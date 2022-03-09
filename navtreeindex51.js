@@ -1,5 +1,8 @@
 var NAVTREEINDEX51 =
 {
+"structnlohmann_1_1detail_1_1has__to__json_3_01BasicJsonType_00_01T_00_01enable__if__t_3_01_9is__4a8838c1c30336126696a126041e661c.html#a25600efc3dbab20cebe1a90f97505d6a":[6,1,2,0,26,0],
+"structnlohmann_1_1detail_1_1has__to__json_3_01BasicJsonType_00_01T_00_01enable__if__t_3_01_9is__4a8838c1c30336126696a126041e661c.html#a7af8dd95a01e7ca32f10075c9934b107":[6,1,2,0,26,1],
+"structnlohmann_1_1detail_1_1identity__tag.html":[6,1,2,0,27],
 "structnlohmann_1_1detail_1_1internal__iterator.html":[6,1,2,0,29],
 "structnlohmann_1_1detail_1_1internal__iterator.html#a2b3bb45f968210e42c282017eeeb63a8":[6,1,2,0,29,2],
 "structnlohmann_1_1detail_1_1internal__iterator.html#a8294a6e6f01b58e1cce8fbae66a50b5d":[6,1,2,0,29,0],
@@ -246,8 +249,5 @@ var NAVTREEINDEX51 =
 "unionmpfr__size__limb__t.html":[6,1,31],
 "unionmpfr__size__limb__t.html#a1ce469735f8eddf7741e94e5d4b71da4":[6,1,31,1],
 "unionmpfr__size__limb__t.html#a329c6351f06549a2d13162ad4f8e1cb1":[6,1,31,0],
-"usergroup0.html":[6],
-"val_8hpp.html":[6,2,0,0,3,59],
-"vf_8hpp.html":[6,2,0,0,3,60],
-"visitor_8hpp.html":[6,2,0,0,0,41]
+"usergroup0.html":[6]
 };

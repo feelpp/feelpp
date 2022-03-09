@@ -104,6 +104,7 @@ $(document).ready(function(){initNavTree('environment_8hpp.html',''); initResiza
   <div class="summary">
 <a href="#nested-classes">Classes</a> &#124;
 <a href="#namespaces">Namespaces</a> &#124;
+<a href="#typedef-members">Typedefs</a> &#124;
 <a href="#func-members">Functions</a>  </div>
   <div class="headertitle">
 <div class="title">environment.hpp File Reference</div>  </div>
@@ -127,6 +128,12 @@ Namespaces</h2></td></tr>
 <tr class="memitem:namespaceFeel"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceFeel.html">Feel</a></td></tr>
 <tr class="memdesc:namespaceFeel"><td class="mdescLeft">&#160;</td><td class="mdescRight">-*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- <br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="typedef-members"></a>
+Typedefs</h2></td></tr>
+<tr class="memitem:a74c0414ab013d6cf6dfe71903f9ff2b9"><td class="memItemLeft" align="right" valign="top"><a id="a74c0414ab013d6cf6dfe71903f9ff2b9"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>Feel::traced</b> = boost::error_info&lt; struct tag_stacktrace, boost::stacktrace::stacktrace &gt;</td></tr>
+<tr class="separator:a74c0414ab013d6cf6dfe71903f9ff2b9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
@@ -167,6 +174,10 @@ template&lt;typename T , typename ... Ts, typename  = typename std::enable_if_t&
 template&lt;typename ... Ts&gt; </td></tr>
 <tr class="memitem:acbf0b86b5377542aab26c49e2980432a"><td class="memTemplItemLeft" align="right" valign="top">std::string&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::soption</b> (Ts &amp;&amp;... v)</td></tr>
 <tr class="separator:acbf0b86b5377542aab26c49e2980432a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a26ca933b206555fce305e6bd89ae72b4"><td class="memTemplParams" colspan="2">template&lt;class E &gt; </td></tr>
+<tr class="memitem:a26ca933b206555fce305e6bd89ae72b4"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#a26ca933b206555fce305e6bd89ae72b4">Feel::throw_with_trace</a> (const E &amp;e)</td></tr>
+<tr class="memdesc:a26ca933b206555fce305e6bd89ae72b4"><td class="mdescLeft">&#160;</td><td class="mdescRight">helper class for throwing any exception with stacktrace:  <a href="namespaceFeel.html#a26ca933b206555fce305e6bd89ae72b4">More...</a><br /></td></tr>
+<tr class="separator:a26ca933b206555fce305e6bd89ae72b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8dd98af8a8608480b011d67db18f47b2"><td class="memTemplParams" colspan="2"><a id="a8dd98af8a8608480b011d67db18f47b2"></a>
 template&lt;typename ... Ts&gt; </td></tr>
 <tr class="memitem:a8dd98af8a8608480b011d67db18f47b2"><td class="memTemplItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classdouble.html">double</a> &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::vdoption</b> (Ts &amp;&amp;... v)</td></tr>

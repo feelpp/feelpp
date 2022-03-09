@@ -1563,6 +1563,9 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>tensor2symm_true</b>
 template&lt;typename SpaceType &gt; </td></tr>
 <tr class="memitem:ae2bff61449295037f4ad04f55323319c"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Test</b> = <a class="el" href="classFeel_1_1BasisFunctions.html">BasisFunctions</a>&lt; SpaceType, 0 &gt;</td></tr>
 <tr class="separator:ae2bff61449295037f4ad04f55323319c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a74c0414ab013d6cf6dfe71903f9ff2b9"><td class="memItemLeft" align="right" valign="top"><a id="a74c0414ab013d6cf6dfe71903f9ff2b9"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>traced</b> = boost::error_info&lt; struct tag_stacktrace, boost::stacktrace::stacktrace &gt;</td></tr>
+<tr class="separator:a74c0414ab013d6cf6dfe71903f9ff2b9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:accd470b67d6c4c15e6bfb2509f5a0de1"><td class="memTemplParams" colspan="2"><a id="accd470b67d6c4c15e6bfb2509f5a0de1"></a>
 template&lt;typename SpaceType &gt; </td></tr>
 <tr class="memitem:accd470b67d6c4c15e6bfb2509f5a0de1"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Trial</b> = <a class="el" href="classFeel_1_1BasisFunctions.html">BasisFunctions</a>&lt; SpaceType, 1 &gt;</td></tr>
@@ -3078,6 +3081,10 @@ template&lt;typename A0 , typename A1 , typename A2 &gt; </td></tr>
 template&lt;typename MeshT &gt; </td></tr>
 <tr class="memitem:a527e0de93d0413a5f89385f959189354"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>print</b> (MeshT *m)</td></tr>
 <tr class="separator:a527e0de93d0413a5f89385f959189354"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acbf0ed30676f879f609f5512463ae511"><td class="memTemplParams" colspan="2"><a id="acbf0ed30676f879f609f5512463ae511"></a>
+template&lt;typename E &gt; </td></tr>
+<tr class="memitem:acbf0ed30676f879f609f5512463ae511"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>print_and_trace</b> (std::string const &amp;s, E const &amp;e)</td></tr>
+<tr class="separator:acbf0ed30676f879f609f5512463ae511"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a18fe962cb5b7e7463de0ed4a2c5031f7"><td class="memTemplParams" colspan="2"><a id="a18fe962cb5b7e7463de0ed4a2c5031f7"></a>
 template&lt;typename StatsIterator &gt; </td></tr>
 <tr class="memitem:a18fe962cb5b7e7463de0ed4a2c5031f7"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>printData</b> (std::ostream &amp;out, StatsIterator statsit, StatsIterator statsen, std::string const &amp;key, <a class="el" href="namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58">size_type</a> stats=Application::ALL|Application::HEADER)</td></tr>
@@ -3086,6 +3093,9 @@ template&lt;typename StatsIterator &gt; </td></tr>
 template&lt;typename StatsIterator &gt; </td></tr>
 <tr class="memitem:ab4f3e763f5590f249f94e7d0d5de65be"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>printErrors</b> (std::ostream &amp;out, StatsIterator statsit, StatsIterator statsen, std::string const &amp;key, <a class="el" href="namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58">size_type</a> stats=Application::ALL|Application::HEADER)</td></tr>
 <tr class="separator:ab4f3e763f5590f249f94e7d0d5de65be"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9907845b84ec2506533e930d2578c888"><td class="memItemLeft" align="right" valign="top"><a id="a9907845b84ec2506533e930d2578c888"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>printGitReport</b> ()</td></tr>
+<tr class="separator:a9907845b84ec2506533e930d2578c888"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa7442b1b8fe0fd0d8b14270a83726323"><td class="memTemplParams" colspan="2"><a id="aa7442b1b8fe0fd0d8b14270a83726323"></a>
 template&lt;typename StatsIterator &gt; </td></tr>
 <tr class="memitem:aa7442b1b8fe0fd0d8b14270a83726323"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>printNumbers</b> (std::ostream &amp;out, StatsIterator statsit, StatsIterator statsen, std::string const &amp;key, <a class="el" href="namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58">size_type</a> stats=Application::ALL|Application::HEADER)</td></tr>
@@ -3335,6 +3345,10 @@ template&lt;typename SpaceType &gt; </td></tr>
 <tr class="memitem:a74627b3d5075d8e531f080bd1427a600"><td class="memItemLeft" align="right" valign="top"><a id="a74627b3d5075d8e531f080bd1427a600"></a>
 Feel::po::options_description&#160;</td><td class="memItemRight" valign="bottom"><b>thermoElectric_options</b> (std::string const &amp;prefix)</td></tr>
 <tr class="separator:a74627b3d5075d8e531f080bd1427a600"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a26ca933b206555fce305e6bd89ae72b4"><td class="memTemplParams" colspan="2">template&lt;class E &gt; </td></tr>
+<tr class="memitem:a26ca933b206555fce305e6bd89ae72b4"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#a26ca933b206555fce305e6bd89ae72b4">throw_with_trace</a> (const E &amp;e)</td></tr>
+<tr class="memdesc:a26ca933b206555fce305e6bd89ae72b4"><td class="mdescLeft">&#160;</td><td class="mdescRight">helper class for throwing any exception with stacktrace:  <a href="namespaceFeel.html#a26ca933b206555fce305e6bd89ae72b4">More...</a><br /></td></tr>
+<tr class="separator:a26ca933b206555fce305e6bd89ae72b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac0ed345a028699f18df84785d1f39a5a"><td class="memItemLeft" align="right" valign="top"><a id="ac0ed345a028699f18df84785d1f39a5a"></a>
 static const std::string&#160;</td><td class="memItemRight" valign="bottom"><b>timerDefaultInstanceName</b> ()</td></tr>
 <tr class="separator:ac0ed345a028699f18df84785d1f39a5a"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -6412,8 +6426,6 @@ template&lt;typename SpaceT , std::enable_if_t&lt; std::is_base_of_v&lt; Functio
 <div class="line">  <a class="code" href="namespaceFeel.html#a2785f8892f89d072d026f84d0225fd50">handleExceptions</a>()</div>
 <div class="line">}</div>
 </div><!-- fragment --> 
-<p class="reference">References <a class="el" href="classFeel_1_1Environment.html#af356d2c22a5301014908b690e272027a">Feel::Environment::isMasterRank()</a>.</p>
-
 </div>
 </div>
 <a id="a5cfaf8fad5de88aad1cad411a763e15a"></a>
@@ -8568,6 +8580,40 @@ template&lt;typename SpaceT , typename  = std::enable_if_t&lt;is_functionspace_v
 
 </div>
 </div>
+<a id="a26ca933b206555fce305e6bd89ae72b4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a26ca933b206555fce305e6bd89ae72b4">&#9670;&nbsp;</a></span>throw_with_trace()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class E &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">void Feel::throw_with_trace </td>
+          <td>(</td>
+          <td class="paramtype">const E &amp;&#160;</td>
+          <td class="paramname"><em>e</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>helper class for throwing any exception with stacktrace: </p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">E</td><td>exception type </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">e</td><td>exception thown </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
 <a id="ad7692ede86dfb9ffbfc4263d4bda59ad"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ad7692ede86dfb9ffbfc4263d4bda59ad">&#9670;&nbsp;</a></span>type_space_t()</h2>
 
@@ -8792,7 +8838,7 @@ template&lt;typename... T&gt; </div>
 </div><!-- contents -->
 </div><!-- doc-content -->
 <div class="ttc" id="anamespaceFeel_html_a56832218e29e9fbfcf68e24a60cee32c"><div class="ttname"><a href="namespaceFeel.html#a56832218e29e9fbfcf68e24a60cee32c">Feel::markedfaces</a></div><div class="ttdeci">markedfaces_t&lt; MeshType &gt; markedfaces(MeshType const &amp;mesh)</div><div class="ttdef"><b>Definition:</b> filters.hpp:379</div></div>
-<div class="ttc" id="anamespaceFeel_html_a2785f8892f89d072d026f84d0225fd50"><div class="ttname"><a href="namespaceFeel.html#a2785f8892f89d072d026f84d0225fd50">Feel::handleExceptions</a></div><div class="ttdeci">void handleExceptions()</div><div class="ttdoc">handle exceptions using a Lippincott function this funnction allows to handle the exceptions thrown i...</div><div class="ttdef"><b>Definition:</b> exceptions.cpp:31</div></div>
+<div class="ttc" id="anamespaceFeel_html_a2785f8892f89d072d026f84d0225fd50"><div class="ttname"><a href="namespaceFeel.html#a2785f8892f89d072d026f84d0225fd50">Feel::handleExceptions</a></div><div class="ttdeci">void handleExceptions()</div><div class="ttdoc">handle exceptions using a Lippincott function this funnction allows to handle the exceptions thrown i...</div><div class="ttdef"><b>Definition:</b> exceptions.cpp:77</div></div>
 <div class="ttc" id="anamespaceFeel_html_a229552e84736e331a5e2972379393aa0"><div class="ttname"><a href="namespaceFeel.html#a229552e84736e331a5e2972379393aa0">Feel::nelements</a></div><div class="ttdeci">size_type nelements(boost::tuple&lt; MT, Iterator, Iterator &gt; const &amp;its, bool global=false, worldcomm_t const &amp;worldComm=Environment::worldComm())</div><div class="ttdef"><b>Definition:</b> filters.hpp:750</div></div>
 <div class="ttc" id="anamespaceFeel_html_a4865c9737b1e5b536a3886ec57f134ff"><div class="ttname"><a href="namespaceFeel.html#a4865c9737b1e5b536a3886ec57f134ff">Feel::faces</a></div><div class="ttdeci">faces_pid_t&lt; MeshType &gt; faces(MeshType const &amp;mesh)</div><div class="ttdef"><b>Definition:</b> filters.hpp:316</div></div>
 <div class="ttc" id="anamespaceFeel_html_a5c5d7739b17b8c03ee6e3250e4523325"><div class="ttname"><a href="namespaceFeel.html#a5c5d7739b17b8c03ee6e3250e4523325">Feel::intersect</a></div><div class="ttdeci">FEELPP_EXPORT Feel::intersect_t&lt; IteratorType &gt; intersect(IteratorType &amp;&amp;it, Args &amp;&amp;... args)</div><div class="ttdoc">this function takes a set of iterators over geometrical entities of the same type (e....</div><div class="ttdef"><b>Definition:</b> intersect.hpp:53</div></div>

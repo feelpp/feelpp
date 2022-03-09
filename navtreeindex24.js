@@ -1,5 +1,6 @@
 var NAVTREEINDEX24 =
 {
+"classFeel_1_1PointSet.html#a7a04cded9c015c67dcdcac4bd47332c1":[6,1,1,218,2],
 "classFeel_1_1PointSet.html#a975709cac35cada9010b8ce44d05b435":[6,1,1,218,20],
 "classFeel_1_1PointSet.html#a9961fb91a86a2650078d43d57d7a26ea":[6,1,1,218,26],
 "classFeel_1_1PointSet.html#aaf6e3178aea1521299dd7d4e412c632d":[6,1,1,218,19],
@@ -248,6 +249,5 @@ var NAVTREEINDEX24 =
 "classFeel_1_1QuadPtLocalization.html#acbb640c9ed4dc16980b5445f583906f6":[6,1,1,228,22],
 "classFeel_1_1QuadPtLocalization.html#ad81b3b0e71cf5714fe02d4ab96ed7b02":[6,1,1,228,52],
 "classFeel_1_1QuadPtLocalization.html#adb4d18d92b4d6adf96efd8cfbf2f6529":[6,1,1,228,41],
-"classFeel_1_1QuadPtLocalization.html#adbaf9ebcf828a036044ca1c30201a009":[6,1,1,228,56],
-"classFeel_1_1QuadPtLocalization.html#adc0250069e47564a77d7877094732797":[6,1,1,228,32]
+"classFeel_1_1QuadPtLocalization.html#adbaf9ebcf828a036044ca1c30201a009":[6,1,1,228,56]
 };

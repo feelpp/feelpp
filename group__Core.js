@@ -86,6 +86,7 @@ var group__Core =
     ] ],
     [ "Environment", "classFeel_1_1Environment.html", [
       [ "abort", "classFeel_1_1Environment.html#aa174c7b26f9285d351fc2e8efb933594", null ],
+      [ "aborted", "classFeel_1_1Environment.html#a955eb91eb141c1aedb753e7bb00cc654", null ],
       [ "about", "classFeel_1_1Environment.html#ad65f5c51eb97579d3aa74452d6d45b51", null ],
       [ "addDeleteObserver", "classFeel_1_1Environment.html#a65c0f336d8f4a7c1e5a2205116a98d27", null ],
       [ "addDeleteObserver", "classFeel_1_1Environment.html#a4cf5e6179d3dfacdacf8ad00641f90db", null ],

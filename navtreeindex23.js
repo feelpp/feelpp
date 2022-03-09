@@ -1,5 +1,6 @@
 var NAVTREEINDEX23 =
 {
+"classFeel_1_1OperatorLinear.html#a1cfd046609f7b4251776da6c470593fb":[6,1,1,201,40],
 "classFeel_1_1OperatorLinear.html#a224e822072064f566f31d3e4461b3123":[6,1,1,201,38],
 "classFeel_1_1OperatorLinear.html#a259dbde76adb96ec5b1fe42e3b46a76f":[6,1,1,201,59],
 "classFeel_1_1OperatorLinear.html#a2615d1d9ebcaa3f086b6e7b3cf7e78d5":[6,1,1,201,22],
@@ -248,6 +249,5 @@ var NAVTREEINDEX23 =
 "classFeel_1_1PointSet.html#a6556c156141f845ab66783506f709663":[6,1,1,218,13],
 "classFeel_1_1PointSet.html#a669a84156dc1f1c9131cdf7bdb50863e":[6,1,1,218,11],
 "classFeel_1_1PointSet.html#a6c950a11dc92bc8bb1fe5d78fca03b33":[6,1,1,218,14],
-"classFeel_1_1PointSet.html#a77629ae553654bf93b67aaf5cc205501":[6,1,1,218,25],
-"classFeel_1_1PointSet.html#a7a04cded9c015c67dcdcac4bd47332c1":[6,1,1,218,2]
+"classFeel_1_1PointSet.html#a77629ae553654bf93b67aaf5cc205501":[6,1,1,218,25]
 };

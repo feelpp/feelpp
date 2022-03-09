@@ -182,6 +182,9 @@ Accessors</h2></td></tr>
 <tr class="memitem:afd3a4ef2925b1469ddee0bf77d94c64d"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Environment.html#afd3a4ef2925b1469ddee0bf77d94c64d">finalized</a> ()</td></tr>
 <tr class="memdesc:afd3a4ef2925b1469ddee0bf77d94c64d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Determine if the MPI environment has already been finalized.  <a href="classFeel_1_1Environment.html#afd3a4ef2925b1469ddee0bf77d94c64d">More...</a><br /></td></tr>
 <tr class="separator:afd3a4ef2925b1469ddee0bf77d94c64d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a955eb91eb141c1aedb753e7bb00cc654"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Environment.html#a955eb91eb141c1aedb753e7bb00cc654">aborted</a> ()</td></tr>
+<tr class="memdesc:a955eb91eb141c1aedb753e7bb00cc654"><td class="mdescLeft">&#160;</td><td class="mdescRight">Determine if the MPI environment has already been aborted.  <a href="classFeel_1_1Environment.html#a955eb91eb141c1aedb753e7bb00cc654">More...</a><br /></td></tr>
+<tr class="separator:a955eb91eb141c1aedb753e7bb00cc654"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3ffa1e65a0e0cf627d2187173c7feebb"><td class="memItemLeft" align="right" valign="top">static std::shared_ptr&lt; <a class="el" href="classFeel_1_1WorldComm.html">WorldComm</a> &gt; const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Environment.html#a3ffa1e65a0e0cf627d2187173c7feebb">worldCommPtr</a> ()</td></tr>
 <tr class="separator:a3ffa1e65a0e0cf627d2187173c7feebb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a62374c8b0a45e6a7376068b986b007b7"><td class="memItemLeft" align="right" valign="top"><a id="a62374c8b0a45e6a7376068b986b007b7"></a>
@@ -514,6 +517,35 @@ virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c
 
 </div>
 </div>
+<a id="a955eb91eb141c1aedb753e7bb00cc654"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a955eb91eb141c1aedb753e7bb00cc654">&#9670;&nbsp;</a></span>aborted()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classbool.html">bool</a> Feel::Environment::aborted </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Determine if the MPI environment has already been aborted. </p>
+<p>this occurs if MPI_Abort has been called</p>
+<dl class="section return"><dt>Returns</dt><dd><code>true</code> if the Feel++ nvironment has been aborted. </dd></dl>
+
+</div>
+</div>
 <a id="a40e7009dadbb4eb4b0c0f4b21f5dd523"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a40e7009dadbb4eb4b0c0f4b21f5dd523">&#9670;&nbsp;</a></span>addTimer()</h2>
 
@@ -835,8 +867,6 @@ virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c
 
 <p>rank 0 process is considered the master process </p>
 <p>the master process can then for example print information in the console or in some files </p>
-
-<p class="reference">Referenced by <a class="el" href="namespaceFeel.html#a2785f8892f89d072d026f84d0225fd50">Feel::handleExceptions()</a>.</p>
 
 </div>
 </div>
@@ -1502,17 +1532,17 @@ virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c
 <p>Shuts down the <a class="el" href="namespaceFeel.html" title="-*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-w...">Feel</a> environment. </p>
 <p>If this <code><a class="el" href="classFeel_1_1Environment.html" title="Initialize, finalize, and query the Feel++ environment.">Environment</a></code> object was used to initialize the <a class="el" href="namespaceFeel.html" title="-*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-w...">Feel</a> environment, and the <a class="el" href="namespaceFeel.html" title="-*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-w...">Feel</a> environment has not already been shut down (finalized), this destructor will shut down the <a class="el" href="namespaceFeel.html" title="-*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-w...">Feel</a> environment. </p>
 
-<p class="reference">References <a class="el" href="classFeel_1_1AboutData.html#a169bf848c34367e76d8fc9b2ba134fe3">Feel::AboutData::appName()</a>, <a class="el" href="classFeel_1_1WorldComm.html#a5089aa8980e3ae1ff3d384198d19a796">Feel::WorldComm::globalRank()</a>, <a class="el" href="classFeel_1_1Environment.html#a29b2eeaca395bba470dc395348692677">saveTimers()</a>, and <a class="el" href="classFeel_1_1Environment.html#a62374c8b0a45e6a7376068b986b007b7">worldComm()</a>.</p>
+<p class="reference">References <a class="el" href="classFeel_1_1Table.html#a502a1ff988881a9bebe50b6d93956e1f">Feel::Table::add_row()</a>, <a class="el" href="classFeel_1_1AboutData.html#a169bf848c34367e76d8fc9b2ba134fe3">Feel::AboutData::appName()</a>, <a class="el" href="classFeel_1_1Environment.html#a0090277ae3216635d65330b4bfff9dd3">appRepository()</a>, <a class="el" href="classFeel_1_1Table.html#a633aa9f099c6e613539513ecb44530d2">Feel::Table::format()</a>, <a class="el" href="classFeel_1_1WorldComm.html#a5089aa8980e3ae1ff3d384198d19a796">Feel::WorldComm::globalRank()</a>, <a class="el" href="classFeel_1_1Environment.html#ac2ba36cb9e6b5cc1df509104647d4ec5">logsRepository()</a>, <a class="el" href="classFeel_1_1Environment.html#a29b2eeaca395bba470dc395348692677">saveTimers()</a>, and <a class="el" href="classFeel_1_1Environment.html#a62374c8b0a45e6a7376068b986b007b7">worldComm()</a>.</p>
 
 </div>
 </div>
 </div><!-- contents -->
 </div><!-- doc-content -->
 <div class="ttc" id="anamespaceFeel_html"><div class="ttname"><a href="namespaceFeel.html">Feel</a></div><div class="ttdoc">-*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-w...</div><div class="ttdef"><b>Definition:</b> about.cpp:36</div></div>
-<div class="ttc" id="aclassFeel_1_1Environment_html_af0fa80df613e602f56dc46f72d0a456c"><div class="ttname"><a href="classFeel_1_1Environment.html#af0fa80df613e602f56dc46f72d0a456c">Feel::Environment::startLogging</a></div><div class="ttdeci">static void startLogging(std::string decorate)</div><div class="ttdoc">start logging.</div><div class="ttdef"><b>Definition:</b> environment.cpp:2014</div></div>
-<div class="ttc" id="aclassFeel_1_1Environment_html_a26e4f2505f0ba9e0a0266390447f68f7"><div class="ttname"><a href="classFeel_1_1Environment.html#a26e4f2505f0ba9e0a0266390447f68f7">Feel::Environment::expand</a></div><div class="ttdeci">static std::string expand(std::string const &amp;expr)</div><div class="ttdoc">expand feel++ pathes in a string</div><div class="ttdef"><b>Definition:</b> environment.cpp:2421</div></div>
-<div class="ttc" id="aclassFeel_1_1Environment_html_a7dab59a5c06a5085826c3d83127e473d"><div class="ttname"><a href="classFeel_1_1Environment.html#a7dab59a5c06a5085826c3d83127e473d">Feel::Environment::stopLogging</a></div><div class="ttdeci">static void stopLogging(bool remove=false)</div><div class="ttdoc">stop logging in Feel++.</div><div class="ttdef"><b>Definition:</b> environment.cpp:2069</div></div>
-<div class="ttc" id="aclassFeel_1_1Environment_html"><div class="ttname"><a href="classFeel_1_1Environment.html">Feel::Environment</a></div><div class="ttdoc">Initialize, finalize, and query the Feel++ environment.</div><div class="ttdef"><b>Definition:</b> environment.hpp:135</div></div>
+<div class="ttc" id="aclassFeel_1_1Environment_html_af0fa80df613e602f56dc46f72d0a456c"><div class="ttname"><a href="classFeel_1_1Environment.html#af0fa80df613e602f56dc46f72d0a456c">Feel::Environment::startLogging</a></div><div class="ttdeci">static void startLogging(std::string decorate)</div><div class="ttdoc">start logging.</div><div class="ttdef"><b>Definition:</b> environment.cpp:2034</div></div>
+<div class="ttc" id="aclassFeel_1_1Environment_html_a26e4f2505f0ba9e0a0266390447f68f7"><div class="ttname"><a href="classFeel_1_1Environment.html#a26e4f2505f0ba9e0a0266390447f68f7">Feel::Environment::expand</a></div><div class="ttdeci">static std::string expand(std::string const &amp;expr)</div><div class="ttdoc">expand feel++ pathes in a string</div><div class="ttdef"><b>Definition:</b> environment.cpp:2441</div></div>
+<div class="ttc" id="aclassFeel_1_1Environment_html_a7dab59a5c06a5085826c3d83127e473d"><div class="ttname"><a href="classFeel_1_1Environment.html#a7dab59a5c06a5085826c3d83127e473d">Feel::Environment::stopLogging</a></div><div class="ttdeci">static void stopLogging(bool remove=false)</div><div class="ttdoc">stop logging in Feel++.</div><div class="ttdef"><b>Definition:</b> environment.cpp:2089</div></div>
+<div class="ttc" id="aclassFeel_1_1Environment_html"><div class="ttname"><a href="classFeel_1_1Environment.html">Feel::Environment</a></div><div class="ttdoc">Initialize, finalize, and query the Feel++ environment.</div><div class="ttdef"><b>Definition:</b> environment.hpp:156</div></div>
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>

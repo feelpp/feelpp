@@ -1,5 +1,8 @@
 var NAVTREEINDEX39 =
 {
+"ginac_8hpp.html#a6dbf40b58f84fd6721f05e2d0387e34e":[6,2,0,0,3,26,74],
+"ginac_8hpp.html#a6e276e3184650ba273d2a69fd394a5c0":[6,2,0,0,3,26,49],
+"ginac_8hpp.html#a7129333552273c27fc9aaffff2c7eef0":[6,2,0,0,3,26,61],
 "ginac_8hpp.html#a71edce761066277b70588577d93af6a6":[6,2,0,0,3,26,30],
 "ginac_8hpp.html#a775d306dbc63f89a38e3c22fd1e3f3ec":[6,2,0,0,3,26,13],
 "ginac_8hpp.html#a788658869718301ba51655bcfd437fa2":[6,2,0,0,3,26,50],
@@ -97,8 +100,8 @@ var NAVTREEINDEX39 =
 "group__DSEL-Variational-Formulation.html#ga7b9221db5c7afed153789f616a1c6328":[5,4,2],
 "group__DSEL-Variational-Formulation.html#gab7965105a4a850885f454c7c3865ffc6":[5,4,0],
 "group__DSEL-Variational-Formulation.html#gaea4c47fc4a17435b9b1d3fe115a6788d":[5,4,1],
-"group__DSEL-Variational-Formulation.html#gaeac7fe8c4b52a6f9c1320275ad39f01e":[5,4,5],
 "group__DSEL-Variational-Formulation.html#gaeac7fe8c4b52a6f9c1320275ad39f01e":[6,2,0,0,3,59,0],
+"group__DSEL-Variational-Formulation.html#gaeac7fe8c4b52a6f9c1320275ad39f01e":[5,4,5],
 "group__Discretization.html":[5,2],
 "group__Filters.html":[5,3],
 "group__FreeFunction.html":[5,13],
@@ -246,8 +249,5 @@ var NAVTREEINDEX39 =
 "meshbase_8hpp.html#gga82cf55da340f64b682d0bea678d6cdf4a5497534826faafd2a147cf7dab7f0027":[6,2,0,0,2,22,1,10],
 "meshbase_8hpp.html#gga82cf55da340f64b682d0bea678d6cdf4a5e216e00f9ebdc9d0a09ecdd6390f5a2":[6,2,0,0,2,22,1,2],
 "meshbase_8hpp.html#gga82cf55da340f64b682d0bea678d6cdf4a6e0edfdb058758b644c5638fe9bc72f6":[6,2,0,0,2,22,1,4],
-"meshbase_8hpp.html#gga82cf55da340f64b682d0bea678d6cdf4a6ebc7c7852ead3e4076308e2d442638c":[6,2,0,0,2,22,1,6],
-"meshbase_8hpp.html#gga82cf55da340f64b682d0bea678d6cdf4ab0c638f3b99ae9bbeee4beba43e0c954":[6,2,0,0,2,22,1,12],
-"meshbase_8hpp.html#gga82cf55da340f64b682d0bea678d6cdf4abc242b5cc184b66bc6ba412b52b83857":[6,2,0,0,2,22,1,1],
-"meshbase_8hpp.html#gga82cf55da340f64b682d0bea678d6cdf4ad391042c5a026199ea229aef2c4f11f6":[6,2,0,0,2,22,1,3]
+"meshbase_8hpp.html#gga82cf55da340f64b682d0bea678d6cdf4a6ebc7c7852ead3e4076308e2d442638c":[6,2,0,0,2,22,1,6]
 };

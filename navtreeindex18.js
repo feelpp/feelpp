@@ -1,5 +1,6 @@
 var NAVTREEINDEX18 =
 {
+"classFeel_1_1GeometricSpace.html":[6,1,1,95],
 "classFeel_1_1GeometricSpace.html#a0077fea4dfe2f6654b36ddd0b77498ed":[6,1,1,95,11],
 "classFeel_1_1GeometricSpace.html#a208633bb0a081fa049e937aba5901711":[6,1,1,95,2],
 "classFeel_1_1GeometricSpace.html#a2373d9c82b70a2c5a38ad9c991e474f8":[6,1,1,95,5],
@@ -248,6 +249,5 @@ var NAVTREEINDEX18 =
 "classFeel_1_1LocalDof.html#a037e8f7eb001fcbf36d155096bd4c230":[6,1,1,165,12],
 "classFeel_1_1LocalDof.html#a42f7a01bbea543f0925ce340c10d2a94":[6,1,1,165,4],
 "classFeel_1_1LocalDof.html#a432c3320f38b77ceea0205617b05bbc7":[6,1,1,165,9],
-"classFeel_1_1LocalDof.html#a479311d76ae2db49ac5f5fb440c524d9":[6,1,1,165,11],
-"classFeel_1_1LocalDof.html#a49ebbbce2076d6451bd9080f010562a1":[6,1,1,165,7]
+"classFeel_1_1LocalDof.html#a479311d76ae2db49ac5f5fb440c524d9":[6,1,1,165,11]
 };
