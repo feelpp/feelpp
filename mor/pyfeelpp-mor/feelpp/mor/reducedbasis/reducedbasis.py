@@ -42,8 +42,6 @@ class reducedbasis():
         """Initialise the object
 
         Args:
-            Aq (list of PETSc.Mat): matrices Aq given by the affine decomposition
-            Fq (list of PETSc.Vec): vectors Fq given by the decomposition of right-hand side
             model (ToolboxMor_{2|3}D): model DEIM used for the decomposition
         """
         self.Qa = 0
@@ -64,7 +62,33 @@ class reducedbasis():
         self.DeltaMax = None
         if rank == 0:
             print("[reducedbasis] rb initialized")
-    
+
+        def alphaLB(mu):
+            if rank == 0:
+                print("[reducedbasis] WARNING : Lower bound not initialized yet")
+            return 1
+
+        def alphaLB_(beta):
+            if rank == 0:
+                print("[reducedbasis] WARNING : Lower bound not initialized yet")
+            return 1
+
+        self.alphaLB = alphaLB
+        self.alphaLB_ = alphaLB_
+
+        self.isInitilized = False
+
+
+    def setMubar(self, mubar):
+        """Set mubar form a given parameter
+
+        Args:
+            mubar (ParameterSpaceElement) : parameter bar{µ}
+        """
+        self.mubar = mubar
+        beta = self.model.computeBetaQm(self.mubar)
+        self.betaA_bar = beta[0]
+        self.betaF_bar = beta[1]
 
 
     """
@@ -88,7 +112,7 @@ class reducedbasis():
         # AN.fill(0)
         # for q in range(0, self.Qa):
         #     AN += self.ANq[q] * beta[q]
-        
+
         if size is None:
             return AN
         else:
@@ -112,7 +136,7 @@ class reducedbasis():
         # FN.fill(0)
         # for q in range(0, self.Qf):
         #     FN += self.FNp[q] * beta[q]
-        
+
         if size is None:
             return FN
         else:
@@ -130,7 +154,7 @@ class reducedbasis():
             tuple (np.ndarray,float) : (uN, sN)
         """
         if beta is None:
-        beta = self.model.computeBetaQm(mu)
+            beta = self.model.computeBetaQm(mu)
         A_mu = self.assembleAN(beta[0][0], size=size)
         F_mu = self.assembleFN(beta[1][0][0], size=size)
 
@@ -203,7 +227,7 @@ class reducedbasis():
         """
         normHatE = self.computeOnlineError(mu, precalc=precalc)
         if precalc is None:
-        alp = self.alphaLB(mu)
+            alp = self.alphaLB(mu)
         else:
             alp = self.alphaLB_(precalc["betaA"])
         return normHatE / np.sqrt(alp)
@@ -234,6 +258,10 @@ class reducedbasis():
         h5f = h5py.File(path+"/reducedbasis.h5", "w")
         f = open('reducedbasis.json', 'w')
 
+        dict_mubar = {}
+        for n in self.mubar.parameterNames(): dict_mubar[n] = self.mubar.parameterNamed(n)
+        content["mubar"] = dict_mubar
+
         h5f.create_dataset("ANq", data=self.ANq)
         h5f.create_dataset("FNp", data=self.FNp)
         # for q, Aq in enumerate(self.ANq):
@@ -248,6 +276,8 @@ class reducedbasis():
             h5f.create_dataset("DeltaMax", data=self.DeltaMax)
         else:
             h5f.create_dataset("DeltaMax", data=np.array([]))
+
+        h5f.create_dataset("alphaMubar", data=np.array([self.alphaMubar]))
 
 
         json.dump(content, f, indent = 4)
@@ -273,6 +303,9 @@ class reducedbasis():
         self.N = j['N']
         self.Qa = j['Qa']
         self.Qf = j['Qf']
+        mubar = model.parameterSpace().element()
+        mubar.setParameters(j["mubar"])
+        self.setMubar(mubar)
 
         h5f = h5py.File(j['path'], "r")
 
@@ -296,7 +329,22 @@ class reducedbasis():
         tmpDeltaMax = h5f["DeltaMax"][:]
         self.DeltaMax = None if tmpDeltaMax.shape == (0,) else tmpDeltaMax
 
+        self.alphaMubar = h5f["alphaMubar"][0]
+        betaA_bar_np = np.array(self.betaA_bar)
+        def alphaLB(mu):
+            # From a parameter
+            betaMu = self.model.computeBetaQm(self.mu)[0][0]
+            return self.alphaMubar * np.min( betaMu / betaA_bar_np )
+
+        def alphaLB_(betaA):
+            # From a decomposition
+            return self.alphaMubar * np.min( betaA / betaA_bar_np )
+
+        self.alphaLB = alphaLB
+        self.alphaLB_ = alphaLB_
+
         print(f"[reduced basis] Basis loaded from {path}")
+        self.setInitialized = True
 
 
 
@@ -309,22 +357,19 @@ class reducedbasisOffline(reducedbasis):
 
         super().__init__(model)
 
+        self.setMubar(mubar)
+
         self.Aq = Aq
         self.Fq = Fq
 
         self.Qa = len(Aq)
         self.Qf = len(Fq)
 
-        self.mubar = mubar
 
         self.SS = np.zeros((self.Qf, self.Qf))
 
         self.NN = Aq[0].size[0]
 
-
-        beta = self.model.computeBetaQm(self.mubar)
-        self.betaA_bar = beta[0]
-        self.betaF_bar = beta[1]
         A_tmp = self.assembleA(self.betaA_bar[0])
         AT_tmp = A_tmp.copy()
         AT_tmp.transpose()
@@ -590,9 +635,7 @@ class reducedbasisOffline(reducedbasis):
     def expandANq(self):
         """Expand the reduced matrices ANq
         """
-        print(self.ANq.shape, (self.Qa, self.N-1, 1))
         self.ANq = np.concatenate( (self.ANq, np.zeros((self.Qa, self.N-1, 1))), axis=2)    # N has already been increased
-        print(self.ANq.shape, (self.Qa, 1, self.N))
         self.ANq = np.concatenate( (self.ANq, np.zeros((self.Qa, 1, self.N))), axis=1)
         for q in range(self.Qa):
             for i,u in enumerate(self.Z):
