@@ -803,16 +803,20 @@ public:
         }
     }
 
+    //! return all markers
     std::map<uint16_type, marker_type> const&
     markers() const
     {
         return M_markers;
     }
+    //! set all markers
     void setMarkers( std::map<uint16_type, marker_type> const& markers )
     {
         M_markers = markers;
     }
-    bool hasMarker( uint16_type k ) const
+
+    //! return true if has marker type id k
+    bool hasMarkerType( uint16_type k ) const
     {
         auto itFindMarker = M_markers.find( k );
         if ( itFindMarker == M_markers.end() )
@@ -821,53 +825,48 @@ public:
             return false;
         return true;
     }
+    //! return true if has marker type id k
+    bool hasMarker( uint16_type k ) const { return this->hasMarkerType( k ); }
+
+    //! return marker with type id k
     marker_type const& marker( uint16_type k ) const
     {
-        DCHECK( this->hasMarker( k ) ) << "no marker type " << k;
+        DCHECK( this->hasMarkerType( k ) ) << "no marker type " << k;
         return M_markers.find( k )->second;
     }
-    marker_type& marker( uint16_type k )
-    {
-        return M_markers[k];
-    }
+    //! set marker type id k with flag v
     void setMarker( uint16_type k, flag_type v )
     {
         M_markers[k].assign( v );
     }
+    //! add flag v to the marker type id k
     void addMarker( uint16_type k, flag_type v )
     {
         M_markers[k].insert( v );
     }
+    //! set marker type id k with flag v
+    template <typename TT,std::enable_if_t< is_iterable_of_v<TT,flag_type>, bool> = true >
+    void setMarker( uint16_type k,TT const& vs )
+    {
+        M_markers[k].assign( vs );
+    }
+    //! add flags vs to the marker type id k
+    template <typename TT,std::enable_if_t< is_iterable_of_v<TT,flag_type>, bool> = true >
+    void addMarker( uint16_type k, TT const& vs )
+    {
+        for ( auto const& v : vs )
+            this->addMarker( k, v );
+    }
 
+    // methods for marker type id  1
     bool hasMarker() const
     {
-        return this->hasMarker( 1 );
+        return this->hasMarkerType( 1 );
     }
     marker_type const& marker() const
     {
-        DCHECK( this->hasMarker( 1 ) ) << "no marker type 1";
-        return M_markers.find( 1 )->second;
+        return this->marker( 1 );
     }
-    marker_type& marker()
-    {
-        return M_markers[1];
-    }
-#if 0
-    marker_type markerOr( uint16_type v = 0 ) const
-    {
-        if ( hasMarker() )
-            return M_markers.find( 1 )->second;
-        else
-            return marker_type{v};
-    }
-    marker_type markerOr( uint16_type v = 0 )
-    {
-        if ( hasMarker() )
-            return M_markers[1];
-        else
-            return marker_type{v};
-    }
-#endif
     void setMarker( flag_type v )
     {
         this->setMarker( 1, v );
@@ -877,57 +876,42 @@ public:
         this->addMarker( 1, v );
     }
     template <typename TT,std::enable_if_t< is_iterable_of_v<TT,flag_type>, bool> = true >
-    //template <typename TT,std::enable_if_t< is_iterable_v<TT>, bool> = true >
-    void addMarkers( TT const& vs )
-        {
-            for ( auto const& v : vs )
-                this->addMarker( v );
-        }
-    template <typename TT,std::enable_if_t< is_iterable_of_v<TT,flag_type>, bool> = true >
-    void setMarkers( TT const& vs )
-        {
-            M_markers[1].assign( vs );
-        }
-    template <typename TT,std::enable_if_t< is_iterable_of_v<TT,flag_type>, bool> = true >
     void setMarker( TT const& vs )
-        {
-            M_markers[1].assign( vs );
-        }
+    {
+        this->setMarker( 1, vs );
+    }
+    template <typename TT,std::enable_if_t< is_iterable_of_v<TT,flag_type>, bool> = true >
+    void addMarker( TT const& vs )
+    {
+        this->addMarker( 1, vs );
+    }
 
+    // methods for marker type id  2
     bool hasMarker2() const
     {
-        return this->hasMarker( 2 );
+        return this->hasMarkerType( 2 );
     }
     marker_type const& marker2() const
     {
-        DCHECK( this->hasMarker( 2 ) ) << "no marker type 2";
-        return M_markers.find( 2 )->second;
-    }
-    marker_type& marker2()
-    {
-        return M_markers[2];
+        return this->marker( 2 );
     }
     void setMarker2( flag_type v )
     {
-        M_markers[2].assign( v );
+        this->setMarker( 2, v );
     }
 
+    // methods for marker type id  3
     bool hasMarker3() const
     {
-        return this->hasMarker( 3 );
+        return this->hasMarkerType( 3 );
     }
     marker_type const& marker3() const
     {
-        DCHECK( this->hasMarker( 3 ) ) << "no marker type 3";
-        return M_markers.find( 3 )->second;
-    }
-    marker_type& marker3()
-    {
-        return M_markers[3];
+        return this->marker( 3 );
     }
     void setMarker3( flag_type v )
     {
-        M_markers[3].assign( v );
+        this->setMarker( 3, v );
     }
 
 

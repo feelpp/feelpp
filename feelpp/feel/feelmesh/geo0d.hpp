@@ -520,8 +520,8 @@ class Geo0D
     std::vector<int> tags() const
     {
         std::vector<int> thetags( 3 );
-        thetags[0] = ( this->hasMarker( 1 ) ) ? this->marker( 1 ).value() : 0; //M_marker1.value();
-        thetags[1] = ( this->hasMarker( 2 ) ) ? this->marker( 2 ).value() : 0; //M_marker2.value();
+        thetags[0] = ( this->hasMarkerType( 1 ) ) ? this->marker( 1 ).value() : 0; //M_marker1.value();
+        thetags[1] = ( this->hasMarkerType( 2 ) ) ? this->marker( 2 ).value() : 0; //M_marker2.value();
         thetags[2] = this->processId();
         return thetags;
     }

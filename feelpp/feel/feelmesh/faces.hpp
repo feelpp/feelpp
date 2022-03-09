@@ -27,8 +27,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-09-03
  */
-#ifndef __faces_H
-#define __faces_H 1
+#ifndef FEELPP_MESH_FACES_HPP
+#define FEELPP_MESH_FACES_HPP
 
 #include <unordered_map>
 #include <feel/feelcore/commobject.hpp>
@@ -312,7 +312,7 @@ public:
                 auto const& face = unwrap_ref( *it );
                 if ( face.processId() != part )
                     continue;
-                if ( !face.hasMarker( markerType ) )
+                if ( !face.hasMarkerType( markerType ) )
                     continue;
                 if ( face.marker( markerType ).isOff() )
                     continue;
@@ -337,7 +337,7 @@ public:
                 auto const& face = unwrap_ref( *it );
                 if ( face.processId() != part )
                     continue;
-                if ( !face.hasMarker( markerType ) )
+                if ( !face.hasMarkerType( markerType ) )
                     continue;
                 if ( !face.marker( markerType ).hasOneOf( markerFlags ) )
                     continue;
@@ -619,15 +619,15 @@ public:
                     continue;
                 if( !faceModified.isConnectedTo1() )
                 {
-                    if ( !faceModified.element0().hasMarker( markerType ) )
+                    if ( !faceModified.element0().hasMarkerType( markerType ) )
                         continue;
                     flag_type tag_0 = faceModified.element0().marker( markerType ).value();
                     faceModified.setMarker( markerType, tag_0 );
                 }
                 else
                 {
-                    bool hasMarkerElt0 = faceModified.element0().hasMarker( markerType );
-                    bool hasMarkerElt1 = faceModified.element1().hasMarker( markerType );
+                    bool hasMarkerElt0 = faceModified.element0().hasMarkerType( markerType );
+                    bool hasMarkerElt1 = faceModified.element1().hasMarkerType( markerType );
                     flag_type tag_0 = (hasMarkerElt0)? faceModified.element0().marker( markerType ).value() : 0;
                     flag_type tag_1 = (hasMarkerElt1)? faceModified.element1().marker( markerType ).value() : 0;
                     if ( hasMarkerElt0 && hasMarkerElt1 )
