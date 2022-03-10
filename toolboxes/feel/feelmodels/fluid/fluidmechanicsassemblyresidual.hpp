@@ -389,7 +389,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidual( 
     // Neumann boundary condition
     if ( BuildCstPart && doAssemblyRhs )
     {
-        for ( auto const& [bcId,bcData] : M_boundaryConditions.normalStress() )
+        for ( auto const& [bcId,bcData] : M_boundaryConditions->normalStress() )
         {
             if ( bcData->isScalarExpr() )
             {
@@ -587,12 +587,12 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidual( 
     //--------------------------------------------------------------------------------------------------//
 
     // weak formulation of the boundaries conditions
-    if ( M_boundaryConditions.hasVelocityImposedNitsche() )
+    if ( M_boundaryConditions->hasVelocityImposedNitsche() )
     {
         if ( !BuildCstPart && !UseJacobianLinearTerms )
         {
             std::set<std::string> allmarkers;
-            for ( auto const& [bcId,bcData] : M_boundaryConditions.velocityImposedNitsche() )
+            for ( auto const& [bcId,bcData] : M_boundaryConditions->velocityImposedNitsche() )
                 allmarkers.insert( bcData->markers().begin(), bcData->markers().end() );
 
             auto Sigmav = this->stressTensorExpr(u,p,se);
@@ -604,7 +604,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidual( 
         }
         if ( BuildCstPart && doAssemblyRhs )
         {
-            for ( auto const& [bcId,bcData] : M_boundaryConditions.velocityImposedNitsche() )
+            for ( auto const& [bcId,bcData] : M_boundaryConditions->velocityImposedNitsche() )
             {
                 linearFormV +=
                     integrate( _range=markedfaces(this->mesh(),bcData->markers()),
@@ -616,7 +616,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidual( 
 
     //------------------------------------------------------------------------------------//
     // Dirichlet with Lagrange-mulitplier
-    if ( M_boundaryConditions.hasVelocityImposedLagrangeMultiplier() )
+    if ( M_boundaryConditions->hasVelocityImposedLagrangeMultiplier() )
     {
         CHECK( this->hasStartSubBlockSpaceIndex("dirichletlm") ) << " start dof index for dirichletlm is not present\n";
         size_type startBlockIndexDirichletLM = this->startSubBlockSpaceIndex("dirichletlm");
@@ -624,7 +624,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidual( 
         if ( !BuildCstPart && !UseJacobianLinearTerms )
         {
             std::set<std::string> allmarkers;
-            for ( auto const& [bcId,bcData] : M_boundaryConditions.velocityImposedLagrangeMultiplier() )
+            for ( auto const& [bcId,bcData] : M_boundaryConditions->velocityImposedLagrangeMultiplier() )
                 allmarkers.insert( bcData->markers().begin(), bcData->markers().end() );
 
             auto lambdaBC = this->XhDirichletLM()->element( XVec, rowStartInVector+startBlockIndexDirichletLM );
@@ -645,7 +645,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidual( 
         if ( BuildCstPart && doAssemblyRhs )
         {
             auto lambdaBC = this->XhDirichletLM()->element();
-            for ( auto const& [bcId,bcData] : M_boundaryConditions.velocityImposedLagrangeMultiplier() )
+            for ( auto const& [bcId,bcData] : M_boundaryConditions->velocityImposedLagrangeMultiplier() )
             {
                 form1( _test=this->XhDirichletLM(),_vector=R,
                        _rowstart=rowStartInVector+startBlockIndexDirichletLM ) +=
@@ -661,13 +661,13 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidual( 
 
     //------------------------------------------------------------------------------------//
 
-    if ( !M_boundaryConditions.pressureImposed().empty() )
+    if ( !M_boundaryConditions->pressureImposed().empty() )
     {
 
         if ( !BuildCstPart && !UseJacobianLinearTerms )
         {
             std::set<std::string> allmarkers;
-            for ( auto const& [bcName,bcData] : M_boundaryConditions.pressureImposed() )
+            for ( auto const& [bcName,bcData] : M_boundaryConditions->pressureImposed() )
                 allmarkers.insert( bcData->markers().begin(), bcData->markers().end() );
             auto rangeFacesPressureBC = markedfaces( this->mesh(),allmarkers );
 
@@ -724,7 +724,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidual( 
         }
         if ( BuildCstPart && doAssemblyRhs )
         {
-            for ( auto const& [bcName,bcData] : M_boundaryConditions.pressureImposed() )
+            for ( auto const& [bcName,bcData] : M_boundaryConditions->pressureImposed() )
             {
                 linearFormV +=
                     integrate( _range=markedfaces(this->mesh(),bcData->markers()),

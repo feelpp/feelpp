@@ -14,7 +14,7 @@ void
 FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateFluidInletVelocity( SymbolsExprType const& se )
 {
     //auto se = this->symbolsExpr();
-    for ( auto const& [bcName,bcData] : M_boundaryConditions.inlet() )
+    for ( auto const& [bcName,bcData] : M_boundaryConditions->inlet() )
     {
         typename boundary_conditions_type::Inlet::Constraint constraint = bcData->constraint();
         auto exprFluidInlet = bcData->expr( se );
@@ -211,9 +211,9 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateInHousePre
     if ( !dynamic_cast<DataUpdateJacobian*>(&data) || !boption(_name="pcd.apply-homogeneous-dirichlet-in-newton",_prefix=this->prefix()) )
     {
         auto rhoExpr = this->materialsProperties()->template materialPropertyExpr<1,1>( "density", se );
-        for ( auto & [bcId,bcData] : M_boundaryConditions.velocityImposed() )
+        for ( auto & [bcId,bcData] : M_boundaryConditions->velocityImposed() )
             myOpPCD->updateFpBoundaryConditionWithDirichlet( rhoExpr, "velocityImposed_" + bcId.second, bcData->expr(se) );
-        for ( auto & [bcName,bcData] : M_boundaryConditions.inlet() )
+        for ( auto & [bcName,bcData] : M_boundaryConditions->inlet() )
         {
             auto const& inletVel = std::get<0>( M_fluidInletVelocityInterpolated.find(bcName)->second );
             myOpPCD->updateFpBoundaryConditionWithDirichlet( rhoExpr, "inlet_" + bcName, -idv(inletVel)*N() );
