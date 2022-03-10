@@ -304,7 +304,7 @@ private :
 
     // boundary conditions
     using boundary_conditions_type = CoefficientFormPDEBoundaryConditions<nRealDim,unknown_is_scalar?0:1>;
-    boundary_conditions_type M_boundaryConditions;
+    std::shared_ptr<boundary_conditions_type> M_boundaryConditions;
 };
 
 template< typename ConvexType, typename BasisUnknownType>
@@ -313,7 +313,7 @@ bool
 CoefficientFormPDE<ConvexType,BasisUnknownType>::hasSymbolDependencyInBoundaryConditions( std::set<std::string> const& symbs, SymbolsExprType const& se ) const
 {
     bool hasDependency = false;
-    for ( auto const& [bcname,bcData] : M_boundaryConditions.neumann() )
+    for ( auto const& [bcname,bcData] : M_boundaryConditions->neumann() )
     {
         auto neumannExpr = bcData->expr();
         if ( neumannExpr.hasSymbolDependency( symbs, se ) )
@@ -325,7 +325,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::hasSymbolDependencyInBoundaryCo
     if ( hasDependency )
         return true;
 
-    for ( auto const& [bcname,bcData] : M_boundaryConditions.robin() )
+    for ( auto const& [bcname,bcData] : M_boundaryConditions->robin() )
     {
         auto theExpr1 = bcData->expr1();
         if ( theExpr1.hasSymbolDependency( symbs, se ) )

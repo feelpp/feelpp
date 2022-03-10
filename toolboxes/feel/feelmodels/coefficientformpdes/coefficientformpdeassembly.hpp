@@ -287,7 +287,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDE( ModelAlgebraic
     if ( buildNonCstPart )
     {
         // k \nabla u  n = g
-        for ( auto const& [bcName,bcData] : M_boundaryConditions.neumann() )
+        for ( auto const& [bcName,bcData] : M_boundaryConditions->neumann() )
         {
             auto theExpr = bcData->expr( se );
             linearForm +=
@@ -296,7 +296,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDE( ModelAlgebraic
                            _geomap=this->geomap() );
         }
         // k \nabla u  n + g u = h  -> - k \nabla u  n = gu - h
-        for ( auto const& [bcName,bcData] : M_boundaryConditions.robin() )
+        for ( auto const& [bcName,bcData] : M_boundaryConditions->robin() )
         {
             auto theExpr1 = bcData->expr1( se );
             bilinearForm +=
@@ -323,7 +323,7 @@ template <typename ModelContextType>
 void
 CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDEDofElimination( ModelAlgebraic::DataUpdateLinear & data, ModelContextType const& mctx ) const
 {
-    if ( !M_boundaryConditions.hasTypeDofElimination() )
+    if ( !M_boundaryConditions->hasTypeDofElimination() )
         return;
     this->log("CoefficientFormPDE","updateLinearPDEDofElimination","start" );
 
@@ -340,7 +340,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDEDofElimination( 
                                _rowstart=this->rowStartInMatrix(),
                                _colstart=this->colStartInMatrix() );
 
-    M_boundaryConditions.applyDofEliminationLinear( bilinearForm, F, mesh, u, se );
+    M_boundaryConditions->applyDofEliminationLinear( bilinearForm, F, mesh, u, se );
 
     this->log("CoefficientFormPDE","updateLinearPDEDofElimination","finish" );
 }
@@ -351,7 +351,7 @@ template <typename ModelContextType>
 void
 CoefficientFormPDE<ConvexType,BasisUnknownType>::updateNewtonInitialGuess( ModelAlgebraic::DataNewtonInitialGuess & data, ModelContextType const& mctx ) const
 {
-    if ( !M_boundaryConditions.hasTypeDofElimination() )
+    if ( !M_boundaryConditions->hasTypeDofElimination() )
         return;
     this->log("CoefficientFormPDE","updateNewtonInitialGuess","start" );
 
@@ -361,7 +361,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateNewtonInitialGuess( Model
     auto u = this->spaceUnknown()->element( U, this->rowStartInVector()+startBlockIndexUnknown );
     auto const& se = mctx.symbolsExpr();
 
-    M_boundaryConditions.applyNewtonInitialGuess( mesh, u, se );
+    M_boundaryConditions->applyNewtonInitialGuess( mesh, u, se );
 
     // update info for synchronization
     this->updateDofEliminationIds( this->unknownName(), data );
@@ -823,7 +823,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic:
     // Neumann bc :  k \nabla u  n = g
     if ( buildNonCstPart )
     {
-        for ( auto const& bcDataPair : M_boundaryConditions.neumann() )
+        for ( auto const& bcDataPair : M_boundaryConditions->neumann() )
         {
             auto const& bcData = bcDataPair.second;
             auto neumannExprBase = bcData->expr();
@@ -864,7 +864,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic:
     }
 
     // Robin bc
-    for ( auto const& [bcName,bcData] : M_boundaryConditions.robin() )
+    for ( auto const& [bcName,bcData] : M_boundaryConditions->robin() )
     {
         auto theExpr1 = bcData->expr1( se );
         bool build_BcRobinTermLhs = theExpr1.expression().isNumericExpression()? buildCstPart : buildNonCstPart;
@@ -1164,7 +1164,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateResidual( ModelAlgebraic:
 
 
     // Neumann bc
-    for ( auto const& [bcName,bcData] : M_boundaryConditions.neumann() )
+    for ( auto const& [bcName,bcData] : M_boundaryConditions->neumann() )
     {
         auto neumannExprBase = bcData->expr();
         bool neumannnBcDependOnUnknown = neumannExprBase.hasSymbolDependency( trialSymbolNames, se );
@@ -1185,7 +1185,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateResidual( ModelAlgebraic:
     }
 
     // Robin bc
-    for ( auto const& [bcName,bcData] : M_boundaryConditions.robin() )
+    for ( auto const& [bcName,bcData] : M_boundaryConditions->robin() )
     {
         auto theExpr1 = bcData->expr1( se );
         bool build_BcRobinTermLhs = theExpr1.expression().isNumericExpression()? buildNonCstPart && !UseJacobianLinearTerms : buildNonCstPart;

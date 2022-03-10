@@ -33,8 +33,7 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
     this->initMaterialProperties();
 
-    if ( !this->mesh() )
-        this->initMesh();
+    this->initMesh();
 
     this->materialsProperties()->addMesh( this->mesh() );
 
@@ -122,12 +121,13 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
 void
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
 {
+    M_boundaryConditions = std::make_shared<boundary_conditions_type>( this->shared_from_this() );
     if ( !this->modelProperties().boundaryConditions().hasSection( this->keyword() ) )
         return;
 
-    M_boundaryConditions.setup( *this,this->modelProperties().boundaryConditions().section( this->keyword() ) );
+    M_boundaryConditions->setup( this->modelProperties().boundaryConditions().section( this->keyword() ) );
 
-    for ( auto const& [bcName,bcData] : M_boundaryConditions.dirichlet() )
+    for ( auto const& [bcName,bcData] : M_boundaryConditions->dirichlet() )
         bcData->updateDofEliminationIds( *this, this->unknownName(), this->spaceUnknown() );
 }
 
@@ -223,7 +223,7 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) 
     super_type::super_model_meshes_type::updateInformationObject( p["Meshes"] );
 
     // Boundary Conditions
-    M_boundaryConditions.updateInformationObject( p["Boundary Conditions"] );
+    M_boundaryConditions->updateInformationObject( p["Boundary Conditions"] );
 
     // FunctionSpace
     nl::json subPt;
@@ -401,7 +401,7 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::setParameterValues( std::map<std::string
         this->materialsProperties()->setParameterValues( paramValues );
     }
 
-    M_boundaryConditions.setParameterValues( paramValues );
+    M_boundaryConditions->setParameterValues( paramValues );
 
     this->log("CoefficientFormPDE","setParameterValues", "finish");
 }
@@ -430,7 +430,7 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
 void
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::updateJacobianDofElimination( ModelAlgebraic::DataUpdateJacobian & data ) const
 {
-    if ( !M_boundaryConditions.hasTypeDofElimination() )
+    if ( !M_boundaryConditions->hasTypeDofElimination() )
         return;
 
     this->log("CoefficientFormPDE","updateJacobianDofElimination","start" );
@@ -444,7 +444,7 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
 void
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::updateResidualDofElimination( ModelAlgebraic::DataUpdateResidual & data ) const
 {
-    if ( !M_boundaryConditions.hasTypeDofElimination() )
+    if ( !M_boundaryConditions->hasTypeDofElimination() )
         return;
     this->log("CoefficientFormPDE","updateResidualDofElimination","start" );
 

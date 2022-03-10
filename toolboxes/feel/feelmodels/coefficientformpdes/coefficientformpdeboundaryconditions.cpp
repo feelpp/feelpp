@@ -104,9 +104,9 @@ CoefficientFormPDEBoundaryConditions<Dim,EquationRank>::Robin::tabulateInformati
 
 template <uint16_type Dim,uint8_type EquationRank>
 void
-CoefficientFormPDEBoundaryConditions<Dim,EquationRank>::setup( ModelBase const& mparent, nl::json const& jarg )
+CoefficientFormPDEBoundaryConditions<Dim,EquationRank>::setup( nl::json const& jarg )
 {
-
+    auto tbParent = this->toolboxParent();
     ModelIndexes indexes;
     for ( std::string const& bcKeyword : { "Dirichlet" } )
     {
@@ -115,8 +115,8 @@ CoefficientFormPDEBoundaryConditions<Dim,EquationRank>::setup( ModelBase const& 
             auto const& j_bc = jarg.at( bcKeyword );
             for ( auto const& [j_bckey,j_bcval] : j_bc.items() )
             {
-                auto bc = std::make_shared<Dirichlet>( j_bckey );
-                bc->setup( mparent,j_bcval,indexes );
+                auto bc = std::make_shared<Dirichlet>( j_bckey,tbParent );
+                bc->setup( j_bcval,indexes );
                 M_dirichlet.emplace( j_bckey, std::move( bc ) );
             }
         }
@@ -129,7 +129,7 @@ CoefficientFormPDEBoundaryConditions<Dim,EquationRank>::setup( ModelBase const& 
             for ( auto const& [j_bckey,j_bcval] : j_bc.items() )
             {
                 auto bc = std::make_shared<Neumann>( j_bckey );
-                bc->setup( mparent,j_bcval,indexes );
+                bc->setup( *tbParent,j_bcval,indexes );
                 M_neumann.emplace( j_bckey, std::move( bc ) );
             }
         }
@@ -142,7 +142,7 @@ CoefficientFormPDEBoundaryConditions<Dim,EquationRank>::setup( ModelBase const& 
             for ( auto const& [j_bckey,j_bcval] : j_bc.items() )
             {
                 auto bc = std::make_shared<Robin>( j_bckey );
-                bc->setup( mparent,j_bcval,indexes );
+                bc->setup( *tbParent,j_bcval,indexes );
                 M_robin.emplace(j_bckey, std::move( bc ) );
             }
         }
@@ -153,7 +153,6 @@ template <uint16_type Dim,uint8_type EquationRank>
 void
 CoefficientFormPDEBoundaryConditions<Dim,EquationRank>::setParameterValues( std::map<std::string,double> const& paramValues )
 {
-
     for ( auto & [bcName,bcData] : M_dirichlet )
         bcData->setParameterValues( paramValues );
     for ( auto & [bcName,bcData] : M_neumann )
