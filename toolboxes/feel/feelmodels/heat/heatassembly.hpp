@@ -449,7 +449,7 @@ Heat<ConvexType,BasisTemperatureType>::updateJacobian( DataUpdateJacobian & data
                                _rowstart=this->rowStartInMatrix(),
                                _colstart=trialBlockIndex ) +=
                             integrate( _range=markedfaces(this->mesh(),bcData->markers()),
-                                       _expr= -timeSteppingScaling*inner(neumannDiffExpr, id(v)),
+                                       _expr= timeSteppingScaling*inner(neumannDiffExpr, id(v)),
                                        _geomap=this->geomap() );
                     }
                 });
@@ -608,7 +608,7 @@ Heat<ConvexType,BasisTemperatureType>::updateResidual( DataUpdateResidual & data
             auto theExpr = bcData->expr( se );
             myLinearForm +=
                 integrate( _range=markedfaces(this->mesh(),bcData->markers()),
-                           _expr= -timeSteppingScaling*theExpr*id(v),
+                           _expr= timeSteppingScaling*theExpr*id(v),
                            _geomap=this->geomap() );
         }
     }
