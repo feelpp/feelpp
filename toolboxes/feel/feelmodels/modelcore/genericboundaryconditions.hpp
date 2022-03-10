@@ -202,7 +202,7 @@ public:
                 bilinearForm +=
                     on( _range=Feel::FeelModels::detail::rangeOfMarkedEntity<ET>(mesh,listMarkedEntities),
                         _element=u,_rhs=F,_expr=theExpr,
-                        _prefix=tbParent->prefix() );
+                        _vm=tbParent->clovm(),_prefix=tbParent->prefix() );
             }
             else if constexpr ( Dim1 > 1 && Dim2 == 1 )
             {
@@ -210,7 +210,7 @@ public:
                 bilinearForm +=
                     on( _range=Feel::FeelModels::detail::rangeOfMarkedEntity<ET>(mesh, listMarkedEntities),
                         _element=u.comp( comp ),_rhs=F,_expr=theExpr,
-                         _prefix=tbParent->prefix() );
+                        _vm=tbParent->clovm(),_prefix=tbParent->prefix() );
             }
         }
 
