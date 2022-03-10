@@ -62,6 +62,8 @@ for container in ${CONTAINERS}; do
 
     if [ "$noop" = "false" ]; then
         docker push "ghcr.io/feelpp/${container}:$tag";
+        docker push "ghcr.io/feelpp/${container}:$tag";
+        docker push "ghcr.io/feelpp/${container}:$tag";
     else
         echo "docker push \"ghcr.io/feelpp/${container}:$tag\"";
     fi
@@ -93,6 +95,8 @@ for container in ${CONTAINERS}; do
             echo "--- Pushing ghcr.io/feelpp/${container}:$aliastag"
             if [ "$noop" = "false" ]; then
                 docker tag "ghcr.io/feelpp/${container}:$tag" "ghcr.io/feelpp/${container}:$aliastag";
+                docker push "ghcr.io/feelpp/${container}:$aliastag";
+                docker push "ghcr.io/feelpp/${container}:$aliastag";
                 docker push "ghcr.io/feelpp/${container}:$aliastag";
             else
                 echo "docker tag \"ghcr.io/feelpp/${container}:$tag\" \"ghcr.io/feelpp/${container}:$aliastag\"";
