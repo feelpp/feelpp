@@ -1595,10 +1595,10 @@ fragmentationMarkedElements( MeshType const& mesh, EntityProcessType entity = En
         std::string fragmentName;
         for ( auto mId : mIds )
         {
-             std::string mName = imesh.markerName( mId );
-             if ( !mName.empty() && !fragmentName.empty() )
-                 fragmentName += "_";
-             fragmentName += mName;
+            std::string mName = imesh.markerName( mId, mesh_type::element_type::nDim );
+            if ( !mName.empty() && !fragmentName.empty() )
+                fragmentName += "_";
+            fragmentName += mName;
         }
         res.emplace( fragmentId, std::make_tuple( std::move( range ), mIds, fragmentName ) );
     }
