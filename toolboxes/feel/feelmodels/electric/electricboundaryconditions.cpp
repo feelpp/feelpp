@@ -10,11 +10,11 @@ namespace FeelModels
 {
 
 void
-ElectricBoundaryConditions::Ground::setup( ModelBase const& mparent, nl::json const& jarg, ModelIndexes const& indexes )
+ElectricBoundaryConditions::Ground::setup( nl::json const& jarg, ModelIndexes const& indexes )
 {
     nl::json j_bc = jarg;
     j_bc["expr"] = "0";
-    super_type::setup( mparent,j_bc,indexes );
+    super_type::setup( j_bc,indexes );
 }
 void
 ElectricBoundaryConditions::Ground::updateInformationObject( nl::json & p ) const
@@ -79,8 +79,9 @@ ElectricBoundaryConditions::SurfaceChargeDensity::tabulateInformations( nl::json
 }
 
 void
-ElectricBoundaryConditions::setup( ModelBase const& mparent, nl::json const& jarg )
+ElectricBoundaryConditions::setup( nl::json const& jarg )
 {
+    auto tbParent = this->toolboxParent();
     ModelIndexes indexes;
     for ( std::string const& bcKeyword : { "electric_potential_imposed", "electric_potential" } )
     {
@@ -89,8 +90,8 @@ ElectricBoundaryConditions::setup( ModelBase const& mparent, nl::json const& jar
             auto const& j_bc = jarg.at( bcKeyword );
             for ( auto const& [j_bckey,j_bcval] : j_bc.items() )
             {
-                auto bc = std::make_shared<ElectricPotentialImposed>( j_bckey );
-                bc->setup( mparent,j_bcval,indexes );
+                auto bc = std::make_shared<ElectricPotentialImposed>( j_bckey,tbParent );
+                bc->setup( j_bcval,indexes );
                 M_electricPotentialImposed.emplace( std::make_pair(Type::ElectricPotentialImposed,j_bckey), std::move( bc ) );
             }
         }
@@ -101,8 +102,8 @@ ElectricBoundaryConditions::setup( ModelBase const& mparent, nl::json const& jar
         {
             auto const& j_bc = jarg.at( bcKeyword );
             std::string bcName = "";
-            auto bc = std::make_shared<Ground>( bcName );
-            bc->setup( mparent,j_bc,indexes );
+            auto bc = std::make_shared<Ground>( bcName, tbParent );
+            bc->setup( j_bc,indexes );
             M_electricPotentialImposed.emplace( std::make_pair(Type::Ground,bcName), std::move( bc ) );
         }
     }
@@ -114,7 +115,7 @@ ElectricBoundaryConditions::setup( ModelBase const& mparent, nl::json const& jar
             for ( auto const& [j_bckey,j_bcval] : j_bc.items() )
             {
                 auto bc = std::make_shared<SurfaceChargeDensity>( j_bckey );
-                bc->setup( mparent,j_bcval,indexes );
+                bc->setup( *tbParent,j_bcval,indexes );
                 M_surfaceChargeDensity.emplace(j_bckey, std::move( bc ) );
             }
         }

@@ -182,7 +182,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) cons
         super_type::super_model_meshes_type::updateInformationObject( p["Meshes"] );
 
         // Boundary Conditions
-        M_boundaryConditions.updateInformationObject( p["Boundary Conditions"] );
+        M_boundaryConditions->updateInformationObject( p["Boundary Conditions"] );
 
         subPt.clear();
         this->functionSpaceDisplacement()->updateInformationObject( subPt["Displacement"] );
@@ -1028,22 +1028,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::setParameterValues( std::map<std::string,dou
     for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
         physicData->setParameterValues( paramValues );
 
-    M_boundaryConditions.setParameterValues( paramValues );
+    M_boundaryConditions->setParameterValues( paramValues );
 
-
-#if 0 // VINCENT
-    this->M_bcDirichlet.setParameterValues( paramValues );
-    for ( auto & bcDirComp : this->M_bcDirichletComponents )
-        bcDirComp.second.setParameterValues( paramValues );
-    this->M_bcNeumannScalar.setParameterValues( paramValues );
-    this->M_bcNeumannVectorial.setParameterValues( paramValues );
-    this->M_bcNeumannTensor2.setParameterValues( paramValues );
-    this->M_bcNeumannEulerianFrameScalar.setParameterValues( paramValues );
-    this->M_bcNeumannEulerianFrameVectorial.setParameterValues( paramValues );
-    this->M_bcNeumannEulerianFrameTensor2.setParameterValues( paramValues );
-    this->M_bcRobin.setParameterValues( paramValues );
-    this->M_volumicForcesProperties.setParameterValues( paramValues );
-#endif
     if ( this->hasSolidEquation1dReduced() )
         M_solid1dReduced->setParameterValues( paramValues );
 }

@@ -206,11 +206,12 @@ ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
 ELECTRIC_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
 {
+    M_boundaryConditions = std::make_shared<boundary_conditions_type>( this->shared_from_this() );
     if ( !this->modelProperties().boundaryConditions().hasSection( this->keyword() ) )
         return;
-    M_boundaryConditions.setup( *this,this->modelProperties().boundaryConditions().section( this->keyword() ) );
+    M_boundaryConditions->setup( this->modelProperties().boundaryConditions().section( this->keyword() ) );
 
-    for ( auto const& [bcName,bcData] : M_boundaryConditions.electricPotentialImposed() )
+    for ( auto const& [bcName,bcData] : M_boundaryConditions->electricPotentialImposed() )
         bcData->updateDofEliminationIds( *this, "electric-potential", this->spaceElectricPotential() );
 }
 
@@ -284,7 +285,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) const
     p["Physics2"] = subPt;
 
     // Boundary Conditions
-    M_boundaryConditions.updateInformationObject( p["Boundary Conditions"] );
+    M_boundaryConditions->updateInformationObject( p["Boundary Conditions"] );
 
     // Materials properties
     if ( this->materialsProperties() )
@@ -439,7 +440,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::setParameterValues( std::map<std::string,double> c
     for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
         physicData->setParameterValues( paramValues );
 
-    M_boundaryConditions.setParameterValues( paramValues );
+    M_boundaryConditions->setParameterValues( paramValues );
 
     this->log("Electric","setParameterValues", "finish");
 }

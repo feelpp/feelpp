@@ -11,8 +11,9 @@ namespace Feel
 namespace FeelModels
 {
 
-class ElectricBoundaryConditions
+class ElectricBoundaryConditions : public BoundaryConditionsBase
 {
+    using super_type = BoundaryConditionsBase;
 public:
     using self_type = ElectricBoundaryConditions;
 
@@ -22,7 +23,7 @@ public:
     {
         using super_type = GenericDirichletBoundaryCondition<1,1>;
     public:
-        ElectricPotentialImposed( std::string const& name ) : super_type( name ) {}
+        ElectricPotentialImposed( std::string const& name, std::shared_ptr<ModelBase> const& tbParent ) : super_type( name, tbParent ) {}
         ElectricPotentialImposed( ElectricPotentialImposed const& ) = default;
         ElectricPotentialImposed( ElectricPotentialImposed && ) = default;
 
@@ -33,10 +34,10 @@ public:
     {
         using super_type = ElectricPotentialImposed;
     public:
-        Ground( std::string const& name ) : super_type( name ) {}
+        Ground( std::string const& name, std::shared_ptr<ModelBase> const& tbParent ) : super_type( name, tbParent ) {}
         Ground( Ground const& ) = default;
         Ground( Ground && ) = default;
-        void setup( ModelBase const& mparent, nl::json const& jarg, ModelIndexes const& indexes ) override;
+        void setup( nl::json const& jarg, ModelIndexes const& indexes ) override;
 
         self_type::Type type() const override { return self_type::Type::Ground; }
 
@@ -79,7 +80,7 @@ public:
     };
 
 
-    ElectricBoundaryConditions() = default;
+    ElectricBoundaryConditions( std::shared_ptr<ModelBase> const& tbParent ) : super_type( tbParent ) {}
     ElectricBoundaryConditions( ElectricBoundaryConditions const& ) = default;
     ElectricBoundaryConditions( ElectricBoundaryConditions && ) = default;
 
@@ -110,7 +111,7 @@ public:
     void setParameterValues( std::map<std::string,double> const& paramValues );
 
     //! setup bc from json
-    void setup( ModelBase const& mparent, nl::json const& jarg );
+    void setup( nl::json const& jarg );
 
     //! update informations
     void updateInformationObject( nl::json & p ) const;

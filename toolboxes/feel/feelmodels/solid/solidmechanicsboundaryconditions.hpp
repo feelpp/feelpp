@@ -12,8 +12,9 @@ namespace FeelModels
 {
 
 template <uint16_type Dim>
-class SolidMechanicsBoundaryConditions
+class SolidMechanicsBoundaryConditions : public BoundaryConditionsBase
 {
+    using super_type = BoundaryConditionsBase;
 public:
     using self_type = SolidMechanicsBoundaryConditions<Dim>;
     enum class Type { DisplacementImposed=0 };
@@ -22,7 +23,7 @@ public:
     {
         using super_type = GenericDirichletBoundaryCondition<Dim,1>;
     public:
-        DisplacementImposed( std::string const& name ) : super_type( name ) {}
+        DisplacementImposed( std::string const& name, std::shared_ptr<ModelBase> const& tbParent ) : super_type( name, tbParent ) {}
         DisplacementImposed( DisplacementImposed const& ) = default;
         DisplacementImposed( DisplacementImposed && ) = default;
 
@@ -134,7 +135,7 @@ public:
     };
 
 
-    SolidMechanicsBoundaryConditions() = default;
+    SolidMechanicsBoundaryConditions( std::shared_ptr<ModelBase> const& tbParent ) : super_type( tbParent ) {}
     SolidMechanicsBoundaryConditions( SolidMechanicsBoundaryConditions const& ) = default;
     SolidMechanicsBoundaryConditions( SolidMechanicsBoundaryConditions && ) = default;
 
@@ -173,7 +174,7 @@ public:
     void setParameterValues( std::map<std::string,double> const& paramValues );
 
     //! setup bc from json
-    void setup( ModelBase const& mparent, nl::json const& jarg );
+    void setup( nl::json const& jarg );
 
     //! update informations
     void updateInformationObject( nl::json & p ) const;

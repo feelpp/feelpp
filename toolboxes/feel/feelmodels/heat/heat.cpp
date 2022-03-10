@@ -202,7 +202,7 @@ HEAT_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
                 isNonLinear = true;
                 break;
             }
-            for ( auto const& [bcName,bcData] : M_boundaryConditions.heatFlux() )
+            for ( auto const& [bcName,bcData] : M_boundaryConditions->heatFlux() )
             {
                 auto neumannExpr = bcData->expr();
                 if ( neumannExpr.hasSymbolDependency( tsName, se ) )
@@ -441,7 +441,7 @@ HEAT_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) const
     p["Physics2"] = subPt;
 
     // Boundary Conditions
-    M_boundaryConditions.updateInformationObject( p["Boundary Conditions"] );
+    M_boundaryConditions->updateInformationObject( p["Boundary Conditions"] );
 
     // Materials properties
     if ( this->materialsProperties() )
@@ -640,7 +640,7 @@ HEAT_CLASS_TEMPLATE_TYPE::setParameterValues( std::map<std::string,double> const
     for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
         physicData->setParameterValues( paramValues );
 
-    M_boundaryConditions.setParameterValues( paramValues );
+    M_boundaryConditions->setParameterValues( paramValues );
 
     this->log("Heat","setParameterValues", "finish");
 }
@@ -649,16 +649,17 @@ HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
 HEAT_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
 {
+    M_boundaryConditions = std::make_shared<boundary_conditions_type>( this->shared_from_this() );
     if ( !this->modelProperties().boundaryConditions().hasSection( this->keyword() ) )
         return;
-    M_boundaryConditions.setup( *this,this->modelProperties().boundaryConditions().section( this->keyword() ) );
+    M_boundaryConditions->setup( this->modelProperties().boundaryConditions().section( this->keyword() ) );
 }
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
 HEAT_CLASS_TEMPLATE_TYPE::updateAlgebraicDofEliminationIds()
 {
-    for ( auto const& [bcName,bcData] : M_boundaryConditions.temperatureImposed() )
+    for ( auto const& [bcName,bcData] : M_boundaryConditions->temperatureImposed() )
         bcData->updateDofEliminationIds( *this, "temperature", this->spaceTemperature() );
 }
 

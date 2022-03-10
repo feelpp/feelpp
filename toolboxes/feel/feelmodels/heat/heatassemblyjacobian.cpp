@@ -26,7 +26,7 @@ HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
 HEAT_CLASS_TEMPLATE_TYPE::updateJacobianDofElimination( DataUpdateJacobian & data ) const
 {
-    if ( !M_boundaryConditions.hasTypeDofElimination() )
+    if ( !M_boundaryConditions->hasTypeDofElimination() )
         return;
 
     this->log("Heat","updateJacobianDofElimination","start" );

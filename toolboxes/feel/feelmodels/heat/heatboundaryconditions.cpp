@@ -95,8 +95,9 @@ HeatBoundaryConditions::ConvectiveHeatFlux::tabulateInformations( nl::json const
 }
 
 void
-HeatBoundaryConditions::setup( ModelBase const& mparent, nl::json const& jarg )
+HeatBoundaryConditions::setup( nl::json const& jarg )
 {
+    auto tbParent = this->toolboxParent();
     ModelIndexes indexes;
     for ( std::string const& bcKeyword : { "temperature_imposed", "temperature" } )
     {
@@ -105,8 +106,8 @@ HeatBoundaryConditions::setup( ModelBase const& mparent, nl::json const& jarg )
             auto const& j_temp = jarg.at( bcKeyword );
             for ( auto const& [j_tempkey,j_tempval] : j_temp.items() )
             {
-                auto bc = std::make_shared<TemperatureImposed>( j_tempkey );
-                bc->setup( mparent,j_tempval,indexes );
+                auto bc = std::make_shared<TemperatureImposed>( j_tempkey, tbParent );
+                bc->setup( j_tempval,indexes );
                 M_temperatureImposed.emplace(j_tempkey, std::move( bc ) );
             }
         }
@@ -119,7 +120,7 @@ HeatBoundaryConditions::setup( ModelBase const& mparent, nl::json const& jarg )
             for ( auto const& [j_tempkey,j_tempval] : j_temp.items() )
             {
                 auto bc = std::make_shared<HeatFlux>( j_tempkey );
-                bc->setup( mparent,j_tempval,indexes );
+                bc->setup( *tbParent,j_tempval,indexes );
                 M_heatFlux.emplace(j_tempkey, std::move( bc ) );
             }
         }
@@ -132,7 +133,7 @@ HeatBoundaryConditions::setup( ModelBase const& mparent, nl::json const& jarg )
             for ( auto const& [j_tempkey,j_tempval] : j_temp.items() )
             {
                 auto bc = std::make_shared<ConvectiveHeatFlux>( j_tempkey );
-                bc->setup( mparent,j_tempval,indexes );
+                bc->setup( *tbParent,j_tempval,indexes );
                 M_convectiveHeatFlux.emplace(j_tempkey, std::move( bc ) );
             }
         }
