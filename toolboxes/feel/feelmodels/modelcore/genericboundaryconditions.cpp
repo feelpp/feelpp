@@ -11,10 +11,11 @@ namespace FeelModels
 
 template <uint16_type Dim1,uint16_type Dim2>
 void
-GenericDirichletBoundaryCondition<Dim1,Dim2>::setup( ModelBase const& mparent, nl::json const& jarg, ModelIndexes const& indexes )
+GenericDirichletBoundaryCondition<Dim1,Dim2>::setup( nl::json const& jarg, ModelIndexes const& indexes )
 {
+    auto tbParent = M_toolboxParent.lock();
     if ( jarg.contains( "expr" ) )
-        M_mexpr.setExpr( jarg.at( "expr" ), mparent.worldComm(), mparent.repository().expr(), indexes );
+        M_mexpr.setExpr( jarg.at( "expr" ), tbParent->worldComm(), tbParent->repository().expr(), indexes );
      if ( jarg.contains( "markers" ) )
      {
          ModelMarkers markers;

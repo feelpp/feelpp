@@ -17,6 +17,19 @@ namespace Feel
 namespace FeelModels
 {
 
+class BoundaryConditionsBase
+{
+public :
+    BoundaryConditionsBase( std::shared_ptr<ModelBase> const& tbParent ) : M_toolboxParent( tbParent ) {}
+    BoundaryConditionsBase( BoundaryConditionsBase const& ) = default;
+    BoundaryConditionsBase( BoundaryConditionsBase && ) = default;
+
+    std::shared_ptr<ModelBase> toolboxParent() const { return M_toolboxParent.lock(); }
+
+protected:
+    std::weak_ptr<ModelBase> M_toolboxParent;
+};
+
 namespace detail
 {
 
@@ -97,12 +110,12 @@ class GenericDirichletBoundaryCondition
 public:
     enum class Method { elimination=0, nitsche, lagrange_multiplier };
 
-    GenericDirichletBoundaryCondition( std::string const& name ) : M_name( name ), M_comp( ComponentType::NO_COMPONENT ), M_method( Method::elimination ) {}
+    GenericDirichletBoundaryCondition( std::string const& name, std::shared_ptr<ModelBase> const& tbParent ) : M_name( name ), M_toolboxParent( tbParent ), M_comp( ComponentType::NO_COMPONENT ), M_method( Method::elimination ) {}
     GenericDirichletBoundaryCondition( GenericDirichletBoundaryCondition const& ) = default;
     GenericDirichletBoundaryCondition( GenericDirichletBoundaryCondition && ) = default;
 
     //! setup bc from json
-    virtual void setup( ModelBase const& mparent, nl::json const& jarg, ModelIndexes const& indexes );
+    virtual void setup( nl::json const& jarg, ModelIndexes const& indexes );
 
     //! return expression
     template <typename SymbolsExprType = symbols_expression_empty_t>
@@ -176,6 +189,7 @@ public:
         {
             if ( !this->isMethodElimination() )
                 return;
+            auto tbParent = M_toolboxParent.lock();
             auto meshMarkersByEntities = Feel::FeelModels::detail::distributeMarkerListOnSubEntity( mesh, M_markers );
             ComponentType comp = M_comp;
             static const int indexDistrib = Feel::FeelModels::detail::indexInDistributeMarker<ET>();
@@ -187,14 +201,16 @@ public:
                 auto theExpr = this->expr(se);
                 bilinearForm +=
                     on( _range=Feel::FeelModels::detail::rangeOfMarkedEntity<ET>(mesh,listMarkedEntities),
-                        _element=u,_rhs=F,_expr=theExpr );
+                        _element=u,_rhs=F,_expr=theExpr,
+                        _prefix=tbParent->prefix() );
             }
             else if constexpr ( Dim1 > 1 && Dim2 == 1 )
             {
                 auto theExpr = this->exprComponent(se);
                 bilinearForm +=
                     on( _range=Feel::FeelModels::detail::rangeOfMarkedEntity<ET>(mesh, listMarkedEntities),
-                        _element=u.comp( comp ),_rhs=F,_expr=theExpr );
+                        _element=u.comp( comp ),_rhs=F,_expr=theExpr,
+                         _prefix=tbParent->prefix() );
             }
         }
 
@@ -226,6 +242,7 @@ public:
 
 protected:
     std::string M_name;
+    std::weak_ptr<ModelBase> M_toolboxParent;
     ModelExpression M_mexpr;
     std::set<std::string> M_markers;
     ComponentType M_comp;
