@@ -11,7 +11,7 @@ template <typename ModelContextType>
 void
 FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateNewtonInitialGuess( DataNewtonInitialGuess & data, ModelContextType const& mctx ) const
 {
-    if ( !M_boundaryConditions.hasTypeDofElimination() )
+    if ( !M_boundaryConditions->hasTypeDofElimination() )
         return;
 
     this->log("FluidMechanics","updateNewtonInitialGuess","start");
@@ -23,10 +23,10 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateNewtonInit
     auto mesh = this->mesh();
     auto const& se = mctx.symbolsExpr();
 
-    M_boundaryConditions.applyNewtonInitialGuess( mesh, u, se );
+    M_boundaryConditions->applyNewtonInitialGuess( mesh, u, se );
 
     // inlet bc
-    for ( auto const& [bcName,bcData] : M_boundaryConditions.inlet() )
+    for ( auto const& [bcName,bcData] : M_boundaryConditions->inlet() )
     {
         auto itFindMark = M_fluidInletVelocityInterpolated.find(bcName);
         if ( itFindMark == M_fluidInletVelocityInterpolated.end() )
@@ -39,7 +39,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateNewtonInit
     // update info for synchronization
     this->updateDofEliminationIds( "velocity", data );
 
-    if ( !M_boundaryConditions.pressureImposed().empty() )
+    if ( !M_boundaryConditions->pressureImposed().empty() )
     {
         auto rangePressureBC = boundaryfaces(M_meshLagrangeMultiplierPressureBC);
         size_type startBlockIndexPressureLM1 = this->startSubBlockSpaceIndex("pressurelm1");
@@ -411,10 +411,10 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobian( 
     //--------------------------------------------------------------------------------------------------//
 
     // Dirichlet bc by using Nitsche formulation
-    if ( M_boundaryConditions.hasVelocityImposedNitsche() && BuildCstPart )
+    if ( M_boundaryConditions->hasVelocityImposedNitsche() && BuildCstPart )
     {
         std::set<std::string> allmarkers;
-        for ( auto const& [bcId,bcData] : M_boundaryConditions.velocityImposedNitsche() )
+        for ( auto const& [bcId,bcData] : M_boundaryConditions->velocityImposedNitsche() )
             allmarkers.insert( bcData->markers().begin(), bcData->markers().end() );
 
         //auto deft = sym(gradt(u));
@@ -437,7 +437,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobian( 
 
     //--------------------------------------------------------------------------------------------------//
     // Dirichlet bc by using Lagrange-multiplier
-    if ( M_boundaryConditions.hasVelocityImposedLagrangeMultiplier() )
+    if ( M_boundaryConditions->hasVelocityImposedLagrangeMultiplier() )
     {
         if ( BuildCstPart )
         {
@@ -461,14 +461,14 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobian( 
 
     //--------------------------------------------------------------------------------------------------//
     // pressure bc
-    if ( !M_boundaryConditions.pressureImposed().empty() )
+    if ( !M_boundaryConditions->pressureImposed().empty() )
     {
         CHECK( this->hasStartSubBlockSpaceIndex("pressurelm1") ) << " start dof index for pressurelm1 is not present\n";
         size_type startBlockIndexPressureLM1 = this->startSubBlockSpaceIndex("pressurelm1");
         if (BuildCstPart)
         {
             std::set<std::string> allmarkers;
-            for ( auto const& [bcName,bcData] : M_boundaryConditions.pressureImposed() )
+            for ( auto const& [bcName,bcData] : M_boundaryConditions->pressureImposed() )
                 allmarkers.insert( bcData->markers().begin(), bcData->markers().end() );
             auto rangeFacesPressureBC = markedfaces( this->mesh(),allmarkers );
 

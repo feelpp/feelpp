@@ -10,14 +10,14 @@ namespace FeelModels
 {
 template <uint16_type Dim>
 void
-FluidMechanicsBoundaryConditions<Dim>::MeshVelocityImposed::setup( ModelBase const& mparent, nl::json const& jarg, ModelIndexes const& indexes )
+FluidMechanicsBoundaryConditions<Dim>::MeshVelocityImposed::setup( nl::json const& jarg, ModelIndexes const& indexes )
 {
     nl::json j_bc = jarg;
     if ( Dim == 2 )
         j_bc["expr"] = "{meshes_fluid_meshmotion_v_0,meshes_fluid_meshmotion_v_1}:meshes_fluid_meshmotion_v_0:meshes_fluid_meshmotion_v_1";
     else
         j_bc["expr"] = "{meshes_fluid_meshmotion_v_0,meshes_fluid_meshmotion_v_1,meshes_fluid_meshmotion_v_2}:meshes_fluid_meshmotion_v_0:meshes_fluid_meshmotion_v_1:meshes_fluid_meshmotion_v_2";
-    super_type::setup( mparent,j_bc,indexes );
+    super_type::setup( j_bc,indexes );
 }
 template <uint16_type Dim>
 void
@@ -316,8 +316,9 @@ FluidMechanicsBoundaryConditions<Dim>::BodyInterface::tabulateInformations( nl::
 
 template <uint16_type Dim>
 void
-FluidMechanicsBoundaryConditions<Dim>::setup( ModelBase const& mparent, nl::json const& jarg )
+FluidMechanicsBoundaryConditions<Dim>::setup( nl::json const& jarg )
 {
+    auto tbParent = this->toolboxParent();
     ModelIndexes indexes;
     for ( std::string const& bcKeyword : { "velocity_imposed", "velocity" } )
     {
@@ -326,8 +327,8 @@ FluidMechanicsBoundaryConditions<Dim>::setup( ModelBase const& mparent, nl::json
             auto const& j_bc = jarg.at( bcKeyword );
             for ( auto const& [j_bckey,j_bcval] : j_bc.items() )
             {
-                auto bc = std::make_shared<VelocityImposed>( j_bckey );
-                bc->setup( mparent,j_bcval,indexes );
+                auto bc = std::make_shared<VelocityImposed>( j_bckey,tbParent );
+                bc->setup( j_bcval,indexes );
                 M_velocityImposed.emplace( std::make_pair(Type::VelocityImposed, j_bckey), std::move( bc ) );
             }
         }
@@ -338,8 +339,8 @@ FluidMechanicsBoundaryConditions<Dim>::setup( ModelBase const& mparent, nl::json
         {
             auto const& j_bc = jarg.at( bcKeyword );
             std::string bcName = "";
-            auto bc = std::make_shared<MeshVelocityImposed>( bcName );
-            bc->setup( mparent,j_bc,indexes );
+            auto bc = std::make_shared<MeshVelocityImposed>( bcName, tbParent );
+            bc->setup( j_bc,indexes );
             M_velocityImposed.emplace( std::make_pair(Type::MeshVelocityImposed,bcName), std::move( bc ) );
         }
     }
@@ -351,7 +352,7 @@ FluidMechanicsBoundaryConditions<Dim>::setup( ModelBase const& mparent, nl::json
             for ( auto const& [j_bckey,j_bcval] : j_bc.items() )
             {
                 auto bc = std::make_shared<Inlet>( j_bckey );
-                bc->setup( mparent,j_bcval,indexes );
+                bc->setup( *tbParent,j_bcval,indexes );
                 M_inlet.emplace( j_bckey, std::move( bc ) );
             }
         }
@@ -364,7 +365,7 @@ FluidMechanicsBoundaryConditions<Dim>::setup( ModelBase const& mparent, nl::json
             for ( auto const& [j_bckey,j_bcval] : j_bc.items() )
             {
                 auto bc = std::make_shared<NormalStress>( j_bckey );
-                bc->setup( mparent,j_bcval,indexes );
+                bc->setup( *tbParent,j_bcval,indexes );
                 M_normalStress.emplace( j_bckey, std::move( bc ) );
             }
         }
@@ -377,7 +378,7 @@ FluidMechanicsBoundaryConditions<Dim>::setup( ModelBase const& mparent, nl::json
             for ( auto const& [j_bckey,j_bcval] : j_bc.items() )
             {
                 auto bc = std::make_shared<PressureImposed>( j_bckey );
-                bc->setup( mparent,j_bcval,indexes );
+                bc->setup( *tbParent,j_bcval,indexes );
                 M_pressureImposed.emplace( j_bckey, std::move( bc ) );
             }
         }
@@ -390,7 +391,7 @@ FluidMechanicsBoundaryConditions<Dim>::setup( ModelBase const& mparent, nl::json
             for ( auto const& [j_bckey,j_bcval] : j_bc.items() )
             {
                 auto bc = std::make_shared<BodyInterface>( j_bckey );
-                bc->setup( mparent,j_bcval,indexes );
+                bc->setup( *tbParent,j_bcval,indexes );
                 M_bodyInterface.emplace( j_bckey, std::move( bc ) );
             }
         }

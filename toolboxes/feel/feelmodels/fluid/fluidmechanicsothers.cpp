@@ -258,7 +258,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) cons
         this->materialsProperties()->updateInformationObject( p["Materials Properties"] );
 
     // Boundary Conditions
-    M_boundaryConditions.updateInformationObject( p["Boundary Conditions"] );
+    M_boundaryConditions->updateInformationObject( p["Boundary Conditions"] );
 #if 0 // VINCENT
     if ( !M_bodySetBC.empty() )
         M_bodySetBC.updateInformationObject( p["Boundary Conditions"] );
@@ -667,7 +667,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::setParameterValues( std::map<std::string,dou
 
     super_type::super_model_meshes_type::setParameterValues( paramValues );
 
-    M_boundaryConditions.setParameterValues( paramValues );
+    M_boundaryConditions->setParameterValues( paramValues );
     M_bodySetBC.setParameterValues( paramValues );
 
 #if 0 // VINCENT
@@ -774,10 +774,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
     if ( this->definePressureCst() && this->definePressureCstMethod() == "lagrange-multiplier" )
         ++cptBlock;
 
-    if ( M_boundaryConditions.hasVelocityImposedLagrangeMultiplier() )
+    if ( M_boundaryConditions->hasVelocityImposedLagrangeMultiplier() )
         ++cptBlock;
 
-    if ( !M_boundaryConditions.pressureImposed().empty() )
+    if ( !M_boundaryConditions->pressureImposed().empty() )
     {
         ++cptBlock;
         if ( nDim == 3 )
@@ -1544,10 +1544,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::nBlockMatrixGraph() const
     if ( this->definePressureCst() && this->definePressureCstMethod() == "lagrange-multiplier" )
         nBlock+=M_XhMeanPressureLM.size();
 
-    if ( M_boundaryConditions.hasVelocityImposedLagrangeMultiplier() )
+    if ( M_boundaryConditions->hasVelocityImposedLagrangeMultiplier() )
         ++nBlock;
 
-    if ( !M_boundaryConditions.pressureImposed().empty() )
+    if ( !M_boundaryConditions->pressureImposed().empty() )
     {
         ++nBlock;
         if ( nDim == 3 )
@@ -1623,7 +1623,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
         }
     }
 
-    if ( M_boundaryConditions.hasVelocityImposedLagrangeMultiplier() )
+    if ( M_boundaryConditions->hasVelocityImposedLagrangeMultiplier() )
     {
         myblockGraph(indexBlock,0) = stencil(_test=this->XhDirichletLM(),_trial=XhV,
                                              _diag_is_nonzero=false,_close=false)->graph();
@@ -1632,7 +1632,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
         ++indexBlock;
     }
 
-    if ( !M_boundaryConditions.pressureImposed().empty() )
+    if ( !M_boundaryConditions->pressureImposed().empty() )
     {
         myblockGraph(indexBlock,0) = stencil(_test=M_spaceLagrangeMultiplierPressureBC,_trial=XhV,
                                              _diag_is_nonzero=false,_close=false)->graph();

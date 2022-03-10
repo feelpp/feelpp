@@ -2791,7 +2791,7 @@ private :
 
     // boundary conditions
     using boundary_conditions_type = FluidMechanicsBoundaryConditions<nDim>;
-    boundary_conditions_type M_boundaryConditions;
+    std::shared_ptr<boundary_conditions_type> M_boundaryConditions;
 #if 0
     // boundary conditions + body forces
     map_vector_field<nDim,1,2> M_bcDirichlet;

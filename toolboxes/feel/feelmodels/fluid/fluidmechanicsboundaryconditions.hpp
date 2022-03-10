@@ -12,8 +12,9 @@ namespace FeelModels
 {
 
 template <uint16_type Dim>
-class FluidMechanicsBoundaryConditions
+class FluidMechanicsBoundaryConditions : public BoundaryConditionsBase
 {
+    using super_type = BoundaryConditionsBase;
 public:
     using self_type = FluidMechanicsBoundaryConditions<Dim>;
     enum class Type { VelocityImposed=0, MeshVelocityImposed };
@@ -22,7 +23,7 @@ public:
     {
         using super_type = GenericDirichletBoundaryCondition<Dim,1>;
     public:
-        VelocityImposed( std::string const& name ) : super_type( name ) {}
+        VelocityImposed( std::string const& name, std::shared_ptr<ModelBase> const& tbParent ) : super_type( name, tbParent ) {}
         VelocityImposed( VelocityImposed const& ) = default;
         VelocityImposed( VelocityImposed && ) = default;
 
@@ -33,10 +34,10 @@ public:
     {
         using super_type = VelocityImposed;
     public:
-        MeshVelocityImposed( std::string const& name ) : super_type( name ) {}
+        MeshVelocityImposed( std::string const& name, std::shared_ptr<ModelBase> const& tbParent ) : super_type( name,tbParent ) {}
         MeshVelocityImposed( MeshVelocityImposed const& ) = default;
         MeshVelocityImposed( MeshVelocityImposed && ) = default;
-        void setup( ModelBase const& mparent, nl::json const& jarg, ModelIndexes const& indexes ) override;
+        void setup( nl::json const& jarg, ModelIndexes const& indexes ) override;
 
         self_type::Type type() const override { return self_type::Type::MeshVelocityImposed; }
 
@@ -216,7 +217,7 @@ public:
     };
 
 
-    FluidMechanicsBoundaryConditions() = default;
+    FluidMechanicsBoundaryConditions( std::shared_ptr<ModelBase> const& tbParent ) : super_type( tbParent ) {}
     FluidMechanicsBoundaryConditions( FluidMechanicsBoundaryConditions const& ) = default;
     FluidMechanicsBoundaryConditions( FluidMechanicsBoundaryConditions && ) = default;
 
@@ -272,7 +273,7 @@ public:
     void setParameterValues( std::map<std::string,double> const& paramValues );
 
     //! setup bc from json
-    void setup( ModelBase const& mparent, nl::json const& jarg );
+    void setup( nl::json const& jarg );
 
     //! update informations
     void updateInformationObject( nl::json & p ) const;

@@ -389,24 +389,25 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
 {
+    M_boundaryConditions = std::make_shared<boundary_conditions_type>( this->shared_from_this() );
     if ( !this->modelProperties().boundaryConditions().hasSection( this->keyword() ) )
         return;
-    M_boundaryConditions.setup( *this,this->modelProperties().boundaryConditions().section( this->keyword() ) );
+    M_boundaryConditions->setup( this->modelProperties().boundaryConditions().section( this->keyword() ) );
 
     // init fluid inlet
     this->initFluidInlet();
 
-    for ( auto const& [bcId,bcData] : M_boundaryConditions.velocityImposed() )
+    for ( auto const& [bcId,bcData] : M_boundaryConditions->velocityImposed() )
         bcData->updateDofEliminationIds( *this, "velocity", this->functionSpaceVelocity() );
 
-    for ( auto const& [bcName,bcData] : M_boundaryConditions.inlet() )
+    for ( auto const& [bcName,bcData] : M_boundaryConditions->inlet() )
         this->updateDofEliminationIds( "velocity", this->functionSpaceVelocity(), markedfaces(this->functionSpaceVelocity()->mesh(),bcData->markers()) );
 
     // Dirichlet bc using a lagrange multiplier
-    if ( M_boundaryConditions.hasVelocityImposedLagrangeMultiplier() )
+    if ( M_boundaryConditions->hasVelocityImposedLagrangeMultiplier() )
     {
         std::set<std::string> allmarkers;
-        for ( auto const& [bcId,bcData] : M_boundaryConditions.velocityImposedLagrangeMultiplier() )
+        for ( auto const& [bcId,bcData] : M_boundaryConditions->velocityImposedLagrangeMultiplier() )
             allmarkers.insert( bcData->markers().begin(), bcData->markers().end() );
         bool useSubMeshRelation = boption(_name="dirichletbc.lm.use-submesh-relation",_prefix=this->prefix());
         size_type useSubMeshRelationKey = (useSubMeshRelation)? EXTRACTION_KEEP_MESH_RELATION : 0;
@@ -421,10 +422,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
     }
 
     // pressure bc
-    if ( !M_boundaryConditions.pressureImposed().empty() )
+    if ( !M_boundaryConditions->pressureImposed().empty() )
     {
         std::set<std::string> allmarkers;
-        for ( auto const& [bcName,bcData] : M_boundaryConditions.pressureImposed() )
+        for ( auto const& [bcName,bcData] : M_boundaryConditions->pressureImposed() )
             allmarkers.insert( bcData->markers().begin(), bcData->markers().end() );
         M_meshLagrangeMultiplierPressureBC = createSubmesh(_mesh=this->mesh(),_range=markedfaces(this->mesh(),allmarkers),_view=true );
         M_spaceLagrangeMultiplierPressureBC = space_trace_velocity_component_type::New( _mesh=M_meshLagrangeMultiplierPressureBC );
@@ -437,7 +438,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
 
 
     // body
-    for ( auto const& [bcName,bcData] : M_boundaryConditions.bodyInterface() )
+    for ( auto const& [bcName,bcData] : M_boundaryConditions->bodyInterface() )
     {
         std::string bodyName = bcName;
         BodyBoundaryCondition bpbc( *this );
@@ -946,12 +947,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initFluidInlet()
 {
-    if ( M_boundaryConditions.inlet().empty() ) return;
+    if ( M_boundaryConditions->inlet().empty() ) return;
 
     M_fluidInletMesh.clear();
     M_fluidInletSpace.clear();
     M_fluidInletVelocity.clear();
-    for ( auto const& [bcName,bcData] : M_boundaryConditions.inlet() )
+    for ( auto const& [bcName,bcData] : M_boundaryConditions->inlet() )
     {
         auto const& markers = bcData->markers();
         typename boundary_conditions_type::Inlet::Shape shape = bcData->shape();
@@ -1285,10 +1286,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::applyRemesh( mesh_ptrtype const& newMesh )
     this->log("FluidMechanics","applyRemesh", "body bc done" );
 
     // velocity imposed by using a lagrange multiplier
-    if ( M_boundaryConditions.hasVelocityImposedLagrangeMultiplier() )
+    if ( M_boundaryConditions->hasVelocityImposedLagrangeMultiplier() )
     {
         std::set<std::string> allmarkers;
-        for ( auto const& [bcId,bcData] : M_boundaryConditions.velocityImposedLagrangeMultiplier() )
+        for ( auto const& [bcId,bcData] : M_boundaryConditions->velocityImposedLagrangeMultiplier() )
             allmarkers.insert( bcData->markers().begin(), bcData->markers().end() );
         M_meshDirichletLM = createSubmesh(_mesh=this->mesh(),_range=markedfaces(this->mesh(),allmarkers)/*, _context=useSubMeshRelationKey*/,_view=true );
         space_trace_velocity_ptrtype old_XhDirichletLM = M_XhDirichletLM;
@@ -1302,10 +1303,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::applyRemesh( mesh_ptrtype const& newMesh )
     }
 
     // pressure bc
-    if ( !M_boundaryConditions.pressureImposed().empty() )
+    if ( !M_boundaryConditions->pressureImposed().empty() )
     {
         std::set<std::string> allmarkers;
-        for ( auto const& [bcName,bcData] : M_boundaryConditions.pressureImposed() )
+        for ( auto const& [bcName,bcData] : M_boundaryConditions->pressureImposed() )
             allmarkers.insert( bcData->markers().begin(), bcData->markers().end() );
         M_meshLagrangeMultiplierPressureBC = createSubmesh(_mesh=this->mesh(),_range=markedfaces(this->mesh(),allmarkers),_view=true );
         space_trace_velocity_component_ptrtype old_spaceLagrangeMultiplierPressureBC = M_spaceLagrangeMultiplierPressureBC;
@@ -1959,11 +1960,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initStartBlockIndexFieldsInMatrix()
         currentStartIndex += M_XhMeanPressureLM.size();
     }
 
-    if ( M_boundaryConditions.hasVelocityImposedLagrangeMultiplier() )
+    if ( M_boundaryConditions->hasVelocityImposedLagrangeMultiplier() )
     {
         this->setStartSubBlockSpaceIndex( "dirichletlm", currentStartIndex++ );
     }
-    if ( !M_boundaryConditions.pressureImposed().empty() )
+    if ( !M_boundaryConditions->pressureImposed().empty() )
     {
         this->setStartSubBlockSpaceIndex( "pressurelm1", currentStartIndex++ );
         if ( nDim == 3 )
@@ -2042,13 +2043,13 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBlockVector()
     }
 
     // lagrange multiplier for Dirichlet BC
-    if ( M_boundaryConditions.hasVelocityImposedLagrangeMultiplier() )
+    if ( M_boundaryConditions->hasVelocityImposedLagrangeMultiplier() )
     {
         bvs->operator()(cptBlock) = M_fieldDirichletLM;//this->backend()->newVector( this->XhDirichletLM() );
         ++cptBlock;
     }
 
-    if ( !M_boundaryConditions.pressureImposed().empty() )
+    if ( !M_boundaryConditions->pressureImposed().empty() )
     {
         bvs->operator()(cptBlock++) = M_fieldLagrangeMultiplierPressureBC1;
         if ( nDim == 3 )
@@ -2097,9 +2098,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initInHousePreconditioner()
         auto opPCD = std::make_shared<op_pcd_type>( this->functionSpaceVelocity(), this->functionSpacePressure(),
                                                     this->backend(), this->prefix(), true);
 
-        for ( auto & [bcId,bcData] : M_boundaryConditions.velocityImposed() )
+        for ( auto & [bcId,bcData] : M_boundaryConditions->velocityImposed() )
             opPCD->addRangeDirichletBC( "velocityImposed_" + bcId.second, markedfaces( this->mesh(), bcData->markers() ) ); // TODO : what to do when markers are not on faces
-        for ( auto & [bcName,bcData] : M_boundaryConditions.inlet() )
+        for ( auto & [bcName,bcData] : M_boundaryConditions->inlet() )
             opPCD->addRangeDirichletBC( "inlet_" + bcName, markedfaces( this->mesh(), bcData->markers() ) );
 
         std::set<std::string> markersNeumann;

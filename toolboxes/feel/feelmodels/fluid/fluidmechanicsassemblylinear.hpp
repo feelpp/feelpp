@@ -438,7 +438,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
 #endif
     //--------------------------------------------------------------------------------------------------//
 
-    if ( M_boundaryConditions.hasVelocityImposedLagrangeMultiplier() )
+    if ( M_boundaryConditions->hasVelocityImposedLagrangeMultiplier() )
     {
         CHECK( this->hasStartSubBlockSpaceIndex("dirichletlm") ) << " start dof index for dirichletlm is not present\n";
         size_type startBlockIndexDirichletLM = this->startSubBlockSpaceIndex("dirichletlm");
@@ -446,7 +446,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
         if (BuildCstPart)
         {
             std::set<std::string> allmarkers;
-            for ( auto const& [bcId,bcData] : M_boundaryConditions.velocityImposedLagrangeMultiplier() )
+            for ( auto const& [bcId,bcData] : M_boundaryConditions->velocityImposedLagrangeMultiplier() )
                 allmarkers.insert( bcData->markers().begin(), bcData->markers().end() );
 
             form2( _test=XhV,_trial=this->XhDirichletLM(),_matrix=A,_pattern=size_type(Pattern::COUPLED),
@@ -463,7 +463,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
         }
         if ( BuildNonCstPart )
         {
-            for ( auto const& [bcId,bcData] : M_boundaryConditions.velocityImposedLagrangeMultiplier() )
+            for ( auto const& [bcId,bcData] : M_boundaryConditions->velocityImposedLagrangeMultiplier() )
             {
                 form1( _test=this->XhDirichletLM(),_vector=F,
                        _rowstart=this->rowStartInVector()+startBlockIndexDirichletLM ) +=
@@ -476,12 +476,12 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
 
     //--------------------------------------------------------------------------------------------------//
     // weak formulation of the boundaries conditions
-    if ( M_boundaryConditions.hasVelocityImposedNitsche() )
+    if ( M_boundaryConditions->hasVelocityImposedNitsche() )
     {
         if ( BuildCstPart)
         {
             std::set<std::string> allmarkers;
-            for ( auto const& [bcId,bcData] : M_boundaryConditions.velocityImposedNitsche() )
+            for ( auto const& [bcId,bcData] : M_boundaryConditions->velocityImposedNitsche() )
                 allmarkers.insert( bcData->markers().begin(), bcData->markers().end() );
 
             //auto viscousStressTensor = 2*idv(mu)*deft;
@@ -498,7 +498,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
         }
         if ( BuildNonCstPart)
         {
-            for ( auto const& [bcId,bcData] : M_boundaryConditions.velocityImposedNitsche() )
+            for ( auto const& [bcId,bcData] : M_boundaryConditions->velocityImposedNitsche() )
             {
                 myLinearFormV +=
                     integrate( _range=markedfaces(this->mesh(),bcData->markers()),
@@ -518,7 +518,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
     }
     if ( build_BoundaryNeumannTerm )
     {
-        for ( auto const& [bcId,bcData] : M_boundaryConditions.normalStress() )
+        for ( auto const& [bcId,bcData] : M_boundaryConditions->normalStress() )
         {
             if ( bcData->isScalarExpr() )
             {
@@ -548,14 +548,14 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
     }
     //--------------------------------------------------------------------------------------------------//
 
-    if ( !M_boundaryConditions.pressureImposed().empty() )
+    if ( !M_boundaryConditions->pressureImposed().empty() )
     {
         CHECK( this->hasStartSubBlockSpaceIndex("pressurelm1") ) << " start dof index for pressurelm1 is not present\n";
         size_type startBlockIndexPressureLM1 = this->startSubBlockSpaceIndex("pressurelm1");
         if ( BuildCstPart )
         {
             std::set<std::string> allmarkers;
-            for ( auto const& [bcName,bcData] : M_boundaryConditions.pressureImposed() )
+            for ( auto const& [bcName,bcData] : M_boundaryConditions->pressureImposed() )
                 allmarkers.insert( bcData->markers().begin(), bcData->markers().end() );
             auto rangeFacesPressureBC = markedfaces( this->mesh(),allmarkers );
 
@@ -614,7 +614,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
         }
         if ( BuildNonCstPart )
         {
-            for ( auto const& [bcName,bcData] : M_boundaryConditions.pressureImposed() )
+            for ( auto const& [bcName,bcData] : M_boundaryConditions->pressureImposed() )
             {
                 myLinearFormV +=
                     integrate( _range=markedfaces(this->mesh(),bcData->markers()),
@@ -987,7 +987,7 @@ template <typename ModelContextType>
 void
 FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDEDofElimination( DataUpdateLinear & data, ModelContextType const& mctx ) const
 {
-    if ( !M_boundaryConditions.hasTypeDofElimination() )
+    if ( !M_boundaryConditions->hasTypeDofElimination() )
         return;
 
     this->log("FluidMechanics","updateLinearPDEDofElimination","start" );
@@ -1004,10 +1004,10 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDED
     auto const& u = this->fieldVelocity();
     auto const& se = mctx.symbolsExpr();
 
-    M_boundaryConditions.applyDofEliminationLinear( bilinearFormVV, F, mesh, u, se );
+    M_boundaryConditions->applyDofEliminationLinear( bilinearFormVV, F, mesh, u, se );
 
     // inlet bc
-    for ( auto const& [bcName,bcData] : M_boundaryConditions.inlet() )
+    for ( auto const& [bcName,bcData] : M_boundaryConditions->inlet() )
     {
         auto const& inletVel = std::get<0>( M_fluidInletVelocityInterpolated.find(bcName)->second );
         bilinearFormVV +=
@@ -1016,7 +1016,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDED
                 _expr=-idv(inletVel)*N() );
     }
 
-    if ( !M_boundaryConditions.pressureImposed().empty() )
+    if ( !M_boundaryConditions->pressureImposed().empty() )
     {
         auto rangePressureBC = boundaryfaces(M_meshLagrangeMultiplierPressureBC);
         size_type startBlockIndexPressureLM1 = this->startSubBlockSpaceIndex("pressurelm1");
