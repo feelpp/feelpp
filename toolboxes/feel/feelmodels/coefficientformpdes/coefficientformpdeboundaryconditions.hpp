@@ -12,8 +12,9 @@ namespace FeelModels
 {
 
 template <uint16_type Dim,uint8_type EquationRank>
-class CoefficientFormPDEBoundaryConditions
+class CoefficientFormPDEBoundaryConditions : public BoundaryConditionsBase
 {
+    using super_type = BoundaryConditionsBase;
 public:
     using self_type = CoefficientFormPDEBoundaryConditions<Dim,EquationRank>;
 
@@ -21,7 +22,7 @@ public:
     {
         using super_type = GenericDirichletBoundaryCondition<(EquationRank>=1)?Dim:1,(EquationRank>=2)?Dim:1>;
     public:
-        Dirichlet( std::string const& name ) : super_type( name ) {}
+        Dirichlet( std::string const& name, std::shared_ptr<ModelBase> const& tbParent ) : super_type( name,tbParent ) {}
         Dirichlet( Dirichlet const& ) = default;
         Dirichlet( Dirichlet && ) = default;
     };
@@ -101,7 +102,7 @@ public:
     };
 
 
-    CoefficientFormPDEBoundaryConditions() = default;
+    CoefficientFormPDEBoundaryConditions( std::shared_ptr<ModelBase> const& tbParent ) : super_type( tbParent ) {}
     CoefficientFormPDEBoundaryConditions( CoefficientFormPDEBoundaryConditions const& ) = default;
     CoefficientFormPDEBoundaryConditions( CoefficientFormPDEBoundaryConditions && ) = default;
 
@@ -136,7 +137,7 @@ public:
     void setParameterValues( std::map<std::string,double> const& paramValues );
 
     //! setup bc from json
-    void setup( ModelBase const& mparent, nl::json const& jarg );
+    void setup( nl::json const& jarg );
 
     //! update informations
     void updateInformationObject( nl::json & p ) const;

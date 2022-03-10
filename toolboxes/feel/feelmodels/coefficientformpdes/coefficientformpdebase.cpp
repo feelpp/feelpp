@@ -64,6 +64,8 @@ CoefficientFormPDEBase<ConvexType>::initMesh()
     // createMeshModel<mesh_type>(*this,M_mesh,fileNameMeshPath);
     // CHECK( M_mesh ) << "mesh generation fail";
 
+    if ( auto ptMeshes = this->modelProperties().pTree().get_child_optional("Meshes") )
+        super_type::super_model_meshes_type::setup( *ptMeshes, {this->keyword()} );
     if ( this->doRestart() )
         super_type::super_model_meshes_type::setupRestart( this->keyword() );
 
