@@ -62,7 +62,7 @@
             {
                 "bottom":
                 {
-                    "expr":"-h_bottom*(heat_T-T0_bottom):h_bottom:heat_T:T0_bottom"
+                    "expr":"h_bottom*(heat_T-T0_bottom):h_bottom:heat_T:T0_bottom"
                 }
             }
         }
