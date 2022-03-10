@@ -193,12 +193,62 @@ public:
 
     void initPostProcess() override {
         super_type::initPostProcess();
+
         int i = 0;
         for( auto const& [name, bc] : this->modelProperties().boundaryConditions2().byFieldType( this->M_fluxKey, "Coupling") )
         {
             auto fields = this->modelProperties().postProcess().exports( name ).fields();
+#if FEELPP_HAS_FMILIB
             M_circuits[i++]->addExportedVariables(std::vector<std::string>(fields.begin(), fields.end()) );
+#elif FEELPP_HAS_FMI4CPP
+            M_export_list.insert(M_export_list.end(),fields.begin(),fields.end());
+#endif
         }
+
+#if FEELPP_HAS_FMI4CPP
+        std::string export_dir = Environment::expand(soption(_name="fmu.export-directory"));
+        if( !export_dir.empty() )
+            M_export_path = fs::path(export_dir)/"fmu_values.csv";
+        else
+            M_export_path = fs::path("fmu_values.csv");
+
+        // need to add option with specific prefix for each circuit
+        // M_export_list = vsoption(_name="fmu.exported-variables");
+
+        std::ofstream data;
+        data.open( M_export_path.string() , std::ios::trunc );
+        data << "t";
+        for( auto const& var : M_export_list )
+            data << "," << var;
+        data << std::endl;
+        data.close();
+#endif
+    }
+
+    using super_type::exportResults;
+    void exportResults( double time ) override {
+        super_type::exportResults(time);
+#if FEELPP_HAS_FMI4CPP
+        std::ofstream data;
+        data.open( M_export_path.string() , std::ios::app );
+        data << time;
+        int i = 0;
+        for( auto const& [name, bc] : this->modelProperties().boundaryConditions2().byFieldType( this->M_fluxKey, "Coupling") )
+        {
+            auto fields = this->modelProperties().postProcess().exports( name ).fields();
+            auto md = M_circuits[i]->get_model_description();
+            std::vector<fmi2ValueReference> vr_buffer;
+            std::transform(fields.begin(), fields.end(), std::back_inserter(vr_buffer),
+                           [&md](std::string const& f) { return md->get_variable_by_name(f).value_reference; });
+            std::vector<double> buffer(vr_buffer.size());
+            M_circuits[i]->read_real( vr_buffer, buffer );
+            for( auto const& v : buffer )
+                data << "," << v;
+            ++i;
+        }
+        data << std::endl;
+        data.close();
+#endif
     }
 
 
@@ -361,6 +411,8 @@ private:
     std::vector<ModelBoundaryConditionCoupling> M_coupledBC;
     bdfs_buffer_type M_bdfsBuffer;
     fmus_type M_circuits;
+    fs::path M_export_path;
+    std::vector<std::string> M_export_list;
 }; // class CoupledMixedPoisson
 
 } // namespace FeelModels

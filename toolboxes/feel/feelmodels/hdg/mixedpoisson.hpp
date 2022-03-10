@@ -305,7 +305,7 @@ public:
     //___________________________________________________________________________________//
 
     void exportResults() { this->exportResults( this->currentTime() ); }
-    void exportResults( double time );
+    virtual void exportResults( double time );
 
     template <typename ModelFieldsType,typename SymbolsExpr,typename ExportsExprType>
     void exportResults( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr, ExportsExprType const& exportsExpr );
