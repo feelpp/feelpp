@@ -464,7 +464,8 @@ class Heat : public ModelNumerical,
         materialsproperties_ptrtype M_materialsProperties;
 
         // boundary conditions
-        HeatBoundaryConditions M_boundaryConditions;
+        using boundary_conditions_type = HeatBoundaryConditions;
+        std::shared_ptr<boundary_conditions_type> M_boundaryConditions;
 
         // stabilization
         bool M_stabilizationGLS;

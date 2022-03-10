@@ -181,18 +181,18 @@ Heat<ConvexType,BasisTemperatureType>::updateLinearPDE( DataUpdateLinear & data,
     // update weak bc
     if ( buildNonCstPart )
     {
-        for ( auto const& [bcName,bcData] : M_boundaryConditions.heatFlux() )
+        for ( auto const& [bcName,bcData] : M_boundaryConditions->heatFlux() )
         {
             auto theExpr = bcData->expr( symbolsExpr );
             if ( doAssemblyRhs )
             {
                 myLinearForm +=
                     integrate( _range=markedfaces(this->mesh(),bcData->markers()),
-                               _expr= timeSteppingScaling*theExpr*id(v),
+                               _expr= -timeSteppingScaling*theExpr*id(v),
                                _geomap=this->geomap() );
             }
         }
-        for ( auto const& [bcName,bcData] : M_boundaryConditions.convectiveHeatFlux() )
+        for ( auto const& [bcName,bcData] : M_boundaryConditions->convectiveHeatFlux() )
         {
             auto theExpr_h = bcData->expr_h( symbolsExpr );
             auto theExpr_Text = bcData->expr_Text( symbolsExpr );
@@ -226,7 +226,7 @@ template <typename ModelContextType>
 void
 Heat<ConvexType,BasisTemperatureType>::updateLinearPDEDofElimination( DataUpdateLinear & data, ModelContextType const& mctx ) const
 {
-    if ( !M_boundaryConditions.hasTypeDofElimination() )
+    if ( !M_boundaryConditions->hasTypeDofElimination() )
         return;
     this->log("Heat","updateLinearPDEDofElimination","start" );
 
@@ -241,7 +241,7 @@ Heat<ConvexType,BasisTemperatureType>::updateLinearPDEDofElimination( DataUpdate
                                _rowstart=this->rowStartInMatrix(),
                                _colstart=this->colStartInMatrix() );
 
-    M_boundaryConditions.applyDofEliminationLinear( bilinearForm, F, mesh, u, se );
+    M_boundaryConditions->applyDofEliminationLinear( bilinearForm, F, mesh, u, se );
 
     this->log("Heat","updateLinearPDEDofElimination","finish" );
 }
@@ -252,7 +252,7 @@ template <typename ModelContextType>
 void
 Heat<ConvexType,BasisTemperatureType>::updateNewtonInitialGuess( DataNewtonInitialGuess & data, ModelContextType const& mctx ) const
 {
-    if ( !M_boundaryConditions.hasTypeDofElimination() )
+    if ( !M_boundaryConditions->hasTypeDofElimination() )
         return;
     this->log("Heat","updateNewtonInitialGuess","start" );
 
@@ -262,7 +262,7 @@ Heat<ConvexType,BasisTemperatureType>::updateNewtonInitialGuess( DataNewtonIniti
     auto u = this->spaceTemperature()->element( U, this->rowStartInVector()+startBlockIndexTemperature );
     auto const& se = mctx.symbolsExpr();
 
-    M_boundaryConditions.applyNewtonInitialGuess( mesh, u, se );
+    M_boundaryConditions->applyNewtonInitialGuess( mesh, u, se );
 
     // update info for synchronization
     this->updateDofEliminationIds( "temperature", data );
@@ -415,7 +415,7 @@ Heat<ConvexType,BasisTemperatureType>::updateJacobian( DataUpdateJacobian & data
     // update weak bc
     if ( buildNonCstPart )
     {
-        for ( auto const& [bcName,bcData] : M_boundaryConditions.convectiveHeatFlux() )
+        for ( auto const& [bcName,bcData] : M_boundaryConditions->convectiveHeatFlux() )
         {
             auto theExpr_h = bcData->expr_h( se );
             bilinearForm_PatternCoupled +=
@@ -423,7 +423,7 @@ Heat<ConvexType,BasisTemperatureType>::updateJacobian( DataUpdateJacobian & data
                            _expr= timeSteppingScaling*theExpr_h*idt(v)*id(v),
                            _geomap=this->geomap() );
         }
-        for ( auto const& bcDataPair : M_boundaryConditions.heatFlux() )
+        for ( auto const& bcDataPair : M_boundaryConditions->heatFlux() )
         {
             auto const& bcData = bcDataPair.second;
             auto neumannExprBase = bcData->expr();
@@ -596,7 +596,7 @@ Heat<ConvexType,BasisTemperatureType>::updateResidual( DataUpdateResidual & data
 
     //--------------------------------------------------------------------------------------------------//
     // update weak bc
-    for ( auto const& [bcName,bcData] : M_boundaryConditions.heatFlux() )
+    for ( auto const& [bcName,bcData] : M_boundaryConditions->heatFlux() )
     {
         //auto theExpr = bcData.expr( se );
         auto neumannExprBase = bcData->expr();
@@ -612,7 +612,7 @@ Heat<ConvexType,BasisTemperatureType>::updateResidual( DataUpdateResidual & data
                            _geomap=this->geomap() );
         }
     }
-    for ( auto const& [bcName,bcData] : M_boundaryConditions.convectiveHeatFlux() )
+    for ( auto const& [bcName,bcData] : M_boundaryConditions->convectiveHeatFlux() )
     {
         auto theExpr_h = bcData->expr_h( se );
         if ( buildNonCstPart )

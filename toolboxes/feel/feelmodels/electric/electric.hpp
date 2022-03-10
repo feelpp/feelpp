@@ -358,7 +358,8 @@ private :
     materialsproperties_ptrtype M_materialsProperties;
 
     // boundary conditions
-    ElectricBoundaryConditions M_boundaryConditions;
+    using boundary_conditions_type = ElectricBoundaryConditions;
+    std::shared_ptr<boundary_conditions_type> M_boundaryConditions;
 
     // post-process
     export_ptrtype M_exporter;

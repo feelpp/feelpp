@@ -76,7 +76,7 @@ Electric<ConvexType,BasisPotentialType>::updateLinearPDE( DataUpdateLinear & dat
     // update weak bc
     if ( buildNonCstPart )
     {
-        for ( auto const& [bcName,bcData] : M_boundaryConditions.surfaceChargeDensity() )
+        for ( auto const& [bcName,bcData] : M_boundaryConditions->surfaceChargeDensity() )
         {
             auto theExpr = bcData->expr( symbolsExpr );
             myLinearForm +=
@@ -93,7 +93,7 @@ template <typename ModelContextType>
 void
 Electric<ConvexType,BasisPotentialType>::updateLinearPDEDofElimination( DataUpdateLinear & data, ModelContextType const& mctx ) const
 {
-    if ( !M_boundaryConditions.hasTypeDofElimination() )
+    if ( !M_boundaryConditions->hasTypeDofElimination() )
         return;
 
     this->log("Electric","updateLinearPDEDofElimination","start" );
@@ -110,7 +110,7 @@ Electric<ConvexType,BasisPotentialType>::updateLinearPDEDofElimination( DataUpda
                                _rowstart=this->rowStartInMatrix(),
                                _colstart=this->colStartInMatrix() );
 
-    M_boundaryConditions.applyDofEliminationLinear( bilinearForm, F, mesh, u, se );
+    M_boundaryConditions->applyDofEliminationLinear( bilinearForm, F, mesh, u, se );
 
     this->log("Electric","updateLinearPDEDofElimination","finish" );
 }
@@ -120,7 +120,7 @@ template <typename ModelContextType>
 void
 Electric<ConvexType,BasisPotentialType>::updateNewtonInitialGuess( DataNewtonInitialGuess & data, ModelContextType const& mctx ) const
 {
-    if ( !M_boundaryConditions.hasTypeDofElimination() )
+    if ( !M_boundaryConditions->hasTypeDofElimination() )
         return;
     this->log("Electric","updateNewtonInitialGuess","start" );
 
@@ -130,7 +130,7 @@ Electric<ConvexType,BasisPotentialType>::updateNewtonInitialGuess( DataNewtonIni
     auto u = this->spaceElectricPotential()->element( U, this->rowStartInVector()+startBlockIndexElectricPotential );
     auto const& se = mctx.symbolsExpr();
 
-    M_boundaryConditions.applyNewtonInitialGuess( mesh, u, se );
+    M_boundaryConditions->applyNewtonInitialGuess( mesh, u, se );
 
     // update info for synchronization
     this->updateDofEliminationIds( "electric-potential", data );
@@ -277,7 +277,7 @@ Electric<ConvexType,BasisPotentialType>::updateResidual( DataUpdateResidual & da
     // weak bc
     if ( buildCstPart )
     {
-        for ( auto const& [bcName,bcData] : M_boundaryConditions.surfaceChargeDensity() )
+        for ( auto const& [bcName,bcData] : M_boundaryConditions->surfaceChargeDensity() )
         {
             auto theExpr = bcData->expr( symbolsExpr );
             myLinearForm +=

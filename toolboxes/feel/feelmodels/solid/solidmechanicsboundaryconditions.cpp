@@ -116,8 +116,9 @@ SolidMechanicsBoundaryConditions<Dim>::Robin::tabulateInformations( nl::json con
 
 template <uint16_type Dim>
 void
-SolidMechanicsBoundaryConditions<Dim>::setup( ModelBase const& mparent, nl::json const& jarg )
+SolidMechanicsBoundaryConditions<Dim>::setup( nl::json const& jarg )
 {
+    auto tbParent = this->toolboxParent();
     ModelIndexes indexes;
     for ( std::string const& bcKeyword : { "displacement_imposed", "displacement" } )
     {
@@ -126,12 +127,15 @@ SolidMechanicsBoundaryConditions<Dim>::setup( ModelBase const& mparent, nl::json
             auto const& j_bc = jarg.at( bcKeyword );
             for ( auto const& [j_bckey,j_bcval] : j_bc.items() )
             {
-                auto bc = std::make_shared<DisplacementImposed>( j_bckey );
-                bc->setup( mparent,j_bcval,indexes );
+                auto bc = std::make_shared<DisplacementImposed>( j_bckey, tbParent );
+                bc->setup( j_bcval,indexes );
                 M_displacementImposed.emplace( std::make_pair(Type::DisplacementImposed, j_bckey), std::move( bc ) );
             }
         }
     }
+
+     // TODO maybe add follower_pressure
+
     for ( std::string const& bcKeyword : { "normal_stress" } )
     {
         if ( jarg.contains( bcKeyword ) )
@@ -140,7 +144,7 @@ SolidMechanicsBoundaryConditions<Dim>::setup( ModelBase const& mparent, nl::json
             for ( auto const& [j_bckey,j_bcval] : j_bc.items() )
             {
                 auto bc = std::make_shared<NormalStress>( j_bckey );
-                bc->setup( mparent,j_bcval,indexes );
+                bc->setup( *tbParent,j_bcval,indexes );
                 M_normalStress.emplace( j_bckey, std::move( bc ) );
             }
         }
@@ -153,7 +157,7 @@ SolidMechanicsBoundaryConditions<Dim>::setup( ModelBase const& mparent, nl::json
             for ( auto const& [j_bckey,j_bcval] : j_bc.items() )
             {
                 auto bc = std::make_shared<Robin>( j_bckey );
-                bc->setup( mparent,j_bcval,indexes );
+                bc->setup( *tbParent,j_bcval,indexes );
                 M_robin.emplace( j_bckey, std::move( bc ) );
             }
         }

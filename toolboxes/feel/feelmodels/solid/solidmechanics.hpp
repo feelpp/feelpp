@@ -339,15 +339,6 @@ public :
     materialsproperties_ptrtype & materialsProperties() { return M_materialsProperties; }
     void setMaterialsProperties( materialsproperties_ptrtype mp ) { CHECK( !this->isUpdatedForUse() ) << "setMaterialsProperties can be called only before called isUpdatedForUse";  M_materialsProperties = mp; }
 
-#if 0
-    bool hasDirichletBC() const
-        {
-            return ( !M_bcDirichlet.empty() ||
-                     !M_bcDirichletComponents.find(Component::X)->second.empty() ||
-                     !M_bcDirichletComponents.find(Component::Y)->second.empty() ||
-                     !M_bcDirichletComponents.find(Component::Z)->second.empty() );
-        }
-#endif
     std::string const& timeStepping() const { return M_timeStepping; }
 
 #if 0
@@ -689,10 +680,6 @@ public :
     std::string couplingFSIcondition() const { return M_couplingFSIcondition; }
     void couplingFSIcondition(std::string s) { M_couplingFSIcondition=s; }
 
-#if 0 // VINCENT
-    std::set<std::string> const& markerNameFSI() const { return M_bcFSIMarkerManagement.markerFluidStructureInterfaceBC(); }
-#endif
-
     void updateNormalStressFromStruct();
     //void updateStressCriterions();
 
@@ -751,25 +738,8 @@ private :
 
     // boundary conditions
     using boundary_conditions_type = SolidMechanicsBoundaryConditions<nDim>;
-    boundary_conditions_type M_boundaryConditions;
+    std::shared_ptr<boundary_conditions_type> M_boundaryConditions;
 
-#if 0
-    map_vector_field<nDim,1,2> M_bcDirichlet;
-    std::map<ComponentType,map_scalar_field<2> > M_bcDirichletComponents;
-    map_scalar_field<2> M_bcNeumannScalar,M_bcInterfaceFSI;
-    map_vector_field<nDim,1,2> M_bcNeumannVectorial;
-    map_matrix_field<nDim,nDim,2> M_bcNeumannTensor2;
-    map_vector_fields<nDim,1,2> M_bcRobin;
-    map_scalar_field<2> M_bcNeumannEulerianFrameScalar;
-    map_vector_field<nDim,1,2> M_bcNeumannEulerianFrameVectorial;
-    map_matrix_field<nDim,nDim,2> M_bcNeumannEulerianFrameTensor2;
-    map_vector_field<nDim,1,2> M_volumicForcesProperties;
-    MarkerManagementDirichletBC M_bcDirichletMarkerManagement;
-    MarkerManagementNeumannBC M_bcNeumannMarkerManagement;
-    MarkerManagementNeumannEulerianFrameBC M_bcNeumannEulerianFrameMarkerManagement;
-    MarkerManagementRobinBC M_bcRobinMarkerManagement;
-    MarkerManagementFluidStructureInterfaceBC M_bcFSIMarkerManagement;
-#endif
     //-------------------------------------------//
     // standard model
     //-------------------------------------------//

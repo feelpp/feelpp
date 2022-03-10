@@ -11,14 +11,15 @@ namespace Feel
 namespace FeelModels
 {
 
-class HeatBoundaryConditions
+class HeatBoundaryConditions : public BoundaryConditionsBase
 {
+    using super_type = BoundaryConditionsBase;
 public:
     class TemperatureImposed : public GenericDirichletBoundaryCondition<1,1>
     {
         using super_type = GenericDirichletBoundaryCondition<1,1>;
     public:
-        TemperatureImposed( std::string const& name ) : super_type( name ) {}
+        TemperatureImposed( std::string const& name, std::shared_ptr<ModelBase> const& tbParent ) : super_type( name, tbParent ) {}
         TemperatureImposed( TemperatureImposed const& ) = default;
         TemperatureImposed( TemperatureImposed && ) = default;
     };
@@ -97,7 +98,7 @@ public:
         std::set<std::string> M_markers;
     };
 
-    HeatBoundaryConditions() = default;
+    HeatBoundaryConditions( std::shared_ptr<ModelBase> const& tbParent ) : super_type( tbParent ) {}
     HeatBoundaryConditions( HeatBoundaryConditions const& ) = default;
     HeatBoundaryConditions( HeatBoundaryConditions && ) = default;
 
@@ -130,7 +131,7 @@ public:
     void setParameterValues( std::map<std::string,double> const& paramValues );
 
     //! setup bc from json
-    void setup( ModelBase const& mparent, nl::json const& jarg );
+    void setup( nl::json const& jarg );
 
     //! update informations
     void updateInformationObject( nl::json & p ) const;
