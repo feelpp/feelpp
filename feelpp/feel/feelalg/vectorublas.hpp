@@ -187,15 +187,15 @@ class VectorUblas : public Vector<T>
         Vector<T>& operator-=( const Vector<T>& v ) override { this->sub( v ); return *this; }
         Vector<T>& operator*=( const value_type v ) { this->scale( v ); return *this; }
 
-        self_type operator+( const self_type & v ) const { return self_type( M_vectorImpl->operator+( v.M_vectorImpl ) ); }
+        self_type operator+( const self_type & v ) const { return self_type( M_vectorImpl->operator+( *v.M_vectorImpl ) ); }
         self_type operator+( const value_type a ) const { return self_type( M_vectorImpl->operator+( a ) ); }
-        friend self_type operator+( const value_type a, const self_type & v ) { return self_type( operator+( a, *v.M_vectorImpl ) ); }
-        self_type operator-( const self_type & v ) const { return self_type( M_vectorImpl->operator-( v.M_vectorImpl ) ); }
+        friend self_type operator+( const value_type a, const self_type & v ) { return self_type( Feel::detail::VectorUblasBase<T>::operator+( a, *v.M_vectorImpl ) ); }
+        self_type operator-( const self_type & v ) const { return self_type( M_vectorImpl->operator-( *v.M_vectorImpl ) ); }
         self_type operator-( const value_type a ) const { return self_type( M_vectorImpl->operator-( a ) ); }
-        friend self_type operator-( const value_type a, const self_type & v ) { return self_type( operator-( a, *v.M_vectorImpl ) ); }
+        friend self_type operator-( const value_type a, const self_type & v ) { return self_type( Feel::detail::VectorUblasBase<T>::operator-( a, *v.M_vectorImpl ) ); }
         self_type operator-() const { return self_type( M_vectorImpl->operator-() ); }
         self_type operator*( const value_type a ) const { return self_type( M_vectorImpl->operator*( a ) ); }
-        friend self_type operator*( const value_type a, const self_type & v ) { return self_type( operator*( a, *v.M_vectorImpl ) ); }
+        friend self_type operator*( const value_type a, const self_type & v ) { return self_type( Feel::detail::VectorUblasBase<T>::operator*( a, *v.M_vectorImpl ) ); }
 
         // Iterators API
         auto begin() { return M_vectorImpl->begin(); }
