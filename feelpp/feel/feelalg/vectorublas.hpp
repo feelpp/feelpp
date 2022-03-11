@@ -183,7 +183,19 @@ class VectorUblas : public Vector<T>
         value_type operator[]( size_type i ) const { return this->operator()( i ); }
         value_type& operator[]( size_type i ) { return this->operator()( i ); }
 
-        //VectorUblasExpression<T> operator+( const Vector<T>& v ) const;
+        Vector<T>& operator+=( const Vector<T>& v ) override { this->add( v ); return *this; }
+        Vector<T>& operator-=( const Vector<T>& v ) override { this->sub( v ); return *this; }
+        Vector<T>& operator*=( const value_type v ) { this->scale( v ); return *this; }
+
+        self_type operator+( const self_type & v ) const { return self_type( M_vectorImpl->operator+( v.M_vectorImpl ) ); }
+        self_type operator+( const value_type a ) const { return self_type( M_vectorImpl->operator+( a ) ); }
+        friend self_type operator+( const value_type a, const self_type & v ) { return self_type( operator+( a, *v.M_vectorImpl ) ); }
+        self_type operator-( const self_type & v ) const { return self_type( M_vectorImpl->operator-( v.M_vectorImpl ) ); }
+        self_type operator-( const value_type a ) const { return self_type( M_vectorImpl->operator-( a ) ); }
+        friend self_type operator-( const value_type a, const self_type & v ) { return self_type( operator-( a, *v.M_vectorImpl ) ); }
+        self_type operator-() const { return self_type( M_vectorImpl->operator-() ); }
+        self_type operator*( const value_type a ) const { return self_type( M_vectorImpl->operator*( a ) ); }
+        friend self_type operator*( const value_type a, const self_type & v ) { return self_type( operator*( a, *v.M_vectorImpl ) ); }
 
         // Iterators API
         auto begin() { return M_vectorImpl->begin(); }
@@ -217,7 +229,6 @@ class VectorUblas : public Vector<T>
         void set( const size_type i, const value_type & value ) override { return M_vectorImpl->set( i, value ); }
         void setVector( int * i, int n, value_type * v ) override { return M_vectorImpl->setVector( i, n, v ); }
 
-        Vector<T>& operator+=( const Vector<T>& v ) override { this->add( v ); return *this; }
         void add( const size_type i, const value_type & value ) override { return M_vectorImpl->add( i, value ); }
         void add( const value_type & value ) override { return M_vectorImpl->add( value ); }
         void add( const Vector<T> & v ) override { return M_vectorImpl->add( v ); }
@@ -228,7 +239,6 @@ class VectorUblas : public Vector<T>
         void addVector( const ublas::vector<value_type> & v, const std::vector<size_type> & dof_ids ) { return M_vectorImpl->addVector( v, dof_ids ); }
         void addVector( const Vector<T> & v, const MatrixSparse<value_type> & A ) override { return M_vectorImpl->addVector( v, A ); }
         
-        Vector<T>& operator-=( const Vector<T>& v ) override { this->sub( v ); return *this; }
         void sub( const Vector<T> & v ) { return M_vectorImpl->sub( v ); }
         void sub( const value_type & a, const Vector<T> & v ) { return M_vectorImpl->sub( a, v ); }
 
