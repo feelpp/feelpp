@@ -475,6 +475,16 @@ class VectorUblasBase: public Vector<T>
         Vector<T>& operator-=( const Vector<T>& v ) override { this->sub( v ); return *this; }
         Vector<T>& operator*=( const value_type & a ) { this->scale( a ); return *this; }
 
+        std::unique_ptr<VectorUblasBase<T>> operator+( const self_type & v ) const;
+        std::unique_ptr<VectorUblasBase<T>> operator+( const value_type a ) const;
+        friend std::unique_ptr<VectorUblasBase<T>> operator+( const value_type a, const self_type & v );
+        std::unique_ptr<VectorUblasBase<T>> operator-( const self_type & v ) const;
+        std::unique_ptr<VectorUblasBase<T>> operator-( const value_type a ) const;
+        friend std::unique_ptr<VectorUblasBase<T>> operator-( const value_type a, const self_type & v );
+        std::unique_ptr<VectorUblasBase<T>> operator-() const;
+        std::unique_ptr<VectorUblasBase<T>> operator*( const value_type a ) const;
+        friend std::unique_ptr<VectorUblasBase<T>> operator*( const value_type a, const self_type & v );
+
         // Iterators API
         virtual iterator_type begin() = 0;
         virtual const_iterator_type begin() const = 0;
