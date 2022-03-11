@@ -50,6 +50,8 @@ BRANCHTAG=$(echo "${BRANCH}" | sed -e 's/\//-/g')
 CONTAINERS=${*:-feelpp-libs}
 echo $CONTAINERS
 
+echo $CR_PAT | docker login ghcr.io -u $CR_LOGIN --password-stdin
+echo "-- registered to ghcr.io..."
 
 for container in ${CONTAINERS}; do
     echo "--- Pushing Container ghcr.io/feelpp/${container}"
