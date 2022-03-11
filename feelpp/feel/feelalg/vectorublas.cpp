@@ -943,6 +943,90 @@ typename VectorUblasContiguousGhosts<T, Storage>::value_type VectorUblasContiguo
     return global_sum;
 }
 
+namespace helpers {
+    template< typename T >
+    struct scalar_sqrt: public ublas::scalar_unary_functor<T>
+    {
+        typedef typename ublas::scalar_unary_functor<T>::argument_type argument_type;
+        typedef typename ublas::scalar_unary_functor<T>::result_type result_type;
+        typedef typename ublas::scalar_unary_functor<T>::value_type value_type;
+        static inline result_type apply( argument_type t ) { return ublas::type_traits<value_type>::type_sqrt(t); }
+    };
+
+    template<class E>
+    typename ublas::vector_unary_traits<E, scalar_sqrt<typename E::value_type> >::result_type
+    sqrt( const ublas::vector_expression<E> & e ) 
+    {
+        typedef typename ublas::vector_unary_traits<E, scalar_sqrt<typename E::value_type> >::expression_type expression_type;
+        return expression_type ( e() );
+    }
+
+    template< typename T1, typename T2 >
+    struct scalar_pow: public ublas::scalar_binary_functor<T1, T2> {
+        typedef typename ublas::scalar_binary_functor<T1, T2>::argument1_type argument1_type;
+        typedef typename ublas::scalar_binary_functor<T1, T2>::argument2_type argument2_type;
+        typedef typename ublas::scalar_binary_functor<T1, T2>::result_type result_type;
+
+        static result_type apply ( argument1_type t, argument2_type n ) 
+        {
+            return math::pow( t, n );
+        }
+    };
+
+    template< typename E, typename T >
+    typename ublas::vector_binary_scalar2_traits<E, const T, scalar_pow<typename E::value_type, T> >::result_type
+    pow(const ublas::vector_expression<E> & e, const T & n ) {
+        typedef typename ublas::vector_binary_scalar2_traits<E, const T, scalar_pow<typename E::value_type, T> >::expression_type expression_type;
+        return expression_type ( e(), n );
+    }
+}
+
+template< typename T, typename Storage >
+std::unique_ptr<VectorUblasBase<T>>
+VectorUblasContiguousGhosts<T, Storage>::sqrt() const
+{
+    std::unique_ptr<VectorUblasBase<T>> sqrtV;
+    if constexpr ( is_vector_proxy ) // should not happen
+    {
+        typedef typename Storage::vector_type result_storage_type;
+        sqrtV.reset( new VectorUblasContiguousGhosts<T, result_storage_type>( 
+                    result_storage_type( helpers::sqrt( this->M_vec ) ), this->mapPtr() ) 
+                );
+    }
+    else
+    {
+        typedef Storage result_storage_type;
+        sqrtV.reset( new VectorUblasContiguousGhosts<T, result_storage_type>( 
+                    result_storage_type( helpers::sqrt( this->M_vec ) ), this->mapPtr() ) 
+                );
+    }
+
+    return sqrtV;
+}
+
+template< typename T, typename Storage >
+std::unique_ptr<VectorUblasBase<T>>
+VectorUblasContiguousGhosts<T, Storage>::pow( int n ) const
+{
+    std::unique_ptr<VectorUblasBase<T>> powV;
+    if constexpr ( is_vector_proxy ) // should not happen
+    {
+        typedef typename Storage::vector_type result_storage_type;
+        powV.reset( new VectorUblasContiguousGhosts<T, result_storage_type>( 
+                    result_storage_type( helpers::pow( this->M_vec, n ) ), this->mapPtr() ) 
+                );
+    }
+    else
+    {
+        typedef Storage result_storage_type;
+        powV.reset( new VectorUblasContiguousGhosts<T, result_storage_type>( 
+                    result_storage_type( helpers::pow( this->M_vec, n ) ), this->mapPtr() ) 
+                );
+    }
+
+    return powV;
+}
+
 template< typename T, typename Storage >
 void VectorUblasContiguousGhosts<T, Storage>::checkInvariants() const
 {
@@ -1618,6 +1702,60 @@ typename VectorUblasNonContiguousGhosts<T, Storage>::value_type VectorUblasNonCo
 #endif
 
     return global_sum;
+}
+
+template< typename T, typename Storage >
+std::unique_ptr<VectorUblasBase<T>>
+VectorUblasNonContiguousGhosts<T, Storage>::sqrt() const
+{
+    std::unique_ptr<VectorUblasBase<T>> sqrtV;
+    if constexpr ( is_vector_proxy )
+    {
+        typedef typename Storage::vector_type result_storage_type;
+        sqrtV.reset( new VectorUblasNonContiguousGhosts<T, result_storage_type>( 
+                    result_storage_type( helpers::sqrt( this->M_vec ) ), 
+                    result_storage_type( helpers::sqrt( this->M_vecNonContiguousGhosts ) ), 
+                    this->mapPtr() )
+                );
+    }
+    else
+    {
+        typedef Storage result_storage_type;
+        sqrtV.reset( new VectorUblasNonContiguousGhosts<T, result_storage_type>( 
+                    result_storage_type( helpers::sqrt( this->M_vec ) ), 
+                    result_storage_type( helpers::sqrt( this->M_vecNonContiguousGhosts ) ), 
+                    this->mapPtr() )
+                );
+    }
+
+    return sqrtV;
+}
+
+template< typename T, typename Storage >
+std::unique_ptr<VectorUblasBase<T>>
+VectorUblasNonContiguousGhosts<T, Storage>::pow( int n ) const
+{
+    std::unique_ptr<VectorUblasBase<T>> powV;
+    if constexpr ( is_vector_proxy )
+    {
+        typedef typename Storage::vector_type result_storage_type;
+        powV.reset( new VectorUblasNonContiguousGhosts<T, result_storage_type>( 
+                    result_storage_type( helpers::pow( this->M_vec, n ) ), 
+                    result_storage_type( helpers::pow( this->M_vecNonContiguousGhosts, n ) ), 
+                    this->mapPtr() ) 
+                );
+    }
+    else
+    {
+        typedef Storage result_storage_type;
+        powV.reset( new VectorUblasNonContiguousGhosts<T, result_storage_type>( 
+                    result_storage_type( helpers::pow( this->M_vec, n ) ), 
+                    result_storage_type( helpers::pow( this->M_vecNonContiguousGhosts, n ) ), 
+                    this->mapPtr() ) 
+                );
+    }
+
+    return powV;
 }
 
 template< typename T, typename Storage >
