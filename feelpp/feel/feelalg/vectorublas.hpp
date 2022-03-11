@@ -542,6 +542,7 @@ class VectorUblasBase: public Vector<T>
 
         void sub( const Vector<T> & v );
         void sub( const value_type & a, const Vector<T> & v );
+        virtual void sub( const value_type & a );
         
         virtual void scale( const value_type factor ) override = 0;
 

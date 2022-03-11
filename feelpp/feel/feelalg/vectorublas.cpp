@@ -344,6 +344,16 @@ void VectorUblasBase<T>::sub( const value_type & a, const Vector<T> & v )
 }
 
 template< typename T >
+void VectorUblasBase<T>::sub( const value_type & value )
+{
+#ifndef NDEBUG
+    checkInvariants();
+#endif
+    for( size_type i = 0; i < this->localSize(); ++i )
+        this->operator()( i ) -= value;
+}
+
+template< typename T >
 void VectorUblasBase<T>::addVector( int * i, int n, value_type * v, size_type K, size_type K2 )
 {
     for( int j = 0; j < n; ++j )
@@ -765,7 +775,7 @@ template< typename T, typename Storage >
 void VectorUblasContiguousGhosts<T, Storage>::setConstant( value_type v )
 {
     M_vec = ublas::scalar_vector<value_type>( M_vec.size(), v );
-}  
+} 
 
 template< typename T, typename Storage > 
 void VectorUblasContiguousGhosts<T, Storage>::setZero()
