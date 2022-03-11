@@ -373,8 +373,6 @@ void PartitionIO<MeshType>::writeMetaData (mesh_ptrtype meshParts)
                                                           { ElementsType::MESH_FACES, 1 },
                                                           { ElementsType::MESH_EDGES, 2 },
                                                           { ElementsType::MESH_POINTS, mesh_type::nDim } };
-    //mapElementsTypeToCoDim[ElementsType::MESH_ELEMENTS] = 0;
-    //mapElementsTypeToCoDim[ElementsType::MESH_FACES] = 1;
 
     if ( !meshParts->meshFragmentationByMarkerByEntity().empty() )
     {
@@ -391,7 +389,7 @@ void PartitionIO<MeshType>::writeMetaData (mesh_ptrtype meshParts)
             ptMesh["fragmentation"] = j_fragmentation;
     }
     std::ofstream o(M_filename);
-    o << pt.dump(1);
+    o << pt.dump(/*1*/);
 #endif
 }
 template<typename MeshType>
@@ -494,7 +492,19 @@ void PartitionIO<MeshType>::readMetaData (mesh_ptrtype meshParts)
     is >> pt;
 
     nl::json const& j_mesh = pt.at("mesh");
+
+    if ( j_mesh.contains( "h5" ) )
+    {
+        std::string const& h5filename = j_mesh.at( "h5" ).template get<std::string>();
+        fs::path filenamefs = fs::path( M_filename );
+        if ( filenamefs.is_relative() )
+            M_h5_filename = (fs::current_path()/fs::path(h5filename)).string();
+        else
+            M_h5_filename = (filenamefs.parent_path() / fs::path( h5filename )).string();
+    }
+
     int nPart = meshParts->worldComm().globalSize();
+
     if ( j_mesh.contains("/partition/n"_json_pointer) )
     {
         nl::json const& j_nPartition = j_mesh.at("/partition/n"_json_pointer);
