@@ -882,6 +882,8 @@ class VectorUblasContiguousGhosts: public VectorUblasContiguousGhostsBase<T>
         virtual void setConstant( value_type v ) override;
         virtual void setZero() override;
 
+        virtual void add( const value_type & a ) override;
+        virtual void sub( const value_type & a ) override;
         virtual void scale( const value_type factor ) override;
 
         // Multiple dispatch operations
@@ -1147,6 +1149,8 @@ class VectorUblasNonContiguousGhosts: public VectorUblasNonContiguousGhostsBase<
         virtual void setConstant( value_type v ) override;
         virtual void setZero() override;
 
+        virtual void add( const value_type & a ) override;
+        virtual void sub( const value_type & a ) override;
         virtual void scale( const value_type factor ) override;
 
         // Multiple dispatch operations

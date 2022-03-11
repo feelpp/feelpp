@@ -783,6 +783,17 @@ void VectorUblasContiguousGhosts<T, Storage>::setZero()
     M_vec = ublas::zero_vector<value_type>( M_vec.size() );
 }
   
+template< typename T, typename Storage > 
+void VectorUblasContiguousGhosts<T, Storage>::add( const value_type & a )
+{
+    M_vec += ublas::scalar_vector<value_type>( M_vec.size(), a );
+}
+
+template< typename T, typename Storage > 
+void VectorUblasContiguousGhosts<T, Storage>::sub( const value_type & a )
+{
+    M_vec -= ublas::scalar_vector<value_type>( M_vec.size(), a );
+}
 
 template< typename T, typename Storage > 
 void VectorUblasContiguousGhosts<T, Storage>::scale( const value_type factor )
@@ -1481,6 +1492,19 @@ void VectorUblasNonContiguousGhosts<T, Storage>::setZero()
     M_vecNonContiguousGhosts = ublas::zero_vector<value_type>( M_vecNonContiguousGhosts.size() );
 }
   
+template< typename T, typename Storage > 
+void VectorUblasNonContiguousGhosts<T, Storage>::add( const value_type & a )
+{
+    M_vec += ublas::scalar_vector<value_type>( M_vec.size(), a );
+    M_vecNonContiguousGhosts += ublas::scalar_vector<value_type>( M_vecNonContiguousGhosts.size(), a );
+}
+
+template< typename T, typename Storage > 
+void VectorUblasNonContiguousGhosts<T, Storage>::sub( const value_type & a )
+{
+    M_vec -= ublas::scalar_vector<value_type>( M_vec.size(), a );
+    M_vecNonContiguousGhosts -= ublas::scalar_vector<value_type>( M_vecNonContiguousGhosts.size(), a );
+}
 
 template< typename T, typename Storage > 
 void VectorUblasNonContiguousGhosts<T, Storage>::scale( const value_type factor )
