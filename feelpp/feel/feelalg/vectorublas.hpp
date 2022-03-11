@@ -262,7 +262,7 @@ class VectorUblas : public Vector<T>
 
         value_type dot( const Vector<T> & v ) const override { return M_vectorImpl->dot( v ); }
 
-        FEELPP_DONT_INLINE self_type sqrt() const { return self_type( M_vectorImpl->sqrt() ); }
+        self_type sqrt() const { return self_type( M_vectorImpl->sqrt() ); }
         self_type pow( int n ) const { return self_type( M_vectorImpl->pow( n ) ); }
         
         // Exports
@@ -844,6 +844,7 @@ class VectorUblasContiguousGhosts: public VectorUblasContiguousGhostsBase<T>
 
         using base_type::operator=;
 
+        using base_type::init;
         void init( const size_type n, const size_type n_local, const bool fast = false ) override;
 
         virtual self_type * clonePtr() const override;
@@ -933,6 +934,9 @@ class VectorUblasContiguousGhosts: public VectorUblasContiguousGhostsBase<T>
         virtual real_type linftyNorm() const override;
 
         virtual value_type sum() const override;
+
+        virtual std::unique_ptr<VectorUblasBase<T>> sqrt() const override;
+        virtual std::unique_ptr<VectorUblasBase<T>> pow( int n ) const override;
 
     protected:
         virtual vector_ptr_variant_type vec() override { return &M_vec; }
@@ -1110,6 +1114,7 @@ class VectorUblasNonContiguousGhosts: public VectorUblasNonContiguousGhostsBase<
 
         using base_type::operator=;
         
+        using base_type::init;
         void init( const size_type n, const size_type n_local, const bool fast = false ) override;
 
         virtual self_type * clonePtr() const override;
@@ -1200,6 +1205,9 @@ class VectorUblasNonContiguousGhosts: public VectorUblasNonContiguousGhostsBase<
         virtual real_type linftyNorm() const override;
 
         virtual value_type sum() const override;
+
+        virtual std::unique_ptr<VectorUblasBase<T>> sqrt() const override;
+        virtual std::unique_ptr<VectorUblasBase<T>> pow( int n ) const override;
 
     protected:
         virtual vector_ptr_variant_type vec() override { return &M_vec; }
