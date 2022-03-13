@@ -636,6 +636,45 @@ if ( FEELPP_ENABLE_CPR )
   set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} CPR/Contrib")
 endif()
 
+option( FEELPP_ENABLE_TASKFLOW "Enable TASKFLOW" ON )
+if ( FEELPP_ENABLE_TASKFLOW )
+  message(STATUS "------------------------------------------------------------")
+  message(STATUS "Configuring TASKFLOW")
+#  set(FETCHCONTENT_SOURCE_DIR_TASKFLOW ${CMAKE_CURRENT_SOURCE_DIR}/taskflow)
+  # patch includes fix for 18.04 compilation
+  FetchContent_Declare(taskflow GIT_REPOSITORY https://github.com/feelpp/taskflow.git )
+  set( BUILD_TASKFLOW_TESTS OFF )
+  FetchContent_MakeAvailable(taskflow)
+  add_library(feelpp_taskflow INTERFACE)
+  set_target_properties(Taskflow PROPERTIES OUTPUT_NAME "feelpp_taskflow")
+  target_link_libraries(feelpp_taskflow INTERFACE Taskflow)
+  add_library(Feelpp::feelpp_taskflow ALIAS feelpp_taskflow)
+  target_include_directories(feelpp_taskflow INTERFACE
+      $<BUILD_INTERFACE:${taskflow_SOURCE_DIR}/>
+      $<INSTALL_INTERFACE:include/feelpp> )
+endif()
+
+# ----------------------------------------------------------
+# A fast and simple to use logging library.
+FetchContent_Declare(   
+    spdlog
+    GIT_REPOSITORY https://github.com/gabime/spdlog.git
+    GIT_TAG        v1.8.2)
+
+FetchContent_GetProperties(spdlog)
+if(NOT spdlog_POPULATED)
+    message("Cloning spdlod")
+    set(SPDLOG_FMT_EXTERNAL ON)
+    FetchContent_Populate(spdlog)
+    add_subdirectory(
+    ${spdlog_SOURCE_DIR}
+    ${spdlog_BINARY_DIR})
+    target_include_directories(feelpp_taskflow INTERFACE
+      $<BUILD_INTERFACE:${spdlog_SOURCE_DIR}/include>
+      $<INSTALL_INTERFACE:include/feelpp> )
+endif()
+
+
 # Add an info message to be displayed at the end of the cmake process.
 if( FEELPP_CONTRIB_SUBMODULE_UPDATED )
   list( APPEND FEELPP_MESSAGE_INFO_END "Feel++ submodules already initialized!\nPlease make sure submodules are up to date (run `git submodule update --init --recursive` in source directory)" )
