@@ -704,6 +704,18 @@ public:
             }
             return std::string();
         }
+    /**
+     * @return the marker name associated to the \p marker id
+     */
+    std::string markerName( size_type marker, size_type dim ) const
+        {
+            for( auto const& n : M_markername )
+            {
+                if (n.second[0] == marker && n.second[1] == dim )
+                    return n.first;
+            }
+            return std::string{};
+        }
 
     /**
      * @return the topological dimension associated to the \p marker
