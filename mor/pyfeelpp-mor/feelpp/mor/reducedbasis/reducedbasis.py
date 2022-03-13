@@ -13,6 +13,7 @@ import h5py
 import json
 from tqdm import tqdm
 from scipy.sparse.linalg import splu, spsolve
+# import time
 
 from mpi4py import MPI
 comm = MPI.COMM_WORLD
@@ -143,7 +144,7 @@ class reducedbasis():
             return FN[:size]
 
 
-    def getSolutions(self, mu, beta = None, size=None):
+    def getSolutions(self, mu, beta=None, size=None):
         """Return solution uN and output sN
 
         Args:
@@ -164,7 +165,7 @@ class reducedbasis():
 
 
 
-    def computeOnlineError(self, mu, precalc=None):
+    def computeOnlineError(self, mu, precalc=None, size=None):
         """compute a posteriori online error, from a parameter mu
 
         Args:
@@ -180,18 +181,19 @@ class reducedbasis():
             beta_ = self.model.computeBetaQm(mu)
             betaA = beta_[0][0]
             betaF = beta_[1][0][0]
-            A_mu = self.assembleAN(betaA)
-            F_mu = self.assembleFN(betaF)
+            A_mu = self.assembleAN(betaA, size=size)
+            F_mu = self.assembleFN(betaF, size=size)
 
             uN = np.linalg.solve(A_mu, F_mu)
         else:
             betaA = precalc["betaA"]
             betaF = precalc["betaF"]
             uN = precalc["uN"]
+        s = [size, self.N][size is None]
 
         s1 = betaF @ self.SS @ betaF    # beta_p*beta_p'*(Sp,Sp')
-        s2 = np.einsum('q,p,n,qpn', betaA, betaF, uN, self.SL, optimize=True)
-        s3 = np.einsum('q,r,n,m,qnrm', betaA, betaA, uN, uN, self.LL, optimize=True)
+        s2 = np.einsum('q,p,n,qpn', betaA, betaF, uN, self.SL[:,:,:s], optimize=True)
+        s3 = np.einsum('q,r,n,m,qnrm', betaA, betaA, uN, uN, self.LL[:,:s,:,:s], optimize=True)
 
         # s1 = 0
         # for p in range(self.Qf):
@@ -214,7 +216,7 @@ class reducedbasis():
 
 
 
-    def computeEnergyBound(self, mu, precalc=None):
+    def computeEnergyBound(self, mu, precalc=None, size=None):
         """computes ernergy bound
 
         Args:
@@ -225,7 +227,7 @@ class reducedbasis():
         Returns:
             float: energy error bound
         """
-        normHatE = self.computeOnlineError(mu, precalc=precalc)
+        normHatE = self.computeOnlineError(mu, precalc=precalc, size=size)
         if precalc is None:
             alp = self.alphaLB(mu)
         else:
@@ -251,7 +253,7 @@ class reducedbasis():
         elif not os.path.isdir(path):
             os.mkdir(path)
 
-        print(f"[reducedbasis] saving reduced basis to {os.getcwd()}/reducedbasis.json...", end=" ")
+        print(f"[reducedbasis] saving reduced basis to {os.getcwd()}/reducedbasis.json ...", end=" ")
 
         content = {'Qa': self.Qa, 'Qf': self.Qf, 'N': self.N, "path": path+"/reducedbasis.h5"}
         os.system('pwd')
@@ -333,7 +335,7 @@ class reducedbasis():
         betaA_bar_np = np.array(self.betaA_bar)
         def alphaLB(mu):
             # From a parameter
-            betaMu = self.model.computeBetaQm(self.mu)[0][0]
+            betaMu = self.model.computeBetaQm(mu)[0][0]
             return self.alphaMubar * np.min( betaMu / betaA_bar_np )
 
         def alphaLB_(betaA):
@@ -346,6 +348,22 @@ class reducedbasis():
         print(f"[reduced basis] Basis loaded from {path}")
         self.setInitialized = True
 
+    def getSize(self, threshold):
+        """Get size of the basis for a desired threshold error
+
+        Args:
+            threshold (float): thresohld
+
+        Returns:
+            int: size of the basis
+        """
+        if self.DeltaMax is None:
+            print("[reducedbasis] Maximal error has not been calculated yet")
+            return self.N
+        ind = 0
+        while self.DeltaMax[ind] > threshold:
+            ind += 1
+        return ind
 
 
 class reducedbasisOffline(reducedbasis):
@@ -516,7 +534,7 @@ class reducedbasisOffline(reducedbasis):
             self.orthonormalizeZ(nb=nb+1)
         elif rank == 0:
             # pass
-            print(f"[reducedBasis] Gram-Schmidt orthonormalization done after {nb+1} step"+['','s'][nb>0])
+            print(f"[reducedBasis] Gram-Schmidt orthonormalization done after {nb+1} step"+['','s'][nb>1])
 
 
 
@@ -692,7 +710,7 @@ class reducedbasisOffline(reducedbasis):
     """
     Finite elements resolution
     """
-    def getSolutionsFE(self, mu):
+    def getSolutionsFE(self, mu, beta=None):
         """Computes the finite element solution (big problem)
 
         Args:
@@ -701,7 +719,8 @@ class reducedbasisOffline(reducedbasis):
         Returns:
             tuple (PETSc.Vec,float) : (u, s)
         """
-        beta = self.model.computeBetaQm(mu)
+        if beta is None:
+            beta = self.model.computeBetaQm(mu)
         A_mu = self.assembleA(beta[0][0])
         F_mu = self.assembleF(beta[1][0][0])
         
@@ -920,6 +939,9 @@ class reducedbasisOffline(reducedbasis):
             betas[mu] = self.model.computeBetaQm(mu)
 
         # fig = go.Figure()
+
+        # t_init = time.process_time()
+        # ts = []
         
         while Delta > eps_tol and self.N < Nmax:
 
@@ -964,28 +986,51 @@ class reducedbasisOffline(reducedbasis):
             i_max = 0
             Delta_max = -float('inf')
 
-            # l = []
-            # m = []
+            # t_loop = time.process_time()
+            # t_sol = 0
+            # t_i = 0
+            # t_nrm = 0
+            # t_eb = 0
+            # t_tst = 0
 
             for i,mu_tmp in enumerate(tqdm(Dmu, desc=f"[reducedBasis] Greedy, step {self.N}", ascii=False, ncols=120)):
                 beta = betas[mu_tmp]
                 ANmu = self.assembleAN(beta[0][0])
+                # t_sol0 = time.process_time()
                 uN,_ = self.getSolutions(mu_tmp, beta=beta)
+                # t_sol1 = time.process_time()
                 norm_uMu = np.sqrt( uN.T @ ANmu @ uN )
+                # t_nrm1 = time.process_time()
 
+                # ti0 = time.process_time()
                 precalc = {"betaA":beta[0][0], "betaF":beta[1][0][0], "uN":uN}
+                # ti1 = time.process_time()
 
+                # t_eb0 = time.process_time()
                 D_en = self.computeEnergyBound(mu_tmp, precalc=precalc)
                 Delta_tmp = D_en / norm_uMu
+                # t_eb1 = time.process_time()
 
                 # m.append(mu_tmp.parameterNamed('k_1'))
                 # l.append(Delta_tmp)
 
+                # t_tst0 = time.process_time()
                 if Delta_tmp > Delta_max:
                     i_max = i
                     Delta_max = Delta_tmp
                     mu_max = mu_tmp
+                # t_tst1 = time.process_time()
 
+                # t_sol += t_sol1 - t_sol0
+                # t_nrm += t_nrm1 - t_sol1
+                # t_i += ti1 - ti0
+                # t_eb += t_eb1 - t_eb0
+                # t_tst += t_tst1 - t_tst0
+
+            # t_end_loop = time.process_time()
+            # ts.append((t_end_loop - t_loop))
+            # print(ts[-1], ts[-1]/len(Dmu))
+            # print(self.N, (t_sol)/len(Dmu), (t_nrm)/len(Dmu), (t_eb)/len(Dmu), (t_tst)/len(Dmu))
             Dmu.pop(i_max)
             Delta = Delta_max
             self.DeltaMax.append(Delta_max)
