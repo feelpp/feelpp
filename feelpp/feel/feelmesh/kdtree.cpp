@@ -22,12 +22,15 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
-   \file kdtree.cpp
+   \file KDTree.cpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2007-06-07
  */
-#include <feel/feelmesh/kdtree.hpp>
+
 #include <fstream>
+#include <spdlog/spdlog.h>
+#include <spdlog/fmt/chrono.h>
+#include <feel/feelmesh/kdtree.hpp>
 
 namespace Feel
 {
@@ -613,12 +616,12 @@ KDTree::pointsInBox( points_type &inpts,
 void
 KDTree::search( const node_type & node_ )
 {
-
     M_node_search = node_;
 
     // construct the tree from the points set
     if ( M_tree == 0 )
     {
+        spdlog::debug("building tree");
         M_tree = detail::build_tree( M_pts.begin(),
                                      M_pts.end(),
                                      0 );
@@ -878,5 +881,174 @@ KDTree::writeLatexData( std::string __nameFile )
 
 }
 
+// ray traversal algorithm
+void
+KDTree::ray_search(const Ray &rayon)
+{
+    M_ray_search = rayon;
 
-} //Feel
+    // construct the tree from the points set
+    if ( M_tree == 0 )
+    {
+        spdlog::debug("building tree");
+        M_tree = detail::build_tree( M_pts.begin(),
+                                     M_pts.end(),
+                                     0 );
+
+        if ( !M_tree )
+            return;
+    }
+
+    // clean the old research
+    M_PtsNearest.clear();
+    M_distanceMax = INT_MAX;
+
+    // compute tmin and tmax
+    double tmin, tmax;
+
+    const KDTree::Node *tn = static_cast<const KDTree::Node*>( M_tree );
+    node_type mini = tn->ptmin;
+    node_type maxi = tn->ptmax;
+
+    spdlog::debug("Check bounding box coordinates : min = ({},{},{}) max = ({},{},{})", mini(0),mini(1),mini(2), maxi(0),maxi(1),maxi(2));
+
+    double t1 = (mini(0) - rayon.origin[0])/rayon.dir[0];
+    double t2 = (maxi(0) - rayon.origin[0])/rayon.dir[0];
+    double t3 = (mini(1) - rayon.origin[1])/rayon.dir[1];
+    double t4 = (maxi(1) - rayon.origin[1])/rayon.dir[1];
+    double t5 = (mini(2) - rayon.origin[2])/rayon.dir[2];
+    double t6 = (maxi(2) - rayon.origin[2])/rayon.dir[2];
+
+    tmin = std::max(std::max(std::min(t1, t2), std::min(t3, t4)), std::min(t5, t6));
+    tmax = std::min(std::min(std::max(t1, t2), std::max(t3, t4)), std::max(t5, t6));
+
+    spdlog::debug("Check ray intersection with bounding box : tmin = {} , tmax = {}", tmin, tmax);
+    // si pas d'intersection avec l'arbre on arrete
+   /* if (tmax < 0 || tmin>tmax)
+            return;
+    */// sinon, run search
+    spdlog::debug("run ray search");
+    run_ray_search( M_tree, M_ray_search, tmin, tmax, 0 );
+}
+
+void
+KDTree::run_ray_search( KDTree::Element * tree, const Ray &rayon, double tmin, double tmax, uint16_type iter )
+{
+    // loop until a leaf is found
+    if ( ! tree->isleaf() )
+    {
+        // pointers to the near child node and far child node 
+        const KDTree::Node *tn = static_cast<const KDTree::Node*>( tree );
+        KDTree::Element *nearChild, *farChild;
+
+        // split axis :
+        // 0 for X-axis, 1 for Y-axis, 2 for Z-axis
+        float splitaxis;
+        size_type N = tn->ptmin.size();
+
+        if ( ( iter%N )==0 )
+            splitaxis = 0;
+        else if ( ( iter%N )==1 )
+            splitaxis = 1;
+        else if ( ( iter%N )==2 )
+            splitaxis = 2;
+
+        // compute tsplit 
+        double tsplit = (tn->split_v - rayon.origin[splitaxis]) / (rayon.dir[splitaxis]);
+        spdlog::debug("tsplit = {}", tsplit);
+
+        // identify near child and far child
+        if(rayon.origin[splitaxis] < tn->split_v) {
+            nearChild = tn->left;
+            farChild = tn->right;
+        } else {
+            nearChild = tn->right;
+            farChild = tn->left;
+        }
+
+        // recursive call : 
+        // depend on tsplit, tmin and tmax values
+        if( tsplit > tmax || tsplit < 0) {
+            run_ray_search(nearChild, rayon, tmin, tmax, iter+1);
+        }
+        else if(tsplit < tmin) {
+            run_ray_search(farChild, rayon, tmin, tmax, iter+1);
+        }
+        else {
+            run_ray_search(nearChild, rayon, tmin, tsplit, iter+1);
+            run_ray_search(farChild, rayon, tsplit, tmax, iter+1);
+        }
+    }
+    // current node is a leaf
+    else 
+    {
+        const KDTree::Leaf *tl = static_cast<const KDTree::Leaf*>( tree );
+        KDTree::points_const_iterator itpt = tl->it;
+        for ( size_type i=0; i<tl->n; ++i,++itpt )
+            update_Pts_search_ray( *itpt , tmin);
+    }
+}
+
+void
+KDTree::update_Pts_search_ray( const index_node_type & p , double tsplit)
+{
+
+    points_search_iterator itpts;
+    points_search_iterator itpts_end;
+    Eigen::Vector3d inter = (this->M_ray_search).origin + tsplit*(this->M_ray_search).dir;
+
+    node_type intersection (3);
+    for (unsigned i = 0; i < 3; ++ i)
+        intersection(i) = inter[i];
+
+
+    double d=detail::distanceNodes( boost::get<0>( p ) , intersection );
+
+    if ( M_PtsNearest.size()<this->M_nbPtMax )
+    {
+        index_node_search_type newEl( boost::make_tuple( boost::get<0>( p ),
+                                      boost::get<1>( p ),
+                                      boost::get<2>( p ),
+                                      boost::get<3>( p ),
+                                      d  )
+                                    );
+        itpts=M_PtsNearest.begin();
+        itpts_end=M_PtsNearest.end();
+
+        while ( itpts!=itpts_end && d > boost::get<4>( *itpts ) )
+        {
+            ++itpts;
+        }
+
+        M_PtsNearest.insert( itpts,newEl );
+    }
+
+    else if ( d<this->M_distanceMax )
+    {
+        itpts=M_PtsNearest.begin();
+        itpts_end=M_PtsNearest.end();
+
+        for ( ; itpts<itpts_end; ++itpts )
+        {
+            if ( d < boost::get<4>( *itpts ) )
+            {
+                index_node_search_type newEl( boost::make_tuple( boost::get<0>( p ),
+                                              boost::get<1>( p ),
+                                              boost::get<2>( p ),
+                                              boost::get<3>( p ),
+                                              d  )
+                                            );
+                M_PtsNearest.insert( itpts,newEl );
+                M_PtsNearest.pop_back();
+                M_distanceMax= boost::get<4>( M_PtsNearest.back() );
+                itpts=itpts_end;
+            }
+
+        }
+
+    }
+
+}
+
+
+} // Feel

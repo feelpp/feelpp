@@ -26,8 +26,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2007-06-07
  */
-#ifndef __KDTree_H
-#define __KDTree_H 1
+#ifndef FEELPP_KDTREE_HPP
+#define FEELPP_KDTREE_HPP 1
 
 #include <vector>
 #include <boost/tuple/tuple.hpp>
@@ -41,6 +41,28 @@
 namespace Feel
 {
 
+/* 
+* Ray class
+* Contain origin and direction of a ray
+*/
+class Ray 
+{ 
+public: 
+    using vec_t = Eigen::Vector3d;
+    Ray(const vec_t &orig, const vec_t &dir) : 
+        origin(orig),
+        dir(dir) 
+    {} 
+    Ray( const Ray &r) :
+        origin(r.origin), 
+        dir(r.dir)
+    {}
+    Ray() : 
+        origin(),
+        dir() 
+    {} 
+    vec_t origin, dir;  // ray origin and dir 
+};
 
 /**
  * \class KDTree
@@ -91,6 +113,7 @@ public:
         M_tree( 0 ),
         M_pts(),
         M_node_search(),
+        M_ray_search(),
         M_PtsNearest(),
         M_distanceMax( INT_MAX ),
         M_nbPtMax( 4 )
@@ -100,6 +123,7 @@ public:
         M_tree( tree.M_tree ),
         M_pts( tree.M_pts ),
         M_node_search( tree.M_node_search ),
+        M_ray_search(),
         M_PtsNearest( tree.M_PtsNearest ),
         M_distanceMax( tree.M_distanceMax ),
         M_nbPtMax( tree.M_nbPtMax )
@@ -234,7 +258,10 @@ public:
     /**
      * print in a file the scatterplot with the cuts of hyperplan (2d et 3d)
      */
-    void writeLatexData( std::string __nameFile = "kdtreeData.tex" );
+    void writeLatexData( std::string __nameFile = "KDTreeData.tex" );
+
+    // Ray traversal algorithm 
+    void ray_search(const Ray &rayon);
     //@}
 
 
@@ -255,12 +282,17 @@ private:
      */
     void update_Pts_search( const index_node_type & p );
 
+    // recursive ray traversal algorithm
+    void run_ray_search( KDTree::Element * tree, const Ray &rayon, double tmin, double tmax,  uint16_type iter );
+    void update_Pts_search_ray( const index_node_type & p , double tsplit);
+
 private:
     Element* M_tree;
     points_type M_pts;
 
     //the point which we search the nearest neighbors
     node_type M_node_search;
+    Ray M_ray_search;
     //vector of the closest neighbors
     points_search_type M_PtsNearest;
     //greater distance from the vector of nearest neighbors
