@@ -1052,6 +1052,79 @@ class reducedbasisOffline(reducedbasis):
         print("[reducedBasis] End greedy algorithm")
         self.DeltaMax = np.array(self.DeltaMax)
 
+        # t_end = time.process_time()
+        # print(ts)
+        # print(t_end - t_init)
         return S
 
+
+
+    def generatePOD(self, Xi_train, eps_tol=1e-6):
+        if rank == 0:
+            print("[reducedBasis] Start greedy algorithm")
+        self.N = 0
+        self.Z = []
+        Delta = 1 + eps_tol
+
+        self.DeltaMax = []
+
+        betas = {}
+        solEF = {}
+        for mu in Xi_train:
+            betas[mu] = self.model.computeBetaQm(mu)
+            solEF[mu], _ = self.getSolutionsFE(mu, betas[mu])
+            print(mu, solEF[mu].min(), solEF[mu].max())
+
+        N_train = len(Xi_train)
+        C = PETSc.Mat().create()
+        C.setSizes([N_train, N_train])
+        C.setFromOptions()
+        C.setUp()
+
+        for i,mu in enumerate(Xi_train):
+            for j,nu in enumerate(Xi_train):
+                C[i,j] = self.scalarX(solEF[mu], solEF[nu])
+        C.assemble()
+
+        E = SLEPc.EPS()
+        E.create()
+        E.setOperators(C)
+        E.setFromOptions()
+        E.setWhichEigenpairs(E.Which.LARGEST_MAGNITUDE)
+        E.setDimensions(N_train)
+
+        E.solve()
+        nCv = E.getConverged()
+        print(f"[slepsc4py] {nCv} eigenmodes computed (should be {N_train})")
+
+        eigenval = np.zeros(nCv)
+        for i in range(nCv):
+            eigenval[i] = float(E.getEigenvalue(i).real)
+
+        phi = PETSc.Vec().create()
+        phi.setSizes(self.NN)
+        phi.setFromOptions()
+        phi.setUp()
+        eigenvect = PETSc.Vec().create()
+        eigenvect.setSizes(nCv)
+        eigenvect.setFromOptions()
+        eigenvect.setUp()
+
+
+        while Delta > eps_tol:
+            self.N += 1
+            phi.set(0)
+            for i in range(nCv):
+                E.getEigenvector(i, eigenvect)
+                p = float(eigenval[i]) * solEF[Xi_train[i]]
+                phi += p
+            self.Z.append(phi.copy())
+
+            Delta = 1 - eigenval[:self.N].sum()/eigenval.sum()
+            self.DeltaMax.append(Delta)
+
+        self.orthonormalizeZ()
+        self.generateANq()
+        self.generateLNp()
+        self.generateFNp()
 

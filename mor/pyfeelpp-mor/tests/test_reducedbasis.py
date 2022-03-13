@@ -228,6 +228,9 @@ def save_and_load(rb):
     rbLoaded = reducedbasis(None)
     rbLoaded.loadReducedBasis(path, rb.model)
 
+    for n in rb.mubar.parameterNames():
+        assert rb.mubar.parameterNamed(n) == rbLoaded.mubar.parameterNamed(n)
+
     assert( rb.Qa == rbLoaded.Qa )
     assert( rb.Qf == rbLoaded.Qf )
     assert( rb.N == rbLoaded.N )
@@ -319,7 +322,54 @@ def test_reducedbasis_greedy(prefix, case, casefile, dim, use_cache, time_depend
 
     Xi_train = listOfParams(500)
     mu0 = model.parameterSpace().element()
-    rb.greedy(mu0, Xi_train, eps_tol=1e-3)
+    rb.greedy(mu0, Xi_train, eps_tol=1e-4)
+
+    assert( rb.test_orth() )
+    assert( rb.DeltaMax[-1] < 1e-4 )
+
+
+    print("\nCompute offline error")
+    rb.computeOfflineErrorRhs()
+    rb.computeOfflineError()
+
+
+    print("\nCompar matrix")
+    compar_matrix(rb, assembleMDEIM)
+
+    print("\nCompar Rhs")
+    compar_rhs(rb, assembleDEIM)
+
+    print("\nCompar solutions")
+    compar_sols(rb, assembleDEIM, heatBox)
+
+    print("\nCompar FE solutions")
+    compar_solFE(rb, assembleDEIM, heatBox)
+
+    print("\n Save and reload basis")
+    save_and_load(rb)
+
+
+
+
+@pytest.mark.parametrize("prefix,case,casefile,dim,use_cache,time_dependent", cases_params, ids=cases_ids)
+def test_reducedbasis_pod(prefix, case, casefile, dim, use_cache, time_dependent, init_feelpp):
+    e = init_feelpp    
+    heatBox, model, decomposition, mubar, assembleMDEIM, assembleDEIM = init_environment(prefix, case, casefile, dim, use_cache, time_dependent)
+
+    Aq = decomposition[0]
+    Fq = decomposition[1]
+
+    rb = reducedbasisOffline(convertToPetscMat(Aq[0]), convertToPetscVec(Fq[0][0]), model, mubar)
+
+    print("\nCompute basis and orthonormalize it")
+    def listOfParams(n):
+        res = []
+        for i in range(n):
+            res.append( model.parameterSpace().element())
+        return res
+
+    Xi_train = listOfParams(15)
+    rb.generatePOD(Xi_train, eps_tol=1e-3)
 
     assert( rb.test_orth() )
     assert( rb.DeltaMax[-1] < 1e-3 )
@@ -344,7 +394,6 @@ def test_reducedbasis_greedy(prefix, case, casefile, dim, use_cache, time_depend
 
     print("\n Save and reload basis")
     save_and_load(rb)
-
 
 
 def compute_time_for_offline_solution(rb):
