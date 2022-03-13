@@ -2,10 +2,8 @@ var elements_8hpp =
 [
     [ "addElement", "elements_8hpp.html#ac484cc4d8dfeb38ccd1e5917e04d1571", null ],
     [ "addElement", "elements_8hpp.html#a985d8d316dd1833a9068a8182782293b", null ],
-    [ "addParts", "elements_8hpp.html#a23ffdcbf635c2fd8f6bef9dea2c85998", null ],
     [ "beginElement", "elements_8hpp.html#a80395c56cf1b99416d827391eab04503", null ],
     [ "beginOrderedElement", "elements_8hpp.html#a39db50efed871f6ce9a50f6ada6778be", null ],
-    [ "beginParts", "elements_8hpp.html#a3dae897c58ce54faba4bd4947769df82", null ],
     [ "boundaryElements", "elements_8hpp.html#a9ce45a6536c5fe2b286b55028163798a", null ],
     [ "boundaryElements", "elements_8hpp.html#af577df48a45188bea43961d967412bce", null ],
     [ "buildOrderedElements", "elements_8hpp.html#aee3ebb8d3c55a0e35f839977b3346543", null ],
@@ -30,7 +28,6 @@ var elements_8hpp =
     [ "elementsWithProcessId", "elements_8hpp.html#a6acbd1558a94669f56992211a0766b0d", null ],
     [ "endElement", "elements_8hpp.html#a10d0d3f5e36088370fab22b0944c9381", null ],
     [ "endOrderedElement", "elements_8hpp.html#a8c1a464e97e04bc474f6e518afeabf7b", null ],
-    [ "endParts", "elements_8hpp.html#a1876d2dda6be797e2346e3a04c985ed6", null ],
     [ "eraseElementOnly", "elements_8hpp.html#ad5c1ba787cdc7087edad3efb09db656c", null ],
     [ "firstElementIteratorWithProcessId", "elements_8hpp.html#a81f9fd901bd7561bed7c8fc6b17b3d4d", null ],
     [ "ghostElements", "elements_8hpp.html#a38fb08da1a91434cb33bae598354d895", null ],
@@ -41,7 +38,6 @@ var elements_8hpp =
     [ "isBoundaryElement", "elements_8hpp.html#afee70c12d025c013c6c82889e2b1d52a", null ],
     [ "isEmpty", "elements_8hpp.html#a537c55d8a973914fd186c0e8352eb3a8", null ],
     [ "operator=", "elements_8hpp.html#a50972fd7b0bc76c7a441e8ed1b779871", null ],
-    [ "parts", "elements_8hpp.html#abbfd9fcd54080fc9fc5d44e8ffb2fcfd", null ],
     [ "reserveNumberOfElement", "elements_8hpp.html#a1b5de1c941212d893f5fde4aba68bcb0", null ],
     [ "serialize", "elements_8hpp.html#a6170271ee1053926f4d5acb3d6ef6434", null ],
     [ "setWorldCommElements", "elements_8hpp.html#a9cbc1455782537a07da3c158ff01fe41", null ],
@@ -60,6 +56,5 @@ var elements_8hpp =
     [ "M_elements", "elements_8hpp.html#a10de5363c7f668c4e9e8aeaf46da148f", null ],
     [ "M_needToOrderElements", "elements_8hpp.html#ae92a3c413ebb90b6bad2339155e88362", null ],
     [ "M_orderedElements", "elements_8hpp.html#a8b365642c22826838fbb7870470bb61d", null ],
-    [ "M_parts", "elements_8hpp.html#a8d67c8b2dd01d67c18b779eb8308c7e5", null ],
     [ "M_worldComm", "elements_8hpp.html#a35edc8c1168984e777919265234f1bef", null ]
 ];

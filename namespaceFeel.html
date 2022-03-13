@@ -478,6 +478,8 @@ Classes</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Localization.html">Localization</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Marker.html">Marker</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1MemoryUsage.html">MemoryUsage</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">class to query for memory usage  <a href="structFeel_1_1MemoryUsage.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1586,10 +1588,10 @@ typedef boost::uint64_t&#160;</td><td class="memItemRight" valign="bottom"><b>ui
 <tr class="memitem:aed52446c0413dd3b45f6c009d0ad530b"><td class="memItemLeft" align="right" valign="top"><a id="aed52446c0413dd3b45f6c009d0ad530b"></a>
 typedef boost::uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>uint8_type</b></td></tr>
 <tr class="separator:aed52446c0413dd3b45f6c009d0ad530b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab2f32f02335b4713f1b82420546d0c69"><td class="memTemplParams" colspan="2"><a id="ab2f32f02335b4713f1b82420546d0c69"></a>
+<tr class="memitem:a9fe709c0933be18d98809c0466595dd6"><td class="memTemplParams" colspan="2"><a id="a9fe709c0933be18d98809c0466595dd6"></a>
 template&lt;typename T &gt; </td></tr>
-<tr class="memitem:ab2f32f02335b4713f1b82420546d0c69"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>unwrap_ptr_t</b> = remove_shared_ptr_type&lt; T &gt;</td></tr>
-<tr class="separator:ab2f32f02335b4713f1b82420546d0c69"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9fe709c0933be18d98809c0466595dd6"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>unwrap_ptr_t</b> = remove_shared_ptr_type&lt; std::remove_pointer_t&lt; T &gt; &gt;</td></tr>
+<tr class="separator:a9fe709c0933be18d98809c0466595dd6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a097cdf09b5677ae1f5f05fe05258608b"><td class="memTemplParams" colspan="2"><a id="a097cdf09b5677ae1f5f05fe05258608b"></a>
 template&lt;typename MeshType &gt; </td></tr>
 <tr class="memitem:a097cdf09b5677ae1f5f05fe05258608b"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>value_t</b> = typename MeshType::value_type</td></tr>
@@ -2160,10 +2162,10 @@ template&lt;size_t S, class ITERATOR , class CONTAINER &gt; </td></tr>
 template&lt;class ITERATOR &gt; </td></tr>
 <tr class="memitem:abf9436b776739909966e92e09369d0ac"><td class="memTemplItemLeft" align="right" valign="top">ITERATOR&#160;</td><td class="memTemplItemRight" valign="bottom"><b>end</b> (std::pair&lt; ITERATOR, ITERATOR &gt; &amp;<a class="el" href="group__Core.html#gaa93ce915ed0b3ba6de937b7fb78fceb8">range</a>)</td></tr>
 <tr class="separator:abf9436b776739909966e92e09369d0ac"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4cf03b6581079698c80478ededf5b313"><td class="memTemplParams" colspan="2">template&lt;int EntityCoDim, typename ElementT &gt; </td></tr>
-<tr class="memitem:a4cf03b6581079698c80478ededf5b313"><td class="memTemplItemLeft" align="right" valign="top">std::optional&lt; std::map&lt; uint16_type, <a class="el" href="classMarker1.html">Marker1</a> &gt; &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#a4cf03b6581079698c80478ededf5b313">entityMarkers</a> (ElementT const &amp;e, uint16_type f)</td></tr>
-<tr class="memdesc:a4cf03b6581079698c80478ededf5b313"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the map of markers of a entity of a geoelement  <a href="namespaceFeel.html#a4cf03b6581079698c80478ededf5b313">More...</a><br /></td></tr>
-<tr class="separator:a4cf03b6581079698c80478ededf5b313"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac860b68c385d2e096ffb6174e5dc7c2a"><td class="memTemplParams" colspan="2">template&lt;int EntityCoDim, typename ElementT &gt; </td></tr>
+<tr class="memitem:ac860b68c385d2e096ffb6174e5dc7c2a"><td class="memTemplItemLeft" align="right" valign="top">std::optional&lt; std::map&lt; uint16_type, typename ElementT::marker_type &gt; &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#ac860b68c385d2e096ffb6174e5dc7c2a">entityMarkers</a> (ElementT const &amp;e, uint16_type f)</td></tr>
+<tr class="memdesc:ac860b68c385d2e096ffb6174e5dc7c2a"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the map of markers of a entity of a geoelement  <a href="namespaceFeel.html#ac860b68c385d2e096ffb6174e5dc7c2a">More...</a><br /></td></tr>
+<tr class="separator:ac860b68c385d2e096ffb6174e5dc7c2a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a26a26c520c7122d0a4ba38135308e288"><td class="memItemLeft" align="right" valign="top"><a id="a26a26c520c7122d0a4ba38135308e288"></a>
 DebugStream&#160;</td><td class="memItemRight" valign="bottom"><b>Error</b> (<a class="el" href="classbool.html">bool</a> cond, <a class="el" href="classint.html">int</a> area)</td></tr>
 <tr class="separator:a26a26c520c7122d0a4ba38135308e288"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -2260,6 +2262,11 @@ template&lt;typename ... Ts&gt; </td></tr>
 template&lt;typename ... Ts&gt; </td></tr>
 <tr class="memitem:aae0194bba0f2f858c384597706e3c59e"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><b>form2</b> (Ts &amp;&amp;... v)</td></tr>
 <tr class="separator:aae0194bba0f2f858c384597706e3c59e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:accc257e7fd2ac1d5537c03a15f45b600"><td class="memTemplParams" colspan="2"><a id="accc257e7fd2ac1d5537c03a15f45b600"></a>
+template&lt;typename MeshType , std::enable_if_t&lt; std::is_base_of_v&lt; MeshBase&lt;&gt;, unwrap_ptr_t&lt; MeshType &gt;&gt;, int &gt;  = 0&gt; </td></tr>
+<tr class="memitem:accc257e7fd2ac1d5537c03a15f45b600"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#accc257e7fd2ac1d5537c03a15f45b600">fragmentationMarkedElements</a> (MeshType const &amp;mesh, EntityProcessType entity=EntityProcessType::LOCAL_ONLY, <a class="el" href="classbool.html">bool</a> includeNonMarkedElement=true)</td></tr>
+<tr class="memdesc:accc257e7fd2ac1d5537c03a15f45b600"><td class="mdescLeft">&#160;</td><td class="mdescRight">return mesh fragmentatin by marked elements : a mapping between fragment id to to the tuple (range, marker ids, fragment name) <br /></td></tr>
+<tr class="separator:accc257e7fd2ac1d5537c03a15f45b600"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab045c366ff0ef1d8a171ce2beef132ef"><td class="memItemLeft" align="right" valign="top"><a id="ab045c366ff0ef1d8a171ce2beef132ef"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>freeargv</b> (char **<a class="el" href="classboost_1_1fusion_1_1vector.html">vector</a>)</td></tr>
 <tr class="separator:ab045c366ff0ef1d8a171ce2beef132ef"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -4480,15 +4487,6 @@ ordered_element_reference_wrapper_iterator&#160;</td><td class="memItemRight" va
 <tr class="memitem:a8c1a464e97e04bc474f6e518afeabf7b"><td class="memItemLeft" align="right" valign="top"><a id="a8c1a464e97e04bc474f6e518afeabf7b"></a>
 ordered_element_reference_wrapper_iterator&#160;</td><td class="memItemRight" valign="bottom"><b>endOrderedElement</b> ()</td></tr>
 <tr class="separator:a8c1a464e97e04bc474f6e518afeabf7b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3dae897c58ce54faba4bd4947769df82"><td class="memItemLeft" align="right" valign="top"><a id="a3dae897c58ce54faba4bd4947769df82"></a>
-parts_const_iterator_type&#160;</td><td class="memItemRight" valign="bottom"><b>beginParts</b> () const</td></tr>
-<tr class="separator:a3dae897c58ce54faba4bd4947769df82"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1876d2dda6be797e2346e3a04c985ed6"><td class="memItemLeft" align="right" valign="top"><a id="a1876d2dda6be797e2346e3a04c985ed6"></a>
-parts_const_iterator_type&#160;</td><td class="memItemRight" valign="bottom"><b>endParts</b> () const</td></tr>
-<tr class="separator:a1876d2dda6be797e2346e3a04c985ed6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abbfd9fcd54080fc9fc5d44e8ffb2fcfd"><td class="memItemLeft" align="right" valign="top"><a id="abbfd9fcd54080fc9fc5d44e8ffb2fcfd"></a>
-parts_map_type const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>parts</b> () const</td></tr>
-<tr class="separator:abbfd9fcd54080fc9fc5d44e8ffb2fcfd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2f149ad13368cbfdfad63d6230c3f7fd"><td class="memItemLeft" align="right" valign="top">std::pair&lt; element_iterator, element_iterator &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#a2f149ad13368cbfdfad63d6230c3f7fd">elementsRange</a> ()</td></tr>
 <tr class="separator:a2f149ad13368cbfdfad63d6230c3f7fd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abf45128a07dc199adca6bf2a56deed8b"><td class="memItemLeft" align="right" valign="top">std::tuple&lt; element_reference_wrapper_const_iterator, element_reference_wrapper_const_iterator, elements_reference_wrapper_ptrtype &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#abf45128a07dc199adca6bf2a56deed8b">elementsWithId</a> (<a class="el" href="namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58">size_type</a> m) const</td></tr>
@@ -4576,9 +4574,6 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>setWorldCommElements<
 <tr class="memitem:aa52e5573506f97f6dcfdd5f37923d1fa"><td class="memItemLeft" align="right" valign="top"><a id="aa52e5573506f97f6dcfdd5f37923d1fa"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>updateOrderedElement</b> ()</td></tr>
 <tr class="separator:aa52e5573506f97f6dcfdd5f37923d1fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a23ffdcbf635c2fd8f6bef9dea2c85998"><td class="memItemLeft" align="right" valign="top"><a id="a23ffdcbf635c2fd8f6bef9dea2c85998"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>addParts</b> (std::set&lt; <a class="el" href="classint.html">int</a> &gt; const &amp;someParts)</td></tr>
-<tr class="separator:a23ffdcbf635c2fd8f6bef9dea2c85998"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>-*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- </p>
@@ -5947,8 +5942,8 @@ template&lt;typename MeshType , typename ExprType , std::enable_if_t&lt; std::is
 
 </div>
 </div>
-<a id="a4cf03b6581079698c80478ededf5b313"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4cf03b6581079698c80478ededf5b313">&#9670;&nbsp;</a></span>entityMarkers()</h2>
+<a id="ac860b68c385d2e096ffb6174e5dc7c2a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac860b68c385d2e096ffb6174e5dc7c2a">&#9670;&nbsp;</a></span>entityMarkers()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -5956,7 +5951,7 @@ template&lt;typename MeshType , typename ExprType , std::enable_if_t&lt; std::is
 template&lt;int EntityCoDim, typename ElementT &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">std::optional&lt;std::map&lt;uint16_type,<a class="el" href="classMarker1.html">Marker1</a>&gt; &gt; Feel::entityMarkers </td>
+          <td class="memname">std::optional&lt;std::map&lt;uint16_type,typename ElementT::marker_type&gt; &gt; Feel::entityMarkers </td>
           <td>(</td>
           <td class="paramtype">ElementT const &amp;&#160;</td>
           <td class="paramname"><em>e</em>, </td>

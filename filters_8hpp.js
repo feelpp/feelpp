@@ -19,6 +19,7 @@ var filters_8hpp =
     [ "elementsWithMarkedFaces", "filters_8hpp.html#ae2cc20f6d5780a555abaf0e47980ac1a", null ],
     [ "faces", "filters_8hpp.html#aa219f4926f7fde5b40779cf7da3d2b91", null ],
     [ "faces", "filters_8hpp.html#a4865c9737b1e5b536a3886ec57f134ff", null ],
+    [ "fragmentationMarkedElements", "filters_8hpp.html#accc257e7fd2ac1d5537c03a15f45b600", null ],
     [ "idedelements", "filters_8hpp.html#a33538f3c396236735baa001c539a0934", null ],
     [ "idedfaces", "filters_8hpp.html#a7f1d8bad099e05c773b93577644292d1", null ],
     [ "idelements", "filters_8hpp.html#a2b5fed3968ca8777189f58f744062464", null ],

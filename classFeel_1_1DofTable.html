@@ -333,6 +333,9 @@ typedef Eigen::Matrix&lt; <a class="el" href="classint.html">int</a>, Eigen::Dyn
 <tr class="memitem:aabc7a2019f70a8d63b6b43cc2419dea4"><td class="memItemLeft" align="right" valign="top"><a id="aabc7a2019f70a8d63b6b43cc2419dea4"></a>
 typedef fe_type::matrix_type&#160;</td><td class="memItemRight" valign="bottom"><b>matrix_type</b></td></tr>
 <tr class="separator:aabc7a2019f70a8d63b6b43cc2419dea4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2af80aaba845c833312c1a57dfcf0e94"><td class="memItemLeft" align="right" valign="top"><a id="a2af80aaba845c833312c1a57dfcf0e94"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>mesh_marker_type</b> = typename element_type::marker_type</td></tr>
+<tr class="separator:a2af80aaba845c833312c1a57dfcf0e94"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a771eef6161a616b2de79bb3a75241dc8"><td class="memItemLeft" align="right" valign="top"><a id="a771eef6161a616b2de79bb3a75241dc8"></a>
 typedef super::mesh_support_base_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>mesh_support_base_ptrtype</b></td></tr>
 <tr class="separator:a771eef6161a616b2de79bb3a75241dc8"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -581,9 +584,9 @@ indices_per_element_type&#160;</td><td class="memItemRight" valign="bottom"><b>i
 void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1DofTable.html#a762db74f163ee972cb1ec9335a94ad8b">initDofMap</a> (<a class="el" href="classFeel_1_1DofTable.html#a7ef534143c67b387d25792d1bfa00be1">mesh_type</a> &amp;M)</td></tr>
 <tr class="memdesc:a762db74f163ee972cb1ec9335a94ad8b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize the dof map table. <br /></td></tr>
 <tr class="separator:a762db74f163ee972cb1ec9335a94ad8b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8659e0911bb981ee51562926774a71e2"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1DofTable.html#a8659e0911bb981ee51562926774a71e2">insertDof</a> (size_type ie, uint16_type l_dof, uint16_type lc, dof_type &amp;&amp;gDof, <a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a> processor, size_type &amp;pDof, int32_type sign=1, <a class="el" href="classbool.html">bool</a> is_dof_periodic=false, size_type shift=0, <a class="el" href="classMarker1.html">Marker1</a> const &amp;marker=<a class="el" href="classMarker1.html">Marker1</a>(0))</td></tr>
-<tr class="memdesc:a8659e0911bb981ee51562926774a71e2"><td class="mdescLeft">&#160;</td><td class="mdescRight">The dof are ordered such that they are contiguous per element and components.  <a href="classFeel_1_1DofTable.html#a8659e0911bb981ee51562926774a71e2">More...</a><br /></td></tr>
-<tr class="separator:a8659e0911bb981ee51562926774a71e2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a66cb6f0e25ead571fcc34f91a3464430"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1DofTable.html#a66cb6f0e25ead571fcc34f91a3464430">insertDof</a> (size_type ie, uint16_type l_dof, uint16_type lc, dof_type &amp;&amp;gDof, <a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a> processor, size_type &amp;pDof, int32_type sign=1, <a class="el" href="classbool.html">bool</a> is_dof_periodic=false, size_type shift=0, mesh_marker_type const &amp;marker=mesh_marker_type{})</td></tr>
+<tr class="memdesc:a66cb6f0e25ead571fcc34f91a3464430"><td class="mdescLeft">&#160;</td><td class="mdescRight">The dof are ordered such that they are contiguous per element and components.  <a href="classFeel_1_1DofTable.html#a66cb6f0e25ead571fcc34f91a3464430">More...</a><br /></td></tr>
+<tr class="separator:a66cb6f0e25ead571fcc34f91a3464430"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a35f63b0e3b1e63ac4d665ef628fc366e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1DofTable.html#a35f63b0e3b1e63ac4d665ef628fc366e">isElementDone</a> (size_type elt, <a class="el" href="classint.html">int</a> c=0) const</td></tr>
 <tr class="separator:a35f63b0e3b1e63ac4d665ef628fc366e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad63cb08f3985540b363d3b8da9b19a5a"><td class="memItemLeft" align="right" valign="top"><a id="ad63cb08f3985540b363d3b8da9b19a5a"></a>
@@ -1092,8 +1095,8 @@ template&lt;typename MeshType , typename FEType , typename PeriodicityType , typ
 
 </div>
 </div>
-<a id="a8659e0911bb981ee51562926774a71e2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8659e0911bb981ee51562926774a71e2">&#9670;&nbsp;</a></span>insertDof()</h2>
+<a id="a66cb6f0e25ead571fcc34f91a3464430"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a66cb6f0e25ead571fcc34f91a3464430">&#9670;&nbsp;</a></span>insertDof()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1157,8 +1160,8 @@ template&lt;typename MeshType , typename FEType , typename PeriodicityType , typ
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classMarker1.html">Marker1</a> const &amp;&#160;</td>
-          <td class="paramname"><em>marker</em> = <code><a class="el" href="classMarker1.html">Marker1</a>(&#160;0&#160;)</code>&#160;</td>
+          <td class="paramtype">mesh_marker_type const &amp;&#160;</td>
+          <td class="paramname"><em>marker</em> = <code>mesh_marker_type{}</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -1585,7 +1588,7 @@ template&lt;typename MeshType , typename FEType , typename PeriodicityType , typ
 </div>
 </div><!-- contents -->
 </div><!-- doc-content -->
-<div class="ttc" id="aclassFeel_1_1DofTable_html_aaf639b5422d70bbd6a8458044cb635ba"><div class="ttname"><a href="classFeel_1_1DofTable.html#aaf639b5422d70bbd6a8458044cb635ba">Feel::DofTable::dofPoints</a></div><div class="ttdeci">dof_points_type const  &amp; dofPoints() const</div><div class="ttdef"><b>Definition:</b> doftable.hpp:577</div></div>
+<div class="ttc" id="aclassFeel_1_1DofTable_html_aaf639b5422d70bbd6a8458044cb635ba"><div class="ttname"><a href="classFeel_1_1DofTable.html#aaf639b5422d70bbd6a8458044cb635ba">Feel::DofTable::dofPoints</a></div><div class="ttdeci">dof_points_type const  &amp; dofPoints() const</div><div class="ttdef"><b>Definition:</b> doftable.hpp:578</div></div>
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>

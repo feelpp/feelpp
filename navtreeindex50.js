@@ -1,5 +1,13 @@
 var NAVTREEINDEX50 =
 {
+"structFeel_1_1vf_1_1UnaryMinus_1_1tensor_1_1is__zero.html#a5abe1f0686d424383d85b78a665bf9c2":[6,1,1,13,47,3,0,0],
+"structFeel_1_1vf_1_1UnaryPlus_1_1HasTestFunction.html":[6,1,1,13,48,0],
+"structFeel_1_1vf_1_1UnaryPlus_1_1HasTestFunction.html#a7371c45018585a85727ff7eef0a8c885":[6,1,1,13,48,0,0],
+"structFeel_1_1vf_1_1UnaryPlus_1_1HasTrialFunction.html":[6,1,1,13,48,1],
+"structFeel_1_1vf_1_1UnaryPlus_1_1HasTrialFunction.html#aad51e309eb391abd60b926e83e70a500":[6,1,1,13,48,1,0],
+"structFeel_1_1vf_1_1UnaryPlus_1_1Lambda.html":[6,1,1,13,48,2],
+"structFeel_1_1vf_1_1UnaryPlus_1_1Lambda.html#afe8b849dbcfe9982d34f932f1d32a4f4":[6,1,1,13,48,2,0],
+"structFeel_1_1vf_1_1UnaryPlus_1_1tensor.html":[6,1,1,13,48,3],
 "structFeel_1_1vf_1_1UnaryPlus_1_1tensor.html#a0855c7846cc0a7255f5545fba70c655c":[6,1,1,13,48,3,11],
 "structFeel_1_1vf_1_1UnaryPlus_1_1tensor.html#a1a418a8d0ffd8ddadf40f1b0cdd8f8c1":[6,1,1,13,48,3,9],
 "structFeel_1_1vf_1_1UnaryPlus_1_1tensor.html#a2b7984bcd5a45d22446918aa8bcbfc4a":[6,1,1,13,48,3,1],
@@ -114,9 +122,9 @@ var NAVTREEINDEX50 =
 "structFeel_1_1vf_1_1tensorGen.html#a60e3126ff2ad399e154b5e1303fb7f38":[6,1,1,13,44,3],
 "structFeel_1_1vf_1_1tensorGen.html#aae2fa21cc4de0919b9830b5af74d0589":[6,1,1,13,44,1],
 "structFeel_1_1vf_1_1tensorGen.html#af23eeb298ba9184dd04aab19d58797d7":[6,1,1,13,44,0],
-"structFeel_1_1void__basis.html":[6,1,1,307],
-"structFeel_1_1void__basis_1_1ChangeTag.html":[6,1,1,307,0],
-"structFeel_1_1void__basis_1_1ChangeTag.html#af468d00e110dd963ebf96aec8a186949":[6,1,1,307,0,0],
+"structFeel_1_1void__basis.html":[6,1,1,308],
+"structFeel_1_1void__basis_1_1ChangeTag.html":[6,1,1,308,0],
+"structFeel_1_1void__basis_1_1ChangeTag.html#af468d00e110dd963ebf96aec8a186949":[6,1,1,308,0,0],
 "structbases.html":[6,1,8],
 "structbases.html#a23777cd1a808aaa4c3c8c12730b61891":[6,1,8,0],
 "structfmem.html":[6,1,27],
@@ -241,13 +249,5 @@ var NAVTREEINDEX50 =
 "structnlohmann_1_1detail_1_1from__json__fn.html":[6,1,2,0,20],
 "structnlohmann_1_1detail_1_1from__json__fn.html#a4ab8572670a673d64b783589cf658270":[6,1,2,0,20,0],
 "structnlohmann_1_1detail_1_1has__from__json.html":[6,1,2,0,21],
-"structnlohmann_1_1detail_1_1has__from__json_3_01BasicJsonType_00_01T_00_01enable__if__t_3_01_9is3ee028c64c76c768be45996bb13fc9c5.html":[6,1,2,0,22],
-"structnlohmann_1_1detail_1_1has__from__json_3_01BasicJsonType_00_01T_00_01enable__if__t_3_01_9is3ee028c64c76c768be45996bb13fc9c5.html#a4d1c8c5e3080360d4ba3d4701b00d442":[6,1,2,0,22,0],
-"structnlohmann_1_1detail_1_1has__from__json_3_01BasicJsonType_00_01T_00_01enable__if__t_3_01_9is3ee028c64c76c768be45996bb13fc9c5.html#ac0718a48961f28e32604e1b16c6f2e8d":[6,1,2,0,22,1],
-"structnlohmann_1_1detail_1_1has__non__default__from__json.html":[6,1,2,0,23],
-"structnlohmann_1_1detail_1_1has__non__default__from__json_3_01BasicJsonType_00_01T_00_01enable__b7a8cd863889b54d1139b207b4233111.html":[6,1,2,0,24],
-"structnlohmann_1_1detail_1_1has__non__default__from__json_3_01BasicJsonType_00_01T_00_01enable__b7a8cd863889b54d1139b207b4233111.html#a4bcee5e52902d3011df08cf0233e5e10":[6,1,2,0,24,1],
-"structnlohmann_1_1detail_1_1has__non__default__from__json_3_01BasicJsonType_00_01T_00_01enable__b7a8cd863889b54d1139b207b4233111.html#a5d5bc2b9f1c107696d64d92cf6b5d0d7":[6,1,2,0,24,0],
-"structnlohmann_1_1detail_1_1has__to__json.html":[6,1,2,0,25],
-"structnlohmann_1_1detail_1_1has__to__json_3_01BasicJsonType_00_01T_00_01enable__if__t_3_01_9is__4a8838c1c30336126696a126041e661c.html":[6,1,2,0,26]
+"structnlohmann_1_1detail_1_1has__from__json_3_01BasicJsonType_00_01T_00_01enable__if__t_3_01_9is3ee028c64c76c768be45996bb13fc9c5.html":[6,1,2,0,22]
 };

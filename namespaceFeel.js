@@ -410,6 +410,7 @@ var namespaceFeel =
     [ "LocalDof", "classFeel_1_1LocalDof.html", "classFeel_1_1LocalDof" ],
     [ "LocalDofSet", "classFeel_1_1LocalDofSet.html", "classFeel_1_1LocalDofSet" ],
     [ "Localization", "classFeel_1_1Localization.html", "classFeel_1_1Localization" ],
+    [ "Marker", "classFeel_1_1Marker.html", "classFeel_1_1Marker" ],
     [ "MemoryUsage", "structFeel_1_1MemoryUsage.html", "structFeel_1_1MemoryUsage" ],
     [ "Mesh", "classFeel_1_1Mesh.html", "classFeel_1_1Mesh" ],
     [ "Mesh0D", "classFeel_1_1Mesh0D.html", "classFeel_1_1Mesh0D" ],

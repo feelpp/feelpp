@@ -6,6 +6,7 @@ var mesh_8hpp =
     [ "trace_mesh", "structFeel_1_1Mesh_1_1trace__mesh.html", "structFeel_1_1Mesh_1_1trace__mesh" ],
     [ "trace_trace_mesh", "structFeel_1_1Mesh_1_1trace__trace__mesh.html", "structFeel_1_1Mesh_1_1trace__trace__mesh" ],
     [ "UpdateNumGlobalEntitiesForAllReduce", "structFeel_1_1Mesh_1_1UpdateNumGlobalEntitiesForAllReduce.html", "structFeel_1_1Mesh_1_1UpdateNumGlobalEntitiesForAllReduce" ],
+    [ "UpdateSetForAllReduce", "structFeel_1_1Mesh_1_1UpdateSetForAllReduce.html", "structFeel_1_1Mesh_1_1UpdateSetForAllReduce" ],
     [ "MeshMarkerName", "structFeel_1_1MeshMarkerName.html", "structFeel_1_1MeshMarkerName" ],
     [ "Partitioner", "classFeel_1_1Partitioner.html", null ],
     [ "PeriodicEntity", "structFeel_1_1PeriodicEntity.html", "structFeel_1_1PeriodicEntity" ],

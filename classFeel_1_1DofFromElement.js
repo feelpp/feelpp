@@ -28,6 +28,7 @@ var classFeel_1_1DofFromElement =
     [ "face_type", "classFeel_1_1DofFromElement.html#a61ff6994a6f935f768a7245bf7cabf29", null ],
     [ "fe_type", "classFeel_1_1DofFromElement.html#a7617aa7dd29f0da3804a43978b432885", null ],
     [ "localdof_type", "classFeel_1_1DofFromElement.html#aecf2376feda29f51a1d9433e55a59d61", null ],
+    [ "mesh_marker_type", "classFeel_1_1DofFromElement.html#a672741d85aa9774768059a31d76be888", null ],
     [ "mesh_type", "classFeel_1_1DofFromElement.html#a95e517e299225e85b9dbab98437ce31e", null ],
     [ "ref_shift_type", "classFeel_1_1DofFromElement.html#a335a6262bf53cd27f79b0ec08bb1ce3c", null ],
     [ "size_type", "classFeel_1_1DofFromElement.html#af50935cbee8bbb493c45674717726d8c", null ],

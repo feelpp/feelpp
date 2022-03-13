@@ -25,6 +25,7 @@ var classFeel_1_1DofFromMortar =
     [ "face_permutation_type", "classFeel_1_1DofFromMortar.html#ae3db862907a0bc3955fa04d2b33721e3", null ],
     [ "face_type", "classFeel_1_1DofFromMortar.html#a7b3feae3aca1bac1650984347aa53b4a", null ],
     [ "fe_type", "classFeel_1_1DofFromMortar.html#a72898be5afca7da8240486de358a4081", null ],
+    [ "mesh_marker_type", "classFeel_1_1DofFromMortar.html#a830c7911bc97112461e6eb2d9784a743", null ],
     [ "mesh_type", "classFeel_1_1DofFromMortar.html#ab125c871a864495e7c15cdfeb60e8715", null ],
     [ "mortar_fe_type", "classFeel_1_1DofFromMortar.html#ac63076e882665e56f23756622b783de6", null ],
     [ "ref_shift_type", "classFeel_1_1DofFromMortar.html#a5e94c068f716bb945fcee884586d31b5", null ],

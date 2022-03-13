@@ -1,5 +1,8 @@
 var NAVTREEINDEX13 =
 {
+"classFeel_1_1FeelModels_1_1TrialsSymbolsExpr.html#a2dc5e05b8b99f47cf2110aeccab7516f":[6,1,1,4,78,8],
+"classFeel_1_1FeelModels_1_1TrialsSymbolsExpr.html#a2e8bc900fe1936d498eb3c19950f7827":[6,1,1,4,78,7],
+"classFeel_1_1FeelModels_1_1TrialsSymbolsExpr.html#a357255e9600a8ef571c6d4583b2893b7":[6,1,1,4,78,5],
 "classFeel_1_1FeelModels_1_1TrialsSymbolsExpr.html#a3ce8c1f49ba424213f4bb6e43c1db778":[6,1,1,4,78,6],
 "classFeel_1_1FeelModels_1_1TrialsSymbolsExpr.html#a7566754963523a39dba7b48c3ad74b3d":[6,1,1,4,78,2],
 "classFeel_1_1FeelModels_1_1TrialsSymbolsExpr.html#aa7f270367b23dc8ae3f4218212622946":[6,1,1,4,78,9],
@@ -246,8 +249,5 @@ var NAVTREEINDEX13 =
 "classFeel_1_1FunctionSpace.html#a82de882685ec0c60309a381543b416ad":[6,1,1,86,162],
 "classFeel_1_1FunctionSpace.html#a8618ec771c6cddb23b84b4def5d42c9e":[6,1,1,86,160],
 "classFeel_1_1FunctionSpace.html#a8663f47f526aca29f9858fa5645f7b33":[6,1,1,86,176],
-"classFeel_1_1FunctionSpace.html#a876ba66bb9931cc52146d3c3c40d14cb":[6,1,1,86,145],
-"classFeel_1_1FunctionSpace.html#a8a579328c64f638e4c43ab75ef8c59b4":[6,1,1,86,65],
-"classFeel_1_1FunctionSpace.html#a8c350674887f96f0b804dfefe312fd4b":[6,1,1,86,130],
-"classFeel_1_1FunctionSpace.html#a8f637459586d6ad3b61830242e0cbf25":[6,1,1,86,64]
+"classFeel_1_1FunctionSpace.html#a876ba66bb9931cc52146d3c3c40d14cb":[6,1,1,86,145]
 };

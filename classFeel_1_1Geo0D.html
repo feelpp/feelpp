@@ -143,6 +143,9 @@ Public Types</h2></td></tr>
 <tr class="memitem:a4b02fe77c14b9a640f2e8d2737a98ce6"><td class="memItemLeft" align="right" valign="top"><a id="a4b02fe77c14b9a640f2e8d2737a98ce6"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>index_type</b> = typename super::index_type</td></tr>
 <tr class="separator:a4b02fe77c14b9a640f2e8d2737a98ce6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9a69add5da7a6ddee8497ff1383ec477"><td class="memItemLeft" align="right" valign="top"><a id="a9a69add5da7a6ddee8497ff1383ec477"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>marker_type</b> = <a class="el" href="classFeel_1_1Marker.html">Marker</a>&lt; flag_type &gt;</td></tr>
+<tr class="separator:a9a69add5da7a6ddee8497ff1383ec477"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a87307e21b3ae4d478d2de186f68a0c22"><td class="memItemLeft" align="right" valign="top"><a id="a87307e21b3ae4d478d2de186f68a0c22"></a>
 typedef matrix_node&lt; value_type &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>matrix_node_type</b></td></tr>
 <tr class="separator:a87307e21b3ae4d478d2de186f68a0c22"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -201,6 +204,9 @@ typedef <a class="el" href="classFeel_1_1Simplex.html">Simplex</a>&lt; 0, 1, Dim
 <tr class="memitem:a982d38698150c3d21d5a08d07348b760 inherit pub_types_classFeel_1_1GeoEntity"><td class="memItemLeft" align="right" valign="top"><a id="a982d38698150c3d21d5a08d07348b760"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>reference_convex_type</b> = <a class="el" href="classFeel_1_1Reference.html">Reference</a>&lt; <a class="el" href="classFeel_1_1Simplex.html">Simplex</a>&lt; 0, 1, Dim &gt;, nDim, nOrder, nRealDim, TT &gt;</td></tr>
 <tr class="separator:a982d38698150c3d21d5a08d07348b760 inherit pub_types_classFeel_1_1GeoEntity"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a59a8d7d8e3455208f12468b55284d39b inherit pub_types_classFeel_1_1GeoEntity"><td class="memItemLeft" align="right" valign="top"><a id="a59a8d7d8e3455208f12468b55284d39b"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>marker_type</b> = <a class="el" href="classFeel_1_1Marker.html">Marker</a>&lt; flag_type &gt;</td></tr>
+<tr class="separator:a59a8d7d8e3455208f12468b55284d39b inherit pub_types_classFeel_1_1GeoEntity"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_types_classFeel_1_1Simplex"><td colspan="2" onclick="javascript:toggleInherit('pub_types_classFeel_1_1Simplex')"><img src="closed.png" alt="-"/>&#160;Public Types inherited from <a class="el" href="classFeel_1_1Simplex.html">Feel::Simplex&lt; 0, 1, Dim &gt;</a></td></tr>
 <tr class="memitem:a0a5eb542f579272991f1e3137b9c1775 inherit pub_types_classFeel_1_1Simplex"><td class="memItemLeft" align="right" valign="top"><a id="a0a5eb542f579272991f1e3137b9c1775"></a>
 typedef mpl::if_&lt; mpl::greater_equal&lt; mpl::int_&lt; nDim &gt;, mpl::int_&lt; 2 &gt; &gt;, mpl::identity&lt; line_permutations &gt;, mpl::identity&lt; no_permutation &gt; &gt;::type::type&#160;</td><td class="memItemRight" valign="bottom"><b>edge_permutation_type</b></td></tr>
@@ -292,57 +298,12 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:aeb811218da744dd0ab0fa17bcd0fdf0e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa3738da6a03a077f15d3c4eac8260b79"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classint.html">int</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Geo0D.html#aa3738da6a03a077f15d3c4eac8260b79">gTag</a> () const</td></tr>
 <tr class="separator:aa3738da6a03a077f15d3c4eac8260b79"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8c1718c583881629d763088958f175ce"><td class="memItemLeft" align="right" valign="top"><a id="a8c1718c583881629d763088958f175ce"></a>
-<a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>hasMarker</b> () const</td></tr>
-<tr class="separator:a8c1718c583881629d763088958f175ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a559bea73c82ffac6371f5120362c0c50"><td class="memItemLeft" align="right" valign="top"><a id="a559bea73c82ffac6371f5120362c0c50"></a>
-<a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>hasMarker</b> (uint16_type k) const</td></tr>
-<tr class="separator:a559bea73c82ffac6371f5120362c0c50"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abca8ec5ebfb25c6f6b59b5bcf4194a72"><td class="memItemLeft" align="right" valign="top"><a id="abca8ec5ebfb25c6f6b59b5bcf4194a72"></a>
-<a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>hasMarker2</b> () const</td></tr>
-<tr class="separator:abca8ec5ebfb25c6f6b59b5bcf4194a72"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5a45b5c077ef6b032b66a874ede7a486"><td class="memItemLeft" align="right" valign="top"><a id="a5a45b5c077ef6b032b66a874ede7a486"></a>
-<a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>hasMarker3</b> () const</td></tr>
-<tr class="separator:a5a45b5c077ef6b032b66a874ede7a486"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a124df2c179bd8785621c0f294e203532"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Geo0D.html#a124df2c179bd8785621c0f294e203532">isParametric</a> () const</td></tr>
 <tr class="separator:a124df2c179bd8785621c0f294e203532"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8f442284c88fd97f1778dd4c1b20745a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Geo0D.html#a8f442284c88fd97f1778dd4c1b20745a">isPeriodic</a> () const</td></tr>
 <tr class="separator:a8f442284c88fd97f1778dd4c1b20745a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8135dc595185e32c801c2455a3b813ea"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Geo0D.html#a8135dc595185e32c801c2455a3b813ea">isVertex</a> () const</td></tr>
 <tr class="separator:a8135dc595185e32c801c2455a3b813ea"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9c680aebf7e029dcbb99601e8a8e3c5b"><td class="memItemLeft" align="right" valign="top"><a id="a9c680aebf7e029dcbb99601e8a8e3c5b"></a>
-<a class="el" href="classMarker1.html">Marker1</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>marker</b> ()</td></tr>
-<tr class="separator:a9c680aebf7e029dcbb99601e8a8e3c5b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3f6a60e2997df1c7fa4ca034d15f3c89"><td class="memItemLeft" align="right" valign="top"><a id="a3f6a60e2997df1c7fa4ca034d15f3c89"></a>
-<a class="el" href="classMarker1.html">Marker1</a> const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>marker</b> () const</td></tr>
-<tr class="separator:a3f6a60e2997df1c7fa4ca034d15f3c89"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7819d8dae2c773402e7a82c1f38279e5"><td class="memItemLeft" align="right" valign="top"><a id="a7819d8dae2c773402e7a82c1f38279e5"></a>
-<a class="el" href="classMarker1.html">Marker1</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>marker</b> (uint16_type k)</td></tr>
-<tr class="separator:a7819d8dae2c773402e7a82c1f38279e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5bb76bc2f055df37ee9075f6a50b34d5"><td class="memItemLeft" align="right" valign="top"><a id="a5bb76bc2f055df37ee9075f6a50b34d5"></a>
-<a class="el" href="classMarker1.html">Marker1</a> const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>marker</b> (uint16_type k) const</td></tr>
-<tr class="separator:a5bb76bc2f055df37ee9075f6a50b34d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aeb285d81baea2dbf77c95ba9106a6286"><td class="memItemLeft" align="right" valign="top"><a id="aeb285d81baea2dbf77c95ba9106a6286"></a>
-<a class="el" href="classMarker1.html">Marker1</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>marker2</b> ()</td></tr>
-<tr class="separator:aeb285d81baea2dbf77c95ba9106a6286"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae736a5a826332be79e6c044be217fff2"><td class="memItemLeft" align="right" valign="top"><a id="ae736a5a826332be79e6c044be217fff2"></a>
-<a class="el" href="classMarker1.html">Marker1</a> const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>marker2</b> () const</td></tr>
-<tr class="separator:ae736a5a826332be79e6c044be217fff2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac73e7e18b4972e36b3f925c8ab2451a1"><td class="memItemLeft" align="right" valign="top"><a id="ac73e7e18b4972e36b3f925c8ab2451a1"></a>
-<a class="el" href="classMarker1.html">Marker1</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>marker3</b> ()</td></tr>
-<tr class="separator:ac73e7e18b4972e36b3f925c8ab2451a1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8b2c243bcd037edebdaf014e49efe52b"><td class="memItemLeft" align="right" valign="top"><a id="a8b2c243bcd037edebdaf014e49efe52b"></a>
-<a class="el" href="classMarker1.html">Marker1</a> const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>marker3</b> () const</td></tr>
-<tr class="separator:a8b2c243bcd037edebdaf014e49efe52b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae9c083570c1071e21344987218724c34"><td class="memItemLeft" align="right" valign="top"><a id="ae9c083570c1071e21344987218724c34"></a>
-<a class="el" href="classMarker1.html">Marker1</a>&#160;</td><td class="memItemRight" valign="bottom"><b>markerOr</b> (uint16_type <a class="el" href="classFeel_1_1Geo0D.html#a3c5a57dd62ab8c76f1d04eab129358dc">v</a>) const</td></tr>
-<tr class="separator:ae9c083570c1071e21344987218724c34"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a70eea5f94127d21a300aa344e4883a57"><td class="memItemLeft" align="right" valign="top"><a id="a70eea5f94127d21a300aa344e4883a57"></a>
-<a class="el" href="classMarker1.html">Marker1</a>&#160;</td><td class="memItemRight" valign="bottom"><b>markerOr</b> (uint16_type <a class="el" href="classFeel_1_1Geo0D.html#a3c5a57dd62ab8c76f1d04eab129358dc">v</a>=0)</td></tr>
-<tr class="separator:a70eea5f94127d21a300aa344e4883a57"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a22f30ecae6fa83a40b7b4cf81780b3fd"><td class="memItemLeft" align="right" valign="top"><a id="a22f30ecae6fa83a40b7b4cf81780b3fd"></a>
-std::map&lt; uint16_type, <a class="el" href="classMarker1.html">Marker1</a> &gt; const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>markers</b> () const</td></tr>
-<tr class="separator:a22f30ecae6fa83a40b7b4cf81780b3fd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1d4c52f636b653084eeac5bead021107"><td class="memItemLeft" align="right" valign="top">index_type&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Geo0D.html#a1d4c52f636b653084eeac5bead021107">masterId</a> () const</td></tr>
 <tr class="memdesc:a1d4c52f636b653084eeac5bead021107"><td class="mdescLeft">&#160;</td><td class="mdescRight">the master id is different from the id in the context of periodic boundary conditions on the slave side  <a href="classFeel_1_1Geo0D.html#a1d4c52f636b653084eeac5bead021107">More...</a><br /></td></tr>
 <tr class="separator:a1d4c52f636b653084eeac5bead021107"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -396,21 +357,6 @@ value_type&#160;</td><td class="memItemRight" valign="bottom"><b>operator[]</b> 
 void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Geo0D.html#a8c1cf00ef2a4da36d81b1189cbd8ad38">setAsVertex</a> (<a class="el" href="classbool.html">bool</a> <a class="el" href="classFeel_1_1Geo0D.html#a3c5a57dd62ab8c76f1d04eab129358dc">v</a>)</td></tr>
 <tr class="memdesc:a8c1cf00ef2a4da36d81b1189cbd8ad38"><td class="mdescLeft">&#160;</td><td class="mdescRight">set the point as a vertex or not using <code>v</code> <br /></td></tr>
 <tr class="separator:a8c1cf00ef2a4da36d81b1189cbd8ad38"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a013c80b491e1342aedbad24e9cc86273"><td class="memItemLeft" align="right" valign="top"><a id="a013c80b491e1342aedbad24e9cc86273"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>setMarker</b> (flag_type <a class="el" href="classFeel_1_1Geo0D.html#a3c5a57dd62ab8c76f1d04eab129358dc">v</a>)</td></tr>
-<tr class="separator:a013c80b491e1342aedbad24e9cc86273"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a49a51889b5656826fdd052aea64a663f"><td class="memItemLeft" align="right" valign="top"><a id="a49a51889b5656826fdd052aea64a663f"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>setMarker</b> (uint16_type k, flag_type <a class="el" href="classFeel_1_1Geo0D.html#a3c5a57dd62ab8c76f1d04eab129358dc">v</a>)</td></tr>
-<tr class="separator:a49a51889b5656826fdd052aea64a663f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a178437b4b48982043649c5436eeca48b"><td class="memItemLeft" align="right" valign="top"><a id="a178437b4b48982043649c5436eeca48b"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>setMarker2</b> (flag_type <a class="el" href="classFeel_1_1Geo0D.html#a3c5a57dd62ab8c76f1d04eab129358dc">v</a>)</td></tr>
-<tr class="separator:a178437b4b48982043649c5436eeca48b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af7d6a37f90dd659e3845af9dbc083c54"><td class="memItemLeft" align="right" valign="top"><a id="af7d6a37f90dd659e3845af9dbc083c54"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>setMarker3</b> (flag_type <a class="el" href="classFeel_1_1Geo0D.html#a3c5a57dd62ab8c76f1d04eab129358dc">v</a>)</td></tr>
-<tr class="separator:af7d6a37f90dd659e3845af9dbc083c54"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1591a2656cd2f9558653dc66383999cc"><td class="memItemLeft" align="right" valign="top"><a id="a1591a2656cd2f9558653dc66383999cc"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>setMarkers</b> (std::map&lt; uint16_type, <a class="el" href="classMarker1.html">Marker1</a> &gt; const &amp;markers)</td></tr>
-<tr class="separator:a1591a2656cd2f9558653dc66383999cc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a603f20f6bdfc81b7be3ee869d00db882"><td class="memItemLeft" align="right" valign="top"><a id="a603f20f6bdfc81b7be3ee869d00db882"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>setMasterId</b> (index_type id)</td></tr>
 <tr class="separator:a603f20f6bdfc81b7be3ee869d00db882"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -438,9 +384,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="clas
 <tr class="memitem:a4c10f95e7ee234712acbec3439aa3800"><td class="memItemLeft" align="right" valign="top"><a id="a4c10f95e7ee234712acbec3439aa3800"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>setPointCoordG</b> (<a class="el" href="classint.html">int</a> i, ublas::vector&lt; <a class="el" href="classdouble.html">double</a> &gt; const &amp;p)</td></tr>
 <tr class="separator:a4c10f95e7ee234712acbec3439aa3800"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a622c8a6f4607b127d2527af2f2bf73bd"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Geo0D.html#a622c8a6f4607b127d2527af2f2bf73bd">setTags</a> (std::vector&lt; <a class="el" href="classint.html">int</a> &gt; const &amp;tags)</td></tr>
-<tr class="memdesc:a622c8a6f4607b127d2527af2f2bf73bd"><td class="mdescLeft">&#160;</td><td class="mdescRight">set the tags associated to the points  <a href="classFeel_1_1Geo0D.html#a622c8a6f4607b127d2527af2f2bf73bd">More...</a><br /></td></tr>
-<tr class="separator:a622c8a6f4607b127d2527af2f2bf73bd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab807472e85bb4179d7e8fcf65b1003a3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Geo0D.html#ab807472e85bb4179d7e8fcf65b1003a3">setTags</a> (std::vector&lt; <a class="el" href="classint.html">int</a> &gt; const &amp;tags) override</td></tr>
+<tr class="memdesc:ab807472e85bb4179d7e8fcf65b1003a3"><td class="mdescLeft">&#160;</td><td class="mdescRight">set the tags associated to the points  <a href="classFeel_1_1Geo0D.html#ab807472e85bb4179d7e8fcf65b1003a3">More...</a><br /></td></tr>
+<tr class="separator:ab807472e85bb4179d7e8fcf65b1003a3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aca11c74d0e6b625b346f7ab70709e97f"><td class="memItemLeft" align="right" valign="top">std::ostream &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Geo0D.html#aca11c74d0e6b625b346f7ab70709e97f">showMe</a> (<a class="el" href="classbool.html">bool</a> verbose=false, std::ostream &amp;c=std::cout) const</td></tr>
 <tr class="memdesc:aca11c74d0e6b625b346f7ab70709e97f"><td class="mdescLeft">&#160;</td><td class="mdescRight">show the information about the <a class="el" href="classFeel_1_1Geo0D.html">Geo0D</a>  <a href="classFeel_1_1Geo0D.html#aca11c74d0e6b625b346f7ab70709e97f">More...</a><br /></td></tr>
 <tr class="separator:aca11c74d0e6b625b346f7ab70709e97f"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -486,6 +432,78 @@ std::set&lt; std::pair&lt; <a class="el" href="namespaceFeel.html#a9ad3b63ce6d74
 <tr class="memitem:a0ef1925d93428763db630de135c4a079 inherit pub_methods_classFeel_1_1GeoEntity"><td class="memItemLeft" align="right" valign="top"><a id="a0ef1925d93428763db630de135c4a079"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>clearElementsGhost</b> ()</td></tr>
 <tr class="separator:a0ef1925d93428763db630de135c4a079 inherit pub_methods_classFeel_1_1GeoEntity"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0bea83d2b18f365652df778f8516f148 inherit pub_methods_classFeel_1_1GeoEntity"><td class="memItemLeft" align="right" valign="top"><a id="a0bea83d2b18f365652df778f8516f148"></a>
+std::map&lt; uint16_type, <a class="el" href="classFeel_1_1Marker.html">marker_type</a> &gt; const &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1GeoEntity.html#a0bea83d2b18f365652df778f8516f148">markers</a> () const</td></tr>
+<tr class="memdesc:a0bea83d2b18f365652df778f8516f148 inherit pub_methods_classFeel_1_1GeoEntity"><td class="mdescLeft">&#160;</td><td class="mdescRight">return all markers <br /></td></tr>
+<tr class="separator:a0bea83d2b18f365652df778f8516f148 inherit pub_methods_classFeel_1_1GeoEntity"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae70bb5c493e2e7554329e625b24703a5 inherit pub_methods_classFeel_1_1GeoEntity"><td class="memItemLeft" align="right" valign="top"><a id="ae70bb5c493e2e7554329e625b24703a5"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1GeoEntity.html#ae70bb5c493e2e7554329e625b24703a5">setMarkers</a> (std::map&lt; uint16_type, <a class="el" href="classFeel_1_1Marker.html">marker_type</a> &gt; const &amp;<a class="el" href="classFeel_1_1GeoEntity.html#a0bea83d2b18f365652df778f8516f148">markers</a>)</td></tr>
+<tr class="memdesc:ae70bb5c493e2e7554329e625b24703a5 inherit pub_methods_classFeel_1_1GeoEntity"><td class="mdescLeft">&#160;</td><td class="mdescRight">set all markers <br /></td></tr>
+<tr class="separator:ae70bb5c493e2e7554329e625b24703a5 inherit pub_methods_classFeel_1_1GeoEntity"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a45e13c17cff0bcf7f33cc7d0faa6f277 inherit pub_methods_classFeel_1_1GeoEntity"><td class="memItemLeft" align="right" valign="top"><a id="a45e13c17cff0bcf7f33cc7d0faa6f277"></a>
+<a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1GeoEntity.html#a45e13c17cff0bcf7f33cc7d0faa6f277">hasMarkerType</a> (uint16_type k) const</td></tr>
+<tr class="memdesc:a45e13c17cff0bcf7f33cc7d0faa6f277 inherit pub_methods_classFeel_1_1GeoEntity"><td class="mdescLeft">&#160;</td><td class="mdescRight">return true if has marker type id k <br /></td></tr>
+<tr class="separator:a45e13c17cff0bcf7f33cc7d0faa6f277 inherit pub_methods_classFeel_1_1GeoEntity"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a451472f8db866f484347fdc1cd75f226 inherit pub_methods_classFeel_1_1GeoEntity"><td class="memItemLeft" align="right" valign="top"><a id="a451472f8db866f484347fdc1cd75f226"></a>
+<a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1GeoEntity.html#a451472f8db866f484347fdc1cd75f226">hasMarker</a> (uint16_type k) const</td></tr>
+<tr class="memdesc:a451472f8db866f484347fdc1cd75f226 inherit pub_methods_classFeel_1_1GeoEntity"><td class="mdescLeft">&#160;</td><td class="mdescRight">return true if has marker type id k <br /></td></tr>
+<tr class="separator:a451472f8db866f484347fdc1cd75f226 inherit pub_methods_classFeel_1_1GeoEntity"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a29f384a4a06430980c347258cc02e0e8 inherit pub_methods_classFeel_1_1GeoEntity"><td class="memItemLeft" align="right" valign="top"><a id="a29f384a4a06430980c347258cc02e0e8"></a>
+<a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>hasMarker</b> () const</td></tr>
+<tr class="separator:a29f384a4a06430980c347258cc02e0e8 inherit pub_methods_classFeel_1_1GeoEntity"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1524e534d59e06f55a25fc3252b10ebe inherit pub_methods_classFeel_1_1GeoEntity"><td class="memItemLeft" align="right" valign="top"><a id="a1524e534d59e06f55a25fc3252b10ebe"></a>
+<a class="el" href="classFeel_1_1Marker.html">marker_type</a> const &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1GeoEntity.html#a1524e534d59e06f55a25fc3252b10ebe">marker</a> (uint16_type k) const</td></tr>
+<tr class="memdesc:a1524e534d59e06f55a25fc3252b10ebe inherit pub_methods_classFeel_1_1GeoEntity"><td class="mdescLeft">&#160;</td><td class="mdescRight">return marker with type id k <br /></td></tr>
+<tr class="separator:a1524e534d59e06f55a25fc3252b10ebe inherit pub_methods_classFeel_1_1GeoEntity"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a86e8595de1220f5c81e99821d253d566 inherit pub_methods_classFeel_1_1GeoEntity"><td class="memItemLeft" align="right" valign="top"><a id="a86e8595de1220f5c81e99821d253d566"></a>
+<a class="el" href="classFeel_1_1Marker.html">marker_type</a> const &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>marker</b> () const</td></tr>
+<tr class="separator:a86e8595de1220f5c81e99821d253d566 inherit pub_methods_classFeel_1_1GeoEntity"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8454192eed1cd164384ee72d53b4996e inherit pub_methods_classFeel_1_1GeoEntity"><td class="memItemLeft" align="right" valign="top"><a id="a8454192eed1cd164384ee72d53b4996e"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1GeoEntity.html#a8454192eed1cd164384ee72d53b4996e">setMarker</a> (uint16_type k, flag_type v)</td></tr>
+<tr class="memdesc:a8454192eed1cd164384ee72d53b4996e inherit pub_methods_classFeel_1_1GeoEntity"><td class="mdescLeft">&#160;</td><td class="mdescRight">set marker type id k with flag v <br /></td></tr>
+<tr class="separator:a8454192eed1cd164384ee72d53b4996e inherit pub_methods_classFeel_1_1GeoEntity"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1076fa1336463ad93b988892c7b93ece inherit pub_methods_classFeel_1_1GeoEntity"><td class="memItemLeft" align="right" valign="top"><a id="a1076fa1336463ad93b988892c7b93ece"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1GeoEntity.html#a1076fa1336463ad93b988892c7b93ece">setMarker</a> (uint16_type k, TT const &amp;vs)</td></tr>
+<tr class="memdesc:a1076fa1336463ad93b988892c7b93ece inherit pub_methods_classFeel_1_1GeoEntity"><td class="mdescLeft">&#160;</td><td class="mdescRight">set marker type id k with flag v <br /></td></tr>
+<tr class="separator:a1076fa1336463ad93b988892c7b93ece inherit pub_methods_classFeel_1_1GeoEntity"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8f6166f84f92e99fc297bd4ef979521d inherit pub_methods_classFeel_1_1GeoEntity"><td class="memItemLeft" align="right" valign="top"><a id="a8f6166f84f92e99fc297bd4ef979521d"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>setMarker</b> (flag_type v)</td></tr>
+<tr class="separator:a8f6166f84f92e99fc297bd4ef979521d inherit pub_methods_classFeel_1_1GeoEntity"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3a83060a8d21dcfb4afde096817ac001 inherit pub_methods_classFeel_1_1GeoEntity"><td class="memItemLeft" align="right" valign="top"><a id="a3a83060a8d21dcfb4afde096817ac001"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>setMarker</b> (TT const &amp;vs)</td></tr>
+<tr class="separator:a3a83060a8d21dcfb4afde096817ac001 inherit pub_methods_classFeel_1_1GeoEntity"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad5bd6933137f55261b6bb44f27dd74b8 inherit pub_methods_classFeel_1_1GeoEntity"><td class="memItemLeft" align="right" valign="top"><a id="ad5bd6933137f55261b6bb44f27dd74b8"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1GeoEntity.html#ad5bd6933137f55261b6bb44f27dd74b8">addMarker</a> (uint16_type k, flag_type v)</td></tr>
+<tr class="memdesc:ad5bd6933137f55261b6bb44f27dd74b8 inherit pub_methods_classFeel_1_1GeoEntity"><td class="mdescLeft">&#160;</td><td class="mdescRight">add flag v to the marker type id k <br /></td></tr>
+<tr class="separator:ad5bd6933137f55261b6bb44f27dd74b8 inherit pub_methods_classFeel_1_1GeoEntity"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acfdbcb5413866fc064ac264092279f82 inherit pub_methods_classFeel_1_1GeoEntity"><td class="memItemLeft" align="right" valign="top"><a id="acfdbcb5413866fc064ac264092279f82"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1GeoEntity.html#acfdbcb5413866fc064ac264092279f82">addMarker</a> (uint16_type k, TT const &amp;vs)</td></tr>
+<tr class="memdesc:acfdbcb5413866fc064ac264092279f82 inherit pub_methods_classFeel_1_1GeoEntity"><td class="mdescLeft">&#160;</td><td class="mdescRight">add flags vs to the marker type id k <br /></td></tr>
+<tr class="separator:acfdbcb5413866fc064ac264092279f82 inherit pub_methods_classFeel_1_1GeoEntity"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaf0eeb6def8b030b7107493fa104e072 inherit pub_methods_classFeel_1_1GeoEntity"><td class="memItemLeft" align="right" valign="top"><a id="aaf0eeb6def8b030b7107493fa104e072"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>addMarker</b> (flag_type v)</td></tr>
+<tr class="separator:aaf0eeb6def8b030b7107493fa104e072 inherit pub_methods_classFeel_1_1GeoEntity"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a91f298f15ddc5c0a3fdba8f2c6c6bd11 inherit pub_methods_classFeel_1_1GeoEntity"><td class="memItemLeft" align="right" valign="top"><a id="a91f298f15ddc5c0a3fdba8f2c6c6bd11"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>addMarker</b> (TT const &amp;vs)</td></tr>
+<tr class="separator:a91f298f15ddc5c0a3fdba8f2c6c6bd11 inherit pub_methods_classFeel_1_1GeoEntity"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a70050b512248d849d52de832e47a481f inherit pub_methods_classFeel_1_1GeoEntity"><td class="memItemLeft" align="right" valign="top"><a id="a70050b512248d849d52de832e47a481f"></a>
+<a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>hasMarker2</b> () const</td></tr>
+<tr class="separator:a70050b512248d849d52de832e47a481f inherit pub_methods_classFeel_1_1GeoEntity"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8196ee801e2b0c23bbe0e3f1c8e54c23 inherit pub_methods_classFeel_1_1GeoEntity"><td class="memItemLeft" align="right" valign="top"><a id="a8196ee801e2b0c23bbe0e3f1c8e54c23"></a>
+<a class="el" href="classFeel_1_1Marker.html">marker_type</a> const &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>marker2</b> () const</td></tr>
+<tr class="separator:a8196ee801e2b0c23bbe0e3f1c8e54c23 inherit pub_methods_classFeel_1_1GeoEntity"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4fd82549d35adc3d7ab8600462f16358 inherit pub_methods_classFeel_1_1GeoEntity"><td class="memItemLeft" align="right" valign="top"><a id="a4fd82549d35adc3d7ab8600462f16358"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>setMarker2</b> (flag_type v)</td></tr>
+<tr class="separator:a4fd82549d35adc3d7ab8600462f16358 inherit pub_methods_classFeel_1_1GeoEntity"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a719e64b8724e734c238f0dbdebdd1092 inherit pub_methods_classFeel_1_1GeoEntity"><td class="memItemLeft" align="right" valign="top"><a id="a719e64b8724e734c238f0dbdebdd1092"></a>
+<a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>hasMarker3</b> () const</td></tr>
+<tr class="separator:a719e64b8724e734c238f0dbdebdd1092 inherit pub_methods_classFeel_1_1GeoEntity"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6784532df5dcbdabf0ec9112b9841621 inherit pub_methods_classFeel_1_1GeoEntity"><td class="memItemLeft" align="right" valign="top"><a id="a6784532df5dcbdabf0ec9112b9841621"></a>
+<a class="el" href="classFeel_1_1Marker.html">marker_type</a> const &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>marker3</b> () const</td></tr>
+<tr class="separator:a6784532df5dcbdabf0ec9112b9841621 inherit pub_methods_classFeel_1_1GeoEntity"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afbe7483cbb59d2d831869a7a11f1f134 inherit pub_methods_classFeel_1_1GeoEntity"><td class="memItemLeft" align="right" valign="top"><a id="afbe7483cbb59d2d831869a7a11f1f134"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>setMarker3</b> (flag_type v)</td></tr>
+<tr class="separator:afbe7483cbb59d2d831869a7a11f1f134 inherit pub_methods_classFeel_1_1GeoEntity"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6a477a9f48894001e242b8cf695519e2 inherit pub_methods_classFeel_1_1GeoEntity"><td class="memItemLeft" align="right" valign="top"><a id="a6a477a9f48894001e242b8cf695519e2"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>GeoEntity</b> ()</td></tr>
 <tr class="separator:a6a477a9f48894001e242b8cf695519e2 inherit pub_methods_classFeel_1_1GeoEntity"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1219,13 +1237,16 @@ template&lt;uint16_type Dim, typename T  = double, typename IndexT  = uint32_typ
 
 </div>
 </div>
-<a id="a622c8a6f4607b127d2527af2f2bf73bd"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a622c8a6f4607b127d2527af2f2bf73bd">&#9670;&nbsp;</a></span>setTags()</h2>
+<a id="ab807472e85bb4179d7e8fcf65b1003a3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab807472e85bb4179d7e8fcf65b1003a3">&#9670;&nbsp;</a></span>setTags()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
 template&lt;uint16_type Dim, typename T  = double, typename IndexT  = uint32_type&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
       <table class="memname">
         <tr>
           <td class="memname">void <a class="el" href="classFeel_1_1Geo0D.html">Feel::Geo0D</a>&lt; Dim, T, IndexT &gt;::setTags </td>
@@ -1235,6 +1256,11 @@ template&lt;uint16_type Dim, typename T  = double, typename IndexT  = uint32_typ
           <td></td>
         </tr>
       </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 
 <p>set the tags associated to the points </p>
@@ -1243,6 +1269,8 @@ template&lt;uint16_type Dim, typename T  = double, typename IndexT  = uint32_typ
 <li>tags[1] elementary region</li>
 <li>tags[2] particular region </li>
 </ul>
+
+<p>Reimplemented from <a class="el" href="classFeel_1_1GeoEntity.html#a4db12deecd2b8e9f7561d1f3ccf5e6f5">Feel::GeoEntity&lt; Simplex&lt; 0, 1, Dim &gt;, double, uint32_type &gt;</a>.</p>
 
 </div>
 </div>
