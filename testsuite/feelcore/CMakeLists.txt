@@ -7,7 +7,7 @@ foreach(TEST git traits singleton factory debug context simget ${OTESTS} env rem
   feelpp_add_test( ${TEST} )
 
 endforeach()
-
+feelpp_add_test(taskflow LINK_LIBRARIES feelpp_taskflow)
 feelpp_add_test( range )
 
 feelpp_get_compile_definition(Feelpp::feelpp FEELPP_HAS_PETSC)
