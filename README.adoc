@@ -46,7 +46,7 @@ ifdef::env-github,env-browser[:outfilesuffix: .adoc]
 ifdef::badges[]
 image:https://github-basic-badges.herokuapp.com/release/feelpp/feelpp.svg[link=https://github.com/feelpp/feelpp/releases/latest]
 image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/feelpp"]
-image:https://api.codacy.com/project/badge/Grade/ee741577e2454024a18d44603be62a6d[link="https://www.codacy.com/app/prudhomm/feelpp?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=feelpp/feelpp&amp;utm_campaign=Badge_Grade"]
+
 
 image:https://img.shields.io/github/stars/feelpp/feelpp?color=009688&logo=Riseup&style=flat-square[link=https://github.com/feelpp/feelpp/stargazers]
 image:https://img.shields.io/github/forks/feelpp/feelpp?color=009688&logo=Moleculer&logoColor=white&style=flat-square[link=https://github.com/feelpp/feelpp/network/members]
