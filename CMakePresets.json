@@ -20,7 +20,7 @@
                     "value": "ON"
                 },
                 "FEELPP_ENABLE_MOR": "ON",
-                "FEELPP_ENABLE_PYTHON": "ON",
+                "FEELPP_ENABLE_FEELPP_PYTHON": "ON",
                 "FEELPP_ENABLE_FMILIB": "OFF",
                 "FEELPP_ENABLE_BENCHMARKS": "ON"
             },
@@ -134,6 +134,17 @@
             "binaryDir": "${sourceDir}/build/testsuite",
             "cacheVariables": {
                 "FEELPP_COMPONENT": "testsuite"
+            }
+        },
+        {
+            "name": "testsuite-install",
+            "inherits": "default",
+            "displayName": "testsuite using local install",
+            "description": "Build only the Feel++ testsuite Component",
+            "binaryDir": "${sourceDir}/build/testsuite-install",
+            "cacheVariables": {
+                "FEELPP_COMPONENT": "testsuite",
+                "FEELPP_DIR": "${sourceDir}/build/default/install/"
             }
         },
         {

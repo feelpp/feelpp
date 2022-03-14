@@ -126,7 +126,7 @@ OPTION(FEELPP_ENABLE_DOCUMENTATION "enable Feel++ documentation (aka examples)" 
 OPTION(FEELPP_ENABLE_BENCHMARKS "enable Feel++ benchmarks" OFF)
 OPTION(FEELPP_ENABLE_TOOLBOXES "enable Feel++ toolboxes" OFF)
 option(FEELPP_ENABLE_MOR "Enable MOR(Model Order Reduction) Applications in Feel++" OFF)
-option(FEELPP_ENABLE_PYTHON "Enable Feel++ python component" OFF)
+option(FEELPP_ENABLE_FEELPP_PYTHON "Enable Feel++ python component" OFF)
 
 # enable PCH only for GCC as for now
 if(CMAKE_C_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
@@ -224,7 +224,7 @@ if ( FEELPP_HAS_MOR )
 endif()
 
 #include(feelpp.module.pyfeelpp)
-if ( FEELPP_ENABLE_PYTHON )
+if ( FEELPP_ENABLE_FEELPP_PYTHON )
   add_subdirectory(python)
 endif()
 
