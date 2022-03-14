@@ -23,6 +23,8 @@
 #
 cmake_minimum_required (VERSION 3.13.0)
 
+include(${CMAKE_SOURCE_DIR}/feelpp.version.cmake)
+
 if ( FEELPP_COMPONENT STREQUAL "toolboxes" OR 
       FEELPP_COMPONENT STREQUAL "mor" OR
       FEELPP_COMPONENT STREQUAL "testsuite" OR
@@ -32,9 +34,10 @@ if ( FEELPP_COMPONENT STREQUAL "toolboxes" OR
       FEELPP_COMPONENT STREQUAL "mor/pyfeelpp-mor" OR
       FEELPP_COMPONENT STREQUAL "pyfeelpp-all"   )
 
+      project(feelpp-${FEELPP_COMPONENT})
       message(STATUS "[component] ${FEELPP_COMPONENT}")
       add_subdirectory(${FEELPP_COMPONENT})
-      
+      include(${CMAKE_SOURCE_DIR}/feelpp.package.cmake)
 else()
 
 if ( ${CMAKE_MAJOR_VERSION} EQUAL 3 )

@@ -32,9 +32,14 @@ if (UNIX)
     ERROR_VARIABLE FEELPP_SYSTEM_MACHINE_error
     RESULT_VARIABLE FEELPP_SYSTEM_MACHINE_result)
 endif()
-SET(CPACK_PACKAGE_NAME "feelpp")
+if ( FEELPP_COMPONENT )
+  SET(CPACK_PACKAGE_NAME "feelpp-${FEELPP_COMPONENT}")
+else()
+  SET(CPACK_PACKAGE_NAME "feelpp")
+endif()
 SET(CPACK_GENERATOR "TGZ")
-SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Feel++")
+string(TOUPPER ${FEELPP_COMPONENT} <output variable>)
+SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Feel++ ${FEELPP_COMPONENT}")
 SET(CPACK_PACKAGE_VENDOR "Christophe Prud'homme")
 SET(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_SOURCE_DIR}/README.adoc")
 SET(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/COPYING.adoc")
@@ -47,7 +52,6 @@ SET(CPACK_SOURCE_OUTPUT_CONFIG_FILE "CPackSourceConfig.cmake")
 SET(CPACK_SYSTEM_NAME "${FEELPP_OS}-${FEELPP_SYSTEM_MACHINE}")
 
 OPTION(FEELPP_ENABLE_CPACK_OPUS "Enable OPUS packaging (if available) in CPack along with Feel++" ON )
-SET(CPACK_PACKAGE_NAME "feelpp")
 SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Feel++ (Finite Element method Embedded Library and language in C++)")
 SET(CPACK_SOURCE_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${FEELPP_VERSION_MAJOR}.${FEELPP_VERSION_MINOR}.${FEELPP_VERSION_MICRO}${FEELPP_VERSION_PRERELEASE}${FEELPP_VERSION_METADATA}")
 
@@ -122,4 +126,17 @@ if ( EXISTS ${FEELPP_SOURCE_DIR}/applications/opus/ AND NOT FEELPP_ENABLE_CPACK_
 #  set(CPACK_SOURCE_IGNORE_FILES "${PROJECT_SOURCE_DIR}/applications/opus/;${CPACK_SOURCE_IGNORE_FILES}" )
 endif()
 
+if ( NOT FEELPP_COMPONENT )
+  # CPACK_SOURCE_INSTALLED_DIRECTORIES won't work because the files we want to include
+  # can be in an ignored directory (build/). So use a script instead
+  set(CPACK_INSTALL_SCRIPT "${CMAKE_BINARY_DIR}/feelpp/cmake/modules/CPackExtraDist.cmake")
+  configure_file("${CMAKE_SOURCE_DIR}/feelpp/cmake/modules/extradist.cmake.in" "${CMAKE_BINARY_DIR}/feelpp/cmake/modules/CPackExtraDist.cmake" @ONLY)
+endif()
+
 include( CPack )
+# make dist equivalent to make package_source
+add_custom_target(dist
+  COMMAND "${CMAKE_COMMAND}" --build "${PROJECT_BINARY_DIR}" --target package_source
+  VERBATIM
+  USES_TERMINAL
+)
