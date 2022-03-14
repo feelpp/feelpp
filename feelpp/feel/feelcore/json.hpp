@@ -23,8 +23,8 @@
 //!
 #pragma once
 
+#define JSON_DIAGNOSTICS FEELPP_ENABLE_JSON_DIAGNOSTICS
 #include <feel/feelcore/_json.hpp>
-
 namespace Feel
 {
     namespace nl = nlohmann;

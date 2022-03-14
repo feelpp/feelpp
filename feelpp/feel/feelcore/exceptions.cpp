@@ -57,20 +57,21 @@ printGitReport()
     }
     else
     {
-        std::cerr << "WARN: failed to get the current git state. Is this a git repo?" << std::endl;
+        LOG(INFO) << "WARN: failed to get the current git state. Is this a git repo?" << std::endl;
     }
 }
 template <typename E>
 void
 print_and_trace( std::string const& s, E const& e )
 {
-    fmt::print( "{:*^30}\n", " Stack Trace " );
+    
     const boost::stacktrace::stacktrace* st = boost::get_error_info<traced>( e );
     if ( st )
     {
+        fmt::print( "{:*^30}\n", " Stack Trace " );
         std::cerr << *st << '\n';
+        fmt::print( "{:*^30}\n", " Stack Trace " );
     }
-    fmt::print( "{:*^30}\n", " Stack Trace " );
     printGitReport();
     fmt::print( fmt::emphasis::bold | fg( fmt::color::red ), s );
 }
