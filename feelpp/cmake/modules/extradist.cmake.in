@@ -1,0 +1,4 @@
+if(CPACK_SOURCE_INSTALLED_DIRECTORIES)
+  message(STATUS "Adding generated cpp files from @CMAKE_CURRENT_BINARY_DIR@/feelpp/feel/feelcore/git.cpp to ${CMAKE_CURRENT_SOURCE_DIR}/feelpp/feel/feelcore/git.cpp...")
+  file(INSTALL "@CMAKE_BINARY_DIR@/feelpp/feel/feelcore/git.cpp" DESTINATION "@CMAKE_SOURCE_DIR@/feelpp/feel/feelcore/")
+endif()
