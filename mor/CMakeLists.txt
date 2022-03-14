@@ -61,9 +61,6 @@ else()
   set(FEELPP_TOOLBOXES_FOUND ON)
 endif()
 
-if ( FEELPP_HAS_PYTHON )
-  message(STATUS "[feelpp-mor] python module path:${FEELPP_PYTHON_MODULE_PATH}")
-endif()
 
 
 OPTION(FEELPP_ENABLE_MOR_ALL "enable all MOR testcase" OFF)
@@ -95,7 +92,6 @@ if ( FEELPP_ENABLE_MOR_MORDICUS )
   endif()
 ENDIF()
 
-add_subdirectory(pyfeelpp-mor)
 
 OPTION(FEELPP_ENABLE_TESTS "enable Feel++ tests" ON)
 if (FEELPP_ENABLE_TESTS)

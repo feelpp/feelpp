@@ -159,8 +159,6 @@ endif()
 
 message(STATUS "[toolboxes] Toolboxes enabled : ${TOOLBOXES}")
 
-# TOOLBOXES needs to be defined for pyfeelpp-toolboxes 
-add_subdirectory( pyfeelpp-toolboxes )
 
 if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
   include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/feelpp-toolboxes.package.cmake)

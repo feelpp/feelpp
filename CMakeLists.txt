@@ -29,10 +29,7 @@ if ( FEELPP_COMPONENT STREQUAL "toolboxes" OR
       FEELPP_COMPONENT STREQUAL "mor" OR
       FEELPP_COMPONENT STREQUAL "testsuite" OR
       FEELPP_COMPONENT STREQUAL "benchmarks" OR
-      FEELPP_COMPONENT STREQUAL "feelpp/pyfeelpp" OR
-      FEELPP_COMPONENT STREQUAL "toolboxes/pyfeelpp-toolboxes" OR
-      FEELPP_COMPONENT STREQUAL "mor/pyfeelpp-mor" OR
-      FEELPP_COMPONENT STREQUAL "pyfeelpp-all"   )
+      FEELPP_COMPONENT STREQUAL "python" )
 
       project(feelpp-${FEELPP_COMPONENT})
       message(STATUS "[component] ${FEELPP_COMPONENT}")
@@ -129,6 +126,7 @@ OPTION(FEELPP_ENABLE_DOCUMENTATION "enable Feel++ documentation (aka examples)" 
 OPTION(FEELPP_ENABLE_BENCHMARKS "enable Feel++ benchmarks" OFF)
 OPTION(FEELPP_ENABLE_TOOLBOXES "enable Feel++ toolboxes" OFF)
 option(FEELPP_ENABLE_MOR "Enable MOR(Model Order Reduction) Applications in Feel++" OFF)
+option(FEELPP_ENABLE_PYTHON "Enable Feel++ python component" OFF)
 
 # enable PCH only for GCC as for now
 if(CMAKE_C_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
@@ -178,7 +176,7 @@ message(STATUS "[feelpp] using ${NProcs2} cores out of ${NProcs} cores" )
 SET( CMAKE_MODULE_PATH  ${FEELPP_HOME_DIR}/feelpp/cmake/modules ${FEELPP_HOME_DIR}/feelpp/cmake/machines )
 
 include(feelpp.dirs)
-include(feelpp.version)
+#include(feelpp.version)
 
 #
 # Enable testing
@@ -224,6 +222,11 @@ endif()
 include(feelpp.module.mor)
 if ( FEELPP_HAS_MOR )
   add_subdirectory(mor)
+endif()
+
+#include(feelpp.module.pyfeelpp)
+if ( FEELPP_ENABLE_PYTHON )
+  add_subdirectory(python)
 endif()
 
 #
@@ -281,7 +284,7 @@ include(feelpp.install)
 ################################################################################
 # Packaging procedure
 ################################################################################
-include(feelpp.package)
+#include(feelpp.package)
 
 ################################################################################
 # Post-config message
