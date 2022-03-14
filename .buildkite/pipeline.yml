@@ -71,14 +71,21 @@ steps:
      (build.message !~ /skip components/)
    agents:
      docker: true
-# - wait
- - trigger: "pkg-feelpp-mor"
-   label: ":package: :debian: :ubuntu: Feel++ MOR ${BUILDKITE_BRANCH}"
-   async: true
+ - name: ':$TARGET, $CXX, feelpp-python :hammer: :docker: :rocket:'
+   command: feelpp/tools/scripts/buildkite/install-feelpp.sh python
    if: |
-     ((build.message !~ /skip mor/) &&
-     (build.message !~ /skip components/)) &&
-     (pipeline.slug=="feelpp" && ( build.branch == "develop" || build.branch == "master" ))
+     (build.message !~ /skip python/) &&
+     (build.message !~ /skip components/)
+   agents:
+     docker: true
+# - wait
+# - trigger: "pkg-feelpp-mor"
+#   label: ":package: :debian: :ubuntu: Feel++ MOR ${BUILDKITE_BRANCH}"
+#   async: true
+#   if: |
+#     ((build.message !~ /skip mor/) &&
+#     (build.message !~ /skip components/)) &&
+#     (pipeline.slug=="feelpp" && ( build.branch == "develop" || build.branch == "master" ))
 
 # # - wait
 # #- trigger: "feelpp-singularity"
