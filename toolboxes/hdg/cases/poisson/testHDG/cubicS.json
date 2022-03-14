@@ -14,6 +14,7 @@
     },
     "InitialConditions":
     {
+        "poisson":{
         "potential":
         {
             "Expression":
@@ -24,6 +25,7 @@
 					"expr":"x*x*x:x:y:t"
                 }
             }
+        }
         }
     },
     "BoundaryConditions":
@@ -52,6 +54,7 @@
     },
     "PostProcess":
     {
+        "poisson":{
 		"Exports":
 		{
         	"fields":["potential","flux"]
@@ -91,6 +94,7 @@
                     "tolerance":1e-8
                 }
             }
+        }
         }
     }
 }
