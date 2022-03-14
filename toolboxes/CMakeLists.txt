@@ -162,6 +162,6 @@ message(STATUS "[toolboxes] Toolboxes enabled : ${TOOLBOXES}")
 
 if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
   include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/feelpp-toolboxes.package.cmake)
-  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/feelpp.version.cmake)
+#  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/feelpp.version.cmake)
 endif()
 

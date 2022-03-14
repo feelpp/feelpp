@@ -176,7 +176,6 @@ message(STATUS "[feelpp] using ${NProcs2} cores out of ${NProcs} cores" )
 SET( CMAKE_MODULE_PATH  ${FEELPP_HOME_DIR}/feelpp/cmake/modules ${FEELPP_HOME_DIR}/feelpp/cmake/machines )
 
 include(feelpp.dirs)
-#include(feelpp.version)
 
 #
 # Enable testing
@@ -284,7 +283,7 @@ include(feelpp.install)
 ################################################################################
 # Packaging procedure
 ################################################################################
-#include(feelpp.package)
+include(${CMAKE_SOURCE_DIR}/feelpp.package.cmake)
 
 ################################################################################
 # Post-config message

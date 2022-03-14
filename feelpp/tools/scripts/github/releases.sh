@@ -4,9 +4,9 @@
 BRANCH=${1:-master}
 INCR=${2:-1}
 TOKEN=$GITHUB_OAUTH
-VERSION_MAJOR=`cat cmake/modules/feelpp.version.cmake | grep "FEELPP_VERSION_MAJOR " | awk 'BEGIN{FS="\""}{print $2}'`
-VERSION_MINOR=`cat cmake/modules/feelpp.version.cmake | grep "FEELPP_VERSION_MINOR " | awk 'BEGIN{FS="\""}{print $2}'`
-VERSION_MICRO=`cat cmake/modules/feelpp.version.cmake | grep "FEELPP_VERSION_MICRO " | awk 'BEGIN{FS="\""}{print $2}'`
+VERSION_MAJOR=`cat feelpp.version.cmake | grep "FEELPP_VERSION_MAJOR " | awk 'BEGIN{FS="\""}{print $2}'`
+VERSION_MINOR=`cat feelpp.version.cmake | grep "FEELPP_VERSION_MINOR " | awk 'BEGIN{FS="\""}{print $2}'`
+VERSION_MICRO=`cat feelpp.version.cmake | grep "FEELPP_VERSION_MICRO " | awk 'BEGIN{FS="\""}{print $2}'`
 VERSION="${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_MICRO}"
 
 # we require jq for parsing json files
