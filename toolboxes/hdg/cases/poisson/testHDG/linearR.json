@@ -28,6 +28,7 @@
     },
     "PostProcess":
     {
+        "poisson":{
 		"Exports":
 		{
         	"fields":["potential","flux"]
@@ -67,6 +68,7 @@
                     "tolerance":1e-7
                 }
             }
+        }
         }
     }
 }
