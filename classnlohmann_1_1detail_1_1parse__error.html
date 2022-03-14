@@ -111,53 +111,7 @@ $(document).ready(function(){initNavTree('classnlohmann_1_1detail_1_1parse__erro
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Description</h2>
 <div class="textblock"><p>exception indicating a parse error </p>
-<p>This exception is thrown by the library when a parse error occurs. Parse errors can occur during the deserialization of JSON text, CBOR, MessagePack, as well as when using JSON Patch.</p>
-<p>Member <em>byte</em> holds the byte index of the last read character in the input file.</p>
-<p>Exceptions have ids 1xx.</p>
-<table class="markdownTable">
-<tr class="markdownTableHead">
-<th class="markdownTableHeadNone">name / id </th><th class="markdownTableHeadNone">example message </th><th class="markdownTableHeadNone">description  </th></tr>
-<tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">json.exception.parse_error.101 </td><td class="markdownTableBodyNone">parse error at 2: unexpected end of input; expected string literal </td><td class="markdownTableBodyNone">This error indicates a syntax error while deserializing a JSON text. The error message describes that an unexpected token (character) was encountered, and the member <em>byte</em> indicates the error position.  </td></tr>
-<tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone">json.exception.parse_error.102 </td><td class="markdownTableBodyNone">parse error at 14: missing or wrong low surrogate </td><td class="markdownTableBodyNone">JSON uses the <code>\uxxxx</code> format to describe Unicode characters. Code points above above 0xFFFF are split into two <code>\uxxxx</code> entries ("surrogate pairs"). This error indicates that the surrogate pair is incomplete or contains an invalid code point.  </td></tr>
-<tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">json.exception.parse_error.103 </td><td class="markdownTableBodyNone">parse error: code points above 0x10FFFF are invalid </td><td class="markdownTableBodyNone">Unicode supports code points up to 0x10FFFF. Code points above 0x10FFFF are invalid.  </td></tr>
-<tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone">json.exception.parse_error.104 </td><td class="markdownTableBodyNone">parse error: JSON patch must be an array of objects </td><td class="markdownTableBodyNone"><a href="https://tools.ietf.org/html/rfc6902">RFC 6902</a> requires a JSON Patch document to be a JSON document that represents an array of objects.  </td></tr>
-<tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">json.exception.parse_error.105 </td><td class="markdownTableBodyNone">parse error: operation must have string member 'op' </td><td class="markdownTableBodyNone">An operation of a JSON Patch document must contain exactly one "op" member, whose value indicates the operation to perform. Its value must be one of "add", "remove", "replace", "move", "copy", or "test"; other values are errors.  </td></tr>
-<tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone">json.exception.parse_error.106 </td><td class="markdownTableBodyNone">parse error: array index '01' must not begin with '0' </td><td class="markdownTableBodyNone">An array index in a JSON Pointer (<a href="https://tools.ietf.org/html/rfc6901">RFC 6901</a>) may be <code>0</code> or any number without a leading <code>0</code>.  </td></tr>
-<tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">json.exception.parse_error.107 </td><td class="markdownTableBodyNone">parse error: JSON pointer must be empty or begin with '/' - was: 'foo' </td><td class="markdownTableBodyNone">A JSON Pointer must be a Unicode string containing a sequence of zero or more reference tokens, each prefixed by a <code>/</code> character.  </td></tr>
-<tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone">json.exception.parse_error.108 </td><td class="markdownTableBodyNone">parse error: escape character '~' must be followed with '0' or '1' </td><td class="markdownTableBodyNone">In a JSON Pointer, only <code>~0</code> and <code>~1</code> are valid escape sequences.  </td></tr>
-<tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">json.exception.parse_error.109 </td><td class="markdownTableBodyNone">parse error: array index 'one' is not a number </td><td class="markdownTableBodyNone">A JSON Pointer array index must be a number.  </td></tr>
-<tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone">json.exception.parse_error.110 </td><td class="markdownTableBodyNone">parse error at 1: cannot read 2 bytes from vector </td><td class="markdownTableBodyNone">When parsing CBOR or MessagePack, the byte vector ends before the complete value has been read.  </td></tr>
-<tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">json.exception.parse_error.112 </td><td class="markdownTableBodyNone">parse error at 1: error reading CBOR; last byte: 0xF8 </td><td class="markdownTableBodyNone">Not all types of CBOR or MessagePack are supported. This exception occurs if an unsupported byte was read.  </td></tr>
-<tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone">json.exception.parse_error.113 </td><td class="markdownTableBodyNone">parse error at 2: expected a CBOR string; last byte: 0x98 </td><td class="markdownTableBodyNone">While parsing a map key, a value that is not a string has been read.  </td></tr>
-<tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">json.exception.parse_error.114 </td><td class="markdownTableBodyNone">parse error: Unsupported BSON record type 0x0F </td><td class="markdownTableBodyNone">The parsing of the corresponding BSON record type is not implemented (yet).  </td></tr>
-<tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone">json.exception.parse_error.115 </td><td class="markdownTableBodyNone">parse error at byte 5: syntax error while parsing UBJSON high-precision number: invalid number text: 1A </td><td class="markdownTableBodyNone">A UBJSON high-precision number could not be parsed.  </td></tr>
-</table>
-<dl class="section note"><dt>Note</dt><dd>For an input with n bytes, 1 is the index of the first character and n+1 is the index of the terminating null byte or the end of file. This also holds true when reading a byte vector (CBOR or MessagePack).</dd></dl>
-<p>@liveexample{The following code shows how a <code><a class="el" href="classnlohmann_1_1detail_1_1parse__error.html" title="exception indicating a parse error">parse_error</a></code> exception can be caught.,<a class="el" href="classnlohmann_1_1detail_1_1parse__error.html" title="exception indicating a parse error">parse_error</a>}</p>
-<dl class="section see"><dt>See also</dt><dd>- <a class="el" href="classnlohmann_1_1detail_1_1exception.html">exception</a> for the base class of the library exceptions </dd>
-<dd>
-- <a class="el" href="classnlohmann_1_1detail_1_1invalid__iterator.html">invalid_iterator</a> for exceptions indicating errors with iterators </dd>
-<dd>
-- <a class="el" href="classnlohmann_1_1detail_1_1type__error.html">type_error</a> for exceptions indicating executing a member function with a wrong type </dd>
-<dd>
-- <a class="el" href="classnlohmann_1_1detail_1_1out__of__range.html">out_of_range</a> for exceptions indicating access out of the defined range </dd>
-<dd>
-- <a class="el" href="classnlohmann_1_1detail_1_1other__error.html">other_error</a> for exceptions indicating other library errors</dd></dl>
-<dl class="section since"><dt>Since</dt><dd>version 3.0.0 </dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/parse_error/">https://json.nlohmann.me/api/basic_json/parse_error/</a> </dd></dl>
 </div><div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Inheritance diagram for nlohmann::detail::parse_error:</div>
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">
@@ -279,7 +233,7 @@ template&lt;typename BasicJsonType &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd><a class="el" href="classnlohmann_1_1detail_1_1parse__error.html" title="exception indicating a parse error">parse_error</a> object </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="namespacenlohmann_1_1detail_1_1dtoa__impl.html#a36ded358763b5dbcea9867660fbe4e28">nlohmann::detail::dtoa_impl::find_largest_pow10()</a>, and <a class="el" href="classnlohmann_1_1detail_1_1json__reverse__iterator.html#ae22803d442d483041d17239615f83b58">nlohmann::detail::json_reverse_iterator&lt; Base &gt;::value()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="classnlohmann_1_1detail_1_1iter__impl.html#a88a00484ac201c52fc5f613d88a2918b">nlohmann::detail::iter_impl&lt; BasicJsonType &gt;::iter_impl()</a>, <a class="el" href="classnlohmann_1_1json__pointer.html#a3d4b15d32d096e3776c5d2c773b524f5">nlohmann::json_pointer&lt; BasicJsonType &gt;::to_string()</a>, and <a class="el" href="classnlohmann_1_1detail_1_1binary__writer.html#ae4e0852b64102ce4b07d99f08f828b7c">nlohmann::detail::binary_writer&lt; BasicJsonType, CharType &gt;::write_msgpack()</a>.</p>
 
 </div>
 </div>

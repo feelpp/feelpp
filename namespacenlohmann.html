@@ -164,13 +164,13 @@ Classes</h2></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">an internal type for a backed binary type  <a href="classnlohmann_1_1byte__container__with__subtype.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnlohmann_1_1json__pointer.html">json_pointer</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">JSON Pointer.  <a href="classnlohmann_1_1json__pointer.html#details">More...</a><br /></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">JSON Pointer defines a string syntax for identifying a specific value within a JSON document.  <a href="classnlohmann_1_1json__pointer.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structnlohmann_1_1json__sax.html">json_sax</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">SAX interface.  <a href="structnlohmann_1_1json__sax.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structnlohmann_1_1ordered__map.html">ordered_map</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="structnlohmann_1_1ordered__map.html" title="ordered_map: a minimal map-like container that preserves insertion order for use within nlohmann::bas...">ordered_map</a>: a minimal map-like container that preserves insertion order for use within nlohmann::basic_json&lt;ordered_map&gt;  <a href="structnlohmann_1_1ordered__map.html#details">More...</a><br /></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">a minimal map-like container that preserves insertion order  <a href="structnlohmann_1_1ordered__map.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structnlohmann_1_1would__call__std__begin.html">would_call_std_begin</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -180,10 +180,10 @@ Classes</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="typedef-members"></a>
 Typedefs</h2></td></tr>
 <tr class="memitem:a2bfd99e845a2e5cd90aeaf1b1431f474"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">json</a> = <a class="el" href="classnlohmann_1_1basic__json.html">basic_json</a>&lt;&gt;</td></tr>
-<tr class="memdesc:a2bfd99e845a2e5cd90aeaf1b1431f474"><td class="mdescLeft">&#160;</td><td class="mdescRight">default JSON class  <a href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">More...</a><br /></td></tr>
+<tr class="memdesc:a2bfd99e845a2e5cd90aeaf1b1431f474"><td class="mdescLeft">&#160;</td><td class="mdescRight">default specialization  <a href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">More...</a><br /></td></tr>
 <tr class="separator:a2bfd99e845a2e5cd90aeaf1b1431f474"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad53cef358adfa7f07cea23eb1e28b9ea"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacenlohmann.html#ad53cef358adfa7f07cea23eb1e28b9ea">ordered_json</a> = <a class="el" href="classnlohmann_1_1basic__json.html">basic_json</a>&lt; <a class="el" href="structnlohmann_1_1ordered__map.html">nlohmann::ordered_map</a> &gt;</td></tr>
-<tr class="memdesc:ad53cef358adfa7f07cea23eb1e28b9ea"><td class="mdescLeft">&#160;</td><td class="mdescRight">ordered JSON class  <a href="namespacenlohmann.html#ad53cef358adfa7f07cea23eb1e28b9ea">More...</a><br /></td></tr>
+<tr class="memdesc:ad53cef358adfa7f07cea23eb1e28b9ea"><td class="mdescLeft">&#160;</td><td class="mdescRight">specialization that maintains the insertion order of object keys  <a href="namespacenlohmann.html#ad53cef358adfa7f07cea23eb1e28b9ea">More...</a><br /></td></tr>
 <tr class="separator:ad53cef358adfa7f07cea23eb1e28b9ea"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
@@ -219,9 +219,8 @@ template&lt;class T &gt; </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>default JSON class </p>
-<p>This type is the default specialization of the <a class="el" href="classnlohmann_1_1basic__json.html">basic_json</a> class which uses the standard template types.</p>
-<dl class="section since"><dt>Since</dt><dd>version 1.0.0 </dd></dl>
+<p>default specialization </p>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/json/">https://json.nlohmann.me/api/json/</a> </dd></dl>
 
 </div>
 </div>
@@ -237,9 +236,8 @@ template&lt;class T &gt; </td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>ordered JSON class </p>
-<p>This type preserves the insertion order of object keys.</p>
-<dl class="section since"><dt>Since</dt><dd>version 3.9.0 </dd></dl>
+<p>specialization that maintains the insertion order of object keys </p>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/ordered_json/">https://json.nlohmann.me/api/ordered_json/</a> </dd></dl>
 
 </div>
 </div>
@@ -263,14 +261,7 @@ template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, 
 </div><div class="memdoc">
 
 <p>user-defined to_string function for JSON values </p>
-<p>This function implements a user-defined to_string for JSON objects.</p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">j</td><td>a JSON object </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>a std::string object </dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/to_string/">https://json.nlohmann.me/api/basic_json/to_string/</a> </dd></dl>
 
 </div>
 </div>

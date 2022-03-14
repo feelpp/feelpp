@@ -640,10 +640,6 @@ template&lt;typename BasicJsonType , typename ConstructibleStringType , enable_i
 template&lt;typename BasicJsonType , typename EnumType , enable_if_t&lt; std::is_enum&lt; EnumType &gt;::value, int &gt;  = 0&gt; </td></tr>
 <tr class="memitem:a5440d650150d01e8015133521351b459"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>from_json</b> (const BasicJsonType &amp;j, EnumType &amp;e)</td></tr>
 <tr class="separator:a5440d650150d01e8015133521351b459"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0514fb051c760a27c59abe0e31337a71"><td class="memTemplParams" colspan="2"><a id="a0514fb051c760a27c59abe0e31337a71"></a>
-template&lt;typename BasicJsonType &gt; </td></tr>
-<tr class="memitem:a0514fb051c760a27c59abe0e31337a71"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>from_json</b> (const BasicJsonType &amp;j, std::filesystem::path &amp;p)</td></tr>
-<tr class="separator:a0514fb051c760a27c59abe0e31337a71"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5cfb765aad92795abd7fda29d017272a"><td class="memTemplParams" colspan="2"><a id="a5cfb765aad92795abd7fda29d017272a"></a>
 template&lt;typename BasicJsonType , typename T , typename Allocator , enable_if_t&lt; is_getable&lt; BasicJsonType, T &gt;::value, int &gt;  = 0&gt; </td></tr>
 <tr class="memitem:a5cfb765aad92795abd7fda29d017272a"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>from_json</b> (const BasicJsonType &amp;j, std::forward_list&lt; T, Allocator &gt; &amp;l)</td></tr>
@@ -660,6 +656,10 @@ template&lt;typename BasicJsonType , typename Key , typename Value , typename Ha
 template&lt;typename BasicJsonType , typename T , enable_if_t&lt; is_getable&lt; BasicJsonType, T &gt;::value, int &gt;  = 0&gt; </td></tr>
 <tr class="memitem:a3df497b1d3977f071b488ecac1401517"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>from_json</b> (const BasicJsonType &amp;j, std::valarray&lt; T &gt; &amp;l)</td></tr>
 <tr class="separator:a3df497b1d3977f071b488ecac1401517"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac046024580a60be0c0214857db7aad65"><td class="memTemplParams" colspan="2"><a id="ac046024580a60be0c0214857db7aad65"></a>
+template&lt;typename BasicJsonType &gt; </td></tr>
+<tr class="memitem:ac046024580a60be0c0214857db7aad65"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>from_json</b> (const BasicJsonType &amp;j, std_fs::path &amp;p)</td></tr>
+<tr class="separator:ac046024580a60be0c0214857db7aad65"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7deb2db8eed6f1762373dde7a6595760"><td class="memTemplParams" colspan="2"><a id="a7deb2db8eed6f1762373dde7a6595760"></a>
 template&lt;typename BasicJsonType , typename T , std::size_t N&gt; </td></tr>
 <tr class="memitem:a7deb2db8eed6f1762373dde7a6595760"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><b>from_json</b> (const BasicJsonType &amp;j, T(&amp;arr)[N]) -&gt; decltype(j.template get&lt; T &gt;(), void())</td></tr>
@@ -782,18 +782,18 @@ template&lt;typename T , std::size_t N&gt; </td></tr>
 template&lt;typename string_type &gt; </td></tr>
 <tr class="memitem:a3c45286b0a2f15ea0a756cb87a76cf9b"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>int_to_string</b> (string_type &amp;target, std::size_t value)</td></tr>
 <tr class="separator:a3c45286b0a2f15ea0a756cb87a76cf9b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad2860d9bcd96cd7b8258a5b94674508c"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacenlohmann_1_1detail.html#ad2860d9bcd96cd7b8258a5b94674508c">little_endianess</a> (<a class="el" href="classint.html">int</a> num=1) noexcept</td></tr>
-<tr class="memdesc:ad2860d9bcd96cd7b8258a5b94674508c"><td class="mdescLeft">&#160;</td><td class="mdescRight">determine system byte order  <a href="namespacenlohmann_1_1detail.html#ad2860d9bcd96cd7b8258a5b94674508c">More...</a><br /></td></tr>
-<tr class="separator:ad2860d9bcd96cd7b8258a5b94674508c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6d9410847162a2ad2f1cff0dcce3b1d9"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacenlohmann_1_1detail.html#a6d9410847162a2ad2f1cff0dcce3b1d9">little_endianness</a> (<a class="el" href="classint.html">int</a> num=1) noexcept</td></tr>
+<tr class="memdesc:a6d9410847162a2ad2f1cff0dcce3b1d9"><td class="mdescLeft">&#160;</td><td class="mdescRight">determine system byte order  <a href="namespacenlohmann_1_1detail.html#a6d9410847162a2ad2f1cff0dcce3b1d9">More...</a><br /></td></tr>
+<tr class="separator:a6d9410847162a2ad2f1cff0dcce3b1d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a09169efff3bd1771fff29bd92cea19e0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacenlohmann_1_1detail.html#a09169efff3bd1771fff29bd92cea19e0">operator&lt;</a> (const <a class="el" href="namespacenlohmann_1_1detail.html#a1ed8fc6239da25abcaf681d30ace4985">value_t</a> lhs, const <a class="el" href="namespacenlohmann_1_1detail.html#a1ed8fc6239da25abcaf681d30ace4985">value_t</a> rhs) noexcept</td></tr>
 <tr class="memdesc:a09169efff3bd1771fff29bd92cea19e0"><td class="mdescLeft">&#160;</td><td class="mdescRight">comparison operator for JSON types  <a href="namespacenlohmann_1_1detail.html#a09169efff3bd1771fff29bd92cea19e0">More...</a><br /></td></tr>
 <tr class="separator:a09169efff3bd1771fff29bd92cea19e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aceff996baf082d6dc1873ad176d10609"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacenlohmann_1_1detail.html#aceff996baf082d6dc1873ad176d10609">replace_substring</a> (std::string &amp;s, const std::string &amp;f, const std::string &amp;t)</td></tr>
 <tr class="memdesc:aceff996baf082d6dc1873ad176d10609"><td class="mdescLeft">&#160;</td><td class="mdescRight">replace all occurrences of a substring by another string  <a href="namespacenlohmann_1_1detail.html#aceff996baf082d6dc1873ad176d10609">More...</a><br /></td></tr>
 <tr class="separator:aceff996baf082d6dc1873ad176d10609"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a83d2aece85dd7ebb63a562d419f549d8"><td class="memItemLeft" align="right" valign="top"><a id="a83d2aece85dd7ebb63a562d419f549d8"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>static_cast&lt; bool &gt;</b> (static_cast&lt; <a class="el" href="classbool.html">bool</a> &gt;(last - first &gt;=2+(-kMinExp - 1)+std::numeric_limits&lt; FloatType &gt;::max_digits10) ? void(0) :__assert_fail(&quot;last - first &gt;= 2 + (-kMinExp - 1) + std::numeric_limits&lt;FloatType&gt;::max_digits10&quot;, &quot;/home/runner/work/feelpp/feelpp/feelpp/feel/feelcore/_json.hpp&quot;, 16425, __extension__ __PRETTY_FUNCTION__))</td></tr>
-<tr class="separator:a83d2aece85dd7ebb63a562d419f549d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5fe912e7485b26f94f63842cfbfebb57"><td class="memItemLeft" align="right" valign="top"><a id="a5fe912e7485b26f94f63842cfbfebb57"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>static_cast&lt; bool &gt;</b> (static_cast&lt; <a class="el" href="classbool.html">bool</a> &gt;(last - first &gt;=2+(-kMinExp - 1)+std::numeric_limits&lt; FloatType &gt;::max_digits10) ? void(0) :__assert_fail(&quot;last - first &gt;= 2 + (-kMinExp - 1) + std::numeric_limits&lt;FloatType&gt;::max_digits10&quot;, &quot;/home/runner/work/feelpp/feelpp/feelpp/feel/feelcore/_json.hpp&quot;, 16046, __extension__ __PRETTY_FUNCTION__))</td></tr>
+<tr class="separator:a5fe912e7485b26f94f63842cfbfebb57"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a91fe576be579c8c2fdd14610605c6dd2"><td class="memTemplParams" colspan="2"><a id="a91fe576be579c8c2fdd14610605c6dd2"></a>
 template&lt;typename BasicJsonType , typename CompatibleNumberIntegerType , enable_if_t&lt; is_compatible_integer_type&lt; typename BasicJsonType::number_integer_t, CompatibleNumberIntegerType &gt;::value, int &gt;  = 0&gt; </td></tr>
 <tr class="memitem:a91fe576be579c8c2fdd14610605c6dd2"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>to_json</b> (BasicJsonType &amp;j, CompatibleNumberIntegerType <a class="el" href="group__DSEL-Variational-Formulation.html#gaeac7fe8c4b52a6f9c1320275ad39f01e">val</a>) noexcept</td></tr>
@@ -814,10 +814,6 @@ template&lt;typename BasicJsonType , typename CompatibleObjectType , enable_if_t
 template&lt;typename BasicJsonType , typename CompatibleString , enable_if_t&lt; std::is_constructible&lt; typename BasicJsonType::string_t, CompatibleString &gt;::value, int &gt;  = 0&gt; </td></tr>
 <tr class="memitem:a7356ed05cdbbb080cee80e1211e1c6c9"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>to_json</b> (BasicJsonType &amp;j, const CompatibleString &amp;s)</td></tr>
 <tr class="separator:a7356ed05cdbbb080cee80e1211e1c6c9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a017d11878524111911622f765e87c341"><td class="memTemplParams" colspan="2"><a id="a017d11878524111911622f765e87c341"></a>
-template&lt;typename BasicJsonType &gt; </td></tr>
-<tr class="memitem:a017d11878524111911622f765e87c341"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>to_json</b> (BasicJsonType &amp;j, const std::filesystem::path &amp;p)</td></tr>
-<tr class="separator:a017d11878524111911622f765e87c341"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab64eeb55b44db44eb8e9070229eb97df"><td class="memTemplParams" colspan="2"><a id="ab64eeb55b44db44eb8e9070229eb97df"></a>
 template&lt;typename BasicJsonType , typename T1 , typename T2 , enable_if_t&lt; std::is_constructible&lt; BasicJsonType, T1 &gt;::value &amp;&amp;std::is_constructible&lt; BasicJsonType, T2 &gt;::value, int &gt;  = 0&gt; </td></tr>
 <tr class="memitem:ab64eeb55b44db44eb8e9070229eb97df"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>to_json</b> (BasicJsonType &amp;j, const std::pair&lt; T1, T2 &gt; &amp;p)</td></tr>
@@ -830,6 +826,10 @@ template&lt;typename BasicJsonType , typename T , enable_if_t&lt; std::is_conver
 template&lt;typename BasicJsonType &gt; </td></tr>
 <tr class="memitem:aeca6fb5fede5ed1e12a4420d98a5692b"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>to_json</b> (BasicJsonType &amp;j, const std::vector&lt; <a class="el" href="classbool.html">bool</a> &gt; &amp;e)</td></tr>
 <tr class="separator:aeca6fb5fede5ed1e12a4420d98a5692b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a18065caade3b6d8ea8fa807cf085448c"><td class="memTemplParams" colspan="2"><a id="a18065caade3b6d8ea8fa807cf085448c"></a>
+template&lt;typename BasicJsonType &gt; </td></tr>
+<tr class="memitem:a18065caade3b6d8ea8fa807cf085448c"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>to_json</b> (BasicJsonType &amp;j, const std_fs::path &amp;p)</td></tr>
+<tr class="separator:a18065caade3b6d8ea8fa807cf085448c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aaa77b0c9745130b77733a92a1a2e82ec"><td class="memTemplParams" colspan="2"><a id="aaa77b0c9745130b77733a92a1a2e82ec"></a>
 template&lt;typename BasicJsonType , typename T , enable_if_t&lt; std::is_same&lt; T, iteration_proxy_value&lt; typename BasicJsonType::iterator &gt;&gt;::value, int &gt;  = 0&gt; </td></tr>
 <tr class="memitem:aaa77b0c9745130b77733a92a1a2e82ec"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>to_json</b> (BasicJsonType &amp;j, const T &amp;b)</td></tr>
@@ -1145,8 +1145,8 @@ template&lt;typename BasicJsonType &gt; </div>
 
 </div>
 </div>
-<a id="ad2860d9bcd96cd7b8258a5b94674508c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad2860d9bcd96cd7b8258a5b94674508c">&#9670;&nbsp;</a></span>little_endianess()</h2>
+<a id="a6d9410847162a2ad2f1cff0dcce3b1d9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6d9410847162a2ad2f1cff0dcce3b1d9">&#9670;&nbsp;</a></span>little_endianness()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1155,7 +1155,7 @@ template&lt;typename BasicJsonType &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">static <a class="el" href="classbool.html">bool</a> nlohmann::detail::little_endianess </td>
+          <td class="memname">static <a class="el" href="classbool.html">bool</a> nlohmann::detail::little_endianness </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classint.html">int</a>&#160;</td>
           <td class="paramname"><em>num</em> = <code>1</code></td><td>)</td>
@@ -1172,8 +1172,6 @@ template&lt;typename BasicJsonType &gt; </div>
 <p>determine system byte order </p>
 <dl class="section return"><dt>Returns</dt><dd>true if and only if system's byte order is little endian</dd></dl>
 <dl class="section note"><dt>Note</dt><dd>from <a href="https://stackoverflow.com/a/1001328/266378">https://stackoverflow.com/a/1001328/266378</a> </dd></dl>
-
-<p class="reference">References <a class="el" href="namespacenlohmann_1_1detail.html#a59e696b1dad6d0d99c172ac4518c2042a49642fb732aa2e112188fba1f9d3ef7f">array_end</a>, <a class="el" href="namespacenlohmann_1_1detail.html#a59e696b1dad6d0d99c172ac4518c2042aa4388a3d92419edbb1c6efd4d52461f3">array_start</a>, <a class="el" href="structnlohmann_1_1json__sax.html#a38c2dbde07138cc436ea7fbf22c1e92d">nlohmann::json_sax&lt; BasicJsonType &gt;::binary()</a>, <a class="el" href="structnlohmann_1_1json__sax.html#a82ed080814fa656191a537284bb0c575">nlohmann::json_sax&lt; BasicJsonType &gt;::boolean()</a>, <a class="el" href="namespaceFeel.html#a55b180ac7bf9d1ebd55a0b79f97e131e">Feel::elements()</a>, <a class="el" href="structnlohmann_1_1json__sax.html#a235ee975617f28e6a996d1e36a282312">nlohmann::json_sax&lt; BasicJsonType &gt;::end_array()</a>, <a class="el" href="structnlohmann_1_1json__sax.html#ad0c722d53ff97be700ccf6a9468bd456">nlohmann::json_sax&lt; BasicJsonType &gt;::end_object()</a>, <a class="el" href="classnlohmann_1_1detail_1_1json__sax__dom__parser.html#afc50fee0a92ce84afb84041ebbdfba80">nlohmann::detail::json_sax_dom_parser&lt; BasicJsonType &gt;::json_sax_dom_parser()</a>, <a class="el" href="structnlohmann_1_1json__sax.html#a2e0c7ecd80b18d18a8cc76f71cfc2028">nlohmann::json_sax&lt; BasicJsonType &gt;::key()</a>, <a class="el" href="namespacenlohmann_1_1detail.html#a59e696b1dad6d0d99c172ac4518c2042a3c6e0b8a9c15224a8228b9a98ca1531d">key</a>, <a class="el" href="structnlohmann_1_1json__sax.html#ae7c31614e8a82164d2d7f8dbf4671b25">nlohmann::json_sax&lt; BasicJsonType &gt;::number_float()</a>, <a class="el" href="structnlohmann_1_1json__sax.html#affa7a78b8e9cc9cc3ac99927143142a5">nlohmann::json_sax&lt; BasicJsonType &gt;::number_integer()</a>, <a class="el" href="structnlohmann_1_1json__sax.html#ad9b253083e0509923ba195136f49face">nlohmann::json_sax&lt; BasicJsonType &gt;::number_unsigned()</a>, <a class="el" href="namespacenlohmann_1_1detail.html#a59e696b1dad6d0d99c172ac4518c2042af63e2a2468a37aa4f394fcc3bcb8249c">object_end</a>, <a class="el" href="namespacenlohmann_1_1detail.html#a59e696b1dad6d0d99c172ac4518c2042ae73f17027cb0acbb537f29d0a6944b26">object_start</a>, <a class="el" href="structnlohmann_1_1json__sax.html#a60287e3bd85f489e04c83f7e3b76e613">nlohmann::json_sax&lt; BasicJsonType &gt;::parse_error()</a>, <a class="el" href="structnlohmann_1_1json__sax.html#a5c53878cf08d463eb4e7ca0270532572">nlohmann::json_sax&lt; BasicJsonType &gt;::start_array()</a>, <a class="el" href="structnlohmann_1_1json__sax.html#a0671528b0debb5a348169d61f0382a0f">nlohmann::json_sax&lt; BasicJsonType &gt;::start_object()</a>, <a class="el" href="structnlohmann_1_1json__sax.html#a07eab82f6c82d606787eee9ad73d2bda">nlohmann::json_sax&lt; BasicJsonType &gt;::string()</a>, <a class="el" href="group__DSEL-Variational-Formulation.html#gaeac7fe8c4b52a6f9c1320275ad39f01e">val()</a>, and <a class="el" href="namespacenlohmann_1_1detail.html#a59e696b1dad6d0d99c172ac4518c2042a2063c1608d6e0baf80249c42e2be5804">value</a>.</p>
 
 </div>
 </div>

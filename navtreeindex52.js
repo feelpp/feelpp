@@ -1,5 +1,10 @@
 var NAVTREEINDEX52 =
 {
+"typetraits_8hpp.html#a37adc77d19e9f0ad6aa70adcae91de55":[6,2,0,0,0,40,1],
+"typetraits_8hpp.html#a559102856463db18fe24e9d6241533ca":[6,2,0,0,0,40,3],
+"typetraits_8hpp.html#a97f4cc26df35977a346e0c745f1e99e8":[6,2,0,0,0,40,4],
+"typetraits_8hpp.html#ad57ee57ed4b8d4ef5a4ae1e8bcf722f2":[6,2,0,0,0,40,2],
+"unary_8hpp.html":[6,2,0,0,3,56],
 "unary_8hpp.html#a2850942bde1d14f61c7e7b620cc836f0":[6,2,0,0,3,56,12],
 "unary_8hpp.html#afcb7134df078e3f16ae93260d952db8b":[6,2,0,0,3,56,13],
 "unaryfunctor_8cpp.html":[6,2,0,0,3,57],

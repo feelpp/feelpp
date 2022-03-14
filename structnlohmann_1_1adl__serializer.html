@@ -113,7 +113,8 @@ $(document).ready(function(){initNavTree('structnlohmann_1_1adl__serializer.html
 struct nlohmann::adl_serializer&lt; ValueType, typename &gt;</h3>
 
 <p>default JSONSerializer template argument </p>
-<p>This serializer ignores the template arguments and uses ADL (<a href="https://en.cppreference.com/w/cpp/language/adl">argument-dependent lookup</a>) for serialization. </p>
+<p>This serializer ignores the template arguments and uses ADL (<a href="https://en.cppreference.com/w/cpp/language/adl">argument-dependent lookup</a>) for serialization.</p>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/adl_serializer/">https://json.nlohmann.me/api/adl_serializer/</a> </dd></dl>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
@@ -160,15 +161,7 @@ template&lt;typename BasicJsonType , typename TargetType  = ValueType&gt; </div>
 </div><div class="memdoc">
 
 <p>convert a JSON value to any value type </p>
-<p>This function is usually called by the <code>get()</code> function of the <a class="el" href="classnlohmann_1_1basic__json.html">basic_json</a> class (either explicit or via conversion operators).</p>
-<dl class="section note"><dt>Note</dt><dd>This function is chosen for value types which are not default-constructible.</dd></dl>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">j</td><td>JSON value to read from</td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>copy of the JSON value, converted to <em>ValueType</em> </dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/adl_serializer/from_json/">https://json.nlohmann.me/api/adl_serializer/from_json/</a> </dd></dl>
 
 </div>
 </div>
@@ -212,15 +205,7 @@ template&lt;typename BasicJsonType , typename TargetType  = ValueType&gt; </div>
 </div><div class="memdoc">
 
 <p>convert a JSON value to any value type </p>
-<p>This function is usually called by the <code>get()</code> function of the <a class="el" href="classnlohmann_1_1basic__json.html">basic_json</a> class (either explicit or via conversion operators).</p>
-<dl class="section note"><dt>Note</dt><dd>This function is chosen for default-constructible value types.</dd></dl>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">j</td><td>JSON value to read from </td></tr>
-    <tr><td class="paramdir">[in,out]</td><td class="paramname">val</td><td>value to write to </td></tr>
-  </table>
-  </dd>
-</dl>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/adl_serializer/from_json/">https://json.nlohmann.me/api/adl_serializer/from_json/</a> </dd></dl>
 
 </div>
 </div>
@@ -264,14 +249,7 @@ template&lt;typename BasicJsonType , typename TargetType  = ValueType&gt; </div>
 </div><div class="memdoc">
 
 <p>convert any value type to a JSON value </p>
-<p>This function is usually called by the constructors of the <a class="el" href="classnlohmann_1_1basic__json.html">basic_json</a> class.</p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramdir">[in,out]</td><td class="paramname">j</td><td>JSON value to write to </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">val</td><td>value to read from </td></tr>
-  </table>
-  </dd>
-</dl>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/adl_serializer/to_json/">https://json.nlohmann.me/api/adl_serializer/to_json/</a> </dd></dl>
 
 </div>
 </div>

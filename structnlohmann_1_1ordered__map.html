@@ -113,13 +113,21 @@ $(document).ready(function(){initNavTree('structnlohmann_1_1ordered__map.html','
 <div class="textblock"><h3>template&lt;class Key, class T, class IgnoredLess = std::less&lt;Key&gt;, class Allocator = std::allocator&lt;std::pair&lt;const Key, T&gt;&gt;&gt;<br />
 struct nlohmann::ordered_map&lt; Key, T, IgnoredLess, Allocator &gt;</h3>
 
-<p><a class="el" href="structnlohmann_1_1ordered__map.html" title="ordered_map: a minimal map-like container that preserves insertion order for use within nlohmann::bas...">ordered_map</a>: a minimal map-like container that preserves insertion order for use within nlohmann::basic_json&lt;ordered_map&gt; </p>
+<p>a minimal map-like container that preserves insertion order </p>
+<p><a class="el" href="structnlohmann_1_1ordered__map.html" title="a minimal map-like container that preserves insertion order">ordered_map</a>: a minimal map-like container that preserves insertion order for use within nlohmann::basic_json&lt;ordered_map&gt;</p>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/ordered_map/">https://json.nlohmann.me/api/ordered_map/</a> </dd></dl>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
 Public Types</h2></td></tr>
+<tr class="memitem:a8276ac13f6e6ad27594a7e287a5ea071"><td class="memItemLeft" align="right" valign="top"><a id="a8276ac13f6e6ad27594a7e287a5ea071"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>const_iterator</b> = typename Container::const_iterator</td></tr>
+<tr class="separator:a8276ac13f6e6ad27594a7e287a5ea071"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0cabe346c38a4f1ab1b8a396fbd2bbe2"><td class="memItemLeft" align="right" valign="top"><a id="a0cabe346c38a4f1ab1b8a396fbd2bbe2"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>Container</b> = std::vector&lt; std::pair&lt; const Key, T &gt;, Allocator &gt;</td></tr>
 <tr class="separator:a0cabe346c38a4f1ab1b8a396fbd2bbe2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aef8bc179883da4194bc6b657b87eeb07"><td class="memItemLeft" align="right" valign="top"><a id="aef8bc179883da4194bc6b657b87eeb07"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>iterator</b> = typename Container::iterator</td></tr>
+<tr class="separator:aef8bc179883da4194bc6b657b87eeb07"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a57095c6ed403f02e1bc2c240a13c9ed8"><td class="memItemLeft" align="right" valign="top"><a id="a57095c6ed403f02e1bc2c240a13c9ed8"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>key_type</b> = Key</td></tr>
 <tr class="separator:a57095c6ed403f02e1bc2c240a13c9ed8"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -130,6 +138,12 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>mapped_type</b> = T<
 template&lt;typename InputIt &gt; </td></tr>
 <tr class="memitem:a89cc338e8466e74baaa138664c79ee98"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>require_input_iter</b> = typename std::enable_if&lt; std::is_convertible&lt; typename std::iterator_traits&lt; InputIt &gt;::iterator_category, std::input_iterator_tag &gt;::value &gt;::type</td></tr>
 <tr class="separator:a89cc338e8466e74baaa138664c79ee98"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab5044ef3fc07cf7aee67241c4d10ce9d"><td class="memItemLeft" align="right" valign="top"><a id="ab5044ef3fc07cf7aee67241c4d10ce9d"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>size_type</b> = typename Container::size_type</td></tr>
+<tr class="separator:ab5044ef3fc07cf7aee67241c4d10ce9d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abe9b97ae84d9c40616913b50b2778150"><td class="memItemLeft" align="right" valign="top"><a id="abe9b97ae84d9c40616913b50b2778150"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>value_type</b> = typename Container::value_type</td></tr>
+<tr class="separator:abe9b97ae84d9c40616913b50b2778150"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -140,14 +154,17 @@ T &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>at</b> (const Key 
 const T &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>at</b> (const Key &amp;key) const</td></tr>
 <tr class="separator:a8b7f27215180385b9b1e98adc4dd8ae7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aee2c188dcc802d6b28910f707a5e637b"><td class="memItemLeft" align="right" valign="top"><a id="aee2c188dcc802d6b28910f707a5e637b"></a>
-<a class="el" href="classsize__type.html">size_type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>count</b> (const Key &amp;key) const</td></tr>
+size_type&#160;</td><td class="memItemRight" valign="bottom"><b>count</b> (const Key &amp;key) const</td></tr>
 <tr class="separator:aee2c188dcc802d6b28910f707a5e637b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a38834c948b844033caa7d5c76fee5866"><td class="memItemLeft" align="right" valign="top"><a id="a38834c948b844033caa7d5c76fee5866"></a>
 std::pair&lt; iterator, <a class="el" href="classbool.html">bool</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>emplace</b> (const key_type &amp;key, T &amp;&amp;t)</td></tr>
 <tr class="separator:a38834c948b844033caa7d5c76fee5866"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a583c8976bbf0c137ff8e2439878f3058"><td class="memItemLeft" align="right" valign="top"><a id="a583c8976bbf0c137ff8e2439878f3058"></a>
-<a class="el" href="classsize__type.html">size_type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>erase</b> (const Key &amp;key)</td></tr>
+size_type&#160;</td><td class="memItemRight" valign="bottom"><b>erase</b> (const Key &amp;key)</td></tr>
 <tr class="separator:a583c8976bbf0c137ff8e2439878f3058"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6f766b4df72c42ac14d55603c85f9e36"><td class="memItemLeft" align="right" valign="top"><a id="a6f766b4df72c42ac14d55603c85f9e36"></a>
+iterator&#160;</td><td class="memItemRight" valign="bottom"><b>erase</b> (iterator first, iterator last)</td></tr>
+<tr class="separator:a6f766b4df72c42ac14d55603c85f9e36"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a26053569acb0a858d87482b2fa3d5dc5"><td class="memItemLeft" align="right" valign="top"><a id="a26053569acb0a858d87482b2fa3d5dc5"></a>
 iterator&#160;</td><td class="memItemRight" valign="bottom"><b>erase</b> (iterator pos)</td></tr>
 <tr class="separator:a26053569acb0a858d87482b2fa3d5dc5"><td class="memSeparator" colspan="2">&#160;</td></tr>

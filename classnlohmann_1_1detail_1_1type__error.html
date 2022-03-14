@@ -110,57 +110,7 @@ $(document).ready(function(){initNavTree('classnlohmann_1_1detail_1_1type__error
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Description</h2>
 <div class="textblock"><p>exception indicating executing a member function with a wrong type </p>
-<p>This exception is thrown in case of a type error; that is, a library function is executed on a JSON value whose type does not match the expected semantics.</p>
-<p>Exceptions have ids 3xx.</p>
-<table class="markdownTable">
-<tr class="markdownTableHead">
-<th class="markdownTableHeadNone">name / id </th><th class="markdownTableHeadNone">example message </th><th class="markdownTableHeadNone">description  </th></tr>
-<tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">json.exception.type_error.301 </td><td class="markdownTableBodyNone">cannot create object from initializer list </td><td class="markdownTableBodyNone">To create an object from an initializer list, the initializer list must consist only of a list of pairs whose first element is a string. When this constraint is violated, an array is created instead.  </td></tr>
-<tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone">json.exception.type_error.302 </td><td class="markdownTableBodyNone">type must be object, but is array </td><td class="markdownTableBodyNone">During implicit or explicit value conversion, the JSON type must be compatible to the target type. For instance, a JSON string can only be converted into string types, but not into numbers or boolean types.  </td></tr>
-<tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">json.exception.type_error.303 </td><td class="markdownTableBodyNone">incompatible ReferenceType for get_ref, actual type is object </td><td class="markdownTableBodyNone">To retrieve a reference to a value stored in a <a class="el" href="classnlohmann_1_1basic__json.html">basic_json</a> object with get_ref, the type of the reference must match the value type. For instance, for a JSON array, the <em>ReferenceType</em> must be array_t &amp;.  </td></tr>
-<tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone">json.exception.type_error.304 </td><td class="markdownTableBodyNone">cannot use at() with string </td><td class="markdownTableBodyNone">The at() member functions can only be executed for certain JSON types.  </td></tr>
-<tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">json.exception.type_error.305 </td><td class="markdownTableBodyNone">cannot use operator[] with string </td><td class="markdownTableBodyNone">The operator[] member functions can only be executed for certain JSON types.  </td></tr>
-<tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone">json.exception.type_error.306 </td><td class="markdownTableBodyNone">cannot use value() with string </td><td class="markdownTableBodyNone">The value() member functions can only be executed for certain JSON types.  </td></tr>
-<tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">json.exception.type_error.307 </td><td class="markdownTableBodyNone">cannot use erase() with string </td><td class="markdownTableBodyNone">The erase() member functions can only be executed for certain JSON types.  </td></tr>
-<tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone">json.exception.type_error.308 </td><td class="markdownTableBodyNone">cannot use push_back() with string </td><td class="markdownTableBodyNone">The push_back() and operator+= member functions can only be executed for certain JSON types.  </td></tr>
-<tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">json.exception.type_error.309 </td><td class="markdownTableBodyNone">cannot use insert() with </td><td class="markdownTableBodyNone">The insert() member functions can only be executed for certain JSON types.  </td></tr>
-<tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone">json.exception.type_error.310 </td><td class="markdownTableBodyNone">cannot use swap() with number </td><td class="markdownTableBodyNone">The swap() member functions can only be executed for certain JSON types.  </td></tr>
-<tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">json.exception.type_error.311 </td><td class="markdownTableBodyNone">cannot use emplace_back() with string </td><td class="markdownTableBodyNone">The emplace_back() member function can only be executed for certain JSON types.  </td></tr>
-<tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone">json.exception.type_error.312 </td><td class="markdownTableBodyNone">cannot use update() with string </td><td class="markdownTableBodyNone">The update() member functions can only be executed for certain JSON types.  </td></tr>
-<tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">json.exception.type_error.313 </td><td class="markdownTableBodyNone">invalid value to unflatten </td><td class="markdownTableBodyNone">The unflatten function converts an object whose keys are JSON Pointers back into an arbitrary nested JSON value. The JSON Pointers must not overlap, because then the resulting value would not be well defined.  </td></tr>
-<tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone">json.exception.type_error.314 </td><td class="markdownTableBodyNone">only objects can be unflattened </td><td class="markdownTableBodyNone">The unflatten function only works for an object whose keys are JSON Pointers.  </td></tr>
-<tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">json.exception.type_error.315 </td><td class="markdownTableBodyNone">values in object must be primitive </td><td class="markdownTableBodyNone">The unflatten function only works for an object whose keys are JSON Pointers and whose values are primitive.  </td></tr>
-<tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone">json.exception.type_error.316 </td><td class="markdownTableBodyNone">invalid UTF-8 byte at index 10: 0x7E </td><td class="markdownTableBodyNone">The dump function only works with UTF-8 encoded strings; that is, if you assign a <code>std::string</code> to a JSON value, make sure it is UTF-8 encoded.  </td></tr>
-<tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">json.exception.type_error.317 </td><td class="markdownTableBodyNone">JSON value cannot be serialized to requested format </td><td class="markdownTableBodyNone">The dynamic type of the object cannot be represented in the requested serialization format (e.g. a raw <code>true</code> or <code>null</code> JSON object cannot be serialized to BSON)  </td></tr>
-</table>
-<p>@liveexample{The following code shows how a <code><a class="el" href="classnlohmann_1_1detail_1_1type__error.html" title="exception indicating executing a member function with a wrong type">type_error</a></code> exception can be caught.,<a class="el" href="classnlohmann_1_1detail_1_1type__error.html" title="exception indicating executing a member function with a wrong type">type_error</a>}</p>
-<dl class="section see"><dt>See also</dt><dd>- <a class="el" href="classnlohmann_1_1detail_1_1exception.html">exception</a> for the base class of the library exceptions </dd>
-<dd>
-- <a class="el" href="classnlohmann_1_1detail_1_1parse__error.html">parse_error</a> for exceptions indicating a parse error </dd>
-<dd>
-- <a class="el" href="classnlohmann_1_1detail_1_1invalid__iterator.html">invalid_iterator</a> for exceptions indicating errors with iterators </dd>
-<dd>
-- <a class="el" href="classnlohmann_1_1detail_1_1out__of__range.html">out_of_range</a> for exceptions indicating access out of the defined range </dd>
-<dd>
-- <a class="el" href="classnlohmann_1_1detail_1_1other__error.html">other_error</a> for exceptions indicating other library errors</dd></dl>
-<dl class="section since"><dt>Since</dt><dd>version 3.0.0 </dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/type_error/">https://json.nlohmann.me/api/basic_json/type_error/</a> </dd></dl>
 </div><div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Inheritance diagram for nlohmann::detail::type_error:</div>
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">

@@ -113,10 +113,8 @@ $(document).ready(function(){initNavTree('classnlohmann_1_1json__pointer.html','
 <div class="textblock"><h3>template&lt;typename BasicJsonType&gt;<br />
 class nlohmann::json_pointer&lt; BasicJsonType &gt;</h3>
 
-<p>JSON Pointer. </p>
-<p>A JSON pointer defines a string syntax for identifying a specific value within a JSON document. It can be used with functions <code>at</code> and <code>operator[]</code>. Furthermore, JSON pointers are the base for JSON patches.</p>
-<dl class="section see"><dt>See also</dt><dd><a href="https://tools.ietf.org/html/rfc6901">RFC 6901</a></dd></dl>
-<dl class="section since"><dt>Since</dt><dd>version 2.0.0 </dd></dl>
+<p>JSON Pointer defines a string syntax for identifying a specific value within a JSON document. </p>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/json_pointer/">https://json.nlohmann.me/api/json_pointer/</a> </dd></dl>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="friends"></a>
 Friends</h2></td></tr>
@@ -130,12 +128,12 @@ template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, 
 <tr class="memitem:a90a11fe6c7f37b1746a3ff9cb24b0d53"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classnlohmann_1_1json__pointer.html">json_pointer</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnlohmann_1_1json__pointer.html#a90a11fe6c7f37b1746a3ff9cb24b0d53">operator/</a> (const <a class="el" href="classnlohmann_1_1json__pointer.html">json_pointer</a> &amp;lhs, const <a class="el" href="classnlohmann_1_1json__pointer.html">json_pointer</a> &amp;rhs)</td></tr>
 <tr class="memdesc:a90a11fe6c7f37b1746a3ff9cb24b0d53"><td class="mdescLeft">&#160;</td><td class="mdescRight">create a new JSON pointer by appending the right JSON pointer at the end of the left JSON pointer  <a href="classnlohmann_1_1json__pointer.html#a90a11fe6c7f37b1746a3ff9cb24b0d53">More...</a><br /></td></tr>
 <tr class="separator:a90a11fe6c7f37b1746a3ff9cb24b0d53"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af5a4bc4f82113c271c9a0cd4d3b5f31c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classnlohmann_1_1json__pointer.html">json_pointer</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnlohmann_1_1json__pointer.html#af5a4bc4f82113c271c9a0cd4d3b5f31c">operator/</a> (const <a class="el" href="classnlohmann_1_1json__pointer.html">json_pointer</a> &amp;ptr, std::size_t array_idx)</td></tr>
-<tr class="memdesc:af5a4bc4f82113c271c9a0cd4d3b5f31c"><td class="mdescLeft">&#160;</td><td class="mdescRight">create a new JSON pointer by appending the array-index-token at the end of the JSON pointer  <a href="classnlohmann_1_1json__pointer.html#af5a4bc4f82113c271c9a0cd4d3b5f31c">More...</a><br /></td></tr>
-<tr class="separator:af5a4bc4f82113c271c9a0cd4d3b5f31c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a926c9065dbed1bedc17857a813f7a46f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classnlohmann_1_1json__pointer.html">json_pointer</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnlohmann_1_1json__pointer.html#a926c9065dbed1bedc17857a813f7a46f">operator/</a> (const <a class="el" href="classnlohmann_1_1json__pointer.html">json_pointer</a> &amp;ptr, std::string token)</td></tr>
-<tr class="memdesc:a926c9065dbed1bedc17857a813f7a46f"><td class="mdescLeft">&#160;</td><td class="mdescRight">create a new JSON pointer by appending the unescaped token at the end of the JSON pointer  <a href="classnlohmann_1_1json__pointer.html#a926c9065dbed1bedc17857a813f7a46f">More...</a><br /></td></tr>
-<tr class="separator:a926c9065dbed1bedc17857a813f7a46f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a29f6d4b492e784b9d196b05a4048c289"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classnlohmann_1_1json__pointer.html">json_pointer</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnlohmann_1_1json__pointer.html#a29f6d4b492e784b9d196b05a4048c289">operator/</a> (const <a class="el" href="classnlohmann_1_1json__pointer.html">json_pointer</a> &amp;lhs, std::size_t array_idx)</td></tr>
+<tr class="memdesc:a29f6d4b492e784b9d196b05a4048c289"><td class="mdescLeft">&#160;</td><td class="mdescRight">create a new JSON pointer by appending the array-index-token at the end of the JSON pointer  <a href="classnlohmann_1_1json__pointer.html#a29f6d4b492e784b9d196b05a4048c289">More...</a><br /></td></tr>
+<tr class="separator:a29f6d4b492e784b9d196b05a4048c289"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa44c0583fb06a018b0cf041302f109fa"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classnlohmann_1_1json__pointer.html">json_pointer</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnlohmann_1_1json__pointer.html#aa44c0583fb06a018b0cf041302f109fa">operator/</a> (const <a class="el" href="classnlohmann_1_1json__pointer.html">json_pointer</a> &amp;lhs, std::string token)</td></tr>
+<tr class="memdesc:aa44c0583fb06a018b0cf041302f109fa"><td class="mdescLeft">&#160;</td><td class="mdescRight">create a new JSON pointer by appending the unescaped token at the end of the JSON pointer  <a href="classnlohmann_1_1json__pointer.html#aa44c0583fb06a018b0cf041302f109fa">More...</a><br /></td></tr>
+<tr class="separator:aa44c0583fb06a018b0cf041302f109fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4667ef558c8c3f8a646bfda0c6654653"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnlohmann_1_1json__pointer.html#a4667ef558c8c3f8a646bfda0c6654653">operator==</a> (<a class="el" href="classnlohmann_1_1json__pointer.html">json_pointer</a> const &amp;lhs, <a class="el" href="classnlohmann_1_1json__pointer.html">json_pointer</a> const &amp;rhs) noexcept</td></tr>
 <tr class="memdesc:a4667ef558c8c3f8a646bfda0c6654653"><td class="mdescLeft">&#160;</td><td class="mdescRight">compares two JSON pointers for equality  <a href="classnlohmann_1_1json__pointer.html#a4667ef558c8c3f8a646bfda0c6654653">More...</a><br /></td></tr>
 <tr class="separator:a4667ef558c8c3f8a646bfda0c6654653"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -267,23 +265,12 @@ template&lt;typename BasicJsonType &gt; </div>
 </div><div class="memdoc">
 
 <p>create a new JSON pointer by appending the right JSON pointer at the end of the left JSON pointer </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">lhs</td><td>JSON pointer </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">rhs</td><td>JSON pointer </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>a new JSON pointer with <em>rhs</em> appended to <em>lhs</em> </dd></dl>
-<p>@liveexample{The example shows the usage of <code>operator/</code>.,json_pointer__operator_add_binary}</p>
-<p>@complexity Linear in the length of <em>lhs</em> and <em>rhs</em>.</p>
-<dl class="section see"><dt>See also</dt><dd>see <a class="el" href="classnlohmann_1_1json__pointer.html#a7395bd0af29ac23fd3f21543c935cdfa">operator/=(const json_pointer&amp;)</a> to append a JSON pointer</dd></dl>
-<dl class="section since"><dt>Since</dt><dd>version 3.6.0 </dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/json_pointer/operator_slash/">https://json.nlohmann.me/api/json_pointer/operator_slash/</a> </dd></dl>
 
 </div>
 </div>
-<a id="af5a4bc4f82113c271c9a0cd4d3b5f31c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af5a4bc4f82113c271c9a0cd4d3b5f31c">&#9670;&nbsp;</a></span>operator/ <span class="overload">[2/3]</span></h2>
+<a id="a29f6d4b492e784b9d196b05a4048c289"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a29f6d4b492e784b9d196b05a4048c289">&#9670;&nbsp;</a></span>operator/ <span class="overload">[2/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -297,7 +284,7 @@ template&lt;typename BasicJsonType &gt; </div>
           <td class="memname"><a class="el" href="classnlohmann_1_1json__pointer.html">json_pointer</a> operator/ </td>
           <td>(</td>
           <td class="paramtype">const <a class="el" href="classnlohmann_1_1json__pointer.html">json_pointer</a>&lt; BasicJsonType &gt; &amp;&#160;</td>
-          <td class="paramname"><em>ptr</em>, </td>
+          <td class="paramname"><em>lhs</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -319,23 +306,12 @@ template&lt;typename BasicJsonType &gt; </div>
 </div><div class="memdoc">
 
 <p>create a new JSON pointer by appending the array-index-token at the end of the JSON pointer </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">ptr</td><td>JSON pointer </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">array_idx</td><td>array index </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>a new JSON pointer with <em>array_idx</em> appended to <em>ptr</em> </dd></dl>
-<p>@liveexample{The example shows the usage of <code>operator/</code>.,json_pointer__operator_add_binary}</p>
-<p>@complexity Linear in the length of <em>ptr</em>.</p>
-<dl class="section see"><dt>See also</dt><dd>see <a class="el" href="classnlohmann_1_1json__pointer.html#a7de51480324eb1c5a89ed552cd699875">operator/=(std::size_t)</a> to append an array index</dd></dl>
-<dl class="section since"><dt>Since</dt><dd>version 3.6.0 </dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/json_pointer/operator_slash/">https://json.nlohmann.me/api/json_pointer/operator_slash/</a> </dd></dl>
 
 </div>
 </div>
-<a id="a926c9065dbed1bedc17857a813f7a46f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a926c9065dbed1bedc17857a813f7a46f">&#9670;&nbsp;</a></span>operator/ <span class="overload">[3/3]</span></h2>
+<a id="aa44c0583fb06a018b0cf041302f109fa"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa44c0583fb06a018b0cf041302f109fa">&#9670;&nbsp;</a></span>operator/ <span class="overload">[3/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -349,7 +325,7 @@ template&lt;typename BasicJsonType &gt; </div>
           <td class="memname"><a class="el" href="classnlohmann_1_1json__pointer.html">json_pointer</a> operator/ </td>
           <td>(</td>
           <td class="paramtype">const <a class="el" href="classnlohmann_1_1json__pointer.html">json_pointer</a>&lt; BasicJsonType &gt; &amp;&#160;</td>
-          <td class="paramname"><em>ptr</em>, </td>
+          <td class="paramname"><em>lhs</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -371,18 +347,7 @@ template&lt;typename BasicJsonType &gt; </div>
 </div><div class="memdoc">
 
 <p>create a new JSON pointer by appending the unescaped token at the end of the JSON pointer </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">ptr</td><td>JSON pointer </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">token</td><td>reference token </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>a new JSON pointer with unescaped <em>token</em> appended to <em>ptr</em> </dd></dl>
-<p>@liveexample{The example shows the usage of <code>operator/</code>.,json_pointer__operator_add_binary}</p>
-<p>@complexity Linear in the length of <em>ptr</em>.</p>
-<dl class="section see"><dt>See also</dt><dd>see <a class="el" href="classnlohmann_1_1json__pointer.html#abdd21567b2b1d69329af0f520335e68b">operator/=(std::string)</a> to append a reference token</dd></dl>
-<dl class="section since"><dt>Since</dt><dd>version 3.6.0 </dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/json_pointer/operator_slash/">https://json.nlohmann.me/api/json_pointer/operator_slash/</a> </dd></dl>
 
 </div>
 </div>
@@ -455,17 +420,7 @@ template&lt;typename BasicJsonType &gt; </div>
 </div><div class="memdoc">
 
 <p>return last reference token </p>
-<dl class="section pre"><dt>Precondition</dt><dd>not <code><a class="el" href="classnlohmann_1_1json__pointer.html#a649252bda4a2e75a0915b11a25d8bcc3" title="return whether pointer points to the root document">empty()</a></code> </dd></dl>
-<dl class="section return"><dt>Returns</dt><dd>last reference token</dd></dl>
-<p>@liveexample{The example shows the usage of <code>back</code>.,json_pointer__back}</p>
-<p>@complexity Constant.</p>
-<dl class="exception"><dt>Exceptions</dt><dd>
-  <table class="exception">
-    <tr><td class="paramname">out_of_range.405</td><td>if JSON pointer has no parent</td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section since"><dt>Since</dt><dd>version 3.6.0 </dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/json_pointer/back/">https://json.nlohmann.me/api/json_pointer/back/</a> </dd></dl>
 
 </div>
 </div>
@@ -495,11 +450,7 @@ template&lt;typename BasicJsonType &gt; </div>
 </div><div class="memdoc">
 
 <p>return whether pointer points to the root document </p>
-<dl class="section return"><dt>Returns</dt><dd>true iff the JSON pointer points to the root document</dd></dl>
-<p>@complexity Constant.</p>
-<p>@exceptionsafety No-throw guarantee: this function never throws exceptions.</p>
-<p>@liveexample{The example shows the result of <code>empty</code> for different JSON Pointers.,json_pointer__empty}</p>
-<dl class="section since"><dt>Since</dt><dd>version 3.6.0 </dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/json_pointer/empty/">https://json.nlohmann.me/api/json_pointer/empty/</a> </dd></dl>
 
 </div>
 </div>
@@ -521,13 +472,7 @@ template&lt;typename BasicJsonType &gt; </div>
 </div><div class="memdoc">
 
 <p>return a string representation of the JSON pointer </p>
-<dl class="section invariant"><dt>Invariant</dt><dd>For each JSON pointer <code>ptr</code>, it holds: <div class="fragment"><div class="line">ptr == <a class="code" href="classnlohmann_1_1json__pointer.html#a7f32d7c62841f0c4a6784cf741a6e4f8">json_pointer</a>(ptr.to_string());</div>
-</div><!-- fragment --></dd></dl>
-<dl class="section return"><dt>Returns</dt><dd>a string representation of the JSON pointer</dd></dl>
-<p>@liveexample{The example shows the result of <code>to_string</code>.,json_pointer__to_string}</p>
-<dl class="section since"><dt>Since</dt><dd>version 2.0.0 </dd></dl>
-
-<p class="reference">References <a class="el" href="classnlohmann_1_1detail_1_1binary__reader.html#ab47df98119524e9c7d9ff0b820913883">nlohmann::detail::binary_reader&lt; BasicJsonType, InputAdapterType, SAX &gt;::current</a>.</p>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/json_pointer/operator_string/">https://json.nlohmann.me/api/json_pointer/operator_string/</a> </dd></dl>
 
 </div>
 </div>
@@ -550,21 +495,7 @@ template&lt;typename BasicJsonType &gt; </div>
 </div><div class="memdoc">
 
 <p>append another JSON pointer at the end of this JSON pointer </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">ptr</td><td>JSON pointer to append </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>JSON pointer with <em>ptr</em> appended</dd></dl>
-<p>@liveexample{The example shows the usage of <code>operator/=</code>.,json_pointer__operator_add}</p>
-<p>@complexity Linear in the length of <em>ptr</em>.</p>
-<dl class="section see"><dt>See also</dt><dd>see <a class="el" href="classnlohmann_1_1json__pointer.html#abdd21567b2b1d69329af0f520335e68b">operator/=(std::string)</a> to append a reference token </dd>
-<dd>
-see <a class="el" href="classnlohmann_1_1json__pointer.html#a7de51480324eb1c5a89ed552cd699875">operator/=(std::size_t)</a> to append an array index </dd>
-<dd>
-see <a class="el" href="classnlohmann_1_1json__pointer.html#a90a11fe6c7f37b1746a3ff9cb24b0d53">operator/(const json_pointer&amp;, const json_pointer&amp;)</a> for a binary operator</dd></dl>
-<dl class="section since"><dt>Since</dt><dd>version 3.6.0 </dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/json_pointer/operator_slasheq/">https://json.nlohmann.me/api/json_pointer/operator_slasheq/</a> </dd></dl>
 
 </div>
 </div>
@@ -587,21 +518,7 @@ template&lt;typename BasicJsonType &gt; </div>
 </div><div class="memdoc">
 
 <p>append an array index at the end of this JSON pointer </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">array_idx</td><td>array index to append </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>JSON pointer with <em>array_idx</em> appended</dd></dl>
-<p>@liveexample{The example shows the usage of <code>operator/=</code>.,json_pointer__operator_add}</p>
-<p>@complexity Amortized constant.</p>
-<dl class="section see"><dt>See also</dt><dd>see <a class="el" href="classnlohmann_1_1json__pointer.html#a7395bd0af29ac23fd3f21543c935cdfa">operator/=(const json_pointer&amp;)</a> to append a JSON pointer </dd>
-<dd>
-see <a class="el" href="classnlohmann_1_1json__pointer.html#abdd21567b2b1d69329af0f520335e68b">operator/=(std::string)</a> to append a reference token </dd>
-<dd>
-see <a class="el" href="classnlohmann_1_1json__pointer.html#a926c9065dbed1bedc17857a813f7a46f">operator/(const json_pointer&amp;, std::string)</a> for a binary operator</dd></dl>
-<dl class="section since"><dt>Since</dt><dd>version 3.6.0 </dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/json_pointer/operator_slasheq/">https://json.nlohmann.me/api/json_pointer/operator_slasheq/</a> </dd></dl>
 
 </div>
 </div>
@@ -624,21 +541,7 @@ template&lt;typename BasicJsonType &gt; </div>
 </div><div class="memdoc">
 
 <p>append an unescaped reference token at the end of this JSON pointer </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">token</td><td>reference token to append </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>JSON pointer with <em>token</em> appended without escaping <em>token</em> </dd></dl>
-<p>@liveexample{The example shows the usage of <code>operator/=</code>.,json_pointer__operator_add}</p>
-<p>@complexity Amortized constant.</p>
-<dl class="section see"><dt>See also</dt><dd>see <a class="el" href="classnlohmann_1_1json__pointer.html#a7395bd0af29ac23fd3f21543c935cdfa">operator/=(const json_pointer&amp;)</a> to append a JSON pointer </dd>
-<dd>
-see <a class="el" href="classnlohmann_1_1json__pointer.html#a7de51480324eb1c5a89ed552cd699875">operator/=(std::size_t)</a> to append an array index </dd>
-<dd>
-see <a class="el" href="classnlohmann_1_1json__pointer.html#af5a4bc4f82113c271c9a0cd4d3b5f31c">operator/(const json_pointer&amp;, std::size_t)</a> for a binary operator</dd></dl>
-<dl class="section since"><dt>Since</dt><dd>version 3.6.0 </dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/json_pointer/operator_slasheq/">https://json.nlohmann.me/api/json_pointer/operator_slasheq/</a> </dd></dl>
 
 </div>
 </div>
@@ -660,10 +563,7 @@ template&lt;typename BasicJsonType &gt; </div>
 </div><div class="memdoc">
 
 <p>returns the parent of this JSON pointer </p>
-<dl class="section return"><dt>Returns</dt><dd>parent of this JSON pointer; in case this JSON pointer is the root, the root itself is returned</dd></dl>
-<p>@complexity Linear in the length of the JSON pointer.</p>
-<p>@liveexample{The example shows the result of <code>parent_pointer</code> for different JSON Pointers.,json_pointer__parent_pointer}</p>
-<dl class="section since"><dt>Since</dt><dd>version 3.6.0 </dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/json_pointer/parent_pointer/">https://json.nlohmann.me/api/json_pointer/parent_pointer/</a> </dd></dl>
 
 </div>
 </div>
@@ -685,18 +585,7 @@ template&lt;typename BasicJsonType &gt; </div>
 </div><div class="memdoc">
 
 <p>remove last reference token </p>
-<dl class="section pre"><dt>Precondition</dt><dd>not <code><a class="el" href="classnlohmann_1_1json__pointer.html#a649252bda4a2e75a0915b11a25d8bcc3" title="return whether pointer points to the root document">empty()</a></code></dd></dl>
-<p>@liveexample{The example shows the usage of <code>pop_back</code>.,json_pointer__pop_back}</p>
-<p>@complexity Constant.</p>
-<dl class="exception"><dt>Exceptions</dt><dd>
-  <table class="exception">
-    <tr><td class="paramname">out_of_range.405</td><td>if JSON pointer has no parent</td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section since"><dt>Since</dt><dd>version 3.6.0 </dd></dl>
-
-<p class="reference">References <a class="el" href="classnlohmann_1_1detail_1_1binary__reader.html#ab47df98119524e9c7d9ff0b820913883">nlohmann::detail::binary_reader&lt; BasicJsonType, InputAdapterType, SAX &gt;::current</a>.</p>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/json_pointer/pop_back/">https://json.nlohmann.me/api/json_pointer/pop_back/</a> </dd></dl>
 
 </div>
 </div>
@@ -719,15 +608,7 @@ template&lt;typename BasicJsonType &gt; </div>
 </div><div class="memdoc">
 
 <p>append an unescaped token at the end of the reference pointer </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">token</td><td>token to add</td></tr>
-  </table>
-  </dd>
-</dl>
-<p>@complexity Amortized constant.</p>
-<p>@liveexample{The example shows the result of <code>push_back</code> for different JSON Pointers.,json_pointer__push_back}</p>
-<dl class="section since"><dt>Since</dt><dd>version 3.6.0 </dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/json_pointer/push_back/">https://json.nlohmann.me/api/json_pointer/push_back/</a> </dd></dl>
 
 </div>
 </div>
@@ -750,15 +631,7 @@ template&lt;typename BasicJsonType &gt; </div>
 </div><div class="memdoc">
 
 <p>append an unescaped token at the end of the reference pointer </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">token</td><td>token to add</td></tr>
-  </table>
-  </dd>
-</dl>
-<p>@complexity Amortized constant.</p>
-<p>@liveexample{The example shows the result of <code>push_back</code> for different JSON Pointers.,json_pointer__push_back}</p>
-<dl class="section since"><dt>Since</dt><dd>version 3.6.0 </dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/json_pointer/push_back/">https://json.nlohmann.me/api/json_pointer/push_back/</a> </dd></dl>
 
 </div>
 </div>
@@ -780,11 +653,9 @@ template&lt;typename BasicJsonType &gt; </div>
 </div><div class="memdoc">
 
 <p>return a string representation of the JSON pointer </p>
-<dl class="section invariant"><dt>Invariant</dt><dd>For each JSON pointer <code>ptr</code>, it holds: <div class="fragment"><div class="line">ptr == <a class="code" href="classnlohmann_1_1json__pointer.html#a7f32d7c62841f0c4a6784cf741a6e4f8">json_pointer</a>(ptr.to_string());</div>
-</div><!-- fragment --></dd></dl>
-<dl class="section return"><dt>Returns</dt><dd>a string representation of the JSON pointer</dd></dl>
-<p>@liveexample{The example shows the result of <code>to_string</code>.,json_pointer__to_string}</p>
-<dl class="section since"><dt>Since</dt><dd>version 2.0.0 </dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/json_pointer/to_string/">https://json.nlohmann.me/api/json_pointer/to_string/</a> </dd></dl>
+
+<p class="reference">References <a class="el" href="classnlohmann_1_1detail_1_1binary__reader.html#aa03c779d4512b5764895dc341b0ef902">nlohmann::detail::binary_reader&lt; BasicJsonType, InputAdapterType, SAX &gt;::chars_read</a>, <a class="el" href="classnlohmann_1_1detail_1_1parse__error.html#ae77bd584cb9101140790219af7fec1ce">nlohmann::detail::parse_error::create()</a>, and <a class="el" href="classnlohmann_1_1detail_1_1binary__reader.html#aba4d89d9d38235f72f60332d6c385222">nlohmann::detail::binary_reader&lt; BasicJsonType, InputAdapterType, SAX &gt;::sax</a>.</p>
 
 </div>
 </div>
@@ -816,28 +687,12 @@ template&lt;typename BasicJsonType &gt; </div>
 </div><div class="memdoc">
 
 <p>create JSON pointer </p>
-<p>Create a JSON pointer according to the syntax described in <a href="https://tools.ietf.org/html/rfc6901#section-3">Section 3 of RFC6901</a>.</p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">s</td><td>string representing the JSON pointer; if omitted, the empty string is assumed which references the whole JSON value</td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="exception"><dt>Exceptions</dt><dd>
-  <table class="exception">
-    <tr><td class="paramname">parse_error.107</td><td>if the given JSON pointer <em>s</em> is nonempty and does not begin with a slash (<code>/</code>); see example below</td></tr>
-    <tr><td class="paramname">parse_error.108</td><td>if a tilde (<code>~</code>) in the given JSON pointer <em>s</em> is not followed by <code>0</code> (representing <code>~</code>) or <code>1</code> (representing <code>/</code>); see example below</td></tr>
-  </table>
-  </dd>
-</dl>
-<p>@liveexample{The example shows the construction several valid JSON pointers as well as the exceptional behavior.,<a class="el" href="classnlohmann_1_1json__pointer.html" title="JSON Pointer.">json_pointer</a>}</p>
-<dl class="section since"><dt>Since</dt><dd>version 2.0.0 </dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/json_pointer/json_pointer/">https://json.nlohmann.me/api/json_pointer/json_pointer/</a> </dd></dl>
 
 </div>
 </div>
 </div><!-- contents -->
 </div><!-- doc-content -->
-<div class="ttc" id="aclassnlohmann_1_1json__pointer_html_a7f32d7c62841f0c4a6784cf741a6e4f8"><div class="ttname"><a href="classnlohmann_1_1json__pointer.html#a7f32d7c62841f0c4a6784cf741a6e4f8">nlohmann::json_pointer::json_pointer</a></div><div class="ttdeci">json_pointer(const std::string &amp;s=&quot;&quot;)</div><div class="ttdoc">create JSON pointer</div><div class="ttdef"><b>Definition:</b> _json.hpp:9988</div></div>
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>

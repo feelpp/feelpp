@@ -110,41 +110,7 @@ $(document).ready(function(){initNavTree('classnlohmann_1_1detail_1_1out__of__ra
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Description</h2>
 <div class="textblock"><p>exception indicating access out of the defined range </p>
-<p>This exception is thrown in case a library function is called on an input parameter that exceeds the expected range, for instance in case of array indices or nonexisting object keys.</p>
-<p>Exceptions have ids 4xx.</p>
-<table class="markdownTable">
-<tr class="markdownTableHead">
-<th class="markdownTableHeadNone">name / id </th><th class="markdownTableHeadNone">example message </th><th class="markdownTableHeadNone">description  </th></tr>
-<tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">json.exception.out_of_range.401 </td><td class="markdownTableBodyNone">array index 3 is out of range </td><td class="markdownTableBodyNone">The provided array index <em>i</em> is larger than <em>size-1</em>.  </td></tr>
-<tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone">json.exception.out_of_range.402 </td><td class="markdownTableBodyNone">array index '-' (3) is out of range </td><td class="markdownTableBodyNone">The special array index <code>-</code> in a JSON Pointer never describes a valid element of the array, but the index past the end. That is, it can only be used to add elements at this position, but not to read it.  </td></tr>
-<tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">json.exception.out_of_range.403 </td><td class="markdownTableBodyNone">key 'foo' not found </td><td class="markdownTableBodyNone">The provided key was not found in the JSON object.  </td></tr>
-<tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone">json.exception.out_of_range.404 </td><td class="markdownTableBodyNone">unresolved reference token 'foo' </td><td class="markdownTableBodyNone">A reference token in a JSON Pointer could not be resolved.  </td></tr>
-<tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">json.exception.out_of_range.405 </td><td class="markdownTableBodyNone">JSON pointer has no parent </td><td class="markdownTableBodyNone">The JSON Patch operations 'remove' and 'add' can not be applied to the root element of the JSON value.  </td></tr>
-<tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone">json.exception.out_of_range.406 </td><td class="markdownTableBodyNone">number overflow parsing '10E1000' </td><td class="markdownTableBodyNone">A parsed number could not be stored as without changing it to NaN or INF.  </td></tr>
-<tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">json.exception.out_of_range.407 </td><td class="markdownTableBodyNone">number overflow serializing '9223372036854775808' </td><td class="markdownTableBodyNone">UBJSON and BSON only support integer numbers up to 9223372036854775807. (until version 3.8.0)  </td></tr>
-<tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone">json.exception.out_of_range.408 </td><td class="markdownTableBodyNone">excessive array size: 8658170730974374167 </td><td class="markdownTableBodyNone">The size (following <code>#</code>) of an UBJSON array or object exceeds the maximal capacity.  </td></tr>
-<tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">json.exception.out_of_range.409 </td><td class="markdownTableBodyNone">BSON key cannot contain code point U+0000 (at byte 2) </td><td class="markdownTableBodyNone">Key identifiers to be serialized to BSON cannot contain code point U+0000, since the key is stored as zero-terminated c-string  </td></tr>
-</table>
-<p>@liveexample{The following code shows how an <code><a class="el" href="classnlohmann_1_1detail_1_1out__of__range.html" title="exception indicating access out of the defined range">out_of_range</a></code> exception can be caught.,<a class="el" href="classnlohmann_1_1detail_1_1out__of__range.html" title="exception indicating access out of the defined range">out_of_range</a>}</p>
-<dl class="section see"><dt>See also</dt><dd>- <a class="el" href="classnlohmann_1_1detail_1_1exception.html">exception</a> for the base class of the library exceptions </dd>
-<dd>
-- <a class="el" href="classnlohmann_1_1detail_1_1parse__error.html">parse_error</a> for exceptions indicating a parse error </dd>
-<dd>
-- <a class="el" href="classnlohmann_1_1detail_1_1invalid__iterator.html">invalid_iterator</a> for exceptions indicating errors with iterators </dd>
-<dd>
-- <a class="el" href="classnlohmann_1_1detail_1_1type__error.html">type_error</a> for exceptions indicating executing a member function with a wrong type </dd>
-<dd>
-- <a class="el" href="classnlohmann_1_1detail_1_1other__error.html">other_error</a> for exceptions indicating other library errors</dd></dl>
-<dl class="section since"><dt>Since</dt><dd>version 3.0.0 </dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/out_of_range/">https://json.nlohmann.me/api/basic_json/out_of_range/</a> </dd></dl>
 </div><div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Inheritance diagram for nlohmann::detail::out_of_range:</div>
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">

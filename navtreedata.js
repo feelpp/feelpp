@@ -26,7 +26,7 @@ var NAVTREE =
     [ "Feel++ API by Doxygen", "index.html", [
       [ "Preface", "index.html#tutorial-preface", null ],
       [ "Objectives", "index.html#Objectives", null ],
-      [ "Organisation of this manual", "index.html#autotoc_md28", [
+      [ "Organisation of this manual", "index.html#autotoc_md0", [
         [ "Supported Compilers", "index.html#tutorial-compilers", null ]
       ] ]
     ] ],
@@ -122,7 +122,7 @@ var NAVTREEINDEX =
 "structFeel_1_1vf_1_1Pow_1_1tensor.html#ac266d25ca6792eb312ef0a0e09e831eb",
 "structFeel_1_1vf_1_1UnaryMinus_1_1tensor_1_1is__zero.html#a5abe1f0686d424383d85b78a665bf9c2",
 "structnlohmann_1_1detail_1_1has__from__json_3_01BasicJsonType_00_01T_00_01enable__if__t_3_01_9is3ee028c64c76c768be45996bb13fc9c5.html#a4d1c8c5e3080360d4ba3d4701b00d442",
-"unary_8hpp.html#a2850942bde1d14f61c7e7b620cc836f0"
+"typetraits_8hpp.html#a37adc77d19e9f0ad6aa70adcae91de55"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';
