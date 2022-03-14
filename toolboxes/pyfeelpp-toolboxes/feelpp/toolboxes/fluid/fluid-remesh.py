@@ -30,12 +30,27 @@ e = feelpp.Environment(sys.argv, opts=tb.toolboxes_options("fluid"),config=feelp
 # CONFINED FALLING CYLINDER - ok results at 18/11/2021
 # feelpp.Environment.setConfigFile('cases/rigid_body_paper_tests/falling_cylinder_confined/falling_cylinder_confined.cfg')
 # OSCILLATING NACA 0012 PROFILE
-feelpp.Environment.setConfigFile('cases/rigid_body_paper_tests/naca0012_profile/naca0012_profile.cfg')
+# feelpp.Environment.setConfigFile('cases/rigid_body_paper_tests/naca0012_profile/naca0012_profile.cfg')
 # VERTICAL FALLING ELLIPSE - not ok results at 18/11/2021 -> does not turn as in Glowinski book
-#feelpp.Environment.setConfigFile('cases/rigid_body_paper_tests/rotating_Jeffrey_ellipsoid/rotating_Jeffrey_ellipsoid.cfg')
+# feelpp.Environment.setConfigFile('cases/rigid_body_paper_tests/rotating_Jeffrey_ellipsoid/rotating_Jeffrey_ellipsoid.cfg')
+
+# Three sphere swimmer planar 2D
+# feelpp.Environment.setConfigFile('cases/rigid_body_paper_tests/3SS_planar_2D/3SS_planar_2D.cfg')
+# Three sphere swimmer planar 3D
+# feelpp.Environment.setConfigFile('cases/rigid_body_paper_tests/3SS_planar_3D/3SS_planar_3D.cfg')
+# feelpp.Environment.setConfigFile('cases/rigid_body_paper_tests/3SS_planar_3D/preconditioner.cfg')
+
+# Falling two disks
+feelpp.Environment.setConfigFile('cases/rigid_body_paper_tests/Falling_two_disks/Two_disks.cfg')
+
 
 f = fluid(dim=2, orderVelocity=2, orderPressure=1)
+# f = fluid(dim=3, orderVelocity=2, orderPressure=1)
 f.init()
+
+# f.contactForce()
+# f.linAssemblyPython(f.contactForce,"Add contact force")
+# sys.exit()
 
 #hfar = 3
 #hclose = hfar/10
@@ -52,8 +67,8 @@ f.init()
 #hfar=1
 #hclose=0.75
 # 3 spheres
-#hfar = 3
-#hclose = 0.2
+# hfar = 3
+# hclose = 0.2
 
 
 ######### PAPER RIGID-BODY-SIMULATIONS
@@ -64,14 +79,28 @@ f.init()
 # hfar = 0.05
 # hclose = 0.025
 # # CONFINED FALLING CYLINDER
-# hfar = 0.1
-# hclose = 0.05
+#hfar = 0.1
+#hclose = 0.05
 # # OSCILLATING NACA 0012 PROFILE
-hfar =0.4 #0.05
-hclose = 0.008 #0.05
+# hfar =0.4 #0.05
+# hclose = 0.008 #0.05
 # ROTATING 3D ELLIPSE
 # hfar = 0.8
 # hclose = 0.2
+
+# Three sphere swimmer planar 2D
+# hfar = 3
+# hclose = 0.2
+
+# Three sphere swimmer planar 3D
+# hfar = 3
+# hclose = 0.2
+
+# Falling two disks
+# hfar = 0.1
+# hclose = 0.0039
+hfar = 1.0
+hclose = 0.04
 
 def remesh_toolbox(f, hclose, hfar, parent_mesh):
     # 3 spheres
@@ -100,45 +129,79 @@ def remesh_toolbox(f, hclose, hfar, parent_mesh):
     # required_facets=["EllipseSurface"]
     # required_elts=["EllipseVolume"]
     # # CONFINED FALLING CYLINDER
-    # required_facets=["CylinderSurface"]
-    # required_elts=["CylinderVolume"]
+    #required_facets=["CylinderSurface"]
+    #required_elts=["CylinderVolume"]
     # # OSCILLATING NACA 0012 PROFILE
-    required_facets=["AirfoilSurface"]
-    required_elts=["AirfoilVolume"]
+    # required_facets=["AirfoilSurface"]
+    # required_elts=["AirfoilVolume"]
     # VERTICAL FALLING ELLIPSE
     # required_facets=["Spheroid"]
     # required_elts=["SpheroidVolume"]
 
+    # Three sphere swimmer planar 2D
+    # required_facets=["CircleCenter","CircleFirst","CircleSecond","CircleThird"]
+    # required_elts=["CirCenter","CirFirst","CirSecond","CirThird"]
+
+    # Three sphere swimmer planar 3D
+    # required_facets=["SphereCenter","SphereFirst","SphereSecond","SphereThird"]
+    # required_elts=["SphCenter","SphFirst","SphSecond","SphThird"]
+
+    # Falling two disks
+    required_facets=["DiskFirst","DiskSecond"]
+    required_elts=["DFirst","DSecond"]
+
     Xh = feelpp.functionSpace(mesh=f.mesh())
     n_required_elts_before=feelpp.nelements(feelpp.markedelements(f.mesh(),required_elts))
-    n_required_facets_before=feelpp.nelements(feelpp.markedfaces(f.mesh(),required_facets))
+    n_required_facets_before=feelpp.nfaces(feelpp.markedfaces(f.mesh(),required_facets))
     print(" . [before remesh]   n required elts: {}".format(n_required_elts_before))
     print(" . [before remesh] n required facets: {}".format(n_required_facets_before))
 #    metric=feelpp.
     new_mesh,cpt = feelpp.remesh(f.mesh(), "gradedls({},{})".format(hclose, hfar), required_elts, required_facets, None )
     print(" . [after remesh]  n remeshes: {}".format(cpt))
     n_required_elts_after=feelpp.nelements(feelpp.markedelements(new_mesh,required_elts))
-    n_required_facets_after=feelpp.nelements(feelpp.markedfaces(new_mesh,required_facets))
+    n_required_facets_after=feelpp.nfaces(feelpp.markedfaces(new_mesh,required_facets))
     print(" . [after remesh]  n required elts: {}".format(n_required_elts_after))
     print(" . [after remesh] n required facets: {}".format(n_required_facets_after))
     f.applyRemesh(new_mesh)
 
+
 parent_mesh=f.mesh()
-remesh_toolbox(f, hclose, hfar, None )
+#remesh_toolbox(f, hclose, hfar, None )
 #f.exportResults()
+
+
+nbr_remesh = 0
+time_remesh = []
+
+
+f.ResAssemblyPython(f.contactForceRes)
+f.linAssemblyPython(f.contactForce)
+
 f.startTimeStep()
+
 while not f.timeStepBase().isFinished():
+    
+    #print("Time : ", f.time())
+
     min_etaq = q.etaQ(f.mesh()).min()
+    
     if min_etaq < 0.4:
 #    if f.timeStepBase().iteration() % 10 == 0:
         remesh_toolbox(f, hclose, hfar, None)
+        nbr_remesh += 1
+        time_remesh.append(f.time())
+
     if feelpp.Environment.isMasterRank():
         print("============================================================\n")
         print("time simulation: {}s iteration : {}\n".format(f.time(), f.timeStepBase().iteration()))
         print("  -- mesh quality: {}s\n".format(min_etaq))
         print("============================================================\n")
     #for i in range(2):
+    
     f.solve()
     f.exportResults()
     
     f.updateTimeStep()
+
+print("Nombre de remaillages : ", nbr_remesh)
+print("Temps des remaillages : ", time_remesh)
