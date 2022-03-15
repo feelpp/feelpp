@@ -265,6 +265,8 @@ public :
     void init();
     void solve();
 private :
+    void updatePhysics( typename super_physics_type::PhysicsTreeNode & physicsTree, ModelModels const& models ) override;
+
     void initCouplingRobinNeumannGeneralized();
 
     void initInterpolation();

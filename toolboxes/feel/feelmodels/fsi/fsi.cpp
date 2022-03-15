@@ -198,10 +198,11 @@ typename SolidType::solid_1dreduced_type::mesh_ptrtype
 createMeshStruct1dFromFluidMesh2d( typename FluidType::self_ptrtype const& FM, std::set<std::string> const& markersFSI, mpl::bool_<false> /**/ )
 {
     auto submeshStruct = createSubmesh( _mesh=FM->meshMotionTool()->referenceMesh(), _range=markedfaces( FM->meshMotionTool()->referenceMesh(), markersFSI ) );
+#if 0
     auto hola = boundaryfaces(submeshStruct);
     for ( auto itp = hola.template get<1>(),enp = hola.template get<2>() ; itp!=enp ; ++itp )
         submeshStruct->faceIterator( unwrap_ref(*itp).id() )->second.setMarker( submeshStruct->markerName("Fixe") );
-
+#endif
     typedef SubMeshData<typename FluidType::mesh_type::index_type> smd_type;
     typedef std::shared_ptr<smd_type> smd_ptrtype;
     smd_ptrtype smd( new smd_type(FM->mesh()) );
@@ -225,10 +226,11 @@ typename FluidType::mesh_type::trace_mesh_ptrtype
 createMeshStruct1dFromFluidMesh2d( typename FluidType::self_ptrtype const& FM, std::set<std::string> const& markersFSI, mpl::bool_<true> /**/ )
 {
     auto submeshStruct = createSubmesh( _mesh=FM->mesh(), _range=markedfaces( FM->mesh(),markersFSI ) );
+#if 0
     auto hola = boundaryfaces(submeshStruct);
     for ( auto itp = hola.template get<1>(),enp = hola.template get<2>() ; itp!=enp ; ++itp )
         submeshStruct->faceIterator( unwrap_ref(*itp).id() )->second.setMarker( submeshStruct->markerName("Fixe") );
-
+#endif
     return submeshStruct;
 }
 
@@ -257,21 +259,30 @@ createMeshStruct1dFromFluidMesh( typename FluidType::self_ptrtype const& FM, std
 
 } // namespace detail
 
+
+
+template< class FluidType, class SolidType >
+void
+FSI<FluidType,SolidType>::updatePhysics( typename super_physics_type::PhysicsTreeNode & physicsTree, ModelModels const& models )
+{
+    if ( !M_fluidModel )
+        M_fluidModel = std::make_shared<fluid_type>("fluid","fluid",this->worldCommPtr(), "", this->repository() );
+    if ( !M_solidModel )
+        M_solidModel = std::make_shared<solid_type>("solid","solid",this->worldCommPtr(), "", this->repository() );
+
+    physicsTree.addChild( M_fluidModel, models );
+    physicsTree.addChild( M_solidModel, models );
+
+    physicsTree.updateMaterialSupportFromChildren( "merge" );
+}
+
 template< class FluidType, class SolidType >
 void
 FSI<FluidType,SolidType>::init()
 {
     this->log("FSI","init","start");
 
-    M_fluidModel = std::make_shared<fluid_type>("fluid","fluid",this->worldCommPtr(), "", this->repository() );
-    M_solidModel = std::make_shared<solid_type>("solid","solid",this->worldCommPtr(), "", this->repository() );
-    // physics
-    using physic_tree_type = typename super_physics_type::PhysicsTree;
-    physic_tree_type physicsTree( this->shared_from_this() );
-    physicsTree.addLeaf( M_fluidModel );
-    physicsTree.addLeaf( M_solidModel );
-    this->initPhysics( physicsTree, this->modelProperties().models() );
-
+    this->initPhysics( this->shared_from_this(), this->modelProperties().models() );
 
     // physical properties
     if ( !M_materialsProperties )
@@ -288,6 +299,22 @@ FSI<FluidType,SolidType>::init()
     // create fsimesh and partitioned meshes if require
     if ( !this->modelMesh( this->keyword() ).importConfig().inputFilename().empty() && !this->doRestart() )
         this->createMesh();
+
+    std::set<std::string> markersFSI_fluid;// = { "fsiWall" /*"fsi-wall"*/ }; // this->fluidModel()->markersFSI()
+    std::set<std::string> markersFSI_solid;// = { "fsiWall" /*"fsi-wall"*/ }; // this->solidModel()->markerNameFSI()
+
+    for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
+    {
+        auto physicFSIData = std::static_pointer_cast<ModelPhysicFSI<mesh_fluid_type::nRealDim>>(physicData);
+        markersFSI_fluid.insert( physicFSIData->interfaceFluid().begin(),physicFSIData->interfaceFluid().end() );
+        markersFSI_solid.insert( physicFSIData->interfaceSolid().begin(),physicFSIData->interfaceSolid().end() );
+    }
+    if ( this->worldComm().isMasterRank() )
+    {
+        std::cout << "markersFSI_fluid :  " << markersFSI_fluid << std::endl;
+        std::cout << "markersFSI_solid :  " << markersFSI_solid << std::endl;
+    }
+
 
     // fluid model build
     //if ( !M_fluidModel )
@@ -315,6 +342,10 @@ FSI<FluidType,SolidType>::init()
     this->log("FSI","init","fluid init done");
 
 
+    // up mesh motion tool
+    this->fluidModel()->meshMotionTool()->addMarkersInBoundaryCondition( "moving", markersFSI_fluid );
+     //this->fluidModel()->meshMotionTool()->setDisplacementImposedOnInitialDomainOverFaces( M_fluidModel->keyword()+"_"+this->keyword(), markersFSI_fluid );
+
     // revert fluid reference mesh if restart
     if ( this->fluidModel()->doRestart() )
     {
@@ -324,9 +355,6 @@ FSI<FluidType,SolidType>::init()
         //this->fluidModel()->functionSpaceVelocity()->rebuildDofPoints();
     }
 
-
-    std::set<std::string> markersFSI_fluid = { "fsiWall" /*"fsi-wall"*/ }; // this->fluidModel()->markersFSI()
-    std::set<std::string> markersFSI_solid = { "fsiWall" /*"fsi-wall"*/ }; // this->solidModel()->markerNameFSI()
 
 
     // solid model build
@@ -1353,9 +1381,10 @@ std::shared_ptr<std::ostringstream>
 FSI<FluidType,SolidType>::getInfo() const
 {
     std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
+#if 0
     *_ostr << this->fluidModel()->getInfo()->str()
            << this->solidModel()->getInfo()->str();
-#if 0
+
     *_ostr << "\n||==============================================||"
            << "\n||-----------------Info : FSI-------------------||"
            << "\n||==============================================||"
