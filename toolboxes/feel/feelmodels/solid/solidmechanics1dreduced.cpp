@@ -43,7 +43,7 @@ SOLIDMECHANICS_1DREDUCED_CLASS_TEMPLATE_TYPE::init()
 
     this->log("SolidMechanics1dReduced","init", "start" );
 
-    this->initPhysics( this->keyword(), this->modelProperties().models() );
+    this->initPhysics( this->shared_from_this(), this->modelProperties().models() );
 
     if ( !this->mesh() )
         this->initMesh();
@@ -63,6 +63,22 @@ SOLIDMECHANICS_1DREDUCED_CLASS_TEMPLATE_TYPE::init()
     bvs->operator()(0) = M_fieldDisp;
 
     this->setIsUpdatedForUse( true );
+
+#if 0
+    std::cout << "info physics" << std::endl;
+    for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
+    {
+        std::cout << "physicName="<<physicName<<std::endl;
+        auto physicSolidData = std::static_pointer_cast<ModelPhysicSolid<nRealDim>>(physicData);
+        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
+        {
+            std::cout << "matName=" << matName << std::endl;
+            auto const& matProperties = this->materialsProperties()->materialProperties( matName );
+            auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
+            std::cout << "measure range : " << measure(_range=range) << std::endl;
+        }
+    }
+#endif
 
     this->log("SolidMechanics1dReduced","init", "finish" );
 }
@@ -129,12 +145,13 @@ SOLIDMECHANICS_1DREDUCED_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICS_1DREDUCED_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
 {
-#if 0 // VINCENT
-    std::string thekey = this->keyword();
-    M_bcDirichlet = this->modelProperties().boundaryConditions().getScalarFields( std::move(thekey), "displacement_imposed" );
-    thekey = this->keyword();
-    M_volumicForcesProperties = this->modelProperties().boundaryConditions().getScalarFields( { { this->keyword(), "VolumicForces" } } );
-#endif
+    M_boundaryConditions = std::make_shared<boundary_conditions_type>( this->shared_from_this() );
+    if ( !this->modelProperties().boundaryConditions().hasSection( this->keyword() ) )
+        return;
+    M_boundaryConditions->setup( this->modelProperties().boundaryConditions().section( this->keyword() ) );
+
+    for ( auto const& [bcId,bcData] : M_boundaryConditions->displacementImposed() )
+        bcData->updateDofEliminationIds( *this, "displacement", this->functionSpace1dReduced() );
 }
 
 SOLIDMECHANICS_1DREDUCED_CLASS_TEMPLATE_DECLARATIONS
@@ -261,8 +278,12 @@ SOLIDMECHANICS_1DREDUCED_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json 
 
     super_type::super_model_base_type::updateInformationObject( p["Environment"] );
 
+    super_physics_type::updateInformationObjectFromCurrentType( p["Physics"] );
+
     super_type::super_model_meshes_type::updateInformationObject( p["Meshes"] );
 
+    // Boundary Conditions
+    M_boundaryConditions->updateInformationObject( p["Boundary Conditions"] );
 }
 SOLIDMECHANICS_1DREDUCED_CLASS_TEMPLATE_DECLARATIONS
 tabulate_informations_ptr_t
@@ -272,8 +293,14 @@ SOLIDMECHANICS_1DREDUCED_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json con
     if ( jsonInfo.contains("Environment") )
         tabInfo->add( "Environment",  super_type::super_model_base_type::tabulateInformations( jsonInfo.at("Environment"), tabInfoProp ) );
 
+    if ( jsonInfo.contains("Physics") )
+        tabInfo->add( "Physics", super_physics_type::tabulateInformations( jsonInfo.at("Physics"), tabInfoProp ) );
+
     if ( jsonInfo.contains("Meshes") )
         tabInfo->add( "Meshes", super_type::super_model_meshes_type::tabulateInformations( jsonInfo.at("Meshes"), tabInfoProp ) );
+
+    if ( jsonInfo.contains("Boundary Conditions") )
+        tabInfo->add( "Boundary Conditions", boundary_conditions_type::tabulateInformations( jsonInfo.at("Boundary Conditions"), tabInfoProp ) );
 
     return tabInfo;
 }
@@ -331,10 +358,11 @@ SOLIDMECHANICS_1DREDUCED_CLASS_TEMPLATE_TYPE::setParameterValues( std::map<std::
         this->modelProperties().postProcess().setParameterValues( paramValues );
         this->materialsProperties()->setParameterValues( paramValues );
     }
-#if 0 // VINCENT
-    M_bcDirichlet.setParameterValues( paramValues );
-    M_volumicForcesProperties.setParameterValues( paramValues );
-#endif
+
+    for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
+        physicData->setParameterValues( paramValues );
+
+    M_boundaryConditions->setParameterValues( paramValues );
 }
 
 

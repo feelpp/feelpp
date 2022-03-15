@@ -1,5 +1,8 @@
 
-feelpp_toolboxes_add_library( solidbase SRCS solidmechanicsboundaryconditions.cpp LINK_LIBRARIES feelpp_modelcore )
+feelpp_toolboxes_add_library( solidbase SRCS
+  solidmechanicsboundaryconditions.cpp
+  solidmechanics1dreducedboundaryconditions.cpp
+  LINK_LIBRARIES feelpp_modelcore )
 
 # geo order 1
 foreach( _DIM 2 3)
