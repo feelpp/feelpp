@@ -1041,13 +1041,15 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->log("FluidMechanics","init", "start" );
     this->timerTool("Constructor").start();
 
-#if 1
+#if 0
     M_bodyMotion = std::make_shared<bodymotion_type>(prefixvm(this->prefix(),"body"), "body", this->worldCommPtr(), this->repository() );
     typename super_physics_type::PhysicsTree physicsTree( this->shared_from_this() );
     physicsTree.addLeaf( M_bodyMotion, false );
     this->initPhysics( physicsTree, this->modelProperties().models() );
-#else
+#elif 0
     this->initPhysics( this->keyword(), this->modelProperties().models() );
+#else
+    this->initPhysics( this->shared_from_this(), this->modelProperties().models() );
 #endif
 
     this->initMaterialProperties();
@@ -3011,8 +3013,14 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::setup( std::string co
     if ( !bi.jsonMaterials().is_null() )
     {
         auto bodyPhysics = std::make_shared<ModelPhysics<nRealDim>>( "body", fluidToolbox );
+#if 0 /// VINCENT
         if ( bodyPhysics->physics().empty() )
             bodyPhysics->initPhysics( "body", ModelModels{}/*fluidToolbox.modelProperties().models()*/ );
+#else
+        if ( bodyPhysics->physics().empty() )
+            bodyPhysics->initPhysics( bodyPhysics, ModelModels{} );
+#endif
+
         //if ( M_body->physics().empty() )
         //M_body->initPhysics( "body", ModelModels{}/*fluidToolbox.modelProperties().models()*/ );
         M_body.reset( new Body( bodyPhysics ) );
