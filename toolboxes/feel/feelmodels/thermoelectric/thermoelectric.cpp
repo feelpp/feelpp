@@ -158,6 +158,26 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
     return myblockGraph;
 }
 
+THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
+void
+THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updatePhysics( typename super_physics_type::PhysicsTreeNode & physicsTree, ModelModels const& models )
+{
+    if ( !M_heatModel )
+    {
+        M_heatModel = std::make_shared<heat_model_type>(prefixvm(this->prefix(),"heat"), "heat", this->worldCommPtr(),
+                                                        this->subPrefix(), this->repository() );
+    }
+    if ( !M_electricModel )
+    {
+        M_electricModel = std::make_shared<electric_model_type>(prefixvm(this->prefix(),"electric"), "electric", this->worldCommPtr(),
+                                                                this->subPrefix(), this->repository() );
+    }
+
+    physicsTree.addChild( M_heatModel, models );
+    physicsTree.addChild( M_electricModel, models );
+
+    physicsTree.updateMaterialSupportFromChildren( "intersect" );
+}
 
 THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -166,18 +186,21 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->log("ThermoElectric","init", "start" );
     this->timerTool("Constructor").start();
 
+#if 0
     M_heatModel.reset( new heat_model_type(prefixvm(this->prefix(),"heat"), "heat", this->worldCommPtr(),
                                            this->subPrefix(), this->repository() ) );
     M_electricModel.reset( new electric_model_type(prefixvm(this->prefix(),"electric"), "electric", this->worldCommPtr(),
                                                    this->subPrefix(), this->repository() ) );
-
+#endif
     // physics
-    using physic_tree_type = typename super_physics_type::PhysicsTree;
-    physic_tree_type physicsTree( this->shared_from_this() );
-    physicsTree.addLeaf( M_heatModel );
-    physicsTree.addLeaf( M_electricModel );
-    this->initPhysics( physicsTree, this->modelProperties().models() );
-
+    this->initPhysics(
+        this->shared_from_this(),
+        [this]( typename super_physics_type::PhysicsTree & physicsTree ) {
+            physicsTree.updatePhysics( this->shared_from_this(), this->modelProperties().models() );
+            CHECK( M_heatModel && M_electricModel ) << "aiai";
+            physicsTree.updatePhysics( M_heatModel, this->modelProperties().models() );
+            physicsTree.updatePhysics( M_electricModel, this->modelProperties().models() );
+        } );
 
     // physical properties
     if ( !M_materialsProperties )
@@ -188,7 +211,6 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         M_materialsProperties->updateForUse( this->modelProperties().materials() );
     }
 
-    //if ( !this->mesh() )
     this->initMesh();
 
     this->materialsProperties()->addMesh( this->mesh() );
