@@ -876,139 +876,207 @@ ModelPhysicFSI<Dim>::tabulateInformations( nl::json const& jsonInfo, TabulateInf
 }
 
 
+
+
+
+
 template <uint16_type Dim>
 void
-ModelPhysics<Dim>::initPhysics( std::string const& type, ModelModels const& models, bool isRequired )
+ModelPhysics<Dim>::PhysicsTreeNode::addChild( std::string const& type, physics_ptrtype p, ModelModels const& models )
 {
-    M_physicType = type;
+    std::cout << "addChild  " << type << std::endl;
+    std::set<std::string> submodelsName;
+    if ( models.hasType( this->physic()->type() ) )
+    {
+        for ( auto const& [_nameFromModels,_model] : models.models( this->physic()->type() ) )
+            if ( _nameFromModels.empty() || _nameFromModels == this->physic()->name() )
+            {
+                auto itFindSubmodel = _model.submodels().find( type );
+                if ( itFindSubmodel != _model.submodels().end() )
+                    submodelsName =  itFindSubmodel->second;
+            }
+    }
+    //std::cout << "hahah submodelsName = " << submodelsName << std::endl;
 
+
+    auto phycisUsedCollection = p->initPhysics( p->keyword(), models, submodelsName );
+    std::cout << "phycisUsedCollection.size() : " << phycisUsedCollection.size() << std::endl;
+
+    // first : add subtree
+    std::vector<std::shared_ptr<PhysicsTreeNode>> treeNodeAdded;
+    for ( auto phycisUsed : phycisUsedCollection )
+    {
+        std::cout << "phycisUsed " << phycisUsed->id() << std::endl;
+        M_children.push_back( PhysicsTreeNode::New(p,phycisUsed) );
+        treeNodeAdded.push_back( M_children.back() );
+
+        std::get<2>(M_data)->addSubphysic( phycisUsed );
+    }
+    // second : up subphysics
+    for ( auto treeNode : treeNodeAdded )
+    {
+        p->updatePhysics( *treeNode, models );
+    }
+
+}
+
+
+template <uint16_type Dim>
+void
+ModelPhysics<Dim>::PhysicsTreeNode::updateMaterialSupportFromChildren( std::string const& applyType )
+{
+    if ( M_children.empty() )
+        return;
+
+    std::vector<std::set<std::string>> matNamesForEachSubphysic;
+    for ( auto & child : M_children )
+    {
+        //child->updateSubphysicsMaterial();
+        matNamesForEachSubphysic.push_back( child->physic()->materialNames() );
+    }
+
+
+    bool isInterfacePhysics = applyType != "intersect";
+    //bool isInterfacePhysics = false;
+    if ( isInterfacePhysics )
+    {
+
+    }
+    else // take intersection
+    {
+        std::set<std::string> intersecMatNames; bool isFirst = true;
+        for ( auto const& _matnames : matNamesForEachSubphysic )
+        {
+            if ( _matnames.empty() )
+                continue;
+            if ( isFirst )
+            {
+                intersecMatNames = _matnames;
+                isFirst = false;
+            }
+            else
+            {
+                std::set<std::string> res;
+                std::set_intersection(intersecMatNames.begin(), intersecMatNames.end(), _matnames.begin(), _matnames.end(),
+                                      std::inserter(res, res.begin()));
+                intersecMatNames = res;
+            }
+        }
+        //CHECK( !intersecMatNames.empty() ) << "incompatible materials names";
+        if ( !intersecMatNames.empty() )
+        {
+            auto currentPhysic = std::get<2>( M_data );
+            if ( !currentPhysic->materialNames().empty() )
+            {
+                // TODO
+            }
+            currentPhysic->setMaterialNames( intersecMatNames );
+        }
+
+    }
+}
+
+
+
+template <uint16_type Dim>
+void
+ModelPhysics<Dim>::PhysicsTree::updatePhysics( physics_ptrtype mphysics, ModelModels const& models )
+{
+    auto physicsUsedCollection = mphysics->initPhysics( mphysics->keyword(), models, {} );
+
+    for ( auto physicsUsed : physicsUsedCollection )
+    {
+        auto treeNode = this->addNode( mphysics, physicsUsed );
+        mphysics->updatePhysics( *treeNode, models );
+        //treeNode->updateSubphysicsMaterial();
+    }
+}
+
+template <uint16_type Dim>
+std::map<typename ModelPhysics<Dim>::physic_id_type,typename ModelPhysics<Dim>::model_physic_ptrtype>
+ModelPhysics<Dim>::PhysicsTree::collectAllPhysics() const
+{
+    std::map<physic_id_type,model_physic_ptrtype> res;
+
+    auto upCollect = [&res]( PhysicsTreeNode const& nodeTree, const auto& ff ) -> void
+                         {
+                             auto physicData = nodeTree.physic();
+                             auto [it,isInserted] = res.emplace( physicData->id(), physicData );
+                             if ( !isInserted )
+                                 return;
+                             for ( auto const& child : nodeTree.children() )
+                                 ff( *child, ff );
+                         };
+    for ( auto const& nodeTree : this->children() )
+        upCollect( *nodeTree, upCollect );
+
+    return res;
+}
+
+template <uint16_type Dim>
+void
+ModelPhysics<Dim>::initPhysics( std::shared_ptr<ModelPhysics<nDim>> mphysics, ModelModels const& models )
+{
+    PhysicsTree physicsTree( mphysics );
+    physicsTree.updatePhysics( mphysics, models );
+    this->addPhysics( physicsTree.collectAllPhysics() );
+}
+
+template <uint16_type Dim>
+void
+ModelPhysics<Dim>::initPhysics( std::shared_ptr<ModelPhysics<nDim>> mphysics, std::function<void(PhysicsTree &)> lambdaInit )
+{
+    PhysicsTree physicsTree( mphysics );
+    lambdaInit( physicsTree );
+    this->addPhysics( physicsTree.collectAllPhysics() );
+}
+
+
+template <uint16_type Dim>
+std::vector<std::shared_ptr<ModelPhysic<Dim>>>
+ModelPhysics<Dim>::initPhysics( std::string const& type, ModelModels const& models, std::set<std::string> const& modelNameRequired, bool isRequired )
+{
+    //M_physicType = type;
+
+    std::vector<std::shared_ptr<ModelPhysic<Dim>>> ret;
     if ( models.hasType( type ) )
     {
         for ( auto const& [_nameFromModels,_model] : models.models( type ) )
         {
             std::string _name = _nameFromModels.empty()? type : _nameFromModels; // use name=type if not given
-            if ( this->hasPhysic( std::make_pair(type, _name) ) )
+            if ( !modelNameRequired.empty() &&  modelNameRequired.find( _name ) == modelNameRequired.end() )
                 continue;
-            auto _mphysic = ModelPhysic<Dim>::New( *this, M_physicModeling, type, _name, _model );
-            M_physics.emplace( std::make_pair(type, _name), _mphysic );
+            auto pId = std::make_pair(type, _name);
+            if ( !this->hasPhysic( pId ) )
+            {
+                auto _mphysic = ModelPhysic<Dim>::New( *this, M_physicModeling, type, _name, _model );
+                M_physics.emplace( pId, _mphysic );
+            }
+            ret.push_back( this->physic( pId ) );
         }
     }
-    else if ( this->physics( type ).empty() && isRequired )
+    else// if ( modelNameRequired.empty() )
     {
-        // create default physic
-        std::string _name = "default";
-        auto _model = ModelModel(type,_name);
-        auto _mphysic = ModelPhysic<Dim>::New( *this, M_physicModeling, type, _name, _model );
-        M_physics.emplace( std::make_pair(type, _name), _mphysic );
+        if ( this->physics( type ).empty()  )
+        {
+            // create default physic
+            std::string _name = "default";
+            auto _model = ModelModel(type,_name);
+            auto _mphysic = ModelPhysic<Dim>::New( *this, M_physicModeling, type, _name, _model );
+            auto pId = std::make_pair(type, _name);
+            M_physics.emplace( pId, _mphysic );
+            ret.push_back( this->physic( pId ) );
+        }
+        else
+        {
+            //CHECK( false ) << "TODO take all";
+            for ( auto const& [pId,mphysic] : this->physics( type ) )
+                ret.push_back( mphysic );
+        }
     }
+    return ret;
 }
 
-template <uint16_type Dim>
-void
-ModelPhysics<Dim>::initPhysics( PhysicsTree const& physicTree, ModelModels const& models )
-{
-    auto allMPhysics = physicTree.allPhysics();
-    for ( auto const& [type,mphysics,isRequired] : allMPhysics )
-    {
-        if ( mphysics )
-            mphysics->initPhysics( type, models, isRequired );
-    }
-
-    // up subphysics by using recursive lambda function
-    auto upSubphysics = [&models]( PhysicsTree const& _physicTree )
-                            {
-                                auto upSubphysicsImpl = [&models]( PhysicsTree const& _physicTreeBis, const auto& ff ) -> void
-                                                            {
-                                                                auto const& [rootType,rootPhysics,rootIsRequiredxs] = _physicTreeBis.root();
-                                                                std::map<std::string,std::map<std::string,std::set<std::string>>> submodelsFromRoot; // subType -> ( rootName -> ( subNames ) )
-                                                                if ( models.hasType( rootType ) )
-                                                                    for ( auto const& [_rootnameFromModels,_rootmodel] : models.models( rootType ) )
-                                                                    {
-                                                                        std::string _rootname = _rootnameFromModels.empty()? rootType : _rootnameFromModels; // use name=type if not given
-                                                                        for ( auto const& [_subtype,_subnames] : _rootmodel.submodels() )
-                                                                            if ( !_subnames.empty() )
-                                                                                submodelsFromRoot[_subtype][_rootname] = _subnames;
-                                                                    }
-
-                                                                for ( auto st : _physicTreeBis.subtrees() )
-                                                                {
-                                                                    ff( st, ff );
-
-                                                                    auto const& [subType,subPhysics,subIsRequired] = st.root();
-                                                                    rootPhysics->setPhysics( std::get<1>(st.root())->physics() );
-
-                                                                    auto itFind = submodelsFromRoot.find( subType );
-                                                                    if ( itFind != submodelsFromRoot.end() ) // link defined in models (i.e. from json)
-                                                                    {
-                                                                        for ( auto const& [_rootname,_subnames] : itFind->second )
-                                                                        {
-                                                                            auto rootPhysicId = std::make_pair( rootType, _rootname );
-                                                                            auto rootPhysic = rootPhysics->physic( rootPhysicId );
-
-                                                                            for ( auto const& _subname : _subnames )
-                                                                            {
-                                                                                auto subPhysic = rootPhysics->physic( std::make_pair( subType, _subname ) );
-                                                                                rootPhysic->addSubphysic( subPhysic );
-                                                                            }
-                                                                        }
-                                                                    }
-                                                                    else // not defined, add all physic with same type
-                                                                    {
-                                                                        for ( auto const& [_rootPhysicId,_rootPhysic] : rootPhysics->physics( rootType ) )
-                                                                            for ( auto const& [_subPhysicId,_subPhysic] : rootPhysics->physics( subType ) )
-                                                                                _rootPhysic->addSubphysic( _subPhysic );
-                                                                    }
-                                                                }
-
-                                                                // update maybe materials names
-                                                                for ( auto const& [_rootPhysicId,_rootPhysic] : rootPhysics->physics( rootType ) )
-                                                                {
-                                                                    if ( _rootPhysic->subphysics().empty() )
-                                                                        continue;
-                                                                    auto const& rootMatNames = _rootPhysic->materialNames();
-                                                                    if ( !rootMatNames.empty() )
-                                                                        continue;
-
-                                                                    std::map<std::string,std::set<std::string>> mapSubphysicTypeToMatNames;
-                                                                    for ( auto const& [pId,subphysic] : _rootPhysic->subphysics() )
-                                                                    {
-                                                                        auto const& subMatNames = subphysic->materialNames();
-                                                                        if ( !subMatNames.empty() ) // warning, only non empty
-                                                                            mapSubphysicTypeToMatNames[subphysic->type()].insert( subMatNames.begin(), subMatNames.end() );
-                                                                    }
-
-                                                                    if ( mapSubphysicTypeToMatNames.empty() ) // ok, do nothing
-                                                                        continue;
-
-                                                                    // take intersection with subphysics
-                                                                    std::set<std::string> intersecMatNames; bool isFirst = true;
-                                                                    for ( auto const& [_t,_matnames] : mapSubphysicTypeToMatNames )
-                                                                    {
-                                                                        if ( isFirst )
-                                                                        {
-                                                                            intersecMatNames = _matnames;
-                                                                            isFirst = false;
-                                                                        }
-                                                                        else
-                                                                        {
-                                                                            std::set<std::string> res;
-                                                                            std::set_intersection(intersecMatNames.begin(), intersecMatNames.end(), _matnames.begin(), _matnames.end(),
-                                                                                                  std::inserter(res, res.begin()));
-                                                                            intersecMatNames = res;
-                                                                        }
-                                                                    }
-                                                                    CHECK( !intersecMatNames.empty() ) << "incompatible materials names";
-                                                                    _rootPhysic->addMaterialNames( intersecMatNames );
-                                                                }
-
-                                                                // check materials names compatibility
-                                                            };
-                                upSubphysicsImpl( _physicTree, upSubphysicsImpl );
-                            };
-
-    upSubphysics( physicTree );
-
-}
 
 template <uint16_type Dim>
 std::set<typename ModelPhysics<Dim>::physic_id_type>
@@ -1030,18 +1098,7 @@ ModelPhysics<Dim>::physicsAvailable( std::string const& type ) const
             res.insert( physicName );
     return res;
 }
-#if 0
-template <uint16_type Dim>
-std::set<std::string>
-ModelPhysics<Dim>::physicsShared( std::string const& pname ) const
-{
-    std::set<std::string> res;
-    auto itFindPhysic = M_physics.find( pname );
-    if ( itFindPhysic != M_physics.end() )
-        itFindPhysic->second->physicsShared( res );
-    return res;
-}
-#endif
+
 template <uint16_type Dim>
 std::map<typename ModelPhysics<Dim>::physic_id_type,std::shared_ptr<ModelPhysic<Dim>>>
 ModelPhysics<Dim>::physics( std::string const& type ) const
@@ -1057,7 +1114,7 @@ ModelPhysics<Dim>::physics( std::string const& type ) const
 
 template <uint16_type Dim>
 void
-ModelPhysics<Dim>::setPhysics( std::map<physic_id_type,std::shared_ptr<ModelPhysic<Dim>>> const& thePhysics )
+ModelPhysics<Dim>::addPhysics( std::map<physic_id_type,std::shared_ptr<ModelPhysic<Dim>>> const& thePhysics )
 {
     M_physics.insert( thePhysics.begin(), thePhysics.end() );
 }
