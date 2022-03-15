@@ -7,7 +7,7 @@ var classFeel_1_1SensorGaussian =
     [ "to_json", "classFeel_1_1SensorGaussian.html#aa764e836a5f2f3d7ac8f91490a582828", null ],
     [ "nDim", "classFeel_1_1SensorGaussian.html#a07ea85a6b1fc5ffb1bcb6aa8dc727e7f", null ],
     [ "mesh_type", "classFeel_1_1SensorGaussian.html#a30b582e566aa3d44d23d8b62a9bb1968", null ],
-    [ "node_t", "classFeel_1_1SensorGaussian.html#a7b4ec3fdb68a09d1d8abffdfb34a23aa", null ],
+    [ "node_t", "classFeel_1_1SensorGaussian.html#a907784fb09410023a2e08be7a3f60122", null ],
     [ "space_ptrtype", "classFeel_1_1SensorGaussian.html#af994fbb89754ecc6e06dc974ee7bff5e", null ],
     [ "space_type", "classFeel_1_1SensorGaussian.html#a967aa674a655f991f7baf861439adcc9", null ],
     [ "super_type", "classFeel_1_1SensorGaussian.html#adc47c83dae3a31c5beba9580fc874011", null ],

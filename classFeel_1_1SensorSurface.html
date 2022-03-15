@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.17"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Feel++: Feel::SensorPointwise&lt; Space &gt; Class Template Reference</title>
+<title>Feel++: Feel::SensorSurface&lt; Space &gt; Class Template Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -82,7 +82,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </div>
 <script type="text/javascript">
 /* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
-$(document).ready(function(){initNavTree('classFeel_1_1SensorPointwise.html',''); initResizable(); });
+$(document).ready(function(){initNavTree('classFeel_1_1SensorSurface.html',''); initResizable(); });
 /* @license-end */
 </script>
 <div id="doc-content">
@@ -105,24 +105,25 @@ $(document).ready(function(){initNavTree('classFeel_1_1SensorPointwise.html','')
 <a href="#friends">Friends</a> &#124;
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
-<a href="classFeel_1_1SensorPointwise-members.html">List of all members</a>  </div>
+<a href="#pub-static-attribs">Static Public Attributes</a> &#124;
+<a href="classFeel_1_1SensorSurface-members.html">List of all members</a>  </div>
   <div class="headertitle">
-<div class="title">Feel::SensorPointwise&lt; Space &gt; Class Template Reference</div>  </div>
+<div class="title">Feel::SensorSurface&lt; Space &gt; Class Template Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Description</h2>
 <div class="textblock"><h3>template&lt;typename Space&gt;<br />
-class Feel::SensorPointwise&lt; Space &gt;</h3>
+class Feel::SensorSurface&lt; Space &gt;</h3>
 
-<p>pointwise type sensor </p>
+<p>surface type sensor </p>
 </div><div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
-  <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Inheritance diagram for Feel::SensorPointwise&lt; Space &gt;:</div>
+  <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Inheritance diagram for Feel::SensorSurface&lt; Space &gt;:</div>
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">
 </div>
 <div id="dynsection-0-content" class="dyncontent" style="display:none;">
  <div class="center">
-  <img src="classFeel_1_1SensorPointwise.png" usemap="#Feel::SensorPointwise_3C_20Space_20_3E_map" alt=""/>
-  <map id="Feel::SensorPointwise_3C_20Space_20_3E_map" name="Feel::SensorPointwise_3C_20Space_20_3E_map">
+  <img src="classFeel_1_1SensorSurface.png" usemap="#Feel::SensorSurface_3C_20Space_20_3E_map" alt=""/>
+  <map id="Feel::SensorSurface_3C_20Space_20_3E_map" name="Feel::SensorSurface_3C_20Space_20_3E_map">
 <area href="classFeel_1_1SensorBase.html" alt="Feel::SensorBase&lt; Space &gt;" shape="rect" coords="0,112,212,136"/>
 <area href="classFeel_1_1FsFunctionalLinear.html" alt="Feel::FsFunctionalLinear&lt; Space &gt;" shape="rect" coords="0,56,212,80"/>
 <area href="classFeel_1_1FsFunctional.html" alt="Feel::FsFunctional&lt; Space &gt;" shape="rect" coords="0,0,212,24"/>
@@ -137,21 +138,21 @@ class&#160;</td><td class="memItemRight" valign="bottom"><b>boost::serialization
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
 Public Types</h2></td></tr>
-<tr class="memitem:aab61b00075938dd84db2a4bea9d8bcdb"><td class="memItemLeft" align="right" valign="top"><a id="aab61b00075938dd84db2a4bea9d8bcdb"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>node_t</b> = typename space_type::mesh_type::node_type</td></tr>
-<tr class="separator:aab61b00075938dd84db2a4bea9d8bcdb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0ad5239304392b765a51a1918f4bebe0"><td class="memItemLeft" align="right" valign="top"><a id="a0ad5239304392b765a51a1918f4bebe0"></a>
+<tr class="memitem:a338d27563aed5262942ea425d8843bc0"><td class="memItemLeft" align="right" valign="top"><a id="a338d27563aed5262942ea425d8843bc0"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>mesh_type</b> = typename super_type::mesh_type</td></tr>
+<tr class="separator:a338d27563aed5262942ea425d8843bc0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad4096d535b50d713760b7156cf06e064"><td class="memItemLeft" align="right" valign="top"><a id="ad4096d535b50d713760b7156cf06e064"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>space_ptrtype</b> = typename super_type::space_ptrtype</td></tr>
-<tr class="separator:a0ad5239304392b765a51a1918f4bebe0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a939de67b846ec9960f156b8ff25d296a"><td class="memItemLeft" align="right" valign="top"><a id="a939de67b846ec9960f156b8ff25d296a"></a>
+<tr class="separator:ad4096d535b50d713760b7156cf06e064"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abb21a6c689bfb96ce13820a45e166122"><td class="memItemLeft" align="right" valign="top"><a id="abb21a6c689bfb96ce13820a45e166122"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>space_type</b> = typename super_type::space_type</td></tr>
-<tr class="separator:a939de67b846ec9960f156b8ff25d296a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a24c0465ea9272adbd5add50439199de0"><td class="memItemLeft" align="right" valign="top"><a id="a24c0465ea9272adbd5add50439199de0"></a>
+<tr class="separator:abb21a6c689bfb96ce13820a45e166122"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aebeaf728d3fe23e47f70c42ce35bc035"><td class="memItemLeft" align="right" valign="top"><a id="aebeaf728d3fe23e47f70c42ce35bc035"></a>
 typedef <a class="el" href="classFeel_1_1SensorBase.html">SensorBase</a>&lt; Space &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>super_type</b></td></tr>
-<tr class="separator:a24c0465ea9272adbd5add50439199de0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af52a7232ed8cc25857c18cb42c3e6f3a"><td class="memItemLeft" align="right" valign="top"><a id="af52a7232ed8cc25857c18cb42c3e6f3a"></a>
-typedef <a class="el" href="classFeel_1_1SensorPointwise.html">SensorPointwise</a>&lt; Space &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>this_type</b></td></tr>
-<tr class="separator:af52a7232ed8cc25857c18cb42c3e6f3a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="separator:aebeaf728d3fe23e47f70c42ce35bc035"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5013a42f042226fa08e6e65e6c6afe74"><td class="memItemLeft" align="right" valign="top"><a id="a5013a42f042226fa08e6e65e6c6afe74"></a>
+typedef <a class="el" href="classFeel_1_1SensorSurface.html">SensorSurface</a>&lt; Space &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>this_type</b></td></tr>
+<tr class="separator:a5013a42f042226fa08e6e65e6c6afe74"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_types_classFeel_1_1SensorBase"><td colspan="2" onclick="javascript:toggleInherit('pub_types_classFeel_1_1SensorBase')"><img src="closed.png" alt="-"/>&#160;Public Types inherited from <a class="el" href="classFeel_1_1SensorBase.html">Feel::SensorBase&lt; Space &gt;</a></td></tr>
 <tr class="memitem:a6b4b97108927712bf4e5aa19d11bab26 inherit pub_types_classFeel_1_1SensorBase"><td class="memItemLeft" align="right" valign="top"><a id="a6b4b97108927712bf4e5aa19d11bab26"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>mesh_type</b> = typename space_type::mesh_type</td></tr>
@@ -215,12 +216,21 @@ typedef space_type::value_type&#160;</td><td class="memItemRight" valign="bottom
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a0ace082c167e9b23e52dbad9e4fe2821"><td class="memItemLeft" align="right" valign="top"><a id="a0ace082c167e9b23e52dbad9e4fe2821"></a>
+<tr class="memitem:a3c7075fe696c307f1cab1e696f867114"><td class="memItemLeft" align="right" valign="top"><a id="a3c7075fe696c307f1cab1e696f867114"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>init</b> () override</td></tr>
-<tr class="separator:a0ace082c167e9b23e52dbad9e4fe2821"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4b58e519378019cfb3d0e145b91e8d21"><td class="memItemLeft" align="right" valign="top"><a id="a4b58e519378019cfb3d0e145b91e8d21"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>SensorPointwise</b> (space_ptrtype const &amp;space, node_t const &amp;p, std::string const &amp;n=&quot;pointwise&quot;)</td></tr>
-<tr class="separator:a4b58e519378019cfb3d0e145b91e8d21"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="separator:a3c7075fe696c307f1cab1e696f867114"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a310fcbf350174badb19c9ff6058d8f58"><td class="memItemLeft" align="right" valign="top"><a id="a310fcbf350174badb19c9ff6058d8f58"></a>
+std::set&lt; std::string &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>markers</b> ()</td></tr>
+<tr class="separator:a310fcbf350174badb19c9ff6058d8f58"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3b65a961f28b7e2f5a0bede1561512d4"><td class="memItemLeft" align="right" valign="top"><a id="a3b65a961f28b7e2f5a0bede1561512d4"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>SensorSurface</b> (space_ptrtype const &amp;space, std::set&lt; std::string &gt; const &amp;markers, std::string const &amp;n=&quot;surface&quot;)</td></tr>
+<tr class="separator:a3b65a961f28b7e2f5a0bede1561512d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6c17870ef01a18ed09ce5f885ede2a3f"><td class="memItemLeft" align="right" valign="top"><a id="a6c17870ef01a18ed09ce5f885ede2a3f"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>setMarkers</b> (std::set&lt; std::string &gt; const &amp;markers)</td></tr>
+<tr class="separator:a6c17870ef01a18ed09ce5f885ede2a3f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9959bcae222ae22cd82f27110e17eaf1"><td class="memItemLeft" align="right" valign="top"><a id="a9959bcae222ae22cd82f27110e17eaf1"></a>
+<a class="el" href="classnlohmann_1_1basic__json.html">json</a>&#160;</td><td class="memItemRight" valign="bottom"><b>to_json</b> () const override</td></tr>
+<tr class="separator:a9959bcae222ae22cd82f27110e17eaf1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classFeel_1_1SensorBase"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classFeel_1_1SensorBase')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classFeel_1_1SensorBase.html">Feel::SensorBase&lt; Space &gt;</a></td></tr>
 <tr class="memitem:ae60d613a2774baf9818865be7e82fcbb inherit pub_methods_classFeel_1_1SensorBase"><td class="memItemLeft" align="right" valign="top"><a id="ae60d613a2774baf9818865be7e82fcbb"></a>
 std::string const &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>name</b> () const</td></tr>
@@ -293,6 +303,12 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>setName</b> (std::str
 space_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>space</b> () const</td></tr>
 <tr class="separator:af85d76bf645c620590a03d60c551fb1c inherit pub_methods_classFeel_1_1FsFunctional"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-attribs"></a>
+Static Public Attributes</h2></td></tr>
+<tr class="memitem:a2a8478b98afb2714a259138969270acf"><td class="memItemLeft" align="right" valign="top"><a id="a2a8478b98afb2714a259138969270acf"></a>
+static const <a class="el" href="classint.html">int</a>&#160;</td><td class="memItemRight" valign="bottom"><b>nDim</b> = space_type::mesh_type::nDim</td></tr>
+<tr class="separator:a2a8478b98afb2714a259138969270acf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="inherited"></a>
 Additional Inherited Members</h2></td></tr>
 <tr class="inherit_header pro_attribs_classFeel_1_1SensorBase"><td colspan="2" onclick="javascript:toggleInherit('pro_attribs_classFeel_1_1SensorBase')"><img src="closed.png" alt="-"/>&#160;Protected Attributes inherited from <a class="el" href="classFeel_1_1SensorBase.html">Feel::SensorBase&lt; Space &gt;</a></td></tr>
@@ -308,7 +324,7 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><b>M_type</b></td
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="navelem"><a class="el" href="namespaceFeel.html">Feel</a></li><li class="navelem"><a class="el" href="classFeel_1_1SensorPointwise.html">SensorPointwise</a></li>
+    <li class="navelem"><a class="el" href="namespaceFeel.html">Feel</a></li><li class="navelem"><a class="el" href="classFeel_1_1SensorSurface.html">SensorSurface</a></li>
     <li class="footer">Generated by
     <a href="http://www.doxygen.org/index.html">
     <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.17 </li>

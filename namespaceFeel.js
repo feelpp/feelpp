@@ -494,6 +494,7 @@ var namespaceFeel =
     [ "SensorGaussian", "classFeel_1_1SensorGaussian.html", "classFeel_1_1SensorGaussian" ],
     [ "SensorMap", "classFeel_1_1SensorMap.html", "classFeel_1_1SensorMap" ],
     [ "SensorPointwise", "classFeel_1_1SensorPointwise.html", "classFeel_1_1SensorPointwise" ],
+    [ "SensorSurface", "classFeel_1_1SensorSurface.html", "classFeel_1_1SensorSurface" ],
     [ "Simget", "classFeel_1_1Simget.html", "classFeel_1_1Simget" ],
     [ "Simplex", "classFeel_1_1Simplex.html", "classFeel_1_1Simplex" ],
     [ "SimplexBase", "classFeel_1_1SimplexBase.html", null ],

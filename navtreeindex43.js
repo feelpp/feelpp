@@ -1,5 +1,16 @@
 var NAVTREEINDEX43 =
 {
+"structFeel_1_1FeelModels_1_1detail_1_1ChangeBasisPolySet_3_01NewPolySetType_00_01BasisType_3_01Od3c3455f9581e098fbbc9c6e4e32dd82.html":[6,1,1,4,0,5],
+"structFeel_1_1FeelModels_1_1detail_1_1ChangeBasisPolySet_3_01NewPolySetType_00_01BasisType_3_01Od3c3455f9581e098fbbc9c6e4e32dd82.html#ab34f75c54d64c72b8d752bde05c83a0a":[6,1,1,4,0,5,0],
+"structFeel_1_1FunctionExpr_1_1ExprContextProd.html":[6,1,1,85,0],
+"structFeel_1_1FunctionExpr_1_1ExprContextProd.html#a82b71f27996f7d5d8b2c973fba196bfc":[6,1,1,85,0,0],
+"structFeel_1_1FunctionExpr_1_1HasTestFunction.html":[6,1,1,85,1],
+"structFeel_1_1FunctionExpr_1_1HasTestFunction.html#ac6bb5b52cc2b8a523006c4a99880f758":[6,1,1,85,1,0],
+"structFeel_1_1FunctionExpr_1_1HasTrialFunction.html":[6,1,1,85,2],
+"structFeel_1_1FunctionExpr_1_1HasTrialFunction.html#a94827a93028c31c64abf0878a3de60dd":[6,1,1,85,2,0],
+"structFeel_1_1FunctionExpr_1_1tensor.html":[6,1,1,85,3],
+"structFeel_1_1FunctionExpr_1_1tensor.html#a14802c3adfa65ea04d334388845ab3c4":[6,1,1,85,3,16],
+"structFeel_1_1FunctionExpr_1_1tensor.html#a1a75830622d70e0534372a2b970eedde":[6,1,1,85,3,6],
 "structFeel_1_1FunctionExpr_1_1tensor.html#a1fdb67765892548bdd6cdbe10947e0dd":[6,1,1,85,3,30],
 "structFeel_1_1FunctionExpr_1_1tensor.html#a2a1708152ce86d1dc3e98a9d2cea035c":[6,1,1,85,3,8],
 "structFeel_1_1FunctionExpr_1_1tensor.html#a2c74fb65f0df5af2c4b4926725d2087f":[6,1,1,85,3,12],
@@ -238,16 +249,5 @@ var NAVTREEINDEX43 =
 "structFeel_1_1Mesh_1_1Inverse.html#a715ec9b8814df6095a616f2bf555be46":[6,1,1,170,0,5],
 "structFeel_1_1Mesh_1_1Inverse.html#ac185371906f16543813451440531aa5d":[6,1,1,170,0,0],
 "structFeel_1_1Mesh_1_1Inverse.html#ad7699ee0cac0ed008dbf0d8bed857a5c":[6,1,1,170,0,6],
-"structFeel_1_1Mesh_1_1Inverse.html#ad8ce3ef0c90b9454ec389dbb6f890e28":[6,1,1,170,0,2],
-"structFeel_1_1Mesh_1_1Inverse.html#adaa3326d6597dff88cdc4c4c2b2f5a80":[6,1,1,170,0,9],
-"structFeel_1_1Mesh_1_1UpdateNumGlobalEntitiesForAllReduce.html":[6,1,1,170,4],
-"structFeel_1_1Mesh_1_1UpdateNumGlobalEntitiesForAllReduce.html#a3d90405dc2175a2f0edb0cdc88830887":[6,1,1,170,4,0],
-"structFeel_1_1Mesh_1_1UpdateNumGlobalEntitiesForAllReduce.html#a797401805296c1042e71fc12430c5a5f":[6,1,1,170,4,1],
-"structFeel_1_1Mesh_1_1UpdateSetForAllReduce.html":[6,1,1,170,5],
-"structFeel_1_1Mesh_1_1UpdateSetForAllReduce.html#ac7ed9151f9536d42ebcfb180844b16f3":[6,1,1,170,5,0],
-"structFeel_1_1Mesh_1_1UpdateSetForAllReduce.html#add0af8bc6ace7924e77d220d8ee5fff7":[6,1,1,170,5,1],
-"structFeel_1_1Mesh_1_1parent__mesh.html":[6,1,1,170,1],
-"structFeel_1_1Mesh_1_1parent__mesh.html#a1a1cb26c710838b8e4b2e8788f60f5d5":[6,1,1,170,1,0],
-"structFeel_1_1Mesh_1_1parent__mesh.html#a4bf67cd5703a4b81c17faac97b927733":[6,1,1,170,1,2],
-"structFeel_1_1Mesh_1_1parent__mesh.html#a4f99a4ca77f3ef2c53fc744c2eeb5eb9":[6,1,1,170,1,3]
+"structFeel_1_1Mesh_1_1Inverse.html#ad8ce3ef0c90b9454ec389dbb6f890e28":[6,1,1,170,0,2]
 };

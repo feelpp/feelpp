@@ -2,7 +2,7 @@ var classFeel_1_1SensorPointwise =
 [
     [ "boost::serialization::access", "classFeel_1_1SensorPointwise.html#ac98d07dd8f7b70e16ccb9a01abf56b9c", null ],
     [ "init", "classFeel_1_1SensorPointwise.html#a0ace082c167e9b23e52dbad9e4fe2821", null ],
-    [ "node_t", "classFeel_1_1SensorPointwise.html#a319523a559750dd8fdb054a8c0c999d3", null ],
+    [ "node_t", "classFeel_1_1SensorPointwise.html#aab61b00075938dd84db2a4bea9d8bcdb", null ],
     [ "space_ptrtype", "classFeel_1_1SensorPointwise.html#a0ad5239304392b765a51a1918f4bebe0", null ],
     [ "space_type", "classFeel_1_1SensorPointwise.html#a939de67b846ec9960f156b8ff25d296a", null ],
     [ "super_type", "classFeel_1_1SensorPointwise.html#a24c0465ea9272adbd5add50439199de0", null ],

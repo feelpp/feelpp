@@ -141,9 +141,9 @@ Public Types</h2></td></tr>
 <tr class="memitem:a30b582e566aa3d44d23d8b62a9bb1968"><td class="memItemLeft" align="right" valign="top"><a id="a30b582e566aa3d44d23d8b62a9bb1968"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>mesh_type</b> = typename super_type::mesh_type</td></tr>
 <tr class="separator:a30b582e566aa3d44d23d8b62a9bb1968"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7b4ec3fdb68a09d1d8abffdfb34a23aa"><td class="memItemLeft" align="right" valign="top"><a id="a7b4ec3fdb68a09d1d8abffdfb34a23aa"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>node_t</b> = typename super_type::node_t</td></tr>
-<tr class="separator:a7b4ec3fdb68a09d1d8abffdfb34a23aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a907784fb09410023a2e08be7a3f60122"><td class="memItemLeft" align="right" valign="top"><a id="a907784fb09410023a2e08be7a3f60122"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>node_t</b> = typename space_type::mesh_type::node_type</td></tr>
+<tr class="separator:a907784fb09410023a2e08be7a3f60122"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af994fbb89754ecc6e06dc974ee7bff5e"><td class="memItemLeft" align="right" valign="top"><a id="af994fbb89754ecc6e06dc974ee7bff5e"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>space_ptrtype</b> = typename super_type::space_ptrtype</td></tr>
 <tr class="separator:af994fbb89754ecc6e06dc974ee7bff5e"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -160,9 +160,6 @@ typedef <a class="el" href="classFeel_1_1SensorGaussian.html">SensorGaussian</a>
 <tr class="memitem:a6b4b97108927712bf4e5aa19d11bab26 inherit pub_types_classFeel_1_1SensorBase"><td class="memItemLeft" align="right" valign="top"><a id="a6b4b97108927712bf4e5aa19d11bab26"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>mesh_type</b> = typename space_type::mesh_type</td></tr>
 <tr class="separator:a6b4b97108927712bf4e5aa19d11bab26 inherit pub_types_classFeel_1_1SensorBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae5aee4dd57a58dfb3aafb80fe9b22ed5 inherit pub_types_classFeel_1_1SensorBase"><td class="memItemLeft" align="right" valign="top"><a id="ae5aee4dd57a58dfb3aafb80fe9b22ed5"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>node_t</b> = typename space_type::mesh_type::node_type</td></tr>
-<tr class="separator:ae5aee4dd57a58dfb3aafb80fe9b22ed5 inherit pub_types_classFeel_1_1SensorBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0bbbe5f5df842be6464a60d94e55244b inherit pub_types_classFeel_1_1SensorBase"><td class="memItemLeft" align="right" valign="top"><a id="a0bbbe5f5df842be6464a60d94e55244b"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>space_ptrtype</b> = typename super_type::space_ptrtype</td></tr>
 <tr class="separator:a0bbbe5f5df842be6464a60d94e55244b inherit pub_types_classFeel_1_1SensorBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -241,18 +238,12 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>setRadius</b> (<a cla
 <tr class="memitem:ae60d613a2774baf9818865be7e82fcbb inherit pub_methods_classFeel_1_1SensorBase"><td class="memItemLeft" align="right" valign="top"><a id="ae60d613a2774baf9818865be7e82fcbb"></a>
 std::string const &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>name</b> () const</td></tr>
 <tr class="separator:ae60d613a2774baf9818865be7e82fcbb inherit pub_methods_classFeel_1_1SensorBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac07086ecc6b210e4f7e258d405a2fb98 inherit pub_methods_classFeel_1_1SensorBase"><td class="memItemLeft" align="right" valign="top"><a id="ac07086ecc6b210e4f7e258d405a2fb98"></a>
-node_t const &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>position</b> () const</td></tr>
-<tr class="separator:ac07086ecc6b210e4f7e258d405a2fb98 inherit pub_methods_classFeel_1_1SensorBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae29993de81002e803fe331dd6b9dd666 inherit pub_methods_classFeel_1_1SensorBase"><td class="memItemLeft" align="right" valign="top"><a id="ae29993de81002e803fe331dd6b9dd666"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>SensorBase</b> (space_ptrtype const &amp;space, node_t const &amp;p, std::string const &amp;name=&quot;sensor&quot;, std::string const &amp;t=&quot;&quot;)</td></tr>
-<tr class="separator:ae29993de81002e803fe331dd6b9dd666 inherit pub_methods_classFeel_1_1SensorBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a02e3e69c0781164bff868f3b04665e2a inherit pub_methods_classFeel_1_1SensorBase"><td class="memItemLeft" align="right" valign="top"><a id="a02e3e69c0781164bff868f3b04665e2a"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>SensorBase</b> (space_ptrtype const &amp;space, std::string const &amp;name=&quot;sensor&quot;, std::string const &amp;t=&quot;&quot;)</td></tr>
+<tr class="separator:a02e3e69c0781164bff868f3b04665e2a inherit pub_methods_classFeel_1_1SensorBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab6162dec9b33d5e7b567fc8772c908f4 inherit pub_methods_classFeel_1_1SensorBase"><td class="memItemLeft" align="right" valign="top"><a id="ab6162dec9b33d5e7b567fc8772c908f4"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>setName</b> (std::string const &amp;n)</td></tr>
 <tr class="separator:ab6162dec9b33d5e7b567fc8772c908f4 inherit pub_methods_classFeel_1_1SensorBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1499fe9390a8e4950a9a5ca2ac5caae6 inherit pub_methods_classFeel_1_1SensorBase"><td class="memItemLeft" align="right" valign="top"><a id="a1499fe9390a8e4950a9a5ca2ac5caae6"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>setPosition</b> (node_t const &amp;p)</td></tr>
-<tr class="separator:a1499fe9390a8e4950a9a5ca2ac5caae6 inherit pub_methods_classFeel_1_1SensorBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a262e240655e7a4d5721f1815fff79a24 inherit pub_methods_classFeel_1_1SensorBase"><td class="memItemLeft" align="right" valign="top"><a id="a262e240655e7a4d5721f1815fff79a24"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>setSpace</b> (space_ptrtype const &amp;space) override</td></tr>
 <tr class="separator:a262e240655e7a4d5721f1815fff79a24 inherit pub_methods_classFeel_1_1SensorBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -327,9 +318,6 @@ Additional Inherited Members</h2></td></tr>
 <tr class="memitem:a2d7671f804d23915b6960b6b9ea5a306 inherit pro_attribs_classFeel_1_1SensorBase"><td class="memItemLeft" align="right" valign="top"><a id="a2d7671f804d23915b6960b6b9ea5a306"></a>
 std::string&#160;</td><td class="memItemRight" valign="bottom"><b>M_name</b></td></tr>
 <tr class="separator:a2d7671f804d23915b6960b6b9ea5a306 inherit pro_attribs_classFeel_1_1SensorBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aaeb8d040247deda8a89cc7daf85ec6b2 inherit pro_attribs_classFeel_1_1SensorBase"><td class="memItemLeft" align="right" valign="top"><a id="aaeb8d040247deda8a89cc7daf85ec6b2"></a>
-node_t&#160;</td><td class="memItemRight" valign="bottom"><b>M_position</b></td></tr>
-<tr class="separator:aaeb8d040247deda8a89cc7daf85ec6b2 inherit pro_attribs_classFeel_1_1SensorBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0be2be5023f2b89fa777fd4cc45d6ea7 inherit pro_attribs_classFeel_1_1SensorBase"><td class="memItemLeft" align="right" valign="top"><a id="a0be2be5023f2b89fa777fd4cc45d6ea7"></a>
 std::string&#160;</td><td class="memItemRight" valign="bottom"><b>M_type</b></td></tr>
 <tr class="separator:a0be2be5023f2b89fa777fd4cc45d6ea7 inherit pro_attribs_classFeel_1_1SensorBase"><td class="memSeparator" colspan="2">&#160;</td></tr>

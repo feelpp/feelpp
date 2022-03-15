@@ -105,7 +105,8 @@ var dir_201afb6b72871638822819f2c834f547 =
       [ "SensorBase", "classFeel_1_1SensorBase.html", "classFeel_1_1SensorBase" ],
       [ "SensorGaussian", "classFeel_1_1SensorGaussian.html", "classFeel_1_1SensorGaussian" ],
       [ "SensorMap", "classFeel_1_1SensorMap.html", "classFeel_1_1SensorMap" ],
-      [ "SensorPointwise", "classFeel_1_1SensorPointwise.html", "classFeel_1_1SensorPointwise" ]
+      [ "SensorPointwise", "classFeel_1_1SensorPointwise.html", "classFeel_1_1SensorPointwise" ],
+      [ "SensorSurface", "classFeel_1_1SensorSurface.html", "classFeel_1_1SensorSurface" ]
     ] ],
     [ "stencil.cpp", "stencil_8cpp.html", "stencil_8cpp" ],
     [ "syncdofs.hpp", "syncdofs_8hpp.html", "syncdofs_8hpp" ],
