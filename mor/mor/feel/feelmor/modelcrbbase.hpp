@@ -381,7 +381,6 @@ public :
             write_json( jsonpath, ptree );
         }
         this->worldComm().barrier();
-
     }
 
     virtual ~ModelCrbBase() {}

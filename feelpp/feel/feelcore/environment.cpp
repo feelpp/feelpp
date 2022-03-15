@@ -50,6 +50,8 @@ extern "C"
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 
+#include <range/v3/view/take_exactly.hpp>
+
 #include <feel/feelcore/mongocxx.hpp>
 
 #include <gflags/gflags.h>
@@ -748,7 +750,15 @@ Environment::~Environment()
     summary( 0, 0 ).format().setFontAlign( Font::Align::center );
     Table data;
     data.add_row( { "logs", Environment::logsRepository() } );
-    data.add_row( { "results", Environment::appRepository() } );
+    if ( Environment::journalEnabled()  )
+        data.add_row( { "journal", Environment::journalFilename() } );
+    Table paths;
+    paths.add_row( { Environment::appRepository() } );
+    for ( auto p : S_paths | ranges::views::take_exactly( S_paths.size() - 3 ) )
+    {
+        paths.add_row({p.string()});
+    }
+    data.add_row( { "directories", paths } );
     summary.add_row({data});
     cout << summary << std::endl;
     cout << "[ Stopping Feel++ ] " << tc::green << "application " << S_about.appName()

@@ -56,77 +56,14 @@ int runSimulation()
     auto heatBox = heat_tb_type::New(_prefix="heat");
     heatBox->init();
     heatBox->printAndSaveInfo();
-    rb_model_ptrtype model = std::make_shared<rb_model_type>();
+
+    rb_model_ptrtype model = std::make_shared<rb_model_type>(soption("toolboxmor.name"));
     model->setFunctionSpaces(heatBox->spaceTemperature());
-    auto rhs = heatBox->algebraicFactory()->rhs()->clone();
-    auto mat = heatBox->algebraicFactory()->matrix();
-    deim_function_type assembleDEIM =
-        [&heatBox,&rhs,&mat](parameter_type const& mu)
-            {
-                for( int i = 0; i < mu.size(); ++i )
-                    heatBox->addParameterInModelProperties(mu.parameterName(i), mu(i));
-                heatBox->updateParameterValues();
-                rhs->zero();
-                heatBox->algebraicFactory()->applyAssemblyLinear( heatBox->algebraicBlockVectorSolution()->vectorMonolithic(), mat, rhs, {"ignore-assembly.lhs"} );
-                return rhs;
-            };
-    model->setAssembleDEIM(assembleDEIM);
-    mdeim_function_type assembleMDEIM =
-        [&heatBox,&rhs,&mat](parameter_type const& mu)
-            {
-                for( int i = 0; i < mu.size(); ++i )
-                    heatBox->addParameterInModelProperties(mu.parameterName(i), mu(i));
-                heatBox->updateParameterValues();
-                mat->zero();
-                heatBox->algebraicFactory()->applyAssemblyLinear( heatBox->algebraicBlockVectorSolution()->vectorMonolithic(), mat, rhs, {"ignore-assembly.rhs"} );
-                return mat;
-            };
-    model->setAssembleMDEIM(assembleMDEIM);
-    model->initModel();
-
-    auto deimHeatBox = std::make_shared<heat_tb_type>("heat");
-    deimHeatBox->setMesh(model->getDEIMReducedMesh());
-    deimHeatBox->init();
-    deimHeatBox->printAndSaveInfo();
-    deim_function_type assembleOnlineDEIM =
-        [deimHeatBox](parameter_type const& mu)
-            {
-                for( int i = 0; i < mu.size(); ++i )
-                    deimHeatBox->addParameterInModelProperties(mu.parameterName(i), mu(i));
-                deimHeatBox->updateParameterValues();
-                auto rhs = deimHeatBox->algebraicFactory()->rhs()->clone();
-                rhs->zero();
-                auto matTMP = deimHeatBox->algebraicFactory()->matrix()->clone();
-                deimHeatBox->algebraicFactory()->applyAssemblyLinear( deimHeatBox->algebraicBlockVectorSolution()->vectorMonolithic(), matTMP, rhs, {"ignore-assembly.lhs"} );
-                return rhs;
-            };
-    model->setOnlineAssembleDEIM(assembleOnlineDEIM);
-    // model->setOnlineAssembleDEIM(assembleDEIM);
-
-    auto mdeimHeatBox = std::make_shared<heat_tb_type>("heat");
-    mdeimHeatBox->setMesh(model->getMDEIMReducedMesh());
-    mdeimHeatBox->init();
-    mdeimHeatBox->printAndSaveInfo();
-    mdeim_function_type assembleOnlineMDEIM =
-        [mdeimHeatBox](parameter_type const& mu)
-            {
-                for( int i = 0; i < mu.size(); ++i )
-                    mdeimHeatBox->addParameterInModelProperties(mu.parameterName(i), mu(i));
-                mdeimHeatBox->updateParameterValues();
-                auto mat = mdeimHeatBox->algebraicFactory()->matrix()->clone();
-                mat->zero();
-                auto rhsTMP = mdeimHeatBox->algebraicFactory()->rhs()->clone();
-                mdeimHeatBox->algebraicFactory()->applyAssemblyLinear( mdeimHeatBox->algebraicBlockVectorSolution()->vectorMonolithic(), mat, rhsTMP, {"ignore-assembly.rhs"} );
-                return mat;
-            };
-    model->setOnlineAssembleMDEIM(assembleOnlineMDEIM);
-    // model->setOnlineAssembleMDEIM(assembleMDEIM);
-
-    model->postInitModel();
-    model->setInitialized(true);
+    auto heatBoxModel = DeimMorModelToolbox<heat_tb_type>::New(heatBox);
+    model->initToolbox(heatBoxModel);
 
     crb_model_ptrtype crbModel = std::make_shared<crb_model_type>(model);
-    crb_ptrtype crb = crb_type::New("toolboxmor", crbModel, crb::stage::offline);
+    crb_ptrtype crb = crb_type::New(soption("toolboxmor.name"), crbModel, crb::stage::offline);
 
     tic();
     crb->offline();
@@ -223,6 +160,7 @@ int main( int argc, char** argv)
         opt.add_options()
             ("case.dimension", Feel::po::value<int>()->default_value( 3 ), "dimension")
             ("case.discretization", Feel::po::value<std::string>()->default_value( "P1" ), "discretization : P1,P2,P3 ")
+            ( "toolboxmor.name", po::value<std::string>()->default_value( "toolboxmor" ), "Name of the db directory" )
             ( "toolboxmor.sampling-size", po::value<int>()->default_value(10), "size of the sampling" )
             ;
 
