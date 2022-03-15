@@ -90,6 +90,8 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::initMesh()
     this->log("HeatFluid","initMesh", "start");
     this->timerTool("Constructor").start();
 
+    if ( auto ptMeshes = this->modelProperties().pTree().get_child_optional("Meshes") )
+        super_type::super_model_meshes_type::setup( *ptMeshes, {this->keyword()} );
     if ( this->doRestart() )
         super_type::super_model_meshes_type::setupRestart( this->keyword() );
     super_type::super_model_meshes_type::updateForUse<mesh_type>( this->keyword() );
@@ -157,6 +159,15 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
     return myblockGraph;
 }
 
+HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+HEATFLUID_CLASS_TEMPLATE_TYPE::updatePhysics( typename super_physics_type::PhysicsTreeNode & physicsTree, ModelModels const& models )
+{
+    physicsTree.addChild( M_heatModel, models );
+    physicsTree.addChild( M_fluidModel, models );
+
+    physicsTree.updateMaterialSupportFromChildren( "intersect" );
+}
 
 HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -171,23 +182,25 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
                                                       this->subPrefix(), this->repository() );
 
     // physics
-    using physic_tree_type = typename super_physics_type::PhysicsTree;
-    physic_tree_type physicsTree( this->shared_from_this() );
-    physicsTree.addLeaf( M_heatModel );
-    physicsTree.addLeaf( M_fluidModel );
-    this->initPhysics( physicsTree, this->modelProperties().models() );
+    this->initPhysics(
+        this->shared_from_this(),
+        [this]( typename super_physics_type::PhysicsTree & physicsTree ) {
+            physicsTree.updatePhysics( this->shared_from_this(), this->modelProperties().models() );
+            //CHECK( M_fluidModel && M_heatModel ) << "aiai";
+            physicsTree.updatePhysics( M_heatModel, this->modelProperties().models() );
+            physicsTree.updatePhysics( M_fluidModel, this->modelProperties().models() );
+        } );
 
     // physical properties
     if ( !M_materialsProperties )
     {
-        auto paramValues = this->modelProperties().parameters().toParameterValues();
-        this->modelProperties().materials().setParameterValues( paramValues );
+        //auto paramValues = this->modelProperties().parameters().toParameterValues();
+        //this->modelProperties().materials().setParameterValues( paramValues );
         M_materialsProperties.reset( new materialsproperties_type( this->shared_from_this() ) );
         M_materialsProperties->updateForUse( this->modelProperties().materials() );
     }
 
-    if ( !this->mesh() )
-        this->initMesh();
+    this->initMesh();
 
     this->materialsProperties()->addMesh( this->mesh() );
 
