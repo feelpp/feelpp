@@ -566,6 +566,35 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonInfo
 }
 
 MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
+std::shared_ptr<NullSpace<double>>
+MIXEDPOISSON_CLASS_TEMPLATE_TYPE::nullSpace(std::string const& name)
+{
+    if constexpr( is_tensor2symm )
+    {
+        auto mode1 = this->M_Mh->element( oneX() );
+        auto mode2 = this->M_Mh->element( oneY() );
+        if constexpr( nDim == 2 )
+        {
+            auto mode3 = this->M_Mh->element( vec(Py(),-Px()) );
+            auto ns = NullSpace<double>({ mode1, mode2, mode3 });
+            return std::make_shared<NullSpace<double>>(Feel::backend(_name=name), ns);
+        } else if constexpr( nDim == 3 )
+        {
+            auto mode3 = this->M_Mh->element( oneZ() );
+            auto mode4 = this->M_Mh->element( vec(Py(),-Px(),cst(0.)) );
+            auto mode5 = this->M_Mh->element( vec(-Pz(),cst(0.),Px()) );
+            auto mode6 = this->M_Mh->element( vec(cst(0.),Pz(),-Py()) );
+            auto ns = NullSpace<double>({ mode1, mode2, mode3, mode4, mode5, mode6 });
+            return std::make_shared<NullSpace<double>>(Feel::backend(_name=name), ns);
+        }
+        else
+            return nullptr;
+    }
+    else
+        return nullptr;
+}
+
+MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
 void
 MIXEDPOISSON_CLASS_TEMPLATE_TYPE::solve()
 {
@@ -597,6 +626,13 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::solveLinear()
 
     auto bbf = blockform2( *M_ps, M_A);
     auto blf = blockform1( *M_ps, M_F);
+
+    if constexpr( is_tensor2symm )
+    {
+        auto name = this->prefix()+".sc";
+        Feel::cout << "attaching near null space to " << name << std::endl;
+        Feel::backend( _name=name )->attachNearNullSpace( this->nullSpace(name) );
+    }
 
     bbf.solve(_solution=U, _rhs=blf, _condense=M_useSC, _name=this->prefix());
 

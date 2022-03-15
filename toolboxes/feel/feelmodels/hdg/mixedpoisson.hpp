@@ -300,6 +300,8 @@ public:
     void updateParameterValues();
     void setParameterValues( std::map<std::string,double> const& paramValues );
 
+    std::shared_ptr<NullSpace<double>> nullSpace(std::string const& name);
+
     //___________________________________________________________________________________//
     // execute post-processing
     //___________________________________________________________________________________//
