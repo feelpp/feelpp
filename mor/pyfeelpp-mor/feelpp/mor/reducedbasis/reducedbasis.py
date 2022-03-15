@@ -266,10 +266,6 @@ class reducedbasis():
 
         h5f.create_dataset("ANq", data=self.ANq)
         h5f.create_dataset("FNp", data=self.FNp)
-        # for q, Aq in enumerate(self.ANq):
-        #     h5f.create_dataset(f"AN{q}", data=Aq)
-        # for p, Fp in enumerate(self.FNp):
-        #     h5f.create_dataset(f"FN{p}", data=Fp)
         h5f.create_dataset(f"SS", data=self.SS)
         h5f.create_dataset(f"SL", data=self.SL)
         h5f.create_dataset(f"LL", data=self.LL)
@@ -584,6 +580,29 @@ class reducedbasisOffline(reducedbasis):
     Offline generation of reduced basis
     """
 
+    def solveFE(self, mat, rhs):
+        """Solve the finite elements problem max * X = rhs
+
+        Args:
+            mat (PETSc.Mat): matrix to inverse
+            rhs (PETSc.Vec): right hand side of the equation
+
+        Returns:
+            PETSc.Vec: assemble vector
+        """
+        pc = self.ksp.getPC()
+        pc.setType(self.PC_TYPE)
+
+        self.reshist = {}
+
+        self.ksp.setOperators(mat)
+        self.ksp.setConvergenceHistory()
+        sol = rhs.duplicate()
+        self.ksp.solve(rhs, sol)
+
+        return sol
+
+
     def generateZ(self, mus, orth=True):
         """Generates the base matrix Z (of shape (NN,N))
 
@@ -603,16 +622,8 @@ class reducedbasisOffline(reducedbasis):
             beta = self.model.computeBetaQm(mu)
             A = self.assembleA(beta[0][0])
             F = self.assembleF(beta[1][0][0])
-            
-            pc = self.ksp.getPC()
-            pc.setType(self.PC_TYPE)
 
-            self.reshist = {}
-
-            self.ksp.setOperators(A)
-            self.ksp.setConvergenceHistory()
-            sol = F.duplicate()
-            self.ksp.solve(F, sol)
+            sol = self.solveFE(A, F)
             self.Z.append(sol)
             # print(i, self.Z[-1].min(), self.Z[-1].max())
             # print(self.reshist)
@@ -935,7 +946,7 @@ class reducedbasisOffline(reducedbasis):
         mu = mu_0
 
         betas = {}
-        for mu in Dmu:
+        for i,mu in enumerate(tqdm(Dmu, desc=f"[reducedBasis] Computing betas", ascii=False, ncols=120)):
             betas[mu] = self.model.computeBetaQm(mu)
 
         # fig = go.Figure()
@@ -957,16 +968,8 @@ class reducedbasisOffline(reducedbasis):
                 beta = betas[mu]
                 A = self.assembleA(beta[0][0])
                 F = self.assembleF(beta[1][0][0])
-                
-                pc = self.ksp.getPC()
-                pc.setType(self.PC_TYPE)
 
-                self.reshist = {}
-
-                self.ksp.setOperators(A)
-                self.ksp.setConvergenceHistory()
-                sol = F.duplicate()
-                self.ksp.solve(F, sol)
+                sol = self.solveFE(A, F)
                 self.Z.append(sol)
                 self.orthonormalizeZ()
 
@@ -1061,7 +1064,7 @@ class reducedbasisOffline(reducedbasis):
 
     def generatePOD(self, Xi_train, eps_tol=1e-6):
         if rank == 0:
-            print("[reducedBasis] Start greedy algorithm")
+            print("[reducedBasis] Start POD algorithm")
         self.N = 0
         self.Z = []
         Delta = 1 + eps_tol
@@ -1070,10 +1073,9 @@ class reducedbasisOffline(reducedbasis):
 
         betas = {}
         solEF = {}
-        for mu in Xi_train:
+        for i,mu in enumerate(tqdm(Xi_train, desc=f"[reducedbasis] Computing offline solutions", ascii=False, ncols=120)):
             betas[mu] = self.model.computeBetaQm(mu)
             solEF[mu], _ = self.getSolutionsFE(mu, betas[mu])
-            print(mu, solEF[mu].min(), solEF[mu].max())
 
         N_train = len(Xi_train)
         C = PETSc.Mat().create()
