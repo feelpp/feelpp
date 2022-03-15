@@ -83,6 +83,7 @@ private :
     void loadParameterFromOptionsVm();
     void initMesh();
     void initPostProcess() override;
+    void updatePhysics( typename super_physics_type::PhysicsTreeNode & physicsTree, ModelModels const& models ) override;
 public :
     // update for use
     void init( bool buildModelAlgebraicFactory = true );
