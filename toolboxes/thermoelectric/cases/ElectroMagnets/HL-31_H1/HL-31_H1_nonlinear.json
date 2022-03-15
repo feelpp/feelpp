@@ -44,44 +44,36 @@
     },
     "BoundaryConditions":
     {
-        "temperature":
+        "heat":
         {
-            "Robin":
+            "convective_heat_flux":
             {
                 "Rint":
                 {
-                    "expr1":"0.085", // h
-                    "expr2":"290" // T_c
+                    "h":"0.085", // h
+                    "Text":"290" // T_c
                 },
                 "Rext":
                 {
-                    "expr1":"0.085", // h
-                    "expr2":"290" // T_c
+                    "h":"0.085", // h
+                    "Text":"290" // T_c
                 }
             },
-            "Neumann":
+            "flux":
             {
-                "Interface":
+                "insulation":
                 {
-                    "expr":"0"
-                },
-                "GR_1_Interface":
-                {
+                    "markers":["Interface","GR_1_Interface"],
                     "expr":"0"
                 }
             }
         },
-        "electric-potential":
+        "electric":
         {
-            "Dirichlet":
-            {
-                "V0":
-                {
-                    "expr":"0" // V_in
-                },
-                "V1":
-                {
-                    "expr":"9" // V_out
+            "ground":{ "markers":"V0" },
+            "electric_potential":{
+                "V1":{
+                    "expr":"9"
                 }
             }
         }
