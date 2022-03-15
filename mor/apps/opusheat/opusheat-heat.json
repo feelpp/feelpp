@@ -41,6 +41,36 @@
             "max":"30"
         }
     },
+    "Models":
+    {
+        "heat":[
+            {
+                "name":"IC1",
+                "materials":["IC1"],
+                "setup":{
+                    "heat-sources":{
+                        "expr":"q_1:q_1"
+                    }
+                }
+            },
+            {
+                "name":"IC2",
+                "materials":["IC2"],
+                "setup":{
+                    "heat-sources":{
+                        "expr":"q_2:q_2"
+                    }
+                }
+            },
+            {
+                "name":"PCBAIR",
+                "materials":["PCB","AIR"],
+                "setup":{
+                    "convection":"{0,-vinconv*(x-0.008)*(x-0.054)*(x>0.008)}:x:vinconv"
+                }
+            }
+        ]
+    },
     "Materials":
     {
         "PCB":
@@ -69,21 +99,26 @@
             "rho":"1"
         }
     },
+    "InitialConditions":
+    {
+        "heat":
+        {
+            "temperature":
+            {
+                "Expression":
+                {
+                    "myic1":
+                    {
+                        "expr":300
+                    }
+                }
+            }
+        }
+    },
     "BoundaryConditions":
     {
         "temperature":
         {
-            "VolumicForces":
-            {
-                "IC1":
-                {
-                    "expr":"q_1:q_1"
-                },
-                "IC2":
-                {
-                    "expr":"q_2:q_2"
-                }
-            },
             "Dirichlet":
             {
                 "dirichlet":
@@ -104,9 +139,12 @@
     },
     "PostProcess":
     {
-        "Exports":
+        "heat":
         {
-            "fields":["temperature"]
+            "Exports":
+            {
+                "fields":["temperature"]
+            }
         }
     }
 }

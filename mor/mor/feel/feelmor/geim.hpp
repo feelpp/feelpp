@@ -31,6 +31,7 @@
 #include <feel/feelcore/unwrapptr.hpp>
 #include <feel/feeldiscr/fsfunctionallinear.hpp>
 #include <feel/feelcore/json.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
 
 #include <limits>
 
