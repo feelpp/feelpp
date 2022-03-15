@@ -28,6 +28,7 @@ MixedPoisson<ConvexType, Order, PolySetType, E_Order>::updateLinearPDE( DataUpda
     auto l = this->M_Ch->element();
     auto tau_constant = cst(M_tauCst);
     auto sc_param = M_useSC ? 0.5 : 1.0;
+    auto el_param = is_tensor2symm ? -1.0 : 1.0;
 
     auto const& symbolsExpr = mctx.symbolsExpr();
 
@@ -50,25 +51,25 @@ MixedPoisson<ConvexType, Order, PolySetType, E_Order>::updateLinearPDE( DataUpda
                 auto coeff_mu_expr = expr( coeff_mu.expr(), symbolsExpr );
                 auto c1 = cst(0.5)/coeff_mu_expr;
                 auto c2 = -coeff_lambda_expr/(cst(2.) * coeff_mu_expr * (nDim*coeff_lambda_expr + cst(2.)*coeff_mu_expr));
-                bbf( 0_c, 0_c ) += integrate(_range=range, _expr=-c1*inner(idt(u),id(u)) );
+                bbf( 0_c, 0_c ) += integrate(_range=range, _expr=-el_param*c1*inner(idt(u),id(u)) );
                 if constexpr( is_tensor2symm ) {
-                    bbf( 0_c, 0_c ) += integrate(_range=range, _expr=-c2*trace(idt(u))*trace(id(u)) );
+                    bbf( 0_c, 0_c ) += integrate(_range=range, _expr=-el_param*c2*trace(idt(u))*trace(id(u)) );
                 }
             }
         }
     }
 
     // -(p,div(v))_Omega
-    bbf( 0_c, 1_c ) += integrate(_range=elements(support(M_Wh)), _expr=-inner(idt(p),div(u)) );
+    bbf( 0_c, 1_c ) += integrate(_range=elements(support(M_Wh)), _expr=-el_param*inner(idt(p),div(u)) );
 
     // <phat,v.n>_Gamma\Gamma_I
     bbf( 0_c, 2_c ) += integrate(_range=internalfaces(support(M_Wh)),
-                                 _expr=inner( idt(phat), leftface(normal(u))+rightface(normal(u)) ) );
+                                 _expr=el_param*inner( idt(phat), leftface(normal(u))+rightface(normal(u)) ) );
     bbf( 0_c, 2_c ) += integrate(_range=M_gammaMinusIntegral,
-                                 _expr=inner(idt(phat), normal(u)) );
+                                 _expr=el_param*inner(idt(phat), normal(u)) );
 
     // (div(j),q)_Omega
-    bbf( 1_c, 0_c ) += integrate(_range=elements(support(M_Wh)), _expr=inner(id(p), divt(u)) );
+    bbf( 1_c, 0_c ) += integrate(_range=elements(support(M_Wh)), _expr=el_param*inner(id(p), divt(u)) );
 
 
     // <tau p, w>_Gamma
@@ -121,13 +122,13 @@ MixedPoisson<ConvexType, Order, PolySetType, E_Order>::updateLinearPDE( DataUpda
 
     // <tau p, mu>_Omega/Gamma
     bbf( 2_c, 1_c ) += integrate(_range=internalfaces(support(M_Wh)),
-                                 _expr=tau_constant * inner(id(phat),
+                                 _expr=el_param*tau_constant * inner(id(phat),
                                                             leftfacet( idt(p) )+
                                                             rightfacet( idt(p) )) );
 
     // <-tau phat, mu>_Omega/Gamma
     bbf( 2_c, 2_c ) += integrate(_range=internalfaces(support(M_Wh)),
-                                 _expr=-sc_param*tau_constant * inner(idt(phat), id(phat) ) );
+                                 _expr=-sc_param*el_param*tau_constant * inner(idt(phat), id(phat) ) );
 
     if( !this->isStationary() )
     {
@@ -173,7 +174,7 @@ MixedPoisson<ConvexType, Order, PolySetType, E_Order>::updateLinearPDE( DataUpda
                                             return expr(coeff_f.template expr<nDim>(), symbolsExpr);
                                         }
                                     }();
-                blf(1_c) += integrate(_range=range, _expr=inner(id(p), coeff_f_expr));
+                blf(1_c) += integrate(_range=range, _expr=el_param*inner(id(p), coeff_f_expr));
             }
         }
     }
@@ -198,10 +199,10 @@ MixedPoisson<ConvexType, Order, PolySetType, E_Order>::updateLinearPDE( DataUpda
                                      _expr=inner(id(phat), normalt(u)) );
         // <tau p, mu>_Gamma_N
         bbf( 2_c, 1_c ) += integrate(_range=markedfaces(support(M_Wh), bc.markers()),
-                                     _expr=tau_constant*inner(id(phat), idt(p)) );
+                                     _expr=el_param*tau_constant*inner(id(phat), idt(p)) );
         // <-tau phat, mu>_Gamma_N
         bbf( 2_c, 2_c ) += integrate(_range=markedfaces(support(M_Wh), bc.markers()),
-                                     _expr=-tau_constant*inner(idt(phat), id(phat)) );
+                                     _expr=-el_param*tau_constant*inner(idt(phat), id(phat)) );
         auto g = [&bc = bc,&symbolsExpr]() -> decltype(auto) {
                      if constexpr( is_scalar ) {
                          return expr(bc.expr(), symbolsExpr);
@@ -219,10 +220,10 @@ MixedPoisson<ConvexType, Order, PolySetType, E_Order>::updateLinearPDE( DataUpda
                                      _expr=inner(id(phat), normalt(u)) );
         // <tau p, mu>_Gamma_R
         bbf( 2_c, 1_c ) += integrate(_range=markedfaces(support(M_Wh), bc.markers()),
-                                     _expr=tau_constant*inner(id(phat), idt(p)) );
+                                     _expr=el_param*tau_constant*inner(id(phat), idt(p)) );
         // <-tau phat, mu>_Gamma_R
         bbf( 2_c, 2_c ) += integrate(_range=markedfaces(support(M_Wh), bc.markers()),
-                                     _expr=-tau_constant*inner(idt(phat), id(phat)) );
+                                     _expr=-el_param*tau_constant*inner(idt(phat), id(phat)) );
 
         auto g1 = expr(bc.expr1(), symbolsExpr);
         bbf(2_c, 2_c) += integrate(_range=markedfaces(support(M_Wh), bc.markers()),
