@@ -121,8 +121,11 @@ public :
     //! return material names used by this physic
     std::set<std::string> const& materialNames() const { return M_materialNames; }
 
+    //! set material names
+    void setMaterialNames( std::set<std::string> const& matNames ) { M_materialNames = matNames; }
+
     //! add material names
-    void addMaterialNames( std::set<std::string> const& matNames ) { return M_materialNames.insert( matNames.begin(), matNames.end() ); }
+    void addMaterialNames( std::set<std::string> const& matNames ) { M_materialNames.insert( matNames.begin(), matNames.end() ); }
 
     //! return the material properties description (.i.e. coefficients of pdes)
     std::map<std::string,material_property_description_type> const& materialPropertyDescription() const { return M_materialPropertyDescription; }
@@ -696,31 +699,53 @@ public :
     using model_physic_ptrtype = std::shared_ptr<model_physic_type>;
 
 protected :
+
+    struct PhysicsTreeNode;
     struct PhysicsTree {
         using physics_ptrtype = std::shared_ptr<ModelPhysics<nDim>>;
-        PhysicsTree( std::string const& type, physics_ptrtype p, bool isRequired = true ) : M_root( std::make_tuple(type,p,isRequired) ) {}
-        PhysicsTree( physics_ptrtype p, bool isRequired = true ) : PhysicsTree( p->keyword(), p, isRequired ) {}
-        void addSubtree( PhysicsTree const& st ) { M_subtrees.push_back( st ); }
-        void addLeaf( std::string const& type, physics_ptrtype p, bool isRequired = true ) { M_subtrees.push_back( PhysicsTree{type,p,isRequired} ); }
-        void addLeaf( physics_ptrtype p, bool isRequired = true ) { this->addLeaf( p->keyword(), p, isRequired ); }
 
-        std::tuple<std::string,physics_ptrtype,bool> const& root() const { return M_root; }
-        std::vector<PhysicsTree> subtrees() const { return M_subtrees; }
+        PhysicsTree( physics_ptrtype p )
+            :
+            M_root( p ) {}
 
-        std::set<std::tuple<std::string,physics_ptrtype,bool>> allPhysics() const
+        std::shared_ptr<PhysicsTreeNode> addNode( physics_ptrtype mphysics, model_physic_ptrtype mp )
             {
-                std::set<std::tuple<std::string,physics_ptrtype,bool>> res;
-                res.insert( this->root() );
-                for ( auto const& st : M_subtrees )
-                {
-                    auto ast = st.allPhysics();
-                    res.insert( ast.begin(), ast.end() );
-                }
-                return res;
+                auto treeNode = PhysicsTreeNode::New( mphysics,mp );
+                M_children.push_back( std::move(treeNode) );
+                return M_children.back();
             }
+
+        std::vector<std::shared_ptr<PhysicsTreeNode>> const& children() const { return M_children; }
+
+        void updatePhysics( physics_ptrtype mphysics, ModelModels const& models );
+
+        std::map<physic_id_type,model_physic_ptrtype> collectAllPhysics() const;
+
     private :
-        std::tuple<std::string,physics_ptrtype,bool> M_root;
-        std::vector<PhysicsTree> M_subtrees;
+        physics_ptrtype M_root;
+        std::vector<std::shared_ptr<PhysicsTreeNode>> M_children;
+    };
+    struct PhysicsTreeNode {
+        using physics_ptrtype = std::shared_ptr<ModelPhysics<nDim>>;
+
+        static std::shared_ptr<PhysicsTreeNode> New( physics_ptrtype p, model_physic_ptrtype mp ) { return std::make_shared<PhysicsTreeNode>(p,mp); }
+
+        PhysicsTreeNode( std::string const& type, physics_ptrtype p, model_physic_ptrtype mp ) : M_data( std::make_tuple(type,p,mp) ) {}
+        PhysicsTreeNode( physics_ptrtype p, model_physic_ptrtype mp ) : PhysicsTreeNode( p->keyword(), p, mp ) {}
+
+        void addChild( std::string const& type, physics_ptrtype p, ModelModels const& models );
+        void addChild( physics_ptrtype p, ModelModels const& models ) { this->addChild( p->keyword(), p, models ); }
+
+        physics_ptrtype modelPhysics() const { return std::get<1>( M_data ); }
+        model_physic_ptrtype physic() const { return std::get<2>( M_data ); }
+
+        std::vector<std::shared_ptr<PhysicsTreeNode>> const& children() const { return M_children; }
+
+        void updateMaterialSupportFromChildren( std::string const& applyType = "intersect" );
+    private :
+        std::tuple<std::string,physics_ptrtype,model_physic_ptrtype> M_data;
+        std::vector<std::shared_ptr<PhysicsTreeNode>> M_children;
+        PhysicsTree* M_globalTree;
     };
 
 public:
@@ -758,7 +783,7 @@ public:
     std::string const& physicModeling() const { return M_physicModeling; }
 
     //! return the type of physic at top level
-    std::string const& physicType() const { return M_physicType; }
+    std::string const& physicType() const { return this->keyword();/*M_physicType;*/ }
 
     //! return name of all physics registered
     std::set<physic_id_type> physicsAvailable() const;
@@ -768,15 +793,14 @@ public:
 
     //! return name of all physics registered related to the current type
     std::set<physic_id_type> physicsAvailableFromCurrentType() const { return this->physicsAvailable( this->physicType() ); }
-#if 0
-    //! return the name of all physic shared from the parent physic \pname
-    std::set<std::string> physicsShared( std::string const& pname ) const;
-#endif
 
-    void initPhysics( std::string const& type, ModelModels const& models, bool isRequired = true );
-    void initPhysics( PhysicsTree const& physicTree, ModelModels const& models );
+    // TODO try remove first arg, because it just the shared_ptr of the current object
+    void initPhysics( std::shared_ptr<ModelPhysics<nDim>> mphysics, ModelModels const& models );
+    void initPhysics( std::shared_ptr<ModelPhysics<nDim>> mphysics, std::function<void(PhysicsTree &)> lambdaInit );
 
-    void setPhysics( std::map<physic_id_type,std::shared_ptr<ModelPhysic<Dim>>> const& thePhysics );
+
+    //! add physics if not already registered
+    void addPhysics( std::map<physic_id_type,std::shared_ptr<ModelPhysic<Dim>>> const& thePhysics );
 
     auto symbolsExprPhysics( std::map<physic_id_type,std::shared_ptr<ModelPhysic<nDim>>> const& mphysics ) const
         {
@@ -790,6 +814,11 @@ public:
         {
             return symbolsExprPhysics( this->physicsFromCurrentType() );
         }
+protected :
+    std::vector<std::shared_ptr<ModelPhysic<Dim>>>
+    initPhysics( std::string const& type, ModelModels const& models, std::set<std::string> const& modelNameRequired, bool isRequired = true );
+
+    virtual void updatePhysics( PhysicsTreeNode & physicsTree, ModelModels const& models ) {}
 
 private :
     template <uint16_type TheDim>
@@ -797,7 +826,7 @@ private :
 
 protected :
 
-    std::string M_physicModeling, M_physicType;
+    std::string M_physicModeling/*, M_physicType*/;
     std::map<physic_id_type,std::shared_ptr<ModelPhysic<nDim>>> M_physics;
 };
 
