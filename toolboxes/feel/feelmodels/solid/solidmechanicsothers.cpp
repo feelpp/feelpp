@@ -197,7 +197,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) cons
     }
 
     if ( this->hasSolidEquation1dReduced() )
-        M_solid1dReduced->updateInformationObject( p["Toolbox Solid 1d Reduced"] );
+        p["Toolbox Solid 1d Reduced"] = M_solid1dReduced->journalSection().to_string();
+    //M_solid1dReduced->updateInformationObject( p["Toolbox Solid 1d Reduced"] );
 
 }
 
@@ -257,7 +258,15 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonIn
 
     // Subtoolbox
     if ( this->hasSolidEquation1dReduced() && jsonInfo.contains( "Toolbox Solid 1d Reduced" ) )
-        tabInfo->add( "Toolbox Solid 1d Reduced", M_solid1dReduced->tabulateInformations( jsonInfo.at("Toolbox Solid 1d Reduced"), tabInfoProp ) );
+    {
+        nl::json::json_pointer jsonPointerSolid1d( jsonInfo.at( "Toolbox Solid 1d Reduced" ).template get<std::string>() );
+        if ( JournalManager::journalData().contains( jsonPointerSolid1d ) )
+        {
+            auto tabInfos_solid1d = M_solid1dReduced->tabulateInformations( JournalManager::journalData().at( jsonPointerSolid1d ), tabInfoProp );
+            //TabulateInformationsSections::cast( tabInfos_solid1d )->erase( "Materials Properties" );
+            tabInfo->add( "Toolbox Solid 1d Reduced", tabInfos_solid1d );
+        }
+    }
 
     return tabInfo;
 }
@@ -1028,7 +1037,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::setParameterValues( std::map<std::string,dou
     for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
         physicData->setParameterValues( paramValues );
 
-    M_boundaryConditions->setParameterValues( paramValues );
+    if ( this->hasSolidEquationStandard() )
+        M_boundaryConditions->setParameterValues( paramValues );
 
     if ( this->hasSolidEquation1dReduced() )
         M_solid1dReduced->setParameterValues( paramValues );

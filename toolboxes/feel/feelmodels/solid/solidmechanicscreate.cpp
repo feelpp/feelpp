@@ -450,6 +450,20 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createsSolid1dReduced()
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updatePhysics( typename super_physics_type::PhysicsTreeNode & physicsTree, ModelModels const& models )
+{
+    auto currentPhysic = std::dynamic_pointer_cast<ModelPhysicSolid<nDim>>( physicsTree.physic() );
+    CHECK( currentPhysic ) << "wrong physic";
+    if ( currentPhysic->equation() == "Generalised-String" )
+    {
+        if ( !M_solid1dReduced )
+            this->createsSolid1dReduced();
+        physicsTree.addChild( M_solid1dReduced, models );
+    }
+}
+
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
 {
     if ( this->isUpdatedForUse() ) return;
@@ -459,8 +473,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
 
 #if 0
     this->initPhysics( this->keyword(), this->modelProperties().models() );
-#else
-
+#elif 0
     this->initPhysics( this->keyword(), this->modelProperties().models() );
     bool hasSolid1dReduced = false;
     for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
@@ -477,6 +490,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
         physicsTree.addLeaf( M_solid1dReduced );
         this->initPhysics( physicsTree, this->modelProperties().models() );
     }
+#else
+    this->initPhysics( this->shared_from_this(), this->modelProperties().models() );
 #endif
 
     this->initMaterialProperties();
@@ -493,7 +508,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
             hasSolid1dReduced = true;
     }
 #endif
-    if ( hasSolid1dReduced )
+    if ( M_solid1dReduced )//hasSolid1dReduced )
     {
         if ( !M_solid1dReduced )
             this->createsSolid1dReduced();

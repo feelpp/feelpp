@@ -282,6 +282,7 @@ private :
     void initMesh();
     void initFunctionSpaces();
     void initBoundaryConditions();
+    void updatePhysics( typename super_physics_type::PhysicsTreeNode & physicsTree, ModelModels const& models ) override;
 
     void createExporters();
 
