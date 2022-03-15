@@ -223,6 +223,7 @@ class reducedbasis():
             mu (ParameterSpaceElement): parameter
             precalc (dict, optional): Dict containing the values of betaA, betaF and uN if these values have already been calculated. Defaults to None.\
                 If None is given, the quantities are calculated in the function
+            size (int, optional): size of the sub-basis considered
 
         Returns:
             float: energy error bound
@@ -234,7 +235,44 @@ class reducedbasis():
             alp = self.alphaLB_(precalc["betaA"])
         return normHatE / np.sqrt(alp)
 
+    def computeEffectivity(self, mu, precalc=None, size=None):
+        """computes effectivity = \Delta_N / ||e(mu)|_X
 
+        Args:
+            mu (ParameterSpaceElement): parameter
+            precalc (dict, optional): Dict containing the values of betaA, betaF and uN if these values have already been calculated. Defaults to None.\
+                If None is given, the quantities are calculated in the function
+            size (int, optional): size of the sub-basis considered
+
+        Returns:
+            float: effectivity
+        """
+        normHatE = self.computeOnlineError(mu, precalc=precalc, size=size)
+        if precalc is None:
+            alp = self.alphaLB(mu)
+        else:
+            alp = self.alphaLB_(precalc["betaA"])
+        return normHatE / alp
+
+
+    def UB_LB(self, mu, precalc=None):
+        """computed the theorical bound for effectivity (1 ⩽ η(µ) ⩽ γ(µ)/α(µ) )
+                                                                    ^^^^^^^^^^
+        Args:
+            mu (ParameterSpaceElement): parameter
+            precalc (dict, optional): Dict containing the values of betaA, betaF and uN if these values have already been calculated. Defaults to None.\
+                If None is given, the quantities are calculated in the function
+
+        Return:
+            float: gamma(mu)/alpha(mu)
+        """
+        if precalc is None:
+            betaMu = self.model.computeBetaQm(mu)[0][0]
+        else:
+            betaMu = precalc["betaA"]
+        gamma = self.gammaUB_(betaMu)
+        alpha = self.alphaLB_(betaMu)
+        return gamma/alpha
 
 
     """
@@ -266,9 +304,9 @@ class reducedbasis():
 
         h5f.create_dataset("ANq", data=self.ANq)
         h5f.create_dataset("FNp", data=self.FNp)
-        h5f.create_dataset(f"SS", data=self.SS)
-        h5f.create_dataset(f"SL", data=self.SL)
-        h5f.create_dataset(f"LL", data=self.LL)
+        h5f.create_dataset("SS", data=self.SS)
+        h5f.create_dataset("SL", data=self.SL)
+        h5f.create_dataset("LL", data=self.LL)
 
         if self.DeltaMax is not None:
             h5f.create_dataset("DeltaMax", data=self.DeltaMax)
@@ -276,7 +314,7 @@ class reducedbasis():
             h5f.create_dataset("DeltaMax", data=np.array([]))
 
         h5f.create_dataset("alphaMubar", data=np.array([self.alphaMubar]))
-
+        h5f.create_dataset("gammaMubar", data=np.array([self.gammaMubar]))
 
         json.dump(content, f, indent = 4)
         h5f.close()
@@ -328,6 +366,7 @@ class reducedbasis():
         self.DeltaMax = None if tmpDeltaMax.shape == (0,) else tmpDeltaMax
 
         self.alphaMubar = h5f["alphaMubar"][0]
+        self.gammaMubar = h5f["gammaMubar"][0]
         betaA_bar_np = np.array(self.betaA_bar)
         def alphaLB(mu):
             # From a parameter
@@ -338,8 +377,19 @@ class reducedbasis():
             # From a decomposition
             return self.alphaMubar * np.min( betaA / betaA_bar_np )
 
+        def gammaUB(mu):
+            # From a parameter
+            betaMu = self.model.computeBetaQm(mu)[0][0]
+            return self.gammaMubar * np.max( betaMu / betaA_bar_np )
+
+        def gammaUB_(betaA):
+            # From a decomposition
+            return self.gammaMubar * np.max( betaA / betaA_bar_np )
+
         self.alphaLB = alphaLB
         self.alphaLB_ = alphaLB_
+        self.gammaUB = gammaUB
+        self.gammaUB_ = gammaUB_
 
         print(f"[reduced basis] Basis loaded from {path}")
         self.setInitialized = True
@@ -432,7 +482,7 @@ class reducedbasisOffline(reducedbasis):
 
         nCv = E.getConverged()
         if rank == 0:
-            print(f"[slepc4py] number of eigenvalues computed : {nCv}")
+            print(f"[slepc4py] number of (smaller) eigenvalues computed : {nCv}")
 
         self.alphaMubar = E.getEigenvalue(0).real
         # alphaMubar = 1
@@ -451,6 +501,36 @@ class reducedbasisOffline(reducedbasis):
 
         self.alphaLB = alphaLB
         self.alphaLB_ = alphaLB_
+
+
+        E.setFromOptions()
+        E.setWhichEigenpairs(E.Which.LARGEST_MAGNITUDE)
+        E.setDimensions(1)
+        E.solve()
+
+        nCv = E.getConverged()
+        if rank == 0:
+            print(f"[slepc4py] number of eigenvalues computed : {nCv}")
+
+        self.gammaMubar = E.getEigenvalue(0).real
+        # gammaMubar = 1
+        if rank == 0:
+            print(f"[reducedbasis] Constant of coercivity : {self.gammaMubar}")
+        betaA_bar_np = np.array(self.betaA_bar)
+        
+        def gammaUB(mu):
+            # From a parameter
+            betaMu = self.model.computeBetaQm(mu)[0][0]
+            return self.gammaMubar * np.max( betaMu / betaA_bar_np )
+
+        def gammaUB_(betaA):
+            # From a decomposition
+            return self.gammaMubar * np.max( betaA / betaA_bar_np )
+
+        self.alphaLB = alphaLB
+        self.alphaLB_ = alphaLB_
+        self.gammaUB = gammaUB
+        self.gammaUB_ = gammaUB_
 
         self.isInitialized = True
 

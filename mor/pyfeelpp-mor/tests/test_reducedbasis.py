@@ -212,10 +212,19 @@ def compar_solFE(rb, assembleMDEIM, heatBox):
     assert(u_tb.size == u_fe.size)
     
     norm = (u_tb - u_fe).norm() / u_tb.norm()
-    print(f"relErr = {norm}\n||u_tb|| = {u_tb}, ||u_fe|| = {u_fe}")
+    print(f"relErr = {norm}\n||u_tb|| = {u_tb.norm()}, ||u_fe|| = {u_fe.norm()}")
     assert norm < 1e-10, f"relative error {norm} is too high"
 
 
+def effectivity(rb):
+    for _ in range(20):
+        mu = rb.model.parameterSpace().element()
+        eta = rb.computeEffectivity(mu)
+        UB_LB = rb.UB_LB(mu)
+
+        print(1, eta, UB_LB)
+
+        # assert 1 <= eta and eta <= UB_LB
 
 
 def save_and_load(rb):
@@ -240,14 +249,17 @@ def save_and_load(rb):
     for p in range(rbLoaded.Qf):
         assert( (rb.FNp[p] == rbLoaded.FNp[p]).all() ), f"p = {p}"
 
-    assert( (rb.SS == rbLoaded.SS).all() ), f"SS"
-    assert( (rb.SL == rbLoaded.SL).all() ), f"SL"
-    assert( (rb.LL == rbLoaded.LL).all() ), f"LL"
+    assert( (rb.SS == rbLoaded.SS).all() ), "SS"
+    assert( (rb.SL == rbLoaded.SL).all() ), "SL"
+    assert( (rb.LL == rbLoaded.LL).all() ), "LL"
     
     if rb.DeltaMax is None:
         assert rbLoaded.DeltaMax is None, "DeltaMax"
     else:
-        assert( (rb.DeltaMax == rbLoaded.DeltaMax).all() ), f"DeltaMax"
+        assert( (rb.DeltaMax == rbLoaded.DeltaMax).all() ), "DeltaMax"
+
+    assert rb.alphaMubar == rbLoaded.alphaMubar, "alphaMubar"
+    assert rb.gammaMubar == rbLoaded.gammaMubar, "gammaMubar"
 
 
 
@@ -299,6 +311,9 @@ def test_reducedbasis_sample(prefix, case, casefile, dim, use_cache, time_depend
 
     print("\n Save and reload basis")
     save_and_load(rb)
+
+    print("\nTest on effectivity")
+    effectivity(rb)
 
 
 
