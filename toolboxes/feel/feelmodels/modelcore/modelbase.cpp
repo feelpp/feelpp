@@ -376,7 +376,7 @@ ModelBase::ModelBase( std::string const& prefix, std::string const& keyword,
                       ModelBaseRepository const& modelRep,
                       ModelBaseCommandLineOptions const& modelCmdLineOpt )
     :
-    super_type( "Toolboxes", prefix ),
+    super_type( "Toolboxes",keyword/*, prefix*/ ),
     M_worldComm(worldComm),
     M_worldsComm( {worldComm} ),
     M_localNonCompositeWorldsComm( { worldComm } ),
