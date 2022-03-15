@@ -884,7 +884,6 @@ template <uint16_type Dim>
 void
 ModelPhysics<Dim>::PhysicsTreeNode::addChild( std::string const& type, physics_ptrtype p, ModelModels const& models )
 {
-    std::cout << "addChild  " << type << std::endl;
     std::set<std::string> submodelsName;
     if ( models.hasType( this->physic()->type() ) )
     {
@@ -900,13 +899,11 @@ ModelPhysics<Dim>::PhysicsTreeNode::addChild( std::string const& type, physics_p
 
 
     auto phycisUsedCollection = p->initPhysics( p->keyword(), models, submodelsName );
-    std::cout << "phycisUsedCollection.size() : " << phycisUsedCollection.size() << std::endl;
 
     // first : add subtree
     std::vector<std::shared_ptr<PhysicsTreeNode>> treeNodeAdded;
     for ( auto phycisUsed : phycisUsedCollection )
     {
-        std::cout << "phycisUsed " << phycisUsed->id() << std::endl;
         M_children.push_back( PhysicsTreeNode::New(p,phycisUsed) );
         treeNodeAdded.push_back( M_children.back() );
 
