@@ -20,9 +20,11 @@ parser.add_argument('--config-file', help="path to cfg file", type=str)
 parser.add_argument('--odir', help="path to output directory", type=str)
 parser.add_argument('--dim', help="dimension of the case", type=int)
 parser.add_argument('--time-dependant', help="time dependand case", type=bool, default=False)
-parser.add_argument('--greedy', help="compute using greedy algorithm", type=int, default=1)
+parser.add_argument('--algo', help="compute using greedy algorithm (default 1) 0 : From sample, 1 : Greedy, 2 : POD", type=int, default=1)
 parser.add_argument('--train-size', help="size of the (random) training set", type=int, default=40)
 parser.add_argument('--tol', help="tolerance for generating", type=float, default=1e-6)
+
+algos_names = ["generation_from_sample", "greedy", "POD_modes"]
 
 if __name__ == '__main__':
     args = parser.parse_args()
@@ -30,7 +32,7 @@ if __name__ == '__main__':
     config_file = args.config_file
     time_dependant = args.time_dependant
     odir = args.odir
-    compute_greedy = args.greedy == 1
+    algo = args.algo
     size = args.train_size
     tol = args.tol
 else:
@@ -39,6 +41,7 @@ else:
     time_dependant = None
     odir = None
     compute_greedy = None
+    algo = None
     size = None
     tol = 1e-6
 
@@ -59,6 +62,8 @@ def generate_basis():
         raise ValueError("dim must be 2 or 3")
     if config_file is None:
         raise ValueError("invalid path to config-file")
+    if algo not in [0,1,2]:
+        raise ValueError(f"Algo {algo} not valid")
 
 
     if rank == 0:
@@ -161,16 +166,29 @@ def generate_basis():
 
 
     mus = listOfParams(size)
-    if compute_greedy:
+    if rank == 0:
+        print("[generate_basis] Start generation of the basis using algo", algos_names[algo])
+    if algo == 0:
+        rb.computeOfflineReducedBasis(mus)
+
+    elif algo == 1:
         mu_0 = Dmu.element()
         rb.greedy(mu_0, mus, eps_tol=tol)
+
+    elif algo == 2:
+        rb.generatePOD(mus, eps_tol=tol)
     else:
-        rb.computeOfflineReducedBasis(mus)
+        pass
+
+    if rank == 0:
+        print("[generate_basis] basis generated ! Now computing errors")
 
     rb.computeOfflineErrorRhs()
     rb.computeOfflineError()
 
     if rank == 0:
+        print("[generate_basis] Done !")
+
         rb.saveReducedBasis(dir, force=True)
 
     return rb

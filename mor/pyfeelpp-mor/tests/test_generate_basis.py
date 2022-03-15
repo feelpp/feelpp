@@ -22,7 +22,7 @@ def test_compute_basis_sample(prefix, case, casefile, dim, time_dependent, init_
     os.system(f"rm -rf {OUTDIR}/sample")
     g.dim = dim
     g.time_dependant = time_dependent
-    g.compute_greedy = False
+    g.algo = 0
     g.size = 40
     g.case = prefix + "/" + case
     g.casefile = casefile
@@ -41,11 +41,31 @@ def test_compute_basis_greedy(prefix, case, casefile, dim, time_dependent, init_
     os.system(f"rm -rf {OUTDIR}/greedy")
     g.dim = dim
     g.time_dependant = time_dependent
-    g.compute_greedy = True
+    g.algo = 1
     g.size = 60
     g.case = prefix + "/" + case
     g.casefile = casefile
     g.dir = OUTDIR + "/greedy"
+    g.config_file = ''
+    g.tol = 1e-3
+
+    # compute and save the basis
+    g.generate_basis()
+
+
+@pytest.mark.parametrize("prefix,case,casefile,dim,time_dependent", cases_params, ids=cases_ids)
+def test_compute_basis_POD(prefix, case, casefile, dim, time_dependent, init_feelpp):
+
+    e = init_feelpp
+
+    os.system(f"rm -rf {OUTDIR}/sample")
+    g.dim = dim
+    g.time_dependant = time_dependent
+    g.algo = 2
+    g.size = 15
+    g.case = prefix + "/" + case
+    g.casefile = casefile
+    g.dir = OUTDIR + "/sample"
     g.config_file = ''
     g.tol = 1e-3
 
