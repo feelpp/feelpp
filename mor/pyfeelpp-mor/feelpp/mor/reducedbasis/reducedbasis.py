@@ -488,7 +488,7 @@ class reducedbasisOffline(reducedbasis):
         # alphaMubar = 1
         if rank == 0:
             print(f"[reducedbasis] Constant of continuity : {self.alphaMubar}")
-        betaA_bar_np = np.array(self.betaA_bar)
+        betaA_bar_np = np.array(self.betaA_bar[0])
         
         def alphaLB(mu):
             # From a parameter
@@ -516,7 +516,6 @@ class reducedbasisOffline(reducedbasis):
         # gammaMubar = 1
         if rank == 0:
             print(f"[reducedbasis] Constant of coercivity : {self.gammaMubar}")
-        betaA_bar_np = np.array(self.betaA_bar)
         
         def gammaUB(mu):
             # From a parameter
@@ -1183,22 +1182,18 @@ class reducedbasisOffline(reducedbasis):
         for i in range(nCv):
             eigenval[i] = float(E.getEigenvalue(i).real)
 
-        phi = PETSc.Vec().create()
-        phi.setSizes(self.NN)
-        phi.setFromOptions()
-        phi.setUp()
         eigenvect = PETSc.Vec().create()
         eigenvect.setSizes(nCv)
         eigenvect.setFromOptions()
         eigenvect.setUp()
 
-
         while Delta > eps_tol:
             self.N += 1
+            phi = solEF[Xi_train[0]].copy()
             phi.set(0)
             for i in range(nCv):
-                E.getEigenvector(i, eigenvect)
-                p = float(eigenval[i]) * solEF[Xi_train[i]]
+                E.getEigenvector(self.N-1, eigenvect)
+                p = float(eigenvect[i]) * solEF[Xi_train[i]]
                 phi += p
             self.Z.append(phi.copy())
 
