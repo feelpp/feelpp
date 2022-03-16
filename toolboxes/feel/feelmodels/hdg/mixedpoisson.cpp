@@ -53,7 +53,8 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::MixedPoisson( std::string const& prefix,
       M_tauCst(doption( prefixvm(this->prefix(), "tau_constant") )),
       M_useSC(boption( prefixvm(this->prefix(), "use-sc")) ),
       M_postMatrixInit(false),
-      M_solverName(soption(_prefix=this->prefix(), _name="solver"))
+      M_solverName(soption(_prefix=this->prefix(), _name="solver")),
+      M_useNearNullSpace(boption(_prefix=this->prefix(), _name="use-near-null-space"))
 {
     this->log("MixedPoisson","constructor", "start" );
 
@@ -629,9 +630,11 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::solveLinear()
 
     if constexpr( is_tensor2symm )
     {
-        auto name = this->prefix()+".sc";
-        Feel::cout << "attaching near null space to " << name << std::endl;
-        Feel::backend( _name=name )->attachNearNullSpace( this->nullSpace(name) );
+        if( M_useNearNullSpace )
+        {
+            auto name = this->prefix()+".sc";
+            Feel::backend( _name=name )->attachNearNullSpace( this->nullSpace(name) );
+        }
     }
 
     bbf.solve(_solution=U, _rhs=blf, _condense=M_useSC, _name=this->prefix());

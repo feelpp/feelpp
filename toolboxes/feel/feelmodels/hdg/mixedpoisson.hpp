@@ -210,6 +210,7 @@ protected:
     std::string M_solverName;
     double M_tauCst;
     bool M_useSC;
+    bool M_useNearNullSpace;
 
     // bool M_isPicard;
 
@@ -281,6 +282,8 @@ public:
     bool useSC() const { return M_useSC; }
     void setUseSC(bool sc) { M_useSC = sc; }
     virtual int constantSpacesSize() const { return M_bcIntegralMarkerManagement.markerIntegralBC().size(); }
+    bool useNearNullSpace() const { return M_useNearNullSpace; }
+    void setUseNearNullSpace(bool use) { M_useNearNullSpace = use; }
 
 protected :
     void loadParameterFromOptionsVm();
