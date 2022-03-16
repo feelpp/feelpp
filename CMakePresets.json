@@ -278,8 +278,23 @@
             },
             "execution": {
                 "noTestsAction": "error",
-                "stopOnFailure": true
+                "stopOnFailure": false
             }
+        },
+        {
+            "name": "toolboxes",
+            "configurePreset": "toolboxes",
+            "inherits": "feelpp"
+        },
+        {
+            "name": "mor",
+            "configurePreset": "mor",
+            "inherits": "feelpp"
+        },
+        {
+            "name": "feelpp-python",
+            "configurePreset": "feelpp-python",
+            "inherits": "feelpp"
         }
     ],
     "vendor": {
