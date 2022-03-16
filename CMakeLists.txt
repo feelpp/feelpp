@@ -23,7 +23,7 @@
 #
 cmake_minimum_required (VERSION 3.13.0)
 
-include(${CMAKE_SOURCE_DIR}/feelpp.version.cmake)
+
 
 if ( FEELPP_COMPONENT STREQUAL "toolboxes" OR 
       FEELPP_COMPONENT STREQUAL "mor" OR
@@ -34,6 +34,9 @@ if ( FEELPP_COMPONENT STREQUAL "toolboxes" OR
       project(feelpp-${FEELPP_COMPONENT})
       message(STATUS "[component] ${FEELPP_COMPONENT}")
       add_subdirectory(${FEELPP_COMPONENT})
+      if ( NOT FEELPP_VERSION_MAJOR )
+        include(${CMAKE_SOURCE_DIR}/feelpp.version.cmake)
+      endif()
       include(${CMAKE_SOURCE_DIR}/feelpp.package.cmake)
 else()
 
@@ -192,7 +195,7 @@ add_custom_target(install-testcase
 
 add_custom_target(check-full COMMAND "ctest")
 
-
+include(${CMAKE_SOURCE_DIR}/feelpp.version.cmake)
 
 ################################################################################
 # Feel

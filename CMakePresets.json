@@ -200,21 +200,27 @@
         {
             "name": "feelpp",
             "configurePreset": "feelpp",
-            "inherits": "default"
+            "inherits": "default",
+            "targets": [
+                "all",
+                "install"
+            ]
         },
         {
             "name": "toolboxes",
             "inherits": "default",
-            "configurePreset": "toolboxes"
+            "configurePreset": "toolboxes",
+            "targets": [
+                "all",
+                "install"
+            ]
         },
         {
             "name": "mor",
             "inherits": "default",
             "configurePreset": "mor",
             "targets": [
-                "feelpp_mor",
-                "pyfeelppmor",
-                "feelpp_mor_apps",
+                "all",
                 "install"
             ]
         },
