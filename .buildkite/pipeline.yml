@@ -13,7 +13,6 @@ steps:
        artifacts: Testing/junit-*.xml
        fail-build-on-error: true
    if: build.message !~ /skip feelpp/
-# - wait
  - trigger: "pkg-feelpp"
    label: ":package: :debian: :ubuntu: Feel++ ${BUILDKITE_BRANCH}"
    async: true
@@ -21,14 +20,6 @@ steps:
      ( pipeline.slug=="feelpp" && ( build.branch == "develop" || build.branch == "master" )) && 
      build.message !~ /skip feelpp/
  - wait
-# # - trigger: "feelpp-singularity"
-# #   label: ":package: :singularity: Feel++ feelpp ${BUILDKITE_BRANCH} containers"
-# #   async: true
-# #   build:
-# #     env:
-# #       GIRDER_ID: "5a4fa90ab0e9571f842931e5"
-# #       PROJECT: "feelpp"
-# #       TAG: ${BUILDKITE_BRANCH}
  - trigger: "feelpp-testsuite"
    label: ":docker: compile and run the Feel++ testsuite :rocket:"
    async: true
@@ -48,22 +39,6 @@ steps:
    agents:
      docker: true
  - wait
-#- trigger: "pkg-feelpp-toolboxes-focal"
-#   label: ":package: :debian: :ubuntu: Feel++ Toolboxes ${BUILDKITE_BRANCH}"
-#   async: true
-#   if: |
-#     ((build.message !~ /skip toolboxes/) &&
-#     (build.message !~ /skip components/)) &&
-#     (pipeline.slug=="feelpp" && ( build.branch == "develop" || build.branch == "master" ))
-# #  - wait
-# # # - trigger: "feelpp-singularity"
-# # #   label: ":package: :singularity: Feel++ Toolboxes ${BUILDKITE_BRANCH} containers"
-# # #   async: true
-# # #   build:
-# # #     env:
-# # #       GIRDER_ID: "5a4fa90ab0e9571f842931e5"
-# # #       PROJECT: "feelpp-toolboxes"
-# # #       TAG: ${BUILDKITE_BRANCH}
  - name: ':$TARGET, $CXX, feelpp-mor :hammer: :docker: :rocket:'
    command: feelpp/tools/scripts/buildkite/install-feelpp.sh mor
    if: |
@@ -71,31 +46,10 @@ steps:
      (build.message !~ /skip components/)
    agents:
      docker: true
- - name: ':$TARGET, $CXX, feelpp-python :hammer: :docker: :rocket:'
+ - name: ':$TARGET, $CXX, feelpp-python :python: :hammer: :docker: :rocket:'
    command: feelpp/tools/scripts/buildkite/install-feelpp.sh python
    if: |
      (build.message !~ /skip python/) &&
      (build.message !~ /skip components/)
    agents:
      docker: true
-# - wait
-# - trigger: "pkg-feelpp-mor"
-#   label: ":package: :debian: :ubuntu: Feel++ MOR ${BUILDKITE_BRANCH}"
-#   async: true
-#   if: |
-#     ((build.message !~ /skip mor/) &&
-#     (build.message !~ /skip components/)) &&
-#     (pipeline.slug=="feelpp" && ( build.branch == "develop" || build.branch == "master" ))
-
-# # - wait
-# #- trigger: "feelpp-singularity"
-# #  label: ":package: :singularity: Feel++ MOR ${BUILDKITE_BRANCH} containers"
-# #  async: true
-# #  build:
-# #    env:
-# #      GIRDER_ID: "5a4fa90ab0e9571f842931e5"
-# #      PROJECT: "feelpp-mor"
-# #      TAG: ${BUILDKITE_BRANCH}
-# # notify:
-# #   - slack: #env-buildkite
-# 
