@@ -68,8 +68,10 @@
                 "FEELPP_COMPONENT": "feelpp",
                 "FEELPP_ENABLE_MOR": "OFF",
                 "FEELPP_ENABLE_TOOLBOXES": "OFF",
+                "FEELPP_ENABLE_FEELPP_PYTHON": "OFF",
                 "FEELPP_ENABLE_TESTS": "OFF",
-                "FEELPP_ENABLE_FMILIB": "OFF"
+                "FEELPP_ENABLE_FMILIB": "OFF",
+                "FEELPP_ENABLE_BENCHMARKS": "OFF"
             }
         },
         {
@@ -217,14 +219,9 @@
             ]
         },
         {
-            "name": "pyfeelpp",
+            "name": "feelpp-python",
             "inherits": "default",
-            "configurePreset": "pyfeelpp"
-        },
-        {
-            "name": "pyfeelpp-all",
-            "inherits": "default",
-            "configurePreset": "pyfeelpp-all",
+            "configurePreset": "feelpp-python",
             "targets": [
                 "pyfeelpp",
                 "pyfeelpp-toolboxes",
@@ -234,9 +231,9 @@
             ]
         },
         {
-            "name": "pyfeelpp-all-dbg",
+            "name": "feelpp-python-dbg",
             "inherits": "default",
-            "configurePreset": "pyfeelpp-all-dbg",
+            "configurePreset": "feelpp-python-dbg",
             "targets": [
                 "all",
                 "install"
@@ -252,6 +249,24 @@
         {
             "name": "default",
             "configurePreset": "default",
+            "filter":{
+                "include":{
+                    "name":"feelpp"
+                }
+            },
+            "output": {
+                "outputOnFailure": true
+            },
+            "execution": {
+                "jobs":2,
+                "noTestsAction": "error",
+                "stopOnFailure": true
+            }
+        },
+        {
+            "name": "feelpp",
+            "configurePreset": "feelpp",
+            "inherits":"default",
             "output": {
                 "outputOnFailure": true
             },
