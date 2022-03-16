@@ -53,43 +53,46 @@
     },
     "PostProcess":
     {
-        "Exports":
+        "elasticity":
         {
-            "fields":["stress","displacement"]
-        },
-        "Measures":
-        {
-            "Norm":
+            "Exports":
             {
-                "displacement_error":
-                {
-                    "type":"L2-error",
-                    "field":"displacement",
-                    "solution":"{1/(2*Pi^2)*sin(Pi*x)*cos(Pi*y),1/(2*Pi^2)*cos(Pi*x)*sin(Pi*y)}:x:y",
-                    "markers":"omega"
-                },
-                "stress_error":
-                {
-                    "type":"L2-error",
-                    "field":"stress",
-                    "solution":"{2.0*cos(Pi*x)*cos(Pi*y)/Pi, -1.0*sin(Pi*x)*sin(Pi*y)/Pi, -1.0*sin(Pi*x)*sin(Pi*y)/Pi, 2.0*cos(Pi*x)*cos(Pi*y)/Pi}:x:y",
-                    "markers":"omega"
-                }
-            }
-        },
-        "Checkers":
-        {
+                "fields":["stress","displacement"]
+            },
             "Measures":
             {
-                "Norm_displacement_error_L2-error":
+                "Norm":
                 {
-                    "value":0,
-                    "tolerance":1e-5
-                },
-                "Norm_stress_error_L2-error":
+                    "displacement_error":
+                    {
+                        "type":"L2-error",
+                        "field":"displacement",
+                        "solution":"{1/(2*Pi^2)*sin(Pi*x)*cos(Pi*y),1/(2*Pi^2)*cos(Pi*x)*sin(Pi*y)}:x:y",
+                        "markers":"omega"
+                    },
+                    "stress_error":
+                    {
+                        "type":"L2-error",
+                        "field":"stress",
+                        "solution":"{2.0*cos(Pi*x)*cos(Pi*y)/Pi, -1.0*sin(Pi*x)*sin(Pi*y)/Pi, -1.0*sin(Pi*x)*sin(Pi*y)/Pi, 2.0*cos(Pi*x)*cos(Pi*y)/Pi}:x:y",
+                        "markers":"omega"
+                    }
+                }
+            },
+            "Checkers":
+            {
+                "Measures":
                 {
-                    "value":0,
-                    "tolerance":1e-5
+                    "Norm_displacement_error_L2-error":
+                    {
+                        "value":0,
+                        "tolerance":1e-3
+                    },
+                    "Norm_stress_error_L2-error":
+                    {
+                        "value":0,
+                        "tolerance":5e-3
+                    }
                 }
             }
         }
