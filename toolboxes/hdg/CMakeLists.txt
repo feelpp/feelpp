@@ -42,7 +42,8 @@ feelpp_add_application( hdg_elasticity
   SRCS mixedelasticity_main.cpp
   INCLUDE_IN_ALL
   LINK_LIBRARIES feelpp_toolbox_hdg_lib
-  INSTALL MAN hdg_elasticity )
+  INSTALL MAN hdg_elasticity
+  TESTS )
 
 feelpp_add_application( hdg_thermoelectric
   SRCS thermoelectric_main.cpp
