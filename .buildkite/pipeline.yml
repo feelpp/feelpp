@@ -4,15 +4,15 @@ steps:
    if: build.message !~ /skip feelpp/
    agents:
      docker: true
-   artifact_paths: Testing/junit-*.xml
+#   artifact_paths: Testing/junit-*.xml
  - wait: ~
    if: build.message !~ /skip feelpp/
    continue_on_failure: false
- - plugins:
-     junit-annotate#v1.7.0:
-       artifacts: Testing/junit-*.xml
-       fail-build-on-error: true
-   if: build.message !~ /skip feelpp/
+ #- plugins:
+ #    junit-annotate#v1.7.0:
+ #      artifacts: Testing/junit-*.xml
+ #      fail-build-on-error: true
+ #  if: build.message !~ /skip feelpp/
  - trigger: "pkg-feelpp"
    label: ":package: :debian: :ubuntu: Feel++ ${BUILDKITE_BRANCH}"
    async: true
