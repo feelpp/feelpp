@@ -14,8 +14,6 @@
         },
         "fsi":
         {
-            //"materials":["Blood","ArterialWall"], // TODO not works when remove this line
-            //"subphysics":["fluid","solid"],
             "setup":{
                 "interface":"wall_balloon_internal"
             }
