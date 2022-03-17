@@ -55,18 +55,10 @@ struct MeshContiguousNumberingMapping
 
             if ( M_partIdToRangeElement.empty() )
             {
-                std::map<int,int> collectionOfMarkersFlag;
-                auto const en_part = mesh->endParts();
-                for ( auto it_part = mesh->beginParts() ; it_part!=en_part;++it_part )
-                    collectionOfMarkersFlag[it_part->first] = it_part->first;
-
-                auto allRanges = collectionOfMarkedelements( mesh, collectionOfMarkersFlag );
-                for ( auto const& [part,rangeElt] : allRanges )
+                for ( auto const& [fragmentId,fragmentData] : fragmentationMarkedElements( mesh ) )
                 {
-                    std::string markerName = mesh->markerName( part );
-                    if ( markerName.empty() || !mesh->hasElementMarker( markerName ) )
-                        markerName = "";
-                    M_partIdToRangeElement[part] = std::make_tuple(markerName, rangeElt );
+                    auto const& [range,mIds,fragmentName] = fragmentData;
+                    M_partIdToRangeElement[fragmentId] = std::make_tuple(fragmentName,range);
                 }
             }
 

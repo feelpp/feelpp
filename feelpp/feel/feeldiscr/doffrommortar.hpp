@@ -61,6 +61,7 @@ class DofFromMortar
     typedef typename element_type::edge_permutation_type edge_permutation_type;
     typedef typename element_type::face_permutation_type face_permutation_type;
     using size_type = typename mesh_type::size_type;
+    using mesh_marker_type = typename doftable_type::mesh_marker_type;
     static const uint16_type nOrder = mortar_fe_type::nOrder;
     static const uint16_type nDim = mesh_type::nDim;
     static const uint16_type nRealDim = mesh_type::nRealDim;
@@ -135,6 +136,7 @@ class DofFromMortar
     doftable_type* M_doftable;
     mortar_fe_type const& M_mortar_fe;
     fe_type const& M_fe;
+    mesh_marker_type M_emptyMarker;
 
   private:
     //! default constructor
@@ -158,8 +160,8 @@ class DofFromMortar
         index_type ie = elt.id();
         auto const& pt0 = elt.point( 0 );
         auto const& pt1 = elt.point( 1 );
-        Marker1 markerPt0 = pt0.hasMarker() ? pt0.marker() : Marker1( 0 );
-        Marker1 markerPt1 = pt1.hasMarker() ? pt1.marker() : Marker1( 0 );
+        mesh_marker_type const& markerPt0 = pt0.hasMarker() ? pt0.marker() : M_emptyMarker;
+        mesh_marker_type const& markerPt1 = pt1.hasMarker() ? pt1.marker() : M_emptyMarker;
 
         uint16_type lc = local_shift;
         index_type n = elt.neighbor( 0 );
@@ -218,7 +220,7 @@ class DofFromMortar
 
         index_type ie = elt.id();
         uint16_type lc = local_shift;
-        Marker1 markerElt = elt.hasMarker() ? elt.marker() : Marker1( 0 );
+        mesh_marker_type const& markerElt = elt.hasMarker() ? elt.marker() : M_emptyMarker;
 
         DVLOG( 2 ) << "adding mortar dof on edge " << mortar_fe_type::nDofPerEdge << " nOrder = " << nOrder;
         for ( uint16_type l = 0; l < mortar_fe_type::nDofPerEdge; ++l, ++lc )
@@ -269,7 +271,7 @@ class DofFromMortar
 
         for ( uint16_type i = 0; i < element_type::numEdges; ++i )
         {
-            Marker1 markerEdge = elt.edge( i ).hasMarker() ? elt.edge( i ).marker() : Marker1( 0 );
+            mesh_marker_type const& markerEdge = elt.edge( i ).hasMarker() ? elt.edge( i ).marker() : M_emptyMarker;
 
             for ( uint16_type l = 0; l < mortar_fe_type::nDofPerEdge; ++l, ++lc )
             {
@@ -324,7 +326,7 @@ class DofFromMortar
 
         for ( uint16_type i = 0; i < element_type::numEdges; ++i )
         {
-            Marker1 markerEdge = elt.edge( i ).hasMarker() ? elt.edge( i ).marker() : Marker1( 0 );
+            mesh_marker_type const& markerEdge = elt.edge( i ).hasMarker() ? elt.edge( i ).marker() : M_emptyMarker;
             for ( uint16_type l = 0; l < mortar_fe_type::nDofPerEdge; ++l, ++lc )
             {
                 size_type gDof = elt.edge( i ).id() * mortar_fe_type::nDofPerEdge;
@@ -384,7 +386,7 @@ class DofFromMortar
 
         index_type ie = elt.id();
         uint16_type lc = local_shift;
-        Marker1 markerElt = elt.hasMarker() ? elt.marker() : Marker1( 0 );
+        mesh_marker_type const& markerElt = elt.hasMarker() ? elt.marker() : M_emptyMarker;
 
         for ( uint16_type l = 0; l < mortar_fe_type::nDofPerFace; ++l, ++lc )
         {
@@ -416,7 +418,7 @@ class DofFromMortar
             face_permutation_type permutation = elt.facePermutation( i );
             FEELPP_ASSERT( permutation != face_permutation_type( 0 ) ).error( "invalid face permutation" );
 
-            Marker1 markerFace = elt.face( i ).hasMarker() ? elt.face( i ).marker() : Marker1( 0 );
+            mesh_marker_type const& markerFace = elt.face( i ).hasMarker() ? elt.face( i ).marker() : M_emptyMarker;
 
             // Polynomial order in each direction
             uint16_type p = 1;
@@ -496,7 +498,7 @@ class DofFromMortar
 
         index_type ie = elt.id();
         uint16_type lc = local_shift;
-        Marker1 markerElt = elt.hasMarker() ? elt.marker() : Marker1( 0 );
+        mesh_marker_type const& markerElt = elt.hasMarker() ? elt.marker() : M_emptyMarker;
 
         for ( uint16_type l = 0; l < mortar_fe_type::nDofPerVolume; ++l, ++lc )
         {
