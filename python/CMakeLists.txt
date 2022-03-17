@@ -59,6 +59,7 @@ if ( CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR OR FEELPP_COMPONENT STRE
 else()
   feelpp_get_environment()
   set(FEELPP_DIR ${CMAKE_INSTALL_PREFIX})
+   set(FEELPP_FOUND ON)
   set(FEELPP_TOOLBOXES_FOUND ON)
   set(FEELPP_MOR_FOUND ON)
 endif()
@@ -69,10 +70,15 @@ if ( FEELPP_HAS_PYTHON )
 endif()
 
 #include(feelpp.module.pyfeelpp)
-
+if ( FEELPP_FOUND )
 add_subdirectory(pyfeelpp)
+endif()
 
 # TOOLBOXES needs to be defined for pyfeelpp-toolboxes 
+if (FEELPP_TOOLBOXES_FOUND )
 add_subdirectory( pyfeelpp-toolboxes )
+endif()
 
+if ( FEELPP_MOR_FOUND ) 
 add_subdirectory(pyfeelpp-mor)
+endif()
