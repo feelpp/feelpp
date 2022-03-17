@@ -192,6 +192,8 @@ if(NOT FEELPP_ENABLE_BUILD_STATIC)
 	set(CMAKE_C++_CREATE_SHARED_LIBRARY 1)
 endif()
 
+option(FEELPP_ENABLE_JSON_DIAGNOSTICS "enable extended json diagnostics" ON)
+
 # feel++ lib
 ADD_SUBDIRECTORY ( feel )
 

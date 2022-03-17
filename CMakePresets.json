@@ -20,7 +20,8 @@
                     "value": "ON"
                 },
                 "FEELPP_ENABLE_MOR": "ON",
-                "FEELPP_ENABLE_FMILIB": "OFF"
+                "FEELPP_ENABLE_FMILIB": "OFF",
+                "FEELPP_ENABLE_BENCHMARKS": "ON"
             },
             "environment": {
                 "MY_ENVIRONMENT_VARIABLE": "Test"
