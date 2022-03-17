@@ -178,6 +178,88 @@ public:
         std::set<std::string> M_markers;
     };
 
+    class OutletFree
+    {
+    public:
+
+        OutletFree( std::string const& name ) : M_name( name ) {}
+        OutletFree( OutletFree const& ) = default;
+        OutletFree( OutletFree && ) = default;
+
+        //! setup bc from json
+        void setup( ModelBase const& mparent, nl::json const& jarg, ModelIndexes const& indexes );
+
+        //! return markers
+        std::set<std::string> const& markers() const { return M_markers; }
+
+        //! update informations
+        void updateInformationObject( nl::json & p ) const;
+        //! return tabulate information from json info
+        static tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp );
+
+    private:
+        std::string M_name;
+        std::set<std::string> M_markers;
+    };
+
+    class OutletWindkessel
+    {
+    public:
+        enum class CouplingType { Implicit=0, Explicit };
+
+        OutletWindkessel( std::string const& name ) : M_name( name ), M_couplingType( CouplingType::Implicit ) {}
+        OutletWindkessel( OutletWindkessel const& ) = default;
+        OutletWindkessel( OutletWindkessel && ) = default;
+
+        //! setup bc from json
+        void setup( ModelBase const& mparent, nl::json const& jarg, ModelIndexes const& indexes );
+
+        //! return markers
+        std::set<std::string> const& markers() const { return M_markers; }
+
+        //! return expression of distal resistance
+        template <typename SymbolsExprType = symbols_expression_empty_t>
+        auto expr_Rd( SymbolsExprType const& se = symbols_expression_empty_t{} ) const
+        {
+            return Feel::vf::expr( M_mexpr_Rd.template expr<1,1>(), se );
+        }
+        //! return expression of proximal resistance
+        template <typename SymbolsExprType = symbols_expression_empty_t>
+        auto expr_Rp( SymbolsExprType const& se = symbols_expression_empty_t{} ) const
+        {
+            return Feel::vf::expr( M_mexpr_Rp.template expr<1,1>(), se );
+        }
+        //! return expression of capacitance
+        template <typename SymbolsExprType = symbols_expression_empty_t>
+        auto expr_Cd( SymbolsExprType const& se = symbols_expression_empty_t{} ) const
+        {
+            return Feel::vf::expr( M_mexpr_Cd.template expr<1,1>(), se );
+        }
+
+        //! return coupling type of this bc (Implicit or Explicit)
+        CouplingType couplingType() const { return M_couplingType; }
+
+        bool useImplicitCoupling() const { return M_couplingType == CouplingType::Implicit; }
+
+        void setParameterValues( std::map<std::string,double> const& paramValues )
+            {
+                M_mexpr_Rd.setParameterValues( paramValues );
+                M_mexpr_Rp.setParameterValues( paramValues );
+                M_mexpr_Cd.setParameterValues( paramValues );
+            }
+
+        //! update informations
+        void updateInformationObject( nl::json & p ) const;
+        //! return tabulate information from json info
+        static tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp );
+
+    private:
+        std::string M_name;
+        std::set<std::string> M_markers;
+        ModelExpression M_mexpr_Rd, M_mexpr_Rp, M_mexpr_Cd;
+        CouplingType M_couplingType;
+    };
+
     class BodyInterface
     {
     public :
@@ -227,6 +309,10 @@ public:
     std::map<std::string,std::shared_ptr<NormalStress>> const& normalStress() const { return M_normalStress; }
     //! return inlet
     std::map<std::string,std::shared_ptr<Inlet>> const& inlet() const { return M_inlet; }
+    //! return outlet free (no normal stress)
+    std::map<std::string,std::shared_ptr<OutletFree>> const& outletFree() const { return M_outletFree; }
+    //! return outlet windkessel
+    std::map<std::string,std::shared_ptr<OutletWindkessel>> const& outletWindkessel() const { return M_outletWindkessel; }
     //! return pressure imposed
     std::map<std::string,std::shared_ptr<PressureImposed>> const& pressureImposed() const { return M_pressureImposed; }
     //! return body interface
@@ -238,6 +324,8 @@ public:
             for ( auto const& [bcId,bcData] : M_velocityImposed )
                 if ( bcData->isMethodElimination() )
                     return true;
+            if ( !M_bodyInterface.empty() )
+                return true;
             return !M_inlet.empty() || !M_pressureImposed.empty();
         }
 
@@ -302,6 +390,8 @@ private:
     std::map<std::pair<Type,std::string>,std::shared_ptr<VelocityImposed>> M_velocityImposed;
     std::map<std::string,std::shared_ptr<NormalStress>> M_normalStress;
     std::map<std::string,std::shared_ptr<Inlet>> M_inlet;
+    std::map<std::string,std::shared_ptr<OutletFree>> M_outletFree;
+    std::map<std::string,std::shared_ptr<OutletWindkessel>> M_outletWindkessel;
     std::map<std::string,std::shared_ptr<PressureImposed>> M_pressureImposed;
     std::map<std::string,std::shared_ptr<BodyInterface>> M_bodyInterface;
 

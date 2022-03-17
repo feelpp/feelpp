@@ -460,24 +460,12 @@ public:
     typedef std::shared_ptr<op_interpolation_fluidinlet_type> op_interpolation_fluidinlet_ptrtype;
     //___________________________________________________________________________________//
     // windkessel model
-    typedef bases<Lagrange<0, Scalar,Continuous>,Lagrange<0, Scalar,Continuous> > basis_fluidoutlet_windkessel_type;
-    typedef FunctionSpace<trace_mesh_type, basis_fluidoutlet_windkessel_type > space_fluidoutlet_windkessel_type;
+    using space_fluidoutlet_windkessel_type = Pch_type<trace_mesh_type,0>;
     typedef std::shared_ptr<space_fluidoutlet_windkessel_type> space_fluidoutlet_windkessel_ptrtype;
     typedef typename space_fluidoutlet_windkessel_type::element_type element_fluidoutlet_windkessel_type;
     typedef std::shared_ptr<element_fluidoutlet_windkessel_type> element_fluidoutlet_windkessel_ptrtype;
-#if defined( FEELPP_MODELS_HAS_MESHALE )
-    typedef typename MeshALE<typename trace_mesh_type::shape_type>::ale_map_functionspace_type space_fluidoutlet_windkessel_mesh_disp_type;
-    typedef std::shared_ptr<space_fluidoutlet_windkessel_mesh_disp_type> space_fluidoutlet_windkessel_mesh_disp_ptrtype;
-    typedef typename space_fluidoutlet_windkessel_mesh_disp_type::element_type element_fluidoutlet_windkessel_mesh_disp_type;
-    typedef std::shared_ptr<element_fluidoutlet_windkessel_mesh_disp_type> element_fluidoutlet_windkessel_mesh_disp_ptrtype;
-    // typedef boost::tuple<boost::mpl::size_t<MESH_ELEMENTS>,
-    //                      typename MeshTraits<trace_mesh_type>::element_const_iterator,
-    //                      typename MeshTraits<trace_mesh_type>::element_const_iterator> range_fluidoutlet_windkessel_type;
-    typedef OperatorInterpolation<space_mesh_disp_type,
-                                  space_fluidoutlet_windkessel_mesh_disp_type/*,
-                                                                              range_fluidoutlet_windkessel_type*/> op_interpolation_fluidoutlet_windkessel_meshdisp_type;
-    typedef std::shared_ptr<op_interpolation_fluidoutlet_windkessel_meshdisp_type> op_interpolation_fluidoutlet_windkessel_meshdisp_ptrtype;
-#endif
+    using bdf_fluidoutlet_windkessel_type = Bdf<space_fluidoutlet_windkessel_type>;
+    using bdf_fluidoutlet_windkessel_ptrtype = std::shared_ptr<bdf_fluidoutlet_windkessel_type>;
 
     // dist2wall
     // typedef bases<Lagrange<1,Scalar,Continuous,PointSetFekete> > basis_dist2wall_type;
@@ -2458,31 +2446,10 @@ public :
     void updateParameterValues();
     void setParameterValues( std::map<std::string,double> const& paramValues );
 
-#if 0
-    map_vector_field<nDim,1,2> const& bcDirichlet() const { return M_bcDirichlet; }
-    map_vector_field<nDim,1,2>& bcDirichlet() { return M_bcDirichlet; }
-    std::map<ComponentType,map_scalar_field<2> > const& bcDirichletComponents() const { return M_bcDirichletComponents; }
-    std::map<ComponentType,map_scalar_field<2> > & bcDirichletComponents() { return M_bcDirichletComponents; }
-    map_scalar_field<2> const& bcNeumannScalar() const { return M_bcNeumannScalar; }
-    map_scalar_field<2> const& bcPressure() const { return M_bcPressure; }
-    map_vector_field<nDim,1,2> const& bcNeumannVectorial() const { return M_bcNeumannVectorial; }
-    map_matrix_field<nDim,nDim,2> const& bcNeumannTensor2() const { return M_bcNeumannTensor2; }
-    map_vector_field<nDim,1,2> const& bodyForces() const { return M_volumicForcesProperties; }
-
-    bool hasDirichletBC() const
-        {
-            return ( !M_bcDirichlet.empty() ||
-                     !M_bcDirichletComponents.find(Component::X)->second.empty() ||
-                     !M_bcDirichletComponents.find(Component::Y)->second.empty() ||
-                     !M_bcDirichletComponents.find(Component::Z)->second.empty() );
-        }
-#endif
-    
     // boundary conditions
     double dirichletBCnitscheGamma() const { return M_dirichletBCnitscheGamma; }
     void setDirichletBCnitscheGamma( double val) { M_dirichletBCnitscheGamma=val; }
 
-    //std::set<std::string> const& markersNameMovingBoundary() const { return this->markerALEMeshBC("moving"); }
     //___________________________________________________________________________________//
     // dirichlet with Lagrange multiplier
     trace_mesh_ptrtype const& meshDirichletLM() const { return M_meshDirichletLM; }
@@ -2492,69 +2459,13 @@ public :
     space_meanpressurelm_ptrtype const& XhMeanPressureLM( int k ) const { return M_XhMeanPressureLM[k]; }
     //___________________________________________________________________________________//
     // fluid inlet bc
-    // bool hasFluidInlet() const { return !M_fluidInletDesc.empty(); }
-    // bool hasFluidInlet( std::string const& type ) const
-    // {
-    //     for (auto const& inletbc : M_fluidInletDesc )
-    //         if ( std::get<1>( inletbc ) == type )
-    //             return true;
-    //     return false;
-    // }
-
     template <typename SymbolsExprType>
     void updateFluidInletVelocity( SymbolsExprType const& se );
     //___________________________________________________________________________________//
-    // fluid outlets bc
-    bool hasFluidOutlet() const { return !M_fluidOutletsBCType.empty(); }
-    bool hasFluidOutletFree() const { return this->hasFluidOutlet("free"); }
-    bool hasFluidOutletWindkessel() const { return this->hasFluidOutlet("windkessel"); }
-    bool hasFluidOutlet(std::string const& type) const
-    {
-        for (auto const& outletbc : M_fluidOutletsBCType )
-            if ( std::get<1>( outletbc ) == type )
-                return true;
-        return false;
-    }
-    bool hasFluidOutletWindkesselImplicit() const
-    {
-        for (auto const& outletbc : M_fluidOutletsBCType )
-            if ( std::get<1>( outletbc ) == "windkessel" && std::get<0>( std::get<2>( outletbc ) ) == "implicit" )
-                return true;
-        return false;
-    }
-    bool hasFluidOutletWindkesselExplicit() const
-    {
-        for (auto const& outletbc : M_fluidOutletsBCType )
-            if ( std::get<1>( outletbc ) == "windkessel" && std::get<0>( std::get<2>( outletbc ) ) == "explicit" )
-                return true;
-        return false;
-    }
-    int nFluidOutlet() const { return M_fluidOutletsBCType.size(); }
-    int nFluidOutletWindkesselImplicit() const
-    {
-        int res=0;
-        for (auto const& outletbc : M_fluidOutletsBCType )
-            if ( std::get<1>( outletbc ) == "windkessel" && std::get<0>( std::get<2>( outletbc ) ) == "implicit" )
-                ++res;
-        return res;
-    }
-    std::map<int,std::vector<double> > const& fluidOutletWindkesselPressureDistalOld() const { return M_fluidOutletWindkesselPressureDistal_old; }
-    trace_mesh_ptrtype const& fluidOutletWindkesselMesh() const { return M_fluidOutletWindkesselMesh; }
-    space_fluidoutlet_windkessel_ptrtype const& fluidOutletWindkesselSpace() { return M_fluidOutletWindkesselSpace; }
-
     //! return the set of body BC
     BodySetBoundaryCondition const& bodySetBC() const { return M_bodySetBC; }
     //! return the set of body BC
     BodySetBoundaryCondition & bodySetBC() { return M_bodySetBC; }
-
-#if 0 // VINCENT
-    bool hasStrongDirichletBC() const
-        {
-            bool hasStrongDirichletBC = this->hasMarkerDirichletBCelimination() || this->hasFluidInlet() || M_bcMarkersMovingBoundaryImposed.hasMarkerDirichletBCelimination() || this->hasMarkerPressureBC()
-                || M_bodySetBC.hasTranslationalVelocityExpr() || M_bodySetBC.hasAngularVelocityExpr();
-            return hasStrongDirichletBC;
-        }
-#endif
 
     //___________________________________________________________________________________//
 
@@ -2605,18 +2516,12 @@ public :
     }
 
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-    template <typename element_mecasol_ptrtype>
-    void updateStructureDisplacement(element_mecasol_ptrtype const & structSol);
-
     void updateALEmesh();
     template <typename SymbolsExprType>
     void updateALEmesh( SymbolsExprType const& se );
 private:
     void updateALEmeshImpl();
 public:
-
-    template <typename element_vel_mecasol_ptrtype>
-    void updateStructureVelocity(element_vel_mecasol_ptrtype velstruct);
 #endif
     //___________________________________________________________________________________//
 
@@ -2737,7 +2642,6 @@ public :
     template <typename ModelContextType>
     void updateJacobian_Turbulence( DataUpdateJacobian & data, ModelContextType const& mfields ) const;
 private :
-    void updateBoundaryConditionsForUse();
 
     //protected:
     virtual size_type initStartBlockIndexFieldsInMatrix();
@@ -2792,17 +2696,6 @@ private :
     // boundary conditions
     using boundary_conditions_type = FluidMechanicsBoundaryConditions<nDim>;
     std::shared_ptr<boundary_conditions_type> M_boundaryConditions;
-#if 0
-    // boundary conditions + body forces
-    map_vector_field<nDim,1,2> M_bcDirichlet;
-    std::map<ComponentType,map_scalar_field<2> > M_bcDirichletComponents;
-    map_scalar_field<2> M_bcNeumannScalar, M_bcPressure;
-    map_vector_field<nDim,1,2> M_bcNeumannVectorial;
-    map_matrix_field<nDim,nDim,2> M_bcNeumannTensor2;
-    map_vector_field<nDim,1,2> M_bcMovingBoundaryImposed;
-    MarkerManagementDirichletBC M_bcMarkersMovingBoundaryImposed;
-    map_vector_field<nDim,1,2> M_volumicForcesProperties;
-#endif
     //---------------------------------------------------
     std::shared_ptr<RangeDistributionByMaterialName<mesh_type> > M_rangeDistributionByMaterialName;
     // range of mesh faces by material : (type -> ( matName -> ( faces range ) )
@@ -2875,10 +2768,9 @@ private :
     std::map<std::string,std::tuple<component_element_velocity_ptrtype,
                                     op_interpolation_fluidinlet_ptrtype > > M_fluidInletVelocityInterpolated;
     std::map<std::string,std::tuple<element_fluidinlet_ptrtype,double,double> > M_fluidInletVelocityRef;//marker->(uRef,maxURef,flowRateRef)
-    // fluid outlet 0d (free, windkessel)
-    std::vector< std::tuple<std::string,std::string, std::tuple<std::string,double,double,double> > > M_fluidOutletsBCType;
-    mutable std::map<int,double> M_fluidOutletWindkesselPressureDistal,M_fluidOutletWindkesselPressureProximal;
-    std::map<int,std::vector<double> > M_fluidOutletWindkesselPressureDistal_old;
+
+    // fluid outlet windkessel bc
+    std::map<std::string,std::tuple<std::vector<element_fluidoutlet_windkessel_ptrtype>,std::vector<bdf_fluidoutlet_windkessel_ptrtype>>> M_fluidOutletWindkesselData;  //(distal, proximal), (bdf distal, bdf proximal)
     trace_mesh_ptrtype M_fluidOutletWindkesselMesh;
     space_fluidoutlet_windkessel_ptrtype M_fluidOutletWindkesselSpace;
 
