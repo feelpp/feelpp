@@ -109,6 +109,7 @@ FluidMechanicsBoundaryConditions<Dim>::Inlet::tabulateInformations( nl::json con
     return TabulateInformations::New( tabInfo, tabInfoProp );
 }
 
+
 template <uint16_type Dim>
 void
 FluidMechanicsBoundaryConditions<Dim>::NormalStress::setup( ModelBase const& mparent, nl::json const& jarg, ModelIndexes const& indexes )
@@ -197,6 +198,113 @@ FluidMechanicsBoundaryConditions<Dim>::PressureImposed::tabulateInformations( nl
     }
     return TabulateInformations::New( tabInfo, tabInfoProp );
 }
+
+
+template <uint16_type Dim>
+void
+FluidMechanicsBoundaryConditions<Dim>::OutletFree::setup( ModelBase const& mparent, nl::json const& jarg, ModelIndexes const& indexes )
+{
+     if ( jarg.contains( "markers" ) )
+     {
+         ModelMarkers markers;
+         markers.setup( jarg.at("markers"), indexes );
+         M_markers = markers;
+     }
+     else
+         M_markers = { M_name };
+}
+
+template <uint16_type Dim>
+void
+FluidMechanicsBoundaryConditions<Dim>::OutletFree::updateInformationObject( nl::json & p ) const
+{
+    p["markers"] = M_markers;
+}
+
+template <uint16_type Dim>
+tabulate_informations_ptr_t
+FluidMechanicsBoundaryConditions<Dim>::OutletFree::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp )
+{
+    Feel::Table tabInfo;
+    if ( jsonInfo.contains("markers") )
+    {
+        Feel::Table tabInfoMarkers = TabulateInformationTools::FromJSON::createTableFromArray( jsonInfo.at("markers") , true );
+        if ( tabInfoMarkers.nRow() > 0 )
+            tabInfo.add_row( { "markers", tabInfoMarkers } );
+    }
+    return TabulateInformations::New( tabInfo, tabInfoProp );
+}
+
+
+template <uint16_type Dim>
+void
+FluidMechanicsBoundaryConditions<Dim>::OutletWindkessel::setup( ModelBase const& mparent, nl::json const& jarg, ModelIndexes const& indexes )
+{
+     if ( jarg.contains( "markers" ) )
+     {
+         ModelMarkers markers;
+         markers.setup( jarg.at("markers"), indexes );
+         M_markers = markers;
+     }
+     else
+         M_markers = { M_name };
+
+    if ( jarg.contains( "Rd" ) )
+        M_mexpr_Rd.setExpr( jarg.at( "Rd" ), mparent.worldComm(), mparent.repository().expr(), indexes );
+    if ( jarg.contains( "Rp" ) )
+        M_mexpr_Rp.setExpr( jarg.at( "Rp" ), mparent.worldComm(), mparent.repository().expr(), indexes );
+    if ( jarg.contains( "Cd" ) )
+        M_mexpr_Cd.setExpr( jarg.at( "Cd" ), mparent.worldComm(), mparent.repository().expr(), indexes );
+
+    if ( jarg.contains( "coupling" ) )
+    {
+        std::string const& coupling = jarg.at( "coupling" ).template get<std::string>();
+        if ( coupling == "explicit" )
+            M_couplingType = CouplingType::Explicit;
+        else if ( coupling == "implicit" )
+            M_couplingType = CouplingType::Implicit;
+    }
+}
+
+template <uint16_type Dim>
+void
+FluidMechanicsBoundaryConditions<Dim>::OutletWindkessel::updateInformationObject( nl::json & p ) const
+{
+    auto [exprStr_Rd,compInfo_Rd] = M_mexpr_Rd.exprInformations();
+    p["expr_Rd"] = exprStr_Rd;
+    auto [exprStr_Rp,compInfo_Rp] = M_mexpr_Rp.exprInformations();
+    p["expr_Rp"] = exprStr_Rp;
+    auto [exprStr_Cd,compInfo_Cd] = M_mexpr_Cd.exprInformations();
+    p["expr_Cd"] = exprStr_Cd;
+    p["markers"] = M_markers;
+
+    if ( M_couplingType == CouplingType::Explicit )
+        p["coupling_type"] = "Explicit";
+    else
+        p["coupling_type"] = "Implicit";
+}
+
+template <uint16_type Dim>
+tabulate_informations_ptr_t
+FluidMechanicsBoundaryConditions<Dim>::OutletWindkessel::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp )
+{
+    Feel::Table tabInfo;
+    TabulateInformationTools::FromJSON::addKeyToValues( tabInfo, jsonInfo, tabInfoProp, { /*"name","type",*/"expr_Rd","expr_Rp","expr_Cd" } );
+    tabInfo.format()
+        .setShowAllBorders( false )
+        .setColumnSeparator(":")
+        .setHasRowSeparator( false );
+    if ( jsonInfo.contains("markers") )
+    {
+        Feel::Table tabInfoMarkers = TabulateInformationTools::FromJSON::createTableFromArray( jsonInfo.at("markers") , true );
+        if ( tabInfoMarkers.nRow() > 0 )
+            tabInfo.add_row( { "markers", tabInfoMarkers } );
+    }
+    TabulateInformationTools::FromJSON::addKeyToValues( tabInfo, jsonInfo, tabInfoProp, { "coupling_type" } );
+
+    return TabulateInformations::New( tabInfo, tabInfoProp );
+}
+
 
 template <uint16_type Dim>
 void
@@ -357,6 +465,19 @@ FluidMechanicsBoundaryConditions<Dim>::setup( nl::json const& jarg )
             }
         }
     }
+    for ( std::string const& bcKeyword : { "outlet_windkessel" } )
+    {
+        if ( jarg.contains( bcKeyword ) )
+        {
+            auto const& j_bc = jarg.at( bcKeyword );
+            for ( auto const& [j_bckey,j_bcval] : j_bc.items() )
+            {
+                auto bc = std::make_shared<OutletWindkessel>( j_bckey );
+                bc->setup( *tbParent,j_bcval,indexes );
+                M_outletWindkessel.emplace( j_bckey, std::move( bc ) );
+            }
+        }
+    }
     for ( std::string const& bcKeyword : { "normal_stress" } )
     {
         if ( jarg.contains( bcKeyword ) )
@@ -406,6 +527,8 @@ FluidMechanicsBoundaryConditions<Dim>::setParameterValues( std::map<std::string,
         bcData->setParameterValues( paramValues );
     for ( auto & [bcName,bcData] : M_inlet )
         bcData->setParameterValues( paramValues );
+    for ( auto & [bcName,bcData] : M_outletWindkessel )
+        bcData->setParameterValues( paramValues );
     for ( auto & [bcId,bcData] : M_normalStress )
         bcData->setParameterValues( paramValues );
     for ( auto & [bcName,bcData] : M_pressureImposed )
@@ -427,6 +550,8 @@ FluidMechanicsBoundaryConditions<Dim>::updateInformationObject( nl::json & p ) c
     }
     for ( auto const& [bcName,bcData] : M_inlet )
         bcData->updateInformationObject( p["inlet"][bcName] );
+    for ( auto const& [bcName,bcData] : M_outletWindkessel )
+        bcData->updateInformationObject( p["outlet_windkessel"][bcName] );
     for ( auto const& [bcName,bcData] : M_normalStress )
         bcData->updateInformationObject( p["normal_stress"][bcName] );
     for ( auto const& [bcName,bcData] : M_pressureImposed )
@@ -460,6 +585,13 @@ FluidMechanicsBoundaryConditions<Dim>::tabulateInformations( nl::json const& jso
         for ( auto const& [j_bckey,j_bcval]: jsonInfo.at( "inlet" ).items() )
             tabInfoBC->add( j_bckey, Inlet::tabulateInformations( j_bcval, tabInfoProp ) );
         tabInfo->add( "Inlet", tabInfoBC );
+    }
+    if ( jsonInfo.contains( "outlet_windkessel" ) )
+    {
+        auto tabInfoBC = TabulateInformationsSections::New( tabInfoProp );
+        for ( auto const& [j_bckey,j_bcval]: jsonInfo.at( "outlet_windkessel" ).items() )
+            tabInfoBC->add( j_bckey, OutletWindkessel::tabulateInformations( j_bcval, tabInfoProp ) );
+        tabInfo->add( "Outlet Windkessel", tabInfoBC );
     }
     if ( jsonInfo.contains( "normal_stress" ) )
     {

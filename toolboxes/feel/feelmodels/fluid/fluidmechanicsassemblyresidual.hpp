@@ -419,144 +419,120 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidual( 
     }
 
     //--------------------------------------------------------------------------------------------------//
-#if 0 // VINCENT
-    if ( this->hasFluidOutletWindkessel() )
+    int indexOutletWindkessel = 0;
+    for ( auto const& [bcName,bcData] : M_boundaryConditions->outletWindkessel() )
     {
-        if ( this->hasFluidOutletWindkesselExplicit() )
+        if ( bcData->useImplicitCoupling() )
         {
-            if ( BuildCstPart && doAssemblyRhs )
+            if ( BuildCstPart || (BuildNonCstPart && !UseJacobianLinearTerms) )
             {
-                auto const beta = M_bdfVelocity->poly();
+                size_type startBlockIndexWindkessel = this->startSubBlockSpaceIndex("windkessel");
 
-                for (int k=0;k<this->nFluidOutlet();++k)
+                bool hasWindkesselActiveDof = M_fluidOutletWindkesselSpace->nLocalDofWithoutGhost() > 0;
+                int blockStartWindkesselVec = rowStartInVector + startBlockIndexWindkessel + 2*indexOutletWindkessel;
+                auto const& basisToContainerGpPressureDistalVec = R->map().dofIdToContainerId( blockStartWindkesselVec );
+                auto const& basisToContainerGpPressureProximalVec = R->map().dofIdToContainerId( blockStartWindkesselVec+1 );
+                if ( hasWindkesselActiveDof )
+                    CHECK( !basisToContainerGpPressureDistalVec.empty() && !basisToContainerGpPressureProximalVec.empty() ) << "incomplete datamap info";
+                const size_type gpPressureDistalVec = (hasWindkesselActiveDof)? basisToContainerGpPressureDistalVec[0] : 0;
+                const size_type gpPressureProximalVec = (hasWindkesselActiveDof)? basisToContainerGpPressureProximalVec[0] : 0;
+
+                // windkessel parameters
+                double Rd = bcData->expr_Rd( se ).evaluate()(0,0);
+                double Rp = bcData->expr_Rp( se ).evaluate()(0,0);
+                double Cd = bcData->expr_Cd( se ).evaluate()(0,0);
+
+                auto const& windkesselData = M_fluidOutletWindkesselData.at(bcName);
+                auto bdfDistal = std::get<1>( windkesselData ).at(0);
+
+                R->setIsClosed( false );
+                if ( BuildCstPart && hasWindkesselActiveDof && doAssemblyRhs )
                 {
-                    if ( std::get<1>( M_fluidOutletsBCType[k] ) != "windkessel" || std::get<0>( std::get<2>( M_fluidOutletsBCType[k] ) ) != "explicit" )
-                        continue;
+                    auto rhsTimeDerivDistal = bdfDistal->polyDeriv();
+                    R->add( gpPressureDistalVec, -Cd*rhsTimeDerivDistal(0) );
+                }
 
-                    // Windkessel model
-                    std::string markerOutlet = std::get<0>( M_fluidOutletsBCType[k] );
-                    auto const& windkesselParam = std::get<2>( M_fluidOutletsBCType[k] );
-                    double Rd=std::get<1>(windkesselParam);
-                    double Rp=std::get<2>(windkesselParam);
-                    double Cd=std::get<3>(windkesselParam);
-                    double Deltat = this->timeStepBDF()->timeStep();
+                if ( BuildNonCstPart && !UseJacobianLinearTerms )
+                {
+                    auto rangeFaceFluidOutlet = markedfaces(mesh,bcData->markers());
 
-                    double xiBF = Rd*Cd*this->timeStepBDF()->polyDerivCoefficient(0)*Deltat+Deltat;
-                    double alphaBF = Rd*Cd/(xiBF);
-                    double gammaBF = Rd*Deltat/xiBF;
-                    double kappaBF = (Rp*xiBF+ Rd*Deltat)/xiBF;
+                    // TODO : not correct, use view here
+                    auto pDistal = std::get<0>( windkesselData ).at(0);
+                    auto pProximal = std::get<0>( windkesselData ).at(1);
 
-                    auto outletQ = integrate(_range=markedfaces(mesh,markerOutlet),
-                                             _expr=trans(idv(beta))*N() ).evaluate()(0,0);
+                    // first equation
+                    if ( hasWindkesselActiveDof )
+                    {
+                        R->add( gpPressureDistalVec,
+                                unwrap_ptr(pDistal)(0)* Cd*bdfDistal->polyDerivCoefficient(0)+ 1./Rd );
+                    }
+                    form1( _test=M_fluidOutletWindkesselSpace,_vector=R,
+                           _rowstart=blockStartWindkesselVec ) +=
+                        integrate( _range=rangeFaceFluidOutlet,
+                                   _expr=-inner(idv(u),N())*id(pDistal),
+                                   _geomap=this->geomap() );
 
-                    double pressureDistalOld  = 0;
-                    for ( uint8_type i = 0; i < this->timeStepBDF()->timeOrder(); ++i )
-                        pressureDistalOld += Deltat*this->timeStepBDF()->polyDerivCoefficient( i+1 )*this->fluidOutletWindkesselPressureDistalOld().find(k)->second[i];
+                    // second equation
+                    if ( hasWindkesselActiveDof )
+                    {
+                        R->add( gpPressureProximalVec, unwrap_ptr(pProximal)(0) - unwrap_ptr(pDistal)(0) );
+                    }
 
-                    M_fluidOutletWindkesselPressureDistal[k] = alphaBF*pressureDistalOld + gammaBF*outletQ;
-                    M_fluidOutletWindkesselPressureProximal[k] = kappaBF*outletQ + alphaBF*pressureDistalOld;
+                    // really correct?
+                    form1( _test=M_fluidOutletWindkesselSpace,_vector=R,
+                           _rowstart=blockStartWindkesselVec+1 )+=
+                        integrate( _range=rangeFaceFluidOutlet,
+                                   _expr=-Rp*inner(idv(u),N())*id(pProximal),
+                                   _geomap=this->geomap() );
 
-                    linearFormV +=
-                        integrate( _range=markedfaces(mesh,markerOutlet),
-                                   _expr= timeSteppingScaling*M_fluidOutletWindkesselPressureProximal[k]*trans(N())*id(v),
+                    // coupling with fluid model
+                    form1( _test=XhV, _vector=R,
+                           _rowstart=rowStartInVector ) +=
+                        integrate( _range=rangeFaceFluidOutlet,
+                                   _expr= timeSteppingScaling*idv(pProximal)*inner(N(),id(v)),
                                    _geomap=this->geomap() );
                 }
             }
-        } // explicit
-        if ( this->hasFluidOutletWindkesselImplicit() )
+        }
+        else
         {
-            CHECK( this->hasStartSubBlockSpaceIndex("windkessel") ) << " start dof index for windkessel is not present\n";
-            size_type startBlockIndexWindkessel = this->startSubBlockSpaceIndex("windkessel");
-
-            if ( BuildCstPart || (!BuildCstPart && !UseJacobianLinearTerms) )
+            if ( BuildCstPart && doAssemblyRhs )
             {
-                //auto presDistalProximal = M_fluidOutletWindkesselSpace->element();
-                //auto presDistal = presDistalProximal.template element<0>();
-                //auto presProximal = presDistalProximal.template element<1>();
+                auto const& beta = M_bdfVelocity->poly();
+                // windkessel parameters
+                double Rd = bcData->expr_Rd( se ).evaluate()(0,0);
+                double Rp = bcData->expr_Rp( se ).evaluate()(0,0);
+                double Cd = bcData->expr_Cd( se ).evaluate()(0,0);
 
-                int cptOutletUsed = 0;
-                for (int k=0;k<this->nFluidOutlet();++k)
-                {
-                    if ( std::get<1>( M_fluidOutletsBCType[k] ) != "windkessel" || std::get<0>( std::get<2>( M_fluidOutletsBCType[k] ) ) != "implicit" )
-                        continue;
+                auto const& windkesselData = M_fluidOutletWindkesselData.at(bcName);
+                auto pDistal = std::get<0>( windkesselData ).at(0);
+                auto pProximal = std::get<0>( windkesselData ).at(1);
+                auto bdfDistal = std::get<1>( windkesselData ).at(0);
 
-                    // Windkessel model
-                    std::string markerOutlet = std::get<0>( M_fluidOutletsBCType[k] );
-                    auto const& windkesselParam = std::get<2>( M_fluidOutletsBCType[k] );
-                    double Rd=std::get<1>(windkesselParam);
-                    double Rp=std::get<2>(windkesselParam);
-                    double Cd=std::get<3>(windkesselParam);
-                    double Deltat = this->timeStepBDF()->timeStep();
+                auto rangeFaceFluidOutlet = markedfaces(mesh,bcData->markers());
 
-                    bool hasWindkesselActiveDof = M_fluidOutletWindkesselSpace->nLocalDofWithoutGhost() > 0;
-                    int blockStartWindkesselVec = rowStartInVector + startBlockIndexWindkessel + 2*cptOutletUsed;
-                    auto const& basisToContainerGpPressureDistalVec = R->map().dofIdToContainerId( blockStartWindkesselVec );
-                    auto const& basisToContainerGpPressureProximalVec = R->map().dofIdToContainerId( blockStartWindkesselVec+1 );
-                    if ( hasWindkesselActiveDof )
-                        CHECK( !basisToContainerGpPressureDistalVec.empty() && !basisToContainerGpPressureProximalVec.empty() ) << "incomplete datamap info";
-                    const size_type gpPressureDistalVec = (hasWindkesselActiveDof)? basisToContainerGpPressureDistalVec[0] : 0;
-                    const size_type gpPressureProximalVec = (hasWindkesselActiveDof)? basisToContainerGpPressureProximalVec[0] : 0;
+                auto outletQ = integrate(_range=rangeFaceFluidOutlet,
+                                         _expr=trans(idv(beta))*N() ).evaluate()(0,0);
 
-                    //const size_type rowStartWindkessel = startDofIndexWindkessel + 2*cptOutletUsed/*k*/;
-                    //const size_type rowStartInVectorWindkessel = rowStartInVector + rowStartWindkessel;
-                    ++cptOutletUsed;
-                    //----------------------------------------------------//
-                    if ( BuildCstPart  && hasWindkesselActiveDof && doAssemblyRhs )
-                    {
-                        double pressureDistalOld  = 0;
-                        for ( uint8_type i = 0; i < this->timeStepBDF()->timeOrder(); ++i )
-                            pressureDistalOld += this->timeStepBDF()->polyDerivCoefficient( i+1 )*this->fluidOutletWindkesselPressureDistalOld().find(k)->second[i];
-                        // add in vector
-                        R->add( gpPressureDistalVec/*rowStartInVectorWindkessel*/, -Cd*pressureDistalOld);
-                    }
-                    //----------------------------------------------------//
-                    if ( !BuildCstPart && !UseJacobianLinearTerms )
-                    {
-                        auto presDistalProximal = M_fluidOutletWindkesselSpace->element(XVec,blockStartWindkesselVec);
-                        auto presDistal = presDistalProximal.template element<0>();
-                        auto presProximal = presDistalProximal.template element<1>();
-#if 0
-                        for ( size_type kk=0;kk<M_fluidOutletWindkesselSpace->nLocalDofWithGhost();++kk )
-                            presDistalProximal( kk ) = XVec->operator()( rowStartWindkessel + kk);
-#endif
-                        //----------------------------------------------------//
-                        // 1ere ligne
-                        if ( hasWindkesselActiveDof )
-                        {
-                            const double value = presDistalProximal(0)*(Cd*this->timeStepBDF()->polyDerivCoefficient(0)+1./Rd);
-                            R->add( gpPressureDistalVec/*rowStartInVectorWindkessel*/,value );
-                        }
-                        form1( _test=M_fluidOutletWindkesselSpace,_vector=R,
-                               _rowstart=blockStartWindkesselVec/*rowStartInVectorWindkessel*/ ) +=
-                            integrate( _range=markedfaces(mesh,markerOutlet),
-                                       _expr=-(trans(idv(u))*N())*id(presDistal),
-                                       _geomap=this->geomap() );
-                        //----------------------------------------------------//
-                        // 2eme ligne
-                        if ( hasWindkesselActiveDof )
-                        {
-                            R->add( gpPressureProximalVec/*rowStartInVectorWindkessel+1*/,  presDistalProximal(1)-presDistalProximal(0) );
-                        }
-                        form1( _test=M_fluidOutletWindkesselSpace,_vector=R,
-                               _rowstart=blockStartWindkesselVec/*rowStartInVectorWindkessel*/ )+=
-                            integrate( _range=markedfaces(mesh,markerOutlet),
-                                       _expr=-Rp*(trans(idv(u))*N())*id(presProximal),
-                                       _geomap=this->geomap() );
-                        //----------------------------------------------------//
-                        // coupling with fluid model
-                        form1( _test=XhV, _vector=R,
-                               _rowstart=rowStartInVector ) +=
-                            integrate( _range=markedfaces(mesh,markerOutlet),
-                                       _expr= timeSteppingScaling*idv(presProximal)*trans(N())*id(v),
-                                       _geomap=this->geomap() );
-                    }
-                }
+
+                auto rhsTimeDerivDistal = bdfDistal->polyDeriv();
+
+                double denum = Rd*Cd*bdfDistal->polyDerivCoefficient(0) + 1;
+                pDistal->setConstant( Rd*outletQ/denum );
+                pDistal->add( Rd*Cd/denum, rhsTimeDerivDistal );
+                pProximal->setConstant( Rp*outletQ );
+                pProximal->add( 1., *pDistal );
+
+                linearFormV +=
+                    integrate( _range=rangeFaceFluidOutlet,
+                               _expr= timeSteppingScaling*idv(pProximal)*inner(N(),id(v)),
+                               _geomap=this->geomap() );
             }
-
-        } // implicit
-
+        }
+        ++indexOutletWindkessel;
     }
 
+#if 0 // VINCENT
     //--------------------------------------------------------------------------------------------------//
 
     if (!BuildCstPart && !UseJacobianLinearTerms && !this->markerSlipBC().empty() )

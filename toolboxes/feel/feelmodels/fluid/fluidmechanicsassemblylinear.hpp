@@ -626,156 +626,136 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
     }
 
     //--------------------------------------------------------------------------------------------------//
-#if 0 // VINCENT
-    if ( this->hasFluidOutletWindkessel() )
+
+
+    int indexOutletWindkessel = 0;
+    for ( auto const& [bcName,bcData] : M_boundaryConditions->outletWindkessel() )
     {
-        this->timerTool("Solve").start();
-        if ( this->hasFluidOutletWindkesselExplicit() )
+        if ( bcData->useImplicitCoupling() )
         {
-            if (BuildNonCstPart)
+            if ( BuildNonCstPart )
+            {
+                size_type startBlockIndexWindkessel = this->startSubBlockSpaceIndex("windkessel");
+
+                bool hasWindkesselActiveDof = M_fluidOutletWindkesselSpace->nLocalDofWithoutGhost() > 0;
+                int blockStartWindkesselRow = rowStartInMatrix + startBlockIndexWindkessel + 2*indexOutletWindkessel;
+                int blockStartWindkesselCol = colStartInMatrix + startBlockIndexWindkessel + 2*indexOutletWindkessel;
+                int blockStartWindkesselVec = rowStartInVector + startBlockIndexWindkessel + 2*indexOutletWindkessel;
+                auto const& basisToContainerGpPressureDistalRow = A->mapRow().dofIdToContainerId( blockStartWindkesselRow );
+                auto const& basisToContainerGpPressureDistalCol = A->mapCol().dofIdToContainerId( blockStartWindkesselCol );
+                auto const& basisToContainerGpPressureDistalVec = F->map().dofIdToContainerId( blockStartWindkesselVec );
+                auto const& basisToContainerGpPressureProximalRow = A->mapRow().dofIdToContainerId( blockStartWindkesselRow+1 );
+                auto const& basisToContainerGpPressureProximalCol = A->mapCol().dofIdToContainerId( blockStartWindkesselCol+1 );
+                auto const& basisToContainerGpPressureProximalVec = F->map().dofIdToContainerId( blockStartWindkesselVec+1 );
+                if ( hasWindkesselActiveDof )
+                    CHECK( !basisToContainerGpPressureDistalRow.empty() && !basisToContainerGpPressureDistalCol.empty() &&
+                           !basisToContainerGpPressureProximalRow.empty() && !basisToContainerGpPressureProximalCol.empty() &&
+                           !basisToContainerGpPressureDistalVec.empty() && !basisToContainerGpPressureProximalVec.empty() ) << "incomplete datamap info";
+                const size_type gpPressureDistalRow = (hasWindkesselActiveDof)? basisToContainerGpPressureDistalRow[0] : 0;
+                const size_type gpPressureDistalCol = (hasWindkesselActiveDof)? basisToContainerGpPressureDistalCol[0] : 0;
+                const size_type gpPressureDistalVec = (hasWindkesselActiveDof)? basisToContainerGpPressureDistalVec[0] : 0;
+                const size_type gpPressureProximalRow = (hasWindkesselActiveDof)? basisToContainerGpPressureProximalRow[0] : 0;
+                const size_type gpPressureProximalCol = (hasWindkesselActiveDof)? basisToContainerGpPressureProximalCol[0] : 0;
+
+                // windkessel parameters
+                double Rd = bcData->expr_Rd( se ).evaluate()(0,0);
+                double Rp = bcData->expr_Rp( se ).evaluate()(0,0);
+                double Cd = bcData->expr_Cd( se ).evaluate()(0,0);
+
+                auto const& windkesselData = M_fluidOutletWindkesselData.at(bcName);
+                auto pDistal = std::get<0>( windkesselData ).at(0);
+                auto pProximal = std::get<0>( windkesselData ).at(1);
+                auto bdfDistal = std::get<1>( windkesselData ).at(0);
+
+                auto rhsTimeDerivDistal = bdfDistal->polyDeriv();
+                auto rangeFaceFluidOutlet = markedfaces(mesh,bcData->markers());
+
+                F->setIsClosed( false );
+                A->setIsClosed( false );
+
+                // first equation
+                if ( hasWindkesselActiveDof )
+                {
+                    A->add( gpPressureDistalRow,gpPressureDistalCol,
+                            Cd*bdfDistal->polyDerivCoefficient(0)+1./Rd );
+                }
+
+                form2( _test=M_fluidOutletWindkesselSpace,_trial=XhV,_matrix=A,
+                       _rowstart=blockStartWindkesselRow,
+                       _colstart=colStartInMatrix ) +=
+                    integrate( _range=rangeFaceFluidOutlet,
+                               _expr=-inner(idt(u),N())*id(pDistal) );
+
+                if ( hasWindkesselActiveDof )
+                {
+                    F->add( gpPressureDistalVec, Cd*rhsTimeDerivDistal(0) );
+                }
+
+                // second equation
+                if ( hasWindkesselActiveDof )
+                {
+                    A->add( gpPressureProximalRow, gpPressureProximalCol,  1.);
+
+                    A->add( gpPressureProximalRow, gpPressureDistalCol, -1.);
+                }
+
+                // really correct?
+                form2( _test=M_fluidOutletWindkesselSpace,_trial=XhV,_matrix=A,
+                       _rowstart=blockStartWindkesselRow+1,
+                       _colstart=colStartInMatrix )+=
+                    integrate( _range=rangeFaceFluidOutlet,
+                               _expr=-Rp*inner(idt(u),N())*id(pProximal) );
+
+                // coupling with fluid model
+                form2( _test=XhV, _trial=M_fluidOutletWindkesselSpace, _matrix=A,
+                       _rowstart=rowStartInMatrix,
+                       _colstart=blockStartWindkesselCol+1 ) +=
+                    integrate( _range=rangeFaceFluidOutlet,
+                               _expr= timeSteppingScaling*idt(pProximal)*inner(N(),id(v)),
+                               _geomap=this->geomap() );
+            }
+        }
+        else
+        {
+            if ( BuildNonCstPart )
             {
                 auto const& beta = M_bdfVelocity->poly();
+                // windkessel parameters
+                double Rd = bcData->expr_Rd( se ).evaluate()(0,0);
+                double Rp = bcData->expr_Rp( se ).evaluate()(0,0);
+                double Cd = bcData->expr_Cd( se ).evaluate()(0,0);
 
-                for (int k=0;k<this->nFluidOutlet();++k)
-                {
-                    if ( std::get<1>( M_fluidOutletsBCType[k] ) != "windkessel" || std::get<0>( std::get<2>( M_fluidOutletsBCType[k] ) ) != "explicit" )
-                        continue;
+                auto const& windkesselData = M_fluidOutletWindkesselData.at(bcName);
+                auto pDistal = std::get<0>( windkesselData ).at(0);
+                auto pProximal = std::get<0>( windkesselData ).at(1);
+                auto bdfDistal = std::get<1>( windkesselData ).at(0);
 
-                    // Windkessel model
-                    std::string markerOutlet = std::get<0>( M_fluidOutletsBCType[k] );
-                    auto const& windkesselParam = std::get<2>( M_fluidOutletsBCType[k] );
-                    double Rd=std::get<1>(windkesselParam);// 6.2e3;
-                    double Rp=std::get<2>(windkesselParam);//400;
-                    double Cd=std::get<3>(windkesselParam);//2.72e-4;
+                auto rangeFaceFluidOutlet = markedfaces(mesh,bcData->markers());
 
-                    double Deltat = this->timeStepBDF()->timeStep();
+                auto outletQ = integrate(_range=rangeFaceFluidOutlet,
+                                         _expr=trans(idv(beta))*N() ).evaluate()(0,0);
 
-                    double xiBF = Rd*Cd*this->timeStepBDF()->polyDerivCoefficient(0)*Deltat+Deltat;
-                    double alphaBF = Rd*Cd/(xiBF);
-                    double gammaBF = Rd*Deltat/xiBF;
-                    double kappaBF = (Rp*xiBF+ Rd*Deltat)/xiBF;
 
-                    auto outletQ = integrate(_range=markedfaces(mesh,markerOutlet),
-                                             _expr=trans(idv(beta))*N() ).evaluate()(0,0);
+                auto rhsTimeDerivDistal = bdfDistal->polyDeriv();
 
-                    double pressureDistalOld  = 0;
-                    for ( uint8_type i = 0; i < this->timeStepBDF()->timeOrder(); ++i )
-                        pressureDistalOld += Deltat*this->timeStepBDF()->polyDerivCoefficient( i+1 )*this->fluidOutletWindkesselPressureDistalOld().find(k)->second[i];
+                double denum = Rd*Cd*bdfDistal->polyDerivCoefficient(0) + 1;
+                pDistal->setConstant( Rd*outletQ/denum );
+                pDistal->add( Rd*Cd/denum, rhsTimeDerivDistal );
 
-                    M_fluidOutletWindkesselPressureDistal[k] = alphaBF*pressureDistalOld + gammaBF*outletQ;
-                    M_fluidOutletWindkesselPressureProximal[k] = kappaBF*outletQ + alphaBF*pressureDistalOld;
+                pProximal->setConstant( Rp*outletQ );
+                pProximal->add( 1., *pDistal );
 
-                    myLinearFormV +=
-                        integrate( _range=markedfaces(mesh,markerOutlet),
-                                   _expr= -timeSteppingScaling*M_fluidOutletWindkesselPressureProximal[k]*trans(N())*id(v),
-                                   _geomap=this->geomap() );
-                }
+                myLinearFormV +=
+                    integrate( _range=rangeFaceFluidOutlet,
+                               //_expr= -timeSteppingScaling*M_fluidOutletWindkesselPressureProximal[k]*trans(N())*id(v),
+                               _expr= -timeSteppingScaling*idv(pProximal)*inner(N(),id(v)),
+                               _geomap=this->geomap() );
             }
         }
-        if ( this->hasFluidOutletWindkesselImplicit() )
-        {
-            CHECK( this->hasStartSubBlockSpaceIndex("windkessel") ) << " start dof index for windkessel is not present\n";
-            size_type startBlockIndexWindkessel = this->startSubBlockSpaceIndex("windkessel");
-
-            if (BuildNonCstPart)
-            {
-                auto presDistalProximal = M_fluidOutletWindkesselSpace->element();
-                auto presDistal = presDistalProximal.template element<0>();
-                auto presProximal = presDistalProximal.template element<1>();
-
-                int cptOutletUsed = 0;
-                for (int k=0;k<this->nFluidOutlet();++k)
-                {
-                    if ( std::get<1>( M_fluidOutletsBCType[k] ) != "windkessel" || std::get<0>( std::get<2>( M_fluidOutletsBCType[k] ) ) != "implicit" )
-                        continue;
-
-                    // Windkessel model
-                    std::string markerOutlet = std::get<0>( M_fluidOutletsBCType[k] );
-                    auto const& windkesselParam = std::get<2>( M_fluidOutletsBCType[k] );
-                    double Rd=std::get<1>(windkesselParam);
-                    double Rp=std::get<2>(windkesselParam);
-                    double Cd=std::get<3>(windkesselParam);
-                    double Deltat = this->timeStepBDF()->timeStep();
-
-                    bool hasWindkesselActiveDof = M_fluidOutletWindkesselSpace->nLocalDofWithoutGhost() > 0;
-                    int blockStartWindkesselRow = rowStartInMatrix + startBlockIndexWindkessel + 2*cptOutletUsed;
-                    int blockStartWindkesselCol = colStartInMatrix + startBlockIndexWindkessel + 2*cptOutletUsed;
-                    int blockStartWindkesselVec = rowStartInVector + startBlockIndexWindkessel + 2*cptOutletUsed;
-                    auto const& basisToContainerGpPressureDistalRow = A->mapRow().dofIdToContainerId( blockStartWindkesselRow );
-                    auto const& basisToContainerGpPressureDistalCol = A->mapCol().dofIdToContainerId( blockStartWindkesselCol );
-                    auto const& basisToContainerGpPressureDistalVec = F->map().dofIdToContainerId( blockStartWindkesselVec );
-                    auto const& basisToContainerGpPressureProximalRow = A->mapRow().dofIdToContainerId( blockStartWindkesselRow+1 );
-                    auto const& basisToContainerGpPressureProximalCol = A->mapCol().dofIdToContainerId( blockStartWindkesselCol+1 );
-                    auto const& basisToContainerGpPressureProximalVec = F->map().dofIdToContainerId( blockStartWindkesselVec+1 );
-                    if ( hasWindkesselActiveDof )
-                        CHECK( !basisToContainerGpPressureDistalRow.empty() && !basisToContainerGpPressureDistalCol.empty() &&
-                               !basisToContainerGpPressureProximalRow.empty() && !basisToContainerGpPressureProximalCol.empty() &&
-                               !basisToContainerGpPressureDistalVec.empty() && !basisToContainerGpPressureProximalVec.empty() ) << "incomplete datamap info";
-                    const size_type gpPressureDistalRow = (hasWindkesselActiveDof)? basisToContainerGpPressureDistalRow[0] : 0;
-                    const size_type gpPressureDistalCol = (hasWindkesselActiveDof)? basisToContainerGpPressureDistalCol[0] : 0;
-                    const size_type gpPressureDistalVec = (hasWindkesselActiveDof)? basisToContainerGpPressureDistalVec[0] : 0;
-                    const size_type gpPressureProximalRow = (hasWindkesselActiveDof)? basisToContainerGpPressureProximalRow[0] : 0;
-                    const size_type gpPressureProximalCol = (hasWindkesselActiveDof)? basisToContainerGpPressureProximalCol[0] : 0;
-
-                    //const size_type rowStartInMatrixWindkessel = rowStartInMatrix + startDofIndexWindkessel + 2*cptOutletUsed/*k*/;
-                    //const size_type colStartInMatrixWindkessel = colStartInMatrix + startDofIndexWindkessel + 2*cptOutletUsed/*k*/;
-                    //const size_type rowStartInVectorWindkessel = rowStartInVector + startDofIndexWindkessel + 2*cptOutletUsed/*k*/;
-                    ++cptOutletUsed;
-                    //--------------------//
-                    // 1ere ligne
-                    if ( hasWindkesselActiveDof )
-                    {
-                        A->add( gpPressureDistalRow/*rowStartInMatrixWindkessel*/,gpPressureDistalCol/*colStartInMatrixWindkessel*/,
-                                Cd*this->timeStepBDF()->polyDerivCoefficient(0)+1./Rd );
-                    }
-
-                    form2( _test=M_fluidOutletWindkesselSpace,_trial=XhV,_matrix=A,
-                           _rowstart=blockStartWindkesselRow/*rowStartInMatrixWindkessel*/,
-                           _colstart=colStartInMatrix ) +=
-                        integrate( _range=markedfaces(mesh,markerOutlet),
-                                   _expr=-(trans(idt(u))*N())*id(presDistal) );
-
-                    if ( hasWindkesselActiveDof )
-                    {
-                        double pressureDistalOld  = 0;
-                        for ( uint8_type i = 0; i < this->timeStepBDF()->timeOrder(); ++i )
-                            pressureDistalOld += this->timeStepBDF()->polyDerivCoefficient( i+1 )*this->fluidOutletWindkesselPressureDistalOld().find(k)->second[i];
-                        // add in vector
-                        F->add( gpPressureDistalVec/*rowStartInVectorWindkessel*/, Cd*pressureDistalOld);
-                    }
-                    //--------------------//
-                    // 2eme ligne
-                    if ( hasWindkesselActiveDof )
-                    {
-                        A->add( gpPressureProximalRow/*rowStartInMatrixWindkessel+1*/, gpPressureProximalCol/*colStartInMatrixWindkessel+1*/,  1.);
-
-                        A->add( gpPressureProximalRow/*rowStartInMatrixWindkessel+1*/, gpPressureDistalCol/*colStartInMatrixWindkessel*/  , -1.);
-                    }
-
-                    form2( _test=M_fluidOutletWindkesselSpace,_trial=XhV,_matrix=A,
-                           _rowstart=blockStartWindkesselRow/*rowStartInMatrixWindkessel*/,
-                           _colstart=colStartInMatrix )+=
-                        integrate( _range=markedfaces(mesh,markerOutlet),
-                                   _expr=-Rp*(trans(idt(u))*N())*id(presProximal) );
-                    //--------------------//
-                    // coupling with fluid model
-                    form2( _test=XhV, _trial=M_fluidOutletWindkesselSpace, _matrix=A,
-                           _rowstart=rowStartInMatrix,
-                           _colstart=blockStartWindkesselCol/*colStartInMatrixWindkessel*/ ) +=
-                        integrate( _range=markedfaces(mesh,markerOutlet),
-                                   _expr= timeSteppingScaling*idt(presProximal)*trans(N())*id(v),
-                                   _geomap=this->geomap() );
-
-
-
-                }
-            }
-
-        }
-        double timeElapsedBC = this->timerTool("Solve").stop();
-        this->log("FluidMechanics","updateLinearPDE","assembly windkessel bc in "+(boost::format("%1% s") %timeElapsedBC).str() );
+        ++indexOutletWindkessel;
     }
-#endif // VINCENT
+
+
     //--------------------------------------------------------------------------------------------------//
 
     if ( !M_bodySetBC.empty() )

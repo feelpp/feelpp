@@ -768,6 +768,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
     // update sub vector
     this->algebraicBlockVectorSolution()->localize();
 
+#if 0
     //--------------------------------------------------
     // update windkessel solution ( todo put fluidOutletWindkesselPressureDistal and Proximal in blockVectorSolution )
     int cptBlock=1;
@@ -799,6 +800,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
             ++cptBlock;
         }
     }
+#endif
 #endif
     //--------------------------------------------------
 #if 0
@@ -1064,6 +1066,16 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::startTimeStep( bool applyPreProcess )
         M_bodySetBC.startTimeStep();
         if ( this->hasTurbulenceModel() )
             M_turbulenceModelType->startTimeStep();
+
+        // windkessel outlet
+        for ( auto const& [bcName,bcData] : M_boundaryConditions->outletWindkessel() )
+        {
+            auto & windkesselData = M_fluidOutletWindkesselData.at(bcName);
+            CHECK( std::get<0>( windkesselData ).size() == 2 && std::get<1>( windkesselData ).size() == 2 ) << "something wrong";
+            for (int k=0;k<2;++k)
+                std::get<1>( windkesselData )[k]->start( unwrap_ptr(std::get<0>( windkesselData )[k]) );
+        }
+
     }
     // up current time
     this->updateTime( M_bdfVelocity->time() );
@@ -1095,49 +1107,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStep()
     this->updateTimeStepCurrentResidual();
 
     // windkessel outlet
-    if (this->hasFluidOutletWindkessel() )
+    for ( auto const& [bcName,bcData] : M_boundaryConditions->outletWindkessel() )
     {
-        bool doWriteOnDisk = this->worldComm().isMasterRank();
-        // warning, in the implicit case, not all process have info
-        // only process which have a face on outlet
-        if ( this->hasFluidOutletWindkesselImplicit() )
-            doWriteOnDisk = (bool)(M_fluidOutletWindkesselSpace->nLocalDofWithoutGhost() > 0);
-
-        if ( doWriteOnDisk )
-        {
-            std::string nameFile = this->rootRepository() + "/" + prefixvm(this->prefix(),"fluidoutletbc.windkessel.data");
-            std::ofstream file(nameFile.c_str(), std::ios::out | std::ios::app);
-            file.precision( 8 );
-            file.setf( std::ios::scientific );
-            file.width( 15 );
-            file.setf( std::ios::left );
-            file << M_bdfVelocity->iteration();
-            file.width( 20 );
-            file << this->time();
-
-            for (int k=0;k<this->nFluidOutlet();++k)
-            {
-                if ( std::get<1>( M_fluidOutletsBCType[k] ) != "windkessel" ) continue;
-
-                file.width( 20 );
-                file << M_fluidOutletWindkesselPressureDistal[k];
-                file.width( 20 );
-                file << M_fluidOutletWindkesselPressureProximal[k];
-            }
-            file << "\n";
-            file.close();
-        }
-
-        // update to next timestep
-        for (int k=0;k<this->nFluidOutlet();++k)
-        {
-            if ( std::get<1>( M_fluidOutletsBCType[k] ) != "windkessel" ) continue;
-
-            const int sizeOld = M_fluidOutletWindkesselPressureDistal_old.find(k)->second.size();
-            for (int l=0;l<sizeOld-1;++l)
-                M_fluidOutletWindkesselPressureDistal_old[k][sizeOld-l-1] = M_fluidOutletWindkesselPressureDistal_old[k][sizeOld-l-2];
-            M_fluidOutletWindkesselPressureDistal_old[k][0] = M_fluidOutletWindkesselPressureDistal[k];
-        }
+        auto & windkesselData = M_fluidOutletWindkesselData.at(bcName);
+        CHECK( std::get<0>( windkesselData ).size() == 2 && std::get<1>( windkesselData ).size() == 2 ) << "something wrong";
+        for (int k=0;k<2;++k)
+            std::get<1>( windkesselData )[k]->next( unwrap_ptr(std::get<0>( windkesselData )[k]) );
     }
 
 #if defined( FEELPP_MODELS_HAS_MESHALE )
@@ -1553,10 +1528,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::nBlockMatrixGraph() const
         if ( nDim == 3 )
             ++nBlock;
     }
-#if 0 // VINCENT
-    if ( this->hasFluidOutletWindkesselImplicit() )
-        nBlock += this->nFluidOutletWindkesselImplicit();
-#endif
+
+    for ( auto const& [bcName,bcData] : M_boundaryConditions->outletWindkessel() )
+        if ( bcData->useImplicitCoupling() )
+            nBlock += 2;
+
     for ( auto const& [bpname,bbc] : M_bodySetBC )
     {
         ++nBlock; // translational velocity
@@ -1646,50 +1622,35 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
             ++indexBlock;
         }
     }
-#if 0 // VINCENT
-    if ( this->hasFluidOutletWindkesselImplicit() )
+    for ( auto const& [bcName,bcData] : M_boundaryConditions->outletWindkessel() )
     {
-        BlocksStencilPattern patCouplingFirstCol(space_fluidoutlet_windkessel_type::nSpaces,1,size_type(Pattern::ZERO));
-        patCouplingFirstCol(0,0) = size_type(Pattern::COUPLED);
-        patCouplingFirstCol(1,0) = size_type(Pattern::COUPLED);
+        if ( !bcData->useImplicitCoupling() )
+            continue;
 
-        BlocksStencilPattern patCouplingFirstRow(1,space_fluidoutlet_windkessel_type::nSpaces,size_type(Pattern::ZERO));
-        patCouplingFirstRow(0,1) = size_type(Pattern::COUPLED);
+        auto range = markedelements(M_fluidOutletWindkesselMesh,bcData->markers());
+        auto rangeFirstCol1 = stencilRange<0,0>( range );
+         // column with velocity
+        myblockGraph(indexBlock,0) = stencil(_test=M_fluidOutletWindkesselSpace,_trial=XhV,
+                                             //_pattern_block=patCouplingFirstCol,
+                                             _range=stencilRangeMap(rangeFirstCol1),
+                                             _diag_is_nonzero=false,_close=false)->graph();
+        myblockGraph(indexBlock+1,0) = myblockGraph(indexBlock,0) ;
 
-        BlocksStencilPattern patCouplingDiag(2,2,size_type(Pattern::COUPLED));
-        patCouplingDiag(0,1) = size_type(Pattern::ZERO);
+        // row with velocity
+        myblockGraph(0,indexBlock) = myblockGraph(indexBlock,0)->transpose( false );
+        myblockGraph(0,indexBlock+1) = myblockGraph(0,indexBlock);
 
-        for (int k=0;k<this->nFluidOutlet();++k)
-        {
-            if ( std::get<1>( M_fluidOutletsBCType[k] ) != "windkessel" || std::get<0>( std::get<2>( M_fluidOutletsBCType[k] ) ) != "implicit" )
-                continue;
-            std::string markerOutlet = std::get<0>( M_fluidOutletsBCType[k] );
-            // first column
-            auto rangeFirstCol1 = stencilRange<0,0>( markedelements(this->fluidOutletWindkesselMesh(),markerOutlet) );
-            auto rangeFirstCol2 = stencilRange<1,0>( markedelements(this->fluidOutletWindkesselMesh(),markerOutlet) );
-            myblockGraph(indexBlock+k,0) = stencil(_test=M_fluidOutletWindkesselSpace,_trial=XhV,
-                                                   _pattern_block=patCouplingFirstCol,
-                                                   _range=stencilRangeMap(rangeFirstCol1,rangeFirstCol2),
-                                                   _diag_is_nonzero=false,_close=false)->graph();
+        // on diag
+        myblockGraph(indexBlock,indexBlock) = stencil(_test=M_fluidOutletWindkesselSpace,_trial=M_fluidOutletWindkesselSpace,
+                                                      //_pattern=(size_type)Pattern::COUPLED,
+                                                      //_pattern_block=patCouplingDiag,
+                                                      _diag_is_nonzero=false,_close=false)->graph();
 
-            // first line
-#if 0
-            myblockGraph(0,indexBlock+k) = stencil(_test=XhV,_trial=M_fluidOutletWindkesselSpace,
-                                                   _pattern_block=patCouplingFirstRow,
-                                                   _diag_is_nonzero=false,_close=false)->graph();
-#else
-            myblockGraph(0,indexBlock+k) = myblockGraph(indexBlock+k,0)->transpose( false );
-#endif
-
-            // on diag
-            myblockGraph(indexBlock+k,indexBlock+k) = stencil(_test=M_fluidOutletWindkesselSpace,_trial=M_fluidOutletWindkesselSpace,
-                                                              //_pattern=(size_type)Pattern::COUPLED,
-                                                              _pattern_block=patCouplingDiag,
-                                                              _diag_is_nonzero=false,_close=false)->graph();
-        }
-        indexBlock += this->nFluidOutletWindkesselImplicit();//this->nFluidOutlet();
+        myblockGraph(indexBlock+1,indexBlock) = myblockGraph(indexBlock,indexBlock);
+        myblockGraph(indexBlock+1,indexBlock+1) = myblockGraph(indexBlock,indexBlock);
+        indexBlock += 2;
     }
-#endif
+
     for ( auto const& [bpname,bbc] : M_bodySetBC )
     {
         size_type startBlockIndexTranslationalVelocity = this->startSubBlockSpaceIndex("body-bc."+bbc.name()+".translational-velocity");
@@ -1789,184 +1750,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::buildMatrixGraph() const
 }
 
 //---------------------------------------------------------------------------------------------------------//
-#if 0
-FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-typename FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::size_type
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::nLocalDof() const
-{
-    auto res = this->functionSpaceVelocity()->nLocalDofWithGhost() + this->functionSpacePressure()->nLocalDofWithGhost();
-    if ( this->definePressureCst() && this->definePressureCstMethod() == "lagrange-multiplier" )
-    {
-        for ( int k=0;k<M_XhMeanPressureLM.size();++k )
-            res += M_XhMeanPressureLM[k]->nLocalDofWithGhost();
-    }
-    if (this->hasMarkerDirichletBClm())
-        res += this->XhDirichletLM()->nLocalDofWithGhost();
-    if ( this->hasFluidOutletWindkesselImplicit() )
-        res += 2*this->nFluidOutletWindkesselImplicit();
-    return res;
-}
-#endif
 
-#if 0
-FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBlockVectorSolution()
-{
-    M_blockVectorSolution.updateVectorFromSubVectors();
-//     // copy velocity/pressure in block
-// #if 0
-//     auto & vecAlgebraic = M_blockVectorSolution.vector();
-//     auto const& fieldVelPres = this->fieldVelocityPressure();
-//     for (int k=0;k< this->functionSpace()->nLocalDofWithGhost() ;++k)
-//         vecAlgebraic->set(k, fieldVelPres(k) );
-// #else
-//     //M_blockVectorSolution.vector()->close();
-//     M_blockVectorSolution.setVector( *M_blockVectorSolution.vectorMonolithic(), this->fieldVelocityPressure(), 0 );
-// #endif
-
-//     // do nothing for others block (fields define only in blockVectorSolution)
-//     if ( this->definePressureCst() && this->definePressureCstMethod() == "lagrange-multiplier" )
-//     {}
-//     if (this->hasMarkerDirichletBClm())
-//     {}
-//     if ( this->hasFluidOutletWindkesselImplicit() )
-//     {}
-
-}
-#endif
-//---------------------------------------------------------------------------------------------------------//
-
-FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
-{
-#if 0 //VINCENT
-    auto XhVelocity = this->functionSpaceVelocity();
-    auto XhCompVelocity = XhVelocity->compSpace();
-    static const uint16_type nDofComponentsVelocity = XhVelocity->dof()->nDofComponents();
-    auto mesh = this->mesh();
-
-    std::set<std::string> velocityMarkers;
-    std::map<ComponentType,std::set<std::string> > compVelocityMarkers;
-
-    //-------------------------------------//
-    // strong Dirichlet bc on velocity from expression
-    for( auto const& d : M_bcDirichlet )
-    {
-        auto listMark = this->markerDirichletBCByNameId( "elimination",name(d) );
-        velocityMarkers.insert( listMark.begin(), listMark.end() );
-    }
-    // strong Dirichlet bc on velocity component from expression
-    for ( auto const& bcDirComp : M_bcDirichletComponents )
-    {
-        ComponentType comp = bcDirComp.first;
-        for( auto const& d : bcDirComp.second )
-        {
-            auto listMark = this->markerDirichletBCByNameId( "elimination",name(d), comp );
-            compVelocityMarkers[comp].insert( listMark.begin(), listMark.end() );
-        }
-    }
-    // strong Dirichlet bc on velocity from inlet bc
-    for ( auto const& inletbc : M_fluidInletDesc )
-    {
-        std::string const& marker = std::get<0>( inletbc );
-        velocityMarkers.insert( marker );
-    }
-    // strong  Dirichlet bc on velocity from moving boundary imposed
-    for( auto const& d : M_bcMovingBoundaryImposed )
-    {
-        auto listMark = M_bcMarkersMovingBoundaryImposed.markerDirichletBCByNameId( "elimination",name(d) );
-        velocityMarkers.insert( listMark.begin(), listMark.end() );
-    }
-
-    //-------------------------------------//
-    // distribute mesh markers by entity
-    std::tuple< std::set<std::string>,std::set<std::string>,std::set<std::string>,std::set<std::string> > meshMarkersVelocityByEntities;
-    std::map<ComponentType, std::tuple< std::set<std::string>,std::set<std::string>,std::set<std::string>,std::set<std::string> > > meshMarkersCompVelocityByEntities;
-    meshMarkersVelocityByEntities = detail::distributeMarkerListOnSubEntity( mesh, velocityMarkers );
-    for ( auto const& compMarkerPair : compVelocityMarkers )
-    {
-        meshMarkersCompVelocityByEntities[compMarkerPair.first] = detail::distributeMarkerListOnSubEntity( mesh, compMarkerPair.second );
-    }
-    //-------------------------------------//
-    // on topological faces
-    auto const& listMarkedFacesVelocity = std::get<0>( meshMarkersVelocityByEntities );
-    if ( !listMarkedFacesVelocity.empty() )
-        this->updateDofEliminationIds( "velocity", XhVelocity, markedfaces( mesh,listMarkedFacesVelocity ) );
-    // on marked edges (only 3d)
-    if constexpr ( nDim == 3)
-    {
-        auto const& listMarkedEdgesVelocity = std::get<1>( meshMarkersVelocityByEntities );
-        if ( !listMarkedEdgesVelocity.empty() )
-            this->updateDofEliminationIds( "velocity", XhVelocity, markededges( mesh,listMarkedEdgesVelocity ) );
-    }
-    // on marked points
-    auto const& listMarkedPointsVelocity = std::get<2>( meshMarkersVelocityByEntities );
-    if ( !listMarkedPointsVelocity.empty() )
-        this->updateDofEliminationIds( "velocity", XhVelocity, markedpoints( mesh,listMarkedPointsVelocity ) );
-
-    //-------------------------------------//
-    // on velocity components
-    for ( auto const& meshMarkersPair : meshMarkersCompVelocityByEntities )
-    {
-        ComponentType comp = meshMarkersPair.first;
-        auto const& listMarkedFacesCompVelocity = std::get<0>( meshMarkersPair.second );
-        if ( !listMarkedFacesCompVelocity.empty() )
-            this->updateDofEliminationIds( "velocity", XhVelocity, markedfaces(mesh,listMarkedFacesCompVelocity ), comp );
-        // edges (only 3d)
-        if constexpr ( nDim == 3)
-        {
-            auto const& listMarkedEdgesCompVelocity = std::get<1>( meshMarkersPair.second );
-            if ( !listMarkedEdgesCompVelocity.empty() )
-                this->updateDofEliminationIds( "velocity", XhVelocity, markededges(mesh,listMarkedEdgesCompVelocity ), comp );
-        }
-        // points
-        auto const& listMarkedPointsCompVelocity = std::get<2>( meshMarkersPair.second );
-        if ( !listMarkedPointsCompVelocity.empty() )
-            this->updateDofEliminationIds( "velocity", XhVelocity, markedpoints(mesh,listMarkedPointsCompVelocity ), comp );
-    }
-
-    if ( this->hasMarkerPressureBC() && M_spaceLagrangeMultiplierPressureBC )
-    {
-        this->updateDofEliminationIds( "pressurebc-lm", M_spaceLagrangeMultiplierPressureBC, boundaryfaces(M_meshLagrangeMultiplierPressureBC) );
-    }
-
-    // body bc
-    for ( auto const& [bpname,bpbc] : M_bodySetBC )
-    {
-        if ( bpbc.hasTranslationalVelocityExpr() )
-        {
-#if 0
-            this->updateDofEliminationIds( "body-bc.translational-velocity",  bpbc.spaceTranslationalVelocity(),  elements( bpbc.mesh() ) );
-            // only do for one, dof ids are the same for all
-            break;
-#else
-            std::string spaceName = "body-bc."+bpbc.name()+".translational-velocity";
-            this->updateDofEliminationIds( spaceName,  bpbc.spaceTranslationalVelocity(),  elements( bpbc.mesh() ) );
-#endif
-        }
-
-        if ( bpbc.hasAngularVelocityExpr() )
-        {
-#if 0
-            this->updateDofEliminationIds( "body-bc.angular-velocity",  bpbc.spaceAngularVelocity(), elements( bpbc.mesh() ) );
-            // only do for one, dof ids are the same for all
-            break;
-#else
-            std::string spaceName = "body-bc."+bpbc.name()+".angular-velocity";
-            this->updateDofEliminationIds( spaceName, bpbc.spaceAngularVelocity(), elements( bpbc.mesh() ) );
-#endif
-        }
-
-        if ( true )
-        {
-            this->updateDofEliminationIds( "velocity", XhVelocity, bpbc.rangeMarkedFacesOnFluid() );
-        }
-
-    }
-#endif
-}
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
