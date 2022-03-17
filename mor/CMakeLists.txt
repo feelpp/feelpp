@@ -38,7 +38,7 @@ set(FEELPP_MOR_BINARY_DIR ${PROJECT_BINARY_DIR})
 if ( CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR OR FEELPP_COMPONENT STREQUAL "mor" )
   find_package(Feel++ COMPONENTS Toolboxes PATHS ${FEELPP_DIR}/share/feelpp/feel/cmake/modules $ENV{FEELPP_DIR}/share/feelpp/feel/cmake/modules /usr/share/feelpp/feel/cmake/modules /usr/local/share/feelpp/feel/cmake/modules )
   if(NOT FEELPP_FOUND)
-    message(FATAL_ERROR "[mor] Feel++ was not found on your system. Make sure to install it and specify the FEELPP_DIR to reference the installation directory.")
+    message(WARNING "[mor] Feel++ was not found on your system. Make sure to install it and specify the FEELPP_DIR to reference the installation directory.")
   else()
     message(STATUS "[mor] found Feel++ library")
   endif()
@@ -58,6 +58,7 @@ else()
   set(FEELPP_DIR ${CMAKE_INSTALL_PREFIX})
 #  include_directories(${FEELPP_MOR_SOURCE_DIR})
 #  include_directories(${FEELPP_MOR_BINARY_DIR})  
+  set(FEELPP_FOUND ON)  
   set(FEELPP_TOOLBOXES_FOUND ON)
 endif()
 
@@ -76,8 +77,11 @@ ENABLE_TESTING()
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 include(feelpp.macros.mor)
 add_subdirectory(cmake)
-add_subdirectory(mor/feel/feelmor)
-add_subdirectory(apps)
+
+if ( FEELPP_FOUND AND FEELPP_TOOLBOXES_FOUND )
+  add_subdirectory(mor/feel/feelmor)
+  add_subdirectory(apps)
+
 
 
 
@@ -94,7 +98,7 @@ ENDIF()
 
 
 OPTION(FEELPP_ENABLE_TESTS "enable Feel++ tests" ON)
-if (FEELPP_ENABLE_TESTS)
+if (FEELPP_ENABLE_TESTS  )
   add_subdirectory(tests)
 endif()
 
@@ -115,3 +119,5 @@ if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
   include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/feelpp-mor.package.cmake)
   include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/feelpp.version.cmake)
 endif()
+
+endif(FEELPP_FOUND AND FEELPP_TOOLBOXES_FOUND)
