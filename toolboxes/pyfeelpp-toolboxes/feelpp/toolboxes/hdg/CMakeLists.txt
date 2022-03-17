@@ -24,12 +24,5 @@
 cmake_minimum_required(VERSION 3.3)
 project(toolboxes-hdg)
 
-if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
-  find_package(Feel++ COMPONENTS Toolboxes PATHS ${FEELPP_DIR}/share/feelpp/feel/cmake/modules $ENV{FEELPP_DIR}/share/feelpp/feel/cmake/modules /usr/share/feelpp/feel/cmake/modules /usr/local/share/feelpp/feel/cmake/modules )
-  if(NOT FEELPP_FOUND)
-      message(FATAL_ERROR "Feel++ was not found on your system. Make sure to install it and specify the FEELPP_DIR to reference the installation directory.")
-  endif()
-endif()
-
-feelpp_add_pymodule(hdg SRCS hdg.cpp LINK_LIBRARIES Feelpp::feelpp_toolbox_hdg_poisson_lib DESTINATION feelpp/toolboxes/hdg )
+feelpp_add_pymodule(hdg SRCS hdg.cpp LINK_LIBRARIES Feelpp::feelpp_toolbox_hdg_lib DESTINATION feelpp/toolboxes/hdg )
 install(FILES  __init__.py hdg_poisson.py mixedpoisson.py DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/toolboxes/hdg)
