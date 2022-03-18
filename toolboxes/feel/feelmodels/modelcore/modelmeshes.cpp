@@ -42,6 +42,8 @@ ModelMeshCommon<IndexType>::ImportConfig::setup( nl::json const& jarg, ModelMesh
         auto const& j_partition = jarg.at("partition");
         if ( j_partition.is_boolean() )
             M_generatePartitioning = j_partition.template get<bool>();
+        else if ( j_partition.is_number_unsigned() )
+            M_generatePartitioning = j_partition.template get<int>() > 0;
         else if ( j_partition.is_string() )
             M_generatePartitioning = boost::lexical_cast<bool>( j_partition.template get<std::string>() );
     }
