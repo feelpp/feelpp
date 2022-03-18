@@ -491,8 +491,8 @@ public:
     }
     ModelMesh<IndexType> const& modelMesh() const { return this->modelMesh( this->keyword() ); }
 
-    void setup( pt::ptree const& pt, std::set<std::string> const& keywordsToSetup );
-    void setup( pt::ptree const& pt ) { this->setup( pt, {this->keyword()} ); }
+    void setup( nl::json const& jarg, std::set<std::string> const& keywordsToSetup );
+    void setup( nl::json const& jarg ) { this->setup( jarg, {this->keyword()} ); }
 
     void setupRestart( std::string const& meshName )
     {

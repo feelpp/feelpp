@@ -162,6 +162,7 @@ class ModelNumerical : virtual public ModelBase,
                 return thebdf;
             }
 
+        void initModelProperties();
         bool hasModelProperties() const { return (M_modelProps)? true : false; }
         std::shared_ptr<ModelProperties> modelPropertiesPtr() const { return M_modelProps; }
         ModelProperties const& modelProperties() const { return *M_modelProps; }

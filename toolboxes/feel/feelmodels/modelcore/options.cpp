@@ -85,7 +85,8 @@ Feel::po::options_description modelnumerical_options(std::string const& prefix)
 {
     Feel::po::options_description appliBaseOptions("Application Base options");
     appliBaseOptions.add_options()
-        (prefixvm(prefix,"filename").c_str(), Feel::po::value<std::string>()->default_value( "" ), "json file describing model properties" )
+        //(prefixvm(prefix,"filename").c_str(), Feel::po::value<std::string>()->default_value( "" ), "json file describing model properties" )
+        (prefixvm(prefix,"filename").c_str(), Feel::po::value<std::string>(), "json file describing model properties [DEPRECATED]" )
         //(prefixvm(prefix,"mesh.filename").c_str(), Feel::po::value< std::string >(), "input mesh or geo file")
         (prefixvm(prefix,"geomap").c_str(), Feel::po::value< std::string >()->default_value("opt"), "geomap strategy : ho, opt ")
 
@@ -101,7 +102,7 @@ Feel::po::options_description modelnumerical_options(std::string const& prefix)
         .add( gmsh_options( prefix ) )
         .add( modelalgebraic_options( prefix ))
         .add( backend_options( prefix ) )
-        .add( ptree_options( prefix ) );
+        .add( json_options( prefix ) );
 }
 
 Feel::po::options_description
