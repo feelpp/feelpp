@@ -396,7 +396,9 @@ ModelBase::ModelBase( std::string const& prefix, std::string const& keyword,
     M_scalabilitySave( boption(_name="scalability-save",_prefix=this->prefix(),_vm=this->clovm()) ),
     M_scalabilityReinitSaveFile( boption(_name="scalability-reinit-savefile",_prefix=this->prefix(),_vm=this->clovm()) ),
     M_isUpdatedForUse( false ),
-    M_upload( soption(_name="upload",_prefix=this->prefix(),_vm=this->clovm()), this->repository().rootWithoutNumProc(), M_worldComm )
+    M_upload( soption(_name="upload",_prefix=this->prefix(),_vm=this->clovm()), this->repository().rootWithoutNumProc(), M_worldComm ),
+    M_manageParameterValues( true ),
+    M_manageParameterValuesOfModelProperties( true )
 {
     if (this->clovm().count(prefixvm(this->prefix(),"scalability-path")))
         M_scalabilityPath = soption(_name="scalability-path",_prefix=this->prefix(),_vm=this->clovm());
@@ -618,6 +620,42 @@ ModelBase::upload( std::string const& dataPath ) const
         M_upload.upload( dataPath );
 }
 
+void
+ModelBase::initModelProperties()
+{
+    if ( !M_modelProps )
+    {
+        M_modelProps = std::make_shared<ModelProperties>( this->repository().expr(),this->worldCommPtr(), this->prefix(),this->clovm() );
+        std::vector<std::string> jsonFilenames;
+        if ( countoption( _name="filename",_prefix=this->prefix(),_vm=this->clovm() ) > 0 )
+            jsonFilenames.push_back( soption( _name="filename",_prefix=this->prefix(),_vm=this->clovm() ) );
+        if ( countoption( _name="json.filename",_prefix=this->prefix(),_vm=this->clovm() ) > 0 )
+            for ( std::string const& filename : vsoption( _name="json.filename",_prefix=this->prefix(),_vm=this->clovm() ) )
+                jsonFilenames.push_back( filename );
+        M_modelProps->setup( jsonFilenames );
+    }
+}
+
+void
+ModelBase::setModelProperties( std::string const& filename )
+{
+    M_modelProps = std::make_shared<ModelProperties>( filename, this->repository().expr(),
+                                                      this->worldCommPtr(), this->prefix(),this->clovm() );
+}
+
+void
+ModelBase::setModelProperties( nl::json const& json )
+{
+    M_modelProps = std::make_shared<ModelProperties>( json, this->repository().expr(),
+                                                      this->worldCommPtr(), this->prefix(),this->clovm() );
+}
+
+void
+ModelBase::addParameterInModelProperties( std::string const& symbolName,double value)
+{
+    if ( M_modelProps )
+        M_modelProps->parameters()[symbolName] = ModelParameter(symbolName,value);
+}
 
 
 } // namespace FeelModels

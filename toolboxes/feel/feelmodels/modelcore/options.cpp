@@ -45,8 +45,12 @@ Feel::po::options_description modelbase_options(std::string const& prefix)
         (prefixvm(prefix,"scalability-path").c_str(), Feel::po::value< std::string >(), "scalability-path")
         (prefixvm(prefix,"scalability-filename").c_str(), Feel::po::value< std::string >(), "scalability-filename")
         (prefixvm(prefix,"upload").c_str(), Feel::po::value< std::string >()->default_value(""), "upload decription")
+
+        //(prefixvm(prefix,"filename").c_str(), Feel::po::value<std::string>()->default_value( "" ), "json file describing model properties"
+        (prefixvm(prefix,"filename").c_str(), Feel::po::value<std::string>(), "json file describing model properties [DEPRECATED]" )
         ;
-    return appliBaseOptions;
+    return appliBaseOptions
+        .add( json_options( prefix ) );
 }
 
 Feel::po::options_description modelalgebraic_options(std::string const& prefix)
@@ -85,8 +89,6 @@ Feel::po::options_description modelnumerical_options(std::string const& prefix)
 {
     Feel::po::options_description appliBaseOptions("Application Base options");
     appliBaseOptions.add_options()
-        //(prefixvm(prefix,"filename").c_str(), Feel::po::value<std::string>()->default_value( "" ), "json file describing model properties" )
-        (prefixvm(prefix,"filename").c_str(), Feel::po::value<std::string>(), "json file describing model properties [DEPRECATED]" )
         //(prefixvm(prefix,"mesh.filename").c_str(), Feel::po::value< std::string >(), "input mesh or geo file")
         (prefixvm(prefix,"geomap").c_str(), Feel::po::value< std::string >()->default_value("opt"), "geomap strategy : ho, opt ")
 
@@ -101,8 +103,7 @@ Feel::po::options_description modelnumerical_options(std::string const& prefix)
         .add( mesh_options( prefix ) )
         .add( gmsh_options( prefix ) )
         .add( modelalgebraic_options( prefix ))
-        .add( backend_options( prefix ) )
-        .add( json_options( prefix ) );
+        .add( backend_options( prefix ) );
 }
 
 Feel::po::options_description

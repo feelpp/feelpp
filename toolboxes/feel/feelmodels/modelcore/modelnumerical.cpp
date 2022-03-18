@@ -54,8 +54,6 @@ ModelNumerical::ModelNumerical( std::string const& _theprefix, std::string const
         M_tsSaveInFile( boption(_name="ts.save") ),
         M_tsSaveFreq( ioption(_name="ts.save.freq") ),
         M_timeCurrent(M_timeInitial),
-        M_manageParameterValues( true ),
-        M_manageParameterValuesOfModelProperties( true ),
         M_exporterPath( (fs::path(this->rootRepository())/(this->keyword()+".exports")).string() ),
         M_postProcessSaveRepository( fs::path(this->rootRepository())/(this->keyword()+".save") ),
         M_postProcessMeasures( (fs::path(this->rootRepository())/(this->keyword()+".measures")).string(), this->worldCommPtr() ),
@@ -72,51 +70,8 @@ ModelNumerical::ModelNumerical( std::string const& _theprefix, std::string const
         else
             M_geomap=GeomapStrategyType::GEOMAP_HO;
         //-----------------------------------------------------------------------//
-#if 0
-        std::string modelPropFilename = Environment::expand( soption( _name="filename",_prefix=this->prefix(),_vm=this->clovm()) );
-        if ( !modelPropFilename.empty() )
-        {
-            this->setModelProperties( modelPropFilename );
-        }
-#endif
     }
 
-void
-ModelNumerical::initModelProperties()
-{
-    if ( !M_modelProps )
-    {
-        M_modelProps = std::make_shared<ModelProperties>( this->repository().expr(),this->worldCommPtr(), this->prefix(),this->clovm() );
-        std::vector<std::string> jsonFilenames;
-        if ( countoption( _name="filename",_prefix=this->prefix(),_vm=this->clovm() ) > 0 )
-            jsonFilenames.push_back( soption( _name="filename",_prefix=this->prefix(),_vm=this->clovm() ) );
-        if ( countoption( _name="json.filename",_prefix=this->prefix(),_vm=this->clovm() ) > 0 )
-            for ( std::string const& filename : vsoption( _name="json.filename",_prefix=this->prefix(),_vm=this->clovm() ) )
-                jsonFilenames.push_back( filename );
-        M_modelProps->setup( jsonFilenames );
-    }
-}
-
-   void
-   ModelNumerical::setModelProperties( std::string const& filename )
-   {
-        M_modelProps = std::make_shared<ModelProperties>( filename, this->repository().expr(),
-                                                          this->worldCommPtr(), this->prefix(),this->clovm() );
-   }
-
-   void
-   ModelNumerical::setModelProperties( nl::json const& json )
-   {
-        M_modelProps = std::make_shared<ModelProperties>( json, this->repository().expr(),
-                                                          this->worldCommPtr(), this->prefix(),this->clovm() );
-   }
-
-   void
-   ModelNumerical::addParameterInModelProperties( std::string const& symbolName,double value)
-   {
-       if ( M_modelProps )
-           M_modelProps->parameters()[symbolName] = ModelParameter(symbolName,value);
-   }
 
     void
     ModelNumerical::setStationary(bool b)
@@ -132,8 +87,7 @@ ModelNumerical::initModelProperties()
     ModelNumerical::updateTime(double t)
     {
         M_timeCurrent=t;
-        if ( M_modelProps )
-            this->addParameterInModelProperties( "t", M_timeCurrent );
+        this->addParameterInModelProperties( "t", M_timeCurrent );
         super_model_meshes_type::updateTime( t );
     }
 
