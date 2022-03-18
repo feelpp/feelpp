@@ -33,6 +33,8 @@ if ( FEELPP_COMPONENT STREQUAL "toolboxes" OR
 
       project(feelpp-${FEELPP_COMPONENT})
       message(STATUS "[component] ${FEELPP_COMPONENT}")
+      include(CTest)
+      enable_testing()
       add_subdirectory(${FEELPP_COMPONENT})
       if ( NOT FEELPP_VERSION_MAJOR )
         include(${CMAKE_SOURCE_DIR}/feelpp.version.cmake)
