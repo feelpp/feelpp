@@ -99,10 +99,11 @@ cmake --preset $FEELPP_COMPONENT -DFEELPP_ENABLE_GIT=OFF -DLIBBSON_DIR=/usr -DLI
 cmake --build --preset $FEELPP_COMPONENT -t dist
 echo "--- cloning feelpp.pkg: ${BRANCH}"
 if test ! -d feelpp.pkg; then
-if  [ -z "$BRANCHDEB" ]; then
-    git clone -q https://github.com/feelpp/feelpp.pkg.git
-else
-    git clone -b $BRANCHDEB -q https://github.com/feelpp/feelpp.pkg.git
+if  test -z "$BRANCH"; then
+    git clone  -q https://github.com/feelpp/feelpp.pkg.git
+else 
+#    git clone -b $BRANCH -q https://github.com/feelpp/feelpp.pkg.git
+    git clone -b develop -q https://github.com/feelpp/feelpp.pkg.git
 fi
 else
     (cd feelpp.pkg && git pull)
