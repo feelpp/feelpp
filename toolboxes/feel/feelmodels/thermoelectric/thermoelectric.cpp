@@ -89,8 +89,8 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::initMesh()
     this->log("ThermoElectric","initMesh", "start");
     this->timerTool("Constructor").start();
 
-    if ( auto ptMeshes = this->modelProperties().pTree().get_child_optional("Meshes") )
-        super_type::super_model_meshes_type::setup( *ptMeshes, {this->keyword()} );
+    if ( this->modelProperties().jsonData().contains("Meshes") )
+        super_type::super_model_meshes_type::setup( this->modelProperties().jsonData().at("Meshes"), {this->keyword()} );
     if ( this->doRestart() )
         super_type::super_model_meshes_type::setupRestart( this->keyword() );
     super_type::super_model_meshes_type::updateForUse<mesh_type>( this->keyword() );
@@ -186,6 +186,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->log("ThermoElectric","init", "start" );
     this->timerTool("Constructor").start();
 
+    this->initModelProperties();
 #if 0
     M_heatModel.reset( new heat_model_type(prefixvm(this->prefix(),"heat"), "heat", this->worldCommPtr(),
                                            this->subPrefix(), this->repository() ) );
