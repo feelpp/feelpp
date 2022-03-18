@@ -50,8 +50,7 @@ namespace FeelModels
  */
 template< typename ConvexType, typename BasisPotentialType>
 class Electric : public ModelNumerical,
-                 public ModelPhysics<ConvexType::nDim>,
-                 public std::enable_shared_from_this< Electric<ConvexType,BasisPotentialType> >
+                 public ModelPhysics<ConvexType::nDim>
 {
     typedef ModelPhysics<ConvexType::nDim> super_physics_type;
 public:
@@ -97,6 +96,8 @@ public:
               worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
               std::string const& subPrefix = "",
               ModelBaseRepository const& modelRep = ModelBaseRepository() );
+
+    std::shared_ptr<self_type> shared_from_this() { return std::dynamic_pointer_cast<self_type>( super_type::shared_from_this() ); }
 
     std::shared_ptr<std::ostringstream> getInfo() const override;
     void updateInformationObject( nl::json & p ) const override;

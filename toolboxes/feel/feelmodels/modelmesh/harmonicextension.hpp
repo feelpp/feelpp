@@ -43,8 +43,7 @@ namespace FeelModels
 {
 
 template< typename MeshType, int Order >
-class HarmonicExtension : public ModelAlgebraic,
-                          public std::enable_shared_from_this< HarmonicExtension<MeshType,Order> >
+class HarmonicExtension : public ModelAlgebraic
 {
 public :
     typedef HarmonicExtension<MeshType,Order> self_type;
@@ -82,6 +81,8 @@ public :
     HarmonicExtension(space_ptrtype space, backend_ptrtype const& backend,
                       std::string const& prefix="",
                       ModelBaseRepository const& modelRep = ModelBaseRepository() );
+
+    std::shared_ptr<self_type> shared_from_this() { return std::dynamic_pointer_cast<self_type>( super_type::shared_from_this() ); }
 
     void init();
 
