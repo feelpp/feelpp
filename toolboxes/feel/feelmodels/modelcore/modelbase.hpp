@@ -35,6 +35,7 @@
 //#include <feel/feelcore/pslogger.hpp>
 #include <feel/feelcore/worldcomm.hpp>
 #include <feel/feelcore/remotedata.hpp>
+#include <feel/feelmodels/modelproperties.hpp>
 
 #include <feel/feelmodels/modelcore/feelmodelscoreconstconfig.hpp>
 #include <feel/feelmodels/modelcore/log.hpp>
@@ -213,6 +214,35 @@ public :
     ModelBaseUpload const& upload() const { return M_upload; }
     void upload( std::string const& dataPath ) const;
 
+    // model properties
+    void initModelProperties();
+    bool hasModelProperties() const { return (M_modelProps)? true : false; }
+    std::shared_ptr<ModelProperties> modelPropertiesPtr() const { return M_modelProps; }
+    ModelProperties const& modelProperties() const { return *M_modelProps; }
+    ModelProperties & modelProperties() { return *M_modelProps; }
+    void setModelProperties( std::shared_ptr<ModelProperties> modelProps ) { M_modelProps = modelProps; }
+
+    /**
+     * @brief Set the Model Properties object from a filename
+     * 
+     * @param filename file name
+     */
+    void setModelProperties( std::string const& filename );
+
+    /**
+     * @brief Set the Model Properties object from a json struct
+     * the json may come from python 
+     * @param j json data structure
+     */
+    void setModelProperties( nl::json const& j );
+
+    void addParameterInModelProperties( std::string const& symbolName,double value );
+
+    bool manageParameterValues() const { return M_manageParameterValues; }
+    void setManageParameterValues( bool b ) { M_manageParameterValues = b; }
+    bool manageParameterValuesOfModelProperties() const { return M_manageParameterValuesOfModelProperties; }
+    void setManageParameterValuesOfModelProperties( bool b ) { M_manageParameterValuesOfModelProperties = b; }
+
 private :
     // worldcomm
     worldcomm_ptr_t M_worldComm;
@@ -241,6 +271,11 @@ private :
     bool M_isUpdatedForUse;
     // upload data tools
     ModelBaseUpload M_upload;
+
+    // model properties
+    std::shared_ptr<ModelProperties> M_modelProps;
+    bool M_manageParameterValues, M_manageParameterValuesOfModelProperties;
+
 };
 
 } // namespace FeelModels
