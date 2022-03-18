@@ -122,7 +122,8 @@ private :
     mutable std::map<std::string,std::pair<std::string,std::map<std::string,std::pair<std::string,std::time_t>>>> M_treeDataStructure;
 };
 
-class ModelBase : public JournalWatcher
+class ModelBase : public JournalWatcher,
+                  public std::enable_shared_from_this<ModelBase>
 {
     using super_type = JournalWatcher;
 public :
