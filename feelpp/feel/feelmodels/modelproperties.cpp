@@ -32,82 +32,91 @@
 namespace Feel {
 
 
+nl::json
+ModelProperties::read_json( std::string const& _filename, worldcomm_ptr_t const& world )
+{
+    std::string filename = Environment::expand( _filename );
+    if ( !fs::exists( filename ) )
+    {
+        if ( world->isMasterRank() )
+        {
+            std::cout << "[modelProperties]  Could not find :\"" << filename << "\"" <<std::endl;
+        }
+        LOG(INFO) << "Could not find " << filename << std::endl;
+        return {};
+    }
+    else
+    {
+        if ( world->isMasterRank() )
+        {
+            std::cout << "[modelProperties] Loading Model Properties : \"" << filename << "\"" << std::endl;
+        }
+        LOG(INFO) << "Loading " << filename << std::endl;
+    }
+#if 0
+    auto json_str_wo_comments = removeComments(readFromFile(filename));
+    LOG(INFO) << "json file without comment:" << json_str_wo_comments;
+    std::istringstream istr( json_str_wo_comments );
+    pt::read_json(istr, M_p);
+#endif
+    std::ifstream ifs(filename);
+    return nl::json::parse(ifs,nullptr,true,true);
+}
 
-ModelProperties::ModelProperties( std::string const& filename, std::string const& directoryLibExpr, worldcomm_ptr_t const& world, std::string const& prefix )
+ModelProperties::ModelProperties( std::string const& directoryLibExpr, worldcomm_ptr_t const& world, std::string const& prefix, po::variables_map const& vm )
     :
     super( world ),
     M_prefix( prefix ),
     M_directoryLibExpr( directoryLibExpr ),
     M_params( world ),
     M_mat( world ),
-    M_bc( world, false ),
     M_ic( world ),
     M_bc2( world ),
     M_postproc( world ),
     M_outputs( world )
 {
-    if ( !fs::exists( filename ) )
+    if ( countoption( _name="json.merge_patch",_prefix=M_prefix,_vm=vm ) > 0 )
     {
-        if ( Environment::isMasterRank() )
-        {
-            std::cout << "[modelProperties]  Could not find :\"" << filename << "\"" <<std::endl;
-        }
-        LOG(INFO) << "Could not find " << filename << std::endl;
-        return;
+        for ( std::string const& patch : vsoption( _name="json.merge_patch",_prefix=M_prefix,_vm=vm ) )
+            M_json_merge_patch.merge_patch( json::parse( patch ) );
     }
-    else
+    if ( countoption( _name="json.patch",_prefix=M_prefix,_vm=vm ) > 0 )
     {
-        if ( Environment::isMasterRank() )
-        {
-            std::cout << "[modelProperties] Loading Model Properties : \"" << filename << "\"" << std::endl;
-        }
-        LOG(INFO) << "Loading " << filename << std::endl;
+        for ( std::string const& patch : vsoption( _name="json.patch", _prefix=M_prefix,_vm=vm ) )
+            M_json_patch.push_back( json::parse( patch ) );
     }
-
-
-    auto json_str_wo_comments = removeComments(readFromFile(filename));
-    LOG(INFO) << "json file without comment:" << json_str_wo_comments;
-
-
-    std::istringstream istr( json_str_wo_comments );
-    pt::read_json(istr, M_p);
-
-    this->setup();
 }
-ModelProperties::ModelProperties( pt::ptree const& pt, std::string const& directoryLibExpr, worldcomm_ptr_t const& world, std::string const& prefix )
+
+ModelProperties::ModelProperties( std::string const& filename, std::string const& directoryLibExpr, worldcomm_ptr_t const& world, std::string const& prefix, po::variables_map const& vm )
     :
-    super( world ),
-    M_prefix( prefix ),
-    M_directoryLibExpr( directoryLibExpr ),
-    M_p( pt )
+    ModelProperties( ModelProperties::read_json( filename, world ),directoryLibExpr,world,prefix,vm )
+{}
+
+void
+ModelProperties::setup( std::vector<std::string> const& filenames )
 {
-    this->setup();
-}
-ModelProperties::ModelProperties( nl::json const& j, std::string const& directoryLibExpr, worldcomm_ptr_t const& world, std::string const& prefix )
-    :
-    super( world ),
-    M_prefix( prefix ),
-    M_directoryLibExpr( directoryLibExpr ),
-    M_p()
-{
-    auto json_str_wo_comments = removeComments(j.dump(1));
-    LOG(INFO) << "json file without comment:" << json_str_wo_comments;
-    std::istringstream istr( json_str_wo_comments );
-    pt::read_json(istr, M_p);
-    this->setup();
+    nl::json j;
+    for ( std::string const& filename : filenames )
+        j.merge_patch( ModelProperties::read_json( filename, this->worldCommPtr() ) );
+    this->setup( std::move( j ) );
 }
 
 void
-ModelProperties::setup()
+ModelProperties::setupFromFilenameOption( po::variables_map const& vm )
 {
-    editPtreeFromOptions( M_p, M_prefix );
+    if ( countoption( _name="json.filename",_prefix=M_prefix,_vm=vm ) > 0 )
+        this->setup( vsoption( _name="json.filename",_prefix=M_prefix,_vm=vm ) );
+}
 
-    std::ostringstream pt_ostr;
-    write_json( pt_ostr, M_p );
-    std::istringstream pt_istream( pt_ostr.str() );
-    nl::json jarg;
-    pt_istream >> jarg;
-
+void
+ModelProperties::setupImpl()
+{
+    if ( !M_json_merge_patch.is_null() )
+        M_jsonData.merge_patch( M_json_merge_patch );
+    if ( !M_json_patch.empty() )
+        M_jsonData = M_jsonData.patch( M_json_patch );
+    nl::json & jarg = M_jsonData;
+    //std::cout << jarg.dump(1) << std::endl;
     if ( jarg.contains("Name") )
     {
         auto const& j_name = jarg.at("Name");
@@ -142,20 +151,18 @@ ModelProperties::setup()
             M_params.setDirectoryLibExpr( M_directoryLibExpr );
         M_params.setPTree( jarg.at("Parameters") );
     }
-#if 1
-    auto bc = M_p.get_child_optional("BoundaryConditionsOldVersion");
-    if ( bc )
-    {
-        LOG(INFO) << "Model with boundary conditions\n";
-        if ( !M_directoryLibExpr.empty() )
-            M_bc.setDirectoryLibExpr( M_directoryLibExpr );
-        M_bc.setPTree( *bc );
-    }
-#endif
     if ( jarg.contains("BoundaryConditions") )
     {
         LOG(INFO) << "Model with boundary conditions\n";
-        M_bcNEW.setup( jarg.at("BoundaryConditions") );
+        if ( M_bc2_enabled )
+        {
+            pt::ptree pt;
+            std::istringstream istr( jarg.at("BoundaryConditions").dump() );
+            pt::read_json(istr, pt);
+            M_bc2.setPTree( pt );
+        }
+        else
+            M_bc.setup( jarg.at("BoundaryConditions") );
     }
 
     if ( jarg.contains("InitialConditions") )
@@ -191,55 +198,4 @@ ModelProperties::setup()
     }
 }
 
-ModelProperties::~ModelProperties()
-{}
-
-std::string ModelProperties::getEntry(std::string &s)
-{
-  std::string res;
-  try{
-  res = M_p.get<std::string>(s);
-  }
-  catch( pt::ptree_bad_path& e)
-  {
-        if ( Environment::isMasterRank() )
-            std::cout << s << " is not an entry in the tree\n";
-  }
-  return res;
-}
-
-void ModelProperties::saveMD(std::ostream &os)
-{
-  os << "## Model \n";
-  os << " - Name **" << name()<< "**\n";
-  os << " - shortName **" << shortName()<< "**\n";
-  os << " - description **" << description()<< "**\n";
-  M_params.saveMD(os);
-  M_mat.saveMD(os);
-  M_bc.saveMD(os);
-  M_postproc.saveMD(os);
-}
-
-void ModelProperties::put(std::string const &key, std::string const &entry)
-{
-  M_p.put(key,entry);
-}
-
-void ModelProperties::write(std::string const &f)
-{
-    pt::write_json(f,M_p);
-}
-
-ModelProperties&
-ModelProperties::enableBoundaryConditions2()
-{
-    M_bc2_enabled = true; 
-    auto bc = M_p.get_child_optional("BoundaryConditions");
-    if ( bc )
-    {
-        VLOG(1) << "Model with boundary conditions\n";
-        M_bc2.setPTree( *bc );
-    }
-    return *this; 
-}
 }
