@@ -19,22 +19,22 @@ echo "FLAVOR: ${FLAVOR}"
 echo "Building $FLAVOR/$DIST packages for channel $CHANNEL Feel++ component $COMPONENT"
 
 # update apt tools
-echo "--- update apt tools"
-sudo apt update
-sudo apt install -y ubuntu-dev-tools
-if [ "$COMPONENT" = "feelpp-toolboxes" -o "$COMPONENT" = "feelpp-mor" ]; then
-    echo "--- update feelpp packages"
-    # this is necessary for toolboxes and mor to retrieve the proper feelpp version
-    sudo apt install -y --reinstall libfeelpp-dev feelpp-tools 
-fi
+# echo "--- update apt tools"
+# sudo apt update
+# sudo apt install -y ubuntu-dev-tools
+# if [ "$COMPONENT" = "feelpp-toolboxes" -o "$COMPONENT" = "feelpp-mor" ]; then
+#     echo "--- update feelpp packages"
+#     # this is necessary for toolboxes and mor to retrieve the proper feelpp version
+#     sudo apt install -y --reinstall libfeelpp-dev feelpp-tools 
+# fi
 
 #PBUILDER_RESULTS=/var/lib/buildkite-agent/pbuilder/${DIST}_result_${BUILDKITE_AGENT_NAME}
 # local debug build
 PBUILDER_RESULTS=$HOME/pbuilder/${DIST}_result_${BUILDKITE_AGENT_NAME}/${CHANNEL}/
-if [ ! -f $HOME/pbuilder/${DIST}_base.tgz ]; then
-    echo "--- creating distribution $DIST results: ${PBUILDER_RESULTS}"
-    pbuilder-dist $DIST create
-fi
+#if [ ! -f $HOME/pbuilder/${DIST}_base.tgz ]; then
+#    echo "--- creating distribution $DIST results: ${PBUILDER_RESULTS}"
+#    pbuilder-dist $DIST create
+#fi
 echo "--- start from clean slate in ${PBUILDER_RESULTS}"
 if [ -d build-$DIST ]; then rm -rf build-$DIST; fi
 
@@ -88,45 +88,42 @@ if [ "$DIST" = "buster" ]; then
 fi
 echo "deb http://apt.feelpp.org/$FLAVOR $DIST $CHANNEL" | tee -a /etc/apt/sources.list
 wget -qO - http://apt.feelpp.org/apt.gpg | apt-key add
-# wget -qO  - https://feelpp.jfrog.io/artifactory/api/security/keypair/gpg-debian/public | apt-key add -
 apt update
 EOF
 fi
-
+set -x
 echo "--- setting directory build-$DIST to build source tarball"
 #git clone https://github.com/feelpp/feelpp /tmp/feelpp
-mkdir build-$DIST
-if [ "$COMPONENT" = "feelpp" ]; then
-    cd build-$DIST && ../configure -r --enable-toolboxes --enable-mor --cmakeflags="-DFEELPP_ENABLE_GIT=OFF -DLIBBSON_DIR=/usr -DLIBMONGOC_DIR=/usr"
-elif [ "$COMPONENT" = "feelpp-toolboxes" ]; then
-    cd build-$DIST && ../configure -r --root=../toolboxes
-elif [ "$COMPONENT" = "feelpp-mor" ]; then
-    cd build-$DIST && ../configure -r --root=../mor    
-fi
-make package_source
+FEELPP_COMPONENT=$(echo $COMPONENT| sed -e s/^feelpp\-//) 
+cmake --preset $FEELPP_COMPONENT -DFEELPP_ENABLE_GIT=OFF -DLIBBSON_DIR=/usr -DLIBMONGOC_DIR=/usr
+cmake --build --preset $FEELPP_COMPONENT -t dist
 echo "--- cloning feelpp.pkg: ${BRANCH}"
-if  [ -z "$BRANCH" ]; then
+if test ! -d feelpp.pkg; then
+if  [ -z "$BRANCHDEB" ]; then
     git clone -q https://github.com/feelpp/feelpp.pkg.git
 else
-    git clone -b $BRANCH -q https://github.com/feelpp/feelpp.pkg.git
+    git clone -b $BRANCHDEB -q https://github.com/feelpp/feelpp.pkg.git
+fi
+else
+    (cd feelpp.pkg && git pull)
 fi
 # local debug build
 #ln -s ../../Debian/feelpp.pkg
 
 
 
-main_version=$(echo ${COMPONENT}-*.tar.gz | sed  "s/${COMPONENT}-\([0-9.]*\)-*\([a-z.0-9]*\).tar.gz/\1/g")
-extra_version=$(echo ${COMPONENT}-*.tar.gz | sed "s/${COMPONENT}-\([0-9.]*\)-*\([a-z.0-9]*\).tar.gz/\2/g")
+main_version=$(echo build/$FEELPP_COMPONENT/${COMPONENT}-*.tar.gz | sed  "s/build\/$FEELPP_COMPONENT\/${COMPONENT}-\([0-9.]*\)-*\([a-z.0-9]*\).tar.gz/\1/g")
+extra_version=$(echo build/$FEELPP_COMPONENT/${COMPONENT}-*.tar.gz | sed "s/build\/$FEELPP_COMPONENT\/${COMPONENT}-\([0-9.]*\)-*\([a-z.0-9]*\).tar.gz/\2/g")
 
 if [ -z $extra_version ]; then
-    version=$(echo ${COMPONENT}-*.tar.gz | sed  "s/${COMPONENT}-\([0-9.]*\)-*\([a-z.0-9]*\).tar.gz/\1/g" )
-    rename_archive=$(echo ${COMPONENT}-*.tar.gz | sed "s/${COMPONENT}-\([0-9.]*\)-*\([a-z.0-9]*\).tar.gz/${COMPONENT}_\1.orig.tar.gz/g" )
+    version=$(echo build/$FEELPP_COMPONENT/${COMPONENT}-*.tar.gz | sed  "s/build\/$FEELPP_COMPONENT\/${COMPONENT}-\([0-9.]*\)-*\([a-z.0-9]*\).tar.gz/\1/g" )
+    rename_archive=$(echo build/$FEELPP_COMPONENT/${COMPONENT}-*.tar.gz | sed "s/build\/$FEELPP_COMPONENT\/${COMPONENT}-\([0-9.]*\)-*\([a-z.0-9]*\).tar.gz/${COMPONENT}_\1.orig.tar.gz/g" )
 else
-    rename_archive=$(echo ${COMPONENT}-*.tar.gz | sed "s/${COMPONENT}-\([0-9.]*\)-*\([a-z.0-9]*\).tar.gz/${COMPONENT}_\1~\2.orig.tar.gz/g")
-    version=$(echo ${COMPONENT}-*.tar.gz | sed  "s/${COMPONENT}-\([0-9.]*\)-*\([a-z.0-9]*\).tar.gz/\1~\2/g" )
+    rename_archive=$(echo build/$FEELPP_COMPONENT/${COMPONENT}-*.tar.gz | sed "s/build\/$FEELPP_COMPONENT\/${COMPONENT}-\([0-9.]*\)-*\([a-z.0-9]*\).tar.gz/${COMPONENT}_\1~\2.orig.tar.gz/g")
+    version=$(echo build/$FEELPP_COMPONENT/${COMPONENT}-*.tar.gz | sed  "s/build\/$FEELPP_COMPONENT\/${COMPONENT}-\([0-9.]*\)-*\([a-z.0-9]*\).tar.gz/\1~\2/g" )
 fi
 echo "--- building archive $rename_archive for debian"
-cp ${COMPONENT}-*.tar.gz feelpp.pkg/${COMPONENT}/$rename_archive
+cp build/$FEELPP_COMPONENT//${COMPONENT}-*.tar.gz feelpp.pkg/${COMPONENT}/$rename_archive
 cd feelpp.pkg/${COMPONENT}/$DIST && tar xzf ../$rename_archive --strip 1
 
 echo "--- update changelog ${COMPONENT}  $version-1"
