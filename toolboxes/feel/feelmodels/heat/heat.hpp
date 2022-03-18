@@ -54,8 +54,7 @@ namespace FeelModels
 
 template< typename ConvexType, typename BasisTemperatureType>
 class Heat : public ModelNumerical,
-             public ModelPhysics<ConvexType::nDim>,
-             public std::enable_shared_from_this< Heat<ConvexType,BasisTemperatureType> >
+             public ModelPhysics<ConvexType::nDim>
     {
         typedef ModelPhysics<ConvexType::nDim> super_physics_type;
     public:
@@ -116,6 +115,8 @@ class Heat : public ModelNumerical,
               worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
               std::string const& subPrefix  = "",
               ModelBaseRepository const& modelRep = ModelBaseRepository() );
+
+        std::shared_ptr<self_type> shared_from_this() { return std::dynamic_pointer_cast<self_type>( super_type::shared_from_this() ); }
 
         //___________________________________________________________________________________//
         // mesh, space, element temperature
