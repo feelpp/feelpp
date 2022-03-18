@@ -498,6 +498,8 @@ ModelPhysicFluid<Dim>::ModelPhysicFluid( ModelPhysics<Dim> const& mphysics, std:
             auto const& j_setup_gravity = j_setup.at("gravity");
             if ( j_setup_gravity.is_boolean() )
                 M_gravityForceEnabled = j_setup_gravity.template get<bool>();
+            else if ( j_setup_gravity.is_number_unsigned() )
+                M_gravityForceEnabled = j_setup_gravity.template get<int>() > 0;
             else if ( j_setup_gravity.is_string() )
                 M_gravityForceEnabled = boost::lexical_cast<bool>( j_setup_gravity.template get<std::string>() );
             else if ( j_setup_gravity.is_object() )
@@ -507,6 +509,8 @@ ModelPhysicFluid<Dim>::ModelPhysicFluid( ModelPhysics<Dim> const& mphysics, std:
                     auto const& j_setup_gravity_enable =  j_setup_gravity.at("enable");
                     if ( j_setup_gravity_enable.is_boolean() )
                         M_gravityForceEnabled = j_setup_gravity_enable.template get<bool>();
+                    else if ( j_setup_gravity_enable.is_number_unsigned() )
+                        M_gravityForceEnabled = j_setup_gravity_enable.template get<int>() > 0;
                     else if ( j_setup_gravity_enable.is_string() )
                         M_gravityForceEnabled = boost::lexical_cast<bool>( j_setup_gravity_enable.template get<std::string>() );
                 }
@@ -594,6 +598,8 @@ ModelPhysicFluid<Dim>::Turbulence::setup( nl::json const& jarg )
         auto const& j_enable = jarg.at("enable");
         if ( j_enable.is_boolean() )
             M_isEnabled = j_enable.template get<bool>();
+        else if ( j_enable.is_number_unsigned() )
+            M_isEnabled = j_enable.template get<int>() > 0;
         else if ( j_enable.is_string() )
             M_isEnabled = boost::lexical_cast<bool>( j_enable.template get<std::string>() );
     }
