@@ -31,6 +31,8 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->log("CoefficientFormPDE","init", "start" );
     this->timerTool("Constructor").start();
 
+    this->initModelProperties();
+
     this->initMaterialProperties();
 
     this->initMesh();

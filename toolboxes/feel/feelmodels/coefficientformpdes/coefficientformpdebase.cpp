@@ -60,16 +60,10 @@ CoefficientFormPDEBase<ConvexType>::initMesh()
     this->log("CoefficientFormPDE","initMesh", "start");
     this->timerTool("Constructor").start();
 
-    // std::string fileNameMeshPath = prefixvm(this->prefix(),"CoefficientFormPDEMesh.path");
-    // createMeshModel<mesh_type>(*this,M_mesh,fileNameMeshPath);
-    // CHECK( M_mesh ) << "mesh generation fail";
-
-    if ( auto ptMeshes = this->modelProperties().pTree().get_child_optional("Meshes") )
-        super_type::super_model_meshes_type::setup( *ptMeshes, {this->keyword()} );
+    if ( this->modelProperties().jsonData().contains("Meshes") )
+        super_type::super_model_meshes_type::setup( this->modelProperties().jsonData().at("Meshes"), {this->keyword()} );
     if ( this->doRestart() )
         super_type::super_model_meshes_type::setupRestart( this->keyword() );
-
-    //super_type::super_model_meshes_type::setMesh( this->keyword(), M_mesh );
     super_type::super_model_meshes_type::updateForUse<mesh_type>( this->keyword() );
 
     CHECK( this->mesh() ) << "mesh generation fail";
@@ -88,9 +82,7 @@ CoefficientFormPDEBase<ConvexType>::initMaterialProperties()
 
     if ( !M_materialsProperties )
     {
-        // auto paramValues = this->modelProperties().parameters().toParameterValues();
-        // this->modelProperties().materials().setParameterValues( paramValues );
-        M_materialsProperties.reset( new materialsproperties_type( this->shared_from_this_cfpdebase() ) );
+        M_materialsProperties.reset( new materialsproperties_type( this->shared_from_this() ) );
         M_materialsProperties->updateForUse( this->modelProperties().materials() );
     }
 

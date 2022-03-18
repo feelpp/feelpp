@@ -22,8 +22,7 @@ namespace FeelModels
 {
 
 template< typename ConvexType, typename BasisUnknownType>
-class CoefficientFormPDE : public CoefficientFormPDEBase<ConvexType>,
-                           public std::enable_shared_from_this< CoefficientFormPDE<ConvexType,BasisUnknownType> >
+class CoefficientFormPDE : public CoefficientFormPDEBase<ConvexType>
 {
 public:
     typedef CoefficientFormPDEBase<ConvexType> super_type;
@@ -60,21 +59,8 @@ public:
                         worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
                         std::string const& subPrefix  = "",
                         ModelBaseRepository const& modelRep = ModelBaseRepository() );
-#if 0
-    CoefficientFormPDE( std::string const& prefix,
-                        std::string const& keyword = "cfpde",
-                        worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
-                        std::string const& subPrefix  = "",
-                        ModelBaseRepository const& modelRep = ModelBaseRepository() )
-        :
-        CoefficientFormPDE( typename super_type::super2_type(), prefix, keyword, worldComm, subPrefix, modelRep )
-        {}
-#endif
-    //! return current shared_ptr of type CoefficientFormPDEBase
-    std::shared_ptr<super_type> shared_from_this_cfpdebase() override { return std::dynamic_pointer_cast<super_type>( this->shared_from_this() ); }
 
-    //! return current shared_ptr of type CoefficientFormPDEBase
-    std::shared_ptr<const super_type> shared_from_this_cfpdebase() const override { return std::dynamic_pointer_cast<const super_type>( this->shared_from_this() ); }
+    std::shared_ptr<self_type> shared_from_this() { return std::dynamic_pointer_cast<self_type>( super_type::shared_from_this() ); }
 
     //! return true is the unknown is scalar
     bool unknownIsScalar() const override { return unknown_is_scalar; }
@@ -84,14 +70,6 @@ public:
     space_unknown_ptrtype const& spaceUnknown() const { return M_Xh; }
     element_unknown_ptrtype const& fieldUnknownPtr() const { return M_fieldUnknown; }
     element_unknown_type const& fieldUnknown() const { return *M_fieldUnknown; }
-    //___________________________________________________________________________________//
-#if 0
-    // boundary condition + body forces
-    map_scalar_field<2> const& bcDirichlet() const { return M_bcDirichlet; }
-    map_scalar_field<2> const& bcNeumann() const { return M_bcNeumann; }
-    map_scalar_fields<2> const& bcRobin() const { return M_bcRobin; }
-    map_scalar_field<2> const& bodyForces() const { return M_volumicForcesProperties; }
-#endif
 
     //___________________________________________________________________________________//
     // time step scheme
