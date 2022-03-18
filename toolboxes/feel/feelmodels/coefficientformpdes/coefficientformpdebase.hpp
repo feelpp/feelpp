@@ -26,6 +26,7 @@ class CoefficientFormPDEBase : public ModelNumerical,
 public :
     using super_type = ModelNumerical;
     using super2_type = ModelGenericPDE<ConvexType::nDim>;
+    using self_type = CoefficientFormPDEBase<ConvexType>;
     using size_type = typename super_type::size_type;
 
     // mesh
@@ -59,22 +60,9 @@ public :
                             worldcomm_ptr_t const& worldComm,
                             std::string const& subPrefix,
                             ModelBaseRepository const& modelRep );
-#if 0
-    CoefficientFormPDEBase( std::string const& prefix,
-                            std::string const& keyword,
-                            worldcomm_ptr_t const& worldComm,
-                            std::string const& subPrefix,
-                            ModelBaseRepository const& modelRep )
-        :
-        CoefficientFormPDEBase( super2_type(), prefix, keyword, worldComm, subPrefix, modelRep )
-        {}
-#endif
 
     //! return current shared_ptr of type CoefficientFormPDEBase
-    virtual std::shared_ptr<CoefficientFormPDEBase<ConvexType>> shared_from_this_cfpdebase() = 0;
-
-    //! return current shared_ptr of type CoefficientFormPDEBase
-    virtual std::shared_ptr<const CoefficientFormPDEBase<ConvexType>> shared_from_this_cfpdebase() const = 0;
+    std::shared_ptr<self_type> shared_from_this() { return std::dynamic_pointer_cast<self_type>( super_type::shared_from_this() ); }
 
     //! return true is the unknown is scalar
     virtual bool unknownIsScalar() const = 0;

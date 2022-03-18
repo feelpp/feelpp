@@ -14,8 +14,7 @@ namespace FeelModels
 
 template< typename ConvexType, typename... BasisUnknownType>
 class CoefficientFormPDEs : public ModelNumerical,
-                            public ModelGenericPDEs<ConvexType::nDim>,
-                            public std::enable_shared_from_this< CoefficientFormPDEs<ConvexType,BasisUnknownType...> >
+                            public ModelGenericPDEs<ConvexType::nDim>
 {
 public :
     typedef ModelNumerical super_type;
@@ -172,6 +171,8 @@ public :
                          worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
                          std::string const& subPrefix  = "",
                          ModelBaseRepository const& modelRep = ModelBaseRepository() );
+
+    std::shared_ptr<self_type> shared_from_this() { return std::dynamic_pointer_cast<self_type>( super_type::shared_from_this() ); }
 
     static
     std::string const& unknowBasisTag( variant_unknown_basis_type const& vb );
