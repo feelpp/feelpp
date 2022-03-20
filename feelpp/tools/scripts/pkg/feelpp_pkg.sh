@@ -11,6 +11,7 @@ source $(dirname $0)/feelpp_pkg_common.sh
 echo "DIST: ${DIST}"
 echo "BRANCH: ${BRANCH}"
 echo "FLAVOR: ${FLAVOR}"
+echo "COMPONENT: ${COMPONENT}"
 
 #OTHERMIRROR=
 #if [ "$COMPONENT" = "feelpp-toolboxes" ]; then
@@ -48,23 +49,24 @@ else
 fi
 
 echo "--- update for pbuilder $DIST"
-pbuilder-dist $DIST update
-if [ "$DIST" = "bionic" ]; then
 echo "--- fixes for pbuilder $DIST"
-    pbuilder-dist $DIST login --save-after-login << EOF
+pbuilder-dist $DIST login --save-after-login << EOF
 apt-get update
 apt-get install apt-transport-https ca-certificates gnupg software-properties-common wget
 
-echo "deb https://apt.kitware.com/ubuntu/ bionic main" >> /etc/apt/sources.list
-echo "deb http://archive.ubuntu.com/ubuntu bionic universe"  >> /etc/apt/sources.list
-echo "deb http://archive.ubuntu.com/ubuntu bionic-updates main" >> /etc/apt/sources.list
-echo "deb http://archive.ubuntu.com/ubuntu bionic-updates universe" >> /etc/apt/sources.list
-echo "deb http://archive.ubuntu.com/ubuntu bionic-backports main" >> /etc/apt/sources.list
-echo "deb http://archive.ubuntu.com/ubuntu bionic-security main" >> /etc/apt/sources.list
+echo "deb https://apt.kitware.com/ubuntu/ $DIST main" >> /etc/apt/sources.list
 wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc  | apt-key add -
+
+if [ "$DIST" = "bionic" ]; then
+    echo "deb http://archive.ubuntu.com/ubuntu bionic universe"  >> /etc/apt/sources.list
+    echo "deb http://archive.ubuntu.com/ubuntu bionic-updates main" >> /etc/apt/sources.list
+    echo "deb http://archive.ubuntu.com/ubuntu bionic-updates universe" >> /etc/apt/sources.list
+    echo "deb http://archive.ubuntu.com/ubuntu bionic-backports main" >> /etc/apt/sources.list
+    echo "deb http://archive.ubuntu.com/ubuntu bionic-security main" >> /etc/apt/sources.list
+fi
 apt-get update
 EOF
-fi
+
 if [ "$DIST" = "buster" ]; then
 echo "--- fixes for pbuilder $DIST"
     pbuilder-dist $DIST login --save-after-login << EOF
@@ -77,7 +79,7 @@ EOF
 fi
 # pbuilder-dist $DIST update
 if [ "$COMPONENT" = "feelpp-toolboxes" -o "$COMPONENT" = "feelpp-mor" ]; then
-    echo "--- add bintray key for $COMPONENT"
+    echo "--- add key for $COMPONENT"
     export DIST
     export CHANNEL
     export FLAVOR
