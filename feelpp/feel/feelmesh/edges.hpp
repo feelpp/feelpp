@@ -26,8 +26,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-09-03
  */
-#ifndef __edges_H
-#define __edges_H 1
+#ifndef FEELPP_MESH_EDGES_HPP
+#define FEELPP_MESH_EDGES_HPP
 
 #include <unordered_map>
 #include <feel/feelcore/commobject.hpp>
@@ -235,7 +235,7 @@ public:
                 auto const& edge = unwrap_ref( *it );
                 if ( edge.processId() != part )
                     continue;
-                if ( !edge.hasMarker( markerType ) )
+                if ( !edge.hasMarkerType( markerType ) )
                     continue;
                 if ( edge.marker().isOff() )
                     continue;
@@ -259,11 +259,9 @@ public:
                 auto const& edge = unwrap_ref( *it );
                 if ( edge.processId() != part )
                     continue;
-                if ( !edge.hasMarker( markerType ) )
+                if ( !edge.hasMarkerType( markerType ) )
                     continue;
-                if ( edge.marker( markerType ).isOff() )
-                    continue;
-                if ( markerFlags.find( edge.marker( markerType ).value() ) == markerFlags.end() )
+                if ( !edge.marker( markerType ).hasOneOf( markerFlags ) )
                     continue;
                 myedges->push_back( boost::cref( edge ) );
             }

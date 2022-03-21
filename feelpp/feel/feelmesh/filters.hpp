@@ -1536,6 +1536,76 @@ elements( MeshType const& mesh, EntityRangeType const& rangeEntity, ElementsType
 }
 
 
+//! return  mesh fragmentatin by marked elements  : a mapping between  fragment id to to the tuple (range, marker ids, fragment name)
+template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0  >
+auto
+fragmentationMarkedElements( MeshType const& mesh, EntityProcessType entity = EntityProcessType::LOCAL_ONLY, bool includeNonMarkedElement = true )
+{
+    CHECK( entity == EntityProcessType::LOCAL_ONLY ) << "TODO";
+    rank_type pid = rank( mesh );
+    using elements_reference_wrapper_ptrtype = typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype;
+    using elements_reference_wrapper_type = typename MeshTraits<MeshType>::elements_reference_wrapper_type;
+    using marker_type = typename MeshTraits<MeshType>::element_type::marker_type;
+
+    std::map<int,std::tuple<elements_pid_t<MeshType>,marker_type,std::string>> res;
+
+    auto const& imesh = Feel::unwrap_ptr( mesh );
+    using mesh_type = typename MeshTraits<MeshType>::mesh_type;
+    auto it = imesh.beginOrderedElement();
+    auto en = imesh.endOrderedElement();
+
+    marker_type emptyMarker;
+    std::map<marker_type, std::tuple<elements_reference_wrapper_ptrtype,int>> mapMarkersToElements;
+
+    auto const& mappingFragments = imesh.meshFragmentationByMarker();
+    for ( auto const& [fragmentId,fragmentMarkerIds] : mappingFragments )
+    {
+        if ( fragmentMarkerIds.empty() && !includeNonMarkedElement )
+            continue;
+        mapMarkersToElements.emplace( fragmentMarkerIds, std::make_tuple( std::make_shared<elements_reference_wrapper_type>(),fragmentId ) );
+    }
+
+    for ( ; it != en; ++it )
+    {
+        auto const& elt = unwrap_ref( *it );
+        if ( elt.processId() != pid )
+            continue;
+
+        if ( !includeNonMarkedElement && !elt.hasMarker() )
+            continue;
+
+        bool hasMarker = elt.hasMarker();
+        if ( !includeNonMarkedElement && !hasMarker )
+            continue;
+        marker_type const& eltMarkers = hasMarker? elt.marker() : emptyMarker;
+
+        auto itFind = mapMarkersToElements.find( eltMarkers );
+        DCHECK( itFind != mapMarkersToElements.end() ) << "missing fragment";
+        std::get<0>(itFind->second)->push_back( boost::cref(elt) );
+    }
+
+    for ( auto & [mIds,fragementData] : mapMarkersToElements )
+    {
+        auto & [myelts,fragmentId] = fragementData;
+        myelts->shrink_to_fit();
+        auto range = boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
+                                        myelts->begin(), myelts->end(),
+                                        myelts );
+
+        std::string fragmentName;
+        for ( auto mId : mIds )
+        {
+            std::string mName = imesh.markerName( mId, mesh_type::element_type::nDim );
+            if ( !mName.empty() && !fragmentName.empty() )
+                fragmentName += "_";
+            fragmentName += mName;
+        }
+        res.emplace( fragmentId, std::make_tuple( std::move( range ), mIds, fragmentName ) );
+    }
+    return res;
+}
+
+
 } // namespace Feel
 
 

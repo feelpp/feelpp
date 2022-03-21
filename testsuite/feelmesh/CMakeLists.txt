@@ -1,5 +1,5 @@
 set_directory_properties(PROPERTIES LABEL testmesh )
-foreach(THETEST entity mesh regiontree mesh_codim1 kdtree P1mesh meshmarker updatemarker partitioner_metis elementswithmarkedfaces meshmover convex )
+foreach(THETEST entity mesh regiontree mesh_codim1 kdtree P1mesh updatemarker partitioner_metis elementswithmarkedfaces meshmover convex )
 
   if(THETEST MATCHES partitioner_metis)
     feelpp_get_compile_definition(Feelpp::feelpp_contrib FEELPP_HAS_METIS)
@@ -13,6 +13,7 @@ foreach(THETEST entity mesh regiontree mesh_codim1 kdtree P1mesh meshmarker upda
 
 endforeach()
 
+feelpp_add_test( meshmarker CFG test_meshmarker.cfg GEO test_meshmarker_square_4mat.geo )
 feelpp_add_test( mesh_filters_operations SRCS test_mesh_filters_operations.cpp CFG test_mesh_filters_operations.cfg GEO test_mesh_filters_operations.geo )
 feelpp_add_test( submesh1d SRCS test_submesh1d.cpp CFG test_submesh1d.cfg GEO test_submesh1d.geo )
 
