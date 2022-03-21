@@ -4,6 +4,7 @@
 #include <feel/feelmodels/modelcore/modelphysics.hpp>
 #include <feel/feelmodels/modelmarkers.hpp>
 
+#include <feel/feelmodels/modelcore/modelgenericpde.hpp>
 
 namespace Feel
 {
@@ -84,6 +85,10 @@ ModelPhysic<Dim>::New( ModelPhysics<Dim> const& mphysics, std::string const& mod
         return std::make_shared<ModelPhysicSolid<Dim>>( mphysics, modeling, type, name, model );
     else if ( modeling == "fsi" )
         return std::make_shared<ModelPhysicFSI<Dim>>( mphysics, modeling, type, name, model );
+    else if ( modeling == "GenericPDE" )
+        return std::make_shared<ModelPhysicCoefficientFormPDE<Dim>>( mphysics, modeling, type, name, model );
+    else if ( modeling == "GenericPDEs" )
+        return std::make_shared<ModelPhysicCoefficientFormPDEs<Dim>>( mphysics, modeling, type, name, model );
     else
         return std::make_shared<ModelPhysic<Dim>>( modeling, type, name, mphysics, model );
 }
@@ -885,6 +890,185 @@ ModelPhysicFSI<Dim>::tabulateInformations( nl::json const& jsonInfo, TabulateInf
 
 
 
+template <uint16_type Dim>
+ModelPhysicCoefficientFormPDE<Dim>::Infos::Infos( std::string const& name, nl::json const& jarg )
+{
+    M_equationName = name;
+
+    if ( jarg.contains("name") )
+    {
+        auto const& j_name = jarg.at("name");
+        if ( j_name.is_string() )
+            M_equationName = j_name.template get<std::string>();
+    }
+
+    if ( jarg.contains("unknown") )
+    {
+        auto const& j_unknown = jarg.at("unknown");
+        CHECK( j_unknown.contains("name") ) << "require to define unknown.name";
+        auto const& j_unknown_name = j_unknown.at("name");
+        if ( j_unknown_name.is_string() )
+            M_unknownName = j_unknown_name.template get<std::string>();
+        CHECK( !M_unknownName.empty() ) << "require to define a non empty unknown.name";
+
+        if ( j_unknown.contains( "symbol" ) )
+        {
+            auto const& j_unknown_symbol = j_unknown.at( "symbol" );
+            if ( j_unknown_symbol.is_string() )
+                M_unknownSymbol = j_unknown_symbol.template get<std::string>();
+        }
+        else
+             M_unknownSymbol = M_unknownName;
+
+        if ( j_unknown.contains( "basis" ) )
+        {
+            auto const& j_unknown_basis = j_unknown.at( "basis" );
+            if ( j_unknown_basis.is_string() )
+                M_unknownBasis = j_unknown_basis.template get<std::string>();
+        }
+        else
+            M_unknownBasis = "Pch1";
+    }
+
+    std::string unknownShape;
+    if ( M_unknownBasis == "Pch1" || M_unknownBasis == "Pch2" || M_unknownBasis == "Pdh1" )
+        unknownShape = "scalar";
+    else if ( M_unknownBasis == "Pchv1" || M_unknownBasis == "Pchv2" || M_unknownBasis == "Ned1h0" )
+        unknownShape = "vectorial";
+    else
+        CHECK( false ) << "invalid unknown.basis : " << M_unknownBasis;
+
+
+    static constexpr uint16_type nDim = Dim;
+    shape_dim_type scalarShape = std::make_pair(1,1);
+    shape_dim_type vectorialShape = std::make_pair(nDim,1);
+    shape_dim_type matrixShape = std::make_pair(nDim,nDim);
+
+    M_coefficientProperties.emplace( Coefficient::convection, std::make_tuple( "beta", shapes_dim_type{ vectorialShape } ) );
+    M_coefficientProperties.emplace( Coefficient::diffusion, std::make_tuple( "c", shapes_dim_type{ scalarShape, matrixShape } ) );
+    M_coefficientProperties.emplace( Coefficient::reaction, std::make_tuple( "a", shapes_dim_type{ scalarShape } ) );
+    M_coefficientProperties.emplace( Coefficient::firstTimeDerivative, std::make_tuple( "d", shapes_dim_type{ scalarShape } ) );
+    M_coefficientProperties.emplace( Coefficient::secondTimeDerivative, std::make_tuple( "m", shapes_dim_type{ scalarShape } ) );
+
+    M_coefficientProperties.emplace( Coefficient::conservativeFluxConvection, std::make_tuple( "alpha", shapes_dim_type{ vectorialShape } ) );
+
+    if ( unknownShape == "scalar" )
+    {
+        M_coefficientProperties.emplace( Coefficient::source, std::make_tuple( "f", shapes_dim_type{ scalarShape } ) );
+        M_coefficientProperties.emplace( Coefficient::conservativeFluxSource, std::make_tuple( "gamma", shapes_dim_type{ vectorialShape } ) );
+    }
+    else if ( unknownShape == "vectorial" )
+    {
+        M_coefficientProperties.emplace( Coefficient::source, std::make_tuple( "f", shapes_dim_type{ vectorialShape } ) );
+        M_coefficientProperties.emplace( Coefficient::conservativeFluxSource, std::make_tuple( "gamma", shapes_dim_type{ matrixShape } ) );
+        M_coefficientProperties.emplace( Coefficient::curlCurl, std::make_tuple( "zeta", shapes_dim_type{ scalarShape } ) );
+    }
+}
+
+
+template <uint16_type Dim>
+ModelPhysicCoefficientFormPDE<Dim>::ModelPhysicCoefficientFormPDE( ModelPhysics<Dim> const& mphysics, std::string const& modeling, std::string const& type, std::string const& name, ModelModel const& model )
+    :
+    super_type( modeling, type, name, mphysics, model )
+{
+    auto const& mgpde = dynamic_cast<ModelGenericPDE<Dim> const&>( mphysics );
+    M_infos = mgpde.M_infos;
+
+    auto const& j_setup = model.setup();
+
+    if ( j_setup.contains("coefficients") )
+    {
+        auto const& j_setup_coeff = j_setup.at("coefficients");
+        for ( auto const& [j_setup_coeffkey,j_setup_coeffval] : j_setup_coeff.items() )
+        {
+            this->addParameter( j_setup_coeffkey, j_setup_coeffval );
+        }
+        // TODO check coefficients shape
+    }
+
+}
+
+template <uint16_type Dim>
+void
+ModelPhysicCoefficientFormPDE<Dim>::updateInformationObject( nl::json & p ) const
+{
+    super_type::updateInformationObject( p["Generic"] );
+}
+template <uint16_type Dim>
+tabulate_informations_ptr_t
+ModelPhysicCoefficientFormPDE<Dim>::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
+{
+    auto tabInfo = TabulateInformationsSections::New( tabInfoProp );
+    if ( jsonInfo.contains("Generic") )
+    {
+        super_type::updateTabulateInformationsBasic( jsonInfo.at("Generic"), tabInfo, tabInfoProp );
+        super_type::updateTabulateInformationsSubphysics( jsonInfo.at("Generic"), tabInfo, tabInfoProp );
+        super_type::updateTabulateInformationsParameters( jsonInfo.at("Generic"), tabInfo, tabInfoProp );
+    }
+    return tabInfo;
+}
+
+
+template <uint16_type Dim>
+ModelPhysicCoefficientFormPDEs<Dim>::ModelPhysicCoefficientFormPDEs( ModelPhysics<Dim> const& mphysics, std::string const& modeling, std::string const& type, std::string const& name, ModelModel const& model )
+    :
+    super_type( modeling, type, name, mphysics, model )
+{
+    auto const& j_setup = model.setup();
+
+    std::cout << "ModelPhysicCoefficientFormPDEs---0---"<<std::endl;
+
+    if ( j_setup.is_object() )
+    {
+        std::cout << "ModelPhysicCoefficientFormPDEs---1---"<<std::endl;
+
+        std::string nameEqDefault = fmt::format("equation{}",M_pdes.size());
+        //typename ModelPhysicCoefficientFormPDE<Dim>::infos_type infos( nameEqDefault, j_setup );
+        auto infos = std::make_shared<cfpde_infos_type>( nameEqDefault, j_setup );
+        M_pdes.push_back( std::make_tuple( std::move( infos ), std::shared_ptr<ModelPhysicCoefficientFormPDE<Dim>>{} ) );
+    }
+    else if ( j_setup.is_array() )
+    {
+        for ( auto const& [j_setupkey,j_setupval] : j_setup.items() )
+        {
+            std::string nameEqDefault = fmt::format("equation{}",M_pdes.size());
+            //typename ModelPhysicCoefficientFormPDE<Dim>::infos_type infos( nameEqDefault, j_setupval );
+            auto infos = std::make_shared<cfpde_infos_type>( nameEqDefault, j_setupval );
+            M_pdes.push_back( std::make_tuple( std::move( infos ), std::shared_ptr<ModelPhysicCoefficientFormPDE<Dim>>{} ) );
+        }
+    }
+
+}
+
+template <uint16_type Dim>
+void
+ModelPhysicCoefficientFormPDEs<Dim>::updateInformationObject( nl::json & p ) const
+{
+    super_type::updateInformationObject( p["Generic"] );
+}
+template <uint16_type Dim>
+tabulate_informations_ptr_t
+ModelPhysicCoefficientFormPDEs<Dim>::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
+{
+    auto tabInfo = TabulateInformationsSections::New( tabInfoProp );
+    if ( jsonInfo.contains("Generic") )
+    {
+        super_type::updateTabulateInformationsBasic( jsonInfo.at("Generic"), tabInfo, tabInfoProp );
+        super_type::updateTabulateInformationsSubphysics( jsonInfo.at("Generic"), tabInfo, tabInfoProp );
+        super_type::updateTabulateInformationsParameters( jsonInfo.at("Generic"), tabInfo, tabInfoProp );
+    }
+    return tabInfo;
+}
+
+
+
+
+
+
+
+
+
+
 
 template <uint16_type Dim>
 void
@@ -1177,6 +1361,10 @@ template class ModelPhysicSolid<2>;
 template class ModelPhysicSolid<3>;
 template class ModelPhysicFSI<2>;
 template class ModelPhysicFSI<3>;
+template class ModelPhysicCoefficientFormPDE<2>;
+template class ModelPhysicCoefficientFormPDE<3>;
+template class ModelPhysicCoefficientFormPDEs<2>;
+template class ModelPhysicCoefficientFormPDEs<3>;
 
 } // namespace FeelModels
 } // namespace Feel
