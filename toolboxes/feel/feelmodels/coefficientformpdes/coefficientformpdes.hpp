@@ -15,9 +15,12 @@ namespace FeelModels
 template< typename ConvexType, typename... BasisUnknownType>
 class CoefficientFormPDEs : public ModelNumerical,
                             public ModelGenericPDEs<ConvexType::nDim>
+    //public ModelPhysics<ConvexType::nRealDim>
 {
 public :
-    typedef ModelNumerical super_type;
+    using super_type = ModelNumerical;
+    //using super_physics_type = ModelPhysics<ConvexType::nRealDim>;
+    using super_physics_type = ModelGenericPDEs<ConvexType::nDim>;
     using size_type = typename super_type::size_type;
 
     using self_type = CoefficientFormPDEs<ConvexType,BasisUnknownType...>;
@@ -498,6 +501,7 @@ private :
     void initMesh();
     void initMaterialProperties();
     void initPostProcess() override;
+    void updatePhysics( typename super_physics_type::PhysicsTreeNode & physicsTree, ModelModels const& models ) override;
 
     void updateAutomaticSolverSelection();
 

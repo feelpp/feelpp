@@ -12,7 +12,7 @@ namespace FeelModels
 {
 
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
-COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::CoefficientFormPDE( typename super_type::super2_type::infos_type const& infosPDE,
+COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::CoefficientFormPDE( typename super_type::super2_type::infos_ptrtype const& infosPDE,
                                                             std::string const& prefix,
                                                             std::string const& keyword,
                                                             worldcomm_ptr_t const& worldComm,
@@ -32,6 +32,8 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->timerTool("Constructor").start();
 
     this->initModelProperties();
+
+    this->initPhysics( this->shared_from_this(), this->modelProperties().models() );
 
     this->initMaterialProperties();
 
@@ -224,6 +226,8 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) 
 
     super_type::super_model_meshes_type::updateInformationObject( p["Meshes"] );
 
+    super_type::super_physics_type::updateInformationObjectFromCurrentType( p["Physics"] );
+
     // Boundary Conditions
     M_boundaryConditions->updateInformationObject( p["Boundary Conditions"] );
 
@@ -247,6 +251,9 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& js
     auto tabInfo = TabulateInformationsSections::New( tabInfoProp );
     if ( jsonInfo.contains("Environment") )
         tabInfo->add( "Environment",  super_type::super_model_base_type::tabulateInformations( jsonInfo.at("Environment"), tabInfoProp ) );
+
+    if ( jsonInfo.contains("Physics") )
+        tabInfo->add( "Physics", super_type::super_physics_type::tabulateInformations( jsonInfo.at("Physics"), tabInfoProp ) );
 
     if ( jsonInfo.contains("Meshes") )
         tabInfo->add( "Meshes", super_type::super_model_meshes_type::tabulateInformations( jsonInfo.at("Meshes"), tabInfoProp ) );

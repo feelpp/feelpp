@@ -26,6 +26,8 @@ class CoefficientFormPDE : public CoefficientFormPDEBase<ConvexType>
 {
 public:
     typedef CoefficientFormPDEBase<ConvexType> super_type;
+    using Coefficient = typename super_type::Coefficient;
+
     using size_type = typename super_type::size_type;
     typedef CoefficientFormPDE<ConvexType,BasisUnknownType> self_type;
     typedef std::shared_ptr<self_type> self_ptrtype;
@@ -53,7 +55,7 @@ public:
     typedef std::shared_ptr<bdf_unknown_type> bdf_unknown_ptrtype;
 
 
-    CoefficientFormPDE( typename super_type::super2_type::infos_type const& infosPDE,
+    CoefficientFormPDE( typename super_type::super2_type::infos_ptrtype const& infosPDE,
                         std::string const& prefix,
                         std::string const& keyword = "cfpde",
                         worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
@@ -249,19 +251,25 @@ public:
     template <typename ModelContextType>
     void updateLinearPDEDofElimination( ModelAlgebraic::DataUpdateLinear & data, ModelContextType const& mctx ) const;
     template <typename ModelContextType,typename RangeType>
-    void updateLinearPDEStabilizationGLS( ModelAlgebraic::DataUpdateLinear & data, ModelContextType const& mctx, std::string const& matName, RangeType const& range ) const;
+    void updateLinearPDEStabilizationGLS( ModelAlgebraic::DataUpdateLinear & data, ModelContextType const& mctx,
+                                          std::shared_ptr<ModelPhysicCoefficientFormPDE<nDim>> physicCFPDEData,
+                                          std::string const& matName, RangeType const& range ) const;
 
     template <typename ModelContextType>
     void updateNewtonInitialGuess( ModelAlgebraic::DataNewtonInitialGuess & data, ModelContextType const& mctx ) const;
     template <typename ModelContextType>
     void updateJacobian( ModelAlgebraic::DataUpdateJacobian & data, ModelContextType const& mctx ) const;
     template <typename ModelContextType,typename RangeType>
-    void updateJacobianStabilizationGLS( ModelAlgebraic::DataUpdateJacobian & data, ModelContextType const& mctx, std::string const& matName, RangeType const& range ) const;
+    void updateJacobianStabilizationGLS( ModelAlgebraic::DataUpdateJacobian & data, ModelContextType const& mctx,
+                                         std::shared_ptr<ModelPhysicCoefficientFormPDE<nDim>> physicCFPDEData,
+                                         std::string const& matName, RangeType const& range ) const;
     void updateJacobianDofElimination( ModelAlgebraic::DataUpdateJacobian & data ) const override;
     template <typename ModelContextType>
     void updateResidual( ModelAlgebraic::DataUpdateResidual & data, ModelContextType const& mctx ) const;
     template <typename ModelContextType,typename RangeType>
-    void updateResidualStabilizationGLS( ModelAlgebraic::DataUpdateResidual & data, ModelContextType const& mctx, std::string const& matName, RangeType const& range ) const;
+    void updateResidualStabilizationGLS( ModelAlgebraic::DataUpdateResidual & data, ModelContextType const& mctx,
+                                         std::shared_ptr<ModelPhysicCoefficientFormPDE<nDim>> physicCFPDEData,
+                                         std::string const& matName, RangeType const& range ) const;
     void updateResidualDofElimination( ModelAlgebraic::DataUpdateResidual & data ) const override;
 
 
