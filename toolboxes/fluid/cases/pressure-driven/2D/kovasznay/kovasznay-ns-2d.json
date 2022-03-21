@@ -41,7 +41,11 @@
             },
             "Dirichlet":
             {
-                "wall":
+                "top":
+                {
+                    "expr":"{uexx,0}:uexx"
+                },
+                "bottom":
                 {
                     "expr":"{uexx,0}:uexx"
                 }
@@ -51,11 +55,11 @@
         {
             "Dirichlet":
             {
-                "inlet":
+                "left":
                 {
                     "expr":"pdynex:pdynex"
                 },
-                "outlet":
+                "right":
                 {
                     "expr":"pdynex:pdynex"
                 }
