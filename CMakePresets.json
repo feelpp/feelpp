@@ -107,6 +107,17 @@
             }
         },
         {
+            "name": "python",
+            "inherits": "default",
+            "displayName": "feelpp-python",
+            "description": "Build only the Feel++ python Component",
+            "binaryDir": "${sourceDir}/build/python",
+            "cacheVariables": {
+                "FEELPP_COMPONENT": "python",
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/build/python/install/"
+            }
+        },
+        {
             "name": "feelpp-python",
             "inherits": "default",
             "displayName": "feelpp-python",
@@ -237,6 +248,18 @@
             ]
         },
         {
+            "name": "python",
+            "inherits": "default",
+            "configurePreset": "python",
+            "targets": [
+                "pyfeelpp",
+                "pyfeelpp-toolboxes",
+                "pyfeelpp-mor",
+                "all",
+                "install"
+            ]
+        },
+        {
             "name": "feelpp-python-dbg",
             "inherits": "default",
             "configurePreset": "feelpp-python-dbg",
@@ -293,6 +316,11 @@
         {
             "name": "mor",
             "configurePreset": "mor",
+            "inherits": "feelpp"
+        },
+        {
+            "name": "python",
+            "configurePreset": "python",
             "inherits": "feelpp"
         },
         {
