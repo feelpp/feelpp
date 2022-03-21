@@ -132,7 +132,7 @@ if ( EXISTS ${FEELPP_SOURCE_DIR}/applications/opus/ AND NOT FEELPP_ENABLE_CPACK_
 #  set(CPACK_SOURCE_IGNORE_FILES "${PROJECT_SOURCE_DIR}/applications/opus/;${CPACK_SOURCE_IGNORE_FILES}" )
 endif()
 
-if ( NOT FEELPP_COMPONENT )
+if ( NOT FEELPP_COMPONENT OR "${FEELPP_COMPONENT}" EQUAL "feelpp" )
   # CPACK_SOURCE_INSTALLED_DIRECTORIES won't work because the files we want to include
   # can be in an ignored directory (build/). So use a script instead
   message(STATUS "[feelpp] add script to handle auto generated file distribution")
