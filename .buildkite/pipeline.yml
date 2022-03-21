@@ -47,7 +47,7 @@ steps:
    agents:
      docker: true
  - name: ':$TARGET, $CXX, feelpp-python :python: :hammer: :docker: :rocket:'
-   command: feelpp/tools/scripts/buildkite/install-feelpp.sh python
+   command: feelpp/tools/scripts/buildkite/install-feelpp.sh feelpp-python
    if: |
      (build.message !~ /skip python/) &&
      (build.message !~ /skip components/)
