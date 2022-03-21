@@ -27,6 +27,10 @@ if [ "${component}" = "feelpp" ] ; then
 #    tag=$(tag_from_os $TARGET $BRANCHTAG $FEELPP_VERSION)
     image="feelpp"
 fi
+if [ "${component}" = "feelpp-python" ] ; then
+#    tag=$(tag_from_os $TARGET $BRANCHTAG $FEELPP_VERSION)
+    image="feelpp-python"
+fi
 echo "--- Building ${image}:${tag}"
 
 
