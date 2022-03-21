@@ -62,6 +62,26 @@ ModelOutput::ModelOutput( std::string name, nl::json const& jarg, worldcomm_ptr_
              M_dim = std::stoi( j_topodim.get<std::string>() );
      }
      // else LOG(WARNING) << "Output " << M_name << " does not have any dimension\n";
+
+     if ( jarg.contains("coord") && jarg.at("coord").is_array() )
+     {
+         for( auto const& [key,value] : jarg.at("coord").items() )
+         {
+             if ( value.is_number() )
+                 M_coord.push_back(value.get<double>());
+             else if ( value.is_string() )
+                 M_coord.push_back(std::stod( value.get<std::string>() ) );
+         }
+     }
+
+     if ( jarg.contains("radius") )
+     {
+         auto const& j_radius = jarg.at("radius");
+         if ( j_radius.is_number() )
+             M_radius = j_radius.get<double>();
+         else if ( j_radius.is_string() )
+             M_radius = std::stod( j_radius.get<std::string>() );
+     }
 }
 
 

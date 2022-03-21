@@ -4,8 +4,8 @@
     "ShortName":"OpusHeat-tb",
     "Models":
     {
-        "equations":[
-            {
+        "cfpdes":{
+            "equations":{
                 "name":"heat",
                 "unknown":
                 {
@@ -13,7 +13,8 @@
                     "name":"temperature",
                     "symbol":"T"
                 }
-            }]
+            }
+        }
     },
     "Parameters":
     {
@@ -114,8 +115,7 @@
     },
     "PostProcess":
     {
-        "use-model-name":1,
-        "heat":
+        "cfpdes":
         {
             "Exports":
             {
