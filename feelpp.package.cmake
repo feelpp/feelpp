@@ -135,8 +135,11 @@ endif()
 if ( NOT FEELPP_COMPONENT )
   # CPACK_SOURCE_INSTALLED_DIRECTORIES won't work because the files we want to include
   # can be in an ignored directory (build/). So use a script instead
+  message(STATUS "[feelpp] add script to handle auto generated file distribution")
   set(CPACK_INSTALL_SCRIPT "${CMAKE_BINARY_DIR}/feelpp/cmake/modules/CPackExtraDist.cmake")
   configure_file("${CMAKE_SOURCE_DIR}/feelpp/cmake/modules/extradist.cmake.in" "${CMAKE_BINARY_DIR}/feelpp/cmake/modules/CPackExtraDist.cmake" @ONLY)
+else()
+  message(STATUS "[${FEELPP_COMPONENT}] no extra dist distribution")
 endif()
 
 include( CPack )
