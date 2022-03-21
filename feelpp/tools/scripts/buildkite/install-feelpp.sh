@@ -40,7 +40,7 @@ elif [ "${component}" = "toolboxes" -o "${component}" = "testsuite" ] ; then
     dockerfile_from "docker/${image}/Dockerfile.template" "ghcr.io/feelpp/feelpp:${tag}" > docker/${image}/dockerfile.tmp
 elif [ "${component}" = "mor" ] ; then
     dockerfile_from "docker/${image}/Dockerfile.template" "ghcr.io/feelpp/feelpp-toolboxes:${tag}" > docker/${image}/dockerfile.tmp
-elif [ "${component}" = "feelpp-python" ] ; then
+elif [ "${component}" = "feelpp-python" -o "${component}" = "python" ] ; then
     dockerfile_from "docker/${image}/Dockerfile.template" "ghcr.io/feelpp/feelpp-mor:${tag}" > docker/${image}/dockerfile.tmp    
 else
     dockerfile_from "docker/${image}/Dockerfile.template" "ghcr.io/feelpp/feelpp-toolboxes:${tag}" > docker/${image}/dockerfile.tmp
@@ -52,7 +52,7 @@ elif [ "${component}" = "toolboxes" ] ; then
     CTEST_FLAGS="-R feelpp_toolbox_ -T test --no-compress-output --output-on-failure"
 elif [ "${component}" = "testsuite" ] ; then
     CTEST_FLAGS="-R feelpp_test_ -T test --no-compress-output --output-on-failure"
-elif [ "${component}" = "feelpp-python" ] ; then
+elif [ "${component}" = "feelpp-python" -o "${component}" = "python" ] ; then
     CTEST_FLAGS="-R feelpp -T test --no-compress-output --output-on-failure"
 else
     CTEST_FLAGS="-T test --no-compress-output --output-on-failure"
