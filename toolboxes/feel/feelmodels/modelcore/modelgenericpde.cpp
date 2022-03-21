@@ -10,15 +10,15 @@ namespace FeelModels
 {
 
 template <uint16_type Dim>
-ModelGenericPDE<Dim>::ModelGenericPDE( infos_type const& infos )
+ModelGenericPDE<Dim>::ModelGenericPDE( infos_ptrtype const& infos )
     :
     super_type( "GenericPDE" ),
     ModelBase(""),
     M_infos( infos )
 {
-    this->setupGenericPDE();
+    //this->setupGenericPDE();
 }
-
+#if 0
 template <uint16_type Dim>
 ModelGenericPDE<Dim>::Infos::Infos( std::string const& name, nl::json const& jarg )
 {
@@ -67,11 +67,14 @@ ModelGenericPDE<Dim>::Infos::Infos( std::string const& name, nl::json const& jar
     else
         CHECK( false ) << "invalid unknown.basis : " << M_unknownBasis;
 }
+#endif
 
+#if 0
 template <uint16_type Dim>
 void
 ModelGenericPDE<Dim>::setupGenericPDE()
 {
+#if 0
     //this->M_physicType = M_infos.equationName();
     auto mphysic = std::make_shared<ModelPhysic<Dim>>( this->physicModeling(), this->physicType(), M_infos.equationName(), *this );
 
@@ -108,7 +111,9 @@ ModelGenericPDE<Dim>::setupGenericPDE()
     }
 
     this->M_physics.emplace( std::make_pair(mphysic->type(),mphysic->name()), mphysic );
+#endif
 }
+#endif
 
 template <uint16_type Dim>
 ModelGenericPDEs<Dim>::ModelGenericPDEs( /*std::string const& physic*/ )
@@ -117,6 +122,7 @@ ModelGenericPDEs<Dim>::ModelGenericPDEs( /*std::string const& physic*/ )
     ModelBase("")
 {}
 
+#if 0
 template <uint16_type Dim>
 void
 ModelGenericPDEs<Dim>::setupGenericPDEs( nl::json const& jarg )
@@ -151,13 +157,14 @@ template <uint16_type Dim>
 void
 ModelGenericPDEs<Dim>::addGenericPDE( typename ModelGenericPDE<nDim>::infos_type const& infos )
 {
-    M_pdes.push_back( std::make_tuple( infos, std::shared_ptr<ModelGenericPDE<nDim>>{} ) );
+    //M_pdes.push_back( std::make_tuple( infos, std::shared_ptr<ModelGenericPDE<nDim>>{} ) );
 }
 
 template <uint16_type Dim>
 void
 ModelGenericPDEs<Dim>::updateForUseGenericPDEs( std::string const& name )
 {
+#if 0
     auto pId = std::make_pair( this->physicType(), name );
     CHECK( this->hasPhysic(pId) ) << "physic not registered";
     auto mphysic = this->physic(pId);
@@ -168,7 +175,9 @@ ModelGenericPDEs<Dim>::updateForUseGenericPDEs( std::string const& name )
         for ( auto const& subPhysic : pde->physics() ) // normally only one
             mphysic->addSubphysic( subPhysic.second );
     }
+#endif
 }
+#endif
 
 template class ModelGenericPDE<2>;
 template class ModelGenericPDE<3>;

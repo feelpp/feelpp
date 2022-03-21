@@ -267,6 +267,12 @@ public :
     //! return the full symbol from parameter name
     std::string symbolFromParameter( std::string const& pname ) const { return "physics_" + prefixvm( prefixvm( M_type, M_name, "_" ), pname, "_" ); }
 
+    //! return true if parameter \pname is present, false otherwise
+    bool hasParameter( std::string const& pname ) const
+        {
+            return M_parameterNameToExpr.find( pname ) != M_parameterNameToExpr.end();
+        }
+
     //! return true if parameter \pname of shape MxN is present, false otherwise
     template <int M,int N>
     bool hasParameterExpr( std::string const& pname ) const
@@ -683,6 +689,94 @@ public :
     tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
 private :
     std::set<std::string> M_interfaceFluid, M_interfaceSolid;
+};
+
+
+template <uint16_type Dim>
+class ModelPhysicCoefficientFormPDE : public ModelPhysic<Dim>
+{
+    using super_type = ModelPhysic<Dim>;
+    using self_type = ModelPhysicCoefficientFormPDE<Dim>;
+public :
+    struct Infos
+    {
+        enum class Coefficient { convection=0, diffusion, reaction, firstTimeDerivative, secondTimeDerivative, source, conservativeFluxConvection, conservativeFluxSource, curlCurl };
+
+        using shape_dim_type = std::pair<uint16_type,uint16_type>;
+        using shapes_dim_type = std::vector<shape_dim_type>;
+
+        Infos() = default;
+        Infos( std::string const& name, nl::json const& jarg );
+        Infos( std::string const& name, std::string const& unknownName, std::string const& unknownSymbol, std::string const& unknownBasis )
+            :
+            M_equationName( name ),
+            M_unknownName( unknownName ),
+            M_unknownSymbol( unknownSymbol ),
+            M_unknownBasis( unknownBasis )
+            {}
+        Infos( Infos const& ) = default;
+        Infos( Infos && ) = default;
+        std::string const& equationName() const { return M_equationName; }
+        std::string const& unknownName() const { return M_unknownName; }
+        std::string const& unknownSymbol() const { return M_unknownSymbol; }
+        std::string const& unknownBasis() const { return M_unknownBasis; }
+
+        std::map<Coefficient,std::tuple<std::string,shapes_dim_type>> const& coefficientProperties() const { return M_coefficientProperties; }
+        std::string const& coefficientName( Coefficient c ) const { return std::get<0>( M_coefficientProperties.at( c ) ); }
+    private :
+        std::string M_equationName, M_unknownName, M_unknownSymbol, M_unknownBasis;
+        std::map<Coefficient,std::tuple<std::string,shapes_dim_type>> M_coefficientProperties;
+    };
+    using infos_type = self_type::Infos;
+
+    ModelPhysicCoefficientFormPDE( ModelPhysics<Dim> const& mphysics, std::string const& modeling, std::string const& type, std::string const& name, ModelModel const& model = ModelModel{} );
+    ModelPhysicCoefficientFormPDE( ModelPhysicCoefficientFormPDE const& ) = default;
+    ModelPhysicCoefficientFormPDE( ModelPhysicCoefficientFormPDE && ) = default;
+
+    std::shared_ptr<infos_type> const& infos() const { return M_infos; }
+
+    using Coefficient = typename infos_type::Coefficient;
+    bool hasCoefficient( Coefficient c ) const { return this->hasCoefficient( M_infos->coefficientName( c ) ); }
+    ModelExpression const& coefficient( Coefficient c ) const { return this->coefficient( M_infos->coefficientName( c ) ); }
+
+    template <int M,int N,typename SymbolsExprType = symbols_expression_empty_t>
+    auto coefficientExpr( Coefficient c, SymbolsExprType const& se = symbols_expression_empty_t{} ) const
+        {
+            return this->coefficientExpr<M,N>( M_infos->coefficientName( c ), se );
+        }
+
+    void updateInformationObject( nl::json & p ) const override;
+    tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
+private:
+    bool hasCoefficient( std::string const& coeffName ) const { return this->hasParameter( coeffName ); }
+    ModelExpression const& coefficient( std::string const& coeffName ) const { return this->parameterModelExpr( coeffName ); }
+    template <int M,int N,typename SymbolsExprType = symbols_expression_empty_t>
+    auto coefficientExpr( std::string const& coeffName, SymbolsExprType const& se = symbols_expression_empty_t{} ) const { return this->template parameterExpr<M,N>( coeffName, se ); }
+private :
+    std::shared_ptr<infos_type> M_infos;
+};
+
+
+template <uint16_type Dim>
+class ModelPhysicCoefficientFormPDEs : public ModelPhysic<Dim>
+{
+    using super_type = ModelPhysic<Dim>;
+    using self_type = ModelPhysicCoefficientFormPDEs<Dim>;
+public :
+    ModelPhysicCoefficientFormPDEs( ModelPhysics<Dim> const& mphysics, std::string const& modeling, std::string const& type, std::string const& name, ModelModel const& model = ModelModel{} );
+    ModelPhysicCoefficientFormPDEs( ModelPhysicCoefficientFormPDEs const& ) = default;
+    ModelPhysicCoefficientFormPDEs( ModelPhysicCoefficientFormPDEs && ) = default;
+
+    auto const& pdes() const { return M_pdes; }
+    auto & pdes() { return M_pdes; }
+
+    void updateInformationObject( nl::json & p ) const override;
+    tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
+
+private :
+    //std::vector<std::tuple<typename ModelPhysicCoefficientFormPDE<Dim>::infos_type,std::shared_ptr<ModelPhysicCoefficientFormPDE<Dim>>>> M_pdes;
+    using cfpde_infos_type = typename ModelPhysicCoefficientFormPDE<Dim>::infos_type;
+    std::vector<std::tuple<std::shared_ptr<cfpde_infos_type>,std::shared_ptr<ModelPhysicCoefficientFormPDE<Dim>>>> M_pdes;
 };
 
 
