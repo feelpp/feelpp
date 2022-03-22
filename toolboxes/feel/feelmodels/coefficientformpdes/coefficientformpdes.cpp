@@ -33,10 +33,23 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::updatePhysics( typename super_physics_t
     auto currentPhysic = std::dynamic_pointer_cast<ModelPhysicCoefficientFormPDEs<nDim>>( physicsTree.physic() );
     CHECK( currentPhysic ) << "wrong physic";
 
-    for ( auto & eq : currentPhysic->pdes() )
+    using model_physic_cfpde_type = ModelPhysicCoefficientFormPDE<nDim>;
+    for ( auto & eqData : currentPhysic->pdes() )
     {
-        auto const& eqInfos = std::get<0>( eq );
-        std::string const& eqName = eqInfos->equationName();
+        std::string const& eqName = std::get<0>( eqData );
+        auto & eqInfos = std::get<1>( eqData );
+        //std::string const& eqName = eqInfos->equationName();
+        if ( models.hasType( eqName ) )
+        {
+            for ( auto const& [_nameFromModels,_model] : models.models( eqName ) )
+            {
+                if ( !eqInfos )
+                    eqInfos = std::make_shared<typename model_physic_cfpde_type::infos_type>( eqName, _model.setup() );
+                break;
+            }
+        }
+
+        CHECK( eqInfos ) << "something is missing";
         std::string const& eqBasisTag = eqInfos->unknownBasis();
         std::shared_ptr<coefficient_form_pde_base_type> newCoefficientFormPDE;
         hana::for_each( tuple_type_unknown_basis, [this,&eqInfos,&eqName,&eqBasisTag,&newCoefficientFormPDE]( auto const& e )
@@ -54,22 +67,7 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::updatePhysics( typename super_physics_t
         physicsTree.addChild( newCoefficientFormPDE, models );
     }
 
-
 #if 0
-    if ( !M_heatModel )
-    {
-        M_heatModel = std::make_shared<heat_model_type>(prefixvm(this->prefix(),"heat"), "heat", this->worldCommPtr(),
-                                                        this->subPrefix(), this->repository() );
-    }
-    if ( !M_electricModel )
-    {
-        M_electricModel = std::make_shared<electric_model_type>(prefixvm(this->prefix(),"electric"), "electric", this->worldCommPtr(),
-                                                                this->subPrefix(), this->repository() );
-    }
-
-    physicsTree.addChild( M_heatModel, models );
-    physicsTree.addChild( M_electricModel, models );
-
     physicsTree.updateMaterialSupportFromChildren( "intersect" );
 #endif
 }
@@ -96,47 +94,6 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 #endif
         } );
 
-
-
-
-
-#if 0
-
-    
-    if ( this->physics().empty() )
-        this->initGenericPDEs( this->keyword() );
-
-    // add equations from modelProperties
-    if ( this->hasModelProperties() )
-    {
-        auto const& models = this->modelProperties().models();
-        if ( models.hasType( this->keyword() ) )
-            for ( auto const& [_name,_model] : models.models( this->keyword() ) ) // only one!
-                this->setupGenericPDEs( _model.setup() );
-    }
-    CHECK( !this->pdes().empty() ) << "no equation";
-
-    for ( auto & eq : this->pdes() )
-    {
-        auto const& eqInfos = std::get<0>( eq );
-        std::string const& eqName = eqInfos.equationName();
-        std::string const& eqBasisTag = eqInfos.unknownBasis();
-        std::shared_ptr<coefficient_form_pde_base_type> newCoefficientFormPDE;
-        hana::for_each( tuple_type_unknown_basis, [this,&eqInfos,&eqName,&eqBasisTag,&newCoefficientFormPDE]( auto const& e )
-                        {
-                            if ( this->unknowBasisTag( e ) == eqBasisTag )
-                            {
-                                using coefficient_form_pde_type = typename self_type::traits::template coefficient_form_pde_t<decltype(e)>;
-                                newCoefficientFormPDE.reset( new coefficient_form_pde_type( eqInfos, prefixvm( this->prefix(),eqName ), eqName/*this->keyword()*/,
-                                                                                            this->worldCommPtr(), this->subPrefix(), this->repository() ) );
-                            }
-                        });
-
-        std::get<1>( eq ) = newCoefficientFormPDE;
-        M_coefficientFormPDEs.push_back( newCoefficientFormPDE );
-    }
-    this->updateForUseGenericPDEs( this->keyword() );
-#endif
 
     this->initMaterialProperties();
 
@@ -649,6 +606,10 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::updateParameterValues()
     this->modelProperties().parameters().updateParameterValues();
     auto paramValues = this->modelProperties().parameters().toParameterValues();
     this->materialsProperties()->updateParameterValues( paramValues );
+
+    for ( auto [physicName,physicData] : this->physics/*FromCurrentType*/() )
+        physicData->updateParameterValues( paramValues );
+
 
     this->updateParameterValues_postProcess( paramValues, prefixvm("postprocess",this->keyword(),"_" ) );
     for (auto const& cfpdeBase : M_coefficientFormPDEs )
