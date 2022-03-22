@@ -728,6 +728,7 @@ public :
         std::map<Coefficient,std::tuple<std::string,shapes_dim_type>> M_coefficientProperties;
     };
     using infos_type = self_type::Infos;
+    using infos_ptrtype = std::shared_ptr<infos_type>;
 
     ModelPhysicCoefficientFormPDE( ModelPhysics<Dim> const& mphysics, std::string const& modeling, std::string const& type, std::string const& name, ModelModel const& model = ModelModel{} );
     ModelPhysicCoefficientFormPDE( ModelPhysicCoefficientFormPDE const& ) = default;
@@ -776,7 +777,7 @@ public :
 private :
     //std::vector<std::tuple<typename ModelPhysicCoefficientFormPDE<Dim>::infos_type,std::shared_ptr<ModelPhysicCoefficientFormPDE<Dim>>>> M_pdes;
     using cfpde_infos_type = typename ModelPhysicCoefficientFormPDE<Dim>::infos_type;
-    std::vector<std::tuple<std::shared_ptr<cfpde_infos_type>,std::shared_ptr<ModelPhysicCoefficientFormPDE<Dim>>>> M_pdes;
+    std::vector<std::tuple<std::string,std::shared_ptr<cfpde_infos_type>,std::shared_ptr<ModelPhysicCoefficientFormPDE<Dim>>>> M_pdes;
 };
 
 

@@ -1014,27 +1014,37 @@ ModelPhysicCoefficientFormPDEs<Dim>::ModelPhysicCoefficientFormPDEs( ModelPhysic
     :
     super_type( modeling, type, name, mphysics, model )
 {
+    using model_physic_cfpde_type = ModelPhysicCoefficientFormPDE<Dim>;
     auto const& j_setup = model.setup();
 
-    std::cout << "ModelPhysicCoefficientFormPDEs---0---"<<std::endl;
-
-    if ( j_setup.is_object() )
+    if ( j_setup.is_string() )
     {
-        std::cout << "ModelPhysicCoefficientFormPDEs---1---"<<std::endl;
-
+        std::string const& eqName = j_setup.template get<std::string>();
+        M_pdes.push_back( std::make_tuple( eqName, typename model_physic_cfpde_type::infos_ptrtype{}, std::shared_ptr<ModelPhysicCoefficientFormPDE<Dim>>{} ) );
+    }
+    else if ( j_setup.is_object() )
+    {
         std::string nameEqDefault = fmt::format("equation{}",M_pdes.size());
         //typename ModelPhysicCoefficientFormPDE<Dim>::infos_type infos( nameEqDefault, j_setup );
         auto infos = std::make_shared<cfpde_infos_type>( nameEqDefault, j_setup );
-        M_pdes.push_back( std::make_tuple( std::move( infos ), std::shared_ptr<ModelPhysicCoefficientFormPDE<Dim>>{} ) );
+        M_pdes.push_back( std::make_tuple( infos->equationName(), std::move( infos ), std::shared_ptr<ModelPhysicCoefficientFormPDE<Dim>>{} ) );
     }
     else if ( j_setup.is_array() )
     {
         for ( auto const& [j_setupkey,j_setupval] : j_setup.items() )
         {
-            std::string nameEqDefault = fmt::format("equation{}",M_pdes.size());
-            //typename ModelPhysicCoefficientFormPDE<Dim>::infos_type infos( nameEqDefault, j_setupval );
-            auto infos = std::make_shared<cfpde_infos_type>( nameEqDefault, j_setupval );
-            M_pdes.push_back( std::make_tuple( std::move( infos ), std::shared_ptr<ModelPhysicCoefficientFormPDE<Dim>>{} ) );
+            if ( j_setupval.is_string() )
+            {
+                std::string const& eqName = j_setupval.template get<std::string>();
+                M_pdes.push_back( std::make_tuple( eqName, typename model_physic_cfpde_type::infos_ptrtype{}, std::shared_ptr<ModelPhysicCoefficientFormPDE<Dim>>{} ) );
+            }
+            else
+            {
+                std::string nameEqDefault = fmt::format("equation{}",M_pdes.size());
+                //typename ModelPhysicCoefficientFormPDE<Dim>::infos_type infos( nameEqDefault, j_setupval );
+                auto infos = std::make_shared<cfpde_infos_type>( nameEqDefault, j_setupval );
+                M_pdes.push_back( std::make_tuple( infos->equationName(), std::move( infos ), std::shared_ptr<ModelPhysicCoefficientFormPDE<Dim>>{} ) );
+            }
         }
     }
 
