@@ -5,13 +5,19 @@
     "Models":
     {
         "cfpdes":{
-            "equations":{
-                "name":"magneto",
-                "unknown":
-                {
+            "equations":"magneto"
+        },
+        "magneto":{
+            "setup":{
+                "unknown":{
                     "basis":"Ned1h0",
                     "name":"potential",
                     "symbol":"A"
+                },
+                "coefficients":{
+                    "zeta":"1/materials_mu:materials_mu",
+                    "a":"1",
+                    "f":"{2/materials_mu,2/materials_mu}:materials_mu"
                 }
             }
         }
@@ -36,10 +42,7 @@
     {
         "Omega":
         {
-            "mu":1e-3,
-            "magneto_zeta":"1/mu:mu",
-            "magneto_a":"1",
-            "magneto_f":"{2/mu,2/mu}:mu"
+            "mu":1e-3
         }
     },
     "BoundaryConditions":

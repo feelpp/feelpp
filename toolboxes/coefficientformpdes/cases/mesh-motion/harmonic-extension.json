@@ -4,13 +4,17 @@
     "Models":
     {
         "cfpdes":{
-            "equations":{
-                "name":"equation1",
-                "unknown":
-                {
+            "equations":"equation1"
+        },
+        "equation1":{
+            "setup":{
+                "unknown":{
                     "basis":"Pchv1",
                     "name":"solution",
                     "symbol":"u"
+                },
+                "coefficients":{
+                    "c":1 // diffusion
                 }
             }
         }
@@ -34,7 +38,6 @@
     {
         "Omega":
         {
-            "equation1_c":1 // diffusion
         }
     },
     "BoundaryConditions":
