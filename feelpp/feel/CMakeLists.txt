@@ -40,7 +40,7 @@ else()
   CONFIGURE_FILE(feelcore/git.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/feelcore/git.cpp @ONLY)
   set(POST_CONFIGURE_FILE "${CMAKE_CURRENT_BINARY_DIR}/feelcore/git.cpp")
 endif()
-message(STATUS "[feelpp] ${POST_CONFIGURE_FILE}"
+message(STATUS "[feelpp] post_configure_file: ${POST_CONFIGURE_FILE}")
 SET(DIRS core timing math alg mesh partition poly opt discr ts filters material vf pde ls fit models python fmi hwsys event)
 foreach(dir ${DIRS})
   add_subdirectory(feel${dir})
