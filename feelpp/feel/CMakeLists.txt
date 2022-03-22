@@ -126,6 +126,12 @@ if ( Boost_FOUND )
     # Boost::filesystem
     BOOST_FILESYSTEM_VERSION=${BOOST_FILESYSTEM_VERSION}
     )
+
+  # Required on MacOS to circumvent error "Boost.Stacktrace requires `_Unwind_Backtrace` function"
+  if( APPLE )
+    target_compile_definitions(feelpp PUBLIC _GNU_SOURCE)
+  endif()
+
   if (BOOST_ENABLE_TEST_DYN_LINK)
     target_compile_definitions( feelpp PUBLIC BOOST_TEST_DYN_LINK )
   endif (BOOST_ENABLE_TEST_DYN_LINK)
