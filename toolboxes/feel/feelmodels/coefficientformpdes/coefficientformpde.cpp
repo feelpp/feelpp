@@ -410,6 +410,9 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::setParameterValues( std::map<std::string
         this->materialsProperties()->setParameterValues( paramValues );
     }
 
+    for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
+        physicData->setParameterValues( paramValues );
+
     M_boundaryConditions->setParameterValues( paramValues );
 
     this->log("CoefficientFormPDE","setParameterValues", "finish");
