@@ -5,13 +5,17 @@
     "Models":
     {
         "cfpdes":{
-            "equations":{
-                "name":"heat",
-                "unknown":
-                {
+            "equations":"heat"
+        },
+        "heat":{
+            "setup":{
+                "unknown":{
                     "basis":"Pch1",
                     "name":"temperature",
                     "symbol":"T"
+                },
+                "coefficients":{
+                    "c":"materials_k:materials_k"
                 }
             }
         }
@@ -41,34 +45,33 @@
             "markers":"mat1",
             "k":"1.15",//[ W/(m*K) ]
             "Cp":"880", //[ J/(kg*K) ]
-            "rho":"2300", //[ kg/(m^3) ]
-            "heat_c":"materials_Concrete_k:materials_Concrete_k"
+            "rho":"2300" //[ kg/(m^3) ]
+            //"heat_c":"materials_Concrete_k:materials_Concrete_k"
         },
         "Wood":
         {
             "markers":"mat2",
             "k":"0.12",//[ W/(m*K) ]
             "Cp":"2500", //[ J/(kg*K) ]
-            "rho":"500", //[ kg/(m^3) ]
-            "heat_c":"materials_Wood_k:materials_Wood_k"
+            "rho":"500" //[ kg/(m^3) ]
+            //"heat_c":"materials_Wood_k:materials_Wood_k"
         },
         "Insulation":
         {
             "markers":"mat3",
             "k":"0.029",//[ W/(m*K) ]
             "Cp":"1000", //[ J/(kg*K) ]
-            "rho":"150", //[ kg/(m^3) ]
-            "heat_c":"materials_Insulation_k:materials_Insulation_k"
+            "rho":"150" //[ kg/(m^3) ]
+            //"heat_c":"materials_Insulation_k:materials_Insulation_k"
         },
         "Aluminium":
         {
             "markers":"mat4",
             "k":"230",//[ W/(m*K) ]
             "Cp":"900", //[ J/(kg*K) ]
-            "rho":"2700", //[ kg/(m^3) ]
-            "heat_c":"materials_Aluminium_k:materials_Aluminium_k"
+            "rho":"2700" //[ kg/(m^3) ]
+            //"heat_c":"materials_Aluminium_k:materials_Aluminium_k"
         }
-
     },
     "BoundaryConditions":
     {
