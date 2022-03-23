@@ -517,19 +517,12 @@ ModelBase::tabulateInformations() const
     return tabRes;
 }
 
-std::shared_ptr<std::ostringstream>
-ModelBase::getInfo() const
-{
-    std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
-    return _ostr;
-}
 void
 ModelBase::printInfo( tabulate_informations_ptr_t const& tabInfos ) const
 {
     if ( this->worldComm().isMasterRank() )
     {
-        std::cout << this->getInfo()->str();
-        std::cout << *tabInfos << std::endl;
+        std::cout << tabInfos->exporterAscii( true ) << std::endl;
     }
 }
 void
@@ -542,7 +535,7 @@ ModelBase::saveInfo( tabulate_informations_ptr_t const& tabInfos ) const
     if ( this->worldComm().isMasterRank() )
     {
         std::ofstream file_ascii( filepath_ascii, std::ios::out);
-        file_ascii << this->getInfo()->str();
+        file_ascii << tabInfos->exporterAscii();
         file_ascii.close();
 
         std::ofstream file_adoc( filepath_adoc, std::ios::out);
