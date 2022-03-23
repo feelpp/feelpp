@@ -252,6 +252,7 @@ MeshALE<Convex>::initTimeStep()
 #endif
 }
 
+#if 0
 template< class Convex >
 std::shared_ptr<std::ostringstream>
 MeshALE<Convex>::getInfo() const
@@ -268,7 +269,7 @@ MeshALE<Convex>::getInfo() const
                << "\n";
     return _ostr;
 }
-
+#endif
 //------------------------------------------------------------------------------------------------//
 
 template< class Convex >

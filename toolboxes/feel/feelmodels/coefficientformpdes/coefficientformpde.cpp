@@ -277,6 +277,7 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& js
     return tabInfo;
 }
 
+#if 0
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
 std::shared_ptr<std::ostringstream>
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::getInfo() const
@@ -330,6 +331,7 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::getInfo() const
 #endif
     return _ostr;
 }
+#endif
 
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
 void

@@ -300,7 +300,6 @@ public :
     void init( bool buildAlgebraicFactory = true );
     void solve( bool upVelAcc=true );
 
-    std::shared_ptr<std::ostringstream> getInfo() const override;
     void updateInformationObject( nl::json & p ) const override;
     tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
 

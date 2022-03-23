@@ -39,7 +39,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::useExtendedDofTable() const
 }
 
 //---------------------------------------------------------------------------------------------------------//
-
+#if 0
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 std::shared_ptr<std::ostringstream>
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
@@ -231,7 +231,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
 
     return _ostr;
 }
-
+#endif
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void

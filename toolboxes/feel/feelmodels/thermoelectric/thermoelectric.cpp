@@ -467,7 +467,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonIn
 
     return tabInfo;
 }
-
+#if 0
 THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 std::shared_ptr<std::ostringstream>
 THERMOELECTRIC_CLASS_TEMPLATE_TYPE::getInfo() const
@@ -513,7 +513,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::getInfo() const
 #endif
     return _ostr;
 }
-
+#endif
 THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
 THERMOELECTRIC_CLASS_TEMPLATE_TYPE::startTimeStep()

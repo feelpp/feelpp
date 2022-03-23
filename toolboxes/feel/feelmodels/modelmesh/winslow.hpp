@@ -105,8 +105,6 @@ public :
 
     void init();
 
-    std::shared_ptr<std::ostringstream> getInfo() const override;
-
 
     space_ptrtype const& functionSpace() const { return M_Xh; }
     element_ptrtype const& displacement() const { return M_displacement; }

@@ -86,8 +86,6 @@ public :
 
     void init();
 
-    std::shared_ptr<std::ostringstream> getInfo() const;
-
     void updateLinearPDE( DataUpdateLinear & data ) const;
 
     void solve();

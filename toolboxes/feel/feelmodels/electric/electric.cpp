@@ -352,7 +352,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonInfo, Ta
     return tabInfo;
 }
 
-
+#if 0
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 std::shared_ptr<std::ostringstream>
 ELECTRIC_CLASS_TEMPLATE_TYPE::getInfo() const
@@ -395,7 +395,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::getInfo() const
 #endif
     return _ostr;
 }
-
+#endif
 
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
