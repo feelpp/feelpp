@@ -50,7 +50,7 @@ public:
                      std::string const& prefix="",
                      po::variables_map const& vm = Environment::vm() );
 
-    template <typename T,std::enable_if_t< std::is_same_v<T,nl::json>, bool> = true >
+    template <typename T,std::enable_if_t< std::is_same_v<std::decay_t<T>,nl::json>, bool> = true >
     ModelProperties( T && jarg,
                      std::string const& directoryLibExpr = "",
                      worldcomm_ptr_t const& world = Environment::worldCommPtr(),
@@ -70,7 +70,7 @@ public:
     //! setup from json filename
     void setup( std::string const& filename ) { this->setup( std::vector<std::string>{ filename } ); }
     //! setup from json object
-    template <typename T,std::enable_if_t< std::is_same_v<T,nl::json>, bool> = true >
+    template <typename T,std::enable_if_t< std::is_same_v<std::decay_t<T>,nl::json>, bool> = true >
     void setup( T && jarg )
     {
         M_jsonData = std::forward<T>( jarg );
