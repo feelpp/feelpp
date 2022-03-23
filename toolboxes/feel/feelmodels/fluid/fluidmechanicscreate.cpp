@@ -60,29 +60,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::New( std::string const& prefix, std::string 
 
 }
 
-FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-std::string
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::expandStringFromSpec( std::string const& expr )
-{
-    std::string res = expr;
-    boost::replace_all( res, "$fluid_u_order", (boost::format("%1%")%nOrderVelocity).str() );
-    boost::replace_all( res, "$fluid_p_order", (boost::format("%1%")%nOrderPressure).str() );
-    boost::replace_all( res, "$fluid_geo_order", (boost::format("%1%")%nOrderGeo).str() );
-    std::string fluidTag = (boost::format("P%1%P%2%G%3%")%nOrderVelocity %nOrderPressure %nOrderGeo ).str();
-    boost::replace_all( res, "$fluid_tag", fluidTag );
-    return res;
-}
-
-// add members instatantiations need by static function expandStringFromSpec
-FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-const uint16_type FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::nOrderVelocity;
-FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-const uint16_type FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::nOrderPressure;
-FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-const uint16_type FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::nOrderGeo;
-
-
-
 //---------------------------------------------------------------------------------------------------------//
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
@@ -215,8 +192,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initMesh()
     this->log("FluidMechanics","initMesh", "start");
     this->timerTool("Constructor").start();
 
-    if ( auto ptMeshes = this->modelProperties().pTree().get_child_optional("Meshes") )
-        super_type::super_model_meshes_type::setup( *ptMeshes, {this->keyword()} );
+    if ( this->modelProperties().jsonData().contains("Meshes") )
+        super_type::super_model_meshes_type::setup( this->modelProperties().jsonData().at("Meshes"), {this->keyword()} );
     if ( this->doRestart() )
         super_type::super_model_meshes_type::setupRestart( this->keyword() );
     super_type::super_model_meshes_type::updateForUse<mesh_type>( this->keyword() );
@@ -766,6 +743,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->log("FluidMechanics","init", "start" );
     this->timerTool("Constructor").start();
 
+    this->initModelProperties();
+
 #if 0
     M_bodyMotion = std::make_shared<bodymotion_type>(prefixvm(this->prefix(),"body"), "body", this->worldCommPtr(), this->repository() );
     typename super_physics_type::PhysicsTree physicsTree( this->shared_from_this() );
@@ -786,7 +765,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
     // backend
     this->initAlgebraicBackend();
-    
 
     if ( M_bodyMotion )
     {
@@ -1781,6 +1759,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTurbulenceModel()
 {
+#if 0 // TODO
     M_turbulenceModelType.reset( new turbulence_model_type( prefixvm(this->prefix(),"turbulence"),
                                                             "cfpdes",
                                                             this->worldCommPtr(), "", this->repository() ) );
@@ -2365,7 +2344,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTurbulenceModel()
     // if ( this->worldComm().isMasterRank() )
     //     std::cout << "holalla turb \n "<< M_turbulenceModelType->modelFields().symbolsExpr().names() << std::endl;
 
-
+#endif
 }
 
 

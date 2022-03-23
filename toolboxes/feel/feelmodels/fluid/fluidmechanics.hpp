@@ -298,8 +298,7 @@ namespace FeelModels
 template< typename ConvexType, typename BasisVelocityType,
           typename BasisPressureType = Lagrange< (BasisVelocityType::nOrder>1)? (BasisVelocityType::nOrder-1):BasisVelocityType::nOrder, Scalar,Continuous,PointSetFekete> >
 class FluidMechanics : public ModelNumerical,
-                       public ModelPhysics<ConvexType::nDim>,
-                       public std::enable_shared_from_this< FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType> >
+                       public ModelPhysics<ConvexType::nDim>
 {
     using super_physics_type = ModelPhysics<ConvexType::nDim>;
 public:
@@ -1939,9 +1938,8 @@ public:
                              worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
                              std::string const& subPrefix = "",
                              ModelBaseRepository const& modelRep = ModelBaseRepository() );
-    //___________________________________________________________________________________//
 
-    static std::string expandStringFromSpec( std::string const& expr );
+    std::shared_ptr<self_type> shared_from_this() { return std::dynamic_pointer_cast<self_type>( super_type::shared_from_this() ); }
 
 private :
     void loadParameterFromOptionsVm();
