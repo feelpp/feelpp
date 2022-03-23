@@ -189,7 +189,6 @@ public :
     tabulate_informations_ptr_t tabulateInformations() const;
     virtual tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const;
 
-    virtual std::shared_ptr<std::ostringstream> getInfo() const;
     void printInfo() const { this->printInfo( this->tabulateInformations() ); }
     void saveInfo() const { this->saveInfo( this->tabulateInformations() ); }
     void printAndSaveInfo() const;
