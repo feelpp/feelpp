@@ -99,6 +99,15 @@ class DistanceToRange
         fastmarching_ptrtype const& fastMarching() const;
 
         //--------------------------------------------------------------------//
+        // Options
+        /*
+         * Maximal computed distance (narrow band)
+         * Negative (eg -1) computes full distance
+         */
+        value_type maxDistance() const { return M_maxDistance; }
+        void setMaxDistance( const value_type & maxDist ) { M_maxDistance = maxDist; }
+
+        //--------------------------------------------------------------------//
         // Geometry
         value_type distanceDofToFace( size_type dofId, size_type faceId ) const;
 
@@ -120,6 +129,8 @@ class DistanceToRange
         functionspace_distance_ptrtype M_spaceDistance;
 
         fastmarching_ptrtype M_fastMarching;
+
+        value_type M_maxDistance = -1.;
 
         mutable elements_reference_wrapper_distance_ptrtype M_eltsTouchingFaces;
         mutable std::unordered_map< size_type, std::vector< size_type > > M_dofsNeighbouringFaces;
@@ -225,6 +236,7 @@ DistanceToRange< FunctionSpaceType >::unsignedDistanceToFaces( range_faces_type 
         );
 
     // Then perform fast-marching
+    this->fastMarching()->setNarrowBandWidth( this->maxDistance() );
     unsignedDistance = this->fastMarching()->run( unsignedDistance, rangeEltsTouchingFaces );
     // Return
     return unsignedDistance;
