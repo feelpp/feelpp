@@ -639,8 +639,9 @@ ModelBase::initModelProperties()
 void
 ModelBase::setModelProperties( std::string const& filename )
 {
-    M_modelProps = std::make_shared<ModelProperties>( filename, this->repository().expr(),
+    M_modelProps = std::make_shared<ModelProperties>( this->repository().expr(),
                                                       this->worldCommPtr(), this->prefix(),this->clovm() );
+    M_modelProps->setup( filename );
 }
 
 void
