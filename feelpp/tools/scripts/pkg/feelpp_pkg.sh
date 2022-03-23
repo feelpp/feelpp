@@ -54,7 +54,7 @@ pbuilder-dist $DIST login --save-after-login << EOF
 apt-get update
 apt-get install apt-transport-https ca-certificates gnupg software-properties-common wget
 
-echo "deb https://apt.kitware.com/ubuntu/ $DIST main" >> /etc/apt/sources.list
+# echo "deb https://apt.kitware.com/ubuntu/ $DIST main" >> /etc/apt/sources.list
 wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc  | apt-key add -
 
 if [ "$DIST" = "bionic" ]; then
@@ -88,7 +88,7 @@ apt-get install -y apt-transport-https ca-certificates gnupg software-properties
 if [ "$DIST" = "buster" ]; then
     echo "deb http://deb.debian.org/debian buster-backports main" >> /etc/apt/sources.list
 fi
-echo "deb [trusted=yes] http://apt.feelpp.org/$FLAVOR $DIST $CHANNEL" | tee -a /etc/apt/sources.list
+# echo "deb [trusted=yes] http://apt.feelpp.org/$FLAVOR $DIST $CHANNEL" | tee -a /etc/apt/sources.list
 wget -qO - http://apt.feelpp.org/apt.gpg | apt-key add
 apt update
 EOF
