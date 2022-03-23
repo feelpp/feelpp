@@ -241,8 +241,8 @@
             "configurePreset": "feelpp-python",
             "targets": [
                 "pyfeelpp",
-                "pyfeelpp-toolboxes",
-                "pyfeelpp-mor",
+                "pyfeelpptoolboxes",
+                "pyfeelppmor",
                 "all",
                 "install"
             ]
@@ -253,8 +253,8 @@
             "configurePreset": "python",
             "targets": [
                 "pyfeelpp",
-                "pyfeelpp-toolboxes",
-                "pyfeelpp-mor",
+                "pyfeelpptoolboxes",
+                "pyfeelppmor",
                 "all",
                 "install"
             ]
