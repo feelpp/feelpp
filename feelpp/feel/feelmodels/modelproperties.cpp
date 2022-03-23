@@ -87,11 +87,6 @@ ModelProperties::ModelProperties( std::string const& directoryLibExpr, worldcomm
     }
 }
 
-ModelProperties::ModelProperties( std::string const& filename, std::string const& directoryLibExpr, worldcomm_ptr_t const& world, std::string const& prefix, po::variables_map const& vm )
-    :
-    ModelProperties( ModelProperties::read_json( filename, world ),directoryLibExpr,world,prefix,vm )
-{}
-
 void
 ModelProperties::setup( std::vector<std::string> const& filenames )
 {
