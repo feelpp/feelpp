@@ -88,7 +88,7 @@ apt-get install -y apt-transport-https ca-certificates gnupg software-properties
 if [ "$DIST" = "buster" ]; then
     echo "deb http://deb.debian.org/debian buster-backports main" >> /etc/apt/sources.list
 fi
-echo "deb http://apt.feelpp.org/$FLAVOR $DIST $CHANNEL" | tee -a /etc/apt/sources.list
+echo "deb [trusted=yes] http://apt.feelpp.org/$FLAVOR $DIST $CHANNEL" | tee -a /etc/apt/sources.list
 wget -qO - http://apt.feelpp.org/apt.gpg | apt-key add
 apt update
 EOF

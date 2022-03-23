@@ -108,6 +108,7 @@ if ( FEELPP_TOOLBOXES_ENABLE_CFPDE )
 endif()
 
 if ( FEELPP_TOOLBOXES_ENABLE_CFPDE AND FEELPP_TOOLBOXES_ENABLE_FLUIDMECHANICS )
+  add_subdirectory( body )
   add_subdirectory( fluid )
   list(APPEND TOOLBOXES "fluid")
 endif()
