@@ -1364,7 +1364,7 @@ FSI<FluidType,SolidType>::updateTimeStep()
 }
 
 //---------------------------------------------------------------------------------------------------------//
-
+#if 0
 template< class FluidType, class SolidType >
 std::shared_ptr<std::ostringstream>
 FSI<FluidType,SolidType>::getInfo() const
@@ -1424,7 +1424,7 @@ FSI<FluidType,SolidType>::getInfo() const
 #endif
     return _ostr;
 }
-
+#endif
 template< class FluidType, class SolidType >
 void
 FSI<FluidType,SolidType>::updateInformationObject( nl::json & p ) const

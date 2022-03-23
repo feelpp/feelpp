@@ -544,7 +544,7 @@ HEAT_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonInfo, Tabula
     return tabInfo;
 }
 
-
+#if 0
 HEAT_CLASS_TEMPLATE_DECLARATIONS
 std::shared_ptr<std::ostringstream>
 HEAT_CLASS_TEMPLATE_TYPE::getInfo() const
@@ -604,6 +604,7 @@ HEAT_CLASS_TEMPLATE_TYPE::getInfo() const
 #endif
     return _ostr;
 }
+#endif
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
 void

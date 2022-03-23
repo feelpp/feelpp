@@ -412,7 +412,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::initPostProcess()
 }
 
 
-
+#if 0
 HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
 std::shared_ptr<std::ostringstream>
 HEATFLUID_CLASS_TEMPLATE_TYPE::getInfo() const
@@ -459,6 +459,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::getInfo() const
 
     return _ostr;
 }
+#endif
 
 HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
 void

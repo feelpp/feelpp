@@ -137,8 +137,6 @@ public :
 
     void init() override;
 
-    std::shared_ptr<std::ostringstream> getInfo() const override;
-
     /**
      * verbose
      */

@@ -14,7 +14,7 @@ namespace FeelModels
 {
 
 //---------------------------------------------------------------------------------------------------//
-
+#if 0
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 std::shared_ptr<std::ostringstream>
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
@@ -155,7 +155,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
 #endif
     return _ostr;
 }
-
+#endif
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) const

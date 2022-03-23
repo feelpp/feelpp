@@ -418,14 +418,6 @@ const std::vector<std::string> COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::S_unknow
 
 
 COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
-std::shared_ptr<std::ostringstream>
-COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::getInfo() const
-{
-    std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
-    return _ostr;
-}
-
-COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
 void
 COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) const
 {
