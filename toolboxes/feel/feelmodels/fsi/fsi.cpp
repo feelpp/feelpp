@@ -93,17 +93,6 @@ FSI<FluidType,SolidType>::FSI( std::string const& prefix,
     this->log("FSI","constructor","finish");
 }
 
-#if 0
-template <typename FluidType,typename SolidType>
-std::string
-FSI<FluidType,SolidType>::expandStringFromSpec( std::string const& expr )
-{
-    std::string res = expr;
-    res = fluid_type::expandStringFromSpec( res );
-    res = solid_type::expandStringFromSpec( res );
-    return res;
-}
-#endif
 //---------------------------------------------------------------------------------------------------------//
 
 template <typename FluidType,typename SolidType>
@@ -282,19 +271,19 @@ FSI<FluidType,SolidType>::init()
 {
     this->log("FSI","init","start");
 
+    this->initModelProperties();
+
     this->initPhysics( this->shared_from_this(), this->modelProperties().models() );
 
     // physical properties
     if ( !M_materialsProperties )
     {
-        auto paramValues = this->modelProperties().parameters().toParameterValues();
-        this->modelProperties().materials().setParameterValues( paramValues );
         M_materialsProperties.reset( new materialsproperties_type( this->shared_from_this() ) );
         M_materialsProperties->updateForUse( this->modelProperties().materials() );
     }
 
-    if ( auto ptMeshes = this->modelProperties().pTree().get_child_optional("Meshes") )
-        super_type::super_model_meshes_type::setup( *ptMeshes, {this->keyword()} );
+    if ( this->modelProperties().jsonData().contains("Meshes") )
+        super_type::super_model_meshes_type::setup( this->modelProperties().jsonData().at("Meshes"), {this->keyword()} );
 
     // create fsimesh and partitioned meshes if require
     if ( !this->modelMesh( this->keyword() ).importConfig().inputFilename().empty() && !this->doRestart() )
@@ -309,11 +298,11 @@ FSI<FluidType,SolidType>::init()
         markersFSI_fluid.insert( physicFSIData->interfaceFluid().begin(),physicFSIData->interfaceFluid().end() );
         markersFSI_solid.insert( physicFSIData->interfaceSolid().begin(),physicFSIData->interfaceSolid().end() );
     }
-    if ( this->worldComm().isMasterRank() )
-    {
-        std::cout << "markersFSI_fluid :  " << markersFSI_fluid << std::endl;
-        std::cout << "markersFSI_solid :  " << markersFSI_solid << std::endl;
-    }
+    // if ( this->worldComm().isMasterRank() )
+    // {
+    //     std::cout << "markersFSI_fluid :  " << markersFSI_fluid << std::endl;
+    //     std::cout << "markersFSI_solid :  " << markersFSI_solid << std::endl;
+    // }
 
 
     // fluid model build
