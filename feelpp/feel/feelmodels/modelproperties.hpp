@@ -49,11 +49,6 @@ public:
                      worldcomm_ptr_t const& world = Environment::worldCommPtr(),
                      std::string const& prefix="",
                      po::variables_map const& vm = Environment::vm() );
-    ModelProperties( std::string const& filename,// = Environment::expand(soption("mod-file")),
-                     std::string const& directoryLibExpr = "",
-                     worldcomm_ptr_t const& world = Environment::worldCommPtr(),
-                     std::string const& prefix="",
-                     po::variables_map const& vm = Environment::vm() );
 
     template <typename T,std::enable_if_t< std::is_same_v<T,nl::json>, bool> = true >
     ModelProperties( T && jarg,
