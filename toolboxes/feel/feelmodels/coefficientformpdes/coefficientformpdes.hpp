@@ -14,13 +14,13 @@ namespace FeelModels
 
 template< typename ConvexType, typename... BasisUnknownType>
 class CoefficientFormPDEs : public ModelNumerical,
-                            public ModelGenericPDEs<ConvexType::nDim>
-    //public ModelPhysics<ConvexType::nRealDim>
+    //public ModelGenericPDEs<ConvexType::nDim>
+                            public ModelPhysics<ConvexType::nRealDim>
 {
 public :
     using super_type = ModelNumerical;
-    //using super_physics_type = ModelPhysics<ConvexType::nRealDim>;
-    using super_physics_type = ModelGenericPDEs<ConvexType::nDim>;
+    using super_physics_type = ModelPhysics<ConvexType::nRealDim>;
+    //using super_physics_type = ModelGenericPDEs<ConvexType::nDim>;
     using size_type = typename super_type::size_type;
 
     using self_type = CoefficientFormPDEs<ConvexType,BasisUnknownType...>;
