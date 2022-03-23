@@ -176,7 +176,6 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::runImpl( element_type con
     value_type negativeBound = -1.;
 
     // Perform parallel fast-marching
-    bool closeDofHeapsAreEmptyOnAllProc = false;
     value_type minPositiveAbsGlobalValue = -1.;
     value_type minNegativeAbsGlobalValue = -1.;
     //while( !closeDofHeapsAreEmptyOnAllProc )
@@ -191,7 +190,8 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::runImpl( element_type con
                 minPositiveAbsLocalValue,
                 mpi::minimum<value_type>()
                 );
-            positiveBound = std::min( minPositiveAbsGlobalValue, M_positiveNarrowBandWidth );
+            //positiveBound = std::min( minPositiveAbsGlobalValue, M_positiveNarrowBandWidth );
+            positiveBound = M_positiveNarrowBandWidth;
         }
         if( hasNegativeBound )
         {
@@ -202,31 +202,66 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::runImpl( element_type con
                 minNegativeAbsLocalValue,
                 mpi::minimum<value_type>()
                 );
-            negativeBound = std::min( minNegativeAbsGlobalValue, M_negativeNarrowBandWidth );
+            //negativeBound = std::min( minNegativeAbsGlobalValue, M_negativeNarrowBandWidth );
+            negativeBound = M_negativeNarrowBandWidth;
+        }
+
+        // Update maxNumberOfNewDofsOnAllProc
+        int maxNumberOfNewDofsOnAllProc = mpi::all_reduce(
+                this->functionSpace()->worldComm(),
+                M_nNewDofs,
+                mpi::maximum<int>()
+                );
+        if( !hasPositiveBound && !hasNegativeBound )
+        {
+            // Check if both positive and negative heaps are empty on all proc
+            bool closeDofHeapsAreEmpty = M_positiveCloseDofHeap.empty() && M_negativeCloseDofHeap.empty();
+            bool closeDofHeapsAreEmptyOnAllProc = mpi::all_reduce(
+                    this->functionSpace()->worldComm(),
+                    closeDofHeapsAreEmpty,
+                    std::logical_and<bool>()
+                    );
+            if( closeDofHeapsAreEmptyOnAllProc && maxNumberOfNewDofsOnAllProc == 0 )
+                break;
+        }
+        if( hasPositiveBound && !hasNegativeBound )
+        {
+            // Check negative heap is empty on all proc
+            bool closeDofNegativeHeapIsEmpty = M_negativeCloseDofHeap.empty();
+            bool closeDofNegativeHeapIsEmptyOnAllProc = mpi::all_reduce(
+                    this->functionSpace()->worldComm(),
+                    closeDofNegativeHeapIsEmpty,
+                    std::logical_and<bool>()
+                    );
+            if( minPositiveAbsGlobalValue >= M_positiveNarrowBandWidth
+                    && closeDofNegativeHeapIsEmptyOnAllProc
+                    && maxNumberOfNewDofsOnAllProc == 0 )
+                break;
+        }
+        if( !hasPositiveBound && hasNegativeBound )
+        {
+            // Check positive heap is empty on all proc
+            bool closeDofPositiveHeapIsEmpty = M_positiveCloseDofHeap.empty();
+            bool closeDofPositiveHeapIsEmptyOnAllProc = mpi::all_reduce(
+                    this->functionSpace()->worldComm(),
+                    closeDofPositiveHeapIsEmpty,
+                    std::logical_and<bool>()
+                    );
+            if( minNegativeAbsGlobalValue >= M_negativeNarrowBandWidth
+                    && closeDofPositiveHeapIsEmptyOnAllProc
+                    && maxNumberOfNewDofsOnAllProc == 0 )
+                break;
         }
         if( hasPositiveBound && hasNegativeBound 
                 && ( minPositiveAbsGlobalValue >= M_positiveNarrowBandWidth ) 
-                && ( minNegativeAbsGlobalValue >= M_negativeNarrowBandWidth ) )
+                && ( minNegativeAbsGlobalValue >= M_negativeNarrowBandWidth ) 
+                && maxNumberOfNewDofsOnAllProc == 0 )
             break;
 
         this->marchLocalNarrowBand( sol, positiveBound, negativeBound );
         this->syncDofs( sol, positiveBound, negativeBound );
         // The second marchLocalNarrowBand is only needed when the stride is finite
         //this->marchLocalNarrowBand( sol, positiveBound, negativeBound );
-        // Update closeDofHeapsAreEmptyOnAllProc
-        bool closeDofHeapsAreEmpty = M_positiveCloseDofHeap.empty() && M_negativeCloseDofHeap.empty();
-        closeDofHeapsAreEmptyOnAllProc = mpi::all_reduce(
-                this->functionSpace()->worldComm(),
-                closeDofHeapsAreEmpty,
-                std::logical_and<bool>()
-                );
-        int maxNumberOfNewDofsOnAllProc = mpi::all_reduce(
-                this->functionSpace()->worldComm(),
-                M_nNewDofs,
-                mpi::maximum<int>()
-                );
-        if( closeDofHeapsAreEmptyOnAllProc && maxNumberOfNewDofsOnAllProc == 0 )
-            break;
     }
 
     return sol;
@@ -380,7 +415,6 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::marchLocalNarrowBand( ele
         this->marchLocalSignedNarrowBand<true>( sol, M_positiveCloseDofHeap, positiveBound );
     else
         this->marchLocalSignedNarrowBand<false>( sol, M_positiveCloseDofHeap, positiveBound );
-
 
     if( negativeBound > 0. )
         this->marchLocalSignedNarrowBand<true>( sol, M_negativeCloseDofHeap, negativeBound );
