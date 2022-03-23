@@ -43,10 +43,11 @@ SOLIDMECHANICS_1DREDUCED_CLASS_TEMPLATE_TYPE::init()
 
     this->log("SolidMechanics1dReduced","init", "start" );
 
+    this->initModelProperties();
+
     this->initPhysics( this->shared_from_this(), this->modelProperties().models() );
 
-    if ( !this->mesh() )
-        this->initMesh();
+    this->initMesh();
 
     this->materialsProperties()->addMesh( this->mesh() );
 
@@ -107,6 +108,8 @@ SOLIDMECHANICS_1DREDUCED_CLASS_TEMPLATE_TYPE::initMesh()
     this->log("SolidMechanics1dReduced","initMesh", "start");
     this->timerTool("Constructor").start();
 
+    if ( this->modelProperties().jsonData().contains("Meshes") )
+        super_type::super_model_meshes_type::setup( this->modelProperties().jsonData().at("Meshes"), {this->keyword()} );
     if ( this->doRestart() )
         super_type::super_model_meshes_type::setupRestart( this->keyword() );
     super_type::super_model_meshes_type::updateForUse<mesh_type>( this->keyword() );

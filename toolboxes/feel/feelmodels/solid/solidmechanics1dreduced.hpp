@@ -21,8 +21,7 @@ namespace FeelModels
 
 template< typename ConvexType, typename BasisDisplacementType>
 class SolidMechanics1dReduced : public ModelNumerical,
-                                public ModelPhysics<ConvexType::nRealDim>,
-                                public std::enable_shared_from_this< SolidMechanics1dReduced<ConvexType,BasisDisplacementType> >
+                                public ModelPhysics<ConvexType::nRealDim>
 {
     using super_physics_type = ModelPhysics<ConvexType::nRealDim>;
 public :
@@ -83,6 +82,8 @@ public :
                              worldcomm_ptr_t const& worldComm,// = Environment::worldCommPtr(),
                              std::string const& subPrefix,//  = "",
                              ModelBaseRepository const& modelRep = ModelBaseRepository() );
+
+    std::shared_ptr<self_type> shared_from_this() { return std::dynamic_pointer_cast<self_type>( super_type::shared_from_this() ); }
 
     void init();
 
