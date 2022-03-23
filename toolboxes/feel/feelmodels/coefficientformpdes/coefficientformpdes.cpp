@@ -19,7 +19,7 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::CoefficientFormPDEs( std::string const&
                                                               ModelBaseRepository const& modelRep )
     :
     super_type( prefix, keyword, worldComm, subPrefix, modelRep ),
-    //super_physics_type( "GenericPDEs" ),
+    super_physics_type( "GenericPDEs" ),
     ModelBase( prefix, keyword, worldComm, subPrefix, modelRep/*, ModelBaseCommandLineOptions( coefficientformpdes_options( prefix ) )*/ )
 {
     M_solverName = soption(_prefix=this->prefix(),_name="solver",_vm=this->clovm());
