@@ -136,7 +136,7 @@ class FastMarching: private LocalEikonalSolver< FunctionSpaceType >
             public:
                 HeapMap( Cmp cmp = Cmp() ) : 
                     M_data(), M_cmp( cmp ), M_validEntriesPtr(), M_size( 0 ) 
-            {}
+                {}
 
                 void insert( data_type const& data ) 
                 {
@@ -268,6 +268,23 @@ class FastMarching: private LocalEikonalSolver< FunctionSpaceType >
         }
 
         //--------------------------------------------------------------------//
+        // Options
+        /*
+         * Positive narrow band width (negative for infinite width)
+         */
+        value_type positiveNarrowBandWidth() const { return M_positiveNarrowBandWidth; }
+        void setPositiveNarrowBandWidth( const value_type & width ) { M_positiveNarrowBandWidth = width; }
+        /*
+         * Negative narrow band width (negative for infinite width)
+         */
+        value_type negativeNarrowBandWidth() const { return M_negativeNarrowBandWidth; }
+        void setNegativeNarrowBandWidth( const value_type & width ) { M_negativeNarrowBandWidth = width; }
+        /*
+         * Set positive and negative widths
+         */
+        void setNarrowBandWidth( const value_type & width ) { this->setPositiveNarrowBandWidth( width ); this->setNegativeNarrowBandWidth( width ); }
+
+        //--------------------------------------------------------------------//
         // Result
         element_type run( element_type const& phi, range_elements_type const& rangeDone );
 
@@ -277,7 +294,9 @@ class FastMarching: private LocalEikonalSolver< FunctionSpaceType >
         void updateNeighborDofs( size_type dofId, element_type & sol );
         void updateCloseDofs( std::vector< size_type > const& dofCloseIds, std::vector< size_type > const& dofDoneIds, size_type eltId, element_type & sol );
 
-        void marchNarrowBand( element_type & sol );
+        void marchLocalNarrowBand( element_type & sol, const value_type & positiveBound, const value_type & negativeBound );
+        template< bool HasBound >
+        void marchLocalSignedNarrowBand( element_type & sol, heap_type & heap, const value_type & bound );
 
         void syncDofs( element_type & sol );
 
@@ -285,6 +304,9 @@ class FastMarching: private LocalEikonalSolver< FunctionSpaceType >
 
     private:
         functionspace_ptrtype M_space;
+
+        value_type M_positiveNarrowBandWidth;
+        value_type M_negativeNarrowBandWidth;
 
         std::map< size_type, std::set< rank_type > > M_dofSharedOnCluster;
         std::map< size_type, size_type > M_mapSharedDofGlobalClusterToGlobalProcess;

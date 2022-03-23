@@ -170,15 +170,20 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::runImpl( element_type con
         }
     }
 
+    value_type positiveBound = -1.;
+    bool hasPositiveBound = M_positiveNarrowBandWidth > 0.;
+    value_type negativeBound = -1.;
+    bool hasNegativeBound = M_negativeNarrowBandWidth > 0.;
+
     // Perform parallel fast-marching
     bool closeDofHeapsAreEmptyOnAllProc = false;
     //while( !closeDofHeapsAreEmptyOnAllProc )
     while( true )
     {
-        this->marchNarrowBand( sol );
+        this->marchLocalNarrowBand( sol, positiveBound, negativeBound );
         this->syncDofs( sol );
-        // The second marchNarrowBand is only needed when the stride is finite
-        //this->marchNarrowBand( sol );
+        // The second marchLocalNarrowBand is only needed when the stride is finite
+        //this->marchLocalNarrowBand( sol, positiveBound, negativeBound );
         // Update closeDofHeapsAreEmptyOnAllProc
         bool closeDofHeapsAreEmpty = M_positiveCloseDofHeap.empty() && M_negativeCloseDofHeap.empty();
         closeDofHeapsAreEmptyOnAllProc = mpi::all_reduce(
@@ -339,13 +344,39 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::updateCloseDofs( std::vec
 
 template< typename FunctionSpaceType, template < typename > class LocalEikonalSolver >
 void
-FastMarching< FunctionSpaceType, LocalEikonalSolver >::marchNarrowBand( element_type & sol )
+FastMarching< FunctionSpaceType, LocalEikonalSolver >::marchLocalNarrowBand( element_type & sol, const value_type & positiveBound, const value_type & negativeBound )
 {
+    // Perform local positive and negative fast-marching
+    if( positiveBound > 0. )
+        this->marchLocalSignedNarrowBand<true>( sol, M_positiveCloseDofHeap, positiveBound );
+    else
+        this->marchLocalSignedNarrowBand<false>( sol, M_positiveCloseDofHeap, positiveBound );
+
+
+    if( negativeBound > 0. )
+        this->marchLocalSignedNarrowBand<true>( sol, M_negativeCloseDofHeap, negativeBound );
+    else
+        this->marchLocalSignedNarrowBand<false>( sol, M_negativeCloseDofHeap, negativeBound );
+}
+
+template< typename FunctionSpaceType, template < typename > class LocalEikonalSolver >
+template< bool HasBound >
+void
+FastMarching< FunctionSpaceType, LocalEikonalSolver >::marchLocalSignedNarrowBand( element_type & sol, heap_type & heap, const value_type & bound )
+{
+    if constexpr( HasBound )
+        DCHECK( bound > 0. ) << "bound should be positive";
+
     // Perform local fast-marching
-    while( !M_positiveCloseDofHeap.empty() )
+    while( !heap.empty() )
     {
-        auto [nextDofDoneId, nextDofDoneValue] = M_positiveCloseDofHeap.pop_front();
+        auto [nextDofDoneId, nextDofDoneValue] = heap.pop_front();
         sol(nextDofDoneId) = nextDofDoneValue;
+        if constexpr( HasBound )
+        {
+            if( std::abs( nextDofDoneValue ) > bound )
+                break;
+        }
         if( M_dofStatus[nextDofDoneId] != FastMarchingDofStatus::DONE_OLD )
             M_dofStatus[nextDofDoneId] = FastMarchingDofStatus::DONE_NEW;
 #ifdef DEBUG_FM_COUT
@@ -356,14 +387,6 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::marchNarrowBand( element_
             << " and status " << int(M_dofStatus[nextDofDoneId])
             << std::endl;
 #endif
-        this->updateNeighborDofs( nextDofDoneId, sol );
-    }
-    while( !M_negativeCloseDofHeap.empty() )
-    {
-        auto [nextDofDoneId, nextDofDoneValue] = M_negativeCloseDofHeap.pop_front();
-        sol(nextDofDoneId) = nextDofDoneValue;
-        if( M_dofStatus[nextDofDoneId] != FastMarchingDofStatus::DONE_OLD )
-            M_dofStatus[nextDofDoneId] = FastMarchingDofStatus::DONE_NEW;
         this->updateNeighborDofs( nextDofDoneId, sol );
     }
 }
