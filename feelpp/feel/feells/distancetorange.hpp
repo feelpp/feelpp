@@ -425,11 +425,20 @@ DistanceToRange< FunctionSpaceType >::dofsNeighbouringFaces( range_faces_type co
     return M_dofsNeighbouringFaces;
 }
 
-template< typename SpaceType, typename RangeType >
-typename Feel::decay_type<SpaceType>::element_type
-distanceToRange( SpaceType const& space, RangeType const& range )
+namespace na::distancetorange {
+    using max_distance = NA::named_argument_t<struct max_distance_tag>;
+}
+inline constexpr auto& _max_distance = NA::identifier<na::distancetorange::max_distance>;
+
+template< typename ... Args >
+auto distanceToRange( Args && ... nargs )
 {
+    auto args = NA::make_arguments( std::forward<Args>(nargs)... );
+    auto && space = args.get( _space );
+    auto && range = args.get( _range );
+    double maxDistance = args.get_else( _max_distance, -1. );
     DistanceToRange distToRange( space );
+    distToRange.setMaxDistance( maxDistance );
     return distToRange.unsignedDistance( range );
 }
 
