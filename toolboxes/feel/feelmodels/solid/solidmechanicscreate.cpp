@@ -54,25 +54,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::New( std::string const& prefix,
     return std::make_shared<self_type>( prefix, keyword, worldComm, subPrefix, modelRep );
 }
 
-SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-std::string
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::expandStringFromSpec( std::string const& expr )
-{
-    std::string res = expr;
-    boost::replace_all( res, "$solid_disp_order", (boost::format("%1%")%nOrderDisplacement).str() );
-    boost::replace_all( res, "$solid_geo_order", (boost::format("%1%")%nOrderGeo).str() );
-    std::string solidTag = (boost::format("P%1%G%2%")%nOrderDisplacement %nOrderGeo ).str();
-    boost::replace_all( res, "$solid_tag", solidTag );
-    return res;
-}
-
-// add members instatantiations need by static function expandStringFromSpec
-SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-const uint16_type SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::nOrderDisplacement;
-SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-const uint16_type SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::nOrderGeo;
-
-
 //---------------------------------------------------------------------------------------------------//
 
 
@@ -163,8 +144,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initMesh()
     this->log("SolidMechanics","initMesh", "start" );
     this->timerTool("Constructor").start();
 
-    if ( auto ptMeshes = this->modelProperties().pTree().get_child_optional("Meshes") )
-        super_type::super_model_meshes_type::setup( *ptMeshes, {this->keyword()} );
+    if ( this->modelProperties().jsonData().contains("Meshes") )
+        super_type::super_model_meshes_type::setup( this->modelProperties().jsonData().at("Meshes"), {this->keyword()} );
     if ( this->doRestart() )
         super_type::super_model_meshes_type::setupRestart( this->keyword() );
     super_type::super_model_meshes_type::updateForUse<mesh_type>( this->keyword() );
@@ -471,6 +452,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
     this->log("SolidMechanics","init", "start" );
     this->timerTool("Constructor").start();
 
+    this->initModelProperties();
 #if 0
     this->initPhysics( this->keyword(), this->modelProperties().models() );
 #elif 0
