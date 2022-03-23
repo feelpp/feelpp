@@ -40,23 +40,6 @@ private :
     infos_ptrtype M_infos;
 };
 
-template <uint16_type Dim>
-class ModelGenericPDEs : public ModelPhysics<Dim>
-{
-    using super_type = ModelPhysics<Dim>;
-    inline static const uint16_type nDim = Dim;
-public :
-    ModelGenericPDEs();
-    ModelGenericPDEs( ModelGenericPDEs const& ) = default;
-    ModelGenericPDEs( ModelGenericPDEs && ) = default;
-
-    //auto const& pdes() const { return M_pdes; }
-    //auto & pdes() { return M_pdes; }
-
-private :
-    //std::vector<std::tuple<typename ModelGenericPDE<nDim>::infos_type,std::shared_ptr<ModelGenericPDE<nDim>>>> M_pdes;
-};
-
 } // namespace FeelModels
 } // namespace Feel
 

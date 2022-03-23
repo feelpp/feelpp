@@ -983,7 +983,25 @@ ModelPhysicCoefficientFormPDE<Dim>::ModelPhysicCoefficientFormPDE( ModelPhysics<
         {
             this->addParameter( j_setup_coeffkey, j_setup_coeffval );
         }
-        // TODO check coefficients shape
+
+        // check coefficients shape
+        for ( auto const& [c,prop] : M_infos->coefficientProperties() )
+        {
+            if ( !this->hasCoefficient( c ) )
+                continue;
+
+            auto const& coeff = this->coefficient( c );
+            bool shapeOk = false;
+            for ( auto const& [dim1,dim2] : std::get<1>( prop ) )
+            {
+                if ( coeff.hasExpr( dim1,dim2 ) )
+                {
+                    shapeOk = true;
+                    break;
+                }
+            }
+            CHECK( shapeOk ) << "invalid coefficient expr shape : " << std::get<0>( prop );
+        }
     }
 
 }
@@ -1024,10 +1042,12 @@ ModelPhysicCoefficientFormPDEs<Dim>::ModelPhysicCoefficientFormPDEs( ModelPhysic
     }
     else if ( j_setup.is_object() )
     {
+#if 0
         std::string nameEqDefault = fmt::format("equation{}",M_pdes.size());
         //typename ModelPhysicCoefficientFormPDE<Dim>::infos_type infos( nameEqDefault, j_setup );
         auto infos = std::make_shared<cfpde_infos_type>( nameEqDefault, j_setup );
         M_pdes.push_back( std::make_tuple( infos->equationName(), std::move( infos ), std::shared_ptr<ModelPhysicCoefficientFormPDE<Dim>>{} ) );
+#endif
     }
     else if ( j_setup.is_array() )
     {
@@ -1040,10 +1060,12 @@ ModelPhysicCoefficientFormPDEs<Dim>::ModelPhysicCoefficientFormPDEs( ModelPhysic
             }
             else
             {
+#if 0
                 std::string nameEqDefault = fmt::format("equation{}",M_pdes.size());
                 //typename ModelPhysicCoefficientFormPDE<Dim>::infos_type infos( nameEqDefault, j_setupval );
                 auto infos = std::make_shared<cfpde_infos_type>( nameEqDefault, j_setupval );
                 M_pdes.push_back( std::make_tuple( infos->equationName(), std::move( infos ), std::shared_ptr<ModelPhysicCoefficientFormPDE<Dim>>{} ) );
+#endif
             }
         }
     }
