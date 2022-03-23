@@ -212,51 +212,59 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::runImpl( element_type con
                 M_nNewDofs,
                 mpi::maximum<int>()
                 );
-        if( !hasPositiveBound && !hasNegativeBound )
+        if( !hasPositiveBound )
         {
-            // Check if both positive and negative heaps are empty on all proc
-            bool closeDofHeapsAreEmpty = M_positiveCloseDofHeap.empty() && M_negativeCloseDofHeap.empty();
-            bool closeDofHeapsAreEmptyOnAllProc = mpi::all_reduce(
-                    this->functionSpace()->worldComm(),
-                    closeDofHeapsAreEmpty,
-                    std::logical_and<bool>()
-                    );
-            if( closeDofHeapsAreEmptyOnAllProc && maxNumberOfNewDofsOnAllProc == 0 )
-                break;
+            if( !hasNegativeBound )
+            {
+                // Check if both positive and negative heaps are empty on all proc
+                bool closeDofHeapsAreEmpty = M_positiveCloseDofHeap.empty() && M_negativeCloseDofHeap.empty();
+                bool closeDofHeapsAreEmptyOnAllProc = mpi::all_reduce(
+                        this->functionSpace()->worldComm(),
+                        closeDofHeapsAreEmpty,
+                        std::logical_and<bool>()
+                        );
+                if( closeDofHeapsAreEmptyOnAllProc && maxNumberOfNewDofsOnAllProc == 0 )
+                    break;
+            }
+            else
+            {
+                // Check positive heap is empty on all proc
+                bool closeDofPositiveHeapIsEmpty = M_positiveCloseDofHeap.empty();
+                bool closeDofPositiveHeapIsEmptyOnAllProc = mpi::all_reduce(
+                        this->functionSpace()->worldComm(),
+                        closeDofPositiveHeapIsEmpty,
+                        std::logical_and<bool>()
+                        );
+                if( minNegativeAbsGlobalValue >= M_negativeNarrowBandWidth
+                        && closeDofPositiveHeapIsEmptyOnAllProc
+                        && maxNumberOfNewDofsOnAllProc == 0 )
+                    break;
+            }
         }
-        if( hasPositiveBound && !hasNegativeBound )
+        else
         {
-            // Check negative heap is empty on all proc
-            bool closeDofNegativeHeapIsEmpty = M_negativeCloseDofHeap.empty();
-            bool closeDofNegativeHeapIsEmptyOnAllProc = mpi::all_reduce(
-                    this->functionSpace()->worldComm(),
-                    closeDofNegativeHeapIsEmpty,
-                    std::logical_and<bool>()
-                    );
-            if( minPositiveAbsGlobalValue >= M_positiveNarrowBandWidth
-                    && closeDofNegativeHeapIsEmptyOnAllProc
-                    && maxNumberOfNewDofsOnAllProc == 0 )
-                break;
+            if( !hasNegativeBound )
+            {
+                // Check negative heap is empty on all proc
+                bool closeDofNegativeHeapIsEmpty = M_negativeCloseDofHeap.empty();
+                bool closeDofNegativeHeapIsEmptyOnAllProc = mpi::all_reduce(
+                        this->functionSpace()->worldComm(),
+                        closeDofNegativeHeapIsEmpty,
+                        std::logical_and<bool>()
+                        );
+                if( minPositiveAbsGlobalValue >= M_positiveNarrowBandWidth
+                        && closeDofNegativeHeapIsEmptyOnAllProc
+                        && maxNumberOfNewDofsOnAllProc == 0 )
+                    break;
+            }
+            else
+            {
+                if( ( minPositiveAbsGlobalValue >= M_positiveNarrowBandWidth ) 
+                        && ( minNegativeAbsGlobalValue >= M_negativeNarrowBandWidth ) 
+                        && maxNumberOfNewDofsOnAllProc == 0 )
+                    break;
+            }
         }
-        if( !hasPositiveBound && hasNegativeBound )
-        {
-            // Check positive heap is empty on all proc
-            bool closeDofPositiveHeapIsEmpty = M_positiveCloseDofHeap.empty();
-            bool closeDofPositiveHeapIsEmptyOnAllProc = mpi::all_reduce(
-                    this->functionSpace()->worldComm(),
-                    closeDofPositiveHeapIsEmpty,
-                    std::logical_and<bool>()
-                    );
-            if( minNegativeAbsGlobalValue >= M_negativeNarrowBandWidth
-                    && closeDofPositiveHeapIsEmptyOnAllProc
-                    && maxNumberOfNewDofsOnAllProc == 0 )
-                break;
-        }
-        if( hasPositiveBound && hasNegativeBound 
-                && ( minPositiveAbsGlobalValue >= M_positiveNarrowBandWidth ) 
-                && ( minNegativeAbsGlobalValue >= M_negativeNarrowBandWidth ) 
-                && maxNumberOfNewDofsOnAllProc == 0 )
-            break;
 
         this->marchLocalNarrowBand( sol, positiveBound, negativeBound );
         this->syncDofs( sol, positiveBound, negativeBound );
