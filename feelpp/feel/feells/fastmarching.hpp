@@ -203,8 +203,9 @@ class FastMarching: private LocalEikonalSolver< FunctionSpaceType >
                     }
                     else // Entry was deleted, remove it
                     {
-                        std::pop_heap( M_data.begin(), M_data.end(), M_cmp );
-                        M_data.pop_back();
+                        container_type & data = const_cast<container_type &>( M_data );
+                        std::pop_heap( data.begin(), data.end(), M_cmp );
+                        data.pop_back();
                         return this->front();
                     }
                 }
@@ -298,15 +299,15 @@ class FastMarching: private LocalEikonalSolver< FunctionSpaceType >
         template< bool HasBound >
         void marchLocalSignedNarrowBand( element_type & sol, heap_type & heap, const value_type & bound );
 
-        void syncDofs( element_type & sol );
+        void syncDofs( element_type & sol, const value_type & positiveBound = -1., const value_type & negativeBound = -1. );
 
         element_type runImpl( element_type const& phi, range_elements_type const& rangeDone );
 
     private:
         functionspace_ptrtype M_space;
 
-        value_type M_positiveNarrowBandWidth;
-        value_type M_negativeNarrowBandWidth;
+        value_type M_positiveNarrowBandWidth = -1.;
+        value_type M_negativeNarrowBandWidth = -1.;
 
         std::map< size_type, std::set< rank_type > > M_dofSharedOnCluster;
         std::map< size_type, size_type > M_mapSharedDofGlobalClusterToGlobalProcess;
@@ -314,7 +315,7 @@ class FastMarching: private LocalEikonalSolver< FunctionSpaceType >
         std::vector< FastMarchingDofStatus > M_dofStatus;
         heap_type M_positiveCloseDofHeap;
         heap_type M_negativeCloseDofHeap;
-        int M_nNewDofs;
+        int M_nNewDofs = 0;
 };
 
 } // namespace Feel

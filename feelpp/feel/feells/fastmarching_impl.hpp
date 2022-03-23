@@ -170,18 +170,47 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::runImpl( element_type con
         }
     }
 
-    value_type positiveBound = -1.;
     bool hasPositiveBound = M_positiveNarrowBandWidth > 0.;
-    value_type negativeBound = -1.;
+    value_type positiveBound = -1.;
     bool hasNegativeBound = M_negativeNarrowBandWidth > 0.;
+    value_type negativeBound = -1.;
 
     // Perform parallel fast-marching
     bool closeDofHeapsAreEmptyOnAllProc = false;
+    value_type minPositiveAbsGlobalValue = -1.;
+    value_type minNegativeAbsGlobalValue = -1.;
     //while( !closeDofHeapsAreEmptyOnAllProc )
     while( true )
     {
+        if( hasPositiveBound )
+        {
+            // Compute global absolute positive min values
+            value_type minPositiveAbsLocalValue = ( !M_positiveCloseDofHeap.empty() ) ? std::abs( M_positiveCloseDofHeap.front().second ) : M_positiveNarrowBandWidth;
+            minPositiveAbsGlobalValue = mpi::all_reduce(
+                this->functionSpace()->worldComm(),
+                minPositiveAbsLocalValue,
+                mpi::minimum<value_type>()
+                );
+            positiveBound = std::min( minPositiveAbsGlobalValue, M_positiveNarrowBandWidth );
+        }
+        if( hasNegativeBound )
+        {
+            // Compute global absolute negative min values
+            value_type minNegativeAbsLocalValue = ( !M_negativeCloseDofHeap.empty() ) ? std::abs( M_negativeCloseDofHeap.front().second ) : M_negativeNarrowBandWidth;
+            minNegativeAbsGlobalValue = mpi::all_reduce(
+                this->functionSpace()->worldComm(),
+                minNegativeAbsLocalValue,
+                mpi::minimum<value_type>()
+                );
+            negativeBound = std::min( minNegativeAbsGlobalValue, M_negativeNarrowBandWidth );
+        }
+        if( hasPositiveBound && hasNegativeBound 
+                && ( minPositiveAbsGlobalValue >= M_positiveNarrowBandWidth ) 
+                && ( minNegativeAbsGlobalValue >= M_negativeNarrowBandWidth ) )
+            break;
+
         this->marchLocalNarrowBand( sol, positiveBound, negativeBound );
-        this->syncDofs( sol );
+        this->syncDofs( sol, positiveBound, negativeBound );
         // The second marchLocalNarrowBand is only needed when the stride is finite
         //this->marchLocalNarrowBand( sol, positiveBound, negativeBound );
         // Update closeDofHeapsAreEmptyOnAllProc
@@ -393,7 +422,7 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::marchLocalSignedNarrowBan
 
 template< typename FunctionSpaceType, template < typename > class LocalEikonalSolver >
 void
-FastMarching< FunctionSpaceType, LocalEikonalSolver >::syncDofs( element_type & sol )
+FastMarching< FunctionSpaceType, LocalEikonalSolver >::syncDofs( element_type & sol, const value_type & positiveBound, const value_type & negativeBound )
 {
     // Dof table
     auto const& dofTable = sol.dof();
@@ -466,7 +495,11 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::syncDofs( element_type & 
                 heap_type & closeDofHeap = ( valNew > 0. ) ? M_positiveCloseDofHeap : M_negativeCloseDofHeap;
                 sol.set( dofId, valNew );
                 closeDofHeap.insert_or_assign( pair_dof_value_type( dofId, valNew ) );
-                M_dofStatus[dofId] = FastMarchingDofStatus::DONE_OLD;
+                if( ( positiveBound > 0. && valNew > positiveBound )
+                 || ( negativeBound > 0. && valNew < 0. && std::abs(valNew) > negativeBound ) )
+                    M_dofStatus[dofId] = FastMarchingDofStatus::CLOSE_OLD;
+                else
+                    M_dofStatus[dofId] = FastMarchingDofStatus::DONE_OLD;
 #ifdef DEBUG_FM_COUT
                 std::cout << "["<<localPid<<"]" << "updating active dof(" << dofId << "," << dofGCId << ")" 
                     << std::endl;
