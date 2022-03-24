@@ -21,6 +21,7 @@
 //! @date 25 Jul 2018
 //! @copyright 2018 Feel++ Consortium
 //!
+#include <fmt/core.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/eigen.h>
 #include <feel/feeldiscr/pch.hpp>
@@ -93,7 +94,7 @@ void defDiscr(py::module &m, std::string const& suffix = "")
     using element_t = typename space_t::element_type;
     std::string pyclass_name;
     int Order = space_t::basis_0_type::nOrder;
-    std::string suffix2 = std::to_string(mesh_t::nDim)+std::string("D_P") + std::to_string(Order) + suffix;
+    std::string suffix2 = fmt::format("{}D_P{}_G{}",mesh_t::nDim,Order,mesh_t::nOrder);
     //std::cout << "suffix discr: " << suffix2 << std::endl;
     //py::bind_vector<worldscomm_ptr_t>(m, "WorldsComm");
     if ( space_t::is_continuous && space_t::is_scalar )
@@ -234,11 +235,7 @@ PYBIND11_MODULE(_discr, m )
                            defDiscr<Pchv_type<Mesh<Simplex<_dim, _geo>>, _order>>( m );
                            defDiscr<Pdhv_type<Mesh<Simplex<_dim, _geo>>, _order>>( m );
                        });
-#if 0
-    defDiscr<Pdh_type<Mesh<Simplex<2>>,0>>( m );
     defDiscrDiscontinuous<Pdh_type<Mesh<Simplex<2>>,0>>( m );
-    defDiscr<Pdh_type<Mesh<Simplex<3>>,0>>( m );
     defDiscrDiscontinuous<Pdh_type<Mesh<Simplex<3>>,0>>( m );
-#endif    
 }
 
