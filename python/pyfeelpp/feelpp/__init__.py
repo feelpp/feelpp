@@ -33,7 +33,7 @@ _meshes={
     'mesh(1,1,2)':Mesh_S1DG1R2,
     #'mesh(1,2,2)':Mesh_1DG2R2,
     'mesh(1,1,1)':Mesh_S1DG1R1,
-    #'mesh(1,2,1)':Mesh_1DG2R1
+    'mesh(1,2,1)':Mesh_S1DG2R1
 }
 
 def mesh( dim=2, geo=1, realdim=2, worldComm=None ):
