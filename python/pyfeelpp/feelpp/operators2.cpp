@@ -18,22 +18,29 @@
 //!
 //! @file
 //! @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-//! @date 23 Jul 2021
-//! @copyright 2017 Feel++ Consortium
+//! @date 23 Mar 2022
+//! @copyright 2022 Feel++ Consortium
 //!
 #include "operators.hpp"
 
-void operators1( py::module& m );
-void operators2( py::module& m );
-void operators3( py::module& m );
-
-PYBIND11_MODULE( _operators, m )
+void operators2( py::module& m )
 {
     using namespace Feel;
     using namespace hana::literals;
     if ( import_mpi4py() < 0 ) return;
 
-    operators1(m);
-    operators2(m);
-    operators3(m);
+    auto dimt = hana::make_tuple( hana::int_c<2> );
+    auto ordert = hana::make_tuple( hana::int_c<0>, hana::int_c<1>, hana::int_c<2>, hana::int_c<3> );
+    auto geot = hana::make_tuple( hana::int_c<1>, hana::int_c<2> );
+    hana::for_each(hana::cartesian_product(hana::make_tuple(dimt, ordert, geot)),
+                   [&m]( auto const& d )
+                       {
+                           constexpr int _dim = std::decay_t<decltype(hana::at_c<0>(d))>::value;
+                           constexpr int _order = std::decay_t<decltype(hana::at_c<1>(d))>::value;
+                           constexpr int _geo = std::decay_t<decltype( hana::at_c<2>( d ) )>::value;
+                           defOperator<Pch_type<Mesh<Simplex<_dim, _geo>>, _order>>( m );
+                           defOperator<Pdh_type<Mesh<Simplex<_dim, _geo>>, _order>>( m );
+                           defOperator<Pchv_type<Mesh<Simplex<_dim, _geo>>, _order>>( m );
+                           defOperator<Pdhv_type<Mesh<Simplex<_dim, _geo>>, _order>>( m );
+                       });
 }
