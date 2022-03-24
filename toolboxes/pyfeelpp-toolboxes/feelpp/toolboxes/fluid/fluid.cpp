@@ -26,7 +26,9 @@
 #include <pybind11/functional.h>
 #include <feel/feelmodels/modelcore/modelnumerical.hpp>
 #include <feel/feelmodels/fluid/fluidmechanics.hpp>
-
+#include <feel/feelfilters/savegmshmesh.hpp>
+#include <feel/feelcore/pybind11_json.hpp>
+#include "contactforce.hpp"
 
 namespace py = pybind11;
 using namespace Feel;
@@ -91,208 +93,67 @@ void defFM(py::module &m)
         // remesh
         .def("applyRemesh",&fm_t::applyRemesh, "apply remesh to toolbox and regenerate the necessary data structure")
 
+        // save GMSH mesh        
         .def(
-            "contactForce",[]( const fm_t& t, FeelModels::ModelAlgebraic::DataUpdateLinear & data)
+            "saveGMSHMesh",[](const fm_t& t, std::string name)
             {
-                //auto data = t.algebraicFactory();
-                
-                //bool buildCstPart = data->buildCstPart();
-                //if( buildCstPart )
-                //    return;
+                saveGMSHMesh(_mesh=t.mesh(),_filename=name);
 
-                double r = 0.125;
-                double rho = 0.12;
-                double eps = 0.005;
-                double c = 0.001; 
-
-                // Get center of mass
-                std::vector<double> massCenters;
-                auto nbr_bodies = 0;
-
-                for ( auto const& [bpname,bpbc] : t.bodySetBC() )
-                {
-                    for (auto &coord_massCenter : bpbc.body().massCenter())
-                    {
-                        massCenters.push_back(coord_massCenter);
-                    }   
-                    nbr_bodies ++;
-                }
-
-                for (auto it = massCenters.begin(); it != massCenters.end(); ++it)
-                {
-                    std::cout << "Coordinates : " << *it << std::endl;
-                }
-
-
-                // Define repulsive force
-                std::vector<std::vector<double> > rep_forces(nDim, std::vector<double>(nbr_bodies));
-
-                for (int b_i = 0;b_i < nbr_bodies; b_i++)
-                {
-                    for (int b_j=b_i+1; b_j < nbr_bodies; b_j++)
-                    {
-                        auto dist_ij = sqrt(std::pow(massCenters[2*b_j]- massCenters[2*b_i],2) + std::pow(massCenters[2*b_j + 1]-massCenters[2*b_i + 1],2));
-                        std::cout << "Distance : " << dist_ij << std::endl;
-                        
-                        if (-(dist_ij-r-r-rho)/rho > 0)
-                        {
-                            for (int d = 0; d<nDim; d++)
-                            {
-                                auto G_ij_d = (massCenters[2*b_j+d]- massCenters[2*b_i+d])/dist_ij;
-                                auto F_ij_d = c/eps * std::pow(-(dist_ij-r-r-rho)/rho,2)*G_ij_d;
-                                rep_forces[d][b_i] += F_ij_d;
-                                rep_forces[d][b_j] += - F_ij_d;
-                            }
-                        }
-                    }
-                }
-
-                // Affichage
-                for(auto& row: rep_forces)
-                {
-                    for(auto& col : row)
-                    { 
-                        std::cout << col << std::endl;
-                    }
-                }
-                            
-                // Ajout de la force
-                auto rhs = data.rhs();
-                auto rowStartInVector = t.rowStartInVector();
-
-                int B = 0;
-                for ( auto const& [bpname,bpbc] : t.bodySetBC() )
-                {
-                    size_type startBlockIndexTranslationalVelocity = t.startSubBlockSpaceIndex("body-bc."+bpbc.name()+".translational-velocity");
-                    rhs->setIsClosed( false );
-
-                    auto const& basisToContainerGpTranslationalVelocityVector = rhs->map().dofIdToContainerId( rowStartInVector+startBlockIndexTranslationalVelocity );
-                    
-                    for (int d=0;d<nDim;++d)
-                    {   
-                        std::cout << "Force ajoutée : " << rep_forces[d][B] << " dim : " << d << " body : " << B << std::endl;
-                        
-                        rhs->add( basisToContainerGpTranslationalVelocityVector[d],
-                                 rep_forces[d][B]);       
-
-                    }
-                    B++;   
-                }
             },
-            "contact force"
-        )
-  
+            "save GMSH mesh"
+        )   
+
         .def(
-            "contactForceRes",[](const fm_t& t,FeelModels::ModelAlgebraic::DataUpdateResidual & data)
+            "addContactForce",[](const fm_t& t, nl::json const& j)
             {
-                //auto data = t.algebraicFactory();
+                auto add_force_term = [&j, &t](FeelModels::ModelAlgebraic::DataUpdateLinear & data) 
+                { 
+                    contactforce<0>(t, data, j);
+                };
 
-                //bool buildCstPart = data->buildCstPart();
-                //if( buildCstPart )
-                //    return;
+                t.algebraicFactory()->addFunctionLinearAssembly(add_force_term);
 
-                double r = 0.125;
-                double rho = 0.12;
-                double eps = 0.00005;
-                double c = 0.001; 
-
-                // Get center of mass
-                std::vector<double> massCenters;
-                auto nbr_bodies = 0;
-
-                for ( auto const& [bpname,bpbc] : t.bodySetBC() )
-                {
-
-                    for (auto &coord_massCenter : bpbc.body().massCenter())
-                    {
-                        massCenters.push_back(coord_massCenter);
-                    }   
-                    nbr_bodies ++;
-                }
-
-                
-                for (auto it = massCenters.begin(); it != massCenters.end(); ++it)
-                {
-                    std::cout << "Coordinates : " << *it << std::endl;
-                }
-
-
-                // Define repulsive force
-                std::vector<std::vector<double> > rep_forces(nDim, std::vector<double>(nbr_bodies));
-
-                for (int b_i = 0;b_i < nbr_bodies; b_i++)
-                {
-                    for (int b_j=b_i+1; b_j < nbr_bodies; b_j++)
-                    {
-                        auto dist_ij = sqrt(std::pow(massCenters[2*b_j]- massCenters[2*b_i],2) + std::pow(massCenters[2*b_j + 1]-massCenters[2*b_i + 1],2));
-                        std::cout << "Distance : " << dist_ij << std::endl;
-
-
-                        std::cout << "Distance - rho" << - (dist_ij-r-r-rho) << std::endl;
-                        
-                        if (-(dist_ij-r-r-rho)/rho > 0)
-                        {
-                            for (int d = 0; d<nDim; d++)
-                            {
-                                auto G_ij_d = (massCenters[2*b_j+d]- massCenters[2*b_i+d])/dist_ij;
-                                auto F_ij_d = c/eps * std::pow(-(dist_ij-r-r-rho)/rho,2)*G_ij_d;
-                                rep_forces[d][b_i] += F_ij_d;
-                                rep_forces[d][b_j] += - F_ij_d;
-                            }
-                        }                       
-                    }
-                }
-
-                // Affichage
-                for(auto& row: rep_forces)
-                {
-                    for(auto& col : row)
-                    { 
-                        std::cout << col << std::endl;
-                    }
-                }
-                            
-                // Ajout de la force
-                //auto rhs = data->residual();
-                auto rhs = data.residual();
-                auto rowStartInVector = t.rowStartInVector();
-
-                int B = 0;
-                for ( auto const& [bpname,bpbc] : t.bodySetBC() )
-                {
-                    size_type startBlockIndexTranslationalVelocity = t.startSubBlockSpaceIndex("body-bc."+bpbc.name()+".translational-velocity");
-                    
-                    rhs->setIsClosed( false );
-
-                    auto const& basisToContainerGpTranslationalVelocityVector = rhs->map().dofIdToContainerId( rowStartInVector+startBlockIndexTranslationalVelocity );
-                    
-                    for (int d=0;d<nDim;++d)
-                    {   
-                        std::cout << "Force ajoutée : " << rep_forces[d][B] << " dim : " << d << " body : " << B << std::endl;
-                        
-                        rhs->add( basisToContainerGpTranslationalVelocityVector[d],
-                                 rep_forces[d][B]);       
-
-                    }
-                    B++;   
-                }
             },
-            "contact res force"
-        )
+            "add function linear assembly"
+        )         
 
         .def(
-            "linAssemblyPython",[](const fm_t& t, std::function<void (FeelModels::ModelAlgebraic::DataUpdateLinear& )> const& func)
+            "addContactForceBoundary",[](const fm_t& t)
             {
-                t.algebraicFactory()->addFunctionLinearAssembly(func);
+                auto add_force_term = [&t](FeelModels::ModelAlgebraic::DataUpdateLinear & data) 
+                { 
+                    contactforceBoundary<0>(t, data);
+                };
+
+                t.algebraicFactory()->addFunctionLinearAssembly(add_force_term);
 
             },
             "add function linear assembly"
         )
 
         .def(
-            "ResAssemblyPython",[](const fm_t& t, std::function<void(FeelModels::ModelAlgebraic::DataUpdateResidual& )> const& func)
+            "addContactForceResBoundary",[](const fm_t& t)
             {
-                t.algebraicFactory()->addFunctionResidualAssembly(func);
+                auto add_force_term = [&t](FeelModels::ModelAlgebraic::DataUpdateResidual & data) 
+                { 
+                    contactforceBoundary<1>(t, data);
+                };  
+
+                t.algebraicFactory()->addFunctionResidualAssembly(add_force_term) ;
+
+            },
+            "add function residual assembly"
+        )
+        
+        .def(
+            "addContactForceRes",[](const fm_t& t,  nl::json const& j)
+            {
+                auto add_force_term = [&j, &t](FeelModels::ModelAlgebraic::DataUpdateResidual & data) 
+                { 
+                    contactforce<1>(t, data, j);
+                };  
+
+                t.algebraicFactory()->addFunctionResidualAssembly(add_force_term) ;
 
             },
             "add function residual assembly"
@@ -310,6 +171,5 @@ PYBIND11_MODULE(_fluid, m )
     defFM<2,3,2,1>(m);
     defFM<3,2,1,1>(m);
     defFM<3,3,2,1>(m);
-
 }
 
