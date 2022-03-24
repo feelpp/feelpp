@@ -34,7 +34,7 @@ foreach( _DIM 2 3)
   endforeach()
 endforeach()
 
-feelpp_toolboxes_add_library(solid_lib SRCS libsolidmechanics.cpp LINK_LIBRARIES ${FEELPP_MODELS_LIBRARIES_FLUIDMECHANICS})
+feelpp_toolboxes_add_library(solid_lib SRCS libsolidmechanics.cpp LINK_LIBRARIES ${FEELPP_MODELS_LIBRARIES_SOLIDMECHANICS})
 
 FILE(GLOB files "*.hpp")
 INSTALL(FILES ${files} DESTINATION include/feelpp/toolboxes/feel/feelmodels/solid COMPONENT Devel)
