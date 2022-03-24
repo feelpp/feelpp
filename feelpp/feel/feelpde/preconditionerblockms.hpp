@@ -43,6 +43,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #include <feel/feelalg/backendpetsc.hpp>
 
 #include <feel/feeldiscr/operatorinterpolation.hpp>
+#include <feel/feelpde/boundaryconditions.hpp>
 
 namespace Feel
 {
@@ -277,7 +278,8 @@ PreconditionerBlockMS<space_type>::PreconditionerBlockMS(space_ptrtype Xh,      
     M_11 = AA->createSubMatrix( M_Vh_indices, M_Vh_indices, true, true);
 
     /* Boundary conditions */
-    BoundaryConditions M_bc = M_model.boundaryConditions();
+    CHECK( false ) << "TODO fix bc";
+    BoundaryConditions M_bc;// = M_model.boundaryConditions();
     //map_vector_field<FEELPP_DIM,1,2> m_dirichlet_u { M_bc.getVectorFields<FEELPP_DIM> ( "u", "Dirichlet" ) };
     map_scalar_field<2> m_dirichlet_p { M_bc.getScalarFields<2> ( "phi", "Dirichlet" ) };
 
@@ -335,7 +337,8 @@ PreconditionerBlockMS<space_type>::init( void )
     //Feel::cout << "Init preconditioner blockms\n";
     LOG(INFO) << "Init preconditioner blockms...\n";
     tic();
-    BoundaryConditions M_bc = M_model.boundaryConditions();
+    CHECK( false ) << "TODO fix bc";
+    BoundaryConditions M_bc;// = M_model.boundaryConditions();
 
     LOG(INFO) << "Create sub Matrix\n";
     map_vector_field<FEELPP_DIM,1,2> m_dirichlet_u { M_bc.getVectorFields<FEELPP_DIM> ( "u", "Dirichlet" )};
