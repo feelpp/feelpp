@@ -121,6 +121,9 @@ public:
 
     virtual ~SensorPointwise(){}
 
+    void setPosition( node_t const& p ) { M_position = p; this->init(); }
+    node_t const& position() const { return M_position; }
+
     void init() override
     {
         // auto v=this->space()->element();
@@ -173,6 +176,8 @@ public:
 
     virtual ~SensorGaussian(){}
 
+    void setPosition( node_t const& p ) { M_position = p; this->init(); }
+    node_t const& position() const { return M_position; }
     void setRadius( double radius ) { M_radius = radius; this->init(); }
     double radius() { return M_radius; }
 
@@ -256,7 +261,7 @@ public:
     void init() override
     {
         auto v = this->space()->element();
-        auto n = integrate(_range=elements(support(this->space())), _expr=cst(1.)).evaluate()(0,0);
+        auto n = integrate(_range=markedfaces(support(this->space()), M_markers), _expr=cst(1.)).evaluate()(0,0);
         form1( _test=this->space(), _vector=this->containerPtr() ) =
             integrate(_range=markedfaces(support(this->space()), M_markers), _expr=id(v)/n );
         this->close();
