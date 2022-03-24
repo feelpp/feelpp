@@ -4,7 +4,10 @@ import feelpp.quality as q
 import feelpp.toolboxes.core as tb
 import feelpp.interpolation as I
 from feelpp.toolboxes.fluid import *
+import json
 
+with open("./configuration.json", 'r') as j:
+    configuration_json = json.load(j)
 
 sys.argv = ['fluid-remesh']
 e = feelpp.Environment(sys.argv, opts=tb.toolboxes_options("fluid"),config=feelpp.globalRepository("fluid-remesh"))
@@ -41,16 +44,13 @@ e = feelpp.Environment(sys.argv, opts=tb.toolboxes_options("fluid"),config=feelp
 # feelpp.Environment.setConfigFile('cases/rigid_body_paper_tests/3SS_planar_3D/preconditioner.cfg')
 
 # Falling two disks
-feelpp.Environment.setConfigFile('cases/rigid_body_paper_tests/Falling_two_disks/Two_disks.cfg')
+# feelpp.Environment.setConfigFile('cases/rigid_body_paper_tests/Falling_two_disks/Two_disks.cfg')
 
+# Falling one disk
+feelpp.Environment.setConfigFile('cases/rigid_body_paper_tests/Falling_one_disk/One_disk.cfg')
 
 f = fluid(dim=2, orderVelocity=2, orderPressure=1)
-# f = fluid(dim=3, orderVelocity=2, orderPressure=1)
 f.init()
-
-# f.contactForce()
-# f.linAssemblyPython(f.contactForce,"Add contact force")
-# sys.exit()
 
 #hfar = 3
 #hclose = hfar/10
@@ -89,18 +89,22 @@ f.init()
 # hclose = 0.2
 
 # Three sphere swimmer planar 2D
-# hfar = 3
-# hclose = 0.2
+#hfar = 3
+#hclose = 0.2
 
 # Three sphere swimmer planar 3D
 # hfar = 3
 # hclose = 0.2
 
 # Falling two disks
-# hfar = 0.1
-# hclose = 0.0039
-hfar = 1.0
-hclose = 0.04
+# hfar = 0.3
+# hclose = 0.00390625
+# hfar = 0.8
+# hclose = 0.01
+
+# Falling one disk
+hfar = 0.1
+hclose = 0.01
 
 def remesh_toolbox(f, hclose, hfar, parent_mesh):
     # 3 spheres
@@ -147,8 +151,12 @@ def remesh_toolbox(f, hclose, hfar, parent_mesh):
     # required_elts=["SphCenter","SphFirst","SphSecond","SphThird"]
 
     # Falling two disks
-    required_facets=["DiskFirst","DiskSecond"]
-    required_elts=["DFirst","DSecond"]
+    # required_facets=["DiskFirst","DiskSecond"]
+    # required_elts=["DFirst","DSecond"]
+
+    # Falling two disks
+    required_facets=["DiskFirst"]
+    required_elts=["DFirst"]
 
     Xh = feelpp.functionSpace(mesh=f.mesh())
     n_required_elts_before=feelpp.nelements(feelpp.markedelements(f.mesh(),required_elts))
@@ -166,16 +174,18 @@ def remesh_toolbox(f, hclose, hfar, parent_mesh):
 
 
 parent_mesh=f.mesh()
-#remesh_toolbox(f, hclose, hfar, None )
+remesh_toolbox(f, hclose, hfar, None )
 #f.exportResults()
 
 
 nbr_remesh = 0
 time_remesh = []
 
+# f.addContactForce(configuration_json)
+# f.addContactForceRes(configuration_json)
 
-f.ResAssemblyPython(f.contactForceRes)
-f.linAssemblyPython(f.contactForce)
+f.addContactForceBoundary()
+f.addContactForceResBoundary()
 
 f.startTimeStep()
 
@@ -183,18 +193,25 @@ while not f.timeStepBase().isFinished():
     
     #print("Time : ", f.time())
 
+    
     min_etaq = q.etaQ(f.mesh()).min()
     
     if min_etaq < 0.4:
 #    if f.timeStepBase().iteration() % 10 == 0:
         remesh_toolbox(f, hclose, hfar, None)
+        #f.addContactForce(configuration_json)
+        #f.addContactForceRes(configuration_json)
+        f.addContactForceBoundary()
+        f.addContactForceResBoundary()
+
         nbr_remesh += 1
         time_remesh.append(f.time())
+    
 
     if feelpp.Environment.isMasterRank():
         print("============================================================\n")
         print("time simulation: {}s iteration : {}\n".format(f.time(), f.timeStepBase().iteration()))
-        print("  -- mesh quality: {}s\n".format(min_etaq))
+        #print("  -- mesh quality: {}s\n".format(min_etaq))
         print("============================================================\n")
     #for i in range(2):
     
@@ -205,3 +222,5 @@ while not f.timeStepBase().isFinished():
 
 print("Nombre de remaillages : ", nbr_remesh)
 print("Temps des remaillages : ", time_remesh)
+
+#f.saveGMSHMesh("mymesh.msh")
