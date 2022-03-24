@@ -221,25 +221,24 @@ PYBIND11_MODULE(_discr, m )
     py::class_<Periodicity<NoPeriodicity>>(m,pyclass_name.c_str()).def(py::init<>());
 
     auto dimt = hana::make_tuple( hana::int_c<1>, hana::int_c<2>, hana::int_c<3>);
-    auto ordert = hana::make_tuple( hana::int_c<1>, hana::int_c<2>, hana::int_c<3>);
-    hana::for_each(hana::cartesian_product(hana::make_tuple(dimt, ordert)),
+    auto ordert = hana::make_tuple( hana::int_c<0>, hana::int_c<1>, hana::int_c<2>, hana::int_c<3> );
+    auto geot = hana::make_tuple( hana::int_c<1>, hana::int_c<2> );
+    hana::for_each(hana::cartesian_product(hana::make_tuple(dimt, ordert, geot)),
                    [&m]( auto const& d )
                        {
                            constexpr int _dim = std::decay_t<decltype(hana::at_c<0>(d))>::value;
                            constexpr int _order = std::decay_t<decltype(hana::at_c<1>(d))>::value;
-                           defDiscr<Pch_type<Mesh<Simplex<_dim>>, _order>>( m );
-                           defDiscr<Pdh_type<Mesh<Simplex<_dim>>, _order>>( m );
-                           defDiscr<Pchv_type<Mesh<Simplex<_dim>>, _order>>( m );
-                           defDiscr<Pdhv_type<Mesh<Simplex<_dim>>, _order>>( m );
-//                           defDiscr<FunctionSpace<Mesh<Simplex<_dim>>, bases<Lagrange<_order, Scalar, Continuous, PointSetFekete>>>>(m, "_fekete");
-//                           defDiscr<FunctionSpace<Mesh<Simplex<_dim>>, bases<Lagrange<_order, Scalar, Discontinuous, PointSetFekete>>>>(m, "_fekete");
-//                           defDiscr<FunctionSpace<Mesh<Simplex<_dim>>, bases<Lagrange<_order, Vectorial, Continuous, PointSetFekete>>>>(m, "_fekete");
-//                           defDiscr<FunctionSpace<Mesh<Simplex<_dim>>, bases<Lagrange<_order, Vectorial, Discontinuous, PointSetFekete>>>>(m, "_fekete");
+                           constexpr int _geo = std::decay_t<decltype( hana::at_c<2>( d ) )>::value;
+                           defDiscr<Pch_type<Mesh<Simplex<_dim, _geo>>, _order>>( m );
+                           defDiscr<Pdh_type<Mesh<Simplex<_dim, _geo>>, _order>>( m );
+                           defDiscr<Pchv_type<Mesh<Simplex<_dim, _geo>>, _order>>( m );
+                           defDiscr<Pdhv_type<Mesh<Simplex<_dim, _geo>>, _order>>( m );
                        });
-
+#if 0
     defDiscr<Pdh_type<Mesh<Simplex<2>>,0>>( m );
     defDiscrDiscontinuous<Pdh_type<Mesh<Simplex<2>>,0>>( m );
     defDiscr<Pdh_type<Mesh<Simplex<3>>,0>>( m );
     defDiscrDiscontinuous<Pdh_type<Mesh<Simplex<3>>,0>>( m );
+#endif    
 }
 
