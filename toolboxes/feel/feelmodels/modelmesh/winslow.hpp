@@ -42,8 +42,7 @@ namespace FeelModels
 {
 
 template< typename MeshType, int Order >
-class Winslow : public ModelAlgebraic,
-                public std::enable_shared_from_this< Winslow<MeshType,Order> >
+class Winslow : public ModelAlgebraic
 {
 public :
     typedef Winslow<MeshType,Order> self_type;
@@ -102,9 +101,9 @@ public :
     Winslow( space_ptrtype const& space, std::string const& prefix="",
              ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
-    void init();
+    std::shared_ptr<self_type> shared_from_this() { return std::dynamic_pointer_cast<self_type>( super_type::shared_from_this() ); }
 
-    std::shared_ptr<std::ostringstream> getInfo() const override;
+    void init();
 
 
     space_ptrtype const& functionSpace() const { return M_Xh; }

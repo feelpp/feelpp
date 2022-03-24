@@ -4,13 +4,18 @@
     "Models":
     {
         "cfpdes":{
-            "equations":{
-                "name":"laplace",
-                "unknown":
-                {
+            "equations":"laplace"
+        },
+        "laplace":{
+            "setup":{
+                "unknown":{
                     "basis":"Pch1",
                     "name":"u",
                     "symbol":"u"
+                },
+                "coefficients":{
+                    "c":"1", // diffusion
+                    "f":"1"
                 }
             }
         }
@@ -30,9 +35,7 @@
     {
         "mymat1":
         {
-            "markers":"Omega",
-            "laplace_c":"1", // diffusion
-            "laplace_f":"1"
+            "markers":"Omega"
         }
     },
     "BoundaryConditions":

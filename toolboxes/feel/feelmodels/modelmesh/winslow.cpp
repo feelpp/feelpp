@@ -191,6 +191,7 @@ if ( Environment::vm().count( prefixvm(this->prefix(),"mesh-adaptation.scalar-we
     this->log("Winslow","init", "finish" );
 }
 
+#if 0
 template< typename MeshType, int Order >
 std::shared_ptr<std::ostringstream>
 Winslow<MeshType,Order>::getInfo() const
@@ -205,7 +206,7 @@ Winslow<MeshType,Order>::getInfo() const
 
     return _ostr;
 }
-
+#endif
 //----------------------------------------------------------------------------//
 
 template< typename MeshType,int Order >
