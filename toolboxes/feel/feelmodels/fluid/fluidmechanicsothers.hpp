@@ -9,6 +9,54 @@ namespace FeelModels
 {
 
 template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType>
+template <typename SymbolsExprType>
+void
+FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateFluidInletVelocity( SymbolsExprType const& se )
+{
+    //auto se = this->symbolsExpr();
+    for ( auto const& [bcName,bcData] : M_boundaryConditions->inlet() )
+    {
+        typename boundary_conditions_type::Inlet::Constraint constraint = bcData->constraint();
+        auto exprFluidInlet = bcData->expr( se );
+        exprFluidInlet.setParameterValues( this->modelProperties().parameters().toParameterValues() ); // TODO!!
+        double evalExprFluidInlet = exprFluidInlet.evaluate()(0,0);
+
+        auto itVelRef = M_fluidInletVelocityRef.find(bcName);
+        CHECK( itVelRef != M_fluidInletVelocityRef.end() ) << "fluid inlet not init for this bcName" << bcName;
+        auto const& velRef = std::get<0>(itVelRef->second);
+        double maxVelRef = std::get<1>(itVelRef->second);
+        double flowRateRef = std::get<2>(itVelRef->second);
+
+        switch ( constraint )
+        {
+        case boundary_conditions_type::Inlet::Constraint::velocity_max :
+            M_fluidInletVelocity[bcName]->zero();
+            M_fluidInletVelocity[bcName]->add( evalExprFluidInlet/maxVelRef, *velRef );
+            break;
+        case boundary_conditions_type::Inlet::Constraint::flow_rate :
+            M_fluidInletVelocity[bcName]->zero();
+            M_fluidInletVelocity[bcName]->add( evalExprFluidInlet/flowRateRef, *velRef );
+            break;
+        }
+
+        auto const& velSubmesh = M_fluidInletVelocity.find(bcName)->second;
+        auto opI = std::get<1>( M_fluidInletVelocityInterpolated[bcName] );
+        auto & velInterp = std::get<0>( M_fluidInletVelocityInterpolated[bcName] );
+        opI->apply( *velSubmesh , *velInterp );
+
+#if 0
+        double flowRateComputed = integrate(_range=markedfaces(this->mesh(),marker),
+                                            _expr=-idv(velInterp)*N() ).evaluate()(0,0);
+        double maxVelComputed = velInterp->max();
+        if ( this->worldComm().isMasterRank() )
+            std::cout << "flowRateComputed : " << flowRateComputed << "\n"
+                      << "maxVelComputed : " << maxVelComputed << "\n";
+#endif
+   }
+}
+
+
+template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType>
 template <typename ModelContextType>
 void
 FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateInHousePreconditioner( DataUpdateBase & data, ModelContextType const& mctx ) const
@@ -94,10 +142,10 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateInHousePre
 
             if ( physicFluidData->equation() == "Stokes" || physicFluidData->equation() == "StokesTransient" )
             {
-                if (this->isMoveDomain() )
+                if (this->hasMeshMotion() )
                 {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-                    myOpPCD->updateFpDiffusionConvection( therange, muExpr, -rhoExpr*idv(this->meshVelocity()), true );
+                    myOpPCD->updateFpDiffusionConvection( therange, muExpr, -rhoExpr*idv(this->meshMotionTool()->velocity()), true );
 #endif
                 }
                 else
@@ -108,10 +156,10 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateInHousePre
             else if ( physicFluidData->equation() == "Navier-Stokes" && this->useSemiImplicitTimeScheme() )
             {
                 auto betaU = *M_fieldVelocityExtrapolated;//this->timeStepBDF()->poly();
-                if (this->isMoveDomain() )
+                if (this->hasMeshMotion() )
                 {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-                    myOpPCD->updateFpDiffusionConvection( therange, muExpr, rhoExpr*( idv(betaU)-idv(this->meshVelocity()) ), true );
+                    myOpPCD->updateFpDiffusionConvection( therange, muExpr, rhoExpr*( idv(betaU)-idv(this->meshMotionTool()->velocity()) ), true );
 #endif
                 }
                 else
@@ -121,10 +169,10 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateInHousePre
             }
             else if ( physicFluidData->equation() == "Navier-Stokes" )
             {
-                if (this->isMoveDomain() )
+                if (this->hasMeshMotion() )
                 {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-                    myOpPCD->updateFpDiffusionConvection( therange, muExpr, rhoExpr*( idv(u)-idv(this->meshVelocity()) ), true );
+                    myOpPCD->updateFpDiffusionConvection( therange, muExpr, rhoExpr*( idv(u)-idv(this->meshMotionTool()->velocity()) ), true );
 #endif
                 }
                 else
@@ -162,19 +210,13 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateInHousePre
 
     if ( !dynamic_cast<DataUpdateJacobian*>(&data) || !boption(_name="pcd.apply-homogeneous-dirichlet-in-newton",_prefix=this->prefix()) )
     {
-        // auto const& fieldRho = this->materialProperties()->fieldRho();
-        // auto rhoExpr = idv( fieldRho );
-        //auto se = this->symbolsExpr();
         auto rhoExpr = this->materialsProperties()->template materialPropertyExpr<1,1>( "density", se );
-        for( auto const& d : M_bcDirichlet )
-            myOpPCD->updateFpBoundaryConditionWithDirichlet( rhoExpr, name(d), expression(d,se) );
-        for( auto const& d : M_bcMovingBoundaryImposed )
-            myOpPCD->updateFpBoundaryConditionWithDirichlet( rhoExpr, name(d), idv(M_meshALE->velocity()) );
-        for ( auto const& inletbc : M_fluidInletDesc )
+        for ( auto & [bcId,bcData] : M_boundaryConditions->velocityImposed() )
+            myOpPCD->updateFpBoundaryConditionWithDirichlet( rhoExpr, "velocityImposed_" + bcId.second, bcData->expr(se) );
+        for ( auto & [bcName,bcData] : M_boundaryConditions->inlet() )
         {
-            std::string const& marker = std::get<0>( inletbc );
-            auto const& inletVel = std::get<0>( M_fluidInletVelocityInterpolated.find(marker)->second );
-            myOpPCD->updateFpBoundaryConditionWithDirichlet( rhoExpr, marker, -idv(inletVel)*N() );
+            auto const& inletVel = std::get<0>( M_fluidInletVelocityInterpolated.find(bcName)->second );
+            myOpPCD->updateFpBoundaryConditionWithDirichlet( rhoExpr, "inlet_" + bcName, -idv(inletVel)*N() );
         }
     }
     else

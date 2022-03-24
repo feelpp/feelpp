@@ -168,7 +168,7 @@ HarmonicExtension<MeshType,Order>::init()
 
     this->log(this->prefix(),"init", "finish");
 }
-
+#if 0
 template< typename MeshType, int Order >
 std::shared_ptr<std::ostringstream>
 HarmonicExtension<MeshType,Order>::getInfo() const
@@ -181,7 +181,7 @@ HarmonicExtension<MeshType,Order>::getInfo() const
 
     return _ostr;
 }
-
+#endif
 
 template< typename MeshType, int Order >
 void

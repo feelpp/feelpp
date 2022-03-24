@@ -29,32 +29,21 @@
     },
     "BoundaryConditions":
     {
-        "displacement_x":
+        "solid":
         {
-            "Dirichlet":
+            "displacement":
             {
-                "AB":
-                {
+                "AB":{
+                    "component":"x",
+                    "expr":"0"
+                },
+                "CD":{
+                    "component":"y",
                     "expr":"0"
                 }
-            }
-        },
-        "displacement_y":
-        {
-            "Dirichlet":
-            {
-                "CD":
-                {
-                    "expr":"0"
-                }
-            }
-        },
-        "displacement":
-        {
-            "Neumann_scalar":
-            {
-                "BC":
-                {
+            },
+            "normal_stress":{
+                "BC":{
                     "expr":"1e7"
                 }
             }
