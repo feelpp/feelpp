@@ -93,7 +93,7 @@ void defExporter(py::module &m)
     using mesh_ptr_t = std::shared_ptr<MeshT>;
     std::string pyclass_name;
 
-    std::string suffix = std::to_string( MeshT::nDim ) + "D";
+    std::string suffix = fmt::format("{}DG{}", MeshT::nDim, MeshT::nOrder );
     pyclass_name = std::string( "TimeSet::Step" ) + suffix;
     py::class_<step_t, step_ptr_t> step_wrapper( m, pyclass_name.c_str() );
 
