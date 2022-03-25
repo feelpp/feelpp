@@ -174,11 +174,11 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::runImpl( element_type con
     value_type positiveBound = -1.;
     bool hasNegativeBound = M_negativeNarrowBandWidth > 0.;
     value_type negativeBound = -1.;
+    bool hasStride = M_stride > 0.;
 
     // Perform parallel fast-marching
     value_type minPositiveAbsGlobalValue = -1.;
     value_type minNegativeAbsGlobalValue = -1.;
-    //while( !closeDofHeapsAreEmptyOnAllProc )
     while( true )
     {
         if( hasPositiveBound )
@@ -190,8 +190,7 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::runImpl( element_type con
                 minPositiveAbsLocalValue,
                 mpi::minimum<value_type>()
                 );
-            //positiveBound = std::min( minPositiveAbsGlobalValue, M_positiveNarrowBandWidth );
-            positiveBound = M_positiveNarrowBandWidth;
+            positiveBound = hasStride ? std::min( minPositiveAbsGlobalValue + M_stride, M_positiveNarrowBandWidth ) : M_positiveNarrowBandWidth;
         }
         if( hasNegativeBound )
         {
@@ -202,8 +201,7 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::runImpl( element_type con
                 minNegativeAbsLocalValue,
                 mpi::minimum<value_type>()
                 );
-            //negativeBound = std::min( minNegativeAbsGlobalValue, M_negativeNarrowBandWidth );
-            negativeBound = M_negativeNarrowBandWidth;
+            negativeBound = hasStride ? std::min( minNegativeAbsGlobalValue + M_stride, M_negativeNarrowBandWidth ) : M_negativeNarrowBandWidth;
         }
 
         // Update maxNumberOfNewDofsOnAllProc
@@ -269,7 +267,8 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::runImpl( element_type con
         this->marchLocalNarrowBand( sol, positiveBound, negativeBound );
         this->syncDofs( sol, positiveBound, negativeBound );
         // The second marchLocalNarrowBand is only needed when the stride is finite
-        //this->marchLocalNarrowBand( sol, positiveBound, negativeBound );
+        if( hasStride )
+            this->marchLocalNarrowBand( sol, positiveBound, negativeBound );
     }
 
     return sol;
