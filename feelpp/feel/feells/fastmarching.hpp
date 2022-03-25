@@ -284,6 +284,11 @@ class FastMarching: private LocalEikonalSolver< FunctionSpaceType >
          * Set positive and negative widths
          */
         void setNarrowBandWidth( const value_type & width ) { this->setPositiveNarrowBandWidth( width ); this->setNegativeNarrowBandWidth( width ); }
+        /*
+         * Local marching stride before parallel update (negative for infinite stride, ie full local marching)
+         */
+        value_type stride() const { return M_stride; }
+        void setStride( const value_type & s ) { M_stride = s; }
 
         //--------------------------------------------------------------------//
         // Result
@@ -308,6 +313,8 @@ class FastMarching: private LocalEikonalSolver< FunctionSpaceType >
 
         value_type M_positiveNarrowBandWidth = -1.;
         value_type M_negativeNarrowBandWidth = -1.;
+
+        value_type M_stride = -1.;
 
         std::map< size_type, std::set< rank_type > > M_dofSharedOnCluster;
         std::map< size_type, size_type > M_mapSharedDofGlobalClusterToGlobalProcess;
