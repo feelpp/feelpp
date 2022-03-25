@@ -106,6 +106,12 @@ class DistanceToRange
          */
         value_type maxDistance() const { return M_maxDistance; }
         void setMaxDistance( const value_type & maxDist ) { M_maxDistance = maxDist; }
+        /*
+         * Fast-marching stride: local fast-marching stride before parallel update
+         * Negative (eg -1) runs full local marching between each sync
+         */
+        value_type fastMarchingStride() const { return M_fastMarchingStride; }
+        void setFastMarchingStride( const value_type & stride ) { M_fastMarchingStride = stride; }
 
         //--------------------------------------------------------------------//
         // Geometry
@@ -131,6 +137,7 @@ class DistanceToRange
         fastmarching_ptrtype M_fastMarching;
 
         value_type M_maxDistance = -1.;
+        value_type M_fastMarchingStride = -1.;
 
         mutable elements_reference_wrapper_distance_ptrtype M_eltsTouchingFaces;
         mutable std::unordered_map< size_type, std::vector< size_type > > M_dofsNeighbouringFaces;
@@ -237,6 +244,7 @@ DistanceToRange< FunctionSpaceType >::unsignedDistanceToFaces( range_faces_type 
 
     // Then perform fast-marching
     this->fastMarching()->setNarrowBandWidth( this->maxDistance() );
+    this->fastMarching()->setStride( this->fastMarchingStride() );
     unsignedDistance = this->fastMarching()->run( unsignedDistance, rangeEltsTouchingFaces );
     // Return
     return unsignedDistance;
@@ -427,8 +435,10 @@ DistanceToRange< FunctionSpaceType >::dofsNeighbouringFaces( range_faces_type co
 
 namespace na::distancetorange {
     using max_distance = NA::named_argument_t<struct max_distance_tag>;
+    using stride = NA::named_argument_t<struct stride_tag>;
 }
 inline constexpr auto& _max_distance = NA::identifier<na::distancetorange::max_distance>;
+inline constexpr auto& _stride = NA::identifier<na::distancetorange::stride>;
 
 template< typename ... Args >
 auto distanceToRange( Args && ... nargs )
@@ -437,8 +447,10 @@ auto distanceToRange( Args && ... nargs )
     auto && space = args.get( _space );
     auto && range = args.get( _range );
     double maxDistance = args.get_else( _max_distance, -1. );
+    double stride = args.get_else( _stride, -1. );
     DistanceToRange distToRange( space );
     distToRange.setMaxDistance( maxDistance );
+    distToRange.setFastMarchingStride( stride );
     return distToRange.unsignedDistance( range );
 }
 
