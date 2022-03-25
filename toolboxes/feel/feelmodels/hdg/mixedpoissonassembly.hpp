@@ -178,103 +178,85 @@ MixedPoisson<ConvexType, Order, PolySetType, E_Order>::updateLinearPDE( DataUpda
             }
         }
     }
-    for( auto& [name, bc] : this->modelProperties().boundaryConditions2().byFieldType( M_potentialKey, "Dirichlet") )
+    for ( auto const& [bcName,bcData] : M_boundaryConditions->dirichlet() )
     {
-        bbf(2_c, 2_c) += integrate(_range=markedfaces(support(M_Wh), bc.markers()),
+        auto bcRangeFaces = markedfaces(support(M_Wh), bcData->markers());
+        bbf(2_c, 2_c) += integrate(_range=bcRangeFaces,
                                    _expr=inner(idt(phat),id(phat)) );
-        auto g = [&bc = bc,&symbolsExpr]() -> decltype(auto) {
-                     if constexpr( is_scalar ) {
-                         return expr(bc.expr(), symbolsExpr);
-                     } else {
-                         return expr(bc.template expr<nDim>(), symbolsExpr);
-                     }
-                 }();
-        blf(2_c) += integrate(_range=markedfaces(support(M_Wh), bc.markers()),
+        auto g = bcData->expr( symbolsExpr );
+        blf(2_c) += integrate(_range=bcRangeFaces,
                               _expr=inner(id(phat),g));
     }
-    for( auto& [name, bc] : this->modelProperties().boundaryConditions2().byFieldType( M_potentialKey, "Neumann") )
+    for ( auto const& [bcName,bcData] : M_boundaryConditions->neumann() )
     {
+        auto bcRangeFaces = markedfaces(support(M_Wh), bcData->markers());
         // <j.n,mu>_Gamma_N
-        bbf( 2_c, 0_c ) += integrate(_range=markedfaces(support(M_Wh), bc.markers()),
+        bbf( 2_c, 0_c ) += integrate(_range=bcRangeFaces,
                                      _expr=inner(id(phat), normalt(u)) );
         // <tau p, mu>_Gamma_N
-        bbf( 2_c, 1_c ) += integrate(_range=markedfaces(support(M_Wh), bc.markers()),
+        bbf( 2_c, 1_c ) += integrate(_range=bcRangeFaces,
                                      _expr=el_param*tau_constant*inner(id(phat), idt(p)) );
         // <-tau phat, mu>_Gamma_N
-        bbf( 2_c, 2_c ) += integrate(_range=markedfaces(support(M_Wh), bc.markers()),
+        bbf( 2_c, 2_c ) += integrate(_range=bcRangeFaces,
                                      _expr=-el_param*tau_constant*inner(idt(phat), id(phat)) );
-        auto g = [&bc = bc,&symbolsExpr]() -> decltype(auto) {
-                     if constexpr( is_scalar ) {
-                         return expr(bc.expr(), symbolsExpr);
-                     } else {
-                         return expr(bc.template expr<nDim>(), symbolsExpr);
-                     }
-                 }();
-        blf(2_c) += integrate(_range=markedfaces(support(M_Wh), bc.markers()),
+        auto g = bcData->expr( symbolsExpr );
+        blf(2_c) += integrate(_range=bcRangeFaces,
                               _expr=inner(id(phat),g));
     }
-    for( auto& [name, bc] : this->modelProperties().boundaryConditions2().byFieldType( M_potentialKey, "Robin") )
+    for ( auto const& [bcName,bcData] : M_boundaryConditions->robin() )
     {
+        auto bcRangeFaces = markedfaces(support(M_Wh), bcData->markers());
         // <j.n,mu>_Gamma_R
-        bbf( 2_c, 0_c ) += integrate(_range=markedfaces(support(M_Wh), bc.markers()),
+        bbf( 2_c, 0_c ) += integrate(_range=bcRangeFaces,
                                      _expr=inner(id(phat), normalt(u)) );
         // <tau p, mu>_Gamma_R
-        bbf( 2_c, 1_c ) += integrate(_range=markedfaces(support(M_Wh), bc.markers()),
+        bbf( 2_c, 1_c ) += integrate(_range=bcRangeFaces,
                                      _expr=el_param*tau_constant*inner(id(phat), idt(p)) );
         // <-tau phat, mu>_Gamma_R
-        bbf( 2_c, 2_c ) += integrate(_range=markedfaces(support(M_Wh), bc.markers()),
+        bbf( 2_c, 2_c ) += integrate(_range=bcRangeFaces,
                                      _expr=-el_param*tau_constant*inner(idt(phat), id(phat)) );
 
-        auto g1 = expr(bc.expr1(), symbolsExpr);
-        bbf(2_c, 2_c) += integrate(_range=markedfaces(support(M_Wh), bc.markers()),
+        auto g1 = bcData->expr1( symbolsExpr );
+        bbf(2_c, 2_c) += integrate(_range=bcRangeFaces,
                                    _expr=g1*inner(idt(phat),id(phat)) );
-        auto g2 = [&bc = bc,&symbolsExpr]() -> decltype(auto) {
-                      if constexpr( is_scalar ) {
-                          return expr(bc.expr2(), symbolsExpr);
-                      } else {
-                          return expr(bc.template expr2<nDim>(), symbolsExpr);
-                      }
-                 }();
-        blf(2_c) += integrate(_range=markedfaces(support(M_Wh), bc.markers()),
+        auto g2 = bcData->expr2( symbolsExpr );
+        blf(2_c) += integrate(_range=bcRangeFaces,
                               _expr=inner(id(phat),g2));
     }
     int i = 0;
-    for( auto& [name, bc] : this->modelProperties().boundaryConditions2().byFieldType( M_fluxKey, "Integral") )
+    for ( auto const& [bcName,bcData] : M_boundaryConditions->integral() )
     {
+        auto bcRangeFaces = markedfaces(support(M_Wh), bcData->markers());
         // <lambda, v.n>_Gamma_I
-        bbf( 0_c, 3_c, 0, i ) += integrate( _range=markedfaces(support(M_Wh), bc.markers()),
+        bbf( 0_c, 3_c, 0, i ) += integrate( _range=bcRangeFaces,
                                             _expr= inner(idt(l), normal(u)) );
 
         // -<lambda, tau w>_Gamma_I
-        bbf( 1_c, 3_c, 0, i ) += integrate( _range=markedfaces(support(M_Wh), bc.markers()),
+        bbf( 1_c, 3_c, 0, i ) += integrate( _range=bcRangeFaces,
                                             _expr=-tau_constant*inner(idt(l), id(p)) );
 
         // <j.n, m>_Gamma_I
-        bbf( 3_c, 0_c, i, 0 ) += integrate( _range=markedfaces(support(M_Wh), bc.markers()),
+        bbf( 3_c, 0_c, i, 0 ) += integrate( _range=bcRangeFaces,
                                             _expr=inner(id(l), normalt(u)) );
 
         // <tau p, m>_Gamma_I
-        bbf( 3_c, 1_c, i, 0 ) += integrate( _range=markedfaces(support(M_Wh), bc.markers()),
+        bbf( 3_c, 1_c, i, 0 ) += integrate( _range=bcRangeFaces,
                                             _expr=tau_constant*inner(idt(p), id(l)) );
 
         // -<lambda2, m>_Gamma_I
-        bbf( 3_c, 3_c, i, i ) += integrate( _range=markedfaces(support(M_Wh), bc.markers()),
+        bbf( 3_c, 3_c, i, i ) += integrate( _range=bcRangeFaces,
                                             _expr=-tau_constant*inner(id(l), idt(l)) );
 
-        double meas = integrate( _range=markedfaces(support(M_Wh), bc.markers()),
+        double meas = integrate( _range=bcRangeFaces,
                                  _expr=cst(1.)).evaluate()(0,0);
-        auto g = [&bc = bc,&symbolsExpr]() -> decltype(auto) {
-                     if constexpr( is_scalar ) {
-                         return expr(bc.expr(), symbolsExpr);
-                     } else {
-                         return expr(bc.template expr<nDim>(), symbolsExpr);
-                     }
-                 }();
-        blf(3_c, i) += integrate( _range=markedfaces(support(M_Wh), bc.markers()),
+        auto g = bcData->expr( symbolsExpr );
+        blf(3_c, i) += integrate( _range=bcRangeFaces,
                                   _expr=inner(g,id(l))/meas);
         i++;
     }
-    for( auto& [name, bc] : this->modelProperties().boundaryConditions2().byFieldType( M_fluxKey, "Interface") )
+#if 0
+    //for( auto& [name, bc] : this->modelProperties().boundaryConditions2().byFieldType( M_fluxKey, "Interface") )
+    for ( auto const& [bcName,bcData] : M_boundaryConditions->interface() )
     {
         auto g = [&bc = bc,&symbolsExpr]() -> decltype(auto) {
                      if constexpr( is_scalar ) {
@@ -286,6 +268,7 @@ MixedPoisson<ConvexType, Order, PolySetType, E_Order>::updateLinearPDE( DataUpda
         blf(2_c) += integrate( _range=markedfaces(support(M_Wh), bc.markers()),
                                _expr=inner(id(phat),g) );
     }
+#endif
 }
 
 template<typename ConvexType, int Order, template<uint16_type> class PolySetType, int E_Order>

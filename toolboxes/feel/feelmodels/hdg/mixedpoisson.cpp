@@ -67,7 +67,6 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::MixedPoisson( std::string const& prefix,
     this->addTimerTool("PostProcessing",nameFilePostProcessing);
     this->addTimerTool("TimeStepping",nameFileTimeStepping);
 
-    this->modelProperties().enableBoundaryConditions2();
     //-----------------------------------------------------------------------------//
     // option in cfg files
     this->loadParameterFromOptionsVm();
@@ -120,20 +119,18 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->log("MixedPoisson","init", "start" );
     this->timerTool("Constructor").start();
 
-    if ( this->physics().empty() )
-        this->initPhysics( this->keyword(), this->modelProperties().models() );
+    this->initModelProperties();
+
+    this->initPhysics( this->shared_from_this(), this->modelProperties().models() );
 
     // physical properties
     if ( !M_materialsProperties )
     {
-        auto paramValues = this->modelProperties().parameters().toParameterValues();
-        this->modelProperties().materials().setParameterValues( paramValues );
         M_materialsProperties.reset( new materialsproperties_type( this->shared_from_this() ) );
         M_materialsProperties->updateForUse( this->modelProperties().materials() );
     }
 
-    if ( !this->mesh() )
-        this->initMesh();
+    this->initMesh();
 
     this->materialsProperties()->addMesh( this->mesh() );
 
@@ -202,11 +199,11 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
     M_pp = std::make_shared<element_potential_type>(M_Wh, M_physicMap["potentialSymbol"]);
     M_ppp = std::make_shared<element_postpotential_type>(M_Whp, "post"+M_physicMap["potentialSymbol"]);
 
-    auto ibcMarkers = std::accumulate(M_bcIntegralMarkerManagement.markerIntegralBC().begin(),
-                                      M_bcIntegralMarkerManagement.markerIntegralBC().end(),
+    auto ibcMarkers = std::accumulate(M_boundaryConditions->integral().begin(),
+                                      M_boundaryConditions->integral().end(),
                                       std::set<std::string>(),
                                       [](auto& prev, auto const& pair) {
-                                          prev.insert(pair.second.begin(), pair.second.end());
+                                          prev.insert(pair.second->markers().begin(), pair.second->markers().end());
                                           return prev;
                                       });
     std::set<int> ibcMeshMarkers;
@@ -253,6 +250,8 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initMesh()
     this->log("MixedPoisson","initMesh", "start");
     this->timerTool("Constructor").start();
 
+    if ( this->modelProperties().jsonData().contains("Meshes") )
+        super_type::super_model_meshes_type::setup( this->modelProperties().jsonData().at("Meshes"), {this->keyword()} );
     if ( this->doRestart() )
         super_type::super_model_meshes_type::setupRestart( this->keyword() );
     super_type::super_model_meshes_type::updateForUse<mesh_type>( this->keyword() );
@@ -267,19 +266,15 @@ MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
 void
 MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
 {
-    M_bcDirichletMarkerManagement.clearMarkerDirichletBC();
-    M_bcNeumannMarkerManagement.clearMarkerNeumannBC();
-    M_bcRobinMarkerManagement.clearMarkerRobinBC();
-    M_bcIntegralMarkerManagement.clearMarkerIntegralBC();
+    M_boundaryConditions = std::make_shared<boundary_conditions_type>( this->shared_from_this() );
+    if ( !this->modelProperties().boundaryConditions().hasSection( this->keyword() ) )
+        return;
 
-    for( auto const& [name, bc] : this->modelProperties().boundaryConditions2().byFieldType( M_potentialKey, "Dirichlet") )
-        M_bcDirichletMarkerManagement.addMarkerDirichletBC("nitsche", name, bc.markers() );
-    for( auto const& [name, bc] : this->modelProperties().boundaryConditions2().byFieldType( M_potentialKey, "Neumann") )
-        M_bcNeumannMarkerManagement.addMarkerNeumannBC(MarkerManagementNeumannBC::NeumannBCShape::SCALAR, name, bc.markers() );
-    for( auto const& [name, bc] : this->modelProperties().boundaryConditions2().byFieldType( M_potentialKey, "Robin") )
-        M_bcRobinMarkerManagement.addMarkerRobinBC(name, bc.markers() );
-    for( auto const& [name, bc] : this->modelProperties().boundaryConditions2().byFieldType( M_fluxKey, "Integral") )
-        M_bcIntegralMarkerManagement.addMarkerIntegralBC(name, bc.markers() );
+    M_boundaryConditions->setup( this->modelProperties().boundaryConditions().section( this->keyword() ) );
+#if 0
+    for ( auto const& [bcName,bcData] : M_boundaryConditions->dirichlet() )
+        bcData->updateDofEliminationIds( *this, this->unknownName(), this->spaceUnknown() );
+#endif
 }
 
 MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
@@ -416,13 +411,12 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::setParameterValues( std::map<std::string,doubl
         this->modelProperties().parameters().setParameterValues( paramValues );
         this->modelProperties().postProcess().setParameterValues( paramValues );
         this->materialsProperties()->setParameterValues( paramValues );
-        this->modelProperties().boundaryConditions2().setParameterValues( paramValues );
     }
-    // M_bcDirichlet.setParameterValues( paramValues );
-    // M_bcNeumann.setParameterValues( paramValues );
-    // M_bcRobin.setParameterValues( paramValues );
-    // M_bcIntegral.setParameterValues( paramValues );
-    // M_volumicForcesProperties.setParameterValues( paramValues );
+
+    for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
+        physicData->setParameterValues( paramValues );
+
+    M_boundaryConditions->setParameterValues( paramValues );
 
     this->log("MixedPoisson","setParameterValues", "finish");
 }
@@ -437,15 +431,6 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::exportResults( double time )
 }
 
 MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
-std::shared_ptr<std::ostringstream>
-MIXEDPOISSON_CLASS_TEMPLATE_TYPE::getInfo() const
-{
-    std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
-    return _ostr;
-}
-
-
-MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
 void
 MIXEDPOISSON_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) const
 {
@@ -458,33 +443,13 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) const
 
     super_type::super_model_meshes_type::updateInformationObject( p["Meshes"] );
 
+    super_physics_type::updateInformationObjectFromCurrentType( p["Physics"] );
 
-    // Physics
+    M_boundaryConditions->updateInformationObject( p["Boundary Conditions"] );
+    // // Physics
     nl::json subPt;
-    subPt.emplace( "time mode", std::string( (this->isStationary())?"Stationary":"Transient") );
-    p["Physics"] = subPt;
-
-    // Boundary Conditions
-#if 0
-    subPt.clear();
-    subPt2.clear();
-    M_bcDirichletMarkerManagement.updateInformationObjectDirichletBC( subPt2 );
-    for( const auto& ptIter : subPt2 )
-        subPt.put_child( ptIter.first, ptIter.second );
-    subPt2.clear();
-    M_bcNeumannMarkerManagement.updateInformationObjectNeumannBC( subPt2 );
-    for( const auto& ptIter : subPt2 )
-        subPt.put_child( ptIter.first, ptIter.second );
-    subPt2.clear();
-    M_bcRobinMarkerManagement.updateInformationObjectRobinBC( subPt2 );
-    for( const auto& ptIter : subPt2 )
-        subPt.put_child( ptIter.first, ptIter.second );
-    p.put_child( "Boundary Conditions",subPt );
-    M_bcIntegralMarkerManagement.updateInformationObjectIntegralBC( subPt2 );
-    for( const auto& ptIter : subPt2 )
-        subPt.put_child( ptIter.first, ptIter.second );
-    p.put_child( "Boundary Conditions",subPt );
-#endif
+    // subPt.emplace( "time mode", std::string( (this->isStationary())?"Stationary":"Transient") );
+    // p["Physics"] = subPt;
 
     // Materials properties
     if ( this->materialsProperties() )
@@ -522,19 +487,19 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonInfo
         tabInfo->add( "Environment",  super_type::super_model_base_type::tabulateInformations( jsonInfo.at("Environment"), tabInfoProp ) );
 
     if ( jsonInfo.contains("Physics") )
-    {
-        Feel::Table tabInfoPhysics;
-        TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoPhysics, jsonInfo.at("Physics"), tabInfoProp );
-        tabInfo->add( "Physics", TabulateInformations::New( tabInfoPhysics, tabInfoProp ) );
-    }
+        tabInfo->add( "Physics", super_physics_type::tabulateInformations( jsonInfo.at("Physics"), tabInfoProp ) );
 
     if ( this->materialsProperties() && jsonInfo.contains("Materials Properties") )
         tabInfo->add( "Materials Properties", this->materialsProperties()->tabulateInformations(jsonInfo.at("Materials Properties"), tabInfoProp ) );
 
-    //tabInfoSections.push_back( std::make_pair( "Boundary conditions",  tabulate::Table{} ) );
-
     if ( jsonInfo.contains("Meshes") )
         tabInfo->add( "Meshes", super_type::super_model_meshes_type::tabulateInformations( jsonInfo.at("Meshes"), tabInfoProp ) );
+
+    if ( jsonInfo.contains("Boundary Conditions") )
+        tabInfo->add( "Boundary Conditions", boundary_conditions_type::tabulateInformations( jsonInfo.at("Boundary Conditions"), tabInfoProp ) );
+
+    //tabInfoSections.push_back( std::make_pair( "Boundary conditions",  tabulate::Table{} ) );
+
 
     if ( jsonInfo.contains("Function Spaces") )
     {
