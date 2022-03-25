@@ -149,7 +149,7 @@ TestDistanceToRange<Dim, Order>::run()
     auto distToBoundaryNarrowBandStride = distanceToRange( 
             _space=Vh, _range=boundaryfaces( mesh ), 
             _max_distance=3.*mesh->hAverage(),
-            _stride=2.*mesh->hAverage()
+            _fm_stride=2.*mesh->hAverage()
             );
     exp->add( "distToBoundaryNarrowBandStride", distToBoundaryNarrowBandStride );
 
