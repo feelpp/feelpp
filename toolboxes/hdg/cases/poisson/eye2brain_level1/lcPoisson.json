@@ -12,21 +12,24 @@
     },
     "InitialConditions":
     {
-        "potential":
+        "poisson":
         {
-            "Expression":
+            "potential":
             {
-                "myic1":
+                "Expression":
                 {
-                    "markers":"Lamina",
-					"expr":"0.25"
+                    "myic1":
+                    {
+                        "markers":"Lamina",
+					    "expr":"0.25"
+                    }
                 }
             }
         }
     },
     "BoundaryConditions":
     {
-        "potential":
+        "poisson":
         {
             "Dirichlet":
             {
@@ -56,10 +59,7 @@
                 {
                      "expr":"0.0"
                 }
-            }
-        },
-        "flux":
-        {
+            },
             "Integral":
             {
                 "Lateral":

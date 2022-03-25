@@ -27,22 +27,25 @@
     },
     "InitialConditions":
     {
-        "potential":
+        "poisson":
         {
-            "Expression":
+            "potential":
             {
-                "myic1":
+                "Expression":
                 {
-                    "markers":"omega",
-                    "expr": "10"
-                    // "expr":"a+b*x*t:x:y:z:a:b:t"
+                    "myic1":
+                    {
+                        "markers":"omega",
+                        "expr": "10"
+                        // "expr":"a+b*x*t:x:y:z:a:b:t"
+                    }
                 }
             }
         }
     },
     "BoundaryConditions":
     {
-        "flux":
+        "poisson":
         {
             "Integral":
             {
@@ -51,10 +54,7 @@
                     "expr":"-0.5*t:t"
                     // "expr":"-k*b*t:k:b:t"
                 }
-            }
-        },
-        "potential":
-        {
+            },
             "Dirichlet":
             {
                 "bottom":

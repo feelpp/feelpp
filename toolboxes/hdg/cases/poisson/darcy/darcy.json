@@ -23,7 +23,7 @@
     },
     "BoundaryConditions":
     {
-        "flux":
+        "poisson":
         {
             "Neumann":
             {
@@ -39,10 +39,7 @@
                 {
                     "expr":"{0,0,0}"
                 }
-            }
-        },
-        "potential":
-        {
+            },
             "Dirichlet":
             {
                 "outer_ZHcircle":
