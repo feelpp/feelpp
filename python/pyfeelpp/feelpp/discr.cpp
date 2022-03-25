@@ -178,6 +178,7 @@ void defDiscr(py::module &m, std::string const& suffix = "")
     m.def( "normL2", static_cast<double (*)( elements_reference_wrapper_t<mesh_ptr_t> const&,element_t const&)>( &f_norml2<elements_reference_wrapper_t<mesh_ptr_t> const&,element_t const&> ), "compute L2 norm of function over a range of elements", py::arg("range"), py::arg("expr") );
     m.def( "normH1", static_cast<double (*)( elements_reference_wrapper_t<mesh_ptr_t> const&,element_t const&)>( &f_normh1<elements_reference_wrapper_t<mesh_ptr_t> const&,element_t const&> ), "compute H1 norm of function over a range of elements", py::arg("range"), py::arg("expr") );
     m.def( "mean", static_cast<eigen_v_t (*)( elements_reference_wrapper_t<mesh_ptr_t> const&,element_t const&)>( &f_mean<elements_reference_wrapper_t<mesh_ptr_t> const&,element_t const&> ), "compute mean of function over a range of elements", py::arg("range"), py::arg("expr") );
+    m.def( "mean", static_cast<eigen_v_t ( * )( faces_reference_wrapper_t<mesh_ptr_t> const&, element_t const& )>( &f_mean<faces_reference_wrapper_t<mesh_ptr_t> const&, element_t const&> ), "compute mean of function over a range of facets", py::arg( "range" ), py::arg( "expr" ) );
     m.def( "minmax", static_cast<std::tuple<double,double,eigen_v2_t> (*)( elements_reference_wrapper_t<mesh_ptr_t> const&,element_t const&)>( &f_minmax<elements_reference_wrapper_t<mesh_ptr_t> const&,element_t const&> ), "compute min max argmin argmax of a function over a range of elements", py::arg("range"), py::arg("expr") );
 
 }

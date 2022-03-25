@@ -49,7 +49,7 @@ int runSimulation(std::shared_ptr<FeelModels::coefficient_form_PDEs_t<ConvexType
     using deim_function_type = typename rb_model_type::deim_function_type;
     using mdeim_function_type = typename rb_model_type::mdeim_function_type;
 
-    rb_model_ptrtype model = std::make_shared<rb_model_type>();
+    rb_model_ptrtype model = std::make_shared<rb_model_type>(soption("toolboxmor.name"));
     auto cfpde = cfpdes->coefficientFormPDE( std::get<1>(cfpdes->pdes()[0])->equationName(), hana::type_c<BasisType> );
     model->setFunctionSpaces(cfpde->spaceUnknown());
     auto rhs = cfpdes->algebraicFactory()->rhs()->clone();
@@ -82,17 +82,17 @@ int runSimulation(std::shared_ptr<FeelModels::coefficient_form_PDEs_t<ConvexType
     deimToolbox->setMesh(model->getDEIMReducedMesh());
     deimToolbox->init();
     deimToolbox->printAndSaveInfo();
+    auto rhsDeim = deimToolbox->algebraicFactory()->rhs()->clone();
+    auto matDeim = deimToolbox->algebraicFactory()->matrix()->clone();
     deim_function_type assembleOnlineDEIM =
-        [deimToolbox](parameter_type const& mu)
+        [&deimToolbox,&rhsDeim,&matDeim](parameter_type const& mu)
             {
                 for( int i = 0; i < mu.size(); ++i )
                     deimToolbox->addParameterInModelProperties(mu.parameterName(i), mu(i));
                 deimToolbox->updateParameterValues();
-                auto rhs = deimToolbox->algebraicFactory()->rhs()->clone();
-                rhs->zero();
-                auto matTMP = deimToolbox->algebraicFactory()->matrix()->clone();
-                deimToolbox->algebraicFactory()->applyAssemblyLinear( deimToolbox->algebraicBlockVectorSolution()->vectorMonolithic(), matTMP, rhs, {"ignore-assembly.lhs"} );
-                return rhs;
+                rhsDeim->zero();
+                deimToolbox->algebraicFactory()->applyAssemblyLinear( deimToolbox->algebraicBlockVectorSolution()->vectorMonolithic(), matDeim, rhsDeim, {"ignore-assembly.lhs"} );
+                return rhsDeim;
             };
     model->setOnlineAssembleDEIM(assembleOnlineDEIM);
     // model->setOnlineAssembleDEIM(assembleDEIM);
@@ -101,17 +101,17 @@ int runSimulation(std::shared_ptr<FeelModels::coefficient_form_PDEs_t<ConvexType
     mdeimToolbox->setMesh(model->getMDEIMReducedMesh());
     mdeimToolbox->init();
     mdeimToolbox->printAndSaveInfo();
+    auto rhsMdeim = mdeimToolbox->algebraicFactory()->rhs()->clone();
+    auto matMdeim = mdeimToolbox->algebraicFactory()->matrix()->clone();
     mdeim_function_type assembleOnlineMDEIM =
-        [mdeimToolbox](parameter_type const& mu)
+        [&mdeimToolbox,&rhsMdeim,&matMdeim](parameter_type const& mu)
             {
                 for( int i = 0; i < mu.size(); ++i )
                     mdeimToolbox->addParameterInModelProperties(mu.parameterName(i), mu(i));
                 mdeimToolbox->updateParameterValues();
-                auto mat = mdeimToolbox->algebraicFactory()->matrix()->clone();
-                mat->zero();
-                auto rhsTMP = mdeimToolbox->algebraicFactory()->rhs()->clone();
-                mdeimToolbox->algebraicFactory()->applyAssemblyLinear( mdeimToolbox->algebraicBlockVectorSolution()->vectorMonolithic(), mat, rhsTMP, {"ignore-assembly.rhs"} );
-                return mat;
+                matMdeim->zero();
+                mdeimToolbox->algebraicFactory()->applyAssemblyLinear( mdeimToolbox->algebraicBlockVectorSolution()->vectorMonolithic(), matMdeim, rhsMdeim, {"ignore-assembly.rhs"} );
+                return matMdeim;
             };
     model->setOnlineAssembleMDEIM(assembleOnlineMDEIM);
     // model->setOnlineAssembleMDEIM(assembleMDEIM);
@@ -213,6 +213,7 @@ int main( int argc, char** argv)
         po::options_description opt("options");
         opt.add_options()
             ("case.dimension", Feel::po::value<int>()->default_value( 3 ), "dimension")
+            ( "toolboxmor.name", po::value<std::string>()->default_value( "toolboxmor" ), "Name of the db directory" )
             ( "toolboxmor.sampling-size", po::value<int>()->default_value(10), "size of the sampling" )
             ;
         Environment env( _argc=argc, _argv=argv,
