@@ -135,6 +135,39 @@ public:
         std::set<std::string> M_markers;
     };
 
+    class CouplingODEs
+    {
+    public:
+        CouplingODEs( std::string const& name ) : M_name( name ) {}
+        CouplingODEs( CouplingODEs const& ) = default;
+        CouplingODEs( CouplingODEs && ) = default;
+
+        //! setup bc from json
+        void setup( ModelBase const& mparent, nl::json const& jarg, ModelIndexes const& indexes );
+
+        //! return markers
+        std::set<std::string> const& markers() const { return M_markers; }
+
+        std::string const& circuit() const { return M_circuit; }
+        std::string const& capacitor() const { return M_capacitor; }
+        std::string const& resistor() const { return M_resistor; }
+        std::string const& buffer() const { return M_buffer; }
+
+        //! update informations
+        virtual void updateInformationObject( nl::json & p ) const;
+        //! return tabulate information from json info
+        static tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp );
+
+    protected:
+        std::string M_name;
+        std::set<std::string> M_markers;
+
+        std::string M_circuit;
+        std::string M_capacitor;
+        std::string M_resistor;
+        std::string M_buffer;
+    };
+
 
     HDGMixedPoissonBoundaryConditions( std::shared_ptr<ModelBase> const& tbParent ) : super_type( tbParent ) {}
     HDGMixedPoissonBoundaryConditions( HDGMixedPoissonBoundaryConditions const& ) = default;
@@ -151,6 +184,8 @@ public:
 
     //! return Integral boundary conditions
     std::map<std::string,std::shared_ptr<Integral>> const& integral() const { return M_integral; }
+
+    std::map<std::string,std::shared_ptr<CouplingODEs>> const& couplingODEs() const { return M_couplingODEs; }
 
     //! return true if a bc is type of dof eliminitation
     bool hasTypeDofElimination() const { return !M_dirichlet.empty(); }
@@ -186,7 +221,7 @@ private:
     std::map<std::string,std::shared_ptr<Neumann>> M_neumann;
     std::map<std::string,std::shared_ptr<Robin>> M_robin;
     std::map<std::string,std::shared_ptr<Integral>> M_integral;
-
+    std::map<std::string,std::shared_ptr<CouplingODEs>> M_couplingODEs;
 }; // HDGMixedPoissonBoundaryConditions
 
 } // namespace FeelModels

@@ -199,6 +199,7 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
     M_pp = std::make_shared<element_potential_type>(M_Wh, M_physicMap["potentialSymbol"]);
     M_ppp = std::make_shared<element_postpotential_type>(M_Whp, "post"+M_physicMap["potentialSymbol"]);
 
+#if 0
     auto ibcMarkers = std::accumulate(M_boundaryConditions->integral().begin(),
                                       M_boundaryConditions->integral().end(),
                                       std::set<std::string>(),
@@ -206,6 +207,13 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
                                           prev.insert(pair.second->markers().begin(), pair.second->markers().end());
                                           return prev;
                                       });
+#else
+    std::set<std::string> ibcMarkers;
+    for ( auto const& [bcName,bcData] : M_boundaryConditions->integral() )
+        ibcMarkers.insert( bcData->markers().begin(),bcData->markers().end() );
+    for ( auto const& [bcName,bcData] : M_boundaryConditions->couplingODEs() )
+        ibcMarkers.insert( bcData->markers().begin(),bcData->markers().end() );
+#endif
     std::set<int> ibcMeshMarkers;
     std::for_each(ibcMarkers.begin(), ibcMarkers.end(),
                   [this,&ibcMeshMarkers](auto const& x) {
@@ -214,7 +222,7 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
     auto complement_integral_faces = complement(faces(support(M_Wh)),
                                                 [ibcMeshMarkers]( auto const& ewrap ) {
                                                     auto const& e = unwrap_ref( ewrap );
-                                                    return ( e.hasMarker() && ibcMeshMarkers.count(e.marker().value()) );
+                                                    return ( e.hasMarker() && ibcMeshMarkers.count(e.marker().value()) ); // WARNING now we can have multiple marker values by entity
                                                 });
     M_gammaMinusIntegral = complement(boundaryfaces(support(M_Wh)),
                                       [ibcMeshMarkers]( auto const& ewrap ) {

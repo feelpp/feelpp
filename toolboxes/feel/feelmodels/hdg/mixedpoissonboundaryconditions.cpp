@@ -145,6 +145,60 @@ HDGMixedPoissonBoundaryConditions<Dim,EquationRank>::Integral::tabulateInformati
     return TabulateInformations::New( tabInfo, tabInfoProp );
 }
 
+template <uint16_type Dim,uint8_type EquationRank>
+void
+HDGMixedPoissonBoundaryConditions<Dim,EquationRank>::CouplingODEs::setup( ModelBase const& mparent, nl::json const& jarg, ModelIndexes const& indexes )
+{
+     if ( jarg.contains( "markers" ) )
+     {
+         ModelMarkers markers;
+         markers.setup( jarg.at("markers"), indexes );
+         M_markers = markers;
+     }
+     else
+         M_markers = { M_name };
+
+
+      if ( jarg.contains( "circuit" ) )
+          M_circuit = jarg.at( "circuit" ).template get<std::string>();
+      if ( jarg.contains( "capacitor" ) )
+          M_capacitor = jarg.at( "capacitor" ).template get<std::string>();
+      if ( jarg.contains( "resistor" ) )
+          M_resistor = jarg.at( "resistor" ).template get<std::string>();
+      if ( jarg.contains( "buffer" ) )
+          M_buffer = jarg.at( "buffer" ).template get<std::string>();
+}
+
+template <uint16_type Dim,uint8_type EquationRank>
+void
+HDGMixedPoissonBoundaryConditions<Dim,EquationRank>::CouplingODEs::updateInformationObject( nl::json & p ) const
+{
+    p["markers"] = M_markers;
+    p["circuit"] = M_circuit;
+    p["capacitor"] = M_capacitor;
+    p["resistor"] = M_resistor;
+    p["buffer"] = M_buffer;
+}
+
+template <uint16_type Dim,uint8_type EquationRank>
+tabulate_informations_ptr_t
+HDGMixedPoissonBoundaryConditions<Dim,EquationRank>::CouplingODEs::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp )
+{
+    Feel::Table tabInfo;
+    TabulateInformationTools::FromJSON::addKeyToValues( tabInfo, jsonInfo, tabInfoProp, { /*"name","type",*/"circuit","capacitor","resistor","buffer" } );
+    tabInfo.format()
+        .setShowAllBorders( false )
+        .setColumnSeparator(":")
+        .setHasRowSeparator( false );
+    if ( jsonInfo.contains("markers") )
+    {
+        Feel::Table tabInfoMarkers = TabulateInformationTools::FromJSON::createTableFromArray( jsonInfo.at("markers") , true );
+        if ( tabInfoMarkers.nRow() > 0 )
+            tabInfo.add_row( { "markers", tabInfoMarkers } );
+    }
+    return TabulateInformations::New( tabInfo, tabInfoProp );
+}
+
 
 template <uint16_type Dim,uint8_type EquationRank>
 void
@@ -204,6 +258,20 @@ HDGMixedPoissonBoundaryConditions<Dim,EquationRank>::setup( nl::json const& jarg
             }
         }
     }
+    for ( std::string const& bcKeyword : { "CouplingODEs" } )
+    {
+        if ( jarg.contains( bcKeyword ) )
+        {
+            auto const& j_bc = jarg.at( bcKeyword );
+            for ( auto const& [j_bckey,j_bcval] : j_bc.items() )
+            {
+                auto bc = std::make_shared<CouplingODEs>( j_bckey );
+                bc->setup( *tbParent,j_bcval,indexes );
+                M_couplingODEs.emplace( j_bckey, std::move( bc ) );
+            }
+        }
+    }
+
 }
 
 template <uint16_type Dim,uint8_type EquationRank>
@@ -248,6 +316,12 @@ HDGMixedPoissonBoundaryConditions<Dim,EquationRank>::updateInformationObject( nl
         for ( auto const& [bcName,bcData] : M_integral )
             bcData->updateInformationObject( pBC[bcName] );
     }
+    if ( !M_couplingODEs.empty() )
+    {
+        nl::json & pBC = p["CouplingODEs"];
+        for ( auto const& [bcName,bcData] : M_couplingODEs )
+            bcData->updateInformationObject( pBC[bcName] );
+    }
 }
 
 template <uint16_type Dim,uint8_type EquationRank>
@@ -283,6 +357,13 @@ HDGMixedPoissonBoundaryConditions<Dim,EquationRank>::tabulateInformations( nl::j
         for ( auto const& [j_bckey,j_bcval]: jsonInfo.at( "Integral" ).items() )
             tabInfoIntegral->add( j_bckey, Integral::tabulateInformations( j_bcval, tabInfoProp ) );
         tabInfo->add( "Integral", tabInfoIntegral );
+    }
+    if ( jsonInfo.contains( "CouplingODEs" ) )
+    {
+        auto tabInfoCouplingODEs = TabulateInformationsSections::New( tabInfoProp );
+        for ( auto const& [j_bckey,j_bcval]: jsonInfo.at( "CouplingODEs" ).items() )
+            tabInfoCouplingODEs->add( j_bckey, CouplingODEs::tabulateInformations( j_bcval, tabInfoProp ) );
+        tabInfo->add( "CouplingODEs", tabInfoCouplingODEs );
     }
     return tabInfo;
 }
