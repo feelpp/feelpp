@@ -136,8 +136,22 @@ TestDistanceToRange<Dim, Order>::run()
     exp->addRegions();
 
     // Distance to boundary
-    auto distToBoundary = distanceToRange( Vh, boundaryfaces( mesh ) );
+    auto distToBoundary = distanceToRange( _space=Vh, _range=boundaryfaces( mesh ) );
     exp->add( "distToBoundary", distToBoundary );
+
+    // Narrow-band distance to boundary 
+    auto distToBoundaryNarrowBand = distanceToRange( 
+            _space=Vh, _range=boundaryfaces( mesh ), 
+            _max_distance=3.*mesh->hAverage() );
+    exp->add( "distToBoundaryNarrowBand", distToBoundaryNarrowBand );
+
+    // Distance to boundary with narrow-band and stride
+    auto distToBoundaryNarrowBandStride = distanceToRange( 
+            _space=Vh, _range=boundaryfaces( mesh ), 
+            _max_distance=3.*mesh->hAverage(),
+            _stride=2.*mesh->hAverage()
+            );
+    exp->add( "distToBoundaryNarrowBandStride", distToBoundaryNarrowBandStride );
 
     // Export
     exp->save();
