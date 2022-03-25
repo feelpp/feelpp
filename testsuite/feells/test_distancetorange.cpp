@@ -106,14 +106,14 @@ TestDistanceToRange<Dim, Order>::setMesh( std::string const& filename )
         if constexpr ( Dim == 2 )
         {
             if ( filename.empty() )
-                return unitSquare();
+                return unitSquare(0.1);
             else
                 return loadMesh( _mesh = new Mesh<Simplex<2>>( "mesh" ), _filename = filename );
         }
         else if constexpr ( Dim == 3 )
         {
             if ( filename.empty() )
-                return unitCube();
+                return unitCube(0.07);
             else
                 return loadMesh( _mesh = new Mesh<Simplex<3, 1>>( "mesh" ), _filename = filename );
         }
