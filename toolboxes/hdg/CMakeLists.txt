@@ -78,7 +78,10 @@ if ( FEELPP_HAS_FMI4CPP )
      )
 
   message(STATUS "[toolbox] add tests feelpp_toolbox_hdg_coupledpoisson-linear")
-  add_test( NAME feelpp_toolbox_hdg_coupledpoisson-linear-om COMMAND feelpp_toolbox_hdg_coupledpoisson --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/coupledpoisson/1-linear/linear.cfg --ts.time-final 0.25 --hdg.poisson.json-editions BoundaryConditions.flux.Coupling.buffer.circuit:${CMAKE_CURRENT_BINARY_DIR}/cases/coupledpoisson/1-linear/test3d0d_linear/test3d0d_linear.fmu)
+  add_test( NAME feelpp_toolbox_hdg_coupledpoisson-linear-om COMMAND feelpp_toolbox_hdg_coupledpoisson --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/coupledpoisson/1-linear/linear.cfg
+        --ts.time-final 0.25
+        --hdg.poisson.json.patch "{ \"op\": \"replace\", \"path\": \"/BoundaryConditions/poisson/CouplingODEs/buffer/circuit\", \"value\": \"/nvme0/chabannes/Feelpp/work_toolboxes_boundaryconditions/feelpp.build/toolboxes/hdg/cases/coupledpoisson/1-linear/test3d0d_linear/test3d0d_linear.fmu\" }" )
+
   # add_test( NAME feelpp_toolbox_hdg_coupledpoisson-linear-dy COMMAND feelpp_toolbox_hdg_coupledpoisson --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/coupledpoisson/1-linear/linear.cfg --ts.time-final 0.25 --hdg.poisson.json-editions BoundaryConditions.flux.Coupling.buffer.circuit:${CMAKE_CURRENT_SOURCE_DIR}/cases/coupledpoisson/1-linear/test3d0d.fmu)
 endif()
 

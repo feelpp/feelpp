@@ -59,7 +59,7 @@
     },
     "BoundaryConditions":
     {
-        "current-density":
+        "electric":
         {
             "Integral":
             {
@@ -67,10 +67,7 @@
                 {
                     "expr":"intensity:intensity"
                 }
-            }
-        },
-        "electric-potential":
-        {
+            },
             "Dirichlet":
             {
                 // "V0":
@@ -102,7 +99,7 @@
                 }
             }
         },
-        "temperature":
+        "heat":
         {
             "Robin":
             {
