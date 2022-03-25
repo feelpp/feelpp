@@ -1075,7 +1075,7 @@ macro( genLibHdg )
     set(HDG_CODEGEN_SOURCES
       ${HDG_LIB_DIR}/mixedpoisson_inst.cpp
       ${HDG_LIB_DIR}/mixedpoissonassemblylinear_inst.cpp )
-    set(HDG_LIB_DEPENDS feelpp_modelmesh feelpp_modelcore )
+    set(HDG_LIB_DEPENDS feelpp_modelmesh feelpp_modelcore feelpp_toolbox_hdgbase )
     # generate the lib target
     genLibBase(
       LIB_NAME ${HDG_LIB_NAME}
