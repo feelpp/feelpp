@@ -435,10 +435,10 @@ DistanceToRange< FunctionSpaceType >::dofsNeighbouringFaces( range_faces_type co
 
 namespace na::distancetorange {
     using max_distance = NA::named_argument_t<struct max_distance_tag>;
-    using stride = NA::named_argument_t<struct stride_tag>;
+    using fm_stride = NA::named_argument_t<struct fm_stride_tag>;
 }
 inline constexpr auto& _max_distance = NA::identifier<na::distancetorange::max_distance>;
-inline constexpr auto& _stride = NA::identifier<na::distancetorange::stride>;
+inline constexpr auto& _fm_stride = NA::identifier<na::distancetorange::fm_stride>;
 
 template< typename ... Args >
 auto distanceToRange( Args && ... nargs )
@@ -447,10 +447,10 @@ auto distanceToRange( Args && ... nargs )
     auto && space = args.get( _space );
     auto && range = args.get( _range );
     double maxDistance = args.get_else( _max_distance, -1. );
-    double stride = args.get_else( _stride, -1. );
+    double fastMarchingStride = args.get_else( _fm_stride, -1. );
     DistanceToRange distToRange( space );
     distToRange.setMaxDistance( maxDistance );
-    distToRange.setFastMarchingStride( stride );
+    distToRange.setFastMarchingStride( fastMarchingStride );
     return distToRange.unsignedDistance( range );
 }
 
