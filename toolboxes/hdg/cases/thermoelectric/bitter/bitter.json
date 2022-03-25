@@ -2,6 +2,10 @@
     "Name": "HDG-Electro-Thermo ",
     "ShortName":"ET",
     "Model":"hdg",
+    "Models":
+    {
+        "equations":"hdg"
+    },
     "Materials":
     {
         "omega":
@@ -14,7 +18,7 @@
     },
     "BoundaryConditions":
     {
-        "current-density":
+        "electric":
         {
             "Integral":
             {
@@ -22,10 +26,7 @@
                 {
                     "expr":"3333"
                 }
-            }
-        },
-        "electric-potential":
-        {
+            },
             "Dirichlet":
             {
                 // "V1":
@@ -65,7 +66,7 @@
                 }
             }
         },
-        "temperature":
+        "heat":
         {
             "Robin":
             {
