@@ -275,14 +275,14 @@ ModelMeasuresStorageValues::restart( std::string const& directory, int restartIn
 {
     std::string filename = this->filename_CSV( directory );
 
-    std::unique_ptr<std::ifstream> ifile;
-    std::unique_ptr<std::ofstream> ofile;
+    std::unique_ptr<fs::ifstream> ifile;
+    std::unique_ptr<fs::ofstream> ofile;
 
     fs::path pfilename = fs::path(filename);
 
     if ( isLastIndex )
     {
-        ifile = std::make_unique<std::ifstream>( pfilename );
+        ifile = std::make_unique<fs::ifstream>( pfilename );
     }
     else
     {
@@ -290,8 +290,8 @@ ModelMeasuresStorageValues::restart( std::string const& directory, int restartIn
         pfilename_tmp.replace_extension( ".tmp.csv" );
         fs::rename( pfilename, pfilename_tmp );
 
-        ifile = std::make_unique<std::ifstream>( pfilename_tmp );
-        ofile = std::make_unique<std::ofstream>( pfilename, std::ios::trunc );
+        ifile = std::make_unique<fs::ifstream>( pfilename_tmp );
+        ofile = std::make_unique<fs::ofstream>( pfilename, std::ios::trunc );
     }
 
     std::string lineRead;

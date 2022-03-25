@@ -606,26 +606,25 @@ ExporterEnsight<MeshType,N>::saveFields( typename timeset_type::step_ptrtype __s
             }
         else
         {
-            typename mesh_type::parts_const_iterator_type p_it = __step->mesh()->beginParts();
-            typename mesh_type::parts_const_iterator_type p_en = __step->mesh()->endParts();
-            for ( ; p_it != p_en; ++p_it )
+            for ( auto const& [fragmentId,fragmentData] : fragmentationMarkedElements( __step->mesh() ) )
             {
-                sprintf( buffer, "part %d",p_it->first );
+                auto const& [range,mIds,fragmentName] = fragmentData;
+                sprintf( buffer, "part %d",fragmentId );
                 __out.write( ( char * ) & buffer, sizeof( buffer ) );
                 DVLOG(2) << "part " << buffer << "\n";
                 strcpy( buffer, this->elementType().c_str() );
                 __out.write( ( char * ) & buffer, sizeof( buffer ) );
                 DVLOG(2) << "element type " << buffer << "\n";
 
-                auto itFindMapElementArrayToDofId = M_mapElementArrayToDofId.find(p_it->first);
+                auto itFindMapElementArrayToDofId = M_mapElementArrayToDofId.find(fragmentId);
                 if ( itFindMapElementArrayToDofId == M_mapElementArrayToDofId.end() )
                 {
-                    auto rangeMarkedElements = __step->mesh()->elementsWithMarker( p_it->first,__step->mesh()->worldComm().localRank() );
-                    auto elt_m_it = std::get<0>( rangeMarkedElements );
-                    auto const elt_m_en = std::get<1>( rangeMarkedElements );
+                    auto rangeMarkedElements = range;
+                    auto elt_m_it = boost::get<1>( rangeMarkedElements );
+                    auto const elt_m_en = boost::get<2>( rangeMarkedElements );
                     index_type nValuesPerComponent = std::distance( elt_m_it, elt_m_en );
                     m_field = Eigen::VectorXf::Zero( nComponents*nValuesPerComponent );
-                    auto & mapArrayToDofId =  M_mapElementArrayToDofId[p_it->first];
+                    auto & mapArrayToDofId =  M_mapElementArrayToDofId[fragmentId];
                     mapArrayToDofId.resize( nValuesPerComponent,invalid_size_type_value );
 
                     for ( index_type e=0; elt_m_it != elt_m_en; ++elt_m_it,++e )
@@ -715,24 +714,24 @@ ExporterEnsight<MeshType,N>::visit( mesh_type* __mesh )
     __out.write( ( char * ) & mp.ids.front(), mp.ids.size() * sizeof( int ) );
     __out.write( ( char * ) mp.coords.data(), mp.coords.size() * sizeof( float ) );
 
-    typename mesh_type::parts_const_iterator_type p_it = __mesh->beginParts();
-    typename mesh_type::parts_const_iterator_type p_en = __mesh->endParts();
-
-    for ( ; p_it != p_en; ++p_it )
+    for ( auto const& [fragmentId,fragmentData] : fragmentationMarkedElements( __mesh ) )
     {
-        sprintf( buffer, "part %d",p_it->first );
+        auto const& [range,mIds,fragmentName] = fragmentData;
+
+        sprintf( buffer, "part %d",fragmentId );
         //    strcpy( buffer, "part 1" );
 
         __out.write( ( char * ) & buffer, sizeof( buffer ) );
-        sprintf( buffer, "Marker %d (%s)", p_it->first, __mesh->markerName(p_it->first).substr(0, 32).c_str());
+        sprintf( buffer, "Marker %d (%s)", fragmentId, fragmentName.substr(0, 32).c_str());
+
         __out.write( ( char * ) & buffer, sizeof( buffer ) );
 
         strcpy( buffer, this->elementType().c_str() );
         __out.write( ( char * ) & buffer, sizeof( buffer ) );
 
-        auto rangeMarkedElements = __mesh->elementsWithMarker( p_it->first,__mesh->worldComm().localRank() );
-        auto elt_it = std::get<0>( rangeMarkedElements );
-        auto const elt_en = std::get<1>( rangeMarkedElements );
+        auto rangeMarkedElements = range;
+        auto elt_it = boost::get<1>( rangeMarkedElements );
+        auto const elt_en = boost::get<2>( rangeMarkedElements );
 
         //	int __ne = __mesh->numElements();
         //int __ne = p_it->second;
@@ -754,7 +753,7 @@ ExporterEnsight<MeshType,N>::visit( mesh_type* __mesh )
 
         std::vector<int> eids( __mesh->numLocalVertices()*__ne );
         size_type e= 0;
-        elt_it = std::get<2>( rangeMarkedElements )->begin();
+        elt_it = boost::get<3>( rangeMarkedElements )->begin();
         for ( ; elt_it != elt_en; ++elt_it, ++e )
         {
             auto const& elt = boost::unwrap_ref( *elt_it );
