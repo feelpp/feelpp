@@ -31,21 +31,24 @@
     },
     "InitialConditions":
     {
-        "potential":
+        "poisson":
         {
-            "Expression":
+            "potential":
             {
-                "OmegaG":
+                "Expression":
                 {
-                    "markers":["omegaG","omegaS","omegaB","omegaD",],
-                    "expr":"0.0"
+                    "OmegaG":
+                    {
+                        "markers":["omegaG","omegaS","omegaB","omegaD"],
+                        "expr":"0.0"
+                    }
                 }
             }
         }
     },
     "BoundaryConditions":
     {
-        "potential":
+        "poisson":
         {
             "Dirichlet":
 	    	{
@@ -80,10 +83,7 @@
         		{
                 	"expr":"0.0"  
                	}
-            }
-		},
-		"flux":
-		{
+            },
 	    	"Integral":
 	    	{
         		"Gate":
