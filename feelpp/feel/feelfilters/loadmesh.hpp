@@ -39,7 +39,7 @@
 #include <feel/feelfilters/domain.hpp>
 #endif
 #include <feel/feelfilters/importeracusimrawmesh.hpp>
-
+#include <feel/feelfilters/importersamcefmesh.hpp>
 
 
 namespace Feel {
@@ -278,6 +278,29 @@ loadMeshImpl( args_loadMesh_type<MeshType> && args )
 #endif
         return m;
     }
+
+
+    // Samcef Mesh (bacon script)
+    if ( mesh_name.extension() == ".dat"  )
+    {
+        if ( verbose )
+            cout << "[loadMesh] Loading mesh in format Samcef: " << fs::system_complete(mesh_name) << "\n";
+        LOG(INFO) << " Loading mesh in Samcef format " << fs::system_complete(mesh_name);
+        CHECK( mesh ) << "Invalid mesh pointer to load " << mesh_name;
+        _mesh_ptrtype m( mesh );
+        m->setWorldComm( worldcomm );
+        ImporterSamcefMesh<_mesh_type> i( mesh_name.string(), worldcomm );
+        i.visit( m.get() );
+        m->components().reset();
+        m->components().set( update );
+        m->updateForUse();
+#if defined(FEELPP_HAS_HDF5)
+        if ( savehdf5 )
+            m->saveHDF5( fs::path(filenameExpand).stem().string()+".json" );
+#endif
+        return m;
+    }
+
 #if defined( FEELPP_HAS_GMSH_H )
     mesh_name = soption(_name="gmsh.domain.shape");
 

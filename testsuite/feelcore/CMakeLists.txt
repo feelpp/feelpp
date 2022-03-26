@@ -2,12 +2,12 @@ set_directory_properties(PROPERTIES LABEL testcore )
 IF ( TBB_FOUND )
   SET( OTESTS tbb )
 ENDIF()
-foreach(TEST git traits singleton factory debug context simget ${OTESTS} env removecomments feelio boostmpi enums mongo hana)
+foreach(TEST json git traits singleton factory debug context simget ${OTESTS} env removecomments feelio boostmpi enums mongo hana)
 
   feelpp_add_test( ${TEST} )
 
 endforeach()
-
+feelpp_add_test(taskflow LINK_LIBRARIES feelpp_taskflow)
 feelpp_add_test( range )
 
 feelpp_get_compile_definition(Feelpp::feelpp FEELPP_HAS_PETSC)

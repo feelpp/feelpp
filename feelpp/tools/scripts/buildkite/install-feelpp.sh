@@ -27,6 +27,10 @@ if [ "${component}" = "feelpp" ] ; then
 #    tag=$(tag_from_os $TARGET $BRANCHTAG $FEELPP_VERSION)
     image="feelpp"
 fi
+if [ "${component}" = "feelpp-python" ] ; then
+#    tag=$(tag_from_os $TARGET $BRANCHTAG $FEELPP_VERSION)
+    image="feelpp-python"
+fi
 echo "--- Building ${image}:${tag}"
 
 
@@ -36,6 +40,8 @@ elif [ "${component}" = "toolboxes" -o "${component}" = "testsuite" ] ; then
     dockerfile_from "docker/${image}/Dockerfile.template" "ghcr.io/feelpp/feelpp:${tag}" > docker/${image}/dockerfile.tmp
 elif [ "${component}" = "mor" ] ; then
     dockerfile_from "docker/${image}/Dockerfile.template" "ghcr.io/feelpp/feelpp-toolboxes:${tag}" > docker/${image}/dockerfile.tmp
+elif [ "${component}" = "feelpp-python" -o "${component}" = "python" ] ; then
+    dockerfile_from "docker/${image}/Dockerfile.template" "ghcr.io/feelpp/feelpp-mor:${tag}" > docker/${image}/dockerfile.tmp    
 else
     dockerfile_from "docker/${image}/Dockerfile.template" "ghcr.io/feelpp/feelpp-toolboxes:${tag}" > docker/${image}/dockerfile.tmp
 fi
@@ -46,6 +52,8 @@ elif [ "${component}" = "toolboxes" ] ; then
     CTEST_FLAGS="-R feelpp_toolbox_ -T test --no-compress-output --output-on-failure"
 elif [ "${component}" = "testsuite" ] ; then
     CTEST_FLAGS="-R feelpp_test_ -T test --no-compress-output --output-on-failure"
+elif [ "${component}" = "feelpp-python" -o "${component}" = "python" ] ; then
+    CTEST_FLAGS="-R feelpp -T test --no-compress-output --output-on-failure"
 else
     CTEST_FLAGS="-T test --no-compress-output --output-on-failure"
 fi
