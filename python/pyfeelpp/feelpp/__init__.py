@@ -22,7 +22,7 @@ def download(data,worldComm):
 
 _meshes={
     'mesh(3,1,3)':Mesh_S3DG1R3,
-    #'mesh(3,2,3)':Mesh_3DG2R3,
+    'mesh(3,2,3)':Mesh_S3DG2R3,
     'mesh(2,1,3)':Mesh_S2DG1R3,
     #'mesh(2,2,3)':Mesh_2DG2R3,
     #'mesh(1,1,3)':Mesh_1DG1R3,
@@ -33,7 +33,7 @@ _meshes={
     'mesh(1,1,2)':Mesh_S1DG1R2,
     #'mesh(1,2,2)':Mesh_1DG2R2,
     'mesh(1,1,1)':Mesh_S1DG1R1,
-    #'mesh(1,2,1)':Mesh_1DG2R1
+    'mesh(1,2,1)':Mesh_S1DG2R1
 }
 
 def mesh( dim=2, geo=1, realdim=2, worldComm=None ):
@@ -74,30 +74,46 @@ def meshstructured( dim=2, geo=1, realdim=2, worldComm=None ):
 
 _spaces={
     # Pch
-    'Pch(1,1)':Pch_1D_P1,
-    'Pch(1,2)':Pch_1D_P2,
-    'Pch(1,3)':Pch_1D_P3,
+    'Pch(1,1,1)':Pch_1D_P1_G1,
+    'Pch(1,2,1)':Pch_1D_P2_G1,
+    'Pch(1,3,1)':Pch_1D_P3_G1,
+    # G2
+    'Pch(1,1,2)':Pch_1D_P1_G2,
+    'Pch(1,2,2)':Pch_1D_P2_G2,
+    'Pch(1,3,2)':Pch_1D_P3_G2,
 
-    'Pch(2,1)':Pch_2D_P1,
-    'Pch(2,2)':Pch_2D_P2,
-    'Pch(2,3)':Pch_2D_P3,
+    'Pch(2,1,1)':Pch_2D_P1_G1,
+    'Pch(2,2,1)':Pch_2D_P2_G1,
+    'Pch(2,3,1)':Pch_2D_P3_G1,
+    'Pch(2,1,2)':Pch_2D_P1_G2,
+    'Pch(2,2,2)':Pch_2D_P2_G2,
+    'Pch(2,3,2)':Pch_2D_P3_G2,
     
-    'Pch(3,1)':Pch_3D_P1,
-    'Pch(3,2)':Pch_3D_P2,
-    'Pch(3,3)':Pch_3D_P3,
-
+    'Pch(3,1,1)':Pch_3D_P1_G1,
+    'Pch(3,2,1)':Pch_3D_P2_G1,
+    'Pch(3,3,1)':Pch_3D_P3_G1,
+    'Pch(3,1,2)':Pch_3D_P1_G2,
+    'Pch(3,2,2)':Pch_3D_P2_G2,
+    'Pch(3,3,2)':Pch_3D_P3_G2,
     # Pchv
-    'Pchv(1,1)': Pchv_1D_P1,
-    'Pchv(1,2)': Pchv_1D_P2,
-    'Pchv(1,3)': Pchv_1D_P3,
-
-    'Pchv(2,1)': Pchv_2D_P1,
-    'Pchv(2,2)': Pchv_2D_P2,
-    'Pchv(2,3)': Pchv_2D_P3,
-
-    'Pchv(3,1)': Pchv_3D_P1,
-    'Pchv(3,2)': Pchv_3D_P2,
-    'Pchv(3,3)': Pchv_3D_P3,
+    'Pchv(1,1,1)': Pchv_1D_P1_G1,
+    'Pchv(1,2,1)': Pchv_1D_P2_G1,
+    'Pchv(1,3,1)': Pchv_1D_P3_G1,
+    'Pchv(2,1,1)': Pchv_2D_P1_G1,
+    'Pchv(2,2,1)': Pchv_2D_P2_G1,
+    'Pchv(2,3,1)': Pchv_2D_P3_G1,
+    'Pchv(3,1,1)': Pchv_3D_P1_G1,
+    'Pchv(3,2,1)': Pchv_3D_P2_G1,
+    'Pchv(3,3,1)': Pchv_3D_P3_G1,
+    'Pchv(1,1,2)': Pchv_1D_P1_G2,
+    'Pchv(1,2,2)': Pchv_1D_P2_G2,
+    'Pchv(1,3,2)': Pchv_1D_P3_G2,
+    'Pchv(2,1,2)': Pchv_2D_P1_G2,
+    'Pchv(2,2,2)': Pchv_2D_P2_G2,
+    'Pchv(2,3,2)': Pchv_2D_P3_G2,
+    'Pchv(3,1,2)': Pchv_3D_P1_G2,
+    'Pchv(3,2,2)': Pchv_3D_P2_G2,
+    'Pchv(3,3,2)': Pchv_3D_P3_G2,
 
     # Pdh
     #'Pdh(1,0)':Pdh_1D_P0,
@@ -105,15 +121,22 @@ _spaces={
     #'Pdh(1,2)':Pdh_1D_P2,
     #'Pdh(1,3)':Pdh_1D_P3,
 
-    'Pdh(2,0)':Pdh_2D_P0,
-    'Pdh(2,1)':Pdh_2D_P1,
-    'Pdh(2,2)':Pdh_2D_P2,
-    'Pdh(2,3)':Pdh_2D_P3,
-
-    'Pdh(3,0)':Pdh_3D_P0,
-    'Pdh(3,1)':Pdh_3D_P1,
-    'Pdh(3,2)':Pdh_3D_P2,
-    'Pdh(3,3)':Pdh_3D_P3,
+    'Pdh(2,0,1)':Pdh_2D_P0_G1,
+    'Pdh(2,1,1)':Pdh_2D_P1_G1,
+    'Pdh(2,2,1)':Pdh_2D_P2_G1,
+    'Pdh(2,3,1)':Pdh_2D_P3_G1,
+    'Pdh(3,0,1)':Pdh_3D_P0_G1,
+    'Pdh(3,1,1)':Pdh_3D_P1_G1,
+    'Pdh(3,2,1)':Pdh_3D_P2_G1,
+    'Pdh(3,3,1)':Pdh_3D_P3_G1,
+    'Pdh(2,0,2)':Pdh_2D_P0_G2,
+    'Pdh(2,1,2)':Pdh_2D_P1_G2,
+    'Pdh(2,2,2)':Pdh_2D_P2_G2,
+    'Pdh(2,3,2)':Pdh_2D_P3_G2,
+    'Pdh(3,0,2)':Pdh_3D_P0_G2,
+    'Pdh(3,1,2)':Pdh_3D_P1_G2,
+    'Pdh(3,2,2)':Pdh_3D_P2_G2,
+    'Pdh(3,3,2)':Pdh_3D_P3_G2
 }
 
 def functionSpace( mesh, space="Pch", order=1, worldscomm=None):
@@ -121,7 +144,7 @@ def functionSpace( mesh, space="Pch", order=1, worldscomm=None):
     """
     if worldscomm is None:
         worldscomm=Environment.worldsComm(1)
-    key=space+'('+str(mesh.dimension())+','+str(order)+')'
+    key="{}({},{},{})".format(space,mesh.dimension(),order,mesh.order())
     if key not in _spaces:
         raise RuntimeError('FunctionSpace '+key+' not existing in dictionary')
     return _spaces[key]( mesh=mesh, worldsComm=worldscomm )
