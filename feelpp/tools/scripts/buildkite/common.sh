@@ -6,7 +6,7 @@ FEELPP_DIR=${FEELPP_DIR:-/usr/local}
 if [ -d ${FEELPP_DIR}/share/feelpp/feel/cmake/modules/ ]; then 
     FEELPP_CMAKE_DIR=${FEELPP_DIR}/share/feelpp/feel/cmake/modules;
 else
-    FEELPP_CMAKE_DIR=feelpp/cmake/modules
+    FEELPP_CMAKE_DIR=. #feelpp/cmake/modules
 fi
 if [ -d ${FEELPP_DIR}/share/feelpp/scripts/ ]; then 
     FEELPP_SCRIPTS_DIR=${FEELPP_DIR}/share/feelpp/scripts;
