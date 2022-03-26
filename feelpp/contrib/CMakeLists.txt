@@ -638,6 +638,7 @@ endif()
 
 # ----------------------------------------------------------
 # A fast and simple to use logging library.
+set(FETCHCONTENT_SOURCE_DIR_SPDLOG ${CMAKE_CURRENT_SOURCE_DIR}/spdlog)
 FetchContent_Declare(   
     spdlog
     GIT_REPOSITORY https://github.com/gabime/spdlog.git
@@ -648,10 +649,11 @@ if(NOT spdlog_POPULATED)
     message(STATUS "------------------------------------------------------------")
     message(STATUS "Configuring SPDLOG")
     set(SPDLOG_FMT_EXTERNAL ON)
-    FetchContent_Populate(spdlog)
-    add_subdirectory(
-    ${spdlog_SOURCE_DIR}
-    ${spdlog_BINARY_DIR})
+    #FetchContent_Populate(spdlog)
+    FetchContent_MakeAvailable(spdlog)
+#    add_subdirectory(
+#    ${spdlog_SOURCE_DIR}
+#    ${spdlog_BINARY_DIR})
     target_link_libraries( feelpp_contrib INTERFACE spdlog::spdlog_header_only )
     install(TARGETS spdlog_header_only EXPORT feelpp-contrib-export-targets
       LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -667,7 +669,8 @@ if ( FEELPP_ENABLE_TASKFLOW )
   message(STATUS "Configuring TASKFLOW")
 #  set(FETCHCONTENT_SOURCE_DIR_TASKFLOW ${CMAKE_CURRENT_SOURCE_DIR}/taskflow)
   # patch includes fix for 18.04 compilation
-  FetchContent_Declare(taskflow GIT_REPOSITORY https://github.com/feelpp/taskflow.git )
+  set(FETCHCONTENT_SOURCE_DIR_TASKFLOW ${CMAKE_CURRENT_SOURCE_DIR}/taskflow)
+  FetchContent_Declare(taskflow GIT_REPOSITORY https://github.com/feelpp/taskflow.git GIT_TAG 31699d74dfb92d4d55fc0f3c87899c6ad8b51d80)
   set( BUILD_TASKFLOW_TESTS OFF )
   set(TF_CMAKE_DIR  "${CMAKE_INSTALL_DATADIR}/feel/cmake/modules")
   FetchContent_MakeAvailable(taskflow)
