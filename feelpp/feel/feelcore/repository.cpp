@@ -111,8 +111,6 @@ Repository::Config::Config()
             global_root = home / feelppdb;
         owner.name = findUser();
         to_json( jc, *this );
-        std::ofstream i( ( home / ".feelppconfig" ).string() );
-        i << jc.dump( 1 );
     }
     VLOG(2) << fmt::format( "config: {}", jc.dump(1) ) << std::endl;
 #if 0    
@@ -205,6 +203,13 @@ Repository::configure()
                 throw;
             }
         };
+        if ( auto home = findHome(); !fs::exists( home / ".feelppconfig" ) )
+        {
+            nl::json jc;
+            to_json(jc,config_);
+            std::ofstream i( ( home / ".feelppconfig" ).string() );
+            i << jc.dump( 1 );
+        }
         if ( !fs::exists( root_ ) )
         {
             create_dir(root_, "root repository");

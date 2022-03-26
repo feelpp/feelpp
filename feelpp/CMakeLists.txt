@@ -26,8 +26,6 @@ project(Feelpp)
 SET( CMAKE_MODULE_PATH  ${FEELPP_HOME_DIR}/feelpp/cmake/modules ${FEELPP_HOME_DIR}/feelpp/cmake/machines )
 
 include(feelpp.dirs)
-# set the Feel++ version
-include(feelpp.version)
 
 # Use of standard headers for GiNaC compiler (for supermuc this option should be OFF)
 option(USE_STANDARD_HEADERS_IN_GINAC_EXCOMPILER "Enable use of standard include headers in ginac-excompiler" ON)
@@ -192,6 +190,8 @@ if(NOT FEELPP_ENABLE_BUILD_STATIC)
 	set(CMAKE_C++_CREATE_SHARED_LIBRARY 1)
 endif()
 
+option(FEELPP_ENABLE_JSON_DIAGNOSTICS "enable extended json diagnostics" ON)
+
 # feel++ lib
 ADD_SUBDIRECTORY ( feel )
 
@@ -210,8 +210,7 @@ if ( FEELPP_HAS_QUICKSTART )
   add_custom_target(quickstart)
   add_subdirectory(quickstart)
 endif()
-include(feelpp.module.pyfeelpp)
-add_subdirectory(pyfeelpp)
+
 
 
 # The configuration File needs to be done at the very end otherwise we won't have the correct values for headers and libraries

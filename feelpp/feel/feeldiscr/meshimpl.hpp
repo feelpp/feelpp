@@ -338,6 +338,8 @@ void Mesh<Shape, T, Tag, IndexT>::updateForUse()
             }
         }
 
+        this->updateMeshFragmentation();
+
         this->updateNumGlobalElements<mesh_type>();
 
         if ( this->components().test( MESH_PROPAGATE_MARKERS ) )
