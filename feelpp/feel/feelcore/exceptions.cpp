@@ -23,84 +23,103 @@
 */
 #include <boost/core/demangle.hpp>
 #include <fmt/core.h>
+#include <fmt/color.h>
 #include <feel/feelcore/environment.hpp>
 
 namespace Feel
 {
-
+void
+printGitReport()
+{
+    if ( GitMetadata::populated() )
+    {
+        if ( GitMetadata::anyUncommittedChanges() )
+        {
+            std::cerr << fmt::format( "WARN: there were uncommitted changes at build-time." ) << std::endl;
+        }
+        const char* str = R"({:*^30}
+ - commit {} (HEAD)
+ - describe {}
+ - Author: {} <{}>
+ - Date: {}
+ - Subject: {}
+ - Body: {}
+{:*^30})";
+        std::cout << fmt::format( str, " Git Report ",
+                                  GitMetadata::commitSHA1(),
+                                  GitMetadata::describe(),
+                                  GitMetadata::authorName(), GitMetadata::authorEmail(),
+                                  GitMetadata::commitDate(),
+                                  GitMetadata::commitSubject(),
+                                  GitMetadata::commitBody(),
+                                  " End Git Report " )
+                  << std::endl;
+    }
+    else
+    {
+        LOG(INFO) << "WARN: failed to get the current git state. Is this a git repo?" << std::endl;
+    }
+}
+template <typename E>
+void
+print_and_trace( std::string const& s, E const& e )
+{
+    
+    const boost::stacktrace::stacktrace* st = boost::get_error_info<traced>( e );
+    if ( st )
+    {
+        fmt::print( "{:*^30}\n", " Stack Trace " );
+        std::cerr << *st << '\n';
+        fmt::print( "{:*^30}\n", " Stack Trace " );
+    }
+    printGitReport();
+    fmt::print( fmt::emphasis::bold | fg( fmt::color::red ), s );
+}
 void handleExceptions()
 {
+
     try
     {
         throw; // re-throw exception already in flight } 
     }
     catch( boost::bad_lexical_cast const& e )
     {
-        if ( Environment::isMasterRank() )
-            fmt::print( "[feel++.boost.bad_lexical_cast] {}, source type: {}, target type: {}", 
-                        e.what(), 
-                        boost::core::demangle(e.source_type().name()), 
-                        boost::core::demangle(e.target_type().name()) );
+        print_and_trace( fmt::format( "[feel++.boost.bad_lexical_cast] {}, source type: {}, target type: {}", 
+                                        e.what(), 
+                                        boost::core::demangle(e.source_type().name()), 
+                                        boost::core::demangle(e.target_type().name())), e );
     }
     catch(const boost::filesystem::filesystem_error& e)
     {
         if ( e.code() == boost::system::errc::permission_denied )
-            fmt::print( "[feel++.boost.filesystem.filesystem_error.permission_denied] {}, path1: {}, path2: {}\n", e.what(), e.path1().string(), e.path2().string() );
+            print_and_trace( fmt::format( "[feel++.boost.filesystem.filesystem_error.permission_denied] {}, path1: {}, path2: {}\n", e.what(), e.path1().string(), e.path2().string() ), e );
         else
-            fmt::print( "[feel++.boost.filesystem.filesystem_error] {}, path1: {}, path2: {}\n", e.what(), e.path1().string(), e.path2().string() );
+            print_and_trace( fmt::format( "[feel++.boost.filesystem.filesystem_error] {}, path1: {}, path2: {}\n", e.what(), e.path1().string(), e.path2().string() ), e );
     }
     catch (json::exception& e)
     {
-        fmt::print("[feel++.json.exception] {}\n",e.what());
+        print_and_trace(fmt::format("[feel++.json.exception] {}\n",e.what()),e);
     }
     catch ( std::invalid_argument const& e )
     {
-        fmt::print( "[feelpp.std.invalid_argument] {}\n",e.what());
+        print_and_trace( fmt::format( "[feelpp.std.invalid_argument] {}\n",e.what()), e );
     }
     catch (const std::runtime_error & e) 
     {
-        fmt::print( "[feel++.std.runtime_error] {}", e.what() );
+        print_and_trace( fmt::format( "[feel++.std.runtime_error] {}", e.what() ), e );
     }
     catch ( const boost::mpi::exception& e )
     {
-        fmt::print( "[feel++.boost.mpi.exception] {}, routine: {}, result_code: {}\n", e.what(), e.routine(), e.result_code() );
+        print_and_trace( fmt::format( "[feel++.boost.mpi.exception] {}, routine: {}, result_code: {}\n", e.what(), e.routine(), e.result_code() ), e );
     }
     catch ( const std::exception& e )
     {
-        fmt::print( "[feel++.std.exception] {}", e.what() );
+        print_and_trace( fmt::format( "[feel++.std.exception] {}", e.what() ), e );
     }
     catch(...)
     {
-        fmt::print( "[feel++.unknown.exception] {}" );
+        fmt::print( "[feel++.unknown.exception] caught unknown exception" );
     }
-    LOG(WARNING) << fmt::format("[feel++] report status\n");
-    if ( GitMetadata::populated() )
-    {
-        if ( GitMetadata::anyUncommittedChanges() )
-        {
-            std::cerr << fmt::format("WARN: there were uncommitted changes at build-time.") << std::endl;
-        }
-        const char* str = R"(commit {} (HEAD)
-                             describe {}
-                             Author: {} <{}>
-                             Date: {}
-                             Subject: {}
-                             Body: {}
-                            )";
-        std::cout << fmt::format( str,
-                        GitMetadata::commitSHA1(),
-                        GitMetadata::describe(),
-                        GitMetadata::authorName(),GitMetadata::authorEmail(),
-                        GitMetadata::commitDate(),
-                        GitMetadata::commitSubject(),
-                        GitMetadata::commitBody() ) << std::endl;
-    }
-    else
-    {
-        std::cerr << "WARN: failed to get the current git state. Is this a git repo?" << std::endl;
-    }
-    LOG(WARNING) << fmt::format("[feel++] abort all mpi processes...\n");
-    Environment::abort(EXIT_FAILURE);
 }    
 
 } // namespace Feel

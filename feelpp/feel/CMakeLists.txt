@@ -27,9 +27,20 @@ CONFIGURE_FILE(feelinfo.h.in feelinfo.h  @ONLY)
 # Define the two required variables before including
 # the source code for watching a git repository.
 set(PRE_CONFIGURE_FILE "feelcore/git.cpp.in")
-set(POST_CONFIGURE_FILE "${CMAKE_CURRENT_BINARY_DIR}/feelcore/git.cpp")
-include(GitWatcher)
-
+if ( GIT_EXECUTABLE )
+  set(POST_CONFIGURE_FILE "${CMAKE_CURRENT_BINARY_DIR}/feelcore/git.cpp")
+  include(GitWatcher)
+elseif( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/feelcore/git.cpp")
+  add_custom_target(check_git)
+  set(POST_CONFIGURE_FILE "${CMAKE_CURRENT_SOURCE_DIR}/feelcore/git.cpp")
+else()
+  set(GIT_RETRIEVED_STATE "false")
+  set(GIT_IS_DIRTY "false")
+  add_custom_target(check_git)
+  CONFIGURE_FILE(feelcore/git.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/feelcore/git.cpp @ONLY)
+  set(POST_CONFIGURE_FILE "${CMAKE_CURRENT_BINARY_DIR}/feelcore/git.cpp")
+endif()
+message(STATUS "[feelpp] post_configure_file: ${POST_CONFIGURE_FILE}")
 SET(DIRS core timing math alg mesh partition poly opt discr ts filters material vf pde ls fit models python fmi hwsys event)
 foreach(dir ${DIRS})
   add_subdirectory(feel${dir})
@@ -68,6 +79,10 @@ target_include_directories(feelpp PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/..>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
   $<INSTALL_INTERFACE:include/feelpp> )  
+
+IF ( FEELPP_ENABLE_JSON_DIAGNOSTICS )
+  target_compile_definitions( feelpp PUBLIC  FEELPP_ENABLE_JSON_DIAGNOSTICS=1 )
+ENDIF()
 
 IF (FEELPP_HAS_LIBDL)
   target_link_libraries( feelpp PRIVATE ${DL_LIBRARY} )
