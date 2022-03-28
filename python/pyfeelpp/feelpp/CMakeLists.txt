@@ -12,7 +12,7 @@ feelpp_add_pymodule(vf SRCS vf.cpp DESTINATION feelpp )
 feelpp_add_pymodule(measure SRCS measure.cpp DESTINATION feelpp )
 feelpp_add_pymodule(integrate SRCS integrate.cpp DESTINATION feelpp )
 feelpp_add_pymodule(interpolation SRCS interpolation.cpp DESTINATION feelpp )
-feelpp_add_pymodule(operators SRCS operators.cpp DESTINATION feelpp )
+feelpp_add_pymodule(operators SRCS operators.cpp operators1.cpp operators2.cpp operators3.cpp DESTINATION feelpp )
 feelpp_add_pymodule(models SRCS models.cpp DESTINATION feelpp )
 feelpp_add_pymodule(quality SRCS quality.cpp DESTINATION feelpp )
 

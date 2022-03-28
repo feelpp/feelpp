@@ -21,10 +21,15 @@
 //! @date 23 Jul 2021
 //! @copyright 2017 Feel++ Consortium
 //!
+#pragma once
 #include <pybind11/pybind11.h>
 #include <fmt/core.h>
 #include <feel/feelcore/environment.hpp>
 #include <feel/feeldiscr/mesh.hpp>
+#include <feel/feeldiscr/pch.hpp>
+#include <feel/feeldiscr/pchv.hpp>
+#include <feel/feeldiscr/pdh.hpp>
+#include <feel/feeldiscr/pdhv.hpp>
 #include <feel/feeldiscr/operatorinterpolation.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelmesh/filters.hpp>
@@ -33,7 +38,8 @@
 #include <pybind11/eigen.h>
 #include <boost/algorithm/string.hpp>
 namespace py = pybind11;
-
+namespace Feel
+{
 template <typename SpaceT>
 void defOperator( py::module& m )
 {
@@ -59,33 +65,55 @@ void defOperator( py::module& m )
         suffix = std::string("Pdhv");
     std::string pyclass_name = fmt::format( "Mass_{}_{}D_P{}", suffix, Dim, Order );
     VLOG(2) << fmt::format("[pyfeelpp] class name: {}", pyclass_name ) << std::endl;
-    using iterator_range_t = elements_reference_wrapper_t<mesh_t>;
+    using elements_iterator_range_t = elements_reference_wrapper_t<mesh_t>;
     using faces_iterator_range_t = faces_reference_wrapper_t<mesh_t>;
 
-    m.def(
-        "mass", []( space_ptr_t const& domain, space_ptr_t const& image, iterator_range_t const& r, std::string const& c = "1" )
+    m.def("on", []( space_ptr_t const& domain, space_ptr_t const& image, 
+                  elements_iterator_range_t const& r, 
+                  sparse_matrix_ptrtype& M,
+                  vector_ptrtype& b,
+                  std::string const& c )
         { 
-            auto a=form2(_test=image,_trial=domain);
+            auto a=form2(_test=image,_trial=domain,_matrix=M);
+            auto u=domain->element();
+            auto v=image->element();
+            if constexpr ( u.is_vectorial )
+                a+=on(_range=r,_rhs=b,_element=u,_expr=expr<RealDim,1>(c));
+            else
+                a+=on(_range=r,_rhs=b,_element=u,_expr=expr(c));
+            return a.matrixPtr(); },
+        py::arg( "trial" ), py::arg( "test" ), py::arg( "range" ), py::arg( "matrix" ),py::arg( "vector" ),py::arg( "coeff" )=std::string{"1"}, "create a mass matrix" );
+    m.def("mass", []( space_ptr_t const& domain, space_ptr_t const& image, 
+                      elements_iterator_range_t const& r, 
+                      sparse_matrix_ptrtype& M, 
+                      std::string const& c = "1" )
+        { 
+            auto a=form2(_test=image,_trial=domain,_matrix=M);
             auto u=domain->element();
             auto v=image->element();
 
             a=integrate(_range=r,_expr=expr(c)*trace(trans(idt(u))*id(v)));
             return a.matrixPtr(); },
-        py::arg( "trial" ), py::arg( "test" ), py::arg( "range" ), py::arg( "coeff" )=std::string{"1"}, "create a mass matrix" );
-    m.def(
-        "mass", []( space_ptr_t const& domain, space_ptr_t const& image, faces_iterator_range_t const& r, std::string const& c = "1" )
+        py::arg( "trial" ), py::arg( "test" ), py::arg( "range" ), py::arg( "matrix" )=static_cast<sparse_matrix_ptrtype>(nullptr), py::arg( "coeff" )=std::string{"1"}, "create a mass matrix" );
+    m.def("mass", []( space_ptr_t const& domain, space_ptr_t const& image, 
+                      faces_iterator_range_t const& r, 
+                      sparse_matrix_ptrtype& M, 
+                      std::string const& c = "1" )
         { 
-            auto a=form2(_test=image,_trial=domain);
+            auto a=form2(_test=image,_trial=domain,_matrix=M);
             auto u=domain->element();
             auto v=image->element();
 
             a=integrate(_range=r,_expr=expr(c)*trace(trans(idt(u))*id(v)));
             return a.matrixPtr(); },
-        py::arg( "trial" ), py::arg( "test" ), py::arg( "range" ), py::arg( "coeff" )=std::string{"1"}, "create a mass matrix" );
-    m.def(
-        "stiffness", []( space_ptr_t const& domain, space_ptr_t const& image, iterator_range_t const& r, std::string const& c = "1" )
+        py::arg( "trial" ), py::arg( "test" ), py::arg( "range" ), py::arg( "matrix" )=static_cast<sparse_matrix_ptrtype>(nullptr), py::arg( "coeff" )=std::string{"1"}, "create a mass matrix" );
+
+    m.def("stiffness", []( space_ptr_t const& domain, space_ptr_t const& image, 
+                           elements_iterator_range_t const& r, 
+                           sparse_matrix_ptrtype& M, 
+                           std::string const& c = "1" )
         { 
-            auto a=form2(_test=image,_trial=domain);
+            auto a=form2(_test=image,_trial=domain,_matrix=M);
             auto u=domain->element();
             auto v=image->element();
             if ( boost::algorithm::contains(c, "{") && boost::algorithm::contains(c, "}") )
@@ -93,29 +121,20 @@ void defOperator( py::module& m )
             else
                 a=integrate(_range=r,_expr=trace(expr(c)*trans(gradt(u))*grad(v)));
             return a.matrixPtr(); },
-        py::arg( "trial" ), py::arg( "test" ), py::arg( "range" ), py::arg( "coeff" )=std::string{"1"},"create a stiffness matrix" );
+        py::arg( "trial" ), py::arg( "test" ), py::arg( "range" ), py::arg( "matrix" )=static_cast<sparse_matrix_ptrtype>(nullptr), py::arg( "coeff" )=std::string{"1"},"create a stiffness matrix" );
+    m.def("advect", []( space_ptr_t const& domain, space_ptr_t const& image, 
+                        elements_iterator_range_t const& r, 
+                        sparse_matrix_ptrtype& M, 
+                        std::string const& c = "1" )
+        { 
+            auto a=form2(_test=image,_trial=domain,_matrix=M);
+            auto u=domain->element();
+            auto v=image->element();
+
+            a=integrate(_range=r,_expr=trans(gradt(u)*expr<RealDim,1>(c))*id(v));
+            return a.matrixPtr(); },
+        py::arg( "trial" ), py::arg( "test" ), py::arg( "range" ), py::arg( "matrix" )=static_cast<sparse_matrix_ptrtype>(nullptr), py::arg( "coeff" )=std::string{"1"}, "create a mass matrix" );
+
 }
 
-PYBIND11_MODULE( _operators, m )
-{
-    using namespace Feel;
-    using namespace hana::literals;
-    if ( import_mpi4py() < 0 ) return;
-
-    auto ordert = hana::make_tuple( 1_c, 2_c );
-    hana::for_each( ordert, [&m](auto const& o ){
-        constexpr int _order = std::decay_t<decltype(o)>::value;
-        // 1D
-        //std::cout << fmt::format("-- Pch 1D P{}", _order ) << std::endl;
-        defOperator<Pch_type<Mesh<Simplex<1>>, _order>>( m );
-        // 2D
-        //std::cout << fmt::format("-- Pch 2D P{}", _order ) << std::endl;
-        defOperator<Pch_type<Mesh<Simplex<2>>, _order>>( m );
-        //std::cout << fmt::format("-- Pchv 2D P{}", _order ) << std::endl;
-        defOperator<Pchv_type<Mesh<Simplex<2>>, _order>>( m );
-        // 3D
-        //std::cout << fmt::format("-- Pch 3D P{}", _order ) << std::endl;
-        defOperator<Pch_type<Mesh<Simplex<3>>, _order>>( m );
-    });
-    
-}
+} // namespace Feel
