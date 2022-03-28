@@ -638,30 +638,35 @@ endif()
 
 # ----------------------------------------------------------
 # A fast and simple to use logging library.
-set(FETCHCONTENT_SOURCE_DIR_SPDLOG ${CMAKE_CURRENT_SOURCE_DIR}/spdlog)
-FetchContent_Declare(   
-    spdlog
-    GIT_REPOSITORY https://github.com/gabime/spdlog.git
-    GIT_TAG        v1.8.2)
-
-FetchContent_GetProperties(spdlog)
-if(NOT spdlog_POPULATED)
-    message(STATUS "------------------------------------------------------------")
-    message(STATUS "Configuring SPDLOG")
-    set(SPDLOG_FMT_EXTERNAL ON)
-    #FetchContent_Populate(spdlog)
-    FetchContent_MakeAvailable(spdlog)
-#    add_subdirectory(
-#    ${spdlog_SOURCE_DIR}
-#    ${spdlog_BINARY_DIR})
-    target_link_libraries( feelpp_contrib INTERFACE spdlog::spdlog_header_only )
-    install(TARGETS spdlog_header_only EXPORT feelpp-contrib-export-targets
-      LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-      ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-      RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-      INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-      )
-endif() 
+option( FEELPP_ENABLE_SPDLOG "Enable SPDLOG" ON )
+if ( FEELPP_ENABLE_SPDLOG )
+  message(STATUS "------------------------------------------------------------")
+  message(STATUS "Configuring SPDLOG")
+  set(FETCHCONTENT_SOURCE_DIR_SPDLOG ${CMAKE_CURRENT_SOURCE_DIR}/spdlog)
+  set(SPDLOG_FMT_EXTERNAL OFF)
+  set(SPDLOG_INSTALL ON)
+  set(export_dest_dir "${CMAKE_INSTALL_DATADIR}/feel/cmake/modules")
+  FetchContent_Declare(   
+      spdlog
+      GIT_REPOSITORY https://github.com/feelpp/spdlog.git
+      GIT_TAG        8a74f3b3df73f73ad883640ec27027c4309bf570)
+  FetchContent_MakeAvailable(spdlog)
+  add_library(feelpp_spdlog INTERFACE)
+  set_target_properties(spdlog PROPERTIES OUTPUT_NAME "feelpp_spdlog")
+  target_link_libraries(feelpp_spdlog INTERFACE spdlog spdlog::spdlog_header_only)
+  add_library(Feelpp::feelpp_spdlog ALIAS feelpp_spdlog)
+  target_include_directories(feelpp_spdlog INTERFACE
+      $<BUILD_INTERFACE:${spdlog_SOURCE_DIR}/>
+      $<INSTALL_INTERFACE:include/feelpp> )
+  install(TARGETS feelpp_spdlog spdlog  EXPORT feelpp-contrib-export-targets
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+        )
+  target_link_libraries( feelpp_contrib INTERFACE feelpp_spdlog )
+  set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} SPDLOG")
+endif(FEELPP_ENABLE_SPDLOG) 
 
 option( FEELPP_ENABLE_TASKFLOW "Enable TASKFLOW" ON )
 if ( FEELPP_ENABLE_TASKFLOW )
@@ -670,9 +675,9 @@ if ( FEELPP_ENABLE_TASKFLOW )
 #  set(FETCHCONTENT_SOURCE_DIR_TASKFLOW ${CMAKE_CURRENT_SOURCE_DIR}/taskflow)
   # patch includes fix for 18.04 compilation
   set(FETCHCONTENT_SOURCE_DIR_TASKFLOW ${CMAKE_CURRENT_SOURCE_DIR}/taskflow)
-  FetchContent_Declare(taskflow GIT_REPOSITORY https://github.com/feelpp/taskflow.git GIT_TAG 31699d74dfb92d4d55fc0f3c87899c6ad8b51d80)
+  FetchContent_Declare(taskflow GIT_REPOSITORY https://github.com/feelpp/taskflow.git GIT_TAG 0635a49230e8ace7d379cbbaa716c66543f3e516)
   set( BUILD_TASKFLOW_TESTS OFF )
-  set(TF_CMAKE_DIR  "${CMAKE_INSTALL_DATADIR}/feel/cmake/modules")
+  set(TF_INSTALL_CMAKE_DIR  "${CMAKE_INSTALL_DATADIR}/feel/cmake/modules")
   FetchContent_MakeAvailable(taskflow)
   add_library(feelpp_taskflow INTERFACE)
   set_target_properties(Taskflow PROPERTIES OUTPUT_NAME "feelpp_taskflow")
