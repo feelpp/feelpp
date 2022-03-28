@@ -13,20 +13,13 @@
         {
             "name":"porousmedium",
             // "k":"-K:K" !!! not working
-            "cond": "-1"
+            "poisson_c": "-1"
         }
     },
     "BoundaryConditions":
     {
         "potential":
         {
-	    "VolumicForces":
-	    {
-		"Omega":
-		{
-		    "expr":"0.0"
-		}
-	    },
             "Dirichlet":
             {
                 "Dirichlet":
@@ -34,25 +27,15 @@
                     "expr":"x*(1-x)*(y-1)+y*y*y/3-y*y+y+2*x:x:y"
                 }
             },
-	    "Robin":
-	    {
-		"Gamma":
-		{
-		    "expr1":"1",
-		    "expr2":"x*(x+1)+1/3:x"
-		}
+	        "Robin":
+	        {
+		        "Gamma":
+		        {
+		            "expr1":"1",
+		            "expr2":"x*(x+1)+1/3:x"
+		        }
+	        }
 	    }
-	},
-	"Exact solution":
-	{
-	    "p_exact":
-	    {
-		    "Omega":
-		    {
-		        "expr":"x*(1-x)*(y-1)+y*y*y/3-y*y+y+2*x:x:y"
-		    }
-	    }
-	}
     },
     "PostProcess":
     {
