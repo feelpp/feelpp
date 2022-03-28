@@ -2469,6 +2469,24 @@ VectorUblas<T> & VectorUblas<T>::operator=( const VectorUblas<T> & v )
     return *this;
 }
 
+template< typename T >
+VectorUblas<T> VectorUblas<T>::createView( Vector<T> & vec )
+{
+#if FEELPP_HAS_PETSC
+    VectorPetsc<T> * vecPetsc = dynamic_cast<VectorPetsc<T> *>( &vec );
+    if( vecPetsc )
+    {
+        size_type nActiveDof = vec.mapPtr()->nLocalDofWithoutGhost();
+        value_type * arrayActiveDof = ( nActiveDof > 0 ) ? std::addressof( (*vecPetsc)(0) ): nullptr;
+        size_type nGhostDof = vec.mapPtr()->nLocalGhosts();
+        value_type * arrayGhostDof = ( nGhostDof > 0 ) ? std::addressof( (*vecPetsc)(nActiveDof) ): nullptr;
+        return VectorUblas<T>( nActiveDof, arrayActiveDof, nGhostDof, arrayGhostDof, vec.mapPtr() );
+    }
+#endif
+    CHECK( false ) << "cannot create view: vector cast only implemented for Petsc vector";
+    return VectorUblas<T>();
+}
+
 /*-----------------------------------------------------------------------------*/
 // Explicit instantiations
 template class VectorUblas<double>;

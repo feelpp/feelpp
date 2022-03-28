@@ -278,6 +278,9 @@ class VectorUblas : public Vector<T>
         self_type range( const range_type & rangeActive, const range_type & rangeGhost, const datamap_ptrtype & dm ) { return self_type( *this, rangeActive, rangeGhost, dm ); }
         self_type slice( const slice_type & sliceActive, const slice_type & sliceGhost, const datamap_ptrtype & dm ) { return self_type( *this, sliceActive, sliceGhost, dm ); }
 
+        //! VectorUblas view on another Vector (eg a VectorPetsc)
+        static self_type createView( Vector<T> & vec );
+
         // Localization (parallel global to one proc local)
         void localizeToOneProcessor( ublas::vector<T> & v_local, const size_type proc_id = 0 ) const { return M_vectorImpl->localizeToOneProcessor( v_local, proc_id ); }
         void localizeToOneProcessor( std::vector<T> & v_local, const size_type proc_id = 0 ) const { return M_vectorImpl->localizeToOneProcessor( v_local, proc_id ); }
