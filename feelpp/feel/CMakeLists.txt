@@ -69,6 +69,10 @@ target_include_directories(feelpp PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
   $<INSTALL_INTERFACE:include/feelpp> )  
 
+IF ( FEELPP_ENABLE_JSON_DIAGNOSTICS )
+  target_compile_definitions( feelpp PUBLIC  FEELPP_ENABLE_JSON_DIAGNOSTICS=1 )
+ENDIF()
+
 IF (FEELPP_HAS_LIBDL)
   target_link_libraries( feelpp PRIVATE ${DL_LIBRARY} )
 endif()
@@ -122,6 +126,12 @@ if ( Boost_FOUND )
     # Boost::filesystem
     BOOST_FILESYSTEM_VERSION=${BOOST_FILESYSTEM_VERSION}
     )
+
+  # Required on MacOS to circumvent error "Boost.Stacktrace requires `_Unwind_Backtrace` function"
+  if( APPLE )
+    target_compile_definitions(feelpp PUBLIC _GNU_SOURCE)
+  endif()
+
   if (BOOST_ENABLE_TEST_DYN_LINK)
     target_compile_definitions( feelpp PUBLIC BOOST_TEST_DYN_LINK )
   endif (BOOST_ENABLE_TEST_DYN_LINK)
