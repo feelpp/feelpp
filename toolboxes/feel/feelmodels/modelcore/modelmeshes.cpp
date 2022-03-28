@@ -357,7 +357,7 @@ ModelMesh<IndexType>::updateForUse( ModelMeshes<IndexType> const& mMeshes )
         auto Vh = M_mmeshCommon->template createFunctionSpace<distange_to_range_space_type>( basis );
         auto u = Vh->elementPtr();
         auto rangeFaces = dtrs.markers().empty()? boundaryfaces(themesh) : markedfaces( themesh, dtrs.markers() );
-        *u = distanceToRange( Vh, rangeFaces );
+        *u = distanceToRange( _space=Vh, _range=rangeFaces );
         M_distanceToRanges[dtrs.name()] = u;
     }
 }
