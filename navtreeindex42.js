@@ -1,5 +1,9 @@
 var NAVTREEINDEX42 =
 {
+"structFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition_1_1ElasticBehavior.html#a1746f1cbe7eb1d2b2a6d07aee1f53cb0":[5,11,1,2,0,4],
+"structFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition_1_1ElasticBehavior.html#a22a149e57e268b68d80c74c679cff7f9":[5,11,1,2,0,6],
+"structFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition_1_1ElasticBehavior.html#a3375138bb0229fa5568f6bd5d5204ef0":[5,11,1,2,0,3],
+"structFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition_1_1ElasticBehavior.html#a68b8237bdcbc7c9d556518b569befd43":[5,11,1,2,0,5],
 "structFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition_1_1ElasticBehavior.html#a807dba9da8adc724021bece8474d256f":[5,11,1,2,0,2],
 "structFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition_1_1ElasticBehavior.html#a81bcfb1961a63116fe4d3327c601f33b":[5,11,1,2,0,0],
 "structFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition_1_1ElasticBehavior.html#a84ef53610910d979ed9270ac8fd570f4":[5,11,1,2,0,9],
@@ -245,9 +249,5 @@ var NAVTREEINDEX42 =
 "structFeel_1_1FeelModels_1_1TrialsSymbolsExprTraits.html#ab999085495703f0a50dc93f76e17c951":[6,1,1,4,80,0],
 "structFeel_1_1FeelModels_1_1detail_1_1ChangeBasisContinuity.html":[6,1,1,4,0,0],
 "structFeel_1_1FeelModels_1_1detail_1_1ChangeBasisContinuity_3_01NewContinuityType_00_01BasisType85014e0d1b1b40793cb205341b8ed0a9.html":[6,1,1,4,0,1],
-"structFeel_1_1FeelModels_1_1detail_1_1ChangeBasisContinuity_3_01NewContinuityType_00_01BasisType85014e0d1b1b40793cb205341b8ed0a9.html#a085fb4dc422654c5889fb37a491b6e5d":[6,1,1,4,0,1,0],
-"structFeel_1_1FeelModels_1_1detail_1_1ChangeBasisOrder.html":[6,1,1,4,0,2],
-"structFeel_1_1FeelModels_1_1detail_1_1ChangeBasisOrder_3_01NewOrder_00_01BasisType_3_01Order_00_86e9208bf6efe5ef93da29d48907e576.html":[6,1,1,4,0,3],
-"structFeel_1_1FeelModels_1_1detail_1_1ChangeBasisOrder_3_01NewOrder_00_01BasisType_3_01Order_00_86e9208bf6efe5ef93da29d48907e576.html#aad05d84b402177072da820667b4eade6":[6,1,1,4,0,3,0],
-"structFeel_1_1FeelModels_1_1detail_1_1ChangeBasisPolySet.html":[6,1,1,4,0,4]
+"structFeel_1_1FeelModels_1_1detail_1_1ChangeBasisContinuity_3_01NewContinuityType_00_01BasisType85014e0d1b1b40793cb205341b8ed0a9.html#a085fb4dc422654c5889fb37a491b6e5d":[6,1,1,4,0,1,0]
 };

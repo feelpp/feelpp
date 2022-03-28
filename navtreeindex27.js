@@ -1,5 +1,9 @@
 var NAVTREEINDEX27 =
 {
+"classFeel_1_1Sphere.html#a745849d4e9047dc03a06ca166e16737c":[6,1,1,257,6],
+"classFeel_1_1Sphere.html#a7dc42f0277c3d6d7494ff5953bdbbacd":[6,1,1,257,4],
+"classFeel_1_1Sphere.html#a955e68ce842bee7362060a8bf144ba7d":[6,1,1,257,15],
+"classFeel_1_1Sphere.html#a9a91c6f9b10ce7402fc707423f9d28f9":[6,1,1,257,5],
 "classFeel_1_1Sphere.html#a9baad8895c12963493311c5475261347":[6,1,1,257,13],
 "classFeel_1_1Sphere.html#ab2f07894ac945c76a3e7667ba90b42bf":[6,1,1,257,2],
 "classFeel_1_1Sphere.html#aca29f707ac3447c337fd491830268ca4":[6,1,1,257,10],
@@ -245,9 +249,5 @@ var NAVTREEINDEX27 =
 "classFeel_1_1TabulateInformationsTable.html":[6,1,1,281],
 "classFeel_1_1TabulateInformationsTable.html#a4128e382355a5a80dcddd8bafe98d7b8":[6,1,1,281,1],
 "classFeel_1_1TabulateInformationsTable.html#a7012a1ba7377b3fca9310ac7e4fb1bd9":[6,1,1,281,0],
-"classFeel_1_1TabulateInformationsTable.html#ab10218560c1d6ee5793769c6b483c148":[6,1,1,281,2],
-"classFeel_1_1TabulateInformationsTableAlternative.html":[6,1,1,282],
-"classFeel_1_1TabulateInformationsTableAlternative.html#a5c1da54cf059497c1071eeb969004f07":[6,1,1,282,1],
-"classFeel_1_1TabulateInformationsTableAlternative.html#a92cad859c6f2d7d56f05f9470bf8ed2b":[6,1,1,282,2],
-"classFeel_1_1TabulateInformationsTableAlternative.html#ae5690ee38de153d38558f241c45dc4a7":[6,1,1,282,0]
+"classFeel_1_1TabulateInformationsTable.html#ab10218560c1d6ee5793769c6b483c148":[6,1,1,281,2]
 };

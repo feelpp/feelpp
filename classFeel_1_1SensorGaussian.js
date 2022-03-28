@@ -2,7 +2,9 @@ var classFeel_1_1SensorGaussian =
 [
     [ "boost::serialization::access", "classFeel_1_1SensorGaussian.html#ac98d07dd8f7b70e16ccb9a01abf56b9c", null ],
     [ "init", "classFeel_1_1SensorGaussian.html#a74e4d48d2b3a2bd5a5331edf503175e0", null ],
+    [ "position", "classFeel_1_1SensorGaussian.html#a2eaa5ee4d58c906e1b22bffcea9fb2a1", null ],
     [ "radius", "classFeel_1_1SensorGaussian.html#a23e5b4275f7a2c1cd84bd8e4295b0dfc", null ],
+    [ "setPosition", "classFeel_1_1SensorGaussian.html#aca709a967f38ed5d1e484b563d7495fb", null ],
     [ "setRadius", "classFeel_1_1SensorGaussian.html#acf39cf46f41fd1800c8cea14fa688d53", null ],
     [ "to_json", "classFeel_1_1SensorGaussian.html#aa764e836a5f2f3d7ac8f91490a582828", null ],
     [ "nDim", "classFeel_1_1SensorGaussian.html#a07ea85a6b1fc5ffb1bcb6aa8dc727e7f", null ],

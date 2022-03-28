@@ -1,5 +1,9 @@
 var NAVTREEINDEX44 =
 {
+"structFeel_1_1Mesh_1_1Inverse.html#a715ec9b8814df6095a616f2bf555be46":[6,1,1,170,0,5],
+"structFeel_1_1Mesh_1_1Inverse.html#ac185371906f16543813451440531aa5d":[6,1,1,170,0,0],
+"structFeel_1_1Mesh_1_1Inverse.html#ad7699ee0cac0ed008dbf0d8bed857a5c":[6,1,1,170,0,6],
+"structFeel_1_1Mesh_1_1Inverse.html#ad8ce3ef0c90b9454ec389dbb6f890e28":[6,1,1,170,0,2],
 "structFeel_1_1Mesh_1_1Inverse.html#adaa3326d6597dff88cdc4c4c2b2f5a80":[6,1,1,170,0,9],
 "structFeel_1_1Mesh_1_1UpdateNumGlobalEntitiesForAllReduce.html":[6,1,1,170,4],
 "structFeel_1_1Mesh_1_1UpdateNumGlobalEntitiesForAllReduce.html#a3d90405dc2175a2f0edb0cdc88830887":[6,1,1,170,4,0],
@@ -245,9 +249,5 @@ var NAVTREEINDEX44 =
 "structFeel_1_1Stencil_1_1rangeiteratorType.html#a719293bc873cc519a6654cfa1beb6d97":[6,1,1,259,1,2],
 "structFeel_1_1Stencil_1_1rangeiteratorType.html#a9ced68fed35e020dbc42cee6e1deed4b":[6,1,1,259,1,5],
 "structFeel_1_1Stencil_1_1rangeiteratorType.html#aa69f1e1c81c99af95738d3bfb4997036":[6,1,1,259,1,6],
-"structFeel_1_1Stencil_1_1rangeiteratorType.html#ab0208aac84b94301fdfe923ef3b2b3ff":[6,1,1,259,1,1],
-"structFeel_1_1Stencil_1_1rangeiteratorType.html#ae4848555575b38006664f002da97a916":[6,1,1,259,1,3],
-"structFeel_1_1SubFaceOfBase.html":[6,1,1,272],
-"structFeel_1_1SubFaceOfNone_1_1Element.html":[6,1,1,273,0],
-"structFeel_1_1SubFaceOfNone_1_1Element.html#a2c07f3e5da5aa2643349259798582dd3":[6,1,1,273,0,0]
+"structFeel_1_1Stencil_1_1rangeiteratorType.html#ab0208aac84b94301fdfe923ef3b2b3ff":[6,1,1,259,1,1]
 };

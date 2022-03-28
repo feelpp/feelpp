@@ -1,5 +1,9 @@
 var NAVTREEINDEX43 =
 {
+"structFeel_1_1FeelModels_1_1detail_1_1ChangeBasisOrder.html":[6,1,1,4,0,2],
+"structFeel_1_1FeelModels_1_1detail_1_1ChangeBasisOrder_3_01NewOrder_00_01BasisType_3_01Order_00_86e9208bf6efe5ef93da29d48907e576.html":[6,1,1,4,0,3],
+"structFeel_1_1FeelModels_1_1detail_1_1ChangeBasisOrder_3_01NewOrder_00_01BasisType_3_01Order_00_86e9208bf6efe5ef93da29d48907e576.html#aad05d84b402177072da820667b4eade6":[6,1,1,4,0,3,0],
+"structFeel_1_1FeelModels_1_1detail_1_1ChangeBasisPolySet.html":[6,1,1,4,0,4],
 "structFeel_1_1FeelModels_1_1detail_1_1ChangeBasisPolySet_3_01NewPolySetType_00_01BasisType_3_01Od3c3455f9581e098fbbc9c6e4e32dd82.html":[6,1,1,4,0,5],
 "structFeel_1_1FeelModels_1_1detail_1_1ChangeBasisPolySet_3_01NewPolySetType_00_01BasisType_3_01Od3c3455f9581e098fbbc9c6e4e32dd82.html#ab34f75c54d64c72b8d752bde05c83a0a":[6,1,1,4,0,5,0],
 "structFeel_1_1FunctionExpr_1_1ExprContextProd.html":[6,1,1,85,0],
@@ -245,9 +249,5 @@ var NAVTREEINDEX43 =
 "structFeel_1_1Mesh_1_1Inverse.html#a0e818bea03cd898c2fc52872a6eccc9a":[6,1,1,170,0,4],
 "structFeel_1_1Mesh_1_1Inverse.html#a25cdb1d35ba857a7bae6fca99c84616d":[6,1,1,170,0,8],
 "structFeel_1_1Mesh_1_1Inverse.html#a498e30c2222953fa9c3b85679110c7dc":[6,1,1,170,0,3],
-"structFeel_1_1Mesh_1_1Inverse.html#a66d0cc4b8b79cbe453f645bdd30710ee":[6,1,1,170,0,7],
-"structFeel_1_1Mesh_1_1Inverse.html#a715ec9b8814df6095a616f2bf555be46":[6,1,1,170,0,5],
-"structFeel_1_1Mesh_1_1Inverse.html#ac185371906f16543813451440531aa5d":[6,1,1,170,0,0],
-"structFeel_1_1Mesh_1_1Inverse.html#ad7699ee0cac0ed008dbf0d8bed857a5c":[6,1,1,170,0,6],
-"structFeel_1_1Mesh_1_1Inverse.html#ad8ce3ef0c90b9454ec389dbb6f890e28":[6,1,1,170,0,2]
+"structFeel_1_1Mesh_1_1Inverse.html#a66d0cc4b8b79cbe453f645bdd30710ee":[6,1,1,170,0,7]
 };
