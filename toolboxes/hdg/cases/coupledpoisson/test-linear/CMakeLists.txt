@@ -2,7 +2,7 @@
 
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #             Thomas Saigre
-#       Date: 30 Avril 2021
+#       Date: 15 Oct. 2021
 #
 #  Copyright (C) 2021 Feel++ Consortium
 #
@@ -23,4 +23,4 @@
 #
 #
 
-feelpp_add_fmu( test3d0d_constant CLASS test3d0d SRCS test3d0d_constant.mo CATEGORY toolboxes/hdg/cases/coupledpoisson/0-constant)
+feelpp_add_fmu( test_linear CLASS test_linear SRCS test_linear.mo )
