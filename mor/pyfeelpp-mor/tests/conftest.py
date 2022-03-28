@@ -52,3 +52,7 @@ def init_feelpp():
 @pytest.fixture(scope="session")
 def init_feelpp_config_local():
     return InitFeelpp(feelpp.localRepository("feelppdb"))
+
+def pytest_configure():
+    pytest.decomposition = []
+    pytest.mubar = []

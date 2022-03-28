@@ -20,6 +20,11 @@ comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 size = comm.Get_size()
 
+from mpi4py import MPI
+comm = MPI.COMM_WORLD
+rank = comm.Get_rank()
+size = comm.Get_size()
+
 
 
 def convertToPetscMat(Aq):
@@ -478,6 +483,7 @@ class reducedbasisOffline(reducedbasis):
         E.setWhichEigenpairs(E.Which.SMALLEST_MAGNITUDE)
         E.setDimensions(1)
 
+
         E.solve()
 
         nCv = E.getConverged()
@@ -697,6 +703,7 @@ class reducedbasisOffline(reducedbasis):
         v.set(0)
         v.assemble()
 
+
         for i,mu in enumerate(tqdm(mus, desc=f"[reducedBasis] Offline generation of the basis", ascii=False, ncols=120)):
             beta = self.model.computeBetaQm(mu)
             A = self.assembleA(beta[0][0])
@@ -706,6 +713,7 @@ class reducedbasisOffline(reducedbasis):
             self.Z.append(sol)
             # print(i, self.Z[-1].min(), self.Z[-1].max())
             # print(self.reshist)
+
 
         if orth:
             self.orthonormalizeZ()

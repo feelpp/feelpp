@@ -367,6 +367,7 @@ public :
                 break;
             }
         }
+std::cout << __FILE__ << "  " << __LINE__ << std::endl;
 
         if ( this->worldComm().isMasterRank() )
         {

@@ -119,5 +119,7 @@
     
     ],
     "cmake.buildDirectory": "${workspaceFolder}/build-${buildKitVendor}${buildKitVersionMajor}-${variant:cpp}-${variant:toolboxes}-${variant:mor}-${variant:buildType}-${variant:webserver}-${variant:doxygen}-${variant:matplot}",
-    "cmake.parallelJobs": 5
+    "cmake.parallelJobs": 5,
+    "cmake.cmakePath": "/usr/local/bin/cmake",
+    "diffEditor.ignoreTrimWhitespace": false,
 }
