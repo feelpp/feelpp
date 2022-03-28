@@ -20,17 +20,13 @@ steps:
      ( pipeline.slug=="feelpp" && ( build.branch == "develop" || build.branch == "master" )) && 
      build.message !~ /skip feelpp/
  - wait
- - trigger: "feelpp-testsuite"
-   label: ":docker: compile and run the Feel++ testsuite :rocket:"
-   async: true
+ - name: ':$TARGET, $CXX, feelpp-testsuite :hammer: :docker: :rocket:'
+   command: feelpp/tools/scripts/buildkite/install-feelpp.sh testsuite
    if: |
      build.message !~ /skip tests/ &&
-     build.message !~ /skip components/ &&
-     ( build.branch == "master" || build.branch == "develop" )
-   build:
-    message: "${BUILDKITE_MESSAGE}"
-    commit: "${BUILDKITE_COMMIT}"
-    branch: "${BUILDKITE_BRANCH}"
+     build.message !~ /skip components/ 
+   agents:
+     docker: true
  - name: ':$TARGET, $CXX, feelpp-toolboxes :hammer: :docker: :rocket:'
    command: feelpp/tools/scripts/buildkite/install-feelpp.sh toolboxes
    if: |
@@ -46,6 +42,7 @@ steps:
      (build.message !~ /skip components/)
    agents:
      docker: true
+ - wait
  - name: ':$TARGET, $CXX, feelpp-python :python: :hammer: :docker: :rocket:'
    command: feelpp/tools/scripts/buildkite/install-feelpp.sh feelpp-python
    if: |
