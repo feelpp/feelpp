@@ -637,37 +637,39 @@ if ( FEELPP_ENABLE_CPR )
 endif()
 
 # ----------------------------------------------------------
-# A fast and simple to use logging library.
-option( FEELPP_ENABLE_SPDLOG "Enable SPDLOG" ON )
-if ( FEELPP_ENABLE_SPDLOG )
-  message(STATUS "------------------------------------------------------------")
-  message(STATUS "Configuring SPDLOG")
-  set(FETCHCONTENT_SOURCE_DIR_SPDLOG ${CMAKE_CURRENT_SOURCE_DIR}/spdlog)
-  set(SPDLOG_FMT_EXTERNAL OFF)
-  set(SPDLOG_INSTALL ON)
-  set(export_dest_dir "${CMAKE_INSTALL_DATADIR}/feel/cmake/modules")
-  FetchContent_Declare(   
-      spdlog
-      GIT_REPOSITORY https://github.com/feelpp/spdlog.git
-      GIT_TAG        8a74f3b3df73f73ad883640ec27027c4309bf570)
-  FetchContent_MakeAvailable(spdlog)
-  add_library(feelpp_spdlog INTERFACE)
-  set_target_properties(spdlog PROPERTIES OUTPUT_NAME "feelpp_spdlog")
-  target_link_libraries(feelpp_spdlog INTERFACE spdlog spdlog::spdlog_header_only)
-  add_library(Feelpp::feelpp_spdlog ALIAS feelpp_spdlog)
-  target_include_directories(feelpp_spdlog INTERFACE
-      $<BUILD_INTERFACE:${spdlog_SOURCE_DIR}/>
-      $<INSTALL_INTERFACE:include/feelpp> )
-  install(TARGETS feelpp_spdlog spdlog spdlog_header_only EXPORT feelpp-contrib-export-targets
-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-        )
-  target_link_libraries( feelpp_contrib INTERFACE feelpp_spdlog )
-  set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} SPDLOG")
-endif(FEELPP_ENABLE_SPDLOG) 
-
+# # A fast and simple to use logging library.
+# option( FEELPP_ENABLE_SPDLOG "Enable SPDLOG" ON )
+# if ( FEELPP_ENABLE_SPDLOG )
+#   message(STATUS "------------------------------------------------------------")
+#   message(STATUS "Configuring SPDLOG")
+#   set(FETCHCONTENT_SOURCE_DIR_SPDLOG ${CMAKE_CURRENT_SOURCE_DIR}/spdlog)
+#   set(SPDLOG_FMT_EXTERNAL OFF)
+#   set(SPDLOG_INSTALL ON)
+#   set(export_dest_dir "${CMAKE_INSTALL_DATADIR}/feel/cmake/modules")
+#   FetchContent_Declare(   
+#       spdlog
+#       GIT_REPOSITORY https://github.com/feelpp/spdlog.git
+#       GIT_TAG        8a74f3b3df73f73ad883640ec27027c4309bf570)
+#   FetchContent_MakeAvailable(spdlog)
+#   add_library(feelpp_spdlog INTERFACE)
+#   set_target_properties(spdlog PROPERTIES OUTPUT_NAME "feelpp_spdlog")
+#   target_link_libraries(feelpp_spdlog INTERFACE spdlog spdlog::spdlog_header_only)
+#   add_library(Feelpp::feelpp_spdlog ALIAS feelpp_spdlog)
+#   target_include_directories(feelpp_spdlog INTERFACE
+#       $<BUILD_INTERFACE:${spdlog_SOURCE_DIR}/include>
+#       $<BUILD_INTERFACE:${spdlog_SOURCE_DIR}/include/spdlog>
+#       $<INSTALL_INTERFACE:include/feelpp>
+#       $<INSTALL_INTERFACE:include/feelpp/spdlog/fmt/bundled> )
+#   install(TARGETS feelpp_spdlog spdlog spdlog_header_only  EXPORT feelpp-contrib-export-targets
+#         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+#         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+#         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+#         INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+#         )
+#   target_link_libraries( feelpp_contrib INTERFACE feelpp_spdlog )
+#   set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} SPDLOG")
+# endif(FEELPP_ENABLE_SPDLOG) 
+# 
 option( FEELPP_ENABLE_TASKFLOW "Enable TASKFLOW" ON )
 if ( FEELPP_ENABLE_TASKFLOW )
   message(STATUS "------------------------------------------------------------")
@@ -681,7 +683,7 @@ if ( FEELPP_ENABLE_TASKFLOW )
   FetchContent_MakeAvailable(taskflow)
   add_library(feelpp_taskflow INTERFACE)
   set_target_properties(Taskflow PROPERTIES OUTPUT_NAME "feelpp_taskflow")
-  target_link_libraries(feelpp_taskflow INTERFACE Taskflow spdlog::spdlog_header_only)
+  target_link_libraries(feelpp_taskflow INTERFACE Taskflow )
   add_library(Feelpp::feelpp_taskflow ALIAS feelpp_taskflow)
   target_include_directories(feelpp_taskflow INTERFACE
       $<BUILD_INTERFACE:${taskflow_SOURCE_DIR}/>
