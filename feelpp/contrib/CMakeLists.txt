@@ -658,7 +658,7 @@ if ( FEELPP_ENABLE_SPDLOG )
   target_include_directories(feelpp_spdlog INTERFACE
       $<BUILD_INTERFACE:${spdlog_SOURCE_DIR}/>
       $<INSTALL_INTERFACE:include/feelpp> )
-  install(TARGETS feelpp_spdlog spdlog  EXPORT feelpp-contrib-export-targets
+  install(TARGETS feelpp_spdlog spdlog spdlog_header_only EXPORT feelpp-contrib-export-targets
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
