@@ -44,7 +44,6 @@ public:
     typedef std::shared_ptr<space_unknown_type> space_unknown_ptrtype;
     typedef typename space_unknown_type::element_type element_unknown_type;
     typedef std::shared_ptr<element_unknown_type> element_unknown_ptrtype;
-    typedef typename space_unknown_type::element_external_storage_type element_unknown_external_storage_type;
     static constexpr bool unknown_is_scalar = space_unknown_type::is_scalar;
     static constexpr bool unknown_is_vectorial = space_unknown_type::is_vectorial;
     // time scheme
