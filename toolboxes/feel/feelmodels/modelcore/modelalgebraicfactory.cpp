@@ -1453,7 +1453,7 @@ ModelAlgebraicFactory::tabulateInformations( nl::json const& jsonInfo, TabulateI
                                       this->model()->worldComm(),this->model()->verboseSolverTimerAllProc());
 
             double relaxParam = M_solverPicardRelaxationParameter;
-            if ( relaxParam < 1 )
+            if ( cptIteration > 0 && relaxParam < 1 )
             {
                 U->scale( relaxParam );
                 U->add( 1.0 - relaxParam, Uold );
