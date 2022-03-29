@@ -75,7 +75,6 @@ public:
     typedef std::shared_ptr<space_electricpotential_type> space_electricpotential_ptrtype;
     typedef typename space_electricpotential_type::element_type element_electricpotential_type;
     typedef std::shared_ptr<element_electricpotential_type> element_electricpotential_ptrtype;
-    typedef typename space_electricpotential_type::element_external_storage_type element_electricpotential_external_storage_type;
 
     // materials properties
     typedef MaterialsProperties<nRealDim> materialsproperties_type;
