@@ -2510,8 +2510,10 @@ public:
             //std::cout << "extract component " << (int)i << " start+i:" << start()+(int)i << " slice size:" << s.size();
 
             size_type startContainerIndex = start() + startSlice;
+            // Warning: drop const-correctness to avoid redefining full "const"-Elements
+            // should be fixed...
             component_type c( compSpace(),
-                    this->container().slice( sActive, sGhost, this->compSpace()->dof() ),
+                    const_cast<this_type *>(this)->container().slice( sActive, sGhost, this->compSpace()->dof() ),
                     __name,
                     startContainerIndex,
                     i,j );
