@@ -946,8 +946,8 @@ class VectorUblasContiguousGhosts: public VectorUblasContiguousGhostsBase<T>
         
         void checkInvariants() const override;
          
-        VectorUblasRange<T, Storage> * rangeImpl( const range_type & rangeActive, const range_type & rangeGhost ) override;
-        VectorUblasSlice<T, Storage> * sliceImpl( const slice_type & sliceActive, const slice_type & sliceGhost ) override;
+        VectorUblasBase<T> * rangeImpl( const range_type & rangeActive, const range_type & rangeGhost ) override;
+        VectorUblasBase<T> * sliceImpl( const slice_type & sliceActive, const slice_type & sliceGhost ) override;
 #if FEELPP_HAS_PETSC
         VectorPetsc<T> * vectorPetscImpl() const override;
 #endif
