@@ -45,6 +45,7 @@
 #include <feel/feeldiscr/product.hpp>
 #include <feel/feelvf/blockforms.hpp>
 #include <feel/feelts/bdf.hpp>
+#include <feel/feelts/newmark.hpp>
 
 #include <feel/feelmodels/hdg/enums.hpp>
 
@@ -57,15 +58,15 @@ namespace FeelModels
  * Toolbox MixedPoisson
  * @ingroup Toolboxes
  */
-template<typename ConvexType, int Order, int E_Order = 4>
+template<typename ConvexType, int Order, template<uint16_type> class PolySetType = Vectorial, int E_Order = 4>
 class MixedPoisson : public ModelNumerical,
                      public ModelPhysics<ConvexType::nDim>,
-                     public std::enable_shared_from_this<MixedPoisson<ConvexType, Order, E_Order> >
+                     public std::enable_shared_from_this<MixedPoisson<ConvexType, Order, PolySetType, E_Order> >
 {
 
 public:
     using super_type = ModelNumerical;
-    using self_type = MixedPoisson<ConvexType, Order, E_Order>;
+    using self_type = MixedPoisson<ConvexType, Order, PolySetType, E_Order>;
     using self_ptrtype = std::shared_ptr<self_type>;
 
     // mesh
@@ -82,29 +83,46 @@ public:
 
     static const uint16_type expr_order = (Order+E_Order)*nOrderGeo;
 
+    template<uint16_type Dim>
+    using polyset_flux_type = PolySetType<Dim>;
+
+    template<uint16_type Dim, class P>
+    struct RankDown { using type = Vectorial<Dim>; };
+    template<uint16_type Dim>
+    struct RankDown<Dim, Vectorial<Dim>> { using type = Scalar<Dim>; };
+    // template<uint16_type Dim>
+    // struct RankUp<Dim, Vectorial<Dim>> { using type = Tensor2Symm<Dim>; };
+    template<uint16_type Dim>
+    using polyset_potential_type = typename RankDown<Dim, polyset_flux_type<Dim>>::type;
+
     // Vh
-    using space_flux_type = Pdhv_type<mesh_type,Order>;
-    using space_flux_ptrtype = Pdhv_ptrtype<mesh_type,Order>;
+    using basis_flux_type = Lagrange<Order, polyset_flux_type, Discontinuous>;
+    using space_flux_type = FunctionSpace<mesh_type, bases<basis_flux_type>>;
+    using space_flux_ptrtype = std::shared_ptr<space_flux_type>;
     using element_flux_type = typename space_flux_type::element_type;
     using element_flux_ptrtype = typename space_flux_type::element_ptrtype;
     // Wh
-    using space_potential_type = Pdh_type<mesh_type,Order>;
-    using space_potential_ptrtype = Pdh_ptrtype<mesh_type,Order>;
+    using basis_potential_type = Lagrange<Order, polyset_potential_type, Discontinuous>;
+    using space_potential_type = FunctionSpace<mesh_type, bases<basis_potential_type>>;
+    using space_potential_ptrtype = std::shared_ptr<space_potential_type>;
     using element_potential_type = typename space_potential_type::element_type;
     using element_potential_ptrtype = typename space_potential_type::element_ptrtype;
     // Whp
-    using space_postpotential_type = Pdh_type<mesh_type,Order+1>;
-    using space_postpotential_ptrtype = Pdh_ptrtype<mesh_type,Order+1>;
+    using basis_postpotential_type = Lagrange<Order+1, polyset_potential_type, Discontinuous>;
+    using space_postpotential_type = FunctionSpace<mesh_type, bases<basis_postpotential_type>>;
+    using space_postpotential_ptrtype = std::shared_ptr<space_postpotential_type>;
     using element_postpotential_type = typename space_postpotential_type::element_type;
     using element_postpotential_ptrtype = typename space_postpotential_type::element_ptrtype;
     // Mh
-    using space_trace_type = Pdh_type<face_mesh_type,Order>;
-    using space_trace_ptrtype = Pdh_ptrtype<face_mesh_type,Order>;
+    using basis_trace_type = Lagrange<Order, polyset_potential_type, Discontinuous>;
+    using space_trace_type = FunctionSpace<face_mesh_type, bases<basis_trace_type>>;
+    using space_trace_ptrtype = std::shared_ptr<space_trace_type>;
     using element_trace_type = typename space_trace_type::element_type;
     using element_trace_ptrtype = typename space_trace_type::element_ptrtype;
     // Ch
-    using space_traceibc_type = Pch_type<face_mesh_type,0>;
-    using space_traceibc_ptrtype = Pch_ptrtype<face_mesh_type,0>;
+    using basis_traceibc_type = Lagrange<0, polyset_potential_type, Continuous>;
+    using space_traceibc_type = FunctionSpace<face_mesh_type, bases<basis_traceibc_type>>;
+    using space_traceibc_ptrtype = std::shared_ptr<space_traceibc_type>;
     using element_traceibc_type = typename space_traceibc_type::element_type;
     using element_traceibc_ptrtype = typename space_traceibc_type::element_ptrtype;
     using element_traceibc_vector_type = std::vector<element_traceibc_ptrtype>;
@@ -120,6 +138,9 @@ public:
                                                space_trace_ptrtype>;
     using product2_space_ptrtype = std::shared_ptr<product2_space_type>;
 
+    static constexpr bool is_scalar = space_potential_type::is_scalar;
+    static constexpr bool is_tensor2symm = space_flux_type::is_tensor2symm;
+
     // materials properties
     typedef MaterialsProperties<nRealDim> materialsproperties_type;
     typedef std::shared_ptr<materialsproperties_type> materialsproperties_ptrtype;
@@ -129,6 +150,8 @@ public:
     typedef std::shared_ptr<export_type> export_ptrtype;
 
     // time scheme
+    using newmark_potential_type = Newmark<space_potential_type>;
+    using newmark_potential_ptrtype = std::shared_ptr<newmark_potential_type>;
     using bdf_potential_type = Bdf<space_potential_type>;
     using bdf_potential_ptrtype = std::shared_ptr<bdf_potential_type>;
 
@@ -180,11 +203,14 @@ protected:
     // time discretisation
     std::string M_timeStepping;
     bdf_potential_ptrtype M_bdfPotential;
+    newmark_potential_ptrtype M_newmarkPotential;
     double M_timeStepThetaValue;
     vector_ptrtype M_timeStepThetaSchemePreviousContrib;
 
+    std::string M_solverName;
     double M_tauCst;
     bool M_useSC;
+    bool M_useNearNullSpace;
 
     // bool M_isPicard;
 
@@ -243,11 +269,21 @@ public:
     materialsproperties_ptrtype & materialsProperties() { return M_materialsProperties; }
     void setMaterialsProperties( materialsproperties_ptrtype mp ) { M_materialsProperties = mp; }
 
+    std::string const& physic() const { return this->keyword(); }
+    std::string diffusionCoefficientName() const { return prefixvm( this->physic(), "c", "_" ); }
+    std::string firstTimeDerivativeCoefficientName() const { return prefixvm( this->physic(), "d", "_" ); }
+    std::string secondTimeDerivativeCoefficientName() const { return prefixvm( this->physic(), "d2", "_" ); }
+    std::string sourceCoefficientName() const { return prefixvm( this->physic(), "f", "_" ); }
+    std::string lameLambdaCoefficientName() const { return prefixvm( this->physic(), "lambda", "_" ); }
+    std::string lameMuCoefficientName() const { return prefixvm( this->physic(), "mu", "_" ); }
+
     double tauCst() const { return M_tauCst; }
     void setTauCst(double cst) { M_tauCst = cst; }
     bool useSC() const { return M_useSC; }
     void setUseSC(bool sc) { M_useSC = sc; }
     virtual int constantSpacesSize() const { return M_bcIntegralMarkerManagement.markerIntegralBC().size(); }
+    bool useNearNullSpace() const { return M_useNearNullSpace; }
+    void setUseNearNullSpace(bool use) { M_useNearNullSpace = use; }
 
 protected :
     void loadParameterFromOptionsVm();
@@ -267,12 +303,14 @@ public:
     void updateParameterValues();
     void setParameterValues( std::map<std::string,double> const& paramValues );
 
+    std::shared_ptr<NullSpace<double>> nullSpace(std::string const& name);
+
     //___________________________________________________________________________________//
     // execute post-processing
     //___________________________________________________________________________________//
 
     void exportResults() { this->exportResults( this->currentTime() ); }
-    void exportResults( double time );
+    virtual void exportResults( double time );
 
     template <typename ModelFieldsType,typename SymbolsExpr,typename ExportsExprType>
     void exportResults( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr, ExportsExprType const& exportsExpr );
@@ -308,6 +346,8 @@ public:
     //___________________________________________________________________________________//
 
     virtual void solve();
+    void solveLinear();
+    void solvePicard();
     virtual void updateLinearPDE( DataUpdateLinear& data ) const override;
     template <typename ModelContextType>
     void updateLinearPDE( DataUpdateLinear & data, ModelContextType const& mfields ) const;
@@ -377,8 +417,17 @@ public:
     // time step scheme
     std::string const& timeStepping() const { return M_timeStepping; }
     bdf_potential_ptrtype const& timeStepBdfPotential() const { return M_bdfPotential; }
-    std::shared_ptr<TSBase> timeStepBase() { return this->timeStepBdfPotential(); }
-    std::shared_ptr<TSBase> timeStepBase() const { return this->timeStepBdfPotential(); }
+    newmark_potential_ptrtype const& timeStepNewmarkPotential() const { return M_newmarkPotential; }
+    std::shared_ptr<TSBase> timeStepBase() {
+        if( M_timeStepping == "BDF" || M_timeStepping == "Theta" )
+            return this->timeStepBdfPotential();
+        else
+            return this->timeStepNewmarkPotential();}
+    std::shared_ptr<TSBase> timeStepBase() const {
+        if( M_timeStepping == "BDF" || M_timeStepping == "Theta" )
+            return this->timeStepBdfPotential();
+        else
+            return this->timeStepNewmarkPotential();}
     virtual void startTimeStep();
     virtual void updateTimeStep();
 
@@ -387,10 +436,10 @@ public:
     //___________________________________________________________________________________//
 };
 
-template< typename ConvexType, int Order, int E_Order>
+template<typename ConvexType, int Order, template<uint16_type> class PolySetType, int E_Order>
 template <typename ModelFieldsType, typename SymbolsExpr, typename ExportsExprType>
 void
-MixedPoisson<ConvexType,Order, E_Order>::exportResults( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr, ExportsExprType const& exportsExpr )
+MixedPoisson<ConvexType, Order, PolySetType, E_Order>::exportResults( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr, ExportsExprType const& exportsExpr )
 {
     this->log("MixedPoisson","exportResults", "start");
     this->timerTool("PostProcessing").start();
@@ -409,10 +458,10 @@ MixedPoisson<ConvexType,Order, E_Order>::exportResults( double time, ModelFields
     this->log("MixedPoisson","exportResults", "finish");
 }
 
-template< typename ConvexType, int Order, int E_Order>
+template<typename ConvexType, int Order, template<uint16_type> class PolySetType, int E_Order>
 template <typename ModelFieldsType, typename SymbolsExpr>
 void
-MixedPoisson<ConvexType,Order, E_Order>::executePostProcessMeasures( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr )
+MixedPoisson<ConvexType, Order, PolySetType, E_Order>::executePostProcessMeasures( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr )
 {
     model_measures_quantities_empty_t mquantities;
 
@@ -420,10 +469,10 @@ MixedPoisson<ConvexType,Order, E_Order>::executePostProcessMeasures( double time
     super_type::executePostProcessMeasures( time, this->mesh(), M_rangeMeshElements, symbolsExpr, mfields, mquantities );
 }
 
-template< typename ConvexType, int Order, int E_Order>
+template<typename ConvexType, int Order, template<uint16_type> class PolySetType, int E_Order>
 template <typename SymbolsExprType>
 void
-MixedPoisson<ConvexType,Order, E_Order>::updateInitialConditions( SymbolsExprType const& se )
+MixedPoisson<ConvexType, Order, PolySetType, E_Order>::updateInitialConditions( SymbolsExprType const& se )
 {
     if ( !this->doRestart() )
     {
@@ -444,8 +493,16 @@ MixedPoisson<ConvexType,Order, E_Order>::updateInitialConditions( SymbolsExprTyp
 
         if ( Environment::vm().count( prefixvm(this->prefix(),"initial-solution.potential").c_str() ) )
         {
-            auto myexpr = expr( soption(_prefix=this->prefix(),_name="initial-solution.potential"),
-                                "",this->worldComm(),this->repository().expr() );
+            // myexpr result of a lambda which return type depends on template
+            auto myexpr = [this]() -> decltype(auto) {
+                              if constexpr( is_scalar ) {
+                                  return expr( soption(_prefix=this->prefix(),_name="initial-solution.potential"),
+                                               "",this->worldComm(),this->repository().expr() );
+                              } else {
+                                  return expr<nDim,1>( soption(_prefix=this->prefix(),_name="initial-solution.potential"),
+                                                       "",this->worldComm(),this->repository().expr() );
+                              }
+                          }();
             icPotentialFields[0]->on(_range=M_rangeMeshElements,_expr=myexpr);
             for ( int k=1;k<icPotentialFields.size();++k )
                 *icPotentialFields[k] = *icPotentialFields[0];

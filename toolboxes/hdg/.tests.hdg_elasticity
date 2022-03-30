@@ -1,0 +1,1 @@
+quarterturn-2d --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/elasticity/quarterturn/quarterturn2D.cfg

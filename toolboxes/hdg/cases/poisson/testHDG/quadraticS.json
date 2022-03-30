@@ -7,11 +7,14 @@
         "omega":
         {
             "name":"simulation_domain",
-            "cond":"1"
+            "poisson_d":"1",
+            "poisson_c":"1",
+            "poisson_f":"-2:x:y:t"
         }
     },
     "InitialConditions":
     {
+        "poisson":{
         "potential":
         {
             "Expression":
@@ -19,34 +22,39 @@
                 "myic1":
                 {
                     "markers":"omega",
-					"expr":"x*x:x:t"
+					"expr":"x*x:x:y:t"
                 }
             }
+        }
         }
     },
     "BoundaryConditions":
     {
+        "flux":
+        {
+            "Integral":
+            {
+                "top":
+                {
+                    "expr":"-4"
+                }
+            }
+        },
         "potential":
         {
-            "VolumicForces":
-            {
-                "omega":
-                {
-					"expr":"-2:x:y:t"
-                }
-            },
             "Dirichlet":
             {
                 "bc":
 				{
-                    "markers":["bottom","top","lateral"],
-					"expr":"x*x:x:t"
+                    "markers":["bottom","lateral"],
+					"expr":"x*x:x:y:t"
 				}
             }
         }
     },
     "PostProcess":
     {
+        "poisson":{
 		"Exports":
 		{
         	"fields":["potential","flux"]
@@ -59,7 +67,7 @@
                 {
                     "type":"L2-error",
                     "field":"potential",
-                    "solution":"x*x:x:t",
+                    "solution":"x*x:x:y:t",
                     "markers":"omega"
                 },
                 "flux_error":
@@ -86,6 +94,7 @@
                     "tolerance":1e-8
                 }
             }
+        }
         }
     }
 }
