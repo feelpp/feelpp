@@ -269,6 +269,14 @@
             ]
         },
         {
+            "name": "testsuite",
+            "configurePreset": "testsuite",
+            "inherits": "default",
+            "targets": [
+                "all"
+            ]
+        },
+        {
             "name": "doxygen",
             "configurePreset": "doxygen",
             "targets": ["doxygen"]
@@ -326,6 +334,11 @@
         {
             "name": "feelpp-python",
             "configurePreset": "feelpp-python",
+            "inherits": "feelpp"
+        },
+        {
+            "name": "testsuite",
+            "configurePreset": "testsuite",
             "inherits": "feelpp"
         }
     ],
