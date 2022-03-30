@@ -21,7 +21,7 @@
             "T0":"293",
             "Lorentz":2.47e-8,
             "sigma0":"58e3",
-            "cond":"sigma0:sigma0",
+            "poisson_c":"sigma0:sigma0",
             // "alpha":"3.35e-3",
             // "T0":"293",
             // "sigma0":"58e+3",
@@ -44,10 +44,6 @@
         },
         "potential":
         {
-            "VolumicForces":
-            {
-                "": {"expr":"0"}
-            },
             "Dirichlet":
             {
                 "V0":
@@ -103,6 +99,7 @@
     },
     "PostProcess":
     {
+        "poisson":{
         "Exports":
         {
             "fields":["potential","flux"]
@@ -199,6 +196,7 @@
                     "tolerance":10
                 }
             }
+        }
         }
     }
 }

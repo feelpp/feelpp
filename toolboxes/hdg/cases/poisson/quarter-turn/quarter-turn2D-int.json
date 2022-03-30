@@ -3,9 +3,7 @@
     "ShortName":"MP",
     "Models":
     {
-        "equations":"hdg",
-        "p_expr":"2*dif/Pi*atan2(y,x):x:y:z:dif",
-        "u_expr":"{2*dif*sigma/Pi*y/(x*x+y*y),-2*dif*sigma/Pi*x/(x*x+y*y)}:x:y:z:dif:sigma"
+        "equations":"hdg"
     },
     "Parameters":
     {
@@ -21,8 +19,7 @@
         "omega":
         {
             "name":"copper",
-            "cond":"58e3",
-            "k":58e3
+            "poisson_c":58e3
             // "alpha":"3.35e-3",
             // "T0":"293",
             // "sigma0":"50",
@@ -45,10 +42,6 @@
         },
         "potential":
         {
-            "VolumicForces":
-            {
-                "":{"expr":"0"}
-            },
             "Dirichlet":
             {
                 // "top":
@@ -67,27 +60,11 @@
                     "expr":"0"
                 }
             }
-        },
-	    "Exact solution":
-	    {
-	        "p_exact":
-	        {
-		        "omega":
-		        {
-		            "expr":"2*dif/Pi*atan2(y,x):x:y:z:dif"
-		        }
-	        },
-            "u_exact":
-            {
-                "omega":
-                {
-                    "expr":"{2*dif*sigma/Pi*y/(x*x+y*y),-2*dif*sigma/Pi*x/(x*x+y*y)}:x:y:z:dif:sigma"
-                }
-            }
-	    }
+        }
     },
     "PostProcess":
     {
+        "poisson":{
         "Exports":
 		{
             "fields":["potential","flux"]
@@ -184,6 +161,7 @@
                     "tolerance":10
                 }
             }
+        }
         }
     }
 }

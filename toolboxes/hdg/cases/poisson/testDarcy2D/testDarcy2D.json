@@ -7,20 +7,14 @@
         "omega":
         {
             "name":"copper",
-            "cond":"-1"
+            "poisson_c":"-1",
+            "poisson_f":"-sin(Pi*x)*sin(Pi*y):x:y"
         }
     },
     "BoundaryConditions":
     {
         "potential":
         {
-            "VolumicForces":
-            {
-                "omega":
-                {
-                    "expr":"-sin(Pi*x)*sin(Pi*y):x:y"
-                }
-            },
             "Neumann":
             {
                 "top":
