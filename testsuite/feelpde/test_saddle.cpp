@@ -7,7 +7,6 @@
 #include <feel/feeldiscr/ned1h.hpp>
 #include <feel/feeldiscr/operatorinterpolation.hpp>
 #include <feel/feelpde/preconditionerblockms.hpp>
-#include <feel/feelmodels/modelproperties.hpp>
 #include <feel/feelvf/vf.hpp>
 
 #define curl_op curl
@@ -67,8 +66,6 @@ BOOST_AUTO_TEST_CASE( test_0 )
 
     auto a = form2(_test=Xh, _trial=Xh);
     auto l = form1( _test=Xh );
-    
-    ModelProperties model;
 
     a = integrate(_range=elements(mesh),
                   _expr = 
@@ -101,11 +98,13 @@ BOOST_AUTO_TEST_CASE( test_0 )
     auto prec = preconditioner(_backend=backend(_name="ms"),_pc=pcTypeConvertStrToEnum(soption("ms.pc-type")), _prefix="ms",_matrix=a.matrixPtr());
     if(soption("ms.pc-type") == "blockms" )
     {
-        auto precBMS = std::make_shared<PreconditionerBlockMS<comp_space_type>>(
-            U.functionSpace(),
-            model,
-            "ms",
-            a.matrixPtr(), 1.);
+        BoundaryConditions bc;
+        bc["u"]["Dirichlet"].push_back( ExpressionStringAtMarker(std::make_tuple( "expression", "Border", "{0,0,y}:x:y:z", "", "" ), ModelMarkers{"Border"} ) );
+        bc["phi"]["Dirichlet"].push_back( ExpressionStringAtMarker(std::make_tuple( "expression", "Border", "0", "", "" ), ModelMarkers{"Border"} ) );
+        auto precBMS = blockms(_space=U.functionSpace(),
+                               _matrix=a.matrixPtr(),
+                               _prefix="ms",
+                               _bc=bc );
         prec->attachInHousePreconditioners("blockms",precBMS);
         //preconditioner(_backend=backend(_name="ms"), _pc=FEELPP_BLOCKMS_PRECOND, _prefix="ms")->attachInHousePreconditioners("blockms",prec);
     }
