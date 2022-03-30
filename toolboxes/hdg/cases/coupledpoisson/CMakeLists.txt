@@ -23,7 +23,7 @@
 #
 #
 
-add_subdirectory( 0-constant )
+add_subdirectory( test-linear )
 add_subdirectory( 1-linear )
 add_subdirectory( 2-nonlinearR )
 add_subdirectory( 3-nonlinearC )

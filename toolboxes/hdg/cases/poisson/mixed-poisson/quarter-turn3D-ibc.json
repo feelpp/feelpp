@@ -7,28 +7,27 @@
         "omega":
         {
             "name":"copper",
-            "cond":"1",
-            "k":"1"
+            "poisson_c":"1"
+        }
+    },
+    "InitialConditions":
+    {
+        "potential":
+        {
+            "Expression":
+            {
+                "myic1":
+                {
+                    "markers":"omega",
+					"expr":"x:x"
+                }
+            }
         }
     },
     "BoundaryConditions":
     {
         "potential":
         {
-            "InitialSolution":
-            {
-                "omega":
-                {
-                    "expr":"x:x"
-                }
-            },
-            "SourceTerm":
-            {
-                "omega":
-                {
-                    "expr":"0"
-                }
-            },
             "Dirichlet":
             {
                 // "top":
@@ -59,23 +58,6 @@
                 "top":
                 {
                     "expr":"-1"
-                }
-            }
-        },
-        "Exact solution":
-        {
-            "p_exact":
-            {
-                "omega":
-                {
-                    "expr":"x:x"
-                }
-            },
-            "u_exact":
-            {
-                "omega":
-                {
-                    "expr":"{-1,0,0}"
                 }
             }
         }
