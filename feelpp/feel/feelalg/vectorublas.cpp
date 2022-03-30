@@ -1390,7 +1390,7 @@ VectorUblasContiguousGhosts<T, Storage>::dotVector( const VectorPetsc<T> & v ) c
 #endif // FEELPP_HAS_PETSC
 
 template< typename T, typename Storage > 
-VectorUblasRange<T, Storage> * VectorUblasContiguousGhosts<T, Storage>::rangeImpl( const range_type & rangeActive, const range_type & rangeGhost )
+VectorUblasBase<T> * VectorUblasContiguousGhosts<T, Storage>::rangeImpl( const range_type & rangeActive, const range_type & rangeGhost )
 {
     if constexpr ( is_vector_range ) // should not happen, but still implemented
     {
@@ -1420,7 +1420,7 @@ VectorUblasRange<T, Storage> * VectorUblasContiguousGhosts<T, Storage>::rangeImp
 }
 
 template< typename T, typename Storage >
-VectorUblasSlice<T, Storage> * VectorUblasContiguousGhosts<T, Storage>::sliceImpl( const slice_type & sliceActive, const slice_type & sliceGhost )
+VectorUblasBase<T> * VectorUblasContiguousGhosts<T, Storage>::sliceImpl( const slice_type & sliceActive, const slice_type & sliceGhost )
 {
     if constexpr ( is_vector_range ) // should not happen, but still implemented
     {
