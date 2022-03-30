@@ -20,7 +20,8 @@
     {
         "omega":
         {
-            "cond":"k:k"
+            "poisson_c":"k:k",
+            "poisson_f":"0.5*x:x"
         }
     },
     "InitialConditions":
@@ -32,7 +33,8 @@
                 "myic1":
                 {
                     "markers":"omega",
-                    "expr": "10+0.5*x*t:x:t"
+                    "expr": "10"
+                    // "expr": "10+0.5*x*t:x:t"
                     // "expr":"a+b*x*t:x:y:z:a:b:t"
                 }
             }
@@ -61,20 +63,13 @@
                     "markers":"top",
                     "capacitor": "Cbuffer.C",
                     "resistor": "Rbuffer.R",
-                    "circuit": "$cfgdir/test3d0d_constant/test3d0d_constant.fmu",
+                    "circuit": "$cfgdir/test_linear/test_linear.fmu",
                     "buffer": "Pi_1.phi"
                 }
             }
         },
         "potential":
         {
-            "VolumicForces":
-            {
-                "omega":
-                {
-                    "expr":0
-                }
-            },
             "Dirichlet":
             {
                 "bottom":
@@ -95,7 +90,12 @@
     {
         "Exports":
         {
-            "fields":["potential","flux"]
+            "fields":["potential","flux"],
+            "expr":
+            {
+                "p_exact":"a+b*x*t:a:b:x:t",
+                "j_exact":"{-k*b*t,0,0}:k:b:t"
+            }
         },
         "Measures":
         {
@@ -106,7 +106,7 @@
                     "type":"L2-error",
                     "field": "potential",
                     // "solution": "a+b*x*t:x:a:b:t",
-                    "solution": "10+0.5*x*0.08:x",
+                    "solution": "10+0.5*x*t:t:x",
                     "markers":"omega"
                 },
                 "flux_error":
@@ -125,12 +125,12 @@
                 "Norm_potential_error_L2-error":
                 {
                     "value":0,
-                    "tolerance":1e-1
+                    "tolerance":1e-6
                 },
                 "Norm_flux_error_L2-error":
                 {
                     "value":0,
-                    "tolerance":1e-1
+                    "tolerance":1e-6
                 }
             }
         }
