@@ -2485,88 +2485,39 @@ public:
         component_type
         comp( ComponentType i, ComponentType j = ComponentType::NO_COMPONENT ) const
         {
-            //return comp( i, mpl::bool_<boost::is_same<>is_composite>() );
-            return comp( i, j, typename mpl::not_< mpl::or_< boost::is_same<container_type,VectorUblas<value_type> >,
-                         boost::is_same<container_type,typename VectorUblas<value_type>::shallow_array_adaptor::type > > >::type() );
-
-        }
-        component_type
-        comp( ComponentType i, ComponentType j, mpl::bool_<true> ) const
-        {
             CHECK( i >= ComponentType::X && (int)i < nComponents1 ) << "Invalid component " << (int)i;
             int startSlice = ((int)i);
             std::string __name = this->name() + "_" + componentToString( i );
             if ( j != ComponentType::NO_COMPONENT )
             {
                 CHECK( j >= ComponentType::X && (int)j < nComponents2 ) << "Invalid component " << (int)j;
+
                 if ( is_tensor2symm )
                 {
                     startSlice = Feel::detail::symmetricIndex( (int)i, (int)j, nComponents1 );
                 }
                 else
-                    startSlice = ((int)i)*nComponents2+((int)j);
-                __name += "_" + componentToString( j );
-            }
-            //auto s = ublas::slice( startSlice, nComponents, M_functionspace->nLocalDofPerComponent() );
-            auto sActive = ublas::slice( this->container().start()+startSlice, nRealComponents, M_functionspace->nLocalDofWithoutGhostPerComponent() );
-            auto sGhost = ublas::slice( this->container().startNonContiguousGhosts()+startSlice, nRealComponents, M_functionspace->nLocalGhostPerComponent() );
-
-            //std::cout << "extract component " << (int)i << " start+i:" << start()+(int)i << "\n";
-
-            size_type startContainerIndex = start() + startSlice;
-            component_type c( compSpace(),
-                              typename component_type::container_type( this->vec().data().expression(), sActive,
-                                                                       this->vecNonContiguousGhosts().data().expression(), sGhost,
-                                                                       this->compSpace()->dof() ),
-                              __name,
-                              startContainerIndex,//start()+(size_type)i,
-                              i );
-            return c;
-        }
-        component_type
-        comp( ComponentType i, ComponentType j, mpl::bool_<false> ) const
-        {
-            CHECK( i >= ComponentType::X && (int)i < nComponents1 ) << "Invalid component " << (int)i;
-            int startSlice = ((int)i);
-            std::string __name = this->name() + "_" + componentToString( i );
-            if ( j != ComponentType::NO_COMPONENT )
-            {
-                CHECK( j >= ComponentType::X && (int)j < nComponents2 ) << "Invalid component " << (int)j;
-                if ( is_tensor2symm )
                 {
-                    startSlice = Feel::detail::symmetricIndex( (int)i, (int)j, nComponents1 );
-                }
-                else
                     startSlice = ((int)i)*nComponents2+((int)j);
+                }
                 __name += "_" + componentToString( j );
+
             }
-            //size_type startGhostDof = (container_type::is_shallow_array_adaptor_vector)? 0 : this->functionSpace()->dof()->nLocalDofWithoutGhost();
-            size_type startGhostDof = this->startGhost();
+
             auto sActive = ublas::slice( startSlice, nRealComponents, M_functionspace->nLocalDofWithoutGhostPerComponent() );
-            auto sGhost = ublas::slice( startGhostDof+startSlice, nRealComponents, M_functionspace->nLocalGhostPerComponent() );
+            auto sGhost = ublas::slice( startSlice, nRealComponents, M_functionspace->nLocalGhostPerComponent() );
 
-            //std::cout << "extract component " << (int)i << " start+i:" << start()+(int)i << "\n";
+            //std::cout << "extract component " << (int)i << " start+i:" << start()+(int)i << " slice size:" << s.size();
+
             size_type startContainerIndex = start() + startSlice;
             component_type c( compSpace(),
-                              typename component_type::container_type( ( container_type& )*this, sActive, sGhost, this->compSpace()->dof() ),
-                              __name,
-                              startContainerIndex,
-                              i );
+                    this->container().slice( sActive, sGhost, this->compSpace()->dof() ),
+                    __name,
+                    startContainerIndex,
+                    i,j );
             return c;
         }
 
-        /**
-         * get the component of the element
-         *
-         * @param i component id
-         * @return the i-th component of the element
-         */
-        //component_type
-        //comp( ComponentType i, ComponentType j = ComponentType::NO_COMPONENT )
-        //{
-            //return comp( i, j, typename mpl::not_< mpl::or_< boost::is_same<container_type,VectorUblas<value_type> >,
-                         //boost::is_same<container_type,typename VectorUblas<value_type>::shallow_array_adaptor::type > > >::type() );
-        //}
         component_type
         comp( ComponentType i, ComponentType j = ComponentType::NO_COMPONENT )
         {
@@ -2596,53 +2547,13 @@ public:
 
             size_type startContainerIndex = start() + startSlice;
             component_type c( compSpace(),
-                    //typename component_type::container_type( this->vec().data().expression(), sActive,
-                    //this->vecNonContiguousGhosts().data().expression(), sGhost,
-                    //this->compSpace()->dof() ),
                     this->container().slice( sActive, sGhost, this->compSpace()->dof() ),
                     __name,
                     startContainerIndex,
                     i,j );
             return c;
         }
-#if 0
-        component_type
-        comp( ComponentType i, ComponentType j, mpl::bool_<false> )
-        {
-            CHECK( i >= ComponentType::X && (int)i < nComponents1 ) << "Invalid component " << (int) i;
-            int startSlice = ((int)i);
-            std::string __name = this->name() + "_" + componentToString( i );
-            if ( j != ComponentType::NO_COMPONENT )
-            {
-                CHECK( j >= ComponentType::X && (int)j < nComponents2 ) << "Invalid component " << (int)j;
-                if ( is_tensor2symm )
-                {
-                    startSlice = Feel::detail::symmetricIndex( (int)i, (int)j, nComponents1 );
-                }
-                else
-                {
-                    startSlice = ((int)i)*nComponents2+((int)j);
-                }
-                __name += "_" + componentToString( j );
-            }
 
-            //auto s = ublas::slice( startSlice, nComponents, M_functionspace->nLocalDofPerComponent() );
-            size_type startGhostDof = (container_type::is_shallow_array_adaptor_vector)? 0 : this->functionSpace()->dof()->nLocalDofWithoutGhost();
-            auto sActive = ublas::slice( startSlice, nRealComponents, M_functionspace->nLocalDofWithoutGhostPerComponent() );
-            auto sGhost = ublas::slice( startGhostDof+startSlice, nRealComponents, M_functionspace->nLocalGhostPerComponent() );
-
-            //std::cout << "extract component " << (int)i << " start+i:" << start()+(int)i << " slice size:" << s.size();
-
-            size_type startContainerIndex = start() + startSlice;
-            component_type c( compSpace(),
-                              //typename component_type::container_type( ( VectorUblas<value_type>& )*this, s, this->compSpace()->dof() ),
-                              typename component_type::container_type( *this, sActive, sGhost, this->compSpace()->dof() ),
-                              __name,
-                              startContainerIndex,//start()+(size_type)i,
-                              i,j );
-            return c;
-        }
-#endif
         component_type
         operator[]( ComponentType i )
             {
