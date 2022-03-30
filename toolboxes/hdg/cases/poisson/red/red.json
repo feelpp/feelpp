@@ -7,25 +7,25 @@
         "OmegaG":
         {
             "name":"oxide",
-	    	"cond":"3.9 *  8.854*10^(-12) * 10^4", // k = epsR * eps0 / q
+	    	"poisson_c":"3.9 *  8.854*10^(-12) * 10^4", // k = epsR * eps0 / q
             "scale_flux":"1e-4 / (3.9 * 8.854^(-12))" // E = D/(epsR*eps0) 
         },
         "OmegaS":
         {
             "name":"silicium",
-	    	"cond":"11.7 *  8.854*10^(-12) * 10^4", // k = epsR * eps0 / q
+	    	"poisson_c":"11.7 *  8.854*10^(-12) * 10^4", // k = epsR * eps0 / q
             "scale_flux":"1e-4 / (11.7 * 8.854^(-12))" // E = D/(epsR*eps0) 
         },
         "OmegaD":
         {
             "name":"silicium",
-	    	"cond":"11.7 *  8.854*10^(-12) * 10^4", // k = epsR * eps0 / q
+	    	"poisson_c":"11.7 *  8.854*10^(-12) * 10^4", // k = epsR * eps0 / q
             "scale_flux":"1e-4 / (11.7 * 8.854^(-12))" // E = D/(epsR*eps0) 
         },
         "OmegaB":
         {
             "name":"silicium",
-	    	"cond":"11.7 *  8.854*10^(-12) * 10^4", // k = epsR * eps0 / q
+	    	"poisson_c":"11.7 *  8.854*10^(-12) * 10^4", // k = epsR * eps0 / q
             "scale_flux":"1e-4 / (11.7 * 8.854^(-12))" // E = D/(epsR*eps0) 
         }
     },
@@ -47,25 +47,6 @@
     {
         "potential":
         {
-            "VolumicForces":
-            {
-                "OmegaG":
-                {
-                    "expr":"0.0:x:y:z" 
-                },
-                "OmegaB":
-                {
-                    "expr":"0.0:x:y:z" 
-                },
-                "OmegaD":
-                {
-                    "expr":"0.0:x:y:z" 
-                },
-                "OmegaS":
-                {
-                    "expr":"0.0:x:y:z" 
-                }
-            },
             "Dirichlet":
 	    	{
 	    		"Source":
@@ -110,7 +91,7 @@
 					"expr": "-1.4558*10^(-17) * 10^4" //"-90.8740" // "-1.4558*10^(-17)"//
                 }
  	    	},
-            "InterfaceCondition":
+            "Interface":
             {
                 "IntSG":
                 {
