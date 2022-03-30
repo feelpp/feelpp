@@ -165,12 +165,11 @@ public:
 
         mesh = loadMesh(_mesh = new mesh_type);
 
-        using namespace std::placeholders;
         M_backend->nlSolver()->jacobian = std::bind( &self_type::updateJacobian,
-                                                       std::ref( *this ), _1, _2 );
+                                                       std::ref( *this ), std::placeholders::_1, std::placeholders::_2 );
 
         M_backend->nlSolver()->residual = std::bind( &self_type::updateResidual,
-                                                       std::ref( *this ), _1, _2 );
+                                                       std::ref( *this ), std::placeholders::_1, std::placeholders::_2 );
     }
 
     /**
