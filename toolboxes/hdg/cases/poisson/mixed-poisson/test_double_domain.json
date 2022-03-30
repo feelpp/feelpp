@@ -7,7 +7,8 @@
         "omega":
         {
             "name":"copper",
-	    	"k":"1"
+	    	"poisson_c":"1",
+            "poisson_f":"4*( (x^2+y^2)*sin(x^2+y^2)-cos(x^2+y^2) ):x:y"
         }/*,
         "omega2":
         {
@@ -19,19 +20,6 @@
     {
         "potential":
         {
-            "SourceTerm":
-            {
-                "omega":
-                {
-                   "expr":"4*( (x^2+y^2)*sin(x^2+y^2)-cos(x^2+y^2) ):x:y"
-                   //"expr":"0.0"
-                }/*,
-                "omega2":
-                {
-                   "expr":"4*( (x^2+y^2)*sin(x^2+y^2)-cos(x^2+y^2) ):x:y"
-                   //"expr":"0.0"
-                }*/
-            },
             "Dirichlet":
 	    	{
 	    		"dirichlet1":
@@ -50,23 +38,7 @@
                     // "expr":"4.0"
                 }*/
 	    	}
-    	},
-		"Exact solution":
-		{
-	    	"p_exact":
-	    	{
-				"omega":
-				{
-                	"expr":"2+sin(x^2+y^2):x:y" 
-		     		//"expr":"4.0" 
-				}/*,
-				"omega2":
-				{
-		     		//"expr":"4.0" 
-                	"expr":"2+sin(x^2+y^2):x:y" 
-				}*/
-	    	}
-		}
+    	}
      },
     "PostProcess":
     {
