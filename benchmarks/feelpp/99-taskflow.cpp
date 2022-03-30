@@ -6,8 +6,8 @@
 #include <feel/feelfilters/loadmesh.hpp>
 #include <taskflow/taskflow.hpp>
 #include <taskflow/algorithm/reduce.hpp>
-#include <spdlog/spdlog.h>
-#include <spdlog/fmt/chrono.h>
+//#include <spdlog/spdlog.h>
+//#include <spdlog/fmt/chrono.h>
 
 int main(int argc, char** argv )
 {
@@ -26,7 +26,7 @@ int main(int argc, char** argv )
     auto beg = std::chrono::high_resolution_clock::now();
     auto mesh = loadMesh(_mesh = new mesh_t);
     auto end = std::chrono::high_resolution_clock::now();
-    spdlog::info("load mesh in {}", std::chrono::duration_cast<std::chrono::seconds>(end - beg));
+//    spdlog::info("load mesh in {}", std::chrono::duration_cast<std::chrono::seconds>(end - beg));
 
     tf::Executor executor(ioption("nt"));
     tf::Taskflow taskflow;
@@ -49,7 +49,7 @@ int main(int argc, char** argv )
         }).name("compute_measure");
     executor.run(taskflow).get();
     end = std::chrono::high_resolution_clock::now();
-    spdlog::info("area domain tf({} threads): {} in {}", ioption("nt"), area, std::chrono::duration_cast<std::chrono::milliseconds>(end - beg));
+    //spdlog::info("area domain tf({} threads): {} in {}", ioption("nt"), area, std::chrono::duration_cast<std::chrono::milliseconds>(end - beg));
     taskflow.dump(std::cout);
     beg = std::chrono::high_resolution_clock::now();
     double area_seq = 0;
@@ -59,9 +59,9 @@ int main(int argc, char** argv )
         area_seq += f.measure();
     }
     end = std::chrono::high_resolution_clock::now();
-    spdlog::info("area domain seq: {} in {}", area_seq, std::chrono::duration_cast<std::chrono::milliseconds>(end - beg));
+    //spdlog::info("area domain seq: {} in {}", area_seq, std::chrono::duration_cast<std::chrono::milliseconds>(end - beg));
 
-    if ( std::abs(area-area_seq)>1e-10 || std::abs(area-meas) > 1e-10 )
-        spdlog::error("error in computing area: {} {} should be approx {}\n", area, area_seq, meas);
+//    if ( std::abs(area-area_seq)>1e-10 || std::abs(area-meas) > 1e-10 )
+//        spdlog::error("error in computing area: {} {} should be approx {}\n", area, area_seq, meas);
     
 }
