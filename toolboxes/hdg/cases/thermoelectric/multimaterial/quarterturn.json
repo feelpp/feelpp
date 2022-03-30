@@ -15,12 +15,16 @@
         "omega":
         {
             "filename":"$cfgdir/omega.json",
-            "physics":"thermo-electric"
+            "physics":"thermo-electric",
+            "electric_c":"sigma:sigma",
+            "heat_c":"k:k"
         },
         "omega2":
         {
             "filename":"$cfgdir/omega.json",
-            "physics":"heat"
+            "physics":"heat",
+            "electric_c":"sigma:sigma",
+            "heat_c":"k:k"
         }
     },
     "BoundaryConditions":
