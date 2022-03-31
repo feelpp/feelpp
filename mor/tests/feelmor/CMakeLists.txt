@@ -22,22 +22,32 @@
 #
 #
 set_directory_properties(PROPERTIES LABEL testmor )
+
+foreach( geo test_deim.geo test_geim.geo parameterspace.json )
+  add_custom_target(copy-${geo})
+  add_custom_command(
+        TARGET copy-${geo} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy
+                ${CMAKE_CURRENT_SOURCE_DIR}/${geo}
+                ${CMAKE_CURRENT_BINARY_DIR}/${geo})
+endforeach()
+
 feelpp_add_test( eim NO_MPI_TEST LINK_LIBRARIES Feelpp::feelpp_mor )
 feelpp_add_test( eim_grepl LINK_LIBRARIES Feelpp::feelpp_mor CLI "--eim.dimension-max=15 --trainset-eim-size=10 --eim.rebuild-database=true" )
 feelpp_add_test( eim_composite CFG test_eim_composite.cfg LINK_LIBRARIES Feelpp::feelpp_mor NO_MPI_TEST )
 
-feelpp_add_test( deim GEO test_deim.geo LINK_LIBRARIES Feelpp::feelpp_mor NO_MPI_TEST)
+feelpp_add_test( deim   LINK_LIBRARIES Feelpp::feelpp_mor NO_MPI_TEST)
 
 feelpp_add_test( rbspace LINK_LIBRARIES Feelpp::feelpp_mor  )
 feelpp_add_test( rbspacevector LINK_LIBRARIES Feelpp::feelpp_mor )
 
-feelpp_add_test( db CFG test_db.cfg GEO test_db.geo LINK_LIBRARIES Feelpp::feelpp_mor CLI "-st_pc_factor_mat_solver_package mumps" )
+feelpp_add_test( db CFG test_db.cfg LINK_LIBRARIES Feelpp::feelpp_mor CLI "-st_pc_factor_mat_solver_package mumps" )
 
-feelpp_add_test( parameterspace CFG parameterspace.cfg GEO parameterspace.json LINK_LIBRARIES Feelpp::feelpp_mor )
+feelpp_add_test( parameterspace CFG parameterspace.cfg LINK_LIBRARIES Feelpp::feelpp_mor )
 feelpp_add_test( reducedglobaldof LINK_LIBRARIES Feelpp::feelpp_mor )
 
-feelpp_add_test( geim GEO test_geim.geo LINK_LIBRARIES Feelpp::feelpp_mor )
-feelpp_add_test( pbdw GEO test_geim.geo LINK_LIBRARIES Feelpp::feelpp_mor )
+feelpp_add_test( geim LINK_LIBRARIES Feelpp::feelpp_mor )
+feelpp_add_test( pbdw LINK_LIBRARIES Feelpp::feelpp_mor )
 
 if (FEELPP_HAS_GLPK)
   feelpp_add_test( empiricalquadrature LINK_LIBRARIES Feelpp::feelpp_mor )
