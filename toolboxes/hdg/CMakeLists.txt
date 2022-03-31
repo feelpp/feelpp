@@ -51,23 +51,12 @@ feelpp_add_application( hdg_thermoelectric
   INSTALL TESTS
   )
 
-# feelpp_add_application( hdg_cvg_thermoelectric
-#   SRCS thermoelectric.hpp cvg_thermoelectric.cpp
-#   LINK_LIBRARIES feelpp_toolbox_hdg_poisson_lib
-#   INSTALL
-#   )
-
 # feelpp_add_application( hdg_poroelastic
 #   SRCS poroelastic_main.cpp
 #   LINK_LIBRARIES feelpp_toolbox_hdg_poisson_lib feelpp_toolbox_hdg_elasticity_lib
 #   INSTALL
 #   )
 
-#feelpp_add_application(
-#  hdg_thermoelectricelasticity
-#  SRCS thermoelectric-elasticity.hpp thermoelectric-elasticity_main.cpp
-#  LINK_LIBRARIES feelpp_toolbox_hdg_poisson_lib feelpp_toolbox_hdg_elasticity_lib
-#  )
 feelpp_add_testcase(cases PREFIX feelpp_toolbox_hdg CATEGORY toolboxes/hdg)
 
 if ( FEELPP_HAS_FMI4CPP )

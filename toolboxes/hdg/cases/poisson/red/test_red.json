@@ -39,7 +39,7 @@
                 {
                     "OmegaG":
                     {
-                        "markers":["omegaG","omegaS","omegaB","omegaD",],
+                        "markers":["omegaG","omegaS","omegaB","omegaD"],
                         "expr":"0.0"
                     }
                 }
@@ -132,9 +132,12 @@
      },
     "PostProcess":
     {
-        "Exports":
+        "poisson":
         {
-            "fields":["potential","flux"]
+            "Exports":
+            {
+                "fields":["potential","flux"]
+            }
         }
     }
 }

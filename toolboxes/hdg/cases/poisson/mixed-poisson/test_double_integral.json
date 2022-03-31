@@ -15,7 +15,7 @@
     },
     "BoundaryConditions":
     {
-        "potential":
+        "poisson":
         {
             "Dirichlet":
 	        {
@@ -34,10 +34,7 @@
                 {
                      "expr":"0.0"
                 }
-            }
-	    },
-	    "flux":
-	    {
+            },
 	        "Integral":
 	        {
         	    "out_1":
@@ -53,9 +50,12 @@
      },
     "PostProcess":
     {
-        "Exports":
+        "poisson":
         {
-            "fields":["potential","flux"]
+            "Exports":
+            {
+                "fields":["potential","flux"]
+            }
         }
     }
 }

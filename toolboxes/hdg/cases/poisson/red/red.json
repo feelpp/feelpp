@@ -110,10 +110,13 @@
      },
     "PostProcess":
     {
-		"Exports":
-		{
-        	"fields":["potential","flux","scaled_flux"]
-		}
+        "poisson":
+        {
+		    "Exports":
+		    {
+        	    "fields":["potential","flux","scaled_flux"]
+		    }
+        }
     }
 }
 
