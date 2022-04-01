@@ -257,6 +257,9 @@ template <typename IndexType>
 void
 ModelMesh<IndexType>::setupRestart( ModelMeshes<IndexType> const& mMeshes )
 {
+    if ( M_mmeshCommon->hasMesh() )
+        return;
+
     std::string meshFilename;
     if ( mMeshes.worldComm().isMasterRank() )
     {
