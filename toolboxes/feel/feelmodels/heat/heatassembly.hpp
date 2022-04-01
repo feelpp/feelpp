@@ -356,8 +356,8 @@ Heat<ConvexType,BasisTemperatureType>::updateJacobian( DataUpdateJacobian & data
                         // NOTE : a strange compilation error related to boost fusion if we use [trialXh,trialBlockIndex] in the loop for
                         for ( auto const& trialSpacePair /*[trialXh,trialBlockIndex]*/ : hana::second(e).blockSpaceIndex() )
                         {
-                            auto trialXh = trialSpacePair.first;
-                            auto trialBlockIndex = trialSpacePair.second;
+                            auto trialXh = trialSpacePair.second;
+                            auto trialBlockIndex = trialSpacePair.first;
 
                             auto kappaDiffExpr = diffSymbolicExpr( kappaExpr, hana::second(e), trialXh, trialBlockIndex, this->worldComm(), this->repository().expr() );
 
@@ -436,8 +436,8 @@ Heat<ConvexType,BasisTemperatureType>::updateJacobian( DataUpdateJacobian & data
                 {
                     for ( auto const& trialSpacePair : hana::second(e).blockSpaceIndex() )
                     {
-                        auto trialXh = trialSpacePair.first;
-                        auto trialBlockIndex = trialSpacePair.second;
+                        auto trialXh = trialSpacePair.second;
+                        auto trialBlockIndex = trialSpacePair.first;
 
                         auto neumannDiffExpr = diffSymbolicExpr( neumannExpr, hana::second(e), trialXh, trialBlockIndex, this->worldComm(), this->repository().expr() );
 

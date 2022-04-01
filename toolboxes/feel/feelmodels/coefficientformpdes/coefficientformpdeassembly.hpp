@@ -433,8 +433,8 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic:
                         // NOTE : a strange compilation error related to boost fusion if we use [trialXh,trialBlockIndex] in the loop for
                         for ( auto const& trialSpacePair /*[trialXh,trialBlockIndex]*/ : hana::second(e).blockSpaceIndex() )
                         {
-                            auto trialXh = trialSpacePair.first;
-                            auto trialBlockIndex = trialSpacePair.second;
+                            auto trialXh = trialSpacePair.second;
+                            auto trialBlockIndex = trialSpacePair.first;
 
                             auto coeff_beta_diff_expr = diffSymbolicExpr( coeff_beta_expr, hana::second(e), trialXh, trialBlockIndex, this->worldComm(), this->repository().expr() );
 
@@ -486,8 +486,8 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic:
                             // NOTE : a strange compilation error related to boost fusion if we use [trialXh,trialBlockIndex] in the loop for
                             for ( auto const& trialSpacePair /*[trialXh,trialBlockIndex]*/ : hana::second(e).blockSpaceIndex() )
                             {
-                                auto trialXh = trialSpacePair.first;
-                                auto trialBlockIndex = trialSpacePair.second;
+                                auto trialXh = trialSpacePair.second;
+                                auto trialBlockIndex = trialSpacePair.first;
 
                                 auto coeff_c_diff_expr = diffSymbolicExpr( coeff_c_expr, hana::second(e), trialXh, trialBlockIndex, this->worldComm(), this->repository().expr() );
 
@@ -536,8 +536,8 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic:
                             // NOTE : a strange compilation error related to boost fusion if we use [trialXh,trialBlockIndex] in the loop for
                             for ( auto const& trialSpacePair /*[trialXh,trialBlockIndex]*/ : hana::second(e).blockSpaceIndex() )
                             {
-                                auto trialXh = trialSpacePair.first;
-                                auto trialBlockIndex = trialSpacePair.second;
+                                auto trialXh = trialSpacePair.second;
+                                auto trialBlockIndex = trialSpacePair.first;
 
                                 auto coeff_c_diff_expr = diffSymbolicExpr( coeff_c_expr, hana::second(e), trialXh, trialBlockIndex, this->worldComm(), this->repository().expr() );
 
@@ -580,8 +580,8 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic:
                     hana::for_each( tse.map(), [this, &coeff_gamma_expr, &v, &J, &range, &Xh, &timeSteppingScaling]( auto const& e ) {
                        for ( auto const& trialSpacePair /*[trialXh,trialBlockIndex]*/ : hana::second( e ).blockSpaceIndex() )
                        {
-                           auto trialXh = trialSpacePair.first;
-                           auto trialBlockIndex = trialSpacePair.second;
+                           auto trialXh = trialSpacePair.second;
+                           auto trialBlockIndex = trialSpacePair.first;
                            auto coeff_gamma_diff_expr = diffSymbolicExpr( coeff_gamma_expr, hana::second( e ), trialXh, trialBlockIndex, this->worldComm(), this->repository().expr() );
                            if ( !coeff_gamma_diff_expr.expression().hasExpr() )
                                continue;
@@ -625,8 +625,8 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic:
                     {
                         for ( auto const& trialSpacePair /*[trialXh,trialBlockIndex]*/ : hana::second(e).blockSpaceIndex() )
                         {
-                            auto trialXh = trialSpacePair.first;
-                            auto trialBlockIndex = trialSpacePair.second;
+                            auto trialXh = trialSpacePair.second;
+                            auto trialBlockIndex = trialSpacePair.first;
                             auto coeff_alpha_diff_expr = diffSymbolicExpr( coeff_alpha_expr, hana::second(e), trialXh, trialBlockIndex, this->worldComm(), this->repository().expr() );
                             if ( !coeff_alpha_diff_expr.expression().hasExpr() )
                                 continue;
@@ -665,8 +665,8 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic:
                         {
                             for ( auto const& trialSpacePair /*[trialXh,trialBlockIndex]*/ : hana::second(e).blockSpaceIndex() )
                             {
-                                auto trialXh = trialSpacePair.first;
-                                auto trialBlockIndex = trialSpacePair.second;
+                                auto trialXh = trialSpacePair.second;
+                                auto trialBlockIndex = trialSpacePair.first;
                                 auto coeff_zeta_diff_expr = diffSymbolicExpr( coeff_zeta_expr, hana::second(e), trialXh, trialBlockIndex, this->worldComm(), this->repository().expr() );
                                 if ( !coeff_zeta_diff_expr.expression().hasExpr() )
                                     continue;
@@ -705,8 +705,8 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic:
                         // NOTE : a strange compilation error related to boost fusion if we use [trialXh,trialBlockIndex] in the loop for
                         for ( auto const& trialSpacePair /*[trialXh,trialBlockIndex]*/ : hana::second(e).blockSpaceIndex() )
                         {
-                            auto trialXh = trialSpacePair.first;
-                            auto trialBlockIndex = trialSpacePair.second;
+                            auto trialXh = trialSpacePair.second;
+                            auto trialBlockIndex = trialSpacePair.first;
 
                             auto coeff_a_diff_expr = diffSymbolicExpr( coeff_a_expr, hana::second(e), trialXh, trialBlockIndex, this->worldComm(), this->repository().expr() );
 
@@ -763,8 +763,8 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic:
                         // NOTE : a strange compilation error related to boost fusion if we use [trialXh,trialBlockIndex] in the loop for
                         for ( auto const& trialSpacePair /*[trialXh,trialBlockIndex]*/ : hana::second(e).blockSpaceIndex() )
                         {
-                            auto trialXh = trialSpacePair.first;
-                            auto trialBlockIndex = trialSpacePair.second;
+                            auto trialXh = trialSpacePair.second;
+                            auto trialBlockIndex = trialSpacePair.first;
 
                             auto coeff_f_diff_expr = diffSymbolicExpr( coeff_f_expr, hana::second(e), trialXh, trialBlockIndex, this->worldComm(), this->repository().expr() );
                             if ( !coeff_f_diff_expr.expression().hasExpr() )
@@ -837,8 +837,8 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic:
                 {
                     for ( auto const& trialSpacePair : hana::second(e).blockSpaceIndex() )
                     {
-                        auto trialXh = trialSpacePair.first;
-                        auto trialBlockIndex = trialSpacePair.second;
+                        auto trialXh = trialSpacePair.second;
+                        auto trialBlockIndex = trialSpacePair.first;
 
                         auto neumannDiffExpr = diffSymbolicExpr( neumannExpr, hana::second(e), trialXh, trialBlockIndex, this->worldComm(), this->repository().expr() );
 

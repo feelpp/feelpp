@@ -127,20 +127,22 @@ public :
 
     tuple_type const& tuple() const { return M_tuple; }
 
-    std::set<std::pair<space_ptrtype,size_type>> const& blockSpaceIndex() const { return M_blockSpaceIndex; }
+    std::map<size_type,space_ptrtype> const& blockSpaceIndex() const { return M_blockSpaceIndex; }
 private :
     void updateForUse()
         {
             hana::for_each( M_tuple, [this]( auto const& e ) {
                     for ( auto const & e2 : e )
                     {
-                        M_blockSpaceIndex.insert( std::make_pair( e2.space(), e2.blockSpaceIndex() ) );
+                        auto [it,isInserted] = M_blockSpaceIndex.insert( std::make_pair( e2.blockSpaceIndex(), e2.space() ) );
+                        if ( !isInserted )
+                            CHECK( it->second == e2.space() ) << "not same space at block index" << e2.blockSpaceIndex();
                     }
                 });
         }
 private :
     tuple_type M_tuple;
-    std::set<std::pair<space_ptrtype,size_type>> M_blockSpaceIndex;
+    std::map<size_type,space_ptrtype> M_blockSpaceIndex;
 };
 
 template<typename SpaceType,typename... TrialSymbolsExprType>
