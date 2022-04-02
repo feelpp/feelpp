@@ -121,12 +121,15 @@ $(document).ready(function(){initNavTree('classFeel_1_1FeelModels_1_1ModelPhysic
  <div class="center">
   <img src="classFeel_1_1FeelModels_1_1ModelPhysic.png" usemap="#Feel::FeelModels::ModelPhysic_3C_20Dim_20_3E_map" alt=""/>
   <map id="Feel::FeelModels::ModelPhysic_3C_20Dim_20_3E_map" name="Feel::FeelModels::ModelPhysic_3C_20Dim_20_3E_map">
-<area href="classFeel_1_1JournalWatcher.html" alt="Feel::JournalWatcher" shape="rect" coords="656,56,974,80"/>
-<area href="classFeel_1_1FeelModels_1_1ModelPhysicElectric.html" alt="Feel::FeelModels::ModelPhysicElectric&lt; Dim &gt;" shape="rect" coords="0,168,318,192"/>
-<area href="classFeel_1_1FeelModels_1_1ModelPhysicFluid.html" alt="Feel::FeelModels::ModelPhysicFluid&lt; Dim &gt;" shape="rect" coords="328,168,646,192"/>
-<area href="classFeel_1_1FeelModels_1_1ModelPhysicHeat.html" alt="Feel::FeelModels::ModelPhysicHeat&lt; Dim &gt;" shape="rect" coords="656,168,974,192"/>
-<area href="classFeel_1_1FeelModels_1_1ModelPhysicSolid.html" alt="Feel::FeelModels::ModelPhysicSolid&lt; Dim &gt;" shape="rect" coords="984,168,1302,192"/>
-<area href="classFeel_1_1FeelModels_1_1ModelPhysicThermoElectric.html" alt="Feel::FeelModels::ModelPhysicThermoElectric&lt; Dim &gt;" shape="rect" coords="1312,168,1630,192"/>
+<area href="classFeel_1_1JournalWatcher.html" alt="Feel::JournalWatcher" shape="rect" coords="0,56,354,80"/>
+<area href="classFeel_1_1FeelModels_1_1ModelPhysicCoefficientFormPDE.html" alt="Feel::FeelModels::ModelPhysicCoefficientFormPDE&lt; Dim &gt;" shape="rect" coords="364,168,718,192"/>
+<area href="classFeel_1_1FeelModels_1_1ModelPhysicCoefficientFormPDEs.html" alt="Feel::FeelModels::ModelPhysicCoefficientFormPDEs&lt; Dim &gt;" shape="rect" coords="364,224,718,248"/>
+<area href="classFeel_1_1FeelModels_1_1ModelPhysicElectric.html" alt="Feel::FeelModels::ModelPhysicElectric&lt; Dim &gt;" shape="rect" coords="364,280,718,304"/>
+<area href="classFeel_1_1FeelModels_1_1ModelPhysicFluid.html" alt="Feel::FeelModels::ModelPhysicFluid&lt; Dim &gt;" shape="rect" coords="364,336,718,360"/>
+<area href="classFeel_1_1FeelModels_1_1ModelPhysicFSI.html" alt="Feel::FeelModels::ModelPhysicFSI&lt; Dim &gt;" shape="rect" coords="364,392,718,416"/>
+<area href="classFeel_1_1FeelModels_1_1ModelPhysicHeat.html" alt="Feel::FeelModels::ModelPhysicHeat&lt; Dim &gt;" shape="rect" coords="364,448,718,472"/>
+<area href="classFeel_1_1FeelModels_1_1ModelPhysicSolid.html" alt="Feel::FeelModels::ModelPhysicSolid&lt; Dim &gt;" shape="rect" coords="364,504,718,528"/>
+<area href="classFeel_1_1FeelModels_1_1ModelPhysicThermoElectric.html" alt="Feel::FeelModels::ModelPhysicThermoElectric&lt; Dim &gt;" shape="rect" coords="364,560,718,584"/>
   </map>
 </div></div>
 <table class="memberdecls">
@@ -187,6 +190,10 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
 void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FeelModels_1_1ModelPhysic.html#a7e9a7dcbe6cf5e8ff9e95fa7d4c3560d">addSubphysic</a> (std::shared_ptr&lt; <a class="el" href="classFeel_1_1FeelModels_1_1ModelPhysic.html">ModelPhysic</a>&lt; nDim &gt;&gt; const &amp;sp, <a class="el" href="classbool.html">bool</a> force=false)</td></tr>
 <tr class="memdesc:a7e9a7dcbe6cf5e8ff9e95fa7d4c3560d"><td class="mdescLeft">&#160;</td><td class="mdescRight">add a subphysic model <br /></td></tr>
 <tr class="separator:a7e9a7dcbe6cf5e8ff9e95fa7d4c3560d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae0a5aeec824b8871d89236342fc1dfce"><td class="memItemLeft" align="right" valign="top"><a id="ae0a5aeec824b8871d89236342fc1dfce"></a>
+<a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FeelModels_1_1ModelPhysic.html#ae0a5aeec824b8871d89236342fc1dfce">hasParameter</a> (std::string const &amp;pname) const</td></tr>
+<tr class="memdesc:ae0a5aeec824b8871d89236342fc1dfce"><td class="mdescLeft">&#160;</td><td class="mdescRight">return true if parameter \pname is present, false otherwise <br /></td></tr>
+<tr class="separator:ae0a5aeec824b8871d89236342fc1dfce"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a14adba38dff1d92d7d7819bee2a5c5a8"><td class="memTemplParams" colspan="2"><a id="a14adba38dff1d92d7d7819bee2a5c5a8"></a>
 template&lt;int M, int N&gt; </td></tr>
 <tr class="memitem:a14adba38dff1d92d7d7819bee2a5c5a8"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classbool.html">bool</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classFeel_1_1FeelModels_1_1ModelPhysic.html#a14adba38dff1d92d7d7819bee2a5c5a8">hasParameterExpr</a> (std::string const &amp;pname) const</td></tr>
@@ -229,6 +236,10 @@ template&lt;int M, int N, typename SymbolsExprType  = symbols_expression_empty_t
 <tr class="memitem:a4e6f4bf0e5cab74bcc125c1d945d7371"><td class="memItemLeft" align="right" valign="top"><a id="a4e6f4bf0e5cab74bcc125c1d945d7371"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>physicsShared</b> (std::set&lt; std::string &gt; &amp;res) const</td></tr>
 <tr class="separator:a4e6f4bf0e5cab74bcc125c1d945d7371"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a22ddf792756645b2f69fb65346a3cdf2"><td class="memItemLeft" align="right" valign="top"><a id="a22ddf792756645b2f69fb65346a3cdf2"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FeelModels_1_1ModelPhysic.html#a22ddf792756645b2f69fb65346a3cdf2">setMaterialNames</a> (std::set&lt; std::string &gt; const &amp;matNames)</td></tr>
+<tr class="memdesc:a22ddf792756645b2f69fb65346a3cdf2"><td class="mdescLeft">&#160;</td><td class="mdescRight">set material names <br /></td></tr>
+<tr class="separator:a22ddf792756645b2f69fb65346a3cdf2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adf6394ea89ae1ef41ab214c1a9b724d5"><td class="memItemLeft" align="right" valign="top"><a id="adf6394ea89ae1ef41ab214c1a9b724d5"></a>
 virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FeelModels_1_1ModelPhysic.html#adf6394ea89ae1ef41ab214c1a9b724d5">setParameterValues</a> (std::map&lt; std::string, <a class="el" href="classdouble.html">double</a> &gt; const &amp;mp)</td></tr>
 <tr class="memdesc:adf6394ea89ae1ef41ab214c1a9b724d5"><td class="mdescLeft">&#160;</td><td class="mdescRight">set parameter values in expression <br /></td></tr>

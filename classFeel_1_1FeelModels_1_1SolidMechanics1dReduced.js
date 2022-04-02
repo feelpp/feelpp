@@ -29,6 +29,7 @@ var classFeel_1_1FeelModels_1_1SolidMechanics1dReduced =
     [ "setMaterialsProperties", "classFeel_1_1FeelModels_1_1SolidMechanics1dReduced.html#aa5b93ab1163fa2fbaffbdf69a8ea21f8", null ],
     [ "setMesh", "classFeel_1_1FeelModels_1_1SolidMechanics1dReduced.html#a43e1d58b8d27806b9ef72053b03bd5e6", null ],
     [ "setParameterValues", "classFeel_1_1FeelModels_1_1SolidMechanics1dReduced.html#ad772e7aa97c814a3b900ec3a52ec337d", null ],
+    [ "shared_from_this", "classFeel_1_1FeelModels_1_1SolidMechanics1dReduced.html#a97794402c800a5cf09f4fb8c96cfbc3e", null ],
     [ "startTimeStep", "classFeel_1_1FeelModels_1_1SolidMechanics1dReduced.html#a7a7d24e63ddf912557a0b259aadc9d2e", null ],
     [ "tabulateInformations", "classFeel_1_1FeelModels_1_1SolidMechanics1dReduced.html#a2f8e1f9b748e37bfa2720b6690812d2a", null ],
     [ "thickness1dReduced", "classFeel_1_1FeelModels_1_1SolidMechanics1dReduced.html#a020073228977a531a9dbd1bd8bb95d50", null ],

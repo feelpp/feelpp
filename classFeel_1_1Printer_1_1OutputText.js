@@ -1,5 +1,6 @@
 var classFeel_1_1Printer_1_1OutputText =
 [
+    [ "applyMaxWidth", "classFeel_1_1Printer_1_1OutputText.html#ac2d43bc18d72b335cef92bf38fd94b27", null ],
     [ "data", "classFeel_1_1Printer_1_1OutputText.html#a613e13c6a631f42d42f998f107437541", null ],
     [ "data", "classFeel_1_1Printer_1_1OutputText.html#ac182f6113e2eb9dee8af4ee5644c202b", null ],
     [ "operator<<", "classFeel_1_1Printer_1_1OutputText.html#afd698cfbad37ba5d319524ee3c5e9011", null ],

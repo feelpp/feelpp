@@ -118,30 +118,21 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>physics_ptrtype</b> 
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a7d43a8df6f609b2aae0b18acb591cc98"><td class="memItemLeft" align="right" valign="top"><a id="a7d43a8df6f609b2aae0b18acb591cc98"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>addLeaf</b> (physics_ptrtype p, <a class="el" href="classbool.html">bool</a> isRequired=true)</td></tr>
-<tr class="separator:a7d43a8df6f609b2aae0b18acb591cc98"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a633cb44b9deb0efd01be233d9b06b36c"><td class="memItemLeft" align="right" valign="top"><a id="a633cb44b9deb0efd01be233d9b06b36c"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>addLeaf</b> (std::string const &amp;type, physics_ptrtype p, <a class="el" href="classbool.html">bool</a> isRequired=true)</td></tr>
-<tr class="separator:a633cb44b9deb0efd01be233d9b06b36c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ade49ed5c28588269b9464c33c693fae3"><td class="memItemLeft" align="right" valign="top"><a id="ade49ed5c28588269b9464c33c693fae3"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>addSubtree</b> (<a class="el" href="structFeel_1_1FeelModels_1_1ModelPhysics_1_1PhysicsTree.html">PhysicsTree</a> const &amp;st)</td></tr>
-<tr class="separator:ade49ed5c28588269b9464c33c693fae3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a529e12f79b760172a3da9d336f38a607"><td class="memItemLeft" align="right" valign="top"><a id="a529e12f79b760172a3da9d336f38a607"></a>
-std::set&lt; std::tuple&lt; std::string, physics_ptrtype, <a class="el" href="classbool.html">bool</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>allPhysics</b> () const</td></tr>
-<tr class="separator:a529e12f79b760172a3da9d336f38a607"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a61ca712bbb9bc41ee89dee481a3b2d45"><td class="memItemLeft" align="right" valign="top"><a id="a61ca712bbb9bc41ee89dee481a3b2d45"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>PhysicsTree</b> (physics_ptrtype p, <a class="el" href="classbool.html">bool</a> isRequired=true)</td></tr>
-<tr class="separator:a61ca712bbb9bc41ee89dee481a3b2d45"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a89b869f6d188d154070707128df3f704"><td class="memItemLeft" align="right" valign="top"><a id="a89b869f6d188d154070707128df3f704"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>PhysicsTree</b> (std::string const &amp;type, physics_ptrtype p, <a class="el" href="classbool.html">bool</a> isRequired=true)</td></tr>
-<tr class="separator:a89b869f6d188d154070707128df3f704"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3e14ec1c15d84958738b3644da643d3a"><td class="memItemLeft" align="right" valign="top"><a id="a3e14ec1c15d84958738b3644da643d3a"></a>
-std::tuple&lt; std::string, physics_ptrtype, <a class="el" href="classbool.html">bool</a> &gt; const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>root</b> () const</td></tr>
-<tr class="separator:a3e14ec1c15d84958738b3644da643d3a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a61734b589c10b41df6d52710bed458d2"><td class="memItemLeft" align="right" valign="top"><a id="a61734b589c10b41df6d52710bed458d2"></a>
-std::vector&lt; <a class="el" href="structFeel_1_1FeelModels_1_1ModelPhysics_1_1PhysicsTree.html">PhysicsTree</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>subtrees</b> () const</td></tr>
-<tr class="separator:a61734b589c10b41df6d52710bed458d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a11fcd0d18d70999b5efd62aae45b52c2"><td class="memItemLeft" align="right" valign="top"><a id="a11fcd0d18d70999b5efd62aae45b52c2"></a>
+std::shared_ptr&lt; <a class="el" href="structFeel_1_1FeelModels_1_1ModelPhysics_1_1PhysicsTreeNode.html">PhysicsTreeNode</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>addNode</b> (physics_ptrtype mphysics, model_physic_ptrtype mp)</td></tr>
+<tr class="separator:a11fcd0d18d70999b5efd62aae45b52c2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a53e34aaee4ff9495ba2ef512c6c16e60"><td class="memItemLeft" align="right" valign="top"><a id="a53e34aaee4ff9495ba2ef512c6c16e60"></a>
+std::vector&lt; std::shared_ptr&lt; <a class="el" href="structFeel_1_1FeelModels_1_1ModelPhysics_1_1PhysicsTreeNode.html">PhysicsTreeNode</a> &gt; &gt; const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>children</b> () const</td></tr>
+<tr class="separator:a53e34aaee4ff9495ba2ef512c6c16e60"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abd07430445a714d0f1de326b191e9e8f"><td class="memItemLeft" align="right" valign="top"><a id="abd07430445a714d0f1de326b191e9e8f"></a>
+std::map&lt; physic_id_type, model_physic_ptrtype &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>collectAllPhysics</b> () const</td></tr>
+<tr class="separator:abd07430445a714d0f1de326b191e9e8f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abf9d2e69db8a0d48fb2af4a31cf159fe"><td class="memItemLeft" align="right" valign="top"><a id="abf9d2e69db8a0d48fb2af4a31cf159fe"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>PhysicsTree</b> (physics_ptrtype p)</td></tr>
+<tr class="separator:abf9d2e69db8a0d48fb2af4a31cf159fe"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a287b54041f8bccd0bcf732e50a220852"><td class="memItemLeft" align="right" valign="top"><a id="a287b54041f8bccd0bcf732e50a220852"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>updatePhysics</b> (physics_ptrtype mphysics, ModelModels const &amp;models)</td></tr>
+<tr class="separator:a287b54041f8bccd0bcf732e50a220852"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 </div><!-- doc-content -->

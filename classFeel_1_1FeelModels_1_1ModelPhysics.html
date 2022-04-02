@@ -107,6 +107,7 @@ $(document).ready(function(){initNavTree('classFeel_1_1FeelModels_1_1ModelPhysic
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-static-attribs">Static Public Attributes</a> &#124;
+<a href="#pro-methods">Protected Member Functions</a> &#124;
 <a href="#pro-attribs">Protected Attributes</a> &#124;
 <a href="classFeel_1_1FeelModels_1_1ModelPhysics-members.html">List of all members</a>  </div>
   <div class="headertitle">
@@ -121,14 +122,15 @@ $(document).ready(function(){initNavTree('classFeel_1_1FeelModels_1_1ModelPhysic
  <div class="center">
   <img src="classFeel_1_1FeelModels_1_1ModelPhysics.png" usemap="#Feel::FeelModels::ModelPhysics_3C_20Dim_20_3E_map" alt=""/>
   <map id="Feel::FeelModels::ModelPhysics_3C_20Dim_20_3E_map" name="Feel::FeelModels::ModelPhysics_3C_20Dim_20_3E_map">
-<area href="classFeel_1_1FeelModels_1_1ModelGenericPDE.html" alt="Feel::FeelModels::ModelGenericPDE&lt; Dim &gt;" shape="rect" coords="0,56,271,80"/>
-<area href="classFeel_1_1FeelModels_1_1ModelGenericPDEs.html" alt="Feel::FeelModels::ModelGenericPDEs&lt; Dim &gt;" shape="rect" coords="281,56,552,80"/>
+<area href="classFeel_1_1FeelModels_1_1ModelGenericPDE.html" alt="Feel::FeelModels::ModelGenericPDE&lt; Dim &gt;" shape="rect" coords="0,56,265,80"/>
   </map>
 </div></div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Instances and minimal complete definitions</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1FeelModels_1_1ModelPhysics_1_1PhysicsTree.html">PhysicsTree</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1FeelModels_1_1ModelPhysics_1_1PhysicsTreeNode.html">PhysicsTreeNode</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="friends"></a>
@@ -158,16 +160,20 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>physic_id_type</b> =
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
+<tr class="memitem:a9150e4591ad9ac5b72440fd50e340006"><td class="memItemLeft" align="right" valign="top"><a id="a9150e4591ad9ac5b72440fd50e340006"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FeelModels_1_1ModelPhysics.html#a9150e4591ad9ac5b72440fd50e340006">addPhysics</a> (std::map&lt; physic_id_type, std::shared_ptr&lt; <a class="el" href="classFeel_1_1FeelModels_1_1ModelPhysic.html">ModelPhysic</a>&lt; Dim &gt;&gt;&gt; const &amp;thePhysics)</td></tr>
+<tr class="memdesc:a9150e4591ad9ac5b72440fd50e340006"><td class="mdescLeft">&#160;</td><td class="mdescRight">add physics if not already registered <br /></td></tr>
+<tr class="separator:a9150e4591ad9ac5b72440fd50e340006"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a87391f11e49c4e5ae02b604a41a7b59e"><td class="memItemLeft" align="right" valign="top"><a id="a87391f11e49c4e5ae02b604a41a7b59e"></a>
 <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FeelModels_1_1ModelPhysics.html#a87391f11e49c4e5ae02b604a41a7b59e">hasPhysic</a> (physic_id_type const &amp;pId) const</td></tr>
 <tr class="memdesc:a87391f11e49c4e5ae02b604a41a7b59e"><td class="mdescLeft">&#160;</td><td class="mdescRight">return true if physic id is already registered <br /></td></tr>
 <tr class="separator:a87391f11e49c4e5ae02b604a41a7b59e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae6272168e469ea599eed0a8d58e24810"><td class="memItemLeft" align="right" valign="top"><a id="ae6272168e469ea599eed0a8d58e24810"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>initPhysics</b> (<a class="el" href="structFeel_1_1FeelModels_1_1ModelPhysics_1_1PhysicsTree.html">PhysicsTree</a> const &amp;physicTree, ModelModels const &amp;models)</td></tr>
-<tr class="separator:ae6272168e469ea599eed0a8d58e24810"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a792ac796f9932e2ba9299df529772b4f"><td class="memItemLeft" align="right" valign="top"><a id="a792ac796f9932e2ba9299df529772b4f"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>initPhysics</b> (std::string const &amp;type, ModelModels const &amp;models, <a class="el" href="classbool.html">bool</a> isRequired=true)</td></tr>
-<tr class="separator:a792ac796f9932e2ba9299df529772b4f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0e1bb210c4b4de48ed6c358cd189c170"><td class="memItemLeft" align="right" valign="top"><a id="a0e1bb210c4b4de48ed6c358cd189c170"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>initPhysics</b> (std::shared_ptr&lt; <a class="el" href="classFeel_1_1FeelModels_1_1ModelPhysics.html">ModelPhysics</a>&lt; nDim &gt;&gt; mphysics, ModelModels const &amp;models)</td></tr>
+<tr class="separator:a0e1bb210c4b4de48ed6c358cd189c170"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8920f7ed3cd8590f04fe1978b06a2ef9"><td class="memItemLeft" align="right" valign="top"><a id="a8920f7ed3cd8590f04fe1978b06a2ef9"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>initPhysics</b> (std::shared_ptr&lt; <a class="el" href="classFeel_1_1FeelModels_1_1ModelPhysics.html">ModelPhysics</a>&lt; nDim &gt;&gt; mphysics, std::function&lt; void(<a class="el" href="structFeel_1_1FeelModels_1_1ModelPhysics_1_1PhysicsTree.html">PhysicsTree</a> &amp;)&gt; lambdaInit)</td></tr>
+<tr class="separator:a8920f7ed3cd8590f04fe1978b06a2ef9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6ec0db1bcb7549624bc3a54e3ddb004a"><td class="memItemLeft" align="right" valign="top"><a id="a6ec0db1bcb7549624bc3a54e3ddb004a"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>ModelPhysics</b> (<a class="el" href="classFeel_1_1FeelModels_1_1ModelPhysics.html">ModelPhysics</a> &amp;&amp;)=default</td></tr>
 <tr class="separator:a6ec0db1bcb7549624bc3a54e3ddb004a"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -219,9 +225,6 @@ std::map&lt; physic_id_type, std::shared_ptr&lt; <a class="el" href="classFeel_1
 std::string const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FeelModels_1_1ModelPhysics.html#a66209530f179b3573a952fe66a8b93c2">physicType</a> () const</td></tr>
 <tr class="memdesc:a66209530f179b3573a952fe66a8b93c2"><td class="mdescLeft">&#160;</td><td class="mdescRight">return the type of physic at top level <br /></td></tr>
 <tr class="separator:a66209530f179b3573a952fe66a8b93c2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad023a0911f0667af9bf6063e4fec7e77"><td class="memItemLeft" align="right" valign="top"><a id="ad023a0911f0667af9bf6063e4fec7e77"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>setPhysics</b> (std::map&lt; physic_id_type, std::shared_ptr&lt; <a class="el" href="classFeel_1_1FeelModels_1_1ModelPhysic.html">ModelPhysic</a>&lt; Dim &gt;&gt;&gt; const &amp;thePhysics)</td></tr>
-<tr class="separator:ad023a0911f0667af9bf6063e4fec7e77"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a233a226e892728fdea4eb92096db82c4"><td class="memItemLeft" align="right" valign="top"><a id="a233a226e892728fdea4eb92096db82c4"></a>
 auto&#160;</td><td class="memItemRight" valign="bottom"><b>symbolsExprPhysics</b> (std::map&lt; physic_id_type, std::shared_ptr&lt; <a class="el" href="classFeel_1_1FeelModels_1_1ModelPhysic.html">ModelPhysic</a>&lt; nDim &gt;&gt;&gt; const &amp;mphysics) const</td></tr>
 <tr class="separator:a233a226e892728fdea4eb92096db82c4"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -241,6 +244,15 @@ Static Public Attributes</h2></td></tr>
 static const uint16_type&#160;</td><td class="memItemRight" valign="bottom"><b>nDim</b> = Dim</td></tr>
 <tr class="separator:abfd7d971b24e5b2c24bab5cee07986a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-methods"></a>
+Protected Member Functions</h2></td></tr>
+<tr class="memitem:ac0dea015a47b7a73dc361c1ce31c0bd8"><td class="memItemLeft" align="right" valign="top"><a id="ac0dea015a47b7a73dc361c1ce31c0bd8"></a>
+std::vector&lt; std::shared_ptr&lt; <a class="el" href="classFeel_1_1FeelModels_1_1ModelPhysic.html">ModelPhysic</a>&lt; Dim &gt; &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>initPhysics</b> (std::string const &amp;type, ModelModels const &amp;models, std::set&lt; std::string &gt; const &amp;modelNameRequired, <a class="el" href="classbool.html">bool</a> isRequired=true)</td></tr>
+<tr class="separator:ac0dea015a47b7a73dc361c1ce31c0bd8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9df2e4a2f12ba0648f841b974663c705"><td class="memItemLeft" align="right" valign="top"><a id="a9df2e4a2f12ba0648f841b974663c705"></a>
+virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>updatePhysics</b> (<a class="el" href="structFeel_1_1FeelModels_1_1ModelPhysics_1_1PhysicsTreeNode.html">PhysicsTreeNode</a> &amp;physicsTree, ModelModels const &amp;models)</td></tr>
+<tr class="separator:a9df2e4a2f12ba0648f841b974663c705"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
 <tr class="memitem:af6873944749b41fab80e611a8cc20a11"><td class="memItemLeft" align="right" valign="top"><a id="af6873944749b41fab80e611a8cc20a11"></a>
@@ -249,9 +261,6 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><b>M_physicModeli
 <tr class="memitem:a5eaa05cad339bc058d86dc10d1fdf279"><td class="memItemLeft" align="right" valign="top"><a id="a5eaa05cad339bc058d86dc10d1fdf279"></a>
 std::map&lt; physic_id_type, std::shared_ptr&lt; <a class="el" href="classFeel_1_1FeelModels_1_1ModelPhysic.html">ModelPhysic</a>&lt; nDim &gt; &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>M_physics</b></td></tr>
 <tr class="separator:a5eaa05cad339bc058d86dc10d1fdf279"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a63c12fa6862fbc68aff343cd865d983a"><td class="memItemLeft" align="right" valign="top"><a id="a63c12fa6862fbc68aff343cd865d983a"></a>
-std::string&#160;</td><td class="memItemRight" valign="bottom"><b>M_physicType</b></td></tr>
-<tr class="separator:a63c12fa6862fbc68aff343cd865d983a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 </div><!-- doc-content -->

@@ -1,5 +1,7 @@
 var classFeel_1_1FeelModels_1_1ModelPhysicSolid =
 [
+    [ "BodyForces", "structFeel_1_1FeelModels_1_1ModelPhysicSolid_1_1BodyForces.html", "structFeel_1_1FeelModels_1_1ModelPhysicSolid_1_1BodyForces" ],
+    [ "bodyForces", "classFeel_1_1FeelModels_1_1ModelPhysicSolid.html#aed4ec3e11418c26e0d142d64028bcbbb", null ],
     [ "compressibleNeoHookeanVariantName", "classFeel_1_1FeelModels_1_1ModelPhysicSolid.html#add36b4905b7be22e2c82f085c4ad7284", null ],
     [ "decouplingEnergyVolumicLaw", "classFeel_1_1FeelModels_1_1ModelPhysicSolid.html#a6672a0d772bc2cfeae97f717de061a71", null ],
     [ "equation", "classFeel_1_1FeelModels_1_1ModelPhysicSolid.html#aecad9cfee9ec5198a1abf6f2127df7ff", null ],

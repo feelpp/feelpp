@@ -117,7 +117,7 @@ $(document).ready(function(){initNavTree('classFeel_1_1FeelModels_1_1ModelBase.h
  <div class="center">
   <img src="classFeel_1_1FeelModels_1_1ModelBase.png" usemap="#Feel::FeelModels::ModelBase_map" alt=""/>
   <map id="Feel::FeelModels::ModelBase_map" name="Feel::FeelModels::ModelBase_map">
-<area href="classFeel_1_1JournalWatcher.html" alt="Feel::JournalWatcher" shape="rect" coords="1487,56,2018,80"/>
+<area href="classFeel_1_1JournalWatcher.html" alt="Feel::JournalWatcher" shape="rect" coords="1217,56,1748,80"/>
 <area href="classFeel_1_1FeelModels_1_1ModelAlgebraic.html" alt="Feel::FeelModels::ModelAlgebraic" shape="rect" coords="811,168,1342,192"/>
 <area href="classFeel_1_1FeelModels_1_1ModelNumerical.html" title="Handles some numerical model aspects: timestepping, mesh and properties." alt="Feel::FeelModels::ModelNumerical" shape="rect" coords="2164,168,2695,192"/>
 <area href="classFeel_1_1FeelModels_1_1ModelNumerical.html" title="Handles some numerical model aspects: timestepping, mesh and properties." alt="Feel::FeelModels::ModelNumerical" shape="rect" coords="811,224,1342,248"/>
@@ -153,6 +153,9 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>notify_type</b> = <a
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
+<tr class="memitem:a94a488b255716d69761e3e62bfaf6bcd"><td class="memItemLeft" align="right" valign="top"><a id="a94a488b255716d69761e3e62bfaf6bcd"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>addParameterInModelProperties</b> (std::string const &amp;symbolName, <a class="el" href="classdouble.html">double</a> value)</td></tr>
+<tr class="separator:a94a488b255716d69761e3e62bfaf6bcd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3c882241177b65fec69b37c75e0a2c43"><td class="memItemLeft" align="right" valign="top"><a id="a3c882241177b65fec69b37c75e0a2c43"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>addTimerTool</b> (std::string const &amp;s, std::string const &amp;fileName) const</td></tr>
 <tr class="separator:a3c882241177b65fec69b37c75e0a2c43"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -163,9 +166,12 @@ po::variables_map const  &amp;&#160;</td><td class="memItemRight" valign="bottom
 <tr class="memitem:afa615c10f69581a9c50d64b6d05d8a05"><td class="memItemLeft" align="right" valign="top"><a id="afa615c10f69581a9c50d64b6d05d8a05"></a>
 virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>createWorldsComm</b> ()</td></tr>
 <tr class="separator:afa615c10f69581a9c50d64b6d05d8a05"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afaf6ea41031144ed77103def65fc4305"><td class="memItemLeft" align="right" valign="top"><a id="afaf6ea41031144ed77103def65fc4305"></a>
-virtual std::shared_ptr&lt; std::ostringstream &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>getInfo</b> () const</td></tr>
-<tr class="separator:afaf6ea41031144ed77103def65fc4305"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abac52427f95c44da29f70159a11ad6a6"><td class="memItemLeft" align="right" valign="top"><a id="abac52427f95c44da29f70159a11ad6a6"></a>
+<a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>hasModelProperties</b> () const</td></tr>
+<tr class="separator:abac52427f95c44da29f70159a11ad6a6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae0afab31e374eb7ceaf3bef7bf540efa"><td class="memItemLeft" align="right" valign="top"><a id="ae0afab31e374eb7ceaf3bef7bf540efa"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>initModelProperties</b> ()</td></tr>
+<tr class="separator:ae0afab31e374eb7ceaf3bef7bf540efa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6d9641bc27a6b1171271fa704f4321c2"><td class="memItemLeft" align="right" valign="top"><a id="a6d9641bc27a6b1171271fa704f4321c2"></a>
 <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>isUpdatedForUse</b> () const</td></tr>
 <tr class="separator:a6d9641bc27a6b1171271fa704f4321c2"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -182,6 +188,12 @@ worldscomm_ptr_t const  &amp;&#160;</td><td class="memItemRight" valign="bottom"
 <tr class="memitem:a6a77848e1caa29d36f41ef8f728d4554"><td class="memItemLeft" align="right" valign="top"><a id="a6a77848e1caa29d36f41ef8f728d4554"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>log</b> (std::string const &amp;_className, std::string const &amp;_functionName, std::string const &amp;_msg) const</td></tr>
 <tr class="separator:a6a77848e1caa29d36f41ef8f728d4554"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2231813e71f6e40c5dbb9b58bf4d24da"><td class="memItemLeft" align="right" valign="top"><a id="a2231813e71f6e40c5dbb9b58bf4d24da"></a>
+<a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>manageParameterValues</b> () const</td></tr>
+<tr class="separator:a2231813e71f6e40c5dbb9b58bf4d24da"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab1954467ff0e4d46cf7b00e64b738abf"><td class="memItemLeft" align="right" valign="top"><a id="ab1954467ff0e4d46cf7b00e64b738abf"></a>
+<a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>manageParameterValuesOfModelProperties</b> () const</td></tr>
+<tr class="separator:ab1954467ff0e4d46cf7b00e64b738abf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a53cfdc35ff989067a8fe88b0a883a358"><td class="memItemLeft" align="right" valign="top"><a id="a53cfdc35ff989067a8fe88b0a883a358"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>ModelBase</b> (<a class="el" href="classFeel_1_1FeelModels_1_1ModelBase.html">ModelBase</a> &amp;&amp;app)=default</td></tr>
 <tr class="separator:a53cfdc35ff989067a8fe88b0a883a358"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -193,6 +205,15 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>log</b> (std::string 
 <tr class="memitem:acecbc78e076868988c612dd3b400dcdb"><td class="memItemLeft" align="right" valign="top"><a id="acecbc78e076868988c612dd3b400dcdb"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>ModelBase</b> (std::string const &amp;prefix, worldcomm_ptr_t const &amp;worldComm=<a class="el" href="classFeel_1_1Environment.html#a3ffa1e65a0e0cf627d2187173c7feebb">Environment::worldCommPtr</a>(), std::string const &amp;subPrefix=&quot;&quot;, <a class="el" href="structFeel_1_1FeelModels_1_1ModelBaseRepository.html">ModelBaseRepository</a> const &amp;modelRep=<a class="el" href="structFeel_1_1FeelModels_1_1ModelBaseRepository.html">ModelBaseRepository</a>(), <a class="el" href="structFeel_1_1FeelModels_1_1ModelBaseCommandLineOptions.html">ModelBaseCommandLineOptions</a> const &amp;modelCmdLineOpt=<a class="el" href="structFeel_1_1FeelModels_1_1ModelBaseCommandLineOptions.html">ModelBaseCommandLineOptions</a>())</td></tr>
 <tr class="separator:acecbc78e076868988c612dd3b400dcdb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac712bc45d2d7eb0eb399d43457d9ff8d"><td class="memItemLeft" align="right" valign="top"><a id="ac712bc45d2d7eb0eb399d43457d9ff8d"></a>
+ModelProperties &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>modelProperties</b> ()</td></tr>
+<tr class="separator:ac712bc45d2d7eb0eb399d43457d9ff8d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a81a6dc3d44a0cf96ce8f7da01fa9709c"><td class="memItemLeft" align="right" valign="top"><a id="a81a6dc3d44a0cf96ce8f7da01fa9709c"></a>
+ModelProperties const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>modelProperties</b> () const</td></tr>
+<tr class="separator:a81a6dc3d44a0cf96ce8f7da01fa9709c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a33a319a998699629f8e0cd825f3c6bf1"><td class="memItemLeft" align="right" valign="top"><a id="a33a319a998699629f8e0cd825f3c6bf1"></a>
+std::shared_ptr&lt; ModelProperties &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>modelPropertiesPtr</b> () const</td></tr>
+<tr class="separator:a33a319a998699629f8e0cd825f3c6bf1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af6bb880d0722cb1278b17fc722b2613d"><td class="memItemLeft" align="right" valign="top"><a id="af6bb880d0722cb1278b17fc722b2613d"></a>
 std::string const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>prefix</b> () const</td></tr>
 <tr class="separator:af6bb880d0722cb1278b17fc722b2613d"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -229,6 +250,21 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>setIsUpdatedForUse</b
 <tr class="memitem:aa71e520a403f959e66dcb9c3bc9d0814"><td class="memItemLeft" align="right" valign="top"><a id="aa71e520a403f959e66dcb9c3bc9d0814"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>setLocalNonCompositeWorldsComm</b> (worldscomm_ptr_t &amp;_worldsComm)</td></tr>
 <tr class="separator:aa71e520a403f959e66dcb9c3bc9d0814"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0325a5bc13c73b70b65c8086497d6a14"><td class="memItemLeft" align="right" valign="top"><a id="a0325a5bc13c73b70b65c8086497d6a14"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>setManageParameterValues</b> (<a class="el" href="classbool.html">bool</a> b)</td></tr>
+<tr class="separator:a0325a5bc13c73b70b65c8086497d6a14"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a62ffe225e47930e95db02e577aab36c9"><td class="memItemLeft" align="right" valign="top"><a id="a62ffe225e47930e95db02e577aab36c9"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>setManageParameterValuesOfModelProperties</b> (<a class="el" href="classbool.html">bool</a> b)</td></tr>
+<tr class="separator:a62ffe225e47930e95db02e577aab36c9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa5ca72de8294d51b9a414b44d7dab92c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FeelModels_1_1ModelBase.html#aa5ca72de8294d51b9a414b44d7dab92c">setModelProperties</a> (<a class="el" href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">nl::json</a> const &amp;j)</td></tr>
+<tr class="memdesc:aa5ca72de8294d51b9a414b44d7dab92c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the Model Properties object from a json struct the json may come from python.  <a href="classFeel_1_1FeelModels_1_1ModelBase.html#aa5ca72de8294d51b9a414b44d7dab92c">More...</a><br /></td></tr>
+<tr class="separator:aa5ca72de8294d51b9a414b44d7dab92c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9effbc41f6214329fea22200cb91fc15"><td class="memItemLeft" align="right" valign="top"><a id="a9effbc41f6214329fea22200cb91fc15"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>setModelProperties</b> (std::shared_ptr&lt; ModelProperties &gt; modelProps)</td></tr>
+<tr class="separator:a9effbc41f6214329fea22200cb91fc15"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac8ba6f76ffc36ceb511db45241449580"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FeelModels_1_1ModelBase.html#ac8ba6f76ffc36ceb511db45241449580">setModelProperties</a> (std::string const &amp;filename)</td></tr>
+<tr class="memdesc:ac8ba6f76ffc36ceb511db45241449580"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the Model Properties object from a filename.  <a href="classFeel_1_1FeelModels_1_1ModelBase.html#ac8ba6f76ffc36ceb511db45241449580">More...</a><br /></td></tr>
+<tr class="separator:ac8ba6f76ffc36ceb511db45241449580"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab5ad6b664e65a3783ba088d51b8fe4b2"><td class="memItemLeft" align="right" valign="top"><a id="ab5ad6b664e65a3783ba088d51b8fe4b2"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>setScalabilityFilename</b> (std::string const &amp;s)</td></tr>
 <tr class="separator:ab5ad6b664e65a3783ba088d51b8fe4b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -350,6 +386,61 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="clas
 <tr class="memdesc:ace7e1916b49e2d851c7253f6c79347b7 inherit pro_methods_classFeel_1_1JournalWatcher"><td class="mdescLeft">&#160;</td><td class="mdescRight">Protected Methods. <br /></td></tr>
 <tr class="separator:ace7e1916b49e2d851c7253f6c79347b7 inherit pro_methods_classFeel_1_1JournalWatcher"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<h2 class="groupheader">Member Function Documentation</h2>
+<a id="aa5ca72de8294d51b9a414b44d7dab92c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa5ca72de8294d51b9a414b44d7dab92c">&#9670;&nbsp;</a></span>setModelProperties() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Feel::FeelModels::ModelBase::setModelProperties </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">nl::json</a> const &amp;&#160;</td>
+          <td class="paramname"><em>j</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Set the Model Properties object from a json struct the json may come from python. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">j</td><td>json data structure </td></tr>
+  </table>
+  </dd>
+</dl>
+
+<p class="reference">References <a class="el" href="classFeel_1_1FeelModels_1_1ModelBase.html#a8d637693639b66945dc4af9899a86ac8">clovm()</a>, and <a class="el" href="namespaceFeel.html#a338e05dd5e37f3594666f0a00e029d3d">Feel::expr()</a>.</p>
+
+</div>
+</div>
+<a id="ac8ba6f76ffc36ceb511db45241449580"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac8ba6f76ffc36ceb511db45241449580">&#9670;&nbsp;</a></span>setModelProperties() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Feel::FeelModels::ModelBase::setModelProperties </td>
+          <td>(</td>
+          <td class="paramtype">std::string const &amp;&#160;</td>
+          <td class="paramname"><em>filename</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Set the Model Properties object from a filename. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">filename</td><td>file name </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="afb0315edfe760e3b61b39ce45b0a60ca"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#afb0315edfe760e3b61b39ce45b0a60ca">&#9670;&nbsp;</a></span>ModelBase()</h2>

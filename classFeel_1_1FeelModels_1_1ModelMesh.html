@@ -132,9 +132,16 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>mesh_base_type</b> =
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
+<tr class="memitem:adf93d9811969d4e95eb180503278ba24"><td class="memTemplParams" colspan="2"><a id="adf93d9811969d4e95eb180503278ba24"></a>
+template&lt;typename MeshType &gt; </td></tr>
+<tr class="memitem:adf93d9811969d4e95eb180503278ba24"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>applyRemesh</b> (std::shared_ptr&lt; MeshType &gt; const &amp;newMesh)</td></tr>
+<tr class="separator:adf93d9811969d4e95eb180503278ba24"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aeec709ad1b5de8fa71d94b88a1dd07ba"><td class="memItemLeft" align="right" valign="top"><a id="aeec709ad1b5de8fa71d94b88a1dd07ba"></a>
 std::map&lt; std::string, <a class="el" href="classFeel_1_1CollectionOfDataByMeshEntity.html">collection_data_by_mesh_entity_type</a> &gt; const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>collectionOfDataByMeshEntity</b> () const</td></tr>
 <tr class="separator:aeec709ad1b5de8fa71d94b88a1dd07ba"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abd6c64337b418fd4de0e8df93549f9ae"><td class="memItemLeft" align="right" valign="top"><a id="abd6c64337b418fd4de0e8df93549f9ae"></a>
+<a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>hasMeshMotion</b> () const</td></tr>
+<tr class="separator:abd6c64337b418fd4de0e8df93549f9ae"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6b7057db17e14770c08dd113b9b382db"><td class="memItemLeft" align="right" valign="top"><a id="a6b7057db17e14770c08dd113b9b382db"></a>
 import_config_type &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>importConfig</b> ()</td></tr>
 <tr class="separator:a6b7057db17e14770c08dd113b9b382db"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -153,10 +160,14 @@ template&lt;typename MeshType &gt; </td></tr>
 template&lt;typename MeshType  = mesh_base_type&gt; </td></tr>
 <tr class="memitem:a0e822472ef3a51fb8da4347189d3086d"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><b>mesh</b> () const</td></tr>
 <tr class="separator:a0e822472ef3a51fb8da4347189d3086d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac85a96f6868d64a9f47cc02ef9bd678e"><td class="memTemplParams" colspan="2"><a id="ac85a96f6868d64a9f47cc02ef9bd678e"></a>
+<tr class="memitem:a7f6a5eb766abb32e00ade29213407f56"><td class="memTemplParams" colspan="2"><a id="a7f6a5eb766abb32e00ade29213407f56"></a>
 template&lt;typename MeshType &gt; </td></tr>
-<tr class="memitem:ac85a96f6868d64a9f47cc02ef9bd678e"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><b>modelFields</b> (std::string const &amp;prefix_symbol=&quot;&quot;) const</td></tr>
-<tr class="separator:ac85a96f6868d64a9f47cc02ef9bd678e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7f6a5eb766abb32e00ade29213407f56"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><b>meshMotionTool</b> () const</td></tr>
+<tr class="separator:a7f6a5eb766abb32e00ade29213407f56"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae5b61ff8de66fbde1d976b0fcf190f43"><td class="memTemplParams" colspan="2"><a id="ae5b61ff8de66fbde1d976b0fcf190f43"></a>
+template&lt;typename MeshType &gt; </td></tr>
+<tr class="memitem:ae5b61ff8de66fbde1d976b0fcf190f43"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><b>modelFields</b> (std::string const &amp;prefix_field=&quot;&quot;, std::string const &amp;prefix_symbol=&quot;&quot;) const</td></tr>
+<tr class="separator:ae5b61ff8de66fbde1d976b0fcf190f43"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9adb74dc7afeaa4da40783f86462583f"><td class="memItemLeft" align="right" valign="top"><a id="a9adb74dc7afeaa4da40783f86462583f"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>ModelMesh</b> (<a class="el" href="classFeel_1_1FeelModels_1_1ModelMesh.html">ModelMesh</a> &amp;&amp;)=default</td></tr>
 <tr class="separator:a9adb74dc7afeaa4da40783f86462583f"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -175,6 +186,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>setAsShared</b> (<a c
 <tr class="memitem:acddae38a41380205b183a9495754cefa"><td class="memItemLeft" align="right" valign="top"><a id="acddae38a41380205b183a9495754cefa"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>setMesh</b> (mesh_base_ptrtype m, std::string const &amp;meshFilename=&quot;&quot;)</td></tr>
 <tr class="separator:acddae38a41380205b183a9495754cefa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adeb2335422ff7e48edddf030d03566e7"><td class="memItemLeft" align="right" valign="top"><a id="adeb2335422ff7e48edddf030d03566e7"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>setParameterValues</b> (std::map&lt; std::string, <a class="el" href="classdouble.html">double</a> &gt; const &amp;paramValues)</td></tr>
+<tr class="separator:adeb2335422ff7e48edddf030d03566e7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5b51146b29a811fb9a028dfb7ad5c4cd"><td class="memItemLeft" align="right" valign="top"><a id="a5b51146b29a811fb9a028dfb7ad5c4cd"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>setup</b> (<a class="el" href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">nl::json</a> const &amp;jarg, <a class="el" href="classFeel_1_1FeelModels_1_1ModelMeshes.html">ModelMeshes</a>&lt; IndexType &gt; const &amp;mMeshes)</td></tr>
 <tr class="separator:a5b51146b29a811fb9a028dfb7ad5c4cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -192,6 +206,10 @@ template&lt;typename MeshType &gt; </td></tr>
 <tr class="memitem:a47a264941fa4976b13fefbe713acb2ce"><td class="memItemLeft" align="right" valign="top"><a id="a47a264941fa4976b13fefbe713acb2ce"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>updateInformationObject</b> (<a class="el" href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">nl::json</a> &amp;p) const</td></tr>
 <tr class="separator:a47a264941fa4976b13fefbe713acb2ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a358e30514f867d0fd3f4b289eb5bf323"><td class="memTemplParams" colspan="2"><a id="a358e30514f867d0fd3f4b289eb5bf323"></a>
+template&lt;typename MeshType , typename SymbolsExprType &gt; </td></tr>
+<tr class="memitem:a358e30514f867d0fd3f4b289eb5bf323"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>updateMeshMotion</b> (SymbolsExprType const &amp;se)</td></tr>
+<tr class="separator:a358e30514f867d0fd3f4b289eb5bf323"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acc641d732ab73aae72dcd52959aa74c5"><td class="memItemLeft" align="right" valign="top"><a id="acc641d732ab73aae72dcd52959aa74c5"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>updateTime</b> (<a class="el" href="classdouble.html">double</a> time)</td></tr>
 <tr class="separator:acc641d732ab73aae72dcd52959aa74c5"><td class="memSeparator" colspan="2">&#160;</td></tr>

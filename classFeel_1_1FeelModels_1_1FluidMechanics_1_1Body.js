@@ -40,7 +40,7 @@ var classFeel_1_1FeelModels_1_1FluidMechanics_1_1Body =
     [ "setMomentOfInertia_bodyFrame", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1Body.html#ad3e4c2517053b8c60f4566b0ac2e3af2", null ],
     [ "setMomentOfInertia_bodyFrame", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1Body.html#aa1471b02936268ab69423210dde2e7e5", null ],
     [ "setParameterValues", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1Body.html#a70023786c0636d61154bea9819f1c742", null ],
-    [ "setup", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1Body.html#afa4ef08e78419190bb921898d0755c9a", null ],
+    [ "setup", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1Body.html#a48ad596db667f8bcc735a2bdd82577c8", null ],
     [ "timeDerivativeOfMomentOfInertia_bodyFrame", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1Body.html#ae74069dc1952bdf2cb46b88a6027fa4f", null ],
     [ "updateDisplacement", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1Body.html#a6b9a85cb615bcc2fe169de96c6235c91", null ],
     [ "updateDisplacementFromRigidDisplacement", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1Body.html#ae60cf75cbe3cedff66293261f089e13f", null ],

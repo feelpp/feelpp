@@ -292,6 +292,9 @@ $(document).ready(function(){initNavTree('functions_s.html',''); initResizable()
 <li>setMarkers()
 : <a class="el" href="classFeel_1_1GeoEntity.html#ae70bb5c493e2e7554329e625b24703a5">Feel::GeoEntity&lt; Entity, T, IndexT &gt;</a>
 </li>
+<li>setMaterialNames()
+: <a class="el" href="classFeel_1_1FeelModels_1_1ModelPhysic.html#a22ddf792756645b2f69fb65346a3cdf2">Feel::FeelModels::ModelPhysic&lt; Dim &gt;</a>
+</li>
 <li>setMeasurePointElementNeighborsBIS()
 : <a class="el" href="classFeel_1_1GeoNDMeasuresStorage.html#a0d0d50be7eb777083418647032ad0571">Feel::GeoNDMeasuresStorage&lt; T &gt;</a>
 </li>
@@ -315,7 +318,7 @@ $(document).ready(function(){initNavTree('functions_s.html',''); initResizable()
 : <a class="el" href="classFeel_1_1FeelModels_1_1ModelMeshes.html#abed1a31cdf072394a786cf447fd00541">Feel::FeelModels::ModelMeshes&lt; IndexType &gt;</a>
 </li>
 <li>setModelProperties()
-: <a class="el" href="classFeel_1_1FeelModels_1_1ModelNumerical.html#ade0422f2a13f8493786e7afcaef4a542">Feel::FeelModels::ModelNumerical</a>
+: <a class="el" href="classFeel_1_1FeelModels_1_1ModelBase.html#ac8ba6f76ffc36ceb511db45241449580">Feel::FeelModels::ModelBase</a>
 </li>
 <li>setName()
 : <a class="el" href="classFeel_1_1detail_1_1TimeSet.html#a1ac51e29f8d46f335c363801c4ac8263">Feel::detail::TimeSet&lt; MeshType, N &gt;</a>
@@ -427,6 +430,22 @@ $(document).ready(function(){initNavTree('functions_s.html',''); initResizable()
 <li>setTranslationalVelocityExpr()
 : <a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyArticulation.html#ab420095f73ebf0c693f7c1f130cfaa24">Feel::FeelModels::FluidMechanics&lt; ConvexType, BasisVelocityType, BasisPressureType &gt;::BodyArticulation</a>
 </li>
+<li>setup()
+: <a class="el" href="classFeel_1_1FeelModels_1_1ElectricBoundaryConditions.html#ac48e95189892fedd478f4fd0b8245676">Feel::FeelModels::ElectricBoundaryConditions</a>
+, <a class="el" href="classFeel_1_1FeelModels_1_1ElectricBoundaryConditions_1_1SurfaceChargeDensity.html#a92bdb2959e60aba2a40a155bcaa29089">Feel::FeelModels::ElectricBoundaryConditions::SurfaceChargeDensity</a>
+, <a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanicsBoundaryConditions_1_1BodyInterface.html#afc52c667f30c08db641af54ab72c3af2">Feel::FeelModels::FluidMechanicsBoundaryConditions&lt; Dim &gt;::BodyInterface</a>
+, <a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanicsBoundaryConditions_1_1Inlet.html#a14e570aecf85c33304b9e4cdfa78bb3a">Feel::FeelModels::FluidMechanicsBoundaryConditions&lt; Dim &gt;::Inlet</a>
+, <a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanicsBoundaryConditions_1_1NormalStress.html#a2467e091c4bdde59a7278ed1802aa986">Feel::FeelModels::FluidMechanicsBoundaryConditions&lt; Dim &gt;::NormalStress</a>
+, <a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanicsBoundaryConditions_1_1OutletFree.html#a924971f88738929af39f1f5d8ffa7c04">Feel::FeelModels::FluidMechanicsBoundaryConditions&lt; Dim &gt;::OutletFree</a>
+, <a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanicsBoundaryConditions_1_1OutletWindkessel.html#ad1873fd7c27c7cd5e59bf628eef7595b">Feel::FeelModels::FluidMechanicsBoundaryConditions&lt; Dim &gt;::OutletWindkessel</a>
+, <a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanicsBoundaryConditions_1_1PressureImposed.html#a8950c0cdd1197034b6c5884a1320cac1">Feel::FeelModels::FluidMechanicsBoundaryConditions&lt; Dim &gt;::PressureImposed</a>
+, <a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanicsBoundaryConditions.html#ad0cfe3049c72a243754714f429599c74">Feel::FeelModels::FluidMechanicsBoundaryConditions&lt; Dim &gt;</a>
+, <a class="el" href="classFeel_1_1FeelModels_1_1GenericDirichletBoundaryCondition.html#a58af5fb76423aa5df814fad8f3987d4a">Feel::FeelModels::GenericDirichletBoundaryCondition&lt; Dim1, Dim2 &gt;</a>
+, <a class="el" href="classFeel_1_1FeelModels_1_1SolidMechanics1dReducedBoundaryConditions.html#a0899bb7ea7fe99ca3fedeb75f3bf3556">Feel::FeelModels::SolidMechanics1dReducedBoundaryConditions&lt; Dim &gt;</a>
+, <a class="el" href="classFeel_1_1FeelModels_1_1SolidMechanicsBoundaryConditions_1_1NormalStress.html#af9797e25fd5a11320a7104baefc2d1ac">Feel::FeelModels::SolidMechanicsBoundaryConditions&lt; Dim &gt;::NormalStress</a>
+, <a class="el" href="classFeel_1_1FeelModels_1_1SolidMechanicsBoundaryConditions_1_1Robin.html#afbc0e2cc98ae47d08cc4af51bc011056">Feel::FeelModels::SolidMechanicsBoundaryConditions&lt; Dim &gt;::Robin</a>
+, <a class="el" href="classFeel_1_1FeelModels_1_1SolidMechanicsBoundaryConditions.html#a068641bf68430700c89b709155251107">Feel::FeelModels::SolidMechanicsBoundaryConditions&lt; Dim &gt;</a>
+</li>
 <li>setUpdatedForUse()
 : <a class="el" href="classFeel_1_1MeshBase.html#aab4330e8d4947e50620e710f653174f8">Feel::MeshBase&lt; IndexT &gt;</a>
 </li>
@@ -448,7 +467,7 @@ $(document).ready(function(){initNavTree('functions_s.html',''); initResizable()
 </li>
 <li>shared_from_this_meshbase()
 : <a class="el" href="classFeel_1_1Mesh.html#a702076ada7fb10ed3a632c1f86858887">Feel::Mesh&lt; GeoShape, T, Tag, IndexT &gt;</a>
-, <a class="el" href="classFeel_1_1MeshBase.html#a78e20cdf727163b368ac004c812b6aa4">Feel::MeshBase&lt; IndexT &gt;</a>
+, <a class="el" href="classFeel_1_1MeshBase.html#a76134f6962229280efeb191f63c923a6">Feel::MeshBase&lt; IndexT &gt;</a>
 </li>
 <li>shortDescription()
 : <a class="el" href="classFeel_1_1AboutData.html#a929c6aacdcd964441067db7b2a9bfa9b">Feel::AboutData</a>
@@ -486,7 +505,7 @@ $(document).ready(function(){initNavTree('functions_s.html',''); initResizable()
 : <a class="el" href="classnlohmann_1_1detail_1_1lexer.html#a7cd7d55de2cd398660bc243c7229caf9">nlohmann::detail::lexer&lt; BasicJsonType, InputAdapterType &gt;</a>
 </li>
 <li>solveImplCondense()
-: <a class="el" href="classFeel_1_1BlockBilinearForm.html#aad09159509e892efa942e282d556f36f">Feel::BlockBilinearForm&lt; PS &gt;</a>
+: <a class="el" href="classFeel_1_1BlockBilinearForm.html#ab59dd52453c126a04050d32b76449921">Feel::BlockBilinearForm&lt; PS &gt;</a>
 </li>
 <li>sparse_matrix_ptrtype
 : <a class="el" href="classFeel_1_1MeshAdaptation.html#af2a212949ffeab1f76431385050d08bb">Feel::MeshAdaptation&lt; Dim, Order, OrderGeo &gt;</a>
@@ -547,7 +566,7 @@ $(document).ready(function(){initNavTree('functions_s.html',''); initResizable()
 , <a class="el" href="classFeel_1_1MeshBase.html#aabe6d77059eb86618499bba56c6024d5">Feel::MeshBase&lt; IndexT &gt;</a>
 </li>
 <li>subMeshToMesh()
-: <a class="el" href="classFeel_1_1MeshBase.html#a8f26094ce5e18505263ca4e4139a07e5">Feel::MeshBase&lt; IndexT &gt;</a>
+: <a class="el" href="classFeel_1_1MeshBase.html#a6939d9096a390e0b7071bf8e274b1183">Feel::MeshBase&lt; IndexT &gt;</a>
 </li>
 <li>subphysicFromType()
 : <a class="el" href="classFeel_1_1FeelModels_1_1ModelPhysic.html#a300aa25092c43f4d978027bf44f90ac6">Feel::FeelModels::ModelPhysic&lt; Dim &gt;</a>
@@ -565,27 +584,30 @@ $(document).ready(function(){initNavTree('functions_s.html',''); initResizable()
 : <a class="el" href="classnlohmann_1_1byte__container__with__subtype.html#abe68a969df28c8cb0b63355b4d38ec1a">nlohmann::byte_container_with_subtype&lt; BinaryType &gt;</a>
 </li>
 <li>subWorldComm()
-: <a class="el" href="classFeel_1_1WorldComm.html#ad61004a966b151838096a0472761ca6a">Feel::WorldComm</a>
+: <a class="el" href="classFeel_1_1WorldComm.html#ae58afe7f35886324b4efaae62667ee0f">Feel::WorldComm</a>
 </li>
 <li>subWorldCommPtr()
 : <a class="el" href="classFeel_1_1WorldComm.html#acd43193528afd5d0f69ab87314bb524d">Feel::WorldComm</a>
 </li>
 <li>subWorldCommSeq()
-: <a class="el" href="classFeel_1_1WorldComm.html#a6dd54243e7f188dc090af0e2e3faa26f">Feel::WorldComm</a>
+: <a class="el" href="classFeel_1_1WorldComm.html#a2e8109bc7c1186e8902331606147ef4d">Feel::WorldComm</a>
 </li>
 <li>subWorldCommSeqPtr()
 : <a class="el" href="classFeel_1_1CommObject.html#adff273f31231ccbbdf407d525cc24fa1">Feel::CommObject</a>
-, <a class="el" href="classFeel_1_1WorldComm.html#a7e8ec63cab1a4131efffa3736918e070">Feel::WorldComm</a>
+, <a class="el" href="classFeel_1_1WorldComm.html#a8068d2175cb399b27fafd10dd3208d37">Feel::WorldComm</a>
 </li>
 <li>Surface()
-: <a class="el" href="classFeel_1_1Surface.html#aa3c216983b23f2ec9e383cb01a86e79f">Feel::Surface</a>
+: <a class="el" href="classFeel_1_1Surface.html#aefdd61375f7351b5aa7a851c77051ed5">Feel::Surface</a>
+</li>
+<li>surfaceChargeDensity()
+: <a class="el" href="classFeel_1_1FeelModels_1_1ElectricBoundaryConditions.html#ac11d5a6a6ee54ecf71daded75c6f8812">Feel::FeelModels::ElectricBoundaryConditions</a>
 </li>
 <li>surfaceCoords()
 : <a class="el" href="classFeel_1_1Sphere.html#aca29f707ac3447c337fd491830268ca4">Feel::Sphere</a>
 , <a class="el" href="classFeel_1_1Surface.html#af41fc1b1098408dc6963824564770679">Feel::Surface</a>
 </li>
-<li>swap()
-: <a class="el" href="classnlohmann_1_1basic__json.html#a76126242de262f6d38cadda19e0d13e1">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;</a>
+<li>swap
+: <a class="el" href="classnlohmann_1_1basic__json.html#aee0ae36cbfb0336832ebc0374c3c7679">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;</a>
 </li>
 <li>swapPoints()
 : <a class="el" href="classFeel_1_1GeoND.html#a50b04a3f9bc000e7d55ca6eeacf6e5fd">Feel::GeoND&lt; Dim, GEOSHAPE, T, IndexT, POINTTYPE, UseMeasuresStorage &gt;</a>

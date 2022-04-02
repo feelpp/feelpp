@@ -45,7 +45,7 @@ var classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition =
     [ "rigidVelocityExpr", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#ab4e6264a2d4d1a6d2f129bc6d4878be3", null ],
     [ "rigidVelocityExprFromFields", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a78f743f650a0b5de7abb552787d7c6d7", null ],
     [ "setParameterValues", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a3ae5344355d1fb7b8333f8ed46568143", null ],
-    [ "setup", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a9a49fad7c9dae9825a99c148736b42ec", null ],
+    [ "setup", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a09c618cd2d9a6402bfd428839072cba7", null ],
     [ "spaceAngularVelocity", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#ad2608eaea79bc4e3d4b169bdd0ff7859", null ],
     [ "spaceElasticVelocityPtr", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a26ec006543400282458dc7abbe8529da", null ],
     [ "spaceTranslationalVelocity", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#aa2c6e3dcb64a16bd53b59f242cf39483", null ],
