@@ -2,6 +2,9 @@
  */
 
 #include <feel/feelmodels/modelcore/modelphysics.hpp>
+#include <feel/feelmodels/modelmarkers.hpp>
+
+#include <feel/feelmodels/modelcore/modelgenericpde.hpp>
 
 namespace Feel
 {
@@ -39,15 +42,15 @@ ModelPhysic<Dim>::ModelPhysic( std::string const& modeling, std::string const& t
     {
         this->addMaterialPropertyDescription( "electric-conductivity", "sigma", { scalarShape } );
     }
-    if ( M_modeling == "solid" )
+    if ( M_modeling == "solid" || M_modeling == "fsi" )
     {
         this->addMaterialPropertyDescription( "Young-modulus", "E", { scalarShape } );
         this->addMaterialPropertyDescription( "Poisson-ratio", "nu", { scalarShape } );
-        this->addMaterialPropertyDescription( "Lame-first-parameter", "lambda", { scalarShape } );
-        this->addMaterialPropertyDescription( "Lame-second-parameter", "mu", { scalarShape } );
+        this->addMaterialPropertyDescription( "Lame-first-parameter", "lambdaLame", { scalarShape } );
+        this->addMaterialPropertyDescription( "Lame-second-parameter", "muLame", { scalarShape } );
         this->addMaterialPropertyDescription( "bulk-modulus", "K", { scalarShape } );
     }
-    if ( M_modeling == "fluid" || M_modeling == "heat-fluid" )
+    if ( M_modeling == "fluid" || M_modeling == "heat-fluid" || M_modeling == "fsi" )
     {
         this->addMaterialPropertyDescription( "dynamic-viscosity", "mu", { scalarShape } );
         this->addMaterialPropertyDescription( "turbulent-dynamic-viscosity", "mu_t", { scalarShape } );
@@ -80,6 +83,12 @@ ModelPhysic<Dim>::New( ModelPhysics<Dim> const& mphysics, std::string const& mod
         return std::make_shared<ModelPhysicFluid<Dim>>( mphysics, modeling, type, name, model );
     else if ( modeling == "solid" )
         return std::make_shared<ModelPhysicSolid<Dim>>( mphysics, modeling, type, name, model );
+    else if ( modeling == "fsi" )
+        return std::make_shared<ModelPhysicFSI<Dim>>( mphysics, modeling, type, name, model );
+    else if ( modeling == "GenericPDE" )
+        return std::make_shared<ModelPhysicCoefficientFormPDE<Dim>>( mphysics, modeling, type, name, model );
+    else if ( modeling == "GenericPDEs" )
+        return std::make_shared<ModelPhysicCoefficientFormPDEs<Dim>>( mphysics, modeling, type, name, model );
     else
         return std::make_shared<ModelPhysic<Dim>>( modeling, type, name, mphysics, model );
 }
@@ -494,6 +503,8 @@ ModelPhysicFluid<Dim>::ModelPhysicFluid( ModelPhysics<Dim> const& mphysics, std:
             auto const& j_setup_gravity = j_setup.at("gravity");
             if ( j_setup_gravity.is_boolean() )
                 M_gravityForceEnabled = j_setup_gravity.template get<bool>();
+            else if ( j_setup_gravity.is_number_unsigned() )
+                M_gravityForceEnabled = j_setup_gravity.template get<int>() > 0;
             else if ( j_setup_gravity.is_string() )
                 M_gravityForceEnabled = boost::lexical_cast<bool>( j_setup_gravity.template get<std::string>() );
             else if ( j_setup_gravity.is_object() )
@@ -503,6 +514,8 @@ ModelPhysicFluid<Dim>::ModelPhysicFluid( ModelPhysics<Dim> const& mphysics, std:
                     auto const& j_setup_gravity_enable =  j_setup_gravity.at("enable");
                     if ( j_setup_gravity_enable.is_boolean() )
                         M_gravityForceEnabled = j_setup_gravity_enable.template get<bool>();
+                    else if ( j_setup_gravity_enable.is_number_unsigned() )
+                        M_gravityForceEnabled = j_setup_gravity_enable.template get<int>() > 0;
                     else if ( j_setup_gravity_enable.is_string() )
                         M_gravityForceEnabled = boost::lexical_cast<bool>( j_setup_gravity_enable.template get<std::string>() );
                 }
@@ -590,6 +603,8 @@ ModelPhysicFluid<Dim>::Turbulence::setup( nl::json const& jarg )
         auto const& j_enable = jarg.at("enable");
         if ( j_enable.is_boolean() )
             M_isEnabled = j_enable.template get<bool>();
+        else if ( j_enable.is_number_unsigned() )
+            M_isEnabled = j_enable.template get<int>() > 0;
         else if ( j_enable.is_string() )
             M_isEnabled = boost::lexical_cast<bool>( j_enable.template get<std::string>() );
     }
@@ -649,6 +664,29 @@ ModelPhysicSolid<Dim>::ModelPhysicSolid( ModelPhysics<Dim> const& mphysics, std:
                     this->setEquation( j_setup_eq.get<std::string>() );
             }
 
+        for ( std::string const& eqarg : { "body-forces" } )
+            if ( j_setup.contains( eqarg ) )
+            {
+                auto const& j_setup_bodyforces = j_setup.at( eqarg );
+                if ( j_setup_bodyforces.is_array() )
+                {
+                    for ( auto const& [j_setup_bodyforceskey,j_setup_bodyforcesval] : j_setup_bodyforces.items() )
+                    {
+                        CHECK( j_setup_bodyforcesval.is_object() ) << "j_setup_bodyforcesval should be an object";
+                        BodyForces bf( this, fmt::format("bodyforce{}",M_bodyForces.size()) );
+                        bf.setup( j_setup_bodyforcesval );
+                        M_bodyForces.push_back( std::move( bf ) );
+                    }
+                }
+                else
+                {
+                    BodyForces bf( this, fmt::format("bodyforce{}",M_bodyForces.size()) );
+                    bf.setup( j_setup_bodyforces );
+                    M_bodyForces.push_back( std::move( bf ) );
+                }
+            }
+
+
         if ( j_setup.contains( "material-model" ) )
         {
             auto const& j_setup_matmodel = j_setup.at( "material-model" );
@@ -691,11 +729,25 @@ ModelPhysicSolid<Dim>::updateInformationObject( nl::json & p ) const
 
     nl::json & pSolid = p["Solid"];
     pSolid["Equation"] = M_equation;
+
+    if ( !M_bodyForces.empty() )
+    {
+        //eqTermSource = "f";
+        nl::json & pBodyForces = pSolid["BodyForces"];
+        for ( auto const& bf : M_bodyForces )
+        {
+            nl::json pbf;
+            bf.updateInformationObject( pbf );
+            pBodyForces.push_back( std::move( pbf ) );
+        }
+    }
+
 }
 template <uint16_type Dim>
 tabulate_informations_ptr_t
 ModelPhysicSolid<Dim>::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
 {
+#if 0
     auto tabInfo = TabulateInformationsSections::New( tabInfoProp );
     if ( jsonInfo.contains("Generic") )
     {
@@ -709,6 +761,39 @@ ModelPhysicSolid<Dim>::tabulateInformations( nl::json const& jsonInfo, TabulateI
         auto const& jsonInfoSolid = jsonInfo.at("Solid");
         TabulateInformationTools::FromJSON::addKeyToValues( tabInfoSolidEquation, jsonInfoSolid, tabInfoProp, { "Equation" } );
         tabInfo->add( "", TabulateInformations::New( tabInfoSolidEquation, tabInfoProp ) );
+    }
+    return tabInfo;
+#endif
+
+
+
+    
+    auto tabInfo = TabulateInformationsSections::New( tabInfoProp );
+    if ( jsonInfo.contains("Generic") )
+    {
+        super_type::updateTabulateInformationsBasic( jsonInfo.at("Generic"), tabInfo, tabInfoProp );
+        super_type::updateTabulateInformationsSubphysics( jsonInfo.at("Generic"), tabInfo, tabInfoProp );
+    }
+    if ( jsonInfo.contains("Solid") )
+    {
+        auto const& jsonInfoSolid = jsonInfo.at("Solid");
+        Feel::Table tabInfoSolidEquation;
+        TabulateInformationTools::FromJSON::addKeyToValues( tabInfoSolidEquation, jsonInfoSolid, tabInfoProp, { "Equation" } );
+        tabInfo->add( "", TabulateInformations::New( tabInfoSolidEquation, tabInfoProp ) );
+
+        if ( jsonInfoSolid.contains("BodyForces") )
+        {
+            auto tabInfoBodyForces = TabulateInformationsSections::New( tabInfoProp );
+            for ( auto const& [bfkey,bfval] : jsonInfoSolid.at("BodyForces").items() )
+                tabInfoBodyForces->add( "", BodyForces::tabulateInformations( bfval, tabInfoProp ) );
+            tabInfo->add( "Body Forces", tabInfoBodyForces );
+        }
+
+    }
+
+    if ( jsonInfo.contains("Generic") )
+    {
+        super_type::updateTabulateInformationsParameters( jsonInfo.at("Generic"), tabInfo, tabInfoProp );
     }
     return tabInfo;
 }
@@ -729,137 +814,488 @@ ModelPhysicSolid<Dim>::setEquation( std::string const& eq )
 
 template <uint16_type Dim>
 void
-ModelPhysics<Dim>::initPhysics( std::string const& type, ModelModels const& models, bool isRequired )
+ModelPhysicSolid<Dim>::BodyForces::setup( nl::json const& jarg )
 {
-    M_physicType = type;
-
-    if ( models.hasType( type ) )
+    if ( jarg.is_string() )
     {
-        for ( auto const& [_nameFromModels,_model] : models.models( type ) )
-        {
-            std::string _name = _nameFromModels.empty()? type : _nameFromModels; // use name=type if not given
-            if ( this->hasPhysic( std::make_pair(type, _name) ) )
-                continue;
-            auto _mphysic = ModelPhysic<Dim>::New( *this, M_physicModeling, type, _name, _model );
-            M_physics.emplace( std::make_pair(type, _name), _mphysic );
-        }
+        M_parent->addParameter( M_name + "_bodyforce", jarg );
     }
-    else if ( this->physics( type ).empty() && isRequired )
+    else if ( jarg.is_object() )
     {
-        // create default physic
-        std::string _name = "default";
-        auto _model = ModelModel(type,_name);
-        auto _mphysic = ModelPhysic<Dim>::New( *this, M_physicModeling, type, _name, _model );
-        M_physics.emplace( std::make_pair(type, _name), _mphysic );
+        CHECK( jarg.contains( "expr" ) ) << "no expr";
+        M_parent->addParameter( M_name + "_bodyforce", jarg.at("expr") );
+    }
+}
+template <uint16_type Dim>
+void
+ModelPhysicSolid<Dim>::BodyForces::updateInformationObject( nl::json & p ) const
+{
+    p["name"] = M_name;
+    auto [exprStr,compInfo] = M_parent->parameterModelExpr(M_name+"_bodyforce").exprInformations();
+    p["expr"] = exprStr;
+}
+template <uint16_type Dim>
+tabulate_informations_ptr_t
+ModelPhysicSolid<Dim>::BodyForces::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp )
+{
+    Feel::Table tabInfo;
+    TabulateInformationTools::FromJSON::addKeyToValues( tabInfo, jsonInfo, tabInfoProp, { "name","expr" } );
+    tabInfo.format()
+        .setShowAllBorders( false )
+        .setColumnSeparator(":")
+        .setHasRowSeparator( false );
+    return TabulateInformations::New( tabInfo, tabInfoProp );
+}
+
+template <uint16_type Dim>
+ModelPhysicFSI<Dim>::ModelPhysicFSI( ModelPhysics<Dim> const& mphysics, std::string const& modeling, std::string const& type, std::string const& name, ModelModel const& model )
+    :
+    super_type( modeling, type, name, mphysics, model )
+{
+    auto const& j_setup = model.setup();
+    if ( j_setup.contains( "interface" ) )
+    {
+        ModelMarkers markers;
+        markers.setup( j_setup.at("interface")/*, indexes*/ );
+        M_interfaceFluid = markers;
+        M_interfaceSolid = markers;
     }
 }
 
 template <uint16_type Dim>
 void
-ModelPhysics<Dim>::initPhysics( PhysicsTree const& physicTree, ModelModels const& models )
+ModelPhysicFSI<Dim>::updateInformationObject( nl::json & p ) const
 {
-    auto allMPhysics = physicTree.allPhysics();
-    for ( auto const& [type,mphysics,isRequired] : allMPhysics )
+    super_type::updateInformationObject( p["Generic"] );
+
+    nl::json & pFSI = p["FSI"];
+    pFSI["interface_fluid"] = M_interfaceFluid;
+    pFSI["interface_solid"] = M_interfaceSolid;
+}
+template <uint16_type Dim>
+tabulate_informations_ptr_t
+ModelPhysicFSI<Dim>::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
+{
+    auto tabInfo = TabulateInformationsSections::New( tabInfoProp );
+    if ( jsonInfo.contains("Generic") )
     {
-        if ( mphysics )
-            mphysics->initPhysics( type, models, isRequired );
+        super_type::updateTabulateInformationsBasic( jsonInfo.at("Generic"), tabInfo, tabInfoProp );
+        super_type::updateTabulateInformationsSubphysics( jsonInfo.at("Generic"), tabInfo, tabInfoProp );
+        super_type::updateTabulateInformationsParameters( jsonInfo.at("Generic"), tabInfo, tabInfoProp );
+    }
+    return tabInfo;
+}
+
+
+
+
+
+template <uint16_type Dim>
+ModelPhysicCoefficientFormPDE<Dim>::Infos::Infos( std::string const& name, nl::json const& jarg )
+{
+    M_equationName = name;
+
+    if ( jarg.contains("name") )
+    {
+        auto const& j_name = jarg.at("name");
+        if ( j_name.is_string() )
+            M_equationName = j_name.template get<std::string>();
     }
 
-    // up subphysics by using recursive lambda function
-    auto upSubphysics = [&models]( PhysicsTree const& _physicTree )
-                            {
-                                auto upSubphysicsImpl = [&models]( PhysicsTree const& _physicTreeBis, const auto& ff ) -> void
-                                                            {
-                                                                auto const& [rootType,rootPhysics,rootIsRequiredxs] = _physicTreeBis.root();
-                                                                std::map<std::string,std::map<std::string,std::set<std::string>>> submodelsFromRoot; // subType -> ( rootName -> ( subNames ) )
-                                                                if ( models.hasType( rootType ) )
-                                                                    for ( auto const& [_rootnameFromModels,_rootmodel] : models.models( rootType ) )
-                                                                    {
-                                                                        std::string _rootname = _rootnameFromModels.empty()? rootType : _rootnameFromModels; // use name=type if not given
-                                                                        for ( auto const& [_subtype,_subnames] : _rootmodel.submodels() )
-                                                                            if ( !_subnames.empty() )
-                                                                                submodelsFromRoot[_subtype][_rootname] = _subnames;
-                                                                    }
+    if ( jarg.contains("unknown") )
+    {
+        auto const& j_unknown = jarg.at("unknown");
+        CHECK( j_unknown.contains("name") ) << "require to define unknown.name";
+        auto const& j_unknown_name = j_unknown.at("name");
+        if ( j_unknown_name.is_string() )
+            M_unknownName = j_unknown_name.template get<std::string>();
+        CHECK( !M_unknownName.empty() ) << "require to define a non empty unknown.name";
 
-                                                                for ( auto st : _physicTreeBis.subtrees() )
-                                                                {
-                                                                    ff( st, ff );
+        if ( j_unknown.contains( "symbol" ) )
+        {
+            auto const& j_unknown_symbol = j_unknown.at( "symbol" );
+            if ( j_unknown_symbol.is_string() )
+                M_unknownSymbol = j_unknown_symbol.template get<std::string>();
+        }
+        else
+             M_unknownSymbol = M_unknownName;
 
-                                                                    auto const& [subType,subPhysics,subIsRequired] = st.root();
-                                                                    rootPhysics->setPhysics( std::get<1>(st.root())->physics() );
+        if ( j_unknown.contains( "basis" ) )
+        {
+            auto const& j_unknown_basis = j_unknown.at( "basis" );
+            if ( j_unknown_basis.is_string() )
+                M_unknownBasis = j_unknown_basis.template get<std::string>();
+        }
+        else
+            M_unknownBasis = "Pch1";
+    }
 
-                                                                    auto itFind = submodelsFromRoot.find( subType );
-                                                                    if ( itFind != submodelsFromRoot.end() ) // link defined in models (i.e. from json)
-                                                                    {
-                                                                        for ( auto const& [_rootname,_subnames] : itFind->second )
-                                                                        {
-                                                                            auto rootPhysicId = std::make_pair( rootType, _rootname );
-                                                                            auto rootPhysic = rootPhysics->physic( rootPhysicId );
+    std::string unknownShape;
+    if ( M_unknownBasis == "Pch1" || M_unknownBasis == "Pch2" || M_unknownBasis == "Pdh1" )
+        unknownShape = "scalar";
+    else if ( M_unknownBasis == "Pchv1" || M_unknownBasis == "Pchv2" || M_unknownBasis == "Ned1h0" )
+        unknownShape = "vectorial";
+    else
+        CHECK( false ) << "invalid unknown.basis : " << M_unknownBasis;
 
-                                                                            for ( auto const& _subname : _subnames )
-                                                                            {
-                                                                                auto subPhysic = rootPhysics->physic( std::make_pair( subType, _subname ) );
-                                                                                rootPhysic->addSubphysic( subPhysic );
-                                                                            }
-                                                                        }
-                                                                    }
-                                                                    else // not defined, add all physic with same type
-                                                                    {
-                                                                        for ( auto const& [_rootPhysicId,_rootPhysic] : rootPhysics->physics( rootType ) )
-                                                                            for ( auto const& [_subPhysicId,_subPhysic] : rootPhysics->physics( subType ) )
-                                                                                _rootPhysic->addSubphysic( _subPhysic );
-                                                                    }
-                                                                }
 
-                                                                // update maybe materials names
-                                                                for ( auto const& [_rootPhysicId,_rootPhysic] : rootPhysics->physics( rootType ) )
-                                                                {
-                                                                    if ( _rootPhysic->subphysics().empty() )
-                                                                        continue;
-                                                                    auto const& rootMatNames = _rootPhysic->materialNames();
-                                                                    if ( !rootMatNames.empty() )
-                                                                        continue;
+    static constexpr uint16_type nDim = Dim;
+    shape_dim_type scalarShape = std::make_pair(1,1);
+    shape_dim_type vectorialShape = std::make_pair(nDim,1);
+    shape_dim_type matrixShape = std::make_pair(nDim,nDim);
 
-                                                                    std::map<std::string,std::set<std::string>> mapSubphysicTypeToMatNames;
-                                                                    for ( auto const& [pId,subphysic] : _rootPhysic->subphysics() )
-                                                                    {
-                                                                        auto const& subMatNames = subphysic->materialNames();
-                                                                        if ( !subMatNames.empty() ) // warning, only non empty
-                                                                            mapSubphysicTypeToMatNames[subphysic->type()].insert( subMatNames.begin(), subMatNames.end() );
-                                                                    }
+    M_coefficientProperties.emplace( Coefficient::convection, std::make_tuple( "beta", shapes_dim_type{ vectorialShape } ) );
+    M_coefficientProperties.emplace( Coefficient::diffusion, std::make_tuple( "c", shapes_dim_type{ scalarShape, matrixShape } ) );
+    M_coefficientProperties.emplace( Coefficient::reaction, std::make_tuple( "a", shapes_dim_type{ scalarShape } ) );
+    M_coefficientProperties.emplace( Coefficient::firstTimeDerivative, std::make_tuple( "d", shapes_dim_type{ scalarShape } ) );
+    M_coefficientProperties.emplace( Coefficient::secondTimeDerivative, std::make_tuple( "m", shapes_dim_type{ scalarShape } ) );
 
-                                                                    if ( mapSubphysicTypeToMatNames.empty() ) // ok, do nothing
-                                                                        continue;
+    M_coefficientProperties.emplace( Coefficient::conservativeFluxConvection, std::make_tuple( "alpha", shapes_dim_type{ vectorialShape } ) );
 
-                                                                    // take intersection with subphysics
-                                                                    std::set<std::string> intersecMatNames; bool isFirst = true;
-                                                                    for ( auto const& [_t,_matnames] : mapSubphysicTypeToMatNames )
-                                                                    {
-                                                                        if ( isFirst )
-                                                                        {
-                                                                            intersecMatNames = _matnames;
-                                                                            isFirst = false;
-                                                                        }
-                                                                        else
-                                                                        {
-                                                                            std::set<std::string> res;
-                                                                            std::set_intersection(intersecMatNames.begin(), intersecMatNames.end(), _matnames.begin(), _matnames.end(),
-                                                                                                  std::inserter(res, res.begin()));
-                                                                            intersecMatNames = res;
-                                                                        }
-                                                                    }
-                                                                    CHECK( !intersecMatNames.empty() ) << "incompatible materials names";
-                                                                    _rootPhysic->addMaterialNames( intersecMatNames );
-                                                                }
+    if ( unknownShape == "scalar" )
+    {
+        M_coefficientProperties.emplace( Coefficient::source, std::make_tuple( "f", shapes_dim_type{ scalarShape } ) );
+        M_coefficientProperties.emplace( Coefficient::conservativeFluxSource, std::make_tuple( "gamma", shapes_dim_type{ vectorialShape } ) );
+    }
+    else if ( unknownShape == "vectorial" )
+    {
+        M_coefficientProperties.emplace( Coefficient::source, std::make_tuple( "f", shapes_dim_type{ vectorialShape } ) );
+        M_coefficientProperties.emplace( Coefficient::conservativeFluxSource, std::make_tuple( "gamma", shapes_dim_type{ matrixShape } ) );
+        M_coefficientProperties.emplace( Coefficient::curlCurl, std::make_tuple( "zeta", shapes_dim_type{ scalarShape } ) );
+    }
+}
 
-                                                                // check materials names compatibility
-                                                            };
-                                upSubphysicsImpl( _physicTree, upSubphysicsImpl );
-                            };
 
-    upSubphysics( physicTree );
+template <uint16_type Dim>
+ModelPhysicCoefficientFormPDE<Dim>::ModelPhysicCoefficientFormPDE( ModelPhysics<Dim> const& mphysics, std::string const& modeling, std::string const& type, std::string const& name, ModelModel const& model )
+    :
+    super_type( modeling, type, name, mphysics, model )
+{
+    auto const& mgpde = dynamic_cast<ModelGenericPDE<Dim> const&>( mphysics );
+    M_infos = mgpde.M_infos;
+
+    auto const& j_setup = model.setup();
+
+    if ( j_setup.contains("coefficients") )
+    {
+        auto const& j_setup_coeff = j_setup.at("coefficients");
+        for ( auto const& [j_setup_coeffkey,j_setup_coeffval] : j_setup_coeff.items() )
+        {
+            this->addParameter( j_setup_coeffkey, j_setup_coeffval );
+        }
+
+        // check coefficients shape
+        for ( auto const& [c,prop] : M_infos->coefficientProperties() )
+        {
+            if ( !this->hasCoefficient( c ) )
+                continue;
+
+            auto const& coeff = this->coefficient( c );
+            bool shapeOk = false;
+            for ( auto const& [dim1,dim2] : std::get<1>( prop ) )
+            {
+                if ( coeff.hasExpr( dim1,dim2 ) )
+                {
+                    shapeOk = true;
+                    break;
+                }
+            }
+            CHECK( shapeOk ) << "invalid coefficient expr shape : " << std::get<0>( prop );
+        }
+    }
 
 }
+
+template <uint16_type Dim>
+void
+ModelPhysicCoefficientFormPDE<Dim>::updateInformationObject( nl::json & p ) const
+{
+    super_type::updateInformationObject( p["Generic"] );
+}
+template <uint16_type Dim>
+tabulate_informations_ptr_t
+ModelPhysicCoefficientFormPDE<Dim>::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
+{
+    auto tabInfo = TabulateInformationsSections::New( tabInfoProp );
+    if ( jsonInfo.contains("Generic") )
+    {
+        super_type::updateTabulateInformationsBasic( jsonInfo.at("Generic"), tabInfo, tabInfoProp );
+        super_type::updateTabulateInformationsSubphysics( jsonInfo.at("Generic"), tabInfo, tabInfoProp );
+        super_type::updateTabulateInformationsParameters( jsonInfo.at("Generic"), tabInfo, tabInfoProp );
+    }
+    return tabInfo;
+}
+
+
+template <uint16_type Dim>
+ModelPhysicCoefficientFormPDEs<Dim>::ModelPhysicCoefficientFormPDEs( ModelPhysics<Dim> const& mphysics, std::string const& modeling, std::string const& type, std::string const& name, ModelModel const& model )
+    :
+    super_type( modeling, type, name, mphysics, model )
+{
+    using model_physic_cfpde_type = ModelPhysicCoefficientFormPDE<Dim>;
+    auto const& j_setup = model.setup();
+
+    if ( j_setup.is_string() )
+    {
+        std::string const& eqName = j_setup.template get<std::string>();
+        M_pdes.push_back( std::make_tuple( eqName, typename model_physic_cfpde_type::infos_ptrtype{}, std::shared_ptr<ModelPhysicCoefficientFormPDE<Dim>>{} ) );
+    }
+    else if ( j_setup.is_object() )
+    {
+#if 0
+        std::string nameEqDefault = fmt::format("equation{}",M_pdes.size());
+        //typename ModelPhysicCoefficientFormPDE<Dim>::infos_type infos( nameEqDefault, j_setup );
+        auto infos = std::make_shared<cfpde_infos_type>( nameEqDefault, j_setup );
+        M_pdes.push_back( std::make_tuple( infos->equationName(), std::move( infos ), std::shared_ptr<ModelPhysicCoefficientFormPDE<Dim>>{} ) );
+#endif
+    }
+    else if ( j_setup.is_array() )
+    {
+        for ( auto const& [j_setupkey,j_setupval] : j_setup.items() )
+        {
+            if ( j_setupval.is_string() )
+            {
+                std::string const& eqName = j_setupval.template get<std::string>();
+                M_pdes.push_back( std::make_tuple( eqName, typename model_physic_cfpde_type::infos_ptrtype{}, std::shared_ptr<ModelPhysicCoefficientFormPDE<Dim>>{} ) );
+            }
+            else
+            {
+#if 0
+                std::string nameEqDefault = fmt::format("equation{}",M_pdes.size());
+                //typename ModelPhysicCoefficientFormPDE<Dim>::infos_type infos( nameEqDefault, j_setupval );
+                auto infos = std::make_shared<cfpde_infos_type>( nameEqDefault, j_setupval );
+                M_pdes.push_back( std::make_tuple( infos->equationName(), std::move( infos ), std::shared_ptr<ModelPhysicCoefficientFormPDE<Dim>>{} ) );
+#endif
+            }
+        }
+    }
+
+}
+
+template <uint16_type Dim>
+void
+ModelPhysicCoefficientFormPDEs<Dim>::updateInformationObject( nl::json & p ) const
+{
+    super_type::updateInformationObject( p["Generic"] );
+}
+template <uint16_type Dim>
+tabulate_informations_ptr_t
+ModelPhysicCoefficientFormPDEs<Dim>::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
+{
+    auto tabInfo = TabulateInformationsSections::New( tabInfoProp );
+    if ( jsonInfo.contains("Generic") )
+    {
+        super_type::updateTabulateInformationsBasic( jsonInfo.at("Generic"), tabInfo, tabInfoProp );
+        super_type::updateTabulateInformationsSubphysics( jsonInfo.at("Generic"), tabInfo, tabInfoProp );
+        super_type::updateTabulateInformationsParameters( jsonInfo.at("Generic"), tabInfo, tabInfoProp );
+    }
+    return tabInfo;
+}
+
+
+
+
+
+
+
+
+
+
+
+template <uint16_type Dim>
+void
+ModelPhysics<Dim>::PhysicsTreeNode::addChild( std::string const& type, physics_ptrtype p, ModelModels const& models )
+{
+    std::set<std::string> submodelsName;
+    if ( models.hasType( this->physic()->type() ) )
+    {
+        for ( auto const& [_nameFromModels,_model] : models.models( this->physic()->type() ) )
+            if ( _nameFromModels.empty() || _nameFromModels == this->physic()->name() )
+            {
+                auto itFindSubmodel = _model.submodels().find( type );
+                if ( itFindSubmodel != _model.submodels().end() )
+                    submodelsName =  itFindSubmodel->second;
+            }
+    }
+    //std::cout << "hahah submodelsName = " << submodelsName << std::endl;
+
+
+    auto phycisUsedCollection = p->initPhysics( p->keyword(), models, submodelsName );
+
+    // first : add subtree
+    std::vector<std::shared_ptr<PhysicsTreeNode>> treeNodeAdded;
+    for ( auto phycisUsed : phycisUsedCollection )
+    {
+        M_children.push_back( PhysicsTreeNode::New(p,phycisUsed) );
+        treeNodeAdded.push_back( M_children.back() );
+
+        std::get<2>(M_data)->addSubphysic( phycisUsed );
+    }
+    // second : up subphysics
+    for ( auto treeNode : treeNodeAdded )
+    {
+        p->updatePhysics( *treeNode, models );
+    }
+
+}
+
+
+template <uint16_type Dim>
+void
+ModelPhysics<Dim>::PhysicsTreeNode::updateMaterialSupportFromChildren( std::string const& applyType )
+{
+    if ( M_children.empty() )
+        return;
+
+    std::vector<std::set<std::string>> matNamesForEachSubphysic;
+    for ( auto & child : M_children )
+    {
+        //child->updateSubphysicsMaterial();
+        matNamesForEachSubphysic.push_back( child->physic()->materialNames() );
+    }
+
+
+    bool isInterfacePhysics = applyType != "intersect";
+    //bool isInterfacePhysics = false;
+    if ( isInterfacePhysics )
+    {
+
+    }
+    else // take intersection
+    {
+        std::set<std::string> intersecMatNames; bool isFirst = true;
+        for ( auto const& _matnames : matNamesForEachSubphysic )
+        {
+            if ( _matnames.empty() )
+                continue;
+            if ( isFirst )
+            {
+                intersecMatNames = _matnames;
+                isFirst = false;
+            }
+            else
+            {
+                std::set<std::string> res;
+                std::set_intersection(intersecMatNames.begin(), intersecMatNames.end(), _matnames.begin(), _matnames.end(),
+                                      std::inserter(res, res.begin()));
+                intersecMatNames = res;
+            }
+        }
+        //CHECK( !intersecMatNames.empty() ) << "incompatible materials names";
+        if ( !intersecMatNames.empty() )
+        {
+            auto currentPhysic = std::get<2>( M_data );
+            if ( !currentPhysic->materialNames().empty() )
+            {
+                // TODO
+            }
+            currentPhysic->setMaterialNames( intersecMatNames );
+        }
+
+    }
+}
+
+
+
+template <uint16_type Dim>
+void
+ModelPhysics<Dim>::PhysicsTree::updatePhysics( physics_ptrtype mphysics, ModelModels const& models )
+{
+    auto physicsUsedCollection = mphysics->initPhysics( mphysics->keyword(), models, {} );
+
+    for ( auto physicsUsed : physicsUsedCollection )
+    {
+        auto treeNode = this->addNode( mphysics, physicsUsed );
+        mphysics->updatePhysics( *treeNode, models );
+        //treeNode->updateSubphysicsMaterial();
+    }
+}
+
+template <uint16_type Dim>
+std::map<typename ModelPhysics<Dim>::physic_id_type,typename ModelPhysics<Dim>::model_physic_ptrtype>
+ModelPhysics<Dim>::PhysicsTree::collectAllPhysics() const
+{
+    std::map<physic_id_type,model_physic_ptrtype> res;
+
+    auto upCollect = [&res]( PhysicsTreeNode const& nodeTree, const auto& ff ) -> void
+                         {
+                             auto physicData = nodeTree.physic();
+                             auto [it,isInserted] = res.emplace( physicData->id(), physicData );
+                             if ( !isInserted )
+                                 return;
+                             for ( auto const& child : nodeTree.children() )
+                                 ff( *child, ff );
+                         };
+    for ( auto const& nodeTree : this->children() )
+        upCollect( *nodeTree, upCollect );
+
+    return res;
+}
+
+template <uint16_type Dim>
+void
+ModelPhysics<Dim>::initPhysics( std::shared_ptr<ModelPhysics<nDim>> mphysics, ModelModels const& models )
+{
+    PhysicsTree physicsTree( mphysics );
+    physicsTree.updatePhysics( mphysics, models );
+    this->addPhysics( physicsTree.collectAllPhysics() );
+}
+
+template <uint16_type Dim>
+void
+ModelPhysics<Dim>::initPhysics( std::shared_ptr<ModelPhysics<nDim>> mphysics, std::function<void(PhysicsTree &)> lambdaInit )
+{
+    PhysicsTree physicsTree( mphysics );
+    lambdaInit( physicsTree );
+    this->addPhysics( physicsTree.collectAllPhysics() );
+}
+
+
+template <uint16_type Dim>
+std::vector<std::shared_ptr<ModelPhysic<Dim>>>
+ModelPhysics<Dim>::initPhysics( std::string const& type, ModelModels const& models, std::set<std::string> const& modelNameRequired, bool isRequired )
+{
+    //M_physicType = type;
+
+    std::vector<std::shared_ptr<ModelPhysic<Dim>>> ret;
+    if ( models.hasType( type ) )
+    {
+        for ( auto const& [_nameFromModels,_model] : models.models( type ) )
+        {
+            std::string _name = _nameFromModels.empty()? type : _nameFromModels; // use name=type if not given
+            if ( !modelNameRequired.empty() &&  modelNameRequired.find( _name ) == modelNameRequired.end() )
+                continue;
+            auto pId = std::make_pair(type, _name);
+            if ( !this->hasPhysic( pId ) )
+            {
+                auto _mphysic = ModelPhysic<Dim>::New( *this, M_physicModeling, type, _name, _model );
+                M_physics.emplace( pId, _mphysic );
+            }
+            ret.push_back( this->physic( pId ) );
+        }
+    }
+    else// if ( modelNameRequired.empty() )
+    {
+        if ( this->physics( type ).empty()  )
+        {
+            // create default physic
+            std::string _name = "default";
+            auto _model = ModelModel(type,_name);
+            auto _mphysic = ModelPhysic<Dim>::New( *this, M_physicModeling, type, _name, _model );
+            auto pId = std::make_pair(type, _name);
+            M_physics.emplace( pId, _mphysic );
+            ret.push_back( this->physic( pId ) );
+        }
+        else
+        {
+            //CHECK( false ) << "TODO take all";
+            for ( auto const& [pId,mphysic] : this->physics( type ) )
+                ret.push_back( mphysic );
+        }
+    }
+    return ret;
+}
+
 
 template <uint16_type Dim>
 std::set<typename ModelPhysics<Dim>::physic_id_type>
@@ -881,18 +1317,7 @@ ModelPhysics<Dim>::physicsAvailable( std::string const& type ) const
             res.insert( physicName );
     return res;
 }
-#if 0
-template <uint16_type Dim>
-std::set<std::string>
-ModelPhysics<Dim>::physicsShared( std::string const& pname ) const
-{
-    std::set<std::string> res;
-    auto itFindPhysic = M_physics.find( pname );
-    if ( itFindPhysic != M_physics.end() )
-        itFindPhysic->second->physicsShared( res );
-    return res;
-}
-#endif
+
 template <uint16_type Dim>
 std::map<typename ModelPhysics<Dim>::physic_id_type,std::shared_ptr<ModelPhysic<Dim>>>
 ModelPhysics<Dim>::physics( std::string const& type ) const
@@ -908,7 +1333,7 @@ ModelPhysics<Dim>::physics( std::string const& type ) const
 
 template <uint16_type Dim>
 void
-ModelPhysics<Dim>::setPhysics( std::map<physic_id_type,std::shared_ptr<ModelPhysic<Dim>>> const& thePhysics )
+ModelPhysics<Dim>::addPhysics( std::map<physic_id_type,std::shared_ptr<ModelPhysic<Dim>>> const& thePhysics )
 {
     M_physics.insert( thePhysics.begin(), thePhysics.end() );
 }
@@ -964,6 +1389,14 @@ template class ModelPhysicThermoElectric<2>;
 template class ModelPhysicThermoElectric<3>;
 template class ModelPhysicFluid<2>;
 template class ModelPhysicFluid<3>;
+template class ModelPhysicSolid<2>;
+template class ModelPhysicSolid<3>;
+template class ModelPhysicFSI<2>;
+template class ModelPhysicFSI<3>;
+template class ModelPhysicCoefficientFormPDE<2>;
+template class ModelPhysicCoefficientFormPDE<3>;
+template class ModelPhysicCoefficientFormPDEs<2>;
+template class ModelPhysicCoefficientFormPDEs<3>;
 
 } // namespace FeelModels
 } // namespace Feel

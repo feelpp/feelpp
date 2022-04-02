@@ -62,7 +62,8 @@ int cg_laplacian_model()
         Vh = Pch<Order>( mesh );
 
     // cgLaplacian may not solve the problem, hence u is std::optional
-    ModelProperties props( Environment::expand(soption("json_filename")) );
+    ModelProperties props;
+    props.setupFromFilenameOption();
     auto to_export = cgLaplacianModel( Vh, props );
 
     // tag::export[]

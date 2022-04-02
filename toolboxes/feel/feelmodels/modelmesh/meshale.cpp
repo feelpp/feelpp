@@ -37,10 +37,11 @@ namespace FeelModels
 
 template< class Convex >
 MeshALE<Convex>::MeshALE(mesh_ptrtype mesh_moving,
-                         std::string const& prefix, worldcomm_ptr_t const& worldcomm,
+                         std::string const& prefix, std::string const& keyword,
+                         worldcomm_ptr_t const& worldcomm,
                          ModelBaseRepository const& modelRep )
     :
-    super_type( prefixvm(prefix,"alemesh"),worldcomm,"",modelRep ),
+    super_type( prefixvm(prefix,"alemesh"),keyword,worldcomm,"",modelRep ),
     M_referenceMesh( mesh_moving->createP1mesh() ),
     M_movingMesh(mesh_moving),
     M_isOnReferenceMesh( true ), M_isOnMovingMesh( true ),
@@ -251,6 +252,7 @@ MeshALE<Convex>::initTimeStep()
 #endif
 }
 
+#if 0
 template< class Convex >
 std::shared_ptr<std::ostringstream>
 MeshALE<Convex>::getInfo() const
@@ -267,7 +269,7 @@ MeshALE<Convex>::getInfo() const
                << "\n";
     return _ostr;
 }
-
+#endif
 //------------------------------------------------------------------------------------------------//
 
 template< class Convex >

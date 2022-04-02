@@ -51,23 +51,12 @@ feelpp_add_application( hdg_thermoelectric
   INSTALL TESTS
   )
 
-# feelpp_add_application( hdg_cvg_thermoelectric
-#   SRCS thermoelectric.hpp cvg_thermoelectric.cpp
-#   LINK_LIBRARIES feelpp_toolbox_hdg_poisson_lib
-#   INSTALL
-#   )
-
 # feelpp_add_application( hdg_poroelastic
 #   SRCS poroelastic_main.cpp
 #   LINK_LIBRARIES feelpp_toolbox_hdg_poisson_lib feelpp_toolbox_hdg_elasticity_lib
 #   INSTALL
 #   )
 
-#feelpp_add_application(
-#  hdg_thermoelectricelasticity
-#  SRCS thermoelectric-elasticity.hpp thermoelectric-elasticity_main.cpp
-#  LINK_LIBRARIES feelpp_toolbox_hdg_poisson_lib feelpp_toolbox_hdg_elasticity_lib
-#  )
 feelpp_add_testcase(cases PREFIX feelpp_toolbox_hdg CATEGORY toolboxes/hdg)
 
 if ( FEELPP_HAS_FMI4CPP )
@@ -78,7 +67,10 @@ if ( FEELPP_HAS_FMI4CPP )
      )
 
   message(STATUS "[toolbox] add tests feelpp_toolbox_hdg_coupledpoisson-linear")
-  add_test( NAME feelpp_toolbox_hdg_coupledpoisson-linear-om COMMAND feelpp_toolbox_hdg_coupledpoisson --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/coupledpoisson/1-linear/linear.cfg --ts.time-final 0.25 --hdg.poisson.json-editions BoundaryConditions.flux.Coupling.buffer.circuit:${CMAKE_CURRENT_BINARY_DIR}/cases/coupledpoisson/1-linear/test3d0d_linear/test3d0d_linear.fmu)
+  add_test( NAME feelpp_toolbox_hdg_coupledpoisson-linear-om COMMAND feelpp_toolbox_hdg_coupledpoisson --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/coupledpoisson/1-linear/linear.cfg
+        --ts.time-final 0.25
+        --hdg.poisson.json.patch "{ \"op\": \"replace\", \"path\": \"/BoundaryConditions/poisson/CouplingODEs/buffer/circuit\", \"value\": \"${CMAKE_CURRENT_BINARY_DIR}/cases/coupledpoisson/1-linear/test3d0d_linear/test3d0d_linear.fmu\" }" )
+
   # add_test( NAME feelpp_toolbox_hdg_coupledpoisson-linear-dy COMMAND feelpp_toolbox_hdg_coupledpoisson --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/coupledpoisson/1-linear/linear.cfg --ts.time-final 0.25 --hdg.poisson.json-editions BoundaryConditions.flux.Coupling.buffer.circuit:${CMAKE_CURRENT_SOURCE_DIR}/cases/coupledpoisson/1-linear/test3d0d.fmu)
 endif()
 

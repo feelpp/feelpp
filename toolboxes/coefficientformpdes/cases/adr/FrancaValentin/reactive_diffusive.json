@@ -4,13 +4,19 @@
     "Models":
     {
         "cfpdes":{
-            "equations":{
-                "name":"equation1",
-                "unknown":
-                {
+            "equations":"equation1"
+        },
+        "equation1":{
+            "setup":{
+                "unknown":{
                     "basis":"Pch1",
                     "name":"solution",
                     "symbol":"u"
+                },
+                "coefficients":{
+                    "c":1e-6,//"1e-6", // diffusion
+                    "a":1, // reaction
+                    "f":1 // source
                 }
             }
         }
@@ -19,10 +25,7 @@
     {
         "mymat1":
         {
-            "markers":"Omega",
-            "equation1_c":1e-6,//"1e-6", // diffusion
-            "equation1_a":1, // reaction
-            "equation1_f":1 // source
+            "markers":"Omega"
         }
     },
     "BoundaryConditions":
