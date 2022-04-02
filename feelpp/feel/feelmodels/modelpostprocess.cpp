@@ -392,6 +392,8 @@ ModelPostprocessPointPosition::setup( nl::json const& jarg, std::string const& n
         auto const& j_include_coordinates = jarg.at("include_coordinates");
         if ( j_include_coordinates.is_boolean() )
             M_includeCoordinates = j_include_coordinates.get<bool>();
+        else if ( j_include_coordinates.is_number_unsigned() )
+            M_includeCoordinates = j_include_coordinates.get<int>() > 0;
         else if ( j_include_coordinates.is_string() )
             M_includeCoordinates = boost::lexical_cast<bool>( j_include_coordinates.get<std::string>() );
     }
@@ -639,6 +641,8 @@ ModelPostprocess::setup()
         auto const& j_useModelName = jarg.at("use-model-name");
         if ( j_useModelName.is_boolean() )
             M_useModelName = j_useModelName.template get<bool>();
+        else if ( j_useModelName.is_number_unsigned() )
+            M_useModelName = j_useModelName.template get<int>() > 0;
         else if ( j_useModelName.is_string() )
             M_useModelName = boost::lexical_cast<bool>( j_useModelName.template get<std::string>() );
     }

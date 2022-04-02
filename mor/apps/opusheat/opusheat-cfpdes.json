@@ -5,15 +5,56 @@
     "Models":
     {
         "cfpdes":{
-            "equations":{
-                "name":"heat",
-                "unknown":
-                {
-                    "basis":"Pch1",
-                    "name":"temperature",
-                    "symbol":"T"
+            "equations":"heat"
+        },
+        "heat":{
+            "common":{
+                "setup":{
+                    "unknown":{
+                        "basis":"Pch1",
+                        "name":"temperature",
+                        "symbol":"T"
+                    }
                 }
-            }
+            },
+            "models":[
+                {
+                    "name":"heat_PCB",
+                    "materials":"PCB",
+                    "setup":{
+                        "coefficients":{
+                            "c":"materials_PCB_k:materials_PCB_k"
+                        }
+                    }
+                },{
+                    "name":"heat_AIR",
+                    "materials":"AIR",
+                    "setup":{
+                        "coefficients":{
+                            "c":"materials_AIR_k:materials_AIR_k",
+                            "beta":"{0,-materials_AIR_Cp*materials_AIR_rho*vinconv*(x-0.008)*(x-0.054)*(x>0.008)}:x:materials_AIR_Cp:materials_AIR_rho:vinconv"
+                        }
+                    }
+                },{
+                    "name":"heat_IC1",
+                    "materials":"IC1",
+                    "setup":{
+                        "coefficients":{
+                            "c":"materials_IC1_k:materials_IC1_k",
+                            "f":"q_1:q_1"
+                        }
+                    }
+                },{
+                    "name":"heat_IC2",
+                    "materials":"IC2",
+                    "setup":{
+                        "coefficients":{
+                            "c":"materials_IC2_k:materials_IC2_k",
+                            "f":"q_2:q_2"
+                        }
+                    }
+                }
+            ]
         }
     },
     "Parameters":
@@ -61,34 +102,25 @@
         {
             "k":"3e-2",
             "Cp":"2e6",
-            "rho":"1",
-            "heat_c":"materials_PCB_k:materials_PCB_k"
+            "rho":"1"
         },
         "AIR":
         {
             "k":"3e-2",
             "Cp":"1",
-            "rho":"1100",
-            "heat_c":"materials_AIR_k:materials_AIR_k",
-            "heat_beta":"{0,-materials_AIR_Cp*materials_AIR_rho*vinconv*(x-0.008)*(x-0.054)*(x>0.008)}:x:materials_AIR_Cp:materials_AIR_rho:vinconv"
+            "rho":"1100"
         },
         "IC1":
         {
-
             "k":"k_1:k_1",
             "Cp":"1.4e6",
-            "rho":"1",
-            "heat_c":"k_1:k_1",
-            "heat_f":"q_1:q_1"
-
+            "rho":"1"
         },
         "IC2":
         {
             "k":"k_2:k_2",
             "Cp":"1.4e6",
-            "rho":"1",
-            "heat_c":"k_2:k_2",
-            "heat_f":"q_2:q_2"
+            "rho":"1"
         }
     },
     "BoundaryConditions":

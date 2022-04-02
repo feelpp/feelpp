@@ -19,6 +19,7 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::CoefficientFormPDEs( std::string const&
                                                               ModelBaseRepository const& modelRep )
     :
     super_type( prefix, keyword, worldComm, subPrefix, modelRep ),
+    super_physics_type( "GenericPDEs" ),
     ModelBase( prefix, keyword, worldComm, subPrefix, modelRep/*, ModelBaseCommandLineOptions( coefficientformpdes_options( prefix ) )*/ )
 {
     M_solverName = soption(_prefix=this->prefix(),_name="solver",_vm=this->clovm());
@@ -27,31 +28,29 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::CoefficientFormPDEs( std::string const&
 
 COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
 void
-COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::updatePhysics( typename super_physics_type::PhysicsTreeNode & physicsTree, ModelModels const& models )
 {
-    this->log("CoefficientFormPDEs","init", "start" );
-    this->timerTool("Constructor").start();
+    auto currentPhysic = std::dynamic_pointer_cast<ModelPhysicCoefficientFormPDEs<nDim>>( physicsTree.physic() );
+    CHECK( currentPhysic ) << "wrong physic";
 
-    CHECK( this->hasModelProperties() ) << "no model properties";
-
-    if ( this->physics().empty() )
-        this->initGenericPDEs( this->keyword() );
-
-    // add equations from modelProperties
-    if ( this->hasModelProperties() )
+    using model_physic_cfpde_type = ModelPhysicCoefficientFormPDE<nDim>;
+    for ( auto & eqData : currentPhysic->pdes() )
     {
-        auto const& models = this->modelProperties().models();
-        if ( models.hasType( this->keyword() ) )
-            for ( auto const& [_name,_model] : models.models( this->keyword() ) ) // only one!
-                this->setupGenericPDEs( _model.setup() );
-    }
-    CHECK( !this->pdes().empty() ) << "no equation";
+        std::string const& eqName = std::get<0>( eqData );
+        auto & eqInfos = std::get<1>( eqData );
+        //std::string const& eqName = eqInfos->equationName();
+        if ( models.hasType( eqName ) )
+        {
+            for ( auto const& [_nameFromModels,_model] : models.models( eqName ) )
+            {
+                if ( !eqInfos )
+                    eqInfos = std::make_shared<typename model_physic_cfpde_type::infos_type>( eqName, _model.setup() );
+                break;
+            }
+        }
 
-    for ( auto & eq : this->pdes() )
-    {
-        auto const& eqInfos = std::get<0>( eq );
-        std::string const& eqName = eqInfos.equationName();
-        std::string const& eqBasisTag = eqInfos.unknownBasis();
+        CHECK( eqInfos ) << "something is missing";
+        std::string const& eqBasisTag = eqInfos->unknownBasis();
         std::shared_ptr<coefficient_form_pde_base_type> newCoefficientFormPDE;
         hana::for_each( tuple_type_unknown_basis, [this,&eqInfos,&eqName,&eqBasisTag,&newCoefficientFormPDE]( auto const& e )
                         {
@@ -63,15 +62,42 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
                             }
                         });
 
-        std::get<1>( eq ) = newCoefficientFormPDE;
+        //std::get<1>( eq ) = newCoefficientFormPDE;
         M_coefficientFormPDEs.push_back( newCoefficientFormPDE );
+        physicsTree.addChild( newCoefficientFormPDE, models );
     }
-    this->updateForUseGenericPDEs( this->keyword() );
+
+#if 0
+    physicsTree.updateMaterialSupportFromChildren( "intersect" );
+#endif
+}
+
+
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
+void
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
+{
+    this->log("CoefficientFormPDEs","init", "start" );
+    this->timerTool("Constructor").start();
+
+    this->initModelProperties();
+    DCHECK( this->hasModelProperties() ) << "no model properties";
+
+    this->initPhysics(
+        this->shared_from_this(),
+        [this]( typename super_physics_type::PhysicsTree & physicsTree ) {
+            physicsTree.updatePhysics( this->shared_from_this(), this->modelProperties().models() );
+#if 0
+            CHECK( M_heatModel && M_electricModel ) << "aiai";
+            physicsTree.updatePhysics( M_heatModel, this->modelProperties().models() );
+            physicsTree.updatePhysics( M_electricModel, this->modelProperties().models() );
+#endif
+        } );
+
 
     this->initMaterialProperties();
 
-    if ( !this->mesh() )
-        this->initMesh();
+    this->initMesh();
 
     for ( auto & cfpdeBase : M_coefficientFormPDEs )
     {
@@ -156,17 +182,12 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::initMesh()
     this->log("CoefficientFormPDEs","initMesh", "start");
     this->timerTool("Constructor").start();
 
-    // std::string fileNameMeshPath = prefixvm(this->prefix(),"mesh.path");
-    // createMeshModel<mesh_type>(*this,M_mesh,fileNameMeshPath);
-    // CHECK( M_mesh ) << "mesh generation fail";
-
+    if ( this->modelProperties().jsonData().contains("Meshes") )
+        super_type::super_model_meshes_type::setup( this->modelProperties().jsonData().at("Meshes"), {this->keyword()} );
     if ( this->doRestart() )
          super_type::super_model_meshes_type::setupRestart( this->keyword() );
-    //super_type::super_model_meshes_type::setMesh( this->keyword(), M_mesh );
     super_type::super_model_meshes_type::updateForUse<mesh_type>( this->keyword() );
-
     CHECK( this->mesh() ) << "mesh generation fail";
-
 
     double tElpased = this->timerTool("Constructor").stop("initMesh");
     this->log("CoefficientFormPDEs","initMesh",(boost::format("finish in %1% s")%tElpased).str() );
@@ -397,14 +418,6 @@ const std::vector<std::string> COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::S_unknow
 
 
 COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
-std::shared_ptr<std::ostringstream>
-COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::getInfo() const
-{
-    std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
-    return _ostr;
-}
-
-COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
 void
 COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) const
 {
@@ -585,6 +598,10 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::updateParameterValues()
     this->modelProperties().parameters().updateParameterValues();
     auto paramValues = this->modelProperties().parameters().toParameterValues();
     this->materialsProperties()->updateParameterValues( paramValues );
+
+    for ( auto [physicName,physicData] : this->physics/*FromCurrentType*/() )
+        physicData->updateParameterValues( paramValues );
+
 
     this->updateParameterValues_postProcess( paramValues, prefixvm("postprocess",this->keyword(),"_" ) );
     for (auto const& cfpdeBase : M_coefficientFormPDEs )

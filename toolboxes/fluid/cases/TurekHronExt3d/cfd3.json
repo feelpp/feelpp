@@ -32,9 +32,9 @@
     },
     "BoundaryConditions":
     {
-        "velocity":
+        "fluid":
         {
-            "Dirichlet":
+            "velocity":
             {
                 "inlet":
                 {
@@ -45,10 +45,7 @@
                     "markers":["wall1","wall2"],
                     "expr":"{0,0,0}"
                 }
-            }
-        },
-        "fluid":
-        {
+            },
             "outlet":
             {
                 "outlet":

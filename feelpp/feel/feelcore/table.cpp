@@ -81,6 +81,28 @@ template < typename T > struct centre
 namespace Feel
 {
 
+namespace Printer
+{
+void
+OutputText::applyMaxWidth( int maxWidth )
+{
+    int currentWidth = 0;
+    int k=0;
+    for ( ;k<M_data.size();++k )
+    {
+        std::string & curText = std::get<0>( M_data[k] );
+        int curSize = curText.size();
+        if ( (currentWidth+curSize) >= maxWidth )
+        {
+            curText.resize( maxWidth - currentWidth );
+            break;
+        }
+        currentWidth += curSize;
+    }
+    M_data.resize( k+1 );
+}
+}
+
 #if 0
 std::vector<std::string>
 splitByLines( std::string const& input )

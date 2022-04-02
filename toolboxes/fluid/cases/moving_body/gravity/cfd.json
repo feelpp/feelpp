@@ -21,6 +21,29 @@
             "materials":"MySolid"
         }
     },
+    "Meshes":
+    {
+        "fluid":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/cfd.geo",
+                "hsize":0.05
+            },
+            "MeshMotion":
+            {
+                "ComputationalDomain":
+                {
+                    "markers":"Omega_fluid",
+                    "method":"harmonic_extension"
+                },
+                "Displacement":
+                {
+                    "Zero":["wall_bottom","wall_left","wall_right","wall_top"]
+                }
+            }
+        }
+    },
     "Materials":
     {
         "Fluid":{
@@ -38,19 +61,16 @@
     },
     "BoundaryConditions":
     {
-        "velocity":
+        "fluid":
         {
-            "Dirichlet":
+            "velocity":
             {
                 "wall":
                 {
                     "markers":["wall_bottom","wall_left","wall_right"],
                     "expr":"{0,0}"
                 }
-            }
-        },
-        "fluid":
-        {
+            },
             "outlet":
             {
                 "wall_top":
