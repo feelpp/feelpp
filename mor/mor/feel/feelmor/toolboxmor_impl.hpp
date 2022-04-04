@@ -246,7 +246,8 @@ ToolboxMor<SpaceType, Options>::setupSpecificityModel( boost::property_tree::ptr
         Feel::cerr << "Warning!! the database does not contain the property file! Expect bugs!"
                    << std::endl;
 
-    M_modelProperties = std::make_shared<ModelProperties>(M_propertyPath);
+    M_modelProperties = std::make_shared<ModelProperties>(); // TODO : put directoryLibExpr and worldcomm
+    M_modelProperties->setup( M_propertyPath );
     auto parameters = M_modelProperties->parameters();
     this->Dmu = parameterspace_type::New(parameters);
 
@@ -270,7 +271,8 @@ ToolboxMor<SpaceType, Options>::initModel()
     M_trainsetMdeimSize = ioption("toolboxmor.trainset-mdeim-size");
     this->addModelFile("property-file", M_propertyPath);
 
-    M_modelProperties = std::make_shared<ModelProperties>(M_propertyPath);
+    M_modelProperties = std::make_shared<ModelProperties>(); // TODO : put directoryLibExpr and worldcomm
+    M_modelProperties->setup( M_propertyPath );
     auto parameters = M_modelProperties->parameters();
     this->Dmu = parameterspace_type::New(parameters);
 

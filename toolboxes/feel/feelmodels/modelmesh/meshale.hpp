@@ -50,6 +50,8 @@
 
 #include <feel/feelmodels/modelmesh/dofrelationshipmap.hpp>
 
+#include <feel/feelmodels/modelcore/modelfields.hpp>
+
 namespace Feel
 {
 namespace FeelModels
@@ -236,15 +238,22 @@ public :
 
 
     MeshALE( mesh_ptrtype mesh_moving,
-             std::string const& prefix="",
+             std::string const& prefix,
+             std::string const& keyword,
              worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr(),
              ModelBaseRepository const& modelRep = ModelBaseRepository() );
+
+    MeshALE( mesh_ptrtype mesh_moving,
+             std::string const& prefix="",
+             worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr(),
+             ModelBaseRepository const& modelRep = ModelBaseRepository() )
+        :
+        MeshALE(mesh_moving,prefix,prefix,worldcomm,modelRep)
+        {}
 
     void init();
 
     void applyRemesh( mesh_ptrtype const& newMesh, std::vector<std::tuple<std::string,range_elements_type>> const& rangeElt );
-
-    std::shared_ptr<std::ostringstream> getInfo() const;
 
     //! defined the whole mesh as a computational domain (compute disp from boundary)
     void setWholeMeshAsComputationalDomain( std::string const& name );
@@ -389,6 +398,20 @@ public :
                 cd.aleFactory()->updateMetricMeshAdaptation( e );
         }
 
+
+
+    struct FieldTag
+    {
+        static auto displacement( self_type const* t ) { return ModelFieldTag<self_type,0>( t ); }
+    };
+    auto modelFields( std::string const& prefix = "" ) const
+        {
+            //auto mfieldDisp = modelField<FieldCtx::ID,ale_map_element_ptrtype>( FieldTag::displacement(this) );
+            //mfieldDisp.add( FieldTag::displacement(this), prefix, "displacement", M_displacement, "s", this->keyword() );
+            return Feel::FeelModels::modelFields( modelField<FieldCtx::ID>( FieldTag::displacement(this), prefix, "displacement", M_displacement, "s", this->keyword() ),
+                                                  modelField<FieldCtx::ID>( FieldTag::displacement(this), prefix, "velocity", M_meshVelocity, "v", this->keyword() ) );
+        }
+
 private :
 
     void updateIdentityMap();
@@ -485,50 +508,19 @@ MeshALE<Convex>::updateDisplacementImposedOnInitialDomain( std::string const& na
 #endif
 //------------------------------------------------------------------------------------------------//
 
-
-
-#if 0
-template<typename Args>
-struct compute_meshale_return
-{
-    typedef typename boost::remove_reference<typename parameter::binding<Args, tag::mesh>::type>::type::element_type mesh_type;
-    using index_type = typename mesh_type::index_type;
-    typedef typename mesh_type::shape_type convex_type;
-    typedef MeshALE<convex_type> type;
-    typedef std::shared_ptr<type> ptrtype;
-};
-
-BOOST_PARAMETER_FUNCTION(
-    ( typename compute_meshale_return<Args>::ptrtype ), // 1. return type
-    meshale,                        // 2. name of the function template
-    tag,                                        // 3. namespace of tag types
-    ( required
-      ( mesh,    *( boost::is_convertible<mpl::_,std::shared_ptr<MeshBase<>> > ) )
-      ) // required
-    ( optional
-      ( prefix,            (std::string), std::string("") )
-      ( worldcomm,         (worldcomm_ptr_t), mesh->worldCommPtr() )
-      ( directory,         (ModelBaseRepository),  ModelBaseRepository() )
-      ) // optionnal
-                         )
-{
-    typedef typename compute_meshale_return<Args>::ptrtype meshale_ptrtype;
-    typedef typename compute_meshale_return<Args>::type meshale_type;
-    return meshale_ptrtype( new meshale_type(mesh,prefix,worldcomm,directory) );
-}
-#endif
 template <typename ... Ts>
 auto meshale( Ts && ... v )
 {
     auto args = NA::make_arguments( std::forward<Ts>(v)... );
     auto && mesh = args.get(_mesh);
     std::string const& prefix = args.get_else(_prefix,"");
+    std::string const& keyword = args.get_else(_keyword,"meshale");
     worldcomm_ptr_t worldcomm = args.get_else(_worldcomm,mesh->worldCommPtr() );
     auto && directory = args.get_else(_directory,ModelBaseRepository() );
 
     using mesh_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(mesh)>>>;
     using convex_type = typename mesh_type::shape_type;
-    return std::make_shared<MeshALE<convex_type>>( mesh,prefix,worldcomm,directory );
+    return std::make_shared<MeshALE<convex_type>>( mesh,prefix,keyword,worldcomm,directory );
 }
 
 } // namespace FeelModels

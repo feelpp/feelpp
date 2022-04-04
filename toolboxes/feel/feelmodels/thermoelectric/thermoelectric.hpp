@@ -41,8 +41,7 @@ namespace FeelModels
 
 template< typename HeatType, typename ElectricType>
 class ThermoElectric : public ModelNumerical,
-                       public ModelPhysics<HeatType::convex_type::nDim>,
-                       public std::enable_shared_from_this< ThermoElectric<HeatType,ElectricType> >
+                       public ModelPhysics<HeatType::convex_type::nDim>
 {
     typedef ModelPhysics<HeatType::convex_type::nDim> super_physics_type;
 public:
@@ -77,7 +76,8 @@ public:
                     std::string const& subPrefix = "",
                     ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
-    std::shared_ptr<std::ostringstream> getInfo() const override;
+    std::shared_ptr<self_type> shared_from_this() { return std::dynamic_pointer_cast<self_type>( super_type::shared_from_this() ); }
+
     void updateInformationObject( nl::json & p ) const override;
     tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
 
@@ -86,6 +86,9 @@ private :
     void loadParameterFromOptionsVm();
     void initMesh();
     void initPostProcess() override;
+
+    void updatePhysics( typename super_physics_type::PhysicsTreeNode & physicsTree, ModelModels const& models ) override;
+
 public :
     // update for use
     void init( bool buildModelAlgebraicFactory = true );

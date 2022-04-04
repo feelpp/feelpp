@@ -61,7 +61,7 @@ BOOST_AUTO_TEST_CASE( test_eim_offline )
     double r = doption("radius");
     int trainsetSize = ioption("trainset-size");
 
-    auto mesh = loadMesh( _mesh=new mesh_type, _filename="test_geim.geo" );
+    auto mesh = loadMesh( _mesh=new mesh_type );
     auto Xh = Pch<1>(mesh);
     auto u = Xh->element();
 

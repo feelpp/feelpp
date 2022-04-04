@@ -44,7 +44,12 @@ public :
 
     struct ExporterAscii
     {
-        ExporterAscii( std::vector<Printer::OutputText> && ot ) : M_outputText( std::move( ot ) ) {}
+        ExporterAscii( std::vector<Printer::OutputText> && ot, int maxWidth = -1 ) : M_outputText( std::move( ot ) )
+            {
+                if ( maxWidth > 0 )
+                    for ( auto & ot : M_outputText )
+                        ot.applyMaxWidth( maxWidth );
+            }
         ExporterAscii( ExporterAscii const& ) = default;
         ExporterAscii( ExporterAscii && ) = default;
         friend std::ostream& operator<<( std::ostream& o, ExporterAscii const& ea );
@@ -78,7 +83,13 @@ public :
     uint16_type verboseLevel() const { return M_verboseLevel; }
 
     //! get an exporter in ascii format
-    ExporterAscii exporterAscii() const { return ExporterAscii( this->exportAscii() ); }
+    ExporterAscii exporterAscii( bool useTerminalWidth = false ) const
+        {
+            int maxWidth = -1;
+            if ( useTerminalWidth && TabulateInformationProperties::terminalProperties().hasWidth() && TabulateInformationProperties::terminalProperties().width() > 0 )
+                maxWidth = TabulateInformationProperties::terminalProperties().width();
+            return ExporterAscii( this->exportAscii(), maxWidth );
+        }
     //! get an exporter in asciidoc format
     ExporterAsciiDoc exporterAsciiDoc( int startLevelSection = 0 ) const { return ExporterAsciiDoc( this->shared_from_this_tabulate_informations(), startLevelSection ); }
 

@@ -45,39 +45,27 @@
     // tag::boundaryconditions[]
     "BoundaryConditions":
     {
-        "displacement_y":
+        "solid":
         {
-            "Dirichlet":
+            "displacement":
             {
-                "Torsion":
-                {
+                "Torsion_y":{
+                    "markers":"Torsion",
+                    "component":"y",
                     "expr":"0.5 + (y - 0.5)*cos(rotation) - (z-0.5)*sin(rotation) - y :y:z:rotation"
-                }
-            }
-        },
-        "displacement_z":
-        {
-            "Dirichlet":
-            {
-                "Torsion":
-                {
+                },
+                "Torsion_z":{
+                    "markers":"Torsion",
+                    "component":"z",
                     "expr":"0.5 + (y - 0.5)*sin(rotation) + (z-0.5)*cos(rotation) - z :y:z:rotation"
-                }
-            }
-        },
-        "displacement" :
-        {
-            "Dirichlet":
-            {
-                "Fixed":
-                {
+                },
+                "Fixed":{
                     "expr":"{0,0,0}"
                 }
             },
-            "Neumann_scalar" :
+            "normal_stress":
             {
-                "BoundaryForce":
-                {
+                "BoundaryForce":{
                     "expr":"0" 
                 }
             }
