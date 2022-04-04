@@ -121,8 +121,11 @@ public :
     //! return material names used by this physic
     std::set<std::string> const& materialNames() const { return M_materialNames; }
 
+    //! set material names
+    void setMaterialNames( std::set<std::string> const& matNames ) { M_materialNames = matNames; }
+
     //! add material names
-    void addMaterialNames( std::set<std::string> const& matNames ) { return M_materialNames.insert( matNames.begin(), matNames.end() ); }
+    void addMaterialNames( std::set<std::string> const& matNames ) { M_materialNames.insert( matNames.begin(), matNames.end() ); }
 
     //! return the material properties description (.i.e. coefficients of pdes)
     std::map<std::string,material_property_description_type> const& materialPropertyDescription() const { return M_materialPropertyDescription; }
@@ -263,6 +266,12 @@ public :
 
     //! return the full symbol from parameter name
     std::string symbolFromParameter( std::string const& pname ) const { return "physics_" + prefixvm( prefixvm( M_type, M_name, "_" ), pname, "_" ); }
+
+    //! return true if parameter \pname is present, false otherwise
+    bool hasParameter( std::string const& pname ) const
+        {
+            return M_parameterNameToExpr.find( pname ) != M_parameterNameToExpr.end();
+        }
 
     //! return true if parameter \pname of shape MxN is present, false otherwise
     template <int M,int N>
@@ -414,7 +423,7 @@ template <uint16_type Dim>
 class ModelPhysicElectric : public ModelPhysic<Dim>
 {
     using super_type = ModelPhysic<Dim>;
-    using self_type = ModelPhysicHeat<Dim>;
+    using self_type = ModelPhysicElectric<Dim>;
 public :
     ModelPhysicElectric( ModelPhysics<Dim> const& mphysics, std::string const& modeling, std::string const& type, std::string const& name, ModelModel const& model = ModelModel{} );
     ModelPhysicElectric( ModelPhysicElectric const& ) = default;
@@ -616,7 +625,29 @@ template <uint16_type Dim>
 class ModelPhysicSolid : public ModelPhysic<Dim>
 {
     using super_type = ModelPhysic<Dim>;
+    using self_type = ModelPhysicSolid<Dim>;
 public :
+    struct BodyForces
+    {
+        BodyForces( self_type * mparent, std::string const& name ) : M_parent( mparent ), M_name( name ) {}
+        BodyForces( BodyForces const& ) = default;
+        BodyForces( BodyForces && ) = default;
+
+        void setup( nl::json const& jarg );
+
+        template <typename SymbolsExprType = symbols_expression_empty_t>
+        auto expr( SymbolsExprType const& se = symbols_expression_empty_t{} ) const
+            {
+                return M_parent->template parameterExpr<Dim,1>( M_name + "_bodyforce", se );
+            }
+
+        void updateInformationObject( nl::json & p ) const;
+        static tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp );
+    private:
+        self_type * M_parent;
+        std::string M_name;
+    };
+
     ModelPhysicSolid( ModelPhysics<Dim> const& mphysics, std::string const& modeling, std::string const& type, std::string const& name, ModelModel const& model = ModelModel{} );
     ModelPhysicSolid( ModelPhysicSolid const& ) = default;
     ModelPhysicSolid( ModelPhysicSolid && ) = default;
@@ -633,10 +664,122 @@ public :
     std::string const& compressibleNeoHookeanVariantName() const { return M_compressibleNeoHookeanVariantName; }
 
     bool useDisplacementPressureFormulation() const { return M_formulation == "displacement-pressure"; }
+
+    std::vector<BodyForces> bodyForces() const { return M_bodyForces; }
 private :
     std::string M_equation, M_materialModel, M_formulation;
     std::string M_decouplingEnergyVolumicLaw, M_compressibleNeoHookeanVariantName;
+    std::vector<BodyForces> M_bodyForces;
 };
+
+template <uint16_type Dim>
+class ModelPhysicFSI : public ModelPhysic<Dim>
+{
+    using super_type = ModelPhysic<Dim>;
+    using self_type = ModelPhysicFSI<Dim>;
+public :
+    ModelPhysicFSI( ModelPhysics<Dim> const& mphysics, std::string const& modeling, std::string const& type, std::string const& name, ModelModel const& model = ModelModel{} );
+    ModelPhysicFSI( ModelPhysicFSI const& ) = default;
+    ModelPhysicFSI( ModelPhysicFSI && ) = default;
+
+    std::set<std::string> const& interfaceFluid() const { return M_interfaceFluid; }
+    std::set<std::string> const& interfaceSolid() const { return M_interfaceSolid; }
+
+    void updateInformationObject( nl::json & p ) const override;
+    tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
+private :
+    std::set<std::string> M_interfaceFluid, M_interfaceSolid;
+};
+
+
+template <uint16_type Dim>
+class ModelPhysicCoefficientFormPDE : public ModelPhysic<Dim>
+{
+    using super_type = ModelPhysic<Dim>;
+    using self_type = ModelPhysicCoefficientFormPDE<Dim>;
+public :
+    struct Infos
+    {
+        enum class Coefficient { convection=0, diffusion, reaction, firstTimeDerivative, secondTimeDerivative, source, conservativeFluxConvection, conservativeFluxSource, curlCurl };
+
+        using shape_dim_type = std::pair<uint16_type,uint16_type>;
+        using shapes_dim_type = std::vector<shape_dim_type>;
+
+        Infos() = default;
+        Infos( std::string const& name, nl::json const& jarg );
+        Infos( std::string const& name, std::string const& unknownName, std::string const& unknownSymbol, std::string const& unknownBasis )
+            :
+            M_equationName( name ),
+            M_unknownName( unknownName ),
+            M_unknownSymbol( unknownSymbol ),
+            M_unknownBasis( unknownBasis )
+            {}
+        Infos( Infos const& ) = default;
+        Infos( Infos && ) = default;
+        std::string const& equationName() const { return M_equationName; }
+        std::string const& unknownName() const { return M_unknownName; }
+        std::string const& unknownSymbol() const { return M_unknownSymbol; }
+        std::string const& unknownBasis() const { return M_unknownBasis; }
+
+        std::map<Coefficient,std::tuple<std::string,shapes_dim_type>> const& coefficientProperties() const { return M_coefficientProperties; }
+        std::string const& coefficientName( Coefficient c ) const { return std::get<0>( M_coefficientProperties.at( c ) ); }
+    private :
+        std::string M_equationName, M_unknownName, M_unknownSymbol, M_unknownBasis;
+        std::map<Coefficient,std::tuple<std::string,shapes_dim_type>> M_coefficientProperties;
+    };
+    using infos_type = self_type::Infos;
+    using infos_ptrtype = std::shared_ptr<infos_type>;
+
+    ModelPhysicCoefficientFormPDE( ModelPhysics<Dim> const& mphysics, std::string const& modeling, std::string const& type, std::string const& name, ModelModel const& model = ModelModel{} );
+    ModelPhysicCoefficientFormPDE( ModelPhysicCoefficientFormPDE const& ) = default;
+    ModelPhysicCoefficientFormPDE( ModelPhysicCoefficientFormPDE && ) = default;
+
+    std::shared_ptr<infos_type> const& infos() const { return M_infos; }
+
+    using Coefficient = typename infos_type::Coefficient;
+    bool hasCoefficient( Coefficient c ) const { return this->hasCoefficient( M_infos->coefficientName( c ) ); }
+    ModelExpression const& coefficient( Coefficient c ) const { return this->coefficient( M_infos->coefficientName( c ) ); }
+
+    template <int M,int N,typename SymbolsExprType = symbols_expression_empty_t>
+    auto coefficientExpr( Coefficient c, SymbolsExprType const& se = symbols_expression_empty_t{} ) const
+        {
+            return this->coefficientExpr<M,N>( M_infos->coefficientName( c ), se );
+        }
+
+    void updateInformationObject( nl::json & p ) const override;
+    tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
+private:
+    bool hasCoefficient( std::string const& coeffName ) const { return this->hasParameter( coeffName ); }
+    ModelExpression const& coefficient( std::string const& coeffName ) const { return this->parameterModelExpr( coeffName ); }
+    template <int M,int N,typename SymbolsExprType = symbols_expression_empty_t>
+    auto coefficientExpr( std::string const& coeffName, SymbolsExprType const& se = symbols_expression_empty_t{} ) const { return this->template parameterExpr<M,N>( coeffName, se ); }
+private :
+    std::shared_ptr<infos_type> M_infos;
+};
+
+
+template <uint16_type Dim>
+class ModelPhysicCoefficientFormPDEs : public ModelPhysic<Dim>
+{
+    using super_type = ModelPhysic<Dim>;
+    using self_type = ModelPhysicCoefficientFormPDEs<Dim>;
+public :
+    ModelPhysicCoefficientFormPDEs( ModelPhysics<Dim> const& mphysics, std::string const& modeling, std::string const& type, std::string const& name, ModelModel const& model = ModelModel{} );
+    ModelPhysicCoefficientFormPDEs( ModelPhysicCoefficientFormPDEs const& ) = default;
+    ModelPhysicCoefficientFormPDEs( ModelPhysicCoefficientFormPDEs && ) = default;
+
+    auto const& pdes() const { return M_pdes; }
+    auto & pdes() { return M_pdes; }
+
+    void updateInformationObject( nl::json & p ) const override;
+    tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
+
+private :
+    //std::vector<std::tuple<typename ModelPhysicCoefficientFormPDE<Dim>::infos_type,std::shared_ptr<ModelPhysicCoefficientFormPDE<Dim>>>> M_pdes;
+    using cfpde_infos_type = typename ModelPhysicCoefficientFormPDE<Dim>::infos_type;
+    std::vector<std::tuple<std::string,std::shared_ptr<cfpde_infos_type>,std::shared_ptr<ModelPhysicCoefficientFormPDE<Dim>>>> M_pdes;
+};
+
 
 template <uint16_type Dim>
 class ModelPhysics : virtual public ModelBase
@@ -651,31 +794,53 @@ public :
     using model_physic_ptrtype = std::shared_ptr<model_physic_type>;
 
 protected :
+
+    struct PhysicsTreeNode;
     struct PhysicsTree {
         using physics_ptrtype = std::shared_ptr<ModelPhysics<nDim>>;
-        PhysicsTree( std::string const& type, physics_ptrtype p, bool isRequired = true ) : M_root( std::make_tuple(type,p,isRequired) ) {}
-        PhysicsTree( physics_ptrtype p, bool isRequired = true ) : PhysicsTree( p->keyword(), p, isRequired ) {}
-        void addSubtree( PhysicsTree const& st ) { M_subtrees.push_back( st ); }
-        void addLeaf( std::string const& type, physics_ptrtype p, bool isRequired = true ) { M_subtrees.push_back( PhysicsTree{type,p,isRequired} ); }
-        void addLeaf( physics_ptrtype p, bool isRequired = true ) { this->addLeaf( p->keyword(), p, isRequired ); }
 
-        std::tuple<std::string,physics_ptrtype,bool> const& root() const { return M_root; }
-        std::vector<PhysicsTree> subtrees() const { return M_subtrees; }
+        PhysicsTree( physics_ptrtype p )
+            :
+            M_root( p ) {}
 
-        std::set<std::tuple<std::string,physics_ptrtype,bool>> allPhysics() const
+        std::shared_ptr<PhysicsTreeNode> addNode( physics_ptrtype mphysics, model_physic_ptrtype mp )
             {
-                std::set<std::tuple<std::string,physics_ptrtype,bool>> res;
-                res.insert( this->root() );
-                for ( auto const& st : M_subtrees )
-                {
-                    auto ast = st.allPhysics();
-                    res.insert( ast.begin(), ast.end() );
-                }
-                return res;
+                auto treeNode = PhysicsTreeNode::New( mphysics,mp );
+                M_children.push_back( std::move(treeNode) );
+                return M_children.back();
             }
+
+        std::vector<std::shared_ptr<PhysicsTreeNode>> const& children() const { return M_children; }
+
+        void updatePhysics( physics_ptrtype mphysics, ModelModels const& models );
+
+        std::map<physic_id_type,model_physic_ptrtype> collectAllPhysics() const;
+
     private :
-        std::tuple<std::string,physics_ptrtype,bool> M_root;
-        std::vector<PhysicsTree> M_subtrees;
+        physics_ptrtype M_root;
+        std::vector<std::shared_ptr<PhysicsTreeNode>> M_children;
+    };
+    struct PhysicsTreeNode {
+        using physics_ptrtype = std::shared_ptr<ModelPhysics<nDim>>;
+
+        static std::shared_ptr<PhysicsTreeNode> New( physics_ptrtype p, model_physic_ptrtype mp ) { return std::make_shared<PhysicsTreeNode>(p,mp); }
+
+        PhysicsTreeNode( std::string const& type, physics_ptrtype p, model_physic_ptrtype mp ) : M_data( std::make_tuple(type,p,mp) ) {}
+        PhysicsTreeNode( physics_ptrtype p, model_physic_ptrtype mp ) : PhysicsTreeNode( p->keyword(), p, mp ) {}
+
+        void addChild( std::string const& type, physics_ptrtype p, ModelModels const& models );
+        void addChild( physics_ptrtype p, ModelModels const& models ) { this->addChild( p->keyword(), p, models ); }
+
+        physics_ptrtype modelPhysics() const { return std::get<1>( M_data ); }
+        model_physic_ptrtype physic() const { return std::get<2>( M_data ); }
+
+        std::vector<std::shared_ptr<PhysicsTreeNode>> const& children() const { return M_children; }
+
+        void updateMaterialSupportFromChildren( std::string const& applyType = "intersect" );
+    private :
+        std::tuple<std::string,physics_ptrtype,model_physic_ptrtype> M_data;
+        std::vector<std::shared_ptr<PhysicsTreeNode>> M_children;
+        PhysicsTree* M_globalTree;
     };
 
 public:
@@ -713,7 +878,7 @@ public:
     std::string const& physicModeling() const { return M_physicModeling; }
 
     //! return the type of physic at top level
-    std::string const& physicType() const { return M_physicType; }
+    std::string const& physicType() const { return this->keyword();/*M_physicType;*/ }
 
     //! return name of all physics registered
     std::set<physic_id_type> physicsAvailable() const;
@@ -723,15 +888,14 @@ public:
 
     //! return name of all physics registered related to the current type
     std::set<physic_id_type> physicsAvailableFromCurrentType() const { return this->physicsAvailable( this->physicType() ); }
-#if 0
-    //! return the name of all physic shared from the parent physic \pname
-    std::set<std::string> physicsShared( std::string const& pname ) const;
-#endif
 
-    void initPhysics( std::string const& type, ModelModels const& models, bool isRequired = true );
-    void initPhysics( PhysicsTree const& physicTree, ModelModels const& models );
+    // TODO try remove first arg, because it just the shared_ptr of the current object
+    void initPhysics( std::shared_ptr<ModelPhysics<nDim>> mphysics, ModelModels const& models );
+    void initPhysics( std::shared_ptr<ModelPhysics<nDim>> mphysics, std::function<void(PhysicsTree &)> lambdaInit );
 
-    void setPhysics( std::map<physic_id_type,std::shared_ptr<ModelPhysic<Dim>>> const& thePhysics );
+
+    //! add physics if not already registered
+    void addPhysics( std::map<physic_id_type,std::shared_ptr<ModelPhysic<Dim>>> const& thePhysics );
 
     auto symbolsExprPhysics( std::map<physic_id_type,std::shared_ptr<ModelPhysic<nDim>>> const& mphysics ) const
         {
@@ -745,6 +909,11 @@ public:
         {
             return symbolsExprPhysics( this->physicsFromCurrentType() );
         }
+protected :
+    std::vector<std::shared_ptr<ModelPhysic<Dim>>>
+    initPhysics( std::string const& type, ModelModels const& models, std::set<std::string> const& modelNameRequired, bool isRequired = true );
+
+    virtual void updatePhysics( PhysicsTreeNode & physicsTree, ModelModels const& models ) {}
 
 private :
     template <uint16_type TheDim>
@@ -752,7 +921,7 @@ private :
 
 protected :
 
-    std::string M_physicModeling, M_physicType;
+    std::string M_physicModeling/*, M_physicType*/;
     std::map<physic_id_type,std::shared_ptr<ModelPhysic<nDim>>> M_physics;
 };
 

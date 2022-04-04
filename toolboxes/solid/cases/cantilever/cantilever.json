@@ -29,19 +29,16 @@
     },
     "BoundaryConditions":
     {
-        "displacement":
+        "solid":
         {
-            "Dirichlet":
+            "displacement":
             {
                 "fixed":
                 {
                     "expr":"{0,0,0}"
                 }
-            }
-        },
-        "displacement":
-        {
-            "Neumann_vectorial":
+            },
+            "normal_stress":
             {
                 "load":
                 {

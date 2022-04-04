@@ -50,7 +50,7 @@ int runSimulation(std::shared_ptr<FeelModels::coefficient_form_PDEs_t<ConvexType
     using mdeim_function_type = typename rb_model_type::mdeim_function_type;
 
     rb_model_ptrtype model = std::make_shared<rb_model_type>(soption("toolboxmor.name"));
-    auto cfpde = cfpdes->coefficientFormPDE( std::get<1>(cfpdes->pdes()[0])->equationName(), hana::type_c<BasisType> );
+    auto cfpde = cfpdes->coefficientFormPDE( cfpdes->coefficientFormPDEs().front()->equationName(), hana::type_c<BasisType> );
     model->setFunctionSpaces(cfpde->spaceUnknown());
     auto rhs = cfpdes->algebraicFactory()->rhs()->clone();
     auto mat = cfpdes->algebraicFactory()->matrix();
@@ -232,7 +232,7 @@ int main( int argc, char** argv)
                                 std::shared_ptr<model_type> cfpdes( new model_type("cfpdes") );
                                 cfpdes->init();
                                 cfpdes->printAndSaveInfo();
-                                auto cfpde = std::get<1>(cfpdes->pdes()[0]);
+                                auto cfpde = cfpdes->coefficientFormPDEs().front();
                                 auto unknownBasis = cfpde->unknownBasis();
 
                                 using cfpdes_type = unwrap_ptr_t<std::decay_t<decltype(cfpdes)>>;

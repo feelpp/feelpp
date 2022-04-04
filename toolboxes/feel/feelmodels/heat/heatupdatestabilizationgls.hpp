@@ -600,69 +600,6 @@ Heat<ConvexType,BasisTemperatureType>::updateLinearPDEStabilizationGLS( DataUpda
     }
 
     this->log("Heat","updateLinearPDEStabilizationGLS", "finish"+sc);
-    
-
-#if 0
-
-    auto rhocpuconv = rhocp*uconv;
-    auto tauExpr = Feel::FeelModels::stabilizationGLSParameterExpr( *heatToolbox.stabilizationGLSParameter(),rhocpuconv/*rhocp*uconv*/, kappa );
-#if 1
-    auto tauFieldPtr = heatToolbox.stabilizationGLSParameter()->fieldTauPtr();
-    tauFieldPtr->on(_range=range,_expr=tauExpr);
-    auto tau = idv(tauFieldPtr);
-#else
-    auto tau = tauExpr;
-#endif
-
-    if (!heatToolbox.isStationary())
-    {
-        auto stab_residual_bilinear = HeatDetail_StabGLS::residualTransientLinearExpr( rhocp, kappa, uconv, u, timeSteppingScaling, heatToolbox, mpl::int_<StabResidualType>() );
-        bilinearForm_PatternCoupled +=
-            integrate( _range=range,
-                       _expr=tau*stab_residual_bilinear*stab_test,
-                       _geomap=heatToolbox.geomap() );
-        auto rhsTimeStep = heatToolbox.timeStepBdfTemperature()->polyDeriv();
-        auto stab_residual_linear = rhocp*idv( rhsTimeStep );
-        myLinearForm +=
-            integrate( _range=range,
-                       _expr= val(tau*stab_residual_linear)*stab_test,
-                       _geomap=heatToolbox.geomap() );
-    }
-    else
-    {
-        auto stab_residual_bilinear = HeatDetail_StabGLS::residualStationaryLinearExpr( rhocp, kappa, uconv, u, heatToolbox, mpl::int_<StabResidualType>() );
-        bilinearForm_PatternCoupled +=
-            integrate( _range=range,
-                       _expr=tau*stab_residual_bilinear*stab_test,
-                       _geomap=heatToolbox.geomap() );
-    }
-    for( auto const& d : heatToolbox.bodyForces() )
-    {
-        auto rangeBodyForceUsed = ( markers(d).empty() )? range : intersect( markedelements(mesh,markers(d)),range );
-        myLinearForm +=
-            integrate( _range=rangeBodyForceUsed,
-                       _expr=timeSteppingScaling*tau*expression(d,heatToolbox.symbolsExpr())*stab_test,
-                       _geomap=heatToolbox.geomap() );
-    }
-#if 0 // TODO VINCENT
-    if ( heatToolbox.timeStepping() == "Theta" )
-    {
-        auto previousSol = data.vectorInfo( prefixvm( heatToolbox.prefix(),"time-stepping.previous-solution") );
-        auto tOld = Xh->element( previousSol, heatToolbox.rowStartInVector() );
-        CHECK( heatToolbox.fieldVelocityConvectionIsUsedAndOperational() ) << "something wrong";
-        auto previousConv = data.vectorInfo( prefixvm( heatToolbox.prefix(),"time-stepping.previous-convection-velocity-field") );
-        auto uConvOld = heatToolbox.fieldVelocityConvection().functionSpace()->element( previousConv );
-        //auto stab_residual_old = (1.0 - timeSteppingScaling)*rhocp*gradv(tOld)*idv(uConvOld);
-        auto stab_residual_old = HeatDetail_StabGLS::residualTransientResidualWithoutTimeDerivativeExpr( rhocp, kappa, idv(uConvOld), tOld, 1.0-timeSteppingScaling, heatToolbox, mpl::int_<StabResidualType>() );
-        myLinearForm +=
-            integrate( _range=range,
-                       _expr=-tau*stab_residual_old*stab_test,
-                       _geomap=heatToolbox.geomap() );
-        // TODO body forces
-    }
-#endif
-    heatToolbox.log("Heat","updateLinearPDEStabilizationGLS", "finish"+sc);
-#endif
 }
 
 

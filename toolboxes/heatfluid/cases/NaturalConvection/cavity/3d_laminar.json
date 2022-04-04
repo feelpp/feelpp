@@ -39,9 +39,9 @@
     },
     "BoundaryConditions":
     {
-        "velocity":
+        "fluid":
         {
-            "Dirichlet":
+            "velocity":
             {
                 "wall":
                 {
@@ -50,9 +50,9 @@
                 }
             }
         },
-        "temperature":
+        "heat":
         {
-            "Dirichlet":
+            "temperature":
             {
                 "wall_xH":{ "expr":"0.5" },
                 "wall_x0": { "expr":"-0.5" }

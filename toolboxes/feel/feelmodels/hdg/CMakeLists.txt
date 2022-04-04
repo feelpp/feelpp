@@ -22,6 +22,8 @@
 #
 #
 
+feelpp_toolboxes_add_library( hdgbase SRCS enums.cpp mixedpoissonboundaryconditions.cpp LINK_LIBRARIES feelpp_modelcore )
+
 foreach(_DIM 2 3)
   math(EXPR _P_ORDER "${FEELPP_INSTANTIATION_ORDER_MAX}")
   feelpp_max( MAX_ORDER 1 ${_P_ORDER})
@@ -38,6 +40,8 @@ foreach(_DIM 2 3)
     endforeach()
   endforeach()
 endforeach()
+
+
 foreach(_DIM 2 3)
   math(EXPR _P_ORDER "${FEELPP_INSTANTIATION_ORDER_MAX}")
   feelpp_max( MAX_ORDER 1 ${_P_ORDER})
@@ -55,17 +59,8 @@ foreach(_DIM 2 3)
   endforeach()
 endforeach()
 
-add_library(feelpp_toolbox_hdg_lib SHARED libmixedpoisson.cpp enums.cpp )
-add_library(Feelpp::feelpp_toolbox_hdg_lib ALIAS feelpp_toolbox_hdg_lib )
-set_target_properties(feelpp_toolbox_hdg_lib PROPERTIES OUTPUT_NAME "feelpp_toolbox_hdg_lib" )
-target_link_libraries(feelpp_toolbox_hdg_lib ${FEELPP_MODELS_LIBRARIES_HDG})
-set_property(TARGET feelpp_toolbox_hdg_lib PROPERTY MACOSX_RPATH ON)
-  set_target_properties(feelpp_toolbox_hdg_lib PROPERTIES VERSION ${FEELPP_TOOLBOXES_SHARED_VERSION} SOVERSION ${FEELPP_TOOLBOXES_SHARED_SOVERSION})
-install(TARGETS feelpp_toolbox_hdg_lib EXPORT feelpp-toolboxes-targets
-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} )
+# TODO create interface lib
+feelpp_toolboxes_add_library(hdg_lib SRCS libmixedpoisson.cpp LINK_LIBRARIES ${FEELPP_MODELS_LIBRARIES_HDG})
 
 FILE(GLOB files "*.hpp")
 INSTALL(FILES ${files} DESTINATION include/feelpp/toolboxes/feel/feelmodels/hdg COMPONENT Devel)

@@ -54,25 +54,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::New( std::string const& prefix,
     return std::make_shared<self_type>( prefix, keyword, worldComm, subPrefix, modelRep );
 }
 
-SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-std::string
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::expandStringFromSpec( std::string const& expr )
-{
-    std::string res = expr;
-    boost::replace_all( res, "$solid_disp_order", (boost::format("%1%")%nOrderDisplacement).str() );
-    boost::replace_all( res, "$solid_geo_order", (boost::format("%1%")%nOrderGeo).str() );
-    std::string solidTag = (boost::format("P%1%G%2%")%nOrderDisplacement %nOrderGeo ).str();
-    boost::replace_all( res, "$solid_tag", solidTag );
-    return res;
-}
-
-// add members instatantiations need by static function expandStringFromSpec
-SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-const uint16_type SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::nOrderDisplacement;
-SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-const uint16_type SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::nOrderGeo;
-
-
 //---------------------------------------------------------------------------------------------------//
 
 
@@ -143,148 +124,13 @@ SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
 {
-    M_bcDirichletMarkerManagement.clearMarkerDirichletBC();
-    M_bcNeumannMarkerManagement.clearMarkerNeumannBC();
-    M_bcFSIMarkerManagement.clearMarkerFluidStructureInterfaceBC();
-    M_bcRobinMarkerManagement.clearMarkerRobinBC();
+    M_boundaryConditions = std::make_shared<boundary_conditions_type>( this->shared_from_this() );
+    if ( !this->modelProperties().boundaryConditions().hasSection( this->keyword() ) )
+        return;
+    M_boundaryConditions->setup( this->modelProperties().boundaryConditions().section( this->keyword() ) );
 
-    std::string dirichletbcType = "elimination";//soption(_name="dirichletbc.type",_prefix=this->prefix());
-    this->M_bcDirichlet = this->modelProperties().boundaryConditions().template getVectorFields<nDim>( "displacement", "Dirichlet" );
-    for( auto const& d : this->M_bcDirichlet )
-        M_bcDirichletMarkerManagement.addMarkerDirichletBC( dirichletbcType, name(d), markers(d), ComponentType::NO_COMPONENT );
-    for ( ComponentType comp : std::vector<ComponentType>( { ComponentType::X, ComponentType::Y, ComponentType::Z } ) )
-    {
-        std::string compTag = ( comp ==ComponentType::X )? "x" : (comp == ComponentType::Y )? "y" : "z";
-        this->M_bcDirichletComponents[comp] = this->modelProperties().boundaryConditions().getScalarFields( (boost::format("displacement_%1%")%compTag).str(), "Dirichlet" );
-        for( auto const& d : this->M_bcDirichletComponents.find(comp)->second )
-            M_bcDirichletMarkerManagement.addMarkerDirichletBC( dirichletbcType, name(d), markers(d), comp );
-    }
-
-    this->M_bcNeumannScalar = this->modelProperties().boundaryConditions().getScalarFields( "displacement", "Neumann_scalar" );
-    for( auto const& d : this->M_bcNeumannScalar )
-        M_bcNeumannMarkerManagement.addMarkerNeumannBC(MarkerManagementNeumannBC::NeumannBCShape::SCALAR,name(d),markers(d));
-    this->M_bcNeumannVectorial = this->modelProperties().boundaryConditions().template getVectorFields<nDim>( "displacement", "Neumann_vectorial" );
-    for( auto const& d : this->M_bcNeumannVectorial )
-        M_bcNeumannMarkerManagement.addMarkerNeumannBC(MarkerManagementNeumannBC::NeumannBCShape::VECTORIAL,name(d),markers(d));
-    this->M_bcNeumannTensor2 = this->modelProperties().boundaryConditions().template getMatrixFields<nDim>( "displacement", "Neumann_tensor2" );
-    for( auto const& d : this->M_bcNeumannTensor2 )
-        M_bcNeumannMarkerManagement.addMarkerNeumannBC(MarkerManagementNeumannBC::NeumannBCShape::TENSOR2,name(d),markers(d));
-
-    this->M_bcInterfaceFSI = this->modelProperties().boundaryConditions().getScalarFields( "displacement", "interface_fsi" );
-    for( auto const& d : this->M_bcInterfaceFSI )
-        M_bcFSIMarkerManagement.addMarkerFluidStructureInterfaceBC( markers(d) );
-
-    this->M_bcRobin = this->modelProperties().boundaryConditions().template getVectorFieldsList<nDim>( "displacement", "robin" );
-    for( auto const& d : this->M_bcRobin )
-        M_bcRobinMarkerManagement.addMarkerRobinBC( name(d),markers(d) );
-
-    this->M_bcNeumannEulerianFrameScalar = this->modelProperties().boundaryConditions().getScalarFields( { { "displacement", "Neumann_eulerian_scalar" },{ "displacement", "FollowerPressure" } } );
-    for( auto const& d : this->M_bcNeumannEulerianFrameScalar )
-        M_bcNeumannEulerianFrameMarkerManagement.addMarkerNeumannEulerianFrameBC(MarkerManagementNeumannEulerianFrameBC::NeumannEulerianFrameBCShape::SCALAR,name(d),markers(d));
-    this->M_bcNeumannEulerianFrameVectorial = this->modelProperties().boundaryConditions().template getVectorFields<nDim>( "displacement", "Neumann_eulerian_vectorial" );
-    for( auto const& d : this->M_bcNeumannEulerianFrameVectorial )
-        M_bcNeumannEulerianFrameMarkerManagement.addMarkerNeumannEulerianFrameBC(MarkerManagementNeumannEulerianFrameBC::NeumannEulerianFrameBCShape::VECTORIAL,name(d),markers(d));
-    this->M_bcNeumannEulerianFrameTensor2 = this->modelProperties().boundaryConditions().template getMatrixFields<nDim>( "displacement", "Neumann_eulerian_tensor2" );
-    for( auto const& d : this->M_bcNeumannEulerianFrameTensor2 )
-        M_bcNeumannEulerianFrameMarkerManagement.addMarkerNeumannEulerianFrameBC(MarkerManagementNeumannEulerianFrameBC::NeumannEulerianFrameBCShape::TENSOR2,name(d),markers(d));
-
-    this->M_volumicForcesProperties = this->modelProperties().boundaryConditions().template getVectorFields<nDim>( "displacement", "VolumicForces" );
-
-
-
-    auto XhDisp = this->functionSpaceDisplacement();
-    auto XhCompDisp = XhDisp->compSpace();
-    static const uint16_type nDofComponentsDisp = XhDisp->dof()->nDofComponents();
-    auto mesh = this->mesh();
-
-    std::set<std::string> dispMarkers;
-    std::map<ComponentType,std::set<std::string> > compDispMarkers;
-
-    // strong Dirichlet bc on displacement from expression
-    for( auto const& d : M_bcDirichlet )
-    {
-        auto listMark = M_bcDirichletMarkerManagement.markerDirichletBCByNameId( "elimination",name(d) );
-        dispMarkers.insert( listMark.begin(), listMark.end() );
-    }
-    // strong Dirichlet bc on displacement component from expression
-    for ( auto const& bcDirComp : M_bcDirichletComponents )
-    {
-        ComponentType comp = bcDirComp.first;
-        for( auto const& d : bcDirComp.second )
-        {
-            auto listMark = M_bcDirichletMarkerManagement.markerDirichletBCByNameId( "elimination",name(d), comp );
-            compDispMarkers[comp].insert( listMark.begin(), listMark.end() );
-        }
-    }
-
-
-
-    //-------------------------------------//
-    // distribute mesh markers by entity
-    std::tuple< std::set<std::string>,std::set<std::string>,std::set<std::string>,std::set<std::string> > meshMarkersDispByEntities;
-    std::map<ComponentType, std::tuple< std::set<std::string>,std::set<std::string>,std::set<std::string>,std::set<std::string> > > meshMarkersCompDispByEntities;
-    meshMarkersDispByEntities = detail::distributeMarkerListOnSubEntity( mesh, dispMarkers );
-    for ( auto const& compMarkerPair : compDispMarkers )
-    {
-        meshMarkersCompDispByEntities[compMarkerPair.first] = detail::distributeMarkerListOnSubEntity( mesh, compMarkerPair.second );
-    }
-    //-------------------------------------//
-    // on topological faces
-    auto const& listMarkedFacesDisp = std::get<0>( meshMarkersDispByEntities );
-    if ( !listMarkedFacesDisp.empty() )
-        this->updateDofEliminationIds( "displacement", XhDisp, markedfaces( mesh,listMarkedFacesDisp ) );
-    // on marked edges (only 3d)
-    if constexpr ( nDim == 3)
-    {
-        auto const& listMarkedEdgesDisp = std::get<1>( meshMarkersDispByEntities );
-        if ( !listMarkedEdgesDisp.empty() )
-            this->updateDofEliminationIds( "displacement", XhDisp, markededges( mesh,listMarkedEdgesDisp ) );
-    }
-    // on marked points
-    auto const& listMarkedPointsDisp = std::get<2>( meshMarkersDispByEntities );
-    if ( !listMarkedPointsDisp.empty() )
-        this->updateDofEliminationIds( "displacement", XhDisp, markedpoints( mesh,listMarkedPointsDisp ) );
-    //-------------------------------------//
-    // on disp components
-    for ( auto const& meshMarkersPair : meshMarkersCompDispByEntities )
-    {
-        ComponentType comp = meshMarkersPair.first;
-        // topological faces
-        auto const& listMarkedFacesCompDisp = std::get<0>( meshMarkersPair.second );
-        if ( !listMarkedFacesCompDisp.empty() )
-        {
-            auto therange = markedfaces(mesh,listMarkedFacesCompDisp );
-            auto dofsToAdd = XhDisp->dofs( therange, comp );
-            XhDisp->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
-            this->dofEliminationIdsAll("displacement",MESH_FACES).insert( dofsToAdd.begin(), dofsToAdd.end() );
-            auto dofsMultiProcessToAdd = XhDisp->dofs( therange, comp, true );
-            this->dofEliminationIdsMultiProcess("displacement",MESH_FACES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
-        }
-        // edges (only 3d)
-        auto const& listMarkedEdgesCompDisp = std::get<1>( meshMarkersPair.second );
-        if ( !listMarkedEdgesCompDisp.empty() )
-        {
-            auto therange = markededges(mesh,listMarkedEdgesCompDisp );
-            auto dofsToAdd = XhDisp->dofs( therange, comp );
-            XhDisp->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
-            this->dofEliminationIdsAll("displacement",MESH_EDGES).insert( dofsToAdd.begin(), dofsToAdd.end() );
-            auto dofsMultiProcessToAdd = XhDisp->dofs( therange, comp, true );
-            this->dofEliminationIdsMultiProcess("displacement",MESH_EDGES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
-        }
-        // points
-        auto const& listMarkedPointsCompDisp = std::get<2>( meshMarkersPair.second );
-        if ( !listMarkedPointsCompDisp.empty() )
-        {
-            auto therange = markedpoints(mesh,listMarkedPointsCompDisp );
-            auto dofsToAdd = XhDisp->dofs( therange, comp );
-            XhDisp->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
-            this->dofEliminationIdsAll("displacement",MESH_POINTS).insert( dofsToAdd.begin(), dofsToAdd.end() );
-            auto dofsMultiProcessToAdd = XhDisp->dofs( therange, comp, true );
-            this->dofEliminationIdsMultiProcess("displacement",MESH_POINTS).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
-        }
-    }
-
-
+    for ( auto const& [bcId,bcData] : M_boundaryConditions->displacementImposed() )
+        bcData->updateDofEliminationIds( *this, "displacement", this->functionSpaceDisplacement() );
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -298,6 +144,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initMesh()
     this->log("SolidMechanics","initMesh", "start" );
     this->timerTool("Constructor").start();
 
+    if ( this->modelProperties().jsonData().contains("Meshes") )
+        super_type::super_model_meshes_type::setup( this->modelProperties().jsonData().at("Meshes"), {this->keyword()} );
     if ( this->doRestart() )
         super_type::super_model_meshes_type::setupRestart( this->keyword() );
     super_type::super_model_meshes_type::updateForUse<mesh_type>( this->keyword() );
@@ -583,6 +431,20 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createsSolid1dReduced()
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updatePhysics( typename super_physics_type::PhysicsTreeNode & physicsTree, ModelModels const& models )
+{
+    auto currentPhysic = std::dynamic_pointer_cast<ModelPhysicSolid<nDim>>( physicsTree.physic() );
+    CHECK( currentPhysic ) << "wrong physic";
+    if ( currentPhysic->equation() == "Generalised-String" )
+    {
+        if ( !M_solid1dReduced )
+            this->createsSolid1dReduced();
+        physicsTree.addChild( M_solid1dReduced, models );
+    }
+}
+
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
 {
     if ( this->isUpdatedForUse() ) return;
@@ -590,10 +452,10 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
     this->log("SolidMechanics","init", "start" );
     this->timerTool("Constructor").start();
 
+    this->initModelProperties();
 #if 0
     this->initPhysics( this->keyword(), this->modelProperties().models() );
-#else
-
+#elif 0
     this->initPhysics( this->keyword(), this->modelProperties().models() );
     bool hasSolid1dReduced = false;
     for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
@@ -610,6 +472,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
         physicsTree.addLeaf( M_solid1dReduced );
         this->initPhysics( physicsTree, this->modelProperties().models() );
     }
+#else
+    this->initPhysics( this->shared_from_this(), this->modelProperties().models() );
 #endif
 
     this->initMaterialProperties();
@@ -626,7 +490,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
             hasSolid1dReduced = true;
     }
 #endif
-    if ( hasSolid1dReduced )
+    if ( M_solid1dReduced )//hasSolid1dReduced )
     {
         if ( !M_solid1dReduced )
             this->createsSolid1dReduced();
@@ -646,8 +510,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
 
     if ( this->hasSolidEquationStandard() )
     {
-        if ( !this->mesh() )
-            this->initMesh();
+        //if ( !this->mesh() )
+        this->initMesh();
 
         this->materialsProperties()->addMesh( this->mesh() );
 

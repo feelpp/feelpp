@@ -29,6 +29,7 @@
 #include <feel/feelpde/operatorpcdbase.hpp>
 #include <feel/feelalg/backend.hpp>
 #include <feel/feeldiscr/pdh.hpp>
+#include <feel/feelpde/boundaryconditions.hpp>
 
 namespace Feel
 {
