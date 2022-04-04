@@ -8,8 +8,8 @@ TOKEN="${CR_PAT}"
 REPO="feelpp/docker" # format: username/repository
 EVENT_TYPE="pkg-feelpp-published"
 
-#cmake --preset feelpp
-#cmake --build --preset feelpp -t dist
+cmake --preset feelpp
+cmake --build --preset feelpp -t dist
 COMPONENT=feelpp
 main_version=$(echo build/$COMPONENT/feelpp-*.tar.gz | sed  "s/build\/feelpp\/feelpp-\([0-9.]*\)-*\([a-z.0-9]*\).tar.gz/\1/g")
 extra_version=$(echo build/$COMPONENT/feelpp-*.tar.gz | sed "s/build\/feelpp\/feelpp-\([0-9.]*\)-*\([a-z.0-9]*\).tar.gz/\2/g")
