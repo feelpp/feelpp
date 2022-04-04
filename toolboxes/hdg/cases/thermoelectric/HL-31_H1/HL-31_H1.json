@@ -31,13 +31,16 @@
     },
     "InitialConditions":
     {
-        "temperature":
+        "heat":
         {
-            "Expression":
+            "temperature":
             {
-                "myic1":
+                "Expression":
                 {
-                    "expr": "290"
+                    "myic1":
+                    {
+                        "expr": "290"
+                    }
                 }
             }
         }
@@ -55,7 +58,7 @@
         //         }
         //     }
         // },
-        "electric-potential":
+        "electric":
         {
             "Dirichlet":
             {
@@ -89,7 +92,7 @@
                 }
             }
         },
-        "temperature":
+        "heat":
         {
             // "Dirichlet":
             // {

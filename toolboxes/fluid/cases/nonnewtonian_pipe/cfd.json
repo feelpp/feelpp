@@ -41,9 +41,9 @@
     },
     "BoundaryConditions":
     {
-        "velocity":
+        "fluid":
         {
-            "Dirichlet":
+            "velocity":
             {
                 "left":
                 {
@@ -53,11 +53,8 @@
                 {
                     "expr":"{0,0}"
                 }
-            }
-        },
-        "pressure":
-        {
-            "Dirichlet":
+            },
+            "pressure":
             {
                 "top":
                 {

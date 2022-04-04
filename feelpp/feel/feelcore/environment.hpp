@@ -973,8 +973,14 @@ int countoption( Ts && ... v )
 {
     auto args = NA::make_arguments( std::forward<Ts>(v)... );
     po::variables_map const& vm = args.get_else(_vm, Environment::vm() );
-    return vm.count( Environment::option( std::forward<Ts>(v)... ).first );
-    //return vm.count(Environment::option( _name=name,_sub=sub,_prefix=prefix, _vm=vm ).first);
+    try
+    {
+        return vm.count( Environment::option( std::forward<Ts>(v)... ).first );
+    }
+    catch( std::invalid_argument const& e )
+    {
+        return 0;
+    }
 }
 
 

@@ -9,26 +9,37 @@
     "Models":
     {
         "cfpdes":{
-            "equations":[
-                {
-                    "name":"equation1",
-                    "unknown":
-                    {
-                        "basis":"Pch1",
-                        "name":"prey",
-                        "symbol":"u"
-                    }
+            "equations":["equation1","equation2"]
+        },
+        "equation1":{
+            "setup":{
+                "unknown":{
+                    "basis":"Pch1",
+                    "name":"prey",
+                    "symbol":"u"
                 },
-                {
-                    "name":"equation2",
-                    "unknown":
-                    {
-                        "basis":"Pch1",
-                        "name":"predator",
-                        "symbol":"v"
-                    }
+                "coefficients":{
+                    "c":"1", // diffusion
+                    "a":"-( (1-equation1_u) - equation2_v/(equation1_u+thealpha) ):thealpha:equation1_u:equation2_v", // reaction
+                    //"f":"( equation1_u*(1-equation1_u) - equation1_u*equation2_v/(equation1_u+thealpha) ):thealpha:equation1_u:equation2_v", // source
+                    "d":"1" // first time derivative
                 }
-            ]
+            }
+        },
+        "equation2":{
+            "setup":{
+                "unknown":{
+                    "basis":"Pch1",
+                    "name":"predator",
+                    "symbol":"v"
+                },
+                "coefficients":{
+                    "c":"thedelta:thedelta", // diffusion
+                    "a":"-( (thebeta*equation1_u)/(equation1_u+thealpha) - thegamma ):thebeta:thealpha:thegamma:equation1_u", // reaction
+                    //"f":"equation2_v*( (thebeta*equation1_u)/(equation1_u+thealpha) - thegamma ):thebeta:thealpha:thegamma:equation1_u:equation2_v", // source
+                    "d":"1"// first time derivative
+                }
+            }
         }
     },
     "Parameters":
@@ -57,15 +68,7 @@
     {
         "mymat1":
         {
-            "markers":"Omega",
-            "equation1_c":"1", // diffusion
-            "equation1_a":"-( (1-equation1_u) - equation2_v/(equation1_u+thealpha) ):thealpha:equation1_u:equation2_v", // reaction
-            //"equation1_f":"( equation1_u*(1-equation1_u) - equation1_u*equation2_v/(equation1_u+thealpha) ):thealpha:equation1_u:equation2_v", // source
-            "equation1_d":"1",// first time derivative
-            "equation2_c":"thedelta:thedelta", // diffusion
-            "equation2_a":"-( (thebeta*equation1_u)/(equation1_u+thealpha) - thegamma ):thebeta:thealpha:thegamma:equation1_u", // reaction
-            //"equation2_f":"equation2_v*( (thebeta*equation1_u)/(equation1_u+thealpha) - thegamma ):thebeta:thealpha:thegamma:equation1_u:equation2_v", // source
-            "equation2_d":"1"// first time derivative
+            "markers":"Omega"
         }
     },
     // "BoundaryConditions":

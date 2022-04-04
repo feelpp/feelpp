@@ -12,7 +12,7 @@
     },
     "BoundaryConditions":
     {
-        "potential":
+        "poisson":
         {
             "Neumann":
             {

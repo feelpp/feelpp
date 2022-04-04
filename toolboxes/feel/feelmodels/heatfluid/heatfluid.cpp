@@ -90,6 +90,8 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::initMesh()
     this->log("HeatFluid","initMesh", "start");
     this->timerTool("Constructor").start();
 
+    if ( this->modelProperties().jsonData().contains("Meshes") )
+        super_type::super_model_meshes_type::setup( this->modelProperties().jsonData().at("Meshes"), {this->keyword()} );
     if ( this->doRestart() )
         super_type::super_model_meshes_type::setupRestart( this->keyword() );
     super_type::super_model_meshes_type::updateForUse<mesh_type>( this->keyword() );
@@ -157,6 +159,15 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
     return myblockGraph;
 }
 
+HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+HEATFLUID_CLASS_TEMPLATE_TYPE::updatePhysics( typename super_physics_type::PhysicsTreeNode & physicsTree, ModelModels const& models )
+{
+    physicsTree.addChild( M_heatModel, models );
+    physicsTree.addChild( M_fluidModel, models );
+
+    physicsTree.updateMaterialSupportFromChildren( "intersect" );
+}
 
 HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -165,29 +176,33 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->log("HeatFluid","init", "start" );
     this->timerTool("Constructor").start();
 
+    this->initModelProperties();
+
     M_heatModel = std::make_shared<heat_model_type>(prefixvm(this->prefix(),"heat"), "heat", this->worldCommPtr(),
                                                     this->subPrefix(), this->repository() );
     M_fluidModel = std::make_shared<fluid_model_type>(prefixvm(this->prefix(),"fluid"), "fluid", this->worldCommPtr(),
                                                       this->subPrefix(), this->repository() );
 
     // physics
-    using physic_tree_type = typename super_physics_type::PhysicsTree;
-    physic_tree_type physicsTree( this->shared_from_this() );
-    physicsTree.addLeaf( M_heatModel );
-    physicsTree.addLeaf( M_fluidModel );
-    this->initPhysics( physicsTree, this->modelProperties().models() );
+    this->initPhysics(
+        this->shared_from_this(),
+        [this]( typename super_physics_type::PhysicsTree & physicsTree ) {
+            physicsTree.updatePhysics( this->shared_from_this(), this->modelProperties().models() );
+            //CHECK( M_fluidModel && M_heatModel ) << "aiai";
+            physicsTree.updatePhysics( M_heatModel, this->modelProperties().models() );
+            physicsTree.updatePhysics( M_fluidModel, this->modelProperties().models() );
+        } );
 
     // physical properties
     if ( !M_materialsProperties )
     {
-        auto paramValues = this->modelProperties().parameters().toParameterValues();
-        this->modelProperties().materials().setParameterValues( paramValues );
+        //auto paramValues = this->modelProperties().parameters().toParameterValues();
+        //this->modelProperties().materials().setParameterValues( paramValues );
         M_materialsProperties.reset( new materialsproperties_type( this->shared_from_this() ) );
         M_materialsProperties->updateForUse( this->modelProperties().materials() );
     }
 
-    if ( !this->mesh() )
-        this->initMesh();
+    this->initMesh();
 
     this->materialsProperties()->addMesh( this->mesh() );
 
@@ -397,7 +412,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::initPostProcess()
 }
 
 
-
+#if 0
 HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
 std::shared_ptr<std::ostringstream>
 HEATFLUID_CLASS_TEMPLATE_TYPE::getInfo() const
@@ -444,6 +459,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::getInfo() const
 
     return _ostr;
 }
+#endif
 
 HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
 void

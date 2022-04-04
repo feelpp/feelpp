@@ -5,8 +5,11 @@
     "Models":
     {
         "solid":{
-            "equations":"Hyper-Elasticity",
-            "material-model":"StVenantKirchhoff"
+            "setup":{
+                "equations":"Hyper-Elasticity",
+                "material-model":"StVenantKirchhoff",
+                "body-forces":"{0,-gravity*1e3}:gravity"
+            }
         }
     },
     "Parameters":
@@ -34,27 +37,18 @@
     },
     "BoundaryConditions":
     {
-        "displacement":
+        "solid":
         {
-            "Dirichlet":
+            "displacement":
             {
-                "fixed-wall":
-                {
+                "fixed-wall":{
                     "expr":"{0,0}"
                 }
             },
-            "Neumann_scalar":
+            "normal_stress":
             {
-                "free-wall":
-                {
+                "free-wall":{
                     "expr":"0" 
-                }
-            },
-            "VolumicForces":
-            {
-                "beam":
-                {
-                    "expr":"{0,-gravity*1e3}:gravity" 
                 }
             }
         }
