@@ -26,6 +26,17 @@
             {
                 "filename":"$cfgdir/cfd.geo",
                 "hsize":0.03
+            },
+            "MeshMotion":
+            {
+                "ComputationalDomain":
+                {
+                    "markers":"Fluid"
+                },
+                "Displacement":
+                {
+                    "Zero":["inlet","wall","outlet"]
+                }
             }
         }
     },
@@ -49,9 +60,9 @@
     },
     "BoundaryConditions":
     {
-        "velocity":
+        "fluid":
         {
-            "Dirichlet":
+            "velocity":
             {
                 "inlet":
                 {
@@ -62,10 +73,7 @@
                 {
                     "expr":"{0,0}"
                 }
-            }
-        },
-        "fluid":
-        {
+            },
             "outlet":
             {
                 "outlet":
@@ -123,7 +131,7 @@
         {
             "Exports":
             {
-                "fields":["velocity","pressure","pid","displacement"]
+                "fields":["velocity","pressure","pid","mesh-displacement"]
             },
             "Measures":
             {

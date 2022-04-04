@@ -77,35 +77,38 @@
     },
     "InitialConditions":
     {
-        "temperature": 
+        "heat":
         {
-            "Expression": 
+            "temperature": 
             {
-                "init": 
+                "Expression": 
                 {
-                    "markers":["Omega_0","Omega_1","Omega_2","Omega_3","Omega_4"], 
-                    "expr":"300" 
+                    "init": 
+                    {
+                        "markers":["Omega_0","Omega_1","Omega_2","Omega_3","Omega_4"], 
+                        "expr":"300" 
+                    }
                 }
             }
         }
     },
     "BoundaryConditions":
     {
-        "temperature":
+        "heat":
         {
-            "Neumann":
+            "flux":
             {
                 "Gamma_root":
                 {
-                    "expr":"1"     // according to doc : -k nabla T.n = g
+                    "expr":"1"     // according to doc : k nabla T.n = g
                 }
             },
-            "Robin":
+            "convective_heat_flux":
             {
                 "Gamma_ext":
                 {
-                    "expr1":"Bi:Bi",
-                    "expr2":"0"
+                    "h":"Bi:Bi",
+                    "Text":"0"
                 }
             }
         }

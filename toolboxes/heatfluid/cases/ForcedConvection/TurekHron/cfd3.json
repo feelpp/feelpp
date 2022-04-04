@@ -48,9 +48,9 @@
     },
     "BoundaryConditions":
     {
-        "velocity":
+        "fluid":
         {
-            "Dirichlet":
+            "velocity":
             {
                 "inlet":
                 {
@@ -64,10 +64,7 @@
                 {
                     "expr":"{0,0}"
                 }
-            }
-        },
-        "fluid":
-        {
+            },
             "outlet":
             {
                 "outlet":
@@ -76,9 +73,9 @@
                 }
             }
         },
-        "temperature":
+        "heat":
         {
-            "Dirichlet":
+            "temperature":
             {
                 "inlet":
                 {
@@ -86,26 +83,7 @@
                     "expr":"( 293.15-10*(y-0.15)*(y-0.25)/(0.2^2) )*(y>0.15)*(y<0.25)+(293.15*(y<(0.15-1e-9)))+(293.15*(y>(0.25-1e-9))):y"
                     //"expr":"293.15"
                 }
-                //  "wall2":
-                //  {
-                //      "expr":"350"//"300" 
-                // }
             }
-            // "Neumann":
-            // {
-            //     "wall2":
-            //     {
-            //         "expr":"5e4" 
-            //     }
-            // },
-            // "Robin":
-            // {
-            //     "wall2":
-            //     {
-            //         "expr1":"1e3",//16.667",// h coeff
-            //         "expr2":"360"// temperature exterior
-            //     }
-            // }
         }
     },
     "PostProcess":

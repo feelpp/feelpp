@@ -102,7 +102,30 @@ ModelModels::setup( nl::json const& jarg )
         }
         else if ( jargval.is_object() )
         {
-            this->operator[]( type ).setup( type, jargval );
+            if ( jargval.contains("common") )
+            {
+                auto const& j_common = jargval.at("common");
+                CHECK( jargval.contains("models") ) << "required a models section";
+                auto const& j_models = jargval.at("models");
+                if ( j_models.is_array() )
+                {
+                    for (auto const& [j_modelskey,j_modelsval] : j_models.items())
+                    {
+                        nl::json j_data = j_common;
+                        j_data.merge_patch( j_modelsval );
+                        this->operator[]( type ).setup( type, j_data );
+                    }
+                }
+                else if ( j_models.is_object() )
+                {
+                    //nl::json j_data = { { "setup", j_common } };
+                    nl::json j_data = j_common;
+                    j_data.merge_patch( j_models );
+                    this->operator[]( type ).setup( type, j_data );
+                }
+            }
+            else
+                this->operator[]( type ).setup( type, jargval );
         }
     }
 }

@@ -23,7 +23,7 @@
     },
     "BoundaryConditions":
     {
-        "potential":
+        "poisson":
         {
             "Dirichlet":
             {
@@ -50,10 +50,7 @@
                 {
                     "expr":"0"
                 }
-            }
-        },
-        "flux":
-        {
+            },
             "Integral":
             {
                 "V0":

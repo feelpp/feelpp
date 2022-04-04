@@ -5,15 +5,41 @@
     "Models":
     {
         "cfpdes":{
-            "equations":{
-                "name":"heat",
-                "unknown":
-                {
-                    "basis":"Pch1",
-                    "name":"temperature",
-                    "symbol":"T"
+            "equations":"heat"
+        },
+        "heat":{
+            "common":{
+                "setup":{
+                    "unknown":{
+                        "basis":"Pch1",
+                        "name":"temperature",
+                        "symbol":"T"
+                    },
+                    "coefficients":{
+                        "d":"materials_rho*materials_Cp:materials_rho:materials_Cp",
+                        "beta":"{materials_rho*materials_Cp*velocity_convection_0,materials_rho*materials_Cp*velocity_convection_1}:materials_rho:materials_Cp:velocity_convection_0:velocity_convection_1"
+                    }
                 }
-            }
+            },
+            "models":[
+                {
+                    "name":"heat_mymat1",
+                    "materials":"mymat1",
+                    "setup":{
+                        "coefficients":{
+                            "c":"materials_mymat1_k:materials_mymat1_k"
+                        }
+                    }
+                },{
+                    "name":"heat_mymat2",
+                    "materials":"mymat2",
+                    "setup":{
+                        "coefficients":{
+                            "c":"{materials_mymat2_k_00,materials_mymat2_k_01,materials_mymat2_k_10,materials_mymat2_k_11}:materials_mymat2_k_00:materials_mymat2_k_01:materials_mymat2_k_10:materials_mymat2_k_11"
+                        }
+                    }
+                }
+            ]
         }
     },
     "Parameters":
@@ -42,10 +68,7 @@
             //"k":"{10,0,0,100}",//[ W/(m*K) ]
             //"k":"10+100*(1-heat_T/293):heat_T",//[ W/(m*K) ]
             "Cp":"1000.005", //[ J/(kg*K) ]
-            "rho":"1.205", //[ kg/(m^3) ]
-            "heat_c":"k:k",
-            "heat_d":"rho*Cp:rho:Cp",
-            "heat_beta":"{rho*Cp*velocity_convection_0,rho*Cp*velocity_convection_1}:rho:Cp:velocity_convection_0:velocity_convection_1"
+            "rho":"1.205" //[ kg/(m^3) ]
         },
         "mymat2":
         {
@@ -53,10 +76,7 @@
             //"k":"100",
             "k":"{100,0,0,100}",//[ W/(m*K) ]
             "Cp":"3500",
-            "rho":"2",
-            "heat_c":"{k_00,k_01,k_10,k_11}:k_00:k_01:k_10:k_11",
-            "heat_d":"rho*Cp:rho:Cp",
-            "heat_beta":"{rho*Cp*velocity_convection_0,rho*Cp*velocity_convection_1}:rho:Cp:velocity_convection_0:velocity_convection_1"
+            "rho":"2"
         }
     },
     "BoundaryConditions":

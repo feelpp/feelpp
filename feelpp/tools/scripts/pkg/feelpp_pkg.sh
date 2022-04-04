@@ -47,52 +47,11 @@ then
 else
     echo "no files in ${PBUILDER_RESULTS}/";
 fi
-
-echo "--- update for pbuilder $DIST"
-echo "--- fixes for pbuilder $DIST"
 pbuilder-dist $DIST login --save-after-login << EOF
-apt-get update
-apt-get install apt-transport-https ca-certificates gnupg software-properties-common wget
-
-# echo "deb https://apt.kitware.com/ubuntu/ $DIST main" >> /etc/apt/sources.list
-wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc  | apt-key add -
-
-if [ "$DIST" = "bionic" ]; then
-    echo "deb http://archive.ubuntu.com/ubuntu bionic universe"  >> /etc/apt/sources.list
-    echo "deb http://archive.ubuntu.com/ubuntu bionic-updates main" >> /etc/apt/sources.list
-    echo "deb http://archive.ubuntu.com/ubuntu bionic-updates universe" >> /etc/apt/sources.list
-    echo "deb http://archive.ubuntu.com/ubuntu bionic-backports main" >> /etc/apt/sources.list
-    echo "deb http://archive.ubuntu.com/ubuntu bionic-security main" >> /etc/apt/sources.list
-fi
+echo "--- apt update"
 apt-get update
 EOF
 
-if [ "$DIST" = "buster" ]; then
-echo "--- fixes for pbuilder $DIST"
-    pbuilder-dist $DIST login --save-after-login << EOF
-apt-get update
-apt-get install -y apt-transport-https ca-certificates gnupg software-properties-common wget
-
-echo "deb http://deb.debian.org/debian buster-backports main" >> /etc/apt/sources.list
-apt-get update
-EOF
-fi
-# pbuilder-dist $DIST update
-if [ "$COMPONENT" = "feelpp-toolboxes" -o "$COMPONENT" = "feelpp-mor" ]; then
-    echo "--- add key for $COMPONENT"
-    export DIST
-    export CHANNEL
-    export FLAVOR
-    pbuilder-dist $DIST login --save-after-login << EOF
-apt-get install -y apt-transport-https ca-certificates gnupg software-properties-common wget
-if [ "$DIST" = "buster" ]; then
-    echo "deb http://deb.debian.org/debian buster-backports main" >> /etc/apt/sources.list
-fi
-# echo "deb [trusted=yes] http://apt.feelpp.org/$FLAVOR $DIST $CHANNEL" | tee -a /etc/apt/sources.list
-wget -qO - http://apt.feelpp.org/apt.gpg | apt-key add
-apt update
-EOF
-fi
 set -x
 echo "--- setting directory build-$DIST to build source tarball"
 #git clone https://github.com/feelpp/feelpp /tmp/feelpp
@@ -136,7 +95,7 @@ echo "--- add source ${COMPONENT}  $version-1"
 dpkg-source -b .
 
 echo "--- building ${COMPONENT} debian version $version-1"
-pbuilder-dist $DIST build --buildresult ${PBUILDER_RESULTS}  ../${COMPONENT}_${version}-1.dsc
+pbuilder-dist $DIST build --buildresult ${PBUILDER_RESULTS}  --buildplace $HOME/pbuilder/cache ../${COMPONENT}_${version}-1.dsc
 
 echo "+++ uploading ${PBUILDER_RESULTS} to bintray $COMPONENT $FLAVOR/$DIST"
 ls  -1 ${PBUILDER_RESULTS}

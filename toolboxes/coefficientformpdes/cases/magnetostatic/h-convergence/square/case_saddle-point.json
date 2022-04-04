@@ -5,26 +5,32 @@
     "Models":
     {
         "cfpdes":{
-            "equations":[
-                {
-                    "name":"magneto",
-                    "unknown":
-                    {
-                        "basis":"Ned1h0",
-                        "name":"potential",
-                        "symbol":"A"
-                    }
+            "equations":["magneto","constraint"]
+        },
+        "magneto":{
+            "setup":{
+                "unknown":{
+                    "basis":"Ned1h0",
+                    "name":"potential",
+                    "symbol":"A"
                 },
-                {
-                    "name":"constraint",
-                    "unknown":
-                    {
-                        "basis":"Pch1",
-                        "name":"lm",
-                        "symbol":"p"
-                    }
+                "coefficients":{
+                    "zeta":"1/materials_mu:materials_mu",
+                    "f":"{2/materials_mu-constraint_grad_p_0,2/materials_mu-constraint_grad_p_1}:materials_mu:constraint_grad_p_0:constraint_grad_p_1"
                 }
-            ]
+            }
+        },
+        "constraint":{
+            "setup":{
+                "unknown":{
+                    "basis":"Pch1",
+                    "name":"lm",
+                    "symbol":"p"
+                },
+                "coefficients":{
+                    "gamma":"{magneto_A_0,magneto_A_1}:magneto_A_0:magneto_A_1"
+                }
+            }
         }
     },
     "Meshes":
@@ -46,10 +52,7 @@
     {
         "Omega":
         {
-            "mu":1e-3,
-            "magneto_zeta":"1/mu:mu",
-            "magneto_f":"{2/mu-constraint_grad_p_0,2/mu-constraint_grad_p_1}:mu:constraint_grad_p_0:constraint_grad_p_1",
-            "constraint_gamma":"{magneto_A_0,magneto_A_1}:magneto_A_0:magneto_A_1"
+            "mu":1e-3
         }
     },
     "BoundaryConditions":

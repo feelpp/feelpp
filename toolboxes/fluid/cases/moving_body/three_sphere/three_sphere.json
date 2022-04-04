@@ -36,18 +36,15 @@
     },
     "BoundaryConditions":
     {
-        "velocity":
+        "fluid":
         {
-            "Dirichlet":
+            "velocity":
             {
                 "BoxWalls":
                 {
                     "expr":"{0,0,0}"
                 }
-            }
-        },
-        "fluid":
-        {
+            },
             "body":
             {
                 "SphereCenter":

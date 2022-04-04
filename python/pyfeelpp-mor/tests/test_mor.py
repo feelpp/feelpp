@@ -18,7 +18,7 @@ cases = [
          #   #{"k_1": 0.1, "k_2": 0.1, "k_3": 0.1, "k_4": 0.1, "k_0": 1, "Bi": 0.01},
          #   {"k_1": 0.1, "k_2": 0.1, "k_3": 0.1, "k_4": 0.1, "k_0": 1, "Bi": 0.01},
          #   {"k_1": 10, "k_2": 10, "k_3": 10, "k_4": 10, "k_0": 1, "Bi": 1}), 'thermal-fin-3d'),
-         (('testcase/testcase/test.cfg', 3,
+         (('testcase/testcase/test.cfg', 2,
             #{"k_1": 5, "k_2": 2, "k_3": 10, "k_4": 0.1},
             {"k_1": 0.1, "k_2": 0.1, "k_3": 0.1, "k_4": 0.1},
             {"k_1": 10, "k_2": 10, "k_3": 10, "k_4": 10}), 'test-case'),
@@ -32,6 +32,7 @@ def init_toolbox(casefile, dim):
     feelpp.Environment.changeRepository(casefile)
 
     heatBox = heat(dim=dim, order=1)
+    heatBox.init()
 
     return heatBox
 

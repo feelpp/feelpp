@@ -240,9 +240,6 @@
             "inherits": "default",
             "configurePreset": "feelpp-python",
             "targets": [
-                "pyfeelpp",
-                "pyfeelpptoolboxes",
-                "pyfeelppmor",
                 "all",
                 "install"
             ]
@@ -252,9 +249,6 @@
             "inherits": "default",
             "configurePreset": "python",
             "targets": [
-                "pyfeelpp",
-                "pyfeelpptoolboxes",
-                "pyfeelppmor",
                 "all",
                 "install"
             ]
