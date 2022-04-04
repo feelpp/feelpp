@@ -6,7 +6,7 @@
 
 namespace Feel
 {
-
+#if 0
 class ModelBoundaryConditionCoupling : public ModelBoundaryCondition
 {
 public:
@@ -28,7 +28,7 @@ private:
     std::string M_resistor;
     std::string M_buffer;
 }; // class ModelBoundaryConditionCoupling
-
+#endif
 namespace FeelModels
 {
 
@@ -78,12 +78,9 @@ public:
 
     void initBoundaryConditions() override {
         super_type::initBoundaryConditions();
-        for( auto const& [name, bc] : this->modelProperties().boundaryConditions2().byFieldType( this->M_fluxKey, "Coupling") )
+        for ( auto const& [bcName,bcData] : this->M_boundaryConditions->couplingODEs() )
         {
-            this->M_bcIntegralMarkerManagement.addMarkerIntegralBC(name, bc.markers() );
-            this->M_coupledBC.push_back(ModelBoundaryConditionCoupling(bc));
-
-            auto fmu = fmi2::fmu( Environment::expand( this->M_coupledBC.back().circuit() ) ).as_cs_fmu()->new_instance();
+            auto fmu = fmi2::fmu( Environment::expand( bcData->circuit() ) ).as_cs_fmu()->new_instance();
             fmu->setup_experiment();
             fmu->enter_initialization_mode();
             fmu->exit_initialization_mode();
@@ -103,9 +100,9 @@ public:
 
         int i = 0;
         int nbIbc = this->nbIbc();
-        for( auto const& [name, bc] : this->modelProperties().boundaryConditions2().byFieldType( this->M_fluxKey, "Coupling") )
+        for ( auto const& [bcName,bcData] : this->M_boundaryConditions->couplingODEs() )
         {
-            M_bdfsBuffer.push_back(this->createBdf( this->spaceTraceIbc(), bc.name(), bdfOrder, nConsecutiveSave, myFileFormat) );
+            M_bdfsBuffer.push_back(this->createBdf( this->spaceTraceIbc(), bcName, bdfOrder, nConsecutiveSave, myFileFormat) );
             if( this->doRestart() )
             {
                 double tir = M_bdfsBuffer.back()->restart();
@@ -163,7 +160,7 @@ public:
         {
             int i = 0;
             int nbIbc = this->nbIbc();
-            for( auto const& [name, bc] : this->modelProperties().boundaryConditions2().byFieldType( this->M_fluxKey, "Coupling") )
+            for ( auto const& [bcName,bcData] : this->M_boundaryConditions->couplingODEs() )
             {
                 std::vector<element_constant_ptrtype> icConstantFields;
                 if( this->isStationary() )
@@ -171,7 +168,7 @@ public:
                 else
                     icConstantFields = M_bdfsBuffer[i]->unknowns();
 
-                super2_type::updateInitialConditions( bc.name(), markedfaces(this->mesh(), bc.markers()), se, icConstantFields );
+                super2_type::updateInitialConditions( bcName, markedfaces(this->mesh(), bcData->markers()), se, icConstantFields );
 
                 if( !this->isStationary() )
                     *(this->M_mup[nbIbc+2*i+1]) = M_bdfsBuffer[i]->unknown(0);
@@ -184,9 +181,9 @@ public:
         super_type::initPostProcess();
 
         int i = 0;
-        for( auto const& [name, bc] : this->modelProperties().boundaryConditions2().byFieldType( this->M_fluxKey, "Coupling") )
+        for ( auto const& [bcName,bcData] : this->M_boundaryConditions->couplingODEs() )
         {
-            auto fields = this->modelProperties().postProcess().exports( name ).fields();
+            auto fields = this->modelProperties().postProcess().exports( bcName ).fields();
             M_export_list.insert(M_export_list.end(),fields.begin(),fields.end());
         }
 
@@ -216,9 +213,9 @@ public:
         data.open( M_export_path.string() , std::ios::app );
         data << time;
         int i = 0;
-        for( auto const& [name, bc] : this->modelProperties().boundaryConditions2().byFieldType( this->M_fluxKey, "Coupling") )
+        for ( auto const& [bcName,bcData] : this->M_boundaryConditions->couplingODEs() )
         {
-            auto fields = this->modelProperties().postProcess().exports( name ).fields();
+            auto fields = this->modelProperties().postProcess().exports( bcName ).fields();
             auto md = M_circuits[i]->get_model_description();
             std::vector<fmi2ValueReference> vr_buffer;
             std::transform(fields.begin(), fields.end(), std::back_inserter(vr_buffer),
@@ -229,17 +226,18 @@ public:
                 data << "," << v;
             ++i;
         }
+
         data << std::endl;
         data.close();
     }
 
 
-    int constantSpacesSize() const override { return this->M_bcIntegralMarkerManagement.markerIntegralBC().size() + this->M_coupledBC.size(); }
-    int nbIbc() const { return this->constantSpacesSize() - 2*this->M_coupledBC.size(); }
+    int constantSpacesSize() const override { return this->M_boundaryConditions->integral().size() + this->M_boundaryConditions->couplingODEs().size(); }
+    int nbIbc() const { return this->constantSpacesSize() - 2*this->M_boundaryConditions->couplingODEs().size(); }
 
     void setSpaceProperties(product_space_ptrtype const& ibcSpaces) override {
-        std::vector<std::string> props(this->M_bcIntegralMarkerManagement.markerIntegralBC().size(), "Ibc");
-        for( auto const& [name, bc] : this->modelProperties().boundaryConditions2().byFieldType( this->M_fluxKey, "Coupling") )
+        std::vector<std::string> props(this->M_boundaryConditions->integral().size(), "Ibc");
+        for ( auto const& [bcName,bcData] : this->M_boundaryConditions->couplingODEs() )
         {
             props.push_back("Ibc");
             props.push_back("Ode");
@@ -269,55 +267,56 @@ public:
         int i = 0;
         int nbIbc = this->nbIbc();
 
-        for( auto const& bc : this->M_coupledBC )
+        for ( auto const& [bcName,bcData] : this->M_boundaryConditions->couplingODEs() )
         {
+            auto bcRangeFaces = markedfaces(support(this->M_Wh), bcData->markers());
             // Feel::cout << "M_mup["<<nbIbc+2*i<<"] = " << this->M_mup[nbIbc+2*i]->max() << std::endl;
             // Feel::cout << "M_mup["<<nbIbc+2*i+1<<"] = " << this->M_mup[nbIbc+2*i+1]->max() << std::endl;
-            double meas = integrate( _range=markedfaces(support(this->M_Wh), bc.markers()),
+            double meas = integrate( _range=bcRangeFaces,
                                      _expr=cst(1.)).evaluate()(0,0);
             auto md = M_circuits[i]->get_model_description();
 
-            std::vector<fmi2ValueReference> vr_buffer = { md->get_variable_by_name( bc.capacitor() ).value_reference,
-                                                          md->get_variable_by_name( bc.resistor() ).value_reference };
+            std::vector<fmi2ValueReference> vr_buffer = { md->get_variable_by_name( bcData->capacitor() ).value_reference,
+                                                          md->get_variable_by_name( bcData->resistor() ).value_reference };
             std::vector<double> buffer(2);
             M_circuits[i]->read_real( vr_buffer, buffer );
             double Cbuffer=buffer[0], Rbuffer=buffer[1];
             // Feel::cout << "Cbuffer = " << Cbuffer << "\tRbuffer = " << Rbuffer << std::endl;
 
             // <lambda, v.n>_Gamma_I
-            bbf( 0_c, 3_c, 0, nbIbc+2*i ) += integrate( _range=markedfaces(support(this->M_Wh), bc.markers()),
+            bbf( 0_c, 3_c, 0, nbIbc+2*i ) += integrate( _range=bcRangeFaces,
                                                         _expr= idt(l) * normal(u) );
 
             // -<lambda, tau w>_Gamma_I
-            bbf( 1_c, 3_c, 0, nbIbc+2*i ) += integrate( _range=markedfaces(support(this->M_Wh), bc.markers()),
+            bbf( 1_c, 3_c, 0, nbIbc+2*i ) += integrate( _range=bcRangeFaces,
                                                         _expr=-tau_constant*inner(idt(l), id(p)) );
 
             // <j.n, m>_Gamma_I
-            bbf( 3_c, 0_c, nbIbc+2*i, 0 ) += integrate( _range=markedfaces(support(this->M_Wh), bc.markers()),
+            bbf( 3_c, 0_c, nbIbc+2*i, 0 ) += integrate( _range=bcRangeFaces,
                                                         _expr=normalt(u) * id(l) );
 
             // <tau p, m>_Gamma_I
-            bbf( 3_c, 1_c, nbIbc+2*i, 0 ) += integrate( _range=markedfaces(support(this->M_Wh), bc.markers()),
+            bbf( 3_c, 1_c, nbIbc+2*i, 0 ) += integrate( _range=bcRangeFaces,
                                                         _expr=tau_constant*inner(idt(p), id(l)) );
 
             // -<lambda2, m>_Gamma_I
-            bbf( 3_c, 3_c, nbIbc+2*i, nbIbc+2*i ) += integrate( _range=markedfaces(support(this->M_Wh), bc.markers()),
+            bbf( 3_c, 3_c, nbIbc+2*i, nbIbc+2*i ) += integrate( _range=bcRangeFaces,
                                                                 _expr=-tau_constant*inner(id(l), idt(l)) );
 
-            bbf( 3_c, 3_c, nbIbc+2*i, nbIbc+2*i ) += integrate( _range=markedfaces(support(this->M_Wh), bc.markers()),
+            bbf( 3_c, 3_c, nbIbc+2*i, nbIbc+2*i ) += integrate( _range=bcRangeFaces,
                                                                 _expr=-inner(idt(l), id(l))/meas/Rbuffer );
-            bbf( 3_c, 3_c, nbIbc+2*i, nbIbc+2*i+1 ) += integrate( _range=markedfaces(support(this->M_Wh), bc.markers()),
+            bbf( 3_c, 3_c, nbIbc+2*i, nbIbc+2*i+1 ) += integrate( _range=bcRangeFaces,
                                                                   _expr=inner(idt(y),id(l))/meas/Rbuffer );
 
 
-            bbf( 3_c, 3_c, nbIbc+2*i+1, nbIbc+2*i ) += integrate( _range=markedfaces(support(this->M_Wh), bc.markers()),
+            bbf( 3_c, 3_c, nbIbc+2*i+1, nbIbc+2*i ) += integrate( _range=bcRangeFaces,
                                                                   _expr=-inner(idt(l), id(y))/meas );
-            bbf( 3_c, 3_c, nbIbc+2*i+1, nbIbc+2*i+1 ) += integrate( _range=markedfaces(support(this->M_Wh), bc.markers()),
+            bbf( 3_c, 3_c, nbIbc+2*i+1, nbIbc+2*i+1 ) += integrate( _range=bcRangeFaces,
                                                                     _expr=inner(idt(y), id(y))/meas );
 
-            bbf( 3_c, 3_c, nbIbc+2*i+1, nbIbc+2*i+1 ) += integrate( _range=markedfaces(support(this->M_Wh), bc.markers()),
+            bbf( 3_c, 3_c, nbIbc+2*i+1, nbIbc+2*i+1 ) += integrate( _range=bcRangeFaces,
                                                                     _expr=Cbuffer*M_bdfsBuffer[i]->polyDerivCoefficient(0)*inner(idt(y), id(y))/meas );
-            blf( 3_c, nbIbc+2*i+1 ) += integrate( _range=markedfaces(support(this->M_Wh), bc.markers()),
+            blf( 3_c, nbIbc+2*i+1 ) += integrate( _range=bcRangeFaces,
                                                   _expr=Cbuffer*inner(idv(this->M_bdfsBuffer[i]->polyDeriv()), id(y))/meas );
             ++i;
         }
@@ -352,10 +351,10 @@ public:
 
         int i = 0;
         int nbIbc = this->nbIbc();
-        for( auto const& bc : M_coupledBC )
+        for ( auto const& [bcName,bcData] : this->M_boundaryConditions->couplingODEs() )
         {
             auto md = M_circuits[i]->get_model_description();
-            fmi2ValueReference vr_buffer = md->get_variable_by_name( bc.buffer() ).value_reference;
+            fmi2ValueReference vr_buffer = md->get_variable_by_name( bcData->buffer() ).value_reference;
             fmi2Real v_buffer = this->M_mup[nbIbc+2*i+1]->max();
             M_circuits[i]->write_real( vr_buffer, v_buffer );
             // Feel::cout << "M_mup["<<i<<"] = " << v_buffer << std::endl;
@@ -410,7 +409,6 @@ public:
     }
 
 private:
-    std::vector<ModelBoundaryConditionCoupling> M_coupledBC;
     bdfs_buffer_type M_bdfsBuffer;
     fmus_type M_circuits;
     fs::path M_export_path;

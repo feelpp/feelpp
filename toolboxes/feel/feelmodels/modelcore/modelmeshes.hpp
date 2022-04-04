@@ -13,6 +13,7 @@
 #include <feel/feelmodels/modelcore/modelfields.hpp>
 
 #include <feel/feelmodels/modelcore/modelmeasurespointsevaluation.hpp>
+#include <feel/feelmodels/modelmesh/meshale.hpp>
 
 namespace Feel
 {
@@ -121,6 +122,16 @@ public:
             return std::dynamic_pointer_cast<MeasurePointsEvaluation<MeshType>>( M_measurePointsEvaluation );
         }
 
+    bool hasMeshMotion() const { return M_meshMotionTool? true : false; }
+
+    template <typename MeshType>
+    auto meshMotionTool() const
+        {
+            return std::dynamic_pointer_cast<MeshALE<typename MeshType::shape_type>>( M_meshMotionTool );
+        }
+
+    void setMeshMotionTool( std::shared_ptr<ModelBase> meshMotionTool ) { M_meshMotionTool = meshMotionTool; }
+
     template <typename SpaceType>
     auto createFunctionSpace( std::string const& basis )
         {
@@ -152,6 +163,7 @@ private:
     std::string M_meshFilename;
     std::map<std::string, std::shared_ptr<FunctionSpaceBase> > M_functionSpaces;
     std::shared_ptr<MeasurePointsEvaluationBase> M_measurePointsEvaluation;
+    std::shared_ptr<ModelBase> M_meshMotionTool;
 };
 
 template <typename IndexType>
@@ -204,10 +216,19 @@ public :
     template <typename MeshType = mesh_base_type>
     auto mesh() const { return M_mmeshCommon->template mesh<MeshType>(); }
 
+    bool hasMeshMotion() const { return M_mmeshCommon->hasMeshMotion(); }
+
+    template <typename MeshType>
+    auto meshMotionTool() const
+        {
+            return M_mmeshCommon->template meshMotionTool<MeshType>();
+        }
+
+
     std::map<std::string,collection_data_by_mesh_entity_type> const& collectionOfDataByMeshEntity() const { return M_codbme; }
 
     template <typename MeshType>
-    auto modelFields( std::string const& prefix_symbol = "" ) const
+    auto modelFields( std::string const& prefix_field = "", std::string const& prefix_symbol = "" ) const
         {
             static constexpr auto tuple_t_basis = hana::to_tuple(hana::tuple_t<
                                                                  Lagrange<1,Scalar,Continuous,PointSetFekete>,
@@ -216,9 +237,7 @@ public :
                                                                  Lagrange<2,Vectorial,Continuous,PointSetFekete>
                                                                  >);
 
-            std::string prefix = prefix_symbol;
-
-            auto mf_fields = hana::fold( tuple_t_basis, model_fields_empty_t{}, [this,prefix,prefix_symbol]( auto const& r, auto const& cur )
+            auto mf_fields = hana::fold( tuple_t_basis, model_fields_empty_t{}, [this,prefix_field,prefix_symbol]( auto const& r, auto const& cur )
                                        {
                                            using basis_type = typename std::decay_t<decltype(cur)>::type;
                                            using space_type = FunctionSpace<MeshType, bases<basis_type> >;
@@ -231,7 +250,7 @@ public :
                                            for ( auto const& [name,fieldBase] : M_fields )
                                            {
                                                if ( auto u = std::dynamic_pointer_cast<field_type>( fieldBase ) )
-                                                   mf.add( mftag, prefix, name, u, name, prefixvm( prefix_symbol, "fields", "_" ) );
+                                                   mf.add( mftag, prefixvm( prefix_field,"fields" ), name, u, name, prefixvm( prefix_symbol, "fields", "_" ) );
                                            }
                                            return Feel::FeelModels::modelFields( r,mf );
                                        });
@@ -245,10 +264,15 @@ public :
             for ( auto const& [name,fieldBase] : M_distanceToRanges )
             {
                 if ( auto u = std::dynamic_pointer_cast<distange_to_range_field_type>( fieldBase ) )
-                    mf_distToRange.add( mftag_distToRange, prefix, name, u, name, prefixvm( prefix_symbol, "distanceToRange", "_" ) );
+                    mf_distToRange.add( mftag_distToRange, prefixvm( prefix_field, "distanceToRange" ), name, u, name, prefixvm( prefix_symbol, "distanceToRange", "_" ) );
             }
 
-            return Feel::FeelModels::modelFields( std::move(mf_fields), std::move(mf_distToRange) );
+            using mf_meshmotion_type = std::decay_t<decltype(this->meshMotionTool<MeshType>()->modelFields(""))>;
+            mf_meshmotion_type mf_meshmotion;
+            if ( auto mmt = this->meshMotionTool<MeshType>() )
+                mf_meshmotion = mmt->modelFields( prefixvm( prefix_field,"meshmotion") );
+
+            return Feel::FeelModels::modelFields( std::move(mf_fields), std::move(mf_distToRange), std::move( mf_meshmotion ) );
         }
 
     template <typename MeshType = mesh_base_type, bool AddFields = true>
@@ -263,7 +287,7 @@ public :
 
             if constexpr( AddFields && !std::is_same_v<MeshType,mesh_base_type> )
             {
-                return Feel::vf::symbolsExpr( res, this->modelFields<MeshType>( prefix_symbol ).symbolsExpr() );
+                return Feel::vf::symbolsExpr( res, this->modelFields<MeshType>( "",prefix_symbol ).symbolsExpr() );
             }
             else
             {
@@ -283,6 +307,72 @@ public :
     static tabulate_informations_ptr_t tabulateInformations( nl::json const& p, TabulateInformationProperties const& tabInfoProp );
 
 
+    void setParameterValues( std::map<std::string,double> const& paramValues )
+        {
+            if ( M_meshMotionSetup )
+                M_meshMotionSetup->setParameterValues( paramValues );
+        }
+
+    template <typename MeshType,typename SymbolsExprType>
+    void
+    updateMeshMotion( SymbolsExprType const& se )
+        {
+            auto meshALE = this->meshMotionTool<MeshType>();
+            if ( !meshALE )
+                return;
+            if ( !M_meshMotionSetup )
+                return;
+
+            if ( !M_meshMotionSetup->displacementImposed().empty() )
+            {
+                bool meshIsOnRefAtBegin = meshALE->isOnReferenceMesh();
+                if ( !meshIsOnRefAtBegin )
+                    meshALE->revertReferenceMesh( false );
+                meshALE->revertInitialDomain( false );
+
+                auto mesh = this->mesh<MeshType>();
+                for ( auto const& [name,dispData] : M_meshMotionSetup->displacementImposed() )
+                {
+                    auto const& [mexpr,markers] = dispData;
+                    meshALE->updateDisplacementImposedOnInitialDomain( M_name/*this->keyword()*/,
+                                                                       Feel::vf::expr( mexpr.template expr<MeshType::nRealDim,1>(), se ),
+                                                                       markedfaces(mesh,markers) );
+                }
+
+                meshALE->revertReferenceMesh( false );
+                if ( !meshIsOnRefAtBegin )
+                    meshALE->revertMovingMesh( false );
+            }
+
+            meshALE->updateMovingMesh();
+        }
+
+
+    template <typename MeshType>
+    void applyRemesh( std::shared_ptr<MeshType> const& newMesh )
+        {
+            auto oldmesh = this->mesh<MeshType>();
+            if ( oldmesh == newMesh )
+                return;
+
+            this->setMesh( newMesh );
+
+            if ( this->hasMeshMotion() )
+            {
+                auto mmt = this->meshMotionTool<MeshType>();
+
+                std::vector<std::tuple<std::string,elements_reference_wrapper_t<MeshType>>> computationDomains;
+                if ( M_meshMotionSetup )
+                {
+                    auto const& cdm = M_meshMotionSetup->computationalDomainMarkers();
+                    if ( cdm.find( "@elements@" ) == cdm.end() )
+                        computationDomains.push_back( std::make_tuple( M_name, markedelements(newMesh, cdm) ) );
+                }
+                mmt->applyRemesh( newMesh, computationDomains );
+            }
+
+            // TODO : other fields
+        }
 
 private:
     std::string M_name;
@@ -337,11 +427,32 @@ private:
         std::string M_name;
         std::set<std::string> M_markers;
     };
+    struct MeshMotionSetup
+    {
+        MeshMotionSetup( ModelMeshes<IndexType> const& mMeshes, nl::json const& jarg );
+
+        std::set<std::string> const& computationalDomainMarkers() { return M_computationalDomainMarkers; }
+        std::map<std::string,std::tuple<ModelExpression,std::set<std::string>>> const& displacementImposed() const { return M_displacementImposed; }
+        std::set<std::string> const& displacementZeroMarkers() const { return M_displacementZeroMarkers; }
+        std::set<std::string> const& displacementFreeMarkers() const { return M_displacementFreeMarkers; }
+
+        void setParameterValues( std::map<std::string,double> const& paramValues )
+            {
+                for ( auto & [name,dispData] : M_displacementImposed )
+                    std::get<0>( dispData ).setParameterValues( paramValues );
+            }
+
+    private :
+        std::set<std::string> M_computationalDomainMarkers;
+        std::map<std::string,std::tuple<ModelExpression,std::set<std::string>>> M_displacementImposed;
+        std::set<std::string> M_displacementZeroMarkers, M_displacementFreeMarkers;
+    };
 
     std::vector<FieldsSetup> M_fieldsSetup;
     std::vector<DistanceToRangeSetup> M_distanceToRangeSetup;
     std::map<std::string, std::shared_ptr<Vector<double>> > M_fields;
     std::map<std::string, std::shared_ptr<Vector<double>> > M_distanceToRanges;
+    std::optional<MeshMotionSetup> M_meshMotionSetup;
 };
 
 template <typename IndexType>
@@ -380,7 +491,8 @@ public:
     }
     ModelMesh<IndexType> const& modelMesh() const { return this->modelMesh( this->keyword() ); }
 
-    void setup( pt::ptree const& pt );
+    void setup( nl::json const& jarg, std::set<std::string> const& keywordsToSetup );
+    void setup( nl::json const& jarg ) { this->setup( jarg, {this->keyword()} ); }
 
     void setupRestart( std::string const& meshName )
     {
@@ -431,6 +543,16 @@ public:
         return this->modelMesh( meshName ).template mesh<MeshType>();
     }
 
+    template <typename MeshType>
+    auto modelFields( std::string const& prefix_field, std::string const& prefix_symbol = "" ) const
+        {
+            using _mf_type = std::decay_t< decltype( this->begin()->second->template modelFields<MeshType>() )>;
+            _mf_type res;
+            for ( auto const& [meshName,mMesh] : *this )
+                res = Feel::FeelModels::modelFields( res, mMesh->template modelFields<MeshType>( prefixvm( prefix_field, meshName ), prefixvm( prefix_symbol, meshName, "_" )  ) );
+            return res;
+        }
+
     template <typename MeshType = mesh_base_type, bool AddFields = true>
     auto symbolsExpr( std::string const& prefix_symbol = "meshes" ) const
     {
@@ -451,6 +573,37 @@ public:
 
     tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
 
+    void setParameterValues( std::map<std::string,double> const& paramValues )
+        {
+            for ( auto & [name,mmesh] : *this )
+                mmesh->setParameterValues( paramValues );
+        }
+
+    bool hasMeshMotion( std::string const& meshName ) const
+        {
+            if ( !hasModelMesh( meshName ) )
+                return false;
+            return this->modelMesh( meshName ).hasMeshMotion();
+        }
+
+    template <typename MeshType>
+    auto meshMotionTool( std::string const& meshName ) const
+        {
+            return this->modelMesh( meshName ).template meshMotionTool<MeshType>();
+        }
+
+    template <typename MeshType,typename SymbolsExprType>
+    void
+    updateMeshMotion( std::string const& meshName, SymbolsExprType const& se )
+    {
+        return this->modelMesh( meshName ).template updateMeshMotion<MeshType>( se );
+    }
+
+    template <typename MeshType>
+    void applyRemesh( std::string const& meshName, std::shared_ptr<MeshType> const& newMesh )
+        {
+            this->modelMesh( meshName ).applyRemesh( newMesh );
+        }
 };
 
 

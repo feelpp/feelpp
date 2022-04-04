@@ -67,7 +67,7 @@
     },
     "BoundaryConditions":
     {
-        "flux":
+        "poisson":
         {
             // "Integral":
             // {
@@ -77,7 +77,7 @@
             //         "expr":"Pi*cos(2*Pi*t):t"
             //     }
             // }
-            "Coupling":
+            "CouplingODEs":
             {
                 "buffer":
                 {
@@ -87,10 +87,7 @@
                     "circuit": "$cfgdir/test3d0d_linear/test3d0d_linear.fmu",
                     "buffer": "Pi_1.phi"
                 }
-            }
-        },
-        "potential":
-        {
+            },
             "Dirichlet":
             {
                 "bottom":

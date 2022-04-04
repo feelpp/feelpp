@@ -36,7 +36,7 @@ namespace Feel {
 void
 ModelMaterialProperty::setup( nl::json const& jarg, worldcomm_t const& worldComm, std::string const& directoryLibExpr, ModelIndexes const& indexes )
 {
-    if ( jarg.is_string() )
+    if ( jarg.is_string() || jarg.is_number() )
         M_mexpr.setExpr( jarg,worldComm,directoryLibExpr,indexes );
     else if ( jarg.is_object() )
     {

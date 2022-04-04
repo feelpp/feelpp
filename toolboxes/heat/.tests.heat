@@ -9,3 +9,4 @@ h-convergence_square_P1 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/h-conver
 h-convergence_square_P2 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/h-convergence/square/square.cfg --directory=toolboxes/testsuite/heat/h-convergence/square/P2 --case.discretization=P2 --case.mode.h-convergence.slopes 3 2 2
 thermo2d_BDF --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/thermo2d/thermo2d.cfg --directory=toolboxes/testsuite/heat/thermo2d_BDF --ts.time-final=1 --heat.time-stepping=BDF
 thermo2d_CN --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/thermo2d/thermo2d.cfg --directory=toolboxes/testsuite/heat/thermo2d_CN --ts.time-final=1 --heat.time-stepping=Theta
+hollow_sphere --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/hollow_sphere/case.cfg --directory=toolboxes/testsuite/heat/testsuite/hollow_sphere

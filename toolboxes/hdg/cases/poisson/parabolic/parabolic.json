@@ -27,22 +27,25 @@
     },
     "InitialConditions":
     {
-        "potential":
+        "poisson":
         {
-            "Expression":
+            "potential":
             {
-                "myic1":
+                "Expression":
                 {
-                    "markers":"omega",
-                    "expr": "10"
-                    // "expr":"a+b*x*t:x:y:z:a:b:t"
+                    "myic1":
+                    {
+                        "markers":"omega",
+                        "expr": "10"
+                        // "expr":"a+b*x*t:x:y:z:a:b:t"
+                    }
                 }
             }
         }
     },
     "BoundaryConditions":
     {
-        "flux":
+        "poisson":
         {
             "Integral":
             {
@@ -51,10 +54,7 @@
                     "expr":"-0.5*t:t"
                     // "expr":"-k*b*t:k:b:t"
                 }
-            }
-        },
-        "potential":
-        {
+            },
             "Dirichlet":
             {
                 "bottom":
@@ -73,45 +73,48 @@
     },
     "PostProcess":
     {
-        "Exports":
+        "poisson":
         {
-            "fields":["potential","flux"]
-        },
-        "Measures":
-        {
-            "Norm":
+            "Exports":
             {
-                "potential_error":
-                {
-                    "type":"L2-error",
-                    "field": "potential",
-                    // "solution": "a+b*x*t:x:a:b:t",
-                    "solution": "10+0.5*x*0.08:x",
-                    "markers":"omega"
-                },
-                "flux_error":
-                {
-                    "type":"L2-error",
-                    "field":"flux",
-                    // "solution":"{-k*b*t,0,0}:k:b:t",
-                    "solution":"{-0.5*0.08,0,0}:t",
-                    "markers":"omega"
-                }
-            }
-        },
-        "Checkers":
-        {
+                "fields":["potential","flux"]
+            },
             "Measures":
             {
-                "Norm_potential_error_L2-error":
+                "Norm":
                 {
-                    "value":0,
-                    "tolerance":1
-                },
-                "Norm_flux_error_L2-error":
+                    "potential_error":
+                    {
+                        "type":"L2-error",
+                        "field": "potential",
+                        // "solution": "a+b*x*t:x:a:b:t",
+                        "solution": "10+0.5*x*0.08:x",
+                        "markers":"omega"
+                    },
+                    "flux_error":
+                    {
+                        "type":"L2-error",
+                        "field":"flux",
+                        // "solution":"{-k*b*t,0,0}:k:b:t",
+                        "solution":"{-0.5*0.08,0,0}:t",
+                        "markers":"omega"
+                    }
+                }
+            },
+            "Checkers":
+            {
+                "Measures":
                 {
-                    "value":0,
-                    "tolerance":1
+                    "Norm_potential_error_L2-error":
+                    {
+                        "value":0,
+                        "tolerance":1
+                    },
+                    "Norm_flux_error_L2-error":
+                    {
+                        "value":0,
+                        "tolerance":1
+                    }
                 }
             }
         }

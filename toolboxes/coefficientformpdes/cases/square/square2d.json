@@ -4,26 +4,37 @@
     "Models":
     {
         "cfpdes":{
-            "equations":[
-                {
-                    "name":"equation1",
-                    "unknown":
-                    {
-                        "basis":"Pch1",
-                        "name":"toto",
-                        "symbol":"Y"
-                    }
+            "equations":["equation1","equation2"]
+        },
+        "equation1":{
+            "setup":{
+                "unknown":{
+                    "basis":"Pch1",
+                    "name":"toto",
+                    "symbol":"Y"
                 },
-                {
-                    "name":"equation2",
-                    "unknown":
-                    {
-                        "basis":"Pch2",
-                        "name":"toto",
-                        "symbol":"Y"
-                    }
+                "coefficients":{
+                    "c":"1", // diffusion
+                    "a":"1", // reaction
+                    //"d":"1"// first time derivative
+                    "f":"1"
                 }
-            ]
+            }
+        },
+        "equation2":{
+            "setup":{
+                "unknown":{
+                    "basis":"Pch2",
+                    "name":"toto",
+                    "symbol":"Y"
+                },
+                "coefficients":{
+                    "c":"10", // diffusion
+                    "a":"1" // reaction
+                    //"d":"1"// first time derivative
+                    //"f":"0"
+                }
+            }
         }
     },
     "Meshes":
@@ -41,16 +52,7 @@
     {
         "mymat1":
         {
-            "markers":"Omega",
-            //"physics":"equation1",//"generic_pde"
-            "equation1_c":"1", // diffusion
-            "equation1_a":"1", // reaction
-            //"equation1_d":"1"// first time derivative
-            "equation1_f":"1",
-            "equation2_c":"10", // diffusion
-            "equation2_a":"1" // reaction
-            //"equation2_d":"1"// first time derivative
-            //"equation2_f":"0"
+            "markers":"Omega"
         }
     },
     "BoundaryConditions":

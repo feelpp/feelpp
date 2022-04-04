@@ -23,7 +23,7 @@
     },
     "BoundaryConditions":
     {
-        "potential":
+        "poisson":
         {
             "Dirichlet":
             {
