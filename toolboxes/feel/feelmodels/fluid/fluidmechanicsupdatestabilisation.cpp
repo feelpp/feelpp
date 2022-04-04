@@ -45,7 +45,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilisation( DataUpdateLine
     bool BuildCstPart = _BuildCstPart;
 
     bool BuildTermStabCIP = BuildNonCstPart;
-    if (this->isMoveDomain() /*this->useFSISemiImplicitScheme()*/)
+    if (this->hasMeshMotion() /*this->useFSISemiImplicitScheme()*/)
     {
         BuildTermStabCIP = BuildCstPart;
     }
@@ -96,7 +96,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilisation( DataUpdateLine
         double order_scaling = math::pow( double(nOrderVelocity), 3.5 );
         auto const& u_extrapoled = this->timeStepBDF()->poly();
 
-        if (M_isMoveDomain)
+        if ( this->hasMeshMotion() )
         {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
             auto cip_stab_coeff_ale_expr = (gamma/order_scaling)*abs( inner(idv(u_extrapoled)-idv(M_fieldMeshVelocityUsedWithStabCIP/*this->meshVelocity()*/),N() ) )*pow(hFace(),2.0);
@@ -194,7 +194,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualStabilisation( DataUpdateResid
     bool UseJacobianLinearTerms = data.useJacobianLinearTerms();
 
     bool BuildTermStabCIP = !BuildCstPart;
-    if ( this->isMoveDomain() )
+    if ( this->hasMeshMotion() )
         BuildTermStabCIP = !BuildCstPart && !UseJacobianLinearTerms;
 
     //--------------------------------------------------------------------------------------------------//
@@ -238,7 +238,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualStabilisation( DataUpdateResid
         auto order_scaling = std::pow( double(nOrderVelocity), 3.5 );
         auto const& u_extrapoled = this->timeStepBDF()->poly();
 
-        if (M_isMoveDomain)
+        if ( this->hasMeshMotion() )
         {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
             auto cip_stab_coeff_ale_expr = gamma*abs( trans(idv(u_extrapoled)-idv(M_fieldMeshVelocityUsedWithStabCIP/*this->meshVelocity()*/) )*N() )*pow(hFace(),2.0)/cst(order_scaling);
@@ -323,7 +323,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianStabilisation( DataUpdateJacob
 
     bool BuildNonCstPart = !BuildCstPart;
     bool BuildTermStabCIP = BuildNonCstPart;
-    if (this->isMoveDomain() /*this->useFSISemiImplicitScheme()*/)
+    if ( this->hasMeshMotion() /*this->useFSISemiImplicitScheme()*/)
     {
         BuildTermStabCIP = BuildCstPart;
     }
@@ -365,7 +365,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianStabilisation( DataUpdateJacob
         auto const& u_extrapoled = this->timeStepBDF()->poly();
 #if 0
         auto betaField = Xh->template functionSpace<0>()->element();
-        if ( this->isMoveDomain() )
+        if ( this->hasMeshMotion() )
         {
             // warning here !! extended element maybe!!
             betaField.on(_range=elements(mesh),_expr=idv(u_extrapoled)-idv(M_fieldMeshVelocityUsedWithStabCIP/*this->meshVelocity()*/) );
@@ -374,7 +374,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianStabilisation( DataUpdateJacob
             betaField.add(1.,u_extrapoled );
 #endif
 
-        if ( this->isMoveDomain() )
+        if ( this->hasMeshMotion() )
         {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
             auto cip_stab_coeff_ale_expr = (gamma/order_scaling)*abs( trans(idv(u_extrapoled)-idv(M_fieldMeshVelocityUsedWithStabCIP/*this->meshVelocity()*/))*N() )*pow(hFace(),2.0);

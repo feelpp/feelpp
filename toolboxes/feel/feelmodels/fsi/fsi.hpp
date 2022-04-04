@@ -43,8 +43,10 @@ namespace FeelModels
 {
 
 template< class FluidType, class SolidType >
-class FSI : public ModelNumerical
+class FSI : public ModelNumerical,
+            public ModelPhysics<FluidType::convex_type::nRealDim>
 {
+    using super_physics_type = ModelPhysics<FluidType::convex_type::nRealDim>;
 public :
     typedef ModelNumerical super_type;
     typedef FSI<FluidType,SolidType> self_type;
@@ -59,6 +61,10 @@ public :
     typedef typename solid_type::mesh_type mesh_solid_type;
     typedef typename solid_type::trace_mesh_type trace_mesh_solid_type;
     typedef typename solid_type::solid_1dreduced_type::mesh_type mesh_solid_1dreduced_type;
+
+    // materials properties
+    typedef MaterialsProperties<fluid_type::mesh_type::nRealDim> materialsproperties_type;
+    typedef std::shared_ptr<materialsproperties_type> materialsproperties_ptrtype;
 
 
     // mesh velocity on FSI boundary
@@ -214,11 +220,13 @@ public :
 
     //---------------------------------------------------------------------------------------------------------//
 
-    FSI( std::string const& prefix, worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
-         std::string const& rootRepository = "" );
+    FSI( std::string const& prefix,
+         std::string const& keyword = "fsi",
+         worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
+         ModelBaseRepository const& modelRep = ModelBaseRepository() );
     FSI( self_type const & M ) = default;
 
-    static std::string expandStringFromSpec( std::string const& expr );
+    std::shared_ptr<self_type> shared_from_this() { return std::dynamic_pointer_cast<self_type>( super_type::shared_from_this() ); }
 
     //---------------------------------------------------------------------------------------------------------//
 
@@ -246,7 +254,6 @@ public :
 
     //---------------------------------------------------------------------------------------------------------//
 
-    std::shared_ptr<std::ostringstream> getInfo() const override;
     void updateInformationObject( nl::json & p ) const override;
     tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
 
@@ -256,6 +263,8 @@ public :
     void init();
     void solve();
 private :
+    void updatePhysics( typename super_physics_type::PhysicsTreeNode & physicsTree, ModelModels const& models ) override;
+
     void initCouplingRobinNeumannGeneralized();
 
     void initInterpolation();
@@ -316,6 +325,15 @@ public :
         this->solidModel()->exportResults(time);
     }
 
+
+    void updateParameterValues();
+    void setParameterValues( std::map<std::string,double> const& paramValues );
+
+    // physical parameters
+    materialsproperties_ptrtype const& materialsProperties() const { return M_materialsProperties; }
+    materialsproperties_ptrtype & materialsProperties() { return M_materialsProperties; }
+    void setMaterialsProperties( materialsproperties_ptrtype mp ) { M_materialsProperties = mp; }
+
     //---------------------------------------------------------------------------------------------------------//
     void updateLinearPDE_Fluid( DataUpdateLinear & data ) const;
     void updateJacobian_Fluid( DataUpdateJacobian & data ) const;
@@ -344,6 +362,8 @@ private :
 
     fluid_ptrtype M_fluidModel;
     solid_ptrtype M_solidModel;
+
+    materialsproperties_ptrtype M_materialsProperties;
 
     double M_meshSize;
     fs::path M_mshfilepathFluidPart1,M_mshfilepathSolidPart1;

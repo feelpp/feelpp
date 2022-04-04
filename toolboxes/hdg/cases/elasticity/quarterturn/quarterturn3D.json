@@ -36,7 +36,7 @@
     },
     "BoundaryConditions":
     {
-        "stress":
+        "elasticity":
         {
             "Neumann":
             {
@@ -61,10 +61,7 @@
                 // {
                 //     "expr":"{1.5*nx*sin(Pi*z)*cos(Pi*x)*cos(Pi*y)/Pi - 1.0*ny*sin(Pi*x)*sin(Pi*y)*sin(Pi*z)/Pi,-1.0*nx*sin(Pi*x)*sin(Pi*y)*sin(Pi*z)/Pi + 1.5*ny*sin(Pi*z)*cos(Pi*x)*cos(Pi*y)/Pi,-0.5*nz*sin(Pi*z)*cos(Pi*x)*cos(Pi*y)/Pi}:Pi:nx:ny:nz:x:y:z"
                 // }
-            }
-		},
-		"displacement":
-		{
+            },
 	    	"Dirichlet":
 	    	{
                 "V":

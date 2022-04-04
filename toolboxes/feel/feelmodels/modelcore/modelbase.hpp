@@ -35,6 +35,7 @@
 //#include <feel/feelcore/pslogger.hpp>
 #include <feel/feelcore/worldcomm.hpp>
 #include <feel/feelcore/remotedata.hpp>
+#include <feel/feelmodels/modelproperties.hpp>
 
 #include <feel/feelmodels/modelcore/feelmodelscoreconstconfig.hpp>
 #include <feel/feelmodels/modelcore/log.hpp>
@@ -121,7 +122,8 @@ private :
     mutable std::map<std::string,std::pair<std::string,std::map<std::string,std::pair<std::string,std::time_t>>>> M_treeDataStructure;
 };
 
-class ModelBase : public JournalWatcher
+class ModelBase : public JournalWatcher,
+                  public std::enable_shared_from_this<ModelBase>
 {
     using super_type = JournalWatcher;
 public :
@@ -187,7 +189,6 @@ public :
     tabulate_informations_ptr_t tabulateInformations() const;
     virtual tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const;
 
-    virtual std::shared_ptr<std::ostringstream> getInfo() const;
     void printInfo() const { this->printInfo( this->tabulateInformations() ); }
     void saveInfo() const { this->saveInfo( this->tabulateInformations() ); }
     void printAndSaveInfo() const;
@@ -212,6 +213,35 @@ public :
     // upload
     ModelBaseUpload const& upload() const { return M_upload; }
     void upload( std::string const& dataPath ) const;
+
+    // model properties
+    void initModelProperties();
+    bool hasModelProperties() const { return (M_modelProps)? true : false; }
+    std::shared_ptr<ModelProperties> modelPropertiesPtr() const { return M_modelProps; }
+    ModelProperties const& modelProperties() const { return *M_modelProps; }
+    ModelProperties & modelProperties() { return *M_modelProps; }
+    void setModelProperties( std::shared_ptr<ModelProperties> modelProps ) { M_modelProps = modelProps; }
+
+    /**
+     * @brief Set the Model Properties object from a filename
+     * 
+     * @param filename file name
+     */
+    void setModelProperties( std::string const& filename );
+
+    /**
+     * @brief Set the Model Properties object from a json struct
+     * the json may come from python 
+     * @param j json data structure
+     */
+    void setModelProperties( nl::json const& j );
+
+    void addParameterInModelProperties( std::string const& symbolName,double value );
+
+    bool manageParameterValues() const { return M_manageParameterValues; }
+    void setManageParameterValues( bool b ) { M_manageParameterValues = b; }
+    bool manageParameterValuesOfModelProperties() const { return M_manageParameterValuesOfModelProperties; }
+    void setManageParameterValuesOfModelProperties( bool b ) { M_manageParameterValuesOfModelProperties = b; }
 
 private :
     // worldcomm
@@ -241,6 +271,11 @@ private :
     bool M_isUpdatedForUse;
     // upload data tools
     ModelBaseUpload M_upload;
+
+    // model properties
+    std::shared_ptr<ModelProperties> M_modelProps;
+    bool M_manageParameterValues, M_manageParameterValuesOfModelProperties;
+
 };
 
 } // namespace FeelModels
