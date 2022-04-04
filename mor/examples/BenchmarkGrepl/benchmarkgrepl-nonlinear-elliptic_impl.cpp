@@ -525,10 +525,11 @@ BenchmarkGreplNonlinearElliptic<Order,Dim>::solve( parameter_type const& mu )
     auto backendMonolithic = backend(_rebuild=true);
     sparse_matrix_ptrtype J = backendMonolithic->newMatrix( _test=Xh, _trial=Xh);
     vector_ptrtype R = backendMonolithic->newVector( Xh );
-    backendMonolithic->nlSolver()->jacobian = boost::bind( &self_type::updateJacobianMonolithic,
-                                                   boost::ref( *this ), _1, _2, mu );
-    backendMonolithic->nlSolver()->residual = boost::bind( &self_type::updateResidualMonolithic,
-                                                   boost::ref( *this ), _1, _2, mu );
+    using namespace std::placeholders;
+    backendMonolithic->nlSolver()->jacobian = std::bind( &self_type::updateJacobianMonolithic,
+                                                   std::ref( *this ), _1, _2, mu );
+    backendMonolithic->nlSolver()->residual = std::bind( &self_type::updateResidualMonolithic,
+                                                   std::ref( *this ), _1, _2, mu );
 
     auto solution = Xh->element();
     backendMonolithic->nlSolve(_jacobian=J, _solution=solution, _residual=R);

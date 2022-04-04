@@ -2248,10 +2248,11 @@ CRB<TruthModelType>::offlineNewtonPrimal( parameter_type const& mu )
 
     boost::tie( boost::tuples::ignore, M_Jqm, M_Rqm ) = M_model->computeAffineDecomposition();
 
-    M_backend_primal->nlSolver()->jacobian = boost::bind( &self_type::offlineUpdateJacobian,
-                                                          boost::ref( *this ), _1, _2, mu );
-    M_backend_primal->nlSolver()->residual = boost::bind( &self_type::offlineUpdateResidual,
-                                                          boost::ref( *this ), _1, _2, mu );
+    using namespace std::placeholders;
+    M_backend_primal->nlSolver()->jacobian = std::bind( &self_type::offlineUpdateJacobian,
+                                                          std::ref( *this ), _1, _2, mu );
+    M_backend_primal->nlSolver()->residual = std::bind( &self_type::offlineUpdateResidual,
+                                                          std::ref( *this ), _1, _2, mu );
 #if 0
     M_backend_primal->nlSolver()->setType( TRUST_REGION );
 #endif
