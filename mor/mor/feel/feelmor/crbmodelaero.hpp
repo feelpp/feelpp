@@ -146,9 +146,8 @@ CRBModelAero<ModelType>::offlineSolveAD( parameter_type const& mu )
 
     this->M_backend_primal = backend( _name="backend-primal", _rebuild=true );
 
-    using namespace std::placeholders;
-    this->M_backend_primal->nlSolver()->jacobian = std::bind( &CRBModelAero<ModelType>::updateJacobianAD, std::ref( *this ), _1, _2, mu );
-    this->M_backend_primal->nlSolver()->residual = std::bind( &CRBModelAero<ModelType>::updateResidualAD, std::ref( *this ), _1, _2, mu );
+    this->M_backend_primal->nlSolver()->jacobian = std::bind( &CRBModelAero<ModelType>::updateJacobianAD, std::ref( *this ), std::placeholders::_1, std::placeholders::_2, mu );
+    this->M_backend_primal->nlSolver()->residual = std::bind( &CRBModelAero<ModelType>::updateResidualAD, std::ref( *this ), std::placeholders::_1, std::placeholders::_2, mu );
     auto post_solve = std::bind( &CRBModelAero<ModelType>::postSolve, std::ref( *this ), _1, _2 );
 
     if ( M_use_psit )
