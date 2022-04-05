@@ -38,18 +38,19 @@ LEVELSETREDISTANCIATIONHJ_CLASS_TEMPLATE_TYPE::LevelSetRedistanciationHJ(
         std::string const& prefix )
 : 
     super_type( space, prefix ),
-    M_advectionHJ( new advectionhj_type( prefix, prefix, space->worldCommPtr() ) ),
+    //M_advectionHJ( new advectionhj_type( prefix, prefix, space->worldCommPtr() ) ),
     M_nGlobalIter(1)
 {
     this->loadParametersFromOptionsVm();
 
-    //M_advectionHJ = advectionhj_type::New( prefix );
+#if 0
     M_advectionHJ->setModelName( "Advection" );
     M_advectionHJ->setTimeInitial(0.);
     M_advectionHJ->setTimeFinal( M_timeStep * M_maxIterations );
     M_advectionHJ->setTimeStep( M_timeStep );
     M_advectionHJ->setFunctionSpace( space );
     M_advectionHJ->init();
+#endif
 
     M_functionSpaceP1Vec = functionspace_P1v_type::New( space->mesh() );
     M_projectorL2Vec = projector(M_functionSpaceP1Vec, M_functionSpaceP1Vec, 
@@ -74,6 +75,7 @@ LEVELSETREDISTANCIATIONHJ_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSETREDISTANCIATIONHJ_CLASS_TEMPLATE_TYPE::element_type
 LEVELSETREDISTANCIATIONHJ_CLASS_TEMPLATE_TYPE::run( element_type const& phi ) const
 {
+#if 0
     auto mesh = M_advectionHJ->mesh();
     auto space = M_advectionHJ->functionSpace();
     // Set initial value
@@ -249,12 +251,15 @@ LEVELSETREDISTANCIATIONHJ_CLASS_TEMPLATE_TYPE::run( element_type const& phi ) co
     Feel::cout << "final relative rate of change = " << relativeRateChangePhiL2 << std::endl;
 
     return M_advectionHJ->fieldSolution();
+#endif
+    return phi;
 }
 
 //--------------------------------------------------------------------//
 //--------------------------------------------------------------------//
 //--------------------------------------------------------------------//
 // Hamilton-Jacobi advection
+#if 0
 #define ADVECTIONHJ_CLASS_TEMPLATE_DECLARATIONS \
     template<typename SpaceType>
 #define ADVECTIONHJ_CLASS_TEMPLATE_TYPE \
@@ -313,5 +318,6 @@ LEVELSETREDISTANCIATIONHJ_CLASS_TEMPLATE_TYPE::ADVECTIONHJ_CLASS_TEMPLATE_TYPE::
 
 #undef LEVELSETREDISTANCIATIONHJ_CLASS_TEMPLATE_DECLARATIONS
 #undef LEVELSETREDISTANCIATIONHJ_CLASS_TEMPLATE_TYPE
+#endif
 
 } // namespace Feel

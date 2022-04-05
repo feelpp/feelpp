@@ -26,7 +26,7 @@
 
 #include <feel/feelmodels/levelset/levelsetredistanciation.hpp>
 #include <feel/feeldiscr/projector.hpp>
-#include <feel/feelmodels/advection/advection.hpp>
+//#include <feel/feelmodels/coefficientformpdes/coefficientformpde.hpp>
 #include <feel/feelmodels/levelset/levelsetdeltaexpr.hpp>
 
 namespace Feel
@@ -66,6 +66,7 @@ public:
 
     //--------------------------------------------------------------------//
     // Hamilton-Jacobi advection
+#if 0
     template<typename SpaceType>
     class AdvectionHJ
         : public Feel::FeelModels::AdvDiffReac<SpaceType/*,TODO*/>
@@ -101,6 +102,7 @@ public:
     //typedef AdvectionHJ<FunctionSpaceType> advectionhj_type;
     typedef Feel::FeelModels::AdvDiffReac<FunctionSpaceType> advectionhj_type;
     typedef std::shared_ptr<advectionhj_type> advectionhj_ptrtype;
+#endif
 
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
@@ -116,8 +118,8 @@ public:
     double tolerance() const { return M_tolerance; }
     void setTolerance( double tol ) { M_tolerance = tol; }
     
-    double timeStep() const { return M_advectionHJ->timeStep(); }
-    void setTimeStep( double dt ) { M_advectionHJ->setTimeStep( dt ); }
+    double timeStep() const { return 1./*M_advectionHJ->timeStep()*/; }
+    void setTimeStep( double dt ) { /*M_advectionHJ->setTimeStep( dt );*/ }
 
     int maxIterations() const { return M_maxIterations; }
     void setMaxIterations( int max ) { M_maxIterations = max; }
@@ -131,7 +133,7 @@ public:
     element_type run( element_type const& phi ) const;
 
 private:
-    advectionhj_ptrtype M_advectionHJ;
+    //advectionhj_ptrtype M_advectionHJ;
 
     double M_tolerance;
     double M_timeStep;
