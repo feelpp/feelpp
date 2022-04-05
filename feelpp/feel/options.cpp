@@ -1130,6 +1130,18 @@ ptree_options( std::string const& prefix )
 }
 
 po::options_description
+json_options( std::string const& prefix )
+{
+    po::options_description _options( "JSON " + prefix + " options" );
+    _options.add_options()
+        ( prefixvm( prefix,"json.filename" ).c_str(), po::value<std::vector<std::string> >()->multitoken(), "specify a list of json filename" )
+        ( prefixvm( prefix,"json.patch" ).c_str(), po::value<std::vector<std::string> >()->multitoken(), "specify a list of patch to be applied" )
+        ( prefixvm( prefix,"json.merge_patch" ).c_str(), po::value<std::vector<std::string> >()->multitoken(), "specify a list of merge_patch to be applied" )
+        ;
+    return _options;
+}
+
+po::options_description
 eq_options( std::string const& prefix )
 {
     po::options_description _options( "EQ " + prefix + " options" );
@@ -1237,7 +1249,8 @@ feel_options( std::string const& prefix  )
                    .add( checker_options( prefix ) )
                    .add( journal_options( prefix ) )
                    .add( fmu_options( prefix ) )
-                   .add( ptree_options( prefix ) );
+        //.add( ptree_options( prefix ) )
+                   .add( json_options( prefix ) );
 
     return opt;
 

@@ -5,13 +5,18 @@
     "Models":
     {
         "cfpdes":{
-            "equations":{
-                "name":"equation1",
-                "unknown":
-                {
+            "equations":"equation1"
+        },
+        "equation1":{
+            "setup":{
+                "unknown":{
                     "basis":"Pdh1",
                     "name":"solution",
                     "symbol":"u"
+                },
+                "coefficients":{
+                    "d":1,
+                    "beta":"{y,-x}:x:y" // convection
                 }
             }
         }
@@ -31,9 +36,7 @@
     {
         "mymat1":
         {
-            "markers":"Omega",
-            "equation1_d":1,
-            "equation1_beta":"{y,-x}:x:y" // convection
+            "markers":"Omega"
         }
     },
     "InitialConditions":

@@ -32,7 +32,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualDofElimination( DataUpdateResidual & data ) const
 {
-    if ( !M_bcDirichletMarkerManagement.hasMarkerDirichletBCelimination() )
+    if ( !M_boundaryConditions->hasTypeDofElimination() )
         return;
 
     this->log("SolidMechanics","updateResidualDofElimination","start" );

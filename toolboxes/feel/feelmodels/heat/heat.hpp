@@ -45,7 +45,7 @@
 
 #include <feel/feelmodels/modelcore/stabilizationglsparameterbase.hpp>
 
-#include <feel/feeldiscr/geometricspace.hpp>
+#include <feel/feelmodels/heat/heatboundaryconditions.hpp>
 
 namespace Feel
 {
@@ -54,8 +54,7 @@ namespace FeelModels
 
 template< typename ConvexType, typename BasisTemperatureType>
 class Heat : public ModelNumerical,
-             public ModelPhysics<ConvexType::nDim>,
-             public std::enable_shared_from_this< Heat<ConvexType,BasisTemperatureType> >
+             public ModelPhysics<ConvexType::nDim>
     {
         typedef ModelPhysics<ConvexType::nDim> super_physics_type;
     public:
@@ -80,7 +79,6 @@ class Heat : public ModelNumerical,
         typedef std::shared_ptr<space_temperature_type> space_temperature_ptrtype;
         typedef typename space_temperature_type::element_type element_temperature_type;
         typedef std::shared_ptr<element_temperature_type> element_temperature_ptrtype;
-        typedef typename space_temperature_type::element_external_storage_type element_temperature_external_storage_type;
         // materials properties
         typedef MaterialsProperties<nRealDim> materialsproperties_type;
         typedef std::shared_ptr<materialsproperties_type> materialsproperties_ptrtype;
@@ -117,6 +115,8 @@ class Heat : public ModelNumerical,
               std::string const& subPrefix  = "",
               ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
+        std::shared_ptr<self_type> shared_from_this() { return std::dynamic_pointer_cast<self_type>( super_type::shared_from_this() ); }
+
         //___________________________________________________________________________________//
         // mesh, space, element temperature
         mesh_ptrtype mesh() const { return super_type::super_model_meshes_type::mesh<mesh_type>( this->keyword() ); }
@@ -141,10 +141,6 @@ class Heat : public ModelNumerical,
         materialsproperties_ptrtype & materialsProperties() { return M_materialsProperties; }
         void setMaterialsProperties( materialsproperties_ptrtype mp ) { M_materialsProperties = mp; }
 
-        // boundary condition + body forces
-        map_scalar_field<2> const& bcDirichlet() const { return M_bcDirichlet; }
-        map_scalar_field<2> const& bcNeumann() const { return M_bcNeumann; }
-        map_scalar_fields<2> const& bcRobin() const { return M_bcRobin; }
         //___________________________________________________________________________________//
         // time step scheme
         std::string const& timeStepping() const { return M_timeStepping; }
@@ -158,7 +154,6 @@ class Heat : public ModelNumerical,
         void updateInitialConditions( SymbolsExprType const& se );
         //___________________________________________________________________________________//
 
-        std::shared_ptr<std::ostringstream> getInfo() const override;
         void updateInformationObject( nl::json & p ) const override;
         tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
 
@@ -468,12 +463,8 @@ class Heat : public ModelNumerical,
         materialsproperties_ptrtype M_materialsProperties;
 
         // boundary conditions
-        map_scalar_field<2> M_bcDirichlet;
-        map_scalar_field<2> M_bcNeumann;
-        map_scalar_fields<2> M_bcRobin;
-        MarkerManagementDirichletBC M_bcDirichletMarkerManagement;
-        MarkerManagementNeumannBC M_bcNeumannMarkerManagement;
-        MarkerManagementRobinBC M_bcRobinMarkerManagement;
+        using boundary_conditions_type = HeatBoundaryConditions;
+        std::shared_ptr<boundary_conditions_type> M_boundaryConditions;
 
         // stabilization
         bool M_stabilizationGLS;

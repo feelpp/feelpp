@@ -25,6 +25,9 @@
 # Installing
 #
 INCLUDE(InstallRequiredSystemLibraries)
+
+INSTALL(FILES ${CMAKE_SOURCE_DIR}/feelpp.version.cmake DESTINATION share/feelpp/feel/cmake/modules COMPONENT Devel)
+
 feelpp_list_subdirs(feeldirs ${CMAKE_CURRENT_SOURCE_DIR})
 
 foreach(includedir ${feeldirs})

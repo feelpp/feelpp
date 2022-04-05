@@ -54,8 +54,6 @@ ModelNumerical::ModelNumerical( std::string const& _theprefix, std::string const
         M_tsSaveInFile( boption(_name="ts.save") ),
         M_tsSaveFreq( ioption(_name="ts.save.freq") ),
         M_timeCurrent(M_timeInitial),
-        M_manageParameterValues( true ),
-        M_manageParameterValuesOfModelProperties( true ),
         M_exporterPath( (fs::path(this->rootRepository())/(this->keyword()+".exports")).string() ),
         M_postProcessSaveRepository( fs::path(this->rootRepository())/(this->keyword()+".save") ),
         M_postProcessMeasures( (fs::path(this->rootRepository())/(this->keyword()+".measures")).string(), this->worldCommPtr() ),
@@ -72,34 +70,8 @@ ModelNumerical::ModelNumerical( std::string const& _theprefix, std::string const
         else
             M_geomap=GeomapStrategyType::GEOMAP_HO;
         //-----------------------------------------------------------------------//
-        std::string modelPropFilename = Environment::expand( soption( _name="filename",_prefix=this->prefix(),_vm=this->clovm()) );
-        if ( !modelPropFilename.empty() )
-        {
-            this->setModelProperties( modelPropFilename );
-            if ( auto ptMeshes = M_modelProps->pTree().get_child_optional("Meshes"))
-                super_model_meshes_type::setup( *ptMeshes );
-        }
     }
 
-   void
-   ModelNumerical::setModelProperties( std::string const& filename )
-   {
-        M_modelProps = std::make_shared<ModelProperties>( filename, this->repository().expr(),
-                                                          this->worldCommPtr(), this->prefix() );
-   }
-
-   void
-   ModelNumerical::setModelProperties( nl::json const& json )
-   {
-        M_modelProps = std::make_shared<ModelProperties>( json, this->repository().expr(),
-                                                          this->worldCommPtr(), this->prefix() );
-   }
-
-   void
-   ModelNumerical::addParameterInModelProperties( std::string const& symbolName,double value)
-   {
-        M_modelProps->parameters()[symbolName] = ModelParameter(symbolName,value);
-   }
 
     void
     ModelNumerical::setStationary(bool b)
@@ -115,8 +87,7 @@ ModelNumerical::ModelNumerical( std::string const& _theprefix, std::string const
     ModelNumerical::updateTime(double t)
     {
         M_timeCurrent=t;
-        if ( M_modelProps )
-            this->addParameterInModelProperties( "t", M_timeCurrent );
+        this->addParameterInModelProperties( "t", M_timeCurrent );
         super_model_meshes_type::updateTime( t );
     }
 

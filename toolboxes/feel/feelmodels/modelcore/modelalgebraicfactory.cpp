@@ -1267,6 +1267,12 @@ ModelAlgebraicFactory::tabulateInformations( nl::json const& jsonInfo, TabulateI
             ModelAlgebraic::DataUpdateLinear dataLinearCst(U,M_CstJ,M_CstR,true);
             dataLinearCst.copyInfos( this->dataInfos() );
             M_functionLinearAssembly( dataLinearCst );
+            for ( auto const& func : M_addFunctionLinearAssembly )
+                func.second( dataLinearCst );
+            M_CstR->close();
+            for ( auto const& av : M_addVectorLinearRhsAssembly )
+                if ( std::get<2>( av.second ) && std::get<3>( av.second ) )
+                    M_CstR->add( std::get<1>( av.second ), std::get<0>( av.second ) );
             M_hasBuildLinearSystemCst = true;
 
             double tAssemblyElapsed = this->model()->timerTool("Solve").stop();
@@ -1316,12 +1322,24 @@ ModelAlgebraicFactory::tabulateInformations( nl::json const& jsonInfo, TabulateI
                 dataLinear->setBuildCstPart( true );
                 //ModelAlgebraic::DataUpdateLinear dataLinearCst(U,M_J,M_R,true);
                 M_functionLinearAssembly( *dataLinear );
+                for ( auto const& func : M_addFunctionLinearAssembly )
+                    func.second( *dataLinear );
+                M_R->close();
+                for ( auto const& av : M_addVectorLinearRhsAssembly )
+                    if ( std::get<2>( av.second ) && std::get<3>( av.second ) )
+                        M_R->add( std::get<1>( av.second ), std::get<0>( av.second ) );
             }
 
             // assembling non cst part
             dataLinear->setBuildCstPart( false );
             //ModelAlgebraic::DataUpdateLinear dataLinearNonCst(U,M_J,M_R,false);
             M_functionLinearAssembly( *dataLinear );
+            for ( auto const& func : M_addFunctionLinearAssembly )
+                func.second( *dataLinear );
+            M_R->close();
+            for ( auto const& av : M_addVectorLinearRhsAssembly )
+                if ( !std::get<2>( av.second ) && std::get<3>( av.second ) )
+                    M_R->add( std::get<1>( av.second ), std::get<0>( av.second ) );
 
             if ( M_explictPartOfSolution )
             {
@@ -1453,7 +1471,7 @@ ModelAlgebraicFactory::tabulateInformations( nl::json const& jsonInfo, TabulateI
                                       this->model()->worldComm(),this->model()->verboseSolverTimerAllProc());
 
             double relaxParam = M_solverPicardRelaxationParameter;
-            if ( relaxParam < 1 )
+            if ( cptIteration > 0 && relaxParam < 1 )
             {
                 U->scale( relaxParam );
                 U->add( 1.0 - relaxParam, Uold );
