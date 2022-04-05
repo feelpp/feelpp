@@ -2248,11 +2248,10 @@ CRB<TruthModelType>::offlineNewtonPrimal( parameter_type const& mu )
 
     boost::tie( boost::tuples::ignore, M_Jqm, M_Rqm ) = M_model->computeAffineDecomposition();
 
-    using namespace std::placeholders;
     M_backend_primal->nlSolver()->jacobian = std::bind( &self_type::offlineUpdateJacobian,
-                                                          std::ref( *this ), _1, _2, mu );
+                                                          std::ref( *this ), std::placeholders::_1, std::placeholders::_2, mu );
     M_backend_primal->nlSolver()->residual = std::bind( &self_type::offlineUpdateResidual,
-                                                          std::ref( *this ), _1, _2, mu );
+                                                          std::ref( *this ), std::placeholders::_1, std::placeholders::_2, mu );
 #if 0
     M_backend_primal->nlSolver()->setType( TRUST_REGION );
 #endif
@@ -4378,9 +4377,8 @@ CRB<TruthModelType>::newton(  size_type N, parameter_type const& mu , vectorN_ty
 
     computeProjectionInitialGuess( mu , N , uN );
 
-    using namespace std::placeholders;
-    M_nlsolver->map_dense_jacobian = std::bind( &self_type::updateJacobian, std::ref( *this ), _1, _2  , mu , N );
-    M_nlsolver->map_dense_residual = std::bind( &self_type::updateResidual, std::ref( *this ), _1, _2  , mu , N );
+    M_nlsolver->map_dense_jacobian = std::bind( &self_type::updateJacobian, std::ref( *this ), std::placeholders::_1, std::placeholders::_2  , mu , N );
+    M_nlsolver->map_dense_residual = std::bind( &self_type::updateResidual, std::ref( *this ), std::placeholders::_1, std::placeholders::_2  , mu , N );
     M_nlsolver->setType( TRUST_REGION );
     M_nlsolver->solve( map_J , map_uN , map_R, 1e-12, 100);
 

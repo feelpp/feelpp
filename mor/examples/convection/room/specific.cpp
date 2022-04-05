@@ -107,11 +107,10 @@ ConvectionCrb::solve( parameter_type const& mu, element_ptrtype& T )
     T->zero();
     using namespace vf;
 
-    using namespace std::placeholders;
     M_backend->nlSolver()->jacobian =
-        std::bind( &self_type::updateJ, std::ref( *this ), _1, _2 );
+        std::bind( &self_type::updateJ, std::ref( *this ), std::placeholders::_1, std::placeholders::_2 );
     M_backend->nlSolver()->residual =
-        std::bind( &self_type::updateR, std::ref( *this ), _1, _2 );
+        std::bind( &self_type::updateR, std::ref( *this ), std::placeholders::_1, std::placeholders::_2 );
 
     vector_ptrtype R( M_backend->newVector( Xh ) );
     sparse_matrix_ptrtype J( M_backend->newMatrix( Xh,Xh ) );

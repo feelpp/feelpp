@@ -898,9 +898,8 @@ CRBTrilinear<TruthModelType>::lb( size_type N, parameter_type const& mu,
     this->updateLinearTerms( current_mu , N );
 
     //this->M_nlsolver->setRelativeResidualTol( 1e-12 );
-    using namespace std::placeholders;
-    this->M_nlsolver->map_dense_jacobian = std::bind( &self_type::updateJacobian, std::ref( *this ), _1, _2, current_mu , N );
-    this->M_nlsolver->map_dense_residual = std::bind( &self_type::updateResidual, std::ref( *this ), _1, _2, current_mu , N );
+    this->M_nlsolver->map_dense_jacobian = std::bind( &self_type::updateJacobian, std::ref( *this ), std::placeholders::_1, std::placeholders::_2, current_mu , N );
+    this->M_nlsolver->map_dense_residual = std::bind( &self_type::updateResidual, std::ref( *this ), std::placeholders::_1, std::placeholders::_2, current_mu , N );
     this->M_nlsolver->setType( TRUST_REGION );
     this->M_nlsolver->solve( map_J , map_uN , map_R, 1e-12, 100);
     //}

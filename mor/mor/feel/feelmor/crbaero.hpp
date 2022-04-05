@@ -808,9 +808,8 @@ CRBAero<TruthModelType>::onlineSolveNewton(  size_type N, parameter_type const& 
 
 
     //Feel::cout << "Jbil=\n"<<M_Jbil<<"\n Rli=\n"<<M_Rli<<std::endl;
-    using namespace std::placeholders;
-    this->M_nlsolver->map_dense_jacobian = std::bind( &self_type::updateJacobianOnline, std::ref( *this ), _1, _2  , mu , N );
-    this->M_nlsolver->map_dense_residual = std::bind( &self_type::updateResidualOnline, std::ref( *this ), _1, _2  , mu , N );
+    this->M_nlsolver->map_dense_jacobian = std::bind( &self_type::updateJacobianOnline, std::ref( *this ), std::placeholders::_1, std::placeholders::_2  , mu , N );
+    this->M_nlsolver->map_dense_residual = std::bind( &self_type::updateResidualOnline, std::ref( *this ), std::placeholders::_1, std::placeholders::_2  , mu , N );
 
     this->M_nlsolver->setType( TRUST_REGION );
     this->M_nlsolver->setRelativeResidualTol( doption(_prefix=this->M_prefix,_name="crb.aero.snes.rtol"));
