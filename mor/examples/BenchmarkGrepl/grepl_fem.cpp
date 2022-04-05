@@ -240,11 +240,10 @@ GreplFem::updateResidual(vector_ptrtype const& X,vector_ptrtype & R)
 GreplFem::element_type
 GreplFem::solveNewton()
 {
-    using namespace std::placeholders;
     backend()->nlSolver()->jacobian = std::bind( &self_type::updateJacobian,
-                                                   std::ref( *this ), _1, _2 );
+                                                   std::ref( *this ), std::placeholders::_1, std::placeholders::_2 );
     backend()->nlSolver()->residual = std::bind( &self_type::updateResidual,
-                                                   std::ref( *this ), _1, _2 );
+                                                   std::ref( *this ), std::placeholders::_1, std::placeholders::_2 );
 
     auto solution = Xh->element();
     backend()->nlSolve(_solution=solution);
