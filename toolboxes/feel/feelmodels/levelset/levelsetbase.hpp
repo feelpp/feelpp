@@ -91,7 +91,6 @@ public:
     static constexpr uint16_type nRealDim = convex_type::nRealDim;
     typedef Mesh<convex_type> mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
-    typedef mesh_type mymesh_type;
 
     //--------------------------------------------------------------------//
     // Periodicity
@@ -220,7 +219,7 @@ public:
 
     //--------------------------------------------------------------------//
     // Exporter
-    typedef Exporter<mymesh_type, nOrderGeo> exporter_type;
+    typedef Exporter<mesh_type, nOrderGeo> exporter_type;
     typedef std::shared_ptr<exporter_type> exporter_ptrtype;
     typedef exporter_ptrtype exporter_manager_ptrtype;
 

@@ -89,21 +89,14 @@ public:
     static constexpr uint16_type nRealDim = convex_type::nRealDim;
     typedef Mesh<convex_type> mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
-    typedef mesh_type mymesh_type;
-
-    //--------------------------------------------------------------------//
-    // materials properties
+    // Materials properties
     typedef MaterialsProperties<nRealDim> materialsproperties_type;
     typedef std::shared_ptr<materialsproperties_type> materialsproperties_ptrtype;
-
-    //--------------------------------------------------------------------//
     // Periodicity
     typedef PeriodicityType periodicity_type;
-    //--------------------------------------------------------------------//
     // Function space manager
     typedef LevelSetSpaceManager<ConvexType, BasisType, PeriodicityType, BasisPnType> levelset_space_manager_type;
     typedef std::shared_ptr<levelset_space_manager_type> levelset_space_manager_ptrtype;
-    //--------------------------------------------------------------------//
     // Function spaces and elements
     // levelset
     typedef typename levelset_space_manager_type::basis_scalar_type basis_levelset_type;
@@ -144,33 +137,17 @@ public:
 
     static_assert( space_levelset_type::is_scalar, "LevelSetBase function basis must be scalar" );
 
-    //--------------------------------------------------------------------//
     // Cached fields
     using cached_scalar_field_type = CachedModelField<element_scalar_type, InplaceUpdatePolicy>;
     using cached_vectorial_field_type = CachedModelField<element_vectorial_type, InplaceUpdatePolicy>;
 
-    //--------------------------------------------------------------------//
-    // Mesh adaptation
-#if defined (MESH_ADAPTATION_LS)
-    typedef MeshAdaptation<Dim, Order, 1, periodicity_type > mesh_adaptation_type;
-    typedef std::shared_ptr< mesh_adaptation_type > mesh_adaptation_ptrtype;
-#endif
-    //--------------------------------------------------------------------//
     // Heaviside and Dirac expressions
     typedef Expr< LevelsetDeltaExpr<element_levelset_type> > levelset_delta_expr_type;
-    //--------------------------------------------------------------------//
+
     // Advection toolbox
     typedef CoefficientFormPDE<convex_type, basis_scalar_type> cfpde_toolbox_type;
     typedef std::shared_ptr<cfpde_toolbox_type> cfpde_toolbox_ptrtype;
 
-#if 0
-    typedef typename advection_toolbox_type::space_advection_velocity_type space_advection_velocity_type;
-    typedef typename advection_toolbox_type::space_advection_velocity_ptrtype space_advection_velocity_ptrtype;
-    typedef typename advection_toolbox_type::element_advection_velocity_type element_advection_velocity_type;
-    typedef typename advection_toolbox_type::element_advection_velocity_ptrtype element_advection_velocity_ptrtype;
-#endif
-
-    //--------------------------------------------------------------------//
     // Range types
     typedef typename MeshTraits<mesh_type>::element_reference_wrapper_const_iterator element_reference_wrapper_const_iterator;
     typedef typename MeshTraits<mesh_type>::elements_reference_wrapper_type elements_reference_wrapper_type;
@@ -182,16 +159,13 @@ public:
     typedef typename MeshTraits<mesh_type>::faces_reference_wrapper_ptrtype faces_reference_wrapper_ptrtype;
     typedef faces_reference_wrapper_t<mesh_type> range_faces_type;
 
-    //--------------------------------------------------------------------//
     // Stretch and shear types
     typedef element_levelset_type element_stretch_type;
     typedef element_levelset_ptrtype element_stretch_ptrtype;
 
-    //--------------------------------------------------------------------//
     // Tool manager
     typedef LevelSetToolManager<ConvexType, BasisType, PeriodicityType, BasisPnType> levelset_tool_manager_type;
     typedef std::shared_ptr<levelset_tool_manager_type> levelset_tool_manager_ptrtype;
-    //--------------------------------------------------------------------//
     // Projectors
     typedef Projector<space_levelset_type, space_levelset_type> projector_levelset_type;
     typedef std::shared_ptr<projector_levelset_type> projector_levelset_ptrtype;
@@ -202,7 +176,6 @@ public:
     typedef Projector<space_tensor2symm_type, space_tensor2symm_type> projector_tensor2symm_type;
     typedef std::shared_ptr<projector_tensor2symm_type> projector_tensor2symm_ptrtype;
 
-    //--------------------------------------------------------------------//
     // Redistanciation
     typedef LevelSetRedistanciation<space_levelset_type> redistanciation_type;
     typedef std::shared_ptr<redistanciation_type> redistanciation_ptrtype;
@@ -217,20 +190,21 @@ public:
 
     typedef boost::bimap<std::string, FastMarchingInitializationMethod> fastmarchinginitializationmethodidmap_type;
 
-    //--------------------------------------------------------------------//
     // Particle injector
     typedef LevelSetParticleInjector<self_type> levelsetparticleinjector_type;
     typedef std::shared_ptr<levelsetparticleinjector_type> levelsetparticleinjector_ptrtype;
 
-    //--------------------------------------------------------------------//
     // Backend
     typedef Backend<value_type> backend_type;
     typedef std::shared_ptr<backend_type> backend_ptrtype;
-
     typedef typename backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
     typedef typename backend_type::vector_ptrtype vector_ptrtype;
+    // Algebraic data
+    using ModelAlgebraic::DataUpdateLinear;
+    using ModelAlgebraic::DataNewtonInitialGuess;
+    using ModelAlgebraic::DataUpdateJacobian;
+    using ModelAlgebraic::DataUpdateResidual;
 
-    //--------------------------------------------------------------------//
     // ModGradPhi advection
     typedef CoefficientFormPDE<convex_type, basis_scalar_type> modgradphi_advection_type;
     typedef std::shared_ptr<modgradphi_advection_type> modgradphi_advection_ptrtype;
@@ -238,7 +212,6 @@ public:
     typedef CoefficientFormPDE<convex_type, basis_scalar_type> stretch_advection_type;
     typedef std::shared_ptr<stretch_advection_type> stretch_advection_ptrtype;
 
-    //--------------------------------------------------------------------//
     // Backward characteristics advection
     typedef basis_vectorial_type basis_backwardcharacteristics_advection_type;
     typedef CoefficientFormPDE<convex_type, basis_vectorial_type> backwardcharacteristics_advection_type;
@@ -249,17 +222,9 @@ public:
     typedef element_scalar_type element_cauchygreen_invariant_type;
     typedef std::shared_ptr<element_cauchygreen_invariant_type> element_cauchygreen_invariant_ptrtype;
 
-    //--------------------------------------------------------------------//
     // Exporter
     using exporter_type = typename super_type::exporter_type;
     using exporter_ptrtype = typename super_type::exporter_ptrtype;
-
-    //--------------------------------------------------------------------//
-    // Algebraic data
-    using ModelAlgebraic::DataUpdateLinear;
-    using ModelAlgebraic::DataNewtonInitialGuess;
-    using ModelAlgebraic::DataUpdateJacobian;
-    using ModelAlgebraic::DataUpdateResidual;
 
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//

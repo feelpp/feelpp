@@ -97,9 +97,6 @@ public :
 
     physic_id_type id() const { return std::make_pair(this->type(),this->name()); }
 
-    //! add a type of subphysics
-    void addSubphysicsType( std::string const& subType ) { M_subphysicsTypes.insert( subType ); }
-
     //! return the map of subphysics
     std::map<physic_id_type,std::shared_ptr<ModelPhysic<nDim>>> const& subphysics() const { return M_subphysics; }
 
