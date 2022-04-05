@@ -87,13 +87,13 @@ ModelOutput::ModelOutput( std::string name, nl::json const& jarg, worldcomm_ptr_
 
 std::string ModelOutput::getString( std::string const& key ) const
 {
-    if ( !M_p.contains("key") )
+    if ( !M_p.contains(key) )
     {
         CHECK( false ) << "invalid key";
         return {};
     }
 
-    auto const& j_key =  M_p.at("key");
+    auto const& j_key =  M_p.at(key);
     if ( !j_key.is_string() )
     {
         CHECK( false ) << "invalid key";
