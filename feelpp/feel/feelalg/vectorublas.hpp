@@ -90,7 +90,7 @@ VectorUblas<T> element_product( const VectorUblas<T> & v1, const VectorUblas<T> 
 
 /*-----------------------------------------------------------------------------*/
 template< typename T >
-class VectorUblas : public Vector<T>
+class FEELPP_EXPORT VectorUblas : public Vector<T>
 {
     public:
         // Typedefs
@@ -298,7 +298,7 @@ namespace detail
 {
 
 template< typename T >
-class VectorUblasBase: public Vector<T>
+class FEELPP_EXPORT VectorUblasBase: public Vector<T>
 {
     public:
         // Typedefs
