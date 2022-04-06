@@ -14,7 +14,7 @@
         "H":4,
         "uex":"(pin-pout)*(L-x)*x/(2*H*nu):pin:pout:L:x:H:nu",
         "pex":"pin+(pout-pin)*y/H:y:H:pin:pout",
-        "pdynex":"pin + y*(-pin + pout)/H + 0.125*x^2*(L - x)^2*(pin - pout)^2/(H^2*nu^2):x:y:L:H:pin:pout:nu",
+        "pdynex":"pex + 0.5*uex^2:pex:uex",
         "ugradex":"-x*(pin - pout)/(2*H*nu) + (-x + L)*(pin - pout)/(2*H*nu):x:pin:pout:H:nu:L"
     },
     "Materials":
@@ -46,21 +46,21 @@
                     "expr":"{0,0}"
                 }
             }
-        },
+        }/*,
         "pressure":
         {
             "Dirichlet":
             {
-                "top":
+                "outlet":
                 {
                     "expr":"pdynex:pdynex"
                 },
-                "bottom":
+                "inlet":
                 {
                     "expr":"pdynex:pdynex"
                 }
             }
-        }
+        }*/
     },
 	"Exact solution":
 	{
