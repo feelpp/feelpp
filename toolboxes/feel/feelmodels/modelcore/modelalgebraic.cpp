@@ -195,7 +195,7 @@ ModelAlgebraic::updateDofEliminationIds( std::string const& spaceName,
     {
         auto itFindDofIdsByEntity = dofIds.find( entity );
         if ( itFindDofIdsByEntity != dofIds.end() )
-            dm->dofIdToContainerId( spaceIndexVector,std::get<1>( itFindDofIdsByEntity->second ),
+            dm->dofIdToContainerId( spaceIndexVector, std::get<0>( itFindDofIdsByEntity->second ), //std::get<1>( itFindDofIdsByEntity->second ),
                                     data.dofEliminationIds( entity ) );
     }
 }
