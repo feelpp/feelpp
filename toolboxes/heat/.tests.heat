@@ -1,2 +1,12 @@
-ThermalBridgesENISO10211_case2  --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/Building/ThermalBridgesENISO10211/thermo2dCase2.cfg  --directory=toolboxes/testsuite/heat/ThermalBridgesENISO10211/2dCase2
-parabolic --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/test-para/test.cfg
+testsuite_test2d_1 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/testsuite/test2d_1.cfg --directory=toolboxes/testsuite/heat/testsuite/test2d_1
+testsuite_test3d_1 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/testsuite/test3d_1.cfg --directory=toolboxes/testsuite/heat/testsuite/test3d_1
+ThermalBridgesENISO10211_case2 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/Building/ThermalBridgesENISO10211/case2.cfg --directory=toolboxes/testsuite/heat/ThermalBridgesENISO10211/Case2
+ThermalBridgesENISO10211_case2_testsuite --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/Building/ThermalBridgesENISO10211/case2.cfg --heat.filename $cfgdir/testsuite_case2.json --directory=toolboxes/testsuite/heat/ThermalBridgesENISO10211/Case2_testsuite
+ThermalBridgesENISO10211_case3 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/Building/ThermalBridgesENISO10211/case3.cfg --directory=toolboxes/testsuite/heat/ThermalBridgesENISO10211/Case3
+test_time-stepping_BDF2 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/test_time-stepping/test.cfg --directory=toolboxes/testsuite/heat/toolboxes/heat/test_time-stepping/BDF2 --heat.time-stepping=BDF --heat.bdf.order=2
+test_time-stepping_CN --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/test_time-stepping/test.cfg --directory=toolboxes/testsuite/heat/toolboxes/heat/test_time-stepping/CN --heat.time-stepping=Theta
+h-convergence_square_P1 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/h-convergence/square/square.cfg --directory=toolboxes/testsuite/heat/h-convergence/square/P1
+h-convergence_square_P2 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/h-convergence/square/square.cfg --directory=toolboxes/testsuite/heat/h-convergence/square/P2 --case.discretization=P2 --case.mode.h-convergence.slopes 3 2 2
+thermo2d_BDF --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/thermo2d/thermo2d.cfg --directory=toolboxes/testsuite/heat/thermo2d_BDF --ts.time-final=1 --heat.time-stepping=BDF
+thermo2d_CN --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/thermo2d/thermo2d.cfg --directory=toolboxes/testsuite/heat/thermo2d_CN --ts.time-final=1 --heat.time-stepping=Theta
+hollow_sphere --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/hollow_sphere/case.cfg --directory=toolboxes/testsuite/heat/testsuite/hollow_sphere

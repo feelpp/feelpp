@@ -9,6 +9,17 @@
         "alpha":3.6e-3,
         "Lorentz":2.47e-8
     },
+    "Meshes":
+    {
+        "thermoelectric":
+        {
+            "Import":
+            {
+                "filename":"girder:{file:5af862d6b0e9574027047fc8}",
+                "partition":1
+            }
+        }
+    },
     "Materials":
     {
         "Cu":
@@ -19,54 +30,57 @@
             "k":"sigma*Lorentz*heat_T:sigma:Lorentz:heat_T"
         }
     },
+    "InitialConditions":
+    {
+        "heat":{
+            "temperature":{
+                "Expression":{
+                    "myic1":{
+                        "expr":"290"
+                    }
+                }
+            }
+        }
+    },
     "BoundaryConditions":
     {
-        "temperature":
+        "heat":
         {
-            "Robin":
+            "convective_heat_flux":
             {
                 "Rint":
                 {
-                    "expr1":"0.085", // h
-                    "expr2":"290" // T_c
+                    "h":"0.085", // h
+                    "Text":"290" // T_c
                 },
                 "Rext":
                 {
-                    "expr1":"0.085", // h
-                    "expr2":"290" // T_c
+                    "h":"0.085", // h
+                    "Text":"290" // T_c
                 }
             },
-            "Neumann":
+            "flux":
             {
-                "Interface":
+                "insulation":
                 {
-                    "expr":"0"
-                },
-                "GR_1_Interface":
-                {
+                    "markers":["Interface","GR_1_Interface"],
                     "expr":"0"
                 }
             }
         },
-        "electric-potential":
+        "electric":
         {
-            "Dirichlet":
-            {
-                "V0":
-                {
-                    "expr":"0" // V_in
-                },
-                "V1":
-                {
-                    "expr":"9" // V_out
+            "ground":{ "markers":"V0" },
+            "electric_potential":{
+                "V1":{
+                    "expr":"9"
                 }
             }
         }
     },
     "PostProcess":
     {
-        "use-model-name":1,
-        "thermo-electric":
+        "thermoelectric":
         {
             "Exports":
             {
@@ -130,12 +144,12 @@
                         "value":1.9858752627481331e+00,
                         "tolerance":1e-1
                     },
-                    "Points_closeToV0_temperature":
+                    "Points_closeToV0_field_temperature":
                     {
                         "value":2.9228730968105037e+02,
                         "tolerance":1e-3
                     },
-                    "Points_closeToV1_temperature":
+                    "Points_closeToV1_field_temperature":
                     {
                         "value": 2.9130483450540504e+02,
                         "tolerance":1e-3
@@ -201,12 +215,12 @@
                         "value":-2.9492993990629227e+04,
                         "tolerance":1e-1
                     },
-                    "Points_closeToV0_electric-potential":
+                    "Points_closeToV0_field_electric-potential":
                     {
                         "value":0,
                         "tolerance":1e-3
                     },
-                    "Points_closeToV1_electric-potential":
+                    "Points_closeToV1_field_electric-potential":
                     {
                         "value":9,
                         "tolerance":1e-3

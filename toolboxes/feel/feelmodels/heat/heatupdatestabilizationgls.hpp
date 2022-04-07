@@ -22,7 +22,7 @@ namespace Heat_detail
 
 template<typename HeatType,typename ModelContextType, typename ... ExprAddedType>
 auto
-exprResidualImpl( HeatType const& heat, ModelPhysic<HeatType::nDim> const& physicData, MaterialProperties const& matProps,
+exprResidualImpl( HeatType const& heat, ModelPhysicHeat<HeatType::nDim> const& physicHeatData, MaterialProperties const& matProps,
                   ModelContextType const& mctx, double timeSteppingScaling, bool timeSteppingEvaluateResidualWithoutTimeDerivative = false )
 {
     auto const& u = mctx.field( HeatType::FieldTag::temperature(&heat), "temperature" );
@@ -31,26 +31,29 @@ exprResidualImpl( HeatType const& heat, ModelPhysic<HeatType::nDim> const& physi
 
     using expr_density_type = std::decay_t<decltype( expr( matProps.property("density").template expr<1,1>(), se ) )>;
     using expr_heat_capacity_type = std::decay_t<decltype( expr( matProps.property("specific-heat-capacity").template expr<1,1>(), se ) )>;
-    using expr_velocity_convection_type = std::decay_t<decltype( expr( heat.velocityConvectionExpr( matName ), se ) )>;
+    using expr_velocity_convection_type = std::decay_t<decltype( std::declval<ModelPhysicHeat<HeatType::nDim>>().convection().expr( se ) )>;
     using expr_thermal_conductivity_scalar_type = std::decay_t<decltype( expr( matProps.property("thermal-conductivity").template expr<1,1>(), se ) )>;
     using expr_thermal_conductivity_matrix_type = std::decay_t<decltype( expr( matProps.property("thermal-conductivity").template expr<HeatType::nDim,HeatType::nDim>(), se ) )>;
     using expr_grad_thermal_conductivity_scalar_type = std::decay_t<decltype( grad<HeatType::nDim>( expr_thermal_conductivity_scalar_type{} ) )>;
+    using expr_heatsource_type = std::decay_t<decltype( std::declval<ModelPhysicHeat<HeatType::nDim>>().heatSources().front().expr( se ) )>;
 
     using expr_residual_time_derivative_type = std::decay_t<decltype( expr_density_type{}*expr_heat_capacity_type{}*(heat.timeStepBdfTemperature()->polyDerivCoefficient(0)*idv(u)-idv(heat.timeStepBdfTemperature()->polyDeriv())) )>;
     using expr_residual_convection_type = std::decay_t<decltype( timeSteppingScaling*expr_density_type{}*expr_heat_capacity_type{}*gradv(u)*expr_velocity_convection_type{} )>;
     using expr_residual_diffusion_scalar_type = std::decay_t<decltype( -timeSteppingScaling*expr_thermal_conductivity_scalar_type{}*laplacianv(u) )>;
     using expr_residual_diffusion_matrix_type = std::decay_t<decltype( -timeSteppingScaling*inner(expr_thermal_conductivity_matrix_type{},hessv(u)) )>;
     using expr_residual_diffusion_variable_conductivity_scalar_type = std::decay_t<decltype( -timeSteppingScaling*inner(expr_grad_thermal_conductivity_scalar_type{},gradv(u)) )>;
+    using expr_residual_heatsource_type = std::decay_t<decltype( -timeSteppingScaling*expr_heatsource_type{} )>;
 
     auto residual_full = exprOptionalConcat<expr_residual_time_derivative_type,expr_residual_convection_type,
                                             expr_residual_diffusion_scalar_type,expr_residual_diffusion_matrix_type,
                                             expr_residual_diffusion_variable_conductivity_scalar_type,
+                                            expr_residual_heatsource_type,
                                             ExprAddedType...>();
 
 
     auto thermalConductivityExprBase = matProps.property("thermal-conductivity");
     bool thermalConductivityIsMatrix = thermalConductivityExprBase.template hasExpr<HeatType::nDim,HeatType::nDim>();
-    bool thermalConductivityDependsOnCoordinatesInSpace = thermalConductivityExprBase.template hasSymbolDependencyOnCoordinatesInSpace<HeatType::nDim>( se );
+    bool thermalConductivityDependsOnCoordinatesInSpace = thermalConductivityExprBase.template hasSymbolDependencyOnCoordinatesInSpace<HeatType::nDim>( se ) && heat.stabilizationGLS_checkConductivityDependencyOnCoordinates();
     if (  HeatType::nOrderTemperature > 1 || thermalConductivityDependsOnCoordinatesInSpace )
     {
         if ( thermalConductivityIsMatrix )
@@ -87,12 +90,18 @@ exprResidualImpl( HeatType const& heat, ModelPhysic<HeatType::nDim> const& physi
         residual_full.expression().add( densityExpr*heatCapacityExpr*(heat.timeStepBdfTemperature()->polyDerivCoefficient(0)*idv(u) - idv(heat.timeStepBdfTemperature()->polyDeriv()) ) );
     }
 
-    if ( heat.hasVelocityConvectionExpr( matName ) )
+    if ( physicHeatData.hasConvectionEnabled() )
     {
         auto densityExpr = expr( matProps.property("density").template expr<1,1>(), se );
         auto heatCapacityExpr = expr( matProps.property("specific-heat-capacity").template expr<1,1>(), se );
-        auto velConvExpr = expr( heat.velocityConvectionExpr( matName ), se );
+        auto velConvExpr = physicHeatData.convection().expr( se );
         residual_full.expression().add( timeSteppingScaling*densityExpr*heatCapacityExpr*gradv(u)*velConvExpr );
+    }
+
+    for ( auto const& heatSource : physicHeatData.heatSources() )
+    {
+        auto hsExpr = heatSource.expr( se );
+        residual_full.expression().add( -timeSteppingScaling*hsExpr );
     }
 
 
@@ -101,17 +110,17 @@ exprResidualImpl( HeatType const& heat, ModelPhysic<HeatType::nDim> const& physi
 
 template<typename HeatType,typename ModelContextType>
 auto
-exprResidual( HeatType const& heat, ModelPhysic<HeatType::nDim> const& physicData, MaterialProperties const& matProps,
+exprResidual( HeatType const& heat, ModelPhysicHeat<HeatType::nDim> const& physicHeatData, MaterialProperties const& matProps,
               ModelContextType const& mctx, double timeSteppingScaling, bool timeSteppingEvaluateResidualWithoutTimeDerivative = false )
 {
-    return exprResidualImpl( heat,physicData,matProps,mctx,timeSteppingScaling,timeSteppingEvaluateResidualWithoutTimeDerivative );
+    return exprResidualImpl( heat,physicHeatData,matProps,mctx,timeSteppingScaling,timeSteppingEvaluateResidualWithoutTimeDerivative );
 }
 template<typename ExprAddedType,typename HeatType,typename ModelContextType>
 auto
-exprResidual( HeatType const& heat, ModelPhysic<HeatType::nDim> const& physicData, MaterialProperties const& matProps,
+exprResidual( HeatType const& heat, ModelPhysicHeat<HeatType::nDim> const& physicHeatData, MaterialProperties const& matProps,
               ModelContextType const& mctx, double timeSteppingScaling, bool timeSteppingEvaluateResidualWithoutTimeDerivative = false )
 {
-    return exprResidualImpl<HeatType,ModelContextType,ExprAddedType>( heat,physicData,matProps,mctx,timeSteppingScaling,timeSteppingEvaluateResidualWithoutTimeDerivative );
+    return exprResidualImpl<HeatType,ModelContextType,ExprAddedType>( heat,physicHeatData,matProps,mctx,timeSteppingScaling,timeSteppingEvaluateResidualWithoutTimeDerivative );
 }
 
 } //  namespace Heat_detail
@@ -123,7 +132,7 @@ template< typename ConvexType, typename BasisTemperatureType >
 template <typename ModelContextType,typename RangeType>
 void
 Heat<ConvexType,BasisTemperatureType>::updateJacobianStabilizationGLS( DataUpdateJacobian & data, ModelContextType const& mctx,
-                                                                       ModelPhysic<nDim> const& physicData,
+                                                                       ModelPhysicHeat<nDim> const& physicHeatData,
                                                                        MaterialProperties const& matProps, RangeType const& range ) const
 {
     sparse_matrix_ptrtype& J = data.jacobian();
@@ -155,7 +164,7 @@ Heat<ConvexType,BasisTemperatureType>::updateJacobianStabilizationGLS( DataUpdat
 
     using expr_density_type = std::decay_t<decltype( expr( matProps.property("density").template expr<1,1>(), se ) )>;
     using expr_heat_capacity_type = std::decay_t<decltype( expr( matProps.property("specific-heat-capacity").template expr<1,1>(), se ) )>;
-    using expr_velocity_convection_type = std::decay_t<decltype( expr( this->velocityConvectionExpr( matName ), se ) )>;
+    using expr_velocity_convection_type = std::decay_t<decltype( std::declval<ModelPhysicHeat<nDim>>().convection().expr( se ) )>;
 
     using expr_coeff_null_type = std::decay_t<decltype( cst(0.) )>;
     using expr_thermal_conductivity_scalar_type = std::decay_t<decltype( expr( matProps.property("thermal-conductivity").template expr<1,1>(), se ) )>;
@@ -189,7 +198,7 @@ Heat<ConvexType,BasisTemperatureType>::updateJacobianStabilizationGLS( DataUpdat
 
     auto thermalConductivityExprBase = matProps.property("thermal-conductivity");
     bool thermalConductivityIsMatrix = thermalConductivityExprBase.template hasExpr<nDim,nDim>();
-    bool thermalConductivityDependsOnCoordinatesInSpace = thermalConductivityExprBase.template hasSymbolDependencyOnCoordinatesInSpace<nDim>( se );
+    bool thermalConductivityDependsOnCoordinatesInSpace = thermalConductivityExprBase.template hasSymbolDependencyOnCoordinatesInSpace<nDim>( se ) && this->stabilizationGLS_checkConductivityDependencyOnCoordinates();
     if ( thermalConductivityIsMatrix )
     {
         auto thermalConductivityExpr = expr( thermalConductivityExprBase.template expr<nDim,nDim>(), se );
@@ -232,11 +241,11 @@ Heat<ConvexType,BasisTemperatureType>::updateJacobianStabilizationGLS( DataUpdat
         residual_lhs.expression().add( densityExpr*heatCapacityExpr*this->timeStepBdfTemperature()->polyDerivCoefficient(0)*idt(u) );
     }
 
-    if ( this->hasVelocityConvectionExpr( matName ) )
+    if ( physicHeatData.hasConvectionEnabled() )
     {
         auto densityExpr = expr( matProps.property("density").template expr<1,1>(), se );
         auto heatCapacityExpr = expr( matProps.property("specific-heat-capacity").template expr<1,1>(), se );
-        auto velConvExpr = expr( this->velocityConvectionExpr( matName ), se );
+        auto velConvExpr = physicHeatData.convection().expr( se );
         residual_lhs.expression().add( timeSteppingScaling*densityExpr*heatCapacityExpr*gradt(u)*velConvExpr );
         stab_test.expression().add( densityExpr*heatCapacityExpr*grad(u)*velConvExpr );
         exprCoeffConvection.expression().add( densityExpr*heatCapacityExpr*velConvExpr );
@@ -271,7 +280,7 @@ template< typename ConvexType, typename BasisTemperatureType >
 template <typename ModelContextType,typename RangeType,typename... ExprAddedType>
 void
 Heat<ConvexType,BasisTemperatureType>::updateResidualStabilizationGLS( DataUpdateResidual & data, ModelContextType const& mctx,
-                                                                       ModelPhysic<nDim> const& physicData,
+                                                                       ModelPhysicHeat<nDim> const& physicHeatData,
                                                                        MaterialProperties const& matProps, RangeType const& range,
                                                                        const ExprAddedType&... exprsAddedInResidual ) const
 {
@@ -304,7 +313,7 @@ Heat<ConvexType,BasisTemperatureType>::updateResidualStabilizationGLS( DataUpdat
 
     using expr_density_type = std::decay_t<decltype( expr( matProps.property("density").template expr<1,1>(), se ) )>;
     using expr_heat_capacity_type = std::decay_t<decltype( expr( matProps.property("specific-heat-capacity").template expr<1,1>(), se ) )>;
-    using expr_velocity_convection_type = std::decay_t<decltype( expr( this->velocityConvectionExpr( matName ), se ) )>;
+    using expr_velocity_convection_type = std::decay_t<decltype( std::declval<ModelPhysicHeat<nDim>>().convection().expr( se ) )>;
 
     using expr_coeff_null_type = std::decay_t<decltype( cst(0.) )>;
     using expr_thermal_conductivity_scalar_type = std::decay_t<decltype( expr( matProps.property("thermal-conductivity").template expr<1,1>(), se ) )>;
@@ -327,12 +336,12 @@ Heat<ConvexType,BasisTemperatureType>::updateResidualStabilizationGLS( DataUpdat
                                         expr_test_diffusion_variable_conductivity_scalar_type>();
 
 
-    using expr_previous_residual_type = std::decay_t<decltype( Heat_detail::exprResidual( *this, physicData, matProps, mctx, 1.0-timeSteppingScaling, true ) )>;
-    auto residual_base = Heat_detail::exprResidual<expr_previous_residual_type>( *this, physicData, matProps, mctx, timeSteppingScaling, timeSteppingEvaluateResidualWithoutTimeDerivative );
+    using expr_previous_residual_type = std::decay_t<decltype( Heat_detail::exprResidual( *this, physicHeatData, matProps, mctx, 1.0-timeSteppingScaling, true ) )>;
+    auto residual_base = Heat_detail::exprResidual<expr_previous_residual_type>( *this, physicHeatData, matProps, mctx, timeSteppingScaling, timeSteppingEvaluateResidualWithoutTimeDerivative );
     if ( !this->isStationary() && this->timeStepping() == "Theta" )
     {
         auto const& mctxPrevious = mctx.additionalContext( "time-stepping.previous-model-context" );
-        auto previousResidualExpr = Heat_detail::exprResidual( *this, physicData, matProps, mctxPrevious, 1.0-timeSteppingScaling, true );
+        auto previousResidualExpr = Heat_detail::exprResidual( *this, physicHeatData, matProps, mctxPrevious, 1.0-timeSteppingScaling, true );
         if ( data.hasParameterValuesInfo( "time-stepping.previous-parameter-values" ) )
             previousResidualExpr.setParameterValues( data.parameterValuesInfo( "time-stepping.previous-parameter-values" ) );
         residual_base.expression().add( previousResidualExpr );
@@ -342,7 +351,7 @@ Heat<ConvexType,BasisTemperatureType>::updateResidualStabilizationGLS( DataUpdat
 
     auto thermalConductivityExprBase = matProps.property("thermal-conductivity");
     bool thermalConductivityIsMatrix = thermalConductivityExprBase.template hasExpr<nDim,nDim>();
-    bool thermalConductivityDependsOnCoordinatesInSpace = thermalConductivityExprBase.template hasSymbolDependencyOnCoordinatesInSpace<nDim>( se );
+    bool thermalConductivityDependsOnCoordinatesInSpace = thermalConductivityExprBase.template hasSymbolDependencyOnCoordinatesInSpace<nDim>( se ) && this->stabilizationGLS_checkConductivityDependencyOnCoordinates();
     if ( thermalConductivityIsMatrix )
     {
         auto thermalConductivityExpr = expr( thermalConductivityExprBase.template expr<nDim,nDim>(), se );
@@ -377,11 +386,11 @@ Heat<ConvexType,BasisTemperatureType>::updateResidualStabilizationGLS( DataUpdat
         tauExprScalarDiffusion.expression().setDiffusion( thermalConductivityExpr );
     }
 
-    if ( this->hasVelocityConvectionExpr( matName ) )
+    if ( physicHeatData.hasConvectionEnabled() )
     {
         auto densityExpr = expr( matProps.property("density").template expr<1,1>(), se );
         auto heatCapacityExpr = expr( matProps.property("specific-heat-capacity").template expr<1,1>(), se );
-        auto velConvExpr = expr( this->velocityConvectionExpr( matName ), se );
+        auto velConvExpr = physicHeatData.convection().expr( se );
         exprCoeffConvection.expression().add( densityExpr*heatCapacityExpr*velConvExpr );
         stab_test.expression().add( densityExpr*heatCapacityExpr*grad(u)*velConvExpr );
     }
@@ -411,7 +420,7 @@ template< typename ConvexType, typename BasisTemperatureType >
 template <typename ModelContextType,typename RangeType>
 void
 Heat<ConvexType,BasisTemperatureType>::updateLinearPDEStabilizationGLS( DataUpdateLinear & data, ModelContextType const& mctx,
-                                                                        ModelPhysic<nDim> const& physicData,
+                                                                        ModelPhysicHeat<nDim> const& physicHeatData,
                                                                         MaterialProperties const& matProps, RangeType const& range ) const
 {
     sparse_matrix_ptrtype& A = data.matrix();
@@ -447,7 +456,8 @@ Heat<ConvexType,BasisTemperatureType>::updateLinearPDEStabilizationGLS( DataUpda
 
     using expr_density_type = std::decay_t<decltype( expr( matProps.property("density").template expr<1,1>(), se ) )>;
     using expr_heat_capacity_type = std::decay_t<decltype( expr( matProps.property("specific-heat-capacity").template expr<1,1>(), se ) )>;
-    using expr_velocity_convection_type = std::decay_t<decltype( expr( this->velocityConvectionExpr( matName ), se ) )>;
+    using expr_velocity_convection_type = std::decay_t<decltype( std::declval<ModelPhysicHeat<nDim>>().convection().expr( se ) )>;
+    using expr_heatsource_type = std::decay_t<decltype( std::declval<ModelPhysicHeat<nDim>>().heatSources().front().expr( se ) )>;
 
     using expr_coeff_null_type = std::decay_t<decltype( cst(0.) )>;
     using expr_thermal_conductivity_scalar_type = std::decay_t<decltype( expr( matProps.property("thermal-conductivity").template expr<1,1>(), se ) )>;
@@ -468,11 +478,12 @@ Heat<ConvexType,BasisTemperatureType>::updateLinearPDEStabilizationGLS( DataUpda
     using expr_residual_lhs_diffusion_variable_conductivity_scalar_type = std::decay_t<decltype( -timeSteppingScaling*inner(expr_grad_thermal_conductivity_scalar_type{},gradt(u)) )>;
 
     using expr_residual_rhs_time_derivative_type = std::decay_t<decltype( expr_density_type{}*expr_heat_capacity_type{}*idv(this->timeStepBdfTemperature()->polyDeriv()) )>;
-    using expr_residual_rhs_previous_residual_type = std::decay_t<decltype( -Heat_detail::exprResidual( *this, physicData, matProps, mctx, 1.0-timeSteppingScaling, true ) )>;
+    using expr_residual_rhs_previous_residual_type = std::decay_t<decltype( -Heat_detail::exprResidual( *this, physicHeatData, matProps, mctx, 1.0-timeSteppingScaling, true ) )>;
+    using expr_residual_rhs_heatsource_type = std::decay_t<decltype( timeSteppingScaling*expr_heatsource_type{} )>;
 
     auto residual_lhs = exprOptionalConcat<expr_residual_lhs_time_derivative_type,expr_residual_lhs_convection_type,expr_residual_lhs_diffusion_scalar_type,expr_residual_lhs_diffusion_matrix_type,
                                            expr_residual_lhs_diffusion_variable_conductivity_scalar_type>();
-    auto residual_rhs = exprOptionalConcat<expr_residual_rhs_time_derivative_type,expr_residual_rhs_previous_residual_type>();
+    auto residual_rhs = exprOptionalConcat<expr_residual_rhs_time_derivative_type,expr_residual_rhs_previous_residual_type,expr_residual_rhs_heatsource_type>();
 
 
     // test functions
@@ -487,7 +498,7 @@ Heat<ConvexType,BasisTemperatureType>::updateLinearPDEStabilizationGLS( DataUpda
 
     auto thermalConductivityExprBase = matProps.property("thermal-conductivity");
     bool thermalConductivityIsMatrix = thermalConductivityExprBase.template hasExpr<nDim,nDim>();
-    bool thermalConductivityDependsOnCoordinatesInSpace = thermalConductivityExprBase.template hasSymbolDependencyOnCoordinatesInSpace<nDim>( se );
+    bool thermalConductivityDependsOnCoordinatesInSpace = thermalConductivityExprBase.template hasSymbolDependencyOnCoordinatesInSpace<nDim>( se ) && this->stabilizationGLS_checkConductivityDependencyOnCoordinates();
     if ( thermalConductivityIsMatrix )
     {
         auto thermalConductivityExpr = expr( thermalConductivityExprBase.template expr<nDim,nDim>(), se );
@@ -531,20 +542,27 @@ Heat<ConvexType,BasisTemperatureType>::updateLinearPDEStabilizationGLS( DataUpda
         residual_rhs.expression().add( densityExpr*heatCapacityExpr*idv(this->timeStepBdfTemperature()->polyDeriv()) );
     }
 
-    if ( this->hasVelocityConvectionExpr( matName ) )
+    if ( physicHeatData.hasConvectionEnabled() )
     {
         auto densityExpr = expr( matProps.property("density").template expr<1,1>(), se );
         auto heatCapacityExpr = expr( matProps.property("specific-heat-capacity").template expr<1,1>(), se );
-        auto velConvExpr = expr( this->velocityConvectionExpr( matName ), se );
+        auto velConvExpr = physicHeatData.convection().expr( se );
         residual_lhs.expression().add( timeSteppingScaling*densityExpr*heatCapacityExpr*gradt(u)*velConvExpr );
         stab_test.expression().add( densityExpr*heatCapacityExpr*grad(u)*velConvExpr );
         exprCoeffConvection.expression().add( densityExpr*heatCapacityExpr*velConvExpr );
     }
 
+    for ( auto const& heatSource : physicHeatData.heatSources() )
+    {
+        auto hsExpr = heatSource.expr( se );
+        residual_rhs.expression().add( timeSteppingScaling*hsExpr );
+    }
+
+
     if ( !this->isStationary() && this->timeStepping() == "Theta" )
     {
         auto const& mctxPrevious = mctx.additionalContext( "time-stepping.previous-model-context" );
-        auto previousResidualExpr = -Heat_detail::exprResidual( *this, physicData, matProps, mctxPrevious, 1.0-timeSteppingScaling, true );
+        auto previousResidualExpr = -Heat_detail::exprResidual( *this, physicHeatData, matProps, mctxPrevious, 1.0-timeSteppingScaling, true );
         if ( data.hasParameterValuesInfo( "time-stepping.previous-parameter-values" ) )
             previousResidualExpr.setParameterValues( data.parameterValuesInfo( "time-stepping.previous-parameter-values" ) );
         residual_rhs.expression().add( previousResidualExpr );
@@ -582,69 +600,6 @@ Heat<ConvexType,BasisTemperatureType>::updateLinearPDEStabilizationGLS( DataUpda
     }
 
     this->log("Heat","updateLinearPDEStabilizationGLS", "finish"+sc);
-    
-
-#if 0
-
-    auto rhocpuconv = rhocp*uconv;
-    auto tauExpr = Feel::FeelModels::stabilizationGLSParameterExpr( *heatToolbox.stabilizationGLSParameter(),rhocpuconv/*rhocp*uconv*/, kappa );
-#if 1
-    auto tauFieldPtr = heatToolbox.stabilizationGLSParameter()->fieldTauPtr();
-    tauFieldPtr->on(_range=range,_expr=tauExpr);
-    auto tau = idv(tauFieldPtr);
-#else
-    auto tau = tauExpr;
-#endif
-
-    if (!heatToolbox.isStationary())
-    {
-        auto stab_residual_bilinear = HeatDetail_StabGLS::residualTransientLinearExpr( rhocp, kappa, uconv, u, timeSteppingScaling, heatToolbox, mpl::int_<StabResidualType>() );
-        bilinearForm_PatternCoupled +=
-            integrate( _range=range,
-                       _expr=tau*stab_residual_bilinear*stab_test,
-                       _geomap=heatToolbox.geomap() );
-        auto rhsTimeStep = heatToolbox.timeStepBdfTemperature()->polyDeriv();
-        auto stab_residual_linear = rhocp*idv( rhsTimeStep );
-        myLinearForm +=
-            integrate( _range=range,
-                       _expr= val(tau*stab_residual_linear)*stab_test,
-                       _geomap=heatToolbox.geomap() );
-    }
-    else
-    {
-        auto stab_residual_bilinear = HeatDetail_StabGLS::residualStationaryLinearExpr( rhocp, kappa, uconv, u, heatToolbox, mpl::int_<StabResidualType>() );
-        bilinearForm_PatternCoupled +=
-            integrate( _range=range,
-                       _expr=tau*stab_residual_bilinear*stab_test,
-                       _geomap=heatToolbox.geomap() );
-    }
-    for( auto const& d : heatToolbox.bodyForces() )
-    {
-        auto rangeBodyForceUsed = ( markers(d).empty() )? range : intersect( markedelements(mesh,markers(d)),range );
-        myLinearForm +=
-            integrate( _range=rangeBodyForceUsed,
-                       _expr=timeSteppingScaling*tau*expression(d,heatToolbox.symbolsExpr())*stab_test,
-                       _geomap=heatToolbox.geomap() );
-    }
-#if 0 // TODO VINCENT
-    if ( heatToolbox.timeStepping() == "Theta" )
-    {
-        auto previousSol = data.vectorInfo( prefixvm( heatToolbox.prefix(),"time-stepping.previous-solution") );
-        auto tOld = Xh->element( previousSol, heatToolbox.rowStartInVector() );
-        CHECK( heatToolbox.fieldVelocityConvectionIsUsedAndOperational() ) << "something wrong";
-        auto previousConv = data.vectorInfo( prefixvm( heatToolbox.prefix(),"time-stepping.previous-convection-velocity-field") );
-        auto uConvOld = heatToolbox.fieldVelocityConvection().functionSpace()->element( previousConv );
-        //auto stab_residual_old = (1.0 - timeSteppingScaling)*rhocp*gradv(tOld)*idv(uConvOld);
-        auto stab_residual_old = HeatDetail_StabGLS::residualTransientResidualWithoutTimeDerivativeExpr( rhocp, kappa, idv(uConvOld), tOld, 1.0-timeSteppingScaling, heatToolbox, mpl::int_<StabResidualType>() );
-        myLinearForm +=
-            integrate( _range=range,
-                       _expr=-tau*stab_residual_old*stab_test,
-                       _geomap=heatToolbox.geomap() );
-        // TODO body forces
-    }
-#endif
-    heatToolbox.log("Heat","updateLinearPDEStabilizationGLS", "finish"+sc);
-#endif
 }
 
 

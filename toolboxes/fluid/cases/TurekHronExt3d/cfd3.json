@@ -3,12 +3,25 @@
     "ShortName":"Fluid",
     "Models":
     {
-        "equations":"Navier-Stokes"
+        "fluid":{
+            "equations":"Navier-Stokes"
+        }
     },
     "Parameters":
     {
         "ubar":"2",
         "chi":"t<2:t"
+    },
+    "Meshes":
+    {
+        "fluid":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/cfd.geo",
+                "hsize":0.03 // #M0=0.03;M1=0.015 ( work also 0.04)
+            }
+        }
     },
     "Materials":
     {
@@ -19,9 +32,9 @@
     },
     "BoundaryConditions":
     {
-        "velocity":
+        "fluid":
         {
-            "Dirichlet":
+            "velocity":
             {
                 "inlet":
                 {
@@ -32,10 +45,7 @@
                     "markers":["wall1","wall2"],
                     "expr":"{0,0,0}"
                 }
-            }
-        },
-        "fluid":
-        {
+            },
             "outlet":
             {
                 "outlet":
@@ -47,13 +57,16 @@
     },
     "PostProcess":
     {
-        "Exports":
+        "fluid":
         {
-            "fields":["velocity","pressure","pid"]
-        },
-        "Measures":
-        {
-            "Forces":"wall2"
+            "Exports":
+            {
+                "fields":["velocity","pressure","pid"]
+            },
+            "Measures":
+            {
+                "Forces":"wall2"
+            }
         }
     }
 

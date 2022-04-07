@@ -30,7 +30,6 @@
 
 #include <feel/options.hpp>
 #include <feel/feelalg/enums.hpp>
-#include <feel/feelcrb/crbenums.hpp>
 #include <feel/feelfilters/gmshenums.hpp>
 
 #if defined(FEELPP_HAS_HARTS)
@@ -93,6 +92,8 @@ generic_options()
         ( "repository.prefix", po::value<std::string>(), "change directory to specified one" )
         ( "repository.case", po::value<std::string>(), "change directory to specified one relative to repository.prefix" )
         ( "repository.npdir", po::value<bool>()->default_value(true), "enable/disable sub-directory np_<number of processors>")
+        ( "repository.append.np", po::value<bool>(), "enable/disable sub-directory np_<number of processors>")
+        ( "repository.append.date", po::value<bool>(), "enable/disable appending sub-directory <date> ")
         ( "npdir", po::value<bool>()->default_value(true), "enable/disable sub-directory np_<number of processors>")
         ( "fail-on-unknown-option", po::value<bool>()->default_value(false), "exit feel++ application if unknown option found" )
         ( "show-preconditioner-options", "show on the fly the preconditioner options used" )
@@ -181,6 +182,7 @@ nlopt_options( std::string const& prefix )
     po::options_description _options( "NLopt " + prefix + " options" );
     _options.add_options()
     // solver options
+        ( prefixvm( prefix,"nlopt.algo" ).c_str(), Feel::po::value<std::string>()->default_value( "LN_COBYLA" ), "NLopt algorithm: refer to /feel/feelopt/enums.cpp for a list" )
         ( prefixvm( prefix,"nlopt.ftol_rel" ).c_str(), Feel::po::value<double>()->default_value( 1e-4 ), "NLopt objective function relative tolerance" )
         ( prefixvm( prefix,"nlopt.ftol_abs" ).c_str(), Feel::po::value<double>()->default_value( 1e-10 ), "NLopt objective function  absolute tolerance" )
         ( prefixvm( prefix,"nlopt.xtol_rel" ).c_str(), Feel::po::value<double>()->default_value( 1e-4 ), "NLopt variables  relative tolerance" )
@@ -687,7 +689,7 @@ crbOptions( std::string const& prefix )
         ( prefixvm( prefix, "crb.absolute-error").c_str() , Feel::po::value<bool>()->default_value( false ), "Impose to compute absolute error PFEM/CRB instead of relative" )
         ( prefixvm( prefix, "crb.dimension-max").c_str()   , Feel::po::value<int>()->default_value( 1 ),       "Offline max WN size, set to 1 by default to avoid to enrich the existing database if this option doesn't appear in onefeel interface or in the config file." )
         ( prefixvm( prefix, "crb.dimension").c_str()   , Feel::po::value<int>()->default_value( -1 ),       "Online  WN size" )
-        ( prefixvm( prefix, "crb.error-type").c_str()   , Feel::po::value<int>()->default_value( ( int )CRB_RESIDUAL_SCM ),       "CRB error type to be computed" )
+        ( prefixvm( prefix, "crb.error-type").c_str()   , Feel::po::value<int>()->default_value( 1 ),       "CRB error type to be computed: =0 residual, =1 residual scm, =2 random, =3 empirical" )
         ( prefixvm( prefix, "crb.compute-apee-for-each-time-step").c_str(),Feel::po::value<bool>()->default_value( true ),"Compute error estimation for each time step (parabolic problems) is true, else compute only for the last one")
         ( prefixvm( prefix, "crb.factor").c_str()   , Feel::po::value<int>()->default_value( -1 ),  "factor useful to estimate error by empirical method" )
         ( prefixvm( prefix, "crb.Nm").c_str()   , Feel::po::value<int>()->default_value( 1 ),       "Offline  number of modes per mu (for the POD) " )
@@ -1128,6 +1130,18 @@ ptree_options( std::string const& prefix )
 }
 
 po::options_description
+json_options( std::string const& prefix )
+{
+    po::options_description _options( "JSON " + prefix + " options" );
+    _options.add_options()
+        ( prefixvm( prefix,"json.filename" ).c_str(), po::value<std::vector<std::string> >()->multitoken(), "specify a list of json filename" )
+        ( prefixvm( prefix,"json.patch" ).c_str(), po::value<std::vector<std::string> >()->multitoken(), "specify a list of patch to be applied" )
+        ( prefixvm( prefix,"json.merge_patch" ).c_str(), po::value<std::vector<std::string> >()->multitoken(), "specify a list of merge_patch to be applied" )
+        ;
+    return _options;
+}
+
+po::options_description
 eq_options( std::string const& prefix )
 {
     po::options_description _options( "EQ " + prefix + " options" );
@@ -1235,7 +1249,8 @@ feel_options( std::string const& prefix  )
                    .add( checker_options( prefix ) )
                    .add( journal_options( prefix ) )
                    .add( fmu_options( prefix ) )
-                   .add( ptree_options( prefix ) );
+        //.add( ptree_options( prefix ) )
+                   .add( json_options( prefix ) );
 
     return opt;
 

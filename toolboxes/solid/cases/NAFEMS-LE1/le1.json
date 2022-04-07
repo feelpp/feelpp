@@ -3,7 +3,20 @@
     "ShortName":"le1",
     "Models":
     {
-        "equations":"Elasticity"
+        "solid":{
+            "equations":"Elasticity"
+        }
+    },
+    "Meshes":
+    {
+        "solid":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/le1.geo",
+                "hsize":0.05 // 0.01
+            }
+        }
     },
     "Materials":
     {
@@ -16,32 +29,21 @@
     },
     "BoundaryConditions":
     {
-        "displacement_x":
+        "solid":
         {
-            "Dirichlet":
+            "displacement":
             {
-                "AB":
-                {
+                "AB":{
+                    "component":"x",
+                    "expr":"0"
+                },
+                "CD":{
+                    "component":"y",
                     "expr":"0"
                 }
-            }
-        },
-        "displacement_y":
-        {
-            "Dirichlet":
-            {
-                "CD":
-                {
-                    "expr":"0"
-                }
-            }
-        },
-        "displacement":
-        {
-            "Neumann_scalar":
-            {
-                "BC":
-                {
+            },
+            "normal_stress":{
+                "BC":{
                     "expr":"1e7"
                 }
             }
@@ -49,18 +51,35 @@
     },
     "PostProcess":
     {
-        "Exports":
+        "solid":
         {
-            "fields":["displacement","von-mises-criterion","tresca-criterion","principal-stresses"]
-        },
-        "Measures":
-        {
-            "Points":
+            "Exports":
             {
-                "pointD":
+                "fields":["displacement","von-mises-criterion","tresca-criterion","principal-stresses"]
+            },
+            "Measures":
+            {
+                "Points":
                 {
-                    "coord":"{2,0,0}",
-                    "fields":["stress_yy"] // NOT AVAILABLE CURRENTLY
+                    "pointD":
+                    {
+                        "coord":"{2,0}",
+                        "expressions":
+                        {
+                            "sigma_yy":"solid_stress_P_11:solid_stress_P_11"
+                        }
+                    }
+                }
+            },
+            "Checkers":
+            {
+                "Measures":
+                {
+                    "Points_pointD_expr_sigma_yy":
+                    {
+                        "value":92.7e6,
+                        "tolerance":1e-2
+                    }
                 }
             }
         }

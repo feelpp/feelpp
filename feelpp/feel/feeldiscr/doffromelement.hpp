@@ -65,6 +65,7 @@ class DofFromElement
     typedef typename element_type::face_permutation_type face_permutation_type;
 
     using size_type = typename mesh_type::size_type;
+    using mesh_marker_type = typename doftable_type::mesh_marker_type;
 
     static const uint16_type nOrder = fe_type::nOrder;
     static const uint16_type nDim = mesh_type::nDim;
@@ -143,6 +144,7 @@ class DofFromElement
   private:
     doftable_type* M_doftable;
     fe_type const& M_fe;
+    mesh_marker_type M_emptyMarker;
 
   private:
     //! default constructor
@@ -172,7 +174,7 @@ class DofFromElement
             for ( uint16_type i = 0; i < element_type::numVertices; ++i )
             {
                 auto const& thepoint = __elt.point( i );
-                Marker1 pointMarker = thepoint.hasMarker() ? thepoint.marker() : Marker1( 0 );
+                mesh_marker_type const& pointMarker = thepoint.hasMarker() ? thepoint.marker() : M_emptyMarker;
                 for ( uint16_type l = 0; l < fe_type::nDofPerVertex; ++l, ++lc )
                 {
                     //const size_type gDof = global_shift + ( __elt.point( i ).id() ) * fe_type::nDofPerVertex + l;
@@ -201,7 +203,7 @@ class DofFromElement
 
                 size_type ie = __elt.id();
                 uint16_type lc = local_shift;
-                Marker1 eltMarker = __elt.hasMarker() ? __elt.marker() : Marker1( 0 );
+                mesh_marker_type const& eltMarker = __elt.hasMarker() ? __elt.marker() : M_emptyMarker;
 
                 for ( uint16_type l = 0; l < fe_type::nDofPerEdge; ++l, ++lc )
                 {
@@ -226,7 +228,7 @@ class DofFromElement
 
                 for ( uint16_type i = 0; i < element_type::numEdges; ++i )
                 {
-                    Marker1 edgeMarker = __elt.edge( i ).hasMarker() ? __elt.edge( i ).marker() : Marker1( 0 );
+                    mesh_marker_type const& edgeMarker = __elt.edge( i ).hasMarker() ? __elt.edge( i ).marker() : M_emptyMarker;
 
                     for ( uint16_type l = 0; l < fe_type::nDofPerEdge; ++l, ++lc )
                     {
@@ -283,7 +285,7 @@ class DofFromElement
 
                 for ( uint16_type i = 0; i < element_type::numEdges; ++i )
                 {
-                    Marker1 edgeMarker = __elt.edge( i ).hasMarker() ? __elt.edge( i ).marker() : Marker1( 0 );
+                    mesh_marker_type const& edgeMarker = __elt.edge( i ).hasMarker() ? __elt.edge( i ).marker() : M_emptyMarker;
                     for ( uint16_type l = 0; l < fe_type::nDofPerEdge; ++l, ++lc )
                     {
                         size_type gDof = __elt.edge( i ).id() * fe_type::nDofPerEdge;
@@ -343,7 +345,7 @@ class DofFromElement
 
                 size_type ie = __elt.id();
                 uint16_type lc = local_shift;
-                Marker1 eltMarker = __elt.hasMarker() ? __elt.marker() : Marker1( 0 );
+                mesh_marker_type const& eltMarker = __elt.hasMarker() ? __elt.marker() : M_emptyMarker;
 
                 for ( uint16_type l = 0; l < fe_type::nDofPerFace; ++l, ++lc )
                 {
@@ -368,7 +370,7 @@ class DofFromElement
                 for ( uint16_type i = 0; i < element_type::numFaces; ++i )
                 {
                     face_permutation_type permutation = __elt.facePermutation( i );
-                    Marker1 faceMarker = __elt.face( i ).hasMarker() ? __elt.face( i ).marker() : Marker1( 0 );
+                    mesh_marker_type const& faceMarker = __elt.face( i ).hasMarker() ? __elt.face( i ).marker() : M_emptyMarker;
 
                     DCHECK( permutation != face_permutation_type( 0 ) ) << "invalid face permutation";
 
@@ -469,7 +471,7 @@ class DofFromElement
 
             size_type ie = __elt.id();
             uint16_type lc = local_shift;
-            Marker1 eltMarker = __elt.hasMarker() ? __elt.marker() : Marker1( 0 );
+            mesh_marker_type const& eltMarker = __elt.hasMarker() ? __elt.marker() : M_emptyMarker;
 
             for ( uint16_type l = 0; l < fe_type::nDofPerVolume; ++l, ++lc )
             {

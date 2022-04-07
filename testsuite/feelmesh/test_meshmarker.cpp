@@ -2,6 +2,7 @@
 #define BOOST_TEST_MODULE test_meshmarker
 #include <feel/feelcore/testsuite.hpp>
 
+#include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelfilters/geotool.hpp>
 #include <feel/feelvf/vf.hpp>
 
@@ -74,8 +75,70 @@ BOOST_AUTO_TEST_CASE( test_meshmarker1 )
         BOOST_CHECK( nMarkedPointsSubmesh >= 4 );
     else
         BOOST_CHECK( nMarkedPointsSubmesh == 4 );
+}
+
+BOOST_AUTO_TEST_CASE( test_meshmarker2 )
+{
+    using namespace Feel;
+    auto mesh = loadMesh(_mesh=new Mesh<Simplex<2,1>>,_filename="${cfgdir}/test_meshmarker_square_4mat.geo");
+    for ( std::string markerName : {"mat1","mat2","mat3","mat4","mat1_2","mat1_2_3","mat1_2_3_4"} )
+        BOOST_CHECK( mesh->hasElementMarker( markerName ) );
+
+    for (int i=0;i<4;++i)
+    {
+        double matMeaure = measure(_range=markedelements(mesh,fmt::format("mat{}",i+1)));
+        BOOST_CHECK_CLOSE( matMeaure, 0.25, 1e-10 );
+    }
+    double matMeaure1_2 = measure(_range=markedelements(mesh,"mat1_2"));
+    BOOST_CHECK_CLOSE( matMeaure1_2, 0.5, 1e-10 );
+    double matMeaure1_2_3 = measure(_range=markedelements(mesh,"mat1_2_3"));
+    BOOST_CHECK_CLOSE( matMeaure1_2_3, 0.75, 1e-10 );
+    double matMeaure1_2_3_4 = measure(_range=markedelements(mesh,"mat1_2_3_4"));
+    BOOST_CHECK_CLOSE( matMeaure1_2_3_4, 1.0, 1e-10 );
+
+    double measure_gamma_x0_mat1 = measure(_range=markedfaces( mesh,"gamma_x0_mat1"));
+    BOOST_CHECK_CLOSE( measure_gamma_x0_mat1, 0.5, 1e-10 );
+    double measure_gamma_x0_mat1_3 = measure(_range=markedfaces( mesh,"gamma_x0_mat1_3"));
+    BOOST_CHECK_CLOSE( measure_gamma_x0_mat1_3, 1.0, 1e-10 );
+    double measure_gamma_all = measure(_range=markedfaces( mesh,"gamma_all"));
+    BOOST_CHECK_CLOSE( measure_gamma_all, 4.0, 1e-10 );
+
+    double measure_interface_mat1_mat3 = measure(_range=markedfaces( mesh,"interface_mat1_mat3"));
+    BOOST_CHECK_CLOSE( measure_interface_mat1_mat3, 0.5, 1e-10 );
+    double measure_interface_all = measure(_range=markedfaces( mesh,"interface_all"));
+    BOOST_CHECK_CLOSE( measure_interface_all, 2.0, 1e-10 );
+
+    size_type nMarkedPoints_point_corner_00 = nelements( markedpoints(mesh,"point_corner_00"), true );
+    BOOST_CHECK( nMarkedPoints_point_corner_00 >= 1 );
+    size_type nMarkedPoints_point_corner_all = nelements( markedpoints(mesh,"point_corner_all"), true );
+    BOOST_CHECK( nMarkedPoints_point_corner_all >= 4 );
+    size_type nMarkedPoints_point_geo_all = nelements( markedpoints(mesh,"point_geo_all"), true );
+    BOOST_CHECK( nMarkedPoints_point_geo_all >= 9 );
+
+
+    auto submeshElt = createSubmesh(_mesh=mesh,_range=markedelements(mesh,"mat1_2_3"));
+    for (int i=0;i<3;++i)
+    {
+        double submeshElt_matMeaure = measure(_range=markedelements(submeshElt,fmt::format("mat{}",i+1)));
+        BOOST_CHECK_CLOSE( submeshElt_matMeaure, 0.25, 1e-10 );
+    }
+    double submeshElt_matMeaure1_2 = measure(_range=markedelements(submeshElt,"mat1_2"));
+    BOOST_CHECK_CLOSE( submeshElt_matMeaure1_2, 0.5, 1e-10 );
+    double submeshElt_matMeaure1_2_3 = measure(_range=markedelements(submeshElt,"mat1_2_3"));
+    BOOST_CHECK_CLOSE( submeshElt_matMeaure1_2_3, 0.75, 1e-10 );
+
+    double submeshElt_measure_gamma_x0_mat1 = measure(_range=markedfaces( submeshElt,"gamma_x0_mat1"));
+    BOOST_CHECK_CLOSE( submeshElt_measure_gamma_x0_mat1, 0.5, 1e-10 );
+    double submeshElt_measure_gamma_x0_mat1_3 = measure(_range=markedfaces( submeshElt,"gamma_x0_mat1_3"));
+    BOOST_CHECK_CLOSE( submeshElt_measure_gamma_x0_mat1_3, 1.0, 1e-10 );
+    double submeshElt_measure_gamma_all = measure(_range=markedfaces( submeshElt,"gamma_all"));
+    BOOST_CHECK_CLOSE( submeshElt_measure_gamma_all, 3.0, 1e-10 );
+
+    size_type submeshElt_nMarkedPoints_point_geo_all = nelements( markedpoints(submeshElt,"point_geo_all"), true );
+    BOOST_CHECK( submeshElt_nMarkedPoints_point_geo_all >= 8 );
 
 }
+
 
 BOOST_AUTO_TEST_SUITE_END()
 

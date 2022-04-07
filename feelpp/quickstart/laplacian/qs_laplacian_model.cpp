@@ -62,7 +62,8 @@ int cg_laplacian_model()
         Vh = Pch<Order>( mesh );
 
     // cgLaplacian may not solve the problem, hence u is std::optional
-    ModelProperties props( Environment::expand(soption("json_filename")) );
+    ModelProperties props;
+    props.setupFromFilenameOption();
     auto to_export = cgLaplacianModel( Vh, props );
 
     // tag::export[]
@@ -82,23 +83,28 @@ int main( int argc, char** argv )
 {
     // tag::env[]
     using namespace Feel;
-    
-    po::options_description laplacianoptions( "Laplacian options" );
-    
-    laplacianoptions.add_options()( "no-solve", po::value<bool>()->default_value( false ), "No solve" )
-        ( "json_filename", po::value<std::string>()->default_value( "$cfgdir/model.json" ), "json files" )
-        ( "pyexpr.filename", po::value<std::string>()->default_value( "$cfgdir/../python/laplacian.py" ), "python filename to execute" );
-    laplacianoptions.add( case_options( FEELPP_DIM, "P1" ) );
-    laplacianoptions.add_options()( "marker.name", po::value<std::string>(), "marker on which to solve problem" );
-    laplacianoptions.add_options()( "marker.levelset", po::value<std::string>(), "marker on which to solve problem" );
+    try
+    {
+        po::options_description laplacianoptions( "Laplacian options" );
+        
+        laplacianoptions.add_options()( "no-solve", po::value<bool>()->default_value( false ), "No solve" )
+            ( "json_filename", po::value<std::string>()->default_value( "$cfgdir/model.json" ), "json files" )
+            ( "pyexpr.filename", po::value<std::string>()->default_value( "$cfgdir/../python/laplacian.py" ), "python filename to execute" );
+        laplacianoptions.add( case_options( FEELPP_DIM, "P1" ) );
+        laplacianoptions.add_options()( "marker.name", po::value<std::string>(), "marker on which to solve problem" );
+        laplacianoptions.add_options()( "marker.levelset", po::value<std::string>(), "marker on which to solve problem" );
 
-    Environment env( _argc = argc, _argv = argv,
-                     _desc = laplacianoptions,
-                     _about = about( _name = "qs_laplacian_model",
-                                     _author = "Feel++ Consortium",
-                                     _email = "feelpp-devel@feelpp.org" ) );
+        Environment env( _argc = argc, _argv = argv,
+                        _desc = laplacianoptions,
+                        _about = about( _name = "qs_laplacian_model",
+                                        _author = "Feel++ Consortium",
+                                        _email = "feelpp-devel@feelpp.org" ) );
 
-    if ( soption( "case.discretization" ) == "P1" )
-        return cg_laplacian_model<FEELPP_DIM,1>();
-    
+        if ( soption( "case.discretization" ) == "P1" )
+            return cg_laplacian_model<FEELPP_DIM,1>();
+    }
+    catch( ... )
+    {
+        handleExceptions();
+    }
 }

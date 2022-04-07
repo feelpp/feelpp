@@ -18,17 +18,13 @@
         "omega":
         {
             "name":"copper",
-            "cond":"58e3"
+            "poisson_c":"58e3"
         }
     },
     "BoundaryConditions":
     {
-        "potential":
+        "poisson":
         {
-            "VolumicForces":
-            {
-                "": {"expr":"0"}
-            },
             "Dirichlet":
             {
                 "top":
@@ -52,6 +48,7 @@
     },
     "PostProcess":
     {
+        "poisson":{
         "Exports":
         {
             "fields":["potential","flux","postpotential"]
@@ -127,12 +124,12 @@
                     "value":3.6815531607082702e-02,
                     "tolerance":1e-1
                 },
-                "Points_V0_potential":
+                "Points_V0_field_potential":
                 {
                     "value":3.125e-02,
                     "tolerance":1e-1
                 },
-                "Points_V1_potential":
+                "Points_V1_field_potential":
                 {
                     "value":0,
                     "tolerance":1e-4
@@ -148,6 +145,7 @@
                     "tolerance":1
                 }
             }
+        }
         }
     }
 }

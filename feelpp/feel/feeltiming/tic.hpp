@@ -62,6 +62,12 @@ counter<time_point,SecondBasedTimer> const sec_timer = {};
 
 namespace Feel
 {
+//! display
+const inline bool display = true;
+
+//! no display
+const inline bool no_display = false;
+
 namespace time
 {
 
@@ -71,12 +77,14 @@ inline void tic()
     Feel::details::sec_timer.tic();
 }
 
+
+
 //! 
 inline double  toc( std::string const& msg = "",
-                    bool display = true, 
+                    bool _display = display, 
                     std::string const& uiname = "" )
 {
-    auto t = Feel::details::sec_timer.toc( msg, display );
+    auto t = Feel::details::sec_timer.toc( msg, _display );
     Environment::addTimer( msg, t, uiname );
     return t.first;
 }

@@ -3,27 +3,41 @@
     "ShortName": "harmonic_extension",
     "Models":
     {
-        "equations":[
-            {
-                "name":"equation1",
-                "unknown":
-                {
+        "cfpdes":{
+            "equations":"equation1"
+        },
+        "equation1":{
+            "setup":{
+                "unknown":{
                     "basis":"Pchv1",
                     "name":"solution",
                     "symbol":"u"
+                },
+                "coefficients":{
+                    "c":1 // diffusion
                 }
             }
-        ]
+        }
     },
     "Parameters":
     {
         "ampl":0.1
     },
-    "Materials":
+     "Meshes":
+    {
+        "cfpdes":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/square.geo",
+                "hsize":0.01
+            }
+        }
+    },
+   "Materials":
     {
         "Omega":
         {
-            "equation1_c":1 // diffusion
         }
     },
     "BoundaryConditions":
@@ -41,31 +55,24 @@
                 {
                     "markers":["Bottom"],
                     "expr":"{0,0}"
-                }
-            },
-            "Dirichlet_x":
-            {
+                },
                 "GammaFixX":
                 {
                     "markers":["Left","Right"],
-                    "expr":"0"
+                    "expr":"0",
+                    "component":"x"
                 }
             }
         }
     },
     "PostProcess":
     {
-        "use-model-name":1,
         "cfpdes":
         {
             "Exports":
             {
                 "fields":["equation1.solution"]
             }
-        },
-        "equation1":
-        {
-
         }
     }
 }

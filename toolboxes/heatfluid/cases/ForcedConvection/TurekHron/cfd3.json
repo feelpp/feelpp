@@ -4,9 +4,7 @@
     "ShortName":"Fluid",
     "Models":
     {
-        "use-model-name":1,
-        "fluid":
-        {
+        "fluid":{
             "equations":"Navier-Stokes"
         }
     },
@@ -14,6 +12,17 @@
     {
         "ubar":"2",
         "chi":"t<2:t"
+    },
+    "Meshes":
+    {
+        "heatfluid":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/cfd.geo",
+                "hsize":0.03 //0.01
+            }
+        }
     },
     "Materials":
     {
@@ -26,23 +35,22 @@
     },
     "InitialConditions":
     {
-        "temperature":
-        {
-            "Expression":
-            {
-                "myic":
-                {
-                    "markers":"Fluid",
-                    "expr":293.15
+        "heat":{
+            "temperature":{
+                "Expression":{
+                    "myic":{
+                        "markers":"Fluid",
+                        "expr":293.15
+                    }
                 }
             }
         }
     },
     "BoundaryConditions":
     {
-        "velocity":
+        "fluid":
         {
-            "Dirichlet":
+            "velocity":
             {
                 "inlet":
                 {
@@ -56,10 +64,7 @@
                 {
                     "expr":"{0,0}"
                 }
-            }
-        },
-        "fluid":
-        {
+            },
             "outlet":
             {
                 "outlet":
@@ -68,9 +73,9 @@
                 }
             }
         },
-        "temperature":
+        "heat":
         {
-            "Dirichlet":
+            "temperature":
             {
                 "inlet":
                 {
@@ -78,32 +83,12 @@
                     "expr":"( 293.15-10*(y-0.15)*(y-0.25)/(0.2^2) )*(y>0.15)*(y<0.25)+(293.15*(y<(0.15-1e-9)))+(293.15*(y>(0.25-1e-9))):y"
                     //"expr":"293.15"
                 }
-                //  "wall2":
-                //  {
-                //      "expr":"350"//"300" 
-                // }
             }
-            // "Neumann":
-            // {
-            //     "wall2":
-            //     {
-            //         "expr":"5e4" 
-            //     }
-            // },
-            // "Robin":
-            // {
-            //     "wall2":
-            //     {
-            //         "expr1":"1e3",//16.667",// h coeff
-            //         "expr2":"360"// temperature exterior
-            //     }
-            // }
         }
     },
     "PostProcess":
     {
-        "use-model-name":1,
-        "heat-fluid":
+        "heatfluid":
         {
             "Exports":
             {
