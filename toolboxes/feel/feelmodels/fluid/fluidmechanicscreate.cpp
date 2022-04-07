@@ -1426,6 +1426,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
                                                                    (boost::format("body_%1%.moment_of_inertia_body_frame")%bname).str(),
                                                                    (boost::format("body_%1%.fluid_forces")%bname).str(), (boost::format("body_%1%.fluid_torques")%bname).str() } );
     }
+    for( auto const& nba : M_bodySetBC.nbodyArticulated() )
+    {
+        this->addPostProcessMeasuresQuantitiesAllNamesAvailable( { (boost::format("nba_%1%.mass_center")%nba.name()).str(),
+                (boost::format("nba_%1%.rigid_rotation_angles")%nba.name()).str() } );
+    }
     this->setPostProcessExportsPidName( "trace_mesh", "trace.pid" );
     this->setPostProcessSaveAllFieldsAvailable( {"velocity","pressure","vorticity"/*,"displacement"*/} );
     super_type::initPostProcess();
