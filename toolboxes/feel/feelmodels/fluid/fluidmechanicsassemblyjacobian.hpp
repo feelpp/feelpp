@@ -113,9 +113,13 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobian( 
     const vector_ptrtype& XVec = data.currentSolution();
     sparse_matrix_ptrtype& J = data.jacobian();
     bool _BuildCstPart = data.buildCstPart();
+    bool usePicardLinearization = data.usePicardLinearization();
+    std::string jacobianApprox = usePicardLinearization? "Picard-Linearization" : "Analytic";
 
     std::string sc=(_BuildCstPart)?" (build cst part)":" (build non cst part)";
-    this->log("FluidMechanics","updateJacobian",(boost::format("start %1%") %sc).str() );
+    this->log("FluidMechanics","updateJacobian", fmt::format( "start {} : {}",sc,jacobianApprox));
+    this->timerTool("Solve").start();
+
     boost::mpi::timer thetimer;
 
     bool BuildNonCstPart = !_BuildCstPart;
@@ -199,7 +203,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobian( 
             bool doAssemblyStressTensor = ( physicFluidData->dynamicViscosity().isNewtonianLaw() && !physicFluidData->turbulence().isEnabled() )? BuildCstPart : BuildNonCstPart;
             if ( doAssemblyStressTensor )
             {
-                auto StressTensorExprJac = Feel::FeelModels::fluidMecViscousStressTensorJacobian(/*gradv(u),*/u,*physicFluidData,matProps,se);
+                auto StressTensorExprJac = Feel::FeelModels::fluidMecViscousStressTensorJacobian(/*gradv(u),*/u,*physicFluidData,matProps,se/*,usePicardLinearization*/);
                 bilinearFormVV +=
                     integrate( _range=range,
                                _expr= timeSteppingScaling*inner( StressTensorExprJac,grad(v) ),
@@ -228,7 +232,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobian( 
                 auto densityExpr = expr( matProps.property("density").template expr<1,1>(), se );
                 if ( BuildNonCstPart )
                 {
-                    if ( this->useSemiImplicitTimeScheme() )
+                    if ( this->useSemiImplicitTimeScheme() || usePicardLinearization )
                     {
                         auto const& beta_u = this->useSemiImplicitTimeScheme()? mctx.field( FieldTag::velocity_extrapolated(this), "velocity_extrapolated" ) : u;
                         bilinearFormVV +=
@@ -770,7 +774,8 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobian( 
     this->updateJacobianStabilisation( data, unwrap_ptr(u),unwrap_ptr(p) );
 
     //--------------------------------------------------------------------------------------------------//
-    /*double*/ timeElapsed=thetimer.elapsed();
+
+    timeElapsed = this->timerTool("Solve").stop();
     this->log("FluidMechanics","updateJacobian",(boost::format("finish %1% in %2% s") %sc %timeElapsed).str() );
 }
 
