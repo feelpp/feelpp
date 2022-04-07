@@ -379,9 +379,11 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic:
     sparse_matrix_ptrtype& J = data.jacobian();
     bool buildCstPart = data.buildCstPart();
     bool buildNonCstPart = !buildCstPart;
+    bool usePicardLinearization = data.usePicardLinearization();
 
     std::string sc=(buildCstPart)?" (cst)":" (non cst)";
-    this->log("CoefficientFormPDE","updateJacobian", "start"+sc);
+    std::string jacobianApprox = usePicardLinearization? "Picardlinearization" : "Analytic";
+    this->log("CoefficientFormPDE","updateJacobian", fmt::format( "start {} : {}",sc,jacobianApprox));
 
     double timeSteppingScaling = 1.;
     if ( !this->isStationary() )
@@ -426,7 +428,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic:
                                    _geomap=this->geomap() );
                 }
                 bool coeffConvectionDependOnUnknown = coeff_beta.hasSymbolDependency( trialSymbolNames, se );
-                if ( coeffConvectionDependOnUnknown && buildNonCstPart )
+                if ( coeffConvectionDependOnUnknown && !usePicardLinearization && buildNonCstPart )
                 {
                     hana::for_each( tse.map(), [this,&coeff_beta_expr,&u,&v,&J,&range,&Xh,&timeSteppingScaling]( auto const& e )
                     {
@@ -479,7 +481,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic:
                                            _geomap=this->geomap() );
                         }
                     }
-                    if ( coeffDiffusionDependOnUnknown && buildNonCstPart )
+                    if ( coeffDiffusionDependOnUnknown && !usePicardLinearization && buildNonCstPart )
                     {
                         hana::for_each( tse.map(), [this,&coeff_c_expr,&u,&v,&J,&range,&Xh,&timeSteppingScaling]( auto const& e )
                         {
@@ -529,7 +531,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic:
                                        _expr= timeSteppingScaling*coeff_c_expr*inner(gradt(u),grad(v)),
                                        _geomap=this->geomap() );
                     }
-                    if ( coeffDiffusionDependOnUnknown && buildNonCstPart )
+                    if ( coeffDiffusionDependOnUnknown && !usePicardLinearization && buildNonCstPart )
                     {
                         hana::for_each( tse.map(), [this,&coeff_c_expr,&u,&v,&J,&range,&Xh,&timeSteppingScaling]( auto const& e )
                         {
@@ -558,7 +560,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic:
             }
 
             // conservative flux source
-            if ( buildNonCstPart && physicCFPDEData->hasCoefficient( Coefficient::conservativeFluxSource ) )
+            if ( !usePicardLinearization && buildNonCstPart && physicCFPDEData->hasCoefficient( Coefficient::conservativeFluxSource ) )
             {
                 auto const& coeff_gamma = physicCFPDEData->coefficient( Coefficient::conservativeFluxSource );
                 bool coeffConservativeFluxSourceDependOnUnknown = coeff_gamma.hasSymbolDependency( trialSymbolNames, se );
@@ -619,7 +621,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic:
                                    _geomap=this->geomap() );
                 }
                 bool coeffConservativeFluxConvectionDependOnUnknown = coeff_alpha.hasSymbolDependency( trialSymbolNames, se );
-                if ( coeffConservativeFluxConvectionDependOnUnknown && buildNonCstPart )
+                if ( coeffConservativeFluxConvectionDependOnUnknown && !usePicardLinearization && buildNonCstPart )
                 {
                     hana::for_each( tse.map(), [this,&coeff_alpha_expr,&u,&v,&J,&range,&Xh,&getConservativeFluxConvectionAssemblyExpr]( auto const& e )
                     {
@@ -659,7 +661,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic:
                                        _geomap=this->geomap() );
                     }
                     bool coeffCurlCurlDependOnUnknown = coeff_zeta.hasSymbolDependency( trialSymbolNames, se );
-                    if ( coeffCurlCurlDependOnUnknown && buildNonCstPart )
+                    if ( coeffCurlCurlDependOnUnknown && !usePicardLinearization && buildNonCstPart )
                     {
                         hana::for_each( tse.map(), [this,&coeff_zeta_expr,&u,&v,&J,&range,&Xh,&timeSteppingScaling]( auto const& e )
                         {
@@ -698,7 +700,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic:
                                    _expr= timeSteppingScaling*coeff_a_expr*inner(idt(u), id(v)),
                                    _geomap=this->geomap() );
                 }
-                if ( coeffReactionDependOnUnknown && buildNonCstPart )
+                if ( coeffReactionDependOnUnknown && !usePicardLinearization && buildNonCstPart )
                 {
                     hana::for_each( tse.map(), [this,&coeff_a_expr,&u,&v,&J,&range,&Xh,&timeSteppingScaling]( auto const& e )
                     {
@@ -752,7 +754,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic:
                 auto const& coeff_f = physicCFPDEData->coefficient( Coefficient::source );
 
                 bool sourceDependOnUnknown = coeff_f.hasSymbolDependency( trialSymbolNames, se );
-                if ( sourceDependOnUnknown && buildNonCstPart )
+                if ( sourceDependOnUnknown && !usePicardLinearization && buildNonCstPart )
                 {
                     auto coeff_f_expr = hana::eval_if( hana::bool_c<unknown_is_scalar>,
                                                        [&coeff_f,&se] { return expr( coeff_f.expr(), se ); },
@@ -823,7 +825,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic:
     } // for each physic
 
     // Neumann bc :  k \nabla u  n = g
-    if ( buildNonCstPart )
+    if ( !usePicardLinearization && buildNonCstPart )
     {
         for ( auto const& bcDataPair : M_boundaryConditions->neumann() )
         {
