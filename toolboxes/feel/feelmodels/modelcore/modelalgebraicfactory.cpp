@@ -38,6 +38,7 @@ namespace FeelModels
 
 ModelAlgebraicFactory::ModelAlgebraicFactory( std::string const& prefix, po::variables_map const& vm )
     :
+    M_applyDofEliminationOnInitialGuess( false ),
     M_useSolverPtAP( false ),
     M_dofElimination_strategy( Feel::ContextOnMap[soption(_prefix=prefix,_name="on.type",_vm=vm)] ),
     M_dofElimination_valueOnDiagonal( doption(_prefix=prefix,_name="on.value_on_diagonal",_vm=vm) ),
@@ -143,6 +144,10 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
         if (this->model()->verbose()) Feel::FeelModels::Log(this->model()->prefix()+".MethodNum","buildMatrixVector","build all vectors",
                                                            this->model()->worldComm(),this->model()->verboseAllProc());
 
+        M_dofEliminationValues = M_backend->newVector(graph->mapRowPtr());
+        M_dofEliminationNonLinearStepValues = M_backend->newVector(graph->mapRowPtr());
+        M_dofEliminationNonLinearRhsModified = M_backend->newVector(graph->mapRowPtr());
+
         size_type size1=0,size2=0;
         //matrix with standart pattern
         M_J = M_backend->newMatrix(size1,size2,size1,size2,graph,indexSplit);
@@ -173,10 +178,10 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
                                          _prefix=M_backend->prefix() );
 
         // necessary to use the nonlinear solver
-        M_backend->nlSolver()->jacobian = std::bind( &self_type::updateJacobian,
-                                                     std::ref( *this ), std::placeholders::_1, std::placeholders::_2/*, M_R*/ );
-        M_backend->nlSolver()->residual = std::bind( &self_type::updateResidual,
-                                                     std::ref( *this ), std::placeholders::_1, std::placeholders::_2 );
+        // M_backend->nlSolver()->jacobian = std::bind( &self_type::updateJacobian,
+        //                                              std::ref( *this ), std::placeholders::_1, std::placeholders::_2/*, M_R*/ );
+        // M_backend->nlSolver()->residual = std::bind( &self_type::updateResidual,
+        //                                              std::ref( *this ), std::placeholders::_1, std::placeholders::_2 );
 
         if ( M_usePseudoTransientContinuation && M_pseudoTransientContinuationSerVariant == "solution" )
         {
@@ -226,10 +231,10 @@ void ModelAlgebraicFactory::initSolverPtAP( sparse_matrix_ptrtype matP, sparse_m
                                                _prefix=M_solverPtAP_backend->prefix() );
 
             // necessary to use the nonlinear solver
-            M_solverPtAP_backend->nlSolver()->jacobian = std::bind( &self_type::updateJacobian,
-                                                                    std::ref( *this ), std::placeholders::_1, std::placeholders::_2 );
-            M_solverPtAP_backend->nlSolver()->residual = std::bind( &self_type::updateResidual,
-                                                                    std::ref( *this ), std::placeholders::_1, std::placeholders::_2 );
+            // M_solverPtAP_backend->nlSolver()->jacobian = std::bind( &self_type::updateJacobian,
+            //                                                         std::ref( *this ), std::placeholders::_1, std::placeholders::_2 );
+            // M_solverPtAP_backend->nlSolver()->residual = std::bind( &self_type::updateResidual,
+            //                                                         std::ref( *this ), std::placeholders::_1, std::placeholders::_2 );
         }
     }
 //---------------------------------------------------------------------------------------------------------------//
@@ -497,51 +502,51 @@ ModelAlgebraicFactory::tabulateInformations( nl::json const& jsonInfo, TabulateI
 }
 
 
-    std::shared_ptr<std::ostringstream>
-    ModelAlgebraicFactory::getInfo() const
-    {
-        std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
+    // std::shared_ptr<std::ostringstream>
+    // ModelAlgebraicFactory::getInfo() const
+    // {
+    //     std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
 
-        *_ostr << "\n||==============================================||"
-               << "\n||---------------Info : SolverNum---------------||"
-               << "\n||==============================================||";
+    //     *_ostr << "\n||==============================================||"
+    //            << "\n||---------------Info : SolverNum---------------||"
+    //            << "\n||==============================================||";
 
-        *_ostr << "\n   Backend "
-               << "\n     -- prefix : " << this->backend()->prefix()
-               << "\n     -- type : " << "BACKEND_PETSC"
-               << "\n   KSP "
-               << "\n     -- type : " << this->backend()->kspType()
-               << "\n     -- tolerance : res=" << this->backend()->rTolerance() << ", diff=" << this->backend()->dTolerance() << ", abs=" << this->backend()->aTolerance()
-               << "\n     -- maxit : " << this->backend()->maxIterationsKSP()
-               << "\n     -- maxit : " << this->backend()->maxIterationsKSPReuse()
-               << "\n     -- reuse prec : " << (this->backend()->reusePrec()?"true":"false")
-               << "\n   SNES "
-               << "\n     -- reuse jac : " << (this->backend()->reuseJac()?"true":"false")
-               << "\n     -- reuse jac rebuild at first Newton step : " << (this->backend()->reuseJacRebuildAtFirstNewtonStep()?"true":"false")
-               << "\n     -- tolerance : res=" << this->backend()->rToleranceSNES() << ", step=" << this->backend()->sToleranceSNES() << ", abs=" << this->backend()->aToleranceSNES()
-               << "\n     -- maxit : " << this->backend()->maxIterationsSNES()
-               << "\n     -- maxit with reuse : " << this->backend()->maxIterationsSNESReuse()
-               << "\n   KSP in SNES "
-               << "\n     -- tolerance : res=" << this->backend()->rtoleranceKSPinSNES()
-               << "\n     -- maxit : " << this->backend()->maxIterationsKSPinSNES()
-               << "\n     -- maxit with reuse : " << this->backend()->maxIterationsKSPinSNESReuse()
-               << "\n     -- reuse prec : " << (this->backend()->reusePrec()?"true":"false")
-               << "\n     -- reuse prec rebuild at first Newton step : " << (this->backend()->reusePrecRebuildAtFirstNewtonStep()?"true":"false")
-               << "\n   PC "
-               << "\n     -- type : " << this->backend()->pcType();
-        if ( this->backend()->pcType() == "lu" )
-            *_ostr << "\n     -- mat solver package : " << this->backend()->pcFactorMatSolverPackageType();
+    //     *_ostr << "\n   Backend "
+    //            << "\n     -- prefix : " << this->backend()->prefix()
+    //            << "\n     -- type : " << "BACKEND_PETSC"
+    //            << "\n   KSP "
+    //            << "\n     -- type : " << this->backend()->kspType()
+    //            << "\n     -- tolerance : res=" << this->backend()->rTolerance() << ", diff=" << this->backend()->dTolerance() << ", abs=" << this->backend()->aTolerance()
+    //            << "\n     -- maxit : " << this->backend()->maxIterationsKSP()
+    //            << "\n     -- maxit : " << this->backend()->maxIterationsKSPReuse()
+    //            << "\n     -- reuse prec : " << (this->backend()->reusePrec()?"true":"false")
+    //            << "\n   SNES "
+    //            << "\n     -- reuse jac : " << (this->backend()->reuseJac()?"true":"false")
+    //            << "\n     -- reuse jac rebuild at first Newton step : " << (this->backend()->reuseJacRebuildAtFirstNewtonStep()?"true":"false")
+    //            << "\n     -- tolerance : res=" << this->backend()->rToleranceSNES() << ", step=" << this->backend()->sToleranceSNES() << ", abs=" << this->backend()->aToleranceSNES()
+    //            << "\n     -- maxit : " << this->backend()->maxIterationsSNES()
+    //            << "\n     -- maxit with reuse : " << this->backend()->maxIterationsSNESReuse()
+    //            << "\n   KSP in SNES "
+    //            << "\n     -- tolerance : res=" << this->backend()->rtoleranceKSPinSNES()
+    //            << "\n     -- maxit : " << this->backend()->maxIterationsKSPinSNES()
+    //            << "\n     -- maxit with reuse : " << this->backend()->maxIterationsKSPinSNESReuse()
+    //            << "\n     -- reuse prec : " << (this->backend()->reusePrec()?"true":"false")
+    //            << "\n     -- reuse prec rebuild at first Newton step : " << (this->backend()->reusePrecRebuildAtFirstNewtonStep()?"true":"false")
+    //            << "\n   PC "
+    //            << "\n     -- type : " << this->backend()->pcType();
+    //     if ( this->backend()->pcType() == "lu" )
+    //         *_ostr << "\n     -- mat solver package : " << this->backend()->pcFactorMatSolverPackageType();
 
-        return _ostr;
-    }
+    //     return _ostr;
+    // }
 
-    void
-    ModelAlgebraicFactory::printInfo() const
-    {
-        if ( this->model()->verboseAllProc() ) std::cout << this->getInfo()->str();
-        else if (this->model()->worldComm().isMasterRank() )
-            std::cout << this->getInfo()->str();
-    }
+    // void
+    // ModelAlgebraicFactory::printInfo() const
+    // {
+    //     if ( this->model()->verboseAllProc() ) std::cout << this->getInfo()->str();
+    //     else if (this->model()->worldComm().isMasterRank() )
+    //         std::cout << this->getInfo()->str();
+    // }
 
 
     void
@@ -551,13 +556,13 @@ ModelAlgebraicFactory::tabulateInformations( nl::json const& jsonInfo, TabulateI
         {
             this->solveLinear( sol );
         }
-        else if ( type == "Picard" || type == "FixPoint" )
+        else if ( type == "Picard-OLD" || type == "FixPoint" )
         {
             this->solvePicard( sol );
         }
-        else if ( type == "Newton" )
+        else if ( type == "Newton" || type == "Picard" )
         {
-            this->solveNewton( sol );
+            this->solveNewton( sol, type == "Picard" );
         }
         else
             CHECK( false ) << "invalid solver type " << type;
@@ -761,12 +766,10 @@ ModelAlgebraicFactory::tabulateInformations( nl::json const& jsonInfo, TabulateI
 
 
     void
-    ModelAlgebraicFactory::updateJacobian(const vector_ptrtype& XX, sparse_matrix_ptrtype& JJ/*, vector_ptrtype& R*/ )
+    ModelAlgebraicFactory::updateJacobian(const vector_ptrtype& XX, sparse_matrix_ptrtype& JJ, std::optional<std::vector<int/*index_type*/>> const& dofEliminationIds, bool usePicardLinearization  )
     {
         auto model = this->model();
         model->timerTool("Solve").start();
-
-        auto R = this->backend()->newVector(XX->mapPtr()); // TO REMOVE
 
         vector_ptrtype currentSolution = XX;
         sparse_matrix_ptrtype currentJacobian = JJ;
@@ -785,14 +788,14 @@ ModelAlgebraicFactory::tabulateInformations( nl::json const& jsonInfo, TabulateI
         }
         else
         {
-            ModelAlgebraic::DataUpdateJacobian dataJacobianCst(currentSolution, currentJacobian, R, true);
+            ModelAlgebraic::DataUpdateJacobian dataJacobianCst(currentSolution, currentJacobian, true, usePicardLinearization);
             dataJacobianCst.copyInfos( this->dataInfos() );
             M_functionJacobianAssembly( dataJacobianCst );
             for ( auto const& func : M_addFunctionJacobianAssembly )
                 func.second( dataJacobianCst );
         }
 
-        ModelAlgebraic::DataUpdateJacobian dataJacobianNonCst(currentSolution, currentJacobian,R,false);
+        ModelAlgebraic::DataUpdateJacobian dataJacobianNonCst(currentSolution, currentJacobian, false, usePicardLinearization);
         dataJacobianNonCst.copyInfos( this->dataInfos() );
         if ( M_usePseudoTransientContinuation )
         {
@@ -812,7 +815,25 @@ ModelAlgebraicFactory::tabulateInformations( nl::json const& jsonInfo, TabulateI
             M_J->PtAP( *M_solverPtAP_matP, *JJ );
         }
 
-        ModelAlgebraic::DataUpdateJacobian dataJacobianDofElimination(XX,JJ,R,false);
+
+        if ( dofEliminationIds )
+        {
+            M_dofEliminationNonLinearStepValues->zero();
+            M_dofEliminationNonLinearRhsModified->zero();
+            if ( !M_applyDofEliminationOnInitialGuess )
+            {
+                for ( size_type k : *dofEliminationIds )
+                {
+                    double vvvv = -M_dofEliminationValues->operator()(k) + currentSolution->operator()(k) ;
+                    M_dofEliminationNonLinearStepValues->set( k, vvvv );
+                }
+                M_dofEliminationNonLinearStepValues->close();
+            }
+            JJ->zeroRows( *dofEliminationIds, *M_dofEliminationNonLinearStepValues, *M_dofEliminationNonLinearRhsModified, M_dofElimination_strategy, M_dofElimination_valueOnDiagonal );
+        }
+
+#if 0
+        ModelAlgebraic::DataUpdateJacobian dataJacobianDofElimination(XX,JJ,false, usePicardLinearization);
         dataJacobianDofElimination.copyInfos( this->dataInfos() );
 
         // dof elimination
@@ -824,22 +845,40 @@ ModelAlgebraicFactory::tabulateInformations( nl::json const& jsonInfo, TabulateI
         {
             // we assume that all shared dofs are present, not need to appy a sync
             std::vector<int> _dofs;_dofs.assign( dataJacobianDofElimination.dofEliminationIds().begin(), dataJacobianDofElimination.dofEliminationIds().end());
-            auto tmp = dataJacobianDofElimination.vectorUsedInStrongDirichlet();
-            JJ->zeroRows( _dofs, *tmp, *tmp, M_dofElimination_strategy, M_dofElimination_valueOnDiagonal );
+
+            M_dofEliminationNonLinearStepValues->zero();
+            M_dofEliminationNonLinearRhsModified->zero();
+            if ( !M_applyDofEliminationOnInitialGuess )
+            {
+                for ( size_type k : dataJacobianDofElimination.dofEliminationIds() )
+                {
+                    double vvvv = -M_dofEliminationValues->operator()(k) + currentSolution->operator()(k) ;
+                    M_dofEliminationNonLinearStepValues->set( k, vvvv );
+                }
+                M_dofEliminationNonLinearStepValues->close();
+            }
+
+            JJ->zeroRows(  _dofs, *M_dofEliminationNonLinearStepValues,*M_dofEliminationNonLinearRhsModified, M_dofElimination_strategy, M_dofElimination_valueOnDiagonal );
         }
 
         if ( M_useSolverPtAP && M_solverPtAP_dofEliminationIds )
         {
+            CHECK( false ) << "TODO VINCENT";
+#if 0
             // we assume that all shared dofs are present, not need to appy a sync
             std::vector<int> _dofs;_dofs.assign( M_solverPtAP_dofEliminationIds->begin(), M_solverPtAP_dofEliminationIds->end());
             auto tmp = dataJacobianDofElimination.vectorUsedInStrongDirichlet();
             JJ->zeroRows( _dofs, *tmp, *tmp, M_dofElimination_strategy, M_dofElimination_valueOnDiagonal );
+#endif
         }
 
         for ( auto const& func : M_addFunctionJacobianPostAssembly )
             func.second( dataJacobianDofElimination );
+#endif
+        for ( auto const& func : M_addFunctionJacobianPostAssembly )
+            func.second( dataJacobianNonCst );
 
-        std::invoke( M_functionUpdateInHousePreconditionerJacobian, dataJacobianDofElimination );
+        std::invoke( M_functionUpdateInHousePreconditionerJacobian, dataJacobianNonCst );
 
         double tElapsed = model->timerTool("Solve").stop();
         model->timerTool("Solve").addDataValue("algebraic-jacobian",tElapsed);
@@ -847,7 +886,7 @@ ModelAlgebraicFactory::tabulateInformations( nl::json const& jsonInfo, TabulateI
     //---------------------------------------------------------------------------------------------------------------//
 
     void
-    ModelAlgebraicFactory::updateResidual(const vector_ptrtype& XX, vector_ptrtype& RR)
+    ModelAlgebraicFactory::updateResidual(const vector_ptrtype& XX, vector_ptrtype& RR, std::optional<std::vector<int/*index_type*/>> const& dofEliminationIds)
     {
         auto model = this->model();
         model->timerTool("Solve").start();
@@ -908,6 +947,27 @@ ModelAlgebraicFactory::tabulateInformations( nl::json const& jsonInfo, TabulateI
             M_solverPtAP_matP->multVector( *M_R, *RR, true );
         }
 
+
+        if ( dofEliminationIds )
+        {
+            if ( M_applyDofEliminationOnInitialGuess )
+            {
+                for ( size_type k : *dofEliminationIds )
+                    RR->set( k, 0. );
+                // we assume that all shared dofs are present, not need to appy a sync
+            }
+            else
+            {
+                for ( size_type k : *dofEliminationIds )
+                {
+                    double vvvv =  -M_dofEliminationValues->operator()(k) + currentSolution->operator()(k) ;
+                    RR->set( k, vvvv );
+                }
+            }
+            RR->close();
+        }
+
+#if 0
         ModelAlgebraic::DataUpdateResidual dataResidualDofElimination( XX,RR, false, doOptimization );
         dataResidualDofElimination.copyInfos( this->dataInfos() );
         // dof elimination
@@ -917,9 +977,22 @@ ModelAlgebraicFactory::tabulateInformations( nl::json const& jsonInfo, TabulateI
 
         if ( dataResidualDofElimination.hasDofEliminationIds() )
         {
-            for ( size_type k : dataResidualDofElimination.dofEliminationIds() )
-                RR->set( k, 0. );
-            // we assume that all shared dofs are present, not need to appy a sync
+            if ( M_applyDofEliminationOnInitialGuess )
+            {
+                for ( size_type k : dataResidualDofElimination.dofEliminationIds() )
+                    RR->set( k, 0. );
+                // we assume that all shared dofs are present, not need to appy a sync
+            }
+            else
+            {
+                for ( size_type k : dataResidualDofElimination.dofEliminationIds() )
+                {
+                    double vvvv =  -M_dofEliminationValues->operator()(k) + currentSolution->operator()(k) ;
+                    RR->set( k, vvvv );
+                }
+            }
+
+            RR->close();
         }
         if ( M_useSolverPtAP && M_solverPtAP_dofEliminationIds )
         {
@@ -929,6 +1002,9 @@ ModelAlgebraicFactory::tabulateInformations( nl::json const& jsonInfo, TabulateI
 
         for ( auto const& func : M_addFunctionResidualPostAssembly )
             func.second( dataResidualDofElimination );
+#endif
+        for ( auto const& func : M_addFunctionResidualPostAssembly )
+            func.second( dataResidualNonCst );
 
         double tElapsed = model->timerTool("Solve").stop();
         model->timerTool("Solve").addDataValue("algebraic-residual",tElapsed);
@@ -939,7 +1015,7 @@ ModelAlgebraicFactory::tabulateInformations( nl::json const& jsonInfo, TabulateI
     //---------------------------------------------------------------------------------------------------------------//
 
     void
-    ModelAlgebraicFactory::solveNewton( vector_ptrtype& U )
+    ModelAlgebraicFactory::solveNewton( vector_ptrtype& U, bool usePicardLinearization )
     {
         auto model = this->model();
         if ( model->verbose() )
@@ -953,22 +1029,48 @@ ModelAlgebraicFactory::tabulateInformations( nl::json const& jsonInfo, TabulateI
         //---------------------------------------------------------------------//
         //---------------------------------------------------------------------//
         model->timerTool("Solve").start();
-        ModelAlgebraic::DataNewtonInitialGuess dataInitialGuess( U );
+
+        if ( !M_applyDofEliminationOnInitialGuess )
+            M_dofEliminationValues->zero();
+
+        ModelAlgebraic::DataNewtonInitialGuess dataInitialGuess( M_applyDofEliminationOnInitialGuess? U : M_dofEliminationValues );
         M_functionNewtonInitialGuess( dataInitialGuess );
         for ( auto const& func : M_addFunctionNewtonInitialGuess )
             func.second( dataInitialGuess );
 
-        if ( dataInitialGuess.hasDofEliminationIds() )
+        std::optional<std::vector<int/*index_type*/>> dofEliminationIds;
+
+        if ( dataInitialGuess.hasDofEliminationIds() || M_useSolverPtAP && M_solverPtAP_dofEliminationIds )
         {
+#if 1
             // create view in order to avoid mpi comm inside petsc
-            auto UView = VectorUblas<value_type>::createView( *U );
+            auto UView = VectorUblas<value_type>::createView( *dataInitialGuess.initialGuess() );
+
+            std::vector<index_type> setDofIds;
             // imposed values by ordering the entities
             std::vector<ElementsType> fromEntities = { MESH_ELEMENTS, MESH_FACES, MESH_EDGES, MESH_POINTS };
             for ( ElementsType entity : fromEntities )
             {
                 if ( dataInitialGuess.hasDofEliminationIds( entity ) )
-                    sync( UView, "=", dataInitialGuess.dofEliminationIds( entity ) );
+                {
+                    auto const& dei = dataInitialGuess.dofEliminationIds( entity );
+                    sync( UView, "=", dei );
+                    std::merge( setDofIds.begin(), setDofIds.end(),
+                                dei.begin(), dei.end(),
+                                std::inserter(setDofIds, setDofIds.begin()));
+                }
             }
+#else
+            dataInitialGuess.initialGuess()->close();
+#endif
+
+             if ( M_useSolverPtAP && M_solverPtAP_dofEliminationIds )
+                 std::merge( setDofIds.begin(), setDofIds.end(),
+                             M_solverPtAP_dofEliminationIds->begin(), M_solverPtAP_dofEliminationIds->end(),
+                             std::inserter(setDofIds, setDofIds.begin()));
+
+            dofEliminationIds.emplace();
+            dofEliminationIds->assign( setDofIds.begin(), setDofIds.end() );
         }
 
         model->timerTool("Solve").elapsed("algebraic-newton-initial-guess");
@@ -985,7 +1087,7 @@ ModelAlgebraicFactory::tabulateInformations( nl::json const& jsonInfo, TabulateI
             if (!M_hasBuildLinearJacobian || model->rebuildLinearPartInJacobian() || model->needToRebuildCstPart() )
             {
                 M_CstJ->zero();
-                ModelAlgebraic::DataUpdateJacobian dataJacobianCst(U, M_CstJ, M_R, true );
+                ModelAlgebraic::DataUpdateJacobian dataJacobianCst(U, M_CstJ, true, usePicardLinearization );
                 dataJacobianCst.copyInfos( this->dataInfos() );
                 if ( M_explictPartOfSolution )
                     dataJacobianCst.addVectorInfo( "explicit-part-of-solution", M_explictPartOfSolution );
@@ -1044,9 +1146,40 @@ ModelAlgebraicFactory::tabulateInformations( nl::json const& jsonInfo, TabulateI
             }
         }
 
-        pre_solve_type pre_solve = std::bind(&self_type::preSolveNewton, std::ref( *this ), std::placeholders::_1, std::placeholders::_2);
+
+        pre_solve_type pre_solve = [this,&dofEliminationIds]( vector_ptrtype rhs, vector_ptrtype sol ) {
+                                       if ( !M_applyDofEliminationOnInitialGuess && dofEliminationIds )
+                                       {
+                                           std::vector<double> zeroValues( dofEliminationIds->size(), 0. );
+                                           rhs->setVector( dofEliminationIds->data(), dofEliminationIds->size(), zeroValues.data() );
+#if 0
+                                           // imposed values by ordering the entities
+                                           std::vector<ElementsType> fromEntities = { MESH_ELEMENTS, MESH_FACES, MESH_EDGES, MESH_POINTS };
+                                           for ( ElementsType entity : fromEntities )
+                                           {
+                                               if ( !dataInitialGuess.hasDofEliminationIds( entity ) )
+                                                   continue;
+
+                                               for ( size_type k : dataInitialGuess.dofEliminationIds( entity ) )
+                                                   rhs->set( k, 0. );
+                                           }
+#endif
+                                           rhs->close();
+                                           rhs->add( 1.0, M_dofEliminationNonLinearRhsModified );
+                                       }
+                                       this->model()->preSolveNewton( rhs, sol );
+                                   };
+        //pre_solve_type pre_solve = std::bind(&self_type::preSolveNewton, std::ref( *this ), std::placeholders::_1, std::placeholders::_2);
         post_solve_type post_solve = std::bind(&self_type::postSolveNewton, std::ref( *this ), std::placeholders::_1, std::placeholders::_2);
         update_nlsolve_type update_nlsolve = std::bind(&self_type::updateNewtonIteration, std::ref( *this ), std::placeholders::_1, std::placeholders::_2,std::placeholders::_3,std::placeholders::_4 );
+
+
+        auto update_jacobian = [this,&dofEliminationIds,usePicardLinearization]( const vector_ptrtype& X, sparse_matrix_ptrtype& J ) {
+                                   this->updateJacobian( X,J,dofEliminationIds,usePicardLinearization );
+                               };
+        auto update_residual = [this,&dofEliminationIds]( const vector_ptrtype& X, vector_ptrtype& R ) {
+                                   this->updateResidual( X,R,dofEliminationIds );
+                               };
 
         typename backend_type::nl_solve_return_type solveStat;
         if ( M_useSolverPtAP )
@@ -1054,6 +1187,9 @@ ModelAlgebraicFactory::tabulateInformations( nl::json const& jsonInfo, TabulateI
             // TODO REMOVE EXPLICIT PART
             M_solverPtAP_matQ->multVector( *U, *M_solverPtAP_solution );
             //*M_solverPtAP_solution = *U; // need to have the same size/datamap
+
+            M_solverPtAP_backend->nlSolver()->jacobian = update_jacobian;
+            M_solverPtAP_backend->nlSolver()->residual = update_residual;
 
             solveStat = M_solverPtAP_backend->nlSolve( _jacobian=M_solverPtAP_matPtAP,
                                                        _solution=M_solverPtAP_solution,
@@ -1067,6 +1203,9 @@ ModelAlgebraicFactory::tabulateInformations( nl::json const& jsonInfo, TabulateI
         }
         else
         {
+            M_backend->nlSolver()->jacobian = update_jacobian;
+            M_backend->nlSolver()->residual = update_residual;
+
             solveStat = M_backend->nlSolve( _jacobian=M_J,
                                             _solution=U,
                                             _residual=M_R,
@@ -1199,7 +1338,7 @@ ModelAlgebraicFactory::tabulateInformations( nl::json const& jsonInfo, TabulateI
     }
 
     //---------------------------------------------------------------------------------------------------------------//
-
+#if 0
     void
     ModelAlgebraicFactory::rebuildCstJacobian( vector_ptrtype U )
     {
@@ -1224,7 +1363,7 @@ ModelAlgebraicFactory::tabulateInformations( nl::json const& jsonInfo, TabulateI
         M_CstJ->close();
         M_CstR->close();
     }
-
+#endif
 
 
 
