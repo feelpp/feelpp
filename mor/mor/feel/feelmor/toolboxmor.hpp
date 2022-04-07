@@ -5,7 +5,7 @@
 #include <feel/feelalg/backend.hpp>
 #include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelmor/modelcrbbase.hpp>
-#include <feel/feelmodels/modelproperties.hpp>
+#include <feel/feelmor/crbmodelproperties.hpp>
 
 namespace Feel
 {
@@ -262,7 +262,7 @@ class FEELPP_EXPORT ToolboxMor : public ModelCrbBase< ParameterSpace<>, SpaceTyp
      * 
      * @return std::shared_ptr<ModelProperties> const& The ModelProperties used by ToolboxMor
      */
-    std::shared_ptr<ModelProperties> const& modelProperties() const { return M_modelProperties; }
+    std::shared_ptr<CRBModelProperties> const& modelProperties() const { return M_modelProperties; }
 
   private :
     void assembleData();
