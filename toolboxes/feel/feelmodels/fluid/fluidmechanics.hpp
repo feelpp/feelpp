@@ -1153,6 +1153,12 @@ public:
                 return std::make_tuple( newMass, std::move( newMassCenter ) );
             }
 
+        auto modelMeasuresQuantities( std::string const& prefix ) const
+            {
+                return Feel::FeelModels::modelMeasuresQuantities( modelMeasuresQuantity( prefix, "mass_center", M_massCenter ),
+                                                                  modelMeasuresQuantity( prefix, "rigid_rotation_angles", M_rigidRotationAngles )
+                                                                  );
+            }
 
     private :
         range_faces_type M_rangeMarkedFacesOnFluid;
@@ -1730,12 +1736,19 @@ public:
 
         auto modelMeasuresQuantities( std::string const& prefix = "" ) const
             {
-                using _res_type = std::decay_t<decltype(this->begin()->second.modelMeasuresQuantities(""))>;
+                using _res_type = std::decay_t<decltype( Feel::FeelModels::modelMeasuresQuantities( this->begin()->second.modelMeasuresQuantities(""),
+                                                                                                    M_nbodyArticulated.front().modelMeasuresQuantities("")
+                                                                                                    ) )>;
                 _res_type res;
                 for ( auto const& [name,bbc] : *this )
                 {
                     std::string currentPrefix = prefixvm( prefix, (boost::format("body_%1%")%name).str() );
                     res = Feel::FeelModels::modelMeasuresQuantities( res, bbc.modelMeasuresQuantities( currentPrefix ) );
+                }
+                for ( auto const& nba : M_nbodyArticulated )
+                {
+                    std::string currentPrefix = prefixvm( prefix, (boost::format("nba_%1%")%nba.name()).str() );
+                    res = Feel::FeelModels::modelMeasuresQuantities( res, nba.modelMeasuresQuantities( currentPrefix ) );
                 }
                 return res;
             }
