@@ -37,7 +37,6 @@
 #include <feel/feelmor/parameterspace.hpp>
 #include <feel/feelmor/crbplugin_interface.hpp>
 #include <feel/feelmor/options.hpp>
-#include <feel/feelmodels/modelproperties.hpp>
 #include <feel/feelmor/crbmodelproperties.hpp>
 
 namespace py = pybind11;
@@ -309,7 +308,7 @@ PYBIND11_MODULE( _mor, m )
     py::class_<ParameterSpaceX,std::shared_ptr<ParameterSpaceX>>(m,"ParameterSpace")
         .def( py::init<>() )
         .def_static("create",&ParameterSpaceX::create )
-        .def_static("New", static_cast<std::shared_ptr<ParameterSpaceX> (*)(ModelParameters const&, std::shared_ptr<WorldComm> const&)>(&ParameterSpaceX::New))
+        .def_static("New", static_cast<std::shared_ptr<ParameterSpaceX> (*)(CRBModelParameters const&, std::shared_ptr<WorldComm> const&)>(&ParameterSpaceX::New))
         .def("sampling", &ParameterSpaceX::sampling)
         .def("element", &ParameterSpaceX::element, "return a parameter from the space\n  - broadcast : share the parameter to all processors\n  - apply_log : log random chosen parameter",
             py::arg("broadcast")=true, py::arg("apply_log")=false)
