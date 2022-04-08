@@ -183,6 +183,21 @@ CRBModelOutputs::getOutput( nl::json const& jarg, std::string const& name )
     return o;
 }
 
+std::map<std::string, CRBModelOutput>
+CRBModelOutputs::ofType( std::string const& type )
+{
+    return ofTypes({type});
+}
+
+std::map<std::string, CRBModelOutput>
+CRBModelOutputs::ofTypes( std::set<std::string> const& types )
+{
+    std::map<std::string, CRBModelOutput> result;
+    std::copy_if(this->begin(), this->end(), std::inserter(result,result.end()),
+                 [&types](auto const& pair) { return types.find(pair.second.type()) != types.end(); });
+    return result;
+}
+
 void
 CRBModelOutputs::setParameterValues( std::map<std::string,double> const& mp )
 {
