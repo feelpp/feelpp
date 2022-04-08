@@ -490,10 +490,10 @@ class FEELPP_EXPORT VectorUblasBase: public Vector<T>
 
         std::unique_ptr<VectorUblasBase<T>> operator+( const self_type & v ) const;
         std::unique_ptr<VectorUblasBase<T>> operator+( value_type a ) const;
-        friend std::unique_ptr<VectorUblasBase<T>> operator+( value_type a, const self_type & v ) { std::unique_ptr<VectorUblasBase<T>> res( v.emptyPtr() ); res->init( v.mapPtr() ); res->setConstant( a ); res->add( v ); return res; }
+        friend std::unique_ptr<VectorUblasBase<T>> operator+( value_type a, const self_type & v ) { std::unique_ptr<VectorUblasBase<T>> res( v.emptyPtr() ); res->init( v.mapPtr() ); res->setConstant( a ); res->addVector( v ); return res; }
         std::unique_ptr<VectorUblasBase<T>> operator-( const self_type & v ) const;
         std::unique_ptr<VectorUblasBase<T>> operator-( value_type a ) const;
-        friend std::unique_ptr<VectorUblasBase<T>> operator-( value_type a, const self_type & v ) { std::unique_ptr<VectorUblasBase<T>> res( v.emptyPtr() ); res->init( v.mapPtr() ); res->setConstant( a ); res->sub( v ); return res; }
+        friend std::unique_ptr<VectorUblasBase<T>> operator-( value_type a, const self_type & v ) { std::unique_ptr<VectorUblasBase<T>> res( v.emptyPtr() ); res->init( v.mapPtr() ); res->setConstant( a ); res->subVector( v ); return res; }
         std::unique_ptr<VectorUblasBase<T>> operator-() const;
         std::unique_ptr<VectorUblasBase<T>> operator*( value_type a ) const;
         friend std::unique_ptr<VectorUblasBase<T>> operator*( value_type a, const self_type & v ) { std::unique_ptr<VectorUblasBase<T>> res( v.clonePtr() ); res->scale( a ); return res; }
