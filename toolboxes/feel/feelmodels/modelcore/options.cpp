@@ -80,6 +80,8 @@ Feel::po::options_description modelalgebraic_options(std::string const& prefix)
         (prefixvm(prefix,"pseudo-transient-continuation.expur.beta-low").c_str(), Feel::po::value<double>()->default_value( 0.1 ), "pseudo-transient-continuation parameter : beta-low")
 
         (prefixvm(prefix,"solver.picard.relaxation-parameter").c_str(), Feel::po::value<double>()->default_value( 1.0 ), "solver.picard.relaxation-parameter")
+
+        (prefixvm(prefix,"solver.nonlinear.apply-dof-elimination-on-initial-guess").c_str(), Feel::po::value<bool>()->default_value( false ), "solver.nonlinear.apply-dof-elimination-on-initial-guess")
         ;
     return appliBaseOptions.add( modelbase_options(prefix ) ).add( on_options( prefix ) );//.add( backend_options( prefix ) );
 }
