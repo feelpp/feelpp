@@ -141,6 +141,15 @@ public:
      */
     CRBModelOutput getOutput( nl::json const& jarg, std::string const& name);
 
+    /**
+     * @brief returns all output of type type
+     * 
+     * @param type type of the outputs
+     * @return std::map<std::string, CRBModelOutput> 
+     */
+    std::map<std::string, CRBModelOutput> ofType(std::string const& type);
+    std::map<std::string, CRBModelOutput> ofTypes(std::set<std::string> const& types);
+
     void setParameterValues( std::map<std::string,double> const& mp );
 
 private:
