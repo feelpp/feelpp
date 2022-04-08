@@ -90,7 +90,7 @@ VectorUblas<T> element_product( const VectorUblas<T> & v1, const VectorUblas<T> 
 
 /*-----------------------------------------------------------------------------*/
 template< typename T >
-class VectorUblas : public Vector<T>
+class FEELPP_EXPORT VectorUblas : public Vector<T>
 {
     public:
         // Typedefs
@@ -188,14 +188,14 @@ class VectorUblas : public Vector<T>
         Vector<T>& operator*=( const value_type v ) { this->scale( v ); return *this; }
 
         self_type operator+( const self_type & v ) const { return self_type( M_vectorImpl->operator+( *v.M_vectorImpl ) ); }
-        self_type operator+( const value_type a ) const { return self_type( M_vectorImpl->operator+( a ) ); }
-        friend self_type operator+( const value_type a, const self_type & v ) { return self_type( a + (*v.M_vectorImpl) ); }
+        self_type operator+( value_type a ) const { return self_type( M_vectorImpl->operator+( a ) ); }
+        friend self_type operator+( value_type a, const self_type & v ) { return self_type( a + (*v.M_vectorImpl) ); }
         self_type operator-( const self_type & v ) const { return self_type( M_vectorImpl->operator-( *v.M_vectorImpl ) ); }
-        self_type operator-( const value_type a ) const { return self_type( M_vectorImpl->operator-( a ) ); }
-        friend self_type operator-( const value_type a, const self_type & v ) { return self_type( a - (*v.M_vectorImpl) ); }
+        self_type operator-( value_type a ) const { return self_type( M_vectorImpl->operator-( a ) ); }
+        friend self_type operator-( value_type a, const self_type & v ) { return self_type( a - (*v.M_vectorImpl) ); }
         self_type operator-() const { return self_type( M_vectorImpl->operator-() ); }
-        self_type operator*( const value_type a ) const { return self_type( M_vectorImpl->operator*( a ) ); }
-        friend self_type operator*( const value_type a, const self_type & v ) { return self_type( a * (*v.M_vectorImpl) ); }
+        self_type operator*( value_type a ) const { return self_type( M_vectorImpl->operator*( a ) ); }
+        friend self_type operator*( value_type a, const self_type & v ) { return self_type( a * (*v.M_vectorImpl) ); }
 
         // Iterators API
         auto begin() { return M_vectorImpl->begin(); }
@@ -298,7 +298,7 @@ namespace detail
 {
 
 template< typename T >
-class VectorUblasBase: public Vector<T>
+class FEELPP_EXPORT VectorUblasBase: public Vector<T>
 {
     public:
         // Typedefs
@@ -489,14 +489,14 @@ class VectorUblasBase: public Vector<T>
         Vector<T>& operator*=( const value_type & a ) { this->scale( a ); return *this; }
 
         std::unique_ptr<VectorUblasBase<T>> operator+( const self_type & v ) const;
-        std::unique_ptr<VectorUblasBase<T>> operator+( const value_type a ) const;
-        friend std::unique_ptr<VectorUblasBase<T>> operator+( const value_type a, const self_type & v );
+        std::unique_ptr<VectorUblasBase<T>> operator+( value_type a ) const;
+        friend std::unique_ptr<VectorUblasBase<T>> operator+( value_type a, const self_type & v ) { std::unique_ptr<VectorUblasBase<T>> res( v.emptyPtr() ); res->init( v.mapPtr() ); res->setConstant( a ); res->addVector( v ); return res; }
         std::unique_ptr<VectorUblasBase<T>> operator-( const self_type & v ) const;
-        std::unique_ptr<VectorUblasBase<T>> operator-( const value_type a ) const;
-        friend std::unique_ptr<VectorUblasBase<T>> operator-( const value_type a, const self_type & v );
+        std::unique_ptr<VectorUblasBase<T>> operator-( value_type a ) const;
+        friend std::unique_ptr<VectorUblasBase<T>> operator-( value_type a, const self_type & v ) { std::unique_ptr<VectorUblasBase<T>> res( v.emptyPtr() ); res->init( v.mapPtr() ); res->setConstant( a ); res->subVector( v ); return res; }
         std::unique_ptr<VectorUblasBase<T>> operator-() const;
-        std::unique_ptr<VectorUblasBase<T>> operator*( const value_type a ) const;
-        friend std::unique_ptr<VectorUblasBase<T>> operator*( const value_type a, const self_type & v );
+        std::unique_ptr<VectorUblasBase<T>> operator*( value_type a ) const;
+        friend std::unique_ptr<VectorUblasBase<T>> operator*( value_type a, const self_type & v ) { std::unique_ptr<VectorUblasBase<T>> res( v.clonePtr() ); res->scale( a ); return res; }
 
         // Iterators API
         virtual iterator_type begin() = 0;
