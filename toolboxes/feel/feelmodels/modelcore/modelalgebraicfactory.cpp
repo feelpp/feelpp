@@ -38,7 +38,7 @@ namespace FeelModels
 
 ModelAlgebraicFactory::ModelAlgebraicFactory( std::string const& prefix, po::variables_map const& vm )
     :
-    M_applyDofEliminationOnInitialGuess( false ),
+    M_applyDofEliminationOnInitialGuess( boption(_prefix=prefix,_name="solver.nonlinear.apply-dof-elimination-on-initial-guess", _vm=vm) ),
     M_useSolverPtAP( false ),
     M_dofElimination_strategy( Feel::ContextOnMap[soption(_prefix=prefix,_name="on.type",_vm=vm)] ),
     M_dofElimination_valueOnDiagonal( doption(_prefix=prefix,_name="on.value_on_diagonal",_vm=vm) ),
@@ -815,7 +815,6 @@ ModelAlgebraicFactory::tabulateInformations( nl::json const& jsonInfo, TabulateI
             M_J->PtAP( *M_solverPtAP_matP, *JJ );
         }
 
-
         if ( dofEliminationIds )
         {
             M_dofEliminationNonLinearStepValues->zero();
@@ -832,49 +831,6 @@ ModelAlgebraicFactory::tabulateInformations( nl::json const& jsonInfo, TabulateI
             JJ->zeroRows( *dofEliminationIds, *M_dofEliminationNonLinearStepValues, *M_dofEliminationNonLinearRhsModified, M_dofElimination_strategy, M_dofElimination_valueOnDiagonal );
         }
 
-#if 0
-        ModelAlgebraic::DataUpdateJacobian dataJacobianDofElimination(XX,JJ,false, usePicardLinearization);
-        dataJacobianDofElimination.copyInfos( this->dataInfos() );
-
-        // dof elimination
-        model->updateJacobianDofElimination( dataJacobianDofElimination );
-        for ( auto const& func : M_addFunctionJacobianDofElimination )
-            func.second( dataJacobianDofElimination );
-
-        if ( dataJacobianDofElimination.hasDofEliminationIds() )
-        {
-            // we assume that all shared dofs are present, not need to appy a sync
-            std::vector<int> _dofs;_dofs.assign( dataJacobianDofElimination.dofEliminationIds().begin(), dataJacobianDofElimination.dofEliminationIds().end());
-
-            M_dofEliminationNonLinearStepValues->zero();
-            M_dofEliminationNonLinearRhsModified->zero();
-            if ( !M_applyDofEliminationOnInitialGuess )
-            {
-                for ( size_type k : dataJacobianDofElimination.dofEliminationIds() )
-                {
-                    double vvvv = -M_dofEliminationValues->operator()(k) + currentSolution->operator()(k) ;
-                    M_dofEliminationNonLinearStepValues->set( k, vvvv );
-                }
-                M_dofEliminationNonLinearStepValues->close();
-            }
-
-            JJ->zeroRows(  _dofs, *M_dofEliminationNonLinearStepValues,*M_dofEliminationNonLinearRhsModified, M_dofElimination_strategy, M_dofElimination_valueOnDiagonal );
-        }
-
-        if ( M_useSolverPtAP && M_solverPtAP_dofEliminationIds )
-        {
-            CHECK( false ) << "TODO VINCENT";
-#if 0
-            // we assume that all shared dofs are present, not need to appy a sync
-            std::vector<int> _dofs;_dofs.assign( M_solverPtAP_dofEliminationIds->begin(), M_solverPtAP_dofEliminationIds->end());
-            auto tmp = dataJacobianDofElimination.vectorUsedInStrongDirichlet();
-            JJ->zeroRows( _dofs, *tmp, *tmp, M_dofElimination_strategy, M_dofElimination_valueOnDiagonal );
-#endif
-        }
-
-        for ( auto const& func : M_addFunctionJacobianPostAssembly )
-            func.second( dataJacobianDofElimination );
-#endif
         for ( auto const& func : M_addFunctionJacobianPostAssembly )
             func.second( dataJacobianNonCst );
 
@@ -967,42 +923,6 @@ ModelAlgebraicFactory::tabulateInformations( nl::json const& jsonInfo, TabulateI
             RR->close();
         }
 
-#if 0
-        ModelAlgebraic::DataUpdateResidual dataResidualDofElimination( XX,RR, false, doOptimization );
-        dataResidualDofElimination.copyInfos( this->dataInfos() );
-        // dof elimination
-        model->updateResidualDofElimination( dataResidualDofElimination );
-        for ( auto const& func : M_addFunctionResidualDofElimination )
-            func.second( dataResidualDofElimination );
-
-        if ( dataResidualDofElimination.hasDofEliminationIds() )
-        {
-            if ( M_applyDofEliminationOnInitialGuess )
-            {
-                for ( size_type k : dataResidualDofElimination.dofEliminationIds() )
-                    RR->set( k, 0. );
-                // we assume that all shared dofs are present, not need to appy a sync
-            }
-            else
-            {
-                for ( size_type k : dataResidualDofElimination.dofEliminationIds() )
-                {
-                    double vvvv =  -M_dofEliminationValues->operator()(k) + currentSolution->operator()(k) ;
-                    RR->set( k, vvvv );
-                }
-            }
-
-            RR->close();
-        }
-        if ( M_useSolverPtAP && M_solverPtAP_dofEliminationIds )
-        {
-            for ( size_type k : *M_solverPtAP_dofEliminationIds )
-                RR->set( k, 0. );
-        }
-
-        for ( auto const& func : M_addFunctionResidualPostAssembly )
-            func.second( dataResidualDofElimination );
-#endif
         for ( auto const& func : M_addFunctionResidualPostAssembly )
             func.second( dataResidualNonCst );
 
@@ -1152,18 +1072,6 @@ ModelAlgebraicFactory::tabulateInformations( nl::json const& jsonInfo, TabulateI
                                        {
                                            std::vector<double> zeroValues( dofEliminationIds->size(), 0. );
                                            rhs->setVector( dofEliminationIds->data(), dofEliminationIds->size(), zeroValues.data() );
-#if 0
-                                           // imposed values by ordering the entities
-                                           std::vector<ElementsType> fromEntities = { MESH_ELEMENTS, MESH_FACES, MESH_EDGES, MESH_POINTS };
-                                           for ( ElementsType entity : fromEntities )
-                                           {
-                                               if ( !dataInitialGuess.hasDofEliminationIds( entity ) )
-                                                   continue;
-
-                                               for ( size_type k : dataInitialGuess.dofEliminationIds( entity ) )
-                                                   rhs->set( k, 0. );
-                                           }
-#endif
                                            rhs->close();
                                            rhs->add( 1.0, M_dofEliminationNonLinearRhsModified );
                                        }
@@ -1336,36 +1244,6 @@ ModelAlgebraicFactory::tabulateInformations( nl::json const& jsonInfo, TabulateI
         for ( auto const& func : M_addFunctionResidualPostAssembly )
             func.second( dataResidual );
     }
-
-    //---------------------------------------------------------------------------------------------------------------//
-#if 0
-    void
-    ModelAlgebraicFactory::rebuildCstJacobian( vector_ptrtype U )
-    {
-        M_CstJ->zero();
-        ModelAlgebraic::DataUpdateJacobian dataJacobianCst(U, M_CstJ, M_R, true );
-        M_functionJacobianAssembly( dataJacobianCst );
-        for ( auto const& func : M_addFunctionJacobianAssembly )
-            func.second( dataJacobianCst );
-        M_CstJ->close();
-    }
-
-
-    void
-    ModelAlgebraicFactory::rebuildCstLinearPDE( vector_ptrtype U )
-    {
-        M_CstJ->zero();
-        M_CstR->zero();
-        ModelAlgebraic::DataUpdateLinear dataLinearCst(U,M_CstJ,M_CstR,true);
-        M_functionLinearAssembly(dataLinearCst);
-        for ( auto const& func : M_addFunctionLinearAssembly )
-            func.second( dataLinearCst );
-        M_CstJ->close();
-        M_CstR->close();
-    }
-#endif
-
-
 
 
     //---------------------------------------------------------------------------------------------------------------//
