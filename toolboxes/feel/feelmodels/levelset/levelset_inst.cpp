@@ -22,9 +22,9 @@ extern template class LevelSetRedistanciationFM<
 extern template class LevelSetRedistanciationHJ< 
     typename Feel::FeelModels::LEVELSETSPACEMANAGER_CLASS_TYPE::space_scalar_type
     >;
-extern template class Feel::FeelModels::AdvDiffReac<
-    typename Feel::FeelModels::LEVELSETSPACEMANAGER_CLASS_TYPE::space_scalar_type
-    >;
+//extern template class Feel::FeelModels::AdvDiffReac<
+    //typename Feel::FeelModels::LEVELSETSPACEMANAGER_CLASS_TYPE::space_scalar_type
+    //>;
 
 namespace FeelModels {
 

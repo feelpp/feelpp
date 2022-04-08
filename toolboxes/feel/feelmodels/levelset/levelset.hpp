@@ -26,8 +26,8 @@
  \author Thibaut Metivet <thibaut.metivet@univ-grenoble-alpes.fr>
  \date 2016-05-20
  */
-#ifndef _LEVELSET_HPP
-#define _LEVELSET_HPP 1
+#ifndef FEELPP_TOOLBOXES_LEVELSET_HPP
+#define FEELPP_TOOLBOXES_LEVELSET_HPP 1
 
 #include <fmt/core.h>
 
@@ -41,6 +41,7 @@
 #include <feel/feelmodels/coefficientformpdes/coefficientformpde.hpp>
 
 #include <feel/feelmodels/levelset/levelsetbase.hpp>
+#include <feel/feelmodels/levelset/levelsetboundaryconditions.hpp>
 #include <feel/feelmodels/levelset/levelsetparticleinjector.hpp>
 
 #include <feel/feelfilters/straightenmesh.hpp>
@@ -70,8 +71,7 @@ template<
     >
 class LevelSet: 
     public LevelSetBase<ConvexType, BasisType, PeriodicityType, BasisPnType>,
-    public ModelPhysics<ConvexType::nDim>,
-    public std::enable_shared_from_this< LevelSet<ConvexType, BasisType, PeriodicityType, BasisPnType> >
+    public ModelPhysics<ConvexType::nDim>
 {
     typedef LevelSetBase<ConvexType, BasisType, PeriodicityType, BasisPnType> super_type;
 public:
@@ -147,6 +147,8 @@ public:
     // Advection toolbox
     typedef CoefficientFormPDE<convex_type, basis_scalar_type> cfpde_toolbox_type;
     typedef std::shared_ptr<cfpde_toolbox_type> cfpde_toolbox_ptrtype;
+    using cfpde_infos_type = typename ModelPhysicCoefficientFormPDE<nDim>::infos_type;
+    using CFPDECoefficient = typename cfpde_toolbox_type::Coefficient;
 
     // Range types
     typedef typename MeshTraits<mesh_type>::element_reference_wrapper_const_iterator element_reference_wrapper_const_iterator;
@@ -253,7 +255,6 @@ public:
                              ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     std::shared_ptr<self_type> shared_from_this() { return std::dynamic_pointer_cast<self_type>( super_type::shared_from_this() ); }
-    std::shared_ptr<self_type const> shared_from_this() const { return std::dynamic_pointer_cast<self_type const>( super_type::shared_from_this() ); }
 
     //--------------------------------------------------------------------//
     // Initialization
@@ -261,7 +262,9 @@ public:
     void initAlgebraicFactory() { M_advectionToolbox->initAlgebraicFactory(); this->setAlgebraicFactory( M_advectionToolbox->algebraicFactory() ); }
     void initPostProcess() override;
 
-    std::shared_ptr<std::ostringstream> getInfo() const override;
+    // Infos
+    void updateInformationObject( nl::json & p ) const override;
+    tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
 
     //--------------------------------------------------------------------//
     // Initial condition
@@ -513,7 +516,8 @@ private:
 protected:
     //--------------------------------------------------------------------//
     // Boundary conditions
-    std::list<std::string> M_bcMarkersInflow;
+    using boundary_conditions_type = LevelSetBoundaryConditions;
+    std::shared_ptr<boundary_conditions_type> M_boundaryConditions;
 
 private:
     //--------------------------------------------------------------------//

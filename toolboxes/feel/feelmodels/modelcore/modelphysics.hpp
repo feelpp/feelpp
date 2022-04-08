@@ -739,6 +739,8 @@ public :
     using Coefficient = typename infos_type::Coefficient;
     bool hasCoefficient( Coefficient c ) const { return this->hasCoefficient( M_infos->coefficientName( c ) ); }
     ModelExpression const& coefficient( Coefficient c ) const { return this->coefficient( M_infos->coefficientName( c ) ); }
+    void setCoefficient( Coefficient c, double val ) { this->addParameter( M_infos->coefficientName( c ), val ); }
+    void setCoefficient( Coefficient c, std::string const& expr ) { this->addParameter( M_infos->coefficientName( c ), expr ); }
 
     template <int M,int N,typename SymbolsExprType = symbols_expression_empty_t>
     auto coefficientExpr( Coefficient c, SymbolsExprType const& se = symbols_expression_empty_t{} ) const

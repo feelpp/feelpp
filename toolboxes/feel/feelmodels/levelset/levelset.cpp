@@ -31,7 +31,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet(
     ModelPhysics<nDim>( "levelset" ),
     ModelBase( prefix, keyword, worldComm, subPrefix, modelRep ),
     M_advectionToolbox( new cfpde_toolbox_type( 
-                typename FeelModels::ModelGenericPDE<nDim>::infos_type( "levelset_phi", "phi", "phi", fmt::format("Pch{}", Order) ),
+                std::make_shared<cfpde_infos_type>( keyword + "_advection", "phi", "phi", fmt::format("Pch{}", Order) ),
                 prefix, keyword, worldComm, subPrefix, modelRep ) ),
     M_doUpdateCauchyGreenTensor(true),
     M_doUpdateCauchyGreenInvariant1(true),
@@ -92,8 +92,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->initTools();
 
     // Physics
-    if ( this->physics().empty() )
-        this->initPhysics( this->keyword(), this->modelProperties().models() );
+    this->initPhysics( this->shared_from_this(), this->modelProperties().models() );
 
     // Materials properties
     if ( !M_materialsProperties )
@@ -105,24 +104,32 @@ LEVELSET_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     }
 
     // Init advection toolbox
-    M_advectionToolbox->setPhysics( this->physics( this->physicType() ), this->keyword() );
     M_advectionToolbox->setManageParameterValues( false );
-    if ( !M_advectionToolbox->modelPropertiesPtr() )
+    if ( !M_advectionToolbox->hasModelProperties() )
     {
         M_advectionToolbox->setModelProperties( this->modelPropertiesPtr() );
         M_advectionToolbox->setManageParameterValuesOfModelProperties( false );
     }
-    M_advectionToolbox->setMesh( this->mesh() );
     M_advectionToolbox->setMaterialsProperties( M_materialsProperties );
+    //M_advectionToolbox->setMesh( this->mesh() );
+    M_advectionToolbox->setModelMeshAsShared( this->modelMesh() );
     M_advectionToolbox->setSpaceUnknown( this->functionSpace() );
     M_advectionToolbox->init( buildModelAlgebraicFactory );
     // Set transient coefficient d=1
+#if 0
     for( std::string const& matName : M_advectionToolbox->materialsProperties()->physicToMaterials( M_advectionToolbox->physicDefault() ) )
     {
         auto & matProp = M_advectionToolbox->materialsProperties()->materialProperties( matName );
         ModelExpression firstTimeDerivativeCoefficientExpr;
         firstTimeDerivativeCoefficientExpr.setExpr( "1", this->worldComm(), this->repository().expr() );
         M_advectionToolbox->materialsProperties()->addProperty( matProp, M_advectionToolbox->firstTimeDerivativeCoefficientName(), firstTimeDerivativeCoefficientExpr, true );
+    }
+#endif
+    for ( auto const& [physicId,physicData] : M_advectionToolbox->physicsFromCurrentType() )
+    {
+        auto physicCFPDEData = std::static_pointer_cast<ModelPhysicCoefficientFormPDE<nDim>>(physicData);
+        if( !physicCFPDEData->hasCoefficient( CFPDECoefficient::firstTimeDerivative ) )
+            physicCFPDEData->setCoefficient( CFPDECoefficient::firstTimeDerivative, 1. );
     }
 
     // Subspaces indices
@@ -281,7 +288,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initInterfaceQuantities()
     if( M_useGradientAugmented )
     {
         M_modGradPhiAdvection.reset( new modgradphi_advection_type( 
-                    typename FeelModels::ModelGenericPDE<nDim>::infos_type( prefixvm( this->keyword(), "modgradphi", "_" ), "modgradphi", "modgradphi", (boost::format("Pch%1%")%Order).str() ),
+                    std::make_shared<cfpde_infos_type>( this->keyword() + "_modgradphi_advection", "modgradphi", "modgradphi", fmt::format("Pch{}", Order) ),
                     this->prefix(), this->keyword(), this->worldCommPtr(), this->subPrefix(), this->rootRepository() ) );
 #if 0
         M_modGradPhiAdvection->setModelName( "Advection-Reaction" );
@@ -293,7 +300,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initInterfaceQuantities()
     if( M_useStretchAugmented )
     {
         M_stretchAdvection.reset( new stretch_advection_type( 
-                    typename FeelModels::ModelGenericPDE<nDim>::infos_type( prefixvm( this->keyword(), "stretch", "_" ), "stretch", "stretch", (boost::format("Pch%1%")%Order).str() ),
+                    std::make_shared<cfpde_infos_type>( this->keyword() + "_stretch_advection", "stretch", "stretch", fmt::format("Pch{}", Order) ),
                     this->prefix(), this->keyword(), this->worldCommPtr(), this->subPrefix(), this->rootRepository() ) );
 #if 0
         M_stretchAdvection->setModelName( "Advection-Reaction" );
@@ -305,7 +312,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initInterfaceQuantities()
     if( M_useCauchyAugmented )
     {
         M_backwardCharacteristicsAdvection.reset( new backwardcharacteristics_advection_type( 
-                    typename FeelModels::ModelGenericPDE<nDim>::infos_type( prefixvm( this->keyword(), "backward_characteristics", "_" ), "backward_characteristics", "backward_characteristics", (boost::format("Pchv%1%")%Order).str() ),
+                    std::make_shared<cfpde_infos_type>( this->keyword() + "_backward_characteristics_advection", "backward_characteristics", "backward_characteristics", fmt::format("Pch{}", Order) ),
                     this->prefix(), this->keyword(), this->worldCommPtr(), this->subPrefix(), this->rootRepository() ) );
 #if 0
         M_backwardCharacteristicsAdvection->setModelName( "Advection" );
@@ -438,6 +445,7 @@ LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
 {
+#if 0
     M_bcMarkersInflow.clear();
     M_levelsetParticleInjectors.clear();
 
@@ -487,6 +495,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
 
         M_levelsetParticleInjectors.push_back( particleInjector );
     }
+#endif
 }
 
 //----------------------------------------------------------------------------//
@@ -1078,6 +1087,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::redistanciate()
     //return _ostr;
 //}
 
+#if 0
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 std::shared_ptr<std::ostringstream>
 LEVELSET_CLASS_TEMPLATE_TYPE::getInfo() const
@@ -1107,6 +1117,23 @@ LEVELSET_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n";
 
     return _ostr;
+}
+#endif
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS 
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) const
+{
+    //TODO
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS 
+tabulate_informations_ptr_t
+LEVELSET_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
+{
+    auto tabInfo = TabulateInformationsSections::New( tabInfoProp );
+    //TODO
+    return tabInfo;
 }
 
 //----------------------------------------------------------------------------//

@@ -39,17 +39,14 @@
 #include <feel/feelmodels/levelset/levelsetredistanciation_fm.hpp>
 #include <feel/feelmodels/levelset/levelsetredistanciation_hj.hpp>
 
-#include <feel/feelmodels/modelcore/modelbase.hpp>
+#include <feel/feelmodels/modelcore/modelnumerical.hpp>
+#include <feel/feelmodels/modelcore/modelphysics.hpp>
 #include <feel/feelmodels/modelcore/modelfields.hpp>
 #include <feel/feelmodels/modelcore/modelmeasuresquantities.hpp>
+#include <feel/feelmodels/modelcore/markermanagement.hpp>
+#include <feel/feelmodels/modelcore/options.hpp>
 
 #include <feel/feelmodels/levelset/parameter_map.hpp>
-
-#if defined (MESH_ADAPTATION_LS)
- #include <levelsetmesh/meshadaptation.hpp>
-// #warning MESH_ADAPTATION_LS is defined in levelset. Need to be defined identically in the application
-#endif
-
 
 namespace Feel {
 
@@ -71,8 +68,7 @@ template<
     typename BasisPnType = BasisType
     >
 class LevelSetBase : 
-    public ModelNumerical,
-    public std::enable_shared_from_this< LevelSetBase<ConvexType, BasisType, PeriodicityType, BasisPnType> >
+    public ModelNumerical
 {
     typedef ModelNumerical super_type;
 public:
@@ -151,12 +147,6 @@ public:
     using cached_scalar_field_type = CachedModelField<element_scalar_type, InplaceUpdatePolicy>;
     using cached_vectorial_field_type = CachedModelField<element_vectorial_type, InplaceUpdatePolicy>;
 
-    //--------------------------------------------------------------------//
-    // Mesh adaptation
-#if defined (MESH_ADAPTATION_LS)
-    typedef MeshAdaptation<Dim, Order, 1, periodicity_type > mesh_adaptation_type;
-    typedef std::shared_ptr< mesh_adaptation_type > mesh_adaptation_ptrtype;
-#endif
     //--------------------------------------------------------------------//
     // Heaviside and Dirac expressions
     typedef Expr< LevelsetDeltaExpr<element_levelset_type> > levelset_delta_expr_type;
@@ -254,6 +244,8 @@ public:
             std::string const& subPrefix = "",
             ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
+    std::shared_ptr<self_type> shared_from_this() { return std::dynamic_pointer_cast<self_type>( super_type::shared_from_this() ); }
+
     //--------------------------------------------------------------------//
     // Initialization
     void initMesh();
@@ -261,8 +253,9 @@ public:
     void initLevelsetValue();
     void initPostProcess() override;
 
-    std::shared_ptr<std::ostringstream> getInfo() const override;
-
+    // Infos
+    void updateInformationObject( nl::json & p ) const override;
+    tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
     //--------------------------------------------------------------------//
     // Parameters
     virtual void updateParameterValues();
@@ -293,14 +286,6 @@ public:
     mesh_ptrtype const& submeshInner( double cut = 1e-3 ) const;
 
     periodicity_type const& periodicity() const { return M_periodicity; }
-
-    //--------------------------------------------------------------------//
-    // Mesh adaptation
-#if defined (MESH_ADAPTATION_LS)
-    mesh_ptrtype adaptMesh(double time, element_levelset_ptrtype elt);
-    mesh_adaptation_ptrtype mesh_adapt;
-    template<typename ExprT> mesh_ptrtype adaptedMeshFromExp(ExprT expr);
-#endif
 
     //--------------------------------------------------------------------//
     // Levelset

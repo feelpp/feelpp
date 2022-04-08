@@ -778,7 +778,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateDirac( element_scalar_ptrtype & D ) cons
     if ( M_useHeavisideDiracNodalProj )
         D->on(_range=this->rangeMeshElements(),_expr=this->diracExpr() );
     else
-        *D = M_projectorL2Scalar->project( this->diracExpr() );
+        *D = M_projectorL2Scalar->project( _expr=this->diracExpr() );
 
     double timeElapsed = this->timerTool("UpdateInterfaceData").stop();
     this->log("LevelSetBase", "updateDirac", "finish in "+(boost::format("%1% s") %timeElapsed).str() );
@@ -803,7 +803,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateHeaviside( element_scalar_ptrtype & H ) 
         if ( M_useHeavisideDiracNodalProj )
             H->on(_range=this->rangeMeshElements(),_expr=Feel::FeelModels::levelsetHeaviside(psi, cst(eps)));
         else
-            *H = M_projectorL2Scalar->project( Feel::FeelModels::levelsetHeaviside(psi, cst(eps)) );
+            *H = M_projectorL2Scalar->project( _expr=Feel::FeelModels::levelsetHeaviside(psi, cst(eps)) );
     }
     else
     {
@@ -812,7 +812,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateHeaviside( element_scalar_ptrtype & H ) 
         if ( M_useHeavisideDiracNodalProj )
             H->on(_range=this->rangeMeshElements(),_expr=Feel::FeelModels::levelsetHeaviside(psi, cst(eps)) );
         else
-            *H = M_projectorL2Scalar->project( Feel::FeelModels::levelsetHeaviside(psi, cst(eps)) );
+            *H = M_projectorL2Scalar->project( _expr=Feel::FeelModels::levelsetHeaviside(psi, cst(eps)) );
     }
 
     double timeElapsed = this->timerTool("UpdateInterfaceData").stop();
@@ -875,11 +875,11 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateDistanceNormal( element_vectorial_ptrtyp
             break;
         case LevelSetDerivationMethod::L2_PROJECTION:
             this->log("LevelSetBase", "updateDistanceNormal", "perform L2 projection");
-            *distN = this->projectorL2Vectorial()->project( N_expr );
+            *distN = this->projectorL2Vectorial()->project( _expr=N_expr );
             break;
         case LevelSetDerivationMethod::SMOOTH_PROJECTION:
             this->log("LevelSetBase", "updateDistanceNormal", "perform smooth projection");
-            *distN = this->smootherVectorial()->project( N_expr );
+            *distN = this->smootherVectorial()->project( _expr=N_expr );
             break;
         //case LevelSetDerivationMethod::PN_NODAL_PROJECTION:
             //this->log("LevelSetBase", "updateDistanceNormal", "perform PN-nodal projection");
@@ -1665,6 +1665,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::setInitialValue(element_levelset_ptrtype const
 //----------------------------------------------------------------------------//
 //----------------------------------------------------------------------------//
 //----------------------------------------------------------------------------//
+#if 0
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 std::shared_ptr<std::ostringstream>
 LEVELSETBASE_CLASS_TEMPLATE_TYPE::getInfo() const
@@ -1813,6 +1814,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::getInfo() const
 
     return _ostr;
 }
+#endif
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS 
 void
@@ -1840,6 +1842,22 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::setParameterValues( std::map<std::string,doubl
         this->modelProperties().postProcess().setParameterValues( paramValues );
         this->modelProperties().initialConditions().setParameterValues( paramValues );
     }
+}
+
+LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS 
+void
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) const
+{
+    //TODO
+}
+
+LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS 
+tabulate_informations_ptr_t
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
+{
+    auto tabInfo = TabulateInformationsSections::New( tabInfoProp );
+    //TODO
+    return tabInfo;
 }
 
 //----------------------------------------------------------------------------//
