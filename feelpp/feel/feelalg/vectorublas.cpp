@@ -131,18 +131,9 @@ VectorUblasBase<T>::operator+( const self_type & v ) const
 
 template< typename T >
 std::unique_ptr<VectorUblasBase<T>> 
-VectorUblasBase<T>::operator+( const value_type a ) const
+VectorUblasBase<T>::operator+( value_type a ) const
 {
     std::unique_ptr<VectorUblasBase<T>> res( this->clonePtr() );
-    res->add( a );
-    return res;
-}
-
-template< typename T >
-std::unique_ptr<VectorUblasBase<T>> 
-operator+( const typename VectorUblasBase<T>::value_type a, const VectorUblasBase<T> & v )
-{
-    std::unique_ptr<VectorUblasBase<T>> res( v.clonePtr() );
     res->add( a );
     return res;
 }
@@ -158,19 +149,10 @@ VectorUblasBase<T>::operator-( const self_type & v ) const
 
 template< typename T >
 std::unique_ptr<VectorUblasBase<T>> 
-VectorUblasBase<T>::operator-( const value_type a ) const
+VectorUblasBase<T>::operator-( value_type a ) const
 {
     std::unique_ptr<VectorUblasBase<T>> res( this->clonePtr() );
     res->sub( a );
-    return res;
-}
-
-template< typename T >
-std::unique_ptr<VectorUblasBase<T>> 
-operator-( const typename VectorUblasBase<T>::value_type a, const VectorUblasBase<T> & v )
-{
-    std::unique_ptr<VectorUblasBase<T>> res( v.clonePtr() );
-    res->add( a );
     return res;
 }
 
@@ -185,18 +167,9 @@ VectorUblasBase<T>::operator-() const
 
 template< typename T >
 std::unique_ptr<VectorUblasBase<T>> 
-VectorUblasBase<T>::operator*( const value_type a ) const
+VectorUblasBase<T>::operator*( value_type a ) const
 {
     std::unique_ptr<VectorUblasBase<T>> res( this->clonePtr() );
-    res->scale( a );
-    return res;
-}
-
-template< typename T >
-std::unique_ptr<VectorUblasBase<T>> 
-operator*( const typename VectorUblasBase<T>::value_type a, const VectorUblasBase<T> & v )
-{
-    std::unique_ptr<VectorUblasBase<T>> res( v.clonePtr() );
     res->scale( a );
     return res;
 }
@@ -2489,7 +2462,7 @@ VectorUblas<T> VectorUblas<T>::createView( Vector<T> & vec )
 
 /*-----------------------------------------------------------------------------*/
 // Explicit instantiations
-template class VectorUblas<double>;
+template class VectorUblas< double >;
 namespace detail {
 template class VectorUblasBase< double >;
 template class VectorUblasContiguousGhosts< double, ublas::vector<double> >;
