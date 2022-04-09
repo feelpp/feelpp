@@ -146,8 +146,26 @@
         {
             "type":"mean",
             "markers":"AIR",
-            "topodim":3,
-            "expr":"k_1*crb_u:k_1:crb_u"
+            "topodim":2,
+            "expr":"crb_u:crb_u"
+        },
+        "ref":
+        {
+            "type":"integrate",
+            "markers":"Gamma_1",
+            "topodim":1,
+            "expr":"k_1*crb_dn_u:k_1:crb_dn_u"
+        },
+        "sensor1":
+        {
+            "type":"sensor",
+            "radius":0.001,
+            "coord":[5e-3,5e-2,0]
+        },
+        "point1":
+        {
+            "type":"point",
+            "coord":[5e-3,5e-2,0]
         }
     },
     "PostProcess":

@@ -5,7 +5,7 @@
 
 using namespace Feel;
 
-void writeErrors(fs::ofstream& out, std::vector<std::vector<double> > const& err)
+void writeErrors(std::ostream& out, std::vector<std::vector<double> > const& err)
 {
     if( out && Environment::isMasterRank() )
     {
@@ -22,8 +22,59 @@ void writeErrors(fs::ofstream& out, std::vector<std::vector<double> > const& err
                 out << std::setw(25) << err[n][i];
             out << std::endl;
         }
-        out.close();
     }
+}
+
+std::tuple<std::vector<double>,std::vector<double>,std::vector<double>,std::vector<double>>
+computeStats(std::vector<std::vector<double>> errs)
+{
+    int N = errs.size();
+    std::vector<double> min(N), max(N), mean(N), stdev(N);
+    if( N == 0 )
+        return std::make_tuple(min, max, mean, stdev);
+    int size = errs[0].size();
+    for(int n = 0; n < N; ++n)
+    {
+        min[n] = *std::min_element(errs[n].begin(), errs[n].end());
+        max[n] = *std::max_element(errs[n].begin(), errs[n].end());
+        double s = std::accumulate(errs[n].begin(), errs[n].end(), 0.0);
+        mean[n] = s/size;
+        double accum = std::accumulate(errs[n].begin(), errs[n].end(), 0.0,
+                                       [s,size](double a, double b) {
+                                           return a + (b-s/size)*(b-s/size);
+                                       });
+        stdev[n] = accum/size;
+    }
+    return std::make_tuple(min, max, mean, stdev);
+}
+
+void writeStats(std::ostream& out, std::vector<double> min, std::vector<double> mean, std::vector<double> max, std::vector<double> stdev)
+{
+    if( out && Environment::isMasterRank() )
+    {
+        int N = min.size();
+        out << std::setw(5) << "N" << std::setw(25) << "min" << std::setw(25) << "max"
+            << std::setw(25) << "mean" << std::setw(25) << "stdev" << std::endl;
+        for(int n = 0; n < N; ++n)
+            out << std::setw(5) << n+1 << std::setw(25) << min[n] << std::setw(25) << max[n]
+                << std::setw(25) << mean[n] << std::setw(25) << stdev[n] << std::endl;
+    }
+}
+
+std::vector<double> computeOutputs(std::vector<std::vector<std::vector<Eigen::VectorXd>>> const& Lqm_pr, 
+                                   std::vector<std::vector<std::vector<double>>> const& beta,
+                                   Eigen::VectorXd const& uN)
+{
+    std::vector<double> outputs;
+    for(int i = 1; i < beta.size(); ++i )
+    {
+        Eigen::VectorXd F_pr = Eigen::VectorXd::Zero(uN.size());
+        for(int q = 0; q < beta[i].size(); ++q)
+            for(int m = 0; m < beta[i][q].size(); ++m)
+                F_pr += beta[i][q][m]*Lqm_pr[i-1][q][m].head(uN.size());
+        outputs.push_back(F_pr.dot(uN));
+    }
+    return outputs;
 }
 
 template<int Dim, int Order>
@@ -69,85 +120,125 @@ int runSimulation()
     crb->offline();
     toc("offline");
 
+    // convergence study
     int N = crb->dimension();
     int timeSteps = 1;
     std::vector<vectorN_type> uNs(timeSteps, vectorN_type(N)), uNolds(timeSteps, vectorN_type(N));
-    std::vector<double> outputs(timeSteps, 0);
+    std::vector<double> outs(timeSteps, 0);
+
+    auto allOutputs = model->modelProperties()->outputs();
+    auto outputs = allOutputs.ofTypes({"integrate","mean","sensor"});
+    auto Fqm = model->getFqm();
+    std::vector<std::vector<std::vector<Eigen::VectorXd>>> Lqm_pr(Fqm.size()-1);
+    for( int i = 1; i < Fqm.size(); ++i)
+    {
+        Lqm_pr[i-1].resize(Fqm[i].size());
+        for( int q = 0; q < Fqm[i].size(); ++q )
+        {
+            Lqm_pr[i-1][q].resize(Fqm[i][q].size());
+            for( int m = 0; m < Fqm[i][q].size(); ++m )
+            {
+                Lqm_pr[i-1][q][m] = Eigen::VectorXd(N);
+                for( int n = 0; n < N; ++n )
+                    Lqm_pr[i-1][q][m](n) = crbModel->Fqm( i, q, m, crbModel->rBFunctionSpace()->primalBasisElement(n) );
+            }
+        }
+    }
 
     sampling_ptrtype sampling( new sampling_type( crbModel->parameterSpace() ) );
     int size = ioption("toolboxmor.sampling-size");
     sampling->clear();
     sampling->randomize( size, true );
 
-    std::vector<std::vector<double> > errs(N, std::vector<double>(size));
-    std::vector<std::vector<double> > errsRel(N, std::vector<double>(size));
+    std::vector<std::vector<double> > errs(N, std::vector<double>(size)), errsRel(N, std::vector<double>(size));
+    std::vector<std::vector<std::vector<double>>> errsOutput(Lqm_pr.size(), std::vector<std::vector<double>>(N, std::vector<double>(size)));
+    std::vector<std::vector<std::vector<double>>> errsOutputRel(Lqm_pr.size(), std::vector<std::vector<double>>(N, std::vector<double>(size)));
+    std::vector<std::vector<double>> errsOutputRef(N, std::vector<double>(size)), errsOutputRefRel(N, std::vector<double>(size));
+    std::vector<double> output;
     auto Xh = model->functionSpace();
     auto mesh = Xh->mesh();
-    auto rangeT = elements(mesh);//Xh->dof()->meshSupport()->rangeElements();
+    auto rangeT = elements(support(Xh));
     auto TFE = Xh->element();
     auto TRB = Xh->element();
 
+    Feel::cout << "starting convergence study with " << size << " random parameters" << std::endl;
     int j = 0;
     for( auto const& mu : *sampling )
     {
+        Feel::cout << "cvg for parameter mu=" << mu.toString() << std::endl;
         for( int i = 0; i < mu.size(); ++i )
             heatBox->addParameterInModelProperties(mu.parameterName(i), mu(i));
         heatBox->updateParameterValues();
-        // heatBox->updateFieldVelocityConvection();
         heatBox->solve();
         TFE = heatBox->fieldTemperature();
         auto normT = normL2( _range=rangeT, _expr=idv(TFE) );
+        int k = 1;
+        std::vector<double> outputsFE;
+        model->computeBetaQm(mu);
+        for( auto& [name, output] : outputs )
+            outputsFE.push_back(model->output(k++, mu, TFE));
+
+        auto betaFqm = model->computeBetaQm(mu).template get<1>();
         for(int n = 0; n < N; ++n)
         {
-            crb->fixedPointPrimal(n+1, mu, uNs, uNolds, outputs);
+            crb->fixedPointPrimal(n+1, mu, uNs, uNolds, outs);
             vectorN_type uN = uNs[0];
             TRB = crb->expansion( uN, n+1 );
             errs[n][j] = normL2( _range=rangeT, _expr=idv(TRB)-idv(TFE) );
             errsRel[n][j] = errs[n][j]/normT;
+
+            auto outputsRB = computeOutputs(Lqm_pr, betaFqm, uN);
+            for( int k = 0; k < outputsRB.size(); ++k )
+            {
+                errsOutput[k][n][j] = std::abs(outputsRB[k]-outputsFE[k]);
+                errsOutputRel[k][n][j] = errsOutput[k][n][j]/std::abs(outputsFE[k]);
+            }
         }
         ++j;
     }
 
-    std::vector<double> min(N), max(N), mean(N), stdev(N);
-    for(int n = 0; n < N; ++n)
-    {
-        min[n] = *std::min_element(errsRel[n].begin(), errsRel[n].end());
-        max[n] = *std::max_element(errsRel[n].begin(), errsRel[n].end());
-        double s = std::accumulate(errsRel[n].begin(), errsRel[n].end(), 0.0);
-        mean[n] = s/size;
-        double accum = std::accumulate(errsRel[n].begin(), errsRel[n].end(), 0.0,
-                                       [s,size](double a, double b) {
-                                           return a + (b-s/size)*(b-s/size);
-                                       });
-        stdev[n] = accum/size;
-    }
-
     fs::ofstream cvgErr( "err.dat" );
-    fs::ofstream cvgErrR( "errR.dat" );
-    fs::ofstream cvgStat( "stat.dat" );
     writeErrors(cvgErr, errs);
+    cvgErr.close();
+    fs::ofstream cvgErrR( "errR.dat" );
     writeErrors(cvgErrR, errsRel);
-    if( cvgStat && Environment::isMasterRank() )
+    cvgErrR.close();
+
+    auto [min,max,mean,stdev] = computeStats(errsRel);
+    fs::ofstream cvgStat( "stat.dat" );
+    writeStats(cvgStat, min, mean, max, stdev);
+    cvgStat.close();
+    Feel::cout << "stats on field over size of RB" << std::endl;
+    writeStats(std::cout, min, mean, max, stdev);
+
+    double tol = doption("toolboxmor.tolerance");
+    bool status = mean[N-1] < tol;
+
+    int k = 0;
+    for( auto const& [name,output] : outputs)
     {
-        cvgStat << std::setw(5) << "N" << std::setw(25) << "min" << std::setw(25) << "max"
-                << std::setw(25) << "mean" << std::setw(25) << "stdev" << std::endl;
-        for(int n = 0; n < N; ++n)
-            cvgStat << std::setw(5) << n+1 << std::setw(25) << min[n] << std::setw(25) << max[n]
-                    << std::setw(25) << mean[n] << std::setw(25) << stdev[n] << std::endl;
-        cvgStat.close();
+        fs::ofstream cvgErrO( "err_"+name+".dat" );
+        writeErrors(cvgErrO, errsOutput[k]);
+        cvgErrO.close();
+        fs::ofstream cvgErrOR( "errR_"+name+".dat" );
+        writeErrors(cvgErrOR, errsOutputRel[k]);
+        cvgErrOR.close();
+        auto [minO,maxO,meanO,stdevO] = computeStats(errsOutputRel[k]);
+        fs::ofstream cvgStatO( "stat_"+name+".dat" );
+        writeStats(cvgStatO, minO, meanO, maxO, stdevO);
+        cvgStatO.close();
+        Feel::cout << "stats on output " << name << " over size of RB" << std::endl;
+        writeStats(std::cout, minO, meanO, maxO, stdevO);
+        status = status && meanO[N-1] < tol;
+        k++;
     }
-    Feel::cout << std::setw(5) << "N" << std::setw(25) << "min" << std::setw(25) << "max"
-               << std::setw(25) << "mean" << std::setw(25) << "stdev" << std::endl;
-    for(int n = 0; n < N; ++n)
-        Feel::cout << std::setw(5) << n+1 << std::setw(25) << min[n] << std::setw(25) << max[n]
-                   << std::setw(25) << mean[n] << std::setw(25) << stdev[n] << std::endl;
 
     auto e = exporter(_mesh=mesh);
     e->add("TFE", TFE);
     e->add("TRB", TRB);
     e->save();
 
-    return 0;
+    return !status;
 }
 
 
@@ -162,6 +253,7 @@ int main( int argc, char** argv)
             ("case.discretization", Feel::po::value<std::string>()->default_value( "P1" ), "discretization : P1,P2,P3 ")
             ( "toolboxmor.name", po::value<std::string>()->default_value( "toolboxmor" ), "Name of the db directory" )
             ( "toolboxmor.sampling-size", po::value<int>()->default_value(10), "size of the sampling" )
+            ( "toolboxmor.tolerance", po::value<double>()->default_value(5e-2), "tolerance" )
             ;
 
         Environment env( _argc=argc, _argv=argv,

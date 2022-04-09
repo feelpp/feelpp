@@ -252,13 +252,13 @@ ToolboxMor<SpaceType, Options>::assembleOutputMean( parameter_type const& mu, CR
         {
             auto range = markedelements(this->Xh->mesh(), output.markers());
             double area = integrate( _range=range, _expr=cst(1.0) ).evaluate()(0,0) ;
-            f += integrate( _range=range, _expr=(exU*id(u))/cst(area) );
+            f += integrate( _range=range, _expr=(exU*id(u)+exGU0*dx(u)+exGU1*dy(u)+exGU2*dz(u))/cst(area) );
         }
         else if( dim == nDim-1 )
         {
             auto range = markedfaces(this->Xh->mesh(), output.markers());
             double area = integrate( _range=range, _expr=cst(1.0) ).evaluate()(0,0) ;
-            f += integrate( _range=range, _expr=(exU*id(u))/cst(area) );
+            f += integrate( _range=range, _expr=(exU*id(u)+exGU0*dx(u)+exGU1*dy(u)+exGU2*dz(u)+exDNU*dn(u))/cst(area) );
         }
     }
    return f.vectorPtr();
@@ -280,8 +280,17 @@ ToolboxMor<SpaceType, Options>::assembleOutputIntegrate( parameter_type const& m
         auto exGU1 = ex.diff<1>("crb_grad_u_1");
         auto exGU2 = ex.diff<1>("crb_grad_u_2");
         auto exDNU = ex.diff<1>("crb_dn_u");
-        f += integrate( _range=markedfaces(this->Xh->mesh(), output.markers() ),
-                        _expr=exU*id(u)+exGU0*dx(u)+exGU1*dy(u)+exGU2*dz(u)+exDNU*grad(u)*N() );
+        auto dim = output.dim();
+        if( dim == nDim )
+        {
+            auto range = markedelements(this->Xh->mesh(), output.markers());
+            f += integrate( _range=range, _expr=exU*id(u)+exGU0*dx(u)+exGU1*dy(u)+exGU2*dz(u) );
+        }
+        else if( dim == nDim-1 )
+        {
+            auto range = markedfaces(this->Xh->mesh(), output.markers());
+            f += integrate( _range=range, _expr=exU*id(u)+exGU0*dx(u)+exGU1*dy(u)+exGU2*dz(u)+exDNU*dn(u) );
+        }
     }
     return f.vectorPtr();    
 }
@@ -296,7 +305,7 @@ ToolboxMor<SpaceType, Options>::assembleOutputSensor( parameter_type const& mu, 
     {
         auto coord = output.coord();
         auto radius = output.radius();
-        if( coord.size() == nDim )
+        if( coord.size() >= nDim )
         {
             if constexpr( nDim == 1 )
             {
@@ -635,7 +644,12 @@ ToolboxMor<SpaceType, Options>::output( int output_index, parameter_type const& 
         for ( int q=0; q<Ql(output_index); q++ )
         {
             for( int m=0; m<mLQF(output_index, q); m++ )
-                s += this->M_betaFqm[output_index][q][m]*dot( *this->M_Fqm[output_index][q][m] , u );
+            {
+                auto d = dot( *this->M_Fqm[output_index][q][m] , u );
+                // Feel::cout << "d["<< output_index << "][" << q << "][" << m << "] = " << d << "\n"
+                //            << "beta = " << this->M_betaFqm[output_index][q][m] << std::endl;
+                s += this->M_betaFqm[output_index][q][m]*d;
+            }
         }
     }
     else
