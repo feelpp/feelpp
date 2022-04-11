@@ -50,6 +50,8 @@ extern "C"
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 
+#include <range/v3/view/take_exactly.hpp>
+
 #include <feel/feelcore/mongocxx.hpp>
 
 #include <gflags/gflags.h>
@@ -57,6 +59,7 @@ extern "C"
 #include <feel/feelinfo.h>
 #include <feel/feelconfig.h>
 #include <feel/feelcore/feel.hpp>
+#include <feel/feelcore/table.hpp>
 
 #if defined ( FEELPP_HAS_PETSC_H )
 #include <petscsys.h>
@@ -495,11 +498,9 @@ Environment::Environment( int argc, char** argv,
     }
 #else
     S_repository = Repository( config );
-//    S_repository.configure();
     S_rootdir = S_repository.root();
     S_appdir = S_repository.directory();
     S_appdirWithoutNumProc = S_repository.directoryWithoutAppenders();
-    
 #endif
 
 
@@ -600,18 +601,8 @@ Environment::Environment( int argc, char** argv,
         d /= S_vm["repository.case"].as<std::string>();
         directory = d.string();
     }
-    if ( !directory.empty() )
-    {
-        S_repository.configure(directory);
-    }
-    else
-    {
-        S_repository.configure();
-    }
-    S_rootdir = S_repository.root();
-    S_appdir = S_repository.directory();
-    S_appdirWithoutNumProc = S_repository.directoryWithoutAppenders();
-    changeRepository( _directory = boost::format{ S_repository.directory().string() } );
+    
+    changeRepository( _directory = boost::format{ directory.string() } );
 #endif
 
     if ( S_vm.count( "dirs" ) == 1 )
@@ -753,7 +744,23 @@ Environment::~Environment()
     if ( boption( _name="display-stats" ) )
         Environment::saveTimers( true );
 
-    double t = toc("env");
+    double t = toc("env",no_display);
+    Table summary;
+    summary.add_row( { S_about.appName() } );
+    summary( 0, 0 ).format().setFontAlign( Font::Align::center );
+    Table data;
+    data.add_row( { "logs", Environment::logsRepository() } );
+    if ( Environment::journalEnabled()  )
+        data.add_row( { "journal", Environment::journalFilename() } );
+    Table paths;
+    paths.add_row( { Environment::appRepository() } );
+    for ( auto p : S_paths | ranges::views::take_exactly( S_paths.size() - 3 ) )
+    {
+        paths.add_row({p.string()});
+    }
+    data.add_row( { "directories", paths } );
+    summary.add_row({data});
+    cout << summary << std::endl;
     cout << "[ Stopping Feel++ ] " << tc::green << "application " << S_about.appName()
          << " execution time " << t << "s" << tc::reset << std::endl;
  
@@ -870,7 +877,7 @@ Environment::~Environment()
 #if defined ( FEELPP_HAS_PETSC_H )
     PetscTruth is_petsc_initialized;
     PetscInitialized( &is_petsc_initialized );
-    if ( is_petsc_initialized )
+    if ( is_petsc_initialized && !Environment::aborted() )
     {
 #if defined( FEELPP_HAS_SLEPC )
         SlepcFinalize();
@@ -888,7 +895,8 @@ Environment::~Environment()
     S_informationObject.reset();
 
     // make sure everybody is here
-    Environment::worldComm().barrier();
+    if ( !Environment::aborted() )
+        Environment::worldComm().barrier();
     if ( Environment::isMasterRank() && S_vm.count("rm") )
     {
         cout << tc::red << "Removing all files (--rm)  in " << appRepository() << "..." << tc::reset << std::endl;
@@ -900,6 +908,8 @@ Environment::~Environment()
         }
     }
 
+    if ( !Environment::aborted() )
+    {
     // call gmsh::finalize() at the end because if gmsh is compiled with MPI support, the gmsh lib call MPI_Finalize
 #if defined( FEELPP_HAS_GMSH_H )
 #if defined( FEELPP_HAS_GMSH_API )
@@ -908,7 +918,7 @@ Environment::~Environment()
         GmshFinalize();
 #endif
 #endif
-
+    }
 }
 
 
@@ -1610,6 +1620,7 @@ Environment::doOptions( int argc, char** argv,
         LOG( WARNING ) << "Command line or config file option parsing error: " << e.what() << "\n"
                        << "  o faulty option: " << e.get_option_name() << "\n"
                        << "Warning: the .cfg file or some options may not have been read properly\n";
+                       
     }
 
     catch ( boost::program_options::ambiguous_option const& e )
@@ -1635,12 +1646,14 @@ Environment::doOptions( int argc, char** argv,
     // catches program_options exceptions
     catch ( std::exception& e )
     {
-        LOG( WARNING ) << "Application option parsing: unknown option:" << e.what() << " (the .cfg file or some options may not have been read properly)\n";
+        //LOG( WARNING ) << "Application option parsing: unknown option:" << e.what() << " (the .cfg file or some options may not have been read properly)\n";
+        throw;
     }
 
     catch ( ... )
     {
-        LOG( WARNING ) << "Application option parsing: unknown exception triggered  (the .cfg file or some options may not have been read properly)\n";
+        //LOG( WARNING ) << "Application option parsing: unknown exception triggered  (the .cfg file or some options may not have been read properly)\n";
+        throw;
     }
 }
 
@@ -1665,6 +1678,10 @@ Environment::initialized()
     return mpi::environment::initialized() ;
 }
 
+bool Environment::aborted()
+{
+    return S_aborted;
+}
 bool
 Environment::finalized()
 {
@@ -1684,6 +1701,7 @@ Environment::isMainThread()
 void
 Environment::abort( int error_code )
 {
+    S_aborted = true;
     return mpi::environment::abort( error_code );
 }
 
@@ -1889,75 +1907,33 @@ Environment::nameUUID( uuids::uuid const& dns_namespace_uuid, std::string const&
 }
 
 void
-Environment::changeRepositoryImpl( boost::format fmt, std::string const& logfilename, bool add_subdir_np, WorldComm const& worldcomm, bool remove )
+Environment::changeRepositoryImpl( boost::format fmt, std::string const& logfilename, Location location, bool add_subdir_np, WorldComm const& worldcomm, bool remove )
 {
-    if ( Environment::vm().count( "nochdir" ) )
-    {
-        S_appdir = fs::current_path();
-        return;
-    }
     stopLogging( remove );
     fs::path rep_path;
     S_paths.push_back( S_appdir );
+    std::string directory = fmt.str();
 
-    typedef std::vector< std::string > split_vector_type;
-
-    split_vector_type dirs; // #2: Search for tokens
-    std::string fmtstr = fmt.str();
-    boost::split( dirs, fmtstr, boost::is_any_of( "/" ) );
-
-    fs::path p = dirs.front();
-
-    if (fs::path(fmtstr).is_absolute())
+    if ( Environment::vm().count( "repository.append.np" ) )
+        S_repository.config().append_np = boption( "repository.append.np" );
+    if ( Environment::vm().count( "repository.append.date" ) )
+        S_repository.config().append_date = boption( "repository.append.date" );
+    // if we are in relative mode then first go back to the initial current path
+    if ( location == Location::relative )
+        ::chdir( S_paths.front().string().c_str() );
+    if ( !directory.empty() )
     {
-        rep_path=fs::path("/");
+        S_repository.configure( directory, location );
     }
-    else if ( p.relative_path() != "." )
+    else
     {
-        rep_path = Environment::rootRepository();
-
-        if ( worldcomm.isMasterRank() && !fs::exists( rep_path ) )
-        {
-            //LOG( INFO ) << "Creating directory " << rep_path << "...";
-            fs::create_directory( rep_path );
-        }
+        S_repository.configure();
     }
+    S_repository.cd();
 
-    for ( std::string const& dir : dirs )
-    {
-        if ( !dir.empty() )
-        {
-            //VLOG(2)<< " option: " << s << "\n";
-            rep_path = rep_path / dir;
-
-            if ( worldcomm.isMasterRank() && !fs::exists( rep_path ) )
-                fs::create_directory( rep_path );
-        }
-    }
-
-    S_appdirWithoutNumProc = rep_path;
-
-    bool append_np = (!S_repository.data().empty())?S_repository.data().value( "/directory/append/np"_json_pointer, false ):false;
-    if ( append_np ||add_subdir_np )
-    {
-        rep_path = rep_path / ( boost::format( "np_%1%" ) % Environment::numberOfProcessors() ).str();
-
-        if ( worldcomm.isMasterRank() && !fs::exists( rep_path ) )
-            fs::create_directory( rep_path );
-
-        //LOG( INFO ) << "changing directory to " << rep_path << "\n";
-    }
-
-    S_appdir = rep_path;
-
-    if ( worldcomm.isMasterRank() && !fs::exists( Environment::logsRepository() ) )
-        fs::create_directory( Environment::logsRepository() );
-
-    // wait all process in order to be sure that the dir has been created by master process
-    worldcomm.barrier();
-
-    // we change directory for now but that may change in the future
-    ::chdir( S_appdir.string().c_str() );
+    S_rootdir = S_repository.root();
+    S_appdir = S_repository.directory();
+    S_appdirWithoutNumProc = S_repository.directoryWithoutAppenders();
 
     startLogging( Environment::about().appName() );
     cout << tc::red

@@ -4,12 +4,28 @@
     "ShortName":"Solid",
     "Models":
     {
-        "equations":"Hyper-Elasticity",
-        "material-model":"StVenantKirchhoff"
+        "solid":{
+            "setup":{
+                "equations":"Hyper-Elasticity",
+                "material-model":"StVenantKirchhoff",
+                "body-forces":"{0,-gravity*1e3}:gravity"
+            }
+        }
     },
     "Parameters":
     {
         "gravity":"2"
+    },
+    "Meshes":
+    {
+        "solid":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/csm.geo",
+                "hsize":0.004
+            }
+        }
     },
     "Materials":
     {
@@ -21,57 +37,50 @@
     },
     "BoundaryConditions":
     {
-        "displacement":
+        "solid":
         {
-            "Dirichlet":
+            "displacement":
             {
-                "fixed-wall":
-                {
+                "fixed-wall":{
                     "expr":"{0,0}"
                 }
             },
-            "Neumann_scalar":
+            "normal_stress":
             {
-                "free-wall":
-                {
+                "free-wall":{
                     "expr":"0" 
-                }
-            },
-            "VolumicForces":
-            {
-                "beam":
-                {
-                    "expr":"{0,-gravity*1e3}:gravity" 
                 }
             }
         }
     },
     "PostProcess":
     {
-        "Exports":
+        "solid":
         {
-            "fields":["displacement","velocity","pid"]
-        },
-        "Measures":
-        {
-            "Points":
+            "Exports":
             {
-                "pointA":
-                {
-                    "coord":"{0.6,0.2,0}",
-                    "fields":["displacement","velocity"]
-                }
+                "fields":["displacement","velocity","pid"]
             },
-            "Statistics":
+            "Measures":
             {
-                "disp":
+                "Points":
                 {
-                    "markers":"free-wall",
-                    "type":"max",
-                    "expr":"solid_s_magnitude:solid_s_magnitude"
+                    "pointA":
+                    {
+                        "coord":"{0.6,0.2,0}",
+                        "fields":["displacement","velocity"]
+                    }
+                },
+                "Statistics":
+                {
+                    "disp":
+                    {
+                        "markers":"free-wall",
+                        "type":"max",
+                        "expr":"solid_s_magnitude:solid_s_magnitude"
+                    }
                 }
             }
         }
     }
-
 }

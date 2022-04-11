@@ -1,5 +1,5 @@
 
-
+#feelpp_toolboxes_add_library( fsibase SRCS fsiboundaryconditions.cpp LINK_LIBRARIES feelpp_modelcore )
 
 # Taylor Hood geo order 1 , solid : P1G1
 foreach( _DIM 2 3)
@@ -84,17 +84,7 @@ foreach( _DIM 2 3)
   endforeach()
 endforeach()
 
-add_library(feelpp_toolbox_fsi_lib SHARED libfsi.cpp)
-add_library(Feelpp::feelpp_toolbox_fsi_lib ALIAS feelpp_toolbox_fsi_lib )  # to match exported target
-set_target_properties(feelpp_toolbox_fsi_lib PROPERTIES OUTPUT_NAME "feelpp_toolbox_fsi_lib")
-target_link_libraries(feelpp_toolbox_fsi_lib ${FEELPP_MODELS_LIBRARIES_FSI})
-set_property(TARGET feelpp_toolbox_fsi_lib PROPERTY MACOSX_RPATH ON)
-set_target_properties(feelpp_toolbox_fsi_lib PROPERTIES VERSION ${FEELPP_TOOLBOXES_SHARED_VERSION} SOVERSION ${FEELPP_TOOLBOXES_SHARED_SOVERSION})
-install(TARGETS feelpp_toolbox_fsi_lib EXPORT feelpp-toolboxes-targets
-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} )
+feelpp_toolboxes_add_library(fsi_lib SRCS libfsi.cpp LINK_LIBRARIES ${FEELPP_MODELS_LIBRARIES_FSI})
 
 FILE(GLOB files "*.hpp")
 INSTALL(FILES ${files} DESTINATION include/feelpp/toolboxes/feel/feelmodels/fsi COMPONENT Devel)

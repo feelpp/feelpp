@@ -99,7 +99,7 @@ FSI<FluidType,SolidType>::initDispInterpolation()
         if (this->verbose() && this->fluidModel()->worldComm().isMasterRank() )
             std::cout << "initDispInterpolation() CONFORME"  << std::endl;
         M_opDisp2dTo2dconf = opInterpolation(_domainSpace=this->solidModel()->functionSpaceDisplacement(),
-                                             _imageSpace=this->fluidModel()->meshALE()->displacement()->functionSpace(),
+                                             _imageSpace=this->fluidModel()->meshMotionTool()->displacement()->functionSpace(),
                                              _range=M_rangeFSI_fluid,
                                              _type=InterpolationConforme(),
                                              _backend=this->fluidModel()->backend() );
@@ -109,7 +109,7 @@ FSI<FluidType,SolidType>::initDispInterpolation()
         if (this->verbose() && this->fluidModel()->worldComm().isMasterRank())
             std::cout << "initDispInterpolation() NONCONFORME" << std::endl;
         M_opDisp2dTo2dnonconf = opInterpolation(_domainSpace=this->solidModel()->functionSpaceDisplacement(),
-                                                _imageSpace=this->fluidModel()->meshALE()->displacement()->functionSpace(),
+                                                _imageSpace=this->fluidModel()->meshMotionTool()->displacement()->functionSpace(),
                                                 _range=M_rangeFSI_fluid,
                                                 _type=InterpolationNonConforme(),
                                                 _backend=this->fluidModel()->backend() );
@@ -128,7 +128,7 @@ FSI<FluidType,SolidType>::initDisp1dToNdInterpolation()
         if (this->verbose() && this->fluidModel()->worldComm().isMasterRank())
             std::cout << "initDisp1dToNdInterpolation() CONFORME"  << std::endl;
         M_opDisp1dToNdconf = opInterpolation(_domainSpace=this->solidModel()->solid1dReduced()->fieldDisplacementVect1dReduced().functionSpace(),
-                                             _imageSpace=this->fluidModel()->meshALE()->displacement()->functionSpace(),//M_fluid->meshDisplacementOnInterface().functionSpace(),
+                                             _imageSpace=this->fluidModel()->meshMotionTool()->displacement()->functionSpace(),//M_fluid->meshDisplacementOnInterface().functionSpace(),
                                              _range=M_rangeFSI_fluid,
                                              _type=InterpolationConforme(),
                                              _backend=this->fluidModel()->backend() );
@@ -138,7 +138,7 @@ FSI<FluidType,SolidType>::initDisp1dToNdInterpolation()
         if (this->verbose() && this->fluidModel()->worldComm().isMasterRank())
             std::cout << "initDisp1dToNdInterpolation() NONCONFORME" << std::endl;
         M_opDisp1dToNdnonconf = opInterpolation(_domainSpace=this->solidModel()->solid1dReduced()->fieldDisplacementVect1dReduced().functionSpace(),
-                                                _imageSpace=this->fluidModel()->meshALE()->displacement()->functionSpace(),//M_fluid->meshDisplacementOnInterface().functionSpace(),
+                                                _imageSpace=this->fluidModel()->meshMotionTool()->displacement()->functionSpace(),//M_fluid->meshDisplacementOnInterface().functionSpace(),
                                                 _range=M_rangeFSI_fluid,
                                                 _type=InterpolationNonConforme(),
                                                 _backend=this->fluidModel()->backend() );
@@ -355,7 +355,7 @@ FSI<FluidType,SolidType>::transfertDisplacement()
     else
         CHECK( false ) << "something wrong";
 
-    this->fluidModel()->meshALE()->updateDisplacementImposed( idv(M_meshDisplacementOnInterface_fluid), M_rangeFSI_fluid );
+    this->fluidModel()->meshMotionTool()->updateDisplacementImposed( idv(M_meshDisplacementOnInterface_fluid), M_rangeFSI_fluid );
 
     if (this->verbose()) Feel::FeelModels::Log("InterpolationFSI","transfertDisplacement", "finish",
                                                this->worldComm(),this->verboseAllProc());
@@ -369,7 +369,7 @@ FSI<FluidType,SolidType>::transfertDisplacementAndApplyMeshMoving()
     M_fluidModel->updateALEmesh();
     // up mesh velocity on interface from mesh velocity
     M_meshVelocityInterface->on( _range=M_rangeFSI_fluid,
-                                 _expr=vf::idv(M_fluidModel->meshALE()->velocity()),
+                                 _expr=vf::idv(M_fluidModel->meshMotionTool()->velocity()),
                                  _geomap=this->geomap() );
     //sync( *M_meshVelocityInterface, "=", M_dofsVelocityInterfaceOnMovingBoundary);
 }
@@ -1121,12 +1121,12 @@ FSI<FluidType,SolidType>::transfertGradVelocityF2S()
 {
     this->log("FSI","transfertGradVelocityF2S","start");
 
-    bool meshIsOnRefAtBegin = this->fluidModel()->meshALE()->isOnReferenceMesh();
+    bool meshIsOnRefAtBegin = this->fluidModel()->meshMotionTool()->isOnReferenceMesh();
     if ( !meshIsOnRefAtBegin )
-        this->fluidModel()->meshALE()->revertReferenceMesh( false );
+        this->fluidModel()->meshMotionTool()->revertReferenceMesh( false );
 
     auto const Id = eye<fluid_type::nDim,fluid_type::nDim>();
-    auto Fa = Id+gradv( this->fluidModel()->meshALE()->displacement());
+    auto Fa = Id+gradv( this->fluidModel()->meshMotionTool()->displacement());
     auto fsirange = M_rangeFSI_fluid;
     for ( int k = 0;k<fluid_type::nDim ;++k )
     {
@@ -1137,7 +1137,7 @@ FSI<FluidType,SolidType>::transfertGradVelocityF2S()
     }
 
     if ( !meshIsOnRefAtBegin )
-        this->fluidModel()->meshALE()->revertMovingMesh( false );
+        this->fluidModel()->meshMotionTool()->revertMovingMesh( false );
 
     if ( M_interfaceFSIisConforme )
     {

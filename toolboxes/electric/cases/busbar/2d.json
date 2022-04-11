@@ -1,11 +1,22 @@
-/ -*- mode: javascript -*-
+// -*- mode: javascript -*-
 {
     "Name":"cvg2d",
     "ShortName":"cvg2d",
-    "Models":
+    "Parameters":
     {
-        "v_expr":"0.25*x/L:x:y:z",
-        "c_expr":"{-0.25/L,0}:x:y:z"
+        "v_expr":"0.25*x/L:x:L",
+        "c_expr":"{-0.25/L,0}:L"
+    },
+    "Meshes":
+    {
+        "electric":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/2d.geo",
+                "hsize":0.1
+            }
+        }
     },
     "Materials":
     {
@@ -16,9 +27,9 @@
     },
     "BoundaryConditions":
     {
-        "electric-potential":
+        "electric":
         {
-            "Dirichlet":
+            "electric_potential":
             {
                 "V0":
                 {

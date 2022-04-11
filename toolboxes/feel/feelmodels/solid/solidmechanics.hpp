@@ -52,8 +52,8 @@
 
 #include <feel/feelmodels/modelcore/options.hpp>
 
+#include <feel/feelmodels/solid/solidmechanicsboundaryconditions.hpp>
 #include <feel/feelmodels/modelvf/solidmecfirstpiolakirchhoff.hpp>
-
 #include <feel/feelmodels/solid/solidmechanics1dreduced.hpp>
 
 namespace Feel
@@ -66,9 +66,9 @@ namespace FeelModels
  */
 template< typename ConvexType, typename BasisDisplacementType >
 class SolidMechanics : public ModelNumerical,
-                       public ModelPhysics<ConvexType::nDim>,
-                       public std::enable_shared_from_this< SolidMechanics<ConvexType,BasisDisplacementType> >
+                       public ModelPhysics<ConvexType::nDim>
 {
+    typedef ModelPhysics<ConvexType::nDim> super_physics_type;
 public:
     typedef ModelNumerical super_type;
     using size_type = typename super_type::size_type;
@@ -272,7 +272,7 @@ public:
                              std::string const& subPrefix = "",
                              ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
-    static std::string expandStringFromSpec( std::string const& expr );
+    std::shared_ptr<self_type> shared_from_this() { return std::dynamic_pointer_cast<self_type>( super_type::shared_from_this() ); }
 
 private :
 
@@ -281,6 +281,7 @@ private :
     void initMesh();
     void initFunctionSpaces();
     void initBoundaryConditions();
+    void updatePhysics( typename super_physics_type::PhysicsTreeNode & physicsTree, ModelModels const& models ) override;
 
     void createExporters();
 
@@ -299,7 +300,6 @@ public :
     void init( bool buildAlgebraicFactory = true );
     void solve( bool upVelAcc=true );
 
-    std::shared_ptr<std::ostringstream> getInfo() const override;
     void updateInformationObject( nl::json & p ) const override;
     tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
 
@@ -338,15 +338,6 @@ public :
     materialsproperties_ptrtype & materialsProperties() { return M_materialsProperties; }
     void setMaterialsProperties( materialsproperties_ptrtype mp ) { CHECK( !this->isUpdatedForUse() ) << "setMaterialsProperties can be called only before called isUpdatedForUse";  M_materialsProperties = mp; }
 
-
-    bool hasDirichletBC() const
-        {
-            return ( !M_bcDirichlet.empty() ||
-                     !M_bcDirichletComponents.find(Component::X)->second.empty() ||
-                     !M_bcDirichletComponents.find(Component::Y)->second.empty() ||
-                     !M_bcDirichletComponents.find(Component::Z)->second.empty() );
-        }
-
     std::string const& timeStepping() const { return M_timeStepping; }
 
 #if 0
@@ -379,9 +370,6 @@ public :
     void startTimeStep();
     void updateTimeStep();
     void updateVelocity();
-
-    void initUserFunctions();
-    void updateUserFunctions( bool onlyExprWithTimeSymbol = false );
 
     // post process
     void initPostProcess() override;
@@ -519,18 +507,6 @@ public :
     element_stress_tensor_type const& fieldStressTensor() const { return *M_fieldStressTensor; }
 
 
-    // fields defined in json
-    std::map<std::string,element_displacement_scalar_ptrtype> const& fieldsUserScalar() const { return M_fieldsUserScalar; }
-    std::map<std::string,element_displacement_ptrtype> const& fieldsUserVectorial() const { return M_fieldsUserVectorial; }
-    bool hasFieldUserScalar( std::string const& key ) const { return M_fieldsUserScalar.find( key ) != M_fieldsUserScalar.end(); }
-    bool hasFieldUserVectorial( std::string const& key ) const { return M_fieldsUserVectorial.find( key ) != M_fieldsUserVectorial.end(); }
-    element_displacement_scalar_ptrtype const& fieldUserScalarPtr( std::string const& key ) const {
-        CHECK( this->hasFieldUserScalar( key ) ) << "field name " << key << " not registered"; return M_fieldsUserScalar.find( key )->second; }
-    element_displacement_ptrtype const& fieldUserVectorialPtr( std::string const& key ) const {
-        CHECK( this->hasFieldUserVectorial( key ) ) << "field name " << key << " not registered"; return M_fieldsUserVectorial.find( key )->second; }
-    element_displacement_scalar_type const& fieldUserScalar( std::string const& key ) const { return *this->fieldUserScalarPtr( key ); }
-    element_displacement_type const& fieldUserVectorial( std::string const& key ) const { return *this->fieldUserVectorialPtr( key ); }
-
 
     //___________________________________________________________________________________//
     // toolbox fields
@@ -600,13 +576,16 @@ public :
     template <typename ModelFieldsType>
     auto symbolsExprToolbox( ModelFieldsType const& mfields ) const
         {
-            auto const& u = mfields.field( FieldTag::displacement(this), "displacement" );
-
-            using _expr_fpkt_type = std::decay_t<decltype(this->firstPiolaKirchhoffTensorExpr( u ))>;
+            using field_disp_type = std::decay_t<decltype( mfields.field( FieldTag::displacement(this), "displacement" ) )>;
+            using _expr_fpkt_type = std::decay_t<decltype(this->firstPiolaKirchhoffTensorExpr( std::declval<field_disp_type>() ))>;
             symbol_expression_t<_expr_fpkt_type> se_fpkt;
-            std::string symbol_fpkt = fmt::format("{}_stress_P",this->keyword());
-            se_fpkt.add( symbol_fpkt, this->firstPiolaKirchhoffTensorExpr( u ), SymbolExprComponentSuffix(nDim,nDim) );
 
+            if ( this->hasSolidEquationStandard() )
+            {
+                auto const& u = mfields.field( FieldTag::displacement(this), "displacement" );
+                std::string symbol_fpkt = fmt::format("{}_stress_P",this->keyword());
+                se_fpkt.add( symbol_fpkt, this->firstPiolaKirchhoffTensorExpr( u ), SymbolExprComponentSuffix(nDim,nDim) );
+            }
             return Feel::vf::symbolsExpr( se_fpkt );
         }
 
@@ -617,7 +596,7 @@ public :
         }
 
 
-    
+
     template <typename DispFieldType,typename SymbolsExprType = symbols_expression_empty_t>
     auto firstPiolaKirchhoffTensorExpr( DispFieldType const& u, SymbolsExprType const& se = symbols_expression_empty_t{} ) const
         {
@@ -700,8 +679,6 @@ public :
     std::string couplingFSIcondition() const { return M_couplingFSIcondition; }
     void couplingFSIcondition(std::string s) { M_couplingFSIcondition=s; }
 
-    std::set<std::string> const& markerNameFSI() const { return M_bcFSIMarkerManagement.markerFluidStructureInterfaceBC(); }
-
     void updateNormalStressFromStruct();
     //void updateStressCriterions();
 
@@ -758,23 +735,9 @@ private :
     // physical parameter
     materialsproperties_ptrtype M_materialsProperties;
 
-
     // boundary conditions
-    map_vector_field<nDim,1,2> M_bcDirichlet;
-    std::map<ComponentType,map_scalar_field<2> > M_bcDirichletComponents;
-    map_scalar_field<2> M_bcNeumannScalar,M_bcInterfaceFSI;
-    map_vector_field<nDim,1,2> M_bcNeumannVectorial;
-    map_matrix_field<nDim,nDim,2> M_bcNeumannTensor2;
-    map_vector_fields<nDim,1,2> M_bcRobin;
-    map_scalar_field<2> M_bcNeumannEulerianFrameScalar;
-    map_vector_field<nDim,1,2> M_bcNeumannEulerianFrameVectorial;
-    map_matrix_field<nDim,nDim,2> M_bcNeumannEulerianFrameTensor2;
-    map_vector_field<nDim,1,2> M_volumicForcesProperties;
-    MarkerManagementDirichletBC M_bcDirichletMarkerManagement;
-    MarkerManagementNeumannBC M_bcNeumannMarkerManagement;
-    MarkerManagementNeumannEulerianFrameBC M_bcNeumannEulerianFrameMarkerManagement;
-    MarkerManagementRobinBC M_bcRobinMarkerManagement;
-    MarkerManagementFluidStructureInterfaceBC M_bcFSIMarkerManagement;
+    using boundary_conditions_type = SolidMechanicsBoundaryConditions<nDim>;
+    std::shared_ptr<boundary_conditions_type> M_boundaryConditions;
 
     //-------------------------------------------//
     // standard model
@@ -850,9 +813,6 @@ private :
     bool M_useFSISemiImplicitScheme;
     std::string M_couplingFSIcondition;
 
-    // fields defined in json
-    std::map<std::string,element_displacement_scalar_ptrtype> M_fieldsUserScalar;
-    std::map<std::string,element_displacement_ptrtype> M_fieldsUserVectorial;
 
 }; // SolidMechanics
 

@@ -4,16 +4,23 @@
     "ShortName":"TestHeat",
     "Models":
     {
-        "equations":[
-            {
-                "name":"heat",
-                "unknown":
-                {
+        "cfpdes":{
+            "equations":"heat"
+        },
+        "heat":{
+            "setup":{
+                "unknown":{
                     "basis":"Pch1",
                     "name":"temperature",
                     "symbol":"T"
+                },
+                "coefficients":{
+                    "c":"materials_k:materials_k",
+                    "d":"materials_rho*materials_Cp:materials_rho:materials_Cp",
+                    "beta":"{materials_rho*materials_Cp*meshes_cfpdes_fields_v_0,materials_rho*materials_Cp*meshes_cfpdes_fields_v_1}:materials_rho:materials_Cp:meshes_cfpdes_fields_v_0:meshes_cfpdes_fields_v_1"
                 }
-            }]
+            }
+        }
     },
     "Meshes":
     {
@@ -42,10 +49,7 @@
             "rho":"1.0e3",
             "mu":"1.0",
             "k":"2.9e-5",
-            "Cp":"4185",
-            "heat_c":"k:k",
-            "heat_d":"rho*Cp:rho:Cp",
-            "heat_beta":"{rho*Cp*meshes_cfpdes_fields_v_0,rho*Cp*meshes_cfpdes_fields_v_1}:rho:Cp:meshes_cfpdes_fields_v_0:meshes_cfpdes_fields_v_1"
+            "Cp":"4185"
         }
     },
     "BoundaryConditions":
@@ -63,29 +67,29 @@
     },
     "InitialConditions":
     {
-        "temperature":
-        {
-            "Expression":
-            {
-                "myic":
-                {
-                    "markers":"Fluid",
-                    "expr":293.15
+        "heat":{
+            "temperature":{
+                "Expression":{
+                    "myic":{
+                        "markers":"Fluid",
+                        "expr":293.15
+                    }
                 }
             }
         }
     },
     "PostProcess":
     {
-        "Exports":
+        "cfpdes":
         {
-            "fields":["heat.temperature"]
-
-            ,"expr":
+            "Exports":
             {
-                "heat_beta":"{materials_heat_beta_0,materials_heat_beta_1}:materials_heat_beta_0:materials_heat_beta_1"
+                "fields":["heat.temperature"],
+                "expr":
+                {
+                    "heat_beta":"{materials_heat_beta_0,materials_heat_beta_1}:materials_heat_beta_0:materials_heat_beta_1"
+                }
             }
         }
     }
-
 }

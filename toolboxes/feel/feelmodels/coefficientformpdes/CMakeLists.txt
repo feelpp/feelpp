@@ -1,33 +1,9 @@
 
 
-
-add_library(
-  feelpp_toolbox_coefficientformpdebase
-  SHARED
-  coefficientformpdebase.cpp
-)
-target_link_libraries(feelpp_toolbox_coefficientformpdebase PUBLIC feelpp_modelcore )
-add_library(Feelpp::feelpp_toolbox_coefficientformpdebase ALIAS feelpp_toolbox_coefficientformpdebase )  # to match exported target
-set_target_properties(feelpp_toolbox_coefficientformpdebase PROPERTIES OUTPUT_NAME "feelpp_toolbox_coefficientformpdebase")
-target_include_directories(feelpp_toolbox_coefficientformpdebase PUBLIC
-  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
-  $<INSTALL_INTERFACE:include/feelpp/toolboxes>  )
-set_property(TARGET feelpp_toolbox_coefficientformpdebase PROPERTY MACOSX_RPATH ON)
-if( FEELPP_ENABLE_PCH_MODELS )
-  add_precompiled_header( feelpp_toolbox_coefficientformpdebase )
-endif()
-#include(GNUInstallDirs)
-set_target_properties(feelpp_toolbox_coefficientformpdebase PROPERTIES VERSION ${FEELPP_TOOLBOXES_SHARED_VERSION} SOVERSION ${FEELPP_TOOLBOXES_SHARED_SOVERSION})
-install(TARGETS feelpp_toolbox_coefficientformpdebase EXPORT feelpp-toolboxes-targets
-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-  )
+feelpp_toolboxes_add_library( coefficientformpdebase SRCS coefficientformpdebase.cpp coefficientformpdeboundaryconditions.cpp LINK_LIBRARIES feelpp_modelcore )
 
 
-
-
+if (1)
 set( _UNKNOWN_BASIS_TYPE_LIST
   #"Lagrange<0,Scalar,Continuous,PointSetFekete>"
   "Lagrange<1,Scalar,Continuous,PointSetFekete>" "Lagrange<2,Scalar,Continuous,PointSetFekete>"
@@ -42,6 +18,10 @@ set( _UNKNOWN_BASIS_TAG_LIST
   "Pdh1"
   "Ned1h0"
   )
+else()
+set( _UNKNOWN_BASIS_TYPE_LIST "Lagrange<1,Scalar,Continuous,PointSetFekete>")
+set( _UNKNOWN_BASIS_TAG_LIST "Pch1")
+endif()
 
 unset( FEELPP_TOOLBOX_COEFFICIENTFORMPDES_REGISTER_ALL_ENTRIES_CLASS_TYPE )
 # geo order 1
@@ -89,17 +69,7 @@ endif()
 INSTALL(FILES ${FEELPP_TOOLBOX_COEFFICIENTFORMPDES_REGISTERD_TYPE_HPP} DESTINATION include/feelpp/toolboxes/feel/feelmodels/coefficientformpdes COMPONENT Devel)
 #########################################################################
 
-add_library(feelpp_toolbox_coefficientformpdes_lib SHARED libcoefficientformpdes.cpp )
-add_library(Feelpp::feelpp_toolbox_coefficientformpdes_lib ALIAS feelpp_toolbox_coefficientformpdes_lib )  # to match exported target
-set_target_properties(feelpp_toolbox_coefficientformpdes_lib PROPERTIES OUTPUT_NAME "feelpp_toolbox_coefficientformpdes_lib")
-target_link_libraries(feelpp_toolbox_coefficientformpdes_lib ${FEELPP_MODELS_LIBRARIES_COEFFICIENTFORMPDES})
-set_property(TARGET feelpp_toolbox_coefficientformpdes_lib PROPERTY MACOSX_RPATH ON)
-set_target_properties(feelpp_toolbox_coefficientformpdes_lib PROPERTIES VERSION ${FEELPP_TOOLBOXES_SHARED_VERSION} SOVERSION ${FEELPP_TOOLBOXES_SHARED_SOVERSION})
-install(TARGETS feelpp_toolbox_coefficientformpdes_lib EXPORT feelpp-toolboxes-targets
-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} )
+feelpp_toolboxes_add_library(coefficientformpdes_lib SRCS libcoefficientformpdes.cpp LINK_LIBRARIES ${FEELPP_MODELS_LIBRARIES_COEFFICIENTFORMPDES})
 
 FILE(GLOB files "*.hpp")
 INSTALL(FILES ${files} DESTINATION include/feelpp/toolboxes/feel/feelmodels/coefficientformpdes COMPONENT Devel)

@@ -1152,10 +1152,11 @@ auto on( Ts && ... v )
     auto && element = std::move(args.template getArgument<na::element>()).value();
     auto && rhs = args.get(_rhs);
     auto && expr = args.get(_expr);
+    po::variables_map const& vm = args.get_else( _vm, Environment::vm() );
     std::string const& prefix = args.get_else(_prefix,"");
-    std::string const& type = args.get_else_invocable(_type,[&prefix](){ return soption(_prefix=prefix,_name="on.type"); } );
-    bool verbose = args.get_else_invocable(_verbose,[&prefix](){ return boption(_prefix=prefix,_name="on.verbose"); } );
-    double value_on_diagonal = args.get_else_invocable(_value_on_diagonal,[&prefix](){ return doption(_prefix=prefix,_name="on.value_on_diagonal"); } );
+    std::string const& type = args.get_else_invocable(_type,[&prefix,&vm](){ return soption(_prefix=prefix,_name="on.type",_vm=vm); } );
+    bool verbose = args.get_else_invocable(_verbose,[&prefix,&vm](){ return boption(_prefix=prefix,_name="on.verbose",_vm=vm); } );
+    double value_on_diagonal = args.get_else_invocable(_value_on_diagonal,[&prefix,&vm](){ return doption(_prefix=prefix,_name="on.value_on_diagonal",_vm=vm); } );
 
     using integratoron_helper_type = vf::detail::integratoron_type<decltype(range),decltype(rhs),decltype(element),decltype(expr)>;
 

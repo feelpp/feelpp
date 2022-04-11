@@ -92,6 +92,8 @@ generic_options()
         ( "repository.prefix", po::value<std::string>(), "change directory to specified one" )
         ( "repository.case", po::value<std::string>(), "change directory to specified one relative to repository.prefix" )
         ( "repository.npdir", po::value<bool>()->default_value(true), "enable/disable sub-directory np_<number of processors>")
+        ( "repository.append.np", po::value<bool>(), "enable/disable sub-directory np_<number of processors>")
+        ( "repository.append.date", po::value<bool>(), "enable/disable appending sub-directory <date> ")
         ( "npdir", po::value<bool>()->default_value(true), "enable/disable sub-directory np_<number of processors>")
         ( "fail-on-unknown-option", po::value<bool>()->default_value(false), "exit feel++ application if unknown option found" )
         ( "show-preconditioner-options", "show on the fly the preconditioner options used" )
@@ -180,6 +182,7 @@ nlopt_options( std::string const& prefix )
     po::options_description _options( "NLopt " + prefix + " options" );
     _options.add_options()
     // solver options
+        ( prefixvm( prefix,"nlopt.algo" ).c_str(), Feel::po::value<std::string>()->default_value( "LN_COBYLA" ), "NLopt algorithm: refer to /feel/feelopt/enums.cpp for a list" )
         ( prefixvm( prefix,"nlopt.ftol_rel" ).c_str(), Feel::po::value<double>()->default_value( 1e-4 ), "NLopt objective function relative tolerance" )
         ( prefixvm( prefix,"nlopt.ftol_abs" ).c_str(), Feel::po::value<double>()->default_value( 1e-10 ), "NLopt objective function  absolute tolerance" )
         ( prefixvm( prefix,"nlopt.xtol_rel" ).c_str(), Feel::po::value<double>()->default_value( 1e-4 ), "NLopt variables  relative tolerance" )
@@ -1127,6 +1130,18 @@ ptree_options( std::string const& prefix )
 }
 
 po::options_description
+json_options( std::string const& prefix )
+{
+    po::options_description _options( "JSON " + prefix + " options" );
+    _options.add_options()
+        ( prefixvm( prefix,"json.filename" ).c_str(), po::value<std::vector<std::string> >()->multitoken(), "specify a list of json filename" )
+        ( prefixvm( prefix,"json.patch" ).c_str(), po::value<std::vector<std::string> >()->multitoken(), "specify a list of patch to be applied" )
+        ( prefixvm( prefix,"json.merge_patch" ).c_str(), po::value<std::vector<std::string> >()->multitoken(), "specify a list of merge_patch to be applied" )
+        ;
+    return _options;
+}
+
+po::options_description
 eq_options( std::string const& prefix )
 {
     po::options_description _options( "EQ " + prefix + " options" );
@@ -1234,7 +1249,8 @@ feel_options( std::string const& prefix  )
                    .add( checker_options( prefix ) )
                    .add( journal_options( prefix ) )
                    .add( fmu_options( prefix ) )
-                   .add( ptree_options( prefix ) );
+        //.add( ptree_options( prefix ) )
+                   .add( json_options( prefix ) );
 
     return opt;
 

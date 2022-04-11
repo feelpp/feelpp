@@ -85,7 +85,7 @@ public :
         M_uuid( Environment::randomUUID( true ) ),
         M_prefix(prefix)
     {
-        auto mesh = loadMesh( _mesh=new mesh_type, _filename="test_deim.geo");
+        auto mesh = loadMesh( _mesh=new mesh_type);
         Xh = space_type::New( mesh );
         setFunctionSpaces(Xh);
     }

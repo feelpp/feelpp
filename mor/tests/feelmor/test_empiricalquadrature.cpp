@@ -92,15 +92,15 @@ BOOST_AUTO_TEST_CASE( test_1 )
             mu = m;
             auto i11 = eq.evaluate(m, 0);
             auto i12 = integrate(_range=r, _expr=g1).evaluate()(0,0);
-            BOOST_CHECK_SMALL( i11 - i12 , 1e-8 );
+            BOOST_CHECK_SMALL( i11 - i12 , 1e-7 );
 
             auto i21 = eq.evaluate(m, 1);
             auto i22 = integrate(_range=r, _expr=g2).evaluate()(1,0);
-            BOOST_CHECK_SMALL( i21 - i22 , 1e-8 );
+            BOOST_CHECK_SMALL( i21 - i22 , 1e-7 );
 
             auto i31 = eq.evaluate(m, 2);
             auto i32 = integrate(_range=r, _expr=g3).evaluate()(0,0);
-            BOOST_CHECK_SMALL( i31 - i32 , 1e-8 );
+            BOOST_CHECK_SMALL( i31 - i32 , 1e-7 );
         }
     }
 }

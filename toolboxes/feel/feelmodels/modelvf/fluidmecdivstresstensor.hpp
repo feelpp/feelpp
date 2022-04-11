@@ -258,8 +258,6 @@ public:
             {
                 this->initTensor( expr, geom );
             }
-        template<typename IM>
-        void init( IM const& im ) {}
 
         void update( Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ ) override
         {
@@ -290,27 +288,7 @@ public:
             }
             this->updateImpl();
         }
-        void update( Geo_t const& geom, uint16_type face ) override
-        {
-            this->setGmc( geom );
-            M_tensorExprEvaluateVelocityOperators->update( geom, face );
-            if constexpr ( !expr_evaluate_velocity_opertors_type::laplacian_is_zero )
-                  M_tensorDynamicViscosity->update( geom, face, false );
-            if ( M_tensorGradDynamicViscosity )
-                M_tensorGradDynamicViscosity->update( geom, face, false );
-            if ( M_useTurbulenceModel )
-            {
-                if constexpr ( !expr_evaluate_velocity_opertors_type::laplacian_is_zero )
-                    M_tensorExprTurbulentDynamicVisocity->update( geom, face );
-                M_tensorExprGradTurbulentDynamicVisocity->update( geom, face );
-                if ( M_tensorGradTurbulentKineticEnergy )
-                {
-                    M_tensorGradTurbulentKineticEnergy->update( geom, face );
-                    M_tensorExprDensity->update( geom, face );
-                }
-            }
-            this->updateImpl();
-        }
+
         ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q ) const override
         {

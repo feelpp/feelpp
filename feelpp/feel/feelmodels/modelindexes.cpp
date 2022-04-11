@@ -27,11 +27,20 @@
 namespace Feel {
 
 std::vector<std::string>
-ModelIndexes::generateIndexFromString( std::string const& input )
+ModelIndexes::generateIndex( nl::json const& jarg )
 {
+    std::string input;
+    if ( jarg.is_string() )
+        input = jarg.get<std::string>();
+    else if ( jarg.is_number_integer() )
+        input = std::to_string(jarg.get<int>());
+    else if ( jarg.is_number_float() )
+        input = std::to_string(jarg.get<double>());
+
     std::vector<std::string> res;
     if ( input.empty() )
         return res;
+
     boost::char_separator<char> sep(":");
     boost::tokenizer<boost::char_separator<char> > kvlist( input, sep);
     int sizeOfSplit = std::distance(kvlist.begin(),kvlist.end());
@@ -39,6 +48,7 @@ ModelIndexes::generateIndexFromString( std::string const& input )
         res.push_back( input );
     else
     {
+        try {
         std::vector<int> rangeDef;
         for( auto const& r : kvlist )
             rangeDef.push_back(std::stoi(r));
@@ -47,6 +57,12 @@ ModelIndexes::generateIndexFromString( std::string const& input )
         auto rangeOfInt = boost::irange(rangeDef[0],rangeDef[1],rangeDef[2]);
         for( auto const& i : rangeOfInt )
             res.push_back( std::to_string(i) );
+        }
+        catch ( std::invalid_argument const& )
+        {
+            // the char : come from an expression
+            res.push_back( input );
+        }
     }
     return res;
 }
@@ -65,9 +81,9 @@ ModelIndexes::generateAllCases( nl::json const& jarg, int startIndex )
         auto const& jKeyIndex = jarg.at( keyIndex );
 
         M_indexes[currentIndex].clear();
-        if ( jKeyIndex.is_string() ) // string value case
+        if ( jKeyIndex.is_string() || jKeyIndex.is_number() ) // string value case
         {
-            std::vector<std::string> indexReaded = generateIndexFromString( jKeyIndex.get<std::string>() );
+            std::vector<std::string> indexReaded = generateIndex( jKeyIndex );
             for ( std::string const& s : indexReaded )
                 M_indexes[currentIndex].push_back( { s } );
         }
@@ -89,8 +105,7 @@ ModelIndexes::generateAllCases( nl::json const& jarg, int startIndex )
                     for ( auto const& el2 : el_val.items() )
                     {
                         auto const& el2_val = el2.value();
-                        CHECK( el2_val.is_string() ) << "TODO : take into account other type";
-                        std::vector<std::string> indexReaded = generateIndexFromString( el2_val );
+                        std::vector<std::string> indexReaded = generateIndex( el2_val );
                         for ( std::string const& s : indexReaded )
                             currentIndexValues.push_back( s );
                     }
@@ -102,8 +117,7 @@ ModelIndexes::generateAllCases( nl::json const& jarg, int startIndex )
                         CHECK( nSubKey == 1 ) << "number of subkey is different (probably a subarray has not the good size)";
                     else
                         nSubKey = 1;
-                    CHECK( el_val.is_string() ) << "TODO : take into account other type";
-                    std::vector<std::string> indexReaded = generateIndexFromString( el_val );
+                    std::vector<std::string> indexReaded = generateIndex( el_val );
                     for ( std::string const& s : indexReaded )
                         M_indexes[currentIndex].push_back( { s } );
                 }
@@ -235,7 +249,7 @@ ModelIndexes::generateAllCases( pt::ptree const& pt, int startIndex )
         M_indexes[currentIndex].clear();
         if ( indexPTree->empty() ) // value case
         {
-            std::vector<std::string> indexReaded = generateIndexFromString( indexPTree->get_value<std::string>() );
+            std::vector<std::string> indexReaded = generateIndex( indexPTree->get_value<std::string>() );
             for ( std::string const& s : indexReaded )
                 M_indexes[currentIndex].push_back( { s } );
         }
@@ -253,7 +267,7 @@ ModelIndexes::generateAllCases( pt::ptree const& pt, int startIndex )
                     for ( auto const& item2 : item.second )
                     {
                         CHECK( item2.first.empty() ) << "should be an array, not a subtree";
-                        std::vector<std::string> indexReaded = generateIndexFromString( item2.second.template get_value<std::string>() );
+                        std::vector<std::string> indexReaded = generateIndex( item2.second.template get_value<std::string>() );
                         for ( std::string const& s : indexReaded )
                             currentIndexValues.push_back( s );
                         //currentIndexValues.push_back( item2.second.template get_value<std::string>() );
@@ -265,7 +279,7 @@ ModelIndexes::generateAllCases( pt::ptree const& pt, int startIndex )
                 }
                 else
                 {
-                    std::vector<std::string> indexReaded = generateIndexFromString( item.second.template get_value<std::string>() );
+                    std::vector<std::string> indexReaded = generateIndex( item.second.template get_value<std::string>() );
                     for ( std::string const& s : indexReaded )
                         M_indexes[currentIndex].push_back( { s } );
                     //M_indexes[currentIndex].push_back( { item.second.template get_value<std::string>() } );

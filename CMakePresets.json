@@ -19,7 +19,10 @@
                     "type": "BOOL",
                     "value": "ON"
                 },
-                "FEELPP_ENABLE_MOR": "ON"
+                "FEELPP_ENABLE_MOR": "ON",
+                "FEELPP_ENABLE_FEELPP_PYTHON": "ON",
+                "FEELPP_ENABLE_FMILIB": "OFF",
+                "FEELPP_ENABLE_BENCHMARKS": "ON"
             },
             "environment": {
                 "MY_ENVIRONMENT_VARIABLE": "Test"
@@ -65,8 +68,10 @@
                 "FEELPP_COMPONENT": "feelpp",
                 "FEELPP_ENABLE_MOR": "OFF",
                 "FEELPP_ENABLE_TOOLBOXES": "OFF",
+                "FEELPP_ENABLE_FEELPP_PYTHON": "OFF",
                 "FEELPP_ENABLE_TESTS": "OFF",
-                "FEELPP_ENABLE_FMILIB": "OFF"
+                "FEELPP_ENABLE_FMILIB": "OFF",
+                "FEELPP_ENABLE_BENCHMARKS": "OFF"
             }
         },
         {
@@ -102,55 +107,36 @@
             }
         },
         {
-            "name": "pyfeelpp",
+            "name": "python",
             "inherits": "default",
-            "displayName": "pyfeelpp",
-            "description": "Build only the Feel++ pyfeelpp Component",
-            "binaryDir": "${sourceDir}/build/pyfeelpp",
+            "displayName": "feelpp-python",
+            "description": "Build only the Feel++ python Component",
+            "binaryDir": "${sourceDir}/build/python",
             "cacheVariables": {
-                "FEELPP_COMPONENT": "feelpp/pyfeelpp"
+                "FEELPP_COMPONENT": "python",
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/build/python/install/"
             }
         },
         {
-            "name": "pyfeelpp-toolboxes",
+            "name": "feelpp-python",
             "inherits": "default",
-            "displayName": "pyfeelpp-toolboxes",
-            "description": "Build only the Feel++ pyfeelpp-toolboxes Component",
-            "binaryDir": "${sourceDir}/build/pyfeelpp-toolboxes",
+            "displayName": "feelpp-python",
+            "description": "Build only the Feel++ python Component",
+            "binaryDir": "${sourceDir}/build/python",
             "cacheVariables": {
-                "FEELPP_COMPONENT": "toolboxes/pyfeelpp-toolboxes"
+                "FEELPP_COMPONENT": "python",
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/build/python/install/"
             }
         },
         {
-            "name": "pyfeelpp-mor",
+            "name": "feelpp-python-dbg",
             "inherits": "default",
-            "displayName": "pyfeelpp-mor",
-            "description": "Build only the Feel++ pyfeelpp-mor Component",
-            "binaryDir": "${sourceDir}/build/pyfeelpp-mor",
-            "cacheVariables": {
-                "FEELPP_COMPONENT": "mor/pyfeelpp-mor"
-            }
-        },
-        {
-            "name": "pyfeelpp-all",
-            "inherits": "default",
-            "displayName": "pyfeelpp-all",
-            "description": "Build only the Feel++ pyfeelpp-all Component",
-            "binaryDir": "${sourceDir}/build/pyfeelpp-all",
-            "cacheVariables": {
-                "FEELPP_COMPONENT": "pyfeelpp-all",
-                "CMAKE_INSTALL_PREFIX": "${sourceDir}/build/pyfeelpp-all/install/"
-            }
-        },
-        {
-            "name": "pyfeelpp-all-dbg",
-            "inherits": "default",
-            "displayName": "pyfeelpp-all-dbg",
-            "description": "Build only the Feel++ pyfeelpp-all Component in Debug mode",
-            "binaryDir": "${sourceDir}/build/pyfeelpp-all-dbg",
+            "displayName": "feelpp-python-dbg",
+            "description": "Build only the Feel++ python Component in Debug mode",
+            "binaryDir": "${sourceDir}/build/python-dbg",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
-                "FEELPP_COMPONENT": "pyfeelpp-all"
+                "FEELPP_COMPONENT": "python"
             }
         },
         {
@@ -161,6 +147,17 @@
             "binaryDir": "${sourceDir}/build/testsuite",
             "cacheVariables": {
                 "FEELPP_COMPONENT": "testsuite"
+            }
+        },
+        {
+            "name": "testsuite-install",
+            "inherits": "default",
+            "displayName": "testsuite using local install",
+            "description": "Build only the Feel++ testsuite Component",
+            "binaryDir": "${sourceDir}/build/testsuite-install",
+            "cacheVariables": {
+                "FEELPP_COMPONENT": "testsuite",
+                "FEELPP_DIR": "${sourceDir}/build/default/install/"
             }
         },
         {
@@ -214,48 +211,63 @@
         {
             "name": "feelpp",
             "configurePreset": "feelpp",
-            "inherits": "default"
+            "inherits": "default",
+            "targets": [
+                "all",
+                "install"
+            ]
         },
         {
             "name": "toolboxes",
             "inherits": "default",
-            "configurePreset": "toolboxes"
+            "configurePreset": "toolboxes",
+            "targets": [
+                "all",
+                "install"
+            ]
         },
         {
             "name": "mor",
             "inherits": "default",
             "configurePreset": "mor",
             "targets": [
-                "feelpp_mor",
-                "pyfeelppmor",
-                "feelpp_mor_apps",
-                "install"
-            ]
-        },
-        {
-            "name": "pyfeelpp",
-            "inherits": "default",
-            "configurePreset": "pyfeelpp"
-        },
-        {
-            "name": "pyfeelpp-all",
-            "inherits": "default",
-            "configurePreset": "pyfeelpp-all",
-            "targets": [
-                "pyfeelpp",
-                "pyfeelpp-toolboxes",
-                "pyfeelpp-mor",
                 "all",
                 "install"
             ]
         },
         {
-            "name": "pyfeelpp-all-dbg",
+            "name": "feelpp-python",
             "inherits": "default",
-            "configurePreset": "pyfeelpp-all-dbg",
+            "configurePreset": "feelpp-python",
             "targets": [
                 "all",
                 "install"
+            ]
+        },
+        {
+            "name": "python",
+            "inherits": "default",
+            "configurePreset": "python",
+            "targets": [
+                "all",
+                "install"
+            ]
+        },
+        {
+            "name": "feelpp-python-dbg",
+            "inherits": "default",
+            "configurePreset": "feelpp-python-dbg",
+            "targets": [
+                "all",
+                "install"
+            ]
+        },
+        {
+            "name": "testsuite",
+            "configurePreset": "testsuite",
+            "inherits": "default",
+            "targets": [
+                "all"
             ]
         },
         {
@@ -268,13 +280,60 @@
         {
             "name": "default",
             "configurePreset": "default",
+            "filter":{
+                "include":{
+                    "name":"feelpp"
+                }
+            },
+            "output": {
+                "outputOnFailure": true
+            },
+            "execution": {
+                "jobs":2,
+                "noTestsAction": "error",
+                "stopOnFailure": true
+            }
+        },
+        {
+            "name": "feelpp",
+            "configurePreset": "feelpp",
+            "inherits":"default",
             "output": {
                 "outputOnFailure": true
             },
             "execution": {
                 "noTestsAction": "error",
-                "stopOnFailure": true
+                "stopOnFailure": false,
+                "repeat":{
+                    "mode":"until-pass",
+                    "count":2
+                }
             }
+        },
+        {
+            "name": "toolboxes",
+            "configurePreset": "toolboxes",
+            "inherits": "feelpp"
+        },
+        {
+            "name": "mor",
+            "configurePreset": "mor",
+            "inherits": "feelpp"
+        },
+        {
+            "name": "python",
+            "configurePreset": "python",
+            "inherits": "feelpp"
+        },
+        {
+            "name": "feelpp-python",
+            "configurePreset": "feelpp-python",
+            "inherits": "feelpp"
+        },
+        {
+            "name": "testsuite",
+            "configurePreset": "testsuite",
+            "inherits": "feelpp"
         }
     ],
     "vendor": {

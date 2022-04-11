@@ -9,9 +9,7 @@ Others ref :
     "ShortName":"HeatFluid",
     "Models":
     {
-        "use-model-name":1,
-        "fluid":
-        {
+        "fluid":{
             "equations":"Navier-Stokes"
         }
     },
@@ -43,9 +41,9 @@ Others ref :
     },
     "BoundaryConditions":
     {
-        "velocity":
+        "fluid":
         {
-            "Dirichlet":
+            "velocity":
             {
                 "wall":
                 {
@@ -54,9 +52,9 @@ Others ref :
                 }
             }
         },
-        "temperature":
+        "heat":
         {
-            "Dirichlet":
+            "temperature":
             {
                 "wall_hot":{ "expr":"0.5" },
                 "wall_cold": { "expr":"-0.5" }
@@ -65,7 +63,6 @@ Others ref :
     },
     "PostProcess":
     {
-        "use-model-name":1,
         "heatfluid":
         {
             "Exports":

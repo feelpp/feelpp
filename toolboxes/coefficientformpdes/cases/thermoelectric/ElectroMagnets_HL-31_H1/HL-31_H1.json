@@ -4,48 +4,65 @@
     "ShortName":"HL-31_H1",
     "Models":
     {
-        "equations":[
-            {
-                "name":"heat",
+        "cfpdes":{
+            "equations":["heat","electric"]
+        },
+        "heat":{
+            "setup":{
                 "unknown":
                 {
                     "basis":"Pch1",
                     "name":"temperature",
                     "symbol":"T"
+                },
+                "coefficients":{
+                    "c":"materials_Cu_k:materials_Cu_k",
+                    "f":"materials_Cu_sigma*(electric_grad_P_0^2+electric_grad_P_1^2+electric_grad_P_2^2):materials_Cu_sigma:electric_grad_P_0:electric_grad_P_1:electric_grad_P_2"         
                 }
-            },
-            {
-                "name":"electric",
+            }
+        },
+        "electric":{
+            "setup":{
                 "unknown":
                 {
                     "basis":"Pch1",
                     "name":"electric-potential",
                     "symbol":"P"
+                },
+                "coefficients":{
+                    "c":"materials_Cu_sigma:materials_Cu_sigma"
                 }
             }
-        ]
+        }
+    },
+    "Meshes":
+    {
+        "cfpdes":
+        {
+            "Import":
+            {
+                "filename":"girder:{file:5af862d6b0e9574027047fc8}",
+                "partition":1
+            }
+        }
     },
     "Materials":
     {
         "Cu":
         {
             "k":0.370, //[ W/(m*K) ]
-            "sigma":53e3,
-            "heat_c":"k:k",
-            "heat_f":"materials_Cu_sigma*(electric_grad_P_0^2+electric_grad_P_1^2+electric_grad_P_2^2):materials_Cu_sigma:electric_grad_P_0:electric_grad_P_1:electric_grad_P_2",
-            "electric_c":"sigma:sigma"
+            "sigma":53e3
         }
     },
     "InitialConditions":
     {
-        "temperature":
-        {
-            "Expression":
-            {
-                "myic":
-                {
-                    "markers":"Cu",
-                    "expr":"290"
+        "heat":{
+            "temperature":{
+                "Expression":{
+                    "myic":{
+                        "markers":"Cu",
+                        "expr":"290"
+                    }
                 }
             }
         }
@@ -96,7 +113,6 @@
     },
     "PostProcess":
     {
-        "use-model-name":1,
         "cfpdes":
         {
             "Exports":

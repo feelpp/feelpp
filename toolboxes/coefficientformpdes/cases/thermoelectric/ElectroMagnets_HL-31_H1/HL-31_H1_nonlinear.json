@@ -4,26 +4,36 @@
     "ShortName":"HL-31_H1",
     "Models":
     {
-        "equations":[
-            {
-                "name":"heat",
+        "cfpdes":{
+            "equations":["heat","electric"]
+        },
+        "heat":{
+            "setup":{
                 "unknown":
                 {
                     "basis":"Pch1",
                     "name":"temperature",
                     "symbol":"T"
+                },
+                "coefficients":{
+                    "c":"materials_Cu_k:materials_Cu_k",
+                    "f":"materials_Cu_sigma*(electric_grad_P_0^2+electric_grad_P_1^2+electric_grad_P_2^2):materials_Cu_sigma:electric_grad_P_0:electric_grad_P_1:electric_grad_P_2"
                 }
-            },
-            {
-                "name":"electric",
+            }
+        },
+        "electric":{
+            "setup":{
                 "unknown":
                 {
                     "basis":"Pch1",
                     "name":"electric-potential",
                     "symbol":"P"
+                },
+                "coefficients":{
+                    "c":"materials_Cu_sigma:materials_Cu_sigma"
                 }
             }
-        ]
+        }
     },
     "Parameters":
     {
@@ -32,41 +42,49 @@
         "alpha":3.6e-3,
         "Lorentz":2.47e-8
     },
+    "Meshes":
+    {
+        "cfpdes":
+        {
+            "Import":
+            {
+                //"filename":"girder:{file:5af862d6b0e9574027047fc8}"
+                //"partition":1
+                // WARNING only good in parallel (np>1), else use the mesh from girder
+                "filename":"$repository/toolboxes/coefficientformpdes/thermoelectric/ElectroMagnets_HL-31_H1/np_$np/cfpdes.mesh.json",
+                "partition":0
+            }
+        }
+    },
     "Materials":
     {
         "Cu":
         {
             "sigma":"sigma0/(1+alpha*(heat_T-T0)):sigma0:alpha:T0:heat_T",
-            "k":"materials_Cu_sigma*Lorentz*heat_T:materials_Cu_sigma:Lorentz:heat_T",
+            "k":"materials_Cu_sigma*Lorentz*heat_T:materials_Cu_sigma:Lorentz:heat_T"
            // "k":0.370, //[ W/(m*K) ]
            // "sigma":53e3,
-
-            "heat_c":"materials_Cu_k:materials_Cu_k",
-            "heat_f":"materials_Cu_sigma*(electric_grad_P_0^2+electric_grad_P_1^2+electric_grad_P_2^2):materials_Cu_sigma:electric_grad_P_0:electric_grad_P_1:electric_grad_P_2",
-            "electric_c":"materials_Cu_sigma:materials_Cu_sigma"
         }
     },
     "InitialConditions":
     {
-        "temperature":
-        {
-            "File":
-            {
-                "myic":
-                {
-                    "filename":"$repository/toolboxes/coefficientformpdes/thermoelectric/ElectroMagnets_HL-31_H1/np_$np/heat.save/temperature.h5",
-                    "format":"hdf5"
+        "heat":{
+            "temperature":{
+                "File":{
+                    "myic":{
+                        "filename":"$repository/toolboxes/coefficientformpdes/thermoelectric/ElectroMagnets_HL-31_H1/np_$np/heat.save/temperature.h5",
+                        "format":"hdf5"
+                    }
                 }
             }
         },
-        "electric-potential":
-        {
-            "File":
-            {
-                "myic":
-                {
-                    "filename":"$repository/toolboxes/coefficientformpdes/thermoelectric/ElectroMagnets_HL-31_H1/np_$np/electric.save/electric-potential.h5",
-                    "format":"hdf5"
+        "electric":{
+            "electric-potential":{
+                "File":{
+                    "myic":{
+                        "filename":"$repository/toolboxes/coefficientformpdes/thermoelectric/ElectroMagnets_HL-31_H1/np_$np/electric.save/electric-potential.h5",
+                        "format":"hdf5"
+                    }
                 }
             }
         }
@@ -117,7 +135,6 @@
     },
     "PostProcess":
     {
-        "use-model-name":1,
         "cfpdes":
         {
             "Exports":

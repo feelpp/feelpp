@@ -14,11 +14,13 @@ namespace FeelModels
 
 template< typename ConvexType, typename... BasisUnknownType>
 class CoefficientFormPDEs : public ModelNumerical,
-                            public ModelGenericPDEs<ConvexType::nDim>,
-                            public std::enable_shared_from_this< CoefficientFormPDEs<ConvexType,BasisUnknownType...> >
+    //public ModelGenericPDEs<ConvexType::nDim>
+                            public ModelPhysics<ConvexType::nRealDim>
 {
 public :
-    typedef ModelNumerical super_type;
+    using super_type = ModelNumerical;
+    using super_physics_type = ModelPhysics<ConvexType::nRealDim>;
+    //using super_physics_type = ModelGenericPDEs<ConvexType::nDim>;
     using size_type = typename super_type::size_type;
 
     using self_type = CoefficientFormPDEs<ConvexType,BasisUnknownType...>;
@@ -173,13 +175,14 @@ public :
                          std::string const& subPrefix  = "",
                          ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
+    std::shared_ptr<self_type> shared_from_this() { return std::dynamic_pointer_cast<self_type>( super_type::shared_from_this() ); }
+
     static
     std::string const& unknowBasisTag( variant_unknown_basis_type const& vb );
 
     void init( bool buildModelAlgebraicFactory=true );
     void initAlgebraicFactory();
 
-    std::shared_ptr<std::ostringstream> getInfo() const override;
     void updateInformationObject( nl::json & p ) const override;
     tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
 
@@ -311,7 +314,7 @@ private :
                                     using coefficient_form_pde_type = typename self_type::traits::template coefficient_form_pde_t<decltype(e)>;
                                     auto cfpde = std::dynamic_pointer_cast<coefficient_form_pde_type>( cfpdeBase );
                                     res = Feel::FeelModels::modelFields( res, cfpde->modelFields( sol,
-                                                                                                  rowStartInVector + this->startSubBlockSpaceIndex( cfpdeBase->physicDefault() ),
+                                                                                                  rowStartInVector + this->startSubBlockSpaceIndex( cfpdeBase->equationName() ),
                                                                                                   prefixvm( prefix, cfpde->keyword() ) ) );
                                 }
                             });
@@ -330,7 +333,7 @@ private :
                                     using coefficient_form_pde_type = typename self_type::traits::template coefficient_form_pde_t<decltype(e)>;
                                     auto cfpde = std::dynamic_pointer_cast<coefficient_form_pde_type>( cfpdeBase );
 
-                                    res = Feel::FeelModels::selectorModelFields( res, cfpde->trialSelectorModelFields( startBlockSpaceIndex + this->startSubBlockSpaceIndex( cfpdeBase->physicDefault() ) ) );
+                                    res = Feel::FeelModels::selectorModelFields( res, cfpde->trialSelectorModelFields( startBlockSpaceIndex + this->startSubBlockSpaceIndex( cfpdeBase->equationName() ) ) );
                                 }
                             });
         }
@@ -497,6 +500,7 @@ private :
     void initMesh();
     void initMaterialProperties();
     void initPostProcess() override;
+    void updatePhysics( typename super_physics_type::PhysicsTreeNode & physicsTree, ModelModels const& models ) override;
 
     void updateAutomaticSolverSelection();
 

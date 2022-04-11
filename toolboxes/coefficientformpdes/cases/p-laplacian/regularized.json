@@ -7,23 +7,28 @@ Example taken from :
     "ShortName": "p-laplacian",
     "Models":
     {
-        "equations":[
-            {
-                "name":"equation1",
-                "unknown":
-                {
+        "cfpdes":{
+            "equations":"equation1"
+        },
+        "equation1":{
+            "setup":{
+                "unknown":{
                     "basis":"Pch1",
                     "name":"solution",
                     "symbol":"u"
+                },
+                "coefficients":{
+                    "c":"(epsilon^2+0.5*(equation1_grad_u_0^2+equation1_grad_u_1^2))^((p-2)/2):equation1_grad_u_0:equation1_grad_u_1:epsilon:p",
+                    "f":"source_c:source_c"
                 }
             }
-        ]
+        }
     },
     "Parameters":
     {
         "epsilon":1e-5,
         "p":5,//9,
-        "c":0.1,
+        "source_c":0.1,
         "u0":"x*y*(1-x^2)*(1-y^2):x:y"
     },
     "Meshes":
@@ -41,8 +46,6 @@ Example taken from :
     {
         "Omega":
         {
-            "equation1_c":"(epsilon^2+0.5*(equation1_grad_u_0^2+equation1_grad_u_1^2))^((p-2)/2):equation1_grad_u_0:equation1_grad_u_1:epsilon:p",
-            "equation1_f":"c:c"
         }
     },
     "InitialConditions":
@@ -75,7 +78,6 @@ Example taken from :
     },
     "PostProcess":
     {
-        "use-model-name":1,
         "cfpdes":
         {
             "Exports":
