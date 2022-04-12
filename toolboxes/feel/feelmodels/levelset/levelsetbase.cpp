@@ -103,6 +103,8 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::init()
 {
     this->log("LevelSetBase", "init", "start");
 
+    this->initModelProperties();
+
     // Mesh and space manager
     if( !M_spaceManager )
     {
@@ -134,72 +136,13 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::init()
     // Set levelset initial value
     // Note: we initialise the levelset even in case of restart to
     // compute the initial geometrical quantities (volume, perimeter, ...)
-    this->initLevelsetValue();
+    this->updateInitialValues( this->symbolsExpr() );
     //}
 
     // Init post-process
     this->initPostProcess();
 
     this->log("LevelSetBase", "init", "finish");
-}
-
-LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
-void
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::initLevelsetValue()
-{
-    this->log("LevelSetBase", "initLevelsetValue", "start");
-
-    if( !M_initialPhi ) // look for JSON initial values
-    {
-        bool hasInitialValue = !this->modelProperties().initialConditions().empty();
-
-        if( hasInitialValue )
-        {
-            auto phiInit = this->functionSpace()->elementPtr();
-            phiInit->setConstant( std::numeric_limits<value_type>::max() );
-            std::vector<element_levelset_ptrtype> icLevelSetFields = { phiInit };
-
-            this->modelProperties().parameters().updateParameterValues();
-            auto paramValues = this->modelProperties().parameters().toParameterValues();
-            this->modelProperties().initialConditions().setParameterValues( paramValues );
-
-            this->updateInitialConditions( this->prefix(), this->rangeMeshElements(), this->symbolsExpr(), icLevelSetFields );
-
-            ModelInitialConditionTimeSet const& icts = this->modelProperties().initialConditions().get( this->keyword(),this->prefix() );
-            for( auto const& [time,icByType]: icts )
-            {
-                auto itFindIcShapes = icByType.find( "Shapes" );
-                if( itFindIcShapes != icByType.end() )
-                {
-                    for( auto const& icShape: itFindIcShapes->second )
-                    {
-                        this->addShape( icShape.jsonSetup(), *phiInit );
-                    }
-                }
-            }
-
-            this->setInitialValue( phiInit );
-        }
-    }
-
-    // Synchronize with current phi
-    if( M_initialPhi ) // user-provided initial value
-    {
-        this->log("LevelSetBase", "initLevelsetValue", "initial value found");
-        *M_phi = *M_initialPhi;
-    }
-    else // no initial value
-    {
-        this->log("LevelSetBase", "initLevelsetValue", "no initial value found; setting to zero");
-        M_phi->zero();
-    }
-
-    this->updateInterfaceQuantities();
-
-    M_initialVolume = this->volume();
-    M_initialPerimeter = this->perimeter();
-
-    this->log("LevelSetBase", "initLevelsetValue", "finish");
 }
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS

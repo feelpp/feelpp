@@ -268,7 +268,8 @@ public:
 
     //--------------------------------------------------------------------//
     // Initial condition
-    void updateInitialConditions();
+    template <typename SymbolsExprType>
+    void updateInitialConditions( SymbolsExprType const& se );
 
     //--------------------------------------------------------------------//
     // Physical parameters
@@ -281,9 +282,6 @@ public:
 
     //--------------------------------------------------------------------//
     // Advection data
-    typename cfpde_toolbox_type::bdf_unknown_ptrtype /*const&*/ timeStepBDF() const { return M_advectionToolbox->timeStepBdfUnknown(); }
-    std::shared_ptr<TSBase> timeStepBase() { return M_advectionToolbox->timeStepBase(); }
-    std::shared_ptr<TSBase> timeStepBase() const { return M_advectionToolbox->timeStepBase(); }
     template<typename ExprT>
     void setAdvectionVelocityExpr( vf::Expr<ExprT> const& v_expr )
     { 
@@ -302,11 +300,7 @@ public:
     //void updateAdvectionVelocity( element_advection_velocity_type const& velocity ) { [>return M_advectionToolbox->updateAdvectionVelocity( velocity );<] }
     //--------------------------------------------------------------------//
     // Spaces
-    space_vectorial_ptrtype const& functionSpaceAdvectionVelocity() const { return M_spaceAdvectionVelocity; }
-    void setFunctionSpaceAdvectionVelocity( space_vectorial_ptrtype const& space ) { M_spaceAdvectionVelocity = space; }
     space_tensor2symm_ptrtype const& functionSpaceTensor2Symm() const { return M_spaceTensor2Symm; }
-
-    //std::string fileNameMeshPath() const override { return prefixvm(this->prefix(),"LevelsetMesh.path"); }
 
     //--------------------------------------------------------------------//
     // Levelset
@@ -342,11 +336,17 @@ public:
     element_markers_ptrtype const& markerCrossedElements() const;
 
     //--------------------------------------------------------------------//
+    // Time stepping
+    typename cfpde_toolbox_type::bdf_unknown_ptrtype const& timeStepBDF() const { return M_advectionToolbox->timeStepBdfUnknown(); }
+    std::shared_ptr<TSBase> timeStepBase() { return M_advectionToolbox->timeStepBase(); }
+    std::shared_ptr<TSBase> timeStepBase() const { return M_advectionToolbox->timeStepBase(); }
+    void startTimeStep();
+    void updateTimeStep();
+
+    //--------------------------------------------------------------------//
     // Assembly and solve
     int nBlockMatrixGraph() const { return 1; }
 
-    bool hasSourceTerm() const { return false; }
-    void updateWeakBCLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const {}
     void updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const;
 
     void solve();
@@ -379,11 +379,6 @@ public:
     template <typename ModelContextType,typename RangeType>
     void updateResidualStabilizationGLS( ModelAlgebraic::DataUpdateResidual & data, ModelContextType const& mctx, std::string const& matName, RangeType const& range ) const { M_advectionToolbox->updateResidualStabilizationGLS( data, mctx, matName, range ); }
     void updateResidualDofElimination( ModelAlgebraic::DataUpdateResidual & data ) const override { M_advectionToolbox->updateResidualDofElimination( data ); }
-
-    //--------------------------------------------------------------------//
-    // Time stepping
-    void startTimeStep();
-    void updateTimeStep();
 
     //--------------------------------------------------------------------//
     // Extension velocity
@@ -526,7 +521,6 @@ private:
     bool M_doExportAdvection;
     //--------------------------------------------------------------------//
     // Spaces
-    space_vectorial_ptrtype M_spaceAdvectionVelocity;
     space_tensor2symm_ptrtype M_spaceTensor2Symm;
     //--------------------------------------------------------------------//
     // Materials properties
@@ -612,22 +606,66 @@ private:
 
 }; //class LevelSet
 
-#ifndef LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-#define LEVELSET_CLASS_TEMPLATE_DECLARATIONS \
-    template< typename ConvexType, typename BasisType, typename PeriodicityType, typename BasisPnType > \
-        /**/
-#endif
-#ifndef LEVELSET_CLASS_TEMPLATE_TYPE
-#define LEVELSET_CLASS_TEMPLATE_TYPE \
-    LevelSet<ConvexType, BasisType, PeriodicityType, BasisPnType> \
-        /**/
-#endif
+template< typename ConvexType, typename BasisType, typename PeriodicityType, typename BasisPnType >
+template< typename SymbolsExprType >
+void
+LevelSet<ConvexType, BasisType, PeriodicityType, BasisPnType>::updateInitialConditions( SymbolsExprType const& se )
+{
+    this->log("LevelSet", "updateInitialConditions", "start");
+
+    M_advectionToolbox->updateInitialConditions( se );
+
+    if( M_useGradientAugmented )
+    {
+        // Initialize modGradPhi
+        if( this->redistInitialValue() )
+        {
+            for( auto const& unknown : M_modGradPhiAdvection->timeStepBdfUnknown()->unknowns() )
+                unknown->setConstant(1.);
+        }
+        else
+        {
+            *(M_modGradPhiAdvection->fieldUnknownPtr()) = this->modGrad( this->phiElt() );
+            for( auto const& unknown : M_modGradPhiAdvection->timeStepBdfUnknown()->unknowns() )
+                *unknown = M_modGradPhiAdvection->fieldUnknown();
+        }
+    }
+    if( M_useStretchAugmented )
+    {
+        // Initialize stretch modGradPhi
+        M_stretchAdvection->fieldUnknownPtr()->setConstant(1.);
+        for( auto const& unknown : M_stretchAdvection->timeStepBdfUnknown()->unknowns() )
+            unknown->setConstant(1.);
+    }
+    if( M_useCauchyAugmented )
+    {
+        // Initialize backward characteristics
+        if( M_hasInitialBackwardCharacteristics )
+        {
+            M_backwardCharacteristicsAdvection->fieldUnknownPtr()->on(
+                    _range=M_backwardCharacteristicsAdvection->rangeMeshElements(),
+                    _expr=M_initialBackwardCharacteristics
+                    );
+        }
+        else
+        {
+            M_backwardCharacteristicsAdvection->fieldUnknownPtr()->on(
+                    _range=M_backwardCharacteristicsAdvection->rangeMeshElements(),
+                    _expr=vf::P()
+                    );
+        }
+        for( auto const& unknown : M_backwardCharacteristicsAdvection->timeStepBdfUnknown()->unknowns() )
+            *unknown = M_backwardCharacteristicsAdvection->fieldUnknown();
+    }
+
+    this->log("LevelSet", "updateInitialConditions", "finish");
+}
 //----------------------------------------------------------------------------//
 // Extension velocity
-LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+template< typename ConvexType, typename BasisType, typename PeriodicityType, typename BasisPnType >
 template<typename ExprT>
-typename LEVELSET_CLASS_TEMPLATE_TYPE::element_vectorial_type
-LEVELSET_CLASS_TEMPLATE_TYPE::extensionVelocity( vf::Expr<ExprT> const& u) const
+typename LevelSet<ConvexType, BasisType, PeriodicityType, BasisPnType>::element_vectorial_type
+LevelSet<ConvexType, BasisType, PeriodicityType, BasisPnType>::extensionVelocity( vf::Expr<ExprT> const& u) const
 {
     this->log("LevelSet", "extensionVelocity", "start");
     this->timerTool("Solve").start();

@@ -143,12 +143,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         this->updateTime( M_advectionToolbox->currentTime() );
     }
 
-    // Set advection initial value
-    if( !this->doRestart() )
-    {
-        // Set other initial values
-        this->updateInitialConditions();
-    }
+    // update initial conditions
+    this->updateInitialConditions( this->symbolsExpr() );
     // Init boundary conditions
     this->initBoundaryConditions();
 
@@ -196,71 +192,6 @@ LEVELSET_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSET_CLASS_TEMPLATE_TYPE::updateInitialConditions()
-{
-    this->log("LevelSet", "updateInitialConditions", "start");
-
-    if( !this->doRestart() )
-    {
-        if( this->initialValue() )
-        {
-            // We need to hack the InitialCondition mechanism since it does not allow for proper management
-            if( !this->isStationary() )
-            {
-                for( auto const& unknown : M_advectionToolbox->timeStepBdfUnknown()->unknowns() )
-                    *unknown = *(this->initialValue());
-            }
-        }
-    }
-
-    if( M_useGradientAugmented )
-    {
-        // Initialize modGradPhi
-        if( this->redistInitialValue() )
-        {
-            for( auto const& unknown : M_modGradPhiAdvection->timeStepBdfUnknown()->unknowns() )
-                unknown->setConstant(1.);
-        }
-        else
-        {
-            *(M_modGradPhiAdvection->fieldUnknownPtr()) = this->modGrad( this->phiElt() );
-            for( auto const& unknown : M_modGradPhiAdvection->timeStepBdfUnknown()->unknowns() )
-                *unknown = M_modGradPhiAdvection->fieldUnknown();
-        }
-    }
-    if( M_useStretchAugmented )
-    {
-        // Initialize stretch modGradPhi
-        M_stretchAdvection->fieldUnknownPtr()->setConstant(1.);
-        for( auto const& unknown : M_stretchAdvection->timeStepBdfUnknown()->unknowns() )
-            unknown->setConstant(1.);
-    }
-    if( M_useCauchyAugmented )
-    {
-        // Initialize backward characteristics
-        if( M_hasInitialBackwardCharacteristics )
-        {
-            M_backwardCharacteristicsAdvection->fieldUnknownPtr()->on(
-                    _range=M_backwardCharacteristicsAdvection->rangeMeshElements(),
-                    _expr=M_initialBackwardCharacteristics
-                    );
-        }
-        else
-        {
-            M_backwardCharacteristicsAdvection->fieldUnknownPtr()->on(
-                    _range=M_backwardCharacteristicsAdvection->rangeMeshElements(),
-                    _expr=vf::P()
-                    );
-        }
-        for( auto const& unknown : M_backwardCharacteristicsAdvection->timeStepBdfUnknown()->unknowns() )
-            *unknown = M_backwardCharacteristicsAdvection->fieldUnknown();
-    }
-
-    this->log("LevelSet", "updateInitialConditions", "finish");
-}
-
-LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-void
 LEVELSET_CLASS_TEMPLATE_TYPE::initPostProcess()
 {
     super_type::initPostProcessExportsAndMeasures();
@@ -271,9 +202,6 @@ LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
 {
-    if( !M_spaceAdvectionVelocity )
-        M_spaceAdvectionVelocity = space_vectorial_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm() );
-
     if( M_useCauchyAugmented )
     {
         this->functionSpaceManager()->initFunctionSpaceTensor2Symm();

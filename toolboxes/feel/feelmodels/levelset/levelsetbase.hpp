@@ -250,9 +250,10 @@ public:
     // Initialization
     void initMesh();
     void init();
-    void initLevelsetValue();
     void initPostProcess() override;
 
+    template <typename SymbolsExprType>
+    void updateInitialValues( SymbolsExprType const& se );
     // Infos
     void updateInformationObject( nl::json & p ) const override;
     tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
@@ -809,6 +810,66 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::LevelSetDistanceMethodIdMap = {
     {"renormalisation", LevelSetDistanceMethod::RENORMALISATION}
 };
 
+//----------------------------------------------------------------------------//
+LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+template <typename SymbolsExprType>
+void
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateInitialValues( SymbolsExprType const& se )
+{
+    this->log("LevelSetBase", "updateInitialValues", "start");
+
+    if( !M_initialPhi ) // look for JSON initial values
+    {
+        bool hasInitialValue = !this->modelProperties().initialConditions().empty();
+
+        if( hasInitialValue )
+        {
+            auto phiInit = this->functionSpace()->elementPtr();
+            phiInit->setConstant( std::numeric_limits<value_type>::max() );
+            std::vector<element_levelset_ptrtype> icLevelSetFields = { phiInit };
+
+            this->modelProperties().parameters().updateParameterValues();
+            auto paramValues = this->modelProperties().parameters().toParameterValues();
+            this->modelProperties().initialConditions().setParameterValues( paramValues );
+
+            this->updateInitialConditions( this->keyword(), this->rangeMeshElements(), se, icLevelSetFields );
+
+            ModelInitialConditionTimeSet const& icts = this->modelProperties().initialConditions().get( this->keyword(), this->prefix() );
+            for( auto const& [time,icByType]: icts )
+            {
+                auto itFindIcShapes = icByType.find( "Shapes" );
+                if( itFindIcShapes != icByType.end() )
+                {
+                    for( auto const& icShape: itFindIcShapes->second )
+                    {
+                        this->addShape( icShape.jsonSetup(), *phiInit );
+                    }
+                }
+            }
+
+            this->setInitialValue( phiInit );
+        }
+    }
+
+    // Synchronize with current phi
+    if( M_initialPhi ) // user-provided initial value
+    {
+        this->log("LevelSetBase", "updateInitialValues", "initial value found");
+        *M_phi = *M_initialPhi;
+    }
+    else // no initial value
+    {
+        this->log("LevelSetBase", "updateInitialValues", "no initial value found; setting to zero");
+        M_phi->zero();
+    }
+
+    this->updateInterfaceQuantities();
+
+    M_initialVolume = this->volume();
+    M_initialPerimeter = this->perimeter();
+
+    this->log("LevelSetBase", "updateInitialValues", "finish");
+}
 //----------------------------------------------------------------------------//
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 template<typename SymbolsExpr, typename ModelFieldsType, typename TupleMeasuresQuantitiesType>
