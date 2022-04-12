@@ -3,14 +3,15 @@ from feelpp.toolboxes.heat import *
 from feelpp.mor import *
 import feelpp
 
-o=toolboxes_options("heat")
+o = toolboxes_options("heat")
 o.add(makeToolboxMorOptions())
-e=feelpp.Environment(sys.argv,opts=o)
+# sys.argv = ['--config-file opusheat/opusheat-heat.cfg']
+e = feelpp.Environment(sys.argv, opts=o)
 
-heatBox=heat(dim=2,order=1)
+heatBox = heat(dim=2, order=1)
 heatBox.init()
-model = toolboxmor_2d()
-model.setFunctionSpaces( Vh=heatBox.spaceTemperature())
+model = toolboxmor_2d("test")
+model.setFunctionSpaces( Vh=heatBox.spaceTemperature() )
 
 def assembleDEIM(mu):
     for i in range(0,mu.size()):
