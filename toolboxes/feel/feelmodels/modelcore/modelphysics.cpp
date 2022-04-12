@@ -930,6 +930,23 @@ ModelPhysicCoefficientFormPDE<Dim>::Infos::Infos( std::string const& name, nl::j
             M_unknownBasis = "Pch1";
     }
 
+    this->initCoefficientProperties();
+}
+
+template <uint16_type Dim>
+ModelPhysicCoefficientFormPDE<Dim>::Infos::Infos( std::string const& name, std::string const& unknownName, std::string const& unknownSymbol, std::string const& unknownBasis ):
+    M_equationName( name ),
+    M_unknownName( unknownName ),
+    M_unknownSymbol( unknownSymbol ),
+    M_unknownBasis( unknownBasis )
+{
+    this->initCoefficientProperties();
+}
+
+template <uint16_type Dim>
+void
+ModelPhysicCoefficientFormPDE<Dim>::Infos::initCoefficientProperties()
+{
     std::string unknownShape;
     if ( M_unknownBasis == "Pch1" || M_unknownBasis == "Pch2" || M_unknownBasis == "Pdh1" )
         unknownShape = "scalar";

@@ -707,13 +707,7 @@ public :
 
         Infos() = default;
         Infos( std::string const& name, nl::json const& jarg );
-        Infos( std::string const& name, std::string const& unknownName, std::string const& unknownSymbol, std::string const& unknownBasis )
-            :
-            M_equationName( name ),
-            M_unknownName( unknownName ),
-            M_unknownSymbol( unknownSymbol ),
-            M_unknownBasis( unknownBasis )
-            {}
+        Infos( std::string const& name, std::string const& unknownName, std::string const& unknownSymbol, std::string const& unknownBasis );
         Infos( Infos const& ) = default;
         Infos( Infos && ) = default;
         std::string const& equationName() const { return M_equationName; }
@@ -724,6 +718,8 @@ public :
         std::map<Coefficient,std::tuple<std::string,shapes_dim_type>> const& coefficientProperties() const { return M_coefficientProperties; }
         std::string const& coefficientName( Coefficient c ) const { return std::get<0>( M_coefficientProperties.at( c ) ); }
     private :
+        void initCoefficientProperties();
+
         std::string M_equationName, M_unknownName, M_unknownSymbol, M_unknownBasis;
         std::map<Coefficient,std::tuple<std::string,shapes_dim_type>> M_coefficientProperties;
     };
