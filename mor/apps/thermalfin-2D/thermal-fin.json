@@ -85,7 +85,7 @@
                 {
                     "init": 
                     {
-                        "markers":["Omega_0","Omega_1","Omega_2","Omega_3","Omega_4"], 
+                        "markers":["Fin_1", "Fin_2", "Fin_3", "Fin_4", "Post"], 
                         "expr":"300" 
                     }
                 }
@@ -100,7 +100,7 @@
             {
                 "Gamma_root":
                 {
-                    "expr":"1"     // according to doc : k nabla T.n = g
+                    "expr":"1"
                 }
             },
             "convective_heat_flux":
