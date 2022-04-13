@@ -66,3 +66,13 @@ def test_mpi_numpy(init_feelpp):
 #    feelpp.Environment.changeRepository(
 #        directory="pyfeelpp-tests/core/test_config_local")
 
+def test_config_parser(init_feelpp):
+    e=init_feelpp
+    feelpp.Environment.changeRepository(
+        directory="pyfeelpp-tests/core/test_config_parser")
+    config = feelpp.readcfg(os.path.dirname(__file__)+'/test.cfg')
+    print("sections: {}".format(config.sections()))
+    d = config['feelpp']['directory']
+    #assert(d == 'toolboxes/fluid/TurekHron/cfd1/P2P1G1')
+    j = config['fluid']['filename']
+    assert(j == "$cfgdir/cfd1.json")
