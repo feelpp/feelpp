@@ -26,28 +26,32 @@
     {
         "levelset":
         {
-            "Expression":
+            "levelset":
             {
-                "drop1":
+                "Expression":
                 {
-                    "expr":"sqrt( (x-x0)*(x-x0) + (y-y0)*(y-y0) ) - r0 :x:x0:y:y0:r0"
-                }
-            },
-            "Shapes":
-            {
-                "drop2":
-                {
-                    "shape": "sphere",
-                    "xc": "-0.1",
-                    "yc": "-0.05",
-                    "radius": "0.16"
+                    "drop1":
+                    {
+                        "markers":"Omega",
+                        "expr":"sqrt( (x-x0)*(x-x0) + (y-y0)*(y-y0) ) - r0 :x:x0:y:y0:r0"
+                    }
                 },
-                "drop3":
+                "Shapes":
                 {
-                    "shape": "sphere",
-                    "xc": "-0.25",
-                    "yc": "0.3",
-                    "radius": "0.05"
+                    "drop2":
+                    {
+                        "shape": "sphere",
+                        "xc": -0.1,
+                        "yc": -0.05,
+                        "radius": 0.16
+                    },
+                    "drop3":
+                    {
+                        "shape": "sphere",
+                        "xc": -0.25,
+                        "yc": 0.3,
+                        "radius": 0.05
+                    }
                 }
             }
         }
@@ -67,13 +71,16 @@
     },
     "PostProcess":
     {
-        "Exports":
+        "levelset":
         {
-            "fields": ["phi", "normal", "curvature"]
-        },
-        "Measures":
-        {
-            "quantities": ["volume"]
+            "Exports":
+            {
+                "fields": ["phi", "normal", "curvature"]
+            },
+            "Measures":
+            {
+                "quantities": ["volume"]
+            }
         }
     }
 }

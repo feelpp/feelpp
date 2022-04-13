@@ -613,7 +613,24 @@ LevelSet<ConvexType, BasisType, PeriodicityType, BasisPnType>::updateInitialCond
 {
     this->log("LevelSet", "updateInitialConditions", "start");
 
-    M_advectionToolbox->updateInitialConditions( se );
+    super_type::updateInitialValues( se );
+    if ( !this->doRestart() )
+    {
+        //M_advectionToolbox->updateInitialConditions( se );
+        // Update CFPDE toolbox initial conditions from levelset initial value
+        std::vector<element_levelset_ptrtype> icLevelsetCFPDEFields;
+        if ( this->isStationary() )
+            icLevelsetCFPDEFields = { M_advectionToolbox->fieldUnknownPtr() };
+        else
+            icLevelsetCFPDEFields = M_advectionToolbox->timeStepBdfUnknown()->unknowns();
+        for( auto & u: icLevelsetCFPDEFields )
+        {
+            *u = this->fieldLevelset();
+        }
+        
+        if ( !this->isStationary() )
+            *(M_advectionToolbox->fieldUnknownPtr()) = M_advectionToolbox->timeStepBdfUnknown()->unknown(0);
+    }
 
     if( M_useGradientAugmented )
     {

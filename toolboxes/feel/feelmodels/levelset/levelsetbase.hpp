@@ -290,9 +290,11 @@ public:
 
     //--------------------------------------------------------------------//
     // Levelset
-    element_levelset_ptrtype phiPtr() const { return M_phi; }
-    element_levelset_type & phiElt() { return *M_phi; }
-    element_levelset_type const& phiElt() const { return *M_phi; }
+    element_levelset_ptrtype fieldLevelsetPtr() const { return M_phi; }
+    element_levelset_ptrtype phiPtr() const { return this->fieldLevelsetPtr(); }
+    element_levelset_type const& fieldLevelset() const { return *M_phi; }
+    //element_levelset_type & phiElt() { return *M_phi; }
+    element_levelset_type const& phiElt() const { return this->fieldLevelset(); }
     void setPhi( element_levelset_type const& phi, bool reinit = true ) { *M_phi = phi; M_hasRedistanciated = reinit; }
     void setPhi( element_levelset_ptrtype const& phi, bool reinit = true ) { this->setPhi( *phi, reinit ); }
 
@@ -824,19 +826,24 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateInitialValues( SymbolsExprType const& se
 
         if( hasInitialValue )
         {
+            this->log("LevelSetBase", "updateInitialValues", "reading initial value from json");
             auto phiInit = this->functionSpace()->elementPtr();
             phiInit->setConstant( std::numeric_limits<value_type>::max() );
             std::vector<element_levelset_ptrtype> icLevelSetFields = { phiInit };
 
-            this->modelProperties().parameters().updateParameterValues();
-            auto paramValues = this->modelProperties().parameters().toParameterValues();
-            this->modelProperties().initialConditions().setParameterValues( paramValues );
+            //this->modelProperties().parameters().updateParameterValues();
+            //auto paramValues = this->modelProperties().parameters().toParameterValues();
+            //this->modelProperties().initialConditions().setParameterValues( paramValues );
 
             this->updateInitialConditions( this->keyword(), this->rangeMeshElements(), se, icLevelSetFields );
 
             ModelInitialConditionTimeSet const& icts = this->modelProperties().initialConditions().get( this->keyword(), this->prefix() );
-            for( auto const& [time,icByType]: icts )
+            double icTime = 0;
+            auto const& icByTypeIt = icts.find( icTime );
+            //for( auto const& [time,icByType]: icts )
+            if ( icByTypeIt != icts.end() )
             {
+                auto const& icByType = icByTypeIt->second;
                 auto itFindIcShapes = icByType.find( "Shapes" );
                 if( itFindIcShapes != icByType.end() )
                 {
