@@ -31,16 +31,16 @@ measureNormEvaluationH1( RangeType const& range, ExprType const& idExpr, GradExp
     std::string normNameOutput = (boost::format("Norm_%1%_%2%")%ppNorm.name() %normType).str();
     double normComputed = 0;
     if ( normType == "H1" )
-        normComputed = normH1(_range=range,_expr=idExpr, _grad_expr=gradExpr, _quad=quadOrder,_quad1=quad1Order );
+        normComputed = normH1(_range=range,_expr=idExpr, _grad_expr=gradExpr, _quad=quadOrder,_quad1=quad1Order, _worldcomm=res.worldCommPtr() );
     else if ( normType == "SemiH1" )
-        normComputed = normSemiH1(_range=range, _grad_expr=gradExpr, _quad=quadOrder,_quad1=quad1Order );
+        normComputed = normSemiH1(_range=range, _grad_expr=gradExpr, _quad=quadOrder,_quad1=quad1Order, _worldcomm=res.worldCommPtr() );
     else if ( normType == "H1-error" )
         normComputed = normH1(_range=range,_expr=idExpr - expr( ppNorm.solution().template expr<shape_type::M,shape_type::N>(), symbolsExpr ),
                               _grad_expr= gradExpr -  trans( expr( ppNorm.gradSolution().template expr<element_type::nRealDim,shape_type::M>(), symbolsExpr ) ),
-                              _quad=quadOrderError,_quad1=quad1OrderError );
+                              _quad=quadOrderError,_quad1=quad1OrderError, _worldcomm=res.worldCommPtr() );
     else if ( normType == "SemiH1-error" )
         normComputed = normSemiH1(_range=range,_grad_expr= gradExpr - trans( expr( ppNorm.gradSolution().template expr<element_type::nRealDim,shape_type::M>(),symbolsExpr ) ),
-                                  _quad=quadOrderError,_quad1=quad1OrderError );
+                                  _quad=quadOrderError,_quad1=quad1OrderError, _worldcomm=res.worldCommPtr() );
     else
         CHECK( false ) << "not a H1 norm type";
     res.setValue( normNameOutput, normComputed );
@@ -62,16 +62,16 @@ measureNormEvaluationH1( RangeType const& range, ExprType const& idExpr, GradExp
     std::string normNameOutput = (boost::format("Norm_%1%_%2%")%ppNorm.name() %normType).str();
     double normComputed = 0;
     if ( normType == "H1" )
-        normComputed = normH1(_range=range,_expr=idExpr, _grad_expr=gradExpr, _quad=quadOrder,_quad1=quad1Order );
+        normComputed = normH1(_range=range,_expr=idExpr, _grad_expr=gradExpr, _quad=quadOrder,_quad1=quad1Order, _worldcomm=res.worldCommPtr() );
     else if ( normType == "SemiH1" )
-        normComputed = normSemiH1(_range=range, _grad_expr=gradExpr, _quad=quadOrder,_quad1=quad1Order );
+        normComputed = normSemiH1(_range=range, _grad_expr=gradExpr, _quad=quadOrder,_quad1=quad1Order, _worldcomm=res.worldCommPtr() );
     else if ( normType == "H1-error" )
         normComputed = normH1(_range=range,_expr=idExpr - expr( ppNorm.solution().template expr<shape_type::M,shape_type::N>(), symbolsExpr ),
                               _grad_expr= gradExpr - expr( ppNorm.gradSolution().template expr<element_type::nRealDim,shape_type::M>(), symbolsExpr ),
-                              _quad=quadOrderError,_quad1=quad1OrderError );
+                              _quad=quadOrderError,_quad1=quad1OrderError, _worldcomm=res.worldCommPtr() );
     else if ( normType == "SemiH1-error" )
         normComputed = normSemiH1(_range=range,_grad_expr= gradExpr - expr( ppNorm.gradSolution().template expr<element_type::nRealDim,shape_type::M>(), symbolsExpr ),
-                                  _quad=quadOrderError,_quad1=quad1OrderError );
+                                  _quad=quadOrderError,_quad1=quad1OrderError, _worldcomm=res.worldCommPtr() );
     else
         CHECK( false ) << "not a H1 norm type";
     res.setValue( normNameOutput, normComputed );
@@ -96,11 +96,11 @@ measureNormEvaluationL2( RangeType const& range, ExprType const& idExpr, std::st
     else if ( normType == "L2-error" || normType == "L2-relative-error" )
     {
         normComputed = normL2(_range=range,_expr=idExpr - expr( ppNorm.solution().template expr<shape_type::M,shape_type::N>(), symbolsExpr ),
-                              _quad=quadOrderError,_quad1=quad1OrderError );
+                              _quad=quadOrderError,_quad1=quad1OrderError, _worldcomm=res.worldCommPtr() );
         if ( normType == "L2-relative-error" )
         {
             double normSolution = normL2(_range=range,_expr=expr( ppNorm.solution().template expr<shape_type::M,shape_type::N>(), symbolsExpr ),
-                                         _quad=quadOrderError,_quad1=quad1OrderError );
+                                         _quad=quadOrderError,_quad1=quad1OrderError, _worldcomm=res.worldCommPtr() );
             if( normSolution > 1e-10 )
                 normComputed /= normSolution;
         }

@@ -556,7 +556,7 @@ Heat<ConvexType,BasisTemperatureType>::executePostProcessMeasures( double time, 
         auto heatFluxExpr = this->normalHeatFluxExpr( t, ppFlux.isOutward(), symbolsExpr );
         auto heatFluxExprUsed = evalOnFaces( std::move(heatFluxExpr),ppFlux.requiresMarkersConnection(),ppFlux.internalFacesEvalutationType() );
         double heatFlux = integrate(_range=range,
-                                    _expr=heatFluxExprUsed ).evaluate()(0,0);
+                                    _expr=heatFluxExprUsed ).evaluate(true,this->worldCommPtr())(0,0);
         this->postProcessMeasures().setValue("Normal_Heat_Flux_"+ppName,heatFlux);
     }
 

@@ -169,6 +169,11 @@ public :
     ModelMeasuresStorage( ModelMeasuresStorage && ) = default;
     ModelMeasuresStorage( ModelMeasuresStorage const& ) = default;
 
+    //! @return WorldComm
+    worldcomm_ptr_t& worldCommPtr() { return M_worldComm; }
+     //! @return WorldComm
+    worldcomm_ptr_t const& worldCommPtr() const { return M_worldComm; }
+
     //! set value \val related to the key nammed by \key (the measure storage is associated to the default name, i.e. empty string)
     template<typename T>
     void setValue(std::string const& key, T && val ) { this->setValue( "", key, std::forward<T>( val ) ); }

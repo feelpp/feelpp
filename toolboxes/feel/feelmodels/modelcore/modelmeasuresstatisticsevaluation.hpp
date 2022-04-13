@@ -51,7 +51,7 @@ measureStatisticsEvaluationMean( RangeType const& range, ExprType const& expr,
     uint16_type quadOrder = (useQuadOrder)? ppStat.quadOrder() : quad_order_from_expression;
     uint16_type quad1Order = (useQuadOrder)? ppStat.quad1Order() : quad_order_from_expression;
 
-    auto statComputed = mean(_range=range,_expr=expr, _quad=quadOrder,_quad1=quad1Order );
+    auto statComputed = mean(_range=range,_expr=expr, _quad=quadOrder,_quad1=quad1Order, _worldcomm=res.worldCommPtr() );
 
     res.setValue( fmt::format("Statistics_{}_mean", ppStat.name()), statComputed);
 }
@@ -65,7 +65,7 @@ measureStatisticsEvaluationIntegrate( RangeType const& range, ExprType const& ex
     uint16_type quadOrder = (useQuadOrder)? ppStat.quadOrder() : quad_order_from_expression;
     uint16_type quad1Order = (useQuadOrder)? ppStat.quad1Order() : quad_order_from_expression;
 
-    auto statComputed = integrate(_range=range,_expr=expr, _quad=quadOrder,_quad1=quad1Order ).evaluate();
+    auto statComputed = integrate(_range=range,_expr=expr, _quad=quadOrder,_quad1=quad1Order ).evaluate(true,res.worldCommPtr());
 
     res.setValue( fmt::format("Statistics_{}_integrate",ppStat.name()), statComputed);
 }
