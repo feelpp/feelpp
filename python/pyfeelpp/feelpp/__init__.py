@@ -10,6 +10,26 @@ from ._ts import  *
 from ._vf import  *
 from ._models import *
 
+def readcfg(filename):
+    """read a Feel++ config file and get a ConfigParser to manipulate the options
+
+    Args:
+        filename (string): filename of the config file
+
+    Returns:
+        ConfigParser: a ConfigParser data structure containing the properties
+
+    Yields:
+        ConfigParser: 
+    """    
+    from configparser import ConfigParser
+    config = ConfigParser()
+    # use this function to add a 
+    def FeelppHead(fp):
+        yield '[feelpp]\n'
+        yield from fp
+    config.read_file(FeelppHead(open(filename)))
+    return config
 
 def download(data,worldComm):
     """Download remote data file"""
