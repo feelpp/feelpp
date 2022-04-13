@@ -62,6 +62,17 @@ def test_mpi_numpy(init_feelpp):
     for i in range(100):
         assert(data[i] == i)
 
+def test_worldcomm_split(init_feelpp):
+    e = init_feelpp
+    if e.numberOfProcessors() > 1 and e.numberOfProcessors()%2 == 0:
+        w,wglob=e.worldCommPtr().split(2)
+        assert(wglob.globalSize() == e.numberOfProcessors())
+        assert(wglob.localSize() == e.numberOfProcessors()/2)
+        assert(w.localSize() == e.numberOfProcessors()/2)
+        assert(w.globalSize() == e.numberOfProcessors()/2)
+          
+
+
 #def test_config_local(init_feelpp_config_local):
 #    feelpp.Environment.changeRepository(
 #        directory="pyfeelpp-tests/core/test_config_local")
