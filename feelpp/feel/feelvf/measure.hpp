@@ -44,10 +44,10 @@ double measure( Ts && ... v )
     int grainsize = args.get_else( _grainsize, 100 );
     std::string const& partitioner = args.get_else( _partitioner, "auto");
     bool verbose = args.get_else( _verbose, false );
-
+    worldcomm_ptr_t worldcomm = args.get_else( _worldcomm, Environment::worldCommPtr() );
     double meas = integrate( _range=range, _expr=expr, _quad=quad, _quad1=quad1, _geomap=geomap,
                              _use_tbb=use_tbb, _use_harts=use_harts, _grainsize=grainsize,
-                             _partitioner=partitioner, _verbose=verbose ).evaluate(parallel)( 0, 0 );
+                             _partitioner=partitioner, _verbose=verbose ).evaluate(parallel,worldcomm)( 0, 0 );
     DLOG(INFO) << "[mean] measure = " << meas << "\n";
     if ( math::abs(meas) < 1e-13 ) 
       LOG(WARNING) << "Invalid domain measure : " << meas << ", domain range: " << nelements( range ) << "\n";

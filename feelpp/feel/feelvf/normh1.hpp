@@ -50,13 +50,13 @@ double normH1( Ts && ... v )
     int grainsize = args.get_else( _grainsize, 100 );
     std::string const& partitioner = args.get_else( _partitioner, "auto");
     bool verbose = args.get_else( _verbose, false );
-
+    worldcomm_ptr_t worldcomm = args.get_else( _worldcomm, Environment::worldCommPtr() );
     double a = integrate( _range=range, _expr=inner(expr), _quad=quad, _geomap=geomap,
                           _quad1=quad1, _use_tbb=use_tbb, _use_harts=use_harts, _grainsize=grainsize,
-                          _partitioner=partitioner, _verbose=verbose ).evaluate(parallel)( 0, 0 );
+                          _partitioner=partitioner, _verbose=verbose ).evaluate(parallel,worldcomm)( 0, 0 );
     double b = integrate( _range=range, _expr=inner(grad_expr), _quad=quad, _geomap=geomap,
                           _quad1=quad1, _use_tbb=use_tbb, _use_harts=use_harts, _grainsize=grainsize,
-                          _partitioner=partitioner, _verbose=verbose ).evaluate(parallel)( 0, 0 );
+                          _partitioner=partitioner, _verbose=verbose ).evaluate(parallel,worldcomm)( 0, 0 );
     return math::sqrt( a + b );
 }
 
