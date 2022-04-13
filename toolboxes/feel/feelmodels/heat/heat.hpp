@@ -184,20 +184,20 @@ class Heat : public ModelNumerical,
         // execute post-processing
         //___________________________________________________________________________________//
 
-        void exportResults() { this->exportResults( this->currentTime() ); }
-        void exportResults( double time );
+        void exportResults( bool save = true ) { this->exportResults( this->currentTime(), save ); }
+        void exportResults( double time, bool save = true );
 
         template <typename ModelFieldsType,typename SymbolsExpr,typename ExportsExprType>
-        void exportResults( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr, ExportsExprType const& exportsExpr );
+        void exportResults( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr, ExportsExprType const& exportsExpr, bool save = true );
 
         template <typename SymbolsExpr>
-        void exportResults( double time, SymbolsExpr const& symbolsExpr )
+        void exportResults( double time, SymbolsExpr const& symbolsExpr, bool save = true )
             {
-                return this->exportResults( time, this->modelFields(), symbolsExpr, this->exprPostProcessExports( symbolsExpr ) );
+                return this->exportResults( time, this->modelFields(), symbolsExpr, this->exprPostProcessExports( symbolsExpr ), save );
             }
 
         template <typename ModelFieldsType,typename SymbolsExpr, typename ModelMeasuresQuantitiesType>
-        void executePostProcessMeasures( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr, ModelMeasuresQuantitiesType const& mquantities );
+        void executePostProcessMeasures( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr, ModelMeasuresQuantitiesType const& mquantities, bool save = true );
 
         bool checkResults() const override;
         //___________________________________________________________________________________//
@@ -521,23 +521,27 @@ Heat<ConvexType,BasisTemperatureType>::updateInitialConditions( SymbolsExprType 
 template< typename ConvexType, typename BasisTemperatureType>
 template <typename ModelFieldsType, typename SymbolsExpr, typename ExportsExprType>
 void
-Heat<ConvexType,BasisTemperatureType>::exportResults( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr, ExportsExprType const& exportsExpr )
+Heat<ConvexType,BasisTemperatureType>::exportResults( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr, ExportsExprType const& exportsExpr,
+                                                      bool save )
 {
     this->log("Heat","exportResults", "start");
     this->timerTool("PostProcessing").start();
 
     if ( M_exporter && M_exporter->exporterGeometry() == EXPORTER_GEOMETRY_CHANGE ) // TODO mv this code
         M_exporter->defaultTimeSet()->setMesh( this->mesh() );
-    this->executePostProcessExports( M_exporter, time, mfields, symbolsExpr, exportsExpr );
-    this->executePostProcessMeasures( time, mfields, symbolsExpr, this->modelMeasuresQuantities() );
-    this->executePostProcessSave( (this->isStationary())? invalid_uint32_type_value : M_bdfTemperature->iteration(), mfields );
+    if ( save )
+        this->executePostProcessExports( M_exporter, time, mfields, symbolsExpr, exportsExpr );
+    this->executePostProcessMeasures( time, mfields, symbolsExpr, this->modelMeasuresQuantities(), save );
+    if ( save )
+        this->executePostProcessSave( (this->isStationary())? invalid_uint32_type_value : M_bdfTemperature->iteration(), mfields );
 
     this->timerTool("PostProcessing").stop("exportResults");
     if ( this->scalabilitySave() )
     {
         if ( !this->isStationary() )
             this->timerTool("PostProcessing").setAdditionalParameter("time",this->currentTime());
-        this->timerTool("PostProcessing").save();
+        if ( save )
+            this->timerTool("PostProcessing").save();
     }
     this->log("Heat","exportResults", "finish");
 }
@@ -545,7 +549,7 @@ Heat<ConvexType,BasisTemperatureType>::exportResults( double time, ModelFieldsTy
 template< typename ConvexType, typename BasisTemperatureType>
 template <typename ModelFieldsType, typename SymbolsExpr, typename ModelMeasuresQuantitiesType>
 void
-Heat<ConvexType,BasisTemperatureType>::executePostProcessMeasures( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr, ModelMeasuresQuantitiesType const& mquantities )
+Heat<ConvexType,BasisTemperatureType>::executePostProcessMeasures( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr, ModelMeasuresQuantitiesType const& mquantities, bool save )
 {
     auto const& t = mfields.field( FieldTag::temperature(this), "temperature" );
 
@@ -561,7 +565,7 @@ Heat<ConvexType,BasisTemperatureType>::executePostProcessMeasures( double time, 
     }
 
     // execute common post process and save measures
-    super_type::executePostProcessMeasures( time, this->mesh(), M_rangeMeshElements, symbolsExpr, mfields, mquantities );
+    super_type::executePostProcessMeasures( time, this->mesh(), M_rangeMeshElements, symbolsExpr, mfields, mquantities, save );
 }
 
 } // namespace FeelModels

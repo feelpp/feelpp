@@ -203,7 +203,7 @@ class ModelNumerical : virtual public ModelBase,
 
         template <typename MeshType, typename RangeType, typename SymbolsExpr, typename ModelFieldsType, typename ModelQuantitiesType>
         void executePostProcessMeasures( double time, std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements,
-                                         SymbolsExpr const& symbolsExpr, ModelFieldsType const& mFields, ModelQuantitiesType const& mQuantities );
+                                         SymbolsExpr const& symbolsExpr, ModelFieldsType const& mFields, ModelQuantitiesType const& mQuantities, bool save = true );
         template<typename ModelQuantitiesType, typename SymbolsExprType = symbols_expression_empty_t>
         void updatePostProcessMeasuresQuantities( ModelQuantitiesType const& mQuantities, SymbolsExprType const& symbolsExpr = symbols_expression_empty_t{} );
         template <typename MeshType, typename RangeType, typename SymbolsExpr, typename ModelFieldsType>
@@ -607,7 +607,8 @@ ModelNumerical::updatePostProcessExports( std::shared_ptr<ExporterType> exporter
 template <typename MeshType, typename RangeType, typename SymbolsExpr, typename ModelFieldsType, typename ModelQuantitiesType>
 void
 ModelNumerical::executePostProcessMeasures( double time, std::shared_ptr<MeshType> mesh, RangeType const& range,
-                                            SymbolsExpr const& symbolsExpr, ModelFieldsType const& mFields, ModelQuantitiesType const& mQuantities )
+                                            SymbolsExpr const& symbolsExpr, ModelFieldsType const& mFields, ModelQuantitiesType const& mQuantities,
+                                            bool save )
 {
     this->updatePostProcessMeasures( mesh, range, symbolsExpr, mFields, mQuantities );
 
@@ -615,7 +616,8 @@ ModelNumerical::executePostProcessMeasures( double time, std::shared_ptr<MeshTyp
     {
         if ( !this->isStationary() )
             this->postProcessMeasures().setValue( "time", time );
-        this->postProcessMeasures().save( time );
+        if ( save )
+            this->postProcessMeasures().save( time );
         //this->upload( this->postProcessMeasuresIO().pathFile() );
     }
 

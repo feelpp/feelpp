@@ -694,11 +694,11 @@ HEAT_CLASS_TEMPLATE_TYPE::solve()
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
-HEAT_CLASS_TEMPLATE_TYPE::exportResults( double time )
+HEAT_CLASS_TEMPLATE_TYPE::exportResults( double time, bool save )
 {
     auto mfields = this->modelFields();
     auto se = this->symbolsExpr( mfields );
-    this->exportResults( time, mfields, se, this->exprPostProcessExports( se ) );
+    this->exportResults( time, mfields, se, this->exprPostProcessExports( se ), save );
 }
 #if 0
 HEAT_CLASS_TEMPLATE_DECLARATIONS
