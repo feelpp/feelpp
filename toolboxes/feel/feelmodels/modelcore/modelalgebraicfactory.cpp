@@ -966,7 +966,8 @@ ModelAlgebraicFactory::tabulateInformations( nl::json const& jsonInfo, TabulateI
             // create view in order to avoid mpi comm inside petsc
             auto UView = VectorUblas<value_type>::createView( *dataInitialGuess.initialGuess() );
 
-            std::vector<index_type> setDofIds;
+            //std::vector<index_type> setDofIds;
+            std::set<index_type> setDofIds;
             // imposed values by ordering the entities
             std::vector<ElementsType> fromEntities = { MESH_ELEMENTS, MESH_FACES, MESH_EDGES, MESH_POINTS };
             for ( ElementsType entity : fromEntities )
@@ -975,19 +976,21 @@ ModelAlgebraicFactory::tabulateInformations( nl::json const& jsonInfo, TabulateI
                 {
                     auto const& dei = dataInitialGuess.dofEliminationIds( entity );
                     sync( UView, "=", dei );
+#if 0
                     std::merge( setDofIds.begin(), setDofIds.end(),
                                 dei.begin(), dei.end(),
                                 std::inserter(setDofIds, setDofIds.begin()));
+#else
+                    setDofIds.insert( dei.begin(), dei.end() );
+#endif
                 }
             }
 #else
             dataInitialGuess.initialGuess()->close();
 #endif
 
-             if ( M_useSolverPtAP && M_solverPtAP_dofEliminationIds )
-                 std::merge( setDofIds.begin(), setDofIds.end(),
-                             M_solverPtAP_dofEliminationIds->begin(), M_solverPtAP_dofEliminationIds->end(),
-                             std::inserter(setDofIds, setDofIds.begin()));
+            if ( M_useSolverPtAP && M_solverPtAP_dofEliminationIds )
+                setDofIds.insert( M_solverPtAP_dofEliminationIds->begin(), M_solverPtAP_dofEliminationIds->end() );
 
             dofEliminationIds.emplace();
             dofEliminationIds->assign( setDofIds.begin(), setDofIds.end() );
