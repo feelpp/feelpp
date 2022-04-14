@@ -476,6 +476,7 @@ ModelPhysicFluid<Dim>::ModelPhysicFluid( ModelPhysics<Dim> const& mphysics, std:
     :
     super_type( modeling, type, name, mphysics, model ),
     M_equation( "Navier-Stokes" ),
+    M_navierStokesFormulation( NavierStokesFormulation::Convective ),
     M_gravityForceEnabled( boption(_name="use-gravity-force",_prefix=mphysics.prefix(),_vm=mphysics.clovm()) ),
     M_dynamicViscosity( soption(_name="viscosity.law",_prefix=mphysics.prefix(),_vm=mphysics.clovm()) ),
     M_turbulence( this )
@@ -495,6 +496,25 @@ ModelPhysicFluid<Dim>::ModelPhysicFluid( ModelPhysics<Dim> const& mphysics, std:
                 auto const& j_setup_eq = j_setup.at( eqarg );
                 if ( j_setup_eq.is_string() )
                     this->setEquation( j_setup_eq.get<std::string>() );
+            }
+
+        // navier stokes formulation
+        for ( std::string const& formulationarg : { "formulation" } )
+            if ( j_setup.contains( formulationarg ) )
+            {
+                 auto const& formulationStr = j_setup.at( formulationarg ).get<std::string>();
+                 if ( formulationStr == "convective" )
+                     M_navierStokesFormulation = NavierStokesFormulation::Convective;
+                 else if ( formulationStr == "skew-symmetric" )
+                     M_navierStokesFormulation = NavierStokesFormulation::SkewSymmetric;
+                 else if ( formulationStr == "conservative" )
+                     M_navierStokesFormulation = NavierStokesFormulation::Conservative;
+                 else if ( formulationStr == "rotational" )
+                     M_navierStokesFormulation = NavierStokesFormulation::Rotational;
+                 else if ( formulationStr == "emac" || formulationStr == "EMAC" )
+                     M_navierStokesFormulation = NavierStokesFormulation::EMAC;
+                 else
+                     CHECK( false) << "wrong formulation value : " << formulationStr;
             }
 
         // gravity force
@@ -558,6 +578,18 @@ void
 ModelPhysicFluid<Dim>::updateInformationObject( nl::json & p ) const
 {
     super_type::updateInformationObject( p["Generic"] );
+
+    nl::json & pFluid = p["Fluid"];
+    pFluid["equation"] = M_equation;
+    if ( M_equation == "Navier-Stokes" )
+    {
+        std::map<NavierStokesFormulation,std::string> mapFormulation = { { NavierStokesFormulation::Convective, "Convective" },
+                                                                         { NavierStokesFormulation::SkewSymmetric, "Skew-Symmetric" },
+                                                                         { NavierStokesFormulation::Conservative, "Conservative" },
+                                                                         { NavierStokesFormulation::Rotational, "Rotational" },
+                                                                         { NavierStokesFormulation::EMAC, "EMAC" } };
+        pFluid["formulation"] = mapFormulation.at( this->navierStokesFormulation() );
+    }
 }
 template <uint16_type Dim>
 tabulate_informations_ptr_t
@@ -568,6 +600,16 @@ ModelPhysicFluid<Dim>::tabulateInformations( nl::json const& jsonInfo, TabulateI
     {
         super_type::updateTabulateInformationsBasic( jsonInfo.at("Generic"), tabInfo, tabInfoProp );
         super_type::updateTabulateInformationsSubphysics( jsonInfo.at("Generic"), tabInfo, tabInfoProp );
+    }
+    if ( jsonInfo.contains("Fluid") )
+    {
+        auto const& jsonInfoFluid = jsonInfo.at("Fluid");
+        Feel::Table tabInfoFluid;
+        TabulateInformationTools::FromJSON::addKeyToValues( tabInfoFluid, jsonInfoFluid, tabInfoProp, { "equation","formulation" } );
+        tabInfo->add( "", TabulateInformations::New( tabInfoFluid, tabInfoProp ) );
+    }
+    if ( jsonInfo.contains("Generic") )
+    {
         super_type::updateTabulateInformationsParameters( jsonInfo.at("Generic"), tabInfo, tabInfoProp );
     }
     return tabInfo;
