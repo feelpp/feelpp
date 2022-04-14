@@ -232,9 +232,15 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobian( 
                 auto densityExpr = expr( matProps.property("density").template expr<1,1>(), se );
                 if ( BuildNonCstPart )
                 {
+                    auto const& beta_u = this->useSemiImplicitTimeScheme()? mctx.field( FieldTag::velocity_extrapolated(this), "velocity_extrapolated" ) : u;
+                    auto convTerm = Feel::FeelModels::fluidMecConvectiveTermJacobian( u,physicFluidData,beta_u, this->useSemiImplicitTimeScheme() || usePicardLinearization );
+                    bilinearFormVV +=
+                        integrate ( _range=range,
+                                    _expr=timeSteppingScaling*densityExpr*inner( convTerm, id(v) ),
+                                    _geomap=this->geomap() );
+#if 0
                     if ( this->useSemiImplicitTimeScheme() || usePicardLinearization )
                     {
-                        auto const& beta_u = this->useSemiImplicitTimeScheme()? mctx.field( FieldTag::velocity_extrapolated(this), "velocity_extrapolated" ) : u;
                         bilinearFormVV +=
                             integrate ( _range=range,
                                         _expr= timeSteppingScaling*densityExpr*trans( gradt(u)*idv(beta_u) )*id(v),
@@ -269,6 +275,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobian( 
                                             _geomap=this->geomap() );
                         }
                     }
+#endif
                 }
 
                 if ( data.hasVectorInfo( "explicit-part-of-solution" ) && BuildCstPart )
