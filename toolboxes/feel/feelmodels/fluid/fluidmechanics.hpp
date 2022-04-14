@@ -57,7 +57,8 @@
 #include <feel/feelmodels/modelcore/stabilizationglsparameterbase.hpp>
 #include <feel/feelmodels/modelcore/rangedistributionbymaterialname.hpp>
 #include <feel/feelmodels/modelvf/fluidmecstresstensor.hpp>
-#include <feel/feelmodels/modelvf/fluidmecconvection.hpp>
+//#include <feel/feelmodels/modelvf/fluidmecconvection.hpp>
+#include <feel/feelmodels/modelvf/fluidmecconvectiveterm.hpp>
 
 #include <feel/feelmodels/fluid/fluidmechanicsboundaryconditions.hpp>
 
