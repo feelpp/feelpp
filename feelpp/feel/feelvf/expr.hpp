@@ -821,8 +821,8 @@ public:
         std::vector<uint16_type> M_permutation;
     };
 
-    template<typename Geo_t>
-    tensor<Geo_t> evaluator( Geo_t geo ) const { return tensor<Geo_t>( *this, geo ); }
+    template<typename Geo_t,typename ... Basis_t>
+    tensor<Geo_t,Basis_t...> evaluator( Geo_t const& geo,const Basis_t&... basisArg  ) const { return tensor<Geo_t,Basis_t...>( *this, geo, basisArg... ); }
 
     template<typename Geo_t>
     tensorPermutation<Geo_t> evaluatorWithPermutation( Geo_t geo ) const { return tensorPermutation<Geo_t>( *this, geo ); }
