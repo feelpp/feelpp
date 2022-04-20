@@ -18,7 +18,7 @@ jobs:
     needs: activate
     container: ghcr.io/feelpp/feelpp-env:ubuntu-20.04
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         submodules: recursive
     - 
