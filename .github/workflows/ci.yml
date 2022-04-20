@@ -35,7 +35,7 @@ jobs:
     - name: Test feelpp
       run: ctest --preset feelpp -j 2
     - name: Download 
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         # Artifact name
         name: ibat-artifacts
