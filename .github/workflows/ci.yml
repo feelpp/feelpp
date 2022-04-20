@@ -18,7 +18,7 @@ jobs:
     needs: activate
     container: ghcr.io/feelpp/feelpp-env:ubuntu-20.04
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         submodules: recursive
     - 
@@ -35,7 +35,7 @@ jobs:
     - name: Test feelpp
       run: ctest --preset feelpp -j 2
     - name: Download 
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         # Artifact name
         name: ibat-artifacts
