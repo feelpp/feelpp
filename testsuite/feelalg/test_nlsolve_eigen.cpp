@@ -126,8 +126,8 @@ public:
 
     void run() override
         {
-            M_nlsolver->map_dense_residual = boost::bind( &self_type::updateResidual, boost::ref( *this ), _1, _2 );
-            M_nlsolver->map_dense_jacobian = boost::bind( &self_type::updateJacobian, boost::ref( *this ), _1, _2 );
+            M_nlsolver->map_dense_residual = std::bind( &self_type::updateResidual, std::ref( *this ), std::placeholders::_1, std::placeholders::_2 );
+            M_nlsolver->map_dense_jacobian = std::bind( &self_type::updateJacobian, std::ref( *this ), std::placeholders::_1, std::placeholders::_2 );
 
             //initial guess
             vectorN_type solution(2);
@@ -205,8 +205,8 @@ public:
 
     void run() override
         {
-            M_nlsolver->map_dense_residual = boost::bind( &self_type::updateResidual, boost::ref( *this ), _1, _2 );
-            M_nlsolver->map_dense_jacobian = boost::bind( &self_type::updateJacobian, boost::ref( *this ), _1, _2 );
+            M_nlsolver->map_dense_residual = std::bind( &self_type::updateResidual, std::ref( *this ), std::placeholders::_1, std::placeholders::_2 );
+            M_nlsolver->map_dense_jacobian = std::bind( &self_type::updateJacobian, std::ref( *this ), std::placeholders::_1, std::placeholders::_2 );
 
             //initial guess
             vectorN_type solution(2);
