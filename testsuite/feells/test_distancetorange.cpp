@@ -106,14 +106,14 @@ TestDistanceToRange<Dim, Order>::setMesh( std::string const& filename )
         if constexpr ( Dim == 2 )
         {
             if ( filename.empty() )
-                return unitSquare();
+                return unitSquare(0.1);
             else
                 return loadMesh( _mesh = new Mesh<Simplex<2>>( "mesh" ), _filename = filename );
         }
         else if constexpr ( Dim == 3 )
         {
             if ( filename.empty() )
-                return unitCube();
+                return unitCube(0.07);
             else
                 return loadMesh( _mesh = new Mesh<Simplex<3, 1>>( "mesh" ), _filename = filename );
         }
@@ -136,8 +136,22 @@ TestDistanceToRange<Dim, Order>::run()
     exp->addRegions();
 
     // Distance to boundary
-    auto distToBoundary = distanceToRange( Vh, boundaryfaces( mesh ) );
+    auto distToBoundary = distanceToRange( _space=Vh, _range=boundaryfaces( mesh ) );
     exp->add( "distToBoundary", distToBoundary );
+
+    // Narrow-band distance to boundary 
+    auto distToBoundaryNarrowBand = distanceToRange( 
+            _space=Vh, _range=boundaryfaces( mesh ), 
+            _max_distance=3.*mesh->hAverage() );
+    exp->add( "distToBoundaryNarrowBand", distToBoundaryNarrowBand );
+
+    // Distance to boundary with narrow-band and stride
+    auto distToBoundaryNarrowBandStride = distanceToRange( 
+            _space=Vh, _range=boundaryfaces( mesh ), 
+            _max_distance=3.*mesh->hAverage(),
+            _fm_stride=2.*mesh->hAverage()
+            );
+    exp->add( "distToBoundaryNarrowBandStride", distToBoundaryNarrowBandStride );
 
     // Export
     exp->save();
