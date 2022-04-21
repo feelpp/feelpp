@@ -87,6 +87,8 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::initMesh()
     this->log("LevelSetBase","initMesh","start");
     this->timerTool("Constructor").start();
 
+    if ( this->modelProperties().jsonData().contains("Meshes") )
+        super_type::super_model_meshes_type::setup( this->modelProperties().jsonData().at("Meshes"), {this->keyword()} );
     if ( this->doRestart() )
         super_type::super_model_meshes_type::setupRestart( this->keyword() );
     super_type::super_model_meshes_type::updateForUse<mesh_type>( this->keyword() );
