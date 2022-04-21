@@ -32,7 +32,13 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(test_create, T, test_types)
     auto u = Xh->element(ex);
     for( auto const& [name, f] : sm )
     {
-        if( auto ff = std::dynamic_pointer_cast<SensorGaussian<space_type>>(f) )
+        if( auto ff = std::dynamic_pointer_cast<SensorPointwise<space_type>>(f) )
+        {
+            auto n = ff->position();
+            auto vv = ex.evaluate({{"x", n(0)}, {"y", n(1)}})(0,0);
+            auto v = (*ff)(u);
+            BOOST_CHECK_CLOSE(v, vv, 1 );
+        } else if( auto ff = std::dynamic_pointer_cast<SensorGaussian<space_type>>(f) )
         {
             auto n = ff->position();
             auto vv = ex.evaluate({{"x", n(0)}, {"y", n(1)}})(0,0);
@@ -52,7 +58,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(test_create, T, test_types)
     oa << sm;
 
     json j = sm.to_json();
-    BOOST_CHECK_EQUAL(j.size(), 2);
+    BOOST_CHECK_EQUAL(j.size(), 3);
 }
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(test_load, T, test_types)
@@ -77,7 +83,13 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(test_load, T, test_types)
     auto u = Xh->element(ex);
     for( auto const& [name, f] : sm )
     {
-        if( auto ff = std::dynamic_pointer_cast<SensorGaussian<space_type>>(f) )
+        if( auto ff = std::dynamic_pointer_cast<SensorPointwise<space_type>>(f) )
+        {
+            auto n = ff->position();
+            auto vv = ex.evaluate({{"x", n(0)}, {"y", n(1)}})(0,0);
+            auto v = (*ff)(u);
+            BOOST_CHECK_CLOSE(v, vv, 1 );
+        } else if( auto ff = std::dynamic_pointer_cast<SensorGaussian<space_type>>(f) )
         {
             auto n = ff->position();
             auto vv = ex.evaluate({{"x", n(0)}, {"y", n(1)}})(0,0);
@@ -93,7 +105,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(test_load, T, test_types)
     }
 
     json j = sm.to_json();
-    BOOST_CHECK_EQUAL(j.size(), 2);
+    BOOST_CHECK_EQUAL(j.size(), 3);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
