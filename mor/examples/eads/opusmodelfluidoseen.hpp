@@ -199,8 +199,8 @@ OpusModelFluidOseen<SpaceType>::OpusModelFluidOseen( po::variables_map const& vm
     M_F = M_backend->newVector( M_Xh );
     FEELPP_ASSERT( M_F != 0 ).error( "invalid vector" );
 
-    M_backend->nlSolver()->residual = boost::bind( &self_type::updateResidual, boost::ref( *this ), _1, _2 );
-    M_backend->nlSolver()->jacobian = boost::bind( &self_type::updateJacobian, boost::ref( *this ), _1, _2 );
+    M_backend->nlSolver()->residual = std::bind( &self_type::updateResidual, std::ref( *this ), std::placeholders::_1, std::placeholders::_2 );
+    M_backend->nlSolver()->jacobian = std::bind( &self_type::updateJacobian, std::ref( *this ), std::placeholders::_1, std::placeholders::_2 );
 
     // jacobian and residual
     M_jac = oplin_ptrtype( new oplin_type( M_Xh, M_Xh, M_backend ) );
