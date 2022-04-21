@@ -1,3 +1,4 @@
+#include <feel/feeldiscr/sensors.hpp>
 
 namespace Feel
 {
@@ -136,7 +137,7 @@ int ToolboxMor<SpaceType, Options>::mQA( int q )
 template<typename SpaceType, int Options>
 int ToolboxMor<SpaceType, Options>::Nl()
 {
-    auto outputs = M_modelProperties->outputs().ofTypes({"integrate","mean","sensor"});
+    auto outputs = M_modelProperties->outputs().ofTypes({"integrate","mean","sensor","point"});
     return 1 + outputs.size();
 }
 
@@ -157,7 +158,7 @@ int ToolboxMor<SpaceType, Options>::mLQF( int l, int q )
         return this->deim()->size();
     else if( l < Nl() )
     {
-        auto outputs = M_modelProperties->outputs().ofTypes({"integrate","mean","sensor"});
+        auto outputs = M_modelProperties->outputs().ofTypes({"integrate","mean","sensor","point"});
         auto output = std::next(outputs.begin(), l-1)->second;
         if( M_outputDeim[output.name()] )
             return this->deim(M_outputDeim[output.name()])->size();
@@ -220,14 +221,16 @@ ToolboxMor<SpaceType, Options>::assembleForDEIM( parameter_type const& mu, int c
         return M_assembleForDEIM(mu);
     else
     {
-        auto outputs = M_modelProperties->outputs().ofTypes({"integrate","mean","sensor"});
+        auto outputs = M_modelProperties->outputs().ofTypes({"integrate","mean","sensor","point"});
         auto output = outputs[M_outputDeimName[tag-1]];
         if( output.type() == "mean" )
             return assembleOutputMean(mu, output);
         else if( output.type() == "integrate" )
             return assembleOutputIntegrate(mu, output);
-        else //if( output.type() == "sensor" )
+        else if( output.type() == "sensor" )
             return assembleOutputSensor(mu, output);
+        else //if( output.type() == "point" )
+            return assembleOutputPoint(mu, output);
     }
 }
 
@@ -299,35 +302,37 @@ template<typename SpaceType, int Options>
 typename ToolboxMor<SpaceType, Options>::vector_ptrtype
 ToolboxMor<SpaceType, Options>::assembleOutputSensor( parameter_type const& mu, CRBModelOutput& output)
 {
-    auto f = form1(_test=this->Xh);
-    auto u = this->Xh->element();
     if constexpr( is_scalar )
     {
         auto coord = output.coord();
+        node_type n(space_type::nDim);
+        for( int i = 0; i < space_type::nDim; ++i )
+            n(i) = coord[i];
         auto radius = output.radius();
-        if( coord.size() >= nDim )
-        {
-            if constexpr( nDim == 1 )
-            {
-                auto phi = exp( -inner(P()-vec(cst(coord[0])))/(2*std::pow(radius,2)));
-                auto n = integrate(_range=elements(support(this->Xh)), _expr=phi).evaluate()(0,0);
-                f += integrate( _range=elements(support(this->Xh)), _expr=id(u)*phi/n);
-            }
-            else if constexpr( nDim == 2 )
-            {
-                auto phi = exp( -inner(P()-vec(cst(coord[0]),cst(coord[1])))/(2*std::pow(radius,2)));
-                auto n = integrate(_range=elements(support(this->Xh)), _expr=phi).evaluate()(0,0);
-                f += integrate( _range=elements(support(this->Xh)), _expr=id(u)*phi/n);
-            }
-            else if constexpr( nDim == 3 )
-            {
-                auto phi = exp( -inner(P()-vec(cst(coord[0]),cst(coord[1]),cst(coord[2])))/(2*std::pow(radius,2)));
-                auto n = integrate(_range=elements(support(this->Xh)), _expr=phi).evaluate()(0,0);
-                f += integrate( _range=elements(support(this->Xh)), _expr=id(u)*phi/n);
-            }
-        }
+        auto s = std::make_shared<SensorGaussian<space_type>>(this->Xh, n, radius, output.name());
+        return s->containerPtr();
+    } else {
+        auto f = form1(_test=this->Xh);
+        return f.vectorPtr();
     }
-    return f.vectorPtr();    
+}
+
+template<typename SpaceType, int Options>
+typename ToolboxMor<SpaceType, Options>::vector_ptrtype
+ToolboxMor<SpaceType, Options>::assembleOutputPoint( parameter_type const& mu, CRBModelOutput& output)
+{
+    if constexpr( is_scalar )
+    {
+        auto coord = output.coord();
+        node_type n(space_type::nDim);
+        for( int i = 0; i < space_type::nDim; ++i )
+            n(i) = coord[i];
+        auto s = std::make_shared<SensorPointwise<space_type>>(this->Xh, n, output.name());
+        return s->containerPtr();
+    } else {
+        auto f = form1(_test=this->Xh);
+        return f.vectorPtr();
+    }
 }
 
 template<typename SpaceType, int Options>
@@ -526,7 +531,7 @@ ToolboxMor<SpaceType, Options>::updateBetaQ_impl( parameter_type const& mu , dou
         this->M_betaMqm[0][i] = 1;
 
     int output = 1;
-    auto outputs = M_modelProperties->outputs().ofTypes({"integrate","mean","sensor"});
+    auto outputs = M_modelProperties->outputs().ofTypes({"integrate","mean","sensor","point"});
     for( auto const& [name,out] : outputs )
     {
         if( M_outputDeim[name] )
@@ -574,7 +579,7 @@ ToolboxMor<SpaceType, Options>::assembleData()
     auto mu = this->Dmu->min();
 
     // output
-    auto outputs = M_modelProperties->outputs().ofTypes({"integrate","mean","sensor"});
+    auto outputs = M_modelProperties->outputs().ofTypes({"integrate","mean","sensor","point"});
     int output = 1;
     for( auto const& outp : outputs )
     {
@@ -597,6 +602,10 @@ ToolboxMor<SpaceType, Options>::assembleData()
         else if( out.type() == "sensor")
         {
             this->M_Fqm[output][0][0] = assembleOutputSensor(mu, out);
+        }
+        else if( out.type() == "point")
+        {
+            this->M_Fqm[output][0][0] = assembleOutputPoint(mu, out);
         }
         output++;
     }
