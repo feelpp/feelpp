@@ -1,4 +1,4 @@
-import  os
+import os, sys
 import pytest
 import feelpp.mor.generate_basis as g
 
@@ -12,6 +12,8 @@ cases_params, cases_ids = list(zip(*cases))
 
 OUTDIR = "/tmp/test_reduced_basis"
 os.system(f"rm -rf {OUTDIR}")
+CWD = os.getcwd()
+
 
 
 @pytest.mark.parametrize("prefix,case,casefile,dim,time_dependent", cases_params, ids=cases_ids)
@@ -24,7 +26,7 @@ def test_compute_basis_sample(prefix, case, casefile, dim, time_dependent, init_
     g.time_dependant = time_dependent
     g.algo = 0
     g.size = 40
-    g.case = prefix + "/" + case
+    g.case = CWD + "/" + prefix + "/" + case
     g.casefile = casefile
     g.dir = OUTDIR + "/sample"
     g.config_file = ''
@@ -43,7 +45,7 @@ def test_compute_basis_greedy(prefix, case, casefile, dim, time_dependent, init_
     g.time_dependant = time_dependent
     g.algo = 1
     g.size = 60
-    g.case = prefix + "/" + case
+    g.case = CWD + "/" + prefix + "/" + case
     g.casefile = casefile
     g.dir = OUTDIR + "/greedy"
     g.config_file = ''
@@ -63,7 +65,7 @@ def test_compute_basis_POD(prefix, case, casefile, dim, time_dependent, init_fee
     g.time_dependant = time_dependent
     g.algo = 2
     g.size = 15
-    g.case = prefix + "/" + case
+    g.case = CWD + "/" + prefix + "/" + case
     g.casefile = casefile
     g.dir = OUTDIR + "/sample"
     g.config_file = ''

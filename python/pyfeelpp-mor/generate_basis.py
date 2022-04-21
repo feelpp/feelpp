@@ -71,6 +71,7 @@ def generate_basis():
         print("Generation of the reduced basis")
         print("           Config-file :", f"{case}/{casefile}")
         print("Data will be stored in :", dir)
+        print("Current working directory is ", os.getcwd())
         print("===============================================")
 
 
