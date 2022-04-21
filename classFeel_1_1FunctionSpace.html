@@ -440,18 +440,12 @@ template&lt;int i&gt; </td></tr>
 <tr class="memitem:a3741a1a67508d071972896c4fa0510ad"><td class="memItemLeft" align="right" valign="top"><a id="a3741a1a67508d071972896c4fa0510ad"></a>
 typedef <a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">Element</a>&lt; value_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>element_type</b></td></tr>
 <tr class="separator:a3741a1a67508d071972896c4fa0510ad"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aeec0289b018631e3d626a3745ca37531"><td class="memItemLeft" align="right" valign="top"><a id="aeec0289b018631e3d626a3745ca37531"></a>
-typedef <a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">Element</a>&lt; value_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>real_element_type</b></td></tr>
-<tr class="separator:aeec0289b018631e3d626a3745ca37531"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab596e0128acd0d45fc3e587161411184"><td class="memItemLeft" align="right" valign="top"><a id="ab596e0128acd0d45fc3e587161411184"></a>
-typedef <a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">Element</a>&lt; value_type, typename <a class="el" href="classVectorUblas.html">VectorUblas</a>&lt; value_type &gt;::shallow_array_adaptor::type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>element_external_storage_type</b></td></tr>
-<tr class="separator:ab596e0128acd0d45fc3e587161411184"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1c27cf1f15da81d7818d79b0fd4abcaa"><td class="memItemLeft" align="right" valign="top"><a id="a1c27cf1f15da81d7818d79b0fd4abcaa"></a>
 typedef std::shared_ptr&lt; <a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">element_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>element_ptrtype</b></td></tr>
 <tr class="separator:a1c27cf1f15da81d7818d79b0fd4abcaa"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0cb06d8c12133bb891ded1b0a17f40e4"><td class="memItemLeft" align="right" valign="top"><a id="a0cb06d8c12133bb891ded1b0a17f40e4"></a>
-typedef std::shared_ptr&lt; <a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">element_external_storage_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>element_external_storage_ptrtype</b></td></tr>
-<tr class="separator:a0cb06d8c12133bb891ded1b0a17f40e4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aeec0289b018631e3d626a3745ca37531"><td class="memItemLeft" align="right" valign="top"><a id="aeec0289b018631e3d626a3745ca37531"></a>
+typedef <a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">Element</a>&lt; value_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>real_element_type</b></td></tr>
+<tr class="separator:aeec0289b018631e3d626a3745ca37531"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a57dd19c9aed4eac6d4a479ce9f1b5f82"><td class="memItemLeft" align="right" valign="top"><a id="a57dd19c9aed4eac6d4a479ce9f1b5f82"></a>
 typedef std::map&lt; size_type, std::vector&lt; size_type &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>proc_dist_map_type</b></td></tr>
 <tr class="separator:a57dd19c9aed4eac6d4a479ce9f1b5f82"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -686,12 +680,12 @@ std::shared_ptr&lt; IndexSplit &gt; const  &amp;&#160;</td><td class="memItemRig
 <tr class="memitem:a97f81d244e85ae7884596760ef20881e"><td class="memTemplParams" colspan="2">template&lt;typename ExprT &gt; </td></tr>
 <tr class="memitem:a97f81d244e85ae7884596760ef20881e"><td class="memTemplItemLeft" align="right" valign="top">element_ptrtype&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classFeel_1_1FunctionSpace.html#a97f81d244e85ae7884596760ef20881e">elementPtr</a> (<a class="el" href="classint.html">int</a> r, ExprT e, std::string const &amp;name=&quot;u&quot;, typename std::enable_if&lt; std::is_base_of&lt; <a class="el" href="classFeel_1_1ExprBase.html">ExprBase</a>, ExprT &gt;::value &gt;::type *=0)</td></tr>
 <tr class="separator:a97f81d244e85ae7884596760ef20881e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aaa4c732c40cb9d923fdfa8b1d728da3a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">Element</a>&lt; value_type, typename <a class="el" href="classVectorUblas.html">VectorUblas</a>&lt; value_type &gt;::shallow_array_adaptor::type &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FunctionSpace.html#aaa4c732c40cb9d923fdfa8b1d728da3a">element</a> (std::shared_ptr&lt; <a class="el" href="classFeel_1_1Vector.html">Vector</a>&lt; value_type &gt; &gt; const &amp;vec, <a class="el" href="classint.html">int</a> blockIdStart=0)</td></tr>
-<tr class="separator:aaa4c732c40cb9d923fdfa8b1d728da3a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af5fb3bc8bad8c264d1de76cb8a56416f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">element_external_storage_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FunctionSpace.html#af5fb3bc8bad8c264d1de76cb8a56416f">element</a> (<a class="el" href="classFeel_1_1Vector.html">Vector</a>&lt; value_type &gt; const &amp;vec, <a class="el" href="classint.html">int</a> blockIdStart=0)</td></tr>
-<tr class="separator:af5fb3bc8bad8c264d1de76cb8a56416f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7402dd116cc150d0dbb0b17f620897fa"><td class="memItemLeft" align="right" valign="top">element_external_storage_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FunctionSpace.html#a7402dd116cc150d0dbb0b17f620897fa">elementPtr</a> (<a class="el" href="classFeel_1_1Vector.html">Vector</a>&lt; value_type &gt; const &amp;vec, <a class="el" href="classint.html">int</a> blockIdStart=0)</td></tr>
-<tr class="separator:a7402dd116cc150d0dbb0b17f620897fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afc79c69228c411293e3147d810b5d4bc"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">element_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FunctionSpace.html#afc79c69228c411293e3147d810b5d4bc">element</a> (std::shared_ptr&lt; <a class="el" href="classFeel_1_1Vector.html">Vector</a>&lt; value_type &gt; &gt; const &amp;vec, <a class="el" href="classint.html">int</a> blockIdStart=0)</td></tr>
+<tr class="separator:afc79c69228c411293e3147d810b5d4bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6afd9097d8f58dcce29b5e423245bcc0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">element_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FunctionSpace.html#a6afd9097d8f58dcce29b5e423245bcc0">element</a> (<a class="el" href="classFeel_1_1Vector.html">Vector</a>&lt; value_type &gt; const &amp;vec, <a class="el" href="classint.html">int</a> blockIdStart=0)</td></tr>
+<tr class="separator:a6afd9097d8f58dcce29b5e423245bcc0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af54e965f6ac305fe89c028a0ea33276c"><td class="memItemLeft" align="right" valign="top">element_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FunctionSpace.html#af54e965f6ac305fe89c028a0ea33276c">elementPtr</a> (<a class="el" href="classFeel_1_1Vector.html">Vector</a>&lt; value_type &gt; const &amp;vec, <a class="el" href="classint.html">int</a> blockIdStart=0)</td></tr>
+<tr class="separator:af54e965f6ac305fe89c028a0ea33276c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5ffd7ab6be49fdf2f8b109a8f9645b29"><td class="memTemplParams" colspan="2"><a id="a5ffd7ab6be49fdf2f8b109a8f9645b29"></a>
 template&lt;int i&gt; </td></tr>
 <tr class="memitem:a5ffd7ab6be49fdf2f8b109a8f9645b29"><td class="memTemplItemLeft" align="right" valign="top">mpl::at_c&lt; functionspace_vector_type, i &gt;::type&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classFeel_1_1FunctionSpace.html#a5ffd7ab6be49fdf2f8b109a8f9645b29">functionSpace</a> ()</td></tr>
@@ -1261,8 +1255,8 @@ template&lt;typename ExprT &gt; </div>
 
 </div>
 </div>
-<a id="aaa4c732c40cb9d923fdfa8b1d728da3a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aaa4c732c40cb9d923fdfa8b1d728da3a">&#9670;&nbsp;</a></span>element() <span class="overload">[2/4]</span></h2>
+<a id="afc79c69228c411293e3147d810b5d4bc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afc79c69228c411293e3147d810b5d4bc">&#9670;&nbsp;</a></span>element() <span class="overload">[2/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1270,7 +1264,7 @@ template&lt;typename ExprT &gt; </div>
 template&lt;typename A0 , typename A1  = parameter::void_, typename A2  = parameter::void_, typename A3  = parameter::void_, typename A4  = parameter::void_&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">Element</a>&lt; value_type, typename <a class="el" href="classVectorUblas.html">VectorUblas</a>&lt;value_type&gt;::shallow_array_adaptor::type &gt; <a class="el" href="classFeel_1_1FunctionSpace.html">Feel::FunctionSpace</a>&lt; A0, A1, A2, A3, A4 &gt;::element </td>
+          <td class="memname"><a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">element_type</a> <a class="el" href="classFeel_1_1FunctionSpace.html">Feel::FunctionSpace</a>&lt; A0, A1, A2, A3, A4 &gt;::element </td>
           <td>(</td>
           <td class="paramtype">std::shared_ptr&lt; <a class="el" href="classFeel_1_1Vector.html">Vector</a>&lt; value_type &gt; &gt; const &amp;&#160;</td>
           <td class="paramname"><em>vec</em>, </td>
@@ -1330,8 +1324,8 @@ template&lt;typename A0 , typename A1  = parameter::void_, typename A2  = parame
 
 </div>
 </div>
-<a id="af5fb3bc8bad8c264d1de76cb8a56416f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af5fb3bc8bad8c264d1de76cb8a56416f">&#9670;&nbsp;</a></span>element() <span class="overload">[4/4]</span></h2>
+<a id="a6afd9097d8f58dcce29b5e423245bcc0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6afd9097d8f58dcce29b5e423245bcc0">&#9670;&nbsp;</a></span>element() <span class="overload">[4/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1339,7 +1333,7 @@ template&lt;typename A0 , typename A1  = parameter::void_, typename A2  = parame
 template&lt;typename A0 , typename A1  = parameter::void_, typename A2  = parameter::void_, typename A3  = parameter::void_, typename A4  = parameter::void_&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">element_external_storage_type</a> <a class="el" href="classFeel_1_1FunctionSpace.html">Feel::FunctionSpace</a>&lt; A0, A1, A2, A3, A4 &gt;::element </td>
+          <td class="memname"><a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">element_type</a> <a class="el" href="classFeel_1_1FunctionSpace.html">Feel::FunctionSpace</a>&lt; A0, A1, A2, A3, A4 &gt;::element </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classFeel_1_1Vector.html">Vector</a>&lt; value_type &gt; const &amp;&#160;</td>
           <td class="paramname"><em>vec</em>, </td>
@@ -1503,8 +1497,8 @@ template&lt;typename A0 , typename A1  = parameter::void_, typename A2  = parame
 
 </div>
 </div>
-<a id="a7402dd116cc150d0dbb0b17f620897fa"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7402dd116cc150d0dbb0b17f620897fa">&#9670;&nbsp;</a></span>elementPtr() <span class="overload">[4/4]</span></h2>
+<a id="af54e965f6ac305fe89c028a0ea33276c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af54e965f6ac305fe89c028a0ea33276c">&#9670;&nbsp;</a></span>elementPtr() <span class="overload">[4/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1512,7 +1506,7 @@ template&lt;typename A0 , typename A1  = parameter::void_, typename A2  = parame
 template&lt;typename A0 , typename A1  = parameter::void_, typename A2  = parameter::void_, typename A3  = parameter::void_, typename A4  = parameter::void_&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">element_external_storage_ptrtype <a class="el" href="classFeel_1_1FunctionSpace.html">Feel::FunctionSpace</a>&lt; A0, A1, A2, A3, A4 &gt;::elementPtr </td>
+          <td class="memname">element_ptrtype <a class="el" href="classFeel_1_1FunctionSpace.html">Feel::FunctionSpace</a>&lt; A0, A1, A2, A3, A4 &gt;::elementPtr </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classFeel_1_1Vector.html">Vector</a>&lt; value_type &gt; const &amp;&#160;</td>
           <td class="paramname"><em>vec</em>, </td>

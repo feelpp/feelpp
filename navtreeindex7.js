@@ -1,9 +1,5 @@
 var NAVTREEINDEX7 =
 {
-"classFeel_1_1FeelModels_1_1FluidMechanicsBoundaryConditions_1_1VelocityImposed.html":[6,1,1,4,14,7],
-"classFeel_1_1FeelModels_1_1FluidMechanicsBoundaryConditions_1_1VelocityImposed.html#a3b166f68abf3a2c724baa9a3fd877014":[6,1,1,4,14,7,0],
-"classFeel_1_1FeelModels_1_1FluidMechanicsBoundaryConditions_1_1VelocityImposed.html#a62e17cdbaaf2f2dc044124e57e7afb30":[6,1,1,4,14,7,3],
-"classFeel_1_1FeelModels_1_1FluidMechanicsBoundaryConditions_1_1VelocityImposed.html#a787c3e9b38ddbfc39386f72b90228c57":[6,1,1,4,14,7,1],
 "classFeel_1_1FeelModels_1_1FluidMechanicsBoundaryConditions_1_1VelocityImposed.html#ac1b1204d6e37fb811381c0a95a188c39":[6,1,1,4,14,7,2],
 "classFeel_1_1FeelModels_1_1FluidMechanicsMaterialProperties.html":[6,1,1,4,15],
 "classFeel_1_1FeelModels_1_1FluidMechanicsMaterialProperties.html#a10e35c05577ffc5de37e5fd17c72f02c":[6,1,1,4,15,23],
@@ -249,5 +245,9 @@ var NAVTREEINDEX7 =
 "classFeel_1_1FeelModels_1_1FluidMechanics_1_1NBodyArticulated.html#aa6ddccf286f2e7f8eddbb4e610581a6a":[5,11,1,6,12],
 "classFeel_1_1FeelModels_1_1FluidMechanics_1_1NBodyArticulated.html#aa71d8bbced4fc3de405cab871f67c83e":[5,11,1,6,41],
 "classFeel_1_1FeelModels_1_1FluidMechanics_1_1NBodyArticulated.html#aabd52011eb0887e648fa5172604abfca":[5,11,1,6,22],
-"classFeel_1_1FeelModels_1_1FluidMechanics_1_1NBodyArticulated.html#aad6e9118b003fdb54168682af21f23f0":[5,11,1,6,42]
+"classFeel_1_1FeelModels_1_1FluidMechanics_1_1NBodyArticulated.html#aad6e9118b003fdb54168682af21f23f0":[5,11,1,6,42],
+"classFeel_1_1FeelModels_1_1FluidMechanics_1_1NBodyArticulated.html#ab8793180c96d09fadadfe1eb71c95800":[5,11,1,6,9],
+"classFeel_1_1FeelModels_1_1FluidMechanics_1_1NBodyArticulated.html#abcfb1f36b131fb97e3947eb6dbfaaa75":[5,11,1,6,35],
+"classFeel_1_1FeelModels_1_1FluidMechanics_1_1NBodyArticulated.html#ac6d24d93c06d7b748d1284132e5de0b7":[5,11,1,6,36],
+"classFeel_1_1FeelModels_1_1FluidMechanics_1_1NBodyArticulated.html#ad0e96407826069f925344484c80d1f94":[5,11,1,6,1]
 };

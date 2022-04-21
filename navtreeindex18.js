@@ -1,16 +1,5 @@
 var NAVTREEINDEX18 =
 {
-"classFeel_1_1GeoEntity.html#a0bea83d2b18f365652df778f8516f148":[6,1,1,94,51],
-"classFeel_1_1GeoEntity.html#a0bedd853e8e15491d412257c060cc691":[6,1,1,94,99],
-"classFeel_1_1GeoEntity.html#a0d6903752eaff6d243816e02ecd0bdec":[6,1,1,94,70],
-"classFeel_1_1GeoEntity.html#a0ef1925d93428763db630de135c4a079":[6,1,1,94,11],
-"classFeel_1_1GeoEntity.html#a0f822aee70e3ffc826610e191a1e3fbb":[6,1,1,94,107],
-"classFeel_1_1GeoEntity.html#a1076fa1336463ad93b988892c7b93ece":[6,1,1,94,83],
-"classFeel_1_1GeoEntity.html#a1524e534d59e06f55a25fc3252b10ebe":[6,1,1,94,48],
-"classFeel_1_1GeoEntity.html#a1826fbf9d2d0cc411e8b009eab783f6c":[6,1,1,94,79],
-"classFeel_1_1GeoEntity.html#a1914c507b914dfe4bf58687c2dead930":[6,1,1,94,32],
-"classFeel_1_1GeoEntity.html#a19aba15de6dd9ae216c0a4d71d13edb0":[6,1,1,94,108],
-"classFeel_1_1GeoEntity.html#a1f82375cab830fa9674d815c53d7f871":[6,1,1,94,106],
 "classFeel_1_1GeoEntity.html#a237294b1b88bab75d7f1cd85d521bf33":[6,1,1,94,105],
 "classFeel_1_1GeoEntity.html#a29623bed3267afa25907549173b3b034":[6,1,1,94,117],
 "classFeel_1_1GeoEntity.html#a29f384a4a06430980c347258cc02e0e8":[6,1,1,94,20],
@@ -249,5 +238,16 @@ var NAVTREEINDEX18 =
 "classFeel_1_1GeoNDCommon.html#accd09bbe5e600760378ca02c74cb38ff":[5,1,5,1],
 "classFeel_1_1GeoNDCommon.html#ada05872e2e962b7fcf2410dbb2a42426":[5,1,5,10],
 "classFeel_1_1GeoNDCommon.html#aea6c35cc23ee4b61d95465e8c6d22003":[5,1,5,13],
-"classFeel_1_1GeoNDCommon.html#aeac5a06084184a3e496a1db862668d25":[5,1,5,0]
+"classFeel_1_1GeoNDCommon.html#aeac5a06084184a3e496a1db862668d25":[5,1,5,0],
+"classFeel_1_1GeoNDMeasuresStorage.html":[6,1,1,99],
+"classFeel_1_1GeoNDMeasuresStorage.html#a06763406731007e577193a1950fc5409":[6,1,1,99,3],
+"classFeel_1_1GeoNDMeasuresStorage.html#a0adb4ecf23e0b4c59ac1093298ec4e54":[6,1,1,99,6],
+"classFeel_1_1GeoNDMeasuresStorage.html#a0d0d50be7eb777083418647032ad0571":[6,1,1,99,5],
+"classFeel_1_1GeoNDMeasuresStorage.html#a215198d33373aa74a8fb859aa399df8b":[6,1,1,99,8],
+"classFeel_1_1GeoNDMeasuresStorage.html#a543a1b1fdfa8c13e30e9f5eee037821b":[6,1,1,99,1],
+"classFeel_1_1GeoNDMeasuresStorage.html#a7d2514eb0130c509cfca27607df02aab":[6,1,1,99,2],
+"classFeel_1_1GeoNDMeasuresStorage.html#aa4d1bccac894efe9c4a6f8e141aac65d":[6,1,1,99,0],
+"classFeel_1_1GeoNDMeasuresStorage.html#aab7c0b391548eef6f25c0ab368939fb5":[6,1,1,99,7],
+"classFeel_1_1GeoNDMeasuresStorage.html#ab27a318446cb18fc87285e6e08c90305":[6,1,1,99,4],
+"classFeel_1_1GeoNDNoMeasuresStorage.html":[6,1,1,100]
 };

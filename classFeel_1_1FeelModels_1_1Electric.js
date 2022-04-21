@@ -62,7 +62,6 @@ var classFeel_1_1FeelModels_1_1Electric =
     [ "nRealDim", "classFeel_1_1FeelModels_1_1Electric.html#a6a420d3a31db7dcb0b14d28eceb87768", null ],
     [ "basis_electricpotential_type", "classFeel_1_1FeelModels_1_1Electric.html#ae2ba685063b45af9d1537692eb360dc3", null ],
     [ "convex_type", "classFeel_1_1FeelModels_1_1Electric.html#a304674ab29c4e1e466fa994d7d2fb585", null ],
-    [ "element_electricpotential_external_storage_type", "classFeel_1_1FeelModels_1_1Electric.html#a5722085665fc715eedeeb48ef4555195", null ],
     [ "element_electricpotential_ptrtype", "classFeel_1_1FeelModels_1_1Electric.html#a812faed19de2c5dc7a4630697fb43ff3", null ],
     [ "element_electricpotential_type", "classFeel_1_1FeelModels_1_1Electric.html#a361e8558c92d796087ac81de8ba63625", null ],
     [ "export_ptrtype", "classFeel_1_1FeelModels_1_1Electric.html#aff0fe0783d293a45d7bd8705d7ec5f76", null ],

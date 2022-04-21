@@ -196,9 +196,9 @@ typedef <a class="el" href="classFeel_1_1FunctionSpace.html">functionspace_type:
 <tr class="memitem:a89f7c426cc783cc9601e9b15f2013970"><td class="memItemLeft" align="right" valign="top"><a id="a89f7c426cc783cc9601e9b15f2013970"></a>
 typedef functionspace_type::component_functionspace_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>component_functionspace_ptrtype</b></td></tr>
 <tr class="separator:a89f7c426cc783cc9601e9b15f2013970"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5431a0878aea6c84b4e9545c47945198"><td class="memItemLeft" align="right" valign="top"><a id="a5431a0878aea6c84b4e9545c47945198"></a>
-typedef component_functionspace_type::template <a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">Element</a>&lt; T, typename Cont::slice::type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>component_type</b></td></tr>
-<tr class="separator:a5431a0878aea6c84b4e9545c47945198"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adc7464ec9f08e631c5773e67e744f20a"><td class="memItemLeft" align="right" valign="top"><a id="adc7464ec9f08e631c5773e67e744f20a"></a>
+typedef component_functionspace_type::template <a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">Element</a>&lt; T, Cont &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>component_type</b></td></tr>
+<tr class="separator:adc7464ec9f08e631c5773e67e744f20a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0503cd364cfb9418c74f8ab0e4afc3a5"><td class="memItemLeft" align="right" valign="top"><a id="a0503cd364cfb9418c74f8ab0e4afc3a5"></a>
 typedef mesh_type::element_type&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#a0503cd364cfb9418c74f8ab0e4afc3a5">geoelement_type</a></td></tr>
 <tr class="memdesc:a0503cd364cfb9418c74f8ab0e4afc3a5"><td class="mdescLeft">&#160;</td><td class="mdescRight">geometry typedef <br /></td></tr>
@@ -307,6 +307,9 @@ template&lt;typename VectorExpr &gt; </td></tr>
 <tr class="separator:a7de370565cbf440d8d124353b3d35024"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a29c18de8d2b095d04312a583dd9ce86c"><td class="memItemLeft" align="right" valign="top">super &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#a29c18de8d2b095d04312a583dd9ce86c">container</a> ()</td></tr>
 <tr class="separator:a29c18de8d2b095d04312a583dd9ce86c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:add9237bd1e7e80bef79b46f346184786"><td class="memItemLeft" align="right" valign="top"><a id="add9237bd1e7e80bef79b46f346184786"></a>
+value_type&#160;</td><td class="memItemRight" valign="bottom"><b>globalValue</b> (size_type i) const</td></tr>
+<tr class="separator:add9237bd1e7e80bef79b46f346184786"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abdac810ae98cd82e98863f569f12fdc5"><td class="memTemplParams" colspan="2">template&lt;ComponentType THECOMP&gt; </td></tr>
 <tr class="memitem:abdac810ae98cd82e98863f569f12fdc5"><td class="memTemplItemLeft" align="right" valign="top">component_type&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#abdac810ae98cd82e98863f569f12fdc5">comp</a> ()</td></tr>
 <tr class="memdesc:abdac810ae98cd82e98863f569f12fdc5"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the component of the element  <a href="classFeel_1_1FunctionSpace_1_1Element.html#abdac810ae98cd82e98863f569f12fdc5">More...</a><br /></td></tr>
@@ -314,21 +317,9 @@ template&lt;typename VectorExpr &gt; </td></tr>
 <tr class="memitem:a76ea5e7bad5607fd6ad891d8c4d9aa8e"><td class="memItemLeft" align="right" valign="top">component_type&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#a76ea5e7bad5607fd6ad891d8c4d9aa8e">comp</a> (ComponentType i, ComponentType j=ComponentType::NO_COMPONENT) const</td></tr>
 <tr class="memdesc:a76ea5e7bad5607fd6ad891d8c4d9aa8e"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the component of the element const version  <a href="classFeel_1_1FunctionSpace_1_1Element.html#a76ea5e7bad5607fd6ad891d8c4d9aa8e">More...</a><br /></td></tr>
 <tr class="separator:a76ea5e7bad5607fd6ad891d8c4d9aa8e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa360dd9dd9bb8402d8744ba608dce90c"><td class="memItemLeft" align="right" valign="top"><a id="aa360dd9dd9bb8402d8744ba608dce90c"></a>
-component_type&#160;</td><td class="memItemRight" valign="bottom"><b>comp</b> (ComponentType i, ComponentType j, mpl::bool_&lt; true &gt;) const</td></tr>
-<tr class="separator:aa360dd9dd9bb8402d8744ba608dce90c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a54f4d32d052efb366ef28a55de1363c7"><td class="memItemLeft" align="right" valign="top"><a id="a54f4d32d052efb366ef28a55de1363c7"></a>
-component_type&#160;</td><td class="memItemRight" valign="bottom"><b>comp</b> (ComponentType i, ComponentType j, mpl::bool_&lt; false &gt;) const</td></tr>
-<tr class="separator:a54f4d32d052efb366ef28a55de1363c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a974e4eac6e71f37f9b51b3affb0d3ade"><td class="memItemLeft" align="right" valign="top">component_type&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#a974e4eac6e71f37f9b51b3affb0d3ade">comp</a> (ComponentType i, ComponentType j=ComponentType::NO_COMPONENT)</td></tr>
-<tr class="memdesc:a974e4eac6e71f37f9b51b3affb0d3ade"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the component of the element  <a href="classFeel_1_1FunctionSpace_1_1Element.html#a974e4eac6e71f37f9b51b3affb0d3ade">More...</a><br /></td></tr>
+<tr class="memitem:a974e4eac6e71f37f9b51b3affb0d3ade"><td class="memItemLeft" align="right" valign="top"><a id="a974e4eac6e71f37f9b51b3affb0d3ade"></a>
+component_type&#160;</td><td class="memItemRight" valign="bottom"><b>comp</b> (ComponentType i, ComponentType j=ComponentType::NO_COMPONENT)</td></tr>
 <tr class="separator:a974e4eac6e71f37f9b51b3affb0d3ade"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1dfb8421ad775e01d808e45919f2f295"><td class="memItemLeft" align="right" valign="top"><a id="a1dfb8421ad775e01d808e45919f2f295"></a>
-component_type&#160;</td><td class="memItemRight" valign="bottom"><b>comp</b> (ComponentType i, ComponentType j, mpl::bool_&lt; true &gt;)</td></tr>
-<tr class="separator:a1dfb8421ad775e01d808e45919f2f295"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a909ffe356bd23120838eec21f4750723"><td class="memItemLeft" align="right" valign="top"><a id="a909ffe356bd23120838eec21f4750723"></a>
-component_type&#160;</td><td class="memItemRight" valign="bottom"><b>comp</b> (ComponentType i, ComponentType j, mpl::bool_&lt; false &gt;)</td></tr>
-<tr class="separator:a909ffe356bd23120838eec21f4750723"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4653115c76b7f5ace81626bb080dde22"><td class="memItemLeft" align="right" valign="top"><a id="a4653115c76b7f5ace81626bb080dde22"></a>
 component_type&#160;</td><td class="memItemRight" valign="bottom"><b>operator[]</b> (ComponentType i)</td></tr>
 <tr class="separator:a4653115c76b7f5ace81626bb080dde22"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -994,9 +985,9 @@ Public Types</h2></td></tr>
 <tr class="memitem:abc596c66fae071c5dbd8032415eb3401"><td class="memItemLeft" align="right" valign="top"><a id="abc596c66fae071c5dbd8032415eb3401"></a>
 typedef mpl::transform&lt; bases_list, <a class="el" href="structFeel_1_1FunctionSpace_1_1Element_1_1AddOffContainer.html">AddOffContainer</a>&lt; mpl::_1 &gt;, mpl::back_inserter&lt; fusion::vector&lt;&gt; &gt; &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>container_vector_type</b></td></tr>
 <tr class="separator:abc596c66fae071c5dbd8032415eb3401"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af3c05a85e646ddcad6084e9d787ea258"><td class="memItemLeft" align="right" valign="top"><a id="af3c05a85e646ddcad6084e9d787ea258"></a>
-typedef Cont ::range::type&#160;</td><td class="memItemRight" valign="bottom"><b>ct_type</b></td></tr>
-<tr class="separator:af3c05a85e646ddcad6084e9d787ea258"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5afa5c25c5d9d4fb43147f2613fcdf00"><td class="memItemLeft" align="right" valign="top"><a id="a5afa5c25c5d9d4fb43147f2613fcdf00"></a>
+typedef Cont&#160;</td><td class="memItemRight" valign="bottom"><b>ct_type</b></td></tr>
+<tr class="separator:a5afa5c25c5d9d4fb43147f2613fcdf00"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad8f99269fdb8d0bcc4afdb84fc50b63f"><td class="memItemLeft" align="right" valign="top"><a id="ad8f99269fdb8d0bcc4afdb84fc50b63f"></a>
 typedef Eigen::Matrix&lt; value_type, Eigen::Dynamic, 1 &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>eigen_type</b></td></tr>
 <tr class="separator:ad8f99269fdb8d0bcc4afdb84fc50b63f"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1124,7 +1115,7 @@ static constexpr <a class="el" href="classint.html">int</a>&#160;</td><td class=
 </table>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="abdac810ae98cd82e98863f569f12fdc5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abdac810ae98cd82e98863f569f12fdc5">&#9670;&nbsp;</a></span>comp() <span class="overload">[1/3]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#abdac810ae98cd82e98863f569f12fdc5">&#9670;&nbsp;</a></span>comp() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1149,49 +1140,8 @@ template&lt;ComponentType THECOMP&gt; </div>
 
 </div>
 </div>
-<a id="a974e4eac6e71f37f9b51b3affb0d3ade"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a974e4eac6e71f37f9b51b3affb0d3ade">&#9670;&nbsp;</a></span>comp() <span class="overload">[2/3]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename A0 , typename A1  = parameter::void_, typename A2  = parameter::void_, typename A3  = parameter::void_, typename A4  = parameter::void_&gt; </div>
-<div class="memtemplate">
-template&lt;typename T  = double, typename Cont  = VectorUblas&lt;T&gt;&gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">component_type <a class="el" href="classFeel_1_1FunctionSpace.html">Feel::FunctionSpace</a>&lt; A0, A1, A2, A3, A4 &gt;::<a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">Element</a>&lt; T, Cont &gt;::comp </td>
-          <td>(</td>
-          <td class="paramtype">ComponentType&#160;</td>
-          <td class="paramname"><em>i</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">ComponentType&#160;</td>
-          <td class="paramname"><em>j</em> = <code>ComponentType::NO_COMPONENT</code>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>get the component of the element </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">i</td><td>component id </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>the i-th component of the element </dd></dl>
-
-</div>
-</div>
 <a id="a76ea5e7bad5607fd6ad891d8c4d9aa8e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a76ea5e7bad5607fd6ad891d8c4d9aa8e">&#9670;&nbsp;</a></span>comp() <span class="overload">[3/3]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a76ea5e7bad5607fd6ad891d8c4d9aa8e">&#9670;&nbsp;</a></span>comp() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
