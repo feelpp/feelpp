@@ -260,6 +260,7 @@ class FEELPP_EXPORT ToolboxMor : public ModelCrbBase< ParameterSpace<>, SpaceTyp
     vector_ptrtype assembleOutputMean( parameter_type const& mu, CRBModelOutput& output);
     vector_ptrtype assembleOutputIntegrate( parameter_type const& mu, CRBModelOutput& output);
     vector_ptrtype assembleOutputSensor( parameter_type const& mu, CRBModelOutput& output);
+    vector_ptrtype assembleOutputPoint( parameter_type const& mu, CRBModelOutput& output);
 
     typename super_type::betaqm_type
     computeBetaQm( parameter_type const& mu , double time , bool only_terms_time_dependent=false ) override;

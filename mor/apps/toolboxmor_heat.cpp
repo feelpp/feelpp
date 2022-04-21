@@ -120,6 +120,9 @@ int runSimulation()
     crb->offline();
     toc("offline");
 
+    if( !boption("toolboxmor.do-cvg") )
+        return 0;
+
     // convergence study
     int N = crb->dimension();
     int timeSteps = 1;
@@ -127,7 +130,7 @@ int runSimulation()
     std::vector<double> outs(timeSteps, 0);
 
     auto allOutputs = model->modelProperties()->outputs();
-    auto outputs = allOutputs.ofTypes({"integrate","mean","sensor"});
+    auto outputs = allOutputs.ofTypes({"integrate","mean","sensor","point"});
     auto Fqm = model->getFqm();
     std::vector<std::vector<std::vector<Eigen::VectorXd>>> Lqm_pr(Fqm.size()-1);
     for( int i = 1; i < Fqm.size(); ++i)
@@ -252,6 +255,7 @@ int main( int argc, char** argv)
             ("case.dimension", Feel::po::value<int>()->default_value( 3 ), "dimension")
             ("case.discretization", Feel::po::value<std::string>()->default_value( "P1" ), "discretization : P1,P2,P3 ")
             ( "toolboxmor.name", po::value<std::string>()->default_value( "toolboxmor" ), "Name of the db directory" )
+            ( "toolboxmor.do-cvg", po::value<bool>()->default_value( true ), "do convergence test" )
             ( "toolboxmor.sampling-size", po::value<int>()->default_value(10), "size of the sampling" )
             ( "toolboxmor.tolerance", po::value<double>()->default_value(5e-2), "tolerance" )
             ;
