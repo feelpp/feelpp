@@ -203,7 +203,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateResidualInextensibility( DataUpdateResidua
                         _range=this->M_levelsetSpaceManager->rangeMeshElements(),
                         _expr=inextensibleLevelsetsExpr
                         );
-                auto inextensibleLevelsetsDeltaExpr = Feel::FeelModels::levelsetDelta( inextensibleLevelsets, M_globalLevelsetThicknessInterface );
+                auto inextensibleLevelsetsDeltaExpr = Feel::FeelModels::levelsetDelta( _element=inextensibleLevelsets, _thickness=M_globalLevelsetThicknessInterface );
                 auto N = trans(gradv(inextensibleLevelsets)) / sqrt( gradv(inextensibleLevelsets)*trans(gradv(inextensibleLevelsets)) );
                 auto NxN = N*trans(N);
 

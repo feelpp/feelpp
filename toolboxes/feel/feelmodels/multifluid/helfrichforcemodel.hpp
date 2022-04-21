@@ -374,23 +374,23 @@ HelfrichForceModel<LevelSetType, FluidMechanicsType>::addHelfrichForce( element_
             auto modGradPhi = this->levelset()->modGradPhi();
 
             auto modGradPhiK = this->levelset()->smoother()->project( 
-                    idv(modGradPhi) * idv(K)
+                    _expr=idv(modGradPhi) * idv(K)
                     );
 
             auto Fb_par = this->levelset()->projectorL2Vectorial()->project(
-                    - idv(K)*idv(K)/2. * idv(N)
+                    _expr=-idv(K)*idv(K)/2. * idv(N)
                     );
             auto Fb_par_div = this->levelset()->smoother()->project(
-                    divv(Fb_par)
+                    _expr=divv(Fb_par)
                     );
             //auto Fb_ortho = this->levelset()->smootherVectorial()->project(
                     //(Id-NxN)*trans(gradv(modGradPhiK)) / sqrt( trans(idv(gradPhi)) * idv(gradPhi) )
                     //);
             auto Fb_ortho = this->levelset()->smootherVectorial()->project(
-                    (trans(gradv(modGradPhiK)) - (gradv(modGradPhiK)*idv(N))*idv(N)) / idv(modGradPhi)
+                    _expr=(trans(gradv(modGradPhiK)) - (gradv(modGradPhiK)*idv(N))*idv(N)) / idv(modGradPhi)
                     );
             auto Fb_ortho_div = this->levelset()->smoother()->project(
-                    divv(Fb_ortho)
+                    _expr=divv(Fb_ortho)
                     );
             //auto Fb_global = this->levelset()->smootherVectorial()->project(
                     //this->bendingModulus() * (divv(Fb_par) + divv(Fb_ortho)) * idv(N)
@@ -416,12 +416,12 @@ HelfrichForceModel<LevelSetType, FluidMechanicsType>::addHelfrichForce( element_
             M_exporter->step(this->levelset()->time())->add(
                     "dirac", "dirac", this->levelset()->D() );
             auto Fb_par_D = this->levelset()->projectorL2Vectorial()->project(
-                    this->bendingModulus() * divv(Fb_par) * idv(N) * idv(this->levelset()->D())
+                    _expr=this->bendingModulus() * divv(Fb_par) * idv(N) * idv(this->levelset()->D())
                     );
             M_exporter->step(this->levelset()->time())->add(
                     "helfrich-parallel", "helfrich-parallel", Fb_par_D );
             auto Fb_ortho_D = this->levelset()->projectorL2Vectorial()->project(
-                    this->bendingModulus() * divv(Fb_ortho) * idv(N) * idv(this->levelset()->D())
+                    _expr=this->bendingModulus() * divv(Fb_ortho) * idv(N) * idv(this->levelset()->D())
                     );
             M_exporter->step(this->levelset()->time())->add(
                     "helfrich-ortho", "helfrich-ortho", Fb_ortho_D );

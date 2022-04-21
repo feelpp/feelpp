@@ -17,8 +17,7 @@ namespace FeelModels {
 template< typename FluidType, typename LevelSetType>
 class MultiFluid : 
     public ModelNumerical,
-    public ModelPhysics<FluidType::convex_type::nDim>,
-    public std::enable_shared_from_this< MultiFluid<FluidType, LevelSetType> >
+    public ModelPhysics<FluidType::convex_type::nDim>
 {
 public:
     // Typedefs
@@ -48,8 +47,8 @@ public:
 
     //--------------------------------------------------------------------//
     // Materials properties
-    typedef MaterialsProperties<mesh_type::nRealDim> materials_properties_type;
-    typedef std::shared_ptr<materials_properties_type> materials_properties_ptrtype;
+    typedef MaterialsProperties<mesh_type::nRealDim> materialsproperties_type;
+    typedef std::shared_ptr<materialsproperties_type> materialsproperties_ptrtype;
 
     //--------------------------------------------------------------------//
     // Range types
@@ -92,8 +91,8 @@ public:
 
     ////--------------------------------------------------------------------//
     //// Density/viscosity
-    //typedef typename fluid_model_type::materialsproperties_type materials_properties_type;
-    //typedef typename fluid_model_type::materialsproperties_ptrtype materials_properties_ptrtype;
+    //typedef typename fluid_model_type::materialsproperties_type materialsproperties_type;
+    //typedef typename fluid_model_type::materialsproperties_ptrtype materialsproperties_ptrtype;
     //--------------------------------------------------------------------//
     // Interface forces model
     typedef InterfaceForcesModel<levelset_model_type, fluid_model_type> interfaceforces_model_type;
@@ -135,6 +134,8 @@ public:
             ModelBaseRepository const& modelRep = ModelBaseRepository() );
     MultiFluid( self_type const& M ) = default;
 
+    std::shared_ptr<self_type> shared_from_this() { return std::dynamic_pointer_cast<self_type>( super_type::shared_from_this() ); }
+
     //--------------------------------------------------------------------//
     // Initialization
     void init( bool buildModelAlgebraicFactory = true );
@@ -142,13 +143,17 @@ public:
 
     void loadParametersFromOptionsVm();
 
+    // Infos
+    void updateInformationObject( nl::json & p ) const override;
+    tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
+
+    //--------------------------------------------------------------------//
+    // Initial condition
     template <typename SymbolsExprType>
     void updateInitialConditions( SymbolsExprType const& se );
 
     //--------------------------------------------------------------------//
     std::string globalLevelsetPrefix() const { return prefixvm( this->prefix(), "levelset"); }
-
-    std::shared_ptr<std::ostringstream> getInfo() const override;
 
     //--------------------------------------------------------------------//
     // Mesh
@@ -186,9 +191,9 @@ public:
     op_lagrangeP1_ptrtype opLagrangeP1() const { return M_opLagrangeP1iso; }
 
     // Physical parameters
-    materials_properties_ptrtype const& materialsProperties() const { return M_materialsProperties; }
-    materials_properties_ptrtype & materialsProperties() { return M_materialsProperties; }
-    void setMaterialsProperties( materials_properties_ptrtype mp ) { M_materialsProperties = mp; }
+    materialsproperties_ptrtype const& materialsProperties() const { return M_materialsProperties; }
+    materialsproperties_ptrtype & materialsProperties() { return M_materialsProperties; }
+    void setMaterialsProperties( materialsproperties_ptrtype mp ) { M_materialsProperties = mp; }
     //// Fluid density-viscosity model
     //material_properties_ptrtype const& fluidMaterialProperties() const { return M_fluidMaterialProperties; }
     //material_properties_ptrtype const& levelsetMaterialProperties( std::string const& name ) const { return M_levelsetsMaterialProperties.at(name); }
@@ -435,7 +440,7 @@ public:
     void updateResidualDofElimination( DataUpdateResidual & data ) const override;
     
     //--------------------------------------------------------------------//
-    // Export
+    // Post-processing
     void exportResults() { this->exportResults( this->currentTime() ); }
     void exportResults( double time );
     void exportMeasures( double time );
@@ -446,7 +451,8 @@ protected:
     //--------------------------------------------------------------------//
     // Initialization
     void initMesh();
-    void initLevelsets();
+    void initFluidToolbox();
+    void initLevelsetToolboxes();
     void initPostProcess() override;
 
     void buildBlockVectorSolution();
@@ -481,7 +487,7 @@ private:
     levelset_tool_manager_ptrtype M_levelsetToolManager;
 
     //--------------------------------------------------------------------//
-    materials_properties_ptrtype M_materialsProperties;
+    materialsproperties_ptrtype M_materialsProperties;
     std::map<std::string,double> M_currentParameterValues;
 
     //--------------------------------------------------------------------//
@@ -496,8 +502,8 @@ private:
 
     //--------------------------------------------------------------------//
     // Parameters
-    materials_properties_ptrtype M_fluidMaterialProperties;
-    std::map<std::string, materials_properties_ptrtype> M_levelsetsMaterialProperties;
+    materialsproperties_ptrtype M_fluidMaterialProperties;
+    std::map<std::string, materialsproperties_ptrtype> M_levelsetsMaterialProperties;
     std::map<std::string, std::map<std::string, interfaceforces_model_ptrtype>> M_levelsetInterfaceForcesModels;
     std::map<std::string, interfaceforces_model_ptrtype> M_additionalInterfaceForcesModel;
     //--------------------------------------------------------------------//
@@ -545,7 +551,7 @@ MultiFluid<FluidType, LevelSetType>::updateInitialConditions( SymbolsExprType co
 {
     M_fluidModel->updateInitialConditions( se );
     for( levelset_model_ptrtype const& lsModel: this->levelsetModels() )
-        lsModel->updateInitialConditions( /*se*/ );
+        lsModel->updateInitialConditions( se );
 }
         
 

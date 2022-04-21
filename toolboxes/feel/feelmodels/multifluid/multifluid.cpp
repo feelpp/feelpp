@@ -62,6 +62,8 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::initMesh()
     this->log("MultiFluid","initMesh", "start");
     this->timerTool("Constructor").start();
 
+    if ( this->modelProperties().jsonData().contains("Meshes") )
+        super_type::super_model_meshes_type::setup( this->modelProperties().jsonData().at("Meshes"), {this->keyword()} );
     if ( this->doRestart() )
         super_type::super_model_meshes_type::setupRestart( this->keyword() );
     super_type::super_model_meshes_type::updateForUse<mesh_type>( this->keyword() );
@@ -80,6 +82,8 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->log("MultiFluid", "init", "start");
     this->timerTool("Constructor").start();
 
+    this->initModelProperties();
+
     M_fluidModel = std::make_shared<fluid_model_type>(
             prefixvm(this->prefix(),"fluid"), "fluid", this->worldCommPtr(),
             this->subPrefix(), this->repository() );
@@ -93,52 +97,42 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
                 );
     }
 
-    // Init physics
-    if ( this->physics().empty() )
-        this->initPhysics( this->keyword(), this->modelProperties().models() );
-    // fluid
-    M_fluidModel->initPhysics( M_fluidModel->keyword(), this->modelProperties().models() );
-    this->M_physics.insert( M_fluidModel->physics().begin(), M_fluidModel->physics().end() );
-    for( auto const& subPhysic: M_fluidModel->physics() )
-        this->M_physics[this->physicDefault()]->addSubphysic( subPhysic.second );
-    // levelsets
-    for( auto const& lsModel: M_levelsetModels )
-    {
-        lsModel->initPhysics( lsModel->keyword(), this->modelProperties().models() );
-        this->M_physics.insert( lsModel->physics().begin(), lsModel->physics().end() );
-        for( auto const& subPhysic: lsModel->physics() )
-            this->M_physics[this->physicDefault()]->addSubphysic( subPhysic.second );
-    }
+    // Physics
+    this->initPhysics( this->shared_from_this(), this->modelProperties().models() );
 
     // Physical properties
     if ( !M_materialsProperties )
     {
-        auto paramValues = this->modelProperties().parameters().toParameterValues();
-        this->modelProperties().materials().setParameterValues( paramValues );
-        M_materialsProperties.reset( new materials_properties_type( this->shared_from_this() ) );
+        //auto paramValues = this->modelProperties().parameters().toParameterValues();
+        //this->modelProperties().materials().setParameterValues( paramValues );
+        M_materialsProperties.reset( new materialsproperties_type( this->shared_from_this() ) );
         M_materialsProperties->updateForUse( this->modelProperties().materials() );
     }
 
-    // Init mesh
+    // Mesh
     if ( !this->mesh() )
         this->initMesh();
 
     this->materialsProperties()->addMesh( this->mesh() );
 
-    // Init fluid toolbox
-    //M_fluidModel->setPhysics( this->physics( M_fluidModel->physicType() ), M_fluidModel->keyword() );
-    M_fluidModel->setManageParameterValues( false );
-    if ( !M_fluidModel->modelPropertiesPtr() )
-    {
-        M_fluidModel->setModelProperties( this->modelPropertiesPtr() );
-        M_fluidModel->setManageParameterValuesOfModelProperties( false );
-    }
-    M_fluidModel->setMesh( this->mesh() );
-    M_fluidModel->setMaterialsProperties( M_materialsProperties );
-    M_fluidModel->init( false );
+    // Fluid toolbox
+    //M_fluidModel->initPhysics( M_fluidModel->keyword(), this->modelProperties().models() );
+    //this->M_physics.insert( M_fluidModel->physics().begin(), M_fluidModel->physics().end() );
+    //for( auto const& subPhysic: M_fluidModel->physics() )
+        //this->M_physics[this->physicDefault()]->addSubphysic( subPhysic.second );
+    //// levelsets
+    //for( auto const& lsModel: M_levelsetModels )
+    //{
+        //lsModel->initPhysics( lsModel->keyword(), this->modelProperties().models() );
+        //this->M_physics.insert( lsModel->physics().begin(), lsModel->physics().end() );
+        //for( auto const& subPhysic: lsModel->physics() )
+            //this->M_physics[this->physicDefault()]->addSubphysic( subPhysic.second );
+    //}
 
+    // Init fluid toolbox
+    this->initFluidToolbox();
     // Init levelset toolboxes
-    this->initLevelsets();
+    this->initLevelsetToolboxes();
 
     // Update current time
     if ( !this->isStationary() )
@@ -155,9 +149,8 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
             "{{ {0}_{1}_0, {0}_{1}_1, {0}_{1}_2 }}:{0}_{1}_0:{0}_{1}_1:{0}_{1}_2",
             M_fluidModel->keyword(), fluidVelocitySymbolUsed 
             );
-    auto velConvExpr = expr<nDim,1>( velConvExprStr, "",this->worldComm(),this->repository().expr() );
     for( levelset_model_ptrtype const& lsModel: M_levelsetModels )
-        lsModel->setAdvectionVelocityExpr( velConvExpr );
+        lsModel->setAdvectionVelocityExpr( velConvExprStr );
 
     // Update constant parameters
     this->updateParameterValues();
@@ -218,7 +211,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     }
 
     //// "Deep" copy FluidMechanics materialProperties
-    //M_fluidMaterialProperties.reset( new materials_properties_type( this->fluidModel()->prefix() ) );
+    //M_fluidMaterialProperties.reset( new materialsproperties_type( this->fluidModel()->prefix() ) );
     //// Create M_interfaceForces
     //M_interfaceForces.reset( new element_levelset_vectorial_type(this->functionSpaceLevelsetVectorial(), "InterfaceForces") ); 
 
@@ -298,6 +291,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
     }
 }
 
+#if 0
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 std::shared_ptr<std::ostringstream>
 MULTIFLUID_CLASS_TEMPLATE_TYPE::getInfo() const
@@ -359,6 +353,23 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n\n";
 
     return _ostr;
+}
+#endif
+
+MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+MULTIFLUID_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) const
+{
+    //TODO
+}
+
+MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
+tabulate_informations_ptr_t
+MULTIFLUID_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
+{
+    auto tabInfo = TabulateInformationsSections::New( tabInfoProp );
+    //TODO
+    return tabInfo;
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
@@ -494,7 +505,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateInextensibilityLM()
             );
     auto dirac = vf::project( 
             _space=this->fluidModel()->functionSpacePressure(), _range=this->fluidModel()->rangeMeshElements(),
-            _expr=Feel::FeelModels::levelsetDelta( inextensibleLevelsets, M_globalLevelsetThicknessInterface )
+            _expr=Feel::FeelModels::levelsetDelta( _element=inextensibleLevelsets, _thickness=M_globalLevelsetThicknessInterface )
             );
     auto it_elt = this->mesh()->beginOrderedElement();
     auto en_elt = this->mesh()->endOrderedElement();
@@ -900,15 +911,16 @@ MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
 MULTIFLUID_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
 {
-    // Levelset forces
-    for( std::string const& levelsetName: M_postProcessMeasuresLevelsetForces )
-    {
-        auto measuredLevelsetForce = this->computeLevelsetForce( levelsetName );
-        std::vector<double> vecMeasuredLevelsetForce = { measuredLevelsetForce(0,0) };
-        if( nDim > 1 ) vecMeasuredLevelsetForce.push_back( measuredLevelsetForce(1,0) );
-        if( nDim > 2 ) vecMeasuredLevelsetForce.push_back( measuredLevelsetForce(2,0) );
-        this->postProcessMeasuresIO().setMeasureComp( levelsetName + ".force", vecMeasuredLevelsetForce );
-    }
+    //// Levelset forces
+    //for( std::string const& levelsetName: M_postProcessMeasuresLevelsetForces )
+    //{
+        //auto measuredLevelsetForce = this->computeLevelsetForce( levelsetName );
+        //std::vector<double> vecMeasuredLevelsetForce = { measuredLevelsetForce(0,0) };
+        //if( nDim > 1 ) vecMeasuredLevelsetForce.push_back( measuredLevelsetForce(1,0) );
+        //if( nDim > 2 ) vecMeasuredLevelsetForce.push_back( measuredLevelsetForce(2,0) );
+        //this->postProcessMeasuresIO().setMeasureComp( levelsetName + ".force", vecMeasuredLevelsetForce );
+    //}
+    //TODO
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
@@ -934,15 +946,34 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::computeLevelsetForce( std::string const& name ) 
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
-MULTIFLUID_CLASS_TEMPLATE_TYPE::initLevelsets()
+MULTIFLUID_CLASS_TEMPLATE_TYPE::initFluidToolbox()
 {
-    this->log("MultiFluid", "initLevelsets", "start");
+    this->log("MultiFluid", "initFluidToolbox", "start");
+
+    M_fluidModel->setManageParameterValues( false );
+    if ( !M_fluidModel->modelPropertiesPtr() )
+    {
+        M_fluidModel->setModelProperties( this->modelPropertiesPtr() );
+        M_fluidModel->setManageParameterValuesOfModelProperties( false );
+    }
+    M_fluidModel->setModelMeshAsShared( this->modelMesh() );
+    M_fluidModel->setMaterialsProperties( M_materialsProperties );
+    M_fluidModel->init( false );
+
+    this->log("MultiFluid", "initLevelsets", "finish");
+}
+
+MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+MULTIFLUID_CLASS_TEMPLATE_TYPE::initLevelsetToolboxes()
+{
+    this->log("MultiFluid", "initLevelsetToolboxes", "start");
     // Get levelset mesh
     mesh_ptrtype mesh;
     if( this->M_useLagrangeP1iso )
     {
         // Build Lagrange P1 iso-U mesh and build levelsets with it
-        M_opLagrangeP1iso = lagrangeP1( this->fluidModel()->functionSpaceVelocity()->compSpace() );
+        M_opLagrangeP1iso = lagrangeP1( _space=this->fluidModel()->functionSpaceVelocity()->compSpace() );
         mesh = this->M_opLagrangeP1iso->mesh(); 
     }
     else
@@ -1017,6 +1048,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::initPostProcess()
     this->log("MultiFluid","initPostProcess", "start");
     this->timerTool("Constructor").start();
 
+    //TODO
     std::set<std::string> ppExportsAllFieldsAvailable;
     for ( auto const& s : M_fluidModel->postProcessExportsAllFieldsAvailable() )
         ppExportsAllFieldsAvailable.insert( prefixvm( M_fluidModel->keyword(), s ) );
@@ -1046,6 +1078,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::initPostProcess()
         }
     }
 
+#if 0
     std::string modelName = "multifluid";
     pt::ptree ptree = this->modelProperties().postProcess().pTree( modelName );
     std::string ppTypeMeasures = "Measures";
@@ -1081,13 +1114,16 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::initPostProcess()
             }
         }
     }
+#endif
+
+    auto se = this->symbolsExpr();
+    this->template initPostProcessMeshes<mesh_type>( se );
+
     // start or restart the export of measures
     if ( !this->isStationary() )
     {
         if ( this->doRestart() )
-            this->postProcessMeasuresIO().restart( "time", this->timeInitial() );
-        else
-            this->postProcessMeasuresIO().setMeasure( "time", this->timeInitial() ); //just to have time in the first column
+            this->postProcessMeasures().restart( this->timeInitial() );
     }
 
     double tElapsed = this->timerTool("Constructor").stop("initPostProcess");
