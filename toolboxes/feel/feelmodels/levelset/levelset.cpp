@@ -302,6 +302,17 @@ LEVELSET_CLASS_TEMPLATE_TYPE::setParameterValues( std::map<std::string,double> c
     M_advectionToolbox->setParameterValues( paramValues );
 }
 
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS 
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::setAdvectionVelocityExpr( std::string const& expr )
+{
+    for ( auto const& [physicId,physicData] : M_advectionToolbox->physicsFromCurrentType() )
+    {
+        auto physicCFPDEData = std::static_pointer_cast<ModelPhysicCoefficientFormPDE<nDim>>(physicData);
+        physicCFPDEData->setCoefficient( CFPDECoefficient::convection, expr );
+    }
+}
+
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSET_CLASS_TEMPLATE_TYPE::element_stretch_ptrtype const&
 LEVELSET_CLASS_TEMPLATE_TYPE::stretch() const

@@ -282,20 +282,7 @@ public:
 
     //--------------------------------------------------------------------//
     // Advection data
-    template<typename ExprT>
-    void setAdvectionVelocityExpr( vf::Expr<ExprT> const& v_expr )
-    { 
-        ModelExpression velocityExpr;
-        if constexpr ( nDim == 2 )
-            velocityExpr.setExprVectorial2( v_expr );
-        else if constexpr ( nDim == 3 )
-            velocityExpr.setExprVectorial3( v_expr );
-
-        for( std::string const& matName : M_advectionToolbox->materialsProperties()->physicToMaterials( M_advectionToolbox->physicDefault() ) )
-        {
-            M_advectionToolbox->materialsProperties()->materialProperties( matName ).add( M_advectionToolbox->convectionCoefficientName(), velocityExpr );
-        }
-    }
+    void setAdvectionVelocityExpr( std::string const& expr );
     //void updateAdvectionVelocity( element_advection_velocity_ptrtype const& velocity ) { [>return M_advectionToolbox->updateAdvectionVelocity( velocity );<] }
     //void updateAdvectionVelocity( element_advection_velocity_type const& velocity ) { [>return M_advectionToolbox->updateAdvectionVelocity( velocity );<] }
     //--------------------------------------------------------------------//
