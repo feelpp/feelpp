@@ -122,20 +122,6 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
     this->materialsProperties()->addMesh( this->mesh() );
 
-    // Fluid toolbox
-    //M_fluidModel->initPhysics( M_fluidModel->keyword(), this->modelProperties().models() );
-    //this->M_physics.insert( M_fluidModel->physics().begin(), M_fluidModel->physics().end() );
-    //for( auto const& subPhysic: M_fluidModel->physics() )
-        //this->M_physics[this->physicDefault()]->addSubphysic( subPhysic.second );
-    //// levelsets
-    //for( auto const& lsModel: M_levelsetModels )
-    //{
-        //lsModel->initPhysics( lsModel->keyword(), this->modelProperties().models() );
-        //this->M_physics.insert( lsModel->physics().begin(), lsModel->physics().end() );
-        //for( auto const& subPhysic: lsModel->physics() )
-            //this->M_physics[this->physicDefault()]->addSubphysic( subPhysic.second );
-    //}
-
     // Init fluid toolbox
     this->initFluidToolbox();
     // Init levelset toolboxes

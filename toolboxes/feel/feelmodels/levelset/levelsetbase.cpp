@@ -1584,30 +1584,6 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::redistanciationHJ( bool buildOnTheFly ) const
 }
 
 //----------------------------------------------------------------------------//
-// Initial value
-LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
-void
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::setInitialValue(element_levelset_ptrtype const& phiv, bool doRedistanciate)
-{
-    this->log("LevelSetBase", "setInitialValue", "start");
-
-    if( !M_initialPhi )
-        M_initialPhi.reset( new element_levelset_type(this->functionSpace(), "InitialPhi") );
-
-    if ( doRedistanciate )
-    {
-        this->log("LevelSetBase", "setInitialValue", "redistanciate");
-        *M_initialPhi = this->redistanciate( *phiv, M_redistanciationMethod );
-    }
-    else
-    {
-        *M_initialPhi = *phiv;
-    }
-
-    this->log("LevelSetBase", "setInitialValue", "finish");
-}
-
-//----------------------------------------------------------------------------//
 //----------------------------------------------------------------------------//
 //----------------------------------------------------------------------------//
 #if 0

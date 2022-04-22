@@ -526,29 +526,6 @@ public:
 
     //--------------------------------------------------------------------//
     // Initial value
-    void setInitialValue(element_levelset_ptrtype const& phiv, bool doRedistanciate);
-    void setInitialValue(element_levelset_ptrtype const& phiv)
-    {
-        this->setInitialValue(phiv, M_redistInitialValue);
-    }
-    template<typename ExprT>
-    void setInitialValue(vf::Expr<ExprT> const& expr, bool doRedistanciate)
-    {
-        auto phi_init = this->functionSpace()->elementPtr();
-        phi_init->on( 
-                _range=this->rangeMeshElements(),
-                _expr=expr
-                );
-        this->setInitialValue( phi_init, doRedistanciate );
-    }
-    template<typename ExprT>
-    void setInitialValue(vf::Expr<ExprT> const& expr)
-    {
-        this->setInitialValue(expr, M_redistInitialValue );
-    }
-
-    element_levelset_ptrtype const& initialValue() const { return M_initialPhi; }
-
     double initialVolume() const { return M_initialVolume; }
     double initialPerimeter() const { return M_initialPerimeter; }
 
@@ -720,7 +697,6 @@ private:
     //--------------------------------------------------------------------//
     // Fields
     element_levelset_ptrtype M_phi;
-    element_levelset_ptrtype M_initialPhi;
 
     //--------------------------------------------------------------------//
     // Markers
@@ -820,54 +796,33 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateInitialValues( SymbolsExprType const& se
 {
     this->log("LevelSetBase", "updateInitialValues", "start");
 
-    if( !M_initialPhi ) // look for JSON initial values
+    if ( this->modelProperties().initialConditions().has( this->keyword(), "phi" ) )
     {
-        bool hasInitialValue = !this->modelProperties().initialConditions().empty();
+        this->fieldLevelsetPtr()->setConstant( std::numeric_limits<value_type>::max() );
+        std::vector<element_levelset_ptrtype> icLevelSetFields = { this->fieldLevelsetPtr() };
+        this->updateInitialConditions( "phi", this->rangeMeshElements(), se, icLevelSetFields );
 
-        if( hasInitialValue )
+        ModelInitialConditionTimeSet const& icts = this->modelProperties().initialConditions().get( this->keyword(), "phi" );
+        double icTime = 0;
+        auto const& icByTypeIt = icts.find( icTime );
+        //for( auto const& [time,icByType]: icts )
+        if ( icByTypeIt != icts.end() )
         {
-            this->log("LevelSetBase", "updateInitialValues", "reading initial value from json");
-            auto phiInit = this->functionSpace()->elementPtr();
-            phiInit->setConstant( std::numeric_limits<value_type>::max() );
-            std::vector<element_levelset_ptrtype> icLevelSetFields = { phiInit };
-
-            //this->modelProperties().parameters().updateParameterValues();
-            //auto paramValues = this->modelProperties().parameters().toParameterValues();
-            //this->modelProperties().initialConditions().setParameterValues( paramValues );
-
-            this->updateInitialConditions( "phi", this->rangeMeshElements(), se, icLevelSetFields );
-
-            ModelInitialConditionTimeSet const& icts = this->modelProperties().initialConditions().get( this->keyword(), this->prefix() );
-            double icTime = 0;
-            auto const& icByTypeIt = icts.find( icTime );
-            //for( auto const& [time,icByType]: icts )
-            if ( icByTypeIt != icts.end() )
+            auto const& icByType = icByTypeIt->second;
+            auto itFindIcShapes = icByType.find( "Shapes" );
+            if( itFindIcShapes != icByType.end() )
             {
-                auto const& icByType = icByTypeIt->second;
-                auto itFindIcShapes = icByType.find( "Shapes" );
-                if( itFindIcShapes != icByType.end() )
+                for( auto const& icShape: itFindIcShapes->second )
                 {
-                    for( auto const& icShape: itFindIcShapes->second )
-                    {
-                        this->addShape( icShape.jsonSetup(), *phiInit );
-                    }
+                    this->addShape( icShape.jsonSetup(), *( this->fieldLevelsetPtr() ) );
                 }
             }
-
-            this->setInitialValue( phiInit );
         }
     }
 
-    // Synchronize with current phi
-    if( M_initialPhi ) // user-provided initial value
+    if( this->redistInitialValue() )
     {
-        this->log("LevelSetBase", "updateInitialValues", "initial value found");
-        *M_phi = *M_initialPhi;
-    }
-    else // no initial value
-    {
-        this->log("LevelSetBase", "updateInitialValues", "no initial value found; setting to zero");
-        M_phi->zero();
+        *( this->fieldLevelsetPtr() ) = this->redistanciate( *( this->fieldLevelsetPtr() ), M_redistanciationMethod );
     }
 
     this->updateInterfaceQuantities();
