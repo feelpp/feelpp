@@ -19,14 +19,17 @@
     {
         "levelset":
         {
-            "Shapes":
+            "phi":
             {
-                "drop1":
+                "Shapes":
                 {
-                    "shape": "sphere",
-                    "xc": "0.3",
-                    "yc": "0.5",
-                    "radius": "0.16"
+                    "drop1":
+                    {
+                        "shape": "sphere",
+                        "xc": "0.3",
+                        "yc": "0.5",
+                        "radius": "0.16"
+                    }
                 }
             }
         }

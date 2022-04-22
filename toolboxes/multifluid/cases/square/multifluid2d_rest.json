@@ -30,13 +30,16 @@
     },
     "InitialConditions":
     {
-        "multifluid.levelset0":
+        "levelset0":
         {
-            "Expression":
+            "phi":
             {
-                "ic1":
+                "Expression":
                 {
-                    "expr":"sqrt( (x-x0)*(x-x0) + (y-y0)*(y-y0) ) - r0 :x:x0:y:y0:r0"
+                    "ic1":
+                    {
+                        "expr":"sqrt( (x-x0)*(x-x0) + (y-y0)*(y-y0) ) - r0 :x:x0:y:y0:r0"
+                    }
                 }
             }
         }

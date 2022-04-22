@@ -835,7 +835,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateInitialValues( SymbolsExprType const& se
             //auto paramValues = this->modelProperties().parameters().toParameterValues();
             //this->modelProperties().initialConditions().setParameterValues( paramValues );
 
-            this->updateInitialConditions( this->keyword(), this->rangeMeshElements(), se, icLevelSetFields );
+            this->updateInitialConditions( "phi", this->rangeMeshElements(), se, icLevelSetFields );
 
             ModelInitialConditionTimeSet const& icts = this->modelProperties().initialConditions().get( this->keyword(), this->prefix() );
             double icTime = 0;
