@@ -46,9 +46,9 @@
     },
     "BoundaryConditions":
     {
-        "velocity":
+        "fluid":
         {
-            "Dirichlet":
+            "velocity":
             {
                 "Left":
                 {
@@ -76,7 +76,7 @@
         {
             "Exports":
             {
-                "fields":["fluid.velocity","fluid.pressure","fluid.density", "fluid.viscosity", "levelset1.phi", "pid"]
+                "fields":["fluid.velocity","fluid.pressure","fluid.density", "fluid.viscosity", "levelset0.phi", "pid"]
             }
         },
         "fluid":
