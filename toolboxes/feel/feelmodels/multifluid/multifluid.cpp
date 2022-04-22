@@ -98,7 +98,14 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     }
 
     // Physics
-    this->initPhysics( this->shared_from_this(), this->modelProperties().models() );
+    this->initPhysics(
+        this->shared_from_this(),
+        [this]( typename super_physics_type::PhysicsTree & physicsTree ) {
+            physicsTree.updatePhysics( this->shared_from_this(), this->modelProperties().models() );
+            physicsTree.updatePhysics( M_fluidModel, this->modelProperties().models() );
+            for( auto const& lsModel: M_levelsetModels )
+                physicsTree.updatePhysics( lsModel, this->modelProperties().models() );
+        } );
 
     // Physical properties
     if ( !M_materialsProperties )
@@ -1128,6 +1135,17 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::initPostProcess()
 
     double tElapsed = this->timerTool("Constructor").stop("initPostProcess");
     this->log("MultiFluid","initPostProcess",fmt::format("finish in {} s", tElapsed ) );
+}
+
+MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+MULTIFLUID_CLASS_TEMPLATE_TYPE::updatePhysics( typename super_physics_type::PhysicsTreeNode & physicsTree, ModelModels const& models )
+{
+    physicsTree.addChild( M_fluidModel, models );
+    for( auto const& lsModel: M_levelsetModels )
+        physicsTree.addChild( lsModel, models );
+
+    physicsTree.updateMaterialSupportFromChildren( "intersect" );
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS

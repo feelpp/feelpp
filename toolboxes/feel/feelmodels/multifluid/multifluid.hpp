@@ -24,6 +24,7 @@ public:
     //--------------------------------------------------------------------//
     // Class
     typedef ModelNumerical super_type;
+    typedef ModelPhysics<FluidType::convex_type::nDim> super_physics_type;
     typedef MultiFluid< FluidType, LevelSetType > self_type;
     typedef std::shared_ptr< self_type > self_ptrtype;
 
@@ -454,6 +455,7 @@ protected:
     void initFluidToolbox();
     void initLevelsetToolboxes();
     void initPostProcess() override;
+    void updatePhysics( typename super_physics_type::PhysicsTreeNode & physicsTree, ModelModels const& models ) override;
 
     void buildBlockVectorSolution();
     virtual int initBlockVectorSolution();
