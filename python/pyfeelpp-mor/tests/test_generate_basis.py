@@ -31,6 +31,8 @@ def test_compute_basis_sample(prefix, case, casefile, dim, time_dependent, init_
     g.dir = OUTDIR + "/sample"
     g.config_file = ''
 
+    os.chdir(CWD)
+
     # compute and save the basis
     g.generate_basis()
 
@@ -51,6 +53,8 @@ def test_compute_basis_greedy(prefix, case, casefile, dim, time_dependent, init_
     g.config_file = ''
     g.tol = 1e-3
 
+    os.chdir(CWD)
+
     # compute and save the basis
     g.generate_basis()
 
@@ -70,6 +74,8 @@ def test_compute_basis_POD(prefix, case, casefile, dim, time_dependent, init_fee
     g.dir = OUTDIR + "/sample"
     g.config_file = ''
     g.tol = 1e-3
+
+    os.chdir(CWD)
 
     # compute and save the basis
     g.generate_basis()
