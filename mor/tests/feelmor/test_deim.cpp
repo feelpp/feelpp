@@ -271,7 +271,7 @@ public :
     {
         return "test_deim";
     }
-    void initOnlineModel()
+    void initOnlineModel(std::shared_ptr<self_type> const& model)
     {}
     typename space_type::mesh_support_vector_type
         functionspaceMeshSupport( mesh_ptrtype const& mesh ) const
