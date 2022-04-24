@@ -48,7 +48,7 @@ typename SpaceT::element_type
 gradedfromls( std::shared_ptr<SpaceT> const& Xh, faces_reference_wrapper_t<typename SpaceT::mesh_ptrtype> const& facets, double hclose, double hfar, double cst = 0. )
 {
     using namespace vf;
-    auto d = distanceToRange( Xh, facets ); 
+    auto d = distanceToRange( _space=Xh, _range=facets );
     d *= 1./d.max(); // max of d is 1
     auto g = Xh->element();
     CHECK( hclose > 0 && hfar > 0 ) << fmt::format("hclose({}) and/or hfar({}) must be stricly positive", hclose, hfar);
