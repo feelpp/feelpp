@@ -5594,7 +5594,7 @@ private:
 
     template <typename RangeType>
     void dofs( RangeType const& rangeElt, ComponentType c1, bool onlyMultiProcessDofs, mpl::false_, std::set<size_type> & res,
-               typename std::enable_if< std::is_same<RangeType,elements_reference_wrapper_t<mesh_type> >::value >::type* = nullptr ) const
+               std::enable_if_t< RangeType::isOnElements() >* = nullptr ) const
         {
             if ( c1 == ComponentType::NO_COMPONENT )
             {
@@ -5632,7 +5632,7 @@ private:
         }
     template <typename RangeType>
     void dofs( RangeType const& rangeFace, ComponentType c1, bool onlyMultiProcessDofs, mpl::false_, std::set<size_type> & res,
-               typename std::enable_if< boost::tuples::template element<0, RangeType>::type::value == MESH_FACES && std::is_same<RangeType,faces_reference_wrapper_t<mesh_type> >::value >::type* = nullptr ) const
+               std::enable_if_t< RangeType::isOnFaces() >* = nullptr ) const
         {
             if ( c1 == ComponentType::NO_COMPONENT )
             {
@@ -5673,14 +5673,15 @@ private:
         }
     template <typename RangeType>
     void dofs( RangeType const& rangeFace, ComponentType c1, bool onlyMultiProcessDofs, mpl::false_, std::set<size_type> & res,
-               typename std::enable_if< boost::tuples::template element<0, RangeType>::type::value == MESH_FACES && !std::is_same<RangeType,faces_reference_wrapper_t<mesh_type> >::value >::type* = nullptr ) const
+               std::enable_if_t< boost::tuples::template element<0, typename RangeType::super>::type::value == MESH_FACES && 
+                                !std::is_same<typename RangeType::super,faces_reference_wrapper_t<mesh_type> >::value >* = nullptr ) const
         {
             CHECK(false) << "TODO";
         }
 
     template <typename RangeType>
     void dofs( RangeType const& rangeEdge, ComponentType c1, bool onlyMultiProcessDofs, mpl::false_, std::set<size_type> & res,
-               typename std::enable_if< std::is_same<RangeType,edges_reference_wrapper_t<mesh_type> >::value >::type* = nullptr ) const
+               std::enable_if_t< RangeType::isOnEdges() >* = nullptr ) const
         {
             size_type eid = invalid_v<size_type>;
             uint16_type edgeid_in_element;
@@ -5754,7 +5755,7 @@ private:
         }
     template <typename RangeType>
     void dofs( RangeType const& rangePoint, ComponentType c1, bool onlyMultiProcessDofs, mpl::false_, std::set<size_type> & res,
-               typename std::enable_if< std::is_same<RangeType,points_reference_wrapper_t<mesh_type> >::value >::type* = nullptr ) const
+               std::enable_if_t< RangeType::isOnPoints()>* = nullptr ) const
         {
             std::vector<uint16_type> compUsed;
             static const uint16_type nDofComponents = this->dof()->nDofComponents();

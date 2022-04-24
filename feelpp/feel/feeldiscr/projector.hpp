@@ -31,6 +31,7 @@
 
 #include <feel/feelcore/parameter.hpp>
 #include <feel/feelalg/backend.hpp>
+
 #include <feel/feelmesh/intersect.hpp>
 #include <feel/feeldiscr/operatorlinear.hpp>
 //#include <feel/feelvf/vf.hpp>
@@ -48,6 +49,7 @@
 #include <feel/feelvf/unary.hpp>
 #include <feel/feelvf/operators.hpp>
 #include <feel/feelvf/geometricdata.hpp>
+#include <feel/feelmesh/ranges.hpp>
 
 namespace Feel
 {
@@ -109,8 +111,8 @@ public :
 
     typedef FsFunctionalLinear<DualImageSpace> image_element_type;
 
-    typedef elements_reference_wrapper_t<typename dual_image_space_type::mesh_type> range_elements_type;
-    typedef faces_reference_wrapper_t<typename dual_image_space_type::mesh_type> range_faces_type;
+    typedef Range<typename dual_image_space_type::mesh_type, MESH_ELEMENTS> range_elements_type;
+    typedef Range<typename dual_image_space_type::mesh_type, MESH_FACES> range_faces_type;
 #if 0
     template<typename Args,typename IntEltsDefault>
     struct integrate_type
