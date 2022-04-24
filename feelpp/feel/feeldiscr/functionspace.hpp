@@ -2190,7 +2190,7 @@ public:
     template<typename T = double,  typename Cont = VectorUblas<T> >
     class Element
         :
-        public Cont,boost::addable<Element<T,Cont> >, boost::subtractable<Element<T,Cont> >, FunctionSpaceBase::ElementBase, basis_0_type::polyset_type
+        public Cont, boost::addable<Element<T,Cont> >, boost::subtractable<Element<T,Cont> >, FunctionSpaceBase::ElementBase, basis_0_type::polyset_type
     {
     public:
         typedef T value_type;
@@ -2201,7 +2201,8 @@ public:
             typedef T value_type;
             BOOST_MPL_ASSERT_NOT( ( boost::is_same<BasisType,mpl::void_> ) );
             typedef typename ChangeBasis<BasisType>::type::element_type fs_type;
-            typedef typename fs_type::template Element<value_type, typename Cont/*VectorUblas<T>*/::range::type > element_type;
+            //typedef typename fs_type::template Element<value_type, typename Cont::range::type > element_type;
+            typedef typename fs_type::template Element<value_type, Cont > element_type;
             typedef std::pair< keyType, std::shared_ptr<element_type> > the_type;
 
             typedef typename mpl::if_<mpl::bool_<FunctionSpace<A0,A1,A2,A3,A4>::is_composite>,
@@ -2213,7 +2214,8 @@ public:
         typedef typename mpl::transform<bases_list, rangeElementStorageType, ChangeElement<mpl::_1,mpl::_2>, mpl::back_inserter<fusion::vector<> > >::type element_vector_type;
 
         //typedef typename fusion::result_of::accumulate<bases_list, fusion::vector<>, ChangeElement<> >
-        typedef typename Cont/*VectorUblas<T>*/::range::type ct_type;
+        //typedef typename Cont[>VectorUblas<T><]::range::type ct_type;
+        typedef Cont ct_type;
 
         typedef Eigen::Matrix<value_type,Eigen::Dynamic,1> eigen_type;
 
@@ -2310,7 +2312,8 @@ public:
 
         typedef typename functionspace_type::component_functionspace_type component_functionspace_type;
         typedef typename functionspace_type::component_functionspace_ptrtype component_functionspace_ptrtype;
-        typedef typename component_functionspace_type::template Element<T,typename Cont/*VectorUblas<value_type>*/::slice::type> component_type;
+        //typedef typename component_functionspace_type::template Element<T,typename Cont[>VectorUblas<value_type><]::slice::type> component_type;
+        typedef typename component_functionspace_type::template Element<T, Cont> component_type;
 
         /**
          * geometry typedef
@@ -2425,6 +2428,11 @@ public:
             return *this;
         }
 
+        value_type globalValue( size_type i ) const
+        {
+            return this->operator()( i );
+        }
+
         /**
          * get the component of the element
          *
@@ -2477,95 +2485,44 @@ public:
         component_type
         comp( ComponentType i, ComponentType j = ComponentType::NO_COMPONENT ) const
         {
-            //return comp( i, mpl::bool_<boost::is_same<>is_composite>() );
-            return comp( i, j, typename mpl::not_< mpl::or_< boost::is_same<container_type,VectorUblas<value_type> >,
-                         boost::is_same<container_type,typename VectorUblas<value_type>::shallow_array_adaptor::type > > >::type() );
-
-        }
-        component_type
-        comp( ComponentType i, ComponentType j, mpl::bool_<true> ) const
-        {
             CHECK( i >= ComponentType::X && (int)i < nComponents1 ) << "Invalid component " << (int)i;
             int startSlice = ((int)i);
             std::string __name = this->name() + "_" + componentToString( i );
             if ( j != ComponentType::NO_COMPONENT )
             {
                 CHECK( j >= ComponentType::X && (int)j < nComponents2 ) << "Invalid component " << (int)j;
+
                 if ( is_tensor2symm )
                 {
                     startSlice = Feel::detail::symmetricIndex( (int)i, (int)j, nComponents1 );
                 }
                 else
-                    startSlice = ((int)i)*nComponents2+((int)j);
-                __name += "_" + componentToString( j );
-            }
-            //auto s = ublas::slice( startSlice, nComponents, M_functionspace->nLocalDofPerComponent() );
-            auto sActive = ublas::slice( this->container().start()+startSlice, nRealComponents, M_functionspace->nLocalDofWithoutGhostPerComponent() );
-            auto sGhost = ublas::slice( this->container().startNonContiguousGhosts()+startSlice, nRealComponents, M_functionspace->nLocalGhostPerComponent() );
-
-            //std::cout << "extract component " << (int)i << " start+i:" << start()+(int)i << "\n";
-
-            size_type startContainerIndex = start() + startSlice;
-            component_type c( compSpace(),
-                              typename component_type::container_type( this->vec().data().expression(), sActive,
-                                                                       this->vecNonContiguousGhosts().data().expression(), sGhost,
-                                                                       this->compSpace()->dof() ),
-                              __name,
-                              startContainerIndex,//start()+(size_type)i,
-                              i );
-            return c;
-        }
-        component_type
-        comp( ComponentType i, ComponentType j, mpl::bool_<false> ) const
-        {
-            CHECK( i >= ComponentType::X && (int)i < nComponents1 ) << "Invalid component " << (int)i;
-            int startSlice = ((int)i);
-            std::string __name = this->name() + "_" + componentToString( i );
-            if ( j != ComponentType::NO_COMPONENT )
-            {
-                CHECK( j >= ComponentType::X && (int)j < nComponents2 ) << "Invalid component " << (int)j;
-                if ( is_tensor2symm )
                 {
-                    startSlice = Feel::detail::symmetricIndex( (int)i, (int)j, nComponents1 );
-                }
-                else
                     startSlice = ((int)i)*nComponents2+((int)j);
+                }
                 __name += "_" + componentToString( j );
+
             }
-            //auto s = ublas::slice( startSlice, nComponents, M_functionspace->nLocalDofPerComponent() );
-            size_type startGhostDof = (container_type::is_shallow_array_adaptor_vector)? 0 : this->functionSpace()->dof()->nLocalDofWithoutGhost();
+
             auto sActive = ublas::slice( startSlice, nRealComponents, M_functionspace->nLocalDofWithoutGhostPerComponent() );
-            auto sGhost = ublas::slice( startGhostDof+startSlice, nRealComponents, M_functionspace->nLocalGhostPerComponent() );
+            auto sGhost = ublas::slice( startSlice, nRealComponents, M_functionspace->nLocalGhostPerComponent() );
 
-            //std::cout << "extract component " << (int)i << " start+i:" << start()+(int)i << "\n";
+            //std::cout << "extract component " << (int)i << " start+i:" << start()+(int)i << " slice size:" << s.size();
+
             size_type startContainerIndex = start() + startSlice;
+            // Warning: drop const-correctness to avoid redefining full "const"-Elements
+            // should be fixed...
             component_type c( compSpace(),
-                              //typename component_type::container_type( ( VectorUblas<value_type>& )*this, s, this->compSpace()->dof() ),
-                              //typename component_type::container_type( *this, sActive, sGhost, this->compSpace()->dof() ),
-                              typename component_type::container_type( ( container_type& )*this, sActive, sGhost, this->compSpace()->dof() ),
-                              //typename component_type::container_type( this->data().expression(), r ),
-                              __name,
-                              startContainerIndex,//start()+(size_type)i,
-                              i );
+                    const_cast<this_type *>(this)->container().slice( sActive, sGhost, this->compSpace()->dof() ),
+                    __name,
+                    startContainerIndex,
+                    i,j );
             return c;
         }
 
-        /**
-         * get the component of the element
-         *
-         * @param i component id
-         * @return the i-th component of the element
-         */
         component_type
         comp( ComponentType i, ComponentType j = ComponentType::NO_COMPONENT )
         {
-            //return comp( i, mpl::bool_<is_composite>() );
-            return comp( i, j, typename mpl::not_< mpl::or_< boost::is_same<container_type,VectorUblas<value_type> >,
-                         boost::is_same<container_type,typename VectorUblas<value_type>::shallow_array_adaptor::type > > >::type() );
-        }
-        component_type
-        comp( ComponentType i, ComponentType j, mpl::bool_<true> )
-        {
             CHECK( i >= ComponentType::X && (int)i < nComponents1 ) << "Invalid component " << (int)i;
             int startSlice = ((int)i);
             std::string __name = this->name() + "_" + componentToString( i );
@@ -2585,58 +2542,20 @@ public:
 
             }
 
-            //auto s = ublas::slice( startSlice, nComponents, M_functionspace->nLocalDofPerComponent() );
-            auto sActive = ublas::slice( this->container().start()+startSlice, nRealComponents, M_functionspace->nLocalDofWithoutGhostPerComponent() );
-            auto sGhost = ublas::slice( this->container().startNonContiguousGhosts()+startSlice, nRealComponents, M_functionspace->nLocalGhostPerComponent() );
-
-            //std::cout << "extract component " << (int)i << " start+i:" << start()+(int)i << " slice size:" << s.size();
-
-            size_type startContainerIndex = start() + startSlice;
-            component_type c( compSpace(),
-                              typename component_type::container_type( this->vec().data().expression(), sActive,
-                                                                       this->vecNonContiguousGhosts().data().expression(), sGhost,
-                                                                       this->compSpace()->dof() ),
-                              __name,
-                              startContainerIndex,//start()+(size_type)i,
-                              i,j );
-            return c;
-        }
-        component_type
-        comp( ComponentType i, ComponentType j, mpl::bool_<false> )
-        {
-            CHECK( i >= ComponentType::X && (int)i < nComponents1 ) << "Invalid component " << (int) i;
-            int startSlice = ((int)i);
-            std::string __name = this->name() + "_" + componentToString( i );
-            if ( j != ComponentType::NO_COMPONENT )
-            {
-                CHECK( j >= ComponentType::X && (int)j < nComponents2 ) << "Invalid component " << (int)j;
-                if ( is_tensor2symm )
-                {
-                    startSlice = Feel::detail::symmetricIndex( (int)i, (int)j, nComponents1 );
-                }
-                else
-                {
-                    startSlice = ((int)i)*nComponents2+((int)j);
-                }
-                __name += "_" + componentToString( j );
-            }
-
-            //auto s = ublas::slice( startSlice, nComponents, M_functionspace->nLocalDofPerComponent() );
-            size_type startGhostDof = (container_type::is_shallow_array_adaptor_vector)? 0 : this->functionSpace()->dof()->nLocalDofWithoutGhost();
             auto sActive = ublas::slice( startSlice, nRealComponents, M_functionspace->nLocalDofWithoutGhostPerComponent() );
-            auto sGhost = ublas::slice( startGhostDof+startSlice, nRealComponents, M_functionspace->nLocalGhostPerComponent() );
+            auto sGhost = ublas::slice( startSlice, nRealComponents, M_functionspace->nLocalGhostPerComponent() );
 
             //std::cout << "extract component " << (int)i << " start+i:" << start()+(int)i << " slice size:" << s.size();
 
             size_type startContainerIndex = start() + startSlice;
             component_type c( compSpace(),
-                              //typename component_type::container_type( ( VectorUblas<value_type>& )*this, s, this->compSpace()->dof() ),
-                              typename component_type::container_type( *this, sActive, sGhost, this->compSpace()->dof() ),
-                              __name,
-                              startContainerIndex,//start()+(size_type)i,
-                              i,j );
+                    this->container().slice( sActive, sGhost, this->compSpace()->dof() ),
+                    __name,
+                    startContainerIndex,
+                    i,j );
             return c;
         }
+
         component_type
         operator[]( ComponentType i )
             {
@@ -4419,8 +4338,8 @@ public:
                 ar & boost::serialization::make_nvp( "family", family );
                 //std::cout << "saving family done" << std::endl;
 
-                typename container_type::const_iterator it = this->begin();
-                typename container_type::const_iterator en = this->end();
+                auto it = this->begin();
+                auto en = this->end();
 
                 for ( size_type i = 0; it != en; ++it, ++i )
                 {
@@ -4548,10 +4467,8 @@ public:
      */
     //@{
     typedef Element<value_type> element_type;
-    typedef Element<value_type> real_element_type;
-    typedef Element< value_type, typename VectorUblas<value_type>::shallow_array_adaptor::type > element_external_storage_type;
     typedef std::shared_ptr<element_type> element_ptrtype;
-    typedef std::shared_ptr<element_external_storage_type> element_external_storage_ptrtype;
+    typedef Element<value_type> real_element_type;
 
     typedef std::map< size_type, std::vector< size_type > > proc_dist_map_type;
 
@@ -5349,7 +5266,7 @@ public:
      * \param blockIdStart if vec was built from a VectorBlock, need to specify the id of first block
      * \return the element of the function space with value shared by the input vector
      */
-    Element< value_type, typename VectorUblas<value_type>::shallow_array_adaptor::type >
+    element_type
     element( std::shared_ptr<Vector<value_type> > const& vec, int blockIdStart = 0 )
     {
         return this->element( *vec, blockIdStart );
@@ -5360,7 +5277,7 @@ public:
      * \param blockIdStart if vec was built from a VectorBlock, need to specify the id of first block
      * \return the element of the function space which use the storage values of the input vector
      */
-    element_external_storage_type
+    element_type
     element( Vector<value_type> const& vec, int blockIdStart = 0 )
     {
 #if FEELPP_HAS_PETSC
@@ -5375,11 +5292,12 @@ public:
         size_type nGhostDof = this->dof()->nLocalGhosts();
         size_type nActiveDofFirstSubSpace = (is_composite)? this->template functionSpace<0>()->dof()->nLocalDofWithoutGhost() : nActiveDof;
         value_type* arrayGhostDof = (nGhostDof>0)? std::addressof( (*vecPetsc)( dmVec.dofIdToContainerId(blockIdStart,nActiveDofFirstSubSpace) ) ) : nullptr;
-        element_external_storage_type u( this->shared_from_this(),nActiveDof,arrayActiveDof,
-                                         nGhostDof, arrayGhostDof );
+        element_type u( this->shared_from_this(), 
+                nActiveDof, arrayActiveDof,
+                nGhostDof, arrayGhostDof );
 #else
         LOG(WARNING) << "element(Vector<value_type> const& vec, int blockIdStart): This function is disabled when Feel++ is not built with PETSc";
-        element_external_storage_type u;
+        element_type u;
 #endif
         return u;
     }
@@ -5389,7 +5307,7 @@ public:
      * \param blockIdStart if vec was built from a VectorBlock, need to specify the id of first block
      * \return the element of the function space which use the storage values of the input vector
      */
-    element_external_storage_ptrtype
+    element_ptrtype
     elementPtr( Vector<value_type> const& vec, int blockIdStart = 0 )
     {
 #if FEELPP_HAS_PETSC
@@ -5404,11 +5322,14 @@ public:
         size_type nGhostDof = this->dof()->nLocalGhosts();
         size_type nActiveDofFirstSubSpace = (is_composite)? this->template functionSpace<0>()->dof()->nLocalDofWithoutGhost() : nActiveDof;
         value_type* arrayGhostDof = (nGhostDof>0)? std::addressof( (*vecPetsc)( dmVec.dofIdToContainerId(blockIdStart,nActiveDofFirstSubSpace) ) ) : nullptr;
-        element_external_storage_ptrtype u( new element_external_storage_type( this->shared_from_this(),nActiveDof,arrayActiveDof,
-                                                                               nGhostDof, arrayGhostDof ) );
+        element_ptrtype u( new element_type( 
+                    this->shared_from_this(),
+                    nActiveDof, arrayActiveDof,
+                    nGhostDof, arrayGhostDof ) 
+                );
 #else
         LOG(WARNING) << "element(Vector<value_type> const& vec, int blockIdStart): This function is disabled when Feel++ is not built with PETSc";
-        element_external_storage_type u;
+        element_type u;
 #endif
         return u;
     }

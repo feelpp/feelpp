@@ -40,7 +40,6 @@
 // Boost.Test
 #include <boost/test/test_tools.hpp>
 #include <boost/test/unit_test.hpp>
-#include <boost/bind.hpp>
 
 using boost::unit_test_framework::test_suite;
 
