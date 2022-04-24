@@ -26,8 +26,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-09-03
  */
-#ifndef __points_H
-#define __points_H 1
+#ifndef FEELPP_MESH_POINTS_HPP
+#define FEELPP_MESH_POINTS_HPP
 
 #include <unordered_map>
 
@@ -265,7 +265,7 @@ class Points
             auto const& point = unwrap_ref( *it );
             if ( point.processId() != part )
                 continue;
-            if ( !point.hasMarker( markerType ) )
+            if ( !point.hasMarkerType( markerType ) )
                 continue;
             if ( point.marker().isOff() )
                 continue;
@@ -289,11 +289,9 @@ class Points
             auto const& point = unwrap_ref( *it );
             if ( point.processId() != part )
                 continue;
-            if ( !point.hasMarker( markerType ) )
+            if ( !point.hasMarkerType( markerType ) )
                 continue;
-            if ( point.marker( markerType ).isOff() )
-                continue;
-            if ( markerFlags.find( point.marker( markerType ).value() ) == markerFlags.end() )
+            if ( !point.marker( markerType ).hasOneOf( markerFlags ) )
                 continue;
             mypoints->push_back( boost::cref( point ) );
         }

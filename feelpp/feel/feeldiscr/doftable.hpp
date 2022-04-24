@@ -172,6 +172,7 @@ public:
     typedef typename mesh_type::edge_type edge_type;
     typedef typename mesh_type::gm_ptrtype gm_ptrtype;
     typedef typename mesh_type::gm_type gm_type;
+    using mesh_marker_type = typename element_type::marker_type;
 
     typedef typename fe_type::matrix_type matrix_type;
     typedef typename fe_type::value_type value_type;
@@ -1208,7 +1209,7 @@ public:
                     int32_type sign = 1,
                     bool is_dof_periodic = false,
                     size_type shift = 0,
-                    Marker1 const& marker = Marker1( 0 ) )
+                    mesh_marker_type const& marker = mesh_marker_type{} )
         {
             bool res = true;
             const int ncdof = is_product?nComponents:1;
@@ -1260,7 +1261,8 @@ public:
                                     ie << "," << lc_dof << ")";
                                 //(Dof  itdof->second+shift, sign, is_dof_periodic, 0, 0, marker.value() ) ) );
 
-                                M_dof_marker.insert( dof2marker( itdof->second+shift+k,  marker.value() ) );
+                                if ( !marker.empty() )
+                                    M_dof_marker.insert( dof2marker( itdof->second+shift+k,  marker.value() ) );
                             }
                             M_ldof.setLocalDof( fe_type::nLocalDof*(nComponents1*c1+c1)+l_dof );
                             const int k = Feel::detail::symmetricIndex(c1,c1,nComponents1);
@@ -1268,7 +1270,8 @@ public:
                             auto res = M_el_l2g.insert( dof_relation( M_ldof, M_gdof ) );
                             DCHECK( res.second ) << "global dof " << itdof->second+shift+k << " not inserted in local dof (" <<
                                 ie << "," << lc_dof << ")";
-                            M_dof_marker.insert( dof2marker( itdof->second+shift+k,  marker.value() ) );
+                            if ( !marker.empty() )
+                                M_dof_marker.insert( dof2marker( itdof->second+shift+k,  marker.value() ) );
                         }
                     }
                     else
@@ -1281,7 +1284,8 @@ public:
                             //(Dof  itdof->second+shift, sign, is_dof_periodic, 0, 0, marker.value() ) ) );
                             DCHECK( res.second ) << "global dof " << itdof->second+shift << " not inserted in local dof (" <<
                                 ie << "," << lc_dof << ")";
-                            M_dof_marker.insert( dof2marker( itdof->second+shift+c,  marker.value() ) );
+                            if ( !marker.empty() )
+                                M_dof_marker.insert( dof2marker( itdof->second+shift+c,  marker.value() ) );
                         }
                     }
 

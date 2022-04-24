@@ -3,7 +3,20 @@
     "ShortName":"Solid",
     "Models":
     {
-        "equations":"Elasticity"
+        "solid":{
+            "equations":"Elasticity"
+        }
+    },
+    "Meshes":
+    {
+        "solid":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/cantilever.geo",
+                "hsize":0.01
+            }
+        }
     },
     "Materials":
     {
@@ -16,19 +29,16 @@
     },
     "BoundaryConditions":
     {
-        "displacement":
+        "solid":
         {
-            "Dirichlet":
+            "displacement":
             {
                 "fixed":
                 {
                     "expr":"{0,0,0}"
                 }
-            }
-        },
-        "displacement":
-        {
-            "Neumann_vectorial":
+            },
+            "normal_stress":
             {
                 "load":
                 {
@@ -39,19 +49,22 @@
     },
     "PostProcess":
     {
-        "Exports":
+        "solid":
         {
-            "fields":["displacement","von-mises-criterion","tresca-criterion", "principal-stresses"]
-        },
-        "Measures":
-        {
-            "VolumeVariation":"cantilever",
-            "Maximum":
+            "Exports":
             {
-                "beam":
+                "fields":["displacement","von-mises-criterion","tresca-criterion", "principal-stresses"]
+            },
+            "Measures":
+            {
+                "VolumeVariation":"cantilever",
+                "Maximum":
                 {
-			        "markers":"",
-                    "fields":["displacement"]
+                    "beam":
+                    {
+			            "markers":"",
+                        "fields":["displacement"]
+                    }
                 }
             }
         }

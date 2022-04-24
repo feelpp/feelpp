@@ -712,7 +712,8 @@ public:
         //for ( int cc1 = 0; cc1 < nComponents1; ++cc1 )
         using expr_basis_t = typename std::decay_t<ExprType>::expr_type::test_basis;
 
-        for( int q = 0; q < nLocalDof; ++q )
+        int nPoints = expr.nPoints();
+        for( int q = 0; q < nPoints; ++q )
         {
             for( int i = 0; i < expr_basis_t::nLocalDof; ++i )
             {
@@ -727,19 +728,19 @@ public:
                         {
                             for( int c2 = 0; c2 < c1; ++c2 )
                             {
-                                int ldof = (c2+nComponents2*c1)*nLocalDof + q;
+                                int ldof = (c2+nComponents2*c1)*nPoints + q;
                                 Ihloc( I, ldof) = expr.evaliq( I, c1, c2, q );
-                                int ldof2 = (c1+nComponents2*c2)*nLocalDof + q;
+                                int ldof2 = (c1+nComponents2*c2)*nPoints + q;
                                 Ihloc( I, ldof2) = Ihloc( I, ldof);
                             }
-                            int ldof = (c1+nComponents2*c1)*nLocalDof + q;
+                            int ldof = (c1+nComponents2*c1)*nPoints + q;
                             Ihloc( I, ldof) = expr.evaliq( I, c1, c1, q );
                         }
                         else
                         {
                             for( int c2 = 0; c2 < shape::N; ++c2 )
                             {
-                                int ldof = (c2+nComponents2*c1)*nLocalDof + q;
+                                int ldof = (c2+nComponents2*c1)*nPoints + q;
                                 Ihloc( I, ldof) = expr.evaliq( I, c1, c2, q );
                             }
                         }

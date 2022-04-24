@@ -45,7 +45,9 @@ endif()
 
 enable_testing()
 
-add_custom_target( testsuite )
+if ( NOT TARGET testsuite )
+  add_custom_target( testsuite )
+endif()
 
 include_directories(${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/..)
 
@@ -57,7 +59,7 @@ message(STATUS "[feelpp/testsuite] disable compile failure: ${FEELPP_DISABLE_COM
 
 
 
-foreach( testdir core python math alg mesh poly filters material models interpolation integration discr crb ts vf leaks opt ls pde fit fmi event)
+foreach( testdir core python math alg mesh poly filters material models interpolation integration discr ts vf leaks opt ls pde fit fmi event)
   add_custom_target( test${testdir} )
   add_subdirectory( feel${testdir} )
 

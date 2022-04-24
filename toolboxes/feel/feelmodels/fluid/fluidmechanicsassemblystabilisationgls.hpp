@@ -57,7 +57,7 @@ exprResidualImpl( FluidMechanicsType const& fm, ModelPhysicFluid<FluidMechanicsT
     if ( !timeSteppingEvaluateResidualWithoutTimeDerivative )
         residual_full.expression().add( trans(gradv(p)) );
 
-    auto divSigmaViscous = fluidMecDivViscousStressTensor(u,physicFluidData,matProps,fm.worldComm(),fm.repository().expr(),se);
+    auto divSigmaViscous = fluidMecDivViscousStressTensor(u,physicFluidData,matProps,fm.worldComm(),fm.repository().expr(),se,fm.stabilizationGLS_checkViscosityDependencyOnCoordinates());
     if ( !divSigmaViscous.expression().isZero() )
     {
         residual_full.expression().add( -timeSteppingScaling*divSigmaViscous );
@@ -201,7 +201,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDES
         residual_lhs.expression().add( -timeSteppingScaling*muExpr*laplaciant(u) );
     }
 #else
-    auto divSigmaViscous = fluidMecDivViscousStressTensorLinearTrial(u,physicFluidData,matProps,this->worldComm(),this->repository().expr(),se);
+    auto divSigmaViscous = fluidMecDivViscousStressTensorLinearTrial(u,physicFluidData,matProps,this->worldComm(),this->repository().expr(),se,this->stabilizationGLS_checkViscosityDependencyOnCoordinates());
     if ( !divSigmaViscous.expression().isZero() )
         residual_lhs.expression().add( -timeSteppingScaling*divSigmaViscous );
 #endif
@@ -228,7 +228,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDES
         int coeffNatureStabilization = ( this->stabilizationGLSType() == "supg" || this->stabilizationGLSType() == "supg-pspg" )? 0 : (this->stabilizationGLSType() == "gls")? 1 : -1;
         // test functions
         using expr_convection_test_type = std::decay_t<decltype( densityExpr*grad(u)*idv(beta_u) )>;
-        auto divSigmaViscousTest = fluidMecDivViscousStressTensorLinearTest(u,physicFluidData,matProps,this->worldComm(),this->repository().expr(),se);
+        auto divSigmaViscousTest = fluidMecDivViscousStressTensorLinearTest(u,physicFluidData,matProps,this->worldComm(),this->repository().expr(),se,this->stabilizationGLS_checkViscosityDependencyOnCoordinates());
         using expr_viscous_stress_test_type = std::decay_t<decltype( -coeffNatureStabilization*divSigmaViscousTest )>;
         auto stab_test = exprOptionalConcat<expr_convection_test_type,expr_viscous_stress_test_type>();
         stab_test.expression().add( densityExpr*grad(u)*idv(beta_u) );
@@ -407,7 +407,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobianSt
         residual_jac.expression().add( densityExpr*this->timeStepBDF()->polyDerivCoefficient(0)*idt(u) );
     }
 
-    auto divSigmaViscous = fluidMecDivViscousStressTensorJacobian(u,physicFluidData,matProps,this->worldComm(),this->repository().expr(),se);
+    auto divSigmaViscous = fluidMecDivViscousStressTensorJacobian(u,physicFluidData,matProps,this->worldComm(),this->repository().expr(),se,this->stabilizationGLS_checkViscosityDependencyOnCoordinates());
     if ( !divSigmaViscous.expression().isZero() )
         residual_jac.expression().add( -timeSteppingScaling*divSigmaViscous );
 
@@ -418,7 +418,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobianSt
         int coeffNatureStabilization = ( this->stabilizationGLSType() == "supg" || this->stabilizationGLSType() == "supg-pspg" )? 0 : (this->stabilizationGLSType() == "gls")? 1 : -1;
         // test functions
         using expr_convection_test_type = std::decay_t<decltype( densityExpr*grad(u)*idv(beta_u) )>;
-        auto divSigmaViscousTest = fluidMecDivViscousStressTensorLinearTest(u,physicFluidData,matProps,this->worldComm(),this->repository().expr(),se);
+        auto divSigmaViscousTest = fluidMecDivViscousStressTensorLinearTest(u,physicFluidData,matProps,this->worldComm(),this->repository().expr(),se,this->stabilizationGLS_checkViscosityDependencyOnCoordinates());
         using expr_viscous_stress_test_type = std::decay_t<decltype( -coeffNatureStabilization*divSigmaViscousTest )>;
         auto stab_test = exprOptionalConcat<expr_convection_test_type,expr_viscous_stress_test_type>();
         stab_test.expression().add( densityExpr*grad(u)*idv(beta_u) );
@@ -589,7 +589,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidualSt
         int coeffNatureStabilization = ( this->stabilizationGLSType() == "supg" || this->stabilizationGLSType() == "supg-pspg" )? 0 : (this->stabilizationGLSType() == "gls")? 1 : -1;
         // test functions
         using expr_convection_test_type = std::decay_t<decltype( densityExpr*grad(u)*idv(beta_u) )>;
-        auto divSigmaViscousTest = fluidMecDivViscousStressTensorLinearTest(u,physicFluidData,matProps,this->worldComm(),this->repository().expr(),se);
+        auto divSigmaViscousTest = fluidMecDivViscousStressTensorLinearTest(u,physicFluidData,matProps,this->worldComm(),this->repository().expr(),se,this->stabilizationGLS_checkViscosityDependencyOnCoordinates());
         using expr_viscous_stress_test_type = std::decay_t<decltype( -coeffNatureStabilization*divSigmaViscousTest )>;
         auto stab_test = exprOptionalConcat<expr_convection_test_type,expr_viscous_stress_test_type>();
         stab_test.expression().add( densityExpr*grad(u)*idv(beta_u) );

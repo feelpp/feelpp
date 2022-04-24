@@ -2,10 +2,21 @@
 {
     "Name":"cvg3d",
     "ShortName":"cvg3d",
-    "Models":
+    "Parameters":
     {
         "v_expr":"2*0.25/Pi*atan2(x,y):x:y",
         "c_expr":"{-2*0.25/Pi*y/(x*x+y*y),2*0.25/Pi*x/(x*x+y*y),0}:x:y:z"
+    },
+    "Meshes":
+    {
+        "electric":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/3d.geo",
+                "hsize":0.1
+            }
+        }
     },
     "Materials":
     {
@@ -16,9 +27,9 @@
     },
     "BoundaryConditions":
     {
-        "electric-potential":
+        "electric":
         {
-            "Dirichlet":
+            "electric_potential":
             {
                 "V0":
                 {

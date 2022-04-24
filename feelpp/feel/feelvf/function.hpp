@@ -174,11 +174,6 @@ public:
         {
         }
 
-        template<typename IM>
-        void init( IM const& im )
-        {
-
-        }
         void update( Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ )
         {
             update( geom );
@@ -188,11 +183,6 @@ public:
             update( geom );
         }
         void update( Geo_t const& geom )
-        {
-            M_gmc =  fusion::at_key<key_type>( geom ).get();
-        }
-
-        void update( Geo_t const& geom, uint16_type /*face*/ )
         {
             M_gmc =  fusion::at_key<key_type>( geom ).get();
         }

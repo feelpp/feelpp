@@ -78,19 +78,11 @@ int cg_laplacian_app()
                                   throw std::invalid_argument( "Invalid data "s + data + " "s + helper);
                           }
                       };
-    try {
-        check_data( soption( _name = "k" ), " set diffusion coefficient using option --k (eg. --k=1)");
-        check_data( soption( _name = "f" ), " set source term using option --f (eg. --f=1)");
-        check_data( soption( _name = "g" ), " set Dirichlet condition using option --g (eg. --g=0)",  support( Vh )->hasAnyMarker( {"Dirichlet"} ) );
-        check_data( soption( _name = "un" ), " set Neumann condition using option --un (eg. --un=0)", support( Vh )->hasAnyMarker( {"Neumann"} ) );
-        check_data( soption( _name = "r_2" ), " set Robin right hand side condition using option --r_2 (eg. --r_2=0)", support( Vh )->hasAnyMarker( {"Robin"} ) );
-    }
-    catch( std::invalid_argument const& e )
-    {
-        Feel::cout << e.what() << std::endl;
-        Feel::cout << "Exiting..." << std::endl;
-        return 1;
-    }
+    check_data( soption( _name = "k" ), " set diffusion coefficient using option --k (eg. --k=1)");
+    check_data( soption( _name = "f" ), " set source term using option --f (eg. --f=1)");
+    check_data( soption( _name = "g" ), " set Dirichlet condition using option --g (eg. --g=0)",  support( Vh )->hasAnyMarker( {"Dirichlet"} ) );
+    check_data( soption( _name = "un" ), " set Neumann condition using option --un (eg. --un=0)", support( Vh )->hasAnyMarker( {"Neumann"} ) );
+    check_data( soption( _name = "r_2" ), " set Robin right hand side condition using option --r_2 (eg. --r_2=0)", support( Vh )->hasAnyMarker( {"Robin"} ) );
     
     auto locals = thechecker.runScript();
 
@@ -190,34 +182,41 @@ int main( int argc, char** argv )
     // tag::env[]
     using namespace Feel;
 
+    try
+    {
 
-    po::options_description laplacianoptions( "Laplacian options" );
-    
-    laplacianoptions.add_options()( "no-solve", po::value<bool>()->default_value( false ), "No solve" )
-        ( "k", po::value<std::string>()->default_value( "1" ), "diffusion coefficient" )
-        ( "f", po::value<std::string>()->default_value( "" ), "right hand side" )
-        ( "g", po::value<std::string>()->default_value( "" ), "Dirichlet boundary condition" )
-        ( "un", po::value<std::string>()->default_value( "" ), "Neumann boundary condition" )
-        ( "r_1", po::value<std::string>()->default_value( "1" ), "Robin left hand side coefficient" )
-        ( "r_2", po::value<std::string>()->default_value( "" ), "Robin right hand side  coefficient" )
-        ( "pyexpr.filename", po::value<std::string>()->default_value( "$cfgdir/../python/laplacian.py" ), "python filename to execute" );
-    laplacianoptions.add( case_options( FEELPP_DIM, "P1" ) );
-    laplacianoptions.add_options()( "marker.name", po::value<std::string>(), "marker on which to solve problem" );
-    laplacianoptions.add_options()( "marker.levelset", po::value<std::string>(), "marker on which to solve problem" );
+        po::options_description laplacianoptions( "Laplacian options" );
 
-    Environment env( _argc = argc, _argv = argv,
-                     _desc = laplacianoptions,
-                     _about = about( _name = "qs_laplacian",
-                                     _author = "Feel++ Consortium",
-                                     _email = "feelpp-devel@feelpp.org" ) );
+        laplacianoptions.add_options()( "no-solve", po::value<bool>()->default_value( false ), "No solve" )
+            ( "k", po::value<std::string>()->default_value( "1" ), "diffusion coefficient" )
+            ( "f", po::value<std::string>()->default_value( "" ), "right hand side" )
+            ( "g", po::value<std::string>()->default_value( "" ), "Dirichlet boundary condition" )
+            ( "un", po::value<std::string>()->default_value( "" ), "Neumann boundary condition" )
+            ( "r_1", po::value<std::string>()->default_value( "1" ), "Robin left hand side coefficient" )
+            ( "r_2", po::value<std::string>()->default_value( "" ), "Robin right hand side  coefficient" )
+            ( "pyexpr.filename", po::value<std::string>()->default_value( "$cfgdir/../python/laplacian.py" ), "python filename to execute" );
+        laplacianoptions.add( case_options( FEELPP_DIM, "P1" ) );
+        laplacianoptions.add_options()( "marker.name", po::value<std::string>(), "marker on which to solve problem" );
+        laplacianoptions.add_options()( "marker.levelset", po::value<std::string>(), "marker on which to solve problem" );
 
-    // end::env[]
-    if ( soption( "case.discretization" ) == "P1" )
-        return cg_laplacian_app<FEELPP_DIM,1>();
-    if ( soption( "case.discretization" ) == "P2" )
-        return cg_laplacian_app<FEELPP_DIM,2>();
-    if ( soption( "case.discretization" ) == "P3" )
-        return cg_laplacian_app<FEELPP_DIM,3>();
-    
+        Environment env( _argc = argc, _argv = argv,
+                         _desc = laplacianoptions,
+                         _about = about( _name = "qs_laplacian",
+                                         _author = "Feel++ Consortium",
+                                         _email = "feelpp-devel@feelpp.org" ) );
+
+        // end::env[]
+        if ( soption( "case.discretization" ) == "P1" )
+            return cg_laplacian_app<FEELPP_DIM,1>();
+        if ( soption( "case.discretization" ) == "P2" )
+            return cg_laplacian_app<FEELPP_DIM,2>();
+        if ( soption( "case.discretization" ) == "P3" )
+            return cg_laplacian_app<FEELPP_DIM,3>();
+    }
+    catch(...)
+    {
+        handleExceptions();
+    }
+    return 1;
 }
 // end::global[]

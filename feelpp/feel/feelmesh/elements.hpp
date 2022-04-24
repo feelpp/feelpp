@@ -28,8 +28,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-09-03
  */
-#ifndef FEELPP_ELEMENTS_HPP
-#define FEELPP_ELEMENTS_HPP 1
+#ifndef FEELPP_MESH_ELEMENTS_HPP
+#define FEELPP_MESH_ELEMENTS_HPP
 
 #include <unordered_map>
 
@@ -245,7 +245,6 @@ public:
             M_orderedElements.clear();
             M_elements.clear();
             M_needToOrderElements = false;
-            M_parts.clear();
         }
     //@}
 
@@ -410,17 +409,6 @@ public:
         }
 
 
-    parts_const_iterator_type beginParts() const
-    {
-        return M_parts.begin();
-    }
-    parts_const_iterator_type endParts() const
-    {
-        return M_parts.end();
-    }
-
-    parts_map_type const& parts() const { return M_parts; }
-
     /**
      * \return the range of iterator \c (begin,end) over the elements
      * with marker \p m on processor \p p
@@ -470,7 +458,7 @@ public:
                 auto const& elt = unwrap_ref( *it );
                 if ( elt.processId() != part )
                     continue;
-                if ( !elt.hasMarker( markerType ) )
+                if ( !elt.hasMarkerType( markerType ) )
                     continue;
                 if ( elt.marker( markerType ).isOff() )
                     continue;
@@ -495,11 +483,9 @@ public:
                 auto const& elt = unwrap_ref( *it );
                 if ( elt.processId() != part )
                     continue;
-                if ( !elt.hasMarker( markerType ) )
+                if ( !elt.hasMarkerType( markerType ) )
                     continue;
-                if ( elt.marker( markerType ).isOff() )
-                    continue;
-                if ( markerFlags.find( elt.marker( markerType ).value() ) == markerFlags.end() )
+                if ( !elt.marker( markerType ).hasOneOf( markerFlags ) )
                     continue;
                 myelements->push_back(boost::cref(elt));
             }
@@ -552,42 +538,84 @@ public:
         /**
      * \return the range of iterator \c (begin,end) over the elements
      * with \c Marker1 \p markerFlags on processor \p p
+     *  - TheType=0 : only actives elements
+     * - TheType=1 : only ghosts elements
+     * - TheType=2 : actives and ghosts elements (container splited)
      */
-    std::map<int, std::tuple<element_reference_wrapper_const_iterator,element_reference_wrapper_const_iterator,elements_reference_wrapper_ptrtype> >
+    template <int TheType=0>
+    auto
     collectionOfElementsWithMarkerByType( uint16_type markerType,  std::map<int,std::set<flag_type>> const& collectionOfMarkerFlagSet, rank_type p = invalid_rank_type_value ) const
         {
             const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
 
-            std::map<int,elements_reference_wrapper_ptrtype> collectionOfElements;
+            std::map<int,elements_reference_wrapper_ptrtype> collectionOfElements, collectionOfGhostElements;
             for ( auto const& [part,markersFlag] : collectionOfMarkerFlagSet )
+            {
                 collectionOfElements[part].reset( new elements_reference_wrapper_type );
+                if constexpr ( TheType == 2 )
+                    collectionOfGhostElements[part].reset( new elements_reference_wrapper_type );
+            }
             auto it = this->beginOrderedElement();
             auto en = this->endOrderedElement();
             for ( ; it!=en;++it )
             {
                 auto const& elt = unwrap_ref( *it );
-                if ( elt.processId() != part )
-                    continue;
-                if ( !elt.hasMarker( markerType ) )
+                bool isActiveElt = elt.processId() == part;
+                if constexpr ( TheType == 0 )
+                    if ( !isActiveElt )
+                        continue;
+                if constexpr ( TheType == 1 )
+                    if ( isActiveElt )
+                        continue;
+
+                if ( !elt.hasMarkerType( markerType ) )
                     continue;
                 if ( elt.marker( markerType ).isOff() )
                     continue;
                 for ( auto const& [part,markersFlag] : collectionOfMarkerFlagSet )
                 {
-                    if ( markersFlag.find( elt.marker( markerType ).value() ) == markersFlag.end() )
+                    if ( !elt.marker( markerType ).hasOneOf( markersFlag ) )
                         continue;
-                    collectionOfElements[part]->push_back(boost::cref(elt));
+
+                    if constexpr ( TheType == 0 || TheType == 1 )
+                    {
+                        collectionOfElements[part]->push_back(boost::cref(elt));
+                    }
+                    else
+                    {
+                        if ( isActiveElt )
+                            collectionOfElements[part]->push_back(boost::cref(elt));
+                        else
+                            collectionOfGhostElements[part]->push_back(boost::cref(elt));
+                    }
                     break;
                 }
             }
 
-            std::map<int, std::tuple<element_reference_wrapper_const_iterator,element_reference_wrapper_const_iterator,elements_reference_wrapper_ptrtype> > collectionOfRangeElement;
-            for ( auto & [part,myelements] : collectionOfElements )
+            if constexpr ( TheType == 0 || TheType == 1 )
             {
-                myelements->shrink_to_fit();
-                collectionOfRangeElement[part] = std::make_tuple( myelements->begin(), myelements->end(), myelements );
+                std::map<int, std::tuple<element_reference_wrapper_const_iterator,element_reference_wrapper_const_iterator,elements_reference_wrapper_ptrtype> > collectionOfRangeElement;
+                for ( auto & [part,myelements] : collectionOfElements )
+                {
+                    myelements->shrink_to_fit();
+                    collectionOfRangeElement[part] = std::make_tuple( myelements->begin(), myelements->end(), myelements );
+                }
+                return collectionOfRangeElement;
             }
-            return collectionOfRangeElement;
+            else
+            {
+                using range_base_type = std::tuple<element_reference_wrapper_const_iterator,element_reference_wrapper_const_iterator,elements_reference_wrapper_ptrtype>;
+                std::map<int, std::tuple<range_base_type,range_base_type> > collectionOfRangeElement;
+                for ( auto & [part,myelements] : collectionOfElements )
+                {
+                    myelements->shrink_to_fit();
+                    auto & myghostelements = collectionOfGhostElements.at(part);
+                    myghostelements->shrink_to_fit();
+                    collectionOfRangeElement[part] = std::make_tuple(  std::make_tuple( myelements->begin(), myelements->end(), myelements ),
+                                                                       std::make_tuple( myghostelements->begin(), myghostelements->end(), myghostelements ) );
+                }
+                return collectionOfRangeElement;
+            }
         }
 
     /**
@@ -747,8 +775,6 @@ public:
     //!
     std::pair<element_iterator,bool> addElement( element_type& f, bool setid = true )
     {
-        if ( f.hasMarker() )
-            M_parts[f.marker().value()]++;
         if ( setid )
             f.setId( M_elements.size() );
         auto ret = M_elements.emplace( std::make_pair( f.id(), f ) );
@@ -769,9 +795,6 @@ public:
     //!
     std::pair<element_iterator,bool> addElement( element_type&& f )
         {
-            if ( f.hasMarker() )
-                M_parts[f.marker().value()]++;
-            //return *M_elements.insert( f );
             auto ret = M_elements.emplace( std::make_pair( f.id(), f ) );
 
             if ( ret.second )
@@ -862,19 +885,15 @@ public:
 
             auto & eltModified = this->elementIterator( elt )->second;
 
-            std::map<uint16_type,flag_type> newEltMarkers;
             for (uint16_type f=0;f<elt.numTopologicalFaces; ++f)
             {
                 auto const& theface = elt.face(f);
                 for ( uint16_type const& markerType : markersType )
                 {
-                    if ( theface.hasMarker( markerType ) )
-                        newEltMarkers[ markerType ] = theface.marker( markerType ).value();
+                    if ( theface.hasMarkerType( markerType ) )
+                        eltModified.addMarker( markerType, theface.marker( markerType ) );
                 }
             }
-            for ( auto const& newMark : newEltMarkers )
-                eltModified.setMarker( newMark.first, newMark.second );
-
         }
     }
     void updateMarkersFromFaces()
@@ -901,13 +920,6 @@ public:
         }
 
     //@}
-protected :
-
-    void addParts( std::set<int> const& someParts )
-        {
-            for ( int p : someParts )
-                M_parts.try_emplace( p, 0 );
-        }
 
 private:
 
@@ -927,7 +939,6 @@ private:
     template<class Archive>
     void serialize( Archive & ar, const unsigned int version )
         {
-            ar & M_parts;
             if ( Archive::is_loading::value )
             {
                 M_elements.clear();
@@ -958,7 +969,6 @@ private:
     elements_type M_elements;
     ordered_elements_reference_wrapper_type M_orderedElements;
     bool M_needToOrderElements;
-    parts_map_type M_parts;
 };
 /// \endcond
 } // Feel

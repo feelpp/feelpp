@@ -27,6 +27,8 @@
 
 #include <feel/feelcore/environment.hpp>
 
+
+#if FEELPP_HAS_FMILIB
 #include <fmilib.h>
 #include <boost/filesystem.hpp>
 
@@ -115,4 +117,5 @@ private :
 
 
 } //namespace Feel
+#endif
 #endif

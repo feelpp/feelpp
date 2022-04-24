@@ -2,37 +2,103 @@
 {
     "Name":"test2d",
     "ShortName":"test2d",
+    "Models":
+    {
+        "heat":
+        [
+            {
+                "name":"heat1",
+                "materials":["OmegaTE"]
+            },
+            {
+                "name":"heat2",
+                "materials":["OmegaHT"]
+            },
+            {
+                "name":"heat3",
+                "materials":["OmegaHT2","OmegaHT3"]
+            },
+            {
+                "name":"heat4",
+                "materials":["OmegaTE2"]
+            }
+        ],
+        "electric":
+        [
+            {
+                "name":"elec1",
+                "materials":["OmegaTE"]
+            },{
+                "name":"elec2",
+                "materials":["OmegaTE2"]
+            }
+        ],
+        "thermoelectric":
+        [
+            {
+                "name":"bbb",
+                //"materials":["OmegaTE"],
+                "submodels":{ "heat":["heat1"], "electric":"elec1" }
+            },{
+                "name":"ccc",
+                //"materials":["OmegaTE"],
+                "submodels":{ "heat":["heat4"], "electric":"elec2" }
+            }
+        ]
+    },
+    "Meshes":
+    {
+        "thermoelectric":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/test-thermoelectric.geo",
+                "hsize":0.05
+            }
+        }
+    },
     "Materials":
     {
         "OmegaTE":
         {
-            "physics":"thermo-electric",
             //"k":"370",//[ W/(m*K) ]
             "k":"100+350*(x*x+y*y):x:y",//[ W/(m*K) ]
-            //"Cp":"1000.005", //[ J/(kg*K) ]
-            // "rho":"1.205", //[ kg/(m^3) ]
             "sigma":"53e6"
             //"sigma":"53e6+y*y*1e8:y"
         },
+        "OmegaTE2":
+        {
+            "k":"370",//[ W/(m*K) ]
+            "sigma":"89e6"
+        },
         "OmegaHT":
         {
-            "physics":"heat",
+            //"physics":"heat",
             //"k":"1"
             "k":"10+350*(x*x+y*y):x:y"
+        },
+        "OmegaHT2":
+        {
+            "k":50
+        },
+        "OmegaHT3":
+        {
+            "k":8
         }
     },
     "BoundaryConditions":
     {
-        "temperature":
+        "heat":
         {
-            "Dirichlet":
+            "temperature":
             {
                 "outerHT":
                 {
+                    "markers":["outerHT","rightTE2"],
                     "expr":"0"
                 }
             },
-            "Neumann":
+            "flux":
             {
                 "insulation":
                 {
@@ -41,9 +107,9 @@
                 }
             }
         },
-        "electric-potential":
+        "electric":
         {
-            "Dirichlet":
+            "electric_potential":
             {
                 "rightTE":
                 {
@@ -52,25 +118,20 @@
                 "leftTE":
                 {
                     "expr":"0.1"
-                }
+                },
+                "topTE2": { "expr":0.2 },
+                "bottomTE2": { "expr":0.5 }
             }
         }
     },
     "PostProcess":
     {
-        "use-model-name":1,
-        "thermo-electric":
+        "thermoelectric":
         {
             "Exports":
             {
                 "fields":["heat.temperature","electric.electric-potential","electric.electric-field","pid","all"]
             }
-        },
-        "heat":
-        {
-        },
-        "electric":
-        {
         }
     }
 

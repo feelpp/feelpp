@@ -2,6 +2,18 @@
 {
     "Name":"bitter",
     "ShortName":"bitter",
+    "Meshes":
+    {
+        "thermoelectric":
+        {
+            "Import":
+            {
+                //"filename":"girder:{file:5e4688bcb0e95704757e263b}",
+                "filename":"girder:{file:5e4688bcb0e95704757e2638}", //fine
+                "partition":1
+            }
+        }
+    },
     "Materials":
     {
         "omega":
@@ -59,8 +71,7 @@
     },
     "PostProcess":
     {
-        "use-model-name":1,
-        "thermo-electric":
+        "thermoelectric":
         {
             "Exports":
             {

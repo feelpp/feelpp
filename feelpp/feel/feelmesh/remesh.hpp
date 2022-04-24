@@ -106,7 +106,7 @@ remesh( std::shared_ptr<MeshT> const& r,
                 double hclose = std::stod( sm[1] );
                 double hfar = std::stod( sm[2] );
                 std::cout << fmt::format( "hclose={} hfar={}", hclose, hfar ) << std::endl;
-                R->setMetric( gradedfromls( P1h, markedfaces( r, req_facets ), hclose, hfar ) );
+                R->setMetric( gradedfromls( P1h, markedfaces( meshSeq, req_facets ), hclose, hfar ) );
             }
             else
             {

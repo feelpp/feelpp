@@ -131,12 +131,8 @@ template<typename T>
 using remove_std_vector_t = typename remove_std_vector<T>::type;
 
 
-template <typename T, typename = void>
-struct is_eigen_matrix : std::false_type {};
 template <typename T>
-struct is_eigen_matrix<T, std::void_t<Eigen::MatrixBase<T>> > : std::true_type {};
-template <typename T>
-inline constexpr bool is_eigen_matrix_v = is_eigen_matrix<T>::value;
+inline constexpr bool is_eigen_matrix_v = std::is_base_of_v<Eigen::MatrixBase<std::decay_t<T>>,std::decay_t<T> >;
 
 } // namespace Feel
 #endif

@@ -23,17 +23,23 @@
 #
 cmake_minimum_required (VERSION 3.13.0)
 
+
+
 if ( FEELPP_COMPONENT STREQUAL "toolboxes" OR 
       FEELPP_COMPONENT STREQUAL "mor" OR
       FEELPP_COMPONENT STREQUAL "testsuite" OR
-      FEELPP_COMPONENT STREQUAL "feelpp/pyfeelpp" OR
-      FEELPP_COMPONENT STREQUAL "toolboxes/pyfeelpp-toolboxes" OR
-      FEELPP_COMPONENT STREQUAL "mor/pyfeelpp-mor" OR
-      FEELPP_COMPONENT STREQUAL "pyfeelpp-all"   )
+      FEELPP_COMPONENT STREQUAL "benchmarks" OR
+      FEELPP_COMPONENT STREQUAL "python" )
 
+      project(feelpp-${FEELPP_COMPONENT})
       message(STATUS "[component] ${FEELPP_COMPONENT}")
+      include(CTest)
+      enable_testing()
       add_subdirectory(${FEELPP_COMPONENT})
-      
+      if ( NOT FEELPP_VERSION_MAJOR )
+        include(${CMAKE_SOURCE_DIR}/feelpp.version.cmake)
+      endif()
+      include(${CMAKE_SOURCE_DIR}/feelpp.package.cmake)
 else()
 
 if ( ${CMAKE_MAJOR_VERSION} EQUAL 3 )
@@ -122,9 +128,10 @@ endif()
 OPTION(FEELPP_ENABLE_ASAN "enable asan flags" OFF)
 OPTION(FEELPP_BENCHMARK_FLAGS "enable benchmarks flags" OFF)
 OPTION(FEELPP_ENABLE_DOCUMENTATION "enable Feel++ documentation (aka examples)" ${FEELPP_DEFAULT})
-OPTION(FEELPP_ENABLE_BENCHMARKS "enable Feel++ benchmarks" ${FEELPP_DEFAULT})
+OPTION(FEELPP_ENABLE_BENCHMARKS "enable Feel++ benchmarks" OFF)
 OPTION(FEELPP_ENABLE_TOOLBOXES "enable Feel++ toolboxes" OFF)
 option(FEELPP_ENABLE_MOR "Enable MOR(Model Order Reduction) Applications in Feel++" OFF)
+option(FEELPP_ENABLE_FEELPP_PYTHON "Enable Feel++ python component" OFF)
 
 # enable PCH only for GCC as for now
 if(CMAKE_C_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
@@ -174,7 +181,6 @@ message(STATUS "[feelpp] using ${NProcs2} cores out of ${NProcs} cores" )
 SET( CMAKE_MODULE_PATH  ${FEELPP_HOME_DIR}/feelpp/cmake/modules ${FEELPP_HOME_DIR}/feelpp/cmake/machines )
 
 include(feelpp.dirs)
-include(feelpp.version)
 
 #
 # Enable testing
@@ -191,7 +197,7 @@ add_custom_target(install-testcase
 
 add_custom_target(check-full COMMAND "ctest")
 
-
+include(${CMAKE_SOURCE_DIR}/feelpp.version.cmake)
 
 ################################################################################
 # Feel
@@ -220,6 +226,11 @@ endif()
 include(feelpp.module.mor)
 if ( FEELPP_HAS_MOR )
   add_subdirectory(mor)
+endif()
+
+#include(feelpp.module.pyfeelpp)
+if ( FEELPP_ENABLE_FEELPP_PYTHON )
+  add_subdirectory(python)
 endif()
 
 #
@@ -277,7 +288,7 @@ include(feelpp.install)
 ################################################################################
 # Packaging procedure
 ################################################################################
-include(feelpp.package)
+include(${CMAKE_SOURCE_DIR}/feelpp.package.cmake)
 
 ################################################################################
 # Post-config message

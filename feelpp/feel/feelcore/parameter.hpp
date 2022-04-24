@@ -48,6 +48,7 @@ using suffix = NA::named_argument_t<struct suffix_tag>;
 using filename = NA::named_argument_t<struct filename_tag>;
 using sep = NA::named_argument_t<struct sep_tag>;
 using directory = NA::named_argument_t<struct directory_tag>;
+using location = NA::named_argument_t<struct location_tag>;
 using chdir = NA::named_argument_t<struct chdir_tag>;
 using config = NA::named_argument_t<struct config_tag>;
 using subdir = NA::named_argument_t<struct subdir_tag>;
@@ -292,6 +293,7 @@ using home = NA::named_argument_t<struct home_tag>;
 using bugs = NA::named_argument_t<struct bugs_tag>;
 using version = NA::named_argument_t<struct version_tag>;
 
+using points_used = NA::named_argument_t<struct points_used_tag>;
 using max_points_used = NA::named_argument_t<struct max_points_used_tag>;
 using projection = NA::named_argument_t<struct projection_tag>;
 
@@ -335,6 +337,7 @@ inline constexpr auto& _suffix = NA::identifier<na::suffix>;
 inline constexpr auto& _filename = NA::identifier<na::filename>;
 inline constexpr auto& _sep = NA::identifier<na::sep>;
 inline constexpr auto& _directory = NA::identifier<na::directory>;
+inline constexpr auto& _location = NA::identifier<na::location>;
 inline constexpr auto& _chdir = NA::identifier<na::chdir>;
 inline constexpr auto& _config = NA::identifier<na::config>;
 inline constexpr auto& _subdir = NA::identifier<na::subdir>;
@@ -579,6 +582,7 @@ inline constexpr auto& _home = NA::identifier<na::home>;
 inline constexpr auto& _bugs = NA::identifier<na::bugs>;
 inline constexpr auto& _version = NA::identifier<na::version>;
 
+inline constexpr auto& _points_used = NA::identifier<na::points_used>;
 inline constexpr auto& _max_points_used = NA::identifier<na::max_points_used>;
 inline constexpr auto& _projection = NA::identifier<na::projection>;
 

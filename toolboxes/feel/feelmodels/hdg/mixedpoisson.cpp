@@ -52,7 +52,9 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::MixedPoisson( std::string const& prefix,
       M_fluxKey(MixedPoissonPhysicsMap[physic]["fluxK"]),
       M_tauCst(doption( prefixvm(this->prefix(), "tau_constant") )),
       M_useSC(boption( prefixvm(this->prefix(), "use-sc")) ),
-      M_postMatrixInit(false)
+      M_postMatrixInit(false),
+      M_solverName(soption(_prefix=this->prefix(), _name="solver")),
+      M_useNearNullSpace(boption(_prefix=this->prefix(), _name="use-near-null-space"))
 {
     this->log("MixedPoisson","constructor", "start" );
 
@@ -65,7 +67,6 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::MixedPoisson( std::string const& prefix,
     this->addTimerTool("PostProcessing",nameFilePostProcessing);
     this->addTimerTool("TimeStepping",nameFileTimeStepping);
 
-    this->modelProperties().enableBoundaryConditions2();
     //-----------------------------------------------------------------------------//
     // option in cfg files
     this->loadParameterFromOptionsVm();
@@ -118,20 +119,18 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->log("MixedPoisson","init", "start" );
     this->timerTool("Constructor").start();
 
-    if ( this->physics().empty() )
-        this->initPhysics( this->keyword(), this->modelProperties().models() );
+    this->initModelProperties();
+
+    this->initPhysics( this->shared_from_this(), this->modelProperties().models() );
 
     // physical properties
     if ( !M_materialsProperties )
     {
-        auto paramValues = this->modelProperties().parameters().toParameterValues();
-        this->modelProperties().materials().setParameterValues( paramValues );
         M_materialsProperties.reset( new materialsproperties_type( this->shared_from_this() ) );
         M_materialsProperties->updateForUse( this->modelProperties().materials() );
     }
 
-    if ( !this->mesh() )
-        this->initMesh();
+    this->initMesh();
 
     this->materialsProperties()->addMesh( this->mesh() );
 
@@ -200,13 +199,21 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
     M_pp = std::make_shared<element_potential_type>(M_Wh, M_physicMap["potentialSymbol"]);
     M_ppp = std::make_shared<element_postpotential_type>(M_Whp, "post"+M_physicMap["potentialSymbol"]);
 
-    auto ibcMarkers = std::accumulate(M_bcIntegralMarkerManagement.markerIntegralBC().begin(),
-                                      M_bcIntegralMarkerManagement.markerIntegralBC().end(),
+#if 0
+    auto ibcMarkers = std::accumulate(M_boundaryConditions->integral().begin(),
+                                      M_boundaryConditions->integral().end(),
                                       std::set<std::string>(),
                                       [](auto& prev, auto const& pair) {
-                                          prev.insert(pair.second.begin(), pair.second.end());
+                                          prev.insert(pair.second->markers().begin(), pair.second->markers().end());
                                           return prev;
                                       });
+#else
+    std::set<std::string> ibcMarkers;
+    for ( auto const& [bcName,bcData] : M_boundaryConditions->integral() )
+        ibcMarkers.insert( bcData->markers().begin(),bcData->markers().end() );
+    for ( auto const& [bcName,bcData] : M_boundaryConditions->couplingODEs() )
+        ibcMarkers.insert( bcData->markers().begin(),bcData->markers().end() );
+#endif
     std::set<int> ibcMeshMarkers;
     std::for_each(ibcMarkers.begin(), ibcMarkers.end(),
                   [this,&ibcMeshMarkers](auto const& x) {
@@ -215,7 +222,7 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
     auto complement_integral_faces = complement(faces(support(M_Wh)),
                                                 [ibcMeshMarkers]( auto const& ewrap ) {
                                                     auto const& e = unwrap_ref( ewrap );
-                                                    return ( e.hasMarker() && ibcMeshMarkers.count(e.marker().value()) );
+                                                    return ( e.hasMarker() && ibcMeshMarkers.count(e.marker().value()) ); // WARNING now we can have multiple marker values by entity
                                                 });
     M_gammaMinusIntegral = complement(boundaryfaces(support(M_Wh)),
                                       [ibcMeshMarkers]( auto const& ewrap ) {
@@ -251,6 +258,8 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initMesh()
     this->log("MixedPoisson","initMesh", "start");
     this->timerTool("Constructor").start();
 
+    if ( this->modelProperties().jsonData().contains("Meshes") )
+        super_type::super_model_meshes_type::setup( this->modelProperties().jsonData().at("Meshes"), {this->keyword()} );
     if ( this->doRestart() )
         super_type::super_model_meshes_type::setupRestart( this->keyword() );
     super_type::super_model_meshes_type::updateForUse<mesh_type>( this->keyword() );
@@ -265,19 +274,15 @@ MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
 void
 MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
 {
-    M_bcDirichletMarkerManagement.clearMarkerDirichletBC();
-    M_bcNeumannMarkerManagement.clearMarkerNeumannBC();
-    M_bcRobinMarkerManagement.clearMarkerRobinBC();
-    M_bcIntegralMarkerManagement.clearMarkerIntegralBC();
+    M_boundaryConditions = std::make_shared<boundary_conditions_type>( this->shared_from_this() );
+    if ( !this->modelProperties().boundaryConditions().hasSection( this->keyword() ) )
+        return;
 
-    for( auto const& [name, bc] : this->modelProperties().boundaryConditions2().byFieldType( M_potentialKey, "Dirichlet") )
-        M_bcDirichletMarkerManagement.addMarkerDirichletBC("nitsche", name, bc.markers() );
-    for( auto const& [name, bc] : this->modelProperties().boundaryConditions2().byFieldType( M_potentialKey, "Neumann") )
-        M_bcNeumannMarkerManagement.addMarkerNeumannBC(MarkerManagementNeumannBC::NeumannBCShape::SCALAR, name, bc.markers() );
-    for( auto const& [name, bc] : this->modelProperties().boundaryConditions2().byFieldType( M_potentialKey, "Robin") )
-        M_bcRobinMarkerManagement.addMarkerRobinBC(name, bc.markers() );
-    for( auto const& [name, bc] : this->modelProperties().boundaryConditions2().byFieldType( M_fluxKey, "Integral") )
-        M_bcIntegralMarkerManagement.addMarkerIntegralBC(name, bc.markers() );
+    M_boundaryConditions->setup( this->modelProperties().boundaryConditions().section( this->keyword() ) );
+#if 0
+    for ( auto const& [bcName,bcData] : M_boundaryConditions->dirichlet() )
+        bcData->updateDofEliminationIds( *this, this->unknownName(), this->spaceUnknown() );
+#endif
 }
 
 MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
@@ -287,26 +292,58 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initTimeStep()
     this->log("MixedPoisson","initTimeStep", "start" );
     this->timerTool("Constructor").start();
 
+    double ti = this->timeInitial();
+    double tf = this->timeFinal();
+    double dt = this->timeStep();
+
     std::string myFileFormat = soption(_name="ts.file-format");// without prefix
+    std::string suffixName = "";
+    if ( myFileFormat == "binary" )
+        suffixName = (boost::format("_rank%1%_%2%")%this->worldComm().rank()%this->worldComm().size() ).str();
 
-    int bdfOrder = 1;
-    if ( M_timeStepping == "BDF" )
-        bdfOrder = ioption(_prefix=this->prefix(),_name="bdf.order");
-    int nConsecutiveSave = std::max( 3, bdfOrder ); // at least 3 is required when restart with theta scheme
-
-    M_bdfPotential = this->createBdf( this->spacePotential(),M_potentialKey, bdfOrder, nConsecutiveSave, myFileFormat );
+    if ( M_timeStepping == "BDF" || M_timeStepping == "Theta" )
+    {
+        int bdfOrder = 1;
+        if ( M_timeStepping == "BDF" )
+            bdfOrder = ioption(_prefix=this->prefix(),_name="bdf.order");
+        int nConsecutiveSave = std::max( 3, bdfOrder ); // at least 3 is required when restart with theta scheme
+        M_bdfPotential = this->createBdf( this->spacePotential(),M_potentialKey, bdfOrder, nConsecutiveSave, myFileFormat );
+    }
+    else if( M_timeStepping == "Newmark" )
+    {
+        M_newmarkPotential = newmark( _space=this->spacePotential(),
+                                      _name=M_potentialKey+suffixName,
+                                      _prefix=this->prefix(),
+                                      _initial_time=ti, _final_time=tf, _time_step=dt,
+                                      _restart=this->doRestart(), _restart_path=this->restartPath(), _restart_at_last_save=this->restartAtLastSave(),
+                                      _save=this->tsSaveInFile(), _freq=this->tsSaveFreq() );
+    }
 
     if (!this->doRestart())
     {
         // up current time
-        this->updateTime( M_bdfPotential->timeInitial() );
+        if ( M_timeStepping == "Newmark" )
+            this->updateTime( M_newmarkPotential->timeInitial() );
+        else
+            this->updateTime( M_bdfPotential->timeInitial() );
     }
     else
     {
-        // start time step
-        double tir = M_bdfPotential->restart();
-        // load a previous solution as current solution
-        *this->fieldPotentialPtr() = M_bdfPotential->unknown(0);
+        double tir;
+        if ( M_timeStepping == "Newmark" )
+        {
+            // restart time step
+            tir = M_newmarkPotential->restart();
+            // load a previous solution as current solution
+            *this->fieldPotentialPtr() = M_newmarkPotential->previousUnknown();
+        }
+        else
+        {
+            // start time step
+            tir = M_bdfPotential->restart();
+            // load a previous solution as current solution
+            *this->fieldPotentialPtr() = M_bdfPotential->unknown(0);
+        }
         // up initial time
         this->setTimeInitial( tir );
         // up current time
@@ -344,23 +381,13 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initPostProcess()
         }
     }
 
-    // point measures
-    auto fieldNamesWithSpacePotential = std::make_pair( std::set<std::string>({M_potentialKey}), this->spacePotential() );
-    auto fieldNamesWithSpacePostPotential = std::make_pair( std::set<std::string>({"post"+M_potentialKey}), this->spacePostPotential() );
-    auto fieldNamesWithSpaceFlux = std::make_pair( std::set<std::string>({M_fluxKey}), this->spaceFlux() );
-    auto fieldNamesWithSpaces = hana::make_tuple( fieldNamesWithSpacePotential, fieldNamesWithSpacePostPotential, fieldNamesWithSpaceFlux );
-    M_measurePointsEvaluation = std::make_shared<measure_points_evaluation_type>( fieldNamesWithSpaces );
-    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint( this->keyword() ) )
-    {
-       M_measurePointsEvaluation->init( evalPoints );
-    }
+    auto se = this->symbolsExpr();
+    this->template initPostProcessMeshes<mesh_type>( se );
 
     if ( !this->isStationary() )
     {
         if ( this->doRestart() )
-            this->postProcessMeasuresIO().restart( "time", this->timeInitial() );
-        else
-            this->postProcessMeasuresIO().setMeasure( "time", this->timeInitial() ); //just for have time in first column
+            this->postProcessMeasures().restart( this->timeInitial() );
     }
 
     double tElpased = this->timerTool("Constructor").stop("createExporters");
@@ -392,13 +419,12 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::setParameterValues( std::map<std::string,doubl
         this->modelProperties().parameters().setParameterValues( paramValues );
         this->modelProperties().postProcess().setParameterValues( paramValues );
         this->materialsProperties()->setParameterValues( paramValues );
-        this->modelProperties().boundaryConditions2().setParameterValues( paramValues );
     }
-    // M_bcDirichlet.setParameterValues( paramValues );
-    // M_bcNeumann.setParameterValues( paramValues );
-    // M_bcRobin.setParameterValues( paramValues );
-    // M_bcIntegral.setParameterValues( paramValues );
-    // M_volumicForcesProperties.setParameterValues( paramValues );
+
+    for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
+        physicData->setParameterValues( paramValues );
+
+    M_boundaryConditions->setParameterValues( paramValues );
 
     this->log("MixedPoisson","setParameterValues", "finish");
 }
@@ -413,15 +439,6 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::exportResults( double time )
 }
 
 MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
-std::shared_ptr<std::ostringstream>
-MIXEDPOISSON_CLASS_TEMPLATE_TYPE::getInfo() const
-{
-    std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
-    return _ostr;
-}
-
-
-MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
 void
 MIXEDPOISSON_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) const
 {
@@ -434,33 +451,13 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) const
 
     super_type::super_model_meshes_type::updateInformationObject( p["Meshes"] );
 
+    super_physics_type::updateInformationObjectFromCurrentType( p["Physics"] );
 
-    // Physics
+    M_boundaryConditions->updateInformationObject( p["Boundary Conditions"] );
+    // // Physics
     nl::json subPt;
-    subPt.emplace( "time mode", std::string( (this->isStationary())?"Stationary":"Transient") );
-    p["Physics"] = subPt;
-
-    // Boundary Conditions
-#if 0
-    subPt.clear();
-    subPt2.clear();
-    M_bcDirichletMarkerManagement.updateInformationObjectDirichletBC( subPt2 );
-    for( const auto& ptIter : subPt2 )
-        subPt.put_child( ptIter.first, ptIter.second );
-    subPt2.clear();
-    M_bcNeumannMarkerManagement.updateInformationObjectNeumannBC( subPt2 );
-    for( const auto& ptIter : subPt2 )
-        subPt.put_child( ptIter.first, ptIter.second );
-    subPt2.clear();
-    M_bcRobinMarkerManagement.updateInformationObjectRobinBC( subPt2 );
-    for( const auto& ptIter : subPt2 )
-        subPt.put_child( ptIter.first, ptIter.second );
-    p.put_child( "Boundary Conditions",subPt );
-    M_bcIntegralMarkerManagement.updateInformationObjectIntegralBC( subPt2 );
-    for( const auto& ptIter : subPt2 )
-        subPt.put_child( ptIter.first, ptIter.second );
-    p.put_child( "Boundary Conditions",subPt );
-#endif
+    // subPt.emplace( "time mode", std::string( (this->isStationary())?"Stationary":"Transient") );
+    // p["Physics"] = subPt;
 
     // Materials properties
     if ( this->materialsProperties() )
@@ -498,19 +495,19 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonInfo
         tabInfo->add( "Environment",  super_type::super_model_base_type::tabulateInformations( jsonInfo.at("Environment"), tabInfoProp ) );
 
     if ( jsonInfo.contains("Physics") )
-    {
-        Feel::Table tabInfoPhysics;
-        TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoPhysics, jsonInfo.at("Physics"), tabInfoProp );
-        tabInfo->add( "Physics", TabulateInformations::New( tabInfoPhysics, tabInfoProp ) );
-    }
+        tabInfo->add( "Physics", super_physics_type::tabulateInformations( jsonInfo.at("Physics"), tabInfoProp ) );
 
     if ( this->materialsProperties() && jsonInfo.contains("Materials Properties") )
         tabInfo->add( "Materials Properties", this->materialsProperties()->tabulateInformations(jsonInfo.at("Materials Properties"), tabInfoProp ) );
 
-    //tabInfoSections.push_back( std::make_pair( "Boundary conditions",  tabulate::Table{} ) );
-
     if ( jsonInfo.contains("Meshes") )
         tabInfo->add( "Meshes", super_type::super_model_meshes_type::tabulateInformations( jsonInfo.at("Meshes"), tabInfoProp ) );
+
+    if ( jsonInfo.contains("Boundary Conditions") )
+        tabInfo->add( "Boundary Conditions", boundary_conditions_type::tabulateInformations( jsonInfo.at("Boundary Conditions"), tabInfoProp ) );
+
+    //tabInfoSections.push_back( std::make_pair( "Boundary conditions",  tabulate::Table{} ) );
+
 
     if ( jsonInfo.contains("Function Spaces") )
     {
@@ -543,8 +540,47 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonInfo
 }
 
 MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
+std::shared_ptr<NullSpace<double>>
+MIXEDPOISSON_CLASS_TEMPLATE_TYPE::nullSpace(std::string const& name)
+{
+    if constexpr( is_tensor2symm )
+    {
+        auto mode1 = this->M_Mh->element( oneX() );
+        auto mode2 = this->M_Mh->element( oneY() );
+        if constexpr( nDim == 2 )
+        {
+            auto mode3 = this->M_Mh->element( vec(Py(),-Px()) );
+            auto ns = NullSpace<double>({ mode1, mode2, mode3 });
+            return std::make_shared<NullSpace<double>>(Feel::backend(_name=name), ns);
+        } else if constexpr( nDim == 3 )
+        {
+            auto mode3 = this->M_Mh->element( oneZ() );
+            auto mode4 = this->M_Mh->element( vec(Py(),-Px(),cst(0.)) );
+            auto mode5 = this->M_Mh->element( vec(-Pz(),cst(0.),Px()) );
+            auto mode6 = this->M_Mh->element( vec(cst(0.),Pz(),-Py()) );
+            auto ns = NullSpace<double>({ mode1, mode2, mode3, mode4, mode5, mode6 });
+            return std::make_shared<NullSpace<double>>(Feel::backend(_name=name), ns);
+        }
+        else
+            return nullptr;
+    }
+    else
+        return nullptr;
+}
+
+MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
 void
 MIXEDPOISSON_CLASS_TEMPLATE_TYPE::solve()
+{
+    if( M_solverName == "Linear" )
+        this->solveLinear();
+    else
+        this->solvePicard();
+}
+
+MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
+void
+MIXEDPOISSON_CLASS_TEMPLATE_TYPE::solveLinear()
 {
     solve::strategy s = M_useSC ? solve::strategy::static_condensation : solve::strategy::monolithic;
     M_A = makeSharedMatrixCondensed<value_type>(s, csrGraphBlocks(*M_ps, (s>=solve::strategy::static_condensation)?Pattern::ZERO:Pattern::COUPLED), *this->backend(), (s>=solve::strategy::static_condensation)?false:true );
@@ -565,10 +601,26 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::solve()
     auto bbf = blockform2( *M_ps, M_A);
     auto blf = blockform1( *M_ps, M_F);
 
+    if constexpr( is_tensor2symm )
+    {
+        if( M_useNearNullSpace )
+        {
+            auto name = this->prefix()+".sc";
+            Feel::backend( _name=name )->attachNearNullSpace( this->nullSpace(name) );
+        }
+    }
+
     bbf.solve(_solution=U, _rhs=blf, _condense=M_useSC, _name=this->prefix());
 
     M_up = std::make_shared<element_flux_type>( U(0_c) );
     M_pp = std::make_shared<element_potential_type>( U(1_c));
+}
+
+MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
+void
+MIXEDPOISSON_CLASS_TEMPLATE_TYPE::solvePicard()
+{
+    CHECK(false) << "Solve Picard not yet implemented";
 }
 
 MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
@@ -604,10 +656,19 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::startTimeStep()
     // // some time stepping require to compute residual without time derivative
     // this->updateTimeStepCurrentResidual();
 
-    // start time step
-    if (!this->doRestart())
-        M_bdfPotential->start( M_bdfPotential->unknowns() );
-     // up current time
+    if ( M_timeStepping == "Newmark" )
+    {
+        // start time step
+        if ( !this->doRestart() )
+            M_newmarkPotential->start(this->fieldPotential());
+    }
+    else if ( M_timeStepping == "BDF" || M_timeStepping == "Theta" )
+    {
+        // start time step
+        if (!this->doRestart())
+            M_bdfPotential->start( M_bdfPotential->unknowns() );
+    }
+    // up current time
     this->updateTime( M_bdfPotential->time() );
 
     // update all expressions in bc or in house prec
@@ -634,13 +695,17 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::updateTimeStep()
         M_bdfPotential->next( this->fieldPotential() );
         int currentTimeOrder = this->timeStepBdfPotential()->timeOrder();
         rebuildCstAssembly = previousTimeOrder != currentTimeOrder && this->timeStepBase()->strategy() == TS_STRATEGY_DT_CONSTANT;
-        this->updateTime( this->timeStepBdfPotential()->time() );
     }
     else if ( M_timeStepping == "Theta" )
     {
         M_bdfPotential->next( this->fieldPotential() );
-        this->updateTime( this->timeStepBdfPotential()->time() );
     }
+    else if ( M_timeStepping == "Newmark" )
+    {
+        M_newmarkPotential->next( this->fieldPotential() );
+    }
+    // up current time
+    this->updateTime( this->timeStepBase()->time() );
 
     if ( rebuildCstAssembly )
         this->setNeedToRebuildCstPart(true);

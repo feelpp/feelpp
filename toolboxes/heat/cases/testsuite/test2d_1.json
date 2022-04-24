@@ -1,0 +1,163 @@
+// -*- mode: javascript -*-
+{
+    //"Name": "Test heat toolbox",
+    //"ShortName":"TestHeat",
+    "Models":
+    {
+        "heat":
+        {
+            "name":"heatAllMat",
+            "materials":["mat1","mat2","mat3","mat4"],
+            "setup": {
+                "heat-sources":
+                {
+                    "expr":1
+                }
+            }
+        }
+    },
+    "Meshes":
+    {
+        "heat":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/square_4mat.geo",
+                "hsize":0.01
+            }
+        }
+    },
+    "Materials":
+    {
+        "mat%1_1%":
+        {
+            "k":"%1_2%",
+            "index1":[ [ "1", "1" ], ["2","2.5"], ["3","3.8"], ["4","4.9"] ]
+        }
+    },
+    "BoundaryConditions":
+    {
+        "heat":
+        {
+            "temperature":
+            {
+                "MarkerDirichlet":
+                {
+                    "markers":["gamma_x0_mat3","gamma_x0_mat1","gamma_xH_mat2","gamma_xH_mat4","gamma_y0_mat3","gamma_y0_mat4","gamma_yH_mat1","gamma_yH_mat2"],
+                    "expr":"0"
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "heat":
+        {
+            "Exports":
+            {
+                "fields":["temperature","all"]
+            },
+            "Measures": {
+                "Statistics": {
+                    "Length_%1%_%2%": {
+		    	        "type": "integrate",
+		    	        "expr": "1",
+		    	        "markers": "%1%",
+                        "internalfaces_evaluation":"%2%",
+		    	        "index1":["interface_mat1_mat2","interface_mat1_mat3","interface_mat3_mat4","interface_mat2_mat4"],
+                        "index2":["average","max","sum","one_side"]
+                    },
+                    "test_connection_mat1_mat2": {
+                        "type": "integrate",
+                        "expr": "1",
+                        "markers": ["interface_mat1_mat2","interface_mat1_mat3"],
+                        "requires_markers_connection":["mat1","mat2"],
+                        "internalfaces_evaluation":"sum"
+                    },
+                    "jump_temperature_%1%": {
+                        "type": "integrate",
+                        "expr": "{heat_T*nx,heat_T*ny}:heat_T:nx:ny",
+                        "markers": "%1%",
+                        "internalfaces_evaluation":"sum",
+                        "index1":["interface_mat1_mat2","interface_mat1_mat3","interface_mat3_mat4","interface_mat2_mat4"]
+                    },
+                    "jump_heatflux_%1%": {
+                        "type": "integrate",
+                        "expr": "materials_k*(heat_grad_T_0*nx+heat_grad_T_1*ny):materials_k:heat_grad_T_0:heat_grad_T_1:nx:ny",
+                        "markers": "%1%",
+                        "internalfaces_evaluation":"sum",
+                        "index1":["interface_mat1_mat2","interface_mat1_mat3","interface_mat3_mat4","interface_mat2_mat4"]
+                    },
+                    "test_ifsum":{
+                        "type":"%1%",
+                        "expr":"materials_k*(x+y):materials_k:x:y",
+                        "internalfaces_evaluation":"sum",
+                        "requires_markers_connection":["mat1","mat2"],
+                        "markers":["interface_mat1_mat2"],
+                        "quad":15,
+                        "index1":["max","min","mean","integrate"]
+                    }
+                },
+                "Normal-Heat-Flux":{
+                    "jump_%1%":
+                    {
+                        "markers":"%1%",
+                        "direction":"inward",
+                        "internalfaces_evaluation":"sum",
+                        "index1":["interface_mat1_mat2","interface_mat1_mat3","interface_mat3_mat4","interface_mat2_mat4"]
+                    },
+                    "connection_mat1":
+                    {
+                        "markers":["interface_mat1_mat2","interface_mat1_mat3"],
+                        "direction":"inward",
+                        "requires_markers_connection":["mat1"],
+                        "index1":["interface_mat1_mat2","interface_mat1_mat3"]
+                    }
+                }
+            },
+            "Checkers":
+            {
+                "Measures":
+                {
+                    "Statistics_Length_%1%_%2_1%_integrate":
+                    {
+                        "value":"%2_2%",
+                        "tolerance":1e-8,
+                        "index1":["interface_mat1_mat2","interface_mat1_mat3","interface_mat3_mat4","interface_mat2_mat4"],
+                        "index2":[ ["average","0.5"],["max","0.5"],["sum","1"],["one_side","0.5"]]
+                    },
+                    "Statistics_test_connection_mat1_mat2_integrate":
+                    {
+                        "value":1.5,
+                        "tolerance":1e-8
+                    },
+                    "Statistics_jump_temperature_%1%_integrate_%2%":
+                    {
+                        "value":0,
+                        "tolerance":1e-8,
+                        "index1":["interface_mat1_mat2","interface_mat1_mat3","interface_mat3_mat4","interface_mat2_mat4"],
+                        "index2":["0","1"]
+                    },
+                    "Statistics_jump_heatflux_%1%_integrate":
+                    {
+                        "value":0,
+                        "tolerance":1e-2,
+                        "index1":["interface_mat1_mat2","interface_mat1_mat3","interface_mat3_mat4","interface_mat2_mat4"]
+                    },
+                    "Normal_Heat_Flux_jump_%1%":
+                    {
+                        "value":0,
+                        "tolerance":1e-2,
+                        "index1":["interface_mat1_mat2","interface_mat1_mat3","interface_mat3_mat4","interface_mat2_mat4"]
+                    },
+                    "Statistics_test_ifsum_%1_1%":{
+                        "value":"%1_2%",
+                        "tolerance":"%1_3%",
+                        "index1":[ ["max","5.25","1e-3"],["min","3.5","1e-3"],["mean","4.375","1e-8"],["integrate","2.1875","1e-8"]]
+                    }
+                }
+            }
+        }
+    }
+
+}

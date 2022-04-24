@@ -143,12 +143,6 @@ public:
             M_right( expr.right(), geom )
         {
         }
-        template<typename IM>
-        void init( IM const& im )
-        {
-            M_left.init( im );
-            M_right.init( im );
-        }
         void update( Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ )
         {
             update( geom );
@@ -162,13 +156,6 @@ public:
             M_gmc = fusion::at_key<key_type>( geom ).get();
             M_left.update( geom );
             M_right.update( geom );
-
-        }
-        void update( Geo_t const& geom, uint16_type face )
-        {
-            M_gmc = fusion::at_key<key_type>( geom ).get();
-            M_left.update( geom, face );
-            M_right.update( geom, face );
 
         }
 
@@ -348,12 +335,6 @@ public:
             M_right( expr.right(), geom )
         {
         }
-        template<typename IM>
-        void init( IM const& im )
-        {
-            M_left.init( im );
-            M_right.init( im );
-        }
         void update( Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ )
         {
             update( geom );
@@ -367,14 +348,6 @@ public:
             M_gmc = fusion::at_key<key_type>( geom ).get();
             M_left.update( geom );
             M_right.update( geom );
-
-        }
-        void update( Geo_t const& geom, uint16_type face )
-        {
-            M_gmc = fusion::at_key<key_type>( geom ).get();
-            M_left.update( geom, face );
-            M_right.update( geom, face );
-
         }
 
         value_type

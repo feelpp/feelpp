@@ -36,9 +36,9 @@
 
 #include <feel/feelmodels/modelcore/modelnumerical.hpp>
 #include <feel/feelmodels/modelcore/modelphysics.hpp>
-#include <feel/feelmodels/modelcore/markermanagement.hpp>
 #include <feel/feelmodels/modelcore/options.hpp>
 #include <feel/feelmodels/modelmaterials/materialsproperties.hpp>
+#include <feel/feelmodels/electric/electricboundaryconditions.hpp>
 
 namespace Feel
 {
@@ -50,10 +50,9 @@ namespace FeelModels
  */
 template< typename ConvexType, typename BasisPotentialType>
 class Electric : public ModelNumerical,
-                 public ModelPhysics<ConvexType::nDim>,
-                 public std::enable_shared_from_this< Electric<ConvexType,BasisPotentialType> >
+                 public ModelPhysics<ConvexType::nDim>
 {
-
+    typedef ModelPhysics<ConvexType::nDim> super_physics_type;
 public:
     typedef ModelNumerical super_type;
     typedef Electric<ConvexType,BasisPotentialType> self_type;
@@ -75,7 +74,6 @@ public:
     typedef std::shared_ptr<space_electricpotential_type> space_electricpotential_ptrtype;
     typedef typename space_electricpotential_type::element_type element_electricpotential_type;
     typedef std::shared_ptr<element_electricpotential_type> element_electricpotential_ptrtype;
-    typedef typename space_electricpotential_type::element_external_storage_type element_electricpotential_external_storage_type;
 
     // materials properties
     typedef MaterialsProperties<nRealDim> materialsproperties_type;
@@ -84,10 +82,6 @@ public:
     // exporter
     typedef Exporter<mesh_type,nOrderGeo> export_type;
     typedef std::shared_ptr<export_type> export_ptrtype;
-
-    // measure tools for points evaluation
-    typedef MeasurePointsEvaluation<space_electricpotential_type> measure_points_evaluation_type;
-    typedef std::shared_ptr<measure_points_evaluation_type> measure_points_evaluation_ptrtype;
 
     struct FieldTag
     {
@@ -102,7 +96,8 @@ public:
               std::string const& subPrefix = "",
               ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
-    std::shared_ptr<std::ostringstream> getInfo() const override;
+    std::shared_ptr<self_type> shared_from_this() { return std::dynamic_pointer_cast<self_type>( super_type::shared_from_this() ); }
+
     void updateInformationObject( nl::json & p ) const override;
     tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
 
@@ -209,7 +204,7 @@ public :
         }
     auto modelFields( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
         {
-            auto field_p = this->spaceElectricPotential()->elementPtr( *sol, rowStartInVector + this->startSubBlockSpaceIndex( "potential-electric" ) );
+            auto field_p = this->spaceElectricPotential()->elementPtr( *sol, rowStartInVector + this->startSubBlockSpaceIndex( "electric-potential" ) );
             return this->modelFields( field_p, prefix );
         }
     template <typename PotentialFieldType>
@@ -362,17 +357,11 @@ private :
     materialsproperties_ptrtype M_materialsProperties;
 
     // boundary conditions
-    map_scalar_field<2> M_bcDirichlet;
-    map_scalar_field<2> M_bcNeumann;
-    map_scalar_fields<2> M_bcRobin;
-    map_scalar_field<2> M_volumicForcesProperties;
-    MarkerManagementDirichletBC M_bcDirichletMarkerManagement;
-    MarkerManagementNeumannBC M_bcNeumannMarkerManagement;
-    MarkerManagementRobinBC M_bcRobinMarkerManagement;
+    using boundary_conditions_type = ElectricBoundaryConditions;
+    std::shared_ptr<boundary_conditions_type> M_boundaryConditions;
 
     // post-process
     export_ptrtype M_exporter;
-    measure_points_evaluation_ptrtype M_measurePointsEvaluation;
 };
 
 
@@ -405,20 +394,10 @@ template <typename ModelFieldsType,typename SymbolsExpr>
 void
 Electric<ConvexType,BasisPotentialType>::executePostProcessMeasures( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr )
 {
-    bool hasMeasure = false;
-    bool hasMeasureNorm = this->updatePostProcessMeasuresNorm( this->mesh(), M_rangeMeshElements, symbolsExpr, mfields );
-    bool hasMeasureStatistics = this->updatePostProcessMeasuresStatistics( this->mesh(), M_rangeMeshElements, symbolsExpr, mfields );
-    bool hasMeasurePoint = this->updatePostProcessMeasuresPoint( M_measurePointsEvaluation, mfields );
-    if ( hasMeasureNorm || hasMeasureStatistics || hasMeasurePoint )
-        hasMeasure = true;
+    model_measures_quantities_empty_t mquantities;
 
-    if ( hasMeasure )
-    {
-        if ( !this->isStationary() )
-            this->postProcessMeasuresIO().setMeasure( "time", time );
-        this->postProcessMeasuresIO().exportMeasures();
-        this->upload( this->postProcessMeasuresIO().pathFile() );
-    }
+    // execute common post process and save measures
+    super_type::executePostProcessMeasures( time, this->mesh(), M_rangeMeshElements, symbolsExpr, mfields, mquantities );
 }
 
 } // namespace FeelModels

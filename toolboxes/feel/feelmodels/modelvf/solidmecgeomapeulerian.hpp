@@ -124,12 +124,9 @@ public:
             M_locGradDisplacement( expr.disp().gradExtents(*this->gmc()) )
             {}
 
-        template<typename IM>
-        void init( IM const& im ) {}
 
         void update( Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ ) override { update(geom); }
         void update( Geo_t const& geom, Basis_i_t const& /*fev*/ ) override { update(geom); }
-        void update( Geo_t const& geom, uint16_type face ) override { CHECK( false ) << "TODO"; }
 
         //using super_type::evalijq; // fix clang warning
 

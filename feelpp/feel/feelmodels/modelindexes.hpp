@@ -25,6 +25,7 @@
 #define FEELPP_MODELS_MODELINDEXES_HPP 1
 
 #include <feel/feelcore/feel.hpp>
+#include <feel/feelcore/json.hpp>
 
 namespace Feel {
 
@@ -48,12 +49,14 @@ class FEELPP_EXPORT ModelIndexes : public std::map<std::string,std::string>
     int nextFreeIndex() const { return M_nextFreeIndex; }
     void setNextFreeIndex( int i ) { M_nextFreeIndex = i; }
 
+    static std::vector<ModelIndexes> generateAllCases( nl::json const& jarg, int startIndex = 1 );
+    static std::vector<ModelIndexes> generateAllCases( nl::json const& jarg, ModelIndexes const& indexes );
     static std::vector<ModelIndexes> generateAllCases( pt::ptree const& pt, int startIndex = 1 );
     static std::vector<ModelIndexes> generateAllCases( pt::ptree const& pt, ModelIndexes const& indexes );
 
   private :
 
-    static std::vector<std::string> generateIndexFromString( std::string const& input );
+    static std::vector<std::string> generateIndex( nl::json const& input );
 
   private :
     int M_nextFreeIndex;

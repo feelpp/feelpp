@@ -8,26 +8,39 @@
     "ShortName": "Square2d",
     "Models":
     {
-        "equations":[
-            {
-                "name":"equation1",
-                "unknown":
-                {
+        "cfpdes":{
+            "equations":["equation1","equation2"]
+        },
+        "equation1":{
+            "setup":{
+                "unknown":{
                     "basis":"Pch1",
                     "name":"prey",
                     "symbol":"u"
+                },
+                "coefficients":{
+                    "c":"1", // diffusion
+                    "a":"-( (1-equation1_u) - equation2_v/(equation1_u+thealpha) ):thealpha:equation1_u:equation2_v", // reaction
+                    //"f":"( equation1_u*(1-equation1_u) - equation1_u*equation2_v/(equation1_u+thealpha) ):thealpha:equation1_u:equation2_v", // source
+                    "d":"1" // first time derivative
                 }
-            },
-            {
-                "name":"equation2",
-                "unknown":
-                {
+            }
+        },
+        "equation2":{
+            "setup":{
+                "unknown":{
                     "basis":"Pch1",
                     "name":"predator",
                     "symbol":"v"
+                },
+                "coefficients":{
+                    "c":"thedelta:thedelta", // diffusion
+                    "a":"-( (thebeta*equation1_u)/(equation1_u+thealpha) - thegamma ):thebeta:thealpha:thegamma:equation1_u", // reaction
+                    //"f":"equation2_v*( (thebeta*equation1_u)/(equation1_u+thealpha) - thegamma ):thebeta:thealpha:thegamma:equation1_u:equation2_v", // source
+                    "d":"1"// first time derivative
                 }
             }
-        ]
+        }
     },
     "Parameters":
     {
@@ -40,19 +53,22 @@
         "ustar":"6/35",
         "vstar":"116.0/245"
     },
+    "Meshes":
+    {
+        "cfpdes":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/square2d.geo",
+                "hsize":1 //10
+            }
+        }
+    },
     "Materials":
     {
         "mymat1":
         {
-            "markers":"Omega",
-            "equation1_c":"1", // diffusion
-            "equation1_a":"-( (1-equation1_u) - equation2_v/(equation1_u+thealpha) ):thealpha:equation1_u:equation2_v", // reaction
-            //"equation1_f":"( equation1_u*(1-equation1_u) - equation1_u*equation2_v/(equation1_u+thealpha) ):thealpha:equation1_u:equation2_v", // source
-            "equation1_d":"1",// first time derivative
-            "equation2_c":"thedelta:thedelta", // diffusion
-            "equation2_a":"-( (thebeta*equation1_u)/(equation1_u+thealpha) - thegamma ):thebeta:thealpha:thegamma:equation1_u", // reaction
-            //"equation2_f":"equation2_v*( (thebeta*equation1_u)/(equation1_u+thealpha) - thegamma ):thebeta:thealpha:thegamma:equation1_u:equation2_v", // source
-            "equation2_d":"1"// first time derivative
+            "markers":"Omega"
         }
     },
     // "BoundaryConditions":
@@ -66,33 +82,29 @@
     // },
     "InitialConditions":
     {
-        "prey":
-        {
-            "Expression":
-            {
-                "myic":
-                {
-                    "markers":"Omega",
-                    "expr":"ustar-(2e-7)*(x-0.1*y-225)*(x-0.1*y-675):ustar:x:y"
+        "equation1":{
+            "prey":{
+                "Expression":{
+                    "myic":{
+                        "markers":"Omega",
+                        "expr":"ustar-(2e-7)*(x-0.1*y-225)*(x-0.1*y-675):ustar:x:y"
+                    }
                 }
             }
         },
-        "predator":
-        {
-            "Expression":
-            {
-                "myic":
-                {
-                    "markers":"Omega",
-                    "expr":"vstar-(3e-5)*(x-450) -(1.2e-4)*(y-150):vstar:x:y"
+        "equation2":{
+            "predator":{
+                "Expression":{
+                    "myic":{
+                        "markers":"Omega",
+                        "expr":"vstar-(3e-5)*(x-450) -(1.2e-4)*(y-150):vstar:x:y"
+                    }
                 }
             }
         }
     },
-
     "PostProcess":
     {
-        "use-model-name":1,
         "cfpdes":
         {
             "Exports":

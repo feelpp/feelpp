@@ -1,0 +1,95 @@
+// -*- mode: javascript -*-
+/*
+- WANG, Peng, ZHANG, Yonghao, et GUO, Zhaoli. Numerical study of three-dimensional natural convection in a cubical cavity at high Rayleigh numbers. International Journal of Heat and Mass Transfer, 2017, vol. 113, p. 217-228.
+*/
+{
+    "Name": "HeatFluid",
+    "ShortName":"HeatFluid",
+    "Models":
+    {
+        "fluid":{
+            "equations":"Navier-Stokes"
+        }
+    },
+    "Parameters":
+    {
+        "Ra":1e5,//1.89e5,//1e5,//1e6,//1e5//1e4,//1e6,
+        "Pr":0.71
+    },
+    "Meshes":
+    {
+        "heatfluid":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/3d_laminar.geo",
+                "hsize":0.03  // 0.01
+            }
+        }
+    },
+    "Materials":
+    {
+        "Omega":{
+            "rho":"1",
+            "mu":"sqrt(Pr/Ra):Pr:Ra",
+            "k":"1/sqrt(Ra*Pr):Pr:Ra",
+            "Cp":"1",
+            "beta":"1"
+        }
+    },
+    "BoundaryConditions":
+    {
+        "fluid":
+        {
+            "velocity":
+            {
+                "wall":
+                {
+                    "markers":["wall_x0","wall_xH","wall_y0","wall_yH","wall_z0","wall_zH"],
+                    "expr":"{0,0,0}"
+                }
+            }
+        },
+        "heat":
+        {
+            "temperature":
+            {
+                "wall_xH":{ "expr":"0.5" },
+                "wall_x0": { "expr":"-0.5" }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "heatfluid":
+        {
+            "Exports":
+            {
+                "fields":["fluid.velocity","fluid.pressure","heat.temperature","pid"]
+            },
+            "Measures":
+            {
+                "Points":
+                {
+                    "line_%1_1%":
+                    {
+                        "over_geometry":
+                        {
+                            "segment":
+                            {
+                                "point1":"%1_2%",
+                                "point2":"%1_3%",
+                                "n_points":100
+                            }
+                        },
+                        "fields":["fluid.velocity","heat.temperature"],
+                        "include_coordinates":1,
+                        "output":{ "type":"table" },
+                        "index1":[ ["xz", "{0.5,0,0.5}", "{0.5,1,0.5}"],
+                                   ["yz", "{0,0.5,0.5}", "{1,0.5,0.5}"] ]
+                    }
+                }
+            }
+        }
+    }
+}

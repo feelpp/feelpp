@@ -7,17 +7,13 @@
         "omega":
         {
             "name":"copper",
-            "cond":"-1"
+            "poisson_c":"-1"
         }
     },
     "BoundaryConditions":
     {
-        "potential":
+        "poisson":
         {
-            "VolumicForces":
-            {
-                "": {"expr":"0"}
-            },
             "Neumann":
             {
                 "inlet":

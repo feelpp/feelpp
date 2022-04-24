@@ -4,13 +4,29 @@
     "ShortName":"Solid",
     "Models":
     {
-        "equations":"Hyper-Elasticity",
-        "material-model":"StVenantKirchhoff"
-        //,"formulation":"displacement-pressure"
+        "solid":{
+            "setup":{
+                "equations":"Hyper-Elasticity",
+                "material-model":"StVenantKirchhoff",
+                //"formulation":"displacement-pressure",
+                "body-forces":"{0,-gravity*1e3}:gravity"
+            }
+        }
     },
     "Parameters":
     {
         "gravity":"2"
+    },
+    "Meshes":
+    {
+        "solid":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/csm.geo",
+                "hsize":0.004
+            }
+        }
     },
     "Materials":
     {
@@ -23,61 +39,55 @@
     },
     "BoundaryConditions":
     {
-        "displacement":
+        "solid":
         {
-            "Dirichlet":
+            "displacement":
             {
-                "fixed-wall":
-                {
+                "fixed-wall":{
                     "expr":"{0,0}"
                 }
             },
-            "Neumann_scalar":
+            "normal_stress":
             {
-                "free-wall":
-                {
+                "free-wall":{
                     "expr":"0" 
-                }
-            },
-            "VolumicForces":
-            {
-                "beam":
-                {
-                    "expr":"{0,-gravity*1e3}:gravity" 
                 }
             }
         }
     },
     "PostProcess":
     {
-        "Exports":
+        "solid":
         {
-            "fields":["displacement","von-mises-criterion"]
-        },
-        "Measures":
-        {
-            "Points":
+            "Exports":
             {
-                "pointA":
-                {
-                    "coord":"{0.6,0.2,0}",
-                    "fields":["displacement"]
-                }
-            }
-        },
-        "Checkers":
-        {
+                "fields":["displacement","von-mises-criterion"]
+            },
             "Measures":
             {
-                "Points_pointA_displacement_0":
+                "Points":
                 {
-                    "value":-7.187e-3,
-                    "tolerance":1e-1
-                },
-                "Points_pointA_displacement_1":
+                    "pointA":
+                    {
+                        "coord":"{0.6,0.2,0}",
+                        "fields":["displacement"]
+                    }
+                }
+            },
+            "Checkers":
+            {
+                "Measures":
                 {
-                    "value":-66.1e-3,
-                    "tolerance":1e-1
+                    "Points_pointA_field_displacement_0":
+                    {
+                        "value":-7.187e-3,
+                        "tolerance":1e-1
+                    },
+                    "Points_pointA_field_displacement_1":
+                    {
+                        "value":-66.1e-3,
+                        "tolerance":1e-1
+                    }
                 }
             }
         }

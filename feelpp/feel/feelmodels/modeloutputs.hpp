@@ -24,15 +24,12 @@
 #ifndef FEELPP_MODELOUTPUTS_HPP
 #define FEELPP_MODELOUTPUTS_HPP 1
 
-#include <boost/property_tree/ptree.hpp>
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/commobject.hpp>
-#include <feel/feelvf/ginac.hpp>
+#include <feel/feelcore/environment.hpp>
 #include <feel/feelmodels/modelmarkers.hpp>
 
 namespace Feel {
-
-namespace pt =  boost::property_tree;
 
 /** \class ModelOutput
  * \brief class containing an output
@@ -54,23 +51,27 @@ class FEELPP_EXPORT ModelOutput : public CommObject
     ModelOutput( ModelOutput&& ) = default;
     ModelOutput& operator=( ModelOutput const& ) = default;
     ModelOutput& operator=( ModelOutput && ) = default;
-    ModelOutput( std::string name, pt::ptree const& p,
+    ModelOutput( std::string name, nl::json const& jarg,
                  worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
                  std::string const& directoryLibExpr = "" );
 
     std::string name() const { return M_name; }
     std::string type() const { return M_type; }
     std::set<std::string> markers() const { return M_markers; }
+    std::vector<double> const& coord() const { return M_coord; }
+    double radius() const { return M_radius; }
     int dim() const { return M_dim; }
     std::string getString( std::string const& key ) const;
 
   private:
-    pt::ptree M_p;
+    nl::json M_p;
     std::string M_directoryLibExpr;
 
     std::string M_name;
     std::string M_type;
     ModelMarkers M_markers;
+    std::vector<double> M_coord;
+    double M_radius;
     int M_dim;
 };
 
@@ -93,11 +94,11 @@ class FEELPP_EXPORT ModelOutputs: public std::map<std::string,ModelOutput>, publ
     using super = CommObject;
     using value_type = std::map<std::string,ModelOutput>::value_type;
     ModelOutputs( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
-    ModelOutputs( pt::ptree const& p, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
+    ModelOutputs( nl::json const& jarg, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
     virtual ~ModelOutputs() = default;
-    void setPTree( pt::ptree const& _p ) { M_p = _p; setup(); }
+    void setPTree( nl::json const& jarg ) { M_p = jarg; setup(); }
     ModelOutput loadOutput( std::string const&, std::string const& );
-    ModelOutput getOutput( pt::ptree const&, std::string const& );
+    ModelOutput getOutput( nl::json const& jarg, std::string const& );
 
     ModelOutput const& output( std::string const& o ) const
     {
@@ -112,7 +113,7 @@ class FEELPP_EXPORT ModelOutputs: public std::map<std::string,ModelOutput>, publ
   private:
     void setup();
 
-    pt::ptree M_p;
+    nl::json M_p;
     std::string M_directoryLibExpr;
 
 };

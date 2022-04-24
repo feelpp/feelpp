@@ -24,7 +24,6 @@
 #ifndef FEELPP_MODELMARKERS_HPP
 #define FEELPP_MODELMARKERS_HPP 1
 
-
 #include <feel/feelmodels/modelindexes.hpp>
 
 namespace Feel {
@@ -42,6 +41,7 @@ class FEELPP_EXPORT ModelMarkers : public std::set<std::string>
     ModelMarkers& operator=( ModelMarkers const& ) = default;
     ModelMarkers& operator=( ModelMarkers&& ) = default;
     void setPTree( pt::ptree const& p, ModelIndexes const& indexes = ModelIndexes() );
+    void setup( nl::json const& jarg, ModelIndexes const& indexes = ModelIndexes() );
     bool empty() const;
 };
 
