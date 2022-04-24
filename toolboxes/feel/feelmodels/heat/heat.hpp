@@ -79,7 +79,6 @@ class Heat : public ModelNumerical,
         typedef std::shared_ptr<space_temperature_type> space_temperature_ptrtype;
         typedef typename space_temperature_type::element_type element_temperature_type;
         typedef std::shared_ptr<element_temperature_type> element_temperature_ptrtype;
-        typedef typename space_temperature_type::element_external_storage_type element_temperature_external_storage_type;
         // materials properties
         typedef MaterialsProperties<nRealDim> materialsproperties_type;
         typedef std::shared_ptr<materialsproperties_type> materialsproperties_ptrtype;

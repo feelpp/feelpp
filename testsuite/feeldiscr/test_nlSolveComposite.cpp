@@ -165,11 +165,11 @@ public:
 
         mesh = loadMesh(_mesh = new mesh_type);
 
-        M_backend->nlSolver()->jacobian = boost::bind( &self_type::updateJacobian,
-                                                       boost::ref( *this ), _1, _2 );
+        M_backend->nlSolver()->jacobian = std::bind( &self_type::updateJacobian,
+                                                       std::ref( *this ), std::placeholders::_1, std::placeholders::_2 );
 
-        M_backend->nlSolver()->residual = boost::bind( &self_type::updateResidual,
-                                                       boost::ref( *this ), _1, _2 );
+        M_backend->nlSolver()->residual = std::bind( &self_type::updateResidual,
+                                                       std::ref( *this ), std::placeholders::_1, std::placeholders::_2 );
     }
 
     /**
