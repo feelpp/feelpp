@@ -323,6 +323,8 @@ namespace FeelModels
         vector_ptrtype M_pseudoTransientContinuationPreviousSolution;
         double M_pseudoTransientContinuationExpurThresholdHigh,M_pseudoTransientContinuationExpurThresholdLow;
         double M_pseudoTransientContinuationExpurBetaHigh, M_pseudoTransientContinuationExpurBetaLow;
+
+        double M_solverPicardRelaxationParameter;
     };
 
 

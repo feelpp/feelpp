@@ -3,25 +3,39 @@
     "ShortName": "L-Shape",
     "Models":
     {
-        "equations":[
-            {
-                "name":"laplace",
-                "unknown":
-                {
+        "cfpdes":{
+            "equations":"laplace"
+        },
+        "laplace":{
+            "setup":{
+                "unknown":{
                     "basis":"Pch1",
                     "name":"u",
                     "symbol":"u"
+                },
+                "coefficients":{
+                    "c":"1", // diffusion
+                    "f":"1"
                 }
             }
-        ]
+        }
+    },
+    "Meshes":
+    {
+        "cfpdes":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/l-shape.geo",
+                "hsize":0.05
+            }
+        }
     },
     "Materials":
     {
         "mymat1":
         {
-            "markers":"Omega",
-            "laplace_c":"1", // diffusion
-            "laplace_f":"1"
+            "markers":"Omega"
         }
     },
     "BoundaryConditions":
@@ -40,7 +54,6 @@
     },
     "PostProcess":
     {
-        "use-model-name":1,
         "cfpdes":
         {
             "Exports":

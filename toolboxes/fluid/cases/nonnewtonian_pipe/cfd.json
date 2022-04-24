@@ -3,8 +3,23 @@
     "ShortName":"gravity",
     "Models":
     {
-        "equations":"Navier-Stokes",
-        "viscosity_law":"carreau-yasuda_law" //"newtonian, power_law, carreau_law, carreau-yasuda_law
+        "fluid":{
+            "setup":{
+                "equations":"Navier-Stokes",
+                "viscosity_law":"carreau-yasuda_law" //"newtonian, power_law, carreau_law, carreau-yasuda_law
+            }
+        }
+    },
+    "Meshes":
+    {
+        "fluid":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/cfd.geo",
+                "hsize":0.00005
+            }
+        }
     },
     "Materials":
     {
@@ -26,9 +41,9 @@
     },
     "BoundaryConditions":
     {
-        "velocity":
+        "fluid":
         {
-            "Dirichlet":
+            "velocity":
             {
                 "left":
                 {
@@ -38,11 +53,8 @@
                 {
                     "expr":"{0,0}"
                 }
-            }
-        },
-        "pressure":
-        {
-            "Dirichlet":
+            },
+            "pressure":
             {
                 "top":
                 {
@@ -57,9 +69,12 @@
     },
     "PostProcess":
     {
-        "Exports":
+        "fluid":
         {
-            "fields":["velocity","pressure","pid", "materials.dynamic-viscosity"]
+            "Exports":
+            {
+                "fields":["velocity","pressure","pid", "materials.dynamic-viscosity"]
+            }
         }
     }
 

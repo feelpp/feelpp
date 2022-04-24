@@ -155,3 +155,9 @@ feelpp/pyfeelpp/pytest-3.json
 nohup.out
 *.mesh.path
 *.measures.csv
+.FMUOutput/
+dslog*
+dsmodel*
+request.
+status.
+feelpp/feel/feelcore/git.cpp

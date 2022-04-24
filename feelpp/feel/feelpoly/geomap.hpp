@@ -814,6 +814,7 @@ class GeoMap
         typedef ElementType element_type;
         //typedef typename element_type::permutation_type permutation_type;
         typedef typename element_type::template PermutationSubEntity<subEntityCoDimFix> permutation_type;
+        using mesh_marker_type = typename element_type::marker_type;
 
         using eigen_matrix_nx_type = eigen_matrix_type<NDim,Eigen::Dynamic,value_type>;
         using eigen_matrix_xn_type = eigen_matrix_type<Eigen::Dynamic,NDim,value_type>;
@@ -986,6 +987,24 @@ class GeoMap
             else
                 update<CTX>( __e );
         }
+
+
+        template<size_type CTX>
+        void updateContext( size_type dynctx = 0 )
+            {
+                M_dynamic_context = M_dynamic_context | dynctx;
+
+                if ( M_dynamic_context != 0 )
+                {
+                    this->resize<CTX|vm::DYNAMIC,true>();
+                    this->updateImpl<CTX|vm::DYNAMIC>();
+                }
+                else
+                {
+                    this->resize<CTX,true>();
+                    this->updateImpl<CTX>();
+                }
+            }
 
 
         FEELPP_STRONG_INLINE
@@ -1532,26 +1551,26 @@ class GeoMap
          *
          * @return the marker of the element
          */
-        Marker1 marker( uint16_type k ) const
+        mesh_marker_type marker( uint16_type k ) const
             {
                 auto itFindMarker = M_e_markers.find( k );
                 if ( itFindMarker!= M_e_markers.end() )
                     return itFindMarker->second;
                 else
-                    return Marker1();
+                    return mesh_marker_type{};
             }
         /**
          * get the marker of the element
          *
          * @return the marker of the element
          */
-        Marker1 marker() const
+        mesh_marker_type marker() const
         {
             auto itFindMarker = M_e_markers.find( 1 );
             if ( itFindMarker!= M_e_markers.end() )
                 return itFindMarker->second;
             else
-                return Marker1();
+                return mesh_marker_type{};
         }
 
         /**
@@ -1559,13 +1578,13 @@ class GeoMap
          *
          * @return the marker2 of the element
          */
-        Marker1 marker2() const
+        mesh_marker_type marker2() const
         {
             auto itFindMarker = M_e_markers.find( 2 );
             if ( itFindMarker!= M_e_markers.end() )
                 return itFindMarker->second;
             else
-                return Marker1();
+                return mesh_marker_type{};
         }
 
         /**
@@ -1573,13 +1592,13 @@ class GeoMap
          *
          * @return the marker3 of the element
          */
-        Marker1 marker3() const
+        mesh_marker_type marker3() const
         {
             auto itFindMarker = M_e_markers.find( 3 );
             if ( itFindMarker!= M_e_markers.end() )
                 return itFindMarker->second;
             else
-                return Marker1();
+                return mesh_marker_type{};
         }
 
         /**
@@ -1587,15 +1606,15 @@ class GeoMap
          *
          * @return the marker of the face of the  element
          */
-        Marker1 entityMarker( uint16_type k = 1 ) const
+        mesh_marker_type entityMarker( uint16_type k = 1 ) const
             {
                 if ( !isOnSubEntity() || !M_f_markers )
-                    return Marker1();
+                    return mesh_marker_type{};
                 auto itFindMarker = M_f_markers->find( k );
                 if ( itFindMarker!= M_f_markers->end() )
                     return itFindMarker->second;
                 else
-                    return Marker1();
+                    return mesh_marker_type{};
             }
 
         /**
@@ -1812,8 +1831,10 @@ class GeoMap
                 if ( M_gm->hasPermutationWithNeighborFace( elt.id(), face_in_elt ) == false )
                 {
                     auto [found_permutation,perm] = this->updateFromMatchingNodes<CTX>(elt, face_in_elt, gmc );
+#if 0 // NOT WORK IN ALL CASES
                     if ( found_permutation )
                         M_gm->setPermutationWithNeighborFace( elt.id(), face_in_elt, perm.value() );
+#endif
                     return found_permutation;
                 }
                 this->update<CTX>( elt, face_in_elt, permutation_type(M_gm->permutationWithNeighborFace(elt.id(), face_in_elt)) );
@@ -2490,8 +2511,8 @@ class GeoMap
         boost::multi_array<value_type, 4> M_B3;
 
         size_type M_id;
-        std::map<uint16_type,Marker1> M_e_markers;
-        std::optional<std::map<uint16_type,Marker1>> M_f_markers;
+        std::map<uint16_type,mesh_marker_type> M_e_markers;
+        std::optional<std::map<uint16_type,mesh_marker_type>> M_f_markers;
         size_type M_elem_id_1;
         uint16_type M_pos_in_elem_id_1;
         size_type M_elem_id_2;

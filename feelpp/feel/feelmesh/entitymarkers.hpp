@@ -39,7 +39,7 @@ namespace Feel {
  */
 template<int EntityCoDim, typename ElementT>
 inline
-std::optional<std::map<uint16_type,Marker1>> entityMarkers( ElementT const& e, uint16_type f )
+std::optional<std::map<uint16_type,typename ElementT::marker_type/*Marker1*/>> entityMarkers( ElementT const& e, uint16_type f )
 {
     if constexpr ( dimension_v<ElementT> >= 1  && is_geoelement_v<ElementT> )
     {

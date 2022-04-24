@@ -67,7 +67,8 @@ HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
 HEATFLUID_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 {
-    M_useNaturalConvection = boption(_prefix=this->prefix(),_name="use-natural-convection");//"Forced-Convection";
+    M_useNaturalConvection = boption(_prefix=this->prefix(),_name="use-natural-convection");
+    M_solverName = soption(_prefix=this->prefix(),_name="solver");
 
     M_BoussinesqRefTemperature = doption(_name="Boussinesq.ref-temperature",_prefix=this->prefix());
     std::string gravityStr;
@@ -89,6 +90,8 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::initMesh()
     this->log("HeatFluid","initMesh", "start");
     this->timerTool("Constructor").start();
 
+    if ( this->modelProperties().jsonData().contains("Meshes") )
+        super_type::super_model_meshes_type::setup( this->modelProperties().jsonData().at("Meshes"), {this->keyword()} );
     if ( this->doRestart() )
         super_type::super_model_meshes_type::setupRestart( this->keyword() );
     super_type::super_model_meshes_type::updateForUse<mesh_type>( this->keyword() );
@@ -156,6 +159,15 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
     return myblockGraph;
 }
 
+HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+HEATFLUID_CLASS_TEMPLATE_TYPE::updatePhysics( typename super_physics_type::PhysicsTreeNode & physicsTree, ModelModels const& models )
+{
+    physicsTree.addChild( M_heatModel, models );
+    physicsTree.addChild( M_fluidModel, models );
+
+    physicsTree.updateMaterialSupportFromChildren( "intersect" );
+}
 
 HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -164,54 +176,55 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->log("HeatFluid","init", "start" );
     this->timerTool("Constructor").start();
 
+    this->initModelProperties();
+
     M_heatModel = std::make_shared<heat_model_type>(prefixvm(this->prefix(),"heat"), "heat", this->worldCommPtr(),
                                                     this->subPrefix(), this->repository() );
     M_fluidModel = std::make_shared<fluid_model_type>(prefixvm(this->prefix(),"fluid"), "fluid", this->worldCommPtr(),
                                                       this->subPrefix(), this->repository() );
 
-    if ( this->physics().empty() )
-    {
-        typename ModelPhysics<mesh_type::nDim>::subphysic_description_type subPhyicsDesc;
-        subPhyicsDesc[M_heatModel->physicType()] = std::make_tuple( M_heatModel->keyword(),M_heatModel );
-        subPhyicsDesc[M_fluidModel->physicType()] = std::make_tuple( M_fluidModel->keyword(), M_fluidModel );
-        this->initPhysics( this->keyword(), this->modelProperties().models(), subPhyicsDesc );
-    }
+    // physics
+    this->initPhysics(
+        this->shared_from_this(),
+        [this]( typename super_physics_type::PhysicsTree & physicsTree ) {
+            physicsTree.updatePhysics( this->shared_from_this(), this->modelProperties().models() );
+            //CHECK( M_fluidModel && M_heatModel ) << "aiai";
+            physicsTree.updatePhysics( M_heatModel, this->modelProperties().models() );
+            physicsTree.updatePhysics( M_fluidModel, this->modelProperties().models() );
+        } );
 
     // physical properties
     if ( !M_materialsProperties )
     {
-        auto paramValues = this->modelProperties().parameters().toParameterValues();
-        this->modelProperties().materials().setParameterValues( paramValues );
+        //auto paramValues = this->modelProperties().parameters().toParameterValues();
+        //this->modelProperties().materials().setParameterValues( paramValues );
         M_materialsProperties.reset( new materialsproperties_type( this->shared_from_this() ) );
         M_materialsProperties->updateForUse( this->modelProperties().materials() );
     }
 
-    if ( !this->mesh() )
-        this->initMesh();
+    this->initMesh();
 
     this->materialsProperties()->addMesh( this->mesh() );
 
     // init heat toolbox
-    M_heatModel->setPhysics( this->physics( M_heatModel->physicType() ), M_heatModel->keyword() );
     M_heatModel->setManageParameterValues( false );
     if ( !M_heatModel->modelPropertiesPtr() )
     {
         M_heatModel->setModelProperties( this->modelPropertiesPtr() );
         M_heatModel->setManageParameterValuesOfModelProperties( false );
     }
-    M_heatModel->setMesh( this->mesh() );
+    M_heatModel->setModelMeshAsShared( this->modelMesh() );
     M_heatModel->setMaterialsProperties( M_materialsProperties );
     M_heatModel->init( false );
 
     // init fluid toolbox
-    M_fluidModel->setPhysics( this->physics( M_fluidModel->physicType() ), M_fluidModel->keyword() );
     M_fluidModel->setManageParameterValues( false );
     if ( !M_fluidModel->modelPropertiesPtr() )
     {
         M_fluidModel->setModelProperties( this->modelPropertiesPtr() );
         M_fluidModel->setManageParameterValuesOfModelProperties( false );
     }
-    M_fluidModel->setMesh( this->mesh() );
+    M_fluidModel->setModelMeshAsShared( this->modelMesh() );
     M_fluidModel->setMaterialsProperties( M_materialsProperties );
     M_fluidModel->init( false );
 
@@ -226,18 +239,20 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     // defined the convection fluid velocity into heat toolbox
     std::string fluidVelocitySymbolUsed = M_useSemiImplicitTimeScheme? "beta_u" : "U"; // TODO : get this info from fluid toolbox
     std::string velConvExprStr = (boost::format( nDim==2? "{%1%_%2%_0,%1%_%2%_1}:%1%_%2%_0:%1%_%2%_1":"{%1%_%2%_0,%1%_%2%_1,%1%_%2%_2}:%1%_%2%_0:%1%_%2%_1:%1%_%2%_2" )%M_fluidModel->keyword() %fluidVelocitySymbolUsed ).str();
-    auto velConvExpr = expr<nDim,1>( velConvExprStr, "",this->worldComm(),this->repository().expr() );
-    for ( std::string const& matName : M_materialsProperties->physicToMaterials( this->physicsAvailableFromCurrentType() ) )
-        M_heatModel->setVelocityConvectionExpr( matName,velConvExpr );
+    nl::json j_heatConvectionVelocity = { {"expr",velConvExprStr} };
+    for ( auto const& [physicId,physicObj] : this->physicsFromCurrentType() )
+    {
+        for ( auto subphysic : physicObj->subphysicsFromType( M_heatModel->physicType() ) )
+        {
+            auto physicHeatObj = std::dynamic_pointer_cast<ModelPhysicHeat<nDim>>(subphysic);
+            CHECK( physicHeatObj ) << "invalid cast";
+            physicHeatObj->setupConvection( j_heatConvectionVelocity );
+        }
+    }
+
 
     if ( M_useNaturalConvection )
         M_fluidModel->setStabilizationGLSDoAssembly( false );
-
-    if ( M_useSemiImplicitTimeScheme )
-    {
-        M_fluidModel->setUseVelocityExtrapolated( true );
-        //M_fluidModel->setUseSemiImplicitTimeScheme(true);
-    }
 
     // post-process
     this->initPostProcess();
@@ -247,6 +262,13 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
     // update initial conditions
     this->updateInitialConditions( this->symbolsExpr() );
+
+
+    // solver
+    if ( M_solverName == "automatic" )
+    {
+        M_solverName = "Newton";
+    }
 
     // backend
     this->initAlgebraicBackend();
@@ -374,12 +396,23 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::initPostProcess()
         }
     }
 
+    auto se = this->symbolsExpr();
+    this->template initPostProcessMeshes<mesh_type>( se );
+
+    // start or restart the export of measures
+    if ( !this->isStationary() )
+    {
+        if ( this->doRestart() )
+            this->postProcessMeasures().restart( this->timeInitial() );
+    }
+
+
     double tElpased = this->timerTool("Constructor").stop("createExporters");
     this->log("HeatFluid","initPostProcess",(boost::format("finish in %1% s")%tElpased).str() );
 }
 
 
-
+#if 0
 HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
 std::shared_ptr<std::ostringstream>
 HEATFLUID_CLASS_TEMPLATE_TYPE::getInfo() const
@@ -426,6 +459,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::getInfo() const
 
     return _ostr;
 }
+#endif
 
 HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -568,15 +602,24 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::exportResults( double time )
     this->timerTool("PostProcessing").start();
 
     auto mfields = this->modelFields();
-    auto symbolExpr = this->symbolsExpr( mfields );
-    M_heatModel->exportResults( time, symbolExpr );
-    M_fluidModel->exportResults( time, symbolExpr );
+    auto se = this->symbolsExpr( mfields );
+    M_heatModel->exportResults( time, se );
+    M_fluidModel->exportResults( time, se );
 
     //auto fields = hana::concat( M_heatModel->allFields( M_heatModel->keyword() ), M_fluidModel->allFields( M_fluidModel->keyword() ) );
-    auto exprExport = hana::concat( M_materialsProperties->exprPostProcessExports( this->mesh(),this->physicsAvailable(),symbolExpr ),
-                                    hana::concat( M_heatModel->exprPostProcessExportsToolbox( symbolExpr,M_heatModel->keyword() ),
-                                                  M_fluidModel->exprPostProcessExports( symbolExpr,M_fluidModel->keyword() ) ) );
-    this->executePostProcessExports( M_exporter, time, mfields, symbolExpr, exprExport );
+    auto exprExport = hana::concat( M_materialsProperties->exprPostProcessExports( this->mesh(),this->physicsAvailable(),se ),
+                                    hana::concat( M_heatModel->exprPostProcessExportsToolbox( se,M_heatModel->keyword() ),
+                                                  M_fluidModel->exprPostProcessExports( se,M_fluidModel->keyword() ) ) );
+    this->executePostProcessExports( M_exporter, time, mfields, se, exprExport );
+
+
+    auto mom = this->materialsProperties()->materialsOnMesh( this->mesh() );
+    auto defaultRangeMeshElements = mom->isDefinedOnWholeMesh( this->physicsAvailableFromCurrentType() )?
+        elements(this->mesh()) : markedelements(this->mesh(), mom->markers( this->physicsAvailableFromCurrentType() ));
+    model_measures_quantities_empty_t mquantities;
+    // execute common post process and save measures
+    super_type::executePostProcessMeasures( time, this->mesh(), defaultRangeMeshElements, se, mfields, mquantities );
+
 
     this->timerTool("PostProcessing").stop("exportResults");
     if ( this->scalabilitySave() )
@@ -654,7 +697,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::solve()
             M_fluidModel->setStartBlockSpaceIndex( this->startSubBlockSpaceIndex("fluid") );
             M_heatModel->setStartBlockSpaceIndex( this->startSubBlockSpaceIndex("heat") );
 
-            this->algebraicFactory()->solve( "Newton", this->algebraicBlockVectorSolution()->vectorMonolithic() );
+            this->algebraicFactory()->solve( M_solverName, this->algebraicBlockVectorSolution()->vectorMonolithic() );
 
             this->algebraicBlockVectorSolution()->localize();
         }

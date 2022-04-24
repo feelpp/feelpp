@@ -23,10 +23,53 @@
 //!
 #pragma once
 
+#define JSON_DIAGNOSTICS FEELPP_ENABLE_JSON_DIAGNOSTICS
 #include <feel/feelcore/_json.hpp>
-
 namespace Feel
 {
     namespace nl = nlohmann;
     using json = nl::json;
 }
+
+#include <boost/filesystem.hpp>
+// partial specialization (full specialization works too)
+namespace nlohmann
+{
+template<>
+struct adl_serializer<boost::filesystem::path>
+{
+    static void to_json( json& j, const boost::filesystem::path& p )
+    {
+        j=p.string();
+    }
+
+    static void from_json( const json& j, boost::filesystem::path& p )
+    {
+        p = j.get<std::string>();
+    }
+};
+
+
+//
+// std::optional
+//
+#include <optional>
+template <class T>
+void to_json( nlohmann::json& j, const std::optional<T>& v )
+{
+    if ( v.has_value() )
+        j = *v;
+    else
+        j = nullptr;
+}
+
+template <class T>
+void from_json( const nlohmann::json& j, std::optional<T>& v )
+{
+    if ( j.is_null() )
+        v = std::nullopt;
+    else
+        v = j.get<T>();
+}
+
+} // namespace nlohmann

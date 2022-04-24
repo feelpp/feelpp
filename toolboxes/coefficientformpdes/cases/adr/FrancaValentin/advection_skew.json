@@ -3,17 +3,24 @@
     "ShortName": "advection_skew",
     "Models":
     {
-        "equations":[
-            {
-                "name":"equation1",
-                "unknown":
-                {
+        "cfpdes":{
+            "equations":"equation1"
+        },
+        "equation1":{
+            "setup":{
+                "unknown":{
                     "basis":"Pch1",
                     "name":"solution",
                     "symbol":"u"
+                },
+                "coefficients":{
+                    //"beta":"{cos(alpha*pi/180),sin(alpha*pi/180)}:alpha", // convection case2
+                    "beta":"{0.15,0.1}", // convection case1
+                    "c":1e-4, // diffusion
+                    "a":0//10//1e-1 // reaction                    
                 }
             }
-        ]
+        }
     },
     "Parameters":
     {
@@ -23,11 +30,7 @@
     {
         "mymat1":
         {
-            "markers":"Omega",
-            //"equation1_beta":"{cos(alpha*pi/180),sin(alpha*pi/180)}:alpha", // convection case2
-            "equation1_beta":"{0.15,0.1}", // convection case1
-            "equation1_c":1e-4, // diffusion
-            "equation1_a":0//10//1e-1 // reaction
+            "markers":"Omega"
         }
     },
     "BoundaryConditions":
@@ -51,17 +54,12 @@
     },
     "PostProcess":
     {
-        "use-model-name":1,
         "cfpdes":
         {
             "Exports":
             {
                 "fields":["all"]
             }
-        },
-        "equation1":
-        {
-
         }
     }
 }

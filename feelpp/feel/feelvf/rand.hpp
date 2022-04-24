@@ -185,10 +185,6 @@ public:
             M_r(expr.low(), expr.high())
         {
         }
-        template<typename IM>
-        void init( IM const& /*im*/ )
-        {
-        }
         void update( Geo_t const&, Basis_i_t const& , Basis_j_t const&  )
         {
         }
@@ -196,9 +192,6 @@ public:
         {
         }
         void update( Geo_t const& )
-        {
-        }
-        void update( Geo_t const&, uint16_type )
         {
         }
         template<typename ... CTX>
