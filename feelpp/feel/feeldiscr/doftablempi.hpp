@@ -1660,8 +1660,8 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGlobalProcessToGlo
             }
 
             // generate a range object
-            auto myrange = boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
-                                              myelts->begin(),myelts->end(),myelts );
+            auto myrange = range( _range=boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
+                                              myelts->begin(),myelts->end(),myelts ), _mesh=mesh );
             DVLOG(2) << "ghost element in doftable : nelements(myrange) ["<<mesh.worldComm().rank()<<"] : " << nelements(myrange) << "\n";
 
             this->buildGhostDofMapExtended( mesh, myrange, myrangeActive );

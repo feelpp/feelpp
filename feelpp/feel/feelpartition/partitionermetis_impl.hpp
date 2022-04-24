@@ -58,7 +58,7 @@ PartitionerMetis<MeshType>::partitionImpl( mesh_ptrtype mesh, rank_type np, std:
     else
     {
         for ( auto const& rangeMeshElt : partitionByRange )
-            this->partitionImpl( mesh, np, rangeMeshElt, usePartitionByRange );
+            this->partitionImpl( mesh, np, range(_range=rangeMeshElt,_mesh=mesh), usePartitionByRange );
     }
 
     auto t = toc("PartitionerMetis::partitionImpl", FLAGS_v > 0 );

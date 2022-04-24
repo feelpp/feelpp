@@ -35,6 +35,7 @@
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feells/fastmarching_impl.hpp>
 #include <feel/feelmesh/filters.hpp>
+#include <feel/feelmesh/ranges.hpp>
 #include <feel/feeldiscr/syncdofs.hpp>
 #include <feel/feelcore/traits.hpp>
 #include <feel/feelvf/cst.hpp>
@@ -67,7 +68,7 @@ class DistanceToRange
         typedef typename MeshTraits<mesh_distance_type>::elements_reference_wrapper_ptrtype elements_reference_wrapper_distance_ptrtype;
         typedef elements_reference_wrapper_t<mesh_distance_type> range_elements_distance_type;
 
-        typedef faces_reference_wrapper_t<mesh_distance_type> range_faces_type;
+        typedef Range<mesh_distance_type,MESH_FACES> range_faces_type;
 
         //--------------------------------------------------------------------//
         static constexpr uint16_type nRealDim = functionspace_distance_type::nRealDim;
