@@ -215,6 +215,9 @@ using rank_proc_in_files_name = NA::named_argument_t<struct rank_proc_in_files_n
 using freq = NA::named_argument_t<struct freq_tag>;
 using n_consecutive_save = NA::named_argument_t<struct n_consecutive_save_tag>;
 
+using pid = NA::named_argument_t<struct pid_tag>;
+
+using marker_type = NA::named_argument_t<struct marker_type_tag>;
 using markerName = NA::named_argument_t<struct markerName_tag>;
 using markerAll = NA::named_argument_t<struct markerAll_tag>;
 using marker1 = NA::named_argument_t<struct marker1_tag>;
@@ -504,6 +507,9 @@ inline constexpr auto& _rank_proc_in_files_name = NA::identifier<na::rank_proc_i
 inline constexpr auto& _freq = NA::identifier<na::freq>;
 inline constexpr auto& _n_consecutive_save = NA::identifier<na::n_consecutive_save>;
 
+inline constexpr auto& _pid = NA::identifier<na::pid>;
+
+inline constexpr auto& _marker_type = NA::identifier<na::marker_type>;
 inline constexpr auto& _markerName = NA::identifier<na::markerName>;
 inline constexpr auto& _markerAll = NA::identifier<na::markerAll>;
 inline constexpr auto& _marker1 = NA::identifier<na::marker1>;
