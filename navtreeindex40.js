@@ -1,5 +1,6 @@
 var NAVTREEINDEX40 =
 {
+"ginac_8hpp.html#a68fa32207dcaa223a18e5de282a60893":[6,2,0,0,3,26,65],
 "ginac_8hpp.html#a6a857748f3b9e9ea77c9ae4e9c4a045d":[6,2,0,0,3,26,51],
 "ginac_8hpp.html#a6c0f97974e142121e6133c5fd8068af7":[6,2,0,0,3,26,63],
 "ginac_8hpp.html#a6dbf40b58f84fd6721f05e2d0387e34e":[6,2,0,0,3,26,74],
@@ -102,8 +103,8 @@ var NAVTREEINDEX40 =
 "group__DSEL-Variational-Formulation.html#ga7b9221db5c7afed153789f616a1c6328":[5,4,2],
 "group__DSEL-Variational-Formulation.html#gab7965105a4a850885f454c7c3865ffc6":[5,4,0],
 "group__DSEL-Variational-Formulation.html#gaea4c47fc4a17435b9b1d3fe115a6788d":[5,4,1],
-"group__DSEL-Variational-Formulation.html#gaeac7fe8c4b52a6f9c1320275ad39f01e":[5,4,5],
 "group__DSEL-Variational-Formulation.html#gaeac7fe8c4b52a6f9c1320275ad39f01e":[6,2,0,0,3,59,0],
+"group__DSEL-Variational-Formulation.html#gaeac7fe8c4b52a6f9c1320275ad39f01e":[5,4,5],
 "group__Discretization.html":[5,2],
 "group__Filters.html":[5,3],
 "group__FreeFunction.html":[5,13],
@@ -248,6 +249,5 @@ var NAVTREEINDEX40 =
 "meshbase_8hpp.html#gga82cf55da340f64b682d0bea678d6cdf4a2d8367fbc0da35214e0e591f8774f921":[6,2,0,0,2,22,1,5],
 "meshbase_8hpp.html#gga82cf55da340f64b682d0bea678d6cdf4a4678bccf185b19440fa3bbd013cbead1":[6,2,0,0,2,22,1,0],
 "meshbase_8hpp.html#gga82cf55da340f64b682d0bea678d6cdf4a4b3943ca4d7fa81ced193d7d9aca5e85":[6,2,0,0,2,22,1,7],
-"meshbase_8hpp.html#gga82cf55da340f64b682d0bea678d6cdf4a5497534826faafd2a147cf7dab7f0027":[6,2,0,0,2,22,1,10],
-"meshbase_8hpp.html#gga82cf55da340f64b682d0bea678d6cdf4a5e216e00f9ebdc9d0a09ecdd6390f5a2":[6,2,0,0,2,22,1,2]
+"meshbase_8hpp.html#gga82cf55da340f64b682d0bea678d6cdf4a5497534826faafd2a147cf7dab7f0027":[6,2,0,0,2,22,1,10]
 };

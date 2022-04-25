@@ -1,5 +1,6 @@
 var NAVTREEINDEX44 =
 {
+"structFeel_1_1FeelModels_1_1TrialSymbolsExprTraits.html":[6,1,1,4,94],
 "structFeel_1_1FeelModels_1_1TrialSymbolsExprTraits.html#a1cf749a6fc6c80dc15c4225703f1f232":[6,1,1,4,94,2],
 "structFeel_1_1FeelModels_1_1TrialSymbolsExprTraits.html#a97354c2a681417633d97fdcda624ae8f":[6,1,1,4,94,1],
 "structFeel_1_1FeelModels_1_1TrialSymbolsExprTraits.html#af2694e9851e8ebef9327400b29f8108c":[6,1,1,4,94,0],
@@ -248,6 +249,5 @@ var NAVTREEINDEX44 =
 "structFeel_1_1MeshTraits.html#aa34fd28f900362268ef0f211f86d78d5":[6,1,1,190,11],
 "structFeel_1_1MeshTraits.html#aa3f3ffd76113f6ee83a296a91e88249a":[6,1,1,190,17],
 "structFeel_1_1MeshTraits.html#aab212a467765bb5019ec57a5c3841c04":[6,1,1,190,14],
-"structFeel_1_1MeshTraits.html#aaec27f3072e2283c6f439bed48462396":[6,1,1,190,9],
-"structFeel_1_1MeshTraits.html#ab59818b5b37163cf0a0b4ba399519484":[6,1,1,190,16]
+"structFeel_1_1MeshTraits.html#aaec27f3072e2283c6f439bed48462396":[6,1,1,190,9]
 };

@@ -40,6 +40,7 @@ var classFeel_1_1WorldComm =
     [ "setColorMap", "classFeel_1_1WorldComm.html#af36ae126d38e0634859a45f0cd4e886c", null ],
     [ "setIsActive", "classFeel_1_1WorldComm.html#a084ba95f9e63ae77c9188f06a0d4b3dd", null ],
     [ "showMe", "classFeel_1_1WorldComm.html#a83ead4adc3644cb83017e9743350a44e", null ],
+    [ "split", "classFeel_1_1WorldComm.html#a99f10bd89247bc33adffa817fac59e84", null ],
     [ "subWorld", "classFeel_1_1WorldComm.html#a6a64714e6b3209d87901a83988d1b61d", null ],
     [ "subWorld", "classFeel_1_1WorldComm.html#aa1bceb57d41121ce6c55f34bf6825c4e", null ],
     [ "subWorldComm", "classFeel_1_1WorldComm.html#a19c57adfb0869106003d4b8548afa90f", null ],

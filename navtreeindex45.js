@@ -1,5 +1,6 @@
 var NAVTREEINDEX45 =
 {
+"structFeel_1_1MeshTraits.html#ab59818b5b37163cf0a0b4ba399519484":[6,1,1,190,16],
 "structFeel_1_1MeshTraits.html#acc5d4cd8267aaad339fc53afe4f767df":[6,1,1,190,28],
 "structFeel_1_1MeshTraits.html#ae1d5522422cf920ea335face89eb8e3e":[6,1,1,190,13],
 "structFeel_1_1MeshTraits.html#ae49b88353b45a4fdfb39a81b45420b54":[6,1,1,190,26],
@@ -248,6 +249,5 @@ var NAVTREEINDEX45 =
 "structFeel_1_1Stencil_1_1rangeExtendedIteratorType.html#a1b159bc98e590bb875e74cca14c1a0ba":[6,1,1,259,0,6],
 "structFeel_1_1Stencil_1_1rangeExtendedIteratorType.html#a2cd58a25bedd3f25ada7f464d68667c3":[6,1,1,259,0,5],
 "structFeel_1_1Stencil_1_1rangeExtendedIteratorType.html#a49776d16c4a42c759e8951ae8813c758":[6,1,1,259,0,2],
-"structFeel_1_1Stencil_1_1rangeExtendedIteratorType.html#a56b63b0877a02b653585c7532b562d17":[6,1,1,259,0,0],
-"structFeel_1_1Stencil_1_1rangeExtendedIteratorType.html#aa6ad0e946ec0c702499aacfdaed213ac":[6,1,1,259,0,4]
+"structFeel_1_1Stencil_1_1rangeExtendedIteratorType.html#a56b63b0877a02b653585c7532b562d17":[6,1,1,259,0,0]
 };
