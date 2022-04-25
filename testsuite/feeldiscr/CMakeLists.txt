@@ -104,3 +104,5 @@ if ( FEELPP_HAS_VTK )
 endif()
 
 feelpp_add_test( sensors CFG sensors.cfg GEO sensorsdesc.json )
+
+feelpp_add_test( geometricspace )
