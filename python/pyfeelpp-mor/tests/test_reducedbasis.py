@@ -54,14 +54,6 @@ def init_model(prefix, case, casefile, dim, use_cache, time_dependent):
     heatBox, dim = init_toolbox(prefix, case, casefile, dim, use_cache)
     model = toolboxmor(dim=dim, time_dependent=time_dependent)
 
-    Dmu = model.parameterSpace()
-    mubar = Dmu.element()
-
-    modelProperties = heatBox.modelProperties()
-    param = modelProperties.parameters()
-    for p in param:
-        assert(p[1].hasMinMax())    # check that parameters can vary
-        mubar.setParameterNamed(p[1].name(), p[1].value())
 
     model.setFunctionSpaces(Vh=heatBox.spaceTemperature())
 
@@ -84,6 +76,19 @@ def init_model(prefix, case, casefile, dim, use_cache, time_dependent):
     model.setAssembleMDEIM(fct=assembleMDEIM)
 
     model.initModel()
+
+    Dmu = model.parameterSpace()
+    mubar = Dmu.element()
+    print(mubar)
+
+    modelProperties = heatBox.modelProperties()
+    param = modelProperties.parameters()
+    for p in param:
+        print(p[1].name())
+        if p[1].hasMinMax():
+            mubar.setParameterNamed(p[1].name(), p[1].value())
+
+    print(mubar)
 
     heatBoxDEIM = heat(dim=dim, order=1)
     meshDEIM = model.getDEIMReducedMesh()
@@ -320,7 +325,7 @@ def test_reducedbasis_sample(prefix, case, casefile, dim, use_cache, time_depend
 
 @pytest.mark.parametrize("prefix,case,casefile,dim,use_cache,time_dependent", cases_params, ids=cases_ids)
 def test_reducedbasis_greedy(prefix, case, casefile, dim, use_cache, time_dependent, init_feelpp):
-    e = init_feelpp    
+    e = init_feelpp
     heatBox, model, decomposition, mubar, assembleMDEIM, assembleDEIM = init_environment(prefix, case, casefile, dim, use_cache, time_dependent)
 
     Aq = decomposition[0]
