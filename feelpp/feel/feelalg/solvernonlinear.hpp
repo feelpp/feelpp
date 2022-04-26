@@ -32,7 +32,7 @@
 #include <functional>
 
 //#include <boost/function.hpp>
-//#include <boost/bind.hpp>
+//#include <boost/bind/bind.hpp>
 
 #include <Eigen/Core>
 #include <Eigen/LU>
