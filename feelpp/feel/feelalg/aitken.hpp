@@ -92,9 +92,6 @@ public:
 
     typedef typename functionspace_type::element_type element_type;
 
-    typedef typename functionspace_type::template Element<typename functionspace_type::value_type,
-            typename VectorUblas<typename functionspace_type::value_type>::range::type > element_range_type;
-
     /**
      * convergence_iteration_type:
      *  - int: iteration number
@@ -319,11 +316,6 @@ public:
     void setElement( element_type const& residual, element_type const& elem );
 
     /**
-     * Set the current element
-     */
-    void setElement( element_type const& residual, element_range_type const& elem );
-
-    /**
      * Compute Aitken parameter
      */
     void calculateParameter();
@@ -352,19 +344,9 @@ private:
     void initializeimpl( element_type const& residual, element_type const& elem );
 
     /**
-     * initiliaze the aitken algorithm
-     */
-    void initializeimpl( element_type const& residual, element_range_type const& elem );
-
-    /**
      * Compute theta and do a relaxation step : u^{n+1} = theta*u^{n+1} + (1-theta)*u^{n}
      */
     void applyimpl( element_type & new_elem,element_type const& residual, element_type const& elem,bool _forceRelax=false );
-
-    /**
-     * Compute theta and do a relaxation step : u^{n+1} = theta*u^{n+1} + (1-theta)*u^{n}
-     */
-    void applyimpl( element_range_type new_elem,element_type const& residual, element_range_type const& elem,bool _forceRelax=false );
 
     /**
      * Compute Aitken parameter
@@ -416,20 +398,6 @@ Aitken<fs_type>::initializeimpl( element_type const& residual, element_type cons
 
 template< typename fs_type >
 void
-Aitken<fs_type>::initializeimpl( element_type const& residual, element_range_type const& elem )
-{
-    M_previousResidual = residual;
-    M_previousElement.zero();
-    M_previousElement.add( 1.,elem );
-    /*M_previousElement = vf::project(M_previousElement.functionSpace(),
-      elements(M_previousElement.mesh()),
-      vf::idv(elem) );*/
-}
-
-//-----------------------------------------------------------------------------------------//
-
-template< typename fs_type >
-void
 Aitken<fs_type>::computeResidualNorm()
 {
     auto oldEltL2Norm = M_previousElement.l2Norm();
@@ -458,20 +426,6 @@ Aitken<fs_type>::setElement( element_type const& residual, element_type const& e
 
 template< typename fs_type >
 void
-Aitken<fs_type>::setElement( element_type const& residual, element_range_type const& elem )
-{
-    M_currentResidual = residual;
-    M_currentElement.zero();
-    M_currentElement.add( 1.,elem );
-    /*M_currentElement = vf::project(M_currentElement.functionSpace(),
-      elements(M_currentElement.mesh()),
-      vf::idv(elem) );*/
-}
-
-//-----------------------------------------------------------------------------------------//
-
-template< typename fs_type >
-void
 Aitken<fs_type>::applyimpl( element_type & new_elem,element_type const& residual, element_type const& elem,bool _forceRelax )
 {
 
@@ -488,30 +442,6 @@ Aitken<fs_type>::applyimpl( element_type & new_elem,element_type const& residual
     }
 
     if ( !M_hasConverged || _forceRelax )
-        relaxationStep( new_elem );
-
-}
-
-//-----------------------------------------------------------------------------------------//
-
-template< typename fs_type >
-void
-Aitken<fs_type>::applyimpl( element_range_type new_elem,element_type const& residual, element_range_type const& elem,bool _forceRelax )
-{
-
-    setElement( residual,elem );
-
-    if ( M_cptIteration>=2 )
-    {
-        computeResidualNorm();
-
-        if ( !M_hasConverged  || _forceRelax )
-        {
-            calculateParameter();
-        }
-    }
-
-    if ( !M_hasConverged  || _forceRelax )
         relaxationStep( new_elem );
 
 }

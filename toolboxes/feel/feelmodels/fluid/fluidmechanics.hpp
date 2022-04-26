@@ -340,8 +340,6 @@ public:
     typedef std::shared_ptr<space_velocity_type> space_velocity_ptrtype;
     typedef typename space_velocity_type::element_type element_velocity_type;
     typedef std::shared_ptr<element_velocity_type> element_velocity_ptrtype;
-    typedef typename space_velocity_type::element_external_storage_type element_velocity_external_storage_type;
-    typedef std::shared_ptr<element_velocity_external_storage_type> element_velocity_external_storage_ptrtype;
     // function space component of velocity
     typedef typename space_velocity_type::component_functionspace_type component_space_velocity_type;
     typedef std::shared_ptr<component_space_velocity_type> component_space_velocity_ptrtype;
@@ -352,7 +350,6 @@ public:
     typedef std::shared_ptr<space_pressure_type> space_pressure_ptrtype;
     typedef typename space_pressure_type::element_type element_pressure_type;
     typedef std::shared_ptr<element_pressure_type> element_pressure_ptrtype;
-    typedef typename space_pressure_type::element_external_storage_type element_pressure_external_storage_type;
     // function space for lagrange multiplier which impose the mean pressure
     typedef FunctionSpace<mesh_type, bases<basis_l_type> > space_meanpressurelm_type;
     typedef std::shared_ptr<space_meanpressurelm_type> space_meanpressurelm_ptrtype;
@@ -2017,7 +2014,7 @@ public :
     element_pressure_type const& fieldPressure() const { return *M_fieldPressure; }
     element_pressure_ptrtype const& fieldPressurePtr() const { return M_fieldPressure; }
 
-    element_velocity_external_storage_ptrtype const& fieldVelocityExtrapolatedPtr() const { return M_fieldVelocityExtrapolated; }
+    element_velocity_ptrtype const& fieldVelocityExtrapolatedPtr() const { return M_fieldVelocityExtrapolated; }
 
     vector_ptrtype vectorVelocityExtrapolated() const { return M_vectorVelocityExtrapolated; }
     vector_ptrtype vectorPreviousVelocityExtrapolated() const { return M_vectorPreviousVelocityExtrapolated; }
@@ -2199,7 +2196,7 @@ public :
 
     auto modelFields( std::string const& prefix = "" ) const
         {
-            return this->modelFields( this->fieldVelocityPtr(), this->fieldPressurePtr(), M_bodySetBC.modelFields( *this, prefix ), M_fieldVelocityExtrapolated/*element_velocity_external_storage_ptrtype{}*/, prefix );
+            return this->modelFields( this->fieldVelocityPtr(), this->fieldPressurePtr(), M_bodySetBC.modelFields( *this, prefix ), M_fieldVelocityExtrapolated, prefix );
         }
     auto modelFields( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
         {
@@ -2219,7 +2216,7 @@ public :
             auto field_p = this->fieldPressure().functionSpace()->elementPtr( *sol, rowStartInVector+this->startSubBlockSpaceIndex("pressure") );
             auto mfields_body = M_bodySetBC.modelFields( *this, sol, rowStartInVector, prefix );
 
-            element_velocity_external_storage_ptrtype field_beta_u;
+            element_velocity_ptrtype field_beta_u;
             auto itFindVelocityExtrapolated = vectorData.find( "velocity_extrapolated" );
             if ( itFindVelocityExtrapolated != vectorData.end() && std::get<0>( itFindVelocityExtrapolated->second ) )
                 field_beta_u = this->fieldVelocity().functionSpace()->elementPtr( *std::get<0>( itFindVelocityExtrapolated->second ), std::get<1>( itFindVelocityExtrapolated->second ) );
@@ -2601,8 +2598,8 @@ public :
     template <typename ModelContextType>
     void updateResidual( DataUpdateResidual & data, ModelContextType const& mfields ) const;
 
-    void updateResidualStabilisation( DataUpdateResidual & data, element_velocity_external_storage_type const& u, element_pressure_external_storage_type const& p ) const;
-    void updateJacobianStabilisation( DataUpdateJacobian & data, element_velocity_external_storage_type const& u, element_pressure_external_storage_type const& p ) const;
+    void updateResidualStabilisation( DataUpdateResidual & data, element_velocity_type const& u, element_pressure_type const& p ) const;
+    void updateJacobianStabilisation( DataUpdateJacobian & data, element_velocity_type const& u, element_pressure_type const& p ) const;
     template <typename ModelContextType,typename RangeType,typename... ExprAddedType>
     void updateJacobianStabilizationGLS( DataUpdateJacobian & data, ModelContextType const& mctx,
                                          ModelPhysicFluid<nDim> const& physicFluidData,
@@ -2689,7 +2686,7 @@ private :
     element_pressure_ptrtype M_fieldPressure;
     // extrapolation of velocity in time
     vector_ptrtype M_vectorVelocityExtrapolated, M_vectorPreviousVelocityExtrapolated;
-    element_velocity_external_storage_ptrtype M_fieldVelocityExtrapolated; // view on M_vectorVelocityExtrapolated
+    element_velocity_ptrtype M_fieldVelocityExtrapolated; // view on M_vectorVelocityExtrapolated
     // time discrtisation fluid
     std::string M_timeStepping;
     bdf_velocity_ptrtype M_bdfVelocity;
