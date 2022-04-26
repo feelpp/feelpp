@@ -104,11 +104,11 @@ void defFM(py::module &m)
         )   
 
         .def(
-            "addContactForce",[](const fm_t& t, nl::json const& j)
+            "addContactForce",[](const fm_t& t)
             {
-                auto add_force_term = [&j, &t](FeelModels::ModelAlgebraic::DataUpdateLinear & data) 
+                auto add_force_term = [&t](FeelModels::ModelAlgebraic::DataUpdateLinear & data) 
                 { 
-                    contactforce<0>(t, data, j);
+                    contactforce<0>(t, data);
                 };
 
                 t.algebraicFactory()->addFunctionLinearAssembly(add_force_term);
@@ -116,27 +116,13 @@ void defFM(py::module &m)
             },
             "add function linear assembly"
         )         
-
+                
         .def(
-            "addContactForceBoundary",[](const fm_t& t)
-            {
-                auto add_force_term = [&t](FeelModels::ModelAlgebraic::DataUpdateLinear & data) 
-                { 
-                    contactforceBoundary<0>(t, data);
-                };
-
-                t.algebraicFactory()->addFunctionLinearAssembly(add_force_term);
-
-            },
-            "add function linear assembly"
-        )
-
-        .def(
-            "addContactForceResBoundary",[](const fm_t& t)
+            "addContactForceRes",[](const fm_t& t)
             {
                 auto add_force_term = [&t](FeelModels::ModelAlgebraic::DataUpdateResidual & data) 
                 { 
-                    contactforceBoundary<1>(t, data);
+                    contactforce<1>(t, data);
                 };  
 
                 t.algebraicFactory()->addFunctionResidualAssembly(add_force_term) ;
@@ -144,13 +130,27 @@ void defFM(py::module &m)
             },
             "add function residual assembly"
         )
-        
+
         .def(
-            "addContactForceRes",[](const fm_t& t,  nl::json const& j)
+            "addContactForceArticulatedBody",[](const fm_t& t)
             {
-                auto add_force_term = [&j, &t](FeelModels::ModelAlgebraic::DataUpdateResidual & data) 
+                auto add_force_term = [&t](FeelModels::ModelAlgebraic::DataUpdateLinear & data) 
                 { 
-                    contactforce<1>(t, data, j);
+                    contactforceArticulatedBody<0>(t, data);
+                };
+
+                t.algebraicFactory()->addFunctionLinearAssembly(add_force_term);
+
+            },
+            "add function linear assembly"
+        )         
+                
+        .def(
+            "addContactForceResArticulatedBody",[](const fm_t& t)
+            {
+                auto add_force_term = [&t](FeelModels::ModelAlgebraic::DataUpdateResidual & data) 
+                { 
+                    contactforceArticulatedBody<1>(t, data);
                 };  
 
                 t.algebraicFactory()->addFunctionResidualAssembly(add_force_term) ;

@@ -3,30 +3,39 @@
     "ShortName":"Falling ellipse",
     "Models":
     {
-        "equations":"Navier-Stokes", 
-        "gravity":
+        "fluid":
         {
-            "enable":1,
-            "expr":"{0,-981}:t"
+            "materials":"Fluid",
+            "setup":
+            {
+                "equations":"Navier-Stokes",
+                "gravity":
+                {
+                    "enable":1,
+                    "expr":"{0,-981}:t" 
+                }
+            }
+        },
+        "body":
+        {
+            "materials":"EllipseVolume"
         }
     },
     "Materials":
     {
         "Fluid":{
-            "physics":"fluid",
             "rho":"1",// g/cm3
             "mu":"0.01"
         },
         "EllipseVolume":{
-            "physics":"body",
             "rho":1.1
         }
     },
     "BoundaryConditions":
     {
-        "velocity":
+        "fluid":
         {
-            "Dirichlet":
+            "velocity":
             {
                 "Walls":
                 {
@@ -36,10 +45,7 @@
                 {
                     "expr":"{0,0}"
                 }
-            }
-        },
-        "fluid":
-        {
+            },
             "outlet":
             {
                 "Top":
@@ -62,15 +68,17 @@
     },
     "PostProcess":
     {
-        "Exports":
-        {
-            "fields":["velocity","pressure","pid","displacement"]
-        },
-        "Measures":
-        {
-            "Quantities":
+        "fluid":{
+            "Exports":
             {
-                "names":"all"
+                "fields":["velocity","pressure","pid","displacement"]
+            },
+            "Measures":
+            {
+                "Quantities":
+                {
+                    "names":"all"
+                }
             }
         }
     }
