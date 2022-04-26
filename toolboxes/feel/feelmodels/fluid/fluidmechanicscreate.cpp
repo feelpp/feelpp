@@ -3579,8 +3579,23 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodySetBoundaryCondition::initAlgebraicFacto
     auto matP = fluidToolbox.backend()->newBlockMatrix(_block=myblockMat, _copy_values=true);
 
     auto matQ = fluidToolbox.backend()->newIdentityMatrix( matP->mapColPtr(), matP->mapRowPtr() );
+    for ( auto & [bpname,bbc] : *this )
+    {
+        auto dofsBody = fluidToolbox.functionSpaceVelocity()->dofs( bbc.rangeMarkedFacesOnFluid() );
+        auto const& basisToContainerGpVelocity = matQ->mapCol().dofIdToContainerId( startBlockIndexVelocity );
+        for ( auto dofid : dofsBody )
+        {
+            matQ->set( basisToContainerGpVelocity[dofid],basisToContainerGpVelocity[dofid], 0.);
+        }
+    }
+    matQ->close();
 
-    algebraicFactory->initSolverPtAP( matP,matQ );
+    auto applyQ = [&fluidToolbox,matQ](vector_ptrtype const& Ud, vector_ptrtype & Ui){
+        matQ->multVector( *Ud, *Ui );
+        fluidToolbox.solverPtAP_applyQ(Ud,Ui);
+    };
+    algebraicFactory->initSolverPtAP( matP, applyQ );
+
 
     std::set<size_type> dofEliminationIdsPtAP;
     bool hasDofEliminationIdsPtAP = false;
@@ -3695,6 +3710,20 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodySetBoundaryCondition::updateAlgebraicFac
 
 }
 
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solverPtAP_applyQ( vector_ptrtype const& Ud, vector_ptrtype & Ui, size_type rowStartInVector ) const
+{
+    size_type startBlockIndexVelocity = this->startSubBlockSpaceIndex("velocity");
+    auto UiView = this->functionSpaceVelocity()->element(Ui,rowStartInVector+startBlockIndexVelocity);
+
+    for ( auto & [bpname,bbc] : M_bodySetBC )
+    {
+        if ( bbc.hasElasticVelocity() && !M_bodySetBC.internal_elasticVelocity_is_v0() )
+            UiView.on(_range=bbc.rangeMarkedFacesOnFluid(),_expr=idv(bbc.fieldElasticVelocityPtr()),_close=true ); // TODO sync all body in one call
+    }
+
+}
 
 } // namespace FeelModels
 } // namespace Feel
