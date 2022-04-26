@@ -197,14 +197,15 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
         M_explictPartOfSolution = M_backend->newVector( M_R->mapPtr() );
 }
 
-void ModelAlgebraicFactory::initSolverPtAP( sparse_matrix_ptrtype matP, sparse_matrix_ptrtype matQ )
+void ModelAlgebraicFactory::initSolverPtAP( sparse_matrix_ptrtype matP, function_solverPtAP_applyQ_type applyQ )
     {
         CHECK ( matP ) << "invalid matP";
         // TODO CHECK compatibility with A
 
         M_useSolverPtAP = true;
         M_solverPtAP_matP = matP;
-        M_solverPtAP_matQ = matQ;
+        //M_solverPtAP_matQ = matQ;
+        M_solverPtAP_applyQ = applyQ;
 
         // if already built we assume that the new matP as the same stencil
         if ( !M_solverPtAP_backend )
@@ -651,8 +652,8 @@ ModelAlgebraicFactory::tabulateInformations( nl::json const& jsonInfo, TabulateI
 
         if ( M_useSolverPtAP )
         {
-            M_solverPtAP_matQ->multVector( *U, *M_solverPtAP_solution );
-            //*M_solverPtAP_solution = *U; // need to have the same size/datamap
+            //M_solverPtAP_matQ->multVector( *U, *M_solverPtAP_solution );
+            std::invoke( M_solverPtAP_applyQ, U, M_solverPtAP_solution );
 
             // PtAP = P^T A P
             M_J->PtAP( *M_solverPtAP_matP, *M_solverPtAP_matPtAP );
@@ -823,7 +824,8 @@ ModelAlgebraicFactory::tabulateInformations( nl::json const& jsonInfo, TabulateI
             {
                 for ( size_type k : *dofEliminationIds )
                 {
-                    double vvvv = -M_dofEliminationValues->operator()(k) + currentSolution->operator()(k) ;
+                    //double vvvv = -M_dofEliminationValues->operator()(k) + currentSolution->operator()(k) ;
+                    double vvvv = -M_dofEliminationValues->operator()(k) + XX->operator()(k) ;
                     M_dofEliminationNonLinearStepValues->set( k, vvvv );
                 }
                 M_dofEliminationNonLinearStepValues->close();
@@ -916,7 +918,8 @@ ModelAlgebraicFactory::tabulateInformations( nl::json const& jsonInfo, TabulateI
             {
                 for ( size_type k : *dofEliminationIds )
                 {
-                    double vvvv =  -M_dofEliminationValues->operator()(k) + currentSolution->operator()(k) ;
+                    //double vvvv =  -M_dofEliminationValues->operator()(k) + currentSolution->operator()(k) ;
+                    double vvvv =  -M_dofEliminationValues->operator()(k) + XX->operator()(k) ;
                     RR->set( k, vvvv );
                 }
             }
@@ -960,7 +963,7 @@ ModelAlgebraicFactory::tabulateInformations( nl::json const& jsonInfo, TabulateI
 
         std::optional<std::vector<int/*index_type*/>> dofEliminationIds;
 
-        if ( dataInitialGuess.hasDofEliminationIds() || M_useSolverPtAP && M_solverPtAP_dofEliminationIds )
+        if ( dataInitialGuess.hasDofEliminationIds() || (M_useSolverPtAP && M_solverPtAP_dofEliminationIds) )
         {
 #if 1
             // create view in order to avoid mpi comm inside petsc
@@ -1096,7 +1099,8 @@ ModelAlgebraicFactory::tabulateInformations( nl::json const& jsonInfo, TabulateI
         if ( M_useSolverPtAP )
         {
             // TODO REMOVE EXPLICIT PART
-            M_solverPtAP_matQ->multVector( *U, *M_solverPtAP_solution );
+            //M_solverPtAP_matQ->multVector( *U, *M_solverPtAP_solution );
+            std::invoke( M_solverPtAP_applyQ, U, M_solverPtAP_solution );
             //*M_solverPtAP_solution = *U; // need to have the same size/datamap
 
             M_solverPtAP_backend->nlSolver()->jacobian = update_jacobian;

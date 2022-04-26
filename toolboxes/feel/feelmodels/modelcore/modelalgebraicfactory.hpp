@@ -81,6 +81,8 @@ namespace FeelModels
         typedef typename backend_type::post_solve_type post_solve_type;
         typedef typename backend_type::update_nlsolve_type update_nlsolve_type;
 
+        typedef std::function<void ( vector_ptrtype const& Ud, vector_ptrtype & Ui )> function_solverPtAP_applyQ_type;
+
         //---------------------------------------------------------------------------------------------------------------//
         //---------------------------------------------------------------------------------------------------------------//
         //---------------------------------------------------------------------------------------------------------------//
@@ -105,7 +107,7 @@ namespace FeelModels
         vector_ptrtype explictPartOfSolution() { return M_explictPartOfSolution; }
 
         bool useSolverPtAP() const { return M_useSolverPtAP; }
-        void initSolverPtAP( sparse_matrix_ptrtype matP, sparse_matrix_ptrtype matQ );
+        void initSolverPtAP( sparse_matrix_ptrtype matP, function_solverPtAP_applyQ_type applyQ );
         bool hasInitSolverPtAP() const { return M_solverPtAP_backend? true : false; }
         void solverPtAP_setDofEliminationIds( std::set<index_type> const& dofId ) { M_solverPtAP_dofEliminationIds = dofId; }
         sparse_matrix_ptrtype solverPtAP_matrixP() const { return M_solverPtAP_matP; }
@@ -270,7 +272,6 @@ namespace FeelModels
 
         bool M_useSolverPtAP;
         sparse_matrix_ptrtype M_solverPtAP_matP;
-        sparse_matrix_ptrtype M_solverPtAP_matQ; // operator from natural basis to PtAP basis
         sparse_matrix_ptrtype M_solverPtAP_matPtAP;
         vector_ptrtype M_solverPtAP_PtF;
         vector_ptrtype M_solverPtAP_solution;
@@ -278,6 +279,8 @@ namespace FeelModels
         preconditioner_ptrtype M_solverPtAP_prec;
         backend_ptrtype M_solverPtAP_backend;
         std::optional<std::set<index_type>> M_solverPtAP_dofEliminationIds;
+        // operator from natural basis to PtAP basis
+        function_solverPtAP_applyQ_type M_solverPtAP_applyQ;
 
         double M_dofElimination_valueOnDiagonal;
         Feel::Context M_dofElimination_strategy;
