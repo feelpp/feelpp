@@ -6,9 +6,6 @@ import feelpp.interpolation as I
 from feelpp.toolboxes.fluid import *
 import json
 
-with open("./configuration.json", 'r') as j:
-    configuration_json = json.load(j)
-
 sys.argv = ['fluid-remesh']
 e = feelpp.Environment(sys.argv, opts=tb.toolboxes_options("fluid"),config=feelpp.globalRepository("fluid-remesh"))
 
@@ -38,16 +35,27 @@ e = feelpp.Environment(sys.argv, opts=tb.toolboxes_options("fluid"),config=feelp
 # feelpp.Environment.setConfigFile('cases/rigid_body_paper_tests/rotating_Jeffrey_ellipsoid/rotating_Jeffrey_ellipsoid.cfg')
 
 # Three sphere swimmer planar 2D
-# feelpp.Environment.setConfigFile('cases/rigid_body_paper_tests/3SS_planar_2D/3SS_planar_2D.cfg')
+#feelpp.Environment.setConfigFile('cases/rigid_body_paper_tests/3-sphere-planar/2d/3ss_planar.cfg')
+
+
 # Three sphere swimmer planar 3D
 # feelpp.Environment.setConfigFile('cases/rigid_body_paper_tests/3SS_planar_3D/3SS_planar_3D.cfg')
 # feelpp.Environment.setConfigFile('cases/rigid_body_paper_tests/3SS_planar_3D/preconditioner.cfg')
 
 # Falling two disks
-# feelpp.Environment.setConfigFile('cases/rigid_body_paper_tests/Falling_two_disks/Two_disks.cfg')
+#feelpp.Environment.setConfigFile('cases/rigid_body_paper_tests/falling_two_disks/two_disks.cfg')
 
 # Falling one disk
-feelpp.Environment.setConfigFile('cases/rigid_body_paper_tests/Falling_one_disk/One_disk.cfg')
+#feelpp.Environment.setConfigFile('cases/rigid_body_paper_tests/falling_one_disk/one_disk.cfg')
+
+# Falling three sphere swimmer
+feelpp.Environment.setConfigFile('cases/contact_cases/three_sphere_2d/three_sphere_2d.cfg')
+
+# Falling multi disks
+#feelpp.Environment.setConfigFile('cases/rigid_body_paper_tests/falling_disks/falling_disks.cfg')
+
+# Falling sphere
+#feelpp.Environment.setConfigFile('cases/rigid_body_paper_tests/falling_sphere/falling_sphere.cfg')
 
 f = fluid(dim=2, orderVelocity=2, orderPressure=1)
 f.init()
@@ -93,18 +101,20 @@ f.init()
 #hclose = 0.2
 
 # Three sphere swimmer planar 3D
-# hfar = 3
-# hclose = 0.2
+#hfar = 3
+#hclose = 0.2
 
 # Falling two disks
-# hfar = 0.3
-# hclose = 0.00390625
-# hfar = 0.8
-# hclose = 0.01
+#hfar = 0.1
+#hclose = 0.01
 
 # Falling one disk
-hfar = 0.1
+hfar = 0.3
 hclose = 0.01
+
+# Falling three sphere swimmer
+#hfar = 0.1
+#hclose = 0.01
 
 def remesh_toolbox(f, hclose, hfar, parent_mesh):
     # 3 spheres
@@ -143,31 +153,43 @@ def remesh_toolbox(f, hclose, hfar, parent_mesh):
     # required_elts=["SpheroidVolume"]
 
     # Three sphere swimmer planar 2D
-    # required_facets=["CircleCenter","CircleFirst","CircleSecond","CircleThird"]
-    # required_elts=["CirCenter","CirFirst","CirSecond","CirThird"]
+    #required_facets=["CircleCenter","CircleFirst","CircleSecond","CircleThird"]
+    #required_elts=["CirCenter","CirFirst","CirSecond","CirThird"]
 
     # Three sphere swimmer planar 3D
     # required_facets=["SphereCenter","SphereFirst","SphereSecond","SphereThird"]
     # required_elts=["SphCenter","SphFirst","SphSecond","SphThird"]
 
     # Falling two disks
-    # required_facets=["DiskFirst","DiskSecond"]
-    # required_elts=["DFirst","DSecond"]
+    #required_facets=["DiskFirst","DiskSecond"]
+    #required_elts=["DFirst","DSecond"]
 
-    # Falling two disks
-    required_facets=["DiskFirst"]
-    required_elts=["DFirst"]
+    # Falling one disk
+    #required_facets=["DiskFirst"]
+    #required_elts=["DFirst"]
+
+    # Falling three sphere swimmer
+    required_facets=["CircleRight","CircleCenter","CircleLeft"]
+    required_elts=["CirRight","CirCenter","CirLeft"]
+
+    # Falling multi disks
+    #required_facets=["DiskFirst","DiskSecond","DiskThird","DiskFourth","DiskFifth"]
+    #required_elts=["DFirst","DSecond","DThird","DFourth","DFifth"]
+
+    # Falling sphere
+    #required_facets=["Sphere"]
+    #required_elts=["Sph"]
 
     Xh = feelpp.functionSpace(mesh=f.mesh())
     n_required_elts_before=feelpp.nelements(feelpp.markedelements(f.mesh(),required_elts))
-    n_required_facets_before=feelpp.nfaces(feelpp.markedfaces(f.mesh(),required_facets))
+    n_required_facets_before=feelpp.nelements(feelpp.markedfaces(f.mesh(),required_facets))
     print(" . [before remesh]   n required elts: {}".format(n_required_elts_before))
     print(" . [before remesh] n required facets: {}".format(n_required_facets_before))
 #    metric=feelpp.
     new_mesh,cpt = feelpp.remesh(f.mesh(), "gradedls({},{})".format(hclose, hfar), required_elts, required_facets, None )
     print(" . [after remesh]  n remeshes: {}".format(cpt))
     n_required_elts_after=feelpp.nelements(feelpp.markedelements(new_mesh,required_elts))
-    n_required_facets_after=feelpp.nfaces(feelpp.markedfaces(new_mesh,required_facets))
+    n_required_facets_after=feelpp.nelements(feelpp.markedfaces(new_mesh,required_facets))
     print(" . [after remesh]  n required elts: {}".format(n_required_elts_after))
     print(" . [after remesh] n required facets: {}".format(n_required_facets_after))
     f.applyRemesh(new_mesh)
@@ -181,11 +203,15 @@ remesh_toolbox(f, hclose, hfar, None )
 nbr_remesh = 0
 time_remesh = []
 
-# f.addContactForce(configuration_json)
-# f.addContactForceRes(configuration_json)
+"""
+Add collision force for spherical rigid bodies : 
+f.addContactForce()
+f.addContactForceRes()
+"""
 
-f.addContactForceBoundary()
-f.addContactForceResBoundary()
+# Add collision force for articualted bodies
+f.addContactForceArticulatedBody()
+f.addContactForceResArticulatedBody()
 
 f.startTimeStep()
 
@@ -196,13 +222,13 @@ while not f.timeStepBase().isFinished():
     
     min_etaq = q.etaQ(f.mesh()).min()
     
-    if min_etaq < 0.4:
+    if min_etaq < 1.0:
 #    if f.timeStepBase().iteration() % 10 == 0:
         remesh_toolbox(f, hclose, hfar, None)
-        #f.addContactForce(configuration_json)
-        #f.addContactForceRes(configuration_json)
-        f.addContactForceBoundary()
-        f.addContactForceResBoundary()
+        #f.addContactForce()
+        #f.addContactForceRes()
+        f.addContactForceArticulatedBody()
+        f.addContactForceResArticulatedBody()
 
         nbr_remesh += 1
         time_remesh.append(f.time())
@@ -217,7 +243,6 @@ while not f.timeStepBase().isFinished():
     
     f.solve()
     f.exportResults()
-    
     f.updateTimeStep()
 
 print("Nombre de remaillages : ", nbr_remesh)
