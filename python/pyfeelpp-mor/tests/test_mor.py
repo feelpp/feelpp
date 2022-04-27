@@ -8,18 +8,18 @@ from feelpp.toolboxes.heat import *
 from feelpp.toolboxes.core import *
 from feelpp.mor import *
 
-# desc : (('path/to/cfg/file', dimension, {mumin}, {mumax}), 'name-of-the-test')
+# desc : (('path/to/cfg/file', dimension, {mudefault}, {mumin}, {mumax}), 'name-of-the-test')
 cases = [
-         #(('testcase/thermal-fin/2d/thermal-fin.cfg', 2,
-         #   #{"k_1": 0.1, "k_2": 0.1, "k_3": 0.1, "k_4": 0.1, "k_0": 1, "Bi": 0.01},
-         #   {"k_1": 0.1, "k_2": 0.1, "k_3": 0.1, "k_4": 0.1, "k_0": 1, "Bi": 0.01},
-         #   {"k_1": 10, "k_2": 10, "k_3": 10, "k_4": 10, "k_0": 1, "Bi": 1}), 'thermal-fin-2d'),
-         #(('testcase/thermal-fin/3d/thermal-fin.cfg', 3,
-         #   #{"k_1": 0.1, "k_2": 0.1, "k_3": 0.1, "k_4": 0.1, "k_0": 1, "Bi": 0.01},
-         #   {"k_1": 0.1, "k_2": 0.1, "k_3": 0.1, "k_4": 0.1, "k_0": 1, "Bi": 0.01},
-         #   {"k_1": 10, "k_2": 10, "k_3": 10, "k_4": 10, "k_0": 1, "Bi": 1}), 'thermal-fin-3d'),
+         (('testcase/thermal-fin/2d/thermal-fin.cfg', 2,
+           {"k_1": 0.1, "k_2": 0.1, "k_3": 0.1, "k_4": 0.1, "k_0": 1, "Bi": 0.01},
+           {"k_1": 0.1, "k_2": 0.1, "k_3": 0.1, "k_4": 0.1, "k_0": 1, "Bi": 0.01},
+           {"k_1": 10, "k_2": 10, "k_3": 10, "k_4": 10, "k_0": 1, "Bi": 1}), 'thermal-fin-2d'),
+         (('testcase/thermal-fin/3d/thermal-fin.cfg', 3,
+           {"k_1": 0.1, "k_2": 0.1, "k_3": 0.1, "k_4": 0.1, "k_0": 1, "Bi": 0.01},
+           {"k_1": 0.1, "k_2": 0.1, "k_3": 0.1, "k_4": 0.1, "k_0": 1, "Bi": 0.01},
+           {"k_1": 10, "k_2": 10, "k_3": 10, "k_4": 10, "k_0": 1, "Bi": 1}), 'thermal-fin-3d'),
          (('testcase/testcase/test.cfg', 2,
-            #{"k_1": 5, "k_2": 2, "k_3": 10, "k_4": 0.1},
+            {"k_1": 5, "k_2": 2, "k_3": 10, "k_4": 0.1},
             {"k_1": 0.1, "k_2": 0.1, "k_3": 0.1, "k_4": 0.1},
             {"k_1": 10, "k_2": 10, "k_3": 10, "k_4": 10}), 'test-case'),
         ]
@@ -38,14 +38,14 @@ def init_toolbox(casefile, dim):
 
 
 
-@pytest.mark.parametrize("casefile,dim,mumin_th,mumax_th", cases_params, ids=cases_ids)
-def test_init_from_ModelPropeties(casefile, dim, mumin_th, mumax_th,  init_feelpp):
+@pytest.mark.parametrize("casefile,dim,mudefault_th,mumin_th,mumax_th", cases_params, ids=cases_ids)
+def test_init_from_ModelPropeties(casefile, dim, mudefault_th, mumin_th, mumax_th,  init_feelpp):
     """Tests the initialisation from ModelProperties
 
     Args:
         casefile (string): path to config file
         dim (int): dimention of the case
-        mubar_th (dict): dict containing the true values of mu_bar (="value" field in the json)
+        mudefault_th (dict): dict containing the true values of mu_bar (="value" field in the json)
         mumin_th (dict): true minimal values for parameters (="min" field in the json)
         mumax_th (dict): true maximal values for parameters (="max" fiels in the json)
         init_feelpp (_fixture_):
@@ -55,18 +55,22 @@ def test_init_from_ModelPropeties(casefile, dim, mumin_th, mumax_th,  init_feelp
 
     modelParameters = heatBox.modelProperties().parameters()
     Dmu = feelpp.mor._mor.ParameterSpace.New(modelParameters, feelpp.Environment.worldCommPtr())
+    default_parameter = modelParameters.toParameterValues()
 
-    # mubar = Dmu.mubar()       # /!\ doesn't exist anymore !
+    mubar = Dmu.element()
+    mubar.setParameters(default_parameter)
     mumin = Dmu.mumin()
     mumax = Dmu.mumax()
 
     mu = Dmu.element()
+    
     print("try to access to the names of elements")
     print(mu.parameterNames())
     print(mumin.parameterNames())
 
 
     for p in mumin_th:
+        assert( mubar.parameterNamed(p) == mudefault_th[p] )
         assert( mumin.parameterNamed(p) == mumin_th[p] )
         assert( mumax.parameterNamed(p) == mumax_th[p] )
 

@@ -76,12 +76,14 @@ def generate_basis():
 
 
     feelpp.Environment.setConfigFile(f'{case}/{casefile}')
-    feelpp.Environment.changeRepository(directory=f'{dir}/{case}')
+    feelpp.Environment.changeRepository(directory=f'{dir}')
 
     # Set the toolboxes
     heatBox = heat(dim=dim, order=1)
     heatBox.init()
 
+    modelParameters = heatBox.modelProperties().parameters()
+    default_parameter = modelParameters.toParameterValues()
 
 
     # model = toolboxmor_2d() if DIM==2 else toolboxmor_3d()
@@ -147,11 +149,9 @@ def generate_basis():
         return mus
 
     mubar = Dmu.element(True, False)
-    # this is temporary : we will be able to read those values from the json
-    # mubar.setParameters({"E":40, "T_amb":298, "T_bl":310, "epsilon":1, "h_amb":10, "h_bl":65})
-    mubar.setParameters({"Bi":0.01, "k_1":0.1, "k_2":0.1, "k_3":0.1, "k_4":0.1})
-    # mubar.setParameters({"phi":250000, "hconv":300, "Tref":450, "P":2e8, "k_4":0.1})
+    mubar.setParameters(default_parameter)
     if rank == 0:
+        print("mubar =")
         mubar.view()
 
     affineDecomposition = model.getAffineDecomposition()
