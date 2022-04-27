@@ -374,12 +374,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
     // init fluid inlet
     this->initFluidInlet();
 
-    for ( auto const& [bcId,bcData] : M_boundaryConditions->velocityImposed() )
-        bcData->updateDofEliminationIds( *this, "velocity", this->functionSpaceVelocity() );
-
-    for ( auto const& [bcName,bcData] : M_boundaryConditions->inlet() )
-        this->updateDofEliminationIds( "velocity", this->functionSpaceVelocity(), markedfaces(this->functionSpaceVelocity()->mesh(),bcData->markers()) );
-
     // Dirichlet bc using a lagrange multiplier
     if ( M_boundaryConditions->hasVelocityImposedLagrangeMultiplier() )
     {
@@ -409,8 +403,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
         M_fieldLagrangeMultiplierPressureBC1 = M_spaceLagrangeMultiplierPressureBC->elementPtr();
         if constexpr ( nDim == 3 )
             M_fieldLagrangeMultiplierPressureBC2 =  M_spaceLagrangeMultiplierPressureBC->elementPtr();
-
-        this->updateDofEliminationIds( "pressurebc-lm", M_spaceLagrangeMultiplierPressureBC, boundaryfaces(M_meshLagrangeMultiplierPressureBC) );
     }
 
 
@@ -427,41 +419,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
     }
     // init bc body
     M_bodySetBC.init( *this );
-    // body bc
-    for ( auto const& [bpname,bpbc] : M_bodySetBC )
-    {
-        if ( bpbc.hasTranslationalVelocityExpr() )
-        {
-#if 0
-            this->updateDofEliminationIds( "body-bc.translational-velocity",  bpbc.spaceTranslationalVelocity(),  elements( bpbc.mesh() ) );
-            // only do for one, dof ids are the same for all
-            break;
-#else
-            std::string spaceName = "body-bc."+bpbc.name()+".translational-velocity";
-            this->updateDofEliminationIds( spaceName,  bpbc.spaceTranslationalVelocity(),  elements( bpbc.mesh() ) );
-#endif
-        }
-
-        if ( bpbc.hasAngularVelocityExpr() )
-        {
-#if 0
-            this->updateDofEliminationIds( "body-bc.angular-velocity",  bpbc.spaceAngularVelocity(), elements( bpbc.mesh() ) );
-            // only do for one, dof ids are the same for all
-            break;
-#else
-            std::string spaceName = "body-bc."+bpbc.name()+".angular-velocity";
-            this->updateDofEliminationIds( spaceName, bpbc.spaceAngularVelocity(), elements( bpbc.mesh() ) );
-#endif
-        }
-
-        if ( true )
-        {
-            this->updateDofEliminationIds( "velocity", this->functionSpaceVelocity(), bpbc.rangeMarkedFacesOnFluid() );
-        }
-
-    }
-
-
 }
 //---------------------------------------------------------------------------------------------------------//
 
@@ -910,6 +867,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     // update initial conditions
     this->updateInitialConditions( this->symbolsExpr() );
 
+    // init algebraic model (alg backend, block index, block vector, InHousePreconditioner
+    this->initAlgebraicModel();
+#if 0
     //-------------------------------------------------//
     // define start dof index ( lm , windkessel )
     this->initStartBlockIndexFieldsInMatrix();
@@ -920,7 +880,23 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     //-------------------------------------------------//
     // InHousePreconditioner : operatorPCD
     this->initInHousePreconditioner();
+#if 0
+        // backend
+    this->initAlgebraicBackend();
 
+    // define start dof index ( lm , windkessel )
+    this->initStartBlockIndexFieldsInMatrix();
+
+    // build solution block vector
+    this->buildBlockVector();
+
+    // dof eliminitation ids
+    this->updateAlgebraicDofEliminationIds();
+
+    // InHousePreconditioner : operatorPCD
+    this->initInHousePreconditioner();
+#endif
+#endif
     //-------------------------------------------------//
     // algebraric data : solver, preconditioner, matrix, vector
     if ( buildModelAlgebraicFactory )
@@ -985,6 +961,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::applyRemesh( mesh_ptrtype const& newMesh )
     // update definePressureCst respect to the method choosen
     if ( this->definePressureCst() )
         this->updateDefinePressureCst();
+
 
     // body bc
     M_bodySetBC.applyRemesh( *this, remeshInterp );
@@ -1112,7 +1089,51 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateAlgebraicDofEliminationIds()
 {
-    //this->updateBoundaryConditionsForUse();
+    // dof elimination bc
+    for ( auto const& [bcId,bcData] : M_boundaryConditions->velocityImposed() )
+        bcData->updateDofEliminationIds( *this, "velocity", this->functionSpaceVelocity() );
+
+    for ( auto const& [bcName,bcData] : M_boundaryConditions->inlet() )
+        this->updateDofEliminationIds( "velocity", this->functionSpaceVelocity(), markedfaces(this->functionSpaceVelocity()->mesh(),bcData->markers()) );
+
+    if ( !M_boundaryConditions->pressureImposed().empty() )
+    {
+        this->updateDofEliminationIds( "pressurebc-lm", M_spaceLagrangeMultiplierPressureBC, boundaryfaces(M_meshLagrangeMultiplierPressureBC) );
+    }
+
+    // body bc
+    for ( auto const& [bpname,bpbc] : M_bodySetBC )
+    {
+        if ( bpbc.hasTranslationalVelocityExpr() )
+        {
+#if 0
+            this->updateDofEliminationIds( "body-bc.translational-velocity",  bpbc.spaceTranslationalVelocity(),  elements( bpbc.mesh() ) );
+            // only do for one, dof ids are the same for all
+            break;
+#else
+            std::string spaceName = "body-bc."+bpbc.name()+".translational-velocity";
+            this->updateDofEliminationIds( spaceName,  bpbc.spaceTranslationalVelocity(),  elements( bpbc.mesh() ) );
+#endif
+        }
+
+        if ( bpbc.hasAngularVelocityExpr() )
+        {
+#if 0
+            this->updateDofEliminationIds( "body-bc.angular-velocity",  bpbc.spaceAngularVelocity(), elements( bpbc.mesh() ) );
+            // only do for one, dof ids are the same for all
+            break;
+#else
+            std::string spaceName = "body-bc."+bpbc.name()+".angular-velocity";
+            this->updateDofEliminationIds( spaceName, bpbc.spaceAngularVelocity(), elements( bpbc.mesh() ) );
+#endif
+        }
+
+        if ( true )
+        {
+            this->updateDofEliminationIds( "velocity", this->functionSpaceVelocity(), bpbc.rangeMarkedFacesOnFluid() );
+        }
+
+    }
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
