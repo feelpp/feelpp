@@ -123,8 +123,7 @@ public :
         Ne[1] = 10;
         Pset->equidistributeProduct( Ne , true , "deim_test_sampling" );
 
-        Environment::setOptionValue("deim.rebuild-database", true );
-        initDeim( Pset );
+        initDeim( Pset, true );
 
         M_deim->run();
         int m = M_deim->size();
@@ -166,10 +165,9 @@ public :
 
 
         // We rebuild a new DEIM object with same uuid so he will reload the db
-        Environment::setOptionValue("deim.rebuild-database", false );
         if ( Environment::rank() == 0 )
             BOOST_TEST_MESSAGE( "Rebuild and check" );
-        initDeim( Pset );
+        initDeim( Pset, false );
 
         // Here we check if the betas are well computed without rebuilding the basis tensors
         int i = 0;
@@ -279,9 +277,10 @@ public :
         return typename space_type::mesh_support_vector_type();
     }
  private :
-    void initDeim( sampling_ptrtype Pset )
+    void initDeim( sampling_ptrtype Pset, bool rebuild )
     {
-        return initDeim( Pset, mpl::bool_<is_mat>() );
+        initDeim( Pset, mpl::bool_<is_mat>() );
+        M_deim->setRebuildDB( rebuild );
     }
     void initDeim( sampling_ptrtype Pset, mpl::bool_<true> )
     {

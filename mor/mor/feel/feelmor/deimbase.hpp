@@ -262,6 +262,7 @@ public :
 
     std::string const& prefixModel() const { return M_prefixModel; }
     void setPrefixModel( std::string const& prefix ) { M_prefixModel = prefix; }
+    void setRebuildDB(bool rebuild) { M_rebuild = rebuild; }
 
     std::vector<indice_type> const& index() const { return M_index; }
     std::vector<indice_type> const& indexR() const { return M_indexR; }
