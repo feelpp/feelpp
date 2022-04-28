@@ -1,5 +1,6 @@
 var NAVTREEINDEX17 =
 {
+"classFeel_1_1FunctionSpace_1_1Element.html#aa98f113888a27c5e587332b320524221":[6,1,1,86,8,283],
 "classFeel_1_1FunctionSpace_1_1Element.html#aaa035677b842760a209a9847aad34250":[6,1,1,86,8,67],
 "classFeel_1_1FunctionSpace_1_1Element.html#aaa0d64462b48360b52a781eb2e46a489":[6,1,1,86,8,108],
 "classFeel_1_1FunctionSpace_1_1Element.html#aabd7a9db122519b77c1f78b7bc098e62":[6,1,1,86,8,123],
@@ -248,6 +249,5 @@ var NAVTREEINDEX17 =
 "classFeel_1_1GeoElement1D.html#adcbbf0745d252aae6b5bdc93004c23a3":[5,1,1,54],
 "classFeel_1_1GeoElement1D.html#adfd53693ffbd28dcad3d4d4736e3395a":[5,1,1,48],
 "classFeel_1_1GeoElement1D.html#ae245e960dddd9b81d3c0301ea725e77a":[5,1,1,39],
-"classFeel_1_1GeoElement1D.html#ae2f2c4a7c535cad1abf584021fc83e8c":[5,1,1,31],
-"classFeel_1_1GeoElement1D.html#ae39c55178780c7c47c7c02b9c163c1bb":[5,1,1,45]
+"classFeel_1_1GeoElement1D.html#ae2f2c4a7c535cad1abf584021fc83e8c":[5,1,1,31]
 };

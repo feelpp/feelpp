@@ -20,6 +20,7 @@ var classFeel_1_1FeelModels_1_1FluidMechanics_1_1NBodyArticulated =
     [ "massExpr", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1NBodyArticulated.html#a01ee1e397edcff4839ebddec9433469f", null ],
     [ "masterBodyBC", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1NBodyArticulated.html#aec3a0b443af262afa41cd0f6fa6e3888", null ],
     [ "matrixPTilde_angular", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1NBodyArticulated.html#a7b39f8df3f504c9275dcdbd85d9a8c9f", null ],
+    [ "modelMeasuresQuantities", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1NBodyArticulated.html#a54eaa675a712baafe03dbdf8b7e6c2d4", null ],
     [ "momentOfInertia_bodyFrame", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1NBodyArticulated.html#ae40f089ee4852e449cd2a044472e05de", null ],
     [ "momentOfInertia_inertialFrame", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1NBodyArticulated.html#af93373f3cbbe4c9e5208de55f26e9e66", null ],
     [ "momentOfInertiaExpr_bodyFrame", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1NBodyArticulated.html#aabd52011eb0887e648fa5172604abfca", null ],

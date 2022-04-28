@@ -1,5 +1,6 @@
 var NAVTREEINDEX19 =
 {
+"classFeel_1_1GeoEntity.html#adbe4dbe07e17f14d92327e0bee56d1d7":[6,1,1,94,55],
 "classFeel_1_1GeoEntity.html#ade196d65017ef561ff3d56b1543e5256":[6,1,1,94,19],
 "classFeel_1_1GeoEntity.html#adf27f073760957fa1e61c9095dedb006":[6,1,1,94,29],
 "classFeel_1_1GeoEntity.html#ae048478012512c63ce8414fb7ba45816":[6,1,1,94,88],
@@ -248,6 +249,5 @@ var NAVTREEINDEX19 =
 "classFeel_1_1Hypercube.html#a6a545763bf62ae874e3509282787a483":[6,1,1,108,30],
 "classFeel_1_1Hypercube.html#a6fe9357aad0cf16633f5cc32233a4fd8":[6,1,1,108,28],
 "classFeel_1_1Hypercube.html#a76fa0ba757812c78118ffdb4fc9b9f85":[6,1,1,108,31],
-"classFeel_1_1Hypercube.html#a8afbd4a09a097e6656ffcb1a8a9a4e3b":[6,1,1,108,8],
-"classFeel_1_1Hypercube.html#a8b90d277c36ae13b14c3c13f168479ca":[6,1,1,108,33]
+"classFeel_1_1Hypercube.html#a8afbd4a09a097e6656ffcb1a8a9a4e3b":[6,1,1,108,8]
 };

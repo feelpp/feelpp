@@ -103,6 +103,7 @@ $(document).ready(function(){initNavTree('classFeel_1_1FeelModels_1_1ModelPhysic
 <div class="header">
   <div class="summary">
 <a href="#nested-classes">Instances and minimal complete definitions</a> &#124;
+<a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="classFeel_1_1FeelModels_1_1ModelPhysicFluid-members.html">List of all members</a>  </div>
   <div class="headertitle">
@@ -131,6 +132,36 @@ Instances and minimal complete definitions</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1FeelModels_1_1ModelPhysicFluid_1_1Turbulence.html">Turbulence</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
+Public Types</h2></td></tr>
+<tr class="memitem:a1d95aabc1ac0578ae52e3469d3f0ecd7"><td class="memItemLeft" align="right" valign="top"><a id="a1d95aabc1ac0578ae52e3469d3f0ecd7"></a>enum &#160;</td><td class="memItemRight" valign="bottom"><b>NavierStokesFormulation</b> { <br />
+&#160;&#160;<b>Convective</b> =0, 
+<b>SkewSymmetric</b>, 
+<b>Conservative</b>, 
+<b>Rotational</b>, 
+<br />
+&#160;&#160;<b>EMAC</b>
+<br />
+ }</td></tr>
+<tr class="separator:a1d95aabc1ac0578ae52e3469d3f0ecd7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="inherit_header pub_types_classFeel_1_1FeelModels_1_1ModelPhysic"><td colspan="2" onclick="javascript:toggleInherit('pub_types_classFeel_1_1FeelModels_1_1ModelPhysic')"><img src="closed.png" alt="-"/>&#160;Public Types inherited from <a class="el" href="classFeel_1_1FeelModels_1_1ModelPhysic.html">Feel::FeelModels::ModelPhysic&lt; Dim &gt;</a></td></tr>
+<tr class="memitem:acef3c157ed4f6d41098f9f10cd74b1d4 inherit pub_types_classFeel_1_1FeelModels_1_1ModelPhysic"><td class="memItemLeft" align="right" valign="top"><a id="acef3c157ed4f6d41098f9f10cd74b1d4"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>material_property_description_type</b> = <a class="el" href="classFeel_1_1FeelModels_1_1MaterialPropertyDescription.html">MaterialPropertyDescription</a></td></tr>
+<tr class="separator:acef3c157ed4f6d41098f9f10cd74b1d4 inherit pub_types_classFeel_1_1FeelModels_1_1ModelPhysic"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab280893a88962c6ed67cfeaf8b18c128 inherit pub_types_classFeel_1_1FeelModels_1_1ModelPhysic"><td class="memItemLeft" align="right" valign="top"><a id="ab280893a88962c6ed67cfeaf8b18c128"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>material_property_shape_dim_type</b> = typename material_property_description_type::shape_dim_type</td></tr>
+<tr class="separator:ab280893a88962c6ed67cfeaf8b18c128 inherit pub_types_classFeel_1_1FeelModels_1_1ModelPhysic"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae2d8b99ee2285974b50a0f5382bf3c50 inherit pub_types_classFeel_1_1FeelModels_1_1ModelPhysic"><td class="memItemLeft" align="right" valign="top"><a id="ae2d8b99ee2285974b50a0f5382bf3c50"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>physic_id_type</b> = std::pair&lt; std::string, std::string &gt;</td></tr>
+<tr class="separator:ae2d8b99ee2285974b50a0f5382bf3c50 inherit pub_types_classFeel_1_1FeelModels_1_1ModelPhysic"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="inherit_header pub_types_classFeel_1_1JournalWatcher"><td colspan="2" onclick="javascript:toggleInherit('pub_types_classFeel_1_1JournalWatcher')"><img src="closed.png" alt="-"/>&#160;Public Types inherited from <a class="el" href="classFeel_1_1JournalWatcher.html">Feel::JournalWatcher</a></td></tr>
+<tr class="memitem:a522922f7cc5012909bab8f46787c1aa5 inherit pub_types_classFeel_1_1JournalWatcher"><td class="memItemLeft" align="right" valign="top"><a id="a522922f7cc5012909bab8f46787c1aa5"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>function_update_information_type</b> = std::function&lt; void(<a class="el" href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">nl::json</a> &amp;)&gt;</td></tr>
+<tr class="separator:a522922f7cc5012909bab8f46787c1aa5 inherit pub_types_classFeel_1_1JournalWatcher"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abe4714c4ffcd3130ae5e978b6e9e8f94 inherit pub_types_classFeel_1_1JournalWatcher"><td class="memItemLeft" align="right" valign="top"><a id="abe4714c4ffcd3130ae5e978b6e9e8f94"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>notify_type</b> = <a class="el" href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">nl::json</a></td></tr>
+<tr class="separator:abe4714c4ffcd3130ae5e978b6e9e8f94 inherit pub_types_classFeel_1_1JournalWatcher"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a2caf4c284dc11dcb1dcd7cc20a8258bd"><td class="memItemLeft" align="right" valign="top"><a id="a2caf4c284dc11dcb1dcd7cc20a8258bd"></a>
@@ -154,6 +185,9 @@ auto const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>gravityF
 <tr class="memitem:ab4ed3d40a032a11e74de1c170075f28a"><td class="memItemLeft" align="right" valign="top"><a id="ab4ed3d40a032a11e74de1c170075f28a"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>ModelPhysicFluid</b> (<a class="el" href="classFeel_1_1FeelModels_1_1ModelPhysics.html">ModelPhysics</a>&lt; Dim &gt; const &amp;mphysics, std::string const &amp;modeling, std::string const &amp;type, std::string const &amp;name, ModelModel const &amp;model=ModelModel{})</td></tr>
 <tr class="separator:ab4ed3d40a032a11e74de1c170075f28a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2cbf315258a0ba876e4baa36900fd90e"><td class="memItemLeft" align="right" valign="top"><a id="a2cbf315258a0ba876e4baa36900fd90e"></a>
+NavierStokesFormulation&#160;</td><td class="memItemRight" valign="bottom"><b>navierStokesFormulation</b> () const</td></tr>
+<tr class="separator:a2cbf315258a0ba876e4baa36900fd90e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1d160c39b316597d0ad57d781d983f0d"><td class="memItemLeft" align="right" valign="top"><a id="a1d160c39b316597d0ad57d781d983f0d"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>setEquation</b> (std::string const &amp;eq)</td></tr>
 <tr class="separator:a1d160c39b316597d0ad57d781d983f0d"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -339,23 +373,6 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="clas
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="inherited"></a>
 Additional Inherited Members</h2></td></tr>
-<tr class="inherit_header pub_types_classFeel_1_1FeelModels_1_1ModelPhysic"><td colspan="2" onclick="javascript:toggleInherit('pub_types_classFeel_1_1FeelModels_1_1ModelPhysic')"><img src="closed.png" alt="-"/>&#160;Public Types inherited from <a class="el" href="classFeel_1_1FeelModels_1_1ModelPhysic.html">Feel::FeelModels::ModelPhysic&lt; Dim &gt;</a></td></tr>
-<tr class="memitem:acef3c157ed4f6d41098f9f10cd74b1d4 inherit pub_types_classFeel_1_1FeelModels_1_1ModelPhysic"><td class="memItemLeft" align="right" valign="top"><a id="acef3c157ed4f6d41098f9f10cd74b1d4"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>material_property_description_type</b> = <a class="el" href="classFeel_1_1FeelModels_1_1MaterialPropertyDescription.html">MaterialPropertyDescription</a></td></tr>
-<tr class="separator:acef3c157ed4f6d41098f9f10cd74b1d4 inherit pub_types_classFeel_1_1FeelModels_1_1ModelPhysic"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab280893a88962c6ed67cfeaf8b18c128 inherit pub_types_classFeel_1_1FeelModels_1_1ModelPhysic"><td class="memItemLeft" align="right" valign="top"><a id="ab280893a88962c6ed67cfeaf8b18c128"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>material_property_shape_dim_type</b> = typename material_property_description_type::shape_dim_type</td></tr>
-<tr class="separator:ab280893a88962c6ed67cfeaf8b18c128 inherit pub_types_classFeel_1_1FeelModels_1_1ModelPhysic"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae2d8b99ee2285974b50a0f5382bf3c50 inherit pub_types_classFeel_1_1FeelModels_1_1ModelPhysic"><td class="memItemLeft" align="right" valign="top"><a id="ae2d8b99ee2285974b50a0f5382bf3c50"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>physic_id_type</b> = std::pair&lt; std::string, std::string &gt;</td></tr>
-<tr class="separator:ae2d8b99ee2285974b50a0f5382bf3c50 inherit pub_types_classFeel_1_1FeelModels_1_1ModelPhysic"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="inherit_header pub_types_classFeel_1_1JournalWatcher"><td colspan="2" onclick="javascript:toggleInherit('pub_types_classFeel_1_1JournalWatcher')"><img src="closed.png" alt="-"/>&#160;Public Types inherited from <a class="el" href="classFeel_1_1JournalWatcher.html">Feel::JournalWatcher</a></td></tr>
-<tr class="memitem:a522922f7cc5012909bab8f46787c1aa5 inherit pub_types_classFeel_1_1JournalWatcher"><td class="memItemLeft" align="right" valign="top"><a id="a522922f7cc5012909bab8f46787c1aa5"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>function_update_information_type</b> = std::function&lt; void(<a class="el" href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">nl::json</a> &amp;)&gt;</td></tr>
-<tr class="separator:a522922f7cc5012909bab8f46787c1aa5 inherit pub_types_classFeel_1_1JournalWatcher"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abe4714c4ffcd3130ae5e978b6e9e8f94 inherit pub_types_classFeel_1_1JournalWatcher"><td class="memItemLeft" align="right" valign="top"><a id="abe4714c4ffcd3130ae5e978b6e9e8f94"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>notify_type</b> = <a class="el" href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">nl::json</a></td></tr>
-<tr class="separator:abe4714c4ffcd3130ae5e978b6e9e8f94 inherit pub_types_classFeel_1_1JournalWatcher"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_static_methods_classFeel_1_1FeelModels_1_1ModelPhysic"><td colspan="2" onclick="javascript:toggleInherit('pub_static_methods_classFeel_1_1FeelModels_1_1ModelPhysic')"><img src="closed.png" alt="-"/>&#160;Static Public Member Functions inherited from <a class="el" href="classFeel_1_1FeelModels_1_1ModelPhysic.html">Feel::FeelModels::ModelPhysic&lt; Dim &gt;</a></td></tr>
 <tr class="memitem:a47a52b2d961cb7db293d73cc07af33a2 inherit pub_static_methods_classFeel_1_1FeelModels_1_1ModelPhysic"><td class="memItemLeft" align="right" valign="top"><a id="a47a52b2d961cb7db293d73cc07af33a2"></a>
 static std::shared_ptr&lt; <a class="el" href="classFeel_1_1FeelModels_1_1ModelPhysic.html">ModelPhysic</a>&lt; Dim &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>New</b> (<a class="el" href="classFeel_1_1FeelModels_1_1ModelPhysics.html">ModelPhysics</a>&lt; Dim &gt; const &amp;mphysics, std::string const &amp;modeling, std::string const &amp;type, std::string const &amp;name, ModelModel const &amp;model=ModelModel{})</td></tr>

@@ -1,5 +1,6 @@
 var NAVTREEINDEX32 =
 {
+"classFeel_1_1vf_1_1Cast.html#aec47322cc005653399979ee93fbe2e5b":[6,1,1,13,5,20],
 "classFeel_1_1vf_1_1Cast.html#af0e6c20b07a84f39fe83956048bec43e":[6,1,1,13,5,4],
 "classFeel_1_1vf_1_1CastBase.html":[6,1,1,13,6],
 "classFeel_1_1vf_1_1Cst.html":[6,1,1,13,7],
@@ -248,6 +249,5 @@ var NAVTREEINDEX32 =
 "classFeel_1_1vf_1_1OpMin.html#aae3d3247b4ca9ee056e3e67527253e28":[6,1,1,13,27,7],
 "classFeel_1_1vf_1_1OpMin.html#abd6a18edb0a0a96f81afc969b334b6d0":[6,1,1,13,27,18],
 "classFeel_1_1vf_1_1OpMin.html#ac40e68745382b7e8d701973aade05d9a":[6,1,1,13,27,3],
-"classFeel_1_1vf_1_1OpMin.html#ad8849355bcd74b5351874d5e87b833f8":[6,1,1,13,27,10],
-"classFeel_1_1vf_1_1OpMin.html#adef4d775b2886759a9e9402a332913da":[6,1,1,13,27,11]
+"classFeel_1_1vf_1_1OpMin.html#ad8849355bcd74b5351874d5e87b833f8":[6,1,1,13,27,10]
 };

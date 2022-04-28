@@ -1,5 +1,6 @@
 var NAVTREEINDEX26 =
 {
+"classFeel_1_1ProductSpaces2.html#a5dc980136e0cd6d46c1f9dfe02cf60f0":[6,1,1,226,13],
 "classFeel_1_1ProductSpaces2.html#a66e68b601fb73ce8136e4bcff3d023da":[6,1,1,226,12],
 "classFeel_1_1ProductSpaces2.html#a75fdeea4ed346b49546043660a6e911e":[6,1,1,226,1],
 "classFeel_1_1ProductSpaces2.html#a99e5e306cca6c4e7ea30651c63886f18":[6,1,1,226,5],
@@ -248,6 +249,5 @@ var NAVTREEINDEX26 =
 "classFeel_1_1Reference_3_01Simplex_3_01Dim_00_01Order_00_01RDim_01_4_00_01Dim_00_01Order_00_01RDim_00_01T_01_4.html#a03d2cb8ffd6919c5cc8e9e6cb6f79101":[6,1,1,233,78],
 "classFeel_1_1Reference_3_01Simplex_3_01Dim_00_01Order_00_01RDim_01_4_00_01Dim_00_01Order_00_01RDim_00_01T_01_4.html#a0a86efe5e9f830745108a99232f7a8d6":[6,1,1,233,45],
 "classFeel_1_1Reference_3_01Simplex_3_01Dim_00_01Order_00_01RDim_01_4_00_01Dim_00_01Order_00_01RDim_00_01T_01_4.html#a0e3d1e964019578fa110ca22bc4998ec":[6,1,1,233,92],
-"classFeel_1_1Reference_3_01Simplex_3_01Dim_00_01Order_00_01RDim_01_4_00_01Dim_00_01Order_00_01RDim_00_01T_01_4.html#a0e532b3f3454393babbb16bdc8798906":[6,1,1,233,37],
-"classFeel_1_1Reference_3_01Simplex_3_01Dim_00_01Order_00_01RDim_01_4_00_01Dim_00_01Order_00_01RDim_00_01T_01_4.html#a0ee916f01526dea73c8710e0d9b79544":[6,1,1,233,39]
+"classFeel_1_1Reference_3_01Simplex_3_01Dim_00_01Order_00_01RDim_01_4_00_01Dim_00_01Order_00_01RDim_00_01T_01_4.html#a0e532b3f3454393babbb16bdc8798906":[6,1,1,233,37]
 };

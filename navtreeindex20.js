@@ -1,5 +1,6 @@
 var NAVTREEINDEX20 =
 {
+"classFeel_1_1Hypercube.html#a8b90d277c36ae13b14c3c13f168479ca":[6,1,1,108,33],
 "classFeel_1_1Hypercube.html#a8dcc030f77703493745d64fe96205149":[6,1,1,108,3],
 "classFeel_1_1Hypercube.html#a9afbfd768a878bf46c452ad97f7f712c":[6,1,1,108,50],
 "classFeel_1_1Hypercube.html#a9aff3d3139858976fd350dffc1543aa5":[6,1,1,108,7],
@@ -248,6 +249,5 @@ var NAVTREEINDEX20 =
 "classFeel_1_1Marker.html#a8913f806a0ab39a2b4c3c21735482906":[6,1,1,168,8],
 "classFeel_1_1Marker.html#a914937e6d010040faaaf584465fdbf71":[6,1,1,168,15],
 "classFeel_1_1Marker.html#a9d5f3379aa6ff20d8e2983dad9caf7d3":[6,1,1,168,10],
-"classFeel_1_1Marker.html#ab2eb8eb806dddbde98904c2f5dafd212":[6,1,1,168,6],
-"classFeel_1_1Marker.html#ac98d07dd8f7b70e16ccb9a01abf56b9c":[6,1,1,168,0]
+"classFeel_1_1Marker.html#ab2eb8eb806dddbde98904c2f5dafd212":[6,1,1,168,6]
 };

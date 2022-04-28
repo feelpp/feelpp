@@ -1,5 +1,6 @@
 var NAVTREEINDEX28 =
 {
+"classFeel_1_1SensorMap.html#a8fb1f223f83699abf1b5259f3bd9fbe1":[6,1,1,250,10],
 "classFeel_1_1SensorMap.html#aa0e3fc8bd093e1ee8b56c313b0e5e03f":[6,1,1,250,11],
 "classFeel_1_1SensorMap.html#ab27444f0e70bb4b98017151847a90c69":[6,1,1,250,13],
 "classFeel_1_1SensorMap.html#ac98d07dd8f7b70e16ccb9a01abf56b9c":[6,1,1,250,0],
@@ -248,6 +249,5 @@ var NAVTREEINDEX28 =
 "classFeel_1_1SubFaceOf.html#aa22ed6e0a0329fcee8f32a5bd1e8672a":[6,1,1,271,18],
 "classFeel_1_1SubFaceOf.html#aa811e58e03f642e547380eb97b86dd44":[6,1,1,271,17],
 "classFeel_1_1SubFaceOf.html#ab88710101144ff7f7ce25c024156870e":[6,1,1,271,5],
-"classFeel_1_1SubFaceOf.html#abd4004fa393538707e106b88cedefe0b":[6,1,1,271,13],
-"classFeel_1_1SubFaceOf.html#ac98d07dd8f7b70e16ccb9a01abf56b9c":[6,1,1,271,1]
+"classFeel_1_1SubFaceOf.html#abd4004fa393538707e106b88cedefe0b":[6,1,1,271,13]
 };

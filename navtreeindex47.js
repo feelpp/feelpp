@@ -1,5 +1,6 @@
 var NAVTREEINDEX47 =
 {
+"structFeel_1_1TimerPair.html#a585afc85e9c48c76a53cc43cd17a0b49":[6,1,1,288,3],
 "structFeel_1_1TimerPair.html#a7b43f33bd0b2d02406b609bae5396442":[6,1,1,288,1],
 "structFeel_1_1TimerPair.html#a9e0ebb918a2fda1cf0cd72a1976feb61":[6,1,1,288,0],
 "structFeel_1_1Triangle.html":[6,1,1,293],
@@ -248,6 +249,5 @@ var NAVTREEINDEX47 =
 "structFeel_1_1detail_1_1PrecomputeDomainBasisFunction.html#aa11ae592d1101bd9b08eddec95c2a6dd":[6,1,1,1,37,21],
 "structFeel_1_1detail_1_1PrecomputeDomainBasisFunction.html#aa653c5d9611295233ad267e327b4c6aa":[6,1,1,1,37,3],
 "structFeel_1_1detail_1_1PrecomputeDomainBasisFunction.html#ab397d5dea781d29331ae964bbb327db7":[6,1,1,1,37,10],
-"structFeel_1_1detail_1_1PrecomputeDomainBasisFunction.html#acac4857c84fea9db6550be58bed71f09":[6,1,1,1,37,20],
-"structFeel_1_1detail_1_1PrecomputeDomainBasisFunction.html#ad283180091bf60f47d7df98131669de0":[6,1,1,1,37,9]
+"structFeel_1_1detail_1_1PrecomputeDomainBasisFunction.html#acac4857c84fea9db6550be58bed71f09":[6,1,1,1,37,20]
 };

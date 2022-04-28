@@ -1,5 +1,6 @@
 var NAVTREEINDEX24 =
 {
+"classFeel_1_1MeshStructuredSetupWithCoordinates.html#a709680474b30ad86323a1ea8169c75af":[6,1,1,187,2],
 "classFeel_1_1MeshStructuredSetupWithCoordinates.html#a849e3f2f80b3689edde021ec7b93979e":[6,1,1,187,5],
 "classFeel_1_1MeshStructuredSetupWithCoordinates.html#aa1844184d57cf8a6d1d57c697840411b":[6,1,1,187,1],
 "classFeel_1_1MeshStructuredSetupWithCoordinates.html#afb84e8b4ac3938b6ec0da0565627e3e6":[6,1,1,187,4],
@@ -248,6 +249,5 @@ var NAVTREEINDEX24 =
 "classFeel_1_1OperatorLinearComposite.html#a8dd23fe2e754f0a3f75e437d0c599218":[6,1,1,203,31],
 "classFeel_1_1OperatorLinearComposite.html#a926fee49aa6feb84cfc2d9dc815a99e5":[6,1,1,203,37],
 "classFeel_1_1OperatorLinearComposite.html#a98855c12bc0391e3d213f8e6642e9f90":[6,1,1,203,10],
-"classFeel_1_1OperatorLinearComposite.html#a9926dd77cb08608a3b50849dfb320477":[6,1,1,203,34],
-"classFeel_1_1OperatorLinearComposite.html#a9c180cb3201b8a9f984ad2069e06269f":[6,1,1,203,39]
+"classFeel_1_1OperatorLinearComposite.html#a9926dd77cb08608a3b50849dfb320477":[6,1,1,203,34]
 };

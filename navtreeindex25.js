@@ -1,5 +1,6 @@
 var NAVTREEINDEX25 =
 {
+"classFeel_1_1OperatorLinearComposite.html#a9c180cb3201b8a9f984ad2069e06269f":[6,1,1,203,39],
 "classFeel_1_1OperatorLinearComposite.html#a9d0b99bed74926d22e11d5783644b6de":[6,1,1,203,5],
 "classFeel_1_1OperatorLinearComposite.html#aab5c2e503ee2541dbe5f989739b86e41":[6,1,1,203,20],
 "classFeel_1_1OperatorLinearComposite.html#aabd3c11a619ded27c831676c755c5a57":[6,1,1,203,16],
@@ -248,6 +249,5 @@ var NAVTREEINDEX25 =
 "classFeel_1_1ProductSpaces2.html#a380574229c9dff0828320ca4a617b18c":[6,1,1,226,11],
 "classFeel_1_1ProductSpaces2.html#a39ade7f3eeb21744f55289fabac102b4":[6,1,1,226,2],
 "classFeel_1_1ProductSpaces2.html#a443f08c1997af4cbfd160b3f11a50c91":[6,1,1,226,4],
-"classFeel_1_1ProductSpaces2.html#a48e4248e311cc8d0079a4b3a002d3fad":[6,1,1,226,10],
-"classFeel_1_1ProductSpaces2.html#a5dc980136e0cd6d46c1f9dfe02cf60f0":[6,1,1,226,13]
+"classFeel_1_1ProductSpaces2.html#a48e4248e311cc8d0079a4b3a002d3fad":[6,1,1,226,10]
 };

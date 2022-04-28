@@ -131,6 +131,9 @@ typedef std::function&lt; void(<a class="el" href="classFeel_1_1FeelModels_1_1Mo
 <tr class="memitem:ac347fa0b8b42304fbe5e2a0b4fde9418"><td class="memItemLeft" align="right" valign="top"><a id="ac347fa0b8b42304fbe5e2a0b4fde9418"></a>
 typedef std::function&lt; void(<a class="el" href="classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataNewtonInitialGuess.html">ModelAlgebraic::DataNewtonInitialGuess</a> &amp;)&gt;&#160;</td><td class="memItemRight" valign="bottom"><b>function_newton_initial_guess_type</b></td></tr>
 <tr class="separator:ac347fa0b8b42304fbe5e2a0b4fde9418"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a06df121b030e90a406d6e29e3c976d30"><td class="memItemLeft" align="right" valign="top"><a id="a06df121b030e90a406d6e29e3c976d30"></a>
+typedef std::function&lt; void(vector_ptrtype const  &amp;Ud, vector_ptrtype &amp;Ui)&gt;&#160;</td><td class="memItemRight" valign="bottom"><b>function_solverPtAP_applyQ_type</b></td></tr>
+<tr class="separator:a06df121b030e90a406d6e29e3c976d30"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af796adb2b300e02ceffae3c2a9cfaeb5"><td class="memItemLeft" align="right" valign="top"><a id="af796adb2b300e02ceffae3c2a9cfaeb5"></a>
 typedef std::function&lt; void(<a class="el" href="classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataUpdateJacobian.html">ModelAlgebraic::DataUpdateJacobian</a> &amp;)&gt;&#160;</td><td class="memItemRight" valign="bottom"><b>function_updateInHousePreconditioner_jacobian_type</b></td></tr>
 <tr class="separator:af796adb2b300e02ceffae3c2a9cfaeb5"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -236,12 +239,6 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>addVectorLinearRhsAss
 <tr class="memitem:acdb22dabc4e53350f1dada6e87092b37"><td class="memItemLeft" align="right" valign="top"><a id="acdb22dabc4e53350f1dada6e87092b37"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>addVectorResidualAssembly</b> (vector_ptrtype const &amp;vec, <a class="el" href="classdouble.html">double</a> scaling=1.0, std::string const &amp;key=&quot;&quot;, <a class="el" href="classbool.html">bool</a> cstPart=false)</td></tr>
 <tr class="separator:acdb22dabc4e53350f1dada6e87092b37"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2f96c31c6a85c05299ff182616cc961e"><td class="memItemLeft" align="right" valign="top"><a id="a2f96c31c6a85c05299ff182616cc961e"></a>
-FEELPP_DEPRECATED void&#160;</td><td class="memItemRight" valign="bottom"><b>AlgoNewton2</b> (vector_ptrtype &amp;U)</td></tr>
-<tr class="separator:a2f96c31c6a85c05299ff182616cc961e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a88e9e0a72bd62f38f26481328b1af6d8"><td class="memItemLeft" align="right" valign="top"><a id="a88e9e0a72bd62f38f26481328b1af6d8"></a>
-FEELPP_DEPRECATED void&#160;</td><td class="memItemRight" valign="bottom"><b>AlgoPicard</b> (vector_ptrtype &amp;U)</td></tr>
-<tr class="separator:a88e9e0a72bd62f38f26481328b1af6d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab52cd2c7311b155ce067f54cdc871cc9"><td class="memItemLeft" align="right" valign="top"><a id="ab52cd2c7311b155ce067f54cdc871cc9"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FeelModels_1_1ModelAlgebraicFactory.html#ab52cd2c7311b155ce067f54cdc871cc9">applyAssemblyLinear</a> (const vector_ptrtype &amp;U, sparse_matrix_ptrtype &amp;lhs, vector_ptrtype &amp;<a class="el" href="classFeel_1_1FeelModels_1_1ModelAlgebraicFactory.html#aa0eda1d88139216cbab5b680f153415b">rhs</a>, std::vector&lt; std::string &gt; const &amp;infos=std::vector&lt; std::string &gt;(), <a class="el" href="classbool.html">bool</a> applyDofElimination=true) const</td></tr>
 <tr class="memdesc:ab52cd2c7311b155ce067f54cdc871cc9"><td class="mdescLeft">&#160;</td><td class="mdescRight">apply assembly of linear operators rhs and lhs (can be usefull for an external use) <br /></td></tr>
@@ -294,9 +291,6 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>evaluateResidual</b> 
 <tr class="memitem:a3ff156447054c6233335af8b364d26ed"><td class="memItemLeft" align="right" valign="top"><a id="a3ff156447054c6233335af8b364d26ed"></a>
 vector_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>explictPartOfSolution</b> ()</td></tr>
 <tr class="separator:a3ff156447054c6233335af8b364d26ed"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4c4404d1ab6340958f1ddcd6e079ac56"><td class="memItemLeft" align="right" valign="top"><a id="a4c4404d1ab6340958f1ddcd6e079ac56"></a>
-std::shared_ptr&lt; std::ostringstream &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>getInfo</b> () const</td></tr>
-<tr class="separator:a4c4404d1ab6340958f1ddcd6e079ac56"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9a6796d4660cad06f9829a8258ddce6c"><td class="memItemLeft" align="right" valign="top"><a id="a9a6796d4660cad06f9829a8258ddce6c"></a>
 <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FeelModels_1_1ModelAlgebraicFactory.html#a9a6796d4660cad06f9829a8258ddce6c">hasAuxiliarySparseMatrix</a> (std::string const &amp;key) const</td></tr>
 <tr class="memdesc:a9a6796d4660cad06f9829a8258ddce6c"><td class="mdescLeft">&#160;</td><td class="mdescRight">return true if a sparse matrix has been attached <br /></td></tr>
@@ -316,12 +310,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>init</b> (model_ptrty
 <tr class="memitem:a7ca0550f1475b10bc84b117585b23024"><td class="memItemLeft" align="right" valign="top"><a id="a7ca0550f1475b10bc84b117585b23024"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>initExplictPartOfSolution</b> ()</td></tr>
 <tr class="separator:a7ca0550f1475b10bc84b117585b23024"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a91ebf8ae68790e6f2b87a8eaee340958"><td class="memItemLeft" align="right" valign="top"><a id="a91ebf8ae68790e6f2b87a8eaee340958"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>initSolverPtAP</b> (sparse_matrix_ptrtype matP, sparse_matrix_ptrtype matQ)</td></tr>
-<tr class="separator:a91ebf8ae68790e6f2b87a8eaee340958"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5927dd53ded0f2d6bf850b87ba36ce24"><td class="memItemLeft" align="right" valign="top"><a id="a5927dd53ded0f2d6bf850b87ba36ce24"></a>
-FEELPP_DEPRECATED void&#160;</td><td class="memItemRight" valign="bottom"><b>linearSolver</b> (vector_ptrtype &amp;U)</td></tr>
-<tr class="separator:a5927dd53ded0f2d6bf850b87ba36ce24"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab44c2b1ab257d7beb30eb9b0229c1d22"><td class="memItemLeft" align="right" valign="top"><a id="ab44c2b1ab257d7beb30eb9b0229c1d22"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>initSolverPtAP</b> (sparse_matrix_ptrtype matP, function_solverPtAP_applyQ_type applyQ)</td></tr>
+<tr class="separator:ab44c2b1ab257d7beb30eb9b0229c1d22"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aee61bc972a07a65948260e8e65bec280"><td class="memItemLeft" align="right" valign="top"><a id="aee61bc972a07a65948260e8e65bec280"></a>
 sparse_matrix_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FeelModels_1_1ModelAlgebraicFactory.html#aee61bc972a07a65948260e8e65bec280">matrix</a> () const</td></tr>
 <tr class="memdesc:aee61bc972a07a65948260e8e65bec280"><td class="mdescLeft">&#160;</td><td class="mdescRight">return matrix used for assembly linear system or the jacobian <br /></td></tr>
@@ -361,15 +352,6 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>preSolveNewton</b> (v
 <tr class="memitem:a25bd8b9de5b8af62f934a25bd7baffee"><td class="memItemLeft" align="right" valign="top"><a id="a25bd8b9de5b8af62f934a25bd7baffee"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>preSolvePicard</b> (vector_ptrtype <a class="el" href="classFeel_1_1FeelModels_1_1ModelAlgebraicFactory.html#aa0eda1d88139216cbab5b680f153415b">rhs</a>, vector_ptrtype sol) const</td></tr>
 <tr class="separator:a25bd8b9de5b8af62f934a25bd7baffee"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6ecde1f9c526189cf58f82263be84888"><td class="memItemLeft" align="right" valign="top"><a id="a6ecde1f9c526189cf58f82263be84888"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>printInfo</b> () const</td></tr>
-<tr class="separator:a6ecde1f9c526189cf58f82263be84888"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a95d739cc31277c7f1ff00ce0e1c61430"><td class="memItemLeft" align="right" valign="top"><a id="a95d739cc31277c7f1ff00ce0e1c61430"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>rebuildCstJacobian</b> (vector_ptrtype U)</td></tr>
-<tr class="separator:a95d739cc31277c7f1ff00ce0e1c61430"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a261ea3b2e5430822827cbdd5fac6bfdc"><td class="memItemLeft" align="right" valign="top"><a id="a261ea3b2e5430822827cbdd5fac6bfdc"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>rebuildCstLinearPDE</b> (vector_ptrtype U)</td></tr>
-<tr class="separator:a261ea3b2e5430822827cbdd5fac6bfdc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3f3d6a250cc4ed699655818ad82bfb33"><td class="memItemLeft" align="right" valign="top"><a id="a3f3d6a250cc4ed699655818ad82bfb33"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>rebuildMatrixVector</b> (graph_ptrtype const &amp;graph, indexsplit_ptrtype const &amp;indexSplit)</td></tr>
 <tr class="separator:a3f3d6a250cc4ed699655818ad82bfb33"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -413,9 +395,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>solve</b> (std::strin
 <tr class="memitem:a6c8bcd42f20dc7798735e0dabe6fb488"><td class="memItemLeft" align="right" valign="top"><a id="a6c8bcd42f20dc7798735e0dabe6fb488"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>solveLinear</b> (vector_ptrtype &amp;U)</td></tr>
 <tr class="separator:a6c8bcd42f20dc7798735e0dabe6fb488"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aaed9dca0353d122235adc4581c70666d"><td class="memItemLeft" align="right" valign="top"><a id="aaed9dca0353d122235adc4581c70666d"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>solveNewton</b> (vector_ptrtype &amp;U)</td></tr>
-<tr class="separator:aaed9dca0353d122235adc4581c70666d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1e268d3a52d563494c34e5003369d972"><td class="memItemLeft" align="right" valign="top"><a id="a1e268d3a52d563494c34e5003369d972"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>solveNewton</b> (vector_ptrtype &amp;U, <a class="el" href="classbool.html">bool</a> usePicardLinearization=false)</td></tr>
+<tr class="separator:a1e268d3a52d563494c34e5003369d972"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adbb34f9018692486fa06c6cdd0ace1e4"><td class="memItemLeft" align="right" valign="top"><a id="adbb34f9018692486fa06c6cdd0ace1e4"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>solvePicard</b> (vector_ptrtype &amp;U)</td></tr>
 <tr class="separator:adbb34f9018692486fa06c6cdd0ace1e4"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -432,18 +414,18 @@ graph_ptrtype const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a
 <tr class="memitem:a7e7b4c2c55340fe1d65075e8fdaffa18"><td class="memItemLeft" align="right" valign="top"><a id="a7e7b4c2c55340fe1d65075e8fdaffa18"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>updateInformationObject</b> (<a class="el" href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">nl::json</a> &amp;p) const</td></tr>
 <tr class="separator:a7e7b4c2c55340fe1d65075e8fdaffa18"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abffb70db1a362b6a44081a34de930185"><td class="memItemLeft" align="right" valign="top"><a id="abffb70db1a362b6a44081a34de930185"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>updateJacobian</b> (const vector_ptrtype &amp;X, sparse_matrix_ptrtype &amp;J)</td></tr>
-<tr class="separator:abffb70db1a362b6a44081a34de930185"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a31bf81b4b1b4bbb4c6ebabb255d51bf8"><td class="memItemLeft" align="right" valign="top"><a id="a31bf81b4b1b4bbb4c6ebabb255d51bf8"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>updateJacobian</b> (const vector_ptrtype &amp;X, sparse_matrix_ptrtype &amp;J, std::optional&lt; std::vector&lt; <a class="el" href="classint.html">int</a> &gt;&gt; const &amp;dofEliminationIds, <a class="el" href="classbool.html">bool</a> usePicardLinearization)</td></tr>
+<tr class="separator:a31bf81b4b1b4bbb4c6ebabb255d51bf8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abcf70976cf95281395f75b4421b1ed8d"><td class="memItemLeft" align="right" valign="top"><a id="abcf70976cf95281395f75b4421b1ed8d"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>updateNewtonIteration</b> (<a class="el" href="classint.html">int</a> step, vector_ptrtype residual, vector_ptrtype sol, typename backend_type::solvernonlinear_type::UpdateIterationData const &amp;data)</td></tr>
 <tr class="separator:abcf70976cf95281395f75b4421b1ed8d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0dcf53a6f095ade84bed9670c4bbe61c"><td class="memItemLeft" align="right" valign="top"><a id="a0dcf53a6f095ade84bed9670c4bbe61c"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>updatePicardIteration</b> (<a class="el" href="classint.html">int</a> step, vector_ptrtype sol)</td></tr>
 <tr class="separator:a0dcf53a6f095ade84bed9670c4bbe61c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a508cf3a9a5c8070ac7de3cac191ef1e4"><td class="memItemLeft" align="right" valign="top"><a id="a508cf3a9a5c8070ac7de3cac191ef1e4"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>updateResidual</b> (const vector_ptrtype &amp;X, vector_ptrtype &amp;R)</td></tr>
-<tr class="separator:a508cf3a9a5c8070ac7de3cac191ef1e4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adeb19fcd498e73ad6f74999f6bab7dd1"><td class="memItemLeft" align="right" valign="top"><a id="adeb19fcd498e73ad6f74999f6bab7dd1"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>updateResidual</b> (const vector_ptrtype &amp;X, vector_ptrtype &amp;R, std::optional&lt; std::vector&lt; <a class="el" href="classint.html">int</a> &gt;&gt; const &amp;dofEliminationIds)</td></tr>
+<tr class="separator:adeb19fcd498e73ad6f74999f6bab7dd1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a558397a76806e49b177d228daf7d5c9a"><td class="memItemLeft" align="right" valign="top"><a id="a558397a76806e49b177d228daf7d5c9a"></a>
 <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>useSolverPtAP</b> () const</td></tr>
 <tr class="separator:a558397a76806e49b177d228daf7d5c9a"><td class="memSeparator" colspan="2">&#160;</td></tr>

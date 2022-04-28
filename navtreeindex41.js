@@ -1,5 +1,6 @@
 var NAVTREEINDEX41 =
 {
+"group__Core.html#gad8f8196f0b8ff9495dd4119eda223772":[5,0,13],
 "group__Core.html#gae90df41f69fcb79f06345d1acd0d6d6f":[5,0,16],
 "group__Core.html#gafdf3582bcb29eaf28321e1f5c48bfa36":[5,0,20],
 "group__DSEL-Variational-Formulation.html":[5,4],
@@ -8,8 +9,8 @@ var NAVTREEINDEX41 =
 "group__DSEL-Variational-Formulation.html#ga7b9221db5c7afed153789f616a1c6328":[5,4,2],
 "group__DSEL-Variational-Formulation.html#gab7965105a4a850885f454c7c3865ffc6":[5,4,0],
 "group__DSEL-Variational-Formulation.html#gaea4c47fc4a17435b9b1d3fe115a6788d":[5,4,1],
-"group__DSEL-Variational-Formulation.html#gaeac7fe8c4b52a6f9c1320275ad39f01e":[6,2,0,0,3,59,0],
 "group__DSEL-Variational-Formulation.html#gaeac7fe8c4b52a6f9c1320275ad39f01e":[5,4,5],
+"group__DSEL-Variational-Formulation.html#gaeac7fe8c4b52a6f9c1320275ad39f01e":[6,2,0,0,3,59,0],
 "group__Discretization.html":[5,2],
 "group__Filters.html":[5,3],
 "group__FreeFunction.html":[5,13],
@@ -248,6 +249,5 @@ var NAVTREEINDEX41 =
 "operatorinterpolation_8hpp.html":[6,2,0,0,1,37],
 "operatorinterpolation_8hpp.html#a07ba931f2adadf4c69a4bee779829f11":[6,2,0,0,1,37,26],
 "operatorinterpolation_8hpp.html#a08abda789343aad664f020fc8d5b671a":[6,2,0,0,1,37,30],
-"operatorinterpolation_8hpp.html#a1690cf42cf4390a3099067309072cc59":[6,2,0,0,1,37,29],
-"operatorinterpolation_8hpp.html#a1d81c802c8ab9f81a2db5e5f2decbe75":[6,2,0,0,1,37,39]
+"operatorinterpolation_8hpp.html#a1690cf42cf4390a3099067309072cc59":[6,2,0,0,1,37,29]
 };

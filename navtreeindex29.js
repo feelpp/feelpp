@@ -1,5 +1,6 @@
 var NAVTREEINDEX29 =
 {
+"classFeel_1_1SubFaceOf.html#ac98d07dd8f7b70e16ccb9a01abf56b9c":[6,1,1,271,1],
 "classFeel_1_1SubFaceOf.html#ad196aa27ba3a8ffe6f06620bddb55914":[6,1,1,271,25],
 "classFeel_1_1SubFaceOf.html#adbb95e153fff821e8221acbc3d98219d":[6,1,1,271,37],
 "classFeel_1_1SubFaceOf.html#adee90844eb1bd251332a25a810eeb2e0":[6,1,1,271,44],
@@ -248,6 +249,5 @@ var NAVTREEINDEX29 =
 "classFeel_1_1TypeInfo.html#aebea668264f4112ff3d0d49e84bddcd9":[5,0,9,6],
 "classFeel_1_1TypeInfo.html#af930f32f1da21da5cd1a46935009e723":[5,0,9,2],
 "classFeel_1_1Vector.html":[6,1,1,299],
-"classFeel_1_1VisitableBase.html":[6,1,1,300],
-"classFeel_1_1VisitableBase.html#a3c4ac7ee3fa9b1ef11cd1e075cb38e49":[6,1,1,300,2]
+"classFeel_1_1VisitableBase.html":[6,1,1,300]
 };

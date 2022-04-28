@@ -1,7 +1,8 @@
 var NAVTREEINDEX35 =
 {
-"classnlohmann_1_1detail_1_1binary__writer.html#ab77aa48692bd4e64e4f051ce6aeb6d2d":[6,1,2,0,3,3],
+"classnlohmann_1_1detail_1_1binary__writer.html#aa0ab8d27fd88a33a2f801413ac4c7fbc":[6,1,2,0,3,5],
 "classnlohmann_1_1detail_1_1binary__writer.html#ab77aa48692bd4e64e4f051ce6aeb6d2d":[6,1,2,0,3,1],
+"classnlohmann_1_1detail_1_1binary__writer.html#ab77aa48692bd4e64e4f051ce6aeb6d2d":[6,1,2,0,3,3],
 "classnlohmann_1_1detail_1_1binary__writer.html#ae4e0852b64102ce4b07d99f08f828b7c":[6,1,2,0,3,6],
 "classnlohmann_1_1detail_1_1exception.html":[6,1,2,0,9],
 "classnlohmann_1_1detail_1_1exception.html#a0672c25ecdf14d1a071d4d6478a65af0":[6,1,2,0,9,4],
@@ -248,6 +249,5 @@ var NAVTREEINDEX35 =
 "classnlohmann_1_1detail_1_1output__stream__adapter.html#ae44ed343cb1a716248547f48dd045b6a":[6,1,2,0,104,3],
 "classnlohmann_1_1detail_1_1output__string__adapter.html":[6,1,2,0,105],
 "classnlohmann_1_1detail_1_1output__string__adapter.html#a12115219862f7ce5728d3653607bd95a":[6,1,2,0,105,0],
-"classnlohmann_1_1detail_1_1output__string__adapter.html#a2d76cc6c88ddbc196a63fcfcac9ee7d1":[6,1,2,0,105,1],
-"classnlohmann_1_1detail_1_1output__string__adapter.html#a975156f443860c85981a7fb9a50ad549":[6,1,2,0,105,2]
+"classnlohmann_1_1detail_1_1output__string__adapter.html#a2d76cc6c88ddbc196a63fcfcac9ee7d1":[6,1,2,0,105,1]
 };

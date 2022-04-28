@@ -1,5 +1,6 @@
 var NAVTREEINDEX49 =
 {
+"structFeel_1_1is__square.html":[6,1,1,154],
 "structFeel_1_1is__std__vector.html":[6,1,1,155],
 "structFeel_1_1is__std__vector_3_01std_1_1vector_3_01T_01_4_01_4.html":[6,1,1,156],
 "structFeel_1_1is__tetrahedron.html":[6,1,1,157],
@@ -248,6 +249,5 @@ var NAVTREEINDEX49 =
 "structFeel_1_1vf_1_1ExprTensorsFromSymbolsExprDummyImpl.html#a9b90adc8b3e8a0af237c9949bb59a3ea":[6,1,1,13,13,4],
 "structFeel_1_1vf_1_1ExprTensorsFromSymbolsExprDummyImpl.html#aa30f32acd84037d3b444cb42bd607eea":[6,1,1,13,13,1],
 "structFeel_1_1vf_1_1ExprTensorsFromSymbolsExprDummyImpl.html#abaee61f693f20c123cca2e01e2639c3c":[6,1,1,13,13,3],
-"structFeel_1_1vf_1_1ExprTensorsFromSymbolsExprDummyImpl.html#ae4fadfc27afeba373e36af8c9ac3a1b5":[6,1,1,13,13,6],
-"structFeel_1_1vf_1_1ExprTensorsFromSymbolsExprImpl.html":[6,1,1,13,14]
+"structFeel_1_1vf_1_1ExprTensorsFromSymbolsExprDummyImpl.html#ae4fadfc27afeba373e36af8c9ac3a1b5":[6,1,1,13,13,6]
 };

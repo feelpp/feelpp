@@ -1,5 +1,6 @@
 var NAVTREEINDEX23 =
 {
+"classFeel_1_1MeshAdaptation.html#a9dd507b38cc17c45fd1f0002beeefa54":[6,1,1,176,20],
 "classFeel_1_1MeshAdaptation.html#ab09fdfdd6df4468659813b3d1880051d":[6,1,1,176,0],
 "classFeel_1_1MeshAdaptation.html#ab2042b7b529e1e7179f85095f4250e0c":[6,1,1,176,1],
 "classFeel_1_1MeshAdaptation.html#ab4ba447fb8c5ac5df3b5060c56160ad3":[6,1,1,176,35],
@@ -248,6 +249,5 @@ var NAVTREEINDEX23 =
 "classFeel_1_1MeshStructuredSetupHyperRectangle.html#ae324eb65b9d44cc8e3a6c1faf648c2db":[6,1,1,186,1],
 "classFeel_1_1MeshStructuredSetupWithCoordinates.html":[6,1,1,187],
 "classFeel_1_1MeshStructuredSetupWithCoordinates.html#a17ae1154f255bc2f3a7f543df4cd24a8":[6,1,1,187,3],
-"classFeel_1_1MeshStructuredSetupWithCoordinates.html#a1e06c6a60bbfbbe5f6a5e6a3e7e69762":[6,1,1,187,0],
-"classFeel_1_1MeshStructuredSetupWithCoordinates.html#a709680474b30ad86323a1ea8169c75af":[6,1,1,187,2]
+"classFeel_1_1MeshStructuredSetupWithCoordinates.html#a1e06c6a60bbfbbe5f6a5e6a3e7e69762":[6,1,1,187,0]
 };

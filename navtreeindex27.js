@@ -1,5 +1,6 @@
 var NAVTREEINDEX27 =
 {
+"classFeel_1_1Reference_3_01Simplex_3_01Dim_00_01Order_00_01RDim_01_4_00_01Dim_00_01Order_00_01RDim_00_01T_01_4.html#a0ee916f01526dea73c8710e0d9b79544":[6,1,1,233,39],
 "classFeel_1_1Reference_3_01Simplex_3_01Dim_00_01Order_00_01RDim_01_4_00_01Dim_00_01Order_00_01RDim_00_01T_01_4.html#a1305742e5ddbac2ad5d27ce1dfdb5bd1":[6,1,1,233,42],
 "classFeel_1_1Reference_3_01Simplex_3_01Dim_00_01Order_00_01RDim_01_4_00_01Dim_00_01Order_00_01RDim_00_01T_01_4.html#a13e378fd1dbc594358d52a404dc9904d":[6,1,1,233,24],
 "classFeel_1_1Reference_3_01Simplex_3_01Dim_00_01Order_00_01RDim_01_4_00_01Dim_00_01Order_00_01RDim_00_01T_01_4.html#a14dcb5b5b195b9c5bdfa440790d7abbd":[6,1,1,233,71],
@@ -248,6 +249,5 @@ var NAVTREEINDEX27 =
 "classFeel_1_1SensorMap.html#a1a82d093b451a6ce7e846f0d8dcc78ca":[6,1,1,250,4],
 "classFeel_1_1SensorMap.html#a1caa69239c6e63b74735a7fb998245b6":[6,1,1,250,9],
 "classFeel_1_1SensorMap.html#a42b000f1df3fa86342b41ca38b311fb1":[6,1,1,250,1],
-"classFeel_1_1SensorMap.html#a603f2a9555facd3519c83a6f4900748e":[6,1,1,250,6],
-"classFeel_1_1SensorMap.html#a8fb1f223f83699abf1b5259f3bd9fbe1":[6,1,1,250,10]
+"classFeel_1_1SensorMap.html#a603f2a9555facd3519c83a6f4900748e":[6,1,1,250,6]
 };

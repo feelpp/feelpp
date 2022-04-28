@@ -1,5 +1,6 @@
 var NAVTREEINDEX53 =
 {
+"structnlohmann_1_1detail_1_1is__default__constructible_3_01std_1_1tuple_3_01Ts_8_8_8_01_4_01_4.html":[6,1,2,0,67],
 "structnlohmann_1_1detail_1_1is__detected__lazy.html":[6,1,2,0,68],
 "structnlohmann_1_1detail_1_1is__getable.html":[6,1,2,0,69],
 "structnlohmann_1_1detail_1_1is__getable.html#a2150b5b5398683147928a61c99cd0070":[6,1,2,0,69,0],

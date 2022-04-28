@@ -118,6 +118,7 @@ var classFeel_1_1FeelModels_1_1FluidMechanics =
     [ "shared_from_this", "classFeel_1_1FeelModels_1_1FluidMechanics.html#aacc09c41ec8b05043748d408c63bb609", null ],
     [ "solve", "classFeel_1_1FeelModels_1_1FluidMechanics.html#ab9a5cc9eade6f4151c112ae3e9b64b1c", null ],
     [ "solverName", "classFeel_1_1FeelModels_1_1FluidMechanics.html#a9d891dca083e825151f12e25c7e0d6ff", null ],
+    [ "solverPtAP_applyQ", "classFeel_1_1FeelModels_1_1FluidMechanics.html#a320326d7615d02423c09eeb6c2ded460", null ],
     [ "stabCIPConvectionGamma", "classFeel_1_1FeelModels_1_1FluidMechanics.html#a94b68431c0c8b652577442df81041f9e", null ],
     [ "stabCIPDivergenceGamma", "classFeel_1_1FeelModels_1_1FluidMechanics.html#a6b76326eaef8007187cdceea5ea260eb", null ],
     [ "stabCIPPressureGamma", "classFeel_1_1FeelModels_1_1FluidMechanics.html#ae4ffae6e3a6b7a79b839ee12d907911b", null ],
