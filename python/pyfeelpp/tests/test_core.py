@@ -62,7 +62,28 @@ def test_mpi_numpy(init_feelpp):
     for i in range(100):
         assert(data[i] == i)
 
+def test_worldcomm_split(init_feelpp):
+    e = init_feelpp
+    if e.numberOfProcessors() > 1 and e.numberOfProcessors()%2 == 0:
+        color,w,wglob=e.worldCommPtr().split(2)
+        assert(wglob.globalSize() == e.numberOfProcessors())
+        assert(wglob.localSize() == e.numberOfProcessors()/2)
+        assert(w.localSize() == e.numberOfProcessors()/2)
+        assert(w.globalSize() == e.numberOfProcessors()/2)
+          
+
+
 #def test_config_local(init_feelpp_config_local):
 #    feelpp.Environment.changeRepository(
 #        directory="pyfeelpp-tests/core/test_config_local")
 
+def test_config_parser(init_feelpp):
+    e=init_feelpp
+    feelpp.Environment.changeRepository(
+        directory="pyfeelpp-tests/core/test_config_parser")
+    config = feelpp.readcfg(os.path.dirname(__file__)+'/test.cfg')
+    print("sections: {}".format(config.sections()))
+    d = config['feelpp']['directory']
+    #assert(d == 'toolboxes/fluid/TurekHron/cfd1/P2P1G1')
+    j = config['fluid']['filename']
+    assert(j == "$cfgdir/cfd1.json")
