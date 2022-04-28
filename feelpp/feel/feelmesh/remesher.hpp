@@ -248,6 +248,9 @@ class Remesh
     // sub mesh data
     smd_ptrtype M_smd;
     std::map<int, std::pair<int, int>> M_id2tag, M_id2tag_face;
+
+    using marker_type = typename mesh_t::element_type::marker_type;
+    std::map<int,std::tuple<ElementsType,int,marker_type>> M_mapMmgFragmentIdToMeshFragementDesc;
 };
 
 template <typename MeshType>
@@ -444,6 +447,23 @@ Remesh<MeshType>::mesh2Mmg( std::shared_ptr<MeshType> const& m_in )
     int nQuadrilaterals = 0;
     int nEdges = ( dimension_v<MeshType> == 2 ) ? m_in->numFaces() : 0;
 
+
+    // create mmg marker fragmentation and the inverse mapping of mesh fragmentation
+    // we only propagte the marker type 1
+    M_mapMmgFragmentIdToMeshFragementDesc.clear();
+    std::map<ElementsType,std::map<marker_type,int>> mapMarkerToMmgFragmentId;
+    int mmgFragmentId = 0;
+    for ( auto const& [et,fragMapping] : m_in->meshFragmentationByMarkerByEntity() )
+    {
+        auto & mapUp = mapMarkerToMmgFragmentId[et];
+        for ( auto const& [fragId,fragMarker] : fragMapping )
+        {
+            mapUp.emplace(fragMarker,mmgFragmentId );
+            M_mapMmgFragmentIdToMeshFragementDesc.emplace( mmgFragmentId, std::make_tuple(et,fragId,fragMarker) );
+            ++mmgFragmentId;
+        }
+    }
+
     if ( std::holds_alternative<MMG5_pMesh>( M_mmg_mesh ) )
     {
         auto mesh = std::get<MMG5_pMesh>( M_mmg_mesh );
@@ -472,10 +492,11 @@ Remesh<MeshType>::mesh2Mmg( std::shared_ptr<MeshType> const& m_in )
 
         pt_id.reserve( nVertices );
         int k = 1;
+        auto const& mapMarkerToMmgFragmentId_points = mapMarkerToMmgFragmentId.at( ElementsType::MESH_POINTS );
         for ( auto const& wpt : points( m_in ) )
         {
             auto const& pt = boost::unwrap_ref( wpt );
-            int ptMarker = pt.hasMarker() ? pt.marker().value() : 0;
+            int ptMarker = pt.hasMarker() ? mapMarkerToMmgFragmentId_points.at( pt.marker() ) : -1;
             if constexpr ( dimension_v<MeshType> == 3 )
             {
                 if ( MMG3D_Set_vertex( std::get<MMG5_pMesh>( M_mmg_mesh ), pt( 0 ), pt( 1 ), pt( 2 ), ptMarker, k ) != 1 )
@@ -520,11 +541,12 @@ Remesh<MeshType>::mesh2Mmg( std::shared_ptr<MeshType> const& m_in )
         int next_free_nreq = req_elts + 1;
         k = 1;
         bool required = false;
+        auto const& mapMarkerToMmgFragmentId_elements = mapMarkerToMmgFragmentId.at( ElementsType::MESH_ELEMENTS );
         for ( auto const& welt : m_in->elements() )
         {
             auto const& [key, elt] = boost::unwrap_ref( welt );
-            int eltMarker = elt.hasMarker() ? elt.marker().value() : 0;
-            required = required_element_ids.count( eltMarker );
+            int eltMarker = elt.hasMarker() ? mapMarkerToMmgFragmentId_elements.at( elt.marker() ) : -1;
+            required = elt.hasMarker()? elt.marker().hasOneOf( required_element_ids ) : false;
             int& id_elt = required ? next_free_req : next_free_nreq;
             M_id2tag[id_elt].first = eltMarker;
             int lab_or_id = required ? id_elt : eltMarker;
@@ -539,7 +561,7 @@ Remesh<MeshType>::mesh2Mmg( std::shared_ptr<MeshType> const& m_in )
                 {
                     throw std::logic_error( "Error in MMG3D_Set_tetrahedron" );
                 }
-                if ( required_element_ids.count( eltMarker ) &&
+                if ( required &&
                      MMG3D_Set_requiredTetrahedron( std::get<MMG5_pMesh>( M_mmg_mesh ), id_elt ) != 1 )
                 {
                     throw std::logic_error( "Error in MMG3D_Set_requiredTetrahedron" );
@@ -555,7 +577,7 @@ Remesh<MeshType>::mesh2Mmg( std::shared_ptr<MeshType> const& m_in )
                 {
                     throw std::logic_error( "Error in MMGS_Set_triangle" );
                 }
-                if ( required_element_ids.count( eltMarker ) &&
+                if ( required &&
                      MMGS_Set_requiredTriangle( std::get<MMG5_pMesh>( M_mmg_mesh ), id_elt ) != 1 )
                 {
                     throw std::logic_error( "Error in MMGS_Set_requiredTriangle" );
@@ -571,7 +593,7 @@ Remesh<MeshType>::mesh2Mmg( std::shared_ptr<MeshType> const& m_in )
                 {
                     throw std::logic_error( "Error in MMG2D_Set_triangle" );
                 }
-                if ( required_element_ids.count( eltMarker ) &&
+                if ( required &&
                      MMG2D_Set_requiredTriangle( std::get<MMG5_pMesh>( M_mmg_mesh ), id_elt ) != 1 )
                 {
                     throw std::logic_error( "Error in MMG2D_Set_requiredTriangle" );
@@ -611,11 +633,12 @@ Remesh<MeshType>::mesh2Mmg( std::shared_ptr<MeshType> const& m_in )
         int f_next_free_nreq = f_req_elts + 1;
         k = 1;
         required = false;
+        auto const& mapMarkerToMmgFragmentId_faces = mapMarkerToMmgFragmentId.at( ElementsType::MESH_FACES );
         for ( auto const& wface : m_in->faces() )
         {
             auto const& [key, face] = boost::unwrap_ref( wface );
-            int faceMarker = face.hasMarker() ? face.marker().value() : 0;
-            required = required_facet_ids.count( faceMarker );
+            int faceMarker = face.hasMarker() ? mapMarkerToMmgFragmentId_faces.at( face.marker() ) : -1;
+            required = face.hasMarker()? face.marker().hasOneOf( required_facet_ids ) : false;
             int& id_elt = required ? f_next_free_req : f_next_free_nreq;
             M_id2tag_face[id_elt].first = faceMarker;
             int lab_or_id = required ? id_elt : faceMarker;
@@ -885,7 +908,12 @@ Remesh<MeshType>::mmg2Mesh( mmg_mesh_t const& mesh )
             point_type pt( k, n );
             pt.setProcessIdInPartition( 0 );
             pt.setProcessId( 0 );
-            pt.setMarker( tag );
+            if ( tag >= 0 )
+            {
+                auto const& [et,fragId,marker] = M_mapMmgFragmentIdToMeshFragementDesc.at( tag );
+                if ( et == ElementsType::MESH_POINTS ) // only marker come from point marker
+                    pt.setMarker( marker );
+            }
             out->addPoint( pt );
         }
 
@@ -908,10 +936,15 @@ Remesh<MeshType>::mmg2Mesh( mmg_mesh_t const& mesh )
                 }
                 int& id_elt = required ? next_free_req : next_free_nreq;
                 using element_type = typename mesh_t::element_type;
-                int lab_or_id = required ? M_id2tag[lab].first : lab;
+                int mmgFragmentId = required ? M_id2tag[lab].first : lab;
                 element_type newElem;
                 newElem.setId( id_elt );
-                newElem.setMarker( lab_or_id );
+                if ( mmgFragmentId >= 0 )
+                {
+                    auto const& [et,fragId,marker] = M_mapMmgFragmentIdToMeshFragementDesc.at( mmgFragmentId );
+                    if ( et == ElementsType::MESH_ELEMENTS ) // only marker come from element marker
+                        newElem.setMarker( marker );
+                }
                 newElem.setProcessIdInPartition( 0 );
                 newElem.setProcessId( 0 );
                 for ( int i = 0; i < 4; i++ )
@@ -944,9 +977,14 @@ Remesh<MeshType>::mmg2Mesh( mmg_mesh_t const& mesh )
                 using face_type = typename mesh_t::face_type;
                 face_type newElem;
                 int& id_elt = required ? f_next_free_req : f_next_free_nreq;
-                int lab_or_id = required ? M_id2tag_face[lab].first : lab;
+                int mmgFragmentId = required ? M_id2tag_face[lab].first : lab;
                 newElem.setId( id_elt );
-                newElem.setMarker( lab_or_id );
+                if ( mmgFragmentId >= 0 )
+                {
+                    auto const& [et,fragId,marker] = M_mapMmgFragmentIdToMeshFragementDesc.at( mmgFragmentId );
+                    if ( et == ElementsType::MESH_FACES ) // only marker come from face marker
+                        newElem.setMarker( marker );
+                }
                 newElem.setProcessIdInPartition( 0 );
                 newElem.setProcessId( 0 );
                 for ( int i = 0; i < 3; i++ )
@@ -965,9 +1003,14 @@ Remesh<MeshType>::mmg2Mesh( mmg_mesh_t const& mesh )
                 }
                 using element_type = typename mesh_t::element_type;
                 element_type newElem;
-                int lab_or_id = required ? M_id2tag[lab].first : lab;
+                int mmgFragmentId = required ? M_id2tag[lab].first : lab;
                 newElem.setId( k );
-                newElem.setMarker( lab_or_id );
+                if ( mmgFragmentId >= 0 )
+                {
+                    auto const& [et,fragId,marker] = M_mapMmgFragmentIdToMeshFragementDesc.at( mmgFragmentId );
+                    if ( et == ElementsType::MESH_ELEMENTS ) // only marker come from element marker
+                        newElem.setMarker( marker );
+                }
                 newElem.setProcessIdInPartition( 0 );
                 newElem.setProcessId( 0 );
                 for ( int i = 0; i < 3; i++ )
@@ -993,16 +1036,21 @@ Remesh<MeshType>::mmg2Mesh( mmg_mesh_t const& mesh )
                     ier = MMG5_STRONGFAILURE;
                 }
                 using face_type = typename mesh_t::face_type;
-                int lab_or_id = required ? M_id2tag_face[lab].first : lab;
+                int mmgFragmentId = required ? M_id2tag_face[lab].first : lab;
                 face_type newElem;
                 newElem.setId( k );
-                newElem.setMarker( lab_or_id );
+                if ( mmgFragmentId >= 0 )
+                {
+                    auto const& [et,fragId,marker] = M_mapMmgFragmentIdToMeshFragementDesc.at( mmgFragmentId );
+                    if ( et == ElementsType::MESH_FACES ) // only marker come from face marker
+                        newElem.setMarker( marker );
+                }
                 newElem.setProcessIdInPartition( 0 );
                 newElem.setProcessId( 0 );
                 for ( int i = 0; i < 2; i++ )
                     newElem.setPoint( i, out->point( iv[i] ) );
                 auto [it, ins] = out->addFace( newElem );
-#if 0                
+#if 0
                 if ( required )
                 {
                     M_smd->bm.insert( typename smd_type::bm_type::value_type( k, M_id2tag_face[lab].second ) );
