@@ -57,7 +57,8 @@
 #include <feel/feelmodels/modelcore/stabilizationglsparameterbase.hpp>
 #include <feel/feelmodels/modelcore/rangedistributionbymaterialname.hpp>
 #include <feel/feelmodels/modelvf/fluidmecstresstensor.hpp>
-#include <feel/feelmodels/modelvf/fluidmecconvection.hpp>
+//#include <feel/feelmodels/modelvf/fluidmecconvection.hpp>
+#include <feel/feelmodels/modelvf/fluidmecconvectiveterm.hpp>
 
 #include <feel/feelmodels/fluid/fluidmechanicsboundaryconditions.hpp>
 
@@ -1150,6 +1151,12 @@ public:
                 return std::make_tuple( newMass, std::move( newMassCenter ) );
             }
 
+        auto modelMeasuresQuantities( std::string const& prefix ) const
+            {
+                return Feel::FeelModels::modelMeasuresQuantities( modelMeasuresQuantity( prefix, "mass_center", M_massCenter ),
+                                                                  modelMeasuresQuantity( prefix, "rigid_rotation_angles", M_rigidRotationAngles )
+                                                                  );
+            }
 
     private :
         range_faces_type M_rangeMarkedFacesOnFluid;
@@ -1500,6 +1507,7 @@ public:
                         angularVelocity = this->angularVelocityExpr().evaluate();
                     else
                         angularVelocity = idv(M_fieldAngularVelocity).evaluate();
+                        //angularVelocity = idv(M_bdfAngularVelocity->poly()).evaluate();
                 }
 
                 this->body().updateDisplacementFromRigidVelocity( translationalVelocity,angularVelocity,dt );
@@ -1727,12 +1735,19 @@ public:
 
         auto modelMeasuresQuantities( std::string const& prefix = "" ) const
             {
-                using _res_type = std::decay_t<decltype(this->begin()->second.modelMeasuresQuantities(""))>;
+                using _res_type = std::decay_t<decltype( Feel::FeelModels::modelMeasuresQuantities( this->begin()->second.modelMeasuresQuantities(""),
+                                                                                                    M_nbodyArticulated.front().modelMeasuresQuantities("")
+                                                                                                    ) )>;
                 _res_type res;
                 for ( auto const& [name,bbc] : *this )
                 {
                     std::string currentPrefix = prefixvm( prefix, (boost::format("body_%1%")%name).str() );
                     res = Feel::FeelModels::modelMeasuresQuantities( res, bbc.modelMeasuresQuantities( currentPrefix ) );
+                }
+                for ( auto const& nba : M_nbodyArticulated )
+                {
+                    std::string currentPrefix = prefixvm( prefix, (boost::format("nba_%1%")%nba.name()).str() );
+                    res = Feel::FeelModels::modelMeasuresQuantities( res, nba.modelMeasuresQuantities( currentPrefix ) );
                 }
                 return res;
             }
@@ -2322,7 +2337,7 @@ public :
             using _expr_meshdisp_type = std::decay_t<decltype(idv(this->meshMotionTool()->displacement()))>;
             std::map<std::string,std::vector<std::tuple< _expr_meshdisp_type, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExprMeshDisp;
             if ( this->hasMeshMotion() )
-                mapExprMeshDisp[prefixvm(prefix,"mesh-displacement")].push_back( std::make_tuple( idv(this->meshMotionTool()->displacement()), M_rangeMeshElements, "nodal" ) ); // maybe use mesh support of disp field
+                mapExprMeshDisp[prefixvm(prefix,"mesh-displacement")].push_back( std::make_tuple( idv(this->meshMotionTool()->displacement()), elements(support(this->meshMotionTool()->displacement()->functionSpace())), "nodal" ) );
 
             auto rangeTrace = this->functionSpaceVelocity()->template meshSupport<0>()->rangeBoundaryFaces();
             auto sigmaExpr = this->stressTensorExpr( u,p,se );
@@ -2618,6 +2633,8 @@ public :
                                           MaterialProperties const& matProps, RangeType const& range,
                                           ExprAddedRhsType const& exprsAddedInResidualRhsTuple = hana::make_tuple(),
                                           ExprAddedLhsType const& exprsAddedInResidualLhsTuple = hana::make_tuple() ) const;
+    // solver PtAP
+    void solverPtAP_applyQ( vector_ptrtype const& Ud, vector_ptrtype & Ui, size_type rowStartInVector = 0 ) const;
     //___________________________________________________________________________________//
     // turbulence model assembly
     void updateLinear_Turbulence( DataUpdateLinear & data ) const;
