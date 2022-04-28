@@ -1,0 +1,21 @@
+digraph "Feel::FeelModels::ModelNumerical"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="Feel::FeelModels::ModelNumerical",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Handles some numerical model aspects: timestepping, mesh and properties."];
+  Node2 -> Node1 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="Feel::FeelModels::ModelBase",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1FeelModels_1_1ModelBase.html",tooltip=" "];
+  Node3 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="Feel::JournalWatcher",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1JournalWatcher.html",tooltip=" "];
+  Node4 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="Event::SlotHandler",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+  Node5 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="std::enable_shared\l_from_this\< ModelBase \>",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+  Node6 -> Node1 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="Feel::FeelModels::ModelAlgebraic",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1FeelModels_1_1ModelAlgebraic.html",tooltip=" "];
+  Node2 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 -> Node1 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="Feel::FeelModels::ModelMeshes\l\< ModelAlgebraic::index_type \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1FeelModels_1_1ModelMeshes.html",tooltip=" "];
+}

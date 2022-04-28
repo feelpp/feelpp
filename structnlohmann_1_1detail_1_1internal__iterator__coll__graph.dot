@@ -1,0 +1,12 @@
+digraph "nlohmann::detail::internal_iterator&lt; BasicJsonType &gt;"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  Node1 [label="nlohmann::detail::internal\l_iterator\< BasicJsonType \>",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="an iterator value"];
+  Node2 -> Node1 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" array_iterator" ,fontname="Helvetica"];
+  Node2 [label="iterator",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+  Node2 -> Node1 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" object_iterator" ,fontname="Helvetica"];
+  Node3 -> Node1 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" primitive_iterator" ,fontname="Helvetica"];
+  Node3 [label="nlohmann::detail::primitive\l_iterator_t",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classnlohmann_1_1detail_1_1primitive__iterator__t.html",tooltip=" "];
+}

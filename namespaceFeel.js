@@ -87,6 +87,8 @@ var namespaceFeel =
       [ "FluidMechanicsBoundaryConditions", "classFeel_1_1FeelModels_1_1FluidMechanicsBoundaryConditions.html", "classFeel_1_1FeelModels_1_1FluidMechanicsBoundaryConditions" ],
       [ "FluidMechanicsMaterialProperties", "classFeel_1_1FeelModels_1_1FluidMechanicsMaterialProperties.html", "classFeel_1_1FeelModels_1_1FluidMechanicsMaterialProperties" ],
       [ "GenericDirichletBoundaryCondition", "classFeel_1_1FeelModels_1_1GenericDirichletBoundaryCondition.html", "classFeel_1_1FeelModels_1_1GenericDirichletBoundaryCondition" ],
+      [ "Heat", "classFeel_1_1FeelModels_1_1Heat.html", "classFeel_1_1FeelModels_1_1Heat" ],
+      [ "HeatBoundaryConditions", "classFeel_1_1FeelModels_1_1HeatBoundaryConditions.html", "classFeel_1_1FeelModels_1_1HeatBoundaryConditions" ],
       [ "MarkerManagementALEMeshBC", "classFeel_1_1FeelModels_1_1MarkerManagementALEMeshBC.html", "classFeel_1_1FeelModels_1_1MarkerManagementALEMeshBC" ],
       [ "MarkerManagementDirichletBC", "classFeel_1_1FeelModels_1_1MarkerManagementDirichletBC.html", "classFeel_1_1FeelModels_1_1MarkerManagementDirichletBC" ],
       [ "MarkerManagementFluidStructureInterfaceBC", "classFeel_1_1FeelModels_1_1MarkerManagementFluidStructureInterfaceBC.html", "classFeel_1_1FeelModels_1_1MarkerManagementFluidStructureInterfaceBC" ],

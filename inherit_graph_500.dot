@@ -1,0 +1,8 @@
+digraph "Graphical Class Hierarchy"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node0 [label="Feel::vf::OpMin\< ExprT1,\l ExprT2 \>::tensor\< Geo\l_t, Basis_i_t, Basis_j\l_t \>::is_zero",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structFeel_1_1vf_1_1OpMin_1_1tensor_1_1is__zero.html",tooltip=" "];
+}

@@ -1,0 +1,37 @@
+digraph "Feel::MeshStructuredSetupHyperRectangle&lt; Dim, RealDim, T, IndexT &gt;"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="Feel::MeshStructuredSetup\lHyperRectangle\< Dim, RealDim,\l T, IndexT \>",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
+  Node2 -> Node1 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="Feel::MeshStructuredSetup\l\< Dim, Dim, double, uint32_type \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1MeshStructuredSetup.html",tooltip=" "];
+  Node3 -> Node2 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" nPointInCell" ,fontname="Helvetica"];
+  Node3 [label="static constexpr int",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classstatic_01constexpr_01int.html",tooltip=" "];
+  Node4 -> Node2 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" M_geometricPoints" ,fontname="Helvetica"];
+  Node4 [label="std::vector\< node_eigen\l_type \>",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+  Node5 -> Node4 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" elements" ,fontname="Helvetica"];
+  Node5 [label="node_eigen_type",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classnode__eigen__type.html",tooltip=" "];
+  Node6 -> Node2 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" M_nPointByAxis" ,fontname="Helvetica"];
+  Node6 [label="std::vector\< index\l_type \>",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+  Node7 -> Node6 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" elements" ,fontname="Helvetica"];
+  Node7 [label="index_type",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+  Node8 -> Node2 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" nRealDim\nnDim" ,fontname="Helvetica"];
+  Node8 [label="static constexpr uint16_type",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+  Node9 -> Node2 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" M_shape" ,fontname="Helvetica"];
+  Node9 [label="std::string",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip="STL class."];
+  Node10 -> Node9 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="std::basic_string\<\l char \>",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip="STL class."];
+  Node11 -> Node2 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" M_discretisationEdges" ,fontname="Helvetica"];
+  Node11 [label="std::vector\< std::tuple\l\< DivisionEdgeType, value\l_type \> \>",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+  Node12 -> Node11 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" elements" ,fontname="Helvetica"];
+  Node12 [label="tuple\< DivisionEdgeType,\l value_type \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classstd_1_1tuple_3_01DivisionEdgeType_00_01value__type_01_4.html",tooltip=" "];
+  Node13 -> Node2 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" M_geometricEdges" ,fontname="Helvetica"];
+  Node13 [label="std::vector\< std::tuple\l\< int, int, int \> \>",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+  Node14 -> Node13 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" elements" ,fontname="Helvetica"];
+  Node14 [label="tuple\< int, int, int \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classstd_1_1tuple_3_01int_00_01int_00_01int_01_4.html",tooltip=" "];
+  Node8 -> Node1 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" nRealDim\nnDim" ,fontname="Helvetica"];
+  Node15 -> Node1 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" nEdge\nnPoint" ,fontname="Helvetica"];
+  Node15 [label="int",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classint.html",tooltip=" "];
+}

@@ -1,0 +1,11 @@
+digraph "Feel::DofFromBoundary&lt; DofTableType, FEType &gt;"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  Node1 [label="Feel::DofFromBoundary\l\< DofTableType, FEType \>",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Local Dof contribution from boundary dof."];
+  Node2 -> Node1 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" nRealDim\nnOrder\nnDofPerElement\nnComponents1\nnComponents2\nnDim\nShape\nnComponents" ,fontname="Helvetica"];
+  Node2 [label="static const uint16_type",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+  Node3 -> Node1 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" is_product\nis_discontinuous\l_totally\nis_p0_continuous\nis_modal\nis_tensor2\nis_vectorial\nis_discontinuous\l_locally\nis_continuous\nis_scalar" ,fontname="Helvetica"];
+  Node3 [label="bool",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classbool.html",tooltip=" "];
+}

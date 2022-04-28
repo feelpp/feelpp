@@ -1,0 +1,8 @@
+digraph "Graphical Class Hierarchy"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node0 [label="nlohmann::detail::is\l_compatible_integer_type\l_impl\< RealIntegerType,\l CompatibleNumberIntegerType,\l enable_if_t\< std::is_integral\l\< RealIntegerType \>::value &&std\l::is_integral\< CompatibleNumberIntegerType\l \>::value &&!std::is_same\< bool, CompatibleNumberInteger\lType \>::value \> \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structnlohmann_1_1detail_1_1is__compatible__integer__type__impl_3_01RealIntegerType_00_01Compatie5920c849e839ebb9f8c57349c900796.html",tooltip=" "];
+}

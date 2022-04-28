@@ -1,0 +1,46 @@
+digraph "Feel::Geo0D&lt; Dim, T, IndexT &gt;"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="Feel::Geo0D\< Dim, T,\l IndexT \>",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
+  Node2 -> Node1 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="boost::equality_comparable\l\< Geo0D\< Dim, double \> \>",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+  Node3 -> Node1 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="boost::less_than_comparable\l\< Geo0D\< Dim, double \> \>",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+  Node4 -> Node1 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="boost::less_than_comparable\l\< Geo0D\< Dim, double \>,\l uint32_type \>",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+  Node5 -> Node1 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="Feel::GeoEntity\< Simplex\l\< 0, 1, Dim \>, double,\l uint32_type \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1GeoEntity.html",tooltip=" "];
+  Node6 -> Node5 [dir="back",color="firebrick4",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="boost::equality_comparable\l\< GeoEntity\< Simplex\< 0,\l 1, Dim \>, double, uint32\l_type \> \>",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+  Node7 -> Node5 [dir="back",color="firebrick4",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="boost::less_than_comparable\l\< GeoEntity\< Simplex\< 0,\l 1, Dim \>, double, uint32\l_type \> \>",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+  Node8 -> Node5 [dir="back",color="firebrick4",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="boost::less_than_comparable\l\< GeoEntity\< Simplex\< 0,\l 1, Dim \>, double, uint32\l_type \>, uint32_type \>",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+  Node9 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="Feel::Simplex\< 0, 1,\l Dim \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1Simplex.html",tooltip=" "];
+  Node10 -> Node9 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="Feel::Convex\< Dim,\l Order, RDim \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1Convex.html",tooltip="Convex base class."];
+  Node11 -> Node10 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="Feel::ConvexBase",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1ConvexBase.html",tooltip=" "];
+  Node12 -> Node10 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" nRealDim\nnOrder\nnDim" ,fontname="Helvetica"];
+  Node12 [label="static const uint16_type",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+  Node13 -> Node9 [dir="back",color="firebrick4",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="Feel::SimplexBase",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1SimplexBase.html",tooltip=" "];
+  Node14 -> Node9 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" shape_v\nShape" ,fontname="Helvetica"];
+  Node14 [label="static constexpr int",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classstatic_01constexpr_01int.html",tooltip=" "];
+  Node15 -> Node9 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" numVolumes\nnumFaces\nnumVertices\nnumTopologicalFaces\nnumEdges\nnumGeometricFaces" ,fontname="Helvetica"];
+  Node15 [label="static const int",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classstatic_01const_01int.html",tooltip=" "];
+  Node12 -> Node9 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" nbPtsPerEdge\nnRealDim\nnOrder\nreal_dimension\nnumPoints\nnumNormals\nnbPtsPerVertex\ntopological_dimension\nnDim\nnbPtsPerVolume\n..." ,fontname="Helvetica"];
+  Node16 -> Node9 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" is_hypercube\nis_simplex" ,fontname="Helvetica"];
+  Node16 [label="bool",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classbool.html",tooltip=" "];
+  Node17 -> Node9 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" Geometry" ,fontname="Helvetica"];
+  Node17 [label="static const size_type",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+  Node12 -> Node5 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" nbPtsPerEdge\nnRealDim\nnOrder\nnumPoints\nnumNormals\nnumFaces\nnumVertices\nnbPtsPerVertex\nnDim\nnbPtsPerVolume\n..." ,fontname="Helvetica"];
+  Node16 -> Node5 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" is_hypercube\nis_simplex" ,fontname="Helvetica"];
+  Node17 -> Node5 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" Geometry\nShape" ,fontname="Helvetica"];
+  Node12 -> Node1 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" nDim" ,fontname="Helvetica"];
+  Node16 -> Node1 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" is_simplex" ,fontname="Helvetica"];
+}

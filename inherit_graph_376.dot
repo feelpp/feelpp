@@ -1,0 +1,8 @@
+digraph "Graphical Class Hierarchy"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node0 [label="Feel::rate::hp::data\l::errors_t",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structFeel_1_1rate_1_1hp_1_1data_1_1errors__t.html",tooltip=" "];
+}

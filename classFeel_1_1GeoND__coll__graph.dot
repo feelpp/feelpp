@@ -1,0 +1,32 @@
+digraph "Feel::GeoND&lt; Dim, GEOSHAPE, T, IndexT, POINTTYPE, UseMeasuresStorage &gt;"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="Feel::GeoND\< Dim, GEOSHAPE,\l T, IndexT, POINTTYPE, UseMeasures\lStorage \>",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Base class for Multi-dimensional basis Geometrical Entities."];
+  Node2 -> Node1 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="Feel::GeoEntity\< GEOSHAPE,\l double \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1GeoEntity.html",tooltip=" "];
+  Node3 -> Node2 [dir="back",color="firebrick4",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="boost::equality_comparable\l\< GeoEntity\< GEOSHAPE, double,\l uint32_type \> \>",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+  Node4 -> Node2 [dir="back",color="firebrick4",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="boost::less_than_comparable\l\< GeoEntity\< GEOSHAPE, double,\l uint32_type \> \>",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+  Node5 -> Node2 [dir="back",color="firebrick4",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="boost::less_than_comparable\l\< GeoEntity\< GEOSHAPE, double,\l uint32_type \>, uint32_type \>",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+  Node6 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="GEOSHAPE",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+  Node7 -> Node2 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" nbPtsPerEdge\nnRealDim\nnOrder\nnumPoints\nnumNormals\nnumFaces\nnumVertices\nnbPtsPerVertex\nnDim\nnbPtsPerVolume\n..." ,fontname="Helvetica"];
+  Node7 [label="static const uint16_type",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+  Node8 -> Node2 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" is_hypercube\nis_simplex" ,fontname="Helvetica"];
+  Node8 [label="bool",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classbool.html",tooltip=" "];
+  Node9 -> Node2 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" Geometry\nShape" ,fontname="Helvetica"];
+  Node9 [label="static const size_type",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+  Node10 -> Node1 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="boost::mpl::if_::type\l::type\< mpl::bool_\< false\l \>, mpl::identity\< GeoNDMeasures\lStorage\< double \> \>, mpl::identity\l\< GeoNDNoMeasuresStorage\< double \> \> \>",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+  Node11 -> Node1 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" meas_quad_order" ,fontname="Helvetica"];
+  Node11 [label="static constexpr uint16_type",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+  Node12 -> Node1 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" numFaces\nnumTopologicalFaces\nnumEdges" ,fontname="Helvetica"];
+  Node12 [label="int",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classint.html",tooltip=" "];
+  Node7 -> Node1 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" numLocalVertices\nnumLocalEdges\nnRealDim\nnOrder\nnumPoints\nnumVertices\nnumLocalPoints\nnumNeighbors\nnDim" ,fontname="Helvetica"];
+  Node9 -> Node1 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" Shape" ,fontname="Helvetica"];
+}

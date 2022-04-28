@@ -1,0 +1,8 @@
+digraph "Graphical Class Hierarchy"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node0 [label="pair\< basis_context\l_ptrtype, std::vector\l\< index_type \> \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classstd_1_1pair_3_01basis__context__ptrtype_00_01std_1_1vector_3_01index__type_01_4_01_4.html",tooltip=" "];
+}

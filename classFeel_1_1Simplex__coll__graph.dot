@@ -1,0 +1,23 @@
+digraph "Feel::Simplex&lt; Dim, Order, RDim &gt;"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="Feel::Simplex\< Dim,\l Order, RDim \>",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="simplex of dimension Dim"];
+  Node2 -> Node1 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="Feel::Convex\< Dim,\l 1, Dim \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1Convex.html",tooltip=" "];
+  Node3 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="Feel::ConvexBase",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1ConvexBase.html",tooltip=" "];
+  Node4 -> Node2 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" nRealDim\nnOrder\nnDim" ,fontname="Helvetica"];
+  Node4 [label="static const uint16_type",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+  Node5 -> Node1 [dir="back",color="firebrick4",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="Feel::SimplexBase",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1SimplexBase.html",tooltip=" "];
+  Node6 -> Node1 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" numVolumes\nnumFaces\nnumVertices\nshape_v\nShape\nnumTopologicalFaces\nnumEdges\nnumGeometricFaces" ,fontname="Helvetica"];
+  Node6 [label="int",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classint.html",tooltip=" "];
+  Node4 -> Node1 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" nbPtsPerEdge\nnRealDim\nnOrder\nreal_dimension\nnumPoints\nnumNormals\nnbPtsPerVertex\ntopological_dimension\nnDim\nnbPtsPerVolume\n..." ,fontname="Helvetica"];
+  Node7 -> Node1 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" is_hypercube\nis_simplex" ,fontname="Helvetica"];
+  Node7 [label="bool",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classbool.html",tooltip=" "];
+  Node8 -> Node1 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" Geometry" ,fontname="Helvetica"];
+  Node8 [label="static const size_type",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+}

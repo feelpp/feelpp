@@ -1,0 +1,12 @@
+digraph "Graphical Class Hierarchy"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node0 [label="type",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classstd_1_1conditional_1_1type.html",tooltip=" "];
+  Node0 -> Node1 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 [label="Feel::is_mesh_structured\l\< MeshT \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structFeel_1_1is__mesh__structured.html",tooltip="trait type to detect a MeshStructured mesh"];
+  Node0 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="nlohmann::detail::conjunction\l\< B1, Bn... \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structnlohmann_1_1detail_1_1conjunction_3_01B1_00_01Bn_8_8_8_01_4.html",tooltip=" "];
+}

@@ -1,0 +1,24 @@
+digraph "Feel::vf::ExprDynamicBase"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="Feel::vf::ExprDynamicBase",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
+  Node1 -> Node2 [dir="back",color="firebrick4",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="Feel::FunctionExpr\l\< FunctionType, Order,\l FunctionArgsTupleType \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1FunctionExpr.html",tooltip=" "];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="Feel::vf::ExprOptionalConcat\l\< TupleExprType \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1vf_1_1ExprOptionalConcat.html",tooltip=" "];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="Feel::vf::GiNaCBase",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1vf_1_1GiNaCBase.html",tooltip=" "];
+  Node4 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="Feel::vf::GinacMatrix\l\< M, N, Order, SymbolsExprType \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1vf_1_1GinacMatrix.html",tooltip="Handle Ginac matrix expression."];
+  Node1 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="Feel::vf::PrintExpr\l\< PrintExprT \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1vf_1_1PrintExpr.html",tooltip=" "];
+  Node1 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="Feel::vf::Trans\< ExprT \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1vf_1_1Trans.html",tooltip="Transpose an scalar, vectorial or matricial expression."];
+  Node1 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="Feel::vf::UnaryMinus\l\< ExprT \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1vf_1_1UnaryMinus.html",tooltip="handler for unary minus expression"];
+  Node1 -> Node9 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="Feel::vf::UnaryPlus\l\< ExprT \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1vf_1_1UnaryPlus.html",tooltip="handler for unary plus expression"];
+}

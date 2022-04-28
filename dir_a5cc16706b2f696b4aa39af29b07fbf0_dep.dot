@@ -1,0 +1,15 @@
+digraph "/home/runner/work/feelpp/feelpp/feelpp/feel/feelmesh" {
+  compound=true
+  node [ fontsize="10", fontname="Helvetica"];
+  edge [ labelfontsize="10", labelfontname="Helvetica"];
+  subgraph clusterdir_a4c121e06ebcc119b041a36581d5d48a {
+    graph [ bgcolor="#ddddee", pencolor="black", label="feel" fontname="Helvetica", fontsize="10", URL="dir_a4c121e06ebcc119b041a36581d5d48a.html"]
+  subgraph clusterdir_a5cc16706b2f696b4aa39af29b07fbf0 {
+    graph [ bgcolor="#eeeeff", pencolor="black", label="" URL="dir_a5cc16706b2f696b4aa39af29b07fbf0.html"];
+    dir_a5cc16706b2f696b4aa39af29b07fbf0 [shape=plaintext label="feelmesh"];
+    dir_95ff000cf1450fd862876eb858a0a6ab [shape=box label="detail" color="black" fillcolor="white" style="filled" URL="dir_95ff000cf1450fd862876eb858a0a6ab.html"];
+  }
+  }
+  dir_f953484fe51916b7b30cc3393ae061de [shape=box label="feelcore" URL="dir_f953484fe51916b7b30cc3393ae061de.html"];
+  dir_a5cc16706b2f696b4aa39af29b07fbf0->dir_f953484fe51916b7b30cc3393ae061de [headlabel="4", labeldistance=1.5 headhref="dir_000003_000002.html"];
+}

@@ -1,0 +1,12 @@
+digraph "Feel::bases&lt; A0, A1, A2, A3, A4 &gt;"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="Feel::bases\< A0, A1,\l A2, A3, A4 \>",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
+  Node2 -> Node1 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="Feel::detail::bases_base",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1detail_1_1bases__base.html",tooltip=" "];
+  Node3 -> Node1 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="boost::mpl::if_::type\l\< boost::is_same\< void\l_basis, void_basis \>, boost\l::fusion::vector\< void_basis\l ::template ChangeTag\< 0 \>::\ltype \>, mpl::if_\< boost::is_same\l\< void_basis, void_basis \>, boost\l::fusion::vector\< void_basis ::template\l ChangeTag\< 0 \>::type, void_basis ::template\l ChangeTag\< 1 \>::type \>, mpl::if_\< boost::\lis_same\< void_basis, void_basis \>, boost::fusion\l::vector\< void_basis ::template ChangeTag\< 0 \>\l::type, void_basis ::template ChangeTag\< 1 \>::type,\l void_basis ::template ChangeTag\< 2 \>::type \>, mpl\l::if_\< boost::is_same\< void_basis, void_basis \>, boost\l::fusion::vector\< void_basis ::template ChangeTag\< 0 \>\l::type, void_basis ::template ChangeTag\< 1 \>::type, void\l_basis ::template ChangeTag\< 2 \>::type, void_basis ::template\l ChangeTag\< 3 \>::type \>, boost::fusion::vector\< void_basis \l::template ChangeTag\< 0 \>::type, void_basis ::template ChangeTag\l\< 1 \>::type, void_basis ::template ChangeTag\< 2 \>::type, void_basis\l ::template ChangeTag\< 3 \>::type, void_basis ::template ChangeTag\<\l 4 \>::type \> \>::type \>::type \>::type \>",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+}

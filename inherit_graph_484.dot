@@ -1,0 +1,12 @@
+digraph "Graphical Class Hierarchy"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1033 [label="tuple",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+  Node1033 -> Node0 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node0 [label="Feel::vf::minmaxData\l\< Dim \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structFeel_1_1vf_1_1minmaxData.html",tooltip="data returned by minmax"];
+  Node1033 -> Node1035 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1035 [label="Feel::vf::normLinfData\l\< Dim \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structFeel_1_1vf_1_1normLinfData.html",tooltip="data returned by normLinf"];
+}

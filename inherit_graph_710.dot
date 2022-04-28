@@ -1,0 +1,8 @@
+digraph "Graphical Class Hierarchy"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node0 [label="std::hash\< nlohmann\l::basic_json\< ObjectType,\l ArrayType, StringType,\l BooleanType, NumberIntegerType,\l NumberUnsignedType, NumberFloatType,\l AllocatorType, JSONSerializer, BinaryType \> \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structstd_1_1hash_3_01nlohmann_1_1basic__json_3_01ObjectType_00_01ArrayType_00_01StringType_00_06d4f1ea19ce1bda8275363c404adf9a2.html",tooltip="hash value for JSON objects"];
+}

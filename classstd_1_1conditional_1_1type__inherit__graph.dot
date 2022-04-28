@@ -1,0 +1,12 @@
+digraph "type"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="type",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="Feel::is_mesh_structured\l\< std::is_base_of_v\< MeshStructured\lBase, MeshT \>, std::true_type,\l std::false_type \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structFeel_1_1is__mesh__structured.html",tooltip="trait type to detect a MeshStructured mesh"];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="nlohmann::detail::conjunction\l\< B1, Bn... \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structnlohmann_1_1detail_1_1conjunction_3_01B1_00_01Bn_8_8_8_01_4.html",tooltip=" "];
+}

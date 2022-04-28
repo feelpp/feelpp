@@ -1,0 +1,16 @@
+digraph "Graphical Class Hierarchy"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node0 [label="Feel::FeelModels::Generic\lDirichletBoundaryCondition\l\< 1, 1 \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1FeelModels_1_1GenericDirichletBoundaryCondition.html",tooltip=" "];
+  Node0 -> Node1 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 [label="Feel::FeelModels::Electric\lBoundaryConditions::ElectricPotential\lImposed",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1FeelModels_1_1ElectricBoundaryConditions_1_1ElectricPotentialImposed.html",tooltip=" "];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="Feel::FeelModels::Electric\lBoundaryConditions::Ground",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1FeelModels_1_1ElectricBoundaryConditions_1_1Ground.html",tooltip=" "];
+  Node0 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="Feel::FeelModels::HeatBoundary\lConditions::TemperatureImposed",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1FeelModels_1_1HeatBoundaryConditions_1_1TemperatureImposed.html",tooltip=" "];
+  Node0 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="Feel::FeelModels::SolidMechanics1d\lReducedBoundaryConditions\<\l Dim \>::DisplacementImposed",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1FeelModels_1_1SolidMechanics1dReducedBoundaryConditions_1_1DisplacementImposed.html",tooltip=" "];
+}

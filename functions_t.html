@@ -117,6 +117,9 @@ $(document).ready(function(){initNavTree('functions_t.html',''); initResizable()
 , <a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanicsBoundaryConditions_1_1PressureImposed.html#acc91cf577991c322cd71595cae26f49e">Feel::FeelModels::FluidMechanicsBoundaryConditions&lt; Dim &gt;::PressureImposed</a>
 , <a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanicsBoundaryConditions.html#a3487298be085f8b641a3224a89bd3710">Feel::FeelModels::FluidMechanicsBoundaryConditions&lt; Dim &gt;</a>
 , <a class="el" href="classFeel_1_1FeelModels_1_1GenericDirichletBoundaryCondition.html#ae3d3f5bd591828f0dc80bbda25bbfe11">Feel::FeelModels::GenericDirichletBoundaryCondition&lt; Dim1, Dim2 &gt;</a>
+, <a class="el" href="classFeel_1_1FeelModels_1_1HeatBoundaryConditions_1_1ConvectiveHeatFlux.html#a1e3489c78fc60c4e7690a9fca93c2139">Feel::FeelModels::HeatBoundaryConditions::ConvectiveHeatFlux</a>
+, <a class="el" href="classFeel_1_1FeelModels_1_1HeatBoundaryConditions_1_1HeatFlux.html#a6a2ad867509f822e530c2e4b6348acf7">Feel::FeelModels::HeatBoundaryConditions::HeatFlux</a>
+, <a class="el" href="classFeel_1_1FeelModels_1_1HeatBoundaryConditions.html#a211014742d2e57f86d768ccf46a27172">Feel::FeelModels::HeatBoundaryConditions</a>
 , <a class="el" href="classFeel_1_1FeelModels_1_1SolidMechanics1dReducedBoundaryConditions.html#af7b0a5524e4677ca59f80daa7242e827">Feel::FeelModels::SolidMechanics1dReducedBoundaryConditions&lt; Dim &gt;</a>
 , <a class="el" href="classFeel_1_1FeelModels_1_1SolidMechanicsBoundaryConditions_1_1NormalStress.html#a0638eb90cf06279da964972945db28dd">Feel::FeelModels::SolidMechanicsBoundaryConditions&lt; Dim &gt;::NormalStress</a>
 , <a class="el" href="classFeel_1_1FeelModels_1_1SolidMechanicsBoundaryConditions_1_1Robin.html#ae27334748aa4760acd66c35e05c6c5dc">Feel::FeelModels::SolidMechanicsBoundaryConditions&lt; Dim &gt;::Robin</a>
@@ -128,6 +131,9 @@ $(document).ready(function(){initNavTree('functions_t.html',''); initResizable()
 </li>
 <li>task()
 : <a class="el" href="classFeel_1_1AboutPerson.html#ac11b01ec30ca230dd7c734ecbeac62ca">Feel::AboutPerson</a>
+</li>
+<li>temperatureImposed()
+: <a class="el" href="classFeel_1_1FeelModels_1_1HeatBoundaryConditions.html#ac2e41e226514c00c5b25b3601bb42f89">Feel::FeelModels::HeatBoundaryConditions</a>
 </li>
 <li>third
 : <a class="el" href="structFeel_1_1BareFace.html#a7159508f7b9d122a921593d8cd2959b3">Feel::BareFace</a>
@@ -159,10 +165,10 @@ $(document).ready(function(){initNavTree('functions_t.html',''); initResizable()
 , <a class="el" href="classFeel_1_1detail_1_1TimeSet.html#a9dbd3daa64b40f8404c3bd1f47488d91">Feel::detail::TimeSet&lt; MeshType, N &gt;</a>
 </li>
 <li>to_bson()
-: <a class="el" href="classnlohmann_1_1basic__json.html#a4a9babd6635e3f7d4af3dec0635073c5">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;</a>
+: <a class="el" href="classnlohmann_1_1basic__json.html#a5b6a88593477b89119025da589cc47a9">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;</a>
 </li>
 <li>to_cbor()
-: <a class="el" href="classnlohmann_1_1basic__json.html#a7ddb186b25dd9b1da672a3d5f3defbf9">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;</a>
+: <a class="el" href="classnlohmann_1_1basic__json.html#ac59dfbee523c5340e41548764a8d26be">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;</a>
 </li>
 <li>to_json()
 : <a class="el" href="structnlohmann_1_1adl__serializer.html#afdcc8f0204ce8ac7d28a5403f6e1f0e7">nlohmann::adl_serializer&lt; ValueType, typename &gt;</a>
@@ -186,7 +192,7 @@ $(document).ready(function(){initNavTree('functions_t.html',''); initResizable()
 : <a class="el" href="classFeel_1_1Mesh.html#a4774a57a61a97a9302e86b77635258b2">Feel::Mesh&lt; GeoShape, T, Tag, IndexT &gt;</a>
 </li>
 <li>toOutputText()
-: <a class="el" href="classFeel_1_1Table.html#a241f1a21beb7fe5b6b6d071e1ccb5bd9">Feel::Table</a>
+: <a class="el" href="classFeel_1_1Table.html#a60e9bb4ed99df8152f243233009b2da4">Feel::Table</a>
 </li>
 <li>topologicalDimension()
 : <a class="el" href="classFeel_1_1Hypercube.html#a16dbb03ef025eee7a10e7bad24493a45">Feel::Hypercube&lt; Dim, Order, RDim &gt;</a>
