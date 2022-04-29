@@ -3,7 +3,10 @@
     "ShortName":"cp2d",
     "Models":
     {
-        "equations":"Stokes"
+        "fluid":
+        {
+            "equations":"Stokes"
+        }
     },
     "Parameters":
     {
@@ -19,33 +22,43 @@
         "pex":"(pin*(-alpha1+acos(x/sqrt(x^2+y^2)))-pout*(-theta-alpha1+acos(x/sqrt(x^2+y^2))))/theta:x:y:pin:pout:alpha1:theta",
         "uexx":"-(pin-pout)*sqrt(-x^2/(x^2+y^2)+1)*(0.5*r1^2*r2^2*(log(r1)-log(r2))/(sqrt(x^2+y^2)*(r1^2-r2^2))+0.5*sqrt(x^2+y^2)*log(sqrt(x^2+y^2))+sqrt(x^2+y^2)*(-0.5*r1^2*log(r1)+0.5*r2^2*log(r2))/(r1^2-r2^2))/theta:x:y:pin:pout:alpha1:theta:r1:r2",
         "uexy":"x*(pin-pout)*(0.5*r1^2*r2^2*(log(r1)-log(r2))/(sqrt(x^2+y^2)*(r1^2-r2^2))+0.5*sqrt(x^2+y^2)*log(sqrt(x^2+y^2))+sqrt(x^2+y^2)*(-0.5*r1^2*log(r1)+0.5*r2^2*log(r2))/(r1^2-r2^2))/(theta*sqrt(x^2+y^2)):x:y:pin:pout:alpha1:theta:r1:r2",
+        "ptotex":"pex + 0.5*( uexx*uexx + uexy*uexy ):pex:uexx:uexy",
         "ugradexxx":"-(pin-pout)*sqrt(-x^2/(x^2+y^2)+1)*(-0.5*x*r1^2*r2^2*(log(r1)-log(r2))/((x^2+y^2)^(3/2)*(r1^2-r2^2))+0.5*x*log(sqrt(x^2+y^2))/sqrt(x^2+y^2)+0.5*x/sqrt(x^2+y^2)+x*(-0.5*r1^2*log(r1)+0.5*r2^2*log(r2))/(sqrt(x^2+y^2)*(r1^2-r2^2)))/theta-(pin-pout)*(x^3/(x^2+y^2)^2-x/(x^2+y^2))*(0.5*r1^2*r2^2*(log(r1)-log(r2))/(sqrt(x^2+y^2)*(r1^2-r2^2))+0.5*sqrt(x^2+y^2)*log(sqrt(x^2+y^2))+sqrt(x^2+y^2)*(-0.5*r1^2*log(r1)+0.5*r2^2*log(r2))/(r1^2-r2^2))/(theta*sqrt(-x^2/(x^2+y^2)+1)):x:y:pin:pout:alpha1:theta:r1:r2",
         "ugradexxy":"-x^2*(pin-pout)*(0.5*r1^2*r2^2*(log(r1)-log(r2))/(sqrt(x^2+y^2)*(r1^2-r2^2))+0.5*sqrt(x^2+y^2)*log(sqrt(x^2+y^2))+sqrt(x^2+y^2)*(-0.5*r1^2*log(r1)+0.5*r2^2*log(r2))/(r1^2-r2^2))/(theta*(x^2+y^2)^(3/2))+x*(pin-pout)*(-0.5*x*r1^2*r2^2*(log(r1)-log(r2))/((x^2+y^2)^(3/2)*(r1^2-r2^2))+0.5*x*log(sqrt(x^2+y^2))/sqrt(x^2+y^2)+0.5*x/sqrt(x^2+y^2)+x*(-0.5*r1^2*log(r1)+0.5*r2^2*log(r2))/(sqrt(x^2+y^2)*(r1^2-r2^2)))/(theta*sqrt(x^2+y^2))+(pin-pout)*(0.5*r1^2*r2^2*(log(r1)-log(r2))/(sqrt(x^2+y^2)*(r1^2-r2^2))+0.5*sqrt(x^2+y^2)*log(sqrt(x^2+y^2))+sqrt(x^2+y^2)*(-0.5*r1^2*log(r1)+0.5*r2^2*log(r2))/(r1^2-r2^2))/(theta*sqrt(x^2+y^2)):x:y:pin:pout:alpha1:theta:r1:r2",
         "ugradexyx":"-x^2*y*(pin-pout)*(0.5*r1^2*r2^2*(log(r1)-log(r2))/(sqrt(x^2+y^2)*(r1^2-r2^2))+0.5*sqrt(x^2+y^2)*log(sqrt(x^2+y^2))+sqrt(x^2+y^2)*(-0.5*r1^2*log(r1)+0.5*r2^2*log(r2))/(r1^2-r2^2))/(theta*(x^2+y^2)^2*sqrt(-x^2/(x^2+y^2)+1))-(pin-pout)*sqrt(-x^2/(x^2+y^2)+1)*(-0.5*y*r1^2*r2^2*(log(r1)-log(r2))/((x^2+y^2)^(3/2)*(r1^2-r2^2))+0.5*y*log(sqrt(x^2+y^2))/sqrt(x^2+y^2)+0.5*y/sqrt(x^2+y^2)+y*(-0.5*r1^2*log(r1)+0.5*r2^2*log(r2))/(sqrt(x^2+y^2)*(r1^2-r2^2)))/theta:x:y:pin:pout:alpha1:theta:r1:r2",
         "ugradexyy":"-x*y*(pin-pout)*(0.5*r1^2*r2^2*(log(r1)-log(r2))/(sqrt(x^2+y^2)*(r1^2-r2^2))+0.5*sqrt(x^2+y^2)*log(sqrt(x^2+y^2))+sqrt(x^2+y^2)*(-0.5*r1^2*log(r1)+0.5*r2^2*log(r2))/(r1^2-r2^2))/(theta*(x^2+y^2)^(3/2))+x*(pin-pout)*(-0.5*y*r1^2*r2^2*(log(r1)-log(r2))/((x^2+y^2)^(3/2)*(r1^2-r2^2))+0.5*y*log(sqrt(x^2+y^2))/sqrt(x^2+y^2)+0.5*y/sqrt(x^2+y^2)+y*(-0.5*r1^2*log(r1)+0.5*r2^2*log(r2))/(sqrt(x^2+y^2)*(r1^2-r2^2)))/(theta*sqrt(x^2+y^2)):x:y:pin:pout:alpha1:theta:r1:r2"
     },
+    "Meshes":
+    {
+        "fluid":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/curved-pipe-2d.geo",
+                "hsize":0.01
+            }
+        }
+    },
     "Materials":
     {
-        "Omega":{
+        "Omega":
+        {
             "rho":"1",
             "mu":"nu:nu"
         }
     },
     "BoundaryConditions":
     {
-        "velocity":
+        "fluid":
         {
-            "Dirichlet":
+            "velocity":
             {
                 "wall":
                 {
                     "expr":"{0,0}"//"{uexx,uexy}:uexx:uexy"
                 }
-            }
-        },
-        "pressure":
-        {
-            "Dirichlet":
+            },
+            "pressure":
             {
                 "inlet":
                 {
@@ -60,59 +73,62 @@
     },
     "PostProcess":
     {
-        "Measures":
-        {
-            "Norm":
-            {
-                "p": 
-                {
-                    "type":"L2-error", 
-                    "field":"pressure",
-                    "quad":10,
-                    "solution":"pex:pex", 
-                    "markers":"Omega" 
-                },
-                "u": 
-                {
-                    "type":["L2-error","H1-error"], 
-                    "field":"velocity",
-                    "quad":10,
-                    "solution":"{uexx,uexy}:uexx:uexy",
-                    "grad_solution":"{ugradexxx, ugradexyx, ugradexxy, ugradexyy}:ugradexxx:ugradexyx:ugradexxy:ugradexyy",
-                    "markers":"Omega" 
-                }
-            }
-        },
-        "Checkers":
+        "fluid":
         {
             "Measures":
             {
-                "Norm_u_L2-error":
+                "Norm":
                 {
-                    "value":0,
-                    "tolerance":1
-                },
-                "Norm_u_H1-error":
-                {
-                    "value":0,
-                    "tolerance":1
-                },
-                "Norm_p_L2-error":
-                {
-                    "value":0,
-                    "tolerance":1
+                    "p": 
+                    {
+                        "type":"L2-error", 
+                        "field":"pressure",
+                        "quad":10,
+                        "solution":"pex:pex", 
+                        "markers":"Omega" 
+                    },
+                    "u": 
+                    {
+                        "type":["L2-error","H1-error"], 
+                        "field":"velocity",
+                        "quad":10,
+                        "solution":"{uexx,uexy}:uexx:uexy",
+                        "grad_solution":"{ugradexxx, ugradexyx, ugradexxy, ugradexyy}:ugradexxx:ugradexyx:ugradexxy:ugradexyy",
+                        "markers":"Omega" 
+                    }
                 }
-            }
-        },
-        "Exports":
-        {
-            "fields":["velocity","pressure","pid"],
-            "expr":
+            },
+            "Checkers":
             {
-                "u_ex":"{uexx,uexy}:uexx:uexy",
-                "p_ex":"pex:pex"
+                "Measures":
+                {
+                    "Norm_u_L2-error":
+                    {
+                        "value":0,
+                        "tolerance":1
+                    },
+                    "Norm_u_H1-error":
+                    {
+                        "value":0,
+                        "tolerance":1
+                    },
+                    "Norm_p_L2-error":
+                    {
+                        "value":0,
+                        "tolerance":1
+                    }
+                }
+            },
+            "Exports":
+            {
+                "fields":["velocity","pressure","pid"],
+                "expr":
+                {
+                    "u_ex":"{uexx,uexy}:uexx:uexy",
+                    "p_ex":"pex:pex",
+                    "p_totex":"ptotex:ptotex"
+                }
             }
         }
     }
-
 }

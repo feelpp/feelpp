@@ -3,7 +3,10 @@
     "ShortName":"pipe2d",
     "Models":
     {
-        "equations":"Navier-Stokes"
+        "fluid":
+            {
+                "equations":"Navier-Stokes"
+            }
     },
     "Parameters":
     {
@@ -14,29 +17,32 @@
         "H":4,
         "uex":"(pin-pout)*(L-x)*x/(2*H*nu):pin:pout:L:x:H:nu",
         "pex":"pin+(pout-pin)*y/H:y:H:pin:pout",
-        "pdynex":"pex + 0.5*uex^2:pex:uex",
-        "ugradex":"-x*(pin - pout)/(2*H*nu) + (-x + L)*(pin - pout)/(2*H*nu):x:pin:pout:H:nu:L"
+        "ptotex":"pex + 0.5*uex*uex:pex:uex",
+        "ugradex":"-x*(pin - pout)/(2*H*nu) + (-x + L)*(pin - pout)/(2*H*nu):x:pin:pout:H:nu:L",
+        "rhs":"{0,0}"
+    },
+    "Meshes":
+    {
+        "fluid":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/pipe-2d.geo"
+            }
+        }
     },
     "Materials":
     {
-        "Omega":{
+        "Omega":
+        {
             "rho":"1",
             "mu":"nu:nu"
         }
     },
     "BoundaryConditions":
     {
-        "velocity":
+        "fluid":
         {
-            "VolumicForces":
-            {
-                "Omega":
-                {
-                    "expr":"{0,0}"
-                }
-            },
-            "Dirichlet":
-            {
                 "left":
                 {
                     "expr":"{0,0}"
@@ -45,93 +51,76 @@
                 {
                     "expr":"{0,0}"
                 }
-            }
-        }/*,
-        "pressure":
-        {
-            "Dirichlet":
+            },
+            "pressure":
             {
-                "outlet":
-                {
-                    "expr":"pdynex:pdynex"
-                },
                 "inlet":
                 {
-                    "expr":"pdynex:pdynex"
+                    "expr":"ptotex:ptotex"
+                },
+                "outlet":
+                {
+                    "expr":"ptotex:ptotex"
                 }
-            }
-        }*/
-    },
-	"Exact solution":
-	{
-	    "p_exact":
-	    {
-		    "Omega":
-		    {
-		        "expr":"pex:pex"
-		    }
-	    },
-        "u_exact":
-        {
-            "Omega":
-            {
-                "expr":"{0,uex}:uex"
             }
         }
     },
     "PostProcess":
     {
-        "Measures":
-        {
-            "Norm":
-            {
-                "p": 
-                {
-                    "type":"L2-error", 
-                    "field":"pressure", 
-                    "solution":"pex:pex",
-                    "markers":"Omega" 
-                },
-                "u": 
-                {
-                    "type":["L2-error", "H1-error"], 
-                    "field":"velocity", 
-                    "solution":"{0,uex}:uex",
-                    "grad_solution":"{0,0,ugradex,0}:ugradex",
-                    "markers":"Omega" 
-                }
-            }
-        },
-        "Checkers":
+        "fluid":
         {
             "Measures":
             {
-                "Norm_u_L2-error":
+                "Norm":
                 {
-                    "value":0,
-                    "tolerance":1
-                },
-                "Norm_u_H1-error":
-                {
-                    "value":0,
-                    "tolerance":1
-                },
-                "Norm_p_L2-error":
-                {
-                    "value":0,
-                    "tolerance":1
+                    "p": 
+                    {
+                        "type":"L2-error", 
+                        "field":"pressure", 
+                        "solution":"pex:pex",
+                        "markers":"Omega" 
+                    },
+                    "u": 
+                    {
+                        "type":["L2-error", "H1-error"], 
+                        "field":"velocity", 
+                        "solution":"{0,uex}:uex",
+                        "grad_solution":"{0,0,ugradex,0}:ugradex",
+                        "markers":"Omega" 
+                    }
                 }
-            }
-        },
-        "Exports":
-        {
-            "fields":["velocity","pressure","pid"],
-            "expr":
+            },
+            "Checkers":
             {
-                "u_ex":"{0,uex}:uex",
-                "p_ex":"pex:pex"
+                "Measures":
+                {
+                    "Norm_u_L2-error":
+                    {
+                        "value":0,
+                        "tolerance":1
+                    },
+                    "Norm_u_H1-error":
+                    {
+                        "value":0,
+                        "tolerance":1
+                    },
+                    "Norm_p_L2-error":
+                    {
+                        "value":0,
+                        "tolerance":1
+                    }
+                }
+            },
+            "Exports":
+            {
+                "fields":["velocity","pressure","pid"],
+                "expr":
+                {
+                    "u_ex":"{0,uex}:uex",
+                    "p_ex":"pex:pex",
+                    "p_totex":"ptotex:ptotex"
+                }
             }
         }
     }
-
 }
