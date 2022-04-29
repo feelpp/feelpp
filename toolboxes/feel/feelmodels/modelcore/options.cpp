@@ -45,8 +45,12 @@ Feel::po::options_description modelbase_options(std::string const& prefix)
         (prefixvm(prefix,"scalability-path").c_str(), Feel::po::value< std::string >(), "scalability-path")
         (prefixvm(prefix,"scalability-filename").c_str(), Feel::po::value< std::string >(), "scalability-filename")
         (prefixvm(prefix,"upload").c_str(), Feel::po::value< std::string >()->default_value(""), "upload decription")
+
+        //(prefixvm(prefix,"filename").c_str(), Feel::po::value<std::string>()->default_value( "" ), "json file describing model properties"
+        (prefixvm(prefix,"filename").c_str(), Feel::po::value<std::string>(), "json file describing model properties [DEPRECATED]" )
         ;
-    return appliBaseOptions;
+    return appliBaseOptions
+        .add( json_options( prefix ) );
 }
 
 Feel::po::options_description modelalgebraic_options(std::string const& prefix)
@@ -76,6 +80,8 @@ Feel::po::options_description modelalgebraic_options(std::string const& prefix)
         (prefixvm(prefix,"pseudo-transient-continuation.expur.beta-low").c_str(), Feel::po::value<double>()->default_value( 0.1 ), "pseudo-transient-continuation parameter : beta-low")
 
         (prefixvm(prefix,"solver.picard.relaxation-parameter").c_str(), Feel::po::value<double>()->default_value( 1.0 ), "solver.picard.relaxation-parameter")
+
+        (prefixvm(prefix,"solver.nonlinear.apply-dof-elimination-on-initial-guess").c_str(), Feel::po::value<bool>()->default_value( /*false*/true ), "solver.nonlinear.apply-dof-elimination-on-initial-guess")
         ;
     return appliBaseOptions.add( modelbase_options(prefix ) ).add( on_options( prefix ) );//.add( backend_options( prefix ) );
 }
@@ -85,7 +91,6 @@ Feel::po::options_description modelnumerical_options(std::string const& prefix)
 {
     Feel::po::options_description appliBaseOptions("Application Base options");
     appliBaseOptions.add_options()
-        (prefixvm(prefix,"filename").c_str(), Feel::po::value<std::string>()->default_value( "" ), "json file describing model properties" )
         //(prefixvm(prefix,"mesh.filename").c_str(), Feel::po::value< std::string >(), "input mesh or geo file")
         (prefixvm(prefix,"geomap").c_str(), Feel::po::value< std::string >()->default_value("opt"), "geomap strategy : ho, opt ")
 
@@ -100,8 +105,7 @@ Feel::po::options_description modelnumerical_options(std::string const& prefix)
         .add( mesh_options( prefix ) )
         .add( gmsh_options( prefix ) )
         .add( modelalgebraic_options( prefix ))
-        .add( backend_options( prefix ) )
-        .add( ptree_options( prefix ) );
+        .add( backend_options( prefix ) );
 }
 
 Feel::po::options_description
@@ -712,10 +716,12 @@ mixedpoisson_options( std::string const& prefix )
 {
     po::options_description desc_options("mixedpoisson options");
     desc_options.add_options()
+        (prefixvm(prefix,"solver").c_str(), Feel::po::value< std::string >()->default_value( "Linear" ), "numeric solver : Linear, Picard")
         ( prefixvm( prefix, "tau_constant" ).c_str(), po::value<double>()->default_value( 1.0 ), "stabilization constant for hybrid methods" )
         ( prefixvm( prefix, "use-sc" ).c_str(), po::value<bool>()->default_value( true ), "use static condensation" )
-        ( prefixvm( prefix, "time-stepping").c_str(), Feel::po::value< std::string >()->default_value("BDF"), "time integration schema : BDF, Theta")
+        ( prefixvm( prefix, "time-stepping").c_str(), Feel::po::value< std::string >()->default_value("BDF"), "time integration schema : BDF, Theta, Newmark")
         ( prefixvm( prefix, "time-stepping.theta.value").c_str(), Feel::po::value< double >()->default_value(0.5), " Theta value")
+        ( prefixvm( prefix, "use-near-null-space").c_str(), Feel::po::value<bool>()->default_value(true), "attach near null space for elasticity")
         ;
     return desc_options.add( modelnumerical_options( prefix ) ).add( bdf_options( prefix ) ).add( ts_options( prefix ) ).add( backend_options( prefix+".sc" ) );
 }

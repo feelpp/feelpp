@@ -117,9 +117,9 @@
     },
     "BoundaryConditions":
     {
-        "temperature":
+        "heat":
         {
-            "Dirichlet":
+            "temperature":
             {
                 "dirichlet":
                 {
@@ -127,12 +127,12 @@
                     "expr":"300"
                 }
             },
-            "Robin":
+            "convective_heat_flux":
             {
                 "Gamma_2":
                 {
-                    "expr1":"hcoeff:hcoeff",// h coeff
-                    "expr2":"300"// temperature exterior
+                    "h":"hcoeff:hcoeff",// h coeff
+                    "Text":"300"// temperature exterior
                 }
             }
         }

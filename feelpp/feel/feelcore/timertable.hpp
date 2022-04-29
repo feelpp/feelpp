@@ -27,9 +27,6 @@
 #include <iomanip>
 #include <iostream>
 
-#include <boost/bind.hpp> 
-#include <boost/ref.hpp>
-
 #include <boost/accumulators/accumulators.hpp>
 #include <boost/accumulators/statistics/stats.hpp>
 #include <boost/accumulators/statistics/count.hpp>
@@ -141,7 +138,7 @@ public:
                                               boost::accumulators::tag::variance,
                                               boost::accumulators::tag::min,
                                               boost::accumulators::tag::max> > acc;
-                for_each(T.second.begin(), T.second.end(), boost::bind<void>(boost::ref(acc), _1));
+                for_each(T.second.begin(), T.second.end(), std::bind<void>(std::ref(acc), std::placeholders::_1));
                 double tot = boost::accumulators::sum(acc);
                 sortTotal[tot] = T.second;
                 os << std::setw( 2*T.second.level ) << " "
@@ -168,7 +165,7 @@ public:
                                               boost::accumulators::tag::variance,
                                               boost::accumulators::tag::min,
                                               boost::accumulators::tag::max> > acc;
-                for_each(T.second.begin(), T.second.end(), boost::bind<void>(boost::ref(acc), _1));
+                for_each(T.second.begin(), T.second.end(), std::bind<void>(std::ref(acc), std::placeholders::_1));
 
                 os << std::setw( 2*T.second.level ) << " "
                    << std::setw( M_max_len-2*T.second.level ) <<std::left << T.second.msg << " " 
@@ -211,7 +208,7 @@ public:
                                               boost::accumulators::tag::variance,
                                               boost::accumulators::tag::min,
                                               boost::accumulators::tag::max> > acc;
-                for_each(T.second.begin(), T.second.end(), boost::bind<void>(boost::ref(acc), _1));
+                for_each(T.second.begin(), T.second.end(), std::bind<void>(std::ref(acc), std::placeholders::_1));
                 double tot = boost::accumulators::sum(acc);
                 sortTotal[tot] = T.second;
                 os << std::setw( M_max_len ) << std::left       << "|" << T.first << " | " 
@@ -238,7 +235,7 @@ public:
                                               boost::accumulators::tag::variance,
                                               boost::accumulators::tag::min,
                                               boost::accumulators::tag::max> > acc;
-                for_each(T.second.begin(), T.second.end(), boost::bind<void>(boost::ref(acc), _1));
+                for_each(T.second.begin(), T.second.end(), std::bind<void>(std::ref(acc), std::placeholders::_1));
 
                 os << std::setw( M_max_len ) <<std::left << "|" << T.second.msg << " | " 
                    << std::setw(7) << std::right << boost::accumulators::count(acc) << " | "
@@ -277,7 +274,7 @@ private:
                                           boost::accumulators::tag::variance,
                                           boost::accumulators::tag::min,
                                           boost::accumulators::tag::max> > acc;
-            for_each(T.second.begin(), T.second.end(), boost::bind<void>(boost::ref(acc), _1));
+            for_each(T.second.begin(), T.second.end(), std::bind<void>(std::ref(acc), std::placeholders::_1));
             double tot = boost::accumulators::sum(acc);
             sortTotal[tot] = T.second;
 
@@ -299,7 +296,7 @@ private:
                                           boost::accumulators::tag::variance,
                                           boost::accumulators::tag::min,
                                           boost::accumulators::tag::max> > acc;
-            for_each(T.second.begin(), T.second.end(), boost::bind<void>(boost::ref(acc), _1));
+            for_each(T.second.begin(), T.second.end(), std::bind<void>(std::ref(acc), std::placeholders::_1));
 
             const std::string& prefix = T.second.instance_name;
             auto & jData = p[prefix];

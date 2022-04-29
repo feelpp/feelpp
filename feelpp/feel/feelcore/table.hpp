@@ -78,6 +78,8 @@ public :
     OutputText& operator<<( OutputText const& ot ) { this->push_back( ot ); return *this; }
 
     void setColor( Font::Color c ) { for ( auto & [s,opt] : M_data ) std::get<0>( opt ) = c; }
+
+    void applyMaxWidth( int maxWidth );
 private:
     std::vector<std::pair<std::string,std::tuple<Font::Color>> > M_data;
 };

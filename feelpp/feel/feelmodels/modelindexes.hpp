@@ -56,7 +56,7 @@ class FEELPP_EXPORT ModelIndexes : public std::map<std::string,std::string>
 
   private :
 
-    static std::vector<std::string> generateIndexFromString( std::string const& input );
+    static std::vector<std::string> generateIndex( nl::json const& input );
 
   private :
     int M_nextFreeIndex;

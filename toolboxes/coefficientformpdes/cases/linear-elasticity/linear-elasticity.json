@@ -4,13 +4,19 @@
     "Models":
     {
         "cfpdes":{
-            "equations":{
-                "name":"elas",
-                "unknown":
-                {
+            "equations":"elas"
+        },
+        "elas":{
+            "setup":{
+                "unknown":{
                     "basis":"Pchv1",
                     "name":"eta",
                     "symbol":"eta"
+                },
+                "coefficients":{
+                    "gamma":"{-lambda*(elas_grad_eta_00+elas_grad_eta_11) - 2*mu*elas_grad_eta_00,-mu*(elas_grad_eta_01+elas_grad_eta_10),-mu*(elas_grad_eta_10+elas_grad_eta_01),-lambda*(elas_grad_eta_00+elas_grad_eta_11) - 2*mu*elas_grad_eta_11}:lambda:mu:elas_div_eta:elas_grad_eta_00:elas_grad_eta_01:elas_grad_eta_10:elas_grad_eta_11",
+                    //"gamma":"{-1*elas_grad_eta_00,-1*elas_grad_eta_01,-1*elas_grad_eta_10,-1*elas_grad_eta_11}:elas_grad_eta_00:elas_grad_eta_01:elas_grad_eta_10:elas_grad_eta_11",
+                    "f": "{0.,-9.81}"
                 }
             }
         }
@@ -36,11 +42,7 @@
     {
         "Iron":
         {
-            "markers":"Omega",
-            "elas_c":0,
-            "elas_gamma":"{-lambda*(elas_grad_eta_00+elas_grad_eta_11) - 2*mu*elas_grad_eta_00,-mu*(elas_grad_eta_01+elas_grad_eta_10),-mu*(elas_grad_eta_10+elas_grad_eta_01),-lambda*(elas_grad_eta_00+elas_grad_eta_11) - 2*mu*elas_grad_eta_11}:lambda:mu:elas_div_eta:elas_grad_eta_00:elas_grad_eta_01:elas_grad_eta_10:elas_grad_eta_11",
-            //"elas_gamma":"{-1*elas_grad_eta_00,-1*elas_grad_eta_01,-1*elas_grad_eta_10,-1*elas_grad_eta_11}:elas_grad_eta_00:elas_grad_eta_01:elas_grad_eta_10:elas_grad_eta_11",
-            "elas_f": "{0.,-9.81}"
+            "markers":"Omega"
         }
     },
     "BoundaryConditions":

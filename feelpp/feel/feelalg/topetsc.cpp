@@ -46,33 +46,16 @@ toPETScPairPtr( Vector<T> & vec )
     // petsc vector
     VectorPetsc<T> * vec_petsc = dynamic_cast<VectorPetsc<T> *>( &vec );
     if ( vec_petsc )
-    {
         return std::make_pair(vec_petsc, vec_petscClone);
-    }
 
     VectorPetsc<T> * vec_petscUsed = nullptr;
     // ublas vector
-    typedef VectorUblas<T> vector_ublas_type;
-    typedef typename vector_ublas_type::range::type vector_ublas_range_type;
-    typedef typename vector_ublas_type::shallow_array_adaptor::type vector_ublas_extarray_type;
-    typedef typename vector_ublas_extarray_type::range::type vector_ublas_extarray_range_type;
-    vector_ublas_type * vec_ublas = dynamic_cast<vector_ublas_type *>( &vec );
-    vector_ublas_range_type * vec_ublasRange = dynamic_cast<vector_ublas_range_type *>( &vec );
-    vector_ublas_extarray_type * vec_ublasExtArray = dynamic_cast<vector_ublas_extarray_type *>( &vec );
-    vector_ublas_extarray_range_type * vec_ublasExtArrayRange = dynamic_cast<vector_ublas_extarray_range_type *>( &vec );
-    bool vecIsUblasVarients = vec_ublas || vec_ublasRange || vec_ublasExtArray || vec_ublasExtArrayRange;
-    if ( vecIsUblasVarients )
+    const VectorUblas<T> * vec_ublas = dynamic_cast<const VectorUblas<T> *>( &vec );
+    if( vec_ublas )
     {
-        if ( vec_ublas )
-            vec_petscClone = toPETScPtr( *vec_ublas );
-        else if ( vec_ublasRange )
-            vec_petscClone = toPETScPtr( *vec_ublasRange );
-        else if ( vec_ublasExtArray )
-            vec_petscClone = toPETScPtr( *vec_ublasExtArray );
-        else if ( vec_ublasExtArrayRange )
-            vec_petscClone = toPETScPtr( *vec_ublasExtArrayRange );
+        vec_petscClone = toPETScPtr( *vec_ublas );
         vec_petscUsed = &(*vec_petscClone);
-        return std::make_pair( vec_petscUsed,vec_petscClone );
+        return std::make_pair( vec_petscUsed, vec_petscClone );
     }
 
     return std::make_pair( vec_petscUsed,vec_petscClone );
@@ -97,27 +80,34 @@ toPETScPairPtr( Vector<T> const& vec, bool allowCopy )
 
     const VectorPetsc<T> * vec_petscUsed = nullptr;
     // ublas vector
-    typedef VectorUblas<T> vector_ublas_type;
-    typedef typename vector_ublas_type::range::type vector_ublas_range_type;
-    typedef typename vector_ublas_type::shallow_array_adaptor::type vector_ublas_extarray_type;
-    typedef typename vector_ublas_extarray_type::range::type vector_ublas_extarray_range_type;
-    const vector_ublas_type * vec_ublas = dynamic_cast<vector_ublas_type const*>( &vec );
-    const vector_ublas_range_type * vec_ublasRange = dynamic_cast<vector_ublas_range_type const*>( &vec );
-    const vector_ublas_extarray_type * vec_ublasExtArray = dynamic_cast<vector_ublas_extarray_type const*>( &vec );
-    const vector_ublas_extarray_range_type * vec_ublasExtArrayRange = dynamic_cast<vector_ublas_extarray_range_type const*>( &vec );
-    bool vecIsUblasVarients = vec_ublas || vec_ublasRange || vec_ublasExtArray || vec_ublasExtArrayRange;
-    if ( vecIsUblasVarients )
+    //typedef VectorUblas<T> vector_ublas_type;
+    //typedef typename vector_ublas_type::range::type vector_ublas_range_type;
+    //typedef typename vector_ublas_type::shallow_array_adaptor::type vector_ublas_extarray_type;
+    //typedef typename vector_ublas_extarray_type::range::type vector_ublas_extarray_range_type;
+    //const vector_ublas_type * vec_ublas = dynamic_cast<vector_ublas_type const*>( &vec );
+    //const vector_ublas_range_type * vec_ublasRange = dynamic_cast<vector_ublas_range_type const*>( &vec );
+    //const vector_ublas_extarray_type * vec_ublasExtArray = dynamic_cast<vector_ublas_extarray_type const*>( &vec );
+    //const vector_ublas_extarray_range_type * vec_ublasExtArrayRange = dynamic_cast<vector_ublas_extarray_range_type const*>( &vec );
+    //bool vecIsUblasVarients = vec_ublas || vec_ublasRange || vec_ublasExtArray || vec_ublasExtArrayRange;
+    //if ( vecIsUblasVarients )
+    //{
+        //if ( vec_ublas )
+            //vec_petscClone = toPETScPtr( *(const_cast<vector_ublas_type *>( vec_ublas ) ) );
+        //else if ( vec_ublasRange )
+            //vec_petscClone = toPETScPtr( *(const_cast<vector_ublas_range_type *>( vec_ublasRange ) ) );
+        //else if ( vec_ublasExtArray )
+            //vec_petscClone = toPETScPtr( *(const_cast<vector_ublas_extarray_type *>( vec_ublasExtArray ) ) );
+        //else if ( vec_ublasExtArrayRange )
+            //vec_petscClone = toPETScPtr( *(const_cast<vector_ublas_extarray_range_type *>( vec_ublasExtArrayRange ) ) );
+        //vec_petscUsed = &(*vec_petscClone);
+        //return std::make_pair( vec_petscUsed,vec_petscClone );
+    //}
+    const VectorUblas<T> * vec_ublas = dynamic_cast<const VectorUblas<T> *>( &vec );
+    if( vec_ublas )
     {
-        if ( vec_ublas )
-            vec_petscClone = toPETScPtr( *(const_cast<vector_ublas_type *>( vec_ublas ) ) );
-        else if ( vec_ublasRange )
-            vec_petscClone = toPETScPtr( *(const_cast<vector_ublas_range_type *>( vec_ublasRange ) ) );
-        else if ( vec_ublasExtArray )
-            vec_petscClone = toPETScPtr( *(const_cast<vector_ublas_extarray_type *>( vec_ublasExtArray ) ) );
-        else if ( vec_ublasExtArrayRange )
-            vec_petscClone = toPETScPtr( *(const_cast<vector_ublas_extarray_range_type *>( vec_ublasExtArrayRange ) ) );
+        vec_petscClone = toPETScPtr( *vec_ublas );
         vec_petscUsed = &(*vec_petscClone);
-        return std::make_pair( vec_petscUsed,vec_petscClone );
+        return std::make_pair( vec_petscUsed, vec_petscClone );
     }
     // create a new vector and copy values
     if ( allowCopy )

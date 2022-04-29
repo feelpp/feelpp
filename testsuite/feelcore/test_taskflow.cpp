@@ -30,14 +30,14 @@
 // Boost.Test
 
 #define BOOST_TEST_MODULE taskflow testsuite
+#include <fmt/core.h>
+#include <fmt/chrono.h>
 #include <feel/feelcore/testsuite.hpp>
 #include <feel/feelcore/environment.hpp>
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 #include <taskflow/taskflow.hpp>
 #include <taskflow/algorithm/reduce.hpp>
-#include <spdlog/spdlog.h>
-#include <spdlog/fmt/chrono.h>
 
 inline Feel::po::options_description
 makeOptions()

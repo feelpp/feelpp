@@ -28,9 +28,9 @@
     },
     "BoundaryConditions":
     {
-        "electric-potential":
+        "electric":
         {
-            "Dirichlet":
+            "electric_potential":
             {
                 "H1_V0":
                 {
