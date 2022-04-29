@@ -19,8 +19,8 @@
     {
         "omega":
         {
-            "cond":"0.38",
-            "k":"k:k"
+            "poisson_c":"k:k",
+            "poisson_f":"sigma*dif*dif*4/(Pi^2)/(x^2+y^2):x:y:dif:sigma"
             // "alpha":"3.35e-3",
             // "T0":"293",
             // "sigma0":"50",
@@ -31,15 +31,8 @@
     },
     "BoundaryConditions":
     {
-        "potential":
+        "poisson":
         {
-            "VolumicForces":
-            {
-                "omega":
-                {
-                    "expr":"sigma*dif*dif*4/(Pi^2)/(x^2+y^2):x:y:dif:sigma"
-                }
-            },
             "Robin":
             {
                 "R":
@@ -59,24 +52,7 @@
                     "expr":"0"
                 }		    
             }
-        },
-	    "Exact solution":
-	    {
-	        "p_exact":
-	        {
-		        "omega":
-		        {
-		            "expr":"(-(2*sigma*dif^2)/(Pi^2*k))*log(sqrt(x*x+y*y))^2 + (-(-(2*sigma*dif^2)/(Pi^2*k))*((2*k*2*log(1)-h*2*1*log(1)^2)+(2*k*1*log(2)+h*2*1*log(2)^2))/(k*(1+2)+h*2*1*log(2/1)))*log(sqrt(x*x+y*y)) + (1/(2*h*2*1)*(((2*k*2*log(1)-h*2*1*log(1)^2)-(2*k*1*log(2)+h*2*1*log(2)^2))*(-(2*sigma*dif^2)/(Pi^2*k)) + (k*(2-1) - h*2*1*log(2*1))*(-(-(2*sigma*dif^2)/(Pi^2*k))*((2*k*2*log(1)-h*2*1*log(1)^2)+(2*k*1*log(2)+h*2*1*log(2)^2))/(k*(1+2)+h*2*1*log(2/1))))+Tw):x:y:sigma:k:dif:h:Tw"
-		        }
-	        },
-	        "u_exact":
-	        {
-		        "omega":
-		        {
-		            "expr":"{-k*((-(2*sigma*dif^2)/(Pi^2*k))*x*log(x*x+y*y)/(x*x+y*y) + (-(-(2*sigma*dif^2)/(Pi^2*k))*((2*k*2*log(1)-h*2*1*log(1)^2)+(2*k*1*log(2)+h*2*1*log(2)^2))/(k*(1+2)+h*2*1*log(2/1)))*x/(x*x+y*y)) , -k*((-(2*sigma*dif^2)/(Pi^2*k))*y*log(x*x+y*y)/(x*x+y*y) + (-(-(2*sigma*dif^2)/(Pi^2*k))*((2*k*2*log(1)-h*2*1*log(1)^2)+(2*k*1*log(2)+h*2*1*log(2)^2))/(k*(1+2)+h*2*1*log(2/1)))*y/(x*x+y*y))}:x:y:sigma:k:dif:h"
-		        }
-	        }
-	    }
+        }
     },
     "PostProcess":
     {

@@ -20,28 +20,29 @@ namespace FeelModels
 
 namespace CoefficientFormPDE_detail
 {
-template<typename CoefficientFormPDEType,typename FieldType, typename SymbolsExprType>
+template<typename CoefficientFormPDEType, typename FieldType, typename SymbolsExprType>
 auto
-exprResidual( CoefficientFormPDEType const& cfpde, std::string const& matName, FieldType const& u, SymbolsExprType const& se, double timeSteppingScaling, bool timeSteppingEvaluateResidualWithoutTimeDerivative = false )
+exprResidual( CoefficientFormPDEType const& cfpde, std::shared_ptr<ModelPhysicCoefficientFormPDE<CoefficientFormPDEType::nDim>> physicCFPDEData, std::string const& matName,
+              FieldType const& u, SymbolsExprType const& se, double timeSteppingScaling, bool timeSteppingEvaluateResidualWithoutTimeDerivative = false )
 {
+    using Coefficient = typename CoefficientFormPDEType::Coefficient;
     static const uint16_type nDim = CoefficientFormPDEType::nDim;
     static constexpr bool unknown_is_scalar = CoefficientFormPDEType::unknown_is_scalar;
     static const uint16_type nOrderUnknown = CoefficientFormPDEType::nOrderUnknown;
 
-    bool hasConvectionTerm = cfpde.materialsProperties()->hasProperty( matName, cfpde.convectionCoefficientName() );
-    bool hasDiffusionTerm = cfpde.materialsProperties()->hasProperty( matName, cfpde.diffusionCoefficientName() );
-    bool hasReactionTerm = cfpde.materialsProperties()->hasProperty( matName, cfpde.reactionCoefficientName() );
-    bool hasSourceTerm = cfpde.materialsProperties()->hasProperty( matName, cfpde.sourceCoefficientName() );
+    bool hasConvectionTerm = physicCFPDEData->hasCoefficient( Coefficient::convection );
+    bool hasDiffusionTerm = physicCFPDEData->hasCoefficient( Coefficient::diffusion );
+    bool hasReactionTerm = physicCFPDEData->hasCoefficient( Coefficient::reaction );
+    bool hasSourceTerm = physicCFPDEData->hasCoefficient( Coefficient::source );
 
-    using expr_coeff_convection_type = std::decay_t<decltype( expr( cfpde.materialsProperties()->materialProperty( matName, cfpde.convectionCoefficientName() ).template expr<nDim,1>(), se ) )>;
-    using expr_coeff_reaction_type = std::decay_t<decltype( expr( cfpde.materialsProperties()->materialProperty( matName, cfpde.reactionCoefficientName() ).expr(), se ) )>;
-    using expr_coeff_diffusion_scalar_type = std::decay_t<decltype( expr( cfpde.materialsProperties()->materialProperty( matName, cfpde.diffusionCoefficientName() ).expr(), se ) )>;
-    using expr_coeff_diffusion_matrix_type = std::decay_t<decltype( expr( cfpde.materialsProperties()->materialProperty( matName, cfpde.diffusionCoefficientName() ).template expr<nDim,nDim>(), se ) )>;
-    using expr_coeff_first_time_derivative_type = std::decay_t<decltype( expr( cfpde.materialsProperties()->materialProperty( matName, cfpde.firstTimeDerivativeCoefficientName() ).expr(), se ) )>;
+    using expr_coeff_convection_type = std::decay_t<decltype( physicCFPDEData->template coefficientExpr<nDim,1>( Coefficient::convection, se ) )>;
+    using expr_coeff_reaction_type = std::decay_t<decltype( physicCFPDEData->template coefficientExpr<1,1>( Coefficient::reaction, se ) )>;
+    using expr_coeff_diffusion_scalar_type = std::decay_t<decltype( physicCFPDEData->template coefficientExpr<1,1>( Coefficient::diffusion, se ) )>;
+    using expr_coeff_diffusion_matrix_type = std::decay_t<decltype( physicCFPDEData->template coefficientExpr<nDim,nDim>( Coefficient::diffusion, se ) )>;
+    using expr_coeff_first_time_derivative_type = std::decay_t<decltype( physicCFPDEData->template coefficientExpr<1,1>( Coefficient::firstTimeDerivative, se ) )>;
     using expr_coeff_source_type = typename mpl::if_c<unknown_is_scalar,
-                                                      std::decay_t<decltype( expr( cfpde.materialsProperties()->materialProperty( matName, cfpde.sourceCoefficientName() ).expr(), se ) )>,
-        std::decay_t<decltype( expr( cfpde.materialsProperties()->materialProperty( matName, cfpde.sourceCoefficientName() ).template expr<nDim,1>(), se ) )> >::type;
-
+                                                      std::decay_t<decltype( physicCFPDEData->template coefficientExpr<1,1>( Coefficient::source, se ) )>,
+                                                      std::decay_t<decltype( physicCFPDEData->template coefficientExpr<nDim,1>( Coefficient::source, se ) )>  >::type;
 
     using expr_convection_residual_type = std::decay_t<decltype( timeSteppingScaling*(gradv(u)*expr_coeff_convection_type{}) )>;
     using expr_reaction_residual_type = std::decay_t<decltype( timeSteppingScaling*expr_coeff_reaction_type{}*idv(u) )>;
@@ -62,28 +63,26 @@ exprResidual( CoefficientFormPDEType const& cfpde, std::string const& matName, F
     // convection
     if ( hasConvectionTerm )
     {
-        auto const& coeff_beta = cfpde.materialsProperties()->materialProperty( matName, cfpde.convectionCoefficientName() );
-        auto const& coeff_beta_expr = expr( coeff_beta.template expr<nDim,1>(), se );
+        auto coeff_beta_expr = physicCFPDEData->template coefficientExpr<nDim,1>( Coefficient::convection, se );
         residual_full.expression().add( timeSteppingScaling*(gradv(u)*coeff_beta_expr) );
     }
 
     // reaction
     if ( hasReactionTerm )
     {
-        auto const& coeff_a = cfpde.materialsProperties()->materialProperty( matName, cfpde.reactionCoefficientName() );
-        auto const& coeff_a_expr = expr( coeff_a.expr(), se );
+        auto coeff_a_expr = physicCFPDEData->template coefficientExpr<1,1>( Coefficient::reaction, se );
         residual_full.expression().add( timeSteppingScaling*coeff_a_expr*idv(u) );
     }
 
     // diffusion
     if ( hasDiffusionTerm )
     {
-        auto const& coeff_c = cfpde.materialsProperties()->materialProperty( matName, cfpde.diffusionCoefficientName() );
+        auto const& coeff_c = physicCFPDEData->coefficient( Coefficient::diffusion );
         if ( coeff_c.template hasExpr<nDim,nDim>() )
         {
             if constexpr ( unknown_is_scalar )
             {
-                auto const& coeff_c_expr = expr( coeff_c.template expr<nDim,nDim>(), se );
+                auto coeff_c_expr = expr( coeff_c.template expr<nDim,nDim>(), se );
                 if constexpr ( nOrderUnknown > 1 )
                 {
                     residual_full.expression().add( -timeSteppingScaling*inner(coeff_c_expr,hessv(u)) );
@@ -98,7 +97,7 @@ exprResidual( CoefficientFormPDEType const& cfpde, std::string const& matName, F
         }
         else
         {
-            auto const& coeff_c_expr = expr( coeff_c.expr(), se );
+            auto coeff_c_expr = expr( coeff_c.expr(), se );
             if constexpr ( nOrderUnknown > 1 )
             {
                 residual_full.expression().add( -timeSteppingScaling*coeff_c_expr*laplacianv(u) );
@@ -115,17 +114,16 @@ exprResidual( CoefficientFormPDEType const& cfpde, std::string const& matName, F
     }
 
     // first time derivative
-    if ( !cfpde.isStationary() && !timeSteppingEvaluateResidualWithoutTimeDerivative && cfpde.materialsProperties()->hasProperty( matName, cfpde.firstTimeDerivativeCoefficientName() ) )
+    if ( !cfpde.isStationary() && !timeSteppingEvaluateResidualWithoutTimeDerivative && physicCFPDEData->hasCoefficient( Coefficient::firstTimeDerivative ) )
     {
-        auto const& coeff_d = cfpde.materialsProperties()->materialProperty( matName, cfpde.firstTimeDerivativeCoefficientName() );
-        auto coeff_d_expr = expr( coeff_d.expr(), se );
+        auto coeff_d_expr = physicCFPDEData->template coefficientExpr<1,1>( Coefficient::firstTimeDerivative, se );
         residual_full.expression().add( coeff_d_expr*(cfpde.timeStepBdfUnknown()->polyDerivCoefficient(0)*idv(u) - idv(cfpde.timeStepBdfUnknown()->polyDeriv()) ) );
     }
 
     // source
     if ( hasSourceTerm )
     {
-        auto const& coeff_f = cfpde.materialsProperties()->materialProperty( matName, cfpde.sourceCoefficientName() );
+        auto const& coeff_f = physicCFPDEData->coefficient( Coefficient::source );
         auto coeff_f_expr = hana::eval_if( hana::bool_c<unknown_is_scalar>,
                                            [&coeff_f,&se] { return expr( coeff_f.expr(), se ); },
                                            [&coeff_f,&se] { return expr( coeff_f.template expr<nDim,1>(), se ); } );
@@ -142,7 +140,9 @@ exprResidual( CoefficientFormPDEType const& cfpde, std::string const& matName, F
 template< typename ConvexType, typename BasisUnknownType>
 template <typename ModelContextType,typename RangeType>
 void
-CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDEStabilizationGLS( ModelAlgebraic::DataUpdateLinear & data, ModelContextType const& mctx, std::string const& matName, RangeType const& range ) const
+CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDEStabilizationGLS( ModelAlgebraic::DataUpdateLinear & data, ModelContextType const& mctx,
+                                                                                  std::shared_ptr<ModelPhysicCoefficientFormPDE<nDim>> physicCFPDEData,
+                                                                                  std::string const& matName, RangeType const& range ) const
 {
     sparse_matrix_ptrtype& A = data.matrix();
     vector_ptrtype& F = data.rhs();
@@ -162,20 +162,20 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDEStabilizationGLS
 
     auto const& se = mctx.symbolsExpr();
 
-    bool hasConvectionTerm = this->materialsProperties()->hasProperty( matName, this->convectionCoefficientName() );
-    bool hasDiffusionTerm = this->materialsProperties()->hasProperty( matName, this->diffusionCoefficientName() );
-    bool hasReactionTerm = this->materialsProperties()->hasProperty( matName, this->reactionCoefficientName() );
+    bool hasConvectionTerm = physicCFPDEData->hasCoefficient( Coefficient::convection );
+    bool hasDiffusionTerm = physicCFPDEData->hasCoefficient( Coefficient::diffusion );
+    bool hasReactionTerm = physicCFPDEData->hasCoefficient( Coefficient::reaction );
 
     int coeffNatureStabilization = ( this->stabilizationType() == "supg" )? 0 : (this->stabilizationType() == "gls")? 1 : -1;
 
-    using expr_coeff_convection_type = std::decay_t<decltype( expr( this->materialsProperties()->materialProperty( matName, this->convectionCoefficientName() ).template expr<nDim,1>(), se ) )>;
-    using expr_coeff_reaction_type = std::decay_t<decltype( expr( this->materialsProperties()->materialProperty( matName, this->reactionCoefficientName() ).expr(), se ) )>;
-    using expr_coeff_diffusion_scalar_type = std::decay_t<decltype( expr( this->materialsProperties()->materialProperty( matName, this->diffusionCoefficientName() ).expr(), se ) )>;
-    using expr_coeff_diffusion_matrix_type = std::decay_t<decltype( expr( this->materialsProperties()->materialProperty( matName, this->diffusionCoefficientName() ).template expr<nDim,nDim>(), se ) )>;
-    using expr_coeff_first_time_derivative_type = std::decay_t<decltype( expr( this->materialsProperties()->materialProperty( matName, this->firstTimeDerivativeCoefficientName() ).expr(), se ) )>;
+    using expr_coeff_convection_type = std::decay_t<decltype( physicCFPDEData->template coefficientExpr<nDim,1>( Coefficient::convection, se ) )>;
+    using expr_coeff_reaction_type = std::decay_t<decltype( physicCFPDEData->template coefficientExpr<1,1>( Coefficient::reaction, se ) )>;
+    using expr_coeff_diffusion_scalar_type = std::decay_t<decltype( physicCFPDEData->template coefficientExpr<1,1>( Coefficient::diffusion, se ) )>;
+    using expr_coeff_diffusion_matrix_type = std::decay_t<decltype( physicCFPDEData->template coefficientExpr<nDim,nDim>( Coefficient::diffusion, se ) )>;
+    using expr_coeff_first_time_derivative_type = std::decay_t<decltype( physicCFPDEData->template coefficientExpr<1,1>( Coefficient::firstTimeDerivative, se ) )>;
     using expr_coeff_source_type = typename mpl::if_c<unknown_is_scalar,
-                                                      std::decay_t<decltype( expr( this->materialsProperties()->materialProperty( matName, this->sourceCoefficientName() ).expr(), se ) )>,
-        std::decay_t<decltype( expr( this->materialsProperties()->materialProperty( matName, this->sourceCoefficientName() ).template expr<nDim,1>(), se ) )>  >::type;
+                                                      std::decay_t<decltype( physicCFPDEData->template coefficientExpr<1,1>( Coefficient::source, se ) )>,
+                                                      std::decay_t<decltype( physicCFPDEData->template coefficientExpr<nDim,1>( Coefficient::source, se ) )>  >::type;
 
     // residual lhs
     using expr_convection_residual_lhs_type = std::decay_t<decltype( timeSteppingScaling*(gradt(u)*expr_coeff_convection_type{}) )>;
@@ -195,7 +195,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDEStabilizationGLS
     // residual rhs
     using expr_first_time_derivative_residual_rhs_type = std::decay_t<decltype( expr_coeff_first_time_derivative_type{}*idv(M_bdfUnknown->polyDeriv()) )>;
     using expr_source_residual_rhs_type = std::decay_t<decltype( timeSteppingScaling*expr_coeff_source_type{} )>;
-    using expr_previous_residual_type = std::decay_t<decltype( -CoefficientFormPDE_detail::exprResidual( *this,matName,u,se,1.0-timeSteppingScaling,true ) )>;
+    using expr_previous_residual_type = std::decay_t<decltype( -CoefficientFormPDE_detail::exprResidual( *this,physicCFPDEData,matName,u,se,1.0-timeSteppingScaling,true ) )>;
     auto residual_rhs = exprOptionalConcat<expr_first_time_derivative_residual_rhs_type,expr_source_residual_rhs_type,expr_previous_residual_type>();
     // test functions
     using expr_convection_test_type = std::decay_t<decltype( grad(u)*expr_coeff_convection_type{} )>;
@@ -224,8 +224,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDEStabilizationGLS
     // convection
     if ( hasConvectionTerm )
     {
-        auto const& coeff_beta = this->materialsProperties()->materialProperty( matName, this->convectionCoefficientName() );
-        auto const& coeff_beta_expr = expr( coeff_beta.template expr<nDim,1>(), se );
+        auto coeff_beta_expr = physicCFPDEData->template coefficientExpr<nDim,1>( Coefficient::convection, se );
         residual_lhs.expression().add( timeSteppingScaling*(gradt(u)*coeff_beta_expr) );
         stab_test.expression().add( grad(u)*coeff_beta_expr );
 #if 0
@@ -239,8 +238,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDEStabilizationGLS
     // reaction
     if ( hasReactionTerm )
     {
-        auto const& coeff_a = this->materialsProperties()->materialProperty( matName, this->reactionCoefficientName() );
-        auto const& coeff_a_expr = expr( coeff_a.expr(), se );
+        auto coeff_a_expr = physicCFPDEData->template coefficientExpr<1,1>( Coefficient::reaction, se );
         residual_lhs.expression().add( timeSteppingScaling*coeff_a_expr*idt(u) );
         if ( coeffNatureStabilization != 0 )
             stab_test.expression().add( coeffNatureStabilization*coeff_a_expr*id(u) );
@@ -251,12 +249,12 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDEStabilizationGLS
     // diffusion
     if ( hasDiffusionTerm )
     {
-        auto const& coeff_c = this->materialsProperties()->materialProperty( matName, this->diffusionCoefficientName() );
+        auto const& coeff_c = physicCFPDEData->coefficient( Coefficient::diffusion );
         if ( coeff_c.template hasExpr<nDim,nDim>() )
         {
             if constexpr ( unknown_is_scalar )
             {
-                auto const& coeff_c_expr = expr( coeff_c.template expr<nDim,nDim>(), se );
+                auto coeff_c_expr = expr( coeff_c.template expr<nDim,nDim>(), se );
                 if constexpr ( nOrderUnknown > 1 )
                 {
                     residual_lhs.expression().add( -timeSteppingScaling*inner(coeff_c_expr,hesst(u)) );
@@ -274,7 +272,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDEStabilizationGLS
         }
         else
         {
-            auto const& coeff_c_expr = expr( coeff_c.expr(), se );
+            auto coeff_c_expr = expr( coeff_c.expr(), se );
             if constexpr ( nOrderUnknown > 1 )
             {
                 residual_lhs.expression().add( -timeSteppingScaling*coeff_c_expr*laplaciant(u) );
@@ -301,9 +299,9 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDEStabilizationGLS
     }
 
     // Source
-    if ( this->materialsProperties()->hasProperty( matName, this->sourceCoefficientName() ) )
+    if ( physicCFPDEData->hasCoefficient( Coefficient::source ) )
     {
-        auto const& coeff_f = this->materialsProperties()->materialProperty( matName, this->sourceCoefficientName() );
+        auto const& coeff_f = physicCFPDEData->coefficient( Coefficient::source );
         auto coeff_f_expr = hana::eval_if( hana::bool_c<unknown_is_scalar>,
                                            [&coeff_f,&se] { return expr( coeff_f.expr(), se ); },
                                            [&coeff_f,&se] { return expr( coeff_f.template expr<nDim,1>(), se ); } );
@@ -312,10 +310,9 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDEStabilizationGLS
     }
 
     // first time derivative
-    if ( !this->isStationary() && this->materialsProperties()->hasProperty( matName, this->firstTimeDerivativeCoefficientName() ) )
+    if ( !this->isStationary() && physicCFPDEData->hasCoefficient( Coefficient::firstTimeDerivative ) )
     {
-        auto const& coeff_d = this->materialsProperties()->materialProperty( matName, this->firstTimeDerivativeCoefficientName() );
-        auto coeff_d_expr = expr( coeff_d.expr(), se );
+        auto coeff_d_expr = physicCFPDEData->template coefficientExpr<1,1>( Coefficient::firstTimeDerivative, se );
         residual_lhs.expression().add( coeff_d_expr*M_bdfUnknown->polyDerivCoefficient(0)*idt(u) );
         residual_rhs.expression().add( coeff_d_expr*idv(M_bdfUnknown->polyDeriv()) );
     }
@@ -325,7 +322,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDEStabilizationGLS
         auto const& mctxPrevious = mctx.additionalContext( "time-stepping.previous-model-context" );
         auto const& uPrevious = mctxPrevious.field( FieldTag::unknown(this), this->unknownName() );
         auto const& sePrevious = mctxPrevious.symbolsExpr();
-        auto previousResidualExpr = CoefficientFormPDE_detail::exprResidual( *this,matName,uPrevious,sePrevious,1.0-timeSteppingScaling,true );
+        auto previousResidualExpr = CoefficientFormPDE_detail::exprResidual( *this,physicCFPDEData,matName,uPrevious,sePrevious,1.0-timeSteppingScaling,true );
         if ( data.hasParameterValuesInfo( "time-stepping.previous-parameter-values" ) )
             previousResidualExpr.setParameterValues( data.parameterValuesInfo( "time-stepping.previous-parameter-values" ) );
         residual_rhs.expression().add( -previousResidualExpr );
@@ -376,7 +373,9 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDEStabilizationGLS
 template< typename ConvexType, typename BasisUnknownType>
 template <typename ModelContextType,typename RangeType>
 void
-CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobianStabilizationGLS( ModelAlgebraic::DataUpdateJacobian & data, ModelContextType const& mctx, std::string const& matName, RangeType const& range ) const
+CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobianStabilizationGLS( ModelAlgebraic::DataUpdateJacobian & data, ModelContextType const& mctx,
+                                                                                 std::shared_ptr<ModelPhysicCoefficientFormPDE<nDim>> physicCFPDEData,
+                                                                                 std::string const& matName, RangeType const& range ) const
 {
     sparse_matrix_ptrtype& J = data.jacobian();
 
@@ -390,21 +389,21 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobianStabilizationGLS(
     auto const& u = mctx.field( FieldTag::unknown(this), this->unknownName() );
     auto const& v = this->fieldUnknown();
 
-    bool hasConvectionTerm = this->materialsProperties()->hasProperty( matName, this->convectionCoefficientName() );
-    bool hasDiffusionTerm = this->materialsProperties()->hasProperty( matName, this->diffusionCoefficientName() );
-    bool hasReactionTerm = this->materialsProperties()->hasProperty( matName, this->reactionCoefficientName() );
-    bool hasSourceTerm = this->materialsProperties()->hasProperty( matName, this->sourceCoefficientName() );
+    bool hasConvectionTerm = physicCFPDEData->hasCoefficient( Coefficient::convection );
+    bool hasDiffusionTerm = physicCFPDEData->hasCoefficient( Coefficient::diffusion );
+    bool hasReactionTerm = physicCFPDEData->hasCoefficient( Coefficient::reaction );
+    bool hasSourceTerm = physicCFPDEData->hasCoefficient( Coefficient::source );
 
     int coeffNatureStabilization = ( this->stabilizationType() == "supg" )? 0 : (this->stabilizationType() == "gls")? 1 : -1;
 
-    using expr_coeff_convection_type = std::decay_t<decltype( expr( this->materialsProperties()->materialProperty( matName, this->convectionCoefficientName() ).template expr<nDim,1>(), se ) )>;
-    using expr_coeff_reaction_type = std::decay_t<decltype( expr( this->materialsProperties()->materialProperty( matName, this->reactionCoefficientName() ).expr(), se ) )>;
-    using expr_coeff_diffusion_scalar_type = std::decay_t<decltype( expr( this->materialsProperties()->materialProperty( matName, this->diffusionCoefficientName() ).expr(), se ) )>;
-    using expr_coeff_diffusion_matrix_type = std::decay_t<decltype( expr( this->materialsProperties()->materialProperty( matName, this->diffusionCoefficientName() ).template expr<nDim,nDim>(), se ) )>;
-    using expr_coeff_first_time_derivative_type = std::decay_t<decltype( expr( this->materialsProperties()->materialProperty( matName, this->firstTimeDerivativeCoefficientName() ).expr(), se ) )>;
+    using expr_coeff_convection_type = std::decay_t<decltype( physicCFPDEData->template coefficientExpr<nDim,1>( Coefficient::convection, se ) )>;
+    using expr_coeff_reaction_type = std::decay_t<decltype( physicCFPDEData->template coefficientExpr<1,1>( Coefficient::reaction, se ) )>;
+    using expr_coeff_diffusion_scalar_type = std::decay_t<decltype( physicCFPDEData->template coefficientExpr<1,1>( Coefficient::diffusion, se ) )>;
+    using expr_coeff_diffusion_matrix_type = std::decay_t<decltype( physicCFPDEData->template coefficientExpr<nDim,nDim>( Coefficient::diffusion, se ) )>;
+    using expr_coeff_first_time_derivative_type = std::decay_t<decltype( physicCFPDEData->template coefficientExpr<1,1>( Coefficient::firstTimeDerivative, se ) )>;
     using expr_coeff_source_type = typename mpl::if_c<unknown_is_scalar,
-                                                      std::decay_t<decltype( expr( this->materialsProperties()->materialProperty( matName, this->sourceCoefficientName() ).expr(), se ) )>,
-        std::decay_t<decltype( expr( this->materialsProperties()->materialProperty( matName, this->sourceCoefficientName() ).template expr<nDim,1>(), se ) )>  >::type;
+                                                      std::decay_t<decltype( physicCFPDEData->template coefficientExpr<1,1>( Coefficient::source, se ) )>,
+                                                      std::decay_t<decltype( physicCFPDEData->template coefficientExpr<nDim,1>( Coefficient::source, se ) )>  >::type;
 
 
     using expr_convection_residual_lhs_type = std::decay_t<decltype( timeSteppingScaling*(gradt(u)*expr_coeff_convection_type{}) )>;
@@ -455,8 +454,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobianStabilizationGLS(
     // convection
     if ( hasConvectionTerm )
     {
-        auto const& coeff_beta = this->materialsProperties()->materialProperty( matName, this->convectionCoefficientName() );
-        auto const& coeff_beta_expr = expr( coeff_beta.template expr<nDim,1>(), se );
+        auto coeff_beta_expr = physicCFPDEData->template coefficientExpr<nDim,1>( Coefficient::convection, se );
         residual_lhs.expression().add( timeSteppingScaling*(gradt(u)*coeff_beta_expr) );
         if ( useShockCapturing )
             residual_eval.expression().add( timeSteppingScaling*(gradv(u)*coeff_beta_expr) );
@@ -468,8 +466,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobianStabilizationGLS(
     // reaction
     if ( hasReactionTerm )
     {
-        auto const& coeff_a = this->materialsProperties()->materialProperty( matName, this->reactionCoefficientName() );
-        auto const& coeff_a_expr = expr( coeff_a.expr(), se );
+        auto coeff_a_expr = physicCFPDEData->template coefficientExpr<1,1>( Coefficient::reaction, se );
         residual_lhs.expression().add( timeSteppingScaling*coeff_a_expr*idt(u) );
         if ( useShockCapturing )
             residual_eval.expression().add( timeSteppingScaling*coeff_a_expr*idv(u) );
@@ -482,7 +479,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobianStabilizationGLS(
     // diffusion
     if ( hasDiffusionTerm )
     {
-        auto const& coeff_c = this->materialsProperties()->materialProperty( matName, this->diffusionCoefficientName() );
+        auto const& coeff_c = physicCFPDEData->coefficient( Coefficient::diffusion );
         if ( coeff_c.template hasExpr<nDim,nDim>() )
         {
             if constexpr ( unknown_is_scalar )
@@ -537,10 +534,9 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobianStabilizationGLS(
     }
 
     // first time derivative
-    if ( !this->isStationary() && this->materialsProperties()->hasProperty( matName, this->firstTimeDerivativeCoefficientName() ) )
+    if ( !this->isStationary() && physicCFPDEData->hasCoefficient( Coefficient::firstTimeDerivative ) )
     {
-        auto const& coeff_d = this->materialsProperties()->materialProperty( matName, this->firstTimeDerivativeCoefficientName() );
-        auto coeff_d_expr = expr( coeff_d.expr(), se );
+        auto coeff_d_expr = physicCFPDEData->template coefficientExpr<1,1>( Coefficient::firstTimeDerivative, se );
         residual_lhs.expression().add( coeff_d_expr*M_bdfUnknown->polyDerivCoefficient(0)*idt(u) );
         if ( useShockCapturing )
             residual_eval.expression().add( coeff_d_expr*(M_bdfUnknown->polyDerivCoefficient(0)*idv(u) - idv(M_bdfUnknown->polyDeriv()) ) );
@@ -550,7 +546,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobianStabilizationGLS(
     // source
     if ( hasSourceTerm )
     {
-        auto const& coeff_f = this->materialsProperties()->materialProperty( matName, this->sourceCoefficientName() );
+        auto const& coeff_f = physicCFPDEData->coefficient( Coefficient::source );
         auto coeff_f_expr = hana::eval_if( hana::bool_c<unknown_is_scalar>,
                                            [&coeff_f,&se] { return expr( coeff_f.expr(), se ); },
                                            [&coeff_f,&se] { return expr( coeff_f.template expr<nDim,1>(), se ); } );
@@ -581,8 +577,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobianStabilizationGLS(
 
     if ( useShockCapturing )
     {
-        auto const& coeff_beta = this->materialsProperties()->materialProperty( matName, this->convectionCoefficientName() );
-        auto const& coeff_beta_expr = expr( coeff_beta.template expr<nDim,1>(), se );
+        auto coeff_beta_expr = physicCFPDEData->template coefficientExpr<nDim,1>( Coefficient::convection, se );
         if constexpr ( unknown_is_scalar )
         {
             // auto tau_sc_FieldPtr = this->stabilizationGLSParameter()->fieldTauPtr()->functionSpace()->elementPtr();
@@ -604,7 +599,9 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobianStabilizationGLS(
 template< typename ConvexType, typename BasisUnknownType>
 template <typename ModelContextType,typename RangeType>
 void
-CoefficientFormPDE<ConvexType,BasisUnknownType>::updateResidualStabilizationGLS( ModelAlgebraic::DataUpdateResidual & data, ModelContextType const& mctx, std::string const& matName, RangeType const& range ) const
+CoefficientFormPDE<ConvexType,BasisUnknownType>::updateResidualStabilizationGLS( ModelAlgebraic::DataUpdateResidual & data, ModelContextType const& mctx,
+                                                                                 std::shared_ptr<ModelPhysicCoefficientFormPDE<nDim>> physicCFPDEData,
+                                                                                 std::string const& matName, RangeType const& range ) const
 {
     vector_ptrtype& R = data.residual();
 
@@ -622,22 +619,21 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateResidualStabilizationGLS(
     auto const& u = mctx.field( FieldTag::unknown(this), this->unknownName() );
     auto const& v = this->fieldUnknown();
 
-    bool hasConvectionTerm = this->materialsProperties()->hasProperty( matName, this->convectionCoefficientName() );
-    bool hasDiffusionTerm = this->materialsProperties()->hasProperty( matName, this->diffusionCoefficientName() );
-    bool hasReactionTerm = this->materialsProperties()->hasProperty( matName, this->reactionCoefficientName() );
-    bool hasSourceTerm = this->materialsProperties()->hasProperty( matName, this->sourceCoefficientName() );
+    bool hasConvectionTerm = physicCFPDEData->hasCoefficient( Coefficient::convection );
+    bool hasDiffusionTerm = physicCFPDEData->hasCoefficient( Coefficient::diffusion );
+    bool hasReactionTerm = physicCFPDEData->hasCoefficient( Coefficient::reaction );
+    bool hasSourceTerm = physicCFPDEData->hasCoefficient( Coefficient::source );
 
     int coeffNatureStabilization = ( this->stabilizationType() == "supg" )? 0 : (this->stabilizationType() == "gls")? 1 : -1;
 
-    using expr_coeff_convection_type = std::decay_t<decltype( expr( this->materialsProperties()->materialProperty( matName, this->convectionCoefficientName() ).template expr<nDim,1>(), se ) )>;
-    using expr_coeff_reaction_type = std::decay_t<decltype( expr( this->materialsProperties()->materialProperty( matName, this->reactionCoefficientName() ).expr(), se ) )>;
-    using expr_coeff_diffusion_scalar_type = std::decay_t<decltype( expr( this->materialsProperties()->materialProperty( matName, this->diffusionCoefficientName() ).expr(), se ) )>;
-    using expr_coeff_diffusion_matrix_type = std::decay_t<decltype( expr( this->materialsProperties()->materialProperty( matName, this->diffusionCoefficientName() ).template expr<nDim,nDim>(), se ) )>;
-    using expr_coeff_first_time_derivative_type = std::decay_t<decltype( expr( this->materialsProperties()->materialProperty( matName, this->firstTimeDerivativeCoefficientName() ).expr(), se ) )>;
+    using expr_coeff_convection_type = std::decay_t<decltype( physicCFPDEData->template coefficientExpr<nDim,1>( Coefficient::convection, se ) )>;
+    using expr_coeff_reaction_type = std::decay_t<decltype( physicCFPDEData->template coefficientExpr<1,1>( Coefficient::reaction, se ) )>;
+    using expr_coeff_diffusion_scalar_type = std::decay_t<decltype( physicCFPDEData->template coefficientExpr<1,1>( Coefficient::diffusion, se ) )>;
+    using expr_coeff_diffusion_matrix_type = std::decay_t<decltype( physicCFPDEData->template coefficientExpr<nDim,nDim>( Coefficient::diffusion, se ) )>;
+    using expr_coeff_first_time_derivative_type = std::decay_t<decltype( physicCFPDEData->template coefficientExpr<1,1>( Coefficient::firstTimeDerivative, se ) )>;
     using expr_coeff_source_type = typename mpl::if_c<unknown_is_scalar,
-                                                      std::decay_t<decltype( expr( this->materialsProperties()->materialProperty( matName, this->sourceCoefficientName() ).expr(), se ) )>,
-        std::decay_t<decltype( expr( this->materialsProperties()->materialProperty( matName, this->sourceCoefficientName() ).template expr<nDim,1>(), se ) )> >::type;
-
+                                                      std::decay_t<decltype( physicCFPDEData->template coefficientExpr<1,1>( Coefficient::source, se ) )>,
+                                                      std::decay_t<decltype( physicCFPDEData->template coefficientExpr<nDim,1>( Coefficient::source, se ) )>  >::type;
 
     using expr_convection_residual_type = std::decay_t<decltype( timeSteppingScaling*(gradv(u)*expr_coeff_convection_type{}) )>;
     using expr_reaction_residual_type = std::decay_t<decltype( timeSteppingScaling*expr_coeff_reaction_type{}*idv(u) )>;
@@ -650,7 +646,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateResidualStabilizationGLS(
                                                                    std::decay_t<decltype( cst(0.) )> >::type;
     using expr_first_time_derivative_residual_type = std::decay_t<decltype( expr_coeff_first_time_derivative_type{}*(M_bdfUnknown->polyDerivCoefficient(0)*idv(u) - idv(M_bdfUnknown->polyDeriv()) ) )>;
     using expr_source_residual_type = std::decay_t<decltype( -timeSteppingScaling*expr_coeff_source_type{} )>;
-    using expr_previous_residual_type = std::decay_t<decltype( CoefficientFormPDE_detail::exprResidual( *this,matName,u,se,1.0-timeSteppingScaling,true ) )>;
+    using expr_previous_residual_type = std::decay_t<decltype( CoefficientFormPDE_detail::exprResidual( *this,physicCFPDEData,matName,u,se,1.0-timeSteppingScaling,true ) )>;
     auto residual_full = exprOptionalConcat<expr_convection_residual_type,expr_reaction_residual_type,
                                             expr_diffusion_scalar_residual_type,expr_diffusion_part2_scalar_residual_type,
                                             expr_diffusion_matrix_residual_type,
@@ -671,8 +667,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateResidualStabilizationGLS(
     // convection
     if ( hasConvectionTerm )
     {
-        auto const& coeff_beta = this->materialsProperties()->materialProperty( matName, this->convectionCoefficientName() );
-        auto const& coeff_beta_expr = expr( coeff_beta.template expr<nDim,1>(), se );
+        auto coeff_beta_expr = physicCFPDEData->template coefficientExpr<nDim,1>( Coefficient::convection, se );
         residual_full.expression().add( timeSteppingScaling*(gradv(u)*coeff_beta_expr) );
         stab_test.expression().add( grad(u)*coeff_beta_expr );
         tauExprScalarDiffusion.expression().setConvection( coeff_beta_expr );
@@ -682,8 +677,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateResidualStabilizationGLS(
     // reaction
     if ( hasReactionTerm )
     {
-        auto const& coeff_a = this->materialsProperties()->materialProperty( matName, this->reactionCoefficientName() );
-        auto const& coeff_a_expr = expr( coeff_a.expr(), se );
+        auto coeff_a_expr = physicCFPDEData->template coefficientExpr<1,1>( Coefficient::reaction, se );
         residual_full.expression().add( timeSteppingScaling*coeff_a_expr*idv(u) );
         if ( coeffNatureStabilization != 0 )
             stab_test.expression().add( coeffNatureStabilization*coeff_a_expr*id(u) );
@@ -694,7 +688,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateResidualStabilizationGLS(
     // diffusion
     if ( hasDiffusionTerm )
     {
-        auto const& coeff_c = this->materialsProperties()->materialProperty( matName, this->diffusionCoefficientName() );
+        auto const& coeff_c = physicCFPDEData->coefficient( Coefficient::diffusion );
         if ( coeff_c.template hasExpr<nDim,nDim>() )
         {
             if constexpr ( unknown_is_scalar )
@@ -738,17 +732,16 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateResidualStabilizationGLS(
     }
 
     // first time derivative
-    if ( !this->isStationary() && !timeSteppingEvaluateResidualWithoutTimeDerivative && this->materialsProperties()->hasProperty( matName, this->firstTimeDerivativeCoefficientName() ) )
+    if ( !this->isStationary() && !timeSteppingEvaluateResidualWithoutTimeDerivative && physicCFPDEData->hasCoefficient( Coefficient::firstTimeDerivative ) )
     {
-        auto const& coeff_d = this->materialsProperties()->materialProperty( matName, this->firstTimeDerivativeCoefficientName() );
-        auto coeff_d_expr = expr( coeff_d.expr(), se );
+        auto coeff_d_expr = physicCFPDEData->template coefficientExpr<1,1>( Coefficient::firstTimeDerivative, se );
         residual_full.expression().add( coeff_d_expr*(M_bdfUnknown->polyDerivCoefficient(0)*idv(u) - idv(M_bdfUnknown->polyDeriv()) ) );
     }
 
     // source
     if ( hasSourceTerm )
     {
-        auto const& coeff_f = this->materialsProperties()->materialProperty( matName, this->sourceCoefficientName() );
+        auto const& coeff_f = physicCFPDEData->coefficient( Coefficient::source );
         auto coeff_f_expr = hana::eval_if( hana::bool_c<unknown_is_scalar>,
                                            [&coeff_f,&se] { return expr( coeff_f.expr(), se ); },
                                            [&coeff_f,&se] { return expr( coeff_f.template expr<nDim,1>(), se ); } );
@@ -760,7 +753,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateResidualStabilizationGLS(
         auto const& mctxPrevious = mctx.additionalContext( "time-stepping.previous-model-context" );
         auto const& uPrevious = mctxPrevious.field( FieldTag::unknown(this), this->unknownName() );
         auto const& sePrevious = mctxPrevious.symbolsExpr();
-        auto previousResidualExpr = CoefficientFormPDE_detail::exprResidual( *this,matName,uPrevious,sePrevious,1.0-timeSteppingScaling,true );
+        auto previousResidualExpr = CoefficientFormPDE_detail::exprResidual( *this,physicCFPDEData,matName,uPrevious,sePrevious,1.0-timeSteppingScaling,true );
         if ( data.hasParameterValuesInfo( "time-stepping.previous-parameter-values" ) )
             previousResidualExpr.setParameterValues( data.parameterValuesInfo( "time-stepping.previous-parameter-values" ) );
         residual_full.expression().add( previousResidualExpr );
@@ -789,8 +782,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateResidualStabilizationGLS(
 
     if ( this->M_stabilizationGLS_applyShockCapturing && hasConvectionTerm )
     {
-        auto const& coeff_beta = this->materialsProperties()->materialProperty( matName, this->convectionCoefficientName() );
-        auto const& coeff_beta_expr = expr( coeff_beta.template expr<nDim,1>(), se );
+        auto coeff_beta_expr = physicCFPDEData->template coefficientExpr<nDim,1>( Coefficient::convection, se );
         if constexpr ( unknown_is_scalar )
         {
             // auto tau_sc_FieldPtr = this->stabilizationGLSParameter()->fieldTauPtr()->functionSpace()->elementPtr();

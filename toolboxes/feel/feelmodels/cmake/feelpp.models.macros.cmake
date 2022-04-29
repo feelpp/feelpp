@@ -1,3 +1,39 @@
+macro(feelpp_toolboxes_add_library)
+  PARSE_ARGUMENTS(FEELPP_TOOLBOXES_ADD_LIB
+    "SRCS;LINK_LIBRARIES;DEPS"
+    ""
+    ${ARGN}
+    )
+
+  CAR(FEELPP_TOOLBOXES_LIB_BASE_NAME ${FEELPP_TOOLBOXES_ADD_LIB_DEFAULT_ARGS})
+  set(FEELPP_TOOLBOXES_TARGET_NAME feelpp_toolbox_${FEELPP_TOOLBOXES_LIB_BASE_NAME})
+  add_library(
+    ${FEELPP_TOOLBOXES_TARGET_NAME} SHARED ${FEELPP_TOOLBOXES_ADD_LIB_SRCS}
+   )
+  target_link_libraries(${FEELPP_TOOLBOXES_TARGET_NAME} PUBLIC ${FEELPP_TOOLBOXES_ADD_LIB_LINK_LIBRARIES} )
+  add_library(Feelpp::${FEELPP_TOOLBOXES_TARGET_NAME} ALIAS ${FEELPP_TOOLBOXES_TARGET_NAME} )  # to match exported target
+  set_target_properties(${FEELPP_TOOLBOXES_TARGET_NAME} PROPERTIES OUTPUT_NAME "${FEELPP_TOOLBOXES_TARGET_NAME}")
+  target_include_directories(${FEELPP_TOOLBOXES_TARGET_NAME} PUBLIC
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:include/feelpp/toolboxes>  )
+  set_property(TARGET ${FEELPP_TOOLBOXES_TARGET_NAME} PROPERTY MACOSX_RPATH ON)
+  if ( FEELPP_TOOLBOXES_ADD_LIB_DEPS )
+    add_dependencies(${FEELPP_TOOLBOXES_TARGET_NAME} ${FEELPP_TOOLBOXES_ADD_LIB_DEPS})
+  endif()
+  if( FEELPP_ENABLE_PCH_MODELS )
+    add_precompiled_header( ${FEELPP_TOOLBOXES_TARGET_NAME} )
+  endif()
+  #include(GNUInstallDirs)
+  set_target_properties(${FEELPP_TOOLBOXES_TARGET_NAME} PROPERTIES VERSION ${FEELPP_TOOLBOXES_SHARED_VERSION} SOVERSION ${FEELPP_TOOLBOXES_SHARED_SOVERSION})
+  install(TARGETS ${FEELPP_TOOLBOXES_TARGET_NAME} EXPORT feelpp-toolboxes-targets
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    )
+
+endmacro(feelpp_toolboxes_add_library)
+
 #############################################################################
 # create generic simple lib
 #############################################################################
@@ -42,6 +78,7 @@ macro(genLibBase)
       ${filepath} ${FEELMODELS_GENLIB_APPLICATION_DIR}/${filename} )
   endforeach()
 
+  
    # message (CODEGEN_SOURCES   :    ${CODEGEN_SOURCES})
    # message( CODEGEN_FILES_TO_COPY  ${CODEGEN_FILES_TO_COPY})
   # generate library
@@ -108,7 +145,7 @@ macro( genLibHeat )
       ${HEAT_LIB_DIR}/heatassemblyjacobian_inst.cpp
       ${HEAT_LIB_DIR}/heatassemblyresidual_inst.cpp
       )
-    set(HEAT_LIB_DEPENDS feelpp_modelmesh feelpp_modelcore  ) 
+    set(HEAT_LIB_DEPENDS feelpp_modelmesh feelpp_modelcore feelpp_toolbox_heatbase ) 
     # generate the lib target
     genLibBase(
       LIB_NAME ${HEAT_LIB_NAME}
@@ -160,7 +197,7 @@ macro( genLibElectric )
       ${ELECTRIC_LIB_DIR}/electricassemblyjacobian_inst.cpp
       ${ELECTRIC_LIB_DIR}/electricassemblyresidual_inst.cpp
       )
-    set(ELECTRIC_LIB_DEPENDS feelpp_modelmesh feelpp_modelcore  )
+    set(ELECTRIC_LIB_DEPENDS feelpp_modelmesh feelpp_modelcore feelpp_toolbox_electricbase )
     # generate the lib target
     genLibBase(
       LIB_NAME ${ELECTRIC_LIB_NAME}
@@ -217,7 +254,7 @@ macro( genLibSolidMechanics )
       ${SOLIDMECHANICS_LIB_DIR}/solidmechanicsupdatejacobian_inst.cpp
       ${SOLIDMECHANICS_LIB_DIR}/solidmechanicsupdateresidual_inst.cpp
       )
-    set(SOLIDMECHANICS_LIB_DEPENDS feelpp_modelmesh feelpp_modelcore ) 
+    set(SOLIDMECHANICS_LIB_DEPENDS feelpp_modelmesh feelpp_modelcore feelpp_toolbox_solidbase ) 
     # generate the lib target
     genLibBase(
       LIB_NAME ${SOLIDMECHANICS_LIB_NAME}
@@ -295,10 +332,10 @@ macro(genLibFluidMechanics)
       ${FLUIDMECHANICS_LIB_DIR}/fluidmechanicsupdatestabilisation_inst.cpp
       ${FLUIDMECHANICS_LIB_DIR}/fluidmechanicsassemblyturbulence_inst.cpp
       )
-    set(FLUIDMECHANICS_LIB_DEPENDS feelpp_modelmesh feelpp_modelcore feelpp_toolbox_coefficientformpdes_${FLUIDMECHANICS_DIM}dG${FLUIDMECHANICS_ORDERGEO} )
-    if ( FEELPP_TOOLBOXES_ENABLE_MESHALE )
-      set(FLUIDMECHANICS_LIB_DEPENDS feelpp_modelmeshale ${FLUIDMECHANICS_LIB_DEPENDS})
-    endif()
+    set(FLUIDMECHANICS_LIB_DEPENDS feelpp_toolbox_fluidbase feelpp_modelmesh feelpp_modelcore feelpp_toolbox_coefficientformpdes_${FLUIDMECHANICS_DIM}dG${FLUIDMECHANICS_ORDERGEO} )
+    # if ( FEELPP_TOOLBOXES_ENABLE_MESHALE )
+    #   set(FLUIDMECHANICS_LIB_DEPENDS feelpp_modelmeshale ${FLUIDMECHANICS_LIB_DEPENDS})
+    # endif()
 
     # generate the lib target
     genLibBase(
@@ -1010,87 +1047,44 @@ endmacro(genLibMaxwell)
 #############################################################################
 #############################################################################
 #############################################################################
-macro( genLibMixedPoisson )
+macro( genLibHdg )
   PARSE_ARGUMENTS(FEELMODELS_APP
-    "DIM;P_ORDER;GEO_ORDER;"
+    "DIM;P_ORDER;GEO_ORDER;POLYSET;"
     ""
     ${ARGN}
     )
 
-  if ( NOT ( FEELMODELS_APP_DIM OR FEELMODELS_APP_P_ORDER OR  FEELMODELS_APP_GEO_ORDER ) )
-    message(FATAL_ERROR "miss argument! FEELMODELS_APP_DIM OR FEELMODELS_APP_P_ORDER OR  FEELMODELS_APP_GEO_ORDER")
+  if ( NOT ( FEELMODELS_APP_DIM OR FEELMODELS_APP_P_ORDER OR FEELMODELS_APP_GEO_ORDER OR FEELMODELS_APP_POLYSET ) )
+    message(FATAL_ERROR "miss argument! FEELMODELS_APP_DIM OR FEELMODELS_APP_P_ORDER OR FEELMODELS_APP_GEO_ORDER OR FEELMODELS_APP_POLYSET")
   endif()
 
-  set(MIXEDPOISSON_DIM ${FEELMODELS_APP_DIM})
-  set(MIXEDPOISSON_ORDERPOLY ${FEELMODELS_APP_P_ORDER})
-  set(MIXEDPOISSON_ORDERGEO ${FEELMODELS_APP_GEO_ORDER})
+  set(HDG_DIM ${FEELMODELS_APP_DIM})
+  set(HDG_ORDERPOLY ${FEELMODELS_APP_P_ORDER})
+  set(HDG_ORDERGEO ${FEELMODELS_APP_GEO_ORDER})
+  set(HDG_POLYSET ${FEELMODELS_APP_POLYSET})
 
-  set(MIXEDPOISSON_LIB_VARIANTS ${MIXEDPOISSON_DIM}dP${MIXEDPOISSON_ORDERPOLY}G${MIXEDPOISSON_ORDERGEO} )
-  set(MIXEDPOISSON_LIB_NAME feelpp_toolbox_hdg_poisson_lib_${MIXEDPOISSON_LIB_VARIANTS})
+  set(HDG_LIB_VARIANTS ${HDG_DIM}dP${HDG_ORDERPOLY}G${HDG_ORDERGEO}_${HDG_POLYSET} )
+  set(HDG_LIB_NAME feelpp_toolbox_hdg_lib_${HDG_LIB_VARIANTS})
 
-  if ( NOT TARGET ${MIXEDPOISSON_LIB_NAME} )
+  if ( NOT TARGET ${HDG_LIB_NAME} )
     # configure the lib
-    set(MIXEDPOISSON_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/hdg/mixedpoisson/${MIXEDPOISSON_LIB_VARIANTS})
-    set(MIXEDPOISSON_CODEGEN_FILES_TO_COPY
+    set(HDG_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/hdg/${HDG_LIB_VARIANTS})
+    set(HDG_CODEGEN_FILES_TO_COPY
       ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/hdg/mixedpoisson_inst.cpp
       ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/hdg/mixedpoissonassemblylinear_inst.cpp )
-    set(MIXEDPOISSON_CODEGEN_SOURCES
-      ${MIXEDPOISSON_LIB_DIR}/mixedpoisson_inst.cpp
-      ${MIXEDPOISSON_LIB_DIR}/mixedpoissonassemblylinear_inst.cpp )
-    set(MIXEDPOISSON_LIB_DEPENDS feelpp_modelmesh feelpp_modelcore )
+    set(HDG_CODEGEN_SOURCES
+      ${HDG_LIB_DIR}/mixedpoisson_inst.cpp
+      ${HDG_LIB_DIR}/mixedpoissonassemblylinear_inst.cpp )
+    set(HDG_LIB_DEPENDS feelpp_modelmesh feelpp_modelcore feelpp_toolbox_hdgbase )
     # generate the lib target
     genLibBase(
-      LIB_NAME ${MIXEDPOISSON_LIB_NAME}
-      LIB_DIR ${MIXEDPOISSON_LIB_DIR}
-      LIB_DEPENDS ${MIXEDPOISSON_LIB_DEPENDS}
-      FILES_TO_COPY ${MIXEDPOISSON_CODEGEN_FILES_TO_COPY}
-      FILES_SOURCES ${MIXEDPOISSON_CODEGEN_SOURCES}
+      LIB_NAME ${HDG_LIB_NAME}
+      LIB_DIR ${HDG_LIB_DIR}
+      LIB_DEPENDS ${HDG_LIB_DEPENDS}
+      FILES_TO_COPY ${HDG_CODEGEN_FILES_TO_COPY}
+      FILES_SOURCES ${HDG_CODEGEN_SOURCES}
       CONFIG_PATH ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/hdg/mixedpoissonconfig.h.in
       )
   endif()
-endmacro(genLibMixedPoisson)
+endmacro(genLibHdg)
 
-#############################################################################
-#############################################################################
-#############################################################################
-#############################################################################
-#############################################################################
-macro( genLibMixedElasticity )
-  PARSE_ARGUMENTS(FEELMODELS_APP
-    "DIM;P_ORDER;GEO_ORDER;"
-    ""
-    ${ARGN}
-    )
-
-  if ( NOT ( FEELMODELS_APP_DIM OR FEELMODELS_APP_P_ORDER OR  FEELMODELS_APP_GEO_ORDER ) )
-    message(FATAL_ERROR "miss argument! FEELMODELS_APP_DIM OR FEELMODELS_APP_P_ORDER OR  FEELMODELS_APP_GEO_ORDER")
-  endif()
-
-  set(MIXEDELASTICITY_DIM ${FEELMODELS_APP_DIM})
-  set(MIXEDELASTICITY_ORDERPOLY ${FEELMODELS_APP_P_ORDER})
-  set(MIXEDELASTICITY_ORDERGEO ${FEELMODELS_APP_GEO_ORDER})
-
-  set(MIXEDELASTICITY_LIB_VARIANTS ${MIXEDELASTICITY_DIM}dP${MIXEDELASTICITY_ORDERPOLY}G${MIXEDELASTICITY_ORDERGEO} )
-  set(MIXEDELASTICITY_LIB_NAME feelpp_toolbox_hdg_elasticity_lib_${MIXEDELASTICITY_LIB_VARIANTS})
-
-  if ( NOT TARGET ${MIXEDELASTICITY_LIB_NAME} )
-    # configure the lib
-    set(MIXEDELASTICITY_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/hdg/mixedelasticity/${MIXEDELASTICITY_LIB_VARIANTS})
-    set(MIXEDELASTICITY_CODEGEN_FILES_TO_COPY
-      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/hdg/mixedelasticitycreate_inst.cpp
-      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/hdg/mixedelasticityassembly_inst.cpp )
-    set(MIXEDELASTICITY_CODEGEN_SOURCES
-      ${MIXEDELASTICITY_LIB_DIR}/mixedelasticitycreate_inst.cpp
-      ${MIXEDELASTICITY_LIB_DIR}/mixedelasticityassembly_inst.cpp )
-    set(MIXEDELASTICITY_LIB_DEPENDS feelpp_modelmesh feelpp_modelcore )
-    # generate the lib target
-    genLibBase(
-      LIB_NAME ${MIXEDELASTICITY_LIB_NAME}
-      LIB_DIR ${MIXEDELASTICITY_LIB_DIR}
-      LIB_DEPENDS ${MIXEDELASTICITY_LIB_DEPENDS}
-      FILES_TO_COPY ${MIXEDELASTICITY_CODEGEN_FILES_TO_COPY}
-      FILES_SOURCES ${MIXEDELASTICITY_CODEGEN_SOURCES}
-      CONFIG_PATH ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/hdg/mixedelasticityconfig.h.in
-      )
-  endif()
-endmacro(genLibMixedElasticity)

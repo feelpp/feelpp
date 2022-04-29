@@ -99,6 +99,21 @@ class DistanceToRange
         fastmarching_ptrtype const& fastMarching() const;
 
         //--------------------------------------------------------------------//
+        // Options
+        /*
+         * Maximal computed distance (narrow band)
+         * Negative (eg -1) computes full distance
+         */
+        value_type maxDistance() const { return M_maxDistance; }
+        void setMaxDistance( const value_type & maxDist ) { M_maxDistance = maxDist; }
+        /*
+         * Fast-marching stride: local fast-marching stride before parallel update
+         * Negative (eg -1) runs full local marching between each sync
+         */
+        value_type fastMarchingStride() const { return M_fastMarchingStride; }
+        void setFastMarchingStride( const value_type & stride ) { M_fastMarchingStride = stride; }
+
+        //--------------------------------------------------------------------//
         // Geometry
         value_type distanceDofToFace( size_type dofId, size_type faceId ) const;
 
@@ -120,6 +135,9 @@ class DistanceToRange
         functionspace_distance_ptrtype M_spaceDistance;
 
         fastmarching_ptrtype M_fastMarching;
+
+        value_type M_maxDistance = -1.;
+        value_type M_fastMarchingStride = -1.;
 
         mutable elements_reference_wrapper_distance_ptrtype M_eltsTouchingFaces;
         mutable std::unordered_map< size_type, std::vector< size_type > > M_dofsNeighbouringFaces;
@@ -225,6 +243,8 @@ DistanceToRange< FunctionSpaceType >::unsignedDistanceToFaces( range_faces_type 
         );
 
     // Then perform fast-marching
+    this->fastMarching()->setNarrowBandWidth( this->maxDistance() );
+    this->fastMarching()->setStride( this->fastMarchingStride() );
     unsignedDistance = this->fastMarching()->run( unsignedDistance, rangeEltsTouchingFaces );
     // Return
     return unsignedDistance;
@@ -413,11 +433,24 @@ DistanceToRange< FunctionSpaceType >::dofsNeighbouringFaces( range_faces_type co
     return M_dofsNeighbouringFaces;
 }
 
-template< typename SpaceType, typename RangeType >
-typename Feel::decay_type<SpaceType>::element_type
-distanceToRange( SpaceType const& space, RangeType const& range )
+namespace na::distancetorange {
+    using max_distance = NA::named_argument_t<struct max_distance_tag>;
+    using fm_stride = NA::named_argument_t<struct fm_stride_tag>;
+}
+inline constexpr auto& _max_distance = NA::identifier<na::distancetorange::max_distance>;
+inline constexpr auto& _fm_stride = NA::identifier<na::distancetorange::fm_stride>;
+
+template< typename ... Args >
+auto distanceToRange( Args && ... nargs )
 {
+    auto args = NA::make_arguments( std::forward<Args>(nargs)... );
+    auto && space = args.get( _space );
+    auto && range = args.get( _range );
+    double maxDistance = args.get_else( _max_distance, -1. );
+    double fastMarchingStride = args.get_else( _fm_stride, -1. );
     DistanceToRange distToRange( space );
+    distToRange.setMaxDistance( maxDistance );
+    distToRange.setFastMarchingStride( fastMarchingStride );
     return distToRange.unsignedDistance( range );
 }
 

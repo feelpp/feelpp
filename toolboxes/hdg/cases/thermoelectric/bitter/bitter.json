@@ -2,17 +2,39 @@
     "Name": "HDG-Electro-Thermo ",
     "ShortName":"ET",
     "Model":"hdg",
+    "Models":
+    {
+        "equations":"hdg"
+    },
     "Materials":
     {
         "omega":
         {
             "filename":"$cfgdir/omega.json",
-            "physics":["heat","electric"]
+            "physics":["heat","electric"],
+            "electric_c":"sigma:sigma",
+            "heat_c":"k:k"
+        }
+    },
+    "InitialConditions":
+    {
+        "heat":{
+            "temperature":
+            {
+                "Expression":
+                {
+                    "myic1":
+                    {
+                        "markers":"omega",
+                        "expr": "293"
+                    }
+                }
+            }
         }
     },
     "BoundaryConditions":
     {
-        "current-density":
+        "electric":
         {
             "Integral":
             {
@@ -20,10 +42,7 @@
                 {
                     "expr":"3333"
                 }
-            }
-        },
-        "electric-potential":
-        {
+            },
             "Dirichlet":
             {
                 // "V1":
@@ -63,7 +82,7 @@
                 }
             }
         },
-        "temperature":
+        "heat":
         {
             "Robin":
             {
@@ -105,6 +124,31 @@
                 "bottom":
                 {
                     "expr":"0"
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "electric":
+        {
+            "Exports":
+            {
+                "fields": ["all"],
+                "expr":
+                {
+                    "Jex":"{sigma0*dif/angle*y/(x*x+y*y),-sigma0*dif/angle*x/(x*x+y*y),0}:x:y:dif:angle:sigma0"
+                }
+            }
+        },
+        "heat":
+        {
+            "Exports":
+            {
+                "fields": ["all"],
+                "expr":
+                {
+                    "Tex":"-a*log(sqrt(x*x+y*y))^2+Tm:x:y:a:Tm"
                 }
             }
         }

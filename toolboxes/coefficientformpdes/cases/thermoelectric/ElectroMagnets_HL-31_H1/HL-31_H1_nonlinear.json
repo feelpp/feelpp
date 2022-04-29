@@ -5,26 +5,34 @@
     "Models":
     {
         "cfpdes":{
-            "equations":[
+            "equations":["heat","electric"]
+        },
+        "heat":{
+            "setup":{
+                "unknown":
                 {
-                    "name":"heat",
-                    "unknown":
-                    {
-                        "basis":"Pch1",
-                        "name":"temperature",
-                        "symbol":"T"
-                    }
+                    "basis":"Pch1",
+                    "name":"temperature",
+                    "symbol":"T"
                 },
-                {
-                    "name":"electric",
-                    "unknown":
-                    {
-                        "basis":"Pch1",
-                        "name":"electric-potential",
-                        "symbol":"P"
-                    }
+                "coefficients":{
+                    "c":"materials_Cu_k:materials_Cu_k",
+                    "f":"materials_Cu_sigma*(electric_grad_P_0^2+electric_grad_P_1^2+electric_grad_P_2^2):materials_Cu_sigma:electric_grad_P_0:electric_grad_P_1:electric_grad_P_2"
                 }
-            ]
+            }
+        },
+        "electric":{
+            "setup":{
+                "unknown":
+                {
+                    "basis":"Pch1",
+                    "name":"electric-potential",
+                    "symbol":"P"
+                },
+                "coefficients":{
+                    "c":"materials_Cu_sigma:materials_Cu_sigma"
+                }
+            }
         }
     },
     "Parameters":
@@ -53,13 +61,9 @@
         "Cu":
         {
             "sigma":"sigma0/(1+alpha*(heat_T-T0)):sigma0:alpha:T0:heat_T",
-            "k":"materials_Cu_sigma*Lorentz*heat_T:materials_Cu_sigma:Lorentz:heat_T",
+            "k":"materials_Cu_sigma*Lorentz*heat_T:materials_Cu_sigma:Lorentz:heat_T"
            // "k":0.370, //[ W/(m*K) ]
            // "sigma":53e3,
-
-            "heat_c":"materials_Cu_k:materials_Cu_k",
-            "heat_f":"materials_Cu_sigma*(electric_grad_P_0^2+electric_grad_P_1^2+electric_grad_P_2^2):materials_Cu_sigma:electric_grad_P_0:electric_grad_P_1:electric_grad_P_2",
-            "electric_c":"materials_Cu_sigma:materials_Cu_sigma"
         }
     },
     "InitialConditions":

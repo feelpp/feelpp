@@ -122,7 +122,7 @@ ALE<Convex,Order>::ALE( mesh_ptrtype mesh, range_elements_type const& rangeElt,
 }
 
 //-------------------------------------------------------------------------------------------//
-
+#if 0
 template < class Convex, int Order >
 std::shared_ptr<std::ostringstream>
 ALE<Convex,Order>::getInfo() const
@@ -177,7 +177,7 @@ ALE<Convex,Order>::getInfo() const
 #endif
     return _ostr;
 }
-
+#endif
 //-------------------------------------------------------------------------------------------//
 
 template < class Convex, int Order >

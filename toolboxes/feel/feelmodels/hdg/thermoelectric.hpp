@@ -85,9 +85,14 @@ public:
                        std::string prefixHeat = "heat",
                        std::string prefixElectric = "electric" );
     void init( mesh_ptrtype const& mesh = nullptr );
+    void printAndSaveInfo();
     void solve();
     void exportResults();
-    bool checkResults() const { return M_heatModel->checkResults() && M_electricModel->checkResults(); }
+    bool checkResults() const {
+        bool ch = M_heatModel->checkResults();
+        bool ce = M_electricModel->checkResults();
+        return ch && ce;
+    }
 
     mesh_ptrtype mesh() const { return M_mesh; }
     heat_ptrtype heatModel() const { return M_heatModel; }
@@ -159,6 +164,14 @@ ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::init( mesh_ptrtype const& mesh )
 
 template<int Dim, int OrderT, int OrderV, int OrderG>
 void
+ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::printAndSaveInfo()
+{
+    M_electricModel->printAndSaveInfo();
+    M_heatModel->printAndSaveInfo();
+}
+
+template<int Dim, int OrderT, int OrderV, int OrderG>
+void
 ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::updateLinear_Heat( Feel::FeelModels::ModelAlgebraic::DataUpdateLinear & data ) const
 {
     bool buildCstPart = data.buildCstPart();
@@ -166,6 +179,7 @@ ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::updateLinear_Heat( Feel::FeelMod
 
     auto mctx = this->modelContext();
     M_heatModel->updateLinearPDE( data, mctx );
+    auto const& symbolsExpr = mctx.symbolsExpr();
 
     auto F = std::dynamic_pointer_cast<condensed_vector_t<value_type>>(data.rhs());
     auto mesh = M_heatModel->mesh();
@@ -180,8 +194,11 @@ ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::updateLinear_Heat( Feel::FeelMod
         {
             for ( std::string const& matName : M_electricModel->materialsProperties()->physicToMaterials( physicName ) )
             {
+                auto coeff_c = M_electricModel->materialsProperties()->materialProperty( matName, M_electricModel->diffusionCoefficientName() );
+                auto coeff_c_expr = expr( coeff_c.expr(), symbolsExpr );
                 auto const& range = M_electricModel->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
-                blf(1_c) += integrate( _range=range, _expr=gradv(v)*idv(j)*id(phi) );
+                blf(1_c) += integrate( _range=range,
+                                       _expr=inner(idv(M_current),idv(M_current))/coeff_c_expr*id(phi) );
             }
         }
     }

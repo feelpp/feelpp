@@ -23,7 +23,8 @@
             "T0":"293",
             "Lorentz":2.47e-8,
             "sigma0":"58e3",
-            "cond":"k0:k0",
+            "poisson_c":"k0:k0",
+            "poisson_f":"sigma0*dif*dif*4/(Pi^2)/(x^2+y^2):x:y:z:dif:sigma0",
             "k0":"0.38",
             // "alpha":"3.35e-3",
             // "T0":"293",
@@ -35,15 +36,8 @@
     },
     "BoundaryConditions":
     {
-        "potential":
+        "poisson":
         {
-            "VolumicForces":
-            {
-                "omega":
-                {
-                    "expr":"sigma0*dif*dif*4/(Pi^2)/(x^2+y^2):x:y:z:dif:sigma0"
-                }
-            },
             // "Dirichlet":
             // {
             //     "Rint":
@@ -87,24 +81,7 @@
                     "expr":"0"
                 }
             }
-        },
-	    "Exact solution":
-	    {
-	        "p_exact":
-	        {
-		        "omega":
-		        {
-		            "expr":"(-(2*sigma0*dif^2)/(Pi^2*k0))*log(sqrt(x*x+y*y))^2 + (-(-(2*sigma0*dif^2)/(Pi^2*k0))*((2*k0*2*log(1)-h*2*1*log(1)^2)+(2*k0*1*log(2)+h*2*1*log(2)^2))/(k0*(1+2)+h*2*1*log(2/1)))*log(sqrt(x*x+y*y)) + (1/(2*h*2*1)*(((2*k0*2*log(1)-h*2*1*log(1)^2)-(2*k0*1*log(2)+h*2*1*log(2)^2))*(-(2*sigma0*dif^2)/(Pi^2*k0)) + (k0*(2-1) - h*2*1*log(2*1))*(-(-(2*sigma0*dif^2)/(Pi^2*k0))*((2*k0*2*log(1)-h*2*1*log(1)^2)+(2*k0*1*log(2)+h*2*1*log(2)^2))/(k0*(1+2)+h*2*1*log(2/1))))+Tw):x:y:z:sigma0:k0:dif:h:Tw"
-		        }
-	        }// ,
-	    //     "u_exact":
-	    //     {
-		//         "omega":
-		//         {
-		//             "expr":"{-k0*((-(2*sigma0*dif^2)/(Pi^2*k0))*x*log(x*x+y*y)/(x*x+y*y) + (-(-(2*sigma0*dif^2)/(Pi^2*k0))*((2*k0*2*log(1)-h*2*1*log(1)^2)+(2*k0*1*log(2)+h*2*1*log(2)^2))/(k0*(1+2)+h*2*1*log(2/1)))*x/(x*x+y*y)) , -k0*((-(2*sigma0*dif^2)/(Pi^2*k0))*y*log(x*x+y*y)/(x*x+y*y) + (-(-(2*sigma0*dif^2)/(Pi^2*k0))*((2*k0*2*log(1)-h*2*1*log(1)^2)+(2*k0*1*log(2)+h*2*1*log(2)^2))/(k0*(1+2)+h*2*1*log(2/1)))*y/(x*x+y*y))}:x:y:z:sigma0:k0:dif:h"
-		//         }
-	    //     }
-	    }
+        }
     },
     "PostProcess":
     {

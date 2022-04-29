@@ -60,7 +60,6 @@
                     // inflow condition
                     "expr":"{4*Um*y*( H-y )/H^2,0}:y:Um:H"
                 },
-                /* outflow condition */
                 "wall":
                 {
                     "markers":"mark",
