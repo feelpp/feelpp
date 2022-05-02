@@ -1,8 +1,0 @@
-digraph "Graphical Class Hierarchy"
-{
- // LATEX_PDF_SIZE
-  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
-  node [fontname="Helvetica",fontsize="10",shape=record];
-  rankdir="LR";
-  Node0 [label="std::tuple_element\l\< N, ::nlohmann::detail\l::iteration_proxy_value\l\< IteratorType \> \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classstd_1_1tuple__element_3_01N_00_01_1_1nlohmann_1_1detail_1_1iteration__proxy__value_3_01IteratorType_01_4_01_4.html",tooltip=" "];
-}

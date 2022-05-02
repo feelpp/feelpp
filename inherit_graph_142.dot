@@ -1,8 +1,0 @@
-digraph "Graphical Class Hierarchy"
-{
- // LATEX_PDF_SIZE
-  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
-  node [fontname="Helvetica",fontsize="10",shape=record];
-  rankdir="LR";
-  Node0 [label="Feel::FeelModels::detail\l::ChangeBasisContinuity\l\< NewContinuityType, BasisType\l\< Order, PolySetType, ContinuityType,\l Pts, Tag \> \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structFeel_1_1FeelModels_1_1detail_1_1ChangeBasisContinuity_3_01NewContinuityType_00_01BasisType85014e0d1b1b40793cb205341b8ed0a9.html",tooltip=" "];
-}

@@ -1,0 +1,10 @@
+<map id="Feel::CommObject" name="Feel::CommObject">
+<area shape="rect" id="node1" title=" " alt="" coords="5,136,148,163"/>
+<area shape="rect" id="node2" href="$classFeel_1_1BilinearFormBase.html" title="Base class for Bilinear Forms handle algebraic representation and multithreading." alt="" coords="196,5,407,32"/>
+<area shape="rect" id="node3" href="$classFeel_1_1CreateSubmeshTool.html" title=" " alt="" coords="200,56,403,112"/>
+<area shape="rect" id="node4" href="$classFeel_1_1FunctionSpaceBase.html" title="base class for FunctionSpace" alt="" coords="210,136,393,163"/>
+<area shape="rect" id="node6" href="$structFeel_1_1GeometricSpaceBase.html" title=" " alt="" coords="203,187,399,213"/>
+<area shape="rect" id="node8" href="$classFeel_1_1vf_1_1details_1_1EvaluatorContext.html" title="work class to evaluate expressions at sets of points" alt="" coords="211,237,391,293"/>
+<area shape="rect" id="node5" href="$classFeel_1_1FunctionSpace.html" title=" " alt="" coords="455,122,624,163"/>
+<area shape="rect" id="node7" href="$classFeel_1_1GeometricSpace.html" title=" " alt="" coords="457,187,621,229"/>
+</map>

@@ -1,0 +1,4 @@
+<map id="Feel::FeelModels::HeatBoundaryConditions::TemperatureImposed" name="Feel::FeelModels::HeatBoundaryConditions::TemperatureImposed">
+<area shape="rect" id="node1" title=" " alt="" coords="5,109,243,151"/>
+<area shape="rect" id="node2" href="$classFeel_1_1FeelModels_1_1GenericDirichletBoundaryCondition.html" title=" " alt="" coords="23,5,225,61"/>
+</map>

@@ -1,0 +1,5 @@
+<map id="Feel::TSBase" name="Feel::TSBase">
+<area shape="rect" id="node1" title="base class for time sets" alt="" coords="153,5,258,32"/>
+<area shape="rect" id="node2" href="$classFeel_1_1Bdf.html" title="Backward differencing formula time discretization." alt="" coords="5,80,184,107"/>
+<area shape="rect" id="node3" href="$classFeel_1_1Newmark.html" title="Newmark discretization." alt="" coords="208,80,427,107"/>
+</map>

@@ -1,9 +1,0 @@
-digraph "Feel::detail::D&lt; T, N, M, P &gt;"
-{
- // LATEX_PDF_SIZE
-  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
-  node [fontname="Helvetica",fontsize="10",shape=record];
-  Node1 [label="Feel::detail::D\< T,\l N, M, P \>",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
-  Node2 -> Node1 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" M_grad" ,fontname="Helvetica"];
-  Node2 [label="multi_array\< m_type, 1 \>",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
-}

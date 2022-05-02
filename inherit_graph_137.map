@@ -1,0 +1,13 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="node1" title="STL class." alt="" coords="5,177,120,203"/>
+<area shape="rect" id="node2" href="$classFeel_1_1FactoryDefaultError_1_1Exception.html" title=" " alt="" coords="168,97,404,153"/>
+<area shape="rect" id="node3" href="$classnlohmann_1_1detail_1_1exception.html" title="general exception of the basic_json class" alt="" coords="184,177,388,203"/>
+<area shape="rect" id="node9" title="STL class." alt="" coords="227,339,345,366"/>
+<area shape="rect" id="node4" href="$classnlohmann_1_1detail_1_1invalid__iterator.html" title="exception indicating errors with iterators" alt="" coords="457,5,641,47"/>
+<area shape="rect" id="node5" href="$classnlohmann_1_1detail_1_1other__error.html" title="exception indicating other library errors" alt="" coords="462,71,637,112"/>
+<area shape="rect" id="node6" href="$classnlohmann_1_1detail_1_1out__of__range.html" title="exception indicating access out of the defined range" alt="" coords="469,136,630,177"/>
+<area shape="rect" id="node7" href="$classnlohmann_1_1detail_1_1parse__error.html" title="exception indicating a parse error" alt="" coords="461,201,637,243"/>
+<area shape="rect" id="node8" href="$classnlohmann_1_1detail_1_1type__error.html" title="exception indicating executing a member function with a wrong type" alt="" coords="465,267,634,308"/>
+<area shape="rect" id="node10" href="$structFeel_1_1CheckerConvergenceFailed.html" title=" " alt="" coords="452,332,647,373"/>
+<area shape="rect" id="node11" href="$structFeel_1_1CheckerExactFailed.html" title=" " alt="" coords="458,398,641,425"/>
+</map>

@@ -1,0 +1,9 @@
+<map id="Feel::FeelModels::ModelNumerical" name="Feel::FeelModels::ModelNumerical">
+<area shape="rect" id="node1" title="Handles some numerical model aspects: timestepping, mesh and properties." alt="" coords="984,60,1231,87"/>
+<area shape="rect" id="node2" href="$classFeel_1_1FeelModels_1_1ModelBase.html" title=" " alt="" coords="437,35,648,61"/>
+<area shape="rect" id="node6" href="$classFeel_1_1FeelModels_1_1ModelAlgebraic.html" title=" " alt="" coords="696,60,936,87"/>
+<area shape="rect" id="node3" href="$classFeel_1_1JournalWatcher.html" title=" " alt="" coords="215,5,370,32"/>
+<area shape="rect" id="node4" title=" " alt="" coords="5,5,148,32"/>
+<area shape="rect" id="node5" title=" " alt="" coords="196,57,389,98"/>
+<area shape="rect" id="node7" href="$classFeel_1_1FeelModels_1_1ModelMeshes.html" title=" " alt="" coords="699,111,933,153"/>
+</map>

@@ -1,9 +1,0 @@
-digraph "Feel::is_iterable_of&lt; T, V, std::void_t&lt; decltype(std::declval&lt; T &gt;().begin()), decltype(std::declval&lt; T &gt;().end()), std::is_same&lt; decltype(*std::declval&lt; T &gt;().begin()), V &gt; &gt; &gt;"
-{
- // LATEX_PDF_SIZE
-  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
-  node [fontname="Helvetica",fontsize="10",shape=record];
-  Node1 [label="Feel::is_iterable_of\l\< T, V, std::void_t\<\l decltype(std::declval\l\< T \>().begin()), decltype\l(std::declval\< T \>().end()\l), std::is_same\< decltype(*std\l::declval\< T \>().begin()), V \> \> \>",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
-  Node2 -> Node1 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
-  Node2 [label="true_type",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
-}

@@ -1,8 +1,0 @@
-digraph "Graphical Class Hierarchy"
-{
- // LATEX_PDF_SIZE
-  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
-  node [fontname="Helvetica",fontsize="10",shape=record];
-  rankdir="LR";
-  Node0 [label="nlohmann::detail::container\l_input_adapter_factory_impl\l::container_input_adapter_factory\l\< ContainerType, void_t\< decltype\l(begin(std::declval\< ContainerType\l \>()), end(std::declval\< ContainerType \>()))\> \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structnlohmann_1_1detail_1_1container__input__adapter__factory__impl_1_1container__input__adapte602516bdb0b70b8ee5c6d4ff825368be.html",tooltip=" "];
-}

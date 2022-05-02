@@ -1,9 +1,0 @@
-digraph "nlohmann::detail::is_constructible_object_type_impl&lt; BasicJsonType, ConstructibleObjectType, enable_if_t&lt; is_detected&lt; mapped_type_t, ConstructibleObjectType &gt;::value &amp;&amp;is_detected&lt; key_type_t, ConstructibleObjectType &gt;::value &gt; &gt;"
-{
- // LATEX_PDF_SIZE
-  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
-  node [fontname="Helvetica",fontsize="10",shape=record];
-  Node1 [label="nlohmann::detail::is\l_constructible_object\l_type_impl\< BasicJsonType,\l ConstructibleObjectType,\l enable_if_t\< is_detected\l\< mapped_type_t, ConstructibleObject\lType \>::value &&is_detected\< key\l_type_t, ConstructibleObjectType\l \>::value \> \>",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
-  Node2 -> Node1 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" value" ,fontname="Helvetica"];
-  Node2 [label="bool",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classbool.html",tooltip=" "];
-}

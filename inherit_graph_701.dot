@@ -1,8 +1,0 @@
-digraph "Graphical Class Hierarchy"
-{
- // LATEX_PDF_SIZE
-  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
-  node [fontname="Helvetica",fontsize="10",shape=record];
-  rankdir="LR";
-  Node0 [label="nlohmann::json_pointer\l\< BasicJsonType \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classnlohmann_1_1json__pointer.html",tooltip="JSON Pointer defines a string syntax for identifying a specific value within a JSON document."];
-}
