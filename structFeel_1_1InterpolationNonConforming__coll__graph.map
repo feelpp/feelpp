@@ -1,8 +1,8 @@
 <map id="Feel::InterpolationNonConforming" name="Feel::InterpolationNonConforming">
-<area shape="rect" id="node1" title=" " alt="" coords="976,107,1219,134"/>
-<area shape="rect" id="node2" href="$classFeel_1_1InterpolationTypeBase.html" title=" " alt="" coords="667,45,887,101"/>
-<area shape="rect" id="node3" href="$classFeel_1_1InterpolationTypeBaseBase.html" title=" " alt="" coords="415,52,617,93"/>
-<area shape="rect" id="node4" title=" " alt="" coords="5,5,219,47"/>
-<area shape="rect" id="node5" href="$classbool.html" title=" " alt="" coords="87,86,137,113"/>
-<area shape="rect" id="node6" title=" " alt="" coords="687,125,866,151"/>
+<area shape="rect" id="node1" title=" " alt="" coords="355,676,597,827"/>
+<area shape="rect" id="node2" href="$classFeel_1_1InterpolationTypeBase.html" title=" " alt="" coords="254,404,474,613"/>
+<area shape="rect" id="node3" href="$classFeel_1_1InterpolationTypeBaseBase.html" title=" " alt="" coords="252,160,476,355"/>
+<area shape="rect" id="node4" title=" " alt="" coords="5,5,219,97"/>
+<area shape="rect" id="node5" href="$classbool.html" title=" " alt="" coords="427,13,477,90"/>
+<area shape="rect" id="node6" title=" " alt="" coords="499,470,677,547"/>
 </map>

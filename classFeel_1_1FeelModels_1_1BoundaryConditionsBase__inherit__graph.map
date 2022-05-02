@@ -1,8 +1,8 @@
 <map id="Feel::FeelModels::BoundaryConditionsBase" name="Feel::FeelModels::BoundaryConditionsBase">
-<area shape="rect" id="node1" title=" " alt="" coords="5,136,207,177"/>
-<area shape="rect" id="node2" href="$classFeel_1_1FeelModels_1_1ElectricBoundaryConditions.html" title=" " alt="" coords="295,5,481,47"/>
-<area shape="rect" id="node3" href="$classFeel_1_1FeelModels_1_1FluidMechanicsBoundaryConditions.html" title=" " alt="" coords="268,71,508,112"/>
-<area shape="rect" id="node4" href="$classFeel_1_1FeelModels_1_1HeatBoundaryConditions.html" title=" " alt="" coords="272,136,504,177"/>
-<area shape="rect" id="node5" href="$classFeel_1_1FeelModels_1_1SolidMechanics1dReducedBoundaryConditions.html" title=" " alt="" coords="255,201,521,243"/>
-<area shape="rect" id="node6" href="$classFeel_1_1FeelModels_1_1SolidMechanicsBoundaryConditions.html" title=" " alt="" coords="268,267,508,308"/>
+<area shape="rect" id="node1" title=" " alt="" coords="571,5,781,141"/>
+<area shape="rect" id="node2" href="$classFeel_1_1FeelModels_1_1ElectricBoundaryConditions.html" title=" " alt="" coords="5,189,232,369"/>
+<area shape="rect" id="node3" href="$classFeel_1_1FeelModels_1_1FluidMechanicsBoundaryConditions.html" title=" " alt="" coords="257,189,535,369"/>
+<area shape="rect" id="node4" href="$classFeel_1_1FeelModels_1_1HeatBoundaryConditions.html" title=" " alt="" coords="560,189,792,369"/>
+<area shape="rect" id="node5" href="$classFeel_1_1FeelModels_1_1SolidMechanics1dReducedBoundaryConditions.html" title=" " alt="" coords="816,189,1083,369"/>
+<area shape="rect" id="node6" href="$classFeel_1_1FeelModels_1_1SolidMechanicsBoundaryConditions.html" title=" " alt="" coords="1107,189,1347,369"/>
 </map>

@@ -1,13 +1,13 @@
 <map id="Feel::Reference&lt; Simplex&lt; Dim, Order, RDim &gt;, Dim, Order, RDim, T &gt;" name="Feel::Reference&lt; Simplex&lt; Dim, Order, RDim &gt;, Dim, Order, RDim, T &gt;">
-<area shape="rect" id="node1" title=" " alt="" coords="984,439,1191,495"/>
-<area shape="rect" id="node2" href="$classFeel_1_1Simplex.html" title="simplex of dimension Dim" alt="" coords="685,417,841,458"/>
-<area shape="rect" id="node3" href="$classFeel_1_1Convex.html" title=" " alt="" coords="307,358,459,399"/>
-<area shape="rect" id="node4" href="$classFeel_1_1ConvexBase.html" title=" " alt="" coords="25,404,164,431"/>
-<area shape="rect" id="node5" title=" " alt="" coords="5,296,184,323"/>
-<area shape="rect" id="node6" href="$classFeel_1_1SimplexBase.html" title=" " alt="" coords="311,475,454,501"/>
-<area shape="rect" id="node7" href="$classint.html" title=" " alt="" coords="363,605,402,632"/>
-<area shape="rect" id="node8" href="$classbool.html" title=" " alt="" coords="357,665,408,692"/>
-<area shape="rect" id="node9" title=" " alt="" coords="301,424,464,451"/>
-<area shape="rect" id="node10" title=" " alt="" coords="660,485,867,512"/>
-<area shape="rect" id="node11" href="$classsize__t.html" title=" " alt="" coords="733,545,793,572"/>
+<area shape="rect" id="node1" title=" " alt="" coords="519,905,726,1349"/>
+<area shape="rect" id="node2" href="$classFeel_1_1Simplex.html" title="simplex of dimension Dim" alt="" coords="361,545,551,813"/>
+<area shape="rect" id="node3" href="$classFeel_1_1Convex.html" title=" " alt="" coords="872,187,1024,323"/>
+<area shape="rect" id="node4" href="$classFeel_1_1ConvexBase.html" title=" " alt="" coords="879,5,1017,83"/>
+<area shape="rect" id="node5" title=" " alt="" coords="68,5,247,83"/>
+<area shape="rect" id="node6" href="$classFeel_1_1SimplexBase.html" title=" " alt="" coords="341,217,483,294"/>
+<area shape="rect" id="node7" href="$classint.html" title=" " alt="" coords="507,217,546,294"/>
+<area shape="rect" id="node8" href="$classbool.html" title=" " alt="" coords="611,217,661,294"/>
+<area shape="rect" id="node9" title=" " alt="" coords="685,217,848,294"/>
+<area shape="rect" id="node10" title=" " alt="" coords="575,641,782,718"/>
+<area shape="rect" id="node11" href="$classsize__t.html" title=" " alt="" coords="806,641,866,718"/>
 </map>

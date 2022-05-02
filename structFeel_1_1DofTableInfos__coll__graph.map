@@ -1,7 +1,7 @@
 <map id="Feel::DofTableInfos" name="Feel::DofTableInfos">
-<area shape="rect" id="node1" title=" " alt="" coords="120,361,267,388"/>
-<area shape="rect" id="node2" title=" " alt="" coords="5,96,80,123"/>
-<area shape="rect" id="node3" title="STL class." alt="" coords="150,96,237,123"/>
-<area shape="rect" id="node4" title="STL class." alt="" coords="124,5,263,47"/>
-<area shape="rect" id="node5" href="$classbool.html" title=" " alt="" coords="299,96,349,123"/>
+<area shape="rect" id="node1" title=" " alt="" coords="129,448,279,628"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,147,80,224"/>
+<area shape="rect" id="node3" title="STL class." alt="" coords="161,147,247,224"/>
+<area shape="rect" id="node4" title="STL class." alt="" coords="135,5,273,97"/>
+<area shape="rect" id="node5" href="$classbool.html" title=" " alt="" coords="320,147,371,224"/>
 </map>

@@ -1,6 +1,6 @@
 <map id="Feel::Environment" name="Feel::Environment">
-<area shape="rect" id="node1" title="Initialize, finalize, and query the Feel++ environment." alt="" coords="99,155,239,181"/>
-<area shape="rect" id="node2" title=" " alt="" coords="5,80,155,107"/>
-<area shape="rect" id="node3" href="$classFeel_1_1JournalManager.html" title="JournalManager that manage the journal system handles all journalWatchers." alt="" coords="179,80,338,107"/>
-<area shape="rect" id="node4" title=" " alt="" coords="179,5,338,32"/>
+<area shape="rect" id="node1" title="Initialize, finalize, and query the Feel++ environment." alt="" coords="69,593,294,1169"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,299,155,377"/>
+<area shape="rect" id="node3" href="$classFeel_1_1JournalManager.html" title="JournalManager that manage the journal system handles all journalWatchers." alt="" coords="179,131,389,545"/>
+<area shape="rect" id="node4" title=" " alt="" coords="205,5,363,83"/>
 </map>

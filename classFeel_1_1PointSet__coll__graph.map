@@ -1,11 +1,11 @@
 <map id="Feel::PointSet&lt; Convex, T &gt;" name="Feel::PointSet&lt; Convex, T &gt;">
-<area shape="rect" id="node1" title="Class of all PointSet on a Convex." alt="" coords="581,147,788,173"/>
-<area shape="rect" id="node2" href="$classFeel_1_1VisitableBase.html" title=" " alt="" coords="262,5,430,32"/>
-<area shape="rect" id="node3" href="$classFeel_1_1PointSetBase.html" title="base class for point sets, to be used eg with SFINAE" alt="" coords="275,56,417,83"/>
-<area shape="rect" id="node4" title=" " alt="" coords="273,107,419,149"/>
-<area shape="rect" id="node5" title=" " alt="" coords="26,115,123,141"/>
-<area shape="rect" id="node6" title=" " alt="" coords="257,173,435,214"/>
-<area shape="rect" id="node7" title="STL class." alt="" coords="303,239,389,265"/>
-<area shape="rect" id="node8" title="STL class." alt="" coords="5,231,144,273"/>
-<area shape="rect" id="node9" title=" " alt="" coords="309,289,383,316"/>
+<area shape="rect" id="node1" title="Class of all PointSet on a Convex." alt="" coords="441,359,663,539"/>
+<area shape="rect" id="node2" href="$classFeel_1_1VisitableBase.html" title=" " alt="" coords="5,160,173,281"/>
+<area shape="rect" id="node3" href="$classFeel_1_1PointSetBase.html" title="base class for point sets, to be used eg with SFINAE" alt="" coords="198,182,341,259"/>
+<area shape="rect" id="node4" title=" " alt="" coords="365,175,510,267"/>
+<area shape="rect" id="node5" title=" " alt="" coords="389,13,486,90"/>
+<area shape="rect" id="node6" title=" " alt="" coords="534,175,711,267"/>
+<area shape="rect" id="node7" title="STL class." alt="" coords="735,182,822,259"/>
+<area shape="rect" id="node8" title="STL class." alt="" coords="709,5,848,97"/>
+<area shape="rect" id="node9" title=" " alt="" coords="847,182,921,259"/>
 </map>

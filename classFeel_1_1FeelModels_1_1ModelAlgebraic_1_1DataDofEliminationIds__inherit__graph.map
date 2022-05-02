@@ -1,5 +1,5 @@
 <map id="Feel::FeelModels::ModelAlgebraic::DataDofEliminationIds" name="Feel::FeelModels::ModelAlgebraic::DataDofEliminationIds">
-<area shape="rect" id="node1" title=" " alt="" coords="5,39,245,80"/>
-<area shape="rect" id="node2" href="$classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataUpdateJacobian.html" title=" " alt="" coords="293,5,533,47"/>
-<area shape="rect" id="node3" href="$classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataUpdateResidual.html" title=" " alt="" coords="293,71,533,112"/>
+<area shape="rect" id="node1" title=" " alt="" coords="137,5,377,185"/>
+<area shape="rect" id="node2" href="$classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataUpdateJacobian.html" title=" " alt="" coords="5,233,245,399"/>
+<area shape="rect" id="node3" href="$classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataUpdateResidual.html" title=" " alt="" coords="269,233,509,399"/>
 </map>

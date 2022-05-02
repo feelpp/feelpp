@@ -1,6 +1,6 @@
 <map id="Feel::Simget" name="Feel::Simget">
-<area shape="rect" id="node1" title="Simulation Object." alt="" coords="69,109,171,136"/>
-<area shape="rect" id="node2" title=" " alt="" coords="5,5,61,32"/>
-<area shape="rect" id="node3" href="$classdouble.html" title=" " alt="" coords="87,5,153,32"/>
-<area shape="rect" id="node4" href="$classint.html" title=" " alt="" coords="239,5,278,32"/>
+<area shape="rect" id="node1" title="Simulation Object." alt="" coords="57,160,204,487"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,5,61,83"/>
+<area shape="rect" id="node3" href="$classdouble.html" title=" " alt="" coords="97,5,164,83"/>
+<area shape="rect" id="node4" href="$classint.html" title=" " alt="" coords="257,5,295,83"/>
 </map>

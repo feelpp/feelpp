@@ -1,11 +1,11 @@
 <map id="Feel::FsFunctionalLinear&lt; Space &gt;" name="Feel::FsFunctionalLinear&lt; Space &gt;">
-<area shape="rect" id="node1" title=" " alt="" coords="192,100,371,141"/>
-<area shape="rect" id="node3" href="$classFeel_1_1FsFunctionalLinearComposite.html" title=" " alt="" coords="431,5,609,47"/>
-<area shape="rect" id="node4" href="$classFeel_1_1FsFunctionalLinearFree.html" title=" " alt="" coords="431,71,609,112"/>
-<area shape="rect" id="node5" href="$classFeel_1_1SensorBase.html" title="base class for sensors" alt="" coords="419,137,621,163"/>
-<area shape="rect" id="node6" href="$classFeel_1_1SensorBase.html" title=" " alt="" coords="437,187,603,214"/>
-<area shape="rect" id="node2" href="$classFeel_1_1FsFunctional.html" title=" " alt="" coords="5,100,144,141"/>
-<area shape="rect" id="node7" href="$classFeel_1_1SensorGaussian.html" title="gaussian type sensor" alt="" coords="671,115,832,156"/>
-<area shape="rect" id="node8" href="$classFeel_1_1SensorPointwise.html" title="pointwise type sensor" alt="" coords="669,180,833,221"/>
-<area shape="rect" id="node9" href="$classFeel_1_1SensorSurface.html" title="surface type sensor" alt="" coords="676,245,827,287"/>
+<area shape="rect" id="node1" title=" " alt="" coords="329,219,508,384"/>
+<area shape="rect" id="node3" href="$classFeel_1_1FsFunctionalLinearComposite.html" title=" " alt="" coords="5,432,184,597"/>
+<area shape="rect" id="node4" href="$classFeel_1_1FsFunctionalLinearFree.html" title=" " alt="" coords="208,432,405,597"/>
+<area shape="rect" id="node5" href="$classFeel_1_1SensorBase.html" title="base class for sensors" alt="" coords="429,432,632,597"/>
+<area shape="rect" id="node6" href="$classFeel_1_1SensorBase.html" title=" " alt="" coords="657,432,823,597"/>
+<area shape="rect" id="node2" href="$classFeel_1_1FsFunctional.html" title=" " alt="" coords="349,5,489,171"/>
+<area shape="rect" id="node7" href="$classFeel_1_1SensorGaussian.html" title="gaussian type sensor" alt="" coords="471,653,633,818"/>
+<area shape="rect" id="node8" href="$classFeel_1_1SensorPointwise.html" title="pointwise type sensor" alt="" coords="657,653,823,818"/>
+<area shape="rect" id="node9" href="$classFeel_1_1SensorSurface.html" title="surface type sensor" alt="" coords="847,645,998,825"/>
 </map>

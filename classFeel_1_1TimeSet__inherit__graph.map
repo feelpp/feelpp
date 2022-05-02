@@ -1,6 +1,6 @@
 <map id="Feel::TimeSet" name="Feel::TimeSet">
-<area shape="rect" id="node1" title="Handles a set of time steps." alt="" coords="156,80,267,107"/>
-<area shape="rect" id="node3" href="$classFeel_1_1CNAB2.html" title=" " alt="" coords="5,162,199,189"/>
-<area shape="rect" id="node4" href="$classFeel_1_1CNAB2x2.html" title=" " alt="" coords="223,155,421,196"/>
-<area shape="rect" id="node2" title="STL class." alt="" coords="107,5,315,32"/>
+<area shape="rect" id="node1" title="Handles a set of time steps." alt="" coords="156,131,267,281"/>
+<area shape="rect" id="node3" href="$classFeel_1_1CNAB2.html" title=" " alt="" coords="5,329,199,553"/>
+<area shape="rect" id="node4" href="$classFeel_1_1CNAB2x2.html" title=" " alt="" coords="223,359,421,524"/>
+<area shape="rect" id="node2" title="STL class." alt="" coords="107,5,315,83"/>
 </map>

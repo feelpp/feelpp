@@ -1,7 +1,7 @@
 <map id="Feel::FunctionSpaceBase" name="Feel::FunctionSpaceBase">
-<area shape="rect" id="node1" title="base class for FunctionSpace" alt="" coords="72,155,255,181"/>
-<area shape="rect" id="node5" href="$classFeel_1_1FunctionSpace.html" title=" " alt="" coords="79,229,248,271"/>
-<area shape="rect" id="node2" href="$classFeel_1_1CommObject.html" title=" " alt="" coords="5,80,148,107"/>
-<area shape="rect" id="node3" href="$classFeel_1_1JournalWatcher.html" title=" " alt="" coords="173,80,327,107"/>
-<area shape="rect" id="node4" title=" " alt="" coords="179,5,321,32"/>
+<area shape="rect" id="node1" title="base class for FunctionSpace" alt="" coords="92,564,275,759"/>
+<area shape="rect" id="node5" href="$classFeel_1_1FunctionSpace.html" title=" " alt="" coords="94,807,273,1397"/>
+<area shape="rect" id="node2" href="$classFeel_1_1CommObject.html" title=" " alt="" coords="5,248,148,399"/>
+<area shape="rect" id="node3" href="$classFeel_1_1JournalWatcher.html" title=" " alt="" coords="173,131,407,516"/>
+<area shape="rect" id="node4" title=" " alt="" coords="219,5,361,83"/>
 </map>

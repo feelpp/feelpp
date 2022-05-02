@@ -1,10 +1,10 @@
 <map id="Feel::Simplex&lt; Dim, Order, RDim &gt;" name="Feel::Simplex&lt; Dim, Order, RDim &gt;">
-<area shape="rect" id="node1" title="simplex of dimension Dim" alt="" coords="651,328,807,369"/>
-<area shape="rect" id="node2" href="$classFeel_1_1Convex.html" title=" " alt="" coords="307,5,459,47"/>
-<area shape="rect" id="node3" href="$classFeel_1_1ConvexBase.html" title=" " alt="" coords="25,13,164,39"/>
-<area shape="rect" id="node4" title=" " alt="" coords="5,183,184,210"/>
-<area shape="rect" id="node5" href="$classFeel_1_1SimplexBase.html" title=" " alt="" coords="311,281,454,307"/>
-<area shape="rect" id="node6" href="$classint.html" title=" " alt="" coords="363,403,402,430"/>
-<area shape="rect" id="node7" href="$classbool.html" title=" " alt="" coords="357,463,408,490"/>
-<area shape="rect" id="node8" title=" " alt="" coords="301,514,464,541"/>
+<area shape="rect" id="node1" title="simplex of dimension Dim" alt="" coords="439,501,628,769"/>
+<area shape="rect" id="node2" href="$classFeel_1_1Convex.html" title=" " alt="" coords="57,187,209,323"/>
+<area shape="rect" id="node3" href="$classFeel_1_1ConvexBase.html" title=" " alt="" coords="5,5,144,83"/>
+<area shape="rect" id="node4" title=" " alt="" coords="168,5,347,83"/>
+<area shape="rect" id="node5" href="$classFeel_1_1SimplexBase.html" title=" " alt="" coords="441,217,583,294"/>
+<area shape="rect" id="node6" href="$classint.html" title=" " alt="" coords="607,217,646,294"/>
+<area shape="rect" id="node7" href="$classbool.html" title=" " alt="" coords="711,217,761,294"/>
+<area shape="rect" id="node8" title=" " alt="" coords="787,217,949,294"/>
 </map>

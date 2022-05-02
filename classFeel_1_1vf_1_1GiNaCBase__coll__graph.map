@@ -1,15 +1,15 @@
 <map id="Feel::vf::GiNaCBase" name="Feel::vf::GiNaCBase">
-<area shape="rect" id="node1" title=" " alt="" coords="855,197,1005,224"/>
-<area shape="rect" id="node2" href="$classFeel_1_1vf_1_1ExprDynamicBase.html" title=" " alt="" coords="449,5,645,32"/>
-<area shape="rect" id="node3" title=" " alt="" coords="468,57,627,98"/>
-<area shape="rect" id="node4" href="$classsize__t.html" title=" " alt="" coords="517,123,577,149"/>
-<area shape="rect" id="node5" title=" " alt="" coords="466,173,629,229"/>
-<area shape="rect" id="node6" title=" " alt="" coords="193,181,336,222"/>
-<area shape="rect" id="node7" title=" " alt="" coords="474,254,621,295"/>
-<area shape="rect" id="node8" title=" " alt="" coords="229,261,300,288"/>
-<area shape="rect" id="node9" href="$classbool.html" title=" " alt="" coords="522,320,573,347"/>
-<area shape="rect" id="node10" title=" " alt="" coords="466,371,629,413"/>
-<area shape="rect" id="node11" href="$classdouble.html" title=" " alt="" coords="231,355,298,381"/>
-<area shape="rect" id="node12" title="STL class." alt="" coords="221,405,308,432"/>
-<area shape="rect" id="node13" title="STL class." alt="" coords="5,398,144,439"/>
+<area shape="rect" id="node1" title=" " alt="" coords="467,500,660,651"/>
+<area shape="rect" id="node2" href="$classFeel_1_1vf_1_1ExprDynamicBase.html" title=" " alt="" coords="5,301,201,408"/>
+<area shape="rect" id="node3" title=" " alt="" coords="225,309,384,401"/>
+<area shape="rect" id="node4" href="$classsize__t.html" title=" " alt="" coords="408,316,468,393"/>
+<area shape="rect" id="node5" title=" " alt="" coords="493,301,655,408"/>
+<area shape="rect" id="node6" title=" " alt="" coords="503,147,645,239"/>
+<area shape="rect" id="node7" title=" " alt="" coords="679,309,826,401"/>
+<area shape="rect" id="node8" title=" " alt="" coords="717,154,788,231"/>
+<area shape="rect" id="node9" href="$classbool.html" title=" " alt="" coords="850,316,901,393"/>
+<area shape="rect" id="node10" title=" " alt="" coords="985,309,1147,401"/>
+<area shape="rect" id="node11" href="$classdouble.html" title=" " alt="" coords="978,154,1045,231"/>
+<area shape="rect" id="node12" title="STL class." alt="" coords="1076,154,1163,231"/>
+<area shape="rect" id="node13" title="STL class." alt="" coords="1050,5,1189,97"/>
 </map>

@@ -1,7 +1,7 @@
 <map id="Feel::GeoEntity&lt; Entity, T, IndexT &gt;" name="Feel::GeoEntity&lt; Entity, T, IndexT &gt;">
-<area shape="rect" id="node1" title="base class for all geometric entities" alt="" coords="272,133,451,174"/>
-<area shape="rect" id="node2" title=" " alt="" coords="9,5,220,61"/>
-<area shape="rect" id="node3" title=" " alt="" coords="9,85,221,141"/>
-<area shape="rect" id="node4" title=" " alt="" coords="5,165,224,221"/>
-<area shape="rect" id="node5" href="$classFeel_1_1Entity.html" title=" " alt="" coords="20,245,209,272"/>
+<area shape="rect" id="node1" title="base class for all geometric entities" alt="" coords="340,160,591,751"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,5,216,112"/>
+<area shape="rect" id="node3" title=" " alt="" coords="239,5,451,112"/>
+<area shape="rect" id="node4" title=" " alt="" coords="476,5,695,112"/>
+<area shape="rect" id="node5" href="$classFeel_1_1Entity.html" title=" " alt="" coords="719,20,908,97"/>
 </map>

@@ -1,5 +1,5 @@
 <map id="Feel::FeelModels::ElectricBoundaryConditions::Ground" name="Feel::FeelModels::ElectricBoundaryConditions::Ground">
-<area shape="rect" id="node1" title=" " alt="" coords="35,213,243,255"/>
-<area shape="rect" id="node2" href="$classFeel_1_1FeelModels_1_1ElectricBoundaryConditions_1_1ElectricPotentialImposed.html" title=" " alt="" coords="5,109,272,165"/>
-<area shape="rect" id="node3" href="$classFeel_1_1FeelModels_1_1GenericDirichletBoundaryCondition.html" title=" " alt="" coords="38,5,239,61"/>
+<area shape="rect" id="node1" title=" " alt="" coords="33,535,244,715"/>
+<area shape="rect" id="node2" href="$classFeel_1_1FeelModels_1_1ElectricBoundaryConditions_1_1ElectricPotentialImposed.html" title=" " alt="" coords="5,336,272,487"/>
+<area shape="rect" id="node3" href="$classFeel_1_1FeelModels_1_1GenericDirichletBoundaryCondition.html" title=" " alt="" coords="29,5,249,288"/>
 </map>

@@ -1,10 +1,10 @@
 <map id="Feel::ProductSpace&lt; T, same_mesh &gt;" name="Feel::ProductSpace&lt; T, same_mesh &gt;">
-<area shape="rect" id="node1" title=" " alt="" coords="724,89,871,131"/>
-<area shape="rect" id="node2" title="STL class." alt="" coords="393,5,599,47"/>
-<area shape="rect" id="node3" title=" " alt="" coords="217,13,256,39"/>
-<area shape="rect" id="node4" href="$classProductSpaceBase.html" title=" " alt="" coords="425,71,567,98"/>
-<area shape="rect" id="node5" href="$classsize__t.html" title=" " alt="" coords="466,122,526,149"/>
-<area shape="rect" id="node6" title=" " alt="" coords="403,173,589,199"/>
-<area shape="rect" id="node7" title="STL class." alt="" coords="193,173,280,199"/>
-<area shape="rect" id="node8" title="STL class." alt="" coords="5,165,144,207"/>
+<area shape="rect" id="node1" title=" " alt="" coords="271,441,467,607"/>
+<area shape="rect" id="node2" title="STL class." alt="" coords="5,287,211,379"/>
+<area shape="rect" id="node3" title=" " alt="" coords="89,147,127,224"/>
+<area shape="rect" id="node4" href="$classProductSpaceBase.html" title=" " alt="" coords="235,294,378,371"/>
+<area shape="rect" id="node5" href="$classsize__t.html" title=" " alt="" coords="402,294,462,371"/>
+<area shape="rect" id="node6" title=" " alt="" coords="487,294,673,371"/>
+<area shape="rect" id="node7" title="STL class." alt="" coords="537,147,623,224"/>
+<area shape="rect" id="node8" title="STL class." alt="" coords="511,5,649,97"/>
 </map>

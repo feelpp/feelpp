@@ -1,9 +1,9 @@
 <map id="Feel::FeelModels::ElectricBoundaryConditions" name="Feel::FeelModels::ElectricBoundaryConditions">
-<area shape="rect" id="node1" title=" " alt="" coords="88,456,275,497"/>
-<area shape="rect" id="node2" href="$classFeel_1_1FeelModels_1_1BoundaryConditionsBase.html" title=" " alt="" coords="81,365,282,407"/>
-<area shape="rect" id="node3" title=" " alt="" coords="82,261,281,303"/>
-<area shape="rect" id="node4" href="$classFeel_1_1FeelModels_1_1ModelBase.html" title=" " alt="" coords="76,172,287,199"/>
-<area shape="rect" id="node5" href="$classFeel_1_1JournalWatcher.html" title=" " alt="" coords="5,89,160,115"/>
-<area shape="rect" id="node6" title=" " alt="" coords="11,5,154,32"/>
-<area shape="rect" id="node7" title=" " alt="" coords="185,81,378,123"/>
+<area shape="rect" id="node1" title=" " alt="" coords="128,1120,355,1300"/>
+<area shape="rect" id="node2" href="$classFeel_1_1FeelModels_1_1BoundaryConditionsBase.html" title=" " alt="" coords="136,935,347,1071"/>
+<area shape="rect" id="node3" title=" " alt="" coords="142,780,341,872"/>
+<area shape="rect" id="node4" href="$classFeel_1_1FeelModels_1_1ModelBase.html" title=" " alt="" coords="113,567,369,717"/>
+<area shape="rect" id="node5" href="$classFeel_1_1JournalWatcher.html" title=" " alt="" coords="5,132,240,517"/>
+<area shape="rect" id="node6" title=" " alt="" coords="51,5,194,83"/>
+<area shape="rect" id="node7" title=" " alt="" coords="265,279,458,371"/>
 </map>

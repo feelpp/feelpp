@@ -1,10 +1,10 @@
 <map id="Feel::GeoEntity&lt; Entity, T, IndexT &gt;" name="Feel::GeoEntity&lt; Entity, T, IndexT &gt;">
-<area shape="rect" id="node1" title="base class for all geometric entities" alt="" coords="379,206,557,247"/>
-<area shape="rect" id="node2" title=" " alt="" coords="9,5,220,61"/>
-<area shape="rect" id="node3" title=" " alt="" coords="9,85,221,141"/>
-<area shape="rect" id="node4" title=" " alt="" coords="5,165,224,221"/>
-<area shape="rect" id="node5" href="$classFeel_1_1Entity.html" title=" " alt="" coords="20,245,209,272"/>
-<area shape="rect" id="node6" title=" " alt="" coords="25,395,204,421"/>
-<area shape="rect" id="node7" href="$classbool.html" title=" " alt="" coords="89,455,140,481"/>
-<area shape="rect" id="node8" title=" " alt="" coords="33,515,196,541"/>
+<area shape="rect" id="node1" title="base class for all geometric entities" alt="" coords="688,321,939,912"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,5,216,112"/>
+<area shape="rect" id="node3" title=" " alt="" coords="239,5,451,112"/>
+<area shape="rect" id="node4" title=" " alt="" coords="476,5,695,112"/>
+<area shape="rect" id="node5" href="$classFeel_1_1Entity.html" title=" " alt="" coords="719,20,908,97"/>
+<area shape="rect" id="node6" title=" " alt="" coords="932,20,1111,97"/>
+<area shape="rect" id="node7" href="$classbool.html" title=" " alt="" coords="1135,20,1185,97"/>
+<area shape="rect" id="node8" title=" " alt="" coords="1211,20,1373,97"/>
 </map>

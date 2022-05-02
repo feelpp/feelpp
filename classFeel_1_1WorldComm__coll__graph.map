@@ -1,5 +1,5 @@
 <map id="Feel::WorldComm" name="Feel::WorldComm">
-<area shape="rect" id="node1" title="Provides interface to MPI Communicators." alt="" coords="144,95,281,121"/>
-<area shape="rect" id="node2" href="$classboost_1_1mpi_1_1communicator.html" title=" " alt="" coords="5,13,199,39"/>
-<area shape="rect" id="node3" title=" " alt="" coords="223,5,424,47"/>
+<area shape="rect" id="node1" title="Provides interface to MPI Communicators." alt="" coords="122,145,303,325"/>
+<area shape="rect" id="node2" href="$classboost_1_1mpi_1_1communicator.html" title=" " alt="" coords="5,13,199,90"/>
+<area shape="rect" id="node3" title=" " alt="" coords="223,5,424,97"/>
 </map>

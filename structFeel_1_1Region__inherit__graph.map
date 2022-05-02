@@ -1,7 +1,7 @@
 <map id="Feel::Region" name="Feel::Region">
-<area shape="rect" id="node1" title=" " alt="" coords="291,5,394,32"/>
-<area shape="rect" id="node2" href="$structFeel_1_1RegionMarker.html" title="class for RegionMarker" alt="" coords="5,80,152,107"/>
-<area shape="rect" id="node3" href="$structFeel_1_1RegionMarker2.html" title="class for RegionMarker2" alt="" coords="176,80,331,107"/>
-<area shape="rect" id="node4" href="$structFeel_1_1RegionMarker3.html" title="class for RegionMarker3" alt="" coords="355,80,509,107"/>
-<area shape="rect" id="node5" href="$structFeel_1_1RegionProcess.html" title="class for RegionProcess" alt="" coords="533,80,685,107"/>
+<area shape="rect" id="node1" title=" " alt="" coords="291,5,394,83"/>
+<area shape="rect" id="node2" href="$structFeel_1_1RegionMarker.html" title="class for RegionMarker" alt="" coords="5,131,152,208"/>
+<area shape="rect" id="node3" href="$structFeel_1_1RegionMarker2.html" title="class for RegionMarker2" alt="" coords="176,131,331,208"/>
+<area shape="rect" id="node4" href="$structFeel_1_1RegionMarker3.html" title="class for RegionMarker3" alt="" coords="355,131,509,208"/>
+<area shape="rect" id="node5" href="$structFeel_1_1RegionProcess.html" title="class for RegionProcess" alt="" coords="533,131,685,208"/>
 </map>

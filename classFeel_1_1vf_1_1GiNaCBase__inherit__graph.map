@@ -1,5 +1,5 @@
 <map id="Feel::vf::GiNaCBase" name="Feel::vf::GiNaCBase">
-<area shape="rect" id="node1" title=" " alt="" coords="55,80,205,107"/>
-<area shape="rect" id="node3" href="$classFeel_1_1vf_1_1GinacMatrix.html" title="Handle Ginac matrix expression." alt="" coords="5,155,255,196"/>
-<area shape="rect" id="node2" href="$classFeel_1_1vf_1_1ExprDynamicBase.html" title=" " alt="" coords="32,5,228,32"/>
+<area shape="rect" id="node1" title=" " alt="" coords="33,160,227,384"/>
+<area shape="rect" id="node3" href="$classFeel_1_1vf_1_1GinacMatrix.html" title="Handle Ginac matrix expression." alt="" coords="5,432,255,935"/>
+<area shape="rect" id="node2" href="$classFeel_1_1vf_1_1ExprDynamicBase.html" title=" " alt="" coords="32,5,228,112"/>
 </map>

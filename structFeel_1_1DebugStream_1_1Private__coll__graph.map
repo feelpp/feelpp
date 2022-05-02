@@ -1,12 +1,12 @@
 <map id="Feel::DebugStream::Private" name="Feel::DebugStream::Private">
-<area shape="rect" id="node1" title=" " alt="" coords="160,443,315,484"/>
-<area shape="rect" id="node2" title=" " alt="" coords="5,339,75,365"/>
-<area shape="rect" id="node3" href="$classbool.html" title=" " alt="" coords="153,339,204,365"/>
-<area shape="rect" id="node4" title="STL class." alt="" coords="228,339,369,365"/>
-<area shape="rect" id="node5" title="STL class." alt="" coords="185,248,367,289"/>
-<area shape="rect" id="node6" title="STL class." alt="" coords="298,157,443,199"/>
-<area shape="rect" id="node10" title="STL class." alt="" coords="391,248,542,289"/>
-<area shape="rect" id="node7" title="STL class." alt="" coords="285,81,456,108"/>
-<area shape="rect" id="node8" title="STL class." alt="" coords="317,5,424,32"/>
-<area shape="rect" id="node9" title="STL class." alt="" coords="399,339,508,365"/>
+<area shape="rect" id="node1" title=" " alt="" coords="175,696,329,788"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,541,75,619"/>
+<area shape="rect" id="node3" href="$classbool.html" title=" " alt="" coords="167,541,217,619"/>
+<area shape="rect" id="node4" title="STL class." alt="" coords="241,541,383,619"/>
+<area shape="rect" id="node5" title="STL class." alt="" coords="198,400,381,492"/>
+<area shape="rect" id="node6" title="STL class." alt="" coords="311,259,457,351"/>
+<area shape="rect" id="node10" title="STL class." alt="" coords="405,400,555,492"/>
+<area shape="rect" id="node7" title="STL class." alt="" coords="299,132,469,209"/>
+<area shape="rect" id="node8" title="STL class." alt="" coords="331,5,437,83"/>
+<area shape="rect" id="node9" title="STL class." alt="" coords="412,541,521,619"/>
 </map>

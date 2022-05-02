@@ -1,7 +1,7 @@
 <map id="Feel::Tetrahedron&lt; Dim &gt;" name="Feel::Tetrahedron&lt; Dim &gt;">
-<area shape="rect" id="node1" title=" " alt="" coords="94,244,239,285"/>
-<area shape="rect" id="node2" href="$classFeel_1_1Simplex.html" title=" " alt="" coords="75,169,258,196"/>
-<area shape="rect" id="node3" href="$classFeel_1_1Convex.html" title=" " alt="" coords="5,80,157,121"/>
-<area shape="rect" id="node4" href="$classFeel_1_1ConvexBase.html" title=" " alt="" coords="12,5,151,32"/>
-<area shape="rect" id="node5" href="$classFeel_1_1SimplexBase.html" title=" " alt="" coords="182,87,325,114"/>
+<area shape="rect" id="node1" title=" " alt="" coords="94,733,239,825"/>
+<area shape="rect" id="node2" href="$classFeel_1_1Simplex.html" title=" " alt="" coords="72,359,261,685"/>
+<area shape="rect" id="node3" href="$classFeel_1_1Convex.html" title=" " alt="" coords="5,131,157,311"/>
+<area shape="rect" id="node4" href="$classFeel_1_1ConvexBase.html" title=" " alt="" coords="12,5,151,83"/>
+<area shape="rect" id="node5" href="$classFeel_1_1SimplexBase.html" title=" " alt="" coords="182,182,325,259"/>
 </map>

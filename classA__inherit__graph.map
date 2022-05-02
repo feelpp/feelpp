@@ -1,8 +1,8 @@
 <map id="A" name="A">
-<area shape="rect" id="node1" title=" " alt="" coords="36,5,75,32"/>
-<area shape="rect" id="node2" href="$classB.html" title=" " alt="" coords="5,80,44,107"/>
-<area shape="rect" id="node5" href="$classC.html" title=" " alt="" coords="68,80,107,107"/>
-<area shape="rect" id="node3" href="$classD.html" title=" " alt="" coords="5,155,44,181"/>
-<area shape="rect" id="node4" href="$classF.html" title=" " alt="" coords="5,229,44,256"/>
-<area shape="rect" id="node6" href="$classE.html" title=" " alt="" coords="68,155,107,181"/>
+<area shape="rect" id="node1" title=" " alt="" coords="54,5,137,127"/>
+<area shape="rect" id="node2" href="$classB.html" title=" " alt="" coords="5,175,84,267"/>
+<area shape="rect" id="node5" href="$classC.html" title=" " alt="" coords="108,175,187,267"/>
+<area shape="rect" id="node3" href="$classD.html" title=" " alt="" coords="5,315,84,392"/>
+<area shape="rect" id="node4" href="$classF.html" title=" " alt="" coords="5,440,84,547"/>
+<area shape="rect" id="node6" href="$classE.html" title=" " alt="" coords="108,315,187,392"/>
 </map>

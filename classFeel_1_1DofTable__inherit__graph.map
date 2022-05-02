@@ -1,5 +1,5 @@
 <map id="Feel::DofTable&lt; MeshType, FEType, PeriodicityType, MortarType &gt;" name="Feel::DofTable&lt; MeshType, FEType, PeriodicityType, MortarType &gt;">
-<area shape="rect" id="node1" title="Local&#45;to&#45;global Degree of Freedom table." alt="" coords="5,184,204,240"/>
-<area shape="rect" id="node2" href="$classFeel_1_1DofTableBase.html" title=" " alt="" coords="11,95,198,136"/>
-<area shape="rect" id="node3" title=" " alt="" coords="20,5,189,47"/>
+<area shape="rect" id="node1" title="Local&#45;to&#45;global Degree of Freedom table." alt="" coords="5,359,204,627"/>
+<area shape="rect" id="node2" href="$classFeel_1_1DofTableBase.html" title=" " alt="" coords="11,145,198,311"/>
+<area shape="rect" id="node3" title=" " alt="" coords="20,5,189,97"/>
 </map>

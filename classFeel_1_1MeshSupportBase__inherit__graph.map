@@ -1,6 +1,6 @@
 <map id="Feel::MeshSupportBase" name="Feel::MeshSupportBase">
-<area shape="rect" id="node1" title="Description of a mesh support." alt="" coords="5,78,180,105"/>
-<area shape="rect" id="node2" href="$classFeel_1_1MeshSupport.html" title="Description of a mesh support." alt="" coords="236,5,389,47"/>
-<area shape="rect" id="node3" href="$classFeel_1_1MeshSupport.html" title=" " alt="" coords="228,71,397,112"/>
-<area shape="rect" id="node4" href="$classFeel_1_1MeshSupport.html" title=" " alt="" coords="232,136,393,177"/>
+<area shape="rect" id="node1" title="Description of a mesh support." alt="" coords="190,5,365,156"/>
+<area shape="rect" id="node2" href="$classFeel_1_1MeshSupport.html" title="Description of a mesh support." alt="" coords="5,204,168,369"/>
+<area shape="rect" id="node3" href="$classFeel_1_1MeshSupport.html" title=" " alt="" coords="193,204,362,369"/>
+<area shape="rect" id="node4" href="$classFeel_1_1MeshSupport.html" title=" " alt="" coords="387,204,549,369"/>
 </map>

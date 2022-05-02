@@ -1,5 +1,5 @@
 <map id="Feel::FeelModels::FluidMechanicsBoundaryConditions&lt; Dim &gt;::VelocityImposed" name="Feel::FeelModels::FluidMechanicsBoundaryConditions&lt; Dim &gt;::VelocityImposed">
-<area shape="rect" id="node1" title=" " alt="" coords="5,109,245,165"/>
-<area shape="rect" id="node3" href="$classFeel_1_1FeelModels_1_1FluidMechanicsBoundaryConditions_1_1MeshVelocityImposed.html" title=" " alt="" coords="5,213,245,269"/>
-<area shape="rect" id="node2" href="$classFeel_1_1FeelModels_1_1GenericDirichletBoundaryCondition.html" title=" " alt="" coords="25,5,226,61"/>
+<area shape="rect" id="node1" title=" " alt="" coords="5,336,245,487"/>
+<area shape="rect" id="node3" href="$classFeel_1_1FeelModels_1_1FluidMechanicsBoundaryConditions_1_1MeshVelocityImposed.html" title=" " alt="" coords="5,535,245,729"/>
+<area shape="rect" id="node2" href="$classFeel_1_1FeelModels_1_1GenericDirichletBoundaryCondition.html" title=" " alt="" coords="15,5,235,288"/>
 </map>

@@ -1,6 +1,6 @@
 <map id="Feel::ProductSpace&lt; T, same_mesh &gt;::Element" name="Feel::ProductSpace&lt; T, same_mesh &gt;::Element">
-<area shape="rect" id="node1" title=" " alt="" coords="332,57,541,98"/>
-<area shape="rect" id="node2" href="$classBlocksBaseVector.html" title=" " alt="" coords="5,5,217,32"/>
-<area shape="rect" id="node3" href="$classFeel_1_1FunctionSpaceBase_1_1ElementBase.html" title=" " alt="" coords="20,57,203,98"/>
-<area shape="rect" id="node4" title=" " alt="" coords="23,122,200,163"/>
+<area shape="rect" id="node1" title=" " alt="" coords="228,160,437,325"/>
+<area shape="rect" id="node2" href="$classBlocksBaseVector.html" title=" " alt="" coords="5,13,217,90"/>
+<area shape="rect" id="node3" href="$classFeel_1_1FunctionSpaceBase_1_1ElementBase.html" title=" " alt="" coords="241,5,424,97"/>
+<area shape="rect" id="node4" title=" " alt="" coords="448,5,625,97"/>
 </map>

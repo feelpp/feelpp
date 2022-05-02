@@ -1,5 +1,5 @@
 <map id="Faces" name="Faces">
-<area shape="rect" id="node1" title=" " alt="" coords="5,87,64,113"/>
-<area shape="rect" id="node2" href="$classFeel_1_1Mesh2D.html" title="2D mesh class" alt="" coords="112,5,369,91"/>
-<area shape="rect" id="node3" href="$classFeel_1_1Mesh3D.html" title="3D mesh class" alt="" coords="141,115,340,186"/>
+<area shape="rect" id="node1" title=" " alt="" coords="235,5,294,83"/>
+<area shape="rect" id="node2" href="$classFeel_1_1Mesh2D.html" title="2D mesh class" alt="" coords="5,131,263,619"/>
+<area shape="rect" id="node3" href="$classFeel_1_1Mesh3D.html" title="3D mesh class" alt="" coords="287,131,504,619"/>
 </map>

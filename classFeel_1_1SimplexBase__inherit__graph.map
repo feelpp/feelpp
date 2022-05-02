@@ -1,17 +1,17 @@
 <map id="Feel::SimplexBase" name="Feel::SimplexBase">
-<area shape="rect" id="node1" title=" " alt="" coords="5,165,148,192"/>
-<area shape="rect" id="node2" href="$classFeel_1_1Simplex.html" title="simplex of dimension Dim" alt="" coords="209,22,365,63"/>
-<area shape="rect" id="node4" href="$classFeel_1_1Simplex.html" title=" " alt="" coords="211,97,364,138"/>
-<area shape="rect" id="node10" href="$classFeel_1_1Simplex.html" title=" " alt="" coords="196,165,379,192"/>
-<area shape="rect" id="node12" href="$classFeel_1_1Simplex.html" title=" " alt="" coords="196,216,379,243"/>
-<area shape="rect" id="node14" href="$classFeel_1_1Simplex.html" title=" " alt="" coords="196,271,379,297"/>
-<area shape="rect" id="node3" href="$classFeel_1_1Reference_3_01Simplex_3_01Dim_00_01Order_00_01RDim_01_4_00_01Dim_00_01Order_00_01RDim_00_01T_01_4.html" title=" " alt="" coords="427,5,633,61"/>
-<area shape="rect" id="node5" href="$classFeel_1_1GeoEntity.html" title=" " alt="" coords="435,85,625,141"/>
-<area shape="rect" id="node6" href="$classFeel_1_1Geo0D.html" title=" " alt="" coords="699,34,862,75"/>
-<area shape="rect" id="node7" href="$classFeel_1_1Geo0D.html" title=" " alt="" coords="711,100,850,127"/>
-<area shape="rect" id="node8" href="$classFeel_1_1Geo0D.html" title=" " alt="" coords="681,151,880,193"/>
-<area shape="rect" id="node9" href="$classFeel_1_1GeoElement0D.html" title="Class for Points and Vertices." alt="" coords="928,151,1136,193"/>
-<area shape="rect" id="node11" href="$structFeel_1_1Line.html" title=" " alt="" coords="459,165,601,192"/>
-<area shape="rect" id="node13" href="$structFeel_1_1Triangle.html" title=" " alt="" coords="447,216,613,243"/>
-<area shape="rect" id="node15" href="$structFeel_1_1Tetrahedron.html" title=" " alt="" coords="457,267,603,309"/>
+<area shape="rect" id="node1" title=" " alt="" coords="504,5,647,83"/>
+<area shape="rect" id="node2" href="$classFeel_1_1Simplex.html" title="simplex of dimension Dim" alt="" coords="34,131,223,472"/>
+<area shape="rect" id="node4" href="$classFeel_1_1Simplex.html" title=" " alt="" coords="267,131,457,472"/>
+<area shape="rect" id="node10" href="$classFeel_1_1Simplex.html" title=" " alt="" coords="481,138,670,465"/>
+<area shape="rect" id="node12" href="$classFeel_1_1Simplex.html" title=" " alt="" coords="694,138,883,465"/>
+<area shape="rect" id="node14" href="$classFeel_1_1Simplex.html" title=" " alt="" coords="907,138,1097,465"/>
+<area shape="rect" id="node3" href="$classFeel_1_1Reference_3_01Simplex_3_01Dim_00_01Order_00_01RDim_01_4_00_01Dim_00_01Order_00_01RDim_00_01T_01_4.html" title=" " alt="" coords="5,601,212,1045"/>
+<area shape="rect" id="node5" href="$classFeel_1_1GeoEntity.html" title=" " alt="" coords="237,520,487,1125"/>
+<area shape="rect" id="node6" href="$classFeel_1_1Geo0D.html" title=" " alt="" coords="106,1173,269,1353"/>
+<area shape="rect" id="node7" href="$classFeel_1_1Geo0D.html" title=" " alt="" coords="293,1181,431,1346"/>
+<area shape="rect" id="node8" href="$classFeel_1_1Geo0D.html" title=" " alt="" coords="456,1173,655,1353"/>
+<area shape="rect" id="node9" href="$classFeel_1_1GeoElement0D.html" title="Class for Points and Vertices." alt="" coords="447,1401,663,1611"/>
+<area shape="rect" id="node11" href="$structFeel_1_1Line.html" title=" " alt="" coords="511,784,653,861"/>
+<area shape="rect" id="node13" href="$structFeel_1_1Triangle.html" title=" " alt="" coords="706,784,871,861"/>
+<area shape="rect" id="node15" href="$structFeel_1_1Tetrahedron.html" title=" " alt="" coords="929,777,1075,869"/>
 </map>

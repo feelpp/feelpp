@@ -1,5 +1,5 @@
 <map id="Feel::stencilQuadSet&lt; QuadOrder1d, QuadOrder2d, QuadOrder3d &gt;" name="Feel::stencilQuadSet&lt; QuadOrder1d, QuadOrder2d, QuadOrder3d &gt;">
-<area shape="rect" id="node1" title=" " alt="" coords="83,109,304,165"/>
-<area shape="rect" id="node2" href="$structFeel_1_1stencilQuadSetBase.html" title="define the quadrature order use with non standard stencil" alt="" coords="5,20,192,47"/>
-<area shape="rect" id="node3" href="$classboost_1_1fusion_1_1vector.html" title=" " alt="" coords="217,5,359,61"/>
+<area shape="rect" id="node1" title=" " alt="" coords="83,160,304,267"/>
+<area shape="rect" id="node2" href="$structFeel_1_1stencilQuadSetBase.html" title="define the quadrature order use with non standard stencil" alt="" coords="5,20,192,97"/>
+<area shape="rect" id="node3" href="$classboost_1_1fusion_1_1vector.html" title=" " alt="" coords="217,5,359,112"/>
 </map>

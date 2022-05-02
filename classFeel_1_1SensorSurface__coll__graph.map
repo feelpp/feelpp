@@ -1,9 +1,9 @@
 <map id="Feel::SensorSurface&lt; Space &gt;" name="Feel::SensorSurface&lt; Space &gt;">
-<area shape="rect" id="node1" title="surface type sensor" alt="" coords="169,304,319,345"/>
-<area shape="rect" id="node2" href="$classFeel_1_1SensorBase.html" title=" " alt="" coords="71,215,273,241"/>
-<area shape="rect" id="node3" href="$classFeel_1_1FsFunctionalLinear.html" title=" " alt="" coords="5,96,184,137"/>
-<area shape="rect" id="node4" href="$classFeel_1_1FsFunctional.html" title=" " alt="" coords="24,5,163,47"/>
-<area shape="rect" id="node5" title="STL class." alt="" coords="211,103,298,130"/>
-<area shape="rect" id="node6" title="STL class." alt="" coords="187,5,325,47"/>
-<area shape="rect" id="node7" href="$classint.html" title=" " alt="" coords="298,215,337,241"/>
+<area shape="rect" id="node1" title="surface type sensor" alt="" coords="169,676,319,856"/>
+<area shape="rect" id="node2" href="$classFeel_1_1SensorBase.html" title=" " alt="" coords="71,463,273,613"/>
+<area shape="rect" id="node3" href="$classFeel_1_1FsFunctionalLinear.html" title=" " alt="" coords="5,220,184,385"/>
+<area shape="rect" id="node4" href="$classFeel_1_1FsFunctional.html" title=" " alt="" coords="22,5,162,171"/>
+<area shape="rect" id="node5" title="STL class." alt="" coords="211,264,298,341"/>
+<area shape="rect" id="node6" title="STL class." alt="" coords="187,42,325,134"/>
+<area shape="rect" id="node7" href="$classint.html" title=" " alt="" coords="298,499,337,577"/>
 </map>
