@@ -3,12 +3,11 @@ var classFeel_1_1JournalManager =
     [ "journalAutoMode", "classFeel_1_1JournalManager.html#ad6ffb95221b4183f0eb6a91c48305c6c", null ],
     [ "journalCheckpoint", "classFeel_1_1JournalManager.html#a4771e8ff34683e6715cd0b86fa59a9a2", null ],
     [ "journalCurrentCheckpoint", "classFeel_1_1JournalManager.html#a26b9d571c84e48737f04fa84194b8d49", null ],
-    [ "journalData", "classFeel_1_1JournalManager.html#a26bbc2bb204806f5356e536d4319c417", null ],
     [ "journalDBConfig", "classFeel_1_1JournalManager.html#a735aa096e8e78391574e06ebec3b18ef", null ],
     [ "journalEnabled", "classFeel_1_1JournalManager.html#a3c926b0dd9aaf0bf5200a37965c714c5", null ],
-    [ "journalFilename", "classFeel_1_1JournalManager.html#a75bd5384b5c5de33aee8031d01e2ffa8", null ],
+    [ "journalFilename", "classFeel_1_1JournalManager.html#a1595d596f9f6f415bc1fb7ccc6fa5acc", null ],
     [ "journalFinalize", "classFeel_1_1JournalManager.html#a81638b0093b593e70a89785b00d54cf5", null ],
-    [ "journalPull", "classFeel_1_1JournalManager.html#a8152cc702e9e463370b1421ea66fc3fa", null ],
+    [ "journalPull", "classFeel_1_1JournalManager.html#ad44a6ffc580c5d69259a682b8ef5c681", null ],
     [ "journalSave", "classFeel_1_1JournalManager.html#a25e83050695ce2e3d6d52a34bdc728b9", null ],
     [ "journalSetDBAuthsrc", "classFeel_1_1JournalManager.html#a20d30fcb0d9e2c22bd5a29888de39779", null ],
     [ "journalSetDBCollection", "classFeel_1_1JournalManager.html#ac58f5acd5c4f1a6750101f2aa7b7ac78", null ],
@@ -21,7 +20,6 @@ var classFeel_1_1JournalManager =
     [ "setJournalAutoMode", "classFeel_1_1JournalManager.html#af3998caa18c821abfa5dba41170473a3", null ],
     [ "setJournalEnable", "classFeel_1_1JournalManager.html#a55deac5c47e5e6ab3ac7607f89149a57", null ],
     [ "setJournalFilename", "classFeel_1_1JournalManager.html#a68fcb2fe0b7c450c25db9b7d8b1f3624", null ],
-    [ "notify_type", "classFeel_1_1JournalManager.html#aa32d9687c879073aee7b4c43cb269285", null ],
     [ "JournalManager", "classFeel_1_1JournalManager.html#a63f487b5d6b635223a07a34c8165d782", null ],
     [ "~JournalManager", "classFeel_1_1JournalManager.html#adca6ff9f7e53eac59d5d8974efeda645", null ]
 ];

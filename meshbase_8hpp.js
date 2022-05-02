@@ -1,6 +1,5 @@
 var meshbase_8hpp =
 [
-    [ "SubMeshData", "classFeel_1_1SubMeshData.html", "classFeel_1_1SubMeshData" ],
     [ "MeshComponents", "meshbase_8hpp.html#ga82cf55da340f64b682d0bea678d6cdf4", [
       [ "MESH_UPDATE_EDGES", "meshbase_8hpp.html#gga82cf55da340f64b682d0bea678d6cdf4a4678bccf185b19440fa3bbd013cbead1", null ],
       [ "MESH_UPDATE_FACES", "meshbase_8hpp.html#gga82cf55da340f64b682d0bea678d6cdf4abc242b5cc184b66bc6ba412b52b83857", null ],
@@ -15,7 +14,5 @@ var meshbase_8hpp =
       [ "MESH_UPDATE_FACES_MINIMAL", "meshbase_8hpp.html#gga82cf55da340f64b682d0bea678d6cdf4a5497534826faafd2a147cf7dab7f0027", null ],
       [ "MESH_GEOMAP_NOT_CACHED", "meshbase_8hpp.html#gga82cf55da340f64b682d0bea678d6cdf4a254230b778be6132fe3813b63975f433", null ],
       [ "MESH_DO_NOT_UPDATE", "meshbase_8hpp.html#gga82cf55da340f64b682d0bea678d6cdf4ab0c638f3b99ae9bbeee4beba43e0c954", null ]
-    ] ],
-    [ "MESH_ALL_COMPONENTS", "meshbase_8hpp.html#adc5de8514aa86afe25c80845e67ed0ef", null ],
-    [ "MESH_COMPONENTS_DEFAULTS", "meshbase_8hpp.html#abb3d68ba0c883c2d7cbd75e7f37e4231", null ]
+    ] ]
 ];

@@ -77,14 +77,14 @@ var sectionId = 'dynsection-0';
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:href="classFeel_1_1InterpolationTypeBase.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="8.5,-149.5 8.5,-316.5 173.5,-316.5 173.5,-149.5 8.5,-149.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="8.5,-149.5 8.5,-316.5 173.5,-316.5 173.5,-149.5 8.5,-149.5"/>
 <text text-anchor="start" x="16.5" y="-304.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::InterpolationTypeBase</text>
 <text text-anchor="start" x="16.5" y="-293.5" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; false, interpolation_operand</text>
 <text text-anchor="middle" x="91" y="-282.5" font-family="Helvetica,sans-Serif" font-size="10.00">_type::ID &gt;</text>
-<polyline fill="none" stroke="black" points="8.5,-275.5 173.5,-275.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="8.5,-275.5 173.5,-275.5 "/>
 <text text-anchor="start" x="16.5" y="-263.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ interpolation_operand</text>
 <text text-anchor="start" x="16.5" y="-252.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ is_conforming</text>
-<polyline fill="none" stroke="black" points="8.5,-245.5 173.5,-245.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="8.5,-245.5 173.5,-245.5 "/>
 <text text-anchor="start" x="16.5" y="-233.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ InterpolationTypeBase()</text>
 <text text-anchor="start" x="16.5" y="-222.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ InterpolationTypeBase()</text>
 <text text-anchor="start" x="16.5" y="-211.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ InterpolationTypeBase()</text>
@@ -106,13 +106,13 @@ var sectionId = 'dynsection-0';
 <g id="node3" class="node">
 <title>Node3</title>
 <g id="a_node3"><a xlink:href="classFeel_1_1InterpolationTypeBaseBase.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="7,-353.5 7,-509.5 175,-509.5 175,-353.5 7,-353.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="7,-353.5 7,-509.5 175,-509.5 175,-353.5 7,-353.5"/>
 <text text-anchor="start" x="15" y="-497.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::InterpolationTypeBase</text>
 <text text-anchor="middle" x="91" y="-486.5" font-family="Helvetica,sans-Serif" font-size="10.00">Base&lt; C, O &gt;</text>
-<polyline fill="none" stroke="black" points="7,-479.5 175,-479.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="7,-479.5 175,-479.5 "/>
 <text text-anchor="start" x="15" y="-467.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ interpolation_operand</text>
 <text text-anchor="start" x="15" y="-456.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ is_conforming</text>
-<polyline fill="none" stroke="black" points="7,-449.5 175,-449.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="7,-449.5 175,-449.5 "/>
 <text text-anchor="start" x="15" y="-437.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ componentsAreSamePoint()</text>
 <text text-anchor="start" x="15" y="-426.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ InterpolationTypeBaseBase()</text>
 <text text-anchor="start" x="15" y="-415.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ InterpolationTypeBaseBase()</text>

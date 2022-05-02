@@ -1,3 +1,44 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classbool.html" title=" " alt="" coords="5,5,56,32"/>
+<area shape="rect" id="node1" title=" " alt="" coords="403,188,606,214"/>
+<area shape="rect" id="node2" href="$classFeel_1_1Geo0D.html" title=" " alt="" coords="970,343,1169,384"/>
+<area shape="rect" id="node4" href="$classFeel_1_1Geo0D.html" title=" " alt="" coords="1000,226,1139,253"/>
+<area shape="rect" id="node5" href="$classFeel_1_1GeoEntity.html" title=" " alt="" coords="669,329,859,385"/>
+<area shape="rect" id="node6" href="$classFeel_1_1Geo0D.html" title="Zero dimensional entity." alt="" coords="988,278,1151,319"/>
+<area shape="rect" id="node7" href="$classFeel_1_1GeoEntity.html" title=" " alt="" coords="659,562,869,603"/>
+<area shape="rect" id="node14" href="$classFeel_1_1GeoEntity.html" title="base class for all geometric entities" alt="" coords="675,147,853,188"/>
+<area shape="rect" id="node15" href="$classFeel_1_1detail_1_1TimeSet_1_1Step.html" title="a step in a time set" alt="" coords="678,212,850,254"/>
+<area shape="rect" id="node3" href="$classFeel_1_1GeoElement0D.html" title="Class for Points and Vertices." alt="" coords="1288,376,1497,418"/>
+<area shape="rect" id="node8" href="$classFeel_1_1GeoND.html" title=" " alt="" coords="917,554,1221,728"/>
+<area shape="rect" id="node10" href="$classFeel_1_1GeoND.html" title=" " alt="" coords="930,803,1209,874"/>
+<area shape="rect" id="node13" href="$classFeel_1_1GeoND.html" title="Base class for Multi&#45;dimensional basis Geometrical Entities." alt="" coords="938,474,1201,530"/>
+<area shape="rect" id="node9" href="$classFeel_1_1GeoElement1D.html" title="class for 1D elements" alt="" coords="1281,622,1504,692"/>
+<area shape="rect" id="node11" href="$classFeel_1_1GeoElement2D.html" title="Class for 2D elements." alt="" coords="1269,733,1516,789"/>
+<area shape="rect" id="node12" href="$classFeel_1_1GeoElement3D.html" title="Class for 3D elements." alt="" coords="1277,813,1508,869"/>
+<area shape="rect" id="node16" title=" " alt="" coords="399,344,611,370"/>
+<area shape="rect" id="node17" href="$classFeel_1_1ConvexBase.html" title=" " alt="" coords="5,744,144,770"/>
+<area shape="rect" id="node18" href="$classFeel_1_1Convex.html" title=" " alt="" coords="195,678,347,719"/>
+<area shape="rect" id="node24" href="$classFeel_1_1Convex.html" title=" " alt="" coords="195,583,347,624"/>
+<area shape="rect" id="node27" href="$classFeel_1_1Convex.html" title=" " alt="" coords="195,824,347,866"/>
+<area shape="rect" id="node34" href="$classFeel_1_1Convex.html" title="Convex base class." alt="" coords="195,890,347,931"/>
+<area shape="rect" id="node19" href="$classFeel_1_1Hypercube.html" title=" " alt="" coords="418,518,591,559"/>
+<area shape="rect" id="node21" href="$classFeel_1_1Simplex.html" title=" " alt="" coords="428,648,581,690"/>
+<area shape="rect" id="node22" href="$classFeel_1_1Simplex.html" title=" " alt="" coords="427,766,583,807"/>
+<area shape="rect" id="node20" href="$classFeel_1_1Reference_3_01Hypercube_3_01Dim_00_01Order_00_01RDim_01_4_00_01Dim_00_01Order_00_01RDim_00_01T_01_4.html" title=" " alt="" coords="660,678,868,734"/>
+<area shape="rect" id="node23" href="$classFeel_1_1Reference_3_01Simplex_3_01Dim_00_01Order_00_01RDim_01_4_00_01Dim_00_01Order_00_01RDim_00_01T_01_4.html" title=" " alt="" coords="661,758,867,814"/>
+<area shape="rect" id="node25" href="$classFeel_1_1Hypercube.html" title=" " alt="" coords="418,122,591,163"/>
+<area shape="rect" id="node26" href="$classFeel_1_1Simplex.html" title="simplex of dimension Dim" alt="" coords="427,583,583,624"/>
+<area shape="rect" id="node28" href="$classFeel_1_1Simplex.html" title=" " alt="" coords="413,832,596,858"/>
+<area shape="rect" id="node30" href="$classFeel_1_1Simplex.html" title=" " alt="" coords="413,882,596,909"/>
+<area shape="rect" id="node32" href="$classFeel_1_1Simplex.html" title=" " alt="" coords="413,933,596,960"/>
+<area shape="rect" id="node29" href="$structFeel_1_1Line.html" title=" " alt="" coords="693,838,835,865"/>
+<area shape="rect" id="node31" href="$structFeel_1_1Tetrahedron.html" title=" " alt="" coords="691,890,837,931"/>
+<area shape="rect" id="node33" href="$structFeel_1_1Triangle.html" title=" " alt="" coords="681,956,847,982"/>
+<area shape="rect" id="node35" href="$classFeel_1_1Entity.html" title=" " alt="" coords="410,238,599,265"/>
+<area shape="rect" id="node36" href="$classFeel_1_1HypercubeBase.html" title=" " alt="" coords="192,328,351,354"/>
+<area shape="rect" id="node37" href="$classFeel_1_1SimplexBase.html" title=" " alt="" coords="200,773,343,800"/>
+<area shape="rect" id="node38" title=" " alt="" coords="458,714,551,741"/>
+<area shape="rect" id="node39" href="$classmpl_1_1if___3_01mpl_1_1bool___3_01false_01_4_00_01mpl_1_1identity_3_01GeoNDMeasuresStorage_1b4a2037756985fd616e6afd271a4aef.html" title=" " alt="" coords="691,510,837,537"/>
+<area shape="rect" id="node40" title=" " alt="" coords="691,628,837,654"/>
+<area shape="rect" id="node41" href="$classFeel_1_1SubFaceOfNone.html" title=" " alt="" coords="970,752,1169,778"/>
+<area shape="rect" id="node42" href="$classFeel_1_1SubFaceOfNone.html" title=" " alt="" coords="989,408,1149,450"/>
 </map>

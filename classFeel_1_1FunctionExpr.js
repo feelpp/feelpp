@@ -1,27 +1,7 @@
 var classFeel_1_1FunctionExpr =
 [
-    [ "ExprContextProd", "structFeel_1_1FunctionExpr_1_1ExprContextProd.html", "structFeel_1_1FunctionExpr_1_1ExprContextProd" ],
-    [ "HasTestFunction", "structFeel_1_1FunctionExpr_1_1HasTestFunction.html", "structFeel_1_1FunctionExpr_1_1HasTestFunction" ],
-    [ "HasTrialFunction", "structFeel_1_1FunctionExpr_1_1HasTrialFunction.html", "structFeel_1_1FunctionExpr_1_1HasTrialFunction" ],
-    [ "tensor", "structFeel_1_1FunctionExpr_1_1tensor.html", "structFeel_1_1FunctionExpr_1_1tensor" ],
-    [ "argsTuple", "classFeel_1_1FunctionExpr.html#aaa68a721af7197d90a7b1d41646c1d81", null ],
-    [ "function", "classFeel_1_1FunctionExpr.html#a923ce09bfeedbf15a409b99611070606", null ],
-    [ "isPolynomial", "classFeel_1_1FunctionExpr.html#a66582fd8053ea1a14bb5e88bcb0c25a4", null ],
-    [ "polynomialOrder", "classFeel_1_1FunctionExpr.html#aa7b16546d607878f17b404c69f74a51a", null ],
-    [ "setPolynomialOrder", "classFeel_1_1FunctionExpr.html#aed598c37b8296b6947dd7bbe0299cb86", null ],
-    [ "args_types", "classFeel_1_1FunctionExpr.html#a03451f8df60dcb8e13d77119d717d6fa", null ],
-    [ "context", "classFeel_1_1FunctionExpr.html#ade1eae41c712bf7257c0435e18e13f2f", null ],
-    [ "is_terminal", "classFeel_1_1FunctionExpr.html#a6669128a1c9eced7afdf413cd37e1436", null ],
-    [ "make_type_tuple", "classFeel_1_1FunctionExpr.html#a70d4f75757d048c478acdee57e48e8c7", null ],
-    [ "args_tuple_type", "classFeel_1_1FunctionExpr.html#a8eecceead0fba5ec0b35ef4321a8aa04", null ],
-    [ "function_type", "classFeel_1_1FunctionExpr.html#a488305e6f632648b6e00714354259ffd", null ],
-    [ "self_type", "classFeel_1_1FunctionExpr.html#a1f9873455025bd5f8ff8e364087037d1", null ],
-    [ "super_type", "classFeel_1_1FunctionExpr.html#a081e4943ba8537545c331b6f705b710c", null ],
-    [ "test_basis", "classFeel_1_1FunctionExpr.html#ade2eb61f0dfb31f200054b6bccdad057", null ],
-    [ "trial_basis", "classFeel_1_1FunctionExpr.html#af38fcd9c81eb950b2e5ce4063d644f6d", null ],
-    [ "value_type", "classFeel_1_1FunctionExpr.html#a2db209da9c033b9596916404e0d070b6", null ],
-    [ "FunctionExpr", "classFeel_1_1FunctionExpr.html#adb0ad892547c7623594dc1935fd7067f", null ],
-    [ "FunctionExpr", "classFeel_1_1FunctionExpr.html#a177a65b14b6630023485c15060e7511d", null ],
-    [ "FunctionExpr", "classFeel_1_1FunctionExpr.html#a9af54e4fb85c7924058699608541a574", null ],
-    [ "FunctionExpr", "classFeel_1_1FunctionExpr.html#a8f219bfc0cb31fcc258f0783c1e28b95", null ]
+    [ "ExprContextProd", "structFeel_1_1FunctionExpr_1_1ExprContextProd.html", null ],
+    [ "HasTestFunction", "structFeel_1_1FunctionExpr_1_1HasTestFunction.html", null ],
+    [ "HasTrialFunction", "structFeel_1_1FunctionExpr_1_1HasTrialFunction.html", null ],
+    [ "tensor", "structFeel_1_1FunctionExpr_1_1tensor.html", "structFeel_1_1FunctionExpr_1_1tensor" ]
 ];

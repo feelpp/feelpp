@@ -27,11 +27,11 @@
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:href="classis__detected.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="4,-105.5 4,-162.5 150,-162.5 150,-105.5 4,-105.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="4,-105.5 4,-162.5 150,-162.5 150,-105.5 4,-105.5"/>
 <text text-anchor="middle" x="77" y="-150.5" font-family="Helvetica,sans-Serif" font-size="10.00">is_detected&lt; Op, Args... &gt;</text>
-<polyline fill="none" stroke="black" points="4,-143.5 150,-143.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="4,-143.5 150,-143.5 "/>
 <text text-anchor="middle" x="77" y="-131.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="4,-124.5 150,-124.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="4,-124.5 150,-124.5 "/>
 <text text-anchor="middle" x="77" y="-112.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>

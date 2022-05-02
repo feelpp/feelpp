@@ -30,12 +30,12 @@
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:href="classFeel_1_1FeelModels_1_1ElectricBoundaryConditions.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="0,-0.5 0,-134.5 170,-134.5 170,-0.5 0,-0.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="0,-0.5 0,-134.5 170,-134.5 170,-0.5 0,-0.5"/>
 <text text-anchor="start" x="8" y="-122.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::Electric</text>
 <text text-anchor="middle" x="85" y="-111.5" font-family="Helvetica,sans-Serif" font-size="10.00">BoundaryConditions</text>
-<polyline fill="none" stroke="black" points="0,-104.5 170,-104.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="0,-104.5 170,-104.5 "/>
 <text text-anchor="middle" x="85" y="-92.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="0,-85.5 170,-85.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="0,-85.5 170,-85.5 "/>
 <text text-anchor="start" x="8" y="-73.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ applyDofEliminationLinear()</text>
 <text text-anchor="start" x="8" y="-62.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ applyNewtonInitialGuess()</text>
 <text text-anchor="start" x="8" y="-51.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ ElectricBoundaryConditions()</text>
@@ -82,12 +82,12 @@
 <g id="node4" class="node">
 <title>Node4</title>
 <g id="a_node4"><a xlink:href="classFeel_1_1FeelModels_1_1HeatBoundaryConditions.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="416,-0.5 416,-134.5 590,-134.5 590,-0.5 416,-0.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="416,-0.5 416,-134.5 590,-134.5 590,-0.5 416,-0.5"/>
 <text text-anchor="start" x="424" y="-122.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::HeatBoundary</text>
 <text text-anchor="middle" x="503" y="-111.5" font-family="Helvetica,sans-Serif" font-size="10.00">Conditions</text>
-<polyline fill="none" stroke="black" points="416,-104.5 590,-104.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="416,-104.5 590,-104.5 "/>
 <text text-anchor="middle" x="503" y="-92.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="416,-85.5 590,-85.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="416,-85.5 590,-85.5 "/>
 <text text-anchor="start" x="424" y="-73.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ applyDofEliminationLinear()</text>
 <text text-anchor="start" x="424" y="-62.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ applyNewtonInitialGuess()</text>
 <text text-anchor="start" x="424" y="-51.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ convectiveHeatFlux()</text>
@@ -108,12 +108,12 @@
 <g id="node5" class="node">
 <title>Node5</title>
 <g id="a_node5"><a xlink:href="classFeel_1_1FeelModels_1_1SolidMechanics1dReducedBoundaryConditions.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="608,-0.5 608,-134.5 808,-134.5 808,-0.5 608,-0.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="608,-0.5 608,-134.5 808,-134.5 808,-0.5 608,-0.5"/>
 <text text-anchor="start" x="616" y="-122.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::SolidMechanics1d</text>
 <text text-anchor="middle" x="708" y="-111.5" font-family="Helvetica,sans-Serif" font-size="10.00">ReducedBoundaryConditions&lt; Dim &gt;</text>
-<polyline fill="none" stroke="black" points="608,-104.5 808,-104.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="608,-104.5 808,-104.5 "/>
 <text text-anchor="middle" x="708" y="-92.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="608,-85.5 808,-85.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="608,-85.5 808,-85.5 "/>
 <text text-anchor="start" x="616" y="-73.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ applyDofEliminationLinear()</text>
 <text text-anchor="start" x="616" y="-62.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ applyNewtonInitialGuess()</text>
 <text text-anchor="start" x="616" y="-51.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ displacementImposed()</text>
@@ -134,12 +134,12 @@
 <g id="node6" class="node">
 <title>Node6</title>
 <g id="a_node6"><a xlink:href="classFeel_1_1FeelModels_1_1SolidMechanicsBoundaryConditions.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="826,-0.5 826,-134.5 1006,-134.5 1006,-0.5 826,-0.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="826,-0.5 826,-134.5 1006,-134.5 1006,-0.5 826,-0.5"/>
 <text text-anchor="start" x="834" y="-122.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::SolidMechanics</text>
 <text text-anchor="middle" x="916" y="-111.5" font-family="Helvetica,sans-Serif" font-size="10.00">BoundaryConditions&lt; Dim &gt;</text>
-<polyline fill="none" stroke="black" points="826,-104.5 1006,-104.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="826,-104.5 1006,-104.5 "/>
 <text text-anchor="middle" x="916" y="-92.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="826,-85.5 1006,-85.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="826,-85.5 1006,-85.5 "/>
 <text text-anchor="start" x="834" y="-73.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ applyDofEliminationLinear()</text>
 <text text-anchor="start" x="834" y="-62.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ applyNewtonInitialGuess()</text>
 <text text-anchor="start" x="834" y="-51.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ displacementImposed()</text>

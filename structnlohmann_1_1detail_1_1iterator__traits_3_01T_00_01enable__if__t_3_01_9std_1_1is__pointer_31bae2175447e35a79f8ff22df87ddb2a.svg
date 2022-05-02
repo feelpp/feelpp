@@ -29,12 +29,12 @@
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:href="structnlohmann_1_1detail_1_1iterator__types.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="0,-127.5 0,-195.5 141,-195.5 141,-127.5 0,-127.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="0,-127.5 0,-195.5 141,-195.5 141,-127.5 0,-127.5"/>
 <text text-anchor="start" x="8" y="-183.5" font-family="Helvetica,sans-Serif" font-size="10.00">nlohmann::detail::iterator</text>
 <text text-anchor="middle" x="70.5" y="-172.5" font-family="Helvetica,sans-Serif" font-size="10.00">_types&lt; T &gt;</text>
-<polyline fill="none" stroke="black" points="0,-165.5 141,-165.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="0,-165.5 141,-165.5 "/>
 <text text-anchor="middle" x="70.5" y="-153.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="0,-146.5 141,-146.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="0,-146.5 141,-146.5 "/>
 <text text-anchor="middle" x="70.5" y="-134.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>

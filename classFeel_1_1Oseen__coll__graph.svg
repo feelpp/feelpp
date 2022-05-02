@@ -46,9 +46,9 @@
 <title>Node2&#45;&gt;Node1</title>
 <path fill="none" stroke="#404040" d="M67,-193.48C67,-177.37 67,-156.19 67,-135.61"/>
 <polygon fill="none" stroke="#404040" points="67,-135.59 63,-129.59 67,-123.59 71,-129.59 67,-135.59"/>
-<text text-anchor="middle" x="89.5" y="-167" font-family="Helvetica,sans-Serif" font-size="10.00"> +uOrder</text>
-<text text-anchor="middle" x="89.5" y="-156" font-family="Helvetica,sans-Serif" font-size="10.00">+pOrder</text>
-<text text-anchor="middle" x="89.5" y="-145" font-family="Helvetica,sans-Serif" font-size="10.00">+Dim</text>
+<text text-anchor="middle" x="88" y="-167" font-family="Helvetica,sans-Serif" font-size="10.00"> +Dim</text>
+<text text-anchor="middle" x="88" y="-156" font-family="Helvetica,sans-Serif" font-size="10.00">+pOrder</text>
+<text text-anchor="middle" x="88" y="-145" font-family="Helvetica,sans-Serif" font-size="10.00">+uOrder</text>
 </g>
 </g>
 </svg>

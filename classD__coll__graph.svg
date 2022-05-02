@@ -26,11 +26,11 @@
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:href="classB.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="1.5,-94.5 1.5,-162.5 60.5,-162.5 60.5,-94.5 1.5,-94.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="1.5,-94.5 1.5,-162.5 60.5,-162.5 60.5,-94.5 1.5,-94.5"/>
 <text text-anchor="middle" x="31" y="-150.5" font-family="Helvetica,sans-Serif" font-size="10.00">B</text>
-<polyline fill="none" stroke="black" points="1.5,-143.5 60.5,-143.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="1.5,-143.5 60.5,-143.5 "/>
 <text text-anchor="middle" x="31" y="-131.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="1.5,-124.5 60.5,-124.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="1.5,-124.5 60.5,-124.5 "/>
 <text text-anchor="start" x="9.5" y="-112.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ hello()</text>
 <text text-anchor="start" x="9.5" y="-101.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ ~B()</text>
 </a>
@@ -46,11 +46,11 @@
 <g id="node3" class="node">
 <title>Node3</title>
 <g id="a_node3"><a xlink:href="classA.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="0,-199.5 0,-289.5 62,-289.5 62,-199.5 0,-199.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="0,-199.5 0,-289.5 62,-289.5 62,-199.5 0,-199.5"/>
 <text text-anchor="middle" x="31" y="-277.5" font-family="Helvetica,sans-Serif" font-size="10.00">A</text>
-<polyline fill="none" stroke="black" points="0,-270.5 62,-270.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="0,-270.5 62,-270.5 "/>
 <text text-anchor="middle" x="31" y="-258.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="0,-251.5 62,-251.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="0,-251.5 62,-251.5 "/>
 <text text-anchor="start" x="8" y="-239.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ A()</text>
 <text text-anchor="start" x="8" y="-228.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ hello()</text>
 <text text-anchor="start" x="8" y="-217.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ value()</text>

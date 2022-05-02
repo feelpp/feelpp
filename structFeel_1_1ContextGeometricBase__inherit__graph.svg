@@ -26,12 +26,12 @@
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:href="classFeel_1_1GeometricSpace_1_1ContextGeometric.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="0,-0.5 0,-123.5 183,-123.5 183,-0.5 0,-0.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="0,-0.5 0,-123.5 183,-123.5 183,-0.5 0,-0.5"/>
 <text text-anchor="start" x="8" y="-111.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::GeometricSpace</text>
 <text text-anchor="middle" x="91.5" y="-100.5" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; MeshType &gt;::ContextGeometric</text>
-<polyline fill="none" stroke="black" points="0,-93.5 183,-93.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="0,-93.5 183,-93.5 "/>
 <text text-anchor="middle" x="91.5" y="-81.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="0,-74.5 183,-74.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="0,-74.5 183,-74.5 "/>
 <text text-anchor="start" x="8" y="-62.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ ContextGeometric()</text>
 <text text-anchor="start" x="8" y="-51.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ ContextGeometric()</text>
 <text text-anchor="start" x="8" y="-40.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ ContextGeometric()</text>

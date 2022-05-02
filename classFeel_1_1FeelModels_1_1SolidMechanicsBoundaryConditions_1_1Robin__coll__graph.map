@@ -1,7 +1,7 @@
 <map id="Feel::FeelModels::SolidMechanicsBoundaryConditions&lt; Dim &gt;::Robin" name="Feel::FeelModels::SolidMechanicsBoundaryConditions&lt; Dim &gt;::Robin">
-<area shape="rect" id="node1" title=" " alt="" coords="59,441,314,621"/>
-<area shape="rect" id="node2" href="$classModelExpression.html" title=" " alt="" coords="5,287,139,364"/>
-<area shape="rect" id="node3" title=" " alt="" coords="283,287,448,364"/>
-<area shape="rect" id="node4" title="STL class." alt="" coords="165,147,251,224"/>
-<area shape="rect" id="node5" title="STL class." alt="" coords="139,5,277,97"/>
+<area shape="rect" id="node1" title=" " alt="" coords="105,441,359,621"/>
+<area shape="rect" id="node2" title=" " alt="" coords="31,147,118,224"/>
+<area shape="rect" id="node5" title=" " alt="" coords="149,287,315,364"/>
+<area shape="rect" id="node3" title=" " alt="" coords="5,5,144,97"/>
+<area shape="rect" id="node4" title=" " alt="" coords="339,287,472,364"/>
 </map>

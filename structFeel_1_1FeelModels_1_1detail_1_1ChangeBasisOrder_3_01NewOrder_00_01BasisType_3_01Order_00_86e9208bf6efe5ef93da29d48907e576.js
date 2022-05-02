@@ -1,4 +1,0 @@
-var structFeel_1_1FeelModels_1_1detail_1_1ChangeBasisOrder_3_01NewOrder_00_01BasisType_3_01Order_00_86e9208bf6efe5ef93da29d48907e576 =
-[
-    [ "type", "structFeel_1_1FeelModels_1_1detail_1_1ChangeBasisOrder_3_01NewOrder_00_01BasisType_3_01Order_00_86e9208bf6efe5ef93da29d48907e576.html#aad05d84b402177072da820667b4eade6", null ]
-];

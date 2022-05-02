@@ -78,11 +78,11 @@ var sectionId = 'dynsection-0';
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:href="classFeel_1_1detail_1_1periodic__base.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="0,-259.5 0,-316.5 144,-316.5 144,-259.5 0,-259.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="0,-259.5 0,-316.5 144,-316.5 144,-259.5 0,-259.5"/>
 <text text-anchor="middle" x="72" y="-304.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::detail::periodic_base</text>
-<polyline fill="none" stroke="black" points="0,-297.5 144,-297.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="0,-297.5 144,-297.5 "/>
 <text text-anchor="middle" x="72" y="-285.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="0,-278.5 144,-278.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="0,-278.5 144,-278.5 "/>
 <text text-anchor="middle" x="72" y="-266.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>
@@ -97,11 +97,11 @@ var sectionId = 'dynsection-0';
 <g id="node3" class="node">
 <title>Node3</title>
 <g id="a_node3"><a xlink:href="structFeel_1_1detail_1_1periodicity__base.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="162.5,-259.5 162.5,-316.5 319.5,-316.5 319.5,-259.5 162.5,-259.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="162.5,-259.5 162.5,-316.5 319.5,-316.5 319.5,-259.5 162.5,-259.5"/>
 <text text-anchor="middle" x="241" y="-304.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::detail::periodicity_base</text>
-<polyline fill="none" stroke="black" points="162.5,-297.5 319.5,-297.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="162.5,-297.5 319.5,-297.5 "/>
 <text text-anchor="middle" x="241" y="-285.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="162.5,-278.5 319.5,-278.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="162.5,-278.5 319.5,-278.5 "/>
 <text text-anchor="middle" x="241" y="-266.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>
@@ -115,7 +115,7 @@ var sectionId = 'dynsection-0';
 <!-- Node4 -->
 <g id="node4" class="node">
 <title>Node4</title>
-<g id="a_node4"><a xlink:title=" ">
+<g id="a_node4"><a xlink:href="classmpl_1_1if___3_01boost_1_1is__same_3_01mpl_1_1void___00_01mpl_1_1void___01_4_00_01boost_1_1f63384247e94ddf6485d6e3d150878af5.html" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="#bfbfbf" points="337.5,-160.5 337.5,-415.5 576.5,-415.5 576.5,-160.5 337.5,-160.5"/>
 <text text-anchor="start" x="345.5" y="-403.5" font-family="Helvetica,sans-Serif" font-size="10.00">mpl::if_&lt; boost::is</text>
 <text text-anchor="start" x="345.5" y="-392.5" font-family="Helvetica,sans-Serif" font-size="10.00">_same&lt; mpl::void_ ,</text>

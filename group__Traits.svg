@@ -9,21 +9,21 @@
 <g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 23)">
 <title>Traits</title>
 <polygon fill="white" stroke="transparent" points="-4,4 -4,-23 133,-23 133,4 -4,4"/>
-<!-- Node1 -->
+<!-- Node2 -->
 <g id="node1" class="node">
-<title>Node1</title>
-<g id="a_node1"><a xlink:title=" ">
-<polygon fill="#bfbfbf" stroke="black" points="129,-19 85,-19 85,0 129,0 129,-19"/>
-<text text-anchor="middle" x="107" y="-7" font-family="Helvetica,sans-Serif" font-size="10.00">Traits</text>
+<title>Node2</title>
+<g id="a_node1"><a xlink:href="group__Feelpp.html" target="_top" xlink:title="Feel++ classes and methods.">
+<polygon fill="white" stroke="black" points="49,-19 0,-19 0,0 49,0 49,-19"/>
+<text text-anchor="middle" x="24.5" y="-7" font-family="Helvetica,sans-Serif" font-size="10.00">Feelpp</text>
 </a>
 </g>
 </g>
-<!-- Node2 -->
+<!-- Node1 -->
 <g id="node2" class="node">
-<title>Node2</title>
-<g id="a_node2"><a xlink:href="group__Feelpp.html" target="_top" xlink:title="Feel++ classes and methods.">
-<polygon fill="white" stroke="black" points="49,-19 0,-19 0,0 49,0 49,-19"/>
-<text text-anchor="middle" x="24.5" y="-7" font-family="Helvetica,sans-Serif" font-size="10.00">Feelpp</text>
+<title>Node1</title>
+<g id="a_node2"><a xlink:title="Traits provided by the library.">
+<polygon fill="#bfbfbf" stroke="black" points="129,-19 85,-19 85,0 129,0 129,-19"/>
+<text text-anchor="middle" x="107" y="-7" font-family="Helvetica,sans-Serif" font-size="10.00">Traits</text>
 </a>
 </g>
 </g>

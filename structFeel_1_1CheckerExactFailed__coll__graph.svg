@@ -28,12 +28,12 @@
 <!-- Node2 -->
 <g id="node2" class="node">
 <title>Node2</title>
-<g id="a_node2"><a xlink:title="STL class.">
-<polygon fill="white" stroke="#bfbfbf" points="24.5,-127.5 24.5,-184.5 113.5,-184.5 113.5,-127.5 24.5,-127.5"/>
+<g id="a_node2"><a xlink:title=" ">
+<polygon fill="white" stroke="black" points="24.5,-127.5 24.5,-184.5 113.5,-184.5 113.5,-127.5 24.5,-127.5"/>
 <text text-anchor="middle" x="69" y="-172.5" font-family="Helvetica,sans-Serif" font-size="10.00">std::logic_error</text>
-<polyline fill="none" stroke="#bfbfbf" points="24.5,-165.5 113.5,-165.5 "/>
+<polyline fill="none" stroke="black" points="24.5,-165.5 113.5,-165.5 "/>
 <text text-anchor="middle" x="69" y="-153.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="#bfbfbf" points="24.5,-146.5 113.5,-146.5 "/>
+<polyline fill="none" stroke="black" points="24.5,-146.5 113.5,-146.5 "/>
 <text text-anchor="middle" x="69" y="-134.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>
@@ -47,12 +47,12 @@
 <!-- Node3 -->
 <g id="node3" class="node">
 <title>Node3</title>
-<g id="a_node3"><a xlink:title="STL class.">
-<polygon fill="white" stroke="#bfbfbf" points="26,-221.5 26,-278.5 112,-278.5 112,-221.5 26,-221.5"/>
+<g id="a_node3"><a xlink:title=" ">
+<polygon fill="white" stroke="black" points="26,-221.5 26,-278.5 112,-278.5 112,-221.5 26,-221.5"/>
 <text text-anchor="middle" x="69" y="-266.5" font-family="Helvetica,sans-Serif" font-size="10.00">std::exception</text>
-<polyline fill="none" stroke="#bfbfbf" points="26,-259.5 112,-259.5 "/>
+<polyline fill="none" stroke="black" points="26,-259.5 112,-259.5 "/>
 <text text-anchor="middle" x="69" y="-247.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="#bfbfbf" points="26,-240.5 112,-240.5 "/>
+<polyline fill="none" stroke="black" points="26,-240.5 112,-240.5 "/>
 <text text-anchor="middle" x="69" y="-228.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>

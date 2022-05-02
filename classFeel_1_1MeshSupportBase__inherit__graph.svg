@@ -5,38 +5,38 @@
  -->
 <!-- Title: Feel::MeshSupportBase Pages: 1 -->
 <svg width="416pt" height="281pt"
- viewBox="0.00 0.00 416.00 281.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+ viewBox="0.00 0.00 415.50 281.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
 <g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 277)">
 <title>Feel::MeshSupportBase</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-277 412,-277 412,4 -4,4"/>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-277 411.5,-277 411.5,4 -4,4"/>
 <!-- Node1 -->
 <g id="node1" class="node">
 <title>Node1</title>
 <g id="a_node1"><a xlink:title="Description of a mesh support.">
-<polygon fill="#bfbfbf" stroke="black" points="138.5,-160.5 138.5,-272.5 269.5,-272.5 269.5,-160.5 138.5,-160.5"/>
-<text text-anchor="middle" x="204" y="-260.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::MeshSupportBase</text>
-<polyline fill="none" stroke="black" points="138.5,-253.5 269.5,-253.5 "/>
-<text text-anchor="middle" x="204" y="-241.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="138.5,-234.5 269.5,-234.5 "/>
-<text text-anchor="start" x="146.5" y="-222.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ hasElement()</text>
-<text text-anchor="start" x="146.5" y="-211.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ hasGhostElement()</text>
-<text text-anchor="start" x="146.5" y="-200.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ isFullSupport()</text>
-<text text-anchor="start" x="146.5" y="-189.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ isPartialSupport()</text>
-<text text-anchor="start" x="146.5" y="-178.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ numElements()</text>
-<text text-anchor="start" x="146.5" y="-167.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 4 more...</text>
+<polygon fill="#bfbfbf" stroke="black" points="141,-160.5 141,-272.5 272,-272.5 272,-160.5 141,-160.5"/>
+<text text-anchor="middle" x="206.5" y="-260.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::MeshSupportBase</text>
+<polyline fill="none" stroke="black" points="141,-253.5 272,-253.5 "/>
+<text text-anchor="middle" x="206.5" y="-241.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polyline fill="none" stroke="black" points="141,-234.5 272,-234.5 "/>
+<text text-anchor="start" x="149" y="-222.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ hasElement()</text>
+<text text-anchor="start" x="149" y="-211.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ hasGhostElement()</text>
+<text text-anchor="start" x="149" y="-200.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ isFullSupport()</text>
+<text text-anchor="start" x="149" y="-189.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ isPartialSupport()</text>
+<text text-anchor="start" x="149" y="-178.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ numElements()</text>
+<text text-anchor="start" x="149" y="-167.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 4 more...</text>
 </a>
 </g>
 </g>
 <!-- Node2 -->
 <g id="node2" class="node">
 <title>Node2</title>
-<g id="a_node2"><a xlink:href="classFeel_1_1MeshSupport.html" target="_top" xlink:title="Description of a mesh support.">
-<polygon fill="white" stroke="black" points="0,-0.5 0,-123.5 122,-123.5 122,-0.5 0,-0.5"/>
+<g id="a_node2"><a xlink:href="classFeel_1_1MeshSupport.html" target="_top" xlink:title=" ">
+<polygon fill="white" stroke="black" points="0,-0.5 0,-123.5 127,-123.5 127,-0.5 0,-0.5"/>
 <text text-anchor="start" x="8" y="-111.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::MeshSupport&lt;</text>
-<text text-anchor="middle" x="61" y="-100.5" font-family="Helvetica,sans-Serif" font-size="10.00"> MeshType &gt;</text>
-<polyline fill="none" stroke="black" points="0,-93.5 122,-93.5 "/>
+<text text-anchor="middle" x="63.5" y="-100.5" font-family="Helvetica,sans-Serif" font-size="10.00"> domain_mesh_type &gt;</text>
+<polyline fill="none" stroke="black" points="0,-93.5 127,-93.5 "/>
 <text text-anchor="start" x="8" y="-81.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ nDim</text>
-<polyline fill="none" stroke="black" points="0,-74.5 122,-74.5 "/>
+<polyline fill="none" stroke="black" points="0,-74.5 127,-74.5 "/>
 <text text-anchor="start" x="8" y="-62.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ hasAnyMarker()</text>
 <text text-anchor="start" x="8" y="-51.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ hasElement()</text>
 <text text-anchor="start" x="8" y="-40.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ hasGhostElement()</text>
@@ -49,58 +49,58 @@
 <!-- Node1&#45;&gt;Node2 -->
 <g id="edge1" class="edge">
 <title>Node1&#45;&gt;Node2</title>
-<path fill="none" stroke="midnightblue" d="M145.47,-153.08C136.36,-143.36 126.95,-133.33 117.88,-123.66"/>
-<polygon fill="none" stroke="midnightblue" points="142.98,-155.54 152.37,-160.44 148.09,-150.76 142.98,-155.54"/>
+<path fill="none" stroke="midnightblue" d="M147.97,-153.08C138.86,-143.36 129.45,-133.33 120.38,-123.66"/>
+<polygon fill="none" stroke="midnightblue" points="145.48,-155.54 154.87,-160.44 150.59,-150.76 145.48,-155.54"/>
 </g>
 <!-- Node3 -->
 <g id="node3" class="node">
 <title>Node3</title>
 <g id="a_node3"><a xlink:href="classFeel_1_1MeshSupport.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="140.5,-0.5 140.5,-123.5 267.5,-123.5 267.5,-0.5 140.5,-0.5"/>
-<text text-anchor="start" x="148.5" y="-111.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::MeshSupport&lt;</text>
-<text text-anchor="middle" x="204" y="-100.5" font-family="Helvetica,sans-Serif" font-size="10.00"> domain_mesh_type &gt;</text>
-<polyline fill="none" stroke="black" points="140.5,-93.5 267.5,-93.5 "/>
-<text text-anchor="start" x="148.5" y="-81.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ nDim</text>
-<polyline fill="none" stroke="black" points="140.5,-74.5 267.5,-74.5 "/>
-<text text-anchor="start" x="148.5" y="-62.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ hasAnyMarker()</text>
-<text text-anchor="start" x="148.5" y="-51.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ hasElement()</text>
-<text text-anchor="start" x="148.5" y="-40.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ hasGhostElement()</text>
-<text text-anchor="start" x="148.5" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ isFullSupport()</text>
-<text text-anchor="start" x="148.5" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ isGhostFace()</text>
-<text text-anchor="start" x="148.5" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 21 more...</text>
+<polygon fill="white" stroke="black" points="145.5,-0.5 145.5,-123.5 267.5,-123.5 267.5,-0.5 145.5,-0.5"/>
+<text text-anchor="start" x="153.5" y="-111.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::MeshSupport&lt;</text>
+<text text-anchor="middle" x="206.5" y="-100.5" font-family="Helvetica,sans-Serif" font-size="10.00"> image_mesh_type &gt;</text>
+<polyline fill="none" stroke="black" points="145.5,-93.5 267.5,-93.5 "/>
+<text text-anchor="start" x="153.5" y="-81.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ nDim</text>
+<polyline fill="none" stroke="black" points="145.5,-74.5 267.5,-74.5 "/>
+<text text-anchor="start" x="153.5" y="-62.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ hasAnyMarker()</text>
+<text text-anchor="start" x="153.5" y="-51.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ hasElement()</text>
+<text text-anchor="start" x="153.5" y="-40.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ hasGhostElement()</text>
+<text text-anchor="start" x="153.5" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ isFullSupport()</text>
+<text text-anchor="start" x="153.5" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ isGhostFace()</text>
+<text text-anchor="start" x="153.5" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 21 more...</text>
 </a>
 </g>
 </g>
 <!-- Node1&#45;&gt;Node3 -->
 <g id="edge2" class="edge">
 <title>Node1&#45;&gt;Node3</title>
-<path fill="none" stroke="midnightblue" d="M204,-150.22C204,-141.4 204,-132.39 204,-123.66"/>
-<polygon fill="none" stroke="midnightblue" points="200.5,-150.44 204,-160.44 207.5,-150.44 200.5,-150.44"/>
+<path fill="none" stroke="midnightblue" d="M206.5,-150.22C206.5,-141.4 206.5,-132.39 206.5,-123.66"/>
+<polygon fill="none" stroke="midnightblue" points="203,-150.44 206.5,-160.44 210,-150.44 203,-150.44"/>
 </g>
 <!-- Node4 -->
 <g id="node4" class="node">
 <title>Node4</title>
-<g id="a_node4"><a xlink:href="classFeel_1_1MeshSupport.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="286,-0.5 286,-123.5 408,-123.5 408,-0.5 286,-0.5"/>
-<text text-anchor="start" x="294" y="-111.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::MeshSupport&lt;</text>
-<text text-anchor="middle" x="347" y="-100.5" font-family="Helvetica,sans-Serif" font-size="10.00"> image_mesh_type &gt;</text>
-<polyline fill="none" stroke="black" points="286,-93.5 408,-93.5 "/>
-<text text-anchor="start" x="294" y="-81.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ nDim</text>
-<polyline fill="none" stroke="black" points="286,-74.5 408,-74.5 "/>
-<text text-anchor="start" x="294" y="-62.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ hasAnyMarker()</text>
-<text text-anchor="start" x="294" y="-51.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ hasElement()</text>
-<text text-anchor="start" x="294" y="-40.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ hasGhostElement()</text>
-<text text-anchor="start" x="294" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ isFullSupport()</text>
-<text text-anchor="start" x="294" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ isGhostFace()</text>
-<text text-anchor="start" x="294" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 21 more...</text>
+<g id="a_node4"><a xlink:href="classFeel_1_1MeshSupport.html" target="_top" xlink:title="Description of a mesh support.">
+<polygon fill="white" stroke="black" points="285.5,-0.5 285.5,-123.5 407.5,-123.5 407.5,-0.5 285.5,-0.5"/>
+<text text-anchor="start" x="293.5" y="-111.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::MeshSupport&lt;</text>
+<text text-anchor="middle" x="346.5" y="-100.5" font-family="Helvetica,sans-Serif" font-size="10.00"> MeshType &gt;</text>
+<polyline fill="none" stroke="black" points="285.5,-93.5 407.5,-93.5 "/>
+<text text-anchor="start" x="293.5" y="-81.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ nDim</text>
+<polyline fill="none" stroke="black" points="285.5,-74.5 407.5,-74.5 "/>
+<text text-anchor="start" x="293.5" y="-62.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ hasAnyMarker()</text>
+<text text-anchor="start" x="293.5" y="-51.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ hasElement()</text>
+<text text-anchor="start" x="293.5" y="-40.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ hasGhostElement()</text>
+<text text-anchor="start" x="293.5" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ isFullSupport()</text>
+<text text-anchor="start" x="293.5" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ isGhostFace()</text>
+<text text-anchor="start" x="293.5" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 21 more...</text>
 </a>
 </g>
 </g>
 <!-- Node1&#45;&gt;Node4 -->
 <g id="edge3" class="edge">
 <title>Node1&#45;&gt;Node4</title>
-<path fill="none" stroke="midnightblue" d="M262.53,-153.08C271.64,-143.36 281.05,-133.33 290.12,-123.66"/>
-<polygon fill="none" stroke="midnightblue" points="259.91,-150.76 255.63,-160.44 265.02,-155.54 259.91,-150.76"/>
+<path fill="none" stroke="midnightblue" d="M264.06,-152.8C272.9,-143.17 282.02,-133.24 290.82,-123.66"/>
+<polygon fill="none" stroke="midnightblue" points="261.23,-150.71 257.04,-160.44 266.38,-155.44 261.23,-150.71"/>
 </g>
 </g>
 </svg>

@@ -1,3 +1,7 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$structF0_1_1result_3_01F0_07Lhs_00_01Rhs_08_4.html" title=" " alt="" coords="5,5,157,47"/>
+<area shape="rect" id="node1" title=" " alt="" coords="5,137,191,164"/>
+<area shape="rect" id="node2" href="$structFeel_1_1detail_1_1NLocalDof_1_1result_3_01NLocalDof_07S_00_01T_08_4.html" title=" " alt="" coords="255,5,462,61"/>
+<area shape="rect" id="node3" href="$structFeel_1_1detail_1_1NLocalDofOnProc_1_1result_3_01NLocalDofOnProc_07S_00_01T_08_4.html" title=" " alt="" coords="239,85,479,141"/>
+<area shape="rect" id="node4" href="$structFeel_1_1detail_1_1NbDof_1_1result_3_01NbDof_07S_00_01T_08_4.html" title=" " alt="" coords="275,166,443,207"/>
+<area shape="rect" id="node5" href="$structFeel_1_1detail_1_1searchIndicesBySpace_1_1result_3_01searchIndicesBySpace_07M_00_01T_08_4.html" title=" " alt="" coords="243,232,474,288"/>
 </map>

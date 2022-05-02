@@ -49,11 +49,11 @@
 <g id="node3" class="node">
 <title>Node3</title>
 <g id="a_node3"><a xlink:title=" ">
-<polygon fill="white" stroke="#bfbfbf" points="137.5,-138.5 137.5,-195.5 277.5,-195.5 277.5,-138.5 137.5,-138.5"/>
+<polygon fill="white" stroke="black" points="137.5,-138.5 137.5,-195.5 277.5,-195.5 277.5,-138.5 137.5,-138.5"/>
 <text text-anchor="middle" x="207.5" y="-183.5" font-family="Helvetica,sans-Serif" font-size="10.00">std::vector&lt; std::string &gt;</text>
-<polyline fill="none" stroke="#bfbfbf" points="137.5,-176.5 277.5,-176.5 "/>
+<polyline fill="none" stroke="black" points="137.5,-176.5 277.5,-176.5 "/>
 <text text-anchor="middle" x="207.5" y="-164.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="#bfbfbf" points="137.5,-157.5 277.5,-157.5 "/>
+<polyline fill="none" stroke="black" points="137.5,-157.5 277.5,-157.5 "/>
 <text text-anchor="middle" x="207.5" y="-145.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>
@@ -68,12 +68,12 @@
 <!-- Node4 -->
 <g id="node4" class="node">
 <title>Node4</title>
-<g id="a_node4"><a xlink:title="STL class.">
-<polygon fill="white" stroke="#bfbfbf" points="175,-243.5 175,-300.5 240,-300.5 240,-243.5 175,-243.5"/>
+<g id="a_node4"><a xlink:title=" ">
+<polygon fill="white" stroke="black" points="175,-243.5 175,-300.5 240,-300.5 240,-243.5 175,-243.5"/>
 <text text-anchor="middle" x="207.5" y="-288.5" font-family="Helvetica,sans-Serif" font-size="10.00">std::string</text>
-<polyline fill="none" stroke="#bfbfbf" points="175,-281.5 240,-281.5 "/>
+<polyline fill="none" stroke="black" points="175,-281.5 240,-281.5 "/>
 <text text-anchor="middle" x="207.5" y="-269.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="#bfbfbf" points="175,-262.5 240,-262.5 "/>
+<polyline fill="none" stroke="black" points="175,-262.5 240,-262.5 "/>
 <text text-anchor="middle" x="207.5" y="-250.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>
@@ -88,13 +88,13 @@
 <!-- Node5 -->
 <g id="node5" class="node">
 <title>Node5</title>
-<g id="a_node5"><a xlink:title="STL class.">
-<polygon fill="white" stroke="#bfbfbf" points="155.5,-338.5 155.5,-406.5 259.5,-406.5 259.5,-338.5 155.5,-338.5"/>
+<g id="a_node5"><a xlink:title=" ">
+<polygon fill="white" stroke="black" points="155.5,-338.5 155.5,-406.5 259.5,-406.5 259.5,-338.5 155.5,-338.5"/>
 <text text-anchor="start" x="163.5" y="-394.5" font-family="Helvetica,sans-Serif" font-size="10.00">std::basic_string&lt;</text>
-<text text-anchor="middle" x="207.5" y="-383.5" font-family="Helvetica,sans-Serif" font-size="10.00"> char &gt;</text>
-<polyline fill="none" stroke="#bfbfbf" points="155.5,-376.5 259.5,-376.5 "/>
+<text text-anchor="middle" x="207.5" y="-383.5" font-family="Helvetica,sans-Serif" font-size="10.00"> Char &gt;</text>
+<polyline fill="none" stroke="black" points="155.5,-376.5 259.5,-376.5 "/>
 <text text-anchor="middle" x="207.5" y="-364.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="#bfbfbf" points="155.5,-357.5 259.5,-357.5 "/>
+<polyline fill="none" stroke="black" points="155.5,-357.5 259.5,-357.5 "/>
 <text text-anchor="middle" x="207.5" y="-345.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>

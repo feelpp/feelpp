@@ -1,7 +1,7 @@
 <map id="Points" name="Points">
-<area shape="rect" id="node1" title=" " alt="" coords="499,5,561,83"/>
-<area shape="rect" id="node2" href="$classFeel_1_1Mesh0D.html" title="0D mesh class" alt="" coords="5,131,255,619"/>
-<area shape="rect" id="node3" href="$classFeel_1_1Mesh1D.html" title="1D mesh class" alt="" coords="279,145,525,604"/>
-<area shape="rect" id="node4" href="$classFeel_1_1Mesh2D.html" title="2D mesh class" alt="" coords="550,153,766,597"/>
-<area shape="rect" id="node5" href="$classFeel_1_1Mesh3D.html" title="3D mesh class" alt="" coords="790,153,1009,597"/>
+<area shape="rect" id="node1" title=" " alt="" coords="445,5,507,83"/>
+<area shape="rect" id="node2" href="$classFeel_1_1Mesh0D.html" title="0D mesh class" alt="" coords="5,131,224,633"/>
+<area shape="rect" id="node3" href="$classFeel_1_1Mesh1D.html" title="1D mesh class" alt="" coords="248,175,464,589"/>
+<area shape="rect" id="node4" href="$classFeel_1_1Mesh2D.html" title="2D mesh class" alt="" coords="488,160,704,604"/>
+<area shape="rect" id="node5" href="$classFeel_1_1Mesh3D.html" title="3D mesh class" alt="" coords="728,153,947,611"/>
 </map>

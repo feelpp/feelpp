@@ -28,11 +28,11 @@
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:href="classbool.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="37,-127.5 37,-184.5 75,-184.5 75,-127.5 37,-127.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="37,-127.5 37,-184.5 75,-184.5 75,-127.5 37,-127.5"/>
 <text text-anchor="middle" x="56" y="-172.5" font-family="Helvetica,sans-Serif" font-size="10.00">bool</text>
-<polyline fill="none" stroke="black" points="37,-165.5 75,-165.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="37,-165.5 75,-165.5 "/>
 <text text-anchor="middle" x="56" y="-153.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="37,-146.5 75,-146.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="37,-146.5 75,-146.5 "/>
 <text text-anchor="middle" x="56" y="-134.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>

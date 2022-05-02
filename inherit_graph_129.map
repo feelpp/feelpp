@@ -1,4 +1,4 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$structFeel_1_1FactoryDefaultError.html" title=" " alt="" coords="5,13,224,54"/>
-<area shape="rect" id="node2" href="$classFeel_1_1FactoryClone.html" title="Implements a generic cloning object Factory." alt="" coords="272,5,483,61"/>
+<area shape="rect" id="node1" href="$structFeel_1_1FactoryDefaultError.html" title="Manages the &quot;Unknown Type&quot; error in an object Factory." alt="" coords="5,13,257,54"/>
+<area shape="rect" id="node2" href="$classFeel_1_1Factory.html" title="Implements a generic object Factory." alt="" coords="305,5,532,61"/>
 </map>

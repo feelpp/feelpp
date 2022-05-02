@@ -35,11 +35,11 @@
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:href="classFeel_1_1vf_1_1CstBase.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="14,-193.5 14,-250.5 112,-250.5 112,-193.5 14,-193.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="14,-193.5 14,-250.5 112,-250.5 112,-193.5 14,-193.5"/>
 <text text-anchor="middle" x="63" y="-238.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::vf::CstBase</text>
-<polyline fill="none" stroke="black" points="14,-231.5 112,-231.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="14,-231.5 112,-231.5 "/>
 <text text-anchor="middle" x="63" y="-219.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="14,-212.5 112,-212.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="14,-212.5 112,-212.5 "/>
 <text text-anchor="middle" x="63" y="-200.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>

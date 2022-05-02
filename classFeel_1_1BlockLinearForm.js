@@ -1,32 +1,5 @@
 var classFeel_1_1BlockLinearForm =
 [
-    [ "close", "classFeel_1_1BlockLinearForm.html#a1fe0a08dcca6b72c5848478512243c1c", null ],
-    [ "functionSpace", "classFeel_1_1BlockLinearForm.html#a6a015f4b812ad93180cf1deb51d494a6", null ],
-    [ "operator()", "classFeel_1_1BlockLinearForm.html#a976d1357c389f76ec6f32cf66aebaf14", null ],
-    [ "operator()", "classFeel_1_1BlockLinearForm.html#a6962ce8960217bf3fedbb10b13aa77e1", null ],
-    [ "operator+=", "classFeel_1_1BlockLinearForm.html#a02e5dd0801e73f3e8b07265f233ee4c3", null ],
-    [ "operator=", "classFeel_1_1BlockLinearForm.html#a650bc2d091ef458d4d0cda219b5e4089", null ],
-    [ "operator=", "classFeel_1_1BlockLinearForm.html#acda2a30acbe0b05624b925da78e65868", null ],
-    [ "setFunctionSpace", "classFeel_1_1BlockLinearForm.html#a94c22558c9613e6caf71cceb586282b7", null ],
-    [ "setStrategy", "classFeel_1_1BlockLinearForm.html#ad3b421d7135f2348ecf5e152886bd2dc", null ],
-    [ "setStrategy", "classFeel_1_1BlockLinearForm.html#a3b32b8fd2a6a137488dfabc4c83d329b", null ],
-    [ "vectorPtr", "classFeel_1_1BlockLinearForm.html#aedb365d29d2029c366497c265d95a72a", null ],
-    [ "vectorPtr", "classFeel_1_1BlockLinearForm.html#aaa5b3b7e346d3ef4ec07af653888fcc6", null ],
     [ "zero", "classFeel_1_1BlockLinearForm.html#a8faea3339787ec70ce62029583b3839d", null ],
-    [ "zeroBlock", "classFeel_1_1BlockLinearForm.html#afb86d8d8ebef244d04a9c4658e0db52c", null ],
-    [ "M_ps", "classFeel_1_1BlockLinearForm.html#a9850c95a9dea0e78c2c422921d31b315", null ],
-    [ "M_vector", "classFeel_1_1BlockLinearForm.html#a8681c6b09c71bf26a10b93c6d4461964", null ],
-    [ "condensed_vector_ptrtype", "classFeel_1_1BlockLinearForm.html#aa760cebee319acb8380b72f70706db6f", null ],
-    [ "condensed_vector_type", "classFeel_1_1BlockLinearForm.html#a11b13680ffd472ac260d6ab93127f959", null ],
-    [ "product_space_t", "classFeel_1_1BlockLinearForm.html#aa8867d86cf3fe1bc93f11d63dc4d0b94", null ],
-    [ "value_type", "classFeel_1_1BlockLinearForm.html#ad59d908dcb4ef5213fd91ed86bbc48f8", null ],
-    [ "vector_ptrtype", "classFeel_1_1BlockLinearForm.html#a489feaaf962459f8aa33893fed5056ca", null ],
-    [ "BlockLinearForm", "classFeel_1_1BlockLinearForm.html#ac6b3fe6196b46439013600e1828f71de", null ],
-    [ "BlockLinearForm", "classFeel_1_1BlockLinearForm.html#a3fda81988333c54b6f1775e2a0746e87", null ],
-    [ "BlockLinearForm", "classFeel_1_1BlockLinearForm.html#a19f440758e33050e2bbf1a6a3d790e20", null ],
-    [ "BlockLinearForm", "classFeel_1_1BlockLinearForm.html#a5bca3e94179862a4f5691c43475fa79b", null ],
-    [ "BlockLinearForm", "classFeel_1_1BlockLinearForm.html#a2d2790d4c4a876e58154ac67b5a99da7", null ],
-    [ "BlockLinearForm", "classFeel_1_1BlockLinearForm.html#ac9cb762d6c6252d2be10d63f70156c6f", null ],
-    [ "BlockLinearForm", "classFeel_1_1BlockLinearForm.html#a616147df4fc6e92bec8a2bf7e07593c3", null ],
-    [ "BlockLinearForm", "classFeel_1_1BlockLinearForm.html#a45c4773a6f42b64a30e7d67f95bb6b93", null ]
+    [ "zeroBlock", "classFeel_1_1BlockLinearForm.html#afb86d8d8ebef244d04a9c4658e0db52c", null ]
 ];

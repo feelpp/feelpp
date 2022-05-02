@@ -76,11 +76,11 @@ var sectionId = 'dynsection-0';
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:href="classFeel_1_1JournalWatcher.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="0,-138.5 0,-426.5 177,-426.5 177,-138.5 0,-138.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="0,-138.5 0,-426.5 177,-426.5 177,-138.5 0,-138.5"/>
 <text text-anchor="middle" x="88.5" y="-414.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::JournalWatcher</text>
-<polyline fill="none" stroke="black" points="0,-407.5 177,-407.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="0,-407.5 177,-407.5 "/>
 <text text-anchor="middle" x="88.5" y="-395.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="0,-388.5 177,-388.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="0,-388.5 177,-388.5 "/>
 <text text-anchor="start" x="8" y="-376.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_journal_is_connected</text>
 <text text-anchor="start" x="8" y="-365.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_category</text>
 <text text-anchor="start" x="8" y="-354.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_name</text>

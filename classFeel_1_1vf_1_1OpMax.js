@@ -1,27 +1,9 @@
 var classFeel_1_1vf_1_1OpMax =
 [
-    [ "HasTestFunction", "structFeel_1_1vf_1_1OpMax_1_1HasTestFunction.html", "structFeel_1_1vf_1_1OpMax_1_1HasTestFunction" ],
-    [ "HasTrialFunction", "structFeel_1_1vf_1_1OpMax_1_1HasTrialFunction.html", "structFeel_1_1vf_1_1OpMax_1_1HasTrialFunction" ],
+    [ "HasTestFunction", "structFeel_1_1vf_1_1OpMax_1_1HasTestFunction.html", null ],
+    [ "HasTrialFunction", "structFeel_1_1vf_1_1OpMax_1_1HasTrialFunction.html", null ],
     [ "tensor", "structFeel_1_1vf_1_1OpMax_1_1tensor.html", "structFeel_1_1vf_1_1OpMax_1_1tensor" ],
     [ "dynamicContext", "classFeel_1_1vf_1_1OpMax.html#a7121f19b1f9aa11140b0b9bb9387411f", null ],
     [ "isPolynomial", "classFeel_1_1vf_1_1OpMax.html#adc69e624127c1077a17836dd9d40ca3c", null ],
-    [ "left", "classFeel_1_1vf_1_1OpMax.html#a8c2f3bece9cffe576d26756f002472a1", null ],
-    [ "polynomialOrder", "classFeel_1_1vf_1_1OpMax.html#ada1d6fbf0663eefac2e0256f58972821", null ],
-    [ "right", "classFeel_1_1vf_1_1OpMax.html#a4173b3a0033ba216d502053361f6807f", null ],
-    [ "context", "classFeel_1_1vf_1_1OpMax.html#a37d6008682084e528a0385630bb74575", null ],
-    [ "has_test_basis", "classFeel_1_1vf_1_1OpMax.html#a43bfffd830a02b03a61efdd9c203680a", null ],
-    [ "has_trial_basis", "classFeel_1_1vf_1_1OpMax.html#ab5534880399551153ff3d4e689c3a4f4", null ],
-    [ "is_terminal", "classFeel_1_1vf_1_1OpMax.html#a94bb4323cb5694ba9ac562a48c636f30", null ],
-    [ "M_expr_1", "classFeel_1_1vf_1_1OpMax.html#a16d3cc1524a16219a8c294401474a7c7", null ],
-    [ "M_expr_2", "classFeel_1_1vf_1_1OpMax.html#a87dc8de3e362434be48a47be4353f395", null ],
-    [ "evaluate_type", "classFeel_1_1vf_1_1OpMax.html#a0396821e8835fe1d67d069cea32c0b9f", null ],
-    [ "expression_1_type", "classFeel_1_1vf_1_1OpMax.html#a0a057fc1681fbeeb03220a001b35f484", null ],
-    [ "expression_2_type", "classFeel_1_1vf_1_1OpMax.html#a581f5378ec14f2a64d9fe74a89e4ff90", null ],
-    [ "test_basis", "classFeel_1_1vf_1_1OpMax.html#af66bf96d1c27266da927c256ed697b86", null ],
-    [ "this_type", "classFeel_1_1vf_1_1OpMax.html#a87fa035c450aae58a7481ce72b5996b2", null ],
-    [ "trial_basis", "classFeel_1_1vf_1_1OpMax.html#a239abcfb41591eb72b8ca382f81107ba", null ],
-    [ "value_type", "classFeel_1_1vf_1_1OpMax.html#a21ce20d253e64f24bb16971323c2e8e9", null ],
-    [ "OpMax", "classFeel_1_1vf_1_1OpMax.html#abacbf7b9eefd7aa380e134ca08512ca8", null ],
-    [ "OpMax", "classFeel_1_1vf_1_1OpMax.html#a61e3568e8398c637bccc002dfee2dd9d", null ],
-    [ "OpMax", "classFeel_1_1vf_1_1OpMax.html#aaaf7953a8d7700c86ef011393c57958b", null ]
+    [ "polynomialOrder", "classFeel_1_1vf_1_1OpMax.html#ada1d6fbf0663eefac2e0256f58972821", null ]
 ];

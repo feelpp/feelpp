@@ -34,11 +34,11 @@
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:href="classbool.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="142.5,-204.5 142.5,-261.5 180.5,-261.5 180.5,-204.5 142.5,-204.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="142.5,-204.5 142.5,-261.5 180.5,-261.5 180.5,-204.5 142.5,-204.5"/>
 <text text-anchor="middle" x="161.5" y="-249.5" font-family="Helvetica,sans-Serif" font-size="10.00">bool</text>
-<polyline fill="none" stroke="black" points="142.5,-242.5 180.5,-242.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="142.5,-242.5 180.5,-242.5 "/>
 <text text-anchor="middle" x="161.5" y="-230.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="142.5,-223.5 180.5,-223.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="142.5,-223.5 180.5,-223.5 "/>
 <text text-anchor="middle" x="161.5" y="-211.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>
@@ -48,8 +48,8 @@
 <title>Node2&#45;&gt;Node1</title>
 <path fill="none" stroke="#404040" d="M161.5,-204.48C161.5,-191.32 161.5,-174.78 161.5,-157.94"/>
 <polygon fill="none" stroke="#404040" points="161.5,-157.67 157.5,-151.67 161.5,-145.67 165.5,-151.67 161.5,-157.67"/>
-<text text-anchor="middle" x="208.5" y="-178" font-family="Helvetica,sans-Serif" font-size="10.00"> +hasVelocity</text>
-<text text-anchor="middle" x="208.5" y="-167" font-family="Helvetica,sans-Serif" font-size="10.00">+hasDisplacement</text>
+<text text-anchor="middle" x="210" y="-178" font-family="Helvetica,sans-Serif" font-size="10.00"> +hasDisplacement</text>
+<text text-anchor="middle" x="210" y="-167" font-family="Helvetica,sans-Serif" font-size="10.00">+hasVelocity</text>
 </g>
 </g>
 </svg>

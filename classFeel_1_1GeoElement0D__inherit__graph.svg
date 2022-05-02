@@ -325,7 +325,7 @@ var sectionId = 'dynsection-0';
 <!-- Node11 -->
 <g id="node11" class="node">
 <title>Node11</title>
-<g id="a_node11"><a xlink:href="classFeel_1_1Convex.html" target="_top" xlink:title="Convex base class.">
+<g id="a_node11"><a xlink:href="classFeel_1_1Convex.html" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="black" points="758,-1146.5 758,-1280.5 872,-1280.5 872,-1146.5 758,-1146.5"/>
 <text text-anchor="start" x="766" y="-1268.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::Convex&lt; Dim,</text>
 <text text-anchor="middle" x="815" y="-1257.5" font-family="Helvetica,sans-Serif" font-size="10.00"> Order, RDim &gt;</text>
@@ -352,11 +352,11 @@ var sectionId = 'dynsection-0';
 <g id="node12" class="node">
 <title>Node12</title>
 <g id="a_node12"><a xlink:href="classFeel_1_1ConvexBase.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="763,-1317.5 763,-1374.5 867,-1374.5 867,-1317.5 763,-1317.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="763,-1317.5 763,-1374.5 867,-1374.5 867,-1317.5 763,-1317.5"/>
 <text text-anchor="middle" x="815" y="-1362.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::ConvexBase</text>
-<polyline fill="none" stroke="black" points="763,-1355.5 867,-1355.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="763,-1355.5 867,-1355.5 "/>
 <text text-anchor="middle" x="815" y="-1343.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="763,-1336.5 867,-1336.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="763,-1336.5 867,-1336.5 "/>
 <text text-anchor="middle" x="815" y="-1324.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>
@@ -371,11 +371,11 @@ var sectionId = 'dynsection-0';
 <g id="node13" class="node">
 <title>Node13</title>
 <g id="a_node13"><a xlink:href="classFeel_1_1SimplexBase.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="890.5,-1185 890.5,-1242 997.5,-1242 997.5,-1185 890.5,-1185"/>
+<polygon fill="white" stroke="#bfbfbf" points="890.5,-1185 890.5,-1242 997.5,-1242 997.5,-1185 890.5,-1185"/>
 <text text-anchor="middle" x="944" y="-1230" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::SimplexBase</text>
-<polyline fill="none" stroke="black" points="890.5,-1223 997.5,-1223 "/>
+<polyline fill="none" stroke="#bfbfbf" points="890.5,-1223 997.5,-1223 "/>
 <text text-anchor="middle" x="944" y="-1211" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="890.5,-1204 997.5,-1204 "/>
+<polyline fill="none" stroke="#bfbfbf" points="890.5,-1204 997.5,-1204 "/>
 <text text-anchor="middle" x="944" y="-1192" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>
@@ -390,12 +390,12 @@ var sectionId = 'dynsection-0';
 <g id="node14" class="node">
 <title>Node14</title>
 <g id="a_node14"><a xlink:href="classFeel_1_1SubFaceOfNone.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="433,-199 433,-322 575,-322 575,-199 433,-199"/>
+<polygon fill="white" stroke="#bfbfbf" points="433,-199 433,-322 575,-322 575,-199 433,-199"/>
 <text text-anchor="start" x="441" y="-310" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::SubFaceOfNone</text>
 <text text-anchor="middle" x="504" y="-299" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; Dim &gt;</text>
-<polyline fill="none" stroke="black" points="433,-292 575,-292 "/>
+<polyline fill="none" stroke="#bfbfbf" points="433,-292 575,-292 "/>
 <text text-anchor="start" x="441" y="-280" font-family="Helvetica,sans-Serif" font-size="10.00">+ nDim</text>
-<polyline fill="none" stroke="black" points="433,-273 575,-273 "/>
+<polyline fill="none" stroke="#bfbfbf" points="433,-273 575,-273 "/>
 <text text-anchor="start" x="441" y="-261" font-family="Helvetica,sans-Serif" font-size="10.00">+ element()</text>
 <text text-anchor="start" x="441" y="-250" font-family="Helvetica,sans-Serif" font-size="10.00">+ isGhostFace()</text>
 <text text-anchor="start" x="441" y="-239" font-family="Helvetica,sans-Serif" font-size="10.00">+ isInterProcessDomain()</text>

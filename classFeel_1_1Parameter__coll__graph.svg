@@ -26,11 +26,11 @@
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:href="classFeel_1_1Parameter__impl.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="0,-94.5 0,-206.5 121,-206.5 121,-94.5 0,-94.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="0,-94.5 0,-206.5 121,-206.5 121,-94.5 0,-94.5"/>
 <text text-anchor="middle" x="60.5" y="-194.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::Parameter_impl</text>
-<polyline fill="none" stroke="black" points="0,-187.5 121,-187.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="0,-187.5 121,-187.5 "/>
 <text text-anchor="middle" x="60.5" y="-175.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="0,-168.5 121,-168.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="0,-168.5 121,-168.5 "/>
 <text text-anchor="start" x="8" y="-156.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ getAttrNames()</text>
 <text text-anchor="start" x="8" y="-145.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ getAttrValues()</text>
 <text text-anchor="start" x="8" y="-134.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ getName()</text>

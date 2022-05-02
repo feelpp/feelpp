@@ -1,10 +1,10 @@
 <map id="Feel::mpfr::MpfrClass" name="Feel::mpfr::MpfrClass">
-<area shape="rect" id="node1" title=" " alt="" coords="291,373,468,612"/>
+<area shape="rect" id="node1" title=" " alt="" coords="287,373,464,612"/>
 <area shape="rect" id="node2" title=" " alt="" coords="5,189,71,267"/>
-<area shape="rect" id="node3" title=" " alt="" coords="95,189,269,267"/>
-<area shape="rect" id="node4" href="$classFeel_1_1mpfr_1_1InexactFlag.html" title=" " alt="" coords="293,160,465,296"/>
-<area shape="rect" id="node5" href="$classint.html" title=" " alt="" coords="360,5,399,83"/>
-<area shape="rect" id="node6" href="$classFeel_1_1mpfr_1_1RefCounter.html" title=" " alt="" coords="489,145,659,311"/>
-<area shape="rect" id="node7" title=" " alt="" coords="549,5,599,83"/>
-<area shape="rect" id="node8" title=" " alt="" coords="683,189,849,267"/>
+<area shape="rect" id="node3" href="$classFeel_1_1mpfr_1_1InexactFlag.html" title=" " alt="" coords="95,160,267,296"/>
+<area shape="rect" id="node4" href="$classint.html" title=" " alt="" coords="161,5,200,83"/>
+<area shape="rect" id="node5" href="$classFeel_1_1mpfr_1_1RefCounter.html" title=" " alt="" coords="291,145,460,311"/>
+<area shape="rect" id="node6" title=" " alt="" coords="350,5,401,83"/>
+<area shape="rect" id="node7" title=" " alt="" coords="485,189,650,267"/>
+<area shape="rect" id="node8" title=" " alt="" coords="674,189,847,267"/>
 </map>

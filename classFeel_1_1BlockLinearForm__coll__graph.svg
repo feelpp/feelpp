@@ -13,18 +13,18 @@
 <g id="node1" class="node">
 <title>Node1</title>
 <g id="a_node1"><a xlink:title="forward declarations of BlockLinearForm and blockform1()">
-<polygon fill="#bfbfbf" stroke="black" points="122,-0.5 122,-123.5 247,-123.5 247,-0.5 122,-0.5"/>
-<text text-anchor="start" x="130" y="-111.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::BlockLinearForm</text>
-<text text-anchor="middle" x="184.5" y="-100.5" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; PS &gt;</text>
-<polyline fill="none" stroke="black" points="122,-93.5 247,-93.5 "/>
-<text text-anchor="middle" x="184.5" y="-81.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="122,-74.5 247,-74.5 "/>
-<text text-anchor="start" x="130" y="-62.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ BlockLinearForm()</text>
-<text text-anchor="start" x="130" y="-51.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ BlockLinearForm()</text>
-<text text-anchor="start" x="130" y="-40.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ BlockLinearForm()</text>
-<text text-anchor="start" x="130" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ BlockLinearForm()</text>
-<text text-anchor="start" x="130" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ BlockLinearForm()</text>
-<text text-anchor="start" x="130" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 17 more...</text>
+<polygon fill="#bfbfbf" stroke="black" points="43,-0.5 43,-123.5 168,-123.5 168,-0.5 43,-0.5"/>
+<text text-anchor="start" x="51" y="-111.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::BlockLinearForm</text>
+<text text-anchor="middle" x="105.5" y="-100.5" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; PS &gt;</text>
+<polyline fill="none" stroke="black" points="43,-93.5 168,-93.5 "/>
+<text text-anchor="middle" x="105.5" y="-81.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polyline fill="none" stroke="black" points="43,-74.5 168,-74.5 "/>
+<text text-anchor="start" x="51" y="-62.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ BlockLinearForm()</text>
+<text text-anchor="start" x="51" y="-51.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ BlockLinearForm()</text>
+<text text-anchor="start" x="51" y="-40.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ BlockLinearForm()</text>
+<text text-anchor="start" x="51" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ BlockLinearForm()</text>
+<text text-anchor="start" x="51" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ BlockLinearForm()</text>
+<text text-anchor="start" x="51" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 17 more...</text>
 </a>
 </g>
 </g>
@@ -32,62 +32,62 @@
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:title=" ">
-<polygon fill="white" stroke="#bfbfbf" points="0,-171.5 0,-239.5 153,-239.5 153,-171.5 0,-171.5"/>
-<text text-anchor="start" x="8" y="-227.5" font-family="Helvetica,sans-Serif" font-size="10.00">std::shared_ptr&lt; condensed</text>
-<text text-anchor="middle" x="76.5" y="-216.5" font-family="Helvetica,sans-Serif" font-size="10.00">_vector_type &gt;</text>
-<polyline fill="none" stroke="#bfbfbf" points="0,-209.5 153,-209.5 "/>
-<text text-anchor="middle" x="76.5" y="-197.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="#bfbfbf" points="0,-190.5 153,-190.5 "/>
-<text text-anchor="start" x="8" y="-178.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ operator&#45;&gt;()</text>
+<polygon fill="white" stroke="#bfbfbf" points="0,-177 0,-234 107,-234 107,-177 0,-177"/>
+<text text-anchor="middle" x="53.5" y="-222" font-family="Helvetica,sans-Serif" font-size="10.00">decay_type&lt; PS &gt;</text>
+<polyline fill="none" stroke="#bfbfbf" points="0,-215 107,-215 "/>
+<text text-anchor="middle" x="53.5" y="-203" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polyline fill="none" stroke="#bfbfbf" points="0,-196 107,-196 "/>
+<text text-anchor="middle" x="53.5" y="-184" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>
 </g>
 <!-- Node2&#45;&gt;Node1 -->
 <g id="edge1" class="edge">
 <title>Node2&#45;&gt;Node1</title>
-<path fill="none" stroke="#404040" d="M101.82,-171.32C110.55,-159.89 120.69,-146.6 130.81,-133.34"/>
-<polygon fill="none" stroke="#404040" points="130.88,-133.25 131.34,-126.06 138.16,-123.71 137.7,-130.91 130.88,-133.25"/>
-<text text-anchor="middle" x="153" y="-145" font-family="Helvetica,sans-Serif" font-size="10.00"> +M_vector</text>
+<path fill="none" stroke="#404040" d="M63.65,-176.88C68.1,-164.77 73.55,-149.93 79.04,-135.01"/>
+<polygon fill="none" stroke="#404040" points="79.08,-134.9 77.39,-127.89 83.22,-123.63 84.9,-130.65 79.08,-134.9"/>
+<text text-anchor="middle" x="94" y="-145" font-family="Helvetica,sans-Serif" font-size="10.00"> +M_ps</text>
 </g>
 <!-- Node3 -->
 <g id="node3" class="node">
 <title>Node3</title>
 <g id="a_node3"><a xlink:title=" ">
-<polygon fill="white" stroke="#bfbfbf" points="10.5,-287.5 10.5,-344.5 142.5,-344.5 142.5,-287.5 10.5,-287.5"/>
-<text text-anchor="middle" x="76.5" y="-332.5" font-family="Helvetica,sans-Serif" font-size="10.00">condensed_vector_type</text>
-<polyline fill="none" stroke="#bfbfbf" points="10.5,-325.5 142.5,-325.5 "/>
-<text text-anchor="middle" x="76.5" y="-313.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="#bfbfbf" points="10.5,-306.5 142.5,-306.5 "/>
-<text text-anchor="middle" x="76.5" y="-294.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polygon fill="white" stroke="black" points="125,-171.5 125,-239.5 278,-239.5 278,-171.5 125,-171.5"/>
+<text text-anchor="start" x="133" y="-227.5" font-family="Helvetica,sans-Serif" font-size="10.00">std::shared_ptr&lt; condensed</text>
+<text text-anchor="middle" x="201.5" y="-216.5" font-family="Helvetica,sans-Serif" font-size="10.00">_vector_type &gt;</text>
+<polyline fill="none" stroke="black" points="125,-209.5 278,-209.5 "/>
+<text text-anchor="middle" x="201.5" y="-197.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polyline fill="none" stroke="black" points="125,-190.5 278,-190.5 "/>
+<text text-anchor="start" x="133" y="-178.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ operator&#45;&gt;()</text>
 </a>
 </g>
 </g>
-<!-- Node3&#45;&gt;Node2 -->
+<!-- Node3&#45;&gt;Node1 -->
 <g id="edge2" class="edge">
-<title>Node3&#45;&gt;Node2</title>
-<path fill="none" stroke="#404040" d="M76.5,-287.34C76.5,-276.53 76.5,-263.85 76.5,-251.77"/>
-<polygon fill="none" stroke="#404040" points="76.5,-251.52 72.5,-245.52 76.5,-239.52 80.5,-245.52 76.5,-251.52"/>
-<text text-anchor="middle" x="89" y="-261" font-family="Helvetica,sans-Serif" font-size="10.00"> +ptr</text>
+<title>Node3&#45;&gt;Node1</title>
+<path fill="none" stroke="#404040" d="M178.99,-171.32C171.31,-160 162.4,-146.86 153.48,-133.73"/>
+<polygon fill="none" stroke="#404040" points="153.43,-133.64 146.75,-130.92 146.69,-123.71 153.37,-126.43 153.43,-133.64"/>
+<text text-anchor="middle" x="193" y="-145" font-family="Helvetica,sans-Serif" font-size="10.00"> +M_vector</text>
 </g>
 <!-- Node4 -->
 <g id="node4" class="node">
 <title>Node4</title>
 <g id="a_node4"><a xlink:title=" ">
-<polygon fill="white" stroke="#bfbfbf" points="171,-177 171,-234 278,-234 278,-177 171,-177"/>
-<text text-anchor="middle" x="224.5" y="-222" font-family="Helvetica,sans-Serif" font-size="10.00">decay_type&lt; PS &gt;</text>
-<polyline fill="none" stroke="#bfbfbf" points="171,-215 278,-215 "/>
-<text text-anchor="middle" x="224.5" y="-203" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="#bfbfbf" points="171,-196 278,-196 "/>
-<text text-anchor="middle" x="224.5" y="-184" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polygon fill="white" stroke="#bfbfbf" points="135.5,-287.5 135.5,-344.5 267.5,-344.5 267.5,-287.5 135.5,-287.5"/>
+<text text-anchor="middle" x="201.5" y="-332.5" font-family="Helvetica,sans-Serif" font-size="10.00">condensed_vector_type</text>
+<polyline fill="none" stroke="#bfbfbf" points="135.5,-325.5 267.5,-325.5 "/>
+<text text-anchor="middle" x="201.5" y="-313.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polyline fill="none" stroke="#bfbfbf" points="135.5,-306.5 267.5,-306.5 "/>
+<text text-anchor="middle" x="201.5" y="-294.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>
 </g>
-<!-- Node4&#45;&gt;Node1 -->
+<!-- Node4&#45;&gt;Node3 -->
 <g id="edge3" class="edge">
-<title>Node4&#45;&gt;Node1</title>
-<path fill="none" stroke="#404040" d="M216.69,-176.88C213.3,-164.89 209.16,-150.22 204.98,-135.45"/>
-<polygon fill="none" stroke="#404040" points="204.9,-135.18 199.42,-130.5 201.64,-123.63 207.12,-128.32 204.9,-135.18"/>
-<text text-anchor="middle" x="227" y="-145" font-family="Helvetica,sans-Serif" font-size="10.00"> +M_ps</text>
+<title>Node4&#45;&gt;Node3</title>
+<path fill="none" stroke="#404040" d="M201.5,-287.34C201.5,-276.53 201.5,-263.85 201.5,-251.77"/>
+<polygon fill="none" stroke="#404040" points="201.5,-251.52 197.5,-245.52 201.5,-239.52 205.5,-245.52 201.5,-251.52"/>
+<text text-anchor="middle" x="214" y="-261" font-family="Helvetica,sans-Serif" font-size="10.00"> +ptr</text>
 </g>
 </g>
 </svg>

@@ -46,7 +46,7 @@ if (edges && edges.length) {
         </defs>
 
 <script type="text/javascript">
-var viewWidth = 753;
+var viewWidth = 702;
 var viewHeight = 676;
 var sectionId = 'dynsection-1';
 </script>
@@ -54,18 +54,18 @@ var sectionId = 'dynsection-1';
 <svg id="graph" class="graph">
 <g id="viewport">
 <title>Feel::Tetrahedron&lt; Dim &gt;</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-672 749,-672 749,4 -4,4"/>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-672 698,-672 698,4 -4,4"/>
 <!-- Node1 -->
 <g id="node1" class="node">
 <title>Node1</title>
 <g id="a_node1"><a xlink:title=" ">
-<polygon fill="#bfbfbf" stroke="black" points="357.5,-0.5 357.5,-68.5 466.5,-68.5 466.5,-0.5 357.5,-0.5"/>
-<text text-anchor="start" x="365.5" y="-56.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::Tetrahedron&lt;</text>
-<text text-anchor="middle" x="412" y="-45.5" font-family="Helvetica,sans-Serif" font-size="10.00"> Dim &gt;</text>
-<polyline fill="none" stroke="black" points="357.5,-38.5 466.5,-38.5 "/>
-<text text-anchor="middle" x="412" y="-26.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="357.5,-19.5 466.5,-19.5 "/>
-<text text-anchor="middle" x="412" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polygon fill="#bfbfbf" stroke="black" points="317.5,-0.5 317.5,-68.5 426.5,-68.5 426.5,-0.5 317.5,-0.5"/>
+<text text-anchor="start" x="325.5" y="-56.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::Tetrahedron&lt;</text>
+<text text-anchor="middle" x="372" y="-45.5" font-family="Helvetica,sans-Serif" font-size="10.00"> Dim &gt;</text>
+<polyline fill="none" stroke="black" points="317.5,-38.5 426.5,-38.5 "/>
+<text text-anchor="middle" x="372" y="-26.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polyline fill="none" stroke="black" points="317.5,-19.5 426.5,-19.5 "/>
+<text text-anchor="middle" x="372" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>
 </g>
@@ -73,32 +73,32 @@ var sectionId = 'dynsection-1';
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:href="classFeel_1_1Simplex.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="341,-106.5 341,-295.5 483,-295.5 483,-106.5 341,-106.5"/>
-<text text-anchor="middle" x="412" y="-283.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::Simplex&lt; 3, Dim &gt;</text>
-<polyline fill="none" stroke="black" points="341,-276.5 483,-276.5 "/>
-<text text-anchor="start" x="349" y="-264.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ nbPtsPerVertex</text>
-<polyline fill="none" stroke="black" points="341,-257.5 483,-257.5 "/>
-<text text-anchor="start" x="349" y="-245.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ dimension()</text>
-<text text-anchor="start" x="349" y="-234.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ operator=()</text>
-<text text-anchor="start" x="349" y="-223.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ operator=()</text>
-<text text-anchor="start" x="349" y="-212.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ Simplex()</text>
-<text text-anchor="start" x="349" y="-201.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ Simplex()</text>
-<text text-anchor="start" x="349" y="-190.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ Simplex()</text>
-<text text-anchor="start" x="349" y="-179.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ topologicalDimension()</text>
-<text text-anchor="start" x="349" y="-168.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ e2p()</text>
-<text text-anchor="start" x="349" y="-157.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ f2e()</text>
-<text text-anchor="start" x="349" y="-146.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ f2eLoc()</text>
-<text text-anchor="start" x="349" y="-135.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ f2p()</text>
-<text text-anchor="start" x="349" y="-124.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ getShape()</text>
-<text text-anchor="start" x="349" y="-113.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 12 more...</text>
+<polygon fill="white" stroke="black" points="301,-106.5 301,-295.5 443,-295.5 443,-106.5 301,-106.5"/>
+<text text-anchor="middle" x="372" y="-283.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::Simplex&lt; 3, Dim &gt;</text>
+<polyline fill="none" stroke="black" points="301,-276.5 443,-276.5 "/>
+<text text-anchor="start" x="309" y="-264.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ topological_dimension</text>
+<polyline fill="none" stroke="black" points="301,-257.5 443,-257.5 "/>
+<text text-anchor="start" x="309" y="-245.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ dimension()</text>
+<text text-anchor="start" x="309" y="-234.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ operator=()</text>
+<text text-anchor="start" x="309" y="-223.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ operator=()</text>
+<text text-anchor="start" x="309" y="-212.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ Simplex()</text>
+<text text-anchor="start" x="309" y="-201.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ Simplex()</text>
+<text text-anchor="start" x="309" y="-190.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ Simplex()</text>
+<text text-anchor="start" x="309" y="-179.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ topologicalDimension()</text>
+<text text-anchor="start" x="309" y="-168.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ e2p()</text>
+<text text-anchor="start" x="309" y="-157.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ f2e()</text>
+<text text-anchor="start" x="309" y="-146.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ f2eLoc()</text>
+<text text-anchor="start" x="309" y="-135.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ f2p()</text>
+<text text-anchor="start" x="309" y="-124.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ getShape()</text>
+<text text-anchor="start" x="309" y="-113.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 12 more...</text>
 </a>
 </g>
 </g>
 <!-- Node2&#45;&gt;Node1 -->
 <g id="edge1" class="edge">
 <title>Node2&#45;&gt;Node1</title>
-<path fill="none" stroke="midnightblue" d="M412,-95.95C412,-86.22 412,-76.93 412,-68.68"/>
-<polygon fill="none" stroke="midnightblue" points="408.5,-96.22 412,-106.22 415.5,-96.22 408.5,-96.22"/>
+<path fill="none" stroke="midnightblue" d="M372,-95.95C372,-86.22 372,-76.93 372,-68.68"/>
+<polygon fill="none" stroke="midnightblue" points="368.5,-96.22 372,-106.22 375.5,-96.22 368.5,-96.22"/>
 </g>
 <!-- Node3 -->
 <g id="node3" class="node">
@@ -120,18 +120,18 @@ var sectionId = 'dynsection-1';
 <!-- Node3&#45;&gt;Node2 -->
 <g id="edge2" class="edge">
 <title>Node3&#45;&gt;Node2</title>
-<path fill="none" stroke="midnightblue" d="M113.19,-420.12C125.68,-385.6 145.62,-343.27 175,-314 221.03,-268.15 289.41,-238.61 340.91,-221.45"/>
-<polygon fill="none" stroke="midnightblue" points="109.86,-419.04 109.86,-429.63 116.47,-421.35 109.86,-419.04"/>
+<path fill="none" stroke="midnightblue" d="M114.14,-420.55C126.93,-386.37 146.84,-344.25 175,-314 209.71,-276.71 259.72,-248.48 300.66,-229.7"/>
+<polygon fill="none" stroke="midnightblue" points="110.84,-419.36 110.72,-429.96 117.42,-421.76 110.84,-419.36"/>
 </g>
 <!-- Node4 -->
 <g id="node4" class="node">
 <title>Node4</title>
 <g id="a_node4"><a xlink:href="classFeel_1_1ConvexBase.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="0,-610.5 0,-667.5 104,-667.5 104,-610.5 0,-610.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="0,-610.5 0,-667.5 104,-667.5 104,-610.5 0,-610.5"/>
 <text text-anchor="middle" x="52" y="-655.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::ConvexBase</text>
-<polyline fill="none" stroke="black" points="0,-648.5 104,-648.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="0,-648.5 104,-648.5 "/>
 <text text-anchor="middle" x="52" y="-636.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="0,-629.5 104,-629.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="0,-629.5 104,-629.5 "/>
 <text text-anchor="middle" x="52" y="-617.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>
@@ -156,21 +156,21 @@ var sectionId = 'dynsection-1';
 </g>
 </g>
 <!-- Node5&#45;&gt;Node2 -->
-<g id="edge8" class="edge">
+<g id="edge7" class="edge">
 <title>Node5&#45;&gt;Node2</title>
-<path fill="none" stroke="#404040" d="M184.24,-610.44C178.13,-567.67 171.37,-483.59 199,-420 227.12,-355.28 283.74,-298.83 331.54,-259.6"/>
-<polygon fill="none" stroke="#404040" points="331.64,-259.52 333.79,-252.64 340.97,-251.98 338.82,-258.86 331.64,-259.52"/>
-<text text-anchor="middle" x="258.5" y="-533" font-family="Helvetica,sans-Serif" font-size="10.00"> +numPoints</text>
-<text text-anchor="middle" x="258.5" y="-522" font-family="Helvetica,sans-Serif" font-size="10.00">+nbPtsPerFace</text>
-<text text-anchor="middle" x="258.5" y="-511" font-family="Helvetica,sans-Serif" font-size="10.00">+nbPtsPerEdge</text>
-<text text-anchor="middle" x="258.5" y="-500" font-family="Helvetica,sans-Serif" font-size="10.00">+numNormals</text>
-<text text-anchor="middle" x="258.5" y="-489" font-family="Helvetica,sans-Serif" font-size="10.00">+nbPtsPerVolume</text>
-<text text-anchor="middle" x="258.5" y="-478" font-family="Helvetica,sans-Serif" font-size="10.00">+real_dimension</text>
-<text text-anchor="middle" x="258.5" y="-467" font-family="Helvetica,sans-Serif" font-size="10.00">+nDim</text>
-<text text-anchor="middle" x="258.5" y="-456" font-family="Helvetica,sans-Serif" font-size="10.00">+topological_dimension</text>
-<text text-anchor="middle" x="258.5" y="-445" font-family="Helvetica,sans-Serif" font-size="10.00">+nRealDim</text>
-<text text-anchor="middle" x="258.5" y="-434" font-family="Helvetica,sans-Serif" font-size="10.00">+nOrder</text>
-<text text-anchor="middle" x="258.5" y="-423" font-family="Helvetica,sans-Serif" font-size="10.00">...</text>
+<path fill="none" stroke="#404040" d="M185,-610.42C179.99,-567.97 174.75,-484.75 199,-420 218.92,-366.8 257.04,-316.48 292.43,-277.62"/>
+<polygon fill="none" stroke="#404040" points="292.72,-277.31 293.87,-270.19 300.88,-268.5 299.74,-275.62 292.72,-277.31"/>
+<text text-anchor="middle" x="243.5" y="-533" font-family="Helvetica,sans-Serif" font-size="10.00"> +nDim</text>
+<text text-anchor="middle" x="243.5" y="-522" font-family="Helvetica,sans-Serif" font-size="10.00">+nOrder</text>
+<text text-anchor="middle" x="243.5" y="-511" font-family="Helvetica,sans-Serif" font-size="10.00">+nRealDim</text>
+<text text-anchor="middle" x="243.5" y="-500" font-family="Helvetica,sans-Serif" font-size="10.00">+nbPtsPerEdge</text>
+<text text-anchor="middle" x="243.5" y="-489" font-family="Helvetica,sans-Serif" font-size="10.00">+nbPtsPerFace</text>
+<text text-anchor="middle" x="243.5" y="-478" font-family="Helvetica,sans-Serif" font-size="10.00">+nbPtsPerVertex</text>
+<text text-anchor="middle" x="243.5" y="-467" font-family="Helvetica,sans-Serif" font-size="10.00">+nbPtsPerVolume</text>
+<text text-anchor="middle" x="243.5" y="-456" font-family="Helvetica,sans-Serif" font-size="10.00">+numNormals</text>
+<text text-anchor="middle" x="243.5" y="-445" font-family="Helvetica,sans-Serif" font-size="10.00">+numPoints</text>
+<text text-anchor="middle" x="243.5" y="-434" font-family="Helvetica,sans-Serif" font-size="10.00">+real_dimension</text>
+<text text-anchor="middle" x="243.5" y="-423" font-family="Helvetica,sans-Serif" font-size="10.00">...</text>
 </g>
 <!-- Node5&#45;&gt;Node3 -->
 <g id="edge4" class="edge">
@@ -178,95 +178,95 @@ var sectionId = 'dynsection-1';
 <path fill="none" stroke="#404040" d="M135.51,-610.38C128.83,-605.05 122.7,-598.93 118,-592 108.32,-577.74 102.7,-560.2 99.49,-543.34"/>
 <polygon fill="none" stroke="#404040" points="99.45,-543.08 94.55,-537.79 97.55,-531.23 102.45,-536.53 99.45,-543.08"/>
 <text text-anchor="middle" x="146.5" y="-584" font-family="Helvetica,sans-Serif" font-size="10.00"> +nDim</text>
-<text text-anchor="middle" x="146.5" y="-573" font-family="Helvetica,sans-Serif" font-size="10.00">+nRealDim</text>
-<text text-anchor="middle" x="146.5" y="-562" font-family="Helvetica,sans-Serif" font-size="10.00">+nOrder</text>
+<text text-anchor="middle" x="146.5" y="-573" font-family="Helvetica,sans-Serif" font-size="10.00">+nOrder</text>
+<text text-anchor="middle" x="146.5" y="-562" font-family="Helvetica,sans-Serif" font-size="10.00">+nRealDim</text>
 </g>
 <!-- Node6 -->
 <g id="node6" class="node">
 <title>Node6</title>
 <g id="a_node6"><a xlink:href="classFeel_1_1SimplexBase.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="326.5,-452 326.5,-509 433.5,-509 433.5,-452 326.5,-452"/>
-<text text-anchor="middle" x="380" y="-497" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::SimplexBase</text>
-<polyline fill="none" stroke="black" points="326.5,-490 433.5,-490 "/>
-<text text-anchor="middle" x="380" y="-478" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="326.5,-471 433.5,-471 "/>
-<text text-anchor="middle" x="380" y="-459" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polygon fill="white" stroke="#bfbfbf" points="296.5,-452 296.5,-509 403.5,-509 403.5,-452 296.5,-452"/>
+<text text-anchor="middle" x="350" y="-497" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::SimplexBase</text>
+<polyline fill="none" stroke="#bfbfbf" points="296.5,-490 403.5,-490 "/>
+<text text-anchor="middle" x="350" y="-478" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polyline fill="none" stroke="#bfbfbf" points="296.5,-471 403.5,-471 "/>
+<text text-anchor="middle" x="350" y="-459" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>
 </g>
 <!-- Node6&#45;&gt;Node2 -->
 <g id="edge5" class="edge">
 <title>Node6&#45;&gt;Node2</title>
-<path fill="none" stroke="#8b1a1a" d="M384.33,-441.93C388.64,-404.54 395.43,-345.68 401.21,-295.61"/>
-<polygon fill="none" stroke="#8b1a1a" points="380.85,-441.54 383.19,-451.88 387.81,-442.34 380.85,-441.54"/>
+<path fill="none" stroke="#8b1a1a" d="M353.02,-441.45C355.98,-404.04 360.63,-345.46 364.58,-295.61"/>
+<polygon fill="none" stroke="#8b1a1a" points="349.49,-441.63 352.19,-451.88 356.47,-442.19 349.49,-441.63"/>
 </g>
 <!-- Node7 -->
 <g id="node7" class="node">
 <title>Node7</title>
-<g id="a_node7"><a xlink:href="classsize__t.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="451.5,-452 451.5,-509 496.5,-509 496.5,-452 451.5,-452"/>
-<text text-anchor="middle" x="474" y="-497" font-family="Helvetica,sans-Serif" font-size="10.00">size_t</text>
-<polyline fill="none" stroke="black" points="451.5,-490 496.5,-490 "/>
-<text text-anchor="middle" x="474" y="-478" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="451.5,-471 496.5,-471 "/>
-<text text-anchor="middle" x="474" y="-459" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<g id="a_node7"><a xlink:href="classbool.html" target="_top" xlink:title=" ">
+<polygon fill="white" stroke="#bfbfbf" points="422,-452 422,-509 460,-509 460,-452 422,-452"/>
+<text text-anchor="middle" x="441" y="-497" font-family="Helvetica,sans-Serif" font-size="10.00">bool</text>
+<polyline fill="none" stroke="#bfbfbf" points="422,-490 460,-490 "/>
+<text text-anchor="middle" x="441" y="-478" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polyline fill="none" stroke="#bfbfbf" points="422,-471 460,-471 "/>
+<text text-anchor="middle" x="441" y="-459" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>
 </g>
 <!-- Node7&#45;&gt;Node2 -->
 <g id="edge6" class="edge">
 <title>Node7&#45;&gt;Node2</title>
-<path fill="none" stroke="#404040" d="M462.67,-451.9C457.01,-437.27 450.45,-418.88 446,-402 438.02,-371.71 431.48,-338.32 426.35,-307.65"/>
-<polygon fill="none" stroke="#404040" points="426.31,-307.43 421.4,-302.16 424.37,-295.59 429.29,-300.87 426.31,-307.43"/>
-<text text-anchor="middle" x="476.5" y="-355.5" font-family="Helvetica,sans-Serif" font-size="10.00"> +Geometry</text>
+<path fill="none" stroke="#404040" d="M430.33,-451.75C425.73,-441.36 419.83,-429.71 413,-420 406.49,-410.74 399.92,-412.19 395,-402 386.75,-384.92 381.36,-346.38 377.89,-307.65"/>
+<polygon fill="none" stroke="#404040" points="377.89,-307.6 373.4,-301.96 376.88,-295.64 381.37,-301.28 377.89,-307.6"/>
+<text text-anchor="middle" x="433" y="-361" font-family="Helvetica,sans-Serif" font-size="10.00"> +is_hypercube</text>
+<text text-anchor="middle" x="433" y="-350" font-family="Helvetica,sans-Serif" font-size="10.00">+is_simplex</text>
 </g>
 <!-- Node8 -->
 <g id="node8" class="node">
 <title>Node8</title>
 <g id="a_node8"><a xlink:href="classint.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="514.5,-452 514.5,-509 543.5,-509 543.5,-452 514.5,-452"/>
-<text text-anchor="middle" x="529" y="-497" font-family="Helvetica,sans-Serif" font-size="10.00">int</text>
-<polyline fill="none" stroke="black" points="514.5,-490 543.5,-490 "/>
-<text text-anchor="middle" x="529" y="-478" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="514.5,-471 543.5,-471 "/>
-<text text-anchor="middle" x="529" y="-459" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polygon fill="white" stroke="#bfbfbf" points="478.5,-452 478.5,-509 507.5,-509 507.5,-452 478.5,-452"/>
+<text text-anchor="middle" x="493" y="-497" font-family="Helvetica,sans-Serif" font-size="10.00">int</text>
+<polyline fill="none" stroke="#bfbfbf" points="478.5,-490 507.5,-490 "/>
+<text text-anchor="middle" x="493" y="-478" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polyline fill="none" stroke="#bfbfbf" points="478.5,-471 507.5,-471 "/>
+<text text-anchor="middle" x="493" y="-459" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>
 </g>
 <!-- Node8&#45;&gt;Node2 -->
-<g id="edge7" class="edge">
+<g id="edge8" class="edge">
 <title>Node8&#45;&gt;Node2</title>
-<path fill="none" stroke="#404040" d="M529.99,-451.86C530.17,-417.93 527.11,-359.3 507,-314 502.43,-303.71 496.61,-293.64 490.11,-284.01"/>
-<polygon fill="none" stroke="#404040" points="490.06,-283.94 483.32,-281.36 483.11,-274.15 489.84,-276.73 490.06,-283.94"/>
-<text text-anchor="middle" x="583.5" y="-394" font-family="Helvetica,sans-Serif" font-size="10.00"> +numEdges</text>
-<text text-anchor="middle" x="583.5" y="-383" font-family="Helvetica,sans-Serif" font-size="10.00">+Shape</text>
-<text text-anchor="middle" x="583.5" y="-372" font-family="Helvetica,sans-Serif" font-size="10.00">+numFaces</text>
-<text text-anchor="middle" x="583.5" y="-361" font-family="Helvetica,sans-Serif" font-size="10.00">+numTopologicalFaces</text>
-<text text-anchor="middle" x="583.5" y="-350" font-family="Helvetica,sans-Serif" font-size="10.00">+numGeometricFaces</text>
-<text text-anchor="middle" x="583.5" y="-339" font-family="Helvetica,sans-Serif" font-size="10.00">+shape_v</text>
-<text text-anchor="middle" x="583.5" y="-328" font-family="Helvetica,sans-Serif" font-size="10.00">+numVolumes</text>
-<text text-anchor="middle" x="583.5" y="-317" font-family="Helvetica,sans-Serif" font-size="10.00">+numVertices</text>
+<path fill="none" stroke="#404040" d="M494.14,-451.79C494.48,-417.79 491.57,-359.09 471,-314 465.6,-302.16 458.51,-290.66 450.61,-279.82"/>
+<polygon fill="none" stroke="#404040" points="450.44,-279.6 443.62,-277.26 443.15,-270.06 449.97,-272.4 450.44,-279.6"/>
+<text text-anchor="middle" x="548.5" y="-394" font-family="Helvetica,sans-Serif" font-size="10.00"> +Shape</text>
+<text text-anchor="middle" x="548.5" y="-383" font-family="Helvetica,sans-Serif" font-size="10.00">+numEdges</text>
+<text text-anchor="middle" x="548.5" y="-372" font-family="Helvetica,sans-Serif" font-size="10.00">+numFaces</text>
+<text text-anchor="middle" x="548.5" y="-361" font-family="Helvetica,sans-Serif" font-size="10.00">+numGeometricFaces</text>
+<text text-anchor="middle" x="548.5" y="-350" font-family="Helvetica,sans-Serif" font-size="10.00">+numTopologicalFaces</text>
+<text text-anchor="middle" x="548.5" y="-339" font-family="Helvetica,sans-Serif" font-size="10.00">+numVertices</text>
+<text text-anchor="middle" x="548.5" y="-328" font-family="Helvetica,sans-Serif" font-size="10.00">+numVolumes</text>
+<text text-anchor="middle" x="548.5" y="-317" font-family="Helvetica,sans-Serif" font-size="10.00">+shape_v</text>
 </g>
 <!-- Node9 -->
 <g id="node9" class="node">
 <title>Node9</title>
-<g id="a_node9"><a xlink:href="classbool.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="646,-452 646,-509 684,-509 684,-452 646,-452"/>
-<text text-anchor="middle" x="665" y="-497" font-family="Helvetica,sans-Serif" font-size="10.00">bool</text>
-<polyline fill="none" stroke="black" points="646,-490 684,-490 "/>
-<text text-anchor="middle" x="665" y="-478" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="646,-471 684,-471 "/>
-<text text-anchor="middle" x="665" y="-459" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<g id="a_node9"><a xlink:href="classsize__t.html" target="_top" xlink:title=" ">
+<polygon fill="white" stroke="#bfbfbf" points="606.5,-452 606.5,-509 651.5,-509 651.5,-452 606.5,-452"/>
+<text text-anchor="middle" x="629" y="-497" font-family="Helvetica,sans-Serif" font-size="10.00">size_t</text>
+<polyline fill="none" stroke="#bfbfbf" points="606.5,-490 651.5,-490 "/>
+<text text-anchor="middle" x="629" y="-478" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polyline fill="none" stroke="#bfbfbf" points="606.5,-471 651.5,-471 "/>
+<text text-anchor="middle" x="629" y="-459" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>
 </g>
 <!-- Node9&#45;&gt;Node2 -->
 <g id="edge9" class="edge">
 <title>Node9&#45;&gt;Node2</title>
-<path fill="none" stroke="#404040" d="M668.8,-451.71C672.09,-416.29 672.45,-354.76 643,-314 607.82,-265.32 545.67,-236.86 494.7,-220.81"/>
-<polygon fill="none" stroke="#404040" points="494.49,-220.75 487.59,-222.85 483,-217.29 489.9,-215.19 494.49,-220.75"/>
-<text text-anchor="middle" x="707" y="-361" font-family="Helvetica,sans-Serif" font-size="10.00"> +is_hypercube</text>
-<text text-anchor="middle" x="707" y="-350" font-family="Helvetica,sans-Serif" font-size="10.00">+is_simplex</text>
+<path fill="none" stroke="#404040" d="M632.81,-451.99C636.18,-416.58 636.68,-354.78 607,-314 570.84,-264.31 506.8,-235.81 454.7,-220.01"/>
+<polygon fill="none" stroke="#404040" points="454.62,-219.99 447.74,-222.15 443.1,-216.64 449.97,-214.47 454.62,-219.99"/>
+<text text-anchor="middle" x="663.5" y="-355.5" font-family="Helvetica,sans-Serif" font-size="10.00"> +Geometry</text>
 </g>
 </g>
 </svg>

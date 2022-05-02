@@ -1,25 +1,9 @@
 var classFeel_1_1vf_1_1One =
 [
-    [ "HasTestFunction", "structFeel_1_1vf_1_1One_1_1HasTestFunction.html", "structFeel_1_1vf_1_1One_1_1HasTestFunction" ],
-    [ "HasTrialFunction", "structFeel_1_1vf_1_1One_1_1HasTrialFunction.html", "structFeel_1_1vf_1_1One_1_1HasTrialFunction" ],
-    [ "Lambda", "structFeel_1_1vf_1_1One_1_1Lambda.html", "structFeel_1_1vf_1_1One_1_1Lambda" ],
+    [ "HasTestFunction", "structFeel_1_1vf_1_1One_1_1HasTestFunction.html", null ],
+    [ "HasTrialFunction", "structFeel_1_1vf_1_1One_1_1HasTrialFunction.html", null ],
+    [ "Lambda", "structFeel_1_1vf_1_1One_1_1Lambda.html", null ],
     [ "tensor", "structFeel_1_1vf_1_1One_1_1tensor.html", "structFeel_1_1vf_1_1One_1_1tensor" ],
-    [ "applySymbolsExpr", "classFeel_1_1vf_1_1One.html#a1a8f84a1f0a5687f69003d4048a96203", null ],
-    [ "diff", "classFeel_1_1vf_1_1One.html#a0f376e3115525f8d97d82f65323eb61e", null ],
     [ "isPolynomial", "classFeel_1_1vf_1_1One.html#ac2f257a05aff74d957cbeac58863a4fc", null ],
-    [ "oneComponentsDynamic", "classFeel_1_1vf_1_1One.html#a11d6c4fe9405535a089cc04b0e7b1c72", null ],
-    [ "operator()", "classFeel_1_1vf_1_1One.html#aded83c353f33a919ed991b94603741a8", null ],
-    [ "polynomialOrder", "classFeel_1_1vf_1_1One.html#a035fdd63c5072f2d40e59de95ce8851a", null ],
-    [ "context", "classFeel_1_1vf_1_1One.html#ace2618e8eb11b4702d70904e336214ec", null ],
-    [ "has_test_basis", "classFeel_1_1vf_1_1One.html#ade6a758f798ef5c0b7ff1026994f2f09", null ],
-    [ "has_trial_basis", "classFeel_1_1vf_1_1One.html#aeb446deab15e27d3318d206f43291c5f", null ],
-    [ "is_terminal", "classFeel_1_1vf_1_1One.html#a6010773a1d23129f0b93266163c1cc3d", null ],
-    [ "test_basis", "classFeel_1_1vf_1_1One.html#a51841f980155cf710151f9c9e906e378", null ],
-    [ "this_type", "classFeel_1_1vf_1_1One.html#af171705b0ca747b756b40a1744304de0", null ],
-    [ "trial_basis", "classFeel_1_1vf_1_1One.html#a1b15afa80986680a37f0c26eed2b9143", null ],
-    [ "value_type", "classFeel_1_1vf_1_1One.html#ae9eeebfa3a704edf87d57e30581fcfc8", null ],
-    [ "One", "classFeel_1_1vf_1_1One.html#acfcf86a93a3b881ef312d03b22c2ca26", null ],
-    [ "One", "classFeel_1_1vf_1_1One.html#adbfb2a28d90ce58571230366113d8b50", null ],
-    [ "One", "classFeel_1_1vf_1_1One.html#aa214e4ea2f9ed79b17f88b076aad7df6", null ],
-    [ "One", "classFeel_1_1vf_1_1One.html#a0987420630981b4bd48d04453ac2a31d", null ]
+    [ "polynomialOrder", "classFeel_1_1vf_1_1One.html#a035fdd63c5072f2d40e59de95ce8851a", null ]
 ];

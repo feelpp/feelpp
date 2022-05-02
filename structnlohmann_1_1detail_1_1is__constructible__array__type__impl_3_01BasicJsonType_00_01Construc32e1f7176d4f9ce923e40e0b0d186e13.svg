@@ -32,11 +32,11 @@
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:title=" ">
-<polygon fill="white" stroke="#bfbfbf" points="76,-160.5 76,-217.5 139,-217.5 139,-160.5 76,-160.5"/>
-<text text-anchor="middle" x="107.5" y="-205.5" font-family="Helvetica,sans-Serif" font-size="10.00">true_type</text>
-<polyline fill="none" stroke="#bfbfbf" points="76,-198.5 139,-198.5 "/>
+<polygon fill="white" stroke="#bfbfbf" points="65.5,-160.5 65.5,-217.5 149.5,-217.5 149.5,-160.5 65.5,-160.5"/>
+<text text-anchor="middle" x="107.5" y="-205.5" font-family="Helvetica,sans-Serif" font-size="10.00">std::true_type</text>
+<polyline fill="none" stroke="#bfbfbf" points="65.5,-198.5 149.5,-198.5 "/>
 <text text-anchor="middle" x="107.5" y="-186.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="#bfbfbf" points="76,-179.5 139,-179.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="65.5,-179.5 149.5,-179.5 "/>
 <text text-anchor="middle" x="107.5" y="-167.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>

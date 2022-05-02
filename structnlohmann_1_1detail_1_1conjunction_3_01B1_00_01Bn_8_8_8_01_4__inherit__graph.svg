@@ -26,14 +26,14 @@
 <!-- Node2 -->
 <g id="node2" class="node">
 <title>Node2</title>
-<g id="a_node2"><a xlink:href="classstd_1_1conditional_1_1type.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="14.5,-105.5 14.5,-184.5 146.5,-184.5 146.5,-105.5 14.5,-105.5"/>
+<g id="a_node2"><a xlink:href="classstd_1_1conditional_3_01bool_07B1_1_1value_08_00_01conjunction_3_01Bn_8_8_8_01_4_00_01B1_01_4_1_1type.html" target="_top" xlink:title=" ">
+<polygon fill="white" stroke="#bfbfbf" points="14.5,-105.5 14.5,-184.5 146.5,-184.5 146.5,-105.5 14.5,-105.5"/>
 <text text-anchor="start" x="22.5" y="-172.5" font-family="Helvetica,sans-Serif" font-size="10.00">std::conditional&lt; bool</text>
 <text text-anchor="start" x="22.5" y="-161.5" font-family="Helvetica,sans-Serif" font-size="10.00">(B1::value), conjunction</text>
 <text text-anchor="middle" x="80.5" y="-150.5" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; Bn... &gt;, B1 &gt;::type</text>
-<polyline fill="none" stroke="black" points="14.5,-143.5 146.5,-143.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="14.5,-143.5 146.5,-143.5 "/>
 <text text-anchor="middle" x="80.5" y="-131.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="14.5,-124.5 146.5,-124.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="14.5,-124.5 146.5,-124.5 "/>
 <text text-anchor="middle" x="80.5" y="-112.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>

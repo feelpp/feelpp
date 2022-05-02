@@ -1,8 +1,6 @@
-<map id="Feel::SubMeshData" name="Feel::SubMeshData">
-<area shape="rect" id="node1" title="data structure storing sub mesh data" alt="" coords="72,1144,219,1295"/>
-<area shape="rect" id="node2" title=" " alt="" coords="5,989,160,1081"/>
-<area shape="rect" id="node3" title=" " alt="" coords="184,989,355,1081"/>
-<area shape="rect" id="node4" href="$classFeel_1_1Mesh.html" title="unifying mesh class" alt="" coords="132,204,407,927"/>
-<area shape="rect" id="node5" title=" " alt="" coords="65,5,244,83"/>
-<area shape="rect" id="node6" title=" " alt="" coords="268,5,503,83"/>
+<map id="Feel::SubMeshData&lt; IndexT &gt;" name="Feel::SubMeshData&lt; IndexT &gt;">
+<area shape="rect" id="node1" title="data structure storing sub mesh data" alt="" coords="151,300,310,465"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,145,176,237"/>
+<area shape="rect" id="node3" title=" " alt="" coords="43,5,138,83"/>
+<area shape="rect" id="node4" title=" " alt="" coords="200,145,355,237"/>
 </map>

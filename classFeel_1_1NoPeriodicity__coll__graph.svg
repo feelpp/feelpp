@@ -32,11 +32,11 @@
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:href="structFeel_1_1detail_1_1periodicity__base.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="0,-171.5 0,-228.5 157,-228.5 157,-171.5 0,-171.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="0,-171.5 0,-228.5 157,-228.5 157,-171.5 0,-171.5"/>
 <text text-anchor="middle" x="78.5" y="-216.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::detail::periodicity_base</text>
-<polyline fill="none" stroke="black" points="0,-209.5 157,-209.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="0,-209.5 157,-209.5 "/>
 <text text-anchor="middle" x="78.5" y="-197.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="0,-190.5 157,-190.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="0,-190.5 157,-190.5 "/>
 <text text-anchor="middle" x="78.5" y="-178.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>
@@ -51,11 +51,11 @@
 <g id="node3" class="node">
 <title>Node3</title>
 <g id="a_node3"><a xlink:href="classbool.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="175.5,-171.5 175.5,-228.5 213.5,-228.5 213.5,-171.5 175.5,-171.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="175.5,-171.5 175.5,-228.5 213.5,-228.5 213.5,-171.5 175.5,-171.5"/>
 <text text-anchor="middle" x="194.5" y="-216.5" font-family="Helvetica,sans-Serif" font-size="10.00">bool</text>
-<polyline fill="none" stroke="black" points="175.5,-209.5 213.5,-209.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="175.5,-209.5 213.5,-209.5 "/>
 <text text-anchor="middle" x="194.5" y="-197.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="175.5,-190.5 213.5,-190.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="175.5,-190.5 213.5,-190.5 "/>
 <text text-anchor="middle" x="194.5" y="-178.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>

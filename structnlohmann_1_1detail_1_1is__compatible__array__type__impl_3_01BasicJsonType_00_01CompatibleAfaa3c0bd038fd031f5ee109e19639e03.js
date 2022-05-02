@@ -1,4 +1,0 @@
-var structnlohmann_1_1detail_1_1is__compatible__array__type__impl_3_01BasicJsonType_00_01CompatibleAfaa3c0bd038fd031f5ee109e19639e03 =
-[
-    [ "value", "structnlohmann_1_1detail_1_1is__compatible__array__type__impl_3_01BasicJsonType_00_01CompatibleAfaa3c0bd038fd031f5ee109e19639e03.html#ad77105133ea27756f970d73b61c6d8dd", null ]
-];

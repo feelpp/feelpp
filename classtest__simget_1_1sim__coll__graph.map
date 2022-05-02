@@ -1,7 +1,7 @@
 <map id="test_simget::sim" name="test_simget::sim">
-<area shape="rect" id="node1" title=" " alt="" coords="65,536,196,643"/>
-<area shape="rect" id="node2" href="$classFeel_1_1Simget.html" title="Simulation Object." alt="" coords="57,160,204,487"/>
-<area shape="rect" id="node3" title=" " alt="" coords="5,5,61,83"/>
-<area shape="rect" id="node4" href="$classdouble.html" title=" " alt="" coords="97,5,164,83"/>
-<area shape="rect" id="node5" href="$classint.html" title=" " alt="" coords="257,5,295,83"/>
+<area shape="rect" id="node1" title=" " alt="" coords="119,536,249,643"/>
+<area shape="rect" id="node2" href="$classFeel_1_1Simget.html" title="Simulation Object." alt="" coords="111,160,257,487"/>
+<area shape="rect" id="node3" title=" " alt="" coords="5,5,72,83"/>
+<area shape="rect" id="node4" href="$classint.html" title=" " alt="" coords="165,5,203,83"/>
+<area shape="rect" id="node5" title=" " alt="" coords="253,5,309,83"/>
 </map>

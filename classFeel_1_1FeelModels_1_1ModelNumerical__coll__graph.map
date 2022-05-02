@@ -1,9 +1,12 @@
 <map id="Feel::FeelModels::ModelNumerical" name="Feel::FeelModels::ModelNumerical">
-<area shape="rect" id="node1" title="Handles some numerical model aspects: timestepping, mesh and properties." alt="" coords="186,976,455,1259"/>
-<area shape="rect" id="node2" href="$classFeel_1_1FeelModels_1_1ModelBase.html" title="Model base class." alt="" coords="113,564,371,715"/>
-<area shape="rect" id="node6" href="$classFeel_1_1FeelModels_1_1ModelAlgebraic.html" title=" " alt="" coords="201,770,441,921"/>
-<area shape="rect" id="node3" href="$classFeel_1_1JournalWatcher.html" title=" " alt="" coords="5,131,241,516"/>
-<area shape="rect" id="node4" title=" " alt="" coords="52,5,195,83"/>
-<area shape="rect" id="node5" title=" " alt="" coords="265,277,459,369"/>
-<area shape="rect" id="node7" href="$classFeel_1_1FeelModels_1_1ModelMeshes.html" title=" " alt="" coords="465,763,723,928"/>
+<area shape="rect" id="node1" title="Handles some numerical model aspects: timestepping, mesh and properties." alt="" coords="151,1009,421,1292"/>
+<area shape="rect" id="node2" href="$classFeel_1_1FeelModels_1_1ModelBase.html" title="Model base class." alt="" coords="177,580,435,731"/>
+<area shape="rect" id="node6" href="$classFeel_1_1FeelModels_1_1ModelAlgebraic.html" title=" " alt="" coords="323,795,563,945"/>
+<area shape="rect" id="node7" href="$classFeel_1_1FeelModels_1_1ModelMeshes.html" title=" " alt="" coords="9,780,248,960"/>
+<area shape="rect" id="node3" href="$classFeel_1_1JournalWatcher.html" title=" " alt="" coords="173,132,409,517"/>
+<area shape="rect" id="node4" title=" " alt="" coords="220,5,363,83"/>
+<area shape="rect" id="node5" title=" " alt="" coords="433,279,627,371"/>
+<area shape="rect" id="node8" title=" " alt="" coords="19,617,153,694"/>
+<area shape="rect" id="node9" title=" " alt="" coords="5,286,44,363"/>
+<area shape="rect" id="node10" title=" " alt="" coords="81,286,120,363"/>
 </map>

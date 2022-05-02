@@ -78,11 +78,11 @@ var sectionId = 'dynsection-1';
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:href="structFeel_1_1GeometricSpaceBase.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="0,-171.5 0,-294.5 148,-294.5 148,-171.5 0,-171.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="0,-171.5 0,-294.5 148,-294.5 148,-171.5 0,-171.5"/>
 <text text-anchor="middle" x="74" y="-282.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::GeometricSpaceBase</text>
-<polyline fill="none" stroke="black" points="0,-275.5 148,-275.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="0,-275.5 148,-275.5 "/>
 <text text-anchor="middle" x="74" y="-263.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="0,-256.5 148,-256.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="0,-256.5 148,-256.5 "/>
 <text text-anchor="start" x="8" y="-244.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ GeometricSpaceBase()</text>
 <text text-anchor="start" x="8" y="-233.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ GeometricSpaceBase()</text>
 <text text-anchor="start" x="8" y="-222.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ GeometricSpaceBase()</text>
@@ -103,11 +103,11 @@ var sectionId = 'dynsection-1';
 <g id="node3" class="node">
 <title>Node3</title>
 <g id="a_node3"><a xlink:href="classFeel_1_1CommObject.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="20.5,-332.5 20.5,-444.5 127.5,-444.5 127.5,-332.5 20.5,-332.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="20.5,-332.5 20.5,-444.5 127.5,-444.5 127.5,-332.5 20.5,-332.5"/>
 <text text-anchor="middle" x="74" y="-432.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::CommObject</text>
-<polyline fill="none" stroke="black" points="20.5,-425.5 127.5,-425.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="20.5,-425.5 127.5,-425.5 "/>
 <text text-anchor="middle" x="74" y="-413.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="20.5,-406.5 127.5,-406.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="20.5,-406.5 127.5,-406.5 "/>
 <text text-anchor="start" x="28.5" y="-394.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ comm()</text>
 <text text-anchor="start" x="28.5" y="-383.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ CommObject()</text>
 <text text-anchor="start" x="28.5" y="-372.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ CommObject()</text>
@@ -148,11 +148,11 @@ var sectionId = 'dynsection-1';
 <g id="node5" class="node">
 <title>Node5</title>
 <g id="a_node5"><a xlink:href="classsize__t.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="344.5,-204.5 344.5,-261.5 389.5,-261.5 389.5,-204.5 344.5,-204.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="344.5,-204.5 344.5,-261.5 389.5,-261.5 389.5,-204.5 344.5,-204.5"/>
 <text text-anchor="middle" x="367" y="-249.5" font-family="Helvetica,sans-Serif" font-size="10.00">size_t</text>
-<polyline fill="none" stroke="black" points="344.5,-242.5 389.5,-242.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="344.5,-242.5 389.5,-242.5 "/>
 <text text-anchor="middle" x="367" y="-230.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="344.5,-223.5 389.5,-223.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="344.5,-223.5 389.5,-223.5 "/>
 <text text-anchor="middle" x="367" y="-211.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>

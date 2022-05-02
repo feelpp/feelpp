@@ -1,5 +1,5 @@
 <map id="Feel::DofFromMortar&lt; DofTableType, MortarFEType, FEType &gt;" name="Feel::DofFromMortar&lt; DofTableType, MortarFEType, FEType &gt;">
-<area shape="rect" id="node1" title="local dof contribution from a mortar element" alt="" coords="55,277,281,575"/>
+<area shape="rect" id="node1" title="local dof contribution from a mortar element" alt="" coords="55,292,281,589"/>
 <area shape="rect" id="node2" title=" " alt="" coords="5,5,184,83"/>
 <area shape="rect" id="node3" href="$classbool.html" title=" " alt="" coords="217,5,268,83"/>
 </map>

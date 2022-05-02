@@ -1,4 +1,6 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$structFeel_1_1FactoryDefaultError.html" title=" " alt="" coords="5,13,257,54"/>
-<area shape="rect" id="node2" href="$classFeel_1_1Factory.html" title="Implements a generic object Factory." alt="" coords="305,5,532,61"/>
+<area shape="rect" id="node1" href="$classFeel_1_1ExpressionEvaluatorBase.html" title=" " alt="" coords="5,13,196,54"/>
+<area shape="rect" id="node2" href="$classFeel_1_1ExpressionEvaluator.html" title=" " alt="" coords="244,13,435,54"/>
+<area shape="rect" id="node3" href="$classFeel_1_1ExpressionEvaluatorParam.html" title=" " alt="" coords="483,13,673,54"/>
+<area shape="rect" id="node4" href="$classFeel_1_1ExpressionEvaluatorNonLinear.html" title=" " alt="" coords="721,5,912,61"/>
 </map>

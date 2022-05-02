@@ -1,14 +1,12 @@
 var markermanagement_8hpp =
 [
-    [ "MarkerManagementALEMeshBC", "classFeel_1_1FeelModels_1_1MarkerManagementALEMeshBC.html", "classFeel_1_1FeelModels_1_1MarkerManagementALEMeshBC" ],
-    [ "MarkerManagementDirichletBC", "classFeel_1_1FeelModels_1_1MarkerManagementDirichletBC.html", "classFeel_1_1FeelModels_1_1MarkerManagementDirichletBC" ],
-    [ "MarkerManagementFluidStructureInterfaceBC", "classFeel_1_1FeelModels_1_1MarkerManagementFluidStructureInterfaceBC.html", "classFeel_1_1FeelModels_1_1MarkerManagementFluidStructureInterfaceBC" ],
-    [ "MarkerManagementIntegralBC", "classFeel_1_1FeelModels_1_1MarkerManagementIntegralBC.html", "classFeel_1_1FeelModels_1_1MarkerManagementIntegralBC" ],
-    [ "MarkerManagementNeumannBC", "classFeel_1_1FeelModels_1_1MarkerManagementNeumannBC.html", "classFeel_1_1FeelModels_1_1MarkerManagementNeumannBC" ],
-    [ "MarkerManagementNeumannEulerianFrameBC", "classFeel_1_1FeelModels_1_1MarkerManagementNeumannEulerianFrameBC.html", "classFeel_1_1FeelModels_1_1MarkerManagementNeumannEulerianFrameBC" ],
-    [ "MarkerManagementPressureBC", "classFeel_1_1FeelModels_1_1MarkerManagementPressureBC.html", "classFeel_1_1FeelModels_1_1MarkerManagementPressureBC" ],
-    [ "MarkerManagementRobinBC", "classFeel_1_1FeelModels_1_1MarkerManagementRobinBC.html", "classFeel_1_1FeelModels_1_1MarkerManagementRobinBC" ],
-    [ "MarkerManagementSlipBC", "classFeel_1_1FeelModels_1_1MarkerManagementSlipBC.html", "classFeel_1_1FeelModels_1_1MarkerManagementSlipBC" ],
-    [ "distributeMarkerListOnSubEntity", "markermanagement_8hpp.html#ab633a3479fbe95ed9e6a51a01b502304", null ],
-    [ "distributeMarkerListOnSubEntity", "markermanagement_8hpp.html#a34fd4fa77ef26e92dfb4be995de6ea78", null ]
+    [ "Feel::FeelModels::MarkerManagementALEMeshBC", "classFeel_1_1FeelModels_1_1MarkerManagementALEMeshBC.html", null ],
+    [ "Feel::FeelModels::MarkerManagementDirichletBC", "classFeel_1_1FeelModels_1_1MarkerManagementDirichletBC.html", null ],
+    [ "Feel::FeelModels::MarkerManagementFluidStructureInterfaceBC", "classFeel_1_1FeelModels_1_1MarkerManagementFluidStructureInterfaceBC.html", null ],
+    [ "Feel::FeelModels::MarkerManagementIntegralBC", "classFeel_1_1FeelModels_1_1MarkerManagementIntegralBC.html", null ],
+    [ "Feel::FeelModels::MarkerManagementNeumannBC", "classFeel_1_1FeelModels_1_1MarkerManagementNeumannBC.html", null ],
+    [ "Feel::FeelModels::MarkerManagementNeumannEulerianFrameBC", "classFeel_1_1FeelModels_1_1MarkerManagementNeumannEulerianFrameBC.html", null ],
+    [ "Feel::FeelModels::MarkerManagementPressureBC", "classFeel_1_1FeelModels_1_1MarkerManagementPressureBC.html", null ],
+    [ "Feel::FeelModels::MarkerManagementRobinBC", "classFeel_1_1FeelModels_1_1MarkerManagementRobinBC.html", null ],
+    [ "Feel::FeelModels::MarkerManagementSlipBC", "classFeel_1_1FeelModels_1_1MarkerManagementSlipBC.html", null ]
 ];

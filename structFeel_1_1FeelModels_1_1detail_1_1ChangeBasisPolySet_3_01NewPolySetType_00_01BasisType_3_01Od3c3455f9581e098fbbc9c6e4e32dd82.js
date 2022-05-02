@@ -1,4 +1,0 @@
-var structFeel_1_1FeelModels_1_1detail_1_1ChangeBasisPolySet_3_01NewPolySetType_00_01BasisType_3_01Od3c3455f9581e098fbbc9c6e4e32dd82 =
-[
-    [ "type", "structFeel_1_1FeelModels_1_1detail_1_1ChangeBasisPolySet_3_01NewPolySetType_00_01BasisType_3_01Od3c3455f9581e098fbbc9c6e4e32dd82.html#ab34f75c54d64c72b8d752bde05c83a0a", null ]
-];

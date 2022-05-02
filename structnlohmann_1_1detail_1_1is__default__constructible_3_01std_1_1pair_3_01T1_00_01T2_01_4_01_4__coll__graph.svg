@@ -28,13 +28,13 @@
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:href="structnlohmann_1_1detail_1_1conjunction.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="0,-116.5 0,-195.5 219,-195.5 219,-116.5 0,-116.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="0,-116.5 0,-195.5 219,-195.5 219,-116.5 0,-116.5"/>
 <text text-anchor="start" x="8" y="-183.5" font-family="Helvetica,sans-Serif" font-size="10.00">nlohmann::detail::conjunction</text>
 <text text-anchor="start" x="8" y="-172.5" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; is_default_constructible</text>
 <text text-anchor="middle" x="109.5" y="-161.5" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; T1 &gt;, is_default_constructible&lt; T2 &gt; &gt;</text>
-<polyline fill="none" stroke="black" points="0,-154.5 219,-154.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="0,-154.5 219,-154.5 "/>
 <text text-anchor="middle" x="109.5" y="-142.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="0,-135.5 219,-135.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="0,-135.5 219,-135.5 "/>
 <text text-anchor="middle" x="109.5" y="-123.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>
@@ -49,11 +49,11 @@
 <g id="node3" class="node">
 <title>Node3</title>
 <g id="a_node3"><a xlink:title=" ">
-<polygon fill="white" stroke="#bfbfbf" points="78,-232.5 78,-289.5 141,-289.5 141,-232.5 78,-232.5"/>
-<text text-anchor="middle" x="109.5" y="-277.5" font-family="Helvetica,sans-Serif" font-size="10.00">true_type</text>
-<polyline fill="none" stroke="#bfbfbf" points="78,-270.5 141,-270.5 "/>
+<polygon fill="white" stroke="#bfbfbf" points="67.5,-232.5 67.5,-289.5 151.5,-289.5 151.5,-232.5 67.5,-232.5"/>
+<text text-anchor="middle" x="109.5" y="-277.5" font-family="Helvetica,sans-Serif" font-size="10.00">std::true_type</text>
+<polyline fill="none" stroke="#bfbfbf" points="67.5,-270.5 151.5,-270.5 "/>
 <text text-anchor="middle" x="109.5" y="-258.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="#bfbfbf" points="78,-251.5 141,-251.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="67.5,-251.5 151.5,-251.5 "/>
 <text text-anchor="middle" x="109.5" y="-239.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>

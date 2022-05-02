@@ -31,12 +31,12 @@
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:title=" ">
-<polygon fill="white" stroke="#bfbfbf" points="40.5,-160.5 40.5,-228.5 150.5,-228.5 150.5,-160.5 40.5,-160.5"/>
+<polygon fill="white" stroke="black" points="40.5,-160.5 40.5,-228.5 150.5,-228.5 150.5,-160.5 40.5,-160.5"/>
 <text text-anchor="start" x="48.5" y="-216.5" font-family="Helvetica,sans-Serif" font-size="10.00">std::vector&lt; tensor</text>
 <text text-anchor="middle" x="95.5" y="-205.5" font-family="Helvetica,sans-Serif" font-size="10.00">_ptrtype &gt;</text>
-<polyline fill="none" stroke="#bfbfbf" points="40.5,-198.5 150.5,-198.5 "/>
+<polyline fill="none" stroke="black" points="40.5,-198.5 150.5,-198.5 "/>
 <text text-anchor="middle" x="95.5" y="-186.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="#bfbfbf" points="40.5,-179.5 150.5,-179.5 "/>
+<polyline fill="none" stroke="black" points="40.5,-179.5 150.5,-179.5 "/>
 <text text-anchor="middle" x="95.5" y="-167.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>
@@ -51,12 +51,12 @@
 <!-- Node3 -->
 <g id="node3" class="node">
 <title>Node3</title>
-<g id="a_node3"><a xlink:title="STL class.">
-<polygon fill="white" stroke="#bfbfbf" points="36.5,-276.5 36.5,-333.5 154.5,-333.5 154.5,-276.5 36.5,-276.5"/>
+<g id="a_node3"><a xlink:title=" ">
+<polygon fill="white" stroke="black" points="36.5,-276.5 36.5,-333.5 154.5,-333.5 154.5,-276.5 36.5,-276.5"/>
 <text text-anchor="middle" x="95.5" y="-321.5" font-family="Helvetica,sans-Serif" font-size="10.00">std::shared_ptr&lt; T &gt;</text>
-<polyline fill="none" stroke="#bfbfbf" points="36.5,-314.5 154.5,-314.5 "/>
+<polyline fill="none" stroke="black" points="36.5,-314.5 154.5,-314.5 "/>
 <text text-anchor="middle" x="95.5" y="-302.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="#bfbfbf" points="36.5,-295.5 154.5,-295.5 "/>
+<polyline fill="none" stroke="black" points="36.5,-295.5 154.5,-295.5 "/>
 <text text-anchor="start" x="44.5" y="-283.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ operator&#45;&gt;()</text>
 </a>
 </g>

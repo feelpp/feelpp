@@ -33,11 +33,11 @@
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:href="classFeel_1_1CommObject.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="22.5,-171.5 22.5,-283.5 129.5,-283.5 129.5,-171.5 22.5,-171.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="22.5,-171.5 22.5,-283.5 129.5,-283.5 129.5,-171.5 22.5,-171.5"/>
 <text text-anchor="middle" x="76" y="-271.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::CommObject</text>
-<polyline fill="none" stroke="black" points="22.5,-264.5 129.5,-264.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="22.5,-264.5 129.5,-264.5 "/>
 <text text-anchor="middle" x="76" y="-252.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="22.5,-245.5 129.5,-245.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="22.5,-245.5 129.5,-245.5 "/>
 <text text-anchor="start" x="30.5" y="-233.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ comm()</text>
 <text text-anchor="start" x="30.5" y="-222.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ CommObject()</text>
 <text text-anchor="start" x="30.5" y="-211.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ CommObject()</text>

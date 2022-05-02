@@ -44,11 +44,11 @@
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:href="classsize__t.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="63,-303.5 63,-360.5 108,-360.5 108,-303.5 63,-303.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="63,-303.5 63,-360.5 108,-360.5 108,-303.5 63,-303.5"/>
 <text text-anchor="middle" x="85.5" y="-348.5" font-family="Helvetica,sans-Serif" font-size="10.00">size_t</text>
-<polyline fill="none" stroke="black" points="63,-341.5 108,-341.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="63,-341.5 108,-341.5 "/>
 <text text-anchor="middle" x="85.5" y="-329.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="63,-322.5 108,-322.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="63,-322.5 108,-322.5 "/>
 <text text-anchor="middle" x="85.5" y="-310.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>

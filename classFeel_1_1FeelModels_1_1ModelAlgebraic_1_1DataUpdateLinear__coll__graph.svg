@@ -32,12 +32,12 @@
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:href="classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataUpdateBase.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="0,-160.5 0,-283.5 180,-283.5 180,-160.5 0,-160.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="0,-160.5 0,-283.5 180,-283.5 180,-160.5 0,-160.5"/>
 <text text-anchor="start" x="8" y="-271.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::ModelAlgebraic</text>
 <text text-anchor="middle" x="90" y="-260.5" font-family="Helvetica,sans-Serif" font-size="10.00">::DataUpdateBase</text>
-<polyline fill="none" stroke="black" points="0,-253.5 180,-253.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="0,-253.5 180,-253.5 "/>
 <text text-anchor="middle" x="90" y="-241.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="0,-234.5 180,-234.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="0,-234.5 180,-234.5 "/>
 <text text-anchor="start" x="8" y="-222.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ addDoubleInfo()</text>
 <text text-anchor="start" x="8" y="-211.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ addInfo()</text>
 <text text-anchor="start" x="8" y="-200.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ addMatrixInfo()</text>

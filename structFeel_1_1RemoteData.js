@@ -1,11 +1,11 @@
 var structFeel_1_1RemoteData =
 [
-    [ "ContentsInfo", "classFeel_1_1RemoteData_1_1ContentsInfo.html", "classFeel_1_1RemoteData_1_1ContentsInfo" ],
-    [ "FileInfo", "structFeel_1_1RemoteData_1_1FileInfo.html", "structFeel_1_1RemoteData_1_1FileInfo" ],
-    [ "FolderInfo", "structFeel_1_1RemoteData_1_1FolderInfo.html", "structFeel_1_1RemoteData_1_1FolderInfo" ],
+    [ "ContentsInfo", "classFeel_1_1RemoteData_1_1ContentsInfo.html", null ],
+    [ "FileInfo", "structFeel_1_1RemoteData_1_1FileInfo.html", null ],
+    [ "FolderInfo", "structFeel_1_1RemoteData_1_1FolderInfo.html", null ],
     [ "Girder", "classFeel_1_1RemoteData_1_1Girder.html", "classFeel_1_1RemoteData_1_1Girder" ],
     [ "Github", "classFeel_1_1RemoteData_1_1Github.html", "classFeel_1_1RemoteData_1_1Github" ],
-    [ "ItemInfo", "structFeel_1_1RemoteData_1_1ItemInfo.html", "structFeel_1_1RemoteData_1_1ItemInfo" ],
+    [ "ItemInfo", "structFeel_1_1RemoteData_1_1ItemInfo.html", null ],
     [ "URL", "classFeel_1_1RemoteData_1_1URL.html", "classFeel_1_1RemoteData_1_1URL" ],
     [ "canDownload", "structFeel_1_1RemoteData.html#a1bcf1311b39d7a8e370757558634c707", null ],
     [ "canUpload", "structFeel_1_1RemoteData.html#a5f552843e37b0c9809f71a0f93149ec8", null ],
@@ -17,10 +17,5 @@ var structFeel_1_1RemoteData =
     [ "setWorldComm", "structFeel_1_1RemoteData.html#add27428178a71cf639d02d79914ae00b", null ],
     [ "upload", "structFeel_1_1RemoteData.html#ad3210c2403d750d708245a5dd0d5850a", null ],
     [ "upload", "structFeel_1_1RemoteData.html#acb6595d6a4f64b1cc0180943ac33e094", null ],
-    [ "worldComm", "structFeel_1_1RemoteData.html#a2bc2183be40bd600fd51abc1ca3a1728", null ],
-    [ "RemoteData", "structFeel_1_1RemoteData.html#a48a1700a10d211d9cc8510f67006dcb3", null ],
-    [ "RemoteData", "structFeel_1_1RemoteData.html#a6dfc9fca4569736b2e03b17e8f05aba2", null ],
-    [ "RemoteData", "structFeel_1_1RemoteData.html#ae8cf2c49b94a56dc8bc344be45717c9c", null ],
-    [ "RemoteData", "structFeel_1_1RemoteData.html#ae7bf64bd71794cd448302f62e411370f", null ],
-    [ "~RemoteData", "structFeel_1_1RemoteData.html#aaa2cba92b73ff7949e04738190df16cf", null ]
+    [ "worldComm", "structFeel_1_1RemoteData.html#a8c80f497f1b97f28fb21b079a5efdba9", null ]
 ];

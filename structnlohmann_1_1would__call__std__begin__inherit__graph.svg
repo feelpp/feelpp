@@ -27,13 +27,13 @@
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:href="structnlohmann_1_1detail2_1_1would__call__std__begin.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="1,-105.5 1,-184.5 122,-184.5 122,-105.5 1,-105.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="1,-105.5 1,-184.5 122,-184.5 122,-105.5 1,-105.5"/>
 <text text-anchor="start" x="9" y="-172.5" font-family="Helvetica,sans-Serif" font-size="10.00">nlohmann::detail2::</text>
 <text text-anchor="start" x="9" y="-161.5" font-family="Helvetica,sans-Serif" font-size="10.00">would_call_std_begin</text>
 <text text-anchor="middle" x="61.5" y="-150.5" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; T... &gt;</text>
-<polyline fill="none" stroke="black" points="1,-143.5 122,-143.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="1,-143.5 122,-143.5 "/>
 <text text-anchor="start" x="9" y="-131.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ value</text>
-<polyline fill="none" stroke="black" points="1,-124.5 122,-124.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="1,-124.5 122,-124.5 "/>
 <text text-anchor="middle" x="61.5" y="-112.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>

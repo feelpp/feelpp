@@ -27,11 +27,11 @@
 <g id="node3" class="node">
 <title>Node3</title>
 <g id="a_node3"><a xlink:href="classD.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="1.5,-116.5 1.5,-173.5 60.5,-173.5 60.5,-116.5 1.5,-116.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="1.5,-116.5 1.5,-173.5 60.5,-173.5 60.5,-116.5 1.5,-116.5"/>
 <text text-anchor="middle" x="31" y="-161.5" font-family="Helvetica,sans-Serif" font-size="10.00">D</text>
-<polyline fill="none" stroke="black" points="1.5,-154.5 60.5,-154.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="1.5,-154.5 60.5,-154.5 "/>
 <text text-anchor="middle" x="31" y="-142.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="1.5,-135.5 60.5,-135.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="1.5,-135.5 60.5,-135.5 "/>
 <text text-anchor="start" x="9.5" y="-123.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ hello()</text>
 </a>
 </g>
@@ -46,11 +46,11 @@
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:href="classA.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="0,-315.5 0,-405.5 62,-405.5 62,-315.5 0,-315.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="0,-315.5 0,-405.5 62,-405.5 62,-315.5 0,-315.5"/>
 <text text-anchor="middle" x="31" y="-393.5" font-family="Helvetica,sans-Serif" font-size="10.00">A</text>
-<polyline fill="none" stroke="black" points="0,-386.5 62,-386.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="0,-386.5 62,-386.5 "/>
 <text text-anchor="middle" x="31" y="-374.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="0,-367.5 62,-367.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="0,-367.5 62,-367.5 "/>
 <text text-anchor="start" x="8" y="-355.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ A()</text>
 <text text-anchor="start" x="8" y="-344.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ hello()</text>
 <text text-anchor="start" x="8" y="-333.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ value()</text>
@@ -68,11 +68,11 @@
 <g id="node4" class="node">
 <title>Node4</title>
 <g id="a_node4"><a xlink:href="classF.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="1.5,-0.5 1.5,-79.5 60.5,-79.5 60.5,-0.5 1.5,-0.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="1.5,-0.5 1.5,-79.5 60.5,-79.5 60.5,-0.5 1.5,-0.5"/>
 <text text-anchor="middle" x="31" y="-67.5" font-family="Helvetica,sans-Serif" font-size="10.00">F</text>
-<polyline fill="none" stroke="black" points="1.5,-60.5 60.5,-60.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="1.5,-60.5 60.5,-60.5 "/>
 <text text-anchor="start" x="9.5" y="-48.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ str</text>
-<polyline fill="none" stroke="black" points="1.5,-41.5 60.5,-41.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="1.5,-41.5 60.5,-41.5 "/>
 <text text-anchor="start" x="9.5" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ F()</text>
 <text text-anchor="start" x="9.5" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ F()</text>
 <text text-anchor="start" x="9.5" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ hello()</text>

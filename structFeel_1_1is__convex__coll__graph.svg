@@ -25,13 +25,13 @@
 <!-- Node2 -->
 <g id="node2" class="node">
 <title>Node2</title>
-<g id="a_node2"><a xlink:href="classstd_1_1is__convertible_1_1type.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="0,-94.5 0,-162.5 140,-162.5 140,-94.5 0,-94.5"/>
+<g id="a_node2"><a xlink:href="classstd_1_1is__convertible_3_01T_00_01ConvexBase_01_4_1_1type.html" target="_top" xlink:title=" ">
+<polygon fill="white" stroke="#bfbfbf" points="0,-94.5 0,-162.5 140,-162.5 140,-94.5 0,-94.5"/>
 <text text-anchor="start" x="8" y="-150.5" font-family="Helvetica,sans-Serif" font-size="10.00">std::is_convertible</text>
 <text text-anchor="middle" x="70" y="-139.5" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; T, ConvexBase &gt;::type</text>
-<polyline fill="none" stroke="black" points="0,-132.5 140,-132.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="0,-132.5 140,-132.5 "/>
 <text text-anchor="middle" x="70" y="-120.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="0,-113.5 140,-113.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="0,-113.5 140,-113.5 "/>
 <text text-anchor="middle" x="70" y="-101.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>

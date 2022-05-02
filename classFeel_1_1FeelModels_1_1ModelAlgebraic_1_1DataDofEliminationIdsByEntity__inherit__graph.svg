@@ -32,12 +32,12 @@
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:href="classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataNewtonInitialGuess.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="3.5,-0.5 3.5,-101.5 183.5,-101.5 183.5,-0.5 3.5,-0.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="3.5,-0.5 3.5,-101.5 183.5,-101.5 183.5,-0.5 3.5,-0.5"/>
 <text text-anchor="start" x="11.5" y="-89.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::ModelAlgebraic</text>
 <text text-anchor="middle" x="93.5" y="-78.5" font-family="Helvetica,sans-Serif" font-size="10.00">::DataNewtonInitialGuess</text>
-<polyline fill="none" stroke="black" points="3.5,-71.5 183.5,-71.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="3.5,-71.5 183.5,-71.5 "/>
 <text text-anchor="middle" x="93.5" y="-59.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="3.5,-52.5 183.5,-52.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="3.5,-52.5 183.5,-52.5 "/>
 <text text-anchor="start" x="11.5" y="-40.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ DataNewtonInitialGuess()</text>
 <text text-anchor="start" x="11.5" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ DataNewtonInitialGuess()</text>
 <text text-anchor="start" x="11.5" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ DataNewtonInitialGuess()</text>

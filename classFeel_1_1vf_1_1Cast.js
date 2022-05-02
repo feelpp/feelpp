@@ -1,29 +1,9 @@
 var classFeel_1_1vf_1_1Cast =
 [
-    [ "HasTestFunction", "structFeel_1_1vf_1_1Cast_1_1HasTestFunction.html", "structFeel_1_1vf_1_1Cast_1_1HasTestFunction" ],
-    [ "HasTrialFunction", "structFeel_1_1vf_1_1Cast_1_1HasTrialFunction.html", "structFeel_1_1vf_1_1Cast_1_1HasTrialFunction" ],
-    [ "Lambda", "structFeel_1_1vf_1_1Cast_1_1Lambda.html", "structFeel_1_1vf_1_1Cast_1_1Lambda" ],
+    [ "HasTestFunction", "structFeel_1_1vf_1_1Cast_1_1HasTestFunction.html", null ],
+    [ "HasTrialFunction", "structFeel_1_1vf_1_1Cast_1_1HasTrialFunction.html", null ],
+    [ "Lambda", "structFeel_1_1vf_1_1Cast_1_1Lambda.html", null ],
     [ "tensor", "structFeel_1_1vf_1_1Cast_1_1tensor.html", "structFeel_1_1vf_1_1Cast_1_1tensor" ],
-    [ "evaluate", "classFeel_1_1vf_1_1Cast.html#af0e6c20b07a84f39fe83956048bec43e", null ],
-    [ "expression", "classFeel_1_1vf_1_1Cast.html#a8ae1a28c25d7ee457839830ac6030b70", null ],
-    [ "expression", "classFeel_1_1vf_1_1Cast.html#ac81383cf85046b2416ead182ae347ca1", null ],
     [ "isPolynomial", "classFeel_1_1vf_1_1Cast.html#a2e3e511fc10a80eef4bafe324b76b67e", null ],
-    [ "operator()", "classFeel_1_1vf_1_1Cast.html#ab5ff00daa1843bc3520e4d8525f41e40", null ],
-    [ "operator=", "classFeel_1_1vf_1_1Cast.html#ada081c5f436da246434a90c45b1b1047", null ],
-    [ "polynomialOrder", "classFeel_1_1vf_1_1Cast.html#ae7760e81f58484e1483394eea254f788", null ],
-    [ "context", "classFeel_1_1vf_1_1Cast.html#a470708013a2ac13679756c53c2b4a8a2", null ],
-    [ "has_test_basis", "classFeel_1_1vf_1_1Cast.html#a0c384b95ec2b332119bb63351d1a5cc9", null ],
-    [ "has_trial_basis", "classFeel_1_1vf_1_1Cast.html#a8affc331bf13fa541c60dd9c849de9eb", null ],
-    [ "is_terminal", "classFeel_1_1vf_1_1Cast.html#a8805ffb173abef05dcd89c790e7f58d0", null ],
-    [ "M_expr", "classFeel_1_1vf_1_1Cast.html#a168981b75fcb7175cdffb10253626c40", null ],
-    [ "evaluate_type", "classFeel_1_1vf_1_1Cast.html#a08393c79cfc085e28b3ac3425111d72e", null ],
-    [ "expression_type", "classFeel_1_1vf_1_1Cast.html#a6605720051d781724903931802b5cb8c", null ],
-    [ "test_basis", "classFeel_1_1vf_1_1Cast.html#a7089ce4b45939d6a051a21a7bef6df57", null ],
-    [ "this_type", "classFeel_1_1vf_1_1Cast.html#aaf6eddf04b9e245dbf44d763263b950b", null ],
-    [ "trial_basis", "classFeel_1_1vf_1_1Cast.html#aec47322cc005653399979ee93fbe2e5b", null ],
-    [ "value_type", "classFeel_1_1vf_1_1Cast.html#ab45eb612449a44d2233ffc2a34fd30ca", null ],
-    [ "Cast", "classFeel_1_1vf_1_1Cast.html#ae90c151c73d883ccf7de8a0bc5dcf2c9", null ],
-    [ "Cast", "classFeel_1_1vf_1_1Cast.html#a880dcd70ef949d1400e471e61dd14d69", null ],
-    [ "Cast", "classFeel_1_1vf_1_1Cast.html#ae381001422b3f7177e3baffe87640625", null ],
-    [ "Cast", "classFeel_1_1vf_1_1Cast.html#ac34da991957f78fa3203eed9b08afff4", null ]
+    [ "polynomialOrder", "classFeel_1_1vf_1_1Cast.html#ae7760e81f58484e1483394eea254f788", null ]
 ];

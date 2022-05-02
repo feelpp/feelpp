@@ -33,12 +33,12 @@
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:href="classFeel_1_1FeelModels_1_1BoundaryConditionsBase.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="21,-171.5 21,-272.5 179,-272.5 179,-171.5 21,-171.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="21,-171.5 21,-272.5 179,-272.5 179,-171.5 21,-171.5"/>
 <text text-anchor="start" x="29" y="-260.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::Boundary</text>
 <text text-anchor="middle" x="100" y="-249.5" font-family="Helvetica,sans-Serif" font-size="10.00">ConditionsBase</text>
-<polyline fill="none" stroke="black" points="21,-242.5 179,-242.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="21,-242.5 179,-242.5 "/>
 <text text-anchor="start" x="29" y="-230.5" font-family="Helvetica,sans-Serif" font-size="10.00"># M_toolboxParent</text>
-<polyline fill="none" stroke="black" points="21,-223.5 179,-223.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="21,-223.5 179,-223.5 "/>
 <text text-anchor="start" x="29" y="-211.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ BoundaryConditionsBase()</text>
 <text text-anchor="start" x="29" y="-200.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ BoundaryConditionsBase()</text>
 <text text-anchor="start" x="29" y="-189.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ BoundaryConditionsBase()</text>

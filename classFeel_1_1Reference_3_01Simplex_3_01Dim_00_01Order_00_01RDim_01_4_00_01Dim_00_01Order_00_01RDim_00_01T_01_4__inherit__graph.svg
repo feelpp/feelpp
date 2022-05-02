@@ -96,7 +96,7 @@ var sectionId = 'dynsection-0';
 <!-- Node2 -->
 <g id="node2" class="node">
 <title>Node2</title>
-<g id="a_node2"><a xlink:href="classFeel_1_1Simplex.html" target="_top" xlink:title="simplex of dimension Dim">
+<g id="a_node2"><a xlink:href="classFeel_1_1Simplex.html" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="black" points="50,-369.5 50,-624.5 192,-624.5 192,-369.5 50,-369.5"/>
 <text text-anchor="start" x="58" y="-612.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::Simplex&lt; Dim,</text>
 <text text-anchor="middle" x="121" y="-601.5" font-family="Helvetica,sans-Serif" font-size="10.00"> Order, RDim &gt;</text>
@@ -136,7 +136,7 @@ var sectionId = 'dynsection-0';
 <g id="a_node3"><a xlink:href="classFeel_1_1Convex.html" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="black" points="0,-661.5 0,-795.5 114,-795.5 114,-661.5 0,-661.5"/>
 <text text-anchor="start" x="8" y="-783.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::Convex&lt; Dim,</text>
-<text text-anchor="middle" x="57" y="-772.5" font-family="Helvetica,sans-Serif" font-size="10.00"> 1, Dim &gt;</text>
+<text text-anchor="middle" x="57" y="-772.5" font-family="Helvetica,sans-Serif" font-size="10.00"> Order, RDim &gt;</text>
 <polyline fill="none" stroke="black" points="0,-765.5 114,-765.5 "/>
 <text text-anchor="middle" x="57" y="-753.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 <polyline fill="none" stroke="black" points="0,-746.5 114,-746.5 "/>
@@ -160,11 +160,11 @@ var sectionId = 'dynsection-0';
 <g id="node4" class="node">
 <title>Node4</title>
 <g id="a_node4"><a xlink:href="classFeel_1_1ConvexBase.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="5,-832.5 5,-889.5 109,-889.5 109,-832.5 5,-832.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="5,-832.5 5,-889.5 109,-889.5 109,-832.5 5,-832.5"/>
 <text text-anchor="middle" x="57" y="-877.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::ConvexBase</text>
-<polyline fill="none" stroke="black" points="5,-870.5 109,-870.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="5,-870.5 109,-870.5 "/>
 <text text-anchor="middle" x="57" y="-858.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="5,-851.5 109,-851.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="5,-851.5 109,-851.5 "/>
 <text text-anchor="middle" x="57" y="-839.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>
@@ -179,11 +179,11 @@ var sectionId = 'dynsection-0';
 <g id="node5" class="node">
 <title>Node5</title>
 <g id="a_node5"><a xlink:href="classFeel_1_1SimplexBase.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="132.5,-700 132.5,-757 239.5,-757 239.5,-700 132.5,-700"/>
+<polygon fill="white" stroke="#bfbfbf" points="132.5,-700 132.5,-757 239.5,-757 239.5,-700 132.5,-700"/>
 <text text-anchor="middle" x="186" y="-745" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::SimplexBase</text>
-<polyline fill="none" stroke="black" points="132.5,-738 239.5,-738 "/>
+<polyline fill="none" stroke="#bfbfbf" points="132.5,-738 239.5,-738 "/>
 <text text-anchor="middle" x="186" y="-726" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="132.5,-719 239.5,-719 "/>
+<polyline fill="none" stroke="#bfbfbf" points="132.5,-719 239.5,-719 "/>
 <text text-anchor="middle" x="186" y="-707" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>

@@ -74,16 +74,16 @@ var sectionId = 'dynsection-0';
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:href="classFeel_1_1FunctionExpr.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="0,-474 0,-641 142,-641 142,-474 0,-474"/>
+<polygon fill="white" stroke="#bfbfbf" points="0,-474 0,-641 142,-641 142,-474 0,-474"/>
 <text text-anchor="start" x="8" y="-629" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FunctionExpr</text>
 <text text-anchor="start" x="8" y="-618" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; FunctionType, Order,</text>
 <text text-anchor="middle" x="71" y="-607" font-family="Helvetica,sans-Serif" font-size="10.00"> FunctionArgsTupleType &gt;</text>
-<polyline fill="none" stroke="black" points="0,-600 142,-600 "/>
+<polyline fill="none" stroke="#bfbfbf" points="0,-600 142,-600 "/>
 <text text-anchor="start" x="8" y="-588" font-family="Helvetica,sans-Serif" font-size="10.00">+ args_types</text>
 <text text-anchor="start" x="8" y="-577" font-family="Helvetica,sans-Serif" font-size="10.00">+ context</text>
 <text text-anchor="start" x="8" y="-566" font-family="Helvetica,sans-Serif" font-size="10.00">+ is_terminal</text>
 <text text-anchor="start" x="8" y="-555" font-family="Helvetica,sans-Serif" font-size="10.00">+ make_type_tuple</text>
-<polyline fill="none" stroke="black" points="0,-548 142,-548 "/>
+<polyline fill="none" stroke="#bfbfbf" points="0,-548 142,-548 "/>
 <text text-anchor="start" x="8" y="-536" font-family="Helvetica,sans-Serif" font-size="10.00">+ argsTuple()</text>
 <text text-anchor="start" x="8" y="-525" font-family="Helvetica,sans-Serif" font-size="10.00">+ function()</text>
 <text text-anchor="start" x="8" y="-514" font-family="Helvetica,sans-Serif" font-size="10.00">+ FunctionExpr()</text>
@@ -103,16 +103,16 @@ var sectionId = 'dynsection-0';
 <g id="node3" class="node">
 <title>Node3</title>
 <g id="a_node3"><a xlink:href="classFeel_1_1vf_1_1ExprOptionalConcat.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="160.5,-474 160.5,-641 315.5,-641 315.5,-474 160.5,-474"/>
+<polygon fill="white" stroke="#bfbfbf" points="160.5,-474 160.5,-641 315.5,-641 315.5,-474 160.5,-474"/>
 <text text-anchor="start" x="168.5" y="-629" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::vf::ExprOptionalConcat</text>
 <text text-anchor="middle" x="238" y="-618" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; TupleExprType &gt;</text>
-<polyline fill="none" stroke="black" points="160.5,-611 315.5,-611 "/>
+<polyline fill="none" stroke="#bfbfbf" points="160.5,-611 315.5,-611 "/>
 <text text-anchor="start" x="168.5" y="-599" font-family="Helvetica,sans-Serif" font-size="10.00">+ context</text>
 <text text-anchor="start" x="168.5" y="-588" font-family="Helvetica,sans-Serif" font-size="10.00">+ has_test_basis</text>
 <text text-anchor="start" x="168.5" y="-577" font-family="Helvetica,sans-Serif" font-size="10.00">+ has_trial_basis</text>
 <text text-anchor="start" x="168.5" y="-566" font-family="Helvetica,sans-Serif" font-size="10.00">+ is_terminal</text>
 <text text-anchor="start" x="168.5" y="-555" font-family="Helvetica,sans-Serif" font-size="10.00">+ nExpr</text>
-<polyline fill="none" stroke="black" points="160.5,-548 315.5,-548 "/>
+<polyline fill="none" stroke="#bfbfbf" points="160.5,-548 315.5,-548 "/>
 <text text-anchor="start" x="168.5" y="-536" font-family="Helvetica,sans-Serif" font-size="10.00">+ add()</text>
 <text text-anchor="start" x="168.5" y="-525" font-family="Helvetica,sans-Serif" font-size="10.00">+ applySymbolsExpr()</text>
 <text text-anchor="start" x="168.5" y="-514" font-family="Helvetica,sans-Serif" font-size="10.00">+ dependentSymbols()</text>
@@ -132,16 +132,16 @@ var sectionId = 'dynsection-0';
 <g id="node4" class="node">
 <title>Node4</title>
 <g id="a_node4"><a xlink:href="classFeel_1_1vf_1_1GiNaCBase.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="334,-474 334,-641 480,-641 480,-474 334,-474"/>
+<polygon fill="white" stroke="#bfbfbf" points="334,-474 334,-641 480,-641 480,-474 334,-474"/>
 <text text-anchor="middle" x="407" y="-629" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::vf::GiNaCBase</text>
-<polyline fill="none" stroke="black" points="334,-622 480,-622 "/>
+<polyline fill="none" stroke="#bfbfbf" points="334,-622 480,-622 "/>
 <text text-anchor="start" x="342" y="-610" font-family="Helvetica,sans-Serif" font-size="10.00"># M_context</text>
 <text text-anchor="start" x="342" y="-599" font-family="Helvetica,sans-Serif" font-size="10.00"># M_indexSymbolGeom</text>
 <text text-anchor="start" x="342" y="-588" font-family="Helvetica,sans-Serif" font-size="10.00"># M_indexSymbolN</text>
 <text text-anchor="start" x="342" y="-577" font-family="Helvetica,sans-Serif" font-size="10.00"># M_indexSymbolXYZ</text>
 <text text-anchor="start" x="342" y="-566" font-family="Helvetica,sans-Serif" font-size="10.00"># M_isNumericExpression</text>
 <text text-anchor="start" x="342" y="-555" font-family="Helvetica,sans-Serif" font-size="10.00">and 3 more...</text>
-<polyline fill="none" stroke="black" points="334,-548 480,-548 "/>
+<polyline fill="none" stroke="#bfbfbf" points="334,-548 480,-548 "/>
 <text text-anchor="start" x="342" y="-536" font-family="Helvetica,sans-Serif" font-size="10.00">+ dynamicContext()</text>
 <text text-anchor="start" x="342" y="-525" font-family="Helvetica,sans-Serif" font-size="10.00">+ eraseParameterValues()</text>
 <text text-anchor="start" x="342" y="-514" font-family="Helvetica,sans-Serif" font-size="10.00">+ GiNaCBase()</text>
@@ -161,15 +161,15 @@ var sectionId = 'dynsection-0';
 <g id="node6" class="node">
 <title>Node6</title>
 <g id="a_node6"><a xlink:href="classFeel_1_1vf_1_1PrintExpr.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="498,-424.5 498,-690.5 612,-690.5 612,-424.5 498,-424.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="498,-424.5 498,-690.5 612,-690.5 612,-424.5 498,-424.5"/>
 <text text-anchor="start" x="506" y="-678.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::vf::PrintExpr</text>
 <text text-anchor="middle" x="555" y="-667.5" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; PrintExprT &gt;</text>
-<polyline fill="none" stroke="black" points="498,-660.5 612,-660.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="498,-660.5 612,-660.5 "/>
 <text text-anchor="start" x="506" y="-648.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ context</text>
 <text text-anchor="start" x="506" y="-637.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ has_test_basis</text>
 <text text-anchor="start" x="506" y="-626.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ has_trial_basis</text>
 <text text-anchor="start" x="506" y="-615.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ is_terminal</text>
-<polyline fill="none" stroke="black" points="498,-608.5 612,-608.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="498,-608.5 612,-608.5 "/>
 <text text-anchor="start" x="506" y="-596.5" font-family="Helvetica,sans-Serif" font-size="10.00">* expression_type</text>
 <text text-anchor="start" x="506" y="-585.5" font-family="Helvetica,sans-Serif" font-size="10.00">* value_type</text>
 <text text-anchor="start" x="506" y="-574.5" font-family="Helvetica,sans-Serif" font-size="10.00">* evaluate_type</text>

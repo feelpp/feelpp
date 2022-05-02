@@ -1,4 +1,0 @@
-var structFeel_1_1FeelModels_1_1detail_1_1ChangeBasisContinuity_3_01NewContinuityType_00_01BasisType85014e0d1b1b40793cb205341b8ed0a9 =
-[
-    [ "type", "structFeel_1_1FeelModels_1_1detail_1_1ChangeBasisContinuity_3_01NewContinuityType_00_01BasisType85014e0d1b1b40793cb205341b8ed0a9.html#a085fb4dc422654c5889fb37a491b6e5d", null ]
-];

@@ -26,11 +26,11 @@
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:href="structFeel_1_1StencilRangeMap0Type.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="0,-6 0,-74 156,-74 156,-6 0,-6"/>
+<polygon fill="white" stroke="#bfbfbf" points="0,-6 0,-74 156,-74 156,-6 0,-6"/>
 <text text-anchor="middle" x="78" y="-62" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::StencilRangeMap0Type</text>
-<polyline fill="none" stroke="black" points="0,-55 156,-55 "/>
+<polyline fill="none" stroke="#bfbfbf" points="0,-55 156,-55 "/>
 <text text-anchor="middle" x="78" y="-43" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="0,-36 156,-36 "/>
+<polyline fill="none" stroke="#bfbfbf" points="0,-36 156,-36 "/>
 <text text-anchor="start" x="8" y="-24" font-family="Helvetica,sans-Serif" font-size="10.00">+ StencilRangeMap0Type()</text>
 <text text-anchor="start" x="8" y="-13" font-family="Helvetica,sans-Serif" font-size="10.00">+ isNullRange()</text>
 </a>
@@ -46,12 +46,12 @@
 <g id="node3" class="node">
 <title>Node3</title>
 <g id="a_node3"><a xlink:href="structFeel_1_1StencilRangeMap1Type.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="174,-0.5 174,-79.5 330,-79.5 330,-0.5 174,-0.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="174,-0.5 174,-79.5 330,-79.5 330,-0.5 174,-0.5"/>
 <text text-anchor="start" x="182" y="-67.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::StencilRangeMap1Type</text>
 <text text-anchor="middle" x="252" y="-56.5" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; ThePair1Type &gt;</text>
-<polyline fill="none" stroke="black" points="174,-49.5 330,-49.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="174,-49.5 330,-49.5 "/>
 <text text-anchor="middle" x="252" y="-37.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="174,-30.5 330,-30.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="174,-30.5 330,-30.5 "/>
 <text text-anchor="start" x="182" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ StencilRangeMap1Type()</text>
 <text text-anchor="start" x="182" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ isNullRange()</text>
 </a>
@@ -67,12 +67,12 @@
 <g id="node4" class="node">
 <title>Node4</title>
 <g id="a_node4"><a xlink:href="structFeel_1_1StencilRangeMap2Type.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="348,-0.5 348,-79.5 524,-79.5 524,-0.5 348,-0.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="348,-0.5 348,-79.5 524,-79.5 524,-0.5 348,-0.5"/>
 <text text-anchor="start" x="356" y="-67.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::StencilRangeMap2Type</text>
 <text text-anchor="middle" x="436" y="-56.5" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; ThePair1Type, ThePair2Type &gt;</text>
-<polyline fill="none" stroke="black" points="348,-49.5 524,-49.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="348,-49.5 524,-49.5 "/>
 <text text-anchor="middle" x="436" y="-37.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="348,-30.5 524,-30.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="348,-30.5 524,-30.5 "/>
 <text text-anchor="start" x="356" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ StencilRangeMap2Type()</text>
 <text text-anchor="start" x="356" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ isNullRange()</text>
 </a>

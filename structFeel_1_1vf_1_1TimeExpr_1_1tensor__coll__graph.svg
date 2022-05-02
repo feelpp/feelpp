@@ -53,12 +53,12 @@
 <!-- Node3 -->
 <g id="node3" class="node">
 <title>Node3</title>
-<g id="a_node3"><a xlink:title="STL class.">
-<polygon fill="white" stroke="#bfbfbf" points="154.5,-210 154.5,-267 219.5,-267 219.5,-210 154.5,-210"/>
+<g id="a_node3"><a xlink:title=" ">
+<polygon fill="white" stroke="black" points="154.5,-210 154.5,-267 219.5,-267 219.5,-210 154.5,-210"/>
 <text text-anchor="middle" x="187" y="-255" font-family="Helvetica,sans-Serif" font-size="10.00">std::string</text>
-<polyline fill="none" stroke="#bfbfbf" points="154.5,-248 219.5,-248 "/>
+<polyline fill="none" stroke="black" points="154.5,-248 219.5,-248 "/>
 <text text-anchor="middle" x="187" y="-236" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="#bfbfbf" points="154.5,-229 219.5,-229 "/>
+<polyline fill="none" stroke="black" points="154.5,-229 219.5,-229 "/>
 <text text-anchor="middle" x="187" y="-217" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>
@@ -68,20 +68,20 @@
 <title>Node3&#45;&gt;Node1</title>
 <path fill="none" stroke="#404040" d="M178.63,-209.85C173.4,-193.22 166.29,-171.72 159,-153 158.09,-150.66 157.15,-148.29 156.18,-145.9"/>
 <polygon fill="none" stroke="#404040" points="156.11,-145.74 150.12,-141.72 151.52,-134.65 157.51,-138.66 156.11,-145.74"/>
-<text text-anchor="middle" x="213" y="-178" font-family="Helvetica,sans-Serif" font-size="10.00"> +M_tag_evalijq</text>
-<text text-anchor="middle" x="213" y="-167" font-family="Helvetica,sans-Serif" font-size="10.00">+M_tag</text>
+<text text-anchor="middle" x="213" y="-178" font-family="Helvetica,sans-Serif" font-size="10.00"> +M_tag</text>
+<text text-anchor="middle" x="213" y="-167" font-family="Helvetica,sans-Serif" font-size="10.00">+M_tag_evalijq</text>
 <text text-anchor="middle" x="213" y="-156" font-family="Helvetica,sans-Serif" font-size="10.00">+M_tag_updateij</text>
 </g>
 <!-- Node4 -->
 <g id="node4" class="node">
 <title>Node4</title>
-<g id="a_node4"><a xlink:title="STL class.">
-<polygon fill="white" stroke="#bfbfbf" points="135,-310.5 135,-378.5 239,-378.5 239,-310.5 135,-310.5"/>
+<g id="a_node4"><a xlink:title=" ">
+<polygon fill="white" stroke="black" points="135,-310.5 135,-378.5 239,-378.5 239,-310.5 135,-310.5"/>
 <text text-anchor="start" x="143" y="-366.5" font-family="Helvetica,sans-Serif" font-size="10.00">std::basic_string&lt;</text>
-<text text-anchor="middle" x="187" y="-355.5" font-family="Helvetica,sans-Serif" font-size="10.00"> char &gt;</text>
-<polyline fill="none" stroke="#bfbfbf" points="135,-348.5 239,-348.5 "/>
+<text text-anchor="middle" x="187" y="-355.5" font-family="Helvetica,sans-Serif" font-size="10.00"> Char &gt;</text>
+<polyline fill="none" stroke="black" points="135,-348.5 239,-348.5 "/>
 <text text-anchor="middle" x="187" y="-336.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="#bfbfbf" points="135,-329.5 239,-329.5 "/>
+<polyline fill="none" stroke="black" points="135,-329.5 239,-329.5 "/>
 <text text-anchor="middle" x="187" y="-317.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>

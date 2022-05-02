@@ -31,12 +31,12 @@
 <g id="node3" class="node">
 <title>Node3</title>
 <g id="a_node3"><a xlink:href="classFeel_1_1FeelModels_1_1ElectricBoundaryConditions_1_1Ground.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="21,-0.5 21,-134.5 179,-134.5 179,-0.5 21,-0.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="21,-0.5 21,-134.5 179,-134.5 179,-0.5 21,-0.5"/>
 <text text-anchor="start" x="29" y="-122.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::Electric</text>
 <text text-anchor="middle" x="100" y="-111.5" font-family="Helvetica,sans-Serif" font-size="10.00">BoundaryConditions::Ground</text>
-<polyline fill="none" stroke="black" points="21,-104.5 179,-104.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="21,-104.5 179,-104.5 "/>
 <text text-anchor="middle" x="100" y="-92.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="21,-85.5 179,-85.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="21,-85.5 179,-85.5 "/>
 <text text-anchor="start" x="29" y="-73.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ Ground()</text>
 <text text-anchor="start" x="29" y="-62.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ Ground()</text>
 <text text-anchor="start" x="29" y="-51.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ Ground()</text>
@@ -57,18 +57,18 @@
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:href="classFeel_1_1FeelModels_1_1GenericDirichletBoundaryCondition.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="17.5,-320.5 17.5,-531.5 182.5,-531.5 182.5,-320.5 17.5,-320.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="17.5,-320.5 17.5,-531.5 182.5,-531.5 182.5,-320.5 17.5,-320.5"/>
 <text text-anchor="start" x="25.5" y="-519.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::Generic</text>
 <text text-anchor="start" x="25.5" y="-508.5" font-family="Helvetica,sans-Serif" font-size="10.00">DirichletBoundaryCondition</text>
 <text text-anchor="middle" x="100" y="-497.5" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; 1, 1 &gt;</text>
-<polyline fill="none" stroke="black" points="17.5,-490.5 182.5,-490.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="17.5,-490.5 182.5,-490.5 "/>
 <text text-anchor="start" x="25.5" y="-478.5" font-family="Helvetica,sans-Serif" font-size="10.00"># M_comp</text>
 <text text-anchor="start" x="25.5" y="-467.5" font-family="Helvetica,sans-Serif" font-size="10.00"># M_markers</text>
 <text text-anchor="start" x="25.5" y="-456.5" font-family="Helvetica,sans-Serif" font-size="10.00"># M_method</text>
 <text text-anchor="start" x="25.5" y="-445.5" font-family="Helvetica,sans-Serif" font-size="10.00"># M_mexpr</text>
 <text text-anchor="start" x="25.5" y="-434.5" font-family="Helvetica,sans-Serif" font-size="10.00"># M_name</text>
 <text text-anchor="start" x="25.5" y="-423.5" font-family="Helvetica,sans-Serif" font-size="10.00"># M_toolboxParent</text>
-<polyline fill="none" stroke="black" points="17.5,-416.5 182.5,-416.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="17.5,-416.5 182.5,-416.5 "/>
 <text text-anchor="start" x="25.5" y="-404.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ applyDofEliminationLinear()</text>
 <text text-anchor="start" x="25.5" y="-393.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ applyNewtonInitialGuess()</text>
 <text text-anchor="start" x="25.5" y="-382.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ expr()</text>

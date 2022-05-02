@@ -2,7 +2,7 @@ var classFeel_1_1Sphere =
 [
     [ "aboveSurface", "classFeel_1_1Sphere.html#a5f4d9a7dd1bdf944141a4fdad2563954", null ],
     [ "belowSurface", "classFeel_1_1Sphere.html#ad7046b7a451d2a141e74d7a3ea3dc8a9", null ],
-    [ "center", "classFeel_1_1Sphere.html#ab2f07894ac945c76a3e7667ba90b42bf", null ],
+    [ "center", "classFeel_1_1Sphere.html#ae4ee7cd83c9626c5e8967b5a30f48621", null ],
     [ "closestPoint", "classFeel_1_1Sphere.html#a4a1943c89141128388ba5520a60c85be", null ],
     [ "createFromCenterRadius", "classFeel_1_1Sphere.html#a7dc42f0277c3d6d7494ff5953bdbbacd", null ],
     [ "intersects", "classFeel_1_1Sphere.html#a9a91c6f9b10ce7402fc707423f9d28f9", null ],
@@ -12,9 +12,5 @@ var classFeel_1_1Sphere =
     [ "setRadius", "classFeel_1_1Sphere.html#a194c1b70ca26df8c79137331abc29899", null ],
     [ "surfaceCoords", "classFeel_1_1Sphere.html#aca29f707ac3447c337fd491830268ca4", null ],
     [ "unitNormal", "classFeel_1_1Sphere.html#ae1560ea6a02fa8ae237c0910d6394685", null ],
-    [ "worldCoords", "classFeel_1_1Sphere.html#a1aec0c7eab3a1303de827119962fca82", null ],
-    [ "Sphere", "classFeel_1_1Sphere.html#a9baad8895c12963493311c5475261347", null ],
-    [ "Sphere", "classFeel_1_1Sphere.html#a4a2cd715a9c8bb93d13e07d42c75bbb1", null ],
-    [ "Sphere", "classFeel_1_1Sphere.html#a955e68ce842bee7362060a8bf144ba7d", null ],
-    [ "~Sphere", "classFeel_1_1Sphere.html#a5d6d123ae9bf74d43c956f53d00d6095", null ]
+    [ "worldCoords", "classFeel_1_1Sphere.html#a1aec0c7eab3a1303de827119962fca82", null ]
 ];

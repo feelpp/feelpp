@@ -1,29 +1,9 @@
 var classFeel_1_1vf_1_1LambdaExpr =
 [
-    [ "HasTestFunction", "structFeel_1_1vf_1_1LambdaExpr_1_1HasTestFunction.html", "structFeel_1_1vf_1_1LambdaExpr_1_1HasTestFunction" ],
-    [ "HasTrialFunction", "structFeel_1_1vf_1_1LambdaExpr_1_1HasTrialFunction.html", "structFeel_1_1vf_1_1LambdaExpr_1_1HasTrialFunction" ],
-    [ "Lambda", "structFeel_1_1vf_1_1LambdaExpr_1_1Lambda.html", "structFeel_1_1vf_1_1LambdaExpr_1_1Lambda" ],
+    [ "HasTestFunction", "structFeel_1_1vf_1_1LambdaExpr_1_1HasTestFunction.html", null ],
+    [ "HasTrialFunction", "structFeel_1_1vf_1_1LambdaExpr_1_1HasTrialFunction.html", null ],
+    [ "Lambda", "structFeel_1_1vf_1_1LambdaExpr_1_1Lambda.html", null ],
     [ "tensor", "structFeel_1_1vf_1_1LambdaExpr_1_1tensor.html", "structFeel_1_1vf_1_1LambdaExpr_1_1tensor" ],
-    [ "applySymbolsExpr", "classFeel_1_1vf_1_1LambdaExpr.html#a9c52907cd0856675ae33704d79ecbb0e", null ],
     [ "isPolynomial", "classFeel_1_1vf_1_1LambdaExpr.html#a161265b8b062d0b74ec4cd6df3f4df6f", null ],
-    [ "LambdaImpl", "classFeel_1_1vf_1_1LambdaExpr.html#a8a278b8a858eed3b3b55f09bb28cc1ef", null ],
-    [ "LambdaImpl", "classFeel_1_1vf_1_1LambdaExpr.html#a72fa9cf0cdc2032d818ae190c3ba4f61", null ],
-    [ "LambdaImpl", "classFeel_1_1vf_1_1LambdaExpr.html#a2c7ebed846c6c0ada181b22a64e93d21", null ],
-    [ "LambdaImpl", "classFeel_1_1vf_1_1LambdaExpr.html#ad3e157340fc94a5433f8c70b1a84a894", null ],
-    [ "LambdaImpl", "classFeel_1_1vf_1_1LambdaExpr.html#ae35a4b7b415f940ac216fa4000ed3d50", null ],
-    [ "operator()", "classFeel_1_1vf_1_1LambdaExpr.html#a9aea1699b31335331ea84a6303e4b29f", null ],
-    [ "operator()", "classFeel_1_1vf_1_1LambdaExpr.html#aa0dcf0911cadf7c251ac4949eeba5d25", null ],
-    [ "operator()", "classFeel_1_1vf_1_1LambdaExpr.html#a97c23b872a6be6a6480dcb4956b574d2", null ],
-    [ "operator()", "classFeel_1_1vf_1_1LambdaExpr.html#a210770e9617c846101d2c9534e3a51cb", null ],
-    [ "operator()", "classFeel_1_1vf_1_1LambdaExpr.html#a4fc070d1ad46860528a04b8c0f39b376", null ],
-    [ "operator()", "classFeel_1_1vf_1_1LambdaExpr.html#a008b07c1a2c7c85aaee32e9eb2f0b0e7", null ],
-    [ "polynomialOrder", "classFeel_1_1vf_1_1LambdaExpr.html#adc0474e8fe72e8919581872b7ca700da", null ],
-    [ "context", "classFeel_1_1vf_1_1LambdaExpr.html#a2b559de71f9f309801476726499cb9a7", null ],
-    [ "has_test_basis", "classFeel_1_1vf_1_1LambdaExpr.html#af5b8d09d39ce2faf4b90956141453ef4", null ],
-    [ "has_trial_basis", "classFeel_1_1vf_1_1LambdaExpr.html#a36e5477d4b374dae3341e41dede94787", null ],
-    [ "is_terminal", "classFeel_1_1vf_1_1LambdaExpr.html#a35c7f6fc529abf9cca9d89b68b353406", null ],
-    [ "kind", "classFeel_1_1vf_1_1LambdaExpr.html#ae960ffcfdc472c383744a7c33fb36622", null ],
-    [ "test_basis", "classFeel_1_1vf_1_1LambdaExpr.html#a9891ee38ac2c2f089fee06e1642fb0b2", null ],
-    [ "trial_basis", "classFeel_1_1vf_1_1LambdaExpr.html#af628efb6ebae2d081afbc7922046e714", null ],
-    [ "value_type", "classFeel_1_1vf_1_1LambdaExpr.html#ada33b7ae405754fc0cbf641fcab8f67b", null ]
+    [ "polynomialOrder", "classFeel_1_1vf_1_1LambdaExpr.html#adc0474e8fe72e8919581872b7ca700da", null ]
 ];

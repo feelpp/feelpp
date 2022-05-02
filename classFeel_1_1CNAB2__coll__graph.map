@@ -1,11 +1,11 @@
 <map id="Feel::CNAB2&lt; FieldType &gt;" name="Feel::CNAB2&lt; FieldType &gt;">
-<area shape="rect" id="node1" title=" " alt="" coords="301,632,493,812"/>
-<area shape="rect" id="node2" href="$classFeel_1_1TimeSet.html" title="Handles a set of time steps." alt="" coords="53,272,164,423"/>
-<area shape="rect" id="node3" title="STL class." alt="" coords="5,145,212,223"/>
-<area shape="rect" id="node4" title=" " alt="" coords="89,5,128,83"/>
-<area shape="rect" id="node5" title=" " alt="" coords="189,309,301,386"/>
-<area shape="rect" id="node6" href="$classdouble.html" title=" " alt="" coords="325,309,391,386"/>
-<area shape="rect" id="node7" href="$classint.html" title=" " alt="" coords="433,309,472,386"/>
-<area shape="rect" id="node8" href="$classbool.html" title=" " alt="" coords="507,309,558,386"/>
-<area shape="rect" id="node9" title=" " alt="" coords="582,309,665,386"/>
+<area shape="rect" id="node1" title=" " alt="" coords="225,632,417,812"/>
+<area shape="rect" id="node2" href="$classFeel_1_1TimeSet.html" title="Handles a set of time steps." alt="" coords="15,272,125,423"/>
+<area shape="rect" id="node3" title=" " alt="" coords="5,145,135,223"/>
+<area shape="rect" id="node4" title=" " alt="" coords="51,5,89,83"/>
+<area shape="rect" id="node5" href="$classbool.html" title=" " alt="" coords="150,309,201,386"/>
+<area shape="rect" id="node6" title=" " alt="" coords="233,309,299,386"/>
+<area shape="rect" id="node7" href="$classint.html" title=" " alt="" coords="347,309,385,386"/>
+<area shape="rect" id="node8" title=" " alt="" coords="410,309,522,386"/>
+<area shape="rect" id="node9" title=" " alt="" coords="546,309,629,386"/>
 </map>

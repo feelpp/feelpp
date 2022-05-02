@@ -29,14 +29,14 @@
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:href="structnlohmann_1_1detail_1_1is__compatible__array__type__impl.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="0,-127.5 0,-217.5 186,-217.5 186,-127.5 0,-127.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="0,-127.5 0,-217.5 186,-217.5 186,-127.5 0,-127.5"/>
 <text text-anchor="start" x="8" y="-205.5" font-family="Helvetica,sans-Serif" font-size="10.00">nlohmann::detail::is</text>
 <text text-anchor="start" x="8" y="-194.5" font-family="Helvetica,sans-Serif" font-size="10.00">_compatible_array_type</text>
 <text text-anchor="start" x="8" y="-183.5" font-family="Helvetica,sans-Serif" font-size="10.00">_impl&lt; BasicJsonType, Compatible</text>
-<text text-anchor="middle" x="93" y="-172.5" font-family="Helvetica,sans-Serif" font-size="10.00">ArrayType &gt;</text>
-<polyline fill="none" stroke="black" points="0,-165.5 186,-165.5 "/>
+<text text-anchor="middle" x="93" y="-172.5" font-family="Helvetica,sans-Serif" font-size="10.00">ArrayType, typename &gt;</text>
+<polyline fill="none" stroke="#bfbfbf" points="0,-165.5 186,-165.5 "/>
 <text text-anchor="middle" x="93" y="-153.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="0,-146.5 186,-146.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="0,-146.5 186,-146.5 "/>
 <text text-anchor="middle" x="93" y="-134.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>
@@ -51,11 +51,11 @@
 <g id="node3" class="node">
 <title>Node3</title>
 <g id="a_node3"><a xlink:title=" ">
-<polygon fill="white" stroke="#bfbfbf" points="59,-254.5 59,-311.5 127,-311.5 127,-254.5 59,-254.5"/>
-<text text-anchor="middle" x="93" y="-299.5" font-family="Helvetica,sans-Serif" font-size="10.00">false_type</text>
-<polyline fill="none" stroke="#bfbfbf" points="59,-292.5 127,-292.5 "/>
+<polygon fill="white" stroke="#bfbfbf" points="48.5,-254.5 48.5,-311.5 137.5,-311.5 137.5,-254.5 48.5,-254.5"/>
+<text text-anchor="middle" x="93" y="-299.5" font-family="Helvetica,sans-Serif" font-size="10.00">std::false_type</text>
+<polyline fill="none" stroke="#bfbfbf" points="48.5,-292.5 137.5,-292.5 "/>
 <text text-anchor="middle" x="93" y="-280.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="#bfbfbf" points="59,-273.5 127,-273.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="48.5,-273.5 137.5,-273.5 "/>
 <text text-anchor="middle" x="93" y="-261.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>

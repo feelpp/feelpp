@@ -1,9 +1,12 @@
 <map id="Feel::Mesh3D&lt; Shape, T, IndexT &gt;" name="Feel::Mesh3D&lt; Shape, T, IndexT &gt;">
-<area shape="rect" id="node1" title="3D mesh class" alt="" coords="548,615,767,1073"/>
-<area shape="rect" id="node2" href="$classFeel_1_1VisitableBase.html" title=" " alt="" coords="5,225,173,347"/>
-<area shape="rect" id="node3" href="$classFeel_1_1MeshBase.html" title=" " alt="" coords="198,5,429,567"/>
-<area shape="rect" id="node4" href="$classElements.html" title=" " alt="" coords="453,247,659,325"/>
-<area shape="rect" id="node5" href="$classPoints.html" title=" " alt="" coords="683,247,835,325"/>
-<area shape="rect" id="node6" href="$classFaces.html" title=" " alt="" coords="859,233,1117,339"/>
-<area shape="rect" id="node7" href="$classEdges.html" title=" " alt="" coords="1141,218,1384,354"/>
+<area shape="rect" id="node1" title="3D mesh class" alt="" coords="527,1173,745,1632"/>
+<area shape="rect" id="node2" href="$classFeel_1_1VisitableBase.html" title=" " alt="" coords="5,777,152,913"/>
+<area shape="rect" id="node3" href="$classFeel_1_1MeshBase.html" title=" " alt="" coords="177,564,407,1125"/>
+<area shape="rect" id="node4" href="$classFeel_1_1CommObject.html" title=" " alt="" coords="114,248,257,399"/>
+<area shape="rect" id="node5" href="$classFeel_1_1JournalWatcher.html" title=" " alt="" coords="281,131,517,516"/>
+<area shape="rect" id="node6" title=" " alt="" coords="327,5,470,83"/>
+<area shape="rect" id="node7" href="$classElements.html" title=" " alt="" coords="432,806,637,883"/>
+<area shape="rect" id="node8" href="$classPoints.html" title=" " alt="" coords="661,806,813,883"/>
+<area shape="rect" id="node9" href="$classFaces.html" title=" " alt="" coords="838,791,1095,898"/>
+<area shape="rect" id="node10" href="$classEdges.html" title=" " alt="" coords="1120,777,1363,913"/>
 </map>

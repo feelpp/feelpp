@@ -31,17 +31,17 @@
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:href="classFeel_1_1FeelModels_1_1StabilizationGLSParameterBase.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="15,-149.5 15,-327.5 197,-327.5 197,-149.5 15,-149.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="15,-149.5 15,-327.5 197,-327.5 197,-149.5 15,-149.5"/>
 <text text-anchor="start" x="23" y="-315.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::Stabilization</text>
 <text text-anchor="middle" x="106" y="-304.5" font-family="Helvetica,sans-Serif" font-size="10.00">GLSParameterBase&lt; MeshType &gt;</text>
-<polyline fill="none" stroke="black" points="15,-297.5 197,-297.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="15,-297.5 197,-297.5 "/>
 <text text-anchor="start" x="23" y="-285.5" font-family="Helvetica,sans-Serif" font-size="10.00"># M_fieldTau</text>
 <text text-anchor="start" x="23" y="-274.5" font-family="Helvetica,sans-Serif" font-size="10.00"># M_hSizeMethod</text>
 <text text-anchor="start" x="23" y="-263.5" font-family="Helvetica,sans-Serif" font-size="10.00"># M_hSizeValues</text>
 <text text-anchor="start" x="23" y="-252.5" font-family="Helvetica,sans-Serif" font-size="10.00"># M_lambdaKValues</text>
 <text text-anchor="start" x="23" y="-241.5" font-family="Helvetica,sans-Serif" font-size="10.00"># M_mesh</text>
 <text text-anchor="start" x="23" y="-230.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 5 more...</text>
-<polyline fill="none" stroke="black" points="15,-223.5 197,-223.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="15,-223.5 197,-223.5 "/>
 <text text-anchor="start" x="23" y="-211.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ applyRemesh()</text>
 <text text-anchor="start" x="23" y="-200.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ fieldTau()</text>
 <text text-anchor="start" x="23" y="-189.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ fieldTauPtr()</text>

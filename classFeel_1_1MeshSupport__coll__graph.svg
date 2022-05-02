@@ -56,11 +56,11 @@
 <g id="node3" class="node">
 <title>Node3</title>
 <g id="a_node3"><a xlink:href="classint.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="149,-199 149,-256 178,-256 178,-199 149,-199"/>
+<polygon fill="white" stroke="#bfbfbf" points="149,-199 149,-256 178,-256 178,-199 149,-199"/>
 <text text-anchor="middle" x="163.5" y="-244" font-family="Helvetica,sans-Serif" font-size="10.00">int</text>
-<polyline fill="none" stroke="black" points="149,-237 178,-237 "/>
+<polyline fill="none" stroke="#bfbfbf" points="149,-237 178,-237 "/>
 <text text-anchor="middle" x="163.5" y="-225" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="149,-218 178,-218 "/>
+<polyline fill="none" stroke="#bfbfbf" points="149,-218 178,-218 "/>
 <text text-anchor="middle" x="163.5" y="-206" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>

@@ -89,11 +89,11 @@
 <g id="node4" class="node">
 <title>Node4</title>
 <g id="a_node4"><a xlink:href="classFeel_1_1ConvexBase.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="5,-557.5 5,-614.5 109,-614.5 109,-557.5 5,-557.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="5,-557.5 5,-614.5 109,-614.5 109,-557.5 5,-557.5"/>
 <text text-anchor="middle" x="57" y="-602.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::ConvexBase</text>
-<polyline fill="none" stroke="black" points="5,-595.5 109,-595.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="5,-595.5 109,-595.5 "/>
 <text text-anchor="middle" x="57" y="-583.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="5,-576.5 109,-576.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="5,-576.5 109,-576.5 "/>
 <text text-anchor="middle" x="57" y="-564.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>
@@ -108,11 +108,11 @@
 <g id="node5" class="node">
 <title>Node5</title>
 <g id="a_node5"><a xlink:href="classFeel_1_1SimplexBase.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="132.5,-425 132.5,-482 239.5,-482 239.5,-425 132.5,-425"/>
+<polygon fill="white" stroke="#bfbfbf" points="132.5,-425 132.5,-482 239.5,-482 239.5,-425 132.5,-425"/>
 <text text-anchor="middle" x="186" y="-470" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::SimplexBase</text>
-<polyline fill="none" stroke="black" points="132.5,-463 239.5,-463 "/>
+<polyline fill="none" stroke="#bfbfbf" points="132.5,-463 239.5,-463 "/>
 <text text-anchor="middle" x="186" y="-451" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="132.5,-444 239.5,-444 "/>
+<polyline fill="none" stroke="#bfbfbf" points="132.5,-444 239.5,-444 "/>
 <text text-anchor="middle" x="186" y="-432" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>

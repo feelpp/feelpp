@@ -1,8 +1,8 @@
 <map id="Feel::TimerTable" name="Feel::TimerTable">
-<area shape="rect" id="node1" title="TimerTable is a map of timer." alt="" coords="94,580,301,745"/>
-<area shape="rect" id="node2" title="STL class." alt="" coords="5,292,168,384"/>
-<area shape="rect" id="node3" title=" " alt="" coords="30,5,69,83"/>
-<area shape="rect" id="node4" title=" " alt="" coords="106,5,145,83"/>
-<area shape="rect" id="node5" href="$classFeel_1_1JournalWatcher.html" title=" " alt="" coords="193,145,429,531"/>
-<area shape="rect" id="node6" title=" " alt="" coords="239,5,382,83"/>
+<area shape="rect" id="node1" title="TimerTable is a map of timer." alt="" coords="73,580,280,745"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,299,140,377"/>
+<area shape="rect" id="node3" title=" " alt="" coords="16,5,55,83"/>
+<area shape="rect" id="node4" title=" " alt="" coords="92,5,131,83"/>
+<area shape="rect" id="node5" href="$classFeel_1_1JournalWatcher.html" title=" " alt="" coords="164,145,400,531"/>
+<area shape="rect" id="node6" title=" " alt="" coords="211,5,353,83"/>
 </map>

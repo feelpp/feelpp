@@ -80,13 +80,13 @@ var sectionId = 'dynsection-0';
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:href="classFeel_1_1FeelModels_1_1FluidMechanicsBoundaryConditions_1_1VelocityImposed.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="0,-182.5 0,-294.5 180,-294.5 180,-182.5 0,-182.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="0,-182.5 0,-294.5 180,-294.5 180,-182.5 0,-182.5"/>
 <text text-anchor="start" x="8" y="-282.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::FluidMechanics</text>
 <text text-anchor="start" x="8" y="-271.5" font-family="Helvetica,sans-Serif" font-size="10.00">BoundaryConditions&lt; Dim &gt;</text>
 <text text-anchor="middle" x="90" y="-260.5" font-family="Helvetica,sans-Serif" font-size="10.00">::VelocityImposed</text>
-<polyline fill="none" stroke="black" points="0,-253.5 180,-253.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="0,-253.5 180,-253.5 "/>
 <text text-anchor="middle" x="90" y="-241.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="0,-234.5 180,-234.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="0,-234.5 180,-234.5 "/>
 <text text-anchor="start" x="8" y="-222.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ type()</text>
 <text text-anchor="start" x="8" y="-211.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ VelocityImposed()</text>
 <text text-anchor="start" x="8" y="-200.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ VelocityImposed()</text>
@@ -104,18 +104,18 @@ var sectionId = 'dynsection-0';
 <g id="node3" class="node">
 <title>Node3</title>
 <g id="a_node3"><a xlink:href="classFeel_1_1FeelModels_1_1GenericDirichletBoundaryCondition.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="7.5,-331.5 7.5,-542.5 172.5,-542.5 172.5,-331.5 7.5,-331.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="7.5,-331.5 7.5,-542.5 172.5,-542.5 172.5,-331.5 7.5,-331.5"/>
 <text text-anchor="start" x="15.5" y="-530.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::Generic</text>
 <text text-anchor="start" x="15.5" y="-519.5" font-family="Helvetica,sans-Serif" font-size="10.00">DirichletBoundaryCondition</text>
 <text text-anchor="middle" x="90" y="-508.5" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; Dim, 1 &gt;</text>
-<polyline fill="none" stroke="black" points="7.5,-501.5 172.5,-501.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="7.5,-501.5 172.5,-501.5 "/>
 <text text-anchor="start" x="15.5" y="-489.5" font-family="Helvetica,sans-Serif" font-size="10.00"># M_comp</text>
 <text text-anchor="start" x="15.5" y="-478.5" font-family="Helvetica,sans-Serif" font-size="10.00"># M_markers</text>
 <text text-anchor="start" x="15.5" y="-467.5" font-family="Helvetica,sans-Serif" font-size="10.00"># M_method</text>
 <text text-anchor="start" x="15.5" y="-456.5" font-family="Helvetica,sans-Serif" font-size="10.00"># M_mexpr</text>
 <text text-anchor="start" x="15.5" y="-445.5" font-family="Helvetica,sans-Serif" font-size="10.00"># M_name</text>
 <text text-anchor="start" x="15.5" y="-434.5" font-family="Helvetica,sans-Serif" font-size="10.00"># M_toolboxParent</text>
-<polyline fill="none" stroke="black" points="7.5,-427.5 172.5,-427.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="7.5,-427.5 172.5,-427.5 "/>
 <text text-anchor="start" x="15.5" y="-415.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ applyDofEliminationLinear()</text>
 <text text-anchor="start" x="15.5" y="-404.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ applyNewtonInitialGuess()</text>
 <text text-anchor="start" x="15.5" y="-393.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ expr()</text>

@@ -29,14 +29,14 @@
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:href="classboost_1_1hana_1_1integral__constant.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="33,-127.5 33,-217.5 164,-217.5 164,-127.5 33,-127.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="33,-127.5 33,-217.5 164,-217.5 164,-127.5 33,-127.5"/>
 <text text-anchor="start" x="41" y="-205.5" font-family="Helvetica,sans-Serif" font-size="10.00">hana::integral_constant</text>
 <text text-anchor="start" x="41" y="-194.5" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; bool, std::is_same&lt;</text>
 <text text-anchor="start" x="41" y="-183.5" font-family="Helvetica,sans-Serif" font-size="10.00"> Tag, T::feelpp_tag &gt;::</text>
 <text text-anchor="middle" x="98.5" y="-172.5" font-family="Helvetica,sans-Serif" font-size="10.00">value &gt;</text>
-<polyline fill="none" stroke="black" points="33,-165.5 164,-165.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="33,-165.5 164,-165.5 "/>
 <text text-anchor="middle" x="98.5" y="-153.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="33,-146.5 164,-146.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="33,-146.5 164,-146.5 "/>
 <text text-anchor="middle" x="98.5" y="-134.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>

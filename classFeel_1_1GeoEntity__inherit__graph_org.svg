@@ -124,11 +124,11 @@
 <g id="node5" class="node">
 <title>Node5</title>
 <g id="a_node5"><a xlink:href="classFeel_1_1Entity.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="535,-490.5 535,-547.5 677,-547.5 677,-490.5 535,-490.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="535,-490.5 535,-547.5 677,-547.5 677,-490.5 535,-490.5"/>
 <text text-anchor="middle" x="606" y="-535.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::Entity&lt; ShapeE, T &gt;</text>
-<polyline fill="none" stroke="black" points="535,-528.5 677,-528.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="535,-528.5 677,-528.5 "/>
 <text text-anchor="middle" x="606" y="-516.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="535,-509.5 677,-509.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="535,-509.5 677,-509.5 "/>
 <text text-anchor="middle" x="606" y="-497.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>

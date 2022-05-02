@@ -116,11 +116,11 @@ var sectionId = 'dynsection-0';
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:href="classVectorUblas.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="0,-589.5 0,-646.5 128,-646.5 128,-589.5 0,-589.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="0,-589.5 0,-646.5 128,-646.5 128,-589.5 0,-589.5"/>
 <text text-anchor="middle" x="64" y="-634.5" font-family="Helvetica,sans-Serif" font-size="10.00">VectorUblas&lt;double &gt;</text>
-<polyline fill="none" stroke="black" points="0,-627.5 128,-627.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="0,-627.5 128,-627.5 "/>
 <text text-anchor="middle" x="64" y="-615.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="0,-608.5 128,-608.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="0,-608.5 128,-608.5 "/>
 <text text-anchor="middle" x="64" y="-596.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>
@@ -137,8 +137,8 @@ var sectionId = 'dynsection-0';
 <g id="a_node3"><a xlink:title=" ">
 <polygon fill="white" stroke="#bfbfbf" points="146,-578.5 146,-657.5 286,-657.5 286,-578.5 146,-578.5"/>
 <text text-anchor="start" x="154" y="-645.5" font-family="Helvetica,sans-Serif" font-size="10.00">boost::addable&lt; Element</text>
-<text text-anchor="start" x="154" y="-634.5" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; double , VectorUblas</text>
-<text text-anchor="middle" x="216" y="-623.5" font-family="Helvetica,sans-Serif" font-size="10.00">&lt;double &gt; &gt; &gt;</text>
+<text text-anchor="start" x="154" y="-634.5" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; double, VectorUblas</text>
+<text text-anchor="middle" x="216" y="-623.5" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; double &gt; &gt; &gt;</text>
 <polyline fill="none" stroke="#bfbfbf" points="146,-616.5 286,-616.5 "/>
 <text text-anchor="middle" x="216" y="-604.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 <polyline fill="none" stroke="#bfbfbf" points="146,-597.5 286,-597.5 "/>
@@ -177,12 +177,12 @@ var sectionId = 'dynsection-0';
 <g id="node5" class="node">
 <title>Node5</title>
 <g id="a_node5"><a xlink:href="classFeel_1_1FunctionSpaceBase_1_1ElementBase.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="476.5,-584 476.5,-652 613.5,-652 613.5,-584 476.5,-584"/>
+<polygon fill="white" stroke="#bfbfbf" points="476.5,-584 476.5,-652 613.5,-652 613.5,-584 476.5,-584"/>
 <text text-anchor="start" x="484.5" y="-640" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FunctionSpaceBase</text>
 <text text-anchor="middle" x="545" y="-629" font-family="Helvetica,sans-Serif" font-size="10.00">::ElementBase</text>
-<polyline fill="none" stroke="black" points="476.5,-622 613.5,-622 "/>
+<polyline fill="none" stroke="#bfbfbf" points="476.5,-622 613.5,-622 "/>
 <text text-anchor="middle" x="545" y="-610" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="476.5,-603 613.5,-603 "/>
+<polyline fill="none" stroke="#bfbfbf" points="476.5,-603 613.5,-603 "/>
 <text text-anchor="middle" x="545" y="-591" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>

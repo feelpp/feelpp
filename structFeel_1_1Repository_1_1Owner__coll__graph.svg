@@ -25,12 +25,12 @@
 <!-- Node2 -->
 <g id="node2" class="node">
 <title>Node2</title>
-<g id="a_node2"><a xlink:title="STL class.">
-<polygon fill="white" stroke="#bfbfbf" points="33.5,-116.5 33.5,-173.5 98.5,-173.5 98.5,-116.5 33.5,-116.5"/>
+<g id="a_node2"><a xlink:title=" ">
+<polygon fill="white" stroke="black" points="33.5,-116.5 33.5,-173.5 98.5,-173.5 98.5,-116.5 33.5,-116.5"/>
 <text text-anchor="middle" x="66" y="-161.5" font-family="Helvetica,sans-Serif" font-size="10.00">std::string</text>
-<polyline fill="none" stroke="#bfbfbf" points="33.5,-154.5 98.5,-154.5 "/>
+<polyline fill="none" stroke="black" points="33.5,-154.5 98.5,-154.5 "/>
 <text text-anchor="middle" x="66" y="-142.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="#bfbfbf" points="33.5,-135.5 98.5,-135.5 "/>
+<polyline fill="none" stroke="black" points="33.5,-135.5 98.5,-135.5 "/>
 <text text-anchor="middle" x="66" y="-123.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>
@@ -40,19 +40,19 @@
 <title>Node2&#45;&gt;Node1</title>
 <path fill="none" stroke="#404040" d="M66,-116.4C66,-102.5 66,-85.39 66,-70.07"/>
 <polygon fill="none" stroke="#404040" points="66,-69.74 62,-63.74 66,-57.74 70,-63.74 66,-69.74"/>
-<text text-anchor="middle" x="86" y="-90" font-family="Helvetica,sans-Serif" font-size="10.00"> +name</text>
-<text text-anchor="middle" x="86" y="-79" font-family="Helvetica,sans-Serif" font-size="10.00">+email</text>
+<text text-anchor="middle" x="86" y="-90" font-family="Helvetica,sans-Serif" font-size="10.00"> +email</text>
+<text text-anchor="middle" x="86" y="-79" font-family="Helvetica,sans-Serif" font-size="10.00">+name</text>
 </g>
 <!-- Node3 -->
 <g id="node3" class="node">
 <title>Node3</title>
-<g id="a_node3"><a xlink:title="STL class.">
-<polygon fill="white" stroke="#bfbfbf" points="14,-211.5 14,-279.5 118,-279.5 118,-211.5 14,-211.5"/>
+<g id="a_node3"><a xlink:title=" ">
+<polygon fill="white" stroke="black" points="14,-211.5 14,-279.5 118,-279.5 118,-211.5 14,-211.5"/>
 <text text-anchor="start" x="22" y="-267.5" font-family="Helvetica,sans-Serif" font-size="10.00">std::basic_string&lt;</text>
-<text text-anchor="middle" x="66" y="-256.5" font-family="Helvetica,sans-Serif" font-size="10.00"> char &gt;</text>
-<polyline fill="none" stroke="#bfbfbf" points="14,-249.5 118,-249.5 "/>
+<text text-anchor="middle" x="66" y="-256.5" font-family="Helvetica,sans-Serif" font-size="10.00"> Char &gt;</text>
+<polyline fill="none" stroke="black" points="14,-249.5 118,-249.5 "/>
 <text text-anchor="middle" x="66" y="-237.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="#bfbfbf" points="14,-230.5 118,-230.5 "/>
+<polyline fill="none" stroke="black" points="14,-230.5 118,-230.5 "/>
 <text text-anchor="middle" x="66" y="-218.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>

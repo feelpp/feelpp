@@ -55,16 +55,16 @@
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:href="classFeel_1_1vf_1_1GiNaCBase.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="20.5,-413.5 20.5,-580.5 166.5,-580.5 166.5,-413.5 20.5,-413.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="20.5,-413.5 20.5,-580.5 166.5,-580.5 166.5,-413.5 20.5,-413.5"/>
 <text text-anchor="middle" x="93.5" y="-568.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::vf::GiNaCBase</text>
-<polyline fill="none" stroke="black" points="20.5,-561.5 166.5,-561.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="20.5,-561.5 166.5,-561.5 "/>
 <text text-anchor="start" x="28.5" y="-549.5" font-family="Helvetica,sans-Serif" font-size="10.00"># M_context</text>
 <text text-anchor="start" x="28.5" y="-538.5" font-family="Helvetica,sans-Serif" font-size="10.00"># M_indexSymbolGeom</text>
 <text text-anchor="start" x="28.5" y="-527.5" font-family="Helvetica,sans-Serif" font-size="10.00"># M_indexSymbolN</text>
 <text text-anchor="start" x="28.5" y="-516.5" font-family="Helvetica,sans-Serif" font-size="10.00"># M_indexSymbolXYZ</text>
 <text text-anchor="start" x="28.5" y="-505.5" font-family="Helvetica,sans-Serif" font-size="10.00"># M_isNumericExpression</text>
 <text text-anchor="start" x="28.5" y="-494.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 3 more...</text>
-<polyline fill="none" stroke="black" points="20.5,-487.5 166.5,-487.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="20.5,-487.5 166.5,-487.5 "/>
 <text text-anchor="start" x="28.5" y="-475.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ dynamicContext()</text>
 <text text-anchor="start" x="28.5" y="-464.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ eraseParameterValues()</text>
 <text text-anchor="start" x="28.5" y="-453.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ GiNaCBase()</text>
@@ -84,11 +84,11 @@
 <g id="node3" class="node">
 <title>Node3</title>
 <g id="a_node3"><a xlink:href="classFeel_1_1vf_1_1ExprDynamicBase.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="20,-617.5 20,-696.5 167,-696.5 167,-617.5 20,-617.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="20,-617.5 20,-696.5 167,-696.5 167,-617.5 20,-617.5"/>
 <text text-anchor="middle" x="93.5" y="-684.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::vf::ExprDynamicBase</text>
-<polyline fill="none" stroke="black" points="20,-677.5 167,-677.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="20,-677.5 167,-677.5 "/>
 <text text-anchor="middle" x="93.5" y="-665.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="20,-658.5 167,-658.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="20,-658.5 167,-658.5 "/>
 <text text-anchor="start" x="28" y="-646.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ dynamicContext()</text>
 <text text-anchor="start" x="28" y="-635.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ ExprDynamicBase()</text>
 <text text-anchor="start" x="28" y="-624.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ ExprDynamicBase()</text>

@@ -46,7 +46,7 @@ if (edges && edges.length) {
         </defs>
 
 <script type="text/javascript">
-var viewWidth = 692;
+var viewWidth = 678;
 var viewHeight = 1012;
 var sectionId = 'dynsection-1';
 </script>
@@ -54,22 +54,22 @@ var sectionId = 'dynsection-1';
 <svg id="graph" class="graph">
 <g id="viewport">
 <title>Feel::FeelModels::FluidMechanicsBoundaryConditions&lt; Dim &gt;::VelocityImposed</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-1008 687.5,-1008 687.5,4 -4,4"/>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-1008 673.84,-1008 673.84,4 -4,4"/>
 <!-- Node1 -->
 <g id="node1" class="node">
 <title>Node1</title>
 <g id="a_node1"><a xlink:title=" ">
-<polygon fill="#bfbfbf" stroke="black" points="252.5,-0.5 252.5,-112.5 432.5,-112.5 432.5,-0.5 252.5,-0.5"/>
-<text text-anchor="start" x="260.5" y="-100.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::FluidMechanics</text>
-<text text-anchor="start" x="260.5" y="-89.5" font-family="Helvetica,sans-Serif" font-size="10.00">BoundaryConditions&lt; Dim &gt;</text>
-<text text-anchor="middle" x="342.5" y="-78.5" font-family="Helvetica,sans-Serif" font-size="10.00">::VelocityImposed</text>
-<polyline fill="none" stroke="black" points="252.5,-71.5 432.5,-71.5 "/>
-<text text-anchor="middle" x="342.5" y="-59.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="252.5,-52.5 432.5,-52.5 "/>
-<text text-anchor="start" x="260.5" y="-40.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ type()</text>
-<text text-anchor="start" x="260.5" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ VelocityImposed()</text>
-<text text-anchor="start" x="260.5" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ VelocityImposed()</text>
-<text text-anchor="start" x="260.5" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ VelocityImposed()</text>
+<polygon fill="#bfbfbf" stroke="black" points="286.34,-0.5 286.34,-112.5 466.34,-112.5 466.34,-0.5 286.34,-0.5"/>
+<text text-anchor="start" x="294.34" y="-100.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::FluidMechanics</text>
+<text text-anchor="start" x="294.34" y="-89.5" font-family="Helvetica,sans-Serif" font-size="10.00">BoundaryConditions&lt; Dim &gt;</text>
+<text text-anchor="middle" x="376.34" y="-78.5" font-family="Helvetica,sans-Serif" font-size="10.00">::VelocityImposed</text>
+<polyline fill="none" stroke="black" points="286.34,-71.5 466.34,-71.5 "/>
+<text text-anchor="middle" x="376.34" y="-59.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polyline fill="none" stroke="black" points="286.34,-52.5 466.34,-52.5 "/>
+<text text-anchor="start" x="294.34" y="-40.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ type()</text>
+<text text-anchor="start" x="294.34" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ VelocityImposed()</text>
+<text text-anchor="start" x="294.34" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ VelocityImposed()</text>
+<text text-anchor="start" x="294.34" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ VelocityImposed()</text>
 </a>
 </g>
 </g>
@@ -77,281 +77,281 @@ var sectionId = 'dynsection-1';
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:href="classFeel_1_1FeelModels_1_1GenericDirichletBoundaryCondition.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="260,-150.5 260,-306.5 425,-306.5 425,-150.5 260,-150.5"/>
-<text text-anchor="start" x="268" y="-294.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::Generic</text>
-<text text-anchor="start" x="268" y="-283.5" font-family="Helvetica,sans-Serif" font-size="10.00">DirichletBoundaryCondition</text>
-<text text-anchor="middle" x="342.5" y="-272.5" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; Dim, 1 &gt;</text>
-<polyline fill="none" stroke="black" points="260,-265.5 425,-265.5 "/>
-<text text-anchor="middle" x="342.5" y="-253.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="260,-246.5 425,-246.5 "/>
-<text text-anchor="start" x="268" y="-234.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ applyDofEliminationLinear()</text>
-<text text-anchor="start" x="268" y="-223.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ applyNewtonInitialGuess()</text>
-<text text-anchor="start" x="268" y="-212.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ expr()</text>
-<text text-anchor="start" x="268" y="-201.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ exprComponent()</text>
-<text text-anchor="start" x="268" y="-190.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ GenericDirichletBoundary</text>
-<text text-anchor="start" x="268" y="-179.5" font-family="Helvetica,sans-Serif" font-size="10.00">Condition()</text>
-<text text-anchor="start" x="268" y="-168.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 12 more...</text>
-<text text-anchor="start" x="268" y="-157.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ tabulateInformations()</text>
+<polygon fill="white" stroke="#bfbfbf" points="293.84,-150.5 293.84,-306.5 458.84,-306.5 458.84,-150.5 293.84,-150.5"/>
+<text text-anchor="start" x="301.84" y="-294.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::Generic</text>
+<text text-anchor="start" x="301.84" y="-283.5" font-family="Helvetica,sans-Serif" font-size="10.00">DirichletBoundaryCondition</text>
+<text text-anchor="middle" x="376.34" y="-272.5" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; Dim, 1 &gt;</text>
+<polyline fill="none" stroke="#bfbfbf" points="293.84,-265.5 458.84,-265.5 "/>
+<text text-anchor="middle" x="376.34" y="-253.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polyline fill="none" stroke="#bfbfbf" points="293.84,-246.5 458.84,-246.5 "/>
+<text text-anchor="start" x="301.84" y="-234.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ applyDofEliminationLinear()</text>
+<text text-anchor="start" x="301.84" y="-223.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ applyNewtonInitialGuess()</text>
+<text text-anchor="start" x="301.84" y="-212.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ expr()</text>
+<text text-anchor="start" x="301.84" y="-201.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ exprComponent()</text>
+<text text-anchor="start" x="301.84" y="-190.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ GenericDirichletBoundary</text>
+<text text-anchor="start" x="301.84" y="-179.5" font-family="Helvetica,sans-Serif" font-size="10.00">Condition()</text>
+<text text-anchor="start" x="301.84" y="-168.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 12 more...</text>
+<text text-anchor="start" x="301.84" y="-157.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ tabulateInformations()</text>
 </a>
 </g>
 </g>
 <!-- Node2&#45;&gt;Node1 -->
 <g id="edge1" class="edge">
 <title>Node2&#45;&gt;Node1</title>
-<path fill="none" stroke="midnightblue" d="M342.5,-140.35C342.5,-131.02 342.5,-121.73 342.5,-112.93"/>
-<polygon fill="none" stroke="midnightblue" points="339,-140.46 342.5,-150.46 346,-140.46 339,-140.46"/>
+<path fill="none" stroke="midnightblue" d="M376.34,-140.35C376.34,-131.02 376.34,-121.73 376.34,-112.93"/>
+<polygon fill="none" stroke="midnightblue" points="372.84,-140.46 376.34,-150.46 379.84,-140.46 372.84,-140.46"/>
 </g>
 <!-- Node3 -->
 <g id="node3" class="node">
 <title>Node3</title>
 <g id="a_node3"><a xlink:title=" ">
-<polygon fill="white" stroke="#bfbfbf" points="0,-360 0,-417 53,-417 53,-360 0,-360"/>
-<text text-anchor="middle" x="26.5" y="-405" font-family="Helvetica,sans-Serif" font-size="10.00">Method</text>
-<polyline fill="none" stroke="#bfbfbf" points="0,-398 53,-398 "/>
-<text text-anchor="middle" x="26.5" y="-386" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="#bfbfbf" points="0,-379 53,-379 "/>
-<text text-anchor="middle" x="26.5" y="-367" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polygon fill="white" stroke="black" points="35.84,-498 35.84,-555 100.84,-555 100.84,-498 35.84,-498"/>
+<text text-anchor="middle" x="68.34" y="-543" font-family="Helvetica,sans-Serif" font-size="10.00">std::string</text>
+<polyline fill="none" stroke="black" points="35.84,-536 100.84,-536 "/>
+<text text-anchor="middle" x="68.34" y="-524" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polyline fill="none" stroke="black" points="35.84,-517 100.84,-517 "/>
+<text text-anchor="middle" x="68.34" y="-505" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>
 </g>
 <!-- Node3&#45;&gt;Node2 -->
 <g id="edge2" class="edge">
 <title>Node3&#45;&gt;Node2</title>
-<path fill="none" stroke="#404040" d="M53.23,-360.2C55.93,-357.98 58.7,-355.87 61.5,-354 119.56,-315.1 191.77,-283.42 248.44,-261.75"/>
-<polygon fill="none" stroke="#404040" points="248.7,-261.65 252.9,-255.79 259.93,-257.41 255.73,-263.27 248.7,-261.65"/>
-<text text-anchor="middle" x="136.5" y="-328" font-family="Helvetica,sans-Serif" font-size="10.00"> #M_method</text>
+<path fill="none" stroke="#404040" d="M45.27,-497.94C18.13,-462 -19.44,-398.46 12.34,-354 73.12,-268.98 195.59,-241.38 281.63,-232.77"/>
+<polygon fill="none" stroke="#404040" points="281.83,-232.75 287.44,-228.22 293.78,-231.66 288.17,-236.19 281.83,-232.75"/>
+<text text-anchor="middle" x="39.34" y="-386" font-family="Helvetica,sans-Serif" font-size="10.00"> #M_name</text>
+</g>
+<!-- Node11 -->
+<g id="node11" class="node">
+<title>Node11</title>
+<g id="a_node11"><a xlink:title=" ">
+<polygon fill="white" stroke="black" points="75.34,-360 75.34,-417 199.34,-417 199.34,-360 75.34,-360"/>
+<text text-anchor="middle" x="137.34" y="-405" font-family="Helvetica,sans-Serif" font-size="10.00">std::set&lt; std::string &gt;</text>
+<polyline fill="none" stroke="black" points="75.34,-398 199.34,-398 "/>
+<text text-anchor="middle" x="137.34" y="-386" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polyline fill="none" stroke="black" points="75.34,-379 199.34,-379 "/>
+<text text-anchor="middle" x="137.34" y="-367" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+</a>
+</g>
+</g>
+<!-- Node3&#45;&gt;Node11 -->
+<g id="edge11" class="edge">
+<title>Node3&#45;&gt;Node11</title>
+<path fill="none" stroke="#404040" d="M82.31,-497.98C92.48,-477.93 106.4,-450.49 117.69,-428.23"/>
+<polygon fill="none" stroke="#404040" points="117.73,-428.15 116.88,-420.99 123.16,-417.45 124.02,-424.61 117.73,-428.15"/>
+<text text-anchor="middle" x="128.34" y="-444" font-family="Helvetica,sans-Serif" font-size="10.00"> +keys</text>
 </g>
 <!-- Node4 -->
 <g id="node4" class="node">
 <title>Node4</title>
 <g id="a_node4"><a xlink:title=" ">
-<polygon fill="white" stroke="#bfbfbf" points="71,-360 71,-417 166,-417 166,-360 71,-360"/>
-<text text-anchor="middle" x="118.5" y="-405" font-family="Helvetica,sans-Serif" font-size="10.00">ComponentType</text>
-<polyline fill="none" stroke="#bfbfbf" points="71,-398 166,-398 "/>
-<text text-anchor="middle" x="118.5" y="-386" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="#bfbfbf" points="71,-379 166,-379 "/>
-<text text-anchor="middle" x="118.5" y="-367" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polygon fill="white" stroke="black" points="16.34,-730.5 16.34,-798.5 120.34,-798.5 120.34,-730.5 16.34,-730.5"/>
+<text text-anchor="start" x="24.34" y="-786.5" font-family="Helvetica,sans-Serif" font-size="10.00">std::basic_string&lt;</text>
+<text text-anchor="middle" x="68.34" y="-775.5" font-family="Helvetica,sans-Serif" font-size="10.00"> Char &gt;</text>
+<polyline fill="none" stroke="black" points="16.34,-768.5 120.34,-768.5 "/>
+<text text-anchor="middle" x="68.34" y="-756.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polyline fill="none" stroke="black" points="16.34,-749.5 120.34,-749.5 "/>
+<text text-anchor="middle" x="68.34" y="-737.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>
 </g>
-<!-- Node4&#45;&gt;Node2 -->
+<!-- Node4&#45;&gt;Node3 -->
 <g id="edge3" class="edge">
-<title>Node4&#45;&gt;Node2</title>
-<path fill="none" stroke="#404040" d="M157.52,-359.98C183.08,-341.95 217.62,-317.59 249.93,-294.79"/>
-<polygon fill="none" stroke="#404040" points="250.07,-294.7 252.67,-287.97 259.88,-287.78 257.28,-294.51 250.07,-294.7"/>
-<text text-anchor="middle" x="231" y="-328" font-family="Helvetica,sans-Serif" font-size="10.00"> #M_comp</text>
+<title>Node4&#45;&gt;Node3</title>
+<path fill="none" stroke="midnightblue" d="M68.34,-720.33C68.34,-672.23 68.34,-595.89 68.34,-555.19"/>
+<polygon fill="none" stroke="midnightblue" points="64.84,-720.44 68.34,-730.44 71.84,-720.44 64.84,-720.44"/>
 </g>
 <!-- Node5 -->
 <g id="node5" class="node">
 <title>Node5</title>
 <g id="a_node5"><a xlink:title=" ">
-<polygon fill="white" stroke="#bfbfbf" points="184,-354.5 184,-422.5 333,-422.5 333,-354.5 184,-354.5"/>
-<text text-anchor="start" x="192" y="-410.5" font-family="Helvetica,sans-Serif" font-size="10.00">std::weak_ptr&lt; Feel</text>
-<text text-anchor="middle" x="258.5" y="-399.5" font-family="Helvetica,sans-Serif" font-size="10.00">::FeelModels::ModelBase &gt;</text>
-<polyline fill="none" stroke="#bfbfbf" points="184,-392.5 333,-392.5 "/>
-<text text-anchor="middle" x="258.5" y="-380.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="#bfbfbf" points="184,-373.5 333,-373.5 "/>
-<text text-anchor="start" x="192" y="-361.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ operator&#45;&gt;()</text>
+<polygon fill="white" stroke="black" points="217.84,-354.5 217.84,-422.5 366.84,-422.5 366.84,-354.5 217.84,-354.5"/>
+<text text-anchor="start" x="225.84" y="-410.5" font-family="Helvetica,sans-Serif" font-size="10.00">std::weak_ptr&lt; Feel</text>
+<text text-anchor="middle" x="292.34" y="-399.5" font-family="Helvetica,sans-Serif" font-size="10.00">::FeelModels::ModelBase &gt;</text>
+<polyline fill="none" stroke="black" points="217.84,-392.5 366.84,-392.5 "/>
+<text text-anchor="middle" x="292.34" y="-380.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polyline fill="none" stroke="black" points="217.84,-373.5 366.84,-373.5 "/>
+<text text-anchor="start" x="225.84" y="-361.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ operator&#45;&gt;()</text>
 </a>
 </g>
 </g>
 <!-- Node5&#45;&gt;Node2 -->
 <g id="edge4" class="edge">
 <title>Node5&#45;&gt;Node2</title>
-<path fill="none" stroke="#404040" d="M269.25,-354.18C272.75,-344.58 276.93,-334.22 281.5,-325 282.77,-322.43 284.1,-319.85 285.46,-317.26"/>
-<polygon fill="none" stroke="#404040" points="285.54,-317.13 284.91,-309.95 291.3,-306.61 291.93,-313.79 285.54,-317.13"/>
-<text text-anchor="middle" x="328.5" y="-328" font-family="Helvetica,sans-Serif" font-size="10.00"> #M_toolboxParent</text>
+<path fill="none" stroke="#404040" d="M302.33,-354.46C305.7,-344.77 309.77,-334.29 314.34,-325 315.61,-322.42 316.94,-319.82 318.31,-317.22"/>
+<polygon fill="none" stroke="#404040" points="318.41,-317.04 317.79,-309.86 324.18,-306.52 324.8,-313.7 318.41,-317.04"/>
+<text text-anchor="middle" x="361.34" y="-328" font-family="Helvetica,sans-Serif" font-size="10.00"> #M_toolboxParent</text>
 </g>
 <!-- Node6 -->
 <g id="node6" class="node">
 <title>Node6</title>
 <g id="a_node6"><a xlink:href="classFeel_1_1FeelModels_1_1ModelBase.html" target="_top" xlink:title="Model base class.">
-<polygon fill="white" stroke="black" points="162,-470.5 162,-582.5 355,-582.5 355,-470.5 162,-470.5"/>
-<text text-anchor="middle" x="258.5" y="-570.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::ModelBase</text>
-<polyline fill="none" stroke="black" points="162,-563.5 355,-563.5 "/>
-<text text-anchor="middle" x="258.5" y="-551.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="162,-544.5 355,-544.5 "/>
-<text text-anchor="start" x="170" y="-532.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ addParameterInModelProperties()</text>
-<text text-anchor="start" x="170" y="-521.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ addTimerTool()</text>
-<text text-anchor="start" x="170" y="-510.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ clovm()</text>
-<text text-anchor="start" x="170" y="-499.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ createWorldsComm()</text>
-<text text-anchor="start" x="170" y="-488.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ hasModelProperties()</text>
-<text text-anchor="start" x="170" y="-477.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 53 more...</text>
+<polygon fill="white" stroke="black" points="195.84,-470.5 195.84,-582.5 388.84,-582.5 388.84,-470.5 195.84,-470.5"/>
+<text text-anchor="middle" x="292.34" y="-570.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::ModelBase</text>
+<polyline fill="none" stroke="black" points="195.84,-563.5 388.84,-563.5 "/>
+<text text-anchor="middle" x="292.34" y="-551.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polyline fill="none" stroke="black" points="195.84,-544.5 388.84,-544.5 "/>
+<text text-anchor="start" x="203.84" y="-532.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ addParameterInModelProperties()</text>
+<text text-anchor="start" x="203.84" y="-521.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ addTimerTool()</text>
+<text text-anchor="start" x="203.84" y="-510.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ clovm()</text>
+<text text-anchor="start" x="203.84" y="-499.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ createWorldsComm()</text>
+<text text-anchor="start" x="203.84" y="-488.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ hasModelProperties()</text>
+<text text-anchor="start" x="203.84" y="-477.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 53 more...</text>
 </a>
 </g>
 </g>
 <!-- Node6&#45;&gt;Node5 -->
 <g id="edge5" class="edge">
 <title>Node6&#45;&gt;Node5</title>
-<path fill="none" stroke="#404040" d="M258.5,-470.18C258.5,-458.43 258.5,-446.15 258.5,-434.82"/>
-<polygon fill="none" stroke="#404040" points="258.5,-434.51 254.5,-428.51 258.5,-422.51 262.5,-428.51 258.5,-434.51"/>
-<text text-anchor="middle" x="271" y="-444" font-family="Helvetica,sans-Serif" font-size="10.00"> +ptr</text>
+<path fill="none" stroke="#404040" d="M292.34,-470.18C292.34,-458.43 292.34,-446.15 292.34,-434.82"/>
+<polygon fill="none" stroke="#404040" points="292.34,-434.51 288.34,-428.51 292.34,-422.51 296.34,-428.51 292.34,-434.51"/>
+<text text-anchor="middle" x="304.84" y="-444" font-family="Helvetica,sans-Serif" font-size="10.00"> +ptr</text>
 </g>
 <!-- Node7 -->
 <g id="node7" class="node">
 <title>Node7</title>
 <g id="a_node7"><a xlink:href="classFeel_1_1JournalWatcher.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="75,-620.5 75,-908.5 252,-908.5 252,-620.5 75,-620.5"/>
-<text text-anchor="middle" x="163.5" y="-896.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::JournalWatcher</text>
-<polyline fill="none" stroke="black" points="75,-889.5 252,-889.5 "/>
-<text text-anchor="middle" x="163.5" y="-877.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="75,-870.5 252,-870.5 "/>
-<text text-anchor="start" x="83" y="-858.5" font-family="Helvetica,sans-Serif" font-size="10.00">* JournalWatcher()</text>
-<text text-anchor="start" x="83" y="-847.5" font-family="Helvetica,sans-Serif" font-size="10.00">* JournalWatcher()</text>
-<text text-anchor="start" x="83" y="-836.5" font-family="Helvetica,sans-Serif" font-size="10.00">* JournalWatcher()</text>
-<text text-anchor="start" x="83" y="-825.5" font-family="Helvetica,sans-Serif" font-size="10.00">* JournalWatcher()</text>
-<text text-anchor="start" x="83" y="-814.5" font-family="Helvetica,sans-Serif" font-size="10.00">* ~JournalWatcher()</text>
-<text text-anchor="start" x="83" y="-803.5" font-family="Helvetica,sans-Serif" font-size="10.00">* journalIsConnected()</text>
-<text text-anchor="start" x="83" y="-792.5" font-family="Helvetica,sans-Serif" font-size="10.00">* journalWatcherInstanceName()</text>
-<text text-anchor="start" x="83" y="-781.5" font-family="Helvetica,sans-Serif" font-size="10.00">* journalSection()</text>
-<text text-anchor="start" x="83" y="-770.5" font-family="Helvetica,sans-Serif" font-size="10.00">* informationObject()</text>
-<text text-anchor="start" x="83" y="-759.5" font-family="Helvetica,sans-Serif" font-size="10.00">* journalConnect()</text>
-<text text-anchor="start" x="83" y="-748.5" font-family="Helvetica,sans-Serif" font-size="10.00">* journalDisconnect()</text>
-<text text-anchor="start" x="83" y="-737.5" font-family="Helvetica,sans-Serif" font-size="10.00">* updateInformationObject()</text>
-<text text-anchor="start" x="83" y="-726.5" font-family="Helvetica,sans-Serif" font-size="10.00">* setInformationObject()</text>
-<text text-anchor="start" x="83" y="-715.5" font-family="Helvetica,sans-Serif" font-size="10.00">* putInformationObject()</text>
-<text text-anchor="start" x="83" y="-704.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 4 more...</text>
-<text text-anchor="start" x="83" y="-693.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_journal_is_connected</text>
-<text text-anchor="start" x="83" y="-682.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_category</text>
-<text text-anchor="start" x="83" y="-671.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_name</text>
-<text text-anchor="start" x="83" y="-660.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_function_updateInformation</text>
-<text text-anchor="start" x="83" y="-649.5" font-family="Helvetica,sans-Serif" font-size="10.00">Object</text>
-<text text-anchor="start" x="83" y="-638.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_informationObject</text>
-<text text-anchor="start" x="83" y="-627.5" font-family="Helvetica,sans-Serif" font-size="10.00">* S_counterObjectByCategory</text>
+<polygon fill="white" stroke="#bfbfbf" points="170.84,-620.5 170.84,-908.5 347.84,-908.5 347.84,-620.5 170.84,-620.5"/>
+<text text-anchor="middle" x="259.34" y="-896.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::JournalWatcher</text>
+<polyline fill="none" stroke="#bfbfbf" points="170.84,-889.5 347.84,-889.5 "/>
+<text text-anchor="middle" x="259.34" y="-877.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polyline fill="none" stroke="#bfbfbf" points="170.84,-870.5 347.84,-870.5 "/>
+<text text-anchor="start" x="178.84" y="-858.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_journal_is_connected</text>
+<text text-anchor="start" x="178.84" y="-847.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_category</text>
+<text text-anchor="start" x="178.84" y="-836.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_name</text>
+<text text-anchor="start" x="178.84" y="-825.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_function_updateInformation</text>
+<text text-anchor="start" x="178.84" y="-814.5" font-family="Helvetica,sans-Serif" font-size="10.00">Object</text>
+<text text-anchor="start" x="178.84" y="-803.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_informationObject</text>
+<text text-anchor="start" x="178.84" y="-792.5" font-family="Helvetica,sans-Serif" font-size="10.00">* S_counterObjectByCategory</text>
+<text text-anchor="start" x="178.84" y="-781.5" font-family="Helvetica,sans-Serif" font-size="10.00">* JournalWatcher()</text>
+<text text-anchor="start" x="178.84" y="-770.5" font-family="Helvetica,sans-Serif" font-size="10.00">* JournalWatcher()</text>
+<text text-anchor="start" x="178.84" y="-759.5" font-family="Helvetica,sans-Serif" font-size="10.00">* JournalWatcher()</text>
+<text text-anchor="start" x="178.84" y="-748.5" font-family="Helvetica,sans-Serif" font-size="10.00">* JournalWatcher()</text>
+<text text-anchor="start" x="178.84" y="-737.5" font-family="Helvetica,sans-Serif" font-size="10.00">* ~JournalWatcher()</text>
+<text text-anchor="start" x="178.84" y="-726.5" font-family="Helvetica,sans-Serif" font-size="10.00">* journalIsConnected()</text>
+<text text-anchor="start" x="178.84" y="-715.5" font-family="Helvetica,sans-Serif" font-size="10.00">* journalWatcherInstanceName()</text>
+<text text-anchor="start" x="178.84" y="-704.5" font-family="Helvetica,sans-Serif" font-size="10.00">* journalSection()</text>
+<text text-anchor="start" x="178.84" y="-693.5" font-family="Helvetica,sans-Serif" font-size="10.00">* informationObject()</text>
+<text text-anchor="start" x="178.84" y="-682.5" font-family="Helvetica,sans-Serif" font-size="10.00">* journalConnect()</text>
+<text text-anchor="start" x="178.84" y="-671.5" font-family="Helvetica,sans-Serif" font-size="10.00">* journalDisconnect()</text>
+<text text-anchor="start" x="178.84" y="-660.5" font-family="Helvetica,sans-Serif" font-size="10.00">* updateInformationObject()</text>
+<text text-anchor="start" x="178.84" y="-649.5" font-family="Helvetica,sans-Serif" font-size="10.00">* setInformationObject()</text>
+<text text-anchor="start" x="178.84" y="-638.5" font-family="Helvetica,sans-Serif" font-size="10.00">* putInformationObject()</text>
+<text text-anchor="start" x="178.84" y="-627.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 4 more...</text>
 </a>
 </g>
 </g>
 <!-- Node7&#45;&gt;Node6 -->
 <g id="edge6" class="edge">
 <title>Node7&#45;&gt;Node6</title>
-<path fill="none" stroke="midnightblue" d="M224.93,-610.89C228.9,-601.03 232.72,-591.53 236.28,-582.69"/>
-<polygon fill="none" stroke="midnightblue" points="221.58,-609.85 221.09,-620.43 228.07,-612.47 221.58,-609.85"/>
+<path fill="none" stroke="midnightblue" d="M280.77,-610.28C282.12,-600.64 283.42,-591.35 284.63,-582.69"/>
+<polygon fill="none" stroke="midnightblue" points="277.27,-610.05 279.35,-620.43 284.2,-611.02 277.27,-610.05"/>
 </g>
 <!-- Node8 -->
 <g id="node8" class="node">
 <title>Node8</title>
 <g id="a_node8"><a xlink:title=" ">
-<polygon fill="white" stroke="#bfbfbf" points="110,-946.5 110,-1003.5 217,-1003.5 217,-946.5 110,-946.5"/>
-<text text-anchor="middle" x="163.5" y="-991.5" font-family="Helvetica,sans-Serif" font-size="10.00">Event::SlotHandler</text>
-<polyline fill="none" stroke="#bfbfbf" points="110,-984.5 217,-984.5 "/>
-<text text-anchor="middle" x="163.5" y="-972.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="#bfbfbf" points="110,-965.5 217,-965.5 "/>
-<text text-anchor="middle" x="163.5" y="-953.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polygon fill="white" stroke="#bfbfbf" points="205.84,-946.5 205.84,-1003.5 312.84,-1003.5 312.84,-946.5 205.84,-946.5"/>
+<text text-anchor="middle" x="259.34" y="-991.5" font-family="Helvetica,sans-Serif" font-size="10.00">Event::SlotHandler</text>
+<polyline fill="none" stroke="#bfbfbf" points="205.84,-984.5 312.84,-984.5 "/>
+<text text-anchor="middle" x="259.34" y="-972.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polyline fill="none" stroke="#bfbfbf" points="205.84,-965.5 312.84,-965.5 "/>
+<text text-anchor="middle" x="259.34" y="-953.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>
 </g>
 <!-- Node8&#45;&gt;Node7 -->
 <g id="edge7" class="edge">
 <title>Node8&#45;&gt;Node7</title>
-<path fill="none" stroke="midnightblue" d="M163.5,-936.25C163.5,-927.86 163.5,-918.49 163.5,-908.57"/>
-<polygon fill="none" stroke="midnightblue" points="160,-936.31 163.5,-946.31 167,-936.31 160,-936.31"/>
+<path fill="none" stroke="midnightblue" d="M259.34,-936.25C259.34,-927.86 259.34,-918.49 259.34,-908.57"/>
+<polygon fill="none" stroke="midnightblue" points="255.84,-936.31 259.34,-946.31 262.84,-936.31 255.84,-936.31"/>
 </g>
 <!-- Node9 -->
 <g id="node9" class="node">
 <title>Node9</title>
 <g id="a_node9"><a xlink:title=" ">
-<polygon fill="white" stroke="#bfbfbf" points="270,-730.5 270,-798.5 415,-798.5 415,-730.5 270,-730.5"/>
-<text text-anchor="start" x="278" y="-786.5" font-family="Helvetica,sans-Serif" font-size="10.00">std::enable_shared</text>
-<text text-anchor="middle" x="342.5" y="-775.5" font-family="Helvetica,sans-Serif" font-size="10.00">_from_this&lt; ModelBase &gt;</text>
-<polyline fill="none" stroke="#bfbfbf" points="270,-768.5 415,-768.5 "/>
-<text text-anchor="middle" x="342.5" y="-756.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="#bfbfbf" points="270,-749.5 415,-749.5 "/>
-<text text-anchor="middle" x="342.5" y="-737.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polygon fill="white" stroke="#bfbfbf" points="365.84,-730.5 365.84,-798.5 510.84,-798.5 510.84,-730.5 365.84,-730.5"/>
+<text text-anchor="start" x="373.84" y="-786.5" font-family="Helvetica,sans-Serif" font-size="10.00">std::enable_shared</text>
+<text text-anchor="middle" x="438.34" y="-775.5" font-family="Helvetica,sans-Serif" font-size="10.00">_from_this&lt; ModelBase &gt;</text>
+<polyline fill="none" stroke="#bfbfbf" points="365.84,-768.5 510.84,-768.5 "/>
+<text text-anchor="middle" x="438.34" y="-756.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polyline fill="none" stroke="#bfbfbf" points="365.84,-749.5 510.84,-749.5 "/>
+<text text-anchor="middle" x="438.34" y="-737.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>
 </g>
 <!-- Node9&#45;&gt;Node6 -->
 <g id="edge8" class="edge">
 <title>Node9&#45;&gt;Node6</title>
-<path fill="none" stroke="midnightblue" d="M327.38,-721.01C313.59,-682.28 293.14,-624.82 278.1,-582.58"/>
-<polygon fill="none" stroke="midnightblue" points="324.08,-722.19 330.73,-730.44 330.68,-719.84 324.08,-722.19"/>
+<path fill="none" stroke="midnightblue" d="M415.46,-721.25C399.5,-692.36 377.39,-653.41 356.34,-620 348.64,-607.77 340.04,-594.89 331.71,-582.74"/>
+<polygon fill="none" stroke="midnightblue" points="412.52,-723.18 420.41,-730.25 418.66,-719.8 412.52,-723.18"/>
 </g>
 <!-- Node10 -->
 <g id="node10" class="node">
 <title>Node10</title>
-<g id="a_node10"><a xlink:href="classModelExpression.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="351.5,-360 351.5,-417 451.5,-417 451.5,-360 351.5,-360"/>
-<text text-anchor="middle" x="401.5" y="-405" font-family="Helvetica,sans-Serif" font-size="10.00">ModelExpression</text>
-<polyline fill="none" stroke="black" points="351.5,-398 451.5,-398 "/>
-<text text-anchor="middle" x="401.5" y="-386" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="351.5,-379 451.5,-379 "/>
-<text text-anchor="middle" x="401.5" y="-367" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<g id="a_node10"><a xlink:title=" ">
+<polygon fill="white" stroke="#bfbfbf" points="385.34,-360 385.34,-417 485.34,-417 485.34,-360 385.34,-360"/>
+<text text-anchor="middle" x="435.34" y="-405" font-family="Helvetica,sans-Serif" font-size="10.00">ModelExpression</text>
+<polyline fill="none" stroke="#bfbfbf" points="385.34,-398 485.34,-398 "/>
+<text text-anchor="middle" x="435.34" y="-386" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polyline fill="none" stroke="#bfbfbf" points="385.34,-379 485.34,-379 "/>
+<text text-anchor="middle" x="435.34" y="-367" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>
 </g>
 <!-- Node10&#45;&gt;Node2 -->
 <g id="edge9" class="edge">
 <title>Node10&#45;&gt;Node2</title>
-<path fill="none" stroke="#404040" d="M391.22,-359.98C386.78,-348.07 381.3,-333.4 375.64,-318.25"/>
-<polygon fill="none" stroke="#404040" points="375.49,-317.84 369.64,-313.62 371.29,-306.6 377.14,-310.82 375.49,-317.84"/>
-<text text-anchor="middle" x="410.5" y="-328" font-family="Helvetica,sans-Serif" font-size="10.00"> #M_mexpr</text>
-</g>
-<!-- Node11 -->
-<g id="node11" class="node">
-<title>Node11</title>
-<g id="a_node11"><a xlink:title=" ">
-<polygon fill="white" stroke="#bfbfbf" points="559.5,-360 559.5,-417 683.5,-417 683.5,-360 559.5,-360"/>
-<text text-anchor="middle" x="621.5" y="-405" font-family="Helvetica,sans-Serif" font-size="10.00">std::set&lt; std::string &gt;</text>
-<polyline fill="none" stroke="#bfbfbf" points="559.5,-398 683.5,-398 "/>
-<text text-anchor="middle" x="621.5" y="-386" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="#bfbfbf" points="559.5,-379 683.5,-379 "/>
-<text text-anchor="middle" x="621.5" y="-367" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-</a>
-</g>
+<path fill="none" stroke="#404040" d="M425.07,-359.98C420.62,-348.07 415.14,-333.4 409.48,-318.25"/>
+<polygon fill="none" stroke="#404040" points="409.33,-317.84 403.48,-313.62 405.13,-306.6 410.98,-310.82 409.33,-317.84"/>
+<text text-anchor="middle" x="443.34" y="-328" font-family="Helvetica,sans-Serif" font-size="10.00"> #M_mexpr</text>
 </g>
 <!-- Node11&#45;&gt;Node2 -->
 <g id="edge10" class="edge">
 <title>Node11&#45;&gt;Node2</title>
-<path fill="none" stroke="#404040" d="M572.9,-359.98C535.17,-338.61 481.72,-308.34 435.81,-282.34"/>
-<polygon fill="none" stroke="#404040" points="435.67,-282.26 428.47,-282.78 425.22,-276.35 432.42,-275.82 435.67,-282.26"/>
-<text text-anchor="middle" x="556.5" y="-328" font-family="Helvetica,sans-Serif" font-size="10.00"> #M_markers</text>
+<path fill="none" stroke="#404040" d="M178.97,-359.98C207.82,-340.91 247.4,-314.74 283.54,-290.85"/>
+<polygon fill="none" stroke="#404040" points="283.62,-290.8 286.42,-284.15 293.63,-284.18 290.83,-290.82 283.62,-290.8"/>
+<text text-anchor="middle" x="262.34" y="-328" font-family="Helvetica,sans-Serif" font-size="10.00"> #M_markers</text>
 </g>
 <!-- Node12 -->
 <g id="node12" class="node">
 <title>Node12</title>
-<g id="a_node12"><a xlink:title="STL class.">
-<polygon fill="white" stroke="#bfbfbf" points="496,-498 496,-555 561,-555 561,-498 496,-498"/>
-<text text-anchor="middle" x="528.5" y="-543" font-family="Helvetica,sans-Serif" font-size="10.00">std::string</text>
-<polyline fill="none" stroke="#bfbfbf" points="496,-536 561,-536 "/>
-<text text-anchor="middle" x="528.5" y="-524" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="#bfbfbf" points="496,-517 561,-517 "/>
-<text text-anchor="middle" x="528.5" y="-505" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<g id="a_node12"><a xlink:title=" ">
+<polygon fill="white" stroke="#bfbfbf" points="503.84,-360 503.84,-417 598.84,-417 598.84,-360 503.84,-360"/>
+<text text-anchor="middle" x="551.34" y="-405" font-family="Helvetica,sans-Serif" font-size="10.00">ComponentType</text>
+<polyline fill="none" stroke="#bfbfbf" points="503.84,-398 598.84,-398 "/>
+<text text-anchor="middle" x="551.34" y="-386" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polyline fill="none" stroke="#bfbfbf" points="503.84,-379 598.84,-379 "/>
+<text text-anchor="middle" x="551.34" y="-367" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>
 </g>
 <!-- Node12&#45;&gt;Node2 -->
-<g id="edge13" class="edge">
+<g id="edge12" class="edge">
 <title>Node12&#45;&gt;Node2</title>
-<path fill="none" stroke="#404040" d="M518.92,-498C501.85,-449.94 465.85,-353.11 443.5,-325 440.2,-320.85 436.72,-316.71 433.12,-312.61"/>
-<polygon fill="none" stroke="#404040" points="433.12,-312.6 426.12,-310.83 425.07,-303.7 432.06,-305.47 433.12,-312.6"/>
-<text text-anchor="middle" x="517.5" y="-386" font-family="Helvetica,sans-Serif" font-size="10.00"> #M_name</text>
-</g>
-<!-- Node12&#45;&gt;Node11 -->
-<g id="edge11" class="edge">
-<title>Node12&#45;&gt;Node11</title>
-<path fill="none" stroke="#404040" d="M547.32,-497.98C561.16,-477.74 580.14,-449.99 595.43,-427.62"/>
-<polygon fill="none" stroke="#404040" points="595.62,-427.35 595.7,-420.14 602.39,-417.45 602.3,-424.66 595.62,-427.35"/>
-<text text-anchor="middle" x="602.5" y="-444" font-family="Helvetica,sans-Serif" font-size="10.00"> +keys</text>
+<path fill="none" stroke="#404040" d="M520.86,-359.98C505.98,-346.55 487.21,-329.59 468.16,-312.4"/>
+<polygon fill="none" stroke="#404040" points="468.01,-312.26 460.88,-311.21 459.1,-304.22 466.24,-305.27 468.01,-312.26"/>
+<text text-anchor="middle" x="515.84" y="-328" font-family="Helvetica,sans-Serif" font-size="10.00"> #M_comp</text>
 </g>
 <!-- Node13 -->
 <g id="node13" class="node">
 <title>Node13</title>
-<g id="a_node13"><a xlink:title="STL class.">
-<polygon fill="white" stroke="#bfbfbf" points="476.5,-730.5 476.5,-798.5 580.5,-798.5 580.5,-730.5 476.5,-730.5"/>
-<text text-anchor="start" x="484.5" y="-786.5" font-family="Helvetica,sans-Serif" font-size="10.00">std::basic_string&lt;</text>
-<text text-anchor="middle" x="528.5" y="-775.5" font-family="Helvetica,sans-Serif" font-size="10.00"> char &gt;</text>
-<polyline fill="none" stroke="#bfbfbf" points="476.5,-768.5 580.5,-768.5 "/>
-<text text-anchor="middle" x="528.5" y="-756.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="#bfbfbf" points="476.5,-749.5 580.5,-749.5 "/>
-<text text-anchor="middle" x="528.5" y="-737.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<g id="a_node13"><a xlink:title=" ">
+<polygon fill="white" stroke="#bfbfbf" points="616.84,-360 616.84,-417 669.84,-417 669.84,-360 616.84,-360"/>
+<text text-anchor="middle" x="643.34" y="-405" font-family="Helvetica,sans-Serif" font-size="10.00">Method</text>
+<polyline fill="none" stroke="#bfbfbf" points="616.84,-398 669.84,-398 "/>
+<text text-anchor="middle" x="643.34" y="-386" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polyline fill="none" stroke="#bfbfbf" points="616.84,-379 669.84,-379 "/>
+<text text-anchor="middle" x="643.34" y="-367" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>
 </g>
-<!-- Node13&#45;&gt;Node12 -->
-<g id="edge12" class="edge">
-<title>Node13&#45;&gt;Node12</title>
-<path fill="none" stroke="midnightblue" d="M528.5,-720.33C528.5,-672.23 528.5,-595.89 528.5,-555.19"/>
-<polygon fill="none" stroke="midnightblue" points="525,-720.44 528.5,-730.44 532,-720.44 525,-720.44"/>
+<!-- Node13&#45;&gt;Node2 -->
+<g id="edge13" class="edge">
+<title>Node13&#45;&gt;Node2</title>
+<path fill="none" stroke="#404040" d="M616.45,-360.42C613.79,-358.15 611.07,-355.98 608.34,-354 565.38,-322.8 513.64,-294.29 469.93,-272.44"/>
+<polygon fill="none" stroke="#404040" points="469.76,-272.35 462.61,-273.28 459.01,-267.03 466.16,-266.11 469.76,-272.35"/>
+<text text-anchor="middle" x="610.34" y="-328" font-family="Helvetica,sans-Serif" font-size="10.00"> #M_method</text>
 </g>
 </g>
 </svg>

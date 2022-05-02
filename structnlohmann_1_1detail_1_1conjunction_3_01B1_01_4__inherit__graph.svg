@@ -27,11 +27,11 @@
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:href="classB1.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="66,-105.5 66,-162.5 95,-162.5 95,-105.5 66,-105.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="66,-105.5 66,-162.5 95,-162.5 95,-105.5 66,-105.5"/>
 <text text-anchor="middle" x="80.5" y="-150.5" font-family="Helvetica,sans-Serif" font-size="10.00">B1</text>
-<polyline fill="none" stroke="black" points="66,-143.5 95,-143.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="66,-143.5 95,-143.5 "/>
 <text text-anchor="middle" x="80.5" y="-131.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="66,-124.5 95,-124.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="66,-124.5 95,-124.5 "/>
 <text text-anchor="middle" x="80.5" y="-112.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>

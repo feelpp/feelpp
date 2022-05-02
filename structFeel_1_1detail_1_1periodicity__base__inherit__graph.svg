@@ -59,17 +59,17 @@
 <polyline fill="none" stroke="black" points="126,-151.5 236,-151.5 "/>
 <text text-anchor="start" x="134" y="-139.5" font-family="Helvetica,sans-Serif" font-size="10.00">* node_type</text>
 <text text-anchor="start" x="134" y="-128.5" font-family="Helvetica,sans-Serif" font-size="10.00">* is_periodic</text>
-<text text-anchor="start" x="134" y="-117.5" font-family="Helvetica,sans-Serif" font-size="10.00">* Periodic()</text>
-<text text-anchor="start" x="134" y="-106.5" font-family="Helvetica,sans-Serif" font-size="10.00">* Periodic()</text>
-<text text-anchor="start" x="134" y="-95.5" font-family="Helvetica,sans-Serif" font-size="10.00">* Periodic()</text>
-<text text-anchor="start" x="134" y="-84.5" font-family="Helvetica,sans-Serif" font-size="10.00">* ~Periodic()</text>
-<text text-anchor="start" x="134" y="-73.5" font-family="Helvetica,sans-Serif" font-size="10.00">* translation()</text>
-<text text-anchor="start" x="134" y="-62.5" font-family="Helvetica,sans-Serif" font-size="10.00">* isPeriodic()</text>
-<text text-anchor="start" x="134" y="-51.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_tag1</text>
-<text text-anchor="start" x="134" y="-40.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_tag2</text>
-<text text-anchor="start" x="134" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_trans</text>
-<text text-anchor="start" x="134" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">* tag1()</text>
-<text text-anchor="start" x="134" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">* tag2()</text>
+<text text-anchor="start" x="134" y="-117.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_tag1</text>
+<text text-anchor="start" x="134" y="-106.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_tag2</text>
+<text text-anchor="start" x="134" y="-95.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_trans</text>
+<text text-anchor="start" x="134" y="-84.5" font-family="Helvetica,sans-Serif" font-size="10.00">* tag1()</text>
+<text text-anchor="start" x="134" y="-73.5" font-family="Helvetica,sans-Serif" font-size="10.00">* tag2()</text>
+<text text-anchor="start" x="134" y="-62.5" font-family="Helvetica,sans-Serif" font-size="10.00">* Periodic()</text>
+<text text-anchor="start" x="134" y="-51.5" font-family="Helvetica,sans-Serif" font-size="10.00">* Periodic()</text>
+<text text-anchor="start" x="134" y="-40.5" font-family="Helvetica,sans-Serif" font-size="10.00">* Periodic()</text>
+<text text-anchor="start" x="134" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">* ~Periodic()</text>
+<text text-anchor="start" x="134" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">* translation()</text>
+<text text-anchor="start" x="134" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">* isPeriodic()</text>
 </a>
 </g>
 </g>
@@ -83,12 +83,12 @@
 <g id="node4" class="node">
 <title>Node4</title>
 <g id="a_node4"><a xlink:href="structFeel_1_1Periodicity.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="254.5,-33.5 254.5,-156.5 373.5,-156.5 373.5,-33.5 254.5,-33.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="254.5,-33.5 254.5,-156.5 373.5,-156.5 373.5,-33.5 254.5,-33.5"/>
 <text text-anchor="start" x="262.5" y="-144.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::Periodicity&lt;</text>
 <text text-anchor="middle" x="314" y="-133.5" font-family="Helvetica,sans-Serif" font-size="10.00"> A0, A1, A2, A3, A4 &gt;</text>
-<polyline fill="none" stroke="black" points="254.5,-126.5 373.5,-126.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="254.5,-126.5 373.5,-126.5 "/>
 <text text-anchor="middle" x="314" y="-114.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="254.5,-107.5 373.5,-107.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="254.5,-107.5 373.5,-107.5 "/>
 <text text-anchor="start" x="262.5" y="-95.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ Periodicity()</text>
 <text text-anchor="start" x="262.5" y="-84.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ Periodicity()</text>
 <text text-anchor="start" x="262.5" y="-73.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ Periodicity()</text>

@@ -1,6 +1,3 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classFeel_1_1Operator.html" title="Operator between function spaces." alt="" coords="5,43,228,84"/>
-<area shape="rect" id="node2" href="$classFeel_1_1OperatorLinear.html" title="Linear Operator between function spaces, represented by a matrix." alt="" coords="276,43,536,84"/>
-<area shape="rect" id="node3" href="$classFeel_1_1OperatorLinearComposite.html" title=" " alt="" coords="584,5,844,47"/>
-<area shape="rect" id="node4" href="$classFeel_1_1OperatorLinearFree.html" title="Linear Operator Free between function spaces, represented by a matrix but this matrix is not automati..." alt="" coords="589,71,839,127"/>
+<area shape="rect" id="node1" href="$structFeel_1_1OseenDefaults.html" title="Oseen Default Data." alt="" coords="5,5,159,32"/>
 </map>

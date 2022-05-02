@@ -48,12 +48,12 @@
 <g id="node3" class="node">
 <title>Node3</title>
 <g id="a_node3"><a xlink:title=" ">
-<polygon fill="white" stroke="#bfbfbf" points="74,-127.5 74,-195.5 256,-195.5 256,-127.5 74,-127.5"/>
+<polygon fill="white" stroke="black" points="74,-127.5 74,-195.5 256,-195.5 256,-127.5 74,-127.5"/>
 <text text-anchor="start" x="82" y="-183.5" font-family="Helvetica,sans-Serif" font-size="10.00">std::shared_ptr&lt; SpaceComposite</text>
 <text text-anchor="middle" x="165" y="-172.5" font-family="Helvetica,sans-Serif" font-size="10.00">Type &gt;</text>
-<polyline fill="none" stroke="#bfbfbf" points="74,-165.5 256,-165.5 "/>
+<polyline fill="none" stroke="black" points="74,-165.5 256,-165.5 "/>
 <text text-anchor="middle" x="165" y="-153.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="#bfbfbf" points="74,-146.5 256,-146.5 "/>
+<polyline fill="none" stroke="black" points="74,-146.5 256,-146.5 "/>
 <text text-anchor="start" x="82" y="-134.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ operator&#45;&gt;()</text>
 </a>
 </g>
@@ -89,11 +89,11 @@
 <g id="node5" class="node">
 <title>Node5</title>
 <g id="a_node5"><a xlink:title=" ">
-<polygon fill="white" stroke="#bfbfbf" points="274,-133 274,-190 398,-190 398,-133 274,-133"/>
+<polygon fill="white" stroke="black" points="274,-133 274,-190 398,-190 398,-133 274,-133"/>
 <text text-anchor="middle" x="336" y="-178" font-family="Helvetica,sans-Serif" font-size="10.00">std::vector&lt; double &gt;</text>
-<polyline fill="none" stroke="#bfbfbf" points="274,-171 398,-171 "/>
+<polyline fill="none" stroke="black" points="274,-171 398,-171 "/>
 <text text-anchor="middle" x="336" y="-159" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="#bfbfbf" points="274,-152 398,-152 "/>
+<polyline fill="none" stroke="black" points="274,-152 398,-152 "/>
 <text text-anchor="middle" x="336" y="-140" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>
@@ -108,12 +108,12 @@
 <!-- Node6 -->
 <g id="node6" class="node">
 <title>Node6</title>
-<g id="a_node6"><a xlink:href="classdouble.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="311,-243.5 311,-300.5 361,-300.5 361,-243.5 311,-243.5"/>
+<g id="a_node6"><a xlink:title=" ">
+<polygon fill="white" stroke="#bfbfbf" points="311,-243.5 311,-300.5 361,-300.5 361,-243.5 311,-243.5"/>
 <text text-anchor="middle" x="336" y="-288.5" font-family="Helvetica,sans-Serif" font-size="10.00">double</text>
-<polyline fill="none" stroke="black" points="311,-281.5 361,-281.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="311,-281.5 361,-281.5 "/>
 <text text-anchor="middle" x="336" y="-269.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="311,-262.5 361,-262.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="311,-262.5 361,-262.5 "/>
 <text text-anchor="middle" x="336" y="-250.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>

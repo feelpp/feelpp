@@ -46,7 +46,7 @@ if (edges && edges.length) {
         </defs>
 
 <script type="text/javascript">
-var viewWidth = 904;
+var viewWidth = 938;
 var viewHeight = 1537;
 var sectionId = 'dynsection-0';
 </script>
@@ -54,97 +54,97 @@ var sectionId = 'dynsection-0';
 <svg id="graph" class="graph">
 <g id="viewport">
 <title>nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-1533 899.5,-1533 899.5,4 -4,4"/>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-1533 933.5,-1533 933.5,4 -4,4"/>
 <!-- Node1 -->
 <g id="node1" class="node">
 <title>Node1</title>
 <g id="a_node1"><a xlink:title="a class to store JSON values">
-<polygon fill="#bfbfbf" stroke="black" points="167,-0.5 167,-937.5 373,-937.5 373,-0.5 167,-0.5"/>
-<text text-anchor="start" x="175" y="-925.5" font-family="Helvetica,sans-Serif" font-size="10.00">nlohmann::basic_json</text>
-<text text-anchor="start" x="175" y="-914.5" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; ObjectType, ArrayType,</text>
-<text text-anchor="start" x="175" y="-903.5" font-family="Helvetica,sans-Serif" font-size="10.00"> StringType, BooleanType,</text>
-<text text-anchor="start" x="175" y="-892.5" font-family="Helvetica,sans-Serif" font-size="10.00"> NumberIntegerType, NumberUnsigned</text>
-<text text-anchor="start" x="175" y="-881.5" font-family="Helvetica,sans-Serif" font-size="10.00">Type, NumberFloatType, AllocatorType,</text>
-<text text-anchor="middle" x="270" y="-870.5" font-family="Helvetica,sans-Serif" font-size="10.00"> JSONSerializer, BinaryType &gt;</text>
-<polyline fill="none" stroke="black" points="167,-863.5 373,-863.5 "/>
-<text text-anchor="middle" x="270" y="-851.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="167,-844.5 373,-844.5 "/>
-<text text-anchor="start" x="175" y="-832.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ __attribute__()</text>
-<text text-anchor="start" x="175" y="-821.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ get_allocator()</text>
-<text text-anchor="start" x="175" y="-810.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ get_ref_impl()</text>
-<text text-anchor="start" x="175" y="-799.5" font-family="Helvetica,sans-Serif" font-size="10.00">* exception</text>
-<text text-anchor="start" x="175" y="-788.5" font-family="Helvetica,sans-Serif" font-size="10.00">* parse_error</text>
-<text text-anchor="start" x="175" y="-777.5" font-family="Helvetica,sans-Serif" font-size="10.00">* invalid_iterator</text>
-<text text-anchor="start" x="175" y="-766.5" font-family="Helvetica,sans-Serif" font-size="10.00">* type_error</text>
-<text text-anchor="start" x="175" y="-755.5" font-family="Helvetica,sans-Serif" font-size="10.00">* out_of_range</text>
-<text text-anchor="start" x="175" y="-744.5" font-family="Helvetica,sans-Serif" font-size="10.00">* other_error</text>
-<text text-anchor="start" x="175" y="-733.5" font-family="Helvetica,sans-Serif" font-size="10.00">* value_type</text>
-<text text-anchor="start" x="175" y="-722.5" font-family="Helvetica,sans-Serif" font-size="10.00">* reference</text>
-<text text-anchor="start" x="175" y="-711.5" font-family="Helvetica,sans-Serif" font-size="10.00">* const_reference</text>
-<text text-anchor="start" x="175" y="-700.5" font-family="Helvetica,sans-Serif" font-size="10.00">* difference_type</text>
-<text text-anchor="start" x="175" y="-689.5" font-family="Helvetica,sans-Serif" font-size="10.00">* size_type</text>
-<text text-anchor="start" x="175" y="-678.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 7 more...</text>
-<text text-anchor="start" x="175" y="-667.5" font-family="Helvetica,sans-Serif" font-size="10.00">* object_comparator_t</text>
-<text text-anchor="start" x="175" y="-656.5" font-family="Helvetica,sans-Serif" font-size="10.00">* object_t</text>
-<text text-anchor="start" x="175" y="-645.5" font-family="Helvetica,sans-Serif" font-size="10.00">* array_t</text>
-<text text-anchor="start" x="175" y="-634.5" font-family="Helvetica,sans-Serif" font-size="10.00">* string_t</text>
-<text text-anchor="start" x="175" y="-623.5" font-family="Helvetica,sans-Serif" font-size="10.00">* boolean_t</text>
-<text text-anchor="start" x="175" y="-612.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 4 more...</text>
-<text text-anchor="start" x="175" y="-601.5" font-family="Helvetica,sans-Serif" font-size="10.00">* swap</text>
-<text text-anchor="start" x="175" y="-590.5" font-family="Helvetica,sans-Serif" font-size="10.00">* clear()</text>
-<text text-anchor="start" x="175" y="-579.5" font-family="Helvetica,sans-Serif" font-size="10.00">* push_back()</text>
-<text text-anchor="start" x="175" y="-568.5" font-family="Helvetica,sans-Serif" font-size="10.00">* operator+=()</text>
-<text text-anchor="start" x="175" y="-557.5" font-family="Helvetica,sans-Serif" font-size="10.00">* push_back()</text>
-<text text-anchor="start" x="175" y="-546.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 22 more...</text>
-<text text-anchor="start" x="175" y="-535.5" font-family="Helvetica,sans-Serif" font-size="10.00">* operator==</text>
-<text text-anchor="start" x="175" y="-524.5" font-family="Helvetica,sans-Serif" font-size="10.00">* operator==</text>
-<text text-anchor="start" x="175" y="-513.5" font-family="Helvetica,sans-Serif" font-size="10.00">* operator==</text>
-<text text-anchor="start" x="175" y="-502.5" font-family="Helvetica,sans-Serif" font-size="10.00">* operator!=</text>
-<text text-anchor="start" x="175" y="-491.5" font-family="Helvetica,sans-Serif" font-size="10.00">* operator!=</text>
-<text text-anchor="start" x="175" y="-480.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 13 more...</text>
-<text text-anchor="start" x="175" y="-469.5" font-family="Helvetica,sans-Serif" font-size="10.00">* operator&lt;&lt;</text>
-<text text-anchor="start" x="175" y="-458.5" font-family="Helvetica,sans-Serif" font-size="10.00">* __attribute__()</text>
-<text text-anchor="start" x="175" y="-447.5" font-family="Helvetica,sans-Serif" font-size="10.00">* at()</text>
-<text text-anchor="start" x="175" y="-436.5" font-family="Helvetica,sans-Serif" font-size="10.00">* at()</text>
-<text text-anchor="start" x="175" y="-425.5" font-family="Helvetica,sans-Serif" font-size="10.00">* at()</text>
-<text text-anchor="start" x="175" y="-414.5" font-family="Helvetica,sans-Serif" font-size="10.00">* at()</text>
-<text text-anchor="start" x="175" y="-403.5" font-family="Helvetica,sans-Serif" font-size="10.00">* operator[]()</text>
-<text text-anchor="start" x="175" y="-392.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 17 more...</text>
-<text text-anchor="start" x="175" y="-381.5" font-family="Helvetica,sans-Serif" font-size="10.00">* __attribute__()</text>
-<text text-anchor="start" x="175" y="-370.5" font-family="Helvetica,sans-Serif" font-size="10.00">* __attribute__()</text>
-<text text-anchor="start" x="175" y="-359.5" font-family="Helvetica,sans-Serif" font-size="10.00">* __attribute__()</text>
-<text text-anchor="start" x="175" y="-348.5" font-family="Helvetica,sans-Serif" font-size="10.00">* to_cbor()</text>
-<text text-anchor="start" x="175" y="-337.5" font-family="Helvetica,sans-Serif" font-size="10.00">* to_cbor()</text>
-<text text-anchor="start" x="175" y="-326.5" font-family="Helvetica,sans-Serif" font-size="10.00">* to_cbor()</text>
-<text text-anchor="start" x="175" y="-315.5" font-family="Helvetica,sans-Serif" font-size="10.00">* to_msgpack()</text>
-<text text-anchor="start" x="175" y="-304.5" font-family="Helvetica,sans-Serif" font-size="10.00">* to_msgpack()</text>
-<text text-anchor="start" x="175" y="-293.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 8 more...</text>
-<text text-anchor="start" x="175" y="-282.5" font-family="Helvetica,sans-Serif" font-size="10.00">* get_impl()</text>
-<text text-anchor="start" x="175" y="-271.5" font-family="Helvetica,sans-Serif" font-size="10.00">* get_impl()</text>
-<text text-anchor="start" x="175" y="-260.5" font-family="Helvetica,sans-Serif" font-size="10.00">* get_impl()</text>
-<text text-anchor="start" x="175" y="-249.5" font-family="Helvetica,sans-Serif" font-size="10.00">* get_impl()</text>
-<text text-anchor="start" x="175" y="-238.5" font-family="Helvetica,sans-Serif" font-size="10.00">* get_impl()</text>
-<text text-anchor="start" x="175" y="-227.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 13 more...</text>
-<text text-anchor="start" x="175" y="-216.5" font-family="Helvetica,sans-Serif" font-size="10.00">* basic_json()</text>
-<text text-anchor="start" x="175" y="-205.5" font-family="Helvetica,sans-Serif" font-size="10.00">* basic_json()</text>
-<text text-anchor="start" x="175" y="-194.5" font-family="Helvetica,sans-Serif" font-size="10.00">* basic_json()</text>
-<text text-anchor="start" x="175" y="-183.5" font-family="Helvetica,sans-Serif" font-size="10.00">* basic_json()</text>
-<text text-anchor="start" x="175" y="-172.5" font-family="Helvetica,sans-Serif" font-size="10.00">* basic_json()</text>
-<text text-anchor="start" x="175" y="-161.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 5 more...</text>
-<text text-anchor="start" x="175" y="-150.5" font-family="Helvetica,sans-Serif" font-size="10.00">* find()</text>
-<text text-anchor="start" x="175" y="-139.5" font-family="Helvetica,sans-Serif" font-size="10.00">* find()</text>
-<text text-anchor="start" x="175" y="-128.5" font-family="Helvetica,sans-Serif" font-size="10.00">* count()</text>
-<text text-anchor="start" x="175" y="-117.5" font-family="Helvetica,sans-Serif" font-size="10.00">* contains()</text>
-<text text-anchor="start" x="175" y="-106.5" font-family="Helvetica,sans-Serif" font-size="10.00">* contains()</text>
-<text text-anchor="start" x="175" y="-95.5" font-family="Helvetica,sans-Serif" font-size="10.00">* begin()</text>
-<text text-anchor="start" x="175" y="-84.5" font-family="Helvetica,sans-Serif" font-size="10.00">* begin()</text>
-<text text-anchor="start" x="175" y="-73.5" font-family="Helvetica,sans-Serif" font-size="10.00">* cbegin()</text>
-<text text-anchor="start" x="175" y="-62.5" font-family="Helvetica,sans-Serif" font-size="10.00">* end()</text>
-<text text-anchor="start" x="175" y="-51.5" font-family="Helvetica,sans-Serif" font-size="10.00">* end()</text>
-<text text-anchor="start" x="175" y="-40.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 11 more...</text>
-<text text-anchor="start" x="175" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">* empty()</text>
-<text text-anchor="start" x="175" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">* size()</text>
-<text text-anchor="start" x="175" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">* max_size()</text>
+<polygon fill="#bfbfbf" stroke="black" points="142,-0.5 142,-937.5 348,-937.5 348,-0.5 142,-0.5"/>
+<text text-anchor="start" x="150" y="-925.5" font-family="Helvetica,sans-Serif" font-size="10.00">nlohmann::basic_json</text>
+<text text-anchor="start" x="150" y="-914.5" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; ObjectType, ArrayType,</text>
+<text text-anchor="start" x="150" y="-903.5" font-family="Helvetica,sans-Serif" font-size="10.00"> StringType, BooleanType,</text>
+<text text-anchor="start" x="150" y="-892.5" font-family="Helvetica,sans-Serif" font-size="10.00"> NumberIntegerType, NumberUnsigned</text>
+<text text-anchor="start" x="150" y="-881.5" font-family="Helvetica,sans-Serif" font-size="10.00">Type, NumberFloatType, AllocatorType,</text>
+<text text-anchor="middle" x="245" y="-870.5" font-family="Helvetica,sans-Serif" font-size="10.00"> JSONSerializer, BinaryType &gt;</text>
+<polyline fill="none" stroke="black" points="142,-863.5 348,-863.5 "/>
+<text text-anchor="middle" x="245" y="-851.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polyline fill="none" stroke="black" points="142,-844.5 348,-844.5 "/>
+<text text-anchor="start" x="150" y="-832.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ __attribute__()</text>
+<text text-anchor="start" x="150" y="-821.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ get_allocator()</text>
+<text text-anchor="start" x="150" y="-810.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ get_ref_impl()</text>
+<text text-anchor="start" x="150" y="-799.5" font-family="Helvetica,sans-Serif" font-size="10.00">* exception</text>
+<text text-anchor="start" x="150" y="-788.5" font-family="Helvetica,sans-Serif" font-size="10.00">* parse_error</text>
+<text text-anchor="start" x="150" y="-777.5" font-family="Helvetica,sans-Serif" font-size="10.00">* invalid_iterator</text>
+<text text-anchor="start" x="150" y="-766.5" font-family="Helvetica,sans-Serif" font-size="10.00">* type_error</text>
+<text text-anchor="start" x="150" y="-755.5" font-family="Helvetica,sans-Serif" font-size="10.00">* out_of_range</text>
+<text text-anchor="start" x="150" y="-744.5" font-family="Helvetica,sans-Serif" font-size="10.00">* other_error</text>
+<text text-anchor="start" x="150" y="-733.5" font-family="Helvetica,sans-Serif" font-size="10.00">* value_type</text>
+<text text-anchor="start" x="150" y="-722.5" font-family="Helvetica,sans-Serif" font-size="10.00">* reference</text>
+<text text-anchor="start" x="150" y="-711.5" font-family="Helvetica,sans-Serif" font-size="10.00">* const_reference</text>
+<text text-anchor="start" x="150" y="-700.5" font-family="Helvetica,sans-Serif" font-size="10.00">* difference_type</text>
+<text text-anchor="start" x="150" y="-689.5" font-family="Helvetica,sans-Serif" font-size="10.00">* size_type</text>
+<text text-anchor="start" x="150" y="-678.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 7 more...</text>
+<text text-anchor="start" x="150" y="-667.5" font-family="Helvetica,sans-Serif" font-size="10.00">* object_comparator_t</text>
+<text text-anchor="start" x="150" y="-656.5" font-family="Helvetica,sans-Serif" font-size="10.00">* object_t</text>
+<text text-anchor="start" x="150" y="-645.5" font-family="Helvetica,sans-Serif" font-size="10.00">* array_t</text>
+<text text-anchor="start" x="150" y="-634.5" font-family="Helvetica,sans-Serif" font-size="10.00">* string_t</text>
+<text text-anchor="start" x="150" y="-623.5" font-family="Helvetica,sans-Serif" font-size="10.00">* boolean_t</text>
+<text text-anchor="start" x="150" y="-612.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 4 more...</text>
+<text text-anchor="start" x="150" y="-601.5" font-family="Helvetica,sans-Serif" font-size="10.00">* swap</text>
+<text text-anchor="start" x="150" y="-590.5" font-family="Helvetica,sans-Serif" font-size="10.00">* clear()</text>
+<text text-anchor="start" x="150" y="-579.5" font-family="Helvetica,sans-Serif" font-size="10.00">* push_back()</text>
+<text text-anchor="start" x="150" y="-568.5" font-family="Helvetica,sans-Serif" font-size="10.00">* operator+=()</text>
+<text text-anchor="start" x="150" y="-557.5" font-family="Helvetica,sans-Serif" font-size="10.00">* push_back()</text>
+<text text-anchor="start" x="150" y="-546.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 22 more...</text>
+<text text-anchor="start" x="150" y="-535.5" font-family="Helvetica,sans-Serif" font-size="10.00">* operator==</text>
+<text text-anchor="start" x="150" y="-524.5" font-family="Helvetica,sans-Serif" font-size="10.00">* operator==</text>
+<text text-anchor="start" x="150" y="-513.5" font-family="Helvetica,sans-Serif" font-size="10.00">* operator==</text>
+<text text-anchor="start" x="150" y="-502.5" font-family="Helvetica,sans-Serif" font-size="10.00">* operator!=</text>
+<text text-anchor="start" x="150" y="-491.5" font-family="Helvetica,sans-Serif" font-size="10.00">* operator!=</text>
+<text text-anchor="start" x="150" y="-480.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 13 more...</text>
+<text text-anchor="start" x="150" y="-469.5" font-family="Helvetica,sans-Serif" font-size="10.00">* operator&lt;&lt;</text>
+<text text-anchor="start" x="150" y="-458.5" font-family="Helvetica,sans-Serif" font-size="10.00">* __attribute__()</text>
+<text text-anchor="start" x="150" y="-447.5" font-family="Helvetica,sans-Serif" font-size="10.00">* at()</text>
+<text text-anchor="start" x="150" y="-436.5" font-family="Helvetica,sans-Serif" font-size="10.00">* at()</text>
+<text text-anchor="start" x="150" y="-425.5" font-family="Helvetica,sans-Serif" font-size="10.00">* at()</text>
+<text text-anchor="start" x="150" y="-414.5" font-family="Helvetica,sans-Serif" font-size="10.00">* at()</text>
+<text text-anchor="start" x="150" y="-403.5" font-family="Helvetica,sans-Serif" font-size="10.00">* operator[]()</text>
+<text text-anchor="start" x="150" y="-392.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 17 more...</text>
+<text text-anchor="start" x="150" y="-381.5" font-family="Helvetica,sans-Serif" font-size="10.00">* __attribute__()</text>
+<text text-anchor="start" x="150" y="-370.5" font-family="Helvetica,sans-Serif" font-size="10.00">* __attribute__()</text>
+<text text-anchor="start" x="150" y="-359.5" font-family="Helvetica,sans-Serif" font-size="10.00">* __attribute__()</text>
+<text text-anchor="start" x="150" y="-348.5" font-family="Helvetica,sans-Serif" font-size="10.00">* to_cbor()</text>
+<text text-anchor="start" x="150" y="-337.5" font-family="Helvetica,sans-Serif" font-size="10.00">* to_cbor()</text>
+<text text-anchor="start" x="150" y="-326.5" font-family="Helvetica,sans-Serif" font-size="10.00">* to_cbor()</text>
+<text text-anchor="start" x="150" y="-315.5" font-family="Helvetica,sans-Serif" font-size="10.00">* to_msgpack()</text>
+<text text-anchor="start" x="150" y="-304.5" font-family="Helvetica,sans-Serif" font-size="10.00">* to_msgpack()</text>
+<text text-anchor="start" x="150" y="-293.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 8 more...</text>
+<text text-anchor="start" x="150" y="-282.5" font-family="Helvetica,sans-Serif" font-size="10.00">* get_impl()</text>
+<text text-anchor="start" x="150" y="-271.5" font-family="Helvetica,sans-Serif" font-size="10.00">* get_impl()</text>
+<text text-anchor="start" x="150" y="-260.5" font-family="Helvetica,sans-Serif" font-size="10.00">* get_impl()</text>
+<text text-anchor="start" x="150" y="-249.5" font-family="Helvetica,sans-Serif" font-size="10.00">* get_impl()</text>
+<text text-anchor="start" x="150" y="-238.5" font-family="Helvetica,sans-Serif" font-size="10.00">* get_impl()</text>
+<text text-anchor="start" x="150" y="-227.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 12 more...</text>
+<text text-anchor="start" x="150" y="-216.5" font-family="Helvetica,sans-Serif" font-size="10.00">* basic_json()</text>
+<text text-anchor="start" x="150" y="-205.5" font-family="Helvetica,sans-Serif" font-size="10.00">* basic_json()</text>
+<text text-anchor="start" x="150" y="-194.5" font-family="Helvetica,sans-Serif" font-size="10.00">* basic_json()</text>
+<text text-anchor="start" x="150" y="-183.5" font-family="Helvetica,sans-Serif" font-size="10.00">* basic_json()</text>
+<text text-anchor="start" x="150" y="-172.5" font-family="Helvetica,sans-Serif" font-size="10.00">* basic_json()</text>
+<text text-anchor="start" x="150" y="-161.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 5 more...</text>
+<text text-anchor="start" x="150" y="-150.5" font-family="Helvetica,sans-Serif" font-size="10.00">* find()</text>
+<text text-anchor="start" x="150" y="-139.5" font-family="Helvetica,sans-Serif" font-size="10.00">* find()</text>
+<text text-anchor="start" x="150" y="-128.5" font-family="Helvetica,sans-Serif" font-size="10.00">* count()</text>
+<text text-anchor="start" x="150" y="-117.5" font-family="Helvetica,sans-Serif" font-size="10.00">* contains()</text>
+<text text-anchor="start" x="150" y="-106.5" font-family="Helvetica,sans-Serif" font-size="10.00">* contains()</text>
+<text text-anchor="start" x="150" y="-95.5" font-family="Helvetica,sans-Serif" font-size="10.00">* begin()</text>
+<text text-anchor="start" x="150" y="-84.5" font-family="Helvetica,sans-Serif" font-size="10.00">* begin()</text>
+<text text-anchor="start" x="150" y="-73.5" font-family="Helvetica,sans-Serif" font-size="10.00">* cbegin()</text>
+<text text-anchor="start" x="150" y="-62.5" font-family="Helvetica,sans-Serif" font-size="10.00">* end()</text>
+<text text-anchor="start" x="150" y="-51.5" font-family="Helvetica,sans-Serif" font-size="10.00">* end()</text>
+<text text-anchor="start" x="150" y="-40.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 11 more...</text>
+<text text-anchor="start" x="150" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">* empty()</text>
+<text text-anchor="start" x="150" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">* size()</text>
+<text text-anchor="start" x="150" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">* max_size()</text>
 </a>
 </g>
 </g>
@@ -152,286 +152,287 @@ var sectionId = 'dynsection-0';
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:title=" ">
-<polygon fill="white" stroke="#bfbfbf" points="50.5,-1095.5 50.5,-1152.5 181.5,-1152.5 181.5,-1095.5 50.5,-1095.5"/>
-<text text-anchor="middle" x="116" y="-1140.5" font-family="Helvetica,sans-Serif" font-size="10.00">const parser_callback_t</text>
-<polyline fill="none" stroke="#bfbfbf" points="50.5,-1133.5 181.5,-1133.5 "/>
-<text text-anchor="middle" x="116" y="-1121.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="#bfbfbf" points="50.5,-1114.5 181.5,-1114.5 "/>
-<text text-anchor="middle" x="116" y="-1102.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polygon fill="white" stroke="#bfbfbf" points="0,-1090 0,-1158 110,-1158 110,-1090 0,-1090"/>
+<text text-anchor="start" x="8" y="-1146" font-family="Helvetica,sans-Serif" font-size="10.00">const char *default</text>
+<text text-anchor="middle" x="55" y="-1135" font-family="Helvetica,sans-Serif" font-size="10.00">_value</text>
+<polyline fill="none" stroke="#bfbfbf" points="0,-1128 110,-1128 "/>
+<text text-anchor="middle" x="55" y="-1116" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polyline fill="none" stroke="#bfbfbf" points="0,-1109 110,-1109 "/>
+<text text-anchor="middle" x="55" y="-1097" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>
 </g>
 <!-- Node2&#45;&gt;Node1 -->
 <g id="edge1" class="edge">
 <title>Node2&#45;&gt;Node1</title>
-<path fill="none" stroke="#404040" d="M122.52,-1095.36C130.84,-1060.09 146.31,-994.48 164.21,-918.59"/>
-<polygon fill="none" stroke="#404040" points="164.23,-918.5 161.71,-911.74 166.98,-906.82 169.5,-913.58 164.23,-918.5"/>
-<text text-anchor="middle" x="165.5" y="-986.5" font-family="Helvetica,sans-Serif" font-size="10.00"> +cb</text>
+<path fill="none" stroke="#404040" d="M64.68,-1089.72C79.17,-1039.93 108.06,-940.64 138.55,-835.87"/>
+<polygon fill="none" stroke="#404040" points="138.63,-835.59 136.46,-828.71 141.98,-824.06 144.14,-830.94 138.63,-835.59"/>
+<text text-anchor="middle" x="120" y="-986.5" font-family="Helvetica,sans-Serif" font-size="10.00"> +const</text>
 </g>
 <!-- Node3 -->
 <g id="node3" class="node">
 <title>Node3</title>
 <g id="a_node3"><a xlink:title=" ">
-<polygon fill="white" stroke="#bfbfbf" points="200,-1095.5 200,-1152.5 238,-1152.5 238,-1095.5 200,-1095.5"/>
-<text text-anchor="middle" x="219" y="-1140.5" font-family="Helvetica,sans-Serif" font-size="10.00">char</text>
-<polyline fill="none" stroke="#bfbfbf" points="200,-1133.5 238,-1133.5 "/>
-<text text-anchor="middle" x="219" y="-1121.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="#bfbfbf" points="200,-1114.5 238,-1114.5 "/>
-<text text-anchor="middle" x="219" y="-1102.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polygon fill="white" stroke="#bfbfbf" points="128.5,-1095.5 128.5,-1152.5 259.5,-1152.5 259.5,-1095.5 128.5,-1095.5"/>
+<text text-anchor="middle" x="194" y="-1140.5" font-family="Helvetica,sans-Serif" font-size="10.00">const parser_callback_t</text>
+<polyline fill="none" stroke="#bfbfbf" points="128.5,-1133.5 259.5,-1133.5 "/>
+<text text-anchor="middle" x="194" y="-1121.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polyline fill="none" stroke="#bfbfbf" points="128.5,-1114.5 259.5,-1114.5 "/>
+<text text-anchor="middle" x="194" y="-1102.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>
 </g>
 <!-- Node3&#45;&gt;Node1 -->
 <g id="edge2" class="edge">
 <title>Node3&#45;&gt;Node1</title>
-<path fill="none" stroke="#404040" d="M218.35,-1095.49C217.76,-1062.37 217.34,-1005.07 220,-956 220.11,-953.93 220.23,-951.85 220.35,-949.76"/>
-<polygon fill="none" stroke="#404040" points="220.35,-949.76 216.7,-943.54 221.04,-937.78 224.69,-944 220.35,-949.76"/>
-<text text-anchor="middle" x="259.5" y="-986.5" font-family="Helvetica,sans-Serif" font-size="10.00"> +default_value</text>
+<path fill="none" stroke="#404040" d="M196.16,-1095.36C198.53,-1065.03 202.65,-1012.26 207.53,-949.81"/>
+<polygon fill="none" stroke="#404040" points="207.54,-949.58 204.02,-943.28 208.48,-937.61 212,-943.91 207.54,-949.58"/>
+<text text-anchor="middle" x="218.5" y="-986.5" font-family="Helvetica,sans-Serif" font-size="10.00"> +cb</text>
 </g>
 <!-- Node4 -->
 <g id="node4" class="node">
 <title>Node4</title>
 <g id="a_node4"><a xlink:href="classbool.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="302,-1095.5 302,-1152.5 340,-1152.5 340,-1095.5 302,-1095.5"/>
-<text text-anchor="middle" x="321" y="-1140.5" font-family="Helvetica,sans-Serif" font-size="10.00">bool</text>
-<polyline fill="none" stroke="black" points="302,-1133.5 340,-1133.5 "/>
-<text text-anchor="middle" x="321" y="-1121.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="302,-1114.5 340,-1114.5 "/>
-<text text-anchor="middle" x="321" y="-1102.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polygon fill="white" stroke="#bfbfbf" points="278,-1095.5 278,-1152.5 316,-1152.5 316,-1095.5 278,-1095.5"/>
+<text text-anchor="middle" x="297" y="-1140.5" font-family="Helvetica,sans-Serif" font-size="10.00">bool</text>
+<polyline fill="none" stroke="#bfbfbf" points="278,-1133.5 316,-1133.5 "/>
+<text text-anchor="middle" x="297" y="-1121.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polyline fill="none" stroke="#bfbfbf" points="278,-1114.5 316,-1114.5 "/>
+<text text-anchor="middle" x="297" y="-1102.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>
 </g>
 <!-- Node4&#45;&gt;Node1 -->
 <g id="edge3" class="edge">
 <title>Node4&#45;&gt;Node1</title>
-<path fill="none" stroke="#404040" d="M318.84,-1095.36C316.47,-1065.03 312.35,-1012.26 307.47,-949.81"/>
-<polygon fill="none" stroke="#404040" points="307.46,-949.58 303,-943.91 306.52,-937.61 310.98,-943.28 307.46,-949.58"/>
-<text text-anchor="middle" x="360.5" y="-1014" font-family="Helvetica,sans-Serif" font-size="10.00"> +allow_exceptions</text>
-<text text-anchor="middle" x="360.5" y="-1003" font-family="Helvetica,sans-Serif" font-size="10.00">+strict</text>
-<text text-anchor="middle" x="360.5" y="-992" font-family="Helvetica,sans-Serif" font-size="10.00">+sax</text>
-<text text-anchor="middle" x="360.5" y="-981" font-family="Helvetica,sans-Serif" font-size="10.00">+ignore_comments</text>
-<text text-anchor="middle" x="360.5" y="-970" font-family="Helvetica,sans-Serif" font-size="10.00">+format</text>
-<text text-anchor="middle" x="360.5" y="-959" font-family="Helvetica,sans-Serif" font-size="10.00">+last</text>
+<path fill="none" stroke="#404040" d="M294.8,-1095.36C292.38,-1065.03 288.18,-1012.26 283.21,-949.81"/>
+<polygon fill="none" stroke="#404040" points="283.19,-949.58 278.73,-943.91 282.24,-937.61 286.7,-943.28 283.19,-949.58"/>
+<text text-anchor="middle" x="337.5" y="-1014" font-family="Helvetica,sans-Serif" font-size="10.00"> +allow_exceptions</text>
+<text text-anchor="middle" x="337.5" y="-1003" font-family="Helvetica,sans-Serif" font-size="10.00">+format</text>
+<text text-anchor="middle" x="337.5" y="-992" font-family="Helvetica,sans-Serif" font-size="10.00">+ignore_comments</text>
+<text text-anchor="middle" x="337.5" y="-981" font-family="Helvetica,sans-Serif" font-size="10.00">+last</text>
+<text text-anchor="middle" x="337.5" y="-970" font-family="Helvetica,sans-Serif" font-size="10.00">+sax</text>
+<text text-anchor="middle" x="337.5" y="-959" font-family="Helvetica,sans-Serif" font-size="10.00">+strict</text>
 </g>
 <!-- Node5 -->
 <g id="node5" class="node">
 <title>Node5</title>
-<g id="a_node5"><a xlink:title="a JSON value">
-<polygon fill="white" stroke="#bfbfbf" points="358.5,-1040.5 358.5,-1207.5 577.5,-1207.5 577.5,-1040.5 358.5,-1040.5"/>
-<text text-anchor="start" x="366.5" y="-1195.5" font-family="Helvetica,sans-Serif" font-size="10.00">nlohmann::basic_json</text>
-<text text-anchor="start" x="366.5" y="-1184.5" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; ObjectType, ArrayType,</text>
-<text text-anchor="start" x="366.5" y="-1173.5" font-family="Helvetica,sans-Serif" font-size="10.00"> StringType, BooleanType,</text>
-<text text-anchor="start" x="366.5" y="-1162.5" font-family="Helvetica,sans-Serif" font-size="10.00"> NumberIntegerType, NumberUnsigned</text>
-<text text-anchor="start" x="366.5" y="-1151.5" font-family="Helvetica,sans-Serif" font-size="10.00">Type, NumberFloatType, AllocatorType,</text>
-<text text-anchor="middle" x="468" y="-1140.5" font-family="Helvetica,sans-Serif" font-size="10.00"> JSONSerializer, BinaryType &gt;::json_value</text>
-<polyline fill="none" stroke="#bfbfbf" points="358.5,-1133.5 577.5,-1133.5 "/>
-<text text-anchor="middle" x="468" y="-1121.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="#bfbfbf" points="358.5,-1114.5 577.5,-1114.5 "/>
-<text text-anchor="start" x="366.5" y="-1102.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ destroy()</text>
-<text text-anchor="start" x="366.5" y="-1091.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ json_value()</text>
-<text text-anchor="start" x="366.5" y="-1080.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ json_value()</text>
-<text text-anchor="start" x="366.5" y="-1069.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ json_value()</text>
-<text text-anchor="start" x="366.5" y="-1058.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ json_value()</text>
-<text text-anchor="start" x="366.5" y="-1047.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 12 more...</text>
+<g id="a_node5"><a xlink:title=" ">
+<polygon fill="white" stroke="black" points="334.5,-1040.5 334.5,-1207.5 553.5,-1207.5 553.5,-1040.5 334.5,-1040.5"/>
+<text text-anchor="start" x="342.5" y="-1195.5" font-family="Helvetica,sans-Serif" font-size="10.00">nlohmann::basic_json</text>
+<text text-anchor="start" x="342.5" y="-1184.5" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; ObjectType, ArrayType,</text>
+<text text-anchor="start" x="342.5" y="-1173.5" font-family="Helvetica,sans-Serif" font-size="10.00"> StringType, BooleanType,</text>
+<text text-anchor="start" x="342.5" y="-1162.5" font-family="Helvetica,sans-Serif" font-size="10.00"> NumberIntegerType, NumberUnsigned</text>
+<text text-anchor="start" x="342.5" y="-1151.5" font-family="Helvetica,sans-Serif" font-size="10.00">Type, NumberFloatType, AllocatorType,</text>
+<text text-anchor="middle" x="444" y="-1140.5" font-family="Helvetica,sans-Serif" font-size="10.00"> JSONSerializer, BinaryType &gt;::json_value</text>
+<polyline fill="none" stroke="black" points="334.5,-1133.5 553.5,-1133.5 "/>
+<text text-anchor="middle" x="444" y="-1121.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polyline fill="none" stroke="black" points="334.5,-1114.5 553.5,-1114.5 "/>
+<text text-anchor="start" x="342.5" y="-1102.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ destroy()</text>
+<text text-anchor="start" x="342.5" y="-1091.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ json_value()</text>
+<text text-anchor="start" x="342.5" y="-1080.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ json_value()</text>
+<text text-anchor="start" x="342.5" y="-1069.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ json_value()</text>
+<text text-anchor="start" x="342.5" y="-1058.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ json_value()</text>
+<text text-anchor="start" x="342.5" y="-1047.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 12 more...</text>
 </a>
 </g>
 </g>
 <!-- Node5&#45;&gt;Node1 -->
 <g id="edge4" class="edge">
 <title>Node5&#45;&gt;Node1</title>
-<path fill="none" stroke="#404040" d="M442.92,-1040.3C425.65,-983.35 401.42,-903.4 376.54,-821.36"/>
-<polygon fill="none" stroke="#404040" points="376.5,-821.25 370.94,-816.67 373.02,-809.77 378.59,-814.35 376.5,-821.25"/>
-<text text-anchor="middle" x="461" y="-986.5" font-family="Helvetica,sans-Serif" font-size="10.00"> +m_value</text>
+<path fill="none" stroke="#404040" d="M418.8,-1040.3C401.34,-983.02 376.8,-902.48 351.64,-819.94"/>
+<polygon fill="none" stroke="#404040" points="351.59,-819.76 346.01,-815.19 348.09,-808.28 353.67,-812.85 351.59,-819.76"/>
+<text text-anchor="middle" x="438" y="-986.5" font-family="Helvetica,sans-Serif" font-size="10.00"> +m_value</text>
 </g>
 <!-- Node6 -->
 <g id="node6" class="node">
 <title>Node6</title>
 <g id="a_node6"><a xlink:title=" ">
-<polygon fill="white" stroke="#bfbfbf" points="0,-1316 0,-1373 64,-1373 64,-1316 0,-1316"/>
-<text text-anchor="middle" x="32" y="-1361" font-family="Helvetica,sans-Serif" font-size="10.00">object_t *</text>
-<polyline fill="none" stroke="#bfbfbf" points="0,-1354 64,-1354 "/>
-<text text-anchor="middle" x="32" y="-1342" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="#bfbfbf" points="0,-1335 64,-1335 "/>
-<text text-anchor="middle" x="32" y="-1323" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polygon fill="white" stroke="#bfbfbf" points="33,-1316 33,-1373 97,-1373 97,-1316 33,-1316"/>
+<text text-anchor="middle" x="65" y="-1361" font-family="Helvetica,sans-Serif" font-size="10.00">object_t *</text>
+<polyline fill="none" stroke="#bfbfbf" points="33,-1354 97,-1354 "/>
+<text text-anchor="middle" x="65" y="-1342" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polyline fill="none" stroke="#bfbfbf" points="33,-1335 97,-1335 "/>
+<text text-anchor="middle" x="65" y="-1323" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>
 </g>
 <!-- Node6&#45;&gt;Node5 -->
 <g id="edge5" class="edge">
 <title>Node6&#45;&gt;Node5</title>
-<path fill="none" stroke="#404040" d="M38.34,-1315.85C44.2,-1296.25 54.82,-1270.74 73,-1255 164.12,-1176.08 228.2,-1246.51 346.56,-1208.35"/>
-<polygon fill="none" stroke="#404040" points="346.85,-1208.25 351.21,-1202.5 358.19,-1204.31 353.84,-1210.05 346.85,-1208.25"/>
-<text text-anchor="middle" x="138" y="-1229" font-family="Helvetica,sans-Serif" font-size="10.00"> +object</text>
+<path fill="none" stroke="#404040" d="M72.49,-1315.97C78.83,-1296.94 89.55,-1272.07 106,-1255 172.45,-1186.05 227.49,-1238.7 322.67,-1208.28"/>
+<polygon fill="none" stroke="#404040" points="322.84,-1208.22 327.19,-1202.47 334.17,-1204.26 329.83,-1210.02 322.84,-1208.22"/>
+<text text-anchor="middle" x="164" y="-1229" font-family="Helvetica,sans-Serif" font-size="10.00"> +object</text>
 </g>
 <!-- Node7 -->
 <g id="node7" class="node">
 <title>Node7</title>
 <g id="a_node7"><a xlink:title=" ">
-<polygon fill="white" stroke="#bfbfbf" points="82.5,-1316 82.5,-1373 195.5,-1373 195.5,-1316 82.5,-1316"/>
-<text text-anchor="middle" x="139" y="-1361" font-family="Helvetica,sans-Serif" font-size="10.00">NumberIntegerType</text>
-<polyline fill="none" stroke="#bfbfbf" points="82.5,-1354 195.5,-1354 "/>
-<text text-anchor="middle" x="139" y="-1342" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="#bfbfbf" points="82.5,-1335 195.5,-1335 "/>
-<text text-anchor="middle" x="139" y="-1323" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polygon fill="white" stroke="#bfbfbf" points="115.5,-1316 115.5,-1373 174.5,-1373 174.5,-1316 115.5,-1316"/>
+<text text-anchor="middle" x="145" y="-1361" font-family="Helvetica,sans-Serif" font-size="10.00">array_t *</text>
+<polyline fill="none" stroke="#bfbfbf" points="115.5,-1354 174.5,-1354 "/>
+<text text-anchor="middle" x="145" y="-1342" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polyline fill="none" stroke="#bfbfbf" points="115.5,-1335 174.5,-1335 "/>
+<text text-anchor="middle" x="145" y="-1323" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>
 </g>
 <!-- Node7&#45;&gt;Node5 -->
 <g id="edge6" class="edge">
 <title>Node7&#45;&gt;Node5</title>
-<path fill="none" stroke="#404040" d="M152.17,-1315.88C167.3,-1287.64 195.03,-1245.27 233,-1226 276.34,-1204 297.58,-1224.23 347.08,-1208.09"/>
-<polygon fill="none" stroke="#404040" points="347.19,-1208.05 351.44,-1202.23 358.45,-1203.92 354.2,-1209.74 347.19,-1208.05"/>
-<text text-anchor="middle" x="277.5" y="-1229" font-family="Helvetica,sans-Serif" font-size="10.00"> +number_integer</text>
+<path fill="none" stroke="#404040" d="M151.55,-1315.72C157.31,-1296.57 167.42,-1271.66 184,-1255 228.05,-1210.74 260.94,-1232.27 323.2,-1208.24"/>
+<polygon fill="none" stroke="#404040" points="323.24,-1208.23 327.23,-1202.22 334.31,-1203.59 330.32,-1209.6 323.24,-1208.23"/>
+<text text-anchor="middle" x="255.5" y="-1229" font-family="Helvetica,sans-Serif" font-size="10.00"> +array</text>
 </g>
 <!-- Node8 -->
 <g id="node8" class="node">
 <title>Node8</title>
 <g id="a_node8"><a xlink:title=" ">
-<polygon fill="white" stroke="#bfbfbf" points="213.5,-1316 213.5,-1373 316.5,-1373 316.5,-1316 213.5,-1316"/>
-<text text-anchor="middle" x="265" y="-1361" font-family="Helvetica,sans-Serif" font-size="10.00">NumberFloatType</text>
-<polyline fill="none" stroke="#bfbfbf" points="213.5,-1354 316.5,-1354 "/>
-<text text-anchor="middle" x="265" y="-1342" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="#bfbfbf" points="213.5,-1335 316.5,-1335 "/>
-<text text-anchor="middle" x="265" y="-1323" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polygon fill="white" stroke="#bfbfbf" points="193,-1316 193,-1373 255,-1373 255,-1316 193,-1316"/>
+<text text-anchor="middle" x="224" y="-1361" font-family="Helvetica,sans-Serif" font-size="10.00">string_t *</text>
+<polyline fill="none" stroke="#bfbfbf" points="193,-1354 255,-1354 "/>
+<text text-anchor="middle" x="224" y="-1342" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polyline fill="none" stroke="#bfbfbf" points="193,-1335 255,-1335 "/>
+<text text-anchor="middle" x="224" y="-1323" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>
 </g>
 <!-- Node8&#45;&gt;Node5 -->
 <g id="edge7" class="edge">
 <title>Node8&#45;&gt;Node5</title>
-<path fill="none" stroke="#404040" d="M277.35,-1315.85C289.45,-1290.67 309.6,-1253.37 334,-1226 338.78,-1220.64 343.88,-1215.37 349.2,-1210.23"/>
-<polygon fill="none" stroke="#404040" points="349.57,-1209.89 351.22,-1202.87 358.34,-1201.7 356.68,-1208.72 349.57,-1209.89"/>
-<text text-anchor="middle" x="372.5" y="-1229" font-family="Helvetica,sans-Serif" font-size="10.00"> +number_float</text>
+<path fill="none" stroke="#404040" d="M232.28,-1315.91C238.81,-1297.33 249.28,-1273.02 264,-1255 266.93,-1251.42 293,-1232.22 324.44,-1209.62"/>
+<polygon fill="none" stroke="#404040" points="324.6,-1209.51 327.15,-1202.76 334.35,-1202.52 331.81,-1209.27 324.6,-1209.51"/>
+<text text-anchor="middle" x="318" y="-1229" font-family="Helvetica,sans-Serif" font-size="10.00"> +string</text>
 </g>
 <!-- Node9 -->
 <g id="node9" class="node">
 <title>Node9</title>
-<g id="a_node9"><a xlink:title=" ">
-<polygon fill="white" stroke="#bfbfbf" points="335,-1316 335,-1373 459,-1373 459,-1316 335,-1316"/>
-<text text-anchor="middle" x="397" y="-1361" font-family="Helvetica,sans-Serif" font-size="10.00">NumberUnsignedType</text>
-<polyline fill="none" stroke="#bfbfbf" points="335,-1354 459,-1354 "/>
-<text text-anchor="middle" x="397" y="-1342" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="#bfbfbf" points="335,-1335 459,-1335 "/>
-<text text-anchor="middle" x="397" y="-1323" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<g id="a_node9"><a xlink:href="classnlohmann_1_1byte__container__with__subtype.html" target="_top" xlink:title="an internal type for a backed binary type">
+<polygon fill="white" stroke="black" points="273,-1255.5 273,-1433.5 437,-1433.5 437,-1255.5 273,-1255.5"/>
+<text text-anchor="start" x="281" y="-1421.5" font-family="Helvetica,sans-Serif" font-size="10.00">nlohmann::byte_container</text>
+<text text-anchor="middle" x="355" y="-1410.5" font-family="Helvetica,sans-Serif" font-size="10.00">_with_subtype&lt; BinaryType &gt;</text>
+<polyline fill="none" stroke="black" points="273,-1403.5 437,-1403.5 "/>
+<text text-anchor="middle" x="355" y="-1391.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polyline fill="none" stroke="black" points="273,-1384.5 437,-1384.5 "/>
+<text text-anchor="start" x="281" y="-1372.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ byte_container_with</text>
+<text text-anchor="start" x="281" y="-1361.5" font-family="Helvetica,sans-Serif" font-size="10.00">_subtype()</text>
+<text text-anchor="start" x="281" y="-1350.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ byte_container_with</text>
+<text text-anchor="start" x="281" y="-1339.5" font-family="Helvetica,sans-Serif" font-size="10.00">_subtype()</text>
+<text text-anchor="start" x="281" y="-1328.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ byte_container_with</text>
+<text text-anchor="start" x="281" y="-1317.5" font-family="Helvetica,sans-Serif" font-size="10.00">_subtype()</text>
+<text text-anchor="start" x="281" y="-1306.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ byte_container_with</text>
+<text text-anchor="start" x="281" y="-1295.5" font-family="Helvetica,sans-Serif" font-size="10.00">_subtype()</text>
+<text text-anchor="start" x="281" y="-1284.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ byte_container_with</text>
+<text text-anchor="start" x="281" y="-1273.5" font-family="Helvetica,sans-Serif" font-size="10.00">_subtype()</text>
+<text text-anchor="start" x="281" y="-1262.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 6 more...</text>
 </a>
 </g>
 </g>
 <!-- Node9&#45;&gt;Node5 -->
 <g id="edge8" class="edge">
 <title>Node9&#45;&gt;Node5</title>
-<path fill="none" stroke="#404040" d="M399.7,-1315.89C402.59,-1291.73 408.14,-1255.92 418,-1226 418.75,-1223.74 419.53,-1221.46 420.36,-1219.17"/>
-<polygon fill="none" stroke="#404040" points="420.46,-1218.92 418.88,-1211.88 424.76,-1207.72 426.34,-1214.76 420.46,-1218.92"/>
-<text text-anchor="middle" x="467.5" y="-1229" font-family="Helvetica,sans-Serif" font-size="10.00"> +number_unsigned</text>
+<path fill="none" stroke="#404040" d="M390.94,-1255.26C395.81,-1243.32 400.81,-1231.03 405.71,-1219"/>
+<polygon fill="none" stroke="#404040" points="405.84,-1218.67 404.4,-1211.61 410.37,-1207.56 411.81,-1214.63 405.84,-1218.67"/>
+<text text-anchor="middle" x="424.5" y="-1229" font-family="Helvetica,sans-Serif" font-size="10.00"> +binary</text>
 </g>
 <!-- Node10 -->
 <g id="node10" class="node">
 <title>Node10</title>
-<g id="a_node10"><a xlink:href="classnlohmann_1_1byte__container__with__subtype.html" target="_top" xlink:title="an internal type for a backed binary type">
-<polygon fill="white" stroke="black" points="477,-1255.5 477,-1433.5 641,-1433.5 641,-1255.5 477,-1255.5"/>
-<text text-anchor="start" x="485" y="-1421.5" font-family="Helvetica,sans-Serif" font-size="10.00">nlohmann::byte_container</text>
-<text text-anchor="middle" x="559" y="-1410.5" font-family="Helvetica,sans-Serif" font-size="10.00">_with_subtype&lt; BinaryType &gt;</text>
-<polyline fill="none" stroke="black" points="477,-1403.5 641,-1403.5 "/>
-<text text-anchor="middle" x="559" y="-1391.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="477,-1384.5 641,-1384.5 "/>
-<text text-anchor="start" x="485" y="-1372.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ byte_container_with</text>
-<text text-anchor="start" x="485" y="-1361.5" font-family="Helvetica,sans-Serif" font-size="10.00">_subtype()</text>
-<text text-anchor="start" x="485" y="-1350.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ byte_container_with</text>
-<text text-anchor="start" x="485" y="-1339.5" font-family="Helvetica,sans-Serif" font-size="10.00">_subtype()</text>
-<text text-anchor="start" x="485" y="-1328.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ byte_container_with</text>
-<text text-anchor="start" x="485" y="-1317.5" font-family="Helvetica,sans-Serif" font-size="10.00">_subtype()</text>
-<text text-anchor="start" x="485" y="-1306.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ byte_container_with</text>
-<text text-anchor="start" x="485" y="-1295.5" font-family="Helvetica,sans-Serif" font-size="10.00">_subtype()</text>
-<text text-anchor="start" x="485" y="-1284.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ byte_container_with</text>
-<text text-anchor="start" x="485" y="-1273.5" font-family="Helvetica,sans-Serif" font-size="10.00">_subtype()</text>
-<text text-anchor="start" x="485" y="-1262.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 6 more...</text>
+<g id="a_node10"><a xlink:href="classBinaryType.html" target="_top" xlink:title=" ">
+<polygon fill="white" stroke="#bfbfbf" points="319.5,-1471.5 319.5,-1528.5 390.5,-1528.5 390.5,-1471.5 319.5,-1471.5"/>
+<text text-anchor="middle" x="355" y="-1516.5" font-family="Helvetica,sans-Serif" font-size="10.00">BinaryType</text>
+<polyline fill="none" stroke="#bfbfbf" points="319.5,-1509.5 390.5,-1509.5 "/>
+<text text-anchor="middle" x="355" y="-1497.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polyline fill="none" stroke="#bfbfbf" points="319.5,-1490.5 390.5,-1490.5 "/>
+<text text-anchor="middle" x="355" y="-1478.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>
 </g>
-<!-- Node10&#45;&gt;Node5 -->
+<!-- Node10&#45;&gt;Node9 -->
 <g id="edge9" class="edge">
-<title>Node10&#45;&gt;Node5</title>
-<path fill="none" stroke="#404040" d="M528.61,-1255.2C524.85,-1245.29 520.94,-1235.39 517,-1226 515.97,-1223.55 514.92,-1221.08 513.84,-1218.6"/>
-<polygon fill="none" stroke="#404040" points="513.84,-1218.59 507.75,-1214.73 508.97,-1207.62 515.06,-1211.49 513.84,-1218.59"/>
-<text text-anchor="middle" x="541.5" y="-1229" font-family="Helvetica,sans-Serif" font-size="10.00"> +binary</text>
+<title>Node10&#45;&gt;Node9</title>
+<path fill="none" stroke="midnightblue" d="M355,-1460.96C355,-1452.47 355,-1443.13 355,-1433.55"/>
+<polygon fill="none" stroke="midnightblue" points="351.5,-1461.2 355,-1471.2 358.5,-1461.2 351.5,-1461.2"/>
 </g>
 <!-- Node11 -->
 <g id="node11" class="node">
 <title>Node11</title>
-<g id="a_node11"><a xlink:href="classBinaryType.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="523.5,-1471.5 523.5,-1528.5 594.5,-1528.5 594.5,-1471.5 523.5,-1471.5"/>
-<text text-anchor="middle" x="559" y="-1516.5" font-family="Helvetica,sans-Serif" font-size="10.00">BinaryType</text>
-<polyline fill="none" stroke="black" points="523.5,-1509.5 594.5,-1509.5 "/>
-<text text-anchor="middle" x="559" y="-1497.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="523.5,-1490.5 594.5,-1490.5 "/>
-<text text-anchor="middle" x="559" y="-1478.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<g id="a_node11"><a xlink:title=" ">
+<polygon fill="white" stroke="#bfbfbf" points="455.5,-1316 455.5,-1373 534.5,-1373 534.5,-1316 455.5,-1316"/>
+<text text-anchor="middle" x="495" y="-1361" font-family="Helvetica,sans-Serif" font-size="10.00">BooleanType</text>
+<polyline fill="none" stroke="#bfbfbf" points="455.5,-1354 534.5,-1354 "/>
+<text text-anchor="middle" x="495" y="-1342" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polyline fill="none" stroke="#bfbfbf" points="455.5,-1335 534.5,-1335 "/>
+<text text-anchor="middle" x="495" y="-1323" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>
 </g>
-<!-- Node11&#45;&gt;Node10 -->
+<!-- Node11&#45;&gt;Node5 -->
 <g id="edge10" class="edge">
-<title>Node11&#45;&gt;Node10</title>
-<path fill="none" stroke="midnightblue" d="M559,-1460.96C559,-1452.47 559,-1443.13 559,-1433.55"/>
-<polygon fill="none" stroke="midnightblue" points="555.5,-1461.2 559,-1471.2 562.5,-1461.2 555.5,-1461.2"/>
+<title>Node11&#45;&gt;Node5</title>
+<path fill="none" stroke="#404040" d="M488.54,-1315.83C482.86,-1291.48 474.24,-1254.57 466.1,-1219.68"/>
+<polygon fill="none" stroke="#404040" points="466.09,-1219.63 460.83,-1214.7 463.36,-1207.95 468.62,-1212.88 466.09,-1219.63"/>
+<text text-anchor="middle" x="495.5" y="-1229" font-family="Helvetica,sans-Serif" font-size="10.00"> +boolean</text>
 </g>
 <!-- Node12 -->
 <g id="node12" class="node">
 <title>Node12</title>
 <g id="a_node12"><a xlink:title=" ">
-<polygon fill="white" stroke="#bfbfbf" points="659,-1316 659,-1373 721,-1373 721,-1316 659,-1316"/>
-<text text-anchor="middle" x="690" y="-1361" font-family="Helvetica,sans-Serif" font-size="10.00">string_t *</text>
-<polyline fill="none" stroke="#bfbfbf" points="659,-1354 721,-1354 "/>
-<text text-anchor="middle" x="690" y="-1342" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="#bfbfbf" points="659,-1335 721,-1335 "/>
-<text text-anchor="middle" x="690" y="-1323" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polygon fill="white" stroke="#bfbfbf" points="552.5,-1316 552.5,-1373 665.5,-1373 665.5,-1316 552.5,-1316"/>
+<text text-anchor="middle" x="609" y="-1361" font-family="Helvetica,sans-Serif" font-size="10.00">NumberIntegerType</text>
+<polyline fill="none" stroke="#bfbfbf" points="552.5,-1354 665.5,-1354 "/>
+<text text-anchor="middle" x="609" y="-1342" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polyline fill="none" stroke="#bfbfbf" points="552.5,-1335 665.5,-1335 "/>
+<text text-anchor="middle" x="609" y="-1323" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>
 </g>
 <!-- Node12&#45;&gt;Node5 -->
 <g id="edge11" class="edge">
 <title>Node12&#45;&gt;Node5</title>
-<path fill="none" stroke="#404040" d="M681.75,-1315.89C675.24,-1297.29 664.77,-1272.98 650,-1255 632.32,-1233.47 610.25,-1213.79 587.65,-1196.63"/>
-<polygon fill="none" stroke="#404040" points="587.58,-1196.58 580.37,-1196.21 577.94,-1189.43 585.14,-1189.79 587.58,-1196.58"/>
-<text text-anchor="middle" x="649" y="-1229" font-family="Helvetica,sans-Serif" font-size="10.00"> +string</text>
+<path fill="none" stroke="#404040" d="M589.74,-1315.65C572.98,-1291.64 547.86,-1256.18 525,-1226 522.8,-1223.09 520.55,-1220.15 518.27,-1217.18"/>
+<polygon fill="none" stroke="#404040" points="518.24,-1217.15 511.41,-1214.85 510.9,-1207.66 517.73,-1209.96 518.24,-1217.15"/>
+<text text-anchor="middle" x="577.5" y="-1229" font-family="Helvetica,sans-Serif" font-size="10.00"> +number_integer</text>
 </g>
 <!-- Node13 -->
 <g id="node13" class="node">
 <title>Node13</title>
 <g id="a_node13"><a xlink:title=" ">
-<polygon fill="white" stroke="#bfbfbf" points="739.5,-1316 739.5,-1373 818.5,-1373 818.5,-1316 739.5,-1316"/>
-<text text-anchor="middle" x="779" y="-1361" font-family="Helvetica,sans-Serif" font-size="10.00">BooleanType</text>
-<polyline fill="none" stroke="#bfbfbf" points="739.5,-1354 818.5,-1354 "/>
-<text text-anchor="middle" x="779" y="-1342" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="#bfbfbf" points="739.5,-1335 818.5,-1335 "/>
-<text text-anchor="middle" x="779" y="-1323" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polygon fill="white" stroke="#bfbfbf" points="684,-1316 684,-1373 808,-1373 808,-1316 684,-1316"/>
+<text text-anchor="middle" x="746" y="-1361" font-family="Helvetica,sans-Serif" font-size="10.00">NumberUnsignedType</text>
+<polyline fill="none" stroke="#bfbfbf" points="684,-1354 808,-1354 "/>
+<text text-anchor="middle" x="746" y="-1342" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polyline fill="none" stroke="#bfbfbf" points="684,-1335 808,-1335 "/>
+<text text-anchor="middle" x="746" y="-1323" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>
 </g>
 <!-- Node13&#45;&gt;Node5 -->
 <g id="edge12" class="edge">
 <title>Node13&#45;&gt;Node5</title>
-<path fill="none" stroke="#404040" d="M768.83,-1315.97C760.68,-1296.95 747.69,-1272.08 730,-1255 690.27,-1216.63 636.99,-1187.4 588.86,-1166.47"/>
-<polygon fill="none" stroke="#404040" points="588.76,-1166.42 581.68,-1167.75 577.72,-1161.72 584.81,-1160.39 588.76,-1166.42"/>
-<text text-anchor="middle" x="731.5" y="-1229" font-family="Helvetica,sans-Serif" font-size="10.00"> +boolean</text>
+<path fill="none" stroke="#404040" d="M727.74,-1315.78C714.56,-1297.14 695.53,-1272.81 675,-1255 642.17,-1226.53 602.14,-1201.37 564.67,-1180.96"/>
+<polygon fill="none" stroke="#404040" points="564.24,-1180.73 557.06,-1181.41 553.66,-1175.05 560.84,-1174.36 564.24,-1180.73"/>
+<text text-anchor="middle" x="701.5" y="-1229" font-family="Helvetica,sans-Serif" font-size="10.00"> +number_unsigned</text>
 </g>
 <!-- Node14 -->
 <g id="node14" class="node">
 <title>Node14</title>
 <g id="a_node14"><a xlink:title=" ">
-<polygon fill="white" stroke="#bfbfbf" points="836.5,-1316 836.5,-1373 895.5,-1373 895.5,-1316 836.5,-1316"/>
-<text text-anchor="middle" x="866" y="-1361" font-family="Helvetica,sans-Serif" font-size="10.00">array_t *</text>
-<polyline fill="none" stroke="#bfbfbf" points="836.5,-1354 895.5,-1354 "/>
-<text text-anchor="middle" x="866" y="-1342" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="#bfbfbf" points="836.5,-1335 895.5,-1335 "/>
-<text text-anchor="middle" x="866" y="-1323" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polygon fill="white" stroke="#bfbfbf" points="826.5,-1316 826.5,-1373 929.5,-1373 929.5,-1316 826.5,-1316"/>
+<text text-anchor="middle" x="878" y="-1361" font-family="Helvetica,sans-Serif" font-size="10.00">NumberFloatType</text>
+<polyline fill="none" stroke="#bfbfbf" points="826.5,-1354 929.5,-1354 "/>
+<text text-anchor="middle" x="878" y="-1342" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polyline fill="none" stroke="#bfbfbf" points="826.5,-1335 929.5,-1335 "/>
+<text text-anchor="middle" x="878" y="-1323" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>
 </g>
 <!-- Node14&#45;&gt;Node5 -->
 <g id="edge13" class="edge">
 <title>Node14&#45;&gt;Node5</title>
-<path fill="none" stroke="#404040" d="M859.85,-1315.67C854.34,-1296.49 844.53,-1271.58 828,-1255 764.29,-1191.11 666.89,-1158.42 589.46,-1141.81"/>
-<polygon fill="none" stroke="#404040" points="589.45,-1141.81 582.77,-1144.51 577.7,-1139.38 584.39,-1136.68 589.45,-1141.81"/>
-<text text-anchor="middle" x="823.5" y="-1229" font-family="Helvetica,sans-Serif" font-size="10.00"> +array</text>
+<path fill="none" stroke="#404040" d="M864.06,-1315.85C853.31,-1296.76 836.94,-1271.88 817,-1255 745.68,-1194.63 644.61,-1161.7 565.67,-1144.1"/>
+<polygon fill="none" stroke="#404040" points="565.42,-1144.04 558.71,-1146.68 553.69,-1141.51 560.4,-1138.86 565.42,-1144.04"/>
+<text text-anchor="middle" x="829.5" y="-1229" font-family="Helvetica,sans-Serif" font-size="10.00"> +number_float</text>
 </g>
 </g>
 </svg>

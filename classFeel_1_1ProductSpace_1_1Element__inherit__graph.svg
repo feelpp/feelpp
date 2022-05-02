@@ -32,11 +32,11 @@
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:href="classBlocksBaseVector.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="0,-166 0,-223 160,-223 160,-166 0,-166"/>
+<polygon fill="white" stroke="#bfbfbf" points="0,-166 0,-223 160,-223 160,-166 0,-166"/>
 <text text-anchor="middle" x="80" y="-211" font-family="Helvetica,sans-Serif" font-size="10.00">BlocksBaseVector&lt; double &gt;</text>
-<polyline fill="none" stroke="black" points="0,-204 160,-204 "/>
+<polyline fill="none" stroke="#bfbfbf" points="0,-204 160,-204 "/>
 <text text-anchor="middle" x="80" y="-192" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="0,-185 160,-185 "/>
+<polyline fill="none" stroke="#bfbfbf" points="0,-185 160,-185 "/>
 <text text-anchor="middle" x="80" y="-173" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>
@@ -51,12 +51,12 @@
 <g id="node3" class="node">
 <title>Node3</title>
 <g id="a_node3"><a xlink:href="classFeel_1_1FunctionSpaceBase_1_1ElementBase.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="178.5,-160.5 178.5,-228.5 315.5,-228.5 315.5,-160.5 178.5,-160.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="178.5,-160.5 178.5,-228.5 315.5,-228.5 315.5,-160.5 178.5,-160.5"/>
 <text text-anchor="start" x="186.5" y="-216.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FunctionSpaceBase</text>
 <text text-anchor="middle" x="247" y="-205.5" font-family="Helvetica,sans-Serif" font-size="10.00">::ElementBase</text>
-<polyline fill="none" stroke="black" points="178.5,-198.5 315.5,-198.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="178.5,-198.5 315.5,-198.5 "/>
 <text text-anchor="middle" x="247" y="-186.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="178.5,-179.5 315.5,-179.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="178.5,-179.5 315.5,-179.5 "/>
 <text text-anchor="middle" x="247" y="-167.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>

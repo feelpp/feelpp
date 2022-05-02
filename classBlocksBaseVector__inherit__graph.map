@@ -1,6 +1,6 @@
 <map id="BlocksBaseVector" name="BlocksBaseVector">
-<area shape="rect" id="node1" title=" " alt="" coords="199,5,338,83"/>
-<area shape="rect" id="node2" href="$classFeel_1_1ProductSpace_1_1Element.html" title=" " alt="" coords="5,138,164,303"/>
-<area shape="rect" id="node3" href="$classFeel_1_1ProductSpaces2_1_1Element.html" title=" " alt="" coords="189,131,349,311"/>
-<area shape="rect" id="node4" href="$classFeel_1_1ProductSpaces_1_1Element.html" title=" " alt="" coords="373,131,532,311"/>
+<area shape="rect" id="node1" title=" " alt="" coords="266,5,405,83"/>
+<area shape="rect" id="node2" href="$classFeel_1_1ProductSpace_1_1Element.html" title=" " alt="" coords="5,138,215,303"/>
+<area shape="rect" id="node3" href="$classFeel_1_1ProductSpaces2_1_1Element.html" title=" " alt="" coords="239,131,431,311"/>
+<area shape="rect" id="node4" href="$classFeel_1_1ProductSpaces_1_1Element.html" title=" " alt="" coords="455,131,631,311"/>
 </map>

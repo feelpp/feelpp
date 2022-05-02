@@ -1,12 +1,14 @@
 <map id="Feel::FeelModels::ModelPhysics&lt; Dim &gt;" name="Feel::FeelModels::ModelPhysics&lt; Dim &gt;">
-<area shape="rect" id="node1" title="Physic set Model." alt="" coords="226,1279,454,1473"/>
-<area shape="rect" id="node2" title=" " alt="" coords="5,286,184,363"/>
-<area shape="rect" id="node7" href="$classFeel_1_1FeelModels_1_1ModelPhysic.html" title=" " alt="" coords="139,580,394,863"/>
-<area shape="rect" id="node3" title="STL class." alt="" coords="539,1117,626,1194"/>
-<area shape="rect" id="node4" title="STL class." alt="" coords="532,933,671,1025"/>
-<area shape="rect" id="node5" title=" " alt="" coords="222,1095,458,1216"/>
-<area shape="rect" id="node6" title=" " alt="" coords="169,925,364,1032"/>
-<area shape="rect" id="node8" href="$classFeel_1_1JournalWatcher.html" title=" " alt="" coords="209,132,445,517"/>
-<area shape="rect" id="node9" title=" " alt="" coords="255,5,398,83"/>
-<area shape="rect" id="node10" href="$classphysic__id__type.html" title=" " alt="" coords="389,940,507,1017"/>
+<area shape="rect" id="node1" title="Physic set Model." alt="" coords="377,1279,605,1473"/>
+<area shape="rect" id="node2" href="$classFeel_1_1FeelModels_1_1ModelBase.html" title="Model base class." alt="" coords="5,646,263,797"/>
+<area shape="rect" id="node3" href="$classFeel_1_1JournalWatcher.html" title=" " alt="" coords="265,132,501,517"/>
+<area shape="rect" id="node12" href="$classFeel_1_1FeelModels_1_1ModelPhysic.html" title=" " alt="" coords="287,580,541,863"/>
+<area shape="rect" id="node4" title=" " alt="" coords="312,5,455,83"/>
+<area shape="rect" id="node5" title=" " alt="" coords="37,279,231,371"/>
+<area shape="rect" id="node6" title=" " alt="" coords="579,286,758,363"/>
+<area shape="rect" id="node7" title=" " alt="" coords="560,1117,647,1194"/>
+<area shape="rect" id="node8" title=" " alt="" coords="534,933,673,1025"/>
+<area shape="rect" id="node9" title=" " alt="" coords="300,1095,536,1216"/>
+<area shape="rect" id="node10" title=" " alt="" coords="391,940,509,1017"/>
+<area shape="rect" id="node11" title=" " alt="" coords="171,925,366,1032"/>
 </map>

@@ -31,11 +31,11 @@
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:href="structFeel_1_1vf_1_1BlocksBase.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="0,-171.5 0,-283.5 143,-283.5 143,-171.5 0,-171.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="0,-171.5 0,-283.5 143,-283.5 143,-171.5 0,-171.5"/>
 <text text-anchor="middle" x="71.5" y="-271.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::vf::BlocksBase&lt; T &gt;</text>
-<polyline fill="none" stroke="black" points="0,-264.5 143,-264.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="0,-264.5 143,-264.5 "/>
 <text text-anchor="middle" x="71.5" y="-252.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="0,-245.5 143,-245.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="0,-245.5 143,-245.5 "/>
 <text text-anchor="start" x="8" y="-233.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ BlocksBase()</text>
 <text text-anchor="start" x="8" y="-222.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ BlocksBase()</text>
 <text text-anchor="start" x="8" y="-211.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ BlocksBase()</text>
@@ -69,8 +69,8 @@
 <title>Node3&#45;&gt;Node1</title>
 <path fill="none" stroke="#404040" d="M213.79,-198.97C204.39,-178.59 191.16,-149.94 179.07,-123.75"/>
 <polygon fill="none" stroke="#404040" points="179.01,-123.6 172.86,-119.82 173.98,-112.7 180.12,-116.47 179.01,-123.6"/>
-<text text-anchor="middle" x="233.5" y="-145" font-family="Helvetica,sans-Serif" font-size="10.00"> +NBLOCKROWS</text>
-<text text-anchor="middle" x="233.5" y="-134" font-family="Helvetica,sans-Serif" font-size="10.00">+NBLOCKCOLS</text>
+<text text-anchor="middle" x="232" y="-145" font-family="Helvetica,sans-Serif" font-size="10.00"> +NBLOCKCOLS</text>
+<text text-anchor="middle" x="232" y="-134" font-family="Helvetica,sans-Serif" font-size="10.00">+NBLOCKROWS</text>
 </g>
 </g>
 </svg>

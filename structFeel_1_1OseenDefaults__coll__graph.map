@@ -1,5 +1,5 @@
 <map id="Feel::OseenDefaults" name="Feel::OseenDefaults">
-<area shape="rect" id="node1" title="Oseen Default Data." alt="" coords="39,219,193,296"/>
-<area shape="rect" id="node2" href="$classdouble.html" title=" " alt="" coords="5,5,72,83"/>
-<area shape="rect" id="node3" href="$classbool.html" title=" " alt="" coords="169,5,220,83"/>
+<area shape="rect" id="node1" title="Oseen Default Data." alt="" coords="42,219,195,296"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,5,72,83"/>
+<area shape="rect" id="node3" href="$classbool.html" title=" " alt="" coords="173,5,224,83"/>
 </map>

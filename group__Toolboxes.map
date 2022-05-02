@@ -1,7 +1,7 @@
 <map id="Toolboxes" name="Toolboxes">
-<area shape="rect" id="node1" title=" " alt="" coords="5,80,92,105"/>
-<area shape="rect" id="node2" href="$group__Fluid.html" title=" " alt="" coords="159,5,213,31"/>
-<area shape="rect" id="node3" href="$group__Solid.html" title=" " alt="" coords="159,55,213,80"/>
-<area shape="rect" id="node4" href="$group__ModelCore.html" title=" " alt="" coords="140,104,232,129"/>
-<area shape="rect" id="node5" href="$group__Electric.html" title=" " alt="" coords="151,153,221,179"/>
+<area shape="rect" id="node1" href="$group__Electric.html" title=" " alt="" coords="151,5,221,31"/>
+<area shape="rect" id="node2" href="$group__Fluid.html" title=" " alt="" coords="159,55,213,80"/>
+<area shape="rect" id="node3" href="$group__ModelCore.html" title=" " alt="" coords="140,104,232,129"/>
+<area shape="rect" id="node4" href="$group__Solid.html" title=" " alt="" coords="159,153,213,179"/>
+<area shape="rect" id="node5" title=" " alt="" coords="5,80,92,105"/>
 </map>

@@ -33,11 +33,11 @@
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:href="classboost_1_1mpi_1_1communicator.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="0,-177 0,-234 145,-234 145,-177 0,-177"/>
+<polygon fill="white" stroke="#bfbfbf" points="0,-177 0,-234 145,-234 145,-177 0,-177"/>
 <text text-anchor="middle" x="72.5" y="-222" font-family="Helvetica,sans-Serif" font-size="10.00">boost::mpi::communicator</text>
-<polyline fill="none" stroke="black" points="0,-215 145,-215 "/>
+<polyline fill="none" stroke="#bfbfbf" points="0,-215 145,-215 "/>
 <text text-anchor="middle" x="72.5" y="-203" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="0,-196 145,-196 "/>
+<polyline fill="none" stroke="#bfbfbf" points="0,-196 145,-196 "/>
 <text text-anchor="middle" x="72.5" y="-184" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>

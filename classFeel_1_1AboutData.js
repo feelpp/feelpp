@@ -40,7 +40,5 @@ var classFeel_1_1AboutData =
       [ "License_QPL", "classFeel_1_1AboutData.html#a0a827cfc2cac83144e4595e19641ba3ea916c4dab44f314dce94cf954e7327bbb", null ],
       [ "License_QPL_V1_0", "classFeel_1_1AboutData.html#a0a827cfc2cac83144e4595e19641ba3eae0c9adc68bab259fecb8b5228b54d71a", null ]
     ] ],
-    [ "AboutData", "classFeel_1_1AboutData.html#a62dff3e1e33aeb455e3881956cf8ee12", null ],
-    [ "AboutData", "classFeel_1_1AboutData.html#a42056c8c7b5fbb65a5e2f18873add58a", null ],
-    [ "~AboutData", "classFeel_1_1AboutData.html#a4565d0cc8c7674549dde2bd3e6a137a8", null ]
+    [ "AboutData", "classFeel_1_1AboutData.html#a62dff3e1e33aeb455e3881956cf8ee12", null ]
 ];

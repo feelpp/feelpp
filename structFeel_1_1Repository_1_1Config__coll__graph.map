@@ -1,9 +1,9 @@
 <map id="Feel::Repository::Config" name="Feel::Repository::Config">
-<area shape="rect" id="node1" title=" " alt="" coords="124,515,300,651"/>
-<area shape="rect" id="node2" title=" " alt="" coords="5,301,56,379"/>
-<area shape="rect" id="node3" href="$classbool.html" title=" " alt="" coords="119,301,169,379"/>
-<area shape="rect" id="node4" href="$structFeel_1_1Repository_1_1Owner.html" title=" " alt="" coords="193,301,369,379"/>
-<area shape="rect" id="node5" title="STL class." alt="" coords="238,147,325,224"/>
-<area shape="rect" id="node6" title="STL class." alt="" coords="212,5,351,97"/>
-<area shape="rect" id="node7" title=" " alt="" coords="393,301,471,379"/>
+<area shape="rect" id="node1" title=" " alt="" coords="200,515,376,651"/>
+<area shape="rect" id="node2" href="$structFeel_1_1Repository_1_1Owner.html" title=" " alt="" coords="5,301,181,379"/>
+<area shape="rect" id="node3" title=" " alt="" coords="50,147,137,224"/>
+<area shape="rect" id="node4" title=" " alt="" coords="24,5,163,97"/>
+<area shape="rect" id="node5" title=" " alt="" coords="205,301,256,379"/>
+<area shape="rect" id="node6" title=" " alt="" coords="308,301,385,379"/>
+<area shape="rect" id="node7" href="$classbool.html" title=" " alt="" coords="420,301,471,379"/>
 </map>

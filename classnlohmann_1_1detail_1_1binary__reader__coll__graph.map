@@ -1,7 +1,7 @@
 <map id="nlohmann::detail::binary_reader&lt; BasicJsonType, InputAdapterType, SAX &gt;" name="nlohmann::detail::binary_reader&lt; BasicJsonType, InputAdapterType, SAX &gt;">
-<area shape="rect" id="node1" title="deserialization of CBOR, MessagePack, and UBJSON values" alt="" coords="120,189,311,384"/>
+<area shape="rect" id="node1" title="deserialization of CBOR, MessagePack, and UBJSON values" alt="" coords="147,189,337,384"/>
 <area shape="rect" id="node2" title=" " alt="" coords="5,5,108,83"/>
-<area shape="rect" id="node3" title=" " alt="" coords="133,5,207,83"/>
-<area shape="rect" id="node4" href="$classbool.html" title=" " alt="" coords="237,5,287,83"/>
-<area shape="rect" id="node5" title=" " alt="" coords="396,5,456,83"/>
+<area shape="rect" id="node3" href="$classbool.html" title=" " alt="" coords="133,5,183,83"/>
+<area shape="rect" id="node4" title=" " alt="" coords="289,5,363,83"/>
+<area shape="rect" id="node5" title=" " alt="" coords="388,5,448,83"/>
 </map>

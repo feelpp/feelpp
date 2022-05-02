@@ -26,16 +26,16 @@
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:href="classFeel_1_1vf_1_1Cast.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="1.5,-0.5 1.5,-167.5 102.5,-167.5 102.5,-0.5 1.5,-0.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="1.5,-0.5 1.5,-167.5 102.5,-167.5 102.5,-0.5 1.5,-0.5"/>
 <text text-anchor="start" x="9.5" y="-155.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::vf::Cast&lt; T,</text>
 <text text-anchor="middle" x="52" y="-144.5" font-family="Helvetica,sans-Serif" font-size="10.00"> ExprT &gt;</text>
-<polyline fill="none" stroke="black" points="1.5,-137.5 102.5,-137.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="1.5,-137.5 102.5,-137.5 "/>
 <text text-anchor="start" x="9.5" y="-125.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ context</text>
 <text text-anchor="start" x="9.5" y="-114.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ has_test_basis</text>
 <text text-anchor="start" x="9.5" y="-103.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ has_trial_basis</text>
 <text text-anchor="start" x="9.5" y="-92.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ is_terminal</text>
 <text text-anchor="start" x="9.5" y="-81.5" font-family="Helvetica,sans-Serif" font-size="10.00"># M_expr</text>
-<polyline fill="none" stroke="black" points="1.5,-74.5 102.5,-74.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="1.5,-74.5 102.5,-74.5 "/>
 <text text-anchor="start" x="9.5" y="-62.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ Cast()</text>
 <text text-anchor="start" x="9.5" y="-51.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ Cast()</text>
 <text text-anchor="start" x="9.5" y="-40.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ Cast()</text>

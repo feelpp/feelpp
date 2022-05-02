@@ -1,27 +1,4 @@
 var ginac_8cpp =
 [
-    [ "curl", "ginac_8cpp.html#aaea30281368c437bffce637cb6c55382", null ],
-    [ "curl", "ginac_8cpp.html#aef47cb69c450e9733c4331d8e6cfe4b8", null ],
-    [ "diff", "ginac_8cpp.html#a41806d481653cc57d63b1affcce0929a", null ],
-    [ "diff", "ginac_8cpp.html#a68b331136975f2adf99ac29b8c2cd240", null ],
-    [ "div", "ginac_8cpp.html#a0a7cf1bf18c8b36cff8df81ca2136f2c", null ],
-    [ "div", "ginac_8cpp.html#a4b7177f313bb680add53255ef22b42e9", null ],
-    [ "grad", "ginac_8cpp.html#aaf62d6fba46222a1e311a7061926b13b", null ],
-    [ "grad", "ginac_8cpp.html#aeb68e1c09332077b1332c3e94a4c9a29", null ],
-    [ "grad", "ginac_8cpp.html#a9efdb56397c5389925d005700bd7c0bf", null ],
-    [ "laplacian", "ginac_8cpp.html#ac8778d3d2c745e19fb2b7b94b3f198b1", null ],
-    [ "laplacian", "ginac_8cpp.html#a40b21887be934c3e6008404c7215ce24", null ],
-    [ "laplacian", "ginac_8cpp.html#a04a1e3205c97123824107e1d1f35c1fd", null ],
-    [ "laplacian", "ginac_8cpp.html#a2c94530753d057b14bba2f5f1cc2b077", null ],
-    [ "parse", "ginac_8cpp.html#a531da82f0e1f4213f5b4ffeb2a64fd70", null ],
-    [ "parse", "ginac_8cpp.html#afd2a7ed97284914d66d3cad8e78c44e9", null ],
-    [ "str", "ginac_8cpp.html#ac88e04f20632fe04269b2bdbab2e6375", null ],
-    [ "str", "ginac_8cpp.html#ac523099cc35eea912a9f028a416d46ef", null ],
-    [ "strsymbol", "ginac_8cpp.html#a002f7366463be92394c95f69099137ca", null ],
-    [ "substitute", "ginac_8cpp.html#a42e2e73f37d0793409f02bcd658aadf4", null ],
-    [ "substitute", "ginac_8cpp.html#aece971c0b5c269e02826b987211e9cb1", null ],
-    [ "substitute", "ginac_8cpp.html#acabf0245c7aa12e819c17c99b8d48d72", null ],
-    [ "substitute", "ginac_8cpp.html#aae186780b3bd8c87073557ee144d1220", null ],
-    [ "toNumericValues", "ginac_8cpp.html#a3742a50c1149140a912a9ebdceb4bf2e", null ],
-    [ "totalDegree", "ginac_8cpp.html#ae39c4f1bf3bb89d3ff92606d6e320902", null ]
+    [ "toNumericValues", "ginac_8cpp.html#a3742a50c1149140a912a9ebdceb4bf2e", null ]
 ];

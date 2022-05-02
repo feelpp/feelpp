@@ -32,11 +32,11 @@
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:href="structFeel_1_1vf_1_1BlocksBase.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="0,-160.5 0,-272.5 143,-272.5 143,-160.5 0,-160.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="0,-160.5 0,-272.5 143,-272.5 143,-160.5 0,-160.5"/>
 <text text-anchor="middle" x="71.5" y="-260.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::vf::BlocksBase&lt; T &gt;</text>
-<polyline fill="none" stroke="black" points="0,-253.5 143,-253.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="0,-253.5 143,-253.5 "/>
 <text text-anchor="middle" x="71.5" y="-241.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="0,-234.5 143,-234.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="0,-234.5 143,-234.5 "/>
 <text text-anchor="start" x="8" y="-222.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ BlocksBase()</text>
 <text text-anchor="start" x="8" y="-211.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ BlocksBase()</text>
 <text text-anchor="start" x="8" y="-200.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ BlocksBase()</text>

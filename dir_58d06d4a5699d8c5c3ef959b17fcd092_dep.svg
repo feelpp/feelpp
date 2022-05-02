@@ -12,7 +12,7 @@
 <g id="clust1" class="cluster">
 <title>clusterdir_58d06d4a5699d8c5c3ef959b17fcd092</title>
 <g id="a_clust1"><a xlink:href="dir_58d06d4a5699d8c5c3ef959b17fcd092.html" target="_top">
-<polygon fill="#eeeeff" stroke="black" points="8,-8 8,-60 150,-60 150,-8 8,-8"/>
+<polygon fill="#f4f7ed" stroke="#404040" stroke-width="2" points="8,-8 8,-60 150,-60 150,-8 8,-8"/>
 </a>
 </g>
 </g>
@@ -25,7 +25,7 @@
 <g id="node2" class="node">
 <title>dir_a4c121e06ebcc119b041a36581d5d48a</title>
 <g id="a_node2"><a xlink:href="dir_a4c121e06ebcc119b041a36581d5d48a.html" target="_top" xlink:title="feel">
-<polygon fill="white" stroke="red" points="70,-52 16,-52 16,-16 70,-16 70,-52"/>
+<polygon fill="#c9d6a2" stroke="#404040" points="70,-52 16,-52 16,-16 70,-16 70,-52"/>
 <text text-anchor="middle" x="43" y="-31.5" font-family="Helvetica,sans-Serif" font-size="10.00">feel</text>
 </a>
 </g>

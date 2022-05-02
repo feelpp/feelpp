@@ -26,12 +26,12 @@
 <!-- Node2 -->
 <g id="node2" class="node">
 <title>Node2</title>
-<g id="a_node2"><a xlink:href="classdouble.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="29,-221.5 29,-278.5 79,-278.5 79,-221.5 29,-221.5"/>
+<g id="a_node2"><a xlink:title=" ">
+<polygon fill="white" stroke="#bfbfbf" points="29,-221.5 29,-278.5 79,-278.5 79,-221.5 29,-221.5"/>
 <text text-anchor="middle" x="54" y="-266.5" font-family="Helvetica,sans-Serif" font-size="10.00">double</text>
-<polyline fill="none" stroke="black" points="29,-259.5 79,-259.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="29,-259.5 79,-259.5 "/>
 <text text-anchor="middle" x="54" y="-247.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="29,-240.5 79,-240.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="29,-240.5 79,-240.5 "/>
 <text text-anchor="middle" x="54" y="-228.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>
@@ -47,11 +47,11 @@
 <g id="node3" class="node">
 <title>Node3</title>
 <g id="a_node3"><a xlink:title=" ">
-<polygon fill="white" stroke="#bfbfbf" points="93,-116.5 93,-173.5 217,-173.5 217,-116.5 93,-116.5"/>
+<polygon fill="white" stroke="black" points="93,-116.5 93,-173.5 217,-173.5 217,-116.5 93,-116.5"/>
 <text text-anchor="middle" x="155" y="-161.5" font-family="Helvetica,sans-Serif" font-size="10.00">std::vector&lt; double &gt;</text>
-<polyline fill="none" stroke="#bfbfbf" points="93,-154.5 217,-154.5 "/>
+<polyline fill="none" stroke="black" points="93,-154.5 217,-154.5 "/>
 <text text-anchor="middle" x="155" y="-142.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="#bfbfbf" points="93,-135.5 217,-135.5 "/>
+<polyline fill="none" stroke="black" points="93,-135.5 217,-135.5 "/>
 <text text-anchor="middle" x="155" y="-123.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>

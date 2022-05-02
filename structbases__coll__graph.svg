@@ -25,12 +25,12 @@
 <!-- Node2 -->
 <g id="node2" class="node">
 <title>Node2</title>
-<g id="a_node2"><a xlink:href="classdouble.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="0,-105.5 0,-162.5 50,-162.5 50,-105.5 0,-105.5"/>
+<g id="a_node2"><a xlink:title=" ">
+<polygon fill="white" stroke="#bfbfbf" points="0,-105.5 0,-162.5 50,-162.5 50,-105.5 0,-105.5"/>
 <text text-anchor="middle" x="25" y="-150.5" font-family="Helvetica,sans-Serif" font-size="10.00">double</text>
-<polyline fill="none" stroke="black" points="0,-143.5 50,-143.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="0,-143.5 50,-143.5 "/>
 <text text-anchor="middle" x="25" y="-131.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="0,-124.5 50,-124.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="0,-124.5 50,-124.5 "/>
 <text text-anchor="middle" x="25" y="-112.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>

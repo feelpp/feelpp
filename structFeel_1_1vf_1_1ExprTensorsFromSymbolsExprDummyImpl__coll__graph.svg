@@ -77,12 +77,12 @@ var sectionId = 'dynsection-1';
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:href="structFeel_1_1vf_1_1ExprTensorsFromSymbolsExpr.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="0.5,-150.5 0.5,-262.5 191.5,-262.5 191.5,-150.5 0.5,-150.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="0.5,-150.5 0.5,-262.5 191.5,-262.5 191.5,-150.5 0.5,-150.5"/>
 <text text-anchor="start" x="8.5" y="-250.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::vf::ExprTensorsFrom</text>
 <text text-anchor="middle" x="96" y="-239.5" font-family="Helvetica,sans-Serif" font-size="10.00">SymbolsExpr&lt; Geo_t &gt;</text>
-<polyline fill="none" stroke="black" points="0.5,-232.5 191.5,-232.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="0.5,-232.5 191.5,-232.5 "/>
 <text text-anchor="middle" x="96" y="-220.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="0.5,-213.5 191.5,-213.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="0.5,-213.5 191.5,-213.5 "/>
 <text text-anchor="start" x="8.5" y="-201.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ init()</text>
 <text text-anchor="start" x="8.5" y="-190.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ newObjectPtr()</text>
 <text text-anchor="start" x="8.5" y="-179.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ tensor()</text>
@@ -101,12 +101,12 @@ var sectionId = 'dynsection-1';
 <g id="node3" class="node">
 <title>Node3</title>
 <g id="a_node3"><a xlink:title=" ">
-<polygon fill="white" stroke="#bfbfbf" points="41,-310.5 41,-378.5 151,-378.5 151,-310.5 41,-310.5"/>
+<polygon fill="white" stroke="black" points="41,-310.5 41,-378.5 151,-378.5 151,-310.5 41,-310.5"/>
 <text text-anchor="start" x="49" y="-366.5" font-family="Helvetica,sans-Serif" font-size="10.00">std::vector&lt; tensor</text>
 <text text-anchor="middle" x="96" y="-355.5" font-family="Helvetica,sans-Serif" font-size="10.00">_ptrtype &gt;</text>
-<polyline fill="none" stroke="#bfbfbf" points="41,-348.5 151,-348.5 "/>
+<polyline fill="none" stroke="black" points="41,-348.5 151,-348.5 "/>
 <text text-anchor="middle" x="96" y="-336.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="#bfbfbf" points="41,-329.5 151,-329.5 "/>
+<polyline fill="none" stroke="black" points="41,-329.5 151,-329.5 "/>
 <text text-anchor="middle" x="96" y="-317.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>
@@ -121,12 +121,12 @@ var sectionId = 'dynsection-1';
 <!-- Node4 -->
 <g id="node4" class="node">
 <title>Node4</title>
-<g id="a_node4"><a xlink:title="STL class.">
-<polygon fill="white" stroke="#bfbfbf" points="37,-426.5 37,-483.5 155,-483.5 155,-426.5 37,-426.5"/>
+<g id="a_node4"><a xlink:title=" ">
+<polygon fill="white" stroke="black" points="37,-426.5 37,-483.5 155,-483.5 155,-426.5 37,-426.5"/>
 <text text-anchor="middle" x="96" y="-471.5" font-family="Helvetica,sans-Serif" font-size="10.00">std::shared_ptr&lt; T &gt;</text>
-<polyline fill="none" stroke="#bfbfbf" points="37,-464.5 155,-464.5 "/>
+<polyline fill="none" stroke="black" points="37,-464.5 155,-464.5 "/>
 <text text-anchor="middle" x="96" y="-452.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="#bfbfbf" points="37,-445.5 155,-445.5 "/>
+<polyline fill="none" stroke="black" points="37,-445.5 155,-445.5 "/>
 <text text-anchor="start" x="45" y="-433.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ operator&#45;&gt;()</text>
 </a>
 </g>

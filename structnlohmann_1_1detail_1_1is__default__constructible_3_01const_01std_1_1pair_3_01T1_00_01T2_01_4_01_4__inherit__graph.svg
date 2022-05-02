@@ -28,13 +28,13 @@
 <g id="node4" class="node">
 <title>Node4</title>
 <g id="a_node4"><a xlink:href="structnlohmann_1_1detail_1_1is__constructible_3_01const_01std_1_1pair_3_01T1_00_01T2_01_4_01_4.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="48,-0.5 48,-79.5 171,-79.5 171,-0.5 48,-0.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="48,-0.5 48,-79.5 171,-79.5 171,-0.5 48,-0.5"/>
 <text text-anchor="start" x="56" y="-67.5" font-family="Helvetica,sans-Serif" font-size="10.00">nlohmann::detail::is</text>
 <text text-anchor="start" x="56" y="-56.5" font-family="Helvetica,sans-Serif" font-size="10.00">_constructible&lt; const</text>
 <text text-anchor="middle" x="109.5" y="-45.5" font-family="Helvetica,sans-Serif" font-size="10.00"> std::pair&lt; T1, T2 &gt; &gt;</text>
-<polyline fill="none" stroke="black" points="48,-38.5 171,-38.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="48,-38.5 171,-38.5 "/>
 <text text-anchor="middle" x="109.5" y="-26.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="48,-19.5 171,-19.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="48,-19.5 171,-19.5 "/>
 <text text-anchor="middle" x="109.5" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>
@@ -49,13 +49,13 @@
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:href="structnlohmann_1_1detail_1_1conjunction.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="0,-232.5 0,-311.5 219,-311.5 219,-232.5 0,-232.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="0,-232.5 0,-311.5 219,-311.5 219,-232.5 0,-232.5"/>
 <text text-anchor="start" x="8" y="-299.5" font-family="Helvetica,sans-Serif" font-size="10.00">nlohmann::detail::conjunction</text>
 <text text-anchor="start" x="8" y="-288.5" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; is_default_constructible</text>
 <text text-anchor="middle" x="109.5" y="-277.5" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; T1 &gt;, is_default_constructible&lt; T2 &gt; &gt;</text>
-<polyline fill="none" stroke="black" points="0,-270.5 219,-270.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="0,-270.5 219,-270.5 "/>
 <text text-anchor="middle" x="109.5" y="-258.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="0,-251.5 219,-251.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="0,-251.5 219,-251.5 "/>
 <text text-anchor="middle" x="109.5" y="-239.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>
@@ -70,11 +70,11 @@
 <g id="node3" class="node">
 <title>Node3</title>
 <g id="a_node3"><a xlink:title=" ">
-<polygon fill="white" stroke="#bfbfbf" points="78,-348.5 78,-405.5 141,-405.5 141,-348.5 78,-348.5"/>
-<text text-anchor="middle" x="109.5" y="-393.5" font-family="Helvetica,sans-Serif" font-size="10.00">true_type</text>
-<polyline fill="none" stroke="#bfbfbf" points="78,-386.5 141,-386.5 "/>
+<polygon fill="white" stroke="#bfbfbf" points="67.5,-348.5 67.5,-405.5 151.5,-405.5 151.5,-348.5 67.5,-348.5"/>
+<text text-anchor="middle" x="109.5" y="-393.5" font-family="Helvetica,sans-Serif" font-size="10.00">std::true_type</text>
+<polyline fill="none" stroke="#bfbfbf" points="67.5,-386.5 151.5,-386.5 "/>
 <text text-anchor="middle" x="109.5" y="-374.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="#bfbfbf" points="78,-367.5 141,-367.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="67.5,-367.5 151.5,-367.5 "/>
 <text text-anchor="middle" x="109.5" y="-355.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>

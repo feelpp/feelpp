@@ -1,10 +1,8 @@
 var quadptlocalization_8hpp =
 [
-    [ "quadptlocrangetype", "structFeel_1_1detail_1_1quadptlocrangetype.html", "structFeel_1_1detail_1_1quadptlocrangetype" ],
-    [ "QuadPtLocalization", "classFeel_1_1QuadPtLocalization.html", "classFeel_1_1QuadPtLocalization" ],
-    [ "bilinearformContext", "structFeel_1_1QuadPtLocalization_1_1bilinearformContext.html", "structFeel_1_1QuadPtLocalization_1_1bilinearformContext" ],
-    [ "linearformContext", "structFeel_1_1QuadPtLocalization_1_1linearformContext.html", "structFeel_1_1QuadPtLocalization_1_1linearformContext" ],
-    [ "TheGmc", "structFeel_1_1QuadPtLocalization_1_1TheGmc.html", "structFeel_1_1QuadPtLocalization_1_1TheGmc" ],
-    [ "quadPtLocPtr", "quadptlocalization_8hpp.html#a38876b1544ac09b282f090874a9b6423", null ],
-    [ "quadPtLocPtr", "quadptlocalization_8hpp.html#a485fddecaae974124d45e172c6c62d29", null ]
+    [ "Feel::detail::quadptlocrangetype< RangeType >", "structFeel_1_1detail_1_1quadptlocrangetype.html", null ],
+    [ "Feel::QuadPtLocalization< IteratorRange, Im, Expr >", "classFeel_1_1QuadPtLocalization.html", "classFeel_1_1QuadPtLocalization" ],
+    [ "Feel::QuadPtLocalization< IteratorRange, Im, Expr >::bilinearformContext< FE1, FE2, ElemContType >", "structFeel_1_1QuadPtLocalization_1_1bilinearformContext.html", null ],
+    [ "Feel::QuadPtLocalization< IteratorRange, Im, Expr >::linearformContext< FE, VectorType, ElemContType >", "structFeel_1_1QuadPtLocalization_1_1linearformContext.html", null ],
+    [ "Feel::QuadPtLocalization< IteratorRange, Im, Expr >::TheGmc< SubEntityCoDim >", "structFeel_1_1QuadPtLocalization_1_1TheGmc.html", null ]
 ];

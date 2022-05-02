@@ -1,10 +1,10 @@
 <map id="Feel::detail::updateDataMapProcess&lt; DofType &gt;" name="Feel::detail::updateDataMapProcess&lt; DofType &gt;">
-<area shape="rect" id="node1" title=" " alt="" coords="167,455,369,591"/>
+<area shape="rect" id="node1" title=" " alt="" coords="141,455,342,591"/>
 <area shape="rect" id="node2" title=" " alt="" coords="5,293,80,370"/>
-<area shape="rect" id="node3" title=" " alt="" coords="105,285,287,377"/>
-<area shape="rect" id="node4" title="STL class." alt="" coords="117,145,275,223"/>
-<area shape="rect" id="node5" title=" " alt="" coords="177,5,215,83"/>
-<area shape="rect" id="node6" href="$classsize__t.html" title=" " alt="" coords="314,293,374,370"/>
-<area shape="rect" id="node7" title=" " alt="" coords="399,293,601,370"/>
-<area shape="rect" id="node8" title=" " alt="" coords="463,145,537,223"/>
+<area shape="rect" id="node3" href="$classsize__t.html" title=" " alt="" coords="138,293,198,370"/>
+<area shape="rect" id="node4" title=" " alt="" coords="222,285,405,377"/>
+<area shape="rect" id="node5" title=" " alt="" coords="235,145,392,223"/>
+<area shape="rect" id="node6" title=" " alt="" coords="294,5,333,83"/>
+<area shape="rect" id="node7" title=" " alt="" coords="429,293,632,370"/>
+<area shape="rect" id="node8" title=" " alt="" coords="493,145,568,223"/>
 </map>

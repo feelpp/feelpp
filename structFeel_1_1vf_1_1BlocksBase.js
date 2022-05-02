@@ -1,25 +1,4 @@
 var structFeel_1_1vf_1_1BlocksBase =
 [
-    [ "getSetOfBlocks", "structFeel_1_1vf_1_1BlocksBase.html#a9e9485a53732dd3b09eee4238ddbe125", null ],
-    [ "merge", "structFeel_1_1vf_1_1BlocksBase.html#ad1c6b8a6572ffcd551b2aae03786312d", null ],
-    [ "nCol", "structFeel_1_1vf_1_1BlocksBase.html#a8af2b9961dc51a53749c9435a14f2338", null ],
-    [ "nRow", "structFeel_1_1vf_1_1BlocksBase.html#a91d218cef68a217a8c36abcd92990e76", null ],
-    [ "operator()", "structFeel_1_1vf_1_1BlocksBase.html#a78ae30429a325a2cdadd6ec5e174eb3b", null ],
-    [ "operator()", "structFeel_1_1vf_1_1BlocksBase.html#a8a6f20618508133a97292ce251072c5e", null ],
-    [ "operator<<", "structFeel_1_1vf_1_1BlocksBase.html#a688e88d4888889b59152260df797b28b", null ],
-    [ "operator=", "structFeel_1_1vf_1_1BlocksBase.html#a3daa8a69823d40515394e4ac4bb968b7", null ],
-    [ "operator=", "structFeel_1_1vf_1_1BlocksBase.html#ac773be8134bb1bcbb225e2de060e12f5", null ],
-    [ "push_back", "structFeel_1_1vf_1_1BlocksBase.html#acc5a7906210b1bd3d654abf62c15dff5", null ],
-    [ "reset", "structFeel_1_1vf_1_1BlocksBase.html#ae9a91092142358b0168daaac1fac1220", null ],
-    [ "resize", "structFeel_1_1vf_1_1BlocksBase.html#a1311b264a75ede5863ec9d6b4835f56f", null ],
-    [ "size", "structFeel_1_1vf_1_1BlocksBase.html#a86937a4ed401f0283a72ab0b5387dede", null ],
-    [ "subBlock", "structFeel_1_1vf_1_1BlocksBase.html#a3ef6c7153dd496d1349edbcfb5a72a60", null ],
-    [ "transpose", "structFeel_1_1vf_1_1BlocksBase.html#a88fe20ba8dc83e61138b09b7ec0d8c20", null ],
-    [ "block_type", "structFeel_1_1vf_1_1BlocksBase.html#a998140b0d112817200db829833973ed1", null ],
-    [ "index_type", "structFeel_1_1vf_1_1BlocksBase.html#a01fad5c539feb4bdc07aa51765d392c1", null ],
-    [ "BlocksBase", "structFeel_1_1vf_1_1BlocksBase.html#ac1faf8dd81ca957190e9ee8f79eb91c3", null ],
-    [ "BlocksBase", "structFeel_1_1vf_1_1BlocksBase.html#a8e2f1719c1d203987506f8983683bf78", null ],
-    [ "BlocksBase", "structFeel_1_1vf_1_1BlocksBase.html#a23c3a4d8317dbe556d9031fd32ea82de", null ],
-    [ "BlocksBase", "structFeel_1_1vf_1_1BlocksBase.html#a2fb5629308cf1b19025fa07a614cff99", null ],
-    [ "BlocksBase", "structFeel_1_1vf_1_1BlocksBase.html#aad6a611ebc17a98f4811d285258cf727", null ]
+    [ "size", "structFeel_1_1vf_1_1BlocksBase.html#a86937a4ed401f0283a72ab0b5387dede", null ]
 ];

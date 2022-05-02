@@ -26,13 +26,13 @@
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:href="structFeel_1_1stencilQuadSet.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="0,-0.5 0,-79.5 166,-79.5 166,-0.5 0,-0.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="0,-0.5 0,-79.5 166,-79.5 166,-0.5 0,-0.5"/>
 <text text-anchor="start" x="8" y="-67.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::stencilQuadSet</text>
 <text text-anchor="start" x="8" y="-56.5" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; QuadOrder1d, QuadOrder2d,</text>
 <text text-anchor="middle" x="83" y="-45.5" font-family="Helvetica,sans-Serif" font-size="10.00"> QuadOrder3d &gt;</text>
-<polyline fill="none" stroke="black" points="0,-38.5 166,-38.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="0,-38.5 166,-38.5 "/>
 <text text-anchor="middle" x="83" y="-26.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="0,-19.5 166,-19.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="0,-19.5 166,-19.5 "/>
 <text text-anchor="start" x="8" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ stencilQuadSet()</text>
 </a>
 </g>

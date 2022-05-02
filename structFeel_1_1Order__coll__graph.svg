@@ -47,11 +47,11 @@
 <g id="node3" class="node">
 <title>Node3</title>
 <g id="a_node3"><a xlink:href="classbool.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="162,-127.5 162,-184.5 200,-184.5 200,-127.5 162,-127.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="162,-127.5 162,-184.5 200,-184.5 200,-127.5 162,-127.5"/>
 <text text-anchor="middle" x="181" y="-172.5" font-family="Helvetica,sans-Serif" font-size="10.00">bool</text>
-<polyline fill="none" stroke="black" points="162,-165.5 200,-165.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="162,-165.5 200,-165.5 "/>
 <text text-anchor="middle" x="181" y="-153.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="162,-146.5 200,-146.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="162,-146.5 200,-146.5 "/>
 <text text-anchor="middle" x="181" y="-134.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>
@@ -62,8 +62,8 @@
 <path fill="none" stroke="#404040" d="M176,-127.37C172.52,-111.76 167.04,-92.19 159,-76 157.63,-73.25 156.09,-70.5 154.44,-67.78"/>
 <polygon fill="none" stroke="#404040" points="154.3,-67.58 147.64,-64.81 147.63,-57.6 154.29,-60.37 154.3,-67.58"/>
 <text text-anchor="middle" x="216.5" y="-101" font-family="Helvetica,sans-Serif" font-size="10.00"> +is_isoparametric</text>
-<text text-anchor="middle" x="216.5" y="-90" font-family="Helvetica,sans-Serif" font-size="10.00">+is_surparametric</text>
-<text text-anchor="middle" x="216.5" y="-79" font-family="Helvetica,sans-Serif" font-size="10.00">+is_subparametric</text>
+<text text-anchor="middle" x="216.5" y="-90" font-family="Helvetica,sans-Serif" font-size="10.00">+is_subparametric</text>
+<text text-anchor="middle" x="216.5" y="-79" font-family="Helvetica,sans-Serif" font-size="10.00">+is_surparametric</text>
 </g>
 </g>
 </svg>

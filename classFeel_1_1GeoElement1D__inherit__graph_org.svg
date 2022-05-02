@@ -242,11 +242,11 @@
 <g id="node9" class="node">
 <title>Node9</title>
 <g id="a_node9"><a xlink:href="classFeel_1_1SubFaceOfNone.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="630.5,-347.5 630.5,-459.5 779.5,-459.5 779.5,-347.5 630.5,-347.5"/>
+<polygon fill="white" stroke="#bfbfbf" points="630.5,-347.5 630.5,-459.5 779.5,-459.5 779.5,-347.5 630.5,-347.5"/>
 <text text-anchor="middle" x="705" y="-447.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::SubFaceOfNone&lt; 0 &gt;</text>
-<polyline fill="none" stroke="black" points="630.5,-440.5 779.5,-440.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="630.5,-440.5 779.5,-440.5 "/>
 <text text-anchor="start" x="638.5" y="-428.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ nDim</text>
-<polyline fill="none" stroke="black" points="630.5,-421.5 779.5,-421.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="630.5,-421.5 779.5,-421.5 "/>
 <text text-anchor="start" x="638.5" y="-409.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ element()</text>
 <text text-anchor="start" x="638.5" y="-398.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ isGhostFace()</text>
 <text text-anchor="start" x="638.5" y="-387.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ isInterProcessDomain()</text>
