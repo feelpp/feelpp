@@ -352,6 +352,12 @@ public:
     void registerSubWorlds( int n ) const;
     void registerSubWorldsGroupBySubspace( int n );
 
+    /**
+     * split the worldcomm into n sub worldcomm
+     * @param n number of sub worldcomm
+     * @return tuple containing the current color and current worldcomm as well as the global worldcomm
+     */
+    std::tuple<int,worldcomm_ptr_t,worldcomm_ptr_t> split( int n ) const;
 private :
 
     FEELPP_NO_EXPORT void initSubWorldCommSeq();
