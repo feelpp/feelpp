@@ -25,7 +25,6 @@ var feelpp_2feel_2feelmesh_2traits_8hpp =
     [ "is_tetrahedron", "structFeel_1_1is__tetrahedron.html", null ],
     [ "is_topological_face", "structFeel_1_1is__topological__face.html", null ],
     [ "is_triangle", "structFeel_1_1is__triangle.html", null ],
-    [ "MeshTraits", "structFeel_1_1MeshTraits.html", "structFeel_1_1MeshTraits" ],
     [ "real_dimension_t", "structFeel_1_1real__dimension__t.html", null ],
     [ "alledges_t", "feelpp_2feel_2feelmesh_2traits_8hpp.html#acdec5937cafa434c16d56e8b24cf3fc8", null ],
     [ "allelements_t", "feelpp_2feel_2feelmesh_2traits_8hpp.html#a290a1cc90b84153e720b1b9d0c7f3cc4", null ],

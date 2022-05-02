@@ -1,5 +1,4 @@
 var searchData=
 [
-  ['basis_20reference_20shapes_5333',['Basis Reference Shapes',['../group__GeoEntites.html',1,'']]],
-  ['basis_20geometrical_20entities_20geo0d_20and_20geond_2e_5334',['Basis Geometrical Entities Geo0D and GeoND.',['../group__GeoXD.html',1,'']]]
+  ['core_5285',['Core',['../group__Core.html',1,'']]]
 ];

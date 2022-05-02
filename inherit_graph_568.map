@@ -1,14 +1,3 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classEdges.html" title=" " alt="" coords="65,5,126,32"/>
-<area shape="rect" id="node2" href="$classFeel_1_1Mesh3D.html" title="3D mesh class" alt="" coords="252,67,421,109"/>
-<area shape="rect" id="node3" href="$classElements.html" title=" " alt="" coords="54,107,137,133"/>
-<area shape="rect" id="node4" href="$classFeel_1_1Mesh0D.html" title="0D mesh class" alt="" coords="252,263,421,305"/>
-<area shape="rect" id="node5" href="$classFeel_1_1Mesh1D.html" title="1D mesh class" alt="" coords="252,198,421,239"/>
-<area shape="rect" id="node6" href="$classFeel_1_1Mesh2D.html" title="2D mesh class" alt="" coords="252,133,421,174"/>
-<area shape="rect" id="node7" href="$classFaces.html" title=" " alt="" coords="66,56,125,83"/>
-<area shape="rect" id="node8" href="$classFeel_1_1PointSetBase.html" title="base class for point sets, to be used eg with SFINAE" alt="" coords="24,329,167,356"/>
-<area shape="rect" id="node9" href="$classFeel_1_1PointSet.html" title="Class of all PointSet on a Convex." alt="" coords="233,329,440,356"/>
-<area shape="rect" id="node10" href="$classFeel_1_1MeshBase.html" title=" " alt="" coords="5,158,185,199"/>
-<area shape="rect" id="node11" href="$classPoints.html" title=" " alt="" coords="64,224,127,251"/>
-<area shape="rect" id="node12" href="$classFeel_1_1VisitableBase.html" title=" " alt="" coords="11,275,179,301"/>
+<area shape="rect" id="node1" href="$structFeel_1_1void__basis_1_1ChangeTag.html" title=" " alt="" coords="5,5,188,47"/>
 </map>

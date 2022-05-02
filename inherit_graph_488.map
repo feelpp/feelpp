@@ -1,3 +1,5 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classFeel_1_1vf_1_1integrator_1_1parallel_1_1HartsContextEvaluate.html" title=" " alt="" coords="5,5,316,61"/>
+<area shape="rect" id="node1" title=" " alt="" coords="5,46,60,73"/>
+<area shape="rect" id="node2" href="$structFeel_1_1vf_1_1minmaxData.html" title="data returned by minmax" alt="" coords="110,5,273,47"/>
+<area shape="rect" id="node3" href="$structFeel_1_1vf_1_1normLinfData.html" title="data returned by normLinf" alt="" coords="108,71,275,112"/>
 </map>

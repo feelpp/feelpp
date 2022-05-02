@@ -1,5 +1,5 @@
 var searchData=
 [
-  ['discretization_5337',['Discretization',['../group__Discretization.html',1,'']]],
-  ['dsel_2dvariational_2dformulation_5338',['DSEL-Variational-Formulation',['../group__DSEL-Variational-Formulation.html',1,'']]]
+  ['feelpp_5288',['Feelpp',['../group__Feelpp.html',1,'']]],
+  ['filters_5289',['Filters',['../group__Filters.html',1,'']]]
 ];

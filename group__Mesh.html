@@ -124,6 +124,8 @@ $(document).ready(function(){initNavTree('group__Mesh.html',''); initResizable()
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Classes</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Geo0D.html">Feel::Geo0D&lt; Dim, T, IndexT &gt;</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1GeoElement0D.html">Feel::GeoElement0D&lt; Dim, SubFace, T, IndexT &gt;</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Class for <a class="el" href="classPoints.html">Points</a> and Vertices.  <a href="classFeel_1_1GeoElement0D.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -154,9 +156,16 @@ Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshBase.html">Feel::MeshBase&lt; IndexT &gt;</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">base mesh class  <a href="classFeel_1_1MeshBase.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1MeshTraits.html">Feel::MeshTraits&lt; MeshType &gt;</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Traits for meshes.  <a href="structFeel_1_1MeshTraits.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="enum-members"></a>
 Enumerations</h2></td></tr>
+<tr class="memitem:ga5df59a8b1a63f40c3c1d5a65162254d5"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__Mesh.html#ga5df59a8b1a63f40c3c1d5a65162254d5">Feel::GeoEntityContext</a> { <a class="el" href="group__Mesh.html#ga5df59a8b1a63f40c3c1d5a65162254d5ab58df77c4224c0712d878f278a68ffb3">Feel::MESH_ENTITY_INTERNAL</a> = ( 1&lt;&lt;0 ), 
+<a class="el" href="group__Mesh.html#ga5df59a8b1a63f40c3c1d5a65162254d5a8cf391070355f4b58e4187176f4eccc2">Feel::MESH_ENTITY_BOUNDARY</a> = ( 1&lt;&lt;1 )
+ }</td></tr>
+<tr class="separator:ga5df59a8b1a63f40c3c1d5a65162254d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga82cf55da340f64b682d0bea678d6cdf4"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__Mesh.html#ga82cf55da340f64b682d0bea678d6cdf4">Feel::MeshComponents</a> { <br />
 &#160;&#160;<b>MESH_UPDATE_EDGES</b> = ( 1 &lt;&lt; 0 ), 
 <b>MESH_UPDATE_FACES</b> = ( 1 &lt;&lt; 1 ), 
@@ -178,8 +187,61 @@ Enumerations</h2></td></tr>
  }</td></tr>
 <tr class="memdesc:ga82cf55da340f64b682d0bea678d6cdf4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Mesh components enum.  <a href="group__Mesh.html#ga82cf55da340f64b682d0bea678d6cdf4">More...</a><br /></td></tr>
 <tr class="separator:ga82cf55da340f64b682d0bea678d6cdf4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga8a2b0de2d64f5281612ba8d3077fbfd6"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__Mesh.html#ga8a2b0de2d64f5281612ba8d3077fbfd6">Feel::ReferenceGeometry</a> { <br />
+&#160;&#160;<a class="el" href="group__Mesh.html#ga8a2b0de2d64f5281612ba8d3077fbfd6af7c4e3a56f51e73b3ddb049c6a05ec66">Feel::GEOMETRY_POINT</a> = ( 1&lt;&lt;0 ), 
+<a class="el" href="group__Mesh.html#ga8a2b0de2d64f5281612ba8d3077fbfd6afee0cbded33063db1eeff118272afa74">Feel::GEOMETRY_LINE</a> = ( 1&lt;&lt;1 ), 
+<a class="el" href="group__Mesh.html#ga8a2b0de2d64f5281612ba8d3077fbfd6abaa799c22c419709b9a1c656e6993485">Feel::GEOMETRY_SURFACE</a> = ( 1&lt;&lt;2 ), 
+<a class="el" href="group__Mesh.html#ga8a2b0de2d64f5281612ba8d3077fbfd6a4a5fafdedda4a8b1f802bddd58dc612a">Feel::GEOMETRY_VOLUME</a> = ( 1&lt;&lt;3 ), 
+<br />
+&#160;&#160;<a class="el" href="group__Mesh.html#ga8a2b0de2d64f5281612ba8d3077fbfd6a54503d8991db83b0881690920230a997">Feel::GEOMETRY_4</a> = ( 1&lt;&lt;4 ), 
+<a class="el" href="group__Mesh.html#ga8a2b0de2d64f5281612ba8d3077fbfd6ac4e0f60e28b63a4d720202b5bee0bea9">Feel::GEOMETRY_5</a> = ( 1&lt;&lt;5 )
+<br />
+ }</td></tr>
+<tr class="separator:ga8a2b0de2d64f5281612ba8d3077fbfd6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gab3dcb9174b244819d7b003186b7da3be"><td class="memItemLeft" align="right" valign="top"><a id="gab3dcb9174b244819d7b003186b7da3be"></a>enum &#160;</td><td class="memItemRight" valign="bottom"><b>ReferenceShapes</b> { <br />
+&#160;&#160;<b>SHAPE_LINEAR</b> = ( 1&lt;&lt;0 ), 
+<b>SHAPE_BILINEAR</b> = ( 1&lt;&lt;1 ), 
+<b>SHAPE_QUADRATIC</b> = ( 1&lt;&lt;2 ), 
+<b>SHAPE_NONE</b> = ( 1&lt;&lt;3 ), 
+<br />
+&#160;&#160;<b>SHAPE_POINT</b> = ( 1&lt;&lt;4 ), 
+<b>SHAPE_LINE</b> = ( 1&lt;&lt;5 ), 
+<b>SHAPE_TRIANGLE</b> = ( 1&lt;&lt;6 ), 
+<b>SHAPE_QUAD</b> = ( 1&lt;&lt;7 ), 
+<br />
+&#160;&#160;<b>SHAPE_HEXA</b> = ( 1&lt;&lt;8 ), 
+<b>SHAPE_PRISM</b> = ( 1&lt;&lt;9 ), 
+<b>SHAPE_TETRA</b> = ( 1&lt;&lt;10 ), 
+<b>SHAPE_SP4</b> = ( 1&lt;&lt;11 ), 
+<br />
+&#160;&#160;<b>SHAPE_SP5</b> = ( 1&lt;&lt;12 )
+<br />
+ }</td></tr>
+<tr class="separator:gab3dcb9174b244819d7b003186b7da3be"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Enumeration Type Documentation</h2>
+<a id="ga5df59a8b1a63f40c3c1d5a65162254d5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga5df59a8b1a63f40c3c1d5a65162254d5">&#9670;&nbsp;</a></span>GeoEntityContext</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum <a class="el" href="group__Mesh.html#ga5df59a8b1a63f40c3c1d5a65162254d5">Feel::GeoEntityContext</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>#include &lt;/home/runner/work/feelpp/feelpp/feelpp/feel/feelmesh/entities.hpp&gt;</code></p>
+<table class="fieldtable">
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="ga5df59a8b1a63f40c3c1d5a65162254d5ab58df77c4224c0712d878f278a68ffb3"></a>MESH_ENTITY_INTERNAL&#160;</td><td class="fielddoc"><p>internal entity </p>
+</td></tr>
+<tr><td class="fieldname"><a id="ga5df59a8b1a63f40c3c1d5a65162254d5a8cf391070355f4b58e4187176f4eccc2"></a>MESH_ENTITY_BOUNDARY&#160;</td><td class="fielddoc"><p>boundary entity </p>
+</td></tr>
+</table>
+
+</div>
+</div>
 <a id="ga82cf55da340f64b682d0bea678d6cdf4"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ga82cf55da340f64b682d0bea678d6cdf4">&#9670;&nbsp;</a></span>MeshComponents</h2>
 
@@ -196,6 +258,36 @@ Enumerations</h2></td></tr>
 
 <p><a class="el" href="classFeel_1_1Mesh.html" title="unifying mesh class">Mesh</a> components enum. </p>
 <p>Components of a mesh that can be enabled or disabled when calling <code>updateForUse()</code> </p>
+
+</div>
+</div>
+<a id="ga8a2b0de2d64f5281612ba8d3077fbfd6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga8a2b0de2d64f5281612ba8d3077fbfd6">&#9670;&nbsp;</a></span>ReferenceGeometry</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum <a class="el" href="group__Mesh.html#ga8a2b0de2d64f5281612ba8d3077fbfd6">Feel::ReferenceGeometry</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>#include &lt;/home/runner/work/feelpp/feelpp/feelpp/feel/feelmesh/entities.hpp&gt;</code></p>
+<table class="fieldtable">
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="ga8a2b0de2d64f5281612ba8d3077fbfd6af7c4e3a56f51e73b3ddb049c6a05ec66"></a>GEOMETRY_POINT&#160;</td><td class="fielddoc"><p>point entity </p>
+</td></tr>
+<tr><td class="fieldname"><a id="ga8a2b0de2d64f5281612ba8d3077fbfd6afee0cbded33063db1eeff118272afa74"></a>GEOMETRY_LINE&#160;</td><td class="fielddoc"><p>line entity </p>
+</td></tr>
+<tr><td class="fieldname"><a id="ga8a2b0de2d64f5281612ba8d3077fbfd6abaa799c22c419709b9a1c656e6993485"></a>GEOMETRY_SURFACE&#160;</td><td class="fielddoc"><p>surface entity </p>
+</td></tr>
+<tr><td class="fieldname"><a id="ga8a2b0de2d64f5281612ba8d3077fbfd6a4a5fafdedda4a8b1f802bddd58dc612a"></a>GEOMETRY_VOLUME&#160;</td><td class="fielddoc"><p>volume entity </p>
+</td></tr>
+<tr><td class="fieldname"><a id="ga8a2b0de2d64f5281612ba8d3077fbfd6a54503d8991db83b0881690920230a997"></a>GEOMETRY_4&#160;</td><td class="fielddoc"><p>hypercube entity </p>
+</td></tr>
+<tr><td class="fieldname"><a id="ga8a2b0de2d64f5281612ba8d3077fbfd6ac4e0f60e28b63a4d720202b5bee0bea9"></a>GEOMETRY_5&#160;</td><td class="fielddoc"><p>hypercube entity </p>
+</td></tr>
+</table>
 
 </div>
 </div>
