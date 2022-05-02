@@ -191,7 +191,7 @@ var sectionId = 'dynsection-1';
 <!-- Node7 -->
 <g id="node7" class="node">
 <title>Node7</title>
-<g id="a_node7"><a xlink:href="classFeel_1_1FeelModels_1_1ModelBase.html" target="_top" xlink:title=" ">
+<g id="a_node7"><a xlink:href="classFeel_1_1FeelModels_1_1ModelBase.html" target="_top" xlink:title="Model base class.">
 <polygon fill="white" stroke="black" points="162.5,-642.5 162.5,-754.5 354.5,-754.5 354.5,-642.5 162.5,-642.5"/>
 <text text-anchor="middle" x="258.5" y="-742.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::ModelBase</text>
 <polyline fill="none" stroke="black" points="162.5,-735.5 354.5,-735.5 "/>

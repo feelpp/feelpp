@@ -116,7 +116,7 @@ var sectionId = 'dynsection-0';
 <!-- Node4 -->
 <g id="node4" class="node">
 <title>Node4</title>
-<g id="a_node4"><a xlink:href="classFeel_1_1FeelModels_1_1ModelBase.html" target="_top" xlink:title=" ">
+<g id="a_node4"><a xlink:href="classFeel_1_1FeelModels_1_1ModelBase.html" target="_top" xlink:title="Model base class.">
 <polygon fill="white" stroke="black" points="763.5,-1069 763.5,-1181 955.5,-1181 955.5,-1069 763.5,-1069"/>
 <text text-anchor="middle" x="859.5" y="-1169" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::ModelBase</text>
 <polyline fill="none" stroke="black" points="763.5,-1162 955.5,-1162 "/>
@@ -140,7 +140,7 @@ var sectionId = 'dynsection-0';
 <!-- Node12 -->
 <g id="node12" class="node">
 <title>Node12</title>
-<g id="a_node12"><a xlink:href="classFeel_1_1FeelModels_1_1ModelPhysic.html" target="_top" xlink:title=" ">
+<g id="a_node12"><a xlink:href="classFeel_1_1FeelModels_1_1ModelPhysic.html" target="_top" xlink:title="Physic of the Model.">
 <polygon fill="white" stroke="black" points="1231,-1019.5 1231,-1230.5 1422,-1230.5 1422,-1019.5 1231,-1019.5"/>
 <text text-anchor="start" x="1239" y="-1218.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::ModelPhysic</text>
 <text text-anchor="middle" x="1326.5" y="-1207.5" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; Dim &gt;</text>
@@ -541,7 +541,7 @@ var sectionId = 'dynsection-0';
 <!-- Node13 -->
 <g id="node13" class="node">
 <title>Node13</title>
-<g id="a_node13"><a xlink:href="classFeel_1_1FeelModels_1_1ModelPhysicCoefficientFormPDE.html" target="_top" xlink:title=" ">
+<g id="a_node13"><a xlink:href="classFeel_1_1FeelModels_1_1ModelPhysicCoefficientFormPDE.html" target="_top" xlink:title="CoefficientFormPDE Physic Model.">
 <polygon fill="white" stroke="black" points="629.5,-700 629.5,-823 823.5,-823 823.5,-700 629.5,-700"/>
 <text text-anchor="start" x="637.5" y="-811" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::ModelPhysic</text>
 <text text-anchor="middle" x="726.5" y="-800" font-family="Helvetica,sans-Serif" font-size="10.00">CoefficientFormPDE&lt; Dim &gt;</text>
@@ -566,7 +566,7 @@ var sectionId = 'dynsection-0';
 <!-- Node14 -->
 <g id="node14" class="node">
 <title>Node14</title>
-<g id="a_node14"><a xlink:href="classFeel_1_1FeelModels_1_1ModelPhysicCoefficientFormPDEs.html" target="_top" xlink:title=" ">
+<g id="a_node14"><a xlink:href="classFeel_1_1FeelModels_1_1ModelPhysicCoefficientFormPDEs.html" target="_top" xlink:title="CoefficientFormPDE set Physic Model.">
 <polygon fill="white" stroke="black" points="842,-694.5 842,-828.5 1041,-828.5 1041,-694.5 842,-694.5"/>
 <text text-anchor="start" x="850" y="-816.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::ModelPhysic</text>
 <text text-anchor="middle" x="941.5" y="-805.5" font-family="Helvetica,sans-Serif" font-size="10.00">CoefficientFormPDEs&lt; Dim &gt;</text>
@@ -592,7 +592,7 @@ var sectionId = 'dynsection-0';
 <!-- Node15 -->
 <g id="node15" class="node">
 <title>Node15</title>
-<g id="a_node15"><a xlink:href="classFeel_1_1FeelModels_1_1ModelPhysicElectric.html" target="_top" xlink:title=" ">
+<g id="a_node15"><a xlink:href="classFeel_1_1FeelModels_1_1ModelPhysicElectric.html" target="_top" xlink:title="Electric Physic Model.">
 <polygon fill="white" stroke="black" points="1059.5,-705.5 1059.5,-817.5 1225.5,-817.5 1225.5,-705.5 1059.5,-705.5"/>
 <text text-anchor="start" x="1067.5" y="-805.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::ModelPhysic</text>
 <text text-anchor="middle" x="1142.5" y="-794.5" font-family="Helvetica,sans-Serif" font-size="10.00">Electric&lt; Dim &gt;</text>
@@ -616,7 +616,7 @@ var sectionId = 'dynsection-0';
 <!-- Node16 -->
 <g id="node16" class="node">
 <title>Node16</title>
-<g id="a_node16"><a xlink:href="classFeel_1_1FeelModels_1_1ModelPhysicFluid.html" target="_top" xlink:title=" ">
+<g id="a_node16"><a xlink:href="classFeel_1_1FeelModels_1_1ModelPhysicFluid.html" target="_top" xlink:title="Fluid Physic Model.">
 <polygon fill="white" stroke="black" points="1243.5,-700 1243.5,-823 1409.5,-823 1409.5,-700 1243.5,-700"/>
 <text text-anchor="start" x="1251.5" y="-811" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::ModelPhysic</text>
 <text text-anchor="middle" x="1326.5" y="-800" font-family="Helvetica,sans-Serif" font-size="10.00">Fluid&lt; Dim &gt;</text>
@@ -641,7 +641,7 @@ var sectionId = 'dynsection-0';
 <!-- Node17 -->
 <g id="node17" class="node">
 <title>Node17</title>
-<g id="a_node17"><a xlink:href="classFeel_1_1FeelModels_1_1ModelPhysicFSI.html" target="_top" xlink:title=" ">
+<g id="a_node17"><a xlink:href="classFeel_1_1FeelModels_1_1ModelPhysicFSI.html" target="_top" xlink:title="Fluid Structure Interaction Physic Model.">
 <polygon fill="white" stroke="black" points="1427.5,-694.5 1427.5,-828.5 1593.5,-828.5 1593.5,-694.5 1427.5,-694.5"/>
 <text text-anchor="start" x="1435.5" y="-816.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::ModelPhysic</text>
 <text text-anchor="middle" x="1510.5" y="-805.5" font-family="Helvetica,sans-Serif" font-size="10.00">FSI&lt; Dim &gt;</text>
@@ -667,7 +667,7 @@ var sectionId = 'dynsection-0';
 <!-- Node18 -->
 <g id="node18" class="node">
 <title>Node18</title>
-<g id="a_node18"><a xlink:href="classFeel_1_1FeelModels_1_1ModelPhysicHeat.html" target="_top" xlink:title=" ">
+<g id="a_node18"><a xlink:href="classFeel_1_1FeelModels_1_1ModelPhysicHeat.html" target="_top" xlink:title="Heat Physic Model.">
 <polygon fill="white" stroke="black" points="1611.5,-700 1611.5,-823 1777.5,-823 1777.5,-700 1611.5,-700"/>
 <text text-anchor="start" x="1619.5" y="-811" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::ModelPhysic</text>
 <text text-anchor="middle" x="1694.5" y="-800" font-family="Helvetica,sans-Serif" font-size="10.00">Heat&lt; Dim &gt;</text>
@@ -692,7 +692,7 @@ var sectionId = 'dynsection-0';
 <!-- Node19 -->
 <g id="node19" class="node">
 <title>Node19</title>
-<g id="a_node19"><a xlink:href="classFeel_1_1FeelModels_1_1ModelPhysicSolid.html" target="_top" xlink:title=" ">
+<g id="a_node19"><a xlink:href="classFeel_1_1FeelModels_1_1ModelPhysicSolid.html" target="_top" xlink:title="Solid Physic Model.">
 <polygon fill="white" stroke="black" points="1796,-700 1796,-823 2023,-823 2023,-700 1796,-700"/>
 <text text-anchor="start" x="1804" y="-811" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::ModelPhysic</text>
 <text text-anchor="middle" x="1909.5" y="-800" font-family="Helvetica,sans-Serif" font-size="10.00">Solid&lt; Dim &gt;</text>
@@ -717,7 +717,7 @@ var sectionId = 'dynsection-0';
 <!-- Node20 -->
 <g id="node20" class="node">
 <title>Node20</title>
-<g id="a_node20"><a xlink:href="classFeel_1_1FeelModels_1_1ModelPhysicThermoElectric.html" target="_top" xlink:title=" ">
+<g id="a_node20"><a xlink:href="classFeel_1_1FeelModels_1_1ModelPhysicThermoElectric.html" target="_top" xlink:title="ThermoElectric Physic Model.">
 <polygon fill="white" stroke="black" points="2041.5,-705.5 2041.5,-817.5 2211.5,-817.5 2211.5,-705.5 2041.5,-705.5"/>
 <text text-anchor="start" x="2049.5" y="-805.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::ModelPhysic</text>
 <text text-anchor="middle" x="2126.5" y="-794.5" font-family="Helvetica,sans-Serif" font-size="10.00">ThermoElectric&lt; Dim &gt;</text>

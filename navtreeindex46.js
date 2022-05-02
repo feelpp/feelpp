@@ -1,5 +1,11 @@
 var NAVTREEINDEX46 =
 {
+"structFeel_1_1FeelModels_1_1TrialsSymbolsExprTraits.html":[4,1,1,4,90],
+"structFeel_1_1FeelModels_1_1TrialsSymbolsExprTraits.html#a4f978ecaf8365ec82de70dc606018305":[4,1,1,4,90,2],
+"structFeel_1_1FeelModels_1_1TrialsSymbolsExprTraits.html#a69aade9edff2e2a8564ebdb396d2efee":[4,1,1,4,90,1],
+"structFeel_1_1FeelModels_1_1TrialsSymbolsExprTraits.html#ab999085495703f0a50dc93f76e17c951":[4,1,1,4,90,0],
+"structFeel_1_1FeelModels_1_1detail_1_1ChangeBasisContinuity.html":[4,1,1,4,0,0],
+"structFeel_1_1FeelModels_1_1detail_1_1ChangeBasisContinuity_3_01NewContinuityType_00_01BasisType85014e0d1b1b40793cb205341b8ed0a9.html":[4,1,1,4,0,1],
 "structFeel_1_1FeelModels_1_1detail_1_1ChangeBasisContinuity_3_01NewContinuityType_00_01BasisType85014e0d1b1b40793cb205341b8ed0a9.html#a085fb4dc422654c5889fb37a491b6e5d":[4,1,1,4,0,1,0],
 "structFeel_1_1FeelModels_1_1detail_1_1ChangeBasisOrder.html":[4,1,1,4,0,2],
 "structFeel_1_1FeelModels_1_1detail_1_1ChangeBasisOrder_3_01NewOrder_00_01BasisType_3_01Order_00_86e9208bf6efe5ef93da29d48907e576.html":[4,1,1,4,0,3],
@@ -243,11 +249,5 @@ var NAVTREEINDEX46 =
 "structFeel_1_1MeshTraits.html#acc5d4cd8267aaad339fc53afe4f767df":[3,0,1,11,28],
 "structFeel_1_1MeshTraits.html#ae1d5522422cf920ea335face89eb8e3e":[3,0,1,11,13],
 "structFeel_1_1MeshTraits.html#ae49b88353b45a4fdfb39a81b45420b54":[3,0,1,11,26],
-"structFeel_1_1MeshTraits.html#af731964b819e35c6662b187136ffbd89":[3,0,1,11,22],
-"structFeel_1_1MeshTraits.html#afe0f303d15b11c67fa5bbee91a01623e":[3,0,1,11,30],
-"structFeel_1_1Mesh_1_1Inverse.html":[4,1,1,165,0],
-"structFeel_1_1Mesh_1_1Inverse.html#a0a170d2090d781cb69547159fadd529b":[4,1,1,165,0,1],
-"structFeel_1_1Mesh_1_1Inverse.html#a0e818bea03cd898c2fc52872a6eccc9a":[4,1,1,165,0,4],
-"structFeel_1_1Mesh_1_1Inverse.html#a25cdb1d35ba857a7bae6fca99c84616d":[4,1,1,165,0,8],
-"structFeel_1_1Mesh_1_1Inverse.html#a498e30c2222953fa9c3b85679110c7dc":[4,1,1,165,0,3]
+"structFeel_1_1MeshTraits.html#af731964b819e35c6662b187136ffbd89":[3,0,1,11,22]
 };

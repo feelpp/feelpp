@@ -12,7 +12,7 @@
 <!-- Node1 -->
 <g id="node1" class="node">
 <title>Node1</title>
-<g id="a_node1"><a xlink:title=" ">
+<g id="a_node1"><a xlink:title="Physic of the Model.">
 <polygon fill="#bfbfbf" stroke="black" points="693.5,-171.5 693.5,-382.5 884.5,-382.5 884.5,-171.5 693.5,-171.5"/>
 <text text-anchor="start" x="701.5" y="-370.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::ModelPhysic</text>
 <text text-anchor="middle" x="789" y="-359.5" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; Dim &gt;</text>
@@ -39,7 +39,7 @@
 <!-- Node4 -->
 <g id="node4" class="node">
 <title>Node4</title>
-<g id="a_node4"><a xlink:href="classFeel_1_1FeelModels_1_1ModelPhysicCoefficientFormPDE.html" target="_top" xlink:title=" ">
+<g id="a_node4"><a xlink:href="classFeel_1_1FeelModels_1_1ModelPhysicCoefficientFormPDE.html" target="_top" xlink:title="CoefficientFormPDE Physic Model.">
 <polygon fill="white" stroke="black" points="0,-6 0,-129 194,-129 194,-6 0,-6"/>
 <text text-anchor="start" x="8" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::ModelPhysic</text>
 <text text-anchor="middle" x="97" y="-106" font-family="Helvetica,sans-Serif" font-size="10.00">CoefficientFormPDE&lt; Dim &gt;</text>
@@ -64,7 +64,7 @@
 <!-- Node5 -->
 <g id="node5" class="node">
 <title>Node5</title>
-<g id="a_node5"><a xlink:href="classFeel_1_1FeelModels_1_1ModelPhysicCoefficientFormPDEs.html" target="_top" xlink:title=" ">
+<g id="a_node5"><a xlink:href="classFeel_1_1FeelModels_1_1ModelPhysicCoefficientFormPDEs.html" target="_top" xlink:title="CoefficientFormPDE set Physic Model.">
 <polygon fill="white" stroke="black" points="212.5,-0.5 212.5,-134.5 411.5,-134.5 411.5,-0.5 212.5,-0.5"/>
 <text text-anchor="start" x="220.5" y="-122.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::ModelPhysic</text>
 <text text-anchor="middle" x="312" y="-111.5" font-family="Helvetica,sans-Serif" font-size="10.00">CoefficientFormPDEs&lt; Dim &gt;</text>
@@ -90,7 +90,7 @@
 <!-- Node6 -->
 <g id="node6" class="node">
 <title>Node6</title>
-<g id="a_node6"><a xlink:href="classFeel_1_1FeelModels_1_1ModelPhysicElectric.html" target="_top" xlink:title=" ">
+<g id="a_node6"><a xlink:href="classFeel_1_1FeelModels_1_1ModelPhysicElectric.html" target="_top" xlink:title="Electric Physic Model.">
 <polygon fill="white" stroke="black" points="430,-11.5 430,-123.5 596,-123.5 596,-11.5 430,-11.5"/>
 <text text-anchor="start" x="438" y="-111.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::ModelPhysic</text>
 <text text-anchor="middle" x="513" y="-100.5" font-family="Helvetica,sans-Serif" font-size="10.00">Electric&lt; Dim &gt;</text>
@@ -114,7 +114,7 @@
 <!-- Node7 -->
 <g id="node7" class="node">
 <title>Node7</title>
-<g id="a_node7"><a xlink:href="classFeel_1_1FeelModels_1_1ModelPhysicFluid.html" target="_top" xlink:title=" ">
+<g id="a_node7"><a xlink:href="classFeel_1_1FeelModels_1_1ModelPhysicFluid.html" target="_top" xlink:title="Fluid Physic Model.">
 <polygon fill="white" stroke="black" points="614,-6 614,-129 780,-129 780,-6 614,-6"/>
 <text text-anchor="start" x="622" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::ModelPhysic</text>
 <text text-anchor="middle" x="697" y="-106" font-family="Helvetica,sans-Serif" font-size="10.00">Fluid&lt; Dim &gt;</text>
@@ -139,7 +139,7 @@
 <!-- Node8 -->
 <g id="node8" class="node">
 <title>Node8</title>
-<g id="a_node8"><a xlink:href="classFeel_1_1FeelModels_1_1ModelPhysicFSI.html" target="_top" xlink:title=" ">
+<g id="a_node8"><a xlink:href="classFeel_1_1FeelModels_1_1ModelPhysicFSI.html" target="_top" xlink:title="Fluid Structure Interaction Physic Model.">
 <polygon fill="white" stroke="black" points="798,-0.5 798,-134.5 964,-134.5 964,-0.5 798,-0.5"/>
 <text text-anchor="start" x="806" y="-122.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::ModelPhysic</text>
 <text text-anchor="middle" x="881" y="-111.5" font-family="Helvetica,sans-Serif" font-size="10.00">FSI&lt; Dim &gt;</text>
@@ -165,7 +165,7 @@
 <!-- Node9 -->
 <g id="node9" class="node">
 <title>Node9</title>
-<g id="a_node9"><a xlink:href="classFeel_1_1FeelModels_1_1ModelPhysicHeat.html" target="_top" xlink:title=" ">
+<g id="a_node9"><a xlink:href="classFeel_1_1FeelModels_1_1ModelPhysicHeat.html" target="_top" xlink:title="Heat Physic Model.">
 <polygon fill="white" stroke="black" points="982,-6 982,-129 1148,-129 1148,-6 982,-6"/>
 <text text-anchor="start" x="990" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::ModelPhysic</text>
 <text text-anchor="middle" x="1065" y="-106" font-family="Helvetica,sans-Serif" font-size="10.00">Heat&lt; Dim &gt;</text>
@@ -190,7 +190,7 @@
 <!-- Node10 -->
 <g id="node10" class="node">
 <title>Node10</title>
-<g id="a_node10"><a xlink:href="classFeel_1_1FeelModels_1_1ModelPhysicSolid.html" target="_top" xlink:title=" ">
+<g id="a_node10"><a xlink:href="classFeel_1_1FeelModels_1_1ModelPhysicSolid.html" target="_top" xlink:title="Solid Physic Model.">
 <polygon fill="white" stroke="black" points="1166.5,-6 1166.5,-129 1393.5,-129 1393.5,-6 1166.5,-6"/>
 <text text-anchor="start" x="1174.5" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::ModelPhysic</text>
 <text text-anchor="middle" x="1280" y="-106" font-family="Helvetica,sans-Serif" font-size="10.00">Solid&lt; Dim &gt;</text>
@@ -215,7 +215,7 @@
 <!-- Node11 -->
 <g id="node11" class="node">
 <title>Node11</title>
-<g id="a_node11"><a xlink:href="classFeel_1_1FeelModels_1_1ModelPhysicThermoElectric.html" target="_top" xlink:title=" ">
+<g id="a_node11"><a xlink:href="classFeel_1_1FeelModels_1_1ModelPhysicThermoElectric.html" target="_top" xlink:title="ThermoElectric Physic Model.">
 <polygon fill="white" stroke="black" points="1412,-11.5 1412,-123.5 1582,-123.5 1582,-11.5 1412,-11.5"/>
 <text text-anchor="start" x="1420" y="-111.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::ModelPhysic</text>
 <text text-anchor="middle" x="1497" y="-100.5" font-family="Helvetica,sans-Serif" font-size="10.00">ThermoElectric&lt; Dim &gt;</text>

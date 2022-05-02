@@ -1,5 +1,5 @@
 <map id="Feel::FeelModels::ModelBase" name="Feel::FeelModels::ModelBase">
-<area shape="rect" id="node1" title=" " alt="" coords="601,564,857,715"/>
+<area shape="rect" id="node1" title="Model base class." alt="" coords="601,564,857,715"/>
 <area shape="rect" id="node5" href="$classFeel_1_1FeelModels_1_1ModelAlgebraic.html" title=" " alt="" coords="530,763,770,913"/>
 <area shape="rect" id="node6" href="$classFeel_1_1FeelModels_1_1ModelNumerical.html" title="Handles some numerical model aspects: timestepping, mesh and properties." alt="" coords="594,961,863,1244"/>
 <area shape="rect" id="node2" href="$classFeel_1_1JournalWatcher.html" title=" " alt="" coords="493,131,727,516"/>

@@ -244,10 +244,10 @@ var NAVTREEINDEX10 =
 "classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataUpdateResidual.html#abe7eeaa3a950fc2732882956bfc9bd1a":[4,1,1,4,31,6,8],
 "classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataUpdateResidual.html#add0ec48c20372427ef31b5c9e0b085da":[4,1,1,4,31,6,0],
 "classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataUpdateResidual.html#ae3b93b00f970b90d7ee65f315b3b5a9a":[4,1,1,4,31,6,9],
-"classFeel_1_1FeelModels_1_1ModelBase.html":[4,1,1,4,33],
-"classFeel_1_1FeelModels_1_1ModelBase.html#a0325a5bc13c73b70b65c8086497d6a14":[4,1,1,4,33,28],
-"classFeel_1_1FeelModels_1_1ModelBase.html#a0b0ed1f15b63a16d0b03942508ce40c4":[4,1,1,4,33,40],
-"classFeel_1_1FeelModels_1_1ModelBase.html#a17af13dcff20dd4c9b01c28819f3f806":[4,1,1,4,33,52],
-"classFeel_1_1FeelModels_1_1ModelBase.html#a17d891021f270f2664d22d9b0d18b5cf":[4,1,1,4,33,50],
-"classFeel_1_1FeelModels_1_1ModelBase.html#a18869441f371a011da27f8a90f1d5ea6":[4,1,1,4,33,9]
+"classFeel_1_1FeelModels_1_1ModelBase.html":[3,1,0,1],
+"classFeel_1_1FeelModels_1_1ModelBase.html#a0325a5bc13c73b70b65c8086497d6a14":[3,1,0,1,28],
+"classFeel_1_1FeelModels_1_1ModelBase.html#a0b0ed1f15b63a16d0b03942508ce40c4":[3,1,0,1,40],
+"classFeel_1_1FeelModels_1_1ModelBase.html#a17af13dcff20dd4c9b01c28819f3f806":[3,1,0,1,52],
+"classFeel_1_1FeelModels_1_1ModelBase.html#a17d891021f270f2664d22d9b0d18b5cf":[3,1,0,1,50],
+"classFeel_1_1FeelModels_1_1ModelBase.html#a18869441f371a011da27f8a90f1d5ea6":[3,1,0,1,9]
 };

@@ -119,7 +119,7 @@
 <!-- Node6 -->
 <g id="node6" class="node">
 <title>Node6</title>
-<g id="a_node6"><a xlink:href="classFeel_1_1FeelModels_1_1ModelBase.html" target="_top" xlink:title=" ">
+<g id="a_node6"><a xlink:href="classFeel_1_1FeelModels_1_1ModelBase.html" target="_top" xlink:title="Model base class.">
 <polygon fill="white" stroke="black" points="162.5,-470.5 162.5,-582.5 354.5,-582.5 354.5,-470.5 162.5,-470.5"/>
 <text text-anchor="middle" x="258.5" y="-570.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::ModelBase</text>
 <polyline fill="none" stroke="black" points="162.5,-563.5 354.5,-563.5 "/>

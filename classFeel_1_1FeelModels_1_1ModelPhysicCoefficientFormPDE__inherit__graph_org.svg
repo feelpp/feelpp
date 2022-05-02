@@ -12,7 +12,7 @@
 <!-- Node1 -->
 <g id="node1" class="node">
 <title>Node1</title>
-<g id="a_node1"><a xlink:title=" ">
+<g id="a_node1"><a xlink:title="CoefficientFormPDE Physic Model.">
 <polygon fill="#bfbfbf" stroke="black" points="0,-0.5 0,-123.5 194,-123.5 194,-0.5 0,-0.5"/>
 <text text-anchor="start" x="8" y="-111.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::ModelPhysic</text>
 <text text-anchor="middle" x="97" y="-100.5" font-family="Helvetica,sans-Serif" font-size="10.00">CoefficientFormPDE&lt; Dim &gt;</text>
@@ -31,7 +31,7 @@
 <!-- Node2 -->
 <g id="node2" class="node">
 <title>Node2</title>
-<g id="a_node2"><a xlink:href="classFeel_1_1FeelModels_1_1ModelPhysic.html" target="_top" xlink:title=" ">
+<g id="a_node2"><a xlink:href="classFeel_1_1FeelModels_1_1ModelPhysic.html" target="_top" xlink:title="Physic of the Model.">
 <polygon fill="white" stroke="black" points="1.5,-160.5 1.5,-371.5 192.5,-371.5 192.5,-160.5 1.5,-160.5"/>
 <text text-anchor="start" x="9.5" y="-359.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::ModelPhysic</text>
 <text text-anchor="middle" x="97" y="-348.5" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; Dim &gt;</text>

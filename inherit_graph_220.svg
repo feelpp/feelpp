@@ -12,7 +12,7 @@
 <!-- Node0 -->
 <g id="node1" class="node">
 <title>Node0</title>
-<g id="a_node1"><a xlink:href="classFeel_1_1FeelModels_1_1ModelPhysics.html" target="_top" xlink:title=" ">
+<g id="a_node1"><a xlink:href="classFeel_1_1FeelModels_1_1ModelPhysics.html" target="_top" xlink:title="Physic set Model.">
 <polygon fill="white" stroke="black" points="0,-0.5 0,-30.5 171,-30.5 171,-0.5 0,-0.5"/>
 <text text-anchor="start" x="8" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::ModelPhysics</text>
 <text text-anchor="middle" x="85.5" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; Dim &gt;</text>
@@ -22,7 +22,7 @@
 <!-- Node1 -->
 <g id="node2" class="node">
 <title>Node1</title>
-<g id="a_node2"><a xlink:href="classFeel_1_1FeelModels_1_1ModelGenericPDE.html" target="_top" xlink:title=" ">
+<g id="a_node2"><a xlink:href="classFeel_1_1FeelModels_1_1ModelGenericPDE.html" target="_top" xlink:title="Generic PDE Model class.">
 <polygon fill="white" stroke="black" points="207,-0.5 207,-30.5 379,-30.5 379,-0.5 207,-0.5"/>
 <text text-anchor="start" x="215" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::ModelGeneric</text>
 <text text-anchor="middle" x="293" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">PDE&lt; Dim &gt;</text>

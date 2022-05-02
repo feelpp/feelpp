@@ -1,7 +1,7 @@
 <map id="Feel::FeelModels::Heat&lt; ConvexType, BasisTemperatureType &gt;" name="Feel::FeelModels::Heat&lt; ConvexType, BasisTemperatureType &gt;">
 <area shape="rect" id="node1" title=" " alt="" coords="2293,2952,2534,3147"/>
 <area shape="rect" id="node2" href="$classFeel_1_1FeelModels_1_1ModelNumerical.html" title="Handles some numerical model aspects: timestepping, mesh and properties." alt="" coords="3863,1754,4132,2037"/>
-<area shape="rect" id="node3" href="$classFeel_1_1FeelModels_1_1ModelBase.html" title=" " alt="" coords="3660,462,3916,613"/>
+<area shape="rect" id="node3" href="$classFeel_1_1FeelModels_1_1ModelBase.html" title="Model base class." alt="" coords="3660,462,3916,613"/>
 <area shape="rect" id="node6" href="$classFeel_1_1FeelModels_1_1ModelAlgebraic.html" title=" " alt="" coords="3668,1064,3908,1215"/>
 <area shape="rect" id="node4" href="$classFeel_1_1JournalWatcher.html" title=" " alt="" coords="3354,5,3588,391"/>
 <area shape="rect" id="node37" href="$classFeel_1_1FunctionSpaceBase.html" title="base class for FunctionSpace" alt="" coords="2980,440,3162,635"/>

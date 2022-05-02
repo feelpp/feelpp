@@ -58,7 +58,7 @@ var sectionId = 'dynsection-1';
 <!-- Node1 -->
 <g id="node1" class="node">
 <title>Node1</title>
-<g id="a_node1"><a xlink:title=" ">
+<g id="a_node1"><a xlink:title="Boundary Conditions in fluid mechanics.">
 <polygon fill="#bfbfbf" stroke="black" points="72.5,-0.5 72.5,-134.5 281.5,-134.5 281.5,-0.5 72.5,-0.5"/>
 <text text-anchor="start" x="80.5" y="-122.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::FluidMechanics</text>
 <text text-anchor="middle" x="177" y="-111.5" font-family="Helvetica,sans-Serif" font-size="10.00">BoundaryConditions&lt; Dim &gt;</text>
@@ -122,7 +122,7 @@ var sectionId = 'dynsection-1';
 <!-- Node4 -->
 <g id="node4" class="node">
 <title>Node4</title>
-<g id="a_node4"><a xlink:href="classFeel_1_1FeelModels_1_1ModelBase.html" target="_top" xlink:title=" ">
+<g id="a_node4"><a xlink:href="classFeel_1_1FeelModels_1_1ModelBase.html" target="_top" xlink:title="Model base class.">
 <polygon fill="white" stroke="black" points="81,-437.5 81,-549.5 273,-549.5 273,-437.5 81,-437.5"/>
 <text text-anchor="middle" x="177" y="-537.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::ModelBase</text>
 <polyline fill="none" stroke="black" points="81,-530.5 273,-530.5 "/>

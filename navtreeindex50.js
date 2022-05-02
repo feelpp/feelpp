@@ -1,5 +1,11 @@
 var NAVTREEINDEX50 =
 {
+"structFeel_1_1detail_1_1is__shared__ptr_3_01std_1_1shared__ptr_3_01T0_01_4_01_4.html":[4,1,1,1,29],
+"structFeel_1_1detail_1_1opinterprangetype.html":[4,1,1,1,34],
+"structFeel_1_1detail_1_1opinterprangetype.html#acbe984a1b2f37e3f3e82ac835d154671":[4,1,1,1,34,0],
+"structFeel_1_1detail_1_1periodicity__base.html":[4,1,1,1,36],
+"structFeel_1_1detail_1_1quadptlocrangetype.html":[4,1,1,1,38],
+"structFeel_1_1detail_1_1quadptlocrangetype.html#af044b9fd6cbbd2d87680b0b8db19ac21":[4,1,1,1,38,0],
 "structFeel_1_1detail_1_1rebuildDofPointsTool.html":[4,1,1,1,39],
 "structFeel_1_1detail_1_1rebuildDofPointsTool.html#a9bbf59c7ca8f53f8f7d6e5f2a0ee4a66":[4,1,1,1,39,0],
 "structFeel_1_1detail_1_1searchIndicesBySpace.html":[4,1,1,1,41],
@@ -243,11 +249,5 @@ var NAVTREEINDEX50 =
 "structFeel_1_1vf_1_1Cst_1_1tensor.html":[4,1,1,13,7,3],
 "structFeel_1_1vf_1_1Cst_1_1tensor.html#a047f481107c1c944a69c8c5f9b59f2a8":[4,1,1,13,7,3,8],
 "structFeel_1_1vf_1_1Cst_1_1tensor.html#a05a3ca636e842ec25f530db771986582":[4,1,1,13,7,3,3],
-"structFeel_1_1vf_1_1Cst_1_1tensor.html#a091fa70745ca550608ac653d1a463169":[4,1,1,13,7,3,21],
-"structFeel_1_1vf_1_1Cst_1_1tensor.html#a0e28e796212a6d967137dde9804003ab":[4,1,1,13,7,3,6],
-"structFeel_1_1vf_1_1Cst_1_1tensor.html#a1915188d53a320b9d4dcbed1a7cc4aa6":[4,1,1,13,7,3,17],
-"structFeel_1_1vf_1_1Cst_1_1tensor.html#a1b376a38b81da573192005c3ac8ed452":[4,1,1,13,7,3,20],
-"structFeel_1_1vf_1_1Cst_1_1tensor.html#a21b62938a542b584c92cb5be43580798":[4,1,1,13,7,3,22],
-"structFeel_1_1vf_1_1Cst_1_1tensor.html#a2a9514516f76ef75d68cd1c0baa43048":[4,1,1,13,7,3,7],
-"structFeel_1_1vf_1_1Cst_1_1tensor.html#a46f99962a05f7363b5885d095fb12959":[4,1,1,13,7,3,10]
+"structFeel_1_1vf_1_1Cst_1_1tensor.html#a091fa70745ca550608ac653d1a463169":[4,1,1,13,7,3,21]
 };

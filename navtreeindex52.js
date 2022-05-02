@@ -1,5 +1,11 @@
 var NAVTREEINDEX52 =
 {
+"structFeel_1_1vf_1_1OpMin_1_1tensor.html#ab9810b678c5bf08004263071445d21de":[4,1,1,13,27,2,9],
+"structFeel_1_1vf_1_1OpMin_1_1tensor.html#accd638b7a76996ce2bbe5e228ccdbfef":[4,1,1,13,27,2,10],
+"structFeel_1_1vf_1_1OpMin_1_1tensor.html#add312e28f90a32fe530b3528260b9f22":[4,1,1,13,27,2,2],
+"structFeel_1_1vf_1_1OpMin_1_1tensor.html#aed65c413f2061f55a790c8c5a2c279f8":[4,1,1,13,27,2,5],
+"structFeel_1_1vf_1_1OpMin_1_1tensor.html#aef721dc1b97e2175285b78833eca8917":[4,1,1,13,27,2,3],
+"structFeel_1_1vf_1_1OpMin_1_1tensor.html#af812f5391b900447b1c52bdf74c38558":[4,1,1,13,27,2,6],
 "structFeel_1_1vf_1_1OpMin_1_1tensor_1_1is__zero.html":[4,1,1,13,27,2,0],
 "structFeel_1_1vf_1_1OpMin_1_1tensor_1_1is__zero.html#a302b11e8b842c195cffc9254fffb3449":[4,1,1,13,27,2,0,0],
 "structFeel_1_1vf_1_1Pow_1_1HasTestFunction.html":[4,1,1,13,28,0],
@@ -243,11 +249,5 @@ var NAVTREEINDEX52 =
 "structFeel_1_1vf_1_1Trans_1_1tensor.html#aedf8e14888106f11cab9e35510e56f42":[4,1,1,13,46,3,7],
 "structFeel_1_1vf_1_1Trans_1_1tensor_1_1is__zero.html":[4,1,1,13,46,3,0],
 "structFeel_1_1vf_1_1Trans_1_1tensor_1_1is__zero.html#a707e9ea4e73b612ad2b8969e24f66fcb":[4,1,1,13,46,3,0,0],
-"structFeel_1_1vf_1_1Trans_1_1tensor_1_1sig.html":[4,1,1,13,46,3,1],
-"structFeel_1_1vf_1_1Trans_1_1tensor_1_1sig.html#ae1e4c90748d2b402185ea61fbbe94714":[4,1,1,13,46,3,1,0],
-"structFeel_1_1vf_1_1UnaryMinus_1_1HasTestFunction.html":[4,1,1,13,47,0],
-"structFeel_1_1vf_1_1UnaryMinus_1_1HasTestFunction.html#aae0d6c41a59625383916ca0668e8bdce":[4,1,1,13,47,0,0],
-"structFeel_1_1vf_1_1UnaryMinus_1_1HasTrialFunction.html":[4,1,1,13,47,1],
-"structFeel_1_1vf_1_1UnaryMinus_1_1HasTrialFunction.html#a99883c294b14916ac9d4051ca1bc6e4e":[4,1,1,13,47,1,0],
-"structFeel_1_1vf_1_1UnaryMinus_1_1Lambda.html":[4,1,1,13,47,2]
+"structFeel_1_1vf_1_1Trans_1_1tensor_1_1sig.html":[4,1,1,13,46,3,1]
 };

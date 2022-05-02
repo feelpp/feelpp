@@ -1,5 +1,5 @@
 var searchData=
 [
-  ['quadptlocalization_3296',['QuadPtLocalization',['../classFeel_1_1QuadPtLocalization.html',1,'Feel']]],
-  ['quadptlocrangetype_3297',['quadptlocrangetype',['../structFeel_1_1detail_1_1quadptlocrangetype.html',1,'Feel::detail']]]
+  ['quadptlocalization_3299',['QuadPtLocalization',['../classFeel_1_1QuadPtLocalization.html',1,'Feel']]],
+  ['quadptlocrangetype_3300',['quadptlocrangetype',['../structFeel_1_1detail_1_1quadptlocrangetype.html',1,'Feel::detail']]]
 ];
