@@ -26,12 +26,14 @@ OUTPUT_DIRECTORY        =
 INPUT                   =   @CMAKE_SOURCE_DIR@/feelpp/feel/feelcore \
                             @CMAKE_SOURCE_DIR@/feelpp/feel/feelmesh \
                             @CMAKE_SOURCE_DIR@/feelpp/feel/feeldiscr \
+                            @CMAKE_SOURCE_DIR@/feelpp/feel/feelts \
                             @CMAKE_SOURCE_DIR@/feelpp/feel/feelvf \
                             @CMAKE_SOURCE_DIR@/toolboxes/feel/feelmodels/modelcore \
                             @CMAKE_SOURCE_DIR@/toolboxes/feel/feelmodels/electric \
                             @CMAKE_SOURCE_DIR@/toolboxes/feel/feelmodels/heat \
                             @CMAKE_SOURCE_DIR@/toolboxes/feel/feelmodels/fluid \
                             @CMAKE_SOURCE_DIR@/toolboxes/feel/feelmodels/solid \
+                            @CMAKE_SOURCE_DIR@/testsuite/feelcore \
                             @CMAKE_CURRENT_SOURCE_DIR@/index.md \
                             @CMAKE_CURRENT_SOURCE_DIR@/examples.md \
 FILE_PATTERNS           = *.hpp *.md
@@ -61,14 +63,15 @@ INLINE_SIMPLE_STRUCTS   = NO
 # Generated formats
 GENERATE_HTML           = YES
 GENERATE_LATEX          = NO
+GENERATE_XML            = YES
 
 GENERATE_TODOLIST       = YES
-GENERATE_TESTLIST       = NO
+GENERATE_TESTLIST       = YES
 GENERATE_BUGLIST        = NO
 GENERATE_DEPRECATEDLIST = NO
 SHOW_USED_FILES         = NO
 SHOW_FILES              = YES
-SHOW_NAMESPACES         = NO
+SHOW_NAMESPACES         = YES
 LAYOUT_FILE             = @CMAKE_CURRENT_SOURCE_DIR@/layout.xml
 
 
