@@ -75,8 +75,18 @@ SHOW_NAMESPACES         = YES
 LAYOUT_FILE             = @CMAKE_CURRENT_SOURCE_DIR@/layout.xml
 
 
-CLASS_DIAGRAMS          = YES
+
 HAVE_DOT                = YES
+DOT_FONTNAME            = Helvetica
+DOT_FONTSIZE            = 10
+CLASS_DIAGRAMS          = YES
+UML_LOOK                = YES
+UML_LIMIT_NUM_FIELDS    = 5
+INCLUDE_GRAPH           = YES
+INCLUDED_BY_GRAPH       = YES
+
+DOT_IMAGE_FORMAT       = svg 
+INTERACTIVE_SVG        = YES
 
 HIDE_UNDOC_RELATIONS    = NO
 HIDE_UNDOC_MEMBERS      = NO
@@ -158,6 +168,6 @@ SEARCHENGINE            = YES
 # Mathjax (HTML only)
 USE_MATHJAX             = YES
 MATHJAX_FORMAT          = TeX-MML-AM_CHTML
-MATHJAX_RELPATH         = https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7
+MATHJAX_RELPATH         = https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.0
 MATHJAX_EXTENSIONS      =
 MATHJAX_CODEFILE        =
