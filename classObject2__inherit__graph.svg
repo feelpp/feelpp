@@ -46,7 +46,7 @@ if (edges && edges.length) {
         </defs>
 
 <script type="text/javascript">
-var viewWidth = 184;
+var viewWidth = 185;
 var viewHeight = 496;
 var sectionId = 'dynsection-0';
 </script>
@@ -54,18 +54,18 @@ var sectionId = 'dynsection-0';
 <svg id="graph" class="graph">
 <g id="viewport">
 <title>Object2</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-492 180,-492 180,4 -4,4"/>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-492 181,-492 181,4 -4,4"/>
 <!-- Node1 -->
 <g id="node1" class="node">
 <title>Node1</title>
 <g id="a_node1"><a xlink:title=" ">
-<polygon fill="#bfbfbf" stroke="black" points="9,-0.5 9,-68.5 167,-68.5 167,-0.5 9,-0.5"/>
-<text text-anchor="middle" x="88" y="-56.5" font-family="Helvetica,sans-Serif" font-size="10.00">Object2</text>
-<polyline fill="none" stroke="black" points="9,-49.5 167,-49.5 "/>
-<text text-anchor="middle" x="88" y="-37.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="9,-30.5 167,-30.5 "/>
-<text text-anchor="start" x="17" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ Object2()</text>
-<text text-anchor="start" x="17" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ updateInformationObject()</text>
+<polygon fill="#bfbfbf" stroke="black" points="9.5,-0.5 9.5,-68.5 167.5,-68.5 167.5,-0.5 9.5,-0.5"/>
+<text text-anchor="middle" x="88.5" y="-56.5" font-family="Helvetica,sans-Serif" font-size="10.00">Object2</text>
+<polyline fill="none" stroke="black" points="9.5,-49.5 167.5,-49.5 "/>
+<text text-anchor="middle" x="88.5" y="-37.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polyline fill="none" stroke="black" points="9.5,-30.5 167.5,-30.5 "/>
+<text text-anchor="start" x="17.5" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ Object2()</text>
+<text text-anchor="start" x="17.5" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ updateInformationObject()</text>
 </a>
 </g>
 </g>
@@ -73,11 +73,11 @@ var sectionId = 'dynsection-0';
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:href="classFeel_1_1JournalWatcher.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="0,-105.5 0,-393.5 176,-393.5 176,-105.5 0,-105.5"/>
-<text text-anchor="middle" x="88" y="-381.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::JournalWatcher</text>
-<polyline fill="none" stroke="black" points="0,-374.5 176,-374.5 "/>
-<text text-anchor="middle" x="88" y="-362.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="0,-355.5 176,-355.5 "/>
+<polygon fill="white" stroke="black" points="0,-105.5 0,-393.5 177,-393.5 177,-105.5 0,-105.5"/>
+<text text-anchor="middle" x="88.5" y="-381.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::JournalWatcher</text>
+<polyline fill="none" stroke="black" points="0,-374.5 177,-374.5 "/>
+<text text-anchor="middle" x="88.5" y="-362.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polyline fill="none" stroke="black" points="0,-355.5 177,-355.5 "/>
 <text text-anchor="start" x="8" y="-343.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_journal_is_connected</text>
 <text text-anchor="start" x="8" y="-332.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_category</text>
 <text text-anchor="start" x="8" y="-321.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_name</text>
@@ -106,27 +106,27 @@ var sectionId = 'dynsection-0';
 <!-- Node2&#45;&gt;Node1 -->
 <g id="edge1" class="edge">
 <title>Node2&#45;&gt;Node1</title>
-<path fill="none" stroke="midnightblue" d="M88,-95.08C88,-85.52 88,-76.6 88,-68.72"/>
-<polygon fill="none" stroke="midnightblue" points="84.5,-95.24 88,-105.24 91.5,-95.24 84.5,-95.24"/>
+<path fill="none" stroke="midnightblue" d="M88.5,-95.08C88.5,-85.52 88.5,-76.6 88.5,-68.72"/>
+<polygon fill="none" stroke="midnightblue" points="85,-95.24 88.5,-105.24 92,-95.24 85,-95.24"/>
 </g>
 <!-- Node3 -->
 <g id="node3" class="node">
 <title>Node3</title>
 <g id="a_node3"><a xlink:title=" ">
-<polygon fill="white" stroke="#bfbfbf" points="34.5,-430.5 34.5,-487.5 141.5,-487.5 141.5,-430.5 34.5,-430.5"/>
-<text text-anchor="middle" x="88" y="-475.5" font-family="Helvetica,sans-Serif" font-size="10.00">Event::SlotHandler</text>
-<polyline fill="none" stroke="#bfbfbf" points="34.5,-468.5 141.5,-468.5 "/>
-<text text-anchor="middle" x="88" y="-456.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="#bfbfbf" points="34.5,-449.5 141.5,-449.5 "/>
-<text text-anchor="middle" x="88" y="-437.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polygon fill="white" stroke="#bfbfbf" points="35,-430.5 35,-487.5 142,-487.5 142,-430.5 35,-430.5"/>
+<text text-anchor="middle" x="88.5" y="-475.5" font-family="Helvetica,sans-Serif" font-size="10.00">Event::SlotHandler</text>
+<polyline fill="none" stroke="#bfbfbf" points="35,-468.5 142,-468.5 "/>
+<text text-anchor="middle" x="88.5" y="-456.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polyline fill="none" stroke="#bfbfbf" points="35,-449.5 142,-449.5 "/>
+<text text-anchor="middle" x="88.5" y="-437.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>
 </g>
 <!-- Node3&#45;&gt;Node2 -->
 <g id="edge2" class="edge">
 <title>Node3&#45;&gt;Node2</title>
-<path fill="none" stroke="midnightblue" d="M88,-420.38C88,-412.29 88,-403.28 88,-393.76"/>
-<polygon fill="none" stroke="midnightblue" points="84.5,-420.45 88,-430.45 91.5,-420.45 84.5,-420.45"/>
+<path fill="none" stroke="midnightblue" d="M88.5,-420.38C88.5,-412.29 88.5,-403.28 88.5,-393.76"/>
+<polygon fill="none" stroke="midnightblue" points="85,-420.45 88.5,-430.45 92,-420.45 85,-420.45"/>
 </g>
 </g>
 </svg>

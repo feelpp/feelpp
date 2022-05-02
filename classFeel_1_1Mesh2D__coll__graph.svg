@@ -59,37 +59,37 @@ var sectionId = 'dynsection-1';
 <g id="node1" class="node">
 <title>Node1</title>
 <g id="a_node1"><a xlink:title="2D mesh class">
-<polygon fill="#bfbfbf" stroke="black" points="416.5,-0.5 416.5,-332.5 577.5,-332.5 577.5,-0.5 416.5,-0.5"/>
-<text text-anchor="start" x="424.5" y="-320.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::Mesh2D&lt; Shape,</text>
+<polygon fill="#bfbfbf" stroke="black" points="416,-0.5 416,-332.5 578,-332.5 578,-0.5 416,-0.5"/>
+<text text-anchor="start" x="424" y="-320.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::Mesh2D&lt; Shape,</text>
 <text text-anchor="middle" x="497" y="-309.5" font-family="Helvetica,sans-Serif" font-size="10.00"> T, IndexT &gt;</text>
-<polyline fill="none" stroke="black" points="416.5,-302.5 577.5,-302.5 "/>
+<polyline fill="none" stroke="black" points="416,-302.5 578,-302.5 "/>
 <text text-anchor="middle" x="497" y="-290.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="416.5,-283.5 577.5,-283.5 "/>
-<text text-anchor="start" x="424.5" y="-271.5" font-family="Helvetica,sans-Serif" font-size="10.00">* return_type</text>
-<text text-anchor="start" x="424.5" y="-260.5" font-family="Helvetica,sans-Serif" font-size="10.00">* super_visitable</text>
-<text text-anchor="start" x="424.5" y="-249.5" font-family="Helvetica,sans-Serif" font-size="10.00">* super</text>
-<text text-anchor="start" x="424.5" y="-238.5" font-family="Helvetica,sans-Serif" font-size="10.00">* index_type</text>
-<text text-anchor="start" x="424.5" y="-227.5" font-family="Helvetica,sans-Serif" font-size="10.00">* size_type</text>
-<text text-anchor="start" x="424.5" y="-216.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 26 more...</text>
-<text text-anchor="start" x="424.5" y="-205.5" font-family="Helvetica,sans-Serif" font-size="10.00">* boost::serialization</text>
-<text text-anchor="start" x="424.5" y="-194.5" font-family="Helvetica,sans-Serif" font-size="10.00">::access</text>
-<text text-anchor="start" x="424.5" y="-183.5" font-family="Helvetica,sans-Serif" font-size="10.00">* beginEdge()</text>
-<text text-anchor="start" x="424.5" y="-172.5" font-family="Helvetica,sans-Serif" font-size="10.00">* endEdge()</text>
-<text text-anchor="start" x="424.5" y="-161.5" font-family="Helvetica,sans-Serif" font-size="10.00">* edges()</text>
-<text text-anchor="start" x="424.5" y="-150.5" font-family="Helvetica,sans-Serif" font-size="10.00">* setWorldComm()</text>
-<text text-anchor="start" x="424.5" y="-139.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 8 more...</text>
-<text text-anchor="start" x="424.5" y="-128.5" font-family="Helvetica,sans-Serif" font-size="10.00">* Mesh2D()</text>
-<text text-anchor="start" x="424.5" y="-117.5" font-family="Helvetica,sans-Serif" font-size="10.00">* Mesh2D()</text>
-<text text-anchor="start" x="424.5" y="-106.5" font-family="Helvetica,sans-Serif" font-size="10.00">* Mesh2D()</text>
-<text text-anchor="start" x="424.5" y="-95.5" font-family="Helvetica,sans-Serif" font-size="10.00">* ~Mesh2D()</text>
-<text text-anchor="start" x="424.5" y="-84.5" font-family="Helvetica,sans-Serif" font-size="10.00">* operator=()</text>
-<text text-anchor="start" x="424.5" y="-73.5" font-family="Helvetica,sans-Serif" font-size="10.00">* operator=()</text>
-<text text-anchor="start" x="424.5" y="-62.5" font-family="Helvetica,sans-Serif" font-size="10.00">* isEmpty()</text>
-<text text-anchor="start" x="424.5" y="-51.5" font-family="Helvetica,sans-Serif" font-size="10.00">* numElements()</text>
-<text text-anchor="start" x="424.5" y="-40.5" font-family="Helvetica,sans-Serif" font-size="10.00">* numLocalEdges()</text>
-<text text-anchor="start" x="424.5" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">* numLocalFaces()</text>
-<text text-anchor="start" x="424.5" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">* numLocalTopologicalFaces()</text>
-<text text-anchor="start" x="424.5" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 4 more...</text>
+<polyline fill="none" stroke="black" points="416,-283.5 578,-283.5 "/>
+<text text-anchor="start" x="424" y="-271.5" font-family="Helvetica,sans-Serif" font-size="10.00">* return_type</text>
+<text text-anchor="start" x="424" y="-260.5" font-family="Helvetica,sans-Serif" font-size="10.00">* super_visitable</text>
+<text text-anchor="start" x="424" y="-249.5" font-family="Helvetica,sans-Serif" font-size="10.00">* super</text>
+<text text-anchor="start" x="424" y="-238.5" font-family="Helvetica,sans-Serif" font-size="10.00">* index_type</text>
+<text text-anchor="start" x="424" y="-227.5" font-family="Helvetica,sans-Serif" font-size="10.00">* size_type</text>
+<text text-anchor="start" x="424" y="-216.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 26 more...</text>
+<text text-anchor="start" x="424" y="-205.5" font-family="Helvetica,sans-Serif" font-size="10.00">* boost::serialization</text>
+<text text-anchor="start" x="424" y="-194.5" font-family="Helvetica,sans-Serif" font-size="10.00">::access</text>
+<text text-anchor="start" x="424" y="-183.5" font-family="Helvetica,sans-Serif" font-size="10.00">* beginEdge()</text>
+<text text-anchor="start" x="424" y="-172.5" font-family="Helvetica,sans-Serif" font-size="10.00">* endEdge()</text>
+<text text-anchor="start" x="424" y="-161.5" font-family="Helvetica,sans-Serif" font-size="10.00">* edges()</text>
+<text text-anchor="start" x="424" y="-150.5" font-family="Helvetica,sans-Serif" font-size="10.00">* setWorldComm()</text>
+<text text-anchor="start" x="424" y="-139.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 8 more...</text>
+<text text-anchor="start" x="424" y="-128.5" font-family="Helvetica,sans-Serif" font-size="10.00">* Mesh2D()</text>
+<text text-anchor="start" x="424" y="-117.5" font-family="Helvetica,sans-Serif" font-size="10.00">* Mesh2D()</text>
+<text text-anchor="start" x="424" y="-106.5" font-family="Helvetica,sans-Serif" font-size="10.00">* Mesh2D()</text>
+<text text-anchor="start" x="424" y="-95.5" font-family="Helvetica,sans-Serif" font-size="10.00">* ~Mesh2D()</text>
+<text text-anchor="start" x="424" y="-84.5" font-family="Helvetica,sans-Serif" font-size="10.00">* operator=()</text>
+<text text-anchor="start" x="424" y="-73.5" font-family="Helvetica,sans-Serif" font-size="10.00">* operator=()</text>
+<text text-anchor="start" x="424" y="-62.5" font-family="Helvetica,sans-Serif" font-size="10.00">* isEmpty()</text>
+<text text-anchor="start" x="424" y="-51.5" font-family="Helvetica,sans-Serif" font-size="10.00">* numElements()</text>
+<text text-anchor="start" x="424" y="-40.5" font-family="Helvetica,sans-Serif" font-size="10.00">* numLocalEdges()</text>
+<text text-anchor="start" x="424" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">* numLocalFaces()</text>
+<text text-anchor="start" x="424" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">* numLocalTopologicalFaces()</text>
+<text text-anchor="start" x="424" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 4 more...</text>
 </a>
 </g>
 </g>
@@ -112,7 +112,7 @@ var sectionId = 'dynsection-1';
 <!-- Node2&#45;&gt;Node1 -->
 <g id="edge1" class="edge">
 <title>Node2&#45;&gt;Node1</title>
-<path fill="none" stroke="midnightblue" d="M71.17,-546.22C80.3,-500.76 98.83,-436.24 135,-391 209.6,-297.68 334.44,-233.06 416.26,-198.13"/>
+<path fill="none" stroke="midnightblue" d="M71.17,-546.22C80.3,-500.76 98.83,-436.24 135,-391 209.48,-297.83 334.06,-233.26 415.88,-198.29"/>
 <polygon fill="none" stroke="midnightblue" points="67.71,-545.71 69.26,-556.19 74.58,-547.03 67.71,-545.71"/>
 </g>
 <!-- Node3 -->
@@ -164,7 +164,7 @@ var sectionId = 'dynsection-1';
 <!-- Node3&#45;&gt;Node1 -->
 <g id="edge2" class="edge">
 <title>Node3&#45;&gt;Node1</title>
-<path fill="none" stroke="midnightblue" d="M322.54,-398.56C324.02,-396.01 325.51,-393.49 327,-391 353.19,-347.3 386.33,-302.04 416.37,-263.77"/>
+<path fill="none" stroke="midnightblue" d="M322.54,-398.56C324.02,-396.01 325.51,-393.49 327,-391 353.07,-347.51 386.01,-302.47 415.94,-264.32"/>
 <polygon fill="none" stroke="midnightblue" points="319.47,-396.88 317.55,-407.29 325.55,-400.35 319.47,-396.88"/>
 </g>
 <!-- Node4 -->
@@ -326,7 +326,7 @@ var sectionId = 'dynsection-1';
 <!-- Node11&#45;&gt;Node1 -->
 <g id="edge10" class="edge">
 <title>Node11&#45;&gt;Node1</title>
-<path fill="none" stroke="midnightblue" d="M744.08,-547.23C723.99,-504.08 693.57,-442.25 662,-391 636.57,-349.73 605.68,-306.42 577.53,-269.03"/>
+<path fill="none" stroke="midnightblue" d="M744.08,-547.23C723.99,-504.08 693.57,-442.25 662,-391 636.76,-350.04 606.14,-307.07 578.17,-269.87"/>
 <polygon fill="none" stroke="midnightblue" points="740.96,-548.81 748.33,-556.42 747.31,-545.87 740.96,-548.81"/>
 </g>
 <!-- Node12 -->
@@ -345,8 +345,8 @@ var sectionId = 'dynsection-1';
 <!-- Node12&#45;&gt;Node1 -->
 <g id="edge11" class="edge">
 <title>Node12&#45;&gt;Node1</title>
-<path fill="none" stroke="#404040" d="M946.06,-572.76C938.7,-529.61 919.29,-445.67 874,-391 797.93,-299.17 673.72,-236.02 588.81,-200.84"/>
-<polygon fill="none" stroke="#404040" points="588.73,-200.81 581.66,-202.24 577.62,-196.27 584.68,-194.84 588.73,-200.81"/>
+<path fill="none" stroke="#404040" d="M946.06,-572.76C938.7,-529.61 919.29,-445.67 874,-391 798.05,-299.31 674.1,-236.21 589.2,-201"/>
+<polygon fill="none" stroke="#404040" points="589.12,-200.97 582.05,-202.4 578.01,-196.43 585.07,-195 589.12,-200.97"/>
 <text text-anchor="middle" x="878.5" y="-365" font-family="Helvetica,sans-Serif" font-size="10.00"> +nDim</text>
 <text text-anchor="middle" x="878.5" y="-354" font-family="Helvetica,sans-Serif" font-size="10.00">+nRealDim</text>
 </g>

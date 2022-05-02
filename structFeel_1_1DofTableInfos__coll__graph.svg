@@ -46,7 +46,7 @@ if (edges && edges.length) {
         </defs>
 
 <script type="text/javascript">
-var viewWidth = 395;
+var viewWidth = 396;
 var viewHeight = 475;
 var sectionId = 'dynsection-0';
 </script>
@@ -54,7 +54,7 @@ var sectionId = 'dynsection-0';
 <svg id="graph" class="graph">
 <g id="viewport">
 <title>Feel::DofTableInfos</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-471 391,-471 391,4 -4,4"/>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-471 392,-471 392,4 -4,4"/>
 <!-- Node1 -->
 <g id="node1" class="node">
 <title>Node1</title>
@@ -123,7 +123,7 @@ var sectionId = 'dynsection-0';
 <title>Node3&#45;&gt;Node1</title>
 <path fill="none" stroke="#404040" d="M149,-303.4C149,-266.52 149,-199.67 149,-146.68"/>
 <polygon fill="none" stroke="#404040" points="149,-146.57 145,-140.57 149,-134.57 153,-140.57 149,-146.57"/>
-<text text-anchor="middle" x="190.5" y="-216.5" font-family="Helvetica,sans-Serif" font-size="10.00"> +feFamilyName</text>
+<text text-anchor="middle" x="191" y="-216.5" font-family="Helvetica,sans-Serif" font-size="10.00"> +feFamilyName</text>
 </g>
 <!-- Node4 -->
 <g id="node4" class="node">
@@ -149,32 +149,32 @@ var sectionId = 'dynsection-0';
 <g id="node5" class="node">
 <title>Node5</title>
 <g id="a_node5"><a xlink:href="classbool.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="236,-303.5 236,-360.5 274,-360.5 274,-303.5 236,-303.5"/>
-<text text-anchor="middle" x="255" y="-348.5" font-family="Helvetica,sans-Serif" font-size="10.00">bool</text>
-<polyline fill="none" stroke="black" points="236,-341.5 274,-341.5 "/>
-<text text-anchor="middle" x="255" y="-329.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="236,-322.5 274,-322.5 "/>
-<text text-anchor="middle" x="255" y="-310.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polygon fill="white" stroke="black" points="237,-303.5 237,-360.5 275,-360.5 275,-303.5 237,-303.5"/>
+<text text-anchor="middle" x="256" y="-348.5" font-family="Helvetica,sans-Serif" font-size="10.00">bool</text>
+<polyline fill="none" stroke="black" points="237,-341.5 275,-341.5 "/>
+<text text-anchor="middle" x="256" y="-329.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polyline fill="none" stroke="black" points="237,-322.5 275,-322.5 "/>
+<text text-anchor="middle" x="256" y="-310.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>
 </g>
 <!-- Node5&#45;&gt;Node1 -->
 <g id="edge4" class="edge">
 <title>Node5&#45;&gt;Node1</title>
-<path fill="none" stroke="#404040" d="M256.96,-303.22C258.35,-266.82 256.77,-201.86 233,-153 227.96,-142.65 221.15,-132.8 213.56,-123.73"/>
-<polygon fill="none" stroke="#404040" points="213.39,-123.54 206.41,-121.71 205.42,-114.57 212.39,-116.4 213.39,-123.54"/>
-<text text-anchor="middle" x="322" y="-277" font-family="Helvetica,sans-Serif" font-size="10.00"> +is_discontinuous_totally</text>
-<text text-anchor="middle" x="322" y="-266" font-family="Helvetica,sans-Serif" font-size="10.00">+is_hcurl_conforming</text>
-<text text-anchor="middle" x="322" y="-255" font-family="Helvetica,sans-Serif" font-size="10.00">+is_product</text>
-<text text-anchor="middle" x="322" y="-244" font-family="Helvetica,sans-Serif" font-size="10.00">+is_scalar</text>
-<text text-anchor="start" x="257" y="-233" font-family="Helvetica,sans-Serif" font-size="10.00">+is_discontinuous</text>
-<text text-anchor="middle" x="322" y="-222" font-family="Helvetica,sans-Serif" font-size="10.00">_locally</text>
-<text text-anchor="middle" x="322" y="-211" font-family="Helvetica,sans-Serif" font-size="10.00">+is_tensor2symm</text>
-<text text-anchor="middle" x="322" y="-200" font-family="Helvetica,sans-Serif" font-size="10.00">+is_continuous</text>
-<text text-anchor="middle" x="322" y="-189" font-family="Helvetica,sans-Serif" font-size="10.00">+is_tensor2</text>
-<text text-anchor="middle" x="322" y="-178" font-family="Helvetica,sans-Serif" font-size="10.00">+is_hdiv_conforming</text>
-<text text-anchor="middle" x="322" y="-167" font-family="Helvetica,sans-Serif" font-size="10.00">+is_modal</text>
-<text text-anchor="middle" x="322" y="-156" font-family="Helvetica,sans-Serif" font-size="10.00">...</text>
+<path fill="none" stroke="#404040" d="M258,-303.2C259.45,-266.77 257.91,-201.79 234,-153 228.71,-142.21 221.48,-131.99 213.46,-122.63"/>
+<polygon fill="none" stroke="#404040" points="213.29,-122.44 206.29,-120.69 205.21,-113.56 212.21,-115.31 213.29,-122.44"/>
+<text text-anchor="middle" x="323" y="-277" font-family="Helvetica,sans-Serif" font-size="10.00"> +is_discontinuous_totally</text>
+<text text-anchor="middle" x="323" y="-266" font-family="Helvetica,sans-Serif" font-size="10.00">+is_hcurl_conforming</text>
+<text text-anchor="middle" x="323" y="-255" font-family="Helvetica,sans-Serif" font-size="10.00">+is_product</text>
+<text text-anchor="middle" x="323" y="-244" font-family="Helvetica,sans-Serif" font-size="10.00">+is_scalar</text>
+<text text-anchor="start" x="258" y="-233" font-family="Helvetica,sans-Serif" font-size="10.00">+is_discontinuous</text>
+<text text-anchor="middle" x="323" y="-222" font-family="Helvetica,sans-Serif" font-size="10.00">_locally</text>
+<text text-anchor="middle" x="323" y="-211" font-family="Helvetica,sans-Serif" font-size="10.00">+is_tensor2symm</text>
+<text text-anchor="middle" x="323" y="-200" font-family="Helvetica,sans-Serif" font-size="10.00">+is_continuous</text>
+<text text-anchor="middle" x="323" y="-189" font-family="Helvetica,sans-Serif" font-size="10.00">+is_tensor2</text>
+<text text-anchor="middle" x="323" y="-178" font-family="Helvetica,sans-Serif" font-size="10.00">+is_hdiv_conforming</text>
+<text text-anchor="middle" x="323" y="-167" font-family="Helvetica,sans-Serif" font-size="10.00">+is_modal</text>
+<text text-anchor="middle" x="323" y="-156" font-family="Helvetica,sans-Serif" font-size="10.00">...</text>
 </g>
 </g>
 </svg>

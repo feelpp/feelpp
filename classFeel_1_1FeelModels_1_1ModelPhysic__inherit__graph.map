@@ -1,13 +1,13 @@
 <map id="Feel::FeelModels::ModelPhysic&lt; Dim &gt;" name="Feel::FeelModels::ModelPhysic&lt; Dim &gt;">
 <area shape="rect" id="node1" title="Physic of the Model." alt="" coords="930,564,1185,847"/>
 <area shape="rect" id="node4" href="$classFeel_1_1FeelModels_1_1ModelPhysicCoefficientFormPDE.html" title="CoefficientFormPDE Physic Model." alt="" coords="5,902,264,1067"/>
-<area shape="rect" id="node5" href="$classFeel_1_1FeelModels_1_1ModelPhysicCoefficientFormPDEs.html" title="CoefficientFormPDE set Physic Model." alt="" coords="289,895,554,1075"/>
+<area shape="rect" id="node5" href="$classFeel_1_1FeelModels_1_1ModelPhysicCoefficientFormPDEs.html" title="CoefficientFormPDE set Physic Model." alt="" coords="288,895,555,1075"/>
 <area shape="rect" id="node6" href="$classFeel_1_1FeelModels_1_1ModelPhysicElectric.html" title="Electric Physic Model." alt="" coords="579,909,800,1060"/>
 <area shape="rect" id="node7" href="$classFeel_1_1FeelModels_1_1ModelPhysicFluid.html" title="Fluid Physic Model." alt="" coords="824,902,1045,1067"/>
 <area shape="rect" id="node8" href="$classFeel_1_1FeelModels_1_1ModelPhysicFSI.html" title="Fluid Structure Interaction Physic Model." alt="" coords="1069,895,1291,1075"/>
 <area shape="rect" id="node9" href="$classFeel_1_1FeelModels_1_1ModelPhysicHeat.html" title="Heat Physic Model." alt="" coords="1315,902,1536,1067"/>
 <area shape="rect" id="node10" href="$classFeel_1_1FeelModels_1_1ModelPhysicSolid.html" title="Solid Physic Model." alt="" coords="1561,902,1863,1067"/>
 <area shape="rect" id="node11" href="$classFeel_1_1FeelModels_1_1ModelPhysicThermoElectric.html" title="ThermoElectric Physic Model." alt="" coords="1888,909,2115,1060"/>
-<area shape="rect" id="node2" href="$classFeel_1_1JournalWatcher.html" title=" " alt="" coords="940,131,1175,516"/>
+<area shape="rect" id="node2" href="$classFeel_1_1JournalWatcher.html" title=" " alt="" coords="939,131,1175,516"/>
 <area shape="rect" id="node3" title=" " alt="" coords="986,5,1129,83"/>
 </map>

@@ -13,19 +13,19 @@
 <g id="node1" class="node">
 <title>Node1</title>
 <g id="a_node1"><a xlink:title="defines a dictionary of scalar fields">
-<polygon fill="#bfbfbf" stroke="black" points="6.5,-0.5 6.5,-134.5 139.5,-134.5 139.5,-0.5 6.5,-0.5"/>
-<text text-anchor="start" x="14.5" y="-122.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::vf::map_scalar</text>
+<polygon fill="#bfbfbf" stroke="black" points="6,-0.5 6,-134.5 140,-134.5 140,-0.5 6,-0.5"/>
+<text text-anchor="start" x="14" y="-122.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::vf::map_scalar</text>
 <text text-anchor="middle" x="73" y="-111.5" font-family="Helvetica,sans-Serif" font-size="10.00">_field&lt; Order &gt;</text>
-<polyline fill="none" stroke="black" points="6.5,-104.5 139.5,-104.5 "/>
+<polyline fill="none" stroke="black" points="6,-104.5 140,-104.5 "/>
 <text text-anchor="middle" x="73" y="-92.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="6.5,-85.5 139.5,-85.5 "/>
-<text text-anchor="start" x="14.5" y="-73.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ map_scalar_field()</text>
-<text text-anchor="start" x="14.5" y="-62.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ map_scalar_field()</text>
-<text text-anchor="start" x="14.5" y="-51.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ map_scalar_field()</text>
-<text text-anchor="start" x="14.5" y="-40.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ map_scalar_field()</text>
-<text text-anchor="start" x="14.5" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ operator=()</text>
-<text text-anchor="start" x="14.5" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ operator=()</text>
-<text text-anchor="start" x="14.5" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ setParameterValues()</text>
+<polyline fill="none" stroke="black" points="6,-85.5 140,-85.5 "/>
+<text text-anchor="start" x="14" y="-73.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ map_scalar_field()</text>
+<text text-anchor="start" x="14" y="-62.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ map_scalar_field()</text>
+<text text-anchor="start" x="14" y="-51.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ map_scalar_field()</text>
+<text text-anchor="start" x="14" y="-40.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ map_scalar_field()</text>
+<text text-anchor="start" x="14" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ operator=()</text>
+<text text-anchor="start" x="14" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ operator=()</text>
+<text text-anchor="start" x="14" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ setParameterValues()</text>
 </a>
 </g>
 </g>

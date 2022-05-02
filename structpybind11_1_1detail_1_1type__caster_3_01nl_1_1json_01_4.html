@@ -102,8 +102,11 @@ $(document).ready(function(){initNavTree('structpybind11_1_1detail_1_1type__cast
 
 <div class="header">
   <div class="summary">
+<a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-static-methods">Static Public Member Functions</a> &#124;
+<a href="#pub-static-attribs">Static Public Attributes</a> &#124;
+<a href="#pro-attribs">Protected Attributes</a> &#124;
 <a href="structpybind11_1_1detail_1_1type__caster_3_01nl_1_1json_01_4-members.html">List of all members</a>  </div>
   <div class="headertitle">
 <div class="title">pybind11::detail::type_caster&lt; nl::json &gt; Struct Reference</div>  </div>
@@ -114,24 +117,53 @@ $(document).ready(function(){initNavTree('structpybind11_1_1detail_1_1type__cast
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">
 </div>
 <div id="dynsection-0-content" class="dyncontent" style="display:none;">
-<div class="center"><iframe scrolling="no" frameborder="0" src="structpybind11_1_1detail_1_1type__caster_3_01nl_1_1json_01_4__coll__graph.svg" width="220" height="132"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="structpybind11_1_1detail_1_1type__caster_3_01nl_1_1json_01_4__coll__graph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
+Public Types</h2></td></tr>
+<tr class="memitem:a31403a3f40d9552a8c9415590a1b54fe"><td class="memTemplParams" colspan="2"><a id="a31403a3f40d9552a8c9415590a1b54fe"></a>
+template&lt;typename T_ &gt; </td></tr>
+<tr class="memitem:a31403a3f40d9552a8c9415590a1b54fe"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>cast_op_type</b> = pybind11::detail::movable_cast_op_type&lt; T_ &gt;</td></tr>
+<tr class="separator:a31403a3f40d9552a8c9415590a1b54fe"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a8a875f2de555104342e3a8a2c964a43e"><td class="memItemLeft" align="right" valign="top"><a id="a8a875f2de555104342e3a8a2c964a43e"></a>
 <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>load</b> (handle src, <a class="el" href="classbool.html">bool</a>)</td></tr>
 <tr class="separator:a8a875f2de555104342e3a8a2c964a43e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a097251aabb5d0e95a8193bddaf33ddf9"><td class="memItemLeft" align="right" valign="top"><a id="a097251aabb5d0e95a8193bddaf33ddf9"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>PYBIND11_TYPE_CASTER</b> (<a class="el" href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">nl::json</a>, _(&quot;json&quot;))</td></tr>
-<tr class="separator:a097251aabb5d0e95a8193bddaf33ddf9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8e0d595fd9f2ae9ac7e5f209214f5d62"><td class="memItemLeft" align="right" valign="top"><a id="a8e0d595fd9f2ae9ac7e5f209214f5d62"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>operator nl::json &amp;</b> ()</td></tr>
+<tr class="separator:a8e0d595fd9f2ae9ac7e5f209214f5d62"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abe5183e0afd2b0e9254a6add8f4a3440"><td class="memItemLeft" align="right" valign="top"><a id="abe5183e0afd2b0e9254a6add8f4a3440"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>operator nl::json &amp;&amp;</b> () &amp;&amp;</td></tr>
+<tr class="separator:abe5183e0afd2b0e9254a6add8f4a3440"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acc0613cc8aa63c16746675d8ba09e7e0"><td class="memItemLeft" align="right" valign="top"><a id="acc0613cc8aa63c16746675d8ba09e7e0"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>operator nl::json *</b> ()</td></tr>
+<tr class="separator:acc0613cc8aa63c16746675d8ba09e7e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
 <tr class="memitem:ad4a2e0db6cd32e21f51faf44d0fc6f1f"><td class="memItemLeft" align="right" valign="top"><a id="ad4a2e0db6cd32e21f51faf44d0fc6f1f"></a>
 static handle&#160;</td><td class="memItemRight" valign="bottom"><b>cast</b> (<a class="el" href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">nl::json</a> src, return_value_policy, handle)</td></tr>
 <tr class="separator:ad4a2e0db6cd32e21f51faf44d0fc6f1f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4d79e1ebfec1e334212f5706bfb80dd3"><td class="memTemplParams" colspan="2"><a id="a4d79e1ebfec1e334212f5706bfb80dd3"></a>
+template&lt;typename T_ , enable_if_t&lt; std::is_same&lt; nl::json, remove_cv_t&lt; T_ &gt;&gt;::value, int &gt;  = 0&gt; </td></tr>
+<tr class="memitem:a4d79e1ebfec1e334212f5706bfb80dd3"><td class="memTemplItemLeft" align="right" valign="top">static handle&#160;</td><td class="memTemplItemRight" valign="bottom"><b>cast</b> (T_ *src, return_value_policy policy, handle parent)</td></tr>
+<tr class="separator:a4d79e1ebfec1e334212f5706bfb80dd3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-attribs"></a>
+Static Public Attributes</h2></td></tr>
+<tr class="memitem:a689cc0cb10398ace996d940231e06c42"><td class="memItemLeft" align="right" valign="top"><a id="a689cc0cb10398ace996d940231e06c42"></a>
+static constexpr auto&#160;</td><td class="memItemRight" valign="bottom"><b>name</b> = _(&quot;json&quot;)</td></tr>
+<tr class="separator:a689cc0cb10398ace996d940231e06c42"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-attribs"></a>
+Protected Attributes</h2></td></tr>
+<tr class="memitem:ae987d17801f8d670f5cadb3cea0b1f61"><td class="memItemLeft" align="right" valign="top"><a id="ae987d17801f8d670f5cadb3cea0b1f61"></a>
+<a class="el" href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">nl::json</a>&#160;</td><td class="memItemRight" valign="bottom"><b>value</b></td></tr>
+<tr class="separator:ae987d17801f8d670f5cadb3cea0b1f61"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 </div><!-- doc-content -->

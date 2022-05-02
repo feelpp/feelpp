@@ -158,7 +158,7 @@
 <g id="node11" class="node">
 <title>Node59</title>
 <g id="a_node11"><a xlink:href="structFeel_1_1TimeStepInfo.html" target="_top" xlink:title="class that stores time step information:">
-<polygon fill="white" stroke="black" points="109.5,-0.5 109.5,-19.5 217.5,-19.5 217.5,-0.5 109.5,-0.5"/>
+<polygon fill="white" stroke="black" points="110,-0.5 110,-19.5 217,-19.5 217,-0.5 110,-0.5"/>
 <text text-anchor="middle" x="163.5" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::TimeStepInfo</text>
 </a>
 </g>
@@ -166,7 +166,7 @@
 <!-- Node49&#45;&gt;Node59 -->
 <g id="edge10" class="edge">
 <title>Node49&#45;&gt;Node59</title>
-<path fill="none" stroke="midnightblue" d="M22.81,-161.35C26.1,-128.74 37.5,-63.62 77,-29 86.03,-21.08 97.63,-16.24 109.36,-13.33"/>
+<path fill="none" stroke="midnightblue" d="M22.81,-161.35C26.1,-128.74 37.5,-63.62 77,-29 86.15,-20.98 97.93,-16.12 109.8,-13.22"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="19.32,-161.16 21.96,-171.42 26.29,-161.76 19.32,-161.16"/>
 </g>
 </g>

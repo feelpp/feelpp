@@ -59,19 +59,19 @@ var sectionId = 'dynsection-1';
 <g id="node1" class="node">
 <title>Node1</title>
 <g id="a_node1"><a xlink:title="Class of all PointSet on a Convex.">
-<polygon fill="#bfbfbf" stroke="black" points="327,-0.5 327,-134.5 493,-134.5 493,-0.5 327,-0.5"/>
+<polygon fill="#bfbfbf" stroke="black" points="326.5,-0.5 326.5,-134.5 493.5,-134.5 493.5,-0.5 326.5,-0.5"/>
 <text text-anchor="middle" x="410" y="-122.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::PointSet&lt; Convex, T &gt;</text>
-<polyline fill="none" stroke="black" points="327,-115.5 493,-115.5 "/>
+<polyline fill="none" stroke="black" points="326.5,-115.5 493.5,-115.5 "/>
 <text text-anchor="middle" x="410" y="-103.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="327,-96.5 493,-96.5 "/>
-<text text-anchor="start" x="335" y="-84.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ FEELPP_DEFINE_VISITABLE()</text>
-<text text-anchor="start" x="335" y="-73.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ getName()</text>
-<text text-anchor="start" x="335" y="-62.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ getPointsInfo()</text>
-<text text-anchor="start" x="335" y="-51.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ nPoints()</text>
-<text text-anchor="start" x="335" y="-40.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ operator=()</text>
-<text text-anchor="start" x="335" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 15 more...</text>
-<text text-anchor="start" x="335" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00"># setPoints()</text>
-<text text-anchor="start" x="335" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00"># setPoints()</text>
+<polyline fill="none" stroke="black" points="326.5,-96.5 493.5,-96.5 "/>
+<text text-anchor="start" x="334.5" y="-84.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ FEELPP_DEFINE_VISITABLE()</text>
+<text text-anchor="start" x="334.5" y="-73.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ getName()</text>
+<text text-anchor="start" x="334.5" y="-62.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ getPointsInfo()</text>
+<text text-anchor="start" x="334.5" y="-51.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ nPoints()</text>
+<text text-anchor="start" x="334.5" y="-40.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ operator=()</text>
+<text text-anchor="start" x="334.5" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 15 more...</text>
+<text text-anchor="start" x="334.5" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00"># setPoints()</text>
+<text text-anchor="start" x="334.5" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00"># setPoints()</text>
 </a>
 </g>
 </g>
@@ -94,7 +94,7 @@ var sectionId = 'dynsection-1';
 <!-- Node2&#45;&gt;Node1 -->
 <g id="edge1" class="edge">
 <title>Node2&#45;&gt;Node1</title>
-<path fill="none" stroke="midnightblue" d="M135.58,-192.84C204.21,-156.67 273.96,-125.44 326.84,-102.84"/>
+<path fill="none" stroke="midnightblue" d="M135.55,-192.85C203.95,-156.81 273.42,-125.68 326.23,-103.1"/>
 <polygon fill="none" stroke="midnightblue" points="133.54,-189.96 126.34,-197.74 136.82,-196.14 133.54,-189.96"/>
 </g>
 <!-- Node3 -->
@@ -235,8 +235,8 @@ var sectionId = 'dynsection-1';
 <!-- Node9&#45;&gt;Node1 -->
 <g id="edge8" class="edge">
 <title>Node9&#45;&gt;Node1</title>
-<path fill="none" stroke="#404040" d="M642.78,-209.94C631.05,-191.89 613.83,-168.8 594,-153 567.43,-131.83 534.71,-114.6 504.25,-101.36"/>
-<polygon fill="none" stroke="#404040" points="504.2,-101.34 497.12,-102.68 493.15,-96.66 500.24,-95.31 504.2,-101.34"/>
+<path fill="none" stroke="#404040" d="M642.78,-209.94C631.05,-191.89 613.83,-168.8 594,-153 567.56,-131.93 535.01,-114.76 504.68,-101.54"/>
+<polygon fill="none" stroke="#404040" points="504.66,-101.54 497.58,-102.88 493.62,-96.85 500.7,-95.51 504.66,-101.54"/>
 <text text-anchor="middle" x="645" y="-161.5" font-family="Helvetica,sans-Serif" font-size="10.00"> #M_npoints</text>
 </g>
 </g>

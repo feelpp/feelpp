@@ -1,11 +1,11 @@
 <map id="Feelpp" name="Feelpp">
 <area shape="rect" id="node1" href="$group__Core.html" title=" " alt="" coords="199,5,251,31"/>
-<area shape="rect" id="node2" href="$group__Filters.html" title=" " alt="" coords="193,55,256,80"/>
+<area shape="rect" id="node2" href="$group__Filters.html" title=" " alt="" coords="194,55,255,80"/>
 <area shape="rect" id="node3" href="$group__Mesh.html" title=" " alt="" coords="196,104,253,129"/>
 <area shape="rect" id="node4" href="$group__DSEL-Variational-Formulation.html" title=" " alt="" coords="119,153,331,179"/>
-<area shape="rect" id="node5" href="$group__Traits.html" title=" " alt="" coords="196,203,253,228"/>
+<area shape="rect" id="node5" href="$group__Traits.html" title=" " alt="" coords="195,203,254,228"/>
 <area shape="rect" id="node6" href="$group__Timing.html" title=" " alt="" coords="191,252,258,277"/>
 <area shape="rect" id="node7" href="$group__Discretization.html" title=" " alt="" coords="169,301,281,327"/>
-<area shape="rect" id="node8" href="$group__SpaceTime.html" title=" " alt="" coords="177,351,272,376"/>
+<area shape="rect" id="node8" href="$group__SpaceTime.html" title=" " alt="" coords="178,351,271,376"/>
 <area shape="rect" id="node9" title="Feel++ classes and methods." alt="" coords="5,179,71,204"/>
 </map>

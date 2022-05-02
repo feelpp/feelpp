@@ -46,7 +46,7 @@ if (edges && edges.length) {
         </defs>
 
 <script type="text/javascript">
-var viewWidth = 752;
+var viewWidth = 753;
 var viewHeight = 665;
 var sectionId = 'dynsection-1';
 </script>
@@ -54,7 +54,7 @@ var sectionId = 'dynsection-1';
 <svg id="graph" class="graph">
 <g id="viewport">
 <title>Feel::Line&lt; Dim &gt;</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-661 748,-661 748,4 -4,4"/>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-661 749,-661 749,4 -4,4"/>
 <!-- Node1 -->
 <g id="node1" class="node">
 <title>Node1</title>
@@ -237,35 +237,35 @@ var sectionId = 'dynsection-1';
 <title>Node8&#45;&gt;Node2</title>
 <path fill="none" stroke="#404040" d="M529.99,-440.86C530.17,-406.93 527.11,-348.3 507,-303 502.43,-292.71 496.61,-282.64 490.11,-273.01"/>
 <polygon fill="none" stroke="#404040" points="490.06,-272.94 483.32,-270.36 483.11,-263.15 489.84,-265.73 490.06,-272.94"/>
-<text text-anchor="middle" x="583" y="-383" font-family="Helvetica,sans-Serif" font-size="10.00"> +numEdges</text>
-<text text-anchor="middle" x="583" y="-372" font-family="Helvetica,sans-Serif" font-size="10.00">+Shape</text>
-<text text-anchor="middle" x="583" y="-361" font-family="Helvetica,sans-Serif" font-size="10.00">+numFaces</text>
-<text text-anchor="middle" x="583" y="-350" font-family="Helvetica,sans-Serif" font-size="10.00">+numTopologicalFaces</text>
-<text text-anchor="middle" x="583" y="-339" font-family="Helvetica,sans-Serif" font-size="10.00">+numGeometricFaces</text>
-<text text-anchor="middle" x="583" y="-328" font-family="Helvetica,sans-Serif" font-size="10.00">+shape_v</text>
-<text text-anchor="middle" x="583" y="-317" font-family="Helvetica,sans-Serif" font-size="10.00">+numVolumes</text>
-<text text-anchor="middle" x="583" y="-306" font-family="Helvetica,sans-Serif" font-size="10.00">+numVertices</text>
+<text text-anchor="middle" x="583.5" y="-383" font-family="Helvetica,sans-Serif" font-size="10.00"> +numEdges</text>
+<text text-anchor="middle" x="583.5" y="-372" font-family="Helvetica,sans-Serif" font-size="10.00">+Shape</text>
+<text text-anchor="middle" x="583.5" y="-361" font-family="Helvetica,sans-Serif" font-size="10.00">+numFaces</text>
+<text text-anchor="middle" x="583.5" y="-350" font-family="Helvetica,sans-Serif" font-size="10.00">+numTopologicalFaces</text>
+<text text-anchor="middle" x="583.5" y="-339" font-family="Helvetica,sans-Serif" font-size="10.00">+numGeometricFaces</text>
+<text text-anchor="middle" x="583.5" y="-328" font-family="Helvetica,sans-Serif" font-size="10.00">+shape_v</text>
+<text text-anchor="middle" x="583.5" y="-317" font-family="Helvetica,sans-Serif" font-size="10.00">+numVolumes</text>
+<text text-anchor="middle" x="583.5" y="-306" font-family="Helvetica,sans-Serif" font-size="10.00">+numVertices</text>
 </g>
 <!-- Node9 -->
 <g id="node9" class="node">
 <title>Node9</title>
 <g id="a_node9"><a xlink:href="classbool.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="645,-441 645,-498 683,-498 683,-441 645,-441"/>
-<text text-anchor="middle" x="664" y="-486" font-family="Helvetica,sans-Serif" font-size="10.00">bool</text>
-<polyline fill="none" stroke="black" points="645,-479 683,-479 "/>
-<text text-anchor="middle" x="664" y="-467" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="645,-460 683,-460 "/>
-<text text-anchor="middle" x="664" y="-448" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polygon fill="white" stroke="black" points="646,-441 646,-498 684,-498 684,-441 646,-441"/>
+<text text-anchor="middle" x="665" y="-486" font-family="Helvetica,sans-Serif" font-size="10.00">bool</text>
+<polyline fill="none" stroke="black" points="646,-479 684,-479 "/>
+<text text-anchor="middle" x="665" y="-467" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polyline fill="none" stroke="black" points="646,-460 684,-460 "/>
+<text text-anchor="middle" x="665" y="-448" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>
 </g>
 <!-- Node9&#45;&gt;Node2 -->
 <g id="edge9" class="edge">
 <title>Node9&#45;&gt;Node2</title>
-<path fill="none" stroke="#404040" d="M667.78,-440.72C671.07,-405.31 671.42,-343.79 642,-303 607.11,-254.63 545.53,-226.19 494.87,-210.07"/>
-<polygon fill="none" stroke="#404040" points="494.73,-210.03 487.82,-212.11 483.25,-206.53 490.15,-204.45 494.73,-210.03"/>
-<text text-anchor="middle" x="706" y="-350" font-family="Helvetica,sans-Serif" font-size="10.00"> +is_hypercube</text>
-<text text-anchor="middle" x="706" y="-339" font-family="Helvetica,sans-Serif" font-size="10.00">+is_simplex</text>
+<path fill="none" stroke="#404040" d="M668.8,-440.71C672.09,-405.29 672.45,-343.76 643,-303 607.82,-254.32 545.67,-225.86 494.7,-209.81"/>
+<polygon fill="none" stroke="#404040" points="494.49,-209.75 487.59,-211.85 483,-206.29 489.9,-204.19 494.49,-209.75"/>
+<text text-anchor="middle" x="707" y="-350" font-family="Helvetica,sans-Serif" font-size="10.00"> +is_hypercube</text>
+<text text-anchor="middle" x="707" y="-339" font-family="Helvetica,sans-Serif" font-size="10.00">+is_simplex</text>
 </g>
 </g>
 </svg>

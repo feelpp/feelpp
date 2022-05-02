@@ -160,7 +160,7 @@
 <g id="node10" class="node">
 <title>Node0</title>
 <g id="a_node10"><a xlink:href="classVectorUblas.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="31,-208 31,-227 106,-227 106,-208 31,-208"/>
+<polygon fill="white" stroke="black" points="30.5,-208 30.5,-227 106.5,-227 106.5,-208 30.5,-208"/>
 <text text-anchor="middle" x="68.5" y="-215" font-family="Helvetica,sans-Serif" font-size="10.00">VectorUblas</text>
 </a>
 </g>
@@ -168,8 +168,8 @@
 <!-- Node0&#45;&gt;Node1 -->
 <g id="edge11" class="edge">
 <title>Node0&#45;&gt;Node1</title>
-<path fill="none" stroke="midnightblue" d="M116.16,-207.7C137.34,-203.26 162.74,-197.93 185.73,-193.1"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="115.2,-204.33 106.13,-209.81 116.63,-211.18 115.2,-204.33"/>
+<path fill="none" stroke="midnightblue" d="M116.55,-207.62C137.63,-203.2 162.83,-197.91 185.65,-193.11"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="115.63,-204.24 106.56,-209.72 117.07,-211.09 115.63,-204.24"/>
 </g>
 </g>
 </svg>

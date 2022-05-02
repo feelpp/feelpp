@@ -59,17 +59,17 @@ var sectionId = 'dynsection-1';
 <g id="node1" class="node">
 <title>Node1</title>
 <g id="a_node1"><a xlink:title=" ">
-<polygon fill="#bfbfbf" stroke="black" points="456.4,-0.5 456.4,-112.5 667.4,-112.5 667.4,-0.5 456.4,-0.5"/>
-<text text-anchor="start" x="464.4" y="-100.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::Stabilization</text>
+<polygon fill="#bfbfbf" stroke="black" points="455.9,-0.5 455.9,-112.5 667.9,-112.5 667.9,-0.5 455.9,-0.5"/>
+<text text-anchor="start" x="463.9" y="-100.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::Stabilization</text>
 <text text-anchor="middle" x="561.9" y="-89.5" font-family="Helvetica,sans-Serif" font-size="10.00">GLSParameter&lt; MeshType, OrderPoly &gt;</text>
-<polyline fill="none" stroke="black" points="456.4,-82.5 667.4,-82.5 "/>
+<polyline fill="none" stroke="black" points="455.9,-82.5 667.9,-82.5 "/>
 <text text-anchor="middle" x="561.9" y="-70.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="456.4,-63.5 667.4,-63.5 "/>
-<text text-anchor="start" x="464.4" y="-51.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ applyRemesh()</text>
-<text text-anchor="start" x="464.4" y="-40.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ init()</text>
-<text text-anchor="start" x="464.4" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ StabilizationGLSParameter()</text>
-<text text-anchor="start" x="464.4" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ updateTau()</text>
-<text text-anchor="start" x="464.4" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ ~StabilizationGLSParameter()</text>
+<polyline fill="none" stroke="black" points="455.9,-63.5 667.9,-63.5 "/>
+<text text-anchor="start" x="463.9" y="-51.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ applyRemesh()</text>
+<text text-anchor="start" x="463.9" y="-40.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ init()</text>
+<text text-anchor="start" x="463.9" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ StabilizationGLSParameter()</text>
+<text text-anchor="start" x="463.9" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ updateTau()</text>
+<text text-anchor="start" x="463.9" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ ~StabilizationGLSParameter()</text>
 </a>
 </g>
 </g>
@@ -77,18 +77,18 @@ var sectionId = 'dynsection-1';
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:href="classFeel_1_1FeelModels_1_1StabilizationGLSParameterBase.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="339.4,-160.5 339.4,-283.5 520.4,-283.5 520.4,-160.5 339.4,-160.5"/>
-<text text-anchor="start" x="347.4" y="-271.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::Stabilization</text>
+<polygon fill="white" stroke="black" points="338.9,-160.5 338.9,-283.5 520.9,-283.5 520.9,-160.5 338.9,-160.5"/>
+<text text-anchor="start" x="346.9" y="-271.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::Stabilization</text>
 <text text-anchor="middle" x="429.9" y="-260.5" font-family="Helvetica,sans-Serif" font-size="10.00">GLSParameterBase&lt; MeshType &gt;</text>
-<polyline fill="none" stroke="black" points="339.4,-253.5 520.4,-253.5 "/>
+<polyline fill="none" stroke="black" points="338.9,-253.5 520.9,-253.5 "/>
 <text text-anchor="middle" x="429.9" y="-241.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="339.4,-234.5 520.4,-234.5 "/>
-<text text-anchor="start" x="347.4" y="-222.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ applyRemesh()</text>
-<text text-anchor="start" x="347.4" y="-211.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ fieldTau()</text>
-<text text-anchor="start" x="347.4" y="-200.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ fieldTauPtr()</text>
-<text text-anchor="start" x="347.4" y="-189.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ hSize()</text>
-<text text-anchor="start" x="347.4" y="-178.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ hSizeMethod()</text>
-<text text-anchor="start" x="347.4" y="-167.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 10 more...</text>
+<polyline fill="none" stroke="black" points="338.9,-234.5 520.9,-234.5 "/>
+<text text-anchor="start" x="346.9" y="-222.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ applyRemesh()</text>
+<text text-anchor="start" x="346.9" y="-211.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ fieldTau()</text>
+<text text-anchor="start" x="346.9" y="-200.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ fieldTauPtr()</text>
+<text text-anchor="start" x="346.9" y="-189.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ hSize()</text>
+<text text-anchor="start" x="346.9" y="-178.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ hSizeMethod()</text>
+<text text-anchor="start" x="346.9" y="-167.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 10 more...</text>
 </a>
 </g>
 </g>
@@ -115,12 +115,12 @@ var sectionId = 'dynsection-1';
 <!-- Node3&#45;&gt;Node2 -->
 <g id="edge2" class="edge">
 <title>Node3&#45;&gt;Node2</title>
-<path fill="none" stroke="#404040" d="M209.31,-364.27C216.5,-344.04 228.22,-318.93 245.9,-302 268.73,-280.14 298.56,-263.84 327.53,-251.91"/>
-<polygon fill="none" stroke="#404040" points="327.84,-251.79 331.95,-245.87 339,-247.39 334.89,-253.31 327.84,-251.79"/>
-<text text-anchor="middle" x="307.4" y="-338" font-family="Helvetica,sans-Serif" font-size="10.00"> #M_sqrtLambdaKValues</text>
-<text text-anchor="middle" x="307.4" y="-327" font-family="Helvetica,sans-Serif" font-size="10.00">#M_mKValues</text>
-<text text-anchor="middle" x="307.4" y="-316" font-family="Helvetica,sans-Serif" font-size="10.00">#M_hSizeValues</text>
-<text text-anchor="middle" x="307.4" y="-305" font-family="Helvetica,sans-Serif" font-size="10.00">#M_lambdaKValues</text>
+<path fill="none" stroke="#404040" d="M208.93,-364.26C215.89,-344.03 227.35,-318.92 244.9,-302 267.98,-279.76 298.28,-263.31 327.67,-251.36"/>
+<polygon fill="none" stroke="#404040" points="327.69,-251.35 331.83,-245.45 338.87,-247 334.73,-252.9 327.69,-251.35"/>
+<text text-anchor="middle" x="306.9" y="-338" font-family="Helvetica,sans-Serif" font-size="10.00"> #M_sqrtLambdaKValues</text>
+<text text-anchor="middle" x="306.9" y="-327" font-family="Helvetica,sans-Serif" font-size="10.00">#M_mKValues</text>
+<text text-anchor="middle" x="306.9" y="-316" font-family="Helvetica,sans-Serif" font-size="10.00">#M_hSizeValues</text>
+<text text-anchor="middle" x="306.9" y="-305" font-family="Helvetica,sans-Serif" font-size="10.00">#M_lambdaKValues</text>
 </g>
 <!-- Node4 -->
 <g id="node4" class="node">
@@ -138,8 +138,8 @@ var sectionId = 'dynsection-1';
 <!-- Node4&#45;&gt;Node2 -->
 <g id="edge5" class="edge">
 <title>Node4&#45;&gt;Node2</title>
-<path fill="none" stroke="#404040" d="M38.39,-672.96C14.58,-611.21 -32.48,-459.6 34.9,-364 100.61,-270.78 233.78,-238.85 327.26,-228.1"/>
-<polygon fill="none" stroke="#404040" points="327.39,-228.09 332.93,-223.47 339.32,-226.81 333.78,-231.43 327.39,-228.09"/>
+<path fill="none" stroke="#404040" d="M38.39,-672.96C14.58,-611.21 -32.48,-459.6 34.9,-364 100.51,-270.92 233.37,-238.94 326.84,-228.15"/>
+<polygon fill="none" stroke="#404040" points="326.96,-228.14 332.5,-223.52 338.89,-226.85 333.35,-231.47 326.96,-228.14"/>
 <text text-anchor="middle" x="84.4" y="-396" font-family="Helvetica,sans-Serif" font-size="10.00"> #M_penalLambdaK</text>
 </g>
 <!-- Node4&#45;&gt;Node3 -->
@@ -267,8 +267,8 @@ var sectionId = 'dynsection-1';
 <!-- Node10&#45;&gt;Node2 -->
 <g id="edge10" class="edge">
 <title>Node10&#45;&gt;Node2</title>
-<path fill="none" stroke="#404040" d="M629.78,-364.17C608.98,-345.1 581.73,-321.23 555.9,-302 550.33,-297.85 541.53,-291.96 531.11,-285.24"/>
-<polygon fill="none" stroke="#404040" points="530.79,-285.03 523.58,-285.17 520.68,-278.57 527.89,-278.43 530.79,-285.03"/>
+<path fill="none" stroke="#404040" d="M629.78,-364.17C608.98,-345.1 581.73,-321.23 555.9,-302 550.37,-297.88 541.66,-292.04 531.33,-285.38"/>
+<polygon fill="none" stroke="#404040" points="531.1,-285.23 523.89,-285.37 520.99,-278.77 528.2,-278.63 531.1,-285.23"/>
 <text text-anchor="middle" x="643.4" y="-321.5" font-family="Helvetica,sans-Serif" font-size="10.00"> #M_spaceTau</text>
 </g>
 <!-- Node11 -->
@@ -402,33 +402,33 @@ var sectionId = 'dynsection-1';
 <g id="node14" class="node">
 <title>Node14</title>
 <g id="a_node14"><a xlink:href="classFeel_1_1JournalWatcher.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="218.9,-1251.5 218.9,-1539.5 394.9,-1539.5 394.9,-1251.5 218.9,-1251.5"/>
+<polygon fill="white" stroke="black" points="218.4,-1251.5 218.4,-1539.5 395.4,-1539.5 395.4,-1251.5 218.4,-1251.5"/>
 <text text-anchor="middle" x="306.9" y="-1527.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::JournalWatcher</text>
-<polyline fill="none" stroke="black" points="218.9,-1520.5 394.9,-1520.5 "/>
+<polyline fill="none" stroke="black" points="218.4,-1520.5 395.4,-1520.5 "/>
 <text text-anchor="middle" x="306.9" y="-1508.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="218.9,-1501.5 394.9,-1501.5 "/>
-<text text-anchor="start" x="226.9" y="-1489.5" font-family="Helvetica,sans-Serif" font-size="10.00">* JournalWatcher()</text>
-<text text-anchor="start" x="226.9" y="-1478.5" font-family="Helvetica,sans-Serif" font-size="10.00">* JournalWatcher()</text>
-<text text-anchor="start" x="226.9" y="-1467.5" font-family="Helvetica,sans-Serif" font-size="10.00">* JournalWatcher()</text>
-<text text-anchor="start" x="226.9" y="-1456.5" font-family="Helvetica,sans-Serif" font-size="10.00">* JournalWatcher()</text>
-<text text-anchor="start" x="226.9" y="-1445.5" font-family="Helvetica,sans-Serif" font-size="10.00">* ~JournalWatcher()</text>
-<text text-anchor="start" x="226.9" y="-1434.5" font-family="Helvetica,sans-Serif" font-size="10.00">* journalIsConnected()</text>
-<text text-anchor="start" x="226.9" y="-1423.5" font-family="Helvetica,sans-Serif" font-size="10.00">* journalWatcherInstanceName()</text>
-<text text-anchor="start" x="226.9" y="-1412.5" font-family="Helvetica,sans-Serif" font-size="10.00">* journalSection()</text>
-<text text-anchor="start" x="226.9" y="-1401.5" font-family="Helvetica,sans-Serif" font-size="10.00">* informationObject()</text>
-<text text-anchor="start" x="226.9" y="-1390.5" font-family="Helvetica,sans-Serif" font-size="10.00">* journalConnect()</text>
-<text text-anchor="start" x="226.9" y="-1379.5" font-family="Helvetica,sans-Serif" font-size="10.00">* journalDisconnect()</text>
-<text text-anchor="start" x="226.9" y="-1368.5" font-family="Helvetica,sans-Serif" font-size="10.00">* updateInformationObject()</text>
-<text text-anchor="start" x="226.9" y="-1357.5" font-family="Helvetica,sans-Serif" font-size="10.00">* setInformationObject()</text>
-<text text-anchor="start" x="226.9" y="-1346.5" font-family="Helvetica,sans-Serif" font-size="10.00">* putInformationObject()</text>
-<text text-anchor="start" x="226.9" y="-1335.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 4 more...</text>
-<text text-anchor="start" x="226.9" y="-1324.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_journal_is_connected</text>
-<text text-anchor="start" x="226.9" y="-1313.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_category</text>
-<text text-anchor="start" x="226.9" y="-1302.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_name</text>
-<text text-anchor="start" x="226.9" y="-1291.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_function_updateInformation</text>
-<text text-anchor="start" x="226.9" y="-1280.5" font-family="Helvetica,sans-Serif" font-size="10.00">Object</text>
-<text text-anchor="start" x="226.9" y="-1269.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_informationObject</text>
-<text text-anchor="start" x="226.9" y="-1258.5" font-family="Helvetica,sans-Serif" font-size="10.00">* S_counterObjectByCategory</text>
+<polyline fill="none" stroke="black" points="218.4,-1501.5 395.4,-1501.5 "/>
+<text text-anchor="start" x="226.4" y="-1489.5" font-family="Helvetica,sans-Serif" font-size="10.00">* JournalWatcher()</text>
+<text text-anchor="start" x="226.4" y="-1478.5" font-family="Helvetica,sans-Serif" font-size="10.00">* JournalWatcher()</text>
+<text text-anchor="start" x="226.4" y="-1467.5" font-family="Helvetica,sans-Serif" font-size="10.00">* JournalWatcher()</text>
+<text text-anchor="start" x="226.4" y="-1456.5" font-family="Helvetica,sans-Serif" font-size="10.00">* JournalWatcher()</text>
+<text text-anchor="start" x="226.4" y="-1445.5" font-family="Helvetica,sans-Serif" font-size="10.00">* ~JournalWatcher()</text>
+<text text-anchor="start" x="226.4" y="-1434.5" font-family="Helvetica,sans-Serif" font-size="10.00">* journalIsConnected()</text>
+<text text-anchor="start" x="226.4" y="-1423.5" font-family="Helvetica,sans-Serif" font-size="10.00">* journalWatcherInstanceName()</text>
+<text text-anchor="start" x="226.4" y="-1412.5" font-family="Helvetica,sans-Serif" font-size="10.00">* journalSection()</text>
+<text text-anchor="start" x="226.4" y="-1401.5" font-family="Helvetica,sans-Serif" font-size="10.00">* informationObject()</text>
+<text text-anchor="start" x="226.4" y="-1390.5" font-family="Helvetica,sans-Serif" font-size="10.00">* journalConnect()</text>
+<text text-anchor="start" x="226.4" y="-1379.5" font-family="Helvetica,sans-Serif" font-size="10.00">* journalDisconnect()</text>
+<text text-anchor="start" x="226.4" y="-1368.5" font-family="Helvetica,sans-Serif" font-size="10.00">* updateInformationObject()</text>
+<text text-anchor="start" x="226.4" y="-1357.5" font-family="Helvetica,sans-Serif" font-size="10.00">* setInformationObject()</text>
+<text text-anchor="start" x="226.4" y="-1346.5" font-family="Helvetica,sans-Serif" font-size="10.00">* putInformationObject()</text>
+<text text-anchor="start" x="226.4" y="-1335.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 4 more...</text>
+<text text-anchor="start" x="226.4" y="-1324.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_journal_is_connected</text>
+<text text-anchor="start" x="226.4" y="-1313.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_category</text>
+<text text-anchor="start" x="226.4" y="-1302.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_name</text>
+<text text-anchor="start" x="226.4" y="-1291.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_function_updateInformation</text>
+<text text-anchor="start" x="226.4" y="-1280.5" font-family="Helvetica,sans-Serif" font-size="10.00">Object</text>
+<text text-anchor="start" x="226.4" y="-1269.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_informationObject</text>
+<text text-anchor="start" x="226.4" y="-1258.5" font-family="Helvetica,sans-Serif" font-size="10.00">* S_counterObjectByCategory</text>
 </a>
 </g>
 </g>
@@ -800,8 +800,8 @@ var sectionId = 'dynsection-1';
 <!-- Node31&#45;&gt;Node2 -->
 <g id="edge34" class="edge">
 <title>Node31&#45;&gt;Node2</title>
-<path fill="none" stroke="#404040" d="M921.57,-369.79C918.42,-367.65 915.17,-365.68 911.9,-364 818.12,-315.8 786.43,-321.99 682.9,-302 619.35,-289.73 597.06,-304.54 532.34,-284.38"/>
-<polygon fill="none" stroke="#404040" points="532.06,-284.28 525.11,-286.2 520.67,-280.52 527.62,-278.6 532.06,-284.28"/>
+<path fill="none" stroke="#404040" d="M921.57,-369.79C918.42,-367.65 915.17,-365.68 911.9,-364 818.12,-315.8 786.43,-321.99 682.9,-302 619.35,-289.73 597.06,-304.54 532.58,-284.48"/>
+<polygon fill="none" stroke="#404040" points="532.35,-284.4 525.4,-286.31 520.96,-280.63 527.91,-278.72 532.35,-284.4"/>
 <text text-anchor="middle" x="915.4" y="-327" font-family="Helvetica,sans-Serif" font-size="10.00"> #M_hSizeMethod</text>
 <text text-anchor="middle" x="915.4" y="-316" font-family="Helvetica,sans-Serif" font-size="10.00">#M_method</text>
 </g>

@@ -200,7 +200,7 @@
 <title>Node9&#45;&gt;Node1</title>
 <path fill="none" stroke="#404040" d="M321.74,-127.36C309.41,-114.23 293.74,-98.85 278,-87 270.35,-81.24 261.98,-75.69 253.49,-70.52"/>
 <polygon fill="none" stroke="#404040" points="253.46,-70.5 246.26,-70.89 243.13,-64.4 250.33,-64.01 253.46,-70.5"/>
-<text text-anchor="middle" x="331" y="-95.5" font-family="Helvetica,sans-Serif" font-size="10.00"> +_S_logfile</text>
+<text text-anchor="middle" x="331.5" y="-95.5" font-family="Helvetica,sans-Serif" font-size="10.00"> +_S_logfile</text>
 </g>
 <!-- Node10&#45;&gt;Node9 -->
 <g id="edge9" class="edge">

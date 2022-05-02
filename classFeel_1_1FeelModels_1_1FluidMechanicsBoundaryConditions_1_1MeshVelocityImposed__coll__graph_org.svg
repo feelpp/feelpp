@@ -147,17 +147,17 @@
 <g id="node7" class="node">
 <title>Node7</title>
 <g id="a_node7"><a xlink:href="classFeel_1_1FeelModels_1_1ModelBase.html" target="_top" xlink:title="Model base class.">
-<polygon fill="white" stroke="black" points="162.5,-653.5 162.5,-765.5 354.5,-765.5 354.5,-653.5 162.5,-653.5"/>
+<polygon fill="white" stroke="black" points="162,-653.5 162,-765.5 355,-765.5 355,-653.5 162,-653.5"/>
 <text text-anchor="middle" x="258.5" y="-753.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::ModelBase</text>
-<polyline fill="none" stroke="black" points="162.5,-746.5 354.5,-746.5 "/>
+<polyline fill="none" stroke="black" points="162,-746.5 355,-746.5 "/>
 <text text-anchor="middle" x="258.5" y="-734.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="162.5,-727.5 354.5,-727.5 "/>
-<text text-anchor="start" x="170.5" y="-715.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ addParameterInModelProperties()</text>
-<text text-anchor="start" x="170.5" y="-704.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ addTimerTool()</text>
-<text text-anchor="start" x="170.5" y="-693.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ clovm()</text>
-<text text-anchor="start" x="170.5" y="-682.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ createWorldsComm()</text>
-<text text-anchor="start" x="170.5" y="-671.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ hasModelProperties()</text>
-<text text-anchor="start" x="170.5" y="-660.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 53 more...</text>
+<polyline fill="none" stroke="black" points="162,-727.5 355,-727.5 "/>
+<text text-anchor="start" x="170" y="-715.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ addParameterInModelProperties()</text>
+<text text-anchor="start" x="170" y="-704.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ addTimerTool()</text>
+<text text-anchor="start" x="170" y="-693.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ clovm()</text>
+<text text-anchor="start" x="170" y="-682.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ createWorldsComm()</text>
+<text text-anchor="start" x="170" y="-671.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ hasModelProperties()</text>
+<text text-anchor="start" x="170" y="-660.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 53 more...</text>
 </a>
 </g>
 </g>
@@ -172,33 +172,33 @@
 <g id="node8" class="node">
 <title>Node8</title>
 <g id="a_node8"><a xlink:href="classFeel_1_1JournalWatcher.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="75.5,-803.5 75.5,-1091.5 251.5,-1091.5 251.5,-803.5 75.5,-803.5"/>
+<polygon fill="white" stroke="black" points="75,-803.5 75,-1091.5 252,-1091.5 252,-803.5 75,-803.5"/>
 <text text-anchor="middle" x="163.5" y="-1079.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::JournalWatcher</text>
-<polyline fill="none" stroke="black" points="75.5,-1072.5 251.5,-1072.5 "/>
+<polyline fill="none" stroke="black" points="75,-1072.5 252,-1072.5 "/>
 <text text-anchor="middle" x="163.5" y="-1060.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="75.5,-1053.5 251.5,-1053.5 "/>
-<text text-anchor="start" x="83.5" y="-1041.5" font-family="Helvetica,sans-Serif" font-size="10.00">* JournalWatcher()</text>
-<text text-anchor="start" x="83.5" y="-1030.5" font-family="Helvetica,sans-Serif" font-size="10.00">* JournalWatcher()</text>
-<text text-anchor="start" x="83.5" y="-1019.5" font-family="Helvetica,sans-Serif" font-size="10.00">* JournalWatcher()</text>
-<text text-anchor="start" x="83.5" y="-1008.5" font-family="Helvetica,sans-Serif" font-size="10.00">* JournalWatcher()</text>
-<text text-anchor="start" x="83.5" y="-997.5" font-family="Helvetica,sans-Serif" font-size="10.00">* ~JournalWatcher()</text>
-<text text-anchor="start" x="83.5" y="-986.5" font-family="Helvetica,sans-Serif" font-size="10.00">* journalIsConnected()</text>
-<text text-anchor="start" x="83.5" y="-975.5" font-family="Helvetica,sans-Serif" font-size="10.00">* journalWatcherInstanceName()</text>
-<text text-anchor="start" x="83.5" y="-964.5" font-family="Helvetica,sans-Serif" font-size="10.00">* journalSection()</text>
-<text text-anchor="start" x="83.5" y="-953.5" font-family="Helvetica,sans-Serif" font-size="10.00">* informationObject()</text>
-<text text-anchor="start" x="83.5" y="-942.5" font-family="Helvetica,sans-Serif" font-size="10.00">* journalConnect()</text>
-<text text-anchor="start" x="83.5" y="-931.5" font-family="Helvetica,sans-Serif" font-size="10.00">* journalDisconnect()</text>
-<text text-anchor="start" x="83.5" y="-920.5" font-family="Helvetica,sans-Serif" font-size="10.00">* updateInformationObject()</text>
-<text text-anchor="start" x="83.5" y="-909.5" font-family="Helvetica,sans-Serif" font-size="10.00">* setInformationObject()</text>
-<text text-anchor="start" x="83.5" y="-898.5" font-family="Helvetica,sans-Serif" font-size="10.00">* putInformationObject()</text>
-<text text-anchor="start" x="83.5" y="-887.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 4 more...</text>
-<text text-anchor="start" x="83.5" y="-876.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_journal_is_connected</text>
-<text text-anchor="start" x="83.5" y="-865.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_category</text>
-<text text-anchor="start" x="83.5" y="-854.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_name</text>
-<text text-anchor="start" x="83.5" y="-843.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_function_updateInformation</text>
-<text text-anchor="start" x="83.5" y="-832.5" font-family="Helvetica,sans-Serif" font-size="10.00">Object</text>
-<text text-anchor="start" x="83.5" y="-821.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_informationObject</text>
-<text text-anchor="start" x="83.5" y="-810.5" font-family="Helvetica,sans-Serif" font-size="10.00">* S_counterObjectByCategory</text>
+<polyline fill="none" stroke="black" points="75,-1053.5 252,-1053.5 "/>
+<text text-anchor="start" x="83" y="-1041.5" font-family="Helvetica,sans-Serif" font-size="10.00">* JournalWatcher()</text>
+<text text-anchor="start" x="83" y="-1030.5" font-family="Helvetica,sans-Serif" font-size="10.00">* JournalWatcher()</text>
+<text text-anchor="start" x="83" y="-1019.5" font-family="Helvetica,sans-Serif" font-size="10.00">* JournalWatcher()</text>
+<text text-anchor="start" x="83" y="-1008.5" font-family="Helvetica,sans-Serif" font-size="10.00">* JournalWatcher()</text>
+<text text-anchor="start" x="83" y="-997.5" font-family="Helvetica,sans-Serif" font-size="10.00">* ~JournalWatcher()</text>
+<text text-anchor="start" x="83" y="-986.5" font-family="Helvetica,sans-Serif" font-size="10.00">* journalIsConnected()</text>
+<text text-anchor="start" x="83" y="-975.5" font-family="Helvetica,sans-Serif" font-size="10.00">* journalWatcherInstanceName()</text>
+<text text-anchor="start" x="83" y="-964.5" font-family="Helvetica,sans-Serif" font-size="10.00">* journalSection()</text>
+<text text-anchor="start" x="83" y="-953.5" font-family="Helvetica,sans-Serif" font-size="10.00">* informationObject()</text>
+<text text-anchor="start" x="83" y="-942.5" font-family="Helvetica,sans-Serif" font-size="10.00">* journalConnect()</text>
+<text text-anchor="start" x="83" y="-931.5" font-family="Helvetica,sans-Serif" font-size="10.00">* journalDisconnect()</text>
+<text text-anchor="start" x="83" y="-920.5" font-family="Helvetica,sans-Serif" font-size="10.00">* updateInformationObject()</text>
+<text text-anchor="start" x="83" y="-909.5" font-family="Helvetica,sans-Serif" font-size="10.00">* setInformationObject()</text>
+<text text-anchor="start" x="83" y="-898.5" font-family="Helvetica,sans-Serif" font-size="10.00">* putInformationObject()</text>
+<text text-anchor="start" x="83" y="-887.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 4 more...</text>
+<text text-anchor="start" x="83" y="-876.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_journal_is_connected</text>
+<text text-anchor="start" x="83" y="-865.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_category</text>
+<text text-anchor="start" x="83" y="-854.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_name</text>
+<text text-anchor="start" x="83" y="-843.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_function_updateInformation</text>
+<text text-anchor="start" x="83" y="-832.5" font-family="Helvetica,sans-Serif" font-size="10.00">Object</text>
+<text text-anchor="start" x="83" y="-821.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_informationObject</text>
+<text text-anchor="start" x="83" y="-810.5" font-family="Helvetica,sans-Serif" font-size="10.00">* S_counterObjectByCategory</text>
 </a>
 </g>
 </g>

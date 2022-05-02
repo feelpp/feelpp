@@ -46,7 +46,7 @@ if (edges && edges.length) {
         </defs>
 
 <script type="text/javascript">
-var viewWidth = 786;
+var viewWidth = 787;
 var viewHeight = 1041;
 var sectionId = 'dynsection-0';
 </script>
@@ -54,7 +54,7 @@ var sectionId = 'dynsection-0';
 <svg id="graph" class="graph">
 <g id="viewport">
 <title>Feel::GeoElement3D&lt; Dim, GEOSHAPE, T, IndexT, UseMeasuresStorage &gt;</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-1037 782,-1037 782,4 -4,4"/>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-1037 782.5,-1037 782.5,4 -4,4"/>
 <!-- Node1 -->
 <g id="node1" class="node">
 <title>Node1</title>
@@ -276,17 +276,17 @@ var sectionId = 'dynsection-0';
 <g id="node9" class="node">
 <title>Node9</title>
 <g id="a_node9"><a xlink:href="classFeel_1_1SubFaceOfNone.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="630,-265 630,-377 778,-377 778,-265 630,-265"/>
+<polygon fill="white" stroke="black" points="629.5,-265 629.5,-377 778.5,-377 778.5,-265 629.5,-265"/>
 <text text-anchor="middle" x="704" y="-365" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::SubFaceOfNone&lt; 0 &gt;</text>
-<polyline fill="none" stroke="black" points="630,-358 778,-358 "/>
-<text text-anchor="start" x="638" y="-346" font-family="Helvetica,sans-Serif" font-size="10.00">+ nDim</text>
-<polyline fill="none" stroke="black" points="630,-339 778,-339 "/>
-<text text-anchor="start" x="638" y="-327" font-family="Helvetica,sans-Serif" font-size="10.00">+ element()</text>
-<text text-anchor="start" x="638" y="-316" font-family="Helvetica,sans-Serif" font-size="10.00">+ isGhostFace()</text>
-<text text-anchor="start" x="638" y="-305" font-family="Helvetica,sans-Serif" font-size="10.00">+ isInterProcessDomain()</text>
-<text text-anchor="start" x="638" y="-294" font-family="Helvetica,sans-Serif" font-size="10.00">+ operator=()</text>
-<text text-anchor="start" x="638" y="-283" font-family="Helvetica,sans-Serif" font-size="10.00">+ operator=()</text>
-<text text-anchor="start" x="638" y="-272" font-family="Helvetica,sans-Serif" font-size="10.00">and 7 more...</text>
+<polyline fill="none" stroke="black" points="629.5,-358 778.5,-358 "/>
+<text text-anchor="start" x="637.5" y="-346" font-family="Helvetica,sans-Serif" font-size="10.00">+ nDim</text>
+<polyline fill="none" stroke="black" points="629.5,-339 778.5,-339 "/>
+<text text-anchor="start" x="637.5" y="-327" font-family="Helvetica,sans-Serif" font-size="10.00">+ element()</text>
+<text text-anchor="start" x="637.5" y="-316" font-family="Helvetica,sans-Serif" font-size="10.00">+ isGhostFace()</text>
+<text text-anchor="start" x="637.5" y="-305" font-family="Helvetica,sans-Serif" font-size="10.00">+ isInterProcessDomain()</text>
+<text text-anchor="start" x="637.5" y="-294" font-family="Helvetica,sans-Serif" font-size="10.00">+ operator=()</text>
+<text text-anchor="start" x="637.5" y="-283" font-family="Helvetica,sans-Serif" font-size="10.00">+ operator=()</text>
+<text text-anchor="start" x="637.5" y="-272" font-family="Helvetica,sans-Serif" font-size="10.00">and 7 more...</text>
 </a>
 </g>
 </g>

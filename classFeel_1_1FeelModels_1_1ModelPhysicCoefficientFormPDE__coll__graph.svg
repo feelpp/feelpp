@@ -46,7 +46,7 @@ if (edges && edges.length) {
         </defs>
 
 <script type="text/javascript">
-var viewWidth = 336;
+var viewWidth = 338;
 var viewHeight = 812;
 var sectionId = 'dynsection-1';
 </script>
@@ -54,23 +54,23 @@ var sectionId = 'dynsection-1';
 <svg id="graph" class="graph">
 <g id="viewport">
 <title>Feel::FeelModels::ModelPhysicCoefficientFormPDE&lt; Dim &gt;</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-808 332,-808 332,4 -4,4"/>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-808 333.5,-808 333.5,4 -4,4"/>
 <!-- Node1 -->
 <g id="node1" class="node">
 <title>Node1</title>
 <g id="a_node1"><a xlink:title="CoefficientFormPDE Physic Model.">
-<polygon fill="#bfbfbf" stroke="black" points="120,-0.5 120,-123.5 314,-123.5 314,-0.5 120,-0.5"/>
-<text text-anchor="start" x="128" y="-111.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::ModelPhysic</text>
-<text text-anchor="middle" x="217" y="-100.5" font-family="Helvetica,sans-Serif" font-size="10.00">CoefficientFormPDE&lt; Dim &gt;</text>
-<polyline fill="none" stroke="black" points="120,-93.5 314,-93.5 "/>
-<text text-anchor="middle" x="217" y="-81.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="120,-74.5 314,-74.5 "/>
-<text text-anchor="start" x="128" y="-62.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ coefficient()</text>
-<text text-anchor="start" x="128" y="-51.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ coefficientExpr()</text>
-<text text-anchor="start" x="128" y="-40.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ hasCoefficient()</text>
-<text text-anchor="start" x="128" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ infos()</text>
-<text text-anchor="start" x="128" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ ModelPhysicCoefficientFormPDE()</text>
-<text text-anchor="start" x="128" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 4 more...</text>
+<polygon fill="#bfbfbf" stroke="black" points="78.5,-0.5 78.5,-123.5 272.5,-123.5 272.5,-0.5 78.5,-0.5"/>
+<text text-anchor="start" x="86.5" y="-111.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::ModelPhysic</text>
+<text text-anchor="middle" x="175.5" y="-100.5" font-family="Helvetica,sans-Serif" font-size="10.00">CoefficientFormPDE&lt; Dim &gt;</text>
+<polyline fill="none" stroke="black" points="78.5,-93.5 272.5,-93.5 "/>
+<text text-anchor="middle" x="175.5" y="-81.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polyline fill="none" stroke="black" points="78.5,-74.5 272.5,-74.5 "/>
+<text text-anchor="start" x="86.5" y="-62.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ coefficient()</text>
+<text text-anchor="start" x="86.5" y="-51.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ coefficientExpr()</text>
+<text text-anchor="start" x="86.5" y="-40.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ hasCoefficient()</text>
+<text text-anchor="start" x="86.5" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ infos()</text>
+<text text-anchor="start" x="86.5" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ ModelPhysicCoefficientFormPDE()</text>
+<text text-anchor="start" x="86.5" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 4 more...</text>
 </a>
 </g>
 </g>
@@ -78,44 +78,44 @@ var sectionId = 'dynsection-1';
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:href="classFeel_1_1FeelModels_1_1ModelPhysic.html" target="_top" xlink:title="Physic of the Model.">
-<polygon fill="white" stroke="black" points="121.5,-161.5 121.5,-372.5 312.5,-372.5 312.5,-161.5 121.5,-161.5"/>
-<text text-anchor="start" x="129.5" y="-360.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::ModelPhysic</text>
-<text text-anchor="middle" x="217" y="-349.5" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; Dim &gt;</text>
-<polyline fill="none" stroke="black" points="121.5,-342.5 312.5,-342.5 "/>
-<text text-anchor="middle" x="217" y="-330.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="121.5,-323.5 312.5,-323.5 "/>
-<text text-anchor="start" x="129.5" y="-311.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ addMaterialNames()</text>
-<text text-anchor="start" x="129.5" y="-300.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ addMaterialPropertyDescription()</text>
-<text text-anchor="start" x="129.5" y="-289.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ addParameter()</text>
-<text text-anchor="start" x="129.5" y="-278.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ addParameter()</text>
-<text text-anchor="start" x="129.5" y="-267.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ addParameter()</text>
-<text text-anchor="start" x="129.5" y="-256.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 28 more...</text>
-<text text-anchor="start" x="129.5" y="-245.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ New()</text>
-<text text-anchor="start" x="129.5" y="-234.5" font-family="Helvetica,sans-Serif" font-size="10.00"># parameterModelExpr()</text>
-<text text-anchor="start" x="129.5" y="-223.5" font-family="Helvetica,sans-Serif" font-size="10.00"># updateTabulateInformations</text>
-<text text-anchor="start" x="129.5" y="-212.5" font-family="Helvetica,sans-Serif" font-size="10.00">Basic()</text>
-<text text-anchor="start" x="129.5" y="-201.5" font-family="Helvetica,sans-Serif" font-size="10.00"># updateTabulateInformations</text>
-<text text-anchor="start" x="129.5" y="-190.5" font-family="Helvetica,sans-Serif" font-size="10.00">Parameters()</text>
-<text text-anchor="start" x="129.5" y="-179.5" font-family="Helvetica,sans-Serif" font-size="10.00"># updateTabulateInformations</text>
-<text text-anchor="start" x="129.5" y="-168.5" font-family="Helvetica,sans-Serif" font-size="10.00">Subphysics()</text>
+<polygon fill="white" stroke="black" points="80,-161.5 80,-372.5 271,-372.5 271,-161.5 80,-161.5"/>
+<text text-anchor="start" x="88" y="-360.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::ModelPhysic</text>
+<text text-anchor="middle" x="175.5" y="-349.5" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; Dim &gt;</text>
+<polyline fill="none" stroke="black" points="80,-342.5 271,-342.5 "/>
+<text text-anchor="middle" x="175.5" y="-330.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polyline fill="none" stroke="black" points="80,-323.5 271,-323.5 "/>
+<text text-anchor="start" x="88" y="-311.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ addMaterialNames()</text>
+<text text-anchor="start" x="88" y="-300.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ addMaterialPropertyDescription()</text>
+<text text-anchor="start" x="88" y="-289.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ addParameter()</text>
+<text text-anchor="start" x="88" y="-278.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ addParameter()</text>
+<text text-anchor="start" x="88" y="-267.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ addParameter()</text>
+<text text-anchor="start" x="88" y="-256.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 28 more...</text>
+<text text-anchor="start" x="88" y="-245.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ New()</text>
+<text text-anchor="start" x="88" y="-234.5" font-family="Helvetica,sans-Serif" font-size="10.00"># parameterModelExpr()</text>
+<text text-anchor="start" x="88" y="-223.5" font-family="Helvetica,sans-Serif" font-size="10.00"># updateTabulateInformations</text>
+<text text-anchor="start" x="88" y="-212.5" font-family="Helvetica,sans-Serif" font-size="10.00">Basic()</text>
+<text text-anchor="start" x="88" y="-201.5" font-family="Helvetica,sans-Serif" font-size="10.00"># updateTabulateInformations</text>
+<text text-anchor="start" x="88" y="-190.5" font-family="Helvetica,sans-Serif" font-size="10.00">Parameters()</text>
+<text text-anchor="start" x="88" y="-179.5" font-family="Helvetica,sans-Serif" font-size="10.00"># updateTabulateInformations</text>
+<text text-anchor="start" x="88" y="-168.5" font-family="Helvetica,sans-Serif" font-size="10.00">Subphysics()</text>
 </a>
 </g>
 </g>
 <!-- Node2&#45;&gt;Node1 -->
 <g id="edge1" class="edge">
 <title>Node2&#45;&gt;Node1</title>
-<path fill="none" stroke="midnightblue" d="M217,-150.99C217,-141.59 217,-132.35 217,-123.59"/>
-<polygon fill="none" stroke="midnightblue" points="213.5,-151.23 217,-161.23 220.5,-151.23 213.5,-151.23"/>
+<path fill="none" stroke="midnightblue" d="M175.5,-150.99C175.5,-141.59 175.5,-132.35 175.5,-123.59"/>
+<polygon fill="none" stroke="midnightblue" points="172,-151.23 175.5,-161.23 179,-151.23 172,-151.23"/>
 </g>
 <!-- Node3 -->
 <g id="node3" class="node">
 <title>Node3</title>
 <g id="a_node3"><a xlink:href="classFeel_1_1JournalWatcher.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="0,-420.5 0,-708.5 176,-708.5 176,-420.5 0,-420.5"/>
-<text text-anchor="middle" x="88" y="-696.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::JournalWatcher</text>
-<polyline fill="none" stroke="black" points="0,-689.5 176,-689.5 "/>
-<text text-anchor="middle" x="88" y="-677.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="0,-670.5 176,-670.5 "/>
+<polygon fill="white" stroke="black" points="0,-420.5 0,-708.5 177,-708.5 177,-420.5 0,-420.5"/>
+<text text-anchor="middle" x="88.5" y="-696.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::JournalWatcher</text>
+<polyline fill="none" stroke="black" points="0,-689.5 177,-689.5 "/>
+<text text-anchor="middle" x="88.5" y="-677.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polyline fill="none" stroke="black" points="0,-670.5 177,-670.5 "/>
 <text text-anchor="start" x="8" y="-658.5" font-family="Helvetica,sans-Serif" font-size="10.00">* JournalWatcher()</text>
 <text text-anchor="start" x="8" y="-647.5" font-family="Helvetica,sans-Serif" font-size="10.00">* JournalWatcher()</text>
 <text text-anchor="start" x="8" y="-636.5" font-family="Helvetica,sans-Serif" font-size="10.00">* JournalWatcher()</text>
@@ -144,47 +144,47 @@ var sectionId = 'dynsection-1';
 <!-- Node3&#45;&gt;Node2 -->
 <g id="edge2" class="edge">
 <title>Node3&#45;&gt;Node2</title>
-<path fill="none" stroke="midnightblue" d="M154.71,-410.68C160.34,-397.79 165.95,-384.94 171.36,-372.54"/>
-<polygon fill="none" stroke="midnightblue" points="151.4,-409.51 150.61,-420.08 157.82,-412.31 151.4,-409.51"/>
+<path fill="none" stroke="midnightblue" d="M133.6,-410.31C137.36,-397.54 141.11,-384.82 144.72,-372.54"/>
+<polygon fill="none" stroke="midnightblue" points="130.19,-409.5 130.73,-420.08 136.91,-411.47 130.19,-409.5"/>
 </g>
 <!-- Node4 -->
 <g id="node4" class="node">
 <title>Node4</title>
 <g id="a_node4"><a xlink:title=" ">
-<polygon fill="white" stroke="#bfbfbf" points="34.5,-746.5 34.5,-803.5 141.5,-803.5 141.5,-746.5 34.5,-746.5"/>
-<text text-anchor="middle" x="88" y="-791.5" font-family="Helvetica,sans-Serif" font-size="10.00">Event::SlotHandler</text>
-<polyline fill="none" stroke="#bfbfbf" points="34.5,-784.5 141.5,-784.5 "/>
-<text text-anchor="middle" x="88" y="-772.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="#bfbfbf" points="34.5,-765.5 141.5,-765.5 "/>
-<text text-anchor="middle" x="88" y="-753.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polygon fill="white" stroke="#bfbfbf" points="35,-746.5 35,-803.5 142,-803.5 142,-746.5 35,-746.5"/>
+<text text-anchor="middle" x="88.5" y="-791.5" font-family="Helvetica,sans-Serif" font-size="10.00">Event::SlotHandler</text>
+<polyline fill="none" stroke="#bfbfbf" points="35,-784.5 142,-784.5 "/>
+<text text-anchor="middle" x="88.5" y="-772.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polyline fill="none" stroke="#bfbfbf" points="35,-765.5 142,-765.5 "/>
+<text text-anchor="middle" x="88.5" y="-753.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>
 </g>
 <!-- Node4&#45;&gt;Node3 -->
 <g id="edge3" class="edge">
 <title>Node4&#45;&gt;Node3</title>
-<path fill="none" stroke="midnightblue" d="M88,-736.25C88,-727.86 88,-718.49 88,-708.57"/>
-<polygon fill="none" stroke="midnightblue" points="84.5,-736.31 88,-746.31 91.5,-736.31 84.5,-736.31"/>
+<path fill="none" stroke="midnightblue" d="M88.5,-736.25C88.5,-727.86 88.5,-718.49 88.5,-708.57"/>
+<polygon fill="none" stroke="midnightblue" points="85,-736.31 88.5,-746.31 92,-736.31 85,-736.31"/>
 </g>
 <!-- Node5 -->
 <g id="node5" class="node">
 <title>Node5</title>
 <g id="a_node5"><a xlink:title=" ">
-<polygon fill="white" stroke="#bfbfbf" points="194,-536 194,-593 328,-593 328,-536 194,-536"/>
-<text text-anchor="middle" x="261" y="-581" font-family="Helvetica,sans-Serif" font-size="10.00">static const uint16_type</text>
-<polyline fill="none" stroke="#bfbfbf" points="194,-574 328,-574 "/>
-<text text-anchor="middle" x="261" y="-562" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="#bfbfbf" points="194,-555 328,-555 "/>
-<text text-anchor="middle" x="261" y="-543" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polygon fill="white" stroke="#bfbfbf" points="195.5,-536 195.5,-593 329.5,-593 329.5,-536 195.5,-536"/>
+<text text-anchor="middle" x="262.5" y="-581" font-family="Helvetica,sans-Serif" font-size="10.00">static const uint16_type</text>
+<polyline fill="none" stroke="#bfbfbf" points="195.5,-574 329.5,-574 "/>
+<text text-anchor="middle" x="262.5" y="-562" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polyline fill="none" stroke="#bfbfbf" points="195.5,-555 329.5,-555 "/>
+<text text-anchor="middle" x="262.5" y="-543" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>
 </g>
 <!-- Node5&#45;&gt;Node2 -->
 <g id="edge4" class="edge">
 <title>Node5&#45;&gt;Node2</title>
-<path fill="none" stroke="#404040" d="M256.9,-535.97C251.76,-501.46 242.63,-440.13 234.4,-384.84"/>
-<polygon fill="none" stroke="#404040" points="234.37,-384.65 229.53,-379.31 232.6,-372.78 237.44,-378.13 234.37,-384.65"/>
-<text text-anchor="middle" x="255" y="-394" font-family="Helvetica,sans-Serif" font-size="10.00"> +nDim</text>
+<path fill="none" stroke="#404040" d="M254.39,-535.97C244.21,-501.39 226.1,-439.87 209.8,-384.49"/>
+<polygon fill="none" stroke="#404040" points="209.74,-384.29 204.21,-379.67 206.35,-372.78 211.88,-377.41 209.74,-384.29"/>
+<text text-anchor="middle" x="233.5" y="-394" font-family="Helvetica,sans-Serif" font-size="10.00"> +nDim</text>
 </g>
 </g>
 </svg>

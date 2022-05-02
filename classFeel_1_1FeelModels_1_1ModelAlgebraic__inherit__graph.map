@@ -1,8 +1,8 @@
 <map id="Feel::FeelModels::ModelAlgebraic" name="Feel::FeelModels::ModelAlgebraic">
 <area shape="rect" id="node1" title=" " alt="" coords="609,763,849,913"/>
 <area shape="rect" id="node6" href="$classFeel_1_1FeelModels_1_1ModelNumerical.html" title="Handles some numerical model aspects: timestepping, mesh and properties." alt="" coords="594,961,863,1244"/>
-<area shape="rect" id="node2" href="$classFeel_1_1FeelModels_1_1ModelBase.html" title="Model base class." alt="" coords="601,564,857,715"/>
-<area shape="rect" id="node3" href="$classFeel_1_1JournalWatcher.html" title=" " alt="" coords="493,131,727,516"/>
+<area shape="rect" id="node2" href="$classFeel_1_1FeelModels_1_1ModelBase.html" title="Model base class." alt="" coords="600,564,857,715"/>
+<area shape="rect" id="node3" href="$classFeel_1_1JournalWatcher.html" title=" " alt="" coords="492,131,728,516"/>
 <area shape="rect" id="node4" title=" " alt="" coords="539,5,681,83"/>
 <area shape="rect" id="node5" title=" " alt="" coords="752,277,945,369"/>
 <area shape="rect" id="node7" href="$classFeel_1_1FeelModels_1_1Electric.html" title="Toolbox Electric." alt="" coords="5,1358,268,1567"/>

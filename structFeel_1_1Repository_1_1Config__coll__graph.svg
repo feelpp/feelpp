@@ -59,16 +59,16 @@ var sectionId = 'dynsection-0';
 <g id="node1" class="node">
 <title>Node1</title>
 <g id="a_node1"><a xlink:title=" ">
-<polygon fill="#bfbfbf" stroke="black" points="89.5,-0.5 89.5,-101.5 220.5,-101.5 220.5,-0.5 89.5,-0.5"/>
+<polygon fill="#bfbfbf" stroke="black" points="89,-0.5 89,-101.5 221,-101.5 221,-0.5 89,-0.5"/>
 <text text-anchor="middle" x="155" y="-89.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::Repository::Config</text>
-<polyline fill="none" stroke="black" points="89.5,-82.5 220.5,-82.5 "/>
+<polyline fill="none" stroke="black" points="89,-82.5 221,-82.5 "/>
 <text text-anchor="middle" x="155" y="-70.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="89.5,-63.5 220.5,-63.5 "/>
-<text text-anchor="start" x="97.5" y="-51.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ Config()</text>
-<text text-anchor="start" x="97.5" y="-40.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ Config()</text>
-<text text-anchor="start" x="97.5" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ Config()</text>
-<text text-anchor="start" x="97.5" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ Config()</text>
-<text text-anchor="start" x="97.5" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ Config()</text>
+<polyline fill="none" stroke="black" points="89,-63.5 221,-63.5 "/>
+<text text-anchor="start" x="97" y="-51.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ Config()</text>
+<text text-anchor="start" x="97" y="-40.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ Config()</text>
+<text text-anchor="start" x="97" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ Config()</text>
+<text text-anchor="start" x="97" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ Config()</text>
+<text text-anchor="start" x="97" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ Config()</text>
 </a>
 </g>
 </g>
@@ -88,8 +88,8 @@ var sectionId = 'dynsection-0';
 <!-- Node2&#45;&gt;Node1 -->
 <g id="edge1" class="edge">
 <title>Node2&#45;&gt;Node1</title>
-<path fill="none" stroke="#404040" d="M16.15,-204.26C15.08,-179.99 17.15,-144.84 34,-120 45.09,-103.65 61.49,-90.8 78.65,-80.88"/>
-<polygon fill="none" stroke="#404040" points="78.84,-80.78 82.22,-74.41 89.4,-75.08 86.02,-81.45 78.84,-80.78"/>
+<path fill="none" stroke="#404040" d="M16.15,-204.26C15.08,-179.99 17.15,-144.84 34,-120 44.98,-103.82 61.15,-91.06 78.13,-81.18"/>
+<polygon fill="none" stroke="#404040" points="78.22,-81.13 81.59,-74.75 88.77,-75.4 85.41,-81.78 78.22,-81.13"/>
 <text text-anchor="middle" x="66" y="-178" font-family="Helvetica,sans-Serif" font-size="10.00"> +exprs</text>
 <text text-anchor="middle" x="66" y="-167" font-family="Helvetica,sans-Serif" font-size="10.00">+feelppdb</text>
 <text text-anchor="middle" x="66" y="-156" font-family="Helvetica,sans-Serif" font-size="10.00">+logs</text>
@@ -195,8 +195,8 @@ var sectionId = 'dynsection-0';
 <!-- Node7&#45;&gt;Node1 -->
 <g id="edge6" class="edge">
 <title>Node7&#45;&gt;Node1</title>
-<path fill="none" stroke="#404040" d="M305.02,-204.37C291.29,-180.49 269.43,-145.86 245,-120 240.26,-114.98 235.12,-110.06 229.78,-105.3"/>
-<polygon fill="none" stroke="#404040" points="229.75,-105.27 222.59,-104.39 220.64,-97.45 227.8,-98.33 229.75,-105.27"/>
+<path fill="none" stroke="#404040" d="M305.02,-204.37C291.29,-180.49 269.43,-145.86 245,-120 240.46,-115.2 235.56,-110.48 230.46,-105.9"/>
+<polygon fill="none" stroke="#404040" points="230.2,-105.68 223.04,-104.79 221.11,-97.84 228.27,-98.73 230.2,-105.68"/>
 <text text-anchor="middle" x="317.5" y="-150.5" font-family="Helvetica,sans-Serif" font-size="10.00"> +location</text>
 </g>
 </g>

@@ -59,22 +59,22 @@ var sectionId = 'dynsection-1';
 <g id="node1" class="node">
 <title>Node1</title>
 <g id="a_node1"><a xlink:title="XML application.">
-<polygon fill="#bfbfbf" stroke="black" points="172,-0.5 172,-167.5 300,-167.5 300,-0.5 172,-0.5"/>
+<polygon fill="#bfbfbf" stroke="black" points="171.5,-0.5 171.5,-167.5 300.5,-167.5 300.5,-0.5 171.5,-0.5"/>
 <text text-anchor="middle" x="236" y="-155.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::ApplicationXML</text>
-<polyline fill="none" stroke="black" points="172,-148.5 300,-148.5 "/>
+<polyline fill="none" stroke="black" points="171.5,-148.5 300.5,-148.5 "/>
 <text text-anchor="middle" x="236" y="-136.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="172,-129.5 300,-129.5 "/>
-<text text-anchor="start" x="180" y="-117.5" font-family="Helvetica,sans-Serif" font-size="10.00">* RunStatus</text>
-<text text-anchor="start" x="180" y="-106.5" font-family="Helvetica,sans-Serif" font-size="10.00">* addOutput()</text>
-<text text-anchor="start" x="180" y="-95.5" font-family="Helvetica,sans-Serif" font-size="10.00">* addParameter()</text>
-<text text-anchor="start" x="180" y="-84.5" font-family="Helvetica,sans-Serif" font-size="10.00">* addOutputValue()</text>
-<text text-anchor="start" x="180" y="-73.5" font-family="Helvetica,sans-Serif" font-size="10.00">* addParameterValue()</text>
-<text text-anchor="start" x="180" y="-62.5" font-family="Helvetica,sans-Serif" font-size="10.00">* preProcessing()</text>
-<text text-anchor="start" x="180" y="-51.5" font-family="Helvetica,sans-Serif" font-size="10.00">* postProcessing()</text>
-<text text-anchor="start" x="180" y="-40.5" font-family="Helvetica,sans-Serif" font-size="10.00">* ApplicationXML()</text>
-<text text-anchor="start" x="180" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">* ApplicationXML()</text>
-<text text-anchor="start" x="180" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">* ~ApplicationXML()</text>
-<text text-anchor="start" x="180" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">* operator=()</text>
+<polyline fill="none" stroke="black" points="171.5,-129.5 300.5,-129.5 "/>
+<text text-anchor="start" x="179.5" y="-117.5" font-family="Helvetica,sans-Serif" font-size="10.00">* RunStatus</text>
+<text text-anchor="start" x="179.5" y="-106.5" font-family="Helvetica,sans-Serif" font-size="10.00">* addOutput()</text>
+<text text-anchor="start" x="179.5" y="-95.5" font-family="Helvetica,sans-Serif" font-size="10.00">* addParameter()</text>
+<text text-anchor="start" x="179.5" y="-84.5" font-family="Helvetica,sans-Serif" font-size="10.00">* addOutputValue()</text>
+<text text-anchor="start" x="179.5" y="-73.5" font-family="Helvetica,sans-Serif" font-size="10.00">* addParameterValue()</text>
+<text text-anchor="start" x="179.5" y="-62.5" font-family="Helvetica,sans-Serif" font-size="10.00">* preProcessing()</text>
+<text text-anchor="start" x="179.5" y="-51.5" font-family="Helvetica,sans-Serif" font-size="10.00">* postProcessing()</text>
+<text text-anchor="start" x="179.5" y="-40.5" font-family="Helvetica,sans-Serif" font-size="10.00">* ApplicationXML()</text>
+<text text-anchor="start" x="179.5" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">* ApplicationXML()</text>
+<text text-anchor="start" x="179.5" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">* ~ApplicationXML()</text>
+<text text-anchor="start" x="179.5" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">* operator=()</text>
 </a>
 </g>
 </g>
@@ -117,7 +117,7 @@ var sectionId = 'dynsection-1';
 <!-- Node2&#45;&gt;Node1 -->
 <g id="edge1" class="edge">
 <title>Node2&#45;&gt;Node1</title>
-<path fill="none" stroke="midnightblue" d="M129.1,-232.76C130.39,-230.48 131.69,-228.23 133,-226 144.59,-206.26 158.3,-185.9 171.87,-167"/>
+<path fill="none" stroke="midnightblue" d="M129.1,-232.76C130.39,-230.48 131.69,-228.23 133,-226 144.43,-206.52 157.94,-186.44 171.33,-167.76"/>
 <polygon fill="none" stroke="midnightblue" points="125.95,-231.22 124.15,-241.66 132.07,-234.62 125.95,-231.22"/>
 </g>
 <!-- Node3 -->
@@ -186,12 +186,12 @@ var sectionId = 'dynsection-1';
 <g id="node6" class="node">
 <title>Node6</title>
 <g id="a_node6"><a xlink:href="classFeel_1_1Parameter.html" target="_top" xlink:title="parameter class to describe code inputs">
-<polygon fill="white" stroke="black" points="186.5,-874.5 186.5,-931.5 279.5,-931.5 279.5,-874.5 186.5,-874.5"/>
+<polygon fill="white" stroke="black" points="186,-874.5 186,-931.5 280,-931.5 280,-874.5 186,-874.5"/>
 <text text-anchor="middle" x="233" y="-919.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::Parameter</text>
-<polyline fill="none" stroke="black" points="186.5,-912.5 279.5,-912.5 "/>
+<polyline fill="none" stroke="black" points="186,-912.5 280,-912.5 "/>
 <text text-anchor="middle" x="233" y="-900.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="186.5,-893.5 279.5,-893.5 "/>
-<text text-anchor="start" x="194.5" y="-881.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ Parameter()</text>
+<polyline fill="none" stroke="black" points="186,-893.5 280,-893.5 "/>
+<text text-anchor="start" x="194" y="-881.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ Parameter()</text>
 </a>
 </g>
 </g>
@@ -226,17 +226,17 @@ var sectionId = 'dynsection-1';
 <g id="node7" class="node">
 <title>Node7</title>
 <g id="a_node7"><a xlink:href="classFeel_1_1Parameter__impl.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="173,-969.5 173,-1081.5 293,-1081.5 293,-969.5 173,-969.5"/>
+<polygon fill="white" stroke="black" points="172.5,-969.5 172.5,-1081.5 293.5,-1081.5 293.5,-969.5 172.5,-969.5"/>
 <text text-anchor="middle" x="233" y="-1069.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::Parameter_impl</text>
-<polyline fill="none" stroke="black" points="173,-1062.5 293,-1062.5 "/>
+<polyline fill="none" stroke="black" points="172.5,-1062.5 293.5,-1062.5 "/>
 <text text-anchor="middle" x="233" y="-1050.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="173,-1043.5 293,-1043.5 "/>
-<text text-anchor="start" x="181" y="-1031.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ getAttrNames()</text>
-<text text-anchor="start" x="181" y="-1020.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ getAttrValues()</text>
-<text text-anchor="start" x="181" y="-1009.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ getName()</text>
-<text text-anchor="start" x="181" y="-998.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ getValues()</text>
-<text text-anchor="start" x="181" y="-987.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ Parameter_impl()</text>
-<text text-anchor="start" x="181" y="-976.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ Parameter_impl()</text>
+<polyline fill="none" stroke="black" points="172.5,-1043.5 293.5,-1043.5 "/>
+<text text-anchor="start" x="180.5" y="-1031.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ getAttrNames()</text>
+<text text-anchor="start" x="180.5" y="-1020.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ getAttrValues()</text>
+<text text-anchor="start" x="180.5" y="-1009.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ getName()</text>
+<text text-anchor="start" x="180.5" y="-998.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ getValues()</text>
+<text text-anchor="start" x="180.5" y="-987.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ Parameter_impl()</text>
+<text text-anchor="start" x="180.5" y="-976.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ Parameter_impl()</text>
 </a>
 </g>
 </g>

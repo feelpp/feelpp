@@ -1,10 +1,10 @@
 <map id="Feel::detail::updateDataMapProcessStandard&lt; DofType &gt;" name="Feel::detail::updateDataMapProcessStandard&lt; DofType &gt;">
-<area shape="rect" id="node1" title=" " alt="" coords="89,559,348,665"/>
+<area shape="rect" id="node1" title=" " alt="" coords="91,559,349,665"/>
 <area shape="rect" id="node2" title=" " alt="" coords="5,397,80,474"/>
-<area shape="rect" id="node3" title=" " alt="" coords="104,397,333,474"/>
-<area shape="rect" id="node4" href="$classFeel_1_1WorldComm.html" title="Provides interface to MPI Communicators." alt="" coords="128,147,309,327"/>
-<area shape="rect" id="node5" href="$classboost_1_1mpi_1_1communicator.html" title=" " alt="" coords="11,13,205,90"/>
-<area shape="rect" id="node6" title=" " alt="" coords="229,5,430,97"/>
-<area shape="rect" id="node7" title=" " alt="" coords="358,389,522,481"/>
-<area shape="rect" id="node8" title=" " alt="" coords="362,198,518,275"/>
+<area shape="rect" id="node3" title=" " alt="" coords="105,397,335,474"/>
+<area shape="rect" id="node4" href="$classFeel_1_1WorldComm.html" title="Provides interface to MPI Communicators." alt="" coords="129,147,311,327"/>
+<area shape="rect" id="node5" href="$classboost_1_1mpi_1_1communicator.html" title=" " alt="" coords="13,13,206,90"/>
+<area shape="rect" id="node6" title=" " alt="" coords="231,5,433,97"/>
+<area shape="rect" id="node7" title=" " alt="" coords="359,389,523,481"/>
+<area shape="rect" id="node8" title=" " alt="" coords="363,198,519,275"/>
 </map>

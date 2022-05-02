@@ -122,7 +122,7 @@ var NAVTREEINDEX =
 "structFeel_1_1vf_1_1OpMin_1_1tensor.html#ab9810b678c5bf08004263071445d21de",
 "structFeel_1_1vf_1_1Trans_1_1tensor_1_1sig.html#ae1e4c90748d2b402185ea61fbbe94714",
 "structnlohmann_1_1detail_1_1external__constructor_3_01value__t_1_1array_01_4.html",
-"syncdofs_8hpp.html"
+"structutility_1_1centre.html"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

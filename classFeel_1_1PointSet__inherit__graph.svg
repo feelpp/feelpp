@@ -13,23 +13,23 @@
 <g id="node1" class="node">
 <title>Node1</title>
 <g id="a_node1"><a xlink:title="Class of all PointSet on a Convex.">
-<polygon fill="#bfbfbf" stroke="black" points="47,-0.5 47,-178.5 213,-178.5 213,-0.5 47,-0.5"/>
+<polygon fill="#bfbfbf" stroke="black" points="46.5,-0.5 46.5,-178.5 213.5,-178.5 213.5,-0.5 46.5,-0.5"/>
 <text text-anchor="middle" x="130" y="-166.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::PointSet&lt; Convex, T &gt;</text>
-<polyline fill="none" stroke="black" points="47,-159.5 213,-159.5 "/>
-<text text-anchor="start" x="55" y="-147.5" font-family="Helvetica,sans-Serif" font-size="10.00"># M_npoints</text>
-<text text-anchor="start" x="55" y="-136.5" font-family="Helvetica,sans-Serif" font-size="10.00"># M_points</text>
-<text text-anchor="start" x="55" y="-125.5" font-family="Helvetica,sans-Serif" font-size="10.00"># M_points_face</text>
-<text text-anchor="start" x="55" y="-114.5" font-family="Helvetica,sans-Serif" font-size="10.00"># pointsInfo</text>
-<text text-anchor="start" x="55" y="-103.5" font-family="Helvetica,sans-Serif" font-size="10.00"># pointsName</text>
-<polyline fill="none" stroke="black" points="47,-96.5 213,-96.5 "/>
-<text text-anchor="start" x="55" y="-84.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ FEELPP_DEFINE_VISITABLE()</text>
-<text text-anchor="start" x="55" y="-73.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ getName()</text>
-<text text-anchor="start" x="55" y="-62.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ getPointsInfo()</text>
-<text text-anchor="start" x="55" y="-51.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ nPoints()</text>
-<text text-anchor="start" x="55" y="-40.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ operator=()</text>
-<text text-anchor="start" x="55" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 15 more...</text>
-<text text-anchor="start" x="55" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00"># setPoints()</text>
-<text text-anchor="start" x="55" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00"># setPoints()</text>
+<polyline fill="none" stroke="black" points="46.5,-159.5 213.5,-159.5 "/>
+<text text-anchor="start" x="54.5" y="-147.5" font-family="Helvetica,sans-Serif" font-size="10.00"># M_npoints</text>
+<text text-anchor="start" x="54.5" y="-136.5" font-family="Helvetica,sans-Serif" font-size="10.00"># M_points</text>
+<text text-anchor="start" x="54.5" y="-125.5" font-family="Helvetica,sans-Serif" font-size="10.00"># M_points_face</text>
+<text text-anchor="start" x="54.5" y="-114.5" font-family="Helvetica,sans-Serif" font-size="10.00"># pointsInfo</text>
+<text text-anchor="start" x="54.5" y="-103.5" font-family="Helvetica,sans-Serif" font-size="10.00"># pointsName</text>
+<polyline fill="none" stroke="black" points="46.5,-96.5 213.5,-96.5 "/>
+<text text-anchor="start" x="54.5" y="-84.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ FEELPP_DEFINE_VISITABLE()</text>
+<text text-anchor="start" x="54.5" y="-73.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ getName()</text>
+<text text-anchor="start" x="54.5" y="-62.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ getPointsInfo()</text>
+<text text-anchor="start" x="54.5" y="-51.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ nPoints()</text>
+<text text-anchor="start" x="54.5" y="-40.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ operator=()</text>
+<text text-anchor="start" x="54.5" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 15 more...</text>
+<text text-anchor="start" x="54.5" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00"># setPoints()</text>
+<text text-anchor="start" x="54.5" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00"># setPoints()</text>
 </a>
 </g>
 </g>

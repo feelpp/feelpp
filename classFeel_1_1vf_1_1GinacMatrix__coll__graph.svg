@@ -46,7 +46,7 @@ if (edges && edges.length) {
         </defs>
 
 <script type="text/javascript">
-var viewWidth = 1040;
+var viewWidth = 1041;
 var viewHeight = 916;
 var sectionId = 'dynsection-1';
 </script>
@@ -54,46 +54,46 @@ var sectionId = 'dynsection-1';
 <svg id="graph" class="graph">
 <g id="viewport">
 <title>Feel::vf::GinacMatrix&lt; M, N, Order, SymbolsExprType &gt;</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-912 1035.5,-912 1035.5,4 -4,4"/>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-912 1036.5,-912 1036.5,4 -4,4"/>
 <!-- Node1 -->
 <g id="node1" class="node">
 <title>Node1</title>
 <g id="a_node1"><a xlink:title="Handle Ginac matrix expression.">
-<polygon fill="#bfbfbf" stroke="black" points="716,-0.5 716,-376.5 903,-376.5 903,-0.5 716,-0.5"/>
-<text text-anchor="start" x="724" y="-364.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::vf::GinacMatrix</text>
-<text text-anchor="middle" x="809.5" y="-353.5" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; M, N, Order, SymbolsExprType &gt;</text>
-<polyline fill="none" stroke="black" points="716,-346.5 903,-346.5 "/>
-<text text-anchor="middle" x="809.5" y="-334.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="716,-327.5 903,-327.5 "/>
-<text text-anchor="start" x="724" y="-315.5" font-family="Helvetica,sans-Serif" font-size="10.00">* super</text>
-<text text-anchor="start" x="724" y="-304.5" font-family="Helvetica,sans-Serif" font-size="10.00">* symbols_expression</text>
-<text text-anchor="start" x="724" y="-293.5" font-family="Helvetica,sans-Serif" font-size="10.00">_storage_type</text>
-<text text-anchor="start" x="724" y="-282.5" font-family="Helvetica,sans-Serif" font-size="10.00">* symbols_expression_type</text>
-<text text-anchor="start" x="724" y="-271.5" font-family="Helvetica,sans-Serif" font-size="10.00">* symbols_expression</text>
-<text text-anchor="start" x="724" y="-260.5" font-family="Helvetica,sans-Serif" font-size="10.00">_tuple_type</text>
-<text text-anchor="start" x="724" y="-249.5" font-family="Helvetica,sans-Serif" font-size="10.00">* test_basis</text>
-<text text-anchor="start" x="724" y="-238.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 7 more...</text>
-<text text-anchor="start" x="724" y="-227.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_fun</text>
-<text text-anchor="start" x="724" y="-216.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_cfun</text>
-<text text-anchor="start" x="724" y="-205.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_filename</text>
-<text text-anchor="start" x="724" y="-194.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_exprDesc</text>
-<text text-anchor="start" x="724" y="-183.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_expr</text>
-<text text-anchor="start" x="724" y="-172.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 21 more...</text>
-<text text-anchor="start" x="724" y="-161.5" font-family="Helvetica,sans-Serif" font-size="10.00">* GinacMatrix()</text>
-<text text-anchor="start" x="724" y="-150.5" font-family="Helvetica,sans-Serif" font-size="10.00">* GinacMatrix()</text>
-<text text-anchor="start" x="724" y="-139.5" font-family="Helvetica,sans-Serif" font-size="10.00">* GinacMatrix()</text>
-<text text-anchor="start" x="724" y="-128.5" font-family="Helvetica,sans-Serif" font-size="10.00">* GinacMatrix()</text>
-<text text-anchor="start" x="724" y="-117.5" font-family="Helvetica,sans-Serif" font-size="10.00">* GinacMatrix()</text>
-<text text-anchor="start" x="724" y="-106.5" font-family="Helvetica,sans-Serif" font-size="10.00">* GinacMatrix()</text>
-<text text-anchor="start" x="724" y="-95.5" font-family="Helvetica,sans-Serif" font-size="10.00">* GinacMatrix()</text>
-<text text-anchor="start" x="724" y="-84.5" font-family="Helvetica,sans-Serif" font-size="10.00">* operator=()</text>
-<text text-anchor="start" x="724" y="-73.5" font-family="Helvetica,sans-Serif" font-size="10.00">* operator=()</text>
-<text text-anchor="start" x="724" y="-62.5" font-family="Helvetica,sans-Serif" font-size="10.00">* polynomialOrder()</text>
-<text text-anchor="start" x="724" y="-51.5" font-family="Helvetica,sans-Serif" font-size="10.00">* isPolynomial()</text>
-<text text-anchor="start" x="724" y="-40.5" font-family="Helvetica,sans-Serif" font-size="10.00">* symbolsExpression()</text>
-<text text-anchor="start" x="724" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">* symbolsExpression()</text>
-<text text-anchor="start" x="724" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">* symbolsExpressionStorage()</text>
-<text text-anchor="start" x="724" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 10 more...</text>
+<polygon fill="#bfbfbf" stroke="black" points="717,-0.5 717,-376.5 904,-376.5 904,-0.5 717,-0.5"/>
+<text text-anchor="start" x="725" y="-364.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::vf::GinacMatrix</text>
+<text text-anchor="middle" x="810.5" y="-353.5" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; M, N, Order, SymbolsExprType &gt;</text>
+<polyline fill="none" stroke="black" points="717,-346.5 904,-346.5 "/>
+<text text-anchor="middle" x="810.5" y="-334.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polyline fill="none" stroke="black" points="717,-327.5 904,-327.5 "/>
+<text text-anchor="start" x="725" y="-315.5" font-family="Helvetica,sans-Serif" font-size="10.00">* super</text>
+<text text-anchor="start" x="725" y="-304.5" font-family="Helvetica,sans-Serif" font-size="10.00">* symbols_expression</text>
+<text text-anchor="start" x="725" y="-293.5" font-family="Helvetica,sans-Serif" font-size="10.00">_storage_type</text>
+<text text-anchor="start" x="725" y="-282.5" font-family="Helvetica,sans-Serif" font-size="10.00">* symbols_expression_type</text>
+<text text-anchor="start" x="725" y="-271.5" font-family="Helvetica,sans-Serif" font-size="10.00">* symbols_expression</text>
+<text text-anchor="start" x="725" y="-260.5" font-family="Helvetica,sans-Serif" font-size="10.00">_tuple_type</text>
+<text text-anchor="start" x="725" y="-249.5" font-family="Helvetica,sans-Serif" font-size="10.00">* test_basis</text>
+<text text-anchor="start" x="725" y="-238.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 7 more...</text>
+<text text-anchor="start" x="725" y="-227.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_fun</text>
+<text text-anchor="start" x="725" y="-216.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_cfun</text>
+<text text-anchor="start" x="725" y="-205.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_filename</text>
+<text text-anchor="start" x="725" y="-194.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_exprDesc</text>
+<text text-anchor="start" x="725" y="-183.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_expr</text>
+<text text-anchor="start" x="725" y="-172.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 21 more...</text>
+<text text-anchor="start" x="725" y="-161.5" font-family="Helvetica,sans-Serif" font-size="10.00">* GinacMatrix()</text>
+<text text-anchor="start" x="725" y="-150.5" font-family="Helvetica,sans-Serif" font-size="10.00">* GinacMatrix()</text>
+<text text-anchor="start" x="725" y="-139.5" font-family="Helvetica,sans-Serif" font-size="10.00">* GinacMatrix()</text>
+<text text-anchor="start" x="725" y="-128.5" font-family="Helvetica,sans-Serif" font-size="10.00">* GinacMatrix()</text>
+<text text-anchor="start" x="725" y="-117.5" font-family="Helvetica,sans-Serif" font-size="10.00">* GinacMatrix()</text>
+<text text-anchor="start" x="725" y="-106.5" font-family="Helvetica,sans-Serif" font-size="10.00">* GinacMatrix()</text>
+<text text-anchor="start" x="725" y="-95.5" font-family="Helvetica,sans-Serif" font-size="10.00">* GinacMatrix()</text>
+<text text-anchor="start" x="725" y="-84.5" font-family="Helvetica,sans-Serif" font-size="10.00">* operator=()</text>
+<text text-anchor="start" x="725" y="-73.5" font-family="Helvetica,sans-Serif" font-size="10.00">* operator=()</text>
+<text text-anchor="start" x="725" y="-62.5" font-family="Helvetica,sans-Serif" font-size="10.00">* polynomialOrder()</text>
+<text text-anchor="start" x="725" y="-51.5" font-family="Helvetica,sans-Serif" font-size="10.00">* isPolynomial()</text>
+<text text-anchor="start" x="725" y="-40.5" font-family="Helvetica,sans-Serif" font-size="10.00">* symbolsExpression()</text>
+<text text-anchor="start" x="725" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">* symbolsExpression()</text>
+<text text-anchor="start" x="725" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">* symbolsExpressionStorage()</text>
+<text text-anchor="start" x="725" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 10 more...</text>
 </a>
 </g>
 </g>
@@ -101,25 +101,25 @@ var sectionId = 'dynsection-1';
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:href="classFeel_1_1vf_1_1GiNaCBase.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="344,-424.5 344,-536.5 489,-536.5 489,-424.5 344,-424.5"/>
-<text text-anchor="middle" x="416.5" y="-524.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::vf::GiNaCBase</text>
-<polyline fill="none" stroke="black" points="344,-517.5 489,-517.5 "/>
-<text text-anchor="middle" x="416.5" y="-505.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="344,-498.5 489,-498.5 "/>
-<text text-anchor="start" x="352" y="-486.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ dynamicContext()</text>
-<text text-anchor="start" x="352" y="-475.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ eraseParameterValues()</text>
-<text text-anchor="start" x="352" y="-464.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ GiNaCBase()</text>
-<text text-anchor="start" x="352" y="-453.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ GiNaCBase()</text>
-<text text-anchor="start" x="352" y="-442.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ GiNaCBase()</text>
-<text text-anchor="start" x="352" y="-431.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 16 more...</text>
+<polygon fill="white" stroke="black" points="344.5,-424.5 344.5,-536.5 490.5,-536.5 490.5,-424.5 344.5,-424.5"/>
+<text text-anchor="middle" x="417.5" y="-524.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::vf::GiNaCBase</text>
+<polyline fill="none" stroke="black" points="344.5,-517.5 490.5,-517.5 "/>
+<text text-anchor="middle" x="417.5" y="-505.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polyline fill="none" stroke="black" points="344.5,-498.5 490.5,-498.5 "/>
+<text text-anchor="start" x="352.5" y="-486.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ dynamicContext()</text>
+<text text-anchor="start" x="352.5" y="-475.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ eraseParameterValues()</text>
+<text text-anchor="start" x="352.5" y="-464.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ GiNaCBase()</text>
+<text text-anchor="start" x="352.5" y="-453.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ GiNaCBase()</text>
+<text text-anchor="start" x="352.5" y="-442.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ GiNaCBase()</text>
+<text text-anchor="start" x="352.5" y="-431.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 16 more...</text>
 </a>
 </g>
 </g>
 <!-- Node2&#45;&gt;Node1 -->
 <g id="edge1" class="edge">
 <title>Node2&#45;&gt;Node1</title>
-<path fill="none" stroke="midnightblue" d="M497.43,-419.78C560.9,-372.95 649.31,-307.7 715.83,-258.62"/>
-<polygon fill="none" stroke="midnightblue" points="495.01,-417.22 489.04,-425.97 499.16,-422.85 495.01,-417.22"/>
+<path fill="none" stroke="midnightblue" d="M499.35,-419.1C562.77,-372.3 650.7,-307.42 716.91,-258.56"/>
+<polygon fill="none" stroke="midnightblue" points="496.93,-416.54 490.96,-425.29 501.08,-422.17 496.93,-416.54"/>
 </g>
 <!-- Node3 -->
 <g id="node3" class="node">
@@ -139,8 +139,8 @@ var sectionId = 'dynsection-1';
 <!-- Node3&#45;&gt;Node2 -->
 <g id="edge2" class="edge">
 <title>Node3&#45;&gt;Node2</title>
-<path fill="none" stroke="midnightblue" d="M306.19,-598.48C318.68,-584.4 332.55,-568.97 345.5,-555 351.05,-549.01 356.89,-542.81 362.75,-536.65"/>
-<polygon fill="none" stroke="midnightblue" points="303.42,-596.34 299.41,-606.14 308.66,-600.98 303.42,-596.34"/>
+<path fill="none" stroke="midnightblue" d="M306.13,-598.42C318.62,-584.34 332.5,-568.93 345.5,-555 351.11,-548.99 357.02,-542.77 362.96,-536.61"/>
+<polygon fill="none" stroke="midnightblue" points="303.36,-596.28 299.35,-606.09 308.6,-600.92 303.36,-596.28"/>
 </g>
 <!-- Node4 -->
 <g id="node4" class="node">
@@ -159,9 +159,9 @@ var sectionId = 'dynsection-1';
 <!-- Node4&#45;&gt;Node2 -->
 <g id="edge3" class="edge">
 <title>Node4&#45;&gt;Node2</title>
-<path fill="none" stroke="#404040" d="M525.3,-611.94C518.24,-604.26 510.95,-595.99 504.5,-588 493.27,-574.09 492.55,-569.05 481.5,-555 479.2,-552.08 476.83,-549.13 474.4,-546.16"/>
-<polygon fill="none" stroke="#404040" points="474.2,-545.92 467.29,-543.88 466.52,-536.71 473.44,-538.75 474.2,-545.92"/>
-<text text-anchor="middle" x="536" y="-569" font-family="Helvetica,sans-Serif" font-size="10.00"> #M_params</text>
+<path fill="none" stroke="#404040" d="M525.95,-611.88C519.02,-604.21 511.85,-595.95 505.5,-588 494.34,-574.03 493.55,-569.05 482.5,-555 480.2,-552.08 477.83,-549.13 475.4,-546.16"/>
+<polygon fill="none" stroke="#404040" points="475.2,-545.92 468.29,-543.88 467.52,-536.71 474.44,-538.75 475.2,-545.92"/>
+<text text-anchor="middle" x="537" y="-569" font-family="Helvetica,sans-Serif" font-size="10.00"> #M_params</text>
 </g>
 <!-- Node5 -->
 <g id="node5" class="node">
@@ -179,15 +179,15 @@ var sectionId = 'dynsection-1';
 <!-- Node5&#45;&gt;Node1 -->
 <g id="edge14" class="edge">
 <title>Node5&#45;&gt;Node1</title>
-<path fill="none" stroke="#404040" d="M33.68,-617.47C42.44,-598.33 56.06,-573.11 73.5,-555 252.87,-368.69 547.26,-262.97 703.84,-217.12"/>
-<polygon fill="none" stroke="#404040" points="704.26,-217 708.91,-211.49 715.79,-213.66 711.14,-219.17 704.26,-217"/>
-<text text-anchor="middle" x="251" y="-478" font-family="Helvetica,sans-Serif" font-size="10.00"> +context</text>
+<path fill="none" stroke="#404040" d="M33.67,-617.46C42.43,-598.31 56.04,-573.09 73.5,-555 253.26,-368.68 547.99,-262.96 704.73,-217.12"/>
+<polygon fill="none" stroke="#404040" points="705.17,-216.99 709.82,-211.48 716.69,-213.66 712.04,-219.17 705.17,-216.99"/>
+<text text-anchor="middle" x="252" y="-478" font-family="Helvetica,sans-Serif" font-size="10.00"> +context</text>
 </g>
 <!-- Node5&#45;&gt;Node2 -->
 <g id="edge4" class="edge">
 <title>Node5&#45;&gt;Node2</title>
-<path fill="none" stroke="#404040" d="M43.07,-617.48C46.66,-613.42 50.53,-609.44 54.5,-606 87.49,-577.38 98.31,-572.09 138.5,-555 200.99,-528.43 275.56,-509.34 331.72,-497.29"/>
-<polygon fill="none" stroke="#404040" points="332.04,-497.22 337.08,-492.07 343.78,-494.75 338.73,-499.9 332.04,-497.22"/>
+<path fill="none" stroke="#404040" d="M43.07,-617.48C46.66,-613.42 50.53,-609.44 54.5,-606 87.49,-577.38 98.3,-572.07 138.5,-555 201.1,-528.41 275.79,-509.35 332.13,-497.31"/>
+<polygon fill="none" stroke="#404040" points="332.48,-497.24 337.53,-492.09 344.22,-494.78 339.17,-499.92 332.48,-497.24"/>
 <text text-anchor="middle" x="170" y="-569" font-family="Helvetica,sans-Serif" font-size="10.00"> #M_context</text>
 </g>
 <!-- Node6 -->
@@ -208,11 +208,11 @@ var sectionId = 'dynsection-1';
 <!-- Node6&#45;&gt;Node2 -->
 <g id="edge5" class="edge">
 <title>Node6&#45;&gt;Node2</title>
-<path fill="none" stroke="#404040" d="M635.37,-611.28C632.03,-609.49 628.73,-607.72 625.5,-606 610.06,-597.79 603.67,-599.52 590.5,-588 577.04,-576.23 581.09,-566.62 567.5,-555 547.8,-538.15 523.57,-524.14 500.33,-513.02"/>
-<polygon fill="none" stroke="#404040" points="500.27,-513 493.15,-514.11 489.38,-507.96 496.51,-506.85 500.27,-513"/>
-<text text-anchor="middle" x="650" y="-580" font-family="Helvetica,sans-Serif" font-size="10.00"> #M_indexSymbolGeom</text>
-<text text-anchor="middle" x="650" y="-569" font-family="Helvetica,sans-Serif" font-size="10.00">#M_indexSymbolN</text>
-<text text-anchor="middle" x="650" y="-558" font-family="Helvetica,sans-Serif" font-size="10.00">#M_indexSymbolXYZ</text>
+<path fill="none" stroke="#404040" d="M635.34,-611.33C632.02,-609.52 628.72,-607.74 625.5,-606 610.45,-597.88 604.3,-599.33 591.5,-588 578.11,-576.15 582.09,-566.62 568.5,-555 548.89,-538.23 524.8,-524.27 501.67,-513.19"/>
+<polygon fill="none" stroke="#404040" points="501.65,-513.18 494.53,-514.29 490.77,-508.14 497.89,-507.03 501.65,-513.18"/>
+<text text-anchor="middle" x="651" y="-580" font-family="Helvetica,sans-Serif" font-size="10.00"> #M_indexSymbolGeom</text>
+<text text-anchor="middle" x="651" y="-569" font-family="Helvetica,sans-Serif" font-size="10.00">#M_indexSymbolN</text>
+<text text-anchor="middle" x="651" y="-558" font-family="Helvetica,sans-Serif" font-size="10.00">#M_indexSymbolXYZ</text>
 </g>
 <!-- Node7 -->
 <g id="node7" class="node">
@@ -252,9 +252,9 @@ var sectionId = 'dynsection-1';
 <!-- Node8&#45;&gt;Node2 -->
 <g id="edge7" class="edge">
 <title>Node8&#45;&gt;Node2</title>
-<path fill="none" stroke="#404040" d="M167.92,-611.86C195.07,-594.17 229.62,-572.51 261.5,-555 284.26,-542.5 309.5,-529.99 332.88,-518.92"/>
-<polygon fill="none" stroke="#404040" points="332.97,-518.88 336.71,-512.71 343.84,-513.78 340.11,-519.95 332.97,-518.88"/>
-<text text-anchor="middle" x="287.5" y="-569" font-family="Helvetica,sans-Serif" font-size="10.00"> #M_syms</text>
+<path fill="none" stroke="#404040" d="M167.19,-611.98C194.18,-594.23 228.63,-572.47 260.5,-555 283.63,-542.33 309.31,-529.72 333.1,-518.61"/>
+<polygon fill="none" stroke="#404040" points="333.35,-518.5 337.12,-512.35 344.24,-513.46 340.48,-519.61 333.35,-518.5"/>
+<text text-anchor="middle" x="286.5" y="-569" font-family="Helvetica,sans-Serif" font-size="10.00"> #M_syms</text>
 </g>
 <!-- Node9 -->
 <g id="node9" class="node">
@@ -292,18 +292,18 @@ var sectionId = 'dynsection-1';
 <!-- Node10&#45;&gt;Node1 -->
 <g id="edge16" class="edge">
 <title>Node10&#45;&gt;Node1</title>
-<path fill="none" stroke="#404040" d="M850.95,-617.41C855.25,-608.33 859.33,-597.99 861.5,-588 864.61,-573.67 862.54,-569.63 861.5,-555 857.67,-500.91 850.69,-442.65 843.07,-388.89"/>
-<polygon fill="none" stroke="#404040" points="843.03,-388.65 838.22,-383.28 841.33,-376.77 846.14,-382.15 843.03,-388.65"/>
-<text text-anchor="middle" x="901.5" y="-489" font-family="Helvetica,sans-Serif" font-size="10.00"> +is_terminal</text>
-<text text-anchor="middle" x="901.5" y="-478" font-family="Helvetica,sans-Serif" font-size="10.00">+has_trial_basis</text>
-<text text-anchor="middle" x="901.5" y="-467" font-family="Helvetica,sans-Serif" font-size="10.00">+has_test_basis</text>
+<path fill="none" stroke="#404040" d="M851.54,-617.48C856,-608.39 860.24,-598.04 862.5,-588 865.72,-573.69 863.54,-569.63 862.5,-555 858.67,-500.91 851.69,-442.65 844.07,-388.89"/>
+<polygon fill="none" stroke="#404040" points="844.03,-388.65 839.22,-383.28 842.33,-376.77 847.14,-382.15 844.03,-388.65"/>
+<text text-anchor="middle" x="902.5" y="-489" font-family="Helvetica,sans-Serif" font-size="10.00"> +is_terminal</text>
+<text text-anchor="middle" x="902.5" y="-478" font-family="Helvetica,sans-Serif" font-size="10.00">+has_trial_basis</text>
+<text text-anchor="middle" x="902.5" y="-467" font-family="Helvetica,sans-Serif" font-size="10.00">+has_test_basis</text>
 </g>
 <!-- Node10&#45;&gt;Node2 -->
 <g id="edge9" class="edge">
 <title>Node10&#45;&gt;Node2</title>
-<path fill="none" stroke="#404040" d="M816.25,-633.93C802.45,-626.04 783.4,-615.25 766.5,-606 751.5,-597.79 745.3,-599.33 732.5,-588 719.11,-576.15 724.22,-565.15 709.5,-555 647.78,-512.42 563.62,-494.48 501.33,-486.93"/>
-<polygon fill="none" stroke="#404040" points="501.1,-486.9 494.68,-490.2 489.17,-485.56 495.58,-482.26 501.1,-486.9"/>
-<text text-anchor="middle" x="797" y="-569" font-family="Helvetica,sans-Serif" font-size="10.00"> #M_isNumericExpression</text>
+<path fill="none" stroke="#404040" d="M816.21,-633.99C802.4,-626.14 783.34,-615.35 766.5,-606 751.89,-597.89 745.94,-599.15 733.5,-588 720.19,-576.07 725.22,-565.15 710.5,-555 648.99,-512.56 565.17,-494.59 502.94,-487"/>
+<polygon fill="none" stroke="#404040" points="502.72,-486.98 496.3,-490.27 490.79,-485.62 497.21,-482.33 502.72,-486.98"/>
+<text text-anchor="middle" x="798" y="-569" font-family="Helvetica,sans-Serif" font-size="10.00"> #M_isNumericExpression</text>
 </g>
 <!-- Node11 -->
 <g id="node11" class="node">
@@ -322,9 +322,9 @@ var sectionId = 'dynsection-1';
 <!-- Node11&#45;&gt;Node2 -->
 <g id="edge10" class="edge">
 <title>Node11&#45;&gt;Node2</title>
-<path fill="none" stroke="#404040" d="M369.62,-611.77C362.67,-604.78 356.53,-596.81 352.5,-588 346.33,-574.51 348.09,-560.59 353.96,-547.44"/>
-<polygon fill="none" stroke="#404040" points="354.11,-547.17 353.42,-539.99 359.78,-536.6 360.47,-543.78 354.11,-547.17"/>
-<text text-anchor="middle" x="417" y="-569" font-family="Helvetica,sans-Serif" font-size="10.00"> #M_symbolNameToValue</text>
+<path fill="none" stroke="#404040" d="M369.62,-611.77C362.67,-604.78 356.53,-596.81 352.5,-588 346.3,-574.46 348.12,-560.51 354.1,-547.35"/>
+<polygon fill="none" stroke="#404040" points="354.27,-547.04 353.63,-539.86 360.01,-536.5 360.65,-543.69 354.27,-547.04"/>
+<text text-anchor="middle" x="417.5" y="-569" font-family="Helvetica,sans-Serif" font-size="10.00"> #M_symbolNameToValue</text>
 </g>
 <!-- Node12 -->
 <g id="node12" class="node">
@@ -390,21 +390,21 @@ var sectionId = 'dynsection-1';
 <g id="node15" class="node">
 <title>Node15</title>
 <g id="a_node15"><a xlink:href="classint.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="976,-452 976,-509 1005,-509 1005,-452 976,-452"/>
-<text text-anchor="middle" x="990.5" y="-497" font-family="Helvetica,sans-Serif" font-size="10.00">int</text>
-<polyline fill="none" stroke="black" points="976,-490 1005,-490 "/>
-<text text-anchor="middle" x="990.5" y="-478" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="976,-471 1005,-471 "/>
-<text text-anchor="middle" x="990.5" y="-459" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polygon fill="white" stroke="black" points="977,-452 977,-509 1006,-509 1006,-452 977,-452"/>
+<text text-anchor="middle" x="991.5" y="-497" font-family="Helvetica,sans-Serif" font-size="10.00">int</text>
+<polyline fill="none" stroke="black" points="977,-490 1006,-490 "/>
+<text text-anchor="middle" x="991.5" y="-478" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polyline fill="none" stroke="black" points="977,-471 1006,-471 "/>
+<text text-anchor="middle" x="991.5" y="-459" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>
 </g>
 <!-- Node15&#45;&gt;Node1 -->
 <g id="edge15" class="edge">
 <title>Node15&#45;&gt;Node1</title>
-<path fill="none" stroke="#404040" d="M976.69,-451.84C972.04,-442.86 966.71,-432.92 961.5,-424 945.33,-396.29 927.37,-367.25 909.62,-339.41"/>
-<polygon fill="none" stroke="#404040" points="909.57,-339.33 902.96,-336.43 903.1,-329.22 909.7,-332.12 909.57,-339.33"/>
-<text text-anchor="middle" x="990.5" y="-398" font-family="Helvetica,sans-Serif" font-size="10.00"> +nSymbolsExpr</text>
+<path fill="none" stroke="#404040" d="M977.69,-451.84C973.04,-442.86 967.71,-432.92 962.5,-424 946.33,-396.29 928.37,-367.25 910.62,-339.41"/>
+<polygon fill="none" stroke="#404040" points="910.57,-339.33 903.96,-336.43 904.1,-329.22 910.7,-332.12 910.57,-339.33"/>
+<text text-anchor="middle" x="991.5" y="-398" font-family="Helvetica,sans-Serif" font-size="10.00"> +nSymbolsExpr</text>
 </g>
 </g>
 </svg>

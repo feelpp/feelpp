@@ -13,11 +13,11 @@
 <g id="node1" class="node">
 <title>Node1</title>
 <g id="a_node1"><a xlink:title=" ">
-<polygon fill="#bfbfbf" stroke="black" points="59,-0.5 59,-57.5 183,-57.5 183,-0.5 59,-0.5"/>
+<polygon fill="#bfbfbf" stroke="black" points="58.5,-0.5 58.5,-57.5 183.5,-57.5 183.5,-0.5 58.5,-0.5"/>
 <text text-anchor="middle" x="121" y="-45.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::Triangle&lt; Dim &gt;</text>
-<polyline fill="none" stroke="black" points="59,-38.5 183,-38.5 "/>
+<polyline fill="none" stroke="black" points="58.5,-38.5 183.5,-38.5 "/>
 <text text-anchor="middle" x="121" y="-26.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="59,-19.5 183,-19.5 "/>
+<polyline fill="none" stroke="black" points="58.5,-19.5 183.5,-19.5 "/>
 <text text-anchor="middle" x="121" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>

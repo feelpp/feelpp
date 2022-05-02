@@ -45,7 +45,7 @@
 <title>Node2&#45;&gt;Node1</title>
 <path fill="none" stroke="#404040" d="M89.5,-160.32C89.5,-149.78 89.5,-137.25 89.5,-124.62"/>
 <polygon fill="none" stroke="#404040" points="89.5,-124.55 85.5,-118.55 89.5,-112.55 93.5,-118.55 89.5,-124.55"/>
-<text text-anchor="middle" x="116.5" y="-134" font-family="Helvetica,sans-Serif" font-size="10.00"> +field_tag</text>
+<text text-anchor="middle" x="117" y="-134" font-family="Helvetica,sans-Serif" font-size="10.00"> +field_tag</text>
 </g>
 </g>
 </svg>

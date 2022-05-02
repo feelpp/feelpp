@@ -201,19 +201,19 @@ var sectionId = 'dynsection-1';
 <!-- Node6&#45;&gt;Node1 -->
 <g id="edge5" class="edge">
 <title>Node6&#45;&gt;Node1</title>
-<path fill="none" stroke="#404040" d="M746.36,-611.28C741.47,-602.1 736.24,-591.74 732,-582 714.24,-541.23 697.12,-497.07 681.52,-454.13"/>
-<polygon fill="none" stroke="#404040" points="681.45,-453.93 675.65,-449.65 677.38,-442.64 683.18,-446.93 681.45,-453.93"/>
-<text text-anchor="middle" x="788" y="-574" font-family="Helvetica,sans-Serif" font-size="10.00"> +numPoints</text>
-<text text-anchor="middle" x="788" y="-563" font-family="Helvetica,sans-Serif" font-size="10.00">+nbPtsPerFace</text>
-<text text-anchor="middle" x="788" y="-552" font-family="Helvetica,sans-Serif" font-size="10.00">+nbPtsPerEdge</text>
-<text text-anchor="middle" x="788" y="-541" font-family="Helvetica,sans-Serif" font-size="10.00">+numNormals</text>
-<text text-anchor="middle" x="788" y="-530" font-family="Helvetica,sans-Serif" font-size="10.00">+nbPtsPerVolume</text>
-<text text-anchor="middle" x="788" y="-519" font-family="Helvetica,sans-Serif" font-size="10.00">+numEdges</text>
-<text text-anchor="middle" x="788" y="-508" font-family="Helvetica,sans-Serif" font-size="10.00">+nDim</text>
-<text text-anchor="middle" x="788" y="-497" font-family="Helvetica,sans-Serif" font-size="10.00">+numFaces</text>
-<text text-anchor="middle" x="788" y="-486" font-family="Helvetica,sans-Serif" font-size="10.00">+numTopologicalFaces</text>
-<text text-anchor="middle" x="788" y="-475" font-family="Helvetica,sans-Serif" font-size="10.00">+numGeometricFaces</text>
-<text text-anchor="middle" x="788" y="-464" font-family="Helvetica,sans-Serif" font-size="10.00">...</text>
+<path fill="none" stroke="#404040" d="M745.77,-611.34C740.71,-602.16 735.33,-591.79 731,-582 713.03,-541.36 695.88,-497.27 680.35,-454.35"/>
+<polygon fill="none" stroke="#404040" points="680.28,-454.16 674.49,-449.87 676.23,-442.87 682.02,-447.16 680.28,-454.16"/>
+<text text-anchor="middle" x="787.5" y="-574" font-family="Helvetica,sans-Serif" font-size="10.00"> +numPoints</text>
+<text text-anchor="middle" x="787.5" y="-563" font-family="Helvetica,sans-Serif" font-size="10.00">+nbPtsPerFace</text>
+<text text-anchor="middle" x="787.5" y="-552" font-family="Helvetica,sans-Serif" font-size="10.00">+nbPtsPerEdge</text>
+<text text-anchor="middle" x="787.5" y="-541" font-family="Helvetica,sans-Serif" font-size="10.00">+numNormals</text>
+<text text-anchor="middle" x="787.5" y="-530" font-family="Helvetica,sans-Serif" font-size="10.00">+nbPtsPerVolume</text>
+<text text-anchor="middle" x="787.5" y="-519" font-family="Helvetica,sans-Serif" font-size="10.00">+numEdges</text>
+<text text-anchor="middle" x="787.5" y="-508" font-family="Helvetica,sans-Serif" font-size="10.00">+nDim</text>
+<text text-anchor="middle" x="787.5" y="-497" font-family="Helvetica,sans-Serif" font-size="10.00">+numFaces</text>
+<text text-anchor="middle" x="787.5" y="-486" font-family="Helvetica,sans-Serif" font-size="10.00">+numTopologicalFaces</text>
+<text text-anchor="middle" x="787.5" y="-475" font-family="Helvetica,sans-Serif" font-size="10.00">+numGeometricFaces</text>
+<text text-anchor="middle" x="787.5" y="-464" font-family="Helvetica,sans-Serif" font-size="10.00">...</text>
 </g>
 <!-- Node7 -->
 <g id="node7" class="node">

@@ -22,7 +22,7 @@
 <g id="node2" class="node">
 <title>Node184</title>
 <g id="a_node2"><a xlink:href="classFeel_1_1WorldComm.html" target="_top" xlink:title="Provides interface to MPI Communicators.">
-<polygon fill="white" stroke="black" points="604.5,-1122.5 604.5,-1141.5 707.5,-1141.5 707.5,-1122.5 604.5,-1122.5"/>
+<polygon fill="white" stroke="black" points="604,-1122.5 604,-1141.5 708,-1141.5 708,-1122.5 604,-1122.5"/>
 <text text-anchor="middle" x="656" y="-1129.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::WorldComm</text>
 </a>
 </g>
@@ -30,7 +30,7 @@
 <!-- Node1094&#45;&gt;Node184 -->
 <g id="edge1" class="edge">
 <title>Node1094&#45;&gt;Node184</title>
-<path fill="none" stroke="midnightblue" d="M460.36,-1218.08C485.08,-1216.45 514.05,-1211.33 537,-1198 559.45,-1184.96 551.19,-1166.07 573,-1152 582.36,-1145.96 593.39,-1141.75 604.27,-1138.8"/>
+<path fill="none" stroke="midnightblue" d="M460.36,-1218.08C485.08,-1216.45 514.05,-1211.33 537,-1198 559.45,-1184.96 551.19,-1166.07 573,-1152 582.23,-1146.04 593.1,-1141.86 603.84,-1138.92"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="459.88,-1214.6 450.06,-1218.58 460.22,-1221.59 459.88,-1214.6"/>
 </g>
 <!-- Node1065 -->
@@ -146,7 +146,7 @@
 <g id="node11" class="node">
 <title>Node1016</title>
 <g id="a_node11"><a xlink:href="classFeel_1_1JournalWatcher.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="122.5,-800.5 122.5,-819.5 238.5,-819.5 238.5,-800.5 122.5,-800.5"/>
+<polygon fill="white" stroke="black" points="122,-800.5 122,-819.5 239,-819.5 239,-800.5 122,-800.5"/>
 <text text-anchor="middle" x="180.5" y="-807.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::JournalWatcher</text>
 </a>
 </g>
@@ -154,7 +154,7 @@
 <!-- Node1015&#45;&gt;Node1016 -->
 <g id="edge8" class="edge">
 <title>Node1015&#45;&gt;Node1016</title>
-<path fill="none" stroke="midnightblue" d="M89.79,-810C100.29,-810 111.56,-810 122.44,-810"/>
+<path fill="none" stroke="midnightblue" d="M89.66,-810C100.03,-810 111.15,-810 121.92,-810"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="89.59,-806.5 79.59,-810 89.59,-813.5 89.59,-806.5"/>
 </g>
 <!-- Node1017 -->
@@ -237,7 +237,7 @@
 <g id="node33" class="node">
 <title>Node106</title>
 <g id="a_node33"><a xlink:href="classFeel_1_1TimerTable.html" target="_top" xlink:title="TimerTable is a map of timer.">
-<polygon fill="white" stroke="black" points="358,-645.5 358,-664.5 455,-664.5 455,-645.5 358,-645.5"/>
+<polygon fill="white" stroke="black" points="358.5,-645.5 358.5,-664.5 454.5,-664.5 454.5,-645.5 358.5,-645.5"/>
 <text text-anchor="middle" x="406.5" y="-652.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::TimerTable</text>
 </a>
 </g>
@@ -245,7 +245,7 @@
 <!-- Node1016&#45;&gt;Node106 -->
 <g id="edge31" class="edge">
 <title>Node1016&#45;&gt;Node106</title>
-<path fill="none" stroke="midnightblue" d="M189.49,-791.04C202.83,-761.88 232.53,-706.53 276,-679 300.24,-663.65 331.84,-657.58 357.75,-655.38"/>
+<path fill="none" stroke="midnightblue" d="M189.49,-791.04C202.83,-761.88 232.53,-706.53 276,-679 300.44,-663.52 332.34,-657.48 358.37,-655.33"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="186.15,-789.94 185.32,-800.5 192.56,-792.76 186.15,-789.94"/>
 </g>
 <!-- Node1028 -->
@@ -335,9 +335,9 @@
 <g id="node17" class="node">
 <title>Node175</title>
 <g id="a_node17"><a xlink:href="classFeel_1_1FeelModels_1_1FluidMechanics.html" target="_top" xlink:title="Fluid Mechanics Toolbox.">
-<polygon fill="white" stroke="black" points="1251.5,-790.5 1251.5,-831.5 1435.5,-831.5 1435.5,-790.5 1251.5,-790.5"/>
-<text text-anchor="start" x="1259.5" y="-819.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::FluidMechanics</text>
-<text text-anchor="start" x="1259.5" y="-808.5" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; ConvexType, BasisVelocityType,</text>
+<polygon fill="white" stroke="black" points="1251,-790.5 1251,-831.5 1436,-831.5 1436,-790.5 1251,-790.5"/>
+<text text-anchor="start" x="1259" y="-819.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::FluidMechanics</text>
+<text text-anchor="start" x="1259" y="-808.5" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; ConvexType, BasisVelocityType,</text>
 <text text-anchor="middle" x="1343.5" y="-797.5" font-family="Helvetica,sans-Serif" font-size="10.00"> BasisPressureType &gt;</text>
 </a>
 </g>
@@ -345,7 +345,7 @@
 <!-- Node173&#45;&gt;Node175 -->
 <g id="edge14" class="edge">
 <title>Node173&#45;&gt;Node175</title>
-<path fill="none" stroke="midnightblue" d="M1154.59,-709.03C1162.23,-712.19 1169.56,-716.12 1176,-721 1200.78,-739.78 1186.84,-762.72 1212,-781 1223.66,-789.47 1237.33,-795.6 1251.35,-800.02"/>
+<path fill="none" stroke="midnightblue" d="M1154.59,-709.03C1162.23,-712.19 1169.56,-716.12 1176,-721 1200.78,-739.78 1186.84,-762.72 1212,-781 1223.47,-789.33 1236.89,-795.4 1250.67,-799.8"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="1155.74,-705.73 1145.15,-705.54 1153.31,-712.29 1155.74,-705.73"/>
 </g>
 <!-- Node176 -->
@@ -728,7 +728,7 @@
 <!-- Node344&#45;&gt;Node175 -->
 <g id="edge45" class="edge">
 <title>Node344&#45;&gt;Node175</title>
-<path fill="none" stroke="midnightblue" d="M1145.31,-762.83C1166.37,-768.83 1190.17,-775.41 1212,-781 1224.72,-784.26 1238.19,-787.54 1251.45,-790.67"/>
+<path fill="none" stroke="midnightblue" d="M1145.31,-762.83C1166.37,-768.83 1190.17,-775.41 1212,-781 1224.5,-784.2 1237.71,-787.42 1250.74,-790.51"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="1146.1,-759.42 1135.53,-760.03 1144.18,-766.15 1146.1,-759.42"/>
 </g>
 <!-- Node344&#45;&gt;Node176 -->
@@ -771,7 +771,7 @@
 <!-- Node170&#45;&gt;Node184 -->
 <g id="edge55" class="edge">
 <title>Node170&#45;&gt;Node184</title>
-<path fill="none" stroke="midnightblue" d="M486.91,-803.5C505.57,-806.59 523.83,-813.45 537,-827 626.31,-918.85 487.17,-1017.89 573,-1113 581.13,-1122 592.6,-1127.17 604.4,-1130.03"/>
+<path fill="none" stroke="midnightblue" d="M486.91,-803.5C505.57,-806.59 523.83,-813.45 537,-827 626.31,-918.85 487.17,-1017.89 573,-1113 581.03,-1121.9 592.33,-1127.04 603.98,-1129.93"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="487.21,-800.01 476.84,-802.19 486.3,-806.95 487.21,-800.01"/>
 </g>
 <!-- Node170&#45;&gt;Node171 -->
@@ -840,7 +840,7 @@
 <!-- Node97&#45;&gt;Node106 -->
 <g id="edge64" class="edge">
 <title>Node97&#45;&gt;Node106</title>
-<path fill="none" stroke="#8b1a1a" d="M187.39,-369.72C206.37,-432.94 265.28,-627 276,-636 298.36,-654.78 330.9,-659.5 357.77,-659.53"/>
+<path fill="none" stroke="#8b1a1a" d="M187.39,-369.72C206.37,-432.94 265.28,-627 276,-636 298.53,-654.93 331.41,-659.57 358.39,-659.53"/>
 <polygon fill="#8b1a1a" stroke="#8b1a1a" points="190.65,-368.39 184.43,-359.81 183.94,-370.4 190.65,-368.39"/>
 </g>
 <!-- Node0 -->
@@ -959,8 +959,8 @@
 <g id="node58" class="node">
 <title>Node109</title>
 <g id="a_node58"><a xlink:href="structFeel_1_1vf_1_1map__vector__field.html" target="_top" xlink:title="defines a dictionary of vector fields">
-<polygon fill="white" stroke="black" points="346,-384 346,-414 467,-414 467,-384 346,-384"/>
-<text text-anchor="start" x="354" y="-402" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::vf::map_vector</text>
+<polygon fill="white" stroke="black" points="345.5,-384 345.5,-414 467.5,-414 467.5,-384 345.5,-384"/>
+<text text-anchor="start" x="353.5" y="-402" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::vf::map_vector</text>
 <text text-anchor="middle" x="406.5" y="-391" font-family="Helvetica,sans-Serif" font-size="10.00">_field&lt; M, N, Order &gt;</text>
 </a>
 </g>
@@ -968,15 +968,15 @@
 <!-- Node97&#45;&gt;Node109 -->
 <g id="edge67" class="edge">
 <title>Node97&#45;&gt;Node109</title>
-<path fill="none" stroke="midnightblue" d="M224.68,-362.16C240.73,-366.48 259.13,-371.21 276,-375 298.76,-380.11 323.94,-384.96 346,-388.94"/>
+<path fill="none" stroke="midnightblue" d="M224.68,-362.16C240.73,-366.48 259.13,-371.21 276,-375 298.53,-380.06 323.44,-384.86 345.35,-388.83"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="225.59,-358.78 215.03,-359.53 223.76,-365.53 225.59,-358.78"/>
 </g>
 <!-- Node110 -->
 <g id="node59" class="node">
 <title>Node110</title>
 <g id="a_node59"><a xlink:href="structFeel_1_1vf_1_1map__vector__fields.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="343.5,-335 343.5,-365 469.5,-365 469.5,-335 343.5,-335"/>
-<text text-anchor="start" x="351.5" y="-353" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::vf::map_vector</text>
+<polygon fill="white" stroke="black" points="343,-335 343,-365 470,-365 470,-335 343,-335"/>
+<text text-anchor="start" x="351" y="-353" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::vf::map_vector</text>
 <text text-anchor="middle" x="406.5" y="-342" font-family="Helvetica,sans-Serif" font-size="10.00">_fields&lt; M, N, Order &gt;</text>
 </a>
 </g>
@@ -984,7 +984,7 @@
 <!-- Node97&#45;&gt;Node110 -->
 <g id="edge68" class="edge">
 <title>Node97&#45;&gt;Node110</title>
-<path fill="none" stroke="midnightblue" d="M241.57,-350C272.97,-350 311.37,-350 343.1,-350"/>
+<path fill="none" stroke="midnightblue" d="M241.53,-350C272.8,-350 311.02,-350 342.69,-350"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="241.21,-346.5 231.21,-350 241.21,-353.5 241.21,-346.5"/>
 </g>
 </g>

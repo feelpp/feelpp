@@ -29,12 +29,12 @@
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:title=" ">
-<polygon fill="white" stroke="#bfbfbf" points="30,-127.5 30,-195.5 122,-195.5 122,-127.5 30,-127.5"/>
-<text text-anchor="start" x="38" y="-183.5" font-family="Helvetica,sans-Serif" font-size="10.00">spirit::lex::lexer</text>
+<polygon fill="white" stroke="#bfbfbf" points="29.5,-127.5 29.5,-195.5 122.5,-195.5 122.5,-127.5 29.5,-127.5"/>
+<text text-anchor="start" x="37.5" y="-183.5" font-family="Helvetica,sans-Serif" font-size="10.00">spirit::lex::lexer</text>
 <text text-anchor="middle" x="76" y="-172.5" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; Lexer &gt;</text>
-<polyline fill="none" stroke="#bfbfbf" points="30,-165.5 122,-165.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="29.5,-165.5 122.5,-165.5 "/>
 <text text-anchor="middle" x="76" y="-153.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="#bfbfbf" points="30,-146.5 122,-146.5 "/>
+<polyline fill="none" stroke="#bfbfbf" points="29.5,-146.5 122.5,-146.5 "/>
 <text text-anchor="middle" x="76" y="-134.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>

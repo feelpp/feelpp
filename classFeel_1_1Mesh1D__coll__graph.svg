@@ -59,35 +59,35 @@ var sectionId = 'dynsection-1';
 <g id="node1" class="node">
 <title>Node1</title>
 <g id="a_node1"><a xlink:title="1D mesh class">
-<polygon fill="#bfbfbf" stroke="black" points="328.5,-0.5 328.5,-310.5 489.5,-310.5 489.5,-0.5 328.5,-0.5"/>
-<text text-anchor="start" x="336.5" y="-298.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::Mesh1D&lt; Shape,</text>
+<polygon fill="#bfbfbf" stroke="black" points="328,-0.5 328,-310.5 490,-310.5 490,-0.5 328,-0.5"/>
+<text text-anchor="start" x="336" y="-298.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::Mesh1D&lt; Shape,</text>
 <text text-anchor="middle" x="409" y="-287.5" font-family="Helvetica,sans-Serif" font-size="10.00"> T, IndexT &gt;</text>
-<polyline fill="none" stroke="black" points="328.5,-280.5 489.5,-280.5 "/>
+<polyline fill="none" stroke="black" points="328,-280.5 490,-280.5 "/>
 <text text-anchor="middle" x="409" y="-268.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="328.5,-261.5 489.5,-261.5 "/>
-<text text-anchor="start" x="336.5" y="-249.5" font-family="Helvetica,sans-Serif" font-size="10.00">* return_type</text>
-<text text-anchor="start" x="336.5" y="-238.5" font-family="Helvetica,sans-Serif" font-size="10.00">* super_visitable</text>
-<text text-anchor="start" x="336.5" y="-227.5" font-family="Helvetica,sans-Serif" font-size="10.00">* super</text>
-<text text-anchor="start" x="336.5" y="-216.5" font-family="Helvetica,sans-Serif" font-size="10.00">* index_type</text>
-<text text-anchor="start" x="336.5" y="-205.5" font-family="Helvetica,sans-Serif" font-size="10.00">* size_type</text>
-<text text-anchor="start" x="336.5" y="-194.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 31 more...</text>
-<text text-anchor="start" x="336.5" y="-183.5" font-family="Helvetica,sans-Serif" font-size="10.00">* boost::serialization</text>
-<text text-anchor="start" x="336.5" y="-172.5" font-family="Helvetica,sans-Serif" font-size="10.00">::access</text>
-<text text-anchor="start" x="336.5" y="-161.5" font-family="Helvetica,sans-Serif" font-size="10.00">* faces()</text>
-<text text-anchor="start" x="336.5" y="-150.5" font-family="Helvetica,sans-Serif" font-size="10.00">* faces()</text>
-<text text-anchor="start" x="336.5" y="-139.5" font-family="Helvetica,sans-Serif" font-size="10.00">* hasFace()</text>
-<text text-anchor="start" x="336.5" y="-128.5" font-family="Helvetica,sans-Serif" font-size="10.00">* face()</text>
-<text text-anchor="start" x="336.5" y="-117.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 27 more...</text>
-<text text-anchor="start" x="336.5" y="-106.5" font-family="Helvetica,sans-Serif" font-size="10.00">* Mesh1D()</text>
-<text text-anchor="start" x="336.5" y="-95.5" font-family="Helvetica,sans-Serif" font-size="10.00">* Mesh1D()</text>
-<text text-anchor="start" x="336.5" y="-84.5" font-family="Helvetica,sans-Serif" font-size="10.00">* ~Mesh1D()</text>
-<text text-anchor="start" x="336.5" y="-73.5" font-family="Helvetica,sans-Serif" font-size="10.00">* operator=()</text>
-<text text-anchor="start" x="336.5" y="-62.5" font-family="Helvetica,sans-Serif" font-size="10.00">* isEmpty()</text>
-<text text-anchor="start" x="336.5" y="-51.5" font-family="Helvetica,sans-Serif" font-size="10.00">* numElements()</text>
-<text text-anchor="start" x="336.5" y="-40.5" font-family="Helvetica,sans-Serif" font-size="10.00">* numLocalFaces()</text>
-<text text-anchor="start" x="336.5" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">* numLocalTopologicalFaces()</text>
-<text text-anchor="start" x="336.5" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">* numLocalVertices()</text>
-<text text-anchor="start" x="336.5" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 3 more...</text>
+<polyline fill="none" stroke="black" points="328,-261.5 490,-261.5 "/>
+<text text-anchor="start" x="336" y="-249.5" font-family="Helvetica,sans-Serif" font-size="10.00">* return_type</text>
+<text text-anchor="start" x="336" y="-238.5" font-family="Helvetica,sans-Serif" font-size="10.00">* super_visitable</text>
+<text text-anchor="start" x="336" y="-227.5" font-family="Helvetica,sans-Serif" font-size="10.00">* super</text>
+<text text-anchor="start" x="336" y="-216.5" font-family="Helvetica,sans-Serif" font-size="10.00">* index_type</text>
+<text text-anchor="start" x="336" y="-205.5" font-family="Helvetica,sans-Serif" font-size="10.00">* size_type</text>
+<text text-anchor="start" x="336" y="-194.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 31 more...</text>
+<text text-anchor="start" x="336" y="-183.5" font-family="Helvetica,sans-Serif" font-size="10.00">* boost::serialization</text>
+<text text-anchor="start" x="336" y="-172.5" font-family="Helvetica,sans-Serif" font-size="10.00">::access</text>
+<text text-anchor="start" x="336" y="-161.5" font-family="Helvetica,sans-Serif" font-size="10.00">* faces()</text>
+<text text-anchor="start" x="336" y="-150.5" font-family="Helvetica,sans-Serif" font-size="10.00">* faces()</text>
+<text text-anchor="start" x="336" y="-139.5" font-family="Helvetica,sans-Serif" font-size="10.00">* hasFace()</text>
+<text text-anchor="start" x="336" y="-128.5" font-family="Helvetica,sans-Serif" font-size="10.00">* face()</text>
+<text text-anchor="start" x="336" y="-117.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 27 more...</text>
+<text text-anchor="start" x="336" y="-106.5" font-family="Helvetica,sans-Serif" font-size="10.00">* Mesh1D()</text>
+<text text-anchor="start" x="336" y="-95.5" font-family="Helvetica,sans-Serif" font-size="10.00">* Mesh1D()</text>
+<text text-anchor="start" x="336" y="-84.5" font-family="Helvetica,sans-Serif" font-size="10.00">* ~Mesh1D()</text>
+<text text-anchor="start" x="336" y="-73.5" font-family="Helvetica,sans-Serif" font-size="10.00">* operator=()</text>
+<text text-anchor="start" x="336" y="-62.5" font-family="Helvetica,sans-Serif" font-size="10.00">* isEmpty()</text>
+<text text-anchor="start" x="336" y="-51.5" font-family="Helvetica,sans-Serif" font-size="10.00">* numElements()</text>
+<text text-anchor="start" x="336" y="-40.5" font-family="Helvetica,sans-Serif" font-size="10.00">* numLocalFaces()</text>
+<text text-anchor="start" x="336" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">* numLocalTopologicalFaces()</text>
+<text text-anchor="start" x="336" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">* numLocalVertices()</text>
+<text text-anchor="start" x="336" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 3 more...</text>
 </a>
 </g>
 </g>
@@ -110,7 +110,7 @@ var sectionId = 'dynsection-1';
 <!-- Node2&#45;&gt;Node1 -->
 <g id="edge1" class="edge">
 <title>Node2&#45;&gt;Node1</title>
-<path fill="none" stroke="midnightblue" d="M72.61,-524.33C82.56,-479.51 101.5,-415.82 135,-369 185.97,-297.77 267.51,-238.86 328.41,-201.28"/>
+<path fill="none" stroke="midnightblue" d="M72.61,-524.33C82.56,-479.51 101.5,-415.82 135,-369 185.79,-298.01 266.95,-239.27 327.78,-201.67"/>
 <polygon fill="none" stroke="midnightblue" points="69.17,-523.65 70.5,-534.17 76.02,-525.12 69.17,-523.65"/>
 </g>
 <!-- Node3 -->
@@ -325,8 +325,8 @@ var sectionId = 'dynsection-1';
 <!-- Node11&#45;&gt;Node1 -->
 <g id="edge10" class="edge">
 <title>Node11&#45;&gt;Node1</title>
-<path fill="none" stroke="#404040" d="M754.08,-550.72C745.5,-508.24 724.58,-426.07 683,-369 634.43,-302.33 559.36,-246.15 500.07,-208.33"/>
-<polygon fill="none" stroke="#404040" points="499.72,-208.11 492.51,-208.3 489.57,-201.72 496.78,-201.53 499.72,-208.11"/>
+<path fill="none" stroke="#404040" d="M754.08,-550.72C745.5,-508.24 724.58,-426.07 683,-369 634.6,-302.56 559.87,-246.54 500.68,-208.72"/>
+<polygon fill="none" stroke="#404040" points="500.34,-208.51 493.14,-208.69 490.19,-202.11 497.4,-201.93 500.34,-208.51"/>
 <text text-anchor="middle" x="693.5" y="-343" font-family="Helvetica,sans-Serif" font-size="10.00"> +nDim</text>
 <text text-anchor="middle" x="693.5" y="-332" font-family="Helvetica,sans-Serif" font-size="10.00">+nRealDim</text>
 </g>

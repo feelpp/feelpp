@@ -46,7 +46,7 @@ if (edges && edges.length) {
         </defs>
 
 <script type="text/javascript">
-var viewWidth = 382;
+var viewWidth = 384;
 var viewHeight = 468;
 var sectionId = 'dynsection-0';
 </script>
@@ -54,7 +54,7 @@ var sectionId = 'dynsection-0';
 <svg id="graph" class="graph">
 <g id="viewport">
 <title>Faces</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-464 378,-464 378,4 -4,4"/>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-464 379.5,-464 379.5,4 -4,4"/>
 <!-- Node1 -->
 <g id="node1" class="node">
 <title>Node1</title>
@@ -119,48 +119,48 @@ var sectionId = 'dynsection-0';
 <g id="node3" class="node">
 <title>Node3</title>
 <g id="a_node3"><a xlink:href="classFeel_1_1Mesh3D.html" target="_top" xlink:title="3D mesh class">
-<polygon fill="white" stroke="black" points="211,-0.5 211,-365.5 374,-365.5 374,-0.5 211,-0.5"/>
-<text text-anchor="start" x="219" y="-353.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::Mesh3D&lt; Shape</text>
-<text text-anchor="start" x="219" y="-342.5" font-family="Helvetica,sans-Serif" font-size="10.00">::template shape&lt; 2</text>
-<text text-anchor="start" x="219" y="-331.5" font-family="Helvetica,sans-Serif" font-size="10.00"> &gt;, Elements&lt; Shape,</text>
-<text text-anchor="middle" x="292.5" y="-320.5" font-family="Helvetica,sans-Serif" font-size="10.00"> double &gt;::element_type &gt;</text>
-<polyline fill="none" stroke="black" points="211,-313.5 374,-313.5 "/>
-<text text-anchor="start" x="219" y="-301.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ nDim</text>
-<text text-anchor="start" x="219" y="-290.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ nRealDim</text>
-<polyline fill="none" stroke="black" points="211,-283.5 374,-283.5 "/>
-<text text-anchor="start" x="219" y="-271.5" font-family="Helvetica,sans-Serif" font-size="10.00">* return_type</text>
-<text text-anchor="start" x="219" y="-260.5" font-family="Helvetica,sans-Serif" font-size="10.00">* super_visitable</text>
-<text text-anchor="start" x="219" y="-249.5" font-family="Helvetica,sans-Serif" font-size="10.00">* super</text>
-<text text-anchor="start" x="219" y="-238.5" font-family="Helvetica,sans-Serif" font-size="10.00">* index_type</text>
-<text text-anchor="start" x="219" y="-227.5" font-family="Helvetica,sans-Serif" font-size="10.00">* size_type</text>
-<text text-anchor="start" x="219" y="-216.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 30 more...</text>
-<text text-anchor="start" x="219" y="-205.5" font-family="Helvetica,sans-Serif" font-size="10.00">* boost::serialization</text>
-<text text-anchor="start" x="219" y="-194.5" font-family="Helvetica,sans-Serif" font-size="10.00">::access</text>
-<text text-anchor="start" x="219" y="-183.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_e2e</text>
-<text text-anchor="start" x="219" y="-172.5" font-family="Helvetica,sans-Serif" font-size="10.00">* setWorldComm()</text>
-<text text-anchor="start" x="219" y="-161.5" font-family="Helvetica,sans-Serif" font-size="10.00">* clear()</text>
-<text text-anchor="start" x="219" y="-150.5" font-family="Helvetica,sans-Serif" font-size="10.00">* FEELPP_DEFINE_VISITABLE()</text>
-<text text-anchor="start" x="219" y="-139.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 6 more...</text>
-<text text-anchor="start" x="219" y="-128.5" font-family="Helvetica,sans-Serif" font-size="10.00">* Mesh3D()</text>
-<text text-anchor="start" x="219" y="-117.5" font-family="Helvetica,sans-Serif" font-size="10.00">* Mesh3D()</text>
-<text text-anchor="start" x="219" y="-106.5" font-family="Helvetica,sans-Serif" font-size="10.00">* Mesh3D()</text>
-<text text-anchor="start" x="219" y="-95.5" font-family="Helvetica,sans-Serif" font-size="10.00">* ~Mesh3D()</text>
-<text text-anchor="start" x="219" y="-84.5" font-family="Helvetica,sans-Serif" font-size="10.00">* operator=()</text>
-<text text-anchor="start" x="219" y="-73.5" font-family="Helvetica,sans-Serif" font-size="10.00">* operator=()</text>
-<text text-anchor="start" x="219" y="-62.5" font-family="Helvetica,sans-Serif" font-size="10.00">* isEmpty()</text>
-<text text-anchor="start" x="219" y="-51.5" font-family="Helvetica,sans-Serif" font-size="10.00">* numElements()</text>
-<text text-anchor="start" x="219" y="-40.5" font-family="Helvetica,sans-Serif" font-size="10.00">* numLocalFaces()</text>
-<text text-anchor="start" x="219" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">* numLocalTopologicalFaces()</text>
-<text text-anchor="start" x="219" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">* numLocalEdges()</text>
-<text text-anchor="start" x="219" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 6 more...</text>
+<polygon fill="white" stroke="black" points="211.5,-0.5 211.5,-365.5 375.5,-365.5 375.5,-0.5 211.5,-0.5"/>
+<text text-anchor="start" x="219.5" y="-353.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::Mesh3D&lt; Shape</text>
+<text text-anchor="start" x="219.5" y="-342.5" font-family="Helvetica,sans-Serif" font-size="10.00">::template shape&lt; 2</text>
+<text text-anchor="start" x="219.5" y="-331.5" font-family="Helvetica,sans-Serif" font-size="10.00"> &gt;, Elements&lt; Shape,</text>
+<text text-anchor="middle" x="293.5" y="-320.5" font-family="Helvetica,sans-Serif" font-size="10.00"> double &gt;::element_type &gt;</text>
+<polyline fill="none" stroke="black" points="211.5,-313.5 375.5,-313.5 "/>
+<text text-anchor="start" x="219.5" y="-301.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ nDim</text>
+<text text-anchor="start" x="219.5" y="-290.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ nRealDim</text>
+<polyline fill="none" stroke="black" points="211.5,-283.5 375.5,-283.5 "/>
+<text text-anchor="start" x="219.5" y="-271.5" font-family="Helvetica,sans-Serif" font-size="10.00">* return_type</text>
+<text text-anchor="start" x="219.5" y="-260.5" font-family="Helvetica,sans-Serif" font-size="10.00">* super_visitable</text>
+<text text-anchor="start" x="219.5" y="-249.5" font-family="Helvetica,sans-Serif" font-size="10.00">* super</text>
+<text text-anchor="start" x="219.5" y="-238.5" font-family="Helvetica,sans-Serif" font-size="10.00">* index_type</text>
+<text text-anchor="start" x="219.5" y="-227.5" font-family="Helvetica,sans-Serif" font-size="10.00">* size_type</text>
+<text text-anchor="start" x="219.5" y="-216.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 30 more...</text>
+<text text-anchor="start" x="219.5" y="-205.5" font-family="Helvetica,sans-Serif" font-size="10.00">* boost::serialization</text>
+<text text-anchor="start" x="219.5" y="-194.5" font-family="Helvetica,sans-Serif" font-size="10.00">::access</text>
+<text text-anchor="start" x="219.5" y="-183.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_e2e</text>
+<text text-anchor="start" x="219.5" y="-172.5" font-family="Helvetica,sans-Serif" font-size="10.00">* setWorldComm()</text>
+<text text-anchor="start" x="219.5" y="-161.5" font-family="Helvetica,sans-Serif" font-size="10.00">* clear()</text>
+<text text-anchor="start" x="219.5" y="-150.5" font-family="Helvetica,sans-Serif" font-size="10.00">* FEELPP_DEFINE_VISITABLE()</text>
+<text text-anchor="start" x="219.5" y="-139.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 6 more...</text>
+<text text-anchor="start" x="219.5" y="-128.5" font-family="Helvetica,sans-Serif" font-size="10.00">* Mesh3D()</text>
+<text text-anchor="start" x="219.5" y="-117.5" font-family="Helvetica,sans-Serif" font-size="10.00">* Mesh3D()</text>
+<text text-anchor="start" x="219.5" y="-106.5" font-family="Helvetica,sans-Serif" font-size="10.00">* Mesh3D()</text>
+<text text-anchor="start" x="219.5" y="-95.5" font-family="Helvetica,sans-Serif" font-size="10.00">* ~Mesh3D()</text>
+<text text-anchor="start" x="219.5" y="-84.5" font-family="Helvetica,sans-Serif" font-size="10.00">* operator=()</text>
+<text text-anchor="start" x="219.5" y="-73.5" font-family="Helvetica,sans-Serif" font-size="10.00">* operator=()</text>
+<text text-anchor="start" x="219.5" y="-62.5" font-family="Helvetica,sans-Serif" font-size="10.00">* isEmpty()</text>
+<text text-anchor="start" x="219.5" y="-51.5" font-family="Helvetica,sans-Serif" font-size="10.00">* numElements()</text>
+<text text-anchor="start" x="219.5" y="-40.5" font-family="Helvetica,sans-Serif" font-size="10.00">* numLocalFaces()</text>
+<text text-anchor="start" x="219.5" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">* numLocalTopologicalFaces()</text>
+<text text-anchor="start" x="219.5" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">* numLocalEdges()</text>
+<text text-anchor="start" x="219.5" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 6 more...</text>
 </a>
 </g>
 </g>
 <!-- Node1&#45;&gt;Node3 -->
 <g id="edge2" class="edge">
 <title>Node1&#45;&gt;Node3</title>
-<path fill="none" stroke="midnightblue" d="M209.31,-392.83C212.56,-384.68 216.2,-375.52 220.11,-365.71"/>
-<polygon fill="none" stroke="midnightblue" points="206,-391.67 205.55,-402.26 212.5,-394.26 206,-391.67"/>
+<path fill="none" stroke="midnightblue" d="M209.46,-392.83C212.74,-384.68 216.43,-375.52 220.37,-365.71"/>
+<polygon fill="none" stroke="midnightblue" points="206.15,-391.68 205.66,-402.26 212.64,-394.29 206.15,-391.68"/>
 </g>
 </g>
 </svg>

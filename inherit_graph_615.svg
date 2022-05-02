@@ -72,8 +72,8 @@
 <g id="node14" class="node">
 <title>Node73</title>
 <g id="a_node14"><a xlink:href="structFeel_1_1is__filter_3_01boost_1_1tuple_3_01T_8_8_8_01_4_01_4.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="150,-993.5 150,-1023.5 267,-1023.5 267,-993.5 150,-993.5"/>
-<text text-anchor="start" x="158" y="-1011.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::is_filter&lt; boost</text>
+<polygon fill="white" stroke="black" points="149.5,-993.5 149.5,-1023.5 267.5,-1023.5 267.5,-993.5 149.5,-993.5"/>
+<text text-anchor="start" x="157.5" y="-1011.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::is_filter&lt; boost</text>
 <text text-anchor="middle" x="208.5" y="-1000.5" font-family="Helvetica,sans-Serif" font-size="10.00">::tuple&lt; T... &gt; &gt;</text>
 </a>
 </g>
@@ -81,7 +81,7 @@
 <!-- Node60&#45;&gt;Node73 -->
 <g id="edge13" class="edge">
 <title>Node60&#45;&gt;Node73</title>
-<path fill="none" stroke="midnightblue" d="M33.82,-677.64C38.42,-741.73 55.91,-939.31 99,-983.5 112.29,-997.13 131.42,-1003.98 149.92,-1007.24"/>
+<path fill="none" stroke="midnightblue" d="M33.82,-677.64C38.42,-741.73 55.91,-939.31 99,-983.5 112.16,-996.99 131.03,-1003.84 149.36,-1007.13"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="37.28,-677.03 33.1,-667.3 30.3,-677.51 37.28,-677.03"/>
 </g>
 <!-- Node74 -->
@@ -105,11 +105,11 @@
 <g id="node16" class="node">
 <title>Node75</title>
 <g id="a_node16"><a xlink:href="structFeel_1_1is__geoelement_3_01GeoElement1D_3_01Dim_00_01GEOSHAPE_00_01SubFace_00_01T_00_01Indba8c2899dfa3a0f4d3915af3d9526e7f.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="124.5,-851 124.5,-914 292.5,-914 292.5,-851 124.5,-851"/>
-<text text-anchor="start" x="132.5" y="-902" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::is_geoelement</text>
-<text text-anchor="start" x="132.5" y="-891" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; GeoElement1D&lt; Dim,</text>
-<text text-anchor="start" x="132.5" y="-880" font-family="Helvetica,sans-Serif" font-size="10.00"> GEOSHAPE, SubFace, T,</text>
-<text text-anchor="start" x="132.5" y="-869" font-family="Helvetica,sans-Serif" font-size="10.00"> IndexT, PointTypeIsSubFaceOf,</text>
+<polygon fill="white" stroke="black" points="124,-851 124,-914 293,-914 293,-851 124,-851"/>
+<text text-anchor="start" x="132" y="-902" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::is_geoelement</text>
+<text text-anchor="start" x="132" y="-891" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; GeoElement1D&lt; Dim,</text>
+<text text-anchor="start" x="132" y="-880" font-family="Helvetica,sans-Serif" font-size="10.00"> GEOSHAPE, SubFace, T,</text>
+<text text-anchor="start" x="132" y="-869" font-family="Helvetica,sans-Serif" font-size="10.00"> IndexT, PointTypeIsSubFaceOf,</text>
 <text text-anchor="middle" x="208.5" y="-858" font-family="Helvetica,sans-Serif" font-size="10.00"> UseMeasuresStorage &gt; &gt;</text>
 </a>
 </g>
@@ -117,7 +117,7 @@
 <!-- Node60&#45;&gt;Node75 -->
 <g id="edge15" class="edge">
 <title>Node60&#45;&gt;Node75</title>
-<path fill="none" stroke="midnightblue" d="M34.37,-677.33C38.87,-714.27 53.56,-794.1 99,-840.5 106.28,-847.93 115.02,-854.07 124.34,-859.14"/>
+<path fill="none" stroke="midnightblue" d="M34.37,-677.33C38.87,-714.27 53.56,-794.1 99,-840.5 106.14,-847.79 114.68,-853.83 123.8,-858.85"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="37.84,-676.88 33.27,-667.32 30.88,-677.64 37.84,-676.88"/>
 </g>
 <!-- Node76 -->

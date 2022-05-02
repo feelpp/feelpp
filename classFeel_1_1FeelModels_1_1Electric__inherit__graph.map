@@ -1,11 +1,11 @@
 <map id="Feel::FeelModels::Electric&lt; ConvexType, BasisPotentialType &gt;" name="Feel::FeelModels::Electric&lt; ConvexType, BasisPotentialType &gt;">
-<area shape="rect" id="node1" title="Toolbox Electric." alt="" coords="325,1307,587,1516"/>
-<area shape="rect" id="node2" href="$classFeel_1_1FeelModels_1_1ModelNumerical.html" title="Handles some numerical model aspects: timestepping, mesh and properties." alt="" coords="185,976,455,1259"/>
-<area shape="rect" id="node3" href="$classFeel_1_1FeelModels_1_1ModelBase.html" title="Model base class." alt="" coords="113,564,369,715"/>
-<area shape="rect" id="node7" href="$classFeel_1_1FeelModels_1_1ModelAlgebraic.html" title=" " alt="" coords="200,770,440,921"/>
-<area shape="rect" id="node4" href="$classFeel_1_1JournalWatcher.html" title=" " alt="" coords="5,131,240,516"/>
-<area shape="rect" id="node5" title=" " alt="" coords="51,5,194,83"/>
-<area shape="rect" id="node6" title=" " alt="" coords="265,277,458,369"/>
-<area shape="rect" id="node8" href="$classFeel_1_1FeelModels_1_1ModelMeshes.html" title=" " alt="" coords="464,763,723,928"/>
-<area shape="rect" id="node9" href="$classFeel_1_1FeelModels_1_1ModelPhysics.html" title=" " alt="" coords="479,1005,707,1229"/>
+<area shape="rect" id="node1" title="Toolbox Electric." alt="" coords="325,1307,588,1516"/>
+<area shape="rect" id="node2" href="$classFeel_1_1FeelModels_1_1ModelNumerical.html" title="Handles some numerical model aspects: timestepping, mesh and properties." alt="" coords="186,976,455,1259"/>
+<area shape="rect" id="node3" href="$classFeel_1_1FeelModels_1_1ModelBase.html" title="Model base class." alt="" coords="113,564,371,715"/>
+<area shape="rect" id="node7" href="$classFeel_1_1FeelModels_1_1ModelAlgebraic.html" title=" " alt="" coords="201,770,441,921"/>
+<area shape="rect" id="node4" href="$classFeel_1_1JournalWatcher.html" title=" " alt="" coords="5,131,241,516"/>
+<area shape="rect" id="node5" title=" " alt="" coords="52,5,195,83"/>
+<area shape="rect" id="node6" title=" " alt="" coords="265,277,459,369"/>
+<area shape="rect" id="node8" href="$classFeel_1_1FeelModels_1_1ModelMeshes.html" title=" " alt="" coords="465,763,723,928"/>
+<area shape="rect" id="node9" href="$classFeel_1_1FeelModels_1_1ModelPhysics.html" title=" " alt="" coords="480,1005,708,1229"/>
 </map>

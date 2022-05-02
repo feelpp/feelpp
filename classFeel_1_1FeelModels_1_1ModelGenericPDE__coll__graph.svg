@@ -251,60 +251,60 @@ var sectionId = 'dynsection-1';
 <g id="node9" class="node">
 <title>Node9</title>
 <g id="a_node9"><a xlink:href="classFeel_1_1JournalWatcher.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="152,-878.5 152,-1166.5 328,-1166.5 328,-878.5 152,-878.5"/>
-<text text-anchor="middle" x="240" y="-1154.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::JournalWatcher</text>
-<polyline fill="none" stroke="black" points="152,-1147.5 328,-1147.5 "/>
-<text text-anchor="middle" x="240" y="-1135.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="152,-1128.5 328,-1128.5 "/>
-<text text-anchor="start" x="160" y="-1116.5" font-family="Helvetica,sans-Serif" font-size="10.00">* JournalWatcher()</text>
-<text text-anchor="start" x="160" y="-1105.5" font-family="Helvetica,sans-Serif" font-size="10.00">* JournalWatcher()</text>
-<text text-anchor="start" x="160" y="-1094.5" font-family="Helvetica,sans-Serif" font-size="10.00">* JournalWatcher()</text>
-<text text-anchor="start" x="160" y="-1083.5" font-family="Helvetica,sans-Serif" font-size="10.00">* JournalWatcher()</text>
-<text text-anchor="start" x="160" y="-1072.5" font-family="Helvetica,sans-Serif" font-size="10.00">* ~JournalWatcher()</text>
-<text text-anchor="start" x="160" y="-1061.5" font-family="Helvetica,sans-Serif" font-size="10.00">* journalIsConnected()</text>
-<text text-anchor="start" x="160" y="-1050.5" font-family="Helvetica,sans-Serif" font-size="10.00">* journalWatcherInstanceName()</text>
-<text text-anchor="start" x="160" y="-1039.5" font-family="Helvetica,sans-Serif" font-size="10.00">* journalSection()</text>
-<text text-anchor="start" x="160" y="-1028.5" font-family="Helvetica,sans-Serif" font-size="10.00">* informationObject()</text>
-<text text-anchor="start" x="160" y="-1017.5" font-family="Helvetica,sans-Serif" font-size="10.00">* journalConnect()</text>
-<text text-anchor="start" x="160" y="-1006.5" font-family="Helvetica,sans-Serif" font-size="10.00">* journalDisconnect()</text>
-<text text-anchor="start" x="160" y="-995.5" font-family="Helvetica,sans-Serif" font-size="10.00">* updateInformationObject()</text>
-<text text-anchor="start" x="160" y="-984.5" font-family="Helvetica,sans-Serif" font-size="10.00">* setInformationObject()</text>
-<text text-anchor="start" x="160" y="-973.5" font-family="Helvetica,sans-Serif" font-size="10.00">* putInformationObject()</text>
-<text text-anchor="start" x="160" y="-962.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 4 more...</text>
-<text text-anchor="start" x="160" y="-951.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_journal_is_connected</text>
-<text text-anchor="start" x="160" y="-940.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_category</text>
-<text text-anchor="start" x="160" y="-929.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_name</text>
-<text text-anchor="start" x="160" y="-918.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_function_updateInformation</text>
-<text text-anchor="start" x="160" y="-907.5" font-family="Helvetica,sans-Serif" font-size="10.00">Object</text>
-<text text-anchor="start" x="160" y="-896.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_informationObject</text>
-<text text-anchor="start" x="160" y="-885.5" font-family="Helvetica,sans-Serif" font-size="10.00">* S_counterObjectByCategory</text>
+<polygon fill="white" stroke="black" points="152.5,-878.5 152.5,-1166.5 329.5,-1166.5 329.5,-878.5 152.5,-878.5"/>
+<text text-anchor="middle" x="241" y="-1154.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::JournalWatcher</text>
+<polyline fill="none" stroke="black" points="152.5,-1147.5 329.5,-1147.5 "/>
+<text text-anchor="middle" x="241" y="-1135.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polyline fill="none" stroke="black" points="152.5,-1128.5 329.5,-1128.5 "/>
+<text text-anchor="start" x="160.5" y="-1116.5" font-family="Helvetica,sans-Serif" font-size="10.00">* JournalWatcher()</text>
+<text text-anchor="start" x="160.5" y="-1105.5" font-family="Helvetica,sans-Serif" font-size="10.00">* JournalWatcher()</text>
+<text text-anchor="start" x="160.5" y="-1094.5" font-family="Helvetica,sans-Serif" font-size="10.00">* JournalWatcher()</text>
+<text text-anchor="start" x="160.5" y="-1083.5" font-family="Helvetica,sans-Serif" font-size="10.00">* JournalWatcher()</text>
+<text text-anchor="start" x="160.5" y="-1072.5" font-family="Helvetica,sans-Serif" font-size="10.00">* ~JournalWatcher()</text>
+<text text-anchor="start" x="160.5" y="-1061.5" font-family="Helvetica,sans-Serif" font-size="10.00">* journalIsConnected()</text>
+<text text-anchor="start" x="160.5" y="-1050.5" font-family="Helvetica,sans-Serif" font-size="10.00">* journalWatcherInstanceName()</text>
+<text text-anchor="start" x="160.5" y="-1039.5" font-family="Helvetica,sans-Serif" font-size="10.00">* journalSection()</text>
+<text text-anchor="start" x="160.5" y="-1028.5" font-family="Helvetica,sans-Serif" font-size="10.00">* informationObject()</text>
+<text text-anchor="start" x="160.5" y="-1017.5" font-family="Helvetica,sans-Serif" font-size="10.00">* journalConnect()</text>
+<text text-anchor="start" x="160.5" y="-1006.5" font-family="Helvetica,sans-Serif" font-size="10.00">* journalDisconnect()</text>
+<text text-anchor="start" x="160.5" y="-995.5" font-family="Helvetica,sans-Serif" font-size="10.00">* updateInformationObject()</text>
+<text text-anchor="start" x="160.5" y="-984.5" font-family="Helvetica,sans-Serif" font-size="10.00">* setInformationObject()</text>
+<text text-anchor="start" x="160.5" y="-973.5" font-family="Helvetica,sans-Serif" font-size="10.00">* putInformationObject()</text>
+<text text-anchor="start" x="160.5" y="-962.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 4 more...</text>
+<text text-anchor="start" x="160.5" y="-951.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_journal_is_connected</text>
+<text text-anchor="start" x="160.5" y="-940.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_category</text>
+<text text-anchor="start" x="160.5" y="-929.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_name</text>
+<text text-anchor="start" x="160.5" y="-918.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_function_updateInformation</text>
+<text text-anchor="start" x="160.5" y="-907.5" font-family="Helvetica,sans-Serif" font-size="10.00">Object</text>
+<text text-anchor="start" x="160.5" y="-896.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_informationObject</text>
+<text text-anchor="start" x="160.5" y="-885.5" font-family="Helvetica,sans-Serif" font-size="10.00">* S_counterObjectByCategory</text>
 </a>
 </g>
 </g>
 <!-- Node9&#45;&gt;Node8 -->
 <g id="edge8" class="edge">
 <title>Node9&#45;&gt;Node8</title>
-<path fill="none" stroke="midnightblue" d="M217.13,-867.93C215.25,-855.29 213.38,-842.7 211.57,-830.54"/>
-<polygon fill="none" stroke="midnightblue" points="213.71,-868.7 218.64,-878.08 220.63,-867.67 213.71,-868.7"/>
+<path fill="none" stroke="midnightblue" d="M217.61,-867.93C215.69,-855.29 213.77,-842.7 211.92,-830.54"/>
+<polygon fill="none" stroke="midnightblue" points="214.19,-868.72 219.16,-878.08 221.11,-867.67 214.19,-868.72"/>
 </g>
 <!-- Node10 -->
 <g id="node10" class="node">
 <title>Node10</title>
 <g id="a_node10"><a xlink:title=" ">
-<polygon fill="white" stroke="#bfbfbf" points="186.5,-1204.5 186.5,-1261.5 293.5,-1261.5 293.5,-1204.5 186.5,-1204.5"/>
-<text text-anchor="middle" x="240" y="-1249.5" font-family="Helvetica,sans-Serif" font-size="10.00">Event::SlotHandler</text>
-<polyline fill="none" stroke="#bfbfbf" points="186.5,-1242.5 293.5,-1242.5 "/>
-<text text-anchor="middle" x="240" y="-1230.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="#bfbfbf" points="186.5,-1223.5 293.5,-1223.5 "/>
-<text text-anchor="middle" x="240" y="-1211.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polygon fill="white" stroke="#bfbfbf" points="187.5,-1204.5 187.5,-1261.5 294.5,-1261.5 294.5,-1204.5 187.5,-1204.5"/>
+<text text-anchor="middle" x="241" y="-1249.5" font-family="Helvetica,sans-Serif" font-size="10.00">Event::SlotHandler</text>
+<polyline fill="none" stroke="#bfbfbf" points="187.5,-1242.5 294.5,-1242.5 "/>
+<text text-anchor="middle" x="241" y="-1230.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polyline fill="none" stroke="#bfbfbf" points="187.5,-1223.5 294.5,-1223.5 "/>
+<text text-anchor="middle" x="241" y="-1211.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>
 </g>
 <!-- Node10&#45;&gt;Node9 -->
 <g id="edge9" class="edge">
 <title>Node10&#45;&gt;Node9</title>
-<path fill="none" stroke="midnightblue" d="M240,-1194.25C240,-1185.86 240,-1176.49 240,-1166.57"/>
-<polygon fill="none" stroke="midnightblue" points="236.5,-1194.31 240,-1204.31 243.5,-1194.31 236.5,-1194.31"/>
+<path fill="none" stroke="midnightblue" d="M241,-1194.25C241,-1185.86 241,-1176.49 241,-1166.57"/>
+<polygon fill="none" stroke="midnightblue" points="237.5,-1194.31 241,-1204.31 244.5,-1194.31 237.5,-1194.31"/>
 </g>
 <!-- Node11 -->
 <g id="node11" class="node">

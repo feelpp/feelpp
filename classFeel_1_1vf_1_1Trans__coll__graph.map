@@ -1,5 +1,5 @@
 <map id="Feel::vf::Trans&lt; ExprT &gt;" name="Feel::vf::Trans&lt; ExprT &gt;">
-<area shape="rect" id="node1" title="Transpose an scalar, vectorial or matricial expression." alt="" coords="156,204,355,545"/>
+<area shape="rect" id="node1" title="Transpose an scalar, vectorial or matricial expression." alt="" coords="155,204,355,545"/>
 <area shape="rect" id="node2" href="$classFeel_1_1vf_1_1ExprDynamicBase.html" title=" " alt="" coords="5,5,201,112"/>
 <area shape="rect" id="node3" href="$classsize__t.html" title=" " alt="" coords="225,20,285,97"/>
 <area shape="rect" id="node4" href="$classbool.html" title=" " alt="" coords="326,20,377,97"/>

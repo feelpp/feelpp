@@ -65,26 +65,26 @@
 <g id="node5" class="node">
 <title>Node5</title>
 <g id="a_node5"><a xlink:href="classFeel_1_1FeelModels_1_1ModelPhysicCoefficientFormPDEs.html" target="_top" xlink:title="CoefficientFormPDE set Physic Model.">
-<polygon fill="white" stroke="black" points="212.5,-0.5 212.5,-134.5 411.5,-134.5 411.5,-0.5 212.5,-0.5"/>
-<text text-anchor="start" x="220.5" y="-122.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::ModelPhysic</text>
+<polygon fill="white" stroke="black" points="212,-0.5 212,-134.5 412,-134.5 412,-0.5 212,-0.5"/>
+<text text-anchor="start" x="220" y="-122.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::ModelPhysic</text>
 <text text-anchor="middle" x="312" y="-111.5" font-family="Helvetica,sans-Serif" font-size="10.00">CoefficientFormPDEs&lt; Dim &gt;</text>
-<polyline fill="none" stroke="black" points="212.5,-104.5 411.5,-104.5 "/>
+<polyline fill="none" stroke="black" points="212,-104.5 412,-104.5 "/>
 <text text-anchor="middle" x="312" y="-92.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="212.5,-85.5 411.5,-85.5 "/>
-<text text-anchor="start" x="220.5" y="-73.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ ModelPhysicCoefficientFormPDEs()</text>
-<text text-anchor="start" x="220.5" y="-62.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ ModelPhysicCoefficientFormPDEs()</text>
-<text text-anchor="start" x="220.5" y="-51.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ ModelPhysicCoefficientFormPDEs()</text>
-<text text-anchor="start" x="220.5" y="-40.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ pdes()</text>
-<text text-anchor="start" x="220.5" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ pdes()</text>
-<text text-anchor="start" x="220.5" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ tabulateInformations()</text>
-<text text-anchor="start" x="220.5" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ updateInformationObject()</text>
+<polyline fill="none" stroke="black" points="212,-85.5 412,-85.5 "/>
+<text text-anchor="start" x="220" y="-73.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ ModelPhysicCoefficientFormPDEs()</text>
+<text text-anchor="start" x="220" y="-62.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ ModelPhysicCoefficientFormPDEs()</text>
+<text text-anchor="start" x="220" y="-51.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ ModelPhysicCoefficientFormPDEs()</text>
+<text text-anchor="start" x="220" y="-40.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ pdes()</text>
+<text text-anchor="start" x="220" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ pdes()</text>
+<text text-anchor="start" x="220" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ tabulateInformations()</text>
+<text text-anchor="start" x="220" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ updateInformationObject()</text>
 </a>
 </g>
 </g>
 <!-- Node1&#45;&gt;Node5 -->
 <g id="edge4" class="edge">
 <title>Node1&#45;&gt;Node5</title>
-<path fill="none" stroke="midnightblue" d="M683.31,-241.26C608.56,-215.31 506.79,-177.17 421,-135 417.92,-133.48 414.81,-131.91 411.69,-130.29"/>
+<path fill="none" stroke="midnightblue" d="M683.31,-241.26C608.56,-215.31 506.79,-177.17 421,-135 418.12,-133.58 415.21,-132.11 412.29,-130.6"/>
 <polygon fill="none" stroke="midnightblue" points="682.62,-244.72 693.21,-244.68 684.9,-238.11 682.62,-244.72"/>
 </g>
 <!-- Node6 -->
@@ -240,33 +240,33 @@
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:href="classFeel_1_1JournalWatcher.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="701,-419.5 701,-707.5 877,-707.5 877,-419.5 701,-419.5"/>
+<polygon fill="white" stroke="black" points="700.5,-419.5 700.5,-707.5 877.5,-707.5 877.5,-419.5 700.5,-419.5"/>
 <text text-anchor="middle" x="789" y="-695.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::JournalWatcher</text>
-<polyline fill="none" stroke="black" points="701,-688.5 877,-688.5 "/>
+<polyline fill="none" stroke="black" points="700.5,-688.5 877.5,-688.5 "/>
 <text text-anchor="middle" x="789" y="-676.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="701,-669.5 877,-669.5 "/>
-<text text-anchor="start" x="709" y="-657.5" font-family="Helvetica,sans-Serif" font-size="10.00">* JournalWatcher()</text>
-<text text-anchor="start" x="709" y="-646.5" font-family="Helvetica,sans-Serif" font-size="10.00">* JournalWatcher()</text>
-<text text-anchor="start" x="709" y="-635.5" font-family="Helvetica,sans-Serif" font-size="10.00">* JournalWatcher()</text>
-<text text-anchor="start" x="709" y="-624.5" font-family="Helvetica,sans-Serif" font-size="10.00">* JournalWatcher()</text>
-<text text-anchor="start" x="709" y="-613.5" font-family="Helvetica,sans-Serif" font-size="10.00">* ~JournalWatcher()</text>
-<text text-anchor="start" x="709" y="-602.5" font-family="Helvetica,sans-Serif" font-size="10.00">* journalIsConnected()</text>
-<text text-anchor="start" x="709" y="-591.5" font-family="Helvetica,sans-Serif" font-size="10.00">* journalWatcherInstanceName()</text>
-<text text-anchor="start" x="709" y="-580.5" font-family="Helvetica,sans-Serif" font-size="10.00">* journalSection()</text>
-<text text-anchor="start" x="709" y="-569.5" font-family="Helvetica,sans-Serif" font-size="10.00">* informationObject()</text>
-<text text-anchor="start" x="709" y="-558.5" font-family="Helvetica,sans-Serif" font-size="10.00">* journalConnect()</text>
-<text text-anchor="start" x="709" y="-547.5" font-family="Helvetica,sans-Serif" font-size="10.00">* journalDisconnect()</text>
-<text text-anchor="start" x="709" y="-536.5" font-family="Helvetica,sans-Serif" font-size="10.00">* updateInformationObject()</text>
-<text text-anchor="start" x="709" y="-525.5" font-family="Helvetica,sans-Serif" font-size="10.00">* setInformationObject()</text>
-<text text-anchor="start" x="709" y="-514.5" font-family="Helvetica,sans-Serif" font-size="10.00">* putInformationObject()</text>
-<text text-anchor="start" x="709" y="-503.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 4 more...</text>
-<text text-anchor="start" x="709" y="-492.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_journal_is_connected</text>
-<text text-anchor="start" x="709" y="-481.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_category</text>
-<text text-anchor="start" x="709" y="-470.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_name</text>
-<text text-anchor="start" x="709" y="-459.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_function_updateInformation</text>
-<text text-anchor="start" x="709" y="-448.5" font-family="Helvetica,sans-Serif" font-size="10.00">Object</text>
-<text text-anchor="start" x="709" y="-437.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_informationObject</text>
-<text text-anchor="start" x="709" y="-426.5" font-family="Helvetica,sans-Serif" font-size="10.00">* S_counterObjectByCategory</text>
+<polyline fill="none" stroke="black" points="700.5,-669.5 877.5,-669.5 "/>
+<text text-anchor="start" x="708.5" y="-657.5" font-family="Helvetica,sans-Serif" font-size="10.00">* JournalWatcher()</text>
+<text text-anchor="start" x="708.5" y="-646.5" font-family="Helvetica,sans-Serif" font-size="10.00">* JournalWatcher()</text>
+<text text-anchor="start" x="708.5" y="-635.5" font-family="Helvetica,sans-Serif" font-size="10.00">* JournalWatcher()</text>
+<text text-anchor="start" x="708.5" y="-624.5" font-family="Helvetica,sans-Serif" font-size="10.00">* JournalWatcher()</text>
+<text text-anchor="start" x="708.5" y="-613.5" font-family="Helvetica,sans-Serif" font-size="10.00">* ~JournalWatcher()</text>
+<text text-anchor="start" x="708.5" y="-602.5" font-family="Helvetica,sans-Serif" font-size="10.00">* journalIsConnected()</text>
+<text text-anchor="start" x="708.5" y="-591.5" font-family="Helvetica,sans-Serif" font-size="10.00">* journalWatcherInstanceName()</text>
+<text text-anchor="start" x="708.5" y="-580.5" font-family="Helvetica,sans-Serif" font-size="10.00">* journalSection()</text>
+<text text-anchor="start" x="708.5" y="-569.5" font-family="Helvetica,sans-Serif" font-size="10.00">* informationObject()</text>
+<text text-anchor="start" x="708.5" y="-558.5" font-family="Helvetica,sans-Serif" font-size="10.00">* journalConnect()</text>
+<text text-anchor="start" x="708.5" y="-547.5" font-family="Helvetica,sans-Serif" font-size="10.00">* journalDisconnect()</text>
+<text text-anchor="start" x="708.5" y="-536.5" font-family="Helvetica,sans-Serif" font-size="10.00">* updateInformationObject()</text>
+<text text-anchor="start" x="708.5" y="-525.5" font-family="Helvetica,sans-Serif" font-size="10.00">* setInformationObject()</text>
+<text text-anchor="start" x="708.5" y="-514.5" font-family="Helvetica,sans-Serif" font-size="10.00">* putInformationObject()</text>
+<text text-anchor="start" x="708.5" y="-503.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 4 more...</text>
+<text text-anchor="start" x="708.5" y="-492.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_journal_is_connected</text>
+<text text-anchor="start" x="708.5" y="-481.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_category</text>
+<text text-anchor="start" x="708.5" y="-470.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_name</text>
+<text text-anchor="start" x="708.5" y="-459.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_function_updateInformation</text>
+<text text-anchor="start" x="708.5" y="-448.5" font-family="Helvetica,sans-Serif" font-size="10.00">Object</text>
+<text text-anchor="start" x="708.5" y="-437.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_informationObject</text>
+<text text-anchor="start" x="708.5" y="-426.5" font-family="Helvetica,sans-Serif" font-size="10.00">* S_counterObjectByCategory</text>
 </a>
 </g>
 </g>
