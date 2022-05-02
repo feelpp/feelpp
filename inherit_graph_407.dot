@@ -4,5 +4,5 @@ digraph "Graphical Class Hierarchy"
   edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
   node [fontname="Helvetica",fontsize="10",shape=record];
   rankdir="LR";
-  Node0 [label="Feel::stencilrangetype\l\< RangeType \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structFeel_1_1stencilrangetype.html",tooltip=" "];
+  Node0 [label="Feel::Repository",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1Repository.html",tooltip="@ structure to handle repository of results"];
 }

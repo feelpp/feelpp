@@ -4,5 +4,5 @@ digraph "Graphical Class Hierarchy"
   edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
   node [fontname="Helvetica",fontsize="10",shape=record];
   rankdir="LR";
-  Node0 [label="Feel::GeoNDCommon\<\l GeoNDType \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1GeoNDCommon.html",tooltip="Common data shared in a collection of multi-dimensional geometrical entity."];
+  Node0 [label="Feel::FunctionSpace\l\< A0, A1, A2, A3, A4\l \>::GetNComponents\< BasisType \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structFeel_1_1FunctionSpace_1_1GetNComponents.html",tooltip=" "];
 }

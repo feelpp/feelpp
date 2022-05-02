@@ -4,5 +4,5 @@ digraph "Graphical Class Hierarchy"
   edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
   node [fontname="Helvetica",fontsize="10",shape=record];
   rankdir="LR";
-  Node0 [label="Feel::FeelModels::detail\l::ChangeBasisOrder\< NewOrder,\l BasisType\< Order, PolySetType,\l ContinuityType, Pts, Tag \> \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structFeel_1_1FeelModels_1_1detail_1_1ChangeBasisOrder_3_01NewOrder_00_01BasisType_3_01Order_00_86e9208bf6efe5ef93da29d48907e576.html",tooltip=" "];
+  Node0 [label="Feel::ExprBase",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1ExprBase.html",tooltip="Base class for expression."];
 }

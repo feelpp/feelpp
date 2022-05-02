@@ -4,7 +4,5 @@ digraph "Graphical Class Hierarchy"
   edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
   node [fontname="Helvetica",fontsize="10",shape=record];
   rankdir="LR";
-  Node0 [label="Feel::FsFunctional\l\< space_type \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1FsFunctional.html",tooltip=" "];
-  Node0 -> Node1 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
-  Node1 [label="Feel::FsFunctionalLinear\l\< space_type \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1FsFunctionalLinear.html",tooltip=" "];
+  Node0 [label="Feel::FeelModels::Transform\lDiffSymbolicExpr\< SymbolicExprType \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structFeel_1_1FeelModels_1_1TransformDiffSymbolicExpr.html",tooltip=" "];
 }

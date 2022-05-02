@@ -4,5 +4,5 @@ digraph "Graphical Class Hierarchy"
   edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
   node [fontname="Helvetica",fontsize="10",shape=record];
   rankdir="LR";
-  Node0 [label="Feel::FunctionExpr\l\< FunctionType, Order,\l FunctionArgsTupleType\l \>::tensor\< Geo_t, Basis\l_i_t, Basis_j_t \>::is_zero",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structFeel_1_1FunctionExpr_1_1tensor_1_1is__zero.html",tooltip=" "];
+  Node0 [label="Feel::FeelModels::TrialSymbol\lExprFeelppTag",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structFeel_1_1FeelModels_1_1TrialSymbolExprFeelppTag.html",tooltip=" "];
 }

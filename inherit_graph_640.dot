@@ -4,5 +4,5 @@ digraph "Graphical Class Hierarchy"
   edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
   node [fontname="Helvetica",fontsize="10",shape=record];
   rankdir="LR";
-  Node0 [label="nlohmann::detail::is\l_compatible_string_type\l\< BasicJsonType, CompatibleString\lType \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structnlohmann_1_1detail_1_1is__compatible__string__type.html",tooltip=" "];
+  Node0 [label="nlohmann::detail::file\l_input_adapter",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classnlohmann_1_1detail_1_1file__input__adapter.html",tooltip="Input adapter for stdio file access."];
 }

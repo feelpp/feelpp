@@ -4,5 +4,5 @@ digraph "Graphical Class Hierarchy"
   edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
   node [fontname="Helvetica",fontsize="10",shape=record];
   rankdir="LR";
-  Node0 [label="Feel::vf::One\< CType,\l Dim \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1vf_1_1One.html",tooltip="CType = -3 : dynamic case, the one compoent(s) is given in argument CType = -2 : (0 0 0) CType = -1 :..."];
+  Node0 [label="Feel::vf::GinacMatrix\l\< M, N, Order, SymbolsExprType\l \>::tensor\< Geo_t, Basis_i\l_t, Basis_j_t \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structFeel_1_1vf_1_1GinacMatrix_1_1tensor.html",tooltip=" "];
 }

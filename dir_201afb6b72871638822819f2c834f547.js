@@ -113,5 +113,5 @@ var dir_201afb6b72871638822819f2c834f547 =
     [ "thch.hpp", "thch_8hpp.html", [
       [ "THch", "structFeel_1_1meta_1_1THch.html", "structFeel_1_1meta_1_1THch" ]
     ] ],
-    [ "timeset.cpp", "timeset_8cpp.html", null ]
+    [ "timeset.cpp", "feeldiscr_2timeset_8cpp.html", null ]
 ];

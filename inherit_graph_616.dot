@@ -4,5 +4,5 @@ digraph "Graphical Class Hierarchy"
   edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
   node [fontname="Helvetica",fontsize="10",shape=record];
   rankdir="LR";
-  Node0 [label="nlohmann::detail::dtoa\l_impl::boundaries",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structnlohmann_1_1detail_1_1dtoa__impl_1_1boundaries.html",tooltip=" "];
+  Node0 [label="nlohmann::detail2::\lend_tag",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structnlohmann_1_1detail2_1_1end__tag.html",tooltip=" "];
 }

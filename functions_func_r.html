@@ -137,6 +137,9 @@ $(document).ready(function(){initNavTree('functions_func_r.html',''); initResiza
 <li>realDimension()
 : <a class="el" href="classFeel_1_1Mesh.html#af1f5a398f67a6483ea6f1b8fc9c9cbd1">Feel::Mesh&lt; GeoShape, T, Tag, IndexT &gt;</a>
 </li>
+<li>realTimePerIteration()
+: <a class="el" href="classFeel_1_1TSBase.html#a2dada0e2714eea9a107bbcf7340af71e">Feel::TSBase</a>
+</li>
 <li>rebuildDofPoints()
 : <a class="el" href="classFeel_1_1DofTable.html#ad6403572157a04f0313d3f825199accf">Feel::DofTable&lt; MeshType, FEType, PeriodicityType, MortarType &gt;</a>
 , <a class="el" href="classFeel_1_1FunctionSpace.html#ac421a861046e08913f5268356e3fd6a7">Feel::FunctionSpace&lt; A0, A1, A2, A3, A4 &gt;</a>
@@ -164,6 +167,9 @@ $(document).ready(function(){initNavTree('functions_func_r.html',''); initResiza
 </li>
 <li>relativeDirectory()
 : <a class="el" href="classFeel_1_1Repository.html#a29f62013c6e366c25ae0551253c0743f">Feel::Repository</a>
+</li>
+<li>reloadMetaData()
+: <a class="el" href="classFeel_1_1TSBase.html#a4b29e5a7ea4cc30cf2f0e6de7dfebd33">Feel::TSBase</a>
 </li>
 <li>rend()
 : <a class="el" href="classnlohmann_1_1basic__json.html#a7a328b29b290cc300345376c54f618cb">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;</a>
@@ -199,8 +205,14 @@ $(document).ready(function(){initNavTree('functions_func_r.html',''); initResiza
 : <a class="el" href="classFeel_1_1Table.html#a949025fbc53a571e398cc9110476a8a0">Feel::Table</a>
 </li>
 <li>restart()
-: <a class="el" href="classFeel_1_1FeelModels_1_1ModelMeasuresStorage.html#ab96f57896a02b40654bb119670d6be29">Feel::FeelModels::ModelMeasuresStorage</a>
+: <a class="el" href="classFeel_1_1Bdf.html#ae4e14bbdacfe6e975c2e8dcabc8d251f">Feel::Bdf&lt; SpaceType &gt;</a>
+, <a class="el" href="classFeel_1_1FeelModels_1_1ModelMeasuresStorage.html#ab96f57896a02b40654bb119670d6be29">Feel::FeelModels::ModelMeasuresStorage</a>
 , <a class="el" href="classFeel_1_1FeelModels_1_1ModelMeasuresStorageValues.html#ae5aa4a64d8bcfe269c93208ccb4f99a8">Feel::FeelModels::ModelMeasuresStorageValues</a>
+, <a class="el" href="classFeel_1_1Newmark.html#aee6222f49f3a0e446dee16b7a7b40851">Feel::Newmark&lt; SpaceType &gt;</a>
+, <a class="el" href="classFeel_1_1TSBase.html#a85fb83fcbedf50ca7e685f52805cc29c">Feel::TSBase</a>
+</li>
+<li>restartStepBeforeLastSave()
+: <a class="el" href="classFeel_1_1TSBase.html#af31883b5f7b56edf5a1279bc9704d66a">Feel::TSBase</a>
 </li>
 <li>result()
 : <a class="el" href="classFeel_1_1QuadPtLocalization.html#af323cbc952d3ec68d4043c27f45487a4">Feel::QuadPtLocalization&lt; IteratorRange, Im, Expr &gt;</a>
@@ -224,7 +236,7 @@ $(document).ready(function(){initNavTree('functions_func_r.html',''); initResiza
 : <a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics_1_1Body.html#ac29658559cbced57a82249a79b349b83">Feel::FeelModels::FluidMechanics&lt; ConvexType, BasisVelocityType, BasisPressureType &gt;::Body</a>
 </li>
 <li>rigidRotationMatrix()
-: <a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics_1_1Body.html#a81123dc6dd5c378e57ba40080c7c5ac9">Feel::FeelModels::FluidMechanics&lt; ConvexType, BasisVelocityType, BasisPressureType &gt;::Body</a>
+: <a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics_1_1Body.html#aedfa55c7b938eb744ac95ad087bac3e2">Feel::FeelModels::FluidMechanics&lt; ConvexType, BasisVelocityType, BasisPressureType &gt;::Body</a>
 , <a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#ad2758d674bdbf5def1a34e3d744c12b8">Feel::FeelModels::FluidMechanics&lt; ConvexType, BasisVelocityType, BasisPressureType &gt;::BodyBoundaryCondition</a>
 , <a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics_1_1NBodyArticulated.html#a31077072e0ccecc54649660a97840656">Feel::FeelModels::FluidMechanics&lt; ConvexType, BasisVelocityType, BasisPressureType &gt;::NBodyArticulated</a>
 </li>
@@ -253,10 +265,10 @@ $(document).ready(function(){initNavTree('functions_func_r.html',''); initResiza
 </li>
 <li>run()
 : <a class="el" href="classFeel_1_1Application.html#a67506b6f4f427f4bca3b82cc0cc2e64d">Feel::Application</a>
-, <a class="el" href="classFeel_1_1Simget.html#a4a4507e4e99a9634adaf704dce940247">Feel::Simget</a>
+, <a class="el" href="classFeel_1_1Simget.html#ae4cebdea070b7aadc9cb5ada1969e5a9">Feel::Simget</a>
 </li>
 <li>run_analysis()
-: <a class="el" href="classFeel_1_1Localization.html#ad3258d4d1cd1e41377b0229eb5b96789">Feel::Localization&lt; MeshType &gt;</a>
+: <a class="el" href="classFeel_1_1Localization.html#a09dd7e3e26cbc70e999e286e2ce9226c">Feel::Localization&lt; MeshType &gt;</a>
 </li>
 </ul>
 </div><!-- contents -->

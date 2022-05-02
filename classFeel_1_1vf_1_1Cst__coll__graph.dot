@@ -6,10 +6,10 @@ digraph "Feel::vf::Cst&lt; T &gt;"
   Node1 [label="Feel::vf::Cst\< T \>",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
   Node2 -> Node1 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
   Node2 [label="Feel::vf::CstBase",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1vf_1_1CstBase.html",tooltip=" "];
-  Node3 -> Node1 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" M_constant" ,fontname="Helvetica"];
-  Node3 [label="const T",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
-  Node4 -> Node1 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" context" ,fontname="Helvetica"];
-  Node4 [label="size_t",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classsize__t.html",tooltip=" "];
-  Node5 -> Node1 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" has_trial_basis\nhas_test_basis\nis_terminal" ,fontname="Helvetica"];
-  Node5 [label="bool",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classbool.html",tooltip=" "];
+  Node3 -> Node1 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" context" ,fontname="Helvetica"];
+  Node3 [label="size_t",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classsize__t.html",tooltip=" "];
+  Node4 -> Node1 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" has_trial_basis\nhas_test_basis\nis_terminal" ,fontname="Helvetica"];
+  Node4 [label="bool",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classbool.html",tooltip=" "];
+  Node5 -> Node1 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" M_constant" ,fontname="Helvetica"];
+  Node5 [label="T",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
 }

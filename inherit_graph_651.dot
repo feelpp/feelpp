@@ -4,5 +4,5 @@ digraph "Graphical Class Hierarchy"
   edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
   node [fontname="Helvetica",fontsize="10",shape=record];
   rankdir="LR";
-  Node0 [label="nlohmann::detail::is\l_ordered_map\< T \>::two",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structnlohmann_1_1detail_1_1is__ordered__map_1_1two.html",tooltip=" "];
+  Node0 [label="nlohmann::detail::is\l_compatible_object_type\l_impl\< BasicJsonType, Compatible\lObjectType, enable_if_t\< is\l_detected\< mapped_type_t, CompatibleObject\lType \>::value &&is_detected\< key_type\l_t, CompatibleObjectType \>::value \> \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structnlohmann_1_1detail_1_1is__compatible__object__type__impl_3_01BasicJsonType_00_01Compatible1dd1bd23ba0e4ce33237aa702f8058a9.html",tooltip=" "];
 }

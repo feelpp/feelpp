@@ -4,23 +4,5 @@ digraph "Graphical Class Hierarchy"
   edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
   node [fontname="Helvetica",fontsize="10",shape=record];
   rankdir="LR";
-  Node46 [label="tuple",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
-  Node46 -> Node0 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
-  Node0 [label="Feel::Dof\< size_type \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1Dof.html",tooltip=" "];
-  Node46 -> Node48 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
-  Node48 [label="Feel::Dof\< SizeT \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1Dof.html",tooltip="class that represents a degree of freedom"];
-  Node46 -> Node49 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
-  Node49 [label="Feel::FaceDof\< SizeT \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structFeel_1_1FaceDof.html",tooltip="Describe a Dof on a Face."];
-  Node46 -> Node50 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
-  Node50 [label="Feel::FeelModels::Material\lPropertyDescription",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1FeelModels_1_1MaterialPropertyDescription.html",tooltip=" "];
-  Node46 -> Node51 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
-  Node51 [label="Feel::RemoteData::ContentsInfo",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1RemoteData_1_1ContentsInfo.html",tooltip="Content info data structure."];
-  Node46 -> Node52 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
-  Node52 [label="Feel::RemoteData::FileInfo",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structFeel_1_1RemoteData_1_1FileInfo.html",tooltip=" "];
-  Node46 -> Node53 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
-  Node53 [label="Feel::RemoteData::FolderInfo",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structFeel_1_1RemoteData_1_1FolderInfo.html",tooltip=" "];
-  Node46 -> Node54 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
-  Node54 [label="Feel::RemoteData::ItemInfo",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structFeel_1_1RemoteData_1_1ItemInfo.html",tooltip=" "];
-  Node46 -> Node55 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
-  Node55 [label="Feel::StatusRequestHTTP",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1StatusRequestHTTP.html",tooltip=" "];
+  Node0 [label="Feel::detail::TimeSet\l\< MeshType, N \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1detail_1_1TimeSet.html",tooltip="data TimeSet"];
 }

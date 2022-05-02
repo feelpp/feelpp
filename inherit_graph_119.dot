@@ -4,5 +4,5 @@ digraph "Graphical Class Hierarchy"
   edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
   node [fontname="Helvetica",fontsize="10",shape=record];
   rankdir="LR";
-  Node0 [label="Feel::DofTable\< MeshType,\l FEType, PeriodicityType,\l MortarType \>::element_access",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structFeel_1_1DofTable_1_1element__access.html",tooltip=" "];
+  Node0 [label="Feel::details::points\< 0 \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structFeel_1_1details_1_1points_3_010_01_4.html",tooltip=" "];
 }

@@ -4,5 +4,5 @@ digraph "Graphical Class Hierarchy"
   edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
   node [fontname="Helvetica",fontsize="10",shape=record];
   rankdir="LR";
-  Node0 [label="pybind11::detail::type\l_caster\< nl::json \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structpybind11_1_1detail_1_1type__caster_3_01nl_1_1json_01_4.html",tooltip=" "];
+  Node0 [label="nlohmann::json_sax\l\< BasicJsonType \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structnlohmann_1_1json__sax.html",tooltip="SAX interface."];
 }

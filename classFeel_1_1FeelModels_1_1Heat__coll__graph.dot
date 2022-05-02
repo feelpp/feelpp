@@ -81,8 +81,6 @@ digraph "Feel::FeelModels::Heat&lt; ConvexType, BasisTemperatureType &gt;"
   Node43 -> Node42 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
   Node43 [label="Feel::FunctionSpaceBase",height=0.2,width=0.4,color="red", fillcolor="white", style="filled",URL="$classFeel_1_1FunctionSpaceBase.html",tooltip="base class for FunctionSpace"];
   Node4 -> Node43 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
-  Node45 -> Node42 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
-  Node45 [label="std::enable_shared\l_from_this\< FunctionSpace\l\< A0, parameter::void_,\l parameter::void_, parameter\l::void_, parameter::void_ \> \>",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
   Node24 -> Node42 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" nRealDim\nN_COMPONENTS\nnSpaces\nnComponents1\nnComponents2\nnDim\nnRealComponents\nrank\nnComponents" ,fontname="Helvetica"];
   Node27 -> Node42 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" is_product\nis_composite\nis_hcurl_conforming\nis_modal\nM_extendedDofTable\nis_nodal\nis_tensor2\nis_mortar\nis_vectorial\nis_periodic\n..." ,fontname="Helvetica"];
   Node11 -> Node34 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" M_hSizeMethod\nM_method" ,fontname="Helvetica"];
@@ -113,8 +111,14 @@ digraph "Feel::FeelModels::Heat&lt; ConvexType, BasisTemperatureType &gt;"
   Node67 -> Node1 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" M_bdfTemperature" ,fontname="Helvetica"];
   Node67 [label="std::shared_ptr\< bdf\l_temperature_type \>",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
   Node68 -> Node67 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" ptr" ,fontname="Helvetica"];
-  Node68 [label="bdf_temperature_type",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
-  Node69 -> Node1 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" M_Xh" ,fontname="Helvetica"];
-  Node69 [label="std::shared_ptr\< space\l_temperature_type \>",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
-  Node42 -> Node69 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" ptr" ,fontname="Helvetica"];
+  Node68 [label="Feel::Bdf\< SpaceType \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1Bdf.html",tooltip="Backward differencing formula time discretization."];
+  Node69 -> Node68 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node69 [label="Feel::TSBase",height=0.2,width=0.4,color="red", fillcolor="white", style="filled",URL="$classFeel_1_1TSBase.html",tooltip="base class for time sets"];
+  Node32 -> Node69 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" M_dt\nM_Tf\nM_Ti\nM_real_time\l_per_iteration\nM_time" ,fontname="Helvetica"];
+  Node25 -> Node69 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" M_saveFreq\nM_restartStepBeforeLast\lSave\nM_iteration\nM_n_restart" ,fontname="Helvetica"];
+  Node27 -> Node69 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" M_rankProcInNameOfFiles\nM_displayStats\nM_restart\nM_restartAtLastSave\nM_saveInFile\nM_reverseLoad\nM_steady\nM_reverse" ,fontname="Helvetica"];
+  Node11 -> Node69 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" M_fileFormat\nM_prefix\nM_name" ,fontname="Helvetica"];
+  Node77 -> Node1 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" M_Xh" ,fontname="Helvetica"];
+  Node77 [label="std::shared_ptr\< space\l_temperature_type \>",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+  Node42 -> Node77 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" ptr" ,fontname="Helvetica"];
 }

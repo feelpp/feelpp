@@ -4,5 +4,7 @@ digraph "Graphical Class Hierarchy"
   edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
   node [fontname="Helvetica",fontsize="10",shape=record];
   rankdir="LR";
-  Node0 [label="Feel::TabulateInformations\l::ExporterAsciiDoc",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structFeel_1_1TabulateInformations_1_1ExporterAsciiDoc.html",tooltip=" "];
+  Node0 [label="Feel::SubFaceOfBase",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structFeel_1_1SubFaceOfBase.html",tooltip=" "];
+  Node0 -> Node1 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 [label="Feel::SubFaceOf\< Element\lType \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1SubFaceOf.html",tooltip=" "];
 }

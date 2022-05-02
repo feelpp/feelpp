@@ -4,5 +4,5 @@ digraph "Graphical Class Hierarchy"
   edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
   node [fontname="Helvetica",fontsize="10",shape=record];
   rankdir="LR";
-  Node0 [label="Feel::FeelModels::FluidMechanics\l\< ConvexType, BasisVelocityType,\l BasisPressureType \>::FieldTag",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structFeel_1_1FeelModels_1_1FluidMechanics_1_1FieldTag.html",tooltip=" "];
+  Node0 [label="Feel::FeelModels::Electric\l\< ConvexType, BasisPotentialType\l \>::FieldTag",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structFeel_1_1FeelModels_1_1Electric_1_1FieldTag.html",tooltip=" "];
 }

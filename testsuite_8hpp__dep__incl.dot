@@ -1,0 +1,43 @@
+digraph "/home/runner/work/feelpp/feelpp/feelpp/feel/feelcore/testsuite.hpp"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  Node1 [label="/home/runner/work/feelpp\l/feelpp/feelpp/feel/feelcore\l/testsuite.hpp",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="/home/runner/work/feelpp\l/feelpp/testsuite/feelcore\l/test_boostmpi.cpp",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="/home/runner/work/feelpp\l/feelpp/testsuite/feelcore\l/test_enums.cpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$test__enums_8cpp.html",tooltip="-*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-w..."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="/home/runner/work/feelpp\l/feelpp/testsuite/feelcore\l/test_env.cpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$test__env_8cpp.html",tooltip=" "];
+  Node1 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="/home/runner/work/feelpp\l/feelpp/testsuite/feelcore\l/test_feelio.cpp",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+  Node1 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="/home/runner/work/feelpp\l/feelpp/testsuite/feelcore\l/test_git.cpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$test__git_8cpp.html",tooltip=" "];
+  Node1 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="/home/runner/work/feelpp\l/feelpp/testsuite/feelcore\l/test_hana.cpp",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+  Node1 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="/home/runner/work/feelpp\l/feelpp/testsuite/feelcore\l/test_hdf5.cpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$test__hdf5_8cpp.html",tooltip=" "];
+  Node1 -> Node9 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="/home/runner/work/feelpp\l/feelpp/testsuite/feelcore\l/test_json.cpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$test__json_8cpp.html",tooltip=" "];
+  Node1 -> Node10 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="/home/runner/work/feelpp\l/feelpp/testsuite/feelcore\l/test_mongo.cpp",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+  Node1 -> Node11 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="/home/runner/work/feelpp\l/feelpp/testsuite/feelcore\l/test_observer.cpp",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+  Node1 -> Node12 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="/home/runner/work/feelpp\l/feelpp/testsuite/feelcore\l/test_observer_mesh.cpp",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+  Node1 -> Node13 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="/home/runner/work/feelpp\l/feelpp/testsuite/feelcore\l/test_ptree_editions.cpp",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+  Node1 -> Node14 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="/home/runner/work/feelpp\l/feelpp/testsuite/feelcore\l/test_range.cpp",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+  Node1 -> Node15 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node15 [label="/home/runner/work/feelpp\l/feelpp/testsuite/feelcore\l/test_removecomments.cpp",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+  Node1 -> Node16 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 [label="/home/runner/work/feelpp\l/feelpp/testsuite/feelcore\l/test_serialization.cpp",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+  Node1 -> Node17 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node17 [label="/home/runner/work/feelpp\l/feelpp/testsuite/feelcore\l/test_simget.cpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$test__simget_8cpp.html",tooltip=" "];
+  Node1 -> Node18 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node18 [label="/home/runner/work/feelpp\l/feelpp/testsuite/feelcore\l/test_taskflow.cpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$test__taskflow_8cpp.html",tooltip=" "];
+  Node1 -> Node19 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node19 [label="/home/runner/work/feelpp\l/feelpp/testsuite/feelcore\l/test_worldcomm.cpp",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+}

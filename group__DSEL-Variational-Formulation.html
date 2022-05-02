@@ -104,14 +104,29 @@ $(document).ready(function(){initNavTree('group__DSEL-Variational-Formulation.ht
   <div class="summary">
 <a href="#func-members">Functions</a>  </div>
   <div class="headertitle">
-<div class="title">DSEL-Variational-Formulation</div>  </div>
+<div class="title">DSEL-Variational-Formulation<div class="ingroups"><a class="el" href="group__Feelpp.html">Feelpp</a></div></div>  </div>
 </div><!--header-->
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Description</h2>
-<p>Variational forms provided by the library. </p>
+<p>Variational forms provided by the library </p>
+<div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
+  <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Collaboration diagram for DSEL-Variational-Formulation:</div>
+<div id="dynsection-0-summary" class="dynsummary" style="display:block;">
+</div>
+<div id="dynsection-0-content" class="dyncontent" style="display:none;">
+<div class="center"><img src="group__DSEL-Variational-Formulation.png" border="0" usemap="#group____DSEL-Variational-Formulation" alt=""/></div>
+</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
+<tr class="memitem:gaa7b95d2d10a5d0e4457740daa190a6e0"><td class="memTemplParams" colspan="2">template&lt;typename ... Ts&gt; </td></tr>
+<tr class="memitem:gaa7b95d2d10a5d0e4457740daa190a6e0"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__DSEL-Variational-Formulation.html#gaa7b95d2d10a5d0e4457740daa190a6e0">Feel::form1</a> (Ts &amp;&amp;... v)</td></tr>
+<tr class="memdesc:gaa7b95d2d10a5d0e4457740daa190a6e0"><td class="mdescLeft">&#160;</td><td class="mdescRight">create a linear form using named arguments  <a href="group__DSEL-Variational-Formulation.html#gaa7b95d2d10a5d0e4457740daa190a6e0">More...</a><br /></td></tr>
+<tr class="separator:gaa7b95d2d10a5d0e4457740daa190a6e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaae0194bba0f2f858c384597706e3c59e"><td class="memTemplParams" colspan="2">template&lt;typename ... Ts&gt; </td></tr>
+<tr class="memitem:gaae0194bba0f2f858c384597706e3c59e"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__DSEL-Variational-Formulation.html#gaae0194bba0f2f858c384597706e3c59e">Feel::form2</a> (Ts &amp;&amp;... v)</td></tr>
+<tr class="memdesc:gaae0194bba0f2f858c384597706e3c59e"><td class="mdescLeft">&#160;</td><td class="mdescRight">create a bi-linear form using named arguments  <a href="group__DSEL-Variational-Formulation.html#gaae0194bba0f2f858c384597706e3c59e">More...</a><br /></td></tr>
+<tr class="separator:gaae0194bba0f2f858c384597706e3c59e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gab7965105a4a850885f454c7c3865ffc6"><td class="memTemplParams" colspan="2"><a id="gab7965105a4a850885f454c7c3865ffc6"></a>
 template&lt;typename ExprT1 , typename ExprT2 , typename  = typename std::enable_if_t&lt; is_vf_expr_v&lt;ExprT1&gt; || is_vf_expr_v&lt;ExprT2&gt; &gt;&gt; </td></tr>
 <tr class="memitem:gab7965105a4a850885f454c7c3865ffc6"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__DSEL-Variational-Formulation.html#gab7965105a4a850885f454c7c3865ffc6">Feel::vf::operator^</a> (ExprT1 &amp;&amp;__e1, ExprT2 &amp;&amp;__e2)</td></tr>
@@ -124,6 +139,10 @@ template&lt;typename ExprT1 , typename ExprT2 , typename  = typename std::enable
 <tr class="memitem:ga7b9221db5c7afed153789f616a1c6328"><td class="memTemplParams" colspan="2">template&lt;typename ExprT &gt; </td></tr>
 <tr class="memitem:ga7b9221db5c7afed153789f616a1c6328"><td class="memTemplItemLeft" align="right" valign="top">Expr&lt; <a class="el" href="classFeel_1_1vf_1_1PrintExpr.html">PrintExpr</a>&lt; ExprT &gt; &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__DSEL-Variational-Formulation.html#ga7b9221db5c7afed153789f616a1c6328">Feel::vf::print</a> (ExprT v, std::string t=&quot;&quot;)</td></tr>
 <tr class="separator:ga7b9221db5c7afed153789f616a1c6328"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga4ce21c8d1bf758252c2e93c6e312b131"><td class="memTemplParams" colspan="2">template&lt;typename ... Ts&gt; </td></tr>
+<tr class="memitem:ga4ce21c8d1bf758252c2e93c6e312b131"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__DSEL-Variational-Formulation.html#ga4ce21c8d1bf758252c2e93c6e312b131">Feel::vf::project</a> (Ts &amp;&amp;... v)</td></tr>
+<tr class="memdesc:ga4ce21c8d1bf758252c2e93c6e312b131"><td class="mdescLeft">&#160;</td><td class="mdescRight">projection/interpolation of an expresion onto a noal functionspace  <a href="group__DSEL-Variational-Formulation.html#ga4ce21c8d1bf758252c2e93c6e312b131">More...</a><br /></td></tr>
+<tr class="separator:ga4ce21c8d1bf758252c2e93c6e312b131"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga174a78295f8a8bbbcd30d9647eeb4e28"><td class="memTemplParams" colspan="2">template&lt;typename T &gt; </td></tr>
 <tr class="memitem:ga174a78295f8a8bbbcd30d9647eeb4e28"><td class="memTemplItemLeft" align="right" valign="top">Expr&lt; <a class="el" href="classFeel_1_1vf_1_1Rand.html">Rand</a>&lt; T &gt; &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__DSEL-Variational-Formulation.html#ga174a78295f8a8bbbcd30d9647eeb4e28">Feel::vf::rand</a> ()</td></tr>
 <tr class="memdesc:ga174a78295f8a8bbbcd30d9647eeb4e28"><td class="mdescLeft">&#160;</td><td class="mdescRight">provide random expression in ]lo,hi[  <a href="group__DSEL-Variational-Formulation.html#ga174a78295f8a8bbbcd30d9647eeb4e28">More...</a><br /></td></tr>
@@ -138,6 +157,73 @@ template&lt;typename ExprT1 , typename ExprT2 , typename  = typename std::enable
 <tr class="separator:gaeac7fe8c4b52a6f9c1320275ad39f01e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Function Documentation</h2>
+<a id="gaa7b95d2d10a5d0e4457740daa190a6e0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaa7b95d2d10a5d0e4457740daa190a6e0">&#9670;&nbsp;</a></span>form1()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename ... Ts&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">auto Feel::form1 </td>
+          <td>(</td>
+          <td class="paramtype">Ts &amp;&amp;...&#160;</td>
+          <td class="paramname"><em>v</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>#include &lt;<a class="el" href="form_8hpp.html">/home/runner/work/feelpp/feelpp/feelpp/feel/feelvf/form.hpp</a>&gt;</code></p>
+
+<p>create a linear form using named arguments </p>
+<div class="fragment"><div class="line"><span class="keyword">auto</span> a = <a class="code" href="group__DSEL-Variational-Formulation.html#gaa7b95d2d10a5d0e4457740daa190a6e0">form1</a>(_test=Xh, _backend=backend(_worldcomm=Xh-&gt;worldCommPtr()), _vector=backend-&gt;newVector( _test=Xh ) );</div>
+<div class="line">a = integrate(...);</div>
+</div><!-- fragment --> 
+</div>
+</div>
+<a id="gaae0194bba0f2f858c384597706e3c59e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaae0194bba0f2f858c384597706e3c59e">&#9670;&nbsp;</a></span>form2()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename ... Ts&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">auto Feel::form2 </td>
+          <td>(</td>
+          <td class="paramtype">Ts &amp;&amp;...&#160;</td>
+          <td class="paramname"><em>v</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>#include &lt;<a class="el" href="form_8hpp.html">/home/runner/work/feelpp/feelpp/feelpp/feel/feelvf/form.hpp</a>&gt;</code></p>
+
+<p>create a bi-linear form using named arguments </p>
+<div class="fragment"><div class="line"><span class="keyword">auto</span> a = <a class="code" href="group__DSEL-Variational-Formulation.html#gaae0194bba0f2f858c384597706e3c59e">form2</a>(_test=Xh, _trial=Yh,  _backend=backend(_worldcomm=Xh-&gt;worldCommPtr()), _matrix=backend-&gt;newVector( _test=Xh, _trial=Yh ) );</div>
+<div class="line">a = integrate(...);</div>
+</div><!-- fragment --><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">_test</td><td>test space </td></tr>
+    <tr><td class="paramname">_trial</td><td>trial space </td></tr>
+    <tr><td class="paramname">_init</td><td>initialize the form (default: false) </td></tr>
+    <tr><td class="paramname">_properties</td><td></td></tr>
+    <tr><td class="paramname">_backend</td><td>algrebraic backend </td></tr>
+    <tr><td class="paramname">_matrix</td><td>algebraic representation of the bilinear form </td></tr>
+    <tr><td class="paramname">_pattern</td><td></td></tr>
+    <tr><td class="paramname">_rowstart</td><td></td></tr>
+    <tr><td class="paramname">_colstart</td><td></td></tr>
+    <tr><td class="paramname">_name</td><td>name of the bilinear for; (default: bilinearform.a) </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
 <a id="gaea4c47fc4a17435b9b1d3fe115a6788d"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#gaea4c47fc4a17435b9b1d3fe115a6788d">&#9670;&nbsp;</a></span>pow()</h2>
 
@@ -171,7 +257,7 @@ template&lt;typename ExprT1 , typename ExprT2 &gt; </div>
 <p>provide pow expression e1^e2 </p>
 <div class="fragment"><div class="line">std::cout &lt;&lt; integrate( _range=<a class="code" href="namespaceFeel.html#a55b180ac7bf9d1ebd55a0b79f97e131e">elements</a>(mesh), _expr=<a class="code" href="group__DSEL-Variational-Formulation.html#gaea4c47fc4a17435b9b1d3fe115a6788d">pow</a>( Px(), Py() ) ).evaluate();</div>
 </div><!-- fragment --> 
-<p class="reference">Referenced by <a class="el" href="namespaceFeel.html#a6586f4480802097cacc2f37606f67f56">Feel::etaQ()</a>, and <a class="el" href="group__DSEL-Variational-Formulation.html#gab7965105a4a850885f454c7c3865ffc6">Feel::vf::operator^()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="classFeel_1_1CNAB2.html#a228e61926d5f61a04d8ae725d908d3a9">Feel::CNAB2&lt; FieldType &gt;::computeStep()</a>, <a class="el" href="namespaceFeel.html#a6586f4480802097cacc2f37606f67f56">Feel::etaQ()</a>, <a class="el" href="group__DSEL-Variational-Formulation.html#gab7965105a4a850885f454c7c3865ffc6">Feel::vf::operator^()</a>, and <a class="el" href="classFeel_1_1Newmark.html#a764f62cb5256f78c0b700f21e9ee6a26">Feel::Newmark&lt; SpaceType &gt;::updateFromDisp()</a>.</p>
 
 </div>
 </div>
@@ -209,6 +295,37 @@ template&lt;typename ExprT &gt; </div>
 <div class="fragment"><div class="line"><span class="keyword">auto</span> e = Px()*Py();</div>
 <div class="line">std::cout &lt;&lt; integrate( _range=<a class="code" href="namespaceFeel.html#a55b180ac7bf9d1ebd55a0b79f97e131e">elements</a>(mesh), _expr=print(e,<span class="stringliteral">&quot;e=&quot;</span>) ).evaluate();</div>
 </div><!-- fragment --><dl class="section return"><dt>Returns</dt><dd>the expression that was printed. </dd></dl>
+
+</div>
+</div>
+<a id="ga4ce21c8d1bf758252c2e93c6e312b131"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga4ce21c8d1bf758252c2e93c6e312b131">&#9670;&nbsp;</a></span>project()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename ... Ts&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">auto Feel::vf::project </td>
+          <td>(</td>
+          <td class="paramtype">Ts &amp;&amp;...&#160;</td>
+          <td class="paramname"><em>v</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>#include &lt;<a class="el" href="projectors_8hpp.html">/home/runner/work/feelpp/feelpp/feelpp/feel/feelvf/projectors.hpp</a>&gt;</code></p>
+
+<p>projection/interpolation of an expresion onto a noal functionspace </p>
+<ul>
+<li>_space the function space to project onto </li>
+<li>_range the range of mesh elements to apply the projection (the remaining parts are set to 0) </li>
+<li>_expr the expression to project </li>
+<li>_geomap the type of geomap to use (make sense only using high order meshes) </li>
+<li>_sum sum the multiple nodal contributions if applicable (false by default) </li>
+</ul>
 
 </div>
 </div>
@@ -314,6 +431,8 @@ template&lt;typename ExprT1 &gt; </div>
 </div><!-- doc-content -->
 <div class="ttc" id="agroup__DSEL-Variational-Formulation_html_gaea4c47fc4a17435b9b1d3fe115a6788d"><div class="ttname"><a href="group__DSEL-Variational-Formulation.html#gaea4c47fc4a17435b9b1d3fe115a6788d">Feel::vf::pow</a></div><div class="ttdeci">auto pow(ExprT1 &amp;&amp;__e1, ExprT2 &amp;&amp;__e2)</div><div class="ttdoc">provide pow expression e1^e2</div><div class="ttdef"><b>Definition:</b> pow.hpp:349</div></div>
 <div class="ttc" id="anamespaceFeel_html_a55b180ac7bf9d1ebd55a0b79f97e131e"><div class="ttname"><a href="namespaceFeel.html#a55b180ac7bf9d1ebd55a0b79f97e131e">Feel::elements</a></div><div class="ttdeci">elements_type const  &amp; elements() const</div><div class="ttdef"><b>Definition:</b> elements.hpp:279</div></div>
+<div class="ttc" id="agroup__DSEL-Variational-Formulation_html_gaa7b95d2d10a5d0e4457740daa190a6e0"><div class="ttname"><a href="group__DSEL-Variational-Formulation.html#gaa7b95d2d10a5d0e4457740daa190a6e0">Feel::form1</a></div><div class="ttdeci">auto form1(Ts &amp;&amp;... v)</div><div class="ttdoc">create a linear form using named arguments</div><div class="ttdef"><b>Definition:</b> form.hpp:79</div></div>
+<div class="ttc" id="agroup__DSEL-Variational-Formulation_html_gaae0194bba0f2f858c384597706e3c59e"><div class="ttname"><a href="group__DSEL-Variational-Formulation.html#gaae0194bba0f2f858c384597706e3c59e">Feel::form2</a></div><div class="ttdeci">auto form2(Ts &amp;&amp;... v)</div><div class="ttdoc">create a bi-linear form using named arguments</div><div class="ttdef"><b>Definition:</b> form.hpp:115</div></div>
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>

@@ -4,5 +4,5 @@ digraph "Graphical Class Hierarchy"
   edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
   node [fontname="Helvetica",fontsize="10",shape=record];
   rankdir="LR";
-  Node0 [label="Feel::Stencil\< X1,\l X2, RangeIteratorTestType,\l RangeExtendedIteratorType,\l QuadSetType \>::rangeiteratorType\< I, J \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structFeel_1_1Stencil_1_1rangeiteratorType.html",tooltip=" "];
+  Node0 [label="Feel::remove_shared\l_ptr\< T \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structFeel_1_1remove__shared__ptr.html",tooltip=" "];
 }

@@ -4,5 +4,5 @@ digraph "Graphical Class Hierarchy"
   edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
   node [fontname="Helvetica",fontsize="10",shape=record];
   rankdir="LR";
-  Node0 [label="std::hash\< std::tuple\l\< TT... \> \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structstd_1_1hash_3_01std_1_1tuple_3_01TT_8_8_8_01_4_01_4.html",tooltip=" "];
+  Node0 [label="pair\< std::vector\<\l Expr\< GinacMatrix\<\l M, 1, 2 \> \> \>, std::\lset\< std::string \> \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classstd_1_1pair_3_01std_1_1vector_3_01Expr_3_01GinacMatrix_3_01M_00_011_00_012_01_4_01_4_01_4_007ea7d0ae691ae0ec6c617773b5a3241.html",tooltip=" "];
 }

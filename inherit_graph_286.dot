@@ -4,5 +4,5 @@ digraph "Graphical Class Hierarchy"
   edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
   node [fontname="Helvetica",fontsize="10",shape=record];
   rankdir="LR";
-  Node0 [label="Feel::GinacExprManagerDefault\lFileNameDeleterImpl",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structFeel_1_1GinacExprManagerDefaultFileNameDeleterImpl.html",tooltip=" "];
+  Node0 [label="Feel::GeoND\< Dim, GEOSHAPE,\l T, IndexT, POINTTYPE, UseMeasures\lStorage \>::GetGm\< GmOrder \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structFeel_1_1GeoND_1_1GetGm.html",tooltip=" "];
 }

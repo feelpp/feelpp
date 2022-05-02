@@ -4,5 +4,5 @@ digraph "Graphical Class Hierarchy"
   edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
   node [fontname="Helvetica",fontsize="10",shape=record];
   rankdir="LR";
-  Node0 [label="mpfr_save_expo_t",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structmpfr__save__expo__t.html",tooltip=" "];
+  Node0 [label="gmc_inverse_type",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classgmc__inverse__type.html",tooltip=" "];
 }

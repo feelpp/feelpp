@@ -111,16 +111,16 @@ $(document).ready(function(){initNavTree('classFeel_1_1Visitor.html',''); initRe
 <div class="textblock"><h3>template&lt;class T, typename R = void&gt;<br />
 class Feel::Visitor&lt; T, R &gt;</h3>
 
-<p>This class is the base class to implement the <a class="el" href="classFeel_1_1Visitor.html">Visitor</a> Pattern. Let's A be a visitor class to a class B: </p><div class="fragment"><div class="line"><span class="keyword">class </span>A: <span class="keyword">public</span> Visitor&lt;B&gt;</div>
+<p>This class is the base class to implement the <a class="el" href="classFeel_1_1Visitor.html">Visitor</a> Pattern. Let's <a class="el" href="classA.html">A</a> be a visitor class to a class <a class="el" href="classB.html">B</a>: </p><div class="fragment"><div class="line"><span class="keyword">class </span><a class="code" href="classA.html">A</a>: <span class="keyword">public</span> Visitor&lt;B&gt;</div>
 <div class="line">{</div>
 <div class="line"><span class="keyword">public</span>:</div>
 <div class="line">...</div>
-<div class="line">void <a class="code" href="classFeel_1_1Visitor.html#a98acadae64f9daa013409b11fd6db989">visit</a>(B * b)</div>
+<div class="line">void <a class="code" href="classFeel_1_1Visitor.html#a98acadae64f9daa013409b11fd6db989">visit</a>(<a class="code" href="classB.html">B</a> * b)</div>
 <div class="line">{</div>
-<div class="line">..implement the functionnality to be added to a B <span class="keyword">class</span>..</div>
+<div class="line">..implement the functionnality to be added to a <a class="code" href="classB.html">B</a> <span class="keyword">class</span>..</div>
 <div class="line">}</div>
 <div class="line">};</div>
-<div class="line"><span class="keyword">class </span>B:</div>
+<div class="line"><span class="keyword">class </span><a class="code" href="classB.html">B</a>:</div>
 <div class="line">{</div>
 <div class="line"><span class="keyword">public</span>:</div>
 <div class="line"><span class="keywordtype">void</span> accept(Visitor&lt;B&gt;* b){  b-&gt;visit(<span class="keyword">this</span>); }</div>
@@ -151,6 +151,8 @@ return_type&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
 </table>
 </div><!-- contents -->
 </div><!-- doc-content -->
+<div class="ttc" id="aclassA_html"><div class="ttname"><a href="classA.html">A</a></div><div class="ttdef"><b>Definition:</b> test_factory.cpp:34</div></div>
+<div class="ttc" id="aclassB_html"><div class="ttname"><a href="classB.html">B</a></div><div class="ttdef"><b>Definition:</b> test_factory.cpp:43</div></div>
 <div class="ttc" id="aclassFeel_1_1Visitor_html_a98acadae64f9daa013409b11fd6db989"><div class="ttname"><a href="classFeel_1_1Visitor.html#a98acadae64f9daa013409b11fd6db989">Feel::Visitor::visit</a></div><div class="ttdeci">virtual return_type visit(T *)=0</div><div class="ttdoc">visit a data structure</div></div>
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->

@@ -4,7 +4,5 @@ digraph "Graphical Class Hierarchy"
   edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
   node [fontname="Helvetica",fontsize="10",shape=record];
   rankdir="LR";
-  Node23 [label="template Element",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
-  Node23 -> Node0 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
-  Node0 [label="Feel::OperatorLinear\l\< DomainSpace, DualImageSpace\l \>::domain_element\< T, Storage \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structFeel_1_1OperatorLinear_1_1domain__element.html",tooltip=" "];
+  Node0 [label="Feel::mpfr::InexactFlag",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1mpfr_1_1InexactFlag.html",tooltip=" "];
 }

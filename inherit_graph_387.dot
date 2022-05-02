@@ -4,5 +4,5 @@ digraph "Graphical Class Hierarchy"
   edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
   node [fontname="Helvetica",fontsize="10",shape=record];
   rankdir="LR";
-  Node0 [label="Feel::Remesh\< MeshType \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1Remesh.html",tooltip="Class that handles remeshing in sequential using mmg and parallel using parmmg."];
+  Node0 [label="Feel::Reference\< Geo,\l Dim, Order, RDim, T \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1Reference.html",tooltip="Reference convex."];
 }

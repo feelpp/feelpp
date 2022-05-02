@@ -4,5 +4,5 @@ digraph "Graphical Class Hierarchy"
   edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
   node [fontname="Helvetica",fontsize="10",shape=record];
   rankdir="LR";
-  Node0 [label="Feel::BlockBilinearForm\l\< PS \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1BlockBilinearForm.html",tooltip="forward declarations of BlockBilinearForm and blocform2()"];
+  Node0 [label="Feel::AboutPerson",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1AboutPerson.html",tooltip="This structure is used to store information about a person or developer."];
 }

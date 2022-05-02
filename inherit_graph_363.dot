@@ -4,5 +4,5 @@ digraph "Graphical Class Hierarchy"
   edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
   node [fontname="Helvetica",fontsize="10",shape=record];
   rankdir="LR";
-  Node0 [label="Feel::Printer::OutputText",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1Printer_1_1OutputText.html",tooltip=" "];
+  Node0 [label="Feel::OperatorTrace\l\< fs_type \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1OperatorTrace.html",tooltip="OperatorTrace made easy."];
 }

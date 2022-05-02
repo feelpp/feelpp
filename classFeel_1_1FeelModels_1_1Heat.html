@@ -140,10 +140,10 @@ Public Types</h2></td></tr>
 typedef BasisTemperatureType&#160;</td><td class="memItemRight" valign="bottom"><b>basis_temperature_type</b></td></tr>
 <tr class="separator:ab7e17bce14fb1069fd50671542bfb0c8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa61947aceaa50eb8179c6b1cc73a2d79"><td class="memItemLeft" align="right" valign="top"><a id="aa61947aceaa50eb8179c6b1cc73a2d79"></a>
-typedef std::shared_ptr&lt; bdf_temperature_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>bdf_temperature_ptrtype</b></td></tr>
+typedef std::shared_ptr&lt; <a class="el" href="classFeel_1_1Bdf.html">bdf_temperature_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>bdf_temperature_ptrtype</b></td></tr>
 <tr class="separator:aa61947aceaa50eb8179c6b1cc73a2d79"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a597d3bc98d24dd6cb65aae3599125da9"><td class="memItemLeft" align="right" valign="top"><a id="a597d3bc98d24dd6cb65aae3599125da9"></a>
-typedef Bdf&lt; <a class="el" href="classFeel_1_1FunctionSpace.html">space_temperature_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>bdf_temperature_type</b></td></tr>
+typedef <a class="el" href="classFeel_1_1Bdf.html">Bdf</a>&lt; <a class="el" href="classFeel_1_1FunctionSpace.html">space_temperature_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>bdf_temperature_type</b></td></tr>
 <tr class="separator:a597d3bc98d24dd6cb65aae3599125da9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac7e730a2c81a8663d716d1415543ccb3"><td class="memItemLeft" align="right" valign="top"><a id="ac7e730a2c81a8663d716d1415543ccb3"></a>
 typedef ConvexType&#160;</td><td class="memItemRight" valign="bottom"><b>convex_type</b></td></tr>
@@ -461,10 +461,10 @@ template&lt;typename ModelFieldsType &gt; </td></tr>
 tabulate_informations_ptr_t&#160;</td><td class="memItemRight" valign="bottom"><b>tabulateInformations</b> (<a class="el" href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">nl::json</a> const &amp;jsonInfo, <a class="el" href="classFeel_1_1TabulateInformationProperties.html">TabulateInformationProperties</a> const &amp;tabInfoProp) const override</td></tr>
 <tr class="separator:a6c197f54da1f19e0f81bf699e33ed6ac"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a794979a55b11ec98d8507bbe81250be1"><td class="memItemLeft" align="right" valign="top"><a id="a794979a55b11ec98d8507bbe81250be1"></a>
-std::shared_ptr&lt; TSBase &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>timeStepBase</b> ()</td></tr>
+std::shared_ptr&lt; <a class="el" href="classFeel_1_1TSBase.html">TSBase</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>timeStepBase</b> ()</td></tr>
 <tr class="separator:a794979a55b11ec98d8507bbe81250be1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a825d50d46baca943f6a3aa332ce1b442"><td class="memItemLeft" align="right" valign="top"><a id="a825d50d46baca943f6a3aa332ce1b442"></a>
-std::shared_ptr&lt; TSBase &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>timeStepBase</b> () const</td></tr>
+std::shared_ptr&lt; <a class="el" href="classFeel_1_1TSBase.html">TSBase</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>timeStepBase</b> () const</td></tr>
 <tr class="separator:a825d50d46baca943f6a3aa332ce1b442"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9f0ebea40ea12d8e4c75e8734f1eb7f5"><td class="memItemLeft" align="right" valign="top"><a id="a9f0ebea40ea12d8e4c75e8734f1eb7f5"></a>
 bdf_temperature_ptrtype const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>timeStepBdfTemperature</b> () const</td></tr>
@@ -1169,7 +1169,7 @@ virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>updatePicardI
 <tr class="separator:a0a4ba5047a4e51b655c40748783592b9 inherit pub_methods_classFeel_1_1FeelModels_1_1ModelAlgebraic"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classFeel_1_1FeelModels_1_1ModelMeshes"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classFeel_1_1FeelModels_1_1ModelMeshes')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classFeel_1_1FeelModels_1_1ModelMeshes.html">Feel::FeelModels::ModelMeshes&lt; ModelAlgebraic::index_type &gt;</a></td></tr>
 <tr class="memitem:a160a7d798e1a4295d77e696d06f8eaa5 inherit pub_methods_classFeel_1_1FeelModels_1_1ModelMeshes"><td class="memItemLeft" align="right" valign="top"><a id="a160a7d798e1a4295d77e696d06f8eaa5"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>applyRemesh</b> (std::string const &amp;meshName, std::shared_ptr&lt; MeshType &gt; const &amp;newMesh)</td></tr>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>applyRemesh</b> (std::string const &amp;meshName, std::shared_ptr&lt; <a class="el" href="classFeel_1_1Mesh.html">MeshType</a> &gt; const &amp;newMesh)</td></tr>
 <tr class="separator:a160a7d798e1a4295d77e696d06f8eaa5 inherit pub_methods_classFeel_1_1FeelModels_1_1ModelMeshes"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a339abad97424a3fb0ef572538e1031a3 inherit pub_methods_classFeel_1_1FeelModels_1_1ModelMeshes"><td class="memItemLeft" align="right" valign="top"><a id="a339abad97424a3fb0ef572538e1031a3"></a>
 <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>hasMeshMotion</b> (std::string const &amp;meshName) const</td></tr>

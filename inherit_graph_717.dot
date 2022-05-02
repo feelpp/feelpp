@@ -4,5 +4,5 @@ digraph "Graphical Class Hierarchy"
   edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
   node [fontname="Helvetica",fontsize="10",shape=record];
   rankdir="LR";
-  Node0 [label="TrialSymbolExpr1\< SpaceType,\l ExprType \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classTrialSymbolExpr1_3_01SpaceType_00_01ExprType_01_4.html",tooltip=" "];
+  Node0 [label="size_t",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classsize__t.html",tooltip=" "];
 }

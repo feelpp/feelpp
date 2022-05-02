@@ -4,5 +4,5 @@ digraph "Graphical Class Hierarchy"
   edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
   node [fontname="Helvetica",fontsize="10",shape=record];
   rankdir="LR";
-  Node0 [label="Feel::vf::UnaryPlus\l\< ExprT \>::tensor\< Geo\l_t, Basis_i_t, Basis_j_t \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structFeel_1_1vf_1_1UnaryPlus_1_1tensor.html",tooltip=" "];
+  Node0 [label="Feel::vf::Trans\< ExprT\l \>::Lambda\< TheExpr \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structFeel_1_1vf_1_1Trans_1_1Lambda.html",tooltip=" "];
 }

@@ -172,22 +172,22 @@ typedef Lagrange&lt; nOrderVelocity-1+mesh_type::nOrder, Vectorial, Discontinuou
 typedef <a class="el" href="structFeel_1_1bases.html">bases</a>&lt; Lagrange&lt; nOrderVelocity, Vectorial, Continuous, PointSetFekete &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>basis_vectorial_PN_type</b></td></tr>
 <tr class="separator:a40ae47091afd3bc2d3873222827e8c6e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a643d8571305df8cf27ffe97a3ce030b7"><td class="memItemLeft" align="right" valign="top"><a id="a643d8571305df8cf27ffe97a3ce030b7"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>bdf_fluidoutlet_windkessel_ptrtype</b> = std::shared_ptr&lt; bdf_fluidoutlet_windkessel_type &gt;</td></tr>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>bdf_fluidoutlet_windkessel_ptrtype</b> = std::shared_ptr&lt; <a class="el" href="classFeel_1_1Bdf.html">bdf_fluidoutlet_windkessel_type</a> &gt;</td></tr>
 <tr class="separator:a643d8571305df8cf27ffe97a3ce030b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9831e66ed1588bc585015054cb0675a1"><td class="memItemLeft" align="right" valign="top"><a id="a9831e66ed1588bc585015054cb0675a1"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>bdf_fluidoutlet_windkessel_type</b> = Bdf&lt; space_fluidoutlet_windkessel_type &gt;</td></tr>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>bdf_fluidoutlet_windkessel_type</b> = <a class="el" href="classFeel_1_1Bdf.html">Bdf</a>&lt; space_fluidoutlet_windkessel_type &gt;</td></tr>
 <tr class="separator:a9831e66ed1588bc585015054cb0675a1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0b0f9faa087c7123b94e0dcbaf212884"><td class="memItemLeft" align="right" valign="top"><a id="a0b0f9faa087c7123b94e0dcbaf212884"></a>
-typedef std::shared_ptr&lt; bdf_trace_p0c_vectorial_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>bdf_trace_p0c_vectorial_ptrtype</b></td></tr>
+typedef std::shared_ptr&lt; <a class="el" href="classFeel_1_1Bdf.html">bdf_trace_p0c_vectorial_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>bdf_trace_p0c_vectorial_ptrtype</b></td></tr>
 <tr class="separator:a0b0f9faa087c7123b94e0dcbaf212884"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aaf711b1960e56a0b904eda1355b96106"><td class="memItemLeft" align="right" valign="top"><a id="aaf711b1960e56a0b904eda1355b96106"></a>
-typedef Bdf&lt; <a class="el" href="classFeel_1_1FunctionSpace.html">space_trace_p0c_vectorial_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>bdf_trace_p0c_vectorial_type</b></td></tr>
+typedef <a class="el" href="classFeel_1_1Bdf.html">Bdf</a>&lt; <a class="el" href="classFeel_1_1FunctionSpace.html">space_trace_p0c_vectorial_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>bdf_trace_p0c_vectorial_type</b></td></tr>
 <tr class="separator:aaf711b1960e56a0b904eda1355b96106"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2294481833fb9d7effd254a2adead089"><td class="memItemLeft" align="right" valign="top"><a id="a2294481833fb9d7effd254a2adead089"></a>
-typedef std::shared_ptr&lt; bdf_velocity_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>bdf_velocity_ptrtype</b></td></tr>
+typedef std::shared_ptr&lt; <a class="el" href="classFeel_1_1Bdf.html">bdf_velocity_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>bdf_velocity_ptrtype</b></td></tr>
 <tr class="separator:a2294481833fb9d7effd254a2adead089"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abd0863f1435ec5a06940643a3a029466"><td class="memItemLeft" align="right" valign="top"><a id="abd0863f1435ec5a06940643a3a029466"></a>
-typedef Bdf&lt; <a class="el" href="classFeel_1_1FunctionSpace.html">space_velocity_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>bdf_velocity_type</b></td></tr>
+typedef <a class="el" href="classFeel_1_1Bdf.html">Bdf</a>&lt; <a class="el" href="classFeel_1_1FunctionSpace.html">space_velocity_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>bdf_velocity_type</b></td></tr>
 <tr class="separator:abd0863f1435ec5a06940643a3a029466"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6503cfb98406c37af6231a4a7c6f6676"><td class="memItemLeft" align="right" valign="top"><a id="a6503cfb98406c37af6231a4a7c6f6676"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>bodymotion_ptrtype</b> = std::shared_ptr&lt; bodymotion_type &gt;</td></tr>
@@ -364,10 +364,10 @@ typedef elements_reference_wrapper_t&lt; <a class="el" href="classFeel_1_1Mesh.h
 typedef faces_reference_wrapper_t&lt; <a class="el" href="classFeel_1_1Mesh.html">mesh_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>range_faces_type</b></td></tr>
 <tr class="separator:a079fc7d71f91425ba396f16c713eadb3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a437eb298b26a9922558047a5127c5a8d"><td class="memItemLeft" align="right" valign="top"><a id="a437eb298b26a9922558047a5127c5a8d"></a>
-typedef std::shared_ptr&lt; savets_pressure_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>savets_pressure_ptrtype</b></td></tr>
+typedef std::shared_ptr&lt; <a class="el" href="classFeel_1_1Bdf.html">savets_pressure_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>savets_pressure_ptrtype</b></td></tr>
 <tr class="separator:a437eb298b26a9922558047a5127c5a8d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9e091779b4f6ca981432718c943f6ca1"><td class="memItemLeft" align="right" valign="top"><a id="a9e091779b4f6ca981432718c943f6ca1"></a>
-typedef Bdf&lt; <a class="el" href="classFeel_1_1FunctionSpace.html">space_pressure_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>savets_pressure_type</b></td></tr>
+typedef <a class="el" href="classFeel_1_1Bdf.html">Bdf</a>&lt; <a class="el" href="classFeel_1_1FunctionSpace.html">space_pressure_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>savets_pressure_type</b></td></tr>
 <tr class="separator:a9e091779b4f6ca981432718c943f6ca1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa3d9c8d2df40cbf20af9e65e306f1e8e"><td class="memItemLeft" align="right" valign="top"><a id="aa3d9c8d2df40cbf20af9e65e306f1e8e"></a>
 typedef std::shared_ptr&lt; <a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics.html">self_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>self_ptrtype</b></td></tr>
@@ -1038,10 +1038,10 @@ template&lt;typename ModelFieldsType &gt; </td></tr>
 tabulate_informations_ptr_t&#160;</td><td class="memItemRight" valign="bottom"><b>tabulateInformations</b> (<a class="el" href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">nl::json</a> const &amp;jsonInfo, <a class="el" href="classFeel_1_1TabulateInformationProperties.html">TabulateInformationProperties</a> const &amp;tabInfoProp) const override</td></tr>
 <tr class="separator:ae7c31f914000d5761579730f3a7fed01"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab390ebe3f8e9b8e1d2a5a49478e444f7"><td class="memItemLeft" align="right" valign="top"><a id="ab390ebe3f8e9b8e1d2a5a49478e444f7"></a>
-std::shared_ptr&lt; TSBase &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>timeStepBase</b> ()</td></tr>
+std::shared_ptr&lt; <a class="el" href="classFeel_1_1TSBase.html">TSBase</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>timeStepBase</b> ()</td></tr>
 <tr class="separator:ab390ebe3f8e9b8e1d2a5a49478e444f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af4af906c720611bc119aa64c43fae015"><td class="memItemLeft" align="right" valign="top"><a id="af4af906c720611bc119aa64c43fae015"></a>
-std::shared_ptr&lt; TSBase &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>timeStepBase</b> () const</td></tr>
+std::shared_ptr&lt; <a class="el" href="classFeel_1_1TSBase.html">TSBase</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>timeStepBase</b> () const</td></tr>
 <tr class="separator:af4af906c720611bc119aa64c43fae015"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8e235608d7011e7d543e73f39d9897f7"><td class="memItemLeft" align="right" valign="top"><a id="a8e235608d7011e7d543e73f39d9897f7"></a>
 bdf_velocity_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>timeStepBDF</b> ()</td></tr>
@@ -1840,7 +1840,7 @@ template&lt;typename SpaceType , typename RangeType &gt; </td></tr>
 <tr class="separator:a0a4ba5047a4e51b655c40748783592b9 inherit pub_methods_classFeel_1_1FeelModels_1_1ModelAlgebraic"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classFeel_1_1FeelModels_1_1ModelMeshes"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classFeel_1_1FeelModels_1_1ModelMeshes')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classFeel_1_1FeelModels_1_1ModelMeshes.html">Feel::FeelModels::ModelMeshes&lt; ModelAlgebraic::index_type &gt;</a></td></tr>
 <tr class="memitem:a160a7d798e1a4295d77e696d06f8eaa5 inherit pub_methods_classFeel_1_1FeelModels_1_1ModelMeshes"><td class="memItemLeft" align="right" valign="top"><a id="a160a7d798e1a4295d77e696d06f8eaa5"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>applyRemesh</b> (std::string const &amp;meshName, std::shared_ptr&lt; MeshType &gt; const &amp;newMesh)</td></tr>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>applyRemesh</b> (std::string const &amp;meshName, std::shared_ptr&lt; <a class="el" href="classFeel_1_1Mesh.html">MeshType</a> &gt; const &amp;newMesh)</td></tr>
 <tr class="separator:a160a7d798e1a4295d77e696d06f8eaa5 inherit pub_methods_classFeel_1_1FeelModels_1_1ModelMeshes"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a339abad97424a3fb0ef572538e1031a3 inherit pub_methods_classFeel_1_1FeelModels_1_1ModelMeshes"><td class="memItemLeft" align="right" valign="top"><a id="a339abad97424a3fb0ef572538e1031a3"></a>
 <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>hasMeshMotion</b> (std::string const &amp;meshName) const</td></tr>

@@ -4,5 +4,5 @@ digraph "Graphical Class Hierarchy"
   edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
   node [fontname="Helvetica",fontsize="10",shape=record];
   rankdir="LR";
-  Node0 [label="Feel::FeelModels::ExprTraits\lFromMeshElement\< MeshElementType,\l ExprType \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structFeel_1_1FeelModels_1_1ExprTraitsFromMeshElement.html",tooltip=" "];
+  Node0 [label="Feel::FeelModels::detail\l::ChangeBasisPolySet\< NewPolySet\lType, BasisType\< Order, PolySetType,\l ContinuityType, Pts, Tag \> \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structFeel_1_1FeelModels_1_1detail_1_1ChangeBasisPolySet_3_01NewPolySetType_00_01BasisType_3_01Od3c3455f9581e098fbbc9c6e4e32dd82.html",tooltip=" "];
 }

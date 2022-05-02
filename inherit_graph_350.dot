@@ -4,5 +4,5 @@ digraph "Graphical Class Hierarchy"
   edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
   node [fontname="Helvetica",fontsize="10",shape=record];
   rankdir="LR";
-  Node0 [label="Feel::OperatorInterpolation\lMatrixSetup\< typename super\l::matrix_type::value_type \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structFeel_1_1OperatorInterpolationMatrixSetup.html",tooltip=" "];
+  Node0 [label="Feel::MongoConfig",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1MongoConfig.html",tooltip=" "];
 }

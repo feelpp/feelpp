@@ -4,5 +4,5 @@ digraph "Graphical Class Hierarchy"
   edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
   node [fontname="Helvetica",fontsize="10",shape=record];
   rankdir="LR";
-  Node0 [label="Feel::cmpBareItem\<\l BareFace \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structFeel_1_1cmpBareItem_3_01BareFace_01_4.html",tooltip=" "];
+  Node0 [label="Feel::BareEdge",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structFeel_1_1BareEdge.html",tooltip="The Edge basis class It contains the attributes common to all Edges In particular,..."];
 }

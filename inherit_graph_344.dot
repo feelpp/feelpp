@@ -4,11 +4,5 @@ digraph "Graphical Class Hierarchy"
   edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
   node [fontname="Helvetica",fontsize="10",shape=record];
   rankdir="LR";
-  Node0 [label="Feel::Operator\< DomainSpace,\l DualImageSpace \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1Operator.html",tooltip="Operator between function spaces."];
-  Node0 -> Node1 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
-  Node1 [label="Feel::OperatorLinear\l\< DomainSpace, DualImageSpace \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1OperatorLinear.html",tooltip="Linear Operator between function spaces, represented by a matrix."];
-  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
-  Node2 [label="Feel::OperatorLinearComposite\l\< DomainSpace, DualImageSpace \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1OperatorLinearComposite.html",tooltip=" "];
-  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
-  Node3 [label="Feel::OperatorLinearFree\l\< DomainSpace, DualImageSpace,\l ExprType \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1OperatorLinearFree.html",tooltip="Linear Operator Free between function spaces, represented by a matrix but this matrix is not automati..."];
+  Node0 [label="Feel::meta::Pch\< MeshType,\l Order, T, Pts, Tag \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structFeel_1_1meta_1_1Pch.html",tooltip=" "];
 }

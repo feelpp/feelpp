@@ -4,5 +4,5 @@ digraph "Graphical Class Hierarchy"
   edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
   node [fontname="Helvetica",fontsize="10",shape=record];
   rankdir="LR";
-  Node0 [label="Feel::detail::compute\l_graph2\< BFType, Space1Type,\l SizeT \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structFeel_1_1detail_1_1compute__graph2.html",tooltip=" "];
+  Node0 [label="Feel::cmpBareItem\<\l BarePoint \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structFeel_1_1cmpBareItem_3_01BarePoint_01_4.html",tooltip="< The actual comparison operator"];
 }

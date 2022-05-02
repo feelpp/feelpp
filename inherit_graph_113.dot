@@ -4,5 +4,5 @@ digraph "Graphical Class Hierarchy"
   edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
   node [fontname="Helvetica",fontsize="10",shape=record];
   rankdir="LR";
-  Node0 [label="Feel::DofFromBoundary\l\< DofTableType, FEType \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1DofFromBoundary.html",tooltip="Local Dof contribution from boundary dof."];
+  Node0 [label="Feel::detail::TimeSet\l\< MeshType, N \>::ltstep",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structFeel_1_1detail_1_1TimeSet_1_1ltstep.html",tooltip=" "];
 }

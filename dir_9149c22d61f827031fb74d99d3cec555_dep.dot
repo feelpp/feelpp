@@ -1,0 +1,12 @@
+digraph "/home/runner/work/feelpp/feelpp/testsuite" {
+  compound=true
+  node [ fontsize="10", fontname="Helvetica"];
+  edge [ labelfontsize="10", labelfontname="Helvetica"];
+  subgraph clusterdir_9149c22d61f827031fb74d99d3cec555 {
+    graph [ bgcolor="#eeeeff", pencolor="black", label="" URL="dir_9149c22d61f827031fb74d99d3cec555.html"];
+    dir_9149c22d61f827031fb74d99d3cec555 [shape=plaintext label="testsuite"];
+    dir_eb842a1f693512d9648911e4229897e1 [shape=box label="feelcore" color="black" fillcolor="white" style="filled" URL="dir_eb842a1f693512d9648911e4229897e1.html"];
+  }
+  dir_58d06d4a5699d8c5c3ef959b17fcd092 [shape=box label="feelpp" fillcolor="white" style="filled" color="red" URL="dir_58d06d4a5699d8c5c3ef959b17fcd092.html"];
+  dir_eb842a1f693512d9648911e4229897e1->dir_58d06d4a5699d8c5c3ef959b17fcd092 [headlabel="51", labeldistance=1.5 headhref="dir_000016_000000.html"];
+}

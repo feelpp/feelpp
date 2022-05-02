@@ -4,5 +4,5 @@ digraph "Graphical Class Hierarchy"
   edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
   node [fontname="Helvetica",fontsize="10",shape=record];
   rankdir="LR";
-  Node0 [label="nlohmann::basic_json\l\< ObjectType, ArrayType,\l StringType, BooleanType,\l NumberIntegerType, NumberUnsigned\lType, NumberFloatType, AllocatorType,\l JSONSerializer, BinaryType \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classnlohmann_1_1basic__json.html",tooltip="a class to store JSON values"];
+  Node0 [label="nlohmann::adl_serializer\l\< py::detail::sequence\l_accessor \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structnlohmann_1_1adl__serializer_3_01py_1_1detail_1_1sequence__accessor_01_4.html",tooltip=" "];
 }

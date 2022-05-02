@@ -4,5 +4,5 @@ digraph "Graphical Class Hierarchy"
   edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
   node [fontname="Helvetica",fontsize="10",shape=record];
   rankdir="LR";
-  Node0 [label="Feel::Assert",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structFeel_1_1Assert.html",tooltip=" "];
+  Node0 [label="F1\< T \>::result\< F1\l(Lhs, Rhs)\>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structF1_1_1result_3_01F1_07Lhs_00_01Rhs_08_4.html",tooltip=" "];
 }

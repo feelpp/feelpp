@@ -4,5 +4,9 @@ digraph "Graphical Class Hierarchy"
   edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
   node [fontname="Helvetica",fontsize="10",shape=record];
   rankdir="LR";
-  Node0 [label="Feel::Oseen\< Space,\l imOrder, Entity \>::\lim\< Order \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structFeel_1_1Oseen_1_1im.html",tooltip=" "];
+  Node0 [label="Feel::Operator\< fs\l_type, fs_type \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1Operator.html",tooltip=" "];
+  Node0 -> Node1 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 [label="Feel::OperatorLinear\l\< fs_type, fs_type \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1OperatorLinear.html",tooltip=" "];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="Feel::OperatorSteklovPc\l\< fs_type \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1OperatorSteklovPc.html",tooltip="OperatorSteklovPc made easy."];
 }

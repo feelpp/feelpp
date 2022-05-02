@@ -4,5 +4,5 @@ digraph "Graphical Class Hierarchy"
   edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
   node [fontname="Helvetica",fontsize="10",shape=record];
   rankdir="LR";
-  Node0 [label="Feel::BareFace",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structFeel_1_1BareFace.html",tooltip="The base Face class."];
+  Node0 [label="F2\< T \>::result\< F2\l(Lhs, Rhs)\>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structF2_1_1result_3_01F2_07Lhs_00_01Rhs_08_4.html",tooltip=" "];
 }

@@ -4,5 +4,5 @@ digraph "Graphical Class Hierarchy"
   edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
   node [fontname="Helvetica",fontsize="10",shape=record];
   rankdir="LR";
-  Node0 [label="Feel::MeshBase\< IndexT \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1MeshBase.html",tooltip="base mesh class"];
+  Node0 [label="Feel::math::Constant\l\< Tag, Rep \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structFeel_1_1math_1_1Constant.html",tooltip="Structure that holds a constant with different numerical representation."];
 }

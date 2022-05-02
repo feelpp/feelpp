@@ -4,5 +4,5 @@ digraph "Graphical Class Hierarchy"
   edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
   node [fontname="Helvetica",fontsize="10",shape=record];
   rankdir="LR";
-  Node0 [label="pair\< size_type, uint16\l_type \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classstd_1_1pair_3_01size__type_00_01uint16__type_01_4.html",tooltip=" "];
+  Node0 [label="nlohmann::detail::wide\l_string_input_adapter\l\< BaseInputAdapter, WideCharType \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classnlohmann_1_1detail_1_1wide__string__input__adapter.html",tooltip=" "];
 }

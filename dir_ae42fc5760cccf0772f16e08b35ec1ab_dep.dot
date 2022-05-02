@@ -1,0 +1,11 @@
+digraph "/home/runner/work/feelpp/feelpp/feelpp/feel/feelts" {
+  compound=true
+  node [ fontsize="10", fontname="Helvetica"];
+  edge [ labelfontsize="10", labelfontname="Helvetica"];
+  subgraph clusterdir_a4c121e06ebcc119b041a36581d5d48a {
+    graph [ bgcolor="#ddddee", pencolor="black", label="feel" fontname="Helvetica", fontsize="10", URL="dir_a4c121e06ebcc119b041a36581d5d48a.html"]
+  dir_ae42fc5760cccf0772f16e08b35ec1ab [shape=box, label="feelts", style="filled", fillcolor="#eeeeff", pencolor="black", URL="dir_ae42fc5760cccf0772f16e08b35ec1ab.html"];
+  }
+  dir_f953484fe51916b7b30cc3393ae061de [shape=box label="feelcore" URL="dir_f953484fe51916b7b30cc3393ae061de.html"];
+  dir_ae42fc5760cccf0772f16e08b35ec1ab->dir_f953484fe51916b7b30cc3393ae061de [headlabel="3", labeldistance=1.5 headhref="dir_000005_000002.html"];
+}

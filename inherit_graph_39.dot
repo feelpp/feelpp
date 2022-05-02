@@ -4,5 +4,5 @@ digraph "Graphical Class Hierarchy"
   edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
   node [fontname="Helvetica",fontsize="10",shape=record];
   rankdir="LR";
-  Node0 [label="Feel::detail::AdvancedConcat\lOfTupleContainerType\< FeelppTag\lOfTupleType, FeelppTagOfContainerType \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structFeel_1_1detail_1_1AdvancedConcatOfTupleContainerType.html",tooltip="Concat hana tuple by storing inside an iterable container (typically a vector) the data of same type ..."];
+  Node0 [label="Feel::clear_values\l\< Contextv, Value1 \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structFeel_1_1clear__values_3_01Contextv_00_01Value1_01_4.html",tooltip=" "];
 }

@@ -4,5 +4,5 @@ digraph "Graphical Class Hierarchy"
   edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
   node [fontname="Helvetica",fontsize="10",shape=record];
   rankdir="LR";
-  Node0 [label="Feel::DofFromPeriodic\l\< DofTableType, FEType \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1DofFromPeriodic.html",tooltip="local contribution from periodic dof"];
+  Node0 [label="Feel::detailOpLagP1\l::SpaceToLagrangeP1Space\l\< SpaceType \>::SelectConvex\l\< PsetType \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structFeel_1_1detailOpLagP1_1_1SpaceToLagrangeP1Space_1_1SelectConvex.html",tooltip=" "];
 }

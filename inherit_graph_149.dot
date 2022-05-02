@@ -4,5 +4,5 @@ digraph "Graphical Class Hierarchy"
   edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
   node [fontname="Helvetica",fontsize="10",shape=record];
   rankdir="LR";
-  Node0 [label="Feel::FeelModels::FluidMechanics\l\< ConvexType, BasisVelocityType,\l BasisPressureType \>::BodyBoundaryCondition",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html",tooltip=" "];
+  Node0 [label="Feel::FeelModels::Dynamic\lViscosityMaterialProperties",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1FeelModels_1_1DynamicViscosityMaterialProperties.html",tooltip="Manage dynamic viscosity for a material."];
 }

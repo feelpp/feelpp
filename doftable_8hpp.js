@@ -1,6 +1,5 @@
 var doftable_8hpp =
 [
-    [ "DofTable", "classFeel_1_1DofTable.html", "classFeel_1_1DofTable" ],
     [ "element_access", "structFeel_1_1DofTable_1_1element__access.html", "structFeel_1_1DofTable_1_1element__access" ],
     [ "face_access", "structFeel_1_1DofTable_1_1face__access.html", "structFeel_1_1DofTable_1_1face__access" ],
     [ "hash< std::tuple< TT... > >", "structstd_1_1hash_3_01std_1_1tuple_3_01TT_8_8_8_01_4_01_4.html", "structstd_1_1hash_3_01std_1_1tuple_3_01TT_8_8_8_01_4_01_4" ],

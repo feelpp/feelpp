@@ -4,5 +4,5 @@ digraph "Graphical Class Hierarchy"
   edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
   node [fontname="Helvetica",fontsize="10",shape=record];
   rankdir="LR";
-  Node0 [label="nlohmann::detail::make\l_void\< Ts \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structnlohmann_1_1detail_1_1make__void.html",tooltip=" "];
+  Node0 [label="nlohmann::detail::iterator\l_input_adapter_factory\<\l IteratorType, enable_if\l_t\< is_iterator_of_multibyte\l\< IteratorType \>::value \> \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structnlohmann_1_1detail_1_1iterator__input__adapter__factory_3_01IteratorType_00_01enable__if__0e86378a778d78dd2284e92dc30f4902.html",tooltip=" "];
 }

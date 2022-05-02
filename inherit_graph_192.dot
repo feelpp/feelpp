@@ -4,5 +4,18 @@ digraph "Graphical Class Hierarchy"
   edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
   node [fontname="Helvetica",fontsize="10",shape=record];
   rankdir="LR";
-  Node0 [label="Feel::FeelModels::ModelFields\l\< TupleFieldType \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1FeelModels_1_1ModelFields.html",tooltip=" "];
+  Node819 [label="Feel::FeelModels::ModelAlgebraic\l::DataDofEliminationIds",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataDofEliminationIds.html",tooltip=" "];
+  Node819 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="Feel::FeelModels::ModelAlgebraic\l::DataUpdateJacobian",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataUpdateJacobian.html",tooltip=" "];
+  Node819 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="Feel::FeelModels::ModelAlgebraic\l::DataUpdateResidual",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataUpdateResidual.html",tooltip=" "];
+  Node818 [label="Feel::FeelModels::ModelAlgebraic\l::DataDofEliminationIdsByEntity",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataDofEliminationIdsByEntity.html",tooltip=" "];
+  Node818 -> Node1 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 [label="Feel::FeelModels::ModelAlgebraic\l::DataNewtonInitialGuess",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataNewtonInitialGuess.html",tooltip=" "];
+  Node0 [label="Feel::FeelModels::ModelAlgebraic\l::DataUpdateBase",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataUpdateBase.html",tooltip=" "];
+  Node0 -> Node1 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node0 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node0 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="Feel::FeelModels::ModelAlgebraic\l::DataUpdateLinear",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataUpdateLinear.html",tooltip=" "];
+  Node0 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
 }

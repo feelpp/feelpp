@@ -4,5 +4,5 @@ digraph "Graphical Class Hierarchy"
   edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
   node [fontname="Helvetica",fontsize="10",shape=record];
   rankdir="LR";
-  Node0 [label="Feel::QuadPtLocalization\l\< IteratorRange, Im, Expr\l \>::linearformContext\< FE,\l VectorType, ElemContType \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structFeel_1_1QuadPtLocalization_1_1linearformContext.html",tooltip=" "];
+  Node0 [label="Feel::Printer::OutputText",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classFeel_1_1Printer_1_1OutputText.html",tooltip=" "];
 }

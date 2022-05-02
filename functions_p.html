@@ -162,6 +162,9 @@ $(document).ready(function(){initNavTree('functions_p.html',''); initResizable()
 <li>pastePosFilesTogether()
 : <a class="el" href="classFeel_1_1MeshAdaptation.html#ae3f840ddb140e92dc3c6a3a57addc2fb">Feel::MeshAdaptation&lt; Dim, Order, OrderGeo &gt;</a>
 </li>
+<li>path()
+: <a class="el" href="classFeel_1_1TSBase.html#aaf3ca9488203414becd394fd8a9df170">Feel::TSBase</a>
+</li>
 <li>pattern()
 : <a class="el" href="classFeel_1_1BilinearFormBase.html#ad685eccce8ecdbbbd320559d177eb801">Feel::BilinearFormBase&lt; T &gt;</a>
 </li>
@@ -229,6 +232,22 @@ $(document).ready(function(){initNavTree('functions_p.html',''); initResizable()
 <li>pointsNearNeighbor()
 : <a class="el" href="classFeel_1_1KDTree.html#ae753e9dee815ad8e01e509804040c49f">Feel::KDTree</a>
 </li>
+<li>poly()
+: <a class="el" href="classFeel_1_1Bdf.html#a3dea4061dc48ce5abc581e9c5f76349c">Feel::Bdf&lt; SpaceType &gt;</a>
+</li>
+<li>polyCoefficient()
+: <a class="el" href="classFeel_1_1Bdf.html#a603fded52c870a6e460d5ec87f8a009a">Feel::Bdf&lt; SpaceType &gt;</a>
+</li>
+<li>polyDeriv()
+: <a class="el" href="classFeel_1_1Bdf.html#a0e1f1e9dd7dcfadda059a8b9cb8a1e6f">Feel::Bdf&lt; SpaceType &gt;</a>
+, <a class="el" href="classFeel_1_1Newmark.html#a606a720ad6f0104270b94b34d714ba48">Feel::Newmark&lt; SpaceType &gt;</a>
+</li>
+<li>polyDerivCoefficient()
+: <a class="el" href="classFeel_1_1Bdf.html#acc3409181de12ed70489772a94fe7eaa">Feel::Bdf&lt; SpaceType &gt;</a>
+</li>
+<li>polyDerivPtr()
+: <a class="el" href="classFeel_1_1Bdf.html#a4b6ef9fe727c8ea205f558a9e940e8d4">Feel::Bdf&lt; SpaceType &gt;</a>
+</li>
 <li>polyDims()
 : <a class="el" href="classFeel_1_1Simplex.html#a99161d453b68cda23ed4b7922923d3a7">Feel::Simplex&lt; Dim, Order, RDim &gt;</a>
 </li>
@@ -251,6 +270,9 @@ $(document).ready(function(){initNavTree('functions_p.html',''); initResizable()
 , <a class="el" href="classFeel_1_1vf_1_1UnaryMinus.html#abcc60832e1dbd8fe7aeb54f8ecac1e15">Feel::vf::UnaryMinus&lt; ExprT &gt;</a>
 , <a class="el" href="classFeel_1_1vf_1_1UnaryPlus.html#aeed9f1a0d5c56eb6885887efbcbe96c7">Feel::vf::UnaryPlus&lt; ExprT &gt;</a>
 </li>
+<li>polyPtr()
+: <a class="el" href="classFeel_1_1Bdf.html#a28ebf9637cf65ce549961cd4736289e8">Feel::Bdf&lt; SpaceType &gt;</a>
+</li>
 <li>pop_back()
 : <a class="el" href="classnlohmann_1_1json__pointer.html#a4b1ee4d511ca195bed896a3da47e264c">nlohmann::json_pointer&lt; BasicJsonType &gt;</a>
 </li>
@@ -265,9 +287,13 @@ $(document).ready(function(){initNavTree('functions_p.html',''); initResizable()
 </li>
 <li>prefix()
 : <a class="el" href="classFeel_1_1Info.html#a0d68e99fbab25b8e9308d6b3e72b9879">Feel::Info</a>
+, <a class="el" href="classFeel_1_1TSBase.html#a15c0e3e4dd144c9b270de5b7478e3da4">Feel::TSBase</a>
 </li>
 <li>pressureImposed()
 : <a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanicsBoundaryConditions.html#ade3aeaabd207f94aac3a431fedac144c">Feel::FeelModels::FluidMechanicsBoundaryConditions&lt; Dim &gt;</a>
+</li>
+<li>previousUnknown()
+: <a class="el" href="classFeel_1_1Newmark.html#af5041fb72bc8caf84d5f85beebd33881">Feel::Newmark&lt; SpaceType &gt;</a>
 </li>
 <li>primitive_iterator
 : <a class="el" href="structnlohmann_1_1detail_1_1internal__iterator.html#a2b3bb45f968210e42c282017eeeb63a8">nlohmann::detail::internal_iterator&lt; BasicJsonType &gt;</a>
@@ -277,6 +303,9 @@ $(document).ready(function(){initNavTree('functions_p.html',''); initResizable()
 </li>
 <li>printStats()
 : <a class="el" href="classFeel_1_1Application.html#a6b34b53bec3864cf68c71c5c1c89e7f9">Feel::Application</a>
+</li>
+<li>priorTimes()
+: <a class="el" href="classFeel_1_1Bdf.html#a291a90e47aced07600aea8803f0a45de">Feel::Bdf&lt; SpaceType &gt;</a>
 </li>
 <li>processId()
 : <a class="el" href="classFeel_1_1Application.html#a076eb8b201ef120a5edcc948a78b16c5">Feel::Application</a>
@@ -293,20 +322,20 @@ $(document).ready(function(){initNavTree('functions_p.html',''); initResizable()
 : <a class="el" href="classFeel_1_1AboutData.html#a2dc46b17dfa16013e2364896c2268a3d">Feel::AboutData</a>
 </li>
 <li>ProductSpace()
-: <a class="el" href="classFeel_1_1ProductSpace.html#a244d8f3fe4eaafc14eb2215176f016d7">Feel::ProductSpace&lt; T, same_mesh &gt;</a>
+: <a class="el" href="classFeel_1_1ProductSpace.html#a485b2327acb8f33095be6a74021658f4">Feel::ProductSpace&lt; T, same_mesh &gt;</a>
 </li>
 <li>programName()
 : <a class="el" href="classFeel_1_1AboutData.html#a73732d228ba54fcbfcab227eaa77bd51">Feel::AboutData</a>
 </li>
 <li>project()
-: <a class="el" href="classFeel_1_1TwoSpacesMap.html#a3016a93d574204eab90df310baa02d7f">Feel::TwoSpacesMap&lt; SpaceType &gt;</a>
+: <a class="el" href="classFeel_1_1TwoSpacesMap.html#a42b2cf821ab2aac38a359909a7c95346">Feel::TwoSpacesMap&lt; SpaceType &gt;</a>
 </li>
 <li>PsLogger()
 : <a class="el" href="classFeel_1_1PsLogger.html#a466132946b8d2d20d1dd73939e277fa3">Feel::PsLogger</a>
 </li>
 <li>push_back()
-: <a class="el" href="classnlohmann_1_1basic__json.html#ab9e0253c92736db021840105d374c4c4">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;</a>
-, <a class="el" href="classnlohmann_1_1json__pointer.html#a697d12b5bd6205f8866691b166b7c7dc">nlohmann::json_pointer&lt; BasicJsonType &gt;</a>
+: <a class="el" href="classnlohmann_1_1basic__json.html#a3405d38087e13994a5a4556065b0be6d">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;</a>
+, <a class="el" href="classnlohmann_1_1json__pointer.html#ac228b13596d3c34185da9fe61b570194">nlohmann::json_pointer&lt; BasicJsonType &gt;</a>
 </li>
 <li>putInformationObject()
 : <a class="el" href="classFeel_1_1JournalWatcher.html#a413c3616b3de7200e305595cdab30389">Feel::JournalWatcher</a>

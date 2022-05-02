@@ -4,5 +4,5 @@ digraph "Graphical Class Hierarchy"
   edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
   node [fontname="Helvetica",fontsize="10",shape=record];
   rankdir="LR";
-  Node0 [label="Feel::vf::ExprOptionalConcat\l\< TupleExprType \>::tensor\l\< Geo_t, Basis_i_t, Basis\l_j_t \>::TransformExprToTensor\l::apply\< T \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structFeel_1_1vf_1_1ExprOptionalConcat_1_1tensor_1_1TransformExprToTensor_1_1apply.html",tooltip=" "];
+  Node0 [label="Feel::vf::EvaluateDataBy\lMeshEntity\< DataByMeshEntity\lType \>::HasTrialFunction\< Func \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structFeel_1_1vf_1_1EvaluateDataByMeshEntity_1_1HasTrialFunction.html",tooltip=" "];
 }
