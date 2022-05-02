@@ -79,6 +79,11 @@ private :
     std::optional<po::variables_map> M_vm;
 };
 
+/**
+ * @brief Repository for Models
+ * @ingroup ModelCore
+ * 
+ */
 struct ModelBaseRepository
 {
     ModelBaseRepository( std::string const& rootDirWithoutNumProc = "", bool use_npSubDir = true, std::string const& exprRepository = "" );
@@ -95,6 +100,11 @@ private :
     std::string M_exprRepository;
 };
 
+/**
+ * @brief File upload helper class
+ * @ingroup ModelCore
+ * 
+ */
 struct ModelBaseUpload
 {
     ModelBaseUpload() = default;
@@ -122,6 +132,11 @@ private :
     mutable std::map<std::string,std::pair<std::string,std::map<std::string,std::pair<std::string,std::time_t>>>> M_treeDataStructure;
 };
 
+/**
+ * @brief Model base class
+ * @ingroup ModelCore
+ * 
+ */
 class ModelBase : public JournalWatcher,
                   public std::enable_shared_from_this<ModelBase>
 {
