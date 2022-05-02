@@ -639,7 +639,9 @@ Winslow<MeshType,Order>::updateJacobianDofElimination( DataUpdateJacobian & data
     this->log("Winslow","updateJacobianDofElimination", "start" );
 
     sparse_matrix_ptrtype& J = data.jacobian();
-    vector_ptrtype& RBis = data.vectorUsedInStrongDirichlet();
+    //vector_ptrtype& RBis = data.vectorUsedInStrongDirichlet();
+    auto RBis = this->backend()->newVector(J->mapRowPtr()); // TO REMOVE
+
     auto Xh = this->functionSpace();
     auto mesh = Xh->mesh();
     auto const& u = *M_displacement;

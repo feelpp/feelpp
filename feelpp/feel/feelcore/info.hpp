@@ -136,7 +136,7 @@ public:
 
 private:
 
-    constexpr static GitMetadata S_git;
+    constexpr static GitMetadata S_git{};
 
 }; // Info
 
