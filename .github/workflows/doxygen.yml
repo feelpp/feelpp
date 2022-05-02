@@ -31,7 +31,7 @@ jobs:
         echo "deb [signed-by=/etc/apt/trusted.gpg.d/feelpp.gpg] http://apt.feelpp.org/ubuntu focal latest" | sudo tee -a /etc/apt/sources.list.d/feelpp.list
         rm -f feelpp.gpg 
         sudo apt update
-        sudo apt --reinstall install -y libfeelpp1 libfeelpp-dev feelpp-tools doxygen
+        sudo apt --reinstall install -y libfeelpp1 libfeelpp-dev feelpp-tools doxygen graphviz
     - name: Configure Doxygen Preset
       run: cmake --preset doxygen
     - name: Build Doxygen
