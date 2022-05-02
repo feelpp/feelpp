@@ -106,7 +106,5 @@ var searchData=
   ['functors_2ehpp_683',['functors.hpp',['../feelcore_2functors_8hpp.html',1,'(Global Namespace)'],['../feelmesh_2functors_8hpp.html',1,'(Global Namespace)']]],
   ['functorsvariadicexpr_684',['FunctorsVariadicExpr',['../structFeel_1_1vf_1_1GinacMatrix_1_1FunctorsVariadicExpr.html',1,'Feel::vf::GinacMatrix']]],
   ['feel_2b_2b_20api_20by_20doxygen_685',['Feel++ API by Doxygen',['../index.html',1,'']]],
-  ['feel_20macros_686',['Feel Macros',['../Macros.html',1,'']]],
-  ['math_687',['math',['../namespaceFeel_1_1math.html',1,'Feel']]],
-  ['feel_20types_688',['Feel Types',['../Types.html',1,'']]]
+  ['math_686',['math',['../namespaceFeel_1_1math.html',1,'Feel']]]
 ];

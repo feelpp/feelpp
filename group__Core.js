@@ -297,6 +297,8 @@ var group__Core =
       [ "WorldComm", "classFeel_1_1WorldComm.html#abc50c86e10760891901159b4c2af45a7", null ],
       [ "WorldComm", "classFeel_1_1WorldComm.html#a8bddafe293c666912be64e1df6d958bb", null ]
     ] ],
+    [ "Macros", "group__Core.html#Macros", "group__Core_Macros_dup" ],
+    [ "Types", "group__Core.html#Types", "group__Core_Types_dup" ],
     [ "worldcomm_ptr_t", "group__Core.html#gad8f8196f0b8ff9495dd4119eda223772", null ],
     [ "worldcomm_t", "group__Core.html#ga092633e7720ec4d42cf92197b9c35c3a", null ],
     [ "worldscomm_ptr_t", "group__Core.html#ga56d5cf37fceae464425abf8d94524b7e", null ],
