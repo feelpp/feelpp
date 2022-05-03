@@ -1,6 +1,6 @@
 {
-    "Name": "Stokes step 2D",
-    "ShortName":"ss2d",
+    "Name": "Navier-Stokes step 2D",
+    "ShortName":"nss2d",
     "Models":
     {
         "fluid":
