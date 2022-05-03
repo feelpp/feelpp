@@ -15,6 +15,5 @@ var classFeel_1_1FeelModels_1_1ModelPhysic =
     [ "subphysicFromType", "classFeel_1_1FeelModels_1_1ModelPhysic.html#add2e4d93ebf869e0eebc0cbf84b52b33", null ],
     [ "subphysics", "classFeel_1_1FeelModels_1_1ModelPhysic.html#aa7bcc41b65e7c270abb1d6bc725b7577", null ],
     [ "subphysicsFromType", "classFeel_1_1FeelModels_1_1ModelPhysic.html#a5f4f02f459f7f71dc8d461bf7a6741c0", null ],
-    [ "symbolFromParameter", "classFeel_1_1FeelModels_1_1ModelPhysic.html#ac480ecdaa0a4818b7f701769e2696d3f", null ],
-    [ "updateInformationObject", "classFeel_1_1FeelModels_1_1ModelPhysic.html#a2c2c841e66c597bdbeab894abec8b865", null ]
+    [ "symbolFromParameter", "classFeel_1_1FeelModels_1_1ModelPhysic.html#ac480ecdaa0a4818b7f701769e2696d3f", null ]
 ];

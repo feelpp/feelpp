@@ -1,0 +1,21 @@
+<map id="Feel::FeelModels::HeatFluid&lt; HeatType, FluidType &gt;" name="Feel::FeelModels::HeatFluid&lt; HeatType, FluidType &gt;">
+<area shape="rect" id="node1" title="class for conjuguate heat transfer toolbox" alt="" coords="718,1713,920,1879"/>
+<area shape="rect" id="node2" href="$classFeel_1_1FeelModels_1_1ModelNumerical.html" title="Handles some numerical model aspects: timestepping, mesh and properties." alt="" coords="102,1381,371,1664"/>
+<area shape="rect" id="node3" href="$classFeel_1_1FeelModels_1_1ModelBase.html" title="Model base class." alt="" coords="61,925,318,1076"/>
+<area shape="rect" id="node7" href="$classFeel_1_1FeelModels_1_1ModelAlgebraic.html" title=" " alt="" coords="42,1153,282,1304"/>
+<area shape="rect" id="node8" href="$classFeel_1_1FeelModels_1_1ModelMeshes.html" title=" " alt="" coords="306,1139,545,1319"/>
+<area shape="rect" id="node12" href="$classFeel_1_1FeelModels_1_1ModelPhysics.html" title=" " alt="" coords="696,1425,942,1620"/>
+<area shape="rect" id="node4" href="$classFeel_1_1JournalWatcher.html" title=" " alt="" coords="296,132,532,517"/>
+<area shape="rect" id="node19" href="$classFeel_1_1FeelModels_1_1ModelPhysic.html" title=" " alt="" coords="625,580,880,863"/>
+<area shape="rect" id="node5" title=" " alt="" coords="342,5,485,83"/>
+<area shape="rect" id="node6" title=" " alt="" coords="184,675,377,767"/>
+<area shape="rect" id="node9" title=" " alt="" coords="353,962,488,1039"/>
+<area shape="rect" id="node10" title=" " alt="" coords="401,683,440,760"/>
+<area shape="rect" id="node11" title=" " alt="" coords="477,683,516,760"/>
+<area shape="rect" id="node13" title=" " alt="" coords="971,286,1150,363"/>
+<area shape="rect" id="node14" title=" " alt="" coords="897,1190,984,1267"/>
+<area shape="rect" id="node15" title=" " alt="" coords="874,955,1012,1047"/>
+<area shape="rect" id="node16" title=" " alt="" coords="634,1168,870,1289"/>
+<area shape="rect" id="node17" title=" " alt="" coords="512,962,630,1039"/>
+<area shape="rect" id="node18" title=" " alt="" coords="655,947,850,1054"/>
+</map>

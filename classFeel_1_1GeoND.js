@@ -25,7 +25,6 @@ var classFeel_1_1GeoND =
     [ "imMeasureOrder1", "classFeel_1_1GeoND.html#ae291977cf4b6633b958856fbbb1b8241", null ],
     [ "isAnticlockwiseOriented", "classFeel_1_1GeoND.html#a1729449d342c04c3818c6ffba2e74ff3", null ],
     [ "isValid", "classFeel_1_1GeoND.html#a40d1ae7ab117ffa7b74f302c91531f03", null ],
-    [ "measure", "classFeel_1_1GeoND.html#af0b17028c355a221ed9ebde24e4c9c56", null ],
     [ "mesh", "classFeel_1_1GeoND.html#adc177f2fd8bf47be48b8fbe910f3c57d", null ],
     [ "neighbor", "classFeel_1_1GeoND.html#ae32b2e47a7c6a2cea471a9777c07d09d", null ],
     [ "nNeighbors", "classFeel_1_1GeoND.html#af181ba53ced46c88aae31e4fac441934", null ],

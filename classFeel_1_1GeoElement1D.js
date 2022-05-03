@@ -15,7 +15,6 @@ var classFeel_1_1GeoElement1D =
     [ "operator=", "classFeel_1_1GeoElement1D.html#ac8c21cda5e9a7199a92bba54be0f1666", null ],
     [ "partition1", "classFeel_1_1GeoElement1D.html#ac675904907a55b2912eda8da8244d584", null ],
     [ "partition2", "classFeel_1_1GeoElement1D.html#a036efd19c125d59f9b306278189e3a5f", null ],
-    [ "permutation", "classFeel_1_1GeoElement1D.html#a385c77de1ce109706600357563b74347", null ],
     [ "processId", "classFeel_1_1GeoElement1D.html#ae4eb23c7617feea3dde5c082d506d4cc", null ],
     [ "setFace", "classFeel_1_1GeoElement1D.html#a1a450ad775d0d0fbd3aeb1676e4e2cb2", null ]
 ];

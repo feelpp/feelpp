@@ -271,7 +271,6 @@ var group__SpaceTime =
       [ "Newmark", "classFeel_1_1Newmark.html#afe0a200773339494c5e767b97bca1d9e", null ],
       [ "gamma", "classFeel_1_1Newmark.html#a33ff708de524715bf9d7b3b6c8ae8973", null ],
       [ "initialize", "classFeel_1_1Newmark.html#a95887d00969aaebe87449dbfa55edc2f", null ],
-      [ "next", "classFeel_1_1Newmark.html#a91ed852964473adb55e6b3b9295a4653", null ],
       [ "next", "classFeel_1_1Newmark.html#aebde12396ebef0fb367698f95d23a50d", null ],
       [ "polyDeriv", "classFeel_1_1Newmark.html#a606a720ad6f0104270b94b34d714ba48", null ],
       [ "previousUnknown", "classFeel_1_1Newmark.html#af5041fb72bc8caf84d5f85beebd33881", null ],

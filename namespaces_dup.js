@@ -17,7 +17,7 @@ var namespaces_dup =
     [ "std", "namespacestd.html", "namespacestd" ],
     [ "termcolor", "namespacetermcolor.html", "namespacetermcolor" ],
     [ "test_simget", null, [
-      [ "sim", "classtest__simget_1_1sim.html", "classtest__simget_1_1sim" ]
+      [ "sim", "classtest__simget_1_1sim.html", null ]
     ] ],
     [ "utility", null, [
       [ "centre", "structutility_1_1centre.html", null ]

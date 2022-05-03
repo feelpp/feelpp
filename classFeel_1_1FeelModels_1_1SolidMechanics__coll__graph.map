@@ -1,5 +1,5 @@
 <map id="Feel::FeelModels::SolidMechanics&lt; ConvexType, BasisDisplacementType &gt;" name="Feel::FeelModels::SolidMechanics&lt; ConvexType, BasisDisplacementType &gt;">
-<area shape="rect" id="node1" title="Solid Mechanics Toolbox." alt="" coords="669,1787,964,1967"/>
+<area shape="rect" id="node1" title="class for Solid Mechanics toolbox" alt="" coords="669,1787,964,1967"/>
 <area shape="rect" id="node2" href="$classFeel_1_1FeelModels_1_1ModelNumerical.html" title="Handles some numerical model aspects: timestepping, mesh and properties." alt="" coords="99,1455,368,1737"/>
 <area shape="rect" id="node3" href="$classFeel_1_1FeelModels_1_1ModelBase.html" title="Model base class." alt="" coords="58,925,316,1076"/>
 <area shape="rect" id="node7" href="$classFeel_1_1FeelModels_1_1ModelAlgebraic.html" title=" " alt="" coords="39,1227,279,1377"/>

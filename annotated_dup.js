@@ -93,6 +93,7 @@ var annotated_dup =
         [ "GenericDirichletBoundaryCondition", "classFeel_1_1FeelModels_1_1GenericDirichletBoundaryCondition.html", "classFeel_1_1FeelModels_1_1GenericDirichletBoundaryCondition" ],
         [ "Heat", "classFeel_1_1FeelModels_1_1Heat.html", "classFeel_1_1FeelModels_1_1Heat" ],
         [ "HeatBoundaryConditions", "classFeel_1_1FeelModels_1_1HeatBoundaryConditions.html", "classFeel_1_1FeelModels_1_1HeatBoundaryConditions" ],
+        [ "HeatFluid", "classFeel_1_1FeelModels_1_1HeatFluid.html", null ],
         [ "MarkerManagementALEMeshBC", "classFeel_1_1FeelModels_1_1MarkerManagementALEMeshBC.html", null ],
         [ "MarkerManagementDirichletBC", "classFeel_1_1FeelModels_1_1MarkerManagementDirichletBC.html", null ],
         [ "MarkerManagementFluidStructureInterfaceBC", "classFeel_1_1FeelModels_1_1MarkerManagementFluidStructureInterfaceBC.html", null ],
@@ -139,14 +140,14 @@ var annotated_dup =
         [ "ModelNumerical", "classFeel_1_1FeelModels_1_1ModelNumerical.html", null ],
         [ "ModelPhysic", "classFeel_1_1FeelModels_1_1ModelPhysic.html", "classFeel_1_1FeelModels_1_1ModelPhysic" ],
         [ "ModelPhysicCoefficientFormPDE", "classFeel_1_1FeelModels_1_1ModelPhysicCoefficientFormPDE.html", "classFeel_1_1FeelModels_1_1ModelPhysicCoefficientFormPDE" ],
-        [ "ModelPhysicCoefficientFormPDEs", "classFeel_1_1FeelModels_1_1ModelPhysicCoefficientFormPDEs.html", "classFeel_1_1FeelModels_1_1ModelPhysicCoefficientFormPDEs" ],
-        [ "ModelPhysicElectric", "classFeel_1_1FeelModels_1_1ModelPhysicElectric.html", "classFeel_1_1FeelModels_1_1ModelPhysicElectric" ],
+        [ "ModelPhysicCoefficientFormPDEs", "classFeel_1_1FeelModels_1_1ModelPhysicCoefficientFormPDEs.html", null ],
+        [ "ModelPhysicElectric", "classFeel_1_1FeelModels_1_1ModelPhysicElectric.html", null ],
         [ "ModelPhysicFluid", "classFeel_1_1FeelModels_1_1ModelPhysicFluid.html", "classFeel_1_1FeelModels_1_1ModelPhysicFluid" ],
-        [ "ModelPhysicFSI", "classFeel_1_1FeelModels_1_1ModelPhysicFSI.html", "classFeel_1_1FeelModels_1_1ModelPhysicFSI" ],
+        [ "ModelPhysicFSI", "classFeel_1_1FeelModels_1_1ModelPhysicFSI.html", null ],
         [ "ModelPhysicHeat", "classFeel_1_1FeelModels_1_1ModelPhysicHeat.html", "classFeel_1_1FeelModels_1_1ModelPhysicHeat" ],
         [ "ModelPhysics", "classFeel_1_1FeelModels_1_1ModelPhysics.html", "classFeel_1_1FeelModels_1_1ModelPhysics" ],
         [ "ModelPhysicSolid", "classFeel_1_1FeelModels_1_1ModelPhysicSolid.html", "classFeel_1_1FeelModels_1_1ModelPhysicSolid" ],
-        [ "ModelPhysicThermoElectric", "classFeel_1_1FeelModels_1_1ModelPhysicThermoElectric.html", "classFeel_1_1FeelModels_1_1ModelPhysicThermoElectric" ],
+        [ "ModelPhysicThermoElectric", "classFeel_1_1FeelModels_1_1ModelPhysicThermoElectric.html", null ],
         [ "RangeDistributionByMaterialName", "classFeel_1_1FeelModels_1_1RangeDistributionByMaterialName.html", "classFeel_1_1FeelModels_1_1RangeDistributionByMaterialName" ],
         [ "RangeTraits", "structFeel_1_1FeelModels_1_1RangeTraits.html", null ],
         [ "SelectorModelField", "classFeel_1_1FeelModels_1_1SelectorModelField.html", null ],
@@ -564,8 +565,8 @@ var annotated_dup =
       [ "Visitor", "classFeel_1_1Visitor.html", "classFeel_1_1Visitor" ],
       [ "VisitorBase", "classFeel_1_1VisitorBase.html", null ],
       [ "VisitorBaseImpl", "classFeel_1_1VisitorBaseImpl.html", null ],
-      [ "VisitorBaseImpl< mpl::list< Head >, R >", "classFeel_1_1VisitorBaseImpl_3_01mpl_1_1list_3_01Head_01_4_00_01R_01_4.html", "classFeel_1_1VisitorBaseImpl_3_01mpl_1_1list_3_01Head_01_4_00_01R_01_4" ],
-      [ "VisitorBaseImpl< mpl::list< Head, Tail >, R >", "classFeel_1_1VisitorBaseImpl_3_01mpl_1_1list_3_01Head_00_01Tail_01_4_00_01R_01_4.html", "classFeel_1_1VisitorBaseImpl_3_01mpl_1_1list_3_01Head_00_01Tail_01_4_00_01R_01_4" ],
+      [ "VisitorBaseImpl< mpl::list< Head >, R >", "classFeel_1_1VisitorBaseImpl_3_01mpl_1_1list_3_01Head_01_4_00_01R_01_4.html", null ],
+      [ "VisitorBaseImpl< mpl::list< Head, Tail >, R >", "classFeel_1_1VisitorBaseImpl_3_01mpl_1_1list_3_01Head_00_01Tail_01_4_00_01R_01_4.html", null ],
       [ "VisitorCyclic", "classFeel_1_1VisitorCyclic.html", null ],
       [ "VisitorList", "classFeel_1_1VisitorList.html", null ],
       [ "void_basis", "structFeel_1_1void__basis.html", [
@@ -753,7 +754,7 @@ var annotated_dup =
       [ "tuple_size<::nlohmann::detail::iteration_proxy_value< IteratorType > >", "classstd_1_1tuple__size_3_1_1nlohmann_1_1detail_1_1iteration__proxy__value_3_01IteratorType_01_4_01_4.html", null ]
     ] ],
     [ "test_simget", null, [
-      [ "sim", "classtest__simget_1_1sim.html", "classtest__simget_1_1sim" ]
+      [ "sim", "classtest__simget_1_1sim.html", null ]
     ] ],
     [ "utility", null, [
       [ "centre", "structutility_1_1centre.html", null ]
@@ -779,7 +780,7 @@ var annotated_dup =
     [ "mpfr_group_t", "structmpfr__group__t.html", null ],
     [ "mpfr_save_expo_t", "structmpfr__save__expo__t.html", null ],
     [ "mpfr_size_limb_t", "unionmpfr__size__limb__t.html", null ],
-    [ "Object2", "classObject2.html", "classObject2" ],
+    [ "Object2", "classObject2.html", null ],
     [ "Points", "classPoints.html", null ],
     [ "VectorUblas", "classVectorUblas.html", null ]
 ];

@@ -196,6 +196,7 @@ var hierarchy =
               [ "Feel::FeelModels::Electric< ConvexType, BasisPotentialType >", "classFeel_1_1FeelModels_1_1Electric.html", null ],
               [ "Feel::FeelModels::FluidMechanics< ConvexType, BasisVelocityType, BasisPressureType >", "classFeel_1_1FeelModels_1_1FluidMechanics.html", null ],
               [ "Feel::FeelModels::Heat< ConvexType, BasisTemperatureType >", "classFeel_1_1FeelModels_1_1Heat.html", null ],
+              [ "Feel::FeelModels::HeatFluid< HeatType, FluidType >", "classFeel_1_1FeelModels_1_1HeatFluid.html", null ],
               [ "Feel::FeelModels::SolidMechanics< ConvexType, BasisDisplacementType >", "classFeel_1_1FeelModels_1_1SolidMechanics.html", null ],
               [ "Feel::FeelModels::SolidMechanics1dReduced< ConvexType, BasisDisplacementType >", "classFeel_1_1FeelModels_1_1SolidMechanics1dReduced.html", null ]
             ] ]
@@ -205,6 +206,9 @@ var hierarchy =
             [ "Feel::FeelModels::FluidMechanics< ConvexType, BasisVelocityType, BasisPressureType >", "classFeel_1_1FeelModels_1_1FluidMechanics.html", null ],
             [ "Feel::FeelModels::Heat< ConvexType, BasisTemperatureType >", "classFeel_1_1FeelModels_1_1Heat.html", null ],
             [ "Feel::FeelModels::SolidMechanics< ConvexType, BasisDisplacementType >", "classFeel_1_1FeelModels_1_1SolidMechanics.html", null ]
+          ] ],
+          [ "Feel::FeelModels::ModelPhysics< HeatType::convex_type::nDim >", "classFeel_1_1FeelModels_1_1ModelPhysics.html", [
+            [ "Feel::FeelModels::HeatFluid< HeatType, FluidType >", "classFeel_1_1FeelModels_1_1HeatFluid.html", null ]
           ] ],
           [ "Feel::FeelModels::ModelPhysics< ConvexType::nRealDim >", "classFeel_1_1FeelModels_1_1ModelPhysics.html", [
             [ "Feel::FeelModels::SolidMechanics1dReduced< ConvexType, BasisDisplacementType >", "classFeel_1_1FeelModels_1_1SolidMechanics1dReduced.html", null ]

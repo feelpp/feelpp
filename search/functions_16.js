@@ -7,12 +7,12 @@ var searchData=
   ['vec_4',['vec',['../matvec_8hpp.html#a1a2f800e8848f86b9c810daa29083e7e',1,'Feel::vf']]],
   ['velocityimposed_5',['velocityImposed',['../classFeel_1_1FeelModels_1_1FluidMechanicsBoundaryConditions.html#aad9bdcf1aa7f658bfaa2a3e56bf2166d',1,'Feel::FeelModels::FluidMechanicsBoundaryConditions']]],
   ['verbose_6',['verbose',['../classFeel_1_1Application.html#a97d3d27bbdf62be58c2458a400e9048d',1,'Feel::Application']]],
-  ['version_7',['version',['../classFeel_1_1Info.html#a6832b110190ad53c75958c93955f1afa',1,'Feel::Info::version()'],['../classFeel_1_1AboutData.html#ac3e7f00124b73aa5009d91e44791435b',1,'Feel::AboutData::version()']]],
+  ['version_7',['version',['../classFeel_1_1AboutData.html#ac3e7f00124b73aa5009d91e44791435b',1,'Feel::AboutData::version()'],['../classFeel_1_1Info.html#a6832b110190ad53c75958c93955f1afa',1,'Feel::Info::version()']]],
   ['versionmajor_8',['versionMajor',['../classFeel_1_1Info.html#aeb0909ebb7f3687714d789fc9ca9e0c4',1,'Feel::Info']]],
   ['versionmicro_9',['versionMicro',['../classFeel_1_1Info.html#afb595918950a1f563c36c1a738254068',1,'Feel::Info']]],
   ['versionminor_10',['versionMinor',['../classFeel_1_1Info.html#a52fe772e71b6221c9e0c0a437530ca83',1,'Feel::Info']]],
   ['versionstring_11',['versionString',['../classFeel_1_1Info.html#aa812aaae349a57d978defb8e39fdbf58',1,'Feel::Info']]],
   ['vertices_12',['vertices',['../classFeel_1_1Geo0D.html#aef59d79033dd05bc702dbe1cbc91f932',1,'Feel::Geo0D::vertices()'],['../classFeel_1_1GeoND.html#aa350af4a5f5d91d7c5b716c3506bb2fa',1,'Feel::GeoND::vertices()']]],
-  ['visit_13',['visit',['../classFeel_1_1Visitor.html#a98acadae64f9daa013409b11fd6db989',1,'Feel::Visitor::visit(T *)=0'],['../classFeel_1_1Visitor.html#ac9a87608ccb0c1179d81b8cf01a4866d',1,'Feel::Visitor::visit(T &amp;__t)'],['../classFeel_1_1VisitorBaseImpl_3_01mpl_1_1list_3_01Head_00_01Tail_01_4_00_01R_01_4.html#a5b987068575ecfb31007f9fc24e12afd',1,'Feel::VisitorBaseImpl&lt; mpl::list&lt; Head, Tail &gt;, R &gt;::visit()'],['../classFeel_1_1VisitorBaseImpl_3_01mpl_1_1list_3_01Head_01_4_00_01R_01_4.html#a0102d0e416e4e1234a343d6e0f304e12',1,'Feel::VisitorBaseImpl&lt; mpl::list&lt; Head &gt;, R &gt;::visit()']]],
+  ['visit_13',['visit',['../classFeel_1_1Visitor.html#a98acadae64f9daa013409b11fd6db989',1,'Feel::Visitor::visit(T *)=0'],['../classFeel_1_1Visitor.html#ac9a87608ccb0c1179d81b8cf01a4866d',1,'Feel::Visitor::visit(T &amp;__t)']]],
   ['vm_14',['vm',['../classFeel_1_1Application.html#ac74f059247013cca98192a5687db517c',1,'Feel::Application::vm()'],['../classFeel_1_1Environment.html#ad681cb419cc2cae94d8bd5352fd54b21',1,'Feel::Environment::vm()'],['../classFeel_1_1Simget.html#a9d8c5379634e03a4356a2affd0d294e6',1,'Feel::Simget::vm()']]]
 ];

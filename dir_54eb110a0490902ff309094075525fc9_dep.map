@@ -1,13 +1,15 @@
 <map id="/nvme0/prudhomm/actions&#45;runner/_work/feelpp/feelpp/toolboxes/feel/feelmodels" name="/nvme0/prudhomm/actions&#45;runner/_work/feelpp/feelpp/toolboxes/feel/feelmodels">
-<area shape="rect" id="node2" href="dir_c57732ed23dc3b01bf44b5fbe95d14f7.html" title="electric" alt="" coords="440,63,512,111"/>
-<area shape="rect" id="node7" href="dir_58d06d4a5699d8c5c3ef959b17fcd092.html" title="feelpp" alt="" coords="344,159,416,207"/>
-<area shape="rect" id="edge1-headlabel" href="dir_000003_000011.html" title="1" alt="" coords="418,145,427,159"/>
-<area shape="rect" id="node3" href="dir_5722ddd198ee32bd64bda56e78a97877.html" title="fluid" alt="" coords="344,63,416,111"/>
-<area shape="rect" id="edge2-headlabel" href="dir_000014_000011.html" title="12" alt="" coords="380,133,397,148"/>
-<area shape="rect" id="node4" href="dir_f35ff70e894d16f8af6447700ed819dc.html" title="heat" alt="" coords="248,63,320,111"/>
-<area shape="rect" id="node5" href="dir_dea2f840933db37d8d7fe2fd193f98c8.html" title="modelcore" alt="" coords="133,63,224,111"/>
-<area shape="rect" id="edge3-headlabel" href="dir_000016_000011.html" title="2" alt="" coords="324,152,333,167"/>
-<area shape="rect" id="node6" href="dir_131c83556db37b45d88be5c6fb48541d.html" title="solid" alt="" coords="37,63,109,111"/>
-<area shape="rect" id="clust2" href="dir_54eb110a0490902ff309094075525fc9.html" alt="" coords="27,52,643,121"/>
-<area shape="rect" id="clust1" href="dir_8376fd919d814f8832f4b02c35fe6e7c.html" title="feel" alt="" coords="16,16,653,132"/>
+<area shape="rect" id="node2" href="dir_c57732ed23dc3b01bf44b5fbe95d14f7.html" title="electric" alt="" coords="544,63,616,111"/>
+<area shape="rect" id="node8" href="dir_58d06d4a5699d8c5c3ef959b17fcd092.html" title="feelpp" alt="" coords="349,159,421,207"/>
+<area shape="rect" id="edge1-headlabel" href="dir_000003_000011.html" title="1" alt="" coords="436,170,446,185"/>
+<area shape="rect" id="node3" href="dir_5722ddd198ee32bd64bda56e78a97877.html" title="fluid" alt="" coords="448,63,520,111"/>
+<area shape="rect" id="edge2-headlabel" href="dir_000014_000011.html" title="12" alt="" coords="420,145,437,160"/>
+<area shape="rect" id="node4" href="dir_f35ff70e894d16f8af6447700ed819dc.html" title="heat" alt="" coords="352,63,424,111"/>
+<area shape="rect" id="node5" href="dir_9e4b3202e39896c5774500e980667bf6.html" title="heatfluid" alt="" coords="248,63,328,111"/>
+<area shape="rect" id="edge3-headlabel" href="dir_000016_000011.html" title="1" alt="" coords="350,133,359,147"/>
+<area shape="rect" id="node6" href="dir_dea2f840933db37d8d7fe2fd193f98c8.html" title="modelcore" alt="" coords="133,63,224,111"/>
+<area shape="rect" id="edge4-headlabel" href="dir_000017_000011.html" title="2" alt="" coords="329,153,338,167"/>
+<area shape="rect" id="node7" href="dir_131c83556db37b45d88be5c6fb48541d.html" title="solid" alt="" coords="37,63,109,111"/>
+<area shape="rect" id="clust2" href="dir_54eb110a0490902ff309094075525fc9.html" alt="" coords="27,52,747,121"/>
+<area shape="rect" id="clust1" href="dir_8376fd919d814f8832f4b02c35fe6e7c.html" title="feel" alt="" coords="16,16,757,132"/>
 </map>
