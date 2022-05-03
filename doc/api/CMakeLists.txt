@@ -40,10 +40,10 @@ if ( DOXYGEN AND FEELPP_ENABLE_DOXYGEN)
    set_target_properties(doxygen PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
    # add subpages to projects/modules
-   configure_file(
-     ${CMAKE_CURRENT_SOURCE_DIR}/pages.doc.in
-     ${CMAKE_CURRENT_SOURCE_DIR}/pages.doc
-     )
+   # configure_file(
+   #   ${CMAKE_CURRENT_SOURCE_DIR}/pages.doc.in
+   #   ${CMAKE_CURRENT_SOURCE_DIR}/pages.doc
+   #   )
 
    set(FEELPP_PROJECTS_DIR,"")
 	 set(FEELPP_DOXYGEN_PROJECT "OFF")

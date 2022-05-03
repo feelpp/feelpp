@@ -33,7 +33,17 @@ namespace Feel
 {
 namespace FeelModels
 {
-
+/**
+ * @brief class for conjuguate heat transfer toolbox
+ * @ingroup HeatFluid
+ *
+ * @tparam HeatType type of the heat transfer toolbox
+ * @tparam FluidType type of the fluid mechanics toolbox
+ *
+ * @code {.cpp}
+ * @endcode
+ *
+ */
 template< typename HeatType, typename FluidType>
 class HeatFluid : public ModelNumerical,
                   public ModelPhysics<HeatType::convex_type::nDim>

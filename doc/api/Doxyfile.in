@@ -31,6 +31,7 @@ INPUT                   =   @CMAKE_SOURCE_DIR@/feelpp/feel/feelcore \
                             @CMAKE_SOURCE_DIR@/toolboxes/feel/feelmodels/modelcore \
                             @CMAKE_SOURCE_DIR@/toolboxes/feel/feelmodels/electric \
                             @CMAKE_SOURCE_DIR@/toolboxes/feel/feelmodels/heat \
+                            @CMAKE_SOURCE_DIR@/toolboxes/feel/feelmodels/heatfluid \
                             @CMAKE_SOURCE_DIR@/toolboxes/feel/feelmodels/fluid \
                             @CMAKE_SOURCE_DIR@/toolboxes/feel/feelmodels/solid \
                             @CMAKE_SOURCE_DIR@/testsuite/feelcore \
@@ -53,7 +54,7 @@ INLINE_INHERITED_MEMB   = NO
 JAVADOC_AUTOBRIEF       = YES
 QT_AUTOBRIEF            = YES
 MULTILINE_CPP_IS_BRIEF  = YES
-INHERIT_DOCS            = YES
+INHERIT_DOCS            = NO
 SEPARATE_MEMBER_PAGES   = NO
 DISTRIBUTE_GROUP_DOC    = NO
 SUBGROUPING             = NO
@@ -85,7 +86,7 @@ UML_LIMIT_NUM_FIELDS    = 5
 INCLUDE_GRAPH           = YES
 INCLUDED_BY_GRAPH       = YES
 
-DOT_IMAGE_FORMAT       = svg 
+DOT_IMAGE_FORMAT       = png
 INTERACTIVE_SVG        = YES
 
 HIDE_UNDOC_RELATIONS    = NO
@@ -125,8 +126,7 @@ ENABLE_PREPROCESSING    = YES
 MACRO_EXPANSION         = YES
 EXPAND_ONLY_PREDEF      = NO
 SEARCH_INCLUDES         = YES
-INCLUDE_PATH            = @CMAKE_SOURCE_DIR@/feelpp/ \
-                          @CMAKE_SOURCE_DIR@/toolboxes/
+INCLUDE_PATH            = @CMAKE_SOURCE_DIR@/feelpp/contrib
 INCLUDE_FILE_PATTERNS   =
 PREDEFINED              = DOXYGEN_SKIP=1 \
                           CPP_DOXYGEN_INVOKED=1 \

@@ -39,7 +39,13 @@ namespace Feel
  *
  * @defgroup Fluid
  * @ingroup Toolboxes
+ *
+ * @defgroup Heat
+ * @ingroup Toolboxes
  * 
+ * @defgroup HeatFluid
+ * @ingroup Toolboxes
+ *
  * @defgroup Solid
  * @ingroup Toolboxes
  */
