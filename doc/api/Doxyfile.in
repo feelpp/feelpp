@@ -29,6 +29,8 @@ INPUT                   =   @CMAKE_SOURCE_DIR@/feelpp/feel/feelcore \
                             @CMAKE_SOURCE_DIR@/feelpp/feel/feelts \
                             @CMAKE_SOURCE_DIR@/feelpp/feel/feelvf \
                             @CMAKE_SOURCE_DIR@/toolboxes/feel/feelmodels/modelcore \
+                            @CMAKE_SOURCE_DIR@/toolboxes/feel/feelmodels/coefficientformpdes \
+                            @CMAKE_BINARY_DIR@/toolboxes/feel/feelmodels/coefficientformpdes \
                             @CMAKE_SOURCE_DIR@/toolboxes/feel/feelmodels/electric \
                             @CMAKE_SOURCE_DIR@/toolboxes/feel/feelmodels/heat \
                             @CMAKE_SOURCE_DIR@/toolboxes/feel/feelmodels/heatfluid \
