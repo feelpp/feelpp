@@ -1,5 +1,6 @@
 var NAVTREEINDEX17 =
 {
+"group__Traits.html#gab7be68dfa9321c6050614248a0ebe556":[3,0,7,19],
 "group__Traits.html#gacdd864e3800acd6fb8b0294800a0168c":[3,0,7,9],
 "group__Traits.html#gad49d4c069c0294ed87f17f835fba7702":[3,0,7,13],
 "group__Traits.html#gad88b60e8e99ab7724f8e508d3c018bb1":[3,0,7,6],
@@ -11,8 +12,8 @@ var NAVTREEINDEX17 =
 "hypercube_8cpp.html":[6,0,0,0,2,10],
 "hypercube_8hpp.html":[6,0,0,0,2,11],
 "hypercubeordering_8hpp.html":[6,0,0,0,2,12],
-"index.html":[],
 "index.html":[0],
+"index.html":[],
 "index.html#Objectives":[0,1],
 "index.html#autotoc_md0":[0,2],
 "index.html#tutorial-compilers":[0,2,0],
@@ -44,10 +45,10 @@ var NAVTREEINDEX17 =
 "makemesh_8hpp.html#aa0486012f3fbe7c1474fab7d54e91acd":[6,0,0,0,1,23,1],
 "markermanagement_8hpp.html":[6,0,2,0,0,2,0],
 "matvec_8hpp.html":[6,0,0,0,4,34],
-"matvec_8hpp.html#a1a2f800e8848f86b9c810daa29083e7e":[6,0,0,0,4,34,1],
 "matvec_8hpp.html#a1a2f800e8848f86b9c810daa29083e7e":[4,0,1,13,99],
-"matvec_8hpp.html#ab60428250499bc8dc1ad803325c3f604":[4,0,1,13,74],
+"matvec_8hpp.html#a1a2f800e8848f86b9c810daa29083e7e":[6,0,0,0,4,34,1],
 "matvec_8hpp.html#ab60428250499bc8dc1ad803325c3f604":[6,0,0,0,4,34,0],
+"matvec_8hpp.html#ab60428250499bc8dc1ad803325c3f604":[4,0,1,13,74],
 "md_examples.html":[1],
 "md_examples.html#example-cg-laplacian":[1,0,0],
 "md_examples.html#example-qs-stokes":[1,0,1],
@@ -248,6 +249,5 @@ var NAVTREEINDEX17 =
 "namespaceFeel.html#adc8182d85957e46bc906fd912fafbd62":[4,0,1,421],
 "namespaceFeel.html#addd475cf30e1d141ae5618dc87ecf7d0":[4,0,1,427],
 "namespaceFeel.html#ae5a32c718addd9a235b0bff89af5f6c3":[4,0,1,381],
-"namespaceFeel.html#ae7b467de013f75f6900cd3ff1ec1d362":[4,0,1,443],
-"namespaceFeel.html#aeae4be2a1bdc7033742a68a8574cf194":[4,0,1,411]
+"namespaceFeel.html#ae7b467de013f75f6900cd3ff1ec1d362":[4,0,1,443]
 };
