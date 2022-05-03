@@ -1,6 +1,3 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classFeel_1_1FeelModels_1_1GenericDirichletBoundaryCondition.html" title=" " alt="" coords="5,45,207,101"/>
-<area shape="rect" id="node2" href="$classFeel_1_1FeelModels_1_1FluidMechanicsBoundaryConditions_1_1VelocityImposed.html" title=" " alt="" coords="255,5,495,61"/>
-<area shape="rect" id="node4" href="$classFeel_1_1FeelModels_1_1SolidMechanicsBoundaryConditions_1_1DisplacementImposed.html" title=" " alt="" coords="255,85,495,141"/>
-<area shape="rect" id="node3" href="$classFeel_1_1FeelModels_1_1FluidMechanicsBoundaryConditions_1_1MeshVelocityImposed.html" title=" " alt="" coords="543,5,783,61"/>
+<area shape="rect" id="node1" href="$structFeel_1_1FeelModels_1_1FluidMechanics_1_1TurbulenceModelBoundaryConditions_1_1Wall.html" title=" " alt="" coords="5,5,348,76"/>
 </map>

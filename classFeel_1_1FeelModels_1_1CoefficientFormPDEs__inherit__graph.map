@@ -1,0 +1,12 @@
+<map id="Feel::FeelModels::CoefficientFormPDEs&lt; ConvexType, BasisUnknownType &gt;" name="Feel::FeelModels::CoefficientFormPDEs&lt; ConvexType, BasisUnknownType &gt;">
+<area shape="rect" id="node1" title="class for Coefficient Form PDE toolbox" alt="" coords="295,1321,581,1560"/>
+<area shape="rect" id="node2" href="$classFeel_1_1FeelModels_1_1ModelNumerical.html" title="Handles some numerical model aspects: timestepping, mesh and properties." alt="" coords="167,991,437,1273"/>
+<area shape="rect" id="node3" href="$classFeel_1_1FeelModels_1_1ModelBase.html" title="Model base class." alt="" coords="263,564,520,715"/>
+<area shape="rect" id="node7" href="$classFeel_1_1FeelModels_1_1ModelAlgebraic.html" title=" " alt="" coords="319,777,559,928"/>
+<area shape="rect" id="node8" href="$classFeel_1_1FeelModels_1_1ModelMeshes.html" title=" " alt="" coords="5,763,244,943"/>
+<area shape="rect" id="node10" href="$classFeel_1_1FeelModels_1_1ModelPhysics.html" title=" " alt="" coords="472,1020,700,1244"/>
+<area shape="rect" id="node4" href="$classFeel_1_1JournalWatcher.html" title=" " alt="" coords="153,131,389,516"/>
+<area shape="rect" id="node5" title=" " alt="" coords="200,5,343,83"/>
+<area shape="rect" id="node6" title=" " alt="" coords="413,277,607,369"/>
+<area shape="rect" id="node9" title=" " alt="" coords="57,593,192,685"/>
+</map>

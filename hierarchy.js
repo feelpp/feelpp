@@ -193,6 +193,10 @@ var hierarchy =
         [ "Feel::FeelModels::ModelBase", "classFeel_1_1FeelModels_1_1ModelBase.html", [
           [ "Feel::FeelModels::ModelMeshes< ModelAlgebraic::index_type >", "classFeel_1_1FeelModels_1_1ModelMeshes.html", [
             [ "Feel::FeelModels::ModelNumerical", "classFeel_1_1FeelModels_1_1ModelNumerical.html", [
+              [ "Feel::FeelModels::CoefficientFormPDEBase< ConvexType >", "classFeel_1_1FeelModels_1_1CoefficientFormPDEBase.html", [
+                [ "Feel::FeelModels::CoefficientFormPDE< ConvexType, BasisUnknownType >", "classFeel_1_1FeelModels_1_1CoefficientFormPDE.html", null ]
+              ] ],
+              [ "Feel::FeelModels::CoefficientFormPDEs< ConvexType, BasisUnknownType >", "classFeel_1_1FeelModels_1_1CoefficientFormPDEs.html", null ],
               [ "Feel::FeelModels::Electric< ConvexType, BasisPotentialType >", "classFeel_1_1FeelModels_1_1Electric.html", null ],
               [ "Feel::FeelModels::FluidMechanics< ConvexType, BasisVelocityType, BasisPressureType >", "classFeel_1_1FeelModels_1_1FluidMechanics.html", null ],
               [ "Feel::FeelModels::Heat< ConvexType, BasisTemperatureType >", "classFeel_1_1FeelModels_1_1Heat.html", null ],
@@ -200,6 +204,10 @@ var hierarchy =
               [ "Feel::FeelModels::SolidMechanics< ConvexType, BasisDisplacementType >", "classFeel_1_1FeelModels_1_1SolidMechanics.html", null ],
               [ "Feel::FeelModels::SolidMechanics1dReduced< ConvexType, BasisDisplacementType >", "classFeel_1_1FeelModels_1_1SolidMechanics1dReduced.html", null ]
             ] ]
+          ] ],
+          [ "Feel::FeelModels::ModelPhysics< ConvexType::nRealDim >", "classFeel_1_1FeelModels_1_1ModelPhysics.html", [
+            [ "Feel::FeelModels::CoefficientFormPDEs< ConvexType, BasisUnknownType >", "classFeel_1_1FeelModels_1_1CoefficientFormPDEs.html", null ],
+            [ "Feel::FeelModels::SolidMechanics1dReduced< ConvexType, BasisDisplacementType >", "classFeel_1_1FeelModels_1_1SolidMechanics1dReduced.html", null ]
           ] ],
           [ "Feel::FeelModels::ModelPhysics< ConvexType::nDim >", "classFeel_1_1FeelModels_1_1ModelPhysics.html", [
             [ "Feel::FeelModels::Electric< ConvexType, BasisPotentialType >", "classFeel_1_1FeelModels_1_1Electric.html", null ],
@@ -210,9 +218,6 @@ var hierarchy =
           [ "Feel::FeelModels::ModelPhysics< HeatType::convex_type::nDim >", "classFeel_1_1FeelModels_1_1ModelPhysics.html", [
             [ "Feel::FeelModels::HeatFluid< HeatType, FluidType >", "classFeel_1_1FeelModels_1_1HeatFluid.html", null ]
           ] ],
-          [ "Feel::FeelModels::ModelPhysics< ConvexType::nRealDim >", "classFeel_1_1FeelModels_1_1ModelPhysics.html", [
-            [ "Feel::FeelModels::SolidMechanics1dReduced< ConvexType, BasisDisplacementType >", "classFeel_1_1FeelModels_1_1SolidMechanics1dReduced.html", null ]
-          ] ],
           [ "Feel::FeelModels::ModelPhysics< nRealDim >", "classFeel_1_1FeelModels_1_1ModelPhysics.html", null ],
           [ "Feel::FeelModels::ModelPhysics< nDim >", "classFeel_1_1FeelModels_1_1ModelPhysics.html", null ],
           [ "Feel::FeelModels::ModelAlgebraic", "classFeel_1_1FeelModels_1_1ModelAlgebraic.html", [
@@ -221,6 +226,9 @@ var hierarchy =
           [ "Feel::FeelModels::ModelMeshes< IndexType >", "classFeel_1_1FeelModels_1_1ModelMeshes.html", null ],
           [ "Feel::FeelModels::ModelNumerical", "classFeel_1_1FeelModels_1_1ModelNumerical.html", null ],
           [ "Feel::FeelModels::ModelPhysics< Dim >", "classFeel_1_1FeelModels_1_1ModelPhysics.html", [
+            [ "Feel::FeelModels::ModelGenericPDE< ConvexType::nDim >", "classFeel_1_1FeelModels_1_1ModelGenericPDE.html", [
+              [ "Feel::FeelModels::CoefficientFormPDEBase< ConvexType >", "classFeel_1_1FeelModels_1_1CoefficientFormPDEBase.html", null ]
+            ] ],
             [ "Feel::FeelModels::ModelGenericPDE< Dim >", "classFeel_1_1FeelModels_1_1ModelGenericPDE.html", null ]
           ] ]
         ] ],
@@ -434,12 +442,22 @@ var hierarchy =
     ] ],
     [ "Feel::FeelModels::AdvancedConcatOfMapContainerType< FeelppTagOfMapType, FeelppTagOfContainerType >", "structFeel_1_1FeelModels_1_1AdvancedConcatOfMapContainerType.html", null ],
     [ "Feel::FeelModels::BoundaryConditionsBase", "classFeel_1_1FeelModels_1_1BoundaryConditionsBase.html", [
+      [ "Feel::FeelModels::CoefficientFormPDEBoundaryConditions< Dim, EquationRank >", "classFeel_1_1FeelModels_1_1CoefficientFormPDEBoundaryConditions.html", null ],
       [ "Feel::FeelModels::ElectricBoundaryConditions", "classFeel_1_1FeelModels_1_1ElectricBoundaryConditions.html", null ],
       [ "Feel::FeelModels::FluidMechanicsBoundaryConditions< Dim >", "classFeel_1_1FeelModels_1_1FluidMechanicsBoundaryConditions.html", null ],
       [ "Feel::FeelModels::HeatBoundaryConditions", "classFeel_1_1FeelModels_1_1HeatBoundaryConditions.html", null ],
       [ "Feel::FeelModels::SolidMechanics1dReducedBoundaryConditions< Dim >", "classFeel_1_1FeelModels_1_1SolidMechanics1dReducedBoundaryConditions.html", null ],
       [ "Feel::FeelModels::SolidMechanicsBoundaryConditions< Dim >", "classFeel_1_1FeelModels_1_1SolidMechanicsBoundaryConditions.html", null ]
     ] ],
+    [ "Feel::FeelModels::CoefficientFormPDE< ConvexType, BasisUnknownType >::FieldTag", "structFeel_1_1FeelModels_1_1CoefficientFormPDE_1_1FieldTag.html", null ],
+    [ "Feel::FeelModels::CoefficientFormPDEBoundaryConditions< Dim, EquationRank >::Neumann", "classFeel_1_1FeelModels_1_1CoefficientFormPDEBoundaryConditions_1_1Neumann.html", null ],
+    [ "Feel::FeelModels::CoefficientFormPDEBoundaryConditions< Dim, EquationRank >::Robin", "classFeel_1_1FeelModels_1_1CoefficientFormPDEBoundaryConditions_1_1Robin.html", null ],
+    [ "Feel::FeelModels::CoefficientFormPDEs< ConvexType, BasisUnknownType >::FilterBasisUnknown< TheBasisType >", "structFeel_1_1FeelModels_1_1CoefficientFormPDEs_1_1FilterBasisUnknown.html", null ],
+    [ "Feel::FeelModels::CoefficientFormPDEs< ConvexType, BasisUnknownType >::FilterBasisUnknown< TheBasisType >::apply< T >", "structFeel_1_1FeelModels_1_1CoefficientFormPDEs_1_1FilterBasisUnknown_1_1apply.html", null ],
+    [ "Feel::FeelModels::CoefficientFormPDEs< ConvexType, BasisUnknownType >::FilterBasisUnknownAll", "structFeel_1_1FeelModels_1_1CoefficientFormPDEs_1_1FilterBasisUnknownAll.html", null ],
+    [ "Feel::FeelModels::CoefficientFormPDEs< ConvexType, BasisUnknownType >::FilterBasisUnknownAll::apply< T >", "structFeel_1_1FeelModels_1_1CoefficientFormPDEs_1_1FilterBasisUnknownAll_1_1apply.html", null ],
+    [ "Feel::FeelModels::CoefficientFormPDEs< ConvexType, BasisUnknownType >::traits", "structFeel_1_1FeelModels_1_1CoefficientFormPDEs_1_1traits.html", null ],
+    [ "Feel::FeelModels::CoefficientFormPDEs< ConvexType, BasisUnknownType >::traits::TransformModelFields::View", "structFeel_1_1FeelModels_1_1CoefficientFormPDEs_1_1traits_1_1TransformModelFields_1_1View.html", null ],
     [ "Feel::FeelModels::detail::ChangeBasisContinuity< C, T >", "structFeel_1_1FeelModels_1_1detail_1_1ChangeBasisContinuity.html", null ],
     [ "Feel::FeelModels::detail::ChangeBasisContinuity< NewContinuityType, BasisType< Order, PolySetType, ContinuityType, Pts, Tag > >", "structFeel_1_1FeelModels_1_1detail_1_1ChangeBasisContinuity_3_01NewContinuityType_00_01BasisType85014e0d1b1b40793cb205341b8ed0a9.html", null ],
     [ "Feel::FeelModels::detail::ChangeBasisOrder< uint16_type, T >", "structFeel_1_1FeelModels_1_1detail_1_1ChangeBasisOrder.html", null ],
@@ -986,6 +1004,9 @@ var hierarchy =
         [ "Feel::FeelModels::FluidMechanicsBoundaryConditions< Dim >::MeshVelocityImposed", "classFeel_1_1FeelModels_1_1FluidMechanicsBoundaryConditions_1_1MeshVelocityImposed.html", null ]
       ] ],
       [ "Feel::FeelModels::SolidMechanicsBoundaryConditions< Dim >::DisplacementImposed", "classFeel_1_1FeelModels_1_1SolidMechanicsBoundaryConditions_1_1DisplacementImposed.html", null ]
+    ] ],
+    [ "GenericDirichletBoundaryCondition<(EquationRank >=1)?Dim:1,(EquationRank >=2)?Dim:1 >", "classGenericDirichletBoundaryCondition_3_07EquationRank_01_4_0a1_08_04Dim_11_00_07EquationRank_01_4_0a2_08_04Dim_11_01_4.html", [
+      [ "Feel::FeelModels::CoefficientFormPDEBoundaryConditions< Dim, EquationRank >::Dirichlet", "classFeel_1_1FeelModels_1_1CoefficientFormPDEBoundaryConditions_1_1Dirichlet.html", null ]
     ] ],
     [ "Feel::GeoNDCommon< Feel::GeoND >", "classFeel_1_1GeoNDCommon.html", null ],
     [ "Feel::GeoNDCommon< typename edge_type::super >", "classFeel_1_1GeoNDCommon.html", null ],

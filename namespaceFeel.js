@@ -69,10 +69,15 @@ var namespaceFeel =
         [ "ChangeBasisOrder", "structFeel_1_1FeelModels_1_1detail_1_1ChangeBasisOrder.html", null ],
         [ "ChangeBasisOrder< NewOrder, BasisType< Order, PolySetType, ContinuityType, Pts, Tag > >", "structFeel_1_1FeelModels_1_1detail_1_1ChangeBasisOrder_3_01NewOrder_00_01BasisType_3_01Order_00_86e9208bf6efe5ef93da29d48907e576.html", null ],
         [ "ChangeBasisPolySet", "structFeel_1_1FeelModels_1_1detail_1_1ChangeBasisPolySet.html", null ],
-        [ "ChangeBasisPolySet< NewPolySetType, BasisType< Order, PolySetType, ContinuityType, Pts, Tag > >", "structFeel_1_1FeelModels_1_1detail_1_1ChangeBasisPolySet_3_01NewPolySetType_00_01BasisType_3_01Od3c3455f9581e098fbbc9c6e4e32dd82.html", null ]
+        [ "ChangeBasisPolySet< NewPolySetType, BasisType< Order, PolySetType, ContinuityType, Pts, Tag > >", "structFeel_1_1FeelModels_1_1detail_1_1ChangeBasisPolySet_3_01NewPolySetType_00_01BasisType_3_01Od3c3455f9581e098fbbc9c6e4e32dd82.html", null ],
+        [ "map_geoshape_to_coefficient_form_PDEs_registered_type", "group__CoefficientFormPDEs.html#ga13b6d9f63d44c9e3b69bef26d5ee0868", null ]
       ] ],
       [ "AdvancedConcatOfMapContainerType", "structFeel_1_1FeelModels_1_1AdvancedConcatOfMapContainerType.html", "structFeel_1_1FeelModels_1_1AdvancedConcatOfMapContainerType" ],
       [ "BoundaryConditionsBase", "classFeel_1_1FeelModels_1_1BoundaryConditionsBase.html", null ],
+      [ "CoefficientFormPDE", "classFeel_1_1FeelModels_1_1CoefficientFormPDE.html", "classFeel_1_1FeelModels_1_1CoefficientFormPDE" ],
+      [ "CoefficientFormPDEBase", "classFeel_1_1FeelModels_1_1CoefficientFormPDEBase.html", "classFeel_1_1FeelModels_1_1CoefficientFormPDEBase" ],
+      [ "CoefficientFormPDEBoundaryConditions", "classFeel_1_1FeelModels_1_1CoefficientFormPDEBoundaryConditions.html", "classFeel_1_1FeelModels_1_1CoefficientFormPDEBoundaryConditions" ],
+      [ "CoefficientFormPDEs", "classFeel_1_1FeelModels_1_1CoefficientFormPDEs.html", "classFeel_1_1FeelModels_1_1CoefficientFormPDEs" ],
       [ "DynamicViscosityCarreauLaw", "structFeel_1_1FeelModels_1_1DynamicViscosityCarreauLaw.html", null ],
       [ "DynamicViscosityCarreauYasudaLaw", "structFeel_1_1FeelModels_1_1DynamicViscosityCarreauYasudaLaw.html", null ],
       [ "DynamicViscosityMaterialProperties", "classFeel_1_1FeelModels_1_1DynamicViscosityMaterialProperties.html", null ],
@@ -168,6 +173,7 @@ var namespaceFeel =
       [ "TrialSymbolsExpr", "classFeel_1_1FeelModels_1_1TrialSymbolsExpr.html", null ],
       [ "TrialSymbolsExprFeelppTag", "structFeel_1_1FeelModels_1_1TrialSymbolsExprFeelppTag.html", null ],
       [ "TrialSymbolsExprTraits", "structFeel_1_1FeelModels_1_1TrialSymbolsExprTraits.html", null ],
+      [ "coefficient_form_PDEs_t", "group__CoefficientFormPDEs.html#ga99803213b82a26bed98f01f64ce8d1c0", null ],
       [ "modelContext", "group__ModelCore.html#ga9060911b903dc0093d1e1e18ad1e5f3a", null ],
       [ "modelContext", "group__ModelCore.html#gacbc541e54e7e7b949eaadd19a99dbca1", null ]
     ] ],

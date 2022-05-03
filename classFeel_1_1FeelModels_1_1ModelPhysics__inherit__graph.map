@@ -1,8 +1,11 @@
 <map id="Feel::FeelModels::ModelPhysics&lt; Dim &gt;" name="Feel::FeelModels::ModelPhysics&lt; Dim &gt;">
-<area shape="rect" id="node1" title="Physic set Model." alt="" coords="128,763,356,987"/>
-<area shape="rect" id="node6" href="$classFeel_1_1FeelModels_1_1ModelGenericPDE.html" title="Generic PDE Model class." alt="" coords="127,1035,357,1200"/>
-<area shape="rect" id="node2" href="$classFeel_1_1FeelModels_1_1ModelBase.html" title="Model base class." alt="" coords="113,564,371,715"/>
-<area shape="rect" id="node3" href="$classFeel_1_1JournalWatcher.html" title=" " alt="" coords="5,131,241,516"/>
-<area shape="rect" id="node4" title=" " alt="" coords="52,5,195,83"/>
-<area shape="rect" id="node5" title=" " alt="" coords="265,277,459,369"/>
+<area shape="rect" id="node1" title="Physic set Model." alt="" coords="163,763,391,987"/>
+<area shape="rect" id="node6" href="$classFeel_1_1FeelModels_1_1ModelGenericPDE.html" title=" " alt="" coords="36,1035,265,1200"/>
+<area shape="rect" id="node9" href="$classFeel_1_1FeelModels_1_1ModelGenericPDE.html" title="Generic PDE Model class." alt="" coords="289,1035,519,1200"/>
+<area shape="rect" id="node2" href="$classFeel_1_1FeelModels_1_1ModelBase.html" title="Model base class." alt="" coords="149,564,406,715"/>
+<area shape="rect" id="node3" href="$classFeel_1_1JournalWatcher.html" title=" " alt="" coords="41,131,277,516"/>
+<area shape="rect" id="node4" title=" " alt="" coords="87,5,230,83"/>
+<area shape="rect" id="node5" title=" " alt="" coords="301,277,494,369"/>
+<area shape="rect" id="node7" href="$classFeel_1_1FeelModels_1_1CoefficientFormPDEBase.html" title=" " alt="" coords="5,1248,296,1604"/>
+<area shape="rect" id="node8" href="$classFeel_1_1FeelModels_1_1CoefficientFormPDE.html" title="class for a single CoefficientFormPDE" alt="" coords="11,1652,290,1905"/>
 </map>

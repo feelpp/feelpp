@@ -1,4 +1,5 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$structFeel_1_1vf_1_1BlocksBase.html" title=" " alt="" coords="5,13,196,39"/>
-<area shape="rect" id="node2" href="$structFeel_1_1vf_1_1Blocks.html" title=" " alt="" coords="244,5,403,47"/>
+<area shape="rect" id="node1" href="$classFeel_1_1TSBase.html" title="base class for time sets" alt="" coords="5,31,111,57"/>
+<area shape="rect" id="node2" href="$classFeel_1_1Bdf.html" title="Backward differencing formula time discretization." alt="" coords="179,5,357,32"/>
+<area shape="rect" id="node3" href="$classFeel_1_1Newmark.html" title="Newmark discretization." alt="" coords="159,56,377,83"/>
 </map>
