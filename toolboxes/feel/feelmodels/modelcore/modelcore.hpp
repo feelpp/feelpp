@@ -34,6 +34,9 @@ namespace Feel
  * @defgroup ModelCore
  * @ingroup Toolboxes
  *
+ * @defgroup CoefficientFormPDEs
+ * @ingroup Toolboxes
+ * 
  * @defgroup Electric
  * @ingroup Toolboxes
  *
