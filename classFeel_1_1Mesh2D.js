@@ -1,5 +1,7 @@
 var classFeel_1_1Mesh2D =
 [
+    [ "Mesh2D", "classFeel_1_1Mesh2D.html#a3abf7f3071040c69fd82710bf2089176", null ],
+    [ "~Mesh2D", "classFeel_1_1Mesh2D.html#a5b9cfb02fda265e6fc15a7800276dac3", null ],
     [ "clear", "classFeel_1_1Mesh2D.html#ad1824b2b07c49e1dae04fea340d63265", null ],
     [ "isEmpty", "classFeel_1_1Mesh2D.html#a63c803982033464ea61f1f15b7a1d30e", null ],
     [ "numEdges", "classFeel_1_1Mesh2D.html#a346281c784ace3640d1cb461ce226e8a", null ],
@@ -12,7 +14,5 @@ var classFeel_1_1Mesh2D =
     [ "numPoints", "classFeel_1_1Mesh2D.html#a9e2b609917d0ce663815b24e29c2e163", null ],
     [ "renumber", "classFeel_1_1Mesh2D.html#a0ad7cd9bb5bfe14045940134367e4e24", null ],
     [ "updateEntitiesCoDimensionOnePermutation", "classFeel_1_1Mesh2D.html#afe5cfa64d3cf50555931b805ee1aa5a6", null ],
-    [ "updateEntitiesCoDimensionTwo", "classFeel_1_1Mesh2D.html#a8e2901aa4f3d31e4d5ecf26869838ef1", null ],
-    [ "Mesh2D", "classFeel_1_1Mesh2D.html#a3abf7f3071040c69fd82710bf2089176", null ],
-    [ "~Mesh2D", "classFeel_1_1Mesh2D.html#a5b9cfb02fda265e6fc15a7800276dac3", null ]
+    [ "updateEntitiesCoDimensionTwo", "classFeel_1_1Mesh2D.html#a8e2901aa4f3d31e4d5ecf26869838ef1", null ]
 ];

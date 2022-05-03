@@ -1,5 +1,10 @@
 var classFeel_1_1Localization =
 [
+    [ "container_search_type", "classFeel_1_1Localization.html#a137c9c40f6e77939a1c4e03a40ac25aa", null ],
+    [ "gm_inverse_type", "classFeel_1_1Localization.html#ac7a11237b1cc145aabeeed6303b14ab3", null ],
+    [ "node_elem_type", "classFeel_1_1Localization.html#a92fb12ada0ef90d4a206111c768a19df", null ],
+    [ "ref_convex_type", "classFeel_1_1Localization.html#a1642b7fbdbc8b01c701a6d4b510d3d58", null ],
+    [ "Localization", "classFeel_1_1Localization.html#a2ffa68fd27d8b9d9a9c61ceb1f3a1c99", null ],
     [ "isIn", "classFeel_1_1Localization.html#a1976b1359589344841da6aa8b447d867", null ],
     [ "isInit", "classFeel_1_1Localization.html#ae95e40dc21ace203e878aaf542f3492e", null ],
     [ "reset", "classFeel_1_1Localization.html#a7a028a47674088decd0e5d51a842051b", null ],
@@ -13,10 +18,5 @@ var classFeel_1_1Localization =
     [ "setExtrapolation", "classFeel_1_1Localization.html#a9fd7402b56538a07eaa0644b2c49c128", null ],
     [ "setMesh", "classFeel_1_1Localization.html#afb07ebe36fbcc5c9fd926641dd108d58", null ],
     [ "updateForUse", "classFeel_1_1Localization.html#a7d54fa323c45777c5484ff5b0b9c1ce6", null ],
-    [ "updateForUseBoundaryFaces", "classFeel_1_1Localization.html#a4208e73dd4d017e2ba913d5af68700f6", null ],
-    [ "container_search_type", "classFeel_1_1Localization.html#a137c9c40f6e77939a1c4e03a40ac25aa", null ],
-    [ "gm_inverse_type", "classFeel_1_1Localization.html#ac7a11237b1cc145aabeeed6303b14ab3", null ],
-    [ "node_elem_type", "classFeel_1_1Localization.html#a92fb12ada0ef90d4a206111c768a19df", null ],
-    [ "ref_convex_type", "classFeel_1_1Localization.html#a1642b7fbdbc8b01c701a6d4b510d3d58", null ],
-    [ "Localization", "classFeel_1_1Localization.html#a2ffa68fd27d8b9d9a9c61ceb1f3a1c99", null ]
+    [ "updateForUseBoundaryFaces", "classFeel_1_1Localization.html#a4208e73dd4d017e2ba913d5af68700f6", null ]
 ];

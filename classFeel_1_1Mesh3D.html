@@ -106,17 +106,10 @@ $(document).ready(function(){initNavTree('classFeel_1_1Mesh3D.html',''); initRes
   <div class="headertitle"><div class="title">Feel::Mesh3D&lt; Shape, T, IndexT &gt; Class Template Reference<div class="ingroups"><a class="el" href="group__Feelpp.html">Feelpp</a> &raquo; <a class="el" href="group__Mesh.html">Mesh</a></div></div></div>
 </div><!--header-->
 <div class="contents">
-<a name="details" id="details"></a><h2 class="groupheader">Description</h2>
-<div class="textblock"><div class="compoundTemplParams">template&lt;typename Shape, typename T = double, typename IndexT = uint32_type&gt;<br />
-class Feel::Mesh3D&lt; Shape, T, IndexT &gt;</div><p >3<a class="el" href="classD.html">D</a> mesh class </p>
-<div class="fragment"><div class="line"><span class="comment">// create a 3D mesh made of simplex of order 1</span></div>
-<div class="line">Mesh3D&lt;Simplex&lt;3,1&gt; &gt; mesh;</div>
-<div class="line"> </div>
-<div class="line"><span class="comment">// create a 3D mesh made of simplex of order 2</span></div>
-<div class="line">Mesh3D&lt;Simplex&lt;3,2&gt; &gt; mesh;</div>
-</div><!-- fragment --><dl class="section author"><dt>Author</dt><dd>Christophe Prud'homme </dd></dl>
-<dl class="section see"><dt>See also</dt><dd></dd></dl>
-</div><div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
+
+<p>3<a class="el" href="classD.html">D</a> mesh class  
+ <a href="classFeel_1_1Mesh3D.html#details">More...</a></p>
+<div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Inheritance diagram for Feel::Mesh3D&lt; Shape, T, IndexT &gt;:</div>
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">
 </div>
@@ -133,6 +126,15 @@ class Feel::Mesh3D&lt; Shape, T, IndexT &gt;</div><p >3<a class="el" href="class
 </div>
 </div>
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-attribs" name="pub-static-attribs"></a>
+Static Public Attributes</h2></td></tr>
+<tr class="memitem:afd41e5ef83d0e967bdfbf3abf851c2e1"><td class="memItemLeft" align="right" valign="top"><a id="afd41e5ef83d0e967bdfbf3abf851c2e1" name="afd41e5ef83d0e967bdfbf3abf851c2e1"></a>
+static const uint16_type&#160;</td><td class="memItemRight" valign="bottom"><b>nDim</b> = 3</td></tr>
+<tr class="separator:afd41e5ef83d0e967bdfbf3abf851c2e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:addc1a321bf26bfd5052cbd14605d9c22"><td class="memItemLeft" align="right" valign="top"><a id="addc1a321bf26bfd5052cbd14605d9c22" name="addc1a321bf26bfd5052cbd14605d9c22"></a>
+static const uint16_type&#160;</td><td class="memItemRight" valign="bottom"><b>nRealDim</b> = 3</td></tr>
+<tr class="separator:addc1a321bf26bfd5052cbd14605d9c22"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader">Typedefs</h2></td></tr>
 <tr class="memitem:a524268594e630474252681f6e7ace041"><td class="memItemLeft" align="right" valign="top"><a id="a524268594e630474252681f6e7ace041" name="a524268594e630474252681f6e7ace041"></a>
 typedef <a class="el" href="classFeel_1_1VisitableBase.html">VisitableBase</a> ::return_type&#160;</td><td class="memItemRight" valign="bottom"><b>return_type</b></td></tr>
@@ -311,15 +313,6 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>updateEntitiesCoDimen
 <tr class="separator:ada136ed27feefb041cb173f34726b909"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abae7809a2af9eaa5c79aa6b73d532305"><td class="memItemLeft" align="right" valign="top">FEELPP_DEPRECATED <a class="el" href="classFeel_1_1Mesh3D.html#a9c4ef0b3b5515806efb3ce8128634948">element_edge_type</a> const &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Mesh3D.html#abae7809a2af9eaa5c79aa6b73d532305">localEdgeId</a> (size_type const e, size_type const n) const</td></tr>
 <tr class="separator:abae7809a2af9eaa5c79aa6b73d532305"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-attribs" name="pub-static-attribs"></a>
-Static Public Attributes</h2></td></tr>
-<tr class="memitem:afd41e5ef83d0e967bdfbf3abf851c2e1"><td class="memItemLeft" align="right" valign="top"><a id="afd41e5ef83d0e967bdfbf3abf851c2e1" name="afd41e5ef83d0e967bdfbf3abf851c2e1"></a>
-static const uint16_type&#160;</td><td class="memItemRight" valign="bottom"><b>nDim</b> = 3</td></tr>
-<tr class="separator:afd41e5ef83d0e967bdfbf3abf851c2e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:addc1a321bf26bfd5052cbd14605d9c22"><td class="memItemLeft" align="right" valign="top"><a id="addc1a321bf26bfd5052cbd14605d9c22" name="addc1a321bf26bfd5052cbd14605d9c22"></a>
-static const uint16_type&#160;</td><td class="memItemRight" valign="bottom"><b>nRealDim</b> = 3</td></tr>
-<tr class="separator:addc1a321bf26bfd5052cbd14605d9c22"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="inherited" name="inherited"></a>
 Additional Inherited Members</h2></td></tr>
@@ -722,6 +715,39 @@ std::map&lt; std::string, std::vector&lt; size_type &gt; &gt;&#160;</td><td clas
 <tr class="memdesc:af3c545665ed90d1eabf264355187ace4 inherit pro_attribs_classFeel_1_1MeshBase"><td class="mdescLeft">&#160;</td><td class="mdescRight">marker name dictionnary ( std::string -&gt; &lt;int,int&gt; ) get&lt;0&gt;() provides the id get&lt;1&gt;() provides the topological dimension <br /></td></tr>
 <tr class="separator:af3c545665ed90d1eabf264355187ace4 inherit pro_attribs_classFeel_1_1MeshBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><div class="compoundTemplParams">template&lt;typename Shape, typename T = double, typename IndexT = uint32_type&gt;<br />
+class Feel::Mesh3D&lt; Shape, T, IndexT &gt;</div><p >3<a class="el" href="classD.html">D</a> mesh class </p>
+<div class="fragment"><div class="line"><span class="comment">// create a 3D mesh made of simplex of order 1</span></div>
+<div class="line">Mesh3D&lt;Simplex&lt;3,1&gt; &gt; mesh;</div>
+<div class="line"> </div>
+<div class="line"><span class="comment">// create a 3D mesh made of simplex of order 2</span></div>
+<div class="line">Mesh3D&lt;Simplex&lt;3,2&gt; &gt; mesh;</div>
+</div><!-- fragment --><dl class="section author"><dt>Author</dt><dd>Christophe Prud'homme </dd></dl>
+<dl class="section see"><dt>See also</dt><dd></dd></dl>
+</div><h2 class="groupheader">Member Typedef Documentation</h2>
+<a id="a9c4ef0b3b5515806efb3ce8128634948" name="a9c4ef0b3b5515806efb3ce8128634948"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9c4ef0b3b5515806efb3ce8128634948">&#9670;&nbsp;</a></span>element_edge_type</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename Shape , typename T  = double, typename IndexT  = uint32_type&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef boost::tuple&lt;size_type, <a class="el" href="classint.html">int</a>&gt; <a class="el" href="classFeel_1_1Mesh3D.html">Feel::Mesh3D</a>&lt; Shape, T, IndexT &gt;::element_edge_type</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Tuple that contains. </p>
+<ol type="1">
+<li>the index of the edge</li>
+<li>+1 or -1 depending on the orientation </li>
+</ol>
+
+</div>
+</div>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="a8e3c8c2bcb205526b5e22ccb6e3f3d24" name="a8e3c8c2bcb205526b5e22ccb6e3f3d24"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a8e3c8c2bcb205526b5e22ccb6e3f3d24">&#9670;&nbsp;</a></span>clear()</h2>
@@ -1120,29 +1146,6 @@ template&lt;typename GEOSHAPE , typename T , typename IndexT &gt; </div>
 <p>update the entities of co-dimension 2 </p>
 
 <p>Implements <a class="el" href="classFeel_1_1MeshBase.html#ab0cf2123d72d496a88e0a394971f9c3a">Feel::MeshBase&lt; uint32_type &gt;</a>.</p>
-
-</div>
-</div>
-<h2 class="groupheader">Member Typedef Documentation</h2>
-<a id="a9c4ef0b3b5515806efb3ce8128634948" name="a9c4ef0b3b5515806efb3ce8128634948"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9c4ef0b3b5515806efb3ce8128634948">&#9670;&nbsp;</a></span>element_edge_type</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename Shape , typename T  = double, typename IndexT  = uint32_type&gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">typedef boost::tuple&lt;size_type, <a class="el" href="classint.html">int</a>&gt; <a class="el" href="classFeel_1_1Mesh3D.html">Feel::Mesh3D</a>&lt; Shape, T, IndexT &gt;::element_edge_type</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Tuple that contains. </p>
-<ol type="1">
-<li>the index of the edge</li>
-<li>+1 or -1 depending on the orientation </li>
-</ol>
 
 </div>
 </div>

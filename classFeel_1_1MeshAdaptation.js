@@ -1,15 +1,5 @@
 var classFeel_1_1MeshAdaptation =
 [
-    [ "adaptMesh", "classFeel_1_1MeshAdaptation.html#ab09fdfdd6df4468659813b3d1880051d", null ],
-    [ "adaptMeshHess1", "classFeel_1_1MeshAdaptation.html#ab2042b7b529e1e7179f85095f4250e0c", null ],
-    [ "adaptMeshImpl", "classFeel_1_1MeshAdaptation.html#ad39b898d87944de4665d92483a23475c", null ],
-    [ "buildAdaptedMesh", "classFeel_1_1MeshAdaptation.html#ac5ffa0f8d6139230c5b6a40f3d3753bf", null ],
-    [ "computeMetric", "classFeel_1_1MeshAdaptation.html#a494029f73662612bc161170298042e14", null ],
-    [ "createAdaptedGeo", "classFeel_1_1MeshAdaptation.html#a19e9e75154b3ddae0f210294d0c3d69d", null ],
-    [ "createPosfile", "classFeel_1_1MeshAdaptation.html#ae0e746f3015a94491f527469ad9b634d", null ],
-    [ "directions", "classFeel_1_1MeshAdaptation.html#a9f42c7821c3120d6ceed1ae529ce1a67", null ],
-    [ "measures", "classFeel_1_1MeshAdaptation.html#a8d2f078cffb00702dec2705d3944c6e4", null ],
-    [ "pastePosFilesTogether", "classFeel_1_1MeshAdaptation.html#ae3f840ddb140e92dc3c6a3a57addc2fb", null ],
     [ "backend_ptrtype", "classFeel_1_1MeshAdaptation.html#a287d9c77e089e5fc0c44ff9837ff599d", null ],
     [ "backend_type", "classFeel_1_1MeshAdaptation.html#af81ad8ec8afcc3b9707a1caed678c351", null ],
     [ "export_ptrtype", "classFeel_1_1MeshAdaptation.html#ad93631a1ba332461b22c06a3f174ceab", null ],
@@ -22,5 +12,15 @@ var classFeel_1_1MeshAdaptation =
     [ "sparse_matrix_type", "classFeel_1_1MeshAdaptation.html#a0dd9c24c5d660266d5cac544be0c846c", null ],
     [ "vector_ptrtype", "classFeel_1_1MeshAdaptation.html#aef0ce2786df3999e79d20bf43087673a", null ],
     [ "vector_type", "classFeel_1_1MeshAdaptation.html#ab82fd55fb9a509a49bba75587cd6f8a2", null ],
-    [ "MeshAdaptation", "classFeel_1_1MeshAdaptation.html#a2cc708bbab60fd83c0b140a366090700", null ]
+    [ "MeshAdaptation", "classFeel_1_1MeshAdaptation.html#a2cc708bbab60fd83c0b140a366090700", null ],
+    [ "adaptMesh", "classFeel_1_1MeshAdaptation.html#ab09fdfdd6df4468659813b3d1880051d", null ],
+    [ "adaptMeshHess1", "classFeel_1_1MeshAdaptation.html#ab2042b7b529e1e7179f85095f4250e0c", null ],
+    [ "adaptMeshImpl", "classFeel_1_1MeshAdaptation.html#ad39b898d87944de4665d92483a23475c", null ],
+    [ "buildAdaptedMesh", "classFeel_1_1MeshAdaptation.html#ac5ffa0f8d6139230c5b6a40f3d3753bf", null ],
+    [ "computeMetric", "classFeel_1_1MeshAdaptation.html#a494029f73662612bc161170298042e14", null ],
+    [ "createAdaptedGeo", "classFeel_1_1MeshAdaptation.html#a19e9e75154b3ddae0f210294d0c3d69d", null ],
+    [ "createPosfile", "classFeel_1_1MeshAdaptation.html#ae0e746f3015a94491f527469ad9b634d", null ],
+    [ "directions", "classFeel_1_1MeshAdaptation.html#a9f42c7821c3120d6ceed1ae529ce1a67", null ],
+    [ "measures", "classFeel_1_1MeshAdaptation.html#a8d2f078cffb00702dec2705d3944c6e4", null ],
+    [ "pastePosFilesTogether", "classFeel_1_1MeshAdaptation.html#ae3f840ddb140e92dc3c6a3a57addc2fb", null ]
 ];

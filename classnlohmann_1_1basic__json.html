@@ -101,22 +101,20 @@ $(document).ready(function(){initNavTree('classnlohmann_1_1basic__json.html','')
 
 <div class="header">
   <div class="summary">
-<a href="#nested-classes">Instances and minimal complete definitions</a> &#124;
-<a href="#friends">Friends</a> &#124;
+<a href="#nested-classes">Classes</a> &#124;
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-static-methods">Static Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
+<a href="#friends">Friends</a> &#124;
 <a href="classnlohmann_1_1basic__json-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt; Class Template Reference</div></div>
 </div><!--header-->
 <div class="contents">
-<a name="details" id="details"></a><h2 class="groupheader">Description</h2>
-<div class="textblock"><div class="compoundTemplParams">template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType, class BooleanType, class NumberIntegerType, class NumberUnsignedType, class NumberFloatType, template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a>&gt;<br />
-class nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;</div><p >a class to store JSON values </p>
-<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/">https://json.nlohmann.me/api/basic_json/</a></dd></dl>
-<dl class="section since"><dt>Since</dt><dd>version 1.0.0 </dd></dl>
-</div><div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
+
+<p>a class to store JSON values  
+ <a href="classnlohmann_1_1basic__json.html#details">More...</a></p>
+<div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Collaboration diagram for nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;:</div>
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">
 </div>
@@ -125,6 +123,70 @@ class nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, N
 </div>
 </div>
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
+Public Types</h2></td></tr>
+<tr class="memitem:a54951d14f0dd10cc3cfdaa24f8bfd15c"><td class="memItemLeft" align="right" valign="top"><a id="a54951d14f0dd10cc3cfdaa24f8bfd15c" name="a54951d14f0dd10cc3cfdaa24f8bfd15c"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>cbor_tag_handler_t</b> = <a class="el" href="namespacenlohmann_1_1detail.html#a58bb1ef1a9ad287a9cfaf1855784d9ac">detail::cbor_tag_handler_t</a></td></tr>
+<tr class="memdesc:a54951d14f0dd10cc3cfdaa24f8bfd15c"><td class="mdescLeft">&#160;</td><td class="mdescRight">how to treat CBOR tags <br /></td></tr>
+<tr class="separator:a54951d14f0dd10cc3cfdaa24f8bfd15c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1e7ca76cc3f62626b380be5e18a002d5"><td class="memItemLeft" align="right" valign="top"><a id="a1e7ca76cc3f62626b380be5e18a002d5" name="a1e7ca76cc3f62626b380be5e18a002d5"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>error_handler_t</b> = <a class="el" href="namespacenlohmann_1_1detail.html#a5a76b60b26dc8c47256a996d18d967df">detail::error_handler_t</a></td></tr>
+<tr class="memdesc:a1e7ca76cc3f62626b380be5e18a002d5"><td class="mdescLeft">&#160;</td><td class="mdescRight">how to treat decoding errors <br /></td></tr>
+<tr class="separator:a1e7ca76cc3f62626b380be5e18a002d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac569f292a070dfd2f6b69c16e746095a"><td class="memItemLeft" align="right" valign="top"><a id="ac569f292a070dfd2f6b69c16e746095a" name="ac569f292a070dfd2f6b69c16e746095a"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>initializer_list_t</b> = std::initializer_list&lt; <a class="el" href="classnlohmann_1_1detail_1_1json__ref.html">detail::json_ref</a>&lt; <a class="el" href="classnlohmann_1_1basic__json.html">basic_json</a> &gt; &gt;</td></tr>
+<tr class="memdesc:ac569f292a070dfd2f6b69c16e746095a"><td class="mdescLeft">&#160;</td><td class="mdescRight">helper type for initializer lists of <a class="el" href="classnlohmann_1_1basic__json.html" title="a class to store JSON values">basic_json</a> values <br /></td></tr>
+<tr class="separator:ac569f292a070dfd2f6b69c16e746095a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a211cf53702226ad9fb3c939a3a3d3689"><td class="memItemLeft" align="right" valign="top"><a id="a211cf53702226ad9fb3c939a3a3d3689" name="a211cf53702226ad9fb3c939a3a3d3689"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>input_format_t</b> = <a class="el" href="namespacenlohmann_1_1detail.html#aa554fc6a11519e4f347deb25a9f0db40">detail::input_format_t</a></td></tr>
+<tr class="separator:a211cf53702226ad9fb3c939a3a3d3689"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa8f1f93b32da01b42413643be32b2c27"><td class="memItemLeft" align="right" valign="top"><a id="aa8f1f93b32da01b42413643be32b2c27" name="aa8f1f93b32da01b42413643be32b2c27"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>json_pointer</b> = <a class="el" href="classnlohmann_1_1json__pointer.html">::nlohmann::json_pointer</a>&lt; <a class="el" href="classnlohmann_1_1basic__json.html">basic_json</a> &gt;</td></tr>
+<tr class="memdesc:aa8f1f93b32da01b42413643be32b2c27"><td class="mdescLeft">&#160;</td><td class="mdescRight">JSON Pointer, see <a class="el" href="classnlohmann_1_1json__pointer.html">nlohmann::json_pointer</a>. <br /></td></tr>
+<tr class="separator:aa8f1f93b32da01b42413643be32b2c27"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a164b1094a1a9feb54e400d8510bb0b12"><td class="memItemLeft" align="right" valign="top"><a id="a164b1094a1a9feb54e400d8510bb0b12" name="a164b1094a1a9feb54e400d8510bb0b12"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>json_sax_t</b> = <a class="el" href="structnlohmann_1_1json__sax.html">json_sax</a>&lt; <a class="el" href="classnlohmann_1_1basic__json.html">basic_json</a> &gt;</td></tr>
+<tr class="memdesc:a164b1094a1a9feb54e400d8510bb0b12"><td class="mdescLeft">&#160;</td><td class="mdescRight">SAX interface type, see <a class="el" href="structnlohmann_1_1json__sax.html">nlohmann::json_sax</a>. <br /></td></tr>
+<tr class="separator:a164b1094a1a9feb54e400d8510bb0b12"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad6ebc5da7ced975bb184133750e7d49f"><td class="memTemplParams" colspan="2"><a id="ad6ebc5da7ced975bb184133750e7d49f" name="ad6ebc5da7ced975bb184133750e7d49f"></a>
+template&lt;typename T , typename SFINAE &gt; </td></tr>
+<tr class="memitem:ad6ebc5da7ced975bb184133750e7d49f"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>json_serializer</b> = JSONSerializer&lt; T, SFINAE &gt;</td></tr>
+<tr class="separator:ad6ebc5da7ced975bb184133750e7d49f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a24086b03c5c063849df0307f78c41c54"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnlohmann_1_1basic__json.html#a24086b03c5c063849df0307f78c41c54">parse_event_t</a> = <a class="el" href="namespacenlohmann_1_1detail.html#a59e696b1dad6d0d99c172ac4518c2042">detail::parse_event_t</a></td></tr>
+<tr class="memdesc:a24086b03c5c063849df0307f78c41c54"><td class="mdescLeft">&#160;</td><td class="mdescRight">parser event types  <a href="classnlohmann_1_1basic__json.html#a24086b03c5c063849df0307f78c41c54">More...</a><br /></td></tr>
+<tr class="separator:a24086b03c5c063849df0307f78c41c54"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0273d074462644e5d5a7ff313ad0d742"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnlohmann_1_1basic__json.html#a0273d074462644e5d5a7ff313ad0d742">parser_callback_t</a> = detail::parser_callback_t&lt; <a class="el" href="classnlohmann_1_1basic__json.html">basic_json</a> &gt;</td></tr>
+<tr class="memdesc:a0273d074462644e5d5a7ff313ad0d742"><td class="mdescLeft">&#160;</td><td class="mdescRight">per-element parser callback type  <a href="classnlohmann_1_1basic__json.html#a0273d074462644e5d5a7ff313ad0d742">More...</a><br /></td></tr>
+<tr class="separator:a0273d074462644e5d5a7ff313ad0d742"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac68cb65a7f3517f0c5b1d3a4967406ad"><td class="memItemLeft" align="right" valign="top"><a id="ac68cb65a7f3517f0c5b1d3a4967406ad" name="ac68cb65a7f3517f0c5b1d3a4967406ad"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>value_t</b> = <a class="el" href="namespacenlohmann_1_1detail.html#a1ed8fc6239da25abcaf681d30ace4985">detail::value_t</a></td></tr>
+<tr class="separator:ac68cb65a7f3517f0c5b1d3a4967406ad"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
+Public Member Functions</h2></td></tr>
+<tr class="memitem:a4227751a51c0e12558f0dffd8c3b5f2a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnlohmann_1_1basic__json.html#a4227751a51c0e12558f0dffd8c3b5f2a">__attribute__</a> ((__warn_unused_result__)) static <a class="el" href="classnlohmann_1_1basic__json.html">basic_json</a> meta()</td></tr>
+<tr class="memdesc:a4227751a51c0e12558f0dffd8c3b5f2a"><td class="mdescLeft">&#160;</td><td class="mdescRight">returns version information on the library  <a href="classnlohmann_1_1basic__json.html#a4227751a51c0e12558f0dffd8c3b5f2a">More...</a><br /></td></tr>
+<tr class="separator:a4227751a51c0e12558f0dffd8c3b5f2a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-methods" name="pub-static-methods"></a>
+Static Public Member Functions</h2></td></tr>
+<tr class="memitem:afc55e7dca1a243b0d5011564824c0267"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classnlohmann_1_1basic__json.html#ad38ae80f1e99d4b1f33c99fea4611457">allocator_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnlohmann_1_1basic__json.html#afc55e7dca1a243b0d5011564824c0267">get_allocator</a> ()</td></tr>
+<tr class="memdesc:afc55e7dca1a243b0d5011564824c0267"><td class="mdescLeft">&#160;</td><td class="mdescRight">returns the allocator associated with the container  <a href="classnlohmann_1_1basic__json.html#afc55e7dca1a243b0d5011564824c0267">More...</a><br /></td></tr>
+<tr class="separator:afc55e7dca1a243b0d5011564824c0267"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:accc90372a4e97329831f6f03441395bd"><td class="memItemLeft" align="right" valign="top"><a id="accc90372a4e97329831f6f03441395bd" name="accc90372a4e97329831f6f03441395bd"></a>
+static ThisType ReferenceType&#160;</td><td class="memItemRight" valign="bottom"><b>get_ref_impl</b> (ThisType &amp;obj)</td></tr>
+<tr class="separator:accc90372a4e97329831f6f03441395bd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
+Public Attributes</h2></td></tr>
+<tr class="memitem:a056b27dd768b2524977e9e82397efa4f"><td class="memItemLeft" align="right" valign="top"><a id="a056b27dd768b2524977e9e82397efa4f" name="a056b27dd768b2524977e9e82397efa4f"></a>
+const <a class="el" href="classnlohmann_1_1basic__json.html#a0273d074462644e5d5a7ff313ad0d742">parser_callback_t</a> const <a class="el" href="classbool.html">bool</a> const <a class="el" href="classbool.html">bool</a> SAX SAX <a class="el" href="namespacenlohmann_1_1detail.html#aa554fc6a11519e4f347deb25a9f0db40">input_format_t</a> const <a class="el" href="classbool.html">bool</a> const <a class="el" href="classbool.html">bool</a> class SAX IteratorType SAX <a class="el" href="namespacenlohmann_1_1detail.html#aa554fc6a11519e4f347deb25a9f0db40">input_format_t</a> const <a class="el" href="classbool.html">bool</a> const <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>ignore_comments</b></td></tr>
+<tr class="separator:a056b27dd768b2524977e9e82397efa4f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a72f1c0ede41f166429ce3fe7c2ffefc0"><td class="memItemLeft" align="right" valign="top"><a id="a72f1c0ede41f166429ce3fe7c2ffefc0" name="a72f1c0ede41f166429ce3fe7c2ffefc0"></a>
+json_value&#160;</td><td class="memItemRight" valign="bottom"><b>m_value</b> = {}</td></tr>
+<tr class="memdesc:a72f1c0ede41f166429ce3fe7c2ffefc0"><td class="mdescLeft">&#160;</td><td class="mdescRight">the value of the current element <br /></td></tr>
+<tr class="separator:a72f1c0ede41f166429ce3fe7c2ffefc0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="friends" name="friends"></a>
 Friends</h2></td></tr>
 <tr class="memitem:aa226ed5103dfd10e27e562d35a3a106b"><td class="memTemplParams" colspan="2"><a id="aa226ed5103dfd10e27e562d35a3a106b" name="aa226ed5103dfd10e27e562d35a3a106b"></a>
@@ -763,74 +825,250 @@ template&lt;typename T , std::size_t N, typename Array  = T (&amp;)[N], detail::
 <tr class="memitem:a1b46c6631e30b8394e89bd1546d69736"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classnlohmann_1_1basic__json.html#a3ada29bca70b4965f6fd37ec1c8f85f7">size_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnlohmann_1_1basic__json.html#a1b46c6631e30b8394e89bd1546d69736">max_size</a> () const noexcept</td></tr>
 <tr class="memdesc:a1b46c6631e30b8394e89bd1546d69736"><td class="mdescLeft">&#160;</td><td class="mdescRight">returns the maximum possible number of elements  <a href="classnlohmann_1_1basic__json.html#a1b46c6631e30b8394e89bd1546d69736">More...</a><br /></td></tr>
 <tr class="separator:a1b46c6631e30b8394e89bd1546d69736"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
-Public Types</h2></td></tr>
-<tr class="memitem:a54951d14f0dd10cc3cfdaa24f8bfd15c"><td class="memItemLeft" align="right" valign="top"><a id="a54951d14f0dd10cc3cfdaa24f8bfd15c" name="a54951d14f0dd10cc3cfdaa24f8bfd15c"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>cbor_tag_handler_t</b> = <a class="el" href="namespacenlohmann_1_1detail.html#a58bb1ef1a9ad287a9cfaf1855784d9ac">detail::cbor_tag_handler_t</a></td></tr>
-<tr class="memdesc:a54951d14f0dd10cc3cfdaa24f8bfd15c"><td class="mdescLeft">&#160;</td><td class="mdescRight">how to treat CBOR tags <br /></td></tr>
-<tr class="separator:a54951d14f0dd10cc3cfdaa24f8bfd15c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1e7ca76cc3f62626b380be5e18a002d5"><td class="memItemLeft" align="right" valign="top"><a id="a1e7ca76cc3f62626b380be5e18a002d5" name="a1e7ca76cc3f62626b380be5e18a002d5"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>error_handler_t</b> = <a class="el" href="namespacenlohmann_1_1detail.html#a5a76b60b26dc8c47256a996d18d967df">detail::error_handler_t</a></td></tr>
-<tr class="memdesc:a1e7ca76cc3f62626b380be5e18a002d5"><td class="mdescLeft">&#160;</td><td class="mdescRight">how to treat decoding errors <br /></td></tr>
-<tr class="separator:a1e7ca76cc3f62626b380be5e18a002d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac569f292a070dfd2f6b69c16e746095a"><td class="memItemLeft" align="right" valign="top"><a id="ac569f292a070dfd2f6b69c16e746095a" name="ac569f292a070dfd2f6b69c16e746095a"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>initializer_list_t</b> = std::initializer_list&lt; <a class="el" href="classnlohmann_1_1detail_1_1json__ref.html">detail::json_ref</a>&lt; <a class="el" href="classnlohmann_1_1basic__json.html">basic_json</a> &gt; &gt;</td></tr>
-<tr class="memdesc:ac569f292a070dfd2f6b69c16e746095a"><td class="mdescLeft">&#160;</td><td class="mdescRight">helper type for initializer lists of <a class="el" href="classnlohmann_1_1basic__json.html" title="a class to store JSON values">basic_json</a> values <br /></td></tr>
-<tr class="separator:ac569f292a070dfd2f6b69c16e746095a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a211cf53702226ad9fb3c939a3a3d3689"><td class="memItemLeft" align="right" valign="top"><a id="a211cf53702226ad9fb3c939a3a3d3689" name="a211cf53702226ad9fb3c939a3a3d3689"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>input_format_t</b> = <a class="el" href="namespacenlohmann_1_1detail.html#aa554fc6a11519e4f347deb25a9f0db40">detail::input_format_t</a></td></tr>
-<tr class="separator:a211cf53702226ad9fb3c939a3a3d3689"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa8f1f93b32da01b42413643be32b2c27"><td class="memItemLeft" align="right" valign="top"><a id="aa8f1f93b32da01b42413643be32b2c27" name="aa8f1f93b32da01b42413643be32b2c27"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>json_pointer</b> = <a class="el" href="classnlohmann_1_1json__pointer.html">::nlohmann::json_pointer</a>&lt; <a class="el" href="classnlohmann_1_1basic__json.html">basic_json</a> &gt;</td></tr>
-<tr class="memdesc:aa8f1f93b32da01b42413643be32b2c27"><td class="mdescLeft">&#160;</td><td class="mdescRight">JSON Pointer, see <a class="el" href="classnlohmann_1_1json__pointer.html">nlohmann::json_pointer</a>. <br /></td></tr>
-<tr class="separator:aa8f1f93b32da01b42413643be32b2c27"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a164b1094a1a9feb54e400d8510bb0b12"><td class="memItemLeft" align="right" valign="top"><a id="a164b1094a1a9feb54e400d8510bb0b12" name="a164b1094a1a9feb54e400d8510bb0b12"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>json_sax_t</b> = <a class="el" href="structnlohmann_1_1json__sax.html">json_sax</a>&lt; <a class="el" href="classnlohmann_1_1basic__json.html">basic_json</a> &gt;</td></tr>
-<tr class="memdesc:a164b1094a1a9feb54e400d8510bb0b12"><td class="mdescLeft">&#160;</td><td class="mdescRight">SAX interface type, see <a class="el" href="structnlohmann_1_1json__sax.html">nlohmann::json_sax</a>. <br /></td></tr>
-<tr class="separator:a164b1094a1a9feb54e400d8510bb0b12"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad6ebc5da7ced975bb184133750e7d49f"><td class="memTemplParams" colspan="2"><a id="ad6ebc5da7ced975bb184133750e7d49f" name="ad6ebc5da7ced975bb184133750e7d49f"></a>
-template&lt;typename T , typename SFINAE &gt; </td></tr>
-<tr class="memitem:ad6ebc5da7ced975bb184133750e7d49f"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>json_serializer</b> = JSONSerializer&lt; T, SFINAE &gt;</td></tr>
-<tr class="separator:ad6ebc5da7ced975bb184133750e7d49f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a24086b03c5c063849df0307f78c41c54"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnlohmann_1_1basic__json.html#a24086b03c5c063849df0307f78c41c54">parse_event_t</a> = <a class="el" href="namespacenlohmann_1_1detail.html#a59e696b1dad6d0d99c172ac4518c2042">detail::parse_event_t</a></td></tr>
-<tr class="memdesc:a24086b03c5c063849df0307f78c41c54"><td class="mdescLeft">&#160;</td><td class="mdescRight">parser event types  <a href="classnlohmann_1_1basic__json.html#a24086b03c5c063849df0307f78c41c54">More...</a><br /></td></tr>
-<tr class="separator:a24086b03c5c063849df0307f78c41c54"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0273d074462644e5d5a7ff313ad0d742"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnlohmann_1_1basic__json.html#a0273d074462644e5d5a7ff313ad0d742">parser_callback_t</a> = detail::parser_callback_t&lt; <a class="el" href="classnlohmann_1_1basic__json.html">basic_json</a> &gt;</td></tr>
-<tr class="memdesc:a0273d074462644e5d5a7ff313ad0d742"><td class="mdescLeft">&#160;</td><td class="mdescRight">per-element parser callback type  <a href="classnlohmann_1_1basic__json.html#a0273d074462644e5d5a7ff313ad0d742">More...</a><br /></td></tr>
-<tr class="separator:a0273d074462644e5d5a7ff313ad0d742"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac68cb65a7f3517f0c5b1d3a4967406ad"><td class="memItemLeft" align="right" valign="top"><a id="ac68cb65a7f3517f0c5b1d3a4967406ad" name="ac68cb65a7f3517f0c5b1d3a4967406ad"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>value_t</b> = <a class="el" href="namespacenlohmann_1_1detail.html#a1ed8fc6239da25abcaf681d30ace4985">detail::value_t</a></td></tr>
-<tr class="separator:ac68cb65a7f3517f0c5b1d3a4967406ad"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
-Public Member Functions</h2></td></tr>
-<tr class="memitem:a4227751a51c0e12558f0dffd8c3b5f2a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnlohmann_1_1basic__json.html#a4227751a51c0e12558f0dffd8c3b5f2a">__attribute__</a> ((__warn_unused_result__)) static <a class="el" href="classnlohmann_1_1basic__json.html">basic_json</a> meta()</td></tr>
-<tr class="memdesc:a4227751a51c0e12558f0dffd8c3b5f2a"><td class="mdescLeft">&#160;</td><td class="mdescRight">returns version information on the library  <a href="classnlohmann_1_1basic__json.html#a4227751a51c0e12558f0dffd8c3b5f2a">More...</a><br /></td></tr>
-<tr class="separator:a4227751a51c0e12558f0dffd8c3b5f2a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-methods" name="pub-static-methods"></a>
-Static Public Member Functions</h2></td></tr>
-<tr class="memitem:afc55e7dca1a243b0d5011564824c0267"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classnlohmann_1_1basic__json.html#ad38ae80f1e99d4b1f33c99fea4611457">allocator_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnlohmann_1_1basic__json.html#afc55e7dca1a243b0d5011564824c0267">get_allocator</a> ()</td></tr>
-<tr class="memdesc:afc55e7dca1a243b0d5011564824c0267"><td class="mdescLeft">&#160;</td><td class="mdescRight">returns the allocator associated with the container  <a href="classnlohmann_1_1basic__json.html#afc55e7dca1a243b0d5011564824c0267">More...</a><br /></td></tr>
-<tr class="separator:afc55e7dca1a243b0d5011564824c0267"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:accc90372a4e97329831f6f03441395bd"><td class="memItemLeft" align="right" valign="top"><a id="accc90372a4e97329831f6f03441395bd" name="accc90372a4e97329831f6f03441395bd"></a>
-static ThisType ReferenceType&#160;</td><td class="memItemRight" valign="bottom"><b>get_ref_impl</b> (ThisType &amp;obj)</td></tr>
-<tr class="separator:accc90372a4e97329831f6f03441395bd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
-Public Attributes</h2></td></tr>
-<tr class="memitem:a056b27dd768b2524977e9e82397efa4f"><td class="memItemLeft" align="right" valign="top"><a id="a056b27dd768b2524977e9e82397efa4f" name="a056b27dd768b2524977e9e82397efa4f"></a>
-const <a class="el" href="classnlohmann_1_1basic__json.html#a0273d074462644e5d5a7ff313ad0d742">parser_callback_t</a> const <a class="el" href="classbool.html">bool</a> const <a class="el" href="classbool.html">bool</a> SAX SAX <a class="el" href="namespacenlohmann_1_1detail.html#aa554fc6a11519e4f347deb25a9f0db40">input_format_t</a> const <a class="el" href="classbool.html">bool</a> const <a class="el" href="classbool.html">bool</a> class SAX IteratorType SAX <a class="el" href="namespacenlohmann_1_1detail.html#aa554fc6a11519e4f347deb25a9f0db40">input_format_t</a> const <a class="el" href="classbool.html">bool</a> const <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>ignore_comments</b></td></tr>
-<tr class="separator:a056b27dd768b2524977e9e82397efa4f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a72f1c0ede41f166429ce3fe7c2ffefc0"><td class="memItemLeft" align="right" valign="top"><a id="a72f1c0ede41f166429ce3fe7c2ffefc0" name="a72f1c0ede41f166429ce3fe7c2ffefc0"></a>
-json_value&#160;</td><td class="memItemRight" valign="bottom"><b>m_value</b> = {}</td></tr>
-<tr class="memdesc:a72f1c0ede41f166429ce3fe7c2ffefc0"><td class="mdescLeft">&#160;</td><td class="mdescRight">the value of the current element <br /></td></tr>
-<tr class="separator:a72f1c0ede41f166429ce3fe7c2ffefc0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<h2 class="groupheader">Methods</h2>
-<a id="a6e2e21da48f5d9471716cd868a068327" name="a6e2e21da48f5d9471716cd868a068327"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6e2e21da48f5d9471716cd868a068327">&#9670;&nbsp;</a></span>operator!= <span class="overload">[1/3]</span></h2>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><div class="compoundTemplParams">template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType, class BooleanType, class NumberIntegerType, class NumberUnsignedType, class NumberFloatType, template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a>&gt;<br />
+class nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;</div><p >a class to store JSON values </p>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/">https://json.nlohmann.me/api/basic_json/</a></dd></dl>
+<dl class="section since"><dt>Since</dt><dd>version 1.0.0 </dd></dl>
+</div><h2 class="groupheader">Member Typedef Documentation</h2>
+<a id="a858c1cf8407bc06494e3a1114a3b73e7" name="a858c1cf8407bc06494e3a1114a3b73e7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a858c1cf8407bc06494e3a1114a3b73e7">&#9670;&nbsp;</a></span>array_t</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="classnlohmann_1_1basic__json.html">nlohmann::basic_json</a>&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, <a class="el" href="classBinaryType.html">BinaryType</a> &gt;::array_t =  ArrayType&lt;<a class="el" href="classnlohmann_1_1basic__json.html">basic_json</a>, AllocatorType&lt;<a class="el" href="classnlohmann_1_1basic__json.html">basic_json</a>&gt; &gt;</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>a type for an array </p>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/array_t/">https://json.nlohmann.me/api/basic_json/array_t/</a> </dd></dl>
+
+</div>
+</div>
+<a id="ad6c955145bebde84d93991ffed7cd389" name="ad6c955145bebde84d93991ffed7cd389"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad6c955145bebde84d93991ffed7cd389">&#9670;&nbsp;</a></span>binary_t</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="classnlohmann_1_1basic__json.html">nlohmann::basic_json</a>&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, <a class="el" href="classBinaryType.html">BinaryType</a> &gt;::binary_t =  <a class="el" href="classnlohmann_1_1byte__container__with__subtype.html">nlohmann::byte_container_with_subtype</a>&lt;<a class="el" href="classBinaryType.html">BinaryType</a>&gt;</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>a type for a packed binary type </p>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/binary_t/">https://json.nlohmann.me/api/basic_json/binary_t/</a> </dd></dl>
+
+</div>
+</div>
+<a id="a44fd1a12c9c54623c942b430e7a72937" name="a44fd1a12c9c54623c942b430e7a72937"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a44fd1a12c9c54623c942b430e7a72937">&#9670;&nbsp;</a></span>boolean_t</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="classnlohmann_1_1basic__json.html">nlohmann::basic_json</a>&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, <a class="el" href="classBinaryType.html">BinaryType</a> &gt;::boolean_t =  BooleanType</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>a type for a boolean </p>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/boolean_t/">https://json.nlohmann.me/api/basic_json/boolean_t/</a> </dd></dl>
+
+</div>
+</div>
+<a id="a5b8abaebd922d82d69756327c0c347e6" name="a5b8abaebd922d82d69756327c0c347e6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5b8abaebd922d82d69756327c0c347e6">&#9670;&nbsp;</a></span>number_float_t</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="classnlohmann_1_1basic__json.html">nlohmann::basic_json</a>&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, <a class="el" href="classBinaryType.html">BinaryType</a> &gt;::number_float_t =  NumberFloatType</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>a type for a number (floating-point) </p>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/number_float_t/">https://json.nlohmann.me/api/basic_json/number_float_t/</a> </dd></dl>
+
+</div>
+</div>
+<a id="a11e390944da90db83089eb2426a749d3" name="a11e390944da90db83089eb2426a749d3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a11e390944da90db83089eb2426a749d3">&#9670;&nbsp;</a></span>number_integer_t</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="classnlohmann_1_1basic__json.html">nlohmann::basic_json</a>&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, <a class="el" href="classBinaryType.html">BinaryType</a> &gt;::number_integer_t =  NumberIntegerType</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>a type for a number (integer) </p>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/number_integer_t/">https://json.nlohmann.me/api/basic_json/number_integer_t/</a> </dd></dl>
+
+</div>
+</div>
+<a id="ae09af9c23351b7245d9be4d1b2035fef" name="ae09af9c23351b7245d9be4d1b2035fef"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae09af9c23351b7245d9be4d1b2035fef">&#9670;&nbsp;</a></span>number_unsigned_t</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="classnlohmann_1_1basic__json.html">nlohmann::basic_json</a>&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, <a class="el" href="classBinaryType.html">BinaryType</a> &gt;::number_unsigned_t =  NumberUnsignedType</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>a type for a number (unsigned) </p>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/number_unsigned_t/">https://json.nlohmann.me/api/basic_json/number_unsigned_t/</a> </dd></dl>
+
+</div>
+</div>
+<a id="ad777f3c1eacc1d0b3f2ec678a59bb91c" name="ad777f3c1eacc1d0b3f2ec678a59bb91c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad777f3c1eacc1d0b3f2ec678a59bb91c">&#9670;&nbsp;</a></span>object_comparator_t</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="classnlohmann_1_1basic__json.html">nlohmann::basic_json</a>&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, <a class="el" href="classBinaryType.html">BinaryType</a> &gt;::object_comparator_t =  std::less&lt;&gt;</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>object key comparator type </p>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/object_comparator_t/">https://json.nlohmann.me/api/basic_json/object_comparator_t/</a> </dd></dl>
+
+</div>
+</div>
+<a id="aef3ff5a73597850597d1d40db9edd376" name="aef3ff5a73597850597d1d40db9edd376"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aef3ff5a73597850597d1d40db9edd376">&#9670;&nbsp;</a></span>object_t</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="classnlohmann_1_1basic__json.html">nlohmann::basic_json</a>&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, <a class="el" href="classBinaryType.html">BinaryType</a> &gt;::object_t =  ObjectType&lt;StringType, <a class="el" href="classnlohmann_1_1basic__json.html">basic_json</a>, <a class="el" href="classnlohmann_1_1basic__json.html#ad777f3c1eacc1d0b3f2ec678a59bb91c">object_comparator_t</a>, AllocatorType&lt;std::pair&lt;const StringType, <a class="el" href="classnlohmann_1_1basic__json.html">basic_json</a>&gt; &gt;&gt;</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>a type for an object </p>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/object_t/">https://json.nlohmann.me/api/basic_json/object_t/</a> </dd></dl>
+
+</div>
+</div>
+<a id="a24086b03c5c063849df0307f78c41c54" name="a24086b03c5c063849df0307f78c41c54"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a24086b03c5c063849df0307f78c41c54">&#9670;&nbsp;</a></span>parse_event_t</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="classnlohmann_1_1basic__json.html">nlohmann::basic_json</a>&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, <a class="el" href="classBinaryType.html">BinaryType</a> &gt;::parse_event_t =  <a class="el" href="namespacenlohmann_1_1detail.html#a59e696b1dad6d0d99c172ac4518c2042">detail::parse_event_t</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>parser event types </p>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/parse_event_t/">https://json.nlohmann.me/api/basic_json/parse_event_t/</a> </dd></dl>
+
+</div>
+</div>
+<a id="a0273d074462644e5d5a7ff313ad0d742" name="a0273d074462644e5d5a7ff313ad0d742"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0273d074462644e5d5a7ff313ad0d742">&#9670;&nbsp;</a></span>parser_callback_t</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="classnlohmann_1_1basic__json.html">nlohmann::basic_json</a>&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, <a class="el" href="classBinaryType.html">BinaryType</a> &gt;::parser_callback_t =  detail::parser_callback_t&lt;<a class="el" href="classnlohmann_1_1basic__json.html">basic_json</a>&gt;</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>per-element parser callback type </p>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/parser_callback_t/">https://json.nlohmann.me/api/basic_json/parser_callback_t/</a> </dd></dl>
+
+</div>
+</div>
+<a id="a33593865ffb1860323dcbd52425b90c8" name="a33593865ffb1860323dcbd52425b90c8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a33593865ffb1860323dcbd52425b90c8">&#9670;&nbsp;</a></span>string_t</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="classnlohmann_1_1basic__json.html">nlohmann::basic_json</a>&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, <a class="el" href="classBinaryType.html">BinaryType</a> &gt;::string_t =  StringType</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>a type for a string </p>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/string_t/">https://json.nlohmann.me/api/basic_json/string_t/</a> </dd></dl>
+
+</div>
+</div>
+<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a id="a19734fbc9c97d536832892ddacd6b62a" name="a19734fbc9c97d536832892ddacd6b62a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a19734fbc9c97d536832892ddacd6b62a">&#9670;&nbsp;</a></span>basic_json() <span class="overload">[1/5]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classnlohmann_1_1basic__json.html">nlohmann::basic_json</a>&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, <a class="el" href="classBinaryType.html">BinaryType</a> &gt;::basic_json </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="namespacenlohmann_1_1detail.html#a1ed8fc6239da25abcaf681d30ace4985">value_t</a>&#160;</td>
+          <td class="paramname"><em>v</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>create an empty value with a given type </p>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/basic_json/">https://json.nlohmann.me/api/basic_json/basic_json/</a> </dd></dl>
+
+<p class="reference">Referenced by <a class="el" href="classnlohmann_1_1basic__json.html#a76126242de262f6d38cadda19e0d13e1">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::swap()</a>.</p>
+
+</div>
+</div>
+<a id="ace6fbaf6c64f60b61922b5c9d3e61aa6" name="ace6fbaf6c64f60b61922b5c9d3e61aa6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ace6fbaf6c64f60b61922b5c9d3e61aa6">&#9670;&nbsp;</a></span>basic_json() <span class="overload">[2/5]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -841,143 +1079,108 @@ template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, 
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classbool.html">bool</a> operator!= </td>
+          <td class="memname"><a class="el" href="classnlohmann_1_1basic__json.html">nlohmann::basic_json</a>&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, <a class="el" href="classBinaryType.html">BinaryType</a> &gt;::basic_json </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classnlohmann_1_1basic__json.html#ab8a1c33ee7b154fc41ca2545aa9724e6">const_reference</a>&#160;</td>
-          <td class="paramname"><em>lhs</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
+          <td class="paramtype">std::nullptr_t&#160;</td>
+          <td class="paramname"> = <code>nullptr</code></td><td>)</td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classnlohmann_1_1basic__json.html#ab8a1c33ee7b154fc41ca2545aa9724e6">const_reference</a>&#160;</td>
-          <td class="paramname"><em>rhs</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
         </tr>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">friend</span></span>  </td>
+<span class="mlabels"><span class="mlabel">noexcept</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 
-<p>comparison: not equal </p>
-<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/operator_ne/">https://json.nlohmann.me/api/basic_json/operator_ne/</a> </dd></dl>
+<p>create a null object </p>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/basic_json/">https://json.nlohmann.me/api/basic_json/basic_json/</a> </dd></dl>
 
 </div>
 </div>
-<a id="a4d581dc2ab78091885f9af24d13749dc" name="a4d581dc2ab78091885f9af24d13749dc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4d581dc2ab78091885f9af24d13749dc">&#9670;&nbsp;</a></span>operator!= <span class="overload">[2/3]</span></h2>
+<a id="adda5ebaff0503f92c8b3d65cfb610ea5" name="adda5ebaff0503f92c8b3d65cfb610ea5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adda5ebaff0503f92c8b3d65cfb610ea5">&#9670;&nbsp;</a></span>basic_json() <span class="overload">[3/5]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
 template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
 <div class="memtemplate">
-template&lt;typename ScalarType , typename std::enable_if&lt; std::is_scalar&lt; ScalarType &gt;<a class="el" href="classnlohmann_1_1basic__json.html#a11641b35219676b225d9bd15c7677659">::value</a>, <a class="el" href="classint.html">int</a> &gt;::type  = 0&gt; </div>
+template&lt;typename CompatibleType , typename U  = detail::uncvref_t&lt;CompatibleType&gt;, detail::enable_if_t&lt; !<a class="el" href="structnlohmann_1_1detail_1_1is__basic__json.html">detail::is_basic_json</a>&lt; U &gt;<a class="el" href="classnlohmann_1_1basic__json.html#a11641b35219676b225d9bd15c7677659">::value</a> &amp;&amp;<a class="el" href="structnlohmann_1_1detail_1_1is__compatible__type.html">detail::is_compatible_type</a>&lt; <a class="el" href="classnlohmann_1_1basic__json.html">basic_json_t</a>, U &gt;<a class="el" href="classnlohmann_1_1basic__json.html#a11641b35219676b225d9bd15c7677659">::value</a>, <a class="el" href="classint.html">int</a> &gt;  = 0&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classbool.html">bool</a> operator!= </td>
+          <td class="memname"><a class="el" href="classnlohmann_1_1basic__json.html">nlohmann::basic_json</a>&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, <a class="el" href="classBinaryType.html">BinaryType</a> &gt;::basic_json </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classnlohmann_1_1basic__json.html#ab8a1c33ee7b154fc41ca2545aa9724e6">const_reference</a>&#160;</td>
-          <td class="paramname"><em>lhs</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
+          <td class="paramtype">CompatibleType &amp;&amp;&#160;</td>
+          <td class="paramname"><em>val</em></td><td>)</td>
           <td></td>
-          <td class="paramtype">ScalarType&#160;</td>
-          <td class="paramname"><em>rhs</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
         </tr>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">friend</span></span>  </td>
+<span class="mlabels"><span class="mlabel">noexcept</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 
-<p>comparison: not equal </p>
-<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/operator_ne/">https://json.nlohmann.me/api/basic_json/operator_ne/</a> </dd></dl>
+<p>create a JSON value from compatible types </p>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/basic_json/">https://json.nlohmann.me/api/basic_json/basic_json/</a> </dd></dl>
 
 </div>
 </div>
-<a id="aa9861979059799375c0fff68174610ba" name="aa9861979059799375c0fff68174610ba"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa9861979059799375c0fff68174610ba">&#9670;&nbsp;</a></span>operator!= <span class="overload">[3/3]</span></h2>
+<a id="a40738eb9cb8c5a9ca14ae4b697c29f8e" name="a40738eb9cb8c5a9ca14ae4b697c29f8e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a40738eb9cb8c5a9ca14ae4b697c29f8e">&#9670;&nbsp;</a></span>basic_json() <span class="overload">[4/5]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
 template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
 <div class="memtemplate">
-template&lt;typename ScalarType , typename std::enable_if&lt; std::is_scalar&lt; ScalarType &gt;<a class="el" href="classnlohmann_1_1basic__json.html#a11641b35219676b225d9bd15c7677659">::value</a>, <a class="el" href="classint.html">int</a> &gt;::type  = 0&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
+template&lt;typename BasicJsonType , detail::enable_if_t&lt; <a class="el" href="structnlohmann_1_1detail_1_1is__basic__json.html">detail::is_basic_json</a>&lt; BasicJsonType &gt;<a class="el" href="classnlohmann_1_1basic__json.html#a11641b35219676b225d9bd15c7677659">::value</a> &amp;&amp;!std::is_same&lt; <a class="el" href="classnlohmann_1_1basic__json.html">basic_json</a>, BasicJsonType &gt;<a class="el" href="classnlohmann_1_1basic__json.html#a11641b35219676b225d9bd15c7677659">::value</a>, <a class="el" href="classint.html">int</a> &gt;  = 0&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classbool.html">bool</a> operator!= </td>
+          <td class="memname"><a class="el" href="classnlohmann_1_1basic__json.html">nlohmann::basic_json</a>&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, <a class="el" href="classBinaryType.html">BinaryType</a> &gt;::basic_json </td>
           <td>(</td>
-          <td class="paramtype">ScalarType&#160;</td>
-          <td class="paramname"><em>lhs</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
+          <td class="paramtype">const BasicJsonType &amp;&#160;</td>
+          <td class="paramname"><em>val</em></td><td>)</td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classnlohmann_1_1basic__json.html#ab8a1c33ee7b154fc41ca2545aa9724e6">const_reference</a>&#160;</td>
-          <td class="paramname"><em>rhs</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">friend</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
 
-<p>comparison: not equal </p>
-<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/operator_ne/">https://json.nlohmann.me/api/basic_json/operator_ne/</a> </dd></dl>
+<p>create a JSON value from an existing one </p>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/basic_json/">https://json.nlohmann.me/api/basic_json/basic_json/</a> </dd></dl>
 
 </div>
 </div>
-<a id="aacd442b66140c764c594ac8ad7dfd5b3" name="aacd442b66140c764c594ac8ad7dfd5b3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aacd442b66140c764c594ac8ad7dfd5b3">&#9670;&nbsp;</a></span>operator&lt; <span class="overload">[1/3]</span></h2>
+<a id="aeac617faf3448d6d2cb33a020be01d37" name="aeac617faf3448d6d2cb33a020be01d37"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aeac617faf3448d6d2cb33a020be01d37">&#9670;&nbsp;</a></span>basic_json() <span class="overload">[5/5]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
 template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classbool.html">bool</a> operator&lt; </td>
+          <td class="memname"><a class="el" href="classnlohmann_1_1basic__json.html">nlohmann::basic_json</a>&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, <a class="el" href="classBinaryType.html">BinaryType</a> &gt;::basic_json </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classnlohmann_1_1basic__json.html#ab8a1c33ee7b154fc41ca2545aa9724e6">const_reference</a>&#160;</td>
-          <td class="paramname"><em>lhs</em>, </td>
+          <td class="paramtype"><a class="el" href="classnlohmann_1_1basic__json.html#ac569f292a070dfd2f6b69c16e746095a">initializer_list_t</a>&#160;</td>
+          <td class="paramname"><em>init</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classnlohmann_1_1basic__json.html#ab8a1c33ee7b154fc41ca2545aa9724e6">const_reference</a>&#160;</td>
-          <td class="paramname"><em>rhs</em>&#160;</td>
+          <td class="paramtype"><a class="el" href="classbool.html">bool</a>&#160;</td>
+          <td class="paramname"><em>type_deduction</em> = <code>true</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespacenlohmann_1_1detail.html#a1ed8fc6239da25abcaf681d30ace4985">value_t</a>&#160;</td>
+          <td class="paramname"><em>manual_type</em> = <code><a class="el" href="namespacenlohmann_1_1detail.html#a1ed8fc6239da25abcaf681d30ace4985af1f713c9e000f5d3f280adbd124df4f5">value_t::array</a></code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -985,691 +1188,10 @@ template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, 
           <td></td><td></td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">friend</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
 
-<p>comparison: less than </p>
-<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/operator_lt/">https://json.nlohmann.me/api/basic_json/operator_lt/</a> </dd></dl>
-
-</div>
-</div>
-<a id="a52907b78829a55473f2548530cf2c1c7" name="a52907b78829a55473f2548530cf2c1c7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a52907b78829a55473f2548530cf2c1c7">&#9670;&nbsp;</a></span>operator&lt; <span class="overload">[2/3]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
-<div class="memtemplate">
-template&lt;typename ScalarType , typename std::enable_if&lt; std::is_scalar&lt; ScalarType &gt;<a class="el" href="classnlohmann_1_1basic__json.html#a11641b35219676b225d9bd15c7677659">::value</a>, <a class="el" href="classint.html">int</a> &gt;::type  = 0&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classbool.html">bool</a> operator&lt; </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classnlohmann_1_1basic__json.html#ab8a1c33ee7b154fc41ca2545aa9724e6">const_reference</a>&#160;</td>
-          <td class="paramname"><em>lhs</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">ScalarType&#160;</td>
-          <td class="paramname"><em>rhs</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">friend</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>comparison: less than </p>
-<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/operator_lt/">https://json.nlohmann.me/api/basic_json/operator_lt/</a> </dd></dl>
-
-</div>
-</div>
-<a id="a71f65ff3abee4c140e27ca64fa327973" name="a71f65ff3abee4c140e27ca64fa327973"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a71f65ff3abee4c140e27ca64fa327973">&#9670;&nbsp;</a></span>operator&lt; <span class="overload">[3/3]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
-<div class="memtemplate">
-template&lt;typename ScalarType , typename std::enable_if&lt; std::is_scalar&lt; ScalarType &gt;<a class="el" href="classnlohmann_1_1basic__json.html#a11641b35219676b225d9bd15c7677659">::value</a>, <a class="el" href="classint.html">int</a> &gt;::type  = 0&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classbool.html">bool</a> operator&lt; </td>
-          <td>(</td>
-          <td class="paramtype">ScalarType&#160;</td>
-          <td class="paramname"><em>lhs</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classnlohmann_1_1basic__json.html#ab8a1c33ee7b154fc41ca2545aa9724e6">const_reference</a>&#160;</td>
-          <td class="paramname"><em>rhs</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">friend</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>comparison: less than </p>
-<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/operator_lt/">https://json.nlohmann.me/api/basic_json/operator_lt/</a> </dd></dl>
-
-</div>
-</div>
-<a id="a5bbe57177fdb5833885dc1567ec13394" name="a5bbe57177fdb5833885dc1567ec13394"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5bbe57177fdb5833885dc1567ec13394">&#9670;&nbsp;</a></span>operator&lt;&lt;</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">std::ostream &amp; operator&lt;&lt; </td>
-          <td>(</td>
-          <td class="paramtype">std::ostream &amp;&#160;</td>
-          <td class="paramname"><em>o</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="el" href="classnlohmann_1_1basic__json.html">basic_json</a>&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, <a class="el" href="classBinaryType.html">BinaryType</a> &gt; &amp;&#160;</td>
-          <td class="paramname"><em>j</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">friend</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>serialize to stream </p>
-<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/operator_ltlt/">https://json.nlohmann.me/api/basic_json/operator_ltlt/</a> </dd></dl>
-
-</div>
-</div>
-<a id="a5c8bb5200f5eac10d31e26be46e5b1ac" name="a5c8bb5200f5eac10d31e26be46e5b1ac"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5c8bb5200f5eac10d31e26be46e5b1ac">&#9670;&nbsp;</a></span>operator&lt;= <span class="overload">[1/3]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classbool.html">bool</a> operator&lt;= </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classnlohmann_1_1basic__json.html#ab8a1c33ee7b154fc41ca2545aa9724e6">const_reference</a>&#160;</td>
-          <td class="paramname"><em>lhs</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classnlohmann_1_1basic__json.html#ab8a1c33ee7b154fc41ca2545aa9724e6">const_reference</a>&#160;</td>
-          <td class="paramname"><em>rhs</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">friend</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>comparison: less than or equal </p>
-<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/operator_le/">https://json.nlohmann.me/api/basic_json/operator_le/</a> </dd></dl>
-
-</div>
-</div>
-<a id="ae7bce6989e2bf72aa0784ca6755e22a9" name="ae7bce6989e2bf72aa0784ca6755e22a9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae7bce6989e2bf72aa0784ca6755e22a9">&#9670;&nbsp;</a></span>operator&lt;= <span class="overload">[2/3]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
-<div class="memtemplate">
-template&lt;typename ScalarType , typename std::enable_if&lt; std::is_scalar&lt; ScalarType &gt;<a class="el" href="classnlohmann_1_1basic__json.html#a11641b35219676b225d9bd15c7677659">::value</a>, <a class="el" href="classint.html">int</a> &gt;::type  = 0&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classbool.html">bool</a> operator&lt;= </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classnlohmann_1_1basic__json.html#ab8a1c33ee7b154fc41ca2545aa9724e6">const_reference</a>&#160;</td>
-          <td class="paramname"><em>lhs</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">ScalarType&#160;</td>
-          <td class="paramname"><em>rhs</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">friend</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>comparison: less than or equal </p>
-<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/operator_le/">https://json.nlohmann.me/api/basic_json/operator_le/</a> </dd></dl>
-
-</div>
-</div>
-<a id="a4e96b98c1f8dfccaaa94aa0d5e77427c" name="a4e96b98c1f8dfccaaa94aa0d5e77427c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4e96b98c1f8dfccaaa94aa0d5e77427c">&#9670;&nbsp;</a></span>operator&lt;= <span class="overload">[3/3]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
-<div class="memtemplate">
-template&lt;typename ScalarType , typename std::enable_if&lt; std::is_scalar&lt; ScalarType &gt;<a class="el" href="classnlohmann_1_1basic__json.html#a11641b35219676b225d9bd15c7677659">::value</a>, <a class="el" href="classint.html">int</a> &gt;::type  = 0&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classbool.html">bool</a> operator&lt;= </td>
-          <td>(</td>
-          <td class="paramtype">ScalarType&#160;</td>
-          <td class="paramname"><em>lhs</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classnlohmann_1_1basic__json.html#ab8a1c33ee7b154fc41ca2545aa9724e6">const_reference</a>&#160;</td>
-          <td class="paramname"><em>rhs</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">friend</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>comparison: less than or equal </p>
-<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/operator_le/">https://json.nlohmann.me/api/basic_json/operator_le/</a> </dd></dl>
-
-</div>
-</div>
-<a id="a122640e7e2db1814fc7bbb3c122ec76e" name="a122640e7e2db1814fc7bbb3c122ec76e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a122640e7e2db1814fc7bbb3c122ec76e">&#9670;&nbsp;</a></span>operator== <span class="overload">[1/3]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classbool.html">bool</a> operator== </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classnlohmann_1_1basic__json.html#ab8a1c33ee7b154fc41ca2545aa9724e6">const_reference</a>&#160;</td>
-          <td class="paramname"><em>lhs</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classnlohmann_1_1basic__json.html#ab8a1c33ee7b154fc41ca2545aa9724e6">const_reference</a>&#160;</td>
-          <td class="paramname"><em>rhs</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">friend</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>comparison: equal </p>
-<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/operator_eq/">https://json.nlohmann.me/api/basic_json/operator_eq/</a> </dd></dl>
-
-</div>
-</div>
-<a id="a107a085c92ec4e062d1185b2d09c7978" name="a107a085c92ec4e062d1185b2d09c7978"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a107a085c92ec4e062d1185b2d09c7978">&#9670;&nbsp;</a></span>operator== <span class="overload">[2/3]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
-<div class="memtemplate">
-template&lt;typename ScalarType , typename std::enable_if&lt; std::is_scalar&lt; ScalarType &gt;<a class="el" href="classnlohmann_1_1basic__json.html#a11641b35219676b225d9bd15c7677659">::value</a>, <a class="el" href="classint.html">int</a> &gt;::type  = 0&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classbool.html">bool</a> operator== </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classnlohmann_1_1basic__json.html#ab8a1c33ee7b154fc41ca2545aa9724e6">const_reference</a>&#160;</td>
-          <td class="paramname"><em>lhs</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">ScalarType&#160;</td>
-          <td class="paramname"><em>rhs</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">friend</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>comparison: equal </p>
-<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/operator_eq/">https://json.nlohmann.me/api/basic_json/operator_eq/</a> </dd></dl>
-
-</div>
-</div>
-<a id="a24ae7acd5b06ae49cfe1c94633436b68" name="a24ae7acd5b06ae49cfe1c94633436b68"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a24ae7acd5b06ae49cfe1c94633436b68">&#9670;&nbsp;</a></span>operator== <span class="overload">[3/3]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
-<div class="memtemplate">
-template&lt;typename ScalarType , typename std::enable_if&lt; std::is_scalar&lt; ScalarType &gt;<a class="el" href="classnlohmann_1_1basic__json.html#a11641b35219676b225d9bd15c7677659">::value</a>, <a class="el" href="classint.html">int</a> &gt;::type  = 0&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classbool.html">bool</a> operator== </td>
-          <td>(</td>
-          <td class="paramtype">ScalarType&#160;</td>
-          <td class="paramname"><em>lhs</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classnlohmann_1_1basic__json.html#ab8a1c33ee7b154fc41ca2545aa9724e6">const_reference</a>&#160;</td>
-          <td class="paramname"><em>rhs</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">friend</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>comparison: equal </p>
-<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/operator_eq/">https://json.nlohmann.me/api/basic_json/operator_eq/</a> </dd></dl>
-
-</div>
-</div>
-<a id="a87db51b6b936fb2ea293cdbc8702dcb8" name="a87db51b6b936fb2ea293cdbc8702dcb8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a87db51b6b936fb2ea293cdbc8702dcb8">&#9670;&nbsp;</a></span>operator&gt; <span class="overload">[1/3]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classbool.html">bool</a> operator&gt; </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classnlohmann_1_1basic__json.html#ab8a1c33ee7b154fc41ca2545aa9724e6">const_reference</a>&#160;</td>
-          <td class="paramname"><em>lhs</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classnlohmann_1_1basic__json.html#ab8a1c33ee7b154fc41ca2545aa9724e6">const_reference</a>&#160;</td>
-          <td class="paramname"><em>rhs</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">friend</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>comparison: greater than </p>
-<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/operator_gt/">https://json.nlohmann.me/api/basic_json/operator_gt/</a> </dd></dl>
-
-</div>
-</div>
-<a id="a9ea8e0e86820fcb3ab0fc937d41226e7" name="a9ea8e0e86820fcb3ab0fc937d41226e7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9ea8e0e86820fcb3ab0fc937d41226e7">&#9670;&nbsp;</a></span>operator&gt; <span class="overload">[2/3]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
-<div class="memtemplate">
-template&lt;typename ScalarType , typename std::enable_if&lt; std::is_scalar&lt; ScalarType &gt;<a class="el" href="classnlohmann_1_1basic__json.html#a11641b35219676b225d9bd15c7677659">::value</a>, <a class="el" href="classint.html">int</a> &gt;::type  = 0&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classbool.html">bool</a> operator&gt; </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classnlohmann_1_1basic__json.html#ab8a1c33ee7b154fc41ca2545aa9724e6">const_reference</a>&#160;</td>
-          <td class="paramname"><em>lhs</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">ScalarType&#160;</td>
-          <td class="paramname"><em>rhs</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">friend</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>comparison: greater than </p>
-<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/operator_gt/">https://json.nlohmann.me/api/basic_json/operator_gt/</a> </dd></dl>
-
-</div>
-</div>
-<a id="a67771044f08fd07105b34667615d9e0e" name="a67771044f08fd07105b34667615d9e0e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a67771044f08fd07105b34667615d9e0e">&#9670;&nbsp;</a></span>operator&gt; <span class="overload">[3/3]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
-<div class="memtemplate">
-template&lt;typename ScalarType , typename std::enable_if&lt; std::is_scalar&lt; ScalarType &gt;<a class="el" href="classnlohmann_1_1basic__json.html#a11641b35219676b225d9bd15c7677659">::value</a>, <a class="el" href="classint.html">int</a> &gt;::type  = 0&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classbool.html">bool</a> operator&gt; </td>
-          <td>(</td>
-          <td class="paramtype">ScalarType&#160;</td>
-          <td class="paramname"><em>lhs</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classnlohmann_1_1basic__json.html#ab8a1c33ee7b154fc41ca2545aa9724e6">const_reference</a>&#160;</td>
-          <td class="paramname"><em>rhs</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">friend</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>comparison: greater than </p>
-<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/operator_gt/">https://json.nlohmann.me/api/basic_json/operator_gt/</a> </dd></dl>
-
-</div>
-</div>
-<a id="a74a943800c7f103d0990d7eef82c6453" name="a74a943800c7f103d0990d7eef82c6453"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a74a943800c7f103d0990d7eef82c6453">&#9670;&nbsp;</a></span>operator&gt;= <span class="overload">[1/3]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classbool.html">bool</a> operator&gt;= </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classnlohmann_1_1basic__json.html#ab8a1c33ee7b154fc41ca2545aa9724e6">const_reference</a>&#160;</td>
-          <td class="paramname"><em>lhs</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classnlohmann_1_1basic__json.html#ab8a1c33ee7b154fc41ca2545aa9724e6">const_reference</a>&#160;</td>
-          <td class="paramname"><em>rhs</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">friend</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>comparison: greater than or equal </p>
-<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/operator_ge/">https://json.nlohmann.me/api/basic_json/operator_ge/</a> </dd></dl>
-
-</div>
-</div>
-<a id="ab83d11de4db25633f93e067aa218cae9" name="ab83d11de4db25633f93e067aa218cae9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab83d11de4db25633f93e067aa218cae9">&#9670;&nbsp;</a></span>operator&gt;= <span class="overload">[2/3]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
-<div class="memtemplate">
-template&lt;typename ScalarType , typename std::enable_if&lt; std::is_scalar&lt; ScalarType &gt;<a class="el" href="classnlohmann_1_1basic__json.html#a11641b35219676b225d9bd15c7677659">::value</a>, <a class="el" href="classint.html">int</a> &gt;::type  = 0&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classbool.html">bool</a> operator&gt;= </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classnlohmann_1_1basic__json.html#ab8a1c33ee7b154fc41ca2545aa9724e6">const_reference</a>&#160;</td>
-          <td class="paramname"><em>lhs</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">ScalarType&#160;</td>
-          <td class="paramname"><em>rhs</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">friend</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>comparison: greater than or equal </p>
-<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/operator_ge/">https://json.nlohmann.me/api/basic_json/operator_ge/</a> </dd></dl>
-
-</div>
-</div>
-<a id="a94c61e0128f0794e7a34e1aecee5c445" name="a94c61e0128f0794e7a34e1aecee5c445"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a94c61e0128f0794e7a34e1aecee5c445">&#9670;&nbsp;</a></span>operator&gt;= <span class="overload">[3/3]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
-<div class="memtemplate">
-template&lt;typename ScalarType , typename std::enable_if&lt; std::is_scalar&lt; ScalarType &gt;<a class="el" href="classnlohmann_1_1basic__json.html#a11641b35219676b225d9bd15c7677659">::value</a>, <a class="el" href="classint.html">int</a> &gt;::type  = 0&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classbool.html">bool</a> operator&gt;= </td>
-          <td>(</td>
-          <td class="paramtype">ScalarType&#160;</td>
-          <td class="paramname"><em>lhs</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classnlohmann_1_1basic__json.html#ab8a1c33ee7b154fc41ca2545aa9724e6">const_reference</a>&#160;</td>
-          <td class="paramname"><em>rhs</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">friend</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>comparison: greater than or equal </p>
-<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/operator_ge/">https://json.nlohmann.me/api/basic_json/operator_ge/</a> </dd></dl>
-
-</div>
-</div>
-<a id="aee0ae36cbfb0336832ebc0374c3c7679" name="aee0ae36cbfb0336832ebc0374c3c7679"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aee0ae36cbfb0336832ebc0374c3c7679">&#9670;&nbsp;</a></span>swap</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void swap </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classnlohmann_1_1basic__json.html#a220ae98554a76205fb7f8822d36b2d5a">reference</a>&#160;</td>
-          <td class="paramname"><em>left</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classnlohmann_1_1basic__json.html#a220ae98554a76205fb7f8822d36b2d5a">reference</a>&#160;</td>
-          <td class="paramname"><em>right</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">friend</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>exchanges the values </p>
-<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/swap/">https://json.nlohmann.me/api/basic_json/swap/</a> </dd></dl>
+<p>create a container (array or object) from an initializer list </p>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/basic_json/">https://json.nlohmann.me/api/basic_json/basic_json/</a> </dd></dl>
 
 </div>
 </div>
@@ -4760,6 +4282,851 @@ template&lt;class ValueType , typename std::enable_if&lt; <a class="el" href="st
 
 </div>
 </div>
+<h2 class="groupheader">Friends And Related Function Documentation</h2>
+<a id="a6e2e21da48f5d9471716cd868a068327" name="a6e2e21da48f5d9471716cd868a068327"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6e2e21da48f5d9471716cd868a068327">&#9670;&nbsp;</a></span>operator!= <span class="overload">[1/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classbool.html">bool</a> operator!= </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classnlohmann_1_1basic__json.html#ab8a1c33ee7b154fc41ca2545aa9724e6">const_reference</a>&#160;</td>
+          <td class="paramname"><em>lhs</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classnlohmann_1_1basic__json.html#ab8a1c33ee7b154fc41ca2545aa9724e6">const_reference</a>&#160;</td>
+          <td class="paramname"><em>rhs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">friend</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>comparison: not equal </p>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/operator_ne/">https://json.nlohmann.me/api/basic_json/operator_ne/</a> </dd></dl>
+
+</div>
+</div>
+<a id="a4d581dc2ab78091885f9af24d13749dc" name="a4d581dc2ab78091885f9af24d13749dc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4d581dc2ab78091885f9af24d13749dc">&#9670;&nbsp;</a></span>operator!= <span class="overload">[2/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
+<div class="memtemplate">
+template&lt;typename ScalarType , typename std::enable_if&lt; std::is_scalar&lt; ScalarType &gt;<a class="el" href="classnlohmann_1_1basic__json.html#a11641b35219676b225d9bd15c7677659">::value</a>, <a class="el" href="classint.html">int</a> &gt;::type  = 0&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classbool.html">bool</a> operator!= </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classnlohmann_1_1basic__json.html#ab8a1c33ee7b154fc41ca2545aa9724e6">const_reference</a>&#160;</td>
+          <td class="paramname"><em>lhs</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">ScalarType&#160;</td>
+          <td class="paramname"><em>rhs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">friend</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>comparison: not equal </p>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/operator_ne/">https://json.nlohmann.me/api/basic_json/operator_ne/</a> </dd></dl>
+
+</div>
+</div>
+<a id="aa9861979059799375c0fff68174610ba" name="aa9861979059799375c0fff68174610ba"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa9861979059799375c0fff68174610ba">&#9670;&nbsp;</a></span>operator!= <span class="overload">[3/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
+<div class="memtemplate">
+template&lt;typename ScalarType , typename std::enable_if&lt; std::is_scalar&lt; ScalarType &gt;<a class="el" href="classnlohmann_1_1basic__json.html#a11641b35219676b225d9bd15c7677659">::value</a>, <a class="el" href="classint.html">int</a> &gt;::type  = 0&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classbool.html">bool</a> operator!= </td>
+          <td>(</td>
+          <td class="paramtype">ScalarType&#160;</td>
+          <td class="paramname"><em>lhs</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classnlohmann_1_1basic__json.html#ab8a1c33ee7b154fc41ca2545aa9724e6">const_reference</a>&#160;</td>
+          <td class="paramname"><em>rhs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">friend</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>comparison: not equal </p>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/operator_ne/">https://json.nlohmann.me/api/basic_json/operator_ne/</a> </dd></dl>
+
+</div>
+</div>
+<a id="aacd442b66140c764c594ac8ad7dfd5b3" name="aacd442b66140c764c594ac8ad7dfd5b3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aacd442b66140c764c594ac8ad7dfd5b3">&#9670;&nbsp;</a></span>operator&lt; <span class="overload">[1/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classbool.html">bool</a> operator&lt; </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classnlohmann_1_1basic__json.html#ab8a1c33ee7b154fc41ca2545aa9724e6">const_reference</a>&#160;</td>
+          <td class="paramname"><em>lhs</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classnlohmann_1_1basic__json.html#ab8a1c33ee7b154fc41ca2545aa9724e6">const_reference</a>&#160;</td>
+          <td class="paramname"><em>rhs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">friend</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>comparison: less than </p>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/operator_lt/">https://json.nlohmann.me/api/basic_json/operator_lt/</a> </dd></dl>
+
+</div>
+</div>
+<a id="a52907b78829a55473f2548530cf2c1c7" name="a52907b78829a55473f2548530cf2c1c7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a52907b78829a55473f2548530cf2c1c7">&#9670;&nbsp;</a></span>operator&lt; <span class="overload">[2/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
+<div class="memtemplate">
+template&lt;typename ScalarType , typename std::enable_if&lt; std::is_scalar&lt; ScalarType &gt;<a class="el" href="classnlohmann_1_1basic__json.html#a11641b35219676b225d9bd15c7677659">::value</a>, <a class="el" href="classint.html">int</a> &gt;::type  = 0&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classbool.html">bool</a> operator&lt; </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classnlohmann_1_1basic__json.html#ab8a1c33ee7b154fc41ca2545aa9724e6">const_reference</a>&#160;</td>
+          <td class="paramname"><em>lhs</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">ScalarType&#160;</td>
+          <td class="paramname"><em>rhs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">friend</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>comparison: less than </p>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/operator_lt/">https://json.nlohmann.me/api/basic_json/operator_lt/</a> </dd></dl>
+
+</div>
+</div>
+<a id="a71f65ff3abee4c140e27ca64fa327973" name="a71f65ff3abee4c140e27ca64fa327973"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a71f65ff3abee4c140e27ca64fa327973">&#9670;&nbsp;</a></span>operator&lt; <span class="overload">[3/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
+<div class="memtemplate">
+template&lt;typename ScalarType , typename std::enable_if&lt; std::is_scalar&lt; ScalarType &gt;<a class="el" href="classnlohmann_1_1basic__json.html#a11641b35219676b225d9bd15c7677659">::value</a>, <a class="el" href="classint.html">int</a> &gt;::type  = 0&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classbool.html">bool</a> operator&lt; </td>
+          <td>(</td>
+          <td class="paramtype">ScalarType&#160;</td>
+          <td class="paramname"><em>lhs</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classnlohmann_1_1basic__json.html#ab8a1c33ee7b154fc41ca2545aa9724e6">const_reference</a>&#160;</td>
+          <td class="paramname"><em>rhs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">friend</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>comparison: less than </p>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/operator_lt/">https://json.nlohmann.me/api/basic_json/operator_lt/</a> </dd></dl>
+
+</div>
+</div>
+<a id="a5bbe57177fdb5833885dc1567ec13394" name="a5bbe57177fdb5833885dc1567ec13394"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5bbe57177fdb5833885dc1567ec13394">&#9670;&nbsp;</a></span>operator&lt;&lt;</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::ostream &amp; operator&lt;&lt; </td>
+          <td>(</td>
+          <td class="paramtype">std::ostream &amp;&#160;</td>
+          <td class="paramname"><em>o</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classnlohmann_1_1basic__json.html">basic_json</a>&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, <a class="el" href="classBinaryType.html">BinaryType</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>j</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">friend</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>serialize to stream </p>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/operator_ltlt/">https://json.nlohmann.me/api/basic_json/operator_ltlt/</a> </dd></dl>
+
+</div>
+</div>
+<a id="a5c8bb5200f5eac10d31e26be46e5b1ac" name="a5c8bb5200f5eac10d31e26be46e5b1ac"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5c8bb5200f5eac10d31e26be46e5b1ac">&#9670;&nbsp;</a></span>operator&lt;= <span class="overload">[1/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classbool.html">bool</a> operator&lt;= </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classnlohmann_1_1basic__json.html#ab8a1c33ee7b154fc41ca2545aa9724e6">const_reference</a>&#160;</td>
+          <td class="paramname"><em>lhs</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classnlohmann_1_1basic__json.html#ab8a1c33ee7b154fc41ca2545aa9724e6">const_reference</a>&#160;</td>
+          <td class="paramname"><em>rhs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">friend</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>comparison: less than or equal </p>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/operator_le/">https://json.nlohmann.me/api/basic_json/operator_le/</a> </dd></dl>
+
+</div>
+</div>
+<a id="ae7bce6989e2bf72aa0784ca6755e22a9" name="ae7bce6989e2bf72aa0784ca6755e22a9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae7bce6989e2bf72aa0784ca6755e22a9">&#9670;&nbsp;</a></span>operator&lt;= <span class="overload">[2/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
+<div class="memtemplate">
+template&lt;typename ScalarType , typename std::enable_if&lt; std::is_scalar&lt; ScalarType &gt;<a class="el" href="classnlohmann_1_1basic__json.html#a11641b35219676b225d9bd15c7677659">::value</a>, <a class="el" href="classint.html">int</a> &gt;::type  = 0&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classbool.html">bool</a> operator&lt;= </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classnlohmann_1_1basic__json.html#ab8a1c33ee7b154fc41ca2545aa9724e6">const_reference</a>&#160;</td>
+          <td class="paramname"><em>lhs</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">ScalarType&#160;</td>
+          <td class="paramname"><em>rhs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">friend</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>comparison: less than or equal </p>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/operator_le/">https://json.nlohmann.me/api/basic_json/operator_le/</a> </dd></dl>
+
+</div>
+</div>
+<a id="a4e96b98c1f8dfccaaa94aa0d5e77427c" name="a4e96b98c1f8dfccaaa94aa0d5e77427c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4e96b98c1f8dfccaaa94aa0d5e77427c">&#9670;&nbsp;</a></span>operator&lt;= <span class="overload">[3/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
+<div class="memtemplate">
+template&lt;typename ScalarType , typename std::enable_if&lt; std::is_scalar&lt; ScalarType &gt;<a class="el" href="classnlohmann_1_1basic__json.html#a11641b35219676b225d9bd15c7677659">::value</a>, <a class="el" href="classint.html">int</a> &gt;::type  = 0&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classbool.html">bool</a> operator&lt;= </td>
+          <td>(</td>
+          <td class="paramtype">ScalarType&#160;</td>
+          <td class="paramname"><em>lhs</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classnlohmann_1_1basic__json.html#ab8a1c33ee7b154fc41ca2545aa9724e6">const_reference</a>&#160;</td>
+          <td class="paramname"><em>rhs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">friend</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>comparison: less than or equal </p>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/operator_le/">https://json.nlohmann.me/api/basic_json/operator_le/</a> </dd></dl>
+
+</div>
+</div>
+<a id="a122640e7e2db1814fc7bbb3c122ec76e" name="a122640e7e2db1814fc7bbb3c122ec76e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a122640e7e2db1814fc7bbb3c122ec76e">&#9670;&nbsp;</a></span>operator== <span class="overload">[1/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classbool.html">bool</a> operator== </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classnlohmann_1_1basic__json.html#ab8a1c33ee7b154fc41ca2545aa9724e6">const_reference</a>&#160;</td>
+          <td class="paramname"><em>lhs</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classnlohmann_1_1basic__json.html#ab8a1c33ee7b154fc41ca2545aa9724e6">const_reference</a>&#160;</td>
+          <td class="paramname"><em>rhs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">friend</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>comparison: equal </p>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/operator_eq/">https://json.nlohmann.me/api/basic_json/operator_eq/</a> </dd></dl>
+
+</div>
+</div>
+<a id="a107a085c92ec4e062d1185b2d09c7978" name="a107a085c92ec4e062d1185b2d09c7978"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a107a085c92ec4e062d1185b2d09c7978">&#9670;&nbsp;</a></span>operator== <span class="overload">[2/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
+<div class="memtemplate">
+template&lt;typename ScalarType , typename std::enable_if&lt; std::is_scalar&lt; ScalarType &gt;<a class="el" href="classnlohmann_1_1basic__json.html#a11641b35219676b225d9bd15c7677659">::value</a>, <a class="el" href="classint.html">int</a> &gt;::type  = 0&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classbool.html">bool</a> operator== </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classnlohmann_1_1basic__json.html#ab8a1c33ee7b154fc41ca2545aa9724e6">const_reference</a>&#160;</td>
+          <td class="paramname"><em>lhs</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">ScalarType&#160;</td>
+          <td class="paramname"><em>rhs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">friend</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>comparison: equal </p>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/operator_eq/">https://json.nlohmann.me/api/basic_json/operator_eq/</a> </dd></dl>
+
+</div>
+</div>
+<a id="a24ae7acd5b06ae49cfe1c94633436b68" name="a24ae7acd5b06ae49cfe1c94633436b68"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a24ae7acd5b06ae49cfe1c94633436b68">&#9670;&nbsp;</a></span>operator== <span class="overload">[3/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
+<div class="memtemplate">
+template&lt;typename ScalarType , typename std::enable_if&lt; std::is_scalar&lt; ScalarType &gt;<a class="el" href="classnlohmann_1_1basic__json.html#a11641b35219676b225d9bd15c7677659">::value</a>, <a class="el" href="classint.html">int</a> &gt;::type  = 0&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classbool.html">bool</a> operator== </td>
+          <td>(</td>
+          <td class="paramtype">ScalarType&#160;</td>
+          <td class="paramname"><em>lhs</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classnlohmann_1_1basic__json.html#ab8a1c33ee7b154fc41ca2545aa9724e6">const_reference</a>&#160;</td>
+          <td class="paramname"><em>rhs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">friend</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>comparison: equal </p>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/operator_eq/">https://json.nlohmann.me/api/basic_json/operator_eq/</a> </dd></dl>
+
+</div>
+</div>
+<a id="a87db51b6b936fb2ea293cdbc8702dcb8" name="a87db51b6b936fb2ea293cdbc8702dcb8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a87db51b6b936fb2ea293cdbc8702dcb8">&#9670;&nbsp;</a></span>operator&gt; <span class="overload">[1/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classbool.html">bool</a> operator&gt; </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classnlohmann_1_1basic__json.html#ab8a1c33ee7b154fc41ca2545aa9724e6">const_reference</a>&#160;</td>
+          <td class="paramname"><em>lhs</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classnlohmann_1_1basic__json.html#ab8a1c33ee7b154fc41ca2545aa9724e6">const_reference</a>&#160;</td>
+          <td class="paramname"><em>rhs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">friend</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>comparison: greater than </p>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/operator_gt/">https://json.nlohmann.me/api/basic_json/operator_gt/</a> </dd></dl>
+
+</div>
+</div>
+<a id="a9ea8e0e86820fcb3ab0fc937d41226e7" name="a9ea8e0e86820fcb3ab0fc937d41226e7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9ea8e0e86820fcb3ab0fc937d41226e7">&#9670;&nbsp;</a></span>operator&gt; <span class="overload">[2/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
+<div class="memtemplate">
+template&lt;typename ScalarType , typename std::enable_if&lt; std::is_scalar&lt; ScalarType &gt;<a class="el" href="classnlohmann_1_1basic__json.html#a11641b35219676b225d9bd15c7677659">::value</a>, <a class="el" href="classint.html">int</a> &gt;::type  = 0&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classbool.html">bool</a> operator&gt; </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classnlohmann_1_1basic__json.html#ab8a1c33ee7b154fc41ca2545aa9724e6">const_reference</a>&#160;</td>
+          <td class="paramname"><em>lhs</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">ScalarType&#160;</td>
+          <td class="paramname"><em>rhs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">friend</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>comparison: greater than </p>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/operator_gt/">https://json.nlohmann.me/api/basic_json/operator_gt/</a> </dd></dl>
+
+</div>
+</div>
+<a id="a67771044f08fd07105b34667615d9e0e" name="a67771044f08fd07105b34667615d9e0e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a67771044f08fd07105b34667615d9e0e">&#9670;&nbsp;</a></span>operator&gt; <span class="overload">[3/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
+<div class="memtemplate">
+template&lt;typename ScalarType , typename std::enable_if&lt; std::is_scalar&lt; ScalarType &gt;<a class="el" href="classnlohmann_1_1basic__json.html#a11641b35219676b225d9bd15c7677659">::value</a>, <a class="el" href="classint.html">int</a> &gt;::type  = 0&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classbool.html">bool</a> operator&gt; </td>
+          <td>(</td>
+          <td class="paramtype">ScalarType&#160;</td>
+          <td class="paramname"><em>lhs</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classnlohmann_1_1basic__json.html#ab8a1c33ee7b154fc41ca2545aa9724e6">const_reference</a>&#160;</td>
+          <td class="paramname"><em>rhs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">friend</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>comparison: greater than </p>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/operator_gt/">https://json.nlohmann.me/api/basic_json/operator_gt/</a> </dd></dl>
+
+</div>
+</div>
+<a id="a74a943800c7f103d0990d7eef82c6453" name="a74a943800c7f103d0990d7eef82c6453"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a74a943800c7f103d0990d7eef82c6453">&#9670;&nbsp;</a></span>operator&gt;= <span class="overload">[1/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classbool.html">bool</a> operator&gt;= </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classnlohmann_1_1basic__json.html#ab8a1c33ee7b154fc41ca2545aa9724e6">const_reference</a>&#160;</td>
+          <td class="paramname"><em>lhs</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classnlohmann_1_1basic__json.html#ab8a1c33ee7b154fc41ca2545aa9724e6">const_reference</a>&#160;</td>
+          <td class="paramname"><em>rhs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">friend</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>comparison: greater than or equal </p>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/operator_ge/">https://json.nlohmann.me/api/basic_json/operator_ge/</a> </dd></dl>
+
+</div>
+</div>
+<a id="ab83d11de4db25633f93e067aa218cae9" name="ab83d11de4db25633f93e067aa218cae9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab83d11de4db25633f93e067aa218cae9">&#9670;&nbsp;</a></span>operator&gt;= <span class="overload">[2/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
+<div class="memtemplate">
+template&lt;typename ScalarType , typename std::enable_if&lt; std::is_scalar&lt; ScalarType &gt;<a class="el" href="classnlohmann_1_1basic__json.html#a11641b35219676b225d9bd15c7677659">::value</a>, <a class="el" href="classint.html">int</a> &gt;::type  = 0&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classbool.html">bool</a> operator&gt;= </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classnlohmann_1_1basic__json.html#ab8a1c33ee7b154fc41ca2545aa9724e6">const_reference</a>&#160;</td>
+          <td class="paramname"><em>lhs</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">ScalarType&#160;</td>
+          <td class="paramname"><em>rhs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">friend</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>comparison: greater than or equal </p>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/operator_ge/">https://json.nlohmann.me/api/basic_json/operator_ge/</a> </dd></dl>
+
+</div>
+</div>
+<a id="a94c61e0128f0794e7a34e1aecee5c445" name="a94c61e0128f0794e7a34e1aecee5c445"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a94c61e0128f0794e7a34e1aecee5c445">&#9670;&nbsp;</a></span>operator&gt;= <span class="overload">[3/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
+<div class="memtemplate">
+template&lt;typename ScalarType , typename std::enable_if&lt; std::is_scalar&lt; ScalarType &gt;<a class="el" href="classnlohmann_1_1basic__json.html#a11641b35219676b225d9bd15c7677659">::value</a>, <a class="el" href="classint.html">int</a> &gt;::type  = 0&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classbool.html">bool</a> operator&gt;= </td>
+          <td>(</td>
+          <td class="paramtype">ScalarType&#160;</td>
+          <td class="paramname"><em>lhs</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classnlohmann_1_1basic__json.html#ab8a1c33ee7b154fc41ca2545aa9724e6">const_reference</a>&#160;</td>
+          <td class="paramname"><em>rhs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">friend</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>comparison: greater than or equal </p>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/operator_ge/">https://json.nlohmann.me/api/basic_json/operator_ge/</a> </dd></dl>
+
+</div>
+</div>
+<a id="aee0ae36cbfb0336832ebc0374c3c7679" name="aee0ae36cbfb0336832ebc0374c3c7679"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aee0ae36cbfb0336832ebc0374c3c7679">&#9670;&nbsp;</a></span>swap</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void swap </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classnlohmann_1_1basic__json.html#a220ae98554a76205fb7f8822d36b2d5a">reference</a>&#160;</td>
+          <td class="paramname"><em>left</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classnlohmann_1_1basic__json.html#a220ae98554a76205fb7f8822d36b2d5a">reference</a>&#160;</td>
+          <td class="paramname"><em>right</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">friend</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>exchanges the values </p>
+<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/swap/">https://json.nlohmann.me/api/basic_json/swap/</a> </dd></dl>
+
+</div>
+</div>
 <h2 class="groupheader">Member Data Documentation</h2>
 <a id="a6b1c287b5766213d54acc69f596904bd" name="a6b1c287b5766213d54acc69f596904bd"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a6b1c287b5766213d54acc69f596904bd">&#9670;&nbsp;</a></span>const</h2>
@@ -4806,370 +5173,6 @@ template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, 
 <div class="line">    </div>
 <div class="line">    <span class="keyword">template</span>&lt;<span class="keyword">class </span>IteratorType</div>
 </div><!-- fragment -->
-</div>
-</div>
-<h2 class="groupheader">Member Typedef Documentation</h2>
-<a id="a858c1cf8407bc06494e3a1114a3b73e7" name="a858c1cf8407bc06494e3a1114a3b73e7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a858c1cf8407bc06494e3a1114a3b73e7">&#9670;&nbsp;</a></span>array_t</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">using <a class="el" href="classnlohmann_1_1basic__json.html">nlohmann::basic_json</a>&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, <a class="el" href="classBinaryType.html">BinaryType</a> &gt;::array_t =  ArrayType&lt;<a class="el" href="classnlohmann_1_1basic__json.html">basic_json</a>, AllocatorType&lt;<a class="el" href="classnlohmann_1_1basic__json.html">basic_json</a>&gt; &gt;</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>a type for an array </p>
-<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/array_t/">https://json.nlohmann.me/api/basic_json/array_t/</a> </dd></dl>
-
-</div>
-</div>
-<a id="ad6c955145bebde84d93991ffed7cd389" name="ad6c955145bebde84d93991ffed7cd389"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad6c955145bebde84d93991ffed7cd389">&#9670;&nbsp;</a></span>binary_t</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">using <a class="el" href="classnlohmann_1_1basic__json.html">nlohmann::basic_json</a>&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, <a class="el" href="classBinaryType.html">BinaryType</a> &gt;::binary_t =  <a class="el" href="classnlohmann_1_1byte__container__with__subtype.html">nlohmann::byte_container_with_subtype</a>&lt;<a class="el" href="classBinaryType.html">BinaryType</a>&gt;</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>a type for a packed binary type </p>
-<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/binary_t/">https://json.nlohmann.me/api/basic_json/binary_t/</a> </dd></dl>
-
-</div>
-</div>
-<a id="a44fd1a12c9c54623c942b430e7a72937" name="a44fd1a12c9c54623c942b430e7a72937"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a44fd1a12c9c54623c942b430e7a72937">&#9670;&nbsp;</a></span>boolean_t</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">using <a class="el" href="classnlohmann_1_1basic__json.html">nlohmann::basic_json</a>&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, <a class="el" href="classBinaryType.html">BinaryType</a> &gt;::boolean_t =  BooleanType</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>a type for a boolean </p>
-<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/boolean_t/">https://json.nlohmann.me/api/basic_json/boolean_t/</a> </dd></dl>
-
-</div>
-</div>
-<a id="a5b8abaebd922d82d69756327c0c347e6" name="a5b8abaebd922d82d69756327c0c347e6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5b8abaebd922d82d69756327c0c347e6">&#9670;&nbsp;</a></span>number_float_t</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">using <a class="el" href="classnlohmann_1_1basic__json.html">nlohmann::basic_json</a>&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, <a class="el" href="classBinaryType.html">BinaryType</a> &gt;::number_float_t =  NumberFloatType</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>a type for a number (floating-point) </p>
-<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/number_float_t/">https://json.nlohmann.me/api/basic_json/number_float_t/</a> </dd></dl>
-
-</div>
-</div>
-<a id="a11e390944da90db83089eb2426a749d3" name="a11e390944da90db83089eb2426a749d3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a11e390944da90db83089eb2426a749d3">&#9670;&nbsp;</a></span>number_integer_t</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">using <a class="el" href="classnlohmann_1_1basic__json.html">nlohmann::basic_json</a>&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, <a class="el" href="classBinaryType.html">BinaryType</a> &gt;::number_integer_t =  NumberIntegerType</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>a type for a number (integer) </p>
-<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/number_integer_t/">https://json.nlohmann.me/api/basic_json/number_integer_t/</a> </dd></dl>
-
-</div>
-</div>
-<a id="ae09af9c23351b7245d9be4d1b2035fef" name="ae09af9c23351b7245d9be4d1b2035fef"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae09af9c23351b7245d9be4d1b2035fef">&#9670;&nbsp;</a></span>number_unsigned_t</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">using <a class="el" href="classnlohmann_1_1basic__json.html">nlohmann::basic_json</a>&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, <a class="el" href="classBinaryType.html">BinaryType</a> &gt;::number_unsigned_t =  NumberUnsignedType</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>a type for a number (unsigned) </p>
-<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/number_unsigned_t/">https://json.nlohmann.me/api/basic_json/number_unsigned_t/</a> </dd></dl>
-
-</div>
-</div>
-<a id="ad777f3c1eacc1d0b3f2ec678a59bb91c" name="ad777f3c1eacc1d0b3f2ec678a59bb91c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad777f3c1eacc1d0b3f2ec678a59bb91c">&#9670;&nbsp;</a></span>object_comparator_t</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">using <a class="el" href="classnlohmann_1_1basic__json.html">nlohmann::basic_json</a>&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, <a class="el" href="classBinaryType.html">BinaryType</a> &gt;::object_comparator_t =  std::less&lt;&gt;</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>object key comparator type </p>
-<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/object_comparator_t/">https://json.nlohmann.me/api/basic_json/object_comparator_t/</a> </dd></dl>
-
-</div>
-</div>
-<a id="aef3ff5a73597850597d1d40db9edd376" name="aef3ff5a73597850597d1d40db9edd376"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aef3ff5a73597850597d1d40db9edd376">&#9670;&nbsp;</a></span>object_t</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">using <a class="el" href="classnlohmann_1_1basic__json.html">nlohmann::basic_json</a>&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, <a class="el" href="classBinaryType.html">BinaryType</a> &gt;::object_t =  ObjectType&lt;StringType, <a class="el" href="classnlohmann_1_1basic__json.html">basic_json</a>, <a class="el" href="classnlohmann_1_1basic__json.html#ad777f3c1eacc1d0b3f2ec678a59bb91c">object_comparator_t</a>, AllocatorType&lt;std::pair&lt;const StringType, <a class="el" href="classnlohmann_1_1basic__json.html">basic_json</a>&gt; &gt;&gt;</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>a type for an object </p>
-<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/object_t/">https://json.nlohmann.me/api/basic_json/object_t/</a> </dd></dl>
-
-</div>
-</div>
-<a id="a24086b03c5c063849df0307f78c41c54" name="a24086b03c5c063849df0307f78c41c54"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a24086b03c5c063849df0307f78c41c54">&#9670;&nbsp;</a></span>parse_event_t</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">using <a class="el" href="classnlohmann_1_1basic__json.html">nlohmann::basic_json</a>&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, <a class="el" href="classBinaryType.html">BinaryType</a> &gt;::parse_event_t =  <a class="el" href="namespacenlohmann_1_1detail.html#a59e696b1dad6d0d99c172ac4518c2042">detail::parse_event_t</a></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>parser event types </p>
-<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/parse_event_t/">https://json.nlohmann.me/api/basic_json/parse_event_t/</a> </dd></dl>
-
-</div>
-</div>
-<a id="a0273d074462644e5d5a7ff313ad0d742" name="a0273d074462644e5d5a7ff313ad0d742"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0273d074462644e5d5a7ff313ad0d742">&#9670;&nbsp;</a></span>parser_callback_t</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">using <a class="el" href="classnlohmann_1_1basic__json.html">nlohmann::basic_json</a>&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, <a class="el" href="classBinaryType.html">BinaryType</a> &gt;::parser_callback_t =  detail::parser_callback_t&lt;<a class="el" href="classnlohmann_1_1basic__json.html">basic_json</a>&gt;</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>per-element parser callback type </p>
-<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/parser_callback_t/">https://json.nlohmann.me/api/basic_json/parser_callback_t/</a> </dd></dl>
-
-</div>
-</div>
-<a id="a33593865ffb1860323dcbd52425b90c8" name="a33593865ffb1860323dcbd52425b90c8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a33593865ffb1860323dcbd52425b90c8">&#9670;&nbsp;</a></span>string_t</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">using <a class="el" href="classnlohmann_1_1basic__json.html">nlohmann::basic_json</a>&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, <a class="el" href="classBinaryType.html">BinaryType</a> &gt;::string_t =  StringType</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>a type for a string </p>
-<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/string_t/">https://json.nlohmann.me/api/basic_json/string_t/</a> </dd></dl>
-
-</div>
-</div>
-<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="a19734fbc9c97d536832892ddacd6b62a" name="a19734fbc9c97d536832892ddacd6b62a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a19734fbc9c97d536832892ddacd6b62a">&#9670;&nbsp;</a></span>basic_json() <span class="overload">[1/5]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classnlohmann_1_1basic__json.html">nlohmann::basic_json</a>&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, <a class="el" href="classBinaryType.html">BinaryType</a> &gt;::basic_json </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="namespacenlohmann_1_1detail.html#a1ed8fc6239da25abcaf681d30ace4985">value_t</a>&#160;</td>
-          <td class="paramname"><em>v</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>create an empty value with a given type </p>
-<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/basic_json/">https://json.nlohmann.me/api/basic_json/basic_json/</a> </dd></dl>
-
-<p class="reference">Referenced by <a class="el" href="classnlohmann_1_1basic__json.html#a76126242de262f6d38cadda19e0d13e1">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::swap()</a>.</p>
-
-</div>
-</div>
-<a id="ace6fbaf6c64f60b61922b5c9d3e61aa6" name="ace6fbaf6c64f60b61922b5c9d3e61aa6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ace6fbaf6c64f60b61922b5c9d3e61aa6">&#9670;&nbsp;</a></span>basic_json() <span class="overload">[2/5]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classnlohmann_1_1basic__json.html">nlohmann::basic_json</a>&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, <a class="el" href="classBinaryType.html">BinaryType</a> &gt;::basic_json </td>
-          <td>(</td>
-          <td class="paramtype">std::nullptr_t&#160;</td>
-          <td class="paramname"> = <code>nullptr</code></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">noexcept</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>create a null object </p>
-<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/basic_json/">https://json.nlohmann.me/api/basic_json/basic_json/</a> </dd></dl>
-
-</div>
-</div>
-<a id="adda5ebaff0503f92c8b3d65cfb610ea5" name="adda5ebaff0503f92c8b3d65cfb610ea5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adda5ebaff0503f92c8b3d65cfb610ea5">&#9670;&nbsp;</a></span>basic_json() <span class="overload">[3/5]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
-<div class="memtemplate">
-template&lt;typename CompatibleType , typename U  = detail::uncvref_t&lt;CompatibleType&gt;, detail::enable_if_t&lt; !<a class="el" href="structnlohmann_1_1detail_1_1is__basic__json.html">detail::is_basic_json</a>&lt; U &gt;<a class="el" href="classnlohmann_1_1basic__json.html#a11641b35219676b225d9bd15c7677659">::value</a> &amp;&amp;<a class="el" href="structnlohmann_1_1detail_1_1is__compatible__type.html">detail::is_compatible_type</a>&lt; <a class="el" href="classnlohmann_1_1basic__json.html">basic_json_t</a>, U &gt;<a class="el" href="classnlohmann_1_1basic__json.html#a11641b35219676b225d9bd15c7677659">::value</a>, <a class="el" href="classint.html">int</a> &gt;  = 0&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classnlohmann_1_1basic__json.html">nlohmann::basic_json</a>&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, <a class="el" href="classBinaryType.html">BinaryType</a> &gt;::basic_json </td>
-          <td>(</td>
-          <td class="paramtype">CompatibleType &amp;&amp;&#160;</td>
-          <td class="paramname"><em>val</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">noexcept</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>create a JSON value from compatible types </p>
-<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/basic_json/">https://json.nlohmann.me/api/basic_json/basic_json/</a> </dd></dl>
-
-</div>
-</div>
-<a id="a40738eb9cb8c5a9ca14ae4b697c29f8e" name="a40738eb9cb8c5a9ca14ae4b697c29f8e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a40738eb9cb8c5a9ca14ae4b697c29f8e">&#9670;&nbsp;</a></span>basic_json() <span class="overload">[4/5]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
-<div class="memtemplate">
-template&lt;typename BasicJsonType , detail::enable_if_t&lt; <a class="el" href="structnlohmann_1_1detail_1_1is__basic__json.html">detail::is_basic_json</a>&lt; BasicJsonType &gt;<a class="el" href="classnlohmann_1_1basic__json.html#a11641b35219676b225d9bd15c7677659">::value</a> &amp;&amp;!std::is_same&lt; <a class="el" href="classnlohmann_1_1basic__json.html">basic_json</a>, BasicJsonType &gt;<a class="el" href="classnlohmann_1_1basic__json.html#a11641b35219676b225d9bd15c7677659">::value</a>, <a class="el" href="classint.html">int</a> &gt;  = 0&gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classnlohmann_1_1basic__json.html">nlohmann::basic_json</a>&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, <a class="el" href="classBinaryType.html">BinaryType</a> &gt;::basic_json </td>
-          <td>(</td>
-          <td class="paramtype">const BasicJsonType &amp;&#160;</td>
-          <td class="paramname"><em>val</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>create a JSON value from an existing one </p>
-<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/basic_json/">https://json.nlohmann.me/api/basic_json/basic_json/</a> </dd></dl>
-
-</div>
-</div>
-<a id="aeac617faf3448d6d2cb33a020be01d37" name="aeac617faf3448d6d2cb33a020be01d37"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aeac617faf3448d6d2cb33a020be01d37">&#9670;&nbsp;</a></span>basic_json() <span class="overload">[5/5]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, template&lt; typename, typename... &gt; class ArrayType, class StringType , class BooleanType , class NumberIntegerType , class NumberUnsignedType , class NumberFloatType , template&lt; typename &gt; class AllocatorType, template&lt; typename, typename=void &gt; class JSONSerializer, class <a class="el" href="classBinaryType.html">BinaryType</a> &gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classnlohmann_1_1basic__json.html">nlohmann::basic_json</a>&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, <a class="el" href="classBinaryType.html">BinaryType</a> &gt;::basic_json </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classnlohmann_1_1basic__json.html#ac569f292a070dfd2f6b69c16e746095a">initializer_list_t</a>&#160;</td>
-          <td class="paramname"><em>init</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classbool.html">bool</a>&#160;</td>
-          <td class="paramname"><em>type_deduction</em> = <code>true</code>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="namespacenlohmann_1_1detail.html#a1ed8fc6239da25abcaf681d30ace4985">value_t</a>&#160;</td>
-          <td class="paramname"><em>manual_type</em> = <code><a class="el" href="namespacenlohmann_1_1detail.html#a1ed8fc6239da25abcaf681d30ace4985af1f713c9e000f5d3f280adbd124df4f5">value_t::array</a></code>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>create a container (array or object) from an initializer list </p>
-<dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/basic_json/">https://json.nlohmann.me/api/basic_json/basic_json/</a> </dd></dl>
-
 </div>
 </div>
 </div><!-- contents -->

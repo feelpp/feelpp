@@ -101,23 +101,20 @@ $(document).ready(function(){initNavTree('classFeel_1_1DofTable.html',''); initR
 
 <div class="header">
   <div class="summary">
-<a href="#nested-classes">Instances and minimal complete definitions</a> &#124;
-<a href="#friends">Friends</a> &#124;
+<a href="#nested-classes">Classes</a> &#124;
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-static-methods">Static Public Member Functions</a> &#124;
 <a href="#pub-static-attribs">Static Public Attributes</a> &#124;
+<a href="#friends">Friends</a> &#124;
 <a href="classFeel_1_1DofTable-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">Feel::DofTable&lt; MeshType, FEType, PeriodicityType, MortarType &gt; Class Template Reference<div class="ingroups"><a class="el" href="group__Feelpp.html">Feelpp</a> &raquo; <a class="el" href="group__SpaceTime.html">SpaceTime</a></div></div></div>
 </div><!--header-->
 <div class="contents">
-<a name="details" id="details"></a><h2 class="groupheader">Description</h2>
-<div class="textblock"><div class="compoundTemplParams">template&lt;typename <a class="el" href="classFeel_1_1Mesh.html">MeshType</a>, typename FEType, typename PeriodicityType, typename MortarType&gt;<br />
-class Feel::DofTable&lt; MeshType, FEType, PeriodicityType, MortarType &gt;</div><p >Local-to-global Degree of Freedom table. </p>
-<dl class="section author"><dt>Author</dt><dd>Christophe Prud'homme </dd>
-<dd>
-Goncalo Pena </dd></dl>
-</div><div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
+
+<p>Local-to-global Degree of Freedom table.  
+ <a href="classFeel_1_1DofTable.html#details">More...</a></p>
+<div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Inheritance diagram for Feel::DofTable&lt; MeshType, FEType, PeriodicityType, MortarType &gt;:</div>
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">
 </div>
@@ -135,40 +132,11 @@ Goncalo Pena </dd></dl>
 </div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
-Instances and minimal complete definitions</h2></td></tr>
+Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1DofTable_1_1element__access.html">element_access</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1DofTable_1_1face__access.html">face_access</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="friends" name="friends"></a>
-Friends</h2></td></tr>
-<tr class="memitem:a500799b8a902106411b918cacc540558"><td class="memTemplParams" colspan="2"><a id="a500799b8a902106411b918cacc540558" name="a500799b8a902106411b918cacc540558"></a>
-template&lt;typename , typename &gt; </td></tr>
-<tr class="memitem:a500799b8a902106411b918cacc540558"><td class="memTemplItemLeft" align="right" valign="top">class&#160;</td><td class="memTemplItemRight" valign="bottom"><b>DofFromBoundary</b></td></tr>
-<tr class="separator:a500799b8a902106411b918cacc540558"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae36cf74dbdd24002880f0fe65d4f6a36"><td class="memTemplParams" colspan="2"><a id="ae36cf74dbdd24002880f0fe65d4f6a36" name="ae36cf74dbdd24002880f0fe65d4f6a36"></a>
-template&lt;typename , typename &gt; </td></tr>
-<tr class="memitem:ae36cf74dbdd24002880f0fe65d4f6a36"><td class="memTemplItemLeft" align="right" valign="top">class&#160;</td><td class="memTemplItemRight" valign="bottom"><b>DofFromEdge</b></td></tr>
-<tr class="separator:ae36cf74dbdd24002880f0fe65d4f6a36"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4930b993b5183a70c6fe06ecd4bba6f6"><td class="memTemplParams" colspan="2"><a id="a4930b993b5183a70c6fe06ecd4bba6f6" name="a4930b993b5183a70c6fe06ecd4bba6f6"></a>
-template&lt;typename , typename &gt; </td></tr>
-<tr class="memitem:a4930b993b5183a70c6fe06ecd4bba6f6"><td class="memTemplItemLeft" align="right" valign="top">class&#160;</td><td class="memTemplItemRight" valign="bottom"><b>DofFromElement</b></td></tr>
-<tr class="separator:a4930b993b5183a70c6fe06ecd4bba6f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af9a85a740a5afc99a87b1b243169a39a"><td class="memTemplParams" colspan="2"><a id="af9a85a740a5afc99a87b1b243169a39a" name="af9a85a740a5afc99a87b1b243169a39a"></a>
-template&lt;typename , typename , typename &gt; </td></tr>
-<tr class="memitem:af9a85a740a5afc99a87b1b243169a39a"><td class="memTemplItemLeft" align="right" valign="top">class&#160;</td><td class="memTemplItemRight" valign="bottom"><b>DofFromMortar</b></td></tr>
-<tr class="separator:af9a85a740a5afc99a87b1b243169a39a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a50d48edfae16f275b4b261815e3107fe"><td class="memTemplParams" colspan="2"><a id="a50d48edfae16f275b4b261815e3107fe" name="a50d48edfae16f275b4b261815e3107fe"></a>
-template&lt;typename , typename &gt; </td></tr>
-<tr class="memitem:a50d48edfae16f275b4b261815e3107fe"><td class="memTemplItemLeft" align="right" valign="top">class&#160;</td><td class="memTemplItemRight" valign="bottom"><b>DofFromPeriodic</b></td></tr>
-<tr class="separator:a50d48edfae16f275b4b261815e3107fe"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a24ffb1862ec6f4725658241531c3f0fd"><td class="memItemLeft" align="right" valign="top"><a id="a24ffb1862ec6f4725658241531c3f0fd" name="a24ffb1862ec6f4725658241531c3f0fd"></a>
-struct&#160;</td><td class="memItemRight" valign="bottom"><b>element_access</b></td></tr>
-<tr class="separator:a24ffb1862ec6f4725658241531c3f0fd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4760ee8839dd1b7f41748429bcfbc31e"><td class="memItemLeft" align="right" valign="top"><a id="a4760ee8839dd1b7f41748429bcfbc31e" name="a4760ee8839dd1b7f41748429bcfbc31e"></a>
-struct&#160;</td><td class="memItemRight" valign="bottom"><b>face_access</b></td></tr>
-<tr class="separator:a4760ee8839dd1b7f41748429bcfbc31e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
 Public Types</h2></td></tr>
@@ -832,7 +800,166 @@ static const uint16_type&#160;</td><td class="memItemRight" valign="bottom"><b>n
 <tr class="memitem:ae2fc7dd24750a563eee7d039603d3b1b"><td class="memItemLeft" align="right" valign="top"><a id="ae2fc7dd24750a563eee7d039603d3b1b" name="ae2fc7dd24750a563eee7d039603d3b1b"></a>
 static const uint16_type&#160;</td><td class="memItemRight" valign="bottom"><b>Shape</b> = mesh_type::Shape</td></tr>
 <tr class="separator:ae2fc7dd24750a563eee7d039603d3b1b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="friends" name="friends"></a>
+Friends</h2></td></tr>
+<tr class="memitem:a500799b8a902106411b918cacc540558"><td class="memTemplParams" colspan="2"><a id="a500799b8a902106411b918cacc540558" name="a500799b8a902106411b918cacc540558"></a>
+template&lt;typename , typename &gt; </td></tr>
+<tr class="memitem:a500799b8a902106411b918cacc540558"><td class="memTemplItemLeft" align="right" valign="top">class&#160;</td><td class="memTemplItemRight" valign="bottom"><b>DofFromBoundary</b></td></tr>
+<tr class="separator:a500799b8a902106411b918cacc540558"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae36cf74dbdd24002880f0fe65d4f6a36"><td class="memTemplParams" colspan="2"><a id="ae36cf74dbdd24002880f0fe65d4f6a36" name="ae36cf74dbdd24002880f0fe65d4f6a36"></a>
+template&lt;typename , typename &gt; </td></tr>
+<tr class="memitem:ae36cf74dbdd24002880f0fe65d4f6a36"><td class="memTemplItemLeft" align="right" valign="top">class&#160;</td><td class="memTemplItemRight" valign="bottom"><b>DofFromEdge</b></td></tr>
+<tr class="separator:ae36cf74dbdd24002880f0fe65d4f6a36"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4930b993b5183a70c6fe06ecd4bba6f6"><td class="memTemplParams" colspan="2"><a id="a4930b993b5183a70c6fe06ecd4bba6f6" name="a4930b993b5183a70c6fe06ecd4bba6f6"></a>
+template&lt;typename , typename &gt; </td></tr>
+<tr class="memitem:a4930b993b5183a70c6fe06ecd4bba6f6"><td class="memTemplItemLeft" align="right" valign="top">class&#160;</td><td class="memTemplItemRight" valign="bottom"><b>DofFromElement</b></td></tr>
+<tr class="separator:a4930b993b5183a70c6fe06ecd4bba6f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af9a85a740a5afc99a87b1b243169a39a"><td class="memTemplParams" colspan="2"><a id="af9a85a740a5afc99a87b1b243169a39a" name="af9a85a740a5afc99a87b1b243169a39a"></a>
+template&lt;typename , typename , typename &gt; </td></tr>
+<tr class="memitem:af9a85a740a5afc99a87b1b243169a39a"><td class="memTemplItemLeft" align="right" valign="top">class&#160;</td><td class="memTemplItemRight" valign="bottom"><b>DofFromMortar</b></td></tr>
+<tr class="separator:af9a85a740a5afc99a87b1b243169a39a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a50d48edfae16f275b4b261815e3107fe"><td class="memTemplParams" colspan="2"><a id="a50d48edfae16f275b4b261815e3107fe" name="a50d48edfae16f275b4b261815e3107fe"></a>
+template&lt;typename , typename &gt; </td></tr>
+<tr class="memitem:a50d48edfae16f275b4b261815e3107fe"><td class="memTemplItemLeft" align="right" valign="top">class&#160;</td><td class="memTemplItemRight" valign="bottom"><b>DofFromPeriodic</b></td></tr>
+<tr class="separator:a50d48edfae16f275b4b261815e3107fe"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a24ffb1862ec6f4725658241531c3f0fd"><td class="memItemLeft" align="right" valign="top"><a id="a24ffb1862ec6f4725658241531c3f0fd" name="a24ffb1862ec6f4725658241531c3f0fd"></a>
+struct&#160;</td><td class="memItemRight" valign="bottom"><b>element_access</b></td></tr>
+<tr class="separator:a24ffb1862ec6f4725658241531c3f0fd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4760ee8839dd1b7f41748429bcfbc31e"><td class="memItemLeft" align="right" valign="top"><a id="a4760ee8839dd1b7f41748429bcfbc31e" name="a4760ee8839dd1b7f41748429bcfbc31e"></a>
+struct&#160;</td><td class="memItemRight" valign="bottom"><b>face_access</b></td></tr>
+<tr class="separator:a4760ee8839dd1b7f41748429bcfbc31e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><div class="compoundTemplParams">template&lt;typename <a class="el" href="classFeel_1_1Mesh.html">MeshType</a>, typename FEType, typename PeriodicityType, typename MortarType&gt;<br />
+class Feel::DofTable&lt; MeshType, FEType, PeriodicityType, MortarType &gt;</div><p >Local-to-global Degree of Freedom table. </p>
+<dl class="section author"><dt>Author</dt><dd>Christophe Prud'homme </dd>
+<dd>
+Goncalo Pena </dd></dl>
+</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a id="a1bed6ec51a3ba994cda8f39a772b95e4" name="a1bed6ec51a3ba994cda8f39a772b95e4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1bed6ec51a3ba994cda8f39a772b95e4">&#9670;&nbsp;</a></span>DofTable() <span class="overload">[1/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="classFeel_1_1Mesh.html">MeshType</a> , typename FEType , typename PeriodicityType , typename MortarType &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classFeel_1_1DofTable.html">Feel::DofTable</a>&lt; <a class="el" href="classFeel_1_1Mesh.html">MeshType</a>, FEType, PeriodicityType, MortarType &gt;<a class="el" href="classFeel_1_1DofTable.html">::DofTable</a> </td>
+          <td>(</td>
+          <td class="paramtype">fe_ptrtype const &amp;&#160;</td>
+          <td class="paramname"><em>_fe</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">periodicity_type const &amp;&#160;</td>
+          <td class="paramname"><em>periodicity</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classFeel_1_1WorldComm.html">WorldComm</a> const &amp;&#160;</td>
+          <td class="paramname"><em>_worldComm</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>The minimal constructor. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">_fe</td><td>reference element </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="ac85e88c1485a548e635b8d4d948bf2e4" name="ac85e88c1485a548e635b8d4d948bf2e4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac85e88c1485a548e635b8d4d948bf2e4">&#9670;&nbsp;</a></span>DofTable() <span class="overload">[2/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="classFeel_1_1Mesh.html">MeshType</a> , typename FEType , typename PeriodicityType , typename MortarType &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classFeel_1_1DofTable.html">Feel::DofTable</a>&lt; <a class="el" href="classFeel_1_1Mesh.html">MeshType</a>, FEType, PeriodicityType, MortarType &gt;<a class="el" href="classFeel_1_1DofTable.html">::DofTable</a> </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classFeel_1_1DofTable.html">DofTable</a>&lt; <a class="el" href="classFeel_1_1Mesh.html">MeshType</a>, FEType, PeriodicityType, MortarType &gt; &amp;&#160;</td>
+          <td class="paramname"><em>dof2</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>copy constructor </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">dof2</td><td>a dof object instance </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="afaab733ae2745b6207de80594be90477" name="afaab733ae2745b6207de80594be90477"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afaab733ae2745b6207de80594be90477">&#9670;&nbsp;</a></span>DofTable() <span class="overload">[3/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="classFeel_1_1Mesh.html">MeshType</a> , typename FEType , typename PeriodicityType , typename MortarType &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classFeel_1_1DofTable.html">Feel::DofTable</a>&lt; <a class="el" href="classFeel_1_1Mesh.html">MeshType</a>, FEType, PeriodicityType, MortarType &gt;<a class="el" href="classFeel_1_1DofTable.html">::DofTable</a> </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classFeel_1_1DofTable.html#a7ef534143c67b387d25792d1bfa00be1">mesh_type</a> &amp;&#160;</td>
+          <td class="paramname"><em>mesh</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">fe_ptrtype const &amp;&#160;</td>
+          <td class="paramname"><em>_fe</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">periodicity_type const &amp;&#160;</td>
+          <td class="paramname"><em>periodicity</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classFeel_1_1WorldComm.html">WorldComm</a> const &amp;&#160;</td>
+          <td class="paramname"><em>_worldComm</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Constructor accepting a mesh as parameter. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">mesh</td><td>a RegionMesh3D </td></tr>
+    <tr><td class="paramname">_fe</td><td>reference element </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="ac427f4b6daaaab6c5adc348aea8d9e12" name="ac427f4b6daaaab6c5adc348aea8d9e12"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ac427f4b6daaaab6c5adc348aea8d9e12">&#9670;&nbsp;</a></span>buildBoundaryDofMap()</h2>
@@ -1517,130 +1644,6 @@ template&lt;typename <a class="el" href="classFeel_1_1Mesh.html">MeshType</a> , 
 <p>insted of creating the dof indices on the fly, get them from a vector. </p>
 <p >The situation typically arises when we want to have dof correspondance between two spaces</p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="classFeel_1_1OperatorLagrangeP1.html">OperatorLagrangeP1</a> </dd></dl>
-
-</div>
-</div>
-<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="a1bed6ec51a3ba994cda8f39a772b95e4" name="a1bed6ec51a3ba994cda8f39a772b95e4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1bed6ec51a3ba994cda8f39a772b95e4">&#9670;&nbsp;</a></span>DofTable() <span class="overload">[1/3]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename <a class="el" href="classFeel_1_1Mesh.html">MeshType</a> , typename FEType , typename PeriodicityType , typename MortarType &gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classFeel_1_1DofTable.html">Feel::DofTable</a>&lt; <a class="el" href="classFeel_1_1Mesh.html">MeshType</a>, FEType, PeriodicityType, MortarType &gt;<a class="el" href="classFeel_1_1DofTable.html">::DofTable</a> </td>
-          <td>(</td>
-          <td class="paramtype">fe_ptrtype const &amp;&#160;</td>
-          <td class="paramname"><em>_fe</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">periodicity_type const &amp;&#160;</td>
-          <td class="paramname"><em>periodicity</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classFeel_1_1WorldComm.html">WorldComm</a> const &amp;&#160;</td>
-          <td class="paramname"><em>_worldComm</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>The minimal constructor. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">_fe</td><td>reference element </td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
-<a id="ac85e88c1485a548e635b8d4d948bf2e4" name="ac85e88c1485a548e635b8d4d948bf2e4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac85e88c1485a548e635b8d4d948bf2e4">&#9670;&nbsp;</a></span>DofTable() <span class="overload">[2/3]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename <a class="el" href="classFeel_1_1Mesh.html">MeshType</a> , typename FEType , typename PeriodicityType , typename MortarType &gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classFeel_1_1DofTable.html">Feel::DofTable</a>&lt; <a class="el" href="classFeel_1_1Mesh.html">MeshType</a>, FEType, PeriodicityType, MortarType &gt;<a class="el" href="classFeel_1_1DofTable.html">::DofTable</a> </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classFeel_1_1DofTable.html">DofTable</a>&lt; <a class="el" href="classFeel_1_1Mesh.html">MeshType</a>, FEType, PeriodicityType, MortarType &gt; &amp;&#160;</td>
-          <td class="paramname"><em>dof2</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>copy constructor </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">dof2</td><td>a dof object instance </td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
-<a id="afaab733ae2745b6207de80594be90477" name="afaab733ae2745b6207de80594be90477"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afaab733ae2745b6207de80594be90477">&#9670;&nbsp;</a></span>DofTable() <span class="overload">[3/3]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename <a class="el" href="classFeel_1_1Mesh.html">MeshType</a> , typename FEType , typename PeriodicityType , typename MortarType &gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classFeel_1_1DofTable.html">Feel::DofTable</a>&lt; <a class="el" href="classFeel_1_1Mesh.html">MeshType</a>, FEType, PeriodicityType, MortarType &gt;<a class="el" href="classFeel_1_1DofTable.html">::DofTable</a> </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classFeel_1_1DofTable.html#a7ef534143c67b387d25792d1bfa00be1">mesh_type</a> &amp;&#160;</td>
-          <td class="paramname"><em>mesh</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">fe_ptrtype const &amp;&#160;</td>
-          <td class="paramname"><em>_fe</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">periodicity_type const &amp;&#160;</td>
-          <td class="paramname"><em>periodicity</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classFeel_1_1WorldComm.html">WorldComm</a> const &amp;&#160;</td>
-          <td class="paramname"><em>_worldComm</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Constructor accepting a mesh as parameter. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">mesh</td><td>a RegionMesh3D </td></tr>
-    <tr><td class="paramname">_fe</td><td>reference element </td></tr>
-  </table>
-  </dd>
-</dl>
 
 </div>
 </div>

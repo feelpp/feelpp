@@ -1,5 +1,12 @@
 var classFeel_1_1WorldComm =
 [
+    [ "communicator_type", "classFeel_1_1WorldComm.html#aa79784801c64f4733ffa9b219bcb2637", null ],
+    [ "self_ptrtype", "classFeel_1_1WorldComm.html#a17b8bdedce7012a7f111b2b7b0d33953", null ],
+    [ "self_type", "classFeel_1_1WorldComm.html#adb513020a43d11dfca57d8bcb4883956", null ],
+    [ "WorldComm", "classFeel_1_1WorldComm.html#a4ed4a25902258a5ca6e66d215fa5787b", null ],
+    [ "WorldComm", "classFeel_1_1WorldComm.html#aeda2e811bd9fb448a31c235b851afbed", null ],
+    [ "WorldComm", "classFeel_1_1WorldComm.html#aee58710d8c993dd3d6797e60b28593cf", null ],
+    [ "WorldComm", "classFeel_1_1WorldComm.html#a3d4df2d2d1098f8039f89c5688667b1b", null ],
     [ "activityOnWorld", "classFeel_1_1WorldComm.html#af324e9be228a27352f22ae142f5dcdf1", null ],
     [ "comm", "classFeel_1_1WorldComm.html#a3cd41d624b68981aaccd34dfe7e31770", null ],
     [ "globalComm", "classFeel_1_1WorldComm.html#aa0c059fe775a097de3d8d14787eb7f8f", null ],
@@ -29,12 +36,5 @@ var classFeel_1_1WorldComm =
     [ "subWorldCommSeq", "classFeel_1_1WorldComm.html#a7eb601e318060e4d8a812cf14efc92e4", null ],
     [ "subWorldCommSeq", "classFeel_1_1WorldComm.html#ac30a1931a835288997a38c9313cddcd7", null ],
     [ "subWorldCommSeqPtr", "classFeel_1_1WorldComm.html#ad20bacea865ad9a4681e8a0450137a6e", null ],
-    [ "subWorldCommSeqPtr", "classFeel_1_1WorldComm.html#a81687dadcc06041861b4ff514141797a", null ],
-    [ "communicator_type", "classFeel_1_1WorldComm.html#aa79784801c64f4733ffa9b219bcb2637", null ],
-    [ "self_ptrtype", "classFeel_1_1WorldComm.html#a17b8bdedce7012a7f111b2b7b0d33953", null ],
-    [ "self_type", "classFeel_1_1WorldComm.html#adb513020a43d11dfca57d8bcb4883956", null ],
-    [ "WorldComm", "classFeel_1_1WorldComm.html#a4ed4a25902258a5ca6e66d215fa5787b", null ],
-    [ "WorldComm", "classFeel_1_1WorldComm.html#aeda2e811bd9fb448a31c235b851afbed", null ],
-    [ "WorldComm", "classFeel_1_1WorldComm.html#aee58710d8c993dd3d6797e60b28593cf", null ],
-    [ "WorldComm", "classFeel_1_1WorldComm.html#a3d4df2d2d1098f8039f89c5688667b1b", null ]
+    [ "subWorldCommSeqPtr", "classFeel_1_1WorldComm.html#a81687dadcc06041861b4ff514141797a", null ]
 ];

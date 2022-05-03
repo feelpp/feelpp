@@ -1,5 +1,21 @@
 var classFeel_1_1AboutData =
 [
+    [ "LicenseKey", "classFeel_1_1AboutData.html#a0a827cfc2cac83144e4595e19641ba3e", [
+      [ "License_Custom", "classFeel_1_1AboutData.html#a0a827cfc2cac83144e4595e19641ba3ead261051b6282ae32df29db9f3c5daaa9", null ],
+      [ "License_File", "classFeel_1_1AboutData.html#a0a827cfc2cac83144e4595e19641ba3eac0fda68be0bf87b167ac07b31b063ae4", null ],
+      [ "License_Unknown", "classFeel_1_1AboutData.html#a0a827cfc2cac83144e4595e19641ba3eafcbb80c1a93457d6008b156c203720da", null ],
+      [ "License_GPL", "classFeel_1_1AboutData.html#a0a827cfc2cac83144e4595e19641ba3ea43cf82023d629e1f1fe046d3c9390773", null ],
+      [ "License_GPL_V2", "classFeel_1_1AboutData.html#a0a827cfc2cac83144e4595e19641ba3ea286d3f78e7b6fc739b89fe3c517df8a9", null ],
+      [ "License_GPL_V3", "classFeel_1_1AboutData.html#a0a827cfc2cac83144e4595e19641ba3eaee1ae29e71bb783670b9c72624ef1b0e", null ],
+      [ "License_LGPL", "classFeel_1_1AboutData.html#a0a827cfc2cac83144e4595e19641ba3ea9bad6b2d10c147fda72c0d946c331ed7", null ],
+      [ "License_LGPL_V2", "classFeel_1_1AboutData.html#a0a827cfc2cac83144e4595e19641ba3ea8ce63dc6a9c168b050b09df7c208cab6", null ],
+      [ "License_LGPL_V3", "classFeel_1_1AboutData.html#a0a827cfc2cac83144e4595e19641ba3eaaaa1a452b46c337cc81818c20f4095af", null ],
+      [ "License_BSD", "classFeel_1_1AboutData.html#a0a827cfc2cac83144e4595e19641ba3ea0c979dad2392ffe615f7961597b5e12d", null ],
+      [ "License_Artistic", "classFeel_1_1AboutData.html#a0a827cfc2cac83144e4595e19641ba3ea6e786c8c1648c5c9c9d5ac1efd333649", null ],
+      [ "License_QPL", "classFeel_1_1AboutData.html#a0a827cfc2cac83144e4595e19641ba3ea916c4dab44f314dce94cf954e7327bbb", null ],
+      [ "License_QPL_V1_0", "classFeel_1_1AboutData.html#a0a827cfc2cac83144e4595e19641ba3eae0c9adc68bab259fecb8b5228b54d71a", null ]
+    ] ],
+    [ "AboutData", "classFeel_1_1AboutData.html#a62dff3e1e33aeb455e3881956cf8ee12", null ],
     [ "addAuthor", "classFeel_1_1AboutData.html#a0a791e9093004aec3fc6c0beafe52391", null ],
     [ "addCredit", "classFeel_1_1AboutData.html#ab2040debd9804c5d0805e5c474967c53", null ],
     [ "appName", "classFeel_1_1AboutData.html#a169bf848c34367e76d8fc9b2ba134fe3", null ],
@@ -24,21 +40,5 @@ var classFeel_1_1AboutData =
     [ "setShortDescription", "classFeel_1_1AboutData.html#a33f3142fdaed169f684650323013c931", null ],
     [ "setVersion", "classFeel_1_1AboutData.html#a41b93ed60cf50da11e93aba319def39e", null ],
     [ "shortDescription", "classFeel_1_1AboutData.html#a929c6aacdcd964441067db7b2a9bfa9b", null ],
-    [ "version", "classFeel_1_1AboutData.html#ac3e7f00124b73aa5009d91e44791435b", null ],
-    [ "LicenseKey", "classFeel_1_1AboutData.html#a0a827cfc2cac83144e4595e19641ba3e", [
-      [ "License_Custom", "classFeel_1_1AboutData.html#a0a827cfc2cac83144e4595e19641ba3ead261051b6282ae32df29db9f3c5daaa9", null ],
-      [ "License_File", "classFeel_1_1AboutData.html#a0a827cfc2cac83144e4595e19641ba3eac0fda68be0bf87b167ac07b31b063ae4", null ],
-      [ "License_Unknown", "classFeel_1_1AboutData.html#a0a827cfc2cac83144e4595e19641ba3eafcbb80c1a93457d6008b156c203720da", null ],
-      [ "License_GPL", "classFeel_1_1AboutData.html#a0a827cfc2cac83144e4595e19641ba3ea43cf82023d629e1f1fe046d3c9390773", null ],
-      [ "License_GPL_V2", "classFeel_1_1AboutData.html#a0a827cfc2cac83144e4595e19641ba3ea286d3f78e7b6fc739b89fe3c517df8a9", null ],
-      [ "License_GPL_V3", "classFeel_1_1AboutData.html#a0a827cfc2cac83144e4595e19641ba3eaee1ae29e71bb783670b9c72624ef1b0e", null ],
-      [ "License_LGPL", "classFeel_1_1AboutData.html#a0a827cfc2cac83144e4595e19641ba3ea9bad6b2d10c147fda72c0d946c331ed7", null ],
-      [ "License_LGPL_V2", "classFeel_1_1AboutData.html#a0a827cfc2cac83144e4595e19641ba3ea8ce63dc6a9c168b050b09df7c208cab6", null ],
-      [ "License_LGPL_V3", "classFeel_1_1AboutData.html#a0a827cfc2cac83144e4595e19641ba3eaaaa1a452b46c337cc81818c20f4095af", null ],
-      [ "License_BSD", "classFeel_1_1AboutData.html#a0a827cfc2cac83144e4595e19641ba3ea0c979dad2392ffe615f7961597b5e12d", null ],
-      [ "License_Artistic", "classFeel_1_1AboutData.html#a0a827cfc2cac83144e4595e19641ba3ea6e786c8c1648c5c9c9d5ac1efd333649", null ],
-      [ "License_QPL", "classFeel_1_1AboutData.html#a0a827cfc2cac83144e4595e19641ba3ea916c4dab44f314dce94cf954e7327bbb", null ],
-      [ "License_QPL_V1_0", "classFeel_1_1AboutData.html#a0a827cfc2cac83144e4595e19641ba3eae0c9adc68bab259fecb8b5228b54d71a", null ]
-    ] ],
-    [ "AboutData", "classFeel_1_1AboutData.html#a62dff3e1e33aeb455e3881956cf8ee12", null ]
+    [ "version", "classFeel_1_1AboutData.html#ac3e7f00124b73aa5009d91e44791435b", null ]
 ];

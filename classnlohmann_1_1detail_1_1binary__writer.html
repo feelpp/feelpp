@@ -107,10 +107,10 @@ $(document).ready(function(){initNavTree('classnlohmann_1_1detail_1_1binary__wri
   <div class="headertitle"><div class="title">nlohmann::detail::binary_writer&lt; BasicJsonType, CharType &gt; Class Template Reference</div></div>
 </div><!--header-->
 <div class="contents">
-<a name="details" id="details"></a><h2 class="groupheader">Description</h2>
-<div class="textblock"><div class="compoundTemplParams">template&lt;typename BasicJsonType, typename CharType&gt;<br />
-class nlohmann::detail::binary_writer&lt; BasicJsonType, CharType &gt;</div><p >serialization to CBOR and MessagePack values </p>
-</div><div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
+
+<p>serialization to CBOR and MessagePack values  
+ <a href="classnlohmann_1_1detail_1_1binary__writer.html#details">More...</a></p>
+<div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Collaboration diagram for nlohmann::detail::binary_writer&lt; BasicJsonType, CharType &gt;:</div>
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">
 </div>
@@ -152,6 +152,46 @@ template&lt;typename <a class="el" href="classC.html">C</a>  = CharType, enable_
 <tr class="memitem:ab77aa48692bd4e64e4f051ce6aeb6d2d"><td class="memTemplItemLeft" align="right" valign="top">static constexpr CharType&#160;</td><td class="memTemplItemRight" valign="bottom"><b>to_char_type</b> (std::uint8_t x) noexcept</td></tr>
 <tr class="separator:ab77aa48692bd4e64e4f051ce6aeb6d2d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><div class="compoundTemplParams">template&lt;typename BasicJsonType, typename CharType&gt;<br />
+class nlohmann::detail::binary_writer&lt; BasicJsonType, CharType &gt;</div><p >serialization to CBOR and MessagePack values </p>
+</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a id="a373289af95a946c19bb4a58a5df71a78" name="a373289af95a946c19bb4a58a5df71a78"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a373289af95a946c19bb4a58a5df71a78">&#9670;&nbsp;</a></span>binary_writer()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename BasicJsonType , typename CharType &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classnlohmann_1_1detail_1_1binary__writer.html">nlohmann::detail::binary_writer</a>&lt; BasicJsonType, CharType &gt;::binary_writer </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespacenlohmann_1_1detail.html#a9b680ddfb58f27eb53a67229447fc556">output_adapter_t</a>&lt; CharType &gt;&#160;</td>
+          <td class="paramname"><em>adapter</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">explicit</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>create a binary writer </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">adapter</td><td>output adapter to write to </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="a9ffc566db5219b473762462234b47db9" name="a9ffc566db5219b473762462234b47db9"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a9ffc566db5219b473762462234b47db9">&#9670;&nbsp;</a></span>write_bson()</h2>
@@ -279,43 +319,6 @@ template&lt;typename BasicJsonType , typename CharType &gt; </div>
     <tr><td class="paramdir">[in]</td><td class="paramname">use_count</td><td>whether to use '#' prefixes (optimized format) </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">use_type</td><td>whether to use '$' prefixes (optimized format) </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">add_prefix</td><td>whether prefixes need to be used for this value </td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
-<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="a373289af95a946c19bb4a58a5df71a78" name="a373289af95a946c19bb4a58a5df71a78"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a373289af95a946c19bb4a58a5df71a78">&#9670;&nbsp;</a></span>binary_writer()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename BasicJsonType , typename CharType &gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classnlohmann_1_1detail_1_1binary__writer.html">nlohmann::detail::binary_writer</a>&lt; BasicJsonType, CharType &gt;::binary_writer </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="namespacenlohmann_1_1detail.html#a9b680ddfb58f27eb53a67229447fc556">output_adapter_t</a>&lt; CharType &gt;&#160;</td>
-          <td class="paramname"><em>adapter</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">explicit</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>create a binary writer </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">adapter</td><td>output adapter to write to </td></tr>
   </table>
   </dd>
 </dl>

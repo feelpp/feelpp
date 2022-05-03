@@ -107,9 +107,10 @@ $(document).ready(function(){initNavTree('classFeel_1_1FeelModels_1_1ModelBase.h
   <div class="headertitle"><div class="title">Feel::FeelModels::ModelBase Class Reference<div class="ingroups"><a class="el" href="group__Toolboxes.html">Toolboxes</a> &raquo; <a class="el" href="group__ModelCore.html">ModelCore</a></div></div></div>
 </div><!--header-->
 <div class="contents">
-<a name="details" id="details"></a><h2 class="groupheader">Description</h2>
-<div class="textblock"><p >Model base class. </p>
-</div><div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
+
+<p>Model base class.  
+ <a href="classFeel_1_1FeelModels_1_1ModelBase.html#details">More...</a></p>
+<div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Inheritance diagram for Feel::FeelModels::ModelBase:</div>
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">
 </div>
@@ -380,6 +381,68 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>applyUpdateInformatio
 <tr class="memdesc:ace7e1916b49e2d851c7253f6c79347b7 inherit pro_methods_classFeel_1_1JournalWatcher"><td class="mdescLeft">&#160;</td><td class="mdescRight">Protected Methods. <br /></td></tr>
 <tr class="separator:ace7e1916b49e2d851c7253f6c79347b7 inherit pro_methods_classFeel_1_1JournalWatcher"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p >Model base class. </p>
+</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a id="afb0315edfe760e3b61b39ce45b0a60ca" name="afb0315edfe760e3b61b39ce45b0a60ca"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afb0315edfe760e3b61b39ce45b0a60ca">&#9670;&nbsp;</a></span>ModelBase()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">Feel::FeelModels::ModelBase::ModelBase </td>
+          <td>(</td>
+          <td class="paramtype">std::string const &amp;&#160;</td>
+          <td class="paramname"><em>prefix</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::string const &amp;&#160;</td>
+          <td class="paramname"><em>keyword</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">worldcomm_ptr_t const &amp;&#160;</td>
+          <td class="paramname"><em>worldComm</em> = <code><a class="el" href="classFeel_1_1Environment.html#a57b323455dd9412c293d662ee9f394b8">Environment::worldCommPtr</a>()</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::string const &amp;&#160;</td>
+          <td class="paramname"><em>subPrefix</em> = <code>&quot;&quot;</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structFeel_1_1FeelModels_1_1ModelBaseRepository.html">ModelBaseRepository</a> const &amp;&#160;</td>
+          <td class="paramname"><em>modelRep</em> = <code><a class="el" href="structFeel_1_1FeelModels_1_1ModelBaseRepository.html">ModelBaseRepository</a>()</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structFeel_1_1FeelModels_1_1ModelBaseCommandLineOptions.html">ModelBaseCommandLineOptions</a> const &amp;&#160;</td>
+          <td class="paramname"><em>modelCmdLineOpt</em> = <code><a class="el" href="structFeel_1_1FeelModels_1_1ModelBaseCommandLineOptions.html">ModelBaseCommandLineOptions</a>()</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">worldcomm</td><td>communicator</td></tr>
+  </table>
+  </dd>
+</dl>
+<p>The worldcomm must be allocated via shared_ptr. The <a class="el" href="classFeel_1_1WorldComm.html" title="Provides interface to MPI Communicators.">WorldComm</a> can be retrieved via <code>shared_from_this()</code> </p>
+
+</div>
+</div>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="aa5ca72de8294d51b9a414b44d7dab92c" name="aa5ca72de8294d51b9a414b44d7dab92c"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aa5ca72de8294d51b9a414b44d7dab92c">&#9670;&nbsp;</a></span>setModelProperties() <span class="overload">[1/2]</span></h2>
@@ -466,66 +529,6 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>applyUpdateInformatio
 <p>Reimplemented in <a class="el" href="classFeel_1_1FeelModels_1_1Electric.html#ab3cc7af31740429de8ccba27dfdda375">Feel::FeelModels::Electric&lt; ConvexType, BasisPotentialType &gt;</a>, <a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics.html#a645737fe7d70b4ced2534eea871320e5">Feel::FeelModels::FluidMechanics&lt; ConvexType, BasisVelocityType, BasisPressureType &gt;</a>, <a class="el" href="classFeel_1_1FeelModels_1_1Heat.html#a691cc55d35fcb20a6a05db30e007eb91">Feel::FeelModels::Heat&lt; ConvexType, BasisTemperatureType &gt;</a>, <a class="el" href="classFeel_1_1FeelModels_1_1ModelMeshes.html#aac1c601731fb93c3d9fbcda013e6d1de">Feel::FeelModels::ModelMeshes&lt; IndexType &gt;</a>, <a class="el" href="classFeel_1_1FeelModels_1_1ModelMeshes.html#aac1c601731fb93c3d9fbcda013e6d1de">Feel::FeelModels::ModelMeshes&lt; ModelAlgebraic::index_type &gt;</a>, <a class="el" href="classFeel_1_1FeelModels_1_1SolidMechanics.html#a1930dd24c8e7fd3b4fbce3c4119d191c">Feel::FeelModels::SolidMechanics&lt; ConvexType, BasisDisplacementType &gt;</a>, and <a class="el" href="classFeel_1_1FeelModels_1_1SolidMechanics1dReduced.html#ab2bb6b0bf5ed66d84b8d49fc50d530b5">Feel::FeelModels::SolidMechanics1dReduced&lt; ConvexType, BasisDisplacementType &gt;</a>.</p>
 
 <p class="reference">References <a class="el" href="classnlohmann_1_1basic__json.html#a02c9bc4d0f33b7dec20b2798301d6971">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::contains()</a>, <a class="el" href="classnlohmann_1_1basic__json.html#af244c096197a233edba4c83200ae66ac">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::emplace()</a>, <a class="el" href="namespaceFeel.html#a338e05dd5e37f3594666f0a00e029d3d">Feel::expr()</a>, and <a class="el" href="classFeel_1_1FeelModels_1_1ModelBase.html#a037ca1f456e1897fad60a3bc5baa98d5">keyword()</a>.</p>
-
-</div>
-</div>
-<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="afb0315edfe760e3b61b39ce45b0a60ca" name="afb0315edfe760e3b61b39ce45b0a60ca"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afb0315edfe760e3b61b39ce45b0a60ca">&#9670;&nbsp;</a></span>ModelBase()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">Feel::FeelModels::ModelBase::ModelBase </td>
-          <td>(</td>
-          <td class="paramtype">std::string const &amp;&#160;</td>
-          <td class="paramname"><em>prefix</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">std::string const &amp;&#160;</td>
-          <td class="paramname"><em>keyword</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">worldcomm_ptr_t const &amp;&#160;</td>
-          <td class="paramname"><em>worldComm</em> = <code><a class="el" href="classFeel_1_1Environment.html#a57b323455dd9412c293d662ee9f394b8">Environment::worldCommPtr</a>()</code>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">std::string const &amp;&#160;</td>
-          <td class="paramname"><em>subPrefix</em> = <code>&quot;&quot;</code>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="structFeel_1_1FeelModels_1_1ModelBaseRepository.html">ModelBaseRepository</a> const &amp;&#160;</td>
-          <td class="paramname"><em>modelRep</em> = <code><a class="el" href="structFeel_1_1FeelModels_1_1ModelBaseRepository.html">ModelBaseRepository</a>()</code>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="structFeel_1_1FeelModels_1_1ModelBaseCommandLineOptions.html">ModelBaseCommandLineOptions</a> const &amp;&#160;</td>
-          <td class="paramname"><em>modelCmdLineOpt</em> = <code><a class="el" href="structFeel_1_1FeelModels_1_1ModelBaseCommandLineOptions.html">ModelBaseCommandLineOptions</a>()</code>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">worldcomm</td><td>communicator</td></tr>
-  </table>
-  </dd>
-</dl>
-<p>The worldcomm must be allocated via shared_ptr. The <a class="el" href="classFeel_1_1WorldComm.html" title="Provides interface to MPI Communicators.">WorldComm</a> can be retrieved via <code>shared_from_this()</code> </p>
 
 </div>
 </div>

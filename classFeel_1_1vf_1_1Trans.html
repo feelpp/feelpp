@@ -101,18 +101,17 @@ $(document).ready(function(){initNavTree('classFeel_1_1vf_1_1Trans.html',''); in
 
 <div class="header">
   <div class="summary">
-<a href="#nested-classes">Instances and minimal complete definitions</a> &#124;
+<a href="#nested-classes">Classes</a> &#124;
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-static-attribs">Static Public Attributes</a> &#124;
 <a href="classFeel_1_1vf_1_1Trans-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">Feel::vf::Trans&lt; ExprT &gt; Class Template Reference</div></div>
 </div><!--header-->
 <div class="contents">
-<a name="details" id="details"></a><h2 class="groupheader">Description</h2>
-<div class="textblock"><div class="compoundTemplParams">template&lt;typename ExprT&gt;<br />
-class Feel::vf::Trans&lt; ExprT &gt;</div><p >Transpose an scalar, vectorial or matricial expression. </p>
-<dl class="section author"><dt>Author</dt><dd>Christophe Prud'homme </dd></dl>
-</div><div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
+
+<p>Transpose an scalar, vectorial or matricial expression.  
+ <a href="classFeel_1_1vf_1_1Trans.html#details">More...</a></p>
+<div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Inheritance diagram for Feel::vf::Trans&lt; ExprT &gt;:</div>
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">
 </div>
@@ -130,7 +129,7 @@ class Feel::vf::Trans&lt; ExprT &gt;</div><p >Transpose an scalar, vectorial or 
 </div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
-Instances and minimal complete definitions</h2></td></tr>
+Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1vf_1_1Trans_1_1HasTestFunction.html">HasTestFunction</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1vf_1_1Trans_1_1HasTrialFunction.html">HasTrialFunction</a></td></tr>
@@ -139,6 +138,35 @@ Instances and minimal complete definitions</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1vf_1_1Trans_1_1tensor.html">tensor</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
+Public Types</h2></td></tr>
+<tr class="memitem:a85e78ac049028f4187fce5ff304460e9"><td class="memItemLeft" align="right" valign="top"><a id="a85e78ac049028f4187fce5ff304460e9" name="a85e78ac049028f4187fce5ff304460e9"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>super</b> = <a class="el" href="classFeel_1_1vf_1_1ExprDynamicBase.html">ExprDynamicBase</a></td></tr>
+<tr class="separator:a85e78ac049028f4187fce5ff304460e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a574dfc1b750bd9c05a8976461c9e6c06"><td class="memItemLeft" align="right" valign="top"><a id="a574dfc1b750bd9c05a8976461c9e6c06" name="a574dfc1b750bd9c05a8976461c9e6c06"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>test_basis</b> = typename ExprT::test_basis</td></tr>
+<tr class="separator:a574dfc1b750bd9c05a8976461c9e6c06"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a16730f2a7b28c92de7da6cac24182d10"><td class="memItemLeft" align="right" valign="top"><a id="a16730f2a7b28c92de7da6cac24182d10" name="a16730f2a7b28c92de7da6cac24182d10"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>trial_basis</b> = typename ExprT::trial_basis</td></tr>
+<tr class="separator:a16730f2a7b28c92de7da6cac24182d10"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-attribs" name="pub-static-attribs"></a>
+Static Public Attributes</h2></td></tr>
+<tr class="memitem:a67a2c6337a976cedde6d44646e9b7f71"><td class="memItemLeft" align="right" valign="top"><a id="a67a2c6337a976cedde6d44646e9b7f71" name="a67a2c6337a976cedde6d44646e9b7f71"></a>
+static const <a class="el" href="namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58">size_type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>context</b> = ExprT::context</td></tr>
+<tr class="separator:a67a2c6337a976cedde6d44646e9b7f71"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a913af55c560962c6416e691371175da3"><td class="memTemplParams" colspan="2"><a id="a913af55c560962c6416e691371175da3" name="a913af55c560962c6416e691371175da3"></a>
+template&lt;typename Func &gt; </td></tr>
+<tr class="memitem:a913af55c560962c6416e691371175da3"><td class="memTemplItemLeft" align="right" valign="top">static const <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><b>has_test_basis</b> = ExprT::template has_test_basis&lt;Func&gt;</td></tr>
+<tr class="separator:a913af55c560962c6416e691371175da3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7828c115d4d89c40599d65d010f001a5"><td class="memTemplParams" colspan="2"><a id="a7828c115d4d89c40599d65d010f001a5" name="a7828c115d4d89c40599d65d010f001a5"></a>
+template&lt;typename Func &gt; </td></tr>
+<tr class="memitem:a7828c115d4d89c40599d65d010f001a5"><td class="memTemplItemLeft" align="right" valign="top">static const <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><b>has_trial_basis</b> = ExprT::template has_trial_basis&lt;Func&gt;</td></tr>
+<tr class="separator:a7828c115d4d89c40599d65d010f001a5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aece2037147da421154b380be9b3fcb57"><td class="memItemLeft" align="right" valign="top"><a id="aece2037147da421154b380be9b3fcb57" name="aece2037147da421154b380be9b3fcb57"></a>
+static const <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>is_terminal</b> = false</td></tr>
+<tr class="separator:aece2037147da421154b380be9b3fcb57"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader">Typedefs</h2></td></tr>
 <tr class="memitem:abdb7b2b23206b7b51bf1944b692dc5db"><td class="memItemLeft" align="right" valign="top"><a id="abdb7b2b23206b7b51bf1944b692dc5db" name="abdb7b2b23206b7b51bf1944b692dc5db"></a>
@@ -210,35 +238,6 @@ template&lt;<a class="el" href="classint.html">int</a> diffOrder, typename TheSy
 expression_type const &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>expression</b> () const</td></tr>
 <tr class="separator:a7da010f630d0fe40c2f5fecb8ac2ebd5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
-Public Types</h2></td></tr>
-<tr class="memitem:a85e78ac049028f4187fce5ff304460e9"><td class="memItemLeft" align="right" valign="top"><a id="a85e78ac049028f4187fce5ff304460e9" name="a85e78ac049028f4187fce5ff304460e9"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>super</b> = <a class="el" href="classFeel_1_1vf_1_1ExprDynamicBase.html">ExprDynamicBase</a></td></tr>
-<tr class="separator:a85e78ac049028f4187fce5ff304460e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a574dfc1b750bd9c05a8976461c9e6c06"><td class="memItemLeft" align="right" valign="top"><a id="a574dfc1b750bd9c05a8976461c9e6c06" name="a574dfc1b750bd9c05a8976461c9e6c06"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>test_basis</b> = typename ExprT::test_basis</td></tr>
-<tr class="separator:a574dfc1b750bd9c05a8976461c9e6c06"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a16730f2a7b28c92de7da6cac24182d10"><td class="memItemLeft" align="right" valign="top"><a id="a16730f2a7b28c92de7da6cac24182d10" name="a16730f2a7b28c92de7da6cac24182d10"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>trial_basis</b> = typename ExprT::trial_basis</td></tr>
-<tr class="separator:a16730f2a7b28c92de7da6cac24182d10"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-attribs" name="pub-static-attribs"></a>
-Static Public Attributes</h2></td></tr>
-<tr class="memitem:a67a2c6337a976cedde6d44646e9b7f71"><td class="memItemLeft" align="right" valign="top"><a id="a67a2c6337a976cedde6d44646e9b7f71" name="a67a2c6337a976cedde6d44646e9b7f71"></a>
-static const <a class="el" href="namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58">size_type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>context</b> = ExprT::context</td></tr>
-<tr class="separator:a67a2c6337a976cedde6d44646e9b7f71"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a913af55c560962c6416e691371175da3"><td class="memTemplParams" colspan="2"><a id="a913af55c560962c6416e691371175da3" name="a913af55c560962c6416e691371175da3"></a>
-template&lt;typename Func &gt; </td></tr>
-<tr class="memitem:a913af55c560962c6416e691371175da3"><td class="memTemplItemLeft" align="right" valign="top">static const <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><b>has_test_basis</b> = ExprT::template has_test_basis&lt;Func&gt;</td></tr>
-<tr class="separator:a913af55c560962c6416e691371175da3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7828c115d4d89c40599d65d010f001a5"><td class="memTemplParams" colspan="2"><a id="a7828c115d4d89c40599d65d010f001a5" name="a7828c115d4d89c40599d65d010f001a5"></a>
-template&lt;typename Func &gt; </td></tr>
-<tr class="memitem:a7828c115d4d89c40599d65d010f001a5"><td class="memTemplItemLeft" align="right" valign="top">static const <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><b>has_trial_basis</b> = ExprT::template has_trial_basis&lt;Func&gt;</td></tr>
-<tr class="separator:a7828c115d4d89c40599d65d010f001a5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aece2037147da421154b380be9b3fcb57"><td class="memItemLeft" align="right" valign="top"><a id="aece2037147da421154b380be9b3fcb57" name="aece2037147da421154b380be9b3fcb57"></a>
-static const <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>is_terminal</b> = false</td></tr>
-<tr class="separator:aece2037147da421154b380be9b3fcb57"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="inherited" name="inherited"></a>
 Additional Inherited Members</h2></td></tr>
 <tr class="inherit_header pub_methods_classFeel_1_1vf_1_1ExprDynamicBase"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classFeel_1_1vf_1_1ExprDynamicBase')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classFeel_1_1vf_1_1ExprDynamicBase.html">Feel::vf::ExprDynamicBase</a></td></tr>
@@ -249,7 +248,11 @@ Additional Inherited Members</h2></td></tr>
 &#160;</td><td class="memItemRight" valign="bottom"><b>ExprDynamicBase</b> (<a class="el" href="namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58">size_type</a> c)</td></tr>
 <tr class="separator:a20492c77a500be232c290961470e9e56 inherit pub_methods_classFeel_1_1vf_1_1ExprDynamicBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-</div><!-- contents -->
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><div class="compoundTemplParams">template&lt;typename ExprT&gt;<br />
+class Feel::vf::Trans&lt; ExprT &gt;</div><p >Transpose an scalar, vectorial or matricial expression. </p>
+<dl class="section author"><dt>Author</dt><dd>Christophe Prud'homme </dd></dl>
+</div></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->

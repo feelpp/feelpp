@@ -101,18 +101,18 @@ $(document).ready(function(){initNavTree('classFeel_1_1SensorBase.html',''); ini
 
 <div class="header">
   <div class="summary">
-<a href="#friends">Friends</a> &#124;
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pro-attribs">Protected Attributes</a> &#124;
+<a href="#friends">Friends</a> &#124;
 <a href="classFeel_1_1SensorBase-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">Feel::SensorBase&lt; Space, ValueT &gt; Class Template Reference<span class="mlabels"><span class="mlabel">abstract</span></span></div></div>
 </div><!--header-->
 <div class="contents">
-<a name="details" id="details"></a><h2 class="groupheader">Description</h2>
-<div class="textblock"><div class="compoundTemplParams">template&lt;typename Space, typename ValueT = double&gt;<br />
-class Feel::SensorBase&lt; Space, ValueT &gt;</div><p >base class for sensors </p>
-</div><div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
+
+<p>base class for sensors  
+ <a href="classFeel_1_1SensorBase.html#details">More...</a></p>
+<div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Inheritance diagram for Feel::SensorBase&lt; Space, ValueT &gt;:</div>
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">
 </div>
@@ -129,12 +129,6 @@ class Feel::SensorBase&lt; Space, ValueT &gt;</div><p >base class for sensors </
 </div>
 </div>
 <table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="friends" name="friends"></a>
-Friends</h2></td></tr>
-<tr class="memitem:ac98d07dd8f7b70e16ccb9a01abf56b9c"><td class="memItemLeft" align="right" valign="top">class&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1SensorBase.html#ac98d07dd8f7b70e16ccb9a01abf56b9c">boost::serialization::access</a></td></tr>
-<tr class="memdesc:ac98d07dd8f7b70e16ccb9a01abf56b9c"><td class="mdescLeft">&#160;</td><td class="mdescRight">other interface may include:  <a href="classFeel_1_1SensorBase.html#ac98d07dd8f7b70e16ccb9a01abf56b9c">More...</a><br /></td></tr>
-<tr class="separator:ac98d07dd8f7b70e16ccb9a01abf56b9c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
 Public Types</h2></td></tr>
 <tr class="memitem:a6b4b97108927712bf4e5aa19d11bab26"><td class="memItemLeft" align="right" valign="top"><a id="a6b4b97108927712bf4e5aa19d11bab26" name="a6b4b97108927712bf4e5aa19d11bab26"></a>
@@ -287,39 +281,17 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><b>M_name</b></td
 <tr class="memitem:a0be2be5023f2b89fa777fd4cc45d6ea7"><td class="memItemLeft" align="right" valign="top"><a id="a0be2be5023f2b89fa777fd4cc45d6ea7" name="a0be2be5023f2b89fa777fd4cc45d6ea7"></a>
 std::string&#160;</td><td class="memItemRight" valign="bottom"><b>M_type</b></td></tr>
 <tr class="separator:a0be2be5023f2b89fa777fd4cc45d6ea7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="friends" name="friends"></a>
+Friends</h2></td></tr>
+<tr class="memitem:ac98d07dd8f7b70e16ccb9a01abf56b9c"><td class="memItemLeft" align="right" valign="top">class&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1SensorBase.html#ac98d07dd8f7b70e16ccb9a01abf56b9c">boost::serialization::access</a></td></tr>
+<tr class="memdesc:ac98d07dd8f7b70e16ccb9a01abf56b9c"><td class="mdescLeft">&#160;</td><td class="mdescRight">other interface may include:  <a href="classFeel_1_1SensorBase.html#ac98d07dd8f7b70e16ccb9a01abf56b9c">More...</a><br /></td></tr>
+<tr class="separator:ac98d07dd8f7b70e16ccb9a01abf56b9c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<h2 class="groupheader">Methods</h2>
-<a id="ac98d07dd8f7b70e16ccb9a01abf56b9c" name="ac98d07dd8f7b70e16ccb9a01abf56b9c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac98d07dd8f7b70e16ccb9a01abf56b9c">&#9670;&nbsp;</a></span>boost::serialization::access</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename Space , typename ValueT  = double&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">friend class boost::serialization::access</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">friend</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>other interface may include: </p>
-<ul>
-<li>DB storage for past measurements</li>
-<li>DB storage for future measurements </li>
-</ul>
-
-</div>
-</div>
-<h2 class="groupheader">Member Function Documentation</h2>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><div class="compoundTemplParams">template&lt;typename Space, typename ValueT = double&gt;<br />
+class Feel::SensorBase&lt; Space, ValueT &gt;</div><p >base class for sensors </p>
+</div><h2 class="groupheader">Member Function Documentation</h2>
 <a id="a262e240655e7a4d5721f1815fff79a24" name="a262e240655e7a4d5721f1815fff79a24"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a262e240655e7a4d5721f1815fff79a24">&#9670;&nbsp;</a></span>setSpace()</h2>
 
@@ -347,6 +319,37 @@ template&lt;typename Space , typename ValueT  = double&gt; </div>
 </div><div class="memdoc">
 
 <p>Reimplemented from <a class="el" href="classFeel_1_1FsFunctionalLinear.html">Feel::FsFunctionalLinear&lt; Space &gt;</a>.</p>
+
+</div>
+</div>
+<h2 class="groupheader">Friends And Related Function Documentation</h2>
+<a id="ac98d07dd8f7b70e16ccb9a01abf56b9c" name="ac98d07dd8f7b70e16ccb9a01abf56b9c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac98d07dd8f7b70e16ccb9a01abf56b9c">&#9670;&nbsp;</a></span>boost::serialization::access</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename Space , typename ValueT  = double&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">friend class boost::serialization::access</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">friend</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>other interface may include: </p>
+<ul>
+<li>DB storage for past measurements</li>
+<li>DB storage for future measurements </li>
+</ul>
 
 </div>
 </div>

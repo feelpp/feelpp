@@ -1,5 +1,7 @@
 var classFeel_1_1Simget =
 [
+    [ "Simget", "classFeel_1_1Simget.html#a47356f761b64cbd1f78d89131828a9e2", null ],
+    [ "~Simget", "classFeel_1_1Simget.html#a91bb6e6656eb7a3319bceab22380d60b", null ],
     [ "about", "classFeel_1_1Simget.html#a27497f5db65c1781c7a8713b95443037", null ],
     [ "changeRepository", "classFeel_1_1Simget.html#afcd4ac23a947d7238110967ee57f00dd", null ],
     [ "comm", "classFeel_1_1Simget.html#a4d709600379ac8b8ff0d266b01239eff", null ],
@@ -16,7 +18,5 @@ var classFeel_1_1Simget =
     [ "setMeshSizeInit", "classFeel_1_1Simget.html#a119c3041499a7509e87397eeea987127", null ],
     [ "stats", "classFeel_1_1Simget.html#a619193855542afe50cd75ca684619d96", null ],
     [ "stats", "classFeel_1_1Simget.html#a2a79531ae4f6178067e0691c35556bed", null ],
-    [ "vm", "classFeel_1_1Simget.html#a9d8c5379634e03a4356a2affd0d294e6", null ],
-    [ "Simget", "classFeel_1_1Simget.html#a47356f761b64cbd1f78d89131828a9e2", null ],
-    [ "~Simget", "classFeel_1_1Simget.html#a91bb6e6656eb7a3319bceab22380d60b", null ]
+    [ "vm", "classFeel_1_1Simget.html#a9d8c5379634e03a4356a2affd0d294e6", null ]
 ];

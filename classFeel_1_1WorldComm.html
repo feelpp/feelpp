@@ -108,20 +108,10 @@ $(document).ready(function(){initNavTree('classFeel_1_1WorldComm.html',''); init
   <div class="headertitle"><div class="title">Feel::WorldComm Class Reference<div class="ingroups"><a class="el" href="group__Feelpp.html">Feelpp</a> &raquo; <a class="el" href="group__Core.html">Core</a></div></div></div>
 </div><!--header-->
 <div class="contents">
-<a name="details" id="details"></a><h2 class="groupheader">Description</h2>
-<div class="textblock"><p >Provides interface to MPI Communicators. </p>
-<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000001">Todo:</a></b></dt><dd>define global, local and god <a class="el" href="classFeel_1_1WorldComm.html" title="Provides interface to MPI Communicators.">WorldComm</a></dd></dl>
-<div class="fragment"><div class="line"><span class="keyword">auto</span> world = <a class="code hl_function" href="classFeel_1_1Environment.html#ade89e3983d4b3f998fb4ebd0e84f28a7">Environment::worldComm</a>();</div>
-<div class="line">std::vector&lt;int&gt; <a class="code hl_function" href="classFeel_1_1WorldComm.html#a9cd39e2ebe804a5f64bae91662d31c8a">mapColorWorld</a>;</div>
-<div class="line"><span class="keywordflow">for</span>( <span class="keywordtype">int</span> <a class="code hl_function" href="namespaceFeel.html#a99aac342902035d1427a6e77b4037a78">rank</a> : irange( world.size() ) )</div>
-<div class="line">  <a class="code hl_function" href="classFeel_1_1WorldComm.html#a9cd39e2ebe804a5f64bae91662d31c8a">mapColorWorld</a>.push_back( <a class="code hl_function" href="namespaceFeel.html#a99aac342902035d1427a6e77b4037a78">rank</a> % 2 );</div>
-<div class="line"><span class="comment">// Creates a WorldComm where we have split the processes into two sets</span></div>
-<div class="line"><a class="code hl_function" href="classFeel_1_1WorldComm.html#a4ed4a25902258a5ca6e66d215fa5787b">WorldComm</a> worldColored( <a class="code hl_function" href="classFeel_1_1WorldComm.html#a9cd39e2ebe804a5f64bae91662d31c8a">mapColorWorld</a> );</div>
-<div class="ttc" id="aclassFeel_1_1Environment_html_ade89e3983d4b3f998fb4ebd0e84f28a7"><div class="ttname"><a href="classFeel_1_1Environment.html#ade89e3983d4b3f998fb4ebd0e84f28a7">Feel::Environment::worldComm</a></div><div class="ttdeci">static WorldComm &amp; worldComm()</div><div class="ttdoc">return the worldcomm (static)</div><div class="ttdef"><b>Definition:</b> environment.hpp:311</div></div>
-<div class="ttc" id="aclassFeel_1_1WorldComm_html_a4ed4a25902258a5ca6e66d215fa5787b"><div class="ttname"><a href="classFeel_1_1WorldComm.html#a4ed4a25902258a5ca6e66d215fa5787b">Feel::WorldComm::WorldComm</a></div><div class="ttdeci">WorldComm()</div><div class="ttdoc">Default constructor.</div><div class="ttdef"><b>Definition:</b> worldcomm.cpp:41</div></div>
-<div class="ttc" id="aclassFeel_1_1WorldComm_html_a9cd39e2ebe804a5f64bae91662d31c8a"><div class="ttname"><a href="classFeel_1_1WorldComm.html#a9cd39e2ebe804a5f64bae91662d31c8a">Feel::WorldComm::mapColorWorld</a></div><div class="ttdeci">std::vector&lt; int &gt; const &amp; mapColorWorld() const</div><div class="ttdoc">the colormap of the worldcomm by default the colormap set all processes to the same color 0</div><div class="ttdef"><b>Definition:</b> worldcomm.hpp:210</div></div>
-<div class="ttc" id="anamespaceFeel_html_a99aac342902035d1427a6e77b4037a78"><div class="ttname"><a href="namespaceFeel.html#a99aac342902035d1427a6e77b4037a78">Feel::rank</a></div><div class="ttdeci">auto rank(C const &amp;c)</div><div class="ttdef"><b>Definition:</b> rank.hpp:37</div></div>
-</div><!-- fragment --> </div><div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
+
+<p>Provides interface to MPI Communicators.  
+ <a href="classFeel_1_1WorldComm.html#details">More...</a></p>
+<div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Inheritance diagram for Feel::WorldComm:</div>
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">
 </div>
@@ -391,6 +381,80 @@ static <a class="el" href="classFeel_1_1WorldComm.html#a17b8bdedce7012a7f111b2b7
 static <a class="el" href="classFeel_1_1WorldComm.html#a17b8bdedce7012a7f111b2b7b0d33953">self_ptrtype</a>&#160;</td><td class="memItemRight" valign="bottom"><b>New</b> (super const &amp;s)</td></tr>
 <tr class="separator:a0aa85649d19c1f5274a96ba2ebc3616f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p >Provides interface to MPI Communicators. </p>
+<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000001">Todo:</a></b></dt><dd>define global, local and god <a class="el" href="classFeel_1_1WorldComm.html" title="Provides interface to MPI Communicators.">WorldComm</a></dd></dl>
+<div class="fragment"><div class="line"><span class="keyword">auto</span> world = <a class="code hl_function" href="classFeel_1_1Environment.html#ade89e3983d4b3f998fb4ebd0e84f28a7">Environment::worldComm</a>();</div>
+<div class="line">std::vector&lt;int&gt; <a class="code hl_function" href="classFeel_1_1WorldComm.html#a9cd39e2ebe804a5f64bae91662d31c8a">mapColorWorld</a>;</div>
+<div class="line"><span class="keywordflow">for</span>( <span class="keywordtype">int</span> <a class="code hl_function" href="namespaceFeel.html#a99aac342902035d1427a6e77b4037a78">rank</a> : irange( world.size() ) )</div>
+<div class="line">  <a class="code hl_function" href="classFeel_1_1WorldComm.html#a9cd39e2ebe804a5f64bae91662d31c8a">mapColorWorld</a>.push_back( <a class="code hl_function" href="namespaceFeel.html#a99aac342902035d1427a6e77b4037a78">rank</a> % 2 );</div>
+<div class="line"><span class="comment">// Creates a WorldComm where we have split the processes into two sets</span></div>
+<div class="line"><a class="code hl_function" href="classFeel_1_1WorldComm.html#a4ed4a25902258a5ca6e66d215fa5787b">WorldComm</a> worldColored( <a class="code hl_function" href="classFeel_1_1WorldComm.html#a9cd39e2ebe804a5f64bae91662d31c8a">mapColorWorld</a> );</div>
+<div class="ttc" id="aclassFeel_1_1Environment_html_ade89e3983d4b3f998fb4ebd0e84f28a7"><div class="ttname"><a href="classFeel_1_1Environment.html#ade89e3983d4b3f998fb4ebd0e84f28a7">Feel::Environment::worldComm</a></div><div class="ttdeci">static WorldComm &amp; worldComm()</div><div class="ttdoc">return the worldcomm (static)</div><div class="ttdef"><b>Definition:</b> environment.hpp:311</div></div>
+<div class="ttc" id="aclassFeel_1_1WorldComm_html_a4ed4a25902258a5ca6e66d215fa5787b"><div class="ttname"><a href="classFeel_1_1WorldComm.html#a4ed4a25902258a5ca6e66d215fa5787b">Feel::WorldComm::WorldComm</a></div><div class="ttdeci">WorldComm()</div><div class="ttdoc">Default constructor.</div><div class="ttdef"><b>Definition:</b> worldcomm.cpp:41</div></div>
+<div class="ttc" id="aclassFeel_1_1WorldComm_html_a9cd39e2ebe804a5f64bae91662d31c8a"><div class="ttname"><a href="classFeel_1_1WorldComm.html#a9cd39e2ebe804a5f64bae91662d31c8a">Feel::WorldComm::mapColorWorld</a></div><div class="ttdeci">std::vector&lt; int &gt; const &amp; mapColorWorld() const</div><div class="ttdoc">the colormap of the worldcomm by default the colormap set all processes to the same color 0</div><div class="ttdef"><b>Definition:</b> worldcomm.hpp:210</div></div>
+<div class="ttc" id="anamespaceFeel_html_a99aac342902035d1427a6e77b4037a78"><div class="ttname"><a href="namespaceFeel.html#a99aac342902035d1427a6e77b4037a78">Feel::rank</a></div><div class="ttdeci">auto rank(C const &amp;c)</div><div class="ttdef"><b>Definition:</b> rank.hpp:37</div></div>
+</div><!-- fragment --> </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a id="aee58710d8c993dd3d6797e60b28593cf" name="aee58710d8c993dd3d6797e60b28593cf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aee58710d8c993dd3d6797e60b28593cf">&#9670;&nbsp;</a></span>WorldComm() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">Feel::WorldComm::WorldComm </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classint.html">int</a>&#160;</td>
+          <td class="paramname"><em>_color</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">explicit</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>build a sub <a class="el" href="classFeel_1_1WorldComm.html" title="Provides interface to MPI Communicators.">WorldComm</a> from a <code>_color</code> a colormap is set based on the <code><a class="el" href="classFeel_1_1WorldComm.html#a5089aa8980e3ae1ff3d384198d19a796" title="Returns the rank in the global WorldComm.">globalRank()</a></code> of the processes </p>
+<dl class="section warning"><dt>Warning</dt><dd>do not use directly this <code><a class="el" href="classFeel_1_1WorldComm.html" title="Provides interface to MPI Communicators.">WorldComm</a></code> to get the sub <a class="el" href="classFeel_1_1WorldComm.html" title="Provides interface to MPI Communicators.">WorldComm</a>, rather use member function <code>subWorldComm( _color )</code> on this <code><a class="el" href="classFeel_1_1WorldComm.html" title="Provides interface to MPI Communicators.">WorldComm</a></code> <div class="fragment"><div class="line"><span class="keyword">auto</span> subwc = <a class="code hl_function" href="classFeel_1_1WorldComm.html#a4ed4a25902258a5ca6e66d215fa5787b">WorldComm</a>( 1 ).subWorldComm( 1 );</div>
+</div><!-- fragment --> </dd></dl>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">_color</td><td>color to use to generate the <a class="el" href="classFeel_1_1WorldComm.html" title="Provides interface to MPI Communicators.">WorldComm</a>: </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a3d4df2d2d1098f8039f89c5688667b1b" name="a3d4df2d2d1098f8039f89c5688667b1b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3d4df2d2d1098f8039f89c5688667b1b">&#9670;&nbsp;</a></span>WorldComm() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">Feel::WorldComm::WorldComm </td>
+          <td>(</td>
+          <td class="paramtype">std::vector&lt; <a class="el" href="classint.html">int</a> &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>_colorWorld</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Creates a sub <a class="el" href="classFeel_1_1WorldComm.html" title="Provides interface to MPI Communicators.">WorldComm</a> from a set of colors <code>_colorWorld</code>. </p>
+<dl class="section warning"><dt>Warning</dt><dd>do not use directly this <code><a class="el" href="classFeel_1_1WorldComm.html" title="Provides interface to MPI Communicators.">WorldComm</a></code> to get the sub <a class="el" href="classFeel_1_1WorldComm.html" title="Provides interface to MPI Communicators.">WorldComm</a>, rather use member function <code>subWorldComm( _color )</code> on this <code><a class="el" href="classFeel_1_1WorldComm.html" title="Provides interface to MPI Communicators.">WorldComm</a></code> <div class="fragment"><div class="line">std::vector&lt;int&gt; cmap( <a class="code hl_function" href="classFeel_1_1Environment.html#ade89e3983d4b3f998fb4ebd0e84f28a7">Environment::worldComm</a>().size(), 1 );</div>
+<div class="line">cmap[0] = 0; <span class="comment">// set a different color for process 0</span></div>
+<div class="line"><span class="keyword">auto</span> subwc = <a class="code hl_function" href="classFeel_1_1WorldComm.html#a4ed4a25902258a5ca6e66d215fa5787b">WorldComm</a>( cmap ).subWorldComm( 1 );</div>
+</div><!-- fragment --> </dd></dl>
+
+</div>
+</div>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="a3cd41d624b68981aaccd34dfe7e31770" name="a3cd41d624b68981aaccd34dfe7e31770"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a3cd41d624b68981aaccd34dfe7e31770">&#9670;&nbsp;</a></span>comm()</h2>
@@ -719,67 +783,6 @@ static <a class="el" href="classFeel_1_1WorldComm.html#a17b8bdedce7012a7f111b2b7
 <dl class="section return"><dt>Returns</dt><dd>the worldcomm shared_ptr with local and global communicator being the same </dd></dl>
 
 <p class="reference">References <a class="el" href="classFeel_1_1WorldComm.html#a5089aa8980e3ae1ff3d384198d19a796">globalRank()</a>, <a class="el" href="classFeel_1_1WorldComm.html#a9cd39e2ebe804a5f64bae91662d31c8a">mapColorWorld()</a>, and <a class="el" href="classFeel_1_1WorldComm.html#a06e0b60441b199b5810247f277c3c704">subWorldComm()</a>.</p>
-
-</div>
-</div>
-<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="aee58710d8c993dd3d6797e60b28593cf" name="aee58710d8c993dd3d6797e60b28593cf"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aee58710d8c993dd3d6797e60b28593cf">&#9670;&nbsp;</a></span>WorldComm() <span class="overload">[1/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">Feel::WorldComm::WorldComm </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classint.html">int</a>&#160;</td>
-          <td class="paramname"><em>_color</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">explicit</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>build a sub <a class="el" href="classFeel_1_1WorldComm.html" title="Provides interface to MPI Communicators.">WorldComm</a> from a <code>_color</code> a colormap is set based on the <code><a class="el" href="classFeel_1_1WorldComm.html#a5089aa8980e3ae1ff3d384198d19a796" title="Returns the rank in the global WorldComm.">globalRank()</a></code> of the processes </p>
-<dl class="section warning"><dt>Warning</dt><dd>do not use directly this <code><a class="el" href="classFeel_1_1WorldComm.html" title="Provides interface to MPI Communicators.">WorldComm</a></code> to get the sub <a class="el" href="classFeel_1_1WorldComm.html" title="Provides interface to MPI Communicators.">WorldComm</a>, rather use member function <code>subWorldComm( _color )</code> on this <code><a class="el" href="classFeel_1_1WorldComm.html" title="Provides interface to MPI Communicators.">WorldComm</a></code> <div class="fragment"><div class="line"><span class="keyword">auto</span> subwc = <a class="code hl_function" href="classFeel_1_1WorldComm.html#a4ed4a25902258a5ca6e66d215fa5787b">WorldComm</a>( 1 ).subWorldComm( 1 );</div>
-</div><!-- fragment --> </dd></dl>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">_color</td><td>color to use to generate the <a class="el" href="classFeel_1_1WorldComm.html" title="Provides interface to MPI Communicators.">WorldComm</a>: </td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
-<a id="a3d4df2d2d1098f8039f89c5688667b1b" name="a3d4df2d2d1098f8039f89c5688667b1b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3d4df2d2d1098f8039f89c5688667b1b">&#9670;&nbsp;</a></span>WorldComm() <span class="overload">[2/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">Feel::WorldComm::WorldComm </td>
-          <td>(</td>
-          <td class="paramtype">std::vector&lt; <a class="el" href="classint.html">int</a> &gt; const &amp;&#160;</td>
-          <td class="paramname"><em>_colorWorld</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Creates a sub <a class="el" href="classFeel_1_1WorldComm.html" title="Provides interface to MPI Communicators.">WorldComm</a> from a set of colors <code>_colorWorld</code>. </p>
-<dl class="section warning"><dt>Warning</dt><dd>do not use directly this <code><a class="el" href="classFeel_1_1WorldComm.html" title="Provides interface to MPI Communicators.">WorldComm</a></code> to get the sub <a class="el" href="classFeel_1_1WorldComm.html" title="Provides interface to MPI Communicators.">WorldComm</a>, rather use member function <code>subWorldComm( _color )</code> on this <code><a class="el" href="classFeel_1_1WorldComm.html" title="Provides interface to MPI Communicators.">WorldComm</a></code> <div class="fragment"><div class="line">std::vector&lt;int&gt; cmap( <a class="code hl_function" href="classFeel_1_1Environment.html#ade89e3983d4b3f998fb4ebd0e84f28a7">Environment::worldComm</a>().size(), 1 );</div>
-<div class="line">cmap[0] = 0; <span class="comment">// set a different color for process 0</span></div>
-<div class="line"><span class="keyword">auto</span> subwc = <a class="code hl_function" href="classFeel_1_1WorldComm.html#a4ed4a25902258a5ca6e66d215fa5787b">WorldComm</a>( cmap ).subWorldComm( 1 );</div>
-</div><!-- fragment --> </dd></dl>
 
 </div>
 </div>

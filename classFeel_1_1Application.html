@@ -105,14 +105,10 @@ $(document).ready(function(){initNavTree('classFeel_1_1Application.html',''); in
   <div class="headertitle"><div class="title">Feel::Application Class Reference<div class="ingroups"><a class="el" href="group__Feelpp.html">Feelpp</a> &raquo; <a class="el" href="group__Core.html">Core</a></div></div></div>
 </div><!--header-->
 <div class="contents">
-<a name="details" id="details"></a><h2 class="groupheader">Description</h2>
-<div class="textblock"><p >provides information about the <a class="el" href="classFeel_1_1Application.html" title="provides information about the Application">Application</a> </p>
-<p >MPI <a class="el" href="classFeel_1_1Application.html" title="provides information about the Application">Application</a>.</p>
-<dl class="section author"><dt>Author</dt><dd>Christophe Prud'homme</dd>
-<dd>
-Christophe Prud'homme </dd></dl>
-<dl class="section see"><dt>See also</dt><dd></dd></dl>
-</div><div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
+
+<p>provides information about the <a class="el" href="classFeel_1_1Application.html" title="provides information about the Application">Application</a>  
+ <a href="classFeel_1_1Application.html#details">More...</a></p>
+<div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Inheritance diagram for Feel::Application:</div>
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">
 </div>
@@ -323,6 +319,301 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>setDimension</b> (<a 
 <tr class="memdesc:a1ddd780ce8d1a26de1b9ce9bbb58c36b"><td class="mdescLeft">&#160;</td><td class="mdescRight">set the dimension of the problem <br /></td></tr>
 <tr class="separator:a1ddd780ce8d1a26de1b9ce9bbb58c36b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p >provides information about the <a class="el" href="classFeel_1_1Application.html" title="provides information about the Application">Application</a> </p>
+<p >MPI <a class="el" href="classFeel_1_1Application.html" title="provides information about the Application">Application</a>.</p>
+<dl class="section author"><dt>Author</dt><dd>Christophe Prud'homme</dd>
+<dd>
+Christophe Prud'homme </dd></dl>
+<dl class="section see"><dt>See also</dt><dd></dd></dl>
+</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a id="a074224ccb2e3626252a7ff2885fcedfa" name="a074224ccb2e3626252a7ff2885fcedfa"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a074224ccb2e3626252a7ff2885fcedfa">&#9670;&nbsp;</a></span>Application() <span class="overload">[1/7]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">Feel::Application::Application </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classFeel_1_1AboutData.html">AboutData</a> const &amp;&#160;</td>
+          <td class="paramname"><em>ad</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Construct an MPI <a class="el" href="classFeel_1_1Application.html" title="provides information about the Application">Application</a>. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">ad</td><td><code><a class="el" href="classFeel_1_1AboutData.html" title="This class is used to store information about a program.">AboutData</a></code> structure for this <code><a class="el" href="classFeel_1_1Application.html" title="provides information about the Application">Application</a></code> </td></tr>
+    <tr><td class="paramname">Comm</td><td>MPI communicator </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a1112e920fd18b261ef08f30ae958cf23" name="a1112e920fd18b261ef08f30ae958cf23"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1112e920fd18b261ef08f30ae958cf23">&#9670;&nbsp;</a></span>Application() <span class="overload">[2/7]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">Feel::Application::Application </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classFeel_1_1AboutData.html">AboutData</a> const &amp;&#160;</td>
+          <td class="paramname"><em>ad</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">po::options_description const &amp;&#160;</td>
+          <td class="paramname"><em>od</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Construct an MPI <a class="el" href="classFeel_1_1Application.html" title="provides information about the Application">Application</a>. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">ad</td><td><code><a class="el" href="classFeel_1_1AboutData.html" title="This class is used to store information about a program.">AboutData</a></code> structure for this <code><a class="el" href="classFeel_1_1Application.html" title="provides information about the Application">Application</a></code> </td></tr>
+    <tr><td class="paramname">od</td><td><code>po::options_description</code> structure for this <code><a class="el" href="classFeel_1_1Application.html" title="provides information about the Application">Application</a></code> </td></tr>
+    <tr><td class="paramname">Comm</td><td>MPI communicator </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a2938c9f53e34a8d01a8aa5360e86ccb8" name="a2938c9f53e34a8d01a8aa5360e86ccb8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2938c9f53e34a8d01a8aa5360e86ccb8">&#9670;&nbsp;</a></span>Application() <span class="overload">[3/7]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">Feel::Application::Application </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classint.html">int</a>&#160;</td>
+          <td class="paramname"><em>argc</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">char **&#160;</td>
+          <td class="paramname"><em>argv</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classFeel_1_1AboutData.html">AboutData</a> const &amp;&#160;</td>
+          <td class="paramname"><em>ad</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Construct an MPI <a class="el" href="classFeel_1_1Application.html" title="provides information about the Application">Application</a>. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">argc</td><td>number of arguments on the command line </td></tr>
+    <tr><td class="paramname">argv</td><td>arguments in the command line </td></tr>
+    <tr><td class="paramname">ad</td><td><code><a class="el" href="classFeel_1_1AboutData.html" title="This class is used to store information about a program.">AboutData</a></code> structure for this <code><a class="el" href="classFeel_1_1Application.html" title="provides information about the Application">Application</a></code> </td></tr>
+    <tr><td class="paramname">Comm</td><td>MPI communicator</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section warning"><dt>Warning</dt><dd>this function is marked deprecated and should not be used anymore, use the <a class="el" href="classFeel_1_1Environment.html" title="Initialize, finalize, and query the Feel++ environment.">Environment</a> class instead to initialize the Feel++ </dd></dl>
+
+</div>
+</div>
+<a id="a7239696dc9414aa9a3ae2e5f182e2ac0" name="a7239696dc9414aa9a3ae2e5f182e2ac0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7239696dc9414aa9a3ae2e5f182e2ac0">&#9670;&nbsp;</a></span>Application() <span class="overload">[4/7]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">Feel::Application::Application </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classint.html">int</a>&#160;</td>
+          <td class="paramname"><em>argc</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">char **&#160;</td>
+          <td class="paramname"><em>argv</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classFeel_1_1AboutData.html">AboutData</a> const &amp;&#160;</td>
+          <td class="paramname"><em>ad</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">po::options_description const &amp;&#160;</td>
+          <td class="paramname"><em>od</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Construct an MPI <a class="el" href="classFeel_1_1Application.html" title="provides information about the Application">Application</a>. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">argc</td><td>number of arguments on the command line </td></tr>
+    <tr><td class="paramname">argv</td><td>arguments in the command line </td></tr>
+    <tr><td class="paramname">ad</td><td><code><a class="el" href="classFeel_1_1AboutData.html" title="This class is used to store information about a program.">AboutData</a></code> structure for this <code><a class="el" href="classFeel_1_1Application.html" title="provides information about the Application">Application</a></code> </td></tr>
+    <tr><td class="paramname">od</td><td><code>po::options_description</code> structure for this <code><a class="el" href="classFeel_1_1Application.html" title="provides information about the Application">Application</a></code> </td></tr>
+    <tr><td class="paramname">Comm</td><td>MPI communicator</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section warning"><dt>Warning</dt><dd>this function is marked deprecated and should not be used anymore, use the <a class="el" href="classFeel_1_1Environment.html" title="Initialize, finalize, and query the Feel++ environment.">Environment</a> class instead to initialize the Feel++ </dd></dl>
+
+</div>
+</div>
+<a id="abe9b41f50a635c26516123780444b149" name="abe9b41f50a635c26516123780444b149"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abe9b41f50a635c26516123780444b149">&#9670;&nbsp;</a></span>Application() <span class="overload">[5/7]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">Feel::Application::Application </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classFeel_1_1Application.html">Application</a> const &amp;&#160;</td>
+          <td class="paramname"><em>app</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>copy constructor </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">app</td><td><code><a class="el" href="classFeel_1_1Application.html" title="provides information about the Application">Application</a></code> to be copy constructed </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a7e72b49f60f7dcfafee4f38c67e79210" name="a7e72b49f60f7dcfafee4f38c67e79210"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7e72b49f60f7dcfafee4f38c67e79210">&#9670;&nbsp;</a></span>Application() <span class="overload">[6/7]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">Feel::Application::Application </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classint.html">int</a>&#160;</td>
+          <td class="paramname"><em>argc</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">char **&#160;</td>
+          <td class="paramname"><em>argv</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classFeel_1_1AboutData.html">AboutData</a> const &amp;&#160;</td>
+          <td class="paramname"><em>ad</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Construct an MPI <a class="el" href="classFeel_1_1Application.html" title="provides information about the Application">Application</a>. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">argc</td><td>number of arguments on the command line </td></tr>
+    <tr><td class="paramname">argv</td><td>arguments in the command line </td></tr>
+    <tr><td class="paramname">ad</td><td><code><a class="el" href="classFeel_1_1AboutData.html" title="This class is used to store information about a program.">AboutData</a></code> structure for this <code><a class="el" href="classFeel_1_1Application.html" title="provides information about the Application">Application</a></code> </td></tr>
+    <tr><td class="paramname">Comm</td><td>MPI communicator </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a8cafdbf60a11fa7ca6056dce78bc85a5" name="a8cafdbf60a11fa7ca6056dce78bc85a5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8cafdbf60a11fa7ca6056dce78bc85a5">&#9670;&nbsp;</a></span>Application() <span class="overload">[7/7]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">Feel::Application::Application </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classint.html">int</a>&#160;</td>
+          <td class="paramname"><em>argc</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">char **&#160;</td>
+          <td class="paramname"><em>argv</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classFeel_1_1AboutData.html">AboutData</a> const &amp;&#160;</td>
+          <td class="paramname"><em>ad</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">po::options_description const &amp;&#160;</td>
+          <td class="paramname"><em>od</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Construct an MPI <a class="el" href="classFeel_1_1Application.html" title="provides information about the Application">Application</a>. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">argc</td><td>number of arguments on the command line </td></tr>
+    <tr><td class="paramname">argv</td><td>arguments in the command line </td></tr>
+    <tr><td class="paramname">ad</td><td><code><a class="el" href="classFeel_1_1AboutData.html" title="This class is used to store information about a program.">AboutData</a></code> structure for this <code><a class="el" href="classFeel_1_1Application.html" title="provides information about the Application">Application</a></code> </td></tr>
+    <tr><td class="paramname">od</td><td><code>po::options_description</code> structure for this <code><a class="el" href="classFeel_1_1Application.html" title="provides information about the Application">Application</a></code> </td></tr>
+    <tr><td class="paramname">Comm</td><td>MPI communicator </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="adca8f49376c4bb58c7d87910f9d17f35" name="adca8f49376c4bb58c7d87910f9d17f35"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#adca8f49376c4bb58c7d87910f9d17f35">&#9670;&nbsp;</a></span>about()</h2>
@@ -995,294 +1286,6 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>setDimension</b> (<a 
 <dl class="section return"><dt>Returns</dt><dd>the variable map </dd></dl>
 
 <p class="reference">Referenced by <a class="el" href="classFeel_1_1Application.html#a0f4563acdfff9cc2067d70329954e49c">resultFileName()</a>.</p>
-
-</div>
-</div>
-<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="a074224ccb2e3626252a7ff2885fcedfa" name="a074224ccb2e3626252a7ff2885fcedfa"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a074224ccb2e3626252a7ff2885fcedfa">&#9670;&nbsp;</a></span>Application() <span class="overload">[1/7]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">Feel::Application::Application </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classFeel_1_1AboutData.html">AboutData</a> const &amp;&#160;</td>
-          <td class="paramname"><em>ad</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Construct an MPI <a class="el" href="classFeel_1_1Application.html" title="provides information about the Application">Application</a>. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">ad</td><td><code><a class="el" href="classFeel_1_1AboutData.html" title="This class is used to store information about a program.">AboutData</a></code> structure for this <code><a class="el" href="classFeel_1_1Application.html" title="provides information about the Application">Application</a></code> </td></tr>
-    <tr><td class="paramname">Comm</td><td>MPI communicator </td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
-<a id="a1112e920fd18b261ef08f30ae958cf23" name="a1112e920fd18b261ef08f30ae958cf23"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1112e920fd18b261ef08f30ae958cf23">&#9670;&nbsp;</a></span>Application() <span class="overload">[2/7]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">Feel::Application::Application </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classFeel_1_1AboutData.html">AboutData</a> const &amp;&#160;</td>
-          <td class="paramname"><em>ad</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">po::options_description const &amp;&#160;</td>
-          <td class="paramname"><em>od</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Construct an MPI <a class="el" href="classFeel_1_1Application.html" title="provides information about the Application">Application</a>. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">ad</td><td><code><a class="el" href="classFeel_1_1AboutData.html" title="This class is used to store information about a program.">AboutData</a></code> structure for this <code><a class="el" href="classFeel_1_1Application.html" title="provides information about the Application">Application</a></code> </td></tr>
-    <tr><td class="paramname">od</td><td><code>po::options_description</code> structure for this <code><a class="el" href="classFeel_1_1Application.html" title="provides information about the Application">Application</a></code> </td></tr>
-    <tr><td class="paramname">Comm</td><td>MPI communicator </td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
-<a id="a2938c9f53e34a8d01a8aa5360e86ccb8" name="a2938c9f53e34a8d01a8aa5360e86ccb8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2938c9f53e34a8d01a8aa5360e86ccb8">&#9670;&nbsp;</a></span>Application() <span class="overload">[3/7]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">Feel::Application::Application </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classint.html">int</a>&#160;</td>
-          <td class="paramname"><em>argc</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">char **&#160;</td>
-          <td class="paramname"><em>argv</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classFeel_1_1AboutData.html">AboutData</a> const &amp;&#160;</td>
-          <td class="paramname"><em>ad</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Construct an MPI <a class="el" href="classFeel_1_1Application.html" title="provides information about the Application">Application</a>. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">argc</td><td>number of arguments on the command line </td></tr>
-    <tr><td class="paramname">argv</td><td>arguments in the command line </td></tr>
-    <tr><td class="paramname">ad</td><td><code><a class="el" href="classFeel_1_1AboutData.html" title="This class is used to store information about a program.">AboutData</a></code> structure for this <code><a class="el" href="classFeel_1_1Application.html" title="provides information about the Application">Application</a></code> </td></tr>
-    <tr><td class="paramname">Comm</td><td>MPI communicator</td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section warning"><dt>Warning</dt><dd>this function is marked deprecated and should not be used anymore, use the <a class="el" href="classFeel_1_1Environment.html" title="Initialize, finalize, and query the Feel++ environment.">Environment</a> class instead to initialize the Feel++ </dd></dl>
-
-</div>
-</div>
-<a id="a7239696dc9414aa9a3ae2e5f182e2ac0" name="a7239696dc9414aa9a3ae2e5f182e2ac0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7239696dc9414aa9a3ae2e5f182e2ac0">&#9670;&nbsp;</a></span>Application() <span class="overload">[4/7]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">Feel::Application::Application </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classint.html">int</a>&#160;</td>
-          <td class="paramname"><em>argc</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">char **&#160;</td>
-          <td class="paramname"><em>argv</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classFeel_1_1AboutData.html">AboutData</a> const &amp;&#160;</td>
-          <td class="paramname"><em>ad</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">po::options_description const &amp;&#160;</td>
-          <td class="paramname"><em>od</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Construct an MPI <a class="el" href="classFeel_1_1Application.html" title="provides information about the Application">Application</a>. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">argc</td><td>number of arguments on the command line </td></tr>
-    <tr><td class="paramname">argv</td><td>arguments in the command line </td></tr>
-    <tr><td class="paramname">ad</td><td><code><a class="el" href="classFeel_1_1AboutData.html" title="This class is used to store information about a program.">AboutData</a></code> structure for this <code><a class="el" href="classFeel_1_1Application.html" title="provides information about the Application">Application</a></code> </td></tr>
-    <tr><td class="paramname">od</td><td><code>po::options_description</code> structure for this <code><a class="el" href="classFeel_1_1Application.html" title="provides information about the Application">Application</a></code> </td></tr>
-    <tr><td class="paramname">Comm</td><td>MPI communicator</td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section warning"><dt>Warning</dt><dd>this function is marked deprecated and should not be used anymore, use the <a class="el" href="classFeel_1_1Environment.html" title="Initialize, finalize, and query the Feel++ environment.">Environment</a> class instead to initialize the Feel++ </dd></dl>
-
-</div>
-</div>
-<a id="abe9b41f50a635c26516123780444b149" name="abe9b41f50a635c26516123780444b149"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abe9b41f50a635c26516123780444b149">&#9670;&nbsp;</a></span>Application() <span class="overload">[5/7]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">Feel::Application::Application </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classFeel_1_1Application.html">Application</a> const &amp;&#160;</td>
-          <td class="paramname"><em>app</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>copy constructor </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">app</td><td><code><a class="el" href="classFeel_1_1Application.html" title="provides information about the Application">Application</a></code> to be copy constructed </td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
-<a id="a7e72b49f60f7dcfafee4f38c67e79210" name="a7e72b49f60f7dcfafee4f38c67e79210"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7e72b49f60f7dcfafee4f38c67e79210">&#9670;&nbsp;</a></span>Application() <span class="overload">[6/7]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">Feel::Application::Application </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classint.html">int</a>&#160;</td>
-          <td class="paramname"><em>argc</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">char **&#160;</td>
-          <td class="paramname"><em>argv</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classFeel_1_1AboutData.html">AboutData</a> const &amp;&#160;</td>
-          <td class="paramname"><em>ad</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Construct an MPI <a class="el" href="classFeel_1_1Application.html" title="provides information about the Application">Application</a>. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">argc</td><td>number of arguments on the command line </td></tr>
-    <tr><td class="paramname">argv</td><td>arguments in the command line </td></tr>
-    <tr><td class="paramname">ad</td><td><code><a class="el" href="classFeel_1_1AboutData.html" title="This class is used to store information about a program.">AboutData</a></code> structure for this <code><a class="el" href="classFeel_1_1Application.html" title="provides information about the Application">Application</a></code> </td></tr>
-    <tr><td class="paramname">Comm</td><td>MPI communicator </td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
-<a id="a8cafdbf60a11fa7ca6056dce78bc85a5" name="a8cafdbf60a11fa7ca6056dce78bc85a5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8cafdbf60a11fa7ca6056dce78bc85a5">&#9670;&nbsp;</a></span>Application() <span class="overload">[7/7]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">Feel::Application::Application </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classint.html">int</a>&#160;</td>
-          <td class="paramname"><em>argc</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">char **&#160;</td>
-          <td class="paramname"><em>argv</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classFeel_1_1AboutData.html">AboutData</a> const &amp;&#160;</td>
-          <td class="paramname"><em>ad</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">po::options_description const &amp;&#160;</td>
-          <td class="paramname"><em>od</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Construct an MPI <a class="el" href="classFeel_1_1Application.html" title="provides information about the Application">Application</a>. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">argc</td><td>number of arguments on the command line </td></tr>
-    <tr><td class="paramname">argv</td><td>arguments in the command line </td></tr>
-    <tr><td class="paramname">ad</td><td><code><a class="el" href="classFeel_1_1AboutData.html" title="This class is used to store information about a program.">AboutData</a></code> structure for this <code><a class="el" href="classFeel_1_1Application.html" title="provides information about the Application">Application</a></code> </td></tr>
-    <tr><td class="paramname">od</td><td><code>po::options_description</code> structure for this <code><a class="el" href="classFeel_1_1Application.html" title="provides information about the Application">Application</a></code> </td></tr>
-    <tr><td class="paramname">Comm</td><td>MPI communicator </td></tr>
-  </table>
-  </dd>
-</dl>
 
 </div>
 </div>

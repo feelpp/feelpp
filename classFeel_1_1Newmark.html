@@ -101,23 +101,17 @@ $(document).ready(function(){initNavTree('classFeel_1_1Newmark.html',''); initRe
 
 <div class="header">
   <div class="summary">
-<a href="#friends">Friends</a> &#124;
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#friends">Friends</a> &#124;
 <a href="classFeel_1_1Newmark-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">Feel::Newmark&lt; SpaceType &gt; Class Template Reference<div class="ingroups"><a class="el" href="group__Feelpp.html">Feelpp</a> &raquo; <a class="el" href="group__SpaceTime.html">SpaceTime</a></div></div></div>
 </div><!--header-->
 <div class="contents">
-<a name="details" id="details"></a><h2 class="groupheader">Description</h2>
-<div class="textblock"><div class="compoundTemplParams">template&lt;typename SpaceType&gt;<br />
-class Feel::Newmark&lt; SpaceType &gt;</div><p ><a class="el" href="classFeel_1_1Newmark.html" title="Newmark discretization.">Newmark</a> discretization. </p>
-<p ><a class="el" href="classA.html">A</a> differential equation of the form</p>
-<p >\( M \ddot{\boldsymbol{\eta}}^{n+1} = A \boldsymbol{\eta}^{n+1} + f \)</p>
-<p >is discretized in time as</p>
-<p class="formulaDsp">
-\begin{eqnarray} \ddot{\boldsymbol{\eta}}^{n+1} &amp;=&amp; \frac{1}{\beta \Delta t^2} \left( \boldsymbol{\eta}^{n+1}-\boldsymbol{\eta}^{n} \right) - \frac{1}{\beta \Delta t} \dot{\boldsymbol{\eta}}^{n} - \left( \frac{1}{2 \beta} -1 \right) \ddot{\boldsymbol{\eta}}^{n} \\ \dot{\boldsymbol{\eta}}^{n+1} &amp;=&amp; \frac{\gamma}{\beta \Delta t} \left( \boldsymbol{\eta}^{n+1}-\boldsymbol{\eta}^{n} \right) - \left( \frac{\gamma}{\beta} -1 \right) \dot{\boldsymbol{\eta}}^{n} - \Delta t \left( \frac{\gamma}{2\beta}-1 \right) \ddot{\boldsymbol{\eta}}^{n} \end{eqnarray}
-</p>
- </div><div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
+
+<p><a class="el" href="classFeel_1_1Newmark.html" title="Newmark discretization.">Newmark</a> discretization.  
+ <a href="classFeel_1_1Newmark.html#details">More...</a></p>
+<div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Inheritance diagram for Feel::Newmark&lt; SpaceType &gt;:</div>
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">
 </div>
@@ -134,12 +128,6 @@ class Feel::Newmark&lt; SpaceType &gt;</div><p ><a class="el" href="classFeel_1_
 </div>
 </div>
 <table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="friends" name="friends"></a>
-Friends</h2></td></tr>
-<tr class="memitem:ac98d07dd8f7b70e16ccb9a01abf56b9c"><td class="memItemLeft" align="right" valign="top"><a id="ac98d07dd8f7b70e16ccb9a01abf56b9c" name="ac98d07dd8f7b70e16ccb9a01abf56b9c"></a>
-class&#160;</td><td class="memItemRight" valign="bottom"><b>boost::serialization::access</b></td></tr>
-<tr class="separator:ac98d07dd8f7b70e16ccb9a01abf56b9c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
 Public Types</h2></td></tr>
 <tr class="memitem:a8612edfcaccf5eb9606b5f835fea5071"><td class="memItemLeft" align="right" valign="top"><a id="a8612edfcaccf5eb9606b5f835fea5071" name="a8612edfcaccf5eb9606b5f835fea5071"></a>
@@ -489,6 +477,12 @@ virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>update</b> ()
 <a class="el" href="classFeel_1_1WorldComm.html">WorldComm</a> const &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>worldComm</b> () const</td></tr>
 <tr class="separator:a18ae67ec94505f0ac41cce4fa15b4708 inherit pub_methods_classFeel_1_1TSBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="friends" name="friends"></a>
+Friends</h2></td></tr>
+<tr class="memitem:ac98d07dd8f7b70e16ccb9a01abf56b9c"><td class="memItemLeft" align="right" valign="top"><a id="ac98d07dd8f7b70e16ccb9a01abf56b9c" name="ac98d07dd8f7b70e16ccb9a01abf56b9c"></a>
+class&#160;</td><td class="memItemRight" valign="bottom"><b>boost::serialization::access</b></td></tr>
+<tr class="separator:ac98d07dd8f7b70e16ccb9a01abf56b9c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="inherited" name="inherited"></a>
 Additional Inherited Members</h2></td></tr>
 <tr class="inherit_header pro_methods_classFeel_1_1TSBase"><td colspan="2" onclick="javascript:toggleInherit('pro_methods_classFeel_1_1TSBase')"><img src="closed.png" alt="-"/>&#160;Protected Member Functions inherited from <a class="el" href="classFeel_1_1TSBase.html">Feel::TSBase</a></td></tr>
@@ -599,67 +593,16 @@ Feel::Timer&#160;</td><td class="memItemRight" valign="bottom"><b>M_timer</b></t
 <tr class="memdesc:a75a9065775b868f193921da99eb0a3b2 inherit pro_attribs_classFeel_1_1TSBase"><td class="mdescLeft">&#160;</td><td class="mdescRight">mpi communicator tool <br /></td></tr>
 <tr class="separator:a75a9065775b868f193921da99eb0a3b2 inherit pro_attribs_classFeel_1_1TSBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<h2 class="groupheader">Member Function Documentation</h2>
-<a id="a91ed852964473adb55e6b3b9295a4653" name="a91ed852964473adb55e6b3b9295a4653"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a91ed852964473adb55e6b3b9295a4653">&#9670;&nbsp;</a></span>next()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename SpaceType &gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">double <a class="el" href="classFeel_1_1Newmark.html">Feel::Newmark</a>&lt; SpaceType &gt;::next</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>advance in time </p>
-<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000010">Todo:</a></b></dt><dd>implements the strategies here, at the moment constant time step </dd></dl>
-
-<p>Reimplemented from <a class="el" href="classFeel_1_1TSBase.html#adb8d719396f180b5662039cc770a2daf">Feel::TSBase</a>.</p>
-
-</div>
-</div>
-<a id="a3a92fef9c982f2a1796ed4efd1263153" name="a3a92fef9c982f2a1796ed4efd1263153"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3a92fef9c982f2a1796ed4efd1263153">&#9670;&nbsp;</a></span>shiftRight()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename SpaceType &gt; </div>
-<div class="memtemplate">
-template&lt;typename container_type &gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">void <a class="el" href="classFeel_1_1Newmark.html">Feel::Newmark</a>&lt; SpaceType &gt;::shiftRight </td>
-          <td>(</td>
-          <td class="paramtype">typename space_type::template Element&lt; value_type, container_type &gt; const &amp;&#160;</td>
-          <td class="paramname"><em>u_curr</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Update the vectors of the previous time steps by shifting on the right the old values. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">u_curr</td><td>current (new) value of the state vector </td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
-<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><div class="compoundTemplParams">template&lt;typename SpaceType&gt;<br />
+class Feel::Newmark&lt; SpaceType &gt;</div><p ><a class="el" href="classFeel_1_1Newmark.html" title="Newmark discretization.">Newmark</a> discretization. </p>
+<p ><a class="el" href="classA.html">A</a> differential equation of the form</p>
+<p >\( M \ddot{\boldsymbol{\eta}}^{n+1} = A \boldsymbol{\eta}^{n+1} + f \)</p>
+<p >is discretized in time as</p>
+<p class="formulaDsp">
+\begin{eqnarray} \ddot{\boldsymbol{\eta}}^{n+1} &amp;=&amp; \frac{1}{\beta \Delta t^2} \left( \boldsymbol{\eta}^{n+1}-\boldsymbol{\eta}^{n} \right) - \frac{1}{\beta \Delta t} \dot{\boldsymbol{\eta}}^{n} - \left( \frac{1}{2 \beta} -1 \right) \ddot{\boldsymbol{\eta}}^{n} \\ \dot{\boldsymbol{\eta}}^{n+1} &amp;=&amp; \frac{\gamma}{\beta \Delta t} \left( \boldsymbol{\eta}^{n+1}-\boldsymbol{\eta}^{n} \right) - \left( \frac{\gamma}{\beta} -1 \right) \dot{\boldsymbol{\eta}}^{n} - \Delta t \left( \frac{\gamma}{2\beta}-1 \right) \ddot{\boldsymbol{\eta}}^{n} \end{eqnarray}
+</p>
+ </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a20bc2e2e94c796c4a5a1a312cbb33bfd" name="a20bc2e2e94c796c4a5a1a312cbb33bfd"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a20bc2e2e94c796c4a5a1a312cbb33bfd">&#9670;&nbsp;</a></span>Newmark() <span class="overload">[1/2]</span></h2>
 
@@ -746,6 +689,66 @@ template&lt;typename SpaceType &gt; </div>
   <table class="params">
     <tr><td class="paramname">space</td><td>approximation space </td></tr>
     <tr><td class="paramname">name</td><td>name of the newmark ts </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<h2 class="groupheader">Member Function Documentation</h2>
+<a id="a91ed852964473adb55e6b3b9295a4653" name="a91ed852964473adb55e6b3b9295a4653"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a91ed852964473adb55e6b3b9295a4653">&#9670;&nbsp;</a></span>next()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename SpaceType &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">double <a class="el" href="classFeel_1_1Newmark.html">Feel::Newmark</a>&lt; SpaceType &gt;::next</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>advance in time </p>
+<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000010">Todo:</a></b></dt><dd>implements the strategies here, at the moment constant time step </dd></dl>
+
+<p>Reimplemented from <a class="el" href="classFeel_1_1TSBase.html#adb8d719396f180b5662039cc770a2daf">Feel::TSBase</a>.</p>
+
+</div>
+</div>
+<a id="a3a92fef9c982f2a1796ed4efd1263153" name="a3a92fef9c982f2a1796ed4efd1263153"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3a92fef9c982f2a1796ed4efd1263153">&#9670;&nbsp;</a></span>shiftRight()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename SpaceType &gt; </div>
+<div class="memtemplate">
+template&lt;typename container_type &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classFeel_1_1Newmark.html">Feel::Newmark</a>&lt; SpaceType &gt;::shiftRight </td>
+          <td>(</td>
+          <td class="paramtype">typename space_type::template Element&lt; value_type, container_type &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>u_curr</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Update the vectors of the previous time steps by shifting on the right the old values. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">u_curr</td><td>current (new) value of the state vector </td></tr>
   </table>
   </dd>
 </dl>

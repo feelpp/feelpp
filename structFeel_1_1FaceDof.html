@@ -106,17 +106,10 @@ $(document).ready(function(){initNavTree('structFeel_1_1FaceDof.html',''); initR
   <div class="headertitle"><div class="title">Feel::FaceDof&lt; SizeT &gt; Struct Template Reference</div></div>
 </div><!--header-->
 <div class="contents">
-<a name="details" id="details"></a><h2 class="groupheader">Description</h2>
-<div class="textblock"><div class="compoundTemplParams">template&lt;typename SizeT = uint32_type&gt;<br />
-struct Feel::FaceDof&lt; SizeT &gt;</div><p >Describe a <a class="el" href="classFeel_1_1Dof.html" title="class that represents a degree of freedom">Dof</a> on a Face. </p>
-<p >the data structure is a tuple containing</p><ul>
-<li>global dof id</li>
-<li>sign of the dof</li>
-<li>is dof periodic</li>
-<li>local dof id in element</li>
-<li>local dof id in face </li>
-</ul>
-</div><div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
+
+<p>Describe a <a class="el" href="classFeel_1_1Dof.html" title="class that represents a degree of freedom">Dof</a> on a Face.  
+ <a href="structFeel_1_1FaceDof.html#details">More...</a></p>
+<div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Inheritance diagram for Feel::FaceDof&lt; SizeT &gt;:</div>
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">
 </div>
@@ -133,6 +126,15 @@ struct Feel::FaceDof&lt; SizeT &gt;</div><p >Describe a <a class="el" href="clas
 </div>
 </div>
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
+Public Types</h2></td></tr>
+<tr class="memitem:a4e06b8a28978582b77783260a814d504"><td class="memItemLeft" align="right" valign="top"><a id="a4e06b8a28978582b77783260a814d504" name="a4e06b8a28978582b77783260a814d504"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>size_type</b> = SizeT</td></tr>
+<tr class="separator:a4e06b8a28978582b77783260a814d504"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5fca0b7c9be438f7964fb5485f5b6a5b"><td class="memItemLeft" align="right" valign="top"><a id="a5fca0b7c9be438f7964fb5485f5b6a5b" name="a5fca0b7c9be438f7964fb5485f5b6a5b"></a>
+typedef std::tuple&lt; SizeT, int16_type, <a class="el" href="classbool.html">bool</a>, uint16_type, uint16_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>super</b></td></tr>
+<tr class="separator:a5fca0b7c9be438f7964fb5485f5b6a5b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader">Constructors, destructor</h2></td></tr>
 <tr class="memitem:adb7f956c58638cae5fffd20dcd6bf94c"><td class="memItemLeft" align="right" valign="top"><a id="adb7f956c58638cae5fffd20dcd6bf94c" name="adb7f956c58638cae5fffd20dcd6bf94c"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>FaceDof</b> ()</td></tr>
@@ -197,17 +199,18 @@ struct Feel::FaceDof&lt; SizeT &gt;</div><p >Describe a <a class="el" href="clas
 <tr class="memitem:a6b4b95fa95b5a68a96a09510ee6ac874"><td class="memItemLeft" align="right" valign="top"><a id="a6b4b95fa95b5a68a96a09510ee6ac874" name="a6b4b95fa95b5a68a96a09510ee6ac874"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>setIndex</b> (size_type id)</td></tr>
 <tr class="separator:a6b4b95fa95b5a68a96a09510ee6ac874"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
-Public Types</h2></td></tr>
-<tr class="memitem:a4e06b8a28978582b77783260a814d504"><td class="memItemLeft" align="right" valign="top"><a id="a4e06b8a28978582b77783260a814d504" name="a4e06b8a28978582b77783260a814d504"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>size_type</b> = SizeT</td></tr>
-<tr class="separator:a4e06b8a28978582b77783260a814d504"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5fca0b7c9be438f7964fb5485f5b6a5b"><td class="memItemLeft" align="right" valign="top"><a id="a5fca0b7c9be438f7964fb5485f5b6a5b" name="a5fca0b7c9be438f7964fb5485f5b6a5b"></a>
-typedef std::tuple&lt; SizeT, int16_type, <a class="el" href="classbool.html">bool</a>, uint16_type, uint16_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>super</b></td></tr>
-<tr class="separator:a5fca0b7c9be438f7964fb5485f5b6a5b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<h2 class="groupheader">Member Function Documentation</h2>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><div class="compoundTemplParams">template&lt;typename SizeT = uint32_type&gt;<br />
+struct Feel::FaceDof&lt; SizeT &gt;</div><p >Describe a <a class="el" href="classFeel_1_1Dof.html" title="class that represents a degree of freedom">Dof</a> on a Face. </p>
+<p >the data structure is a tuple containing</p><ul>
+<li>global dof id</li>
+<li>sign of the dof</li>
+<li>is dof periodic</li>
+<li>local dof id in element</li>
+<li>local dof id in face </li>
+</ul>
+</div><h2 class="groupheader">Member Function Documentation</h2>
 <a id="ac8108e7a0a522218f8ca76f7c1478e6c" name="ac8108e7a0a522218f8ca76f7c1478e6c"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ac8108e7a0a522218f8ca76f7c1478e6c">&#9670;&nbsp;</a></span>index()</h2>
 

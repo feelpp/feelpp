@@ -123,6 +123,14 @@ $(document).ready(function(){initNavTree('classFeel_1_1JournalWatcher.html','');
 </div>
 </div>
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
+Public Types</h2></td></tr>
+<tr class="memitem:a522922f7cc5012909bab8f46787c1aa5"><td class="memItemLeft" align="right" valign="top"><a id="a522922f7cc5012909bab8f46787c1aa5" name="a522922f7cc5012909bab8f46787c1aa5"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>function_update_information_type</b> = std::function&lt; void(<a class="el" href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">nl::json</a> &amp;)&gt;</td></tr>
+<tr class="separator:a522922f7cc5012909bab8f46787c1aa5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abe4714c4ffcd3130ae5e978b6e9e8f94"><td class="memItemLeft" align="right" valign="top"><a id="abe4714c4ffcd3130ae5e978b6e9e8f94" name="abe4714c4ffcd3130ae5e978b6e9e8f94"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>notify_type</b> = <a class="el" href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">nl::json</a></td></tr>
+<tr class="separator:abe4714c4ffcd3130ae5e978b6e9e8f94"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abd9945cd29d3edeb37883dccde52fd1f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1JournalWatcher.html#abd9945cd29d3edeb37883dccde52fd1f">JournalWatcher</a> (std::string const &amp;category=&quot;&quot;, std::string const &amp;name=&quot;&quot;, <a class="el" href="classbool.html">bool</a> connect=<a class="el" href="classFeel_1_1JournalManager.html#ad6ffb95221b4183f0eb6a91c48305c6c">JournalManager::journalAutoMode</a>())</td></tr>
 <tr class="memdesc:abd9945cd29d3edeb37883dccde52fd1f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructors.  <a href="classFeel_1_1JournalWatcher.html#abd9945cd29d3edeb37883dccde52fd1f">More...</a><br /></td></tr>
 <tr class="separator:abd9945cd29d3edeb37883dccde52fd1f"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -184,16 +192,63 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>journalFinalize</b> (
 void&#160;</td><td class="memItemRight" valign="bottom"><b>applyUpdateInformationObject</b> ()</td></tr>
 <tr class="memdesc:ace7e1916b49e2d851c7253f6c79347b7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Protected Methods. <br /></td></tr>
 <tr class="separator:ace7e1916b49e2d851c7253f6c79347b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
-Public Types</h2></td></tr>
-<tr class="memitem:a522922f7cc5012909bab8f46787c1aa5"><td class="memItemLeft" align="right" valign="top"><a id="a522922f7cc5012909bab8f46787c1aa5" name="a522922f7cc5012909bab8f46787c1aa5"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>function_update_information_type</b> = std::function&lt; void(<a class="el" href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">nl::json</a> &amp;)&gt;</td></tr>
-<tr class="separator:a522922f7cc5012909bab8f46787c1aa5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abe4714c4ffcd3130ae5e978b6e9e8f94"><td class="memItemLeft" align="right" valign="top"><a id="abe4714c4ffcd3130ae5e978b6e9e8f94" name="abe4714c4ffcd3130ae5e978b6e9e8f94"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>notify_type</b> = <a class="el" href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">nl::json</a></td></tr>
-<tr class="separator:abe4714c4ffcd3130ae5e978b6e9e8f94"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a id="abd9945cd29d3edeb37883dccde52fd1f" name="abd9945cd29d3edeb37883dccde52fd1f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abd9945cd29d3edeb37883dccde52fd1f">&#9670;&nbsp;</a></span>JournalWatcher()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">Feel::JournalWatcher::JournalWatcher </td>
+          <td>(</td>
+          <td class="paramtype">std::string const &amp;&#160;</td>
+          <td class="paramname"><em>category</em> = <code>&quot;&quot;</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::string const &amp;&#160;</td>
+          <td class="paramname"><em>name</em> = <code>&quot;&quot;</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classbool.html">bool</a>&#160;</td>
+          <td class="paramname"><em>connect</em> = <code><a class="el" href="classFeel_1_1JournalManager.html#ad6ffb95221b4183f0eb6a91c48305c6c">JournalManager::journalAutoMode</a>()</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">explicit</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Constructors. </p>
+<p >Default constructor.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">force</td><td>Force the connection to the journal.</td></tr>
+  </table>
+  </dd>
+</dl>
+<p>When this constructor is called by a child class, the new child observer is automatically connected (in "auto" mode) to the journal system. <a class="el" href="classA.html">A</a> slot is created and and is connected to a <a class="el" href="classFeel_1_1JournalManager.html" title="JournalManager that manage the journal system handles all journalWatchers.">JournalManager</a>.</p>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="classFeel_1_1JournalManager.html" title="JournalManager that manage the journal system handles all journalWatchers.">JournalManager</a> </dd></dl>
+
+<p class="reference">Referenced by <a class="el" href="classFeel_1_1TimerTable.html#a55154b7ed367e004fe5dc116e506ed70">Feel::TimerTable::TimerTable()</a>.</p>
+
+</div>
+</div>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="a06b0658fd9351626fe4a61bc43ad053f" name="a06b0658fd9351626fe4a61bc43ad053f"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a06b0658fd9351626fe4a61bc43ad053f">&#9670;&nbsp;</a></span>journalConnect()</h2>
@@ -295,62 +350,6 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>notify_type</b> = <a
 <p>update information object into p </p>
 
 <p>Reimplemented in <a class="el" href="classFeel_1_1FunctionSpace.html#a79ab3bb7910174c73d4e9ee6be0243ba">Feel::FunctionSpace&lt; A0, A1, A2, A3, A4 &gt;</a>, <a class="el" href="classFeel_1_1FunctionSpace.html#a79ab3bb7910174c73d4e9ee6be0243ba">Feel::FunctionSpace&lt; A0, A1, A2, A3, A4 &gt;</a>, <a class="el" href="classObject2.html#a4cd088fdf01c9b8767110a34d2cca491">Object2</a>, <a class="el" href="classFeel_1_1FeelModels_1_1Electric.html#ab3cc7af31740429de8ccba27dfdda375">Feel::FeelModels::Electric&lt; ConvexType, BasisPotentialType &gt;</a>, <a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics.html#a645737fe7d70b4ced2534eea871320e5">Feel::FeelModels::FluidMechanics&lt; ConvexType, BasisVelocityType, BasisPressureType &gt;</a>, <a class="el" href="classFeel_1_1FeelModels_1_1Heat.html#a691cc55d35fcb20a6a05db30e007eb91">Feel::FeelModels::Heat&lt; ConvexType, BasisTemperatureType &gt;</a>, <a class="el" href="classFeel_1_1FeelModels_1_1ModelBase.html#a8fcb5239ba9d77a30bdbd651aa111ee8">Feel::FeelModels::ModelBase</a>, <a class="el" href="classFeel_1_1FeelModels_1_1ModelMeshes.html#aac1c601731fb93c3d9fbcda013e6d1de">Feel::FeelModels::ModelMeshes&lt; IndexType &gt;</a>, <a class="el" href="classFeel_1_1FeelModels_1_1ModelMeshes.html#aac1c601731fb93c3d9fbcda013e6d1de">Feel::FeelModels::ModelMeshes&lt; ModelAlgebraic::index_type &gt;</a>, <a class="el" href="classFeel_1_1FeelModels_1_1ModelPhysic.html#a2c2c841e66c597bdbeab894abec8b865">Feel::FeelModels::ModelPhysic&lt; Dim &gt;</a>, <a class="el" href="classFeel_1_1FeelModels_1_1ModelPhysic.html#a2c2c841e66c597bdbeab894abec8b865">Feel::FeelModels::ModelPhysic&lt; nDim &gt;</a>, <a class="el" href="classFeel_1_1FeelModels_1_1ModelPhysicHeat.html#abe13d973b2e24942f48dc55724ec3295">Feel::FeelModels::ModelPhysicHeat&lt; Dim &gt;</a>, <a class="el" href="classFeel_1_1FeelModels_1_1ModelPhysicElectric.html#a0addfd8a752a2947e024d2476d661c39">Feel::FeelModels::ModelPhysicElectric&lt; Dim &gt;</a>, <a class="el" href="classFeel_1_1FeelModels_1_1ModelPhysicThermoElectric.html#aadafdc28c3b34ac379d7d699788cd2ab">Feel::FeelModels::ModelPhysicThermoElectric&lt; Dim &gt;</a>, <a class="el" href="classFeel_1_1FeelModels_1_1ModelPhysicFluid.html#a8672b9744d645e348a67809c70c14a4f">Feel::FeelModels::ModelPhysicFluid&lt; Dim &gt;</a>, <a class="el" href="classFeel_1_1FeelModels_1_1ModelPhysicSolid.html#ac4ea4145331e6a5dc3419fcee5694497">Feel::FeelModels::ModelPhysicSolid&lt; Dim &gt;</a>, <a class="el" href="classFeel_1_1FeelModels_1_1ModelPhysicFSI.html#ac22e395800103930b9aa88eb71b30b34">Feel::FeelModels::ModelPhysicFSI&lt; Dim &gt;</a>, <a class="el" href="classFeel_1_1FeelModels_1_1ModelPhysicCoefficientFormPDE.html#a3bcbe86232bae37744f98c2067e9e740">Feel::FeelModels::ModelPhysicCoefficientFormPDE&lt; Dim &gt;</a>, <a class="el" href="classFeel_1_1FeelModels_1_1ModelPhysicCoefficientFormPDEs.html#a01f726189c1f8a783498a00d24157b9e">Feel::FeelModels::ModelPhysicCoefficientFormPDEs&lt; Dim &gt;</a>, <a class="el" href="classFeel_1_1FeelModels_1_1SolidMechanics.html#a1930dd24c8e7fd3b4fbce3c4119d191c">Feel::FeelModels::SolidMechanics&lt; ConvexType, BasisDisplacementType &gt;</a>, and <a class="el" href="classFeel_1_1FeelModels_1_1SolidMechanics1dReduced.html#ab2bb6b0bf5ed66d84b8d49fc50d530b5">Feel::FeelModels::SolidMechanics1dReduced&lt; ConvexType, BasisDisplacementType &gt;</a>.</p>
-
-</div>
-</div>
-<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="abd9945cd29d3edeb37883dccde52fd1f" name="abd9945cd29d3edeb37883dccde52fd1f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abd9945cd29d3edeb37883dccde52fd1f">&#9670;&nbsp;</a></span>JournalWatcher()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">Feel::JournalWatcher::JournalWatcher </td>
-          <td>(</td>
-          <td class="paramtype">std::string const &amp;&#160;</td>
-          <td class="paramname"><em>category</em> = <code>&quot;&quot;</code>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">std::string const &amp;&#160;</td>
-          <td class="paramname"><em>name</em> = <code>&quot;&quot;</code>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classbool.html">bool</a>&#160;</td>
-          <td class="paramname"><em>connect</em> = <code><a class="el" href="classFeel_1_1JournalManager.html#ad6ffb95221b4183f0eb6a91c48305c6c">JournalManager::journalAutoMode</a>()</code>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">explicit</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Constructors. </p>
-<p >Default constructor.</p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">force</td><td>Force the connection to the journal.</td></tr>
-  </table>
-  </dd>
-</dl>
-<p>When this constructor is called by a child class, the new child observer is automatically connected (in "auto" mode) to the journal system. <a class="el" href="classA.html">A</a> slot is created and and is connected to a <a class="el" href="classFeel_1_1JournalManager.html" title="JournalManager that manage the journal system handles all journalWatchers.">JournalManager</a>.</p>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="classFeel_1_1JournalManager.html" title="JournalManager that manage the journal system handles all journalWatchers.">JournalManager</a> </dd></dl>
-
-<p class="reference">Referenced by <a class="el" href="classFeel_1_1TimerTable.html#a55154b7ed367e004fe5dc116e506ed70">Feel::TimerTable::TimerTable()</a>.</p>
 
 </div>
 </div>

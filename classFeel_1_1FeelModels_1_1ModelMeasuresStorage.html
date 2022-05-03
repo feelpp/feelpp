@@ -106,10 +106,10 @@ $(document).ready(function(){initNavTree('classFeel_1_1FeelModels_1_1ModelMeasur
   <div class="headertitle"><div class="title">Feel::FeelModels::ModelMeasuresStorage Class Reference</div></div>
 </div><!--header-->
 <div class="contents">
-<a name="details" id="details"></a><h2 class="groupheader">Description</h2>
-<div class="textblock"><p >Measure Storage class. </p>
-<p >The class stores values and tables in maps </p><div class="fragment"><div class="line">code</div>
-</div><!-- fragment --> </div><div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
+
+<p>Measure Storage class.  
+ <a href="classFeel_1_1FeelModels_1_1ModelMeasuresStorage.html#details">More...</a></p>
+<div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Collaboration diagram for Feel::FeelModels::ModelMeasuresStorage:</div>
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">
 </div>
@@ -118,6 +118,23 @@ $(document).ready(function(){initNavTree('classFeel_1_1FeelModels_1_1ModelMeasur
 </div>
 </div>
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
+Public Member Functions</h2></td></tr>
+<tr class="memitem:adb7fb10364a7228a9d4fa1bd9f2caa71"><td class="memItemLeft" align="right" valign="top"><a id="adb7fb10364a7228a9d4fa1bd9f2caa71" name="adb7fb10364a7228a9d4fa1bd9f2caa71"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>ModelMeasuresStorage</b> (<a class="el" href="classFeel_1_1FeelModels_1_1ModelMeasuresStorage.html">ModelMeasuresStorage</a> &amp;&amp;)=default</td></tr>
+<tr class="separator:adb7fb10364a7228a9d4fa1bd9f2caa71"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5ca29a8c443cd13544e34758bb813ee8"><td class="memItemLeft" align="right" valign="top"><a id="a5ca29a8c443cd13544e34758bb813ee8" name="a5ca29a8c443cd13544e34758bb813ee8"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>ModelMeasuresStorage</b> (<a class="el" href="classFeel_1_1FeelModels_1_1ModelMeasuresStorage.html">ModelMeasuresStorage</a> const &amp;)=default</td></tr>
+<tr class="separator:a5ca29a8c443cd13544e34758bb813ee8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a446add5c60b918854e3d416181516b6c"><td class="memItemLeft" align="right" valign="top"><a id="a446add5c60b918854e3d416181516b6c" name="a446add5c60b918854e3d416181516b6c"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>ModelMeasuresStorage</b> (std::string const &amp;<a class="el" href="classFeel_1_1FeelModels_1_1ModelMeasuresStorage.html#a85929d0fe575b39c766383cf9c1716a8">directory</a>, <a class="el" href="group__Core.html#gad8f8196f0b8ff9495dd4119eda223772">worldcomm_ptr_t</a> const &amp;<a class="el" href="namespaceFeel.html#a57a2a83804b0a7ad73fdf0db910ce561">worldComm</a>)</td></tr>
+<tr class="separator:a446add5c60b918854e3d416181516b6c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a86d681ba3efe80949f77ac252406277a"><td class="memTemplParams" colspan="2"><a id="a86d681ba3efe80949f77ac252406277a" name="a86d681ba3efe80949f77ac252406277a"></a>
+template&lt;typename T &gt; </td></tr>
+<tr class="memitem:a86d681ba3efe80949f77ac252406277a"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>setValue</b> (std::string const &amp;key, T &amp;&amp;<a class="el" href="group__DSEL-Variational-Formulation.html#ga804803997f88c76948f600cb3835b99d">val</a>)</td></tr>
+<tr class="memdesc:a86d681ba3efe80949f77ac252406277a"><td class="mdescLeft">&#160;</td><td class="mdescRight">set value \val related to the key nammed by \key (the measure storage is associated to the default name, i.e. empty string) <br /></td></tr>
+<tr class="separator:a86d681ba3efe80949f77ac252406277a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader">)</h2></td></tr>
 <tr><td class="ititle" colspan="2"><p ><a class="anchor" id="amgrp9371d7a2e3ae86a00aab4771e39d255d"></a>set a pair key/value defined by \keyVal (the measure storage is associated to the </p>
 </td></tr>
@@ -193,25 +210,11 @@ fs::path&#160;</td><td class="memItemRight" valign="bottom"><b>directory</b> () 
 <a class="el" href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">nl::json</a>&#160;</td><td class="memItemRight" valign="bottom"><b>metadata</b> () const</td></tr>
 <tr class="memdesc:a0913a0e0877115a1565e28262d05e3f8"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the metadata from the measure storage <br /></td></tr>
 <tr class="separator:a0913a0e0877115a1565e28262d05e3f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
-Public Member Functions</h2></td></tr>
-<tr class="memitem:adb7fb10364a7228a9d4fa1bd9f2caa71"><td class="memItemLeft" align="right" valign="top"><a id="adb7fb10364a7228a9d4fa1bd9f2caa71" name="adb7fb10364a7228a9d4fa1bd9f2caa71"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>ModelMeasuresStorage</b> (<a class="el" href="classFeel_1_1FeelModels_1_1ModelMeasuresStorage.html">ModelMeasuresStorage</a> &amp;&amp;)=default</td></tr>
-<tr class="separator:adb7fb10364a7228a9d4fa1bd9f2caa71"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5ca29a8c443cd13544e34758bb813ee8"><td class="memItemLeft" align="right" valign="top"><a id="a5ca29a8c443cd13544e34758bb813ee8" name="a5ca29a8c443cd13544e34758bb813ee8"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>ModelMeasuresStorage</b> (<a class="el" href="classFeel_1_1FeelModels_1_1ModelMeasuresStorage.html">ModelMeasuresStorage</a> const &amp;)=default</td></tr>
-<tr class="separator:a5ca29a8c443cd13544e34758bb813ee8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a446add5c60b918854e3d416181516b6c"><td class="memItemLeft" align="right" valign="top"><a id="a446add5c60b918854e3d416181516b6c" name="a446add5c60b918854e3d416181516b6c"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>ModelMeasuresStorage</b> (std::string const &amp;<a class="el" href="classFeel_1_1FeelModels_1_1ModelMeasuresStorage.html#a85929d0fe575b39c766383cf9c1716a8">directory</a>, <a class="el" href="group__Core.html#gad8f8196f0b8ff9495dd4119eda223772">worldcomm_ptr_t</a> const &amp;<a class="el" href="namespaceFeel.html#a57a2a83804b0a7ad73fdf0db910ce561">worldComm</a>)</td></tr>
-<tr class="separator:a446add5c60b918854e3d416181516b6c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a86d681ba3efe80949f77ac252406277a"><td class="memTemplParams" colspan="2"><a id="a86d681ba3efe80949f77ac252406277a" name="a86d681ba3efe80949f77ac252406277a"></a>
-template&lt;typename T &gt; </td></tr>
-<tr class="memitem:a86d681ba3efe80949f77ac252406277a"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>setValue</b> (std::string const &amp;key, T &amp;&amp;<a class="el" href="group__DSEL-Variational-Formulation.html#ga804803997f88c76948f600cb3835b99d">val</a>)</td></tr>
-<tr class="memdesc:a86d681ba3efe80949f77ac252406277a"><td class="mdescLeft">&#160;</td><td class="mdescRight">set value \val related to the key nammed by \key (the measure storage is associated to the default name, i.e. empty string) <br /></td></tr>
-<tr class="separator:a86d681ba3efe80949f77ac252406277a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-</div><!-- contents -->
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p >Measure Storage class. </p>
+<p >The class stores values and tables in maps </p><div class="fragment"><div class="line">code</div>
+</div><!-- fragment --> </div></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->

@@ -135,6 +135,51 @@ Public Member Functions</h2></td></tr>
 &#160;</td><td class="memItemRight" valign="bottom"><b>serializer</b> (<a class="el" href="classnlohmann_1_1detail_1_1serializer.html">serializer</a> &amp;&amp;)=delete</td></tr>
 <tr class="separator:a28081304e70cca6b3042c101ee5c498c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a id="ac010525281d97867ee842da37294fe83" name="ac010525281d97867ee842da37294fe83"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac010525281d97867ee842da37294fe83">&#9670;&nbsp;</a></span>serializer()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename BasicJsonType &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classnlohmann_1_1detail_1_1serializer.html">nlohmann::detail::serializer</a>&lt; BasicJsonType &gt;::serializer </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespacenlohmann_1_1detail.html#a9b680ddfb58f27eb53a67229447fc556">output_adapter_t</a>&lt; char &gt;&#160;</td>
+          <td class="paramname"><em>s</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char&#160;</td>
+          <td class="paramname"><em>ichar</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespacenlohmann_1_1detail.html#a5a76b60b26dc8c47256a996d18d967df">error_handler_t</a>&#160;</td>
+          <td class="paramname"><em>error_handler_</em> = <code><a class="el" href="namespacenlohmann_1_1detail.html#a5a76b60b26dc8c47256a996d18d967dfa2133fd717402a7966ee88d06f9e0b792">error_handler_t::strict</a></code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">s</td><td>output stream to serialize to </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">ichar</td><td>indentation character to use </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">error_handler_</td><td>how to react on decoding errors </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="a95460ebd1a535a543e5a0ec52e00f48b" name="a95460ebd1a535a543e5a0ec52e00f48b"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a95460ebd1a535a543e5a0ec52e00f48b">&#9670;&nbsp;</a></span>dump()</h2>
@@ -202,51 +247,6 @@ template&lt;typename BasicJsonType &gt; </div>
 </dl>
 
 <p class="reference">Referenced by <a class="el" href="classnlohmann_1_1basic__json.html#a826e180d2457d114ed4c51f4b0737df8">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::get()</a>.</p>
-
-</div>
-</div>
-<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="ac010525281d97867ee842da37294fe83" name="ac010525281d97867ee842da37294fe83"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac010525281d97867ee842da37294fe83">&#9670;&nbsp;</a></span>serializer()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename BasicJsonType &gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classnlohmann_1_1detail_1_1serializer.html">nlohmann::detail::serializer</a>&lt; BasicJsonType &gt;::serializer </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="namespacenlohmann_1_1detail.html#a9b680ddfb58f27eb53a67229447fc556">output_adapter_t</a>&lt; char &gt;&#160;</td>
-          <td class="paramname"><em>s</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const char&#160;</td>
-          <td class="paramname"><em>ichar</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="namespacenlohmann_1_1detail.html#a5a76b60b26dc8c47256a996d18d967df">error_handler_t</a>&#160;</td>
-          <td class="paramname"><em>error_handler_</em> = <code><a class="el" href="namespacenlohmann_1_1detail.html#a5a76b60b26dc8c47256a996d18d967dfa2133fd717402a7966ee88d06f9e0b792">error_handler_t::strict</a></code>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">s</td><td>output stream to serialize to </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">ichar</td><td>indentation character to use </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">error_handler_</td><td>how to react on decoding errors </td></tr>
-  </table>
-  </dd>
-</dl>
 
 </div>
 </div>

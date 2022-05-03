@@ -1,5 +1,7 @@
 var classFeel_1_1JournalManager =
 [
+    [ "JournalManager", "classFeel_1_1JournalManager.html#a63f487b5d6b635223a07a34c8165d782", null ],
+    [ "~JournalManager", "classFeel_1_1JournalManager.html#adca6ff9f7e53eac59d5d8974efeda645", null ],
     [ "journalAutoMode", "classFeel_1_1JournalManager.html#ad6ffb95221b4183f0eb6a91c48305c6c", null ],
     [ "journalCheckpoint", "classFeel_1_1JournalManager.html#a4771e8ff34683e6715cd0b86fa59a9a2", null ],
     [ "journalCurrentCheckpoint", "classFeel_1_1JournalManager.html#a26b9d571c84e48737f04fa84194b8d49", null ],
@@ -19,7 +21,5 @@ var classFeel_1_1JournalManager =
     [ "journalSignal", "classFeel_1_1JournalManager.html#a4c45a94b804e8445e999389e38bdfeff", null ],
     [ "setJournalAutoMode", "classFeel_1_1JournalManager.html#af3998caa18c821abfa5dba41170473a3", null ],
     [ "setJournalEnable", "classFeel_1_1JournalManager.html#a55deac5c47e5e6ab3ac7607f89149a57", null ],
-    [ "setJournalFilename", "classFeel_1_1JournalManager.html#a68fcb2fe0b7c450c25db9b7d8b1f3624", null ],
-    [ "JournalManager", "classFeel_1_1JournalManager.html#a63f487b5d6b635223a07a34c8165d782", null ],
-    [ "~JournalManager", "classFeel_1_1JournalManager.html#adca6ff9f7e53eac59d5d8974efeda645", null ]
+    [ "setJournalFilename", "classFeel_1_1JournalManager.html#a68fcb2fe0b7c450c25db9b7d8b1f3624", null ]
 ];

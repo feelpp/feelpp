@@ -101,7 +101,7 @@ $(document).ready(function(){initNavTree('classFeel_1_1FunctionSpace_1_1Element.
 
 <div class="header">
   <div class="summary">
-<a href="#nested-classes">Instances and minimal complete definitions</a> &#124;
+<a href="#nested-classes">Classes</a> &#124;
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-static-attribs">Static Public Attributes</a> &#124;
@@ -127,7 +127,7 @@ $(document).ready(function(){initNavTree('classFeel_1_1FunctionSpace_1_1Element.
 </div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
-Instances and minimal complete definitions</h2></td></tr>
+Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1FunctionSpace_1_1Element_1_1AddOffContainer.html">AddOffContainer</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">usefull in // with composite case store the off views  <a href="structFeel_1_1FunctionSpace_1_1Element_1_1AddOffContainer.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -135,6 +135,139 @@ Instances and minimal complete definitions</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1FunctionSpace_1_1Element_1_1sub__element.html">sub_element</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
+Public Types</h2></td></tr>
+<tr class="memitem:aaf62d597f46fa51ccb9a3bdd5a2881c5"><td class="memItemLeft" align="right" valign="top"><a id="aaf62d597f46fa51ccb9a3bdd5a2881c5" name="aaf62d597f46fa51ccb9a3bdd5a2881c5"></a>
+typedef mpl::transform&lt; bases_list, <a class="el" href="structFeel_1_1FunctionSpace_1_1Element_1_1AddOffContainer.html">AddOffContainer</a>&lt; mpl::_1 &gt;, mpl::back_inserter&lt; <a class="el" href="classboost_1_1fusion_1_1vector.html">fusion::vector</a>&lt;&gt; &gt; &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>container_vector_type</b></td></tr>
+<tr class="separator:aaf62d597f46fa51ccb9a3bdd5a2881c5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5afa5c25c5d9d4fb43147f2613fcdf00"><td class="memItemLeft" align="right" valign="top"><a id="a5afa5c25c5d9d4fb43147f2613fcdf00" name="a5afa5c25c5d9d4fb43147f2613fcdf00"></a>
+typedef Cont&#160;</td><td class="memItemRight" valign="bottom"><b>ct_type</b></td></tr>
+<tr class="separator:a5afa5c25c5d9d4fb43147f2613fcdf00"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad8f99269fdb8d0bcc4afdb84fc50b63f"><td class="memItemLeft" align="right" valign="top"><a id="ad8f99269fdb8d0bcc4afdb84fc50b63f" name="ad8f99269fdb8d0bcc4afdb84fc50b63f"></a>
+typedef Eigen::Matrix&lt; value_type, Eigen::Dynamic, 1 &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>eigen_type</b></td></tr>
+<tr class="separator:ad8f99269fdb8d0bcc4afdb84fc50b63f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab6dc29568cf1e845b44eaf352c64f24a"><td class="memItemLeft" align="right" valign="top"><a id="ab6dc29568cf1e845b44eaf352c64f24a" name="ab6dc29568cf1e845b44eaf352c64f24a"></a>
+typedef mpl::transform&lt; bases_list, rangeElementStorageType, <a class="el" href="structFeel_1_1FunctionSpace_1_1Element_1_1ChangeElement.html">ChangeElement</a>&lt; mpl::_1, mpl::_2 &gt;, mpl::back_inserter&lt; <a class="el" href="classboost_1_1fusion_1_1vector.html">fusion::vector</a>&lt;&gt; &gt; &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>element_vector_type</b></td></tr>
+<tr class="separator:ab6dc29568cf1e845b44eaf352c64f24a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1d881db514025772c26e73a83a1c490b"><td class="memItemLeft" align="right" valign="top"><a id="a1d881db514025772c26e73a83a1c490b" name="a1d881db514025772c26e73a83a1c490b"></a>
+typedef std::shared_ptr&lt; <a class="el" href="classFeel_1_1FunctionSpace.html">functionspace_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>functionspace_ptrtype</b></td></tr>
+<tr class="separator:a1d881db514025772c26e73a83a1c490b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a052675d8e187df7a3de49579553bc9a2"><td class="memItemLeft" align="right" valign="top"><a id="a052675d8e187df7a3de49579553bc9a2" name="a052675d8e187df7a3de49579553bc9a2"></a>
+typedef <a class="el" href="classFeel_1_1FunctionSpace.html">FunctionSpace</a>&lt; A0, A1, A2, A3, A4 &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>functionspace_type</b></td></tr>
+<tr class="separator:a052675d8e187df7a3de49579553bc9a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abc298d56a0488e7e4516893a80b6081c"><td class="memItemLeft" align="right" valign="top"><a id="abc298d56a0488e7e4516893a80b6081c" name="abc298d56a0488e7e4516893a80b6081c"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>index_type</b> = typename mesh_type::index_type</td></tr>
+<tr class="separator:abc298d56a0488e7e4516893a80b6081c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab95c872aea53b1e4549f2c622b635e0a"><td class="memItemLeft" align="right" valign="top"><a id="ab95c872aea53b1e4549f2c622b635e0a" name="ab95c872aea53b1e4549f2c622b635e0a"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>mesh_ptrtype</b> = typename functionspace_type::mesh_ptrtype</td></tr>
+<tr class="separator:ab95c872aea53b1e4549f2c622b635e0a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a63aeb8bbb9718f8a2c165e34a631c8ce"><td class="memItemLeft" align="right" valign="top"><a id="a63aeb8bbb9718f8a2c165e34a631c8ce" name="a63aeb8bbb9718f8a2c165e34a631c8ce"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>mesh_type</b> = typename functionspace_type::mesh_type</td></tr>
+<tr class="separator:a63aeb8bbb9718f8a2c165e34a631c8ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a481dc8887b4741a45079446c38334334"><td class="memItemLeft" align="right" valign="top"><a id="a481dc8887b4741a45079446c38334334" name="a481dc8887b4741a45079446c38334334"></a>
+typedef mpl::range_c&lt; <a class="el" href="classint.html">int</a>, 0, <a class="el" href="classFeel_1_1FunctionSpace.html">FunctionSpace</a>&lt; A0, A1, A2, A3, A4 &gt;::nSpaces &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>rangeElementStorageType</b></td></tr>
+<tr class="separator:a481dc8887b4741a45079446c38334334"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a59cc876f05824434767295fffaedec5b"><td class="memItemLeft" align="right" valign="top"><a id="a59cc876f05824434767295fffaedec5b" name="a59cc876f05824434767295fffaedec5b"></a>
+typedef T&#160;</td><td class="memItemRight" valign="bottom"><b>value_type</b></td></tr>
+<tr class="separator:a59cc876f05824434767295fffaedec5b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
+Public Member Functions</h2></td></tr>
+<tr class="memitem:a2c6b40f0c3ad3febcc4bec535ea421c1"><td class="memTemplParams" colspan="2"><a id="a2c6b40f0c3ad3febcc4bec535ea421c1" name="a2c6b40f0c3ad3febcc4bec535ea421c1"></a>
+template&lt;<a class="el" href="classint.html">int</a> i, typename ExprT &gt; </td></tr>
+<tr class="memitem:a2c6b40f0c3ad3febcc4bec535ea421c1"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1FunctionSpace.html">FunctionSpace</a>&lt; A0, A1, A2, A3, A4 &gt;::template <a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">Element</a>&lt; Y, Cont &gt;::template <a class="el" href="structFeel_1_1FunctionSpace_1_1Element_1_1sub__element.html">sub_element</a>&lt; i &gt;::type &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>element</b> (ExprT e, std::string const &amp;<a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#a06551754ff467fb6eaff07d75a85774a">name</a>, <a class="el" href="classbool.html">bool</a> updateOffViews, typename std::enable_if&lt; std::is_base_of&lt; <a class="el" href="classFeel_1_1ExprBase.html">ExprBase</a>, ExprT &gt;::value &gt;::type *)</td></tr>
+<tr class="separator:a2c6b40f0c3ad3febcc4bec535ea421c1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad8e6a376854aa75baeec7e2f60a58321"><td class="memTemplParams" colspan="2"><a id="ad8e6a376854aa75baeec7e2f60a58321" name="ad8e6a376854aa75baeec7e2f60a58321"></a>
+template&lt;<a class="el" href="classint.html">int</a> i&gt; </td></tr>
+<tr class="memitem:ad8e6a376854aa75baeec7e2f60a58321"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1FunctionSpace.html">FunctionSpace</a>&lt; A0, A1, A2, A3, A4 &gt;::template <a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">Element</a>&lt; Y, Cont &gt;::template <a class="el" href="structFeel_1_1FunctionSpace_1_1Element_1_1sub__element.html">sub_element</a>&lt; i &gt;::type&#160;</td><td class="memTemplItemRight" valign="bottom"><b>elementImpl</b> (std::string const &amp;<a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#a06551754ff467fb6eaff07d75a85774a">name</a>, <a class="el" href="classbool.html">bool</a> updateOffViews)</td></tr>
+<tr class="separator:ad8e6a376854aa75baeec7e2f60a58321"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a267b22f165ca82859fa5c13dfaf122f3"><td class="memTemplParams" colspan="2"><a id="a267b22f165ca82859fa5c13dfaf122f3" name="a267b22f165ca82859fa5c13dfaf122f3"></a>
+template&lt;typename IteratorType , typename ExprType &gt; </td></tr>
+<tr class="memitem:a267b22f165ca82859fa5c13dfaf122f3"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>onImpl</b> (std::pair&lt; IteratorType, IteratorType &gt; const &amp;r, ExprType const &amp;ex, std::string const &amp;prefix, GeomapStrategyType geomap_strategy, <a class="el" href="classbool.html">bool</a> accumulate, <a class="el" href="classbool.html">bool</a> verbose, <a class="el" href="classboost_1_1mpl_1_1int__.html">mpl::int_</a>&lt; <a class="el" href="namespaceFeel.html#a9e8a34e55922ab08cf593c8f9addd590a822c39538709589ddc423825b9adf5ce">MESH_EDGES</a> &gt;)</td></tr>
+<tr class="separator:a267b22f165ca82859fa5c13dfaf122f3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1d8f46b791df8e085dc28ce1242a77f6"><td class="memTemplParams" colspan="2"><a id="a1d8f46b791df8e085dc28ce1242a77f6" name="a1d8f46b791df8e085dc28ce1242a77f6"></a>
+template&lt;typename IteratorType , typename ExprType &gt; </td></tr>
+<tr class="memitem:a1d8f46b791df8e085dc28ce1242a77f6"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>onImpl</b> (std::pair&lt; IteratorType, IteratorType &gt; const &amp;r, ExprType const &amp;ex, std::string const &amp;prefix, GeomapStrategyType geomap_strategy, <a class="el" href="classbool.html">bool</a> accumulate, <a class="el" href="classbool.html">bool</a> verbose, <a class="el" href="classboost_1_1mpl_1_1int__.html">mpl::int_</a>&lt; <a class="el" href="namespaceFeel.html#a9e8a34e55922ab08cf593c8f9addd590aba9f37f6ea35ac09cf969b638eac11d6">MESH_ELEMENTS</a> &gt;)</td></tr>
+<tr class="separator:a1d8f46b791df8e085dc28ce1242a77f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8e366a972476a1b830212675adcadd77"><td class="memTemplParams" colspan="2"><a id="a8e366a972476a1b830212675adcadd77" name="a8e366a972476a1b830212675adcadd77"></a>
+template&lt;typename IteratorType , typename ExprType &gt; </td></tr>
+<tr class="memitem:a8e366a972476a1b830212675adcadd77"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>onImpl</b> (std::pair&lt; IteratorType, IteratorType &gt; const &amp;r, ExprType const &amp;ex, std::string const &amp;prefix, GeomapStrategyType geomap_strategy, <a class="el" href="classbool.html">bool</a> accumulate, <a class="el" href="classbool.html">bool</a> verbose, <a class="el" href="classboost_1_1mpl_1_1int__.html">mpl::int_</a>&lt; <a class="el" href="namespaceFeel.html#a9e8a34e55922ab08cf593c8f9addd590a45f482eab6ccb2dd97a838fbbf7b287a">MESH_FACES</a> &gt;)</td></tr>
+<tr class="separator:a8e366a972476a1b830212675adcadd77"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa4fb9a6f4c5fdb99cdae98f1ccfca6ad"><td class="memTemplParams" colspan="2"><a id="aa4fb9a6f4c5fdb99cdae98f1ccfca6ad" name="aa4fb9a6f4c5fdb99cdae98f1ccfca6ad"></a>
+template&lt;typename IteratorType , typename ExprType &gt; </td></tr>
+<tr class="memitem:aa4fb9a6f4c5fdb99cdae98f1ccfca6ad"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>onImpl</b> (std::pair&lt; IteratorType, IteratorType &gt; const &amp;r, ExprType const &amp;ex, std::string const &amp;prefix, GeomapStrategyType geomap_strategy, <a class="el" href="classbool.html">bool</a> accumulate, <a class="el" href="classbool.html">bool</a> verbose, <a class="el" href="classboost_1_1mpl_1_1int__.html">mpl::int_</a>&lt; <a class="el" href="namespaceFeel.html#a9e8a34e55922ab08cf593c8f9addd590a45f482eab6ccb2dd97a838fbbf7b287a">MESH_FACES</a> &gt;, mpl::false_)</td></tr>
+<tr class="separator:aa4fb9a6f4c5fdb99cdae98f1ccfca6ad"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a930c1e6c1b3048c2534c19a1b5151efb"><td class="memTemplParams" colspan="2"><a id="a930c1e6c1b3048c2534c19a1b5151efb" name="a930c1e6c1b3048c2534c19a1b5151efb"></a>
+template&lt;typename IteratorType , typename ExprType &gt; </td></tr>
+<tr class="memitem:a930c1e6c1b3048c2534c19a1b5151efb"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>onImpl</b> (std::pair&lt; IteratorType, IteratorType &gt; const &amp;r, ExprType const &amp;ex, std::string const &amp;prefix, GeomapStrategyType geomap_strategy, <a class="el" href="classbool.html">bool</a> accumulate, <a class="el" href="classbool.html">bool</a> verbose, <a class="el" href="classboost_1_1mpl_1_1int__.html">mpl::int_</a>&lt; <a class="el" href="namespaceFeel.html#a9e8a34e55922ab08cf593c8f9addd590a45f482eab6ccb2dd97a838fbbf7b287a">MESH_FACES</a> &gt;, mpl::true_)</td></tr>
+<tr class="separator:a930c1e6c1b3048c2534c19a1b5151efb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0b3023fd3d994f6737507048537acd6f"><td class="memTemplParams" colspan="2"><a id="a0b3023fd3d994f6737507048537acd6f" name="a0b3023fd3d994f6737507048537acd6f"></a>
+template&lt;typename IteratorType , typename ExprType &gt; </td></tr>
+<tr class="memitem:a0b3023fd3d994f6737507048537acd6f"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>onImpl</b> (std::pair&lt; IteratorType, IteratorType &gt; const &amp;r, ExprType const &amp;ex, std::string const &amp;prefix, GeomapStrategyType geomap_strategy, <a class="el" href="classbool.html">bool</a> accumulate, <a class="el" href="classbool.html">bool</a> verbose, <a class="el" href="classboost_1_1mpl_1_1int__.html">mpl::int_</a>&lt; <a class="el" href="namespaceFeel.html#a9e8a34e55922ab08cf593c8f9addd590a9a4435f4374f50c44d57dbbcff2b0fd3">MESH_POINTS</a> &gt;)</td></tr>
+<tr class="separator:a0b3023fd3d994f6737507048537acd6f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0680e8e86b2b283bab559781a6c0736d"><td class="memTemplParams" colspan="2"><a id="a0680e8e86b2b283bab559781a6c0736d" name="a0680e8e86b2b283bab559781a6c0736d"></a>
+template&lt;typename ContOtherType &gt; </td></tr>
+<tr class="memitem:a0680e8e86b2b283bab559781a6c0736d"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1FunctionSpace.html">FunctionSpace</a>&lt; A0, A1, A2, A3, A4 &gt;::template <a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">Element</a>&lt; Y, Cont &gt; &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>operator=</b> (<a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">Element</a>&lt; Y, ContOtherType &gt; const &amp;v)</td></tr>
+<tr class="separator:a0680e8e86b2b283bab559781a6c0736d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa9722156abb8721cabb067fa0c934783"><td class="memTemplParams" colspan="2"><a id="aa9722156abb8721cabb067fa0c934783" name="aa9722156abb8721cabb067fa0c934783"></a>
+template&lt;typename VectorExpr &gt; </td></tr>
+<tr class="memitem:aa9722156abb8721cabb067fa0c934783"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1FunctionSpace.html">FunctionSpace</a>&lt; A0, A1, A2, A3, A4 &gt;::template <a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">Element</a>&lt; Y, Cont &gt; &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>operator=</b> (VectorExpr const &amp;__v)</td></tr>
+<tr class="separator:aa9722156abb8721cabb067fa0c934783"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-attribs" name="pub-static-attribs"></a>
+Static Public Attributes</h2></td></tr>
+<tr class="memitem:adec2c0ca259222ed4f70ea841f9d0898"><td class="memItemLeft" align="right" valign="top"><a id="adec2c0ca259222ed4f70ea841f9d0898" name="adec2c0ca259222ed4f70ea841f9d0898"></a>
+static constexpr <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>is_composite</b> = functionspace_type::is_composite</td></tr>
+<tr class="separator:adec2c0ca259222ed4f70ea841f9d0898"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afdfc43ec1cee6980041d489966212884"><td class="memItemLeft" align="right" valign="top"><a id="afdfc43ec1cee6980041d489966212884" name="afdfc43ec1cee6980041d489966212884"></a>
+static constexpr <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>is_continuous</b> = functionspace_type::is_continuous</td></tr>
+<tr class="separator:afdfc43ec1cee6980041d489966212884"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aad5e2c7e31f9ec78b7ba6f9c63c1f4a8"><td class="memItemLeft" align="right" valign="top"><a id="aad5e2c7e31f9ec78b7ba6f9c63c1f4a8" name="aad5e2c7e31f9ec78b7ba6f9c63c1f4a8"></a>
+static constexpr <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>is_hcurl_conforming</b> = functionspace_type::is_hcurl_conforming</td></tr>
+<tr class="separator:aad5e2c7e31f9ec78b7ba6f9c63c1f4a8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a34186a305718e5222f36fb76fda61b4c"><td class="memItemLeft" align="right" valign="top"><a id="a34186a305718e5222f36fb76fda61b4c" name="a34186a305718e5222f36fb76fda61b4c"></a>
+static constexpr <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>is_hdiv_conforming</b> = functionspace_type::is_hdiv_conforming</td></tr>
+<tr class="separator:a34186a305718e5222f36fb76fda61b4c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af2c51e7c465273c191252e7be82073b2"><td class="memItemLeft" align="right" valign="top"><a id="af2c51e7c465273c191252e7be82073b2" name="af2c51e7c465273c191252e7be82073b2"></a>
+static constexpr <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>is_mortar</b> = functionspace_type::is_mortar</td></tr>
+<tr class="separator:af2c51e7c465273c191252e7be82073b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a40dfe0f607790f7e869eeed7fe7d7f2d"><td class="memItemLeft" align="right" valign="top"><a id="a40dfe0f607790f7e869eeed7fe7d7f2d" name="a40dfe0f607790f7e869eeed7fe7d7f2d"></a>
+static constexpr <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>is_scalar</b> = functionspace_type::is_scalar</td></tr>
+<tr class="separator:a40dfe0f607790f7e869eeed7fe7d7f2d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1f6d4385f39f22ac28ea7059718ce0d0"><td class="memItemLeft" align="right" valign="top"><a id="a1f6d4385f39f22ac28ea7059718ce0d0" name="a1f6d4385f39f22ac28ea7059718ce0d0"></a>
+static constexpr <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>is_tensor2</b> = functionspace_type::is_tensor2</td></tr>
+<tr class="separator:a1f6d4385f39f22ac28ea7059718ce0d0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1f792fab28e90c2d354731010c884bbe"><td class="memItemLeft" align="right" valign="top"><a id="a1f792fab28e90c2d354731010c884bbe" name="a1f792fab28e90c2d354731010c884bbe"></a>
+static constexpr <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>is_tensor2symm</b> = functionspace_type::is_tensor2symm</td></tr>
+<tr class="separator:a1f792fab28e90c2d354731010c884bbe"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac2d5673d34e67f22b75cbe05287c52b8"><td class="memItemLeft" align="right" valign="top"><a id="ac2d5673d34e67f22b75cbe05287c52b8" name="ac2d5673d34e67f22b75cbe05287c52b8"></a>
+static constexpr <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>is_vectorial</b> = functionspace_type::is_vectorial</td></tr>
+<tr class="separator:ac2d5673d34e67f22b75cbe05287c52b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aba4f788db2930f0ff328bd36d76e6e8f"><td class="memItemLeft" align="right" valign="top"><a id="aba4f788db2930f0ff328bd36d76e6e8f" name="aba4f788db2930f0ff328bd36d76e6e8f"></a>
+static constexpr uint16_type&#160;</td><td class="memItemRight" valign="bottom"><b>nComponents</b> = functionspace_type::nComponents</td></tr>
+<tr class="separator:aba4f788db2930f0ff328bd36d76e6e8f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0d50cf667749ce01c300fcda2bd551b8"><td class="memItemLeft" align="right" valign="top"><a id="a0d50cf667749ce01c300fcda2bd551b8" name="a0d50cf667749ce01c300fcda2bd551b8"></a>
+static constexpr uint16_type&#160;</td><td class="memItemRight" valign="bottom"><b>nComponents1</b> = functionspace_type::nComponents1</td></tr>
+<tr class="separator:a0d50cf667749ce01c300fcda2bd551b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1610c240ed74328f713e52492196ba9a"><td class="memItemLeft" align="right" valign="top"><a id="a1610c240ed74328f713e52492196ba9a" name="a1610c240ed74328f713e52492196ba9a"></a>
+static constexpr uint16_type&#160;</td><td class="memItemRight" valign="bottom"><b>nComponents2</b> = functionspace_type::nComponents2</td></tr>
+<tr class="separator:a1610c240ed74328f713e52492196ba9a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4d174d5e7a671d61e708d5d68568e3ba"><td class="memItemLeft" align="right" valign="top"><a id="a4d174d5e7a671d61e708d5d68568e3ba" name="a4d174d5e7a671d61e708d5d68568e3ba"></a>
+static constexpr uint16_type&#160;</td><td class="memItemRight" valign="bottom"><b>nDim</b> = mesh_type::nDim</td></tr>
+<tr class="separator:a4d174d5e7a671d61e708d5d68568e3ba"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac200f832c21db5f01ab4c9bdfeeeecae"><td class="memItemLeft" align="right" valign="top"><a id="ac200f832c21db5f01ab4c9bdfeeeecae" name="ac200f832c21db5f01ab4c9bdfeeeecae"></a>
+static constexpr uint16_type&#160;</td><td class="memItemRight" valign="bottom"><b>nRealComponents</b> = functionspace_type::nRealComponents</td></tr>
+<tr class="separator:ac200f832c21db5f01ab4c9bdfeeeecae"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4c8b03426cc4964fe6697c040860dd74"><td class="memItemLeft" align="right" valign="top"><a id="a4c8b03426cc4964fe6697c040860dd74" name="a4c8b03426cc4964fe6697c040860dd74"></a>
+static constexpr uint16_type&#160;</td><td class="memItemRight" valign="bottom"><b>nRealDim</b> = mesh_type::nRealDim</td></tr>
+<tr class="separator:a4c8b03426cc4964fe6697c040860dd74"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a82154d1613415250e7af810b031f025f"><td class="memItemLeft" align="right" valign="top"><a id="a82154d1613415250e7af810b031f025f" name="a82154d1613415250e7af810b031f025f"></a>
+static constexpr uint16_type&#160;</td><td class="memItemRight" valign="bottom"><b>nSpaces</b> = functionspace_type::nSpaces</td></tr>
+<tr class="separator:a82154d1613415250e7af810b031f025f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1b3d8aef8f8e5bce7f8725fa30a34601"><td class="memItemLeft" align="right" valign="top"><a id="a1b3d8aef8f8e5bce7f8725fa30a34601" name="a1b3d8aef8f8e5bce7f8725fa30a34601"></a>
+static constexpr <a class="el" href="classint.html">int</a>&#160;</td><td class="memItemRight" valign="bottom"><b>rank</b> = functionspace_type::rank</td></tr>
+<tr class="separator:a1b3d8aef8f8e5bce7f8725fa30a34601"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader">Typedefs</h2></td></tr>
 <tr class="memitem:ab32f7861d7f85869e0b210276811d11d"><td class="memItemLeft" align="right" valign="top"><a id="ab32f7861d7f85869e0b210276811d11d" name="ab32f7861d7f85869e0b210276811d11d"></a>
@@ -977,140 +1110,29 @@ template&lt;typename ... Ts&gt; </td></tr>
 template&lt;typename RangeType , typename ExprType &gt; </td></tr>
 <tr class="memitem:a5192ab3467d8c516d9542088a0dd9716"><td class="memTemplItemLeft" align="right" valign="top">FEELPP_NO_EXPORT void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>onImpl</b> (RangeType const &amp;r, ExprType const &amp;e, std::string const &amp;prefix, GeomapStrategyType geomap_strategy, <a class="el" href="classbool.html">bool</a> accumulate=true, <a class="el" href="classbool.html">bool</a> verbose=false)</td></tr>
 <tr class="separator:a5192ab3467d8c516d9542088a0dd9716"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
-Public Types</h2></td></tr>
-<tr class="memitem:aaf62d597f46fa51ccb9a3bdd5a2881c5"><td class="memItemLeft" align="right" valign="top"><a id="aaf62d597f46fa51ccb9a3bdd5a2881c5" name="aaf62d597f46fa51ccb9a3bdd5a2881c5"></a>
-typedef mpl::transform&lt; bases_list, <a class="el" href="structFeel_1_1FunctionSpace_1_1Element_1_1AddOffContainer.html">AddOffContainer</a>&lt; mpl::_1 &gt;, mpl::back_inserter&lt; <a class="el" href="classboost_1_1fusion_1_1vector.html">fusion::vector</a>&lt;&gt; &gt; &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>container_vector_type</b></td></tr>
-<tr class="separator:aaf62d597f46fa51ccb9a3bdd5a2881c5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5afa5c25c5d9d4fb43147f2613fcdf00"><td class="memItemLeft" align="right" valign="top"><a id="a5afa5c25c5d9d4fb43147f2613fcdf00" name="a5afa5c25c5d9d4fb43147f2613fcdf00"></a>
-typedef Cont&#160;</td><td class="memItemRight" valign="bottom"><b>ct_type</b></td></tr>
-<tr class="separator:a5afa5c25c5d9d4fb43147f2613fcdf00"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad8f99269fdb8d0bcc4afdb84fc50b63f"><td class="memItemLeft" align="right" valign="top"><a id="ad8f99269fdb8d0bcc4afdb84fc50b63f" name="ad8f99269fdb8d0bcc4afdb84fc50b63f"></a>
-typedef Eigen::Matrix&lt; value_type, Eigen::Dynamic, 1 &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>eigen_type</b></td></tr>
-<tr class="separator:ad8f99269fdb8d0bcc4afdb84fc50b63f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab6dc29568cf1e845b44eaf352c64f24a"><td class="memItemLeft" align="right" valign="top"><a id="ab6dc29568cf1e845b44eaf352c64f24a" name="ab6dc29568cf1e845b44eaf352c64f24a"></a>
-typedef mpl::transform&lt; bases_list, rangeElementStorageType, <a class="el" href="structFeel_1_1FunctionSpace_1_1Element_1_1ChangeElement.html">ChangeElement</a>&lt; mpl::_1, mpl::_2 &gt;, mpl::back_inserter&lt; <a class="el" href="classboost_1_1fusion_1_1vector.html">fusion::vector</a>&lt;&gt; &gt; &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>element_vector_type</b></td></tr>
-<tr class="separator:ab6dc29568cf1e845b44eaf352c64f24a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1d881db514025772c26e73a83a1c490b"><td class="memItemLeft" align="right" valign="top"><a id="a1d881db514025772c26e73a83a1c490b" name="a1d881db514025772c26e73a83a1c490b"></a>
-typedef std::shared_ptr&lt; <a class="el" href="classFeel_1_1FunctionSpace.html">functionspace_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>functionspace_ptrtype</b></td></tr>
-<tr class="separator:a1d881db514025772c26e73a83a1c490b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a052675d8e187df7a3de49579553bc9a2"><td class="memItemLeft" align="right" valign="top"><a id="a052675d8e187df7a3de49579553bc9a2" name="a052675d8e187df7a3de49579553bc9a2"></a>
-typedef <a class="el" href="classFeel_1_1FunctionSpace.html">FunctionSpace</a>&lt; A0, A1, A2, A3, A4 &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>functionspace_type</b></td></tr>
-<tr class="separator:a052675d8e187df7a3de49579553bc9a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abc298d56a0488e7e4516893a80b6081c"><td class="memItemLeft" align="right" valign="top"><a id="abc298d56a0488e7e4516893a80b6081c" name="abc298d56a0488e7e4516893a80b6081c"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>index_type</b> = typename mesh_type::index_type</td></tr>
-<tr class="separator:abc298d56a0488e7e4516893a80b6081c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab95c872aea53b1e4549f2c622b635e0a"><td class="memItemLeft" align="right" valign="top"><a id="ab95c872aea53b1e4549f2c622b635e0a" name="ab95c872aea53b1e4549f2c622b635e0a"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>mesh_ptrtype</b> = typename functionspace_type::mesh_ptrtype</td></tr>
-<tr class="separator:ab95c872aea53b1e4549f2c622b635e0a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a63aeb8bbb9718f8a2c165e34a631c8ce"><td class="memItemLeft" align="right" valign="top"><a id="a63aeb8bbb9718f8a2c165e34a631c8ce" name="a63aeb8bbb9718f8a2c165e34a631c8ce"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>mesh_type</b> = typename functionspace_type::mesh_type</td></tr>
-<tr class="separator:a63aeb8bbb9718f8a2c165e34a631c8ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a481dc8887b4741a45079446c38334334"><td class="memItemLeft" align="right" valign="top"><a id="a481dc8887b4741a45079446c38334334" name="a481dc8887b4741a45079446c38334334"></a>
-typedef mpl::range_c&lt; <a class="el" href="classint.html">int</a>, 0, <a class="el" href="classFeel_1_1FunctionSpace.html">FunctionSpace</a>&lt; A0, A1, A2, A3, A4 &gt;::nSpaces &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>rangeElementStorageType</b></td></tr>
-<tr class="separator:a481dc8887b4741a45079446c38334334"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a59cc876f05824434767295fffaedec5b"><td class="memItemLeft" align="right" valign="top"><a id="a59cc876f05824434767295fffaedec5b" name="a59cc876f05824434767295fffaedec5b"></a>
-typedef T&#160;</td><td class="memItemRight" valign="bottom"><b>value_type</b></td></tr>
-<tr class="separator:a59cc876f05824434767295fffaedec5b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
-Public Member Functions</h2></td></tr>
-<tr class="memitem:a2c6b40f0c3ad3febcc4bec535ea421c1"><td class="memTemplParams" colspan="2"><a id="a2c6b40f0c3ad3febcc4bec535ea421c1" name="a2c6b40f0c3ad3febcc4bec535ea421c1"></a>
-template&lt;<a class="el" href="classint.html">int</a> i, typename ExprT &gt; </td></tr>
-<tr class="memitem:a2c6b40f0c3ad3febcc4bec535ea421c1"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1FunctionSpace.html">FunctionSpace</a>&lt; A0, A1, A2, A3, A4 &gt;::template <a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">Element</a>&lt; Y, Cont &gt;::template <a class="el" href="structFeel_1_1FunctionSpace_1_1Element_1_1sub__element.html">sub_element</a>&lt; i &gt;::type &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>element</b> (ExprT e, std::string const &amp;<a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#a06551754ff467fb6eaff07d75a85774a">name</a>, <a class="el" href="classbool.html">bool</a> updateOffViews, typename std::enable_if&lt; std::is_base_of&lt; <a class="el" href="classFeel_1_1ExprBase.html">ExprBase</a>, ExprT &gt;::value &gt;::type *)</td></tr>
-<tr class="separator:a2c6b40f0c3ad3febcc4bec535ea421c1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad8e6a376854aa75baeec7e2f60a58321"><td class="memTemplParams" colspan="2"><a id="ad8e6a376854aa75baeec7e2f60a58321" name="ad8e6a376854aa75baeec7e2f60a58321"></a>
-template&lt;<a class="el" href="classint.html">int</a> i&gt; </td></tr>
-<tr class="memitem:ad8e6a376854aa75baeec7e2f60a58321"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1FunctionSpace.html">FunctionSpace</a>&lt; A0, A1, A2, A3, A4 &gt;::template <a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">Element</a>&lt; Y, Cont &gt;::template <a class="el" href="structFeel_1_1FunctionSpace_1_1Element_1_1sub__element.html">sub_element</a>&lt; i &gt;::type&#160;</td><td class="memTemplItemRight" valign="bottom"><b>elementImpl</b> (std::string const &amp;<a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#a06551754ff467fb6eaff07d75a85774a">name</a>, <a class="el" href="classbool.html">bool</a> updateOffViews)</td></tr>
-<tr class="separator:ad8e6a376854aa75baeec7e2f60a58321"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a267b22f165ca82859fa5c13dfaf122f3"><td class="memTemplParams" colspan="2"><a id="a267b22f165ca82859fa5c13dfaf122f3" name="a267b22f165ca82859fa5c13dfaf122f3"></a>
-template&lt;typename IteratorType , typename ExprType &gt; </td></tr>
-<tr class="memitem:a267b22f165ca82859fa5c13dfaf122f3"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>onImpl</b> (std::pair&lt; IteratorType, IteratorType &gt; const &amp;r, ExprType const &amp;ex, std::string const &amp;prefix, GeomapStrategyType geomap_strategy, <a class="el" href="classbool.html">bool</a> accumulate, <a class="el" href="classbool.html">bool</a> verbose, <a class="el" href="classboost_1_1mpl_1_1int__.html">mpl::int_</a>&lt; <a class="el" href="namespaceFeel.html#a9e8a34e55922ab08cf593c8f9addd590a822c39538709589ddc423825b9adf5ce">MESH_EDGES</a> &gt;)</td></tr>
-<tr class="separator:a267b22f165ca82859fa5c13dfaf122f3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1d8f46b791df8e085dc28ce1242a77f6"><td class="memTemplParams" colspan="2"><a id="a1d8f46b791df8e085dc28ce1242a77f6" name="a1d8f46b791df8e085dc28ce1242a77f6"></a>
-template&lt;typename IteratorType , typename ExprType &gt; </td></tr>
-<tr class="memitem:a1d8f46b791df8e085dc28ce1242a77f6"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>onImpl</b> (std::pair&lt; IteratorType, IteratorType &gt; const &amp;r, ExprType const &amp;ex, std::string const &amp;prefix, GeomapStrategyType geomap_strategy, <a class="el" href="classbool.html">bool</a> accumulate, <a class="el" href="classbool.html">bool</a> verbose, <a class="el" href="classboost_1_1mpl_1_1int__.html">mpl::int_</a>&lt; <a class="el" href="namespaceFeel.html#a9e8a34e55922ab08cf593c8f9addd590aba9f37f6ea35ac09cf969b638eac11d6">MESH_ELEMENTS</a> &gt;)</td></tr>
-<tr class="separator:a1d8f46b791df8e085dc28ce1242a77f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8e366a972476a1b830212675adcadd77"><td class="memTemplParams" colspan="2"><a id="a8e366a972476a1b830212675adcadd77" name="a8e366a972476a1b830212675adcadd77"></a>
-template&lt;typename IteratorType , typename ExprType &gt; </td></tr>
-<tr class="memitem:a8e366a972476a1b830212675adcadd77"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>onImpl</b> (std::pair&lt; IteratorType, IteratorType &gt; const &amp;r, ExprType const &amp;ex, std::string const &amp;prefix, GeomapStrategyType geomap_strategy, <a class="el" href="classbool.html">bool</a> accumulate, <a class="el" href="classbool.html">bool</a> verbose, <a class="el" href="classboost_1_1mpl_1_1int__.html">mpl::int_</a>&lt; <a class="el" href="namespaceFeel.html#a9e8a34e55922ab08cf593c8f9addd590a45f482eab6ccb2dd97a838fbbf7b287a">MESH_FACES</a> &gt;)</td></tr>
-<tr class="separator:a8e366a972476a1b830212675adcadd77"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa4fb9a6f4c5fdb99cdae98f1ccfca6ad"><td class="memTemplParams" colspan="2"><a id="aa4fb9a6f4c5fdb99cdae98f1ccfca6ad" name="aa4fb9a6f4c5fdb99cdae98f1ccfca6ad"></a>
-template&lt;typename IteratorType , typename ExprType &gt; </td></tr>
-<tr class="memitem:aa4fb9a6f4c5fdb99cdae98f1ccfca6ad"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>onImpl</b> (std::pair&lt; IteratorType, IteratorType &gt; const &amp;r, ExprType const &amp;ex, std::string const &amp;prefix, GeomapStrategyType geomap_strategy, <a class="el" href="classbool.html">bool</a> accumulate, <a class="el" href="classbool.html">bool</a> verbose, <a class="el" href="classboost_1_1mpl_1_1int__.html">mpl::int_</a>&lt; <a class="el" href="namespaceFeel.html#a9e8a34e55922ab08cf593c8f9addd590a45f482eab6ccb2dd97a838fbbf7b287a">MESH_FACES</a> &gt;, mpl::false_)</td></tr>
-<tr class="separator:aa4fb9a6f4c5fdb99cdae98f1ccfca6ad"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a930c1e6c1b3048c2534c19a1b5151efb"><td class="memTemplParams" colspan="2"><a id="a930c1e6c1b3048c2534c19a1b5151efb" name="a930c1e6c1b3048c2534c19a1b5151efb"></a>
-template&lt;typename IteratorType , typename ExprType &gt; </td></tr>
-<tr class="memitem:a930c1e6c1b3048c2534c19a1b5151efb"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>onImpl</b> (std::pair&lt; IteratorType, IteratorType &gt; const &amp;r, ExprType const &amp;ex, std::string const &amp;prefix, GeomapStrategyType geomap_strategy, <a class="el" href="classbool.html">bool</a> accumulate, <a class="el" href="classbool.html">bool</a> verbose, <a class="el" href="classboost_1_1mpl_1_1int__.html">mpl::int_</a>&lt; <a class="el" href="namespaceFeel.html#a9e8a34e55922ab08cf593c8f9addd590a45f482eab6ccb2dd97a838fbbf7b287a">MESH_FACES</a> &gt;, mpl::true_)</td></tr>
-<tr class="separator:a930c1e6c1b3048c2534c19a1b5151efb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0b3023fd3d994f6737507048537acd6f"><td class="memTemplParams" colspan="2"><a id="a0b3023fd3d994f6737507048537acd6f" name="a0b3023fd3d994f6737507048537acd6f"></a>
-template&lt;typename IteratorType , typename ExprType &gt; </td></tr>
-<tr class="memitem:a0b3023fd3d994f6737507048537acd6f"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>onImpl</b> (std::pair&lt; IteratorType, IteratorType &gt; const &amp;r, ExprType const &amp;ex, std::string const &amp;prefix, GeomapStrategyType geomap_strategy, <a class="el" href="classbool.html">bool</a> accumulate, <a class="el" href="classbool.html">bool</a> verbose, <a class="el" href="classboost_1_1mpl_1_1int__.html">mpl::int_</a>&lt; <a class="el" href="namespaceFeel.html#a9e8a34e55922ab08cf593c8f9addd590a9a4435f4374f50c44d57dbbcff2b0fd3">MESH_POINTS</a> &gt;)</td></tr>
-<tr class="separator:a0b3023fd3d994f6737507048537acd6f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0680e8e86b2b283bab559781a6c0736d"><td class="memTemplParams" colspan="2"><a id="a0680e8e86b2b283bab559781a6c0736d" name="a0680e8e86b2b283bab559781a6c0736d"></a>
-template&lt;typename ContOtherType &gt; </td></tr>
-<tr class="memitem:a0680e8e86b2b283bab559781a6c0736d"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1FunctionSpace.html">FunctionSpace</a>&lt; A0, A1, A2, A3, A4 &gt;::template <a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">Element</a>&lt; Y, Cont &gt; &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>operator=</b> (<a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">Element</a>&lt; Y, ContOtherType &gt; const &amp;v)</td></tr>
-<tr class="separator:a0680e8e86b2b283bab559781a6c0736d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa9722156abb8721cabb067fa0c934783"><td class="memTemplParams" colspan="2"><a id="aa9722156abb8721cabb067fa0c934783" name="aa9722156abb8721cabb067fa0c934783"></a>
-template&lt;typename VectorExpr &gt; </td></tr>
-<tr class="memitem:aa9722156abb8721cabb067fa0c934783"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1FunctionSpace.html">FunctionSpace</a>&lt; A0, A1, A2, A3, A4 &gt;::template <a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">Element</a>&lt; Y, Cont &gt; &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>operator=</b> (VectorExpr const &amp;__v)</td></tr>
-<tr class="separator:aa9722156abb8721cabb067fa0c934783"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-attribs" name="pub-static-attribs"></a>
-Static Public Attributes</h2></td></tr>
-<tr class="memitem:adec2c0ca259222ed4f70ea841f9d0898"><td class="memItemLeft" align="right" valign="top"><a id="adec2c0ca259222ed4f70ea841f9d0898" name="adec2c0ca259222ed4f70ea841f9d0898"></a>
-static constexpr <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>is_composite</b> = functionspace_type::is_composite</td></tr>
-<tr class="separator:adec2c0ca259222ed4f70ea841f9d0898"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afdfc43ec1cee6980041d489966212884"><td class="memItemLeft" align="right" valign="top"><a id="afdfc43ec1cee6980041d489966212884" name="afdfc43ec1cee6980041d489966212884"></a>
-static constexpr <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>is_continuous</b> = functionspace_type::is_continuous</td></tr>
-<tr class="separator:afdfc43ec1cee6980041d489966212884"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aad5e2c7e31f9ec78b7ba6f9c63c1f4a8"><td class="memItemLeft" align="right" valign="top"><a id="aad5e2c7e31f9ec78b7ba6f9c63c1f4a8" name="aad5e2c7e31f9ec78b7ba6f9c63c1f4a8"></a>
-static constexpr <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>is_hcurl_conforming</b> = functionspace_type::is_hcurl_conforming</td></tr>
-<tr class="separator:aad5e2c7e31f9ec78b7ba6f9c63c1f4a8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a34186a305718e5222f36fb76fda61b4c"><td class="memItemLeft" align="right" valign="top"><a id="a34186a305718e5222f36fb76fda61b4c" name="a34186a305718e5222f36fb76fda61b4c"></a>
-static constexpr <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>is_hdiv_conforming</b> = functionspace_type::is_hdiv_conforming</td></tr>
-<tr class="separator:a34186a305718e5222f36fb76fda61b4c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af2c51e7c465273c191252e7be82073b2"><td class="memItemLeft" align="right" valign="top"><a id="af2c51e7c465273c191252e7be82073b2" name="af2c51e7c465273c191252e7be82073b2"></a>
-static constexpr <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>is_mortar</b> = functionspace_type::is_mortar</td></tr>
-<tr class="separator:af2c51e7c465273c191252e7be82073b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a40dfe0f607790f7e869eeed7fe7d7f2d"><td class="memItemLeft" align="right" valign="top"><a id="a40dfe0f607790f7e869eeed7fe7d7f2d" name="a40dfe0f607790f7e869eeed7fe7d7f2d"></a>
-static constexpr <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>is_scalar</b> = functionspace_type::is_scalar</td></tr>
-<tr class="separator:a40dfe0f607790f7e869eeed7fe7d7f2d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1f6d4385f39f22ac28ea7059718ce0d0"><td class="memItemLeft" align="right" valign="top"><a id="a1f6d4385f39f22ac28ea7059718ce0d0" name="a1f6d4385f39f22ac28ea7059718ce0d0"></a>
-static constexpr <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>is_tensor2</b> = functionspace_type::is_tensor2</td></tr>
-<tr class="separator:a1f6d4385f39f22ac28ea7059718ce0d0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1f792fab28e90c2d354731010c884bbe"><td class="memItemLeft" align="right" valign="top"><a id="a1f792fab28e90c2d354731010c884bbe" name="a1f792fab28e90c2d354731010c884bbe"></a>
-static constexpr <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>is_tensor2symm</b> = functionspace_type::is_tensor2symm</td></tr>
-<tr class="separator:a1f792fab28e90c2d354731010c884bbe"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac2d5673d34e67f22b75cbe05287c52b8"><td class="memItemLeft" align="right" valign="top"><a id="ac2d5673d34e67f22b75cbe05287c52b8" name="ac2d5673d34e67f22b75cbe05287c52b8"></a>
-static constexpr <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>is_vectorial</b> = functionspace_type::is_vectorial</td></tr>
-<tr class="separator:ac2d5673d34e67f22b75cbe05287c52b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aba4f788db2930f0ff328bd36d76e6e8f"><td class="memItemLeft" align="right" valign="top"><a id="aba4f788db2930f0ff328bd36d76e6e8f" name="aba4f788db2930f0ff328bd36d76e6e8f"></a>
-static constexpr uint16_type&#160;</td><td class="memItemRight" valign="bottom"><b>nComponents</b> = functionspace_type::nComponents</td></tr>
-<tr class="separator:aba4f788db2930f0ff328bd36d76e6e8f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0d50cf667749ce01c300fcda2bd551b8"><td class="memItemLeft" align="right" valign="top"><a id="a0d50cf667749ce01c300fcda2bd551b8" name="a0d50cf667749ce01c300fcda2bd551b8"></a>
-static constexpr uint16_type&#160;</td><td class="memItemRight" valign="bottom"><b>nComponents1</b> = functionspace_type::nComponents1</td></tr>
-<tr class="separator:a0d50cf667749ce01c300fcda2bd551b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1610c240ed74328f713e52492196ba9a"><td class="memItemLeft" align="right" valign="top"><a id="a1610c240ed74328f713e52492196ba9a" name="a1610c240ed74328f713e52492196ba9a"></a>
-static constexpr uint16_type&#160;</td><td class="memItemRight" valign="bottom"><b>nComponents2</b> = functionspace_type::nComponents2</td></tr>
-<tr class="separator:a1610c240ed74328f713e52492196ba9a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4d174d5e7a671d61e708d5d68568e3ba"><td class="memItemLeft" align="right" valign="top"><a id="a4d174d5e7a671d61e708d5d68568e3ba" name="a4d174d5e7a671d61e708d5d68568e3ba"></a>
-static constexpr uint16_type&#160;</td><td class="memItemRight" valign="bottom"><b>nDim</b> = mesh_type::nDim</td></tr>
-<tr class="separator:a4d174d5e7a671d61e708d5d68568e3ba"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac200f832c21db5f01ab4c9bdfeeeecae"><td class="memItemLeft" align="right" valign="top"><a id="ac200f832c21db5f01ab4c9bdfeeeecae" name="ac200f832c21db5f01ab4c9bdfeeeecae"></a>
-static constexpr uint16_type&#160;</td><td class="memItemRight" valign="bottom"><b>nRealComponents</b> = functionspace_type::nRealComponents</td></tr>
-<tr class="separator:ac200f832c21db5f01ab4c9bdfeeeecae"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4c8b03426cc4964fe6697c040860dd74"><td class="memItemLeft" align="right" valign="top"><a id="a4c8b03426cc4964fe6697c040860dd74" name="a4c8b03426cc4964fe6697c040860dd74"></a>
-static constexpr uint16_type&#160;</td><td class="memItemRight" valign="bottom"><b>nRealDim</b> = mesh_type::nRealDim</td></tr>
-<tr class="separator:a4c8b03426cc4964fe6697c040860dd74"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a82154d1613415250e7af810b031f025f"><td class="memItemLeft" align="right" valign="top"><a id="a82154d1613415250e7af810b031f025f" name="a82154d1613415250e7af810b031f025f"></a>
-static constexpr uint16_type&#160;</td><td class="memItemRight" valign="bottom"><b>nSpaces</b> = functionspace_type::nSpaces</td></tr>
-<tr class="separator:a82154d1613415250e7af810b031f025f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1b3d8aef8f8e5bce7f8725fa30a34601"><td class="memItemLeft" align="right" valign="top"><a id="a1b3d8aef8f8e5bce7f8725fa30a34601" name="a1b3d8aef8f8e5bce7f8725fa30a34601"></a>
-static constexpr <a class="el" href="classint.html">int</a>&#160;</td><td class="memItemRight" valign="bottom"><b>rank</b> = functionspace_type::rank</td></tr>
-<tr class="separator:a1b3d8aef8f8e5bce7f8725fa30a34601"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<h2 class="groupheader">Member Typedef Documentation</h2>
+<a id="a4a3ba7730aff8cf8d15592dd9ca639fc" name="a4a3ba7730aff8cf8d15592dd9ca639fc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4a3ba7730aff8cf8d15592dd9ca639fc">&#9670;&nbsp;</a></span>id_type</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename A0 , typename A1  = parameter::void_, typename A2  = parameter::void_, typename A3  = parameter::void_, typename A4  = parameter::void_&gt; </div>
+<div class="memtemplate">
+template&lt;typename T  = double, typename Cont  = VectorUblas&lt;T&gt;&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="classFeel_1_1FunctionSpace.html">Feel::FunctionSpace</a>&lt; A0, A1, A2, A3, A4 &gt;::Element&lt; T, Cont &gt;::id_type =  <a class="el" href="structFeel_1_1detail_1_1ID.html">Feel::detail::ID</a>&lt;value_type,nComponents1,nComponents2&gt;</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Interpolation at a set of points. </p>
+<p >data structure that stores the interpolated values of the element at a set of points </p>
+
+</div>
+</div>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="abdac810ae98cd82e98863f569f12fdc5" name="abdac810ae98cd82e98863f569f12fdc5"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#abdac810ae98cd82e98863f569f12fdc5">&#9670;&nbsp;</a></span>comp() <span class="overload">[1/2]</span></h2>
@@ -2010,28 +2032,6 @@ template&lt;typename T  = double, typename Cont  = VectorUblas&lt;T&gt;&gt; </di
       </table>
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>the element-wise square root </dd></dl>
-
-</div>
-</div>
-<h2 class="groupheader">Member Typedef Documentation</h2>
-<a id="a4a3ba7730aff8cf8d15592dd9ca639fc" name="a4a3ba7730aff8cf8d15592dd9ca639fc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4a3ba7730aff8cf8d15592dd9ca639fc">&#9670;&nbsp;</a></span>id_type</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename A0 , typename A1  = parameter::void_, typename A2  = parameter::void_, typename A3  = parameter::void_, typename A4  = parameter::void_&gt; </div>
-<div class="memtemplate">
-template&lt;typename T  = double, typename Cont  = VectorUblas&lt;T&gt;&gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">using <a class="el" href="classFeel_1_1FunctionSpace.html">Feel::FunctionSpace</a>&lt; A0, A1, A2, A3, A4 &gt;::Element&lt; T, Cont &gt;::id_type =  <a class="el" href="structFeel_1_1detail_1_1ID.html">Feel::detail::ID</a>&lt;value_type,nComponents1,nComponents2&gt;</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Interpolation at a set of points. </p>
-<p >data structure that stores the interpolated values of the element at a set of points </p>
 
 </div>
 </div>

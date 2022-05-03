@@ -101,19 +101,14 @@ $(document).ready(function(){initNavTree('classFeel_1_1FunctionSpace.html',''); 
 
 <div class="header">
   <div class="summary">
-<a href="#nested-classes">Instances and minimal complete definitions</a> &#124;
+<a href="#nested-classes">Classes</a> &#124;
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="classFeel_1_1FunctionSpace-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">Feel::FunctionSpace&lt; A0, A1, A2, A3, A4 &gt; Class Template Reference<div class="ingroups"><a class="el" href="group__Feelpp.html">Feelpp</a> &raquo; <a class="el" href="group__SpaceTime.html">SpaceTime</a></div></div></div>
 </div><!--header-->
 <div class="contents">
-<a name="details" id="details"></a><h2 class="groupheader">Description</h2>
-<div class="textblock"><div class="compoundTemplParams">template&lt;typename A0, typename A1 = parameter::void_, typename A2 = parameter::void_, typename A3 = parameter::void_, typename A4 = parameter::void_&gt;<br />
-class Feel::FunctionSpace&lt; A0, A1, A2, A3, A4 &gt;</div><dl class="section author"><dt>Author</dt><dd>Function Space Class</dd></dl>
-<p><code><a class="el" href="classFeel_1_1FunctionSpace.html">FunctionSpace</a></code> is a representation of a functional space parametrized by the type of the mesh (<code>MeshType</code>)</p>
-<dl class="section author"><dt>Author</dt><dd>Christophe Prud'homme <a href="#" onclick="location.href='mai'+'lto:'+'chr'+'is'+'top'+'he'+'.pr'+'ud'+'hom'+'me'+'@fe'+'el'+'pp.'+'or'+'g'; return false;">chris<span class="obfuscator">.nosp@m.</span>toph<span class="obfuscator">.nosp@m.</span>e.pru<span class="obfuscator">.nosp@m.</span>dhom<span class="obfuscator">.nosp@m.</span>me@fe<span class="obfuscator">.nosp@m.</span>elpp<span class="obfuscator">.nosp@m.</span>.org</a> </dd></dl>
-</div><div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
+<div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Inheritance diagram for Feel::FunctionSpace&lt; A0, A1, A2, A3, A4 &gt;:</div>
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">
 </div>
@@ -131,7 +126,7 @@ class Feel::FunctionSpace&lt; A0, A1, A2, A3, A4 &gt;</div><dl class="section au
 </div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
-Instances and minimal complete definitions</h2></td></tr>
+Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1FunctionSpace_1_1Basis.html">Basis</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1FunctionSpace_1_1ChangeBasis.html">ChangeBasis</a></td></tr>
@@ -166,6 +161,188 @@ Instances and minimal complete definitions</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1FunctionSpace_1_1sub__functionspace.html">sub_functionspace</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
+Public Types</h2></td></tr>
+<tr class="memitem:ab416b767c777ca4b5b9756d79edc1967"><td class="memItemLeft" align="right" valign="top"><a id="ab416b767c777ca4b5b9756d79edc1967" name="ab416b767c777ca4b5b9756d79edc1967"></a>enum &#160;</td><td class="memItemRight" valign="bottom">{ <b>mpl_assertion_in_line_1582</b> = sizeof( boost::mpl::assertion_failed&lt;false&gt;( boost::mpl::assert_not_arg( (void (*) ( boost::is_same&lt;mpl::at&lt;bases_list,mpl::int_&lt;0&gt; &gt;, mpl::void_&gt; ))0, 1 ) ) )
+ }</td></tr>
+<tr class="separator:ab416b767c777ca4b5b9756d79edc1967"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a59c9133c635219a7b12c443d91928ea4"><td class="memItemLeft" align="right" valign="top"><a id="a59c9133c635219a7b12c443d91928ea4" name="a59c9133c635219a7b12c443d91928ea4"></a>
+typedef functionspace_signature::bind&lt; A0, A1, A2, A3, A4 &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>args</b></td></tr>
+<tr class="separator:a59c9133c635219a7b12c443d91928ea4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a14e6bf5c8dc00f9c8573ec2b2c92ba9a"><td class="memItemLeft" align="right" valign="top"><a id="a14e6bf5c8dc00f9c8573ec2b2c92ba9a" name="a14e6bf5c8dc00f9c8573ec2b2c92ba9a"></a>
+typedef parameter::binding&lt; args, tag::bases_list, <a class="el" href="structFeel_1_1bases.html">Feel::bases</a>&lt; Lagrange&lt; 1, Scalar &gt; &gt; &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>bases_list</b></td></tr>
+<tr class="separator:a14e6bf5c8dc00f9c8573ec2b2c92ba9a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a55a3b4f813678f4957f06f55e174a382"><td class="memItemLeft" align="right" valign="top"><a id="a55a3b4f813678f4957f06f55e174a382" name="a55a3b4f813678f4957f06f55e174a382"></a>
+typedef Feel::detail::bases2&lt; typename mpl::transform&lt; bases_list, <a class="el" href="structFeel_1_1FunctionSpace_1_1GetComponentBasis.html">GetComponentBasis</a>&lt; mpl::_1 &gt;, mpl::back_inserter&lt; <a class="el" href="classboost_1_1fusion_1_1vector.html">fusion::vector</a>&lt;&gt; &gt; &gt;::type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>component_basis_vector_type</b></td></tr>
+<tr class="separator:a55a3b4f813678f4957f06f55e174a382"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae8916dec6dfbde6551ce077535f26787"><td class="memItemLeft" align="right" valign="top"><a id="ae8916dec6dfbde6551ce077535f26787" name="ae8916dec6dfbde6551ce077535f26787"></a>
+typedef mpl::transform&lt; bases_list, <a class="el" href="structFeel_1_1FunctionSpace_1_1ChangeBasisToComponentBasis.html">ChangeBasisToComponentBasis</a>&lt; mpl::_1 &gt;, mpl::back_inserter&lt; <a class="el" href="classboost_1_1fusion_1_1vector.html">fusion::vector</a>&lt;&gt; &gt; &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>component_functionspace_vector_type</b></td></tr>
+<tr class="separator:ae8916dec6dfbde6551ce077535f26787"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aede1c9e112c31545733e6c9c52e276f1"><td class="memItemLeft" align="right" valign="top"><a id="aede1c9e112c31545733e6c9c52e276f1" name="aede1c9e112c31545733e6c9c52e276f1"></a>
+typedef mpl::transform&lt; bases_list, <a class="el" href="structFeel_1_1FunctionSpace_1_1ChangeBasis.html">ChangeBasis</a>&lt; mpl::_1 &gt;, mpl::back_inserter&lt; <a class="el" href="classboost_1_1fusion_1_1vector.html">fusion::vector</a>&lt;&gt; &gt; &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>functionspace_vector_type</b></td></tr>
+<tr class="separator:aede1c9e112c31545733e6c9c52e276f1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aad05d7b8121f9ede3db251be6460fd01"><td class="memItemLeft" align="right" valign="top"><a id="aad05d7b8121f9ede3db251be6460fd01" name="aad05d7b8121f9ede3db251be6460fd01"></a>
+typedef parameter::binding&lt; args, tag::mesh_type &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>meshes_list</b></td></tr>
+<tr class="separator:aad05d7b8121f9ede3db251be6460fd01"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a07c109d45948dadb3e5638c2aa02df1f"><td class="memItemLeft" align="right" valign="top"><a id="a07c109d45948dadb3e5638c2aa02df1f" name="a07c109d45948dadb3e5638c2aa02df1f"></a>
+typedef parameter::binding&lt; args, tag::mortar_type, <a class="el" href="structFeel_1_1mortars.html">mortars</a>&lt; <a class="el" href="classFeel_1_1NoMortar.html">NoMortar</a> &gt; &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>mortar_list</b></td></tr>
+<tr class="separator:a07c109d45948dadb3e5638c2aa02df1f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a229b6680226d783d84f7adf88ed33381"><td class="memItemLeft" align="right" valign="top"><a id="a229b6680226d783d84f7adf88ed33381" name="a229b6680226d783d84f7adf88ed33381"></a>
+typedef parameter::binding&lt; args, tag::periodicity_type, <a class="el" href="structFeel_1_1Periodicity.html">Periodicity</a>&lt; <a class="el" href="classFeel_1_1NoPeriodicity.html">NoPeriodicity</a> &gt; &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>periodicity_type</b></td></tr>
+<tr class="separator:a229b6680226d783d84f7adf88ed33381"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a38e2bbf4b70d33049d255223ec3eaad0"><td class="memItemLeft" align="right" valign="top"><a id="a38e2bbf4b70d33049d255223ec3eaad0" name="a38e2bbf4b70d33049d255223ec3eaad0"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>super</b> = <a class="el" href="classFeel_1_1FunctionSpaceBase.html">FunctionSpaceBase</a></td></tr>
+<tr class="separator:a38e2bbf4b70d33049d255223ec3eaad0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1af0526ebfd01e4c0feb69fcd7dc5c28"><td class="memItemLeft" align="right" valign="top"><a id="a1af0526ebfd01e4c0feb69fcd7dc5c28" name="a1af0526ebfd01e4c0feb69fcd7dc5c28"></a>
+typedef parameter::binding&lt; args, tag::value_type, double &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>value_type</b></td></tr>
+<tr class="separator:a1af0526ebfd01e4c0feb69fcd7dc5c28"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="inherit_header pub_types_classFeel_1_1FunctionSpaceBase"><td colspan="2" onclick="javascript:toggleInherit('pub_types_classFeel_1_1FunctionSpaceBase')"><img src="closed.png" alt="-"/>&#160;Public Types inherited from <a class="el" href="classFeel_1_1FunctionSpaceBase.html">Feel::FunctionSpaceBase</a></td></tr>
+<tr class="memitem:ac1f9f6d414447408c1dbf9ed24b09b88 inherit pub_types_classFeel_1_1FunctionSpaceBase"><td class="memItemLeft" align="right" valign="top"><a id="ac1f9f6d414447408c1dbf9ed24b09b88" name="ac1f9f6d414447408c1dbf9ed24b09b88"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>super</b> = <a class="el" href="classFeel_1_1CommObject.html">CommObject</a></td></tr>
+<tr class="separator:ac1f9f6d414447408c1dbf9ed24b09b88 inherit pub_types_classFeel_1_1FunctionSpaceBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af475ab6fa8d18fb25b79216015cbee62 inherit pub_types_classFeel_1_1FunctionSpaceBase"><td class="memItemLeft" align="right" valign="top"><a id="af475ab6fa8d18fb25b79216015cbee62" name="af475ab6fa8d18fb25b79216015cbee62"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>super2</b> = <a class="el" href="classFeel_1_1JournalWatcher.html">JournalWatcher</a></td></tr>
+<tr class="separator:af475ab6fa8d18fb25b79216015cbee62 inherit pub_types_classFeel_1_1FunctionSpaceBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="inherit_header pub_types_classFeel_1_1JournalWatcher"><td colspan="2" onclick="javascript:toggleInherit('pub_types_classFeel_1_1JournalWatcher')"><img src="closed.png" alt="-"/>&#160;Public Types inherited from <a class="el" href="classFeel_1_1JournalWatcher.html">Feel::JournalWatcher</a></td></tr>
+<tr class="memitem:a522922f7cc5012909bab8f46787c1aa5 inherit pub_types_classFeel_1_1JournalWatcher"><td class="memItemLeft" align="right" valign="top"><a id="a522922f7cc5012909bab8f46787c1aa5" name="a522922f7cc5012909bab8f46787c1aa5"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>function_update_information_type</b> = std::function&lt; void(<a class="el" href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">nl::json</a> &amp;)&gt;</td></tr>
+<tr class="separator:a522922f7cc5012909bab8f46787c1aa5 inherit pub_types_classFeel_1_1JournalWatcher"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abe4714c4ffcd3130ae5e978b6e9e8f94 inherit pub_types_classFeel_1_1JournalWatcher"><td class="memItemLeft" align="right" valign="top"><a id="abe4714c4ffcd3130ae5e978b6e9e8f94" name="abe4714c4ffcd3130ae5e978b6e9e8f94"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>notify_type</b> = <a class="el" href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">nl::json</a></td></tr>
+<tr class="separator:abe4714c4ffcd3130ae5e978b6e9e8f94 inherit pub_types_classFeel_1_1JournalWatcher"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
+Public Member Functions</h2></td></tr>
+<tr class="memitem:aabd24af4641fb11b764ae5fb67d53151"><td class="memTemplParams" colspan="2"><a id="aabd24af4641fb11b764ae5fb67d53151" name="aabd24af4641fb11b764ae5fb67d53151"></a>
+template&lt;typename FSpaceHead &gt; </td></tr>
+<tr class="memitem:aabd24af4641fb11b764ae5fb67d53151"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>initHead</b> (FSpaceHead &amp;head)</td></tr>
+<tr class="separator:aabd24af4641fb11b764ae5fb67d53151"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afbcc1ce5f3f2e0b62df9b5d910939ff7"><td class="memTemplParams" colspan="2"><a id="afbcc1ce5f3f2e0b62df9b5d910939ff7" name="afbcc1ce5f3f2e0b62df9b5d910939ff7"></a>
+template&lt;typename FSpaceHead , typename... FSpaceTail&gt; </td></tr>
+<tr class="memitem:afbcc1ce5f3f2e0b62df9b5d910939ff7"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>initList</b> (FSpaceHead &amp;head, FSpaceTail... tail)</td></tr>
+<tr class="separator:afbcc1ce5f3f2e0b62df9b5d910939ff7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="inherit_header pub_methods_classFeel_1_1FunctionSpaceBase"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classFeel_1_1FunctionSpaceBase')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classFeel_1_1FunctionSpaceBase.html">Feel::FunctionSpaceBase</a></td></tr>
+<tr class="memitem:a37d3a58d537730a74b255cf5879ae91d inherit pub_methods_classFeel_1_1FunctionSpaceBase"><td class="memItemLeft" align="right" valign="top"><a id="a37d3a58d537730a74b255cf5879ae91d" name="a37d3a58d537730a74b255cf5879ae91d"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>FunctionSpaceBase</b> ()</td></tr>
+<tr class="separator:a37d3a58d537730a74b255cf5879ae91d inherit pub_methods_classFeel_1_1FunctionSpaceBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab9365514fa752c6f6db0ad801017dd45 inherit pub_methods_classFeel_1_1FunctionSpaceBase"><td class="memItemLeft" align="right" valign="top"><a id="ab9365514fa752c6f6db0ad801017dd45" name="ab9365514fa752c6f6db0ad801017dd45"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>FunctionSpaceBase</b> (std::string const &amp;name, <a class="el" href="group__Core.html#gad8f8196f0b8ff9495dd4119eda223772">worldcomm_ptr_t</a> const &amp;w)</td></tr>
+<tr class="separator:ab9365514fa752c6f6db0ad801017dd45 inherit pub_methods_classFeel_1_1FunctionSpaceBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3cef04a4ce395bd794a7f9ec345f497f inherit pub_methods_classFeel_1_1FunctionSpaceBase"><td class="memItemLeft" align="right" valign="top"><a id="a3cef04a4ce395bd794a7f9ec345f497f" name="a3cef04a4ce395bd794a7f9ec345f497f"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>FunctionSpaceBase</b> (<a class="el" href="classFeel_1_1FunctionSpaceBase.html">FunctionSpaceBase</a> const &amp;)=default</td></tr>
+<tr class="separator:a3cef04a4ce395bd794a7f9ec345f497f inherit pub_methods_classFeel_1_1FunctionSpaceBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7dd7a5c20d70cd868002888d08892bc6 inherit pub_methods_classFeel_1_1FunctionSpaceBase"><td class="memItemLeft" align="right" valign="top"><a id="a7dd7a5c20d70cd868002888d08892bc6" name="a7dd7a5c20d70cd868002888d08892bc6"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>FunctionSpaceBase</b> (<a class="el" href="classFeel_1_1FunctionSpaceBase.html">FunctionSpaceBase</a> &amp;&amp;)=default</td></tr>
+<tr class="separator:a7dd7a5c20d70cd868002888d08892bc6 inherit pub_methods_classFeel_1_1FunctionSpaceBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6069138a9d9721198a2baf69331efa1b inherit pub_methods_classFeel_1_1FunctionSpaceBase"><td class="memItemLeft" align="right" valign="top"><a id="a6069138a9d9721198a2baf69331efa1b" name="a6069138a9d9721198a2baf69331efa1b"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>~FunctionSpaceBase</b> () override=default</td></tr>
+<tr class="memdesc:a6069138a9d9721198a2baf69331efa1b inherit pub_methods_classFeel_1_1FunctionSpaceBase"><td class="mdescLeft">&#160;</td><td class="mdescRight">destructor <br /></td></tr>
+<tr class="separator:a6069138a9d9721198a2baf69331efa1b inherit pub_methods_classFeel_1_1FunctionSpaceBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa93c3c9543dbbcafd1e9b606caadfd26 inherit pub_methods_classFeel_1_1FunctionSpaceBase"><td class="memItemLeft" align="right" valign="top"><a id="aa93c3c9543dbbcafd1e9b606caadfd26" name="aa93c3c9543dbbcafd1e9b606caadfd26"></a>
+<a class="el" href="classFeel_1_1FunctionSpaceBase.html">FunctionSpaceBase</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>operator=</b> (<a class="el" href="classFeel_1_1FunctionSpaceBase.html">FunctionSpaceBase</a> const &amp;o)</td></tr>
+<tr class="memdesc:aa93c3c9543dbbcafd1e9b606caadfd26 inherit pub_methods_classFeel_1_1FunctionSpaceBase"><td class="mdescLeft">&#160;</td><td class="mdescRight">copy operator <br /></td></tr>
+<tr class="separator:aa93c3c9543dbbcafd1e9b606caadfd26 inherit pub_methods_classFeel_1_1FunctionSpaceBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="inherit_header pub_methods_classFeel_1_1CommObject"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classFeel_1_1CommObject')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classFeel_1_1CommObject.html">Feel::CommObject</a></td></tr>
+<tr class="memitem:a2878303384e7e2ac71a2001d09b151f1 inherit pub_methods_classFeel_1_1CommObject"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1WorldComm.html">WorldComm</a> const &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1CommObject.html#a2878303384e7e2ac71a2001d09b151f1">comm</a> () const</td></tr>
+<tr class="separator:a2878303384e7e2ac71a2001d09b151f1 inherit pub_methods_classFeel_1_1CommObject"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aff5127f0182a5ba1e59a7c0ab56d676d inherit pub_methods_classFeel_1_1CommObject"><td class="memItemLeft" align="right" valign="top"><a id="aff5127f0182a5ba1e59a7c0ab56d676d" name="aff5127f0182a5ba1e59a7c0ab56d676d"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>CommObject</b> (<a class="el" href="classFeel_1_1CommObject.html">CommObject</a> &amp;&amp;)=default</td></tr>
+<tr class="separator:aff5127f0182a5ba1e59a7c0ab56d676d inherit pub_methods_classFeel_1_1CommObject"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1c6981c30773b85b5b9352e23e50541d inherit pub_methods_classFeel_1_1CommObject"><td class="memItemLeft" align="right" valign="top"><a id="a1c6981c30773b85b5b9352e23e50541d" name="a1c6981c30773b85b5b9352e23e50541d"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>CommObject</b> (<a class="el" href="classFeel_1_1CommObject.html">CommObject</a> const &amp;)=default</td></tr>
+<tr class="separator:a1c6981c30773b85b5b9352e23e50541d inherit pub_methods_classFeel_1_1CommObject"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a131c0e0f9c06e2d7205d91cb0b02d6d3 inherit pub_methods_classFeel_1_1CommObject"><td class="memItemLeft" align="right" valign="top"><a id="a131c0e0f9c06e2d7205d91cb0b02d6d3" name="a131c0e0f9c06e2d7205d91cb0b02d6d3"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>CommObject</b> (<a class="el" href="group__Core.html#gad8f8196f0b8ff9495dd4119eda223772">worldcomm_ptr_t</a> &amp;w)</td></tr>
+<tr class="separator:a131c0e0f9c06e2d7205d91cb0b02d6d3 inherit pub_methods_classFeel_1_1CommObject"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aff9016eecf0278f21aa0fc6623af0843 inherit pub_methods_classFeel_1_1CommObject"><td class="memItemLeft" align="right" valign="top"><a id="aff9016eecf0278f21aa0fc6623af0843" name="aff9016eecf0278f21aa0fc6623af0843"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>CommObject</b> (<a class="el" href="group__Core.html#gad8f8196f0b8ff9495dd4119eda223772">worldcomm_ptr_t</a> const &amp;w)</td></tr>
+<tr class="separator:aff9016eecf0278f21aa0fc6623af0843 inherit pub_methods_classFeel_1_1CommObject"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5fb26839b00f17ba7163062bbde02868 inherit pub_methods_classFeel_1_1CommObject"><td class="memItemLeft" align="right" valign="top"><a id="a5fb26839b00f17ba7163062bbde02868" name="a5fb26839b00f17ba7163062bbde02868"></a>
+<a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>hasWorldComm</b> () const</td></tr>
+<tr class="memdesc:a5fb26839b00f17ba7163062bbde02868 inherit pub_methods_classFeel_1_1CommObject"><td class="mdescLeft">&#160;</td><td class="mdescRight">returns true if worldcomm is allocated, false othewise <br /></td></tr>
+<tr class="separator:a5fb26839b00f17ba7163062bbde02868 inherit pub_methods_classFeel_1_1CommObject"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab4550541da35c492dbe497ab64b6ab5f inherit pub_methods_classFeel_1_1CommObject"><td class="memItemLeft" align="right" valign="top"><a id="ab4550541da35c492dbe497ab64b6ab5f" name="ab4550541da35c492dbe497ab64b6ab5f"></a>
+<a class="el" href="classFeel_1_1CommObject.html">CommObject</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>operator=</b> (<a class="el" href="classFeel_1_1CommObject.html">CommObject</a> &amp;&amp;)=default</td></tr>
+<tr class="separator:ab4550541da35c492dbe497ab64b6ab5f inherit pub_methods_classFeel_1_1CommObject"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a43abd1e23d2d8b45b44976f462e8ae88 inherit pub_methods_classFeel_1_1CommObject"><td class="memItemLeft" align="right" valign="top"><a id="a43abd1e23d2d8b45b44976f462e8ae88" name="a43abd1e23d2d8b45b44976f462e8ae88"></a>
+<a class="el" href="classFeel_1_1CommObject.html">CommObject</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>operator=</b> (<a class="el" href="classFeel_1_1CommObject.html">CommObject</a> const &amp;)=default</td></tr>
+<tr class="separator:a43abd1e23d2d8b45b44976f462e8ae88 inherit pub_methods_classFeel_1_1CommObject"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a028f41fa1573ce8ab23ca3d4b58f2787 inherit pub_methods_classFeel_1_1CommObject"><td class="memItemLeft" align="right" valign="top"><a id="a028f41fa1573ce8ab23ca3d4b58f2787" name="a028f41fa1573ce8ab23ca3d4b58f2787"></a>
+virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>setWorldComm</b> (<a class="el" href="group__Core.html#gad8f8196f0b8ff9495dd4119eda223772">worldcomm_ptr_t</a> const &amp;w)</td></tr>
+<tr class="separator:a028f41fa1573ce8ab23ca3d4b58f2787 inherit pub_methods_classFeel_1_1CommObject"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af4706cd3988d7e89eb589e4d8550f027 inherit pub_methods_classFeel_1_1CommObject"><td class="memItemLeft" align="right" valign="top"><a id="af4706cd3988d7e89eb589e4d8550f027" name="af4706cd3988d7e89eb589e4d8550f027"></a>
+virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>setWorldComm</b> (<a class="el" href="group__Core.html#ga092633e7720ec4d42cf92197b9c35c3a">worldcomm_t</a> &amp;w)</td></tr>
+<tr class="separator:af4706cd3988d7e89eb589e4d8550f027 inherit pub_methods_classFeel_1_1CommObject"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a57ce9a3c8ce878aad44af453e9a86cd5 inherit pub_methods_classFeel_1_1CommObject"><td class="memItemLeft" align="right" valign="top"><a id="a57ce9a3c8ce878aad44af453e9a86cd5" name="a57ce9a3c8ce878aad44af453e9a86cd5"></a>
+<a class="el" href="group__Core.html#gad8f8196f0b8ff9495dd4119eda223772">worldcomm_ptr_t</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>subWorldCommSeqPtr</b> ()</td></tr>
+<tr class="separator:a57ce9a3c8ce878aad44af453e9a86cd5 inherit pub_methods_classFeel_1_1CommObject"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a84c90797789f314e68decd8067472004 inherit pub_methods_classFeel_1_1CommObject"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__Core.html#gad8f8196f0b8ff9495dd4119eda223772">worldcomm_ptr_t</a> const &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1CommObject.html#a84c90797789f314e68decd8067472004">subWorldCommSeqPtr</a> () const</td></tr>
+<tr class="separator:a84c90797789f314e68decd8067472004 inherit pub_methods_classFeel_1_1CommObject"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac4dc3a64dfa57eae395d7dc4cc111480 inherit pub_methods_classFeel_1_1CommObject"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1WorldComm.html">WorldComm</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1CommObject.html#ac4dc3a64dfa57eae395d7dc4cc111480">worldComm</a> ()</td></tr>
+<tr class="separator:ac4dc3a64dfa57eae395d7dc4cc111480 inherit pub_methods_classFeel_1_1CommObject"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a10eb9eb25801238fd8e7b7c5a8a56226 inherit pub_methods_classFeel_1_1CommObject"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1WorldComm.html">WorldComm</a> const &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1CommObject.html#a10eb9eb25801238fd8e7b7c5a8a56226">worldComm</a> () const</td></tr>
+<tr class="separator:a10eb9eb25801238fd8e7b7c5a8a56226 inherit pub_methods_classFeel_1_1CommObject"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a88a2438cc2106e4f02b16a773f131d64 inherit pub_methods_classFeel_1_1CommObject"><td class="memItemLeft" align="right" valign="top"><a id="a88a2438cc2106e4f02b16a773f131d64" name="a88a2438cc2106e4f02b16a773f131d64"></a>
+<a class="el" href="group__Core.html#gad8f8196f0b8ff9495dd4119eda223772">worldcomm_ptr_t</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>worldCommPtr</b> ()</td></tr>
+<tr class="separator:a88a2438cc2106e4f02b16a773f131d64 inherit pub_methods_classFeel_1_1CommObject"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a09b9bc17f193940eb257daaf001b2d8c inherit pub_methods_classFeel_1_1CommObject"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__Core.html#gad8f8196f0b8ff9495dd4119eda223772">worldcomm_ptr_t</a> const &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1CommObject.html#a09b9bc17f193940eb257daaf001b2d8c">worldCommPtr</a> () const</td></tr>
+<tr class="separator:a09b9bc17f193940eb257daaf001b2d8c inherit pub_methods_classFeel_1_1CommObject"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="inherit_header pub_methods_classFeel_1_1JournalWatcher"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classFeel_1_1JournalWatcher')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classFeel_1_1JournalWatcher.html">Feel::JournalWatcher</a></td></tr>
+<tr class="memitem:abd9945cd29d3edeb37883dccde52fd1f inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1JournalWatcher.html#abd9945cd29d3edeb37883dccde52fd1f">JournalWatcher</a> (std::string const &amp;category=&quot;&quot;, std::string const &amp;name=&quot;&quot;, <a class="el" href="classbool.html">bool</a> connect=<a class="el" href="classFeel_1_1JournalManager.html#ad6ffb95221b4183f0eb6a91c48305c6c">JournalManager::journalAutoMode</a>())</td></tr>
+<tr class="memdesc:abd9945cd29d3edeb37883dccde52fd1f inherit pub_methods_classFeel_1_1JournalWatcher"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructors.  <a href="classFeel_1_1JournalWatcher.html#abd9945cd29d3edeb37883dccde52fd1f">More...</a><br /></td></tr>
+<tr class="separator:abd9945cd29d3edeb37883dccde52fd1f inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5dbcbf72916fdaf212547f2234a2b6b3 inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memItemLeft" align="right" valign="top"><a id="a5dbcbf72916fdaf212547f2234a2b6b3" name="a5dbcbf72916fdaf212547f2234a2b6b3"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>JournalWatcher</b> (std::string const &amp;category, <a class="el" href="classbool.html">bool</a> useDefaultName, <a class="el" href="classbool.html">bool</a> connect=<a class="el" href="classFeel_1_1JournalManager.html#ad6ffb95221b4183f0eb6a91c48305c6c">JournalManager::journalAutoMode</a>())</td></tr>
+<tr class="separator:a5dbcbf72916fdaf212547f2234a2b6b3 inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a88ea87a03996b1fdd594fba5d73628af inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memItemLeft" align="right" valign="top"><a id="a88ea87a03996b1fdd594fba5d73628af" name="a88ea87a03996b1fdd594fba5d73628af"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>JournalWatcher</b> (function_update_information_type const &amp;func, std::string const &amp;category=&quot;&quot;, std::string const &amp;name=&quot;&quot;, <a class="el" href="classbool.html">bool</a> useDefaultNameIfEmpty=true, <a class="el" href="classbool.html">bool</a> connect=<a class="el" href="classFeel_1_1JournalManager.html#ad6ffb95221b4183f0eb6a91c48305c6c">JournalManager::journalAutoMode</a>())</td></tr>
+<tr class="separator:a88ea87a03996b1fdd594fba5d73628af inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad5bc65581ee15e28b7b952a1cb7550d8 inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memItemLeft" align="right" valign="top"><a id="ad5bc65581ee15e28b7b952a1cb7550d8" name="ad5bc65581ee15e28b7b952a1cb7550d8"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>JournalWatcher</b> (<a class="el" href="classFeel_1_1JournalWatcher.html">JournalWatcher</a> const &amp;jw)</td></tr>
+<tr class="memdesc:ad5bc65581ee15e28b7b952a1cb7550d8 inherit pub_methods_classFeel_1_1JournalWatcher"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copy constructor. <br /></td></tr>
+<tr class="separator:ad5bc65581ee15e28b7b952a1cb7550d8 inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a57e786ea451e75b7e8ae4c18588070f9 inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memItemLeft" align="right" valign="top"><a id="a57e786ea451e75b7e8ae4c18588070f9" name="a57e786ea451e75b7e8ae4c18588070f9"></a>
+virtual&#160;</td><td class="memItemRight" valign="bottom"><b>~JournalWatcher</b> ()</td></tr>
+<tr class="memdesc:a57e786ea451e75b7e8ae4c18588070f9 inherit pub_methods_classFeel_1_1JournalWatcher"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default destructor. The (inherited) object is always disconnected from the journal during the destruction. <br /></td></tr>
+<tr class="separator:a57e786ea451e75b7e8ae4c18588070f9 inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7281440e6bedae2c791013bb0d5153e5 inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1JournalWatcher.html#a7281440e6bedae2c791013bb0d5153e5">journalIsConnected</a> () const</td></tr>
+<tr class="memdesc:a7281440e6bedae2c791013bb0d5153e5 inherit pub_methods_classFeel_1_1JournalWatcher"><td class="mdescLeft">&#160;</td><td class="mdescRight">GettersCheck if the object is connected to the journal.  <a href="classFeel_1_1JournalWatcher.html#a7281440e6bedae2c791013bb0d5153e5">More...</a><br /></td></tr>
+<tr class="separator:a7281440e6bedae2c791013bb0d5153e5 inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac78269919009a0236e0de0ba957e767e inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memItemLeft" align="right" valign="top">std::string const &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1JournalWatcher.html#ac78269919009a0236e0de0ba957e767e">journalWatcherInstanceName</a> () const</td></tr>
+<tr class="memdesc:ac78269919009a0236e0de0ba957e767e inherit pub_methods_classFeel_1_1JournalWatcher"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return the full instance name for this watched object. The name is composed with the base name and a suffix index corresponding to the nth call.  <a href="classFeel_1_1JournalWatcher.html#ac78269919009a0236e0de0ba957e767e">More...</a><br /></td></tr>
+<tr class="separator:ac78269919009a0236e0de0ba957e767e inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa9a1de5ee8106764f87553fdbb1b3963 inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memItemLeft" align="right" valign="top"><a id="aa9a1de5ee8106764f87553fdbb1b3963" name="aa9a1de5ee8106764f87553fdbb1b3963"></a>
+<a class="el" href="classnlohmann_1_1basic__json.html#aa8f1f93b32da01b42413643be32b2c27">nl::json::json_pointer</a>&#160;</td><td class="memItemRight" valign="bottom"><b>journalSection</b> () const</td></tr>
+<tr class="memdesc:aa9a1de5ee8106764f87553fdbb1b3963 inherit pub_methods_classFeel_1_1JournalWatcher"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return the section into the journal as json_pointer. <br /></td></tr>
+<tr class="separator:aa9a1de5ee8106764f87553fdbb1b3963 inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a217ab39107e0c35409d0cb8ab4fdc732 inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memItemLeft" align="right" valign="top"><a id="a217ab39107e0c35409d0cb8ab4fdc732" name="a217ab39107e0c35409d0cb8ab4fdc732"></a>
+<a class="el" href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">nl::json</a> const &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>informationObject</b> () const</td></tr>
+<tr class="memdesc:a217ab39107e0c35409d0cb8ab4fdc732 inherit pub_methods_classFeel_1_1JournalWatcher"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return the information into property tree. <br /></td></tr>
+<tr class="separator:a217ab39107e0c35409d0cb8ab4fdc732 inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a06b0658fd9351626fe4a61bc43ad053f inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1JournalWatcher.html#a06b0658fd9351626fe4a61bc43ad053f">journalConnect</a> ()</td></tr>
+<tr class="memdesc:a06b0658fd9351626fe4a61bc43ad053f inherit pub_methods_classFeel_1_1JournalWatcher"><td class="mdescLeft">&#160;</td><td class="mdescRight">Setters.  <a href="classFeel_1_1JournalWatcher.html#a06b0658fd9351626fe4a61bc43ad053f">More...</a><br /></td></tr>
+<tr class="separator:a06b0658fd9351626fe4a61bc43ad053f inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a96ececa1ab870912814a7355a04a2e33 inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memItemLeft" align="right" valign="top"><a id="a96ececa1ab870912814a7355a04a2e33" name="a96ececa1ab870912814a7355a04a2e33"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>journalDisconnect</b> ()</td></tr>
+<tr class="memdesc:a96ececa1ab870912814a7355a04a2e33 inherit pub_methods_classFeel_1_1JournalWatcher"><td class="mdescLeft">&#160;</td><td class="mdescRight">Disconnect the derived object from the simulation info manager. The disconnection is safe. <br /></td></tr>
+<tr class="separator:a96ececa1ab870912814a7355a04a2e33 inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a85a93671ca463e19247fdd59ea499071 inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memItemLeft" align="right" valign="top"><a id="a85a93671ca463e19247fdd59ea499071" name="a85a93671ca463e19247fdd59ea499071"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>setInformationObject</b> (<a class="el" href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">nl::json</a> const &amp;<a class="el" href="classFeel_1_1JournalWatcher.html#a217ab39107e0c35409d0cb8ab4fdc732">informationObject</a>)</td></tr>
+<tr class="memdesc:a85a93671ca463e19247fdd59ea499071 inherit pub_methods_classFeel_1_1JournalWatcher"><td class="mdescLeft">&#160;</td><td class="mdescRight">set information object <br /></td></tr>
+<tr class="separator:a85a93671ca463e19247fdd59ea499071 inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a413c3616b3de7200e305595cdab30389 inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memItemLeft" align="right" valign="top"><a id="a413c3616b3de7200e305595cdab30389" name="a413c3616b3de7200e305595cdab30389"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>putInformationObject</b> (<a class="el" href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">nl::json</a> const &amp;<a class="el" href="classFeel_1_1JournalWatcher.html#a217ab39107e0c35409d0cb8ab4fdc732">informationObject</a>)</td></tr>
+<tr class="memdesc:a413c3616b3de7200e305595cdab30389 inherit pub_methods_classFeel_1_1JournalWatcher"><td class="mdescLeft">&#160;</td><td class="mdescRight">put information object <br /></td></tr>
+<tr class="separator:a413c3616b3de7200e305595cdab30389 inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a211268f64f6271848b4ffe8168ca31fc inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memItemLeft" align="right" valign="top"><a id="a211268f64f6271848b4ffe8168ca31fc" name="a211268f64f6271848b4ffe8168ca31fc"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>addInformationObject</b> (<a class="el" href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">nl::json</a> const &amp;<a class="el" href="classFeel_1_1JournalWatcher.html#a217ab39107e0c35409d0cb8ab4fdc732">informationObject</a>)</td></tr>
+<tr class="memdesc:a211268f64f6271848b4ffe8168ca31fc inherit pub_methods_classFeel_1_1JournalWatcher"><td class="mdescLeft">&#160;</td><td class="mdescRight">add information object <br /></td></tr>
+<tr class="separator:a211268f64f6271848b4ffe8168ca31fc inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac4fe7b05debcbc3fd43502d47dddb589 inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memItemLeft" align="right" valign="top"><a id="ac4fe7b05debcbc3fd43502d47dddb589" name="ac4fe7b05debcbc3fd43502d47dddb589"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>journalFinalize</b> ()</td></tr>
+<tr class="memdesc:ac4fe7b05debcbc3fd43502d47dddb589 inherit pub_methods_classFeel_1_1JournalWatcher"><td class="mdescLeft">&#160;</td><td class="mdescRight">finalize journal publication <br /></td></tr>
+<tr class="separator:ac4fe7b05debcbc3fd43502d47dddb589 inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader">Constants</h2></td></tr>
 <tr class="memitem:ab81f56060f1646390fe872bb76d047cf"><td class="memItemLeft" align="right" valign="top"><a id="ab81f56060f1646390fe872bb76d047cf" name="ab81f56060f1646390fe872bb76d047cf"></a>
@@ -781,188 +958,6 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>operator()</b> (MESH_
 <tr class="memdesc:a1f95e641d6c8a3a07db83356817a609a"><td class="mdescLeft">&#160;</td><td class="mdescRight">update element when mesh has been changed <br /></td></tr>
 <tr class="separator:a1f95e641d6c8a3a07db83356817a609a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
-Public Types</h2></td></tr>
-<tr class="memitem:ab416b767c777ca4b5b9756d79edc1967"><td class="memItemLeft" align="right" valign="top"><a id="ab416b767c777ca4b5b9756d79edc1967" name="ab416b767c777ca4b5b9756d79edc1967"></a>enum &#160;</td><td class="memItemRight" valign="bottom">{ <b>mpl_assertion_in_line_1582</b> = sizeof( boost::mpl::assertion_failed&lt;false&gt;( boost::mpl::assert_not_arg( (void (*) ( boost::is_same&lt;mpl::at&lt;bases_list,mpl::int_&lt;0&gt; &gt;, mpl::void_&gt; ))0, 1 ) ) )
- }</td></tr>
-<tr class="separator:ab416b767c777ca4b5b9756d79edc1967"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a59c9133c635219a7b12c443d91928ea4"><td class="memItemLeft" align="right" valign="top"><a id="a59c9133c635219a7b12c443d91928ea4" name="a59c9133c635219a7b12c443d91928ea4"></a>
-typedef functionspace_signature::bind&lt; A0, A1, A2, A3, A4 &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>args</b></td></tr>
-<tr class="separator:a59c9133c635219a7b12c443d91928ea4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a14e6bf5c8dc00f9c8573ec2b2c92ba9a"><td class="memItemLeft" align="right" valign="top"><a id="a14e6bf5c8dc00f9c8573ec2b2c92ba9a" name="a14e6bf5c8dc00f9c8573ec2b2c92ba9a"></a>
-typedef parameter::binding&lt; args, tag::bases_list, <a class="el" href="structFeel_1_1bases.html">Feel::bases</a>&lt; Lagrange&lt; 1, Scalar &gt; &gt; &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>bases_list</b></td></tr>
-<tr class="separator:a14e6bf5c8dc00f9c8573ec2b2c92ba9a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a55a3b4f813678f4957f06f55e174a382"><td class="memItemLeft" align="right" valign="top"><a id="a55a3b4f813678f4957f06f55e174a382" name="a55a3b4f813678f4957f06f55e174a382"></a>
-typedef Feel::detail::bases2&lt; typename mpl::transform&lt; bases_list, <a class="el" href="structFeel_1_1FunctionSpace_1_1GetComponentBasis.html">GetComponentBasis</a>&lt; mpl::_1 &gt;, mpl::back_inserter&lt; <a class="el" href="classboost_1_1fusion_1_1vector.html">fusion::vector</a>&lt;&gt; &gt; &gt;::type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>component_basis_vector_type</b></td></tr>
-<tr class="separator:a55a3b4f813678f4957f06f55e174a382"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae8916dec6dfbde6551ce077535f26787"><td class="memItemLeft" align="right" valign="top"><a id="ae8916dec6dfbde6551ce077535f26787" name="ae8916dec6dfbde6551ce077535f26787"></a>
-typedef mpl::transform&lt; bases_list, <a class="el" href="structFeel_1_1FunctionSpace_1_1ChangeBasisToComponentBasis.html">ChangeBasisToComponentBasis</a>&lt; mpl::_1 &gt;, mpl::back_inserter&lt; <a class="el" href="classboost_1_1fusion_1_1vector.html">fusion::vector</a>&lt;&gt; &gt; &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>component_functionspace_vector_type</b></td></tr>
-<tr class="separator:ae8916dec6dfbde6551ce077535f26787"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aede1c9e112c31545733e6c9c52e276f1"><td class="memItemLeft" align="right" valign="top"><a id="aede1c9e112c31545733e6c9c52e276f1" name="aede1c9e112c31545733e6c9c52e276f1"></a>
-typedef mpl::transform&lt; bases_list, <a class="el" href="structFeel_1_1FunctionSpace_1_1ChangeBasis.html">ChangeBasis</a>&lt; mpl::_1 &gt;, mpl::back_inserter&lt; <a class="el" href="classboost_1_1fusion_1_1vector.html">fusion::vector</a>&lt;&gt; &gt; &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>functionspace_vector_type</b></td></tr>
-<tr class="separator:aede1c9e112c31545733e6c9c52e276f1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aad05d7b8121f9ede3db251be6460fd01"><td class="memItemLeft" align="right" valign="top"><a id="aad05d7b8121f9ede3db251be6460fd01" name="aad05d7b8121f9ede3db251be6460fd01"></a>
-typedef parameter::binding&lt; args, tag::mesh_type &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>meshes_list</b></td></tr>
-<tr class="separator:aad05d7b8121f9ede3db251be6460fd01"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a07c109d45948dadb3e5638c2aa02df1f"><td class="memItemLeft" align="right" valign="top"><a id="a07c109d45948dadb3e5638c2aa02df1f" name="a07c109d45948dadb3e5638c2aa02df1f"></a>
-typedef parameter::binding&lt; args, tag::mortar_type, <a class="el" href="structFeel_1_1mortars.html">mortars</a>&lt; <a class="el" href="classFeel_1_1NoMortar.html">NoMortar</a> &gt; &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>mortar_list</b></td></tr>
-<tr class="separator:a07c109d45948dadb3e5638c2aa02df1f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a229b6680226d783d84f7adf88ed33381"><td class="memItemLeft" align="right" valign="top"><a id="a229b6680226d783d84f7adf88ed33381" name="a229b6680226d783d84f7adf88ed33381"></a>
-typedef parameter::binding&lt; args, tag::periodicity_type, <a class="el" href="structFeel_1_1Periodicity.html">Periodicity</a>&lt; <a class="el" href="classFeel_1_1NoPeriodicity.html">NoPeriodicity</a> &gt; &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>periodicity_type</b></td></tr>
-<tr class="separator:a229b6680226d783d84f7adf88ed33381"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a38e2bbf4b70d33049d255223ec3eaad0"><td class="memItemLeft" align="right" valign="top"><a id="a38e2bbf4b70d33049d255223ec3eaad0" name="a38e2bbf4b70d33049d255223ec3eaad0"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>super</b> = <a class="el" href="classFeel_1_1FunctionSpaceBase.html">FunctionSpaceBase</a></td></tr>
-<tr class="separator:a38e2bbf4b70d33049d255223ec3eaad0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1af0526ebfd01e4c0feb69fcd7dc5c28"><td class="memItemLeft" align="right" valign="top"><a id="a1af0526ebfd01e4c0feb69fcd7dc5c28" name="a1af0526ebfd01e4c0feb69fcd7dc5c28"></a>
-typedef parameter::binding&lt; args, tag::value_type, double &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>value_type</b></td></tr>
-<tr class="separator:a1af0526ebfd01e4c0feb69fcd7dc5c28"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="inherit_header pub_types_classFeel_1_1FunctionSpaceBase"><td colspan="2" onclick="javascript:toggleInherit('pub_types_classFeel_1_1FunctionSpaceBase')"><img src="closed.png" alt="-"/>&#160;Public Types inherited from <a class="el" href="classFeel_1_1FunctionSpaceBase.html">Feel::FunctionSpaceBase</a></td></tr>
-<tr class="memitem:ac1f9f6d414447408c1dbf9ed24b09b88 inherit pub_types_classFeel_1_1FunctionSpaceBase"><td class="memItemLeft" align="right" valign="top"><a id="ac1f9f6d414447408c1dbf9ed24b09b88" name="ac1f9f6d414447408c1dbf9ed24b09b88"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>super</b> = <a class="el" href="classFeel_1_1CommObject.html">CommObject</a></td></tr>
-<tr class="separator:ac1f9f6d414447408c1dbf9ed24b09b88 inherit pub_types_classFeel_1_1FunctionSpaceBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af475ab6fa8d18fb25b79216015cbee62 inherit pub_types_classFeel_1_1FunctionSpaceBase"><td class="memItemLeft" align="right" valign="top"><a id="af475ab6fa8d18fb25b79216015cbee62" name="af475ab6fa8d18fb25b79216015cbee62"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>super2</b> = <a class="el" href="classFeel_1_1JournalWatcher.html">JournalWatcher</a></td></tr>
-<tr class="separator:af475ab6fa8d18fb25b79216015cbee62 inherit pub_types_classFeel_1_1FunctionSpaceBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="inherit_header pub_types_classFeel_1_1JournalWatcher"><td colspan="2" onclick="javascript:toggleInherit('pub_types_classFeel_1_1JournalWatcher')"><img src="closed.png" alt="-"/>&#160;Public Types inherited from <a class="el" href="classFeel_1_1JournalWatcher.html">Feel::JournalWatcher</a></td></tr>
-<tr class="memitem:a522922f7cc5012909bab8f46787c1aa5 inherit pub_types_classFeel_1_1JournalWatcher"><td class="memItemLeft" align="right" valign="top"><a id="a522922f7cc5012909bab8f46787c1aa5" name="a522922f7cc5012909bab8f46787c1aa5"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>function_update_information_type</b> = std::function&lt; void(<a class="el" href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">nl::json</a> &amp;)&gt;</td></tr>
-<tr class="separator:a522922f7cc5012909bab8f46787c1aa5 inherit pub_types_classFeel_1_1JournalWatcher"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abe4714c4ffcd3130ae5e978b6e9e8f94 inherit pub_types_classFeel_1_1JournalWatcher"><td class="memItemLeft" align="right" valign="top"><a id="abe4714c4ffcd3130ae5e978b6e9e8f94" name="abe4714c4ffcd3130ae5e978b6e9e8f94"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>notify_type</b> = <a class="el" href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">nl::json</a></td></tr>
-<tr class="separator:abe4714c4ffcd3130ae5e978b6e9e8f94 inherit pub_types_classFeel_1_1JournalWatcher"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
-Public Member Functions</h2></td></tr>
-<tr class="memitem:aabd24af4641fb11b764ae5fb67d53151"><td class="memTemplParams" colspan="2"><a id="aabd24af4641fb11b764ae5fb67d53151" name="aabd24af4641fb11b764ae5fb67d53151"></a>
-template&lt;typename FSpaceHead &gt; </td></tr>
-<tr class="memitem:aabd24af4641fb11b764ae5fb67d53151"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>initHead</b> (FSpaceHead &amp;head)</td></tr>
-<tr class="separator:aabd24af4641fb11b764ae5fb67d53151"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afbcc1ce5f3f2e0b62df9b5d910939ff7"><td class="memTemplParams" colspan="2"><a id="afbcc1ce5f3f2e0b62df9b5d910939ff7" name="afbcc1ce5f3f2e0b62df9b5d910939ff7"></a>
-template&lt;typename FSpaceHead , typename... FSpaceTail&gt; </td></tr>
-<tr class="memitem:afbcc1ce5f3f2e0b62df9b5d910939ff7"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>initList</b> (FSpaceHead &amp;head, FSpaceTail... tail)</td></tr>
-<tr class="separator:afbcc1ce5f3f2e0b62df9b5d910939ff7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="inherit_header pub_methods_classFeel_1_1FunctionSpaceBase"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classFeel_1_1FunctionSpaceBase')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classFeel_1_1FunctionSpaceBase.html">Feel::FunctionSpaceBase</a></td></tr>
-<tr class="memitem:a37d3a58d537730a74b255cf5879ae91d inherit pub_methods_classFeel_1_1FunctionSpaceBase"><td class="memItemLeft" align="right" valign="top"><a id="a37d3a58d537730a74b255cf5879ae91d" name="a37d3a58d537730a74b255cf5879ae91d"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>FunctionSpaceBase</b> ()</td></tr>
-<tr class="separator:a37d3a58d537730a74b255cf5879ae91d inherit pub_methods_classFeel_1_1FunctionSpaceBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab9365514fa752c6f6db0ad801017dd45 inherit pub_methods_classFeel_1_1FunctionSpaceBase"><td class="memItemLeft" align="right" valign="top"><a id="ab9365514fa752c6f6db0ad801017dd45" name="ab9365514fa752c6f6db0ad801017dd45"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>FunctionSpaceBase</b> (std::string const &amp;name, <a class="el" href="group__Core.html#gad8f8196f0b8ff9495dd4119eda223772">worldcomm_ptr_t</a> const &amp;w)</td></tr>
-<tr class="separator:ab9365514fa752c6f6db0ad801017dd45 inherit pub_methods_classFeel_1_1FunctionSpaceBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3cef04a4ce395bd794a7f9ec345f497f inherit pub_methods_classFeel_1_1FunctionSpaceBase"><td class="memItemLeft" align="right" valign="top"><a id="a3cef04a4ce395bd794a7f9ec345f497f" name="a3cef04a4ce395bd794a7f9ec345f497f"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>FunctionSpaceBase</b> (<a class="el" href="classFeel_1_1FunctionSpaceBase.html">FunctionSpaceBase</a> const &amp;)=default</td></tr>
-<tr class="separator:a3cef04a4ce395bd794a7f9ec345f497f inherit pub_methods_classFeel_1_1FunctionSpaceBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7dd7a5c20d70cd868002888d08892bc6 inherit pub_methods_classFeel_1_1FunctionSpaceBase"><td class="memItemLeft" align="right" valign="top"><a id="a7dd7a5c20d70cd868002888d08892bc6" name="a7dd7a5c20d70cd868002888d08892bc6"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>FunctionSpaceBase</b> (<a class="el" href="classFeel_1_1FunctionSpaceBase.html">FunctionSpaceBase</a> &amp;&amp;)=default</td></tr>
-<tr class="separator:a7dd7a5c20d70cd868002888d08892bc6 inherit pub_methods_classFeel_1_1FunctionSpaceBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6069138a9d9721198a2baf69331efa1b inherit pub_methods_classFeel_1_1FunctionSpaceBase"><td class="memItemLeft" align="right" valign="top"><a id="a6069138a9d9721198a2baf69331efa1b" name="a6069138a9d9721198a2baf69331efa1b"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>~FunctionSpaceBase</b> () override=default</td></tr>
-<tr class="memdesc:a6069138a9d9721198a2baf69331efa1b inherit pub_methods_classFeel_1_1FunctionSpaceBase"><td class="mdescLeft">&#160;</td><td class="mdescRight">destructor <br /></td></tr>
-<tr class="separator:a6069138a9d9721198a2baf69331efa1b inherit pub_methods_classFeel_1_1FunctionSpaceBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa93c3c9543dbbcafd1e9b606caadfd26 inherit pub_methods_classFeel_1_1FunctionSpaceBase"><td class="memItemLeft" align="right" valign="top"><a id="aa93c3c9543dbbcafd1e9b606caadfd26" name="aa93c3c9543dbbcafd1e9b606caadfd26"></a>
-<a class="el" href="classFeel_1_1FunctionSpaceBase.html">FunctionSpaceBase</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>operator=</b> (<a class="el" href="classFeel_1_1FunctionSpaceBase.html">FunctionSpaceBase</a> const &amp;o)</td></tr>
-<tr class="memdesc:aa93c3c9543dbbcafd1e9b606caadfd26 inherit pub_methods_classFeel_1_1FunctionSpaceBase"><td class="mdescLeft">&#160;</td><td class="mdescRight">copy operator <br /></td></tr>
-<tr class="separator:aa93c3c9543dbbcafd1e9b606caadfd26 inherit pub_methods_classFeel_1_1FunctionSpaceBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="inherit_header pub_methods_classFeel_1_1CommObject"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classFeel_1_1CommObject')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classFeel_1_1CommObject.html">Feel::CommObject</a></td></tr>
-<tr class="memitem:a2878303384e7e2ac71a2001d09b151f1 inherit pub_methods_classFeel_1_1CommObject"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1WorldComm.html">WorldComm</a> const &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1CommObject.html#a2878303384e7e2ac71a2001d09b151f1">comm</a> () const</td></tr>
-<tr class="separator:a2878303384e7e2ac71a2001d09b151f1 inherit pub_methods_classFeel_1_1CommObject"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aff5127f0182a5ba1e59a7c0ab56d676d inherit pub_methods_classFeel_1_1CommObject"><td class="memItemLeft" align="right" valign="top"><a id="aff5127f0182a5ba1e59a7c0ab56d676d" name="aff5127f0182a5ba1e59a7c0ab56d676d"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>CommObject</b> (<a class="el" href="classFeel_1_1CommObject.html">CommObject</a> &amp;&amp;)=default</td></tr>
-<tr class="separator:aff5127f0182a5ba1e59a7c0ab56d676d inherit pub_methods_classFeel_1_1CommObject"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1c6981c30773b85b5b9352e23e50541d inherit pub_methods_classFeel_1_1CommObject"><td class="memItemLeft" align="right" valign="top"><a id="a1c6981c30773b85b5b9352e23e50541d" name="a1c6981c30773b85b5b9352e23e50541d"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>CommObject</b> (<a class="el" href="classFeel_1_1CommObject.html">CommObject</a> const &amp;)=default</td></tr>
-<tr class="separator:a1c6981c30773b85b5b9352e23e50541d inherit pub_methods_classFeel_1_1CommObject"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a131c0e0f9c06e2d7205d91cb0b02d6d3 inherit pub_methods_classFeel_1_1CommObject"><td class="memItemLeft" align="right" valign="top"><a id="a131c0e0f9c06e2d7205d91cb0b02d6d3" name="a131c0e0f9c06e2d7205d91cb0b02d6d3"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>CommObject</b> (<a class="el" href="group__Core.html#gad8f8196f0b8ff9495dd4119eda223772">worldcomm_ptr_t</a> &amp;w)</td></tr>
-<tr class="separator:a131c0e0f9c06e2d7205d91cb0b02d6d3 inherit pub_methods_classFeel_1_1CommObject"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aff9016eecf0278f21aa0fc6623af0843 inherit pub_methods_classFeel_1_1CommObject"><td class="memItemLeft" align="right" valign="top"><a id="aff9016eecf0278f21aa0fc6623af0843" name="aff9016eecf0278f21aa0fc6623af0843"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>CommObject</b> (<a class="el" href="group__Core.html#gad8f8196f0b8ff9495dd4119eda223772">worldcomm_ptr_t</a> const &amp;w)</td></tr>
-<tr class="separator:aff9016eecf0278f21aa0fc6623af0843 inherit pub_methods_classFeel_1_1CommObject"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5fb26839b00f17ba7163062bbde02868 inherit pub_methods_classFeel_1_1CommObject"><td class="memItemLeft" align="right" valign="top"><a id="a5fb26839b00f17ba7163062bbde02868" name="a5fb26839b00f17ba7163062bbde02868"></a>
-<a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>hasWorldComm</b> () const</td></tr>
-<tr class="memdesc:a5fb26839b00f17ba7163062bbde02868 inherit pub_methods_classFeel_1_1CommObject"><td class="mdescLeft">&#160;</td><td class="mdescRight">returns true if worldcomm is allocated, false othewise <br /></td></tr>
-<tr class="separator:a5fb26839b00f17ba7163062bbde02868 inherit pub_methods_classFeel_1_1CommObject"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab4550541da35c492dbe497ab64b6ab5f inherit pub_methods_classFeel_1_1CommObject"><td class="memItemLeft" align="right" valign="top"><a id="ab4550541da35c492dbe497ab64b6ab5f" name="ab4550541da35c492dbe497ab64b6ab5f"></a>
-<a class="el" href="classFeel_1_1CommObject.html">CommObject</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>operator=</b> (<a class="el" href="classFeel_1_1CommObject.html">CommObject</a> &amp;&amp;)=default</td></tr>
-<tr class="separator:ab4550541da35c492dbe497ab64b6ab5f inherit pub_methods_classFeel_1_1CommObject"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a43abd1e23d2d8b45b44976f462e8ae88 inherit pub_methods_classFeel_1_1CommObject"><td class="memItemLeft" align="right" valign="top"><a id="a43abd1e23d2d8b45b44976f462e8ae88" name="a43abd1e23d2d8b45b44976f462e8ae88"></a>
-<a class="el" href="classFeel_1_1CommObject.html">CommObject</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>operator=</b> (<a class="el" href="classFeel_1_1CommObject.html">CommObject</a> const &amp;)=default</td></tr>
-<tr class="separator:a43abd1e23d2d8b45b44976f462e8ae88 inherit pub_methods_classFeel_1_1CommObject"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a028f41fa1573ce8ab23ca3d4b58f2787 inherit pub_methods_classFeel_1_1CommObject"><td class="memItemLeft" align="right" valign="top"><a id="a028f41fa1573ce8ab23ca3d4b58f2787" name="a028f41fa1573ce8ab23ca3d4b58f2787"></a>
-virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>setWorldComm</b> (<a class="el" href="group__Core.html#gad8f8196f0b8ff9495dd4119eda223772">worldcomm_ptr_t</a> const &amp;w)</td></tr>
-<tr class="separator:a028f41fa1573ce8ab23ca3d4b58f2787 inherit pub_methods_classFeel_1_1CommObject"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af4706cd3988d7e89eb589e4d8550f027 inherit pub_methods_classFeel_1_1CommObject"><td class="memItemLeft" align="right" valign="top"><a id="af4706cd3988d7e89eb589e4d8550f027" name="af4706cd3988d7e89eb589e4d8550f027"></a>
-virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>setWorldComm</b> (<a class="el" href="group__Core.html#ga092633e7720ec4d42cf92197b9c35c3a">worldcomm_t</a> &amp;w)</td></tr>
-<tr class="separator:af4706cd3988d7e89eb589e4d8550f027 inherit pub_methods_classFeel_1_1CommObject"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a57ce9a3c8ce878aad44af453e9a86cd5 inherit pub_methods_classFeel_1_1CommObject"><td class="memItemLeft" align="right" valign="top"><a id="a57ce9a3c8ce878aad44af453e9a86cd5" name="a57ce9a3c8ce878aad44af453e9a86cd5"></a>
-<a class="el" href="group__Core.html#gad8f8196f0b8ff9495dd4119eda223772">worldcomm_ptr_t</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>subWorldCommSeqPtr</b> ()</td></tr>
-<tr class="separator:a57ce9a3c8ce878aad44af453e9a86cd5 inherit pub_methods_classFeel_1_1CommObject"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a84c90797789f314e68decd8067472004 inherit pub_methods_classFeel_1_1CommObject"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__Core.html#gad8f8196f0b8ff9495dd4119eda223772">worldcomm_ptr_t</a> const &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1CommObject.html#a84c90797789f314e68decd8067472004">subWorldCommSeqPtr</a> () const</td></tr>
-<tr class="separator:a84c90797789f314e68decd8067472004 inherit pub_methods_classFeel_1_1CommObject"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac4dc3a64dfa57eae395d7dc4cc111480 inherit pub_methods_classFeel_1_1CommObject"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1WorldComm.html">WorldComm</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1CommObject.html#ac4dc3a64dfa57eae395d7dc4cc111480">worldComm</a> ()</td></tr>
-<tr class="separator:ac4dc3a64dfa57eae395d7dc4cc111480 inherit pub_methods_classFeel_1_1CommObject"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a10eb9eb25801238fd8e7b7c5a8a56226 inherit pub_methods_classFeel_1_1CommObject"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1WorldComm.html">WorldComm</a> const &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1CommObject.html#a10eb9eb25801238fd8e7b7c5a8a56226">worldComm</a> () const</td></tr>
-<tr class="separator:a10eb9eb25801238fd8e7b7c5a8a56226 inherit pub_methods_classFeel_1_1CommObject"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a88a2438cc2106e4f02b16a773f131d64 inherit pub_methods_classFeel_1_1CommObject"><td class="memItemLeft" align="right" valign="top"><a id="a88a2438cc2106e4f02b16a773f131d64" name="a88a2438cc2106e4f02b16a773f131d64"></a>
-<a class="el" href="group__Core.html#gad8f8196f0b8ff9495dd4119eda223772">worldcomm_ptr_t</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>worldCommPtr</b> ()</td></tr>
-<tr class="separator:a88a2438cc2106e4f02b16a773f131d64 inherit pub_methods_classFeel_1_1CommObject"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a09b9bc17f193940eb257daaf001b2d8c inherit pub_methods_classFeel_1_1CommObject"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__Core.html#gad8f8196f0b8ff9495dd4119eda223772">worldcomm_ptr_t</a> const &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1CommObject.html#a09b9bc17f193940eb257daaf001b2d8c">worldCommPtr</a> () const</td></tr>
-<tr class="separator:a09b9bc17f193940eb257daaf001b2d8c inherit pub_methods_classFeel_1_1CommObject"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="inherit_header pub_methods_classFeel_1_1JournalWatcher"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classFeel_1_1JournalWatcher')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classFeel_1_1JournalWatcher.html">Feel::JournalWatcher</a></td></tr>
-<tr class="memitem:abd9945cd29d3edeb37883dccde52fd1f inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1JournalWatcher.html#abd9945cd29d3edeb37883dccde52fd1f">JournalWatcher</a> (std::string const &amp;category=&quot;&quot;, std::string const &amp;name=&quot;&quot;, <a class="el" href="classbool.html">bool</a> connect=<a class="el" href="classFeel_1_1JournalManager.html#ad6ffb95221b4183f0eb6a91c48305c6c">JournalManager::journalAutoMode</a>())</td></tr>
-<tr class="memdesc:abd9945cd29d3edeb37883dccde52fd1f inherit pub_methods_classFeel_1_1JournalWatcher"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructors.  <a href="classFeel_1_1JournalWatcher.html#abd9945cd29d3edeb37883dccde52fd1f">More...</a><br /></td></tr>
-<tr class="separator:abd9945cd29d3edeb37883dccde52fd1f inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5dbcbf72916fdaf212547f2234a2b6b3 inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memItemLeft" align="right" valign="top"><a id="a5dbcbf72916fdaf212547f2234a2b6b3" name="a5dbcbf72916fdaf212547f2234a2b6b3"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>JournalWatcher</b> (std::string const &amp;category, <a class="el" href="classbool.html">bool</a> useDefaultName, <a class="el" href="classbool.html">bool</a> connect=<a class="el" href="classFeel_1_1JournalManager.html#ad6ffb95221b4183f0eb6a91c48305c6c">JournalManager::journalAutoMode</a>())</td></tr>
-<tr class="separator:a5dbcbf72916fdaf212547f2234a2b6b3 inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a88ea87a03996b1fdd594fba5d73628af inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memItemLeft" align="right" valign="top"><a id="a88ea87a03996b1fdd594fba5d73628af" name="a88ea87a03996b1fdd594fba5d73628af"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>JournalWatcher</b> (function_update_information_type const &amp;func, std::string const &amp;category=&quot;&quot;, std::string const &amp;name=&quot;&quot;, <a class="el" href="classbool.html">bool</a> useDefaultNameIfEmpty=true, <a class="el" href="classbool.html">bool</a> connect=<a class="el" href="classFeel_1_1JournalManager.html#ad6ffb95221b4183f0eb6a91c48305c6c">JournalManager::journalAutoMode</a>())</td></tr>
-<tr class="separator:a88ea87a03996b1fdd594fba5d73628af inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad5bc65581ee15e28b7b952a1cb7550d8 inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memItemLeft" align="right" valign="top"><a id="ad5bc65581ee15e28b7b952a1cb7550d8" name="ad5bc65581ee15e28b7b952a1cb7550d8"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>JournalWatcher</b> (<a class="el" href="classFeel_1_1JournalWatcher.html">JournalWatcher</a> const &amp;jw)</td></tr>
-<tr class="memdesc:ad5bc65581ee15e28b7b952a1cb7550d8 inherit pub_methods_classFeel_1_1JournalWatcher"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copy constructor. <br /></td></tr>
-<tr class="separator:ad5bc65581ee15e28b7b952a1cb7550d8 inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a57e786ea451e75b7e8ae4c18588070f9 inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memItemLeft" align="right" valign="top"><a id="a57e786ea451e75b7e8ae4c18588070f9" name="a57e786ea451e75b7e8ae4c18588070f9"></a>
-virtual&#160;</td><td class="memItemRight" valign="bottom"><b>~JournalWatcher</b> ()</td></tr>
-<tr class="memdesc:a57e786ea451e75b7e8ae4c18588070f9 inherit pub_methods_classFeel_1_1JournalWatcher"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default destructor. The (inherited) object is always disconnected from the journal during the destruction. <br /></td></tr>
-<tr class="separator:a57e786ea451e75b7e8ae4c18588070f9 inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7281440e6bedae2c791013bb0d5153e5 inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1JournalWatcher.html#a7281440e6bedae2c791013bb0d5153e5">journalIsConnected</a> () const</td></tr>
-<tr class="memdesc:a7281440e6bedae2c791013bb0d5153e5 inherit pub_methods_classFeel_1_1JournalWatcher"><td class="mdescLeft">&#160;</td><td class="mdescRight">GettersCheck if the object is connected to the journal.  <a href="classFeel_1_1JournalWatcher.html#a7281440e6bedae2c791013bb0d5153e5">More...</a><br /></td></tr>
-<tr class="separator:a7281440e6bedae2c791013bb0d5153e5 inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac78269919009a0236e0de0ba957e767e inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memItemLeft" align="right" valign="top">std::string const &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1JournalWatcher.html#ac78269919009a0236e0de0ba957e767e">journalWatcherInstanceName</a> () const</td></tr>
-<tr class="memdesc:ac78269919009a0236e0de0ba957e767e inherit pub_methods_classFeel_1_1JournalWatcher"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return the full instance name for this watched object. The name is composed with the base name and a suffix index corresponding to the nth call.  <a href="classFeel_1_1JournalWatcher.html#ac78269919009a0236e0de0ba957e767e">More...</a><br /></td></tr>
-<tr class="separator:ac78269919009a0236e0de0ba957e767e inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa9a1de5ee8106764f87553fdbb1b3963 inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memItemLeft" align="right" valign="top"><a id="aa9a1de5ee8106764f87553fdbb1b3963" name="aa9a1de5ee8106764f87553fdbb1b3963"></a>
-<a class="el" href="classnlohmann_1_1basic__json.html#aa8f1f93b32da01b42413643be32b2c27">nl::json::json_pointer</a>&#160;</td><td class="memItemRight" valign="bottom"><b>journalSection</b> () const</td></tr>
-<tr class="memdesc:aa9a1de5ee8106764f87553fdbb1b3963 inherit pub_methods_classFeel_1_1JournalWatcher"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return the section into the journal as json_pointer. <br /></td></tr>
-<tr class="separator:aa9a1de5ee8106764f87553fdbb1b3963 inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a217ab39107e0c35409d0cb8ab4fdc732 inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memItemLeft" align="right" valign="top"><a id="a217ab39107e0c35409d0cb8ab4fdc732" name="a217ab39107e0c35409d0cb8ab4fdc732"></a>
-<a class="el" href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">nl::json</a> const &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>informationObject</b> () const</td></tr>
-<tr class="memdesc:a217ab39107e0c35409d0cb8ab4fdc732 inherit pub_methods_classFeel_1_1JournalWatcher"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return the information into property tree. <br /></td></tr>
-<tr class="separator:a217ab39107e0c35409d0cb8ab4fdc732 inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a06b0658fd9351626fe4a61bc43ad053f inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1JournalWatcher.html#a06b0658fd9351626fe4a61bc43ad053f">journalConnect</a> ()</td></tr>
-<tr class="memdesc:a06b0658fd9351626fe4a61bc43ad053f inherit pub_methods_classFeel_1_1JournalWatcher"><td class="mdescLeft">&#160;</td><td class="mdescRight">Setters.  <a href="classFeel_1_1JournalWatcher.html#a06b0658fd9351626fe4a61bc43ad053f">More...</a><br /></td></tr>
-<tr class="separator:a06b0658fd9351626fe4a61bc43ad053f inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a96ececa1ab870912814a7355a04a2e33 inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memItemLeft" align="right" valign="top"><a id="a96ececa1ab870912814a7355a04a2e33" name="a96ececa1ab870912814a7355a04a2e33"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>journalDisconnect</b> ()</td></tr>
-<tr class="memdesc:a96ececa1ab870912814a7355a04a2e33 inherit pub_methods_classFeel_1_1JournalWatcher"><td class="mdescLeft">&#160;</td><td class="mdescRight">Disconnect the derived object from the simulation info manager. The disconnection is safe. <br /></td></tr>
-<tr class="separator:a96ececa1ab870912814a7355a04a2e33 inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a85a93671ca463e19247fdd59ea499071 inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memItemLeft" align="right" valign="top"><a id="a85a93671ca463e19247fdd59ea499071" name="a85a93671ca463e19247fdd59ea499071"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>setInformationObject</b> (<a class="el" href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">nl::json</a> const &amp;<a class="el" href="classFeel_1_1JournalWatcher.html#a217ab39107e0c35409d0cb8ab4fdc732">informationObject</a>)</td></tr>
-<tr class="memdesc:a85a93671ca463e19247fdd59ea499071 inherit pub_methods_classFeel_1_1JournalWatcher"><td class="mdescLeft">&#160;</td><td class="mdescRight">set information object <br /></td></tr>
-<tr class="separator:a85a93671ca463e19247fdd59ea499071 inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a413c3616b3de7200e305595cdab30389 inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memItemLeft" align="right" valign="top"><a id="a413c3616b3de7200e305595cdab30389" name="a413c3616b3de7200e305595cdab30389"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>putInformationObject</b> (<a class="el" href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">nl::json</a> const &amp;<a class="el" href="classFeel_1_1JournalWatcher.html#a217ab39107e0c35409d0cb8ab4fdc732">informationObject</a>)</td></tr>
-<tr class="memdesc:a413c3616b3de7200e305595cdab30389 inherit pub_methods_classFeel_1_1JournalWatcher"><td class="mdescLeft">&#160;</td><td class="mdescRight">put information object <br /></td></tr>
-<tr class="separator:a413c3616b3de7200e305595cdab30389 inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a211268f64f6271848b4ffe8168ca31fc inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memItemLeft" align="right" valign="top"><a id="a211268f64f6271848b4ffe8168ca31fc" name="a211268f64f6271848b4ffe8168ca31fc"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>addInformationObject</b> (<a class="el" href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">nl::json</a> const &amp;<a class="el" href="classFeel_1_1JournalWatcher.html#a217ab39107e0c35409d0cb8ab4fdc732">informationObject</a>)</td></tr>
-<tr class="memdesc:a211268f64f6271848b4ffe8168ca31fc inherit pub_methods_classFeel_1_1JournalWatcher"><td class="mdescLeft">&#160;</td><td class="mdescRight">add information object <br /></td></tr>
-<tr class="separator:a211268f64f6271848b4ffe8168ca31fc inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac4fe7b05debcbc3fd43502d47dddb589 inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memItemLeft" align="right" valign="top"><a id="ac4fe7b05debcbc3fd43502d47dddb589" name="ac4fe7b05debcbc3fd43502d47dddb589"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>journalFinalize</b> ()</td></tr>
-<tr class="memdesc:ac4fe7b05debcbc3fd43502d47dddb589 inherit pub_methods_classFeel_1_1JournalWatcher"><td class="mdescLeft">&#160;</td><td class="mdescRight">finalize journal publication <br /></td></tr>
-<tr class="separator:ac4fe7b05debcbc3fd43502d47dddb589 inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="inherited" name="inherited"></a>
 Additional Inherited Members</h2></td></tr>
 <tr class="inherit_header pro_methods_classFeel_1_1JournalWatcher"><td colspan="2" onclick="javascript:toggleInherit('pro_methods_classFeel_1_1JournalWatcher')"><img src="closed.png" alt="-"/>&#160;Protected Member Functions inherited from <a class="el" href="classFeel_1_1JournalWatcher.html">Feel::JournalWatcher</a></td></tr>
@@ -971,6 +966,80 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>applyUpdateInformatio
 <tr class="memdesc:ace7e1916b49e2d851c7253f6c79347b7 inherit pro_methods_classFeel_1_1JournalWatcher"><td class="mdescLeft">&#160;</td><td class="mdescRight">Protected Methods. <br /></td></tr>
 <tr class="separator:ace7e1916b49e2d851c7253f6c79347b7 inherit pro_methods_classFeel_1_1JournalWatcher"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><div class="compoundTemplParams">template&lt;typename A0, typename A1 = parameter::void_, typename A2 = parameter::void_, typename A3 = parameter::void_, typename A4 = parameter::void_&gt;<br />
+class Feel::FunctionSpace&lt; A0, A1, A2, A3, A4 &gt;</div><dl class="section author"><dt>Author</dt><dd>Function Space Class</dd></dl>
+<p><code><a class="el" href="classFeel_1_1FunctionSpace.html">FunctionSpace</a></code> is a representation of a functional space parametrized by the type of the mesh (<code>MeshType</code>)</p>
+<dl class="section author"><dt>Author</dt><dd>Christophe Prud'homme <a href="#" onclick="location.href='mai'+'lto:'+'chr'+'is'+'top'+'he'+'.pr'+'ud'+'hom'+'me'+'@fe'+'el'+'pp.'+'or'+'g'; return false;">chris<span class="obfuscator">.nosp@m.</span>toph<span class="obfuscator">.nosp@m.</span>e.pru<span class="obfuscator">.nosp@m.</span>dhom<span class="obfuscator">.nosp@m.</span>me@fe<span class="obfuscator">.nosp@m.</span>elpp<span class="obfuscator">.nosp@m.</span>.org</a> </dd></dl>
+</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a id="af2618e53afbe69e6545ac510882006fa" name="af2618e53afbe69e6545ac510882006fa"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af2618e53afbe69e6545ac510882006fa">&#9670;&nbsp;</a></span>FunctionSpace()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename A0 , typename A1  = parameter::void_, typename A2  = parameter::void_, typename A3  = parameter::void_, typename A4  = parameter::void_&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classFeel_1_1FunctionSpace.html">Feel::FunctionSpace</a>&lt; A0, A1, A2, A3, A4 &gt;::FunctionSpace </td>
+          <td>(</td>
+          <td class="paramtype">mesh_ptrtype const &amp;&#160;</td>
+          <td class="paramname"><em>mesh</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">mesh_support_vector_type const &amp;&#160;</td>
+          <td class="paramname"><em>meshSupport</em> = <code>mesh_support_vector_type()</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_type&#160;</td>
+          <td class="paramname"><em>mesh_components</em> = <code>MESH_RENUMBER&#160;|&#160;MESH_CHECK</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">periodicity_type&#160;</td>
+          <td class="paramname"><em>periodicity</em> = <code>periodicity_type()</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group__Core.html#ga56d5cf37fceae464425abf8d94524b7e">worldscomm_ptr_t</a> const &amp;&#160;</td>
+          <td class="paramname"><em>_worldsComm</em> = <code><a class="el" href="classFeel_1_1Environment.html#a372e7cff15a7e7132a18b5d11c780fd1">Environment::worldsComm</a>(nSpaces)</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; <a class="el" href="classbool.html">bool</a> &gt;&#160;</td>
+          <td class="paramname"><em>extendedDofTable</em> = <code>std::vector&lt;<a class="el" href="classbool.html">bool</a>&gt;(nSpaces,false)</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramname"><em>name</em> = <code>&quot;&quot;</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code><a class="el" href="classFeel_1_1FunctionSpace.html">FunctionSpace</a></code> constructor </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">mesh</td><td>a mesh data structure </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="a4f805bf86518c4df5cc598a3a2ccb31f" name="a4f805bf86518c4df5cc598a3a2ccb31f"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a4f805bf86518c4df5cc598a3a2ccb31f">&#9670;&nbsp;</a></span>basis()</h2>
@@ -2394,75 +2463,6 @@ template&lt;typename A0 , typename A1  = parameter::void_, typename A2  = parame
 <div class="line">                                              mpl::identity&lt;meshes_list&gt;,</div>
 <div class="line">                                              mpl::identity&lt;nodim&gt; &gt;::type::type::nRealDim</div>
 </div><!-- fragment -->
-</div>
-</div>
-<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="af2618e53afbe69e6545ac510882006fa" name="af2618e53afbe69e6545ac510882006fa"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af2618e53afbe69e6545ac510882006fa">&#9670;&nbsp;</a></span>FunctionSpace()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename A0 , typename A1  = parameter::void_, typename A2  = parameter::void_, typename A3  = parameter::void_, typename A4  = parameter::void_&gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classFeel_1_1FunctionSpace.html">Feel::FunctionSpace</a>&lt; A0, A1, A2, A3, A4 &gt;::FunctionSpace </td>
-          <td>(</td>
-          <td class="paramtype">mesh_ptrtype const &amp;&#160;</td>
-          <td class="paramname"><em>mesh</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">mesh_support_vector_type const &amp;&#160;</td>
-          <td class="paramname"><em>meshSupport</em> = <code>mesh_support_vector_type()</code>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_type&#160;</td>
-          <td class="paramname"><em>mesh_components</em> = <code>MESH_RENUMBER&#160;|&#160;MESH_CHECK</code>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">periodicity_type&#160;</td>
-          <td class="paramname"><em>periodicity</em> = <code>periodicity_type()</code>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="group__Core.html#ga56d5cf37fceae464425abf8d94524b7e">worldscomm_ptr_t</a> const &amp;&#160;</td>
-          <td class="paramname"><em>_worldsComm</em> = <code><a class="el" href="classFeel_1_1Environment.html#a372e7cff15a7e7132a18b5d11c780fd1">Environment::worldsComm</a>(nSpaces)</code>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">std::vector&lt; <a class="el" href="classbool.html">bool</a> &gt;&#160;</td>
-          <td class="paramname"><em>extendedDofTable</em> = <code>std::vector&lt;<a class="el" href="classbool.html">bool</a>&gt;(nSpaces,false)</code>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const std::string &amp;&#160;</td>
-          <td class="paramname"><em>name</em> = <code>&quot;&quot;</code>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p><code><a class="el" href="classFeel_1_1FunctionSpace.html">FunctionSpace</a></code> constructor </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">mesh</td><td>a mesh data structure </td></tr>
-  </table>
-  </dd>
-</dl>
-
 </div>
 </div>
 </div><!-- contents -->

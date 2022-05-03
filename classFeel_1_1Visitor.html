@@ -105,29 +105,10 @@ $(document).ready(function(){initNavTree('classFeel_1_1Visitor.html',''); initRe
   <div class="headertitle"><div class="title">Feel::Visitor&lt; T, R &gt; Class Template Reference<span class="mlabels"><span class="mlabel">abstract</span></span></div></div>
 </div><!--header-->
 <div class="contents">
-<a name="details" id="details"></a><h2 class="groupheader">Description</h2>
-<div class="textblock"><div class="compoundTemplParams">template&lt;class T, typename R = void&gt;<br />
-class Feel::Visitor&lt; T, R &gt;</div><p >This class is the base class to implement the <a class="el" href="classFeel_1_1Visitor.html" title="This class is the base class to implement the Visitor Pattern.">Visitor</a> Pattern. </p>
-<p >Let's <a class="el" href="classA.html">A</a> be a visitor class to a class <a class="el" href="classB.html">B</a>: </p><div class="fragment"><div class="line"><span class="keyword">class </span><a class="code hl_class" href="classA.html">A</a>: <span class="keyword">public</span> Visitor&lt;B&gt;</div>
-<div class="line">{</div>
-<div class="line"><span class="keyword">public</span>:</div>
-<div class="line">...</div>
-<div class="line">void <a class="code hl_function" href="classFeel_1_1Visitor.html#a98acadae64f9daa013409b11fd6db989">visit</a>(<a class="code hl_class" href="classB.html">B</a> * b)</div>
-<div class="line">{</div>
-<div class="line">..implement the functionnality to be added to a <a class="code hl_class" href="classB.html">B</a> <span class="keyword">class</span>..</div>
-<div class="line">}</div>
-<div class="line">};</div>
-<div class="line"><span class="keyword">class </span><a class="code hl_class" href="classB.html">B</a>:</div>
-<div class="line">{</div>
-<div class="line"><span class="keyword">public</span>:</div>
-<div class="line"><span class="keywordtype">void</span> accept(Visitor&lt;B&gt;* b){  b-&gt;visit(<span class="keyword">this</span>); }</div>
-<div class="line">};</div>
-<div class="ttc" id="aclassA_html"><div class="ttname"><a href="classA.html">A</a></div><div class="ttdef"><b>Definition:</b> test_factory.cpp:35</div></div>
-<div class="ttc" id="aclassB_html"><div class="ttname"><a href="classB.html">B</a></div><div class="ttdef"><b>Definition:</b> test_factory.cpp:45</div></div>
-<div class="ttc" id="aclassFeel_1_1Visitor_html_a98acadae64f9daa013409b11fd6db989"><div class="ttname"><a href="classFeel_1_1Visitor.html#a98acadae64f9daa013409b11fd6db989">Feel::Visitor::visit</a></div><div class="ttdeci">virtual return_type visit(T *)=0</div><div class="ttdoc">visit a data structure</div></div>
-</div><!-- fragment --><dl class="section author"><dt>Author</dt><dd>Christophe Prud'homme <a href="#" onclick="location.href='mai'+'lto:'+'Chr'+'is'+'top'+'he'+'.Pr'+'ud'+'hom'+'me'+'@an'+'n.'+'jus'+'si'+'eu.'+'fr'; return false;">Chris<span class="obfuscator">.nosp@m.</span>toph<span class="obfuscator">.nosp@m.</span>e.Pru<span class="obfuscator">.nosp@m.</span>dhom<span class="obfuscator">.nosp@m.</span>me@an<span class="obfuscator">.nosp@m.</span>n.ju<span class="obfuscator">.nosp@m.</span>ssieu<span class="obfuscator">.nosp@m.</span>.fr</a> </dd></dl>
-<dl class="section see"><dt>See also</dt><dd>Gamma, Helm, Johnson, Vlissides, Design Patterns Pub: Addison Wesley </dd></dl>
-</div><div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
+
+<p>This class is the base class to implement the <a class="el" href="classFeel_1_1Visitor.html" title="This class is the base class to implement the Visitor Pattern.">Visitor</a> Pattern.  
+ <a href="classFeel_1_1Visitor.html#details">More...</a></p>
+<div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Collaboration diagram for Feel::Visitor&lt; T, R &gt;:</div>
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">
 </div>
@@ -154,7 +135,29 @@ return_type&#160;</td><td class="memItemRight" valign="bottom"><b>visit</b> (T &
 <tr class="memdesc:ac9a87608ccb0c1179d81b8cf01a4866d"><td class="mdescLeft">&#160;</td><td class="mdescRight">visit a data structure <br /></td></tr>
 <tr class="separator:ac9a87608ccb0c1179d81b8cf01a4866d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<h2 class="groupheader">Member Function Documentation</h2>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><div class="compoundTemplParams">template&lt;class T, typename R = void&gt;<br />
+class Feel::Visitor&lt; T, R &gt;</div><p >This class is the base class to implement the <a class="el" href="classFeel_1_1Visitor.html" title="This class is the base class to implement the Visitor Pattern.">Visitor</a> Pattern. </p>
+<p >Let's <a class="el" href="classA.html">A</a> be a visitor class to a class <a class="el" href="classB.html">B</a>: </p><div class="fragment"><div class="line"><span class="keyword">class </span><a class="code hl_class" href="classA.html">A</a>: <span class="keyword">public</span> Visitor&lt;B&gt;</div>
+<div class="line">{</div>
+<div class="line"><span class="keyword">public</span>:</div>
+<div class="line">...</div>
+<div class="line">void <a class="code hl_function" href="classFeel_1_1Visitor.html#a98acadae64f9daa013409b11fd6db989">visit</a>(<a class="code hl_class" href="classB.html">B</a> * b)</div>
+<div class="line">{</div>
+<div class="line">..implement the functionnality to be added to a <a class="code hl_class" href="classB.html">B</a> <span class="keyword">class</span>..</div>
+<div class="line">}</div>
+<div class="line">};</div>
+<div class="line"><span class="keyword">class </span><a class="code hl_class" href="classB.html">B</a>:</div>
+<div class="line">{</div>
+<div class="line"><span class="keyword">public</span>:</div>
+<div class="line"><span class="keywordtype">void</span> accept(Visitor&lt;B&gt;* b){  b-&gt;visit(<span class="keyword">this</span>); }</div>
+<div class="line">};</div>
+<div class="ttc" id="aclassA_html"><div class="ttname"><a href="classA.html">A</a></div><div class="ttdef"><b>Definition:</b> test_factory.cpp:35</div></div>
+<div class="ttc" id="aclassB_html"><div class="ttname"><a href="classB.html">B</a></div><div class="ttdef"><b>Definition:</b> test_factory.cpp:45</div></div>
+<div class="ttc" id="aclassFeel_1_1Visitor_html_a98acadae64f9daa013409b11fd6db989"><div class="ttname"><a href="classFeel_1_1Visitor.html#a98acadae64f9daa013409b11fd6db989">Feel::Visitor::visit</a></div><div class="ttdeci">virtual return_type visit(T *)=0</div><div class="ttdoc">visit a data structure</div></div>
+</div><!-- fragment --><dl class="section author"><dt>Author</dt><dd>Christophe Prud'homme <a href="#" onclick="location.href='mai'+'lto:'+'Chr'+'is'+'top'+'he'+'.Pr'+'ud'+'hom'+'me'+'@an'+'n.'+'jus'+'si'+'eu.'+'fr'; return false;">Chris<span class="obfuscator">.nosp@m.</span>toph<span class="obfuscator">.nosp@m.</span>e.Pru<span class="obfuscator">.nosp@m.</span>dhom<span class="obfuscator">.nosp@m.</span>me@an<span class="obfuscator">.nosp@m.</span>n.ju<span class="obfuscator">.nosp@m.</span>ssieu<span class="obfuscator">.nosp@m.</span>.fr</a> </dd></dl>
+<dl class="section see"><dt>See also</dt><dd>Gamma, Helm, Johnson, Vlissides, Design Patterns Pub: Addison Wesley </dd></dl>
+</div><h2 class="groupheader">Member Function Documentation</h2>
 <a id="a98acadae64f9daa013409b11fd6db989" name="a98acadae64f9daa013409b11fd6db989"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a98acadae64f9daa013409b11fd6db989">&#9670;&nbsp;</a></span>visit()</h2>
 

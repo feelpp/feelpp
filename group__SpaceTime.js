@@ -1,6 +1,8 @@
 var group__SpaceTime =
 [
     [ "Feel::Bdf< SpaceType >", "classFeel_1_1Bdf.html", [
+      [ "Bdf", "classFeel_1_1Bdf.html#af083687b49bcab19acd3ec19edf8a8be", null ],
+      [ "Bdf", "classFeel_1_1Bdf.html#ac3d2fcaade573fd55ea7a59c780b74fb", null ],
       [ "applyRemesh", "classFeel_1_1Bdf.html#ac33ecbb1aba64fccaba2c6109e925f3b", null ],
       [ "bdfOrder", "classFeel_1_1Bdf.html#a03475dd4b945f3cacea1303262533a85", null ],
       [ "bdfPrefix", "classFeel_1_1Bdf.html#a4374df9c223c98d8bb8395d5cfcb6836", null ],
@@ -30,14 +32,12 @@ var group__SpaceTime =
       [ "unknownPtr", "classFeel_1_1Bdf.html#aa5be87af331b85b9ce36cf8f15a5cd55", null ],
       [ "unknowns", "classFeel_1_1Bdf.html#a76ee3c1f12c7b950ca4c4fa72dd820b4", null ],
       [ "unknowns", "classFeel_1_1Bdf.html#a333b314406841f96f7d255506f24d036", null ],
-      [ "updateDerivative", "classFeel_1_1Bdf.html#a3c7776bd2a77a43a089fdf79cd6a69ec", null ],
-      [ "Bdf", "classFeel_1_1Bdf.html#af083687b49bcab19acd3ec19edf8a8be", null ],
-      [ "Bdf", "classFeel_1_1Bdf.html#ac3d2fcaade573fd55ea7a59c780b74fb", null ]
+      [ "updateDerivative", "classFeel_1_1Bdf.html#a3c7776bd2a77a43a089fdf79cd6a69ec", null ]
     ] ],
     [ "Feel::detail::TimeSet< MeshType, N >", "classFeel_1_1detail_1_1TimeSet.html", [
       [ "ltstep", "structFeel_1_1detail_1_1TimeSet_1_1ltstep.html", null ],
       [ "Step", "classFeel_1_1detail_1_1TimeSet_1_1Step.html", [
-        [ "TimeSet", "classFeel_1_1detail_1_1TimeSet_1_1Step.html#a88bf561ea152c6e9df272cb7a9ad69a6", null ],
+        [ "~Step", "classFeel_1_1detail_1_1TimeSet_1_1Step.html#ab1671d6e5094b611b81adbf97fdca31a", null ],
         [ "activeIndex", "classFeel_1_1detail_1_1TimeSet_1_1Step.html#a4df77a62b39b1b8ede6ad1975811a5c9", null ],
         [ "addRegions", "classFeel_1_1detail_1_1TimeSet_1_1Step.html#a5e68e23f1b6083c2fbc6f860d69ef7bd", null ],
         [ "beginScalar", "classFeel_1_1detail_1_1TimeSet_1_1Step.html#af38a7a319ce1e7a4064d6de70886b8f3", null ],
@@ -54,8 +54,9 @@ var group__SpaceTime =
         [ "scalar", "classFeel_1_1detail_1_1TimeSet_1_1Step.html#a5b3dd7d60eacc8430979f8783a75908d", null ],
         [ "state", "classFeel_1_1detail_1_1TimeSet_1_1Step.html#a0eec164fc891f9dfac36a48209af7ce0", null ],
         [ "time", "classFeel_1_1detail_1_1TimeSet_1_1Step.html#a52e94bb777b6e8fb005984b4932111d6", null ],
-        [ "~Step", "classFeel_1_1detail_1_1TimeSet_1_1Step.html#ab1671d6e5094b611b81adbf97fdca31a", null ]
+        [ "TimeSet", "classFeel_1_1detail_1_1TimeSet_1_1Step.html#a88bf561ea152c6e9df272cb7a9ad69a6", null ]
       ] ],
+      [ "TimeSet", "classFeel_1_1detail_1_1TimeSet.html#a9dbd3daa64b40f8404c3bd1f47488d91", null ],
       [ "firstActiveStep", "classFeel_1_1detail_1_1TimeSet.html#aa87709ae81c66638f464d94754d56ca3", null ],
       [ "index", "classFeel_1_1detail_1_1TimeSet.html#a6e86e9e84c21912a2ceefefffcab3605", null ],
       [ "name", "classFeel_1_1detail_1_1TimeSet.html#a59510ef40c8c45c474f4f2af70bb8455", null ],
@@ -68,12 +69,23 @@ var group__SpaceTime =
       [ "M_index", "classFeel_1_1detail_1_1TimeSet.html#a3e0289c18c0be6e939c6dc2d4544074a", null ],
       [ "M_name", "classFeel_1_1detail_1_1TimeSet.html#a2e6c8f07791678451e0460b96666fbaf", null ],
       [ "M_step_set", "classFeel_1_1detail_1_1TimeSet.html#af7f250b6b85bc6c293d5eaad4e1fe57b", null ],
-      [ "M_time_increment", "classFeel_1_1detail_1_1TimeSet.html#ae80202a1e5b3c7d8fb342e3b87dd15db", null ],
-      [ "TimeSet", "classFeel_1_1detail_1_1TimeSet.html#a9dbd3daa64b40f8404c3bd1f47488d91", null ]
+      [ "M_time_increment", "classFeel_1_1detail_1_1TimeSet.html#ae80202a1e5b3c7d8fb342e3b87dd15db", null ]
     ] ],
     [ "Feel::DofTable< MeshType, FEType, PeriodicityType, MortarType >", "classFeel_1_1DofTable.html", [
       [ "element_access", "structFeel_1_1DofTable_1_1element__access.html", null ],
       [ "face_access", "structFeel_1_1DofTable_1_1face__access.html", null ],
+      [ "dof_element_type", "classFeel_1_1DofTable.html#a52821bc2a9b63a4f0de3aa9fa30bc225", null ],
+      [ "face_sign_info_type", "classFeel_1_1DofTable.html#ae91cf4610eff93e238e2412129542fd2", null ],
+      [ "global_dof_fromface_type", "classFeel_1_1DofTable.html#a11cbee9f798673970784ad9c1c22a6dd", null ],
+      [ "global_dof_type", "classFeel_1_1DofTable.html#aa4a8e824246aa45176f59b95ff6dcd66", null ],
+      [ "local_dof_type", "classFeel_1_1DofTable.html#a14d2f30c443e6cc3d9ca65c349d81219", null ],
+      [ "localdof_type", "classFeel_1_1DofTable.html#a1b5a5523e7f7976431e219e2e3b41d4d", null ],
+      [ "mesh_type", "classFeel_1_1DofTable.html#a7ef534143c67b387d25792d1bfa00be1", null ],
+      [ "permutation_vector_type", "classFeel_1_1DofTable.html#adbe592edfeab055b96434942490bc0d8", null ],
+      [ "pidtodofid_type", "classFeel_1_1DofTable.html#ace90bef4efe0e877bd06e332f02dd8f8", null ],
+      [ "DofTable", "classFeel_1_1DofTable.html#a1bed6ec51a3ba994cda8f39a772b95e4", null ],
+      [ "DofTable", "classFeel_1_1DofTable.html#ac85e88c1485a548e635b8d4d948bf2e4", null ],
+      [ "DofTable", "classFeel_1_1DofTable.html#afaab733ae2745b6207de80594be90477", null ],
       [ "build", "classFeel_1_1DofTable.html#a0eaa2a3e277d1a57e2295f813932a6a7", null ],
       [ "build", "classFeel_1_1DofTable.html#adc76fb579387f84925034344ea726c36", null ],
       [ "build", "classFeel_1_1DofTable.html#a5e111776af979f6bd7d183dfff036674", null ],
@@ -116,19 +128,7 @@ var group__SpaceTime =
       [ "setDofIndices", "classFeel_1_1DofTable.html#a8fea5b9b41e6c466eabc1b88cce12e3f", null ],
       [ "setMapGDof", "classFeel_1_1DofTable.html#a7efd7320dbf8927a7ef416a6fa4fdb3a", null ],
       [ "setMeshSupport", "classFeel_1_1DofTable.html#a5ad606efe7e33e51b412492845814054", null ],
-      [ "showMe", "classFeel_1_1DofTable.html#a5fa3fbe99ddfc0891c62d61a9edd2d50", null ],
-      [ "dof_element_type", "classFeel_1_1DofTable.html#a52821bc2a9b63a4f0de3aa9fa30bc225", null ],
-      [ "face_sign_info_type", "classFeel_1_1DofTable.html#ae91cf4610eff93e238e2412129542fd2", null ],
-      [ "global_dof_fromface_type", "classFeel_1_1DofTable.html#a11cbee9f798673970784ad9c1c22a6dd", null ],
-      [ "global_dof_type", "classFeel_1_1DofTable.html#aa4a8e824246aa45176f59b95ff6dcd66", null ],
-      [ "local_dof_type", "classFeel_1_1DofTable.html#a14d2f30c443e6cc3d9ca65c349d81219", null ],
-      [ "localdof_type", "classFeel_1_1DofTable.html#a1b5a5523e7f7976431e219e2e3b41d4d", null ],
-      [ "mesh_type", "classFeel_1_1DofTable.html#a7ef534143c67b387d25792d1bfa00be1", null ],
-      [ "permutation_vector_type", "classFeel_1_1DofTable.html#adbe592edfeab055b96434942490bc0d8", null ],
-      [ "pidtodofid_type", "classFeel_1_1DofTable.html#ace90bef4efe0e877bd06e332f02dd8f8", null ],
-      [ "DofTable", "classFeel_1_1DofTable.html#a1bed6ec51a3ba994cda8f39a772b95e4", null ],
-      [ "DofTable", "classFeel_1_1DofTable.html#ac85e88c1485a548e635b8d4d948bf2e4", null ],
-      [ "DofTable", "classFeel_1_1DofTable.html#afaab733ae2745b6207de80594be90477", null ]
+      [ "showMe", "classFeel_1_1DofTable.html#a5fa3fbe99ddfc0891c62d61a9edd2d50", null ]
     ] ],
     [ "Feel::FunctionSpace< A0, A1, A2, A3, A4 >", "classFeel_1_1FunctionSpace.html", [
       [ "Basis", "structFeel_1_1FunctionSpace_1_1Basis.html", null ],
@@ -143,6 +143,10 @@ var group__SpaceTime =
         [ "AddOffContainer", "structFeel_1_1FunctionSpace_1_1Element_1_1AddOffContainer.html", null ],
         [ "ChangeElement", "structFeel_1_1FunctionSpace_1_1Element_1_1ChangeElement.html", null ],
         [ "sub_element", "structFeel_1_1FunctionSpace_1_1Element_1_1sub__element.html", null ],
+        [ "geoelement_type", "classFeel_1_1FunctionSpace_1_1Element.html#a0503cd364cfb9418c74f8ab0e4afc3a5", null ],
+        [ "grad_type", "classFeel_1_1FunctionSpace_1_1Element.html#a998e3beeedf6136a17610a0d1344c1f8", null ],
+        [ "id_type", "classFeel_1_1FunctionSpace_1_1Element.html#a4a3ba7730aff8cf8d15592dd9ca639fc", null ],
+        [ "local_interpolant_type", "classFeel_1_1FunctionSpace_1_1Element.html#a14a11c74b9a189ca01a79b6eb1ace885", null ],
         [ "comp", "classFeel_1_1FunctionSpace_1_1Element.html#abdac810ae98cd82e98863f569f12fdc5", null ],
         [ "comp", "classFeel_1_1FunctionSpace_1_1Element.html#a76ea5e7bad5607fd6ad891d8c4d9aa8e", null ],
         [ "compSpace", "classFeel_1_1FunctionSpace_1_1Element.html#a385d5effa796d29751bc77c217be4418", null ],
@@ -180,11 +184,7 @@ var group__SpaceTime =
         [ "symmetricGradient", "classFeel_1_1FunctionSpace_1_1Element.html#a23d09da3497086f665251f741a37ea66", null ],
         [ "worldComm", "classFeel_1_1FunctionSpace_1_1Element.html#acf0635e22f492ead3d0359ce6896e070", null ],
         [ "worldComm", "classFeel_1_1FunctionSpace_1_1Element.html#adacd543d54a8ed6e6011bd3deb8f9e5e", null ],
-        [ "worldsComm", "classFeel_1_1FunctionSpace_1_1Element.html#a21d8f42364c4d8b09b8bc953d765f151", null ],
-        [ "geoelement_type", "classFeel_1_1FunctionSpace_1_1Element.html#a0503cd364cfb9418c74f8ab0e4afc3a5", null ],
-        [ "grad_type", "classFeel_1_1FunctionSpace_1_1Element.html#a998e3beeedf6136a17610a0d1344c1f8", null ],
-        [ "id_type", "classFeel_1_1FunctionSpace_1_1Element.html#a4a3ba7730aff8cf8d15592dd9ca639fc", null ],
-        [ "local_interpolant_type", "classFeel_1_1FunctionSpace_1_1Element.html#a14a11c74b9a189ca01a79b6eb1ace885", null ]
+        [ "worldsComm", "classFeel_1_1FunctionSpace_1_1Element.html#a21d8f42364c4d8b09b8bc953d765f151", null ]
       ] ],
       [ "GetComponentBasis", "structFeel_1_1FunctionSpace_1_1GetComponentBasis.html", null ],
       [ "GetMesh", "structFeel_1_1FunctionSpace_1_1GetMesh.html", null ],
@@ -194,6 +194,9 @@ var group__SpaceTime =
       [ "GetPeriodicity", "structFeel_1_1FunctionSpace_1_1GetPeriodicity.html", null ],
       [ "nodim", "structFeel_1_1FunctionSpace_1_1nodim.html", null ],
       [ "sub_functionspace", "structFeel_1_1FunctionSpace_1_1sub__functionspace.html", null ],
+      [ "local_interpolant_type", "classFeel_1_1FunctionSpace.html#a289a12d2a0267b512306ba9453316577", null ],
+      [ "FunctionSpace", "classFeel_1_1FunctionSpace.html#af2618e53afbe69e6545ac510882006fa", null ],
+      [ "~FunctionSpace", "classFeel_1_1FunctionSpace.html#af1079314c4d707f7452e20c874ac085f", null ],
       [ "basis", "classFeel_1_1FunctionSpace.html#a4f805bf86518c4df5cc598a3a2ccb31f", null ],
       [ "basisName", "classFeel_1_1FunctionSpace.html#a3e1473bb7d6f935c4d4678cce4b61452", null ],
       [ "basisOrder", "classFeel_1_1FunctionSpace.html#aec4e42a68d6dacb44de2e2b4375e7fb6", null ],
@@ -260,12 +263,12 @@ var group__SpaceTime =
       [ "M_dofOnOff", "classFeel_1_1FunctionSpace.html#a28227bb46ef1eed43d448d2a89b20645", null ],
       [ "M_extendedDofTableComposite", "classFeel_1_1FunctionSpace.html#a64fff94ffa04575676b124344544432b", null ],
       [ "M_ref_fe", "classFeel_1_1FunctionSpace.html#aa798114f85bc067201efae1b28ed250e", null ],
-      [ "M_rt", "classFeel_1_1FunctionSpace.html#ad90149d16e3a95a470da0dfa8297633c", null ],
-      [ "local_interpolant_type", "classFeel_1_1FunctionSpace.html#a289a12d2a0267b512306ba9453316577", null ],
-      [ "FunctionSpace", "classFeel_1_1FunctionSpace.html#af2618e53afbe69e6545ac510882006fa", null ],
-      [ "~FunctionSpace", "classFeel_1_1FunctionSpace.html#af1079314c4d707f7452e20c874ac085f", null ]
+      [ "M_rt", "classFeel_1_1FunctionSpace.html#ad90149d16e3a95a470da0dfa8297633c", null ]
     ] ],
     [ "Feel::Newmark< SpaceType >", "classFeel_1_1Newmark.html", [
+      [ "Newmark", "classFeel_1_1Newmark.html#a20bc2e2e94c796c4a5a1a312cbb33bfd", null ],
+      [ "Newmark", "classFeel_1_1Newmark.html#aa60461cb51659512cb2d66e90d23726a", null ],
+      [ "Newmark", "classFeel_1_1Newmark.html#afe0a200773339494c5e767b97bca1d9e", null ],
       [ "gamma", "classFeel_1_1Newmark.html#a33ff708de524715bf9d7b3b6c8ae8973", null ],
       [ "initialize", "classFeel_1_1Newmark.html#a95887d00969aaebe87449dbfa55edc2f", null ],
       [ "next", "classFeel_1_1Newmark.html#a91ed852964473adb55e6b3b9295a4653", null ],
@@ -275,19 +278,16 @@ var group__SpaceTime =
       [ "restart", "classFeel_1_1Newmark.html#aee6222f49f3a0e446dee16b7a7b40851", null ],
       [ "shiftRight", "classFeel_1_1Newmark.html#a3a92fef9c982f2a1796ed4efd1263153", null ],
       [ "start", "classFeel_1_1Newmark.html#a1a53ea35cde6af59bd7048daf462bb10", null ],
-      [ "updateFromDisp", "classFeel_1_1Newmark.html#a764f62cb5256f78c0b700f21e9ee6a26", null ],
-      [ "Newmark", "classFeel_1_1Newmark.html#a20bc2e2e94c796c4a5a1a312cbb33bfd", null ],
-      [ "Newmark", "classFeel_1_1Newmark.html#aa60461cb51659512cb2d66e90d23726a", null ],
-      [ "Newmark", "classFeel_1_1Newmark.html#afe0a200773339494c5e767b97bca1d9e", null ]
+      [ "updateFromDisp", "classFeel_1_1Newmark.html#a764f62cb5256f78c0b700f21e9ee6a26", null ]
     ] ],
     [ "Feel::OperatorLagrangeP1< SpaceType >", "classFeel_1_1OperatorLagrangeP1.html", [
-      [ "check", "classFeel_1_1OperatorLagrangeP1.html#a69bf39bfafe65a49d2df96e96d6331de", null ],
-      [ "operator=", "classFeel_1_1OperatorLagrangeP1.html#ade068b1b2563bc46ca8249084e9432fa", null ],
       [ "domain_space_type", "classFeel_1_1OperatorLagrangeP1.html#a382f9a8fad9a4b38895891bb9674bc5b", null ],
       [ "dual_image_space_type", "classFeel_1_1OperatorLagrangeP1.html#a667c951be4adda3dbd6daa016325411b", null ],
       [ "el2el_type", "classFeel_1_1OperatorLagrangeP1.html#a4732a0f9fa8462dbec7d4292b6f24a25", null ],
       [ "OperatorLagrangeP1", "classFeel_1_1OperatorLagrangeP1.html#ad5d6d8b180407b4efd8af71e636769c5", null ],
-      [ "~OperatorLagrangeP1", "classFeel_1_1OperatorLagrangeP1.html#ac9d77c736162f9ac60b5969a1d34aecd", null ]
+      [ "~OperatorLagrangeP1", "classFeel_1_1OperatorLagrangeP1.html#ac9d77c736162f9ac60b5969a1d34aecd", null ],
+      [ "check", "classFeel_1_1OperatorLagrangeP1.html#a69bf39bfafe65a49d2df96e96d6331de", null ],
+      [ "operator=", "classFeel_1_1OperatorLagrangeP1.html#ade068b1b2563bc46ca8249084e9432fa", null ]
     ] ],
     [ "Feel::TimeSet", "classFeel_1_1TimeSet.html", [
       [ "save", "classFeel_1_1TimeSet.html#a8615cf56d468a6dfd14eebe172bf1ba5", null ]

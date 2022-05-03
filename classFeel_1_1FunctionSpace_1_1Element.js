@@ -3,6 +3,10 @@ var classFeel_1_1FunctionSpace_1_1Element =
     [ "AddOffContainer", "structFeel_1_1FunctionSpace_1_1Element_1_1AddOffContainer.html", null ],
     [ "ChangeElement", "structFeel_1_1FunctionSpace_1_1Element_1_1ChangeElement.html", null ],
     [ "sub_element", "structFeel_1_1FunctionSpace_1_1Element_1_1sub__element.html", null ],
+    [ "geoelement_type", "classFeel_1_1FunctionSpace_1_1Element.html#a0503cd364cfb9418c74f8ab0e4afc3a5", null ],
+    [ "grad_type", "classFeel_1_1FunctionSpace_1_1Element.html#a998e3beeedf6136a17610a0d1344c1f8", null ],
+    [ "id_type", "classFeel_1_1FunctionSpace_1_1Element.html#a4a3ba7730aff8cf8d15592dd9ca639fc", null ],
+    [ "local_interpolant_type", "classFeel_1_1FunctionSpace_1_1Element.html#a14a11c74b9a189ca01a79b6eb1ace885", null ],
     [ "comp", "classFeel_1_1FunctionSpace_1_1Element.html#abdac810ae98cd82e98863f569f12fdc5", null ],
     [ "comp", "classFeel_1_1FunctionSpace_1_1Element.html#a76ea5e7bad5607fd6ad891d8c4d9aa8e", null ],
     [ "compSpace", "classFeel_1_1FunctionSpace_1_1Element.html#a385d5effa796d29751bc77c217be4418", null ],
@@ -40,9 +44,5 @@ var classFeel_1_1FunctionSpace_1_1Element =
     [ "symmetricGradient", "classFeel_1_1FunctionSpace_1_1Element.html#a23d09da3497086f665251f741a37ea66", null ],
     [ "worldComm", "classFeel_1_1FunctionSpace_1_1Element.html#acf0635e22f492ead3d0359ce6896e070", null ],
     [ "worldComm", "classFeel_1_1FunctionSpace_1_1Element.html#adacd543d54a8ed6e6011bd3deb8f9e5e", null ],
-    [ "worldsComm", "classFeel_1_1FunctionSpace_1_1Element.html#a21d8f42364c4d8b09b8bc953d765f151", null ],
-    [ "geoelement_type", "classFeel_1_1FunctionSpace_1_1Element.html#a0503cd364cfb9418c74f8ab0e4afc3a5", null ],
-    [ "grad_type", "classFeel_1_1FunctionSpace_1_1Element.html#a998e3beeedf6136a17610a0d1344c1f8", null ],
-    [ "id_type", "classFeel_1_1FunctionSpace_1_1Element.html#a4a3ba7730aff8cf8d15592dd9ca639fc", null ],
-    [ "local_interpolant_type", "classFeel_1_1FunctionSpace_1_1Element.html#a14a11c74b9a189ca01a79b6eb1ace885", null ]
+    [ "worldsComm", "classFeel_1_1FunctionSpace_1_1Element.html#a21d8f42364c4d8b09b8bc953d765f151", null ]
 ];

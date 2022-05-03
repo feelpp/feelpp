@@ -1,5 +1,7 @@
 var classFeel_1_1Bdf =
 [
+    [ "Bdf", "classFeel_1_1Bdf.html#af083687b49bcab19acd3ec19edf8a8be", null ],
+    [ "Bdf", "classFeel_1_1Bdf.html#ac3d2fcaade573fd55ea7a59c780b74fb", null ],
     [ "applyRemesh", "classFeel_1_1Bdf.html#ac33ecbb1aba64fccaba2c6109e925f3b", null ],
     [ "bdfOrder", "classFeel_1_1Bdf.html#a03475dd4b945f3cacea1303262533a85", null ],
     [ "bdfPrefix", "classFeel_1_1Bdf.html#a4374df9c223c98d8bb8395d5cfcb6836", null ],
@@ -29,7 +31,5 @@ var classFeel_1_1Bdf =
     [ "unknownPtr", "classFeel_1_1Bdf.html#aa5be87af331b85b9ce36cf8f15a5cd55", null ],
     [ "unknowns", "classFeel_1_1Bdf.html#a76ee3c1f12c7b950ca4c4fa72dd820b4", null ],
     [ "unknowns", "classFeel_1_1Bdf.html#a333b314406841f96f7d255506f24d036", null ],
-    [ "updateDerivative", "classFeel_1_1Bdf.html#a3c7776bd2a77a43a089fdf79cd6a69ec", null ],
-    [ "Bdf", "classFeel_1_1Bdf.html#af083687b49bcab19acd3ec19edf8a8be", null ],
-    [ "Bdf", "classFeel_1_1Bdf.html#ac3d2fcaade573fd55ea7a59c780b74fb", null ]
+    [ "updateDerivative", "classFeel_1_1Bdf.html#a3c7776bd2a77a43a089fdf79cd6a69ec", null ]
 ];

@@ -101,30 +101,17 @@ $(document).ready(function(){initNavTree('classFeel_1_1Bdf.html',''); initResiza
 
 <div class="header">
   <div class="summary">
-<a href="#friends">Friends</a> &#124;
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#friends">Friends</a> &#124;
 <a href="classFeel_1_1Bdf-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">Feel::Bdf&lt; SpaceType &gt; Class Template Reference<div class="ingroups"><a class="el" href="group__Feelpp.html">Feelpp</a> &raquo; <a class="el" href="group__SpaceTime.html">SpaceTime</a></div></div></div>
 </div><!--header-->
 <div class="contents">
-<a name="details" id="details"></a><h2 class="groupheader">Description</h2>
-<div class="textblock"><div class="compoundTemplParams">template&lt;typename SpaceType&gt;<br />
-class Feel::Bdf&lt; SpaceType &gt;</div><p >Backward differencing formula time discretization. </p>
-<p ><a class="el" href="classA.html">A</a> differential equation of the form</p>
-<p >\( M u&#39; = A u + f \)</p>
-<p >is discretized in time as</p>
-<p >\( M p&#39;(t_{k+1}) = A u_{k+1} + f_{k+1} \)</p>
-<p >where p denotes the polynomial of order n in t that interpolates \( (t_i,u_i) \) for \( i = k-n+1,...,k+1\).</p>
-<p >The approximative time derivative \( p&#39;(t_{k+1}) \) is a linear combination of state vectors \(u_i\):</p>
-<p >\( p&#39;(t_{k+1}) = \frac{1}{\Delta t} (\alpha_0 u_{k+1} - \sum_{i=0}^n \alpha_i u_{k+1-i} )\)</p>
-<p >Thus we have</p>
-<p >\( \frac{\alpha_0}{\Delta t} M u_{k+1} = A u_{k+1} + f + M \bar{p} \)</p>
-<p >with</p>
-<p >\( \bar{p} = \frac{1}{\Delta t} \sum_{i=1}^n \alpha_i u_{k+1-i} \)</p>
-<p >This class stores the n last state vectors in order to be able to calculate \( \bar{p} \). It also provides \( \alpha_i \) and can extrapolate the new state from the n last states with a polynomial of order n-1:</p>
-<p >\( u_{k+1} \approx \sum_{i=0}^{n-1} \beta_i u_{k-i} \) </p>
-</div><div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
+
+<p>Backward differencing formula time discretization.  
+ <a href="classFeel_1_1Bdf.html#details">More...</a></p>
+<div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Inheritance diagram for Feel::Bdf&lt; SpaceType &gt;:</div>
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">
 </div>
@@ -141,12 +128,6 @@ class Feel::Bdf&lt; SpaceType &gt;</div><p >Backward differencing formula time d
 </div>
 </div>
 <table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="friends" name="friends"></a>
-Friends</h2></td></tr>
-<tr class="memitem:ac98d07dd8f7b70e16ccb9a01abf56b9c"><td class="memItemLeft" align="right" valign="top"><a id="ac98d07dd8f7b70e16ccb9a01abf56b9c" name="ac98d07dd8f7b70e16ccb9a01abf56b9c"></a>
-class&#160;</td><td class="memItemRight" valign="bottom"><b>boost::serialization::access</b></td></tr>
-<tr class="separator:ac98d07dd8f7b70e16ccb9a01abf56b9c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
 Public Types</h2></td></tr>
 <tr class="memitem:a26c24ff0565651739569a4116a8c7081"><td class="memItemLeft" align="right" valign="top"><a id="a26c24ff0565651739569a4116a8c7081" name="a26c24ff0565651739569a4116a8c7081"></a>
@@ -541,6 +522,12 @@ virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>update</b> ()
 <a class="el" href="classFeel_1_1WorldComm.html">WorldComm</a> const &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>worldComm</b> () const</td></tr>
 <tr class="separator:a18ae67ec94505f0ac41cce4fa15b4708 inherit pub_methods_classFeel_1_1TSBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="friends" name="friends"></a>
+Friends</h2></td></tr>
+<tr class="memitem:ac98d07dd8f7b70e16ccb9a01abf56b9c"><td class="memItemLeft" align="right" valign="top"><a id="ac98d07dd8f7b70e16ccb9a01abf56b9c" name="ac98d07dd8f7b70e16ccb9a01abf56b9c"></a>
+class&#160;</td><td class="memItemRight" valign="bottom"><b>boost::serialization::access</b></td></tr>
+<tr class="separator:ac98d07dd8f7b70e16ccb9a01abf56b9c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="inherited" name="inherited"></a>
 Additional Inherited Members</h2></td></tr>
 <tr class="inherit_header pro_methods_classFeel_1_1TSBase"><td colspan="2" onclick="javascript:toggleInherit('pro_methods_classFeel_1_1TSBase')"><img src="closed.png" alt="-"/>&#160;Protected Member Functions inherited from <a class="el" href="classFeel_1_1TSBase.html">Feel::TSBase</a></td></tr>
@@ -651,6 +638,74 @@ Feel::Timer&#160;</td><td class="memItemRight" valign="bottom"><b>M_timer</b></t
 <tr class="memdesc:a75a9065775b868f193921da99eb0a3b2 inherit pro_attribs_classFeel_1_1TSBase"><td class="mdescLeft">&#160;</td><td class="mdescRight">mpi communicator tool <br /></td></tr>
 <tr class="separator:a75a9065775b868f193921da99eb0a3b2 inherit pro_attribs_classFeel_1_1TSBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><div class="compoundTemplParams">template&lt;typename SpaceType&gt;<br />
+class Feel::Bdf&lt; SpaceType &gt;</div><p >Backward differencing formula time discretization. </p>
+<p ><a class="el" href="classA.html">A</a> differential equation of the form</p>
+<p >\( M u&#39; = A u + f \)</p>
+<p >is discretized in time as</p>
+<p >\( M p&#39;(t_{k+1}) = A u_{k+1} + f_{k+1} \)</p>
+<p >where p denotes the polynomial of order n in t that interpolates \( (t_i,u_i) \) for \( i = k-n+1,...,k+1\).</p>
+<p >The approximative time derivative \( p&#39;(t_{k+1}) \) is a linear combination of state vectors \(u_i\):</p>
+<p >\( p&#39;(t_{k+1}) = \frac{1}{\Delta t} (\alpha_0 u_{k+1} - \sum_{i=0}^n \alpha_i u_{k+1-i} )\)</p>
+<p >Thus we have</p>
+<p >\( \frac{\alpha_0}{\Delta t} M u_{k+1} = A u_{k+1} + f + M \bar{p} \)</p>
+<p >with</p>
+<p >\( \bar{p} = \frac{1}{\Delta t} \sum_{i=1}^n \alpha_i u_{k+1-i} \)</p>
+<p >This class stores the n last state vectors in order to be able to calculate \( \bar{p} \). It also provides \( \alpha_i \) and can extrapolate the new state from the n last states with a polynomial of order n-1:</p>
+<p >\( u_{k+1} \approx \sum_{i=0}^{n-1} \beta_i u_{k-i} \) </p>
+</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a id="af083687b49bcab19acd3ec19edf8a8be" name="af083687b49bcab19acd3ec19edf8a8be"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af083687b49bcab19acd3ec19edf8a8be">&#9670;&nbsp;</a></span>Bdf()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename SpaceType &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classFeel_1_1Bdf.html">Feel::Bdf</a>&lt; SpaceType &gt;::Bdf </td>
+          <td>(</td>
+          <td class="paramtype">space_ptrtype const &amp;&#160;</td>
+          <td class="paramname"><em>space</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::string const &amp;&#160;</td>
+          <td class="paramname"><em>name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::string const &amp;&#160;</td>
+          <td class="paramname"><em>prefix</em> = <code>&quot;&quot;</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">po::variables_map const &amp;&#160;</td>
+          <td class="paramname"><em>vm</em> = <code><a class="el" href="classFeel_1_1Environment.html#ad681cb419cc2cae94d8bd5352fd54b21">Environment::vm</a>()</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Constructor. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">space</td><td>approximation space </td></tr>
+    <tr><td class="paramname">name</td><td>name of the BDF </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="a711cc6daf9eaad0dbc6f408328919786" name="a711cc6daf9eaad0dbc6f408328919786"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a711cc6daf9eaad0dbc6f408328919786">&#9670;&nbsp;</a></span>functionSpace()</h2>
@@ -819,58 +874,6 @@ template&lt;typename container_type &gt; </div>
 </dl>
 
 <p class="reference">Referenced by <a class="el" href="classFeel_1_1Bdf.html#abf1f13f924da97e15ac6e626882aaaaf">Feel::Bdf&lt; SpaceType &gt;::next()</a>, and <a class="el" href="classFeel_1_1Bdf.html#acc3409181de12ed70489772a94fe7eaa">Feel::Bdf&lt; SpaceType &gt;::polyDerivCoefficient()</a>.</p>
-
-</div>
-</div>
-<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="af083687b49bcab19acd3ec19edf8a8be" name="af083687b49bcab19acd3ec19edf8a8be"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af083687b49bcab19acd3ec19edf8a8be">&#9670;&nbsp;</a></span>Bdf()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename SpaceType &gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classFeel_1_1Bdf.html">Feel::Bdf</a>&lt; SpaceType &gt;::Bdf </td>
-          <td>(</td>
-          <td class="paramtype">space_ptrtype const &amp;&#160;</td>
-          <td class="paramname"><em>space</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">std::string const &amp;&#160;</td>
-          <td class="paramname"><em>name</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">std::string const &amp;&#160;</td>
-          <td class="paramname"><em>prefix</em> = <code>&quot;&quot;</code>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">po::variables_map const &amp;&#160;</td>
-          <td class="paramname"><em>vm</em> = <code><a class="el" href="classFeel_1_1Environment.html#ad681cb419cc2cae94d8bd5352fd54b21">Environment::vm</a>()</code>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Constructor. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">space</td><td>approximation space </td></tr>
-    <tr><td class="paramname">name</td><td>name of the BDF </td></tr>
-  </table>
-  </dd>
-</dl>
 
 </div>
 </div>

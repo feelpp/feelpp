@@ -106,13 +106,10 @@ $(document).ready(function(){initNavTree('classFeel_1_1AboutPerson.html',''); in
   <div class="headertitle"><div class="title">Feel::AboutPerson Class Reference</div></div>
 </div><!--header-->
 <div class="contents">
-<a name="details" id="details"></a><h2 class="groupheader">Description</h2>
-<div class="textblock"><p >This structure is used to store information about a person or developer. </p>
-<p >It can store the person's name, a task, an email address and a link to a home page. This class is intended for use in the <a class="el" href="classFeel_1_1AboutData.html" title="This class is used to store information about a program.">AboutData</a> class, but it can be used elsewhere as well. Normally you should at least define the person's name.</p>
-<p >Example Usage within a main():</p>
-<p ><a class="el" href="classFeel_1_1AboutData.html" title="This class is used to store information about a program.">AboutData</a> about("hello", "0.1", "A Feel version of Hello, world!"), AboutData::License_LGPL, "Copyright (c) 2003 Developer");</p>
-<p >about.addAuthor("Joe Developer", "developer", "joe@host.com", 0); about.addCredit("Joe User", "A lot of bug reports"), "joe.user@host.org", 0); </p>
-</div><div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
+
+<p>This structure is used to store information about a person or developer.  
+ <a href="classFeel_1_1AboutPerson.html#details">More...</a></p>
+<div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Collaboration diagram for Feel::AboutPerson:</div>
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">
 </div>
@@ -145,6 +142,64 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:a7a34f0ea39e1dfbc118f76e03ca3f1c1"><td class="mdescLeft">&#160;</td><td class="mdescRight">The home page or a relevant link.  <a href="classFeel_1_1AboutPerson.html#a7a34f0ea39e1dfbc118f76e03ca3f1c1">More...</a><br /></td></tr>
 <tr class="separator:a7a34f0ea39e1dfbc118f76e03ca3f1c1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p >This structure is used to store information about a person or developer. </p>
+<p >It can store the person's name, a task, an email address and a link to a home page. This class is intended for use in the <a class="el" href="classFeel_1_1AboutData.html" title="This class is used to store information about a program.">AboutData</a> class, but it can be used elsewhere as well. Normally you should at least define the person's name.</p>
+<p >Example Usage within a main():</p>
+<p ><a class="el" href="classFeel_1_1AboutData.html" title="This class is used to store information about a program.">AboutData</a> about("hello", "0.1", "A Feel version of Hello, world!"), AboutData::License_LGPL, "Copyright (c) 2003 Developer");</p>
+<p >about.addAuthor("Joe Developer", "developer", "joe@host.com", 0); about.addCredit("Joe User", "A lot of bug reports"), "joe.user@host.org", 0); </p>
+</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a id="a9340ef525ac4f0af07180f09837eb85f" name="a9340ef525ac4f0af07180f09837eb85f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9340ef525ac4f0af07180f09837eb85f">&#9670;&nbsp;</a></span>AboutPerson()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">Feel::AboutPerson::AboutPerson </td>
+          <td>(</td>
+          <td class="paramtype">std::string&#160;</td>
+          <td class="paramname"><em>_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::string&#160;</td>
+          <td class="paramname"><em>_task</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::string&#160;</td>
+          <td class="paramname"><em>_emailAddress</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::string&#160;</td>
+          <td class="paramname"><em>_webAddress</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Convenience constructor. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">name</td><td>The name of the person.</td></tr>
+    <tr><td class="paramname">task</td><td>The task of this person. This string should be marked for translation, e.g.</td></tr>
+    <tr><td class="paramname">emailAddress</td><td>The email address of the person.</td></tr>
+    <tr><td class="paramname">webAddress</td><td>Home page of the person. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="af5d2f579d45ed0abb84c41e077feb37b" name="af5d2f579d45ed0abb84c41e077feb37b"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#af5d2f579d45ed0abb84c41e077feb37b">&#9670;&nbsp;</a></span>emailAddress()</h2>
@@ -223,58 +278,6 @@ Public Member Functions</h2></td></tr>
 
 <p>The home page or a relevant link. </p>
 <dl class="section return"><dt>Returns</dt><dd>the persons home page (can be std::string, if it has been constructed with a null home page) </dd></dl>
-
-</div>
-</div>
-<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="a9340ef525ac4f0af07180f09837eb85f" name="a9340ef525ac4f0af07180f09837eb85f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9340ef525ac4f0af07180f09837eb85f">&#9670;&nbsp;</a></span>AboutPerson()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">Feel::AboutPerson::AboutPerson </td>
-          <td>(</td>
-          <td class="paramtype">std::string&#160;</td>
-          <td class="paramname"><em>_name</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">std::string&#160;</td>
-          <td class="paramname"><em>_task</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">std::string&#160;</td>
-          <td class="paramname"><em>_emailAddress</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">std::string&#160;</td>
-          <td class="paramname"><em>_webAddress</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Convenience constructor. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">name</td><td>The name of the person.</td></tr>
-    <tr><td class="paramname">task</td><td>The task of this person. This string should be marked for translation, e.g.</td></tr>
-    <tr><td class="paramname">emailAddress</td><td>The email address of the person.</td></tr>
-    <tr><td class="paramname">webAddress</td><td>Home page of the person. </td></tr>
-  </table>
-  </dd>
-</dl>
 
 </div>
 </div>

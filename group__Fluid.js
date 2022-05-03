@@ -81,6 +81,7 @@ var group__Fluid =
     [ "Feel::FeelModels::FluidMechanics< ConvexType, BasisVelocityType, BasisPressureType >::BodyBoundaryCondition", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html", [
       [ "ElasticBehavior", "structFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition_1_1ElasticBehavior.html", null ],
       [ "FieldTag", "structFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition_1_1FieldTag.html", null ],
+      [ "evaluate_torques_type", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a90b39f93b054fd60fefc72ae3a53692a", null ],
       [ "attachToNBodyArticulated", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#af3f201316c82d15ef7d0430bb8db6a8b", null ],
       [ "fluidForces", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a46bd6628ab9f5ac621ff9b7a7d5cefac", null ],
       [ "getNBodyArticulated", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a5b25a73a4cde8b0759203756f0c34ec2", null ],
@@ -90,8 +91,7 @@ var group__Fluid =
       [ "momentOfInertia_inertialFrame", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a2e28ec256147103939120c97ef800393", null ],
       [ "rigidRotationMatrix", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#ad7b799f4c667938bccb2eef7325cb18b", null ],
       [ "updateDisplacement", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a75ad83a6c90c90f91d681fda2c45d7fc", null ],
-      [ "updateElasticVelocityWithRotation", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a8f36d61ff85979a4178036813657c689", null ],
-      [ "evaluate_torques_type", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a90b39f93b054fd60fefc72ae3a53692a", null ]
+      [ "updateElasticVelocityWithRotation", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a8f36d61ff85979a4178036813657c689", null ]
     ] ],
     [ "Feel::FeelModels::FluidMechanics< ConvexType, BasisVelocityType, BasisPressureType >::BodySetBoundaryCondition", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodySetBoundaryCondition.html", null ],
     [ "Feel::RemeshInterpolation", "classFeel_1_1RemeshInterpolation.html", [

@@ -1,4 +1,4 @@
-var annotated =
+var annotated_dup =
 [
     [ "detail", null, [
       [ "Env", "classdetail_1_1Env.html", null ]

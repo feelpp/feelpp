@@ -105,21 +105,10 @@ $(document).ready(function(){initNavTree('classFeel_1_1Periodic.html',''); initR
   <div class="headertitle"><div class="title">Feel::Periodic&lt; T &gt; Class Template Reference</div></div>
 </div><!--header-->
 <div class="contents">
-<a name="details" id="details"></a><h2 class="groupheader">Description</h2>
-<div class="textblock"><div class="compoundTemplParams">template&lt;typename T = double&gt;<br />
-class Feel::Periodic&lt; T &gt;</div><p ><a class="el" href="classFeel_1_1Periodic.html" title="Periodic class holder.">Periodic</a> class holder. </p>
-<p >the periodic condition is set both as template parameter for the functionspace and constructor parameter. In the former the tags that are periodic/linked together are set as well as the fact that we have a periodic condition. In the former we set the translation Trans that allow to link the dofs of tag2 and tag1.</p>
-<p >This data structure is then passed to the <a class="el" href="classFeel_1_1Dof.html" title="class that represents a degree of freedom">Dof</a> class as well that will actually do the real work to treat the periodic condition. Its job is to set the same dof identifier for the dof on Tag2 as the <a class="el" href="classFeel_1_1Dof.html" title="class that represents a degree of freedom">Dof</a> on Tag1 with respect to the translation Trans. The 'periodic condition' check must be done for all entities of an element (vertex,edge,face,volume) even for the volume (think P0 discontinuous). During the check the dof points coordinates of Tag1 are put into a data structure DS as well as the corresponding dof identifier for rapid localisation then the dof points are translation by Trans and look for in DS. One and only one point must be found, then the dof identifier of the original point in Tag2 is set to the one in Tag1.</p>
-<p >Issues:</p>
-<ul>
-<li>the dof are constructed by entity (vertex,edge,face,volume) so for each entity one must check that the dof points belongs to either Tag1 or Tag2. This is not yet clear how to do this.</li>
-<li>the data structure DS must be efficient to find the proper point in Tag1 list, see sedgewick for reference.</li>
-<li><p class="startli">the implementation of the periodic logic could be done either in dof or in periodic, with the former we have access to all information a priori but <a class="el" href="classFeel_1_1Dof.html" title="class that represents a degree of freedom">Dof</a> get some added weight, with the latter we need to pass extra information and we make sure that the <a class="el" href="classFeel_1_1Dof.html" title="class that represents a degree of freedom">Dof</a> stays more or less as it is. The other issue is that we must implement the same interface for all related periodic conditions.</p>
-<dl class="section author"><dt>Author</dt><dd>Christophe Prud'homme </dd></dl>
-<dl class="section see"><dt>See also</dt><dd></dd></dl>
-</li>
-</ul>
-</div><div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
+
+<p><a class="el" href="classFeel_1_1Periodic.html" title="Periodic class holder.">Periodic</a> class holder.  
+ <a href="classFeel_1_1Periodic.html#details">More...</a></p>
+<div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Inheritance diagram for Feel::Periodic&lt; T &gt;:</div>
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">
 </div>
@@ -176,7 +165,21 @@ static <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItem
 <tr class="memdesc:ab4e2f242370e8dedc63e1ee037ef7a10"><td class="mdescLeft">&#160;</td><td class="mdescRight">return whether the condition is periodic or not <br /></td></tr>
 <tr class="separator:ab4e2f242370e8dedc63e1ee037ef7a10"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-</div><!-- contents -->
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><div class="compoundTemplParams">template&lt;typename T = double&gt;<br />
+class Feel::Periodic&lt; T &gt;</div><p ><a class="el" href="classFeel_1_1Periodic.html" title="Periodic class holder.">Periodic</a> class holder. </p>
+<p >the periodic condition is set both as template parameter for the functionspace and constructor parameter. In the former the tags that are periodic/linked together are set as well as the fact that we have a periodic condition. In the former we set the translation Trans that allow to link the dofs of tag2 and tag1.</p>
+<p >This data structure is then passed to the <a class="el" href="classFeel_1_1Dof.html" title="class that represents a degree of freedom">Dof</a> class as well that will actually do the real work to treat the periodic condition. Its job is to set the same dof identifier for the dof on Tag2 as the <a class="el" href="classFeel_1_1Dof.html" title="class that represents a degree of freedom">Dof</a> on Tag1 with respect to the translation Trans. The 'periodic condition' check must be done for all entities of an element (vertex,edge,face,volume) even for the volume (think P0 discontinuous). During the check the dof points coordinates of Tag1 are put into a data structure DS as well as the corresponding dof identifier for rapid localisation then the dof points are translation by Trans and look for in DS. One and only one point must be found, then the dof identifier of the original point in Tag2 is set to the one in Tag1.</p>
+<p >Issues:</p>
+<ul>
+<li>the dof are constructed by entity (vertex,edge,face,volume) so for each entity one must check that the dof points belongs to either Tag1 or Tag2. This is not yet clear how to do this.</li>
+<li>the data structure DS must be efficient to find the proper point in Tag1 list, see sedgewick for reference.</li>
+<li><p class="startli">the implementation of the periodic logic could be done either in dof or in periodic, with the former we have access to all information a priori but <a class="el" href="classFeel_1_1Dof.html" title="class that represents a degree of freedom">Dof</a> get some added weight, with the latter we need to pass extra information and we make sure that the <a class="el" href="classFeel_1_1Dof.html" title="class that represents a degree of freedom">Dof</a> stays more or less as it is. The other issue is that we must implement the same interface for all related periodic conditions.</p>
+<dl class="section author"><dt>Author</dt><dd>Christophe Prud'homme </dd></dl>
+<dl class="section see"><dt>See also</dt><dd></dd></dl>
+</li>
+</ul>
+</div></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->

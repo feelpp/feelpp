@@ -107,18 +107,10 @@ $(document).ready(function(){initNavTree('classnlohmann_1_1detail_1_1json__sax__
   <div class="headertitle"><div class="title">nlohmann::detail::json_sax_dom_parser&lt; BasicJsonType &gt; Class Template Reference</div></div>
 </div><!--header-->
 <div class="contents">
-<a name="details" id="details"></a><h2 class="groupheader">Description</h2>
-<div class="textblock"><div class="compoundTemplParams">template&lt;typename BasicJsonType&gt;<br />
-class nlohmann::detail::json_sax_dom_parser&lt; BasicJsonType &gt;</div><p >SAX implementation to create a JSON value from SAX events. </p>
-<p >This class implements the <a class="el" href="structnlohmann_1_1json__sax.html">json_sax</a> interface and processes the SAX events to create a JSON value which makes it basically a DOM parser. The structure or hierarchy of the JSON value is managed by the stack <code>ref_stack</code> which contains a pointer to the respective array or object for each recursion depth.</p>
-<p >After successful parsing, the value that is passed by reference to the constructor contains the parsed value.</p>
-<dl class="tparams"><dt>Template Parameters</dt><dd>
-  <table class="tparams">
-    <tr><td class="paramname">BasicJsonType</td><td>the JSON type </td></tr>
-  </table>
-  </dd>
-</dl>
-</div><div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
+
+<p>SAX implementation to create a JSON value from SAX events.  
+ <a href="classnlohmann_1_1detail_1_1json__sax__dom__parser.html#details">More...</a></p>
+<div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Collaboration diagram for nlohmann::detail::json_sax_dom_parser&lt; BasicJsonType &gt;:</div>
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">
 </div>
@@ -205,7 +197,18 @@ template&lt;class Exception &gt; </td></tr>
 <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>string</b> (string_t &amp;<a class="el" href="group__DSEL-Variational-Formulation.html#ga804803997f88c76948f600cb3835b99d">val</a>)</td></tr>
 <tr class="separator:a851d965082d20a726138f5d0330dc7d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><div class="compoundTemplParams">template&lt;typename BasicJsonType&gt;<br />
+class nlohmann::detail::json_sax_dom_parser&lt; BasicJsonType &gt;</div><p >SAX implementation to create a JSON value from SAX events. </p>
+<p >This class implements the <a class="el" href="structnlohmann_1_1json__sax.html">json_sax</a> interface and processes the SAX events to create a JSON value which makes it basically a DOM parser. The structure or hierarchy of the JSON value is managed by the stack <code>ref_stack</code> which contains a pointer to the respective array or object for each recursion depth.</p>
+<p >After successful parsing, the value that is passed by reference to the constructor contains the parsed value.</p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">BasicJsonType</td><td>the JSON type </td></tr>
+  </table>
+  </dd>
+</dl>
+</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="afc50fee0a92ce84afb84041ebbdfba80" name="afc50fee0a92ce84afb84041ebbdfba80"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#afc50fee0a92ce84afb84041ebbdfba80">&#9670;&nbsp;</a></span>json_sax_dom_parser()</h2>
 

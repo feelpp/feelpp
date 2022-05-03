@@ -107,10 +107,10 @@ $(document).ready(function(){initNavTree('classnlohmann_1_1detail_1_1binary__rea
   <div class="headertitle"><div class="title">nlohmann::detail::binary_reader&lt; BasicJsonType, InputAdapterType, SAX &gt; Class Template Reference</div></div>
 </div><!--header-->
 <div class="contents">
-<a name="details" id="details"></a><h2 class="groupheader">Description</h2>
-<div class="textblock"><div class="compoundTemplParams">template&lt;typename BasicJsonType, typename InputAdapterType, typename SAX = json_sax_dom_parser&lt;BasicJsonType&gt;&gt;<br />
-class nlohmann::detail::binary_reader&lt; BasicJsonType, InputAdapterType, SAX &gt;</div><p >deserialization of CBOR, MessagePack, and UBJSON values </p>
-</div><div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
+
+<p>deserialization of CBOR, MessagePack, and UBJSON values  
+ <a href="classnlohmann_1_1detail_1_1binary__reader.html#details">More...</a></p>
+<div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Collaboration diagram for nlohmann::detail::binary_reader&lt; BasicJsonType, InputAdapterType, SAX &gt;:</div>
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">
 </div>
@@ -170,40 +170,10 @@ json_sax_t const <a class="el" href="classbool.html">bool</a>&#160;</td><td clas
 json_sax_t const <a class="el" href="classbool.html">bool</a> const <a class="el" href="namespacenlohmann_1_1detail.html#a58bb1ef1a9ad287a9cfaf1855784d9ac">cbor_tag_handler_t</a>&#160;</td><td class="memItemRight" valign="bottom"><b>tag_handler</b></td></tr>
 <tr class="separator:afa06e1a22f34f9627be81433e228d5f9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<h2 class="groupheader">Member Function Documentation</h2>
-<a id="a652bd78a42119c77fcf40c79451fccb3" name="a652bd78a42119c77fcf40c79451fccb3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a652bd78a42119c77fcf40c79451fccb3">&#9670;&nbsp;</a></span>__attribute__()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename BasicJsonType , typename InputAdapterType , typename SAX  = json_sax_dom_parser&lt;BasicJsonType&gt;&gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classnlohmann_1_1detail_1_1binary__reader.html">nlohmann::detail::binary_reader</a>&lt; BasicJsonType, InputAdapterType, SAX &gt;::__attribute__ </td>
-          <td>(</td>
-          <td class="paramtype">(__nonnull__(3))&#160;</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">format</td><td>the binary format to parse </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">sax_</td><td>a SAX event processor </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">strict</td><td>whether to expect the input to be consumed completed </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">tag_handler</td><td>how to treat CBOR tags</td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>whether parsing was successful </dd></dl>
-
-<p class="reference">References <a class="el" href="namespacenlohmann_1_1detail.html#a59e696b1dad6d0d99c172ac4518c2042a49642fb732aa2e112188fba1f9d3ef7f">nlohmann::detail::array_end</a>, <a class="el" href="namespacenlohmann_1_1detail.html#a59e696b1dad6d0d99c172ac4518c2042aa4388a3d92419edbb1c6efd4d52461f3">nlohmann::detail::array_start</a>, <a class="el" href="structnlohmann_1_1json__sax.html#a38c2dbde07138cc436ea7fbf22c1e92d">nlohmann::json_sax&lt; BasicJsonType &gt;::binary()</a>, <a class="el" href="structnlohmann_1_1json__sax.html#a82ed080814fa656191a537284bb0c575">nlohmann::json_sax&lt; BasicJsonType &gt;::boolean()</a>, <a class="el" href="namespaceFeel.html#abdab447afcf746e7e621c56c1d6dc06b">Feel::elements()</a>, <a class="el" href="structnlohmann_1_1json__sax.html#a235ee975617f28e6a996d1e36a282312">nlohmann::json_sax&lt; BasicJsonType &gt;::end_array()</a>, <a class="el" href="structnlohmann_1_1json__sax.html#ad0c722d53ff97be700ccf6a9468bd456">nlohmann::json_sax&lt; BasicJsonType &gt;::end_object()</a>, <a class="el" href="classnlohmann_1_1detail_1_1json__sax__dom__parser.html#afc50fee0a92ce84afb84041ebbdfba80">nlohmann::detail::json_sax_dom_parser&lt; BasicJsonType &gt;::json_sax_dom_parser()</a>, <a class="el" href="structnlohmann_1_1json__sax.html#a2e0c7ecd80b18d18a8cc76f71cfc2028">nlohmann::json_sax&lt; BasicJsonType &gt;::key()</a>, <a class="el" href="namespacenlohmann_1_1detail.html#a59e696b1dad6d0d99c172ac4518c2042a3c6e0b8a9c15224a8228b9a98ca1531d">nlohmann::detail::key</a>, <a class="el" href="structnlohmann_1_1json__sax.html#a0ad26edef3f8d530dcec3192bba82df6">nlohmann::json_sax&lt; BasicJsonType &gt;::null()</a>, <a class="el" href="structnlohmann_1_1json__sax.html#ae7c31614e8a82164d2d7f8dbf4671b25">nlohmann::json_sax&lt; BasicJsonType &gt;::number_float()</a>, <a class="el" href="structnlohmann_1_1json__sax.html#affa7a78b8e9cc9cc3ac99927143142a5">nlohmann::json_sax&lt; BasicJsonType &gt;::number_integer()</a>, <a class="el" href="structnlohmann_1_1json__sax.html#ad9b253083e0509923ba195136f49face">nlohmann::json_sax&lt; BasicJsonType &gt;::number_unsigned()</a>, <a class="el" href="namespacenlohmann_1_1detail.html#a59e696b1dad6d0d99c172ac4518c2042af63e2a2468a37aa4f394fcc3bcb8249c">nlohmann::detail::object_end</a>, <a class="el" href="namespacenlohmann_1_1detail.html#a59e696b1dad6d0d99c172ac4518c2042ae73f17027cb0acbb537f29d0a6944b26">nlohmann::detail::object_start</a>, <a class="el" href="structnlohmann_1_1json__sax.html#a60287e3bd85f489e04c83f7e3b76e613">nlohmann::json_sax&lt; BasicJsonType &gt;::parse_error()</a>, <a class="el" href="structnlohmann_1_1json__sax.html#a5c53878cf08d463eb4e7ca0270532572">nlohmann::json_sax&lt; BasicJsonType &gt;::start_array()</a>, <a class="el" href="structnlohmann_1_1json__sax.html#a0671528b0debb5a348169d61f0382a0f">nlohmann::json_sax&lt; BasicJsonType &gt;::start_object()</a>, <a class="el" href="structnlohmann_1_1json__sax.html#a07eab82f6c82d606787eee9ad73d2bda">nlohmann::json_sax&lt; BasicJsonType &gt;::string()</a>, <a class="el" href="group__DSEL-Variational-Formulation.html#ga804803997f88c76948f600cb3835b99d">val()</a>, and <a class="el" href="namespacenlohmann_1_1detail.html#a59e696b1dad6d0d99c172ac4518c2042a2063c1608d6e0baf80249c42e2be5804">nlohmann::detail::value</a>.</p>
-
-</div>
-</div>
-<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><div class="compoundTemplParams">template&lt;typename BasicJsonType, typename InputAdapterType, typename SAX = json_sax_dom_parser&lt;BasicJsonType&gt;&gt;<br />
+class nlohmann::detail::binary_reader&lt; BasicJsonType, InputAdapterType, SAX &gt;</div><p >deserialization of CBOR, MessagePack, and UBJSON values </p>
+</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a2aee4c3507eca623f7cec32544fdc5b2" name="a2aee4c3507eca623f7cec32544fdc5b2"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a2aee4c3507eca623f7cec32544fdc5b2">&#9670;&nbsp;</a></span>binary_reader()</h2>
 
@@ -237,6 +207,39 @@ template&lt;typename BasicJsonType , typename InputAdapterType , typename SAX  =
   </table>
   </dd>
 </dl>
+
+</div>
+</div>
+<h2 class="groupheader">Member Function Documentation</h2>
+<a id="a652bd78a42119c77fcf40c79451fccb3" name="a652bd78a42119c77fcf40c79451fccb3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a652bd78a42119c77fcf40c79451fccb3">&#9670;&nbsp;</a></span>__attribute__()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename BasicJsonType , typename InputAdapterType , typename SAX  = json_sax_dom_parser&lt;BasicJsonType&gt;&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classnlohmann_1_1detail_1_1binary__reader.html">nlohmann::detail::binary_reader</a>&lt; BasicJsonType, InputAdapterType, SAX &gt;::__attribute__ </td>
+          <td>(</td>
+          <td class="paramtype">(__nonnull__(3))&#160;</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">format</td><td>the binary format to parse </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">sax_</td><td>a SAX event processor </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">strict</td><td>whether to expect the input to be consumed completed </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">tag_handler</td><td>how to treat CBOR tags</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>whether parsing was successful </dd></dl>
+
+<p class="reference">References <a class="el" href="namespacenlohmann_1_1detail.html#a59e696b1dad6d0d99c172ac4518c2042a49642fb732aa2e112188fba1f9d3ef7f">nlohmann::detail::array_end</a>, <a class="el" href="namespacenlohmann_1_1detail.html#a59e696b1dad6d0d99c172ac4518c2042aa4388a3d92419edbb1c6efd4d52461f3">nlohmann::detail::array_start</a>, <a class="el" href="structnlohmann_1_1json__sax.html#a38c2dbde07138cc436ea7fbf22c1e92d">nlohmann::json_sax&lt; BasicJsonType &gt;::binary()</a>, <a class="el" href="structnlohmann_1_1json__sax.html#a82ed080814fa656191a537284bb0c575">nlohmann::json_sax&lt; BasicJsonType &gt;::boolean()</a>, <a class="el" href="namespaceFeel.html#abdab447afcf746e7e621c56c1d6dc06b">Feel::elements()</a>, <a class="el" href="structnlohmann_1_1json__sax.html#a235ee975617f28e6a996d1e36a282312">nlohmann::json_sax&lt; BasicJsonType &gt;::end_array()</a>, <a class="el" href="structnlohmann_1_1json__sax.html#ad0c722d53ff97be700ccf6a9468bd456">nlohmann::json_sax&lt; BasicJsonType &gt;::end_object()</a>, <a class="el" href="classnlohmann_1_1detail_1_1json__sax__dom__parser.html#afc50fee0a92ce84afb84041ebbdfba80">nlohmann::detail::json_sax_dom_parser&lt; BasicJsonType &gt;::json_sax_dom_parser()</a>, <a class="el" href="structnlohmann_1_1json__sax.html#a2e0c7ecd80b18d18a8cc76f71cfc2028">nlohmann::json_sax&lt; BasicJsonType &gt;::key()</a>, <a class="el" href="namespacenlohmann_1_1detail.html#a59e696b1dad6d0d99c172ac4518c2042a3c6e0b8a9c15224a8228b9a98ca1531d">nlohmann::detail::key</a>, <a class="el" href="structnlohmann_1_1json__sax.html#a0ad26edef3f8d530dcec3192bba82df6">nlohmann::json_sax&lt; BasicJsonType &gt;::null()</a>, <a class="el" href="structnlohmann_1_1json__sax.html#ae7c31614e8a82164d2d7f8dbf4671b25">nlohmann::json_sax&lt; BasicJsonType &gt;::number_float()</a>, <a class="el" href="structnlohmann_1_1json__sax.html#affa7a78b8e9cc9cc3ac99927143142a5">nlohmann::json_sax&lt; BasicJsonType &gt;::number_integer()</a>, <a class="el" href="structnlohmann_1_1json__sax.html#ad9b253083e0509923ba195136f49face">nlohmann::json_sax&lt; BasicJsonType &gt;::number_unsigned()</a>, <a class="el" href="namespacenlohmann_1_1detail.html#a59e696b1dad6d0d99c172ac4518c2042af63e2a2468a37aa4f394fcc3bcb8249c">nlohmann::detail::object_end</a>, <a class="el" href="namespacenlohmann_1_1detail.html#a59e696b1dad6d0d99c172ac4518c2042ae73f17027cb0acbb537f29d0a6944b26">nlohmann::detail::object_start</a>, <a class="el" href="structnlohmann_1_1json__sax.html#a60287e3bd85f489e04c83f7e3b76e613">nlohmann::json_sax&lt; BasicJsonType &gt;::parse_error()</a>, <a class="el" href="structnlohmann_1_1json__sax.html#a5c53878cf08d463eb4e7ca0270532572">nlohmann::json_sax&lt; BasicJsonType &gt;::start_array()</a>, <a class="el" href="structnlohmann_1_1json__sax.html#a0671528b0debb5a348169d61f0382a0f">nlohmann::json_sax&lt; BasicJsonType &gt;::start_object()</a>, <a class="el" href="structnlohmann_1_1json__sax.html#a07eab82f6c82d606787eee9ad73d2bda">nlohmann::json_sax&lt; BasicJsonType &gt;::string()</a>, <a class="el" href="group__DSEL-Variational-Formulation.html#ga804803997f88c76948f600cb3835b99d">val()</a>, and <a class="el" href="namespacenlohmann_1_1detail.html#a59e696b1dad6d0d99c172ac4518c2042a2063c1608d6e0baf80249c42e2be5804">nlohmann::detail::value</a>.</p>
 
 </div>
 </div>

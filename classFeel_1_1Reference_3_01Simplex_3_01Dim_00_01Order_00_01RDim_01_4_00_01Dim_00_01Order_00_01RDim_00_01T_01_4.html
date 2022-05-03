@@ -101,7 +101,7 @@ $(document).ready(function(){initNavTree('classFeel_1_1Reference_3_01Simplex_3_0
 
 <div class="header">
   <div class="summary">
-<a href="#nested-classes">Instances and minimal complete definitions</a> &#124;
+<a href="#nested-classes">Classes</a> &#124;
 <a href="#pub-types">Public Types</a> &#124;
 <a href="classFeel_1_1Reference_3_01Simplex_3_01Dim_00_01Order_00_01RDim_01_4_00_01Dim_00_01Order_00_01RDim_00_01T_01_4-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">Feel::Reference&lt; Simplex&lt; Dim, Order, RDim &gt;, Dim, Order, RDim, T &gt; Class Template Reference</div></div>
@@ -124,6 +124,58 @@ $(document).ready(function(){initNavTree('classFeel_1_1Reference_3_01Simplex_3_0
 </div>
 </div>
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
+Public Types</h2></td></tr>
+<tr class="memitem:a70092698a50a9baabf1b1a039f8b6b65"><td class="memItemLeft" align="right" valign="top"><a id="a70092698a50a9baabf1b1a039f8b6b65" name="a70092698a50a9baabf1b1a039f8b6b65"></a>
+typedef <a class="el" href="classFeel_1_1Simplex.html">Simplex</a>&lt; Dim, <a class="el" href="structFeel_1_1Order.html">Order</a>, RDim &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>super</b></td></tr>
+<tr class="separator:a70092698a50a9baabf1b1a039f8b6b65"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="inherit_header pub_types_classFeel_1_1Simplex"><td colspan="2" onclick="javascript:toggleInherit('pub_types_classFeel_1_1Simplex')"><img src="closed.png" alt="-"/>&#160;Public Types inherited from <a class="el" href="classFeel_1_1Simplex.html">Feel::Simplex&lt; Dim, Order, RDim &gt;</a></td></tr>
+<tr class="memitem:a89dc5e4edbd7ea13a8569c599f310e6a inherit pub_types_classFeel_1_1Simplex"><td class="memItemLeft" align="right" valign="top"><a id="a89dc5e4edbd7ea13a8569c599f310e6a" name="a89dc5e4edbd7ea13a8569c599f310e6a"></a>
+typedef mpl::if_&lt; mpl::greater_equal&lt; <a class="el" href="classboost_1_1mpl_1_1int__.html">mpl::int_</a>&lt; nDim &gt;, <a class="el" href="classboost_1_1mpl_1_1int__.html">mpl::int_</a>&lt; 2 &gt; &gt;, mpl::identity&lt; line_permutations &gt;, mpl::identity&lt; no_permutation &gt; &gt;::type::type&#160;</td><td class="memItemRight" valign="bottom"><b>edge_permutation_type</b></td></tr>
+<tr class="separator:a89dc5e4edbd7ea13a8569c599f310e6a inherit pub_types_classFeel_1_1Simplex"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa7fada43e78048a505715f7468332746 inherit pub_types_classFeel_1_1Simplex"><td class="memItemLeft" align="right" valign="top"><a id="aa7fada43e78048a505715f7468332746" name="aa7fada43e78048a505715f7468332746"></a>
+typedef mpl::at&lt; map_entity_to_point_t, <a class="el" href="classboost_1_1mpl_1_1int__.html">mpl::int_</a>&lt; nDim &gt; &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>edge_to_point_t</b></td></tr>
+<tr class="separator:aa7fada43e78048a505715f7468332746 inherit pub_types_classFeel_1_1Simplex"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a83877f90aff6310e5a6b5e452475f49d inherit pub_types_classFeel_1_1Simplex"><td class="memItemLeft" align="right" valign="top"><a id="a83877f90aff6310e5a6b5e452475f49d" name="a83877f90aff6310e5a6b5e452475f49d"></a>
+typedef mpl::at&lt; v_edges_t, <a class="el" href="classboost_1_1mpl_1_1int__.html">mpl::int_</a>&lt; real_dimension &gt; &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>edge_type</b></td></tr>
+<tr class="separator:a83877f90aff6310e5a6b5e452475f49d inherit pub_types_classFeel_1_1Simplex"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acd3984596429bfe1af13ad7fafb8f3a3 inherit pub_types_classFeel_1_1Simplex"><td class="memItemLeft" align="right" valign="top"><a id="acd3984596429bfe1af13ad7fafb8f3a3" name="acd3984596429bfe1af13ad7fafb8f3a3"></a>
+typedef mpl::at&lt; elements_t, <a class="el" href="classboost_1_1mpl_1_1int__.html">mpl::int_</a>&lt; nDim &gt; &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>element_type</b></td></tr>
+<tr class="separator:acd3984596429bfe1af13ad7fafb8f3a3 inherit pub_types_classFeel_1_1Simplex"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a70f1fa8a8b5ed16963dea99f277f0b07 inherit pub_types_classFeel_1_1Simplex"><td class="memItemLeft" align="right" valign="top"><a id="a70f1fa8a8b5ed16963dea99f277f0b07" name="a70f1fa8a8b5ed16963dea99f277f0b07"></a>
+typedef mpl::if_&lt; mpl::equal_to&lt; <a class="el" href="classboost_1_1mpl_1_1int__.html">mpl::int_</a>&lt; nDim &gt;, <a class="el" href="classboost_1_1mpl_1_1int__.html">mpl::int_</a>&lt; 3 &gt; &gt;, mpl::identity&lt; triangular_faces_type &gt;, mpl::identity&lt; no_permutation &gt; &gt;::type::type&#160;</td><td class="memItemRight" valign="bottom"><b>face_permutation_type</b></td></tr>
+<tr class="separator:a70f1fa8a8b5ed16963dea99f277f0b07 inherit pub_types_classFeel_1_1Simplex"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a68f88b8c80ff82772d3159702b0dea76 inherit pub_types_classFeel_1_1Simplex"><td class="memItemLeft" align="right" valign="top"><a id="a68f88b8c80ff82772d3159702b0dea76" name="a68f88b8c80ff82772d3159702b0dea76"></a>
+typedef mpl::at&lt; map_entity_to_point_t, <a class="el" href="classboost_1_1mpl_1_1int__.html">mpl::int_</a>&lt; nDim &gt; &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>face_to_edge_t</b></td></tr>
+<tr class="separator:a68f88b8c80ff82772d3159702b0dea76 inherit pub_types_classFeel_1_1Simplex"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab88b4438eb3560d3a760ec524e012690 inherit pub_types_classFeel_1_1Simplex"><td class="memItemLeft" align="right" valign="top"><a id="ab88b4438eb3560d3a760ec524e012690" name="ab88b4438eb3560d3a760ec524e012690"></a>
+typedef mpl::at&lt; map_entity_to_point_t, <a class="el" href="classboost_1_1mpl_1_1int__.html">mpl::int_</a>&lt; nDim &gt; &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>face_to_point_t</b></td></tr>
+<tr class="separator:ab88b4438eb3560d3a760ec524e012690 inherit pub_types_classFeel_1_1Simplex"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a47305e59d67962291fc4bee5586c3738 inherit pub_types_classFeel_1_1Simplex"><td class="memItemLeft" align="right" valign="top"><a id="a47305e59d67962291fc4bee5586c3738" name="a47305e59d67962291fc4bee5586c3738"></a>
+typedef topological_face_type&#160;</td><td class="memItemRight" valign="bottom"><b>GeoBShape</b></td></tr>
+<tr class="separator:a47305e59d67962291fc4bee5586c3738 inherit pub_types_classFeel_1_1Simplex"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a323ad2bc355eec51b47281f566d33734 inherit pub_types_classFeel_1_1Simplex"><td class="memItemLeft" align="right" valign="top"><a id="a323ad2bc355eec51b47281f566d33734" name="a323ad2bc355eec51b47281f566d33734"></a>
+typedef mpl::if_&lt; mpl::equal_to&lt; <a class="el" href="classboost_1_1mpl_1_1int__.html">mpl::int_</a>&lt; nDim &gt;, <a class="el" href="classboost_1_1mpl_1_1int__.html">mpl::int_</a>&lt; 2 &gt; &gt;, mpl::identity&lt; mpl::vector&lt; edge_permutation_type, vertex_permutation_type, vertex_permutation_type &gt; &gt;, typenamempl::if_&lt; mpl::equal_to&lt; <a class="el" href="classboost_1_1mpl_1_1int__.html">mpl::int_</a>&lt; nDim &gt;, <a class="el" href="classboost_1_1mpl_1_1int__.html">mpl::int_</a>&lt; 3 &gt; &gt;, mpl::identity&lt; mpl::vector&lt; face_permutation_type, edge_permutation_type, vertex_permutation_type &gt; &gt;, mpl::identity&lt; mpl::vector&lt; vertex_permutation_type, vertex_permutation_type, vertex_permutation_type &gt; &gt; &gt;::type &gt;::type::type&#160;</td><td class="memItemRight" valign="bottom"><b>permutation_by_subentity_type</b></td></tr>
+<tr class="separator:a323ad2bc355eec51b47281f566d33734 inherit pub_types_classFeel_1_1Simplex"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6879efc7adc433e6b894de85e408b6b8 inherit pub_types_classFeel_1_1Simplex"><td class="memItemLeft" align="right" valign="top"><a id="a6879efc7adc433e6b894de85e408b6b8" name="a6879efc7adc433e6b894de85e408b6b8"></a>
+typedef mpl::if_&lt; mpl::equal_to&lt; <a class="el" href="classboost_1_1mpl_1_1int__.html">mpl::int_</a>&lt; nDim &gt;, <a class="el" href="classboost_1_1mpl_1_1int__.html">mpl::int_</a>&lt; 2 &gt; &gt;, mpl::identity&lt; edge_permutation_type &gt;, typenamempl::if_&lt; mpl::equal_to&lt; <a class="el" href="classboost_1_1mpl_1_1int__.html">mpl::int_</a>&lt; nDim &gt;, <a class="el" href="classboost_1_1mpl_1_1int__.html">mpl::int_</a>&lt; 3 &gt; &gt;, mpl::identity&lt; face_permutation_type &gt;, mpl::identity&lt; no_permutation &gt; &gt;::type &gt;::type::type&#160;</td><td class="memItemRight" valign="bottom"><b>permutation_type</b></td></tr>
+<tr class="separator:a6879efc7adc433e6b894de85e408b6b8 inherit pub_types_classFeel_1_1Simplex"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac8cd5fd597f12c4532c9de21585ce1ca inherit pub_types_classFeel_1_1Simplex"><td class="memItemLeft" align="right" valign="top"><a id="ac8cd5fd597f12c4532c9de21585ce1ca" name="ac8cd5fd597f12c4532c9de21585ce1ca"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>PermutationSubEntity</b> = typename mpl::at_c&lt; permutation_by_subentity_type, N-1 &gt;::type</td></tr>
+<tr class="separator:ac8cd5fd597f12c4532c9de21585ce1ca inherit pub_types_classFeel_1_1Simplex"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac8c5bf59ec4ff4bc534a770a29c9a5ff inherit pub_types_classFeel_1_1Simplex"><td class="memItemLeft" align="right" valign="top"><a id="ac8c5bf59ec4ff4bc534a770a29c9a5ff" name="ac8c5bf59ec4ff4bc534a770a29c9a5ff"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>shape</b> = <a class="el" href="classFeel_1_1Simplex.html">Simplex</a>&lt; shape_dim, O, R &gt;</td></tr>
+<tr class="separator:ac8c5bf59ec4ff4bc534a770a29c9a5ff inherit pub_types_classFeel_1_1Simplex"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae4aa1e2911441084707ca714eb437345 inherit pub_types_classFeel_1_1Simplex"><td class="memItemLeft" align="right" valign="top"><a id="ae4aa1e2911441084707ca714eb437345" name="ae4aa1e2911441084707ca714eb437345"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>shape_t</b> = <a class="el" href="classFeel_1_1Simplex.html">Simplex</a>&lt; shape_dim, O, R &gt;</td></tr>
+<tr class="separator:ae4aa1e2911441084707ca714eb437345 inherit pub_types_classFeel_1_1Simplex"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac64ff9c5b6cdbf3187e5351b4914fd9f inherit pub_types_classFeel_1_1Simplex"><td class="memItemLeft" align="right" valign="top"><a id="ac64ff9c5b6cdbf3187e5351b4914fd9f" name="ac64ff9c5b6cdbf3187e5351b4914fd9f"></a>
+typedef mpl::at&lt; typenamefaces_t&lt; real_dimension &gt;::type, <a class="el" href="classboost_1_1mpl_1_1int__.html">mpl::int_</a>&lt; nDim &gt; &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>topological_face_type</b></td></tr>
+<tr class="separator:ac64ff9c5b6cdbf3187e5351b4914fd9f inherit pub_types_classFeel_1_1Simplex"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afbd3abeda7a4078e0fbd76a16cd5fbf4 inherit pub_types_classFeel_1_1Simplex"><td class="memItemLeft" align="right" valign="top"><a id="afbd3abeda7a4078e0fbd76a16cd5fbf4" name="afbd3abeda7a4078e0fbd76a16cd5fbf4"></a>
+typedef no_permutation&#160;</td><td class="memItemRight" valign="bottom"><b>vertex_permutation_type</b></td></tr>
+<tr class="separator:afbd3abeda7a4078e0fbd76a16cd5fbf4 inherit pub_types_classFeel_1_1Simplex"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader">Typedefs</h2></td></tr>
 <tr class="memitem:a4143ab84de9f8903dc432f9b91cc3fe2"><td class="memItemLeft" align="right" valign="top"><a id="a4143ab84de9f8903dc432f9b91cc3fe2" name="a4143ab84de9f8903dc432f9b91cc3fe2"></a>
 typedef <a class="el" href="classFeel_1_1Simplex.html">super</a>&#160;</td><td class="memItemRight" valign="bottom"><b>GeoShape</b></td></tr>
@@ -410,58 +462,6 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>hFace</b> (<a class
 <tr class="memitem:a22ce497842e7d43d013627dd1d604b81"><td class="memItemLeft" align="right" valign="top"><a id="a22ce497842e7d43d013627dd1d604b81" name="a22ce497842e7d43d013627dd1d604b81"></a>
 EntityRange&lt; <a class="el" href="classFeel_1_1Reference_3_01Simplex_3_01Dim_00_01Order_00_01RDim_01_4_00_01Dim_00_01Order_00_01RDim_00_01T_01_4.html">self_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>entityRange</b> (uint16_type d) const</td></tr>
 <tr class="separator:a22ce497842e7d43d013627dd1d604b81"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
-Public Types</h2></td></tr>
-<tr class="memitem:a70092698a50a9baabf1b1a039f8b6b65"><td class="memItemLeft" align="right" valign="top"><a id="a70092698a50a9baabf1b1a039f8b6b65" name="a70092698a50a9baabf1b1a039f8b6b65"></a>
-typedef <a class="el" href="classFeel_1_1Simplex.html">Simplex</a>&lt; Dim, <a class="el" href="structFeel_1_1Order.html">Order</a>, RDim &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>super</b></td></tr>
-<tr class="separator:a70092698a50a9baabf1b1a039f8b6b65"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="inherit_header pub_types_classFeel_1_1Simplex"><td colspan="2" onclick="javascript:toggleInherit('pub_types_classFeel_1_1Simplex')"><img src="closed.png" alt="-"/>&#160;Public Types inherited from <a class="el" href="classFeel_1_1Simplex.html">Feel::Simplex&lt; Dim, Order, RDim &gt;</a></td></tr>
-<tr class="memitem:a89dc5e4edbd7ea13a8569c599f310e6a inherit pub_types_classFeel_1_1Simplex"><td class="memItemLeft" align="right" valign="top"><a id="a89dc5e4edbd7ea13a8569c599f310e6a" name="a89dc5e4edbd7ea13a8569c599f310e6a"></a>
-typedef mpl::if_&lt; mpl::greater_equal&lt; <a class="el" href="classboost_1_1mpl_1_1int__.html">mpl::int_</a>&lt; nDim &gt;, <a class="el" href="classboost_1_1mpl_1_1int__.html">mpl::int_</a>&lt; 2 &gt; &gt;, mpl::identity&lt; line_permutations &gt;, mpl::identity&lt; no_permutation &gt; &gt;::type::type&#160;</td><td class="memItemRight" valign="bottom"><b>edge_permutation_type</b></td></tr>
-<tr class="separator:a89dc5e4edbd7ea13a8569c599f310e6a inherit pub_types_classFeel_1_1Simplex"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa7fada43e78048a505715f7468332746 inherit pub_types_classFeel_1_1Simplex"><td class="memItemLeft" align="right" valign="top"><a id="aa7fada43e78048a505715f7468332746" name="aa7fada43e78048a505715f7468332746"></a>
-typedef mpl::at&lt; map_entity_to_point_t, <a class="el" href="classboost_1_1mpl_1_1int__.html">mpl::int_</a>&lt; nDim &gt; &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>edge_to_point_t</b></td></tr>
-<tr class="separator:aa7fada43e78048a505715f7468332746 inherit pub_types_classFeel_1_1Simplex"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a83877f90aff6310e5a6b5e452475f49d inherit pub_types_classFeel_1_1Simplex"><td class="memItemLeft" align="right" valign="top"><a id="a83877f90aff6310e5a6b5e452475f49d" name="a83877f90aff6310e5a6b5e452475f49d"></a>
-typedef mpl::at&lt; v_edges_t, <a class="el" href="classboost_1_1mpl_1_1int__.html">mpl::int_</a>&lt; real_dimension &gt; &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>edge_type</b></td></tr>
-<tr class="separator:a83877f90aff6310e5a6b5e452475f49d inherit pub_types_classFeel_1_1Simplex"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acd3984596429bfe1af13ad7fafb8f3a3 inherit pub_types_classFeel_1_1Simplex"><td class="memItemLeft" align="right" valign="top"><a id="acd3984596429bfe1af13ad7fafb8f3a3" name="acd3984596429bfe1af13ad7fafb8f3a3"></a>
-typedef mpl::at&lt; elements_t, <a class="el" href="classboost_1_1mpl_1_1int__.html">mpl::int_</a>&lt; nDim &gt; &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>element_type</b></td></tr>
-<tr class="separator:acd3984596429bfe1af13ad7fafb8f3a3 inherit pub_types_classFeel_1_1Simplex"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a70f1fa8a8b5ed16963dea99f277f0b07 inherit pub_types_classFeel_1_1Simplex"><td class="memItemLeft" align="right" valign="top"><a id="a70f1fa8a8b5ed16963dea99f277f0b07" name="a70f1fa8a8b5ed16963dea99f277f0b07"></a>
-typedef mpl::if_&lt; mpl::equal_to&lt; <a class="el" href="classboost_1_1mpl_1_1int__.html">mpl::int_</a>&lt; nDim &gt;, <a class="el" href="classboost_1_1mpl_1_1int__.html">mpl::int_</a>&lt; 3 &gt; &gt;, mpl::identity&lt; triangular_faces_type &gt;, mpl::identity&lt; no_permutation &gt; &gt;::type::type&#160;</td><td class="memItemRight" valign="bottom"><b>face_permutation_type</b></td></tr>
-<tr class="separator:a70f1fa8a8b5ed16963dea99f277f0b07 inherit pub_types_classFeel_1_1Simplex"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a68f88b8c80ff82772d3159702b0dea76 inherit pub_types_classFeel_1_1Simplex"><td class="memItemLeft" align="right" valign="top"><a id="a68f88b8c80ff82772d3159702b0dea76" name="a68f88b8c80ff82772d3159702b0dea76"></a>
-typedef mpl::at&lt; map_entity_to_point_t, <a class="el" href="classboost_1_1mpl_1_1int__.html">mpl::int_</a>&lt; nDim &gt; &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>face_to_edge_t</b></td></tr>
-<tr class="separator:a68f88b8c80ff82772d3159702b0dea76 inherit pub_types_classFeel_1_1Simplex"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab88b4438eb3560d3a760ec524e012690 inherit pub_types_classFeel_1_1Simplex"><td class="memItemLeft" align="right" valign="top"><a id="ab88b4438eb3560d3a760ec524e012690" name="ab88b4438eb3560d3a760ec524e012690"></a>
-typedef mpl::at&lt; map_entity_to_point_t, <a class="el" href="classboost_1_1mpl_1_1int__.html">mpl::int_</a>&lt; nDim &gt; &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>face_to_point_t</b></td></tr>
-<tr class="separator:ab88b4438eb3560d3a760ec524e012690 inherit pub_types_classFeel_1_1Simplex"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a47305e59d67962291fc4bee5586c3738 inherit pub_types_classFeel_1_1Simplex"><td class="memItemLeft" align="right" valign="top"><a id="a47305e59d67962291fc4bee5586c3738" name="a47305e59d67962291fc4bee5586c3738"></a>
-typedef topological_face_type&#160;</td><td class="memItemRight" valign="bottom"><b>GeoBShape</b></td></tr>
-<tr class="separator:a47305e59d67962291fc4bee5586c3738 inherit pub_types_classFeel_1_1Simplex"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a323ad2bc355eec51b47281f566d33734 inherit pub_types_classFeel_1_1Simplex"><td class="memItemLeft" align="right" valign="top"><a id="a323ad2bc355eec51b47281f566d33734" name="a323ad2bc355eec51b47281f566d33734"></a>
-typedef mpl::if_&lt; mpl::equal_to&lt; <a class="el" href="classboost_1_1mpl_1_1int__.html">mpl::int_</a>&lt; nDim &gt;, <a class="el" href="classboost_1_1mpl_1_1int__.html">mpl::int_</a>&lt; 2 &gt; &gt;, mpl::identity&lt; mpl::vector&lt; edge_permutation_type, vertex_permutation_type, vertex_permutation_type &gt; &gt;, typenamempl::if_&lt; mpl::equal_to&lt; <a class="el" href="classboost_1_1mpl_1_1int__.html">mpl::int_</a>&lt; nDim &gt;, <a class="el" href="classboost_1_1mpl_1_1int__.html">mpl::int_</a>&lt; 3 &gt; &gt;, mpl::identity&lt; mpl::vector&lt; face_permutation_type, edge_permutation_type, vertex_permutation_type &gt; &gt;, mpl::identity&lt; mpl::vector&lt; vertex_permutation_type, vertex_permutation_type, vertex_permutation_type &gt; &gt; &gt;::type &gt;::type::type&#160;</td><td class="memItemRight" valign="bottom"><b>permutation_by_subentity_type</b></td></tr>
-<tr class="separator:a323ad2bc355eec51b47281f566d33734 inherit pub_types_classFeel_1_1Simplex"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6879efc7adc433e6b894de85e408b6b8 inherit pub_types_classFeel_1_1Simplex"><td class="memItemLeft" align="right" valign="top"><a id="a6879efc7adc433e6b894de85e408b6b8" name="a6879efc7adc433e6b894de85e408b6b8"></a>
-typedef mpl::if_&lt; mpl::equal_to&lt; <a class="el" href="classboost_1_1mpl_1_1int__.html">mpl::int_</a>&lt; nDim &gt;, <a class="el" href="classboost_1_1mpl_1_1int__.html">mpl::int_</a>&lt; 2 &gt; &gt;, mpl::identity&lt; edge_permutation_type &gt;, typenamempl::if_&lt; mpl::equal_to&lt; <a class="el" href="classboost_1_1mpl_1_1int__.html">mpl::int_</a>&lt; nDim &gt;, <a class="el" href="classboost_1_1mpl_1_1int__.html">mpl::int_</a>&lt; 3 &gt; &gt;, mpl::identity&lt; face_permutation_type &gt;, mpl::identity&lt; no_permutation &gt; &gt;::type &gt;::type::type&#160;</td><td class="memItemRight" valign="bottom"><b>permutation_type</b></td></tr>
-<tr class="separator:a6879efc7adc433e6b894de85e408b6b8 inherit pub_types_classFeel_1_1Simplex"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac8cd5fd597f12c4532c9de21585ce1ca inherit pub_types_classFeel_1_1Simplex"><td class="memItemLeft" align="right" valign="top"><a id="ac8cd5fd597f12c4532c9de21585ce1ca" name="ac8cd5fd597f12c4532c9de21585ce1ca"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>PermutationSubEntity</b> = typename mpl::at_c&lt; permutation_by_subentity_type, N-1 &gt;::type</td></tr>
-<tr class="separator:ac8cd5fd597f12c4532c9de21585ce1ca inherit pub_types_classFeel_1_1Simplex"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac8c5bf59ec4ff4bc534a770a29c9a5ff inherit pub_types_classFeel_1_1Simplex"><td class="memItemLeft" align="right" valign="top"><a id="ac8c5bf59ec4ff4bc534a770a29c9a5ff" name="ac8c5bf59ec4ff4bc534a770a29c9a5ff"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>shape</b> = <a class="el" href="classFeel_1_1Simplex.html">Simplex</a>&lt; shape_dim, O, R &gt;</td></tr>
-<tr class="separator:ac8c5bf59ec4ff4bc534a770a29c9a5ff inherit pub_types_classFeel_1_1Simplex"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae4aa1e2911441084707ca714eb437345 inherit pub_types_classFeel_1_1Simplex"><td class="memItemLeft" align="right" valign="top"><a id="ae4aa1e2911441084707ca714eb437345" name="ae4aa1e2911441084707ca714eb437345"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>shape_t</b> = <a class="el" href="classFeel_1_1Simplex.html">Simplex</a>&lt; shape_dim, O, R &gt;</td></tr>
-<tr class="separator:ae4aa1e2911441084707ca714eb437345 inherit pub_types_classFeel_1_1Simplex"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac64ff9c5b6cdbf3187e5351b4914fd9f inherit pub_types_classFeel_1_1Simplex"><td class="memItemLeft" align="right" valign="top"><a id="ac64ff9c5b6cdbf3187e5351b4914fd9f" name="ac64ff9c5b6cdbf3187e5351b4914fd9f"></a>
-typedef mpl::at&lt; typenamefaces_t&lt; real_dimension &gt;::type, <a class="el" href="classboost_1_1mpl_1_1int__.html">mpl::int_</a>&lt; nDim &gt; &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>topological_face_type</b></td></tr>
-<tr class="separator:ac64ff9c5b6cdbf3187e5351b4914fd9f inherit pub_types_classFeel_1_1Simplex"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afbd3abeda7a4078e0fbd76a16cd5fbf4 inherit pub_types_classFeel_1_1Simplex"><td class="memItemLeft" align="right" valign="top"><a id="afbd3abeda7a4078e0fbd76a16cd5fbf4" name="afbd3abeda7a4078e0fbd76a16cd5fbf4"></a>
-typedef no_permutation&#160;</td><td class="memItemRight" valign="bottom"><b>vertex_permutation_type</b></td></tr>
-<tr class="separator:afbd3abeda7a4078e0fbd76a16cd5fbf4 inherit pub_types_classFeel_1_1Simplex"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="inherited" name="inherited"></a>
 Additional Inherited Members</h2></td></tr>

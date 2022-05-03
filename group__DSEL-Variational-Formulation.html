@@ -105,8 +105,9 @@ $(document).ready(function(){initNavTree('group__DSEL-Variational-Formulation.ht
   <div class="headertitle"><div class="title">DSEL-Variational-Formulation<div class="ingroups"><a class="el" href="group__Feelpp.html">Feelpp</a></div></div></div>
 </div><!--header-->
 <div class="contents">
-<a name="details" id="details"></a><h2 class="groupheader">Description</h2>
-<p >Variational forms provided by the library. </p>
+
+<p>Variational forms provided by the library.  
+<a href="#details">More...</a></p>
 <div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Collaboration diagram for DSEL-Variational-Formulation:</div>
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">
@@ -157,6 +158,8 @@ template&lt;typename ExprT1 &gt; </td></tr>
 <tr class="memdesc:ga804803997f88c76948f600cb3835b99d"><td class="mdescLeft">&#160;</td><td class="mdescRight">precompute expression tensorThis allows for more efficient bi/linear form assembly <br /></td></tr>
 <tr class="separator:ga804803997f88c76948f600cb3835b99d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<p >Variational forms provided by the library. </p>
 <h2 class="groupheader">Function Documentation</h2>
 <a id="gaa7b95d2d10a5d0e4457740daa190a6e0" name="gaa7b95d2d10a5d0e4457740daa190a6e0"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#gaa7b95d2d10a5d0e4457740daa190a6e0">&#9670;&nbsp;</a></span>form1()</h2>
@@ -176,7 +179,7 @@ template&lt;typename ... Ts&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p><code>#include &lt;<a class="el" href="form_8hpp.html">/nvme0/prudhomm/actions-runner-3/_work/feelpp/feelpp/feelpp/feel/feelvf/form.hpp</a>&gt;</code></p>
+<p><code>#include &lt;<a class="el" href="form_8hpp.html">/nvme0/prudhomm/actions-runner/_work/feelpp/feelpp/feelpp/feel/feelvf/form.hpp</a>&gt;</code></p>
 
 <p>create a linear form using named arguments </p>
 <div class="fragment"><div class="line"><span class="keyword">auto</span> a = <a class="code hl_function" href="group__DSEL-Variational-Formulation.html#gaa7b95d2d10a5d0e4457740daa190a6e0">form1</a>(_test=Xh, _backend=backend(_worldcomm=Xh-&gt;worldCommPtr()), _vector=backend-&gt;newVector( _test=Xh ) );</div>
@@ -203,7 +206,7 @@ template&lt;typename ... Ts&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p><code>#include &lt;<a class="el" href="form_8hpp.html">/nvme0/prudhomm/actions-runner-3/_work/feelpp/feelpp/feelpp/feel/feelvf/form.hpp</a>&gt;</code></p>
+<p><code>#include &lt;<a class="el" href="form_8hpp.html">/nvme0/prudhomm/actions-runner/_work/feelpp/feelpp/feelpp/feel/feelvf/form.hpp</a>&gt;</code></p>
 
 <p>create a bi-linear form using named arguments </p>
 <div class="fragment"><div class="line"><span class="keyword">auto</span> a = <a class="code hl_function" href="group__DSEL-Variational-Formulation.html#gaae0194bba0f2f858c384597706e3c59e">form2</a>(_test=Xh, _trial=Yh,  _backend=backend(_worldcomm=Xh-&gt;worldCommPtr()), _matrix=backend-&gt;newVector( _test=Xh, _trial=Yh ) );</div>
@@ -255,7 +258,7 @@ template&lt;typename ExprT1 , typename ExprT2 &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p><code>#include &lt;<a class="el" href="pow_8hpp.html">/nvme0/prudhomm/actions-runner-3/_work/feelpp/feelpp/feelpp/feel/feelvf/pow.hpp</a>&gt;</code></p>
+<p><code>#include &lt;<a class="el" href="pow_8hpp.html">/nvme0/prudhomm/actions-runner/_work/feelpp/feelpp/feelpp/feel/feelvf/pow.hpp</a>&gt;</code></p>
 
 <p>provide pow expression e1^e2 </p>
 <div class="fragment"><div class="line">std::cout &lt;&lt; integrate( _range=<a class="code hl_function" href="namespaceFeel.html#abdab447afcf746e7e621c56c1d6dc06b">elements</a>(mesh), _expr=<a class="code hl_function" href="group__DSEL-Variational-Formulation.html#gaea4c47fc4a17435b9b1d3fe115a6788d">pow</a>( Px(), Py() ) ).evaluate();</div>
@@ -294,7 +297,7 @@ template&lt;typename ExprT &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p><code>#include &lt;<a class="el" href="print_8hpp.html">/nvme0/prudhomm/actions-runner-3/_work/feelpp/feelpp/feelpp/feel/feelvf/print.hpp</a>&gt;</code></p>
+<p><code>#include &lt;<a class="el" href="print_8hpp.html">/nvme0/prudhomm/actions-runner/_work/feelpp/feelpp/feelpp/feel/feelvf/print.hpp</a>&gt;</code></p>
 
 <p>print an expression during evaluation. </p>
 <p >This function is typically used for debugging purposes and it allows to check the numerical results of expressions and sub-expressions.</p>
@@ -323,7 +326,7 @@ template&lt;typename ... Ts&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p><code>#include &lt;<a class="el" href="projectors_8hpp.html">/nvme0/prudhomm/actions-runner-3/_work/feelpp/feelpp/feelpp/feel/feelvf/projectors.hpp</a>&gt;</code></p>
+<p><code>#include &lt;<a class="el" href="projectors_8hpp.html">/nvme0/prudhomm/actions-runner/_work/feelpp/feelpp/feelpp/feel/feelvf/projectors.hpp</a>&gt;</code></p>
 
 <p>projection/interpolation of an expresion onto a noal functionspace </p>
 <ul>
@@ -353,7 +356,7 @@ template&lt;typename T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p><code>#include &lt;<a class="el" href="rand_8hpp.html">/nvme0/prudhomm/actions-runner-3/_work/feelpp/feelpp/feelpp/feel/feelvf/rand.hpp</a>&gt;</code></p>
+<p><code>#include &lt;<a class="el" href="rand_8hpp.html">/nvme0/prudhomm/actions-runner/_work/feelpp/feelpp/feelpp/feel/feelvf/rand.hpp</a>&gt;</code></p>
 
 <p>provide random expression in ]lo,hi[ </p>
 <dl class="params"><dt>Parameters</dt><dd>
@@ -394,7 +397,7 @@ template&lt;typename T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p><code>#include &lt;<a class="el" href="rand_8hpp.html">/nvme0/prudhomm/actions-runner-3/_work/feelpp/feelpp/feelpp/feel/feelvf/rand.hpp</a>&gt;</code></p>
+<p><code>#include &lt;<a class="el" href="rand_8hpp.html">/nvme0/prudhomm/actions-runner/_work/feelpp/feelpp/feelpp/feel/feelvf/rand.hpp</a>&gt;</code></p>
 
 <p>provide random expression in ]lo,hi[ </p>
 <dl class="params"><dt>Parameters</dt><dd>

@@ -105,12 +105,10 @@ $(document).ready(function(){initNavTree('classFeel_1_1MeshBase.html',''); initR
   <div class="headertitle"><div class="title">Feel::MeshBase&lt; IndexT &gt; Class Template Reference<span class="mlabels"><span class="mlabel">abstract</span></span><div class="ingroups"><a class="el" href="group__Feelpp.html">Feelpp</a> &raquo; <a class="el" href="group__Mesh.html">Mesh</a></div></div></div>
 </div><!--header-->
 <div class="contents">
-<a name="details" id="details"></a><h2 class="groupheader">Description</h2>
-<div class="textblock"><div class="compoundTemplParams">template&lt;typename IndexT = uint32_type&gt;<br />
-class Feel::MeshBase&lt; IndexT &gt;</div><p >base mesh class </p>
-<dl class="section author"><dt>Author</dt><dd>Christophe Prud'homme </dd></dl>
-<dl class="section see"><dt>See also</dt><dd>/ </dd></dl>
-</div><div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
+
+<p>base mesh class  
+ <a href="classFeel_1_1MeshBase.html#details">More...</a></p>
+<div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Inheritance diagram for Feel::MeshBase&lt; IndexT &gt;:</div>
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">
 </div>
@@ -543,6 +541,34 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>applyUpdateInformatio
 <tr class="memdesc:ace7e1916b49e2d851c7253f6c79347b7 inherit pro_methods_classFeel_1_1JournalWatcher"><td class="mdescLeft">&#160;</td><td class="mdescRight">Protected Methods. <br /></td></tr>
 <tr class="separator:ace7e1916b49e2d851c7253f6c79347b7 inherit pro_methods_classFeel_1_1JournalWatcher"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><div class="compoundTemplParams">template&lt;typename IndexT = uint32_type&gt;<br />
+class Feel::MeshBase&lt; IndexT &gt;</div><p >base mesh class </p>
+<dl class="section author"><dt>Author</dt><dd>Christophe Prud'homme </dd></dl>
+<dl class="section see"><dt>See also</dt><dd>/ </dd></dl>
+</div><h2 class="groupheader">Member Typedef Documentation</h2>
+<a id="a91247ada5746df1ef0edd9af84f014a0" name="a91247ada5746df1ef0edd9af84f014a0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a91247ada5746df1ef0edd9af84f014a0">&#9670;&nbsp;</a></span>face_processor_type</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename IndexT  = uint32_type&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef boost::tuple&lt;<a class="el" href="classFeel_1_1MeshBase.html#a390da92c55ab75b3615cd8635bc03ffb">index_type</a>, <a class="el" href="classFeel_1_1MeshBase.html#a390da92c55ab75b3615cd8635bc03ffb">index_type</a>&gt; <a class="el" href="classFeel_1_1MeshBase.html">Feel::MeshBase</a>&lt; IndexT &gt;::face_processor_type</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Tuple that contains. </p>
+<ol type="1">
+<li>the index of the face</li>
+<li>the processor id the face belongs to </li>
+</ol>
+
+</div>
+</div>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="ab8ea6b4bb1774e80a43d434737903aea" name="ab8ea6b4bb1774e80a43d434737903aea"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ab8ea6b4bb1774e80a43d434737903aea">&#9670;&nbsp;</a></span>clear()</h2>
@@ -1666,29 +1692,6 @@ template&lt;typename IndexT &gt; </div>
 
 <p>update all info for this mesh according the <code>components</code> </p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="classFeel_1_1MeshBase.html#a7142e9259be05c4412f098d569405e44">components()</a>, <a class="el" href="classFeel_1_1MeshBase.html#a96154e93ff9b91803e0ec60555a6b662" title="set the components to be updated by updateForUse()">setComponents()</a> </dd></dl>
-
-</div>
-</div>
-<h2 class="groupheader">Member Typedef Documentation</h2>
-<a id="a91247ada5746df1ef0edd9af84f014a0" name="a91247ada5746df1ef0edd9af84f014a0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a91247ada5746df1ef0edd9af84f014a0">&#9670;&nbsp;</a></span>face_processor_type</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename IndexT  = uint32_type&gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">typedef boost::tuple&lt;<a class="el" href="classFeel_1_1MeshBase.html#a390da92c55ab75b3615cd8635bc03ffb">index_type</a>, <a class="el" href="classFeel_1_1MeshBase.html#a390da92c55ab75b3615cd8635bc03ffb">index_type</a>&gt; <a class="el" href="classFeel_1_1MeshBase.html">Feel::MeshBase</a>&lt; IndexT &gt;::face_processor_type</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Tuple that contains. </p>
-<ol type="1">
-<li>the index of the face</li>
-<li>the processor id the face belongs to </li>
-</ol>
 
 </div>
 </div>

@@ -106,32 +106,10 @@ $(document).ready(function(){initNavTree('classFeel_1_1Environment.html',''); in
   <div class="headertitle"><div class="title">Feel::Environment Class Reference<div class="ingroups"><a class="el" href="group__Feelpp.html">Feelpp</a> &raquo; <a class="el" href="group__Core.html">Core</a></div></div></div>
 </div><!--header-->
 <div class="contents">
-<a name="details" id="details"></a><h2 class="groupheader">Description</h2>
-<div class="textblock"><p >Initialize, finalize, and query the Feel++ environment. </p>
-<p >The <code><a class="el" href="classFeel_1_1Environment.html" title="Initialize, finalize, and query the Feel++ environment.">Environment</a></code> class is used to initialize, finalize, and query the Feel++ environment. It will typically be used in the <code>main()</code> function of a program, which will create a single instance of <code><a class="el" href="classFeel_1_1Environment.html" title="Initialize, finalize, and query the Feel++ environment.">Environment</a></code> initialized with the arguments passed to the program:</p>
-<div class="fragment"><div class="line"><span class="keywordtype">int</span> main(<span class="keywordtype">int</span> argc, <span class="keywordtype">char</span>* argv[])</div>
-<div class="line">{</div>
-<div class="line">   <span class="keyword">using namespace </span><a class="code hl_namespace" href="namespaceFeel.html">Feel</a>;</div>
-<div class="line">   <a class="code hl_function" href="classFeel_1_1Environment.html#a2f72ceaafeecd718e9089c5d16322cfd">Environment</a> env(argc, argv);</div>
-<div class="line">}</div>
-<div class="ttc" id="aclassFeel_1_1Environment_html_a2f72ceaafeecd718e9089c5d16322cfd"><div class="ttname"><a href="classFeel_1_1Environment.html#a2f72ceaafeecd718e9089c5d16322cfd">Feel::Environment::Environment</a></div><div class="ttdeci">Environment()</div><div class="ttdoc">Initialize the Feel environment.</div><div class="ttdef"><b>Definition:</b> environment.cpp:296</div></div>
-<div class="ttc" id="anamespaceFeel_html"><div class="ttname"><a href="namespaceFeel.html">Feel</a></div><div class="ttdoc">-*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-w...</div><div class="ttdef"><b>Definition:</b> about.cpp:37</div></div>
-</div><!-- fragment --><p> or more commonly </p><div class="fragment"><div class="line"><span class="keywordtype">int</span> main(<span class="keywordtype">int</span> argc, <span class="keywordtype">char</span>* argv[])</div>
-<div class="line">{</div>
-<div class="line">   <span class="keyword">using namespace </span><a class="code hl_namespace" href="namespaceFeel.html">Feel</a>;</div>
-<div class="line">   po::options_description myoptions( <span class="stringliteral">&quot;Laplacian options&quot;</span> );</div>
-<div class="line">   myoptions.add_options()</div>
-<div class="line">         ( <span class="stringliteral">&quot;mu&quot;</span>, po::value&lt;double&gt;()-&gt;default_value( 1.0 ), <span class="stringliteral">&quot;coeff&quot;</span> );</div>
-<div class="line">   <a class="code hl_function" href="classFeel_1_1Environment.html#a2f72ceaafeecd718e9089c5d16322cfd">Environment</a> env( _argc=argc, _argv=argv,</div>
-<div class="line">                    _desc=myoptions,</div>
-<div class="line">                   _about=about(_name=<span class="stringliteral">&quot;myapp&quot;</span>,</div>
-<div class="line">                                _author=<span class="stringliteral">&quot;Feel++ Consortium&quot;</span>,</div>
-<div class="line">                                _email=<span class="stringliteral">&quot;feelpp-devel@feelpp.org&quot;</span>));</div>
-<div class="line">}</div>
-</div><!-- fragment --><p >The instance of <code><a class="el" href="classFeel_1_1Environment.html" title="Initialize, finalize, and query the Feel++ environment.">Environment</a></code> will initialize Feel++ (by calling <code>MPI</code>, <code>PETSc</code>, <code>SLEPc</code> or Logging initialization routines) in its constructor and finalize in its destructor.</p>
-<dl class="section author"><dt>Author</dt><dd>Christophe Prud'homme </dd></dl>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="classFeel_1_1Application.html" title="provides information about the Application">Application</a> </dd></dl>
-</div><div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
+
+<p>Initialize, finalize, and query the Feel++ environment.  
+ <a href="classFeel_1_1Environment.html#details">More...</a></p>
+<div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Inheritance diagram for Feel::Environment:</div>
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">
 </div>
@@ -148,6 +126,132 @@ $(document).ready(function(){initNavTree('classFeel_1_1Environment.html',''); in
 </div>
 </div>
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-methods" name="pub-static-methods"></a>
+Static Public Member Functions</h2></td></tr>
+<tr class="memitem:a65c0f336d8f4a7c1e5a2205116a98d27"><td class="memTemplParams" colspan="2"><a id="a65c0f336d8f4a7c1e5a2205116a98d27" name="a65c0f336d8f4a7c1e5a2205116a98d27"></a>
+template&lt;typename Observer &gt; </td></tr>
+<tr class="memitem:a65c0f336d8f4a7c1e5a2205116a98d27"><td class="memTemplItemLeft" align="right" valign="top">static void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>addDeleteObserver</b> (Observer const &amp;obs)</td></tr>
+<tr class="separator:a65c0f336d8f4a7c1e5a2205116a98d27"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4cf5e6179d3dfacdacf8ad00641f90db"><td class="memTemplParams" colspan="2"><a id="a4cf5e6179d3dfacdacf8ad00641f90db" name="a4cf5e6179d3dfacdacf8ad00641f90db"></a>
+template&lt;typename Observer &gt; </td></tr>
+<tr class="memitem:a4cf5e6179d3dfacdacf8ad00641f90db"><td class="memTemplItemLeft" align="right" valign="top">static void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>addDeleteObserver</b> (std::shared_ptr&lt; Observer &gt; const &amp;obs)</td></tr>
+<tr class="separator:a4cf5e6179d3dfacdacf8ad00641f90db"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a40e7009dadbb4eb4b0c0f4b21f5dd523"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Environment.html#a40e7009dadbb4eb4b0c0f4b21f5dd523">addTimer</a> (std::string const &amp;msg, std::pair&lt; double, <a class="el" href="classint.html">int</a> &gt; const &amp;t, std::string const &amp;uiname)</td></tr>
+<tr class="memdesc:a40e7009dadbb4eb4b0c0f4b21f5dd523"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return the timerstable pointer.  <a href="classFeel_1_1Environment.html#a40e7009dadbb4eb4b0c0f4b21f5dd523">More...</a><br /></td></tr>
+<tr class="separator:a40e7009dadbb4eb4b0c0f4b21f5dd523"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7577f9c9892a52415fffdf2466dc11d6"><td class="memItemLeft" align="right" valign="top"><a id="a7577f9c9892a52415fffdf2466dc11d6" name="a7577f9c9892a52415fffdf2466dc11d6"></a>
+static void&#160;</td><td class="memItemRight" valign="bottom"><b>clearSomeMemory</b> ()</td></tr>
+<tr class="separator:a7577f9c9892a52415fffdf2466dc11d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a26e4f2505f0ba9e0a0266390447f68f7"><td class="memItemLeft" align="right" valign="top">static std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Environment.html#a26e4f2505f0ba9e0a0266390447f68f7">expand</a> (std::string const &amp;<a class="el" href="namespaceFeel.html#a338e05dd5e37f3594666f0a00e029d3d">expr</a>)</td></tr>
+<tr class="memdesc:a26e4f2505f0ba9e0a0266390447f68f7"><td class="mdescLeft">&#160;</td><td class="mdescRight">expand feel++ pathes in a string  <a href="classFeel_1_1Environment.html#a26e4f2505f0ba9e0a0266390447f68f7">More...</a><br /></td></tr>
+<tr class="separator:a26e4f2505f0ba9e0a0266390447f68f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4fc75efe7320d69c331e814fa35321cf"><td class="memItemLeft" align="right" valign="top">static std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Environment.html#a4fc75efe7320d69c331e814fa35321cf">findFileRemotely</a> (std::string const &amp;fname, std::string const &amp;subdir=&quot;&quot;)</td></tr>
+<tr class="memdesc:a4fc75efe7320d69c331e814fa35321cf"><td class="mdescLeft">&#160;</td><td class="mdescRight">try find remotely the file <code>fname</code>  <a href="classFeel_1_1Environment.html#a4fc75efe7320d69c331e814fa35321cf">More...</a><br /></td></tr>
+<tr class="separator:a4fc75efe7320d69c331e814fa35321cf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a43c7e409ca67d5c89864bb5a91468fdf"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="structFeel_1_1MemoryUsage.html">MemoryUsage</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Environment.html#a43c7e409ca67d5c89864bb5a91468fdf">logMemoryUsage</a> (std::string const &amp;message)</td></tr>
+<tr class="memdesc:a43c7e409ca67d5c89864bb5a91468fdf"><td class="mdescLeft">&#160;</td><td class="mdescRight">print resident memory usage as well as PETSc malloc usage in log file  <a href="classFeel_1_1Environment.html#a43c7e409ca67d5c89864bb5a91468fdf">More...</a><br /></td></tr>
+<tr class="separator:a43c7e409ca67d5c89864bb5a91468fdf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a01c76631f21c183a6ae7e80917bc639c"><td class="memTemplParams" colspan="2"><a id="a01c76631f21c183a6ae7e80917bc639c" name="a01c76631f21c183a6ae7e80917bc639c"></a>
+template&lt;typename ... Ts&gt; </td></tr>
+<tr class="memitem:a01c76631f21c183a6ae7e80917bc639c"><td class="memTemplItemLeft" align="right" valign="top">static std::pair&lt; std::string, po::variable_value &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>option</b> (Ts &amp;&amp;... v)</td></tr>
+<tr class="separator:a01c76631f21c183a6ae7e80917bc639c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a29b2eeaca395bba470dc395348692677"><td class="memItemLeft" align="right" valign="top"><a id="a29b2eeaca395bba470dc395348692677" name="a29b2eeaca395bba470dc395348692677"></a>
+static void&#160;</td><td class="memItemRight" valign="bottom"><b>saveTimers</b> (<a class="el" href="classbool.html">bool</a> save)</td></tr>
+<tr class="memdesc:a29b2eeaca395bba470dc395348692677"><td class="mdescLeft">&#160;</td><td class="mdescRight">display and save timers <br /></td></tr>
+<tr class="separator:a29b2eeaca395bba470dc395348692677"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a03c354cd6b80d01548ccb01f7626e2d4"><td class="memItemLeft" align="right" valign="top"><a id="a03c354cd6b80d01548ccb01f7626e2d4" name="a03c354cd6b80d01548ccb01f7626e2d4"></a>
+static void&#160;</td><td class="memItemRight" valign="bottom"><b>saveTimersMD</b> (std::ostream &amp;os)</td></tr>
+<tr class="separator:a03c354cd6b80d01548ccb01f7626e2d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aed57a58c7097f59d7bfa3cfe3dd4df18"><td class="memItemLeft" align="right" valign="top">static FEELPP_DEPRECATED const fs::path &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Environment.html#aed57a58c7097f59d7bfa3cfe3dd4df18">scratchDirectory</a> ()</td></tr>
+<tr class="separator:aed57a58c7097f59d7bfa3cfe3dd4df18"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8466d0b1433677e624082f9f6d13d818"><td class="memItemLeft" align="right" valign="top">static FEELPP_DEPRECATED void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Environment.html#a8466d0b1433677e624082f9f6d13d818">setLogs</a> (std::string const &amp;prefix)</td></tr>
+<tr class="memdesc:a8466d0b1433677e624082f9f6d13d818"><td class="mdescLeft">&#160;</td><td class="mdescRight">get <code>variables_map</code> from <code>options_description</code> <code>desc</code>  <a href="classFeel_1_1Environment.html#a8466d0b1433677e624082f9f6d13d818">More...</a><br /></td></tr>
+<tr class="separator:a8466d0b1433677e624082f9f6d13d818"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af0fa80df613e602f56dc46f72d0a456c"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Environment.html#af0fa80df613e602f56dc46f72d0a456c">startLogging</a> (std::string decorate)</td></tr>
+<tr class="memdesc:af0fa80df613e602f56dc46f72d0a456c"><td class="mdescLeft">&#160;</td><td class="mdescRight">start logging.  <a href="classFeel_1_1Environment.html#af0fa80df613e602f56dc46f72d0a456c">More...</a><br /></td></tr>
+<tr class="separator:af0fa80df613e602f56dc46f72d0a456c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7dab59a5c06a5085826c3d83127e473d"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Environment.html#a7dab59a5c06a5085826c3d83127e473d">stopLogging</a> (<a class="el" href="classbool.html">bool</a> remove=false)</td></tr>
+<tr class="memdesc:a7dab59a5c06a5085826c3d83127e473d"><td class="mdescLeft">&#160;</td><td class="mdescRight">stop logging in Feel++.  <a href="classFeel_1_1Environment.html#a7dab59a5c06a5085826c3d83127e473d">More...</a><br /></td></tr>
+<tr class="separator:a7dab59a5c06a5085826c3d83127e473d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aefa39799fcc994f5d7f089f2ac7df1cd"><td class="memTemplParams" colspan="2"><a id="aefa39799fcc994f5d7f089f2ac7df1cd" name="aefa39799fcc994f5d7f089f2ac7df1cd"></a>
+template&lt;typename ... Ts&gt; </td></tr>
+<tr class="memitem:aefa39799fcc994f5d7f089f2ac7df1cd"><td class="memTemplItemLeft" align="right" valign="top">static po::variable_value&#160;</td><td class="memTemplItemRight" valign="bottom"><b>vm</b> (Ts &amp;&amp;... v)</td></tr>
+<tr class="separator:aefa39799fcc994f5d7f089f2ac7df1cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="inherit_header pub_static_methods_classFeel_1_1JournalManager"><td colspan="2" onclick="javascript:toggleInherit('pub_static_methods_classFeel_1_1JournalManager')"><img src="closed.png" alt="-"/>&#160;Static Public Member Functions inherited from <a class="el" href="classFeel_1_1JournalManager.html">Feel::JournalManager</a></td></tr>
+<tr class="memitem:a68fcb2fe0b7c450c25db9b7d8b1f3624 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1JournalManager.html#a68fcb2fe0b7c450c25db9b7d8b1f3624">setJournalFilename</a> (const std::string &amp;name)</td></tr>
+<tr class="memdesc:a68fcb2fe0b7c450c25db9b7d8b1f3624 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="mdescLeft">&#160;</td><td class="mdescRight">Setters.  <a href="classFeel_1_1JournalManager.html#a68fcb2fe0b7c450c25db9b7d8b1f3624">More...</a><br /></td></tr>
+<tr class="separator:a68fcb2fe0b7c450c25db9b7d8b1f3624 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af3998caa18c821abfa5dba41170473a3 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1JournalManager.html#af3998caa18c821abfa5dba41170473a3">setJournalAutoMode</a> (<a class="el" href="classbool.html">bool</a> b)</td></tr>
+<tr class="memdesc:af3998caa18c821abfa5dba41170473a3 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the journal mode.  <a href="classFeel_1_1JournalManager.html#af3998caa18c821abfa5dba41170473a3">More...</a><br /></td></tr>
+<tr class="separator:af3998caa18c821abfa5dba41170473a3 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a55deac5c47e5e6ab3ac7607f89149a57 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memItemLeft" align="right" valign="top"><a id="a55deac5c47e5e6ab3ac7607f89149a57" name="a55deac5c47e5e6ab3ac7607f89149a57"></a>
+static void&#160;</td><td class="memItemRight" valign="bottom"><b>setJournalEnable</b> (<a class="el" href="classbool.html">bool</a> m)</td></tr>
+<tr class="memdesc:a55deac5c47e5e6ab3ac7607f89149a57 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="mdescLeft">&#160;</td><td class="mdescRight">Activate or deactivate the journal. <br /></td></tr>
+<tr class="separator:a55deac5c47e5e6ab3ac7607f89149a57 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1595d596f9f6f415bc1fb7ccc6fa5acc inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memItemLeft" align="right" valign="top">static const std::string &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1JournalManager.html#a1595d596f9f6f415bc1fb7ccc6fa5acc">journalFilename</a> ()</td></tr>
+<tr class="memdesc:a1595d596f9f6f415bc1fb7ccc6fa5acc inherit pub_static_methods_classFeel_1_1JournalManager"><td class="mdescLeft">&#160;</td><td class="mdescRight">Getters.  <a href="classFeel_1_1JournalManager.html#a1595d596f9f6f415bc1fb7ccc6fa5acc">More...</a><br /></td></tr>
+<tr class="separator:a1595d596f9f6f415bc1fb7ccc6fa5acc inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8e8bc627cd458b5b68931fadf8864360 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memItemLeft" align="right" valign="top"><a id="a8e8bc627cd458b5b68931fadf8864360" name="a8e8bc627cd458b5b68931fadf8864360"></a>
+static <a class="el" href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">nl::json</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>journalData</b> ()</td></tr>
+<tr class="separator:a8e8bc627cd458b5b68931fadf8864360 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad6ffb95221b4183f0eb6a91c48305c6c inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memItemLeft" align="right" valign="top">static const <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1JournalManager.html#ad6ffb95221b4183f0eb6a91c48305c6c">journalAutoMode</a> ()</td></tr>
+<tr class="memdesc:ad6ffb95221b4183f0eb6a91c48305c6c inherit pub_static_methods_classFeel_1_1JournalManager"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the current journal mode status.  <a href="classFeel_1_1JournalManager.html#ad6ffb95221b4183f0eb6a91c48305c6c">More...</a><br /></td></tr>
+<tr class="separator:ad6ffb95221b4183f0eb6a91c48305c6c inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3c926b0dd9aaf0bf5200a37965c714c5 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memItemLeft" align="right" valign="top">static const <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1JournalManager.html#a3c926b0dd9aaf0bf5200a37965c714c5">journalEnabled</a> ()</td></tr>
+<tr class="memdesc:a3c926b0dd9aaf0bf5200a37965c714c5 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the journal status.  <a href="classFeel_1_1JournalManager.html#a3c926b0dd9aaf0bf5200a37965c714c5">More...</a><br /></td></tr>
+<tr class="separator:a3c926b0dd9aaf0bf5200a37965c714c5 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a26b9d571c84e48737f04fa84194b8d49 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memItemLeft" align="right" valign="top">static const uint32_type&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1JournalManager.html#a26b9d571c84e48737f04fa84194b8d49">journalCurrentCheckpoint</a> ()</td></tr>
+<tr class="memdesc:a26b9d571c84e48737f04fa84194b8d49 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the current checkpoint counter.  <a href="classFeel_1_1JournalManager.html#a26b9d571c84e48737f04fa84194b8d49">More...</a><br /></td></tr>
+<tr class="separator:a26b9d571c84e48737f04fa84194b8d49 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4c45a94b804e8445e999389e38bdfeff inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memItemLeft" align="right" valign="top">static decltype(auto)&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1JournalManager.html#a4c45a94b804e8445e999389e38bdfeff">journalSignal</a> ()</td></tr>
+<tr class="memdesc:a4c45a94b804e8445e999389e38bdfeff inherit pub_static_methods_classFeel_1_1JournalManager"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the journal underlying static signal.  <a href="classFeel_1_1JournalManager.html#a4c45a94b804e8445e999389e38bdfeff">More...</a><br /></td></tr>
+<tr class="separator:a4c45a94b804e8445e999389e38bdfeff inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad44a6ffc580c5d69259a682b8ef5c681 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classnlohmann_1_1basic__json.html">notify_type</a> const &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1JournalManager.html#ad44a6ffc580c5d69259a682b8ef5c681">journalPull</a> ()</td></tr>
+<tr class="memdesc:ad44a6ffc580c5d69259a682b8ef5c681 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="mdescLeft">&#160;</td><td class="mdescRight">Journal gather/save.  <a href="classFeel_1_1JournalManager.html#ad44a6ffc580c5d69259a682b8ef5c681">More...</a><br /></td></tr>
+<tr class="separator:ad44a6ffc580c5d69259a682b8ef5c681 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a25e83050695ce2e3d6d52a34bdc728b9 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memItemLeft" align="right" valign="top"><a id="a25e83050695ce2e3d6d52a34bdc728b9" name="a25e83050695ce2e3d6d52a34bdc728b9"></a>
+static void&#160;</td><td class="memItemRight" valign="bottom"><b>journalSave</b> (std::string const &amp;filename=&quot;&quot;)</td></tr>
+<tr class="memdesc:a25e83050695ce2e3d6d52a34bdc728b9 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="mdescLeft">&#160;</td><td class="mdescRight">Save the global property tree into a json file. <br /></td></tr>
+<tr class="separator:a25e83050695ce2e3d6d52a34bdc728b9 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4771e8ff34683e6715cd0b86fa59a9a2 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1JournalManager.html#a4771e8ff34683e6715cd0b86fa59a9a2">journalCheckpoint</a> (<a class="el" href="classbool.html">bool</a> save=true, const std::string &amp;filename=&quot;&quot;)</td></tr>
+<tr class="memdesc:a4771e8ff34683e6715cd0b86fa59a9a2 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="mdescLeft">&#160;</td><td class="mdescRight">Generate a checkpoint.  <a href="classFeel_1_1JournalManager.html#a4771e8ff34683e6715cd0b86fa59a9a2">More...</a><br /></td></tr>
+<tr class="separator:a4771e8ff34683e6715cd0b86fa59a9a2 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a81638b0093b593e70a89785b00d54cf5 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memItemLeft" align="right" valign="top"><a id="a81638b0093b593e70a89785b00d54cf5" name="a81638b0093b593e70a89785b00d54cf5"></a>
+static void&#160;</td><td class="memItemRight" valign="bottom"><b>journalFinalize</b> ()</td></tr>
+<tr class="memdesc:a81638b0093b593e70a89785b00d54cf5 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create the journal. <br /></td></tr>
+<tr class="separator:a81638b0093b593e70a89785b00d54cf5 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa22d14a63e58f83e174f112e4c7dde42 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1JournalManager.html#aa22d14a63e58f83e174f112e4c7dde42">journalSetDBName</a> (const std::string &amp;dbname=&quot;feelpp&quot;)</td></tr>
+<tr class="memdesc:aa22d14a63e58f83e174f112e4c7dde42 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="mdescLeft">&#160;</td><td class="mdescRight">Setters.  <a href="classFeel_1_1JournalManager.html#aa22d14a63e58f83e174f112e4c7dde42">More...</a><br /></td></tr>
+<tr class="separator:aa22d14a63e58f83e174f112e4c7dde42 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a99491d1f40d95a437b0f641e13fa2a26 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memItemLeft" align="right" valign="top"><a id="a99491d1f40d95a437b0f641e13fa2a26" name="a99491d1f40d95a437b0f641e13fa2a26"></a>
+static void&#160;</td><td class="memItemRight" valign="bottom"><b>journalSetDBHost</b> (const std::string &amp;host=&quot;localhost&quot;)</td></tr>
+<tr class="memdesc:a99491d1f40d95a437b0f641e13fa2a26 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the mongodb host. <br /></td></tr>
+<tr class="separator:a99491d1f40d95a437b0f641e13fa2a26 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a43ee7ea4b636156a6726edbe3b78094f inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memItemLeft" align="right" valign="top"><a id="a43ee7ea4b636156a6726edbe3b78094f" name="a43ee7ea4b636156a6726edbe3b78094f"></a>
+static void&#160;</td><td class="memItemRight" valign="bottom"><b>journalSetDBUsername</b> (const std::string &amp;user=&quot;&quot;)</td></tr>
+<tr class="memdesc:a43ee7ea4b636156a6726edbe3b78094f inherit pub_static_methods_classFeel_1_1JournalManager"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the mongodb user name. <br /></td></tr>
+<tr class="separator:a43ee7ea4b636156a6726edbe3b78094f inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a590a7e086eb67542f4bb16cbe8b66c12 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memItemLeft" align="right" valign="top"><a id="a590a7e086eb67542f4bb16cbe8b66c12" name="a590a7e086eb67542f4bb16cbe8b66c12"></a>
+static void&#160;</td><td class="memItemRight" valign="bottom"><b>journalSetDBPassword</b> (const std::string &amp;password=&quot;&quot;)</td></tr>
+<tr class="memdesc:a590a7e086eb67542f4bb16cbe8b66c12 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the mongodb user password. <br /></td></tr>
+<tr class="separator:a590a7e086eb67542f4bb16cbe8b66c12 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a97592926bcd7c286d5e7901545273557 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memItemLeft" align="right" valign="top"><a id="a97592926bcd7c286d5e7901545273557" name="a97592926bcd7c286d5e7901545273557"></a>
+static void&#160;</td><td class="memItemRight" valign="bottom"><b>journalSetDBPort</b> (const std::string &amp;port=&quot;27017&quot;)</td></tr>
+<tr class="memdesc:a97592926bcd7c286d5e7901545273557 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the mongodb port. <br /></td></tr>
+<tr class="separator:a97592926bcd7c286d5e7901545273557 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a20d30fcb0d9e2c22bd5a29888de39779 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memItemLeft" align="right" valign="top"><a id="a20d30fcb0d9e2c22bd5a29888de39779" name="a20d30fcb0d9e2c22bd5a29888de39779"></a>
+static void&#160;</td><td class="memItemRight" valign="bottom"><b>journalSetDBAuthsrc</b> (const std::string &amp;authsrc=&quot;admin&quot;)</td></tr>
+<tr class="memdesc:a20d30fcb0d9e2c22bd5a29888de39779 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the collection used to authenticate. <br /></td></tr>
+<tr class="separator:a20d30fcb0d9e2c22bd5a29888de39779 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac58f5acd5c4f1a6750101f2aa7b7ac78 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memItemLeft" align="right" valign="top"><a id="ac58f5acd5c4f1a6750101f2aa7b7ac78" name="ac58f5acd5c4f1a6750101f2aa7b7ac78"></a>
+static void&#160;</td><td class="memItemRight" valign="bottom"><b>journalSetDBCollection</b> (const std::string &amp;dbname=&quot;journal&quot;)</td></tr>
+<tr class="memdesc:ac58f5acd5c4f1a6750101f2aa7b7ac78 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set mongodb collection to use for the journal. <br /></td></tr>
+<tr class="separator:ac58f5acd5c4f1a6750101f2aa7b7ac78 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a735aa096e8e78391574e06ebec3b18ef inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memItemLeft" align="right" valign="top"><a id="a735aa096e8e78391574e06ebec3b18ef" name="a735aa096e8e78391574e06ebec3b18ef"></a>
+static void&#160;</td><td class="memItemRight" valign="bottom"><b>journalDBConfig</b> (const <a class="el" href="classFeel_1_1MongoConfig.html">MongoConfig</a> &amp;mc)</td></tr>
+<tr class="memdesc:a735aa096e8e78391574e06ebec3b18ef inherit pub_static_methods_classFeel_1_1JournalManager"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set mongodb collection to use for the journal. <br /></td></tr>
+<tr class="separator:a735aa096e8e78391574e06ebec3b18ef inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader">Typedefs</h2></td></tr>
 <tr class="memitem:aa0bd7230548371a819bd92f110d506d6"><td class="memItemLeft" align="right" valign="top"><a id="aa0bd7230548371a819bd92f110d506d6" name="aa0bd7230548371a819bd92f110d506d6"></a>
 typedef <a class="el" href="classFeel_1_1WorldComm.html">WorldComm</a>&#160;</td><td class="memItemRight" valign="bottom"><b>worldcomm_type</b></td></tr>
@@ -339,132 +443,6 @@ static uuids::uuid&#160;</td><td class="memItemRight" valign="bottom"><b>nameUUI
 <tr class="memdesc:aa41742c7a53cafd818bc49fa49bc48db"><td class="mdescLeft">&#160;</td><td class="mdescRight">Generate a UUID from a namespace UUID and a name. <br /></td></tr>
 <tr class="separator:aa41742c7a53cafd818bc49fa49bc48db"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-methods" name="pub-static-methods"></a>
-Static Public Member Functions</h2></td></tr>
-<tr class="memitem:a65c0f336d8f4a7c1e5a2205116a98d27"><td class="memTemplParams" colspan="2"><a id="a65c0f336d8f4a7c1e5a2205116a98d27" name="a65c0f336d8f4a7c1e5a2205116a98d27"></a>
-template&lt;typename Observer &gt; </td></tr>
-<tr class="memitem:a65c0f336d8f4a7c1e5a2205116a98d27"><td class="memTemplItemLeft" align="right" valign="top">static void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>addDeleteObserver</b> (Observer const &amp;obs)</td></tr>
-<tr class="separator:a65c0f336d8f4a7c1e5a2205116a98d27"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4cf5e6179d3dfacdacf8ad00641f90db"><td class="memTemplParams" colspan="2"><a id="a4cf5e6179d3dfacdacf8ad00641f90db" name="a4cf5e6179d3dfacdacf8ad00641f90db"></a>
-template&lt;typename Observer &gt; </td></tr>
-<tr class="memitem:a4cf5e6179d3dfacdacf8ad00641f90db"><td class="memTemplItemLeft" align="right" valign="top">static void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>addDeleteObserver</b> (std::shared_ptr&lt; Observer &gt; const &amp;obs)</td></tr>
-<tr class="separator:a4cf5e6179d3dfacdacf8ad00641f90db"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a40e7009dadbb4eb4b0c0f4b21f5dd523"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Environment.html#a40e7009dadbb4eb4b0c0f4b21f5dd523">addTimer</a> (std::string const &amp;msg, std::pair&lt; double, <a class="el" href="classint.html">int</a> &gt; const &amp;t, std::string const &amp;uiname)</td></tr>
-<tr class="memdesc:a40e7009dadbb4eb4b0c0f4b21f5dd523"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return the timerstable pointer.  <a href="classFeel_1_1Environment.html#a40e7009dadbb4eb4b0c0f4b21f5dd523">More...</a><br /></td></tr>
-<tr class="separator:a40e7009dadbb4eb4b0c0f4b21f5dd523"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7577f9c9892a52415fffdf2466dc11d6"><td class="memItemLeft" align="right" valign="top"><a id="a7577f9c9892a52415fffdf2466dc11d6" name="a7577f9c9892a52415fffdf2466dc11d6"></a>
-static void&#160;</td><td class="memItemRight" valign="bottom"><b>clearSomeMemory</b> ()</td></tr>
-<tr class="separator:a7577f9c9892a52415fffdf2466dc11d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a26e4f2505f0ba9e0a0266390447f68f7"><td class="memItemLeft" align="right" valign="top">static std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Environment.html#a26e4f2505f0ba9e0a0266390447f68f7">expand</a> (std::string const &amp;<a class="el" href="namespaceFeel.html#a338e05dd5e37f3594666f0a00e029d3d">expr</a>)</td></tr>
-<tr class="memdesc:a26e4f2505f0ba9e0a0266390447f68f7"><td class="mdescLeft">&#160;</td><td class="mdescRight">expand feel++ pathes in a string  <a href="classFeel_1_1Environment.html#a26e4f2505f0ba9e0a0266390447f68f7">More...</a><br /></td></tr>
-<tr class="separator:a26e4f2505f0ba9e0a0266390447f68f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4fc75efe7320d69c331e814fa35321cf"><td class="memItemLeft" align="right" valign="top">static std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Environment.html#a4fc75efe7320d69c331e814fa35321cf">findFileRemotely</a> (std::string const &amp;fname, std::string const &amp;subdir=&quot;&quot;)</td></tr>
-<tr class="memdesc:a4fc75efe7320d69c331e814fa35321cf"><td class="mdescLeft">&#160;</td><td class="mdescRight">try find remotely the file <code>fname</code>  <a href="classFeel_1_1Environment.html#a4fc75efe7320d69c331e814fa35321cf">More...</a><br /></td></tr>
-<tr class="separator:a4fc75efe7320d69c331e814fa35321cf"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a43c7e409ca67d5c89864bb5a91468fdf"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="structFeel_1_1MemoryUsage.html">MemoryUsage</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Environment.html#a43c7e409ca67d5c89864bb5a91468fdf">logMemoryUsage</a> (std::string const &amp;message)</td></tr>
-<tr class="memdesc:a43c7e409ca67d5c89864bb5a91468fdf"><td class="mdescLeft">&#160;</td><td class="mdescRight">print resident memory usage as well as PETSc malloc usage in log file  <a href="classFeel_1_1Environment.html#a43c7e409ca67d5c89864bb5a91468fdf">More...</a><br /></td></tr>
-<tr class="separator:a43c7e409ca67d5c89864bb5a91468fdf"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a01c76631f21c183a6ae7e80917bc639c"><td class="memTemplParams" colspan="2"><a id="a01c76631f21c183a6ae7e80917bc639c" name="a01c76631f21c183a6ae7e80917bc639c"></a>
-template&lt;typename ... Ts&gt; </td></tr>
-<tr class="memitem:a01c76631f21c183a6ae7e80917bc639c"><td class="memTemplItemLeft" align="right" valign="top">static std::pair&lt; std::string, po::variable_value &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>option</b> (Ts &amp;&amp;... v)</td></tr>
-<tr class="separator:a01c76631f21c183a6ae7e80917bc639c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a29b2eeaca395bba470dc395348692677"><td class="memItemLeft" align="right" valign="top"><a id="a29b2eeaca395bba470dc395348692677" name="a29b2eeaca395bba470dc395348692677"></a>
-static void&#160;</td><td class="memItemRight" valign="bottom"><b>saveTimers</b> (<a class="el" href="classbool.html">bool</a> save)</td></tr>
-<tr class="memdesc:a29b2eeaca395bba470dc395348692677"><td class="mdescLeft">&#160;</td><td class="mdescRight">display and save timers <br /></td></tr>
-<tr class="separator:a29b2eeaca395bba470dc395348692677"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a03c354cd6b80d01548ccb01f7626e2d4"><td class="memItemLeft" align="right" valign="top"><a id="a03c354cd6b80d01548ccb01f7626e2d4" name="a03c354cd6b80d01548ccb01f7626e2d4"></a>
-static void&#160;</td><td class="memItemRight" valign="bottom"><b>saveTimersMD</b> (std::ostream &amp;os)</td></tr>
-<tr class="separator:a03c354cd6b80d01548ccb01f7626e2d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aed57a58c7097f59d7bfa3cfe3dd4df18"><td class="memItemLeft" align="right" valign="top">static FEELPP_DEPRECATED const fs::path &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Environment.html#aed57a58c7097f59d7bfa3cfe3dd4df18">scratchDirectory</a> ()</td></tr>
-<tr class="separator:aed57a58c7097f59d7bfa3cfe3dd4df18"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8466d0b1433677e624082f9f6d13d818"><td class="memItemLeft" align="right" valign="top">static FEELPP_DEPRECATED void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Environment.html#a8466d0b1433677e624082f9f6d13d818">setLogs</a> (std::string const &amp;prefix)</td></tr>
-<tr class="memdesc:a8466d0b1433677e624082f9f6d13d818"><td class="mdescLeft">&#160;</td><td class="mdescRight">get <code>variables_map</code> from <code>options_description</code> <code>desc</code>  <a href="classFeel_1_1Environment.html#a8466d0b1433677e624082f9f6d13d818">More...</a><br /></td></tr>
-<tr class="separator:a8466d0b1433677e624082f9f6d13d818"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af0fa80df613e602f56dc46f72d0a456c"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Environment.html#af0fa80df613e602f56dc46f72d0a456c">startLogging</a> (std::string decorate)</td></tr>
-<tr class="memdesc:af0fa80df613e602f56dc46f72d0a456c"><td class="mdescLeft">&#160;</td><td class="mdescRight">start logging.  <a href="classFeel_1_1Environment.html#af0fa80df613e602f56dc46f72d0a456c">More...</a><br /></td></tr>
-<tr class="separator:af0fa80df613e602f56dc46f72d0a456c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7dab59a5c06a5085826c3d83127e473d"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Environment.html#a7dab59a5c06a5085826c3d83127e473d">stopLogging</a> (<a class="el" href="classbool.html">bool</a> remove=false)</td></tr>
-<tr class="memdesc:a7dab59a5c06a5085826c3d83127e473d"><td class="mdescLeft">&#160;</td><td class="mdescRight">stop logging in Feel++.  <a href="classFeel_1_1Environment.html#a7dab59a5c06a5085826c3d83127e473d">More...</a><br /></td></tr>
-<tr class="separator:a7dab59a5c06a5085826c3d83127e473d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aefa39799fcc994f5d7f089f2ac7df1cd"><td class="memTemplParams" colspan="2"><a id="aefa39799fcc994f5d7f089f2ac7df1cd" name="aefa39799fcc994f5d7f089f2ac7df1cd"></a>
-template&lt;typename ... Ts&gt; </td></tr>
-<tr class="memitem:aefa39799fcc994f5d7f089f2ac7df1cd"><td class="memTemplItemLeft" align="right" valign="top">static po::variable_value&#160;</td><td class="memTemplItemRight" valign="bottom"><b>vm</b> (Ts &amp;&amp;... v)</td></tr>
-<tr class="separator:aefa39799fcc994f5d7f089f2ac7df1cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="inherit_header pub_static_methods_classFeel_1_1JournalManager"><td colspan="2" onclick="javascript:toggleInherit('pub_static_methods_classFeel_1_1JournalManager')"><img src="closed.png" alt="-"/>&#160;Static Public Member Functions inherited from <a class="el" href="classFeel_1_1JournalManager.html">Feel::JournalManager</a></td></tr>
-<tr class="memitem:a68fcb2fe0b7c450c25db9b7d8b1f3624 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1JournalManager.html#a68fcb2fe0b7c450c25db9b7d8b1f3624">setJournalFilename</a> (const std::string &amp;name)</td></tr>
-<tr class="memdesc:a68fcb2fe0b7c450c25db9b7d8b1f3624 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="mdescLeft">&#160;</td><td class="mdescRight">Setters.  <a href="classFeel_1_1JournalManager.html#a68fcb2fe0b7c450c25db9b7d8b1f3624">More...</a><br /></td></tr>
-<tr class="separator:a68fcb2fe0b7c450c25db9b7d8b1f3624 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af3998caa18c821abfa5dba41170473a3 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1JournalManager.html#af3998caa18c821abfa5dba41170473a3">setJournalAutoMode</a> (<a class="el" href="classbool.html">bool</a> b)</td></tr>
-<tr class="memdesc:af3998caa18c821abfa5dba41170473a3 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the journal mode.  <a href="classFeel_1_1JournalManager.html#af3998caa18c821abfa5dba41170473a3">More...</a><br /></td></tr>
-<tr class="separator:af3998caa18c821abfa5dba41170473a3 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a55deac5c47e5e6ab3ac7607f89149a57 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memItemLeft" align="right" valign="top"><a id="a55deac5c47e5e6ab3ac7607f89149a57" name="a55deac5c47e5e6ab3ac7607f89149a57"></a>
-static void&#160;</td><td class="memItemRight" valign="bottom"><b>setJournalEnable</b> (<a class="el" href="classbool.html">bool</a> m)</td></tr>
-<tr class="memdesc:a55deac5c47e5e6ab3ac7607f89149a57 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="mdescLeft">&#160;</td><td class="mdescRight">Activate or deactivate the journal. <br /></td></tr>
-<tr class="separator:a55deac5c47e5e6ab3ac7607f89149a57 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1595d596f9f6f415bc1fb7ccc6fa5acc inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memItemLeft" align="right" valign="top">static const std::string &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1JournalManager.html#a1595d596f9f6f415bc1fb7ccc6fa5acc">journalFilename</a> ()</td></tr>
-<tr class="memdesc:a1595d596f9f6f415bc1fb7ccc6fa5acc inherit pub_static_methods_classFeel_1_1JournalManager"><td class="mdescLeft">&#160;</td><td class="mdescRight">Getters.  <a href="classFeel_1_1JournalManager.html#a1595d596f9f6f415bc1fb7ccc6fa5acc">More...</a><br /></td></tr>
-<tr class="separator:a1595d596f9f6f415bc1fb7ccc6fa5acc inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8e8bc627cd458b5b68931fadf8864360 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memItemLeft" align="right" valign="top"><a id="a8e8bc627cd458b5b68931fadf8864360" name="a8e8bc627cd458b5b68931fadf8864360"></a>
-static <a class="el" href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">nl::json</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>journalData</b> ()</td></tr>
-<tr class="separator:a8e8bc627cd458b5b68931fadf8864360 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad6ffb95221b4183f0eb6a91c48305c6c inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memItemLeft" align="right" valign="top">static const <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1JournalManager.html#ad6ffb95221b4183f0eb6a91c48305c6c">journalAutoMode</a> ()</td></tr>
-<tr class="memdesc:ad6ffb95221b4183f0eb6a91c48305c6c inherit pub_static_methods_classFeel_1_1JournalManager"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the current journal mode status.  <a href="classFeel_1_1JournalManager.html#ad6ffb95221b4183f0eb6a91c48305c6c">More...</a><br /></td></tr>
-<tr class="separator:ad6ffb95221b4183f0eb6a91c48305c6c inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3c926b0dd9aaf0bf5200a37965c714c5 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memItemLeft" align="right" valign="top">static const <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1JournalManager.html#a3c926b0dd9aaf0bf5200a37965c714c5">journalEnabled</a> ()</td></tr>
-<tr class="memdesc:a3c926b0dd9aaf0bf5200a37965c714c5 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the journal status.  <a href="classFeel_1_1JournalManager.html#a3c926b0dd9aaf0bf5200a37965c714c5">More...</a><br /></td></tr>
-<tr class="separator:a3c926b0dd9aaf0bf5200a37965c714c5 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a26b9d571c84e48737f04fa84194b8d49 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memItemLeft" align="right" valign="top">static const uint32_type&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1JournalManager.html#a26b9d571c84e48737f04fa84194b8d49">journalCurrentCheckpoint</a> ()</td></tr>
-<tr class="memdesc:a26b9d571c84e48737f04fa84194b8d49 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the current checkpoint counter.  <a href="classFeel_1_1JournalManager.html#a26b9d571c84e48737f04fa84194b8d49">More...</a><br /></td></tr>
-<tr class="separator:a26b9d571c84e48737f04fa84194b8d49 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4c45a94b804e8445e999389e38bdfeff inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memItemLeft" align="right" valign="top">static decltype(auto)&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1JournalManager.html#a4c45a94b804e8445e999389e38bdfeff">journalSignal</a> ()</td></tr>
-<tr class="memdesc:a4c45a94b804e8445e999389e38bdfeff inherit pub_static_methods_classFeel_1_1JournalManager"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the journal underlying static signal.  <a href="classFeel_1_1JournalManager.html#a4c45a94b804e8445e999389e38bdfeff">More...</a><br /></td></tr>
-<tr class="separator:a4c45a94b804e8445e999389e38bdfeff inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad44a6ffc580c5d69259a682b8ef5c681 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classnlohmann_1_1basic__json.html">notify_type</a> const &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1JournalManager.html#ad44a6ffc580c5d69259a682b8ef5c681">journalPull</a> ()</td></tr>
-<tr class="memdesc:ad44a6ffc580c5d69259a682b8ef5c681 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="mdescLeft">&#160;</td><td class="mdescRight">Journal gather/save.  <a href="classFeel_1_1JournalManager.html#ad44a6ffc580c5d69259a682b8ef5c681">More...</a><br /></td></tr>
-<tr class="separator:ad44a6ffc580c5d69259a682b8ef5c681 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a25e83050695ce2e3d6d52a34bdc728b9 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memItemLeft" align="right" valign="top"><a id="a25e83050695ce2e3d6d52a34bdc728b9" name="a25e83050695ce2e3d6d52a34bdc728b9"></a>
-static void&#160;</td><td class="memItemRight" valign="bottom"><b>journalSave</b> (std::string const &amp;filename=&quot;&quot;)</td></tr>
-<tr class="memdesc:a25e83050695ce2e3d6d52a34bdc728b9 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="mdescLeft">&#160;</td><td class="mdescRight">Save the global property tree into a json file. <br /></td></tr>
-<tr class="separator:a25e83050695ce2e3d6d52a34bdc728b9 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4771e8ff34683e6715cd0b86fa59a9a2 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1JournalManager.html#a4771e8ff34683e6715cd0b86fa59a9a2">journalCheckpoint</a> (<a class="el" href="classbool.html">bool</a> save=true, const std::string &amp;filename=&quot;&quot;)</td></tr>
-<tr class="memdesc:a4771e8ff34683e6715cd0b86fa59a9a2 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="mdescLeft">&#160;</td><td class="mdescRight">Generate a checkpoint.  <a href="classFeel_1_1JournalManager.html#a4771e8ff34683e6715cd0b86fa59a9a2">More...</a><br /></td></tr>
-<tr class="separator:a4771e8ff34683e6715cd0b86fa59a9a2 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a81638b0093b593e70a89785b00d54cf5 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memItemLeft" align="right" valign="top"><a id="a81638b0093b593e70a89785b00d54cf5" name="a81638b0093b593e70a89785b00d54cf5"></a>
-static void&#160;</td><td class="memItemRight" valign="bottom"><b>journalFinalize</b> ()</td></tr>
-<tr class="memdesc:a81638b0093b593e70a89785b00d54cf5 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create the journal. <br /></td></tr>
-<tr class="separator:a81638b0093b593e70a89785b00d54cf5 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa22d14a63e58f83e174f112e4c7dde42 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1JournalManager.html#aa22d14a63e58f83e174f112e4c7dde42">journalSetDBName</a> (const std::string &amp;dbname=&quot;feelpp&quot;)</td></tr>
-<tr class="memdesc:aa22d14a63e58f83e174f112e4c7dde42 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="mdescLeft">&#160;</td><td class="mdescRight">Setters.  <a href="classFeel_1_1JournalManager.html#aa22d14a63e58f83e174f112e4c7dde42">More...</a><br /></td></tr>
-<tr class="separator:aa22d14a63e58f83e174f112e4c7dde42 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a99491d1f40d95a437b0f641e13fa2a26 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memItemLeft" align="right" valign="top"><a id="a99491d1f40d95a437b0f641e13fa2a26" name="a99491d1f40d95a437b0f641e13fa2a26"></a>
-static void&#160;</td><td class="memItemRight" valign="bottom"><b>journalSetDBHost</b> (const std::string &amp;host=&quot;localhost&quot;)</td></tr>
-<tr class="memdesc:a99491d1f40d95a437b0f641e13fa2a26 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the mongodb host. <br /></td></tr>
-<tr class="separator:a99491d1f40d95a437b0f641e13fa2a26 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a43ee7ea4b636156a6726edbe3b78094f inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memItemLeft" align="right" valign="top"><a id="a43ee7ea4b636156a6726edbe3b78094f" name="a43ee7ea4b636156a6726edbe3b78094f"></a>
-static void&#160;</td><td class="memItemRight" valign="bottom"><b>journalSetDBUsername</b> (const std::string &amp;user=&quot;&quot;)</td></tr>
-<tr class="memdesc:a43ee7ea4b636156a6726edbe3b78094f inherit pub_static_methods_classFeel_1_1JournalManager"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the mongodb user name. <br /></td></tr>
-<tr class="separator:a43ee7ea4b636156a6726edbe3b78094f inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a590a7e086eb67542f4bb16cbe8b66c12 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memItemLeft" align="right" valign="top"><a id="a590a7e086eb67542f4bb16cbe8b66c12" name="a590a7e086eb67542f4bb16cbe8b66c12"></a>
-static void&#160;</td><td class="memItemRight" valign="bottom"><b>journalSetDBPassword</b> (const std::string &amp;password=&quot;&quot;)</td></tr>
-<tr class="memdesc:a590a7e086eb67542f4bb16cbe8b66c12 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the mongodb user password. <br /></td></tr>
-<tr class="separator:a590a7e086eb67542f4bb16cbe8b66c12 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a97592926bcd7c286d5e7901545273557 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memItemLeft" align="right" valign="top"><a id="a97592926bcd7c286d5e7901545273557" name="a97592926bcd7c286d5e7901545273557"></a>
-static void&#160;</td><td class="memItemRight" valign="bottom"><b>journalSetDBPort</b> (const std::string &amp;port=&quot;27017&quot;)</td></tr>
-<tr class="memdesc:a97592926bcd7c286d5e7901545273557 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the mongodb port. <br /></td></tr>
-<tr class="separator:a97592926bcd7c286d5e7901545273557 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a20d30fcb0d9e2c22bd5a29888de39779 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memItemLeft" align="right" valign="top"><a id="a20d30fcb0d9e2c22bd5a29888de39779" name="a20d30fcb0d9e2c22bd5a29888de39779"></a>
-static void&#160;</td><td class="memItemRight" valign="bottom"><b>journalSetDBAuthsrc</b> (const std::string &amp;authsrc=&quot;admin&quot;)</td></tr>
-<tr class="memdesc:a20d30fcb0d9e2c22bd5a29888de39779 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the collection used to authenticate. <br /></td></tr>
-<tr class="separator:a20d30fcb0d9e2c22bd5a29888de39779 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac58f5acd5c4f1a6750101f2aa7b7ac78 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memItemLeft" align="right" valign="top"><a id="ac58f5acd5c4f1a6750101f2aa7b7ac78" name="ac58f5acd5c4f1a6750101f2aa7b7ac78"></a>
-static void&#160;</td><td class="memItemRight" valign="bottom"><b>journalSetDBCollection</b> (const std::string &amp;dbname=&quot;journal&quot;)</td></tr>
-<tr class="memdesc:ac58f5acd5c4f1a6750101f2aa7b7ac78 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set mongodb collection to use for the journal. <br /></td></tr>
-<tr class="separator:ac58f5acd5c4f1a6750101f2aa7b7ac78 inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a735aa096e8e78391574e06ebec3b18ef inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memItemLeft" align="right" valign="top"><a id="a735aa096e8e78391574e06ebec3b18ef" name="a735aa096e8e78391574e06ebec3b18ef"></a>
-static void&#160;</td><td class="memItemRight" valign="bottom"><b>journalDBConfig</b> (const <a class="el" href="classFeel_1_1MongoConfig.html">MongoConfig</a> &amp;mc)</td></tr>
-<tr class="memdesc:a735aa096e8e78391574e06ebec3b18ef inherit pub_static_methods_classFeel_1_1JournalManager"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set mongodb collection to use for the journal. <br /></td></tr>
-<tr class="separator:a735aa096e8e78391574e06ebec3b18ef inherit pub_static_methods_classFeel_1_1JournalManager"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="inherited" name="inherited"></a>
 Additional Inherited Members</h2></td></tr>
 <tr class="inherit_header pub_types_classFeel_1_1JournalManager"><td colspan="2" onclick="javascript:toggleInherit('pub_types_classFeel_1_1JournalManager')"><img src="closed.png" alt="-"/>&#160;Public Types inherited from <a class="el" href="classFeel_1_1JournalManager.html">Feel::JournalManager</a></td></tr>
@@ -480,6 +458,194 @@ virtual&#160;</td><td class="memItemRight" valign="bottom"><b>~JournalManager</b
 <tr class="memdesc:adca6ff9f7e53eac59d5d8974efeda645 inherit pub_methods_classFeel_1_1JournalManager"><td class="mdescLeft">&#160;</td><td class="mdescRight">Destructor. <br /></td></tr>
 <tr class="separator:adca6ff9f7e53eac59d5d8974efeda645 inherit pub_methods_classFeel_1_1JournalManager"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p >Initialize, finalize, and query the Feel++ environment. </p>
+<p >The <code><a class="el" href="classFeel_1_1Environment.html" title="Initialize, finalize, and query the Feel++ environment.">Environment</a></code> class is used to initialize, finalize, and query the Feel++ environment. It will typically be used in the <code>main()</code> function of a program, which will create a single instance of <code><a class="el" href="classFeel_1_1Environment.html" title="Initialize, finalize, and query the Feel++ environment.">Environment</a></code> initialized with the arguments passed to the program:</p>
+<div class="fragment"><div class="line"><span class="keywordtype">int</span> main(<span class="keywordtype">int</span> argc, <span class="keywordtype">char</span>* argv[])</div>
+<div class="line">{</div>
+<div class="line">   <span class="keyword">using namespace </span><a class="code hl_namespace" href="namespaceFeel.html">Feel</a>;</div>
+<div class="line">   <a class="code hl_function" href="classFeel_1_1Environment.html#a2f72ceaafeecd718e9089c5d16322cfd">Environment</a> env(argc, argv);</div>
+<div class="line">}</div>
+<div class="ttc" id="aclassFeel_1_1Environment_html_a2f72ceaafeecd718e9089c5d16322cfd"><div class="ttname"><a href="classFeel_1_1Environment.html#a2f72ceaafeecd718e9089c5d16322cfd">Feel::Environment::Environment</a></div><div class="ttdeci">Environment()</div><div class="ttdoc">Initialize the Feel environment.</div><div class="ttdef"><b>Definition:</b> environment.cpp:296</div></div>
+<div class="ttc" id="anamespaceFeel_html"><div class="ttname"><a href="namespaceFeel.html">Feel</a></div><div class="ttdoc">-*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-w...</div><div class="ttdef"><b>Definition:</b> about.cpp:37</div></div>
+</div><!-- fragment --><p> or more commonly </p><div class="fragment"><div class="line"><span class="keywordtype">int</span> main(<span class="keywordtype">int</span> argc, <span class="keywordtype">char</span>* argv[])</div>
+<div class="line">{</div>
+<div class="line">   <span class="keyword">using namespace </span><a class="code hl_namespace" href="namespaceFeel.html">Feel</a>;</div>
+<div class="line">   po::options_description myoptions( <span class="stringliteral">&quot;Laplacian options&quot;</span> );</div>
+<div class="line">   myoptions.add_options()</div>
+<div class="line">         ( <span class="stringliteral">&quot;mu&quot;</span>, po::value&lt;double&gt;()-&gt;default_value( 1.0 ), <span class="stringliteral">&quot;coeff&quot;</span> );</div>
+<div class="line">   <a class="code hl_function" href="classFeel_1_1Environment.html#a2f72ceaafeecd718e9089c5d16322cfd">Environment</a> env( _argc=argc, _argv=argv,</div>
+<div class="line">                    _desc=myoptions,</div>
+<div class="line">                   _about=about(_name=<span class="stringliteral">&quot;myapp&quot;</span>,</div>
+<div class="line">                                _author=<span class="stringliteral">&quot;Feel++ Consortium&quot;</span>,</div>
+<div class="line">                                _email=<span class="stringliteral">&quot;feelpp-devel@feelpp.org&quot;</span>));</div>
+<div class="line">}</div>
+</div><!-- fragment --><p >The instance of <code><a class="el" href="classFeel_1_1Environment.html" title="Initialize, finalize, and query the Feel++ environment.">Environment</a></code> will initialize Feel++ (by calling <code>MPI</code>, <code>PETSc</code>, <code>SLEPc</code> or Logging initialization routines) in its constructor and finalize in its destructor.</p>
+<dl class="section author"><dt>Author</dt><dd>Christophe Prud'homme </dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="classFeel_1_1Application.html" title="provides information about the Application">Application</a> </dd></dl>
+</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a id="a2f72ceaafeecd718e9089c5d16322cfd" name="a2f72ceaafeecd718e9089c5d16322cfd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2f72ceaafeecd718e9089c5d16322cfd">&#9670;&nbsp;</a></span>Environment() <span class="overload">[1/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">Feel::Environment::Environment </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Initialize the <a class="el" href="namespaceFeel.html" title="-*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-w...">Feel</a> environment. </p>
+<p >Default constructor.</p>
+<p >If the <a class="el" href="namespaceFeel.html" title="-*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-w...">Feel</a> environment has not already been initialized, initializes <a class="el" href="namespaceFeel.html" title="-*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-w...">Feel</a> </p>
+
+</div>
+</div>
+<a id="a5dd435d3b4d3664600a9555c750cee22" name="a5dd435d3b4d3664600a9555c750cee22"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5dd435d3b4d3664600a9555c750cee22">&#9670;&nbsp;</a></span>Environment() <span class="overload">[2/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">Feel::Environment::Environment </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classint.html">int</a> &amp;&#160;</td>
+          <td class="paramname"><em>argc</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">char **&amp;&#160;</td>
+          <td class="paramname"><em>argv</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Initialize the <a class="el" href="namespaceFeel.html" title="-*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-w...">Feel</a> environment. </p>
+<p >Constructor.</p>
+<p >If the <a class="el" href="namespaceFeel.html" title="-*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-w...">Feel</a> environment has not already been initialized, initializes <a class="el" href="namespaceFeel.html" title="-*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-w...">Feel</a></p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">argc</td><td>The number of arguments provided in <code>argv</code>, as passed into the program's <code>main</code> function.</td></tr>
+    <tr><td class="paramname">argv</td><td>The array of argument strings passed to the program via <code>main</code>. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a2090fcc5dc3f4bd395df2a3c21b12a79" name="a2090fcc5dc3f4bd395df2a3c21b12a79"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2090fcc5dc3f4bd395df2a3c21b12a79">&#9670;&nbsp;</a></span>Environment() <span class="overload">[3/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">Feel::Environment::Environment </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classint.html">int</a>&#160;</td>
+          <td class="paramname"><em>argc</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">char **&#160;</td>
+          <td class="paramname"><em>argv</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">mpi::threading::level&#160;</td>
+          <td class="paramname"><em>lvl</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">po::options_description const &amp;&#160;</td>
+          <td class="paramname"><em>desc</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">po::options_description const &amp;&#160;</td>
+          <td class="paramname"><em>desc_lib</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classFeel_1_1AboutData.html">AboutData</a> const &amp;&#160;</td>
+          <td class="paramname"><em>about</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structFeel_1_1Repository_1_1Config.html">Repository::Config</a> const &amp;&#160;</td>
+          <td class="paramname"><em>config</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Construct a new <a class="el" href="classFeel_1_1Environment.html" title="Initialize, finalize, and query the Feel++ environment.">Environment</a> object. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">argc</td><td>number of command line aguments </td></tr>
+    <tr><td class="paramname">argv</td><td>command line aguments </td></tr>
+    <tr><td class="paramname">lvl</td><td>level of threading in MPI </td></tr>
+    <tr><td class="paramname">desc</td><td>command line options for application </td></tr>
+    <tr><td class="paramname">desc_lib</td><td>command line options for library </td></tr>
+    <tr><td class="paramname">about</td><td>about data structure </td></tr>
+    <tr><td class="paramname">config</td><td>configuration of the repository of the resut&amp;lts </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a8063d8d062ce24ca7776b78cbfd57ca3" name="a8063d8d062ce24ca7776b78cbfd57ca3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8063d8d062ce24ca7776b78cbfd57ca3">&#9670;&nbsp;</a></span>~Environment()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">Feel::Environment::~Environment </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Shuts down the <a class="el" href="namespaceFeel.html" title="-*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-w...">Feel</a> environment. </p>
+<p >If this <code><a class="el" href="classFeel_1_1Environment.html" title="Initialize, finalize, and query the Feel++ environment.">Environment</a></code> object was used to initialize the <a class="el" href="namespaceFeel.html" title="-*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-w...">Feel</a> environment, and the <a class="el" href="namespaceFeel.html" title="-*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-w...">Feel</a> environment has not already been shut down (finalized), this destructor will shut down the <a class="el" href="namespaceFeel.html" title="-*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-w...">Feel</a> environment. </p>
+
+<p class="reference">References <a class="el" href="classFeel_1_1Table.html#a502a1ff988881a9bebe50b6d93956e1f">Feel::Table::add_row()</a>, <a class="el" href="classFeel_1_1AboutData.html#a169bf848c34367e76d8fc9b2ba134fe3">Feel::AboutData::appName()</a>, <a class="el" href="classFeel_1_1Table.html#a45716a5e07ec00f7aaca52cf21badb40">Feel::Table::format()</a>, <a class="el" href="classFeel_1_1JournalManager.html#a3c926b0dd9aaf0bf5200a37965c714c5">Feel::JournalManager::journalEnabled()</a>, <a class="el" href="classFeel_1_1JournalManager.html#a1595d596f9f6f415bc1fb7ccc6fa5acc">Feel::JournalManager::journalFilename()</a>, <a class="el" href="classFeel_1_1Environment.html#ac2ba36cb9e6b5cc1df509104647d4ec5">logsRepository()</a>, and <a class="el" href="classFeel_1_1Environment.html#a29b2eeaca395bba470dc395348692677">saveTimers()</a>.</p>
+
+</div>
+</div>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="aa174c7b26f9285d351fc2e8efb933594" name="aa174c7b26f9285d351fc2e8efb933594"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aa174c7b26f9285d351fc2e8efb933594">&#9670;&nbsp;</a></span>abort()</h2>
@@ -1371,169 +1537,6 @@ virtual&#160;</td><td class="memItemRight" valign="bottom"><b>~JournalManager</b
 </table>
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>the shared_ptr <a class="el" href="classFeel_1_1WorldComm.html" title="Provides interface to MPI Communicators.">WorldComm</a> </dd></dl>
-
-</div>
-</div>
-<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="a2f72ceaafeecd718e9089c5d16322cfd" name="a2f72ceaafeecd718e9089c5d16322cfd"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2f72ceaafeecd718e9089c5d16322cfd">&#9670;&nbsp;</a></span>Environment() <span class="overload">[1/3]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">Feel::Environment::Environment </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Initialize the <a class="el" href="namespaceFeel.html" title="-*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-w...">Feel</a> environment. </p>
-<p >Default constructor.</p>
-<p >If the <a class="el" href="namespaceFeel.html" title="-*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-w...">Feel</a> environment has not already been initialized, initializes <a class="el" href="namespaceFeel.html" title="-*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-w...">Feel</a> </p>
-
-</div>
-</div>
-<a id="a5dd435d3b4d3664600a9555c750cee22" name="a5dd435d3b4d3664600a9555c750cee22"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5dd435d3b4d3664600a9555c750cee22">&#9670;&nbsp;</a></span>Environment() <span class="overload">[2/3]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">Feel::Environment::Environment </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classint.html">int</a> &amp;&#160;</td>
-          <td class="paramname"><em>argc</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">char **&amp;&#160;</td>
-          <td class="paramname"><em>argv</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Initialize the <a class="el" href="namespaceFeel.html" title="-*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-w...">Feel</a> environment. </p>
-<p >Constructor.</p>
-<p >If the <a class="el" href="namespaceFeel.html" title="-*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-w...">Feel</a> environment has not already been initialized, initializes <a class="el" href="namespaceFeel.html" title="-*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-w...">Feel</a></p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">argc</td><td>The number of arguments provided in <code>argv</code>, as passed into the program's <code>main</code> function.</td></tr>
-    <tr><td class="paramname">argv</td><td>The array of argument strings passed to the program via <code>main</code>. </td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
-<a id="a2090fcc5dc3f4bd395df2a3c21b12a79" name="a2090fcc5dc3f4bd395df2a3c21b12a79"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2090fcc5dc3f4bd395df2a3c21b12a79">&#9670;&nbsp;</a></span>Environment() <span class="overload">[3/3]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">Feel::Environment::Environment </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classint.html">int</a>&#160;</td>
-          <td class="paramname"><em>argc</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">char **&#160;</td>
-          <td class="paramname"><em>argv</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">mpi::threading::level&#160;</td>
-          <td class="paramname"><em>lvl</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">po::options_description const &amp;&#160;</td>
-          <td class="paramname"><em>desc</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">po::options_description const &amp;&#160;</td>
-          <td class="paramname"><em>desc_lib</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classFeel_1_1AboutData.html">AboutData</a> const &amp;&#160;</td>
-          <td class="paramname"><em>about</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="structFeel_1_1Repository_1_1Config.html">Repository::Config</a> const &amp;&#160;</td>
-          <td class="paramname"><em>config</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Construct a new <a class="el" href="classFeel_1_1Environment.html" title="Initialize, finalize, and query the Feel++ environment.">Environment</a> object. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">argc</td><td>number of command line aguments </td></tr>
-    <tr><td class="paramname">argv</td><td>command line aguments </td></tr>
-    <tr><td class="paramname">lvl</td><td>level of threading in MPI </td></tr>
-    <tr><td class="paramname">desc</td><td>command line options for application </td></tr>
-    <tr><td class="paramname">desc_lib</td><td>command line options for library </td></tr>
-    <tr><td class="paramname">about</td><td>about data structure </td></tr>
-    <tr><td class="paramname">config</td><td>configuration of the repository of the resut&amp;lts </td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
-<a id="a8063d8d062ce24ca7776b78cbfd57ca3" name="a8063d8d062ce24ca7776b78cbfd57ca3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8063d8d062ce24ca7776b78cbfd57ca3">&#9670;&nbsp;</a></span>~Environment()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">Feel::Environment::~Environment </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Shuts down the <a class="el" href="namespaceFeel.html" title="-*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-w...">Feel</a> environment. </p>
-<p >If this <code><a class="el" href="classFeel_1_1Environment.html" title="Initialize, finalize, and query the Feel++ environment.">Environment</a></code> object was used to initialize the <a class="el" href="namespaceFeel.html" title="-*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-w...">Feel</a> environment, and the <a class="el" href="namespaceFeel.html" title="-*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-w...">Feel</a> environment has not already been shut down (finalized), this destructor will shut down the <a class="el" href="namespaceFeel.html" title="-*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-w...">Feel</a> environment. </p>
-
-<p class="reference">References <a class="el" href="classFeel_1_1Table.html#a502a1ff988881a9bebe50b6d93956e1f">Feel::Table::add_row()</a>, <a class="el" href="classFeel_1_1AboutData.html#a169bf848c34367e76d8fc9b2ba134fe3">Feel::AboutData::appName()</a>, <a class="el" href="classFeel_1_1Table.html#a45716a5e07ec00f7aaca52cf21badb40">Feel::Table::format()</a>, <a class="el" href="classFeel_1_1JournalManager.html#a3c926b0dd9aaf0bf5200a37965c714c5">Feel::JournalManager::journalEnabled()</a>, <a class="el" href="classFeel_1_1JournalManager.html#a1595d596f9f6f415bc1fb7ccc6fa5acc">Feel::JournalManager::journalFilename()</a>, <a class="el" href="classFeel_1_1Environment.html#ac2ba36cb9e6b5cc1df509104647d4ec5">logsRepository()</a>, and <a class="el" href="classFeel_1_1Environment.html#a29b2eeaca395bba470dc395348692677">saveTimers()</a>.</p>
 
 </div>
 </div>

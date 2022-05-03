@@ -3,6 +3,9 @@ var classFeel_1_1GeoND =
     [ "GetGm", "structFeel_1_1GeoND_1_1GetGm.html", null ],
     [ "GetImMeasure", "structFeel_1_1GeoND_1_1GetImMeasure.html", null ],
     [ "tt", "structFeel_1_1GeoND_1_1tt.html", null ],
+    [ "GeoND", "classFeel_1_1GeoND.html#a87f04b7924508e9467e5bf3276af4d53", null ],
+    [ "GeoND", "classFeel_1_1GeoND.html#ab8adcd81fb8c20f7c0ab75c15adbac10", null ],
+    [ "~GeoND", "classFeel_1_1GeoND.html#af24bd9256a400abbb485bf23da2a0822", null ],
     [ "barycenter", "classFeel_1_1GeoND.html#af02ee1626f5999d1c59e4faf7362886a", null ],
     [ "exchangePoints", "classFeel_1_1GeoND.html#a039a8c9d3cb24e0f8db68951a83ca12a", null ],
     [ "faceBarycenter", "classFeel_1_1GeoND.html#aa20fdd5655f528679f462be596776829", null ],
@@ -49,8 +52,5 @@ var classFeel_1_1GeoND =
     [ "swapPoints", "classFeel_1_1GeoND.html#a50b04a3f9bc000e7d55ca6eeacf6e5fd", null ],
     [ "updateG", "classFeel_1_1GeoND.html#a98969a3cecb0879d9b8be11e38bcd1e0", null ],
     [ "updateVertices", "classFeel_1_1GeoND.html#a7243938877695f057a4bc2bcc6c2d315", null ],
-    [ "vertices", "classFeel_1_1GeoND.html#aa350af4a5f5d91d7c5b716c3506bb2fa", null ],
-    [ "GeoND", "classFeel_1_1GeoND.html#a87f04b7924508e9467e5bf3276af4d53", null ],
-    [ "GeoND", "classFeel_1_1GeoND.html#ab8adcd81fb8c20f7c0ab75c15adbac10", null ],
-    [ "~GeoND", "classFeel_1_1GeoND.html#af24bd9256a400abbb485bf23da2a0822", null ]
+    [ "vertices", "classFeel_1_1GeoND.html#aa350af4a5f5d91d7c5b716c3506bb2fa", null ]
 ];

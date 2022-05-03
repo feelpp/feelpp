@@ -106,10 +106,10 @@ $(document).ready(function(){initNavTree('classFeel_1_1PsLogger.html',''); initR
   <div class="headertitle"><div class="title">Feel::PsLogger Class Reference</div></div>
 </div><!--header-->
 <div class="contents">
-<a name="details" id="details"></a><h2 class="groupheader">Description</h2>
-<div class="textblock"><p >Writes output of the system command ps to a logfile. </p>
-<dl class="section author"><dt>Author</dt><dd>Christoph Winkelmann, 2002 </dd></dl>
-</div><div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
+
+<p>Writes output of the system command ps to a logfile.  
+ <a href="classFeel_1_1PsLogger.html#details">More...</a></p>
+<div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Collaboration diagram for Feel::PsLogger:</div>
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">
 </div>
@@ -133,47 +133,10 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><b>fileName</b> (
 <a class="el" href="classFeel_1_1WorldComm.html">WorldComm</a> const &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>worldComm</b> () const</td></tr>
 <tr class="separator:afdfb1232136fb2f68a941c0cf3e09fa6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<h2 class="groupheader">Member Function Documentation</h2>
-<a id="a2f72736898d3212023d583d9bf131992" name="a2f72736898d3212023d583d9bf131992"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2f72736898d3212023d583d9bf131992">&#9670;&nbsp;</a></span>log()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void Feel::PsLogger::log </td>
-          <td>(</td>
-          <td class="paramtype">std::string&#160;</td>
-          <td class="paramname"><em>logMessage</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classbool.html">bool</a>&#160;</td>
-          <td class="paramname"><em>all_procs</em> = <code>true</code>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>writes the log message and the output of ps to the logfile. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">logMessage</td><td>the log message to write into the logfile </td></tr>
-    <tr><td class="paramname">all_procs</td><td>: write on all processors if true </td></tr>
-  </table>
-  </dd>
-</dl>
-
-<p class="reference">References <a class="el" href="classFeel_1_1WorldComm.html#a5089aa8980e3ae1ff3d384198d19a796">Feel::WorldComm::globalRank()</a>, <a class="el" href="classFeel_1_1Environment.html#a43c7e409ca67d5c89864bb5a91468fdf">Feel::Environment::logMemoryUsage()</a>, <a class="el" href="classFeel_1_1WorldComm.html#a72784467524c2d4a8a8301c93bf6d716">Feel::WorldComm::masterRank()</a>, and <a class="el" href="classFeel_1_1Environment.html#ade89e3983d4b3f998fb4ebd0e84f28a7">Feel::Environment::worldComm()</a>.</p>
-
-</div>
-</div>
-<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p >Writes output of the system command ps to a logfile. </p>
+<dl class="section author"><dt>Author</dt><dd>Christoph Winkelmann, 2002 </dd></dl>
+</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a466132946b8d2d20d1dd73939e277fa3" name="a466132946b8d2d20d1dd73939e277fa3"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a466132946b8d2d20d1dd73939e277fa3">&#9670;&nbsp;</a></span>PsLogger()</h2>
 
@@ -221,6 +184,46 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><b>fileName</b> (
   </table>
   </dd>
 </dl>
+
+</div>
+</div>
+<h2 class="groupheader">Member Function Documentation</h2>
+<a id="a2f72736898d3212023d583d9bf131992" name="a2f72736898d3212023d583d9bf131992"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2f72736898d3212023d583d9bf131992">&#9670;&nbsp;</a></span>log()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Feel::PsLogger::log </td>
+          <td>(</td>
+          <td class="paramtype">std::string&#160;</td>
+          <td class="paramname"><em>logMessage</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classbool.html">bool</a>&#160;</td>
+          <td class="paramname"><em>all_procs</em> = <code>true</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>writes the log message and the output of ps to the logfile. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">logMessage</td><td>the log message to write into the logfile </td></tr>
+    <tr><td class="paramname">all_procs</td><td>: write on all processors if true </td></tr>
+  </table>
+  </dd>
+</dl>
+
+<p class="reference">References <a class="el" href="classFeel_1_1WorldComm.html#a5089aa8980e3ae1ff3d384198d19a796">Feel::WorldComm::globalRank()</a>, <a class="el" href="classFeel_1_1Environment.html#a43c7e409ca67d5c89864bb5a91468fdf">Feel::Environment::logMemoryUsage()</a>, <a class="el" href="classFeel_1_1WorldComm.html#a72784467524c2d4a8a8301c93bf6d716">Feel::WorldComm::masterRank()</a>, and <a class="el" href="classFeel_1_1Environment.html#ade89e3983d4b3f998fb4ebd0e84f28a7">Feel::Environment::worldComm()</a>.</p>
 
 </div>
 </div>

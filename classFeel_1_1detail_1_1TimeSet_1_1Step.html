@@ -106,10 +106,10 @@ $(document).ready(function(){initNavTree('classFeel_1_1detail_1_1TimeSet_1_1Step
   <div class="headertitle"><div class="title">Feel::detail::TimeSet&lt; MeshType, N &gt;::Step Class Reference</div></div>
 </div><!--header-->
 <div class="contents">
-<a name="details" id="details"></a><h2 class="groupheader">Description</h2>
-<div class="textblock"><div class="compoundTemplParams">template&lt;typename MeshType, <a class="el" href="classint.html">int</a> N = 1&gt;<br />
-class Feel::detail::TimeSet&lt; MeshType, N &gt;::Step</div><p >a step in a time set </p>
-</div><div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
+
+<p>a step in a time set  
+ <a href="classFeel_1_1detail_1_1TimeSet_1_1Step.html#details">More...</a></p>
+<div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Inheritance diagram for Feel::detail::TimeSet&lt; MeshType, N &gt;::Step:</div>
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">
 </div>
@@ -126,6 +126,90 @@ class Feel::detail::TimeSet&lt; MeshType, N &gt;::Step</div><p >a step in a time
 </div>
 </div>
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
+Public Types</h2></td></tr>
+<tr class="memitem:ad8ec04916d6004193da855cf311f8ee7"><td class="memItemLeft" align="right" valign="top"><a id="ad8ec04916d6004193da855cf311f8ee7" name="ad8ec04916d6004193da855cf311f8ee7"></a>
+typedef map_complex_type::const_iterator&#160;</td><td class="memItemRight" valign="bottom"><b>complex_const_iterator</b></td></tr>
+<tr class="separator:ad8ec04916d6004193da855cf311f8ee7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a744e15b104e9eeb74b273696ed2f7c8e"><td class="memItemLeft" align="right" valign="top"><a id="a744e15b104e9eeb74b273696ed2f7c8e" name="a744e15b104e9eeb74b273696ed2f7c8e"></a>
+typedef map_complex_type::iterator&#160;</td><td class="memItemRight" valign="bottom"><b>complex_iterator</b></td></tr>
+<tr class="separator:a744e15b104e9eeb74b273696ed2f7c8e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6259582ee1ea43b1fa682ee5dc000686"><td class="memItemLeft" align="right" valign="top"><a id="a6259582ee1ea43b1fa682ee5dc000686" name="a6259582ee1ea43b1fa682ee5dc000686"></a>
+typedef map_element_type::const_iterator&#160;</td><td class="memItemRight" valign="bottom"><b>element_const_iterator</b></td></tr>
+<tr class="separator:a6259582ee1ea43b1fa682ee5dc000686"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a577f5023ef314ec685545de690cc12d1"><td class="memItemLeft" align="right" valign="top"><a id="a577f5023ef314ec685545de690cc12d1" name="a577f5023ef314ec685545de690cc12d1"></a>
+typedef std::pair&lt; FunctionSpaceType, std::vector&lt; std::vector&lt; element_scalar_ptrtype &gt; &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>element_field_type</b></td></tr>
+<tr class="separator:a577f5023ef314ec685545de690cc12d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a323a49c370a482612fac2bdb92bb91d0"><td class="memItemLeft" align="right" valign="top"><a id="a323a49c370a482612fac2bdb92bb91d0" name="a323a49c370a482612fac2bdb92bb91d0"></a>
+typedef map_element_type::iterator&#160;</td><td class="memItemRight" valign="bottom"><b>element_iterator</b></td></tr>
+<tr class="separator:a323a49c370a482612fac2bdb92bb91d0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9f9803bd452d27bfc3af35f29a5edd90"><td class="memItemLeft" align="right" valign="top"><a id="a9f9803bd452d27bfc3af35f29a5edd90" name="a9f9803bd452d27bfc3af35f29a5edd90"></a>
+typedef std::shared_ptr&lt; <a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">element_scalar_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>element_scalar_ptrtype</b></td></tr>
+<tr class="separator:a9f9803bd452d27bfc3af35f29a5edd90"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afed794696933b6912c65188fd45df075"><td class="memItemLeft" align="right" valign="top"><a id="afed794696933b6912c65188fd45df075" name="afed794696933b6912c65188fd45df075"></a>
+typedef <a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">scalar_p0_space_type::element_type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>element_scalar_type</b></td></tr>
+<tr class="separator:afed794696933b6912c65188fd45df075"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a83bce9bdfbcdf86a5b9436bc54e6ecba"><td class="memItemLeft" align="right" valign="top"><a id="a83bce9bdfbcdf86a5b9436bc54e6ecba" name="a83bce9bdfbcdf86a5b9436bc54e6ecba"></a>
+typedef std::map&lt; std::string, std::pair&lt; complex_type, <a class="el" href="classbool.html">bool</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>map_complex_type</b></td></tr>
+<tr class="separator:a83bce9bdfbcdf86a5b9436bc54e6ecba"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9bc3653556912dfb19ccee3de7de0878"><td class="memItemLeft" align="right" valign="top"><a id="a9bc3653556912dfb19ccee3de7de0878" name="a9bc3653556912dfb19ccee3de7de0878"></a>
+typedef std::map&lt; std::string, element_field_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>map_element_type</b></td></tr>
+<tr class="separator:a9bc3653556912dfb19ccee3de7de0878"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a56ac9a6263424e30a01e3d0102e7dec5"><td class="memItemLeft" align="right" valign="top"><a id="a56ac9a6263424e30a01e3d0102e7dec5" name="a56ac9a6263424e30a01e3d0102e7dec5"></a>
+typedef std::map&lt; std::string, nodal_field_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>map_nodal_type</b></td></tr>
+<tr class="separator:a56ac9a6263424e30a01e3d0102e7dec5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a894cfe52dea567b1c59922cdadcd3a60"><td class="memItemLeft" align="right" valign="top"><a id="a894cfe52dea567b1c59922cdadcd3a60" name="a894cfe52dea567b1c59922cdadcd3a60"></a>
+typedef std::map&lt; std::string, std::pair&lt; scalar_type, <a class="el" href="classbool.html">bool</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>map_scalar_type</b></td></tr>
+<tr class="separator:a894cfe52dea567b1c59922cdadcd3a60"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a81a18e91a747784e342b7d69ebc222ec"><td class="memItemLeft" align="right" valign="top"><a id="a81a18e91a747784e342b7d69ebc222ec" name="a81a18e91a747784e342b7d69ebc222ec"></a>
+typedef std::shared_ptr&lt; <a class="el" href="classFeel_1_1Mesh.html">mesh_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>mesh_ptrtype</b></td></tr>
+<tr class="separator:a81a18e91a747784e342b7d69ebc222ec"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a57927a48894317acf71ef59b0868d04f"><td class="memItemLeft" align="right" valign="top"><a id="a57927a48894317acf71ef59b0868d04f" name="a57927a48894317acf71ef59b0868d04f"></a>
+typedef MeshType&#160;</td><td class="memItemRight" valign="bottom"><b>mesh_type</b></td></tr>
+<tr class="separator:a57927a48894317acf71ef59b0868d04f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a681c29afde5d7c72ecd609d1dbb3b401"><td class="memItemLeft" align="right" valign="top"><a id="a681c29afde5d7c72ecd609d1dbb3b401" name="a681c29afde5d7c72ecd609d1dbb3b401"></a>
+typedef map_nodal_type::const_iterator&#160;</td><td class="memItemRight" valign="bottom"><b>nodal_const_iterator</b></td></tr>
+<tr class="separator:a681c29afde5d7c72ecd609d1dbb3b401"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad9a2aed358934cc32a3beb6fb92607e3"><td class="memItemLeft" align="right" valign="top"><a id="ad9a2aed358934cc32a3beb6fb92607e3" name="ad9a2aed358934cc32a3beb6fb92607e3"></a>
+typedef std::pair&lt; FunctionSpaceType, std::vector&lt; std::vector&lt; nodal_scalar_ptrtype &gt; &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>nodal_field_type</b></td></tr>
+<tr class="separator:ad9a2aed358934cc32a3beb6fb92607e3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5ea935ccd667fe6d453621bdbb3beba4"><td class="memItemLeft" align="right" valign="top"><a id="a5ea935ccd667fe6d453621bdbb3beba4" name="a5ea935ccd667fe6d453621bdbb3beba4"></a>
+typedef map_nodal_type::iterator&#160;</td><td class="memItemRight" valign="bottom"><b>nodal_iterator</b></td></tr>
+<tr class="separator:a5ea935ccd667fe6d453621bdbb3beba4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac5db7022431d904fe17102e4945bc7e0"><td class="memItemLeft" align="right" valign="top"><a id="ac5db7022431d904fe17102e4945bc7e0" name="ac5db7022431d904fe17102e4945bc7e0"></a>
+typedef std::shared_ptr&lt; nodal_scalar_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>nodal_scalar_ptrtype</b></td></tr>
+<tr class="separator:ac5db7022431d904fe17102e4945bc7e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1e142d02c1c5e50ee0ad8cccd3693ab8"><td class="memItemLeft" align="right" valign="top"><a id="a1e142d02c1c5e50ee0ad8cccd3693ab8" name="a1e142d02c1c5e50ee0ad8cccd3693ab8"></a>
+typedef scalar_p1_space_type::element_type&#160;</td><td class="memItemRight" valign="bottom"><b>nodal_scalar_type</b></td></tr>
+<tr class="separator:a1e142d02c1c5e50ee0ad8cccd3693ab8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a00f85075496668946c8b20b69e5a0c0b"><td class="memItemLeft" align="right" valign="top"><a id="a00f85075496668946c8b20b69e5a0c0b" name="a00f85075496668946c8b20b69e5a0c0b"></a>
+typedef map_scalar_type::const_iterator&#160;</td><td class="memItemRight" valign="bottom"><b>scalar_const_iterator</b></td></tr>
+<tr class="separator:a00f85075496668946c8b20b69e5a0c0b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a546f689fb329d1f7acb5c5b2f487edb7"><td class="memItemLeft" align="right" valign="top"><a id="a546f689fb329d1f7acb5c5b2f487edb7" name="a546f689fb329d1f7acb5c5b2f487edb7"></a>
+typedef map_scalar_type::iterator&#160;</td><td class="memItemRight" valign="bottom"><b>scalar_iterator</b></td></tr>
+<tr class="separator:a546f689fb329d1f7acb5c5b2f487edb7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa68eb5470eead0a6429ba6d5f47f1aec"><td class="memItemLeft" align="right" valign="top"><a id="aa68eb5470eead0a6429ba6d5f47f1aec" name="aa68eb5470eead0a6429ba6d5f47f1aec"></a>
+typedef std::shared_ptr&lt; <a class="el" href="classFeel_1_1FunctionSpace.html">scalar_p0_space_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>scalar_p0_space_ptrtype</b></td></tr>
+<tr class="separator:aa68eb5470eead0a6429ba6d5f47f1aec"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1ad103b7b9df5f58df04ba6fd5899201"><td class="memItemLeft" align="right" valign="top"><a id="a1ad103b7b9df5f58df04ba6fd5899201" name="a1ad103b7b9df5f58df04ba6fd5899201"></a>
+typedef <a class="el" href="classFeel_1_1FunctionSpace.html">Pdh_type</a>&lt; MeshType, 0 &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>scalar_p0_space_type</b></td></tr>
+<tr class="separator:a1ad103b7b9df5f58df04ba6fd5899201"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a092398b3516506f53f59c24a9bb74fbd"><td class="memItemLeft" align="right" valign="top"><a id="a092398b3516506f53f59c24a9bb74fbd" name="a092398b3516506f53f59c24a9bb74fbd"></a>
+typedef std::shared_ptr&lt; scalar_p1_space_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>scalar_p1_space_ptrtype</b></td></tr>
+<tr class="separator:a092398b3516506f53f59c24a9bb74fbd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1a0f61d0f07ecc2055654f0db53bd7e2"><td class="memItemLeft" align="right" valign="top"><a id="a1a0f61d0f07ecc2055654f0db53bd7e2" name="a1a0f61d0f07ecc2055654f0db53bd7e2"></a>
+typedef Pch_type&lt; MeshType, N &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>scalar_p1_space_type</b></td></tr>
+<tr class="separator:a1a0f61d0f07ecc2055654f0db53bd7e2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a51c6a43b5e58b36f7338070183b2f732"><td class="memItemLeft" align="right" valign="top"><a id="a51c6a43b5e58b36f7338070183b2f732" name="a51c6a43b5e58b36f7338070183b2f732"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>size_type</b> = typename mesh_type::size_type</td></tr>
+<tr class="separator:a51c6a43b5e58b36f7338070183b2f732"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab45be6390e7d1a1fd779f9988a65019b"><td class="memItemLeft" align="right" valign="top"><a id="ab45be6390e7d1a1fd779f9988a65019b" name="ab45be6390e7d1a1fd779f9988a65019b"></a>
+typedef <a class="el" href="classFeel_1_1detail_1_1TimeSet_1_1Step.html">Step</a>&#160;</td><td class="memItemRight" valign="bottom"><b>step_type</b></td></tr>
+<tr class="separator:ab45be6390e7d1a1fd779f9988a65019b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa494a47a73b50e4ddf46ea0d46fc13d8"><td class="memItemLeft" align="right" valign="top"><a id="aa494a47a73b50e4ddf46ea0d46fc13d8" name="aa494a47a73b50e4ddf46ea0d46fc13d8"></a>
+typedef std::variant&lt; std::string, std::set&lt; std::string &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>variant_representation_arg_type</b></td></tr>
+<tr class="separator:aa494a47a73b50e4ddf46ea0d46fc13d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader">Methods</h2></td></tr>
 <tr class="memitem:a88bf561ea152c6e9df272cb7a9ad69a6"><td class="memItemLeft" align="right" valign="top"><a id="a88bf561ea152c6e9df272cb7a9ad69a6" name="a88bf561ea152c6e9df272cb7a9ad69a6"></a>
 class&#160;</td><td class="memItemRight" valign="bottom"><b>TimeSet</b></td></tr>
@@ -271,92 +355,11 @@ template&lt;typename ExprT , typename EltWrapperT  = elements_reference_wrapper_
 template&lt;<a class="el" href="classbool.html">bool</a> IsNodal, typename ExprT , typename EltWrapperT  = elements_reference_wrapper_t&lt;mesh_type&gt;&gt; </td></tr>
 <tr class="memitem:a32c92de12cae3bc2568199262f9655ac"><td class="memTemplItemLeft" align="right" valign="top">FEELPP_NO_EXPORT void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>addExpr</b> (std::string const &amp;__n, std::string const &amp;__fname, ExprT const &amp;<a class="el" href="namespaceFeel.html#a338e05dd5e37f3594666f0a00e029d3d">expr</a>, EltWrapperT const &amp;rangeElt)</td></tr>
 <tr class="separator:a32c92de12cae3bc2568199262f9655ac"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
-Public Types</h2></td></tr>
-<tr class="memitem:ad8ec04916d6004193da855cf311f8ee7"><td class="memItemLeft" align="right" valign="top"><a id="ad8ec04916d6004193da855cf311f8ee7" name="ad8ec04916d6004193da855cf311f8ee7"></a>
-typedef map_complex_type::const_iterator&#160;</td><td class="memItemRight" valign="bottom"><b>complex_const_iterator</b></td></tr>
-<tr class="separator:ad8ec04916d6004193da855cf311f8ee7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a744e15b104e9eeb74b273696ed2f7c8e"><td class="memItemLeft" align="right" valign="top"><a id="a744e15b104e9eeb74b273696ed2f7c8e" name="a744e15b104e9eeb74b273696ed2f7c8e"></a>
-typedef map_complex_type::iterator&#160;</td><td class="memItemRight" valign="bottom"><b>complex_iterator</b></td></tr>
-<tr class="separator:a744e15b104e9eeb74b273696ed2f7c8e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6259582ee1ea43b1fa682ee5dc000686"><td class="memItemLeft" align="right" valign="top"><a id="a6259582ee1ea43b1fa682ee5dc000686" name="a6259582ee1ea43b1fa682ee5dc000686"></a>
-typedef map_element_type::const_iterator&#160;</td><td class="memItemRight" valign="bottom"><b>element_const_iterator</b></td></tr>
-<tr class="separator:a6259582ee1ea43b1fa682ee5dc000686"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a577f5023ef314ec685545de690cc12d1"><td class="memItemLeft" align="right" valign="top"><a id="a577f5023ef314ec685545de690cc12d1" name="a577f5023ef314ec685545de690cc12d1"></a>
-typedef std::pair&lt; FunctionSpaceType, std::vector&lt; std::vector&lt; element_scalar_ptrtype &gt; &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>element_field_type</b></td></tr>
-<tr class="separator:a577f5023ef314ec685545de690cc12d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a323a49c370a482612fac2bdb92bb91d0"><td class="memItemLeft" align="right" valign="top"><a id="a323a49c370a482612fac2bdb92bb91d0" name="a323a49c370a482612fac2bdb92bb91d0"></a>
-typedef map_element_type::iterator&#160;</td><td class="memItemRight" valign="bottom"><b>element_iterator</b></td></tr>
-<tr class="separator:a323a49c370a482612fac2bdb92bb91d0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9f9803bd452d27bfc3af35f29a5edd90"><td class="memItemLeft" align="right" valign="top"><a id="a9f9803bd452d27bfc3af35f29a5edd90" name="a9f9803bd452d27bfc3af35f29a5edd90"></a>
-typedef std::shared_ptr&lt; <a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">element_scalar_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>element_scalar_ptrtype</b></td></tr>
-<tr class="separator:a9f9803bd452d27bfc3af35f29a5edd90"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afed794696933b6912c65188fd45df075"><td class="memItemLeft" align="right" valign="top"><a id="afed794696933b6912c65188fd45df075" name="afed794696933b6912c65188fd45df075"></a>
-typedef <a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">scalar_p0_space_type::element_type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>element_scalar_type</b></td></tr>
-<tr class="separator:afed794696933b6912c65188fd45df075"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a83bce9bdfbcdf86a5b9436bc54e6ecba"><td class="memItemLeft" align="right" valign="top"><a id="a83bce9bdfbcdf86a5b9436bc54e6ecba" name="a83bce9bdfbcdf86a5b9436bc54e6ecba"></a>
-typedef std::map&lt; std::string, std::pair&lt; complex_type, <a class="el" href="classbool.html">bool</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>map_complex_type</b></td></tr>
-<tr class="separator:a83bce9bdfbcdf86a5b9436bc54e6ecba"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9bc3653556912dfb19ccee3de7de0878"><td class="memItemLeft" align="right" valign="top"><a id="a9bc3653556912dfb19ccee3de7de0878" name="a9bc3653556912dfb19ccee3de7de0878"></a>
-typedef std::map&lt; std::string, element_field_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>map_element_type</b></td></tr>
-<tr class="separator:a9bc3653556912dfb19ccee3de7de0878"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a56ac9a6263424e30a01e3d0102e7dec5"><td class="memItemLeft" align="right" valign="top"><a id="a56ac9a6263424e30a01e3d0102e7dec5" name="a56ac9a6263424e30a01e3d0102e7dec5"></a>
-typedef std::map&lt; std::string, nodal_field_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>map_nodal_type</b></td></tr>
-<tr class="separator:a56ac9a6263424e30a01e3d0102e7dec5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a894cfe52dea567b1c59922cdadcd3a60"><td class="memItemLeft" align="right" valign="top"><a id="a894cfe52dea567b1c59922cdadcd3a60" name="a894cfe52dea567b1c59922cdadcd3a60"></a>
-typedef std::map&lt; std::string, std::pair&lt; scalar_type, <a class="el" href="classbool.html">bool</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>map_scalar_type</b></td></tr>
-<tr class="separator:a894cfe52dea567b1c59922cdadcd3a60"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a81a18e91a747784e342b7d69ebc222ec"><td class="memItemLeft" align="right" valign="top"><a id="a81a18e91a747784e342b7d69ebc222ec" name="a81a18e91a747784e342b7d69ebc222ec"></a>
-typedef std::shared_ptr&lt; <a class="el" href="classFeel_1_1Mesh.html">mesh_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>mesh_ptrtype</b></td></tr>
-<tr class="separator:a81a18e91a747784e342b7d69ebc222ec"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a57927a48894317acf71ef59b0868d04f"><td class="memItemLeft" align="right" valign="top"><a id="a57927a48894317acf71ef59b0868d04f" name="a57927a48894317acf71ef59b0868d04f"></a>
-typedef MeshType&#160;</td><td class="memItemRight" valign="bottom"><b>mesh_type</b></td></tr>
-<tr class="separator:a57927a48894317acf71ef59b0868d04f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a681c29afde5d7c72ecd609d1dbb3b401"><td class="memItemLeft" align="right" valign="top"><a id="a681c29afde5d7c72ecd609d1dbb3b401" name="a681c29afde5d7c72ecd609d1dbb3b401"></a>
-typedef map_nodal_type::const_iterator&#160;</td><td class="memItemRight" valign="bottom"><b>nodal_const_iterator</b></td></tr>
-<tr class="separator:a681c29afde5d7c72ecd609d1dbb3b401"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad9a2aed358934cc32a3beb6fb92607e3"><td class="memItemLeft" align="right" valign="top"><a id="ad9a2aed358934cc32a3beb6fb92607e3" name="ad9a2aed358934cc32a3beb6fb92607e3"></a>
-typedef std::pair&lt; FunctionSpaceType, std::vector&lt; std::vector&lt; nodal_scalar_ptrtype &gt; &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>nodal_field_type</b></td></tr>
-<tr class="separator:ad9a2aed358934cc32a3beb6fb92607e3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5ea935ccd667fe6d453621bdbb3beba4"><td class="memItemLeft" align="right" valign="top"><a id="a5ea935ccd667fe6d453621bdbb3beba4" name="a5ea935ccd667fe6d453621bdbb3beba4"></a>
-typedef map_nodal_type::iterator&#160;</td><td class="memItemRight" valign="bottom"><b>nodal_iterator</b></td></tr>
-<tr class="separator:a5ea935ccd667fe6d453621bdbb3beba4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac5db7022431d904fe17102e4945bc7e0"><td class="memItemLeft" align="right" valign="top"><a id="ac5db7022431d904fe17102e4945bc7e0" name="ac5db7022431d904fe17102e4945bc7e0"></a>
-typedef std::shared_ptr&lt; nodal_scalar_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>nodal_scalar_ptrtype</b></td></tr>
-<tr class="separator:ac5db7022431d904fe17102e4945bc7e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1e142d02c1c5e50ee0ad8cccd3693ab8"><td class="memItemLeft" align="right" valign="top"><a id="a1e142d02c1c5e50ee0ad8cccd3693ab8" name="a1e142d02c1c5e50ee0ad8cccd3693ab8"></a>
-typedef scalar_p1_space_type::element_type&#160;</td><td class="memItemRight" valign="bottom"><b>nodal_scalar_type</b></td></tr>
-<tr class="separator:a1e142d02c1c5e50ee0ad8cccd3693ab8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a00f85075496668946c8b20b69e5a0c0b"><td class="memItemLeft" align="right" valign="top"><a id="a00f85075496668946c8b20b69e5a0c0b" name="a00f85075496668946c8b20b69e5a0c0b"></a>
-typedef map_scalar_type::const_iterator&#160;</td><td class="memItemRight" valign="bottom"><b>scalar_const_iterator</b></td></tr>
-<tr class="separator:a00f85075496668946c8b20b69e5a0c0b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a546f689fb329d1f7acb5c5b2f487edb7"><td class="memItemLeft" align="right" valign="top"><a id="a546f689fb329d1f7acb5c5b2f487edb7" name="a546f689fb329d1f7acb5c5b2f487edb7"></a>
-typedef map_scalar_type::iterator&#160;</td><td class="memItemRight" valign="bottom"><b>scalar_iterator</b></td></tr>
-<tr class="separator:a546f689fb329d1f7acb5c5b2f487edb7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa68eb5470eead0a6429ba6d5f47f1aec"><td class="memItemLeft" align="right" valign="top"><a id="aa68eb5470eead0a6429ba6d5f47f1aec" name="aa68eb5470eead0a6429ba6d5f47f1aec"></a>
-typedef std::shared_ptr&lt; <a class="el" href="classFeel_1_1FunctionSpace.html">scalar_p0_space_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>scalar_p0_space_ptrtype</b></td></tr>
-<tr class="separator:aa68eb5470eead0a6429ba6d5f47f1aec"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1ad103b7b9df5f58df04ba6fd5899201"><td class="memItemLeft" align="right" valign="top"><a id="a1ad103b7b9df5f58df04ba6fd5899201" name="a1ad103b7b9df5f58df04ba6fd5899201"></a>
-typedef <a class="el" href="classFeel_1_1FunctionSpace.html">Pdh_type</a>&lt; MeshType, 0 &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>scalar_p0_space_type</b></td></tr>
-<tr class="separator:a1ad103b7b9df5f58df04ba6fd5899201"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a092398b3516506f53f59c24a9bb74fbd"><td class="memItemLeft" align="right" valign="top"><a id="a092398b3516506f53f59c24a9bb74fbd" name="a092398b3516506f53f59c24a9bb74fbd"></a>
-typedef std::shared_ptr&lt; scalar_p1_space_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>scalar_p1_space_ptrtype</b></td></tr>
-<tr class="separator:a092398b3516506f53f59c24a9bb74fbd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1a0f61d0f07ecc2055654f0db53bd7e2"><td class="memItemLeft" align="right" valign="top"><a id="a1a0f61d0f07ecc2055654f0db53bd7e2" name="a1a0f61d0f07ecc2055654f0db53bd7e2"></a>
-typedef Pch_type&lt; MeshType, N &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>scalar_p1_space_type</b></td></tr>
-<tr class="separator:a1a0f61d0f07ecc2055654f0db53bd7e2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a51c6a43b5e58b36f7338070183b2f732"><td class="memItemLeft" align="right" valign="top"><a id="a51c6a43b5e58b36f7338070183b2f732" name="a51c6a43b5e58b36f7338070183b2f732"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>size_type</b> = typename mesh_type::size_type</td></tr>
-<tr class="separator:a51c6a43b5e58b36f7338070183b2f732"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab45be6390e7d1a1fd779f9988a65019b"><td class="memItemLeft" align="right" valign="top"><a id="ab45be6390e7d1a1fd779f9988a65019b" name="ab45be6390e7d1a1fd779f9988a65019b"></a>
-typedef <a class="el" href="classFeel_1_1detail_1_1TimeSet_1_1Step.html">Step</a>&#160;</td><td class="memItemRight" valign="bottom"><b>step_type</b></td></tr>
-<tr class="separator:ab45be6390e7d1a1fd779f9988a65019b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa494a47a73b50e4ddf46ea0d46fc13d8"><td class="memItemLeft" align="right" valign="top"><a id="aa494a47a73b50e4ddf46ea0d46fc13d8" name="aa494a47a73b50e4ddf46ea0d46fc13d8"></a>
-typedef std::variant&lt; std::string, std::set&lt; std::string &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>variant_representation_arg_type</b></td></tr>
-<tr class="separator:aa494a47a73b50e4ddf46ea0d46fc13d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<h2 class="groupheader">Member Function Documentation</h2>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><div class="compoundTemplParams">template&lt;typename MeshType, <a class="el" href="classint.html">int</a> N = 1&gt;<br />
+class Feel::detail::TimeSet&lt; MeshType, N &gt;::Step</div><p >a step in a time set </p>
+</div><h2 class="groupheader">Member Function Documentation</h2>
 <a id="a4df77a62b39b1b8ede6ad1975811a5c9" name="a4df77a62b39b1b8ede6ad1975811a5c9"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a4df77a62b39b1b8ede6ad1975811a5c9">&#9670;&nbsp;</a></span>activeIndex()</h2>
 

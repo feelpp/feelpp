@@ -1,5 +1,8 @@
 var classFeel_1_1Mesh1D =
 [
+    [ "Mesh1D", "classFeel_1_1Mesh1D.html#aab8b3d975dcfd749b7066230ba47ecdf", null ],
+    [ "Mesh1D", "classFeel_1_1Mesh1D.html#a54b5f15f7b0984adf483a7d97ac00e90", null ],
+    [ "~Mesh1D", "classFeel_1_1Mesh1D.html#a02588a509a561b44b8de4ebeba38d4bf", null ],
     [ "clear", "classFeel_1_1Mesh1D.html#af798f0e4ed2de4f007d1f23d7f861c76", null ],
     [ "isEmpty", "classFeel_1_1Mesh1D.html#ae6c0a6bc0d5e6625a8d6d031d61fd20f", null ],
     [ "numElements", "classFeel_1_1Mesh1D.html#aef67bb9dbfff851163e917703e5bad77", null ],
@@ -10,8 +13,5 @@ var classFeel_1_1Mesh1D =
     [ "numPoints", "classFeel_1_1Mesh1D.html#ab735ee315ee93e672048bbea7f576abe", null ],
     [ "renumber", "classFeel_1_1Mesh1D.html#adcd34657d4fdc6c6aa721e572a0a6083", null ],
     [ "updateEntitiesCoDimensionOnePermutation", "classFeel_1_1Mesh1D.html#abf484bb27c9db30c4b2ca4124d6f895d", null ],
-    [ "updateEntitiesCoDimensionTwo", "classFeel_1_1Mesh1D.html#a304e3a70dee28067319881c4b4d64374", null ],
-    [ "Mesh1D", "classFeel_1_1Mesh1D.html#aab8b3d975dcfd749b7066230ba47ecdf", null ],
-    [ "Mesh1D", "classFeel_1_1Mesh1D.html#a54b5f15f7b0984adf483a7d97ac00e90", null ],
-    [ "~Mesh1D", "classFeel_1_1Mesh1D.html#a02588a509a561b44b8de4ebeba38d4bf", null ]
+    [ "updateEntitiesCoDimensionTwo", "classFeel_1_1Mesh1D.html#a304e3a70dee28067319881c4b4d64374", null ]
 ];

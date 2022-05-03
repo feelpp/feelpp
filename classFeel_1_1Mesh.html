@@ -101,27 +101,18 @@ $(document).ready(function(){initNavTree('classFeel_1_1Mesh.html',''); initResiz
 
 <div class="header">
   <div class="summary">
-<a href="#nested-classes">Instances and minimal complete definitions</a> &#124;
-<a href="#friends">Friends</a> &#124;
+<a href="#nested-classes">Classes</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pro-methods">Protected Member Functions</a> &#124;
+<a href="#friends">Friends</a> &#124;
 <a href="classFeel_1_1Mesh-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">Feel::Mesh&lt; GeoShape, T, Tag, IndexT &gt; Class Template Reference</div></div>
 </div><!--header-->
 <div class="contents">
-<a name="details" id="details"></a><h2 class="groupheader">Description</h2>
-<div class="textblock"><div class="compoundTemplParams">template&lt;typename GeoShape, typename T = double, <a class="el" href="classint.html">int</a> Tag = 0, typename IndexT = uint32_type&gt;<br />
-class Feel::Mesh&lt; GeoShape, T, Tag, IndexT &gt;</div><p >unifying mesh class </p>
-<p >This structure is an aggregation of elements, faces, edges(3D) and points data structures and provides a unified interface with respect to the dimension.</p>
-<dl class="tparams"><dt>Template Parameters</dt><dd>
-  <table class="tparams">
-    <tr><td class="paramname">GeoShape</td><td>Geometric entities type </td></tr>
-    <tr><td class="paramname">T</td><td>numerical type for coordinates </td></tr>
-    <tr><td class="paramname"><a class="el" href="structFeel_1_1Tag.html">Tag</a></td><td>= 0 to discriminate between meshes of the same type </td></tr>
-  </table>
-  </dd>
-</dl>
-</div><div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
+
+<p>unifying mesh class  
+ <a href="classFeel_1_1Mesh.html#details">More...</a></p>
+<div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Inheritance diagram for Feel::Mesh&lt; GeoShape, T, Tag, IndexT &gt;:</div>
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">
 </div>
@@ -139,7 +130,7 @@ class Feel::Mesh&lt; GeoShape, T, Tag, IndexT &gt;</div><p >unifying mesh class 
 </div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
-Instances and minimal complete definitions</h2></td></tr>
+Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1Mesh_1_1Inverse.html">Inverse</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1Mesh_1_1parent__mesh.html">parent_mesh</a></td></tr>
@@ -152,6 +143,165 @@ Instances and minimal complete definitions</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1Mesh_1_1UpdateSetForAllReduce.html">UpdateSetForAllReduce</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
+Public Member Functions</h2></td></tr>
+<tr class="memitem:a0e9e8013dfe087689c84c94a0eb319b0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Mesh.html#a0e9e8013dfe087689c84c94a0eb319b0">checkLocalPermutation</a> (<a class="el" href="classboost_1_1mpl_1_1bool__.html">mpl::bool_</a>&lt; false &gt;) const</td></tr>
+<tr class="memdesc:a0e9e8013dfe087689c84c94a0eb319b0"><td class="mdescLeft">&#160;</td><td class="mdescRight">private:  <a href="classFeel_1_1Mesh.html#a0e9e8013dfe087689c84c94a0eb319b0">More...</a><br /></td></tr>
+<tr class="separator:a0e9e8013dfe087689c84c94a0eb319b0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ade1099865bea2d08a23e519e5b9facf5"><td class="memItemLeft" align="right" valign="top"><a id="ade1099865bea2d08a23e519e5b9facf5" name="ade1099865bea2d08a23e519e5b9facf5"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>checkLocalPermutation</b> (<a class="el" href="classboost_1_1mpl_1_1bool__.html">mpl::bool_</a>&lt; true &gt;) const</td></tr>
+<tr class="separator:ade1099865bea2d08a23e519e5b9facf5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5b9b0d269b5f0d3ab3811dd833f95a09"><td class="memItemLeft" align="right" valign="top"><a id="a5b9b0d269b5f0d3ab3811dd833f95a09" name="a5b9b0d269b5f0d3ab3811dd833f95a09"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>decode</b> ()</td></tr>
+<tr class="memdesc:a5b9b0d269b5f0d3ab3811dd833f95a09"><td class="mdescLeft">&#160;</td><td class="mdescRight">decode the mesh data structure from a tighter data structure and to avoid pointers in order to serialize it for saving/loading and sending/receiving the mesh <br /></td></tr>
+<tr class="separator:a5b9b0d269b5f0d3ab3811dd833f95a09"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a78785cf9fbbf110f0ba85d09d63ea325"><td class="memItemLeft" align="right" valign="top"><a id="a78785cf9fbbf110f0ba85d09d63ea325" name="a78785cf9fbbf110f0ba85d09d63ea325"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>encode</b> ()</td></tr>
+<tr class="memdesc:a78785cf9fbbf110f0ba85d09d63ea325"><td class="mdescLeft">&#160;</td><td class="mdescRight">encode the mesh data structure into a tighter data structure and to avoid pointers in order to serialize it for saving/loading and sending/receiving the mesh <br /></td></tr>
+<tr class="separator:a78785cf9fbbf110f0ba85d09d63ea325"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae1c06bf148b0004b90c8f6d281094221"><td class="memItemLeft" align="right" valign="top"><a id="ae1c06bf148b0004b90c8f6d281094221" name="ae1c06bf148b0004b90c8f6d281094221"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>FEELPP_DEFINE_VISITABLE</b> ()</td></tr>
+<tr class="separator:ae1c06bf148b0004b90c8f6d281094221"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1bde4ac6d172980bca2a547d6e2c2506"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Mesh.html#a1bde4ac6d172980bca2a547d6e2c2506">isPeriodic</a> () const</td></tr>
+<tr class="separator:a1bde4ac6d172980bca2a547d6e2c2506"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6a758e0f28ce8b7c0a6bdacd21af91c5"><td class="memTemplParams" colspan="2"><a id="a6a758e0f28ce8b7c0a6bdacd21af91c5" name="a6a758e0f28ce8b7c0a6bdacd21af91c5"></a>
+template&lt;typename ... Ts&gt; </td></tr>
+<tr class="memitem:a6a758e0f28ce8b7c0a6bdacd21af91c5"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classbool.html">bool</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><b>load</b> (Ts &amp;&amp;... v)</td></tr>
+<tr class="separator:a6a758e0f28ce8b7c0a6bdacd21af91c5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a42dbd7fe8a0f0c0bb5e8dcb95fb76259"><td class="memItemLeft" align="right" valign="top"><a id="a42dbd7fe8a0f0c0bb5e8dcb95fb76259" name="a42dbd7fe8a0f0c0bb5e8dcb95fb76259"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>meshModified</b> () override</td></tr>
+<tr class="separator:a42dbd7fe8a0f0c0bb5e8dcb95fb76259"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a35b64711c3835132a45955cd897ea464"><td class="memTemplParams" colspan="2"><a id="a35b64711c3835132a45955cd897ea464" name="a35b64711c3835132a45955cd897ea464"></a>
+template&lt;typename TheShape &gt; </td></tr>
+<tr class="memitem:a35b64711c3835132a45955cd897ea464"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>modifyEdgesOnBoundary</b> (face_type &amp;f, std::enable_if_t&lt; TheShape::nDim !=3 &gt; *)</td></tr>
+<tr class="separator:a35b64711c3835132a45955cd897ea464"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aeb4a2a110a6d9d1c1b4b3ffe4013c3e5"><td class="memTemplParams" colspan="2"><a id="aeb4a2a110a6d9d1c1b4b3ffe4013c3e5" name="aeb4a2a110a6d9d1c1b4b3ffe4013c3e5"></a>
+template&lt;typename TheShape &gt; </td></tr>
+<tr class="memitem:aeb4a2a110a6d9d1c1b4b3ffe4013c3e5"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>modifyEdgesOnBoundary</b> (face_type &amp;face, std::enable_if_t&lt; TheShape::nDim==3 &gt; *)</td></tr>
+<tr class="separator:aeb4a2a110a6d9d1c1b4b3ffe4013c3e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a84a28b0c5106753c611f9ab75606e856"><td class="memTemplParams" colspan="2"><a id="a84a28b0c5106753c611f9ab75606e856" name="a84a28b0c5106753c611f9ab75606e856"></a>
+template&lt;typename TheShape &gt; </td></tr>
+<tr class="memitem:a84a28b0c5106753c611f9ab75606e856"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classbool.html">bool</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><b>modifyElementOnBoundaryFromEdge</b> (element_type &amp;elt, std::enable_if_t&lt; TheShape::nDim !=3 &gt; *)</td></tr>
+<tr class="separator:a84a28b0c5106753c611f9ab75606e856"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a87914f4ee7f49ae838386381cf026268"><td class="memTemplParams" colspan="2"><a id="a87914f4ee7f49ae838386381cf026268" name="a87914f4ee7f49ae838386381cf026268"></a>
+template&lt;typename TheShape &gt; </td></tr>
+<tr class="memitem:a87914f4ee7f49ae838386381cf026268"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classbool.html">bool</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><b>modifyElementOnBoundaryFromEdge</b> (element_type &amp;elt, std::enable_if_t&lt; TheShape::nDim==3 &gt; *)</td></tr>
+<tr class="separator:a87914f4ee7f49ae838386381cf026268"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af617b0de4efc5af011dfee5b534a19d0"><td class="memTemplParams" colspan="2"><a id="af617b0de4efc5af011dfee5b534a19d0" name="af617b0de4efc5af011dfee5b534a19d0"></a>
+template&lt;typename TheShape &gt; </td></tr>
+<tr class="memitem:af617b0de4efc5af011dfee5b534a19d0"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>removeMarkerNameWithoutEntity</b> (std::enable_if_t&lt; TheShape::nDim==0 &gt; *)</td></tr>
+<tr class="separator:af617b0de4efc5af011dfee5b534a19d0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a52a97a4150fa43700562989f4a8fc719"><td class="memTemplParams" colspan="2"><a id="a52a97a4150fa43700562989f4a8fc719" name="a52a97a4150fa43700562989f4a8fc719"></a>
+template&lt;typename TheShape  = GeoShape&gt; </td></tr>
+<tr class="memitem:a52a97a4150fa43700562989f4a8fc719"><td class="memTemplItemLeft" align="right" valign="top">FEELPP_NO_EXPORT void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>removeMarkerNameWithoutEntity</b> (std::enable_if_t&lt; TheShape::nDim==0 &gt; *=nullptr)</td></tr>
+<tr class="separator:a52a97a4150fa43700562989f4a8fc719"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad78d44d5822d276ffb11af2d7e580161"><td class="memTemplParams" colspan="2"><a id="ad78d44d5822d276ffb11af2d7e580161" name="ad78d44d5822d276ffb11af2d7e580161"></a>
+template&lt;typename TheShape &gt; </td></tr>
+<tr class="memitem:ad78d44d5822d276ffb11af2d7e580161"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>removeMarkerNameWithoutEntity</b> (std::enable_if_t&lt; TheShape::nDim==1 &gt; *)</td></tr>
+<tr class="separator:ad78d44d5822d276ffb11af2d7e580161"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a06f00a142ec393caf1c1d103cdd41218"><td class="memTemplParams" colspan="2"><a id="a06f00a142ec393caf1c1d103cdd41218" name="a06f00a142ec393caf1c1d103cdd41218"></a>
+template&lt;typename TheShape  = GeoShape&gt; </td></tr>
+<tr class="memitem:a06f00a142ec393caf1c1d103cdd41218"><td class="memTemplItemLeft" align="right" valign="top">FEELPP_NO_EXPORT void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>removeMarkerNameWithoutEntity</b> (std::enable_if_t&lt; TheShape::nDim==1 &gt; *=nullptr)</td></tr>
+<tr class="separator:a06f00a142ec393caf1c1d103cdd41218"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af2af5f6ff4d71f466a23f9a7c44ee757"><td class="memTemplParams" colspan="2"><a id="af2af5f6ff4d71f466a23f9a7c44ee757" name="af2af5f6ff4d71f466a23f9a7c44ee757"></a>
+template&lt;typename TheShape &gt; </td></tr>
+<tr class="memitem:af2af5f6ff4d71f466a23f9a7c44ee757"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>removeMarkerNameWithoutEntity</b> (std::enable_if_t&lt; TheShape::nDim==2 &gt; *)</td></tr>
+<tr class="separator:af2af5f6ff4d71f466a23f9a7c44ee757"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2f18ea9bc52e6e8d979c8b23ec588152"><td class="memTemplParams" colspan="2"><a id="a2f18ea9bc52e6e8d979c8b23ec588152" name="a2f18ea9bc52e6e8d979c8b23ec588152"></a>
+template&lt;typename TheShape  = GeoShape&gt; </td></tr>
+<tr class="memitem:a2f18ea9bc52e6e8d979c8b23ec588152"><td class="memTemplItemLeft" align="right" valign="top">FEELPP_NO_EXPORT void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>removeMarkerNameWithoutEntity</b> (std::enable_if_t&lt; TheShape::nDim==2 &gt; *=nullptr)</td></tr>
+<tr class="separator:a2f18ea9bc52e6e8d979c8b23ec588152"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0a31595f2fa66673dca82a97a27626d7"><td class="memTemplParams" colspan="2"><a id="a0a31595f2fa66673dca82a97a27626d7" name="a0a31595f2fa66673dca82a97a27626d7"></a>
+template&lt;typename TheShape &gt; </td></tr>
+<tr class="memitem:a0a31595f2fa66673dca82a97a27626d7"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>removeMarkerNameWithoutEntity</b> (std::enable_if_t&lt; TheShape::nDim==3 &gt; *)</td></tr>
+<tr class="separator:a0a31595f2fa66673dca82a97a27626d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a46c4247bb93dad32ca0f4e38f41a374b"><td class="memTemplParams" colspan="2"><a id="a46c4247bb93dad32ca0f4e38f41a374b" name="a46c4247bb93dad32ca0f4e38f41a374b"></a>
+template&lt;typename TheShape  = GeoShape&gt; </td></tr>
+<tr class="memitem:a46c4247bb93dad32ca0f4e38f41a374b"><td class="memTemplItemLeft" align="right" valign="top">FEELPP_NO_EXPORT void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>removeMarkerNameWithoutEntity</b> (std::enable_if_t&lt; TheShape::nDim==3 &gt; *=nullptr)</td></tr>
+<tr class="separator:a46c4247bb93dad32ca0f4e38f41a374b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9d95dabb70c27125761760a7948e9625"><td class="memTemplParams" colspan="2"><a id="a9d95dabb70c27125761760a7948e9625" name="a9d95dabb70c27125761760a7948e9625"></a>
+template&lt;typename ... Ts&gt; </td></tr>
+<tr class="memitem:a9d95dabb70c27125761760a7948e9625"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>save</b> (Ts &amp;&amp;... v) const</td></tr>
+<tr class="separator:a9d95dabb70c27125761760a7948e9625"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a85b1320c69de76241668007069d01111"><td class="memItemLeft" align="right" valign="top"><a id="a85b1320c69de76241668007069d01111" name="a85b1320c69de76241668007069d01111"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>setPeriodicEntities</b> (std::vector&lt; <a class="el" href="structFeel_1_1PeriodicEntity.html">PeriodicEntity</a> &gt; const &amp;e)</td></tr>
+<tr class="memdesc:a85b1320c69de76241668007069d01111"><td class="mdescLeft">&#160;</td><td class="mdescRight">set the periodic entities <br /></td></tr>
+<tr class="separator:a85b1320c69de76241668007069d01111"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abc85d25d681af7faf6b7cfa168da7ff1"><td class="memTemplParams" colspan="2"><a id="abc85d25d681af7faf6b7cfa168da7ff1" name="abc85d25d681af7faf6b7cfa168da7ff1"></a>
+template&lt;typename RangeT &gt; </td></tr>
+<tr class="memitem:abc85d25d681af7faf6b7cfa168da7ff1"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1Mesh.html">Mesh</a>&lt; Shape, T, <a class="el" href="structFeel_1_1Tag.html">Tag</a>, IndexT &gt;::template <a class="el" href="structFeel_1_1Mesh_1_1trace__mesh.html">trace_mesh</a>&lt; <a class="el" href="structFeel_1_1Tag.html">Tag</a> &gt;::ptrtype&#160;</td><td class="memTemplItemRight" valign="bottom"><b>trace</b> (RangeT const &amp;<a class="el" href="group__Core.html#ga9ac2567d303c357e7c0de44280697997">range</a>) const</td></tr>
+<tr class="separator:abc85d25d681af7faf6b7cfa168da7ff1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3a80a35dadb91402e69a93b9a4109bb8"><td class="memTemplParams" colspan="2"><a id="a3a80a35dadb91402e69a93b9a4109bb8" name="a3a80a35dadb91402e69a93b9a4109bb8"></a>
+template&lt;typename RangeT , <a class="el" href="classint.html">int</a> TheTag&gt; </td></tr>
+<tr class="memitem:a3a80a35dadb91402e69a93b9a4109bb8"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1Mesh.html">Mesh</a>&lt; Shape, T, <a class="el" href="structFeel_1_1Tag.html">Tag</a>, IndexT &gt;::template <a class="el" href="structFeel_1_1Mesh_1_1trace__mesh.html">trace_mesh</a>&lt; TheTag &gt;::ptrtype&#160;</td><td class="memTemplItemRight" valign="bottom"><b>trace</b> (RangeT const &amp;<a class="el" href="group__Core.html#ga9ac2567d303c357e7c0de44280697997">range</a>, <a class="el" href="classboost_1_1mpl_1_1int__.html">mpl::int_</a>&lt; TheTag &gt;) const</td></tr>
+<tr class="separator:a3a80a35dadb91402e69a93b9a4109bb8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9f6d6ac7647f0faaa249e123c9ceffe1"><td class="memTemplParams" colspan="2"><a id="a9f6d6ac7647f0faaa249e123c9ceffe1" name="a9f6d6ac7647f0faaa249e123c9ceffe1"></a>
+template&lt;typename TheShape &gt; </td></tr>
+<tr class="memitem:a9f6d6ac7647f0faaa249e123c9ceffe1"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>updateCommonDataInEntities</b> (std::enable_if_t&lt; TheShape::nDim==0 &gt; *)</td></tr>
+<tr class="separator:a9f6d6ac7647f0faaa249e123c9ceffe1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae46fc2eeba311f293b854e10d2dfe1aa"><td class="memTemplParams" colspan="2"><a id="ae46fc2eeba311f293b854e10d2dfe1aa" name="ae46fc2eeba311f293b854e10d2dfe1aa"></a>
+template&lt;typename TheShape &gt; </td></tr>
+<tr class="memitem:ae46fc2eeba311f293b854e10d2dfe1aa"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>updateCommonDataInEntities</b> (std::enable_if_t&lt; TheShape::nDim==1 &gt; *)</td></tr>
+<tr class="separator:ae46fc2eeba311f293b854e10d2dfe1aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3cb5adb47af3b1826216d7f33d305e84"><td class="memTemplParams" colspan="2"><a id="a3cb5adb47af3b1826216d7f33d305e84" name="a3cb5adb47af3b1826216d7f33d305e84"></a>
+template&lt;typename TheShape &gt; </td></tr>
+<tr class="memitem:a3cb5adb47af3b1826216d7f33d305e84"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>updateCommonDataInEntities</b> (std::enable_if_t&lt; TheShape::nDim==2 &gt; *)</td></tr>
+<tr class="separator:a3cb5adb47af3b1826216d7f33d305e84"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adcc378ec658c92e4ca2ebef5f3e9833c"><td class="memTemplParams" colspan="2"><a id="adcc378ec658c92e4ca2ebef5f3e9833c" name="adcc378ec658c92e4ca2ebef5f3e9833c"></a>
+template&lt;typename TheShape &gt; </td></tr>
+<tr class="memitem:adcc378ec658c92e4ca2ebef5f3e9833c"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>updateCommonDataInEntities</b> (std::enable_if_t&lt; TheShape::nDim==3 &gt; *)</td></tr>
+<tr class="separator:adcc378ec658c92e4ca2ebef5f3e9833c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af07637d935948d0e46f5064cacd5efaf"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Mesh.html#af07637d935948d0e46f5064cacd5efaf">updateForUse</a> () override</td></tr>
+<tr class="memdesc:af07637d935948d0e46f5064cacd5efaf"><td class="mdescLeft">&#160;</td><td class="mdescRight">update the mesh data structure before using it  <a href="classFeel_1_1Mesh.html#af07637d935948d0e46f5064cacd5efaf">More...</a><br /></td></tr>
+<tr class="separator:af07637d935948d0e46f5064cacd5efaf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a017da014dbc9de5c81eea1d569de9135"><td class="memItemLeft" align="right" valign="top"><a id="a017da014dbc9de5c81eea1d569de9135" name="a017da014dbc9de5c81eea1d569de9135"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>updateForUseAfterMovingNodes</b> (<a class="el" href="classbool.html">bool</a> upMeasures=true) override</td></tr>
+<tr class="memdesc:a017da014dbc9de5c81eea1d569de9135"><td class="mdescLeft">&#160;</td><td class="mdescRight">update the mesh when nodes have moved <br /></td></tr>
+<tr class="separator:a017da014dbc9de5c81eea1d569de9135"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4b7b9fa1df79b6105cfdf74e0b9c11ab"><td class="memItemLeft" align="right" valign="top"><a id="a4b7b9fa1df79b6105cfdf74e0b9c11ab" name="a4b7b9fa1df79b6105cfdf74e0b9c11ab"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>updateMeasures</b> ()</td></tr>
+<tr class="memdesc:a4b7b9fa1df79b6105cfdf74e0b9c11ab"><td class="mdescLeft">&#160;</td><td class="mdescRight">update hAverage, hMin, hMax, measure of the mesh and measure of the boundary mesh <br /></td></tr>
+<tr class="separator:a4b7b9fa1df79b6105cfdf74e0b9c11ab"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa0bcce985b0d77ff9f9d97fc6e16927c"><td class="memTemplParams" colspan="2"><a id="aa0bcce985b0d77ff9f9d97fc6e16927c" name="aa0bcce985b0d77ff9f9d97fc6e16927c"></a>
+template&lt;typename RangeT &gt; </td></tr>
+<tr class="memitem:aa0bcce985b0d77ff9f9d97fc6e16927c"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1Mesh.html">Mesh</a>&lt; Shape, T, <a class="el" href="structFeel_1_1Tag.html">Tag</a>, IndexT &gt;::template <a class="el" href="structFeel_1_1Mesh_1_1trace__trace__mesh.html">trace_trace_mesh</a>&lt; <a class="el" href="structFeel_1_1Tag.html">Tag</a> &gt;::ptrtype&#160;</td><td class="memTemplItemRight" valign="bottom"><b>wireBasket</b> (RangeT const &amp;<a class="el" href="group__Core.html#ga9ac2567d303c357e7c0de44280697997">range</a>) const</td></tr>
+<tr class="separator:aa0bcce985b0d77ff9f9d97fc6e16927c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2f2e4247f96ebdf7584c4d655340c0e1"><td class="memTemplParams" colspan="2"><a id="a2f2e4247f96ebdf7584c4d655340c0e1" name="a2f2e4247f96ebdf7584c4d655340c0e1"></a>
+template&lt;typename RangeT , <a class="el" href="classint.html">int</a> TheTag&gt; </td></tr>
+<tr class="memitem:a2f2e4247f96ebdf7584c4d655340c0e1"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1Mesh.html">Mesh</a>&lt; Shape, T, <a class="el" href="structFeel_1_1Tag.html">Tag</a>, IndexT &gt;::template <a class="el" href="structFeel_1_1Mesh_1_1trace__trace__mesh.html">trace_trace_mesh</a>&lt; TheTag &gt;::ptrtype&#160;</td><td class="memTemplItemRight" valign="bottom"><b>wireBasket</b> (RangeT const &amp;<a class="el" href="group__Core.html#ga9ac2567d303c357e7c0de44280697997">range</a>, <a class="el" href="classboost_1_1mpl_1_1int__.html">mpl::int_</a>&lt; TheTag &gt;) const</td></tr>
+<tr class="separator:a2f2e4247f96ebdf7584c4d655340c0e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-methods" name="pro-methods"></a>
+Protected Member Functions</h2></td></tr>
+<tr class="memitem:a5128e9a88c09dbaa672bd3f717ed5a7f"><td class="memItemLeft" align="right" valign="top"><a id="a5128e9a88c09dbaa672bd3f717ed5a7f" name="a5128e9a88c09dbaa672bd3f717ed5a7f"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>check</b> () const override</td></tr>
+<tr class="memdesc:a5128e9a88c09dbaa672bd3f717ed5a7f"><td class="mdescLeft">&#160;</td><td class="mdescRight">check mesh connectivity <br /></td></tr>
+<tr class="separator:a5128e9a88c09dbaa672bd3f717ed5a7f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a89ac647f3a18c7c3a23c82c443f98a83"><td class="memItemLeft" align="right" valign="top"><a id="a89ac647f3a18c7c3a23c82c443f98a83" name="a89ac647f3a18c7c3a23c82c443f98a83"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>updateAdjacencyElements</b> ()</td></tr>
+<tr class="memdesc:a89ac647f3a18c7c3a23c82c443f98a83"><td class="mdescLeft">&#160;</td><td class="mdescRight">update the adjacency graph elements (usefull if coDimensionOne not updated) <br /></td></tr>
+<tr class="separator:a89ac647f3a18c7c3a23c82c443f98a83"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8bc3c90ca198089f69499db669566944"><td class="memItemLeft" align="right" valign="top"><a id="a8bc3c90ca198089f69499db669566944" name="a8bc3c90ca198089f69499db669566944"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>updateEntitiesCoDimensionGhostCellByUsingBlockingComm</b> ()</td></tr>
+<tr class="memdesc:a8bc3c90ca198089f69499db669566944"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update in ghost cells of entities of codimension 1. <br /></td></tr>
+<tr class="separator:a8bc3c90ca198089f69499db669566944"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4052100118fb07e327acb97c571d713e"><td class="memItemLeft" align="right" valign="top"><a id="a4052100118fb07e327acb97c571d713e" name="a4052100118fb07e327acb97c571d713e"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm</b> ()</td></tr>
+<tr class="separator:a4052100118fb07e327acb97c571d713e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4731d2d84b891dfd1fa095c524a25bb0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Mesh.html#a4731d2d84b891dfd1fa095c524a25bb0">updateEntitiesCoDimensionOne</a> () override</td></tr>
+<tr class="memdesc:a4731d2d84b891dfd1fa095c524a25bb0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update connectivity of entities of codimension 1.  <a href="classFeel_1_1Mesh.html#a4731d2d84b891dfd1fa095c524a25bb0">More...</a><br /></td></tr>
+<tr class="separator:a4731d2d84b891dfd1fa095c524a25bb0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abf8f4f1da1ad526cd8ff274a7ba704e1"><td class="memItemLeft" align="right" valign="top"><a id="abf8f4f1da1ad526cd8ff274a7ba704e1" name="abf8f4f1da1ad526cd8ff274a7ba704e1"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>updateEntitiesCoDimensionOne</b> (<a class="el" href="classboost_1_1mpl_1_1bool__.html">mpl::bool_</a>&lt; false &gt;)</td></tr>
+<tr class="separator:abf8f4f1da1ad526cd8ff274a7ba704e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6150f558c91f2dff84245acc31d4a684"><td class="memItemLeft" align="right" valign="top"><a id="a6150f558c91f2dff84245acc31d4a684" name="a6150f558c91f2dff84245acc31d4a684"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>updateEntitiesCoDimensionOne</b> (<a class="el" href="classboost_1_1mpl_1_1bool__.html">mpl::bool_</a>&lt; true &gt;)</td></tr>
+<tr class="separator:a6150f558c91f2dff84245acc31d4a684"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1a73d0aad5a882f30e95e50f24957111"><td class="memItemLeft" align="right" valign="top"><a id="a1a73d0aad5a882f30e95e50f24957111" name="a1a73d0aad5a882f30e95e50f24957111"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>updateEntitiesCoDimensionOneMinimal</b> ()</td></tr>
+<tr class="memdesc:a1a73d0aad5a882f30e95e50f24957111"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update in ghost cells of entities of codimension 1. Done only for marked entities and ghost faces. <br /></td></tr>
+<tr class="separator:a1a73d0aad5a882f30e95e50f24957111"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="friends" name="friends"></a>
 Friends</h2></td></tr>
@@ -624,167 +774,20 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>recv</b> (<a class="e
 <tr class="memitem:a6ec40611d3bfb0a373de7742a0d561c8"><td class="memItemLeft" align="right" valign="top"><a id="a6ec40611d3bfb0a373de7742a0d561c8" name="a6ec40611d3bfb0a373de7742a0d561c8"></a>
 FEELPP_DEPRECATED void&#160;</td><td class="memItemRight" valign="bottom"><b>saveMD</b> (std::ostream &amp;out)</td></tr>
 <tr class="separator:a6ec40611d3bfb0a373de7742a0d561c8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
-Public Member Functions</h2></td></tr>
-<tr class="memitem:a0e9e8013dfe087689c84c94a0eb319b0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Mesh.html#a0e9e8013dfe087689c84c94a0eb319b0">checkLocalPermutation</a> (<a class="el" href="classboost_1_1mpl_1_1bool__.html">mpl::bool_</a>&lt; false &gt;) const</td></tr>
-<tr class="memdesc:a0e9e8013dfe087689c84c94a0eb319b0"><td class="mdescLeft">&#160;</td><td class="mdescRight">private:  <a href="classFeel_1_1Mesh.html#a0e9e8013dfe087689c84c94a0eb319b0">More...</a><br /></td></tr>
-<tr class="separator:a0e9e8013dfe087689c84c94a0eb319b0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ade1099865bea2d08a23e519e5b9facf5"><td class="memItemLeft" align="right" valign="top"><a id="ade1099865bea2d08a23e519e5b9facf5" name="ade1099865bea2d08a23e519e5b9facf5"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>checkLocalPermutation</b> (<a class="el" href="classboost_1_1mpl_1_1bool__.html">mpl::bool_</a>&lt; true &gt;) const</td></tr>
-<tr class="separator:ade1099865bea2d08a23e519e5b9facf5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5b9b0d269b5f0d3ab3811dd833f95a09"><td class="memItemLeft" align="right" valign="top"><a id="a5b9b0d269b5f0d3ab3811dd833f95a09" name="a5b9b0d269b5f0d3ab3811dd833f95a09"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>decode</b> ()</td></tr>
-<tr class="memdesc:a5b9b0d269b5f0d3ab3811dd833f95a09"><td class="mdescLeft">&#160;</td><td class="mdescRight">decode the mesh data structure from a tighter data structure and to avoid pointers in order to serialize it for saving/loading and sending/receiving the mesh <br /></td></tr>
-<tr class="separator:a5b9b0d269b5f0d3ab3811dd833f95a09"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a78785cf9fbbf110f0ba85d09d63ea325"><td class="memItemLeft" align="right" valign="top"><a id="a78785cf9fbbf110f0ba85d09d63ea325" name="a78785cf9fbbf110f0ba85d09d63ea325"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>encode</b> ()</td></tr>
-<tr class="memdesc:a78785cf9fbbf110f0ba85d09d63ea325"><td class="mdescLeft">&#160;</td><td class="mdescRight">encode the mesh data structure into a tighter data structure and to avoid pointers in order to serialize it for saving/loading and sending/receiving the mesh <br /></td></tr>
-<tr class="separator:a78785cf9fbbf110f0ba85d09d63ea325"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae1c06bf148b0004b90c8f6d281094221"><td class="memItemLeft" align="right" valign="top"><a id="ae1c06bf148b0004b90c8f6d281094221" name="ae1c06bf148b0004b90c8f6d281094221"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>FEELPP_DEFINE_VISITABLE</b> ()</td></tr>
-<tr class="separator:ae1c06bf148b0004b90c8f6d281094221"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1bde4ac6d172980bca2a547d6e2c2506"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Mesh.html#a1bde4ac6d172980bca2a547d6e2c2506">isPeriodic</a> () const</td></tr>
-<tr class="separator:a1bde4ac6d172980bca2a547d6e2c2506"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6a758e0f28ce8b7c0a6bdacd21af91c5"><td class="memTemplParams" colspan="2"><a id="a6a758e0f28ce8b7c0a6bdacd21af91c5" name="a6a758e0f28ce8b7c0a6bdacd21af91c5"></a>
-template&lt;typename ... Ts&gt; </td></tr>
-<tr class="memitem:a6a758e0f28ce8b7c0a6bdacd21af91c5"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classbool.html">bool</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><b>load</b> (Ts &amp;&amp;... v)</td></tr>
-<tr class="separator:a6a758e0f28ce8b7c0a6bdacd21af91c5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a42dbd7fe8a0f0c0bb5e8dcb95fb76259"><td class="memItemLeft" align="right" valign="top"><a id="a42dbd7fe8a0f0c0bb5e8dcb95fb76259" name="a42dbd7fe8a0f0c0bb5e8dcb95fb76259"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>meshModified</b> () override</td></tr>
-<tr class="separator:a42dbd7fe8a0f0c0bb5e8dcb95fb76259"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a35b64711c3835132a45955cd897ea464"><td class="memTemplParams" colspan="2"><a id="a35b64711c3835132a45955cd897ea464" name="a35b64711c3835132a45955cd897ea464"></a>
-template&lt;typename TheShape &gt; </td></tr>
-<tr class="memitem:a35b64711c3835132a45955cd897ea464"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>modifyEdgesOnBoundary</b> (face_type &amp;f, std::enable_if_t&lt; TheShape::nDim !=3 &gt; *)</td></tr>
-<tr class="separator:a35b64711c3835132a45955cd897ea464"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aeb4a2a110a6d9d1c1b4b3ffe4013c3e5"><td class="memTemplParams" colspan="2"><a id="aeb4a2a110a6d9d1c1b4b3ffe4013c3e5" name="aeb4a2a110a6d9d1c1b4b3ffe4013c3e5"></a>
-template&lt;typename TheShape &gt; </td></tr>
-<tr class="memitem:aeb4a2a110a6d9d1c1b4b3ffe4013c3e5"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>modifyEdgesOnBoundary</b> (face_type &amp;face, std::enable_if_t&lt; TheShape::nDim==3 &gt; *)</td></tr>
-<tr class="separator:aeb4a2a110a6d9d1c1b4b3ffe4013c3e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a84a28b0c5106753c611f9ab75606e856"><td class="memTemplParams" colspan="2"><a id="a84a28b0c5106753c611f9ab75606e856" name="a84a28b0c5106753c611f9ab75606e856"></a>
-template&lt;typename TheShape &gt; </td></tr>
-<tr class="memitem:a84a28b0c5106753c611f9ab75606e856"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classbool.html">bool</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><b>modifyElementOnBoundaryFromEdge</b> (element_type &amp;elt, std::enable_if_t&lt; TheShape::nDim !=3 &gt; *)</td></tr>
-<tr class="separator:a84a28b0c5106753c611f9ab75606e856"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a87914f4ee7f49ae838386381cf026268"><td class="memTemplParams" colspan="2"><a id="a87914f4ee7f49ae838386381cf026268" name="a87914f4ee7f49ae838386381cf026268"></a>
-template&lt;typename TheShape &gt; </td></tr>
-<tr class="memitem:a87914f4ee7f49ae838386381cf026268"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classbool.html">bool</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><b>modifyElementOnBoundaryFromEdge</b> (element_type &amp;elt, std::enable_if_t&lt; TheShape::nDim==3 &gt; *)</td></tr>
-<tr class="separator:a87914f4ee7f49ae838386381cf026268"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af617b0de4efc5af011dfee5b534a19d0"><td class="memTemplParams" colspan="2"><a id="af617b0de4efc5af011dfee5b534a19d0" name="af617b0de4efc5af011dfee5b534a19d0"></a>
-template&lt;typename TheShape &gt; </td></tr>
-<tr class="memitem:af617b0de4efc5af011dfee5b534a19d0"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>removeMarkerNameWithoutEntity</b> (std::enable_if_t&lt; TheShape::nDim==0 &gt; *)</td></tr>
-<tr class="separator:af617b0de4efc5af011dfee5b534a19d0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a52a97a4150fa43700562989f4a8fc719"><td class="memTemplParams" colspan="2"><a id="a52a97a4150fa43700562989f4a8fc719" name="a52a97a4150fa43700562989f4a8fc719"></a>
-template&lt;typename TheShape  = GeoShape&gt; </td></tr>
-<tr class="memitem:a52a97a4150fa43700562989f4a8fc719"><td class="memTemplItemLeft" align="right" valign="top">FEELPP_NO_EXPORT void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>removeMarkerNameWithoutEntity</b> (std::enable_if_t&lt; TheShape::nDim==0 &gt; *=nullptr)</td></tr>
-<tr class="separator:a52a97a4150fa43700562989f4a8fc719"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad78d44d5822d276ffb11af2d7e580161"><td class="memTemplParams" colspan="2"><a id="ad78d44d5822d276ffb11af2d7e580161" name="ad78d44d5822d276ffb11af2d7e580161"></a>
-template&lt;typename TheShape &gt; </td></tr>
-<tr class="memitem:ad78d44d5822d276ffb11af2d7e580161"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>removeMarkerNameWithoutEntity</b> (std::enable_if_t&lt; TheShape::nDim==1 &gt; *)</td></tr>
-<tr class="separator:ad78d44d5822d276ffb11af2d7e580161"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a06f00a142ec393caf1c1d103cdd41218"><td class="memTemplParams" colspan="2"><a id="a06f00a142ec393caf1c1d103cdd41218" name="a06f00a142ec393caf1c1d103cdd41218"></a>
-template&lt;typename TheShape  = GeoShape&gt; </td></tr>
-<tr class="memitem:a06f00a142ec393caf1c1d103cdd41218"><td class="memTemplItemLeft" align="right" valign="top">FEELPP_NO_EXPORT void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>removeMarkerNameWithoutEntity</b> (std::enable_if_t&lt; TheShape::nDim==1 &gt; *=nullptr)</td></tr>
-<tr class="separator:a06f00a142ec393caf1c1d103cdd41218"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af2af5f6ff4d71f466a23f9a7c44ee757"><td class="memTemplParams" colspan="2"><a id="af2af5f6ff4d71f466a23f9a7c44ee757" name="af2af5f6ff4d71f466a23f9a7c44ee757"></a>
-template&lt;typename TheShape &gt; </td></tr>
-<tr class="memitem:af2af5f6ff4d71f466a23f9a7c44ee757"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>removeMarkerNameWithoutEntity</b> (std::enable_if_t&lt; TheShape::nDim==2 &gt; *)</td></tr>
-<tr class="separator:af2af5f6ff4d71f466a23f9a7c44ee757"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2f18ea9bc52e6e8d979c8b23ec588152"><td class="memTemplParams" colspan="2"><a id="a2f18ea9bc52e6e8d979c8b23ec588152" name="a2f18ea9bc52e6e8d979c8b23ec588152"></a>
-template&lt;typename TheShape  = GeoShape&gt; </td></tr>
-<tr class="memitem:a2f18ea9bc52e6e8d979c8b23ec588152"><td class="memTemplItemLeft" align="right" valign="top">FEELPP_NO_EXPORT void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>removeMarkerNameWithoutEntity</b> (std::enable_if_t&lt; TheShape::nDim==2 &gt; *=nullptr)</td></tr>
-<tr class="separator:a2f18ea9bc52e6e8d979c8b23ec588152"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0a31595f2fa66673dca82a97a27626d7"><td class="memTemplParams" colspan="2"><a id="a0a31595f2fa66673dca82a97a27626d7" name="a0a31595f2fa66673dca82a97a27626d7"></a>
-template&lt;typename TheShape &gt; </td></tr>
-<tr class="memitem:a0a31595f2fa66673dca82a97a27626d7"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>removeMarkerNameWithoutEntity</b> (std::enable_if_t&lt; TheShape::nDim==3 &gt; *)</td></tr>
-<tr class="separator:a0a31595f2fa66673dca82a97a27626d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a46c4247bb93dad32ca0f4e38f41a374b"><td class="memTemplParams" colspan="2"><a id="a46c4247bb93dad32ca0f4e38f41a374b" name="a46c4247bb93dad32ca0f4e38f41a374b"></a>
-template&lt;typename TheShape  = GeoShape&gt; </td></tr>
-<tr class="memitem:a46c4247bb93dad32ca0f4e38f41a374b"><td class="memTemplItemLeft" align="right" valign="top">FEELPP_NO_EXPORT void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>removeMarkerNameWithoutEntity</b> (std::enable_if_t&lt; TheShape::nDim==3 &gt; *=nullptr)</td></tr>
-<tr class="separator:a46c4247bb93dad32ca0f4e38f41a374b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9d95dabb70c27125761760a7948e9625"><td class="memTemplParams" colspan="2"><a id="a9d95dabb70c27125761760a7948e9625" name="a9d95dabb70c27125761760a7948e9625"></a>
-template&lt;typename ... Ts&gt; </td></tr>
-<tr class="memitem:a9d95dabb70c27125761760a7948e9625"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>save</b> (Ts &amp;&amp;... v) const</td></tr>
-<tr class="separator:a9d95dabb70c27125761760a7948e9625"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a85b1320c69de76241668007069d01111"><td class="memItemLeft" align="right" valign="top"><a id="a85b1320c69de76241668007069d01111" name="a85b1320c69de76241668007069d01111"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>setPeriodicEntities</b> (std::vector&lt; <a class="el" href="structFeel_1_1PeriodicEntity.html">PeriodicEntity</a> &gt; const &amp;e)</td></tr>
-<tr class="memdesc:a85b1320c69de76241668007069d01111"><td class="mdescLeft">&#160;</td><td class="mdescRight">set the periodic entities <br /></td></tr>
-<tr class="separator:a85b1320c69de76241668007069d01111"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abc85d25d681af7faf6b7cfa168da7ff1"><td class="memTemplParams" colspan="2"><a id="abc85d25d681af7faf6b7cfa168da7ff1" name="abc85d25d681af7faf6b7cfa168da7ff1"></a>
-template&lt;typename RangeT &gt; </td></tr>
-<tr class="memitem:abc85d25d681af7faf6b7cfa168da7ff1"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1Mesh.html">Mesh</a>&lt; Shape, T, <a class="el" href="structFeel_1_1Tag.html">Tag</a>, IndexT &gt;::template <a class="el" href="structFeel_1_1Mesh_1_1trace__mesh.html">trace_mesh</a>&lt; <a class="el" href="structFeel_1_1Tag.html">Tag</a> &gt;::ptrtype&#160;</td><td class="memTemplItemRight" valign="bottom"><b>trace</b> (RangeT const &amp;<a class="el" href="group__Core.html#ga9ac2567d303c357e7c0de44280697997">range</a>) const</td></tr>
-<tr class="separator:abc85d25d681af7faf6b7cfa168da7ff1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3a80a35dadb91402e69a93b9a4109bb8"><td class="memTemplParams" colspan="2"><a id="a3a80a35dadb91402e69a93b9a4109bb8" name="a3a80a35dadb91402e69a93b9a4109bb8"></a>
-template&lt;typename RangeT , <a class="el" href="classint.html">int</a> TheTag&gt; </td></tr>
-<tr class="memitem:a3a80a35dadb91402e69a93b9a4109bb8"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1Mesh.html">Mesh</a>&lt; Shape, T, <a class="el" href="structFeel_1_1Tag.html">Tag</a>, IndexT &gt;::template <a class="el" href="structFeel_1_1Mesh_1_1trace__mesh.html">trace_mesh</a>&lt; TheTag &gt;::ptrtype&#160;</td><td class="memTemplItemRight" valign="bottom"><b>trace</b> (RangeT const &amp;<a class="el" href="group__Core.html#ga9ac2567d303c357e7c0de44280697997">range</a>, <a class="el" href="classboost_1_1mpl_1_1int__.html">mpl::int_</a>&lt; TheTag &gt;) const</td></tr>
-<tr class="separator:a3a80a35dadb91402e69a93b9a4109bb8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9f6d6ac7647f0faaa249e123c9ceffe1"><td class="memTemplParams" colspan="2"><a id="a9f6d6ac7647f0faaa249e123c9ceffe1" name="a9f6d6ac7647f0faaa249e123c9ceffe1"></a>
-template&lt;typename TheShape &gt; </td></tr>
-<tr class="memitem:a9f6d6ac7647f0faaa249e123c9ceffe1"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>updateCommonDataInEntities</b> (std::enable_if_t&lt; TheShape::nDim==0 &gt; *)</td></tr>
-<tr class="separator:a9f6d6ac7647f0faaa249e123c9ceffe1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae46fc2eeba311f293b854e10d2dfe1aa"><td class="memTemplParams" colspan="2"><a id="ae46fc2eeba311f293b854e10d2dfe1aa" name="ae46fc2eeba311f293b854e10d2dfe1aa"></a>
-template&lt;typename TheShape &gt; </td></tr>
-<tr class="memitem:ae46fc2eeba311f293b854e10d2dfe1aa"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>updateCommonDataInEntities</b> (std::enable_if_t&lt; TheShape::nDim==1 &gt; *)</td></tr>
-<tr class="separator:ae46fc2eeba311f293b854e10d2dfe1aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3cb5adb47af3b1826216d7f33d305e84"><td class="memTemplParams" colspan="2"><a id="a3cb5adb47af3b1826216d7f33d305e84" name="a3cb5adb47af3b1826216d7f33d305e84"></a>
-template&lt;typename TheShape &gt; </td></tr>
-<tr class="memitem:a3cb5adb47af3b1826216d7f33d305e84"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>updateCommonDataInEntities</b> (std::enable_if_t&lt; TheShape::nDim==2 &gt; *)</td></tr>
-<tr class="separator:a3cb5adb47af3b1826216d7f33d305e84"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adcc378ec658c92e4ca2ebef5f3e9833c"><td class="memTemplParams" colspan="2"><a id="adcc378ec658c92e4ca2ebef5f3e9833c" name="adcc378ec658c92e4ca2ebef5f3e9833c"></a>
-template&lt;typename TheShape &gt; </td></tr>
-<tr class="memitem:adcc378ec658c92e4ca2ebef5f3e9833c"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>updateCommonDataInEntities</b> (std::enable_if_t&lt; TheShape::nDim==3 &gt; *)</td></tr>
-<tr class="separator:adcc378ec658c92e4ca2ebef5f3e9833c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af07637d935948d0e46f5064cacd5efaf"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Mesh.html#af07637d935948d0e46f5064cacd5efaf">updateForUse</a> () override</td></tr>
-<tr class="memdesc:af07637d935948d0e46f5064cacd5efaf"><td class="mdescLeft">&#160;</td><td class="mdescRight">update the mesh data structure before using it  <a href="classFeel_1_1Mesh.html#af07637d935948d0e46f5064cacd5efaf">More...</a><br /></td></tr>
-<tr class="separator:af07637d935948d0e46f5064cacd5efaf"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a017da014dbc9de5c81eea1d569de9135"><td class="memItemLeft" align="right" valign="top"><a id="a017da014dbc9de5c81eea1d569de9135" name="a017da014dbc9de5c81eea1d569de9135"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>updateForUseAfterMovingNodes</b> (<a class="el" href="classbool.html">bool</a> upMeasures=true) override</td></tr>
-<tr class="memdesc:a017da014dbc9de5c81eea1d569de9135"><td class="mdescLeft">&#160;</td><td class="mdescRight">update the mesh when nodes have moved <br /></td></tr>
-<tr class="separator:a017da014dbc9de5c81eea1d569de9135"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4b7b9fa1df79b6105cfdf74e0b9c11ab"><td class="memItemLeft" align="right" valign="top"><a id="a4b7b9fa1df79b6105cfdf74e0b9c11ab" name="a4b7b9fa1df79b6105cfdf74e0b9c11ab"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>updateMeasures</b> ()</td></tr>
-<tr class="memdesc:a4b7b9fa1df79b6105cfdf74e0b9c11ab"><td class="mdescLeft">&#160;</td><td class="mdescRight">update hAverage, hMin, hMax, measure of the mesh and measure of the boundary mesh <br /></td></tr>
-<tr class="separator:a4b7b9fa1df79b6105cfdf74e0b9c11ab"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa0bcce985b0d77ff9f9d97fc6e16927c"><td class="memTemplParams" colspan="2"><a id="aa0bcce985b0d77ff9f9d97fc6e16927c" name="aa0bcce985b0d77ff9f9d97fc6e16927c"></a>
-template&lt;typename RangeT &gt; </td></tr>
-<tr class="memitem:aa0bcce985b0d77ff9f9d97fc6e16927c"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1Mesh.html">Mesh</a>&lt; Shape, T, <a class="el" href="structFeel_1_1Tag.html">Tag</a>, IndexT &gt;::template <a class="el" href="structFeel_1_1Mesh_1_1trace__trace__mesh.html">trace_trace_mesh</a>&lt; <a class="el" href="structFeel_1_1Tag.html">Tag</a> &gt;::ptrtype&#160;</td><td class="memTemplItemRight" valign="bottom"><b>wireBasket</b> (RangeT const &amp;<a class="el" href="group__Core.html#ga9ac2567d303c357e7c0de44280697997">range</a>) const</td></tr>
-<tr class="separator:aa0bcce985b0d77ff9f9d97fc6e16927c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2f2e4247f96ebdf7584c4d655340c0e1"><td class="memTemplParams" colspan="2"><a id="a2f2e4247f96ebdf7584c4d655340c0e1" name="a2f2e4247f96ebdf7584c4d655340c0e1"></a>
-template&lt;typename RangeT , <a class="el" href="classint.html">int</a> TheTag&gt; </td></tr>
-<tr class="memitem:a2f2e4247f96ebdf7584c4d655340c0e1"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1Mesh.html">Mesh</a>&lt; Shape, T, <a class="el" href="structFeel_1_1Tag.html">Tag</a>, IndexT &gt;::template <a class="el" href="structFeel_1_1Mesh_1_1trace__trace__mesh.html">trace_trace_mesh</a>&lt; TheTag &gt;::ptrtype&#160;</td><td class="memTemplItemRight" valign="bottom"><b>wireBasket</b> (RangeT const &amp;<a class="el" href="group__Core.html#ga9ac2567d303c357e7c0de44280697997">range</a>, <a class="el" href="classboost_1_1mpl_1_1int__.html">mpl::int_</a>&lt; TheTag &gt;) const</td></tr>
-<tr class="separator:a2f2e4247f96ebdf7584c4d655340c0e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-methods" name="pro-methods"></a>
-Protected Member Functions</h2></td></tr>
-<tr class="memitem:a5128e9a88c09dbaa672bd3f717ed5a7f"><td class="memItemLeft" align="right" valign="top"><a id="a5128e9a88c09dbaa672bd3f717ed5a7f" name="a5128e9a88c09dbaa672bd3f717ed5a7f"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>check</b> () const override</td></tr>
-<tr class="memdesc:a5128e9a88c09dbaa672bd3f717ed5a7f"><td class="mdescLeft">&#160;</td><td class="mdescRight">check mesh connectivity <br /></td></tr>
-<tr class="separator:a5128e9a88c09dbaa672bd3f717ed5a7f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a89ac647f3a18c7c3a23c82c443f98a83"><td class="memItemLeft" align="right" valign="top"><a id="a89ac647f3a18c7c3a23c82c443f98a83" name="a89ac647f3a18c7c3a23c82c443f98a83"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>updateAdjacencyElements</b> ()</td></tr>
-<tr class="memdesc:a89ac647f3a18c7c3a23c82c443f98a83"><td class="mdescLeft">&#160;</td><td class="mdescRight">update the adjacency graph elements (usefull if coDimensionOne not updated) <br /></td></tr>
-<tr class="separator:a89ac647f3a18c7c3a23c82c443f98a83"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8bc3c90ca198089f69499db669566944"><td class="memItemLeft" align="right" valign="top"><a id="a8bc3c90ca198089f69499db669566944" name="a8bc3c90ca198089f69499db669566944"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>updateEntitiesCoDimensionGhostCellByUsingBlockingComm</b> ()</td></tr>
-<tr class="memdesc:a8bc3c90ca198089f69499db669566944"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update in ghost cells of entities of codimension 1. <br /></td></tr>
-<tr class="separator:a8bc3c90ca198089f69499db669566944"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4052100118fb07e327acb97c571d713e"><td class="memItemLeft" align="right" valign="top"><a id="a4052100118fb07e327acb97c571d713e" name="a4052100118fb07e327acb97c571d713e"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm</b> ()</td></tr>
-<tr class="separator:a4052100118fb07e327acb97c571d713e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4731d2d84b891dfd1fa095c524a25bb0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Mesh.html#a4731d2d84b891dfd1fa095c524a25bb0">updateEntitiesCoDimensionOne</a> () override</td></tr>
-<tr class="memdesc:a4731d2d84b891dfd1fa095c524a25bb0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update connectivity of entities of codimension 1.  <a href="classFeel_1_1Mesh.html#a4731d2d84b891dfd1fa095c524a25bb0">More...</a><br /></td></tr>
-<tr class="separator:a4731d2d84b891dfd1fa095c524a25bb0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abf8f4f1da1ad526cd8ff274a7ba704e1"><td class="memItemLeft" align="right" valign="top"><a id="abf8f4f1da1ad526cd8ff274a7ba704e1" name="abf8f4f1da1ad526cd8ff274a7ba704e1"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>updateEntitiesCoDimensionOne</b> (<a class="el" href="classboost_1_1mpl_1_1bool__.html">mpl::bool_</a>&lt; false &gt;)</td></tr>
-<tr class="separator:abf8f4f1da1ad526cd8ff274a7ba704e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6150f558c91f2dff84245acc31d4a684"><td class="memItemLeft" align="right" valign="top"><a id="a6150f558c91f2dff84245acc31d4a684" name="a6150f558c91f2dff84245acc31d4a684"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>updateEntitiesCoDimensionOne</b> (<a class="el" href="classboost_1_1mpl_1_1bool__.html">mpl::bool_</a>&lt; true &gt;)</td></tr>
-<tr class="separator:a6150f558c91f2dff84245acc31d4a684"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1a73d0aad5a882f30e95e50f24957111"><td class="memItemLeft" align="right" valign="top"><a id="a1a73d0aad5a882f30e95e50f24957111" name="a1a73d0aad5a882f30e95e50f24957111"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>updateEntitiesCoDimensionOneMinimal</b> ()</td></tr>
-<tr class="memdesc:a1a73d0aad5a882f30e95e50f24957111"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update in ghost cells of entities of codimension 1. Done only for marked entities and ghost faces. <br /></td></tr>
-<tr class="separator:a1a73d0aad5a882f30e95e50f24957111"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<h2 class="groupheader">Member Function Documentation</h2>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><div class="compoundTemplParams">template&lt;typename GeoShape, typename T = double, <a class="el" href="classint.html">int</a> Tag = 0, typename IndexT = uint32_type&gt;<br />
+class Feel::Mesh&lt; GeoShape, T, Tag, IndexT &gt;</div><p >unifying mesh class </p>
+<p >This structure is an aggregation of elements, faces, edges(3D) and points data structures and provides a unified interface with respect to the dimension.</p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">GeoShape</td><td>Geometric entities type </td></tr>
+    <tr><td class="paramname">T</td><td>numerical type for coordinates </td></tr>
+    <tr><td class="paramname"><a class="el" href="structFeel_1_1Tag.html">Tag</a></td><td>= 0 to discriminate between meshes of the same type </td></tr>
+  </table>
+  </dd>
+</dl>
+</div><h2 class="groupheader">Member Function Documentation</h2>
 <a id="a65d3e0734bd3af7556b9986b3ab8c205" name="a65d3e0734bd3af7556b9986b3ab8c205"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a65d3e0734bd3af7556b9986b3ab8c205">&#9670;&nbsp;</a></span>addElement() <span class="overload">[1/2]</span></h2>
 

@@ -1,5 +1,8 @@
 var classFeel_1_1GeoElement3D =
 [
+    [ "GeoElement3D", "classFeel_1_1GeoElement3D.html#a4504219dc10abfa1a2fc2a9819d81ef8", null ],
+    [ "GeoElement3D", "classFeel_1_1GeoElement3D.html#a74e8499668b76b1f06f41dce27570cf3", null ],
+    [ "~GeoElement3D", "classFeel_1_1GeoElement3D.html#a3af74346ed994639791c5813da8d32fb", null ],
     [ "boundaryEntityDimension", "classFeel_1_1GeoElement3D.html#ab23c43c59d5940a55395377a1d010567", null ],
     [ "faces", "classFeel_1_1GeoElement3D.html#a3cbf1a572cd1e8161ed2741014360ecc", null ],
     [ "faces", "classFeel_1_1GeoElement3D.html#aa138ecf2f2666c7e39ce84e77172bfae", null ],
@@ -18,8 +21,5 @@ var classFeel_1_1GeoElement3D =
     [ "setFace", "classFeel_1_1GeoElement3D.html#ad1a626fb86a0a6cb46bbee0533b24ec8", null ],
     [ "numLocalEdges", "classFeel_1_1GeoElement3D.html#a341e430dd2336619670d36cb5b0c88a5", null ],
     [ "numLocalFaces", "classFeel_1_1GeoElement3D.html#ae2db1d66562a346024c207e6cd88852b", null ],
-    [ "numLocalVertices", "classFeel_1_1GeoElement3D.html#ac160d4d1b04512468b263637542314b5", null ],
-    [ "GeoElement3D", "classFeel_1_1GeoElement3D.html#a4504219dc10abfa1a2fc2a9819d81ef8", null ],
-    [ "GeoElement3D", "classFeel_1_1GeoElement3D.html#a74e8499668b76b1f06f41dce27570cf3", null ],
-    [ "~GeoElement3D", "classFeel_1_1GeoElement3D.html#a3af74346ed994639791c5813da8d32fb", null ]
+    [ "numLocalVertices", "classFeel_1_1GeoElement3D.html#ac160d4d1b04512468b263637542314b5", null ]
 ];

@@ -17,6 +17,9 @@ var classFeel_1_1FunctionSpace =
     [ "GetPeriodicity", "structFeel_1_1FunctionSpace_1_1GetPeriodicity.html", null ],
     [ "nodim", "structFeel_1_1FunctionSpace_1_1nodim.html", null ],
     [ "sub_functionspace", "structFeel_1_1FunctionSpace_1_1sub__functionspace.html", null ],
+    [ "local_interpolant_type", "classFeel_1_1FunctionSpace.html#a289a12d2a0267b512306ba9453316577", null ],
+    [ "FunctionSpace", "classFeel_1_1FunctionSpace.html#af2618e53afbe69e6545ac510882006fa", null ],
+    [ "~FunctionSpace", "classFeel_1_1FunctionSpace.html#af1079314c4d707f7452e20c874ac085f", null ],
     [ "basis", "classFeel_1_1FunctionSpace.html#a4f805bf86518c4df5cc598a3a2ccb31f", null ],
     [ "basisName", "classFeel_1_1FunctionSpace.html#a3e1473bb7d6f935c4d4678cce4b61452", null ],
     [ "basisOrder", "classFeel_1_1FunctionSpace.html#aec4e42a68d6dacb44de2e2b4375e7fb6", null ],
@@ -83,8 +86,5 @@ var classFeel_1_1FunctionSpace =
     [ "M_dofOnOff", "classFeel_1_1FunctionSpace.html#a28227bb46ef1eed43d448d2a89b20645", null ],
     [ "M_extendedDofTableComposite", "classFeel_1_1FunctionSpace.html#a64fff94ffa04575676b124344544432b", null ],
     [ "M_ref_fe", "classFeel_1_1FunctionSpace.html#aa798114f85bc067201efae1b28ed250e", null ],
-    [ "M_rt", "classFeel_1_1FunctionSpace.html#ad90149d16e3a95a470da0dfa8297633c", null ],
-    [ "local_interpolant_type", "classFeel_1_1FunctionSpace.html#a289a12d2a0267b512306ba9453316577", null ],
-    [ "FunctionSpace", "classFeel_1_1FunctionSpace.html#af2618e53afbe69e6545ac510882006fa", null ],
-    [ "~FunctionSpace", "classFeel_1_1FunctionSpace.html#af1079314c4d707f7452e20c874ac085f", null ]
+    [ "M_rt", "classFeel_1_1FunctionSpace.html#ad90149d16e3a95a470da0dfa8297633c", null ]
 ];

@@ -6,6 +6,8 @@ var classFeel_1_1Mesh =
     [ "trace_trace_mesh", "structFeel_1_1Mesh_1_1trace__trace__mesh.html", null ],
     [ "UpdateNumGlobalEntitiesForAllReduce", "structFeel_1_1Mesh_1_1UpdateNumGlobalEntitiesForAllReduce.html", null ],
     [ "UpdateSetForAllReduce", "structFeel_1_1Mesh_1_1UpdateSetForAllReduce.html", null ],
+    [ "face_processor_type", "classFeel_1_1Mesh.html#aa012daf8007499bdeed2908e60a654b2", null ],
+    [ "Mesh", "classFeel_1_1Mesh.html#abebbfdc153c88dbab322a01899d42d14", null ],
     [ "addElement", "classFeel_1_1Mesh.html#a65d3e0734bd3af7556b9986b3ab8c205", null ],
     [ "addElement", "classFeel_1_1Mesh.html#abdd5907a2f0af5c534da0d445e501650", null ],
     [ "check", "classFeel_1_1Mesh.html#a5128e9a88c09dbaa672bd3f717ed5a7f", null ],
@@ -77,7 +79,5 @@ var classFeel_1_1Mesh =
     [ "updateMarker3WithRange", "classFeel_1_1Mesh.html#a24dde928e0dc7b391b03ea94e00a49ec", null ],
     [ "updateMeasures", "classFeel_1_1Mesh.html#a4b7b9fa1df79b6105cfdf74e0b9c11ab", null ],
     [ "updateNumGlobalElements", "classFeel_1_1Mesh.html#a7358d3fa8f7c90d56807173ab125c0e6", null ],
-    [ "meshChanged", "classFeel_1_1Mesh.html#aa45d0a74151105c40d518a1cb59e5d10", null ],
-    [ "face_processor_type", "classFeel_1_1Mesh.html#aa012daf8007499bdeed2908e60a654b2", null ],
-    [ "Mesh", "classFeel_1_1Mesh.html#abebbfdc153c88dbab322a01899d42d14", null ]
+    [ "meshChanged", "classFeel_1_1Mesh.html#aa45d0a74151105c40d518a1cb59e5d10", null ]
 ];

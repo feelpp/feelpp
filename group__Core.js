@@ -1,6 +1,15 @@
 var group__Core =
 [
     [ "Feel::Application", "classFeel_1_1Application.html", [
+      [ "simget_iterator", "classFeel_1_1Application.html#abf27535f4318a03d55a2607626981418", null ],
+      [ "simgets_type", "classFeel_1_1Application.html#af693db51ca874953a72fee81cd13ed4e", null ],
+      [ "Application", "classFeel_1_1Application.html#a074224ccb2e3626252a7ff2885fcedfa", null ],
+      [ "Application", "classFeel_1_1Application.html#a1112e920fd18b261ef08f30ae958cf23", null ],
+      [ "Application", "classFeel_1_1Application.html#a2938c9f53e34a8d01a8aa5360e86ccb8", null ],
+      [ "Application", "classFeel_1_1Application.html#a7239696dc9414aa9a3ae2e5f182e2ac0", null ],
+      [ "Application", "classFeel_1_1Application.html#abe9b41f50a635c26516123780444b149", null ],
+      [ "Application", "classFeel_1_1Application.html#a7e72b49f60f7dcfafee4f38c67e79210", null ],
+      [ "Application", "classFeel_1_1Application.html#a8cafdbf60a11fa7ca6056dce78bc85a5", null ],
       [ "about", "classFeel_1_1Application.html#adca8f49376c4bb58c7d87910f9d17f35", null ],
       [ "add", "classFeel_1_1Application.html#a3a665c340ba4df177090b4d78c1d9ded", null ],
       [ "barrier", "classFeel_1_1Application.html#a66069d9fcb67b26127ec12fb2b7d23ea", null ],
@@ -40,19 +49,14 @@ var group__Core =
       [ "unknownArgc", "classFeel_1_1Application.html#a28775cb65bd0035acab43ba1f39a239b", null ],
       [ "unknownArgv", "classFeel_1_1Application.html#a6b8a8f5d855cb2cd6d5c32de1ef39d40", null ],
       [ "verbose", "classFeel_1_1Application.html#a97d3d27bbdf62be58c2458a400e9048d", null ],
-      [ "vm", "classFeel_1_1Application.html#ac74f059247013cca98192a5687db517c", null ],
-      [ "simget_iterator", "classFeel_1_1Application.html#abf27535f4318a03d55a2607626981418", null ],
-      [ "simgets_type", "classFeel_1_1Application.html#af693db51ca874953a72fee81cd13ed4e", null ],
-      [ "Application", "classFeel_1_1Application.html#a074224ccb2e3626252a7ff2885fcedfa", null ],
-      [ "Application", "classFeel_1_1Application.html#a1112e920fd18b261ef08f30ae958cf23", null ],
-      [ "Application", "classFeel_1_1Application.html#a2938c9f53e34a8d01a8aa5360e86ccb8", null ],
-      [ "Application", "classFeel_1_1Application.html#a7239696dc9414aa9a3ae2e5f182e2ac0", null ],
-      [ "Application", "classFeel_1_1Application.html#abe9b41f50a635c26516123780444b149", null ],
-      [ "Application", "classFeel_1_1Application.html#a7e72b49f60f7dcfafee4f38c67e79210", null ],
-      [ "Application", "classFeel_1_1Application.html#a8cafdbf60a11fa7ca6056dce78bc85a5", null ]
+      [ "vm", "classFeel_1_1Application.html#ac74f059247013cca98192a5687db517c", null ]
     ] ],
     [ "Feel::AssertContext", "classFeel_1_1AssertContext.html", null ],
     [ "Feel::Environment", "classFeel_1_1Environment.html", [
+      [ "Environment", "classFeel_1_1Environment.html#a2f72ceaafeecd718e9089c5d16322cfd", null ],
+      [ "Environment", "classFeel_1_1Environment.html#a5dd435d3b4d3664600a9555c750cee22", null ],
+      [ "Environment", "classFeel_1_1Environment.html#a2090fcc5dc3f4bd395df2a3c21b12a79", null ],
+      [ "~Environment", "classFeel_1_1Environment.html#a8063d8d062ce24ca7776b78cbfd57ca3", null ],
       [ "abort", "classFeel_1_1Environment.html#aa174c7b26f9285d351fc2e8efb933594", null ],
       [ "aborted", "classFeel_1_1Environment.html#a955eb91eb141c1aedb753e7bb00cc654", null ],
       [ "addTimer", "classFeel_1_1Environment.html#a40e7009dadbb4eb4b0c0f4b21f5dd523", null ],
@@ -100,11 +104,7 @@ var group__Core =
       [ "vm", "classFeel_1_1Environment.html#ad681cb419cc2cae94d8bd5352fd54b21", null ],
       [ "worldComm", "classFeel_1_1Environment.html#ade89e3983d4b3f998fb4ebd0e84f28a7", null ],
       [ "worldCommPtr", "classFeel_1_1Environment.html#a57b323455dd9412c293d662ee9f394b8", null ],
-      [ "worldsComm", "classFeel_1_1Environment.html#a372e7cff15a7e7132a18b5d11c780fd1", null ],
-      [ "Environment", "classFeel_1_1Environment.html#a2f72ceaafeecd718e9089c5d16322cfd", null ],
-      [ "Environment", "classFeel_1_1Environment.html#a5dd435d3b4d3664600a9555c750cee22", null ],
-      [ "Environment", "classFeel_1_1Environment.html#a2090fcc5dc3f4bd395df2a3c21b12a79", null ],
-      [ "~Environment", "classFeel_1_1Environment.html#a8063d8d062ce24ca7776b78cbfd57ca3", null ]
+      [ "worldsComm", "classFeel_1_1Environment.html#a372e7cff15a7e7132a18b5d11c780fd1", null ]
     ] ],
     [ "Feel::Factory< AbstractProduct, IdentifierType, ProductCreator, FactoryErrorPolicy >", "classFeel_1_1Factory.html", [
       [ "createObject", "classFeel_1_1Factory.html#a637b9c070e8086850bc944c329c05490", null ],
@@ -115,14 +115,14 @@ var group__Core =
     [ "Feel::math::Constant< Tag, Rep >", "structFeel_1_1math_1_1Constant.html", null ],
     [ "Feel::MemoryUsage", "structFeel_1_1MemoryUsage.html", null ],
     [ "Feel::meta::Context< StorageType >", "classFeel_1_1meta_1_1Context.html", [
+      [ "Context", "classFeel_1_1meta_1_1Context.html#a73dc08b525a7c6297aeb8ac3d6c50546", null ],
+      [ "Context", "classFeel_1_1meta_1_1Context.html#a4885dda662ac91c476fe7c0686daa7e4", null ],
+      [ "~Context", "classFeel_1_1meta_1_1Context.html#a45590a91d804c789ec9fbf5736ab303e", null ],
       [ "context", "classFeel_1_1meta_1_1Context.html#a266cc3e0549778f0fbab25cb45b097a9", null ],
       [ "operator()", "classFeel_1_1meta_1_1Context.html#a12edf06b9f9e912874549e5e0bb35dea", null ],
       [ "operator=", "classFeel_1_1meta_1_1Context.html#ab9ad74216455012043a514b848c5c082", null ],
       [ "operator=", "classFeel_1_1meta_1_1Context.html#a11f0900906628cfab629f427a4546141", null ],
-      [ "setContext", "classFeel_1_1meta_1_1Context.html#ac0f6f77e37b3351855df76774c2aa177", null ],
-      [ "Context", "classFeel_1_1meta_1_1Context.html#a73dc08b525a7c6297aeb8ac3d6c50546", null ],
-      [ "Context", "classFeel_1_1meta_1_1Context.html#a4885dda662ac91c476fe7c0686daa7e4", null ],
-      [ "~Context", "classFeel_1_1meta_1_1Context.html#a45590a91d804c789ec9fbf5736ab303e", null ]
+      [ "setContext", "classFeel_1_1meta_1_1Context.html#ac0f6f77e37b3351855df76774c2aa177", null ]
     ] ],
     [ "Feel::Singleton< T >", "classFeel_1_1Singleton.html", [
       [ "instance", "classFeel_1_1Singleton.html#a1d3a68a11d8143582273ca02114a140b", null ]
@@ -135,6 +135,13 @@ var group__Core =
     [ "Feel::VisitorBase", "classFeel_1_1VisitorBase.html", null ],
     [ "Feel::VisitorBaseImpl< TList, R >", "classFeel_1_1VisitorBaseImpl.html", null ],
     [ "Feel::WorldComm", "classFeel_1_1WorldComm.html", [
+      [ "communicator_type", "classFeel_1_1WorldComm.html#aa79784801c64f4733ffa9b219bcb2637", null ],
+      [ "self_ptrtype", "classFeel_1_1WorldComm.html#a17b8bdedce7012a7f111b2b7b0d33953", null ],
+      [ "self_type", "classFeel_1_1WorldComm.html#adb513020a43d11dfca57d8bcb4883956", null ],
+      [ "WorldComm", "classFeel_1_1WorldComm.html#a4ed4a25902258a5ca6e66d215fa5787b", null ],
+      [ "WorldComm", "classFeel_1_1WorldComm.html#aeda2e811bd9fb448a31c235b851afbed", null ],
+      [ "WorldComm", "classFeel_1_1WorldComm.html#aee58710d8c993dd3d6797e60b28593cf", null ],
+      [ "WorldComm", "classFeel_1_1WorldComm.html#a3d4df2d2d1098f8039f89c5688667b1b", null ],
       [ "activityOnWorld", "classFeel_1_1WorldComm.html#af324e9be228a27352f22ae142f5dcdf1", null ],
       [ "comm", "classFeel_1_1WorldComm.html#a3cd41d624b68981aaccd34dfe7e31770", null ],
       [ "globalComm", "classFeel_1_1WorldComm.html#aa0c059fe775a097de3d8d14787eb7f8f", null ],
@@ -164,14 +171,7 @@ var group__Core =
       [ "subWorldCommSeq", "classFeel_1_1WorldComm.html#a7eb601e318060e4d8a812cf14efc92e4", null ],
       [ "subWorldCommSeq", "classFeel_1_1WorldComm.html#ac30a1931a835288997a38c9313cddcd7", null ],
       [ "subWorldCommSeqPtr", "classFeel_1_1WorldComm.html#ad20bacea865ad9a4681e8a0450137a6e", null ],
-      [ "subWorldCommSeqPtr", "classFeel_1_1WorldComm.html#a81687dadcc06041861b4ff514141797a", null ],
-      [ "communicator_type", "classFeel_1_1WorldComm.html#aa79784801c64f4733ffa9b219bcb2637", null ],
-      [ "self_ptrtype", "classFeel_1_1WorldComm.html#a17b8bdedce7012a7f111b2b7b0d33953", null ],
-      [ "self_type", "classFeel_1_1WorldComm.html#adb513020a43d11dfca57d8bcb4883956", null ],
-      [ "WorldComm", "classFeel_1_1WorldComm.html#a4ed4a25902258a5ca6e66d215fa5787b", null ],
-      [ "WorldComm", "classFeel_1_1WorldComm.html#aeda2e811bd9fb448a31c235b851afbed", null ],
-      [ "WorldComm", "classFeel_1_1WorldComm.html#aee58710d8c993dd3d6797e60b28593cf", null ],
-      [ "WorldComm", "classFeel_1_1WorldComm.html#a3d4df2d2d1098f8039f89c5688667b1b", null ]
+      [ "subWorldCommSeqPtr", "classFeel_1_1WorldComm.html#a81687dadcc06041861b4ff514141797a", null ]
     ] ],
     [ "Macros", "group__Core.html#Macros", "group__Core_Macros_dup" ],
     [ "Types", "group__Core.html#Types", "group__Core_Types_dup" ],
