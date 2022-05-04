@@ -240,7 +240,7 @@ public:
     std::map<int,double> priorTimes() const override
         {
             std::map<int,double> prior;
-            for( int i = 0; i < this->M_order; ++i )
+            for( int i = 0; i < this->M_order+1; ++i )
                 prior[i]=timeInitial()-i*timeStep();
             return prior;
         }
@@ -270,12 +270,21 @@ public:
     double restart();
 
     /**
+     * @brief filter the bdf to obtain one order higher accuracy
+     * 
+     * @tparam container_type type of the container
+     * @param u_curr 
+     */
+    template<typename container_type>
+    auto filter( typename space_type::template Element<value_type, container_type> & u_curr );
+
+    /**
        Update the vectors of the previous time steps by shifting on the right
        the old values.
        @param u_curr current (new) value of the state vector
     */
     template<typename container_type>
-    void shiftRight( typename space_type::template Element<value_type, container_type> const& u_curr );
+    void shiftRight( typename space_type::template Element<value_type, container_type> & u_curr );
 
     /**
      * Move to next time step (solution not shifted).
@@ -302,7 +311,7 @@ public:
      */
     template<typename container_type>
     double
-    next( typename space_type::template Element<value_type, container_type> const& u_curr )
+    next( typename space_type::template Element<value_type, container_type> & u_curr )
     {
         this->shiftRight( u_curr );
 
@@ -387,7 +396,11 @@ public:
         LOG(INFO) << "  time order : " << this->timeOrder() << "\n";
     }
 
+    eigen 
+    firstDifferences()
+    {
 
+    }
 private:
     void init();
 
@@ -492,7 +505,7 @@ Bdf<SpaceType>::Bdf( space_ptrtype const& __space, std::string const& name, std:
     computeCoefficients();
 
     CHECK( this->numberOfConsecutiveSave() >= this->bdfOrder() ) << "numberOfConsecutiveSave is too small, should be >= bdfOrder";
-    M_unknowns.resize( std::max(this->bdfOrder(), this->numberOfConsecutiveSave()) );
+    M_unknowns.resize( std::max(this->bdfOrder()+1, this->numberOfConsecutiveSave()) );
     for ( uint8_type __i = 0; __i < M_unknowns.size(); ++__i )
     {
         M_unknowns[__i] = element_ptrtype( new element_type( M_space ) );
@@ -580,7 +593,7 @@ Bdf<SpaceType>::init()
 {
 
     CHECK( this->numberOfConsecutiveSave() >= this->bdfOrder() ) << "numberOfConsecutiveSave is too small, should be >= bdfOrder";
-    int sizeUnknowns = std::max(this->bdfOrder(), this->numberOfConsecutiveSave());
+    int sizeUnknowns = std::max(this->bdfOrder()+1, this->numberOfConsecutiveSave());
     if ( M_unknowns.size() != sizeUnknowns )
     {
         M_unknowns.resize( sizeUnknowns );
@@ -733,7 +746,7 @@ Bdf<SpaceType>::initialize( unknowns_type const& uv0 )
     M_time_values_map.push_back( M_Ti );
 
     if ( uv0.size() == 1 )
-        std::for_each( M_unknowns.begin(), M_unknowns.end(), *boost::lambda::_1 = *uv0[0] );
+        std::for_each( M_unknowns.begin(), M_unknowns.end(), [&uv0]( element_ptrtype& v ) { *v = *uv0[0]; } );
     else if ( uv0.size() > 1 )
         std::copy( uv0.begin(), uv0.end(), M_unknowns.begin() );
 
@@ -914,24 +927,38 @@ Bdf<SpaceType>::loadCurrent()
         }
     }
 }
+template <typename SpaceType>
+template<typename container_type>
+auto
+Bdf<SpaceType>::filter( typename space_type::template Element<value_type, container_type> & __new_unk )
+{
+
+    if ( M_order_cur == 1 )
+    {
+        std::cout << fmt::format("filtering order 1") << std::endl;
+        __new_unk = project( _space = __new_unk.functionSpace(),
+                            _expr = idv( __new_unk ) - ( idv( __new_unk ) - 2 * idv( M_unknowns[0] ) + idv( M_unknowns[1] ) ) / 3. );
+    }
+    return __new_unk;
+}
 
 template <typename SpaceType>
 template<typename container_type>
 void
-Bdf<SpaceType>::shiftRight( typename space_type::template Element<value_type, container_type> const& __new_unk )
+Bdf<SpaceType>::shiftRight( typename space_type::template Element<value_type, container_type> & __new_unk )
 {
     DVLOG(2) << "shiftRight: inserting time " << this->time() << "s\n";
     super::shiftRight();
 
     // shift all previously stored bdf data
-    using namespace boost::lambda;
-    typename unknowns_type::reverse_iterator __it = boost::next( M_unknowns.rbegin() );
-    std::for_each( M_unknowns.rbegin(), boost::prior( M_unknowns.rend() ),
-                   ( *lambda::_1 = *( *lambda::var( __it ) ), ++lambda::var( __it ) ) );
+    auto it = std::next( M_unknowns.rbegin() );
+    std::for_each( M_unknowns.rbegin(), std::prev( M_unknowns.rend() ),
+                   [&it]( element_ptrtype& v )
+                   { *v = **it; ++it; } );
     // u(t^{n}) coefficient is in M_unknowns[0]
     *M_unknowns[0] = __new_unk;
     int i = 0;
-    BOOST_FOREACH( std::shared_ptr<element_type>& t, M_unknowns  )
+    for( auto const& t: M_unknowns  )
     {
         DVLOG(2) << "[Bdf::shiftright] id: " << i << " l2norm = " << t->l2Norm() << "\n";
         ++i;

@@ -68,6 +68,7 @@ public :
 
         // initialize bdf with with known values prior to mybdf->initialTime()
         // (initialTime included)
+        auto unknowns = Xh->elementsPtr(mybdf->priorTimes().size());
         for( auto time : mybdf->priorTimes() )
         {
             if( Environment::worldComm().isMasterRank() )
@@ -77,8 +78,8 @@ public :
                     {"t", time.second},
                     {"alpha", alpha},
                     {"beta", beta} } );
-            ue = project( _space=Xh, _expr=ue_g );
-            mybdf->setUnknown( time.first, ue );
+            *unknowns[time.first] = project( _space=Xh, _expr=ue_g );
+            //mybdf->setUnknown( time.first, ue );
         }
 
         fe.setParameterValues( {
@@ -100,9 +101,11 @@ public :
         {
             std::cout << "max error at time " << mybdf->timeInitial() << "s :" << std::setprecision(16) << maxerror << "\n";
         }
-
-        for ( mybdf->start();  mybdf->isFinished() == false; mybdf->next(solution) )
+        
+        
+        for ( mybdf->start(unknowns);  mybdf->isFinished() == false; mybdf->next(solution) )
         {
+            Feel::cout << fmt::format( "-- time: {}, iteration: {}", mybdf->time(), mybdf->iteration() ) << std::endl;
             // update time value in expression
             ue_g.setParameterValues( {{"t", mybdf->time()}} );
             fe.setParameterValues( {{"t", mybdf->time()}} );
@@ -117,6 +120,9 @@ public :
 
             at += on(_range=boundaryfaces(mesh),_element=solution,_rhs=ft,_expr=ue_g);
             at.solve( _solution=solution, _rhs=ft );
+            
+            if ( boption("bdf.filter") )
+                mybdf->filter( solution );
 
             // project onto space for error estimation
             ue = project( _space=Xh, _expr=ue_g );
