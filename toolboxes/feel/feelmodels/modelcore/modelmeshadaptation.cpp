@@ -1,0 +1,153 @@
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+ */
+
+#include <feel/feelmodels/modelcore/modelmeshes.hpp>
+
+// #include <feel/feeldiscr/mesh.hpp>
+// #include <feel/feelfilters/loadmesh.hpp>
+// #include <feel/feells/distancetorange.hpp>
+
+// // TO REMOVE
+#if 0
+#include <feel/feelmesh/remesher.hpp>
+//#include <feel/feeldiscr/pch.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
+#endif
+#include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feelmesh/partitionmesh.hpp>
+#include <feel/feelfilters/partitionio.hpp>
+#include <feel/feelmesh/remesh.hpp>
+
+
+namespace Feel
+{
+namespace FeelModels
+{
+
+template <typename IndexType>
+ModelMesh<IndexType>::MeshAdaptationSetup::MeshAdaptationSetup( ModelMeshes<IndexType> const& mMeshes, nl::json const& jarg )
+{
+    if ( jarg.contains( "metric" ) )
+    {
+        auto j_metric = jarg.at( "metric" );
+        if ( j_metric.is_string() || j_metric.is_number() )
+            M_metric.setExpr( j_metric, mMeshes.worldComm(), mMeshes.repository().expr()/*, indexes*/ );
+        else
+            CHECK( false ) << "no metric";
+    }
+
+    for ( std::string const& keepMarkerKey : { "keep-markers" } )
+    {
+        if ( jarg.contains( keepMarkerKey ) )
+            M_requiredMarkers.insert( jarg.at( keepMarkerKey ).template get<std::string>() );
+    }
+
+    M_tmpDir = (fs::path(mMeshes.repository().root())/"meshes")/"tmp";
+}
+
+
+template <typename IndexType>
+template <typename MeshType>
+std::shared_ptr<MeshType>
+ModelMesh<IndexType>::MeshAdaptationExecute::executeImpl( std::shared_ptr<MeshType> inputMesh )
+{
+    std::vector<std::string> requiredMarkersElements, requiredMarkersFaces;
+    for ( std::string const&  _m : M_mas.requiredMarkers() )
+    {
+        if ( inputMesh->hasElementMarker( _m ) )
+            requiredMarkersElements.push_back( _m );
+        else if ( inputMesh->hasFaceMarker( _m ) )
+            requiredMarkersFaces.push_back( _m );
+    }
+
+    using scalar_metric_field_type = typename std::decay_t<decltype( unwrap_ptr( Pch<1>( inputMesh ) ) )>::element_type;
+    auto scalarMetricField = std::dynamic_pointer_cast<scalar_metric_field_type>( M_scalarMetricField );
+
+    if ( inputMesh->worldComm().localSize() == 1 )
+    {
+        auto r = remesher( inputMesh, requiredMarkersElements, requiredMarkersFaces );
+
+        r.setMetric( *scalarMetricField );
+
+        // auto metExpr = expr( mas.metricExpr().template expr<1,1>(), se );
+        // auto Vh = Pch<1>( oldmesh );
+        // auto met = Vh->element();
+        // met.on(_range=elements(oldmesh),_expr=metExpr );
+        // r.setMetric( met );
+        return r.execute();
+    }
+    else
+    {
+        if ( inputMesh->worldComm().isMasterRank() )
+        {
+            if ( !fs::exists( M_mas.M_tmpDir ) )
+                fs::create_directories( M_mas.M_tmpDir );
+        }
+        inputMesh->worldComm().barrier();
+
+        std::string imeshParaPath = (M_mas.M_tmpDir/"mesh_i.json").string();
+        std::string omeshParaPath = (M_mas.M_tmpDir/"mesh_o.json").string();
+        int nPartition = inputMesh->worldComm().localSize();
+        inputMesh->saveHDF5( imeshParaPath );
+
+        std::string scalarMetricFieldPath = (M_mas.M_tmpDir/"scalar_metric_field").string();
+        scalarMetricField->save(_path=scalarMetricFieldPath);
+
+        std::string spacefileName = (M_mas.M_tmpDir/"scalar_metric_space").string();
+        scalarMetricField->functionSpace()->save( spacefileName );
+
+        if ( inputMesh->worldComm().isMasterRank() )
+        {
+            auto inputMeshSeq = loadMesh(_mesh=new MeshType{Environment::worldCommSeqPtr()}, _savehdf5=0,
+                                         _filename=imeshParaPath,
+                                         //_update=update_,  TODO test FACE_MINIMAL
+                                         _straighten=false );
+
+            auto r = remesher( inputMeshSeq, requiredMarkersElements, requiredMarkersFaces );
+#if 1
+            //auto VhSeq = Pch<1>( inputMeshSeq );
+            auto VhSeq = scalar_metric_field_type::functionspace_type::New(_mesh=inputMeshSeq );
+            auto metFieldSeq = VhSeq->elementPtr();
+            metFieldSeq->load(_path=scalarMetricFieldPath,_space_path=spacefileName);
+            // //auto metExpr = expr( M_mas.metricExpr().template expr<1,1>(), se );
+            // auto metExpr = M_mas.metricExpr().template expr<1,1>();
+            // metField->on( _range=elements(inputMeshSeq),_expr=metExpr );
+            r.setMetric( *metFieldSeq );
+#else
+            using scalar_metric_field_type = typename std::decay_t<decltype( unwrap_ptr( Pch<1>( inputMesh ) ) )>::element_type;
+            auto m = std::dynamic_pointer_cast<scalar_metric_field_type>( M_scalarMetricField );
+            auto Vh = Pch<1>( inputMeshSeq );
+            auto opI = opInterpolation(_domainSpace=m->functionSpace(),
+                                       _imageSpace=Vh );
+            auto matrixInterpolation = opI->matPtr();
+            auto metField = Vh->elementPtr();
+            matrixInterpolation->multVector( *m, *metField );
+#endif
+            auto outputMeshSeq = r.execute();
+            using io_t = PartitionIO<MeshType>;
+            io_t io( omeshParaPath );
+            io.write( partitionMesh( outputMeshSeq, nPartition/*, partitionByRange, partconfig*/ ) );
+        }
+
+        inputMesh->worldComm().barrier();
+
+        auto out = loadMesh(_mesh=new MeshType{inputMesh->worldCommPtr()}, _savehdf5=0,
+                            _filename=omeshParaPath/*, _update=update_*/ );
+        return out;
+
+
+    }
+    //return std::shared_ptr<MeshType>{};
+}
+
+
+
+template class ModelMesh<uint32_type>;
+
+template std::shared_ptr<Mesh<Simplex<2,1>>> ModelMesh<uint32_type>::MeshAdaptationExecute::executeImpl<Mesh<Simplex<2,1>>>( std::shared_ptr<Mesh<Simplex<2,1>>> );
+template std::shared_ptr<Mesh<Simplex<3,1>>> ModelMesh<uint32_type>::MeshAdaptationExecute::executeImpl<Mesh<Simplex<3,1>>>( std::shared_ptr<Mesh<Simplex<3,1>>> );
+
+} // namespace FeelModel
+} // namespace Feel
+
+
