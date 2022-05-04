@@ -15,15 +15,8 @@ from tqdm import tqdm
 from scipy.sparse.linalg import splu, spsolve
 # import time
 
-from mpi4py import MPI
-comm = MPI.COMM_WORLD
-rank = comm.Get_rank()
-size = comm.Get_size()
+import feelpp
 
-from mpi4py import MPI
-comm = MPI.COMM_WORLD
-rank = comm.Get_rank()
-size = comm.Get_size()
 
 
 
@@ -44,7 +37,7 @@ def convertToPetscVec(Fq):
 
 class reducedbasis():
 
-    def __init__(self, model) -> None:
+    def __init__(self, model, worldComm=None) -> None:
         """Initialise the object
 
         Args:
@@ -53,6 +46,11 @@ class reducedbasis():
         self.Qa = 0
         self.Qf = 0
         self.N = 0
+
+        if worldComm == None:
+            self.worldComm = feelpp.Environment.worldCommPtr()
+        else:
+            worldComm = worldComm
 
         self.model = model  # TODO : load online model
         
@@ -66,16 +64,16 @@ class reducedbasis():
 
         ## For greedy memory
         self.DeltaMax = None
-        if rank == 0:
+        if self.worldComm.isMasterRank():
             print("[reducedbasis] rb initialized")
 
         def alphaLB(mu):
-            if rank == 0:
+            if self.worldComm.isMasterRank():
                 print("[reducedbasis] WARNING : Lower bound not initialized yet")
             return 1
 
         def alphaLB_(beta):
-            if rank == 0:
+            if self.worldComm.isMasterRank():
                 print("[reducedbasis] WARNING : Lower bound not initialized yet")
             return 1
 
@@ -458,7 +456,7 @@ class reducedbasisOffline(reducedbasis):
 
         def monitor(ksp, its, rnorm):
             self.reshist[its] = rnorm
-            if rank == 0:
+            if self.worldComm.isMasterRank():
                 print("[petsc4py] Iteration {} Residual norm: {}".format(its,rnorm))
         
         def monitor_nverbose(ksp, its, rnorm):
@@ -487,12 +485,12 @@ class reducedbasisOffline(reducedbasis):
         E.solve()
 
         nCv = E.getConverged()
-        if rank == 0:
+        if self.worldComm.isMasterRank():
             print(f"[slepc4py] number of (smaller) eigenvalues computed : {nCv}")
 
         self.alphaMubar = E.getEigenvalue(0).real
         # alphaMubar = 1
-        if rank == 0:
+        if self.worldComm.isMasterRank():
             print(f"[reducedbasis] Constant of continuity : {self.alphaMubar}")
         betaA_bar_np = np.array(self.betaA_bar[0])
         
@@ -515,12 +513,12 @@ class reducedbasisOffline(reducedbasis):
         E.solve()
 
         nCv = E.getConverged()
-        if rank == 0:
+        if self.worldComm.isMasterRank():
             print(f"[slepc4py] number of eigenvalues computed : {nCv}")
 
         self.gammaMubar = E.getEigenvalue(0).real
         # gammaMubar = 1
-        if rank == 0:
+        if self.worldComm.isMasterRank():
             print(f"[reducedbasis] Constant of coercivity : {self.gammaMubar}")
         
         def gammaUB(mu):
@@ -613,7 +611,7 @@ class reducedbasisOffline(reducedbasis):
         # if not (self.test_orth() == np.eye(self.N)).all() and nb < 2:
         if not (self.test_orth() ) and nb < 10:
             self.orthonormalizeZ(nb=nb+1)
-        elif rank == 0:
+        elif self.worldComm.isMasterRank():
             # pass
             print(f"[reducedBasis] Gram-Schmidt orthonormalization done after {nb+1} step"+['','s'][nb>1])
 
@@ -1019,7 +1017,7 @@ class reducedbasisOffline(reducedbasis):
         Returns:
             list of ParameterSpaceElement: parameters for the basis
         """
-        if rank == 0:
+        if self.worldComm.isMasterRank():
             print("[reducedBasis] Start greedy algorithm")
         self.N = 0
         S = []
@@ -1126,7 +1124,7 @@ class reducedbasisOffline(reducedbasis):
             self.DeltaMax.append(Delta_max)
             mu = mu_max
 
-            if rank == 0:
+            if self.worldComm.isMasterRank():
                 print(f"[reducedBasis] Greedy algo, N={self.N}, Δ={Delta:e} (tol={eps_tol:e})".ljust(64), f"µ={mu}")
         if rank == 0 and self.N == Nmax:
             print("[reducedBasis] Greedy algo : warning, max size reached")
@@ -1150,7 +1148,7 @@ class reducedbasisOffline(reducedbasis):
 
 
     def generatePOD(self, Xi_train, eps_tol=1e-6):
-        if rank == 0:
+        if self.worldComm.isMasterRank():
             print("[reducedBasis] Start POD algorithm")
         self.N = 0
         self.Z = []

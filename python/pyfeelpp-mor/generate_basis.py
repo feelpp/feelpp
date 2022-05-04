@@ -5,11 +5,6 @@ from feelpp.toolboxes.core import *
 from feelpp.mor import *
 import feelpp
 
-from mpi4py import MPI
-comm = MPI.COMM_WORLD
-rank = comm.Get_rank()
-size = comm.Get_size()
-
 
 import argparse
 
@@ -56,7 +51,10 @@ if config_file is not None:
     casefile = split[-1]
 
 
-def generate_basis():
+def generate_basis(worldComm=None):
+
+    if worldComm is None:
+        worldComm = feelpp.Environment.worldCommPtr()
 
     if dim not in [2,3]:
         raise ValueError("dim must be 2 or 3")
@@ -66,7 +64,7 @@ def generate_basis():
         raise ValueError(f"Algo {algo} not valid")
 
 
-    if rank == 0:
+    if worldComm.isMasterRank():
         print("==============================================")
         print("Generation of the reduced basis")
         print("           Config-file :", f"{case}/{casefile}")
@@ -150,7 +148,7 @@ def generate_basis():
 
     mubar = Dmu.element(True, False)
     mubar.setParameters(default_parameter)
-    if rank == 0:
+    if worldComm.isMasterRank():
         print("mubar =")
         mubar.view()
 
@@ -162,12 +160,12 @@ def generate_basis():
                                     mor_rb.convertToPetscVec(Fq[0][0]),
                                     model, mubar)
     rb.setVerbose(False)
-    if rank == 0:
+    if worldComm.isMasterRank():
         print("Size of the big problem :", rb.NN)
 
 
     mus = listOfParams(size)
-    if rank == 0:
+    if worldComm.isMasterRank():
         print("[generate_basis] Start generation of the basis using algo", algos_names[algo])
     if algo == 0:
         rb.computeOfflineReducedBasis(mus)
@@ -181,13 +179,13 @@ def generate_basis():
     else:
         pass
 
-    if rank == 0:
+    if worldComm.isMasterRank():
         print("[generate_basis] basis generated ! Now computing errors")
 
     rb.computeOfflineErrorRhs()
     rb.computeOfflineError()
 
-    if rank == 0:
+    if worldComm.isMasterRank():
         print("[generate_basis] Done !")
 
         rb.saveReducedBasis(dir, force=True)
