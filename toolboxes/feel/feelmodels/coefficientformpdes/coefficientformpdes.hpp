@@ -11,7 +11,26 @@ namespace Feel
 {
 namespace FeelModels
 {
-
+/**
+ * @brief class for Coefficient Form PDE toolbox
+ * @ingroup CoefficientFormPDEs
+ *
+ * @tparam ConvexType convex for the mesh
+ * @tparam BasisUnknownType basis type for unknowns in set of equations
+ * 
+ * @code {.cpp}
+ * using cfpdes_t = FeelModels::coefficient_form_PDEs_t< Simplex<nDim,nOrderGeo> >;
+ * auto cfpdes = std::make_shared<cfpdes_t>("cfpdes");
+ * cfpdes->init();
+ * cfpdes->printAndSaveInfo();
+ * if ( cfpdes->isStationary() )
+ * {
+ *     cfpdes->solve();
+ *     cfpdes->exportResults();
+ * }
+ * @endcode
+ * 
+ */
 template< typename ConvexType, typename... BasisUnknownType>
 class CoefficientFormPDEs : public ModelNumerical,
     //public ModelGenericPDEs<ConvexType::nDim>

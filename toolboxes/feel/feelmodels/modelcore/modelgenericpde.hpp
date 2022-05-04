@@ -11,6 +11,12 @@ namespace Feel
 namespace FeelModels
 {
 
+/**
+ * @brief Generic PDE Model class
+ * @ingroup ModelCore
+ * 
+ * @tparam Dim real dimension of the model
+ */
 template <uint16_type Dim>
 class ModelGenericPDE : public ModelPhysics<Dim>
 {

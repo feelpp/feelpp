@@ -34,7 +34,7 @@
 namespace Feel {
 
 /**
- * \addtogroup Traits
+ * \ingroup Traits
  * @{
  */
 /**

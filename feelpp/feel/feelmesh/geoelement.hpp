@@ -496,10 +496,6 @@ private:
 
 #endif
 
-//     *********** Geometrical Elements *****************
-/** \defgroup GeoEle Geometry Element classes
-    \ingroup Obsolet_Groups */
-/*@{*/
 
 /**
  * Class for Points and Vertices

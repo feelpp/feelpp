@@ -30,6 +30,11 @@
 #define FEELPP_TIMING_TIC_HPP 1
 
 #include <feel/feelcore/environment.hpp>
+
+/** 
+ * @defgroup Timing
+ * @ingroup Feelpp
+ */
 #include <feel/feeltiming/timer.hpp>
 #include <feel/feeltiming/now.hpp>
 
@@ -71,7 +76,19 @@ const inline bool no_display = false;
 namespace time
 {
 
-//! Record internal time at its execution. To be used with toc.
+//! 
+/**
+ * @brief Record internal time at its execution. To be used with toc.
+ * 
+ * \code {.cpp}
+ * tic()
+ * ...
+ * // some code here
+ * ...
+ * std::cout << fmt::format("time spent in block in seconds : {}", toc() );
+ * \endcode
+ * 
+ */
 inline void tic()
 {
     Feel::details::sec_timer.tic();

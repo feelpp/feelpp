@@ -22,7 +22,7 @@
 #
 #
 SET( SRC
-  marker.cpp bareitems.cpp
+  marker.cpp
   entities.cpp
   regiontree.cpp kdtree.cpp
   functors.cpp
