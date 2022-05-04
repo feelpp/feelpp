@@ -71,6 +71,8 @@ HEAT_CLASS_TEMPLATE_TYPE::initMesh()
         super_type::super_model_meshes_type::setupRestart( this->keyword() );
     super_type::super_model_meshes_type::updateForUse<mesh_type>( this->keyword() );
 
+    super_type::super_model_meshes_type::modelMesh( this->keyword() ).setFunctionApplyRemesh( [this]( typename super_type::super_model_meshes_type::mesh_base_ptrtype m ) { this->applyRemesh( std::dynamic_pointer_cast<mesh_type>( m ) ); } );
+
     CHECK( this->mesh() ) << "mesh generation fail";
 
     double tElpased = this->timerTool("Constructor").stop("initMesh");
@@ -263,7 +265,9 @@ HEAT_CLASS_TEMPLATE_TYPE::applyRemesh( mesh_ptrtype const& newMesh )
     this->materialsProperties()->removeMesh( oldMesh );
     this->materialsProperties()->addMesh( newMesh );
 
-    this->setMesh( newMesh );
+    //this->setMesh( newMesh );
+    super_type::super_model_meshes_type::applyRemesh( this->keyword(), newMesh );
+
 
     // function space and fields
     space_temperature_ptrtype old_Xh = M_Xh;
@@ -641,6 +645,8 @@ HEAT_CLASS_TEMPLATE_TYPE::setParameterValues( std::map<std::string,double> const
     }
     for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
         physicData->setParameterValues( paramValues );
+
+    super_type::super_model_meshes_type::setParameterValues( paramValues );
 
     M_boundaryConditions->setParameterValues( paramValues );
 
