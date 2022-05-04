@@ -268,10 +268,12 @@ class FEELPP_EXPORT VectorUblas : public Vector<T>
         // Exports
         void printMatlab( const std::string filename = "NULL", bool renumber = false ) const override { return M_vectorImpl->printMatlab( filename, renumber ); }
 #ifdef FEELPP_HAS_HDF5
-        FEELPP_DONT_INLINE 
+        FEELPP_DONT_INLINE
         void saveHDF5( const std::string & filename, const std::string & tableName = "element", bool appendMode = false ) const { return M_vectorImpl->saveHDF5( filename, tableName, appendMode ); }
-        FEELPP_DONT_INLINE 
+        FEELPP_DONT_INLINE
         void loadHDF5( const std::string & filename, const std::string & tableName = "element" ) { return M_vectorImpl->loadHDF5( filename, tableName ); }
+        FEELPP_DONT_INLINE
+        void loadHDF5( const std::string & filename, std::optional<std::vector<index_type>> const& mappingFromInput, const std::string & tableName = "element" ) { return M_vectorImpl->loadHDF5( filename, tableName, mappingFromInput ); }
 #endif
 
         // Range and slice API
@@ -612,7 +614,7 @@ class FEELPP_EXPORT VectorUblasBase: public Vector<T>
         void printMatlab( const std::string filename = "NULL", bool renumber = false ) const override;
 #ifdef FEELPP_HAS_HDF5
         void saveHDF5( const std::string & filename, const std::string & tableName = "element", bool appendMode = false ) const;
-        void loadHDF5( const std::string & filename, const std::string & tableName = "element" );
+        void loadHDF5( const std::string & filename, const std::string & tableName = "element", std::optional<std::vector<index_type>> const& mappingFromInput = {} );
 #endif
 
         // Localization (parallel global to one proc local)
