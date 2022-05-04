@@ -61,8 +61,21 @@ namespace Feel
 namespace FeelModels
 {
 /**
- * Solid Mechanics Toolbox
- * \ingroup Toolboxes
+ * @brief class for Solid Mechanics toolbox
+ * @ingroup Solid
+ *
+ * @tparam ConvexType convex for the mesh
+ * @tparam BasisDisplacementType basis type for displacement
+ *
+ * @code {.cpp}
+ * using solid_t = SolidMechanics< Simplex<nDim,1>, Lagrange<OrderT, Vectorial,Continuous,PointSetFekete>>;
+ * auto solid = std::make_shared<solid_t>("solid");
+ * solid->init();
+ * solid->printAndSaveInfo();
+ * solid->solve();
+ * solid->exportResults();
+ * @endcode
+ *
  */
 template< typename ConvexType, typename BasisDisplacementType >
 class SolidMechanics : public ModelNumerical,
