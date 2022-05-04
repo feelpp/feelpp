@@ -15,6 +15,7 @@
 #include <feel/feelmodels/modelcore/modelmeasurespointsevaluation.hpp>
 #include <feel/feelmodels/modelmesh/meshale.hpp>
 
+
 namespace Feel
 {
 namespace FeelModels
@@ -156,6 +157,8 @@ public:
             else
                 return std::dynamic_pointer_cast<SpaceType>( itFind->second );
         }
+
+    void clearFunctionSpaces() { M_functionSpaces.clear(); }
 
 private:
     ImportConfig M_importConfig;
@@ -311,7 +314,15 @@ public :
         {
             if ( M_meshMotionSetup )
                 M_meshMotionSetup->setParameterValues( paramValues );
+             for ( MeshAdaptationSetup & mas : M_meshAdaptationSetup )
+                 mas.setParameterValues( paramValues );
         }
+
+
+    template <typename MeshType>
+    void
+    updateDistanceToRange();
+
 
     template <typename MeshType,typename SymbolsExprType>
     void
@@ -348,31 +359,31 @@ public :
         }
 
 
-    template <typename MeshType>
-    void applyRemesh( std::shared_ptr<MeshType> const& newMesh )
+    template <typename MeshType,typename SymbolsExprType>
+    void
+    updateMeshAdaptation( SymbolsExprType const& se )
         {
-            auto oldmesh = this->mesh<MeshType>();
-            if ( oldmesh == newMesh )
-                return;
+             auto oldmesh = this->mesh<MeshType>();
 
-            this->setMesh( newMesh );
-
-            if ( this->hasMeshMotion() )
-            {
-                auto mmt = this->meshMotionTool<MeshType>();
-
-                std::vector<std::tuple<std::string,elements_reference_wrapper_t<MeshType>>> computationDomains;
-                if ( M_meshMotionSetup )
-                {
-                    auto const& cdm = M_meshMotionSetup->computationalDomainMarkers();
-                    if ( cdm.find( "@elements@" ) == cdm.end() )
-                        computationDomains.push_back( std::make_tuple( M_name, markedelements(newMesh, cdm) ) );
-                }
-                mmt->applyRemesh( newMesh, computationDomains );
-            }
-
-            // TODO : other fields
+             for ( MeshAdaptationSetup & mas : M_meshAdaptationSetup )
+             {
+                 auto out = MeshAdaptationExecute::execute( mas, oldmesh, se );
+#if 1
+                 if ( M_functionApplyRemesh )
+                     std::invoke( M_functionApplyRemesh, out );
+                 else
+                     this->applyRemesh( out );
+#endif
+                 break;
+             }
         }
+
+
+    using function_apply_remesh = std::function<void ( mesh_base_ptrtype )>;
+    void setFunctionApplyRemesh( function_apply_remesh f ) { M_functionApplyRemesh = f; }
+
+    template <typename MeshType>
+    void applyRemesh( std::shared_ptr<MeshType> const& newMesh );
 
 private:
     std::string M_name;
@@ -448,21 +459,85 @@ private:
         std::set<std::string> M_displacementZeroMarkers, M_displacementFreeMarkers;
     };
 
+    struct MeshAdaptationExecute;
+
+    struct MeshAdaptationSetup
+    {
+        MeshAdaptationSetup( ModelMeshes<IndexType> const& mMeshes, nl::json const& jarg );
+
+        ModelExpression const& metricExpr() const { return M_metric; }
+
+        std::set<std::string> const& requiredMarkers() const { return M_requiredMarkers; }
+        void setParameterValues( std::map<std::string,double> const& paramValues ) { M_metric.setParameterValues( paramValues ); }
+
+        friend struct MeshAdaptationExecute;
+        //template <typename TT>
+        //friend struct ModelMesh<TT>::MeshAdaptationExecute;
+    private:
+
+        std::set<std::string> M_requiredMarkers;
+        std::set<std::string> M_whenModes;
+        ModelExpression M_metric;
+        fs::path M_tmpDir; // store tmp mesh file in parallel, should be removed when ParMmg work!
+    };
+
+    struct MeshAdaptationExecute
+    {
+        template <typename MeshType,typename SymbolsExprType>
+        static
+        std::shared_ptr<MeshType> execute( MeshAdaptationSetup const& mass, std::shared_ptr<MeshType> inputMesh, SymbolsExprType const& se )
+            {
+                MeshAdaptationExecute mae{mass};
+                return mae.execute(inputMesh,se);
+            }
+
+        MeshAdaptationExecute( MeshAdaptationSetup const& mas ) : M_mas( mas ) {}
+
+        template <typename MeshType,typename SymbolsExprType>
+        std::shared_ptr<MeshType> execute( std::shared_ptr<MeshType> inputMesh, SymbolsExprType const& se )
+            {
+                auto Vh = Pch<1>( inputMesh );
+                //auto met = Vh->element();
+                //M_scalarMetricField = Vh->elementPtr();
+                auto metField = Vh->elementPtr();
+                M_scalarMetricField = metField;
+                auto metExpr = expr( M_mas.metricExpr().template expr<1,1>(), se );
+                metField->on( _range=elements(inputMesh),_expr=metExpr );
+
+                if  constexpr ( (MeshType::nDim == MeshType::nRealDim) && MeshType::nOrder == 1 )
+                    return this->executeImpl( inputMesh );
+                else
+                    return std::shared_ptr<MeshType>{};
+            }
+
+    private:
+        template <typename MeshType>
+        std::shared_ptr<MeshType> executeImpl( std::shared_ptr<MeshType> inputMesh );
+
+    private:
+        MeshAdaptationSetup M_mas;
+        std::shared_ptr<Vector<double>> M_scalarMetricField;
+    };
+
     std::vector<FieldsSetup> M_fieldsSetup;
     std::vector<DistanceToRangeSetup> M_distanceToRangeSetup;
     std::map<std::string, std::shared_ptr<Vector<double>> > M_fields;
     std::map<std::string, std::shared_ptr<Vector<double>> > M_distanceToRanges;
     std::optional<MeshMotionSetup> M_meshMotionSetup;
+    std::vector<MeshAdaptationSetup> M_meshAdaptationSetup;
+    function_apply_remesh M_functionApplyRemesh;
+
 };
 
 template <typename IndexType>
 class ModelMeshes : protected std::map<std::string,std::shared_ptr<ModelMesh<IndexType>>>,
                     virtual public ModelBase
 {
+public:
     using index_type = IndexType;
     using mesh_base_type = MeshBase<IndexType>;
     using mesh_base_ptrtype = std::shared_ptr<mesh_base_type>;
-public:
+
     ModelMeshes() : ModelBase("")
     {
         auto me = std::make_shared<ModelMesh<IndexType>>( this->keyword(), *this );

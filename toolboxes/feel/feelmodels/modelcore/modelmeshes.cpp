@@ -3,6 +3,10 @@
 
 #include <feel/feelmodels/modelcore/modelmeshes.hpp>
 
+#include <boost/preprocessor/comparison/greater_equal.hpp>
+#include <boost/preprocessor/array/to_list.hpp>
+#include <boost/preprocessor/list/append.hpp>
+
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feells/distancetorange.hpp>
@@ -200,7 +204,6 @@ ModelMesh<IndexType>::MeshMotionSetup::MeshMotionSetup( ModelMeshes<IndexType> c
     }
 }
 
-
 template <typename IndexType>
 ModelMesh<IndexType>::ModelMesh( std::string const& name, ModelMeshes<IndexType> const& mMeshes )
     :
@@ -250,6 +253,20 @@ ModelMesh<IndexType>::setup( nl::json const& jarg, ModelMeshes<IndexType> const&
     {
         MeshMotionSetup mms( mMeshes, jarg.at("MeshMotion") );
         M_meshMotionSetup.emplace( std::move( mms ) );
+    }
+
+    if ( jarg.contains("MeshAdaptation") )
+    {
+        auto const& j_meshadapt = jarg.at("MeshAdaptation");
+        if ( j_meshadapt.is_object() )
+        {
+            MeshAdaptationSetup mas( mMeshes, j_meshadapt );
+            M_meshAdaptationSetup.push_back( std::move( mas ) );
+        }
+        else if ( j_meshadapt.is_array() )
+        {
+            // TODO
+        }
     }
 }
 
@@ -408,18 +425,7 @@ ModelMesh<IndexType>::updateForUse( ModelMeshes<IndexType> const& mMeshes )
     }
 
     // distance to range
-    for ( auto const& dtrs : M_distanceToRangeSetup )
-    {
-        auto themesh = this->mesh<MeshType>();
-        std::string basis = fmt::format( "Pch{}", MeshType::nOrder );
-        //std::cout << "distance to range  create basis " << basis << std::endl;
-        using distange_to_range_space_type = FunctionSpace<MeshType, bases<Lagrange<MeshType::nOrder,Scalar,Continuous,PointSetFekete>>>;
-        auto Vh = M_mmeshCommon->template createFunctionSpace<distange_to_range_space_type>( basis );
-        auto u = Vh->elementPtr();
-        auto rangeFaces = dtrs.markers().empty()? boundaryfaces(themesh) : markedfaces( themesh, dtrs.markers() );
-        *u = distanceToRange( _space=Vh, _range=rangeFaces );
-        M_distanceToRanges[dtrs.name()] = u;
-    }
+    this->updateDistanceToRange<MeshType>();
 
     if constexpr ( mesh_type::nDim>1 )
     {
@@ -454,6 +460,63 @@ ModelMesh<IndexType>::updateForUse( ModelMeshes<IndexType> const& mMeshes )
     }
 
 }
+
+
+template <typename IndexType>
+template <typename MeshType>
+void
+ModelMesh<IndexType>::updateDistanceToRange()
+{
+    for ( auto const& dtrs : M_distanceToRangeSetup )
+    {
+        auto themesh = this->mesh<MeshType>();
+        std::string basis = fmt::format( "Pch{}", MeshType::nOrder );
+        //std::cout << "distance to range  create basis " << basis << std::endl;
+        using distange_to_range_space_type = FunctionSpace<MeshType, bases<Lagrange<MeshType::nOrder,Scalar,Continuous,PointSetFekete>>>;
+        auto Vh = M_mmeshCommon->template createFunctionSpace<distange_to_range_space_type>( basis );
+        auto u = Vh->elementPtr();
+        auto rangeFaces = dtrs.markers().empty()? boundaryfaces(themesh) : markedfaces( themesh, dtrs.markers() );
+        *u = distanceToRange( _space=Vh, _range=rangeFaces );
+        M_distanceToRanges[dtrs.name()] = u;
+    }
+}
+
+template <typename IndexType>
+template <typename MeshType>
+void
+ModelMesh<IndexType>::applyRemesh( std::shared_ptr<MeshType> const& newMesh )
+{
+    auto oldmesh = this->mesh<MeshType>();
+    if ( oldmesh == newMesh )
+        return;
+
+    this->setMesh( newMesh );
+
+    M_mmeshCommon->clearFunctionSpaces();
+    // TODO : common clear space + applyRemesh to pointmeasure
+
+    M_distanceToRanges.clear();
+    this->updateDistanceToRange<MeshType>();
+    if constexpr ( MeshType::nDim > 1 )
+    {
+        if ( this->hasMeshMotion() )
+        {
+            auto mmt = this->meshMotionTool<MeshType>();
+
+            std::vector<std::tuple<std::string,elements_reference_wrapper_t<MeshType>>> computationDomains;
+            if ( M_meshMotionSetup )
+            {
+                auto const& cdm = M_meshMotionSetup->computationalDomainMarkers();
+                if ( cdm.find( "@elements@" ) == cdm.end() )
+                    computationDomains.push_back( std::make_tuple( M_name, markedelements(newMesh, cdm) ) );
+            }
+            mmt->applyRemesh( newMesh, computationDomains );
+        }
+    }
+    // TODO : other fields
+}
+
+
 template <typename IndexType>
 void
 ModelMesh<IndexType>::updateInformationObject( nl::json & p ) const
@@ -624,23 +687,83 @@ template class ModelMeshCommon<uint32_type>;
 template class ModelMesh<uint32_type>;
 template class ModelMeshes<uint32_type>;
 
-template void ModelMesh<uint32_type>::updateForUse<Mesh<Simplex<2,1>>>( ModelMeshes<uint32_type> const& );
-template void ModelMesh<uint32_type>::updateForUse<Mesh<Simplex<3,1>>>( ModelMeshes<uint32_type> const& );
-template void ModelMesh<uint32_type>::updateForUse<Mesh<Simplex<1,1,2>>>( ModelMeshes<uint32_type> const& );
-template void ModelMesh<uint32_type>::updateForUse<Mesh<Simplex<1,1,3>>>( ModelMeshes<uint32_type> const& );
+
+#define FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_GEOSHAPE_ORDER1_LIST \
+    BOOST_PP_TUPLE_TO_LIST(                                             \
+        ( ( Simplex,2,1,2),                                             \
+          ( Simplex,3,1,3),                                             \
+          ( Simplex,1,1,2),                                             \
+          ( Simplex,1,1,3) ) )                                          \
+    /**/
+
 #if BOOST_PP_GREATER_EQUAL( FEELPP_MESH_MAX_ORDER, 2 )
-template void ModelMesh<uint32_type>::updateForUse<Mesh<Simplex<2,2>>>( ModelMeshes<uint32_type> const& );
-template void ModelMesh<uint32_type>::updateForUse<Mesh<Simplex<3,2>>>( ModelMeshes<uint32_type> const& );
-template void ModelMesh<uint32_type>::updateForUse<Mesh<Simplex<1,2,2>>>( ModelMeshes<uint32_type> const& );
-template void ModelMesh<uint32_type>::updateForUse<Mesh<Simplex<1,2,3>>>( ModelMeshes<uint32_type> const& );
+#define FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_GEOSHAPE_ORDER2_LIST \
+    BOOST_PP_TUPLE_TO_LIST(                                             \
+        ( ( Simplex,2,2,2),                                             \
+          ( Simplex,3,2,3),                                             \
+          ( Simplex,1,2,2),                                             \
+          ( Simplex,1,2,3) ) )                                          \
+    /**/
+#else
+#define FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_GEOSHAPE_ORDER2_LIST BOOST_PP_NIL
 #endif
+
 #if BOOST_PP_GREATER_EQUAL( FEELPP_MESH_MAX_ORDER, 3 )
-template void ModelMesh<uint32_type>::updateForUse<Mesh<Simplex<2,3>>>( ModelMeshes<uint32_type> const& );
-template void ModelMesh<uint32_type>::updateForUse<Mesh<Simplex<3,3>>>( ModelMeshes<uint32_type> const& );
+#define FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_GEOSHAPE_ORDER3_LIST \
+    BOOST_PP_TUPLE_TO_LIST(                                             \
+        ( ( Simplex,2,3,2),                                             \
+          ( Simplex,3,3,3) ) )                                          \
+    /**/
+#else
+#define FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_GEOSHAPE_ORDER3_LIST BOOST_PP_NIL
 #endif
+
 #if BOOST_PP_GREATER_EQUAL( FEELPP_MESH_MAX_ORDER, 4 )
-template void ModelMesh<uint32_type>::updateForUse<Mesh<Simplex<2,4>>>( ModelMeshes<uint32_type> const& );
-template void ModelMesh<uint32_type>::updateForUse<Mesh<Simplex<3,4>>>( ModelMeshes<uint32_type> const& );
+#define FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_GEOSHAPE_ORDER4_LIST \
+    BOOST_PP_TUPLE_TO_LIST(                                             \
+        ( ( Simplex,2,4,2),                                             \
+          ( Simplex,3,4,3) ) )                                          \
+    /**/
+#else
+#define FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_GEOSHAPE_ORDER4_LIST BOOST_PP_NIL
 #endif
+
+
+#define FEELPP_TOOLBOXES_PP_MODELMESHES_GEOSHAPE_CLASS_NAME(T)   BOOST_PP_TUPLE_ELEM(4, 0, T)
+#define FEELPP_TOOLBOXES_PP_MODELMESHES_GEOSHAPE_DIM(T)   BOOST_PP_TUPLE_ELEM(4, 1, T)
+#define FEELPP_TOOLBOXES_PP_MODELMESHES_GEOSHAPE_ORDER(T)   BOOST_PP_TUPLE_ELEM(4, 2, T)
+#define FEELPP_TOOLBOXES_PP_MODELMESHES_GEOSHAPE_REALDIM(T)   BOOST_PP_TUPLE_ELEM(4, 3, T)
+
+#define FEELPP_TOOLBOXES_PP_MODELMESHES_GEOSHAPE_CLASS(T)               \
+    FEELPP_TOOLBOXES_PP_MODELMESHES_GEOSHAPE_CLASS_NAME(T)              \
+    < FEELPP_TOOLBOXES_PP_MODELMESHES_GEOSHAPE_DIM(T),                  \
+      FEELPP_TOOLBOXES_PP_MODELMESHES_GEOSHAPE_ORDER(T),                \
+      FEELPP_TOOLBOXES_PP_MODELMESHES_GEOSHAPE_REALDIM(T) >             \
+    /**/
+
+#define FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_GEOSHAPE_LIST     \
+    BOOST_PP_LIST_APPEND( FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_GEOSHAPE_ORDER1_LIST, \
+                          BOOST_PP_LIST_APPEND( FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_GEOSHAPE_ORDER2_LIST, \
+                                                BOOST_PP_LIST_APPEND( FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_GEOSHAPE_ORDER3_LIST, \
+                                                                      FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_GEOSHAPE_ORDER4_LIST ) ) ) \
+    /**/
+
+#define FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_INDEXTYPE_LIST    \
+    BOOST_PP_ARRAY_TO_LIST((1, (uint32_type)))                          \
+    /**/
+
+
+/* Generates code for all binary operators and integral type pairs. */
+#define FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_METHODS_OP(_, IS) \
+    FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_METHODS_OP_CODE IS    \
+   /**/
+#define FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_METHODS_OP_CODE(PP_I,PP_GS) \
+    template void ModelMesh<PP_I>::updateForUse<Mesh<FEELPP_TOOLBOXES_PP_MODELMESHES_GEOSHAPE_CLASS(PP_GS)>>( ModelMeshes<PP_I> const& ); \
+    template void ModelMesh<PP_I>::applyRemesh<Mesh<FEELPP_TOOLBOXES_PP_MODELMESHES_GEOSHAPE_CLASS(PP_GS)>>( std::shared_ptr<Mesh<FEELPP_TOOLBOXES_PP_MODELMESHES_GEOSHAPE_CLASS(PP_GS)>> const& );
+    /**/
+
+BOOST_PP_LIST_FOR_EACH_PRODUCT( FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_METHODS_OP, 2, (FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_INDEXTYPE_LIST,FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_GEOSHAPE_LIST) )
+/**/
+
 } // namespace FeelModels
 } // namespace Feel
