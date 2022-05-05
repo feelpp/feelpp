@@ -5656,6 +5656,13 @@ public:
             return mappingWithFile;
         }
 
+    template <typename TT=functionspace_type,std::enable_if_t< TT::is_composite, bool> = true >
+    std::vector<index_type> relationFromFile( std::string const& filepathstr ) const
+        {
+            CHECK( false ) << "composite case not implemented";
+            return {};
+        }
+
     //@}
 
 
