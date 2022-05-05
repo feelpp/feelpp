@@ -195,7 +195,7 @@ def compar_sols(rb, assembleMDEIM, heatBox):
 
     _,sN = rb.getSolutions(mu)
     
-    norm = (sN - s_tb ) / s_tb
+    norm = abs(sN - s_tb ) / abs(s_tb)
     print(f"relErr = {norm}\n||s_tb|| = {s_tb}, ||s_rb|| = {sN}")
     assert norm < 1e-10, f"relative error {norm} is too high"
 

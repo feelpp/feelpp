@@ -258,7 +258,7 @@ PYBIND11_MODULE(_alg, m )
 
         .def( "vec", static_cast<Vec ( VectorPetsc<double>::* )() const>( &VectorPetsc<double>::vec ), "return a PETSc Vector" )
         ;
-    py::class_<MatrixSparse<double>, PyMatrixSparseDouble, std::shared_ptr<MatrixSparse<double>>>( m, "MatrixSparseDouble" )
+    py::class_<MatrixSparse<double>, PyMatrixSparseDouble, std::shared_ptr<MatrixSparse<double>>>( m, "MatrixSparseDouble" )    // the one in parallel
         .def( py::init<>() )
         .def( "clone", &MatrixSparse<double>::clone, "return  MatrixSparse clone" )
         .def( "size1", &MatrixSparse<double>::size1, "return Matrix size1" )
@@ -276,9 +276,9 @@ PYBIND11_MODULE(_alg, m )
         .def(
             "to_petsc", []( std::shared_ptr<MatrixSparse<double>> const& m )
             { return toPETSc( m ); },
-            "cast a MattrixSparse to a MatrixPetsc" );
+            "cast a MattrixSparse to a MatrixPetsc" )
     ;
-    py::class_<MatrixPetsc<double>, MatrixSparse<double>, std::shared_ptr<MatrixPetsc<double>>>( m, "MatrixPetscDouble" )
+    py::class_<MatrixPetsc<double>, MatrixSparse<double>, std::shared_ptr<MatrixPetsc<double>>>( m, "MatrixPetscDouble" )   // the one in sequential
         .def( py::init<worldcomm_ptr_t>() )
         .def( py::init<datamap_ptr_t<uint32_type>, datamap_ptr_t<uint32_type>>() )
         .def( py::init<datamap_ptr_t<uint32_type>, datamap_ptr_t<uint32_type>, worldcomm_ptr_t>() )
@@ -286,6 +286,26 @@ PYBIND11_MODULE(_alg, m )
         .def( "size1", &MatrixPetsc<double>::size1, "return  PETSc Matrix row size" )
         .def( "size2", &MatrixPetsc<double>::size2, "return  PETSc Matrix column size" )
         .def( "shape", &MatrixPetsc<double>::shape, "return the shape of the matrix" )
+        .def( "clear", &MatrixPetsc<double>::clear, "clear")
+        .def( "zero", static_cast<void ( MatrixPetsc<double>::* )()>( &MatrixPetsc<double>::zero ), "zero" )
+        .def( "rowStart", &MatrixPetsc<double>::rowStart, "return  PETSc Matrix row start" )
+        .def( "rowStop", &MatrixPetsc<double>::rowStop, "return  PETSc Matrix row stop " )
+        .def( "clear", &MatrixPetsc<double>::clear, "clear PETSc matrix" )
+        .def( "zero", static_cast<void ( MatrixPetsc<double>::* )()>( &MatrixPetsc<double>::zero ), "zero PETSc matrix" )
+        .def( "mat", static_cast<Mat ( MatrixPetsc<double>::* )() const>( &MatrixPetsc<double>::mat ), "return a PETSc sparse matrix" )
+        .def( "scale", static_cast<void ( MatrixPetsc<double>::* )( const double )>( &MatrixPetsc<double>::scale ), py::arg("scale")=1.0, "return a scaled PETSc sparse matrix" )
+        .def( "addMatrix", static_cast<void ( MatrixPetsc<double>::* )( double, MatrixSparse<double> const&,  Feel::MatrixStructure)>( &MatrixPetsc<double>::addMatrix ), py::arg("scale")=1.0, py::arg("matrix"), py::arg("structure")=(int)Feel::SAME_NONZERO_PATTERN, "add a scaled PETSc sparse matrix" )
+        ;
+    py::class_<MatrixPetscMPI<double>, MatrixSparse<double>, std::shared_ptr<MatrixPetscMPI<double>>>( m, "MatrixPetscMPIDouble")
+        .def( py::init<worldcomm_ptr_t>() )
+        .def( py::init<datamap_ptr_t<uint32_type>, datamap_ptr_t<uint32_type>>() )
+        .def( py::init<datamap_ptr_t<uint32_type>, datamap_ptr_t<uint32_type>, worldcomm_ptr_t>() )
+        .def( "clone", &MatrixPetsc<double>::clone, "return  PETSc MatrixSparse clone" )
+        .def( "size1", &MatrixPetsc<double>::size1, "return  PETSc Matrix row size" )
+        .def( "size2", &MatrixPetsc<double>::size2, "return  PETSc Matrix column size" )
+        .def( "shape", &MatrixPetsc<double>::shape, "return the shape of the matrix" )
+        .def( "clear", &MatrixPetsc<double>::clear, "clear")
+        .def( "zero", static_cast<void ( MatrixPetsc<double>::* )()>( &MatrixPetsc<double>::zero ), "zero" )
         .def( "rowStart", &MatrixPetsc<double>::rowStart, "return  PETSc Matrix row start" )
         .def( "rowStop", &MatrixPetsc<double>::rowStop, "return  PETSc Matrix row stop " )
         .def( "clear", &MatrixPetsc<double>::clear, "clear PETSc matrix" )
