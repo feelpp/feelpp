@@ -25,7 +25,7 @@ namespace FeelModels
 {
 
 template <typename IndexType>
-ModelMesh<IndexType>::MeshAdaptationSetup::MeshAdaptationSetup( ModelMeshes<IndexType> const& mMeshes, nl::json const& jarg )
+ModelMesh<IndexType>::MeshAdaptation::Setup::Setup( ModelMeshes<IndexType> const& mMeshes, nl::json const& jarg )
 {
     if ( jarg.contains( "metric" ) )
     {
@@ -33,7 +33,7 @@ ModelMesh<IndexType>::MeshAdaptationSetup::MeshAdaptationSetup( ModelMeshes<Inde
         if ( j_metric.is_string() || j_metric.is_number() )
             M_metric.setExpr( j_metric, mMeshes.worldComm(), mMeshes.repository().expr()/*, indexes*/ );
         else
-            CHECK( false ) << "no metric";
+            throw std::runtime_error( "no metric" );
     }
 
     for ( std::string const& keepMarkerKey : { "keep-markers" } )
@@ -42,6 +42,37 @@ ModelMesh<IndexType>::MeshAdaptationSetup::MeshAdaptationSetup( ModelMeshes<Inde
             M_requiredMarkers.insert( jarg.at( keepMarkerKey ).template get<std::string>() );
     }
 
+    nl::json events;
+    for ( std::string const& eventKey : { "event","events" } )
+    {
+        if ( jarg.contains( eventKey ) )
+        {
+            auto const& j_event = jarg.at( eventKey );
+            if ( j_event.is_string() )
+                events[j_event.template get<std::string>()] = nl::json{};
+             else if ( j_event.is_array() )
+                for ( auto const& [j_eventkey,j_eventval] : j_event.items() )
+                    events[j_eventval.template get<std::string>()] = nl::json{};
+             else if ( j_event.is_object() )
+                for ( auto const& [j_eventkey,j_eventval] : j_event.items() )
+                    events[j_eventkey] = j_eventval;
+         }
+    }
+
+    for ( auto const& [event,j_eventval] : events.items() )
+    {
+        if ( event == "after_import" )
+            M_executionEvents.insert( ExecutionEvent::after_import );
+        else if ( event == "after_init" )
+            M_executionEvents.insert( ExecutionEvent::after_init );
+        else if ( event == "each_time_step" )
+        {
+            M_executionEvents.insert( ExecutionEvent::each_time_step );
+            // TODO frequency
+        }
+        else
+            throw std::runtime_error( fmt::format("invalid event {}", event ) );
+    }
     M_tmpDir = (fs::path(mMeshes.repository().root())/"meshes")/"tmp";
 }
 
@@ -49,7 +80,7 @@ ModelMesh<IndexType>::MeshAdaptationSetup::MeshAdaptationSetup( ModelMeshes<Inde
 template <typename IndexType>
 template <typename MeshType>
 std::shared_ptr<MeshType>
-ModelMesh<IndexType>::MeshAdaptationExecute::executeImpl( std::shared_ptr<MeshType> inputMesh )
+ModelMesh<IndexType>::MeshAdaptation::Execute::executeImpl( std::shared_ptr<MeshType> inputMesh )
 {
     std::vector<std::string> requiredMarkersElements, requiredMarkersFaces;
     for ( std::string const&  _m : M_mas.requiredMarkers() )
@@ -144,8 +175,8 @@ ModelMesh<IndexType>::MeshAdaptationExecute::executeImpl( std::shared_ptr<MeshTy
 
 template class ModelMesh<uint32_type>;
 
-template std::shared_ptr<Mesh<Simplex<2,1>>> ModelMesh<uint32_type>::MeshAdaptationExecute::executeImpl<Mesh<Simplex<2,1>>>( std::shared_ptr<Mesh<Simplex<2,1>>> );
-template std::shared_ptr<Mesh<Simplex<3,1>>> ModelMesh<uint32_type>::MeshAdaptationExecute::executeImpl<Mesh<Simplex<3,1>>>( std::shared_ptr<Mesh<Simplex<3,1>>> );
+template std::shared_ptr<Mesh<Simplex<2,1>>> ModelMesh<uint32_type>::MeshAdaptation::Execute::executeImpl<Mesh<Simplex<2,1>>>( std::shared_ptr<Mesh<Simplex<2,1>>> );
+template std::shared_ptr<Mesh<Simplex<3,1>>> ModelMesh<uint32_type>::MeshAdaptation::Execute::executeImpl<Mesh<Simplex<3,1>>>( std::shared_ptr<Mesh<Simplex<3,1>>> );
 
 } // namespace FeelModel
 } // namespace Feel
