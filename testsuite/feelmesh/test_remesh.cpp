@@ -233,7 +233,7 @@ TestRemesh<Dim, RDim>::execute( int niter )
         {
             double measinit_elt = measure( _range = markedelements( Vh->mesh(), required_elements_str_ ) );
             double measremesh_elt = measure( _range = markedelements( Vhr->mesh(), required_elements_str_ ) );
-            std::cout << measinit_elt << " "<< required_elements_str_<< " " << measremesh_elt << std::endl;
+            
             if ( Environment::isMasterRank() )
                 BOOST_MESSAGE( fmt::format( "check element set measure {} initial: {} remesh: {} error: {}", required_elements_str_, measinit_elt, measremesh_elt, measinit_elt - measremesh_elt ) );
             BOOST_TEST(measinit_elt>=1e-6); // check that the integral is positive
@@ -246,7 +246,7 @@ TestRemesh<Dim, RDim>::execute( int niter )
             double measremesh_facets = measure( _range = markedfaces( Vhr->mesh(), required_facets_str_ ) );
             if ( Environment::isMasterRank() )
                 BOOST_MESSAGE( fmt::format( "check element set measure {} initial: {} remesh: {} error: {}", required_facets_str_, measinit_facets, measremesh_facets, measinit_facets - measremesh_facets ) );
-            std::cout << measinit_facets << " "<< required_facets_str_<< " " << measremesh_facets << std::endl;
+            
             BOOST_TEST(measinit_facets>=1e-6); // check that the integral is positive
             BOOST_TEST(measremesh_facets>=1e-6); // check that the integral is positive
             BOOST_CHECK_SMALL( measinit_facets - measremesh_facets, 1e-10 );
