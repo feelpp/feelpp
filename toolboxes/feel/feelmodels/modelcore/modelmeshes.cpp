@@ -11,6 +11,7 @@
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feells/distancetorange.hpp>
 
+
 namespace Feel
 {
 namespace FeelModels
@@ -260,7 +261,7 @@ ModelMesh<IndexType>::setup( nl::json const& jarg, ModelMeshes<IndexType> const&
         auto const& j_meshadapt = jarg.at("MeshAdaptation");
         if ( j_meshadapt.is_object() )
         {
-            MeshAdaptationSetup mas( mMeshes, j_meshadapt );
+            typename MeshAdaptation::Setup mas( mMeshes, j_meshadapt );
             M_meshAdaptationSetup.push_back( std::move( mas ) );
         }
         else if ( j_meshadapt.is_array() )
@@ -427,6 +428,18 @@ ModelMesh<IndexType>::updateForUse( ModelMeshes<IndexType> const& mMeshes )
     // distance to range
     this->updateDistanceToRange<MeshType>();
 
+    // mesh adaptation
+    if ( std::find_if( M_meshAdaptationSetup.begin(), M_meshAdaptationSetup.end(),
+                       []( auto const& mas ){ return mas.isExecutedAfterImport(); } ) != M_meshAdaptationSetup.end() )
+    {
+        const_cast<ModelMeshes<IndexType>&>( mMeshes ).modelProperties().parameters().updateParameterValues();
+        auto paramValues = mMeshes.modelProperties().parameters().toParameterValues();
+        for ( typename MeshAdaptation::Setup & mas : M_meshAdaptationSetup )
+            mas.setParameterValues( paramValues );
+
+        this->updateMeshAdaptation<MeshType>( MeshAdaptation::ExecutionEvent::after_import, Feel::vf::symbolsExpr( mMeshes.symbolsExprParameter(),  mMeshes.template symbolsExpr<MeshType>() ) );
+    }
+
     if constexpr ( mesh_type::nDim>1 )
     {
         if ( M_meshMotionSetup )
@@ -478,6 +491,45 @@ ModelMesh<IndexType>::updateDistanceToRange()
         auto rangeFaces = dtrs.markers().empty()? boundaryfaces(themesh) : markedfaces( themesh, dtrs.markers() );
         *u = distanceToRange( _space=Vh, _range=rangeFaces );
         M_distanceToRanges[dtrs.name()] = u;
+
+        std::string normalizationType = "min-max";
+        if ( normalizationType == "min-max" || normalizationType == "mean" )
+        {
+            double uMax = u->max();
+            double uMin = u->min();
+
+            // min-max normalization : u_normalized \in [0,1] with u_normalized = (u-min(u))/(max(u)-min(u)
+            if ( normalizationType == "min-max" )
+            {
+                std::cout << "uMax=" << uMax << " uMin=" << uMin << std::endl;
+                auto uNormalizedMinMax = Vh->elementPtr();
+                *uNormalizedMinMax = *u;
+                //*uNormalizedMinMax -= uMin;
+                uNormalizedMinMax->add( -uMin );
+                *uNormalizedMinMax *= 1./(uMax-uMin);
+                if ( false )
+                {
+                    // u_normalized_ab = a + u_normalized*(b-a)
+                    double a = 0, b = 1;
+                    *uNormalizedMinMax *= (b-a);
+                    uNormalizedMinMax->add( a );
+                }
+                M_distanceToRanges[fmt::format("{}_normalized_minmax",dtrs.name())] = uNormalizedMinMax;
+            }
+
+            // mean normalization :  u_normalized = (u-average(u))/(max(u)-min(u))
+            if ( normalizationType == "mean" )
+            {
+                double average = mean(_range=elements(support(u->functionSpace())),_expr=idv(u))(0,0);
+                auto uNormalizedMean = Vh->elementPtr();
+                *uNormalizedMean = *u;
+                //*uNormalizedMean -= average;
+                uNormalizedMean->add( -average );
+                *uNormalizedMean *= 1./(uMax-uMin);
+                M_distanceToRanges[fmt::format("{}_normalized_mean",dtrs.name())] = uNormalizedMean;
+            }
+        }
+
     }
 }
 
@@ -497,6 +549,7 @@ ModelMesh<IndexType>::applyRemesh( std::shared_ptr<MeshType> const& newMesh )
 
     M_distanceToRanges.clear();
     this->updateDistanceToRange<MeshType>();
+
     if constexpr ( MeshType::nDim > 1 )
     {
         if ( this->hasMeshMotion() )

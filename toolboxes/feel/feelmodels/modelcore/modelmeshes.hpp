@@ -191,6 +191,148 @@ public :
     using mesh_base_ptrtype = std::shared_ptr<mesh_base_type>;
     using collection_data_by_mesh_entity_type = CollectionOfDataByMeshEntity<index_type>;
     using import_config_type = typename ModelMeshCommon<IndexType>::ImportConfig;
+private :
+        struct FieldsSetup
+    {
+        FieldsSetup( std::string const& name, nl::json const& jarg )
+            :
+            M_name( name )
+            {
+                if ( jarg.contains("filename") )
+                    M_filename = Environment::expand( jarg.at("filename") );
+                else
+                    CHECK( false ) << "filename required";
+
+                if ( jarg.contains("basis") )
+                    M_basis = Environment::expand( jarg.at("basis") );
+                else
+                    CHECK( false ) << "basis required";
+            }
+        std::string const& name() const { return M_name; }
+        std::string const& filename() const { return M_filename; }
+        std::string const& basis() const { return M_basis; }
+    private :
+        std::string M_name;
+        std::string M_filename;
+        std::string M_basis;
+    };
+
+    struct DistanceToRangeSetup
+    {
+        DistanceToRangeSetup( std::string const& name, nl::json const& jarg )
+            :
+            M_name( name )
+            {
+                auto itFind = jarg.find("markers");
+                if ( itFind == jarg.end() )
+                    itFind = jarg.find("marker");
+                if ( itFind != jarg.end() )
+                {
+                    ModelMarkers mm;
+                    mm.setup( *itFind );
+                    M_markers = mm;
+                }
+            }
+        std::string const& name() const { return M_name; }
+        std::set<std::string> const& markers() const { return M_markers; }
+    private :
+        std::string M_name;
+        std::set<std::string> M_markers;
+    };
+    struct MeshMotionSetup
+    {
+        MeshMotionSetup( ModelMeshes<IndexType> const& mMeshes, nl::json const& jarg );
+
+        std::set<std::string> const& computationalDomainMarkers() { return M_computationalDomainMarkers; }
+        std::map<std::string,std::tuple<ModelExpression,std::set<std::string>>> const& displacementImposed() const { return M_displacementImposed; }
+        std::set<std::string> const& displacementZeroMarkers() const { return M_displacementZeroMarkers; }
+        std::set<std::string> const& displacementFreeMarkers() const { return M_displacementFreeMarkers; }
+
+        void setParameterValues( std::map<std::string,double> const& paramValues )
+            {
+                for ( auto & [name,dispData] : M_displacementImposed )
+                    std::get<0>( dispData ).setParameterValues( paramValues );
+            }
+
+    private :
+        std::set<std::string> M_computationalDomainMarkers;
+        std::map<std::string,std::tuple<ModelExpression,std::set<std::string>>> M_displacementImposed;
+        std::set<std::string> M_displacementZeroMarkers, M_displacementFreeMarkers;
+    };
+
+    struct MeshAdaptation
+    {
+        struct Execute;
+
+        enum class ExecutionEvent { after_import=0, after_init, each_time_step/*, mesh_quality*/ };
+
+        struct Setup
+        {
+            Setup( ModelMeshes<IndexType> const& mMeshes, nl::json const& jarg );
+
+            ModelExpression const& metricExpr() const { return M_metric; }
+
+            std::set<std::string> const& requiredMarkers() const { return M_requiredMarkers; }
+
+            bool isExecutedAfterImport() const { return this->isExecutedWhen( ExecutionEvent::after_import ); }
+            bool isExecutedAfterInit() const { return this->isExecutedWhen( ExecutionEvent::after_init ); }
+            bool isExecutedEachTimeStep() const { return this->isExecutedWhen( ExecutionEvent::each_time_step ); }
+
+            bool isExecutedWhen( ExecutionEvent m ) const { return M_executionEvents.find( m ) != M_executionEvents.end(); }
+
+            void setParameterValues( std::map<std::string,double> const& paramValues ) { M_metric.setParameterValues( paramValues ); }
+
+            friend struct Execute;
+            //template <typename TT>
+            //friend struct ModelMesh<TT>::MeshAdaptationExecute;
+        private:
+
+            std::set<std::string> M_requiredMarkers;
+            std::set<ExecutionEvent> M_executionEvents;
+            ModelExpression M_metric;
+            fs::path M_tmpDir; // store tmp mesh file in parallel, should be removed when ParMmg work!
+        };
+
+        struct Execute
+        {
+            template <typename MeshType,typename SymbolsExprType>
+            static
+            std::shared_ptr<MeshType> execute( typename MeshAdaptation::Setup const& mass, std::shared_ptr<MeshType> inputMesh, SymbolsExprType const& se )
+                {
+                    Execute mae{mass};
+                    return mae.execute(inputMesh,se);
+                }
+
+            Execute( typename MeshAdaptation::Setup const& mas ) : M_mas( mas ) {}
+
+            template <typename MeshType,typename SymbolsExprType>
+            std::shared_ptr<MeshType> execute( std::shared_ptr<MeshType> inputMesh, SymbolsExprType const& se )
+                {
+                    auto Vh = Pch<1>( inputMesh );
+                    //auto met = Vh->element();
+                    //M_scalarMetricField = Vh->elementPtr();
+                    auto metField = Vh->elementPtr();
+                    M_scalarMetricField = metField;
+                    auto metExpr = expr( M_mas.metricExpr().template expr<1,1>(), se );
+                    metField->on( _range=elements(inputMesh),_expr=metExpr );
+
+                    if  constexpr ( (MeshType::nDim == MeshType::nRealDim) && MeshType::nOrder == 1 )
+                                      return this->executeImpl( inputMesh );
+                    else
+                        return std::shared_ptr<MeshType>{};
+                }
+
+        private:
+            template <typename MeshType>
+            std::shared_ptr<MeshType> executeImpl( std::shared_ptr<MeshType> inputMesh );
+
+        private:
+            typename MeshAdaptation::Setup const& M_mas;
+            std::shared_ptr<Vector<double>> M_scalarMetricField;
+        };
+    };
+
+public :
 
     ModelMesh( std::string const& name )
         :
@@ -327,7 +469,7 @@ public :
         {
             if ( M_meshMotionSetup )
                 M_meshMotionSetup->setParameterValues( paramValues );
-             for ( MeshAdaptationSetup & mas : M_meshAdaptationSetup )
+            for ( typename MeshAdaptation::Setup & mas : M_meshAdaptationSetup )
                  mas.setParameterValues( paramValues );
         }
 
@@ -374,19 +516,22 @@ public :
 
     template <typename MeshType,typename SymbolsExprType>
     void
-    updateMeshAdaptation( SymbolsExprType const& se )
+    updateMeshAdaptation( typename MeshAdaptation::ExecutionEvent execEvent, SymbolsExprType const& se )
         {
              auto oldmesh = this->mesh<MeshType>();
 
-             for ( MeshAdaptationSetup & mas : M_meshAdaptationSetup )
+             for ( typename MeshAdaptation::Setup & mas : M_meshAdaptationSetup )
              {
-                 auto out = MeshAdaptationExecute::execute( mas, oldmesh, se );
-#if 1
+                 if ( !mas.isExecutedWhen( execEvent ) )
+                     continue;
+
+                 auto out = MeshAdaptation::Execute::execute( mas, oldmesh, se );
+
                  if ( M_functionApplyRemesh )
                      std::invoke( M_functionApplyRemesh, out );
                  else
                      this->applyRemesh( out );
-#endif
+
                  break;
              }
         }
@@ -404,140 +549,13 @@ private:
     std::map<std::string,collection_data_by_mesh_entity_type> M_codbme;
 
 
-    struct FieldsSetup
-    {
-        FieldsSetup( std::string const& name, nl::json const& jarg )
-            :
-            M_name( name )
-            {
-                if ( jarg.contains("filename") )
-                    M_filename = Environment::expand( jarg.at("filename") );
-                else
-                    CHECK( false ) << "filename required";
-
-                if ( jarg.contains("basis") )
-                    M_basis = Environment::expand( jarg.at("basis") );
-                else
-                    CHECK( false ) << "basis required";
-            }
-        std::string const& name() const { return M_name; }
-        std::string const& filename() const { return M_filename; }
-        std::string const& basis() const { return M_basis; }
-    private :
-        std::string M_name;
-        std::string M_filename;
-        std::string M_basis;
-    };
-
-    struct DistanceToRangeSetup
-    {
-        DistanceToRangeSetup( std::string const& name, nl::json const& jarg )
-            :
-            M_name( name )
-            {
-                auto itFind = jarg.find("markers");
-                if ( itFind == jarg.end() )
-                    itFind = jarg.find("marker");
-                if ( itFind != jarg.end() )
-                {
-                    ModelMarkers mm;
-                    mm.setup( *itFind );
-                    M_markers = mm;
-                }
-            }
-        std::string const& name() const { return M_name; }
-        std::set<std::string> const& markers() const { return M_markers; }
-    private :
-        std::string M_name;
-        std::set<std::string> M_markers;
-    };
-    struct MeshMotionSetup
-    {
-        MeshMotionSetup( ModelMeshes<IndexType> const& mMeshes, nl::json const& jarg );
-
-        std::set<std::string> const& computationalDomainMarkers() { return M_computationalDomainMarkers; }
-        std::map<std::string,std::tuple<ModelExpression,std::set<std::string>>> const& displacementImposed() const { return M_displacementImposed; }
-        std::set<std::string> const& displacementZeroMarkers() const { return M_displacementZeroMarkers; }
-        std::set<std::string> const& displacementFreeMarkers() const { return M_displacementFreeMarkers; }
-
-        void setParameterValues( std::map<std::string,double> const& paramValues )
-            {
-                for ( auto & [name,dispData] : M_displacementImposed )
-                    std::get<0>( dispData ).setParameterValues( paramValues );
-            }
-
-    private :
-        std::set<std::string> M_computationalDomainMarkers;
-        std::map<std::string,std::tuple<ModelExpression,std::set<std::string>>> M_displacementImposed;
-        std::set<std::string> M_displacementZeroMarkers, M_displacementFreeMarkers;
-    };
-
-    struct MeshAdaptationExecute;
-
-    struct MeshAdaptationSetup
-    {
-        MeshAdaptationSetup( ModelMeshes<IndexType> const& mMeshes, nl::json const& jarg );
-
-        ModelExpression const& metricExpr() const { return M_metric; }
-
-        std::set<std::string> const& requiredMarkers() const { return M_requiredMarkers; }
-        void setParameterValues( std::map<std::string,double> const& paramValues ) { M_metric.setParameterValues( paramValues ); }
-
-        friend struct MeshAdaptationExecute;
-        //template <typename TT>
-        //friend struct ModelMesh<TT>::MeshAdaptationExecute;
-    private:
-
-        std::set<std::string> M_requiredMarkers;
-        std::set<std::string> M_whenModes;
-        ModelExpression M_metric;
-        fs::path M_tmpDir; // store tmp mesh file in parallel, should be removed when ParMmg work!
-    };
-
-    struct MeshAdaptationExecute
-    {
-        template <typename MeshType,typename SymbolsExprType>
-        static
-        std::shared_ptr<MeshType> execute( MeshAdaptationSetup const& mass, std::shared_ptr<MeshType> inputMesh, SymbolsExprType const& se )
-            {
-                MeshAdaptationExecute mae{mass};
-                return mae.execute(inputMesh,se);
-            }
-
-        MeshAdaptationExecute( MeshAdaptationSetup const& mas ) : M_mas( mas ) {}
-
-        template <typename MeshType,typename SymbolsExprType>
-        std::shared_ptr<MeshType> execute( std::shared_ptr<MeshType> inputMesh, SymbolsExprType const& se )
-            {
-                auto Vh = Pch<1>( inputMesh );
-                //auto met = Vh->element();
-                //M_scalarMetricField = Vh->elementPtr();
-                auto metField = Vh->elementPtr();
-                M_scalarMetricField = metField;
-                auto metExpr = expr( M_mas.metricExpr().template expr<1,1>(), se );
-                metField->on( _range=elements(inputMesh),_expr=metExpr );
-
-                if  constexpr ( (MeshType::nDim == MeshType::nRealDim) && MeshType::nOrder == 1 )
-                    return this->executeImpl( inputMesh );
-                else
-                    return std::shared_ptr<MeshType>{};
-            }
-
-    private:
-        template <typename MeshType>
-        std::shared_ptr<MeshType> executeImpl( std::shared_ptr<MeshType> inputMesh );
-
-    private:
-        MeshAdaptationSetup M_mas;
-        std::shared_ptr<Vector<double>> M_scalarMetricField;
-    };
 
     std::vector<FieldsSetup> M_fieldsSetup;
     std::vector<DistanceToRangeSetup> M_distanceToRangeSetup;
     std::map<std::string, std::shared_ptr<Vector<double>> > M_fields;
     std::map<std::string, std::shared_ptr<Vector<double>> > M_distanceToRanges;
     std::optional<MeshMotionSetup> M_meshMotionSetup;
-    std::vector<MeshAdaptationSetup> M_meshAdaptationSetup;
+    std::vector<typename MeshAdaptation::Setup> M_meshAdaptationSetup;
     function_apply_remesh M_functionApplyRemesh;
 
 };
