@@ -231,19 +231,25 @@ TestRemesh<Dim, RDim>::execute( int niter )
         }
         if ( !required_elements_str_.empty() )
         {
-            double measinit = measure( _range = markedelements( Vh->mesh(), required_elements_str_ ) );
-            double measremesh = measure( _range = markedelements( Vhr->mesh(), required_elements_str_ ) );
+            double measinit_elt = measure( _range = markedelements( Vh->mesh(), required_elements_str_ ) );
+            double measremesh_elt = measure( _range = markedelements( Vhr->mesh(), required_elements_str_ ) );
+            std::cout << measinit_elt << " "<< required_elements_str_<< " " << measremesh_elt << std::endl;
             if ( Environment::isMasterRank() )
-                BOOST_MESSAGE( fmt::format( "check element set measure {} initial: {} remesh: {} error: {}", required_elements_str_, measinit, measremesh, measinit - measremesh ) );
-            BOOST_CHECK_SMALL( measinit-measremesh, 1e-10 );
+                BOOST_MESSAGE( fmt::format( "check element set measure {} initial: {} remesh: {} error: {}", required_elements_str_, measinit_elt, measremesh_elt, measinit_elt - measremesh_elt ) );
+            BOOST_TEST(measinit_elt>=1e-6); // check that the integral is positive
+            BOOST_TEST(measremesh_elt>=1e-6);// check that the integral is positive
+            BOOST_CHECK_SMALL( measinit_elt-measremesh_elt, 1e-10 );
         }
         if ( !required_facets_str_.empty() )
         {
-            double measinit = measure( _range = markedfaces( Vh->mesh(), required_facets_str_ ) );
-            double measremesh = measure( _range = markedfaces( Vhr->mesh(), required_facets_str_ ) );
+            double measinit_facets = measure( _range = markedfaces( Vh->mesh(), required_facets_str_ ) );
+            double measremesh_facets = measure( _range = markedfaces( Vhr->mesh(), required_facets_str_ ) );
             if ( Environment::isMasterRank() )
-                BOOST_MESSAGE( fmt::format( "check element set measure {} initial: {} remesh: {} error: {}", required_facets_str_, measinit, measremesh, measinit - measremesh ) );
-            BOOST_CHECK_SMALL( measinit - measremesh, 1e-10 );
+                BOOST_MESSAGE( fmt::format( "check element set measure {} initial: {} remesh: {} error: {}", required_facets_str_, measinit_facets, measremesh_facets, measinit_facets - measremesh_facets ) );
+            std::cout << measinit_facets << " "<< required_facets_str_<< " " << measremesh_facets << std::endl;
+            BOOST_TEST(measinit_facets>=1e-6); // check that the integral is positive
+            BOOST_TEST(measremesh_facets>=1e-6); // check that the integral is positive
+            BOOST_CHECK_SMALL( measinit_facets - measremesh_facets, 1e-10 );
         }
         if ( !check_facets_.empty() )
         {
@@ -331,13 +337,13 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( testnDMatTwo, T, dim_types )
     TestRemesh<T::first_type::value, T::second_type::value> r;
     if constexpr ( T::first_type::value == 2 )
     {
-        r.setMesh( "$datadir/data/geo/square_twoMaterials.geo", "MatTwo", "BdryFixedDiscr" );
+        r.setMesh( "$datadir/geo/square_twoMaterials.geo", "MatTwo", "BdryFixedDiscr" );
     }
     else
     {
         // r.setMesh( "$datadir/geo/cube_twoMaterials.geo", "MatTwo", "BdryFixedDiscr" );
         //r.setMesh( "$datadir/geo/cube_twoMaterials.geo", "MatTwo", "", { "BdryFixedDiscr"} );
-        r.setMesh( "$datadir/geo/cube_twoMaterials.geo", "MatTwo");
+        r.setMesh( "$datadir/geo/cube_twoMaterials.geo", "MatTwo", "BdryFixedDiscr" );
     }
     r.execute( 1 );
 }
