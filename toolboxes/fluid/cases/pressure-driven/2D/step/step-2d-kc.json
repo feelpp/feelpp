@@ -1,6 +1,6 @@
 {
-    "Name": "Navier-Stokes step 2D",
-    "ShortName":"nss2d",
+    "Name": "Backward Facing Step 2D",
+    "ShortName":"bfs2d",
     "Models":
     {
         "fluid":
@@ -11,9 +11,9 @@
     "Parameters":
     {
         "nu":1,
-        "rho":1,
-        "pin":1,
-        "pout":0
+        "pout":0,
+        "uxin":"6*y*(1-y):y",
+        "uyin":"0"
     },
     "Meshes":
     {
@@ -21,15 +21,15 @@
         {
             "Import":
             {
-                "filename":"$cfgdir/fda-2d.geo"
+                "filename":"$cfgdir/step-2d.geo"
             }
         }
     },
     "Materials":
     {
         "Omega":{
-            "rho":"rho:rho",//"1056",
-            "mu":"nu:nu"//"0.056"
+            "rho":"1",
+            "mu":"nu:nu"
         }
     },
     "BoundaryConditions":
@@ -41,28 +41,28 @@
                 "wall":
                 {
                     "expr":"{0,0}"
+                },
+                "inlet":
+                {
+                    "expr":"{uxin,uyin}:uxin:uyin"
                 }
             },
             "pressure":
             {
-                "inlet":
-                {
-                    "expr":"pin:pin"
-                },
                 "outlet":
                 {
                     "expr":"pout:pout"
                 }
             }
-        }
-    },
-    "PostProcess":
-    {
-        "fluid":
+        },
+        "PostProcess":
         {
-            "Exports":
+            "fluid":
             {
-                "fields":["velocity","pressure","pid"]
+                "Exports":
+                {
+                    "fields":["velocity","pressure","pid"]
+                }
             }
         }
     }

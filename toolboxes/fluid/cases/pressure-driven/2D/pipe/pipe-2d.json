@@ -25,8 +25,7 @@
         {
             "Import":
             {
-                "filename":"$cfgdir/pipe-2d.geo",
-                "hsize":0.01
+                "filename":"$cfgdir/pipe-2d.geo"
             }
         }
     },
