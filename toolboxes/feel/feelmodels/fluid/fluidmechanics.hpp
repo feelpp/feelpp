@@ -57,7 +57,8 @@
 #include <feel/feelmodels/modelcore/stabilizationglsparameterbase.hpp>
 #include <feel/feelmodels/modelcore/rangedistributionbymaterialname.hpp>
 #include <feel/feelmodels/modelvf/fluidmecstresstensor.hpp>
-#include <feel/feelmodels/modelvf/fluidmecconvection.hpp>
+//#include <feel/feelmodels/modelvf/fluidmecconvection.hpp>
+#include <feel/feelmodels/modelvf/fluidmecconvectiveterm.hpp>
 
 #include <feel/feelmodels/fluid/fluidmechanicsboundaryconditions.hpp>
 
@@ -339,8 +340,6 @@ public:
     typedef std::shared_ptr<space_velocity_type> space_velocity_ptrtype;
     typedef typename space_velocity_type::element_type element_velocity_type;
     typedef std::shared_ptr<element_velocity_type> element_velocity_ptrtype;
-    typedef typename space_velocity_type::element_external_storage_type element_velocity_external_storage_type;
-    typedef std::shared_ptr<element_velocity_external_storage_type> element_velocity_external_storage_ptrtype;
     // function space component of velocity
     typedef typename space_velocity_type::component_functionspace_type component_space_velocity_type;
     typedef std::shared_ptr<component_space_velocity_type> component_space_velocity_ptrtype;
@@ -351,7 +350,6 @@ public:
     typedef std::shared_ptr<space_pressure_type> space_pressure_ptrtype;
     typedef typename space_pressure_type::element_type element_pressure_type;
     typedef std::shared_ptr<element_pressure_type> element_pressure_ptrtype;
-    typedef typename space_pressure_type::element_external_storage_type element_pressure_external_storage_type;
     // function space for lagrange multiplier which impose the mean pressure
     typedef FunctionSpace<mesh_type, bases<basis_l_type> > space_meanpressurelm_type;
     typedef std::shared_ptr<space_meanpressurelm_type> space_meanpressurelm_ptrtype;
@@ -1153,6 +1151,12 @@ public:
                 return std::make_tuple( newMass, std::move( newMassCenter ) );
             }
 
+        auto modelMeasuresQuantities( std::string const& prefix ) const
+            {
+                return Feel::FeelModels::modelMeasuresQuantities( modelMeasuresQuantity( prefix, "mass_center", M_massCenter ),
+                                                                  modelMeasuresQuantity( prefix, "rigid_rotation_angles", M_rigidRotationAngles )
+                                                                  );
+            }
 
     private :
         range_faces_type M_rangeMarkedFacesOnFluid;
@@ -1503,6 +1507,7 @@ public:
                         angularVelocity = this->angularVelocityExpr().evaluate();
                     else
                         angularVelocity = idv(M_fieldAngularVelocity).evaluate();
+                        //angularVelocity = idv(M_bdfAngularVelocity->poly()).evaluate();
                 }
 
                 this->body().updateDisplacementFromRigidVelocity( translationalVelocity,angularVelocity,dt );
@@ -1730,12 +1735,19 @@ public:
 
         auto modelMeasuresQuantities( std::string const& prefix = "" ) const
             {
-                using _res_type = std::decay_t<decltype(this->begin()->second.modelMeasuresQuantities(""))>;
+                using _res_type = std::decay_t<decltype( Feel::FeelModels::modelMeasuresQuantities( this->begin()->second.modelMeasuresQuantities(""),
+                                                                                                    M_nbodyArticulated.front().modelMeasuresQuantities("")
+                                                                                                    ) )>;
                 _res_type res;
                 for ( auto const& [name,bbc] : *this )
                 {
                     std::string currentPrefix = prefixvm( prefix, (boost::format("body_%1%")%name).str() );
                     res = Feel::FeelModels::modelMeasuresQuantities( res, bbc.modelMeasuresQuantities( currentPrefix ) );
+                }
+                for ( auto const& nba : M_nbodyArticulated )
+                {
+                    std::string currentPrefix = prefixvm( prefix, (boost::format("nba_%1%")%nba.name()).str() );
+                    res = Feel::FeelModels::modelMeasuresQuantities( res, nba.modelMeasuresQuantities( currentPrefix ) );
                 }
                 return res;
             }
@@ -2002,7 +2014,7 @@ public :
     element_pressure_type const& fieldPressure() const { return *M_fieldPressure; }
     element_pressure_ptrtype const& fieldPressurePtr() const { return M_fieldPressure; }
 
-    element_velocity_external_storage_ptrtype const& fieldVelocityExtrapolatedPtr() const { return M_fieldVelocityExtrapolated; }
+    element_velocity_ptrtype const& fieldVelocityExtrapolatedPtr() const { return M_fieldVelocityExtrapolated; }
 
     vector_ptrtype vectorVelocityExtrapolated() const { return M_vectorVelocityExtrapolated; }
     vector_ptrtype vectorPreviousVelocityExtrapolated() const { return M_vectorPreviousVelocityExtrapolated; }
@@ -2184,7 +2196,7 @@ public :
 
     auto modelFields( std::string const& prefix = "" ) const
         {
-            return this->modelFields( this->fieldVelocityPtr(), this->fieldPressurePtr(), M_bodySetBC.modelFields( *this, prefix ), M_fieldVelocityExtrapolated/*element_velocity_external_storage_ptrtype{}*/, prefix );
+            return this->modelFields( this->fieldVelocityPtr(), this->fieldPressurePtr(), M_bodySetBC.modelFields( *this, prefix ), M_fieldVelocityExtrapolated, prefix );
         }
     auto modelFields( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
         {
@@ -2204,7 +2216,7 @@ public :
             auto field_p = this->fieldPressure().functionSpace()->elementPtr( *sol, rowStartInVector+this->startSubBlockSpaceIndex("pressure") );
             auto mfields_body = M_bodySetBC.modelFields( *this, sol, rowStartInVector, prefix );
 
-            element_velocity_external_storage_ptrtype field_beta_u;
+            element_velocity_ptrtype field_beta_u;
             auto itFindVelocityExtrapolated = vectorData.find( "velocity_extrapolated" );
             if ( itFindVelocityExtrapolated != vectorData.end() && std::get<0>( itFindVelocityExtrapolated->second ) )
                 field_beta_u = this->fieldVelocity().functionSpace()->elementPtr( *std::get<0>( itFindVelocityExtrapolated->second ), std::get<1>( itFindVelocityExtrapolated->second ) );
@@ -2325,7 +2337,7 @@ public :
             using _expr_meshdisp_type = std::decay_t<decltype(idv(this->meshMotionTool()->displacement()))>;
             std::map<std::string,std::vector<std::tuple< _expr_meshdisp_type, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExprMeshDisp;
             if ( this->hasMeshMotion() )
-                mapExprMeshDisp[prefixvm(prefix,"mesh-displacement")].push_back( std::make_tuple( idv(this->meshMotionTool()->displacement()), M_rangeMeshElements, "nodal" ) ); // maybe use mesh support of disp field
+                mapExprMeshDisp[prefixvm(prefix,"mesh-displacement")].push_back( std::make_tuple( idv(this->meshMotionTool()->displacement()), elements(support(this->meshMotionTool()->displacement()->functionSpace())), "nodal" ) );
 
             auto rangeTrace = this->functionSpaceVelocity()->template meshSupport<0>()->rangeBoundaryFaces();
             auto sigmaExpr = this->stressTensorExpr( u,p,se );
@@ -2586,8 +2598,8 @@ public :
     template <typename ModelContextType>
     void updateResidual( DataUpdateResidual & data, ModelContextType const& mfields ) const;
 
-    void updateResidualStabilisation( DataUpdateResidual & data, element_velocity_external_storage_type const& u, element_pressure_external_storage_type const& p ) const;
-    void updateJacobianStabilisation( DataUpdateJacobian & data, element_velocity_external_storage_type const& u, element_pressure_external_storage_type const& p ) const;
+    void updateResidualStabilisation( DataUpdateResidual & data, element_velocity_type const& u, element_pressure_type const& p ) const;
+    void updateJacobianStabilisation( DataUpdateJacobian & data, element_velocity_type const& u, element_pressure_type const& p ) const;
     template <typename ModelContextType,typename RangeType,typename... ExprAddedType>
     void updateJacobianStabilizationGLS( DataUpdateJacobian & data, ModelContextType const& mctx,
                                          ModelPhysicFluid<nDim> const& physicFluidData,
@@ -2621,6 +2633,8 @@ public :
                                           MaterialProperties const& matProps, RangeType const& range,
                                           ExprAddedRhsType const& exprsAddedInResidualRhsTuple = hana::make_tuple(),
                                           ExprAddedLhsType const& exprsAddedInResidualLhsTuple = hana::make_tuple() ) const;
+    // solver PtAP
+    void solverPtAP_applyQ( vector_ptrtype const& Ud, vector_ptrtype & Ui, size_type rowStartInVector = 0 ) const;
     //___________________________________________________________________________________//
     // turbulence model assembly
     void updateLinear_Turbulence( DataUpdateLinear & data ) const;
@@ -2672,7 +2686,7 @@ private :
     element_pressure_ptrtype M_fieldPressure;
     // extrapolation of velocity in time
     vector_ptrtype M_vectorVelocityExtrapolated, M_vectorPreviousVelocityExtrapolated;
-    element_velocity_external_storage_ptrtype M_fieldVelocityExtrapolated; // view on M_vectorVelocityExtrapolated
+    element_velocity_ptrtype M_fieldVelocityExtrapolated; // view on M_vectorVelocityExtrapolated
     // time discrtisation fluid
     std::string M_timeStepping;
     bdf_velocity_ptrtype M_bdfVelocity;
