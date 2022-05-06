@@ -24,6 +24,8 @@
 #ifndef __FEELPP_VF_EIG_H
 #define __FEELPP_VF_EIG_H 1
 
+#include <feel/feelvf/expr.hpp>
+
 namespace Feel
 {
 namespace vf
@@ -186,11 +188,6 @@ class Eig : public ExprDynamicBase
               M_eigv( vf::detail::ExtractGm<Geo_t>::get( geom )->nPoints() )
         {
         }
-        template <typename IM>
-        void init( IM const& im )
-        {
-            M_tensor_expr.init( im );
-        }
         void update( Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ )
         {
             update( geom );
@@ -202,11 +199,6 @@ class Eig : public ExprDynamicBase
         void update( Geo_t const& geom )
         {
             M_tensor_expr.update( geom );
-            computeEig();
-        }
-        void update( Geo_t const& geom, uint16_type face )
-        {
-            M_tensor_expr.update( geom, face );
             computeEig();
         }
 
@@ -232,6 +224,12 @@ class Eig : public ExprDynamicBase
         evalq( uint16_type c1, uint16_type c2, uint16_type q ) const
         {
             return M_eigv[q]( c1, c2 );
+        }
+
+        Eigen::Map<const vector_type>
+        evalq( uint16_type q ) const
+        {
+            return Eigen::Map<const vector_type>(M_eigv[q].data());
         }
 
       private:

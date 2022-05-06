@@ -1,0 +1,55 @@
+// -*- mode: javascript -*-
+{
+    "Name":"cvg2d",
+    "ShortName":"cvg2d",
+    "Parameters":
+    {
+        "v_expr":"0.25*x/L:x:L",
+        "c_expr":"{-0.25/L,0}:L"
+    },
+    "Meshes":
+    {
+        "electric":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/2d.geo",
+                "hsize":0.1
+            }
+        }
+    },
+    "Materials":
+    {
+        "omega":
+        {
+            "sigma":"4.8e7"
+        }
+    },
+    "BoundaryConditions":
+    {
+        "electric":
+        {
+            "electric_potential":
+            {
+                "V0":
+                {
+                    "expr":"0" // V_in
+                },
+                "V1":
+                {
+                    "expr":"0.25" // V_out
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "electric":
+        {
+            "Exports":
+            {
+                "fields":["electric-potential","electric-field","pid"]
+            }
+        }
+    }
+}

@@ -1,0 +1,93 @@
+{
+    "Name": "Square2d",
+    "ShortName": "Square2d",
+    "Models":
+    {
+        "cfpdes":{
+            "equations":["equation1","equation2"]
+        },
+        "equation1":{
+            "setup":{
+                "unknown":{
+                    "basis":"Pch1",
+                    "name":"toto",
+                    "symbol":"Y"
+                },
+                "coefficients":{
+                    "c":"1", // diffusion
+                    "a":"1", // reaction
+                    //"d":"1"// first time derivative
+                    "f":"1"
+                }
+            }
+        },
+        "equation2":{
+            "setup":{
+                "unknown":{
+                    "basis":"Pch2",
+                    "name":"toto",
+                    "symbol":"Y"
+                },
+                "coefficients":{
+                    "c":"10", // diffusion
+                    "a":"1" // reaction
+                    //"d":"1"// first time derivative
+                    //"f":"0"
+                }
+            }
+        }
+    },
+    "Meshes":
+    {
+        "cfpdes":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/square2d.geo",
+                "hsize":0.03
+            }
+        }
+    },
+    "Materials":
+    {
+        "mymat1":
+        {
+            "markers":"Omega"
+        }
+    },
+    "BoundaryConditions":
+    {
+        "equation1":
+        {
+            "Dirichlet":
+            {
+                "mybc":
+                {
+                    "markers":["Left","Bottom","Right","Top"],
+                    "expr":"0"
+                }
+            }
+        },
+        "equation2":
+        {
+            "Dirichlet":
+            {
+                "mybc":
+                {
+                    "markers":"Left",
+                    "expr":"1"
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "cfpdes":
+        {
+            "Exports":
+            {
+                "fields":["all"]
+            }
+        }
+    }
+}

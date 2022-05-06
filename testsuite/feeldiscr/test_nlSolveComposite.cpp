@@ -165,11 +165,11 @@ public:
 
         mesh = loadMesh(_mesh = new mesh_type);
 
-        M_backend->nlSolver()->jacobian = boost::bind( &self_type::updateJacobian,
-                                                       boost::ref( *this ), _1, _2 );
+        M_backend->nlSolver()->jacobian = std::bind( &self_type::updateJacobian,
+                                                       std::ref( *this ), std::placeholders::_1, std::placeholders::_2 );
 
-        M_backend->nlSolver()->residual = boost::bind( &self_type::updateResidual,
-                                                       boost::ref( *this ), _1, _2 );
+        M_backend->nlSolver()->residual = std::bind( &self_type::updateResidual,
+                                                       std::ref( *this ), std::placeholders::_1, std::placeholders::_2 );
     }
 
     /**
@@ -178,7 +178,7 @@ public:
     void updateResidual(const vector_ptrtype& X, vector_ptrtype& R);
     void updateJacobian(const vector_ptrtype& X, sparse_matrix_ptrtype& J);
     void newtonSolve(element_type& sol);
-    void run();
+    void run() override;
 
 private:
     //! linear algebra backend
@@ -405,8 +405,8 @@ TestNLSolveComposite<Dim, OrderV, OrderT>::run()
     V = VT.template element<0>();
     T = VT.template element<1>();
 
-    auto T_mean = integrate( elements(mesh), idv(T) ).evaluate()(0,0);
-    auto area = integrate( elements(mesh), cst(1.) ).evaluate()(0,0);
+    auto T_mean = integrate( _range=elements(mesh), _expr=idv(T) ).evaluate()(0,0);
+    auto area = integrate( _range=elements(mesh), _expr=cst(1.) ).evaluate()(0,0);
     T_mean /= area;
     if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
         std::cout << "[P" << OrderV << "-P" << OrderT << "] Tmean = " << T_mean << std::endl;

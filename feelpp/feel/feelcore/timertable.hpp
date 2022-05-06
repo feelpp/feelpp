@@ -27,9 +27,6 @@
 #include <iomanip>
 #include <iostream>
 
-#include <boost/bind.hpp> 
-#include <boost/ref.hpp>
-
 #include <boost/accumulators/accumulators.hpp>
 #include <boost/accumulators/statistics/stats.hpp>
 #include <boost/accumulators/statistics/count.hpp>
@@ -141,7 +138,7 @@ public:
                                               boost::accumulators::tag::variance,
                                               boost::accumulators::tag::min,
                                               boost::accumulators::tag::max> > acc;
-                for_each(T.second.begin(), T.second.end(), boost::bind<void>(boost::ref(acc), _1));
+                for_each(T.second.begin(), T.second.end(), std::bind<void>(std::ref(acc), std::placeholders::_1));
                 double tot = boost::accumulators::sum(acc);
                 sortTotal[tot] = T.second;
                 os << std::setw( 2*T.second.level ) << " "
@@ -168,7 +165,7 @@ public:
                                               boost::accumulators::tag::variance,
                                               boost::accumulators::tag::min,
                                               boost::accumulators::tag::max> > acc;
-                for_each(T.second.begin(), T.second.end(), boost::bind<void>(boost::ref(acc), _1));
+                for_each(T.second.begin(), T.second.end(), std::bind<void>(std::ref(acc), std::placeholders::_1));
 
                 os << std::setw( 2*T.second.level ) << " "
                    << std::setw( M_max_len-2*T.second.level ) <<std::left << T.second.msg << " " 
@@ -179,22 +176,7 @@ public:
                    << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << boost::accumulators::mean(acc) << " "
                    << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << std::sqrt(boost::accumulators::variance(acc)) << "\n";
 
-                std::string n = boost::trim_fill_copy( boost::trim_fill_copy_if( T.second.msg, "_", boost::is_any_of(":")), "_" );
-                
-                try {
-                    Environment::summary().put( "application.timers."s+n+".name", T.second.msg );
-                    Environment::summary().put( "application.timers."s+n+".count", boost::accumulators::count(acc) );
-                    Environment::summary().put( "application.timers."s+n+".total", boost::accumulators::sum(acc) );
-                    Environment::summary().put( "application.timers."s+n+".max", boost::accumulators::max(acc) );
-                    Environment::summary().put( "application.timers."s+n+".min", boost::accumulators::min(acc) );
-                    Environment::summary().put( "application.timers."s+n+".mean", boost::accumulators::mean(acc) );
-                    Environment::summary().put( "application.timers."s+n+".stddev", std::sqrt(boost::accumulators::variance(acc)) );
-                }
-                catch( pt::ptree_bad_data const& d )
-                {
-                    std::cout << "d: " << d.what() << std::endl;
-                }
-                
+                std::string n = boost::trim_fill_copy( boost::trim_fill_copy_if( T.second.msg, "_", boost::is_any_of(":")), "_" );                
             }
             os << std::resetiosflags(os.flags());
             if ( display )
@@ -226,7 +208,7 @@ public:
                                               boost::accumulators::tag::variance,
                                               boost::accumulators::tag::min,
                                               boost::accumulators::tag::max> > acc;
-                for_each(T.second.begin(), T.second.end(), boost::bind<void>(boost::ref(acc), _1));
+                for_each(T.second.begin(), T.second.end(), std::bind<void>(std::ref(acc), std::placeholders::_1));
                 double tot = boost::accumulators::sum(acc);
                 sortTotal[tot] = T.second;
                 os << std::setw( M_max_len ) << std::left       << "|" << T.first << " | " 
@@ -253,7 +235,7 @@ public:
                                               boost::accumulators::tag::variance,
                                               boost::accumulators::tag::min,
                                               boost::accumulators::tag::max> > acc;
-                for_each(T.second.begin(), T.second.end(), boost::bind<void>(boost::ref(acc), _1));
+                for_each(T.second.begin(), T.second.end(), std::bind<void>(std::ref(acc), std::placeholders::_1));
 
                 os << std::setw( M_max_len ) <<std::left << "|" << T.second.msg << " | " 
                    << std::setw(7) << std::right << boost::accumulators::count(acc) << " | "
@@ -276,7 +258,7 @@ private:
     //! @{
 
     //! update information
-    void updateInformationObject( pt::ptree & p ) override
+    void updateInformationObject( nl::json & p ) const override
     {
         using namespace boost::accumulators;
         using namespace std::string_literals;
@@ -292,18 +274,19 @@ private:
                                           boost::accumulators::tag::variance,
                                           boost::accumulators::tag::min,
                                           boost::accumulators::tag::max> > acc;
-            for_each(T.second.begin(), T.second.end(), boost::bind<void>(boost::ref(acc), _1));
+            for_each(T.second.begin(), T.second.end(), std::bind<void>(std::ref(acc), std::placeholders::_1));
             double tot = boost::accumulators::sum(acc);
             sortTotal[tot] = T.second;
 
             const std::string& prefix = T.second.instance_name;
-            p.put( prefix + ".message", T.second.msg );
-            p.put( prefix + ".count", boost::accumulators::count(acc) );
-            p.put( prefix + ".total", boost::accumulators::sum(acc) );
-            p.put( prefix + ".max", boost::accumulators::max(acc) );
-            p.put( prefix + ".min", boost::accumulators::min(acc) );
-            p.put( prefix + ".mean", boost::accumulators::mean(acc) );
-            p.put( prefix + ".std_dev", std::sqrt( boost::accumulators::variance(acc) ) );
+            auto & jData = p[prefix];
+            jData[ "message" ] = T.second.msg;
+            jData[ "count" ] = boost::accumulators::count(acc);
+            jData[ "total" ] = boost::accumulators::sum(acc);
+            jData[ "max" ] = boost::accumulators::max(acc);
+            jData[ "min"] = boost::accumulators::min(acc);
+            jData[ "mean" ] = boost::accumulators::mean(acc);
+            jData[ "std_dev" ] = std::sqrt( boost::accumulators::variance(acc) );
         }
 
         for( auto const& T: sortTotal )
@@ -313,16 +296,17 @@ private:
                                           boost::accumulators::tag::variance,
                                           boost::accumulators::tag::min,
                                           boost::accumulators::tag::max> > acc;
-            for_each(T.second.begin(), T.second.end(), boost::bind<void>(boost::ref(acc), _1));
+            for_each(T.second.begin(), T.second.end(), std::bind<void>(std::ref(acc), std::placeholders::_1));
 
             const std::string& prefix = T.second.instance_name;
-            p.put( prefix + ".message", T.second.msg );
-            p.put( prefix + ".count", boost::accumulators::count(acc) );
-            p.put( prefix + ".total", boost::accumulators::sum(acc) );
-            p.put( prefix + ".max", boost::accumulators::max(acc) );
-            p.put( prefix + ".min", boost::accumulators::min(acc) );
-            p.put( prefix + ".mean", boost::accumulators::mean(acc) );
-            p.put( prefix + ".std_dev", std::sqrt( boost::accumulators::variance(acc) ) );
+            auto & jData = p[prefix];
+            jData[ "message" ] = T.second.msg;
+            jData[ "count" ] = boost::accumulators::count(acc);
+            jData[ "total" ] = boost::accumulators::sum(acc);
+            jData[ "max" ] = boost::accumulators::max(acc);
+            jData[ "min" ] = boost::accumulators::min(acc);
+            jData[ "mean" ] = boost::accumulators::mean(acc);
+            jData[ "std_dev" ] = std::sqrt( boost::accumulators::variance(acc) );
         }
     }
 

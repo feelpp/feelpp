@@ -444,7 +444,7 @@ public:
         this->setIgnorePhysicalName( "FEELPP_GMSH_PHYSICALNAME_IGNORED" );
         //showMe();
     }
-    ~ImporterGmsh()
+    ~ImporterGmsh() override
     {}
 
     //@}
@@ -517,7 +517,7 @@ public:
      */
     //@{
 
-    void visit( mesh_type* mesh );
+    void visit( mesh_type* mesh ) override;
 
     void showMe() const;
 
@@ -754,9 +754,6 @@ ImporterGmsh<MeshType>::readFromMemory( mesh_type* mesh )
             physicalTags.push_back( entityTag );
         else
             gmsh::model::getPhysicalGroupsForEntity( entityDim, entityTag, physicalTags );
-        // fix for exporter TO REMOVE!!!!
-        if ( physicalTags.empty() && entityDim == mesh_type::nDim )
-            physicalTags.push_back( 1234 );
 
         std::vector<int> elementTypes;
 #if GMSH_VERSION_GREATER_OR_EQUAL_THAN(4,2,0)
@@ -2171,14 +2168,7 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
                 {
                     for ( int thePhysicalTag : itFindEntityTagToPhysicalMarkers->second )
                         physicalTag.push_back( thePhysicalTag );
-                    if ( physicalTag.size() > 0 )
-                    {
-                        CHECK( physicalTag.size() == 1 ) << "support only one physical marker by entity";
-                    }
                 }
-                // fix for exporter TO REMOVE!!!!
-                if ( physicalTag.empty() && entityDim == mesh_type::nDim )
-                    physicalTag.push_back( 1234 );//123456;//0;
             }
 
 #if defined( FEELPP_HAS_GMSH_API )
@@ -2247,13 +2237,13 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
                             {
                                 auto itFindGmhsId = __idGmshToFeel.find( gmshEltToUpdate.num );
                                 CHECK( itFindGmhsId != __idGmshToFeel.end() ) << "Gmsh element id not found";
-                                CHECK( gmshEltToUpdate.physical.size() == 1 ) "support only one marker";
+                                //CHECK( gmshEltToUpdate.physical.size() == 1 ) "support only one marker";
 
                                 if ( entityDim == ( mesh_type::nDim -1 ) )
                                 {
                                     auto faceIt = mesh->faceIterator( itFindGmhsId->second );
                                     CHECK( faceIt != mesh->endFace() ) << "face not found";
-                                    faceIt->second.setMarker( gmshEltToUpdate.physical[0] );
+                                    faceIt->second.addMarker( gmshEltToUpdate.physical );
                                 }
                                 else if ( mesh_type::nDim == 3 && entityDim == ( mesh_type::nDim - 2 ) )
                                 {
@@ -2261,14 +2251,14 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
                                     {
                                         auto edgeIt = mesh->edgeIterator( itFindGmhsId->second );
                                         CHECK( edgeIt != mesh->endEdge() ) << "face not found";
-                                        edgeIt->second.setMarker( gmshEltToUpdate.physical[0] );
+                                        edgeIt->second.addMarker( gmshEltToUpdate.physical );
                                     }
                                 }
                                 else if ( entityDim == 0 )
                                 {
                                     auto pointIt = mesh->pointIterator( itFindGmhsId->second );
                                     CHECK( pointIt != mesh->endPoint() ) << "point not found";
-                                    pointIt->second.setMarker( gmshEltToUpdate.physical[0] );
+                                    pointIt->second.addMarker( gmshEltToUpdate.physical );
                                 }
                             }
                             useThisEntity = false;
@@ -2615,7 +2605,7 @@ ImporterGmsh<MeshType>::addPoint( mesh_type* mesh, Feel::detail::GMSHElement con
     auto & pt = pit->second;
 
     if ( !__e.physical.empty() )
-        pt.setMarker( __e.physical[0] );
+        pt.addMarker( __e.physical );
     if ( false )
         pt.setMarker2( __e.elementary );
     //pt.setProcessId( __e.partition );
@@ -2641,7 +2631,7 @@ ImporterGmsh<MeshType>::addEdge( mesh_type*mesh, Feel::detail::GMSHElement const
     //e.setWorldComm(this->worldComm());
     e.setProcessIdInPartition( this->worldComm().localRank() );
     if ( !__e.physical.empty() )
-        e.setMarker( __e.physical[0] );
+        e.addMarker( __e.physical );
     if ( false )
         e.setMarker2( __e.elementary );
     e.setProcessId( __e.partition );
@@ -2678,7 +2668,7 @@ ImporterGmsh<MeshType>::addEdge( mesh_type* mesh, Feel::detail::GMSHElement cons
     e.setProcessIdInPartition( this->worldComm().localRank() );
     e.setId( mesh->numFaces() );
     if ( !__e.physical.empty() )
-        e.setMarker( __e.physical[0] );
+        e.addMarker( __e.physical );
     if ( false )
         e.setMarker2( __e.elementary );
     e.setProcessId( __e.partition );
@@ -2716,7 +2706,7 @@ ImporterGmsh<MeshType>::addEdge( mesh_type*mesh, Feel::detail::GMSHElement const
     e.setProcessIdInPartition( this->worldComm().localRank() );
     e.setId( mesh->numEdges() );
     if ( !__e.physical.empty() )
-        e.setMarker( __e.physical[0] );
+        e.addMarker( __e.physical );
     if ( false )
         e.setMarker2( __e.elementary );
     // warning : process id is define after (when call mesh->updateForUse()
@@ -2771,7 +2761,7 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, Feel::detail::GMSHElement cons
     e.setId( ( false )? __e.num : mesh->elements().size() );
     e.setProcessIdInPartition( this->worldComm().localRank() );
     if ( !__e.physical.empty() )
-        e.setMarker( __e.physical[0] );
+        e.addMarker( __e.physical );
     if ( false )
         e.setMarker2( __e.elementary );
     e.setProcessId( __e.partition );
@@ -2807,7 +2797,7 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, Feel::detail::GMSHElement cons
     e.setProcessIdInPartition( this->worldComm().localRank() );
     e.setId( mesh->numFaces() );
     if ( !__e.physical.empty() )
-        e.setMarker( __e.physical[0] );
+        e.addMarker( __e.physical );
     if ( false )
         e.setMarker2( __e.elementary );
     e.setProcessId( __e.partition );
@@ -2861,7 +2851,7 @@ ImporterGmsh<MeshType>::addVolume( mesh_type* mesh, Feel::detail::GMSHElement co
     e.setProcessIdInPartition( this->worldComm().localRank() );
     GmshOrdering<element_type> ordering;
     if ( !__e.physical.empty() )
-        e.setMarker( __e.physical[0] );
+        e.addMarker( __e.physical );
     if ( false )
         e.setMarker2( __e.elementary );
     e.setProcessId( __e.partition );
@@ -2961,14 +2951,34 @@ ImporterGmsh<MeshType>::updateGhostCellInfo( mesh_type* mesh, std::map<int,int> 
 
     mpi::request * reqs = new mpi::request[nbRequest];
     int cptRequest=0;
+
+    for ( auto const& [proc,thedata] : dataToSend )
+    {
+        int nSendData = thedata.size();
+        reqs[cptRequest++] = this->worldComm().localComm().isend( proc , 0, nSendData );
+    }
+
+    std::map<rank_type,size_type> sizeRecv;
+    for ( rank_type proc=0; proc<nProc; ++proc )
+    {
+        if ( nbMsgToRecv[proc] > 0 )
+        {
+            reqs[cptRequest++] = this->worldComm().localComm().irecv( proc , 0, sizeRecv[proc] );
+        }
+    }
+    // wait all requests
+    mpi::wait_all(reqs, reqs + cptRequest);
+
     //-----------------------------------------------------------//
+    cptRequest=0;
     // first send
     auto itDataToSend = dataToSend.begin();
     auto const enDataToSend = dataToSend.end();
     for ( ; itDataToSend!=enDataToSend ; ++itDataToSend )
     {
-        reqs[cptRequest] = this->worldComm().localComm().isend( itDataToSend->first , 0, itDataToSend->second );
-        ++cptRequest;
+        int nSendData = itDataToSend->second.size();
+        if ( nSendData > 0 )
+            reqs[cptRequest++] = this->worldComm().localComm().isend( itDataToSend->first , 0, &(itDataToSend->second[0]), nSendData );
     }
     //-----------------------------------------------------------//
     // first recv
@@ -2977,13 +2987,15 @@ ImporterGmsh<MeshType>::updateGhostCellInfo( mesh_type* mesh, std::map<int,int> 
     {
         if ( nbMsgToRecv[proc] > 0 )
         {
-            reqs[cptRequest] = this->worldComm().localComm().irecv( proc , 0, dataToRecv[proc] );
-            ++cptRequest;
+            int nRecvData = sizeRecv[proc];
+            dataToRecv[proc].resize( nRecvData );
+            if ( nRecvData > 0 )
+                reqs[cptRequest++] = this->worldComm().localComm().irecv( proc , 0, &(dataToRecv[proc][0]), nRecvData );
         }
     }
     //-----------------------------------------------------------//
     // wait all requests
-    mpi::wait_all(reqs, reqs + nbRequest);
+    mpi::wait_all(reqs, reqs + cptRequest);
     //-----------------------------------------------------------//
     // build the container to ReSend
     std::map<rank_type, std::vector<int> > dataToReSend;
@@ -3005,8 +3017,9 @@ ImporterGmsh<MeshType>::updateGhostCellInfo( mesh_type* mesh, std::map<int,int> 
     auto const enDataToReSend = dataToReSend.end();
     for ( ; itDataToReSend!=enDataToReSend ; ++itDataToReSend )
     {
-        reqs[cptRequest] = this->worldComm().localComm().isend( itDataToReSend->first , 0, itDataToReSend->second );
-        ++cptRequest;
+        int nSendData = itDataToReSend->second.size();
+        if ( nSendData > 0 )
+            reqs[cptRequest++] = this->worldComm().localComm().isend( itDataToReSend->first , 0, &(itDataToReSend->second[0]), nSendData );
     }
     //-----------------------------------------------------------//
     // recv the initial request
@@ -3015,12 +3028,14 @@ ImporterGmsh<MeshType>::updateGhostCellInfo( mesh_type* mesh, std::map<int,int> 
     for ( ; itDataToSend!=enDataToSend ; ++itDataToSend )
     {
         const rank_type idProc = itDataToSend->first;
-        reqs[cptRequest] = this->worldComm().localComm().irecv( idProc, 0, finalDataToRecv[idProc] );
-        ++cptRequest;
+        int nRecvData = itDataToSend->second.size();
+        finalDataToRecv[idProc].resize( nRecvData );
+        if ( nRecvData > 0 )
+            reqs[cptRequest++] = this->worldComm().localComm().irecv( idProc, 0, &(finalDataToRecv[idProc][0]), nRecvData );
     }
     //-----------------------------------------------------------//
     // wait all requests
-    mpi::wait_all(reqs, reqs + nbRequest);
+    mpi::wait_all(reqs, reqs + cptRequest);
     // delete reqs because finish comm
     delete [] reqs;
     //-----------------------------------------------------------//

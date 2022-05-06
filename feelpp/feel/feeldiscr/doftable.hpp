@@ -172,6 +172,7 @@ public:
     typedef typename mesh_type::edge_type edge_type;
     typedef typename mesh_type::gm_ptrtype gm_ptrtype;
     typedef typename mesh_type::gm_type gm_type;
+    using mesh_marker_type = typename element_type::marker_type;
 
     typedef typename fe_type::matrix_type matrix_type;
     typedef typename fe_type::value_type value_type;
@@ -369,7 +370,7 @@ public:
      */
     DofTable( mesh_type& mesh, fe_ptrtype const& _fe, periodicity_type const& periodicity, WorldComm const& _worldComm );
 
-    ~DofTable()
+    ~DofTable() override
         {
             M_el_l2g.clear();
             M_face_l2g.clear();
@@ -1208,7 +1209,7 @@ public:
                     int32_type sign = 1,
                     bool is_dof_periodic = false,
                     size_type shift = 0,
-                    Marker1 const& marker = Marker1( 0 ) )
+                    mesh_marker_type const& marker = mesh_marker_type{} )
         {
             bool res = true;
             const int ncdof = is_product?nComponents:1;
@@ -1260,7 +1261,8 @@ public:
                                     ie << "," << lc_dof << ")";
                                 //(Dof  itdof->second+shift, sign, is_dof_periodic, 0, 0, marker.value() ) ) );
 
-                                M_dof_marker.insert( dof2marker( itdof->second+shift+k,  marker.value() ) );
+                                if ( !marker.empty() )
+                                    M_dof_marker.insert( dof2marker( itdof->second+shift+k,  marker.value() ) );
                             }
                             M_ldof.setLocalDof( fe_type::nLocalDof*(nComponents1*c1+c1)+l_dof );
                             const int k = Feel::detail::symmetricIndex(c1,c1,nComponents1);
@@ -1268,7 +1270,8 @@ public:
                             auto res = M_el_l2g.insert( dof_relation( M_ldof, M_gdof ) );
                             DCHECK( res.second ) << "global dof " << itdof->second+shift+k << " not inserted in local dof (" <<
                                 ie << "," << lc_dof << ")";
-                            M_dof_marker.insert( dof2marker( itdof->second+shift+k,  marker.value() ) );
+                            if ( !marker.empty() )
+                                M_dof_marker.insert( dof2marker( itdof->second+shift+k,  marker.value() ) );
                         }
                     }
                     else
@@ -1281,7 +1284,8 @@ public:
                             //(Dof  itdof->second+shift, sign, is_dof_periodic, 0, 0, marker.value() ) ) );
                             DCHECK( res.second ) << "global dof " << itdof->second+shift << " not inserted in local dof (" <<
                                 ie << "," << lc_dof << ")";
-                            M_dof_marker.insert( dof2marker( itdof->second+shift+c,  marker.value() ) );
+                            if ( !marker.empty() )
+                                M_dof_marker.insert( dof2marker( itdof->second+shift+c,  marker.value() ) );
                         }
                     }
 
@@ -1505,8 +1509,8 @@ private:
     void generateDofPoints( ext_elements_t<mesh_type> const& range ) const;
 
 private:
-    void generateDofPoints( mesh_type& M, bool buildMinimalParallel, mpl::bool_<true> ) const;
-    void generateDofPoints( mesh_type& M, bool buildMinimalParallel, mpl::bool_<false> ) const;
+    //void generateDofPoints( mesh_type& M, bool buildMinimalParallel, mpl::bool_<true> ) const;
+    //void generateDofPoints( mesh_type& M, bool buildMinimalParallel, mpl::bool_<false> ) const;
 private:
 
     mesh_type* M_mesh;
@@ -2666,6 +2670,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildBoundaryDofMap( me
     toc( "DofTable::buildBoundaryDofMap", FLAGS_v>1 );
 }    // updateBoundaryDof
 
+#if 0
 template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
 void
 DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mesh_type& M, bool buildMinimalParallel ) const
@@ -2829,9 +2834,11 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mes
     DVLOG(2) << "[Dof::generateDofPoints] mortar case, generating dof coordinates done\n";
 
 }
+#endif
+
 template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
 void
-DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mesh_type& M, bool buildMinimalParallel, mpl::bool_<false> ) const
+DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mesh_type& M, bool buildMinimalParallel/*, mpl::bool_<false>*/ ) const
 {
     if ( M_hasBuiltDofPoints )// !M_dof_points.empty() )
         return;
@@ -2840,8 +2847,6 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mes
         return;
 
     DVLOG(2) << "[Dof::generateDofPoints] generating dof coordinates\n";
-    typedef typename gm_type::template Context<vm::POINT, element_type> gm_context_type;
-    typedef std::shared_ptr<gm_context_type> gm_context_ptrtype;
 
 #if 0
     auto rangeElements = M.elementsWithProcessId( M.worldComm().localRank() );
@@ -2856,10 +2861,23 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mes
     if ( it_elt == en_elt )
         return;
 
+    auto gm = M.gm();
     // Precompute some data in the reference element for
     // geometric mapping and reference finite element
-    typename gm_type::precompute_ptrtype __geopc( new typename gm_type::precompute_type( M.gm(), this->fe().points() ) );
-    gm_context_ptrtype __c( new gm_context_type( M.gm(), boost::unwrap_ref( *it_elt ), __geopc ) );
+    typename gm_type::precompute_ptrtype __geopc( new typename gm_type::precompute_type( gm, this->fe().points() ) );
+
+    using gm_context_type = typename gm_type::template Context<element_type>;
+    using gm_context_ptrtype = std::shared_ptr<gm_context_type>;
+    gm_context_ptrtype ctx = gm->template context<vm::POINT>( unwrap_ref( *it_elt ), __geopc );
+    gm_context_ptrtype mctx;
+    if constexpr( is_mortar )
+    {
+        mortar_fe_type mfe;
+        typename gm_type::precompute_ptrtype __mgeopc( new typename gm_type::precompute_type( gm, mfe.points() ) );
+        mctx = gm->template context<vm::POINT>( unwrap_ref( *it_elt ), __mgeopc );
+    }
+
+    gm_context_ptrtype ctxCurrent;
 
     for ( size_type dof_id = 0; it_elt!=en_elt ; ++it_elt )
     {
@@ -2880,8 +2898,17 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mes
                 continue;
         }
 
+        if constexpr( is_mortar )
+        {
+            if ( elt.isOnBoundary() )
+                ctxCurrent = mctx;
+            else
+                ctxCurrent = ctx;
+        }
+        else
+            ctxCurrent = ctx;
 
-        __c->update( elt );
+        ctxCurrent->template update<vm::POINT>( elt );
 
         for ( auto const& ldof : this->localDof( elt.id() ) )
         {
@@ -2903,12 +2930,12 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mes
                 if ( M_dof_points.find( thedof ) == M_dof_points.end() )
                 {
                     uint16_type c1 = this->fe().component( ldofId );
-                    M_dof_points[thedof] = boost::make_tuple( __c->xReal( ldofParentId ), thedof, c1 );
+                    M_dof_points[thedof] = boost::make_tuple( ctxCurrent->xReal( ldofParentId ), thedof, c1 );
                 }
 #if !defined( NDEBUG )
                 else if ( !isP0Continuous<fe_type>::result )
                 {
-                    auto dofpointFromGmc = __c->xReal( ldofParentId );
+                    auto dofpointFromGmc = ctxCurrent->xReal( ldofParentId );
                     auto dofpointStored = M_dof_points[thedof].template get<0>();
                     bool find2=true;
                     for (uint16_type d=0;d< nRealDim;++d)
@@ -2955,8 +2982,6 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generatePeriodicDofPoin
         return;
 
     DVLOG(2) << "[Dof::generateDofPoints] generating dof coordinates\n";
-    typedef typename gm_type::template Context<vm::POINT, element_type> gm_context_type;
-    typedef std::shared_ptr<gm_context_type> gm_context_ptrtype;
 
     typedef typename fe_type::template Context<vm::POINT, fe_type, gm_type, element_type> fecontext_type;
 
@@ -2976,14 +3001,14 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generatePeriodicDofPoin
     if ( it_elt == en_elt )
         return;
 
-    gm_context_ptrtype __c( new gm_context_type( gm, *it_elt->template get<0>(), __geopc ) );
+    auto __c = gm->template context<vm::POINT>( *it_elt->template get<0>(), __geopc );
 
     std::vector<bool> dof_done( periodic_dof_points.size() );
     std::fill( dof_done.begin(), dof_done.end(), false );
 
     for ( size_type dof_id = 0; it_elt!=en_elt ; ++it_elt )
     {
-        __c->update( *it_elt->template get<0>() );
+        __c->template update<vm::POINT>( *it_elt->template get<0>() );
 
         face_type const& __face = *it_elt->template get<1>();
 

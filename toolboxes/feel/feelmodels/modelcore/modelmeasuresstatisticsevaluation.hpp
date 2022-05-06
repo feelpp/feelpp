@@ -1,4 +1,5 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4*/
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+ */
 
 #ifndef FEELPP_TOOLBOXES_CORE_MEASURE_STATISTICS_EVALUATION_HPP
 #define FEELPP_TOOLBOXES_CORE_MEASURE_STATISTICS_EVALUATION_HPP 1
@@ -6,6 +7,8 @@
 #include <feel/feelvf/integrate.hpp>
 #include <feel/feelvf/mean.hpp>
 #include <feel/feelmodels/modelcore/traits.hpp>
+#include <feel/feelcore/tuple_utils.hpp>
+#include <feel/feelmodels/modelvf/evalonentities.hpp>
 
 namespace Feel
 {
@@ -15,7 +18,7 @@ namespace FeelModels
 template<typename RangeType, typename ExprType >
 void
 measureStatisticsEvaluationMinMax( RangeType const& range, ExprType const& expr,
-                                   ModelPostprocessStatistics const& ppStat,  std::map<std::string,double> & res,
+                                   ModelPostprocessStatistics const& ppStat,  ModelMeasuresStorage & res,
                                    std::string ppStatType, bool useQuadOrder = true )
 {
     //uint16_type quadOrder = (useQuadOrder)? ppStat.quadOrder() : quad_order_from_expression;
@@ -30,19 +33,19 @@ measureStatisticsEvaluationMinMax( RangeType const& range, ExprType const& expr,
     if ( ppStatType == "min" || ppStatType == "min-max" )
     {
         std::string statNameOutput = (boost::format("Statistics_%1%_min")%ppStat.name() ).str();
-        res[statNameOutput] = pmin;
+        res.setValue(statNameOutput, pmin);
     }
     if ( ppStatType == "max" || ppStatType == "min-max" )
     {
         std::string statNameOutput = (boost::format("Statistics_%1%_max")%ppStat.name() ).str();
-        res[statNameOutput] = pmax;
+        res.setValue(statNameOutput, pmax);
     }
 }
 
 template<typename RangeType, typename ExprType >
 void
 measureStatisticsEvaluationMean( RangeType const& range, ExprType const& expr,
-                                 ModelPostprocessStatistics const& ppStat,  std::map<std::string,double> & res,
+                                 ModelPostprocessStatistics const& ppStat,  ModelMeasuresStorage & res,
                                  bool useQuadOrder = true )
 {
     uint16_type quadOrder = (useQuadOrder)? ppStat.quadOrder() : quad_order_from_expression;
@@ -50,27 +53,13 @@ measureStatisticsEvaluationMean( RangeType const& range, ExprType const& expr,
 
     auto statComputed = mean(_range=range,_expr=expr, _quad=quadOrder,_quad1=quad1Order );
 
-    for ( int i=0;i<statComputed.rows() ;++i )
-        for ( int j=0;j<statComputed.cols() ;++j )
-        {
-            double val = statComputed(i,j);
-            std::string statNameOutput;
-            if ( statComputed.rows() == 1 && statComputed.cols() == 1 )
-                statNameOutput = (boost::format("Statistics_%1%_mean")%ppStat.name() ).str();
-            else if ( statComputed.rows() == 1 )
-                statNameOutput = (boost::format("Statistics_%1%_mean_%2%")%ppStat.name()%j ).str();
-            else if ( statComputed.cols() == 1 )
-                statNameOutput = (boost::format("Statistics_%1%_mean_%2%")%ppStat.name()%i ).str();
-            else
-                statNameOutput = (boost::format("Statistics_%1%_mean_%2%_%3%")%ppStat.name()%i%j ).str();
-            res[statNameOutput] = val;
-        }
+    res.setValue( fmt::format("Statistics_{}_mean", ppStat.name()), statComputed);
 }
 
 template<typename RangeType, typename ExprType >
 void
 measureStatisticsEvaluationIntegrate( RangeType const& range, ExprType const& expr,
-                                      ModelPostprocessStatistics const& ppStat,  std::map<std::string,double> & res,
+                                      ModelPostprocessStatistics const& ppStat, ModelMeasuresStorage & res,
                                       bool useQuadOrder = true )
 {
     uint16_type quadOrder = (useQuadOrder)? ppStat.quadOrder() : quad_order_from_expression;
@@ -78,27 +67,13 @@ measureStatisticsEvaluationIntegrate( RangeType const& range, ExprType const& ex
 
     auto statComputed = integrate(_range=range,_expr=expr, _quad=quadOrder,_quad1=quad1Order ).evaluate();
 
-    for ( int i=0;i<statComputed.rows() ;++i )
-        for ( int j=0;j<statComputed.cols() ;++j )
-        {
-            double val = statComputed(i,j);
-            std::string statNameOutput;
-             if ( statComputed.rows() == 1 && statComputed.cols() == 1 )
-                 statNameOutput = (boost::format("Statistics_%1%_integrate")%ppStat.name() ).str();
-             else if ( statComputed.rows() == 1 )
-                statNameOutput = (boost::format("Statistics_%1%_integrate_%2%")%ppStat.name()%j ).str();
-            else if ( statComputed.cols() == 1 )
-                statNameOutput = (boost::format("Statistics_%1%_integrate_%2%")%ppStat.name()%i ).str();
-            else
-                statNameOutput = (boost::format("Statistics_%1%_integrate_%2%_%3%")%ppStat.name()%i%j ).str();
-            res[statNameOutput] = val;
-        }
+    res.setValue( fmt::format("Statistics_{}_integrate",ppStat.name()), statComputed);
 }
-template<typename RangeType, typename SymbolsExpr, typename FieldTupleType >
+template<typename RangeType, typename SymbolsExpr, typename... FieldTupleType >
 void
 measureStatisticsEvaluation( RangeType const& range,
-                             ModelPostprocessStatistics const& ppStat,  std::map<std::string,double> & res,
-                             SymbolsExpr const& symbolsExpr, FieldTupleType const& fieldTuple )
+                             ModelPostprocessStatistics const& ppStat, ModelMeasuresStorage & res,
+                             SymbolsExpr const& symbolsExpr, FieldTupleType const& ... fieldTuple )
 {
     std::set<std::string> ppStatType;
     bool hasMin = false, hasMax = false;
@@ -120,22 +95,59 @@ measureStatisticsEvaluation( RangeType const& range,
 
     if ( ppStat.hasField() )
     {
-        hana::for_each( fieldTuple, [&]( auto const& e )
+        ( Feel::for_each( fieldTuple.tuple(), [&]( auto const& e )
                         {
-                            if ( ppStat.field() == e.first )
-                            {
-                                auto const& fieldFunc = e.second;
-                                for ( std::string const& statType : ppStatType )
+                            if constexpr ( is_iterable_v<decltype(e)> )
                                 {
-                                    if ( statType == "min" || statType == "max" || statType == "min-max"  )
-                                        measureStatisticsEvaluationMinMax( range, idv(fieldFunc), ppStat, res, statType, false );
-                                    else if ( statType == "mean" )
-                                        measureStatisticsEvaluationMean( range, idv(fieldFunc), ppStat, res, false );
-                                    else if ( statType == "integrate" )
-                                        measureStatisticsEvaluationIntegrate( range, idv(fieldFunc), ppStat, res, false );
+                                    for ( auto const& mfield : e )
+                                    {
+                                        std::string fieldName = mfield.nameWithPrefix();
+                                        auto const& fieldFunc = mfield.field();
+                                        if constexpr ( is_shared_ptr<decltype(fieldFunc)>::value )
+                                            {
+                                                if ( !fieldFunc )
+                                                    continue;
+                                            }
+                                        if ( ppStat.field() == fieldName )
+                                        {
+                                            mfield.applyUpdateFunction();
+                                            auto exprUsed = evalOnEntities( range,idv(fieldFunc),ppStat.requiresMarkersConnection(),ppStat.internalFacesEvalutationType() );
+                                            for ( std::string const& statType : ppStatType )
+                                            {
+                                                if ( statType == "min" || statType == "max" || statType == "min-max"  )
+                                                    measureStatisticsEvaluationMinMax( range, exprUsed, ppStat, res, statType, false );
+                                                else if ( statType == "mean" )
+                                                    measureStatisticsEvaluationMean( range, exprUsed, ppStat, res, false );
+                                                else if ( statType == "integrate" )
+                                                    measureStatisticsEvaluationIntegrate( range, exprUsed, ppStat, res, false );
+                                            }
+                                        }
+                                    }
                                 }
+                            else
+                            {
+#if 0
+                                if ( ppStat.field() == e.first )
+                                {
+                                    auto const& fieldFunc = e.second;
+                                    if constexpr ( is_shared_ptr<decltype(fieldFunc)>::value )
+                                        {
+                                            if ( !fieldFunc )
+                                                return;
+                                        }
+                                    for ( std::string const& statType : ppStatType )
+                                    {
+                                        if ( statType == "min" || statType == "max" || statType == "min-max"  )
+                                            measureStatisticsEvaluationMinMax( range, idv(fieldFunc), ppStat, res, statType, false );
+                                        else if ( statType == "mean" )
+                                            measureStatisticsEvaluationMean( range, idv(fieldFunc), ppStat, res, false );
+                                        else if ( statType == "integrate" )
+                                            measureStatisticsEvaluationIntegrate( range, idv(fieldFunc), ppStat, res, false );
+                                    }
+                                }
+#endif
                             }
-                        });
+                        }), ... );
     }
     else if ( ppStat.hasExpr() )
     {
@@ -155,34 +167,35 @@ measureStatisticsEvaluation( RangeType const& range,
                                 if ( exprGeneric.template hasExpr<i,j>() )
                                 {
                                     auto statExpr = expr( exprGeneric.expr<i,j>(), symbolsExpr );
+                                    auto exprUsed = evalOnEntities( range,statExpr,ppStat.requiresMarkersConnection(),ppStat.internalFacesEvalutationType() );
                                     if ( statType == "min" || statType == "max" || statType == "min-max"  )
-                                        measureStatisticsEvaluationMinMax( range, statExpr, ppStat, res, statType );
+                                        measureStatisticsEvaluationMinMax( range, exprUsed, ppStat, res, statType );
                                     else if ( statType == "mean" )
-                                        measureStatisticsEvaluationMean( range, statExpr, ppStat, res );
+                                        measureStatisticsEvaluationMean( range, exprUsed, ppStat, res );
                                     else if ( statType == "integrate" )
-                                        measureStatisticsEvaluationIntegrate( range, statExpr, ppStat, res );
+                                        measureStatisticsEvaluationIntegrate( range, exprUsed, ppStat, res );
                                 }
                             });
         }
     }
 }
 
-template<typename MeshType, typename RangeType, typename SymbolsExpr, typename FieldTupleType >
+template<typename MeshType, typename RangeType, typename SymbolsExpr, typename... FieldTupleType >
 void
 measureStatisticsEvaluation( std::shared_ptr<MeshType> const& mesh, RangeType const& defaultRange,
-                             ModelPostprocessStatistics const& ppStat,  std::map<std::string,double> & res,
-                             SymbolsExpr const& symbolsExpr, FieldTupleType const& fieldTuple )
+                             ModelPostprocessStatistics const& ppStat, ModelMeasuresStorage & res,
+                             SymbolsExpr const& symbolsExpr, FieldTupleType const& ... fieldTuple )
 {
     auto meshMarkers = ppStat.markers();
     if ( meshMarkers.empty() )
-        measureStatisticsEvaluation( defaultRange,ppStat,res,symbolsExpr,fieldTuple );
+        measureStatisticsEvaluation( defaultRange,ppStat,res,symbolsExpr,fieldTuple... );
     else
     {
         std::string firstMarker = *meshMarkers.begin();
         if ( mesh->hasElementMarker( firstMarker ) )
-            measureStatisticsEvaluation(  markedelements( mesh,ppStat.markers() ),ppStat,res,symbolsExpr,fieldTuple );
+            measureStatisticsEvaluation(  markedelements( mesh,ppStat.markers() ),ppStat,res,symbolsExpr,fieldTuple... );
         else if ( mesh->hasFaceMarker( firstMarker ) )
-            measureStatisticsEvaluation(  markedfaces( mesh,ppStat.markers() ),ppStat,res,symbolsExpr,fieldTuple );
+            measureStatisticsEvaluation(  markedfaces( mesh,ppStat.markers() ),ppStat,res,symbolsExpr,fieldTuple... );
         else if ( mesh->hasEdgeMarker( firstMarker ) || mesh->hasPointMarker( firstMarker ) )
             CHECK( false ) << "not implemented for edges/points";
         else if ( !mesh->hasMarker( firstMarker ) )

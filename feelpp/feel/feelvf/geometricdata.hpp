@@ -46,7 +46,8 @@
 
 
 #include <feel/feelvf/expr.hpp>
-
+#include <feel/feelvf/one.hpp>
+#include <feel/feelvf/cst.hpp>
 
 namespace Feel { namespace vf {
 
@@ -161,6 +162,15 @@ const size_type mctx = vm::MEASURE;
 #
 
 # /* Generates code for all binary operators and integral type pairs. */
+# define VF_ARRAY_GD_DECLARATION(_, O)  \
+    VF_ARRAY_GD_CODE_DECLARATION O     \
+   /**/
+
+#define VF_ARRAY_GD_CODE_DECLARATION(O)                                \
+    class VF_GD_NAME( O );                                             \
+    /**/
+
+# /* Generates code for all binary operators and integral type pairs. */
 # define VF_ARRAY_GD(_, O) \
       VF_ARRAY_GD_CODE O   \
    /**/
@@ -212,6 +222,60 @@ const size_type mctx = vm::MEASURE;
         constexpr uint16_type polynomialOrder() const { return VF_GD_IMORDER(O); } \
         constexpr bool isPolynomial() const { return true; }            \
                                                                         \
+        template <typename SymbolsExprType>                             \
+            this_type applySymbolsExpr( SymbolsExprType const& se ) const \
+        {                                                               \
+            return *this;                                               \
+        }                                                               \
+                                                                        \
+        template <typename TheSymbolExprType>                           \
+            bool hasSymbolDependency( std::string const& symb, TheSymbolExprType const& se ) const \
+        {                                                               \
+            if constexpr ( std::is_same_v<this_type,GDP> )              \
+                             return symb == "x" || symb == "y"  || symb == "z"; \
+            else if constexpr ( std::is_same_v<this_type,GDPx> )        \
+                                  return symb == "x";                   \
+            else if constexpr ( std::is_same_v<this_type,GDPy> )        \
+                                  return symb == "y";                   \
+            else if constexpr ( std::is_same_v<this_type,GDPz> )        \
+                                  return symb == "z";                   \
+            else                                                        \
+                return false;                                           \
+        }                                                               \
+                                                                        \
+        template <int diffOrder, typename TheSymbolExprType>            \
+            auto diff( std::string const& diffVariable, WorldComm const& world, std::string const& dirLibExpr, \
+                       TheSymbolExprType const& se ) const              \
+        {                                                               \
+            if constexpr ( std::is_same_v<this_type,GDP> )              \
+                {                                                       \
+                    if constexpr ( diffOrder == 1 )                     \
+                    {                                                   \
+                        std::set<ComponentType> oneComp;                \
+                        if ( diffVariable == "x" )                      \
+                            oneComp.insert( ComponentType::X );         \
+                        else if ( diffVariable == "y" )                 \
+                            oneComp.insert( ComponentType::Y );         \
+                        else if ( diffVariable == "z" )                 \
+                            oneComp.insert( ComponentType::Z );         \
+                        return Feel::vf::one( oneComp );                \
+                    }                                                   \
+                    else                                                \
+                        return Feel::vf::vector_zero();                 \
+                }                                                       \
+            else if constexpr ( std::is_same_v<this_type,GDPx> )        \
+                 return Feel::vf::cst( (diffOrder == 1 && diffVariable == "x")? value_type(1) : value_type(0) ); \
+            else if constexpr ( std::is_same_v<this_type,GDPy> )        \
+                 return Feel::vf::cst( (diffOrder == 1 && diffVariable == "y")? value_type(1) : value_type(0) ); \
+            else if constexpr ( std::is_same_v<this_type,GDPz> )       \
+                 return Feel::vf::cst( (diffOrder == 1 && diffVariable == "z")? value_type(1) : value_type(0) ); \
+            else                                                        \
+            {                                                           \
+                CHECK( false ) << "TODO";                               \
+                return *this;                                           \
+            }                                                           \
+        }                                                               \
+                                                                        \
         template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t> \
             struct tensor                                               \
         {                                                               \
@@ -244,10 +308,13 @@ const size_type mctx = vm::MEASURE;
                 :                                                       \
                 M_gmc( fusion::at_key<key_type>( geom ).get() )        \
                 {}                                                      \
-            template<typename IM>                                       \
-                void init( IM const& im )                               \
-            {                                                           \
-            }                                                           \
+            template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType> \
+            tensor( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse, \
+                        expression_type const& expr, Geo_t const& geom, const TheArgsType&... theInitArgs ) \
+                :                                                       \
+                tensor( expr, geom, theInitArgs... )                    \
+            {}                                                          \
+                                                                        \
             void update( Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ ) \
             {                                                           \
                 update( geom );                                         \
@@ -260,10 +327,11 @@ const size_type mctx = vm::MEASURE;
             {                                                           \
                 M_gmc = fusion::at_key<key_type>( geom ).get();        \
             }                                                           \
-            void update( Geo_t const& geom, uint16_type face )          \
+            template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType> \
+                void update( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse, \
+                             Geo_t const& geom, const TheArgsType&... theUpdateArgs ) \
             {                                                           \
-                /*BOOST_STATIC_ASSERT( dim_ok );*/                      \
-                update( geom );                                         \
+                this->update( geom );                                   \
             }                                                           \
             template<typename ... CTX>                                  \
             void updateContext( CTX const& ... ctx )                    \
@@ -323,6 +391,10 @@ const size_type mctx = vm::MEASURE;
 //
 // Generate the code
 //
+
+BOOST_PP_LIST_FOR_EACH_PRODUCT( VF_ARRAY_GD_DECLARATION, 1, ( VF_GD ) )
+BOOST_PP_LIST_FOR_EACH_PRODUCT( VF_ARRAY_GD_DECLARATION, 1, ( VF_GD2 ) )
+
 BOOST_PP_LIST_FOR_EACH_PRODUCT( VF_ARRAY_GD, 1, ( VF_GD ) )
 BOOST_PP_LIST_FOR_EACH_PRODUCT( VF_ARRAY_GD, 1, ( VF_GD2 ) )
 /// \endcond

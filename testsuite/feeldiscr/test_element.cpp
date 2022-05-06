@@ -35,9 +35,12 @@
 // give a name to the testsuite
 #define BOOST_TEST_MODULE element testsuite
 #include <feel/feelcore/testsuite.hpp>
-#include <feel/feel.hpp>
+#include <feel/feelcore/environment.hpp>
 
-
+#include <feel/feeldiscr/pch.hpp>
+#include <feel/feelalg/backend.hpp>
+#include <feel/feelfilters/unitsquare.hpp>
+#include <feel/feelvf/vf.hpp>
 FEELPP_ENVIRONMENT_NO_OPTIONS
 
 BOOST_AUTO_TEST_SUITE( element )
@@ -52,7 +55,7 @@ BOOST_AUTO_TEST_CASE( test_element_1 )
     auto u = Xh->element();
     u.setOnes();
     auto a = form2( _test=Xh, _trial=Xh );
-    a = integrate( elements(mesh), idt(u)*id(u));
+    a = integrate( _range=elements(mesh), _expr=idt(u)*id(u));
     a.close();
     auto v = backend()->newVector( Xh );
     auto w = backend()->newVector( Xh );

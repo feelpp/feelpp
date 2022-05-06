@@ -414,32 +414,22 @@ WorldComm::subWorldCommPtr()
 worldcomm_ptr_t 
 WorldComm::subWorldComm( int _color ) const
 {
-    //std::cout << " WorldComm::subWorldComm( int _color ) " << std::endl;
-
-    bool isActive;
     int myColor = this->mapColorWorld()[this->globalRank()];
-
-    if ( myColor==_color )
-        isActive=true;
-
-    else
-        isActive=false;
-
-    std::vector<int> newIsActive(this->godSize(),false);
-    if (isActive)
+    bool isActive = ( myColor == _color );
+    std::vector<int> newIsActive( this->godSize(), false );
+    if ( isActive )
+    {
+        for ( int p = 0; p < this->localSize(); ++p )
         {
-            for ( int p=0;p<this->localSize();++p)
-                {
-                    newIsActive[ mapGlobalRankToGodRank()[mapLocalRankToGlobalRank()[p]] ]=true;
-                }
+            newIsActive[mapGlobalRankToGodRank()[mapLocalRankToGlobalRank()[p]]] = true;
         }
+    }
 
     return std::make_shared<self_type>( this->localComm(),
                                         this->localComm(),
                                         this->godComm(),
                                         myColor,
                                         newIsActive );
-    
 }
 
 //-------------------------------------------------------------------------------
@@ -887,5 +877,16 @@ WorldComm::setColorMap( std::vector<int> const& colormap )
                      this->globalRank(),
                      M_mapLocalRankToGlobalRank );
 }
-
+std::tuple<int, worldcomm_ptr_t, worldcomm_ptr_t>
+WorldComm::split( int n ) const
+{
+    int color = this->rank() % n;
+    // create map which color the world
+    std::vector<int> mapColorWorld;
+    for ( int rank : irange( 0, this->size() ) )
+        mapColorWorld.push_back( rank % n );
+    worldcomm_ptr_t worldColored = std::make_shared<worldcomm_t>( mapColorWorld );
+    worldcomm_ptr_t w = worldColored->subWorldComm( color );
+    return std::tuple( color, w, worldColored );
+}
 } //namespace Feel

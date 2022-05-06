@@ -24,44 +24,55 @@
 #ifndef FEELPP_MODELMODELS_HPP
 #define FEELPP_MODELMODELS_HPP 1
 
-#include <boost/property_tree/ptree.hpp>
 #include <feel/feelcore/feel.hpp>
+#include <feel/feelcore/json.hpp>
 
 namespace Feel {
-
-namespace pt = boost::property_tree;
 
 class FEELPP_EXPORT ModelModel
 {
   public :
     ModelModel() = default;
-    ModelModel( pt::ptree const& p );
+    ModelModel( std::string const& type, std::string const& name, nl::json const& p = {} );
+    ModelModel( std::string const& type, nl::json const& p = {} ) : ModelModel( type, "", p ) {}
     ModelModel( ModelModel const& ) = default;
     ModelModel( ModelModel && ) = default;
-    pt::ptree const& ptree() const { return M_ptree; }
-    std::string const& equations() const { return M_equations; }
+    std::string type() const { return M_type; }
+    std::string const& name() const { return M_name; }
+    nl::json const& setup() const { return M_setup; }
+    std::map<std::string,std::set<std::string>> const& submodels() const { return M_submodels; }
+    std::set<std::string> const& materials() const { return M_materials; }
+
   private:
-    pt::ptree M_ptree;
-    std::string M_equations;
+    std::string M_type;
+    std::string M_name;
+    std::map<std::string,std::set<std::string>> M_submodels; // type -> ( name1,name2,..)
+    std::set<std::string> M_materials;
+    nl::json M_setup;
 };
 
-class FEELPP_EXPORT ModelModels : public std::map<std::string,ModelModel>
+class FEELPP_EXPORT ModelModelsSameType : public std::map<std::string,ModelModel>
+{
+  public:
+    ModelModelsSameType() = default;
+    ModelModelsSameType( ModelModelsSameType const& ) = default;
+    ModelModelsSameType( ModelModelsSameType && ) = default;
+
+    void setup( std::string type, nl::json const& jarg );
+};
+
+class FEELPP_EXPORT ModelModels : public std::map<std::string,ModelModelsSameType>
 {
   public :
-    ModelModels();
+    ModelModels() = default;
     ModelModels( ModelModels const& ) = default;
     ModelModels( ModelModels && ) = default;
-    pt::ptree const& pTree() const { return M_p; }
-    ModelModel const& model( std::string const& name = "" ) const;
-    bool hasModel( std::string const& name = "" ) const;
+    ModelModelsSameType const& models( std::string const& type ) const { CHECK( this->hasType( type ) ) << "no type registered"; return this->find( type )->second; }
+    bool hasType( std::string const& type ) const { return this->find( type ) != this->end(); }
 
-    void setPTree( pt::ptree const& _p ) { M_p = _p; setup(); }
+    void setPTree( nl::json const& jarg ) { this->setup(jarg); }
   private :
-    void setup();
-  private :
-    pt::ptree M_p;
-    bool M_useModelName;
-    ModelModel M_emptyModel;
+    void setup( nl::json const& jarg );
 };
 
 } // namespace Feel

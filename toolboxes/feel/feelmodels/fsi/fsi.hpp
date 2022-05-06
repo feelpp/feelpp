@@ -43,8 +43,10 @@ namespace FeelModels
 {
 
 template< class FluidType, class SolidType >
-class FSI : public ModelNumerical
+class FSI : public ModelNumerical,
+            public ModelPhysics<FluidType::convex_type::nRealDim>
 {
+    using super_physics_type = ModelPhysics<FluidType::convex_type::nRealDim>;
 public :
     typedef ModelNumerical super_type;
     typedef FSI<FluidType,SolidType> self_type;
@@ -58,7 +60,11 @@ public :
     typedef typename fluid_type::trace_mesh_type trace_mesh_fluid_type;
     typedef typename solid_type::mesh_type mesh_solid_type;
     typedef typename solid_type::trace_mesh_type trace_mesh_solid_type;
-    typedef typename solid_type::mesh_1dreduced_type mesh_solid_1dreduced_type;
+    typedef typename solid_type::solid_1dreduced_type::mesh_type mesh_solid_1dreduced_type;
+
+    // materials properties
+    typedef MaterialsProperties<fluid_type::mesh_type::nRealDim> materialsproperties_type;
+    typedef std::shared_ptr<materialsproperties_type> materialsproperties_ptrtype;
 
 
     // mesh velocity on FSI boundary
@@ -104,6 +110,7 @@ public :
         // space and element displacement with interaction 2d/2d or 3d/3d
     typedef typename fluid_type::mesh_ale_type::ale_map_functionspace_type space_fluid_disp_type;
     typedef typename fluid_type::mesh_ale_type::ale_map_element_type element_fluid_disp_type;
+    typedef typename fluid_type::mesh_ale_type::ale_map_element_ptrtype element_fluid_disp_ptrtype;
 
     typedef typename solid_type::space_displacement_type space_struct_disp_type;
     typedef typename solid_type::element_displacement_type element_struct_disp_type;
@@ -132,17 +139,17 @@ public :
                                   range_fluid_trace_elt_type/*range_fluid_face_type*/,InterpolationConforme> op_interpolation2dTo2dconf_velocity_type;
     typedef std::shared_ptr<op_interpolation2dTo2dconf_velocity_type> op_interpolation2dTo2dconf_velocity_ptrtype;
     
-    typedef OperatorInterpolation<space_struct_velocity_type, typename fluid_type::space_fluid_velocity_type,
+    typedef OperatorInterpolation<space_struct_velocity_type, typename fluid_type::space_velocity_type,
                                   range_fluid_face_type,InterpolationNonConforme> op_interpolation2dTo2dnonconf_velocityBis_type;
     typedef std::shared_ptr<op_interpolation2dTo2dnonconf_velocityBis_type> op_interpolation2dTo2dnonconf_velocityBis_ptrtype;
-    typedef OperatorInterpolation<space_struct_velocity_type, typename fluid_type::space_fluid_velocity_type,
+    typedef OperatorInterpolation<space_struct_velocity_type, typename fluid_type::space_velocity_type,
                                   range_fluid_face_type,InterpolationConforme> op_interpolation2dTo2dconf_velocityBis_type;
     typedef std::shared_ptr<op_interpolation2dTo2dconf_velocityBis_type> op_interpolation2dTo2dconf_velocityBis_ptrtype;
     
     //-----------------------------------------------------------------------------------//
     // space and element displacement with interaction 2d/1d (disp is scalar)
-    typedef typename solid_type::space_vect_1dreduced_type space_struct_vect_disp_1dreduced_type;
-    typedef typename solid_type::element_vect_1dreduced_type element_struct_vect_disp_1dreduced_type;
+    typedef typename solid_type::solid_1dreduced_type::space_displacement_type/*space_vect_1dreduced_type*/ space_struct_vect_disp_1dreduced_type;
+    typedef typename solid_type::solid_1dreduced_type::element_displacement_type/*element_vect_1dreduced_type*/ element_struct_vect_disp_1dreduced_type;
 
     //operator interpolation for this displacement
     typedef OperatorInterpolation<space_struct_vect_disp_1dreduced_type, space_fluid_disp_type,
@@ -154,8 +161,8 @@ public :
 
     //-----------------------------------------------------------------------------------//
     // space and element velocity with interaction 2d/1d (velocity is scalar)
-    typedef typename solid_type::space_vect_1dreduced_type space_struct_vect_velocity_1dreduced_type;
-    typedef typename solid_type::element_vect_1dreduced_type element_struct_vect_velocity_1dreduced_type;
+    typedef typename solid_type::solid_1dreduced_type::space_displacement_type/*space_vect_1dreduced_type*/ space_struct_vect_velocity_1dreduced_type;
+    typedef typename solid_type::solid_1dreduced_type::element_displacement_component_type/*element_vect_1dreduced_type*/ element_struct_vect_velocity_1dreduced_type;
 
     //operator interpolation for this velocity
     typedef OperatorInterpolation<space_struct_vect_velocity_1dreduced_type, space_fluid_meshvelocityonboundary_type/*space_fluid_velocity_type*/,
@@ -187,7 +194,7 @@ public :
     typedef std::shared_ptr<op_s2f_interpolation2dTo2dconf_stress_type> op_s2f_interpolation2dTo2dconf_stress_ptrtype;
 
     //typedef typename fluid_type::space_fluid_velocity_type space_fluid_velocity_type;
-    typedef OperatorInterpolation<typename fluid_type::space_fluid_velocity_type/*space_fluid_velocity_type*/,space_struct_velocity_type,
+    typedef OperatorInterpolation<typename fluid_type::space_velocity_type/*space_fluid_velocity_type*/,space_struct_velocity_type,
                                   range_solid_face_type,InterpolationConforme> op_f2s_interpolation2dTo2dconf_velocity_type;
     typedef std::shared_ptr<op_f2s_interpolation2dTo2dconf_velocity_type> op_f2s_interpolation2dTo2dconf_velocity_ptrtype;
 
@@ -213,11 +220,13 @@ public :
 
     //---------------------------------------------------------------------------------------------------------//
 
-    FSI( std::string const& prefix, worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
-         std::string const& rootRepository = "" );
+    FSI( std::string const& prefix,
+         std::string const& keyword = "fsi",
+         worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
+         ModelBaseRepository const& modelRep = ModelBaseRepository() );
     FSI( self_type const & M ) = default;
 
-    static std::string expandStringFromSpec( std::string const& expr );
+    std::shared_ptr<self_type> shared_from_this() { return std::dynamic_pointer_cast<self_type>( super_type::shared_from_this() ); }
 
     //---------------------------------------------------------------------------------------------------------//
 
@@ -245,7 +254,8 @@ public :
 
     //---------------------------------------------------------------------------------------------------------//
 
-    std::shared_ptr<std::ostringstream> getInfo() const override;
+    void updateInformationObject( nl::json & p ) const override;
+    tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
 
     //---------------------------------------------------------------------------------------------------------//
 
@@ -253,6 +263,8 @@ public :
     void init();
     void solve();
 private :
+    void updatePhysics( typename super_physics_type::PhysicsTreeNode & physicsTree, ModelModels const& models ) override;
+
     void initCouplingRobinNeumannGeneralized();
 
     void initInterpolation();
@@ -281,7 +293,7 @@ private :
 
 
     double couplingRNG_coeffForm2() const { return M_couplingRNG_coeffForm2; }
-    typename fluid_type::space_fluid_velocity_type::element_ptrtype/*element_meshvelocityonboundary_ptrtype*/ const& couplingRNG_evalForm1() const { return M_couplingRNG_evalForm1; }
+    typename fluid_type::space_velocity_type::element_ptrtype/*element_meshvelocityonboundary_ptrtype*/ const& couplingRNG_evalForm1() const { return M_couplingRNG_evalForm1; }
 
     auto
     couplingRNG_operatorExpr( mpl::int_<2> /**/ ) const
@@ -313,6 +325,15 @@ public :
         this->solidModel()->exportResults(time);
     }
 
+
+    void updateParameterValues();
+    void setParameterValues( std::map<std::string,double> const& paramValues );
+
+    // physical parameters
+    materialsproperties_ptrtype const& materialsProperties() const { return M_materialsProperties; }
+    materialsproperties_ptrtype & materialsProperties() { return M_materialsProperties; }
+    void setMaterialsProperties( materialsproperties_ptrtype mp ) { M_materialsProperties = mp; }
+
     //---------------------------------------------------------------------------------------------------------//
     void updateLinearPDE_Fluid( DataUpdateLinear & data ) const;
     void updateJacobian_Fluid( DataUpdateJacobian & data ) const;
@@ -341,6 +362,8 @@ private :
 
     fluid_ptrtype M_fluidModel;
     solid_ptrtype M_solidModel;
+
+    materialsproperties_ptrtype M_materialsProperties;
 
     double M_meshSize;
     fs::path M_mshfilepathFluidPart1,M_mshfilepathSolidPart1;
@@ -371,11 +394,10 @@ private :
     double M_couplingNitscheFamily_gamma, M_couplingNitscheFamily_gamma0, M_couplingNitscheFamily_alpha;
 
     double M_couplingRNG_coeffForm2;
-    typename fluid_type::space_fluid_velocity_type::element_ptrtype/*element_meshvelocityonboundary_ptrtype*/ M_couplingRNG_evalForm1;
-    typename fluid_type::space_fluid_velocity_type::element_ptrtype/*element_meshvelocityonboundary_ptrtype*/ M_coulingRNG_operatorDiagonalOnFluid;
+    typename fluid_type::space_velocity_type::element_ptrtype/*element_meshvelocityonboundary_ptrtype*/ M_couplingRNG_evalForm1;
+    typename fluid_type::space_velocity_type::element_ptrtype/*element_meshvelocityonboundary_ptrtype*/ M_coulingRNG_operatorDiagonalOnFluid;
     sparse_matrix_ptrtype M_coulingRNG_matrixTimeDerivative, M_coulingRNG_matrixStress;
     vector_ptrtype M_coulingRNG_vectorTimeDerivative,  M_coulingRNG_vectorStress;
-    bool M_coulingRNG_usePrecomputeBC;
     std::string M_coulingRNG_strategyTimeStepCompatibility;
 
     op_interpolation2dTo2dnonconf_disp_ptrtype M_opDisp2dTo2dnonconf;
@@ -453,6 +475,7 @@ private :
 
     std::set<size_type> M_dofsMultiProcessVelocitySpaceOnFSI_fluid;
 
+    element_fluid_disp_ptrtype M_meshDisplacementOnInterface_fluid;
 };
 
 } // namespace FeelModels

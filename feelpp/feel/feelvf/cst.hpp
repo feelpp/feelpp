@@ -73,6 +73,10 @@ public:
 
     typedef Cst<T> expression_type;
 
+    Cst() : M_constant( 0 )
+    {
+        //DVLOG(2) << "Cst::Cst( default ) : constant value: " << M_constant << "\n";
+    }
     constexpr explicit Cst( const T& value )
         :
         M_constant( value )
@@ -80,7 +84,7 @@ public:
     }
     constexpr explicit Cst( T&& value )
         :
-        M_constant( std::move(value) )
+        M_constant( std::forward<T>(value) )
         {
         }
 
@@ -131,7 +135,28 @@ public:
     typename Lambda<TheExpr...>::type
     operator()( TheExpr... e  ) { return typename Lambda<TheExpr...>::type(M_constant); }
 
-    void setParameterValues( std::map<std::string,value_type> const& mp ) {}
+    // void setParameterValues( std::map<std::string,value_type> const& mp ) {}
+
+    template <typename SymbolsExprType>
+    expression_type applySymbolsExpr( SymbolsExprType const& se ) const
+        {
+            return *this;
+        }
+
+    // template <typename TheSymbolExprType>
+    // bool hasSymbolDependency( std::string const& symb, TheSymbolExprType const& se ) const { return false; }
+    // template <typename TheSymbolExprType>
+    // void dependentSymbols( std::string const& symb, std::map<std::string,std::set<std::string>> & res, TheSymbolExprType const& se ) const {}
+
+    template <int diffOrder, typename TheSymbolExprType>
+    auto diff( std::string const& diffVariable, WorldComm const& world, std::string const& dirLibExpr,
+               TheSymbolExprType const& se ) const
+    {
+        return expression_type(0);
+    }
+
+
+
 
     template<typename Geo_t, typename Basis_i_t=mpl::void_, typename Basis_j_t = Basis_i_t>
     struct tensor
@@ -173,10 +198,13 @@ public:
             M_constant( expr.value_ref() )
         {
         }
-        template<typename IM>
-        void init( IM const& /*im*/ )
-        {
-        }
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        tensor( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                expression_type const& expr, Geo_t const& geom, const TheArgsType&... theInitArgs )
+            :
+            tensor( expr, geom, theInitArgs... )
+            {}
+
         void update( Geo_t const&, Basis_i_t const& , Basis_j_t const&  )
         {
         }
@@ -186,13 +214,15 @@ public:
         void update( Geo_t const& )
         {
         }
-        void update( Geo_t const&, uint16_type )
-        {
-        }
         template<typename ... CTX>
         void updateContext( CTX const& ... ctx )
         {
         }
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        void update( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                     Geo_t const& geom, const TheArgsType&... theUpdateArgs )
+            {}
+
 
         constexpr value_type
         evalij( uint16_type /*i*/, uint16_type /*j*/ ) const
@@ -228,10 +258,6 @@ public:
     };
 
 protected:
-    Cst() : M_constant( 0 )
-    {
-        //DVLOG(2) << "Cst::Cst( default ) : constant value: " << M_constant << "\n";
-    }
 
     const T M_constant;
 };

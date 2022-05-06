@@ -6,17 +6,35 @@ INSTALL( FILES ${CMAKE_CURRENT_BINARY_DIR}/feelmodelscoreconstconfig.hpp DESTINA
 #############################################################################
 #############################################################################
 
+
+set( FEELPP_TOOLBOXES_CORE_SRC  options.cpp log.cpp timertool.cpp
+  modelbase.cpp modelalgebraic.cpp modelnumerical.cpp modelphysics.cpp modelgenericpde.cpp modelmeshes.cpp
+  modelalgebraicfactory.cpp markermanagement.cpp modelmeasures.cpp genericboundaryconditions.cpp )
+
+if( FEELPP_MODELS_HAS_MESHALE )
+  # harmonic extension src
+  if( FEELPP_TOOLBOXES_HAS_MESHALE_HARMONICEXTENSION )
+    list(APPEND FEELPP_TOOLBOXES_CORE_SRC ../modelmesh/harmonicextension.cpp )
+  endif()
+  # winslow src
+  if( FEELPP_TOOLBOXES_HAS_MESHALE_WINSLOW )
+    list(APPEND FEELPP_TOOLBOXES_CORE_SRC  ../modelmesh/winslow_inst2d.cpp ../modelmesh/winslow_inst3d.cpp )
+  endif()
+
+  # lib src
+  list(APPEND FEELPP_TOOLBOXES_CORE_SRC  ../modelmesh/ale2d.cpp ../modelmesh/ale3d.cpp )
+endif()
+
 add_library(feelpp_modelcore
   SHARED
-  options.cpp log.cpp timertool.cpp
-  modelbase.cpp modelalgebraic.cpp modelnumerical.cpp
-  markermanagement.cpp modelmeasures.cpp
+  ${FEELPP_TOOLBOXES_CORE_SRC}
   )
 target_link_libraries(feelpp_modelcore Feelpp::feelpp)
 add_library(Feelpp::feelpp_modelcore ALIAS feelpp_modelcore )  # to match exported target
 set_target_properties(feelpp_modelcore PROPERTIES OUTPUT_NAME "feelpp_modelcore")
 target_include_directories(feelpp_modelcore PUBLIC
   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
+  $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>
   $<INSTALL_INTERFACE:include/feelpp/toolboxes>  )
 set_property(TARGET feelpp_modelcore PROPERTY MACOSX_RPATH ON)
 if( FEELPP_ENABLE_PCH_MODELS )

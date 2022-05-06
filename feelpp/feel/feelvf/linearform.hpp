@@ -34,9 +34,6 @@
 #include <Eigen/Eigen>
 #include <Eigen/StdVector>
 
-#include <boost/fusion/support/pair.hpp>
-#include <boost/fusion/container.hpp>
-#include <boost/fusion/sequence.hpp>
 #include <boost/fusion/algorithm.hpp>
 #include <boost/multi_array.hpp>
 #include <feel/feelvf/block.hpp>
@@ -209,10 +206,12 @@ public:
                                   mpl::identity<typename space_type::fe_type> >::type::type test_fe_type;
         typedef test_fe_type trial_fe_type;
         typedef std::shared_ptr<test_fe_type> test_fe_ptrtype;
-        typedef typename test_fe_type::template Context< test_geometric_mapping_context_type::context,
-                test_fe_type,
-                test_geometric_mapping_type,
-                mesh_element_type> test_fecontext_type;
+        typedef typename test_fe_type::template Context< expression_type::context, // test_geometric_mapping_context_type::context,
+                                                         test_fe_type,
+                                                         test_geometric_mapping_type,
+                                                         mesh_element_type,
+                                                         0,
+                                                         test_geometric_mapping_context_type::subEntityCoDim > test_fecontext_type;
         typedef test_fecontext_type trial_fecontext_type;
 
 #if 0

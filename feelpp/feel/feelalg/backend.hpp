@@ -6,6 +6,7 @@
        Date: 2007-12-23
 
   Copyright (C) 2007-2012 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2011-present Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -26,11 +27,10 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2007-12-23
  */
-#ifndef Backend_H
-#define Backend_H 1
+#ifndef FEELPP_ALG_BACKEND_H
+#define FEELPP_ALG_BACKEND_H 1
 
 #include <functional>
-#include <boost/timer.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/tuple/tuple_comparison.hpp>
 #include <boost/fusion/include/fold.hpp>
@@ -56,17 +56,6 @@
 #include <feel/feelalg/matrixshell.hpp>
 #include <feel/feelalg/matrixshellsparse.hpp>
 
-
-
-//#include <feel/feelvf/vf.hpp>
-//#include <boost/fusion/support/pair.hpp>
-//#include <boost/fusion/container.hpp>
-//#include <boost/fusion/sequence.hpp>
-//#include <boost/fusion/algorithm.hpp>
-
-//namespace fusion = boost::fusion;
-
-//#include <feel/feelvf/bilinearform.hpp>
 #include <feel/feelvf/pattern.hpp>
 #include <feel/feelvf/block.hpp>
 
@@ -149,7 +138,7 @@ public:
     BackendBase( worldcomm_ptr_t const& w ) : super( w ) {}
     BackendBase( BackendBase const& ) = default;
     BackendBase( BackendBase && ) = default;
-    virtual ~BackendBase() = default;
+    ~BackendBase() override = default;
 };
 /**
  * \class Backend
@@ -212,7 +201,7 @@ public:
     Backend( po::variables_map const& vm, std::string const& prefix = "", worldcomm_ptr_t const& worldComm=Environment::worldCommPtr() );
     Backend( Backend const& ) = default;
     Backend( Backend && ) = default;
-    virtual ~Backend();
+    ~Backend() override;
 
 
     /**
@@ -235,7 +224,7 @@ public:
      * \param worldcomm the communicator
      * \return the backend
      */
-    static backend_ptrtype build( std::string const& kind, std::string const& prefix = "", worldcomm_ptr_t const& worldComm=Environment::worldCommPtr() );
+    static backend_ptrtype build( std::string const& kind, std::string const& prefix = "", worldcomm_ptr_t const& worldComm=Environment::worldCommPtr(), po::variables_map const& vm = Environment::vm() );
 
 
     static FEELPP_DEPRECATED backend_ptrtype build( po::variables_map const& vm, std::string const& prefix = "", worldcomm_ptr_t const& worldComm=Environment::worldCommPtr() );
@@ -362,25 +351,38 @@ public:
 
     virtual sparse_matrix_ptrtype newZeroMatrix( datamap_ptrtype const& dm1, datamap_ptrtype const& dm2 ) = 0;
 
+    virtual sparse_matrix_ptrtype newIdentityMatrix( datamap_ptrtype const& dm1, datamap_ptrtype const& dm2 )
+    {
+        CHECK( false ) << "Not Implemented in base class!";
+        return sparse_matrix_ptrtype{};
+    }
+
     /**
      * helper function
      */
-    BOOST_PARAMETER_MEMBER_FUNCTION( ( sparse_matrix_ptrtype ),
-                                     newMatrix,
-                                     tag,
-                                     ( required
-                                       ( trial,*( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
-                                       ( test,*( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) ) )
-                                     ( optional
-                                       ( pattern,( size_type ),Pattern::COUPLED )
-                                       ( properties,( size_type ),NON_HERMITIAN )
-                                       ( buildGraphWithTranspose, ( bool ),false )
-                                       ( pattern_block,    *, ( BlocksStencilPattern(1,1,size_type( Pattern::HAS_NO_BLOCK_PATTERN ) ) ) )
-                                       ( diag_is_nonzero,  *( boost::is_integral<mpl::_> ), true )
-                                       ( verbose,   ( bool ), boption(_prefix=this->prefix(),_name="backend.verbose") )
-                                       ( collect_garbage, *( boost::is_integral<mpl::_> ), true )
-                                     ) )
+    template <typename TrialType,typename TestType>
+        sparse_matrix_ptrtype newMatrix( NA::arguments<
+                                         typename na::trial::template required_as_t<std::shared_ptr<TrialType>>,
+                                         typename na::test::template required_as_t<std::shared_ptr<TestType>>,
+                                         typename na::pattern::template required_as_t<size_type>,
+                                         typename na::properties::template required_as_t<size_type>,
+                                         typename na::buildGraphWithTranspose::template required_as_t<bool>,
+                                         typename na::pattern_block::template required_as_t<BlocksStencilPattern const&>,
+                                         typename na::diag_is_nonzero::template required_as_t<bool>,
+                                         typename na::verbose::template required_as_t<bool>,
+                                         typename na::collect_garbage::template required_as_t<bool>
+                                         > && args )
     {
+        auto && trial = args.get(_trial);
+        auto && test = args.get(_test);
+        size_type pattern = args.get(_pattern);
+        size_type properties = args.get(_properties);
+        bool buildGraphWithTranspose = args.get(_buildGraphWithTranspose);
+        BlocksStencilPattern const& pattern_block = args.get(_pattern_block);
+        bool diag_is_nonzero = args.get(_diag_is_nonzero);
+        bool verbose = args.get(_verbose);
+        bool collect_garbage = args.get(_collect_garbage);
+
         if ( verbose )
         {
             Environment::logMemoryUsage( "backend::newMatrix begin" );
@@ -452,6 +454,27 @@ public:
         return mat;
     }
 
+    template <typename ... Ts,typename  = typename std::enable_if_t< sizeof...(Ts) != 0 && ( NA::is_named_argument_v<Ts> && ...) > >
+        sparse_matrix_ptrtype newMatrix( Ts && ... v )
+    {
+        auto args = NA::make_arguments( std::forward<Ts>(v)... )
+            .add_default_arguments( NA::make_default_argument( _pattern, Pattern::COUPLED ),
+                                    NA::make_default_argument( _properties, NON_HERMITIAN ),
+                                    NA::make_default_argument( _buildGraphWithTranspose, false ),
+                                    NA::make_default_argument( _pattern_block, BlocksStencilPattern(1,1,size_type( Pattern::HAS_NO_BLOCK_PATTERN )) ),
+                                    NA::make_default_argument( _diag_is_nonzero, true ),
+                                    NA::make_default_argument( _verbose, M_verbose ),
+                                    NA::make_default_argument( _collect_garbage, true )
+                                    );
+
+
+        using trial_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype( args.get(_trial) )>>>;
+        using test_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype( args.get(_test) )>>>;
+
+        return newMatrix<trial_type,test_type>( std::move( args ) );
+    }
+
+
     template<typename DomainSpace, typename ImageSpace>
     sparse_matrix_ptrtype newMatrix( DomainSpace const& dm, ImageSpace const& im, sparse_matrix_ptrtype const& M, size_type prop = NON_HERMITIAN  )
     {
@@ -511,18 +534,13 @@ public:
     /**
      * instantiate a new block matrix sparse
      */
-    BOOST_PARAMETER_MEMBER_FUNCTION( ( sparse_matrix_ptrtype ),
-                                     newBlockMatrix,
-                                     tag,
-                                     ( required
-                                       ( block,* )
-                                     )
-                                     ( optional
-                                       ( copy_values,*( boost::is_integral<mpl::_> ),true )
-                                       ( diag_is_nonzero,  *( boost::is_integral<mpl::_> ), true )
-                                     )
-                                   )
+    template <typename ... Ts>
+    sparse_matrix_ptrtype newBlockMatrix( Ts && ... v )
     {
+        auto args = NA::make_arguments( std::forward<Ts>(v)... );
+        auto && block = args.get(_block );
+        bool copy_values = args.get_else( _copy_values, true );
+        bool diag_is_nonzero = args.get_else( _diag_is_nonzero, true );
         return newBlockMatrixImpl( block,copy_values,diag_is_nonzero );
     }
 
@@ -540,17 +558,12 @@ public:
     /**
      * instantiate a new block matrix sparse
      */
-    BOOST_PARAMETER_MEMBER_FUNCTION( ( vector_ptrtype ),
-                                     newBlockVector,
-                                     tag,
-                                     ( required
-                                       ( block,* )
-                                     )
-                                     ( optional
-                                       ( copy_values,*( boost::is_integral<mpl::_> ),true )
-                                     )
-                                   )
+    template <typename ... Ts>
+    vector_ptrtype newBlockVector( Ts && ... v )
     {
+        auto args = NA::make_arguments( std::forward<Ts>(v)... );
+        auto && block = args.get(_block );
+        bool copy_values = args.get_else( _copy_values, true );
         return newBlockVectorImpl( block,copy_values );
     }
 
@@ -558,15 +571,12 @@ public:
     /**
      * instantiate a new zero matrix
      */
-    BOOST_PARAMETER_MEMBER_FUNCTION( ( sparse_matrix_ptrtype ),
-                                     newZeroMatrix,
-                                     tag,
-                                     ( required
-                                       ( test,*( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> >) )
-                                       ( trial,*( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> >) )
-                                     )
-                                   )
+    template <typename ... Ts,typename  = typename std::enable_if_t< sizeof...(Ts) == 2 && ( NA::is_named_argument_v<Ts> && ...) > >
+    sparse_matrix_ptrtype newZeroMatrix( Ts && ... v )
     {
+        auto args = NA::make_arguments( std::forward<Ts>(v)... );
+        auto && test = args.get(_test );
+        auto && trial = args.get(_trial );
         return this->newZeroMatrix( trial->dofOnOff(), test->dofOn() );
     }
 
@@ -583,18 +593,18 @@ public:
     /**
      * helper function
      */
-    BOOST_PARAMETER_MEMBER_FUNCTION( ( vector_ptrtype ),
-                                     newVector,
-                                     tag,
-                                     ( required
-                                       ( test,*( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> >) )
-                                     )
-                                   )
+    template <typename ... Ts,typename  = typename std::enable_if_t< sizeof...(Ts) != 0 && ( NA::is_named_argument_v<Ts> && ...) > >
+    vector_ptrtype newVector( Ts && ... v )
     {
-        if ( !this->comm().isActive() ) return vector_ptrtype();
-
+        auto args = NA::make_arguments( std::forward<Ts>(v)... );
+        auto && test = args.get(_test );
+        if ( !this->comm().isActive() )
+            return vector_ptrtype();
         return this->newVector( test->dof() );
     }
+
+    template <typename SpaceType,typename = typename std::enable_if_t< std::is_base_of_v<FunctionSpaceBase,SpaceType>>>
+    vector_ptrtype newVector( std::shared_ptr<SpaceType> space ) { return this->newVector(_test=space ); }
 
     //@}
 
@@ -840,36 +850,28 @@ public:
      * set tolerances: relative tolerance \p rtol, divergence tolerance \p dtol
      * and absolute tolerance \p atol
      */
-    BOOST_PARAMETER_MEMBER_FUNCTION( ( void ),
-                                     setTolerances,
-                                     tag,
-                                     ( required
-                                       ( rtolerance, ( real_type ) )
-                                     )
-                                     ( optional
-                                       ( maxit,      ( size_type ), 1000 )
-                                       ( atolerance, ( real_type ),    1e-50 )
-                                       ( dtolerance, ( real_type ),    1e5 )
-                                     ) )
+    template <typename ... Ts>
+    void setTolerances( Ts && ... v )
     {
+        auto args = NA::make_arguments( std::forward<Ts>(v)... );
+        real_type rtolerance = args.get(_rtolerance );
+        size_type maxit = args.get_else( _maxit, 1000 );
+        real_type atolerance = args.get_else( _atolerance, 1e-50 );
+        real_type dtolerance = args.get_else( _dtolerance, 1e5 );
         M_rtolerance = rtolerance;
         M_dtolerance = dtolerance;
         M_atolerance = atolerance;
         M_maxitKSP = maxit;
     }
 
-    BOOST_PARAMETER_MEMBER_FUNCTION( ( void ),
-                                     setTolerancesSNES,
-                                     tag,
-                                     ( required
-                                       ( rtolerance, ( double ) )
-                                     )
-                                     ( optional
-                                       ( maxit,      ( size_type ), 50 )
-                                       ( atolerance, ( double ),    1e-50 )
-                                       ( stolerance, ( double ),    1e-8 )
-                                     ) )
+    template <typename ... Ts>
+    void setTolerancesSNES( Ts && ... v )
     {
+        auto args = NA::make_arguments( std::forward<Ts>(v)... );
+        real_type rtolerance = args.get(_rtolerance );
+        size_type maxit = args.get_else( _maxit, 50 );
+        real_type atolerance = args.get_else( _atolerance, 1e-50 );
+        real_type stolerance = args.get_else( _stolerance, 1e-8 );
         M_rtoleranceSNES = rtolerance;
         M_stoleranceSNES = stolerance;
         M_atoleranceSNES = atolerance;
@@ -879,18 +881,14 @@ public:
     /**
      * set solver: krylov subspace method and preconditioners
      */
-    BOOST_PARAMETER_MEMBER_FUNCTION( ( void ),
-                                     setSolverType,
-                                     tag,
-                                     ( required
-                                       ( ksp, ( std::string ) )
-                                     )
-                                     ( optional
-                                       ( pc,      ( std::string ), "lu" )
-                                       ( constant_null_space,      ( bool ), false )
-                                       ( pcfactormatsolverpackage,  ( std::string ), "petsc" )
-                                     ) )
+    template <typename ... Ts>
+    void setSolverType( Ts && ... v )
     {
+        auto args = NA::make_arguments( std::forward<Ts>(v)... );
+        std::string const& ksp = args.get(_ksp );
+        std::string const& pc = args.get_else( _pc, "lu" );
+        bool constant_null_space = args.get_else( _constant_null_space, false );
+        std::string const& pcfactormatsolverpackage = args.get_else( _pcfactormatsolverpackage, "petsc" );
         M_ksp = ksp;
         M_pc = pc;
         M_pcFactorMatSolverPackage = pcfactormatsolverpackage;
@@ -1032,37 +1030,32 @@ public:
      *
      * \warning some parameter may not be meaningful for all backends
      */
-    BOOST_PARAMETER_MEMBER_FUNCTION( ( solve_return_type ),
-                                     solve,
-                                     tag,
-                                     ( required
-                                       //( matrix,*(mpl::or_<sparse_matrix_ptrtype,shell_matrix_ptrtype>) )
-                                       ( matrix,(sparse_matrix_ptrtype) )
-                                       //( in_out( solution ),*( mpl::or_<mpl::or_<boost::is_convertible<mpl::_,vector_type&>,boost::is_convertible<mpl::_,vector_type> >,boost::is_convertible<mpl::_,vector_ptrtype> > ) )
-                                       ( in_out( solution ),* )
-                                       ( rhs,( vector_ptrtype ) ) )
-                                     ( optional
-                                       //(prec,(sparse_matrix_ptrtype), matrix )
-                                       ( prec,( preconditioner_ptrtype ), preconditioner_ptrtype() )
-                                       ( null_space,( NullSpace<value_type> ), NullSpace<value_type>() )
-                                       ( near_null_space,( NullSpace<value_type> ), NullSpace<value_type>() )
-                                       ( maxit,( size_type ), M_maxitKSP/*1000*/ )
-                                       ( rtolerance,( double ), M_rtolerance/*1e-13*/ )
-                                       ( atolerance,( double ), M_atolerance/*1e-50*/ )
-                                       ( dtolerance,( double ), M_dtolerance/*1e5*/ )
-                                       ( reuse_prec,( bool ), M_reuse_prec )
-                                       ( transpose,( bool ), false )
-                                       ( close,( bool ), true )
-                                       ( constant_null_space,( bool ), M_constant_null_space/*false*/ )
-                                       ( pre, (pre_solve_type), pre_solve_type() )
-                                       ( post, (post_solve_type), post_solve_type() )
-                                       ( pc,( std::string ),M_pc/*"lu"*/ )
-                                       ( ksp,( std::string ),M_ksp/*"gmres"*/ )
-                                       ( pcfactormatsolverpackage,( std::string ), M_pcFactorMatSolverPackage )
-                                       ( verbose,   ( bool ), boption(_prefix=this->prefix(),_name="backend.verbose") )
-                                     )
-                                   )
+    template <typename ... Ts,typename = typename std::enable_if_t< sizeof...(Ts) != 0 && ( NA::is_named_argument_v<Ts> && ...) > >
+    solve_return_type solve( Ts && ... v )
     {
+        auto args = NA::make_arguments( std::forward<Ts>(v)... );
+        sparse_matrix_ptrtype matrix = args.get(_matrix);
+        auto && solution = args.get(_solution);
+        vector_ptrtype rhs = args.get(_rhs);
+        preconditioner_ptrtype prec = args.get_else(_prec,preconditioner_ptrtype{});
+        NullSpace<value_type> const& null_space = args.get_else_invocable(_null_space,[](){ return NullSpace<value_type>{}; } );
+        NullSpace<value_type> const& near_null_space = args.get_else_invocable(_near_null_space,[](){ return NullSpace<value_type>{}; } );
+        size_type maxit = args.get_else(_maxit,M_maxitKSP );
+        double rtolerance = args.get_else(_rtolerance,M_rtolerance );
+        double atolerance = args.get_else(_atolerance,M_atolerance );
+        double dtolerance = args.get_else(_dtolerance,M_dtolerance );
+        bool reuse_prec = args.get_else(_reuse_prec, M_reuse_prec);
+        bool transpose = args.get_else(_transpose,false);
+        bool close = args.get_else(_close,true);
+        bool constant_null_space = args.get_else(_constant_null_space,M_constant_null_space);
+        pre_solve_type pre = args.get_else(_pre,pre_solve_type{});
+        post_solve_type post = args.get_else(_post,post_solve_type{});
+        std::string const& pc = args.get_else(_pc,M_pc);
+        std::string const& ksp = args.get_else(_ksp,M_ksp);
+        std::string const& pcfactormatsolverpackage = args.get_else(_pcfactormatsolverpackage,M_pcFactorMatSolverPackage);
+        bool verbose = args.get_else(_verbose, M_verbose );
+
+
         if ( verbose )
         {
             Environment::logMemoryUsage( "backend::solve begin" );
@@ -1211,36 +1204,31 @@ public:
     /**
      * solve for \f$P F(x)=0 b\f$
      */
-    BOOST_PARAMETER_MEMBER_FUNCTION( ( nl_solve_return_type ),
-                                     nlSolve,
-                                     tag,
-                                     ( required
-                                       //( in_out( solution ),*( mpl::or_<boost::is_convertible<mpl::_,vector_type&>,boost::is_convertible<mpl::_,vector_ptrtype> > ) ) )
-                                       ( in_out( solution ),*))
-                                     ( optional
-                                       ( jacobian,( sparse_matrix_ptrtype ), sparse_matrix_ptrtype() )
-                                       ( residual,( vector_ptrtype ), vector_ptrtype() )
-                                       //(prec,(sparse_matrix_ptrtype), jacobian )
-                                       ( prec,( preconditioner_ptrtype ), preconditioner_ptrtype() )
-                                       ( null_space,( NullSpace<value_type> ), NullSpace<value_type>() )
-                                       ( near_null_space,( NullSpace<value_type> ), NullSpace<value_type>() )
-                                       ( maxit,( size_type ), M_maxitSNES/*50*/ )
-                                       ( rtolerance,( double ), M_rtoleranceSNES/*1e-8*/ )
-                                       ( atolerance,( double ), M_atoleranceSNES/*1e-50*/ )
-                                       ( stolerance,( double ), M_stoleranceSNES/*1e-8*/ )
-                                       ( reuse_prec,( bool ), M_reuse_prec )
-                                       ( reuse_jac,( bool ), M_reuse_jac )
-                                       ( transpose,( bool ), false )
-                                       ( pre, (pre_solve_type), pre_solve_type() )
-                                       ( post, (post_solve_type), post_solve_type() )
-                                       ( update, (update_nlsolve_type), update_nlsolve_type() )
-                                       ( pc,( std::string ),M_pc/*"lu"*/ )
-                                       ( ksp,( std::string ),M_ksp/*"gmres"*/ )
-                                       ( pcfactormatsolverpackage,( std::string ), M_pcFactorMatSolverPackage )
-                                       ( verbose,   ( bool ), boption(_prefix=this->prefix(),_name="backend.verbose") )
-                                     )
-                                   )
+    template <typename ... Ts,typename = typename std::enable_if_t< sizeof...(Ts) != 0 && ( NA::is_named_argument_v<Ts> && ...) > >
+    nl_solve_return_type nlSolve( Ts && ... v )
     {
+        auto args = NA::make_arguments( std::forward<Ts>(v)... );
+        auto && solution = args.get(_solution);
+        sparse_matrix_ptrtype jacobian = args.get_else(_jacobian,sparse_matrix_ptrtype{});
+        vector_ptrtype residual = args.get_else(_residual,vector_ptrtype{});
+        preconditioner_ptrtype prec = args.get_else(_prec,preconditioner_ptrtype{});
+        NullSpace<value_type> const& null_space = args.get_else_invocable(_null_space,[](){ return NullSpace<value_type>{}; } );
+        NullSpace<value_type> const& near_null_space = args.get_else_invocable(_near_null_space,[](){ return NullSpace<value_type>{}; } );
+        size_type maxit = args.get_else(_maxit,M_maxitSNES );
+        double rtolerance = args.get_else(_rtolerance,M_rtoleranceSNES );
+        double atolerance = args.get_else(_atolerance,M_atoleranceSNES );
+        double stolerance = args.get_else(_stolerance,M_stoleranceSNES );
+        bool reuse_prec = args.get_else(_reuse_prec, M_reuse_prec );
+        bool reuse_jac = args.get_else(_reuse_jac, M_reuse_jac );
+        bool transpose = args.get_else(_transpose, false );
+        pre_solve_type pre = args.get_else(_pre,pre_solve_type{});
+        post_solve_type post = args.get_else(_post,post_solve_type{});
+        update_nlsolve_type update = args.get_else(_update,update_nlsolve_type{});
+        std::string const& pc = args.get_else(_pc,M_pc);
+        std::string const& ksp = args.get_else(_ksp,M_ksp);
+        std::string const& pcfactormatsolverpackage = args.get_else(_pcfactormatsolverpackage,M_pcFactorMatSolverPackage);
+        bool verbose = args.get_else(_verbose, M_verbose );
+
         if ( verbose )
         {
             Environment::logMemoryUsage( "backend::nlSolve begin" );
@@ -1501,7 +1489,7 @@ private:
     bool   M_reusePC;
     bool   M_reusedPC;
     bool   M_reuseFailed;
-    boost::timer M_timer;
+    Feel::Timer M_timer;
     bool   M_transpose;
     size_type    M_maxitKSP, M_maxitKSPinSNES, M_maxitSNES;
     size_type    M_maxitKSPReuse, M_maxitKSPinSNESReuse, M_maxitSNESReuse;
@@ -1519,6 +1507,8 @@ private:
     post_solve_type M_post_solve;
     datamap_ptrtype M_datamap;
     boost::signals2::signal<void()> M_deleteObservers;
+
+    bool M_verbose;
 };
 
 
@@ -1604,35 +1594,25 @@ backend_impl( std::string const& name, std::string const& kind, bool rebuild, wo
 
 } // detail
 
-BOOST_PARAMETER_FUNCTION(
-                         ( backend_ptrtype ), // return type
-                         backend,           // 2. function name
-                         tag,               // 3. namespace of tag types
-                         ( optional
-                           ( name,           ( std::string ), "" )
-                           ( kind,           ( std::string ), soption(_prefix=name,_name="backend"))
-                           ( rebuild,        ( bool ), boption(_prefix=name,_name="backend.rebuild") )
-                           ( worldcomm,      (worldcomm_ptr_t), Environment::worldCommPtr() )
-                           ) )
+
+template <typename ... Ts>
+backend_ptrtype backend( Ts && ... v )
 {
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    std::string const& name = args.get_else(_name,"");
+    std::string const& kind = args.get_else_invocable(_kind,[&name](){ return soption(_prefix=name,_name="backend"); });
+    bool rebuild = args.get_else_invocable(_rebuild,[&name](){ return boption(_prefix=name,_name="backend.rebuild"); });
+    worldcomm_ptr_t worldcomm = args.get_else(_worldcomm,Environment::worldCommPtr());
     return Feel::detail::backend_impl<double>( name, kind, rebuild, worldcomm);
 }
-
-
-/*
- * Complex backend
- */
-BOOST_PARAMETER_FUNCTION(
-                         ( c_backend_ptrtype ), // return type
-                         cbackend,           // 2. function name
-                         tag,               // 3. namespace of tag types
-                         ( optional
-                           ( name,           ( std::string ), "" )
-                           ( kind,           ( std::string ), soption(_prefix=name,_name="backend"))
-                           ( rebuild,        ( bool ), boption(_prefix=name,_name="backend.rebuild") )
-                           ( worldcomm,      (worldcomm_ptr_t), Environment::worldCommPtr() )
-                           ) )
+template <typename ... Ts>
+c_backend_ptrtype cbackend( Ts && ... v )
 {
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    std::string const& name = args.get_else(_name,"");
+    std::string const& kind = args.get_else_invocable(_kind,[&name](){ return soption(_prefix=name,_name="backend"); });
+    bool rebuild = args.get_else_invocable(_rebuild,[&name](){ return boption(_prefix=name,_name="backend.rebuild"); });
+    worldcomm_ptr_t worldcomm = args.get_else(_worldcomm,Environment::worldCommPtr());
     return Feel::detail::backend_impl<std::complex<double>>( name, kind, rebuild, worldcomm);
 }
 

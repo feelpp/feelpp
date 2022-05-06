@@ -1,0 +1,60 @@
+{
+    "Name": "reactive_diffusive",
+    "ShortName": "reactive_diffusive",
+    "Models":
+    {
+        "cfpdes":{
+            "equations":"equation1"
+        },
+        "equation1":{
+            "setup":{
+                "unknown":{
+                    "basis":"Pch1",
+                    "name":"solution",
+                    "symbol":"u"
+                },
+                "coefficients":{
+                    "c":1e-6,//"1e-6", // diffusion
+                    "a":1, // reaction
+                    "f":1 // source
+                }
+            }
+        }
+    },
+    "Materials":
+    {
+        "mymat1":
+        {
+            "markers":"Omega"
+        }
+    },
+    "BoundaryConditions":
+    {
+        "equation1":
+        {
+            "Dirichlet":
+            {
+                "Gamma0":
+                {
+                    "markers":["Bottom","Right","Bottom-Left","Top-Right"],
+                    "expr":"0"
+                },
+                "Gamma1":
+                {
+                    "markers":["Left","Top"],
+                    "expr":"1"
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "cfpdes":
+        {
+            "Exports":
+            {
+                "fields":["all"]
+            }
+        }
+    }
+}

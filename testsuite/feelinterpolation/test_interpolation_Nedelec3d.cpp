@@ -6,6 +6,7 @@
 Date: 2007-12-19
 
 Copyright (C) 2007-2012 Université Joseph Fourier (Grenoble I)
+Copyright (C) 2011-present Feel++ Consortium
 
 This library is free software; you can redistribute it and/or
 modify it under the terms of the GNU Lesser General Public
@@ -36,7 +37,10 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 //#define BOOST_TEST_NO_MAIN
 
 #include <feel/feelcore/testsuite.hpp>
-#include <feel/feel.hpp>
+#include <feel/feelcore/environment.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feelfilters/exporter.hpp>
+#include <feel/feelvf/vf.hpp>
 #include <feel/feelpoly/nedelec.hpp>
 #include <feel/feelvf/print.hpp>
 
@@ -194,16 +198,16 @@ TestInterpolationHCurl3D::testInterpolation( std::string one_element_mesh )
     else if(mesh_path.stem().string() == "one-elt-real-rotz" )
         jac = "{0,-1,0,1,0,0,0,0,1}:x:y:z";
 
-    U_h_int(0) = integrate( markedelements(edgeMesh, edges[0]), trans(expr<3,3>(jac)*t0)*myexpr ).evaluate()(0,0);
-    U_h_int(1) = integrate( markedelements(edgeMesh, edges[1]), trans(expr<3,3>(jac)*t1)*myexpr ).evaluate()(0,0);
-    U_h_int(2) = integrate( markedelements(edgeMesh, edges[2]), trans(expr<3,3>(jac)*t2)*myexpr ).evaluate()(0,0);
-    U_h_int(3) = integrate( markedelements(edgeMesh, edges[3]), trans(expr<3,3>(jac)*t3)*myexpr ).evaluate()(0,0);
-    U_h_int(4) = integrate( markedelements(edgeMesh, edges[4]), trans(expr<3,3>(jac)*t4)*myexpr ).evaluate()(0,0);
-    U_h_int(5) = integrate( markedelements(edgeMesh, edges[5]), trans(expr<3,3>(jac)*t5)*myexpr ).evaluate()(0,0);
+    U_h_int(0) = integrate( _range=markedelements(edgeMesh, edges[0]), _expr=trans(expr<3,3>(jac)*t0)*myexpr ).evaluate()(0,0);
+    U_h_int(1) = integrate( _range=markedelements(edgeMesh, edges[1]), _expr=trans(expr<3,3>(jac)*t1)*myexpr ).evaluate()(0,0);
+    U_h_int(2) = integrate( _range=markedelements(edgeMesh, edges[2]), _expr=trans(expr<3,3>(jac)*t2)*myexpr ).evaluate()(0,0);
+    U_h_int(3) = integrate( _range=markedelements(edgeMesh, edges[3]), _expr=trans(expr<3,3>(jac)*t3)*myexpr ).evaluate()(0,0);
+    U_h_int(4) = integrate( _range=markedelements(edgeMesh, edges[4]), _expr=trans(expr<3,3>(jac)*t4)*myexpr ).evaluate()(0,0);
+    U_h_int(5) = integrate( _range=markedelements(edgeMesh, edges[5]), _expr=trans(expr<3,3>(jac)*t5)*myexpr ).evaluate()(0,0);
 
     for(int i=0; i<edges.size(); i++)
         {
-            double edgeLength = integrate( markedelements(edgeMesh, edges[i]), cst(1.) ).evaluate()(0,0);
+            double edgeLength = integrate( _range=markedelements(edgeMesh, edges[i]), _expr=cst(1.) ).evaluate()(0,0);
             U_h_int(i) /= edgeLength;
         }
 
@@ -211,7 +215,7 @@ TestInterpolationHCurl3D::testInterpolation( std::string one_element_mesh )
     for(int i=0; i<Xh->nLocalDof(); i++)
         {
             CHECK( edgeMesh->hasMarkers( {edges[i]} ) );
-            U_h_int(i) = integrate( markedelements(edgeMesh, edges[i]), trans( print(T(),"T=") )*myexpr ).evaluate()(0,0);
+            U_h_int(i) = integrate( _range=markedelements(edgeMesh, edges[i]), _expr=trans( print(T(),"T=") )*myexpr ).evaluate()(0,0);
             std::cout << "U_h_int(" << i << ")= " << U_h_int(i) << std::endl;
         }
 #endif

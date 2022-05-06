@@ -1,0 +1,100 @@
+{
+    "Name": "HDG-Mixed-Linear-Elasticity",
+    "ShortName":"ME",
+    "Models":
+    {
+        "equations":"hdg"
+    },
+    "Materials":
+    {
+        "omega":
+        {
+            "name":"copper",
+            "elasticity_lambda":"1",
+	    	"elasticity_mu":"1",
+            "elasticity_f":"{-3*sin(Pi*x)*cos(Pi*y),-3*cos(Pi*x)*sin(Pi*y)}:x:y"
+        }
+    },
+    "BoundaryConditions":
+    {
+		"elasticity":
+		{
+	    	"Dirichlet":
+	    	{
+                // "Rext":
+                // {
+                //     "expr":"{1/(2*Pi^2)*sin(Pi*x)*cos(Pi*y),1/(2*Pi^2)*cos(Pi*x)*sin(Pi*y)}:x:y"
+                // },
+                // "Rint":
+                // {
+                //     "expr":"{1/(2*Pi^2)*sin(Pi*x)*cos(Pi*y),1/(2*Pi^2)*cos(Pi*x)*sin(Pi*y)}:x:y"
+                // },
+                "V0":
+                {
+                    "expr":"{1/(2*Pi^2)*sin(Pi*x)*cos(Pi*y),1/(2*Pi^2)*cos(Pi*x)*sin(Pi*y)}:x:y"
+                },
+                "V1":
+                {
+                    "expr":"{1/(2*Pi^2)*sin(Pi*x)*cos(Pi*y),1/(2*Pi^2)*cos(Pi*x)*sin(Pi*y)}:x:y"
+                }
+ 	    	},
+            "Neumann":
+            {
+                "Rint":
+                {
+                    "expr":"{2.0*nx*cos(Pi*x)*cos(Pi*y)/Pi - 1.0*ny*sin(Pi*x)*sin(Pi*y)/Pi, -1.0*nx*sin(Pi*x)*sin(Pi*y)/Pi + 2.0*ny*cos(Pi*x)*cos(Pi*y)/Pi}:x:y:nx:ny"
+                },
+                "Rext":
+                {
+                    "expr":"{2.0*nx*cos(Pi*x)*cos(Pi*y)/Pi - 1.0*ny*sin(Pi*x)*sin(Pi*y)/Pi, -1.0*nx*sin(Pi*x)*sin(Pi*y)/Pi + 2.0*ny*cos(Pi*x)*cos(Pi*y)/Pi}:x:y:nx:ny"
+                }
+            }
+    	}
+    },
+    "PostProcess":
+    {
+        "elasticity":
+        {
+            "Exports":
+            {
+                "fields":["stress","displacement"]
+            },
+            "Measures":
+            {
+                "Norm":
+                {
+                    "displacement_error":
+                    {
+                        "type":"L2-error",
+                        "field":"displacement",
+                        "solution":"{1/(2*Pi^2)*sin(Pi*x)*cos(Pi*y),1/(2*Pi^2)*cos(Pi*x)*sin(Pi*y)}:x:y",
+                        "markers":"omega"
+                    },
+                    "stress_error":
+                    {
+                        "type":"L2-error",
+                        "field":"stress",
+                        "solution":"{2.0*cos(Pi*x)*cos(Pi*y)/Pi, -1.0*sin(Pi*x)*sin(Pi*y)/Pi, -1.0*sin(Pi*x)*sin(Pi*y)/Pi, 2.0*cos(Pi*x)*cos(Pi*y)/Pi}:x:y",
+                        "markers":"omega"
+                    }
+                }
+            },
+            "Checkers":
+            {
+                "Measures":
+                {
+                    "Norm_displacement_error_L2-error":
+                    {
+                        "value":0,
+                        "tolerance":1e-3
+                    },
+                    "Norm_stress_error_L2-error":
+                    {
+                        "value":0,
+                        "tolerance":5e-3
+                    }
+                }
+            }
+        }
+    }
+}

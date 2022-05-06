@@ -1,0 +1,99 @@
+{
+    "Name": "Cahn-Hilliard",
+    "ShortName": "cahn-hilliard",
+    "Models":
+    {
+        "cfpdes":{
+            "equations":["equation1","equation2"]
+        },
+        "equation1":{
+            "setup":{
+                "unknown":{
+                    "basis":"Pch1",
+                    "name":"c",
+                    "symbol":"c"
+                },
+                "coefficients":{
+                    "d": "1", // time
+                    //"gamma": "{-M*(0.5*equation2_grad_mu_previous_0+0.5*quation2_grad_mu_0),-M*(0.5*equation2_grad_mu_previous_1+0.5*quation2_grad_mu_1)}:equation2_grad_mu_0:equation2_grad_mu_1:equation2_grad_mu_previous_0:equation2_grad_mu_previous_1:M"
+                    "gamma": "{-M*(0.5*equation2_grad_mu_0+0.5*equation2_grad_mu_0),-M*(0.5*equation2_grad_mu_1+0.5*equation2_grad_mu_1)}:equation2_grad_mu_0:equation2_grad_mu_1:M"
+                }
+            }
+        },
+        "equation2":{
+            "setup":{
+                "unknown":{
+                    "basis":"Pch1",
+                    "name":"mu",
+                    "symbol":"mu"
+                },
+                "coefficients":{
+                    "gamma":"{lambda*equation1_grad_c_0,lambda*equation1_grad_c_1}:lambda:equation1_grad_c_0:equation1_grad_c_1", 
+                    "a":"1",
+                    "f":"100*equation1_c*equation1_c*(2*equation1_c-2) + 200*(equation1_c*(1-equation1_c)*(1-equation1_c)):equation1_c"
+                    //"f": "equation1_c*(equation1_c*equation1_c - 1):equation1_c"
+                }
+            }
+        }        
+    },
+    "Parameters": {
+        "M": 1,
+        "lambda":1e-5
+    },
+    "Meshes":
+    {
+        "cfpdes":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/square2d.geo",
+                "hsize":0.1
+            }
+        }
+    },
+    "Materials":
+    {
+        "mymat1":
+        {
+            "markers":"Omega"
+        }
+    },
+    "BoundaryConditions":
+    {
+        
+    },
+    "InitialConditions":
+    {
+        "equation1":{
+            "c":{
+                "Expression": {
+                    "myic": {
+                        "markers": "Omega",
+                        //"expr": "0.63 + 0.02*(0.5-uniform(0,1))",
+                        "expr": "sin(2*pi*x)*sin(2*pi*y):x:y"
+                    }
+                }
+            }
+        },
+        "equation2":{
+            "mu": {
+                "Expression": {
+                    "myic": {
+                        "markers": "Omega",
+                        "expr": "0"
+                    }
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "cfpdes":
+        {
+            "Exports":
+            {
+                "fields":["all"]
+            }
+        }
+    }
+}

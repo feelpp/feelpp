@@ -1,0 +1,162 @@
+{
+    "Name": "HDG-Electro-Thermo ",
+    "ShortName":"ET",
+    "Parameters":
+    {
+        "dif":0.03125,
+        "intensity":-800,
+        "sigma0":58e3,
+        "k0":0.38,
+        "h":0.08,
+        "Tw":293
+    },
+    "Materials":
+    {
+        "omega":
+        {
+            "filename":"$cfgdir/omega.json",
+            "physics":["heat","electric"],
+            "electric_c":"sigma:sigma",
+            "heat_c":"k:k"
+        },
+        "omega2":
+        {
+            "filename":"$cfgdir/omega.json",
+            "physics":"heat",
+            "electric_c":"sigma:sigma",
+            "heat_c":"k:k"
+        }
+    },
+    "InitialConditions":
+    {
+        "heat":{
+            "temperature":
+            {
+                "Expression":
+                {
+                    "myic1":
+                    {
+                        "markers":["omega","omega2"],
+                        "expr": "293"
+                    }
+                }
+            }
+        }
+    },
+    "BoundaryConditions":
+    {
+        // "current-density":
+        // {
+        //     "Integral":
+        //     {
+        //         "V0":
+        //         {
+        //             "expr":"intensity:intensity"
+        //         }
+        //     }
+        // },
+        "electric":
+        {
+            "Dirichlet":
+            {
+                "V0":
+                {
+                    "expr":"dif:dif"
+                },
+                "V1":
+                {
+                    "expr":"0"
+                }
+            },
+            "Neumann":
+            {
+                "Rint":
+                {
+                    "expr":"0"
+                },
+                "Rext":
+                {
+                    "expr":"0"
+                },
+                "top":
+                {
+                    "expr":"0"
+                },
+                "bottom":
+                {
+                    "expr":"0"
+                }
+            }
+        },
+        "heat":
+        {
+            "Robin":
+            {
+                "Rint":
+                {
+                    "expr1":"-h:h",
+                    "expr2":"-h*Tw:h:Tw"
+                },
+                "Rext":
+                {
+                    "expr1":"-h:h",
+                    "expr2":"-h*Tw:h:Tw"
+                },
+                "Rint2":
+                {
+                    "expr1":"-h:h",
+                    "expr2":"-h*Tw:h:Tw"
+                },
+                "Rext2":
+                {
+                    "expr1":"-h:h",
+                    "expr2":"-h*Tw:h:Tw"
+                }
+            },
+            "Neumann":
+            {
+                "V0":
+                {
+                    "expr":"0"
+                },
+                "V1":
+                {
+                    "expr":"0"
+                },
+                "V02":
+                {
+                    "expr":"0"
+                },
+                "V12":
+                {
+                    "expr":"0"
+                },
+                "top2":
+                {
+                    "expr":"0"
+                },
+                "bottom":
+                {
+                    "expr":"0"
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "electric":
+        {
+            "Exports":
+            {
+                "fields": ["all"]
+            }
+        },
+        "heat":
+        {
+            "Exports":
+            {
+                "fields": ["all"]
+            }
+        }
+    }
+}

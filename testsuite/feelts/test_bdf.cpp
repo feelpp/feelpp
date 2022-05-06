@@ -61,9 +61,9 @@ public:
     MyApp()
         :
         super(),
-        bdf( this->vm(), "bdf","test_bdf", Environment::worldComm() )
+        bdf( "bdf","test_bdf", Environment::worldComm() )
     {}
-    void run()
+    void run() override
     {
         for ( bdf.start(); bdf.isFinished() == false; bdf.next() )
         {

@@ -41,12 +41,12 @@ namespace Feel
  \f$
  */
 template<typename MeshType>
-Pdh_element_t<MeshType,0>
-etaQ( std::shared_ptr<MeshType> const& m )
+std::shared_ptr<Pdh_element_t<MeshType,0>>
+etaQ( Pdh_ptrtype<MeshType,0> const& Xh, std::shared_ptr<MeshType> const& m )
 {
     using value_type=value_t<MeshType>;
-    auto Xh = Pdh<0>( m );
-    auto q = Xh->element();
+    
+    auto q = Xh->elementPtr();
 
     local_interpolant_t<decltype(Xh)> Ihloc( 1 );
     for ( auto const& eltWrap : elements( m ) )
@@ -58,10 +58,17 @@ etaQ( std::shared_ptr<MeshType> const& m )
         else if constexpr ( dimension_v<MeshType> == 3 )
             // use formula 33 in D Field 
             Ihloc( 0 ) = math::pow(2.,3)*math::pow(3.,8)*math::sqrt(3.)*math::pow(elt.measure(),4)/math::pow(elt.faceMeasures().array().square().sum(),3);
-        q.assign( elt, Ihloc );
+        q->assign( elt, Ihloc );
     }
     return q;
     
+}
+template<typename MeshType>
+std::shared_ptr<Pdh_element_t<MeshType,0>>
+etaQ( std::shared_ptr<MeshType> const& m )
+{
+    auto Xh = Pdh<0>( m );
+    return etaQ( Xh, m );
 }
 
 /**
@@ -72,12 +79,12 @@ etaQ( std::shared_ptr<MeshType> const& m )
  *
  */
 template<typename MeshType>
-Pdh_element_t<MeshType,0>
-nsrQ( std::shared_ptr<MeshType> const& m )
+std::shared_ptr<Pdh_element_t<MeshType,0>>
+nsrQ( Pdh_ptrtype<MeshType,0> const& Xh, std::shared_ptr<MeshType> const& m )
 {
     using value_type=value_t<MeshType>;
-    auto Xh = Pdh<0>( m );
-    auto q = Xh->element();
+    
+    auto q = Xh->elementPtr();
 
     local_interpolant_t<decltype(Xh)> Ihloc( 1 );
     for ( auto const& eltWrap : elements( m ) )
@@ -92,10 +99,20 @@ nsrQ( std::shared_ptr<MeshType> const& m )
             Ihloc( 0 ) = 2*r/R;
         }
         else if constexpr ( dimension_v<MeshType> == 3 )
+        {
             Ihloc( 0 ) = 0;
-        q.assign( elt, Ihloc );
+        }
+        q->assign( elt, Ihloc );
     }
     return q;
     
 }
+template<typename MeshType>
+std::shared_ptr<Pdh_element_t<MeshType,0>>
+nsrQ( std::shared_ptr<MeshType> const& m )
+{
+    auto Xh = Pdh<0>( m );
+    return nsrQ( Xh, m );
+}
+
 }

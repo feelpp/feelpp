@@ -116,8 +116,8 @@ depends_lib    \
     port:glpk \
     port:libANN \
     port:libxml2 \
-    port:vtk \
     port:cln
+    #port:vtk 
 
 
 #python.default_version 36

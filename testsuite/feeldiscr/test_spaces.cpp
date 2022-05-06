@@ -6,7 +6,7 @@
        Date: 2013-07-15
 
   Copyright (C) 2013 Université de Strasbourg
-
+  
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
   License as published by the Free Software Foundation; either
@@ -27,8 +27,13 @@
    \date 2013-07-15
  */
 #include <sstream>
-#include <boost/timer.hpp>
-#include <feel/feel.hpp>
+
+#include <feel/feelcore/environment.hpp>
+#include <feel/feelfilters/unithypercube.hpp>
+#include <feel/feelfilters/exporter.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feelvf/vf.hpp>
 
 int main( int argc, char** argv)
 {
@@ -47,7 +52,7 @@ int main( int argc, char** argv)
     auto mesh = loadMesh( _mesh = new mesh_type );
     auto Xh = fspace_type::New( mesh );
     auto v = backend()->newVector( Xh );
-    auto M = backend()->newMatrix( Xh, Xh );
+    auto M = backend()->newMatrix( _test=Xh, _trial=Xh );
     M->graph()->showMe( std::cout );
 
     auto U = Xh->element();
@@ -55,15 +60,15 @@ int main( int argc, char** argv)
     auto p = U.element<1>();
     auto l = U.element<2>();
     //auto t = U.element<3>();
-    auto a = form2( Xh, Xh );
-    a  = integrate( elements(mesh), trans(idt(u))*id(u) );
-    a += integrate( elements(mesh), trans(idt(p))*id(p) );
-    a += integrate( elements(mesh), trans(idt(l))*id(l) );
+    auto a = form2( _test=Xh, _trial=Xh );
+    a  = integrate( _range=elements(mesh), _expr=trans(idt(u))*id(u) );
+    a += integrate( _range=elements(mesh), _expr=trans(idt(p))*id(p) );
+    a += integrate( _range=elements(mesh), _expr=trans(idt(l))*id(l) );
     //a += integrate( elements(mesh), trans(idt(t))*id(t) );
-    auto b = form1( Xh );
-    b  = integrate( elements(mesh), trans(vec(cst(1.),cst(1.)))*id(u) );
-    b += integrate( elements(mesh), id(p) );
-    b += integrate( elements(mesh), id(l) );
+    auto b = form1( _test=Xh );
+    b  = integrate( _range=elements(mesh), _expr=trans(vec(cst(1.),cst(1.)))*id(u) );
+    b += integrate( _range=elements(mesh), _expr=id(p) );
+    b += integrate( _range=elements(mesh), _expr=id(l) );
     //b += integrate( elements(mesh), id(t) );
     a.solve( _solution=U, _rhs=b );
 #if 0

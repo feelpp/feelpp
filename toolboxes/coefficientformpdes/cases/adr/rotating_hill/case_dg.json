@@ -1,0 +1,65 @@
+{
+    // case taken from https://doc.freefem.org/tutorials/rotatingHill.html
+    "Name": "rotating_hill_advection",
+    "ShortName": "rotating_hill_advection",
+    "Models":
+    {
+        "cfpdes":{
+            "equations":"equation1"
+        },
+        "equation1":{
+            "setup":{
+                "unknown":{
+                    "basis":"Pdh1",
+                    "name":"solution",
+                    "symbol":"u"
+                },
+                "coefficients":{
+                    "d":1,
+                    "beta":"{y,-x}:x:y" // convection
+                }
+            }
+        }
+    },
+    "Meshes":
+    {
+        "cfpdes":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/circle.geo",
+                "hsize":0.025
+            }
+        }
+    },
+    "Materials":
+    {
+        "mymat1":
+        {
+            "markers":"Omega"
+        }
+    },
+    "InitialConditions":
+    {
+        "equation1":{
+            "solution":{
+                "Expression":{
+                    "myic":{
+                        "markers":"Omega",
+                        "expr":"exp(-10*((x-0.3)^2 +(y-0.3)^2)):x:y"
+                    }
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "cfpdes":
+        {
+            "Exports":
+            {
+                "fields":["equation1.solution","pid"]
+            }
+        }
+    }
+}

@@ -27,8 +27,8 @@
    \date 2006-11-16
  */
 
-#ifndef _OPERATORLINEAR_HPP_
-#define _OPERATORLINEAR_HPP_
+#ifndef FEELPP_DISCR_OPERATORLINEAR_H
+#define FEELPP_DISCR_OPERATORLINEAR_H
 
 #include <feel/feeldiscr/operator.hpp>
 
@@ -73,18 +73,6 @@ public:
     template<typename T, typename Storage>
     struct domain_element: public super::domain_space_type::template Element<T,Storage> {};
 
-    typedef typename domain_space_type::template Element<typename domain_space_type::value_type,
-            typename VectorUblas<typename domain_space_type::value_type>::range::type > domain_element_range_type;
-
-    typedef typename domain_space_type::template Element<typename domain_space_type::value_type,
-            typename VectorUblas<typename domain_space_type::value_type>::slice::type > domain_element_slice_type;
-
-    typedef typename dual_image_space_type::template Element<typename dual_image_space_type::value_type,
-            typename VectorUblas<typename dual_image_space_type::value_type>::range::type > dual_image_element_range_type;
-
-    typedef typename dual_image_space_type::template Element<typename dual_image_space_type::value_type,
-            typename VectorUblas<typename dual_image_space_type::value_type>::slice::type > dual_image_element_slice_type;
-
     //template<typename T, typename Storage>
     //struct dual_image_element: public super::dual_image_space_type::template Element<T,Storage> {};
 
@@ -115,7 +103,7 @@ public:
         if ( buildMatrix ) M_matrix = M_backend->newMatrix( _trial=domainSpace, _test=dualImageSpace , _pattern=M_pattern );
     }
 
-    virtual ~OperatorLinear() {}
+    ~OperatorLinear() override {}
 
     virtual void
     init( domain_space_ptrtype     domainSpace,
@@ -134,6 +122,7 @@ public:
     void setName( std::string name ) { M_name = name; }
     std::string name() const { return M_name ; }
 
+    void setMatrix( matrix_ptrtype m ) { M_matrix = m; }
 
     // apply the operator: ie := Op de
     template<typename Storage>
@@ -153,9 +142,9 @@ public:
         ie.container() = *_v2;
     }
 
-    virtual void
+    void
     apply( const domain_element_type& de,
-           image_element_type&        ie ) const
+           image_element_type&        ie ) const override
     {
         if ( ! M_matrix->closed() )
         {
@@ -203,182 +192,6 @@ public:
         ie.container() = *_v2;
     }
 
-
-    virtual void
-    //apply( const typename domain_space_type::template Element<typename domain_space_type::value_type,
-    //       typename VectorUblas<typename domain_space_type::value_type>::range::type > & de,
-    apply( const domain_element_range_type & de,
-           typename dual_image_space_type::element_type & ie )
-    {
-        if ( ! M_matrix->closed() )
-        {
-            M_matrix->close();
-        }
-
-        vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
-        *_v1 = de;_v1->close();
-        vector_ptrtype _v2( M_backend->newVector( _test=ie.functionSpace() ) );
-        M_backend->prod( M_matrix, _v1, _v2 );
-        ie.container() = *_v2;
-    }
-
-    virtual void
-    apply( const typename domain_space_type::element_type & de,
-           dual_image_element_range_type & ie )
-    {
-        if ( ! M_matrix->closed() )
-        {
-            M_matrix->close();
-        }
-
-        vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
-        *_v1 = de;_v1->close();
-        vector_ptrtype _v2( M_backend->newVector( _test=ie.functionSpace() ) );
-        M_backend->prod( M_matrix, _v1, _v2 );
-        ie.container() = *_v2;
-    }
-
-
-    virtual void
-    apply( const domain_element_range_type & de,
-           dual_image_element_range_type & ie )
-    {
-        if ( ! M_matrix->closed() )
-        {
-            M_matrix->close();
-        }
-
-        vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
-        *_v1 = de;_v1->close();
-        vector_ptrtype _v2( M_backend->newVector( _test=ie.functionSpace() ) );
-        M_backend->prod( M_matrix, _v1, _v2 );
-        ie.container() = *_v2;
-    }
-
-
-    virtual void
-    apply( const domain_element_slice_type & de,
-           typename dual_image_space_type::element_type & ie )
-    {
-        if ( ! M_matrix->closed() )
-        {
-            M_matrix->close();
-        }
-
-        vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
-        *_v1 = de;_v1->close();
-        vector_ptrtype _v2( M_backend->newVector( _test=ie.functionSpace() ) );
-        M_backend->prod( M_matrix, _v1, _v2 );
-        ie.container() = *_v2;
-    }
-
-    virtual void
-    apply( const typename domain_space_type::element_type & de,
-           dual_image_element_slice_type & ie )
-    {
-        if ( ! M_matrix->closed() )
-        {
-            M_matrix->close();
-        }
-
-        vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
-        *_v1 = de;_v1->close();
-        vector_ptrtype _v2( M_backend->newVector( _test=ie.functionSpace() ) );
-        M_backend->prod( M_matrix, _v1, _v2 );
-        ie.container() = *_v2;
-    }
-
-
-    virtual void
-    apply( /*const*/ domain_element_slice_type /*&*/ de,
-                     dual_image_element_slice_type /*&*/ ie )
-    {
-        if ( ! M_matrix->closed() )
-        {
-            M_matrix->close();
-        }
-
-        vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
-        *_v1 = de;_v1->close();
-        vector_ptrtype _v2( M_backend->newVector( _test=ie.functionSpace() ) );
-        M_backend->prod( M_matrix, _v1, _v2 );
-        ie.container() = *_v2;
-    }
-#if 0
-    void
-    apply( const typename domain_space_type::element_type::component_type & de,
-           typename dual_image_space_type::element_type & ie )
-    {
-        if ( ! M_matrix->closed() )
-        {
-            M_matrix->close();
-        }
-
-        vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
-        *_v1 = de;_v1->close();
-        vector_ptrtype _v2( M_backend->newVector( _test=ie.functionSpace() ) );
-        M_backend->prod( M_matrix, _v1, _v2 );
-        ie.container() = *_v2;
-    }
-#endif
-
-
-
-
-    virtual void
-    apply( const domain_element_range_type & de,
-           dual_image_element_slice_type & ie )
-    {
-        if ( ! M_matrix->closed() )
-        {
-            M_matrix->close();
-        }
-
-        vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
-        *_v1 = de;_v1->close();
-        vector_ptrtype _v2( M_backend->newVector( _test=ie.functionSpace() ) );
-        M_backend->prod( M_matrix, _v1, _v2 );
-        ie.container() = *_v2;
-    }
-
-    virtual void
-    apply( const domain_element_slice_type & de,
-           dual_image_element_range_type & ie )
-    {
-        if ( ! M_matrix->closed() )
-        {
-            M_matrix->close();
-        }
-
-        vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
-        *_v1 = de;_v1->close();
-        vector_ptrtype _v2( M_backend->newVector( _test=ie.functionSpace() ) );
-        M_backend->prod( M_matrix, _v1, _v2 );
-        ie.container() = *_v2;
-    }
-
-
-
-
-#if 0
-    template<typename Storage1,typename Storage2>
-    void
-    apply( const domain_element<typename domain_element_type::value_type, Storage1>& de,
-           dual_image_element<typename dual_image_element_type::value_type, Storage2>& ie ) //const
-    {
-        if ( ! M_matrix->closed() )
-        {
-            M_matrix->close();
-        }
-
-        vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
-        *_v1 = de;_v1->close();
-        //vector_ptrtype _v2( M_backend->newVector( ie.space()->dof() ) );
-        vector_ptrtype _v2( M_backend->newVector( _test=ie.functionSpace() ) );
-        M_backend->prod( M_matrix, _v1, _v2 );
-        ie.container() = *_v2;
-    }
-#endif
     template <typename T1 = typename domain_space_type::element_type,
              typename T2 = typename dual_image_space_type::element_type >
     T2
@@ -577,42 +390,19 @@ private:
 }; // class Operator
 
 
-
-template<typename Args>
-struct compute_opLinear_return
+template <typename ... Ts>
+auto opLinear( Ts && ... v )
 {
-    typedef typename boost::remove_reference<typename parameter::binding<Args, tag::domainSpace>::type>::type::element_type domain_space_type;
-    typedef typename boost::remove_reference<typename parameter::binding<Args, tag::imageSpace>::type>::type::element_type image_space_type;
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && domainSpace = args.get(_domainSpace);
+    auto && imageSpace = args.get(_imageSpace);
+    using domain_space_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(domainSpace)>>>;
+    using image_space_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(imageSpace)>>>;
+    auto && backend = args.get_else_invocable(_backend,[](){ return Backend<typename domain_space_type::value_type>::build( soption( _name="backend" ) ); } );
+    size_type pattern = args.get_else(_pattern,Pattern::COUPLED );
 
-    typedef std::shared_ptr<OperatorLinear<domain_space_type, image_space_type> > type;
-};
-
-BOOST_PARAMETER_FUNCTION(
-    ( typename compute_opLinear_return<Args>::type ), // 1. return type
-    opLinear,                        // 2. name of the function template
-    tag,                                        // 3. namespace of tag types
-    ( required
-      ( domainSpace,    *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
-      ( imageSpace,     *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
-    ) // required
-    ( optional
-      ( backend,        *, Backend<typename compute_opLinear_return<Args>::domain_space_type::value_type>::build( soption( _name="backend" ) ) )
-      ( pattern,        *, (size_type)Pattern::COUPLED  )
-    ) // optionnal
-)
-{
-#if BOOST_VERSION < 105900
-    Feel::detail::ignore_unused_variable_warning( args );
-#endif
-    typedef OperatorLinear<typename compute_opLinear_return<Args>::domain_space_type,
-            typename compute_opLinear_return<Args>::image_space_type> operatorlinear_type;
-
-    std::shared_ptr<operatorlinear_type> opI( new operatorlinear_type( domainSpace,imageSpace,backend,pattern ) );
-
-    return opI;
-
-} // opLinear
-
+    return std::make_shared<OperatorLinear<domain_space_type,image_space_type>>( domainSpace,imageSpace,backend,pattern );
+}
 
 
 

@@ -43,31 +43,12 @@ if ( NOT TARGET quickstart )
   add_custom_target(quickstart)
 endif()
 
+if ( NOT TARGET hdg_stokes )
+  add_custom_target(hdg_stokes)
+endif()
+
 add_subdirectory( python )
-
-#
-# Laplacian
-#
-feelpp_add_application( laplacian_2d SRCS qs_laplacian.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_LAPLACIAN_2D INSTALL TESTS)
-feelpp_add_application( laplacian_2dh SRCS qs_laplacian.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 FEELPP_HYPERCUBE=1 EXEC QS_LAPLACIAN_2DH INSTALL)
-feelpp_add_application( laplacian_3d SRCS qs_laplacian.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 EXEC QS_LAPLACIAN_3D INSTALL TESTS)
-feelpp_add_testcase( laplacian PREFIX qs CATEGORY quickstart )
-add_dependencies(quickstart ${QS_LAPLACIAN_2D} ${QS_LAPLACIAN_2DH} ${QS_LAPLACIAN_3D}  )
-add_dependencies(check ${QS_LAPLACIAN_2D} ${QS_LAPLACIAN_2DH} ${QS_LAPLACIAN_3D} )
-
-
-#
-# HDG Laplacian
-#
-feelpp_add_application( hdg_laplacian_2d SRCS qs_hdg_laplacian.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_HDG_LAPLACIAN_2D INSTALL TESTS)
-feelpp_add_application( hdg_laplacian_3d SRCS qs_hdg_laplacian.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 EXEC QS_HDG_LAPLACIAN_3D INSTALL TESTS) 
-add_dependencies(quickstart ${QS_HDG_LAPLACIAN_2D} ${QS_HDG_LAPLACIAN_3D}  )
-add_dependencies(check ${QS_HDG_LAPLACIAN_2D} ${QS_HDG_LAPLACIAN_3D} )
-
-feelpp_add_application( hdg_laplacian_ibc_2d SRCS qs_hdg_laplacian_ibc.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_HDG_LAPLACIAN_IBC_2D INSTALL TESTS )
-feelpp_add_application( hdg_laplacian_ibc_3d SRCS qs_hdg_laplacian_ibc.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 EXEC QS_HDG_LAPLACIAN_IBC_3D INSTALL TESTS ) 
-add_dependencies(quickstart ${QS_HDG_LAPLACIAN_IBC_2D} ${QS_HDG_LAPLACIAN_IBC_3D}  )
-add_dependencies(check ${QS_HDG_LAPLACIAN_IBC_2D} ${QS_HDG_LAPLACIAN_IBC_3D} )
+add_subdirectory( laplacian )
 
 #
 # ADR
@@ -83,19 +64,21 @@ add_dependencies(check ${QS_ADR_2D} ${QS_ADR_3D} )
 #
 feelpp_add_application( stokes_2d SRCS qs_stokes.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_STOKES_2D INSTALL TESTS)
 feelpp_add_application( stokes_3d SRCS qs_stokes.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 EXEC QS_STOKES_3D INSTALL TESTS)
+feelpp_add_application( hdg_stokes_2d SRCS qs_hdg_stokes.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_HDG_STOKES_2D INSTALL TESTS)
+feelpp_add_application( hdg_stokes_3d SRCS qs_hdg_stokes.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 EXEC QS_HDG_STOKES_3D INSTALL TESTS)
 feelpp_add_testcase( stokes PREFIX qs CATEGORY quickstart )
-add_dependencies(quickstart ${QS_STOKES_2D} ${QS_STOKES_3D})
-add_dependencies(check ${QS_STOKES_2D} ${QS_STOKES_3D})
+add_dependencies(quickstart ${QS_STOKES_2D} ${QS_STOKES_3D} ${QS_HDG_STOKES_2D} ${QS_HDG_STOKES_3D} )
+add_dependencies(check ${QS_STOKES_2D} ${QS_STOKES_3D} ${QS_HDG_STOKES_2D} ${QS_HDG_STOKES_3D})
+add_dependencies(hdg_stokes ${QS_HDG_STOKES_2D} ${QS_HDG_STOKES_3D})
 
 #
 # Linear elasticity
 #
 feelpp_add_application( elasticity_2d SRCS qs_elasticity.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_ELASTICITY_2D INSTALL TESTS )
 feelpp_add_application( elasticity_3d SRCS qs_elasticity.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 EXEC QS_ELASTICITY_3D INSTALL )
-if ( "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" )
-  feelpp_add_application( elasticity_pure_traction_2d SRCS qs_elasticity_pure_traction.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_ELASTICITY_PURE_TRACTION_2D INSTALL )
-  feelpp_add_application( elasticity_pure_traction_3d SRCS qs_elasticity_pure_traction.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 EXEC QS_ELASTICITY_PURE_TRACTION_3D INSTALL  )
-endif()
+feelpp_add_application( elasticity_pure_traction_2d SRCS qs_elasticity_pure_traction.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_ELASTICITY_PURE_TRACTION_2D INSTALL )
+feelpp_add_application( elasticity_pure_traction_3d SRCS qs_elasticity_pure_traction.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 EXEC QS_ELASTICITY_PURE_TRACTION_3D INSTALL  )
+
 feelpp_add_testcase( elasticity PREFIX qs CATEGORY quickstart )
 add_dependencies(quickstart ${QS_ELASTICITY_2D} ${QS_ELASTICITY_3D})
 add_dependencies(check ${QS_ELASTICITY_2D} ${QS_ELASTICITY_3D})

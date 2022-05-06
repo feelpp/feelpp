@@ -35,18 +35,13 @@ ModelParameters::ModelParameters( worldcomm_ptr_t const& world )
     super( world )
 {}
 
-ModelParameters::ModelParameters( pt::ptree const& p, worldcomm_ptr_t const& world )
-    :
-    super( world )
-{}
-
 ModelParameters::~ModelParameters()
 {}
 
 void
-ModelParameters::setPTree( pt::ptree const& p )
+ModelParameters::setPTree( nl::json const& jarg )
 {
-    M_p = p;
+    M_p = jarg;
     setup();
 }
 
@@ -54,92 +49,110 @@ ModelParameters::setPTree( pt::ptree const& p )
 void
 ModelParameters::setup()
 {
-    for( auto const& v : M_p )
+    for ( auto const& [jargkey,jargval] : M_p.items() )
     {
-        LOG(INFO) << "reading parameter " << v.first  << "\n";
-        std::string t = v.first; // parameter name
-        auto f= v.second;
-        if ( f.empty() ) // parameter is not a node but a leaf
+        std::string const& t = jargkey; // parameter name
+        LOG(INFO) << "reading parameter " << t;
+
+        if ( jargval.is_primitive() )
         {
-            if( boost::optional<double> d = f.get_value_optional<double>() )
-            {
-                LOG(INFO) << "adding parameter " << t << " with value " << *d;
-                this->operator[](t) = ModelParameter( t, *d, 0, 0 );
-            }
-            else if ( boost::optional<std::string> s = f.get_value_optional<std::string>() )
-            {
-                LOG(INFO) << "adding parameter " << t << " with expr " << *s;
-                this->operator[](t) = ModelParameter( t, *s, M_directoryLibExpr, this->worldComm() );
-            }
-            else
-            {
-                LOG(INFO) << "adding parameter " << t << " with default value 0";
-                this->operator[](t) = ModelParameter( t, 0, 0, 0 );
-            }
+            ModelExpression modelexpr;
+            modelexpr.setExpr( jargval, this->worldComm(), M_directoryLibExpr );
+            if ( modelexpr.hasAtLeastOneExpr() )
+                this->emplace( std::make_pair( t, ModelParameter( t, modelexpr ) ) );
         }
-        else
+        else if ( jargval.is_object() )
         {
             std::string name = t;
-            if( boost::optional<std::string> n = f.get_optional<std::string>("name") )
-                name = *n;
+            if ( jargval.contains("name") )
+            {
+                auto const& j_name = jargval.at("name");
+                if ( j_name.is_string() )
+                    name = j_name.get<std::string>();
+            }
             std::string type = "expression";
-            if( boost::optional<std::string> n = f.get_optional<std::string>("type") )
-                type = *n;
+            if ( jargval.contains("type") )
+            {
+                auto const& j_type = jargval.at("type");
+                if ( j_type.is_string() )
+                    type = j_type.get<std::string>();
+            }
+            std::string desc;
+            if ( jargval.contains("description") )
+            {
+                auto const& j_description = jargval.at("description");
+                if ( j_description.is_string() )
+                    desc = j_description.get<std::string>();
+            }
+
             if ( type == "expression" || type == "value" )
             {
                 double val = 0.;
                 double min = 0.;
                 double max = 0.;
-                if( boost::optional<double> d = f.get_optional<double>("min") )
-                    min = *d;
-                if( boost::optional<double> d = f.get_optional<double>("max") )
-                    max = *d;
-                if( boost::optional<double> d = f.get_optional<double>("value") )
-                    this->operator[](t) = ModelParameter( name, *d, min, max );
-                else if ( boost::optional<std::string> s = f.get_optional<std::string>("value") )
-                    this->operator[](t) = ModelParameter( name, *s, M_directoryLibExpr, this->worldComm(), min, max );
-                else
-                    this->operator[](t) = ModelParameter( name, 0., min, max );
+                if ( jargval.contains("min") )
+                {
+                    auto const& j_min = jargval.at("min");
+                    if ( j_min.is_number() )
+                        min = j_min.get<double>();
+                    else if ( j_min.is_string() )
+                        min = std::stod( j_min.get<std::string>() );
+                }
+                if ( jargval.contains("max") )
+                {
+                    auto const& j_max = jargval.at("max");
+                    if ( j_max.is_number() )
+                        max = j_max.get<double>();
+                    else if ( j_max.is_string() )
+                        max = std::stod( j_max.get<std::string>() );
+                }
+
+                ModelExpression modelexpr;
+                if ( jargval.contains("value") )
+                    modelexpr.setExpr( jargval.at("value"), this->worldComm(), M_directoryLibExpr );
+                this->operator[](t) = ModelParameter( t, modelexpr, min, max, desc );
             }
             else if ( type == "fit" )
             {
                 std::string filename;
-                if( boost::optional<std::string> d = f.get_optional<std::string>("filename") )
-                    filename = *d;
-                else
-                    CHECK( false ) << "filename is required with fit type";
-                std::string exprStr;
-                if( boost::optional<std::string> d = f.get_optional<std::string>("expr") )
-                    exprStr = *d;
-                else
-                    CHECK( false ) << "expr is required with fit type";
+                if ( jargval.contains("filename") )
+                    filename = jargval.at("filename").get<std::string>();
+                CHECK( !filename.empty() ) << "filename is required with fit type";
+
+                ModelExpression modelexpr;
+                if ( jargval.contains("expr") )
+                    modelexpr.setExpr( jargval.at("expr"), this->worldComm(), M_directoryLibExpr );
+                CHECK( modelexpr.hasAtLeastOneExpr() ) << "expr is required with fit type";
+
                 std::string interpType = "Akima";
-                if( boost::optional<std::string> d = f.get_optional<std::string>("interpolation") )
-                    interpType = *d;
+                if ( jargval.contains("interpolation") )
+                    interpType = jargval.at("interpolation").get<std::string>();
 
                 auto itFindType = InterpolationTypeMap.find( interpType );
                 CHECK( itFindType != InterpolationTypeMap.end() ) << "invalid interpolator type " << type;
                 InterpolationType interpolatorEnumType = itFindType->second;
 
                 std::string abscissa;
-                if( boost::optional<std::string> d = f.get_optional<std::string>("abscissa") )
-                    abscissa = *d;
-                std::string ordinate;
-                if( boost::optional<std::string> d = f.get_optional<std::string>("ordinate") )
-                    ordinate = *d;
+                if ( jargval.contains("abscissa") )
+                    abscissa = jargval.at("abscissa").get<std::string>();
 
-                
+                std::string ordinate;
+                if ( jargval.contains("ordinate") )
+                    ordinate = jargval.at("ordinate").get<std::string>();
+
                 std::shared_ptr<Interpolator> interpolator = Interpolator::New( /*interpType*/interpolatorEnumType, filename, abscissa, ordinate, this->worldComm() );
-                this->operator[](t) = ModelParameter( name, interpolator, exprStr, M_directoryLibExpr, this->worldComm() );
+                this->operator[](t) = ModelParameter( name, interpolator,  modelexpr, desc );
             }
         }
     }
+    this->updateParameterValues();
 }
 
 void
 ModelParameters::saveMD(std::ostream &os)
 {
-  auto myMap = toParameterValues();
+#if 0
+    auto myMap = toParameterValues();
   os << "### Parameters\n";
   os << "|Name|Value|Min|Max|\n";
   os << "|---|---|---|---|\n";
@@ -151,24 +164,30 @@ ModelParameters::saveMD(std::ostream &os)
       << it->second.max() << "|\n";
   }
   os << "\n";
+#endif
 }
 
 
 void
 ModelParameters::updateParameterValues()
 {
-#if 0
+    // erase parameter in expr
+    std::set<std::string> allSymbNames;
     for( auto const& p : *this )
-        if ( p.second.hasExpression() )
-            for ( auto const& mysymb : p.second.expression().expression().symbols() )
-                std::cout << "p.first " << p.first << " mysymb " << mysymb.get_name() << "\n";
-#endif
-    std::map<std::string,double> mp;
-    for( auto const& p : *this )
-        if ( !p.second.hasExpression() || p.second.expression().expression().symbols().empty() )
-            mp[p.first] = p.second.value();
-    // update all parameters with expression which not depends of symbols (can be improved)
-    this->setParameterValues( mp );
+        p.second.updateSymbolNames( allSymbNames );
+    for( auto & p : *this )
+        p.second.eraseParameterValues( allSymbNames );
+
+
+    int previousParam = 0;
+    while ( true )
+    {
+        std::map<std::string,double> mp = this->toParameterValues();
+        if ( mp.size() == previousParam )
+            break;
+        previousParam = mp.size();
+        this->setParameterValues( mp );
+    }
 }
 void
 ModelParameters::setParameterValues( std::map<std::string,double> const& mp )
@@ -182,11 +201,40 @@ ModelParameters::toParameterValues() const
 {
     std::map<std::string,double> pv;
     for( auto const& p : *this )
-        if ( p.second.type() != "fit" )
-            pv[p.first]=p.second.value();
+    {
+        auto const& mparam = p.second;
+        if ( !mparam.isEvaluable() )
+            continue;
+
+        p.second.updateParameterValues( pv );
+    }
     return pv;
 }
 
+void
+ModelParameter::updateInformationObject( std::string const& symbol, nl::json::array_t & ja ) const
+{
+    if ( this->type() == "expression" )
+    {
+        auto [exprStr,compInfo] = M_expr.exprInformations();
+        ja.push_back( symbolExprInformations( symbol, exprStr, compInfo, this->name() ) );
+    }
+    else if ( this->type() == "fit" )
+    {
+        auto compInfo = SymbolExprComponentSuffix( 1, 1 );
+        ja.push_back( symbolExprInformations( symbol, "fit(.)", compInfo, this->name() ) );
+    }
+}
 
+void
+ModelParameters::updateInformationObject( nl::json & p ) const
+{
+    nl::json::array_t ja;
+
+    for( auto const& [symbName, mparam] : *this )
+        mparam.updateInformationObject( symbName,ja );
+
+    p = ja;
+}
 
 }

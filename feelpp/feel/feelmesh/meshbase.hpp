@@ -25,13 +25,15 @@
 #ifndef FEELPP_MESHBASE_HPP
 #define FEELPP_MESHBASE_HPP 1
 
+#include <unordered_map>
+
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/context.hpp>
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/commobject.hpp>
 #include <feel/feeltiming/tic.hpp>
 #include <feel/feelmesh/submeshdata.hpp>
-#include <unordered_map>
+#include <feel/feelmesh/meshsupportbase.hpp>
 
 #if defined(FEELPP_HAS_VTK)
 #include <feel/feelcore/disablewarnings.hpp>
@@ -79,8 +81,9 @@ const uint16_type MESH_COMPONENTS_DEFAULTS = MESH_RENUMBER | MESH_CHECK;
 //! @see
 //!/
 template<typename IndexT = uint32_type>
-class FEELPP_EXPORT MeshBase : public CommObject
+class FEELPP_EXPORT MeshBase : public CommObject, public JournalWatcher
 {
+    using super2 = JournalWatcher;
 public:
 
 
@@ -125,12 +128,21 @@ public:
     {}
     MeshBase( MeshBase const& ) = default;
     MeshBase( MeshBase && ) = default;
-    virtual ~MeshBase();
+    ~MeshBase() override;
 
     /**
      * build from a topological dimension, a real dimension and a communicator
      */
     MeshBase( uint16_type topodim, uint16_type realdim,
+              worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
+        :
+        MeshBase( "", topodim, realdim, worldComm )
+    {}
+
+    /**
+     * build from a name, a topological dimension, a real dimension and a communicator
+     */
+    MeshBase( std::string const& name, uint16_type topodim, uint16_type realdim,
               worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
 
     //@}
@@ -331,6 +343,9 @@ public:
         {
             M_smd = smd;
         }
+
+    //! return sub mesh data
+    smd_ptrtype subMeshData() const { return M_smd; }
 
     //! \return true if mesh holds sub mesh data
     bool hasSubMeshData() const { return M_smd.use_count() > 0; }
@@ -570,6 +585,15 @@ public:
         return ret;
     }
 
+    //! attach a mesh support
+    void attachMeshSupport( MeshSupportBase* ms ) const;
+
+    //! detach a mesh support
+    void detachMeshSupport( MeshSupportBase* ms ) const;
+
+    //! return all mesh supports attached
+    std::vector<MeshSupportBase*> const& meshSupportsAttached() const { return M_meshSupportsAttached; }
+
     //!
     //! @return true if the list strings are all  mesh marker
     //!
@@ -679,6 +703,18 @@ public:
                     return n.first;
             }
             return std::string();
+        }
+    /**
+     * @return the marker name associated to the \p marker id
+     */
+    std::string markerName( size_type marker, size_type dim ) const
+        {
+            for( auto const& n : M_markername )
+            {
+                if (n.second[0] == marker && n.second[1] == dim )
+                    return n.first;
+            }
+            return std::string{};
         }
 
     /**
@@ -882,6 +918,8 @@ private:
     //! meshes with nodes shared
     std::vector<std::weak_ptr<MeshBase<IndexT>>> M_meshesWithNodesShared;
 
+    //! mesh supports attached
+    mutable std::vector<MeshSupportBase*> M_meshSupportsAttached;
 
 };
 #if !defined(FEELPP_INSTANTIATE_NOEXTERN_MESHBASE)

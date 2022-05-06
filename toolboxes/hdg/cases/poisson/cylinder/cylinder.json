@@ -1,0 +1,41 @@
+{
+    "Name": "HDG-Mixed-Poisson ",
+    "ShortName":"MP",
+    "Models":{"equations":"hdg"},
+    "Materials":
+    {
+        "omega":
+        {
+            "name":"copper",
+            "poisson_c":"-1"
+        }
+    },
+    "BoundaryConditions":
+    {
+        "poisson":
+        {
+            "Neumann":
+            {
+                "inlet":
+                {
+                    "expr":"-2*(1-(x*x+y*y)/0.25):x:y"
+                },
+                "outlet":
+                {
+                    "expr":"2*(1-(x*x+y*y)/0.25):x:y"
+                },
+                "wall":
+                {
+                    "expr":"0"
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "Exports":
+        {
+            "fields":["potential","flux"]
+        }
+    }    
+}

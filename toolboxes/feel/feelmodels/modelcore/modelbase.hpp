@@ -32,23 +32,61 @@
 
 #include <feel/options.hpp>
 #include <feel/feelcore/environment.hpp>
-#include <feel/feelcore/pslogger.hpp>
+//#include <feel/feelcore/pslogger.hpp>
 #include <feel/feelcore/worldcomm.hpp>
 #include <feel/feelcore/remotedata.hpp>
+#include <feel/feelmodels/modelproperties.hpp>
 
 #include <feel/feelmodels/modelcore/feelmodelscoreconstconfig.hpp>
 #include <feel/feelmodels/modelcore/log.hpp>
 #include <feel/feelmodels/modelcore/timertool.hpp>
 
+#include <feel/feelcore/tabulateinformations.hpp>
 
 namespace Feel
 {
+
+namespace TabulateInformationTools
+{
+namespace FromJSON
+{
+tabulate_informations_ptr_t
+tabulateInformationsModelFields( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp );
+}
+}
+
+
 namespace FeelModels
 {
 
+void printToolboxApplication( std::string const& toolboxName, worldcomm_t const& worldComm = Environment::worldComm() );
+
+struct ModelBaseCommandLineOptions
+{
+    ModelBaseCommandLineOptions() = default;
+    explicit ModelBaseCommandLineOptions( po::options_description const& _options );
+    ModelBaseCommandLineOptions( ModelBaseCommandLineOptions const& ) = default;
+    ModelBaseCommandLineOptions( ModelBaseCommandLineOptions && ) = default;
+
+    po::variables_map const& vm() const
+        {
+            if ( M_vm.has_value() )
+                return *M_vm;
+            else
+                return Environment::vm();
+        }
+private :
+    std::optional<po::variables_map> M_vm;
+};
+
+/**
+ * @brief Repository for Models
+ * @ingroup ModelCore
+ * 
+ */
 struct ModelBaseRepository
 {
-    ModelBaseRepository( std::string const& rootDirWithoutNumProc = "" );
+    ModelBaseRepository( std::string const& rootDirWithoutNumProc = "", bool use_npSubDir = true, std::string const& exprRepository = "" );
     ModelBaseRepository( ModelBaseRepository const& ) = default;
     ModelBaseRepository( ModelBaseRepository && ) = default;
 
@@ -62,6 +100,11 @@ private :
     std::string M_exprRepository;
 };
 
+/**
+ * @brief File upload helper class
+ * @ingroup ModelCore
+ * 
+ */
 struct ModelBaseUpload
 {
     ModelBaseUpload() = default;
@@ -89,7 +132,13 @@ private :
     mutable std::map<std::string,std::pair<std::string,std::map<std::string,std::pair<std::string,std::time_t>>>> M_treeDataStructure;
 };
 
-class ModelBase : public JournalWatcher
+/**
+ * @brief Model base class
+ * @ingroup ModelCore
+ * 
+ */
+class ModelBase : public JournalWatcher,
+                  public std::enable_shared_from_this<ModelBase>
 {
     using super_type = JournalWatcher;
 public :
@@ -105,20 +154,25 @@ public :
     ModelBase( std::string const& prefix, std::string const& keyword,
                worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
                std::string const& subPrefix = "",
-               ModelBaseRepository const& modelRep = ModelBaseRepository() );
+               ModelBaseRepository const& modelRep = ModelBaseRepository(),
+               ModelBaseCommandLineOptions const& modelCmdLineOpt = ModelBaseCommandLineOptions() );
     ModelBase( std::string const& prefix,
                worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
                std::string const& subPrefix = "",
-               ModelBaseRepository const& modelRep = ModelBaseRepository() )
+               ModelBaseRepository const& modelRep = ModelBaseRepository(),
+               ModelBaseCommandLineOptions const& modelCmdLineOpt = ModelBaseCommandLineOptions() )
         :
-        ModelBase( prefix, prefix, worldComm, subPrefix, modelRep )
+        ModelBase( prefix, prefix, worldComm, subPrefix, modelRep, modelCmdLineOpt )
         {}
+    //ModelBase() : ModelBase("") {}
+    ModelBase() = delete;
 
     ModelBase( ModelBase const& app ) = default;
+    ModelBase( ModelBase && app ) = default;
     virtual ~ModelBase();
 
     // worldcomm
-    worldcomm_ptr_t const&  worldCommPtr() const;
+    worldcomm_ptr_t const& worldCommPtr() const;
     worldcomm_ptr_t & worldCommPtr();
     worldcomm_t & worldComm();
     worldcomm_t const& worldComm() const;
@@ -129,6 +183,8 @@ public :
     worldscomm_ptr_t const& localNonCompositeWorldsComm() const;
     void setLocalNonCompositeWorldsComm( worldscomm_ptr_t & _worldsComm);
     virtual void createWorldsComm();
+    //! return variables map from command line options
+    po::variables_map const& clovm() const { return M_modelCommandLineOptions.vm(); }
     // prefix
     std::string const& prefix() const;
     std::string const& subPrefix() const;
@@ -143,12 +199,18 @@ public :
     bool verboseAllProc() const;
     void log( std::string const& _className,std::string const& _functionName,std::string const& _msg ) const;
     // info
-    std::string filenameSaveInfo() const;
-    void setFilenameSaveInfo(std::string const& s);
-    virtual std::shared_ptr<std::ostringstream> getInfo() const;
-    virtual void printInfo() const;
-    virtual void saveInfo() const;
-    virtual void printAndSaveInfo() const;
+    void updateInformationObject( nl::json & p ) const override;
+
+    tabulate_informations_ptr_t tabulateInformations() const;
+    virtual tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const;
+
+    void printInfo() const { this->printInfo( this->tabulateInformations() ); }
+    void saveInfo() const { this->saveInfo( this->tabulateInformations() ); }
+    void printAndSaveInfo() const;
+private :
+    void printInfo( tabulate_informations_ptr_t const& tabInfo ) const;
+    void saveInfo( tabulate_informations_ptr_t const& tabInfo ) const;
+public :
     // timer
     TimerToolBase & timerTool( std::string const& s ) const;
     void addTimerTool( std::string const& s, std::string const& fileName ) const;
@@ -167,6 +229,35 @@ public :
     ModelBaseUpload const& upload() const { return M_upload; }
     void upload( std::string const& dataPath ) const;
 
+    // model properties
+    void initModelProperties();
+    bool hasModelProperties() const { return (M_modelProps)? true : false; }
+    std::shared_ptr<ModelProperties> modelPropertiesPtr() const { return M_modelProps; }
+    ModelProperties const& modelProperties() const { return *M_modelProps; }
+    ModelProperties & modelProperties() { return *M_modelProps; }
+    void setModelProperties( std::shared_ptr<ModelProperties> modelProps ) { M_modelProps = modelProps; }
+
+    /**
+     * @brief Set the Model Properties object from a filename
+     * 
+     * @param filename file name
+     */
+    void setModelProperties( std::string const& filename );
+
+    /**
+     * @brief Set the Model Properties object from a json struct
+     * the json may come from python 
+     * @param j json data structure
+     */
+    void setModelProperties( nl::json const& j );
+
+    void addParameterInModelProperties( std::string const& symbolName,double value );
+
+    bool manageParameterValues() const { return M_manageParameterValues; }
+    void setManageParameterValues( bool b ) { M_manageParameterValues = b; }
+    bool manageParameterValuesOfModelProperties() const { return M_manageParameterValuesOfModelProperties; }
+    void setManageParameterValuesOfModelProperties( bool b ) { M_manageParameterValuesOfModelProperties = b; }
+
 private :
     // worldcomm
     worldcomm_ptr_t M_worldComm;
@@ -179,10 +270,10 @@ private :
     std::string M_keyword;
     // directory
     ModelBaseRepository M_modelRepository;
+    // command line options
+    ModelBaseCommandLineOptions M_modelCommandLineOptions;
     // verbose
     bool M_verbose,M_verboseAllProc;
-    // filename for save info
-    std::string M_filenameSaveInfo;
     // timertool register by a name id
     mutable std::map<std::string,std::shared_ptr<TimerToolBase> > M_mapTimerTool;
     bool M_timersActivated;
@@ -195,14 +286,12 @@ private :
     bool M_isUpdatedForUse;
     // upload data tools
     ModelBaseUpload M_upload;
-};
 
-// null application
-struct ModelBaseNull
-{
-    static const bool is_class_null = true;
-};
+    // model properties
+    std::shared_ptr<ModelProperties> M_modelProps;
+    bool M_manageParameterValues, M_manageParameterValuesOfModelProperties;
 
+};
 
 } // namespace FeelModels
 } // namespace feel

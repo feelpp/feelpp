@@ -8,7 +8,7 @@
 
   Copyright (C) 2011 UJF
   Copyright (C) 2011 CNRS
-
+  
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
   License as published by the Free Software Foundation; either
@@ -29,19 +29,21 @@
    \author Cecile Daversin <cecile.daversin@lncmi.cnrs.fr>
    \date 2014-01-29
  */
-#define USE_BOOST_TEST 1
-
-// make sure that the init_unit_test function is defined by UTF
-//#define BOOST_TEST_MAIN
-// give a name to the testsuite
 #define BOOST_TEST_MODULE H_div approximation
-// disable the main function creation, use our own
-//#define BOOST_TEST_NO_MAIN
-
 #include <feel/feelcore/testsuite.hpp>
 
-#include <feel/feel.hpp>
+#include <feel/feelcore/environment.hpp>
+#include <feel/feelcore/application.hpp>
+#include <feel/feelalg/backend.hpp>
+#include <feel/feeldiscr/pchv.hpp>
+#include <feel/feeldiscr/dh.hpp>
+#include <feel/feeldiscr/operatorlinear.hpp>
+#include <feel/feeldiscr/operatorinterpolation.hpp>
+#include <feel/feeldiscr/projector.hpp>
 #include <feel/feelpoly/raviartthomas.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feelfilters/exporter.hpp>
+#include <feel/feelvf/vf.hpp>
 
 namespace Feel
 {
@@ -85,6 +87,7 @@ makeAbout()
 
 using namespace Feel;
 
+template<int Dim, int Order>
 class TestHDiv
     :
 public Application
@@ -102,17 +105,17 @@ public:
     typedef typename std::shared_ptr<backend_type> backend_ptrtype ;
 
     //! geometry entities type composing the mesh, here Simplex in Dimension Dim of Order G_order
-    typedef Simplex<2,1> convex_type;
+    typedef Simplex<Dim,1> convex_type;
     //! mesh type
     typedef Mesh<convex_type> mesh_type;
     //! mesh shared_ptr<> type
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     //! the basis type of our approximation space
-    typedef bases<RaviartThomas<0> > basis_type;
-    typedef bases<Lagrange<1,Vectorial> > lagrange_basis_v_type; //P1 vectorial space
-    typedef bases<Lagrange<1,Scalar> > lagrange_basis_s_type; //P1 scalar space
-    typedef bases< RaviartThomas<0>, Lagrange<1,Scalar> > prod_basis_type; //For Darcy : (u,p) (\in H_div x L2)
+    typedef bases<RaviartThomas<Order> > basis_type;
+    typedef bases<Lagrange<Order+1,Vectorial> > lagrange_basis_v_type; //P1 vectorial space
+    typedef bases<Lagrange<Order+1,Scalar> > lagrange_basis_s_type; //P1 scalar space
+    typedef bases< RaviartThomas<Order>, Lagrange<Order,Scalar,Discontinuous> > prod_basis_type; //For Darcy : (u,p) (\in H_div x L2)
     //! the approximation function space type
     typedef FunctionSpace<mesh_type, basis_type> space_type;
     typedef FunctionSpace<mesh_type, lagrange_basis_s_type> lagrange_space_s_type;
@@ -166,16 +169,20 @@ private:
 
 }; //TestHDiv
 
+template<int Dim, int Order>
 void
-TestHDiv::exampleProblem1()
+TestHDiv<Dim,Order>::exampleProblem1()
 {
     mesh_ptrtype mesh = loadMesh(_mesh = new mesh_type);
 
     //auto K = ones<2,2>(); // Hydraulic conductivity tensor
-    auto K = mat<2,2>(cst(2.),cst(1.),cst(1.),cst(2.));
+    //auto K = mat<2,2>(cst(2.),cst(1.),cst(1.),cst(2.));
     //auto Lambda = ones<2,2>(); // Hydraulic resistivity tensor
-    auto Lambda = (1.0/3.0)*mat<2,2>(cst(2.),cst(-1.),cst(-1.),cst(2.)); // Lambda = inv(K)
-    auto f = Px()+Py(); // int_omega f = 0
+    auto K = expr<Dim,Dim>( soption("functions.k") );
+    auto Lambda = inv(K); //(1.0/3.0)*mat<2,2>(cst(2.),cst(-1.),cst(-1.),cst(2.)); // Lambda = inv(K)
+    auto f = expr<Dim,1>( soption("functions.f") );
+    auto g = expr( soption("functions.g") );
+    auto pbdy = expr( soption("functions.p") );
     auto epsilon = 1e-7;
 
     // ****** Primal formulation - with Lagrange ******
@@ -188,16 +195,15 @@ TestHDiv::exampleProblem1()
     auto F_l = M_backend->newVector( Xh );
     auto darcyL_rhs = form1( _test=Xh, _vector=F_l );
     // fq
-    darcyL_rhs += integrate( _range=elements(mesh), _expr=f*id(q_l) );
+    darcyL_rhs += integrate( _range=elements(mesh), _expr=trans(f)*id(u_l) );
+    darcyL_rhs += integrate( _range=elements(mesh), _expr=g*id(q_l) );
     F_l->close();
 
-    auto M_l = M_backend->newMatrix( Xh, Xh );
+    auto M_l = M_backend->newMatrix( _test=Xh, _trial=Xh );
     auto darcyL = form2( _test=Xh, _trial=Xh, _matrix=M_l);
     // K \grap p \grad q
     darcyL += integrate( _range=elements(mesh), _expr=gradt(p_l)*K*trans(grad(q_l)) );
-    M_l->close();
-
-    darcyL += on( boundaryfaces(mesh), _element=p_l, _rhs=darcyL_rhs, _expr=cst(0.) );
+    darcyL += on( _range=boundaryfaces(mesh), _element=p_l, _rhs=darcyL_rhs, _expr=pbdy );
 
     // Solve problem (p)
     M_backend->solve( _matrix=M_l, _solution=p_l, _rhs=F_l );
@@ -211,24 +217,26 @@ TestHDiv::exampleProblem1()
     auto U_rt = Yh->element( "(u,p)" ); //trial
     auto V_rt = Yh->element( "(v,q)" ); //test
 
-    auto u_rt = U_rt.element<0>( "u" ); //velocity field
-    auto v_rt = V_rt.element<0>( "v" ); // potential field
-    auto p_rt = U_rt.element<1>( "p" );
-    auto q_rt = V_rt.element<1>( "q" );
+    auto u_rt = U_rt.template element<0>( "u" ); //velocity field
+    auto v_rt = V_rt.template element<0>( "v" ); // potential field
+    auto p_rt = U_rt.template element<1>( "p" );
+    auto q_rt = V_rt.template element<1>( "q" );
 
     auto F_rt = M_backend->newVector( Yh );
     auto darcyRT_rhs = form1( _test=Yh, _vector=F_rt );
     // fq
-    darcyRT_rhs += integrate( _range=elements(mesh), _expr=f*id(q_rt) );
-
-    auto M_rt = M_backend->newMatrix( Yh, Yh );
+    darcyRT_rhs += integrate( _range=elements(mesh), _expr=-1.*g*id(q_rt) );
+    darcyRT_rhs += integrate( _range=elements(mesh), _expr=trans(f)*id(v_rt) );
+    darcyRT_rhs += integrate( _range=boundaryfaces(mesh), _expr = -1.*pbdy*trans(id(v_rt))*N() );
+    auto M_rt = M_backend->newMatrix( _test=Yh, _trial=Yh );
     auto darcyRT = form2( _test=Yh, _trial=Yh, _matrix=M_rt);
     // Lambda u v
-    darcyRT += integrate( _range=elements(mesh), _expr = -trans(Lambda*idt(u_rt))*id(v_rt) );
+    darcyRT += integrate( _range=elements(mesh), _expr = trans(idt(u_rt))*id(v_rt) );
+    
     // p div(v)
-    darcyRT += integrate( _range=elements(mesh), _expr = idt(p_rt)*div(v_rt) );
+    darcyRT += integrate( _range=elements(mesh), _expr = -1.*idt(p_rt)*div(v_rt) );
     // div(u) q
-    darcyRT += integrate( _range=elements(mesh), _expr = divt(u_rt)*id(q_rt) );
+    darcyRT += integrate( _range=elements(mesh), _expr = -1.*divt(u_rt)*id(q_rt) );
 
     // Solve problem
     backend(_rebuild=true)->solve( _matrix=M_rt, _solution=U_rt, _rhs=F_rt );
@@ -254,46 +262,48 @@ TestHDiv::exampleProblem1()
                                  % ( boost::format( "%1%-%2%-%3%" ) % "hypercube" % 2 % 1 ).str()
                                  % "darcy" ).str();
     auto exporter_pro1 = exporter(_mesh=mesh,_name=exporterName );
-    exporter_pro1->step( 0 )->add( "velocity_L", u_l );
-    exporter_pro1->step( 0 )->add( "potential_L", p_l );
-    exporter_pro1->step( 0 )->add( "velocity_RT", u_rt );
-    exporter_pro1->step( 0 )->add( "potential_RT", p_rt );
+    exporter_pro1->step( 0 )->add( "velocity_L", u_l, "nodal" );
+    exporter_pro1->step( 0 )->add( "potential_L", p_l, "nodal" );
+    exporter_pro1->step( 0 )->add( "velocity_RT", idv(u_rt) );
+    exporter_pro1->step( 0 )->add( "potential_RT", p_rt, "nodal" );
     exporter_pro1->save();
 }
 
+template<int Dim, int Order>
 void
-TestHDiv::testProjector()
+TestHDiv<Dim,Order>::testProjector()
 {
     mesh_ptrtype mesh = loadMesh(_mesh = new mesh_type);
 
-    auto RTh = Dh<0>( mesh );
+    auto RTh = Dh<Order>( mesh );
     lagrange_space_v_ptrtype Yh_v = lagrange_space_v_type::New( mesh ); //lagrange vectorial space
     lagrange_space_s_ptrtype Yh_s = lagrange_space_s_type::New( mesh ); //lagrange scalar space
 
-    auto E = Py()*unitX() + Px()*unitY();
-    auto f = cst(0.); //div(E) = f
+    auto E = expr<Dim,1>( soption("functions.e" ) );
+    auto fE = div(E);
+    auto gE = grad<Dim>(E);
 
     // L2 projection (Lagrange)
     auto l2_lagV = opProjection( _domainSpace=Yh_v, _imageSpace=Yh_v, _type=L2 ); //l2 vectorial proj
     auto l2_lagS = opProjection( _domainSpace=Yh_s, _imageSpace=Yh_s, _type=L2 ); //l2 scalar proj
     auto E_pL2_lag = l2_lagV->project( _expr= E );
-    auto error_pL2_lag = l2_lagS->project( _expr=divv(E_pL2_lag) - f );
+    auto error_pL2_lag = l2_lagS->project( _expr=divv(E_pL2_lag) - fE );
 
     // H1 projection (Lagrange)
     auto h1_lagV = opProjection( _domainSpace=Yh_v, _imageSpace=Yh_v, _type=H1 ); //h1 vectorial proj
     auto h1_lagS = opProjection( _domainSpace=Yh_s, _imageSpace=Yh_s, _type=H1 ); //h1 scalar proj
-    auto E_pH1_lag = h1_lagV->project( _expr= E, _grad_expr=mat<2,2>(cst(0.),cst(1.),cst(1.),cst(0.)) );
-    auto error_pH1_lag = l2_lagS->project( _expr=divv(E_pH1_lag) - f );
+    auto E_pH1_lag = h1_lagV->project( _expr= E, _grad_expr=gE );
+    auto error_pH1_lag = l2_lagS->project( _expr=divv(E_pH1_lag) - fE );
 
     // HDIV projection (Lagrange)
     auto hdiv_lagV = opProjection( _domainSpace=Yh_v, _imageSpace=Yh_v, _type=HDIV );
     auto E_pHDIV_lag = hdiv_lagV->project( _expr= E, _div_expr=cst(0.) );
-    auto error_pHDIV_lag = l2_lagS->project( _expr=divv(E_pHDIV_lag) - f );
+    auto error_pHDIV_lag = l2_lagS->project( _expr=divv(E_pHDIV_lag) - fE );
 
     // L2 projection (RT)
     auto l2_rt = opProjection( _domainSpace=RTh, _imageSpace=RTh, _type=L2 );
     auto E_pL2_rt = l2_rt->project( _expr= E );
-    auto error_pL2_rt = l2_lagS->project( _expr=divv(E_pL2_lag) - f );
+    auto error_pL2_rt = l2_lagS->project( _expr=divv(E_pL2_lag) - fE );
 
     BOOST_TEST_MESSAGE("L2 projection [Lagrange]: error[div(E)-f]");
     std::cout << "error L2: " << math::sqrt( l2_lagS->energy( error_pL2_lag, error_pL2_lag ) ) << "\n";
@@ -314,52 +324,42 @@ TestHDiv::testProjector()
                                  % ( boost::format( "%1%-%2%-%3%" ) % "hypercube" % 2 % 1 ).str()
                                  % proj_name ).str();
     auto exporter_proj = exporter(_mesh=mesh,_name=exporterName );
-    exporter_proj->step( 0 )->add( "proj_L2_E[Lagrange]", E_pL2_lag );
-    exporter_proj->step( 0 )->add( "proj_H1_E[Lagrange]", E_pH1_lag );
-    exporter_proj->step( 0 )->add( "proj_HDiv_E[Lagrange]", E_pHDIV_lag );
-    exporter_proj->step( 0 )->add( "proj_L2_E[RT]", E_pL2_rt );
+    exporter_proj->step( 0 )->add( "proj_L2_E[Lagrange]", E_pL2_lag, "nodal" );
+    exporter_proj->step( 0 )->add( "proj_H1_E[Lagrange]", E_pH1_lag, "nodal" );
+    exporter_proj->step( 0 )->add( "proj_HDiv_E[Lagrange]", E_pHDIV_lag, "nodal" );
+    exporter_proj->step( 0 )->add( "proj_L2_E[RT]", E_pL2_rt, "nodal" );
     exporter_proj->save();
 }
 
 }
-#if USE_BOOST_TEST
+
 
 FEELPP_ENVIRONMENT_WITH_OPTIONS( Feel::makeAbout(), Feel::makeOptions() )
 
 BOOST_AUTO_TEST_SUITE( HDIV )
 
-BOOST_AUTO_TEST_CASE( test_hdiv_projection_ref )
+typedef boost::mpl::vector<boost::mpl::pair<boost::mpl::int_<2>,boost::mpl::int_<0>>, 
+                           boost::mpl::pair<boost::mpl::int_<2>,boost::mpl::int_<1>>
+                           //boost::mpl::pair<boost::mpl::int_<3>,boost::mpl::int_<0>>, 
+                           //boost::mpl::pair<boost::mpl::int_<3>,boost::mpl::int_<1>>
+                        > types;
+using namespace Feel;
+
+BOOST_AUTO_TEST_CASE_TEMPLATE( test_hdiv_proj, T, types )
 {
-    BOOST_TEST_MESSAGE( "*** projection on square ***" );
-    Feel::TestHDiv t;
-    Feel::Environment::changeRepository( boost::format( "%1%/test_projection/" )
-                                         % Feel::Environment::about().appName() );
+    Feel::TestHDiv<T::first::value,T::second::value> t;
+    Feel::Environment::changeRepository( _directory=boost::format( "%1%/test_projection_%2%D_RT%3%/" )
+                                         % Feel::Environment::about().appName() 
+                                         % T::first::value % T::second::value  );
     t.testProjector();
 }
-
-BOOST_AUTO_TEST_CASE( test_hdiv_example_1 )
+BOOST_AUTO_TEST_CASE_TEMPLATE(test_hdiv_darcy,T,types)
 {
-    BOOST_TEST_MESSAGE( "*** resolution of Darcy problem ***" );
-    Feel::TestHDiv t;
-
-    Feel::Environment::changeRepository( boost::format( "%1%/test_Darcy/h_%2%/" )
-                                         % Feel::Environment::about().appName()
-                                         % t.hSize() );
-
+    Feel::TestHDiv<T::first::value,T::second::value> t;
+    Feel::Environment::changeRepository( _directory= boost::format( "%1%/test_Darcy_%2%D_RT%3%/h_%4%/" ) 
+                                                      % Feel::Environment::about().appName() 
+                                                      % T::first::value % T::second::value
+                                                      % t.hSize()  );
     t.exampleProblem1();
 }
-
 BOOST_AUTO_TEST_SUITE_END()
-#else
-
-int
-main( int argc, char* argv[] )
-{
-    Feel::Environment env( argc,argv,
-                           makeAbout(), makeOptions() );
-    Feel::TestHDiv app_hdiv;
-    app_hdiv.testProjector();
-    app_hdiv.exampleProblem1();
-}
-
-#endif

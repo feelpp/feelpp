@@ -27,29 +27,38 @@ if [ "${component}" = "feelpp" ] ; then
 #    tag=$(tag_from_os $TARGET $BRANCHTAG $FEELPP_VERSION)
     image="feelpp"
 fi
+if [ "${component}" = "feelpp-python" ] ; then
+#    tag=$(tag_from_os $TARGET $BRANCHTAG $FEELPP_VERSION)
+    image="feelpp-python"
+fi
 echo "--- Building ${image}:${tag}"
 
 
 if [ "${component}" = "feelpp" ] ; then
-    dockerfile_from "docker/${image}/Dockerfile.template" "feelpp/feelpp-env:${tagos}" > docker/${image}/dockerfile.tmp
+    dockerfile_from "docker/${image}/Dockerfile.template" "ghcr.io/feelpp/feelpp-env:${tagos}" > docker/${image}/dockerfile.tmp
 elif [ "${component}" = "toolboxes" -o "${component}" = "testsuite" ] ; then
-    dockerfile_from "docker/${image}/Dockerfile.template" "feelpp/feelpp:${tag}" > docker/${image}/dockerfile.tmp
+    dockerfile_from "docker/${image}/Dockerfile.template" "ghcr.io/feelpp/feelpp:${tag}" > docker/${image}/dockerfile.tmp
 elif [ "${component}" = "mor" ] ; then
-    dockerfile_from "docker/${image}/Dockerfile.template" "feelpp/feelpp-toolboxes:${tag}" > docker/${image}/dockerfile.tmp
+    dockerfile_from "docker/${image}/Dockerfile.template" "ghcr.io/feelpp/feelpp-toolboxes:${tag}" > docker/${image}/dockerfile.tmp
+elif [ "${component}" = "feelpp-python" -o "${component}" = "python" ] ; then
+    dockerfile_from "docker/${image}/Dockerfile.template" "ghcr.io/feelpp/feelpp-mor:${tag}" > docker/${image}/dockerfile.tmp    
 else
-    dockerfile_from "docker/${image}/Dockerfile.template" "feelpp/feelpp-toolboxes:${tag}" > docker/${image}/dockerfile.tmp
+    dockerfile_from "docker/${image}/Dockerfile.template" "ghcr.io/feelpp/feelpp-toolboxes:${tag}" > docker/${image}/dockerfile.tmp
 fi
 
 if [ "${component}" = "feelpp" ] ; then
     CTEST_FLAGS="-R feelpp_qs_ -T test --no-compress-output"
 elif [ "${component}" = "toolboxes" ] ; then
-    CTEST_FLAGS="-R feelpp_toolbox_ -T test --no-compress-output"
+    CTEST_FLAGS="-R feelpp_toolbox_ -T test --no-compress-output --output-on-failure"
 elif [ "${component}" = "testsuite" ] ; then
-    CTEST_FLAGS="-R feelpp_test_ -T test --no-compress-output"
+    CTEST_FLAGS="-R feelpp_test_ -T test --no-compress-output --output-on-failure"
+elif [ "${component}" = "feelpp-python" -o "${component}" = "python" ] ; then
+    CTEST_FLAGS="-R feelpp -T test --no-compress-output --output-on-failure"
 else
-    CTEST_FLAGS="-T test --no-compress-output"
+    CTEST_FLAGS="-T test --no-compress-output --output-on-failure"
 fi
 
+if [ ! -z $BUILDKITE_JOB_ID]; then
 cat << EOF | buildkite-agent annotate --style "info"
 Building Feel++ ${component} with the following configuration
  * CXX=${CXX}
@@ -60,11 +69,13 @@ Building Feel++ ${component} with the following configuration
  * JOBS=${JOBS}
  * BRANCH=${BUILDKITE_BRANCH}
 
-Docker image: feelpp/${image}:${tag}
+Docker image: ghcr.io/feelpp/${image}:${tag}
 EOF
+fi
+
 docker build \
        --pull \
-       --tag=feelpp/${image}:${tag} \
+       --tag=ghcr.io/feelpp/${image}:${tag} \
        --build-arg=BUILD_JOBS=${JOBS}\
        --build-arg=BRANCH=${BUILDKITE_BRANCH}\
        --build-arg=CXX="${CXX}" \
@@ -80,10 +91,11 @@ docker build \
        docker/${image}
 
 
-echo "--- Tagging ${image}:${tag}"
+echo "--- Tagging ghcr.io/feelpp/${image}:${tag}"
 extratags=$(extratags_from_target $TARGET $BRANCHTAG $FEELPP_VERSION)
 # add extra tags
 for tagalias in ${extratags[@]}; do
-    echo "Tagging feelpp/${image}:$tag as feelpp/${image}:$tagalias"
-    docker tag "feelpp/${image}:$tag" "feelpp/${image}:$tagalias"
+    echo "Tagging ghcr.io/feelpp/${image}:$tag as ghcr.io/feelpp/${image}:$tagalias"
+    docker tag "ghcr.io/feelpp/${image}:$tag" "ghcr.io/feelpp/${image}:$tagalias"
 done
+source $(dirname $0)/release.sh  -- ${image}

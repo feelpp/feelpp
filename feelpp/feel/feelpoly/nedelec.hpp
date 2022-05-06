@@ -1134,7 +1134,7 @@ public:
         M_refconvex()
     {}
 
-    ~Nedelec()
+    ~Nedelec() override
     {}
 
     //@}

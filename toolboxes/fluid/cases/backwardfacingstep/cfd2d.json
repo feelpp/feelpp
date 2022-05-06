@@ -1,0 +1,66 @@
+{
+    "Name": "Backward Facing Step 2d",
+    "ShortName":"backwardfacingstep2d",
+    "Models":
+    {
+        "fluid":{
+            "equations":"Navier-Stokes"
+        }
+    },
+    "Meshes":
+    {
+        "fluid":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/step-elmann-2009.geo",
+                "hsize":0.05
+            }
+        }
+    },
+    "Materials":
+    {
+        "fluid":{
+            "rho":"1",
+            // "mu":"0.2"//Re=10
+            "mu":"0.02"//Re=100
+            // "mu":"0.01"//Re=200
+            // "mu":"0.005"//Re=400
+        }
+    },
+    "BoundaryConditions":
+    {
+        "fluid":
+        {
+            "velocity":
+            {
+                "inlet":
+                {
+                    "expr":"{ 6*y*(1-y),0 }:y"
+                },
+                "wall":
+                {
+                    "expr":"{0,0}"
+                }
+            },
+            "outlet":
+            {
+                "outlet":
+                {
+                    "expr":"0" 
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "fluid":
+        {
+            "Exports":
+            {
+                "fields":["velocity","pressure","pid"]
+            }
+        }
+    }
+
+}

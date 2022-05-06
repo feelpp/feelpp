@@ -28,6 +28,7 @@
 #define FEELPP_INFO_HPP 1
 
 #include <feel/feelcore/feelmacros.hpp>
+#include <feel/feelcore/git.hpp>
 
 /**
  * Namespace for general FEEL functions.
@@ -126,6 +127,16 @@ public:
      * architecture-independent data files for this program
      */
     static char const* datadir();
+
+    /**
+     * @brief get git metadata
+     * 
+     */
+    static GitMetadata gitMetadata() { return S_git; }
+
+private:
+
+    constexpr static GitMetadata S_git{};
 
 }; // Info
 

@@ -34,7 +34,7 @@ namespace FeelModels {
  * @author Vincent Chabannes
  * @see
  */
-template<typename ElementVelocityType,typename ElementMuP0Type,typename SpecificExprType>
+template<typename ElementVelocityType,typename SpecificExprType>
 class FluidMecConvectionImpl
 {
 public:
@@ -43,7 +43,7 @@ public:
      */
     //@{
 
-    typedef FluidMecConvectionImpl<ElementVelocityType,ElementMuP0Type,SpecificExprType> this_type;
+    typedef FluidMecConvectionImpl<ElementVelocityType,SpecificExprType> this_type;
 
     static const size_type context = mpl::if_<mpl::or_<boost::is_same<SpecificExprType,mpl::int_<0> >,
                                                        boost::is_same<SpecificExprType,mpl::int_<1> > >,
@@ -51,20 +51,14 @@ public:
                                               mpl::int_<vm::JACOBIAN|vm::KB|vm::GRAD> >::type::value;
 
     static const size_type context_velocity = vm::JACOBIAN|vm::KB|vm::GRAD;
-    static const size_type context_muP0 = vm::JACOBIAN;
 
     typedef ElementVelocityType element_type;
-    typedef ElementMuP0Type element_muP0_type;
 
     //------------------------------------------------------------------------------//
     // velocity functionspace
     typedef typename element_type::functionspace_type functionspace_type;
     typedef typename functionspace_type::reference_element_type* fe_ptrtype;
     typedef typename functionspace_type::reference_element_type fe_type;
-    //------------------------------------------------------------------------------//
-    // muP0 functionspace
-    typedef typename element_muP0_type::functionspace_type functionspace_muP0_type;
-    typedef typename functionspace_muP0_type::reference_element_type fe_muP0_type;
     //------------------------------------------------------------------------------//
 
     typedef typename functionspace_type::geoelement_type geoelement_type;
@@ -109,16 +103,11 @@ public:
      */
     //@{
 
-    FluidMecConvectionImpl( element_type const & v, element_muP0_type const& muP0 )
+    FluidMecConvectionImpl( element_type const & v )
         :
-        M_v( boost::cref(v) ),
-        M_muP0( boost::cref(muP0) )
+        M_v( boost::cref(v) )
     {}
-    FluidMecConvectionImpl( FluidMecConvectionImpl const & op )
-        :
-        M_v( op.M_v ),
-        M_muP0( op.M_muP0 )
-    {}
+    FluidMecConvectionImpl( FluidMecConvectionImpl const & op ) = default;
     ~FluidMecConvectionImpl()
     {}
 
@@ -155,7 +144,6 @@ public:
     bool isPolynomial() const { return true; }
 
     element_type const& velocity() const { return M_v; }
-    element_muP0_type const& muP0() const { return M_muP0; }
 
     //@}
 
@@ -175,14 +163,8 @@ public:
         // fe velocity context
         typedef typename fe_type::PreCompute pc_type;
         typedef std::shared_ptr<pc_type> pc_ptrtype;
-        typedef typename fe_type::template Context<context_velocity, fe_type, gm_type,geoelement_type,gmc_type::context> ctx_type;
+        typedef typename fe_type::template Context<context_velocity, fe_type, gm_type,geoelement_type/*,gmc_type::context*/> ctx_type;
         typedef std::shared_ptr<ctx_type> ctx_ptrtype;
-
-        // fe muP0 context
-        typedef typename fe_muP0_type::PreCompute pc_muP0_type;
-        typedef std::shared_ptr<pc_muP0_type> pc_muP0_ptrtype;
-        typedef typename fe_muP0_type::template Context<context_muP0, fe_muP0_type, gm_type,geoelement_type,gmc_type::context> ctx_muP0_type;
-        typedef std::shared_ptr<ctx_muP0_type> ctx_muP0_ptrtype;
 
 
         // fe context for test and trial function
@@ -204,9 +186,6 @@ public:
 
         // output and usefull containter
         typedef Shape<gmc_type::nDim, Scalar, false, false> shape_scalar;
-        //typedef Eigen::Matrix<value_type,shape_scalar::M,shape_scalar::N> loc_scalar_type;
-        typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<1,1>> loc_scalar_type;
-        typedef boost::multi_array<loc_scalar_type,1> array_scalar_type;
 
         typedef Shape<gmc_type::nDim, Vectorial, false, false> shape_vectorial;
         //typedef Eigen::Matrix<value_type,shape_vectorial::M,shape_vectorial::N> loc_vectorial_type;
@@ -227,7 +206,7 @@ public:
         typedef boost::multi_array<loc_matrix_vectorial_type,1> array_matrix_vectorial_type;
 
         using ret_type = Eigen::Map<loc_matrix_vectorial_type const>;
-        
+
         typedef typename mpl::if_<mpl::or_< boost::is_same<SpecificExprType,mpl::int_<0> >,
                                             boost::is_same<SpecificExprType,mpl::int_<1> > >,
                                   shape_vectorial,
@@ -247,20 +226,15 @@ public:
             M_fecTrial( fusion::at_key<basis_fec_trial_key_type>( feu ).get() ),
             M_pc( new pc_type( expr.velocity().functionSpace()->fe(), fusion::at_key<key_type>( geom )->xRefs() ) ),
             M_ctx( new ctx_type( expr.velocity().functionSpace()->fe(),fusion::at_key<key_type>( geom ),(pc_ptrtype const&)M_pc ) ),
-            M_pcMuP0( new pc_muP0_type( expr.muP0().functionSpace()->fe(), fusion::at_key<key_type>( geom )->xRefs() ) ),
-            M_ctxMuP0( new ctx_muP0_type( expr.muP0().functionSpace()->fe(),fusion::at_key<key_type>( geom ),(pc_muP0_ptrtype const&)M_pcMuP0 ) ),
             M_loc( expr.velocity().idExtents(*fusion::at_key<key_type>( geom )) ),
             M_locId( expr.velocity().idExtents(*fusion::at_key<key_type>( geom )) ),
             M_locGrad( expr.velocity().gradExtents(*fusion::at_key<key_type>( geom )) ),
-            M_locMuP0( expr.muP0().idExtents(*fusion::at_key<key_type>( geom )) ),
             M_zeroLocGrad(),
-            M_zeroLocId(),
-            M_zeroLocScalar()
+            M_zeroLocId()
             //M_zero( ret_type::Zero() )
             {
                 M_zeroLocGrad.setZero();
                 M_zeroLocId.setZero();
-                M_zeroLocScalar.setZero();
             }
 
         tensor( this_type const& expr,
@@ -271,20 +245,15 @@ public:
             M_fecTest( fusion::at_key<basis_fec_test_key_type>( fev ).get() ),
             M_pc( new pc_type( expr.velocity().functionSpace()->fe(), fusion::at_key<key_type>( geom )->xRefs() ) ),
             M_ctx( new ctx_type( expr.velocity().functionSpace()->fe(),fusion::at_key<key_type>( geom ),(pc_ptrtype const&)M_pc ) ),
-            M_pcMuP0( new pc_muP0_type( expr.muP0().functionSpace()->fe(), fusion::at_key<key_type>( geom )->xRefs() ) ),
-            M_ctxMuP0( new ctx_muP0_type( expr.muP0().functionSpace()->fe(),fusion::at_key<key_type>( geom ),(pc_muP0_ptrtype const&)M_pcMuP0 ) ),
             M_loc( expr.velocity().idExtents(*fusion::at_key<key_type>( geom )) ),
             M_locId( expr.velocity().idExtents(*fusion::at_key<key_type>( geom )) ),
             M_locGrad( expr.velocity().gradExtents(*fusion::at_key<key_type>( geom )) ),
-            M_locMuP0( expr.muP0().idExtents(*fusion::at_key<key_type>( geom )) ),
             M_zeroLocGrad(),
-            M_zeroLocId(),
-            M_zeroLocScalar()
+            M_zeroLocId()
             //M_zero( ret_type::Zero() )
             {
                 M_zeroLocGrad.setZero();
                 M_zeroLocId.setZero();
-                M_zeroLocScalar.setZero();
             }
 
         tensor( this_type const& expr, Geo_t const& geom )
@@ -293,39 +262,25 @@ public:
             M_geot( fusion::at_key<key_type>( geom ) ),
             M_pc( new pc_type( expr.velocity().functionSpace()->fe(), fusion::at_key<key_type>( geom )->xRefs() ) ),
             M_ctx( new ctx_type( expr.velocity().functionSpace()->fe(),fusion::at_key<key_type>( geom ),(pc_ptrtype const&)M_pc ) ),
-            M_pcMuP0( new pc_muP0_type( expr.muP0().functionSpace()->fe(), fusion::at_key<key_type>( geom )->xRefs() ) ),
-            M_ctxMuP0( new ctx_muP0_type( expr.muP0().functionSpace()->fe(),fusion::at_key<key_type>( geom ),(pc_muP0_ptrtype const&)M_pcMuP0 ) ),
             M_loc( expr.velocity().idExtents(*fusion::at_key<key_type>( geom )) ),
             M_locId( expr.velocity().idExtents(*fusion::at_key<key_type>( geom )) ),
             M_locGrad( expr.velocity().gradExtents(*fusion::at_key<key_type>( geom )) ),
-            M_locMuP0( expr.muP0().idExtents(*fusion::at_key<key_type>( geom )) ),
             M_zeroLocGrad(),
-            M_zeroLocId(),
-            M_zeroLocScalar()
+            M_zeroLocId()
             //M_zero( ret_type::Zero() )
             {
                 M_zeroLocGrad.setZero();
                 M_zeroLocId.setZero();
-                M_zeroLocScalar.setZero();
             }
 
-        template<typename IM>
-        void init( IM const& im )
-        {
-            //M_tensor_expr.init( im );
-        }
         void update( Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& feu )
         {
             std::fill( M_locId.data(), M_locId.data()+M_locId.num_elements(), M_zeroLocId/*loc_id_type::Zero()*/ );
             std::fill( M_locGrad.data(), M_locGrad.data()+M_locGrad.num_elements(), M_zeroLocGrad/*loc_grad_type::Zero()*/ );
-            std::fill( M_locMuP0.data(), M_locMuP0.data()+M_locMuP0.num_elements(), M_zeroLocScalar/*loc_scalar_type::Zero()*/ );
 
             const uint16_type nQuadPts = M_geot->nPoints();
 
             //M_ctx->update( fusion::at_key<key_type>( geom ),  (pc_ptrtype const&) M_pc );
-
-            M_ctxMuP0->update( fusion::at_key<key_type>( geom ),  (pc_muP0_ptrtype const&) M_pcMuP0 );
-            M_expr.muP0().id( *M_ctxMuP0, M_locMuP0 );
 #if 0
             M_expr.velocity().id( *M_ctx, M_locId );
             M_expr.velocity().grad( *M_ctx, M_locGrad );
@@ -365,14 +320,11 @@ public:
         {
             std::fill( M_locId.data(), M_locId.data()+M_locId.num_elements(), M_zeroLocId/*loc_id_type::Zero()*/ );
             std::fill( M_locGrad.data(), M_locGrad.data()+M_locGrad.num_elements(), M_zeroLocGrad/*loc_grad_type::Zero()*/ );
-            std::fill( M_locMuP0.data(), M_locMuP0.data()+M_locMuP0.num_elements(), M_zeroLocScalar/*loc_scalar_type::Zero()*/ );
 
             const uint16_type nQuadPts = M_geot->nPoints();
 
             M_ctx->update( fusion::at_key<key_type>( geom ),  (pc_ptrtype const&) M_pc );
 
-            M_ctxMuP0->update( fusion::at_key<key_type>( geom ),  (pc_muP0_ptrtype const&) M_pcMuP0 );
-            M_expr.muP0().id( *M_ctxMuP0, M_locMuP0 );
 #if 0
             M_expr.velocity().id( *M_ctx, M_locId );
             M_expr.velocity().grad( *M_ctx, M_locGrad );
@@ -404,9 +356,6 @@ public:
 #endif
             update(mpl::int_<gmc_type::nDim>(), mpl::int_<SpecificExprType::value>() );
         }
-        void update( Geo_t const& geom, uint16_type face )
-        {
-        }
 
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const
@@ -430,9 +379,7 @@ public:
             const value_type part1 = du1vdx*u1t + du1vdy*u2t + du1tdx*u1v + du1tdy*u2v;
             const value_type part2 = du2vdx*u1t + du2vdy*u2t + du2tdx*u1v + du2tdy*u2v;
 
-            const value_type mu = M_locMuP0[q](0,0);
-
-            const value_type res = mu*(part1*u1 + part2*u2);
+            const value_type res = part1*u1 + part2*u2;
 
             return res;
         }
@@ -455,9 +402,7 @@ public:
             const value_type part2 = du2vdx*u1t + du2vdy*u2t + du2vdz*u3t + du2tdx*u1v + du2tdy*u2v + du2tdz*u3v;
             const value_type part3 = du3vdx*u1t + du3vdy*u2t + du3vdz*u3t + du3tdx*u1v + du3tdy*u2v + du3tdz*u3v;
 
-            const value_type mu = M_locMuP0[q](0,0);
-
-            const value_type res = mu*(part1*u1 + part2*u2 + part3*u3);
+            const value_type res = part1*u1 + part2*u2 + part3*u3;
 
             return res;
         }
@@ -482,8 +427,7 @@ public:
             const value_type stab1 = 0.5*(divut*u1v + divuv*u1t);
             const value_type stab2 = 0.5*(divut*u2v + divuv*u2t);
 
-            const value_type mu = M_locMuP0[q](0,0);
-            const value_type res = mu*((part1+stab1)*u1 + (part2+stab2)*u2);
+            const value_type res = (part1+stab1)*u1 + (part2+stab2)*u2;
 
             return res;
         }
@@ -505,8 +449,6 @@ public:
             const value_type divut = du1tdx + du2tdy + du3tdz;
             const value_type divuv = du1vdx + du2vdy + du3vdz;
 
-            const value_type mu = M_locMuP0[q](0,0);
-
             const value_type part1 = du1vdx*u1t + du1vdy*u2t + du1vdz*u3t + du1tdx*u1v + du1tdy*u2v + du1tdz*u3v;
             const value_type part2 = du2vdx*u1t + du2vdy*u2t + du2vdz*u3t + du2tdx*u1v + du2tdy*u2v + du2tdz*u3v;
             const value_type part3 = du3vdx*u1t + du3vdy*u2t + du3vdz*u3t + du3tdx*u1v + du3tdy*u2v + du3tdz*u3v;
@@ -515,7 +457,7 @@ public:
             const value_type stab2 = 0.5*(divut*u2v + divuv*u2t);
             const value_type stab3 = 0.5*(divut*u3v + divuv*u3t);
 
-            const value_type res = mu*((part1+stab1)*u1 + (part2+stab2)*u2 + (part3+stab3)*u3);
+            const value_type res = (part1+stab1)*u1 + (part2+stab2)*u2 + (part3+stab3)*u3;
 
             // trans(divt(u)*val(0.5*idv(*M_P0Rho)*idv(u))+val(0.5*idv(*M_P0Rho)*divv(u))*idt(u))*id(v),
 
@@ -558,11 +500,10 @@ public:
             const uint16_type nQuadPts = M_geot->nPoints();
             for ( uint16_type q = 0; q < nQuadPts; ++q )
                 {
-                    const value_type mu = M_locMuP0[q](0,0);
                     const value_type locId0 = M_locId[q](0,0);
                     const value_type locId1 = M_locId[q](1,0);
-                    M_loc[q](0,0) = mu*( M_locGrad[q](0,0)*locId0 + M_locGrad[q](0,1)*locId1 );
-                    M_loc[q](1,0) = mu*( M_locGrad[q](1,0)*locId0 + M_locGrad[q](1,1)*locId1 );
+                    M_loc[q](0,0) = M_locGrad[q](0,0)*locId0 + M_locGrad[q](0,1)*locId1;
+                    M_loc[q](1,0) = M_locGrad[q](1,0)*locId0 + M_locGrad[q](1,1)*locId1;
                     //M_loc[q](0,0) = M_locGrad[q](0,0)*M_locId[q](0,0) + M_locGrad[q](0,1)*M_locId[q](1,0);
                     //M_loc[q](1,0) = M_locGrad[q](1,0)*M_locId[q](0,0) + M_locGrad[q](1,1)*M_locId[q](1,0);
                 }
@@ -573,10 +514,9 @@ public:
             const uint16_type nQuadPts = M_geot->nPoints();
             for ( uint16_type q = 0; q < nQuadPts; ++q )
                 {
-                    const value_type mu = M_locMuP0[q](0,0);
-                    M_loc[q](0,0) = mu*( M_locGrad[q](0,0)*M_locId[q](0,0) + M_locGrad[q](0,1)*M_locId[q](1,0) + M_locGrad[q](0,2)*M_locId[q](2,0) );
-                    M_loc[q](1,0) = mu*( M_locGrad[q](1,0)*M_locId[q](0,0) + M_locGrad[q](1,1)*M_locId[q](1,0) + M_locGrad[q](1,2)*M_locId[q](2,0) );
-                    M_loc[q](2,0) = mu*( M_locGrad[q](2,0)*M_locId[q](0,0) + M_locGrad[q](2,1)*M_locId[q](1,0) + M_locGrad[q](2,2)*M_locId[q](2,0) );
+                    M_loc[q](0,0) = M_locGrad[q](0,0)*M_locId[q](0,0) + M_locGrad[q](0,1)*M_locId[q](1,0) + M_locGrad[q](0,2)*M_locId[q](2,0);
+                    M_loc[q](1,0) = M_locGrad[q](1,0)*M_locId[q](0,0) + M_locGrad[q](1,1)*M_locId[q](1,0) + M_locGrad[q](1,2)*M_locId[q](2,0);
+                    M_loc[q](2,0) = M_locGrad[q](2,0)*M_locId[q](0,0) + M_locGrad[q](2,1)*M_locId[q](1,0) + M_locGrad[q](2,2)*M_locId[q](2,0);
                 }
         }
         /**
@@ -587,14 +527,13 @@ public:
             const uint16_type nQuadPts = M_geot->nPoints();
             for ( uint16_type q = 0; q < nQuadPts; ++q )
                 {
-                    const value_type mu = M_locMuP0[q](0,0);
                     const value_type u1v = M_locId[q](0,0), u2v = M_locId[q](1,0);
                     const value_type du1vdx = M_locGrad[q](0,0), du1vdy = M_locGrad[q](0,1);
                     const value_type du2vdx = M_locGrad[q](1,0), du2vdy = M_locGrad[q](1,1);
                     const value_type divuv = du1vdx + du2vdy;
 
-                    M_loc[q](0,0) = mu*( du1vdx*u1v + du1vdy*u2v + 0.5*divuv*u1v );
-                    M_loc[q](1,0) = mu*( du2vdx*u1v + du2vdy*u2v + 0.5*divuv*u2v );
+                    M_loc[q](0,0) = du1vdx*u1v + du1vdy*u2v + 0.5*divuv*u1v;
+                    M_loc[q](1,0) = du2vdx*u1v + du2vdy*u2v + 0.5*divuv*u2v;
                 }
         }
         void update( mpl::int_<3> /*Dim*/, mpl::int_<1> /*TypeOfExpr*/)
@@ -602,16 +541,15 @@ public:
             const uint16_type nQuadPts = M_geot->nPoints();
             for ( uint16_type q = 0; q < nQuadPts; ++q )
                 {
-                    const value_type mu = M_locMuP0[q](0,0);
                     const value_type u1v = M_locId[q](0,0), u2v = M_locId[q](1,0), u3v = M_locId[q](2,0);
                     const value_type du1vdx = M_locGrad[q](0,0), du1vdy = M_locGrad[q](0,1), du1vdz = M_locGrad[q](0,2);
                     const value_type du2vdx = M_locGrad[q](1,0), du2vdy = M_locGrad[q](1,1), du2vdz = M_locGrad[q](1,2);
                     const value_type du3vdx = M_locGrad[q](2,0), du3vdy = M_locGrad[q](2,1), du3vdz = M_locGrad[q](2,2);
                     const value_type divuv = du1vdx + du2vdy + du3vdz;
 
-                    M_loc[q](0,0) = mu*( du1vdx*u1v + du1vdy*u2v + du1vdz*u3v + 0.5*divuv*u1v );
-                    M_loc[q](1,0) = mu*( du2vdx*u1v + du2vdy*u2v + du2vdz*u3v + 0.5*divuv*u2v );
-                    M_loc[q](2,0) = mu*( du3vdx*u1v + du3vdy*u2v + du3vdz*u3v + 0.5*divuv*u3v );
+                    M_loc[q](0,0) = du1vdx*u1v + du1vdy*u2v + du1vdz*u3v + 0.5*divuv*u1v;
+                    M_loc[q](1,0) = du2vdx*u1v + du2vdy*u2v + du2vdz*u3v + 0.5*divuv*u2v;
+                    M_loc[q](2,0) = du3vdx*u1v + du3vdy*u2v + du3vdz*u3v + 0.5*divuv*u3v;
                 }
         }
 
@@ -625,24 +563,19 @@ public:
 
         pc_ptrtype M_pc;
         ctx_ptrtype M_ctx;
-        pc_muP0_ptrtype M_pcMuP0;
-        ctx_muP0_ptrtype M_ctxMuP0;
 
         array_matrix_vectorial_type M_loc;
 
         array_id_type M_locId;
         array_grad_type M_locGrad;
-        array_scalar_type M_locMuP0;
+
         //ret_type M_zero;
         loc_grad_type M_zeroLocGrad;
         loc_id_type M_zeroLocId;
-        loc_scalar_type M_zeroLocScalar;
-
     };
 
 private:
     boost::reference_wrapper<const element_type> M_v;
-    boost::reference_wrapper<const element_muP0_type> M_muP0;
 
 };
 /// \endcond
@@ -650,40 +583,40 @@ private:
 /**
  * \brief det of the expression tensor
  */
-template<class ElementVelocityType, class ElementMuP0Type>
+template<class ElementVelocityType>
 inline
-Expr< FluidMecConvectionImpl<ElementVelocityType,ElementMuP0Type,mpl::int_<0> > >
-fluidMecConvection( ElementVelocityType const& v, ElementMuP0Type const& muP0 )
+auto
+fluidMecConvection( ElementVelocityType const& v )
 {
-    typedef FluidMecConvectionImpl<ElementVelocityType,ElementMuP0Type,mpl::int_<0> > convection_t;
-    return Expr< convection_t >(  convection_t( v,muP0 ) );
+    typedef FluidMecConvectionImpl<unwrap_ptr_t<ElementVelocityType>,mpl::int_<0> > convection_t;
+    return Expr< convection_t >(  convection_t( unwrap_ptr(v) ) );
 }
 
-template<class ElementVelocityType, class ElementMuP0Type>
+template<class ElementVelocityType>
 inline
-Expr< FluidMecConvectionImpl<ElementVelocityType,ElementMuP0Type,mpl::int_<1> > >
-fluidMecConvectionWithEnergyStab( ElementVelocityType const& v, ElementMuP0Type const& muP0 )
+auto
+fluidMecConvectionWithEnergyStab( ElementVelocityType const& v )
 {
-    typedef FluidMecConvectionImpl<ElementVelocityType,ElementMuP0Type,mpl::int_<1> > convection_t;
-    return Expr< convection_t >(  convection_t( v,muP0 ) );
+    typedef FluidMecConvectionImpl<unwrap_ptr_t<ElementVelocityType>,mpl::int_<1> > convection_t;
+    return Expr< convection_t >(  convection_t( unwrap_ptr(v) ) );
 }
 
-template<class ElementVelocityType, class ElementMuP0Type>
+template<class ElementVelocityType>
 inline
-Expr< FluidMecConvectionImpl<ElementVelocityType,ElementMuP0Type,mpl::int_<2> > >
-fluidMecConvectionJacobian( ElementVelocityType const& v, ElementMuP0Type const& muP0 )
+auto
+fluidMecConvectionJacobian( ElementVelocityType const& v )
 {
-    typedef FluidMecConvectionImpl<ElementVelocityType,ElementMuP0Type,mpl::int_<2> > convection_t;
-    return Expr< convection_t >(  convection_t( v,muP0 ) );
+    typedef FluidMecConvectionImpl<unwrap_ptr_t<ElementVelocityType>,mpl::int_<2> > convection_t;
+    return Expr< convection_t >(  convection_t( unwrap_ptr(v) ) );
 }
 
-template<class ElementVelocityType, class ElementMuP0Type>
+template<class ElementVelocityType>
 inline
-Expr< FluidMecConvectionImpl<ElementVelocityType,ElementMuP0Type,mpl::int_<3> > >
-fluidMecConvectionJacobianWithEnergyStab( ElementVelocityType const& v, ElementMuP0Type const& muP0 )
+auto
+fluidMecConvectionJacobianWithEnergyStab( ElementVelocityType const& v )
 {
-    typedef FluidMecConvectionImpl<ElementVelocityType,ElementMuP0Type,mpl::int_<3> > convection_t;
-    return Expr< convection_t >(  convection_t( v,muP0 ) );
+    typedef FluidMecConvectionImpl<unwrap_ptr_t<ElementVelocityType>,mpl::int_<3> > convection_t;
+    return Expr< convection_t >(  convection_t( unwrap_ptr(v) ) );
 }
 
 

@@ -1,0 +1,40 @@
+ISO 10211:2007 Thermal bridges in building construction
+=======================================================
+
+== Introduction
+
+ISO 10211:2007 sets out the specifications for a three-dimensional and a
+two-dimensional geometrical model of a thermal bridge for the numerical
+calculation of:
+
+ . heat flows, in order to assess the overall heat loss from a building or part of it;
+ . minimum surface temperatures, in order to assess the risk of surface condensation.
+ 
+These specifications include the geometrical boundaries and subdivisions of the
+model, the thermal boundary conditions, and the thermal values and relationships
+to be used.
+
+ISO 10211:2007 is based upon the following assumptions:
+
+ . all physical properties are independent of temperature;
+ . there are no heat sources within the building element.
+ 
+ISO 10211:2007 can also be used for the derivation of linear and point thermal
+transmittances and of surface temperature factors.
+
+more information link:http://www.iso.org/iso/catalogue_detail.htm?csnumber=40967[here].
+
+== Test cases
+
+* Case 2 : 2d, temperature distribution and heat flow within a roof construction
+* Case 3 : 3d, temperature distribution and heat flows through the wall-balcony junction
+* Case 4 : 3d, temperature distribution and heat flows within a three dimensional thermal bridge consisting of an iron bar penetrating an insulation layer
+
+== Running the testcase
+
+[source,sh]
+----
+$ feelpp_toolbox_heat --config-file case2.cfg
+$ feelpp_toolbox_heat --config-file case3.cfg
+$ feelpp_toolbox_heat --config-file case4.cfg
+----

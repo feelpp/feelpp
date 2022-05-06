@@ -9,7 +9,7 @@ feelpp_add_application( maxwell_3d SRCS main_maxwell.cpp
   DEFS FEELPP_DIM=3
   INSTALL
   )
-
+if (0)
 feelpp_add_application( cvg_maxwell_2d SRCS cvg_maxwell.cpp
   LINK_LIBRARIES feelpp_toolbox_maxwell_lib
   DEFS FEELPP_DIM=2
@@ -21,9 +21,9 @@ feelpp_add_application( cvg_maxwell_3d SRCS cvg_maxwell.cpp
   DEFS FEELPP_DIM=3
   INSTALL
   )
+endif()
 
 feelpp_add_application( biotsavart SRCS biotsavart_main.cpp INSTALL )
 
-foreach( _testcase IN ITEMS "test" "cvg" "biotsavart" )
-  feelpp_add_testcase(${_testcase} PREFIX feelpp_toolbox_maxwell CATEGORY toolboxes/maxwell)
-endforeach()
+feelpp_add_testcase(cases PREFIX feelpp_toolbox_maxwell CATEGORY toolboxes/maxwell)
+

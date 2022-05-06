@@ -1,0 +1,59 @@
+// -*- mode: javascript -*-
+{
+    "Name":"HL-31_H1",
+    "ShortName":"HL-31_H1",
+    "Meshes":
+    {
+        "electric":
+        {
+            "Import":
+            {
+                "filename":"girder:{file:5af862d6b0e9574027047fc8}",
+                "partition":1
+            }
+        }
+    },
+    "Materials":
+    {
+        "Cu":
+        {
+            "sigma":"58e3"
+        }
+    },
+    "BoundaryConditions":
+    {
+        "electric":
+        {
+            "electric_potential":
+            {
+                "V1":
+                {
+                    "expr":"9" // V_out
+                }
+            },
+            "ground":{ "markers":["V0"] }
+        }
+    },
+    "PostProcess":
+    {
+        "electric":
+        {
+            "Exports":
+            {
+                "fields":["electric-potential","current-density","electric-field"]
+            },
+            "Measures":
+            {
+                "Statistics":
+                {
+                    "mystatA": 
+                    {
+                        "type":"mean", 
+                        "field":"electric-potential",
+                        "markers":"V1"
+                    }
+                }
+            }
+        }
+    }
+}

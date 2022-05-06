@@ -36,10 +36,13 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 //#define BOOST_TEST_NO_MAIN
 
 #include <feel/feelcore/testsuite.hpp>
-#include <feel/feel.hpp>
+#include <feel/feelcore/environment.hpp>
+#include <feel/feelvf/vf.hpp>
 #include <feel/feelvf/print.hpp>
+#include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feelpoly/raviartthomas.hpp>
-
+#include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feelfilters/exporter.hpp>
 namespace Feel
 {
 /**
@@ -172,7 +175,7 @@ TestInterpolationHDiv<Dim>::testInterpolationOneElt( std::string one_element_mes
     for ( int i = 0; i < Xh->nLocalDof(); ++i )
         {
             CHECK( mesh->hasMarkers( {faces[i]} ) );
-            U_h_int(i) = integrate( markedfaces( oneelement_mesh, faces[i] ), trans( N() )*myexpr ).evaluate()(0,0);
+            U_h_int(i) = integrate( _range=markedfaces( oneelement_mesh, faces[i] ), _expr=trans( N() )*myexpr ).evaluate()(0,0);
         }
 
     // raviart-thomas interpolant using on

@@ -44,9 +44,9 @@ public:
      */
     //@{
 
-    static const uint16_type nDim = super::nDim;
-    static const uint16_type nOrder = super::nOrder;
-    static const uint16_type nRealDim = super::nRealDim;
+    static constexpr uint16_type nDim = super::nDim;
+    static constexpr uint16_type nOrder = super::nOrder;
+    static constexpr uint16_type nRealDim = super::nRealDim;
 
     static const uint16_type topological_dimension = super::topological_dimension;
     static const uint16_type real_dimension = super::real_dimension;
@@ -98,6 +98,8 @@ public:
 
     using permutation_type = typename super::permutation_type;
     using edge_permutation_type = typename super::edge_permutation_type;
+
+    using marker_type = Marker<flag_type/*uint16_type*/>;
     //@}
 
     /** @name Constructors, destructor
@@ -281,7 +283,7 @@ public:
 
     Reference( Reference const & r ) = default;
 
-    ~Reference() = default;
+    ~Reference() override = default;
 
     //@}
 
@@ -524,9 +526,9 @@ public:
     {
         return 0;
     }
-    std::map<uint16_type,Marker1> markers() const
+    std::map<uint16_type,marker_type> markers() const
     {
-        return std::map<uint16_type,Marker1>();
+        return std::map<uint16_type,marker_type>{};
     }
     flag_type marker() const
     {

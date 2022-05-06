@@ -20,13 +20,31 @@
 #define LEVELSET_CLASS_TEMPLATE_TYPE \
     LevelSet<ConvexType, BasisType, PeriodicityType, FunctionSpaceAdvectionVelocityType, BasisPnType> \
         /**/
+#define LEVELSET_CONVEX_TYPE \
+    Simplex<LEVELSET_DIM,LEVELSET_ORDERGEO,LEVELSET_DIM> \
+        /**/
+#define LEVELSET_BASIS_TYPE \
+    Lagrange<LEVELSET_ORDERPOLY, Scalar, Continuous, LEVELSET_INTERPOLATION_POINTS > \
+    /**/
+#define LEVELSET_PERIODICITY_TYPE \
+    LEVELSET_PERIODICITY \
+    /**/
+#define LEVELSET_BASISADVECTIONVELOCITY_TYPE \
+    Lagrange<LEVELSET_VELOCITY_ORDER, Vectorial, Continuous, LEVELSET_INTERPOLATION_POINTS > \
+    /**/
+#define LEVELSET_FUNCTIONSPACEADVECTIONVELOCITY_TYPE \
+    FunctionSpace< Mesh<LEVELSET_CONVEX_TYPE>, bases<LEVELSET_BASISADVECTIONVELOCITY_TYPE> > \
+    /**/
+#define LEVELSET_BASISPN_TYPE \
+    Lagrange<LEVELSET_PN_ORDERPOLY, Scalar, Continuous, LEVELSET_INTERPOLATION_POINTS > \
+    /**/
 #define LEVELSET_CLASS_TYPE \
-    LevelSet< Simplex<LEVELSET_DIM,LEVELSET_ORDERGEO,LEVELSET_DIM>, \
-        Lagrange<LEVELSET_ORDERPOLY, Scalar, Continuous, LEVELSET_INTERPOLATION_POINTS >, \
-        LEVELSET_PERIODICITY, \
-        /*FunctionSpace< Mesh<Simplex<LEVELSET_DIM,LEVELSET_ORDERGEO,LEVELSET_DIM>>, bases<Lagrange<LEVELSET_ORDERPOLY, Vectorial, Continuous, LEVELSET_INTERPOLATION_POINTS>>, Periodicity<LEVELSET_PERIODICITY> >,*/ \
-        FunctionSpace< Mesh<Simplex<LEVELSET_DIM,LEVELSET_ORDERGEO,LEVELSET_DIM>>, Feel::detail::bases<Lagrange<LEVELSET_VELOCITY_ORDER, Vectorial, Continuous, LEVELSET_INTERPOLATION_POINTS>>, double, Periodicity<LEVELSET_PERIODICITY>, mortars<NoMortar> >, \
-        Lagrange<LEVELSET_PN_ORDERPOLY, Scalar, Continuous, LEVELSET_INTERPOLATION_POINTS > \
+    LevelSet< \
+        LEVELSET_CONVEX_TYPE, \
+        LEVELSET_BASIS_TYPE, \
+        LEVELSET_PERIODICITY_TYPE, \
+        LEVELSET_FUNCTIONSPACEADVECTIONVELOCITY_TYPE, \
+        LEVELSET_BASISPN_TYPE \
         >                    \
     /**/
 #define LEVELSET_CLASS_INSTANTIATION \

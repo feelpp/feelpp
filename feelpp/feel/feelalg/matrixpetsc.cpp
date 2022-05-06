@@ -27,7 +27,7 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2008-01-03
  */
-#include <boost/timer.hpp>
+
 #include <boost/smart_ptr/make_shared.hpp>
 
 #include <feel/feelcore/feelpetsc.hpp>
@@ -204,6 +204,26 @@ MatrixPetsc<T>::~MatrixPetsc()
     this->clear();
 }
 
+
+template <typename T>
+typename MatrixPetsc<T>::clone_ptrtype
+MatrixPetsc<T>::clone () const
+{
+    clone_ptrtype cloned_matrix;
+    if ( auto m = dynamic_cast<MatrixPetscMPI<T> const*>( this ); m )
+    {
+        Mat M;
+        MatDuplicate( m->mat(), MAT_COPY_VALUES, &M );
+        cloned_matrix.reset( new MatrixPetscMPI<T>( M, this->mapRowPtr(), this->mapColPtr(), false, true ) );
+    }  
+    else if ( auto m = dynamic_cast<MatrixPetsc<T> const*>( this ); m )
+    {
+        Mat M;
+        MatDuplicate( m->mat(), MAT_COPY_VALUES, &M );
+        cloned_matrix.reset( new MatrixPetsc<T>( M, this->mapRowPtr(), this->mapColPtr(), true ) );
+    }
+    return cloned_matrix;
+}
 
 template <typename T>
 void MatrixPetsc<T>::init ( const size_type m,
@@ -986,7 +1006,7 @@ MatrixPetsc<T>::multVector( const Vector<T>& arg, Vector<T>& dest, bool transpos
     if ( !arg.closed() )
         const_cast<Vector<T>*>( &arg )->close();
     if ( !dest.isInitialized() )
-        dest.init( this->mapColPtr() );
+        dest.init( (transpose)? this->mapRowPtr() :this->mapColPtr() );
     else if ( !dest.closed() )
         dest.close();
 
@@ -1112,7 +1132,7 @@ MatrixPetsc<T>::PtAP( MatrixSparse<value_type> const& matP, MatrixSparse<value_t
         int ierr=0;
         if ( matC.isInitialized() )
         {
-#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 3)
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN(3,3,0)
             ierr = MatPtAP( this->mat(), matP_petsc->mat(), MAT_REUSE_MATRIX, 1.0, &matC_petsc->mat() );
             CHKERRABORT( this->comm(),ierr );
 #else
@@ -1121,7 +1141,7 @@ MatrixPetsc<T>::PtAP( MatrixSparse<value_type> const& matP, MatrixSparse<value_t
         }
         else
         {
-#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 3)
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN(3,3,0)
             ierr = MatPtAP( this->mat(), matP_petsc->mat(), MAT_INITIAL_MATRIX, 1.0, &matC_petsc->mat() );
             CHKERRABORT( this->comm(),ierr );
 #else

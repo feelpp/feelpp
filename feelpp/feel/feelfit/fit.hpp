@@ -87,6 +87,10 @@ public:
     }
 
     Interpolator const& interpolator() const { return *M_interpolator; }
+    std::shared_ptr<Interpolator> const& interpolatorPtr() const { return M_interpolator; }
+
+    //! dynamic context
+    size_type dynamicContext() const { return Feel::vf::dynamicContext( M_expr ); }
 
     //! polynomial order
     uint16_type polynomialOrder() const { return M_expr.polynomialOrder(); }
@@ -102,6 +106,33 @@ public:
             else
                 return evaluate_type::Constant( this->interpolator().diff( M_expr.evaluate( parallel,worldcomm )(0,0) ) );
         }
+
+    template <typename SymbolsExprType>
+    auto applySymbolsExpr( SymbolsExprType const& se ) const
+        {
+            return Fit<std::decay_t<decltype(M_expr.applySymbolsExpr( se ))>,InterpOperator>( M_expr.applySymbolsExpr( se ), this->interpolatorPtr() );
+        }
+
+    template <typename TheSymbolExprType>
+    bool hasSymbolDependency( std::string const& symb, TheSymbolExprType const& se ) const
+        {
+            return M_expr.hasSymbolDependency( symb, se );
+        }
+
+    template <typename TheSymbolExprType>
+    void dependentSymbols( std::string const& symb, std::map<std::string,std::set<std::string>> & res, TheSymbolExprType const& se ) const
+        {
+            return M_expr.dependentSymbols( symb, res, se );
+        }
+
+    template <int diffOrder, typename TheSymbolExprType>
+    auto diff( std::string const& diffVariable, WorldComm const& world, std::string const& dirLibExpr,
+               TheSymbolExprType const& se ) const
+    {
+        CHECK( false ) << "TODO";
+        return *this;
+    }
+
 
     // geo_t : transformation geométrique
     // basis_i_t : fonctions tests
@@ -160,12 +191,14 @@ public:
             M_tensor_expr( expr.expression(), geom )
             {}
 
-        // IM =
-        template<typename IM>
-        void init( IM const& im )
-        {
-            M_tensor_expr.init( im );
-        }
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        tensor( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                this_type const& expr, Geo_t const& geom, const TheArgsType&... theInitArgs )
+            :
+            M_exprFit( expr ),
+            M_tensor_expr( std::true_type{}, exprExpanded.expression(), ttse, expr.expression(), geom, theInitArgs... )
+            {}
+
 
         // precompute the part in the bilinear form
         void update( Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ )
@@ -182,11 +215,12 @@ public:
         {
             M_tensor_expr.update( geom );
         }
-        // precompute the part in the evaluate part for a face
-        void update( Geo_t const& geom, uint16_type face )
-        {
-            M_tensor_expr.update( geom, face );
-        }
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        void update( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                     Geo_t const& geom, const TheArgsType&... theUpdateArgs )
+            {
+                M_tensor_expr.update( std::true_type{}, exprExpanded.expression(), ttse, geom, theUpdateArgs... );
+            }
 
         // i : local index of basis test function
         // j : local index of basis trial function

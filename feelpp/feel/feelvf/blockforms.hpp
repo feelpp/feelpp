@@ -1,33 +1,28 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*-
-
  This file is part of the Feel++ library
-
  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  Date: 24 Jul 2016
-
  Copyright (C) 2016 Feel++ Consortium
-
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
  License as published by the Free Software Foundation; either
  version 2.1 of the License, or (at your option) any later version.
-
  This library is distributed in the hope that it will be useful,
  but WITHOUT ANY WARRANTY; without even the implied warranty of
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  Lesser General Public License for more details.
-
  You should have received a copy of the GNU Lesser General Public
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-#ifndef FEELPP_BLOCKFORMS_HPP
-#define FEELPP_BLOCKFORMS_HPP 1
+#ifndef FEELPP_VF_BLOCKFORMS_H
+#define FEELPP_VF_BLOCKFORMS_H
 
 #include <feel/feelvf/form.hpp>
 #include <feel/feelalg/vectorblock.hpp>
 #include <feel/feelalg/matrixcondensed.hpp>
 #include <feel/feelalg/vectorcondensed.hpp>
+#include <feel/feeldiscr/csrgraphblocks.hpp>
 #include <feel/feeldiscr/product.hpp>
 
 
@@ -48,25 +43,29 @@ template<typename PS, typename BackendT>
 BlockBilinearForm<PS>
 blockform2( PS&& ps, BackendT&& b );
 
-template<typename PS, typename BackendT>
+template<typename PS, typename BackendT, typename RangeMapT = StencilRangeMap0Type>
 BlockBilinearForm<PS>
 blockform2( PS&& ps, solve::strategy s, BackendT&& b,
-            size_type pattern = Pattern::COUPLED );
+            size_type pattern = Pattern::COUPLED,
+            RangeMapT r = stencilRangeMap() );
 
-template<typename PS, typename BackendT>
+template<typename PS, typename BackendT, typename RangeMapT = StencilRangeMap0Type>
 BlockBilinearForm<PS>
 blockform2( PS&& ps, solve::strategy s, BackendT&& b,
-            std::vector<size_type> const& patterns );
+            std::vector<size_type> const& patterns,
+            RangeMapT r = stencilRangeMap() );
 
-template<typename PS, typename BackendT>
+template<typename PS, typename BackendT, typename RangeMapT = StencilRangeMap0Type>
 BlockBilinearForm<PS>
 blockform2( PS const& ps, solve::strategy s, BackendT&& b,
-            size_type pattern = Pattern::COUPLED );
+            size_type pattern = Pattern::COUPLED,
+            RangeMapT r = stencilRangeMap() );
 
-template<typename PS, typename BackendT>
+template<typename PS, typename BackendT, typename RangeMapT = StencilRangeMap0Type>
 BlockBilinearForm<PS>
 blockform2( PS const& ps, solve::strategy s, BackendT&& b,
-            std::vector<size_type> const& patterns );
+            std::vector<size_type> const& patterns,
+            RangeMapT r = stencilRangeMap() );
 
 template<typename PS,typename T>
 BlockBilinearForm<PS>
@@ -127,21 +126,21 @@ public :
         M_matrix( std::make_shared<condensed_matrix_type>( csrGraphBlocks(M_ps, Pattern::COUPLED), backend(), false ) )
         {}    
     
-    template<typename T,typename BackendT>
-    BlockBilinearForm( T&& ps, BackendT&& b,
+    template<typename T,typename BackendT, typename RangeMapT>
+    BlockBilinearForm( T&& ps, BackendT&& b, RangeMapT r = stencilRangeMap(),
                        std::enable_if_t<std::is_base_of<ProductSpacesBase,decay_type<T>>::value && std::is_base_of<BackendBase,decay_type<BackendT>>::value>* = nullptr )
         :
         M_ps(std::forward<T>(ps)),
-        M_matrix( std::make_shared<condensed_matrix_type>( csrGraphBlocks(M_ps, Pattern::COUPLED), std::forward<BackendT>(b), false ) )
+        M_matrix( std::make_shared<condensed_matrix_type>( csrGraphBlocks(M_ps, Pattern::COUPLED, r), std::forward<BackendT>(b), false ) )
         {}
 
-    template<typename T, typename BackendT>
-    BlockBilinearForm( T&& ps, solve::strategy s, BackendT&& b, size_type pattern = Pattern::COUPLED,
+    template<typename T, typename BackendT, typename RangeMapT>
+    BlockBilinearForm( T&& ps, solve::strategy s, BackendT&& b, size_type pattern = Pattern::COUPLED, RangeMapT r = stencilRangeMap(),
                        std::enable_if_t<std::is_base_of<ProductSpacesBase,decay_type<T>>::value && std::is_base_of<BackendBase,decay_type<BackendT>>::value>* = nullptr )
         :
         M_ps(std::forward<T>(ps)),
         M_matrix( std::make_shared<condensed_matrix_type>( s,
-                                                             csrGraphBlocks(M_ps, (s>=solve::strategy::static_condensation)?Pattern::ZERO:pattern),
+                                                             csrGraphBlocks(M_ps, (s>=solve::strategy::static_condensation)?Pattern::ZERO:pattern,r),
                                                              std::forward<BackendT>(b),
                                                              (s>=solve::strategy::static_condensation)?false:true )  )
         {}
@@ -344,29 +343,34 @@ public :
     sparse_matrix_ptrtype matrixPtr() { return M_matrix; }
     using pre_solve_type = typename Backend<value_type>::pre_solve_type;
     using post_solve_type = typename Backend<value_type>::post_solve_type;
-    BOOST_PARAMETER_MEMBER_FUNCTION( ( typename Backend<double>::solve_return_type ),
-                                     solve,
-                                     tag,
-                                     ( required
-                                       ( in_out( solution ),* )
-                                       ( rhs, * ) )
-                                     ( optional
-                                       ( condense,           ( bool ), false )
-                                       ( local,           ( bool ), false )
-                                       ( name,           ( std::string ), "" )
-                                       ( kind,           ( std::string ), soption(_prefix=name,_name="backend") )
-                                       ( rebuild,        ( bool ), boption(_prefix=name,_name="backend.rebuild") )
-                                       ( pre, (pre_solve_type), pre_solve_type() )
-                                       ( post, (post_solve_type), post_solve_type() )
-                                       ) )
+
+    template <typename ... Ts>
+    typename Backend<double>::solve_return_type solve( Ts && ... v )
         {
-            if ( condense )
-                return solveImplCondense( M_ps, solution, rhs, name, kind, rebuild, pre, post );
-            if ( local )
+            auto args = NA::make_arguments( std::forward<Ts>(v)... );
+            auto && solution = args.get(_solution);
+            auto && rhs = args.get(_rhs);
+            bool condense = args.get_else(_condense,false);
+            auto && condenser = args.get_else(_condenser,condenser_poisson() );
+            bool local = args.get_else(_local,false);
+            std::string const& name = args.get_else(_name,"" );
+            std::string const& kind = args.get_else_invocable(_kind,[&name](){ return soption(_prefix=name,_name="backend"); } );
+            bool rebuild = args.get_else_invocable(_rebuild,[&name](){ return boption(_prefix=name,_name="backend.rebuild"); } );
+            pre_solve_type pre = args.get_else(_pre, pre_solve_type() );
+            post_solve_type post = args.get_else(_post,post_solve_type() );
+
+            if constexpr ( std::is_same_v<decay_type<decltype(condenser)>,condenser_stokes> )
+                return solveImpl( solution, rhs, name, kind, rebuild, pre, post );
+            else
             {
-                return solveImplLocal( M_ps, solution, rhs, name, kind, rebuild, pre, post );
+                if ( condense )
+                    return solveImplCondense( M_ps, solution, rhs, name, kind, rebuild, pre, post, condenser );
+                if ( local )
+                {
+                    return solveImplLocal( M_ps, solution, rhs, name, kind, rebuild, pre, post );
+                }
+                return solveImpl( solution, rhs, name, kind, rebuild, pre, post );
             }
-            return solveImpl( solution, rhs, name, kind, rebuild, pre, post );
         }
     template <typename PS_t, typename Solution_t, typename Rhs_t>
     typename Backend<double>::solve_return_type
@@ -393,20 +397,21 @@ public :
             typename Backend<double>::solve_return_type r;
             return r;
         }
-    template <typename PS_t, typename Solution_t, typename Rhs_t>
+    template <typename PS_t, typename Solution_t, typename Rhs_t, typename CT>
     typename Backend<double>::solve_return_type
     solveImplCondense( PS_t& ps, Solution_t& solution, Rhs_t const& rhs, std::string const& name, std::string const& kind,
-                       bool rebuild, pre_solve_type pre, post_solve_type post,
-                       std::enable_if_t<std::is_base_of<ProductSpaceBase,decay_type<PS_t>>::value>* = nullptr )
+                       bool rebuild, pre_solve_type pre, post_solve_type post, CT ct,
+                       std::enable_if_t<std::is_base_of_v<ProductSpaceBase,decay_type<PS_t>> && is_condenser_v<CT>>* = nullptr )
         {
             return solveImpl( solution, rhs, name, kind, rebuild, pre, post );
         }
-    template <typename PS_t, typename Solution_t, typename Rhs_t>
+    template <typename PS_t, typename Solution_t, typename Rhs_t, typename CT>
     typename Backend<double>::solve_return_type
     solveImplCondense( PS_t& ps, Solution_t& solution, Rhs_t const& rhs, std::string const& name, std::string const& kind,
-                       bool rebuild, pre_solve_type pre, post_solve_type post,
+                       bool rebuild, pre_solve_type pre, post_solve_type post, CT ct,
                        std::enable_if_t< hana::Foldable<typename decay_type<PS_t>::tuple_spaces_type>::value &&
-                                         !std::is_base_of<ProductSpaceBase,decay_type<PS_t>>::value>* = nullptr )
+                                         !std::is_base_of_v<ProductSpaceBase,decay_type<PS_t>> &&
+                                         is_condenser_v<CT>>* = nullptr )
         {
             return solveImplCondense( ps, solution, rhs, name, kind, rebuild, pre, post,hana::integral_constant<int,decltype(hana::size( M_ps.tupleSpaces() ))::value>() );
         }
@@ -425,7 +430,11 @@ public :
                                                                              _post=post
                                                                              );
             toc("blockform.monolithic",FLAGS_v>0);
-
+            if ( Environment::isSequential() && boption("exporter.matlab") )
+            {
+                M_matrix->getSparseMatrix()->printMatlab("A.m");
+                rhs.vectorPtr()->getVector()->printMatlab("b.m");
+            } 
             solution.localize(U);
             return r1;
         }
@@ -584,7 +593,7 @@ public :
 
             auto sc = M_matrix->sc();
 
-            auto Th = product3( M_ps[3_c], M_ps[4_c], ps[2_c] );
+            auto Th = product2( M_ps[3_c], M_ps[4_c], ps[2_c] );
             std::vector<size_type> patterns = {Pattern::HDG,Pattern::HDG,Pattern::ZERO,
                                                Pattern::HDG,Pattern::HDG,Pattern::COUPLED,
                                                Pattern::ZERO,Pattern::COUPLED,Pattern::COUPLED};
@@ -632,8 +641,78 @@ public :
 
             return r;
         }
-    product_space_t M_ps;
-    condensed_matrix_ptrtype M_matrix;
+
+        //!
+        //! solve using static condensation in the case of 2 trace spaces
+        //!
+        template <typename PS_t, typename Solution_t, typename Rhs_t>
+        typename Backend<double>::solve_return_type
+        solveImplCondense( PS_t& ps, Solution_t& solution, Rhs_t const& rhs, std::string const& name, std::string const& kind,
+                           bool rebuild, pre_solve_type pre, post_solve_type post, hana::integral_constant<int, 3*5>,
+                           std::enable_if_t<!std::is_base_of<ProductSpaceBase, decay_type<PS_t>>::value>* = nullptr )
+        {
+#if 0            
+            //auto& e4 = solution(3_c,0);
+            auto& e3 = solution( 2_c );
+            auto& e2 = solution( 1_c );
+            auto& e1 = solution( 0_c );
+
+            auto sc = M_matrix->sc();
+
+            auto Th = product2( M_ps[3_c], M_ps[4_c], ps[2_c] );
+            std::vector<size_type> patterns = { Pattern::HDG, Pattern::HDG, Pattern::ZERO,
+                                                Pattern::HDG, Pattern::HDG, Pattern::COUPLED,
+                                                Pattern::ZERO, Pattern::COUPLED, Pattern::COUPLED };
+            auto S = blockform2( Th, solve::strategy::monolithic, backend(), patterns );
+            auto V = blockform1( Th, solve::strategy::monolithic, backend() );
+            //MatSetOption ( dynamic_cast<MatrixPetsc<double>*>(S.matrixPtr().get())->mat(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE );
+            auto U = Th.element();
+            //e3.printMatlab("phat.m");
+            tic();
+            this->syncLocalMatrix();
+            sc->condense( rhs.vectorPtr()->sc(), solution, S, V );
+            toc( "blockform.sc.condense", FLAGS_v > 0 );
+            S.close();
+            V.close();
+            cout << " . Condensation done" << std::endl;
+            tic();
+            cout << " . starting Solve" << std::endl;
+
+            auto r = S.solve( _solution = U, _rhs = V, _name = prefixvm( name, "sc" ), _rebuild = rebuild ); //, _condense=true );
+
+            cout << " . Solve done" << std::endl;
+            toc( "blockform.sc.solve", FLAGS_v > 0 );
+
+            solution( 2_c ) = U( 0_c );
+            for ( int i = 0; i < Th[1_c]->numberOfSpaces(); ++i )
+                solution( 3_c, i ) = U( 1_c, i );
+            for ( int i = 0; i < Th[2_c]->numberOfSpaces(); ++i )
+                solution( 4_c, i ) = U( 2_c, i );
+#if 0
+            S.matrixPtr()->printMatlab("S.m");
+            V.vectorPtr()->printMatlab("g.m");
+            e3.printMatlab("phat1.m");
+            e1.printMatlab("u.m");
+            e2.printMatlab("p.m");
+#endif
+            tic();
+            cout << " . starting local Solve" << std::endl;
+            sc->setDim4( M_ps[3_c]->numberOfSpaces() );
+            sc->localSolve( rhs.vectorPtr()->sc(), solution );
+            cout << " . local Solve done" << std::endl;
+            toc( "blockform.sc.localsolve", FLAGS_v > 0 );
+#if 0
+            e1.printMatlab("u1.m");
+            e2.printMatlab("p1.m");
+#endif
+
+            return r;
+#else
+            return typename Backend<double>::solve_return_type{};
+#endif
+        }
+        product_space_t M_ps;
+        condensed_matrix_ptrtype M_matrix;
 };
 
 template<typename PS>
@@ -650,32 +729,32 @@ blockform2( PS&& ps, BackendT&& b )
     return BlockBilinearForm<PS>( std::forward<PS>(ps), std::forward<BackendT>(b) );
 }
 
-template<typename PS, typename BackendT>
+template<typename PS, typename BackendT, typename RangeMapT>
 BlockBilinearForm<PS>
-blockform2( PS && ps, solve::strategy s, BackendT&& b, size_type pattern )
+blockform2( PS && ps, solve::strategy s, BackendT&& b, size_type pattern, RangeMapT r )
 {
-    return BlockBilinearForm<PS>( std::forward<PS>( ps ), s, std::forward<BackendT>(b), pattern );
+    return BlockBilinearForm<PS>( std::forward<PS>( ps ), s, std::forward<BackendT>(b), pattern, r );
 }
 
-template<typename PS, typename BackendT>
+template<typename PS, typename BackendT, typename RangeMapT>
 BlockBilinearForm<PS>
-blockform2( PS && ps, solve::strategy s, BackendT&& b, std::vector<size_type>  const& patterns )
+blockform2( PS && ps, solve::strategy s, BackendT&& b, std::vector<size_type>  const& patterns, RangeMapT r )
 {
-    return BlockBilinearForm<PS>( std::forward<PS>( ps ), s, std::forward<BackendT>(b), patterns );
+    return BlockBilinearForm<PS>( std::forward<PS>( ps ), s, std::forward<BackendT>(b), patterns, r );
 }
 
-template<typename PS, typename BackendT>
+template<typename PS, typename BackendT, typename RangeMapT>
 BlockBilinearForm<PS>
-blockform2( PS const& ps, solve::strategy s, BackendT&& b, size_type pattern )
+blockform2( PS const& ps, solve::strategy s, BackendT&& b, size_type pattern, RangeMapT r )
 {
-    return BlockBilinearForm<PS>( ps, s, std::forward<BackendT>(b), pattern );
+    return BlockBilinearForm<PS>( ps, s, std::forward<BackendT>(b), pattern, r );
 }
 
-template<typename PS, typename BackendT>
+template<typename PS, typename BackendT, typename RangeMapT>
 BlockBilinearForm<PS>
-blockform2( PS const& ps, solve::strategy s, BackendT&& b, std::vector<size_type> const& patterns )
+blockform2( PS const& ps, solve::strategy s, BackendT&& b, std::vector<size_type> const& patterns, RangeMapT r )
 {
-    return BlockBilinearForm<PS>( ps, s, std::forward<BackendT>(b), patterns );
+    return BlockBilinearForm<PS>( ps, s, std::forward<BackendT>(b), patterns, r );
 }
 
 template<typename PS,typename T>

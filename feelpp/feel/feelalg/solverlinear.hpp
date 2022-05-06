@@ -17,8 +17,8 @@
 // License along with this library; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
-#ifndef __linear_solver_h__
-#define __linear_solver_h__
+#ifndef FEELPP_ALG_SOLVERLINEAR_H
+#define FEELPP_ALG_SOLVERLINEAR_H
 
 #include <boost/mpi/communicator.hpp>
 
@@ -88,12 +88,12 @@ public:
     /**
      *  Constructor. Initializes Solver data structures
      */
-    SolverLinear ( po::variables_map const& vm, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
+    SolverLinear ( std::string const& prefix, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(), po::variables_map const& vm = Environment::vm() );
 
     /**
      * Destructor.
      */
-    virtual ~SolverLinear ();
+    ~SolverLinear () override;
 
     /**
      * @returns true if the data structures are
@@ -118,10 +118,10 @@ public:
     /**
      * return variables_map
      */
-    po::variables_map vm() const
-    {
-        return M_vm;
-    }
+    // po::variables_map vm() const
+    // {
+    //     return M_vm;
+    // }
 
     /**
      * \return the relative tolerance
@@ -177,23 +177,19 @@ public:
      * set tolerances: relative tolerance \p rtol, divergence tolerance \p dtol
      * and absolute tolerance \p atol
      */
-    BOOST_PARAMETER_MEMBER_FUNCTION( ( void ),
-                                     setTolerances,
-                                     tag,
-                                     ( required
-                                       ( rtolerance,( double ) )
-                                     )
-                                     ( optional
-                                       ( maxit,( size_type ), 1000 )
-                                       ( atolerance,( double ), 1e-50 )
-                                       ( dtolerance,( double ), 1e5 )
-                                     ) )
-    {
-        M_rtolerance = rtolerance;
-        M_dtolerance = dtolerance;
-        M_atolerance = atolerance;
-        M_maxit=maxit;
-    }
+    template <typename ... Ts>
+    void setTolerances( Ts && ... v )
+        {
+            auto args = NA::make_arguments( std::forward<Ts>(v)... );
+            double rtolerance = args.get(_rtolerance );
+            size_type maxit = args.get_else(_maxit,1000);
+            double atolerance = args.get_else(_atolerance,1e-50 );
+            double dtolerance = args.get_else(_dtolerance,1e5 );
+            M_rtolerance = rtolerance;
+            M_dtolerance = dtolerance;
+            M_atolerance = atolerance;
+            M_maxit=maxit;
+        }
 
     /**
      * Sets the type of solver to use.
@@ -373,7 +369,7 @@ protected:
 protected:
 
     ///
-    po::variables_map M_vm;
+    // po::variables_map M_vm;
 
     std::string M_prefix;
 
@@ -426,6 +422,11 @@ protected:
 
     bool M_showKSPMonitor;
     bool M_showKSPConvergedReason;
+
+    bool M_kspView;
+    bool M_kspUseInitialGuessNonZero;
+    std::string M_kspNormType;
+    int M_nRestartGMRES, M_nRestartFGMRES, M_nRestartGCR;
 };
 
 
@@ -446,15 +447,19 @@ SolverLinear<T,SizeT>::SolverLinear ( worldcomm_ptr_t const& worldComm ) :
     M_is_initialized      ( false ),
     M_prec_matrix_structure( SAME_NONZERO_PATTERN ),
     M_showKSPMonitor( false ),
-    M_showKSPConvergedReason( false )
+    M_showKSPConvergedReason( false ),
+    M_kspView( false ), M_kspUseInitialGuessNonZero( false ),
+    M_kspNormType( "default" ),
+    M_nRestartGMRES( 30 ), M_nRestartFGMRES( 30 ), M_nRestartGCR( 30 )
 {
 }
 
 template <typename T, typename SizeT>
 inline
-SolverLinear<T,SizeT>::SolverLinear ( po::variables_map const& vm, worldcomm_ptr_t const& worldComm ) :
+SolverLinear<T,SizeT>::SolverLinear ( std::string const& prefix, worldcomm_ptr_t const& worldComm, po::variables_map const& vm ) :
     super( worldComm ),
-    M_vm( vm ),
+    //M_vm( vm ),
+    M_prefix( prefix ),
     M_rtolerance( 1e-8 ),
     M_dtolerance( 1e5 ),
     M_atolerance( 1e-50 ),
@@ -464,7 +469,13 @@ SolverLinear<T,SizeT>::SolverLinear ( po::variables_map const& vm, worldcomm_ptr
     M_is_initialized      ( false ),
     M_prec_matrix_structure( SAME_NONZERO_PATTERN ),
     M_showKSPMonitor( false ),
-    M_showKSPConvergedReason( false )
+    M_showKSPConvergedReason( false ),
+    M_kspView( boption(_name="ksp-view",_prefix=prefix,_vm=vm) ),
+    M_kspUseInitialGuessNonZero( boption(_name="ksp-use-initial-guess-nonzero", _prefix=prefix,_vm=vm) ),
+    M_kspNormType( soption(_name="ksp-norm-type",_prefix=prefix,_vm=vm) ),
+    M_nRestartGMRES( ioption(_name="gmres-restart", _prefix=prefix,_vm=vm ) ),
+    M_nRestartFGMRES( ioption(_name="fgmres-restart", _prefix=prefix,_vm=vm ) ),
+    M_nRestartGCR( ioption(_name="gcr-restart", _prefix=prefix,_vm=vm ) )
 {
 }
 

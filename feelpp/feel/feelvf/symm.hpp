@@ -145,6 +145,45 @@ public:
                 return 0.5*( a-at );
         }
 
+    void setParameterValues( std::map<std::string,value_type> const& mp )
+        {
+            M_expr.setParameterValues( mp );
+        }
+    void updateParameterValues( std::map<std::string,double> & pv ) const
+        {
+             M_expr.updateParameterValues( pv );
+        }
+
+    template <typename SymbolsExprType>
+    auto applySymbolsExpr( SymbolsExprType const& se ) const
+        {
+            auto newExpr = M_expr.applySymbolsExpr( se );
+            using new_expr_type = std::decay_t<decltype(newExpr)>;
+            return Sym<new_expr_type,Part>( newExpr );
+        }
+
+    template <typename TheSymbolExprType>
+    bool hasSymbolDependency( std::string const& symb, TheSymbolExprType const& se ) const
+        {
+            return M_expr.hasSymbolDependency( symb, se );
+        }
+
+    template <typename TheSymbolExprType>
+    void dependentSymbols( std::string const& symb, std::map<std::string,std::set<std::string>> & res, TheSymbolExprType const& se ) const
+        {
+            M_expr.dependentSymbols( symb,res,se );
+        }
+
+    template <int diffOrder, typename TheSymbolExprType>
+    auto diff( std::string const& diffVariable, WorldComm const& world, std::string const& dirLibExpr,
+               TheSymbolExprType const& se ) const
+    {
+        auto diffExpr = M_expr.template diff<diffOrder>( diffVariable, world, dirLibExpr, se );
+        using expr_diff_type = std::decay_t<decltype(diffExpr)>;
+        return Sym<expr_diff_type,Part>{ diffExpr };
+    }
+
+
     //@}
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
@@ -184,6 +223,12 @@ public:
             M_tensor_expr( expr.expression(), geom )
         {
         }
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        tensor( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                this_type const& expr, Geo_t const& geom, const TheArgsType&... theInitArgs )
+            :
+            M_tensor_expr( std::true_type{}, exprExpanded.expression(), ttse, expr.expression(), geom, theInitArgs... )
+            {}
 
         template<typename IM>
         void init( IM const& im )
@@ -205,6 +250,12 @@ public:
         void update( Geo_t const& geom, uint16_type face )
         {
             M_tensor_expr.update( geom, face );
+        }
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        void update( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                     Geo_t const& geom, const TheArgsType&... theUpdateArgs )
+        {
+            M_tensor_expr.update( std::true_type{}, exprExpanded.expression(), ttse, geom, theUpdateArgs... );
         }
 
         value_type

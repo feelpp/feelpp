@@ -1,15 +1,9 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4*/
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4 
+ */
 
 #include <feel/feelmodels/heat/heat.hpp>
-//#include <feel/feelfilters/loadgmshmesh.hpp>
-//#include <feel/feelfilters/geotool.hpp>
-
-//#include <feel/feelvf/vf.hpp>
-
-#include <feel/feelmodels/modelmesh/createmesh.hpp>
 
 #include <feel/feelmodels/modelcore/stabilizationglsparameter.hpp>
-//#include <feel/feelmodels/modelvf/stabilizationglsparameter.hpp>
 
 namespace Feel
 {
@@ -24,7 +18,8 @@ HEAT_CLASS_TEMPLATE_TYPE::Heat( std::string const& prefix,
                                 ModelBaseRepository const& modelRep )
     :
     super_type( prefix, keyword, worldComm, subPrefix, modelRep ),
-    M_thermalProperties( new thermalproperties_type( prefix, this->repository().expr() ) )
+    ModelPhysics<nDim>( "heat" ),
+    ModelBase( prefix, keyword, worldComm, subPrefix, modelRep )
 {
     this->log("Heat","constructor", "start" );
 
@@ -49,19 +44,18 @@ HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
 HEAT_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 {
-    M_fieldVelocityConvectionIsUsed = boption(_name="use_velocity-convection",_prefix=this->prefix()) ||
-        Environment::vm().count(prefixvm(this->prefix(),"velocity-convection").c_str());
-    M_fieldVelocityConvectionIsIncompressible = boption(_name="velocity-convection_is_incompressible",_prefix=this->prefix());
-
-    M_doExportAll = boption(_name="do_export_all",_prefix=this->prefix());
-    M_doExportVelocityConvection = boption(_name="do_export_velocity-convection",_prefix=this->prefix());
+    M_useExtendedDoftable = boption(_name="use-extended-doftable",_prefix=this->prefix());
 
     M_stabilizationGLS = boption(_name="stabilization-gls",_prefix=this->prefix());
     M_stabilizationGLSType = soption(_name="stabilization-gls.type",_prefix=this->prefix());
 
+    M_stabilizationGLS_checkConductivityDependencyOnCoordinates = boption(_name="stabilization-gls.check-conductivity-dependency-on-coordinates",_prefix=this->prefix());
+
     // time stepping
     M_timeStepping = soption(_name="time-stepping",_prefix=this->prefix());
     M_timeStepThetaValue = doption(_name="time-stepping.theta.value",_prefix=this->prefix());
+
+    M_solverName = soption(_name="solver",_prefix=this->prefix());
 }
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
@@ -71,8 +65,13 @@ HEAT_CLASS_TEMPLATE_TYPE::initMesh()
     this->log("Heat","initMesh", "start");
     this->timerTool("Constructor").start();
 
-    createMeshModel<mesh_type>(*this,M_mesh,this->fileNameMeshPath());
-    CHECK( M_mesh ) << "mesh generation fail";
+    if ( this->modelProperties().jsonData().contains("Meshes") )
+        super_type::super_model_meshes_type::setup( this->modelProperties().jsonData().at("Meshes"), {this->keyword()} );
+    if ( this->doRestart() )
+        super_type::super_model_meshes_type::setupRestart( this->keyword() );
+    super_type::super_model_meshes_type::updateForUse<mesh_type>( this->keyword() );
+
+    CHECK( this->mesh() ) << "mesh generation fail";
 
     double tElpased = this->timerTool("Constructor").stop("initMesh");
     this->log("Heat","initMesh",(boost::format("finish in %1% s")%tElpased).str() );
@@ -86,9 +85,11 @@ HEAT_CLASS_TEMPLATE_TYPE::initMaterialProperties()
     this->log("Heat","initMaterialProperties", "start" );
     this->timerTool("Constructor").start();
 
-    auto paramValues = this->modelProperties().parameters().toParameterValues();
-    this->modelProperties().materials().setParameterValues( paramValues );
-    M_thermalProperties->updateForUse( M_mesh, this->modelProperties().materials() );
+    if ( !M_materialsProperties )
+    {
+        M_materialsProperties.reset( new materialsproperties_type( this->shared_from_this() ) );
+        M_materialsProperties->updateForUse( this->modelProperties().materials() );
+    }
 
     double tElpased = this->timerTool("Constructor").stop("initMaterialProperties");
     this->log("Heat","initMaterialProperties",(boost::format("finish in %1% s")%tElpased).str() );
@@ -101,65 +102,24 @@ HEAT_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
     this->log("Heat","initFunctionSpaces", "start" );
     this->timerTool("Constructor").start();
 
+    auto mom = this->materialsProperties()->materialsOnMesh( this->mesh() );
     // functionspace
-    if ( M_thermalProperties->isDefinedOnWholeMesh() )
+    if ( mom->isDefinedOnWholeMesh( this->physicsAvailableFromCurrentType() ) )
     {
-        M_rangeMeshElements = elements(M_mesh);
-        M_Xh = space_temperature_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
+        M_rangeMeshElements = elements(this->mesh());
+        M_Xh = space_temperature_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm(), _extended_doftable=M_useExtendedDoftable );
     }
     else
     {
-        M_rangeMeshElements = markedelements(M_mesh, M_thermalProperties->markers());
-        M_Xh = space_temperature_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm(),_range=M_rangeMeshElements );
+        M_rangeMeshElements = markedelements(this->mesh(), mom->markers( this->physicsAvailableFromCurrentType() ));
+        M_Xh = space_temperature_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm(),_range=M_rangeMeshElements, _extended_doftable=M_useExtendedDoftable );
     }
 
-    M_fieldTemperature.reset( new element_temperature_type(M_Xh,"temperature"));
-
-    if ( this->fieldVelocityConvectionIsUsed() )
-        this->updateForUseFunctionSpacesVelocityConvection();
+    //M_fieldTemperature.reset( new element_temperature_type(M_Xh,"temperature"));
+    M_fieldTemperature =  M_Xh->elementPtr( "temperature" );
 
     double tElpased = this->timerTool("Constructor").stop("initFunctionSpaces");
     this->log("Heat","initFunctionSpaces",(boost::format("finish in %1% s")%tElpased).str() );
-}
-
-HEAT_CLASS_TEMPLATE_DECLARATIONS
-void
-HEAT_CLASS_TEMPLATE_TYPE::updateForUseFunctionSpacesVelocityConvection()
-{
-    if ( !M_XhVelocityConvection )
-    {
-        if ( M_thermalProperties->isDefinedOnWholeMesh() )
-            M_XhVelocityConvection = space_velocityconvection_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
-        else
-            M_XhVelocityConvection = space_velocityconvection_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm(), _range=M_rangeMeshElements );
-    }
-
-    if ( !M_fieldVelocityConvection )
-    {
-        M_fieldVelocityConvection.reset( new element_velocityconvection_type(M_XhVelocityConvection,"VelocityConvection"));
-        // load the field velocity convection from a math expr
-        if ( Environment::vm().count(prefixvm(this->prefix(),"velocity-convection").c_str()) )
-        {
-            M_exprVelocityConvection = expr<nDim,1>( soption(_prefix=this->prefix(),_name="velocity-convection"),
-                                                     "",this->worldComm(),this->repository().expr() );
-            this->updateFieldVelocityConvection();
-        }
-    }
-}
-
-HEAT_CLASS_TEMPLATE_DECLARATIONS
-void
-HEAT_CLASS_TEMPLATE_TYPE::updateFieldVelocityConvection( bool onlyExprWithTimeSymbol )
-{
-    if ( M_exprVelocityConvection.get_ptr() == 0 )
-        return;
-
-    if ( onlyExprWithTimeSymbol && !M_exprVelocityConvection->expression().hasSymbol("t") )
-        return;
-
-    auto paramValues = this->modelProperties().parameters().toParameterValues();
-    M_exprVelocityConvection->setParameterValues( paramValues );
-    M_fieldVelocityConvection->on(_range=M_rangeMeshElements,_expr=*M_exprVelocityConvection);
 }
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
@@ -172,7 +132,7 @@ HEAT_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
                                 _trial=this->spaceTemperature() )->graph();
     return myblockGraph;
 }
-
+#if 0
 HEAT_CLASS_TEMPLATE_DECLARATIONS
 typename HEAT_CLASS_TEMPLATE_TYPE::size_type
 HEAT_CLASS_TEMPLATE_TYPE::nLocalDof() const
@@ -180,7 +140,7 @@ HEAT_CLASS_TEMPLATE_TYPE::nLocalDof() const
     size_type res = this->spaceTemperature()->nLocalDofWithGhost();
     return res;
 }
-
+#endif
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -189,10 +149,19 @@ HEAT_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->log("Heat","init", "start" );
     this->timerTool("Constructor").start();
 
-    if ( !M_mesh )
-        this->initMesh();
+    this->initModelProperties();
+
+    // physics
+    this->initPhysics( this->shared_from_this(), this->modelProperties().models() );
 
     this->initMaterialProperties();
+
+    this->initMesh();
+
+    this->materialsProperties()->addMesh( this->mesh() );
+
+    for ( auto & [physicId,physicObj] : this->physicsFromCurrentType() )
+        std::static_pointer_cast<ModelPhysicHeat<nDim>>(physicObj)->updateForUse( this->materialsProperties(), this->mesh() );
 
     this->initFunctionSpaces();
 
@@ -202,8 +171,6 @@ HEAT_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     if ( !this->isStationary() )
         this->initTimeStep();
 
-    this->initInitialConditions();
-
     // stabilization gls
     if ( M_stabilizationGLS )
     {
@@ -212,22 +179,48 @@ HEAT_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         M_stabilizationGLSParameter->init();
     }
 
+    // update constant parameters into
+    this->updateParameterValues();
+
+    // update initial conditions
+    this->updateInitialConditions( this->symbolsExpr() );
+
     // post-process
     this->initPostProcess();
 
-    // update fields
-    this->updateFields( this->symbolsExpr() );
+    // automatic solver selection
+    if ( M_solverName == "automatic" )
+    {
+        auto mfields = this->modelFields();
+        auto se = this->symbolsExpr( mfields );
+        auto tse =  this->trialSymbolsExpr( mfields, this->trialSelectorModelFields( 0/*rowStartInVector*/ ) );
+        auto trialSymbolNames = tse.names();
+        bool isNonLinear = false;
+        for ( std::string tsName : trialSymbolNames )
+        {
+            if ( this->materialsProperties()->hasThermalConductivityDependingOnSymbol( tsName ) )
+            {
+                isNonLinear = true;
+                break;
+            }
+            for ( auto const& [bcName,bcData] : M_boundaryConditions->heatFlux() )
+            {
+                auto neumannExpr = bcData->expr();
+                if ( neumannExpr.hasSymbolDependency( tsName, se ) )
+                {
+                    isNonLinear = true;
+                    break;
+                }
+            }
 
-    // backend : use worldComm of Xh
-    M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), M_Xh->worldCommPtr() );
+            if ( isNonLinear )
+                break;
+        }
+        M_solverName = isNonLinear? "Newton" : "Linear";
+    }
 
-    // subspaces index
-    size_type currentStartIndex = 0;
-    this->setStartSubBlockSpaceIndex( "temperature", currentStartIndex++ );
 
-     // vector solution
-    M_blockVectorSolution.resize( 1 );
-    M_blockVectorSolution(0) = this->fieldTemperaturePtr();
+    this->initAlgebraicModel();
 
     // algebraic solver
     if ( buildModelAlgebraicFactory )
@@ -242,35 +235,79 @@ HEAT_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
+HEAT_CLASS_TEMPLATE_TYPE::initAlgebraicModel()
+{
+    // backend
+    this->initAlgebraicBackend();
+
+    // subspaces index
+    size_type currentStartIndex = 0;
+    this->setStartSubBlockSpaceIndex( "temperature", currentStartIndex++ );
+
+    this->updateAlgebraicDofEliminationIds();
+
+     // vector solution
+    auto bvs = this->initAlgebraicBlockVectorSolution( 1 );
+    bvs->operator()(0) = this->fieldTemperaturePtr();
+    // init petsc vector associated to the block
+    bvs->buildVector( this->backend() );
+}
+
+HEAT_CLASS_TEMPLATE_DECLARATIONS
+void
+HEAT_CLASS_TEMPLATE_TYPE::applyRemesh( mesh_ptrtype const& newMesh )
+{
+    mesh_ptrtype oldMesh = this->mesh();
+
+    // material prop
+    this->materialsProperties()->removeMesh( oldMesh );
+    this->materialsProperties()->addMesh( newMesh );
+
+    this->setMesh( newMesh );
+
+    // function space and fields
+    space_temperature_ptrtype old_Xh = M_Xh;
+    element_temperature_ptrtype old_fieldTemperature = M_fieldTemperature;
+    this->initFunctionSpaces();
+
+    // createInterpolationOp
+    auto opI_temperature = opInterpolation(_domainSpace=old_Xh,
+                                           _imageSpace=M_Xh,
+                                           _range=M_rangeMeshElements );
+    auto matrixInterpolation_temperature = opI_temperature->matPtr();
+    matrixInterpolation_temperature->multVector( *old_fieldTemperature, *M_fieldTemperature );
+
+    // time stepping
+    if ( M_bdfTemperature )
+        M_bdfTemperature->applyRemesh( M_Xh, matrixInterpolation_temperature );
+
+    // TODO : stabilization gls
+
+    // TODO : post process ??
+
+    // reset algebraic data/tools
+    this->removeAllAlgebraicDataAndTools();
+    this->initAlgebraicModel();
+
+    this->initAlgebraicFactory(); // TODO : Theta time scheme
+
+}
+
+HEAT_CLASS_TEMPLATE_DECLARATIONS
+void
 HEAT_CLASS_TEMPLATE_TYPE::initTimeStep()
 {
     this->log("Heat","initTimeStep", "start" );
     this->timerTool("Constructor").start();
 
     std::string myFileFormat = soption(_name="ts.file-format");// without prefix
-    std::string suffixName = "";
-    if ( myFileFormat == "binary" )
-        std::string suffixName = (boost::format("_rank%1%_%2%")%this->worldComm().rank()%this->worldComm().size() ).str();
-    fs::path saveTsDir = fs::path(this->rootRepository())/fs::path( prefixvm(this->prefix(),prefixvm(this->subPrefix(),"ts")) );
 
     int bdfOrder = 1;
     if ( M_timeStepping == "BDF" )
         bdfOrder = ioption(_prefix=this->prefix(),_name="bdf.order");
-    int nConsecutiveSave = std::max( 3, bdfOrder ); // at least 3 is required when restart with theta scheme 
-    M_bdfTemperature = bdf( _space=this->spaceTemperature(),
-                            _name="temperature"+suffixName,
-                            _prefix=this->prefix(),
-                            _order=bdfOrder,
-                            // don't use the fluid.bdf {initial,final,step}time but the general bdf info, the order will be from fluid.bdf
-                            _initial_time=this->timeInitial(),
-                            _final_time=this->timeFinal(),
-                            _time_step=this->timeStep(),
-                            _restart=this->doRestart(),
-                            _restart_path=this->restartPath(),
-                            _restart_at_last_save=this->restartAtLastSave(),
-                            _save=this->tsSaveInFile(), _format=myFileFormat, _freq=this->tsSaveFreq(),
-                            _n_consecutive_save=nConsecutiveSave );
-    M_bdfTemperature->setPathSave( ( saveTsDir/"temperature" ).string() );
+    int nConsecutiveSave = std::max( 3, bdfOrder ); // at least 3 is required when restart with theta scheme
+
+    M_bdfTemperature = this->createBdf( this->spaceTemperature(),"temperature", bdfOrder, nConsecutiveSave, myFileFormat );
 
     if (!this->doRestart())
     {
@@ -295,47 +332,25 @@ HEAT_CLASS_TEMPLATE_TYPE::initTimeStep()
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
-HEAT_CLASS_TEMPLATE_TYPE::initInitialConditions()
-{
-    if ( !this->doRestart() )
-    {
-        std::vector<element_temperature_ptrtype> icTemperatureFields;
-        if ( this->isStationary() )
-            icTemperatureFields = { this->fieldTemperaturePtr() };
-        else
-            icTemperatureFields = M_bdfTemperature->unknowns();
-
-        auto paramValues = this->modelProperties().parameters().toParameterValues();
-        this->modelProperties().initialConditions().setParameterValues( paramValues );
-
-        this->updateInitialConditions( "temperature", M_rangeMeshElements, this->symbolsExpr(), icTemperatureFields );
-
-        if ( !this->isStationary() )
-            *this->fieldTemperaturePtr() = M_bdfTemperature->unknown(0);
-
-        if ( Environment::vm().count( prefixvm(this->prefix(),"initial-solution.temperature").c_str() ) )
-        {
-            auto myexpr = expr( soption(_prefix=this->prefix(),_name="initial-solution.temperature"),
-                                "",this->worldComm(),this->repository().expr() );
-            this->fieldTemperaturePtr()->on(_range=M_rangeMeshElements,_expr=myexpr);
-        }
-    }
-}
-
-HEAT_CLASS_TEMPLATE_DECLARATIONS
-void
 HEAT_CLASS_TEMPLATE_TYPE::initPostProcess()
 {
     this->log("Heat","initPostProcess", "start");
     this->timerTool("Constructor").start();
 
-    this->setPostProcessExportsAllFieldsAvailable( {"temperature","velocity-convection","thermal-conductivity","density","pid"} );
-    this->setPostProcessSaveAllFieldsAvailable( {"temperature","velocity-convection","thermal-conductivity","density"} );
+    this->setPostProcessExportsAllFieldsAvailable( {"temperature","velocity-convection"} );
+    this->addPostProcessExportsAllFieldsAvailable( this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->mesh(),this->physicsAvailable() ) );
+    this->setPostProcessExportsPidName( "pid" );
+    this->setPostProcessSaveAllFieldsAvailable( {"temperature" } );
     super_type::initPostProcess();
 
     if ( !this->postProcessExportsFields().empty() )
     {
+#if 0
         std::string geoExportType="static";//change_coords_only, change, static
+#else
+        bool useStaticExporter = boption(_name="exporter.use-static-mesh",_prefix=this->prefix());
+        std::string geoExportType = useStaticExporter? "static":"change";
+#endif
         M_exporter = exporter( _mesh=this->mesh(),
                                _name="Export",
                                _geo=geoExportType,
@@ -346,61 +361,42 @@ HEAT_CLASS_TEMPLATE_TYPE::initPostProcess()
             M_exporter->restart(this->timeInitial());
     }
 
-    pt::ptree ptree = this->modelProperties().postProcess().pTree( this->keyword() );
-    //  heat flux measures
-    std::string ppTypeMeasures = "Measures";
-    for( auto const& ptreeLevel0 : ptree )
+
+    if ( this->modelProperties().postProcess().hasJsonProperties( this->keyword() ) )
     {
-        std::string ptreeLevel0Name = ptreeLevel0.first;
-        if ( ptreeLevel0Name != ppTypeMeasures ) continue;
-        for( auto const& ptreeLevel1 : ptreeLevel0.second )
+        auto const& j_pp = this->modelProperties().postProcess().jsonProperties( this->keyword() );
+        std::string ppTypeMeasures = "Measures";
+        if ( j_pp.contains( ppTypeMeasures ) )
         {
-            std::string ptreeLevel1Name = ptreeLevel1.first;
-            if ( ptreeLevel1Name == "Normal-Heat-Flux" )
+            auto j_pp_measures = j_pp.at( ppTypeMeasures );
+            for ( auto const& [j_pp_measureskey,j_pp_measuresval] : j_pp_measures.items() )
             {
-                // get list of marker
-                std::set<std::string> markerSet;
-                std::string markerUnique = ptreeLevel1.second.template get_value<std::string>();
-                if ( markerUnique.empty() )
+                if ( j_pp_measureskey == "Normal-Heat-Flux" )
                 {
-                    for (auto const& ptreeMarker : ptreeLevel1.second )
+                    for ( auto const& [j_pp_measures_nhfkey,j_pp_measures_nhfval] : j_pp_measuresval.items() )
                     {
-                        std::string marker = ptreeMarker.second.template get_value<std::string>();
-                        markerSet.insert( marker );
+                        auto indexesAllCases = ModelIndexes::generateAllCases( j_pp_measures_nhfval );
+                        for ( auto const& indexes : indexesAllCases )
+                        {
+                            ModelMeasuresNormalFluxGeneric ppFlux;
+                            ppFlux.setup( j_pp_measures_nhfval, indexes.replace( j_pp_measures_nhfkey ), indexes );
+                            if ( !ppFlux.markers().empty() )
+                                M_postProcessMeasuresNormalHeatFlux[ppFlux.name()] = ppFlux;
+                        }
                     }
-                }
-                else
-                {
-                    markerSet.insert( markerUnique );
-                }
-                // save forces measure for each marker
-                for ( std::string const& marker : markerSet )
-                {
-                    ModelMeasuresForces myPpForces;
-                    myPpForces.addMarker( marker );
-                    myPpForces.setName( marker );
-                    //std::cout << "add ppHeatFlux with name " << marker<<"\n";
-                    std::string name = myPpForces.name();
-                    M_postProcessMeasuresForces.push_back( myPpForces );
                 }
             }
         }
     }
 
-    // point measures
-    auto fieldNamesWithSpaceTemperature = std::make_pair( std::set<std::string>({"temperature"}), this->spaceTemperature() );
-    auto fieldNamesWithSpaces = hana::make_tuple( fieldNamesWithSpaceTemperature );
-    M_measurePointsEvaluation = std::make_shared<measure_points_evaluation_type>( fieldNamesWithSpaces );
-    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint( this->keyword() ) )
-        M_measurePointsEvaluation->init( evalPoints );
+    auto se = this->symbolsExpr();
+    this->template initPostProcessMeshes<mesh_type>( se );
 
     // start or restart the export of measures
     if ( !this->isStationary() )
     {
         if ( this->doRestart() )
-            this->postProcessMeasuresIO().restart( "time", this->timeInitial() );
-        else
-            this->postProcessMeasuresIO().setMeasure( "time", this->timeInitial() ); //just for have time in first column
+            this->postProcessMeasures().restart( this->timeInitial() );
     }
 
     double tElpased = this->timerTool("Constructor").stop("initPostProcess");
@@ -411,91 +407,150 @@ HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
 HEAT_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
 {
-    // init petsc vector associated to the block
-    M_blockVectorSolution.buildVector( this->backend() );
-
-    M_algebraicFactory.reset( new model_algebraic_factory_type( this->shared_from_this(),this->backend() ) );
+    auto algebraicFactory = std::make_shared<model_algebraic_factory_type>( this->shared_from_this(),this->backend() );
+    this->setAlgebraicFactory( algebraicFactory );
 
     if ( M_timeStepping == "Theta" )
     {
-        M_timeStepThetaSchemePreviousContrib = this->backend()->newVector(M_blockVectorSolution.vectorMonolithic()->mapPtr() );
-        M_algebraicFactory->addVectorResidualAssembly( M_timeStepThetaSchemePreviousContrib, 1.0, "Theta-Time-Stepping-Previous-Contrib", true );
-        M_algebraicFactory->addVectorLinearRhsAssembly( M_timeStepThetaSchemePreviousContrib, -1.0, "Theta-Time-Stepping-Previous-Contrib", false );
+        M_timeStepThetaSchemePreviousContrib = this->backend()->newVector( this->algebraicBlockVectorSolution()->vectorMonolithic()->mapPtr() );
+        algebraicFactory->addVectorResidualAssembly( M_timeStepThetaSchemePreviousContrib, 1.0, "Theta-Time-Stepping-Previous-Contrib", true );
+        algebraicFactory->addVectorLinearRhsAssembly( M_timeStepThetaSchemePreviousContrib, -1.0, "Theta-Time-Stepping-Previous-Contrib", false );
         if ( M_stabilizationGLS )
-            M_algebraicFactory->dataInfos().addVectorInfo( prefixvm( this->prefix(),"time-stepping.previous-solution"), this->backend()->newVector( M_blockVectorSolution.vectorMonolithic()->mapPtr() ) );
+            algebraicFactory->dataInfos().addVectorInfo( "time-stepping.previous-solution", this->backend()->newVector( this->algebraicBlockVectorSolution()->vectorMonolithic()->mapPtr() ) );
     }
 
 }
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
-HEAT_CLASS_TEMPLATE_TYPE::updateInformationObject( pt::ptree & p )
+HEAT_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) const
 {
     if ( !this->isUpdatedForUse() )
         return;
-    if ( p.get_child_optional( "Prefix" ) )
+    if ( p.contains( "Environment" ) )
         return;
-    p.put( "Prefix", this->prefix() );
-    p.put( "Root Repository", this->rootRepository() );
 
-    // Physical Model
-    pt::ptree subPt, subPt2;
-    subPt.put( "time mode", std::string( (this->isStationary())?"Stationary":"Transient") );
-    subPt.put( "velocity-convection",  std::string( (this->fieldVelocityConvectionIsUsedAndOperational())?"Yes":"No" ) );
-    p.put_child( "Physical Model", subPt );
+    super_type::super_model_base_type::updateInformationObject( p["Environment"] );
+
+    super_type::super_model_meshes_type::updateInformationObject( p["Meshes"] );
+
+    super_physics_type::updateInformationObjectFromCurrentType( p["Physics"] );
+
+    // Physics
+    nl::json subPt;
+    subPt.emplace( "time mode", std::string( (this->isStationary())?"Stationary":"Transient") );
+    p["Physics2"] = subPt;
 
     // Boundary Conditions
-    subPt.clear();
-    subPt2.clear();
-    this->updateInformationObjectDirichletBC( subPt2 );
-    for( const auto& ptIter : subPt2 )
-        subPt.put_child( ptIter.first, ptIter.second );
-    subPt2.clear();
-    this->updateInformationObjectNeumannBC( subPt2 );
-    for( const auto& ptIter : subPt2 )
-        subPt.put_child( ptIter.first, ptIter.second );
-    subPt2.clear();
-    this->updateInformationObjectRobinBC( subPt2 );
-    for( const auto& ptIter : subPt2 )
-        subPt.put_child( ptIter.first, ptIter.second );
-    p.put_child( "Boundary Conditions",subPt );
+    M_boundaryConditions->updateInformationObject( p["Boundary Conditions"] );
 
-    // Materials parameters
-    subPt.clear();
-    this->thermalProperties()->updateInformationObject( subPt );
-    p.put_child( "Materials parameters", subPt );
+    // Materials properties
+    if ( this->materialsProperties() )
+        this->materialsProperties()->updateInformationObject( p["Materials Properties"] );
 
-    // Mesh and FunctionSpace
+    // FunctionSpace
     subPt.clear();
-    subPt.put("filename", this->meshFile());
-    M_mesh->putInformationObject( subPt );
-    p.put( "Mesh",  M_mesh->journalSectionName() );
-    p.put( "FunctionSpace Temperature",  M_Xh->journalSectionName() );
-    if ( this->fieldVelocityConvectionIsUsedAndOperational() )
-        p.put( "FunctionSpace Velocity Convection", M_XhVelocityConvection->journalSectionName() );
+    subPt["Temperature"] = M_Xh->journalSection().to_string();
+    p.emplace( "Function Spaces",  subPt );
     if ( M_stabilizationGLS )
     {
         subPt.clear();
-        subPt.put( "type", M_stabilizationGLSType );
+        subPt.emplace( "type", M_stabilizationGLSType );
         if ( M_stabilizationGLSParameter )
-            subPt.put( "paramter method", M_stabilizationGLSParameter->method() );
-        p.put_child( "Finite element stabilization", subPt );
+            subPt.emplace( "paramter method", M_stabilizationGLSParameter->method() );
+        p["Finite element stabilization"] = subPt;
     }
 
-    // Algebraic Solver
-    if ( M_algebraicFactory )
+    this->modelFields().updateInformationObject( p["Fields"] );
+
+    if ( !this->isStationary() )
     {
         subPt.clear();
-        M_algebraicFactory->updateInformationObject( subPt );
-        p.put_child( "Algebraic Solver", subPt );
+        subPt.emplace( "initial time", this->timeStepBase()->timeInitial() );
+        subPt.emplace( "final time", this->timeStepBase()->timeFinal() );
+        subPt.emplace( "time step", this->timeStepBase()->timeStep() );
+        subPt.emplace( "type", M_timeStepping );
+        p["Time Discretization"] = subPt;
+    }
+
+
+    // Algebraic Solver
+    if ( this->algebraicFactory() )
+    {
+        this->algebraicFactory()->updateInformationObject( p["Algebraic Solver"] );
     }
 }
 
+HEAT_CLASS_TEMPLATE_DECLARATIONS
+tabulate_informations_ptr_t
+HEAT_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
+{
+    auto tabInfo = TabulateInformationsSections::New( tabInfoProp );
+    if ( jsonInfo.contains("Environment") )
+        tabInfo->add( "Environment",  super_type::super_model_base_type::tabulateInformations( jsonInfo.at("Environment"), tabInfoProp ) );
+
+    if ( jsonInfo.contains("Physics") )
+        tabInfo->add( "Physics", super_physics_type::tabulateInformations( jsonInfo.at("Physics"), tabInfoProp ) );
+
+    if ( jsonInfo.contains("Physics2") )
+    {
+        Feel::Table tabInfoPhysics;
+        TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoPhysics, jsonInfo.at("Physics2"), tabInfoProp );
+        tabInfo->add( "Physics2", TabulateInformations::New( tabInfoPhysics, tabInfoProp ) );
+    }
+
+    if ( this->materialsProperties() && jsonInfo.contains("Materials Properties") )
+        tabInfo->add( "Materials Properties", this->materialsProperties()->tabulateInformations(jsonInfo.at("Materials Properties"), tabInfoProp ) );
+
+    if ( jsonInfo.contains("Boundary Conditions") )
+        tabInfo->add( "Boundary Conditions", HeatBoundaryConditions::tabulateInformations( jsonInfo.at("Boundary Conditions"), tabInfoProp ) );
+
+    if ( jsonInfo.contains("Meshes") )
+        tabInfo->add( "Meshes", super_type::super_model_meshes_type::tabulateInformations( jsonInfo.at("Meshes"), tabInfoProp ) );
+
+    if ( jsonInfo.contains("Function Spaces") )
+    {
+        auto const& jsonInfoFunctionSpaces = jsonInfo.at("Function Spaces");
+        auto tabInfoFunctionSpaces = TabulateInformationsSections::New( tabInfoProp );
+
+        nl::json::json_pointer jsonPointerSpaceTemperature( jsonInfoFunctionSpaces.at( "Temperature" ).template get<std::string>() );
+        if ( JournalManager::journalData().contains( jsonPointerSpaceTemperature ) )
+            tabInfoFunctionSpaces->add( "Temperature", TabulateInformationTools::FromJSON::tabulateInformationsFunctionSpace( JournalManager::journalData().at( jsonPointerSpaceTemperature ), tabInfoProp ) );
+
+        tabInfo->add( "Function Spaces", tabInfoFunctionSpaces );
+    }
+
+    // fields
+    if ( jsonInfo.contains("Fields") )
+        tabInfo->add( "Fields", TabulateInformationTools::FromJSON::tabulateInformationsModelFields( jsonInfo.at("Fields"), tabInfoProp ) );
+
+    if ( jsonInfo.contains("Time Discretization") )
+    {
+        Feel::Table tabInfoTimeDiscr;
+        TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoTimeDiscr, jsonInfo.at("Time Discretization"), tabInfoProp );
+        tabInfo->add( "Time Discretization", TabulateInformations::New( tabInfoTimeDiscr, tabInfoProp ) );
+    }
+
+    if ( jsonInfo.contains("Finite element stabilization") )
+    {
+        Feel::Table tabInfoStab;
+        TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoStab, jsonInfo.at("Finite element stabilization"), tabInfoProp );
+        tabInfo->add( "Finite element stabilization", TabulateInformations::New( tabInfoStab, tabInfoProp ) );
+    }
+
+    if ( jsonInfo.contains( "Algebraic Solver" ) )
+        tabInfo->add( "Algebraic Solver", model_algebraic_factory_type::tabulateInformations( jsonInfo.at("Algebraic Solver"), tabInfoProp ) );
+
+    return tabInfo;
+}
+
+#if 0
 HEAT_CLASS_TEMPLATE_DECLARATIONS
 std::shared_ptr<std::ostringstream>
 HEAT_CLASS_TEMPLATE_TYPE::getInfo() const
 {
     std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
+#if 0
     *_ostr << "\n||==============================================||"
            << "\n||==============================================||"
            << "\n||==============================================||"
@@ -506,23 +561,25 @@ HEAT_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n   Prefix : " << this->prefix()
            << "\n   Root Repository : " << this->rootRepository();
     *_ostr << "\n   Physical Model"
-           << "\n     -- time mode           : " << std::string( (this->isStationary())?"Stationary":"Transient")
-           << "\n     -- velocity-convection : " << std::string( (this->fieldVelocityConvectionIsUsedAndOperational())?"Yes":"No" );
+           << "\n     -- time mode           : " << std::string( (this->isStationary())?"Stationary":"Transient");
+    for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
+        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
+            if ( this->hasVelocityConvectionExpr( matName ) )
+                *_ostr << "\n     -- convection-velocity [" << matName << "] : " <<  str( this->velocityConvectionExpr( matName ).expression() );
     *_ostr << "\n   Boundary conditions"
-           << this->getInfoDirichletBC()
-           << this->getInfoNeumannBC()
-           << this->getInfoRobinBC();
-    *_ostr << this->thermalProperties()->getInfoMaterialParameters()->str();
+           << M_bcDirichletMarkerManagement.getInfoDirichletBC()
+           << M_bcNeumannMarkerManagement.getInfoNeumannBC()
+           << M_bcRobinMarkerManagement.getInfoRobinBC();
+    *_ostr << this->materialsProperties()->getInfoMaterialParameters()->str();
+#if 0
     *_ostr << "\n   Mesh Discretization"
            << "\n     -- mesh filename      : " << this->meshFile()
-           << "\n     -- number of element : " << M_mesh->numGlobalElements()
+           << "\n     -- number of element : " << this->mesh()->numGlobalElements()
            << "\n     -- order             : " << nOrderGeo;
+#endif
     *_ostr << "\n   Space Temperature Discretization"
            << "\n     -- order         : " << nOrderPoly
            << "\n     -- number of dof : " << M_Xh->nDof() << " (" << M_Xh->nLocalDof() << ")";
-    if ( this->fieldVelocityConvectionIsUsedAndOperational() )
-        *_ostr << "\n   Space Velocity Convection Discretization"
-               << "\n     -- number of dof : " << M_XhVelocityConvection->nDof() << " (" << M_XhVelocityConvection->nLocalDof() << ")";
     if ( !this->isStationary() )
     {
         *_ostr << "\n   Time Discretization"
@@ -538,75 +595,74 @@ HEAT_CLASS_TEMPLATE_TYPE::getInfo() const
         if ( M_stabilizationGLSParameter )
             *_ostr << "\n     -- paramter method : " << M_stabilizationGLSParameter->method();
     }
-    if ( M_algebraicFactory )
-        *_ostr << M_algebraicFactory->getInfo()->str();
+    if ( this->algebraicFactory() )
+        *_ostr << this->algebraicFactory()->getInfo()->str();
     *_ostr << "\n||==============================================||"
            << "\n||==============================================||"
            << "\n||==============================================||"
            << "\n";
-
+#endif
     return _ostr;
 }
+#endif
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
 HEAT_CLASS_TEMPLATE_TYPE::updateParameterValues()
 {
+    if ( !this->manageParameterValues() )
+        return;
+
     this->modelProperties().parameters().updateParameterValues();
     auto paramValues = this->modelProperties().parameters().toParameterValues();
-    this->modelProperties().parameters().setParameterValues( paramValues );
+    this->materialsProperties()->updateParameterValues( paramValues );
+    for ( auto [physicName,physicData] : this->physics/*FromCurrentType*/() )
+        physicData->updateParameterValues( paramValues );
 
-    this->thermalProperties()->setParameterValues( paramValues );
-    M_bcDirichlet.setParameterValues( paramValues );
-    M_bcNeumann.setParameterValues( paramValues );
-    M_bcRobin.setParameterValues( paramValues );
-    M_volumicForcesProperties.setParameterValues( paramValues );
+    this->updateParameterValues_postProcess( paramValues, prefixvm("postprocess",this->keyword(),"_" ) );
+
+    this->setParameterValues( paramValues );
+}
+HEAT_CLASS_TEMPLATE_DECLARATIONS
+void
+HEAT_CLASS_TEMPLATE_TYPE::setParameterValues( std::map<std::string,double> const& paramValues )
+{
+    this->log("Heat","setParameterValues", "start");
+
+    for ( auto const& [param,val] : paramValues )
+        M_currentParameterValues[param] = val;
+
+    if ( this->manageParameterValuesOfModelProperties() )
+    {
+        this->modelProperties().parameters().setParameterValues( paramValues );
+        this->modelProperties().postProcess().setParameterValues( paramValues );
+        this->modelProperties().initialConditions().setParameterValues( paramValues );
+        this->materialsProperties()->setParameterValues( paramValues );
+    }
+    for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
+        physicData->setParameterValues( paramValues );
+
+    M_boundaryConditions->setParameterValues( paramValues );
+
+    this->log("Heat","setParameterValues", "finish");
 }
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
 HEAT_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
 {
-    this->clearMarkerDirichletBC();
-    this->clearMarkerNeumannBC();
-    this->clearMarkerRobinBC();
+    M_boundaryConditions = std::make_shared<boundary_conditions_type>( this->shared_from_this() );
+    if ( !this->modelProperties().boundaryConditions().hasSection( this->keyword() ) )
+        return;
+    M_boundaryConditions->setup( this->modelProperties().boundaryConditions().section( this->keyword() ) );
+}
 
-    this->M_bcDirichlet = this->modelProperties().boundaryConditions().getScalarFields( "temperature", "Dirichlet" );
-    for( auto const& d : this->M_bcDirichlet )
-        this->addMarkerDirichletBC("elimination", name(d), markers(d) );
-    this->M_bcNeumann = this->modelProperties().boundaryConditions().getScalarFields( "temperature", "Neumann" );
-    for( auto const& d : this->M_bcNeumann )
-        this->addMarkerNeumannBC(NeumannBCShape::SCALAR,name(d),markers(d));
-
-    this->M_bcRobin = this->modelProperties().boundaryConditions().getScalarFieldsList( "temperature", "Robin" );
-    for( auto const& d : this->M_bcRobin )
-        this->addMarkerRobinBC( name(d),markers(d) );
-
-    this->M_volumicForcesProperties = this->modelProperties().boundaryConditions().getScalarFields( "temperature", "VolumicForces" );
-
-    auto mesh = this->mesh();
-    auto XhTemperature = this->spaceTemperature();
-    std::set<std::string> temperatureMarkers;
-
-    // strong Dirichlet bc on temperature from expression
-    for( auto const& d : M_bcDirichlet )
-    {
-        auto listMark = this->markerDirichletBCByNameId( "elimination",name(d) );
-        temperatureMarkers.insert( listMark.begin(), listMark.end() );
-    }
-    auto meshMarkersTemperatureByEntities = detail::distributeMarkerListOnSubEntity( mesh, temperatureMarkers );
-
-    // on topological faces
-    auto const& listMarkedFacesTemperature = std::get<0>( meshMarkersTemperatureByEntities );
-    if ( !listMarkedFacesTemperature.empty() )
-    {
-        auto therange = markedfaces(mesh,listMarkedFacesTemperature );
-        auto dofsToAdd = XhTemperature->dofs( therange );
-        XhTemperature->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
-        this->dofEliminationIdsAll("temperature",MESH_FACES).insert( dofsToAdd.begin(), dofsToAdd.end() );
-        auto dofsMultiProcessToAdd = XhTemperature->dofs( therange, ComponentType::NO_COMPONENT, true );
-        this->dofEliminationIdsMultiProcess("temperature",MESH_FACES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
-    }
+HEAT_CLASS_TEMPLATE_DECLARATIONS
+void
+HEAT_CLASS_TEMPLATE_TYPE::updateAlgebraicDofEliminationIds()
+{
+    for ( auto const& [bcName,bcData] : M_boundaryConditions->temperatureImposed() )
+        bcData->updateDofEliminationIds( *this, "temperature", this->spaceTemperature() );
 }
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
@@ -616,20 +672,13 @@ HEAT_CLASS_TEMPLATE_TYPE::solve()
     this->log("Heat","solve", "start");
     this->timerTool("Solve").start();
 
-    this->updateParameterValues();
-
     this->setStartBlockSpaceIndex( 0 );
 
-    M_blockVectorSolution.updateVectorFromSubVectors();
+    this->algebraicBlockVectorSolution()->updateVectorFromSubVectors();
 
-    if ( this->thermalProperties()->hasThermalConductivityDependingOnSymbol( "heat_T" ) )
-        M_algebraicFactory->solve( "Newton", M_blockVectorSolution.vectorMonolithic() );
-    else
-        M_algebraicFactory->solve( "LinearSystem", M_blockVectorSolution.vectorMonolithic() );
+    this->algebraicFactory()->solve( M_solverName, this->algebraicBlockVectorSolution()->vectorMonolithic() );
 
-    M_blockVectorSolution.localize();
-
-    this->updateFields( this->symbolsExpr() );
+    this->algebraicBlockVectorSolution()->localize();
 
     double tElapsed = this->timerTool("Solve").stop("solve");
     if ( this->scalabilitySave() )
@@ -647,15 +696,29 @@ HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
 HEAT_CLASS_TEMPLATE_TYPE::exportResults( double time )
 {
-    this->exportResults( time, this->symbolsExpr() );
+    auto mfields = this->modelFields();
+    auto se = this->symbolsExpr( mfields );
+    this->exportResults( time, mfields, se, this->exprPostProcessExports( se ) );
 }
-
+#if 0
 HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
 HEAT_CLASS_TEMPLATE_TYPE::executePostProcessMeasures( double time )
 {
-    this->executePostProcessMeasures( time, this->allFields(), this->symbolsExpr() );
+    auto mfields = this->modelFields();
+    this->executePostProcessMeasures( time, mfields, this->symbolsExpr( mfields ) );
 }
+#endif
+
+HEAT_CLASS_TEMPLATE_DECLARATIONS
+bool
+HEAT_CLASS_TEMPLATE_TYPE::checkResults() const
+{
+    const_cast<self_type*>(this)->updateParameterValues();
+    auto se = this->symbolsExpr();
+    return super_type::checkResults( se );
+}
+
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -704,18 +767,10 @@ HEAT_CLASS_TEMPLATE_TYPE::updateTimeStep()
         this->updateTime( this->timeStepBdfTemperature()->time() );
     }
 
-    // update velocity convection id symbolic expr exist and  depend only of time
-    this->updateFieldVelocityConvection( true );
+    if ( rebuildCstAssembly )
+        this->setNeedToRebuildCstPart(true);
 
-    // maybe rebuild cst jacobian or linear
-    if ( M_algebraicFactory && rebuildCstAssembly )
-    {
-        if (!this->rebuildCstPartInLinearSystem())
-        {
-            this->log("Heat","updateTimeStep", "do rebuildCstLinearPDE" );
-            M_algebraicFactory->rebuildCstLinearPDE(this->blockVectorSolution().vectorMonolithic());
-        }
-    }
+    this->updateParameterValues();
 
     this->timerTool("TimeStepping").stop("updateTimeStep");
     if ( this->scalabilitySave() ) this->timerTool("TimeStepping").save();
@@ -728,140 +783,31 @@ HEAT_CLASS_TEMPLATE_TYPE::updateTimeStepCurrentResidual()
 {
     if ( this->isStationary() )
         return;
-    if ( !M_algebraicFactory )
+
+    auto algebraicFactory = this->algebraicFactory();
+    if ( !algebraicFactory )
         return;
+
     if ( M_timeStepping == "Theta" )
     {
         M_timeStepThetaSchemePreviousContrib->zero();
-        M_blockVectorSolution.updateVectorFromSubVectors();
-        ModelAlgebraic::DataUpdateResidual dataResidual( M_blockVectorSolution.vectorMonolithic(), M_timeStepThetaSchemePreviousContrib, true, false );
+        this->algebraicBlockVectorSolution()->updateVectorFromSubVectors();
+        ModelAlgebraic::DataUpdateResidual dataResidual( this->algebraicBlockVectorSolution()->vectorMonolithic(), M_timeStepThetaSchemePreviousContrib, true, false );
         dataResidual.addInfo( prefixvm( this->prefix(), "time-stepping.evaluate-residual-without-time-derivative" ) );
-        M_algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", false );
-        M_algebraicFactory->evaluateResidual( dataResidual );
-        M_algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", true );
+        this->setStartBlockSpaceIndex( 0 );
+        algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", false );
+        algebraicFactory->evaluateResidual( dataResidual );
+        algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", true );
 
         if ( M_stabilizationGLS )
         {
-            auto & dataInfos = M_algebraicFactory->dataInfos();
-            *dataInfos.vectorInfo( prefixvm( this->prefix(),"time-stepping.previous-solution") ) = *M_blockVectorSolution.vectorMonolithic();
-            if ( this->fieldVelocityConvectionIsUsedAndOperational() )
-            {
-                std::string convectionOseenEntry = prefixvm( this->prefix(),"time-stepping.previous-convection-velocity-field" );
-                if ( !dataInfos.hasVectorInfo( convectionOseenEntry ) )
-                    dataInfos.addVectorInfo( convectionOseenEntry, this->backend()->newVector( this->fieldVelocityConvection().mapPtr() ) );
-                *dataInfos.vectorInfo( convectionOseenEntry ) = this->fieldVelocityConvection();
-            }
+            auto & dataInfos = algebraicFactory->dataInfos();
+            *dataInfos.vectorInfo( "time-stepping.previous-solution" ) = *this->algebraicBlockVectorSolution()->vectorMonolithic();
+            dataInfos.addParameterValuesInfo( "time-stepping.previous-parameter-values", M_currentParameterValues );
         }
     }
 }
 
-HEAT_CLASS_TEMPLATE_DECLARATIONS
-void
-HEAT_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
-{
-    this->updateLinearPDE( data, this->symbolsExpr() );
-}
-
-HEAT_CLASS_TEMPLATE_DECLARATIONS
-void
-HEAT_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( DataNewtonInitialGuess & data ) const
-{
-    if ( M_bcDirichlet.empty() ) return;
-
-    this->log("Heat","updateNewtonInitialGuess","start" );
-
-    vector_ptrtype& U = data.initialGuess();
-    auto mesh = this->mesh();
-    auto u = this->spaceTemperature()->element( U, this->rowStartInVector() );
-
-    for( auto const& d : M_bcDirichlet )
-    {
-        auto theExpr = expression(d,this->symbolsExpr());
-        u.on(_range=markedfaces(mesh, this->markerDirichletBCByNameId( "elimination",name(d) ) ),
-             _expr=theExpr );
-    }
-
-    // update info for synchronization
-    this->updateDofEliminationIds( "temperature", data );
-
-    this->log("Heat","updateNewtonInitialGuess","finish" );
-}
-
-HEAT_CLASS_TEMPLATE_DECLARATIONS
-void
-HEAT_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
-{
-    const vector_ptrtype& XVec = data.currentSolution();
-    auto const t = this->spaceTemperature()->element(XVec, this->rowStartInVector());
-    this->updateJacobian( data, this->symbolsExpr(t) );
-}
-HEAT_CLASS_TEMPLATE_DECLARATIONS
-void
-HEAT_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
-{
-    const vector_ptrtype& XVec = data.currentSolution();
-    auto const t = this->spaceTemperature()->element(XVec, this->rowStartInVector());
-    this->updateResidual( data, this->symbolsExpr(t) );
-}
-
-HEAT_CLASS_TEMPLATE_DECLARATIONS
-void
-HEAT_CLASS_TEMPLATE_TYPE::updateResidualDofElimination( DataUpdateResidual & data ) const
-{
-    if ( !this->hasMarkerDirichletBCelimination() ) return;
-    //if ( this->M_bcDirichlet.empty() ) return;
-
-    this->log("Heat","updateResidualDofElimination","start" );
-
-    this->updateDofEliminationIds( "temperature", data );
-
-    this->log("Heat","updateResidualDofElimination","finish" );
-}
-
-HEAT_CLASS_TEMPLATE_DECLARATIONS
-void
-HEAT_CLASS_TEMPLATE_TYPE::updateJacobianDofElimination( DataUpdateJacobian & data ) const
-{
-    if ( !this->hasMarkerDirichletBCelimination() ) return;
-    //if ( this->M_bcDirichlet.empty() ) return;
-
-    this->log("Heat","updateJacobianDofElimination","start" );
-
-    this->updateDofEliminationIds( "temperature", data );
-
-    this->log("Heat","updateJacobianDofElimination","finish" );
-}
-
-
-HEAT_CLASS_TEMPLATE_DECLARATIONS
-void
-HEAT_CLASS_TEMPLATE_TYPE::updateLinearPDEDofElimination( DataUpdateLinear & data ) const
-{
-    if ( !this->hasMarkerDirichletBCelimination() ) return;
-    //if ( this->M_bcDirichlet.empty() ) return;
-
-    this->log("Heat","updateLinearPDEDofElimination","start" );
-
-    sparse_matrix_ptrtype& A = data.matrix();
-    vector_ptrtype& F = data.rhs();
-    auto mesh = this->mesh();
-    auto Xh = this->spaceTemperature();
-    auto const& u = this->fieldTemperature();
-    auto bilinearForm_PatternCoupled = form2( _test=Xh,_trial=Xh,_matrix=A,
-                                              _pattern=size_type(Pattern::COUPLED),
-                                              _rowstart=this->rowStartInMatrix(),
-                                              _colstart=this->colStartInMatrix() );
-
-    for( auto const& d : this->M_bcDirichlet )
-    {
-        auto theExpr = expression(d,this->symbolsExpr());
-        bilinearForm_PatternCoupled +=
-            on( _range=markedfaces(mesh, this->markerDirichletBCByNameId( "elimination",name(d) ) ),
-                _element=u,_rhs=F,_expr=theExpr );
-    }
-
-    this->log("Heat","updateLinearPDEDofElimination","finish" );
-}
 
 } // end namespace FeelModels
 } // end namespace Feel

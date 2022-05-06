@@ -1384,7 +1384,7 @@ public:
         return __geopc;
     }
 
-    template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g = context_v, int SubEntityCoDim = 1>
+    template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g = context_v, int SubEntityCoDim = 0>
     class Context
     {
     public:
@@ -1418,7 +1418,8 @@ public:
         using optimization_p2_t = mpl::bool_<true>;
         using no_optimization_p2_t = mpl::bool_<false>;
 
-        static const bool do_opt_q1= ( nOrder<=2 ) && ( Geo_t::nOrder==1 ) && ( convex_type::is_hypercube );
+        static const bool do_pt_q1= ( nOrder<=2 ) && ( Geo_t::nOrder==1 ) && ( convex_type::is_hypercube );
+
 
         typedef typename Basis_t::polyset_type polyset_type;
         static const uint16_type rank = polyset_type::rank;
@@ -1430,8 +1431,10 @@ public:
         typedef typename reference_element_type::value_type value_type;
 
         typedef ElementType geometric_element_type;
-        typedef typename Geo_t::template Context<context_g, ElementType,SubEntityCoDim> geometric_mapping_context_type;
+        typedef typename Geo_t::template Context<ElementType,SubEntityCoDim> geometric_mapping_context_type;
         typedef std::shared_ptr<geometric_mapping_context_type> geometric_mapping_context_ptrtype;
+
+        static const bool second_derivative_require_grad = !geometric_mapping_context_type::is_linear;//  Geo_t::nOrder > 1 || !convex_type::is_simplex;
 
         typedef typename node<value_type>::type node_type;
 
@@ -1468,6 +1471,7 @@ public:
         using dx_type = Eigen::TensorFixedSize<value_type,Eigen::Sizes<nComponents2,1>>;
         using dy_type = dx_type;
         using dz_type = dx_type;
+        using normal_component_type = Eigen::TensorFixedSize<value_type,Eigen::Sizes<(rank==2)? nComponents1:1,1>>;
 #endif
         typedef geometric_mapping_context_type gmc_type;
         typedef Eigen::Matrix<value_type,Eigen::Dynamic, Eigen::Dynamic> matrix_eigen_type;
@@ -1478,13 +1482,13 @@ public:
         typedef typename Eigen::Map<const Eigen::Matrix<value_type,gmc_type::NDim,gmc_type::PDim,Eigen::ColMajor> > matrix_eigen_ublas_NP_type;
         typedef typename Eigen::Map<const Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::ColMajor> > matrix_eigen_ublas_type;
 
-        
+
         Context( reference_element_ptrtype const& __RefEle,
                  geometric_mapping_context_ptrtype const& __gmc,
                  precompute_ptrtype const& __pc )
             :
             M_pc( __pc ),
-            M_npoints( __pc->nPoints() ),
+            M_npoints( 0/*__pc->nPoints()*/ ),
 
             M_ipt( 0 ),
             M_ref_ele( __RefEle ),
@@ -1503,72 +1507,8 @@ public:
             M_dz()
         {
             std::iota( M_dofs.begin(), M_dofs.end(), 0 );
-            const int ntdof = this->nDofs();
-            if ( vm::has_normal_component_v<context> )
-            {
-                M_normal_component.resize( boost::extents[ntdof][M_npoints] );
-                id_type i_n;
-                i_n.setConstant( 0. );
-                std::fill( M_normal_component.data(), M_normal_component.data()+M_normal_component.num_elements(), i_n );
-            }
-            if ( vm::has_trace_v<context> )
-            {
-                M_trace.resize( boost::extents[ntdof][M_npoints] );
-                std::fill( M_trace.data(), M_trace.data()+M_trace.num_elements(), 0. );
-            }
-                    
 
-            //LOG(INFO) << " Polynomial derivatives optimized for P1: " << do_optimization_p1;
-            if ( vm::has_grad<context>::value || vm::has_first_derivative<context>::value  )
-            {
-                //const int ntdof = nDof*nComponents1;
-                
-                if ( do_optimization_p1 )
-                    M_grad.resize( boost::extents[ntdof][1] );
-                else
-                    M_grad.resize( boost::extents[ntdof][M_npoints] );
-
-                if ( vm::has_first_derivative_normal<context>::value )
-                {
-                    M_dn.resize( boost::extents[ntdof][M_npoints] );
-                }
-
-                if ( vm::has_symm<context>::value )
-                {
-                    if ( do_optimization_p1 )
-                        M_symm_grad.resize( boost::extents[ntdof][1] );
-                    else
-                        M_symm_grad.resize( boost::extents[ntdof][M_npoints] );
-                }
-                if ( vm::has_div<context>::value )
-                {
-                    if ( do_optimization_p1 )
-                        M_div.resize( boost::extents[ntdof][1] );
-                    else
-                        M_div.resize( boost::extents[ntdof][M_npoints] );
-                }
-
-                if ( vm::has_curl<context>::value )
-                {
-                    if ( do_optimization_p1 )
-                        M_curl.resize( boost::extents[ntdof][1] );
-                    else
-                        M_curl.resize( boost::extents[ntdof][M_npoints] );
-                }
-
-                if ( vm::has_hessian<context>::value || vm::has_second_derivative<context>::value  )
-                {
-                    M_hessian.resize( boost::extents[ntdof][M_npoints] );
-                }
-                if ( vm::has_laplacian<context>::value )
-                {
-                    M_hessian.resize( boost::extents[ntdof][M_npoints] );
-                    M_laplacian.resize( boost::extents[ntdof][M_npoints] );
-                }
-                resizeAndSet( rank_t<rank>() );
-            }
-
-            update( __gmc );
+            update( __gmc, __pc );
         }
         Context( Context const& c )
             :
@@ -1689,6 +1629,10 @@ public:
             return M_gmc->id();
         }
 
+        //! @return the dynamic context associated
+        size_type dynamicContext() const { return M_gmc->dynamicContext()/* M_dynamic_context*/; }
+
+
         /**
          * @return the number of basis functions
          */
@@ -1762,6 +1706,11 @@ public:
                                            uint32_type q ) const
             {
                 return M_normal_component[i][q]( c1,c2 );
+            }
+        normal_component_type const& normalComponent( uint32_type i,
+                                                      uint32_type q ) const
+            {
+                return M_normal_component[i][q];
             }
         value_type const& trace( uint32_type i,
                                  uint16_type c1,
@@ -2225,6 +2174,25 @@ public:
                 }
 
             }
+    private :
+        FEELPP_STRONG_INLINE void updateGrad( geometric_mapping_context_type* thegmc, rank_t<0> );
+        FEELPP_STRONG_INLINE void updateFirstDerivativeNormal( geometric_mapping_context_type* thegmc, rank_t<0> );
+        FEELPP_STRONG_INLINE void updateHessian( geometric_mapping_context_type* thegmc, rank_t<0> );
+        FEELPP_STRONG_INLINE void updateLaplacian( geometric_mapping_context_type* thegmc, rank_t<0> );
+
+        FEELPP_STRONG_INLINE void updateNormalComponent( geometric_mapping_context_type* thegmc, rank_t<1> );
+        FEELPP_STRONG_INLINE void updateGrad( geometric_mapping_context_type* thegmc, rank_t<1> );
+        FEELPP_STRONG_INLINE void updateSymm( geometric_mapping_context_type* thegmc, rank_t<1> );
+        FEELPP_STRONG_INLINE void updateDiv( geometric_mapping_context_type* thegmc, rank_t<1> );
+        FEELPP_STRONG_INLINE void updateCurl( geometric_mapping_context_type* thegmc, rank_t<1> );
+        FEELPP_STRONG_INLINE void updateFirstDerivativeNormal( geometric_mapping_context_type* thegmc, rank_t<1> );
+        FEELPP_STRONG_INLINE void updateHessian( geometric_mapping_context_type* thegmc, rank_t<1> );
+        FEELPP_STRONG_INLINE void updateLaplacian( geometric_mapping_context_type* thegmc, rank_t<1> );
+
+        FEELPP_STRONG_INLINE void updateNormalComponent( geometric_mapping_context_type* thegmc, rank_t<2> );
+        FEELPP_STRONG_INLINE void updateTrace( geometric_mapping_context_type* thegmc, rank_t<2> );
+        FEELPP_STRONG_INLINE void updateGrad( geometric_mapping_context_type* thegmc, rank_t<2> );
+        FEELPP_STRONG_INLINE void updateDiv( geometric_mapping_context_type* thegmc, rank_t<2> );
     private:
 
         boost::optional<precompute_ptrtype> M_pc;
@@ -2244,7 +2212,7 @@ public:
         typename precompute_type::grad_type const* M_gradphi;
 #endif
         boost::multi_array<hess_type,2> M_hessphi;
-        boost::multi_array<id_type,2> M_normal_component;
+        boost::multi_array<normal_component_type,2> M_normal_component;
         boost::multi_array<value_type,2> M_trace;
         boost::multi_array<dn_type,2> M_dn;
         boost::multi_array<grad_type,2> M_grad;

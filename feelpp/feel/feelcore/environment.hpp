@@ -32,8 +32,14 @@
 #include <cstdlib>
 #include <memory>
 
+#include <fmt/core.h>
+#include <fmt/format.h>
+
 #include <boost/noncopyable.hpp>
 #include <boost/signals2/signal.hpp>
+
+#include <boost/stacktrace.hpp>
+#include <boost/exception/all.hpp>
 
 #include <boost/format.hpp>
 #include <boost/property_tree/ptree_fwd.hpp>
@@ -68,6 +74,7 @@
 #include <feel/feelcore/about.hpp>
 #include <feel/feelcore/termcolor.hpp>
 #include <feel/options.hpp>
+#include <feel/feelcore/repository.hpp>
 
 #if defined ( FEELPP_HAS_PETSC_H )
 #include <petscsys.h>
@@ -76,7 +83,7 @@
 #if defined(FEELPP_HAS_HARTS)
 #include <hwloc.h>
 #endif
-
+#include <feel/feelcore/repository.hpp>
 #include <feel/feelcore/journalmanager.hpp>
 #include <feel/feelhwsys/hwsys.hpp>
 
@@ -86,6 +93,23 @@ namespace tc = termcolor;
 namespace pt =  boost::property_tree;
 namespace uuids =  boost::uuids;
 
+// boost::error_info typedef that holds the stacktrace:
+using traced = boost::error_info<struct tag_stacktrace, boost::stacktrace::stacktrace>;
+
+/**
+ * @brief helper class for throwing any exception with stacktrace:
+ *
+ * @tparam E exception type
+ * @param e exception thown
+ */
+template <class E>
+void throw_with_trace( const E& e )
+{
+    throw boost::enable_error_info( e )
+        << traced( boost::stacktrace::stacktrace() );
+}
+
+// forward declarationx@
 class TimerTable;
 
 //!
@@ -226,64 +250,72 @@ public:
      */
     Environment( int& argc, char** &argv );
 
+    /**
+     * @brief Construct a new Environment object
+     * 
+     * @param argc number of command line aguments
+     * @param argv command line aguments
+     * @param lvl level of threading in MPI 
+     * @param desc command line options for application
+     * @param desc_lib command line options for library
+     * @param about about data structure
+     * @param config configuration of the repository of the resut&lts
+     */
     Environment( int argc, char** argv,
-#if BOOST_VERSION >= 105500
                  mpi::threading::level lvl,
-#endif
                  po::options_description const& desc,
                  po::options_description const& desc_lib,
                  AboutData const& about,
-                 std::string directory,
-                 bool add_subdir_np = true );
+                 Repository::Config const& config );
 
 #if defined(FEELPP_ENABLE_PYTHON_WRAPPING)
-    Environment( pybind11::list arg, po::options_description const& desc );
+    /**
+     * @brief Construct a new Environment object
+     * 
+     * @param arg sys arg
+     * @param desc description of the options
+     * @param directory directory to save the results
+     * @param chdir change directory to FEELPP_REPOSITORY or stay in current directory
+     */
+    Environment( pybind11::list arg, po::options_description const& desc, Repository::Config const& config );
     Environment( pybind11::list arg );
 #endif
 
-
-    template <class ArgumentPack>
-    Environment( ArgumentPack const& args )
+    Environment( NA::arguments<
+                 typename na::argc::template required_as_t<int>,
+                 typename na::argv::template required_as_t<char**>,
+                 typename na::threading::template required_as_t<mpi::threading::level>,
+                 typename na::desc::template required_as_t<po::options_description const&>,
+                 typename na::desc_lib::template required_as_t<po::options_description const&>,
+                 typename na::about::template required_as_t<AboutData const&>,
+                 typename na::config::template required_as_t<Repository::Config const&>
+                 > && args )
         :
-        Environment( args[_argc],
-                     args[_argv],
-#if BOOST_VERSION >= 105500
-                     args[_threading|mpi::threading::funneled],
-#endif
-                     args[_desc|feel_nooptions()],
-                     args[_desc_lib | feel_options()],
-                     args[_about| makeAboutDefault( args[_argv][0] )],
-                     args[_directory|args[_about| makeAboutDefault( args[_argv][0] )].appName()],
-                     args[_subdir| true ] )
+        Environment( args.get(_argc), args.get(_argv), args.get(_threading),
+                     args.get(_desc), args.get(_desc_lib),
+                     args.get(_about), args.get(_config)
+                     ) {}
+  private :
+    template <typename ... Ts>
+        decltype(auto) make_args_env_constructor( Ts && ... v )
+    {
+        auto args0 = NA::make_arguments( std::forward<Ts>(v)... )
+            .add_default_arguments( NA::make_default_argument( _threading, mpi::threading::funneled ),
+                                    NA::make_default_argument_invocable( _desc, [](){ return feel_nooptions(); } ),
+                                    NA::make_default_argument_invocable( _desc_lib, [](){ return feel_options(); } )
+                                    );
+        char** argv = args0.get(_argv);
+        return std::move(args0).add_default_arguments( NA::make_default_argument_invocable( _about, [&argv](){ return makeAboutDefault( argv[0] ); } ),
+                                                       NA::make_default_argument_invocable( _config, [&argv](){ return globalRepository(makeAboutDefault( argv[0] ).appName()); } )
+                                                       );
+    }
+  public:
+
+    template <typename ... Ts,typename  = typename std::enable_if_t< sizeof...(Ts) != 0 && ( NA::is_named_argument_v<Ts> && ...) > >
+        Environment( Ts && ... v )
+            :
+            Environment( make_args_env_constructor( std::forward<Ts>(v)... ) )
         {}
-#if BOOST_VERSION >= 105500
-    BOOST_PARAMETER_CONSTRUCTOR(
-        Environment, ( Environment ), tag,
-        ( required
-          ( argc,* )
-          ( argv,* ) )
-        ( optional
-          ( desc,* )
-          ( desc_lib,* )
-          ( about,* )
-          ( threading,(mpi::threading::level) )
-          ( directory,( std::string ) )
-          ( subdir,*( boost::is_convertible<mpl::_,bool> ) )
-          ) ) // no semicolon
-#else
-    BOOST_PARAMETER_CONSTRUCTOR(
-        Environment, ( Environment ), tag,
-        ( required
-          ( argc,* )
-          ( argv,* ) )
-        ( optional
-          ( desc,* )
-          ( desc_lib,* )
-          ( about,* )
-          ( directory,( std::string ) )
-          ( subdir,*( boost::is_convertible<mpl::_,bool> ) )
-          ) ) // no semicolon
-#endif
 
     /** Shuts down the Feel environment.
      *
@@ -292,7 +324,7 @@ public:
      *  down (finalized), this destructor will shut down the Feel
      *  environment.
      */
-    ~Environment();
+    ~Environment() override;
 
     //@}
 
@@ -321,6 +353,14 @@ public:
      *  @returns @c true if the MPI environment has been finalized.
      */
     static bool finalized();
+
+    /** Determine if the MPI environment has already been aborted.
+     *
+     *  this occurs if MPI_Abort has been called
+     *
+     *  @returns @c true if the Feel++ nvironment has been aborted.
+     */
+    static bool aborted();
 
     /**
      * @return the shared_ptr WorldComm
@@ -383,6 +423,29 @@ public:
         return S_worldcomm->masterRank();
     }
 
+    /** get the thread level that could be set
+     * The thread level resquested to mpi may not be supported.
+     * This function returns the maximum level of thread support that could be setup
+     * @return the maximum thread level supported with respect to the initialization request
+     */
+    static mpi::threading::level threadLevel();
+
+    /** Are we in the main thread?
+     * this function may be useful e.g. in funneled level
+     */
+    static bool isMainThread();
+
+    /** Abort all MPI processes.
+     *  Aborts all MPI processes and returns to the environment. The
+     *  precise behavior will be defined by the underlying MPI
+     *  implementation. This is equivalent to a call to @c MPI_Abort
+     *  with @c MPI_COMM_WORLD.
+     *
+     *  @param errcode The error code to return to the environment.
+     *  @returns Will not return.
+     */
+    static void abort(int errcode);
+
     /**
      * @return true if number of process is 1, hence the environment is
      * sequential
@@ -426,6 +489,13 @@ public:
         }
         return S_configFiles;
     }
+
+    /**
+     * @brief Set the Configuration from a File 
+     * 
+     * @param filename filename of the config file
+     */
+    static void setConfigFile( std::string const& filename );
 
     /**
      * return variables_map
@@ -485,6 +555,13 @@ public:
     /** @name  Mutators
      */
     //@{
+
+    /**
+     * @brief get the repository info
+     * 
+     * @return Repository& 
+     */
+    static Repository& repository() { return S_repository; }
 
     /**
      * set the static worldcomm
@@ -559,20 +636,18 @@ public:
 
     //! @name directories
     //! @{
-
-    BOOST_PARAMETER_MEMBER_FUNCTION(
-        ( void ), static changeRepository, tag,
-        ( required
-          ( directory,( boost::format ) ) )
-        ( optional
-          ( filename,*( boost::is_convertible<mpl::_,std::string> ),"logfile" )
-          ( subdir,*( boost::is_convertible<mpl::_,bool> ),S_vm["npdir"].as<bool>() )
-          ( worldcomm, ( WorldComm ), Environment::worldComm() )
-          ( remove, ( bool ), false )
-          ) )
-        {
-            changeRepositoryImpl( directory, filename, subdir, worldcomm, remove );
-        }
+    template <typename ... Ts>
+    static void changeRepository( Ts && ... v )
+    {
+        auto args = NA::make_arguments( std::forward<Ts>(v)... );
+        boost::format directory = args.get(_directory);
+        std::string location_str = args.get_else( _location, "global" );
+        std::string const& filename = args.get_else(_filename, "logfile" );
+        bool subdir = args.get_else_invocable(_subdir, [](){ return S_vm["npdir"].as<bool>(); } );
+        WorldComm const& worldcomm = args.get_else(_worldcomm, Environment::worldComm() );
+        bool remove = args.get_else(_remove, false );
+        changeRepositoryImpl( directory, filename, location(location_str), subdir, worldcomm, remove );
+    }
 
     //! \return the root repository (default: \c $HOME/feel)
     static std::string const& rootRepository();
@@ -651,53 +726,34 @@ public:
     static uuids::uuid nameUUID( uuids::uuid const& dns_namespace_uuid, std::string const& name );
 
     //! @}
-
-    BOOST_PARAMETER_MEMBER_FUNCTION(
-        ( po::variable_value ), static vm, tag,
-        ( required
-          ( name,( std::string ) ) )
-        ( optional
-          ( sub,( std::string ),std::string() )
-          ( prefix,( std::string ),std::string() )
-          ( vm, ( po::variables_map const& ), Environment::vm() )
-        ) )
+    template <typename ... Ts>
+    static std::pair<std::string,po::variable_value> option( Ts && ... v )
     {
-        std::ostringstream os;
+        auto args = NA::make_arguments( std::forward<Ts>(v)... );
+        std::string const& name  = args.get(_name);
+        std::string const& sub = args.get_else(_sub, "" );
+        std::string const& prefix = args.get_else(_prefix, "" );
+        po::variables_map const& vm = args.get_else(_vm, Environment::vm() );
+
+        auto opt = fmt::memory_buffer();
 
         if ( !prefix.empty() )
-            os << prefix << ".";
-
+            fmt::format_to( opt, "{}.",prefix);
         if ( !sub.empty() )
-            os << sub << "-";
-
-        os << name;
-        auto it = vm.find( os.str() );
-        CHECK( it != vm.end() ) << "Invalid option " << os.str() << "\n";
-        return it->second;
+            fmt::format_to( std::back_inserter( opt ), "{}-",sub);
+        fmt::format_to( std::back_inserter( opt ), "{}",name);
+        std::string optname = fmt::to_string(opt);
+        auto it = vm.find( optname );
+        if ( it == vm.end() )
+            throw_with_trace( std::invalid_argument( fmt::format( "{}:{} invalid or missing option {}", __FILE__, __LINE__, optname ) ) );
+        ///CHECK( it != vm.end() ) << "Invalid option " << os.str() << "\n";
+        return *it;
     }
 
-    BOOST_PARAMETER_MEMBER_FUNCTION(
-        ( std::pair<std::string,po::variable_value> ), static option, tag,
-        ( required
-          ( name,( std::string ) ) )
-        ( optional
-          ( sub,( std::string ),std::string() )
-          ( prefix,( std::string ),std::string() )
-          ( vm, ( po::variables_map const& ), Environment::vm() )
-          ) )
+    template <typename ... Ts>
+    static po::variable_value vm( Ts && ... v )
     {
-        std::ostringstream os;
-
-        if ( !prefix.empty() )
-            os << prefix << ".";
-
-        if ( !sub.empty() )
-            os << sub << "-";
-
-        os << name;
-        auto it = vm.find( os.str() );
-        CHECK( it != vm.end() ) << "Invalid option " << os.str() << "\n";
-        return *it;
+        return option( std::forward<Ts>(v)... ).second;
     }
 
     /**
@@ -756,24 +812,6 @@ public:
     //! \endcode
     //!
     static void stopLogging( bool remove = false );
-
-    //! @return the summry tree of the application
-    static pt::ptree& summary() { return S_summary; }
-
-    //!
-    //! generate a summary of the execution of the application
-    //! @param fname name of the filename to generate
-    //! @param stage a string describing the stage at which the summary is generated/updated
-    //! @param write a boolean true to write the summary to disk, false otherwise
-    //! \code
-    //! Environment::generateSummary( about().appName(), "start", true ); // write to disk
-    //! Environment::generateSummary( about().appName(), "mid", false ); // do not write to disk but update tree
-    //! Environment::generateSummary( about().appName(), "end", true ); // write to disk
-    //! \endcode
-    //!
-    //!
-    [[deprecated("is replaced by Feel++ journal from v0.106.0")]]
-    static pt::ptree& generateSummary( std::string fname, std::string stage, bool write = true );
 
     template<typename Observer>
     static void
@@ -837,7 +875,7 @@ private:
     //! @{
 
     //! change the directory where the results are stored
-    static void changeRepositoryImpl( boost::format fmt, std::string const& logfile, bool add_subdir_np, WorldComm const& worldcomm, bool remove );
+    static void changeRepositoryImpl( boost::format fmt, std::string const& logfile, Location location, bool add_subdir_np, WorldComm const& worldcomm, bool remove );
 
 #if defined ( FEELPP_HAS_PETSC_H )
     FEELPP_NO_EXPORT void initPetsc( int * argc = 0, char *** argv = NULL );
@@ -863,7 +901,7 @@ private:
     static FEELPP_NO_EXPORT void parseAndStoreOptions( po::command_line_parser parser, bool extra_parser = false );
 
     //! update information into ptree
-    void updateInformationObject( pt::ptree & p );
+    void updateInformationObject( nl::json & p ) const;
 
     //! @}
 
@@ -878,13 +916,15 @@ private:
 
     static std::vector<fs::path> S_paths;
 
+    inline static Repository S_repository = unknownRepository();
     static fs::path S_rootdir;
     static fs::path S_appdir;
     static fs::path S_appdirWithoutNumProc;
     static fs::path S_scratchdir;
     static fs::path S_cfgdir;
     static AboutData S_about;
-    static pt::ptree S_summary;
+    static inline bool S_aborted = false;
+    static inline bool S_init_python = true;
     static std::shared_ptr<po::command_line_parser> S_commandLineParser;
     static std::vector<std::tuple<std::string,std::istringstream> > S_configFiles;
     static po::variables_map S_vm;
@@ -921,224 +961,99 @@ private:
     static std::unique_ptr<JournalWatcher> S_informationObject;
 };
 
-BOOST_PARAMETER_FUNCTION(
-    ( po::variable_value ), option, tag,
-    ( required
-      ( name,( std::string ) ) )
-    ( optional
-      ( sub,( std::string ),"" )
-      ( prefix,( std::string ),"" )
-      ( vm, ( po::variables_map const& ), Environment::vm() )
-    ) )
+
+template <typename ... Ts>
+po::variable_value option( Ts && ... v )
 {
-    return Environment::vm( _name=name,_sub=sub,_prefix=prefix, _vm=vm );
+    return Environment::vm( std::forward<Ts>(v)... );
 }
 
-BOOST_PARAMETER_FUNCTION(
-    ( int ), countoption, tag,
-    ( required
-      ( name,( std::string ) ) )
-    ( optional
-      ( sub,( std::string ),"" )
-      ( prefix,( std::string ),"" )
-      ( vm, ( po::variables_map const& ), Environment::vm() )
-      ) )
+template <typename ... Ts>
+int countoption( Ts && ... v )
 {
-    return vm.count(Environment::option( _name=name,_sub=sub,_prefix=prefix, _vm=vm ).first);
-}
-
-BOOST_PARAMETER_FUNCTION(
-    ( double ),
-    doption, tag,
-    ( required
-      ( name,( std::string ) ) )
-    ( optional
-      ( sub,( std::string ),"" )
-      ( prefix,( std::string ),"" )
-    ) )
-{
-    double opt;
-
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    po::variables_map const& vm = args.get_else(_vm, Environment::vm() );
     try
     {
-        opt = Environment::vm( _name=name,_sub=sub,_prefix=prefix ).template as<double>();
+        return vm.count( Environment::option( std::forward<Ts>(v)... ).first );
     }
-
-    catch ( boost::bad_any_cast const& bac )
+    catch( std::invalid_argument const& e )
     {
-        CHECK( false ) <<"Option "<< name << "  either does not exist or is not a double" <<std::endl;
+        return 0;
     }
-
-    return opt;
-}
-
-BOOST_PARAMETER_FUNCTION(
-    ( bool ),
-    boption, tag,
-    ( required
-      ( name,( std::string ) ) )
-    ( optional
-      ( sub,( std::string ),"" )
-      ( prefix,( std::string ),"" )
-    ) )
-{
-    bool opt;
-
-    try
-    {
-        opt = Environment::vm( _name=name,_sub=sub,_prefix=prefix ).template as<bool>();
-    }
-
-    catch ( boost::bad_any_cast const& bac )
-    {
-        CHECK( false ) <<"Option "<< name << "  either does not exist or is not a boolean" <<std::endl;
-    }
-
-    return opt;
-}
-
-BOOST_PARAMETER_FUNCTION(
-    ( int ),
-    ioption, tag,
-    ( required
-      ( name,( std::string ) ) )
-    ( optional
-      ( sub,( std::string ),"" )
-      ( prefix,( std::string ),"" )
-    ) )
-{
-    int opt;
-
-    try
-    {
-        opt = Environment::vm( _name=name,_sub=sub,_prefix=prefix ).template as<int>();
-    }
-
-    catch ( boost::bad_any_cast const& bac )
-    {
-        CHECK( false ) <<"Option "<< name << "  either does not exist or is not an integer" <<std::endl;
-    }
-
-    return opt;
 }
 
 
-BOOST_PARAMETER_FUNCTION(
-    ( std::string ),
-    soption, tag,
-    ( required
-      ( name,( std::string ) ) )
-    ( optional
-      ( sub,( std::string ),"" )
-      ( prefix,( std::string ),"" )
-    ) )
-{
-    std::string opt;
-
-    try
-    {
-        opt = Environment::vm( _name=name,_sub=sub,_prefix=prefix ).template as<std::string>();
-    }
-
-    catch ( boost::bad_any_cast const& bac )
-    {
-        CHECK( false ) <<"Option "<< name << "  either does not exist or is not a string" <<std::endl;
-    }
-
-    return opt;
-}
-
-BOOST_PARAMETER_FUNCTION(
-    ( std::vector<std::string> ),
-    vsoption, tag,
-    ( required
-      ( name,( std::string ) ) )
-    ( optional
-      ( sub,( std::string ),"" )
-      ( prefix,( std::string ),"" )
-    ) )
-{
-	std::vector<std::string> opt;
-
-    try
-    {
-        opt = Environment::vm( _name=name,_sub=sub,_prefix=prefix ).template as<std::vector<std::string>>();
-    }
-
-    catch ( boost::bad_any_cast const& bac )
-    {
-        CHECK( false ) <<"Option "<< name << "  either does not exist or is not a string" <<std::endl;
-    }
-
-    return opt;
-}
-
-BOOST_PARAMETER_FUNCTION(
-    ( std::vector<double> ),
-    vdoption, tag,
-    ( required
-      ( name,( std::string ) ) )
-    ( optional
-      ( sub,( std::string ),"" )
-      ( prefix,( std::string ),"" )
-    ) )
-{
-	std::vector<double> opt;
-
-    try
-    {
-        opt = Environment::vm( _name=name,_sub=sub,_prefix=prefix ).template as<std::vector<double>>();
-    }
-
-    catch ( boost::bad_any_cast const& bac )
-    {
-        CHECK( false ) <<"Option "<< name << "  either does not exist or is not a string" <<std::endl;
-    }
-
-    return opt;
-}
-
-//! @cond
-namespace detail
-{
-template<typename Args, typename Tag=tag::opt>
-struct FEELPP_EXPORT option
-{
-    typedef typename boost::remove_pointer<
-    typename boost::remove_const<
-    typename boost::remove_reference<
-    typename parameter::binding<Args, Tag>::type
-    >::type
-    >::type
-    >::type type;
-};
-
-}
-//! @endcond
-
-BOOST_PARAMETER_FUNCTION(
-    ( typename Feel::detail::option<Args>::type ),
-    optionT, tag,
-    ( required
-      ( name,( std::string ) )
-      ( in_out( opt ),* ) )
-    ( optional
-      ( sub,( std::string ),"" )
-      ( prefix,( std::string ),"" )
-    ) )
+template <typename T,typename ... Ts,typename = typename std::enable_if_t< sizeof...(Ts) != 0 && ( NA::is_named_argument_v<Ts> && ...) > >
+T optionT( Ts && ... v )
 {
     try
     {
-        opt = Environment::vm( _name=name,_sub=sub,_prefix=prefix ).template as<typename Feel::detail::option<Args>::type>();
+        return Environment::vm( std::forward<Ts>(v)... ).template as<T>();
     }
-
     catch ( boost::bad_any_cast const& bac )
     {
+        auto args = NA::make_arguments( std::forward<Ts>(v)... );
+        std::string const& name  = args.get(_name);
+        //CHECK( false ) <<"Option "<< name << "  either does not exist or is not a double" <<std::endl;
         CHECK( false ) <<"problem in conversion type of argument "<< name << " : check the option type"<<std::endl;
+        return {};
     }
-
-    return opt;
 }
+
+template <typename T>
+T optionT( std::string const& name )
+{
+    return optionT<T>(_name=name);
+}
+
+template <typename ... Ts>
+double doption( Ts && ... v )
+{
+    return optionT<double>( std::forward<Ts>(v)... );
+}
+template <typename ... Ts>
+bool boption( Ts && ... v )
+{
+    return optionT<bool>( std::forward<Ts>(v)... );
+}
+template <typename ... Ts>
+int ioption( Ts && ... v )
+{
+    return optionT<int>( std::forward<Ts>(v)... );
+}
+template <typename ... Ts>
+std::string soption( Ts && ... v )
+{
+    return optionT<std::string>( std::forward<Ts>(v)... );
+}
+template <typename ... Ts>
+std::vector<std::string> vsoption( Ts && ... v )
+{
+    return optionT<std::vector<std::string>>( std::forward<Ts>(v)... );
+}
+template <typename ... Ts>
+std::vector<double> vdoption( Ts && ... v )
+{
+    return optionT<std::vector<double>>( std::forward<Ts>(v)... );
+}
+
+/**
+ * @brief handle exceptions using a Lippincott function
+ * this funnction allows to handle the exceptions thrown in Feel++
+ * \code
+ * try {
+ *   Environment env(),
+ *   // Feel++ code here
+ * }
+ * catch( ... )
+ * {
+ *   handleExceptions()
+ * }
+ * \endcode
+ */
+void handleExceptions();
+
 
 } // Feel
 

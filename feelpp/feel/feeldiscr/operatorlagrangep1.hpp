@@ -26,8 +26,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2008-01-31
  */
-#ifndef __OperatorLagrangeP1_H
-#define __OperatorLagrangeP1_H 1
+#ifndef FEELPP_DISCR_OPERATORLAGRANGEP1_H
+#define FEELPP_DISCR_OPERATORLAGRANGEP1_H 1
 
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feelpoly/fekete.hpp>
@@ -35,6 +35,7 @@
 #include <feel/feelfilters/pointsettomesh.hpp>
 //#include <feel/feelfilters/exporterquick.hpp>
 #ifdef FEELPP_HAS_GMSH
+#include <feel/feelfilters/straightenmesh.hpp>
 #include <feel/feelfilters/loadgmshmesh.hpp>
 #endif
 //#include <feel/feelfilters/savegmshmesh.hpp>
@@ -142,7 +143,8 @@ public:
 
     typedef typename domain_mesh_type::gm_type gm_type;
     typedef typename domain_mesh_type::element_type element_type;
-    typedef typename gm_type::template Context<vm::POINT, element_type> gmc_type;
+    static const size_type gmc_context_v = vm::POINT;
+    typedef typename gm_type::template Context<element_type> gmc_type;
     typedef std::shared_ptr<gmc_type> gmc_ptrtype;
     typedef typename gm_type::precompute_ptrtype gmpc_ptrtype;
 
@@ -171,7 +173,7 @@ public:
     /**
      * destructor. nothing really to be done here
      */
-    ~OperatorLagrangeP1()
+    ~OperatorLagrangeP1() override
     {}
 
     //@}
@@ -512,9 +514,9 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild, size_ty
 
         // update the gemap context
         if ( !M_gmc )
-            M_gmc = gmc_ptrtype( new gmc_type( meshDomain->gm(), curelt, M_gmpc ) );
+            M_gmc = meshDomain->gm()->template context<gmc_context_v>( curelt, M_gmpc );
         else
-            M_gmc->update( curelt );
+            M_gmc->template update<gmc_context_v>( curelt );
 
         // iterate on each new element (from ref elt)
         auto itl = M_p2m.mesh()->beginElement();
@@ -686,9 +688,9 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild, size_ty
                 elt.setNeighborPartitionIds( parentElt.neighborPartitionIds() );
 
                 if ( !M_gmc )
-                    M_gmc = gmc_ptrtype( new gmc_type( meshDomain->gm(), parentElt, M_gmpc ) );
+                    M_gmc = meshDomain->gm()->template context<gmc_context_v>( parentElt, M_gmpc );
                 else
-                    M_gmc->update( parentElt );
+                    M_gmc->template update<gmc_context_v>( parentElt );
 
                 auto const& pointData = boost::get<2>( dataByElt );
                 bool isConnectedToActiveAnElement = false;
@@ -770,7 +772,7 @@ OperatorLagrangeP1<space_type>::operator()( element_type const& u ) const
 
     for ( ; it != en; ++it )
     {
-        gmc_ptrtype gmc( new gmc_type( this->domainSpace()->mesh()->gm(), *it, M_gmpc ) );
+        this->domainSpace()->mesh()->gm()->template context<gmc_context_v>( unwrap_ref( *it ), M_gmpc );
         typename matrix_node<value_type>::type u_at_pts = u.id( *gmc );
 
         typename std::list<size_type>::const_iterator ite = M_el2el[it->id()].begin();
@@ -813,45 +815,19 @@ opLagrangeP1_impl( std::shared_ptr<space_type> const& Xh,
     return std::shared_ptr<OperatorLagrangeP1<space_type> >( new OperatorLagrangeP1<space_type>( Xh,backend,pathMeshLagP1,prefix,rebuild,parallel,meshUpdate ) );
 }
 
-
-template<typename Args>
-struct compute_opLagrangeP1_return
+template <typename ... Ts>
+auto lagrangeP1( Ts && ... v )
 {
-    typedef typename boost::remove_reference<typename parameter::binding<Args, tag::space>::type>::type::element_type space_type;
-    typedef std::shared_ptr<OperatorLagrangeP1<space_type> > type;
-};
-
-
-BOOST_PARAMETER_FUNCTION(
-    ( typename compute_opLagrangeP1_return<Args>::type ), // 1. return type
-    lagrangeP1,                        // 2. name of the function template
-    tag,                                        // 3. namespace of tag types
-    ( required
-      ( space,    *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
-    ) // required
-    ( optional
-      ( backend,    *, Backend<typename compute_opLagrangeP1_return<Args>::space_type::value_type>::build( soption( _name="backend" ) ) )
-      ( path,       *( boost::is_convertible<mpl::_,std::string> ), std::string(".") )
-      ( prefix,     *( boost::is_convertible<mpl::_,std::string> ), std::string("") )
-      ( rebuild,    *( boost::is_integral<mpl::_> ), 1 )
-      ( parallel,   *( boost::is_integral<mpl::_> ), 1 )
-      ( update,     *( boost::is_integral<mpl::_> ), MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK )
-    ) // optionnal
-)
-{
-#if BOOST_VERSION < 105900
-    Feel::detail::ignore_unused_variable_warning( args );
-#endif
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && space = args.get(_space);
+    auto && backend = args.get_else_invocable(_backend, [](){ return Feel::backend(); } );
+    std::string const& path = args.get_else(_path,".");
+    std::string const& prefix = args.get_else(_prefix,"");
+    bool rebuild = args.get_else(_rebuild, true );
+    bool parallel = args.get_else(_parallel, true );
+    size_type update = args.get_else(_update, /*MESH_RENUMBER|*/MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
     return opLagrangeP1_impl(space,backend,path,prefix,rebuild,parallel,update);
 }
-
-
-
-
-
-
-
-
 
 
 } // Feel

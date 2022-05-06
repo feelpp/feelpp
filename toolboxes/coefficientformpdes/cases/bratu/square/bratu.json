@@ -1,0 +1,66 @@
+{
+    "Name": "Square2d",
+    "ShortName": "Square2d",
+    "Models":
+    {
+        "cfpdes":{
+            "equations":"equation1"
+        },
+        "equation1":{   
+            "setup":{
+                "unknown":
+                {
+                    "basis":"Pch1",
+                    "name":"solution",
+                    "symbol":"u"
+                },
+                "coefficients":{
+                    "c":"-1", // diffusion
+                    "f":"-exp(equation1_u):equation1_u"
+                }
+            }
+        }
+    },
+    "Meshes":
+    {
+        "cfpdes":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/square.geo",
+                "hsize":0.03
+            }
+        }
+    },
+    "Materials":
+    {
+        "mymat1":
+        {
+            "markers":"Omega"
+        }
+    },
+    "BoundaryConditions":
+    {
+        "equation1":
+        {
+            "Dirichlet":
+            {
+                "mybc":
+                {
+                    "markers":["Left","Bottom","Right","Top"],
+                    "expr":"0"
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "cfpdes":
+        {
+            "Exports":
+            {
+                "fields":["all"]
+            }
+        }
+    }
+}

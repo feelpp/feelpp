@@ -1,0 +1,11 @@
+{
+    "name":"copper",
+    "alpha":"3.6e-3",
+    "T0":"290",
+    "sigma0":"58e+3",
+    "k0":"0.38",
+    "Lorentz":2.47e-8,
+    "sigma":"sigma0/(1+alpha*(heat_T-T0)):sigma0:alpha:heat_T:T0",
+    "k":"sigma0*Lorentz*heat_T/(1+alpha*(heat_T-T0)):sigma0:alpha:T0:Lorentz:heat_T"
+    // "k":"k0*T/((1+alpha*(T-T0))*T0):k0:T:alpha:T0"
+}

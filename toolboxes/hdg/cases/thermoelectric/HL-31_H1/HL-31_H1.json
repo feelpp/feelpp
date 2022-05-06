@@ -1,0 +1,229 @@
+{
+    "Name": "HL-31_H1 ",
+    "ShortName":"H1",
+    "Model":"hdg",
+    "Parameters":
+    {
+        "dif":9,
+        // "dif":0.03125,
+        // "dif":0.1,
+        // "intensity":-800,
+        "intensity":-1000,
+        "alpha":3.6e-3,
+        "T0":290,
+        "Lorentz":2.47e-8,
+        "sigma0":53e3,
+        "k0":0.370,
+        "hc":0.085000,
+        "Tw":290
+    },
+    "Materials":
+    {
+        "Cu":
+        {
+            "physics":["heat","electric"],
+            "electric_c":"sigma0/(1+alpha*(heat_T-T0)):sigma0:alpha:heat_T:T0",
+            // "electric_c":"sigma0:sigma0",
+            "heat_c":"sigma0*Lorentz*heat_T/(1+alpha*(heat_T-T0)):sigma0:alpha:T0:Lorentz:heat_T"
+            // "heat_c":"k0*heat_T/((1+alpha*(heat_T-T0))*T0):k0:heat_T:alpha:T0"
+            // "heat_c":"k0:k0"
+        }
+    },
+    "InitialConditions":
+    {
+        "heat":
+        {
+            "temperature":
+            {
+                "Expression":
+                {
+                    "myic1":
+                    {
+                        "expr": "290"
+                    }
+                }
+            }
+        }
+    },
+    "BoundaryConditions":
+    {
+        // "current-density":
+        // {
+        //     "Integral":
+        //     {
+        //         "V1":
+        //         {
+        //             "expr":"29486"
+        //             // "expr":"100"
+        //         }
+        //     }
+        // },
+        "electric":
+        {
+            "Dirichlet":
+            {
+                "V1":
+                {
+                    "expr":"dif:dif"
+                    // "expr":"0.9"//"9"
+                },
+                "V0":
+                {
+                    "expr":"0"
+                }
+            },
+            "Neumann":
+            {
+                "Rint":
+                {
+                    "expr":"0"
+                },
+                "Rext":
+                {
+                    "expr":"0"
+                },
+                "Interface":
+                {
+                    "expr":"0"
+                },
+                "GR_1_Interface":
+                {
+                    "expr":"0"
+                }
+            }
+        },
+        "heat":
+        {
+            // "Dirichlet":
+            // {
+            //     "Rint":
+            //     {
+            //         "expr":"300"
+            //     },
+            //     "Rext":
+            //     {
+            //         "expr":"300"
+            //     }//,
+                // "V0":
+                // {
+                //     "expr":"300"
+                // },
+                // "V1":
+                // {
+                //     "expr":"300"
+                // },
+                // "Interface":
+                // {
+                //     "expr":"300"
+                // },
+                // "GR_1_Interface":
+                // {
+                //     "expr":"300"
+                // }                
+            // },
+            "Robin":
+            {
+                "Rint":
+                {
+                    "expr1":"-hc:hc",
+                    "expr2":"-hc*Tw:hc:Tw"
+                },
+                "Rext":
+                {
+                    "expr1":"-hc:hc",
+                    "expr2":"-hc*Tw:hc:Tw"
+                }
+            },
+            "Neumann":
+            {
+                "V0":
+                {
+                    "expr":"0"
+                },
+                "V1":
+                {
+                    "expr":"0"
+                },
+                "Interface":
+                {
+                    "expr":"0"
+                },
+                "GR_1_Interface":
+                {
+                    "expr":"0"
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "electric":
+        {
+            "Exports":
+            {
+                "fields": ["all"]
+            },
+            "Measures":
+            {
+                "Statistics":
+                {
+                    "intensity_%1%":
+                    {
+                        "type":"integrate",
+                        "field":"current-density",
+                        "markers":"%1%",
+                        "index1":["V0","V1"]
+                    }
+                }
+            }
+        },
+        "heat":
+        {
+            "Exports":
+            {
+                "fields": ["all"]
+            },
+            "Measures":
+            {
+                "Statistics":
+                {
+                    "FluxV0":
+                    {
+                        "type":"integrate",
+                        "expr":"-materials_Cu_k*heat_dn_T:materials_Cu_k:heat_dn_T",
+                        "markers":"V0"
+                    },
+                    "FluxV1":
+                    {
+                        "type":"integrate",
+                        "expr":"-materials_Cu_k*heat_dn_T:materials_Cu_k:heat_dn_T",
+                        "markers":"V1"
+                    },
+                    "temp":
+                    {
+                        "type":["max","mean","min"],
+                        "field":"temperature"
+                    }
+                },
+                "Points":
+                {
+                    "closeToV0":
+                    {
+                        "coord":"{0.6,22,108}",
+                        "fields":"temperature"
+                    },
+                    "closeToV1":
+                    {
+                        "coord":"{0.6,22,-226}",
+                        "fields":"temperature"
+                    },
+                    "middle":
+                    {
+                        "coord":"{0.6,22,0}",
+                        "fields":"temperature"
+                    }
+                }
+            }
+        }
+    }
+}

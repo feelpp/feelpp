@@ -40,7 +40,14 @@
 
 #include <feel/feelcore/testsuite.hpp>
 
-#include <feel/feel.hpp>
+#include <feel/feelcore/environment.hpp>
+#include <feel/feelalg/backend.hpp>
+#include <feel/feeldiscr/dh.hpp>
+#include <feel/feeldiscr/operatorlinear.hpp>
+#include <feel/feeldiscr/operatorinterpolation.hpp>
+#include <feel/feeldiscr/projector.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feelfilters/exporter.hpp>
 #include <feel/feelpoly/raviartthomas.hpp>
 
 /**
@@ -273,7 +280,7 @@ TestHDiv3DOneElt::shape_functions( std::string one_element_mesh )
     std::string shape_name = "shape_functions";
     std::string exporter_shape_name = ( boost::format( "%1%-%2%-%3%" )
                                         % this->about().appName()
-                                        % mesh_path.stem()
+                                        % mesh_path.stem().string()
                                         % shape_name ).str();
     auto exporter_shape = exporter( _mesh=mesh,_name=exporter_shape_name );
 
@@ -286,7 +293,7 @@ TestHDiv3DOneElt::shape_functions( std::string one_element_mesh )
             u_vec[i] = U_ref;
 
             std::ostringstream ostr;
-            ostr << mesh_path.stem() << "-" << Xh->basis()->familyName() << "-" << i;
+            ostr << mesh_path.stem().string() << "-" << Xh->basis()->familyName() << "-" << i;
             exporter_shape->step( 0 )->add( ostr.str(), U_ref );
         }
 
@@ -314,7 +321,7 @@ TestHDiv3DOneElt::shape_functions( std::string one_element_mesh )
             int faceid = 0;
             BOOST_FOREACH( std::string face, faces )
                 {
-                    auto int_u_n = integrate( markedfaces( oneelement_mesh, face ), trans(N())*idv( u_vec[i]) ).evaluate()( 0,0 );
+                    auto int_u_n = integrate( _range=markedfaces( oneelement_mesh, face ), _expr=trans(N())*idv( u_vec[i]) ).evaluate()( 0,0 );
 
                     if ( faceid == i )
                         BOOST_CHECK_CLOSE( int_u_n, 1, 1e-13 );
@@ -322,7 +329,7 @@ TestHDiv3DOneElt::shape_functions( std::string one_element_mesh )
                         BOOST_CHECK_SMALL( int_u_n, 1e-13 );
                     checkidv[3*i+faceid] = int_u_n;
 
-                    form1( _test=Xh, _vector=F) = integrate( markedfaces( oneelement_mesh, face), trans(N())*id( V_ref ) );
+                    form1( _test=Xh, _vector=F) = integrate( _range=markedfaces( oneelement_mesh, face), _expr=trans(N())*id( V_ref ) );
 
                     auto form_v_n = inner_product( u_vec[i], *F );
                     // form_v_n /= nb_proc; //one elt mesh : sum contribution (same value) on each proc
@@ -340,17 +347,17 @@ TestHDiv3DOneElt::shape_functions( std::string one_element_mesh )
             // Test : \int_\Omega div(N_i) = \int_\delta\Omega (N_i.n) = 1 [RT : \int_\delta\Omega (N_i.n) = \sum \face (N_i.n) = 1]
             // Piola transformation : (ref elt -> real elt) : u -> ( J/detJ )u [div u -> (1/detJ)trace(J grad u)]
 
-            auto int_divx = integrate( elements( oneelement_mesh ), divv(u_vec[i])  ).evaluate()( 0,0 );
-            auto int_xn = integrate(boundaryfaces(oneelement_mesh), trans(N())*idv(u_vec[i]) ).evaluate()( 0,0 );
+            auto int_divx = integrate( _range=elements( oneelement_mesh ), _expr=divv(u_vec[i])  ).evaluate()( 0,0 );
+            auto int_xn = integrate(_range=boundaryfaces(oneelement_mesh), _expr=trans(N())*idv(u_vec[i]) ).evaluate()( 0,0 );
 
             BOOST_CHECK_CLOSE( int_divx, 1, 1e-13 );
             BOOST_CHECK_CLOSE( int_divx, int_xn, 1e-13 );
             checkStokesidv[i] = int_divx;
             checkStokesidv[i + Xh->nLocalDof()] = int_xn;
 
-            form1( _test=Xh, _vector=F) = integrate( elements( oneelement_mesh ), div(V_ref) );
+            form1( _test=Xh, _vector=F) = integrate( _range=elements( oneelement_mesh ), _expr=div(V_ref) );
             auto form_divx = inner_product( u_vec[i], *F );
-            form1( _test=Xh, _vector=F) = integrate( boundaryfaces( oneelement_mesh ), trans(N())*id(V_ref) );
+            form1( _test=Xh, _vector=F) = integrate( _range=boundaryfaces( oneelement_mesh ), _expr=trans(N())*id(V_ref) );
             auto form_xn = inner_product( u_vec[i], *F );
 
             // form_divx /= nb_proc;

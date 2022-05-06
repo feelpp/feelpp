@@ -90,18 +90,18 @@ struct test_submesh: public Application
         BOOST_CHECK_EQUAL( nelements(elements(meshbdy),false), nelements( boundaryelements( mesh ) ) );
         //saveGMSHMesh( _mesh=meshbdy, _filename=shape+"_sub.msh" );
         using namespace Feel::vf;
-        double intm1 = integrate( elements( meshbdy ), cst( 1. ) ).evaluate()( 0,0 );
-        double intm2 = integrate( boundaryelements( mesh ), cst( 1. ) ).evaluate()( 0,0 );
+        double intm1 = integrate( _range=elements( meshbdy ), _expr=cst( 1. ) ).evaluate()( 0,0 );
+        double intm2 = integrate( _range=boundaryelements( mesh ), _expr=cst( 1. ) ).evaluate()( 0,0 );
         BOOST_CHECK_CLOSE( intm1, intm2, 1e-12 );
         //double intm11 = integrate( boundaryfaces(meshbdy), cst(1.) ).evaluate()(0,0);
         //double intm21 = integrate( boundaryfaces(mesh), cst(1.) ).evaluate()(0,0);
         //BOOST_CHECK_CLOSE( intm11, intm21, 1e-12 );
 
-        double intm12 = integrate( markedfaces( meshbdy,"Dirichlet" ), cst( 1. ) ).evaluate()( 0,0 );
-        double intm22 = integrate( markedfaces( mesh,"Dirichlet" ), cst( 1. ) ).evaluate()( 0,0 );
+        double intm12 = integrate( _range=markedfaces( meshbdy,"Dirichlet" ), _expr=cst( 1. ) ).evaluate()( 0,0 );
+        double intm22 = integrate( _range=markedfaces( mesh,"Dirichlet" ), _expr=cst( 1. ) ).evaluate()( 0,0 );
         BOOST_CHECK_CLOSE( intm12, intm22, 1e-12 );
-        double intm13 = integrate( markedfaces( meshbdy,"Neumann" ), cst( 1. ) ).evaluate()( 0,0 );
-        double intm23 = integrate( markedfaces( mesh,"Neumann" ), cst( 1. ) ).evaluate()( 0,0 );
+        double intm13 = integrate( _range=markedfaces( meshbdy,"Neumann" ), _expr=cst( 1. ) ).evaluate()( 0,0 );
+        double intm23 = integrate( _range=markedfaces( mesh,"Neumann" ), _expr=cst( 1. ) ).evaluate()( 0,0 );
         BOOST_CHECK_CLOSE( intm13, intm23, 1e-12 );
 
 
@@ -111,29 +111,29 @@ struct test_submesh: public Application
         //saveGMSHMesh( _mesh=meshbdy, _filename="meshbdy" );
 
         using namespace Feel::vf;
-        double intm3 = integrate( elements( meshint ), cst( 1. ) ).evaluate()( 0,0 );
-        double intm4 = integrate( internalelements( mesh ), cst( 1. ) ).evaluate()( 0,0 );
+        double intm3 = integrate( _range=elements( meshint ), _expr=cst( 1. ) ).evaluate()( 0,0 );
+        double intm4 = integrate( _range=internalelements( mesh ), _expr=cst( 1. ) ).evaluate()( 0,0 );
         BOOST_CHECK_CLOSE( intm3, intm4, 1e-12 );
         //saveGMSHMesh( _mesh=meshint, _filename="meshint" );
 #if 0
         auto Xh = space_type::New( mesh );
         auto u = Xh->element();
         auto v = Xh->element();
-        auto D = backend->newMatrix( Xh, Xh );
-        form2( Xh, Xh, D, _init=true ) = integrate( internalelements( mesh ), idt( u )*id( v ) );
+        auto D = backend->newMatrix( _test=Xh, _trial=Xh );
+        form2( Xh, Xh, D, _init=true ) = integrate( _range=internalelements( mesh ), _expr=idt( u )*id( v ) );
         D->close();
 
         auto Yh = space_type::New( meshint );
         auto ui = Yh->element();
         auto vi = Yh->element();
         auto Fi = backend->newVector( Yh );
-        form1( _test=Yh, _vector=Fi, _init=true ) = integrate( elements( meshint ), id( vi ) );
+        form1( _test=Yh, _vector=Fi, _init=true ) = integrate( _range=elements( meshint ), _expr=id( vi ) );
         Fi->close();
 
-        auto Di = backend->newMatrix( Yh, Yh );
-        form2( _test=Yh, _trial=Yh, _matrix=Di, _init=true ) = integrate( elements( meshint ), gradt( ui )*trans( grad( vi ) ) );
+        auto Di = backend->newMatrix( _test=Yh, _trial=Yh );
+        form2( _test=Yh, _trial=Yh, _matrix=Di, _init=true ) = integrate( _range=elements( meshint ), _expr=gradt( ui )*trans( grad( vi ) ) );
         Di->close();
-        form2( _test=Yh, _trial=Yh, _matrix=Di ) += on( boundaryfaces( meshint ), ui, Fi, cst( 0. ) );
+        form2( _test=Yh, _trial=Yh, _matrix=Di ) += on( _range=boundaryfaces( meshint ), _element=ui, _rhs=Fi, _expr=cst( 0. ) );
 
         backend->solve( _matrix=Di, _rhs=Fi, _solution=ui );
 
@@ -233,7 +233,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_submesh2, T, dim2_types )
     auto u2 = Yh->element();
     opI->apply( u1, u2 );
 
-    auto l2error = normL2( boundaryelements(mesh), idv(u1)-idv(u2) );
+    auto l2error = normL2( _range=boundaryelements(mesh), _expr=idv(u1)-idv(u2) );
     BOOST_CHECK_SMALL( l2error, 1e-14 );
     auto t1 = t.elapsed();t.restart();
     BOOST_TEST_MESSAGE( "Test submesh : elapsed time for optimized version : " << t1 << "s\n" );
@@ -249,7 +249,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_submesh2, T, dim2_types )
     auto u3 = Yh->element();
     opI2->apply( u1, u3 );
 
-    auto l2error2 = normL2( boundaryelements(mesh), idv(u1)-idv(u3) );
+    auto l2error2 = normL2( _range=boundaryelements(mesh), _expr=idv(u1)-idv(u3) );
     BOOST_CHECK_SMALL( l2error2, 1e-14 );
 
     auto t2 = t.elapsed();t.restart();
@@ -265,7 +265,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_submesh2, T, dim2_types )
     opI3->apply( u2, u4 );
 
     t1 = t.elapsed();t.restart();
-    l2error = normL2( boundaryelements(mesh), idv(u4)-idv(u2) );
+    l2error = normL2( _range=boundaryelements(mesh), _expr=idv(u4)-idv(u2) );
     BOOST_CHECK_SMALL( l2error, 1e-14 );
     BOOST_TEST_MESSAGE( "Test submesh : elapsed time for optimized version (transpose) : " << t1 << "s\n" );
 
@@ -278,7 +278,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_submesh2, T, dim2_types )
     opI4->apply( u3, u5 );
 
     t2 = t.elapsed();t.restart();
-    l2error2 = normL2( boundaryelements(mesh), idv(u5)-idv(u3) );
+    l2error2 = normL2( _range=boundaryelements(mesh), _expr=idv(u5)-idv(u3) );
     BOOST_CHECK_SMALL( l2error2, 1e-14 );
     BOOST_TEST_MESSAGE( "Test submesh : elapsed time for non-optimized version (transpose) : " << t2 << "s\n" );
 

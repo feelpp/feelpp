@@ -75,6 +75,7 @@ public :
     using size_type = typename super_type::size_type;
     typedef Mesh< convex_type > mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
+    using range_elements_type = elements_reference_wrapper_t<mesh_type>;
 
     static const bool isEqualOrderAndOrderLow = boost::is_same<mpl::int_<Order>,mpl::int_<Order_low> >::type::value;
 
@@ -117,7 +118,11 @@ public :
      * constructor
      *
      */
-    ALE( mesh_ptrtype mesh, std::string prefix="", worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr(),
+    ALE( std::string const& prefix="", worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr(),
+         ModelBaseRepository const& modelRep = ModelBaseRepository() );
+    ALE( mesh_ptrtype mesh, std::string const& prefix="", worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr(),
+         ModelBaseRepository const& modelRep = ModelBaseRepository() );
+    ALE( mesh_ptrtype mesh, range_elements_type const& rangeElt, std::string const& prefix="", worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr(),
          ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     /**
@@ -131,8 +136,6 @@ public :
     ~ALE() {}
 
     void init() override;
-
-    std::shared_ptr<std::ostringstream> getInfo() const override;
 
     /**
      * verbose
@@ -187,7 +190,7 @@ public :
     /**
      * reset all the data from the class
      */
-    void restart( mesh_ptrtype mesh );
+    //void restart( mesh_ptrtype mesh );
 
     void initMetricMeshAdaptation() override;
     void updateMetricMeshAdaptation( Expr<GinacExVF<2>> const& e ) override;
@@ -195,9 +198,7 @@ public :
 
 private:
 
-    void createALE();
-    void createALEHO( mpl::true_ );
-    void createALEHO( mpl::false_ );
+    void createALE( std::optional<range_elements_type> const& rangeElt = std::nullopt );
 
 #if defined( FEELPP_TOOLBOXES_HAS_MESHALE_HARMONICEXTENSION )
     void createHarmonicExtension();

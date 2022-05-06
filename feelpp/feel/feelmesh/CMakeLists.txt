@@ -22,11 +22,12 @@
 #
 #
 SET( SRC
-  marker.cpp bareitems.cpp
+  marker.cpp
   entities.cpp
   regiontree.cpp kdtree.cpp
   functors.cpp
   meshbase.cpp
+  remesher.cpp
     )
 
 file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp detail/*.hpp)

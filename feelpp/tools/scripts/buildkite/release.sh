@@ -5,10 +5,10 @@ set -euo pipefail
 source $(dirname $0)/common.sh
 
 #set -x
-if [ -v DOCKER_PASSWORD -a -v DOCKER_LOGIN ]; then
-    docker login --username="${DOCKER_LOGIN}" --password="${DOCKER_PASSWORD}";
-fi
-
+#if [ -v DOCKER_PASSWORD -a -v DOCKER_LOGIN ]; then
+#    docker login --username="${DOCKER_LOGIN}" --password="${DOCKER_PASSWORD}";
+#fi
+#echo $CR_PAT | docker login ghcr.io -u USERNAME --password-stdin
     
 
 build="$(basename "$0")"
@@ -50,20 +50,24 @@ BRANCHTAG=$(echo "${BRANCH}" | sed -e 's/\//-/g')
 CONTAINERS=${*:-feelpp-libs}
 echo $CONTAINERS
 
+echo $CR_PAT | docker login ghcr.io -u $CR_LOGIN --password-stdin
+echo "-- registered to ghcr.io..."
 
 for container in ${CONTAINERS}; do
-    echo "--- Pushing Container feelpp/${container}"
+    echo "--- Pushing Container ghcr.io/feelpp/${container}"
 
     #tag=$(echo "${BRANCH}" | sed -e 's/\//-/g')-$(cut -d- -f 2- <<< $(tag_from_target $TARGET))
     #tag=$(cut -d- -f 2- <<< $(tag_from_target $TARGET))
     tag=$(tag_from_target $TARGET $BRANCHTAG $VERSION)
         
-    echo "--- Pushing feelpp/${container}:$tag"
+    echo "--- Pushing ghcr.io/feelpp/${container}:$tag"
 
     if [ "$noop" = "false" ]; then
-        docker push "feelpp/${container}:$tag";
+        docker push "ghcr.io/feelpp/${container}:$tag";
+        docker push "ghcr.io/feelpp/${container}:$tag";
+        docker push "ghcr.io/feelpp/${container}:$tag";
     else
-        echo "docker push \"feelpp/${container}:$tag\"";
+        echo "docker push \"ghcr.io/feelpp/${container}:$tag\"";
     fi
 
     
@@ -90,13 +94,15 @@ for container in ${CONTAINERS}; do
         extratags=$(echo $(extratags_from_target $TARGET $BRANCHTAG $VERSION) | tr ' ' '\n' | sort | uniq | xargs)
         echo $extratags
         for aliastag in ${extratags[@]} ; do
-            echo "--- Pushing feelpp/${container}:$aliastag"
+            echo "--- Pushing ghcr.io/feelpp/${container}:$aliastag"
             if [ "$noop" = "false" ]; then
-                docker tag "feelpp/${container}:$tag" "feelpp/${container}:$aliastag";
-                docker push "feelpp/${container}:$aliastag";
+                docker tag "ghcr.io/feelpp/${container}:$tag" "ghcr.io/feelpp/${container}:$aliastag";
+                docker push "ghcr.io/feelpp/${container}:$aliastag";
+                docker push "ghcr.io/feelpp/${container}:$aliastag";
+                docker push "ghcr.io/feelpp/${container}:$aliastag";
             else
-                echo "docker tag \"feelpp/${container}:$tag\" \"feelpp/${container}:$aliastag\"";
-                echo "docker push \"feelpp/${container}:$aliastag\"";
+                echo "docker tag \"ghcr.io/feelpp/${container}:$tag\" \"ghcr.io/feelpp/${container}:$aliastag\"";
+                echo "docker push \"ghcr.io/feelpp/${container}:$aliastag\"";
             fi
         done
 #    fi

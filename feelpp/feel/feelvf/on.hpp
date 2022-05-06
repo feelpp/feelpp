@@ -28,10 +28,9 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-03-15
  */
-#ifndef FEELPP_INTEGRATORON_HPP
-#define FEELPP_INTEGRATORON_HPP 1
+#ifndef FEELPP_VF_ON_H
+#define FEELPP_VF_ON_H
 
-#include <boost/timer.hpp>
 #include <boost/foreach.hpp>
 
 #include <feel/feelalg/enums.hpp>
@@ -209,6 +208,27 @@ public:
     {
         M_elts.push_back( __elts );
     }
+
+    IntegratorOnExpr( ElementRange const& __elts,
+                      element_type && __u,
+                      rhs_element_type const& __rhs,
+                      expression_type const& __expr,
+                      size_type __on,
+                      double value_on_diag )
+        :
+        M_elts(),
+        M_eltbegin( __elts.template get<1>() ),
+        M_eltend( __elts.template get<2>() ),
+        M_uFromRValue( std::make_shared<element_type>( std::forward<element_type>(__u) ) ),
+        M_u( *M_uFromRValue ),
+        M_rhs( __rhs ),
+        M_expr( __expr ),
+        M_on_strategy( __on ),
+        M_value_on_diagonal( value_on_diag )
+    {
+        M_elts.push_back( __elts );
+    }
+
     IntegratorOnExpr( std::list<ElementRange> const& __elts,
                       element_type const& __u,
                       rhs_element_type const& __rhs,
@@ -314,6 +334,7 @@ private:
     element_iterator M_eltbegin;
     element_iterator M_eltend;
 
+    std::shared_ptr<element_type> M_uFromRValue;
     element_type const& M_u;
     mutable rhs_element_type M_rhs;
     expression_type M_expr;
@@ -383,7 +404,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
             for ( ; elt_it != elt_en; ++elt_it )
             {
                 auto const& curElt = unwrap_ref( *elt_it );
-                ctx->update( curElt, geopc );
+                ctx->template update<context>( curElt, geopc );
                 expr_evaluator.update( mapgmc( ctx ) );
                 fe->interpolate( expr_evaluator, IhLoc );
 
@@ -460,27 +481,12 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
     // geometric mapping context
     typedef typename element_type::functionspace_type::mesh_type::gm_type gm_type;
     typedef std::shared_ptr<gm_type> gm_ptrtype;
-    //typedef typename gm_type::template Context<context, geoelement_type> gmc_type;
-    typedef typename mpl::if_< mpl::or_<is_hdiv_conforming<fe_type>, is_hcurl_conforming<fe_type> >,
-                               typename gm_type::template Context<context|vm::JACOBIAN|vm::KB|vm::TANGENT|vm::NORMAL, geoelement_type>,
-                               typename gm_type::template Context<context, geoelement_type> >::type gmc_type;
-    typedef std::shared_ptr<gmc_type> gmc_ptrtype;
-    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
+    static const size_type gmc_v = is_hdiv_conforming_v<fe_type> || is_hcurl_conforming_v<fe_type> ? context|vm::JACOBIAN|vm::KB|vm::TANGENT|vm::NORMAL : context;
 
     static const uint16_type nDim = geoshape_type::nDim;
 
     // dof
     typedef typename element_type::functionspace_type::dof_type dof_type;
-
-    // basis
-    typedef typename fe_type::template Context< context, fe_type, gm_type, geoelement_type> fecontext_type;
-    typedef std::shared_ptr<fecontext_type> fecontext_ptrtype;
-    //typedef fusion::map<fusion::pair<vf::detail::gmc<0>, fecontext_ptrtype> > map_gmc_type;
-
-    // expression
-    //typedef typename expression_type::template tensor<map_gmc_type,fecontext_type> t_expr_type;
-    typedef typename expression_type::template tensor<map_gmc_type> t_expr_type;
-    typedef typename t_expr_type::shape shape;
 
     if (  M_on_strategy.test( ContextOn::PENALISATION ) )
     {
@@ -494,7 +500,6 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
     // start
     //
     DVLOG(2)  << "assembling Dirichlet conditions\n";
-    boost::timer __timer;
 
     std::vector<int> dofs;
     std::vector<value_type> values;
@@ -538,8 +543,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
 
         fe_type const* __fe = M_u.functionSpace()->fe().get();
 
-        gm_ptrtype __gm( new gm_type );
-
+        auto __gm = faceForInit.element( 0 ).gm();
 
         //
         // Precompute some data in the reference element for
@@ -563,10 +567,9 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
         }
 
         uint16_type __face_id = faceForInit.pos_first();
-        gmc_ptrtype __c( new gmc_type( __gm, faceForInit.element( 0 ), __geopc, __face_id, M_expr.dynamicContext() ) );
+        auto ctx = __gm->template context<gmc_v>( faceForInit.element( 0 ), __geopc, __face_id, M_expr.dynamicContext() );
 
-        map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
-        t_expr_type expr( M_expr, mapgmc );
+        auto expr_evaluator = M_expr.evaluator( vf::mapgmc(ctx) );
 
         DVLOG(2)  << "face_type::numVertices = " << face_type::numVertices << ", fe_type::nDofPerVertex = " << fe_type::nDofPerVertex << "\n"
                   << "face_type::numEdges = " << face_type::numEdges << ", fe_type::nDofPerEdge = " << fe_type::nDofPerEdge << "\n"
@@ -638,18 +641,16 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
                 __face_id = theface.pos_second();
                 faceConnectionId = 1;
             }
-            __c->update( theface.element( faceConnectionId ), __face_id );
+            ctx->template update<gmc_v>( theface.element( faceConnectionId ), __face_id );
 
             DVLOG(2) << "FACE_ID = " << theface.id()
                      << " element id= " << ((faceConnectionId==0)? theface.ad_first() : theface.ad_second())
                      << " pos in elt= " << ((faceConnectionId==0)? theface.pos_first() : theface.pos_second());
             DVLOG(2) << "FACE_ID = " << theface.id() << " face pts=" << theface.G() << "\n";
-            DVLOG(2) << "FACE_ID = " << theface.id() << "  ref pts=" << __c->xRefs() << "\n";
-            DVLOG(2) << "FACE_ID = " << theface.id() << " real pts=" << __c->xReal() << "\n";
+            DVLOG(2) << "FACE_ID = " << theface.id() << "  ref pts=" << ctx->xRefs() << "\n";
+            DVLOG(2) << "FACE_ID = " << theface.id() << " real pts=" << ctx->xReal() << "\n";
 
-            //map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
-            //t_expr_type expr( M_expr, mapgmc );
-            expr.update( mapgmc );
+            expr_evaluator.update( mapgmc( ctx ) );
 
 #if 0
             std::pair<index_type,index_type> range_dof( std::make_pair( M_u.start(),
@@ -658,7 +659,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
             DVLOG(2)  << "[integratoron] dof range = " << range_dof.second << "\n";
 #endif
             //use interpolant
-            __fe->faceInterpolate( expr, IhLoc );
+            __fe->faceInterpolate( expr_evaluator, IhLoc );
 
             for( auto const& ldof : M_u.functionSpace()->dof()->faceLocalDof( theface.id() ) )
                 {
@@ -742,7 +743,6 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
     // start
     //
     DVLOG(2)  << "assembling Dirichlet conditions\n";
-    boost::timer __timer;
 
     std::vector<int> dofs;
     std::vector<value_type> values;
@@ -834,7 +834,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
                 //geopc = gm->preCompute( __fe->edgePoints(edgeid_in_element) );
                 ////geopc = gm->preComputeAtEdges( __fe->edgePoints(ptid_in_element) );
                 //ctx->update( elt, edgeid_in_element, geopc );
-                ctx->update( elt, edgeid_in_element );
+                ctx->template update<context>( elt, edgeid_in_element );
                 expr_evaluator.update( mapgmc( ctx ) );
                 __fe->edgeInterpolate( expr_evaluator, IhLoc );
 
@@ -1022,7 +1022,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
                 auto const& elt = mesh->element( eid );
                 //geopc = gm->preCompute( __fe->vertexPoints(ptid_in_element) );
                 //ctx->update( elt, ptid_in_element, geopc, mpl::int_<0>() );
-                ctx->update( elt, ptid_in_element );
+                ctx->template update<context>( elt, ptid_in_element );
                 expr_evaluator.update( mapgmc( ctx ) );
                 __fe->vertexInterpolate( expr_evaluator, IhLoc );
 
@@ -1079,13 +1079,14 @@ struct v_ptr2
     typedef typename T::vector_ptrtype type;
 };
 
-template<typename Args>
+
+template<typename ArgRangeType,typename ArgRhsType,typename ArgElementType,typename ArgExprType>
 struct integratoron_type
 {
-    typedef clean_type<Args,tag::range> _range_base_type;
-    typedef clean_type<Args,tag::rhs> _rhs_type;
-    typedef clean_type<Args,tag::element> _element_type;
-    typedef clean_type<Args,tag::expr> _expr_type;
+    using _range_base_type = std::decay_t<ArgRangeType>;
+    using _rhs_type = std::decay_t<ArgRhsType>;
+    using _element_type = std::decay_t<ArgElementType>;
+    using _expr_type = std::decay_t<ArgExprType>;
 
     typedef typename mpl::if_< boost::is_std_list<_range_base_type>,
                                mpl::identity<_range_base_type>,
@@ -1141,33 +1142,30 @@ getRhsVector( V const&  v )
  * \arg geomap the type of geomap to use (make sense only using high order meshes)
  * \arg sum sum the multiple nodal  contributions  if applicable (false by default)
  */
-BOOST_PARAMETER_FUNCTION(
-    ( typename vf::detail::integratoron_type<Args>::expr_type ), // return type
-    on,    // 2. function name
-
-    tag,           // 3. namespace of tag types
-
-    ( required
-      ( range, *  )
-      ( element, *  )
-      ( rhs, *  )
-      ( expr,   * )
-        ) // 4. one required parameter, and
-
-    ( optional
-      ( prefix,   ( std::string ), "" )
-      ( type,   ( std::string ), soption(_prefix=prefix,_name="on.type") )
-      ( verbose,   ( bool ), boption(_prefix=prefix,_name="on.verbose") )
-      ( value_on_diagonal,   ( double ), doption(_prefix=prefix,_name="on.value_on_diagonal") )
-        )
-    )
+template <typename ... Ts>
+auto on( Ts && ... v )
 {
-    typename vf::detail::integratoron_type<Args>::type ion( range,
-                                                            element,
-                                                            Feel::vf::detail::getRhsVector(rhs),
-                                                            expr,
-                                                            size_type(ContextOnMap[type]),
-                                                            value_on_diagonal );
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && range = args.get(_range);
+    //auto && element = args.get(_element);
+    // NOTE : the line below allows to defined element as an lvalue or rvalue (as given when called the function) : TODO : add api in NApp
+    auto && element = std::move(args.template getArgument<na::element>()).value();
+    auto && rhs = args.get(_rhs);
+    auto && expr = args.get(_expr);
+    po::variables_map const& vm = args.get_else( _vm, Environment::vm() );
+    std::string const& prefix = args.get_else(_prefix,"");
+    std::string const& type = args.get_else_invocable(_type,[&prefix,&vm](){ return soption(_prefix=prefix,_name="on.type",_vm=vm); } );
+    bool verbose = args.get_else_invocable(_verbose,[&prefix,&vm](){ return boption(_prefix=prefix,_name="on.verbose",_vm=vm); } );
+    double value_on_diagonal = args.get_else_invocable(_value_on_diagonal,[&prefix,&vm](){ return doption(_prefix=prefix,_name="on.value_on_diagonal",_vm=vm); } );
+
+    using integratoron_helper_type = vf::detail::integratoron_type<decltype(range),decltype(rhs),decltype(element),decltype(expr)>;
+
+    typename integratoron_helper_type::type ion( range,
+                                                 std::forward<decltype(element)>( element ),
+                                                 Feel::vf::detail::getRhsVector(rhs),
+                                                 expr,
+                                                 size_type(ContextOnMap[type]),
+                                                 value_on_diagonal );
     if ( verbose )
     {
         LOG(INFO) << "Dirichlet condition over : "<< nelements(range) << " faces";
@@ -1193,7 +1191,7 @@ BOOST_PARAMETER_FUNCTION(
         }
     }
     //typename vf::detail::integratoron_type<Args>::type ion( range, element, rhs, expr, type );
-    return typename vf::detail::integratoron_type<Args>::expr_type( ion );
+    return typename integratoron_helper_type::expr_type( std::move(ion) );
 }
 
 

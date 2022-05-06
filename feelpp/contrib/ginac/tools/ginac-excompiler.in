@@ -2,18 +2,18 @@
 #set -x
 soname=`dirname $1`/`basename $1 .cpp`.so
 if [[ "$OSTYPE" == "darwin"* ]]; then
-    if [ -x /usr/bin/cc ]; then
-        /usr/bin/cc @_USE_STANDARD_C_HEADERS_@ -I@FEELPP_SOURCE_DIR@/feelpp/contrib/ginac/tools/ -I@CMAKE_INSTALL_PREFIX@/include/feelpp/excompiler -O3 -x c -fPIC -shared -Wl,-install_name,$soname -o $soname $1
+    if [ -x /usr/bin/c++ ]; then
+        /usr/bin/c++ -std=c++@FEELPP_STD_CPP@ @_USE_STANDARD_C_HEADERS_@ -I@FEELPP_SOURCE_DIR@/feelpp/contrib/ginac/tools/ -I@CMAKE_INSTALL_PREFIX@/include/feelpp/excompiler -O3 -x c++ -fPIC -shared -Wl,-install_name,$soname -o $soname $1
     else
-        @CMAKE_C_COMPILER@ @_USE_STANDARD_C_HEADERS_@ -I@FEELPP_SOURCE_DIR@/feelpp/contrib/ginac/tools/ -I@CMAKE_INSTALL_PREFIX@/include/feelpp/excompiler -O3 -x c -fPIC -shared -Wl,-install_name,$soname -o $soname $1
+        @CMAKE_CXX_COMPILER@ -std=c++@FEELPP_STD_CPP@ @_USE_STANDARD_C_HEADERS_@ -I@FEELPP_SOURCE_DIR@/feelpp/contrib/ginac/tools/ -I@CMAKE_INSTALL_PREFIX@/include/feelpp/excompiler -O3 -x c++ -fPIC -shared -Wl,-install_name,$soname -o $soname $1
     fi
 else
-    if [ -x @CMAKE_C_COMPILER@ ]; then
-        @CMAKE_C_COMPILER@ @_USE_STANDARD_C_HEADERS_@ -I@FEELPP_SOURCE_DIR@/feelpp/contrib/ginac/tools/ -I@CMAKE_INSTALL_PREFIX@/include/feelpp/excompiler -O3 -x c -fPIC -shared -Wl,-soname,$soname -o $soname $1
+    if [ -x @CMAKE_CXX_COMPILER@ ]; then
+        @CMAKE_CXX_COMPILER@ -std=c++@FEELPP_STD_CPP@ @_USE_STANDARD_C_HEADERS_@ -I@FEELPP_SOURCE_DIR@/feelpp/contrib/ginac/tools/ -I@CMAKE_INSTALL_PREFIX@/include/feelpp/excompiler -O3 -x c++ -fPIC -shared -Wl,-soname,$soname -o $soname $1
     elif [ -x /usr/bin/g++ ]; then
-        /usr/bin/g++ @_USE_STANDARD_C_HEADERS_@ -I@FEELPP_SOURCE_DIR@/feelpp/contrib/ginac/tools/ -I@CMAKE_INSTALL_PREFIX@/include/feelpp/excompiler -O3 -x c -fPIC -shared -Wl,-soname,$soname -o $soname $1
+        /usr/bin/g++ -std=c++@FEELPP_STD_CPP@ @_USE_STANDARD_C_HEADERS_@ -I@FEELPP_SOURCE_DIR@/feelpp/contrib/ginac/tools/ -I@CMAKE_INSTALL_PREFIX@/include/feelpp/excompiler -O3 -x c++ -fPIC -shared -Wl,-soname,$soname -o $soname $1
     else
-        echo "@CMAKE_C_COMPILER@ and /usr/bin/g++ not found."
+        echo "@CMAKE_CXX_COMPILER@ and /usr/bin/g++ not found."
     fi
 fi
 

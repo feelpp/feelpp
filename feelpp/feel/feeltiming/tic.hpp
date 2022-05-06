@@ -30,6 +30,11 @@
 #define FEELPP_TIMING_TIC_HPP 1
 
 #include <feel/feelcore/environment.hpp>
+
+/** 
+ * @defgroup Timing
+ * @ingroup Feelpp
+ */
 #include <feel/feeltiming/timer.hpp>
 #include <feel/feeltiming/now.hpp>
 
@@ -62,21 +67,41 @@ counter<time_point,SecondBasedTimer> const sec_timer = {};
 
 namespace Feel
 {
+//! display
+const inline bool display = true;
+
+//! no display
+const inline bool no_display = false;
+
 namespace time
 {
 
-//! Record internal time at its execution. To be used with toc.
+//! 
+/**
+ * @brief Record internal time at its execution. To be used with toc.
+ * 
+ * \code {.cpp}
+ * tic()
+ * ...
+ * // some code here
+ * ...
+ * std::cout << fmt::format("time spent in block in seconds : {}", toc() );
+ * \endcode
+ * 
+ */
 inline void tic()
 {
     Feel::details::sec_timer.tic();
 }
 
+
+
 //! 
 inline double  toc( std::string const& msg = "",
-                    bool display = true, 
+                    bool _display = display, 
                     std::string const& uiname = "" )
 {
-    auto t = Feel::details::sec_timer.toc( msg, display );
+    auto t = Feel::details::sec_timer.toc( msg, _display );
     Environment::addTimer( msg, t, uiname );
     return t.first;
 }

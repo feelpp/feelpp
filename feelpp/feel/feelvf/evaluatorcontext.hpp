@@ -26,11 +26,9 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2013-03-20
  */
-#ifndef __FEELPP_EVALUATORCONTEXT_H
-#define __FEELPP_EVALUATORCONTEXT_H 1
+#ifndef FEELPP_VF_EVALUATORCONTEXT_H
+#define FEELPP_VF_EVALUATORCONTEXT_H
 
-#include <boost/timer.hpp>
-#include <boost/signals2/signal.hpp>
 #include <feel/feelcore/parameter.hpp>
 #include <feel/feelcore/commobject.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
@@ -80,6 +78,7 @@ public:
     EvaluatorContext( context_type const& ctx,
                       context2_type const& ctx2,
                       expression_type const& __expr,
+                      std::optional<std::reference_wrapper<const std::set<index_type>>> const& pointsUsed,
                       int max_points_used,
                       GeomapStrategyType geomap_strategy,
                       bool mpi_communications,
@@ -90,6 +89,7 @@ public:
         M_ctx( ctx ),
         M_ctx2( ctx2 ),
         M_expr( __expr ),
+        M_pointsUsed( pointsUsed ),
         M_max_points_used( max_points_used ),
         M_geomap_strategy( geomap_strategy ),
         M_mpi_communications( mpi_communications ),
@@ -99,21 +99,21 @@ public:
     }
 
 
-    EvaluatorContext( EvaluatorContext const& __vfi )
-        :
-        super( __vfi ),
-        M_ctx( __vfi.M_ctx ),
-        M_ctx2( __vfi.M_ctx2 ),
-        M_expr( __vfi.M_expr ),
-        M_max_points_used( __vfi.M_max_points_used ),
-        M_geomap_strategy( __vfi.M_geomap_strategy ),
-        M_mpi_communications( __vfi.M_mpi_communications ),
-        M_projection( __vfi.M_projection )
-    {
-        DVLOG(2) << "EvaluatorContext copy constructor\n";
-    }
+    EvaluatorContext( EvaluatorContext const& __vfi ) = default;
+    //     :
+    //     super( __vfi ),
+    //     M_ctx( __vfi.M_ctx ),
+    //     M_ctx2( __vfi.M_ctx2 ),
+    //     M_expr( __vfi.M_expr ),
+    //     M_max_points_used( __vfi.M_max_points_used ),
+    //     M_geomap_strategy( __vfi.M_geomap_strategy ),
+    //     M_mpi_communications( __vfi.M_mpi_communications ),
+    //     M_projection( __vfi.M_projection )
+    // {
+    //     DVLOG(2) << "EvaluatorContext copy constructor\n";
+    // }
 
-    virtual ~EvaluatorContext() {}
+    ~EvaluatorContext() override {}
 
     //@}
 
@@ -178,6 +178,7 @@ private:
     context_type M_ctx;
     context2_type M_ctx2;
     expression_type const&  M_expr;
+    std::optional<std::reference_wrapper<const std::set<index_type>>> M_pointsUsed;
     int M_max_points_used;
     GeomapStrategyType M_geomap_strategy;
     bool M_mpi_communications;
@@ -192,15 +193,15 @@ EvaluatorContext<CTX, ExprT, CTX2>::operator()() const
         return evaluateProjection();
 
     //rank of the current processor
-    int proc_number = this->worldComm().globalRank();
+    rank_type proc_number = this->worldComm().globalRank();
 
     //total number of processors
-    int nprocs = this->worldComm().globalSize();
+    rank_type nprocs = this->worldComm().globalSize();
 
     auto it = M_ctx.begin();
     auto en = M_ctx.end();
 
-    typedef typename CTX::mapped_type::element_type::geometric_mapping_context_ptrtype gm_context_ptrtype;
+    typedef typename CTX::mapped_type::first_type::element_type::geometric_mapping_context_ptrtype gm_context_ptrtype;
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gm_context_ptrtype> > map_gmc_type;
     typedef expression_type the_expression_type;
     typedef typename boost::remove_reference<typename boost::remove_const<the_expression_type>::type >::type iso_expression_type;
@@ -210,15 +211,33 @@ EvaluatorContext<CTX, ExprT, CTX2>::operator()() const
 
     //in case of scalar unknown, shape::M should be 1
     //CHECK( shape::M == 1 ) << "Invalid expression shape " << shape::M << " should be 1";
+    //if( CTX::is_rb_context )
+    //    LOG( INFO ) << "we have a RB context ";
+    //else
+    //    LOG( INFO ) << "we have a FEM context";
 
     int local_max_size = 0;
     int global_max_size = 0;
-    int npoints = M_ctx.nPoints();
+    index_type npoints = M_ctx.nPoints();
+    if ( M_pointsUsed )
+        npoints = std::min( (index_type)M_pointsUsed->get().size(), npoints );
     if( M_max_points_used > 0 )
         local_max_size = M_max_points_used;
     else
         local_max_size = npoints;
     mpi::all_reduce( this->worldComm(), local_max_size, global_max_size, mpi::maximum<int>() );
+
+    std::vector<index_type> nodeIdCtxToNodeIdUsed( M_ctx.nPoints(), invalid_v<index_type> );
+    if ( M_pointsUsed )
+    {
+        index_type k=0;
+        for ( index_type nid : M_pointsUsed->get() )
+            nodeIdCtxToNodeIdUsed[nid] = k++;
+    }
+    else
+    {
+        std::iota(nodeIdCtxToNodeIdUsed.begin(), nodeIdCtxToNodeIdUsed.end(), 0);
+    }
 
     element_type __globalv( global_max_size*shape::M*shape::N );
     __globalv.setZero();
@@ -235,45 +254,60 @@ EvaluatorContext<CTX, ExprT, CTX2>::operator()() const
          * the programmer so that we don't have to re-create the expression
          * context if the reference points are the same
          */
+#if 0
         map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >(it->second->gmContext() ) );
-
         t_expr_type tensor_expr( M_expr, mapgmc );
-
+#endif
         auto Xh = M_ctx.ptrFunctionSpace();
         auto Xh2 = M_ctx2.ptrFunctionSpace();
         //loop on local points
         for ( int p = 0; it!=en ; ++it, ++p )
         {
-            auto const& ctx = *it;
+            auto const& ctx = std::get<0>( it->second );
+            auto const& curCtxIdToPointIds = std::get<1>( it->second );
+            int curCtxIndex = it->first;
 
-            //if( CTX::is_rb_context )
-            //    LOG( INFO ) << "we have a RB context ";
-            //else
-            //    LOG( INFO ) << "we have a FEM context";
-            int global_p = it->first;
-
-            if( global_p < global_max_size )
+            std::vector<std::tuple<uint16_type,index_type,index_type>> gmcNodesUsed;
+            for ( uint16_type q=0;q<curCtxIdToPointIds.size();++q )
             {
-                if ( !M_ctx2.empty() && M_ctx2.find( global_p ) != M_ctx2.end() )
-                {
-                    auto const& ctx2 = *M_ctx2.find( global_p );
-                    tensor_expr.updateContext( Xh->contextBasis( ctx, M_ctx ), Xh2->contextBasis( ctx2, M_ctx2 ) );
-                }
-                else
-                    tensor_expr.updateContext( Xh->contextBasis( ctx, M_ctx ) );
+                index_type nodeId = curCtxIdToPointIds[q];
+                if ( M_pointsUsed )
+                    if ( M_pointsUsed->get().find( nodeId ) == M_pointsUsed->get().end() )
+                        continue;
+                index_type nidUsed = nodeIdCtxToNodeIdUsed[nodeId];
+                if( nidUsed < global_max_size )
+                    gmcNodesUsed.push_back( std::make_tuple(q,nodeId,nidUsed ) );
+            }
 
-                //LOG( INFO ) << "Xh->contextBasis returns a context of type \n"<< typeid( decltype( Xh->contextBasis( ctx, M_ctx ) )  ).name();
+            if ( gmcNodesUsed.empty() )
+                continue;
 
+#if 1
+            // TODO VINCENT : really rebuild tensor or reuse-it (warning in GinacMatrix updateContext(..) called update(geom))
+            // maybe with geometric space call directly update(geom)
+            map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >(ctx->gmContext() ) );
+            t_expr_type tensor_expr( M_expr, mapgmc );
+#endif
+            if ( !M_ctx2.empty() && M_ctx2.find( curCtxIndex ) != M_ctx2.end() )
+            {
+                auto const& ctx2 = std::get<0>( M_ctx2.find( curCtxIndex )->second );
+                tensor_expr.updateContext( ctx, ctx2 );
+            }
+            else
+                tensor_expr.updateContext( ctx );
+
+            //LOG( INFO ) << "Xh->contextBasis returns a context of type \n"<< typeid( decltype( Xh->contextBasis( ctx, M_ctx ) )  ).name();
+
+            for ( auto const& [q,global_p_BIS,nidUsed] : gmcNodesUsed )
+            {
                 for ( uint16_type c2 = 0; c2 < shape::N; ++c2 )
                 {
                     for ( uint16_type c1 = 0; c1 < shape::M; ++c1 )
                     {
-                        //__localv(shape::M*p+c1) = tensor_expr.evalq( c1, 0, 0 );
-                        __localv(global_p*shape::M*shape::N+c1+c2*shape::M) = tensor_expr.evalq( c1, c2, 0 );
-                        //LOG( INFO ) << "__localv("<<shape::M*p+c1<<") = "<<tensor_expr.evalq( c1, 0, 0 )<<" and global p = "<<global_p;
+                        __localv(nidUsed*shape::M*shape::N+c1+c2*shape::M) = tensor_expr.evalq( c1, c2, q );
                     }
                 }
-            }//only if globalp < max_size
+            }
 
         }//loop over local points
     }
@@ -301,7 +335,7 @@ template<typename CTX, typename ExprT, typename CTX2>
 typename EvaluatorContext<CTX, ExprT, CTX2>::element_type
 EvaluatorContext<CTX, ExprT, CTX2>::evaluateProjection(  ) const
 {
-    typedef typename CTX::mapped_type::element_type::geometric_mapping_context_ptrtype gm_context_ptrtype;
+    typedef typename CTX::mapped_type::first_type::element_type::geometric_mapping_context_ptrtype gm_context_ptrtype;
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gm_context_ptrtype> > map_gmc_type;
     typedef expression_type the_expression_type;
     typedef typename boost::remove_reference<typename boost::remove_const<the_expression_type>::type >::type iso_expression_type;
@@ -326,7 +360,7 @@ EvaluatorContext<CTX, ExprT, CTX2>::evaluateProjection( mpl::bool_<true> ) const
     auto it = M_ctx.begin();
     auto en = M_ctx.end();
 
-    typedef typename CTX::mapped_type::element_type::geometric_mapping_context_ptrtype gm_context_ptrtype;
+    typedef typename CTX::mapped_type::first_type::element_type::geometric_mapping_context_ptrtype gm_context_ptrtype;
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gm_context_ptrtype> > map_gmc_type;
     typedef expression_type the_expression_type;
     typedef typename boost::remove_reference<typename boost::remove_const<the_expression_type>::type >::type iso_expression_type;
@@ -356,7 +390,7 @@ EvaluatorContext<CTX, ExprT, CTX2>::evaluateProjection( mpl::bool_<true> ) const
          * the programmer so that we don't have to re-create the expression
          * context if the reference points are the same
          */
-        map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >(it->second->gmContext() ) );
+        map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >(std::get<0>(it->second)->gmContext() ) );
 
         t_expr_type tensor_expr( M_expr, mapgmc );
 
@@ -369,7 +403,7 @@ EvaluatorContext<CTX, ExprT, CTX2>::evaluateProjection( mpl::bool_<true> ) const
 
             if( global_p < max_size )
             {
-                auto const& e = ctx.second->gmContext()->element();
+                auto const& e = std::get<0>(ctx.second)->gmContext()->element();
                 //Xh is a pointer, not a shared ptr
                 //functionspace is a shared ptr
                 auto functionspace = M_ctx.functionSpace();
@@ -412,6 +446,7 @@ EvaluatorContext<CTX, ExprT, CTX2>::evaluateProjection( mpl::bool_<false> ) cons
 }
 /// \endcond
 
+#if 0
 /// \cond DETAIL
 namespace detail
 {
@@ -426,6 +461,7 @@ struct evaluate_context
 };
 }
 /// \endcond
+#endif
 
 
 template<typename Ctx, typename ExprT, typename Ctx2>
@@ -433,6 +469,8 @@ typename details::EvaluatorContext<Ctx, Expr<ExprT>, Ctx2 >::element_type
 evaluatecontext_impl( Ctx const& ctx,
                       Ctx2 const& ctx2,
                       Expr<ExprT> const& __expr,
+                      std::optional<std::reference_wrapper<const std::set<index_type>>> const& pointsUsed = std::nullopt,
+                      //std::set<index_type> const& pointsUsed = {},
                       int max_points_used = -1,
                       GeomapStrategyType geomap = GeomapStrategyType::GEOMAP_HO,
                       bool mpi_communications = true,
@@ -440,7 +478,7 @@ evaluatecontext_impl( Ctx const& ctx,
                       worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
 {
     typedef details::EvaluatorContext<Ctx, Expr<ExprT>, Ctx2 > proj_t;
-    proj_t p( ctx, ctx2, __expr, max_points_used, geomap , mpi_communications , projection, worldComm );
+    proj_t p( ctx, ctx2, __expr, pointsUsed, max_points_used, geomap , mpi_communications , projection, worldComm );
     return p();
 }
 
@@ -456,30 +494,26 @@ evaluatecontext_impl( Ctx const& ctx,
  * \arg mpi_communications a bool that indicates if all proc communicate or not
  * \arg projection a bool that indicates if we project the expression on function space or not (usefull for EIM)
  */
-BOOST_PARAMETER_FUNCTION(
-    ( typename vf::detail::evaluate_context<Args>::element_type ), // return type
-    evaluateFromContext,    // 2. function name
-
-    tag,           // 3. namespace of tag types
-
-    ( required
-      ( context, *  )
-      ( expr, * )
-    ) // 4. one required parameter, and
-
-    ( optional
-      ( context2, *, context.functionSpace()->context() )
-      ( max_points_used, (int), -1 )
-      ( geomap,         *, GeomapStrategyType::GEOMAP_OPT )
-      ( mpi_communications, (bool), true )
-      ( projection, (bool), false )
-      ( worldcomm,  (worldcomm_ptr_t), (mpi_communications && !context.ctxHaveBeenMpiBroadcasted() )? context.functionSpace()->worldCommPtr() : context.functionSpace()->worldComm().subWorldCommSeqPtr() )
-    )
-)
+template <typename ... Ts>
+auto evaluateFromContext( Ts && ... v )
 {
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && context = args.get(_context);
+    auto && expr = args.get(_expr);
+    auto && context2 = args.get_else(_context2,context.functionSpace()->context());
+    int max_points_used = args.get_else(_max_points_used,-1);
+    auto && points_used = args.get_else(_points_used,std::nullopt );
+    GeomapStrategyType geomap = args.get_else(_geomap,GeomapStrategyType::GEOMAP_OPT );
+    bool mpi_communications = args.get_else(_mpi_communications,true);
+    bool projection = args.get_else(_projection,false);
+    worldcomm_ptr_t worldcomm = args.get_else_invocable(_worldcomm,[&mpi_communications,&context](){
+         return (mpi_communications && !context.ctxHaveBeenMpiBroadcasted() )? context.functionSpace()->worldCommPtr() : context.functionSpace()->worldComm().subWorldCommSeqPtr(); } );
+
+    std::optional<std::reference_wrapper<const std::set<index_type>>> optional_points_used{ points_used };
+
     bool doMpiComm = mpi_communications && !context.ctxHaveBeenMpiBroadcasted();
     //LOG(INFO) << "evaluate expression..." << std::endl;
-    return evaluatecontext_impl( context, context2, expr, max_points_used, geomap , doMpiComm/*mpi_communications*/, projection, worldcomm );
+    return evaluatecontext_impl( context, context2, expr, optional_points_used, max_points_used, geomap , doMpiComm/*mpi_communications*/, projection, worldcomm );
     //LOG(INFO) << "evaluate expression done." << std::endl;
 }
 

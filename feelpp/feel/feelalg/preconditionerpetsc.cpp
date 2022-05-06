@@ -552,33 +552,11 @@ SetPCType( PC& pc, const PreconditionerType & preconditioner_type, const MatSolv
 
 }
 
-template <typename T>
-void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerType & preconditioner_type,
-                                                          const MatSolverPackageType & matSolverPackage_type,
-                                                          PC & pc,
-                                                          worldcomm_ptr_t const& worldComm,
-                                                          std::string const& name )
-{
-    int ierr = 0;
-    SetPCType( pc, preconditioner_type, matSolverPackage_type, worldComm );
-
-    // configure main preconditioner
-    ConfigurePC( pc, this, worldComm, "", name );
-
-    // prepare PC to use
-    ierr = PCSetUp( pc );
-    CHKERRABORT( worldComm->globalComm(),ierr );
-
-    if ( boption( _prefix=name, _name="pc-view" ) )
-    {
-        ierr = PCView( pc, PETSC_VIEWER_STDOUT_WORLD );
-        CHKERRABORT( worldComm->globalComm(),ierr );
-    }
-}
 
 /**
  * ConfigurePC
  */
+#if 0
 ConfigurePC::ConfigurePC( PC& pc, PreconditionerPetsc<double> * precFeel,
                           worldcomm_ptr_t const& worldComm, std::string const& sub, std::string const& prefix )
     :
@@ -598,6 +576,7 @@ ConfigurePC::ConfigurePC( PC& pc, PreconditionerPetsc<double> * precFeel,
 {
     run( pc );
 }
+#endif
 ConfigurePC::ConfigurePC( PC& pc, PreconditionerPetsc<double> * precFeel,
                           worldcomm_ptr_t const& worldComm, std::string const& sub, std::string const& prefix,
                           std::vector<std::string> const& prefixOverwrite,
@@ -605,6 +584,7 @@ ConfigurePC::ConfigurePC( PC& pc, PreconditionerPetsc<double> * precFeel,
     :
     ConfigurePCBase( precFeel,worldComm, sub, prefix, prefixOverwrite ),
     M_useConfigDefaultPetsc( option(_name="pc-use-config-default-petsc",_prefix=prefix,_sub=sub,_vm=vm).as<bool>() ),
+    M_view( getOption<bool>("pc-view",prefix,sub,prefixOverwrite,vm) ),
     M_factorShiftType( option(_name="pc-factor-shift-type",_prefix=prefix,_sub=sub,_vm=vm).as<std::string>() )
 {
     run( pc );
@@ -617,8 +597,24 @@ ConfigurePC::ConfigurePC( PreconditionerPetsc<double> * precFeel,
     :
     ConfigurePCBase( precFeel,worldComm, sub, prefix, prefixOverwrite ),
     M_useConfigDefaultPetsc( option(_name="pc-use-config-default-petsc",_prefix=prefix,_sub=sub,_vm=vm).as<bool>() ),
+    M_view( getOption<bool>("pc-view",prefix,sub,prefixOverwrite,vm) ),
     M_factorShiftType( option(_name="pc-factor-shift-type",_prefix=prefix,_sub=sub,_vm=vm).as<std::string>() )
 {}
+
+
+ConfigurePC::ConfigurePC( PC& pc, PreconditionerPetsc<double> * precFeel, worldcomm_ptr_t const& worldComm,
+                          std::string const& sub, std::string const& prefix,
+                          std::vector<std::string> const& prefixOverwrite,
+                          po::options_description const& _options )
+    :
+    ConfigurePCBase( precFeel,worldComm, sub, prefix, prefixOverwrite, _options ),
+    M_useConfigDefaultPetsc( option(_name="pc-use-config-default-petsc",_prefix=prefix,_sub=sub,_vm=this->vm()).as<bool>() ),
+    M_view( getOption<bool>("pc-view",prefix,sub,prefixOverwrite,this->vm()) ),
+    M_factorShiftType( option(_name="pc-factor-shift-type",_prefix=prefix,_sub=sub,_vm=this->vm()).as<std::string>() )
+{
+    run( pc );
+}
+
 
 void
 ConfigurePC::run( PC& pc )
@@ -1462,6 +1458,37 @@ ConfigureKSP::run( KSP& ksp ) const
         PETSc::MatNullSpaceDestroy( nullsp );
     }
 
+}
+
+
+
+
+
+ template <typename T>
+void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerType & preconditioner_type,
+                                                          const MatSolverPackageType & matSolverPackage_type,
+                                                          PC & pc,
+                                                          worldcomm_ptr_t const& worldComm,
+                                                          std::string const& name )
+{
+    int ierr = 0;
+    SetPCType( pc, preconditioner_type, matSolverPackage_type, worldComm );
+
+    // configure main preconditioner
+    
+    po::options_description _options( "options Main PC",200);
+    updateOptionsDescPrecBase( _options,name,"",true/*,pcType*/ );
+    ConfigurePC pcConf( pc, this, worldComm, "", name, std::vector<std::string>{},_options );
+    
+    // prepare PC to use
+    ierr = PCSetUp( pc );
+    CHKERRABORT( worldComm->globalComm(),ierr );
+
+    if ( pcConf.view() )// boption( _prefix=name, _name="pc-view" ) )
+    {
+        ierr = PCView( pc, PETSC_VIEWER_STDOUT_WORLD );
+        CHKERRABORT( worldComm->globalComm(),ierr );
+    }
 }
 
 

@@ -57,7 +57,6 @@ pyexprFromFile( std::string const& pyfilename, std::map<std::string,std::map<std
     
     if ( Environment::isMasterRank() )
     {
-        py::scoped_interpreter guard{}; // start the interpreter and keep it alive
         std::string sympytoginac_f = Environment::findFile( "sympy2ginac.py", lookups_ );
         //std::cout << "sympytoginac_f = " << sympytoginac_f << std::endl;
         py::module::import("sys").attr("path").cast<py::list>().append( fs::path( sympytoginac_f ).parent_path().string() );
@@ -110,7 +109,6 @@ pyexprFromFile( std::string const& pyfilename, std::map<std::string,std::string>
     
     if ( Environment::isMasterRank() )
     {
-        py::scoped_interpreter guard{}; // start the interpreter and keep it alive
         std::string sympytoginac_f = Environment::findFile( "sympy2ginac.py", lookups_ );
         //std::cout << "sympytoginac_f = " << sympytoginac_f << std::endl;
         py::module::import("sys").attr("path").cast<py::list>().append( fs::path( sympytoginac_f ).parent_path().string() );
@@ -150,7 +148,6 @@ pyexpr( std::string const& pycode, std::vector<std::string> const& vars, std::ma
     
     if ( Environment::isMasterRank() )
     {
-        py::scoped_interpreter guard{}; // start the interpreter and keep it alive
         py::module::import("sys").attr("path").cast<py::list>().append(Environment::expand("$top_srcdir/feelpp/feel/feelpython/"));
         py::dict _locals=py::cast(locals);
         py::exec(pycode.c_str(), py::globals(),_locals);

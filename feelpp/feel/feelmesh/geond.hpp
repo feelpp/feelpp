@@ -73,6 +73,7 @@ class ReversePoint
 
 /**
  * @class GeoNDCommon
+ * @ingroup Mesh
  * @brief Common data shared in a collection of multi-dimensional geometrical entity.
  */
 template <typename GeoNDType>
@@ -181,6 +182,7 @@ private :
 
 /**
  * @class GeoND
+ * @ingroup Mesh
  * @brief Base class for Multi-dimensional basis Geometrical Entities.
  *
  */
@@ -275,6 +277,7 @@ class GeoND
     typedef typename GetImMeasure<nOrder>::type quad_meas_type;
     typedef typename GetImMeasure<1>::type quad_meas1_type;
 
+
     /**
      * default constructor
      */
@@ -308,7 +311,6 @@ class GeoND
           super2( std::move( e ) ),
           M_points( std::move( e.M_points ) ),
           M_neighbors( std::move( e.M_neighbors ) ),
-          M_markers( std::move( e.M_markers ) ),
           M_commonData( std::move( e.M_commonData ) )
     {
         //std::cout << "GeoND move ctor\n";
@@ -321,7 +323,6 @@ class GeoND
         super2::operator=( std::move( e ) );
         M_points = std::move( e.M_points );
         M_neighbors = std::move( e.M_neighbors );
-        M_markers = std::move( e.M_markers );
         M_commonData = std::move( e.M_commonData );
         //M_face_measures = std::move( e.M_face_measures );
         //std::cout << "GeoND move assign\n";
@@ -331,7 +332,7 @@ class GeoND
     /**
      * destructor, make it virtual for derived classes
      */
-    ~GeoND()
+    ~GeoND() override
     {
     }
 
@@ -649,6 +650,26 @@ class GeoND
         // return ublas::subrange( M_G, 0, nRealDim, 0, numVertices );
     }
 
+    //! update G with all points of the element
+    template <typename TheNodesType>
+    void updateG( TheNodesType & G,
+                  std::enable_if_t<is_eigen_matrix_v<TheNodesType> >* = nullptr ) const
+    {
+        DCHECK( nRealDim == G.rows() && G.cols() >= numPoints ) << "G is not compatible";
+        for ( uint16_type i = 0; i < numPoints; ++i )
+            G.col( i ) = em_fixed_size_cmatrix_t<nRealDim,1,value_type>( M_points[i]->node().data().begin() );
+    }
+
+    //! update G with all vertices of the element
+    template <typename TheNodesType>
+    void updateVertices( TheNodesType & G,
+                         std::enable_if_t<is_eigen_matrix_v<TheNodesType> >* = nullptr ) const
+    {
+        DCHECK( nRealDim == G.rows() && G.cols() >= numVertices ) << "G is not compatible";
+        for ( uint16_type i = 0; i < numVertices; ++i )
+            G.col( i ) = em_fixed_size_cmatrix_t<nRealDim,1,value_type>( M_points[i]->node().data().begin() );
+    }
+
     point_iterator beginPoint()
     {
         return M_points.begin();
@@ -782,11 +803,12 @@ class GeoND
                 ctxPtsOnRefFaces[f][__p.value()] = baryOnRefFace;
         }
         auto pcf = gm1->preComputeOnFaces( gm1, ctxPtsOnRefFaces );
-        auto ctx = gm1->template context</*vm::POINT|*/ vm::NORMAL | vm::KB | vm::JACOBIAN>( *this, pcf, 0 );
+        static const size_type gmc_context_v = /*vm::POINT|*/ vm::NORMAL | vm::KB | vm::JACOBIAN;
+        auto ctx = gm1->template context<gmc_context_v>( *this, pcf, 0 );
         em_matrix_col_type<value_type> ns( _normals.data().begin(), _normals.size1(), _normals.size2() );
         for ( uint16_type f = 0; f < numTopologicalFaces; ++f )
         {
-            ctx->update( *this, f );
+            ctx->template update<gmc_context_v>( *this, f );
             ns.col( f ) = ctx->unitNormal( 0 );
             //ublas::column( _normals, f ) = ctx->unitNormal( 0 );
         }
@@ -811,8 +833,9 @@ class GeoND
         matrix_node_type baryOnFace( nRealDim, 1 );
         ublas::column( baryOnFace, 0 ) = gm1->referenceConvex().faceBarycenter( f );
         auto pcf = gm1->preComputeOnFaces( gm1, baryOnFace );
-        auto ctx = gm1->template context</*vm::POINT|*/ vm::NORMAL | vm::KB | vm::JACOBIAN>( *this, pcf, f );
-        ctx->update( *this, f );
+        static const size_type gmc_context_v =/*vm::POINT|*/ vm::NORMAL | vm::KB | vm::JACOBIAN;
+        auto ctx = gm1->template context<gmc_context_v>( *this, pcf, f );
+        ctx->template update<gmc_context_v>( *this, f );
 
         node_type n( nRealDim );
         em_node_type<value_type> en( n.data().begin(), n.size() );
@@ -897,136 +920,6 @@ class GeoND
     void applyDisplacementG( int i, ublas::vector<double> const& u )
     {
         // ublas::column( M_G, i ) += u;
-    }
-    /**
-     * set the tags associated to the points
-     * - tags[0] physical region
-     * - tags[1] elementary region
-     * - tags[2] particular region
-     */
-    void setTags( std::vector<int> const& tags )
-    {
-        M_markers[1].assign( tags[0] );
-        if ( tags.size() > 1 )
-            M_markers[2].assign( tags[1] );
-
-        if ( tags.size() > 2 )
-        {
-            this->setProcessId( tags[3] );
-
-            if ( tags[2] > 1 )
-            {
-                // ghosts
-                std::vector<rank_type> p( tags[2] - 1 );
-
-                for ( size_type i = 0; i < p.size(); ++i )
-                {
-                    p[i] = tags[4 + i];
-                }
-
-                this->setNeighborPartitionIds( p );
-            }
-        }
-    }
-
-    std::map<uint16_type, Marker1> const&
-    markers() const
-    {
-        return M_markers;
-    }
-    void setMarkers( std::map<uint16_type, Marker1> const& markers )
-    {
-        M_markers = markers;
-    }
-    bool hasMarker( uint16_type k ) const
-    {
-        auto itFindMarker = M_markers.find( k );
-        if ( itFindMarker == M_markers.end() )
-            return false;
-        if ( itFindMarker->second.isOff() )
-            return false;
-        return true;
-    }
-    Marker1 const& marker( uint16_type k ) const
-    {
-        DCHECK( this->hasMarker( k ) ) << "no marker type " << k;
-        return M_markers.find( k )->second;
-    }
-    Marker1& marker( uint16_type k )
-    {
-        return M_markers[k];
-    }
-    void setMarker( uint16_type k, flag_type v )
-    {
-        M_markers[k].assign( v );
-    }
-
-    bool hasMarker() const
-    {
-        return this->hasMarker( 1 );
-    }
-    Marker1 const& marker() const
-    {
-        DCHECK( this->hasMarker( 1 ) ) << "no marker type 1";
-        return M_markers.find( 1 )->second;
-    }
-    Marker1& marker()
-    {
-        return M_markers[1];
-    }
-    Marker1 markerOr( uint16_type v = 0 ) const
-    {
-        if ( hasMarker() )
-            return M_markers.find( 1 )->second;
-        else
-            return Marker1{v};
-    }
-    Marker1 markerOr( uint16_type v = 0 )
-    {
-        if ( hasMarker() )
-            return M_markers[1];
-        else
-            return Marker1{v};
-    }
-    void setMarker( flag_type v )
-    {
-        M_markers[1].assign( v );
-    }
-
-    bool hasMarker2() const
-    {
-        return this->hasMarker( 2 );
-    }
-    Marker1 const& marker2() const
-    {
-        DCHECK( this->hasMarker( 2 ) ) << "no marker type 2";
-        return M_markers.find( 2 )->second;
-    }
-    Marker1& marker2()
-    {
-        return M_markers[2];
-    }
-    void setMarker2( flag_type v )
-    {
-        M_markers[2].assign( v );
-    }
-
-    bool hasMarker3() const
-    {
-        return this->hasMarker( 3 );
-    }
-    Marker1 const& marker3() const
-    {
-        DCHECK( this->hasMarker( 3 ) ) << "no marker type 3";
-        return M_markers.find( 3 )->second;
-    }
-    Marker1& marker3()
-    {
-        return M_markers[3];
-    }
-    void setMarker3( flag_type v )
-    {
-        M_markers[3].assign( v );
     }
 
     //! \return the number of point element neighbors
@@ -1153,8 +1046,6 @@ class GeoND
         }
         // DVLOG(2) << "  - G...\n";
         // ar & M_G;
-        DVLOG( 2 ) << "  - markers...\n";
-        ar& M_markers;
     }
 
   private:
@@ -1163,9 +1054,6 @@ class GeoND
 
     //! store neighbor element id
     std::vector<size_type> M_neighbors;
-
-    //! mapping from marker index to marker flag
-    std::map<uint16_type, Marker1> M_markers;
 
     //! common data shared in a collection of multi-dimensional geometrical entity
     mutable GeoNDCommon<self_type> * M_commonData;
@@ -1306,7 +1194,7 @@ void GeoND<Dim, GEOSHAPE, T, IndexT, POINTTYPE, UseMeasuresStorage>::updateWithC
         {
             for ( uint16_type f = 0; f < numTopologicalFaces; ++f )
             {
-                ctxf->update( dynamic_cast<typename CtxFaceType::element_type const&>( *this ), f );
+                ctxf->template update</*vm::POINT|*/ vm::NORMAL | vm::KB | vm::JACOBIAN>( dynamic_cast<typename CtxFaceType::element_type const&>( *this ), f );
                 this->setFaceMeasure( f, computeFaceMeasureImpl( thequad,ctxf, f ) );
             }
         }

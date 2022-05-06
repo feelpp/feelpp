@@ -47,6 +47,7 @@
 #include <feel/feelvf/on.hpp>
 
 #include <feel/feelmodels/modelmesh/metricmeshadaptation.hpp>
+#include <feel/feelmodels/modelcore/markermanagement.hpp>
 
 namespace Feel
 {
@@ -54,7 +55,7 @@ namespace FeelModels
 {
 namespace ALE_IMPL
 {
-
+#if 0
 namespace detailALE
 {
 template < typename SpaceLowType,typename SpaceHighType >
@@ -71,72 +72,99 @@ buildSpaceHigh(std::shared_ptr<SpaceLowType> spaceLow, mpl::bool_<true> /**/ )
     return spaceLow;
 }
 }
-
-
+#endif
 
 template < class Convex, int Order >
-ALE<Convex,Order>::ALE( mesh_ptrtype mesh, std::string prefix, worldcomm_ptr_t const& worldcomm,
+ALE<Convex,Order>::ALE( std::string const& prefix, worldcomm_ptr_t const& worldcomm,
                         ModelBaseRepository const& modelRep )
     :
-    super_type( mesh,prefix,worldcomm,modelRep ),
+    super_type( prefix,worldcomm,modelRep ),
     M_verboseSolverTimer(boption(_prefix=this->prefix(),_name="verbose_solvertimer")),
     M_verboseSolverTimerAllProc(boption(_prefix=this->prefix(),_name="verbose_solvertimer_allproc")),
-    M_reference_mesh( mesh ),
     M_alemeshTypeName( soption( _name="type",_prefix=this->prefix() ) ),
     M_doHoCorrection( boption(_prefix=this->prefix(),_name="apply-ho-correction") ),
     M_isInitHarmonicExtension( false ),
     M_isInitWinslow( false )
+{}
+
+template < class Convex, int Order >
+ALE<Convex,Order>::ALE( mesh_ptrtype mesh, std::string const& prefix, worldcomm_ptr_t const& worldcomm,
+                        ModelBaseRepository const& modelRep )
+    :
+    ALE( prefix,worldcomm,modelRep )
 {
-    this->log( "ALE", "constructor", "start" );
+    this->log( "ALE", "constructor 1", "start" );
+
+    M_reference_mesh = mesh;
 
     this->createALE();
 
     this->preCompute();
 
-    this->log( "ALE", "constructor", "finish" );
+    this->log( "ALE", "constructor 1", "finish" );
+}
+template < class Convex, int Order >
+ALE<Convex,Order>::ALE( mesh_ptrtype mesh, range_elements_type const& rangeElt,
+                        std::string const& prefix, worldcomm_ptr_t const& worldcomm,
+                        ModelBaseRepository const& modelRep )
+    :
+    ALE( prefix,worldcomm,modelRep )
+{
+    this->log( "ALE", "constructor 2", "start" );
+
+    M_reference_mesh = mesh;
+
+    this->createALE( rangeElt );
+
+    this->preCompute();
+
+    this->log( "ALE", "constructor 2", "finish" );
 }
 
 //-------------------------------------------------------------------------------------------//
-
+#if 0
 template < class Convex, int Order >
 std::shared_ptr<std::ostringstream>
 ALE<Convex,Order>::getInfo() const
 {
     std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
     *_ostr << "\n   Physical Markers";
-    if ( this->flagSet().find("fixed") != this->flagSet().end() )
+    for ( std::string bctype : { "moving","fixed","free" } )
     {
-        *_ostr << "\n     -- fixed : ";
-        auto it = this->flagSet().find("fixed")->second.begin();
-        auto en = this->flagSet().find("fixed")->second.end();
-        for ( int cptMark = 0 ; it!=en ; ++it,++cptMark )
+        if ( this->bcToMarkers().find(bctype) != this->bcToMarkers().end() )
         {
-            if ( cptMark > 0 ) *_ostr << " , ";
-            *_ostr << *it;
+            *_ostr << "\n     -- " << bctype << " : ";
+            auto it = this->bcToMarkers().find(bctype)->second.begin();
+            auto en = this->bcToMarkers().find(bctype)->second.end();
+            for ( int cptMark = 0 ; it!=en ; ++it,++cptMark )
+            {
+                if ( cptMark > 0 ) *_ostr << " , ";
+                *_ostr << *it;
+            }
         }
     }
-    if ( this->flagSet().find("moving") != this->flagSet().end() )
-    {
-        *_ostr << "\n     -- moving : ";
-        auto it = this->flagSet().find("moving")->second.begin();
-        auto en = this->flagSet().find("moving")->second.end();
-        for ( int cptMark = 0 ; it!=en ; ++it,++cptMark )
-        {
-            if ( cptMark > 0 ) *_ostr << " , ";
-            *_ostr << *it;
-        }
-    }
-    if ( this->flagSet().find("free") != this->flagSet().end() )
-    {
-        *_ostr << "\n     -- free : ";
-        auto it = this->flagSet().find("free")->second.begin();
-        auto en = this->flagSet().find("free")->second.end();
-        for ( int cptMark = 0 ; it!=en ; ++it,++cptMark )
-        {
-            if ( cptMark > 0 ) *_ostr << " , ";
-            *_ostr << *it;
-        }
-    }
+        // if ( this->flagSet().find("moving") != this->flagSet().end() )
+    // {
+    //     *_ostr << "\n     -- moving : ";
+    //     auto it = this->flagSet().find("moving")->second.begin();
+    //     auto en = this->flagSet().find("moving")->second.end();
+    //     for ( int cptMark = 0 ; it!=en ; ++it,++cptMark )
+    //     {
+    //         if ( cptMark > 0 ) *_ostr << " , ";
+    //         *_ostr << *it;
+    //     }
+    // }
+    // if ( this->flagSet().find("free") != this->flagSet().end() )
+    // {
+    //     *_ostr << "\n     -- free : ";
+    //     auto it = this->flagSet().find("free")->second.begin();
+    //     auto en = this->flagSet().find("free")->second.end();
+    //     for ( int cptMark = 0 ; it!=en ; ++it,++cptMark )
+    //     {
+    //         if ( cptMark > 0 ) *_ostr << " , ";
+    //         *_ostr << *it;
+    //     }
+    // }
 
 
 #if defined( FEELPP_TOOLBOXES_HAS_MESHALE_HARMONICEXTENSION )
@@ -149,7 +177,7 @@ ALE<Convex,Order>::getInfo() const
 #endif
     return _ostr;
 }
-
+#endif
 //-------------------------------------------------------------------------------------------//
 
 template < class Convex, int Order >
@@ -190,7 +218,7 @@ ALE<Convex,Order>::init()
         for ( std::string const& bctype : std::vector<std::string>( { "moving","fixed" } ) )
         {
             auto & dofsHighOnBoundary = M_dofsHighOnBoundary[bctype];
-            for ( auto const& faceWrap : markedfaces(M_fspaceHigh->mesh(),this->flagSet(bctype) ) )
+            for ( auto const& faceWrap : markedfaces(M_fspaceHigh->mesh(),this->markers(bctype) ) )
             {
                 auto const& face = unwrap_ref( faceWrap );
                 auto facedof = M_fspaceHigh->dof()->faceLocalDof( face.id() );
@@ -205,46 +233,46 @@ ALE<Convex,Order>::init()
 
 template < class Convex, int Order >
 void
-ALE<Convex,Order>::createALE()
+ALE<Convex,Order>::createALE( std::optional<range_elements_type> const& rangeElt )
 {
-    M_fspaceLow = space_low_type::New( _mesh=M_reference_mesh );
+    if ( rangeElt )
+        M_fspaceLow = space_low_type::New( _mesh=M_reference_mesh,_range=*rangeElt );
+    else
+        M_fspaceLow = space_low_type::New( _mesh=M_reference_mesh );
     M_aleLow.reset( new element_low_type( M_fspaceLow, "low_order_ALE_map" ) );
     M_displacementLow.reset( new element_low_type( M_fspaceLow, "low_order_displacement" ) );
     M_identityLow.reset( new element_low_type( M_fspaceLow, "low_order_identity_map" ) );
 
-    //M_fspaceHigh = detailALE::buildSpaceHigh<space_low_type,space_high_type>(M_fspaceLow, M_moveGhostEltFromExtendedStencil,
-    //                                                                         mpl::bool_<isEqualOrderAndOrderLow>() );
-    this->createALEHO( mpl::bool_< ( Order > Order_low ) >() );
-}
-template < class Convex, int Order >
-void
-ALE<Convex,Order>::createALEHO( mpl::true_ )
-{
-    M_bHigh = backend_type::build( soption( _name="backend" ), prefixvm(this->prefix(),"ho"), this->worldCommPtr() );
-    M_fspaceHigh = detailALE::buildSpaceHigh<space_low_type,space_high_type>(M_fspaceLow,mpl::bool_<isEqualOrderAndOrderLow>() );
-#if ALE_WITH_BOUNDARYELEMENT
-    M_fspaceHighLocal = space_high_type::New( createSubmesh( M_reference_mesh, boundaryelements(M_reference_mesh) ) );
-#endif
-    M_aleHigh.reset( new element_high_type( M_fspaceHigh, "high_order_ALE map" ) );
-    M_displacementHigh.reset( new element_high_type( M_fspaceHigh, "high_order_displacement" ) );
-    M_identityHigh.reset( new element_high_type( M_fspaceHigh, "high_order_identity map" ) );
-#if ALE_WITH_BOUNDARYELEMENT
-    M_harmonicHigh =  M_bHigh->newMatrix( M_fspaceHighLocal, M_fspaceHighLocal );
-    M_rhsHigh = M_bHigh->newVector( M_fspaceHighLocal );
-#else
-    M_harmonicHigh = M_bHigh->newMatrix( M_fspaceHigh, M_fspaceHigh );
-    M_rhsHigh = M_bHigh->newVector( M_fspaceHigh );
-#endif
-}
-template < class Convex, int Order >
-void
-ALE<Convex,Order>::createALEHO( mpl::false_ )
-{
+    //this->createALEHO( mpl::bool_< ( Order > Order_low ) >() );
+    if constexpr (  Order > Order_low )
+    {
+        M_bHigh = backend_type::build( soption( _name="backend" ), prefixvm(this->prefix(),"ho"), this->worldCommPtr() );
+        //M_fspaceHigh = detailALE::buildSpaceHigh<space_low_type,space_high_type>(M_fspaceLow,mpl::bool_<isEqualOrderAndOrderLow>() );
+        if constexpr ( std::is_same_v<space_low_type,space_high_type> )
+            M_fspaceHigh = M_fspaceLow;
+        else
+            M_fspaceHigh = space_high_type::New( _mesh=M_fspaceLow->mesh(),_range=M_fspaceLow->template meshSupport<0>() );
 
+#if ALE_WITH_BOUNDARYELEMENT
+        M_fspaceHighLocal = space_high_type::New( createSubmesh( M_reference_mesh, boundaryelements(M_reference_mesh) ) );
+#endif
+        M_aleHigh.reset( new element_high_type( M_fspaceHigh, "high_order_ALE map" ) );
+        M_displacementHigh.reset( new element_high_type( M_fspaceHigh, "high_order_displacement" ) );
+        M_identityHigh.reset( new element_high_type( M_fspaceHigh, "high_order_identity map" ) );
+#if ALE_WITH_BOUNDARYELEMENT
+        M_harmonicHigh =  M_bHigh->newMatrix( _test=M_fspaceHighLocal, _trial=M_fspaceHighLocal );
+        M_rhsHigh = M_bHigh->newVector( M_fspaceHighLocal );
+#else
+        M_harmonicHigh = M_bHigh->newMatrix( _test=M_fspaceHigh, _trial=M_fspaceHigh );
+        M_rhsHigh = M_bHigh->newVector( M_fspaceHigh );
+#endif
+
+    }
 }
 
 //-------------------------------------------------------------------------------------------//
 
+#if 0
 template < class Convex, int Order >
 void
 ALE<Convex,Order>::restart( mesh_ptrtype mesh )
@@ -256,6 +284,7 @@ ALE<Convex,Order>::restart( mesh_ptrtype mesh )
 
     this->preCompute();
 }
+#endif
 
 //-------------------------------------------------------------------------------------------//
 
@@ -274,7 +303,7 @@ ALE<Convex,Order>::createHarmonicExtension()
                                                                   Feel::backend(_rebuild=true,_name=this->prefix() ),
                                                                   prefixvm(this->prefix(),"harmonic"),
                                                                   this->repository() ) );
-    M_harmonicextensionFactory->setflagSet(this->flagSet());
+    M_harmonicextensionFactory->setMarkersInBoundaryCondition(this->bcToMarkers());
     M_harmonicextensionFactory->init();
     M_isInitHarmonicExtension = true;
 
@@ -293,7 +322,7 @@ ALE<Convex,Order>::createWinslow()
 
     M_winslowFactory.reset(new winslow_type( M_fspaceLow,//M_reference_mesh,
                                              prefixvm(this->prefix(),"winslow") ) );
-    M_winslowFactory->setflagSet(this->flagSet());
+    M_winslowFactory->setMarkersInBoundaryCondition(this->bcToMarkers());
     M_winslowFactory->init();
     M_isInitWinslow=true;
 
@@ -338,7 +367,7 @@ void
 ALE<Convex,Order>::generateLowOrderMap_HARMONIC( ale_map_element_type const & dispOnBoundary )
 {
 #if defined( FEELPP_TOOLBOXES_HAS_MESHALE_HARMONICEXTENSION )
-    M_harmonicextensionFactory->setflagSet(this->flagSet());
+    M_harmonicextensionFactory->setMarkersInBoundaryCondition(this->bcToMarkers());
     M_harmonicextensionFactory->generateALEMap(dispOnBoundary);
 
     *M_displacementLow = *M_harmonicextensionFactory->displacement();
@@ -360,7 +389,7 @@ ALE<Convex,Order>::generateLowOrderMap_WINSLOW( ale_map_element_type const & dis
                                                 ale_map_element_type const & oldDisp )
 {
 #if defined( FEELPP_TOOLBOXES_HAS_MESHALE_WINSLOW )
-    M_winslowFactory->setflagSet(this->flagSet());
+    M_winslowFactory->setMarkersInBoundaryCondition(this->bcToMarkers());
     M_winslowFactory->generateALEMap(dispOnBoundary,oldDisp);
 
     // interpolate disp
@@ -386,7 +415,7 @@ ALE<Convex,Order>::preCompute()
 
     M_aleLow->zero();
     M_displacementLow->zero();
-    M_identityLow->on( _range=elements( M_reference_mesh ), _expr=P() );
+    M_identityLow->on( _range=elements( /*M_reference_mesh*/support(M_fspaceLow) ), _expr=P() );
 
     this->preComputeHO( mpl::bool_< ( Order > Order_low ) >() );
 }
@@ -401,7 +430,7 @@ ALE<Convex,Order>::preComputeHO( mpl::true_ )
 {
     M_aleHigh->zero();
     M_displacementHigh->zero();
-    *M_identityHigh = vf::project( _space=M_fspaceHigh, _range=elements( M_reference_mesh ), _expr=P() );
+    *M_identityHigh = vf::project( _space=M_fspaceHigh, _range=elements( /*M_reference_mesh*/support(M_fspaceHigh) ), _expr=P() );
 
     using namespace Feel::vf;
 #if ALE_WITH_BOUNDARYELEMENT
@@ -409,7 +438,7 @@ ALE<Convex,Order>::preComputeHO( mpl::true_ )
     auto w = fspaceHighLocal->element( "w" );
     //M_timer.restart();
     form2( _test=M_fspaceHighLocal, _trial=M_fspaceHighLocal, _matrix=M_harmonicHigh ) =
-        integrate( elements(M_fspaceHighLocal->mesh()), trace( trans(gradt(z))*grad(w) ) );
+        integrate( _range=elements(M_fspaceHighLocal->mesh()), _expr=trace( trans(gradt(z))*grad(w) ) );
     //form2( fspaceHighLocal, fspaceHighLocal, harmonicHigh ) +=
     //    integrate( boundaryfaces(fspaceHighLocal->mesh()), - trans((gradt(z)*N()))*id(w) );
 
@@ -418,7 +447,7 @@ ALE<Convex,Order>::preComputeHO( mpl::true_ )
     auto w = M_fspaceHigh->element( "w" );
     //M_timer.restart();
     form2( _test=M_fspaceHigh, _trial=M_fspaceHigh, _matrix=M_harmonicHigh ) =
-        integrate( elements(M_fspaceHigh->mesh()), trace( trans(gradt(z))*grad(w) ) );
+        integrate( _range=elements(M_fspaceHigh->mesh()), _expr=trace( trans(gradt(z))*grad(w) ) );
     //form2( fspaceHigh, fspaceHigh, harmonicHigh ) +=
     //    integrate( boundaryfaces(fspaceHigh->mesh()), - trans((gradt(z)*N()))*id(w) );
 #endif
@@ -482,10 +511,10 @@ ALE<Convex,Order>::updateBoundaryElements( ale_map_element_type const & dispOnBo
     auto zero = 0*one();
 
     auto dispHighAux = M_fspaceHigh->element();
-    dispHighAux.on(_range=markedfaces(M_fspaceHigh->mesh(), this->flagSet("moving")),
+    dispHighAux.on(_range=markedfaces(M_fspaceHigh->mesh(), this->markers("moving")),
                    _expr=correction);
     // also at fixed boundary (if boundary is ho, else is zero)
-    dispHighAux.on(_range=markedfaces(M_fspaceHigh->mesh(), this->flagSet("fixed")),
+    dispHighAux.on(_range=markedfaces(M_fspaceHigh->mesh(), this->markers("fixed")),
                    _expr=correction);
     // synch values
     auto itFindDofsMoving = M_dofsHighOnBoundary.find( "moving" );
@@ -543,30 +572,34 @@ ALE<Convex,Order>::updateBoundaryElements( ale_map_element_type const & dispOnBo
 #endif
 
     /* Impose boundary conditions for the moving boundary = position - aleLow */
-    for ( uint16_type i=0; i < this->flagSet("moving").size(); ++i )
+    if ( this->bcToMarkers().find("moving") != this->bcToMarkers().end() )
     {
-        form2( _test=M_fspaceHigh, _trial=M_fspaceHigh, _matrix=M_harmonicHigh ) +=
-            on( _range=markedfaces( M_reference_mesh, this->flagSet("moving",i) ),
-                _element=v,
-                _rhs=M_rhsHigh,
-                _expr=correction );
+        auto dmlose = Feel::FeelModels::detail::distributeMarkerListOnSubEntity(M_reference_mesh, this->markers("moving") );
+        auto const& faceMarkers = std::get<0>( dmlose );
+        if ( !faceMarkers.empty() )
+        {
+            form2( _test=M_fspaceHigh, _trial=M_fspaceHigh, _matrix=M_harmonicHigh ) +=
+                on( _range=markedfaces( M_reference_mesh, faceMarkers ),
+                    _element=v,
+                    _rhs=M_rhsHigh,
+                    _expr=correction );
+        }
     }
-
-    for ( uint16_type i=0; i < this->flagSet("fixed").size(); ++i )
+    for ( std::string bctype : { "fixed","free" } )
     {
-        form2( _test=M_fspaceHigh, _trial=M_fspaceHigh, _matrix=M_harmonicHigh ) +=
-            on( _range=markedfaces( M_reference_mesh, this->flagSet("fixed",i) ),
-                _element=v,
-                _rhs=M_rhsHigh,
-                _expr=idv(dispOnBoundary)/*zero*/ );
-    }
-    for ( uint16_type i=0; i < this->flagSet("free").size(); ++i )
-    {
-        form2( _test=M_fspaceHigh, _trial=M_fspaceHigh, _matrix=M_harmonicHigh ) +=
-            on( _range=markedfaces( M_reference_mesh, this->flagSet("free",i) ),
-                _element=v,
-                _rhs=M_rhsHigh,
-                _expr=idv(dispOnBoundary)/*zero*/ );
+        if ( this->bcToMarkers().find(bctype) != this->bcToMarkers().end() )
+        {
+            auto dmlose = Feel::FeelModels::detail::distributeMarkerListOnSubEntity(M_reference_mesh, this->markers(bctype) );
+            auto const& faceMarkers = std::get<0>( dmlose );
+            if ( !faceMarkers.empty() )
+            {
+                form2( _test=M_fspaceHigh, _trial=M_fspaceHigh, _matrix=M_harmonicHigh ) +=
+                    on( _range=markedfaces( M_reference_mesh, faceMarkers ),
+                        _element=v,
+                        _rhs=M_rhsHigh,
+                        _expr=idv(dispOnBoundary)/*zero*/ );
+            }
+        }
     }
 
     //std::cout << "  -- ale : solving for high order correction" << std::endl;

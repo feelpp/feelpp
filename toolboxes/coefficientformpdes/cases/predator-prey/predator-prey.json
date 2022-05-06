@@ -1,0 +1,116 @@
+{
+    /*
+      References :
+      - Finite element approximation of spatially extended prey interactions with the Holling type II functional response ( Marcus R. Garvie - Catalin Trenchea )
+      - Finite-Difference Schemes for Reaction-Diffusion Equations Modeling Prey-Predator Interactions in MATLAB ( Marcus R. Garvie )
+     */
+    "Name": "Square2d",
+    "ShortName": "Square2d",
+    "Models":
+    {
+        "cfpdes":{
+            "equations":["equation1","equation2"]
+        },
+        "equation1":{
+            "setup":{
+                "unknown":{
+                    "basis":"Pch1",
+                    "name":"prey",
+                    "symbol":"u"
+                },
+                "coefficients":{
+                    "c":"1", // diffusion
+                    "a":"-( (1-equation1_u) - equation2_v/(equation1_u+thealpha) ):thealpha:equation1_u:equation2_v", // reaction
+                    //"f":"( equation1_u*(1-equation1_u) - equation1_u*equation2_v/(equation1_u+thealpha) ):thealpha:equation1_u:equation2_v", // source
+                    "d":"1" // first time derivative
+                }
+            }
+        },
+        "equation2":{
+            "setup":{
+                "unknown":{
+                    "basis":"Pch1",
+                    "name":"predator",
+                    "symbol":"v"
+                },
+                "coefficients":{
+                    "c":"thedelta:thedelta", // diffusion
+                    "a":"-( (thebeta*equation1_u)/(equation1_u+thealpha) - thegamma ):thebeta:thealpha:thegamma:equation1_u", // reaction
+                    //"f":"equation2_v*( (thebeta*equation1_u)/(equation1_u+thealpha) - thegamma ):thebeta:thealpha:thegamma:equation1_u:equation2_v", // source
+                    "d":"1"// first time derivative
+                }
+            }
+        }
+    },
+    "Parameters":
+    {
+        "thealpha":0.4,
+        "thebeta":2.0,
+        "thegamma":0.6,
+        "thedelta":1.0,
+        // "ustar":"thealpha*thegamma/(thebeta-thegamma):thealpha:thegamma:thebeta",
+        // "vstar":"(1-ustar)*(ustar+thealpha):ustar:thealpha"
+        "ustar":"6/35",
+        "vstar":"116.0/245"
+    },
+    "Meshes":
+    {
+        "cfpdes":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/square2d.geo",
+                "hsize":1 //10
+            }
+        }
+    },
+    "Materials":
+    {
+        "mymat1":
+        {
+            "markers":"Omega"
+        }
+    },
+    // "BoundaryConditions":
+    // {
+    //     "equation1":
+    //     {
+    //     },
+    //     "equation2":
+    //     {
+    //     }
+    // },
+    "InitialConditions":
+    {
+        "equation1":{
+            "prey":{
+                "Expression":{
+                    "myic":{
+                        "markers":"Omega",
+                        "expr":"ustar-(2e-7)*(x-0.1*y-225)*(x-0.1*y-675):ustar:x:y"
+                    }
+                }
+            }
+        },
+        "equation2":{
+            "predator":{
+                "Expression":{
+                    "myic":{
+                        "markers":"Omega",
+                        "expr":"vstar-(3e-5)*(x-450) -(1.2e-4)*(y-150):vstar:x:y"
+                    }
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "cfpdes":
+        {
+            "Exports":
+            {
+                "fields":["equation1.prey","equation2.predator"]
+            }
+        }
+    }
+}

@@ -23,14 +23,14 @@
 #
 
 
-cmake_minimum_required(VERSION 3.7.2)
+cmake_minimum_required(VERSION 3.13)
 
 project(benchmarks)
 set(PROJECT_SHORTNAME "bench")
 
 # with this it is possible to compile applications/models from an installed
 # version of feel++. This is useful also for staged compilation for docker
-if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
+if ( ( CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR ) OR ( FEELPP_COMPONENT STREQUAL "benchmarks" ) )
   find_package(Feel++ PATHS ${FEELPP_DIR}/share/feelpp/feel/cmake/modules $ENV{FEELPP_DIR}/share/feelpp/feel/cmake/modules /usr/share/feelpp/feel/cmake/modules /usr/local/share/feelpp/feel/cmake/modules )
   if(NOT FEELPP_FOUND)
       message(FATAL_ERROR "Feel++ was not found on your system. Make sure to install it and specify the FEELPP_DIR to reference the installation directory.")
@@ -41,9 +41,10 @@ else()
   set(FEELPP_DIR ${CMAKE_INSTALL_PREFIX})
 endif()
 
-option(BENCHMARK_ENABLE_GTEST_TESTS "Enable building the unit tests which depend on gtest" OFF)
-set( BENCHMARK_ENABLE_GTEST_TESTS OFF )
+option(BENCHMARK_ENABLE_TESTING  "Enable building the unit tests which depend on gtest" OFF)
+set( BENCHMARK_ENABLE_TESTING OFF )
 feelppGitSubmodulePrepare( benchmark )
 include_directories(${CMAKE_SOURCE_DIR}/benchmarks/benchmark/include)
 add_subdirectory(benchmark)
 add_subdirectory(feelpp)
+add_subdirectory(compilation)

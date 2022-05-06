@@ -29,6 +29,9 @@
 #ifndef FEELPP_GEOMETRIC_SPACE_HPP
 #define FEELPP_GEOMETRIC_SPACE_HPP 1
 
+#include <feel/feelalg/glas.hpp>
+#include <feel/feelpoly/context.hpp>
+
 namespace Feel
 {
 
@@ -41,7 +44,7 @@ struct GeometricSpaceBase : public CommObject
     GeometricSpaceBase( GeometricSpaceBase && ) = default;
     GeometricSpaceBase& operator=( GeometricSpaceBase const& ) = default;
     GeometricSpaceBase& operator=( GeometricSpaceBase && ) = default;
-    virtual ~GeometricSpaceBase() = default;
+    ~GeometricSpaceBase() override = default;
 
 };
 struct ContextGeometricBase {};
@@ -62,7 +65,8 @@ public :
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     typedef typename mesh_type::element_type element_type;
     typedef typename element_type::gm_type gm_type;
-    typedef typename gm_type::template Context<vm::POINT, element_type> gmc_type;
+    static const size_type gmc_context_v = vm::POINT|vm::DYNAMIC;
+    typedef typename gm_type::template Context<element_type> gmc_type;
     typedef std::shared_ptr<gmc_type> gmc_ptrtype;
 
 
@@ -87,6 +91,7 @@ public :
     class ContextGeometric : public ContextGeometricBase
     {
     public :
+        using gmc_type = typename GeometricSpace<MeshType>::gmc_type;
         typedef std::shared_ptr<gmc_type> geometric_mapping_context_ptrtype;
 
         ContextGeometric() = default;
@@ -110,6 +115,13 @@ public :
         {
             M_meshGeoContext = meshGeoContext;
         }
+
+        template <size_type CTX>
+        void updateGmcContext( size_type dynctx = 0 )
+            {
+                if ( M_gmc )
+                    M_gmc->template updateContext<gmc_context_v|CTX>( dynctx );
+            }
 
     private :
         friend class boost::serialization::access;
@@ -136,7 +148,8 @@ public :
                         M_meshGeoContext->addElement( meshEltCtx, false );
                     }
                     auto const& meshEltCtxRegister = M_meshGeoContext->element( meshEltCtx.id() );
-                    M_gmc.reset( new gmc_type( M_meshGeoContext->gm(),meshEltCtxRegister ) );
+                    M_gmc = M_meshGeoContext->gm()->template context<gmc_context_v>( meshEltCtxRegister, typename gmc_type::precompute_ptrtype{} );
+                    //M_gmc.reset( new gmc_type( M_meshGeoContext->gm(),meshEltCtxRegister ) );
                     ar & boost::serialization::make_nvp( "gmContext", *M_gmc );
                 }
                 else if ( M_Xh && M_Xh->mesh() )
@@ -144,7 +157,8 @@ public :
                     // std::cout << "geospace ContextGeo with full mesh\n";
                     CHECK ( M_Xh->mesh()->hasElement( meshEltCtx.id()/*, meshEltCtx.processId()*/ ) ) << "fails because mesh doesnt have the element reloaded for gmc";
                     auto const& meshEltCtxRegister = M_Xh->mesh()->element( meshEltCtx.id()/*, meshEltCtx.processId()*/ );
-                    M_gmc.reset( new gmc_type( M_Xh->mesh()->gm(),meshEltCtxRegister ) );
+                    //M_gmc.reset( new gmc_type( M_Xh->mesh()->gm(),meshEltCtxRegister ) );
+                    M_gmc = M_Xh->mesh()->gm()->template context<gmc_context_v>( meshEltCtxRegister, typename gmc_type::precompute_ptrtype{} );
                     ar & boost::serialization::make_nvp( "gmContext", *M_gmc );
 
                 }
@@ -159,10 +173,10 @@ public :
 
     class Context
         :
-        public std::map<int,std::shared_ptr<ContextGeometric>>
+        public std::map<int,std::pair<std::shared_ptr<ContextGeometric>,std::vector<index_type>>>
     {
     public:
-        typedef std::map<int,std::shared_ptr<ContextGeometric>> super_type;
+        using super_type = std::map<int,std::pair<std::shared_ptr<ContextGeometric>,std::vector<index_type>>>;
         typedef typename super_type::iterator iterator;
 
         typedef geometricspace_type functionspace_type;
@@ -191,6 +205,8 @@ public :
             return M_t.size();
         }
 
+        std::vector<node_type> const& points() const { return M_t; }
+
         bool ctxHaveBeenMpiBroadcasted() const { return M_ctxHaveBeenMpiBroadcasted; }
 
         void removeCtx()
@@ -202,15 +218,18 @@ public :
         }
 
 
+        //! add a node
+        //! param applyUpdateForUse : call updateForUse (default is true to keep same behavior with previous version)
         std::pair<iterator, bool>
-        add( node_type const& t )
+        add( node_type const& t, bool applyUpdateForUse = true )
         {
+            int ptIdInCtx = M_t.size();
             M_t.push_back( t );
 
             std::pair<iterator, bool> ret = std::make_pair(this->end(),false);
 
             //rank of the current processor
-            rank_type proc_number = M_Xh->mesh()->worldComm().globalRank();
+            rank_type currentProcRank = M_Xh->mesh()->worldComm().globalRank();
             //total number of processors
             rank_type nprocs = M_Xh->mesh()->worldComm().globalSize();
 
@@ -225,20 +244,47 @@ public :
             bool found = found_points[0];
 
             std::vector<int> found_pt( nprocs, 0 );
+            if( found )
+                found_pt[currentProcRank]=1;
             std::vector<int> global_found_pt( nprocs, 0 );
+            if ( nprocs > 1 )
+                mpi::all_reduce( M_Xh->mesh()->comm(), found_pt.data(), found_pt.size(), global_found_pt.data(), std::plus<int>() );
+            else
+                global_found_pt[ 0 ] = found_pt[ 0 ];
+            // only one proc has the point
+            bool findOneProcess = false;
+            for ( rank_type p=0;p<nprocs;++p )
+            {
+                if ( findOneProcess )
+                    global_found_pt[p] = 0;
+                if ( global_found_pt[p] == 1 )
+                    findOneProcess=true;
+            }
+            if ( global_found_pt[ currentProcRank ] == 1 ) //we are on the proc that have the searched point
+            {
+                auto it = loc->result_analysis_begin();
+                auto en = loc->result_analysis_end();
+                DCHECK( boost::next(it) == en ) << "Logic problem in finding one point in the mesh\n";
+                auto eid = it->first;
+                auto xref = boost::get<1>( *(it->second.begin()) );
+                DVLOG(2) << "found point " << t << " in element " << eid << " on proc "<<currentProcRank
+                         << "  - reference coordinates " << xref;
 
+                M_eltToUpdate[eid].push_back( std::make_tuple(ptIdInCtx, xref ) );
+            }
+#if 0
             if( found ) //we are on the proc that have the searched point
             {
 
-                found_pt[proc_number]=1;
+                found_pt[currentProcRank]=1;
 
                 auto it = loc->result_analysis_begin();
                 auto en = loc->result_analysis_end();
                 DCHECK( boost::next(it) == en ) << "Logic problem in finding one point in the mesh\n";
                 auto eid = it->first;
                 auto xref = boost::get<1>( *(it->second.begin()) );
-                DVLOG(2) << "found point " << t << " in element " << eid << " on proc "<<proc_number<<"\n";
-                DVLOG(2) << "  - reference coordinates " << xref << "\n";
+                DVLOG(2) << "found point " << t << " in element " << eid << " on proc "<<currentProcRank
+                         << "  - reference coordinates " << xref;
 
                 typename mesh_type::gm_type::precompute_type::matrix_node_t_type p(mesh_type::nDim,1);
 
@@ -248,7 +294,7 @@ public :
                 auto gmpc = M_Xh->mesh()->gm()->preCompute( M_Xh->mesh()->gm(), p );
                 DVLOG(2) << "build precompute data structure for geometric mapping\n";
                 // build geometric mapping
-                auto gmc = M_Xh->mesh()->gm()->template context<gmc_type::context>( M_Xh->mesh()->element( eid ), gmpc );
+                auto gmc = M_Xh->mesh()->gm()->template context<gmc_context_v>( M_Xh->mesh()->element( eid ), gmpc );
                 DVLOG(2) << "build geometric mapping context\n";
 
                 int number = M_t.size()-1;
@@ -266,7 +312,7 @@ public :
                     mpi::all_reduce( M_Xh->mesh()->comm(), found_pt.data(), found_pt.size(), global_found_pt.data(), std::plus<int>() );
 
             }//not found case
-
+#endif
             //verify that the point is on a proc
             bool found_on_a_proc = false;
             for (int i = 0 ; i < global_found_pt.size(); ++i )
@@ -281,16 +327,65 @@ public :
             }
             CHECK( found_on_a_proc ) << "the point " << t << " was not found ! \n";
 
+            if ( applyUpdateForUse )
+                this->updateForUse();
+
             // update geo context for each process + define context mesh
-            int mynumber = M_t.size()-1;
-            this->syncCtx( mynumber );
+            if ( false )
+            {
+                int mynumber = M_t.size()-1;
+                this->syncCtx( mynumber );
+            }
 
             return ret;
+        }
+
+
+        void updateForUse()
+        {
+            //M_eltToUpdate[eid].push_back( std::make_tuple(ptIdInCtx, xref ) );
+            for ( auto const& [eid,data] : M_eltToUpdate )
+            {
+                typename mesh_type::gm_type::precompute_type::matrix_node_t_type xrefs(mesh_type::nDim,data.size());
+                int k=0;
+                std::vector<index_type> ptIds(data.size());
+                for ( auto const& [ptIdInCtx,xref] : data )
+                {
+                    ublas::column( xrefs, k ) = xref;
+                    ptIds[k] = ptIdInCtx;
+                    ++k;
+                }
+                // compute for each basis function in reference element its
+                // value at \hat{t} in reference element
+                auto gmpc = M_Xh->mesh()->gm()->preCompute( M_Xh->mesh()->gm(), xrefs );
+                DVLOG(2) << "build precompute data structure for geometric mapping\n";
+                // build geometric mapping
+                auto gmc = M_Xh->mesh()->gm()->template context<gmc_context_v>( M_Xh->mesh()->element( eid ), gmpc );
+                DVLOG(2) << "build geometric mapping context\n";
+
+                int number = this->size();//M_t.size()-1;
+                /*ret =*/ this->insert( std::make_pair( number , std::make_pair( std::make_shared<ContextGeometric>( M_Xh, gmc ), std::move(ptIds) ) ) );
+            }
+
+            M_eltToUpdate.clear();
+
+        }
+
+        template <size_type CTX>
+        void updateGmcContext( size_type dynctx = 0 )
+        {
+            for ( auto& [ptId,geoCtx] : *this )
+            {
+                if ( std::get<0>( geoCtx ) )
+                    std::get<0>( geoCtx )->template updateGmcContext<CTX>( dynctx );
+            }
         }
 
     private :
         void syncCtx( int ptId )
         {
+            CHECK( false ) << "TODO";
+#if 0
             rank_type procId = M_t_proc[ptId];
             rank_type myrank = M_Xh->worldComm().rank();
 
@@ -326,7 +421,7 @@ public :
                 this->operator[]( ptId ) = geoCtxReload;
 
             //std::cout << "["<<M_Xh->worldComm().rank()<<"] M_meshGeoContext->numElements() : " << M_meshGeoContext->numElements() << "\n";
-
+#endif
         }
 
         friend class boost::serialization::access;
@@ -344,9 +439,13 @@ public :
 
                 for ( int geoCtxKey : geoCtxKeys )
                 {
+                    auto const& [ctx,ptIds] = this->find( geoCtxKey )->second;
                     std::string geoctxNameInSerialization = (boost::format("geoSpaceContext_%1%")%geoCtxKey).str();
                     // std::cout << "geospace::Context save name : " << geoctxNameInSerialization << "\n";
-                    ar & boost::serialization::make_nvp( geoctxNameInSerialization.c_str(), *(this->find( geoCtxKey )->second) );
+                    ar & boost::serialization::make_nvp( geoctxNameInSerialization.c_str(), *ctx /* *(this->find( geoCtxKey )->second)*/ );
+
+                    std::string ptIdsInCtxNameInSerialization = (boost::format("ptIdsInCtx_%1%")%geoCtxKey).str();
+                    ar & boost::serialization::make_nvp( ptIdsInCtxNameInSerialization.c_str(), ptIds );
                 }
             }
         template<class Archive>
@@ -368,7 +467,12 @@ public :
                     std::string geoctxNameInSerialization = (boost::format("geoSpaceContext_%1%")%geoCtxKey).str();
                     // std::cout << "geospace::Context load name : " << geoctxNameInSerialization << "\n";
                     ar & boost::serialization::make_nvp( geoctxNameInSerialization.c_str(), *geoCtxReload );
-                    /*ret =*/ this->insert( std::make_pair( geoCtxKey , geoCtxReload ) );
+
+                    std::string ptIdsInCtxNameInSerialization = (boost::format("ptIdsInCtx_%1%")%geoCtxKey).str();
+                    std::vector<index_type> ptIds;
+                    ar & boost::serialization::make_nvp( ptIdsInCtxNameInSerialization.c_str(), ptIds );
+
+                    /*ret =*/ this->insert( std::make_pair( geoCtxKey , std::make_pair( geoCtxReload,ptIds ) ) );
                 }
             }
         BOOST_SERIALIZATION_SPLIT_MEMBER()
@@ -380,6 +484,8 @@ public :
         mesh_ptrtype M_meshGeoContext;
         bool M_ctxHaveBeenMpiBroadcasted;
 
+        //! internal container used by updateForUse
+        std::map<size_type, std::vector<std::tuple<size_type, node_type> > > M_eltToUpdate;
     };
 
     Context context() /*const*/ { return Context( this->shared_from_this() ); }
@@ -390,6 +496,25 @@ private :
     mesh_ptrtype M_mesh;
 
 };
+
+#if 0
+template <typename MeshType, typename ... CTX>
+auto selectGeomapContext( std::shared_ptr<MeshType> const& mesh, CTX const& ... ctx )
+{
+    using geoelement_type = typename MeshType::element_type;
+    using gmc_type = typename geoelement_type::gm_type::template Context<geoelement_type>;
+    std::shared_ptr<gmc_type> res;
+    hana::for_each( hana::make_tuple( ctx... ), [&mesh,&res]( auto const& e )
+                    {
+                        if constexpr ( std::is_same_v<std::decay_t<decltype(e->gmContext())>, std::shared_ptr<gmc_type> > )
+                        {
+                            if ( e->gmContext()->element().mesh()->isSameMesh( mesh ) )
+                                res = e->gmContext();
+                        }
+                    } );
+    return res;
+}
+#endif
 
 } //namespace Feel
 

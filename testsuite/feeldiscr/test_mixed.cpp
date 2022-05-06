@@ -174,7 +174,7 @@ public:
     /**
      * run the convergence test
      */
-    void run();
+    void run() override;
 
 private:
 
@@ -256,25 +256,25 @@ TestMixed<Dim,Order>::run()
     //P->printMatlab( "P.m" );
     //U->printMatlab( "U.m" );
 
-    double meas = integrate( elements( mesh ), cst( 1. ) ).evaluate()( 0, 0 );
+    double meas = integrate( _range=elements( mesh ), _expr=cst( 1. ) ).evaluate()( 0, 0 );
 
-    double res =  integrate( elements( mesh ), divv( u )*idv( p ) ).evaluate()( 0,0 ) ;
+    double res =  integrate( _range=elements( mesh ), _expr=divv( u )*idv( p ) ).evaluate()( 0,0 ) ;
     BOOST_CHECK_CLOSE( res, Dim*meas, 5e-11 );
     BOOST_TEST_MESSAGE( "[(u,p)] res = " << res << " (must be equal to " << Dim*meas << ")\n" );
 
-    res =  integrate( elements( mesh ), divv( u )*divv( u ) ).evaluate()( 0,0 ) ;
+    res =  integrate( _range=elements( mesh ), _expr=divv( u )*divv( u ) ).evaluate()( 0,0 ) ;
     BOOST_CHECK_CLOSE( res, Dim*Dim*meas, 5e-11 );
     BOOST_TEST_MESSAGE( "[(u,u)] res = " << res << " (must be equal to " << Dim*Dim*meas << ")\n" );
 
-    res =  integrate( elements( mesh ), idv( p )*idv( p ) ).evaluate()( 0,0 ) ;
+    res =  integrate( _range=elements( mesh ), _expr=idv( p )*idv( p ) ).evaluate()( 0,0 ) ;
     BOOST_CHECK_CLOSE( res, meas, 5e-11 );
     BOOST_TEST_MESSAGE( "[(p,p)] res = " << res << " (must be equal to " << meas << ")\n" );
 
     {
-        auto D = M_backend->newMatrix( Xh, Yh );
+        auto D = M_backend->newMatrix( _trial=Xh, _test=Yh );
         BOOST_CHECK_EQUAL( D->size1(), Yh->nDof() );
         BOOST_CHECK_EQUAL( D->size2(), Xh->nDof() );
-        form2( _trial=Xh, _test=Yh, _matrix=D, _init=true )= integrate( elements( mesh ), divt( u )*id( p ) );
+        form2( _trial=Xh, _test=Yh, _matrix=D, _init=true )= integrate( _range=elements( mesh ), _expr=divt( u )*id( p ) );
         D->close();
         //D->printMatlab( "D.m" );
         D->multVector( U, Q );
@@ -284,7 +284,7 @@ TestMixed<Dim,Order>::run()
         BOOST_TEST_MESSAGE( "[D(p,u)] res = " << res << " (must be equal to " << Dim*meas << ")\n" );
 
         form2( _trial=Xh, _test=Yh, _matrix=D, _init=true )=
-            integrate( elements( mesh ), -grad( p )*idt( u ) );
+            integrate( _range=elements( mesh ), _expr=-grad( p )*idt( u ) );
 
         D->close();
         //D->printMatlab( "Dg.m" );
@@ -294,7 +294,7 @@ TestMixed<Dim,Order>::run()
         BOOST_TEST_MESSAGE( "[Dg(p,u)] res = " << res << " (must be equal to " << 0 << ")\n" );
 
         form2( _trial=Xh, _test=Yh, _matrix=D, _init=true )=
-            integrate( boundaryfaces( mesh ), trans( idt( u ) )*N()*id( p ) );
+            integrate( _range=boundaryfaces( mesh ), _expr=trans( idt( u ) )*N()*id( p ) );
 
         D->close();
         //D->printMatlab( "Db.m" );
@@ -305,7 +305,7 @@ TestMixed<Dim,Order>::run()
 
         vector_ptrtype F( M_backend->newVector( Yh ) );
         BOOST_CHECK_EQUAL( F->localSize(), Yh->nLocalDofWithGhost() );
-        form1( _test=Yh, _vector=F, _init=true )= integrate( elements( mesh ), divv( u )*id( p ) );
+        form1( _test=Yh, _vector=F, _init=true )= integrate( _range=elements( mesh ), _expr=divv( u )*id( p ) );
 
         F->close();
         //F->printMatlab( "Fu.m" );
@@ -315,10 +315,10 @@ TestMixed<Dim,Order>::run()
 
     }
     {
-        sparse_matrix_ptrtype D( M_backend->newMatrix( Yh, Xh ) );
+        sparse_matrix_ptrtype D( M_backend->newMatrix( _trial=Yh, _test=Xh ) );
         BOOST_CHECK_EQUAL( D->size1(), Xh->nDof() );
         BOOST_CHECK_EQUAL( D->size2(), Yh->nDof() );
-        form2( _test=Xh, _trial=Yh, _matrix=D, _init=true )= integrate( elements( mesh ), div( u )*idt( p ) );
+        form2( _test=Xh, _trial=Yh, _matrix=D, _init=true )= integrate( _range=elements( mesh ), _expr=div( u )*idt( p ) );
 
         D->close();
         //D->printMatlab( "Dt.m" );
@@ -330,7 +330,7 @@ TestMixed<Dim,Order>::run()
 
         vector_ptrtype F( M_backend->newVector( Xh ) );
         BOOST_CHECK_EQUAL( F->localSize(), Xh->nLocalDofWithGhost() );
-        form1( _test=Xh, _vector=F, _init=true )= integrate( elements( mesh ), div( u )*idv( p ) );
+        form1( _test=Xh, _vector=F, _init=true )= integrate( _range=elements( mesh ), _expr=div( u )*idv( p ) );
 
         F->close();
         //F->printMatlab( "Fp.m" );
@@ -341,10 +341,10 @@ TestMixed<Dim,Order>::run()
 
     }
     {
-        sparse_matrix_ptrtype D( M_backend->newMatrix( Xh, Xh ) );
+        sparse_matrix_ptrtype D( M_backend->newMatrix( _test=Xh, _trial=Xh ) );
         BOOST_CHECK_EQUAL( D->size1(), Xh->nDof() );
         BOOST_CHECK_EQUAL( D->size2(), Xh->nDof() );
-        form2( _trial=Xh, _test=Xh, _matrix=D, _init=true )= integrate( elements( mesh ), divt( u )*div( u ) );
+        form2( _trial=Xh, _test=Xh, _matrix=D, _init=true )= integrate( _range=elements( mesh ), _expr=divt( u )*div( u ) );
         D->close();
         //D->printMatlab( "divdiv.m" );
         D->multVector( U, V );
@@ -354,11 +354,11 @@ TestMixed<Dim,Order>::run()
 
     }
     {
-        sparse_matrix_ptrtype D( M_backend->newMatrix( Yh, Yh ) );
+        sparse_matrix_ptrtype D( M_backend->newMatrix( _test=Yh, _trial=Yh ) );
         BOOST_CHECK_EQUAL( D->mapRow().nLocalDofWithGhost(), Yh->nLocalDofWithGhost() );
         BOOST_CHECK_EQUAL( D->mapCol().nLocalDofWithGhost(), Yh->nLocalDofWithGhost() );
 
-        form2( _trial=Yh, _test=Yh, _matrix=D, _init=true )= integrate( elements( mesh ), idt( p )*id( p ) );
+        form2( _trial=Yh, _test=Yh, _matrix=D, _init=true )= integrate( _range=elements( mesh ), _expr=idt( p )*id( p ) );
         D->close();
         //D->printMatlab( "idid.m" );
         D->multVector( P, Q );

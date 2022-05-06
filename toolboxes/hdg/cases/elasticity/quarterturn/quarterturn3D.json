@@ -1,0 +1,134 @@
+{
+    "Name": "HDG-Mixed-Linear-Elasticity",
+    "ShortName":"ME",
+    "Models":
+    {
+        "equations":"hdg"
+    },
+    "Parameters":
+    {
+        "u1":"cos(pi*x)*cos(pi*y)*cos(pi*z):x:y:z",
+        "u2":"sin(pi*x)*sin(pi*z)*cos(pi*y):x:y:z",
+        "u3":"sin(pi*y)*cos(pi*x)*cos(pi*z):x:y:z",
+        "s11":"-1.0*pi*sin(pi*x)*sin(pi*y)*sin(pi*z) - 3.0*pi*sin(pi*x)*cos(pi*y)*cos(pi*z) - 1.0*pi*sin(pi*y)*sin(pi*z)*cos(pi*x):x:y:z",
+        "s12":"-1.0*pi*sin(pi*y)*cos(pi*x)*cos(pi*z) + 1.0*pi*sin(pi*z)*cos(pi*x)*cos(pi*y):x:y:z",
+        "s13":"-1.0*pi*sin(pi*x)*sin(pi*y)*cos(pi*z) - 1.0*pi*sin(pi*z)*cos(pi*x)*cos(pi*y):x:y:z",
+        "s21":"-1.0*pi*sin(pi*y)*cos(pi*x)*cos(pi*z) + 1.0*pi*sin(pi*z)*cos(pi*x)*cos(pi*y):x:y:z",
+        "s22":"-3.0*pi*sin(pi*x)*sin(pi*y)*sin(pi*z) - 1.0*pi*sin(pi*x)*cos(pi*y)*cos(pi*z) - 1.0*pi*sin(pi*y)*sin(pi*z)*cos(pi*x):x:y:z",
+        "s23":"1.0*pi*sin(pi*x)*cos(pi*y)*cos(pi*z) + 1.0*pi*cos(pi*x)*cos(pi*y)*cos(pi*z):x:y:z",
+        "s31":"-1.0*pi*sin(pi*x)*sin(pi*y)*cos(pi*z) - 1.0*pi*sin(pi*z)*cos(pi*x)*cos(pi*y):x:y:z",
+        "s32":"1.0*pi*sin(pi*x)*cos(pi*y)*cos(pi*z) + 1.0*pi*cos(pi*x)*cos(pi*y)*cos(pi*z):x:y:z",
+        "s33":"-1.0*pi*sin(pi*x)*sin(pi*y)*sin(pi*z) - 1.0*pi*sin(pi*x)*cos(pi*y)*cos(pi*z) - 3.0*pi*sin(pi*y)*sin(pi*z)*cos(pi*x):x:y:z"
+    },
+    "Materials":
+    {
+        "omega":
+        {
+            "name":"copper",
+			// "elasticity_rho":"1",
+            // "elasticity_d2":"1",
+            "elasticity_lambda":"1",
+	    	"elasticity_mu":"1",
+            "elasticity_f":"{2.0*Pi*Pi*sin(Pi*x)*sin(Pi*y)*sin(Pi*z) - 2.0*Pi*Pi*sin(Pi*y)*sin(Pi*z)*cos(Pi*x) - 5.0*Pi*Pi*cos(Pi*x)*cos(Pi*y)*cos(Pi*z), 2.0*Pi*Pi*sin(Pi*x)*sin(Pi*y)*cos(Pi*z) - 5.0*Pi*Pi*sin(Pi*x)*sin(Pi*z)*cos(Pi*y) - 2.0*Pi*Pi*sin(Pi*z)*cos(Pi*x)*cos(Pi*y), -2.0*Pi*Pi*sin(Pi*x)*sin(Pi*y)*cos(Pi*z) + 2.0*Pi*Pi*sin(Pi*x)*sin(Pi*z)*cos(Pi*y) - 5.0*Pi*Pi*sin(Pi*y)*cos(Pi*x)*cos(Pi*z)}:x:y:z"
+            // "elasticity_f":"{2*Pi*Pi*sin(Pi*x)*sin(Pi*y)*sin(Pi*z)-2*Pi*Pi*cos(Pi*x)*sin(Pi*y)*sin(Pi*z)-5*Pi*Pi*cos(Pi*x)*cos(Pi*y)*cos(Pi*z),2*Pi*Pi*cos(Pi*z)*sin(Pi*x)*sin(Pi*y)-5*Pi*Pi*cos(Pi*y)*sin(Pi*x)*sin(Pi*z)-2*Pi*Pi*cos(Pi*x)*cos(Pi*y)*sin(Pi*z),}"
+            // "elasticity_f":"{-2.5*sin(Pi*x)*cos(Pi*y)*sin(Pi*z),-2.5*cos(Pi*x)*sin(Pi*y)*sin(Pi*z),-0.5*cos(Pi*x)*cos(Pi*y)*cos(Pi*z)}:x:y:z"
+        }
+    },
+    "BoundaryConditions":
+    {
+        "elasticity":
+        {
+            "Neumann":
+            {
+                "lateral":
+                {
+                    "markers":["Rint","Rext","top","bottom"],
+                    "expr":"{s11*nx+s12*ny+s13*nz,s21*nx+s22*ny+s23*nz,s31*nx+s32*ny+s33*nz}:s11:s12:s13:s21:s22:s23:s31:s32:s33:nx:ny:nz"
+                }
+                // "Rint":
+                // {
+                //     "expr":"{1.5*nx*sin(Pi*z)*cos(Pi*x)*cos(Pi*y)/Pi - 1.0*ny*sin(Pi*x)*sin(Pi*y)*sin(Pi*z)/Pi,-1.0*nx*sin(Pi*x)*sin(Pi*y)*sin(Pi*z)/Pi + 1.5*ny*sin(Pi*z)*cos(Pi*x)*cos(Pi*y)/Pi,-0.5*nz*sin(Pi*z)*cos(Pi*x)*cos(Pi*y)/Pi}:Pi:nx:ny:nz:x:y:z"
+                // },
+                // "Rext":
+                // {
+                //     "expr":"{1.5*nx*sin(Pi*z)*cos(Pi*x)*cos(Pi*y)/Pi - 1.0*ny*sin(Pi*x)*sin(Pi*y)*sin(Pi*z)/Pi,-1.0*nx*sin(Pi*x)*sin(Pi*y)*sin(Pi*z)/Pi + 1.5*ny*sin(Pi*z)*cos(Pi*x)*cos(Pi*y)/Pi,-0.5*nz*sin(Pi*z)*cos(Pi*x)*cos(Pi*y)/Pi}:Pi:nx:ny:nz:x:y:z"
+                // },
+                // "top":
+                // {
+                //     "expr":"{1.5*nx*sin(Pi*z)*cos(Pi*x)*cos(Pi*y)/Pi - 1.0*ny*sin(Pi*x)*sin(Pi*y)*sin(Pi*z)/Pi,-1.0*nx*sin(Pi*x)*sin(Pi*y)*sin(Pi*z)/Pi + 1.5*ny*sin(Pi*z)*cos(Pi*x)*cos(Pi*y)/Pi,-0.5*nz*sin(Pi*z)*cos(Pi*x)*cos(Pi*y)/Pi}:Pi:nx:ny:nz:x:y:z"
+                // },
+                // "bottom":
+                // {
+                //     "expr":"{1.5*nx*sin(Pi*z)*cos(Pi*x)*cos(Pi*y)/Pi - 1.0*ny*sin(Pi*x)*sin(Pi*y)*sin(Pi*z)/Pi,-1.0*nx*sin(Pi*x)*sin(Pi*y)*sin(Pi*z)/Pi + 1.5*ny*sin(Pi*z)*cos(Pi*x)*cos(Pi*y)/Pi,-0.5*nz*sin(Pi*z)*cos(Pi*x)*cos(Pi*y)/Pi}:Pi:nx:ny:nz:x:y:z"
+                // }
+            },
+	    	"Dirichlet":
+	    	{
+                "V":
+                {
+                    "markers":["V0","V1"],
+                    "expr":"{u1,u2,u3}:u1:u2:u3"
+                }
+                // "V0":
+                // {
+                //     "expr":"{(1.0/2.0)*sin(Pi*x)*sin(Pi*z)*cos(Pi*y)/pow(Pi, 2),(1.0/2.0)*sin(Pi*y)*sin(Pi*z)*cos(Pi*x)/pow(Pi, 2),(1.0/2.0)*cos(Pi*x)*cos(Pi*y)*cos(Pi*z)/pow(Pi, 2)}:x:y:z"
+                // },
+                // "V1":
+                // {
+                //     "expr":"{(1.0/2.0)*sin(Pi*x)*sin(Pi*z)*cos(Pi*y)/pow(Pi, 2),(1.0/2.0)*sin(Pi*y)*sin(Pi*z)*cos(Pi*x)/pow(Pi, 2),(1.0/2.0)*cos(Pi*x)*cos(Pi*y)*cos(Pi*z)/pow(Pi, 2)}:x:y:z"
+                // }
+ 	    	}
+    	}
+    },
+    "PostProcess":
+    {
+        "elasticity":
+        {
+            "Exports":
+            {
+                "fields":["stress","displacement"],
+                "expr": {
+                    "displ":"{u1,u2,u3}:u1:u2:u3"
+                }
+            },
+            "Measures":
+            {
+                "Norm":
+                {
+                    "displacement_error":
+                    {
+                        "type":"L2-error",
+                        "field":"displacement",
+                        "solution":"{u1,u2,u3}:u1:u2:u3",
+                        // "solution":"{(1.0/2.0)*sin(Pi*x)*sin(Pi*z)*cos(Pi*y)/pow(Pi, 2),(1.0/2.0)*sin(Pi*y)*sin(Pi*z)*cos(Pi*x)/pow(Pi, 2),(1.0/2.0)*cos(Pi*x)*cos(Pi*y)*cos(Pi*z)/pow(Pi, 2)}:x:y:z",
+                        "markers":"omega"
+                    },
+                    "stress_error":
+                    {
+                        "type":"L2-error",
+                        "field":"stress",
+                        "solution":"{s11,s12,s13,s21,s22,s23,s31,s32,s33}:s11:s12:s13:s21:s22:s23:s31:s32:s33",
+                        // "solution":"{1.5*sin(Pi*z)*cos(Pi*x)*cos(Pi*y)/Pi,-1.0*sin(Pi*x)*sin(Pi*y)*sin(Pi*z)/Pi,0,-1.0*sin(Pi*x)*sin(Pi*y)*sin(Pi*z)/Pi,1.5*sin(Pi*z)*cos(Pi*x)*cos(Pi*y)/Pi,0,0,0,-0.5*sin(Pi*z)*cos(Pi*x)*cos(Pi*y)/Pi}:x:y:z",
+                        "markers":"omega"
+                    }
+                }
+            },
+            "Checkers":
+            {
+                "Measures":
+                {
+                    "Norm_displacement_error_L2-error":
+                    {
+                        "value":0,
+                        "tolerance":1e-3
+                    },
+                    "Norm_stress_error_L2-error":
+                    {
+                        "value":0,
+                        "tolerance":1e-2
+                    }
+                }
+            }
+        }
+    }
+}

@@ -379,7 +379,7 @@ struct syncOperatorEqual : syncOperator<T,SizeT>
         super_type( m ),
         M_hasOperator( true )
         {}
-    virtual T operator()( size_type gcdof, rank_type activeProcId, T activeDofValue, storage_ghostdof_type const& ghostDofs ) const
+    T operator()( size_type gcdof, rank_type activeProcId, T activeDofValue, storage_ghostdof_type const& ghostDofs ) const override
         {
             auto itFindGCDof = this->activeDofClusterUsedByProc().find( gcdof );
             if ( itFindGCDof != this->activeDofClusterUsedByProc().end()  )
@@ -399,7 +399,7 @@ struct syncOperatorEqual : syncOperator<T,SizeT>
             }
             return activeDofValue;
         }
-    virtual bool hasOperator() const { return M_hasOperator; }
+    bool hasOperator() const override { return M_hasOperator; }
 private :
     bool M_hasOperator;
 };
@@ -418,7 +418,7 @@ struct syncOperatorPlus : syncOperator<T,SizeT>
         :
         super_type( m )
         {}
-    virtual T operator()( size_type gcdof, rank_type activeProcId, T activeDofValue, storage_ghostdof_type const& ghostDofs ) const
+    T operator()( size_type gcdof, rank_type activeProcId, T activeDofValue, storage_ghostdof_type const& ghostDofs ) const override
         {
             T res = 0;
             auto itFindGCDof = this->activeDofClusterUsedByProc().find( gcdof );
@@ -448,7 +448,7 @@ struct syncOperatorPlus : syncOperator<T,SizeT>
                 return res;
             }
         }
-    virtual bool hasOperator() const { return true; }
+    bool hasOperator() const override { return true; }
 };
 // BinaryFuncType = 0 -> min, BinaryFuncType=1 -> max
 template <typename T, int BinaryFuncType,typename SizeT>
@@ -465,7 +465,7 @@ struct syncOperatorBinaryFunc : syncOperator<T,SizeT>
         :
         super_type( m )
         {}
-    virtual T operator()( size_type gcdof, rank_type activeProcId, T activeDofValue, storage_ghostdof_type const& ghostDofs ) const
+    T operator()( size_type gcdof, rank_type activeProcId, T activeDofValue, storage_ghostdof_type const& ghostDofs ) const override
         {
             auto itFindGCDof = this->activeDofClusterUsedByProc().find( gcdof );
             if ( itFindGCDof == this->activeDofClusterUsedByProc().end() )
@@ -509,7 +509,7 @@ struct syncOperatorBinaryFunc : syncOperator<T,SizeT>
     static T applyBinaryFunc( T const& val1, T const& val2, mpl::int_<0> /**/ ) { return std::min( val1,val2 ); }
     static T applyBinaryFunc( T const& val1, T const& val2, mpl::int_<1> /**/ ) { return std::max( val1,val2 ); }
 
-    virtual bool hasOperator() const { return true; }
+    bool hasOperator() const override { return true; }
 };
 
 } // detail
@@ -560,13 +560,12 @@ sync( Vector<T,SizeT> & v, detail::syncOperator<T,SizeT> const& opSync )
     mpi::request * reqs = new mpi::request[nbRequest];
     // apply isend/irecv
     int cptRequest=0;
+    std::map<rank_type,size_type> sizeRecv;
 
     if ( opSync.hasOperator() )
     {
         // init data to send : values of ghost dof is send to the unique active dof
         std::map< rank_type, std::vector< boost::tuple<size_type,T> > > dataToSend, dataToRecv;
-        for ( rank_type p : dataMap->neighborSubdomains() )
-            dataToSend[p].clear();
         for ( size_type id=0 ; id<dataMap->nLocalDofWithGhost() ; ++id )
         {
             if ( dataMap->dofGlobalProcessIsGhost(id) )
@@ -578,16 +577,31 @@ sync( Vector<T,SizeT> & v, detail::syncOperator<T,SizeT> const& opSync )
                 dataToSend[procIdFinded].push_back( boost::make_tuple(gcdof,val) );
             }
         }
-        // apply isend/irecv
+
+        // get size of data to transfer
         cptRequest=0;
-        for ( rank_type p : dataMap->neighborSubdomains() )
+        for ( rank_type neighborRank : dataMap->neighborSubdomains() )
         {
-            CHECK( dataToSend.find(p) != dataToSend.end() ) << " no data to send to proc " << p << "\n";
-            reqs[cptRequest++] = dataMap->worldComm().localComm().isend( p , 0, dataToSend.find(p)->second );
-            reqs[cptRequest++] = dataMap->worldComm().localComm().irecv( p , 0, dataToRecv[p] );
+            reqs[cptRequest++] = dataMap->worldComm().localComm().isend( neighborRank , 0, (size_type)dataToSend[neighborRank].size() );
+            reqs[cptRequest++] = dataMap->worldComm().localComm().irecv( neighborRank , 0, sizeRecv[neighborRank] );
         }
         // wait all requests
-        mpi::wait_all(reqs, reqs + nbRequest);
+        mpi::wait_all(reqs, reqs + cptRequest);
+
+        // apply isend/irecv
+        cptRequest=0;
+        for ( rank_type neighborRank : dataMap->neighborSubdomains() )
+        {
+            int nSendData = dataToSend[neighborRank].size();
+            if ( nSendData > 0 )
+                reqs[cptRequest++] = dataMap->worldComm().localComm().isend( neighborRank , 0, &(dataToSend[neighborRank][0]), nSendData );
+            int nRecvData = sizeRecv[neighborRank];
+            dataToRecv[neighborRank].resize( nRecvData );
+            if ( nRecvData > 0 )
+                reqs[cptRequest++] = dataMap->worldComm().localComm().irecv( neighborRank , 0, &(dataToRecv[neighborRank][0]), nRecvData );
+        }
+        // wait all requests
+        mpi::wait_all(reqs, reqs + cptRequest);
         // update value of active dofs (repect to the sync operator)
         std::map<size_type, std::set<std::pair< rank_type, T > > > ghostDofValues;
         for ( auto const& dataR : dataToRecv )
@@ -618,8 +632,6 @@ sync( Vector<T,SizeT> & v, detail::syncOperator<T,SizeT> const& opSync )
 
     // init data to re-send : update values of active dof in ghost dof associated
     std::map< rank_type, std::vector< boost::tuple<size_type,T> > > dataToReSend, dataToReRecv;
-    for ( rank_type p : dataMap->neighborSubdomains() )
-        dataToReSend[p].clear();
     for ( auto const& dofActive : dataMap->activeDofSharedOnCluster() )
     {
         size_type gpdof = dofActive.first;
@@ -633,16 +645,31 @@ sync( Vector<T,SizeT> & v, detail::syncOperator<T,SizeT> const& opSync )
                 dataToReSend[pNeighborId].push_back( boost::make_tuple(gcdof,val) );
         }
     }
-    // prepare mpi com
+
+
+    // get size of data to transfer
     cptRequest=0;
-    for ( rank_type p : dataMap->neighborSubdomains() )
+    for ( rank_type neighborRank : dataMap->neighborSubdomains() )
     {
-        CHECK( dataToReSend.find(p) != dataToReSend.end() ) << " no data to send to proc " << p << "\n";
-        reqs[cptRequest++] = dataMap->worldComm().localComm().isend( p , 0, dataToReSend.find(p)->second );
-        reqs[cptRequest++] = dataMap->worldComm().localComm().irecv( p , 0, dataToReRecv[p] );
+        reqs[cptRequest++] = dataMap->worldComm().localComm().isend( neighborRank , 0, (size_type)dataToReSend[neighborRank].size() );
+        reqs[cptRequest++] = dataMap->worldComm().localComm().irecv( neighborRank , 0, sizeRecv[neighborRank] );
     }
     // wait all requests
-    mpi::wait_all(reqs, reqs + nbRequest);
+    mpi::wait_all(reqs, reqs + cptRequest);
+
+    cptRequest=0;
+    for ( rank_type neighborRank : dataMap->neighborSubdomains() )
+    {
+        int nSendData = dataToReSend[neighborRank].size();
+        if ( nSendData > 0 )
+            reqs[cptRequest++] = dataMap->worldComm().localComm().isend( neighborRank , 0, &(dataToReSend[neighborRank][0]), nSendData );
+        int nRecvData = sizeRecv[neighborRank];
+        dataToReRecv[neighborRank].resize( nRecvData );
+        if ( nRecvData > 0 )
+            reqs[cptRequest++] = dataMap->worldComm().localComm().irecv( neighborRank , 0, &(dataToReRecv[neighborRank][0]), nRecvData );
+    }
+    // wait all requests
+    mpi::wait_all(reqs, reqs + cptRequest);
     delete [] reqs;
     // update values of ghost dofs
     for ( auto const& dataR : dataToReRecv )

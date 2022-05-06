@@ -1,6 +1,10 @@
 // -*- coding: utf-8; mode: c++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:set fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-#include <feel/feel.hpp>
-
+#include <feel/feelcore/environment.hpp>
+#include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feeldiscr/pch.hpp>
+#include <feel/feelalg/backend.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feelvf/vf.hpp>
 #if !defined( MESH_DIM )
 #define MESH_DIM 2
 #endif
@@ -33,7 +37,7 @@ int main(int argc, char**argv )
     auto mesh = loadMesh(_mesh=new mesh_type );
     // Function spaces creation with extended doftable
     std::vector<bool> ext_doft( {true, false, false} );
-    auto Xh_F = space_type_F::New( mesh,_extended_doftable=ext_doft );
+    auto Xh_F = space_type_F::New( _mesh=mesh,_extended_doftable=ext_doft );
 
     // Matrix creation with extended pattern
     backend_ptrtype backend( backend_type::build( soption( _name="backend" ) ) );

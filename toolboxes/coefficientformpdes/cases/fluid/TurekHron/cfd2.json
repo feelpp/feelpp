@@ -1,0 +1,120 @@
+{
+    "Name": "Turek-Hron cfd2",
+    "ShortName": "Turek-Hron cfd2",
+    "Models":
+    {
+        "cfpdes":{
+            "equations":["momentum","mass"]
+        },
+        "momentum":{
+            "setup":{
+                "unknown":{
+                    "basis":"Pchv2",
+                    "name":"velocity",
+                    "symbol":"u"
+                },
+                "coefficients":{
+                    "beta":"{materials_rho*momentum_u_0,materials_rho*momentum_u_1}:materials_rho:momentum_u_0:momentum_u_1",
+                    "gamma":"{mass_p-2*materials_mu*momentum_grad_u_00,-materials_mu*(momentum_grad_u_01+momentum_grad_u_10),-materials_mu*(momentum_grad_u_01+momentum_grad_u_10),mass_p-2*materials_mu*momentum_grad_u_11}:materials_mu:mass_p:momentum_grad_u_00:momentum_grad_u_10:momentum_grad_u_01:momentum_grad_u_11"
+                }
+            }
+        },
+        "mass":{
+            "setup":{
+                "unknown":{
+                    "basis":"Pch1",
+                    "name":"pressure",
+                    "symbol":"p"
+                },
+                "coefficients":{
+                    "f":"-momentum_div_u:momentum_div_u" // div u
+                }
+            }
+        }
+
+    },
+    "Parameters":
+    {
+        "ubar":"1.0"
+    },
+    "Meshes":
+    {
+        "cfpdes":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/cfd.geo",
+                "hsize":0.03
+            }
+        }
+    },
+    "Materials":
+    {
+        "fluid":
+        {
+            "markers":"Fluid",
+            "rho":1e3,
+            "mu":1
+        }
+    },
+    "BoundaryConditions":
+    {
+        "momentum":
+        {
+            "Dirichlet":
+            {
+                "inlet": {
+                    "expr":"{ 1.5*ubar*(4./0.1681)*y*(0.41-y),0}:ubar:y"
+                },
+                "wall": {
+                    "markers": ["wall1","wall2"],
+                    "expr":"{0,0}"
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "cfpdes":
+        {
+            "Exports":
+            {
+                "fields":["momentum.velocity","mass.pressure","pid"]
+            },
+            "Measures":
+            {
+                "Statistics":
+                {
+                    "drag":
+                    {
+                        "type":"integrate",
+                        "expr":"(-mass_p + 2*materials_mu*momentum_grad_u_00)*nx + (materials_mu*(momentum_grad_u_01+momentum_grad_u_10))*ny:mass_p:momentum_grad_u_00:momentum_grad_u_01:momentum_grad_u_10:materials_mu:nx:ny",
+                        "markers":"wall2"
+                    },
+                    "lift":
+                    {
+                        "type":"integrate",
+                        "expr":"(-mass_p + 2*materials_mu*momentum_grad_u_11)*ny + (materials_mu*(momentum_grad_u_01+momentum_grad_u_10))*nx:mass_p:momentum_grad_u_11:momentum_grad_u_01:momentum_grad_u_10:materials_mu:nx:ny",
+                        "markers":"wall2"
+                    }
+                }
+            },
+            "Checkers":
+            {
+                "Measures":
+                {
+                    "Statistics_lift_integrate":
+                    {
+                        "value":-10.53,
+                        "tolerance":1e-1
+                    },
+                    "Statistics_drag_integrate":
+                    {
+                        "value":-136.7,
+                        "tolerance":1e-1
+                    }
+                }
+            }
+        }
+    }
+}

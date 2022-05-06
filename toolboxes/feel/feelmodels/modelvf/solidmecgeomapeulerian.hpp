@@ -1,27 +1,29 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4*/
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+ */
 #ifndef __FEELPP_MODELS_VF_SOLIDMECGEOMAPEULERIAN_H
 #define __FEELPP_MODELS_VF_SOLIDMECGEOMAPEULERIAN_H 1
 
 #include <feel/feelmodels/modelvf/exprtensorbase.hpp>
-#include <feel/feelmodels/solid/mechanicalpropertiesdescription.hpp>
 
 namespace Feel
 {
 namespace FeelModels
 {
 
-template<typename ElementDispType,typename SpecificExprType>
+template<typename ElementDispType,ExprApplyType ExprApplied>
 class SolidMecGeomapEulerian
 {
 public:
 
-    typedef SolidMecGeomapEulerian<ElementDispType,SpecificExprType> self_type;
+    typedef SolidMecGeomapEulerian<ElementDispType,ExprApplied> self_type;
 
     static const size_type context_disp = vm::JACOBIAN|vm::KB|vm::GRAD;
     static const size_type context = context_disp;
 
     typedef ElementDispType element_disp_type;
-    typedef SpecificExprType spec_expr_type;
+    static constexpr bool is_applied_as_eval = ExprApplied == ExprApplyType::EVAL;
+    static constexpr bool is_applied_as_jacobian = ExprApplied == ExprApplyType::JACOBIAN;
+
     //------------------------------------------------------------------------------//
     // displacement functionspace
     typedef typename element_disp_type::functionspace_type functionspace_disp_type;
@@ -45,10 +47,7 @@ public:
     template<typename Func>
     struct HasTrialFunction
     {
-        static const bool result = mpl::if_<  mpl::bool_< ( SpecificExprType::value == ExprApplyType::JACOBIAN ) >,
-                                              typename mpl::if_<boost::is_same<Func,fe_disp_type>,
-                                                                     mpl::bool_<true>, mpl::bool_<false> >::type,
-                                                   mpl::bool_<false> >::type::value;
+        static const bool result = is_applied_as_jacobian && std::is_same_v<Func,fe_disp_type>;
     };
     using test_basis = std::nullptr_t;
     using trial_basis = std::nullptr_t;
@@ -92,7 +91,7 @@ public:
         // fe disp context
         typedef typename fe_disp_type::PreCompute pc_disp_type;
         typedef std::shared_ptr<pc_disp_type> pc_disp_ptrtype;
-        typedef typename fe_disp_type::template Context<context_disp, fe_disp_type,gm_type,geoelement_type,gmc_type::context> ctx_disp_type;
+        typedef typename fe_disp_type::template Context<context_disp, fe_disp_type,gm_type,geoelement_type,0, gmc_type::subEntityCoDim> ctx_disp_type;
         typedef std::shared_ptr<ctx_disp_type> ctx_disp_ptrtype;
 
         tensor( expr_type const& expr,Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
@@ -125,26 +124,23 @@ public:
             M_locGradDisplacement( expr.disp().gradExtents(*this->gmc()) )
             {}
 
-        template<typename IM>
-        void init( IM const& im ) {}
 
-        void update( Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ ) { update(geom); }
-        void update( Geo_t const& geom, Basis_i_t const& /*fev*/ ) { update(geom); }
-        void update( Geo_t const& geom, uint16_type face ) { CHECK( false ) << "TODO"; }
+        void update( Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ ) override { update(geom); }
+        void update( Geo_t const& geom, Basis_i_t const& /*fev*/ ) override { update(geom); }
 
-        using super_type::evalijq; // fix clang warning
+        //using super_type::evalijq; // fix clang warning
 
-        value_type evalq( uint16_type c1, uint16_type c2, uint16_type q ) const
+        value_type evalq( uint16_type c1, uint16_type c2, uint16_type q ) const override
         {
             return M_locRes[q]( c1,c2 );
         }
         ret_type
-        evalq( uint16_type q ) const
+        evalq( uint16_type q ) const override
         {
             return ret_type(M_locRes[q].data());
         }
 
-        void update( Geo_t const& geom )
+        void update( Geo_t const& geom ) override
         {
             this->setGmc( geom );
             std::fill( this->M_locRes.data(), this->M_locRes.data()+this->M_locRes.num_elements(), super_type::matrix_shape_type::Zero() );
@@ -154,98 +150,79 @@ public:
                 this->M_pcDisp->update( this->gmc()->pc()->nodes() );
             this->M_ctxDisp->update( this->gmc(),  (pc_disp_ptrtype const&) this->M_pcDisp );
             this->M_expr.disp().grad( *this->M_ctxDisp, this->M_locGradDisplacement );
-            updateImpl( mpl::int_<SpecificExprType::value>() );
-        }
-        ret_type
-        evalijq( uint16_type i, uint16_type j, uint16_type q ) const
-        {
-            return evalijq( i,j,q, mpl::int_<SpecificExprType::value>() );
-        }
-        value_type
-        evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const
-        {
-            return evalijq( i,j,c1,c2,q, mpl::int_<SpecificExprType::value>() );
-        }
-        value_type
-        evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
-        {
-            return evaliq( i,c1,c2,q, mpl::int_<SpecificExprType::value>() );
-        }
-        ret_type
-        evaliq( uint16_type i, uint16_type q ) const
+
+            if constexpr ( expr_type::is_applied_as_eval )
             {
-            DCHECK( SpecificExprType::value == ExprApplyType::EVAL ) << "only for EVAL expression";
-            return ret_type(M_locRes[q].data());
+                this->updateImpl();
+            }
         }
+        ret_type
+        evalijq( uint16_type i, uint16_type j, uint16_type q ) const override
+        {
+            if constexpr ( expr_type::is_applied_as_eval )
+                return this->evalq( q );
+            else
+                return this->evalijq( i,j,q,mpl::int_<super_type::gmc_type::nDim>() );
+        }
+        value_type
+        evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const override
+        {
+            if constexpr ( expr_type::is_applied_as_eval )
+                return this->evalq( c1,c2,q );
+            else
+                return this->evalijq( i,j,c1,c2,mpl::int_<super_type::gmc_type::nDim>() );
+        }
+        value_type
+        evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const override
+        {
+            DCHECK( expr_type::is_applied_as_eval ) << "only for EVAL expression";
+            return this->evalq(c1,c2,q);
+        }
+        ret_type
+        evaliq( uint16_type i, uint16_type q ) const override
+            {
+                DCHECK( expr_type::is_applied_as_eval ) << "only for EVAL expression";
+                return this->evalq(q);
+            }
 
     private:
 
-
-        void updateImpl( mpl::int_<ExprApplyType::EVAL> )
-        {
-            updateImpl( mpl::int_<ExprApplyType::EVAL>(), mpl::int_<super_type::gmc_type::nDim>() );
-        }
-        void updateImpl( mpl::int_<ExprApplyType::EVAL>, mpl::int_<2> /*Dim*/ )
+        void updateImpl()
         {
             for ( uint16_type q = 0; q < this->gmc()->nPoints(); ++q )
             {
                 // compute : Fv*J*Cv^{-1} = Fv*J*(Fv^T*Fv)^{-1} = J*Fv^{-T} (with J=det(F))
                 auto const& gradDisplacementEval = this->M_locGradDisplacement[q];
-                const value_type du1vdx = gradDisplacementEval(0,0), du1vdy = gradDisplacementEval(0,1);
-                const value_type du2vdx = gradDisplacementEval(1,0), du2vdy = gradDisplacementEval(1,1);
                 typename super_type::matrix_shape_type/*loc_tensor2_type*/ & theLocRes = this->M_locRes[q];
-                theLocRes(0,0) = 1+du2vdy;
-                theLocRes(0,1) = -du2vdx;
-                theLocRes(1,0) = -du1vdy;
-                theLocRes(1,1) = 1+du1vdx;
+                if constexpr ( super_type::gmc_type::nDim == 2 )
+                {
+                    const value_type du1vdx = gradDisplacementEval(0,0), du1vdy = gradDisplacementEval(0,1);
+                    const value_type du2vdx = gradDisplacementEval(1,0), du2vdy = gradDisplacementEval(1,1);
+                    theLocRes(0,0) = 1+du2vdy;
+                    theLocRes(0,1) = -du2vdx;
+                    theLocRes(1,0) = -du1vdy;
+                    theLocRes(1,1) = 1+du1vdx;
+                }
+                else
+                {
+                    const value_type du1vdx = gradDisplacementEval(0,0), du1vdy = gradDisplacementEval(0,1), du1vdz = gradDisplacementEval(0,2);
+                    const value_type du2vdx = gradDisplacementEval(1,0), du2vdy = gradDisplacementEval(1,1), du2vdz = gradDisplacementEval(1,2);
+                    const value_type du3vdx = gradDisplacementEval(2,0), du3vdy = gradDisplacementEval(2,1), du3vdz = gradDisplacementEval(2,2);
+                    theLocRes(0,0) = (1+du2vdy)*(1+du3vdz) - du2vdz*du3vdy;
+                    theLocRes(0,1) = du2vdz*du3vdx - du2vdx*(1+du3vdz);
+                    theLocRes(0,2) = du2vdx*du3vdy - (1+du2vdy)*du3vdx;
+                    theLocRes(1,0) = du1vdz*du3vdy - du1vdy*(1+du3vdz);
+                    theLocRes(1,1) = (1+du1vdx)*(1+du3vdz) - du1vdz*du3vdx;
+                    theLocRes(1,2) = du1vdy*du3vdx - (1+du1vdx)*du3vdy;
+                    theLocRes(2,0) = du1vdy*du2vdz - du1vdz*(1+du2vdy);
+                    theLocRes(2,1) = du1vdz*du2vdx - (1+du1vdx)*du2vdz;
+                    theLocRes(2,2) = (1+du1vdx)*(1+du2vdy) - du1vdy*du2vdx;
+                }
             }
-        }
-        void updateImpl( mpl::int_<ExprApplyType::EVAL>, mpl::int_<3> /*Dim*/ )
-        {
-            for ( uint16_type q = 0; q < this->gmc()->nPoints(); ++q )
-            {
-                // compute : Fv*J*Cv^{-1} = Fv*J*(Fv^T*Fv)^{-1} = J*Fv^{-T} (with J=det(F))
-                auto const& gradDisplacementEval = this->M_locGradDisplacement[q];
-                const value_type du1vdx = gradDisplacementEval(0,0), du1vdy = gradDisplacementEval(0,1), du1vdz = gradDisplacementEval(0,2);
-                const value_type du2vdx = gradDisplacementEval(1,0), du2vdy = gradDisplacementEval(1,1), du2vdz = gradDisplacementEval(1,2);
-                const value_type du3vdx = gradDisplacementEval(2,0), du3vdy = gradDisplacementEval(2,1), du3vdz = gradDisplacementEval(2,2);
-                typename super_type::matrix_shape_type/*loc_tensor2_type*/ & theLocRes = this->M_locRes[q];
-                theLocRes(0,0) = (1+du2vdy)*(1+du3vdz) - du2vdz*du3vdy;
-                theLocRes(0,1) = du2vdz*du3vdx - du2vdx*(1+du3vdz);
-                theLocRes(0,2) = du2vdx*du3vdy - (1+du2vdy)*du3vdx;
-                theLocRes(1,0) = du1vdz*du3vdy - du1vdy*(1+du3vdz);
-                theLocRes(1,1) = (1+du1vdx)*(1+du3vdz) - du1vdz*du3vdx;
-                theLocRes(1,2) = du1vdy*du3vdx - (1+du1vdx)*du3vdy;
-                theLocRes(2,0) = du1vdy*du2vdz - du1vdz*(1+du2vdy);
-                theLocRes(2,1) = du1vdz*du2vdx - (1+du1vdx)*du2vdz;
-                theLocRes(2,2) = (1+du1vdx)*(1+du2vdy) - du1vdy*du2vdx;
-            }
-        }
-        void updateImpl( mpl::int_<ExprApplyType::JACOBIAN> ) {}
-        //---------------------------------------------------------//
-        value_type
-        evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<ExprApplyType::EVAL> ) const
-        {
-            return this->evalq( c1,c2,q );
-        }
-        value_type
-        evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<ExprApplyType::JACOBIAN> ) const
-        {
-            CHECK( false ) << "not allow"; return 0;
         }
         //---------------------------------------------------------//
         ret_type
-        evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::int_<ExprApplyType::EVAL> ) const
-        {
-            return super_type::evalijq( i,j,q); // not allow
-        }
-        ret_type
-        evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::int_<ExprApplyType::JACOBIAN> ) const
-        {
-            return evalijq( i,j,q, mpl::int_<ExprApplyType::JACOBIAN>(),mpl::int_<super_type::gmc_type::nDim>() );
-        }
-        ret_type
-        evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::int_<ExprApplyType::JACOBIAN> ,mpl::int_<2> /*Dim*/ ) const
+        evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::int_<2> /*Dim*/ ) const
         {
             CHECK( false ) << "TODO mat";
             auto const& gradTrial = this->fecTrial()->grad( j, q );
@@ -259,7 +236,7 @@ public:
             return ret_type(this->locMatrixShape().data());
         }
         ret_type
-        evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::int_<ExprApplyType::JACOBIAN> ,mpl::int_<3> /*Dim*/ ) const
+        evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::int_<3> /*Dim*/ ) const
         {
             CHECK( false ) << "TODO mat";
             auto const& gradTrial = this->fecTrial()->grad( j, q );
@@ -285,17 +262,7 @@ public:
         }
 
         value_type
-        evalijq( uint16_type i,uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<ExprApplyType::EVAL> ) const
-        {
-            return this->evalq( c1,c2,q );
-        }
-        value_type
-        evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<ExprApplyType::JACOBIAN> ) const
-        {
-            return evalijq( i,j,c1,c2,q,mpl::int_<ExprApplyType::JACOBIAN>(),mpl::int_<super_type::gmc_type::nDim>() );
-        }
-        value_type
-        evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<ExprApplyType::JACOBIAN> ,mpl::int_<2> /*Dim*/ ) const
+        evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<2> /*Dim*/ ) const
         {
             if (c1==0)
             {
@@ -313,7 +280,7 @@ public:
             }
         }
         value_type
-        evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<ExprApplyType::JACOBIAN> ,mpl::int_<3> /*Dim*/ ) const
+        evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<3> /*Dim*/ ) const
         {
             auto const& gradTrial = this->fecTrial()->grad( j, q );
             const value_type dF11 = gradTrial( 0, 0, 0 ), dF12 = gradTrial( 0, 1, 0 ), dF13 = gradTrial( 0, 2, 0 );
@@ -370,19 +337,19 @@ private:
 
 template<class ElementDispType>
 inline
-Expr< SolidMecGeomapEulerian<ElementDispType,mpl::int_<ExprApplyType::EVAL> > >
+auto
 solidMecGeomapEulerian( ElementDispType const& v )
 {
-    typedef SolidMecGeomapEulerian<ElementDispType,mpl::int_<ExprApplyType::EVAL> > myexpr_type;
-    return Expr< myexpr_type >(  myexpr_type( v ) );
+    typedef SolidMecGeomapEulerian<unwrap_ptr_t<ElementDispType>,ExprApplyType::EVAL > myexpr_type;
+    return Expr< myexpr_type >(  myexpr_type( unwrap_ptr(v) ) );
 }
 template<class ElementDispType>
 inline
-Expr< SolidMecGeomapEulerian<ElementDispType,mpl::int_<ExprApplyType::JACOBIAN> > >
+auto
 solidMecGeomapEulerianJacobian( ElementDispType const& v )
 {
-    typedef SolidMecGeomapEulerian<ElementDispType,mpl::int_<ExprApplyType::JACOBIAN> > myexpr_type;
-    return Expr< myexpr_type >(  myexpr_type( v ) );
+    typedef SolidMecGeomapEulerian<unwrap_ptr_t<ElementDispType>,ExprApplyType::JACOBIAN > myexpr_type;
+    return Expr< myexpr_type >(  myexpr_type( unwrap_ptr(v) ) );
 }
 
 

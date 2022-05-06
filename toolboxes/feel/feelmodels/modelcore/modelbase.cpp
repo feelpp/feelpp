@@ -31,7 +31,96 @@
 
 namespace Feel {
 
+namespace TabulateInformationTools
+{
+namespace FromJSON
+{
+tabulate_informations_ptr_t
+tabulateInformationsModelFields( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp )
+{
+    auto tabInfo = TabulateInformationsSections::New( tabInfoProp );
+    for ( auto const& el : jsonInfo.items() )
+    {
+        std::string const& fieldName = el.key();
+        auto tabInfoField = TabulateInformationsSections::New( tabInfoProp );
+
+        Feel::Table tabInfoBasic;
+        TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoBasic, el.value(), tabInfoProp );
+        tabInfoBasic.format()
+            .setShowAllBorders( false )
+            .setColumnSeparator(":")
+            .setHasRowSeparator( false );
+        tabInfoField->add( "", TabulateInformations::New( tabInfoBasic,tabInfoProp ) );
+        if ( el.value().contains( "SymbolsExpr" ) )
+        {
+            auto const& jSE = el.value().at( "SymbolsExpr" );
+            tabInfoField->add( "", TabulateInformationTools::FromJSON::tabulateInformationsSymbolsExpr( jSE,tabInfoProp.newByIncreasingVerboseLevel(),true) );
+        }
+        tabInfo->add( fieldName, tabInfoField );
+    }
+    return tabInfo;
+}
+
+} // namespace FromJSON
+} // namespace TabulateInformationTools
+
+
+
 namespace FeelModels {
+
+
+void printToolboxApplication( std::string const& toolboxName, worldcomm_t const& worldComm )
+{
+    return;
+    std::vector<std::string> all_lines;
+    all_lines.push_back("███████╗███████╗███████╗██╗       ██╗         ██╗           ████████╗ ██████╗  ██████╗ ██╗     ██████╗  ██████╗ ██╗  ██╗███████╗███████╗");
+    all_lines.push_back("██╔════╝██╔════╝██╔════╝██║       ██║         ██║           ╚══██╔══╝██╔═══██╗██╔═══██╗██║     ██╔══██╗██╔═══██╗╚██╗██╔╝██╔════╝██╔════╝");
+    all_lines.push_back("█████╗  █████╗  █████╗  ██║   ██████████╗ ██████████╗          ██║   ██║   ██║██║   ██║██║     ██████╔╝██║   ██║ ╚███╔╝ █████╗  ███████╗");
+    all_lines.push_back("██╔══╝  ██╔══╝  ██╔══╝  ██║   ╚═══██╔═══╝ ╚═══██╔═══╝  █████╗  ██║   ██║   ██║██║   ██║██║     ██╔══██╗██║   ██║ ██╔██╗ ██╔══╝  ╚════██║");
+    all_lines.push_back("██║     ███████╗███████╗███████╗  ██║         ██║      ╚════╝  ██║   ╚██████╔╝╚██████╔╝███████╗██████╔╝╚██████╔╝██╔╝ ██╗███████╗███████║");
+    all_lines.push_back("╚═╝     ╚══════╝╚══════╝╚══════╝  ╚═╝         ╚═╝              ╚═╝    ╚═════╝  ╚═════╝ ╚══════╝╚═════╝  ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝");
+
+    std::vector<std::string> all_lines_app;
+    if ( toolboxName == "cfpdes" )
+    {
+        all_lines_app.push_back(" ██████╗ ██████╗ ███████╗███████╗███████╗██╗ ██████╗██╗███████╗███╗   ██╗████████╗    ███████╗ ██████╗ ██████╗ ███╗   ███╗    ██████╗ ██████╗ ███████╗███████╗");
+        all_lines_app.push_back("██╔════╝██╔═══██╗██╔════╝██╔════╝██╔════╝██║██╔════╝██║██╔════╝████╗  ██║╚══██╔══╝    ██╔════╝██╔═══██╗██╔══██╗████╗ ████║    ██╔══██╗██╔══██╗██╔════╝██╔════╝");
+        all_lines_app.push_back("██║     ██║   ██║█████╗  █████╗  █████╗  ██║██║     ██║█████╗  ██╔██╗ ██║   ██║       █████╗  ██║   ██║██████╔╝██╔████╔██║    ██████╔╝██║  ██║█████╗  ███████╗");
+        all_lines_app.push_back("██║     ██║   ██║██╔══╝  ██╔══╝  ██╔══╝  ██║██║     ██║██╔══╝  ██║╚██╗██║   ██║       ██╔══╝  ██║   ██║██╔══██╗██║╚██╔╝██║    ██╔═══╝ ██║  ██║██╔══╝  ╚════██║");
+        all_lines_app.push_back("╚██████╗╚██████╔╝███████╗██║     ██║     ██║╚██████╗██║███████╗██║ ╚████║   ██║       ██║     ╚██████╔╝██║  ██║██║ ╚═╝ ██║    ██║     ██████╔╝███████╗███████║");
+        all_lines_app.push_back(" ╚═════╝ ╚═════╝ ╚══════╝╚═╝     ╚═╝     ╚═╝ ╚═════╝╚═╝╚══════╝╚═╝  ╚═══╝   ╚═╝       ╚═╝      ╚═════╝ ╚═╝  ╚═╝╚═╝     ╚═╝    ╚═╝     ╚═════╝ ╚══════╝╚══════╝");
+    }
+    else if ( toolboxName == "heat" )
+    {
+        all_lines_app.push_back("██╗  ██╗███████╗ █████╗ ████████╗");
+        all_lines_app.push_back("██║  ██║██╔════╝██╔══██╗╚══██╔══╝");
+        all_lines_app.push_back("███████║█████╗  ███████║   ██║   ");
+        all_lines_app.push_back("██╔══██║██╔══╝  ██╔══██║   ██║   ");
+        all_lines_app.push_back("██║  ██║███████╗██║  ██║   ██║   ");
+        all_lines_app.push_back("╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝   ╚═╝   ");
+    }
+
+    tabulate::Table tabInfo;
+    // the a\b added is for fix the FontAlign::center, not very nice but work if we hide the left/right borders
+    for ( int k=0;k<all_lines.size();++k )
+        tabInfo.add_row({ "a\b" +all_lines[k] + "a\b" });
+    for ( int k=0;k<all_lines_app.size();++k )
+        tabInfo.add_row({ "a\b" +all_lines_app[k] +"a\b" });
+    tabInfo.format()
+        .hide_border()
+        .multi_byte_characters(true)
+        //.hide_border_top()
+        .font_color(tabulate::Color::green/*red*/)
+        .font_align(tabulate::FontAlign::center)
+        //.font_background_color(tabulate::Color::green)
+        ;
+
+    if ( worldComm.isMasterRank() )
+        std::cout << tabInfo << std::endl;
+    worldComm.barrier();
+}
+
+
 
 namespace ToolboxesDetail
 {
@@ -42,12 +131,32 @@ void removeTrailingSlash( std::string & s )
 }
 }
 
-ModelBaseRepository::ModelBaseRepository( std::string const& rootDirWithoutNumProc )
+ModelBaseCommandLineOptions::ModelBaseCommandLineOptions( po::options_description const& _options )
+{
+    M_vm.emplace();
+    auto mycmdparser = Environment::commandLineParser();
+    po::parsed_options parsed = mycmdparser.options( _options ).
+        style(po::command_line_style::allow_long | po::command_line_style::long_allow_adjacent | po::command_line_style::long_allow_next).
+        allow_unregistered().run();
+    po::store(parsed,*M_vm);
+    for ( auto & configFile : Environment::configFiles() )
+    {
+        std::istringstream & iss = std::get<1>( configFile );
+        po::store(po::parse_config_file(iss, _options,true), *M_vm);
+    }
+    po::notify(*M_vm);
+}
+
+
+ModelBaseRepository::ModelBaseRepository( std::string const& rootDirWithoutNumProc, bool use_npSubDir, std::string const& exprRepository )
 {
     if ( rootDirWithoutNumProc.empty() )
     {
         M_rootRepositoryWithoutNumProc = Environment::appRepositoryWithoutNumProc();
-        M_rootRepositoryWithNumProc = Environment::appRepository();
+        if ( use_npSubDir )
+            M_rootRepositoryWithNumProc = Environment::appRepository();
+        else
+            M_rootRepositoryWithNumProc = M_rootRepositoryWithoutNumProc;
         M_exprRepository = Environment::exprRepository();
     }
     else
@@ -55,9 +164,22 @@ ModelBaseRepository::ModelBaseRepository( std::string const& rootDirWithoutNumPr
         M_rootRepositoryWithoutNumProc = Environment::expand( rootDirWithoutNumProc );
         if ( fs::path( M_rootRepositoryWithoutNumProc ).is_relative() )
             M_rootRepositoryWithoutNumProc = (fs::path(Environment::rootRepository())/fs::path(M_rootRepositoryWithoutNumProc)).string();
-        std::string npSubDir = (boost::format( "np_%1%" ) % Environment::worldComm().localSize() ).str();
-        M_rootRepositoryWithNumProc = ( fs::path(M_rootRepositoryWithoutNumProc) / fs::path( npSubDir ) ).string();
+
+        if ( use_npSubDir )
+        {
+            std::string npSubDir = (boost::format( "np_%1%" ) % Environment::worldComm().localSize() ).str();
+            M_rootRepositoryWithNumProc = ( fs::path(M_rootRepositoryWithoutNumProc) / fs::path( npSubDir ) ).string();
+        }
+        else
+            M_rootRepositoryWithNumProc = M_rootRepositoryWithoutNumProc;
         M_exprRepository = ( fs::path(M_rootRepositoryWithoutNumProc) / fs::path( "exprs" ) ).string();
+    }
+
+    if ( !exprRepository.empty() )
+    {
+        M_exprRepository = Environment::expand( exprRepository );
+        if ( fs::path( M_exprRepository ).is_relative() )
+            M_exprRepository = (fs::path(M_rootRepositoryWithoutNumProc)/fs::path( M_exprRepository )).string();
     }
 
     ToolboxesDetail::removeTrailingSlash( M_rootRepositoryWithoutNumProc );
@@ -251,37 +373,40 @@ ModelBaseUpload::print() const
 ModelBase::ModelBase( std::string const& prefix, std::string const& keyword,
                       worldcomm_ptr_t const& worldComm,
                       std::string const& subPrefix,
-                      ModelBaseRepository const& modelRep )
+                      ModelBaseRepository const& modelRep,
+                      ModelBaseCommandLineOptions const& modelCmdLineOpt )
     :
-    super_type( "Toolboxes", prefix ),
+    super_type( "Toolboxes",keyword/*, prefix*/ ),
     M_worldComm(worldComm),
     M_worldsComm( {worldComm} ),
     M_localNonCompositeWorldsComm( { worldComm } ),
+    M_modelCommandLineOptions( modelCmdLineOpt ),
     M_prefix( prefix ),
     M_subPrefix( subPrefix ),
     M_keyword( keyword ),
     M_modelRepository( modelRep ),
-    M_verbose( boption(_name="verbose",_prefix=this->prefix()) ),
-    M_verboseAllProc( boption(_name="verbose_allproc",_prefix=this->prefix()) ),
-    M_filenameSaveInfo( prefixvm(this->prefix(),prefixvm(this->subPrefix(),"toolbox-info.txt")) ),
-    M_timersActivated( boption(_name="timers.activated",_prefix=this->prefix()) ),
-    M_timersSaveFileMasterRank( boption(_name="timers.save-master-rank",_prefix=this->prefix()) ),
-    M_timersSaveFileMax( boption(_name="timers.save-max",_prefix=this->prefix()) ),
-    M_timersSaveFileMin( boption(_name="timers.save-min",_prefix=this->prefix()) ),
-    M_timersSaveFileMean( boption(_name="timers.save-mean",_prefix=this->prefix()) ),
-    M_timersSaveFileAll( boption(_name="timers.save-all",_prefix=this->prefix()) ),
-    M_scalabilitySave( boption(_name="scalability-save",_prefix=this->prefix()) ),
-    M_scalabilityReinitSaveFile( boption(_name="scalability-reinit-savefile",_prefix=this->prefix()) ),
+    M_verbose( boption(_name="verbose",_prefix=this->prefix(),_vm=this->clovm()) ),
+    M_verboseAllProc( boption(_name="verbose_allproc",_prefix=this->prefix(),_vm=this->clovm()) ),
+    M_timersActivated( boption(_name="timers.activated",_prefix=this->prefix(),_vm=this->clovm()) ),
+    M_timersSaveFileMasterRank( boption(_name="timers.save-master-rank",_prefix=this->prefix(),_vm=this->clovm()) ),
+    M_timersSaveFileMax( boption(_name="timers.save-max",_prefix=this->prefix(),_vm=this->clovm()) ),
+    M_timersSaveFileMin( boption(_name="timers.save-min",_prefix=this->prefix(),_vm=this->clovm()) ),
+    M_timersSaveFileMean( boption(_name="timers.save-mean",_prefix=this->prefix(),_vm=this->clovm()) ),
+    M_timersSaveFileAll( boption(_name="timers.save-all",_prefix=this->prefix(),_vm=this->clovm()) ),
+    M_scalabilitySave( boption(_name="scalability-save",_prefix=this->prefix(),_vm=this->clovm()) ),
+    M_scalabilityReinitSaveFile( boption(_name="scalability-reinit-savefile",_prefix=this->prefix(),_vm=this->clovm()) ),
     M_isUpdatedForUse( false ),
-    M_upload( soption(_name="upload",_prefix=this->prefix()), this->repository().rootWithoutNumProc(), M_worldComm )
+    M_upload( soption(_name="upload",_prefix=this->prefix(),_vm=this->clovm()), this->repository().rootWithoutNumProc(), M_worldComm ),
+    M_manageParameterValues( true ),
+    M_manageParameterValuesOfModelProperties( true )
 {
-    if (Environment::vm().count(prefixvm(this->prefix(),"scalability-path")))
-        M_scalabilityPath = Environment::vm()[prefixvm(this->prefix(),"scalability-path")].as< std::string >();
+    if (this->clovm().count(prefixvm(this->prefix(),"scalability-path")))
+        M_scalabilityPath = soption(_name="scalability-path",_prefix=this->prefix(),_vm=this->clovm());
     else
         M_scalabilityPath = this->repository().rootWithoutNumProc();
 
-    if (Environment::vm().count(prefixvm(this->prefix(),"scalability-filename")))
-        M_scalabilityFilename = Environment::vm()[prefixvm(this->prefix(),"scalability-filename")].as< std::string >();
+    if (this->clovm().count(prefixvm(this->prefix(),"scalability-filename")))
+        M_scalabilityFilename = soption(_name="scalability-filename",_prefix=this->prefix(),_vm=this->clovm());
     else
         M_scalabilityFilename = this->prefix()+".scalibility";
 
@@ -340,50 +465,94 @@ ModelBase::log( std::string const& _className,std::string const& _functionName,s
 }
 
 // info
-std::string
-ModelBase::filenameSaveInfo() const
-{
-    return M_filenameSaveInfo;
-}
+
 void
-ModelBase::setFilenameSaveInfo( std::string const& s )
+ModelBase::updateInformationObject( nl::json & p ) const
 {
-    M_filenameSaveInfo = s;
+    if ( p.contains( "prefix" ) )
+        return;
+    p.emplace( "prefix", this->prefix() );
+    p.emplace( "keyword", this->keyword() );
+    p.emplace( "root repository", this->rootRepository() );
+    p.emplace( "expr repository", this->repository().expr() );
+    p.emplace( "number of processus", this->worldComm().localSize() );
 }
-std::shared_ptr<std::ostringstream>
-ModelBase::getInfo() const
+
+tabulate_informations_ptr_t
+ModelBase::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
 {
-    std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
-    return _ostr;
+    Feel::Table tabInfo;
+    TabulateInformationTools::FromJSON::addKeyToValues( tabInfo, jsonInfo, tabInfoProp, { "prefix","keyword","root repository","expr eepository", "number of processus" } );
+    //TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfo, jsonInfo, tabInfoProp ); // bad ordering due to boost properties
+    tabInfo.format()
+        .setShowAllBorders( false )
+        .setColumnSeparator(":")
+        .setHasRowSeparator( false );
+    return TabulateInformations::New( tabInfo, tabInfoProp );
 }
-void
-ModelBase::printInfo() const
-{
-    if ( this->verboseAllProc() )
-        std::cout << this->getInfo()->str();
-    else if (this->worldComm().isMasterRank() )
-        std::cout << this->getInfo()->str();
-}
-void
-ModelBase::saveInfo() const
+
+tabulate_informations_ptr_t
+ModelBase::tabulateInformations() const
 {
     Environment::journalCheckpoint();
+#if 0
+    pt::ptree pt;
+    this->updateInformationObject( pt );
+    std::ostringstream pt_ostr;
+    write_json( pt_ostr, pt );
+    std::istringstream pt_istream( pt_ostr.str() );
+    nl::json jsonInfo;
+    pt_istream >> jsonInfo;
+#else
+    nl::json jsonInfo;
+    this->updateInformationObject( jsonInfo );
+#endif
 
-    fs::path thepath = fs::path(this->rootRepository())/fs::path(this->filenameSaveInfo());
-    if (this->worldComm().isMasterRank() )
+    auto tabInfo = this->tabulateInformations( jsonInfo, TabulateInformationProperties{} );
+
+    auto tabRes = TabulateInformationsSections::New();
+    std::string title = (boost::format("Toolbox : %1%")%this->keyword()).str();
+    tabRes->add( title, tabInfo );
+
+    return tabRes;
+}
+
+void
+ModelBase::printInfo( tabulate_informations_ptr_t const& tabInfos ) const
+{
+    if ( this->worldComm().isMasterRank() )
     {
-        std::ofstream file( thepath.string().c_str(), std::ios::out);
-        file << this->getInfo()->str();
-        file.close();
+        std::cout << tabInfos->exporterAscii( true ) << std::endl;
+    }
+}
+void
+ModelBase::saveInfo( tabulate_informations_ptr_t const& tabInfos ) const
+{
+    std::string filename_ascii = prefixvm(this->keyword(),"informations.txt");
+    std::string filename_adoc = prefixvm(this->keyword(),"informations.adoc");
+    std::string filepath_ascii = (fs::path(this->rootRepository())/filename_ascii).string();
+    std::string filepath_adoc = (fs::path(this->rootRepository())/filename_adoc).string();
+    if ( this->worldComm().isMasterRank() )
+    {
+        std::ofstream file_ascii( filepath_ascii, std::ios::out);
+        file_ascii << tabInfos->exporterAscii();
+        file_ascii.close();
+
+        std::ofstream file_adoc( filepath_adoc, std::ios::out);
+        file_adoc << ":sectnums:" << "\n";
+        file_adoc << tabInfos->exporterAsciiDoc() << "\n";
+        file_adoc.close();
     }
 
-    this->upload( thepath.string() );
+    this->upload( filepath_ascii );
+    this->upload( filepath_adoc );
 }
 void
 ModelBase::printAndSaveInfo() const
 {
-    this->printInfo();
-    this->saveInfo();
+    auto tabInfo = this->tabulateInformations();
+    this->printInfo( tabInfo );
+    this->saveInfo( tabInfo );
 }
 
 // timer
@@ -444,6 +613,43 @@ ModelBase::upload( std::string const& dataPath ) const
         M_upload.upload( dataPath );
 }
 
+void
+ModelBase::initModelProperties()
+{
+    if ( !M_modelProps )
+    {
+        M_modelProps = std::make_shared<ModelProperties>( this->repository().expr(),this->worldCommPtr(), this->prefix(),this->clovm() );
+        std::vector<std::string> jsonFilenames;
+        if ( countoption( _name="filename",_prefix=this->prefix(),_vm=this->clovm() ) > 0 )
+            jsonFilenames.push_back( soption( _name="filename",_prefix=this->prefix(),_vm=this->clovm() ) );
+        if ( countoption( _name="json.filename",_prefix=this->prefix(),_vm=this->clovm() ) > 0 )
+            for ( std::string const& filename : vsoption( _name="json.filename",_prefix=this->prefix(),_vm=this->clovm() ) )
+                jsonFilenames.push_back( filename );
+        M_modelProps->setup( jsonFilenames );
+    }
+}
+
+void
+ModelBase::setModelProperties( std::string const& filename )
+{
+    M_modelProps = std::make_shared<ModelProperties>( this->repository().expr(),
+                                                      this->worldCommPtr(), this->prefix(),this->clovm() );
+    M_modelProps->setup( filename );
+}
+
+void
+ModelBase::setModelProperties( nl::json const& json )
+{
+    M_modelProps = std::make_shared<ModelProperties>( json, this->repository().expr(),
+                                                      this->worldCommPtr(), this->prefix(),this->clovm() );
+}
+
+void
+ModelBase::addParameterInModelProperties( std::string const& symbolName,double value)
+{
+    if ( M_modelProps )
+        M_modelProps->parameters()[symbolName] = ModelParameter(symbolName,value);
+}
 
 
 } // namespace FeelModels

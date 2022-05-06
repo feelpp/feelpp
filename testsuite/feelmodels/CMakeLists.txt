@@ -24,4 +24,4 @@
 
 set_directory_properties(PROPERTIES LABEL testmodels )
 
-feelpp_add_test( modelproperties CFG modelproperties.cfg GEO test.feelpp)
+feelpp_add_test( modelproperties CFG modelproperties.cfg GEO feelpp.json )

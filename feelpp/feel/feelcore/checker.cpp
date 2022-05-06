@@ -26,6 +26,10 @@
 #include <feel/feelcore/checker.hpp>
 #include <feel/feelmath/polyfit.hpp>
 #include <feel/feelmath/vector.hpp>
+#include <feel/feelpython/pyexpr.hpp>
+#include <fmt/core.h>
+#include <fmt/format.h>
+#include <fmt/ostream.h>
 
 namespace Feel {
 
@@ -37,8 +41,8 @@ hp::hp( double h, int p )
     M_p(p)
 
 {
-    bool verbose = boption("checker.verbose");
-    fs::path path ( Environment::expand( soption("checker.filename" ) ) );
+    bool verbose = boption(_name="checker.verbose");
+    fs::path path ( Environment::expand( soption(_name="checker.filename" ) ) );
     if ( fs::exists( path ) )
     {
         std::ifstream f ( path.string().c_str() );
@@ -152,7 +156,7 @@ hp::operator()( std::string const& sol, std::pair<std::string,double> const& r, 
     pt::ptree fnode;
     fnode.add_child( solution, node );
     //M_ptree.add_child( std::to_string(M_p), node );
-    pt::write_json(soption("checker.name")+".json", fnode);
+    pt::write_json(soption(_name="checker.name")+".json", fnode);
     //pt::write_json(std::cout, node);
 #endif
     return Checks::NONE;
@@ -160,29 +164,57 @@ hp::operator()( std::string const& sol, std::pair<std::string,double> const& r, 
 
 
 } // rate
-
+#if 0
 Checker
 checker( std::string const& c_name, std::string const& solution, std::string const& gradient )
 {
-    if ( solution.empty() && soption("checker.solution" ).empty() )
+    if ( solution.empty() && soption(_name="checker.solution" ).empty() )
         throw std::logic_error("Invalid setup of Checker system, no solution provided");
-    auto sol = solution.empty()?soption("checker.solution" ):solution;
+    auto sol = solution.empty()?soption(_name="checker.solution" ):solution;
     Checker c{c_name};
     c.setSolution( solution );
-    if ( !gradient.empty() || !soption("checker.gradient" ).empty() )
-        c.setGradient( gradient.empty()?soption("checker.gradient" ):gradient );
+    if ( !gradient.empty() || !soption(_name="checker.gradient" ).empty() )
+        c.setGradient( gradient.empty()?soption(_name="checker.gradient" ):gradient );
     return c;
 }
-
+#endif
 Checker::Checker( std::string const& name )
     :
     super( "Checker", name ),
-    M_check( boption("checker.check") ),
-    M_verbose( boption("checker.verbose" ) ),
-    M_solution( soption("checker.solution" ) ),
-    M_etol( doption("checker.tolerance.exact" ) ),
-    M_otol( doption("checker.tolerance.order" ) )
+    M_check( boption(_name="checker.check") ),
+    M_verbose( boption(_name="checker.verbose" ) ),
+    M_solution( soption(_name="checker.solution" ) ),
+    M_etol( doption(_name="checker.tolerance.exact" ) ),
+    M_otol( doption(_name="checker.tolerance.order" ) )
 {
+}
+
+void
+Checker::setScript( std::string const& s, variables_t const& in, std::map<std::string,double> const& p, bool u )
+{
+    M_use_script = u;
+    M_script_in = in;
+    M_script = s;
+    std::cout << fmt::format( "script: {}", s ) << std::endl;
+    M_param_values= p;
+    std::cout << fmt::format( "param_values: {}", M_param_values ) << std::endl;
+}
+Checker::variables_t
+Checker::runScript()
+{
+    variables_t locals{ M_script_in };
+    locals[M_solution_key]=M_solution;
+    if ( M_gradient )
+        locals[M_gradient_key]=*M_gradient;
+    else
+        locals[M_gradient_key]="";
+    LOG(INFO) << fmt::format( "gradient({})={}", M_gradient_key, locals[M_gradient_key]) << std::endl;
+    locals["compute_pde_coefficients"]=boption(_name="checker.compute-pde-coefficients")?"true":"false";
+    Feel::pyexprFromFile( Environment::expand(M_script), locals );
+    LOG(INFO) << fmt::format( "gradient({})={}", M_gradient_key, locals[M_gradient_key] ) << std::endl;
+    M_solution=locals[M_solution_key];
+    M_gradient=locals[M_gradient_key];
+    return locals;
 }
 
 }

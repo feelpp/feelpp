@@ -64,28 +64,21 @@ public:
     typedef ExprT2 expression_2_type;
     typedef typename expression_1_type::value_type value_1_type;
     typedef typename expression_2_type::value_type value_2_type;
-    typedef value_1_type value_type;
-    using evaluate_type = typename expression_1_type::evaluate_type;
+    using value_type = decltype(std::pow(value_1_type{}, value_2_type{}));
+    using evaluate_type = evaluate_expression_t<this_type>;
 
-    // verify that all returning types are integral or floating types
-    BOOST_STATIC_ASSERT( ::boost::is_arithmetic<value_1_type>::value  &&
-                         ::boost::is_arithmetic<value_2_type>::value );
 
-    explicit Pow( expression_1_type const& __expr1, expression_2_type const& __expr2  )
+    template <typename TheExprT1, typename TheExprT2>
+    Pow( TheExprT1 && __expr1, TheExprT2 && __expr2  )
         :
-        M_expr_1( __expr1 ),
-        M_expr_2( __expr2 )
+        M_expr_1( std::forward<TheExprT1>(__expr1) ),
+        M_expr_2( std::forward<TheExprT2>(__expr2) )
     {
-        DVLOG(2) << "Pow::Pow default constructor\n";
+        DVLOG(2) << "Pow::Pow constructor\n";
     }
 
-    Pow( Pow const& __vfp  )
-        :
-        M_expr_1( __vfp.M_expr_1 ),
-        M_expr_2( __vfp.M_expr_2 )
-    {
-        DVLOG(2) << "Pow::Pow copy constructor\n";
-    }
+    Pow( Pow const& ) = default;
+    Pow( Pow &&  ) = default;
 
     bool isSymetric() const
     {
@@ -96,6 +89,10 @@ public:
      * \warning the Pow order computation is wrong here, we actually need the
      * ExprT2 value (and not imorder) to multiply by ExprT1::imorder.
      */
+
+    //! dynamic context
+    size_type dynamicContext() const { return Feel::vf::dynamicContext( M_expr_1 ) | Feel::vf::dynamicContext( M_expr_2 ); }
+
     //! polynomial order
     uint16_type polynomialOrder() const { return M_expr_1.polynomialOrder(); }
 
@@ -120,6 +117,53 @@ public:
                 for ( uint16_type j=0;j< eval1.cols();++j )
                     res(i,j) = std::pow( eval1(i,j), eval2(0,0) );
             return res;
+        }
+
+    void setParameterValues( std::map<std::string,value_type> const& mp )
+        {
+            M_expr_1.setParameterValues( mp );
+            M_expr_2.setParameterValues( mp );
+        }
+    void updateParameterValues( std::map<std::string,double> & pv ) const
+        {
+             M_expr_1.updateParameterValues( pv );
+             M_expr_2.updateParameterValues( pv );
+        }
+
+    template <typename SymbolsExprType>
+    auto applySymbolsExpr( SymbolsExprType const& se ) const
+        {
+            auto newLeftExpr = this->left().applySymbolsExpr( se );
+            auto newRightExpr = this->right().applySymbolsExpr( se );
+            using new_expr_left_type = std::decay_t<decltype(newLeftExpr)>;
+            using new_expr_right_type = std::decay_t<decltype(newRightExpr)>;
+            return Pow<new_expr_left_type,new_expr_right_type>( newLeftExpr,newRightExpr );
+        }
+
+    template <typename TheSymbolExprType>
+    bool hasSymbolDependency( std::string const& symb, TheSymbolExprType const& se ) const
+        {
+            return M_expr_1.hasSymbolDependency( symb, se ) ||  M_expr_2.hasSymbolDependency( symb, se );
+        }
+
+    template <typename TheSymbolExprType>
+    void dependentSymbols( std::string const& symb, std::map<std::string,std::set<std::string>> & res, TheSymbolExprType const& se ) const
+        {
+            M_expr_1.dependentSymbols( symb,res,se );
+            M_expr_2.dependentSymbols( symb,res,se );
+        }
+
+    template <int diffOrder, typename TheSymbolExprType>
+    auto diff( std::string const& diffVariable, WorldComm const& world, std::string const& dirLibExpr,
+               TheSymbolExprType const& se ) const
+        {
+            // NOTE : this expression assumes that the exponent does not depend on the symbol to be derived
+            auto diffExpr1 = M_expr_1.template diff<diffOrder>( diffVariable, world, dirLibExpr, se );
+            using expr1_diff_type = std::decay_t<decltype(diffExpr1)>;
+            auto newExponant = M_expr_2 - cst(1.); // 1.0;
+            using new_expr2_type = std::decay_t<decltype(newExponant)>;
+            using new_pow_type = Pow<expression_1_type, new_expr2_type>;
+            return diffExpr1*M_expr_2*expr(new_pow_type( M_expr_1, newExponant));
         }
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t>
@@ -174,12 +218,17 @@ public:
         {
             update( geom );
         }
-        template<typename IM>
-        void init( IM const& im )
-        {
-            M_left.init( im );
-            M_right.init( im );
-        }
+
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        tensor( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                expression_type const& expr, Geo_t const& geom, const TheArgsType&... theInitArgs )
+            :
+            M_gmc( fusion::at_key<key_type>( geom ).get() ),
+            M_left( std::true_type{}, exprExpanded.left(), ttse, expr.left(), geom, theInitArgs... ),
+            M_right( std::true_type{}, exprExpanded.right(), ttse, expr.right(), geom, theInitArgs... ),
+            M_loc(  boost::extents[M_gmc->nPoints()] )
+            {}
+
         void update( Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ )
         {
             update( geom );
@@ -203,11 +252,14 @@ public:
                         M_loc[q]( c1,c2 ) = std::pow( left, right );
                     }
         }
-        void update( Geo_t const& geom, uint16_type face )
+
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        void update( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                     Geo_t const& geom, const TheArgsType&... theUpdateArgs )
         {
             M_gmc = fusion::at_key<key_type>( geom ).get();
-            M_left.update( geom, face );
-            M_right.update( geom, face );
+            M_left.update( std::true_type{}, exprExpanded.left(), ttse, geom, theUpdateArgs... );
+            M_right.update( std::true_type{}, exprExpanded.right(), ttse, geom, theUpdateArgs... );
 
             for ( int q = 0; q < M_gmc->nPoints(); ++q )
                 for ( int c1 = 0; c1 < shape::M; ++c1 )
@@ -218,6 +270,7 @@ public:
                         M_loc[q]( c1,c2 ) = std::pow( left, right );
                     }
         }
+
 
         value_type
         evalijq( uint16_type /*i*/, uint16_type /*j*/, uint16_type c1, uint16_type c2, uint16_type q  ) const
@@ -281,50 +334,45 @@ protected:
     expression_2_type M_expr_2;
 };
 
+
+
+/**
+ * @brief provide pow expression e1^e2
+ * @ingroup DSEL-Variational-Formulation
+ * \code
+   std::cout << integrate( _range=elements(mesh), _expr=pow( Px(), Py() ) ).evaluate();
+   \endcode
+ */
 template<typename ExprT1,  typename ExprT2>
 inline
-Expr< Pow<typename mpl::if_<boost::is_arithmetic<ExprT1>,
-      mpl::identity<Cst<ExprT1> >,
-      mpl::identity<ExprT1> >::type::type,
-      typename mpl::if_<boost::is_arithmetic<ExprT2>,
-      mpl::identity<Cst<ExprT2> >,
-      mpl::identity<ExprT2> >::type::type> >
-      pow( ExprT1 const& __e1, ExprT2 const& __e2 )
+auto
+pow( ExprT1 && __e1, ExprT2 && __e2 )
 {
-    typedef typename mpl::if_<boost::is_arithmetic<ExprT1>,
-            mpl::identity<Cst<ExprT1> >,
-            mpl::identity<ExprT1> >::type::type t1;
-    typedef typename mpl::if_<boost::is_arithmetic<ExprT2>,
-            mpl::identity<Cst<ExprT2> >,
-            mpl::identity<ExprT2> >::type::type t2;
-    typedef Pow<t1, t2> expr_t;
-    return Expr< expr_t >(  expr_t( t1( __e1 ), t2( __e2 ) ) );
+    auto arg_to_expr = []( auto && b ) -> decltype(auto) {
+                           if constexpr ( std::is_arithmetic_v<std::decay_t<decltype(b)>> )
+                               return cst( std::forward<decltype(b)>( b ) );
+                           else
+                               return std::forward<decltype(b)>( b );
+                       };
+    decltype(auto) e1 = arg_to_expr( std::forward<ExprT1>( __e1 ) );
+    decltype(auto) e2 = arg_to_expr( std::forward<ExprT2>( __e2 ) );
+    using t1 = std::decay_t<decltype(e1)>;
+    using t2 = std::decay_t<decltype(e2)>;
+    using expr_t = Pow<t1, t2>;
+    return Feel::vf::expr( expr_t(e1,e2) );
 }
 
 
-template<typename ExprT1,  typename ExprT2>
+/**
+ * provide pow expression e1^e2
+ * @ingroup DSEL-Variational-Formulation
+ */
+template<typename ExprT1, typename ExprT2,typename = typename std::enable_if_t< is_vf_expr_v<ExprT1> || is_vf_expr_v<ExprT2> > >
 inline
-Expr< Pow<typename mpl::if_<boost::is_arithmetic<ExprT1>,
-                            mpl::identity<Cst<ExprT1> >,
-                            mpl::identity<Expr<ExprT1> > >::type::type,
-          typename mpl::if_<boost::is_arithmetic<ExprT2>,
-                            mpl::identity<Cst<ExprT2> >,
-                            mpl::identity<Expr<ExprT2> > >::type::type> >
-operator^( typename mpl::if_<boost::is_arithmetic<ExprT1>,
-                             mpl::identity<ExprT1>,
-                             mpl::identity<Expr<ExprT1> > >::type::type const& __e1,
-           typename mpl::if_<boost::is_arithmetic<ExprT2>,
-                             mpl::identity<ExprT2>,
-                             mpl::identity<Expr<ExprT2> > >::type::type const& __e2 )
+auto
+operator^( ExprT1 && __e1, ExprT2 && __e2 )
 {
-    typedef typename mpl::if_<boost::is_arithmetic<ExprT1>,
-            mpl::identity<Cst<ExprT1> >,
-            mpl::identity<ExprT1> >::type::type t1;
-    typedef typename mpl::if_<boost::is_arithmetic<ExprT2>,
-            mpl::identity<Cst<ExprT2> >,
-            mpl::identity<ExprT2> >::type::type t2;
-    typedef Pow<t1, t2> expr_t;
-    return Expr< expr_t >(  expr_t( t1( __e1 ), t2( __e2 ) ) );
+    return pow( std::forward<ExprT1>( __e1 ), std::forward<ExprT1>( __e2 ) );
 }
 } // vf
 } //Feel

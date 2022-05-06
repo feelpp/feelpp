@@ -26,986 +26,15 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2007-07-20
  */
-#ifndef __VFVec_H
-#define __VFVec_H 1
+#ifndef FEELPP_VF_MATVEC_H
+#define FEELPP_VF_MATVEC_H 1
 
-#include <boost/fusion/container/vector.hpp>
-#include <boost/fusion/algorithm/iteration.hpp>
-#include <boost/mpl/bitor.hpp>
-#include <boost/mpl/bitwise.hpp>
-#include <boost/mpl/transform.hpp>
-
-#include <boost/mpl/plus.hpp>
-#include <boost/mpl/arithmetic.hpp>
-
+#include <boost/mp11.hpp>
 
 namespace Feel
 {
-namespace fusion = boost::fusion;
-namespace mpl = boost::mpl;
 namespace vf
 {
-/// \cond detail
-namespace detail
-{
-struct GetContext
-{
-    template<typename Sig>
-    struct result;
-
-    template<typename Lhs, typename Rhs>
-    struct result<GetContext( Lhs,Rhs )>
-#if BOOST_VERSION < 104200
-: boost::remove_reference<Lhs>
-#else
-: boost::remove_reference<Rhs>
-#endif
-    {
-
-        typedef typename boost::remove_reference<Lhs>::type lhs_noref_type;
-        typedef typename boost::remove_reference<Rhs>::type rhs_noref_type;
-#if BOOST_VERSION < 104200
-        typedef typename mpl::bitor_<mpl::size_t<lhs_noref_type::context>, rhs_noref_type >::type type;
-#else
-        typedef typename mpl::bitor_<mpl::size_t<rhs_noref_type::context>, lhs_noref_type >::type type;
-#endif
-    };
-#if 0
-    template<typename Expr1, typename Expr2>
-    struct result
-    {
-        typedef typename mpl::bitor_<mpl::size_t<Expr1::context>, Expr2 >::type type;
-    };
-#endif
-    template<typename Lhs, typename Rhs>
-#if BOOST_VERSION < 104200
-    Lhs
-#else
-    Rhs
-#endif
-    operator()( const Lhs& lhs, const Rhs& rhs ) const
-    {
-        return lhs | rhs;
-    }
-};
-
-struct GetPolynomialOrder
-{
-    template<typename Sig>
-    struct result;
-
-    template<typename ExprT,typename V>
-    struct result<GetPolynomialOrder( V,ExprT )>
-        :
-        boost::remove_reference<V>
-        {};
-
-    template <typename ExprT>
-    uint16_type
-    operator()( uint16_type const& res, ExprT const& expr ) const
-        {
-            return std::max( res, expr.polynomialOrder() );
-        }
-};
-
-struct GetIsPolynomial
-{
-    template<typename Sig>
-    struct result;
-
-    template<typename ExprT,typename V>
-    struct result<GetIsPolynomial( V,ExprT )>
-        :
-        boost::remove_reference<V>
-    {};
-
-    template <typename ExprT>
-    bool
-    operator()( bool const& res, ExprT const& expr ) const
-        {
-            return res && expr.isPolynomial();
-        }
-};
-
-#if 0
-struct GetImOrder
-{
-    template<typename Sig>
-    struct result;
-
-    template<typename Lhs, typename Rhs>
-    struct result<GetImOrder( Lhs,Rhs )>
-#if BOOST_VERSION < 104200
-: boost::remove_reference<Lhs>
-#else
-: boost::remove_reference<Rhs>
-#endif
-    {
-
-        typedef typename boost::remove_reference<Lhs>::type lhs_noref_type;
-        typedef typename boost::remove_reference<Rhs>::type rhs_noref_type;
-#if BOOST_VERSION < 104200
-        typedef typename boost::mpl::max< boost::mpl::size_t<lhs_noref_type::imorder>, rhs_noref_type >::type type;
-#else
-        typedef typename boost::mpl::max< boost::mpl::size_t<rhs_noref_type::imorder>, lhs_noref_type >::type type;
-#endif
-    };
-
-    template<typename Lhs, typename Rhs>
-#if BOOST_VERSION < 104200
-    Lhs
-#else
-    Rhs
-#endif
-    operator()( const Lhs& lhs, const Rhs& rhs ) const
-    {
-    }
-};
-struct GetImIsPoly
-{
-    template<typename Sig>
-    struct result;
-
-    template<typename Lhs, typename Rhs>
-    struct result<GetImIsPoly( Lhs,Rhs )>
-#if BOOST_VERSION < 104200
-: boost::remove_reference<Lhs>
-#else
-: boost::remove_reference<Rhs>
-#endif
-    {
-
-        typedef typename boost::remove_reference<Lhs>::type lhs_noref_type;
-        typedef typename boost::remove_reference<Rhs>::type rhs_noref_type;
-#if BOOST_VERSION < 104200
-        typedef typename boost::mpl::and_< boost::mpl::bool_<lhs_noref_type::imIsPoly>, rhs_noref_type >::type type;
-#else
-        typedef typename boost::mpl::and_< boost::mpl::bool_<rhs_noref_type::imIsPoly>, lhs_noref_type >::type type;
-#endif
-    };
-
-    template<typename Lhs, typename Rhs>
-#if BOOST_VERSION < 104200
-    Lhs
-#else
-    Rhs
-#endif
-    operator()( const Lhs& lhs, const Rhs& rhs ) const
-    {
-    }
-};
-#endif
-template<typename Func>
-struct ExprHasTestFunction
-{
-    template<typename Sig>
-    struct result;
-
-    template<typename Lhs, typename Rhs>
-    struct result<ExprHasTestFunction( Lhs,Rhs )>
-#if BOOST_VERSION < 104200
-: boost::remove_reference<Lhs>
-#else
-: boost::remove_reference<Rhs>
-#endif
-    {
-
-        typedef typename boost::remove_reference<Lhs>::type lhs_noref_type;
-        typedef typename boost::remove_reference<Rhs>::type rhs_noref_type;
-#if BOOST_VERSION < 104200
-        typedef typename mpl::or_<mpl::bool_<lhs_noref_type::template HasTestFunction<Func>::result>, rhs_noref_type >::type type;
-#else
-        typedef typename mpl::or_<mpl::bool_<rhs_noref_type::template HasTestFunction<Func>::result>, lhs_noref_type >::type type;
-#endif
-    };
-    template<typename Lhs, typename Rhs>
-#if BOOST_VERSION < 104200
-    Lhs
-#else
-    Rhs
-#endif
-    operator()( const Lhs& lhs, const Rhs& rhs ) const
-    {
-#if 0
-        typedef typename boost::remove_reference<Lhs>::type lhs_noref_type;
-        typedef typename boost::remove_reference<Rhs>::type rhs_noref_type;
-        return ( lhs_noref_type::template ExprHasTestFunction<Func>::result ||
-                 lhs_noref_type::template ExprHasTestFunction<Func>::result );
-#endif
-    }
-};
-template<typename Func>
-struct ExprHasTrialFunction
-{
-    template<typename Sig>
-    struct result;
-
-    template<typename Lhs, typename Rhs>
-    struct result<ExprHasTrialFunction( Lhs,Rhs )>
-#if BOOST_VERSION < 104200
-: boost::remove_reference<Lhs>
-#else
-: boost::remove_reference<Rhs>
-#endif
-    {
-
-        typedef typename boost::remove_reference<Lhs>::type lhs_noref_type;
-        typedef typename boost::remove_reference<Rhs>::type rhs_noref_type;
-#if BOOST_VERSION < 104200
-        typedef typename mpl::or_<mpl::bool_<lhs_noref_type::template HasTrialFunction<Func>::result>, rhs_noref_type >::type type;
-#else
-        typedef typename mpl::or_<mpl::bool_<rhs_noref_type::template HasTrialFunction<Func>::result>, lhs_noref_type >::type type;
-#endif
-    };
-    template<typename Lhs, typename Rhs>
-#if BOOST_VERSION < 104200
-    Lhs
-#else
-    Rhs
-#endif
-    operator()( const Lhs& lhs, const Rhs& rhs ) const
-    {
-#if 0
-        return ( Lhs::template HasTrialFunction<Func>::result ||
-                 Rhs::template HasTrialFunction<Func>::result );
-#endif
-    }
-};
-template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
-struct initialize_expression_gij
-{
-    template<typename Sig>
-    struct result;
-
-    template<typename ExprT>
-    struct result<initialize_expression_gij( ExprT )>
-    {
-        typedef typename boost::remove_reference<ExprT>::type::template tensor<Geo_t, Basis_i_t, Basis_j_t> type;
-    };
-
-    initialize_expression_gij( Geo_t const& geom , Basis_i_t const& fev, Basis_j_t const& feu )
-        :
-        M_geom( geom ),
-        M_fev( fev ),
-        M_feu( feu )
-    {}
-
-    template <typename ExprT>
-    typename ExprT::template tensor<Geo_t, Basis_i_t, Basis_j_t>
-    operator()( ExprT& expr ) const
-    {
-        return typename ExprT::template tensor<Geo_t, Basis_i_t, Basis_j_t>( expr, M_geom, M_fev, M_feu );
-    }
-    const Geo_t& M_geom;
-    const Basis_i_t& M_fev;
-    const Basis_j_t& M_feu;
-};
-template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
-struct initialize_expression_gi
-{
-    template<typename Sig>
-    struct result;
-
-    template<typename ExprT>
-    struct result<initialize_expression_gi( ExprT )>
-    {
-        typedef typename boost::remove_reference<ExprT>::type::template tensor<Geo_t, Basis_i_t, Basis_j_t> type;
-    };
-    initialize_expression_gi( Geo_t const& geom , Basis_i_t const& fev )
-        :
-        M_geom( geom ),
-        M_fev( fev )
-    {}
-
-    template <typename ExprT>
-    typename ExprT::template tensor<Geo_t, Basis_i_t, Basis_j_t>
-    operator()( ExprT& expr ) const
-    {
-        return typename ExprT::template tensor<Geo_t, Basis_i_t, Basis_j_t>( expr, M_geom, M_fev );
-    }
-
-    const Geo_t& M_geom;
-    const Basis_i_t& M_fev;
-};
-
-template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
-struct initialize_expression_g
-{
-    template<typename Sig>
-    struct result;
-
-    template<typename ExprT>
-    struct result<initialize_expression_g( ExprT )>
-    {
-        typedef typename boost::remove_reference<ExprT>::type::template tensor<Geo_t, Basis_i_t, Basis_j_t> type;
-    };
-    initialize_expression_g( Geo_t const& geom )
-        :
-        M_geom( geom )
-    {}
-
-    template <typename ExprT>
-    typename ExprT::template tensor<Geo_t, Basis_i_t, Basis_j_t>
-    operator()( ExprT& expr ) const
-    {
-        return typename ExprT::template tensor<Geo_t, Basis_i_t, Basis_j_t>( expr, M_geom );
-        //return typename ExprT::template tensor<Geo_t>( expr, M_geom );
-    }
-
-    const Geo_t& M_geom;
-};
-
-template<int ...>
-struct myseq { };
-
-template<int N, int ...S>
-struct mygens : mygens<N-1, N-1, S...> { };
-
-template<int ...S>
-struct mygens<0, S...>
-{
-    typedef myseq<S...> type;
-};
-
-template<typename ... CTX>
-struct update_context
-{
-    update_context( CTX const& ... ctx )
-        :
-        M_ctx( ctx... )
-    {}
-
-    template <typename ExprT>
-    void operator()( ExprT& expr ) const
-    {
-        preApply( expr, typename mygens<sizeof...(CTX)>::type() );
-    }
-
-    template<typename ExprT, int ...S>
-    void preApply(ExprT& expr, myseq<S...>) const
-    {
-        apply(expr,std::get<S>(M_ctx) ...);
-    }
-
-    template <typename ExprT, typename ... CTX2>
-    void apply( ExprT& expr, CTX2 const& ... ctx ) const
-    {
-        expr.updateContext( ctx... );
-    }
-
-    std::tuple<CTX...> M_ctx;
-
-};
-
-template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
-struct update_expression_gij
-{
-    update_expression_gij( Geo_t const& geom , Basis_i_t const& fev, Basis_j_t const& feu )
-        :
-        M_geom( geom ),
-        M_fev( fev ),
-        M_feu( feu )
-    {}
-
-    template <typename ExprT>
-    void operator()( ExprT& expr ) const
-    {
-        expr.update( M_geom, M_fev, M_feu );
-    }
-    const Geo_t& M_geom;
-    const Basis_i_t& M_fev;
-    const Basis_j_t& M_feu;
-};
-template<typename Geo_t, typename Basis_i_t>
-struct update_expression_gi
-{
-    update_expression_gi( Geo_t const& geom , Basis_i_t const& fev )
-        :
-        M_geom( geom ),
-        M_fev( fev )
-    {}
-
-    template <typename ExprT>
-    void operator()( ExprT& expr ) const
-    {
-        expr.update( M_geom, M_fev );
-    }
-    const Geo_t& M_geom;
-    const Basis_i_t& M_fev;
-};
-
-template<typename Geo_t>
-struct update_expression_g
-{
-    update_expression_g( Geo_t const& geom )
-        :
-        M_geom( geom )
-    {}
-
-    template <typename ExprT>
-    void operator()( ExprT& expr ) const
-    {
-        expr.update( M_geom );
-    }
-    const Geo_t& M_geom;
-};
-
-
-template<typename Geo_t>
-struct update_expression_face_g
-{
-    update_expression_face_g( Geo_t const& geom, uint16_type face )
-        :
-        M_geom( geom ),
-        M_face( face )
-    {}
-
-    template <typename ExprT>
-    void operator()( ExprT& expr ) const
-    {
-        expr.update( M_geom, M_face );
-    }
-    const Geo_t& M_geom;
-    const uint16_type M_face;
-};
-
-template<typename IM_t>
-struct init_expression
-{
-    init_expression( IM_t const& im )
-        :
-        M_im( im )
-    {}
-
-    template <typename ExprT>
-    void operator()( ExprT& expr ) const
-    {
-        expr.init( M_im );
-    }
-    const IM_t& M_im;
-};
-
-template<typename T>
-struct evaluate_expression_gij
-{
-    template<typename Sig>
-    struct result;
-
-    template<typename ExprT, typename V>
-#if BOOST_VERSION < 104200
-    struct result<evaluate_expression_gij<T>( ExprT,V )>
-#else
-    struct result<evaluate_expression_gij<T>( V,ExprT )>
-#endif
-:
-    boost::remove_reference<V>
-    {};
-    evaluate_expression_gij( uint16_type indexi , uint16_type indexj, uint16_type c1, uint16_type q )
-        :
-        M_indexi( indexi ),
-        M_indexj( indexj ),
-        M_c1( c1 ),
-        M_c2( 0 ),
-        M_q( q ),
-        M_index( M_c1 ),
-        M_current( 0 )
-    {}
-
-    evaluate_expression_gij( int n, uint16_type indexi, uint16_type indexj, uint16_type c1, uint16_type c2, uint16_type q )
-        :
-        M_indexi( indexi ),
-        M_indexj( indexj ),
-        M_c1( c1 ),
-        M_c2( c2 ),
-        M_q( q ),
-        M_index( M_c1*n+M_c2 ),
-        M_current( 0 )
-
-    {}
-
-    template <typename ExprT>
-    T
-#if BOOST_VERSION < 104200
-    operator()( ExprT const& expr, T const& res ) const
-#else
-    operator()( T const& res, ExprT const& expr ) const
-#endif
-    {
-        T ret = res;
-
-        if ( M_current == M_index )
-            ret = expr.evalijq( M_indexi, M_indexj, 0, 0, M_q );
-
-        ++M_current;
-        return ret;
-    }
-    const uint16_type M_indexi;
-    const uint16_type M_indexj;
-    const uint16_type M_c1;
-    const uint16_type M_c2;
-    const uint16_type M_q;
-    const uint16_type M_index;
-    mutable int M_current;
-
-};
-template<typename T=double>
-struct evaluate_expression_gi
-{
-    template<typename Sig>
-    struct result;
-
-    template<typename ExprT,typename V>
-#if BOOST_VERSION < 104200
-    struct result<evaluate_expression_gi<T>( ExprT,V )>
-#else
-    struct result<evaluate_expression_gi<T>( V,ExprT )>
-#endif
-:
-    boost::remove_reference<V>
-    {};
-
-    evaluate_expression_gi( uint16_type indexi, uint16_type c1, uint16_type q )
-        :
-        M_indexi( indexi ),
-        M_c1( c1 ),
-        M_c2( 0 ),
-        M_q( q ),
-        M_index( M_c1 ),
-        M_current( 0 )
-    {}
-
-    evaluate_expression_gi( int n, uint16_type indexi, uint16_type c1, uint16_type c2, uint16_type q )
-        :
-        M_indexi( indexi ),
-        M_c1( c1 ),
-        M_c2( c2 ),
-        M_q( q ),
-        M_index( M_c1*n+M_c2 ),
-        M_current( 0 )
-
-    {}
-    template <typename ExprT>
-    T
-#if BOOST_VERSION < 104200
-    operator()( ExprT const& expr, T const& res ) const
-#else
-    operator()( T const& res, ExprT const& expr ) const
-#endif
-    {
-        T ret = res;
-
-        if ( M_current == M_index )
-            ret = expr.evaliq( M_indexi, 0, 0, M_q );
-
-        ++M_current;
-        return ret;
-
-    }
-    const uint16_type M_indexi;
-    const uint16_type M_c1;
-    const uint16_type M_c2;
-    const uint16_type M_q;
-    const uint16_type M_index;
-    mutable int M_current;
-};
-
-template<typename T=double>
-struct evaluate_expression_g
-{
-    template<typename Sig>
-    struct result;
-
-    template<typename ExprT,typename V>
-#if BOOST_VERSION < 104200
-    struct result<evaluate_expression_g<T>( ExprT,V )>
-#else
-    struct result<evaluate_expression_g<T>( V,ExprT )>
-#endif
-:
-    boost::remove_reference<V>
-    {};
-
-    evaluate_expression_g( uint16_type c1, uint16_type q )
-        :
-        M_c1( c1 ),
-        M_c2( 0 ),
-        M_q( q ),
-        M_index( M_c1 ),
-        M_current( 0 )
-    {}
-
-    evaluate_expression_g( int n, uint16_type c1, uint16_type c2, uint16_type q )
-        :
-        M_c1( c1 ),
-        M_c2( c2 ),
-        M_q( q ),
-        M_index( M_c1*n+M_c2 ),
-        M_current( 0 )
-
-    {}
-
-    template <typename ExprT>
-    T
-#if BOOST_VERSION < 104200
-    operator()( ExprT const& expr, T const& res ) const
-#else
-    operator()( T const& res, ExprT const& expr ) const
-#endif
-    {
-        T ret = res;
-
-        if ( M_current == M_index )
-            ret = expr.evalq( 0, 0, M_q );
-
-        ++M_current;
-        return ret;
-    }
-    const uint16_type M_c1;
-    const uint16_type M_c2;
-    const uint16_type M_q;
-    const uint16_type M_index;
-    mutable int M_current;
-};
-
-
-template<typename... TheExpr>
-struct initialize_lambda_expression
-{
-    template<typename Sig>
-    struct result;
-
-    template<typename ExprT>
-    struct result<initialize_lambda_expression( ExprT )>
-    {
-        typedef typename boost::remove_reference<ExprT>::type::template Lambda<TheExpr...>::type type;
-    };
-
-    initialize_lambda_expression( TheExpr... e )
-        :
-        M_e( e... )
-        {}
-
-    template <typename ExprT>
-    typename ExprT::template Lambda<TheExpr...>::type
-    operator()( ExprT const& expr ) const
-        {
-            return typename ExprT::template Lambda<TheExpr...>::type( expr( M_e ) );
-        }
-
-    std::tuple<TheExpr...> M_e;
-};
-
-template<typename EvaluateType>
-struct evaluate_expression
-{
-    static const uint16_type nRow = EvaluateType::RowsAtCompileTime;
-    static const uint16_type nCol = EvaluateType::ColsAtCompileTime;
-
-    explicit evaluate_expression( EvaluateType & eval ) : M_eval( eval ), M_current( 0 ) {}
-
-    template <typename ExprT>
-    void operator()( ExprT const& expr ) const
-    {
-        uint16_type i = M_current / nCol;
-        uint16_type j = M_current % nCol;
-        M_eval( i,j ) = expr.evaluate()(0,0);
-        ++M_current;
-    }
-
-    EvaluateType & M_eval;
-    mutable int M_current;
-};
-
-/**
- * \class Vec
- * \brief class that represents a matrix in the language
- *
- * @author Christophe Prud'homme
- * @see
- */
-template<typename VectorExpr>
-class Vec
-{
-public:
-
-
-    /** @name Typedefs
-     */
-    //@{
-    static const size_type context = fusion::result_of::accumulate<VectorExpr,mpl::size_t<0>,GetContext>::type::value;
-    //static const size_type context = fusion::accumulate( VectorExpr(),size_type(0),GetContext() );
-    static const bool is_terminal = false;
-
-    template<typename Func>
-    struct HasTestFunction
-    {
-        static const bool result = fusion::result_of::accumulate<VectorExpr,mpl::bool_<false>,ExprHasTestFunction<Func> >::type::value;
-    };
-    template<typename Func>
-    struct HasTrialFunction
-    {
-        static const bool result = fusion::result_of::accumulate<VectorExpr,mpl::bool_<false>,ExprHasTrialFunction<Func> >::type::value;
-    };
-
-    template<typename Func>
-    static const bool has_test_basis = fusion::result_of::accumulate<VectorExpr,mpl::bool_<false>,ExprHasTestFunction<Func> >::type::value;
-    template<typename Func>
-    static const bool has_trial_basis = fusion::result_of::accumulate<VectorExpr,mpl::bool_<false>,ExprHasTrialFunction<Func> >::type::value;
-    using test_basis = std::nullptr_t;
-    using trial_basis = std::nullptr_t;
-
-
-    typedef VectorExpr expression_vector_type;
-    typedef Vec<expression_vector_type> this_type;
-
-    static const uint16_type vector_size =  fusion::result_of::size<expression_vector_type>::type::value;
-
-    typedef double value_type;
-    using evaluate_type = Eigen::Matrix<value_type,vector_size,1>;
-
-    template<typename... TheExpr>
-    struct Lambda
-    {
-        template<typename CompExprType>
-        struct GetComponentExpr
-        {
-            typedef typename CompExprType::template Lambda<TheExpr...>::type type;
-        };
-        typedef typename mpl::transform<expression_vector_type,
-                                        GetComponentExpr<mpl::_1>,
-                                        mpl::back_inserter<fusion::vector<> > >::type the_fusionvector_type;
-        typedef Vec<the_fusionvector_type> type;
-    };
-
-    template<typename... TheExpr>
-    typename Lambda<TheExpr...>::type
-    operator()( TheExpr... e  )
-        {
-            return typename Lambda<TheExpr...>::type( fusion::transform( this->expression(), initialize_lambda_expression<TheExpr...>( e... ) ) );
-        }
-
-    //@}
-
-    /** @name Constructors, destructor
-     */
-    //@{
-
-    Vec( VectorExpr const& expr )
-        :
-        M_expr( expr )
-    {}
-    Vec( Vec const & expr )
-        :
-        M_expr( expr.M_expr )
-    {}
-    ~Vec()
-    {}
-
-    //@}
-
-    /** @name Operator overloads
-     */
-    //@{
-
-
-    //@}
-
-    /** @name Accessors
-     */
-    //@{
-
-    expression_vector_type const&  expression() const
-    {
-        return M_expr;
-    }
-    expression_vector_type      &  expression()
-    {
-        return M_expr;
-    }
-
-    //@}
-
-    /** @name  Mutators
-     */
-    //@{
-
-
-    //@}
-
-    /** @name  Methods
-     */
-    //@{
-
-    //! polynomial order
-    uint16_type polynomialOrder() const { return fusion::accumulate( M_expr, uint16_type( 0 ), GetPolynomialOrder{} ); }
-
-    //! expression is polynomial?
-    bool isPolynomial() const { return fusion::accumulate( M_expr, true, GetIsPolynomial{} ); }
-
-    //! evaluate the expression without context
-    evaluate_type evaluate( bool, worldcomm_ptr_t const& ) const
-        {
-            evaluate_type res;
-            fusion::for_each( M_expr,vf::detail::evaluate_expression<evaluate_type>( res ) );
-            return res;
-        }
-
-    //@}
-
-    template<typename Geo_t, typename Basis_i_t = boost::none_t, typename Basis_j_t = Basis_i_t>
-    struct tensor
-    {
-        typedef this_type expression_type;
-        typedef typename expression_type::expression_vector_type expression_vector_type;
-        typedef Shape<expression_type::vector_size, Vectorial, false, false> shape;
-        static const bool theshape = ( shape::M == expression_type::vector_size && shape::N == 1 );
-        BOOST_MPL_ASSERT_MSG( theshape,
-                              INVALID_TENSOR_SHAPE_SHOULD_BE_RANK_1,
-                              ( mpl::int_<shape::M>, mpl::int_<shape::N> ) );
-
-        typedef typename boost::remove_reference<typename fusion::result_of::at<expression_vector_type, boost::mpl::int_<0> >::type>::type::value_type value_type;
-        //typedef typename expression_type::value_type value_type;
-
-        template<typename ExprT>
-        struct ExpressionToTensor
-        {
-            typedef typename boost::remove_reference<ExprT>::type expr_type;
-            typedef typename expr_type::template tensor<Geo_t, Basis_i_t, Basis_j_t> type;
-        };
-        typedef typename mpl::transform<expression_vector_type, ExpressionToTensor<mpl::_1>, mpl::back_inserter<fusion::vector<> > >::type tensor_vector_type;
-
-
-        struct is_zero
-        {
-            static const bool value = false;
-        };
-
-        tensor( expression_type const& expr,
-                Geo_t const& geom,
-                Basis_i_t const& fev,
-                Basis_j_t const& feu )
-            :
-            M_expr( fusion::transform( expr.expression(), initialize_expression_gij<Geo_t,Basis_i_t,Basis_j_t>( geom, fev, feu ) ) )
-        {
-
-            update( geom, fev, feu );
-        }
-        tensor( expression_type const& expr,
-                Geo_t const& geom,
-                Basis_i_t const& fev )
-            :
-            M_expr( fusion::transform( expr.expression(), initialize_expression_gi<Geo_t,Basis_i_t,Basis_j_t>( geom, fev ) ) )
-        {
-            update( geom, fev );
-        }
-        tensor( expression_type const& expr,
-                Geo_t const& geom )
-            :
-            M_expr( fusion::transform( expr.expression(), initialize_expression_g<Geo_t,Basis_i_t,Basis_j_t>( geom ) ) )
-        {
-            update( geom );
-        }
-        template<typename IM>
-        void init( IM const& im )
-        {
-            fusion::for_each( M_expr,vf::detail::init_expression<IM>( im ) );
-        }
-        void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
-        {
-            fusion::for_each( M_expr,vf::detail::update_expression_gij<Geo_t, Basis_i_t, Basis_j_t>( geom, fev, feu ) );
-
-        }
-        void update( Geo_t const& geom, Basis_i_t const& fev )
-        {
-            fusion::for_each( M_expr,vf::detail::update_expression_gi<Geo_t, Basis_i_t>( geom, fev ) );
-        }
-        void update( Geo_t const& geom )
-        {
-            fusion::for_each( M_expr,vf::detail::update_expression_g<Geo_t>( geom ) );
-        }
-        void update( Geo_t const& geom, uint16_type face )
-        {
-            fusion::for_each( M_expr,vf::detail::update_expression_face_g<Geo_t>( geom, face ) );
-        }
-        template<typename ... CTX>
-        void updateContext( CTX const& ... ctx )
-        {
-            fusion::for_each( M_expr,vf::detail::update_context<CTX...>( ctx... ) );
-        }
-
-        value_type
-        evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type /*c2*/, uint16_type q ) const
-        {
-            return fusion::accumulate( M_expr, value_type( 0 ),vf::detail::evaluate_expression_gij<value_type>( i, j, c1, q  ) );
-        }
-        template<int PatternContext>
-        value_type
-        evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type /*c2*/, uint16_type q,
-                 mpl::int_<PatternContext> ) const
-        {
-            return fusion::accumulate( M_expr, value_type( 0 ),
-                                      vf::detail::evaluate_expression_gij<value_type>( i, j, c1, q  ) );
-
-        }
-
-        value_type
-        evaliq( uint16_type i, uint16_type c1, uint16_type /*c2*/, uint16_type q ) const
-        {
-            return fusion::accumulate( M_expr, value_type( 0 ),vf::detail::evaluate_expression_gi<value_type>( i, c1, q ) );
-        }
-        value_type
-        evalq( uint16_type c1, uint16_type /*c2*/, uint16_type q ) const
-        {
-            return fusion::accumulate( M_expr, value_type( 0 ),vf::detail::evaluate_expression_g<value_type>( c1, q ) );
-        }
-        tensor_vector_type M_expr;
-    };
-
-
-
-protected:
-
-private:
-    Vec();
-
-    expression_vector_type M_expr;
-};
-} // detail
-/// \endcond
-
-/**
- * \brief vector definition
- */
-template<typename Expr1>
-inline
-Expr<vf::detail::Vec<fusion::vector<Expr1> > >
-vec( Expr1  expr1 )
-{
-    typedef vf::detail::Vec<fusion::vector<Expr1> > expr_t;
-    return Expr<expr_t>( expr_t( fusion::vector<Expr1>( expr1 ) ) );
-}
-/**
- * \brief vector definition
- */
-template<typename Expr1, typename Expr2>
-inline
-Expr<vf::detail::Vec<fusion::vector<Expr1, Expr2> > >
-vec( Expr1  expr1, Expr2  expr2 )
-{
-    typedef vf::detail::Vec<fusion::vector<Expr1, Expr2> > expr_t;
-    return Expr<expr_t>( expr_t( fusion::vector<Expr1, Expr2>( expr1, expr2 ) ) );
-}
-/**
- * \brief vector definition
- */
-template<typename Expr1, typename Expr2, typename Expr3>
-inline
-Expr<vf::detail::Vec<fusion::vector<Expr1, Expr2, Expr3> > >
-vec( Expr1  expr1, Expr2  expr2, Expr3  expr3 )
-{
-    typedef vf::detail::Vec<fusion::vector<Expr1, Expr2, Expr3> > expr_t;
-    return Expr<expr_t>( expr_t( fusion::vector<Expr1, Expr2, Expr3>( expr1, expr2, expr3 ) ) );
-}
 
 /// \cond detail
 namespace detail
@@ -1023,29 +52,100 @@ class Mat
 {
 public:
 
+    using tuple_expr_type = MatrixExpr;
+    using first_expression_type = typename std::decay_t<decltype(hana::at_c<0>( tuple_expr_type{} ))>;
+    static const int nExpr = std::decay_t<decltype(hana::size(tuple_expr_type{}))>::value;
+
+    BOOST_MPL_ASSERT_MSG( ( M*N == nExpr ),
+                          INVALID_MATRIX_SIZE,
+                          ( mpl::int_<M>, mpl::int_<N>, mpl::int_<M*N>,
+                            mpl::int_<nExpr> ) );
 
     /** @name Typedefs
      */
     //@{
+    struct FunctorsVariadicExpr
+    {
+        struct GetContextExpr
+        {
+            template <typename R,typename T>
+            constexpr auto operator()(R /*const&*/ r, T const& t) const
+                {
+                    return hana::integral_constant<size_type, r.value | std::decay_t<decltype(t)>::context >{};
+                }
+        };
 
-    static const size_type context = fusion::result_of::accumulate<MatrixExpr,mpl::size_t<0>,GetContext>::type::value;
-    //static const size_type context = fusion::accumulate( MatrixExpr(),size_type(0),GetContext() );
+        template<typename Funct>
+        struct HasTestFunction
+        {
+            template <typename T1,typename T2>
+            constexpr auto operator()( T1 const& res,T2 const& e ) const
+                {
+                    return hana::integral_constant<bool, T1::value || T2::template HasTestFunction<Funct>::result >{};
+                }
+        };
+        template<typename Funct>
+        struct HasTrialFunction
+        {
+            template <typename T1,typename T2>
+            constexpr auto operator()( T1 const& res,T2 const& e ) const
+                {
+                    return hana::integral_constant<bool, T1::value || T2::template HasTrialFunction<Funct>::result >{};
+                }
+        };
+        template<typename Funct>
+        struct HasTestBasis
+        {
+            template <typename T1,typename T2>
+            constexpr auto operator()( T1 const& res,T2 const& e ) const
+                {
+                    return hana::integral_constant<bool, T1::value || T2::template has_test_basis<Funct>::result >{};
+                }
+        };
+        template<typename Funct>
+        struct HasTrialBasis
+        {
+            template <typename T1,typename T2>
+            constexpr auto operator()( T1 const& res,T2 const& e ) const
+                {
+                    return hana::integral_constant<bool, T1::value || T2::template has_trial_basis<Funct>::result >{};
+                }
+        };
+    };
+
+    static const size_type context = std::decay_t<decltype( hana::fold( tuple_expr_type{},
+                                                                        hana::integral_constant<size_type, 0>{},
+                                                                        typename FunctorsVariadicExpr::GetContextExpr{}
+                                                                        ) )>::value;
     static const bool is_terminal = false;
 
     template<typename Func>
     struct HasTestFunction
     {
-        static const bool result = fusion::result_of::accumulate<MatrixExpr,mpl::bool_<false>,ExprHasTestFunction<Func> >::type::value;
+        static const bool result = std::decay_t<decltype( hana::fold( tuple_expr_type{},
+                                                                      hana::integral_constant<bool,false>{},
+                                                                      typename FunctorsVariadicExpr::template HasTestFunction<Func>{}
+                                                                      ) )>::value;
     };
     template<typename Func>
     struct HasTrialFunction
     {
-        static const bool result = fusion::result_of::accumulate<MatrixExpr,mpl::bool_<false>,ExprHasTrialFunction<Func> >::type::value;
+        static const bool result = std::decay_t<decltype( hana::fold( tuple_expr_type{},
+                                                                      hana::integral_constant<bool,false>{},
+                                                                      typename FunctorsVariadicExpr::template HasTrialFunction<Func>{}
+                                                                      ) )>::value;
     };
     template<typename Func>
-    static const bool has_test_basis = fusion::result_of::accumulate<MatrixExpr,mpl::bool_<false>,ExprHasTestFunction<Func> >::type::value;
+    static const bool has_test_basis = std::decay_t<decltype( hana::fold( tuple_expr_type{},
+                                                                          hana::integral_constant<bool,false>{},
+                                                                          typename FunctorsVariadicExpr::template HasTestBasis<Func>{}
+                                                                          ) )>::value;
     template<typename Func>
-    static const bool has_trial_basis = fusion::result_of::accumulate<MatrixExpr,mpl::bool_<false>,ExprHasTrialFunction<Func> >::type::value;
+    static const bool has_trial_basis = std::decay_t<decltype( hana::fold( tuple_expr_type{},
+                                                                           hana::integral_constant<bool,false>{},
+                                                                           typename FunctorsVariadicExpr::template HasTrialBasis<Func>{}
+                                                                           ) )>::value;
+
     using test_basis = std::nullptr_t;
     using trial_basis = std::nullptr_t;
 
@@ -1056,36 +156,46 @@ public:
     static const uint16_type matrix_size2 = N;
     static const uint16_type matrix_size  = M*N;
 
-    typedef double value_type;
+    //typedef double value_type;
+    using value_type = typename first_expression_type::value_type;
     using evaluate_type = Eigen::Matrix<value_type,matrix_size1,matrix_size2>;
 
-#if 0
-    BOOST_MPL_ASSERT_MSG( ( M*N == fusion::result_of::size<expression_matrix_type>::type::value ),
-                          ( INVALID_MATRIX_SIZE ),
-                          ( mpl::int_<M>, mpl::int_<N>, mpl::int_<M*N>,
-                            mpl::int_<fusion::result_of::size<expression_matrix_type>::type::value> ) );
-#endif
 
     template<typename... TheExpr>
     struct Lambda
     {
-        template<typename CompExprType>
-        struct GetLambdaComponentExpr
-        {
-            typedef typename CompExprType::template Lambda<TheExpr...>::type type;
+        template <typename T>
+        using TransformLambdaExpr = typename T::template Lambda<TheExpr...>::type;
+#if 0
+        // utility to convert tuple (hana, std, ... )
+        template <template <typename...> class C, typename Tuple> struct RebindImpl;
+        template <template <typename...> class C, typename ... Ts>
+        struct RebindImpl<C, hana::tuple<Ts...>>{
+            using type = C<Ts...>;
+        };
+        template <template <typename...> class C, typename ... Ts>
+        struct RebindImpl<C, std::tuple<Ts...>>{
+            using type = C<Ts...>;
         };
 
-        typedef typename mpl::transform< expression_matrix_type,
-                                         GetLambdaComponentExpr<mpl::_1>,
-                                        mpl::back_inserter<fusion::vector<> > >::type the_fusionvector_type;
-        typedef Mat<M,N,the_fusionvector_type> type;
+        // convert hana::tuple<...> to std::tuple<...>
+        using expr_tuple_as_std_tuple_type = typename RebindImpl< std::tuple, expression_matrix_type >::type;
+
+        // transfrom std::tuple<..> with Lambda type
+        using lambda_expr_tuple_as_std_tuple_type = boost::mp11::mp_transform<TransformLambdaExpr,expr_tuple_as_std_tuple_type>;
+
+        // get type by converting std::tuple<...> to hana::tuple<...>
+        using type = Mat<M,N, typename RebindImpl< hana::tuple, lambda_expr_tuple_as_std_tuple_type >::type>;
+#else
+        using type = Mat<M,N,  boost::mp11::mp_transform<TransformLambdaExpr,expression_matrix_type> >;
+#endif
     };
 
     template<typename... TheExpr>
     typename Lambda<TheExpr...>::type
     operator()( TheExpr... e  )
         {
-            return typename Lambda<TheExpr...>::type( fusion::transform( this->expression(), initialize_lambda_expression<TheExpr...>( e... ) ) );
+            return typename Lambda<TheExpr...>::type( hana::transform( this->expression(), [&e...]( auto const& t) { return t(e...); } ) );
         }
 
 
@@ -1095,7 +205,12 @@ public:
      */
     //@{
 
-    Mat( MatrixExpr const& expr )
+    explicit Mat( MatrixExpr const& expr )
+        :
+        M_expr( expr )
+    {
+    }
+    explicit Mat( MatrixExpr && expr )
         :
         M_expr( expr )
     {
@@ -1143,18 +258,84 @@ public:
      */
     //@{
 
+    //! dynamic context
+    size_type dynamicContext() const
+        {
+            size_type res = 0;
+            hana::for_each( M_expr, [&res]( auto const& e )
+                            {
+                                res = res | Feel::vf::dynamicContext( e );
+                            } );
+            return res;
+        }
+
     //! polynomial order
-    uint16_type polynomialOrder() const { return fusion::accumulate( M_expr, uint16_type( 0 ), GetPolynomialOrder{} ); }
+    uint16_type polynomialOrder() const
+        {
+            return hana::fold( M_expr, uint16_type(0), []( uint16_type res, auto const& e ) { return std::max( res, e.polynomialOrder() ); });
+        }
 
     //! expression is polynomial?
-    bool isPolynomial() const { return fusion::accumulate( M_expr, true, GetIsPolynomial{} ); }
+    bool isPolynomial() const
+        {
+            return hana::fold( M_expr, true, []( bool res, auto const& e ) { return res && e.isPolynomial(); });
+        }
 
     //! evaluate the expression without context
-    evaluate_type evaluate( bool, worldcomm_ptr_t const& ) const
+    evaluate_type evaluate( bool parallel, worldcomm_ptr_t const& worldcomm ) const
         {
             evaluate_type res;
-            fusion::for_each( M_expr,vf::detail::evaluate_expression<evaluate_type>( res ) );
+            uint16_type k = 0;
+            hana::for_each( M_expr, [&parallel,&worldcomm,&k,&res]( auto const& e )
+                            {
+                                uint16_type i = k / res.cols();
+                                uint16_type j = k % res.cols();
+                                res( i,j ) = e.evaluate(parallel,worldcomm)(0,0);
+                                ++k;
+                            } );
             return res;
+        }
+
+    void setParameterValues( std::map<std::string,value_type> const& mp )
+        {
+            hana::for_each( M_expr, [&mp]( auto & e ) { e.setParameterValues( mp ); } );
+        }
+    void updateParameterValues( std::map<std::string,double> & pv ) const
+        {
+            hana::for_each( M_expr, [&pv]( auto const& e ) { e.updateParameterValues( pv ); } );
+        }
+
+    template <typename SymbolsExprType>
+    auto applySymbolsExpr( SymbolsExprType const& se ) const
+        {
+            auto newTupleExprs = hana::transform( M_expr, [&se](auto const& t){ return t.applySymbolsExpr( se ); });
+            return Mat<M, N, std::decay_t<decltype(newTupleExprs)> >( std::move( newTupleExprs ) );
+        }
+
+    template <typename TheSymbolExprType>
+    bool hasSymbolDependency( std::string const& symb, TheSymbolExprType const& se ) const
+        {
+            bool res = false;
+            hana::for_each( M_expr, [&symb,&se,&res]( auto const& e )
+                            {
+                                if ( res )
+                                    return;
+                                res = e.hasSymbolDependency( symb, se );
+                            } );
+            return res;
+        }
+    template <typename TheSymbolExprType>
+    void dependentSymbols( std::string const& symb, std::map<std::string,std::set<std::string>> & res, TheSymbolExprType const& se ) const
+        {
+            hana::for_each( M_expr, [&symb,&res,&se]( auto const& e ) { e.dependentSymbols( symb,res,se ); } );
+        }
+
+    template <int diffOrder, typename TheSymbolExprType>
+    auto diff( std::string const& diffVariable, WorldComm const& world, std::string const& dirLibExpr,
+               TheSymbolExprType const& se ) const
+        {
+            auto newTupleExprs = hana::transform( M_expr, [&diffVariable,&world,&dirLibExpr,&se](auto const& t){ return t.template diff<diffOrder>( diffVariable, world, dirLibExpr, se ); });
+            return Mat<M, N, std::decay_t<decltype(newTupleExprs)> >( std::move( newTupleExprs ) );
         }
 
     //@}
@@ -1164,28 +345,53 @@ public:
     {
         typedef this_type expression_type;
         typedef typename expression_type::expression_matrix_type expression_matrix_type;
-        typedef Shape<expression_type::matrix_size1, Tensor2, false, false> shape;
 
-#if 0
-        static const bool theshape = ( shape::M == expression_type::matrix_size && shape::N == 1 );
-        BOOST_MPL_ASSERT_MSG( theshape,
-                              INVALID_TENSOR_SHAPE_SHOULD_BE_RANK_1,
-                              ( mpl::int_<shape::M>, mpl::int_<shape::N> ) );
-#endif
+        using shape = ShapeGeneric<gmc_t<Geo_t>::nDim,M,N>;
 
-        typedef typename boost::remove_reference<typename fusion::result_of::at<expression_matrix_type, boost::mpl::int_<0> >::type>::type::value_type value_type;
-        typedef typename boost::remove_reference<typename fusion::result_of::at<expression_matrix_type, boost::mpl::int_<0> >::type>::type::value_type first_value_type;
-        //typedef fusion::result_of::accumulate<VectorExpr,first_value_type,GetValueType>::type value_type;
-        //typedef typename expression_type::value_type value_type;
+        using value_type = expression_type::value_type;
 
-        template<typename ExprT>
-        struct ExpressionToTensor
+        struct TransformExprToTensor
         {
-            typedef typename boost::remove_reference<ExprT>::type expr_type;
-            typedef typename expr_type::template tensor<Geo_t, Basis_i_t, Basis_j_t> type;
-        };
-        typedef typename mpl::transform<expression_matrix_type, ExpressionToTensor<mpl::_1>, mpl::back_inserter<fusion::vector<> > >::type tensor_matrix_type;
+            template <typename T>
+            struct apply {
+                using type = typename T::template tensor<Geo_t, Basis_i_t, Basis_j_t>;
+            };
+            template <typename T>
+            constexpr auto operator()(T const& t) const
+                {
+                    using _tensor_type = typename TransformExprToTensor::template apply<T>::type;
+                    //return _tensor_type( t, Geo_t{} );
+                    std::unique_ptr<_tensor_type> result;
+                    return *result;
+                }
+            template <typename T>
+            constexpr auto operator()(T const& t, Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu ) const
+                {
+                    using _tensor_type = typename TransformExprToTensor::template apply<T>::type;
+                    return _tensor_type( t, geom, fev, feu );
+                }
+            template <typename T>
+            constexpr auto operator()(T const& t, Geo_t const& geom, Basis_i_t const& fev ) const
+                {
+                    using _tensor_type = typename TransformExprToTensor::template apply<T>::type;
+                    return _tensor_type( t, geom, fev );
+                }
+            template <typename T>
+            constexpr auto operator()(T const& t, Geo_t const& geom ) const
+                {
+                    using _tensor_type = typename TransformExprToTensor::template apply<T>::type;
+                    return _tensor_type( t, geom );
+                }
 
+            template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename T, typename... TheArgsType>
+            constexpr auto operator()(std::true_type, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                                      T const& t, Geo_t const& geom, const TheArgsType&... theInitArgs ) const
+                {
+                    using _tensor_type = typename TransformExprToTensor::template apply<T>::type;
+                    return _tensor_type( std::true_type{}, exprExpanded, ttse, t, geom, theInitArgs... );
+                }
+        };
+        using tensor_matrix_type = std::decay_t<decltype( hana::transform( expression_matrix_type{}, TransformExprToTensor{} ) ) >;
 
         struct is_zero
         {
@@ -1197,83 +403,111 @@ public:
                 Basis_i_t const& fev,
                 Basis_j_t const& feu )
             :
-            M_expr( fusion::transform( expr.expression(), initialize_expression_gij<Geo_t,Basis_i_t,Basis_j_t>( geom, fev, feu ) ) )
-        {
+            M_expr( hana::transform( expr.expression(), [&geom,&fev,&feu](auto const& t) { return TransformExprToTensor{}(t,geom,fev,feu); } ) )
+            {}
 
-            update( geom, fev, feu );
-        }
         tensor( expression_type const& expr,
                 Geo_t const& geom,
                 Basis_i_t const& fev )
             :
-            M_expr( fusion::transform( expr.expression(), initialize_expression_gi<Geo_t,Basis_i_t,Basis_j_t>( geom, fev ) ) )
-        {
-            update( geom, fev );
-        }
+            M_expr( hana::transform( expr.expression(), [&geom,&fev](auto const& t) { return TransformExprToTensor{}(t,geom,fev); } ) )
+            {}
+
         tensor( expression_type const& expr,
                 Geo_t const& geom )
             :
-            M_expr( fusion::transform( expr.expression(), initialize_expression_g<Geo_t,Basis_i_t,Basis_j_t>( geom ) ) )
-        {
-            update( geom );
-        }
-        template<typename IM>
-        void init( IM const& im )
-        {
-            fusion::for_each( M_expr,vf::detail::init_expression<IM>( im ) );
-        }
+            M_expr( hana::transform( expr.expression(), [&geom](auto const& t) { return TransformExprToTensor{}(t,geom); } ) )
+            {}
+
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        tensor( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                expression_type const& expr, Geo_t const& geom, const TheArgsType&... theInitArgs )
+            :
+            //M_expr( hana::transform( hana::make_range( hana::int_c<0>, hana::int_c<nExpr> ), [&exprExpanded,ttse,&expr,&geom,&theInitArgs...](auto eId )
+            M_expr( hana::transform( hana::unpack( hana::make_range( hana::int_c<0>, hana::int_c<nExpr> ), hana::make_tuple ), [&exprExpanded,&ttse,&expr,&geom,&theInitArgs...](auto eId )
+                                     {
+                                         return TransformExprToTensor{}(std::true_type{},hana::at( exprExpanded.expression(), hana::int_c<eId> ), ttse,
+                                                                        hana::at( expr.expression(), hana::int_c<eId> ), geom, theInitArgs...);
+                                     } ) )
+            {}
+
         void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
         {
-            fusion::for_each( M_expr,vf::detail::update_expression_gij<Geo_t, Basis_i_t, Basis_j_t>( geom, fev, feu ) );
-
+            hana::for_each( M_expr, [&geom,&fev,&feu]( auto & e ) { e.update( geom, fev, feu ); } );
         }
         void update( Geo_t const& geom, Basis_i_t const& fev )
         {
-            fusion::for_each( M_expr,vf::detail::update_expression_gi<Geo_t, Basis_i_t>( geom, fev ) );
+            hana::for_each( M_expr, [&geom,&fev]( auto & e ) { e.update( geom, fev ); } );
         }
         void update( Geo_t const& geom )
         {
-            fusion::for_each( M_expr,vf::detail::update_expression_g<Geo_t>( geom ) );
-        }
-        void update( Geo_t const& geom, uint16_type face )
-        {
-            fusion::for_each( M_expr,vf::detail::update_expression_face_g<Geo_t>( geom, face ) );
+            hana::for_each( M_expr, [&geom]( auto & e ) { e.update( geom ); } );
         }
         template<typename ... CTX>
         void updateContext( CTX const& ... ctx )
         {
-            fusion::for_each( M_expr,vf::detail::update_context<CTX...>( ctx... ) );
+            hana::for_each( M_expr, [&ctx...]( auto & e ) { e.updateContext( ctx... ); } );
         }
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        void update( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                     Geo_t const& geom, const TheArgsType&... theUpdateArgs )
+        {
+            hana::for_each( hana::make_range( hana::int_c<0>, hana::int_c<nExpr> ), [this,&exprExpanded,&ttse,&geom,&theUpdateArgs...]( auto eId )
+                            {
+                                hana::at( M_expr, hana::int_c<eId> ).update( std::true_type{}, hana::at( exprExpanded.expression(), hana::int_c<eId> ), ttse, geom, theUpdateArgs... );
+                            } );
+        }
+
 
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
-            return fusion::accumulate( M_expr, value_type( 0 ),
-                                      vf::detail::evaluate_expression_gij<value_type>( expression_type::matrix_size2,
-                                               i, j, c1, c2, q ) );
+            uint16_type index = c1*expression_type::matrix_size2+c2;
+            uint16_type k = 0;
+            value_type res(0);
+            hana::for_each( M_expr, [&i,&j,&q,&index,&k,&res]( auto const& e )
+                            {
+                                if ( k == index )
+                                    res = e.evalijq( i,j,0,0,q );
+                                ++k;
+                            } );
+            return res;
         }
         template<int PatternContext>
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q,
                  mpl::int_<PatternContext> ) const
         {
-            return fusion::accumulate( M_expr, value_type( 0 ),
-                                      vf::detail::evaluate_expression_gij<value_type>( expression_type::matrix_size2,
-                                               i, j, c1, c2, q ) );
+            return this->evalijq(i,j,c1,c2,q);
         }
 
         value_type
         evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
-            return fusion::accumulate( M_expr, value_type( 0 ),
-                                      vf::detail::evaluate_expression_gi<value_type>( expression_type::matrix_size2, i, c1, c2, q ) );
-
+            uint16_type index = c1*expression_type::matrix_size2+c2;
+            uint16_type k = 0;
+            value_type res(0);
+            hana::for_each( M_expr, [&i,&q,&index,&k,&res]( auto const& e )
+                            {
+                                if ( k == index )
+                                    res = e.evaliq( i,0,0,q );
+                                ++k;
+                            } );
+            return res;
         }
         value_type
         evalq( uint16_type c1, uint16_type c2, uint16_type q ) const
-        {
-            return fusion::accumulate( M_expr, value_type( 0 ),vf::detail::evaluate_expression_g<value_type>( expression_type::matrix_size2,
-                                       c1, c2, q ) );
+            {
+                uint16_type index = c1*expression_type::matrix_size2+c2;
+                uint16_type k = 0;
+                value_type res(0);
+                hana::for_each( M_expr, [&q,&index,&k,&res]( auto const& e )
+                                {
+                                    if ( k == index )
+                                        res = e.evalq( 0,0,q );
+                                    ++k;
+                                } );
+                return res;
         }
         tensor_matrix_type M_expr;
     };
@@ -1287,132 +521,38 @@ private:
 
     expression_matrix_type M_expr;
 };
+
+template<typename VectorExpr>
+using Vec = Mat<std::decay_t<decltype(hana::size(VectorExpr{}))>::value,1,VectorExpr>;
+
 } // detail
 /// \endcond
 
 /**
- * \brief matrix definition
+ * \brief vector definition
  */
-template<int M, int N, typename Expr1>
+template<typename Expr1,typename ... ExprT>
 inline
-Expr<vf::detail::Mat<M, N, fusion::vector<Expr1> > >
-mat( Expr1  expr1 )
+auto
+vec( Expr1 const& expr1, const ExprT&... expr2 )
 {
-    BOOST_MPL_ASSERT_MSG( ( M == 1 && N == 1 ),  INVALID_MATRIX_SIZE_SHOULD_BE_1_1, ( mpl::int_<M>, mpl::int_<N> ) );
-    typedef vf::detail::Mat<M, N, fusion::vector<Expr1> > expr_t;
-    return Expr<expr_t>( expr_t( fusion::vector<Expr1>( expr1 ) ) );
+    using expr_t = vf::detail::Vec< hana::tuple<Expr1,ExprT...> >;
+    return Expr<expr_t>( expr_t( hana::make_tuple( expr1, expr2... ) ) );
 }
+
 
 /**
  * \brief matrix definition
  */
-template<int M, int N, typename Expr1, typename Expr2>
+template<int M, int N, typename Expr1,typename ... ExprT>
 inline
-Expr<vf::detail::Mat<M, N, fusion::vector<Expr1, Expr2> > >
-mat( Expr1  expr1, Expr2  expr2 )
+Expr<vf::detail::Mat<M, N, hana::tuple<Expr1,ExprT...> > >
+mat( Expr1 const& expr1, const ExprT&... expr2 )
 {
-    BOOST_MPL_ASSERT_MSG( ( M == 2 && N == 1 || M == 1 && N == 2 ), INVALID_MATRIX_SIZE, ( mpl::int_<M>, mpl::int_<N> ) );
-    typedef vf::detail::Mat<M,N,fusion::vector<Expr1, Expr2> > expr_t;
-    return Expr<expr_t>( expr_t( fusion::vector<Expr1, Expr2>( expr1, expr2 ) ) );
+    using expr_t = vf::detail::Mat<M, N, hana::tuple<Expr1,ExprT...> > ;
+    return Expr<expr_t>( expr_t( hana::make_tuple( expr1, expr2... ) ) );
 }
 
-/**
- * \brief matrix definition
- */
-template<int M, int N, typename Expr1, typename Expr2, typename Expr3>
-inline
-Expr<vf::detail::Mat<M, N, fusion::vector<Expr1, Expr2, Expr3> > >
-mat( Expr1  expr1, Expr2  expr2, Expr3  expr3 )
-{
-#if 0
-    BOOST_MPL_ASSERT_MSG( ( M == 3 && N == 1 ||
-                            M == 1 && N == 3 ),
-                          ( INVALID_MATRIX_SIZE ),
-                          ( mpl::int_<M>, mpl::int_<N> ) );
-#endif
-    typedef vf::detail::Mat<M, N, fusion::vector<Expr1, Expr2, Expr3> > expr_t;
-    return Expr<expr_t>( expr_t( fusion::vector<Expr1, Expr2, Expr3>( expr1, expr2, expr3 ) ) );
-}
-
-/**
- * \brief matrix definition
- */
-template<int M, int N, typename Expr1, typename Expr2, typename Expr3, typename Expr4>
-inline
-Expr<vf::detail::Mat<M, N, fusion::vector<Expr1, Expr2, Expr3, Expr4> > >
-mat( Expr1  expr1, Expr2  expr2, Expr3  expr3, Expr4 expr4 )
-{
-#if 0
-    BOOST_MPL_ASSERT_MSG( ( M == 4 && N == 1 ||
-                            M == 1 && N == 4 ||
-                            M == 2 && N == 2 ),
-                          ( INVALID_MATRIX_SIZE ),
-                          ( mpl::int_<M>, mpl::int_<N> ) );
-#endif
-    typedef vf::detail::Mat<M, N, fusion::vector<Expr1, Expr2, Expr3, Expr4> > expr_t;
-    return Expr<expr_t>( expr_t( fusion::vector<Expr1, Expr2, Expr3, Expr4>( expr1, expr2, expr3, expr4 ) ) );
-}
-
-/**
- * \brief matrix definition
- */
-template<int M, int N, typename Expr1, typename Expr2, typename Expr3, typename Expr4, typename Expr5>
-inline
-Expr<vf::detail::Mat<M, N, fusion::vector<Expr1, Expr2, Expr3, Expr4, Expr5> > >
-mat( Expr1  expr1, Expr2  expr2, Expr3  expr3, Expr4 expr4, Expr5 expr5 )
-{
-#if 0
-    BOOST_MPL_ASSERT_MSG( ( M == 4 && N == 1 ||
-                            M == 1 && N == 4 ||
-                            M == 2 && N == 2 ),
-                          ( INVALID_MATRIX_SIZE ),
-                          ( mpl::int_<M>, mpl::int_<N> ) );
-#endif
-    typedef vf::detail::Mat<M, N, fusion::vector<Expr1, Expr2, Expr3, Expr4, Expr5> > expr_t;
-    return Expr<expr_t>( expr_t( fusion::vector<Expr1, Expr2, Expr3, Expr4, Expr5>( expr1, expr2, expr3, expr4, expr5 ) ) );
-}
-
-/**
- * \brief matrix definition
- */
-template<int M, int N, typename Expr1, typename Expr2, typename Expr3, typename Expr4, typename Expr5, typename Expr6>
-inline
-Expr<vf::detail::Mat<M, N, fusion::vector<Expr1, Expr2, Expr3, Expr4, Expr5, Expr6> > >
-mat( Expr1  expr1, Expr2  expr2, Expr3  expr3, Expr4 expr4, Expr5 expr5, Expr6 expr6 )
-{
-#if 0
-    BOOST_MPL_ASSERT_MSG( ( M == 4 && N == 1 ||
-                            M == 1 && N == 4 ||
-                            M == 2 && N == 2 ),
-                          ( INVALID_MATRIX_SIZE ),
-                          ( mpl::int_<M>, mpl::int_<N> ) );
-#endif
-    typedef vf::detail::Mat<M, N, fusion::vector<Expr1, Expr2, Expr3, Expr4, Expr5, Expr6> > expr_t;
-    return Expr<expr_t>( expr_t( fusion::vector<Expr1, Expr2, Expr3, Expr4, Expr5, Expr6>( expr1, expr2, expr3, expr4, expr5, expr6 ) ) );
-}
-
-/**
- * \brief matrix definition
- */
-template<int M, int N,
-         typename Expr1, typename Expr2, typename Expr3, typename Expr4,
-         typename Expr5, typename Expr6, typename Expr7, typename Expr8,
-         typename Expr9>
-inline
-Expr<vf::detail::Mat<M, N, fusion::vector<Expr1, Expr2, Expr3, Expr4, Expr5, Expr6, Expr7, Expr8, Expr9 > > >
-mat( Expr1  expr1, Expr2  expr2, Expr3  expr3, Expr4 expr4,
-     Expr5  expr5, Expr6  expr6, Expr7  expr7, Expr8 expr8, Expr9 expr9 )
-{
-#if 0
-    BOOST_MPL_ASSERT_MSG( ( M == 4 && N == 1 ||
-                            M == 1 && N == 4 ||
-                            M == 2 && N == 2 ),
-                          ( INVALID_MATRIX_SIZE ),
-                          ( mpl::int_<M>, mpl::int_<N> ) );
-#endif
-    typedef vf::detail::Mat<M, N, fusion::vector<Expr1, Expr2, Expr3, Expr4,Expr5, Expr6, Expr7, Expr8, Expr9> > expr_t;
-    return Expr<expr_t>( expr_t( fusion::vector<Expr1, Expr2, Expr3, Expr4, Expr5, Expr6, Expr7, Expr8, Expr9>( expr1, expr2, expr3, expr4, expr5, expr6, expr7, expr8, expr9 ) ) );
-}
 
 } // vf
 } // Feel

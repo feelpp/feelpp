@@ -61,12 +61,14 @@ BOOST_AUTO_TEST_SUITE( modelproperties )
 
 BOOST_AUTO_TEST_CASE( test_materials )
 {
-    auto mesh = loadMesh(new Mesh<Simplex<3> >);
+    auto mesh = loadMesh(_mesh=new Mesh<Simplex<3> >);
     auto Xh = Pch<1>(mesh);
     auto g = Xh->element();
     auto d = Xh->element();
 
-    ModelProperties model_props( Environment::expand(soption("json_filename")) );
+    ModelProperties model_props;
+    model_props.setupFromFilenameOption();
+
     auto mats = model_props.materials();
     for ( auto const& matPair : mats )
     {
@@ -74,11 +76,11 @@ BOOST_AUTO_TEST_CASE( test_materials )
         auto physics = mat.physics();
         auto name = mat.name();
         auto meshMarkers = mat.meshMarkers();
-        auto rhoInt = mat.getInt("rho");
-        auto etaDouble = mat.getDouble("eta");
 
-        auto rho = mat.getScalar( "rho" );
-        auto f = mat.getScalar("f","g",idv(g));
+        auto rho = mat.property("rho");
+        auto eta = mat.property("eta");
+        auto f = mat.property("f");
+#if 0
         auto fParam = mat.getScalar("f",{{"g",1.}});
         auto hList = mat.getScalar("h",{"g","t"},{idv(g),idv(d)});
         auto fVec = mat.getScalar("f",std::vector<std::string>(1,"g"), std::vector<decltype(idv(g))>(1,idv(g)));
@@ -92,8 +94,8 @@ BOOST_AUTO_TEST_CASE( test_materials )
         auto chi = mat.getMatrix<2>( "chi" );
         auto xhiPair = mat.getMatrix<3>( "xhi", {"t",2.} );
         auto xhiMap = mat.getMatrix<3,3>( "xhi", {{"t",3.}});
-
-#if 1
+#endif
+#if 0
         Feel::cout << "properties for " << matPair.first << std::endl;
         Feel::cout << "\t" << name << std::endl;
         Feel::cout << "\thas " << physics.size() << " physics:" << std::endl;
@@ -126,8 +128,11 @@ BOOST_AUTO_TEST_CASE( test_materials )
 
 BOOST_AUTO_TEST_CASE( test_parameters )
 {
-    ModelProperties model_props( Environment::expand(soption("json_filename")) );
+    ModelProperties model_props;
+    model_props.setupFromFilenameOption();
+
     auto param = model_props.parameters();
+    BOOST_CHECK_EQUAL( param.size(), 3);
     for ( auto const& pp : param )
     {
         auto p = pp.second;
@@ -136,16 +141,23 @@ BOOST_AUTO_TEST_CASE( test_parameters )
             BOOST_CHECK_CLOSE( p.value(), 0.3, 10e-8);
             BOOST_CHECK_CLOSE( p.min(), 1e-4, 10e-8);
             BOOST_CHECK_EQUAL( p.max(), 10);
+            BOOST_CHECK_EQUAL( p.description(), "Um desc" );
         }
         else if( p.name() == "H" )
         {
             BOOST_CHECK_CLOSE( p.value(), 0.41, 10e-8 );
+            BOOST_CHECK_EQUAL( p.description(), "" );
+        }
+        else if( p.name() == "Te" )
+        {
+            BOOST_CHECK_CLOSE( p.value(), 293.1, 10e-8);
         }
 #if 0
         Feel::cout << p.name() << std::endl
                    << "\tvalue : " << p.value() << std::endl
                    << "\tmin   : " << p.min() << std::endl
-                   << "\tmax   : " << p.max() << std::endl;
+                   << "\tmax   : " << p.max() << std::endl
+                   << "\tdesc  : " << p.description() << std::endl;
         if ( p.hasExpression() )
             Feel::cout << "\texpr  : " << p.expression() << std::endl;
 #endif
@@ -154,66 +166,69 @@ BOOST_AUTO_TEST_CASE( test_parameters )
 
 BOOST_AUTO_TEST_CASE( test_bc )
 {
-    std::vector<std::set<std::string> > markers;
-    markers.push_back({{"inflow"}});
-    markers.push_back({{"mark"}});
-    std::set<std::string> s;
-    s.insert("mark1");
-    s.insert("mark2");
-    markers.push_back(s);
-    markers.push_back({{"feelpp"}});
-    markers.push_back(std::set<std::string>({{"mark1","mark2","mymarker","toto2","toto4","toto6","feelpp1_pA","feelpp1_pD","feelpp2_pA","feelpp2_pD"}}));
-    ModelProperties model_props( Environment::expand(soption("json_filename")) );
-    auto boundaryconditions = model_props.boundaryConditions();
-    int i = 0;
-    for( auto const& type : boundaryconditions["velocity"] )
+    std::set<std::string> markersRobinTest = {"mark1","mark2","mymarker","toto2","toto4","toto6","feelpp1_pA","feelpp1_pD","feelpp2_pA","feelpp2_pD"};
+
+    ModelProperties model_props;
+    model_props.setupFromFilenameOption();
+
+    auto const& boundaryconditions = model_props.boundaryConditions();
+
+    bool hasRobinBC = false;
+    BOOST_CHECK( boundaryconditions.hasSection( "velocity" ) );
+    for( auto const& [j_type,j_val] : boundaryconditions.section( "velocity" ).items() )
     {
-        for( auto const& cond : type.second )
+        BOOST_CHECK( j_type == "Dirichlet" || j_type  == "Neumann" || j_type == "Robin" );
+        BOOST_CHECK( j_val.is_object() );
+
+        if ( j_type == "Robin" )
         {
-            BOOST_CHECK_EQUAL( cond.markers().size(), markers[i].size() );
-            for( auto const& m : cond.markers() )
-                BOOST_CHECK( markers[i].find(m) != markers[i].end() );
-            ++i;
+            hasRobinBC = true;
+            BOOST_CHECK( j_val.contains( "test" ) );
+            auto const& j_robin_test = j_val.at( "test" );
+            BOOST_CHECK( j_robin_test.contains( "markers" ) );
+            ModelMarkers mmarkers;
+            mmarkers.setup( j_robin_test.at( "markers" ) );
+
+            for ( std::string const& _m : markersRobinTest )
+                BOOST_CHECK( mmarkers.find( _m ) != mmarkers.end() );
         }
     }
-    auto test = boundaryconditions["velocity"]["Robin"][0];
-    BOOST_CHECK_EQUAL( test.material(), "mycopper" );
+    BOOST_CHECK( hasRobinBC );
 }
 
-#if 0 // TODO
 BOOST_AUTO_TEST_CASE( test_bc2 )
 {
-    std::vector<std::set<std::string> > markers;
-    markers.push_back({{"inflow"}});
-    markers.push_back({{"mark"}});
-    std::set<std::string> s;
-    s.insert("mark1");
-    s.insert("mark2");
-    markers.push_back(s);
-    markers.push_back({{"feelpp"}});
-    markers.push_back(std::set<std::string>({{"mark1","mark2","mymarker","toto2","toto4","toto6","feelpp1_pA","feelpp1_pD","feelpp2_pA","feelpp2_pD"}}));
-    ModelProperties model_props( Environment::expand(soption("json_filename")) );
+    std::map<std::string,std::map<std::string,std::set<std::string>>> markers;
+    markers["Dirichlet"] = { { "inflow", { "inflow" } }, { "wall", { "mark" } }, { "cylinder", { "mark1", "mark2" } } };
+    markers["Neumann"] = { { "outlet", { "feelpp" } } };
+    markers["Robin"] = { { "test", { "mark1","mark2","mymarker","toto2","toto4","toto6","feelpp1_pA","feelpp1_pD","feelpp2_pA","feelpp2_pD" } } };
+
+    ModelProperties model_props;
+    model_props.enableBoundaryConditions2();
+    model_props.setupFromFilenameOption();
+
     auto boundaryconditions = model_props.boundaryConditions2();
-    int i = 0;
-    for( auto const& type : boundaryconditions["velocity"] )
+    for( auto const& [bcTypeName,bcTypeData] : boundaryconditions.at("velocity") )
     {
-        for( auto const& cond : type.second )
+        for( auto const& [bcName,cond] : bcTypeData )
         {
-            BOOST_CHECK_EQUAL( cond.markers().size(), markers[i].size() );
-            for( auto const& m : cond.markers() )
-                BOOST_CHECK( markers[i].find(m) != markers[i].end() );
-            ++i;
+            auto const& checkMarkers = markers.at(bcTypeName).at(bcName);
+            auto const& bcMarkers = cond.markers();
+            for ( std::string const& _m : checkMarkers )
+                BOOST_CHECK( bcMarkers.find( _m ) != bcMarkers.end() );
+
+            if ( bcTypeName == "Robin" && bcName == "test" )
+                BOOST_CHECK_EQUAL( cond.material(), "mycopper" );
         }
     }
-    auto test = boundaryconditions["velocity"]["Robin"][0];
-    BOOST_CHECK_EQUAL( test.material(), "mycopper" );
 }
-#endif
+
 
 
 BOOST_AUTO_TEST_CASE( test_postprocess )
 {
-    ModelProperties model_props( Environment::expand(soption("json_filename")) );
+    ModelProperties model_props;
+    model_props.setupFromFilenameOption();
 
     std::map<std::string,std::tuple<double,std::set<std::string>> > ppStatExpected;
     for ( std::string const& i : std::vector<std::string>( {"A","B"} ) )
@@ -233,7 +248,7 @@ BOOST_AUTO_TEST_CASE( test_postprocess )
     }
 
     std::map<std::string,std::tuple<double,std::set<std::string>> > ppStatRegistered;
-    for (auto const& stat : model_props.postProcess().measuresStatistics() )
+    for (auto const& stat : model_props.postProcess().measuresStatistics("test") )
     {
         //std::cout << "stat.name() " << stat.name() << " " << stat.markers()  << std::endl;
         std::get<0>( ppStatRegistered[stat.name()] ) = stat.expr().exprScalar().evaluate()(0,0);
@@ -253,7 +268,9 @@ BOOST_AUTO_TEST_CASE( test_postprocess )
 
 BOOST_AUTO_TEST_CASE( test_outputs )
 {
-    ModelProperties model_props( Environment::expand(soption("json_filename")) );
+    ModelProperties model_props;
+    model_props.setupFromFilenameOption();
+
     auto outputs = model_props.outputs();
     for( auto const& out : outputs )
     {

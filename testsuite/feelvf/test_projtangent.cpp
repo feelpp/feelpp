@@ -61,7 +61,7 @@ BOOST_AUTO_TEST_SUITE( projtangent_suite )
 BOOST_AUTO_TEST_CASE( test_0 )
 {
     BOOST_TEST_MESSAGE( "test_circle" );
-    Feel::Environment::changeRepository( boost::format( "testsuite/feelvf/%1%/test_circle/h_%2%/" )
+    Feel::Environment::changeRepository( _directory=boost::format( "testsuite/feelvf/%1%/test_circle/h_%2%/" )
                                          % Feel::Environment::about().appName()
                                          % option(_name="gmsh.hsize").as<double>() );
     auto mesh = unitCircle();
@@ -83,7 +83,7 @@ BOOST_AUTO_TEST_CASE( test_0 )
 BOOST_AUTO_TEST_CASE( test_1 )
 {
     BOOST_TEST_MESSAGE( "test_square" );
-    Feel::Environment::changeRepository( boost::format( "testsuite/feelvf/%1%/test_square/h_%2%/" )
+    Feel::Environment::changeRepository( _directory=boost::format( "testsuite/feelvf/%1%/test_square/h_%2%/" )
                                          % Feel::Environment::about().appName()
                                          % option(_name="gmsh.hsize").as<double>() );
     auto mesh = unitSquare();
@@ -109,7 +109,7 @@ BOOST_AUTO_TEST_CASE( test_1 )
 BOOST_AUTO_TEST_CASE( test_2 )
 {
     BOOST_TEST_MESSAGE( "test_cube" );
-    Feel::Environment::changeRepository( boost::format( "testsuite/feelvf/%1%/test_cube/h_%2%/" )
+    Feel::Environment::changeRepository( _directory=boost::format( "testsuite/feelvf/%1%/test_cube/h_%2%/" )
                                          % Feel::Environment::about().appName()
                                          % option(_name="gmsh.hsize").as<double>() );
     auto mesh = unitCube();
@@ -131,7 +131,7 @@ BOOST_AUTO_TEST_CASE( test_2 )
 BOOST_AUTO_TEST_CASE( test_3 )
 {
     BOOST_TEST_MESSAGE( "test_square" );
-    Feel::Environment::changeRepository( boost::format( "testsuite/feelvf/%1%/test_unitsquare/h_%2%/" )
+    Feel::Environment::changeRepository( _directory=boost::format( "testsuite/feelvf/%1%/test_unitsquare/h_%2%/" )
                                          % Feel::Environment::about().appName()
                                          % option(_name="gmsh.hsize").as<double>() );
     auto mesh = unitSquare();
@@ -150,7 +150,7 @@ BOOST_AUTO_TEST_CASE( test_3 )
 BOOST_AUTO_TEST_CASE( test_4 )
 {
     BOOST_TEST_MESSAGE( "test_cube" );
-    Feel::Environment::changeRepository( boost::format( "testsuite/feelvf/%1%/test_cube/h_%2%/" )
+    Feel::Environment::changeRepository( _directory=boost::format( "testsuite/feelvf/%1%/test_cube/h_%2%/" )
                                          % Feel::Environment::about().appName()
                                          % option(_name="gmsh.hsize").as<double>() );
     auto mesh = unitCube();
@@ -170,7 +170,7 @@ BOOST_AUTO_TEST_CASE( test_4 )
     // T2 = 1 and hence the integral should be equal to 1 on each 1 and 6
     // over all the the cube
     double b = integrate( _range= boundaryfaces( mesh ), _expr= trans(cross(basisT1(),basisT2()))*basisN() ).evaluate()( 0,0 );
-    BOOST_CHECK_CLOSE( b, 6, 1e-13);
+    BOOST_CHECK_CLOSE( b, 6., 1e-12);
     BOOST_TEST_MESSAGE( "int 1^T*T=" << b << " (must be zero)");
     BOOST_TEST_MESSAGE( "test_square done" );
 }

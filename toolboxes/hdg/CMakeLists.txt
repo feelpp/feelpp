@@ -28,58 +28,51 @@ if(CMAKE_C_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
 endif()
 
-if ( FEELPP_HAS_OMC AND FEELPP_HAS_FMILIB )
-  feelpp_add_fmu( test3d0d_nonlinearR CLASS test3d0d_nonlinearR SRCS test3d0d_nonlinearR/test3d0d_nonlinearR.mo  test3d0d_nonlinearR/nonlinearResistor.mo  test3d0d_nonlinearR/voltage_nonlinearTest3d0d.mo )
+if ( ( FEELPP_HAS_OMC OR FEELPP_HAS_MO2FMU ) AND FEELPP_HAS_FMI4CPP )
+  add_subdirectory( cases/coupledpoisson )
 endif()
 
 feelpp_add_application( hdg_poisson
   SRCS mixedpoisson_main.cpp
-  LINK_LIBRARIES feelpp_toolbox_hdg_poisson_lib
-  INSTALL MAN hdg_poisson )
-
-feelpp_add_application( hdg_cvg_poisson
-  SRCS cvg_mixedpoisson.cpp
-  LINK_LIBRARIES feelpp_toolbox_hdg_poisson_lib
-  INSTALL )
+  LINK_LIBRARIES feelpp_toolbox_hdg_lib
+  INSTALL MAN hdg_poisson
+  TESTS )
 
 feelpp_add_application( hdg_elasticity
   SRCS mixedelasticity_main.cpp
   INCLUDE_IN_ALL
-  LINK_LIBRARIES feelpp_toolbox_hdg_elasticity_lib
-  INSTALL MAN hdg_elasticity )
+  LINK_LIBRARIES feelpp_toolbox_hdg_lib
+  INSTALL MAN hdg_elasticity
+  TESTS )
 
 feelpp_add_application( hdg_thermoelectric
-  SRCS thermoelectric.hpp thermoelectric_main.cpp
-  LINK_LIBRARIES feelpp_toolbox_hdg_poisson_lib
-  INSTALL
+  SRCS thermoelectric_main.cpp
+  LINK_LIBRARIES feelpp_toolbox_hdg_lib
+  INSTALL TESTS
   )
 
-feelpp_add_application( hdg_cvg_thermoelectric
-  SRCS thermoelectric.hpp cvg_thermoelectric.cpp
-  LINK_LIBRARIES feelpp_toolbox_hdg_poisson_lib
-  INSTALL
-  )
+# feelpp_add_application( hdg_poroelastic
+#   SRCS poroelastic_main.cpp
+#   LINK_LIBRARIES feelpp_toolbox_hdg_poisson_lib feelpp_toolbox_hdg_elasticity_lib
+#   INSTALL
+#   )
 
-feelpp_add_application( hdg_poroelastic
-  SRCS poroelastic_main.cpp
-  LINK_LIBRARIES feelpp_toolbox_hdg_poisson_lib feelpp_toolbox_hdg_elasticity_lib
-  INSTALL
-  )
+feelpp_add_testcase(cases PREFIX feelpp_toolbox_hdg CATEGORY toolboxes/hdg)
 
-#feelpp_add_application(
-#  hdg_thermoelectricelasticity
-#  SRCS thermoelectric-elasticity.hpp thermoelectric-elasticity_main.cpp
-#  LINK_LIBRARIES feelpp_toolbox_hdg_poisson_lib feelpp_toolbox_hdg_elasticity_lib
-#  )
+if ( FEELPP_HAS_FMI4CPP )
+  feelpp_add_application( hdg_coupledpoisson
+    SRCS coupledmixedpoisson_main.cpp
+    LINK_LIBRARIES feelpp_toolbox_hdg_lib
+    INSTALL MAN hdg_coupledpoisson
+     )
 
-if ( FEELPP_HAS_FMILIB )
-feelpp_add_application( hdg_coupledpoisson
-  SRCS coupledmixedpoisson_main.cpp
-  LINK_LIBRARIES feelpp_toolbox_hdg_poisson_lib
-  INSTALL MAN hdg_coupledpoisson  )
+  message(STATUS "[toolbox] add tests feelpp_toolbox_hdg_coupledpoisson-linear")
+  add_test( NAME feelpp_toolbox_hdg_coupledpoisson-linear-om COMMAND feelpp_toolbox_hdg_coupledpoisson --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/coupledpoisson/1-linear/linear.cfg
+        --ts.time-final 0.25
+        --hdg.poisson.json.patch "{ \"op\": \"replace\", \"path\": \"/BoundaryConditions/poisson/CouplingODEs/buffer/circuit\", \"value\": \"${CMAKE_CURRENT_BINARY_DIR}/cases/coupledpoisson/1-linear/test3d0d_linear/test3d0d_linear.fmu\" }" )
+
+  # add_test( NAME feelpp_toolbox_hdg_coupledpoisson-linear-dy COMMAND feelpp_toolbox_hdg_coupledpoisson --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/coupledpoisson/1-linear/linear.cfg --ts.time-final 0.25 --hdg.poisson.json-editions BoundaryConditions.flux.Coupling.buffer.circuit:${CMAKE_CURRENT_SOURCE_DIR}/cases/coupledpoisson/1-linear/test3d0d.fmu)
 endif()
 
 
-foreach( _testcase IN ITEMS "poisson" "elasticity" "thermoelectric"  )
-  feelpp_add_testcase(${_testcase} PREFIX feelpp_toolbox_hdg CATEGORY toolboxes/hdg)
-endforeach()
+

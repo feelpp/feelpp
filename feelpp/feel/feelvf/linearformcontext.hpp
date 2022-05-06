@@ -67,9 +67,7 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,
     M_eval0_expr( new eval0_expr_type( expr, _gmcExpr, M_test_fec0 ) ),
     M_eval1_expr(),
     M_integrator( im )
-{
-    M_eval0_expr->init( im );
-}
+{}
 
 template<typename SpaceType, typename VectorType,  typename ElemContType>
 template<typename GeomapContext,typename ExprT, typename IM,typename GeomapExprContext,typename GeomapTrialContext,int UseMortarType>
@@ -101,9 +99,8 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,
     M_eval0_expr( new eval0_expr_type( expr, _gmcExpr, M_test_fec0 ) ),
     M_eval1_expr(),
     M_integrator( im )
-{
-    M_eval0_expr->init( im2 );
-}
+{}
+
 template<typename SpaceType, typename VectorType,  typename ElemContType>
 template<typename GeomapContext,typename ExprT, typename IM,typename GeomapExprContext,typename GeomapTrialContext,int UseMortarType>
 template<typename IMExpr, typename IMTest>
@@ -133,9 +130,8 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,
     M_eval0_expr( new eval0_expr_type( expr, _gmcExpr, M_test_fec0 ) ),
     M_eval1_expr(),
     M_integrator( im )
-{
-    M_eval0_expr->init( imExpr );
-}
+{}
+
 template<typename SpaceType, typename VectorType,  typename ElemContType>
 template<typename GeomapContext,typename ExprT, typename IM,typename GeomapExprContext,typename GeomapTrialContext,int UseMortarType>
 template<typename IM2>
@@ -170,11 +166,8 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,
     M_eval0_expr( new eval0_expr_type( expr, _gmcExpr, M_test_fec0 ) ),
     M_eval1_expr( new eval1_expr_type( expr, _gmcExpr, M_test_fec1 ) ),
     M_integrator( im )
+{}
 
-{
-    M_eval0_expr->init( im2 );
-    M_eval1_expr->init( im2 );
-}
 template<typename SpaceType, typename VectorType,  typename ElemContType>
 template<typename GeomapContext,typename ExprT, typename IM,typename GeomapExprContext,typename GeomapTrialContext,int UseMortarType>
 template<typename IM2, typename IMTest>
@@ -207,11 +200,8 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,
     M_eval0_expr( new eval0_expr_type( expr, _gmcExpr, M_test_fec0 ) ),
     M_eval1_expr( new eval1_expr_type( expr, _gmcExpr, M_test_fec1 ) ),
     M_integrator( im )
+{}
 
-{
-    M_eval0_expr->init( im2 );
-    M_eval1_expr->init( im2 );
-}
 template<typename SpaceType, typename VectorType,  typename ElemContType>
 template<typename GeomapContext,typename ExprT,typename IM,typename GeomapExprContext,typename GeomapTrialContext,int UseMortarType>
 void
@@ -308,7 +298,7 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,
                           INVALID_TENSOR_SHAPE_SHOULD_BE_RANK_0,
                           ( mpl::int_<shape::M>, mpl::int_<shape::N> ) );
 
-    if ( !UseMortar )
+    if constexpr ( !UseMortar )
     {
         for ( uint16_type i = 0; i < test_dof_type::nDofPerElement; ++i )
         {
@@ -362,7 +352,7 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,
                           INVALID_TENSOR_SHAPE_SHOULD_BE_RANK_0,
                           ( mpl::int_<shape::M>, mpl::int_<shape::N> ) );
 
-    if ( !UseMortar )
+    if constexpr ( !UseMortar )
     {
         if ( isFirstExperience )
             for ( uint16_type i = 0; i < test_dof_type::nDofPerElement; ++i )
@@ -401,7 +391,7 @@ void
 LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,GeomapExprContext,GeomapTrialContext,UseMortarType>::assemble( index_type elt_0 )
 {
 
-    if ( !UseMortar )
+    if constexpr ( !UseMortar )
     {
         M_local_rows = M_test_dof->localToGlobalIndices( elt_0, M_form.dofIdToContainerId() ).array();
 

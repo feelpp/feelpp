@@ -22,8 +22,8 @@
 //! License along with this library; if not, write to the Free Software
 //! Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 //!
-#ifndef __galerkingraph_H
-#define __galerkingraph_H 1
+#ifndef FEELPP_DISCR_STENCIL_H
+#define FEELPP_DISCR_STENCIL_H 1
 
 #define FEELPP_EXPORT_GRAPH 0
 #if FEELPP_EXPORT_GRAPH
@@ -234,16 +234,16 @@ stencilRange( IteratorRange const& r)
 
 
 
-struct stencilRangeMapTypeBase {};
+struct StencilRangeMapTypeBase {};
 
-struct stencilRangeMap0Type
+struct StencilRangeMap0Type
     :
-    public stencilRangeMapTypeBase,
+    public StencilRangeMapTypeBase,
     public fusion::map<>
 {
     typedef fusion::map<> super_type;
 
-    stencilRangeMap0Type()
+    StencilRangeMap0Type()
         :
         super_type()
     {}
@@ -252,15 +252,15 @@ struct stencilRangeMap0Type
 };
 
 template <typename ThePair1Type>
-struct stencilRangeMap1Type
+struct StencilRangeMap1Type
     :
-    public stencilRangeMapTypeBase,
+    public StencilRangeMapTypeBase,
     public fusion::map< fusion::pair< typename ThePair1Type::first_type, typename ThePair1Type::second_type > >
 {
     typedef typename ThePair1Type::first_type key1_type;
     typedef fusion::map< fusion::pair< key1_type, typename ThePair1Type::second_type > > super_type;
 
-    stencilRangeMap1Type( ThePair1Type const& p )
+    StencilRangeMap1Type( ThePair1Type const& p )
         :
         super_type( p )
     {}
@@ -269,9 +269,9 @@ struct stencilRangeMap1Type
 };
 
 template <typename ThePair1Type,typename ThePair2Type>
-struct stencilRangeMap2Type
+struct StencilRangeMap2Type
     :
-    public stencilRangeMapTypeBase,
+    public StencilRangeMapTypeBase,
     public fusion::map< fusion::pair< typename ThePair1Type::first_type, typename ThePair1Type::second_type >,
                         fusion::pair< typename ThePair2Type::first_type, typename ThePair2Type::second_type > >
 {
@@ -280,7 +280,7 @@ struct stencilRangeMap2Type
     typedef fusion::map< fusion::pair< key1_type, typename ThePair1Type::second_type >,
                          fusion::pair< key2_type, typename ThePair2Type::second_type > > super_type;
 
-    stencilRangeMap2Type( ThePair1Type const& p1, ThePair2Type const& p2 )
+    StencilRangeMap2Type( ThePair1Type const& p1, ThePair2Type const& p2 )
         :
         super_type( p1,p2 )
     {}
@@ -288,20 +288,20 @@ struct stencilRangeMap2Type
     static bool isNullRange() { return false; }
 };
 
-stencilRangeMap0Type stencilRangeMap();
+StencilRangeMap0Type stencilRangeMap();
 
 template <typename ThePair1Type>
-stencilRangeMap1Type<ThePair1Type>
+StencilRangeMap1Type<ThePair1Type>
 stencilRangeMap( ThePair1Type const& p)
 {
-    return stencilRangeMap1Type<ThePair1Type>( p.second );
+    return StencilRangeMap1Type<ThePair1Type>( p.second );
 }
 
 template <typename ThePair1Type,typename ThePair2Type>
-stencilRangeMap2Type<ThePair1Type,ThePair2Type>
+StencilRangeMap2Type<ThePair1Type,ThePair2Type>
 stencilRangeMap( ThePair1Type const& p1, ThePair2Type const& p2)
 {
-    return stencilRangeMap2Type<ThePair1Type,ThePair2Type>( p1.second, p2.second );
+    return StencilRangeMap2Type<ThePair1Type,ThePair2Type>( p1.second, p2.second );
 }
 
 /**
@@ -350,16 +350,20 @@ type_spaces_t( T1&& t1, T2&& t2 )
 }
 
 template<typename X1, typename X2,
-         typename RangeIteratorTestType = stencilRangeMap0Type,
-         typename RangeExtendedIteratorType = stencilRangeMap0Type,
+         typename RangeIteratorTestType = StencilRangeMap0Type,
+         typename RangeExtendedIteratorType = StencilRangeMap0Type,
          typename QuadSetType = stencilQuadSet<> >
 class Stencil
 {
 public:
-    typedef X1 test_space_ptrtype;
-    typedef X2 trial_space_ptrtype;
-    typedef typename X1::element_type test_space_type;
-    typedef typename X2::element_type trial_space_type;
+    using test_space_type = X1;
+    using trial_space_type = X2;
+    using test_space_ptrtype = std::shared_ptr<test_space_type>;
+    using trial_space_ptrtype = std::shared_ptr<trial_space_type>;
+    // typedef X1 test_space_ptrtype;
+    // typedef X2 trial_space_ptrtype;
+    // typedef typename X1::element_type test_space_type;
+    // typedef typename X2::element_type trial_space_type;
     typedef GraphCSR graph_type;
     typedef std::shared_ptr<graph_type> graph_ptrtype;
     typedef Stencil<X1,X2,RangeIteratorTestType,RangeExtendedIteratorType,QuadSetType> self_type;
@@ -561,6 +565,9 @@ private:
             const bool test_related_to_trial = _M_X1->mesh()->isSubMeshFrom( _M_X2->mesh() );
             const bool trial_related_to_test = _M_X2->mesh()->isSubMeshFrom( _M_X1->mesh() );
             const bool trial_sibling_of_test = _M_X2->mesh()->isSiblingOf( _M_X1->mesh() );
+            DVLOG(2) << "test_related_to_trial" << test_related_to_trial;
+            DVLOG(2) << "trial_related_to_test" << trial_related_to_test;
+            DVLOG(2) << "trial_sibling_of_test" << trial_sibling_of_test;
             if ( test_related_to_trial )
             {
                 index_type face_id = _M_X1->mesh()->subMeshToMesh( test_eid );
@@ -607,14 +614,15 @@ private:
                 index_type domain_eid = invalid_v<index_type>;
                 if ( id_in_sibling!=invalid_v<index_type>)
                 {
-                    domain_eid = _M_X2->mesh()->face(id_in_sibling).element0().id();
+                    //domain_eid = _M_X2->mesh()->face(id_in_sibling).element0().id();
+                    domain_eid = _M_X2->mesh()->element(id_in_sibling).id();
                     DVLOG(1) << "[test_sibling_of_trial<1>] test element id: "  << test_eid << " trial element id : " << domain_eid << "\n";
                     idsFind.insert( domain_eid );
                 }
             }
             else
             {
-                CHECK ( false ) << "[trial_related_to_test<1>] : test and trial mesh can not be the same here\n";
+                CHECK ( false ) << "[trial_related_to_test<1>] : test and trial mesh cannot be the same here\n";
             }
             google::FlushLogFiles( google::GLOG_INFO );
             return idsFind;
@@ -708,13 +716,13 @@ public :
         return fusion::at_key< key_type >( M_rangeIteratorTest );
     }
     template <int I,int J>
-    stencilRangeMap0Type
+    StencilRangeMap0Type
     subRangeIterator( mpl::bool_<true> /**/ )
     {
-        return stencilRangeMap0Type();
+        return StencilRangeMap0Type{};
     }
     template <int I,int J>
-    stencilRangeMap1Type< fusion::pair<  fusion::pair<mpl::int_<0>,mpl::int_<0> >, typename rangeiteratorType<I,J>::resultfindrange_type::second_type > >
+    StencilRangeMap1Type< fusion::pair<  fusion::pair<mpl::int_<0>,mpl::int_<0> >, typename rangeiteratorType<I,J>::resultfindrange_type::second_type > >
     subRangeIterator( mpl::bool_<false> /**/ )
     {
         return stencilRangeMap( stencilRange<0,0>( rangeiterator<I,J>(mpl::bool_<false>()) ) );
@@ -739,13 +747,13 @@ public :
         return fusion::at_key< key_type >( M_rangeIteratorExtended );
     }
     template <int I,int J>
-    stencilRangeMap0Type
+    StencilRangeMap0Type
     subRangeExtendedIterator( mpl::bool_<true> /**/ )
     {
-        return stencilRangeMap0Type();
+        return StencilRangeMap0Type{};
     }
     template <int I,int J>
-    stencilRangeMap1Type< fusion::pair< fusion::pair<mpl::int_<0>,mpl::int_<0> >, typename rangeExtendedIteratorType<I,J>::resultfindrange_type::second_type > >
+    StencilRangeMap1Type< fusion::pair< fusion::pair<mpl::int_<0>,mpl::int_<0> >, typename rangeExtendedIteratorType<I,J>::resultfindrange_type::second_type > >
     subRangeExtendedIterator( mpl::bool_<false> /**/ )
     {
         return stencilRangeMap( stencilRange<0,0>( rangeExtendedIterator<I,J>( mpl::bool_<false>() ) ) );
@@ -762,14 +770,27 @@ private:
 };
 namespace detail
 {
+#if 0
 template<typename Args>
 struct compute_stencil_type
 {
     typedef typename remove_pointer_const_reference_type<Args,tag::test>::type _test_type;
     typedef typename remove_pointer_const_reference_type<Args,tag::trial>::type _trial_type;
-    typedef typename remove_pointer_const_reference_default_type<Args,tag::range, stencilRangeMap0Type >::type _range_type;
-    typedef typename remove_pointer_const_reference_default_type<Args,tag::range_extended, stencilRangeMap0Type >::type _range_extended_type;
+    typedef typename remove_pointer_const_reference_default_type<Args,tag::range, StencilRangeMap0Type >::type _range_type;
+    typedef typename remove_pointer_const_reference_default_type<Args,tag::range_extended, StencilRangeMap0Type >::type _range_extended_type;
     typedef typename remove_pointer_const_reference_default_type<Args,tag::quad, stencilQuadSet<> >::type _quad_type;
+    typedef Stencil<_test_type, _trial_type, _range_type, _range_extended_type, _quad_type> type;
+    typedef std::shared_ptr<type> ptrtype;
+};
+#endif
+template<typename ArgTestType,typename ArgTrialType,typename ArgRangeType, typename ArgRangeExtendedType, typename ArgQuadType>
+struct compute_stencil_type
+{
+    using _test_type = Feel::remove_shared_ptr_type<std::decay_t<ArgTestType>>;
+    using _trial_type = Feel::remove_shared_ptr_type<std::decay_t<ArgTrialType>>;
+    using _range_type = std::decay_t<ArgRangeType>;
+    using _range_extended_type = std::decay_t<ArgRangeExtendedType>;
+    using _quad_type = std::decay_t<ArgQuadType>;
     typedef Stencil<_test_type, _trial_type, _range_type, _range_extended_type, _quad_type> type;
     typedef std::shared_ptr<type> ptrtype;
 };
@@ -812,37 +833,32 @@ void stencilManagerPrint();
 
 extern BlocksStencilPattern default_block_pattern;
 
-BOOST_PARAMETER_FUNCTION(
-    ( typename Feel::detail::compute_stencil_type<Args>::ptrtype ), // 1. return type
-    stencil,                                       // 2. name of the function template
-    tag,                                        // 3. namespace of tag types
-    ( required                                  // 4. one required parameter, and
-      ( test,             *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
-      ( trial,            *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
-    )
-    ( optional                                  //    four optional parameters, with defaults
-      ( pattern,          ( uint32_type ), Pattern::COUPLED )
-      ( pattern_block,    *, default_block_pattern )
-      ( diag_is_nonzero,  ( bool ), false )
-      ( collect_garbage,  ( bool ), true )
-      ( close,            ( bool ), true )
-      ( range,            *( boost::is_convertible<mpl::_, stencilRangeMapTypeBase>) , stencilRangeMap0Type() )
-      ( range_extended,   *( boost::is_convertible<mpl::_, stencilRangeMapTypeBase>) , stencilRangeMap0Type() )
-      ( quad,             *( boost::is_convertible<mpl::_, stencilQuadSetBase>), stencilQuadSet<>() )
-    )
-)
+template <typename ... Ts>
+auto stencil( Ts && ... v )
 {
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && test = args.template get<NA::constraint::is_convertible<std::shared_ptr<FunctionSpaceBase>>::apply>(_test);
+    auto && trial = args.template get<NA::constraint::is_convertible<std::shared_ptr<FunctionSpaceBase>>::apply>(_trial);
+    uint32_type pattern = args.get_else( _pattern, Pattern::COUPLED );
+    auto && pattern_block = args.get_else( _pattern_block, default_block_pattern );
+    bool diag_is_nonzero =  args.get_else( _diag_is_nonzero, false );
+    bool collect_garbage =  args.get_else( _collect_garbage, true );
+    bool close = args.get_else( _close, true );
+    auto && range = args.get_else( _range, StencilRangeMap0Type() );
+    auto && range_extended = args.get_else( _range_extended, StencilRangeMap0Type() );
+    auto && quad = args.get_else( _quad, stencilQuadSet<>() );
+
     using size_type = uint32_type;
     if ( collect_garbage )
     {
         // cleanup memory before doing anything
         stencilManagerGarbageCollect();
     }
-#if BOOST_VERSION < 105900
-    Feel::detail::ignore_unused_variable_warning( args );
-#endif
-    typedef typename Feel::detail::compute_stencil_type<Args>::ptrtype stencil_ptrtype;
-    typedef typename Feel::detail::compute_stencil_type<Args>::type stencil_type;
+
+    //typedef typename Feel::detail::compute_stencil_type<Args>::ptrtype stencil_ptrtype;
+    //typedef typename Feel::detail::compute_stencil_type<Args>::type stencil_type;
+    using stencil_type = typename Feel::detail::compute_stencil_type<decltype(test),decltype(trial),decltype(range),decltype(range_extended),decltype(quad)>::type;
+    using stencil_ptrtype = std::shared_ptr<stencil_type>;
 
     // we look into the spaces dictionary for existing graph
     auto git = StencilManager::instance().find(
@@ -1933,7 +1949,8 @@ struct gmcDefStencil
 {
     typedef typename EltType::gm_type::precompute_type pc_type;
     typedef typename EltType::gm_type::precompute_ptrtype pc_ptrtype;
-    typedef typename EltType::gm_type::template Context<vm::POINT, EltType> gmc_type;
+    static const size_type gmc_v = vm::POINT;
+    typedef typename EltType::gm_type::template Context<EltType> gmc_type;
     typedef std::shared_ptr<gmc_type> gmc_ptrtype;
 };
 
@@ -1946,8 +1963,9 @@ struct gmcDefFaceStencil
     typedef typename FaceType2::super2::template Element<FaceType2>::type EltType;
     typedef typename gmcDefStencil<EltType>::pc_type pc_type;
     typedef typename gmcDefStencil<EltType>::pc_ptrtype pc_ptrtype;
-    typedef typename gmcDefStencil<EltType>::gmc_type gmc_type;
-    typedef typename gmcDefStencil<EltType>::gmc_ptrtype gmc_ptrtype;
+    static const size_type gmc_v = vm::POINT;
+    typedef typename EltType::gm_type::template Context<EltType,1> gmc_type;
+    typedef std::shared_ptr<gmc_type> gmc_ptrtype;
 };
 
 template<typename ImType,typename EltType>
@@ -1960,7 +1978,7 @@ gmcStencil( mpl::size_t<MESH_ELEMENTS> /**/, EltType const& elem, ImType const& 
     typedef typename gmcDefStencil<EltType>::gmc_ptrtype gmc_ptrtype;
 
     pc_ptrtype geopc( new pc_type( elem.gm(), im.points() ) );
-    gmc_ptrtype gmc( new gmc_type( elem.gm(), elem, geopc ) );
+    gmc_ptrtype gmc = elem.gm()->template context<gmcDefStencil<EltType>::gmc_v>( elem, geopc );
     return gmc;
 }
 
@@ -1990,23 +2008,20 @@ gmcStencil( mpl::size_t<MESH_FACES> /**/, FaceType const& theface, ImType const&
     }
 
     uint16_type __face_id_in_elt_0 = theface.pos_first();
-    gmc_ptrtype gmc( new gmc_type( theface.element( 0 ).gm(),
-                                   theface.element( 0 ),
-                                   __geopc,
-                                   __face_id_in_elt_0 ) );
+    gmc_ptrtype gmc = theface.element( 0 ).gm()->template context<gmcDefFaceStencil<FaceType>::gmc_v>( theface.element( 0 ), __geopc, __face_id_in_elt_0 );
     return gmc;
 }
 template<typename EltType>
 void
 gmcUpdateStencil( mpl::size_t<MESH_ELEMENTS> /**/, EltType const& elem, typename gmcDefStencil<EltType>::gmc_ptrtype &gmc )
 {
-    gmc->update( elem );
+    gmc->template update<gmcDefStencil<EltType>::gmc_v>( elem );
 }
 template<typename FaceType>
 void
 gmcUpdateStencil( mpl::size_t<MESH_FACES> /**/, FaceType const& theface, typename gmcDefFaceStencil<FaceType>::gmc_ptrtype &gmc )
 {
-    gmc->update( theface.element( 0 ), theface.pos_first() );
+    gmc->template update<gmcDefFaceStencil<FaceType>::gmc_v>( theface.element( 0 ), theface.pos_first() );
 }
 
 

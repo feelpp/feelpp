@@ -20,40 +20,18 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-/**
-   \file test_element_serialize.cpp
-   \author Stephane Veys <stephane.veys@imag.fr>
-   \date 2012-06-30
-*/
 
 #define BOOST_TEST_MODULE test_element_serialize
 #include <feel/feelcore/testsuite.hpp>
 
-#include <fstream>
-
-#include <boost/tuple/tuple.hpp>
-#include <boost/serialization/vector.hpp>
-#include <boost/serialization/list.hpp>
-#include <boost/serialization/string.hpp>
-#include <boost/serialization/version.hpp>
-#include <boost/serialization/split_member.hpp>
-
-#include <boost/archive/text_oarchive.hpp>
-#include <boost/archive/text_iarchive.hpp>
-
 #include <feel/feelcore/serialization.hpp>
-#include <feel/feeldiscr/region.hpp>
-#include <feel/feelfilters/creategmshmesh.hpp>
-#include <feel/feelfilters/domain.hpp>
-#include <feel/options.hpp>
-#include <feel/feeltiming/tic.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
-#include <feel/feelpoly/polynomialset.hpp>
 #include <feel/feelvf/vf.hpp>
 
 /** use Feel namespace */
 using namespace Feel;
-using namespace Feel::vf;
+//using namespace Feel::vf;
 
 
 inline
@@ -62,40 +40,17 @@ makeOptions()
 {
     po::options_description testelementserializeoptions( "TestElementSerialize options" );
     testelementserializeoptions.add_options()
-        ( "hsize", po::value<double>()->default_value( 0.2 ), "mesh size" )
-        ( "shape", Feel::po::value<std::string>()->default_value( "simplex" ), "shape of the domain (either simplex or hypercube)" )
-        ( "nb_element", po::value<int>()->default_value( 2 ), "number of elements of the vector" )
+        ( "nb_element", po::value<int>()->default_value( 5 ), "number of elements of the vector" )
         ;
     return testelementserializeoptions.add( Feel::feel_options() );
 }
 
-
-inline
-AboutData
-makeAbout()
-{
-    AboutData about( "test_element_serialize" ,
-                     "test_element_serialize" ,
-                     "0.2",
-                     "nD(n=1,2,3) test serialization of element_type ( single and vector )",
-                     Feel::AboutData::License_GPL,
-                     "Copyright (c) 2008-2009 Universite Joseph Fourier" );
-
-    about.addAuthor( "Stephane Veys", "developer", "stephane.veys@imag.fr", "" );
-    return about;
-
-}
-
-
-template<int Dim>
+template<int Dim,int Order>
 class TestElementSerialize
-    :
-public Simget
 {
-    typedef Simget super;
 public:
 
-    static const uint16_type Order = 1;
+    //static const uint16_type Order = 1;
 
     typedef double value_type;
     typedef Simplex<Dim> convex_type;
@@ -107,22 +62,34 @@ public:
     /**
      * Constructor
      */
-    TestElementSerialize( bool rebuild_database )
+    TestElementSerialize( std::string const& dbName, bool create_database )
         :
-        super(),
-        M_meshSize( this->vm()["hsize"].template as<double>() ),
-        M_shape( this->vm()["shape"].template as<std::string>() ),
-        M_nb_element( this->vm()["nb_element"].template as<int>() ),
-        M_rebuild_database( rebuild_database )
+        M_dbName( dbName ),
+        M_dbDirectory( fs::current_path()/dbName ),
+        M_nb_element( 0 )
     {
+        if ( create_database )
+        {
+            M_nb_element = ioption(_name="nb_element");
+            double meshSize = 0.3;
+            this->create_database( meshSize );
+        }
+        else
+        {
+            this->load_database();
+        }
     }
 
-    void run();
-    void run( const double* X, unsigned long P, double* Y, unsigned long N );
+    std::shared_ptr<space_type> functionSpace() const { return M_functionSpace; }
+    element_type element() const { return M_element; }
+    std::vector< std::shared_ptr<element_type> > const& vector_element() const { return M_vector_element; }
 
-    void saveDB();
-    void loadDB();
-    fs::path dbPath();
+    void create_database( double meshSize );
+    void load_database();
+
+    fs::path dbPath() const { return M_dbDirectory/"database"; }
+
+
 
     friend class boost::serialization::access;
 
@@ -132,178 +99,99 @@ public:
     void save( Archive & ar, const unsigned int version ) const;
     template<class Archive>
     void load( Archive & ar, const unsigned int version ) ;
-    bool existDB();
-    void setRebuildDatabase( bool b);
 
 private:
 
-    double M_meshSize;
-    std::string M_shape;
+    std::string M_dbName;
+    fs::path M_dbDirectory;
+
+    std::shared_ptr<space_type> M_functionSpace;
     element_type M_element;
-    element_type M_element_temp;
     int M_nb_element;
-    bool M_rebuild_database;
-    std::vector< element_type > M_vector_element;
-    std::vector< element_type > M_rebuilt_vector_element;
-}; // TestElementSerialize
+    std::vector< std::shared_ptr<element_type> > M_vector_element;
+};
 
 
-template<int Dim>
+template<int Dim,int Order>
 void
-TestElementSerialize<Dim>::run()
+TestElementSerialize<Dim,Order>::create_database( double meshSize )
 {
-    std::cout << "------------------------------------------------------------\n";
-    std::cout << "Execute TestElementSerialize<" << Dim << ">\n";
-    std::vector<double> X( 2 );
-    X[0] = M_meshSize;
+    BOOST_TEST_MESSAGE( "DB will be created " );
+    auto mesh = loadMesh(_mesh = new mesh_type,_h=meshSize );
+    mesh->save( _name="mymesh",_path=M_dbDirectory,_type="text" );
 
-    if ( M_shape == "hypercube" )
-        X[1] = 1;
+    M_functionSpace = space_type::New( _mesh=mesh );
+    M_element = M_functionSpace->element();
+    M_vector_element.resize( M_nb_element );
 
-    else // default is simplex
-        X[1] = 0;
+    M_element.on( _range=elements(mesh), _expr=Px() );
+    M_element.setName("element");
+    for( int i = 0 ; i < M_nb_element ; i++ )
+    {
+        M_vector_element[i] = M_functionSpace->elementPtr();
+        M_vector_element[i]->on( _range=elements(mesh), _expr=cst(i+3.14)*Px() );
+        M_vector_element[i]->setName("element_"+std::to_string(i));
+    }
 
-    std::vector<double> Y( 3 );
-    run( X.data(), X.size(), Y.data(), Y.size() );
+    if ( !fs::exists( M_dbDirectory ) )
+        fs::create_directories( M_dbDirectory );
+
+    fs::ofstream ofs ( this->dbPath() );
+    CHECK( ofs ) << "can't write the db";
+    boost::archive::text_oarchive oa( ofs );
+    oa << *this;
+
 }
 
-template<int Dim>
+template<int Dim,int Order>
 void
-TestElementSerialize<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
+TestElementSerialize<Dim,Order>::load_database()
 {
-    if ( X[1] == 0 ) M_shape = "simplex";
-
-    if ( X[1] == 1 ) M_shape = "hypercube";
-
-#if 1
-    if ( !this->vm().count( "nochdir" ) )
-
-        Environment::changeRepository( boost::format( "testsuite/feeldiscr/%1%/%2%-%3%/h_%4%/" )
-                                       % this->about().appName()
-                                       % M_shape
-                                       % Dim
-                                       % M_meshSize );
-#endif
-
-
     auto mesh = mesh_type::New();
-
-    auto is_mesh_loaded = mesh->load( _name="mymesh",_path=".",_type="text" );
-
-    if ( ! is_mesh_loaded )
-    {
-        mesh = createGMSHMesh( _mesh=new mesh_type,
-                               _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
-                               _desc=domain( _name=( boost::format( "%1%-%2%-%3%" ) % M_shape % Dim % 1 ).str() ,
-                                             _usenames=true,
-                                             _shape=M_shape,
-                                             _dim=Dim,
-                                             _h=X[0],
-                                             _xmin=0.,
-                                             _xmax=1.,
-                                             _ymin=0.,
-                                             _ymax=1.,
-                                             _zmin=0.,
-                                             _zmax=1. ) );
-        mesh->save( _name="mymesh",_path=".",_type="text" );
-    }
+    bool mesh_is_loaded = mesh->load( _name="mymesh",_path=M_dbDirectory,_type="text" );
+    CHECK( mesh_is_loaded ) << "can't load the mesh";
+    //this->load
+    M_functionSpace = space_type::New( _mesh=mesh );
+    M_element = M_functionSpace->element();
 
 
-    if( ! existDB() || M_rebuild_database )
-    {
-        auto Xh = space_type::New( mesh );
-        M_element = Xh->element();
-        M_vector_element.resize( M_nb_element );
-        std::cout<<"DB will be created "<<std::endl;
-        M_element = vf::project( _space=Xh , _range=elements(mesh), _expr=cst( 1 ) );
-        M_element.setName("element");
-        for( int i = 0 ; i < M_nb_element ; i++ )
-        {
-            M_vector_element[i] = Xh->element();
-            M_vector_element[i] = M_element ;
-            M_vector_element[i].setName("element_"+(boost::format("%1%") %i ).str());
-           std::cout<<"save element "<<M_vector_element[i].name()<<std::endl;
-        }
-        M_element_temp = Xh->element();
-        this->saveDB();
-        std::cout<<"DB successfully created "<<std::endl;
-    }
-    else
-    {
-        std::cout<<"DB will be loaded"<<std::endl;
-        this->loadDB();
-        std::cout<<"DB successfully loaded"<<std::endl;
-
-
-        double max = M_element.max();
-        double min = M_element.min();
-        BOOST_CHECK_CLOSE( max, 1.0, 2e-1 );
-        BOOST_CHECK_CLOSE( min, 1.0, 2e-1 );
-
-        for( int e = 0 ; e < M_nb_element; e++ )
-        {
-            max = M_rebuilt_vector_element[e].max();
-            min = M_rebuilt_vector_element[e].min();
-            BOOST_CHECK_CLOSE( max, 1.0, 2e-1 );
-            BOOST_CHECK_CLOSE( min, 1.0, 2e-1 );
-        }
-
-    }
-
-
-
-
-} // TestElementSerialize::run
-
-template< int Dim>
-bool
-TestElementSerialize<Dim>::existDB()
-{
-    return fs::exists( this->dbPath() / "database" );
+    fs::ifstream ifs( this->dbPath() );
+    CHECK( ifs ) << "can't read the db";
+    boost::archive::text_iarchive ia( ifs );
+    ia >> *this;
 }
 
-template< int Dim>
+
+template< int Dim,int Order>
 template<class Archive>
 void
-TestElementSerialize<Dim>::save( Archive & ar, const unsigned int version ) const
+TestElementSerialize<Dim,Order>::save( Archive & ar, const unsigned int version ) const
 {
     ar & BOOST_SERIALIZATION_NVP( M_nb_element );
     ar & BOOST_SERIALIZATION_NVP( M_element );
 
     for( int e=0; e<M_nb_element; e++ )
-        ar & BOOST_SERIALIZATION_NVP( M_vector_element[e] );
+        ar & BOOST_SERIALIZATION_NVP( *(M_vector_element[e]) );
 
     //ar & BOOST_SERIALIZATION_NVP( M_vector_element );
 }
 
-template< int Dim>
+template< int Dim,int Order>
 template<class Archive>
 void
-TestElementSerialize<Dim>::load( Archive & ar, const unsigned int version )
+TestElementSerialize<Dim,Order>::load( Archive & ar, const unsigned int version )
 {
-
-    auto mesh = mesh_type::New();
-    auto is_mesh_loaded = mesh->load( _name="mymesh",_path=".",_type="text" );
-
-    auto Xh = space_type::New( mesh );
-    M_element = Xh->element();
-
     ar & BOOST_SERIALIZATION_NVP( M_nb_element );
 
     ar & BOOST_SERIALIZATION_NVP( M_element );
 
-    M_rebuilt_vector_element.resize( M_nb_element );
     M_vector_element.resize( M_nb_element );
 
 #if 1
     for(int e=0; e<M_nb_element; e++)
     {
-        M_element_temp = Xh->element();
-        M_element_temp.setName("element_"+(boost::format("%1%") %e ).str() );
-        ar & BOOST_SERIALIZATION_NVP( M_element_temp );
-        M_rebuilt_vector_element[e] = M_element_temp;
-
-        M_vector_element[e] = Xh->element();
+        M_vector_element[e] = M_functionSpace->elementPtr();
+        ar & BOOST_SERIALIZATION_NVP( *(M_vector_element[e]) );
     }
 #else
     //problem when loading M_vector_element
@@ -312,91 +200,50 @@ TestElementSerialize<Dim>::load( Archive & ar, const unsigned int version )
 }
 
 
-template< int Dim>
-fs::path
-TestElementSerialize<Dim>::dbPath()
+template <typename DatabaseType>
+void compareDatabases( DatabaseType const& db1, DatabaseType const& db2 )
 {
-    std::string localpath = ( boost::format( "%1%/testsuite/feeldiscr/%2%/%3%-%4%/h_%5%/db/" )
-                              % Feel::Environment::rootRepository()
-                              % this->about().appName()
-                              % M_shape
-                              % Dim
-                              % M_meshSize).str();
+    auto space1 = db1.functionSpace();
+    auto space2 = db2.functionSpace();
+    BOOST_CHECK( space1->nDof() > 0 );
+    BOOST_CHECK( space1->nDof() == space2->nDof() );
 
-    fs::path rep_path = localpath;
+    auto rangeElt = elements(space1->mesh());
+    auto const& elt1 = db1.element();
+    auto const& elt2 = db2.element();
+    BOOST_CHECK( elt1.name() == elt2.name() );
+    BOOST_CHECK_SMALL( normL2(_range=rangeElt,_expr=idv(elt1)-idv(elt2)), 1e-8 );
 
-    return rep_path ;
+    auto const& vec_elt1 = db1.vector_element();
+    auto const& vec_elt2 = db2.vector_element();
+    BOOST_CHECK( vec_elt1.size() == vec_elt2.size() );
+    for( int e = 0 ; e < vec_elt1.size(); e++ )
+        BOOST_CHECK_SMALL( normL2(_range=rangeElt,_expr=idv(vec_elt1[e])-idv(vec_elt2[e])), 1e-8 );
 }
 
 
-template< int Dim >
-void
-TestElementSerialize<Dim>::saveDB()
-{
 
-    fs::path path = this->dbPath();
-    fs::create_directories( path );
-
-    fs::ofstream ofs ( this->dbPath() / "database" );
-
-    if ( ofs )
-    {
-        boost::archive::text_oarchive oa( ofs );
-        oa << *this;
-    }
-    else
-        throw std::logic_error(" can't use ofs in saveDB() " );
-}
-
-template< int Dim >
-void
-TestElementSerialize<Dim>::loadDB()
-{
-
-    fs::path db = this->dbPath();
-
-    fs::ifstream ifs( db / "database" );
-
-    if ( ifs )
-    {
-        boost::archive::text_iarchive ia( ifs );
-        ia >> *this;
-    }
-}
-
-
-template < int Dim >
-void
-TestElementSerialize<Dim>::setRebuildDatabase( bool b )
-{
-    M_rebuild_database = b;
-}
-
-/**
- * main code
- */
-
-FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
+FEELPP_ENVIRONMENT_WITH_OPTIONS( Feel::makeAboutDefault("test_element_serialize"), makeOptions() )
 
 BOOST_AUTO_TEST_SUITE( element_serialize )
 
-BOOST_AUTO_TEST_CASE( MyElementSerializeCase )
+typedef boost::mpl::list<
+    std::pair<boost::mpl::int_<1>,boost::mpl::int_<1>>,
+    std::pair<boost::mpl::int_<1>,boost::mpl::int_<2>>,
+    std::pair<boost::mpl::int_<2>,boost::mpl::int_<1>>,
+    std::pair<boost::mpl::int_<2>,boost::mpl::int_<2>>,
+    std::pair<boost::mpl::int_<3>,boost::mpl::int_<1>>,
+    std::pair<boost::mpl::int_<3>,boost::mpl::int_<2>> > dim_types;
+
+BOOST_AUTO_TEST_CASE_TEMPLATE( MyElementSerializeCase, T, dim_types )
 {
-    Application app;
+    static const int dim = T::first_type::value;
+    static const int order = T::second_type::value;
 
-    //the first one :  create database ( if doesn't exist )
-    app.add( new TestElementSerialize<1>( true ) );
-    //the second one : load database
-    app.add( new TestElementSerialize<1>(false ) );
-
-    app.add( new TestElementSerialize<2>(true ) );
-    app.add( new TestElementSerialize<2>(false ) );
-
-    app.add( new TestElementSerialize<3>(true ) );
-    app.add( new TestElementSerialize<3>(false ) );
-
-    app.run();
-
+    std::string dbName = (boost::format("db_%1%d_P%2%")%dim%order).str();
+    TestElementSerialize<dim,order> dbc( dbName, true );
+    TestElementSerialize<dim,order> dbl( dbName, false );
+    compareDatabases( dbc, dbl );
 }
 BOOST_AUTO_TEST_SUITE_END()
 

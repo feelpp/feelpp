@@ -101,6 +101,17 @@ ExporterEnsightGold<MeshType,N>::init()
         }
     }
 
+
+
+    M_nodesOrderingInElementToEnsight[ Simplex<1,2>::type() + "_1d_g2" ] = { 0,2,1 };
+    M_nodesOrderingInElementToEnsight[ Simplex<2,2>::type() + "_2d_g2" ] = { 0,1,2,4,5,3 };
+    M_nodesOrderingInElementToEnsight[ Simplex<3,2>::type() + "_3d_g2" ] = { 0,1,2,3,5,6,4,7,8,9 };
+
+    M_nodesOrderingInElementToEnsight[ Hypercube<1,2>::type() + "_1d_g2" ] = { 0,2,1 };
+    M_nodesOrderingInElementToEnsight[ Hypercube<2,2>::type() + "_2d_g2" ] = { 0,1,2,3,4,5,6,7 };
+    M_nodesOrderingInElementToEnsight[ Hypercube<3,2>::type() + "_3d_g2" ] = { 0,1,2,3,4,5,6,7,8,9,10,11,17,12,16,18,13,19,14,15 };
+
+
     /* TODO Do a cleanup of previous stored files */
     /* to avoid conflicts */
     /* example case: where a new simulation has fewer timesteps */
@@ -1032,7 +1043,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements(MPI_File fh, mesh_ptrtyp
     if( this->worldComm().isMasterRank() )
     {
         memset(buffer, '\0', sizeof(buffer));
-        strncpy( buffer, this->elementType().c_str(), 80);
+        strncpy( buffer, this->elementType().c_str(), 80-1);
         MPI_File_write_at(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
         //MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status );
     }
@@ -1293,6 +1304,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements( MPI_File fh, mesh_conti
         nodes[k+nPointOnProcess] = nodes_B[3*k+1];
         nodes[k+2*nPointOnProcess] = nodes_B[3*k+2];
     }
+
     int32_t localOffset = mp.startPointIds( part,currentPid )*sizeOfFloat;
     //MPI_File_write_at(fh, posInFile+localOffset,  nodes.data(), nodes.size(), MPI_FLOAT, &status );
     if ( nPointOnProcess > 0 )
@@ -1307,7 +1319,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements( MPI_File fh, mesh_conti
     if( this->worldComm().isMasterRank() )
     {
         memset(buffer, '\0', sizeof(buffer));
-        strncpy( buffer, this->elementType().c_str(), 80);
+        strncpy( buffer, this->elementType().c_str(), 80-1);
         MPI_File_write_at(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
         //MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status );
     }
@@ -1329,15 +1341,27 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements( MPI_File fh, mesh_conti
     MPI_File_write_at(fh, posInFile/*+localOffset*/,  elids.data(), elids.size(), MPI_INT32_T, &status );
     posInFile+=gnole*sizeOfInt32_t;
 #endif
-    
+
     auto const& pointsIdsInElt_B = mp.pointIdsInElements( part );
     std::vector<int32_t> pointsIdsInElt(pointsIdsInElt_B.size());
-    for ( int k=0;k<pointsIdsInElt_B.size();++k)
-        pointsIdsInElt[k] = pointsIdsInElt_B[k] +1 ;
 
-    localOffset = mp.startElementIds( part,currentPid )*mesh_type::element_type::numPoints*sizeOfInt32_t;
+    uint16_type nPointsUsedInElt = mesh_type::element_type::numPoints;
+    if constexpr ( N == 1 )
+    {
+        for ( int k=0;k<pointsIdsInElt_B.size();++k)
+            pointsIdsInElt[k] = pointsIdsInElt_B[k] +1 ;
+    }
+    else
+    {
+        auto itFindOrdering = M_nodesOrderingInElementToEnsight.find( (boost::format("%1%_%2%d_g%3%") %mesh_type::shape_type::type() %mesh_type::shape_type::nDim %mesh_type::shape_type::nOrder ).str() );
+        CHECK( itFindOrdering != M_nodesOrderingInElementToEnsight.end() ) << "not found an ordering";
+        auto const& mappingWithThisKindOfElement = itFindOrdering->second;
+        nPointsUsedInElt = mappingWithThisKindOfElement.size();
+        mp.updateOrderingOfPointsIdsInElt( part, currentPid, pointsIdsInElt, mappingWithThisKindOfElement, 1, nPointsUsedInElt );
+    }
+    localOffset = mp.startElementIds( part,currentPid )*nPointsUsedInElt*sizeOfInt32_t;
     MPI_File_write_at(fh, posInFile+localOffset, pointsIdsInElt.data(), pointsIdsInElt.size(), MPI_INT32_T, &status );
-    posInFile += gnole*mesh_type::element_type::numPoints*sizeOfInt32_t;
+    posInFile += gnole*nPointsUsedInElt*sizeOfInt32_t;
 }
 #endif
 
@@ -1535,7 +1559,7 @@ ExporterEnsightGold<MeshType,N>::saveFields( timeset_ptrtype __ts, typename time
         if( this->worldComm().isMasterRank() )
         {
             memset(buffer, '\0', sizeof(buffer));
-            strncpy(buffer, field00.name().c_str(), 80);
+            strncpy(buffer, field00.name().c_str(), 80-1);
             MPI_File_write_at(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
         }
         posInFile+=80;
@@ -1670,7 +1694,7 @@ ExporterEnsightGold<MeshType,N>::saveFields( timeset_ptrtype __ts, typename time
                 else
                 {
                     memset(buffer, '\0', sizeof(buffer));
-                    strncpy(buffer, this->elementType().c_str(), 80);
+                    strncpy(buffer, this->elementType().c_str(), 80-1);
                 }
                 MPI_File_write_at(fh, posInFile+80+sizeOfInt32_t, buffer, sizeof(buffer), MPI_CHAR, &status);
             }
@@ -1706,7 +1730,7 @@ ExporterEnsightGold<MeshType,N>::saveFields( timeset_ptrtype __ts, typename time
                         VLOG(1) << "field size=" << __field_size;
                         __field = Eigen::VectorXf::Zero( __field_size );
 
-                        const int np = __step->mesh()->numLocalVertices();
+                        //const int np = __step->mesh()->numLocalVertices();
 
                         auto const& r =  mp.rangeElement( part );
                         auto elt_it = r.template get<1>();
@@ -1715,6 +1739,7 @@ ExporterEnsightGold<MeshType,N>::saveFields( timeset_ptrtype __ts, typename time
                         {
                             auto const& elt = unwrap_ref( *elt_it );
                             auto const& locglob_ind = d->localToGlobalIndices( elt.id() );
+                            const int np = N==1? elt.numVertices : elt.numPoints;
                             for ( uint16_type p = 0; p < np; ++p )
                             {
                                 index_type ptid = mp.pointIdToContiguous(part,elt.point( p ).id());

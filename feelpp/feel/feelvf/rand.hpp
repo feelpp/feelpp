@@ -185,10 +185,6 @@ public:
             M_r(expr.low(), expr.high())
         {
         }
-        template<typename IM>
-        void init( IM const& /*im*/ )
-        {
-        }
         void update( Geo_t const&, Basis_i_t const& , Basis_j_t const&  )
         {
         }
@@ -196,9 +192,6 @@ public:
         {
         }
         void update( Geo_t const& )
-        {
-        }
-        void update( Geo_t const&, uint16_type )
         {
         }
         template<typename ... CTX>
@@ -246,6 +239,12 @@ private:
 };
 
 
+/**
+ * provide random expression in ]lo,hi[
+ * @ingroup DSEL-Variational-Formulation
+ * @param lo lower end of the interval
+ * @param hi upper of the interval
+ */
 template<typename T>
 inline
 Expr< Rand<T> >
@@ -255,6 +254,12 @@ rand()
     return Expr< rand_t >(  rand_t( T(0), T(1) ) );
 }
 
+/**
+ * provide random expression in ]lo,hi[
+ * @ingroup DSEL-Variational-Formulation
+ * @param lo lower end of the interval
+ * @param hi upper of the interval
+ */
 template<typename T>
 inline
 Expr< Rand<T> >

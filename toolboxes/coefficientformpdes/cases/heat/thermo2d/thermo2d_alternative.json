@@ -1,0 +1,225 @@
+// -*- mode: javascript -*-
+{
+    "Name": "Test heat toolbox",
+    "ShortName":"TestHeat",
+    "Models":
+    {
+        "cfpdes":{
+            "equations":"heat"
+        },
+        "heat":{
+            "common":{
+                "setup":{
+                    "unknown":{
+                        "basis":"Pch1",
+                        "name":"temperature",
+                        "symbol":"T"
+                    },
+                    "coefficients":{
+                        "f":"-materials_rho*materials_Cp*heat_dT_dt:materials_rho:materials_Cp:heat_dT_dt",
+                        "beta":"{materials_rho*materials_Cp*velocity_convection_0,materials_rho*materials_Cp*velocity_convection_1}:materials_rho:materials_Cp:velocity_convection_0:velocity_convection_1"
+                    }
+                }
+            },
+            "models":[
+                {
+                    "name":"heat_mymat1",
+                    "materials":"mymat1",
+                    "setup":{
+                        "coefficients":{
+                            "c":"materials_mymat1_k:materials_mymat1_k"
+                        }
+                    }
+                },{
+                    "name":"heat_mymat2",
+                    "materials":"mymat2",
+                    "setup":{
+                        "coefficients":{
+                            "c":"{materials_mymat2_k_00,materials_mymat2_k_01,materials_mymat2_k_10,materials_mymat2_k_11}:materials_mymat2_k_00:materials_mymat2_k_01:materials_mymat2_k_10:materials_mymat2_k_11"
+                        }
+                    }
+                }
+            ]
+        }
+
+    },
+    "Parameters":
+    {
+        "velocity_convection":"{-30*(y+-0.7)*(y-0.5)*(y>0.5)*(y<0.7),0}:y"
+        //"velocity_convection":"{-300*(y+-0.7)*(y-0.5)*(y>0.5)*(y<0.7),0}:y"
+    },
+    "Meshes":
+    {
+        "cfpdes":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/thermo2d.geo",
+                "hsize":0.01
+            }
+        }
+    },
+    "Materials":
+    {
+        "mymat1":
+        {
+            "markers":"Omega1",
+            "k":"10",//[ W/(m*K) ]
+            //"k":"10+100*(1+y):y",//[ W/(m*K) ]
+            //"k":"{10,0,0,100}",//[ W/(m*K) ]
+            //"k":"10+100*(1-heat_T/293):heat_T",//[ W/(m*K) ]
+            "Cp":"1000.005", //[ J/(kg*K) ]
+            "rho":"1.205" //[ kg/(m^3) ]
+        },
+        "mymat2":
+        {
+            "markers":"Omega2",
+            //"k":"100",
+            "k":"{100,0,0,100}",//[ W/(m*K) ]
+            "Cp":"3500",
+            "rho":"2"
+        }
+    },
+    "BoundaryConditions":
+    {
+        "heat":
+        {
+            "Dirichlet":
+            {
+                "MarkerDirichlet":
+                {
+                    "expr":"293-10*(y-1)*(y+1):y"
+                },
+                "wall":
+                {
+                    "expr":"293+0.38*t:t"
+                }
+            },
+            "Neumann":
+            {
+                "MarkerNeumann":
+                {
+                    "markers":["MarkerNeumann_1","MarkerNeumann_2"],
+                    "expr":"0" 
+                }
+            },
+            "Robin":
+            {
+                "MarkerRobin":
+                {
+                    "expr1":"16.667",// h coeff
+                    "expr2":"297*16.667"// h coeff times temperature exterior
+                }
+            }
+        }
+    },
+    "InitialConditions":
+    {
+        "heat":{
+            "temperature":{
+                "Expression": {
+                    "myic1":{
+                        "markers":"Omega1",
+                        "expr":"293"
+                    },
+                    "myic2":{
+                        "markers":"Omega2",
+                        //"expr":"305"
+                        "expr":"293+(305-293)*(x-1)/0.4:x"
+                    }/*,
+                       "myic3":
+                       {
+                       "markers":"Interface_1_2",
+                       "expr":"310"
+                       }*/
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "cfpdes":
+        {
+            "Exports":
+            {
+                "fields":["heat.temperature"],
+                "expr":
+                {
+                    "heat_dT_dt":"heat_dT_dt:heat_dT_dt"
+                }
+            },
+            "Measures":
+            {
+                "Statistics":
+                {
+                    "dT_dt_v1":
+                    {
+                        "type":"integrate",
+                        "expr":"heat_dT_dt:heat_dT_dt"
+                        //"markers":"Omega1"
+                    },
+                    "dT_dt_v2":
+                    {
+                        "type":"integrate",
+                        "expr":"heat_dT_dt_lhs-heat_dT_dt_rhs:heat_dT_dt_lhs:heat_dT_dt_rhs"
+                        //"markers":"Omega1"
+                    }
+                }
+            },
+            "Checkers":
+            {
+                // TODO
+                // "Expressions":
+                // {
+                //     "toto":
+                //     {
+                //         "expr":"",
+                //         "target_value":"",
+                //         "tolerance":1e-1
+                //     }
+                // },
+                "Measures":
+                {
+                    "Statistics_dT_dt_v1_integrate":
+                    {
+                        "value":"postprocess_cfpdes_measures_Statistics_dT_dt_v2_integrate:postprocess_cfpdes_measures_Statistics_dT_dt_v2_integrate",
+                        "tolerance":1e-5
+                    }
+                }
+            }
+        },
+        "heat":
+        {
+            "Measures":
+            {
+                "Statistics":
+                {
+                    "dT_dt_v1":
+                    {
+                        "type":"integrate",
+                        "expr":"heat_dT_dt:heat_dT_dt"
+                        //"markers":"Omega1"
+                    },
+                    "dT_dt_v2":
+                    {
+                        "type":"integrate",
+                        "expr":"heat_dT_dt_lhs-heat_dT_dt_rhs:heat_dT_dt_lhs:heat_dT_dt_rhs"
+                        //"markers":"Omega1"
+                    }
+                }
+            },
+            "Checkers":
+            {
+                "Measures":
+                {
+                    "Statistics_dT_dt_v1_integrate":
+                    {
+                        "value":"postprocess_cfpdes_measures_Statistics_dT_dt_v2_integrate:postprocess_cfpdes_measures_Statistics_dT_dt_v2_integrate",
+                        "tolerance":1e-5
+                    }
+                }
+            }
+        }
+    }
+
+}

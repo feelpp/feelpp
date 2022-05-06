@@ -1,0 +1,72 @@
+{
+    "Name": "Elasticity",
+    "ShortName": "Elasticity",
+    "Models":
+    {
+        "cfpdes":{
+            "equations":"elas"
+        },
+        "elas":{
+            "setup":{
+                "unknown":{
+                    "basis":"Pchv1",
+                    "name":"eta",
+                    "symbol":"eta"
+                },
+                "coefficients":{
+                    "gamma":"{-lambda*(elas_grad_eta_00+elas_grad_eta_11) - 2*mu*elas_grad_eta_00,-mu*(elas_grad_eta_01+elas_grad_eta_10),-mu*(elas_grad_eta_10+elas_grad_eta_01),-lambda*(elas_grad_eta_00+elas_grad_eta_11) - 2*mu*elas_grad_eta_11}:lambda:mu:elas_div_eta:elas_grad_eta_00:elas_grad_eta_01:elas_grad_eta_10:elas_grad_eta_11",
+                    //"gamma":"{-1*elas_grad_eta_00,-1*elas_grad_eta_01,-1*elas_grad_eta_10,-1*elas_grad_eta_11}:elas_grad_eta_00:elas_grad_eta_01:elas_grad_eta_10:elas_grad_eta_11",
+                    "f": "{0.,-9.81}"
+                }
+            }
+        }
+    },
+    "Parameters": {
+        "E": 204e6,
+        "nu": 0.29,
+        "mu": "E/(2*(1+nu)):E:nu",
+        "lambda":"E*nu/((1+nu)*(1-2*nu)):E:nu"
+    },
+    "Meshes":
+    {
+        "cfpdes":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/beam.geo",
+                "hsize":0.01
+            }
+        }
+    },
+    "Materials":
+    {
+        "Iron":
+        {
+            "markers":"Omega"
+        }
+    },
+    "BoundaryConditions":
+    {
+        "elas":
+        {
+            "Dirichlet":
+            {
+                "mybc":
+                {
+                    "markers":"Dirichlet",
+                    "expr":"{0.,0.}"
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "cfpdes":
+        {
+            "Exports":
+            {
+                "fields":["all"]
+            }
+        }
+    }
+}

@@ -93,7 +93,6 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
         LOG(INFO) << "mortar Phi context ";
         fusion::at_key<gmc<0>>( M_test_fec0 ).get()->print();
     }
-    M_eval_expr00->init( im );
 }
 
 template<typename FE1,  typename FE2, typename ElemContType>
@@ -136,8 +135,6 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     M_integrator( im )
 {
     this->initDynamicEigenMatrix();
-    // faces
-    M_eval_expr00->init( im2 );
 }
 
 template<typename FE1,  typename FE2, typename ElemContType>
@@ -178,8 +175,6 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     M_integrator( im )
 {
     this->initDynamicEigenMatrix();
-    // faces
-    M_eval_expr00->init( im2 );
 }
 
 template<typename FE1,  typename FE2, typename ElemContType>
@@ -225,8 +220,6 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     M_integrator( im )
 {
     this->initDynamicEigenMatrix();
-    // faces
-    M_eval_expr00->init( im );
 }
 
 template<typename FE1,  typename FE2, typename ElemContType>
@@ -274,11 +267,6 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     FEELPP_ASSERT( fusion::at_key<trial_gmc1 >( M_trial_fec1 ).get() != 0 ).error( "invalid trial_fec" );
 
     this->initDynamicEigenMatrix();
-
-    M_eval_expr00->init( im2 );
-    M_eval_expr01->init( im2 );
-    M_eval_expr10->init( im2 );
-    M_eval_expr11->init( im2 );
 }
 
 template<typename FE1,  typename FE2, typename ElemContType>
@@ -335,14 +323,6 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     FEELPP_ASSERT( fusion::at_key<trial_gmc1 >( M_trial_fec1 ).get() != 0 ).error( "invalid trial_fec" );
 
     this->initDynamicEigenMatrix();
-
-    M_eval_expr00->init( im2 );
-    if ( M_form.isPatternExtended() )
-    {
-        M_eval_expr01->init( im2 );
-        M_eval_expr10->init( im2 );
-    }
-    M_eval_expr11->init( im2 );
 }
 
 template<typename FE1,  typename FE2, typename ElemContType>
@@ -352,7 +332,7 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
                                                                                                                       map_trial_geometric_mapping_context_type const& _gmcTrial,
                                                                                                                       map_geometric_mapping_expr_context_type const& _gmcExpr )
 {
-    if ( UseMortar )
+    if constexpr ( UseMortar )
         LOG(INFO) << "bilin context same fe: " << boost::is_same<map_test_fecontext_type, map_trial_fecontext_type>::value;
     update( _gmcTest, _gmcTrial, _gmcExpr, boost::is_same<map_test_fecontext_type, map_trial_fecontext_type>() );
     // if we know that the result will be zero, don't update the integrator and return immediately
@@ -369,7 +349,7 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     fusion::for_each( M_test_fec, vf::detail::FEContextUpdate<0,form_context_type>( _gmcTest, *this ) );
     M_test_fec0 = fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( M_test_fec ) );
 
-    if ( UseMortar )
+    if constexpr ( UseMortar )
     {
         LOG(INFO) << "update Fe mortar Phi context element : ";
         fusion::at_key<gmc<0>>( M_test_fec0 ).get()->print();
@@ -727,7 +707,7 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     bool useMortarTrialAssembly = trial_dof_type::is_mortar && M_trial_dof->mesh()->isBoundaryElement( _gmcTrial.id() );
 #endif
 
-    if ( UseMortarType == 0 )
+    if constexpr ( UseMortarType == 0 )
     {
         if ( isFirstExperience )
             for ( uint16_type j = 0; j < trial_dof_type::nDofPerElement; ++j )
@@ -744,7 +724,7 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
                 }
         DVLOG(2) << "M_rep = " << M_rep*6/0.25;
     }
-    else if ( UseMortarType == 1 )
+    else if constexpr ( UseMortarType == 1 )
     {
 #if !defined(NDEBUG)
         CHECK( useMortarTestAssembly && !useMortarTrialAssembly ) << "bad UseMortarType";
@@ -763,7 +743,7 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
                 }
         DVLOG(2) << "M_mortarTest_rep = " << M_mortarTest_rep*6/0.25;
     }
-    else if ( UseMortarType == 2 )
+    else if constexpr ( UseMortarType == 2 )
     {
 #if !defined(NDEBUG)
         CHECK( !useMortarTestAssembly && useMortarTrialAssembly ) << "bad UseMortarType";
@@ -782,7 +762,7 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
                 }
         DVLOG(2) << "M_mortarTrial_rep = " << M_mortarTrial_rep*6/0.25;
     }
-    else if ( UseMortarType == 3 )
+    else if constexpr ( UseMortarType == 3 )
     {
         CHECK ( false ) << "TODO";
     }
@@ -981,7 +961,7 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     bool useMortarTrialAssembly = trial_dof_type::is_mortar && M_trial_dof->mesh()->isBoundaryElement( eltTrialId );
 #endif
 
-    if ( UseMortarType == 0 )
+    if constexpr ( UseMortarType == 0 )
     {
         M_local_rows.array() = M_test_dof->localToGlobalIndices( eltTestId,M_form.dofIdToContainerIdTest() ).array();
         M_local_cols.array() = M_trial_dof->localToGlobalIndices( eltTrialId,M_form.dofIdToContainerIdTrial() ).array();
@@ -998,7 +978,7 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
                           M_local_cols.data(), M_local_cols.size(),
                           M_rep.data() );
     }
-    else if ( UseMortarType == 1 )
+    else if constexpr ( UseMortarType == 1 )
     {
 #if !defined(NDEBUG)
         CHECK( useMortarTestAssembly && !useMortarTrialAssembly ) << "bad UseMortarType";
@@ -1017,7 +997,7 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
                           M_local_cols.data(), M_local_cols.size(),
                           M_mortarTest_rep.data() );
     }
-    else if ( UseMortarType == 2 )
+    else if constexpr ( UseMortarType == 2 )
     {
 #if !defined(NDEBUG)
         CHECK( !useMortarTestAssembly && useMortarTrialAssembly ) << "bad UseMortarType";
@@ -1032,7 +1012,7 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
                           M_mortarTrial_local_cols.data(), M_mortarTrial_local_cols.size(),
                           M_mortarTrial_rep.data() );
     }
-    else if ( UseMortarType == 3 )
+    else if constexpr ( UseMortarType == 3 )
     {
         CHECK( false ) << "TODO";
     }

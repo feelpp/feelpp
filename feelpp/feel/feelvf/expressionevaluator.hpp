@@ -6,7 +6,8 @@
        Date: 2009-11-24
 
   Copyright (C) 2009-2012 Universite Joseph Fourier (Grenoble I)
-
+  Copyright (C) 2011-present Feel++ Consortium
+  
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
   License as published by the Free Software Foundation; either
@@ -25,8 +26,11 @@
 #ifndef FEELPP_EXPRESSION_EVALUATOR_HPP
 #define FEELPP_EXPRESSION_EVALUATOR_HPP
 
-using namespace Feel;
+#include <feel/feelpoly/context.hpp>
+#include <feel/feelpoly/geomap.hpp>
 
+namespace Feel
+{
 template<typename RangeType>
 class ExpressionEvaluatorBase
 {
@@ -64,9 +68,9 @@ protected:
     using gm_type = typename super::gm_type;
 
     using expr_type = ExprT;
-    using context_type = typename gm_type::template Context<vm::POINT|vm::JACOBIAN|expr_type::context,typename std::remove_const<typename element_type::type>::type >;
+    using context_type = typename gm_type::template Context<typename std::remove_const<typename element_type::type>::type >;
     using context_ptrtype = std::shared_ptr<context_type>;
-    using map_gmc_type = map_gmc_type<context_type>;
+    using map_gmc_type = Feel::vf::map_gmc_type<context_type>;
     using evaluator_type = typename expr_type::template tensor<map_gmc_type>;
     using evaluator_ptrtype = std::shared_ptr<evaluator_type>;
     using weights_type = ublas::vector<double>;
@@ -124,7 +128,7 @@ void
 ExpressionEvaluator<RangeType, ExprT>::update(element_type const& eltWrap)
 {
     auto const& elt = unwrap_ref( eltWrap );
-    M_ctx->update( elt );
+    M_ctx->template update<vm::POINT | vm::JACOBIAN | expr_type::context>( elt );
     M_evaluator->update( vf::mapgmc( M_ctx ) );
 }
 
@@ -177,6 +181,8 @@ protected:
     using parameterspace_ptrtype = typename super::parameterspace_ptrtype;
     using parameterelement_type = typename super::parameterelement_type;
 
+    using ExpressionEvaluator<EltT, ExprT>::update;
+
 public:
     ExpressionEvaluatorParam( range_type const& r, expr_type const& ex,
                               parameterelement_type const& mu, int comp = 0 ):
@@ -221,6 +227,8 @@ public:
     using function_element_type = FctT;
     using update_function_type = std::function<bool(parameterelement_type const&, function_element_type&)>;
 
+    using ExpressionEvaluator<EltT, ExprT>::update;
+
 public:
     ExpressionEvaluatorNonLinear( range_type const& r, expr_type const& ex,
                                   parameterelement_type& mu, FctT& u, int comp = 0 )
@@ -249,6 +257,6 @@ ExpressionEvaluatorNonLinear< EltT, ExprT, FctT>::update( parameterelement_type 
     }
     return true;
 }
-
+} // Feel
 
 #endif

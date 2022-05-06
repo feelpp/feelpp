@@ -137,9 +137,9 @@ class Mesh2D
     /**
      * default constructor
      */
-    explicit Mesh2D( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
+    explicit Mesh2D( std::string const& name = "", worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
         : super_visitable(),
-          super( 2, nRealDim, worldComm ),
+          super( name, 2, nRealDim, worldComm ),
           super_elements( worldComm ),
           super_points( worldComm ),
           super_faces( worldComm )
@@ -153,7 +153,7 @@ class Mesh2D
     /**
      * destructor
      */
-    ~Mesh2D()
+    ~Mesh2D() override
     {
         VLOG( 1 ) << "Mesh2D destructor";
         this->clear();
@@ -279,7 +279,7 @@ class Mesh2D
  * clear out all data from the mesh, \p isEmpty() should return
  * \p true after a \p clear()
  */
-    virtual void clear() override
+    void clear() override
     {
         VLOG( 1 ) << "Deleting Mesh2D...\n";
 
@@ -328,12 +328,46 @@ class Mesh2D
             {
                 if ( !elt.hasFace( j ) )
                     continue;
+                auto const& face = elt.face( j );
+
+                // if on boundary don't do anything
+                if ( face.isOnBoundary() || !face.isConnectedTo1() )
+                    continue;
+
+                bool applyOnFirstConnection = false;
+                if ( face.isInterProcessDomain() )
+                {
+                    if ( face.partition1() < face.partition2() )
+                    {
+                        if ( face.proc_first() == face.partition2() )
+                            applyOnFirstConnection = true;
+                    }
+                    else
+                    {
+                        if ( face.proc_first() == face.partition1() )
+                            applyOnFirstConnection = true;
+                    }
+                }
+
+                if ( applyOnFirstConnection )
+                {
+                    if ( face.ad_first() == elt.id() )
+                        elt.setEdgePermutation( face.pos_first(), edge_permutation_type( edge_permutation_type::REVERSE_PERMUTATION ) );
+                }
+                else
+                {
+                    if ( face.ad_second() == elt.id() )
+                        elt.setEdgePermutation( face.pos_second(), edge_permutation_type( edge_permutation_type::REVERSE_PERMUTATION ) );
+                }
+
+#if 0
                 if ( elt.face( j ).isConnectedTo1() &&
                      elt.face( j ).ad_second() == elt.id() )
                 {
                     elt.setEdgePermutation( elt.face( j ).pos_second(),
                                             edge_permutation_type( edge_permutation_type::REVERSE_PERMUTATION ) );
                 }
+#endif
             }
         }
     }

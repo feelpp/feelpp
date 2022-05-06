@@ -27,7 +27,11 @@
    \date 2013-07-30
  */
 
-#include <boost/timer.hpp>
+#include <feel/feelcore/environment.hpp>
+#include <feel/feeldiscr/pch.hpp>
+#include <feel/feelfilters/unithypercube.hpp>
+#include <feel/feelfilters/exporter.hpp>
+#include <feel/feelvf/vf.hpp>
 
 #define BOOST_TEST_MODULE evaluate testsuite
 #include <feel/feelcore/testsuite.hpp>
@@ -38,7 +42,6 @@
 #include <gperftools/heap-checker.h>
 #endif /* FEELPP_HAS_GPERFTOOLS */
 
-#include <feel/feel.hpp>
 
 using namespace Feel;
 

@@ -27,19 +27,11 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-07-28
  */
-#define CHAR_BIT 8
-#include <boost/timer.hpp>
-// Boost.Test
-#define BOOST_TEST_MAIN
-#include <boost/test/unit_test.hpp>
-#include <boost/test/test_case_template.hpp>
-#include <boost/mpl/list.hpp>
 
-
-using boost::unit_test::test_suite;
-
-
+#define BOOST_TEST_MODULE test_jacobi
+#include <feel/feelcore/testsuite.hpp>
 #include <feel/feelcore/feel.hpp>
+#include <feel/feeltiming/timer.hpp>
 #include <feel/feelpoly/jacobi.hpp>
 #include <feel/feelpoly/expansions.hpp>
 #include <feel/feelpoly/dubiner.hpp>
@@ -73,7 +65,7 @@ public:
     {
         using namespace Feel;
 
-        boost::timer __timer;
+        Feel::Timer __timer;
 
         for ( int n = 0; n < 10000; ++n )
         {
@@ -96,7 +88,7 @@ public:
         }
 
         std::cout << "meta::jacobi test done in " << __timer.elapsed()/1000 << "\n";
-        __timer.restart();
+        __timer.start();
 
         for ( int n = 0; n < 10000; ++n )
         {
@@ -124,7 +116,7 @@ public:
             ublas::vector<T> pts( 2 );
             pts[0] = 1.0;
             pts[1] = 1.0;
-            ublas::matrix<T> P ( JacobiBatchEvaluation<N, T>( 0, 0, pts ) );
+            ublas::matrix<T> P ( JacobiBatchEvaluation<T>( N, 0, 0, pts ) );
             BOOST_CHECK( P.size1() == N+1 );
             BOOST_CHECK( P.size2() == 2 );
             value_type v = value_type( double( fact( N+0 ) )/value_type( double( fact( N )*fact( 0 ) ) ) );
@@ -143,7 +135,7 @@ public:
                 ublas::vector<T> pts( 2 );
                 pts[0] = 0.6;
                 pts[1] = 0.6;
-                ublas::matrix<T> dP ( JacobiBatchDerivation<N, T>( 0.0, 0.0, pts ) );
+                ublas::matrix<T> dP ( JacobiBatchDerivation<T>( N, 0.0, 0.0, pts ) );
 
                 if ( Feel::math::abs( dP( N, 0 ) - dp2 ) > Feel::type_traits<T>::epsilon() )
                 {
@@ -178,6 +170,9 @@ public:
 };
 
 
+FEELPP_ENVIRONMENT_NO_OPTIONS
+
+BOOST_AUTO_TEST_SUITE( jacobi )
 
 typedef boost::mpl::list<boost::mpl::int_<0>,boost::mpl::int_<1>,boost::mpl::int_<2>,boost::mpl::int_<10> > test_types;
 
@@ -192,6 +187,9 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_dubiner_double, T, test_types )
     BOOST_TEST_MESSAGE( "o- TestDubiner<" << T::value << ", double>()" );
     TestDubiner<T::value, double> d0;
 }
+
+BOOST_AUTO_TEST_SUITE_END()
+
 #if 0
 #if 1
 //

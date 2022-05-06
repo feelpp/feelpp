@@ -52,6 +52,7 @@ class FEELPP_EXPORT ModelBoundaryCondition : public CommObject
     std::string const& name() const { return M_name; }
     std::string const& marker() const { return *M_markers.begin(); }
     std::set<std::string> const& markers() const { return M_markers; }
+    bool emptyMarkers() const { return M_markers.empty(); }
     std::string const& material() const { return M_material; }
     std::string const& expression() const { return M_expr1; }
     std::string const& expression1() const { return M_expr1; }
@@ -82,13 +83,15 @@ class FEELPP_EXPORT ModelBoundaryCondition : public CommObject
     bool isExpression2Matrix() const { return M_modelExpr2.isMatrix(); }
 
     template<int M=1, int N=1>
-    auto expr() { return M_modelExpr1.expr<M,N>(); }
+    auto expr() const { return M_modelExpr1.expr<M,N>(); }
     template<int M=1, int N=1>
-    auto expr1() { return M_modelExpr1.expr<M,N>(); }
+    auto expr1() const { return M_modelExpr1.expr<M,N>(); }
     template<int M=1, int N=1>
-    auto expr2() { return M_modelExpr2.expr<M,N>(); }
+    auto expr2() const { return M_modelExpr2.expr<M,N>(); }
 
-private:
+    void setParameterValues( std::map<std::string,double> const& mp );
+
+protected:
     pt::ptree M_pt;
     std::string M_name;
     std::string M_material;
@@ -99,6 +102,26 @@ private:
     ModelExpression M_modelExpr2;
 };
 
+struct FEELPP_EXPORT ModelBoundaryId : public std::tuple<std::string,std::string,std::string>
+{
+  using parent = std::tuple<std::string,std::string,std::string>;
+  ModelBoundaryId( parent const& t ) : parent( t ) {}
+  std::string const& type() const { return std::get<1>( *this ); }
+  // 
+  std::string const& field() const { return std::get<0>( *this ); }
+  // the name of the bc, can be also the name of the marker
+  std::string const& name() const { return std::get<2>( *this ); }
+
+};
+inline std::ostream&
+operator<<(std::ostream& os, ModelBoundaryId const& bcid )
+{
+  os << "(" << bcid.field() << "," << bcid.type() << "," << bcid.name() << ")";
+  return os;
+}
+/**
+ * a map of boundary conditions
+ */
 class FEELPP_EXPORT ModelBoundaryConditions : public std::map<std::string,std::map<std::string,std::map<std::string,ModelBoundaryCondition> > >, public CommObject
 {
   public:
@@ -106,10 +129,42 @@ class FEELPP_EXPORT ModelBoundaryConditions : public std::map<std::string,std::m
     explicit ModelBoundaryConditions( worldcomm_ptr_t const& world = Environment::worldCommPtr() );
     virtual ~ModelBoundaryConditions() = default;
     void setPTree( pt::ptree const& p );
-private:
+    void setParameterValues( std::map<std::string,double> const& mp );
+    // flatten the boundary condition map so that we can easily iterate in a one level loop
+    std::map<ModelBoundaryId,ModelBoundaryCondition> flatten() const;
+    std::map<std::string,std::map<std::string,ModelBoundaryCondition> > const& byField( std::string const& field ) const;
+    std::map<std::string,ModelBoundaryCondition> const& byFieldType( std::string const& field, std::string const& type ) const;
+
+  private:
     void setup();
 
     pt::ptree M_pt;
+    std::map<std::string,std::map<std::string,ModelBoundaryCondition> > M_emptyField;
+    std::map<std::string,ModelBoundaryCondition> M_emptyFieldType;
+};
+
+
+class FEELPP_EXPORT ModelBoundaryConditionsNEW// : public std::map<std::string,nl::json>
+{
+  public:
+  ModelBoundaryConditionsNEW() = default;
+  ModelBoundaryConditionsNEW( ModelBoundaryConditionsNEW && ) = default;
+  ModelBoundaryConditionsNEW( ModelBoundaryConditionsNEW const& ) = default;
+
+  bool hasSection( std::string const& sn ) const { return M_sections.find( sn ) != M_sections.end(); }
+  nl::json const& section( std::string const& sn ) const { return M_sections.at( sn ); }
+
+  void setup( nl::json const& jarg )
+  {
+      if ( !jarg.is_object() )
+          return;
+      for ( auto const& [jargkey,jargval] : jarg.items() )
+      {
+          M_sections.emplace( jargkey,jargval );
+      }
+  }
+  private:
+  std::map<std::string,nl::json> M_sections;
 };
 
 }

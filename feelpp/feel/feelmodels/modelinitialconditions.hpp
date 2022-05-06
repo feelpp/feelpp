@@ -58,8 +58,10 @@ class FEELPP_EXPORT ModelInitialCondition : public CommObject
     std::string const& fileType() const { return M_fileType; }
     std::string const& fileDirectory() const { return M_fileDirectory; }
 
+    nl::json const& jsonSetup() const { return M_jsonSetup; }
+
     void setParameterValues( std::map<std::string,double> const& mp );
-    void setup( pt::ptree const& p, std::string const& typeIC );
+    void setup( nl::json const& jarg, std::string const& typeIC );
   private :
     std::string M_name;
     bool M_isExpression, M_isFile;
@@ -68,6 +70,7 @@ class FEELPP_EXPORT ModelInitialCondition : public CommObject
     ModelMarkers M_markers;
     ModelExpression M_modelExpr;
     std::string M_fileName, M_fileType, M_fileDirectory;
+    nl::json M_jsonSetup;
 };
 
 
@@ -85,18 +88,14 @@ class FEELPP_EXPORT ModelInitialConditionTimeSet : public CommObject, public std
     ModelInitialConditionTimeSet& operator=( ModelInitialConditionTimeSet const& ) = default;
     ModelInitialConditionTimeSet& operator=( ModelInitialConditionTimeSet && ) = default;
 
-    //! return the property tree
-    pt::ptree const& pTree() const { return M_p; }
-
     void setParameterValues( std::map<std::string,double> const& mp );
-    void setup( pt::ptree const& p );
+    void setup( nl::json const& jarg );
   private :
-    pt::ptree M_p;
     std::string M_directoryLibExpr;
 
 };
 
-class FEELPP_EXPORT ModelInitialConditions : public CommObject, public std::map<std::string,ModelInitialConditionTimeSet>
+class FEELPP_EXPORT ModelInitialConditions : public CommObject, public std::map<std::string,std::map<std::string,ModelInitialConditionTimeSet>> // toolbox name -> (field name -> ic data)
 {
     using super = CommObject;
   public :
@@ -109,11 +108,14 @@ class FEELPP_EXPORT ModelInitialConditions : public CommObject, public std::map<
     ModelInitialConditions& operator=( ModelInitialConditions const& ) = default;
     ModelInitialConditions& operator=( ModelInitialConditions && ) = default;
 
-    void setPTree( pt::ptree const& _p );
+    void setPTree( nl::json const& jarg );
     void setDirectoryLibExpr( std::string const& directoryLibExpr ) { M_directoryLibExpr = directoryLibExpr; }
     void setParameterValues( std::map<std::string,double> const& mp );
 
-    ModelInitialConditionTimeSet const& get( std::string const& name ) const;
+    bool has( std::string const& tbname, std::string const& fieldname ) const;
+    ModelInitialConditionTimeSet const& get( std::string const& tbname, std::string const& fieldname ) const;
+  private :
+    void setupInternal( std::string const& tbname, nl::json const& jarg );
   private :
     std::string M_directoryLibExpr;
     ModelInitialConditionTimeSet M_emptylInitialConditionTimeSet;

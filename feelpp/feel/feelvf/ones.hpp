@@ -26,8 +26,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2007-04-11
  */
-#ifndef __Ones_H
-#define __Ones_H 1
+#ifndef FEELPP_VF_ONES_H
+#define FEELPP_VF_ONES_H 1
 
 //#include <blitz/array.h>
 #include <boost/multi_array.hpp>
@@ -153,6 +153,20 @@ public:
         return M_values;
     }
 
+    template <typename SymbolsExprType>
+    this_type applySymbolsExpr( SymbolsExprType const& se ) const
+        {
+            return *this;
+        }
+
+    template <int diffOrder, typename TheSymbolExprType>
+    auto diff( std::string const& diffVariable, WorldComm const& world, std::string const& dirLibExpr,
+               TheSymbolExprType const& se ) const
+        {
+            return vf::detail::Ones<M, N>( Eigen::Matrix<value_type,M,N>::Zero() );
+        }
+
+
     //@}
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
     struct tensor
@@ -211,10 +225,12 @@ public:
             M_values( expr.ones() )
         {
         }
-        template<typename IM>
-        void init( IM const& /*im*/ )
-        {
-        }
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        tensor( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                expression_type const& expr, Geo_t const& geom, const TheArgsType&... theInitArgs )
+            :
+            tensor( expr, geom, theInitArgs... )
+            {}
 
         void update( Geo_t const&, Basis_i_t const&, Basis_j_t const& )
         {
@@ -225,9 +241,10 @@ public:
         void update( Geo_t const& )
         {
         }
-        void update( Geo_t const& /*geom*/, uint16_type /*face*/ )
-        {
-        }
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        void update( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                     Geo_t const& geom, const TheArgsType&... theUpdateArgs )
+            {}
 
 
         value_type
@@ -349,4 +366,4 @@ constant( double value )
 
 } // vf
 } // Feel
-#endif /* __Ones_H */
+#endif /* FEELPP_VF_ONES_H */

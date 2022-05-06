@@ -1,0 +1,103 @@
+// -*- mode: javascript -*-
+{
+    "Name": "body under gravity",
+    "ShortName":"bug",
+    "Models":
+    {
+        "fluid":
+        {
+            "materials":"Fluid",
+            "setup":{
+                "equations":"Navier-Stokes",
+                "gravity":1
+                // "gravity":
+                // {
+                //     "enable":1,
+                //     "expr":"{0,-9.80665*cos((t/0.2)*pi/2)}:t"
+                // }
+            }
+        },
+        "body":{
+            "materials":"MySolid"
+        }
+    },
+    "Meshes":
+    {
+        "fluid":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/cfd.geo",
+                "hsize":0.05
+            },
+            "MeshMotion":
+            {
+                "ComputationalDomain":
+                {
+                    "markers":"Omega_fluid",
+                    "method":"harmonic_extension"
+                },
+                "Displacement":
+                {
+                    "Zero":["wall_bottom","wall_left","wall_right","wall_top"]
+                }
+            }
+        }
+    },
+    "Materials":
+    {
+        "Fluid":{
+            "markers":"Omega_fluid",
+            //"physics":"fluid",
+            "rho":"1.0e3",
+            "mu":"1.0"
+        },
+        "MySolid":{
+            "markers":"Omega_body",
+            //"physics":"body",
+            "rho":"7.0e3"
+            //"rho":"2.0e3+1e3*sin((t/0.1)*pi/2):t"
+        }
+    },
+    "BoundaryConditions":
+    {
+        "fluid":
+        {
+            "velocity":
+            {
+                "wall":
+                {
+                    "markers":["wall_bottom","wall_left","wall_right"],
+                    "expr":"{0,0}"
+                }
+            },
+            "outlet":
+            {
+                "wall_top":
+                {
+                    "expr":"0" 
+                }
+            },
+            "body":
+            {
+                "p1_mark":
+                 {
+                     "markers":"wall_body",
+                     "materials":"MySolid"
+                     // ,"translational-velocity":"{0.5,-1}"
+                     // ,"angular-velocity":"0"
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "fluid":
+        {
+            "Exports":
+            {
+                "fields":["velocity","pressure","pid","displacement"]
+            }
+        }
+    }
+}

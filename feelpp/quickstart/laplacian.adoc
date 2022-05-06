@@ -1,0 +1,96 @@
+:feelpp: Feel++
+= feelpp_qs_laplacian(1)
+Christophe Prud'homme <https://github.com/prudhomm[@prudhomm]>; Vincent Chabannes <https://github.com/vincentchabannes[@vincentchabannes]>
+:manmanual: feelpp_qs_laplacian
+:man-linkstyle: pass:[blue R < >]
+:stem: latexmath
+
+== NAME
+
+{manmanual} - solving Poisson's equation {feelpp}
+
+
+== SYNOPSIS
+
+{manmanual} --config-file 
+
+== DESCRIPTION
+
+{manmanual} is a simple application which can solve Poisson's equations with Dirichlet, Neumann or Robin boundary condition or a mix of them.
+
+The coefficient of the equations can be automatically computed to get a manufactured solution in order to verify the code with stem:[L^2] and stem:[H^1].
+
+=== Options
+
+{manmanual} requires some options.
+
+.Table of command-line {manmanual} options
+|===                                                                                                                                                                              
+| Name | Description | Default value
+
+| config-file | .cfg file to configure the application |  
+| checker.check | check the norms with respect to a manufactured solution | true
+| checker.compute-pde-coefficients | compute pde coefficients from manufactured solution | true
+| checker.solution | manufactured solution |
+| checker.gradient | gradient of the manufactured solution |
+| f | right hand side expression |
+| un | expression on Neumann boundary | 
+| g | expression on Dirichlet boundary |
+| r_2 | right hand side expression on Robin/Fourier boundary |
+|===  
+
+== EXAMPLES
+
+We are now using the `feelpp/feelpp-toolboxes:latest` docker image  as described in link:http://book.feelpp.org/user-manual/#getting_started[] to demonstrate {manmanual} usage.               
+
+NOTE: `feelpp/feelpp` docker image works as well.
+
+[source,shell]
+.Starting the docker `feelpp/feelpp-toolboxes:latest`
+----
+docker run --rm -ti -v $HOME/feel:/feel feelpp/feelpp-toolboxes
+----
+
+=== Solving Poisson's equation in a triangle
+
+Let's consider Poisson's equation in a triangle with each side associated respectively to Dirichlet, Neumann and Robin condition.
+
+==== Solve using manufactured solution
+
+The application can be run to solve the equation and verify the solution using a manufactured solution using `--checker.check=true` and `--checker.solution=<expr>` to provide the solution.
+
+The coefficients associated to the manufactured solution can be computed automatically by a python script (`--checker.compute-pde-coefficients=true`) or provided by the user(`--checker.compute-pde-coefficients=false`)
+
+.Solving Poisson's equation using manufacture solution and let {feelpp} compute the coefficients of the PDE
+[source,shell]
+----
+ ./feelpp_qs_laplacian_2d --config-file laplacian/triangle/triangle.cfg --checker.solution="x" --checker.compute-pde-coefficients=true 
+----
+
+.Solving Poisson's equation using manufacture solution and provide the coefficients of the PDE
+[source,shell]
+----
+ ./feelpp_qs_laplacian_2d --config-file laplacian/triangle/triangle.cfg --checker.solution="x" --checker.compute-pde-coefficients=false --un=-nx:x --g=x:x --r_2=-nx-x:nx:x --f=1
+----
+
+==== Solving Poisson's equation
+
+Poisson's equation can be solved by simply giving the material and boundary condition expressions using `--checker.check=false`.
+In that case, the solution may in general not be known and no verification is done.
+
+.Solving Poisson's equation with the coefficients provided
+[source,shell]
+----
+ ./feelpp_qs_laplacian_2d --config-file laplacian/triangle/triangle.cfg --checker.compute-pde-coefficients=false --ckecker.check=false --un=0 --g=0 --r_2=0 --f=1
+----
+
+== SEE ALSO
+
+*{feelpp} Book:* http://book.feelpp.org
+*{feelpp} mathemmatics:* http://docs.feelpp.org/math/current/fem/laplacian/
+
+== COPYING
+
+Copyright \(C) 2017-2020 {feelpp} Consortium. +
+Free use of this software is granted under the terms of the GPLv3 License.
+

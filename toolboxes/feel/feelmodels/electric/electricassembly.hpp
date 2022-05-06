@@ -1,15 +1,17 @@
 #ifndef FEELPP_TOOLBOXES_ELECTRIC_ASSEMBLY_HPP
 #define FEELPP_TOOLBOXES_ELECTRIC_ASSEMBLY_HPP 1
 
+#include <feel/feelmodels/modelcore/diffsymbolicexpr.hpp>
+
 namespace Feel
 {
 namespace FeelModels
 {
 
 template< typename ConvexType, typename BasisPotentialType>
-template <typename SymbolsExpr>
+template <typename ModelContextType>
 void
-Electric<ConvexType,BasisPotentialType>::updateLinearPDE( DataUpdateLinear & data, SymbolsExpr const& symbolsExpr ) const
+Electric<ConvexType,BasisPotentialType>::updateLinearPDE( DataUpdateLinear & data, ModelContextType const& mctx ) const
 {
     sparse_matrix_ptrtype& A = data.matrix();
     vector_ptrtype& F = data.rhs();
@@ -23,6 +25,7 @@ Electric<ConvexType,BasisPotentialType>::updateLinearPDE( DataUpdateLinear & dat
     auto mesh = this->mesh();
     auto XhV = this->spaceElectricPotential();
     auto const& v = this->fieldElectricPotential();
+    auto const& symbolsExpr = mctx.symbolsExpr();
 
     auto bilinearForm_PatternCoupled = form2( _test=XhV,_trial=XhV,_matrix=A,
                                               _pattern=size_type(Pattern::COUPLED),
@@ -33,29 +36,32 @@ Electric<ConvexType,BasisPotentialType>::updateLinearPDE( DataUpdateLinear & dat
 
     //--------------------------------------------------------------------------------------------------//
 
-    for ( auto const& rangeData : M_electricProperties->rangeMeshElementsByMaterial() )
+    for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
     {
-        std::string const& matName = rangeData.first;
-        auto const& range = rangeData.second;
-        auto const& electricConductivity = M_electricProperties->electricConductivity( matName );
-
-        auto sigma = expr( electricConductivity.expr(), symbolsExpr);
-        //if ( sigma.expression().hasSymbol( "heat_T" ) )
-        //    continue;
-        //auto sigma = idv(M_electricProperties->fieldElectricConductivity());
-        bool buildDiffusion = sigma.expression().isConstant()? buildCstPart : buildNonCstPart;
-        if ( buildDiffusion )
+        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
         {
-            bilinearForm_PatternCoupled +=
-                integrate( _range=range,
-                           _expr= sigma*inner(gradt(v),grad(v)),
-                           _geomap=this->geomap() );
+            auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
+            auto const& electricConductivity = this->materialsProperties()->electricConductivity( matName );
+
+            auto sigma = expr( electricConductivity.expr(), symbolsExpr);
+            //if ( sigma.expression().hasSymbol( "heat_T" ) )
+            //    continue;
+            //auto sigma = idv(M_electricProperties->fieldElectricConductivity());
+            bool buildDiffusion = sigma.expression().isConstant()? buildCstPart : buildNonCstPart;
+            if ( buildDiffusion )
+            {
+                bilinearForm_PatternCoupled +=
+                    integrate( _range=range,
+                               _expr= sigma*inner(gradt(v),grad(v)),
+                               _geomap=this->geomap() );
+            }
         }
     }
 
     // update source term
     if ( buildNonCstPart )
     {
+#if 0 //VINCENT
         for( auto const& d : this->M_volumicForcesProperties )
         {
             auto rangeEltUsed = (markers(d).empty())? M_rangeMeshElements : markedelements(this->mesh(),markers(d));
@@ -64,98 +70,151 @@ Electric<ConvexType,BasisPotentialType>::updateLinearPDE( DataUpdateLinear & dat
                            _expr= expression(d,symbolsExpr)*id(v),
                            _geomap=this->geomap() );
         }
+#endif
     }
 
     // update weak bc
     if ( buildNonCstPart )
     {
-        for( auto const& d : this->M_bcNeumann )
+        for ( auto const& [bcName,bcData] : M_boundaryConditions->surfaceChargeDensity() )
         {
+            auto theExpr = bcData->expr( symbolsExpr );
             myLinearForm +=
-                integrate( _range=markedfaces(mesh,this->markerNeumannBC(NeumannBCShape::SCALAR,name(d)) ),
-                           _expr= expression(d,symbolsExpr)*id(v),
-                           _geomap=this->geomap() );
-        }
-
-        for( auto const& d : this->M_bcRobin )
-        {
-            auto theExpr1 = expression1( d,symbolsExpr );
-            bilinearForm_PatternCoupled +=
-                integrate( _range=markedfaces(mesh,this->markerRobinBC( name(d) ) ),
-                           _expr= theExpr1*idt(v)*id(v),
-                           _geomap=this->geomap() );
-            auto theExpr2 = expression2( d,symbolsExpr );
-            myLinearForm +=
-                integrate( _range=markedfaces(mesh,this->markerRobinBC( name(d) ) ),
-                           _expr= theExpr1*theExpr2*id(v),
+                integrate( _range=markedfaces(mesh,bcData->markers()),
+                           _expr=-theExpr*id(v),
                            _geomap=this->geomap() );
         }
     }
-
 }
 
 
 template< typename ConvexType, typename BasisPotentialType>
-template <typename SymbolsExpr>
+template <typename ModelContextType>
 void
-Electric<ConvexType,BasisPotentialType>::updateJacobian( DataUpdateJacobian & data, SymbolsExpr const& symbolsExpr ) const
+Electric<ConvexType,BasisPotentialType>::updateLinearPDEDofElimination( DataUpdateLinear & data, ModelContextType const& mctx ) const
+{
+    if ( !M_boundaryConditions->hasTypeDofElimination() )
+        return;
+
+    this->log("Electric","updateLinearPDEDofElimination","start" );
+
+    sparse_matrix_ptrtype& A = data.matrix();
+    vector_ptrtype& F = data.rhs();
+    auto const& se = mctx.symbolsExpr();
+    auto XhV = this->spaceElectricPotential();
+    auto const& u = this->fieldElectricPotential();
+    auto mesh = XhV->mesh();
+
+    auto bilinearForm = form2( _test=XhV,_trial=XhV,_matrix=A,
+                               _pattern=size_type(Pattern::COUPLED),
+                               _rowstart=this->rowStartInMatrix(),
+                               _colstart=this->colStartInMatrix() );
+
+    M_boundaryConditions->applyDofEliminationLinear( bilinearForm, F, mesh, u, se );
+
+    this->log("Electric","updateLinearPDEDofElimination","finish" );
+}
+
+template< typename ConvexType, typename BasisPotentialType>
+template <typename ModelContextType>
+void
+Electric<ConvexType,BasisPotentialType>::updateNewtonInitialGuess( DataNewtonInitialGuess & data, ModelContextType const& mctx ) const
+{
+    if ( !M_boundaryConditions->hasTypeDofElimination() )
+        return;
+    this->log("Electric","updateNewtonInitialGuess","start" );
+
+    vector_ptrtype& U = data.initialGuess();
+    auto mesh = this->mesh();
+    size_type startBlockIndexElectricPotential = this->startSubBlockSpaceIndex( "electric-potential" );
+    auto u = this->spaceElectricPotential()->element( U, this->rowStartInVector()+startBlockIndexElectricPotential );
+    auto const& se = mctx.symbolsExpr();
+
+    M_boundaryConditions->applyNewtonInitialGuess( mesh, u, se );
+
+    // update info for synchronization
+    this->updateDofEliminationIds( "electric-potential", data );
+
+    this->log("Electric","updateNewtonInitialGuess","finish" );
+}
+
+
+template< typename ConvexType, typename BasisPotentialType>
+template <typename ModelContextType>
+void
+Electric<ConvexType,BasisPotentialType>::updateJacobian( DataUpdateJacobian & data, ModelContextType const& mctx ) const
 {
     const vector_ptrtype& XVec = data.currentSolution();
     sparse_matrix_ptrtype& J = data.jacobian();
-    vector_ptrtype& RBis = data.vectorUsedInStrongDirichlet();
     bool buildCstPart = data.buildCstPart();
     bool buildNonCstPart = !buildCstPart;
 
     std::string sc=(buildCstPart)?" (build cst part)":" (build non cst part)";
     this->log("Electric","updateJacobian", "start"+sc);
-    size_type startBlockIndexElectricPotential = this->startSubBlockSpaceIndex( "potential-electric" );
+    size_type startBlockIndexElectricPotential = this->startSubBlockSpaceIndex( "electric-potential" );
 
     auto mesh = this->mesh();
     auto XhV = this->spaceElectricPotential();
-    // auto const& v = this->fieldElectricPotential();
-    auto const v = XhV->element(XVec, this->rowStartInVector()+startBlockIndexElectricPotential );
+    auto const& v = mctx.field( FieldTag::potential(this), "electric-potential" );
+    auto const& se = mctx.symbolsExpr();
+    auto const& tse = mctx.trialSymbolsExpr();
+    auto trialSymbolNames = tse.names();
 
     auto bilinearForm_PatternCoupled = form2( _test=XhV,_trial=XhV,_matrix=J,
                                               _pattern=size_type(Pattern::COUPLED),
                                               _rowstart=this->rowStartInMatrix()+startBlockIndexElectricPotential,
                                               _colstart=this->colStartInMatrix()+startBlockIndexElectricPotential );
 
-    for ( auto const& rangeData : M_electricProperties->rangeMeshElementsByMaterial() )
+    for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
     {
-        std::string const& matName = rangeData.first;
-        auto const& range = rangeData.second;
-        auto const& electricConductivity = M_electricProperties->electricConductivity( matName );
-        bool buildDiffusion = ( electricConductivity.isConstant() )? buildCstPart : buildNonCstPart;
-        if ( buildDiffusion )
+        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
         {
-            auto sigmaExpr = expr(electricConductivity.expr(),symbolsExpr);
-            bilinearForm_PatternCoupled +=
-                integrate( _range=range,
-                           _expr= sigmaExpr*inner(gradt(v),grad(v)),
-                           _geomap=this->geomap() );
-        }
-    }
+            auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
+            auto const& electricConductivity =  this->materialsProperties()->electricConductivity( matName );
+            bool electricConductivityDependOnTrialSymbol = electricConductivity.hasSymbolDependency( trialSymbolNames,se );
+            auto sigmaExpr = expr(electricConductivity.expr(),se);
+            bool buildDiffusion = sigmaExpr.expression().isNumericExpression()? buildCstPart : buildNonCstPart;
+            if ( buildDiffusion )
+            {
+                bilinearForm_PatternCoupled +=
+                    integrate( _range=range,
+                               _expr= sigmaExpr*inner(gradt(v),grad(v)),
+                               _geomap=this->geomap() );
+            }
+            if ( electricConductivityDependOnTrialSymbol && buildNonCstPart )
+            {
+                hana::for_each( tse.map(), [this,&sigmaExpr,&v,&J,&range,&XhV]( auto const& e )
+                    {
+                        // NOTE : a strange compilation error related to boost fusion if we use [trialXh,trialBlockIndex] in the loop for
+                        for ( auto const& trialSpacePair /*[trialXh,trialBlockIndex]*/ : hana::second(e).blockSpaceIndex() )
+                        {
+                            auto trialXh = trialSpacePair.second;
+                            auto trialBlockIndex = trialSpacePair.first;
 
-    //--------------------------------------------------------------------------------------------------//
-    // weak bc
-    if ( buildNonCstPart )
-    {
-        for( auto const& d : this->M_bcRobin )
-        {
-            bilinearForm_PatternCoupled +=
-                integrate( _range=markedfaces(mesh,this->markerRobinBC( name(d) ) ),
-                           _expr= expression1(d,symbolsExpr)*idt(v)*id(v),
-                           _geomap=this->geomap() );
+                            auto sigmaDiffExpr = diffSymbolicExpr( sigmaExpr, hana::second(e), trialXh, trialBlockIndex, this->worldComm(), this->repository().expr() );
+
+                            if ( !sigmaDiffExpr.expression().hasExpr() )
+                                continue;
+
+                            form2( _test=XhV,_trial=trialXh,_matrix=J,
+                                   _pattern=size_type(Pattern::COUPLED),
+                                   _rowstart=this->rowStartInMatrix(),
+                                   _colstart=trialBlockIndex ) +=
+                                integrate( _range=range,
+                                           _expr= sigmaDiffExpr*inner(gradv(v),grad(v)),
+                                           _geomap=this->geomap() );
+                        }
+                    });
+            }
         }
     }
-    //--------------------------------------------------------------------------------------------------//
 
 }
 
 template< typename ConvexType, typename BasisPotentialType>
-template <typename SymbolsExpr>
+template <typename ModelContextType>
 void
-Electric<ConvexType,BasisPotentialType>::updateResidual( DataUpdateResidual & data, SymbolsExpr const& symbolsExpr ) const
+Electric<ConvexType,BasisPotentialType>::updateResidual( DataUpdateResidual & data, ModelContextType const& mctx ) const
 {
     const vector_ptrtype& XVec = data.currentSolution();
     vector_ptrtype& R = data.residual();
@@ -166,30 +225,34 @@ Electric<ConvexType,BasisPotentialType>::updateResidual( DataUpdateResidual & da
     std::string sc=(buildCstPart)?" (cst)":" (non cst)";
     this->log("Electric","updateResidual", "start"+sc);
 
-    size_type startBlockIndexElectricPotential = this->startSubBlockSpaceIndex( "potential-electric" );
+    size_type startBlockIndexElectricPotential = this->startSubBlockSpaceIndex( "electric-potential" );
 
     auto mesh = this->mesh();
     auto XhV = this->spaceElectricPotential();
     // auto const& v = this->fieldElectricPotential();
-    auto const v = XhV->element(XVec, this->rowStartInVector()+startBlockIndexElectricPotential );
+    //auto const v = XhV->element(XVec, this->rowStartInVector()+startBlockIndexElectricPotential );
+    auto const& v = mctx.field( FieldTag::potential(this), "electric-potential" );
+    auto const& symbolsExpr = mctx.symbolsExpr();
 
     auto myLinearForm = form1( _test=XhV, _vector=R,
                                _rowstart=this->rowStartInVector() + startBlockIndexElectricPotential );
 
-    for ( auto const& rangeData : M_electricProperties->rangeMeshElementsByMaterial() )
+    for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
     {
-        std::string const& matName = rangeData.first;
-        auto const& range = rangeData.second;
-        auto const& electricConductivity = M_electricProperties->electricConductivity( matName );
-
-        bool buildDiffusion = ( electricConductivity.isConstant() )? buildNonCstPart && !UseJacobianLinearTerms : buildNonCstPart;
-        if ( buildDiffusion )
+        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
         {
+            auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
+            auto const& electricConductivity =  this->materialsProperties()->electricConductivity( matName );
+
             auto sigmaExpr = expr(electricConductivity.expr(),symbolsExpr);
-            myLinearForm +=
-                integrate( _range=range,
-                           _expr= sigmaExpr*inner(gradv(v),grad(v)),
-                           _geomap=this->geomap() );
+            bool buildDiffusion = sigmaExpr.expression().isNumericExpression()? buildNonCstPart && !UseJacobianLinearTerms : buildNonCstPart;
+            if ( buildDiffusion )
+            {
+                myLinearForm +=
+                    integrate( _range=range,
+                               _expr= sigmaExpr*inner(gradv(v),grad(v)),
+                               _geomap=this->geomap() );
+            }
         }
     }
 
@@ -197,6 +260,7 @@ Electric<ConvexType,BasisPotentialType>::updateResidual( DataUpdateResidual & da
     // source term
     if ( buildCstPart )
     {
+#if 0 //VINCENT
         for( auto const& d : this->M_volumicForcesProperties )
         {
             auto rangeEltUsed = (markers(d).empty())? M_rangeMeshElements : markedelements(this->mesh(),markers(d));
@@ -205,34 +269,19 @@ Electric<ConvexType,BasisPotentialType>::updateResidual( DataUpdateResidual & da
                            _expr= -expression(d,symbolsExpr)*id(v),
                            _geomap=this->geomap() );
         }
+#endif
     }
 
     //--------------------------------------------------------------------------------------------------//
     // weak bc
     if ( buildCstPart )
     {
-        for( auto const& d : this->M_bcNeumann )
+        for ( auto const& [bcName,bcData] : M_boundaryConditions->surfaceChargeDensity() )
         {
+            auto theExpr = bcData->expr( symbolsExpr );
             myLinearForm +=
-                integrate( _range=markedfaces(mesh,this->markerNeumannBC(NeumannBCShape::SCALAR,name(d)) ),
-                           _expr= -expression(d,symbolsExpr)*id(v),
-                           _geomap=this->geomap() );
-        }
-    }
-    for( auto const& d : this->M_bcRobin )
-    {
-        if ( buildNonCstPart )
-        {
-            myLinearForm +=
-                integrate( _range=markedfaces(mesh,this->markerRobinBC( name(d) ) ),
-                           _expr= expression1(d,symbolsExpr)*idv(v)*id(v),
-                           _geomap=this->geomap() );
-        }
-        if ( buildCstPart )
-        {
-            myLinearForm +=
-                integrate( _range=markedfaces(mesh,this->markerRobinBC( name(d) ) ),
-                           _expr= -expression1(d,symbolsExpr)*expression2(d,symbolsExpr)*id(v),
+                integrate( _range=markedfaces(mesh,bcData->markers()),
+                           _expr= theExpr*id(v),
                            _geomap=this->geomap() );
         }
     }

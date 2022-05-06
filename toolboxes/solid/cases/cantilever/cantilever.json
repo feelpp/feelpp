@@ -1,0 +1,72 @@
+{
+    "Name": "Solid Mechanics ",
+    "ShortName":"Solid",
+    "Models":
+    {
+        "solid":{
+            "equations":"Elasticity"
+        }
+    },
+    "Meshes":
+    {
+        "solid":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/cantilever.geo",
+                "hsize":0.01
+            }
+        }
+    },
+    "Materials":
+    {
+        "cantilever":
+        {
+            "E":"206.84277e9", //N/m^2
+            "nu":"0.3",
+            "rho":"7870" // kg/m^3
+        }
+    },
+    "BoundaryConditions":
+    {
+        "solid":
+        {
+            "displacement":
+            {
+                "fixed":
+                {
+                    "expr":"{0,0,0}"
+                }
+            },
+            "normal_stress":
+            {
+                "load":
+                {
+                    "expr":"{0,-10000/0.02,0}"	// F/A
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "solid":
+        {
+            "Exports":
+            {
+                "fields":["displacement","von-mises-criterion","tresca-criterion", "principal-stresses"]
+            },
+            "Measures":
+            {
+                "VolumeVariation":"cantilever",
+                "Maximum":
+                {
+                    "beam":
+                    {
+			            "markers":"",
+                        "fields":["displacement"]
+                    }
+                }
+            }
+        }
+    }
+}

@@ -21,45 +21,39 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#ifndef FEELPP_MEASURE_HPP
-#define FEELPP_MEASURE_HPP 1
+#ifndef FEELPP_VF_MEASURE_HPP
+#define FEELPP_VF_MEASURE_HPP 1
 
 #include <feel/feelvf/expr.hpp>
 #include <feel/feelvf/integrate.hpp>
 
 namespace Feel {
 
-BOOST_PARAMETER_FUNCTION(
-    ( double ), // return type
-    measure,    // 2. function name
-
-    tag,           // 3. namespace of tag types
-
-    ( required
-      ( range, *  )
-    ) // 4. one required parameter, and
-
-    ( optional
-      ( expr,   *, cst(1.0))
-      ( quad,   *, quad_order_from_expression )
-      ( geomap, *, GeomapStrategyType::GEOMAP_OPT )
-      ( quad1,   *, quad_order_from_expression )
-      ( use_tbb,   ( bool ), false )
-      ( use_harts,   ( bool ), false )
-      ( grainsize,   ( int ), 100 )
-      ( partitioner,   *, "auto" )
-      ( verbose,   ( bool ), false )
-    )
-)
+template <typename ... Ts>
+double measure( Ts && ... v )
 {
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && range = args.get(_range);
+    auto && expr = args.get_else(_expr,cst(1.));
+    bool parallel = args.get_else( _parallel, true );
+    auto && quad = args.get_else( _quad, quad_order_from_expression );
+    auto && quad1 = args.get_else( _quad1, quad_order_from_expression );
+    GeomapStrategyType geomap = args.get_else( _geomap,GeomapStrategyType::GEOMAP_OPT );
+    bool use_tbb = args.get_else( _use_tbb, false );
+    bool use_harts = args.get_else( _use_harts, false );
+    int grainsize = args.get_else( _grainsize, 100 );
+    std::string const& partitioner = args.get_else( _partitioner, "auto");
+    bool verbose = args.get_else( _verbose, false );
+
     double meas = integrate( _range=range, _expr=expr, _quad=quad, _quad1=quad1, _geomap=geomap,
                              _use_tbb=use_tbb, _use_harts=use_harts, _grainsize=grainsize,
-                             _partitioner=partitioner, _verbose=verbose ).evaluate()( 0, 0 );
+                             _partitioner=partitioner, _verbose=verbose ).evaluate(parallel)( 0, 0 );
     DLOG(INFO) << "[mean] measure = " << meas << "\n";
-    CHECK( math::abs(meas) > 1e-13 ) << "Invalid domain measure : " << meas << ", domain range: " << nelements( range ) << "\n";
+    if ( math::abs(meas) < 1e-13 ) 
+      LOG(WARNING) << "Invalid domain measure : " << meas << ", domain range: " << nelements( range ) << "\n";
     return meas;
 }
 
 }
 
-#endif /* FEELPP_MEASURE_HPP */
+#endif /* FEELPP_VF_MEASURE_HPP */

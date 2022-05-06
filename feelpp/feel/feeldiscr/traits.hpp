@@ -34,7 +34,7 @@
 namespace Feel {
 
 /**
- * \addtogroup Traits
+ * \ingroup Traits
  * @{
  */
 /**
@@ -131,6 +131,13 @@ template<typename T>
 constexpr bool is_tensor2symm_field_v = is_tensor2symm_field<T>::value;
 
 /**
+ * helper variable template, 
+ * @return true of field is a matrix field field, false otherwise
+ */
+template<typename T>
+constexpr bool is_matrix_field_v  = is_tensor2_field_v<T> || is_tensor2symm_field_v<T>;
+
+/**
  * if \p T has base class \p FunctionSpaceBase (hense if it is a function space)
  * then provides the member constant value equal to true, false otherwise
  */
@@ -187,7 +194,7 @@ using element_t = typename SpaceT::element_type;
  * get the element shared ptr type of a functionspace
  */
 template<typename SpaceT, typename = std::enable_if_t<is_functionspace_v<SpaceT>>>
-using element_ptr_t = typename SpaceT::element_ptr_type;
+using element_ptr_t = typename SpaceT::element_ptrtype;
 
 /**
  * @} // end Traits group

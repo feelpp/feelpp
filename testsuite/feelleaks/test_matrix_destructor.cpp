@@ -31,7 +31,10 @@
 
 #include <fstream>
 
-#include <feel/feel.hpp>
+#include <feel/feelcore/environment.hpp>
+#include <feel/feeldiscr/pch.hpp>
+#include <feel/feelalg/backend.hpp>
+#include <feel/feelfilters/unithypercube.hpp>
 #include <Eigen/Core>
 #include <Eigen/LU>
 #include <Eigen/Dense>
@@ -114,7 +117,7 @@ testMatrixDestructor()
     std::string str = ( boost::format("pslog-%1%D-P%2%") %Dim %Order ).str();
     PsLogger ps (str);
     ps.log(myformat("before matrix creation", Dim, Order) );
-    auto matrix = backend()->newMatrix( Xh , Xh);
+    auto matrix = backend()->newMatrix( _test=Xh , _trial=Xh);
     ps.log(myformat("matrix created",Dim,Order));
 
     //call destructor

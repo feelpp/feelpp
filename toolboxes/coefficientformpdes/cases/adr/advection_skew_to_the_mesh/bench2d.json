@@ -1,0 +1,70 @@
+{
+    "Name": "advection_skew_to_the_mesh",
+    "ShortName": "advection_skew_to_the_mesh",
+    "Models":
+    {
+        "cfpdes":{
+            "equations":"equation1"
+        },
+        "equation1":{
+            "setup":{
+                "unknown":{
+                    "basis":"Pch1",
+                    "name":"solution",
+                    "symbol":"u"
+                },
+                "coefficients":{
+                    "c":"1e-8", // diffusion
+                    "beta":"{cos(alpha),sin(alpha)}:alpha" // convection
+                }
+            }
+        }
+    },
+    "Parameters":
+    {
+        "alpha":"atan(1)"
+    },
+    "Meshes":
+    {
+        "cfpdes":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/bench2d.geo",
+                "hsize":0.03
+            }
+        }
+    },
+    "Materials":
+    {
+        "mymat1":
+        {
+            "markers":"Omega"
+        }
+    },
+    "BoundaryConditions":
+    {
+        "equation1":
+        {
+            "Dirichlet":
+            {
+                "Gamma0":
+                {
+                    "markers":["Gamma0","GammaOut"],
+                    "expr":"0"
+                },
+                "Gamma1": { "expr":"1" }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "cfpdes":
+        {
+            "Exports":
+            {
+                "fields":["all"]
+            }
+        }
+    }
+}

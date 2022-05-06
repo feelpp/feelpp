@@ -1,5 +1,4 @@
 
-
 #include "electricconfig.h"
 #include <feel/feelmodels/electric/electric.cpp>
 

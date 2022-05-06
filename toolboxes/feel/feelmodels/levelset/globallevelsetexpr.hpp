@@ -2,7 +2,6 @@
 #define _GLOBAL_LEVELSET_EXPR_HPP 1
 
 namespace Feel {
-//namespace vf {
 namespace FeelModels {
 
 template<typename ElementLevelsetType>
@@ -327,7 +326,6 @@ globalLevelsetExpr( std::vector< std::shared_ptr<ElementLevelsetType> > const& l
 }
 
 } // namespace FeelModels
-//} // namespace vf
 } // namespace Feel
 
 #endif //_GLOBAL_LEVELSET_EXPR_HPP

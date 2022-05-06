@@ -21,6 +21,12 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
+add_custom_target( benchs )
 
-feelpp_add_application( env SRCS env.cpp LINK_LIBRARIES  benchmark )
-feelpp_add_application( mesh SRCS mesh.cpp LINK_LIBRARIES  benchmark )
+feelpp_add_application( env SRCS 01-env.cpp LINK_LIBRARIES  benchmark EXEC B_ENV )
+feelpp_add_application( mesh SRCS 02-mesh.cpp LINK_LIBRARIES  benchmark EXEC B_MESH )
+feelpp_add_application( space SRCS 03-space.cpp LINK_LIBRARIES  benchmark EXEC B_SPACE )
+feelpp_add_application( integrate SRCS 04-integrate.cpp LINK_LIBRARIES  benchmark EXEC B_INTEGRATE )
+feelpp_add_application( gmc SRCS gmc.cpp LINK_LIBRARIES  benchmark EXEC B_GMC )
+feelpp_add_application( taskflow SRCS 99-taskflow.cpp LINK_LIBRARIES Feelpp::feelpp_taskflow )
+add_dependencies( benchs ${B_ENV} ${B_MESH} ${B_SPACE} ${B_INTEGRATE} ${B_GMC})

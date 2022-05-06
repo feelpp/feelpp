@@ -1,0 +1,11 @@
+{
+    "alpha":"3.6e-3",
+    "T0":"293",
+    "sigma0":"58e3",
+    "Lorentz":2.47e-8,
+    // "sigma":"sigma0:sigma0",
+    "sigma":"sigma0/(1+alpha*(heat_T-T0)):sigma0:alpha:heat_T:T0",
+    "k0":"0.380",
+    // "k":"sigma0*Lorentz*T/(1+alpha*(T-T0)):sigma0:alpha:T0:Lorentz:T"
+    "k":"k0*heat_T/((1+alpha*(heat_T-T0))*T0):k0:heat_T:alpha:T0"
+}

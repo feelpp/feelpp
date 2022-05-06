@@ -68,42 +68,50 @@ main( int argc, char** argv )
     auto v = Vh->element();
     double penalbc = option(_name="penalbc").as<double>();
 
-    // reaction terms
+    // tag::reaction[]
     auto reaction = expr( option(_name="reaction").as<std::string>(), "u", idv(u), "reaction" );
     auto reaction_diff = diff( option(_name="reaction").as<std::string>(), "u", "u", idv(u), "reaction_diff"  );
-
-    // diffusion terms
+    // end::reaction[]
+    // tag::diffusion[]
     auto diffusion = expr( option(_name="diffusion").as<std::string>(), "u", idv(u), "diffusion" );
     auto diffusion_diff = diff( option(_name="diffusion").as<std::string>(), "u", "u", idv(u), "diffusion_diff" );
+    // end::diffusion[]
 
+    // tag::jacobian[]
     auto Jacobian = [=](const vector_ptrtype& X, sparse_matrix_ptrtype& J)
         {
-            if (!J) J = backend()->newMatrix( Vh, Vh );
+            if (!J) J = backend()->newMatrix( _test=Vh, _trial=Vh );
             auto a = form2( _test=Vh, _trial=Vh, _matrix=J );
-            a = integrate( elements( mesh ), (diffusion*gradt( u )+diffusion_diff*idt(u)*gradv(u))*trans( grad( v ) ) );
-            a += integrate( elements( mesh ), reaction_diff*idt( u )*id( v ) );
-            a += integrate( boundaryfaces( mesh ),
+            a = integrate( _range=elements( mesh ), _expr=(diffusion*gradt( u )+diffusion_diff*idt(u)*gradv(u))*trans( grad( v ) ) );
+            a += integrate( _range=elements( mesh ), _expr=reaction_diff*idt( u )*id( v ) );
+            a += integrate( _range=boundaryfaces( mesh ),
+                            _expr=
                             ( - trans( id( v ) )*( (diffusion*gradt( u )+diffusion_diff*idt(u)*gradv(u))*N() )
                               + trans( idt( u ) )*( (diffusion+diffusion_diff*idv(u))*grad( v )*N() )
                               + penalbc*trans( idt( u ) )*id( v )/hFace() ) );
         };
+    // end::jacobian[]
+    // tag::residual[]
     auto Residual = [=](const vector_ptrtype& X, vector_ptrtype& R)
         {
             auto u = Vh->element();
             u = *X;
             auto r = form1( _test=Vh, _vector=R );
-            r = integrate( elements( mesh ), diffusion*gradv( u )*trans( grad( v ) ) );
-            r +=  integrate( elements( mesh ),  reaction*id( v ) );
-            r +=  integrate( boundaryfaces( mesh ),
+            r = integrate( _range=elements( mesh ), _expr=diffusion*gradv( u )*trans( grad( v ) ) );
+            r +=  integrate( _range=elements( mesh ),  _expr=reaction*id( v ) );
+            r +=  integrate( _range=boundaryfaces( mesh ),
+                             _expr=
                              ( - diffusion*trans( id( v ) )*( diffusion*gradv( u )*N() )
                                + diffusion*trans( idv( u ) )*( diffusion*grad( v )*N() )
                                + penalbc*trans( idv( u ) )*id( v )/hFace() ) );
         };
+    // end::jacobian[]
+    // tag::nlsolve[]
     u.zero();
     backend()->nlSolver()->residual = Residual;
     backend()->nlSolver()->jacobian = Jacobian;
     backend()->nlSolve( _solution=u );
-
+    // end::nlsolve[]
     auto e = exporter( _mesh=mesh );
     e->add( "u", u );
     e->save();

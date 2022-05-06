@@ -24,32 +24,41 @@
 #ifndef FEELPP_MESH_PARTITIONER_HPP
 #define FEELPP_MESH_PARTITIONER_HPP 1
 
+#include <fmt/core.h>
+#include <fmt/color.h>
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelmesh/partitionmesh.hpp>
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feelfilters/partitionio.hpp>
+#if defined( FEELPP_HAS_MMG ) && defined( FEELPP_HAS_PARMMG )
 #include <feel/feelmesh/remesh.hpp>
+#endif
+#include <feel/feelcore/json.hpp>
+
 //#include <feel/feelfilters/savegmshmesh.hpp>
+#include "dump.hpp"
 
 namespace Feel {
 
+namespace nl = nlohmann;
 
 template <typename ShapeType>
-void partition( std::vector<int> const& nParts)
+void partition( std::vector<int> const& nParts, nl::json const& partconfig )
 {
     typedef Mesh<ShapeType> mesh_type;
 
     // only master rank because only metis is supported at this time
     if ( Environment::isMasterRank() )
     {
-        std::cout << "run partioner with shape " << ShapeType::name() << "\n";
+        fmt::print( fmt::emphasis::bold, 
+                    "** Run partioner with shape {}...\n", ShapeType::name() );
         fs::path inputPathMesh = fs::system_complete( soption("ifile") );
 
         tic();
         size_type update_ = MESH_UPDATE_ELEMENTS_ADJACENCY|MESH_NO_UPDATE_MEASURES|MESH_GEOMAP_NOT_CACHED;
-        if ( boption( "sc.ibc_partitioning" ) )
+        if ( !partconfig.is_null() && !partconfig.empty() && partconfig["partitioner"].contains( "aggregates" ) ) //boption( "sc.ibc_partitioning" ) )
             update_ |= MESH_UPDATE_FACES_MINIMAL;
         auto mesh = loadMesh(_mesh=new mesh_type(Environment::worldCommSeqPtr()), _savehdf5=0,
                              _filename=inputPathMesh.string(),
@@ -59,8 +68,9 @@ void partition( std::vector<int> const& nParts)
         //_update=size_type(MESH_UPDATE_FACES|MESH_UPDATE_EDGES));
         toc("loading mesh done",FLAGS_v>0);
 
-        if constexpr ( is_simplex_v<ShapeType> )
+        if constexpr ( is_simplex_v<ShapeType> && ShapeType::nDim > 1 )
         {
+            
             if ( boption( "remesh" ) )
             {
                 auto Xh = Pch<1>( mesh );
@@ -76,29 +86,21 @@ void partition( std::vector<int> const& nParts)
                         h_=hs.at( soption("remesh.h"));
                     met.on( _range=elements(mesh), _expr=cst(h_)  );
                 }
+#if defined( FEELPP_HAS_MMG ) && defined( FEELPP_HAS_PARMMG ) 
                 auto r =  remesher( mesh );
-    
                 r.setMetric( met );
                 auto out = r.execute();
                 out->updateForUse();
                 mesh = out;
+#else
+                fmt::print( fg( fmt::color::crimson ) | fmt::emphasis::bold, 
+                            "mmg and parmmg are not configured with feelpp!\n"
+                            " - remeshing is disabled\n"
+                            " - result mesh is the initial mesh\n" );
+#endif
             }
         }
-        std::cout << "      number of elements in memory : " << mesh->numGlobalElements() << std::endl;
-        std::cout << "      number of faces in memory : " << mesh->numGlobalFaces() << std::endl;
-        if ( mesh_type::nDim == 3 )
-            std::cout << "      number of edges in memory : " << mesh->numGlobalEdges() << std::endl;
-        std::cout << "      number of points  in memory : " << mesh->numGlobalPoints() << std::endl;
-        for( auto marker: mesh->markerNames() )
-        {
-            auto name = marker.first;
-            auto data = marker.second;
-            if ( data[1] == mesh->dimension()-1 )
-            {
-                size_type nelts = nelements( markedfaces(mesh, name ), true );
-                std::cout << "      number of marked faces " << name << " with tag " << data[0] << " : " << nelts << std::endl;
-            }
-        }
+        dump(mesh);
 
         //saveGMSHMesh(_mesh=mesh,_filename="tototi.msh");
 
@@ -172,7 +174,7 @@ void partition( std::vector<int> const& nParts)
             tic();
             using io_t = PartitionIO<mesh_t<decltype(mesh)>>;
             io_t io( outputPathMesh );
-            io.write( partitionMesh( mesh, nPartition, partitionByRange ) );
+            io.write( partitionMesh( mesh, nPartition, partitionByRange, partconfig ) );
             toc("paritioning and save on disk done",FLAGS_v>0);
         }
     }

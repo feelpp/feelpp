@@ -36,7 +36,6 @@
 #include <feel/feelvf/operators.hpp>
 
 #include <feel/feelmodels/modelcore/modelalgebraic.hpp>
-#include <feel/feelmodels/modelalg/modelalgebraicfactory.hpp>
 
 namespace Feel
 {
@@ -44,8 +43,7 @@ namespace FeelModels
 {
 
 template< typename MeshType, int Order >
-class HarmonicExtension : public ModelAlgebraic,
-                          public std::enable_shared_from_this< HarmonicExtension<MeshType,Order> >
+class HarmonicExtension : public ModelAlgebraic
 {
 public :
     typedef HarmonicExtension<MeshType,Order> self_type;
@@ -60,8 +58,8 @@ public :
     typedef typename space_type::element_type element_type;
     typedef std::shared_ptr<element_type> element_ptrtype;
 
-    typedef ModelAlgebraicFactory model_algebraic_factory_type;
-    typedef std::shared_ptr< model_algebraic_factory_type > model_algebraic_factory_ptrtype;
+    // typedef ModelAlgebraicFactory model_algebraic_factory_type;
+    // typedef std::shared_ptr< model_algebraic_factory_type > model_algebraic_factory_ptrtype;
 
     typedef super_type::backend_ptrtype backend_ptrtype;
     typedef super_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
@@ -75,51 +73,50 @@ public :
     typedef std::shared_ptr<space_P0_type> space_P0_ptrtype;
 
     HarmonicExtension(mesh_ptrtype mesh, backend_ptrtype const& backend,
-                      std::string prefix="",
+                      std::string const& prefix="",
                       worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr(),
                       bool useGhostEltFromExtendedStencil=false,
                       ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     HarmonicExtension(space_ptrtype space, backend_ptrtype const& backend,
-                      std::string prefix="",
+                      std::string const& prefix="",
                       ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
-    void init();
+    std::shared_ptr<self_type> shared_from_this() { return std::dynamic_pointer_cast<self_type>( super_type::shared_from_this() ); }
 
-    std::shared_ptr<std::ostringstream> getInfo() const;
+    void init();
 
     void updateLinearPDE( DataUpdateLinear & data ) const;
 
     void solve();
 
-    backend_ptrtype const& backend() const;
     mesh_ptrtype const& mesh() const;
     space_ptrtype const& functionSpace() const;
     element_ptrtype const& displacement() const;
     element_ptrtype const& dispImposedOnBoundary() const;
 
-    flagSet_type const& flagSet() const;
-    std::vector<flag_type> const& flagSet(std::string key) const;
-    flag_type flagSet(std::string key, int k) const;
-    void setflagSet( flagSet_type const & fl );
-
+    void setMarkersInBoundaryCondition( std::map< std::string, std::set<std::string> > const& bcToMarkers ) { M_bcToMarkers = bcToMarkers; }
 
     template < typename elem_type >
     void
     generateALEMap( elem_type const & dispOnBoundary )
     {
+#if 0
         bool useGhostEltFromExtendedStencil = this->functionSpace()->dof()->buildDofTableMPIExtended() && this->mesh()->worldComm().localSize()>1;
         EntityProcessType entityProcess = (useGhostEltFromExtendedStencil)? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
         *M_dispImposedOnBoundary = vf::project(_space=this->functionSpace(),
                                                _range=elements(this->mesh(),entityProcess),
                                                _expr=vf::idv(dispOnBoundary) );
+#else
+        CHECK( !this->functionSpace()->dof()->buildDofTableMPIExtended() ) << "not implemented";
+        *M_dispImposedOnBoundary = vf::project(_space=this->functionSpace(),
+                                               _range=elements(support(this->functionSpace())),
+                                               _expr=vf::idv(dispOnBoundary) );
+#endif
         this->solve();
     }
 
 private :
-
-    backend_ptrtype M_backend;
-    model_algebraic_factory_ptrtype M_algebraicFactory;
 
     mesh_ptrtype M_mesh;
     space_ptrtype M_Xh;
@@ -127,7 +124,7 @@ private :
     element_ptrtype M_dispImposedOnBoundary;
     vector_ptrtype M_vectorSolution;
 
-    flagSet_type M_flagSet;
+    std::map< std::string, std::set<std::string> > M_bcToMarkers;
 
     space_P0_ptrtype M_XhP0;
 

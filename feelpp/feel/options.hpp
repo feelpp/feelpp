@@ -48,6 +48,10 @@ feel_options( std::string const& prefix = "" );
 inline po::options_description
 feel_nooptions() { return po::options_description(); }
 
+//! case options
+po::options_description
+case_options( int default_dim, std::string const& default_discr, std::string const& prefix = "" );
+
 //! add benchmark options to feel++ applications
 po::options_description benchmark_options( std::string const& prefix = "" );
 
@@ -135,6 +139,16 @@ po::options_description ams_options( std::string const& prefix = "" );
 po::options_description stabilization_options( std::string const& prefix="" );
 
 po::options_description sc_options( std::string const& prefix="" );
+
+/**
+ * create new parameters with a prefix
+ */
+po::options_description parameters_options( std::string const& prefix="" );
+/**
+ * create new functions with a prefix
+ */
+po::options_description functions_options( std::string const& prefix="" );
+
 /**
  * command line for data interpolator
  */
@@ -154,7 +168,16 @@ po::options_description journal_options( std::string const& prefix="" );
 //! ptree options
 po::options_description ptree_options( std::string const& prefix="" );
 
+//! json options
+po::options_description json_options( std::string const& prefix = "" );
+
 //! empirical quadrature options
 po::options_description eq_options( std::string const& prefix="" );
+
+//! geim options
+po::options_description geim_options( std::string const& prefix="" );
+
+//! pbdw options
+po::options_description pbdw_options( std::string const& prefix="" );
 }
 #endif // FEELPP_OPTIONS_HPP

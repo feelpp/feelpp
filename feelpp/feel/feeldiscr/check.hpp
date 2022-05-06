@@ -43,7 +43,8 @@ enum class solution_t {
  * 
  * @return 0 if ok, 1 otherwise
  */
-template<typename CheckerT, typename ElementT, typename = std::enable_if_t<is_scalar_field_v<ElementT> || is_vector_field_v<ElementT>>>
+template<typename CheckerT, typename ElementT, 
+         typename = std::enable_if_t<is_scalar_field_v<ElementT> || is_vector_field_v<ElementT> || is_matrix_field_v<ElementT> >>
 int check( CheckerT&& thechecker, ElementT const& u, solution_t s = solution_t::unique )
 {
     int status = 0;
@@ -66,11 +67,17 @@ int check( CheckerT&& thechecker, ElementT const& u, solution_t s = solution_t::
                 {
                     return expr<dim,1>( solution );
                 }
+                else if constexpr ( is_matrix_field_v<ElementT> ) 
+                {
+                    return expr<dim,dim>( solution );
+                }
             };
             auto sol_ex = get_sol_ex( thechecker ); 
+            sol_ex.setParameterValues( thechecker.parameterValues() );
+
             tic(); 
             double l2_p=1, l2=0;
-
+    
             if ( s == solution_t::unique )
             {
                 l2_p = normL2(_range=elements(support(Vh)), _expr=sol_ex );
@@ -80,10 +87,10 @@ int check( CheckerT&& thechecker, ElementT const& u, solution_t s = solution_t::
             {
                 if constexpr ( is_scalar_field_v<ElementT> )
                 {
-                    auto mean_p_exact = mean( elements(support(Vh)), sol_ex )(0,0);
-                    auto mean_p = mean( elements(support(Vh)), idv(u) )(0,0);
-                    l2 = normL2( elements(support(Vh)),
-                                 (sol_ex - cst(mean_p_exact)) - (idv(u) - cst(mean_p)) );
+                    auto mean_p_exact = mean( _range=elements(support(Vh)), _expr=sol_ex )(0,0);
+                    auto mean_p = mean( _range=elements(support(Vh)), _expr=idv(u) )(0,0);
+                    l2 = normL2( _range=elements(support(Vh)),
+                                 _expr=(sol_ex - cst(mean_p_exact)) - (idv(u) - cst(mean_p)) );
                     l2_p = normL2( _range=elements(support(Vh)), _expr=sol_ex- cst(mean_p_exact) );
                 }
             }
@@ -92,6 +99,8 @@ int check( CheckerT&& thechecker, ElementT const& u, solution_t s = solution_t::
             toc("L2 error norm");
             if ( !thechecker.hasGradient() )
                 return { { "L2", l2/l2_p } };
+            if ( is_matrix_field_v<ElementT> )
+                throw std::invalid_argument( "H1 and SemiH1 norms not supported for Matrix Fields" );
             
             auto get_grad_ex = [=]( auto const & c ) {
                 if constexpr ( is_scalar_field_v<ElementT> ) 
@@ -104,6 +113,7 @@ int check( CheckerT&& thechecker, ElementT const& u, solution_t s = solution_t::
                 }
             };
             auto grad_ex = get_grad_ex( thechecker );
+            grad_ex.setParameterValues( thechecker.parameterValues() );
             tic();
             double h1_p = normH1(_range=elements(support(Vh)), _expr=(sol_ex), _grad_expr=grad_ex );
             double h1 = normH1(_range=elements(support(Vh)), _expr=idv(u)-(sol_ex), _grad_expr=gradv(u)-grad_ex );

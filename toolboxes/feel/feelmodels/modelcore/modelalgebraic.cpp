@@ -37,20 +37,21 @@ namespace FeelModels {
 ModelAlgebraic::ModelAlgebraic( std::string _theprefix, std::string const& keyword,
                                 worldcomm_ptr_t const& _worldComm,
                                 std::string const& subPrefix,
-                                ModelBaseRepository const& modelRep )
+                                ModelBaseRepository const& modelRep,
+                                ModelBaseCommandLineOptions const& modelCmdLineOpt )
     :
-    super_type( _theprefix,keyword,_worldComm,subPrefix,modelRep ),
-    M_verboseSolverTimer( boption(_name="verbose_solvertimer",_prefix=this->prefix()) ),
-    M_verboseSolverTimerAllProc( boption(_name="verbose_solvertimer_allproc",_prefix=this->prefix()) ),
-    M_rebuildCstPartInLinearSystem( boption(_name="linearsystem-cst-update",_prefix=this->prefix()) ),
-    M_useLinearJacobianInResidual( boption(_name="residual-uselinearjac",_prefix=this->prefix()) ),
-    M_rebuildLinearPartInJacobian( boption(_name="jacobian-linear-update",_prefix=this->prefix()) ),
+    super_type( _theprefix,keyword,_worldComm,subPrefix,modelRep, modelCmdLineOpt ),
+    M_verboseSolverTimer( boption(_name="verbose_solvertimer",_prefix=this->prefix(),_vm=this->clovm()) ),
+    M_verboseSolverTimerAllProc( boption(_name="verbose_solvertimer_allproc",_prefix=this->prefix(),_vm=this->clovm()) ),
+    M_rebuildCstPartInLinearSystem( boption(_name="linearsystem-cst-update",_prefix=this->prefix(),_vm=this->clovm()) ),
+    M_useLinearJacobianInResidual( boption(_name="residual-uselinearjac",_prefix=this->prefix(),_vm=this->clovm()) ),
+    M_rebuildLinearPartInJacobian( boption(_name="jacobian-linear-update",_prefix=this->prefix(),_vm=this->clovm()) ),
     M_rebuildCstPartInResidual(true), // not an option (just opitmisation with semi-implicit)
-    M_useCstMatrix( boption(_name="use-cst-matrix",_prefix=this->prefix()) ),
-    M_useCstVector( boption(_name="use-cst-vector",_prefix=this->prefix()) ),
+    M_useCstMatrix( boption(_name="use-cst-matrix",_prefix=this->prefix(),_vm=this->clovm()) ),
+    M_useCstVector( boption(_name="use-cst-vector",_prefix=this->prefix(),_vm=this->clovm()) ),
     M_needToRebuildCstPart( false ),
-    M_errorIfSolverNotConverged( boption(_name="error-if-solver-not-converged",_prefix=this->prefix()) ),
-    M_printGraph( boption(_name="graph-print-python",_prefix=this->prefix()) ),
+    M_errorIfSolverNotConverged( boption(_name="error-if-solver-not-converged",_prefix=this->prefix(),_vm=this->clovm()) ),
+    M_printGraph( boption(_name="graph-print-python",_prefix=this->prefix(),_vm=this->clovm()) ),
     M_startBlockSpaceIndexMatrixRow(0),
     M_startBlockSpaceIndexMatrixCol(0),
     M_startBlockSpaceIndexVector(0)
@@ -58,8 +59,8 @@ ModelAlgebraic::ModelAlgebraic( std::string _theprefix, std::string const& keywo
 
     //-----------------------------------------------------------------------//
     //-----------------------------------------------------------------------//
-    if (Environment::vm().count(prefixvm(this->prefix(),"graph-print-python-filename")))
-        M_printGraphFileName = Environment::vm()[prefixvm(this->prefix(),"graph-print-python-filename")].as< std::string >();
+    if (this->clovm().count(prefixvm(this->prefix(),"graph-print-python-filename")))
+        M_printGraphFileName = soption(_name="graph-print-python-filename",_prefix=this->prefix(),_vm=this->clovm());
     else
         M_printGraphFileName = this->prefix()+".graphPython.py";
 
@@ -122,53 +123,12 @@ void
 ModelAlgebraic::setPrintGraphFileName(std::string s) { M_printGraphFileName=s; }
 
 /**
- * return false
- */
-bool
-ModelAlgebraic::hasExtendedPattern() const { return false; }
-
-/**
  * return an empty blockPattern if not overhead
  */
 ModelAlgebraic::block_pattern_type
 ModelAlgebraic::blockPattern() const
 {
     return block_pattern_type(0,0);
-}
-
-bool
-ModelAlgebraic::buildMatrixPrecond() const
-{
-    return !( Environment::vm()[prefixvm(this->prefix(),"preconditioner.contribution")].as<std::string>() == "same_matrix" );
-}
-
-void
-ModelAlgebraic::updatePreconditioner(const vector_ptrtype& X,
-                                          sparse_matrix_ptrtype& A,
-                                          sparse_matrix_ptrtype& A_extended,
-                                          sparse_matrix_ptrtype& Prec) const
-{
-    std::string precType = option(_prefix=this->prefix(),_name="preconditioner.contribution").as<std::string>();
-
-    if( precType =="same_matrix")
-    {
-        // only copy shrared_ptr (normally already done in constructor)
-        Prec=A;
-    }
-    else if( precType =="standart")
-    {
-        // copy standart pattern
-        Prec->zero();
-        Prec->addMatrix(1.,A);
-    }
-    else if( precType =="extended" )
-    {
-        // copy standart and extended pattern
-        Prec->zero();
-        Prec->addMatrix(1.,A);
-        if (hasExtendedPattern())
-            Prec->addMatrix(1.,A_extended);
-    }
 }
 
 BlocksBaseGraphCSR
@@ -220,14 +180,6 @@ ModelAlgebraic::updateLinearPDE( DataUpdateLinear & data ) const
 void
 ModelAlgebraic::updateLinearPDEDofElimination( DataUpdateLinear & data ) const
 {}
-void
-ModelAlgebraic::updatePicard( DataUpdateLinear & data ) const
-{}
-double
-ModelAlgebraic::updatePicardConvergence( vector_ptrtype const& Unew, vector_ptrtype const& Uold ) const
-{
-    return 0.;
-}
 
 
 void
@@ -243,7 +195,7 @@ ModelAlgebraic::updateDofEliminationIds( std::string const& spaceName,
     {
         auto itFindDofIdsByEntity = dofIds.find( entity );
         if ( itFindDofIdsByEntity != dofIds.end() )
-            dm->dofIdToContainerId( spaceIndexVector,std::get<1>( itFindDofIdsByEntity->second ),
+            dm->dofIdToContainerId( spaceIndexVector, std::get<0>( itFindDofIdsByEntity->second ), //std::get<1>( itFindDofIdsByEntity->second ),
                                     data.dofEliminationIds( entity ) );
     }
 }

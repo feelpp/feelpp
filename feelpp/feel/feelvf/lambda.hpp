@@ -87,6 +87,9 @@ public:
     //! expression is polynomial?
     constexpr bool isPolynomial() const { return false; }
 
+    template <typename ExpandSymbolsExprType>
+    auto applySymbolsExpr( ExpandSymbolsExprType const& se ) const { return *this; }
+
     template<typename ExprT>
     typename Lambda<ExprT>::type
     operator()( ExprT const& e )
@@ -194,10 +197,6 @@ public:
         tensor( expression_type const& expr, Geo_t const& /*geom*/ )
         {
         }
-        template<typename IM>
-        void init( IM const& /*im*/ )
-        {
-        }
         void update( Geo_t const&, Basis_i_t const& , Basis_j_t const&  )
         {
         }
@@ -205,9 +204,6 @@ public:
         {
         }
         void update( Geo_t const& )
-        {
-        }
-        void update( Geo_t const&, uint16_type )
         {
         }
         template<typename ... CTX>

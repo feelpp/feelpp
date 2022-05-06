@@ -1,0 +1,56 @@
+{
+    "Name": "HDG-Mixed-Poisson",
+    "ShortName":"MP",
+    "Models": { "equations":"hdg"},
+    "Materials":
+    {
+        "omega":
+        {
+            "name":"copper",
+	    	"poisson_c":"1",
+            "poisson_f":"4*( (x^2+y^2)*sin(x^2+y^2)-cos(x^2+y^2) ):x:y"
+        }/*,
+        "omega2":
+        {
+            "name":"copper",
+	    	"k":"1"
+        }*/
+    },
+    "BoundaryConditions":
+    {
+        "poisson":
+        {
+            "Dirichlet":
+	    	{
+	    		"dirichlet1":
+        		{
+                	"expr":"2+sin(x^2+y^2):x:y" 
+                	//"expr":"4.0" 
+               	},
+	    		"dirichlet2":
+        		{
+                	"expr":"2+sin(x^2+y^2):x:y" 
+                	//"expr":"4.0" 
+               	}/*,
+                "interface":
+                {
+                	"expr":"2+sin(x^2+y^2):x:y" 
+                    // "expr":"4.0"
+                }*/
+	    	}
+    	}
+     },
+    "PostProcess":
+    {
+        "poisson":{
+            "Exports":
+            {
+                "fields":["potential","flux"]
+            }
+        }
+    }
+}
+
+
+
+

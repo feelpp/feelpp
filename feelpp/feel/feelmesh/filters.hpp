@@ -34,12 +34,6 @@
 #include <utility>
 #include <unordered_set>
 #include <any>
-#if BOOST_VERSION >= 105600
-#include <boost/phoenix/stl/algorithm/detail/is_std_list.hpp>
-#else
-#include <boost/spirit/home/phoenix/stl/algorithm/detail/is_std_list.hpp>
-#endif
-
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/rank.hpp>
 #include <feel/feelcore/enums.hpp>
@@ -51,148 +45,6 @@
 
 namespace Feel
 {
-template <typename T> struct is_filter: std::false_type {};
-
-template <typename... T> struct is_filter<boost::tuple<T...>>: std::true_type {};
-template <typename... T>
-constexpr bool is_filter_v = is_filter<T...>::value;
-
-/**
- * a RangeType can be one or more filter/range objects of the same type, we
- * extract the underlying type by first casting everything to a list and then
- * retrieving consistently the type.
- */
-template <typename RangeType>
-using range_t = typename mpl::if_< boost::is_std_list<RangeType>,
-                                   mpl::identity<RangeType>,
-                                   mpl::identity<std::list<RangeType> > >::type::type::value_type;
-
-template <typename RangeType>
-using entity_range_t = typename  boost::unwrap_reference<typename boost::tuples::template element<1,range_t<RangeType> >::type::value_type>::type;
-
-template<typename MeshType>
-using elements_reference_wrapper_t = boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-                                                  typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
-                                                  typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
-                                                  typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype>;
-
-template<typename MeshType>
-using allelements_t = elements_reference_wrapper_t<MeshType>;
-
-template<typename MeshType>
-using elements_pid_t = elements_reference_wrapper_t<MeshType>;
-
-template<typename MeshType>
-using idelements_t = elements_reference_wrapper_t<MeshType>;
-
-template<typename MeshType>
-using ext_elements_t = elements_reference_wrapper_t<MeshType>;
-
-template<typename MeshType>
-using boundaryelements_t = elements_reference_wrapper_t<MeshType>;
-template<typename MeshType>
-using internalelements_t = elements_reference_wrapper_t<MeshType>;
-
-template<typename MeshType>
-using markedelements_t = elements_reference_wrapper_t<MeshType>;
-template<typename MeshType>
-using marked2elements_t = elements_reference_wrapper_t<MeshType>;
-template<typename MeshType>
-using marked3elements_t = elements_reference_wrapper_t<MeshType>;
-
-
-template<typename MeshType>
-using faces_reference_wrapper_t = boost::tuple<mpl::size_t<MESH_FACES>,
-                                                  typename MeshTraits<MeshType>::face_reference_wrapper_const_iterator,
-                                                  typename MeshTraits<MeshType>::face_reference_wrapper_const_iterator,
-                                                  typename MeshTraits<MeshType>::faces_reference_wrapper_ptrtype>;
-
-template<typename MeshType>
-using allfaces_t =  faces_reference_wrapper_t<MeshType>;
-
-template<typename MeshType>
-using idfaces_t =  faces_reference_wrapper_t<MeshType>;
-
-template<typename MeshType>
-using faces_pid_t = faces_reference_wrapper_t<MeshType>;
-
-template<typename MeshType>
-using ext_faces_t = faces_reference_wrapper_t<MeshType>;
-
-template<typename MeshType>
-using boundaryfaces_t = faces_reference_wrapper_t<MeshType>;
-template<typename MeshType>
-using internalfaces_t = faces_reference_wrapper_t<MeshType>;
-template<typename MeshType>
-using interprocessfaces_t =  faces_reference_wrapper_t<MeshType>;
-
-template<typename MeshType>
-using markedfaces_t = faces_reference_wrapper_t<MeshType>;
-template<typename MeshType>
-using marked2faces_t = faces_reference_wrapper_t<MeshType>;
-template<typename MeshType>
-using marked3faces_t = faces_reference_wrapper_t<MeshType>;
-
-
-template<typename MeshType>
-using edges_reference_wrapper_t = boost::tuple<mpl::size_t<MESH_EDGES>,
-                                                  typename MeshTraits<MeshType>::edge_reference_wrapper_const_iterator,
-                                                  typename MeshTraits<MeshType>::edge_reference_wrapper_const_iterator,
-                                                  typename MeshTraits<MeshType>::edges_reference_wrapper_ptrtype>;
-
-template<typename MeshType>
-using alledges_t = edges_reference_wrapper_t<MeshType>;
-
-template<typename MeshType>
-using pid_edges_t = edges_reference_wrapper_t<MeshType>;
-
-template<typename MeshType>
-using ext_edges_t =  edges_reference_wrapper_t<MeshType>;
-
-template<typename MeshType>
-using markededges_t = edges_reference_wrapper_t<MeshType>;
-template<typename MeshType>
-using boundaryedges_t = edges_reference_wrapper_t<MeshType>;
-template<typename MeshType>
-using internaledges_t = edges_reference_wrapper_t<MeshType>;
-
-template<typename MeshType>
-using points_reference_wrapper_t = boost::tuple<mpl::size_t<MESH_POINTS>,
-                                    typename MeshTraits<MeshType>::point_reference_wrapper_const_iterator,
-                                    typename MeshTraits<MeshType>::point_reference_wrapper_const_iterator,
-                                    typename MeshTraits<MeshType>::points_reference_wrapper_ptrtype>;
-template<typename MeshType>
-using allpoints_t = points_reference_wrapper_t<MeshType>;
-template<typename MeshType>
-using points_pid_t = points_reference_wrapper_t<MeshType>;
-template<typename MeshType>
-using markedpoints_t = points_reference_wrapper_t<MeshType>;
-template<typename MeshType>
-using boundarypoints_t = points_reference_wrapper_t<MeshType>;
-template<typename MeshType>
-using internalpoints_t = points_reference_wrapper_t<MeshType>;
-
-template<typename IteratorRangeT>
-using submeshrange_t = typename Feel::detail::submeshrangetype<IteratorRangeT>::type;
-
-
-template<typename IteratorType>
-using filter_enum_t = typename boost::tuples::element<0,typename meta::remove_all<IteratorType>::type >::type;
-template<typename IteratorType>
-using filter_iterator_t = typename boost::tuples::element<1,typename meta::remove_all<IteratorType>::type >::type;
-template<typename IteratorType>
-using filter_entity_t = typename boost::unwrap_reference<typename filter_iterator_t<IteratorType>::value_type>::type;
-template<typename IteratorType>
-using ext_entities_from_iterator_t = boost::tuple<filter_enum_t<IteratorType>,
-                                                  typename std::vector<boost::reference_wrapper<filter_entity_t<IteratorType> const> >::const_iterator,
-                                                  typename std::vector<boost::reference_wrapper<filter_entity_t<IteratorType> const> >::const_iterator,
-                                                  std::shared_ptr<std::vector<boost::reference_wrapper<filter_entity_t<IteratorType> const> > >
-                                                  >;
-
-template<typename MeshType>
-using elements_wrapper_t = typename MeshTraits<MeshType>::elements_reference_wrapper_type;
-template<typename MeshType>
-using elements_wrapper_ptr_t = typename MeshTraits<MeshType>::elements_reference_wrapper_ptr_type;
 
 template<typename MeshType>
 decltype(auto)
@@ -300,7 +152,7 @@ elements( MeshType const& mesh, vf::Expr<ExprType> const& expr )
             auto const& elt = unwrap_ref( *it );
             if ( elt.processId() != pid )
                 continue;
-            ctx->update( elt );
+            ctx->template update<context>( elt );
             expr_evaluator.update( vf::mapgmc( ctx ) );
             bool addElt = true;
             for ( uint16_type q=0;q<ctx->nPoints();++q )
@@ -477,26 +329,20 @@ template<typename MeshType>
 std::map<int,markedelements_t<MeshType> >
 collectionOfMarkedelements( MeshType const& mesh, std::any const& collectionOfMarkersFlag )
 {
-    std::map<int,std::set<flag_type>> collectionOfMarkerFlagSet;
-    if ( auto argCasted = std::any_cast<std::map<int,int>>( &collectionOfMarkersFlag) )
-    {
-        for ( auto const& [part,markersFlag] : *argCasted )
-            collectionOfMarkerFlagSet[part] = Feel::unwrap_ptr( mesh ).markersId( markersFlag );
-    }
-    else
-        CHECK( false ) << "TODO : others cast";
-
-    uint16_type markerType = 1;
-    rank_type pid = rank( mesh );
-    auto collectionOfRangeElement = Feel::unwrap_ptr( mesh ).collectionOfElementsWithMarkerByType( markerType, collectionOfMarkerFlagSet, pid );
-    std::map<int,markedelements_t<MeshType> > res;
-    for ( auto const& [part,rangeElementsWithMarker] : collectionOfRangeElement )
-        res[part] = boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
-                                       std::get<0>( rangeElementsWithMarker ),
-                                       std::get<1>( rangeElementsWithMarker ),
-                                       std::get<2>( rangeElementsWithMarker ) );
-    return res;
+    return Feel::detail::collectionOfMarkedelements<0>( mesh,collectionOfMarkersFlag );
 }
+/**
+ *
+ * \ingroup MeshIterators
+ * \return a mapping between a id and pair of (range active element, range ghost elements)
+ */
+template<typename MeshType>
+auto
+collectionOfMarkedelementsWithGhostsSplitted( MeshType const& mesh, std::any const& collectionOfMarkersFlag )
+{
+    return Feel::detail::collectionOfMarkedelements<2>( mesh,collectionOfMarkersFlag );
+}
+
 
 
 /**
@@ -1578,33 +1424,57 @@ idelements( MeshType const& imesh, std::vector<T> const& l )
 
 
 //! \return a pair of iterators to iterate over a range of elements 'rangeElt' which
-//!  touch the range of faces rangeFace by a point/edge/faces (with respect to type arg)
-template<typename MeshType>
+//!  touch the range of faces or edges \rangeEntity by a point/edge/faces (with respect to type arg)
+template<typename MeshType,typename EntityRangeType>
 elements_pid_t<MeshType>
-elements( MeshType const& mesh, elements_reference_wrapper_t<MeshType> const& rangeElt, faces_reference_wrapper_t<MeshType> const& rangeFace, ElementsType type = ElementsType::MESH_POINTS )
+elements( MeshType const& mesh, elements_reference_wrapper_t<MeshType> const& rangeElt, EntityRangeType const& rangeEntity, ElementsType type = ElementsType::MESH_POINTS )
 {
     std::unordered_set<size_type> entityIds;
-    for( auto const& faceWrap : rangeFace )
+    if constexpr ( std::is_same_v<EntityRangeType,faces_reference_wrapper_t<MeshType> > )
     {
-        auto const& face = unwrap_ref( faceWrap );
-        if ( type == ElementsType::MESH_POINTS )
+        for( auto const& faceWrap : rangeEntity )
         {
-            for ( uint16_type p=0;p<face.nVertices();++p )
-                entityIds.insert( face.point(p).id() );
+            auto const& face = unwrap_ref( faceWrap );
+            if ( type == ElementsType::MESH_POINTS )
+            {
+                for ( uint16_type p=0;p<face.nVertices();++p )
+                    entityIds.insert( face.point(p).id() );
+            }
+            else if ( type == ElementsType::MESH_EDGES && is_3d<MeshType>::value )
+            {
+                for ( uint16_type p=0;p<face.nEdges();++p )
+                    entityIds.insert( face.edge(p).id() );
+            }
+            else if ( type == ElementsType::MESH_FACES || ( is_2d<MeshType>::value && type == ElementsType::MESH_EDGES ) )
+            {
+                entityIds.insert( face.id() );
+            }
+            else
+                CHECK( false ) << "invalid type " << type;
         }
-        else if ( type == ElementsType::MESH_EDGES && is_3d<MeshType>::value )
-        {
-            for ( uint16_type p=0;p<face.nEdges();++p )
-                entityIds.insert( face.edge(p).id() );
-        }
-        else if ( type == ElementsType::MESH_FACES || ( is_2d<MeshType>::value && type == ElementsType::MESH_EDGES ) )
-        {
-            entityIds.insert( face.id() );
-        }
-        else
-            CHECK( false ) << "invalid type " << type;
     }
-
+    else if constexpr ( std::is_same_v<EntityRangeType,edges_reference_wrapper_t<MeshType> > )
+        {
+            for( auto const& edgeWrap : rangeEntity )
+            {
+                auto const& edge = unwrap_ref( edgeWrap );
+                if ( type == ElementsType::MESH_POINTS )
+                {
+                    for ( uint16_type p=0;p<edge.nVertices();++p )
+                        entityIds.insert( edge.point(p).id() );
+                }
+                else if ( type == ElementsType::MESH_EDGES )
+                {
+                    entityIds.insert( edge.id() );
+                }
+                else
+                    CHECK( false ) << "invalid type :" << type << " (should be MESH_POINTS or MESH_EDGES)";
+            }
+        }
+    else
+    {
+        CHECK( false ) << "invalid range";
+    }
 
     typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype myelts( new typename MeshTraits<MeshType>::elements_reference_wrapper_type );
 
@@ -1657,12 +1527,82 @@ elements( MeshType const& mesh, elements_reference_wrapper_t<MeshType> const& ra
 }
 
 //! \return a pair of iterators to iterate over all elements (not ghost) which
-//!  touch the range of faces rangeFace by a point/edge/faces (with respect to type arg)
-template<typename MeshType>
+//!  touch the range of faces or edges rangeEntity by a point/edge/faces (with respect to type arg)
+template<typename MeshType,typename EntityRangeType>
 elements_pid_t<MeshType>
-elements( MeshType const& mesh, faces_reference_wrapper_t<MeshType> const& rangeFace, ElementsType type = ElementsType::MESH_POINTS )
+elements( MeshType const& mesh, EntityRangeType const& rangeEntity, ElementsType type = ElementsType::MESH_POINTS )
 {
-    return elements( mesh, elements(mesh), rangeFace, type );
+    return elements( mesh, elements(mesh), rangeEntity, type );
+}
+
+
+//! return  mesh fragmentatin by marked elements  : a mapping between  fragment id to to the tuple (range, marker ids, fragment name)
+template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0  >
+auto
+fragmentationMarkedElements( MeshType const& mesh, EntityProcessType entity = EntityProcessType::LOCAL_ONLY, bool includeNonMarkedElement = true )
+{
+    CHECK( entity == EntityProcessType::LOCAL_ONLY ) << "TODO";
+    rank_type pid = rank( mesh );
+    using elements_reference_wrapper_ptrtype = typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype;
+    using elements_reference_wrapper_type = typename MeshTraits<MeshType>::elements_reference_wrapper_type;
+    using marker_type = typename MeshTraits<MeshType>::element_type::marker_type;
+
+    std::map<int,std::tuple<elements_pid_t<MeshType>,marker_type,std::string>> res;
+
+    auto const& imesh = Feel::unwrap_ptr( mesh );
+    using mesh_type = typename MeshTraits<MeshType>::mesh_type;
+    auto it = imesh.beginOrderedElement();
+    auto en = imesh.endOrderedElement();
+
+    marker_type emptyMarker;
+    std::map<marker_type, std::tuple<elements_reference_wrapper_ptrtype,int>> mapMarkersToElements;
+
+    auto const& mappingFragments = imesh.meshFragmentationByMarker();
+    for ( auto const& [fragmentId,fragmentMarkerIds] : mappingFragments )
+    {
+        if ( fragmentMarkerIds.empty() && !includeNonMarkedElement )
+            continue;
+        mapMarkersToElements.emplace( fragmentMarkerIds, std::make_tuple( std::make_shared<elements_reference_wrapper_type>(),fragmentId ) );
+    }
+
+    for ( ; it != en; ++it )
+    {
+        auto const& elt = unwrap_ref( *it );
+        if ( elt.processId() != pid )
+            continue;
+
+        if ( !includeNonMarkedElement && !elt.hasMarker() )
+            continue;
+
+        bool hasMarker = elt.hasMarker();
+        if ( !includeNonMarkedElement && !hasMarker )
+            continue;
+        marker_type const& eltMarkers = hasMarker? elt.marker() : emptyMarker;
+
+        auto itFind = mapMarkersToElements.find( eltMarkers );
+        DCHECK( itFind != mapMarkersToElements.end() ) << "missing fragment";
+        std::get<0>(itFind->second)->push_back( boost::cref(elt) );
+    }
+
+    for ( auto & [mIds,fragementData] : mapMarkersToElements )
+    {
+        auto & [myelts,fragmentId] = fragementData;
+        myelts->shrink_to_fit();
+        auto range = boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
+                                        myelts->begin(), myelts->end(),
+                                        myelts );
+
+        std::string fragmentName;
+        for ( auto mId : mIds )
+        {
+            std::string mName = imesh.markerName( mId, mesh_type::element_type::nDim );
+            if ( !mName.empty() && !fragmentName.empty() )
+                fragmentName += "_";
+            fragmentName += mName;
+        }
+        res.emplace( fragmentId, std::make_tuple( std::move( range ), mIds, fragmentName ) );
+    }
+    return res;
 }
 
 

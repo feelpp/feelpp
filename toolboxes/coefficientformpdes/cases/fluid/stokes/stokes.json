@@ -1,0 +1,84 @@
+{
+    "Name": "Stokes",
+    "ShortName": "stokes",
+    "Models":
+    {
+        "cfpdes":{
+            "equations":["momentum","mass"]
+        },
+        "momentum":{
+            "setup":{
+                "unknown":{
+                    "basis":"Pchv2",
+                    "name":"velocity",
+                    "symbol":"u"
+                },
+                "coefficients":{
+                    "gamma":"{mass_p-2*materials_mu*momentum_grad_u_00,-materials_mu*(momentum_grad_u_01+momentum_grad_u_10),-materials_mu*(momentum_grad_u_01+momentum_grad_u_10),mass_p-2*materials_mu*momentum_grad_u_11}:materials_mu:mass_p:momentum_grad_u_00:momentum_grad_u_10:momentum_grad_u_01:momentum_grad_u_11"
+                }
+            }
+        },
+        "mass":{
+            "setup":{
+                "unknown":{
+                    "basis":"Pch1",
+                    "name":"pressure",
+                    "symbol":"p"
+                },
+                "coefficients":{
+                    //"gamma":"{momentum_u_0,momentum_u_1}:momentum_u_0:momentum_u_1" // div u
+                    "f":"-(momentum_grad_u_00+momentum_grad_u_11):momentum_grad_u_00:momentum_grad_u_11" // div u
+                }
+            }
+        }
+    },
+    "Meshes":
+    {
+        "cfpdes":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/square2d.geo",
+                "hsize":0.03
+            }
+        }
+    },
+    "Materials":
+    {
+        "fluid":
+        {
+            "markers":"Omega",
+            //"momentum_c":"1", // diffusion
+            "rho":1,
+            "mu":1
+        }
+    },
+    "BoundaryConditions":
+    {
+        "momentum":
+        {
+            "Dirichlet":
+            {
+                "wall":
+                {
+                    "markers":["Left","Bottom","Right"],
+                    "expr":"{0,0}"
+                },
+                "lid": {
+                    "markers": ["Top"],
+                    "expr": "{1,0}"
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "cfpdes":
+        {
+            "Exports":
+            {
+                "fields":["all"]
+            }
+        }
+    }
+}

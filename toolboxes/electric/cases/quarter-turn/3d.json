@@ -1,0 +1,55 @@
+// -*- mode: javascript -*-
+{
+    "Name":"cvg3d",
+    "ShortName":"cvg3d",
+    "Parameters":
+    {
+        "v_expr":"2*0.25/Pi*atan2(x,y):x:y",
+        "c_expr":"{-2*0.25/Pi*y/(x*x+y*y),2*0.25/Pi*x/(x*x+y*y),0}:x:y:z"
+    },
+    "Meshes":
+    {
+        "electric":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/3d.geo",
+                "hsize":0.1
+            }
+        }
+    },
+    "Materials":
+    {
+        "omega":
+        {
+            "sigma":"4.8e7"
+        }
+    },
+    "BoundaryConditions":
+    {
+        "electric":
+        {
+            "electric_potential":
+            {
+                "V0":
+                {
+                    "expr":"0" // V_in
+                },
+                "V1":
+                {
+                    "expr":"0.25" // V_out
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "electric":
+        {
+            "Exports":
+            {
+                "fields":["electric-potential","electric-field","pid"]
+            }
+        }
+    }
+}

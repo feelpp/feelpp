@@ -391,25 +391,25 @@ macro(feelpp_add_test)
       endif()
       IF(NOT FEELPP_TEST_NO_MPI_TEST AND NProcs2 GREATER 1)
         if ( FEELPP_TEST_SKIP_TEST OR FEELPP_TEST_SKIP_MPI_TEST )
-           add_test(NAME feelpp_test_${FEELPP_TEST_NAME}-np-${NProcs2} COMMAND /bin/sh -c "exit 77")
-           set_tests_properties( feelpp_test_${FEELPP_TEST_NAME}-np-${NProcs2} PROPERTIES SKIP_RETURN_CODE 77 )
+           add_test(NAME ${FEELPP_TEST_EXEC}-np-${NProcs2} COMMAND /bin/sh -c "exit 77")
+           set_tests_properties( ${FEELPP_TEST_EXEC}-np-${NProcs2} PROPERTIES SKIP_RETURN_CODE 77 )
         else()
-          add_test(NAME feelpp_test_${FEELPP_TEST_NAME}-np-${NProcs2} COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${NProcs2} ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/${targetname} --log_level=test_suite ${BOOST_TEST_SEPARATOR} ${MPIEXEC_POSTFLAGS} ${FEELPP_TEST_CFG_CLI} ${FEELPP_TEST_CLI} --directory=testsuite/test_${FEELPP_TEST_NAME} --rm )
+          add_test(NAME ${FEELPP_TEST_EXEC}-np-${NProcs2} COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${NProcs2} ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/${targetname} --log_level=test_suite ${BOOST_TEST_SEPARATOR} ${MPIEXEC_POSTFLAGS} ${FEELPP_TEST_CFG_CLI} ${FEELPP_TEST_CLI} --directory=testsuite/test_${FEELPP_TEST_NAME} --rm )
         endif()
-        set_property(TEST feelpp_test_${FEELPP_TEST_NAME}-np-${NProcs2}  PROPERTY LABELS ${FEELPP_TEST_LABEL}  ${FEELPP_TEST_LABEL_DIRECTORY} )
+        set_property(TEST ${FEELPP_TEST_EXEC}-np-${NProcs2}  PROPERTY LABELS ${FEELPP_TEST_LABEL}  ${FEELPP_TEST_LABEL_DIRECTORY} )
         if(CMAKE_BUILD_TYPE MATCHES Debug)
-          set_tests_properties(feelpp_test_${FEELPP_TEST_NAME}-np-${NProcs2} PROPERTIES ENVIRONMENT "ASAN_OPTIONS=detect_leaks=0;LSAN_OPTIONS=suppressions=${PROJECT_SOURCE_DIR}/../feelpp/tools/lsan/suppressions.txt")
+          set_tests_properties(${FEELPP_TEST_EXEC}-np-${NProcs2} PROPERTIES ENVIRONMENT "ASAN_OPTIONS=detect_leaks=0;LSAN_OPTIONS=suppressions=${PROJECT_SOURCE_DIR}/../feelpp/tools/lsan/suppressions.txt")
         endif()
       ENDIF()
       if ( FEELPP_TEST_SKIP_TEST OR FEELPP_TEST_SKIP_SEQ_TEST )
-         add_test(NAME feelpp_test_${FEELPP_TEST_NAME}-np-1 COMMAND /bin/sh -c "exit 77")
-         set_tests_properties( feelpp_test_${FEELPP_TEST_NAME}-np-1 PROPERTIES SKIP_RETURN_CODE 77 )
+         add_test(NAME ${FEELPP_TEST_EXEC}-np-1 COMMAND /bin/sh -c "exit 77")
+         set_tests_properties( ${FEELPP_TEST_EXEC}-np-1 PROPERTIES SKIP_RETURN_CODE 77 )
       else()
-         add_test(NAME feelpp_test_${FEELPP_TEST_NAME}-np-1 COMMAND ${CMAKE_CURRENT_BINARY_DIR}/${targetname} --log_level=test_suite ${BOOST_TEST_SEPARATOR} ${FEELPP_TEST_CFG_CLI} ${FEELPP_TEST_CLI} --directory=testsuite/test_${FEELPP_TEST_NAME}  --rm )
+         add_test(NAME ${FEELPP_TEST_EXEC}-np-1 COMMAND ${CMAKE_CURRENT_BINARY_DIR}/${targetname} --log_level=test_suite ${BOOST_TEST_SEPARATOR} ${FEELPP_TEST_CFG_CLI} ${FEELPP_TEST_CLI} --directory=testsuite/test_${FEELPP_TEST_NAME}  --rm )
       endif()
-      set_property(TEST feelpp_test_${FEELPP_TEST_NAME}-np-1  PROPERTY LABELS ${FEELPP_TEST_LABEL} ${FEELPP_TEST_LABEL_DIRECTORY} )
+      set_property(TEST ${FEELPP_TEST_EXEC}-np-1  PROPERTY LABELS ${FEELPP_TEST_LABEL} ${FEELPP_TEST_LABEL_DIRECTORY} )
       if(CMAKE_BUILD_TYPE MATCHES Debug)
-        set_tests_properties(feelpp_test_${FEELPP_TEST_NAME}-np-1 PROPERTIES ENVIRONMENT "ASAN_OPTIONS=detect_leaks=0;LSAN_OPTIONS=suppressions=${PROJECT_SOURCE_DIR}/../feelpp/tools/lsan/suppressions.txt")
+        set_tests_properties(${FEELPP_TEST_EXEC}-np-1 PROPERTIES ENVIRONMENT "ASAN_OPTIONS=detect_leaks=0;LSAN_OPTIONS=suppressions=${PROJECT_SOURCE_DIR}/../feelpp/tools/lsan/suppressions.txt")
       endif()
     endif()
 
@@ -418,14 +418,14 @@ macro(feelpp_add_test)
     if ( NOT FEELPP_TEST_NO_TEST )
       if ( FEELPP_TEST_TIMEOUT )
         IF(NOT FEELPP_TEST_NO_MPI_TEST AND NProcs2 GREATER 1)
-          set_property(TEST feelpp_test_${FEELPP_TEST_NAME}-np-${NProcs2}  PROPERTY TIMEOUT ${FEELPP_TEST_TIMEOUT})
+          set_property(TEST ${FEELPP_TEST_EXEC}-np-${NProcs2}  PROPERTY TIMEOUT ${FEELPP_TEST_TIMEOUT})
         endif()
-        set_property(TEST feelpp_test_${FEELPP_TEST_NAME}-np-1  PROPERTY TIMEOUT ${FEELPP_TEST_TIMEOUT})
+        set_property(TEST ${FEELPP_TEST_EXEC}-np-1  PROPERTY TIMEOUT ${FEELPP_TEST_TIMEOUT})
       else()
         IF(NOT FEELPP_TEST_NO_MPI_TEST AND NProcs2 GREATER 1)
-          set_property(TEST feelpp_test_${FEELPP_TEST_NAME}-np-${NProcs2}  PROPERTY TIMEOUT ${FEELPP_DEFAULT_TEST_TIMEOUT})
+          set_property(TEST ${FEELPP_TEST_EXEC}-np-${NProcs2}  PROPERTY TIMEOUT ${FEELPP_DEFAULT_TEST_TIMEOUT})
         endif()
-        set_property(TEST feelpp_test_${FEELPP_TEST_NAME}-np-1  PROPERTY TIMEOUT  ${FEELPP_DEFAULT_TEST_TIMEOUT})
+        set_property(TEST ${FEELPP_TEST_EXEC}-np-1  PROPERTY TIMEOUT  ${FEELPP_DEFAULT_TEST_TIMEOUT})
       endif()
     endif()
 
@@ -733,9 +733,6 @@ macro (feelpp_add_man NAME MAN SECT)
    endif()
 endmacro (feelpp_add_man)
 
-# CRB cmake macros
-include(feelpp.macros.crb)
-
 # OM cmake macros
 macro ( feelpp_add_fmu )
     PARSE_ARGUMENTS( OM_MODEL
@@ -1001,4 +998,32 @@ macro(feelpp_get_environment)
   get_property( MPIEXEC_NUMPROC_FLAG TARGET Feelpp::feelpp PROPERTY MPIEXEC_NUMPROC_FLAG )
   get_property( MPIEXEC_PREFLAGS TARGET Feelpp::feelpp PROPERTY MPIEXEC_PREFLAGS )
   get_property( MPIEXEC_POSTFLAGS TARGET Feelpp::feelpp PROPERTY MPIEXEC_POSTFLAGS )
+  if ( FEELPP_HAS_PYTHON )
+    get_property( FEELPP_PYTHON_MODULE_PATH TARGET Feelpp::feelpp PROPERTY FEELPP_PYTHON_MODULE_PATH )
+  endif()
 endmacro()
+
+#
+# add a pybind11 feelpp module
+# FEELPP_PYTHON_MODULE_PATH must be defined !
+#
+macro(feelpp_add_pymodule)
+ PARSE_ARGUMENTS(FEELPP_PYMODULE
+    "NAME;SRCS;DESTINATION;LINK_LIBRARIES"
+    ""
+    ${ARGN}
+    )
+  CAR(FEELPP_PYMODULE_NAME ${FEELPP_PYMODULE_DEFAULT_ARGS})
+  message(STATUS "[pyfeelpp] add pymodule ${FEELPP_PYMODULE_NAME}")
+  pybind11_add_module(_${FEELPP_PYMODULE_NAME}  ${FEELPP_PYMODULE_SRCS}  )
+  target_include_directories(_${FEELPP_PYMODULE_NAME} PRIVATE ${PYTHON_INCLUDE_DIRS} ${MPI4PY_INCLUDE_DIR} ${PETSC4PY_INCLUDE_DIR})
+  target_link_libraries( _${FEELPP_PYMODULE_NAME} PUBLIC Feelpp::feelpp ${FEELPP_PYMODULE_LINK_LIBRARIES} )
+  install(TARGETS _${FEELPP_PYMODULE_NAME} DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/${FEELPP_PYMODULE_DESTINATION})
+  if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py )
+    add_custom_command(
+           TARGET _${FEELPP_PYMODULE_NAME} POST_BUILD
+           COMMAND ${CMAKE_COMMAND} -E copy
+                   ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py
+                   ${CMAKE_CURRENT_BINARY_DIR}/__init__.py)
+  endif()
+endmacro(feelpp_add_pymodule)

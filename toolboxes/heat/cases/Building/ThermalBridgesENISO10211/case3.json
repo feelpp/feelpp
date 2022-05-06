@@ -1,0 +1,168 @@
+// -*- mode: javascript -*-
+{
+    "Name": "ISO 10211:2007 Thermal bridges in building construction : Case 3",
+    "ShortName":"ThermalBridges : Case3",
+    "Parameters":
+    {
+        "h_alpha":"1.0/0.2",
+        "h_beta":"1.0/0.2",
+        "h_gamma":"1.0/0.05",
+        "T0_alpha":20,
+        "T0_beta":15,
+        "T0_gamma":0
+    },
+    "Meshes":
+    {
+        "heat":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/case3.geo",
+                "hsize":0.02
+            }
+        }
+    },
+    "Materials":
+    {
+        "Internal_wall":
+        {
+            "markers":["Internal_wall_upper","Internal_wall_lower"],
+            "k":"0.7",//[ W/(m*K) ]
+            "Cp":"800", //[ J/(kg*K) ]
+            "rho":"1700" //[ kg/(m^3) ]
+        },
+        "External_wall":
+        {
+            "k":"1",//[ W/(m*K) ]
+            "Cp":"1000", //[ J/(kg*K) ]
+            "rho":"2000" //[ kg/(m^3) ]
+        },
+        "Insulation":
+        {
+            "k":"0.04",//[ W/(m*K) ]
+            "Cp":"1000", //[ J/(kg*K) ]
+            "rho":"200" //[ kg/(m^3) ]
+        },
+        "Horizontal_structure":
+        {
+            "k":"2.5",//[ W/(m*K) ]
+            "Cp":"600", //[ J/(kg*K) ]
+            "rho":"5000" //[ kg/(m^3) ]
+        },
+        "Floor":
+        {
+            "k":"1",//[ W/(m*K) ]
+            "Cp":"800", //[ J/(kg*K) ]
+            "rho":"1000" //[ kg/(m^3) ]
+        }
+    },
+    "BoundaryConditions":
+    {
+        "heat":
+        {
+            "convective_heat_flux":
+            {
+                "alpha":
+                {
+                    "h":"h_alpha:h_alpha",// h coeff
+                    "Text":"T0_alpha:T0_alpha"// temperature exterior
+                },
+                "beta":
+                {
+                    "h":"h_beta:h_beta",// h coeff
+                    "Text":"T0_beta:T0_beta"// temperature exterior
+                },
+                "gamma":
+                {
+                    "h":"h_gamma:h_gamma",// h coeff
+                    "Text":"T0_gamma:T0_gamma"// temperature exterior
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "heat":
+        {
+            "Exports":
+            {
+                "fields":["temperature","pid"]
+            },
+            "Save":
+            {
+                "Fields":
+                {
+                    "names":["temperature"]
+                    //"format":"hdf5"
+                }
+            },
+            "Measures":
+            {
+                "Normal-Heat-Flux":
+                {
+                    "%1%":
+                    {
+                        "markers":"%1%",
+                        "direction":"inward",
+                        "index1":["alpha","beta","gamma"]
+                    }
+                },
+                "Statistics":
+                {
+                    "temperature_%1%":
+                    {
+                        "type":["min","max"],
+                        "field":"temperature",
+                        "markers":"%1%",
+                        "index1":["alpha","beta"]
+                    }
+                },
+                "Points":
+                {
+                    "%1_1%":
+                    {
+                        "coord":"%1_2%",
+                        "fields":"temperature",
+                        "index1":[ ["alpha_min", "{0.2,0.2,1}"],
+                                   ["alpha_max", "{1.2,1.2,1}"],
+                                   ["beta_min", "{0.2,0.2,1.2}"],
+                                   ["beta_max", "{1.2,1.2,1.2}"]
+                                 ]
+                    }
+                }
+            },
+            "Checkers":
+            {
+                "Measures":
+                {
+                    "Statistics_temperature_alpha_min":
+                    {
+                        "value":11.32,
+                        "tolerance":1e-2
+                    },
+                    "Statistics_temperature_beta_min":
+                    {
+                        "value":11.11,
+                        "tolerance":1e-2
+                    },
+                    "Normal_Heat_Flux_%1_1%":
+                    {
+                        "value":"%1_2%",
+                        "tolerance":0.1,
+                        "index1":[ ["alpha", "46.09"],["beta","13.89"],["gamma","-59.98"] ]
+                    },
+                    "Points_%1_1%_field_temperature":
+                    {
+                        "value":"%1_2%",
+                        "tolerance":1e-2,
+                        "index1": [ [ "alpha_min", "postprocess_heat_measures_Statistics_temperature_alpha_min:postprocess_heat_measures_Statistics_temperature_alpha_min" ],
+                                    [ "alpha_max", "postprocess_heat_measures_Statistics_temperature_alpha_max:postprocess_heat_measures_Statistics_temperature_alpha_max" ],
+                                    [ "beta_min", "postprocess_heat_measures_Statistics_temperature_beta_min:postprocess_heat_measures_Statistics_temperature_beta_min" ],
+                                    [ "beta_max", "postprocess_heat_measures_Statistics_temperature_beta_max:postprocess_heat_measures_Statistics_temperature_beta_max" ]
+                                  ]
+                    }
+                }
+            }
+        }
+    }
+}
