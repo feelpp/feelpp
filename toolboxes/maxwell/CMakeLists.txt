@@ -23,7 +23,8 @@ feelpp_add_application( cvg_maxwell_3d SRCS cvg_maxwell.cpp
   )
 endif()
 
-feelpp_add_application( biotsavart SRCS biotsavart_main.cpp INSTALL )
+feelpp_add_application( biotsavart SRCS biotsavart_main.cpp LINK_LIBRARIES feelpp_modelcore INSTALL )
+
 
 feelpp_add_testcase(cases PREFIX feelpp_toolbox_maxwell CATEGORY toolboxes/maxwell)
 
