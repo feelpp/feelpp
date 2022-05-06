@@ -81,6 +81,8 @@ ModelPhysic<Dim>::New( ModelPhysics<Dim> const& mphysics, std::string const& mod
         return std::make_shared<ModelPhysicThermoElectric<Dim>>( mphysics, modeling, type, name, model );
     else if ( modeling == "fluid" )
         return std::make_shared<ModelPhysicFluid<Dim>>( mphysics, modeling, type, name, model );
+    else if ( modeling == "multifluid" )
+        return std::make_shared<ModelPhysicMultifluid<Dim>>( mphysics, modeling, type, name, model );
     else if ( modeling == "solid" )
         return std::make_shared<ModelPhysicSolid<Dim>>( mphysics, modeling, type, name, model );
     else if ( modeling == "fsi" )
@@ -477,7 +479,7 @@ ModelPhysicFluid<Dim>::ModelPhysicFluid( ModelPhysics<Dim> const& mphysics, std:
     super_type( modeling, type, name, mphysics, model ),
     M_equation( "Navier-Stokes" ),
     M_gravityForceEnabled( boption(_name="use-gravity-force",_prefix=mphysics.prefix(),_vm=mphysics.clovm()) ),
-    M_dynamicViscosity( soption(_name="viscosity.law",_prefix=mphysics.prefix(),_vm=mphysics.clovm()) ),
+    M_dynamicViscosity( new DynamicViscosity( soption(_name="viscosity.law",_prefix=mphysics.prefix(),_vm=mphysics.clovm()) ) ),
     M_turbulence( this )
 {
 
@@ -528,7 +530,7 @@ ModelPhysicFluid<Dim>::ModelPhysicFluid( ModelPhysics<Dim> const& mphysics, std:
         {
             auto const& j_setup_viscosity_law = j_setup.at("viscosity_law");
             CHECK( j_setup_viscosity_law.is_string() ) << "viscosity_law must be a string";
-            M_dynamicViscosity.setLaw( j_setup_viscosity_law.template get<std::string>() );
+            M_dynamicViscosity->setLaw( j_setup_viscosity_law.template get<std::string>() );
         }
 
         if ( j_setup.contains("turbulence") )
@@ -634,6 +636,73 @@ ModelPhysicFluid<Dim>::Turbulence::setup( nl::json const& jarg )
     this->setParameterNoMaterialLink( "sigma_k", "1.0", "k-epsilon" );
     this->setParameterNoMaterialLink( "sigma_epsilon", "1.3", "k-epsilon" );
 
+}
+
+
+template <uint16_type Dim>
+ModelPhysicMultifluid<Dim>::ModelPhysicMultifluid( ModelPhysics<Dim> const& mphysics, std::string const& modeling, std::string const& type, std::string const& name, ModelModel const& model ):
+    super_type( modeling, type, name, mphysics, model ),
+    M_nFluids( ioption( _name="nfluids", _prefix=mphysics.prefix(), _vm=mphysics.clovm() ) )
+{
+    auto const& j_setup = model.setup();
+    if( j_setup.is_object() )
+    {
+        if( j_setup.contains( "nfluids" ) )
+        {
+            auto const& j_setup_nfluids = j_setup.at( "nfluids" );
+            if( j_setup_nfluids.is_number_unsigned() )
+                M_nFluids = j_setup_nfluids.template get<int>();
+            else if( j_setup_nfluids.string() )
+                M_nFluids = std::stoi( j_setup_nfluids.template get<std::string>() );
+        }
+        CHECK( M_nFluids >= 2 ) << "invalid number of fluids (" << M_nFluids << ")";
+    }
+
+    this->updateMaterialPropertyDescription();
+}
+
+template <uint16_type Dim>
+void
+ModelPhysicMultifluid<Dim>::updateInformationObject( nl::json & p ) const
+{
+    super_type::updateInformationObject( p );
+}
+template <uint16_type Dim>
+tabulate_informations_ptr_t
+ModelPhysicMultifluid<Dim>::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
+{
+    return super_type::tabulateInformations( jsonInfo, tabInfoProp );
+}
+
+template <uint16_type Dim>
+void
+ModelPhysicMultifluid<Dim>::updateMaterialPropertyDescription()
+{
+    auto const addMaterialPropertyDescriptionFluid = [this]( const std::string & prefix ) {
+        this->addMaterialPropertyDescription( prefixvm( prefix, "dynamic-viscosity", "_" ), prefixvm( prefix, "mu", "_" ), { scalarShape } );
+        this->addMaterialPropertyDescription( prefixvm( prefix, "turbulent-dynamic-viscosity", "_" ), prefixvm( prefix, "mu_t", "_" ), { scalarShape } );
+        this->addMaterialPropertyDescription( prefixvm( prefix, "turbulent-kinetic-energy", "_" ), prefixvm( prefix, "tke", "_" ), { scalarShape } );
+        this->addMaterialPropertyDescription( prefixvm( prefix, "consistency-index", "_" ), prefixvm( prefix, "mu_k", "_" ), { scalarShape } );
+        this->addMaterialPropertyDescription( prefixvm( prefix, "power-law-index", "_" ), prefixvm( prefix, "mu_power_law_n", "_" ), { scalarShape } );
+        this->addMaterialPropertyDescription( prefixvm( prefix, "viscosity-min", "_" ), prefixvm( prefix, "mu_min", "_" ), { scalarShape } );
+        this->addMaterialPropertyDescription( prefixvm( prefix, "viscosity-max", "_" ), prefixvm( prefix, "mu_max", "_" ), { scalarShape } );
+        this->addMaterialPropertyDescription( prefixvm( prefix, "viscosity-zero-shear", "_" ), prefixvm( prefix, "mu_0", "_" ), { scalarShape } );
+        this->addMaterialPropertyDescription( prefixvm( prefix, "viscosity-infinite-shear", "_" ), prefixvm( prefix, "mu_inf", "_" ), { scalarShape } );
+        this->addMaterialPropertyDescription( prefixvm( prefix, "carreau-law-lambda", "_" ), prefixvm( prefix, "mu_carreau_law_lambda", "_" ), { scalarShape } );
+        this->addMaterialPropertyDescription( prefixvm( prefix, "carreau-law-n", "_" ), prefixvm( prefix, "mu_carreau_law_n", "_" ), { scalarShape } );
+        this->addMaterialPropertyDescription( prefixvm( prefix, "carreau-yasuda-law-lambda", "_" ), prefixvm( prefix, "mu_carreau_yasuda_law_lambda", "_" ), { scalarShape } );
+        this->addMaterialPropertyDescription( prefixvm( prefix, "carreau-yasuda-law-n", "_" ), prefixvm( prefix, "mu_carreau_yasuda_law_n", "_" ), { scalarShape } );
+        this->addMaterialPropertyDescription( prefixvm( prefix, "carreau-yasuda-law-a", "_" ), prefixvm( prefix, "mu_carreau_yasuda_law_a", "_" ), { scalarShape } );
+    };
+
+    // External fluid
+    addMaterialPropertyDescriptionFluid( "fluid" );
+    // Internal fluids
+    for ( uint32_t n = 0; n < this->nFluids(); ++n )
+    {
+        std::string const lsKeyword = fmt::format( "levelset{}", n );
+        addMaterialPropertyDescriptionFluid( lsKeyword );
+    }
 }
 
 template <uint16_type Dim>

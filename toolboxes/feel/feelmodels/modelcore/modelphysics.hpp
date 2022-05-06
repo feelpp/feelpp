@@ -313,8 +313,9 @@ private :
     std::string M_directoryLibExpr;
     std::map<physic_id_type,std::shared_ptr<ModelPhysic<nDim>>> M_subphysics;
     std::set<std::string> M_materialNames;
-    std::map<std::string,material_property_description_type> M_materialPropertyDescription; // name -> (symbol, shapes.. )
     std::map<std::string,ModelExpression> M_parameterNameToExpr;
+protected:
+    std::map<std::string,material_property_description_type> M_materialPropertyDescription; // name -> (symbol, shapes.. )
 };
 
 template <uint16_type Dim>
@@ -449,7 +450,13 @@ public :
 private :
 };
 
-
+namespace DynamicViscosityLaw {
+    struct Law {};
+    struct NewtonianLaw: Law { static constexpr std::string_view name = "newtonian"; };
+    struct PowerLaw: Law { static constexpr std::string_view name = "power_law"; };
+    struct CarreauLaw: Law { static constexpr std::string_view name = "carreau_law"; };
+    struct CarreauYasudaLaw: Law { static constexpr std::string_view name = "carreau-yasuda_law"; };
+}
 
 template <uint16_type Dim>
 class ModelPhysicFluid : public ModelPhysic<Dim>
@@ -457,32 +464,39 @@ class ModelPhysicFluid : public ModelPhysic<Dim>
     using super_type = ModelPhysic<Dim>;
     using self_type = ModelPhysicFluid<Dim>;
 public :
+
     struct DynamicViscosity
     {
-        DynamicViscosity( std::string const& ln )
-            :
-            M_lawName( ln )
-            {
-                CHECK( this->checkLawName() ) << "invalid law name " << ln;
-            }
+        DynamicViscosity( std::string const& ln, ModelPhysicFluid<Dim> * mphysic ):
+            M_lawName( ln ),
+            M_modelPhysicFluid( mphysics )
+        {
+            //CHECK( this->checkLawName() ) << "invalid law name " << ln;
+        }
         DynamicViscosity( DynamicViscosity const& ) = default;
         DynamicViscosity( DynamicViscosity && ) = default;
 
         void setLaw( std::string const& ln ) { M_lawName = ln; CHECK( this->checkLawName() ) << "invalid law name " << ln; }
         std::string const& lawName() const { return M_lawName; }
 
-        bool isNewtonianLaw() const { return (this->lawName() == "newtonian"); }
-        bool isPowerLaw() const { return (this->lawName() == "power_law"); }
-        bool isCarreauLaw() const { return (this->lawName() == "carreau_law"); }
-        bool isCarreauYasudaLaw() const { return (this->lawName() == "carreau-yasuda_law"); }
+        template< typename LawType >
+        bool isLaw() const { return ( this->lawName() == LawType::name ); }
 
+        bool isNewtonianLaw() const { return this->isLaw<Newtonian>(); }
+        bool isPowerLaw() const { return this->isLaw<PowerLaw>(); }
+        bool isCarreauLaw() const { return this->isLaw<CarreauLaw>(); }
+        bool isCarreauYasudaLaw() const { return this->isLaw<CarreauYasudaLaw>(); }
+
+    private:
         bool checkLawName() const
-            {
-                return ( this->isNewtonianLaw() || this->isPowerLaw() || this->isCarreauLaw() || this->isCarreauYasudaLaw() );
-            }
+        {
+            //return ( this->isNewtonianLaw() || this->isPowerLaw() || this->isCarreauLaw() || this->isCarreauYasudaLaw() );
+            return true;
+        }
 
-    private :
+    private:
         std::string M_lawName;
+        ModelPhysicFluid<Dim> * M_modelPhysicFluid;
     };
 
     struct Turbulence
@@ -500,18 +514,18 @@ public :
         void setup( nl::json const& jarg );
 
         void setFrictionVelocityWallFunction( std::string const& matName, std::string const& expr )
-            {
-                this->setParameterOnMaterial( matName, "u_tau_wallfunction", expr );
-            }
+        {
+            this->setParameterOnMaterial( matName, "u_tau_wallfunction", expr );
+        }
         std::string frictionVelocityWallFunctionSymbol( std::string const& matName ) const
-            {
-                return M_parent->symbolFromParameter( this->symbolBaseNameOnMaterial( matName, "u_tau_wallfunction" ) );
-            }
+        {
+            return M_parent->symbolFromParameter( this->symbolBaseNameOnMaterial( matName, "u_tau_wallfunction" ) );
+        }
         template <typename SymbolsExprType = symbols_expression_empty_t>
         auto frictionVelocityWallFunctionExpr( std::string const& matName, SymbolsExprType const& se = symbols_expression_empty_t{} ) const
-            {
-                return M_parent->template parameterExpr<1,1>( this->symbolBaseNameOnMaterial( matName, "u_tau_wallfunction" ), se );
-            }
+        {
+            return M_parent->template parameterExpr<1,1>( this->symbolBaseNameOnMaterial( matName, "u_tau_wallfunction" ), se );
+        }
 
         std::string vonKarmanConstantSymbol() const { return M_parent->symbolFromParameter( this->symbolBaseNameNoMaterialNoModelLink("kappa") ); }
         // upper limit on the mixing length (used by k-epsilon)
@@ -525,61 +539,61 @@ public :
 
 
         void setParameterOnMaterial( std::string const& matName, std::string const& propName, std::string const& expr )
-            {
-                M_parent->addParameter( this->symbolBaseNameOnMaterial( matName,propName ), expr );
-            }
+        {
+            M_parent->addParameter( this->symbolBaseNameOnMaterial( matName,propName ), expr );
+        }
         void setParameterOnMaterial( std::string const& matName, std::string const& propName, std::string const& tmodel, std::string const& expr )
-            {
-                M_parent->addParameter( this->symbolBaseNameOnMaterial( matName,propName,tmodel ), expr );
-            }
+        {
+            M_parent->addParameter( this->symbolBaseNameOnMaterial( matName,propName,tmodel ), expr );
+        }
         void setParameterNoMaterialLink( std::string const& propName, std::string const& expr, std::string const& tmodel )
-            {
-                M_parent->addParameter( this->symbolBaseNameNoMaterialLink( propName, tmodel ), expr );
-            }
+        {
+            M_parent->addParameter( this->symbolBaseNameNoMaterialLink( propName, tmodel ), expr );
+        }
         void setParameterNoMaterialLink( std::string const& propName, std::string const& expr )
-            {
-                M_parent->addParameter( this->symbolBaseNameNoMaterialLink( propName ), expr );
-            }
+        {
+            M_parent->addParameter( this->symbolBaseNameNoMaterialLink( propName ), expr );
+        }
         void setParameterNoMaterialNoModelLink( std::string const& propName, std::string const& expr )
-            {
-                M_parent->addParameter( this->symbolBaseNameNoMaterialNoModelLink( propName ), expr );
-            }
+        {
+            M_parent->addParameter( this->symbolBaseNameNoMaterialNoModelLink( propName ), expr );
+        }
 
     private :
         std::string prefixSymbolTurbulenceModel() const { return this->prefixSymbolTurbulenceModel( M_model ); }
 
         std::string prefixSymbolTurbulenceModel( std::string const& tmodel ) const
-            {
-                std::string prefix = "turbulence";
-                if ( tmodel.empty() )
-                    return prefix;
-                else if ( tmodel == "k-epsilon" )
-                    return prefixvm( prefix, "k_epsilon", "_" );
+        {
+            std::string prefix = "turbulence";
+            if ( tmodel.empty() )
                 return prefix;
-            }
+            else if ( tmodel == "k-epsilon" )
+                return prefixvm( prefix, "k_epsilon", "_" );
+            return prefix;
+        }
         std::string symbolBaseNameOnMaterial( std::string const& matName, std::string const& propName, std::string const& tmodel ) const
-            {
-                std::string prefix = this->prefixSymbolTurbulenceModel( tmodel );
-                if ( !matName.empty() )
-                    prefix += "_" + matName;
-                return prefixvm( prefix,propName,"_");
-            }
+        {
+            std::string prefix = this->prefixSymbolTurbulenceModel( tmodel );
+            if ( !matName.empty() )
+                prefix += "_" + matName;
+            return prefixvm( prefix,propName,"_");
+        }
         std::string symbolBaseNameOnMaterial( std::string const& matName, std::string const& propName ) const
-            {
-                return this->symbolBaseNameOnMaterial( matName, propName, M_model );
-            }
+        {
+            return this->symbolBaseNameOnMaterial( matName, propName, M_model );
+        }
         std::string symbolBaseNameNoMaterialLink( std::string const& propName ) const
-            {
-                return this->symbolBaseNameNoMaterialLink( propName, M_model );
-            }
+        {
+            return this->symbolBaseNameNoMaterialLink( propName, M_model );
+        }
         std::string symbolBaseNameNoMaterialLink( std::string const& propName, std::string const& tmodel ) const
-            {
-                return this->symbolBaseNameOnMaterial( "", propName, tmodel );
-            }
+        {
+            return this->symbolBaseNameOnMaterial( "", propName, tmodel );
+        }
         std::string symbolBaseNameNoMaterialNoModelLink( std::string const& propName ) const
-            {
-                return this->symbolBaseNameOnMaterial( "", propName, "" );
-            }
+        {
+            return this->symbolBaseNameOnMaterial( "", propName, "" );
+        }
 
     private :
         self_type * M_parent;
@@ -600,7 +614,7 @@ public :
     bool gravityForceEnabled() const { return M_gravityForceEnabled; }
     auto const& gravityForceExpr() const { return M_gravityForceExpr.template expr<Dim,1>(); }
 
-    DynamicViscosity const& dynamicViscosity() const { return M_dynamicViscosity; }
+    virtual DynamicViscosity const& dynamicViscosity() const { return *M_dynamicViscosity; }
     Turbulence const& turbulence() const { return M_turbulence; }
     Turbulence & turbulence() { return M_turbulence; }
 
@@ -612,13 +626,45 @@ public :
                 M_gravityForceExpr.setParameterValues( mp );
         }
 
-private :
+protected :
     std::string M_equation;
     bool M_gravityForceEnabled;
     ModelExpression M_gravityForceExpr;
 
-    DynamicViscosity M_dynamicViscosity;
+    std::unique_ptr<DynamicViscosity> M_dynamicViscosity;
     Turbulence M_turbulence;
+};
+
+namespace DynamicViscosityLaw {
+    struct Multifluid: Law { static constexpr std::string_view name = "multifluid"; };
+}
+
+template <uint16_type Dim>
+class ModelPhysicMultifluid : public ModelPhysicFluid<Dim>
+{
+    using super_type = ModelPhysicFluid<Dim>;
+    using self_type = ModelPhysicMultifluid<Dim>;
+public:
+    ModelPhysicMultifluid( ModelPhysics<Dim> const& mphysics, std::string const& modeling, std::string const& type, std::string const& name, ModelModel const& model = ModelModel{} );
+    ModelPhysicMultifluid( ModelPhysicMultifluid const& ) = default;
+    ModelPhysicMultifluid( ModelPhysicMultifluid && ) = default;
+
+    void updateInformationObject( nl::json & p ) const override;
+    tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
+
+    uint32_t nFluids() const { return M_nFluids; }
+    void setNFluids( uint32_t n ) { M_nFluids = n; this->updateMaterialPropertyDescription(); }
+
+    //! set parameter values in expression
+    void setParameterValues( std::map<std::string, double> const& mp ) override
+    {
+        super_type::setParameterValues( mp );
+    }
+
+private:
+    void updateMaterialPropertyDescription();
+
+    uint32_t M_nFluids;
 };
 
 template <uint16_type Dim>
@@ -844,9 +890,10 @@ protected :
 public:
 
     //ModelPhysics() = default;
-    explicit ModelPhysics( std::string const& modeling ) : ModelBase(""), M_physicModeling( modeling ) {}
-    ModelPhysics( std::string const& modeling, ModelBase const& mbase ) : ModelBase(mbase), M_physicModeling( modeling ) {}
-    ModelPhysics( std::string const& modeling, ModelBase && mbase ) : ModelBase(std::move(mbase)), M_physicModeling( modeling ) {}
+    explicit ModelPhysics( std::string const& modeling ) : ModelBase(""), M_physicModeling( modeling ) { M_physicType = this->keyword(); }
+    explicit ModelPhysics( std::string const& modeling, std::string const& type ) : ModelBase(""), M_physicModeling( modeling ), M_physicsType( type ) { }
+    ModelPhysics( std::string const& modeling, ModelBase const& mbase ) : ModelBase(mbase), M_physicModeling( modeling ), M_physicType( mbase.keyword() ) {}
+    ModelPhysics( std::string const& modeling, ModelBase && mbase ) : ModelBase(std::move(mbase)), M_physicModeling( modeling ) { M_physicType = this->keyword(); }
     ModelPhysics( ModelPhysics const& ) = default;
     ModelPhysics( ModelPhysics && ) = default;
     virtual ~ModelPhysics() = default;
@@ -876,7 +923,7 @@ public:
     std::string const& physicModeling() const { return M_physicModeling; }
 
     //! return the type of physic at top level
-    std::string const& physicType() const { return this->keyword();/*M_physicType;*/ }
+    std::string const& physicType() const { return M_physicType; }
 
     //! return name of all physics registered
     std::set<physic_id_type> physicsAvailable() const;
@@ -919,7 +966,7 @@ private :
 
 protected :
 
-    std::string M_physicModeling/*, M_physicType*/;
+    std::string M_physicModeling, M_physicType;
     std::map<physic_id_type,std::shared_ptr<ModelPhysic<nDim>>> M_physics;
 };
 
