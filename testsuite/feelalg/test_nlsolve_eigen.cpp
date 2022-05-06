@@ -42,6 +42,8 @@
 #include <Eigen/LU>
 #include <Eigen/Dense>
 
+#include <functional>
+
 
 #define FEELAPP( argc, argv, about, options )                           \
     Feel::Application app( argc, argv, about, options );                \

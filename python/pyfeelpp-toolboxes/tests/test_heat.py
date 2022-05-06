@@ -1,6 +1,7 @@
-import sys
+import sys,os
 import feelpp
 import pytest
+from pathlib import Path
 from feelpp.toolboxes.core import *
 from feelpp.toolboxes.heat import *
 
@@ -31,6 +32,31 @@ def test_heat(casefile,dim,order):
 
     return not f.checkResults()
 
+parts = [2,3,6]
+
+
+@pytest.mark.parametrize("nparts", parts)
+def test_heat_ensemble(nparts):
+    c=feelpp.readcfg(os.path.dirname(__file__)+'/heat/Building/ThermalBridgesENISO10211/case2.cfg')    
+    feelpp.Environment.setConfigFile(os.path.dirname(__file__)+'/heat/Building/ThermalBridgesENISO10211/case2.cfg')
+    dim = int(c['feelpp']['case.dimension'])
+    order = [int(s) for s in c['feelpp']['case.discretization'].split("P") if s.isdigit()][0]
+    if feelpp.Environment.numberOfProcessors() > 1 and feelpp.Environment.numberOfProcessors() % nparts == 0:
+        color, w, wglob = feelpp.Environment.worldCommPtr().split(nparts)
+        feelpp.Environment.changeRepository(c['feelpp']['directory']+"/{}_{}".format(nparts,color))
+        f = heat(dim=dim, order=order, worldComm=w)
+        if not f.isStationary():
+            f.setTimeFinal(10*f.timeStep())
+        #simulate(f)
+        # meas = f.postProcessMeasures().values()
+        # try:
+        #     import pandas as pd
+        # 
+        #     df = pd.DataFrame([meas])
+        # except ImportError:
+        #     print("cannot import pandas, no problem it was just a test")
+        # 
+        # return not f.checkResults()
 
 def test_heat_alg():
     feelpp.Environment.setConfigFile(

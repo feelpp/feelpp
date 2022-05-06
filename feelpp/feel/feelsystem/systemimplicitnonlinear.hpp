@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2009-01-04
 
-  Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2009 UniversitÃ© Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -187,8 +187,9 @@ SystemImplicitNonLinear<SpaceType>::SystemImplicitNonLinear( functionspace_ptrty
     M_R( M_backend->newVector( Xh ) )
 
 {
-    M_backend->nlSolver()->residual = boost::bind( &self_type::updateResidual, boost::ref( *this ), _1, _2 );
-    M_backend->nlSolver()->jacobian = boost::bind( &self_type::updateJacobian, boost::ref( *this ), _1, _2 );
+    using namespace std::placeholders;
+    M_backend->nlSolver()->residual = std::bind( &self_type::updateResidual, std::ref( *this ), _1, _2 );
+    M_backend->nlSolver()->jacobian = std::bind( &self_type::updateJacobian, std::ref( *this ), _1, _2 );
 
 }
 template<typename SpaceType>

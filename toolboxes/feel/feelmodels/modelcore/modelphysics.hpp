@@ -457,6 +457,8 @@ class ModelPhysicFluid : public ModelPhysic<Dim>
     using super_type = ModelPhysic<Dim>;
     using self_type = ModelPhysicFluid<Dim>;
 public :
+
+    enum class NavierStokesFormulation { Convective=0, SkewSymmetric, Conservative, Rotational, EMAC };
     struct DynamicViscosity
     {
         DynamicViscosity( std::string const& ln )
@@ -597,6 +599,8 @@ public :
     std::string const& equation() const { return M_equation; }
     void setEquation( std::string const& eq );
 
+    NavierStokesFormulation navierStokesFormulation() const { return M_navierStokesFormulation; }
+
     bool gravityForceEnabled() const { return M_gravityForceEnabled; }
     auto const& gravityForceExpr() const { return M_gravityForceExpr.template expr<Dim,1>(); }
 
@@ -614,6 +618,8 @@ public :
 
 private :
     std::string M_equation;
+    NavierStokesFormulation M_navierStokesFormulation;
+
     bool M_gravityForceEnabled;
     ModelExpression M_gravityForceExpr;
 
