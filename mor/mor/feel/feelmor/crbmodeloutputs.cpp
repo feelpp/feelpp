@@ -92,17 +92,11 @@ CRBModelOutput::CRBModelOutput( std::string name, nl::json const& jarg, worldcom
 std::string CRBModelOutput::getString( std::string const& key ) const
 {
     if ( !M_p.contains(key) )
-    {
-        CHECK( false ) << "invalid key " << key;
-        return {};
-    }
+        throw std::out_of_range("invalid key "+key);
 
     auto const& j_key =  M_p.at(key);
     if ( !j_key.is_string() )
-    {
-        CHECK( false ) << "key " << key << " not a string";
-        return {};
-    }
+        throw std::logic_error("key "+key+" not a string");
 
     return j_key.get<std::string>();
 }
