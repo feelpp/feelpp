@@ -26,7 +26,7 @@ void writeErrors(std::ostream& out, std::vector<std::vector<double> > const& err
 }
 
 std::tuple<std::vector<double>,std::vector<double>,std::vector<double>,std::vector<double>>
-computeStats(std::vector<std::vector<double>> errs)
+computeStats(std::vector<std::vector<double>> const& errs)
 {
     int N = errs.size();
     std::vector<double> min(N), max(N), mean(N), stdev(N);
@@ -48,7 +48,7 @@ computeStats(std::vector<std::vector<double>> errs)
     return std::make_tuple(min, max, mean, stdev);
 }
 
-void writeStats(std::ostream& out, std::vector<double> min, std::vector<double> mean, std::vector<double> max, std::vector<double> stdev)
+void writeStats(std::ostream& out, std::vector<double> const& min, std::vector<double> const& mean, std::vector<double> const& max, std::vector<double> const& stdev)
 {
     if( out && Environment::isMasterRank() )
     {

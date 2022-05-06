@@ -54,7 +54,7 @@ public:
         auto const& expression() const
     {
         if ( !this->hasExpression<M,N>() )
-            CHECK( false ) << "no expression defined";
+            throw std::logic_error("no expression defined for "+M_name);
         return M_expr.template expr<M,N>();
     }
 
