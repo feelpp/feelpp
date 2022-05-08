@@ -430,14 +430,14 @@ ModelMesh<IndexType>::updateForUse( ModelMeshes<IndexType> const& mMeshes )
 
     // mesh adaptation
     if ( std::find_if( M_meshAdaptationSetup.begin(), M_meshAdaptationSetup.end(),
-                       []( auto const& mas ){ return mas.isExecutedAfterImport(); } ) != M_meshAdaptationSetup.end() )
+                       []( auto const& mas ){ return mas.isExecutedWhen( MeshAdaptation::template createEvent<MeshAdaptation::Event::Type::after_import>() ); } ) != M_meshAdaptationSetup.end() )
     {
         const_cast<ModelMeshes<IndexType>&>( mMeshes ).modelProperties().parameters().updateParameterValues();
         auto paramValues = mMeshes.modelProperties().parameters().toParameterValues();
         for ( typename MeshAdaptation::Setup & mas : M_meshAdaptationSetup )
             mas.setParameterValues( paramValues );
-
-        this->updateMeshAdaptation<MeshType>( MeshAdaptation::ExecutionEvent::after_import, Feel::vf::symbolsExpr( mMeshes.symbolsExprParameter(),  mMeshes.template symbolsExpr<MeshType>() ) );
+        this->updateMeshAdaptation<MeshType>( MeshAdaptation::template createEvent<MeshAdaptation::Event::Type::after_import>(),
+                                              Feel::vf::symbolsExpr( mMeshes.symbolsExprParameter(), mMeshes.template symbolsExpr<MeshType>() ) );
     }
 
     if constexpr ( mesh_type::nDim>1 )

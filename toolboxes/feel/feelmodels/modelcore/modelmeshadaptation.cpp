@@ -3,21 +3,17 @@
 
 #include <feel/feelmodels/modelcore/modelmeshes.hpp>
 
-// #include <feel/feeldiscr/mesh.hpp>
-// #include <feel/feelfilters/loadmesh.hpp>
-// #include <feel/feells/distancetorange.hpp>
-
-// // TO REMOVE
-#if 0
+#if 1
+#include <feel/feelmesh/partitionmesh.hpp>
+#include <feel/feelfilters/partitionio.hpp>
 #include <feel/feelmesh/remesher.hpp>
-//#include <feel/feeldiscr/pch.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
-#endif
+#else
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelmesh/partitionmesh.hpp>
 #include <feel/feelfilters/partitionio.hpp>
 #include <feel/feelmesh/remesh.hpp>
-
+#endif
 
 namespace Feel
 {
@@ -26,6 +22,9 @@ namespace FeelModels
 
 template <typename IndexType>
 ModelMesh<IndexType>::MeshAdaptation::Setup::Setup( ModelMeshes<IndexType> const& mMeshes, nl::json const& jarg )
+    :
+    M_eventEachTimeStep_frequency( 1 ),
+    M_eventEachTimeStep_lastExecutionIndex( invalid_v<size_type> )
 {
     if ( jarg.contains( "metric" ) )
     {
@@ -33,7 +32,7 @@ ModelMesh<IndexType>::MeshAdaptation::Setup::Setup( ModelMeshes<IndexType> const
         if ( j_metric.is_string() || j_metric.is_number() )
             M_metric.setExpr( j_metric, mMeshes.worldComm(), mMeshes.repository().expr()/*, indexes*/ );
         else
-            throw std::runtime_error( "no metric" );
+            throw std::runtime_error(  fmt::format("invalid metric type {}", j_metric ) );
     }
 
     for ( std::string const& keepMarkerKey : { "keep-markers" } )
@@ -62,13 +61,29 @@ ModelMesh<IndexType>::MeshAdaptation::Setup::Setup( ModelMeshes<IndexType> const
     for ( auto const& [event,j_eventval] : events.items() )
     {
         if ( event == "after_import" )
-            M_executionEvents.insert( ExecutionEvent::after_import );
+            M_executionEvents.insert( Event::Type::after_import );
         else if ( event == "after_init" )
-            M_executionEvents.insert( ExecutionEvent::after_init );
+            M_executionEvents.insert( Event::Type::after_init );
         else if ( event == "each_time_step" )
         {
-            M_executionEvents.insert( ExecutionEvent::each_time_step );
-            // TODO frequency
+            M_executionEvents.insert( Event::Type::each_time_step );
+            if ( j_eventval.contains( "frequency" ) )
+            {
+                auto const& j_ets_frequency = j_eventval.at( "frequency" );
+                if ( j_ets_frequency.is_number_unsigned() )
+                    M_eventEachTimeStep_frequency =  j_ets_frequency.template get<int>();
+                else if ( j_ets_frequency.is_string() )
+                    M_eventEachTimeStep_frequency = std::stoi( j_ets_frequency.template get<std::string>() );
+                else
+                    throw std::runtime_error( fmt::format("invalid frequency type {}", j_ets_frequency ) );
+            }
+            if ( j_eventval.contains( "condition" ) )
+            {
+                auto const& j_ets_condition = j_eventval.at( "condition" );
+                M_eventEachTimeStep_condition.setExpr( j_ets_condition, mMeshes.worldComm(), mMeshes.repository().expr()/*, indexes*/ );
+                if ( !M_eventEachTimeStep_condition.template hasExpr<1,1>() )
+                    throw std::runtime_error( fmt::format("invalid condition {}, should be a boolean scalar expr", j_ets_condition ) );
+            }
         }
         else
             throw std::runtime_error( fmt::format("invalid event {}", event ) );
