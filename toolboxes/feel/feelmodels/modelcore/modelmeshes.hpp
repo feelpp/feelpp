@@ -260,11 +260,52 @@ private :
         std::set<std::string> M_displacementZeroMarkers, M_displacementFreeMarkers;
     };
 
+public :
+
     struct MeshAdaptation
     {
-        struct Execute;
 
-        enum class ExecutionEvent { after_import=0, after_init, each_time_step/*, mesh_quality*/ };
+        struct Event {
+            enum class Type { never=0, after_import, after_init, each_time_step/*, mesh_quality*/ };
+            virtual ~Event() {};
+            virtual Type type() const { return Type::never; }
+        };
+        struct EventAfterImport : public Event
+        {
+            typename Event::Type type() const override { return Event::Type::after_import; }
+        };
+        struct EventAfterInit : public Event
+        {
+            typename Event::Type type() const override { return Event::Type::after_init; }
+        };
+        struct EventEachTimeStep : public Event
+        {
+            EventEachTimeStep( double t, size_type index ) : M_currentTime( t ), M_currentIndex( index ) {}
+            typename Event::Type type() const override { return Event::Type::each_time_step; }
+            double currentTime() const { return M_currentTime; }
+            size_type currentIndex() const { return M_currentIndex; }
+        private :
+            double M_currentTime;
+            size_type M_currentIndex;
+        };
+
+        template <typename Event::Type TT>
+        static auto createEvent() { return std::make_shared<Event>(); }
+        template <>
+        static auto createEvent<Event::Type::after_import>() { return std::make_shared<EventAfterImport>(); }
+        template <>
+        static auto createEvent<Event::Type::after_init>() { return std::make_shared<EventAfterInit>(); }
+        template <typename Event::Type TT>
+        static auto createEvent( double t, size_type index ) { return std::make_shared<Event>(); }
+        template <>
+        static auto createEvent<Event::Type::each_time_step>( double t, size_type index ) { return std::make_shared<EventEachTimeStep>( t, index ); }
+
+    private :
+
+        template <typename TT>
+        friend class ModelMesh;
+
+        struct Execute;
 
         struct Setup
         {
@@ -274,21 +315,49 @@ private :
 
             std::set<std::string> const& requiredMarkers() const { return M_requiredMarkers; }
 
-            bool isExecutedAfterImport() const { return this->isExecutedWhen( ExecutionEvent::after_import ); }
-            bool isExecutedAfterInit() const { return this->isExecutedWhen( ExecutionEvent::after_init ); }
-            bool isExecutedEachTimeStep() const { return this->isExecutedWhen( ExecutionEvent::each_time_step ); }
+            template <typename SymbolsExprType = symbols_expression_empty_t>
+            bool isExecutedWhen( std::shared_ptr<Event> e, SymbolsExprType const& se = symbols_expression_empty_t{} ) const
+                {
+                    if ( M_executionEvents.find( e->type() ) == M_executionEvents.end() )
+                        return false;
 
-            bool isExecutedWhen( ExecutionEvent m ) const { return M_executionEvents.find( m ) != M_executionEvents.end(); }
+                    switch ( e->type() )
+                    {
+                    case Event::Type::each_time_step:
+                    {
+                        auto e_ets = std::dynamic_pointer_cast<EventEachTimeStep>( e );
+                        if ( e_ets->currentIndex() == M_eventEachTimeStep_lastExecutionIndex )
+                            return false;
+                        if ( ( e_ets->currentIndex() % M_eventEachTimeStep_frequency ) != 0 )
+                            return false;
+                        if ( M_eventEachTimeStep_condition.template hasExpr<1,1>() )
+                        {
+                            auto conditionExpr = expr( M_eventEachTimeStep_condition.template expr<1,1>(), se );
+                            if ( std::abs(conditionExpr.evaluate()(0,0)) < 1e-12 )
+                                return false;
+                        }
+                        break;
+                    }
+                    default:
+                        break;
+                    }
+                    return true;
+                }
 
-            void setParameterValues( std::map<std::string,double> const& paramValues ) { M_metric.setParameterValues( paramValues ); }
+            void setParameterValues( std::map<std::string,double> const& paramValues )
+                {
+                    M_metric.setParameterValues( paramValues );
+                    M_eventEachTimeStep_condition.setParameterValues( paramValues );
+                }
 
             friend struct Execute;
-            //template <typename TT>
-            //friend struct ModelMesh<TT>::MeshAdaptationExecute;
         private:
 
             std::set<std::string> M_requiredMarkers;
-            std::set<ExecutionEvent> M_executionEvents;
+            std::set<typename Event::Type> M_executionEvents;
+            size_type M_eventEachTimeStep_frequency;
+            size_type M_eventEachTimeStep_lastExecutionIndex;
+            ModelExpression M_eventEachTimeStep_condition;
             ModelExpression M_metric;
             fs::path M_tmpDir; // store tmp mesh file in parallel, should be removed when ParMmg work!
         };
@@ -297,9 +366,11 @@ private :
         {
             template <typename MeshType,typename SymbolsExprType>
             static
-            std::shared_ptr<MeshType> execute( typename MeshAdaptation::Setup const& mass, std::shared_ptr<MeshType> inputMesh, SymbolsExprType const& se )
+            std::shared_ptr<MeshType> execute( typename MeshAdaptation::Setup const& mas, std::shared_ptr<MeshType> inputMesh, std::shared_ptr<Event> event, SymbolsExprType const& se )
                 {
-                    Execute mae{mass};
+                    if ( !mas.isExecutedWhen( event,se ) )
+                        return {};
+                    Execute mae{mas};
                     return mae.execute(inputMesh,se);
                 }
 
@@ -332,7 +403,7 @@ private :
         };
     };
 
-public :
+    //public :
 
     ModelMesh( std::string const& name )
         :
@@ -516,16 +587,15 @@ public :
 
     template <typename MeshType,typename SymbolsExprType>
     void
-    updateMeshAdaptation( typename MeshAdaptation::ExecutionEvent execEvent, SymbolsExprType const& se )
+    updateMeshAdaptation( std::shared_ptr<typename MeshAdaptation::Event> event, SymbolsExprType const& se )
         {
              auto oldmesh = this->mesh<MeshType>();
 
              for ( typename MeshAdaptation::Setup & mas : M_meshAdaptationSetup )
              {
-                 if ( !mas.isExecutedWhen( execEvent ) )
+                 auto out = MeshAdaptation::Execute::execute( mas, oldmesh, event, se );
+                 if ( !out )
                      continue;
-
-                 auto out = MeshAdaptation::Execute::execute( mas, oldmesh, se );
 
                  if ( M_functionApplyRemesh )
                      std::invoke( M_functionApplyRemesh, out );
@@ -572,8 +642,10 @@ class ModelMeshes : protected std::map<std::string,std::shared_ptr<ModelMesh<Ind
 {
 public:
     using index_type = IndexType;
-    using mesh_base_type = MeshBase<IndexType>;
-    using mesh_base_ptrtype = std::shared_ptr<mesh_base_type>;
+    using modelmesh_type = ModelMesh<IndexType>;
+    using mesh_base_type = typename modelmesh_type::mesh_base_type;
+    using mesh_base_ptrtype = typename modelmesh_type::mesh_base_ptrtype;
+    using mesh_adaptation_type = typename modelmesh_type::MeshAdaptation;
 
     ModelMeshes() : ModelBase("")
     {
@@ -708,8 +780,18 @@ public:
     void
     updateMeshMotion( std::string const& meshName, SymbolsExprType const& se )
     {
-        return this->modelMesh( meshName ).template updateMeshMotion<MeshType>( se );
+        if ( this->hasModelMesh( meshName ) )
+            this->modelMesh( meshName ).template updateMeshMotion<MeshType>( se );
     }
+
+    template <typename MeshType,typename SymbolsExprType>
+    void
+    updateMeshAdaptation( std::string const& meshName, std::shared_ptr<typename mesh_adaptation_type::Event> event, SymbolsExprType const& se )
+        {
+            if ( this->hasModelMesh( meshName ) )
+                this->modelMesh( meshName ).template updateMeshAdaptation<MeshType>( event, se );
+        }
+
 
     template <typename MeshType>
     void applyRemesh( std::string const& meshName, std::shared_ptr<MeshType> const& newMesh )
