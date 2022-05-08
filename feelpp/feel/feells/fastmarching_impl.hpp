@@ -133,17 +133,31 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::runImpl( element_type con
     M_negativeCloseDofHeap.clear();
 
     // Initialize DONE dofs
-    auto itEltDone = boost::get<1>( rangeDone );
-    auto enEltDone = boost::get<2>( rangeDone );
+    auto itEltDone = rangeDone.template get<1>();
+    auto enEltDone = rangeDone.template get<2>();
     for( ; itEltDone != enEltDone; ++itEltDone )
     {
         auto const eltDone = boost::unwrap_ref( *itEltDone );
         size_type const eltDoneId = eltDone.id();
-        for( uint16_type j = 0; j < nDofPerElt; ++j )
+#ifdef DEBUG_FM_COUT
+        std::cout << "["<<this->mesh()->worldCommPtr()->localRank()<<"]" 
+            << "fixing elt " << eltDoneId << " with dofs { ";
+#endif
+        for( auto const& lDof: this->functionSpace()->dof()->localDof( eltDoneId ) )
         {
-            size_type dofId = this->functionSpace()->dof()->localToGlobalId( eltDoneId, j );
+            size_type dofId = lDof.second.index();
             M_dofStatus[dofId] = FastMarchingDofStatus::DONE_FIX;
+#ifdef DEBUG_FM_COUT
+            std::cout << "(" 
+                << lDof.first.localDof() << ","
+                << dofId << ","
+                << this->functionSpace()->dof()->mapGlobalProcessToGlobalCluster( dofId ) << "; "
+                << sol( dofId ) << "); ";
+#endif
         }
+#ifdef DEBUG_FM_COUT
+        std::cout << " }" << std::endl;
+#endif
     }
     Feel::syncDofs( M_dofStatus, *sol.dof(), rangeDone,
             []( FastMarchingDofStatus curStatus, std::set<FastMarchingDofStatus> ghostVals ) 
