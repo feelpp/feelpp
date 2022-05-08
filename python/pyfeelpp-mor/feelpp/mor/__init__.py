@@ -9,9 +9,10 @@ _toolboxmor={
     'toolboxmor_dt(3)':ToolboxMor_3D_dt
 }
 
-def toolboxmor( dim=2, time_dependent=False, prefix="" ):
+def toolboxmor( name, dim=2, time_dependent=False, prefix="" ):
     """create a model toolbox mor
     Keyword arguments:
+    name -- name of the model
     dim -- the dimension (default: 2)
     prefix -- the prefix of the model
     """
@@ -21,4 +22,4 @@ def toolboxmor( dim=2, time_dependent=False, prefix="" ):
     key += '('+str(dim)+')'
     if key not in _toolboxmor:
         raise RuntimeError('ToolboxMor model '+key+' not existing')
-    return _toolboxmor[key]( "" )
+    return _toolboxmor[key]( name, prefix )

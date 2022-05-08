@@ -1126,7 +1126,7 @@ class reducedbasisOffline(reducedbasis):
 
             if self.worldComm.isMasterRank():
                 print(f"[reducedBasis] Greedy algo, N={self.N}, Δ={Delta:e} (tol={eps_tol:e})".ljust(64), f"µ={mu}")
-        if rank == 0 and self.N == Nmax:
+        if self.worldComm.isMasterRank():
             print("[reducedBasis] Greedy algo : warning, max size reached")
 
     #     fig.update_layout(

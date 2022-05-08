@@ -52,7 +52,8 @@ def init_toolbox(prefix, case, casefile, dim, use_cache):
 
 def init_model(prefix, case, casefile, dim, use_cache, time_dependent):
     heatBox, dim = init_toolbox(prefix, case, casefile, dim, use_cache)
-    model = toolboxmor(dim=dim, time_dependent=time_dependent)
+    name = prefix.replace("/","-") + "-" + case + "-np_" +  str(feelpp.Environment.numberOfProcessors())
+    model = toolboxmor(name=name, dim=dim, time_dependent=time_dependent)
 
 
     model.setFunctionSpaces(Vh=heatBox.spaceTemperature())
@@ -193,7 +194,7 @@ def compar_sols(rb, assembleMDEIM, heatBox):
     heatBox.solve()
     s_tb = feelpp.mean(range=feelpp.markedfaces(heatBox.mesh(), "Gamma_root"), expr=heatBox.fieldTemperature())[0]
 
-    _,sN = rb.getSolutions(mu)
+    _,sN = rb.getSolutionsFE(mu)
     
     norm = abs(sN - s_tb ) / abs(s_tb)
     print(f"relErr = {norm}\n||s_tb|| = {s_tb}, ||s_rb|| = {sN}")
