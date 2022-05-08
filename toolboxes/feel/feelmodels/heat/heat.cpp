@@ -221,8 +221,14 @@ HEAT_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         M_solverName = isNonLinear? "Newton" : "Linear";
     }
 
-
+    // algebraic model
     this->initAlgebraicModel();
+
+    // mesh adaptation at event after_init
+    using mesh_adaptation_type = typename super_type::super_model_meshes_type::mesh_adaptation_type;
+    this->template updateMeshAdaptation<mesh_type>( this->keyword(),
+                                                    mesh_adaptation_type::createEvent<mesh_adaptation_type::Event::Type::after_init>(),
+                                                    this->symbolsExpr() );
 
     // algebraic solver
     if ( buildModelAlgebraicFactory )
@@ -777,6 +783,11 @@ HEAT_CLASS_TEMPLATE_TYPE::updateTimeStep()
         this->setNeedToRebuildCstPart(true);
 
     this->updateParameterValues();
+
+    using mesh_adaptation_type = typename super_type::super_model_meshes_type::mesh_adaptation_type;
+    this->template updateMeshAdaptation<mesh_type>( this->keyword(),
+                                                    mesh_adaptation_type::createEvent<mesh_adaptation_type::Event::Type::each_time_step>( this->time(),M_bdfTemperature->iteration() ),
+                                                    this->symbolsExpr() );
 
     this->timerTool("TimeStepping").stop("updateTimeStep");
     if ( this->scalabilitySave() ) this->timerTool("TimeStepping").save();
