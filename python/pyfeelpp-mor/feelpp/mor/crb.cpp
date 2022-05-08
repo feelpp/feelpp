@@ -37,6 +37,7 @@
 #include <feel/feelmor/parameterspace.hpp>
 #include <feel/feelmor/crbplugin_interface.hpp>
 #include <feel/feelmor/options.hpp>
+#include <feel/feelmor/crbmodelproperties.hpp>
 
 namespace py = pybind11;
 PYBIND11_DECLARE_HOLDER_TYPE(T, std::shared_ptr<T>);
@@ -220,6 +221,41 @@ PYBIND11_MODULE( _mor, m )
                 return py::make_iterator(v.begin(), v.end());
             }, py::keep_alive<0, 1>()); /* Keep vector alive while iterator is used */
 
+    py::class_<CRBModelParameter>(m,"CRBModelParamater")
+        .def(py::init<>())
+        .def("name",&CRBModelParameter::name, "name of the parameter")
+        .def("value",&CRBModelParameter::value, "value of the parameter")
+        .def("min",&CRBModelParameter::min, "minimum of the parameter")
+        .def("max",&CRBModelParameter::max, "maximum of the parameter")
+        .def("description",&CRBModelParameter::description, "description of the parameter");
+    
+    py::class_<CRBModelParameters>(m,"CRBModelParameters")
+        .def(py::init<worldcomm_ptr_t const&>(),
+             py::arg("worldComm"))
+        .def("__len__", [](const CRBModelParameters &v) { return v.size(); })
+        .def("__iter__", [](CRBModelParameters &v) {
+            return py::make_iterator(v.begin(), v.end());
+        }, py::keep_alive<0,1>())
+        .def("at",static_cast<CRBModelParameter& (CRBModelParameters::*)(std::string const&)>(&CRBModelParameters::at), "parameter for key");
+
+    py::class_<CRBModelOutput>(m,"CRBModelOutput")
+        .def(py::init<worldcomm_ptr_t const&>(),
+             py::arg("worldComm"));
+    py::class_<CRBModelOutputs>(m,"CRBModelOutputs")
+        .def(py::init<worldcomm_ptr_t const&>(),
+             py::arg("worldComm"))
+        .def("__len__", [](const CRBModelOutputs &v) { return v.size(); })
+        .def("__iter__", [](CRBModelOutputs &v) {
+            return py::make_iterator(v.begin(), v.end());
+        }, py::keep_alive<0,1>())
+        .def("at",static_cast<CRBModelOutput& (CRBModelOutputs::*)(std::string const&)>(&CRBModelOutputs::at), "output for key");
+
+    py::class_<CRBModelProperties, std::shared_ptr<CRBModelProperties>>(m,"CRBModelProperties")
+        .def(py::init< std::string const&, worldcomm_ptr_t const&, std::string const&>(),"initialize ModelProperties",py::arg("directoryLibExpr")="",py::arg("worldComm"),py::arg("prefix")="")
+        .def("setup",static_cast<void(CRBModelProperties::*)(std::string const&)>(&CRBModelProperties::setup), "setup from a filename")
+        .def("parameters",static_cast<CRBModelParameters& (CRBModelProperties::*)()>(&CRBModelProperties::parameters), "get parameters of the model",py::return_value_policy::reference)
+        .def("outputs",static_cast<CRBModelOutputs& (CRBModelProperties::*)()>(&CRBModelProperties::outputs), "get outputs of the model");
+
     using ElementP = ParameterSpaceX::Element;
     py::class_<ElementP>(m,"ParameterSpaceElement")
         //.def("__repr__",[](const ParameterSpaceX::Element &a) {
@@ -272,7 +308,7 @@ PYBIND11_MODULE( _mor, m )
     py::class_<ParameterSpaceX,std::shared_ptr<ParameterSpaceX>>(m,"ParameterSpace")
         .def( py::init<>() )
         .def_static("create",&ParameterSpaceX::create )
-        .def_static("New", static_cast<std::shared_ptr<ParameterSpaceX> (*)(ModelParameters const&, std::shared_ptr<WorldComm> const&)>(&ParameterSpaceX::New))
+        .def_static("New", static_cast<std::shared_ptr<ParameterSpaceX> (*)(CRBModelParameters const&, std::shared_ptr<WorldComm> const&)>(&ParameterSpaceX::New))
         .def("sampling", &ParameterSpaceX::sampling)
         .def("element", &ParameterSpaceX::element, "return a parameter from the space\n  - broadcast : share the parameter to all processors\n  - apply_log : log random chosen parameter",
             py::arg("broadcast")=true, py::arg("apply_log")=false)
