@@ -23,7 +23,7 @@
 #
 # set(CMAKE_CXX_FLAGS "-g -O0" )
 
-set(SRC toolboxmor.cpp crbdb.cpp crbmodeldb.cpp pfemapp.cpp opusapp.cpp crbplugin_interface.cpp )
+set(SRC toolboxmor.cpp crbdb.cpp crbmodeldb.cpp pfemapp.cpp opusapp.cpp crbplugin_interface.cpp crbmodelproperties.cpp crbmodelparameters.cpp crbmodeloutputs.cpp )
 
 file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp)
 add_library( feelpp_mor SHARED ${SRC} )

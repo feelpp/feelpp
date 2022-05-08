@@ -74,7 +74,7 @@ public :
 
     //! Constructor from model
     DEIMModel( model_ptrtype model, sampling_ptrtype sampling, std::string prefix,
-               std::string const& dbfilename, std::string const& dbdirectory, int tag );
+               std::string const& dbfilename, std::string const& dbdirectory, int tag, po::variables_map vm );
 
     //! Destructor
     virtual ~DEIMModel() {}
@@ -313,15 +313,15 @@ private :
 
 
 template <typename ModelType, typename TensorType>
-DEIMModel<ModelType,TensorType>::DEIMModel( model_ptrtype model, sampling_ptrtype sampling, std::string prefix, std::string const& dbfilename, std::string const& dbdirectory, int tag ) :
+DEIMModel<ModelType,TensorType>::DEIMModel( model_ptrtype model, sampling_ptrtype sampling, std::string prefix, std::string const& dbfilename, std::string const& dbdirectory, int tag, po::variables_map vm ) :
     super_type( model->functionSpace(), model->parameterSpace(),
                 sampling, model->uuid(), model->modelName(),
-                prefix, dbfilename, dbdirectory, Environment::worldCommPtr(), model->prefix() ),
+                prefix, dbfilename, dbdirectory, Environment::worldCommPtr(), model->prefix(), vm ),
     M_model( model ),
     M_tag( tag )
 {
     this->M_online_model = model_ptrtype( new model_type( model->prefix() ) );
-    this->M_online_model->setModelOnlineDeim( prefixvm(this->M_prefix,"deim-online") );
+    //this->M_online_model->setModelOnlineDeim( prefixvm(this->M_prefix,"deim-online"), this->M_vm );
     this->M_online_model->setOnlineModel();
 
     if ( !this->M_rebuild )
@@ -338,7 +338,7 @@ DEIMModel<ModelType,TensorType>::DEIMModel( model_ptrtype model, sampling_ptrtyp
         cout << this->name() + " : option deim.rebuild-database=true : start greedy algorithm from beginning\n";
     if ( Rh )
         M_online_model->setFunctionSpaces( Rh );
-    this->M_online_model->initOnlineModel();
+    this->M_online_model->initOnlineModel(M_model);
 } //DEIMModel
 
 
