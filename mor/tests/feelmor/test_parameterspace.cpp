@@ -245,7 +245,7 @@ BOOST_AUTO_TEST_CASE( test3 )
     istr >> p;
     //pt::ptree p;
     //pt::read_json(istr, p);
-    auto parameters = ModelParameters();
+    auto parameters = CRBModelParameters();
     parameters.setPTree(p);
     auto Dmu = parameterspace_type::New(parameters);
     BOOST_CHECK( Dmu->dimension() == 2 );
