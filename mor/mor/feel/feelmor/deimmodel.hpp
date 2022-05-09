@@ -320,7 +320,8 @@ DEIMModel<ModelType,TensorType>::DEIMModel( model_ptrtype model, sampling_ptrtyp
     M_model( model ),
     M_tag( tag )
 {
-    this->M_online_model = model_ptrtype( new model_type( model->prefix() ) );
+    this->M_online_model = model_ptrtype( new model_type( model->modelName() ) );
+//    this->M_online_model = std::make_shared<model_type>( model->modelName(), model->uuid(), model->worldCommPtr(), model->prefix());
     //this->M_online_model->setModelOnlineDeim( prefixvm(this->M_prefix,"deim-online"), this->M_vm );
     this->M_online_model->setOnlineModel();
 
