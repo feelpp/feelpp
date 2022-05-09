@@ -17,23 +17,23 @@ jobs:
 #        BRANCH: "master"
 #        MESSAGE: ":github: Triggered from a GitHub Action by Holo3 Project"
   build:
-    runs-on: ubuntu-20.04
+    runs-on: self-ubuntu-20.04
     if: "!contains(github.event.head_commit.message, 'doc skip')"
     steps:
     - uses: actions/checkout@v3
       with:
         lfs: true
-    - name: Update Dependencies
-      run: |
-        sudo apt install -y gpg
-        wget -qO - http://apt.feelpp.org/apt.gpg | gpg --dearmor > feelpp.gpg
-        sudo install -o root -g root -m 644 feelpp.gpg /etc/apt/trusted.gpg.d
-        echo "deb [signed-by=/etc/apt/trusted.gpg.d/feelpp.gpg] http://apt.feelpp.org/ubuntu focal latest" | sudo tee -a /etc/apt/sources.list.d/feelpp.list
-        rm -f feelpp.gpg 
-        sudo apt update
-        sudo apt --reinstall install -y libfeelpp1 libfeelpp-dev feelpp-tools doxygen
+#    - name: Update Dependencies
+#      run: |
+#        sudo apt install -y gpg
+#        wget -qO - http://apt.feelpp.org/apt.gpg | gpg --dearmor > feelpp.gpg
+#        sudo install -o root -g root -m 644 feelpp.gpg /etc/apt/trusted.gpg.d
+#        echo "deb [signed-by=/etc/apt/trusted.gpg.d/feelpp.gpg] http://apt.feelpp.org/ubuntu focal latest" | sudo tee -a /etc/apt/sources.list.d/feelpp.list
+#        rm -f feelpp.gpg 
+#        sudo apt update
+#        sudo apt --reinstall install -y libfeelpp1 libfeelpp-dev feelpp-tools doxygen graphviz
     - name: Configure Doxygen Preset
-      run: cmake --preset doxygen
+      run: cmake --preset doxygen -DDOXYGEN_EXECUTABLE=/nvme0/prudhomm/local/doxygen/bin/doxygen
     - name: Build Doxygen
       run: cmake --build --preset doxygen
     - name: Deploy

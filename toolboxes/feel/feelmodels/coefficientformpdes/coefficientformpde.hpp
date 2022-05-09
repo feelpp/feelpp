@@ -20,7 +20,14 @@ namespace Feel
 {
 namespace FeelModels
 {
-
+/**
+ * @brief class for a single CoefficientFormPDE 
+ * @ingroup CoefficientFormPDEs
+ *
+ * @tparam ConvexType convex for the mesh
+ * @tparam BasisUnknownType basis type for unknowns in an equation
+ * 
+ */
 template< typename ConvexType, typename BasisUnknownType>
 class CoefficientFormPDE : public CoefficientFormPDEBase<ConvexType>
 {

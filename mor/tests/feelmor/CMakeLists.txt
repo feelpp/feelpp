@@ -53,3 +53,5 @@ if (FEELPP_HAS_GLPK)
   feelpp_add_test( empiricalquadrature LINK_LIBRARIES Feelpp::feelpp_mor )
 endif()
 feelpp_add_test( exprevaluator LINK_LIBRARIES Feelpp::feelpp_mor )
+
+feelpp_add_test( crbmodelproperties LINK_LIBRARIES Feelpp::feelpp_mor CLI "--json.filename ${CMAKE_CURRENT_SOURCE_DIR}/feelpp.json")
