@@ -41,14 +41,6 @@ else:
     tol = 1e-6
 
 
-if config_file is not None:
-    split = config_file.split('/')
-    case = '/'.join(split[:-1])
-    if odir is None:
-        dir = HOME + '/feel/reducedbasis/'+split[-2]
-    else:
-        dir = odir
-    casefile = split[-1]
 
 
 def generate_basis(worldComm=None):
@@ -67,14 +59,13 @@ def generate_basis(worldComm=None):
     if worldComm.isMasterRank():
         print("==============================================")
         print("Generation of the reduced basis")
-        print("           Config-file :", f"{case}/{casefile}")
-        print("Data will be stored in :", dir)
+        print("           Config-file :", f"{config_file}")
+        print("Data will be stored in :", feelpp.Environment.rootRepository()+"/"+odir)
         print("Current working directory is ", os.getcwd())
         print("===============================================")
 
 
-    feelpp.Environment.setConfigFile(f'{case}/{casefile}')
-    feelpp.Environment.changeRepository(directory=f'{dir}')
+    feelpp.Environment.setConfigFile(f'{config_file}')
 
     # Set the toolboxes
     heatBox = heat(dim=dim, order=1)
@@ -83,9 +74,11 @@ def generate_basis(worldComm=None):
     modelParameters = heatBox.modelProperties().parameters()
     default_parameter = modelParameters.toParameterValues()
 
+    split = config_file.split('/')
+    case = '/'.join(split[:-1])
 
-    # model = toolboxmor_2d() if DIM==2 else toolboxmor_3d()
-    model = toolboxmor(dim=dim, time_dependent=time_dependant)
+    name = case.replace("/","-") + "-" + "-np_" +  str(feelpp.Environment.numberOfProcessors())
+    model = toolboxmor(name=name, dim=dim, time_dependent=time_dependant)
     model.setFunctionSpaces( Vh=heatBox.spaceTemperature() )
 
 
@@ -188,18 +181,18 @@ def generate_basis(worldComm=None):
     if worldComm.isMasterRank():
         print("[generate_basis] Done !")
 
-        rb.saveReducedBasis(dir, force=True)
+        rb.saveReducedBasis(feelpp.Environment.rootRepository()+"/"+odir, force=True)
 
     return rb
 
 
 
 if __name__ == '__main__':
-    config = feelpp.globalRepository(f'{dir}')
+    # config = feelpp.globalRepository(f'{dir}')
     sys.argv = ['generate-basis']
     o = toolboxes_options("heat")
     o.add(makeToolboxMorOptions())
 
-    e = feelpp.Environment(sys.argv, opts=o, config=config)
+    e = feelpp.Environment(sys.argv, opts=o)
 
     generate_basis()

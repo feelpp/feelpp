@@ -19,7 +19,7 @@
 //! @file
 //! @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 //! @date 17 Jun 2018
-//! @copyright 2018 Feel++ Consortium
+//! @copyright 2018-2022 Feel++ Consortium
 //!
 
 #ifndef FEELPP_FEELTYPES_HPP
@@ -29,9 +29,11 @@
 #include <boost/cstdint.hpp>
 
 
-/*!  \page Types Feel Types
-  \section types Types
-  \subsection real Real Numbers
+/**
+ *\page Types Types
+   \ingroup Core
+   \section types Types
+   \subsection real Real Numbers
 
   Feel defines a number of types that are used in the library.
 

@@ -10,8 +10,6 @@ cases = [
         ]
 cases_params, cases_ids = list(zip(*cases))
 
-OUTDIR = "/tmp/test_reduced_basis"
-os.system(f"rm -rf {OUTDIR}")
 CWD = os.getcwd()
 
 
@@ -21,17 +19,14 @@ def test_compute_basis_sample(prefix, case, casefile, dim, time_dependent, init_
 
     e = init_feelpp
 
-    os.system(f"rm -rf {OUTDIR}/sample")
     g.dim = dim
     g.time_dependant = time_dependent
     g.algo = 0
     g.size = 40
     g.case = CWD + "/" + prefix + "/" + case
     g.casefile = casefile
-    g.dir = OUTDIR + "/sample"
-    g.config_file = ''
-
-    os.chdir(CWD)
+    g.config_file = g.case + "/" + casefile
+    g.odir = "sample"
 
     # compute and save the basis
     g.generate_basis()
@@ -42,18 +37,15 @@ def test_compute_basis_sample(prefix, case, casefile, dim, time_dependent, init_
 def test_compute_basis_greedy(prefix, case, casefile, dim, time_dependent, init_feelpp):
 
     e = init_feelpp
-    os.system(f"rm -rf {OUTDIR}/greedy")
     g.dim = dim
     g.time_dependant = time_dependent
     g.algo = 1
     g.size = 60
     g.case = CWD + "/" + prefix + "/" + case
     g.casefile = casefile
-    g.dir = OUTDIR + "/greedy"
-    g.config_file = ''
+    g.config_file = g.case + "/" + casefile
+    g.odir = "greedy"
     g.tol = 1e-3
-
-    os.chdir(CWD)
 
     # compute and save the basis
     g.generate_basis()
@@ -64,18 +56,15 @@ def test_compute_basis_POD(prefix, case, casefile, dim, time_dependent, init_fee
 
     e = init_feelpp
 
-    os.system(f"rm -rf {OUTDIR}/sample")
     g.dim = dim
     g.time_dependant = time_dependent
     g.algo = 2
     g.size = 15
     g.case = CWD + "/" + prefix + "/" + case
     g.casefile = casefile
-    g.dir = OUTDIR + "/sample"
-    g.config_file = ''
+    g.config_file = g.case + "/" + casefile
+    g.odir = "/POD"
     g.tol = 1e-3
-
-    os.chdir(CWD)
 
     # compute and save the basis
     g.generate_basis()

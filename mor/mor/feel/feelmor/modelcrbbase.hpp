@@ -410,7 +410,7 @@ std::cout << __FILE__ << "  " << __LINE__ << std::endl;
     }
 
     //! functions call by deim to init specific part of the model when online.
-    virtual void initOnlineModel()
+    virtual void initOnlineModel( std::shared_ptr<self_type> const& model )
     {}
 
     void setOnlineModel() { M_isOnlineModel = true; }

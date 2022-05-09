@@ -1,11 +1,10 @@
 import sys
+import os
 import pytest
 from petsc4py import PETSc
 
 
 import feelpp
-from feelpp.toolboxes.heat import *
-from feelpp.toolboxes.core import *
 from feelpp.mor import *
 
 # desc : (('path/to/cfg/file', dimension, {mudefault}, {mumin}, {mumax}), 'name-of-the-test')
@@ -26,20 +25,8 @@ cases = [
 cases_params, cases_ids = list(zip(*cases))
 
 
-def init_toolbox(casefile, dim):
-
-    feelpp.Environment.setConfigFile(casefile)
-    feelpp.Environment.changeRepository(casefile)
-
-    heatBox = heat(dim=dim, order=1)
-    heatBox.init()
-
-    return heatBox
-
-
-
-@pytest.mark.parametrize("casefile,dim,mudefault_th,mumin_th,mumax_th", cases_params, ids=cases_ids)
-def test_init_from_ModelPropeties(casefile, dim, mudefault_th, mumin_th, mumax_th,  init_feelpp):
+@pytest.mark.parametrize("casefile,dim,mumin_th,mumax_th", cases_params, ids=cases_ids)
+def test_init_from_ModelPropeties(casefile, dim, mumin_th, mumax_th,  init_feelpp):
     """Tests the initialisation from ModelProperties
 
     Args:
@@ -51,9 +38,12 @@ def test_init_from_ModelPropeties(casefile, dim, mudefault_th, mumin_th, mumax_t
         init_feelpp (_fixture_):
     """
     e = init_feelpp
-    heatBox = init_toolbox(casefile, dim)
+    feelpp.Environment.setConfigFile(casefile)
 
-    modelParameters = heatBox.modelProperties().parameters()
+    model_path = "$cfgdir/"+os.path.splitext(os.path.basename(casefile))[0] + ".json"
+    model_properties = CRBModelProperties(worldComm=feelpp.Environment.worldCommPtr())
+    model_properties.setup(model_path)
+    modelParameters = model_properties.parameters()
     Dmu = feelpp.mor._mor.ParameterSpace.New(modelParameters, feelpp.Environment.worldCommPtr())
     default_parameter = modelParameters.toParameterValues()
 
@@ -79,9 +69,12 @@ def test_init_from_ModelPropeties(casefile, dim, mudefault_th, mumin_th, mumax_t
 @pytest.mark.parametrize("casefile,dim,Mu", [cases_params[-1][:3]], ids=[cases_ids[-1]])
 def test_param_not_in_range(casefile, dim, Mu,  init_feelpp):
     e = init_feelpp
-    heatBox = init_toolbox(casefile, dim)
+    feelpp.Environment.setConfigFile(casefile)
 
-    modelParameters = heatBox.modelProperties().parameters()
+    model_path = "$cfgdir/"+os.path.splitext(os.path.basename(casefile))[0] + ".json"
+    model_properties = CRBModelProperties(worldComm=feelpp.Environment.worldCommPtr())
+    model_properties.setup(model_path)
+    modelParameters = model_properties.parameters()
     Dmu = feelpp.mor._mor.ParameterSpace.New(modelParameters, feelpp.Environment.worldCommPtr())
 
     mu = Dmu.element()

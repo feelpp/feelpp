@@ -7,17 +7,17 @@ namespace Feel {
 
    \section Credits_Copyright Copyright
 
-   Feel++ is Copyright (C) 2010-2014 by
+   Feel++ is Copyright (C) 2010-2022 by
    \li Feel++ Consortium
 
    Feel++ is Copyright (C) 2005-2014 by
    \li Université Joseph Fourier (Grenoble, France)
    \li University of Coimbra (Portugal)
 
-   Feel++ is Copyright (C) 2011-2014 by
+   Feel++ is Copyright (C) 2011-2022 by
    \li Université de Strasbourg (France)
 
-   Feel++ is Copyright (C) 2011-2014 by
+   Feel++ is Copyright (C) 2011-2022 by
    \li CNRS (France)
 
    Feel++ is Copyright (C) 2005-2006 by
@@ -33,22 +33,14 @@ namespace Feel {
 
 The current developers are
 
-
- \li Alexandre Ancel <alexandre.ancel@cemosis.fr>
  \li Vincent Chabannes <vincent.chabannes@feelpp.org>
- \li Guillaume Dollé <gdolle@unistra.fr>
- \li Vincent Doyeux <vincent.doyeux@ujf-grenoble.fr>
- \li Cecile Daversin <Cecile.Daversin@lncmi.cnrs.fr>
- \li Vincent Huber <vincent.huber@cemosis.fr>
- \li Mourad Ismail <Mourad.Ismail@ujf-grenoble.fr>
- \li Pierre Jolivet <pierre.jolivet@ljll.math.upmc.fr>
- \li Goncalo Pena <goncalo.pena@epfl.ch>
  \li Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  \li Abdoulaye Samake <samakeablo@gmail.com>
- \li Ranine Tarabay <ranine.tarbay@math.unistra.fr>
- \li Christophe Trophime <christophe.trophime@lncmi.cnrs.fr>
- \li Stéphane Veys <stephane.veys@imag.fr>
- \li Jean-Baptiste Wahl <wahl.jb@gmail.com>
+ \li Luca Berti
+ \li Thomas Saigre Tardif
+ \li Romain Hild
+ \li Philippe Ricka
+
 
 Feel++ benefits from the many discussions and close research collaborations with
 the following persons
@@ -72,19 +64,26 @@ Daniele Di Pietro.
  \li Benjamn Stamm <benjamin.stamm@epfl.ch>
  \li Gilles Steiner <gilles.steiner@epfl.ch>
  \li Christoph Winkelmann <christoph.winkelmann@epfl.ch>
-
+ \li Ranine Tarabay <ranine.tarbay@math.unistra.fr>
+ \li Christophe Trophime <christophe.trophime@lncmi.cnrs.fr>
+ \li Stéphane Veys <stephane.veys@imag.fr>
+ \li Jean-Baptiste Wahl <wahl.jb@gmail.com>
+ \li Guillaume Dollé <gdolle@unistra.fr>
+ \li Vincent Doyeux <vincent.doyeux@ujf-grenoble.fr>
+ \li Cecile Daversin <Cecile.Daversin@lncmi.cnrs.fr>
+ \li Vincent Huber <vincent.huber@cemosis.fr>
+ \li Mourad Ismail <Mourad.Ismail@ujf-grenoble.fr>
+ \li Pierre Jolivet <pierre.jolivet@ljll.math.upmc.fr>
+ \li Goncalo Pena <goncalo.pena@epfl.ch>
+ \li Alexandre Ancel <alexandre.ancel@cemosis.fr>
+ 
  \subsection Documentation_Authors Documentation Authors
 
  This documentation is a contribution from many people (in alphabetical order
  with respect to the name):
 
- \li Alexandre Ancel
- \li Denis Barbier
- \li Guillaume Dollé
- \li Vincent Huber
+ \li Vincent Chabannes
  \li Christophe Prud'homme
- \li Ranine Tarabay
- \li Jean-Baptiste Wahl
 
  \section Funding Funding
 
