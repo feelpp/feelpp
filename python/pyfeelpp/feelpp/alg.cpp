@@ -258,7 +258,19 @@ PYBIND11_MODULE(_alg, m )
 
         .def( "vec", static_cast<Vec ( VectorPetsc<double>::* )() const>( &VectorPetsc<double>::vec ), "return a PETSc Vector" )
         ;
-    py::class_<MatrixSparse<double>, PyMatrixSparseDouble, std::shared_ptr<MatrixSparse<double>>>( m, "MatrixSparseDouble" )    // the one in parallel
+
+    py::class_<VectorPetscMPI<double>, Vector<double, uint32_type>, std::shared_ptr<VectorPetscMPI<double>>>( m, "VectorPetscMPIDouble" )
+        .def( py::init<>() )
+        .def( py::init<datamap_ptr_t<uint32_type>, bool>() )
+        .def( "clone", &VectorPetsc<double>::clone, "return  PETSc Vector clone" )
+        .def( "size", &VectorPetsc<double>::size, "return  PETSc Vector size" )
+        .def( "clear", &VectorPetsc<double>::clear, "clear PETSc vector" )
+        .def( "zero", static_cast<void ( VectorPetsc<double>::* )()>(&VectorPetsc<double>::zero), "zero PETSc vector" )
+
+        .def( "vec", static_cast<Vec ( VectorPetsc<double>::* )() const>( &VectorPetsc<double>::vec ), "return a PETSc Vector" )
+        ;
+
+    py::class_<MatrixSparse<double>, PyMatrixSparseDouble, std::shared_ptr<MatrixSparse<double>>>( m, "MatrixSparseDouble" )
         .def( py::init<>() )
         .def( "clone", &MatrixSparse<double>::clone, "return  MatrixSparse clone" )
         .def( "size1", &MatrixSparse<double>::size1, "return Matrix size1" )
@@ -278,7 +290,7 @@ PYBIND11_MODULE(_alg, m )
             { return toPETSc( m ); },
             "cast a MattrixSparse to a MatrixPetsc" )
     ;
-    py::class_<MatrixPetsc<double>, MatrixSparse<double>, std::shared_ptr<MatrixPetsc<double>>>( m, "MatrixPetscDouble" )   // the one in sequential
+    py::class_<MatrixPetsc<double>, MatrixSparse<double>, std::shared_ptr<MatrixPetsc<double>>>( m, "MatrixPetscDouble" )
         .def( py::init<worldcomm_ptr_t>() )
         .def( py::init<datamap_ptr_t<uint32_type>, datamap_ptr_t<uint32_type>>() )
         .def( py::init<datamap_ptr_t<uint32_type>, datamap_ptr_t<uint32_type>, worldcomm_ptr_t>() )
