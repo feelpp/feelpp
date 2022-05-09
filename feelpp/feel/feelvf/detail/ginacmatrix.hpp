@@ -660,7 +660,7 @@ public:
     //! return true if the expression can be evaluated (TODO : iterate over symbols expression)
     bool isEvaluable() const
     {
-        return M_isNumericExpression || ( M_indexSymbolXYZ.empty() && M_indexSymbolN.empty() & M_indexSymbolGeom.empty()&& (M_syms.size() == M_symbolNameToValue.size()) );
+        return M_isNumericExpression || ( M_indexSymbolXYZ.empty() && M_indexSymbolN.empty() && M_indexSymbolGeom.empty()&& (M_syms.size() == M_symbolNameToValue.size()) );
     }
     bool isConstant() const { return this->isEvaluable(); }
 
