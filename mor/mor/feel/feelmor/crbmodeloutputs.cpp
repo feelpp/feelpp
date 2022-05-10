@@ -22,18 +22,17 @@
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 #include <iostream>
-#include <boost/property_tree/json_parser.hpp>
 
-#include <feel/feelmodels/modeloutputs.hpp>
+#include <feel/feelmor/crbmodeloutputs.hpp>
 
 namespace Feel {
 
-ModelOutput::ModelOutput( worldcomm_ptr_t const& worldComm )
+CRBModelOutput::CRBModelOutput( worldcomm_ptr_t const& worldComm )
     :
     super( worldComm )
 {}
 
-ModelOutput::ModelOutput( std::string name, nl::json const& jarg, worldcomm_ptr_t const& worldComm, std::string const& directoryLibExpr )
+CRBModelOutput::CRBModelOutput( std::string name, nl::json const& jarg, worldcomm_ptr_t const& worldComm, std::string const& directoryLibExpr )
     :
     super( worldComm ),
     M_p( jarg ),
@@ -47,7 +46,7 @@ ModelOutput::ModelOutput( std::string name, nl::json const& jarg, worldcomm_ptr_
         if ( j_type.is_string() )
             M_type = j_type.get<std::string>();
     }
-    //else LOG(WARNING) << "Missing type entry in output " << M_name << "\n";
+    else LOG(WARNING) << "Missing type entry in output " << M_name << "\n";
 
      if ( jarg.contains("markers") )
          M_markers.setup( jarg.at("markers") );
@@ -82,28 +81,27 @@ ModelOutput::ModelOutput( std::string name, nl::json const& jarg, worldcomm_ptr_
          else if ( j_radius.is_string() )
              M_radius = std::stod( j_radius.get<std::string>() );
      }
+
+    if ( jarg.contains("expr") )
+        M_expr.setExpr( jarg.at("expr"), this->worldComm(), M_directoryLibExpr );
+    else
+        M_expr.setExpr( std::string("crb_u:crb_u"), this->worldComm(), M_directoryLibExpr );
 }
 
 
-std::string ModelOutput::getString( std::string const& key ) const
+std::string CRBModelOutput::getString( std::string const& key ) const
 {
     if ( !M_p.contains(key) )
-    {
-        CHECK( false ) << "invalid key";
-        return {};
-    }
+        throw std::out_of_range("invalid key "+key);
 
     auto const& j_key =  M_p.at(key);
     if ( !j_key.is_string() )
-    {
-        CHECK( false ) << "invalid key";
-        return {};
-    }
+        throw std::logic_error("key "+key+" not a string");
 
     return j_key.get<std::string>();
 }
 
-std::ostream& operator<<( std::ostream& os, ModelOutput const& o )
+std::ostream& operator<<( std::ostream& os, CRBModelOutput const& o )
 {
     os << "Output " << o.name()
        << "[ type: " << o.type()
@@ -117,12 +115,12 @@ std::ostream& operator<<( std::ostream& os, ModelOutput const& o )
     return os;
 }
 
-ModelOutputs::ModelOutputs( worldcomm_ptr_t const& worldComm )
+CRBModelOutputs::CRBModelOutputs( worldcomm_ptr_t const& worldComm )
     :
     super( worldComm )
 {}
 
-ModelOutputs::ModelOutputs( nl::json const& jarg, worldcomm_ptr_t const& worldComm )
+CRBModelOutputs::CRBModelOutputs( nl::json const& jarg, worldcomm_ptr_t const& worldComm )
     :
     super( worldComm ),
     M_p( jarg )
@@ -130,8 +128,20 @@ ModelOutputs::ModelOutputs( nl::json const& jarg, worldcomm_ptr_t const& worldCo
     setup();
 }
 
-ModelOutput
-ModelOutputs::loadOutput( std::string const& s, std::string const& name )
+CRBModelOutputs::~CRBModelOutputs()
+{}
+
+void
+CRBModelOutputs::setPTree( nl::json const& jarg )
+{
+    M_p = jarg;
+    setup();
+}
+
+
+
+CRBModelOutput
+CRBModelOutputs::loadOutput( std::string const& s, std::string const& name )
 {
     nl::json j;
     std::ifstream i(s);
@@ -140,12 +150,12 @@ ModelOutputs::loadOutput( std::string const& s, std::string const& name )
 }
 
 void
-ModelOutputs::setup()
+CRBModelOutputs::setup()
 {
     auto const& jarg = M_p;
     for ( auto const& [jargkey,jargval] : jarg.items() )
     {
-        LOG(INFO) << "Output :" << jargkey;
+        LOG(INFO) << "CRBOutput :" << jargkey;
         if ( jargval.contains("filename") )
         {
             auto const& j_filename = jargval.at("filename");
@@ -159,12 +169,34 @@ ModelOutputs::setup()
     }
 }
 
-ModelOutput
-ModelOutputs::getOutput( nl::json const& jarg, std::string const& name )
+CRBModelOutput
+CRBModelOutputs::getOutput( nl::json const& jarg, std::string const& name )
 {
-    ModelOutput o( name, jarg, this->worldCommPtr(), M_directoryLibExpr );
-    LOG(INFO) << "adding output " << o;
+    CRBModelOutput o( name, jarg, this->worldCommPtr(), M_directoryLibExpr );
+    LOG(INFO) << "adding crboutput " << o;
     return o;
+}
+
+std::map<std::string, CRBModelOutput>
+CRBModelOutputs::ofType( std::string const& type )
+{
+    return ofTypes({type});
+}
+
+std::map<std::string, CRBModelOutput>
+CRBModelOutputs::ofTypes( std::set<std::string> const& types )
+{
+    std::map<std::string, CRBModelOutput> result;
+    std::copy_if(this->begin(), this->end(), std::inserter(result,result.end()),
+                 [&types](auto const& pair) { return types.find(pair.second.type()) != types.end(); });
+    return result;
+}
+
+void
+CRBModelOutputs::setParameterValues( std::map<std::string,double> const& mp )
+{
+    for( auto & p : *this )
+        p.second.setParameterValues( mp );
 }
 
 } // namespace Feel
