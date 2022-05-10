@@ -190,6 +190,17 @@
             "cacheVariables": {
                 "FEELPP_ENABLE_DOXYGEN": "ON"
             }
+        },
+        {
+            "name": "Release",
+            "displayName": "Release Config",
+            "description": "Release configure using 'Unix Makefiles' generator",
+            "generator": "Unix Makefiles",
+            "cacheVariables": {
+                "CMAKE_POLICY_DEFAULT_CMP0091": "NEW",
+                "CMAKE_BUILD_TYPE": "Release"
+            },
+            "toolchainFile": "/nvme0/prudhomm/Devel/feelpp/conan_toolchain.cmake"
         }
     ],
     "buildPresets": [
@@ -273,23 +284,29 @@
         {
             "name": "doxygen",
             "configurePreset": "doxygen",
-            "targets": ["doxygen"]
+            "targets": [
+                "doxygen"
+            ]
+        },
+        {
+            "name": "Release",
+            "configurePreset": "Release"
         }
     ],
     "testPresets": [
         {
             "name": "default",
             "configurePreset": "default",
-            "filter":{
-                "include":{
-                    "name":"feelpp"
+            "filter": {
+                "include": {
+                    "name": "feelpp"
                 }
             },
             "output": {
                 "outputOnFailure": true
             },
             "execution": {
-                "jobs":2,
+                "jobs": 2,
                 "noTestsAction": "error",
                 "stopOnFailure": true
             }
@@ -297,16 +314,16 @@
         {
             "name": "feelpp",
             "configurePreset": "feelpp",
-            "inherits":"default",
+            "inherits": "default",
             "output": {
                 "outputOnFailure": true
             },
             "execution": {
                 "noTestsAction": "error",
                 "stopOnFailure": false,
-                "repeat":{
-                    "mode":"until-pass",
-                    "count":2
+                "repeat": {
+                    "mode": "until-pass",
+                    "count": 2
                 }
             }
         },
