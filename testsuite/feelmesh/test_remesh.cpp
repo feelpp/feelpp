@@ -184,13 +184,9 @@ TestRemesh<Dim, RDim>::execute( int niter )
         //met.on( _range = elements( mesh_ ), _expr = expr( soption( "functions.s" ) ) );
         met.on( _range = elements( mesh_ ), _expr = expr( metric ) );
 
-        auto r = remesher( mesh_, mesh_->markerName( required_elements_str_ ), mesh_->markerName( required_facets_str_ ) );
-
-        r.setMetric( met );
-        auto out = r.execute();
-        out->updateForUse();
+        auto [out,cpt] = remesh( mesh_, metric, { required_elements_str_ }, { required_facets_str_ }, mesh_ptr_t{}  );
         dump( out );
-
+        BOOST_CHECK_EQUAL(  nelements( markedelements(mesh_,required_elements_str_)),nelements( markedelements(out,required_elements_str_)) );
         auto Mhr = createMetricSpace( out );
         auto Vhr = createSpace<scalar,2>( out );
         auto Whr = createSpace<vectorial,2>( out );
