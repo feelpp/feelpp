@@ -51,7 +51,23 @@ namespace Feel
 {
 namespace FeelModels
 {
-
+/**
+ * @brief class for heat transfer toolbox
+ * @ingroup Heat
+ *
+ * @tparam ConvexType convex for the mesh
+ * @tparam BasisTemperatureType basis type for Temperature
+ *
+ * @code {.cpp}
+ * using heat_t = Heat< Simplex<nDim,1>, Lagrange<OrderT, Scalar,Continuous,PointSetFekete>>;
+ * auto heat = std::make_shared<heat_t>("heat");
+ * heat->init();
+ * heat->printAndSaveInfo();
+ * heat->solve();
+ * heat->exportResults();
+ * @endcode
+ *
+ */
 template< typename ConvexType, typename BasisTemperatureType>
 class Heat : public ModelNumerical,
              public ModelPhysics<ConvexType::nDim>

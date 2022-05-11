@@ -294,7 +294,7 @@ endif()
 # MongoCXX
 message(STATUS "------------------------------------------------------------")
 message(STATUS "Configuring Mongo")
-option( FEELPP_ENABLE_MONGOCXX "Enable Mongocxx" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
+option( FEELPP_ENABLE_MONGOCXX "Enable Mongocxx" OFF ) #${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
 if ( FEELPP_ENABLE_MONGOCXX )
   feelppContribPrepare( mongocxx )
   if( FEELPP_CONTRIB_PREPARE_SUCCEED )
