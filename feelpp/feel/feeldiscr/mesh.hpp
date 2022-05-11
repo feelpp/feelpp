@@ -60,7 +60,6 @@
 #include <feel/feelmesh/mesh1d.hpp>
 #include <feel/feelmesh/mesh2d.hpp>
 #include <feel/feelmesh/mesh3d.hpp>
-#include <feel/feelmesh/meshutil.hpp>
 
 #include <feel/feelalg/boundingbox.hpp>
 #include <feel/feelpoly/geomap.hpp>

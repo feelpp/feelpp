@@ -33,7 +33,31 @@ namespace Feel
 {
 namespace FeelModels
 {
-
+/**
+ * @brief class for conjuguate heat transfer toolbox
+ * @ingroup HeatFluid
+ *
+ * @tparam HeatType type of the heat transfer toolbox
+ * @tparam FluidType type of the fluid mechanics toolbox
+ *
+ * @code {.cpp}
+ * using heat_t FeelModels::Heat< Simplex<nDim,1>,
+ *                           Lagrange<OrderT, Scalar,Continuous,PointSetFekete> >;
+ * using fluid _t = FeelModels::FluidMechanics< Simplex<nDim,1>,
+ *                                     Lagrange<OrderV, Vectorial,Continuous,PointSetFekete>,
+ *                                     Lagrange<OrderP, Scalar,Continuous,PointSetFekete> >;
+ * using heatfluid_t = FeelModels::HeatFluid<heat_t, fluid_t>;
+ * auto heatFluid = std::make_shared<heatfluid_t>("heat-fluid");
+ * heatFluid->init();
+ * heatFluid->printAndSaveInfo(); * 
+ * if (heatFluid->isStationary() )
+ * {
+ *     heatFluid->solve();
+ *     heatFluid->exportResults();
+ * }
+ * @endcode
+ *
+ */
 template< typename HeatType, typename FluidType>
 class HeatFluid : public ModelNumerical,
                   public ModelPhysics<HeatType::convex_type::nDim>

@@ -51,7 +51,7 @@
 #include <feel/feelcore/ptreetools.hpp>
 #include <feel/feelcore/utility.hpp>
 #include <feel/feelcore/hashtables.hpp>
-#include <feel/feelmodels/modelparameters.hpp>
+#include <feel/feelmor/crbmodelparameters.hpp>
 
 namespace Feel
 {
@@ -341,6 +341,15 @@ public:
                 mu_str <<","<< this->operator[](i);
             mu_str <<"]";
             return mu_str.str();
+        }
+
+        std::map<std::string, double> toParameterValues() const
+        {
+            std::map<std::string, double> pm;
+            auto parameterNames = this->parameterNames();
+            for( auto const& n : parameterNames )
+                pm[n] = this->parameterNamed(n);
+            return pm;
         }
 
     private:
@@ -1492,29 +1501,22 @@ public:
         }
 #endif
     //! constructor from ModelProperties
-    ParameterSpace( ModelParameters const& modelParameters, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
+    ParameterSpace( CRBModelParameters const& modelParameters, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
         :
         super( worldComm ),
         M_nDim(),
         M_min(),
         M_max()
     {
-        int nbCrbParameters = count_if(modelParameters.begin(), modelParameters.end(), [] (auto const& p)
-                                    {
-                                        return p.second.hasMinMax();
-                                    });
-        this->setDimension( nbCrbParameters );
+        this->setDimension( modelParameters.size() );
 
         int i = 0;
         for( auto const& parameterPair : modelParameters )
         {
-            if( parameterPair.second.hasMinMax() )
-            {
-                setParameterName( i, parameterPair.second.name() );
-                M_min(i) = parameterPair.second.min();
-                M_max(i) = parameterPair.second.max();
-                ++i;
-            }
+            setParameterName( i, parameterPair.second.name() );
+            M_min(i) = parameterPair.second.min();
+            M_max(i) = parameterPair.second.max();
+            ++i;
         }
     }
 
@@ -1539,7 +1541,7 @@ public:
             ps->loadJson( filename );
             return ps;
         }
-    static parameterspace_ptrtype New( ModelParameters const& modelParameters, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr())
+    static parameterspace_ptrtype New( CRBModelParameters const& modelParameters, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr())
         {
 	    auto ps = std::make_shared<parameterspace_type>( modelParameters, worldComm );
 	    ps->setSpaces();

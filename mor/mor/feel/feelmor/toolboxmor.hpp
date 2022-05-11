@@ -5,7 +5,7 @@
 #include <feel/feelalg/backend.hpp>
 #include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelmor/modelcrbbase.hpp>
-#include <feel/feelmodels/modelproperties.hpp>
+#include <feel/feelmor/crbmodelproperties.hpp>
 
 namespace Feel
 {
@@ -238,6 +238,18 @@ class FEELPP_EXPORT ToolboxMor : public ModelCrbBase< ParameterSpace<>, SpaceTyp
      */
     void initModel() override;
     /**
+     * @brief Initialized the model for the online phase
+     * 
+     * @param ptree json section to load the database
+     * @param dbDir database directory
+     */
+    void setupSpecificityModel( boost::property_tree::ptree const& ptree, std::string const& dbDir ) override;
+    /**
+     * @brief Initialize the deim online model
+     * 
+     */
+    void initOnlineModel( std::shared_ptr<super_type> const& model ) override;
+    /**
      * @brief Need to be called after the initModel to assemble the data
      * 
      */
@@ -245,6 +257,10 @@ class FEELPP_EXPORT ToolboxMor : public ModelCrbBase< ParameterSpace<>, SpaceTyp
 
     sparse_matrix_ptrtype assembleForMDEIM( parameter_type const& mu, int const& tag ) override;
     vector_ptrtype assembleForDEIM( parameter_type const& mu, int const& tag ) override;
+    vector_ptrtype assembleOutputMean( parameter_type const& mu, CRBModelOutput& output);
+    vector_ptrtype assembleOutputIntegrate( parameter_type const& mu, CRBModelOutput& output);
+    vector_ptrtype assembleOutputSensor( parameter_type const& mu, CRBModelOutput& output);
+    vector_ptrtype assembleOutputPoint( parameter_type const& mu, CRBModelOutput& output);
 
     typename super_type::betaqm_type
     computeBetaQm( parameter_type const& mu , double time , bool only_terms_time_dependent=false ) override;
@@ -255,14 +271,14 @@ class FEELPP_EXPORT ToolboxMor : public ModelCrbBase< ParameterSpace<>, SpaceTyp
 
     // element_type solve(parameter_type const& mu) override;
 
-    void setupSpecificityModel( boost::property_tree::ptree const& ptree, std::string const& dbDir ) override;
 
     /**
      * @brief Returns the ModelProperties used by ToolboxMor
      * 
      * @return std::shared_ptr<ModelProperties> const& The ModelProperties used by ToolboxMor
      */
-    std::shared_ptr<ModelProperties> const& modelProperties() const { return M_modelProperties; }
+    std::shared_ptr<CRBModelProperties> const& modelProperties() const { return M_modelProperties; }
+    std::vector<std::string> const& outputDeimName() const { return M_outputDeimName; }
 
   private :
     void assembleData();
@@ -314,7 +330,7 @@ class FEELPP_EXPORT ToolboxMor : public ModelCrbBase< ParameterSpace<>, SpaceTyp
 private:
 
     std::string M_propertyPath;
-    std::shared_ptr<ModelProperties> M_modelProperties;
+    std::shared_ptr<CRBModelProperties> M_modelProperties;
 
     int M_trainsetDeimSize;
     int M_trainsetMdeimSize;
@@ -324,6 +340,10 @@ private:
 
     deim_function_type M_assembleForDEIM;
     mdeim_function_type M_assembleForMDEIM;
+
+    std::vector<std::string> M_outputName;
+    std::map<std::string, int> M_outputDeim;
+    std::vector<std::string> M_outputDeimName;
 
 }; // class ToolboxMor
 

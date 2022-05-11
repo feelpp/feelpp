@@ -3,32 +3,35 @@
 {
     "Name": "Testcase for test_mor",
     "ShortName":"mor_testcase",
-    "Parameters":
+    "CRBParameters":
     {
         "k_1":
         {
-            "value":"5",
             "min":"0.1",
             "max":"10"
         },
         "k_2":
         {
-            "value":"2",
             "min":"0.1",
             "max":"10"
         },
         "k_3":
         {
-            "value":"10",
             "min":"0.1",
             "max":"10"
         },
         "k_4":
         {
-            "value":"0.1",
             "min":"0.1",
             "max":"10"
         }
+    },
+    "Parameters":
+    {
+        "k_1":"5",
+        "k_2":"2",
+        "k_3":"10",
+        "k_4":"0.1"
     },
     "Materials":
     {

@@ -36,21 +36,9 @@ template <typename IndexT>
 class MeshBase;
 
 /**
- *  \defgroup GeoXD Basis Geometrical Entities Geo0D and GeoND.
- *  \ingroup Obsolet_Groups
- *  They are intermediate classes used to build the actual Geometry classes
- *
- *  \warning Geo1D/2D/3D are template classes because some of the info is not
- *  known a priori and I want all vector dimensions determined at compile time
- *  to enhance memory access time.
- */
-
-/*@{*/
-
-/**
  * \class Geo0D
- *
- *  Zero dimensional entity.
+ * @ingroup Mesh
+ * Zero dimensional entity.
  *
  * \ingroup GeoXD
  */

@@ -79,12 +79,16 @@ form( std::string name,
     return vf::detail::LinearForm<X1, RepType, RepType>( name, __X1, __M, rowstart, init, do_threshold, threshold );
 }
 
-
 /**
- * @addtogroup FreeFunction
- * @{
+ * @brief create a linear form using named arguments
+ * @ingroup DSEL-Variational-Formulation
+ *
+ * @code {.cpp}
+ * auto a = form1(_test=Xh, _backend=backend(_worldcomm=Xh->worldCommPtr()), _vector=backend->newVector( _test=Xh ) );
+ * a = integrate(...);
+ * @endcode
+ *
  */
-
 template <typename ... Ts>
 auto form1( Ts && ... v )
 {
@@ -101,11 +105,26 @@ auto form1( Ts && ... v )
     return form( name, test, vector, rowstart, init, do_threshold, threshold );
 }
 
-
 /**
- * @}
+ * @brief create a bi-linear form using named arguments
+ * @ingroup DSEL-Variational-Formulation
+ *
+ * @code {.cpp}
+ * auto a = form2(_test=Xh, _trial=Yh,  _backend=backend(_worldcomm=Xh->worldCommPtr()), _matrix=backend->newVector( _test=Xh, _trial=Yh ) );
+ * a = integrate(...);
+ * @endcode
+ *
+ * @param _test test space
+ * @param _trial trial space
+ * @param _init initialize the form (default: false)
+ * @param _properties
+ * @param _backend algrebraic backend
+ * @param _matrix algebraic representation of the bilinear form 
+ * @param _pattern
+ * @param _rowstart
+ * @param _colstart
+ * @param _name name of the bilinear for; (default: bilinearform.a)
  */
-
 template <typename ... Ts>
 auto form2( Ts && ... v )
 {

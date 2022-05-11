@@ -1,0 +1,11 @@
+{
+  "description": "Doxygen Builder",
+  "scripts": {
+    "clean-build": "npm run clean-install;npm run build",
+    "clean-install": "rm -rf node_modules/ .cache/ package-lock.json ;npm i --cache=.cache/npm",
+    "serve": "node-srv -p 8010 ../../build/doxygen/doc/api/html"
+  },
+  "devDependencies": {
+    "node-srv": "^3.0.3"
+  }
+}
