@@ -249,11 +249,13 @@ TestRemesh<Dim, RDim>::execute( int niter )
         {
             for( auto m : check_facets_ )
             {
+                BOOST_CHECK( nelements( markedfaces( Vh->mesh(), m ) ) > 0 );
                 double measinit = measure( _range = markedfaces( Vh->mesh(), m ) );
                 double measremesh = measure( _range = markedfaces( Vhr->mesh(), m ) );
+                
                 if ( Environment::isMasterRank() )
                     BOOST_MESSAGE( fmt::format( "check element set measure {} initial: {} remesh: {} error: {}", m, measinit, measremesh, measinit - measremesh ) );
-                BOOST_CHECK_SMALL( measinit - measremesh, 1e-10 );
+                BOOST_CHECK_CLOSE( measinit, measremesh, 1e-10 );
             }
         }
         backend(_rebuild=true);
@@ -310,11 +312,11 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( testnDMat, T, dim_types )
     TestRemesh<T::first_type::value, T::second_type::value> r;
     if constexpr ( T::first_type::value == 2 )
     {
-        r.setMesh( "$datadir/geo/square_squareHole.geo", "","BdryFixedDiscr" );
+        r.setMesh( "$cfgdir/square_squareHole.geo", "","BdryFixedDiscr" );
     }
     else
     {
-        r.setMesh( "$datadir/geo/cube_cubeHole.geo", "","BdryFixedDiscr" );
+        r.setMesh( "$cfgdir/cube_cubeHole.geo", "","BdryFixedDiscr" );
     }
     r.execute( 1 );
 }
@@ -331,13 +333,13 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( testnDMatTwo, T, dim_types )
     TestRemesh<T::first_type::value, T::second_type::value> r;
     if constexpr ( T::first_type::value == 2 )
     {
-        r.setMesh( "$datadir/data/geo/square_twoMaterials.geo", "MatTwo", "BdryFixedDiscr" );
+        r.setMesh( "$cfgdir/square_twoMaterials.geo", "MatTwo", "BdryFixedDiscr" );
     }
     else
     {
-        // r.setMesh( "$datadir/geo/cube_twoMaterials.geo", "MatTwo", "BdryFixedDiscr" );
-        //r.setMesh( "$datadir/geo/cube_twoMaterials.geo", "MatTwo", "", { "BdryFixedDiscr"} );
-        r.setMesh( "$datadir/geo/cube_twoMaterials.geo", "MatTwo");
+        r.setMesh( "$cfgdir/cube_twoMaterials.geo", "MatTwo", "BdryFixedDiscr" );
+        //r.setMesh( "$cfgdir/cube_twoMaterials.geo", "MatTwo", "", { "BdryFixedDiscr"} );
+        //r.setMesh( "$cfgdir/cube_twoMaterials.geo", "MatTwo");
     }
     r.execute( 1 );
 }
