@@ -20,7 +20,7 @@ Curve Loop(1) = {3, 4, 1, 2};
 Curve Loop(2) = {7, 8, 5, 6};
 Plane Surface(1) = {1, 2};
 
-Physical Curve("BdryFixedDiscr") = {6,7,8,5};
+Physical Curve("FixedBoundaryMatTwo") = {6,7,8,5};
 
 Physical Surface("MatOne") = {1};
 

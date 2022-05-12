@@ -38,6 +38,6 @@ Curve Loop(2) = {7, 8, 5, 6};
 //+
 Plane Surface(1) = {1, 2};
 //+
-Physical Curve("BdryFixedDiscr") = {6,7,8,5};
+Physical Curve("FixedBoundaryMatTwo") = {6,7,8,5};
 
 Physical Surface("Body") = {1};

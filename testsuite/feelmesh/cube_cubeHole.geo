@@ -69,6 +69,6 @@ Surface Loop(2) = {40, 44, 28, 32, 36, 43};
 //+
 Volume(1) = {1, 2};
 //+
-Physical Surface("BdryFixedDiscr") = {43, 28, 32, 40, 44, 36};
+Physical Surface("OtherFixedBoundary") = {43, 28, 32, 40, 44, 36};
 
 Physical Volume("Body") = {1};
