@@ -289,12 +289,15 @@ class reducedbasis():
             force (bool, optional): Force saving, even if files are already present. Defaults to False.
         """
         if os.path.isdir(path) and not force:
-            print(f"[reducedBasis] Directory {path} already exists. Rerun with force=True to force saving")
+            if self.worldComm.isMasterRank():
+                print(f"[reducedBasis] Directory {path} already exists. Rerun with force=True to force saving")
             return
         elif not os.path.isdir(path):
-            os.mkdir(path)
+            if self.worldComm.isMasterRank():
+                os.mkdir(path)
 
-        print(f"[reducedbasis] saving reduced basis to {os.getcwd()}/reducedbasis.json ...", end=" ")
+        if self.worldComm.isMasterRank():
+            print(f"[reducedbasis] saving reduced basis to {os.getcwd()}/reducedbasis.json ...", end=" ")
 
         content = {'Qa': self.Qa, 'Qf': self.Qf, 'N': self.N, "path": path+"/reducedbasis.h5"}
         os.system('pwd')
@@ -322,7 +325,8 @@ class reducedbasis():
         json.dump(content, f, indent = 4)
         h5f.close()
         f.close()
-        print("Done !")
+        if self.worldComm.isMasterRank():
+            print("Done !")
         return os.getcwd() + "/reducedbasis.json"
 
 
@@ -362,7 +366,7 @@ class reducedbasis():
             assert self.SL.shape == (self.Qa, self.Qf, self.N), f"Wrong shape for SL (excepted {(self.Qa, self.Qf, self.N)}, got {self.SL.shape}"
             assert self.LL.shape == (self.Qa, self.N, self.Qa, self.N), f"Wrong shape for LL (excepted {(self.Qa, self.N, self.Qa, self.N)}, got {self.LL.shape}"
         except AssertionError as e:
-            print(f"[reduced basis] Something went wrong when loading {path} : {e}")
+            print(f"[reduced basis] [{self.worldComm.localRank()}] Something went wrong when loading {path} : {e}")
 
 
         tmpDeltaMax = h5f["DeltaMax"][:]
@@ -394,7 +398,8 @@ class reducedbasis():
         self.gammaUB = gammaUB
         self.gammaUB_ = gammaUB_
 
-        print(f"[reduced basis] Basis loaded from {path}")
+        if self.worldComm.isMasterRank():
+            print(f"[reduced basis] Basis loaded from {path}")
         self.setInitialized = True
 
     def getSize(self, threshold):
@@ -407,7 +412,8 @@ class reducedbasis():
             int: size of the basis
         """
         if self.DeltaMax is None:
-            print("[reducedbasis] Maximal error has not been calculated yet")
+            if self.worldComm.isMasterRank():
+                print("[reducedbasis] Maximal error has not been calculated yet")
             return self.N
         ind = 0
         while self.DeltaMax[ind] > threshold:
@@ -612,7 +618,6 @@ class reducedbasisOffline(reducedbasis):
         if not (self.test_orth() ) and nb < 10:
             self.orthonormalizeZ(nb=nb+1)
         elif self.worldComm.isMasterRank():
-            # pass
             print(f"[reducedBasis] Gram-Schmidt orthonormalization done after {nb+1} step"+['','s'][nb>1])
 
 
@@ -1137,7 +1142,8 @@ class reducedbasisOffline(reducedbasis):
     #     )
     #     fig.write_image("energy.png", scale=2)
     #     fig.write_html("energy.html")
-        print("[reducedBasis] End greedy algorithm")
+        if self.worldComm.isMasterRank():
+            print("[reducedBasis] End greedy algorithm")
         self.DeltaMax = np.array(self.DeltaMax)
 
         # t_end = time.process_time()
@@ -1182,7 +1188,8 @@ class reducedbasisOffline(reducedbasis):
 
         E.solve()
         nCv = E.getConverged()
-        print(f"[slepsc4py] {nCv} eigenmodes computed (should be {N_train})")
+        if self.worldComm.isMasterRank():
+            print(f"[slepsc4py] {nCv} eigenmodes computed (should be {N_train})")
 
         eigenval = np.zeros(nCv)
         for i in range(nCv):
