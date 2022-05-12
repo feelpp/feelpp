@@ -7,17 +7,17 @@ from petsc4py import PETSc
 import feelpp
 from feelpp.mor import *
 
-# desc : (('path/to/cfg/file', dimension, {mudefault}, {mumin}, {mumax}), 'name-of-the-test')
+# desc : (('path/to/cfg/file', {mudefault}, {mumin}, {mumax}), 'name-of-the-test')
 cases = [
-         (('testcase/thermal-fin/2d/thermal-fin.cfg', 2,
+         (('testcase/thermal-fin/2d/thermal-fin.cfg',
            {"k_1": 0.1, "k_2": 0.1, "k_3": 0.1, "k_4": 0.1, "k_0": 1, "Bi": 0.01},
            {"k_1": 0.1, "k_2": 0.1, "k_3": 0.1, "k_4": 0.1, "k_0": 1, "Bi": 0.01},
            {"k_1": 10, "k_2": 10, "k_3": 10, "k_4": 10, "k_0": 1, "Bi": 1}), 'thermal-fin-2d'),
-         (('testcase/thermal-fin/3d/thermal-fin.cfg', 3,
+         (('testcase/thermal-fin/3d/thermal-fin.cfg',
            {"k_1": 0.1, "k_2": 0.1, "k_3": 0.1, "k_4": 0.1, "k_0": 1, "Bi": 0.01},
            {"k_1": 0.1, "k_2": 0.1, "k_3": 0.1, "k_4": 0.1, "k_0": 1, "Bi": 0.01},
            {"k_1": 10, "k_2": 10, "k_3": 10, "k_4": 10, "k_0": 1, "Bi": 1}), 'thermal-fin-3d'),
-         (('testcase/testcase/test.cfg', 2,
+         (('testcase/testcase/test.cfg',
             {"k_1": 5, "k_2": 2, "k_3": 10, "k_4": 0.1},
             {"k_1": 0.1, "k_2": 0.1, "k_3": 0.1, "k_4": 0.1},
             {"k_1": 10, "k_2": 10, "k_3": 10, "k_4": 10}), 'test-case'),
@@ -25,13 +25,12 @@ cases = [
 cases_params, cases_ids = list(zip(*cases))
 
 
-@pytest.mark.parametrize("casefile,dim,mumin_th,mumax_th", cases_params, ids=cases_ids)
-def test_init_from_ModelPropeties(casefile, dim, mumin_th, mumax_th,  init_feelpp):
+@pytest.mark.parametrize("casefile,mudefault_th,mumin_th,mumax_th", cases_params, ids=cases_ids)
+def test_init_from_ModelPropeties(casefile, mudefault_th, mumin_th, mumax_th,  init_feelpp):
     """Tests the initialisation from ModelProperties
 
     Args:
         casefile (string): path to config file
-        dim (int): dimention of the case
         mudefault_th (dict): dict containing the true values of mu_bar (="value" field in the json)
         mumin_th (dict): true minimal values for parameters (="min" field in the json)
         mumax_th (dict): true maximal values for parameters (="max" fiels in the json)
@@ -41,11 +40,18 @@ def test_init_from_ModelPropeties(casefile, dim, mumin_th, mumax_th,  init_feelp
     feelpp.Environment.setConfigFile(casefile)
 
     model_path = "$cfgdir/"+os.path.splitext(os.path.basename(casefile))[0] + ".json"
-    model_properties = CRBModelProperties(worldComm=feelpp.Environment.worldCommPtr())
+
+    # Get the CRBParameters from CRBModelProperties
+    crb_model_properties = CRBModelProperties(worldComm=feelpp.Environment.worldCommPtr())
+    crb_model_properties.setup(model_path)
+    crb_modelParameters = crb_model_properties.parameters()
+    Dmu = feelpp.mor._mor.ParameterSpace.New(crb_modelParameters, feelpp.Environment.worldCommPtr())
+
+    # Get the default parameter from ModelProperties
+    model_properties = feelpp.ModelProperties(worldComm=feelpp.Environment.worldCommPtr())
     model_properties.setup(model_path)
-    modelParameters = model_properties.parameters()
-    Dmu = feelpp.mor._mor.ParameterSpace.New(modelParameters, feelpp.Environment.worldCommPtr())
-    default_parameter = modelParameters.toParameterValues()
+    model_parameter = model_properties.parameters()
+    default_parameter = model_parameter.toParameterValues()
 
     mubar = Dmu.element()
     mubar.setParameters(default_parameter)
@@ -66,8 +72,8 @@ def test_init_from_ModelPropeties(casefile, dim, mumin_th, mumax_th,  init_feelp
 
 
 
-@pytest.mark.parametrize("casefile,dim,Mu", [cases_params[-1][:3]], ids=[cases_ids[-1]])
-def test_param_not_in_range(casefile, dim, Mu,  init_feelpp):
+@pytest.mark.parametrize("casefile,Mu", [cases_params[-1][:2]], ids=[cases_ids[-1]])
+def test_param_not_in_range(casefile, Mu,  init_feelpp):
     e = init_feelpp
     feelpp.Environment.setConfigFile(casefile)
 
