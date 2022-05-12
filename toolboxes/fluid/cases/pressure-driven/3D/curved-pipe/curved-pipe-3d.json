@@ -3,7 +3,10 @@
     "ShortName":"cp3d",
     "Models":
     {
-        "equations":"Stokes"
+        "fluid":
+        {
+            "equations":"Stokes"
+        }
     },
     "Parameters":
     {
@@ -26,26 +29,24 @@
     },
     "Materials":
     {
-        "Omega":{
+        "Omega":
+        {
             "rho":"1",
             "mu":"nu:nu"
         }
     },
     "BoundaryConditions":
     {
-        "velocity":
+        "fluid":
         {
-            "Dirichlet":
+            "velocity":
             {
                 "wall":
                 {
                     "expr":"{uexx,uexy,0}:uexx:uexy"
                 }
-            }
-        },
-        "pressure":
-        {
-            "Dirichlet":
+            },
+            "pressure":
             {
                 "inlet":
                 {
@@ -60,59 +61,61 @@
     },
     "PostProcess":
     {
-        "Measures":
-        {
-            "Norm":
-            {
-                "p": 
-                {
-                    "type":"L2-error", 
-                    "field":"pressure",
-                    "quad":8,
-                    "solution":"pex:pex", 
-                    "markers":"Omega" 
-                },
-                "u": 
-                {
-                    "type":["L2-error","H1-error"], 
-                    "field":"velocity",
-                    "quad":8,
-                    "solution":"{uexx,uexy,0}:uexx:uexy",
-                    "grad_solution":"{ugradexxx, ugradexyx, 0, ugradexxy, ugradexyy, 0, 0, 0, 0}:ugradexxx:ugradexyx:ugradexxy:ugradexyy",
-                    "markers":"Omega" 
-                }
-            }
-        },
-        "Checkers":
+        "fluid":
         {
             "Measures":
             {
-                "Norm_u_L2-error":
+                "Norm":
                 {
-                    "value":0,
-                    "tolerance":1
-                },
-                "Norm_u_H1-error":
-                {
-                    "value":0,
-                    "tolerance":1
-                },
-                "Norm_p_L2-error":
-                {
-                    "value":0,
-                    "tolerance":1
+                    "p": 
+                    {
+                        "type":"L2-error", 
+                        "field":"pressure",
+                        "quad":8,
+                        "solution":"pex:pex", 
+                        "markers":"Omega" 
+                    },
+                    "u": 
+                    {
+                        "type":["L2-error","H1-error"], 
+                        "field":"velocity",
+                        "quad":8,
+                        "solution":"{uexx,uexy,0}:uexx:uexy",
+                        "grad_solution":"{ugradexxx, ugradexyx, 0, ugradexxy, ugradexyy, 0, 0, 0, 0}:ugradexxx:ugradexyx:ugradexxy:ugradexyy",
+                        "markers":"Omega" 
+                    }
                 }
-            }
-        },
-        "Exports":
-        {
-            "fields":["velocity","pressure","pid"],
-            "expr":
+            },
+            "Checkers":
             {
-                "u_ex":"{uexx,uexy,0}:uexx:uexy",
-                "p_ex":"pex:pex"
+                "Measures":
+                {
+                    "Norm_u_L2-error":
+                    {
+                        "value":0,
+                        "tolerance":1
+                    },
+                    "Norm_u_H1-error":
+                    {
+                        "value":0,
+                        "tolerance":1
+                    },
+                    "Norm_p_L2-error":
+                    {
+                        "value":0,
+                        "tolerance":1
+                    }
+                }
+            },
+            "Exports":
+            {
+                "fields":["velocity","pressure","pid"],
+                "expr":
+                {
+                    "u_ex":"{uexx,uexy,0}:uexx:uexy",
+                    "p_ex":"pex:pex"
+                }
             }
         }
     }
-
 }

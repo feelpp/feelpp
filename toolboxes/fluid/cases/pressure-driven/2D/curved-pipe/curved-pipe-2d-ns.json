@@ -63,11 +63,11 @@
             {
                 "inlet":
                 {
-                    "expr":"pin:pin"
+                    "expr":"pex:pex"
                 },
                 "outlet":
                 {
-                    "expr":"pout:pout"
+                    "expr":"pex:pex"
                 }
             }
         }
