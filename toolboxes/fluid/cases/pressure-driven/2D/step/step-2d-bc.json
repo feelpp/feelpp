@@ -13,7 +13,7 @@
         "Re":1,
         "D":1,
         "nu":1,
-        "pin":1000,
+        "pin":10,
         "pout":0,
         "uxin":"6*(2-y)*(y-1):y",
         "uyin":0
@@ -44,24 +44,24 @@
                 "wall":
                 {
                     "expr":"{0,0}"
-                    // },
-                    // "inlet":
-                    // {
-                        //     "expr":"{uxin,uyin}:uxin:uyin"
-                    }
-                },
-                "pressure":
+                }/*,
+                "inlet":
                 {
-                    "outlet":
-                    {
-                        "expr":"pout:pout"
-                    },
-                    "inlet":
-                    {
-                        "expr":"pin:pin"
-                    }
+                    "expr":"{uxin,uyin}:uxin:uyin"
+                }*/
+            },
+            "pressure":
+            {
+                "outlet":
+                {
+                    "expr":"pout:pout"
+                },
+                "inlet":
+                {
+                    "expr":"pin:pin"
                 }
             }
+        }
     },
     "PostProcess":
     {

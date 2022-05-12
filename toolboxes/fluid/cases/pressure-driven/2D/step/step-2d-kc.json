@@ -12,7 +12,7 @@
     {
         "nu":1,
         "pout":0,
-        "uxin":"6*y*(1-y):y",
+        "uxin":"6*(2-y)*(y-1):y",
         "uyin":"0"
     },
     "Meshes":
@@ -54,15 +54,15 @@
                     "expr":"pout:pout"
                 }
             }
-        },
-        "PostProcess":
+        }
+    },
+    "PostProcess":
+    {
+        "fluid":
         {
-            "fluid":
+            "Exports":
             {
-                "Exports":
-                {
-                    "fields":["velocity","pressure","pid"]
-                }
+                "fields":["velocity","pressure","pid"]
             }
         }
     }
