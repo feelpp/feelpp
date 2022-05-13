@@ -53,12 +53,13 @@ remesh_options( std::string const& prefix )
 template<int topoDim, int realDim>
 void setMMGOptions( std::string const& prefix, std::variant<MMG5_pMesh, PMMG_pParMesh> mesh_, MMG5_pSol sol )
 {
-#if 0    
+#if 1    
     if ( std::holds_alternative<MMG5_pMesh>( mesh_ ) )
     {
         auto mesh = std::get<MMG5_pMesh>( mesh_ );
         if constexpr ( topoDim == 3 )
         {
+#if 0            
             if ( countoption( prefixvm( prefix, "remesh.verbose" ) ) )
                 MMG3D_Set_iparameter( mesh, sol, MMG3D_IPARAM_verbose, ioption( prefixvm( prefix, "remesh.verbose" ) ) ); /*!< [-1..10], Tune level of verbosity */
             if ( countoption( prefixvm( prefix, "remesh.debug" ) ) )
@@ -73,10 +74,13 @@ void setMMGOptions( std::string const& prefix, std::variant<MMG5_pMesh, PMMG_pPa
               
             //MMG3D_Set_iparameter( M_mmg_mesh, M_mmg_sol, MMG3D_IPARAM_verbose, value<MmgOption::Verbose>() );
             //MMG3D_Set_iparameter( M_mmg_mesh, M_mmg_sol, MMG3D_IPARAM_mem, value<MmgOption::Mem>() );
-    
+#else
+            MMG3D_Set_iparameter( mesh, sol, MMG3D_IPARAM_opnbdy, 1 );
+#endif
         }
         else if constexpr ( topoDim == 2 && realDim == 3 )
         {
+#if 0            
             if ( countoption( prefixvm(prefix,"remesh.verbose") ) )
                 MMGS_Set_iparameter( mesh, sol, MMGS_IPARAM_verbose, ioption( prefixvm(prefix,"remesh.verbose") ) ); /*!< [-1..10], Tune level of verbosity */
             if ( countoption(  prefixvm(prefix,"remesh.debug" )) )
@@ -87,9 +91,11 @@ void setMMGOptions( std::string const& prefix, std::variant<MMG5_pMesh, PMMG_pPa
                 MMGS_Set_dparameter( mesh, sol, MMGS_DPARAM_hmax, doption( _name = "remesh.hmax", _prefix = prefix ) );
             if ( Environment::vm().count( prefixvm( prefix, "remesh.hsiz" ) ) )
                 MMGS_Set_dparameter( mesh, sol, MMGS_DPARAM_hsiz, doption( _name = "remesh.hsiz", _prefix = prefix ) );
+#endif                
         }
         else if constexpr ( topoDim == 2 && realDim == 2 )
         {
+#if 0            
             if ( countoption( prefixvm( prefix, "remesh.verbose" ) ) )
                 MMG2D_Set_iparameter( mesh, sol, MMG2D_IPARAM_verbose, ioption( prefixvm( prefix, "remesh.verbose" ) ) ); /*!< [-1..10], Tune level of verbosity */
             if ( countoption( prefixvm( prefix, "remesh.debug" ) ) )
@@ -107,7 +113,9 @@ void setMMGOptions( std::string const& prefix, std::variant<MMG5_pMesh, PMMG_pPa
                 MMG2D_Set_dparameter( mesh, sol, MMG2D_DPARAM_hgradreq, doption( _name = "remesh.hgradreq", _prefix = prefix ) );
             if ( Environment::vm().count( prefixvm( prefix, "remesh.hausd" ) ) )
                 MMG2D_Set_dparameter( mesh, sol, MMG2D_DPARAM_hausd, doption( _name = "remesh.hausd", _prefix = prefix ) );
-
+#else
+            MMG2D_Set_iparameter( mesh, sol, MMG2D_IPARAM_opnbdy, 1 );
+#endif
         }
     }
 #endif
