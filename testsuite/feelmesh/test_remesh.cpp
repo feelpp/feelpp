@@ -42,19 +42,23 @@
 using namespace Feel;
 namespace hana =  boost::hana;
 using namespace hana::literals;
+using namespace std::string_literals;
+
 inline
 po::options_description
 makeOptions()
 {
+    // clang-format: off
     po::options_description desc_options( "test_Mmg options" );
     desc_options.add_options()
+        ( "niter", po::value<int>()->default_value( 1 ), "niter" )
         ( "hsize", po::value<double>()->default_value( 0.1 ), "mesh size" )
         ( "remesh.verbose", po::value<int>()->default_value( 1 ), "mesh size" )
         ( "remesh.hmin", po::value<double>(), "Minimal mesh size " )
         ( "remesh.hmax", po::value<double>(), "Maximal mesh size " )
         ( "remesh.hsiz", po::value<double>(), "Constant mesh size " )
-        
         ;
+    // clang-format: on
     return desc_options.add( backend_options("I") ).add( backend_options("Iv") ).add( Feel::feel_options() );
 }
 
@@ -71,7 +75,7 @@ makeAbout()
                      "0.1",
                      "test Mmg",
                      Feel::AboutData::License_GPL,
-                     "Copyright (c) 2020 Universite de Strasbourg" );
+                     "Copyright (c) 2020-2022 Universite de Strasbourg" );
 
     about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;
@@ -98,7 +102,7 @@ class TestRemesh
     using mesh_ptr_t = std::shared_ptr< mesh_t >;
     
     TestRemesh() = default;
-    mesh_ptr_t setMesh( std::string const& fname = "", std::string const& e = "", std::string const& f = "", std::vector<std::string> const& f_c = {} );
+    mesh_ptr_t setMesh( std::string const& fname = "", std::string const& e = "", std::vector<std::string> const& f = {}, std::vector<std::string> const& f_c = {} );
     auto createMetricSpace( mesh_ptr_t m )
     {
         return Pch<1>( m );
@@ -132,12 +136,12 @@ class TestRemesh
     int execute( int loop = 1 );
     mesh_ptr_t mesh_;
     std::string required_elements_str_;
-    std::string required_facets_str_;
+    std::vector<std::string> required_facets_str_;
     std::vector<std::string> check_facets_;
 };
 template <int Dim, int RDim>
 typename TestRemesh<Dim, RDim>::mesh_ptr_t 
-TestRemesh<Dim, RDim>::setMesh( std::string const& filename, std::string const& r_e, std::string const& r_f, std::vector<std::string> const& r_c )
+TestRemesh<Dim, RDim>::setMesh( std::string const& filename, std::string const& r_e, std::vector<std::string> const& r_f, std::vector<std::string> const& r_c )
 {
     auto create_mesh = [&]() {
         if constexpr ( topo_dim == 2 && real_dim == 2 )
@@ -176,6 +180,8 @@ TestRemesh<Dim, RDim>::execute( int niter )
     std::vector<std::tuple<int,std::string>> iters{ {0,"0.5"}, {1,"0.25"}, {2,"0.125"} };
     for( auto [iter,metric]: iters) //ranges::views::ints( 0, niter ) )
     {
+        if ( iter >= niter )
+            break;
         auto Vh = createSpace<scalar,2>( mesh_ );
         auto Wh = createSpace<vectorial,2>( mesh_ );
         
@@ -183,9 +189,9 @@ TestRemesh<Dim, RDim>::execute( int niter )
         auto met = Mh->element();
         //met.on( _range = elements( mesh_ ), _expr = expr( soption( "functions.s" ) ) );
         met.on( _range = elements( mesh_ ), _expr = expr( metric ) );
-
-        auto [out,cpt] = remesh( mesh_, metric, { required_elements_str_ }, { required_facets_str_ }, mesh_ptr_t{}  );
-        dump( out );
+        dump( mesh_, fmt::format( "dump mesh before remesh iter: {}, metric: {}", iter, metric ) );
+        auto [out,cpt] = remesh( mesh_, metric, { required_elements_str_ }, required_facets_str_, mesh_ptr_t{}  );
+        dump( out, fmt::format( "dump mesh after remesh iter: {}, metric: {}", iter, metric ) );
         BOOST_CHECK_EQUAL(  nelements( markedelements(mesh_,required_elements_str_), true),nelements( markedelements(out,required_elements_str_),true) );
         BOOST_CHECK_EQUAL(  nelements( markedfaces(mesh_,required_facets_str_),true),nelements( markedfaces(out,required_facets_str_),true) );
 
@@ -299,89 +305,46 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( testnD, T, dim_types )
 
     TestRemesh<T::first_type::value, T::second_type::value> r;
     r.setMesh();
-    r.execute(3);
-
+    r.execute( ioption( "niter" ) );
 }
 
 typedef boost::mpl::list<
     std::pair<boost::mpl::int_<2>, boost::mpl::int_<2>>,
     std::pair<boost::mpl::int_<3>, boost::mpl::int_<3>>>
     dim_types;
-BOOST_AUTO_TEST_CASE_TEMPLATE( testnDMat, T, dim_types )
+BOOST_AUTO_TEST_CASE_TEMPLATE( test_with_hole, T, dim_types )
 {
     using namespace Feel;
-
-    if ( Environment::isParallel() && T::first_type::value == 2 )
-        return;
+    if ( Environment::isMasterRank() )
+        {
+            BOOST_MESSAGE( "================================================================" );
+            BOOST_MESSAGE( fmt::format( "[test_with+hole] required facet marker {}", "RequiredBoundaryOfRequiredElements" ) );
+        }
     TestRemesh<T::first_type::value, T::second_type::value> r;
-    if constexpr ( T::first_type::value == 2 )
-    {
-        r.setMesh( "$cfgdir/square_squareHole.geo", "","FixedBoundaryMatTwo" );
-    }
-    else
-    {
-        r.setMesh( "$cfgdir/cube_cubeHole.geo", "","FixedBoundaryMatTwo" );
-    }
-    r.execute( 1 );
-}
-// typedef boost::mpl::list<
-//     std::pair<boost::mpl::int_<2>, boost::mpl::int_<2>>,
-//     std::pair<boost::mpl::int_<3>, boost::mpl::int_<3>>>
-//     dim_types;
-// BOOST_AUTO_TEST_CASE_TEMPLATE( test_required_elts_and_facets, T, dim_types )
-// {
-//     using namespace Feel;
-// 
-//     TestRemesh<T::first_type::value, T::second_type::value> r;
-//     if constexpr ( T::first_type::value == 2 )
-//     {
-//         r.setMesh( "$cfgdir/square_twoMaterials.geo", "MatTwo", "OtherFixedBoundary" );
-//     }
-//     else
-//     {
-//         r.setMesh( "$cfgdir/cube_twoMaterials.geo", "MatTwo", "OtherFixedBoundary" );
-//     }
-//     r.execute( 1 );
-// }
-typedef boost::mpl::list<
-    std::pair<boost::mpl::int_<2>, boost::mpl::int_<2>>,
-    std::pair<boost::mpl::int_<3>, boost::mpl::int_<3>>>
-    dim_types;
-BOOST_AUTO_TEST_CASE_TEMPLATE( test_required_elts, T, dim_types )
-{
-    using namespace Feel;
-
-    TestRemesh<T::first_type::value, T::second_type::value> r;
-    if constexpr ( T::first_type::value == 2 )
-    {
-        r.setMesh( "$cfgdir/square_twoMaterials.geo", "MatTwo", "" );
-    }
-    else
-    {
-        r.setMesh( "$cfgdir/cube_twoMaterials.geo", "MatTwo", "" );
-        // r.setMesh( "$cfgdir/cube_twoMaterials.geo", "MatTwo", "", { "FixedBoundaryMatTwo"} );
-        // r.setMesh( "$cfgdir/cube_twoMaterials.geo", "MatTwo");
-    }
-    r.execute( 1 );
+    r.setMesh( fmt::format( "$cfgdir/domain_{}d.geo", T::first_type::value ), "", { "RequiredBoundaryOfRequiredElements"s }, { "RequiredBoundaryOfRequiredElements"s } );
+    r.execute( ioption("niter") );
 }
 typedef boost::mpl::list<
     std::pair<boost::mpl::int_<2>, boost::mpl::int_<2>>,
     std::pair<boost::mpl::int_<3>, boost::mpl::int_<3>>>
     dim_types;
-BOOST_AUTO_TEST_CASE_TEMPLATE( test_required_facets, T, dim_types )
+BOOST_AUTO_TEST_CASE_TEMPLATE( test_required_elements_and_facets, T, dim_types )
 {
     using namespace Feel;
 
-    TestRemesh<T::first_type::value, T::second_type::value> r;
-    if constexpr ( T::first_type::value == 2 )
+    auto bdys = std::vector{ { "OtherRequiredBoundary"s, "RequiredBoundaryOfRequiredElements"s } };
+    for ( std::string mat : std::vector{ { "", "MatTwo" } } )
     {
-        r.setMesh( "$cfgdir/square_twoMaterials.geo", "", "FixedBoundaryMatTwo" );
+        if ( Environment::isMasterRank() )
+        {
+            BOOST_MESSAGE( "================================================================" );
+            BOOST_MESSAGE( fmt::format( "[test_required_elements_and_facets] required mat {}, required facet {}", mat, bdys ) );
+        }
+        TestRemesh<T::first_type::value, T::second_type::value> r;
+        r.setMesh( fmt::format("$cfgdir/domains_{}d.geo",T::first_type::value), mat, bdys, bdys );
+        r.execute( ioption("niter") );
     }
-    else
-    {
-        r.setMesh( "$cfgdir/cube_twoMaterials.geo", "", "FixedBoundaryMatTwo" );
-    }
-    r.execute( 1 );
 }
+
 
 BOOST_AUTO_TEST_SUITE_END()
