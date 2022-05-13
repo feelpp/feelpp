@@ -6,10 +6,13 @@ import os,shutil
 from pathlib import Path
 import subprocess
 
+import os
+HOME = os.environ['HOME']
+
 config_cases=[  ("pyfeelpp-tests/core/test_config",feelpp.Location.standard,False),
                 ("pyfeelpp-tests/core/test_config",feelpp.Location.relative,True),
                 #("pyfeelpp-tests/core/test_config",feelpp.Location.git,True),
-                ("/tmp/toto/pyfeelpp-tests/core/test_config",feelpp.Location.absolute,True),
+                (f"{HOME}/tmp/toto/pyfeelpp-tests/core/test_config",feelpp.Location.absolute,True),
             ]
 
 @pytest.mark.parametrize("dir,location,rm", config_cases)

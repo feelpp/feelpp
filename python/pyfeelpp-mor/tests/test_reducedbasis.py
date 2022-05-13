@@ -238,7 +238,7 @@ def save_and_load(rb):
     """
     os.system("rm -rf /tmp/test_reducedbasis")
 
-    path = rb.saveReducedBasis("/tmp/test_reducedbasis")
+    path = rb.saveReducedBasis("/tmp/test_reducedbasis", force=True)
 
     rbLoaded = reducedbasis(None)
     rbLoaded.loadReducedBasis(path, rb.model)

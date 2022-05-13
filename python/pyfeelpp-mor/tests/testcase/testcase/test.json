@@ -8,7 +8,8 @@
         "k_1":
         {
             "min":"0.1",
-            "max":"10"
+            "max":"10",
+            "description":"first parameter"
         },
         "k_2":
         {
@@ -58,6 +59,34 @@
             "k":"k_4:k_4",
             "Cp":"1.4e6",
             "rho":"1"
+        }
+    },
+    "CRBOutputs":
+    {
+        "test":
+        {
+            "type":"mean",
+            "markers":"Omega1",
+            "topodim":2,
+            "expr":"crb_u:crb_u"
+        },
+        "ref":
+        {
+            "type":"integrate",
+            "markers":"up",
+            "topodim":1,
+            "expr":"k_1*crb_dn_u:k_1:crb_dn_u"
+        },
+        "sensor1":
+        {
+            "type":"sensor",
+            "radius":0.05,
+            "coord":[0.4,0.1,0]
+        },
+        "point1":
+        {
+            "type":"point",
+            "coord":[0,0,0]
         }
     }
 }

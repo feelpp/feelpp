@@ -91,6 +91,7 @@ private :
 
         this->updateEltsId( this->M_index );
 
+        Feel::cout << fmt::format("[DEIM::updateSubMesh] load submesh : {}\n", this->name(true)+"-submesh.msh");
         auto submesh = createSubmesh( _mesh=mesh,
                                       _range=idelements(mesh, this->M_elts_ids.begin(), this->M_elts_ids.end()),
                                       _context=EXTRACTION_KEEP_MESH_RELATION);
