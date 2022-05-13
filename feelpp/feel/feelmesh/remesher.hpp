@@ -443,7 +443,7 @@ Remesh<MeshType>::mesh2Mmg( std::shared_ptr<MeshType> const& m_in )
     int nTetrahedra = ( dimension_v<MeshType> == 3 ) ? nelements( elements( m_in ) ) : 0;
     int nPrisms = 0;
     auto boundary_and_marked_faces = concatenate( boundaryfaces( m_in ), markedfaces( m_in, M_required_facet_markers ) );
-    int nTriangles = ( dimension_v<MeshType> == 3 ) ? ( ( m_in->worldCommPtr()->localSize() > 1 ) ? nelements( boundary_and_marked_faces ) + nelements( interprocessfaces( m_in ) ) : m_in->numFaces() ) : nelements( elements( m_in ) );
+    int nTriangles = ( dimension_v<MeshType> == 3 ) ? m_in->numFaces() : nelements( elements( m_in ) ); //( dimension_v<MeshType> == 3 ) ? ( ( m_in->worldCommPtr()->localSize() > 1 ) ? nelements( boundary_and_marked_faces ) + nelements( interprocessfaces( m_in ) ) : m_in->numFaces() ) : nelements( elements( m_in ) );
     int nQuadrilaterals = 0;
     int nEdges = ( dimension_v<MeshType> == 2 ) ? m_in->numFaces() : 0;
 
@@ -639,7 +639,7 @@ Remesh<MeshType>::mesh2Mmg( std::shared_ptr<MeshType> const& m_in )
             auto const& [key, face] = boost::unwrap_ref( wface );
             int faceMarker = face.hasMarker() ? mapMarkerToMmgFragmentId_faces.at( face.marker() ) : -1;
             required = face.hasMarker()? face.marker().hasOneOf( required_facet_ids ) : false;
-            int& id_elt = required ? f_next_free_req : f_next_free_nreq;
+            int& id_elt = k;//required ? f_next_free_req : f_next_free_nreq;
             M_id2tag_face[id_elt].first = faceMarker;
             int lab_or_id = required ? id_elt : faceMarker;
             if constexpr ( dimension_v<MeshType> == 3 )
@@ -711,7 +711,7 @@ Remesh<MeshType>::mesh2Mmg( std::shared_ptr<MeshType> const& m_in )
 #endif
             // update facet index
             k++;
-            id_elt++;
+            //id_elt++;
         }
     }
     else if ( std::holds_alternative<PMMG_pParMesh>( M_mmg_mesh ) )
@@ -934,7 +934,7 @@ Remesh<MeshType>::mmg2Mesh( mmg_mesh_t const& mesh )
                     std::cout << "Unable to get mesh tetra " << k << std::endl;
                     ier = MMG5_STRONGFAILURE;
                 }
-                int& id_elt = required ? next_free_req : next_free_nreq;
+                int& id_elt = k;//required ? next_free_req : next_free_nreq;
                 using element_type = typename mesh_t::element_type;
                 int mmgFragmentId = required ? M_id2tag[lab].first : lab;
                 element_type newElem;
@@ -955,11 +955,20 @@ Remesh<MeshType>::mmg2Mesh( mmg_mesh_t const& mesh )
                     M_smd->bm.insert( typename smd_type::bm_type::value_type( id_elt, M_id2tag[lab].second ) );
                     //std::cout << fmt::format( "[mmg->feelpp] required elt  {} tag,id: {}", id_elt, M_id2tag[lab] ) << std::endl;
                 }
-                ++id_elt;
+                //++id_elt;
             }
         }
-        int f_req_elts = nelements( markedfaces( M_mesh, M_required_facet_markers ) );
-        std::cout << fmt::format( "[mmg->feelpp] number of required facets: {}, tag", f_req_elts ) << std::endl;
+        int f_req_elts = 0; 
+        if constexpr ( dimension_v<MeshType> == 3 )
+        {
+            f_req_elts = nelements( markedfaces( M_mesh, M_required_facet_markers ) );
+            std::cout << fmt::format( "[mmg->feelpp] number of required facets: {}, tag", f_req_elts ) << std::endl;
+        }
+        else  if constexpr ( dimension_v<MeshType> == 2 )
+        {
+            f_req_elts = nelements( markedelements( M_mesh, M_required_element_markers ) );
+            std::cout << fmt::format( "[mmg->feelpp] number of required elements: {}, tag", f_req_elts ) << std::endl;
+        }
         int f_next_free_req = 1;
         int f_next_free_nreq = f_req_elts + 1;
         for ( int k = 1; k <= nTriangles; k++ )
@@ -974,9 +983,10 @@ Remesh<MeshType>::mmg2Mesh( mmg_mesh_t const& mesh )
                     std::cout << "Unable to get mesh triangle " << k << std::endl;
                     ier = MMG5_STRONGFAILURE;
                 }
+                
                 using face_type = typename mesh_t::face_type;
                 face_type newElem;
-                int& id_elt = required ? f_next_free_req : f_next_free_nreq;
+                int& id_elt = k;//required ? f_next_free_req : f_next_free_nreq;
                 int mmgFragmentId = required ? M_id2tag_face[lab].first : lab;
                 newElem.setId( id_elt );
                 if ( mmgFragmentId >= 0 )
@@ -990,7 +1000,7 @@ Remesh<MeshType>::mmg2Mesh( mmg_mesh_t const& mesh )
                 for ( int i = 0; i < 3; i++ )
                     newElem.setPoint( i, out->point( iv[i] ) );
                 out->addFace( newElem );
-                id_elt++;
+                //id_elt++;
             }
             if constexpr ( dimension_v<MeshType> == 2 && real_dimension_v<MeshType> == 2 )
             {
@@ -1022,6 +1032,11 @@ Remesh<MeshType>::mmg2Mesh( mmg_mesh_t const& mesh )
                     //std::cout << fmt::format( "[mmg->feelpp] required elt  {} tag,id: {}", id_elt, M_id2tag[lab] ) << std::endl;
                 }
             }
+        }
+        if constexpr ( dimension_v<MeshType> == 2 )
+        {
+            int f_req_elts = nelements( markedelements( M_mesh, M_required_facet_markers ) );
+            std::cout << fmt::format( "[mmg->feelpp] number of required facets: {}, tag", f_req_elts ) << std::endl;
         }
         for ( int k = 1; k <= nEdges; k++ )
         {
