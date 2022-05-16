@@ -27,6 +27,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <pybind11/eigen.h>
+#include <feel/feelcore/pybind11_json.hpp>
 
 #include <feel/feelmesh/filters.hpp>
 #include <feel/feeldiscr/mesh.hpp>
