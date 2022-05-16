@@ -51,6 +51,7 @@ makeOptions()
     // clang-format: off
     po::options_description desc_options( "test_Mmg options" );
     desc_options.add_options()
+        ( "json", po::value<std::string>(), "json file" )
         ( "niter", po::value<int>()->default_value( 1 ), "niter" )
         ( "hsize", po::value<double>()->default_value( 0.1 ), "mesh size" )
         ( "remesh.verbose", po::value<int>()->default_value( 1 ), "mesh size" )
@@ -101,7 +102,18 @@ class TestRemesh
     using mesh_t = Mesh<Simplex<Dim,1,RDim>>;
     using mesh_ptr_t = std::shared_ptr< mesh_t >;
     
-    TestRemesh() = default;
+    TestRemesh()
+    {
+        
+        std::string fname = Environment::expand("$cfgdir/test_remesh.json");
+        BOOST_MESSAGE( fmt::format( "initialize test_remesh with json file: {}\n", fname) );
+        if ( fs::exists(fs::path(fname) ) )
+        {
+            std::ifstream fin(fname.c_str());
+            fin >> j_;
+            BOOST_MESSAGE( fmt::format( "json: {}\n",j_.dump(1) ) );
+        }
+    }
     mesh_ptr_t setMesh( std::string const& fname = "", std::string const& e = "", std::vector<std::string> const& f = {}, std::vector<std::string> const& f_c = {} );
     auto createMetricSpace( mesh_ptr_t m )
     {
@@ -134,6 +146,7 @@ class TestRemesh
         }
     }
     int execute( int loop = 1 );
+    nl::json j_;
     mesh_ptr_t mesh_;
     std::string required_elements_str_;
     std::vector<std::string> required_facets_str_;
@@ -190,10 +203,14 @@ TestRemesh<Dim, RDim>::execute( int niter )
         //met.on( _range = elements( mesh_ ), _expr = expr( soption( "functions.s" ) ) );
         met.on( _range = elements( mesh_ ), _expr = expr( metric ) );
         dump( mesh_, fmt::format( "dump mesh before remesh iter: {}, metric: {}", iter, metric ) );
-        auto [out,cpt] = remesh( mesh_, metric, { required_elements_str_ }, required_facets_str_, mesh_ptr_t{}  );
+        auto [out,cpt] = remesh( _mesh=mesh_, _metric=metric, 
+                                 _required_elts=std::vector<std::string>{{ required_elements_str_ }}, 
+                                 _required_facets=required_facets_str_,
+                                 _params=j_ );
         dump( out, fmt::format( "dump mesh after remesh iter: {}, metric: {}", iter, metric ) );
         BOOST_CHECK_EQUAL(  nelements( markedelements(mesh_,required_elements_str_), true),nelements( markedelements(out,required_elements_str_),true) );
-        BOOST_CHECK_EQUAL(  nelements( markedfaces(mesh_,required_facets_str_),true),nelements( markedfaces(out,required_facets_str_),true) );
+        if ( !Environment::isParallel() )
+            BOOST_CHECK_EQUAL(  nelements( markedfaces(mesh_,required_facets_str_),true),nelements( markedfaces(out,required_facets_str_),true) );
 
         auto Mhr = createMetricSpace( out );
         auto Vhr = createSpace<scalar,2>( out );
