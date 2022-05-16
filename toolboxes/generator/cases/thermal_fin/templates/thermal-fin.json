@@ -3,26 +3,29 @@
 {
     "Name": "Themal Fin {{ dim }}d",
     "ShortName":"ThermalFin{{ dim }}d",
-    "Parameters":
+    "CRBParameters":
     {
         {% for item in fins %}"k_{{ item }}":
         {
-            "value":"0.1",
             "min":"0.1",
             "max":"10"
         },
         {% endfor %}"k_0":
         {
-            "value":"1",
             "min":"1",
             "max":"1"
         },
         "Bi":
         {
-            "value":"0.01",
             "min":"0.01",
             "max":"1"
         }
+    },
+    "Parameters":
+    {
+        {% for item in fins %}"k_{{ item }}": "0.1",
+        {% endfor %}"k_0": "1",
+        "Bi": "0.01"
     },
     "Materials":
     {
@@ -41,35 +44,38 @@
     },
     "InitialConditions":
     {
-        "temperature": 
+        "heat":
         {
-            "Expression": 
+            "temperature":
             {
-                "init": 
+                "Expression":
                 {
-                    "markers":[{% for item in fins %}"Fin_{{ item }}", {% endfor %}"Post"], 
-                    "expr":"0" 
+                    "init":
+                    {
+                        "markers":[{% for item in fins %}"Fin_{{ item }}", {% endfor %}"Post"],
+                        "expr":"0"
+                    }
                 }
             }
         }
     },
     "BoundaryConditions":
     {
-        "temperature":
+        "heat":
         {
-            "Neumann":
+            "flux":
             {
                 "Gamma_root":
                 {
-                    "expr":"1"     // according to doc : -k nabla T.n = g
+                    "expr":"1"
                 }
             },
-            "Robin":
+            "convective_heat_flux":
             {
                 "Gamma_ext":
                 {
-                    "expr1":"Bi:Bi",
-                    "expr2":"0"
+                    "h":"Bi:Bi",
+                    "Text":"0"
                 }
             }
         }
