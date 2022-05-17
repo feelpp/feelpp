@@ -3,7 +3,6 @@ import pytest
 import pandas as pd
 import time
 
-FEEL_PATH = os.environ['HOME'] + '/feel'
 
 from mpi4py import MPI
 comm = MPI.COMM_WORLD
@@ -21,10 +20,10 @@ from feelpp.mor.reducedbasis.reducedbasis import *
 
 #        (( prefix, case, casefile, dim, use_cache, time_dependant), name     )
 cases = [
-         (('testcase/thermal-fin', '2d', 'thermal-fin.cfg', 2, False, False), 'thermal-fin-2d'),
-         (('testcase/thermal-fin', '2d', 'thermal-fin.cfg', 2, True, False), 'thermal-fin-2d-cached'),
-         (('testcase/thermal-fin', '3d', 'thermal-fin.cfg', 3, False, False), 'thermal-fin-3d'),
-         (('testcase/thermal-fin', '3d', 'thermal-fin.cfg', 3, True, False), 'thermal-fin-3d-cached')
+         (('testcase', 'thermal-fin/2d', 'thermal-fin.cfg', 2, False, False), 'thermal-fin-2d'),
+         (('testcase', 'thermal-fin/2d', 'thermal-fin.cfg', 2, True, False), 'thermal-fin-2d-cached'),
+         (('testcase', 'thermal-fin/3d', 'thermal-fin.cfg', 3, False, False), 'thermal-fin-3d'),
+         (('testcase', 'thermal-fin/3d', 'thermal-fin.cfg', 3, True, False), 'thermal-fin-3d-cached')
         ]
 cases_params, cases_ids = list(zip(*cases))
 
@@ -34,12 +33,17 @@ def init_toolbox(prefix, case, casefile, dim, use_cache):
 
     if not use_cache:
         print('removing cache...')
+        name = case.replace("/","-") + "-np_" +  str(feelpp.Environment.numberOfProcessors())
+        # try:
+        #     shutil.rmtree(feelpp.Environment.rootRepository() + '/pyfeelppmor-tests')
+        # except FileNotFoundError:
+        #     print(f"Deletion of {feelpp.Environment.rootRepository()}/pyfeelppmor-tests did not succeded : Directory doesn't exist")
         try:
-            shutil.rmtree(FEEL_PATH + '/crbdb')
-            shutil.rmtree(FEEL_PATH + f'{prefix}/{case}')
+            shutil.rmtree(feelpp.Environment.rootRepository() + "/crbdb/" + name)
         except FileNotFoundError:
-            print('You asked to remove cache, but there was none, so no problem !')
+            print(f"Deletion of {feelpp.Environment.rootRepository()}/crbdb/{name} did not succeded : Directory doesn't exist")
 
+    print("Current working directory is",  os.getcwd())
     feelpp.Environment.setConfigFile(f'{prefix}/{case}/{casefile}')
     feelpp.Environment.changeRepository(directory=f'{prefix}/{case}')
 
@@ -52,7 +56,7 @@ def init_toolbox(prefix, case, casefile, dim, use_cache):
 
 def init_model(prefix, case, casefile, dim, use_cache, time_dependent):
     heatBox, dim = init_toolbox(prefix, case, casefile, dim, use_cache)
-    name = prefix.replace("/","-") + "-" + case + "-np_" +  str(feelpp.Environment.numberOfProcessors())
+    name = case.replace("/","-") + "-np_" +  str(feelpp.Environment.numberOfProcessors())
     model = toolboxmor(name=name, dim=dim, time_dependent=time_dependent)
 
 

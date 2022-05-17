@@ -1,5 +1,5 @@
 from logging import getLogger
-import sys
+import sys, shutil
 
 import py
 import pytest
@@ -30,6 +30,12 @@ def has_petsc4py():
 
 class InitFeelpp:
     def __init__(self,config):
+        
+        try:
+            shutil.rmtree(feelpp.Environment.rootRepository() + '/pyfeelppmor-tests')
+        except FileNotFoundError:
+            print(f"Deletion of {feelpp.Environment.rootRepository()}/pyfeelppmor-tests did not succeded : Directory doesn't exist")
+
         try:
             print('xxx call init_feelpp;', __file__)
             sys.argv=['test_pyfeelppmor']
