@@ -21,64 +21,75 @@ parser.add_argument('--tol', help="tolerance for generating", type=float, defaul
 
 algos_names = ["generation_from_sample", "greedy", "POD_modes"]
 
-if __name__ == '__main__':
-    args = parser.parse_args()
-    dim = args.dim
-    config_file = args.config_file
-    time_dependant = args.time_dependant
-    odir = args.odir
-    algo = args.algo
-    size = args.train_size
-    tol = args.tol
-else:
-    dim = None
-    config_file = None
-    time_dependant = None
-    odir = None
-    compute_greedy = None
-    algo = None
-    size = None
-    tol = 1e-6
+class generateBasisConfig():
+
+    def __init__(self, dim=None, config_file=None, time_dependant=False, odir=None, case=None, algo=1, size=40, tol=1e-6):
+        self.dim = dim
+        self.config_file = config_file
+        self.time_dependant = time_dependant
+        self.odir = odir
+        self.case = case
+        self.algo = algo
+        self.size = size
+        self.tol = tol
 
 
 
+def generate_basis(worldComm=None, config=None):
+    """Generates the reduced basis
 
-def generate_basis(worldComm=None):
+    Args:
+        worldComm (feelpp._core.WorldComm, optional): Pointer to the MPI communicator. Defaults to None.
+        config (generateBasisConfig, optional): Configuration for the generation of the basis. Defaults to None.
+
+    Raises:
+        ValueError: if no configuration is given
+        ValueError: if dimension if not 2 or 3
+        ValueError: if no config_file is given
+        ValueError: if value for algorithm is not valid (see documentation)
+
+    Returns:
+        feelpp.mor.reducedbasis.reducedbasis.reducedbasisOffline: Object dealing with the reduced basis. The content is also saved on disk
+    """
+
+    if config is None:
+        raise ValueError("No configuration passed. Please give an instance of generateBasisConfig")
 
     if worldComm is None:
         worldComm = feelpp.Environment.worldCommPtr()
 
-    if dim not in [2,3]:
+    if config.dim not in [2,3]:
         raise ValueError("dim must be 2 or 3")
-    if config_file is None:
+    if config.config_file is None:
         raise ValueError("invalid path to config-file")
-    if algo not in [0,1,2]:
-        raise ValueError(f"Algo {algo} not valid")
+    if config.algo not in [0,1,2]:
+        raise ValueError(f"Algo {config.algo} not valid")
+
+    name = config.case.replace("/","-") + "-" + "-np_" +  str(feelpp.Environment.numberOfProcessors())
+    name = name.replace('--', '-')
+    if "$name" in config.odir:
+        config.odir = config.odir.replace("$name", name)
 
 
     if worldComm.isMasterRank():
         print("==============================================")
         print("Generation of the reduced basis")
-        print("           Config-file :", f"{config_file}")
-        print("Data will be stored in :", feelpp.Environment.rootRepository()+"/"+odir)
+        print("           Config-file :", f"{config.config_file}")
+        print("Data will be stored in :", feelpp.Environment.rootRepository()+"/"+config.odir)
         print("Current working directory is ", os.getcwd())
         print("===============================================")
 
 
-    feelpp.Environment.setConfigFile(f'{config_file}')
+    feelpp.Environment.setConfigFile(f'{config.config_file}')
 
     # Set the toolboxes
-    heatBox = heat(dim=dim, order=1)
+    heatBox = heat(dim=config.dim, order=1)
     heatBox.init()
 
     modelParameters = heatBox.modelProperties().parameters()
     default_parameter = modelParameters.toParameterValues()
 
-    split = config_file.split('/')
-    case = '/'.join(split[:-1])
-
-    name = case.replace("/","-") + "-" + "-np_" +  str(feelpp.Environment.numberOfProcessors())
-    model = toolboxmor(name=name, dim=dim, time_dependent=time_dependant)
+    model = toolboxmor(name=name, dim=config.dim, time_dependent=config.time_dependant)
     model.setFunctionSpaces( Vh=heatBox.spaceTemperature() )
 
 
@@ -102,12 +113,12 @@ def generate_basis(worldComm=None):
 
     model.initModel()
 
-    heatBoxDEIM = heat(dim=dim, order=1)
+    heatBoxDEIM = heat(dim=config.dim, order=1)
     meshDEIM = model.getDEIMReducedMesh()
     heatBoxDEIM.setMesh(meshDEIM)
     heatBoxDEIM.init()
 
-    heatBoxMDEIM = heat(dim=dim, order=1)
+    heatBoxMDEIM = heat(dim=config.dim, order=1)
     meshMDEIM = model.getMDEIMReducedMesh()
     heatBoxMDEIM.setMesh(meshMDEIM)
     heatBoxMDEIM.init()
@@ -157,18 +168,18 @@ def generate_basis(worldComm=None):
         print("Size of the big problem :", rb.NN)
 
 
-    mus = listOfParams(size)
+    mus = listOfParams(config.size)
     if worldComm.isMasterRank():
-        print("[generate_basis] Start generation of the basis using algo", algos_names[algo])
-    if algo == 0:
+        print("[generate_basis] Start generation of the basis using algo", algos_names[config.algo])
+    if config.algo == 0:
         rb.computeOfflineReducedBasis(mus)
 
-    elif algo == 1:
+    elif config.algo == 1:
         mu_0 = Dmu.element()
-        rb.greedy(mu_0, mus, eps_tol=tol)
+        rb.greedy(mu_0, mus, eps_tol=config.tol)
 
-    elif algo == 2:
-        rb.generatePOD(mus, eps_tol=tol)
+    elif config.algo == 2:
+        rb.generatePOD(mus, eps_tol=config.tol)
     else:
         pass
 
@@ -181,7 +192,7 @@ def generate_basis(worldComm=None):
     if worldComm.isMasterRank():
         print("[generate_basis] Done !")
 
-        rb.saveReducedBasis(feelpp.Environment.rootRepository()+"/"+odir, force=True)
+    s = rb.saveReducedBasis(feelpp.Environment.rootRepository()+"/"+config.odir, force=True)
 
     return rb
 
@@ -195,4 +206,17 @@ if __name__ == '__main__':
 
     e = feelpp.Environment(sys.argv, opts=o)
 
-    generate_basis()
+    args = parser.parse_args()
+    dim = args.dim
+    config_file = args.config_file
+    time_dependant = args.time_dependant
+    odir = args.odir
+    algo = args.algo
+    size = args.train_size
+    tol = args.tol
+    split = config_file.split('/')
+    case = '/'.join(split[:-1])
+
+    config = generateBasisConfig(dim, config_file, time_dependant, odir, case, algo, size, tol)
+
+    generate_basis(config=config)

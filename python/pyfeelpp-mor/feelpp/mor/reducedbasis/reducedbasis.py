@@ -297,7 +297,7 @@ class reducedbasis():
                 os.mkdir(path)
 
         if self.worldComm.isMasterRank():
-            print(f"[reducedbasis] saving reduced basis to {os.getcwd()}/reducedbasis.json ...", end=" ")
+            print(f"[reducedbasis] saving reduced basis to {path}/reducedbasis.json ...", end=" ")
 
         content = {'Qa': self.Qa, 'Qf': self.Qf, 'N': self.N, "path": path+"/reducedbasis.h5"}
         os.system('pwd')
@@ -327,7 +327,7 @@ class reducedbasis():
         f.close()
         if self.worldComm.isMasterRank():
             print("Done !")
-        return os.getcwd() + "/reducedbasis.json"
+        return path + "/reducedbasis.json"
 
 
     def loadReducedBasis(self, path, model):
