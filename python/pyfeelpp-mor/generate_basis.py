@@ -200,7 +200,7 @@ def generate_basis(worldComm=None, config=None):
 
 if __name__ == '__main__':
     # config = feelpp.globalRepository(f'{dir}')
-    if sys.argv[0] == 'generate_basis.py':
+    if 'generate_basis.py' in sys.argv[0]:
         sys.argv = sys.argv[1:]
     args = parser.parse_args(sys.argv)
     sys.argv = ['generate-basis']

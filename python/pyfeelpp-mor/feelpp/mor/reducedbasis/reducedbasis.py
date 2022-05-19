@@ -299,32 +299,34 @@ class reducedbasis():
         if self.worldComm.isMasterRank():
             print(f"[reducedbasis] saving reduced basis to {os.getcwd()}/reducedbasis.json ...", end=" ")
 
-        content = {'Qa': self.Qa, 'Qf': self.Qf, 'N': self.N, "path": path+"/reducedbasis.h5"}
-        os.system('pwd')
-        h5f = h5py.File(path+"/reducedbasis.h5", "w")
-        f = open('reducedbasis.json', 'w')
+        if self.worldComm.isMasterRank():
+            h5f = h5py.File(path+"/reducedbasis.h5", "w")
+            content = {'Qa': self.Qa, 'Qf': self.Qf, 'N': self.N, "path": path+"/reducedbasis.h5"}
+            dict_mubar = {}
+            for n in self.mubar.parameterNames(): dict_mubar[n] = self.mubar.parameterNamed(n)
+            content["mubar"] = dict_mubar
+            
+            f = open('reducedbasis.json', 'w')
+            json.dump(content, f, indent = 4)
+            f.close()
 
-        dict_mubar = {}
-        for n in self.mubar.parameterNames(): dict_mubar[n] = self.mubar.parameterNamed(n)
-        content["mubar"] = dict_mubar
 
-        h5f.create_dataset("ANq", data=self.ANq)
-        h5f.create_dataset("FNp", data=self.FNp)
-        h5f.create_dataset("SS", data=self.SS)
-        h5f.create_dataset("SL", data=self.SL)
-        h5f.create_dataset("LL", data=self.LL)
+            h5f.create_dataset("ANq", data=self.ANq)
+            h5f.create_dataset("FNp", data=self.FNp)
+            h5f.create_dataset("SS", data=self.SS)
+            h5f.create_dataset("SL", data=self.SL)
+            h5f.create_dataset("LL", data=self.LL)
 
-        if self.DeltaMax is not None:
-            h5f.create_dataset("DeltaMax", data=self.DeltaMax)
-        else:
-            h5f.create_dataset("DeltaMax", data=np.array([]))
+            if self.DeltaMax is not None:
+                h5f.create_dataset("DeltaMax", data=self.DeltaMax)
+            else:
+                h5f.create_dataset("DeltaMax", data=np.array([]))
 
-        h5f.create_dataset("alphaMubar", data=np.array([self.alphaMubar]))
-        h5f.create_dataset("gammaMubar", data=np.array([self.gammaMubar]))
+            h5f.create_dataset("alphaMubar", data=np.array([self.alphaMubar]))
+            h5f.create_dataset("gammaMubar", data=np.array([self.gammaMubar]))
 
-        json.dump(content, f, indent = 4)
-        h5f.close()
-        f.close()
+
+            h5f.close()
         if self.worldComm.isMasterRank():
             print("Done !")
         return f"{os.getcwd()}/reducedbasis.json"
