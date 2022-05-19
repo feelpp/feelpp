@@ -698,7 +698,7 @@ public:
         }
     template<typename ExprType>
     void
-    interpolateBasisFunction( ExprType&& expr, local_interpolants_type & Ihloc ) const
+    evaluateBasisFunction/*interpolateBasisFunction*/( ExprType&& expr, local_interpolants_type & Ihloc ) const
     {
         using shape = typename std::decay_t<ExprType>::shape;
         /*
@@ -749,6 +749,93 @@ public:
             }
         }
     }
+
+    template<typename ExprType>
+    void
+    interpolateBasisFunction( ExprType&& expr, local_interpolants_type & Ihloc, std::vector<uint16_type> const& mapExprPointToDofPoint ) const
+    {
+        using shape = typename std::decay_t<ExprType>::shape;
+        /*
+        BOOST_MPL_ASSERT_MSG( nComponents1==shape::M,
+                              INCOMPATIBLE_NUMBER_OF_COMPONENTS,
+                              (mpl::int_<nComponents1>,mpl::int_<shape::M>));
+        BOOST_MPL_ASSERT_MSG( nComponents2==shape::N,
+                              INCOMPATIBLE_NUMBER_OF_COMPONENTS,
+                              (mpl::int_<nComponents2>,mpl::int_<shape::N>));
+         */
+        //for ( int cc1 = 0; cc1 < nComponents1; ++cc1 )
+        using expr_basis_t = typename std::decay_t<ExprType>::expr_type::test_basis;
+
+        int nPoints = expr.nPoints();
+        for( int q = 0; q < nPoints; ++q )
+        {
+            uint16_type q2 = mapExprPointToDofPoint[q];
+            for( int i = 0; i < expr_basis_t::nLocalDof; ++i )
+            {
+                int ncomp1= ( expr_basis_t::is_product?expr_basis_t::nComponents1:1 );
+
+                for ( uint16_type c = 0; c < ncomp1; ++c )
+                {
+                    uint16_type I = expr_basis_t::nLocalDof*c + i;
+                    for( int c1 = 0; c1 < shape::M; ++c1 )
+                    {
+                        if ( is_symm_v )
+                        {
+                            for( int c2 = 0; c2 < c1; ++c2 )
+                            {
+                                int ldof = (c2+nComponents2*c1)*nLocalDof + q2;
+                                Ihloc( I, ldof) = expr.evaliq( I, c1, c2, q );
+                                int ldof2 = (c1+nComponents2*c2)*nLocalDof + q2;
+                                Ihloc( I, ldof2) = Ihloc( I, ldof);
+                            }
+                            int ldof = (c1+nComponents2*c1)*nLocalDof + q2;
+                            Ihloc( I, ldof) = expr.evaliq( I, c1, c1, q );
+                        }
+                        else
+                        {
+                            for( int c2 = 0; c2 < shape::N; ++c2 )
+                            {
+                                int ldof = (c2+nComponents2*c1)*nLocalDof + q2;
+                                Ihloc( I, ldof) = expr.evaliq( I, c1, c2, q );
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    template<typename ExprType,
+             std::enable_if_t< std::decay_t<ExprType>::gmc_type::subEntityCoDim == 0 ,bool> = true >
+    void
+    interpolateBasisFunction( ExprType&& expr, local_interpolants_type & Ihloc ) const
+        {
+            std::vector<uint16_type> mapExprPointToDofPoint(nLocalDof);
+            std::iota( mapExprPointToDofPoint.begin(), mapExprPointToDofPoint.end(), 0 );
+            this->interpolateBasisFunction( expr, Ihloc, mapExprPointToDofPoint );
+        }
+
+    template<typename ExprType,
+             std::enable_if_t< std::decay_t<ExprType>::gmc_type::subEntityCoDim == 1 ,bool> = true >
+    void
+    interpolateBasisFunction( ExprType&& expr, local_interpolants_type & Ihloc ) const
+        {
+            int nPoints = expr.nPoints();
+            CHECK( nLocalFaceDof == nPoints ) << nLocalFaceDof << " vs "<< nPoints;
+            auto gmc = expr.geom();
+            uint16_type faceIdInElt = gmc->faceId();
+            std::vector<uint16_type> mapExprPointToDofPoint( nLocalFaceDof );
+            for ( int lfd = 0;lfd < nLocalFaceDof;++lfd )
+            {
+                if ( lfd < (face_type::numVertices * nDofPerVertex) )
+                    mapExprPointToDofPoint[lfd] = reference_convex_type::e2p(faceIdInElt,lfd);
+                else
+                    CHECK( false ) << "TODO";
+            }
+
+            this->interpolateBasisFunction( expr, Ihloc, mapExprPointToDofPoint );
+        }
+
     //@}
 
 private:
