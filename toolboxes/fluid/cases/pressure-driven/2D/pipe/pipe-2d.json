@@ -11,6 +11,7 @@
     "Parameters":
     {
         "nu":1,
+        "rho":1,
         "L":1,
         "pin":1,
         "pout":0,

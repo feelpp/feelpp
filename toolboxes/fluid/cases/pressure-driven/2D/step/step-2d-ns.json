@@ -11,7 +11,9 @@
     "Parameters":
     {
         "nu":1,
+        "r":1,
         "pout":0,
+        "pin":11,
         "uxin":"6*(2-y)*(y-1):y",
         "uyin":"0"
     },
@@ -27,8 +29,9 @@
     },
     "Materials":
     {
-        "Omega":{
-            "rho":"1",
+        "Omega":
+        {
+            "rho":"r:r",
             "mu":"nu:nu"
         }
     },
@@ -41,10 +44,6 @@
                 "wall":
                 {
                     "expr":"{0,0}"
-                },
-                "inlet":
-                {
-                    "expr":"{uxin,uyin}:uxin:uyin"
                 }
             },
             "pressure":
@@ -52,6 +51,10 @@
                 "outlet":
                 {
                     "expr":"pout:pout"
+                },
+                "inlet":
+                {
+                    "expr":"pin:pin"
                 }
             }
         }
@@ -60,6 +63,18 @@
     {
         "fluid":
         {
+            "Measures":
+            {
+                "Statistics":
+                {
+                    "Re_D": 
+                    {
+                        "type":"integrate",
+                        "expr":"2*fluid_U_magnitude*r/nu:fluid_U_magnitude:r:nu",
+                        "markers":"inlet"
+                    }
+                }
+            },
             "Exports":
             {
                 "fields":["velocity","pressure","pid"]

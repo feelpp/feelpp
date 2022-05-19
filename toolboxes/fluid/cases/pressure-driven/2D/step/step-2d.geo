@@ -5,7 +5,7 @@ h=0.1;
 hin=1;
 hout=2;
 lstep=1;
-lfloor=5;
+lfloor=3;
 
 Point(1) = {-lstep, hout-hin, 0, h};
 Point(2) = {0, hout-hin, 0, h*0.1};

@@ -5,7 +5,7 @@
     {
         "fluid":
         {
-            "equations":"Navier-Stokes"
+            "equations":"Stokes"
         }
     },
     "Parameters":

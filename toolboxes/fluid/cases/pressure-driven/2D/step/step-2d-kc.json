@@ -12,6 +12,7 @@
     {
         "nu":1,
         "pout":0,
+        "pin":24,
         "uxin":"6*(2-y)*(y-1):y",
         "uyin":"0"
     },
@@ -41,17 +42,21 @@
                 "wall":
                 {
                     "expr":"{0,0}"
-                },
+                }/*,
                 "inlet":
                 {
                     "expr":"{uxin,uyin}:uxin:uyin"
-                }
+                }*/
             },
             "pressure":
             {
                 "outlet":
                 {
                     "expr":"pout:pout"
+                },
+                "inlet":
+                {
+                    "expr":"pin:pin"
                 }
             }
         }
