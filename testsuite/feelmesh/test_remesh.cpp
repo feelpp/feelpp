@@ -209,8 +209,7 @@ TestRemesh<Dim, RDim>::execute( int niter )
                                  _params=j_ );
         dump( out, fmt::format( "dump mesh after remesh iter: {}, metric: {}", iter, metric ) );
         BOOST_CHECK_EQUAL(  nelements( markedelements(mesh_,required_elements_str_), true),nelements( markedelements(out,required_elements_str_),true) );
-        if ( !Environment::isParallel() )
-            BOOST_CHECK_EQUAL(  nelements( markedfaces(mesh_,required_facets_str_),true),nelements( markedfaces(out,required_facets_str_),true) );
+        BOOST_CHECK_EQUAL(  nelements( markedfaces(mesh_,required_facets_str_),true),nelements( markedfaces(out,required_facets_str_),true) );
 
         auto Mhr = createMetricSpace( out );
         auto Vhr = createSpace<scalar,2>( out );
