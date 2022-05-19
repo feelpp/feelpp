@@ -1,10 +1,12 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
  */
 
 #include <feel/feelmodels/coefficientformpdes/coefficientformpdes.hpp>
 
 //#include <feel/feelmodels/modelmesh/createmesh.hpp>
 #include <feel/feelmodels/modelcore/utils.hpp>
+
+#include <feel/feelvf/operators.hpp>
 
 namespace Feel
 {
@@ -267,6 +269,140 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
 {
     auto algebraicFactory = std::make_shared<model_algebraic_factory_type>( this->shared_from_this(),this->backend() );
     this->setAlgebraicFactory( algebraicFactory );
+
+
+#if 0
+
+    int nEq = M_coefficientFormPDEs.size();
+    int nBlock = nEq;//this->nBlockMatrixGraph();
+    BlocksBaseSparseMatrix<double> myblockMat( nBlock,nBlock );
+    //BlocksBaseGraphCSR myblockGraph(nEq,nEq);
+    for ( int k=0;k<nEq;++k )
+    {
+        auto const& cfpdeBase = M_coefficientFormPDEs[k];
+        hana::for_each( tuple_type_unknown_basis, [this,&nEq,&k,&myblockMat,&cfpdeBase]( auto const& e )
+                        {
+                            if ( this->unknowBasisTag( e ) != cfpdeBase->unknownBasis() )
+                                return;
+
+                            using coefficient_form_pde_type = typename self_type::traits::template coefficient_form_pde_t<decltype(e)>;
+                            auto cfpde = std::dynamic_pointer_cast<coefficient_form_pde_type>( cfpdeBase );
+                            if ( !cfpde ) CHECK( false ) << "failure in dynamic_pointer_cast";
+
+                            int rowId = this->startSubBlockSpaceIndex( cfpde->equationName() );
+
+                            myblockMat(k,k) = this->backend()->newIdentityMatrix( cfpde->spaceUnknown()->dof(), cfpde->spaceUnknown()->dof() );
+                            if ( k == 0 )
+                            {
+                                auto dofsBody = cfpde->spaceUnknown()->dofs( markedfaces(this->mesh(),"Interface") );
+                                auto matFI_Id = myblockMat(k,k);
+                                for ( auto dofid : dofsBody )
+                                {
+                                    matFI_Id->set( dofid,dofid, 0.);
+                                }
+                            }
+                            std::cout << "TOTO k="<<k<< " : " << cfpdeBase->unknownBasis() << std::endl;
+                            //auto Matp = this->backend()->newIdentityMatrix( algebraicFactory->matrix()->mapColPtr(), algebraicFactory->matrix()->mapRowPtr() );
+// #if 0
+//                             myblockGraph(rowId,rowId) = stencil(_test=cfpde->spaceUnknown(),
+//                                                                 _trial=cfpde->spaceUnknown() )->graph();
+// #else
+//                             auto blockGraph = cfpde->buildBlockMatrixGraph();
+//                             for (int bg1 = 0 ; bg1< blockGraph.nRow() ; ++bg1)
+//                                 for (int bg2 = 0 ; bg2< blockGraph.nCol() ; ++bg2)
+//                                     myblockGraph(rowId+bg1,rowId+bg2) = blockGraph(bg1,bg2);
+// #endif
+                            if ( k != 0 )
+                                return;
+
+                            // maybe coupling with other equation in the row
+                            for ( int k2=0;k2<nEq;++k2 )
+                            {
+                                if ( k2 != 1 )
+                                    continue;
+                                // if ( k == k2 )
+                                //     continue;
+                                // if ( k != 0 )
+                                //     continue;
+                                auto const& cfpdeBase2 = M_coefficientFormPDEs[k2];
+                                hana::for_each( tuple_type_unknown_basis, [this,&rowId,&myblockMat,&cfpde,&cfpdeBase2,&k,&k2]( auto const& e2 )
+                                                {
+                                                    if ( this->unknowBasisTag( e2 ) != cfpdeBase2->unknownBasis() )
+                                                        return;
+
+                                                    using coefficient_form_pde_2_type = typename self_type::traits::template coefficient_form_pde_t<decltype(e2)>;
+                                                    auto cfpde2 = std::dynamic_pointer_cast<coefficient_form_pde_2_type>( cfpdeBase2 );
+                                                    if ( !cfpde2 ) CHECK( false ) << "failure in dynamic_pointer_cast";
+                                                    std::cout << "TITI k2="<<k2<< " : " << cfpdeBase2->unknownBasis() << std::endl;
+
+
+#if 1
+                                                    sparse_matrix_ptrtype mat;
+                                                    bool buildNewMatrix = true;
+                                                    OperatorInterpolationMatrixSetup matSetup( mat, buildNewMatrix? Feel::DIFFERENT_NONZERO_PATTERN : Feel::SAME_NONZERO_PATTERN,
+                                                                                               //startBlockIndexVelocity, startBlockIndexAngularVelocity );
+                                                                                               0,0/*rowId, startBlockIndexAngularVelocity*/ );
+                                                    auto w = cfpde2->spaceUnknown()->element();
+
+                                                    if constexpr( std::decay_t<decltype(*cfpde2)>::unknown_is_scalar )
+                                                    {
+                                                        auto opI_AngularVelocity = opInterpolation( _domainSpace=cfpde2->spaceUnknown(),_imageSpace=cfpde->spaceUnknown(),
+                                                                                                    _range= markedfaces(this->mesh(),"Bound_super"/*"Interface"*/),
+                                                                                                    //_type= makeExprInterpolation( id(w)*vec(-Py()+massCenter(1,0),Px()-massCenter(0,0) ), nonconforming_t() ),
+                                                                                                    //_type= makeExprInterpolation( id(w), nonconforming_t() ),
+                                                                                                    //_type= makeExprInterpolation( -cross( N(), trans(grad(w)) ), nonconforming_t() ),
+                                                                                                    //_type= makeExprInterpolation( -cross( trans(grad(w)),N() ), nonconforming_t() ),
+                                                                                                    _type= makeExprInterpolation( -trans(grad(w)), nonconforming_t() ),
+
+                                                                                                    _matrix=matSetup );
+
+                                                        if ( buildNewMatrix )
+                                                            mat = opI_AngularVelocity->matPtr();
+                                                        myblockMat(k,k2) = opI_AngularVelocity->matPtr();
+                                                    }
+                                                    // M_matrixPTilde_angular = opI_AngularVelocity->matPtr();
+#endif
+
+                                                    // auto tse = this->trialSymbolsExpr( mfields, cfpde2->trialSelectorModelFields() );
+                                                    // auto trialSymbolNames = tse.names();
+
+                                                    // if ( cfpde->hasSymbolDependencyInCoefficients( trialSymbolNames, se ) )
+                                                    // {
+                                                    //     int colId = this->startSubBlockSpaceIndex( cfpde2->equationName() );
+                                                    //     myblockGraph(rowId,colId) = stencil(_test=cfpde->spaceUnknown(),
+                                                    //                                  _trial=cfpde2->spaceUnknown() )->graph();
+                                                    // }
+                                                });
+                            }
+
+                        });
+    }
+
+
+
+
+    auto matP = this->backend()->newBlockMatrix(_block=myblockMat, _copy_values=true);
+
+    //auto matP = this->backend()->newIdentityMatrix( algebraicFactory->matrix()->mapColPtr(), algebraicFactory->matrix()->mapRowPtr() );
+    auto matQ = this->backend()->newIdentityMatrix( matP->mapColPtr(), matP->mapRowPtr() );
+    // for ( auto & [bpname,bbc] : *this )
+    // {
+    //     auto dofsBody = fluidToolbox.functionSpaceVelocity()->dofs( bbc.rangeMarkedFacesOnFluid() );
+    //     auto const& basisToContainerGpVelocity = matQ->mapCol().dofIdToContainerId( startBlockIndexVelocity );
+    //     for ( auto dofid : dofsBody )
+    //     {
+    //         matQ->set( basisToContainerGpVelocity[dofid],basisToContainerGpVelocity[dofid], 0.);
+    //     }
+    // }
+    // matQ->close();
+
+    auto applyQ = [this,matQ](vector_ptrtype const& Ud, vector_ptrtype & Ui){
+                      matQ->multVector( *Ud, *Ui );
+                      //this->solverPtAP_applyQ(Ud,Ui);
+                  };
+    algebraicFactory->initSolverPtAP( matP, applyQ );
+
+#endif
 
     bool hasTimeSteppingTheta = false;
     for (auto & cfpde : M_coefficientFormPDEs )
