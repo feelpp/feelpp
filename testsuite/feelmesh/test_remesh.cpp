@@ -102,10 +102,10 @@ class TestRemesh
     using mesh_t = Mesh<Simplex<Dim,1,RDim>>;
     using mesh_ptr_t = std::shared_ptr< mesh_t >;
     
-    TestRemesh()
+    TestRemesh(std::string const& jname = "test_remesh.json" )
     {
         
-        std::string fname = Environment::expand("$cfgdir/test_remesh.json");
+        std::string fname = Environment::expand(fmt::format("$cfgdir/{}",jname));
         BOOST_MESSAGE( fmt::format( "initialize test_remesh with json file: {}\n", fname) );
         if ( fs::exists(fs::path(fname) ) )
         {
@@ -356,11 +356,32 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_required_elements_and_facets, T, dim_types )
             BOOST_MESSAGE( "================================================================" );
             BOOST_MESSAGE( fmt::format( "[test_required_elements_and_facets] required mat {}, required facet {}", mat, bdys ) );
         }
-        TestRemesh<T::first_type::value, T::second_type::value> r;
+        TestRemesh<T::first_type::value, T::second_type::value> r("test_remesh.json");
         r.setMesh( fmt::format("$cfgdir/domains_{}d.geo",T::first_type::value), mat, bdys, bdys );
         r.execute( ioption("niter") );
     }
 }
 
+typedef boost::mpl::list<
+    std::pair<boost::mpl::int_<2>, boost::mpl::int_<2>>,
+    std::pair<boost::mpl::int_<3>, boost::mpl::int_<3>>>
+    dim_types;
+BOOST_AUTO_TEST_CASE_TEMPLATE( test_required_elements_and_facets_with_relations, T, dim_types )
+{
+    using namespace Feel;
+
+    auto bdys = std::vector{ { "OtherRequiredBoundary"s, "RequiredBoundaryOfRequiredElements"s } };
+    for ( std::string mat : std::vector{ { "", "MatTwo" } } )
+    {
+        if ( Environment::isMasterRank() )
+        {
+            BOOST_MESSAGE( "================================================================" );
+            BOOST_MESSAGE( fmt::format( "[test_required_elements_and_facets] required mat {}, required facet {}", mat, bdys ) );
+        }
+        TestRemesh<T::first_type::value, T::second_type::value> r("test_remesh_relations.json");
+        r.setMesh( fmt::format( "$cfgdir/domains_{}d.geo", T::first_type::value ), mat, bdys, bdys );
+        r.execute( ioption( "niter" ) );
+    }
+}
 
 BOOST_AUTO_TEST_SUITE_END()
