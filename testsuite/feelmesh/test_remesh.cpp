@@ -42,19 +42,24 @@
 using namespace Feel;
 namespace hana =  boost::hana;
 using namespace hana::literals;
+using namespace std::string_literals;
+
 inline
 po::options_description
 makeOptions()
 {
+    // clang-format: off
     po::options_description desc_options( "test_Mmg options" );
     desc_options.add_options()
+        ( "json", po::value<std::string>(), "json file" )
+        ( "niter", po::value<int>()->default_value( 1 ), "niter" )
         ( "hsize", po::value<double>()->default_value( 0.1 ), "mesh size" )
         ( "remesh.verbose", po::value<int>()->default_value( 1 ), "mesh size" )
         ( "remesh.hmin", po::value<double>(), "Minimal mesh size " )
         ( "remesh.hmax", po::value<double>(), "Maximal mesh size " )
         ( "remesh.hsiz", po::value<double>(), "Constant mesh size " )
-        
         ;
+    // clang-format: on
     return desc_options.add( backend_options("I") ).add( backend_options("Iv") ).add( Feel::feel_options() );
 }
 
@@ -71,7 +76,7 @@ makeAbout()
                      "0.1",
                      "test Mmg",
                      Feel::AboutData::License_GPL,
-                     "Copyright (c) 2020 Universite de Strasbourg" );
+                     "Copyright (c) 2020-2022 Universite de Strasbourg" );
 
     about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;
@@ -97,8 +102,19 @@ class TestRemesh
     using mesh_t = Mesh<Simplex<Dim,1,RDim>>;
     using mesh_ptr_t = std::shared_ptr< mesh_t >;
     
-    TestRemesh() = default;
-    mesh_ptr_t setMesh( std::string const& fname = "", std::string const& e = "", std::string const& f = "", std::vector<std::string> const& f_c = {} );
+    TestRemesh(std::string const& jname = "test_remesh.json" )
+    {
+        
+        std::string fname = Environment::expand(fmt::format("$cfgdir/{}",jname));
+        BOOST_MESSAGE( fmt::format( "initialize test_remesh with json file: {}\n", fname) );
+        if ( fs::exists(fs::path(fname) ) )
+        {
+            std::ifstream fin(fname.c_str());
+            fin >> j_;
+            BOOST_MESSAGE( fmt::format( "json: {}\n",j_.dump(1) ) );
+        }
+    }
+    mesh_ptr_t setMesh( std::string const& fname = "", std::string const& e = "", std::vector<std::string> const& f = {}, std::vector<std::string> const& f_c = {} );
     auto createMetricSpace( mesh_ptr_t m )
     {
         return Pch<1>( m );
@@ -130,14 +146,15 @@ class TestRemesh
         }
     }
     int execute( int loop = 1 );
+    nl::json j_;
     mesh_ptr_t mesh_;
     std::string required_elements_str_;
-    std::string required_facets_str_;
+    std::vector<std::string> required_facets_str_;
     std::vector<std::string> check_facets_;
 };
 template <int Dim, int RDim>
 typename TestRemesh<Dim, RDim>::mesh_ptr_t 
-TestRemesh<Dim, RDim>::setMesh( std::string const& filename, std::string const& r_e, std::string const& r_f, std::vector<std::string> const& r_c )
+TestRemesh<Dim, RDim>::setMesh( std::string const& filename, std::string const& r_e, std::vector<std::string> const& r_f, std::vector<std::string> const& r_c )
 {
     auto create_mesh = [&]() {
         if constexpr ( topo_dim == 2 && real_dim == 2 )
@@ -176,6 +193,8 @@ TestRemesh<Dim, RDim>::execute( int niter )
     std::vector<std::tuple<int,std::string>> iters{ {0,"0.5"}, {1,"0.25"}, {2,"0.125"} };
     for( auto [iter,metric]: iters) //ranges::views::ints( 0, niter ) )
     {
+        if ( iter >= niter )
+            break;
         auto Vh = createSpace<scalar,2>( mesh_ );
         auto Wh = createSpace<vectorial,2>( mesh_ );
         
@@ -183,13 +202,14 @@ TestRemesh<Dim, RDim>::execute( int niter )
         auto met = Mh->element();
         //met.on( _range = elements( mesh_ ), _expr = expr( soption( "functions.s" ) ) );
         met.on( _range = elements( mesh_ ), _expr = expr( metric ) );
-
-        auto r = remesher( mesh_, mesh_->markerName( required_elements_str_ ), mesh_->markerName( required_facets_str_ ) );
-
-        r.setMetric( met );
-        auto out = r.execute();
-        out->updateForUse();
-        dump( out );
+        dump( mesh_, fmt::format( "dump mesh before remesh iter: {}, metric: {}", iter, metric ) );
+        auto [out,cpt] = remesh( _mesh=mesh_, _metric=metric, 
+                                 _required_elts=std::vector<std::string>{{ required_elements_str_ }}, 
+                                 _required_facets=required_facets_str_,
+                                 _params=j_ );
+        dump( out, fmt::format( "dump mesh after remesh iter: {}, metric: {}", iter, metric ) );
+        BOOST_CHECK_EQUAL(  nelements( markedelements(mesh_,required_elements_str_), true),nelements( markedelements(out,required_elements_str_),true) );
+        BOOST_CHECK_EQUAL(  nelements( markedfaces(mesh_,required_facets_str_),true),nelements( markedfaces(out,required_facets_str_),true) );
 
         auto Mhr = createMetricSpace( out );
         auto Vhr = createSpace<scalar,2>( out );
@@ -229,31 +249,39 @@ TestRemesh<Dim, RDim>::execute( int niter )
                 BOOST_MESSAGE( fmt::format( "L2 error norm {}: {}", f.second, errw ) );
             BOOST_CHECK_SMALL( errw, 1e-10 );
         }
-        if ( !required_elements_str_.empty() )
+        if ( nelements( markedelements( Vh->mesh(), required_elements_str_ ), true ) > 0 )
         {
             double measinit = measure( _range = markedelements( Vh->mesh(), required_elements_str_ ) );
             double measremesh = measure( _range = markedelements( Vhr->mesh(), required_elements_str_ ) );
             if ( Environment::isMasterRank() )
                 BOOST_MESSAGE( fmt::format( "check element set measure {} initial: {} remesh: {} error: {}", required_elements_str_, measinit, measremesh, measinit - measremesh ) );
-            BOOST_CHECK_SMALL( measinit-measremesh, 1e-10 );
+            BOOST_CHECK_CLOSE( measinit, measremesh, 1e-10 );
         }
-        if ( !required_facets_str_.empty() )
+        if ( nelements(markedfaces( Vh->mesh(), required_facets_str_ ), true) > 0 )
         {
             double measinit = measure( _range = markedfaces( Vh->mesh(), required_facets_str_ ) );
             double measremesh = measure( _range = markedfaces( Vhr->mesh(), required_facets_str_ ) );
             if ( Environment::isMasterRank() )
                 BOOST_MESSAGE( fmt::format( "check element set measure {} initial: {} remesh: {} error: {}", required_facets_str_, measinit, measremesh, measinit - measremesh ) );
-            BOOST_CHECK_SMALL( measinit - measremesh, 1e-10 );
+            BOOST_CHECK_CLOSE( measinit, measremesh, 1e-10 );
         }
         if ( !check_facets_.empty() )
         {
             for( auto m : check_facets_ )
             {
-                double measinit = measure( _range = markedfaces( Vh->mesh(), m ) );
-                double measremesh = measure( _range = markedfaces( Vhr->mesh(), m ) );
-                if ( Environment::isMasterRank() )
-                    BOOST_MESSAGE( fmt::format( "check element set measure {} initial: {} remesh: {} error: {}", m, measinit, measremesh, measinit - measremesh ) );
-                BOOST_CHECK_SMALL( measinit - measremesh, 1e-10 );
+                if ( nelements(markedfaces( Vh->mesh(), m ), true ) > 0 )
+                {
+                    double measinit = measure( _range = markedfaces( Vh->mesh(), m ) );
+                    double measremesh = measure( _range = markedfaces( Vhr->mesh(), m ) );
+
+                    if ( Environment::isMasterRank() )
+                        BOOST_MESSAGE( fmt::format( "check element set measure {} initial: {} remesh: {} error: {}", m, measinit, measremesh, measinit - measremesh ) );
+                    BOOST_CHECK_CLOSE( measinit, measremesh, 1e-10 );
+                }
+                else
+                {
+                    BOOST_MESSAGE( fmt::format( "facets with marker {} do not exist", m ) );
+                }
             }
         }
         backend(_rebuild=true);
@@ -293,53 +321,67 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( testnD, T, dim_types )
 
     TestRemesh<T::first_type::value, T::second_type::value> r;
     r.setMesh();
-    r.execute(3);
-
+    r.execute( ioption( "niter" ) );
 }
 
 typedef boost::mpl::list<
     std::pair<boost::mpl::int_<2>, boost::mpl::int_<2>>,
     std::pair<boost::mpl::int_<3>, boost::mpl::int_<3>>>
     dim_types;
-BOOST_AUTO_TEST_CASE_TEMPLATE( testnDMat, T, dim_types )
+BOOST_AUTO_TEST_CASE_TEMPLATE( test_with_hole, T, dim_types )
 {
     using namespace Feel;
-
-    if ( Environment::isParallel() && T::first_type::value == 2 )
-        return;
+    if ( Environment::isMasterRank() )
+        {
+            BOOST_MESSAGE( "================================================================" );
+            BOOST_MESSAGE( fmt::format( "[test_with+hole] required facet marker {}", "RequiredBoundaryOfRequiredElements" ) );
+        }
     TestRemesh<T::first_type::value, T::second_type::value> r;
-    if constexpr ( T::first_type::value == 2 )
-    {
-        r.setMesh( "$datadir/geo/square_squareHole.geo", "","BdryFixedDiscr" );
-    }
-    else
-    {
-        r.setMesh( "$datadir/geo/cube_cubeHole.geo", "","BdryFixedDiscr" );
-    }
-    r.execute( 1 );
+    r.setMesh( fmt::format( "$cfgdir/domain_{}d.geo", T::first_type::value ), "", { "RequiredBoundaryOfRequiredElements"s }, { "RequiredBoundaryOfRequiredElements"s } );
+    r.execute( ioption("niter") );
 }
 typedef boost::mpl::list<
     std::pair<boost::mpl::int_<2>, boost::mpl::int_<2>>,
     std::pair<boost::mpl::int_<3>, boost::mpl::int_<3>>>
     dim_types;
-BOOST_AUTO_TEST_CASE_TEMPLATE( testnDMatTwo, T, dim_types )
+BOOST_AUTO_TEST_CASE_TEMPLATE( test_required_elements_and_facets, T, dim_types )
 {
     using namespace Feel;
 
-    if ( Environment::isParallel() && T::first_type::value == 2 )
-        return;
-    TestRemesh<T::first_type::value, T::second_type::value> r;
-    if constexpr ( T::first_type::value == 2 )
+    auto bdys = std::vector{ { "OtherRequiredBoundary"s, "RequiredBoundaryOfRequiredElements"s } };
+    for ( std::string mat : std::vector{ { "", "MatTwo" } } )
     {
-        r.setMesh( "$datadir/data/geo/square_twoMaterials.geo", "MatTwo", "BdryFixedDiscr" );
+        if ( Environment::isMasterRank() )
+        {
+            BOOST_MESSAGE( "================================================================" );
+            BOOST_MESSAGE( fmt::format( "[test_required_elements_and_facets] required mat {}, required facet {}", mat, bdys ) );
+        }
+        TestRemesh<T::first_type::value, T::second_type::value> r("test_remesh.json");
+        r.setMesh( fmt::format("$cfgdir/domains_{}d.geo",T::first_type::value), mat, bdys, bdys );
+        r.execute( ioption("niter") );
     }
-    else
+}
+
+typedef boost::mpl::list<
+    std::pair<boost::mpl::int_<2>, boost::mpl::int_<2>>,
+    std::pair<boost::mpl::int_<3>, boost::mpl::int_<3>>>
+    dim_types;
+BOOST_AUTO_TEST_CASE_TEMPLATE( test_required_elements_and_facets_with_relations, T, dim_types )
+{
+    using namespace Feel;
+
+    auto bdys = std::vector{ { "OtherRequiredBoundary"s, "RequiredBoundaryOfRequiredElements"s } };
+    for ( std::string mat : std::vector{ { "", "MatTwo" } } )
     {
-        // r.setMesh( "$datadir/geo/cube_twoMaterials.geo", "MatTwo", "BdryFixedDiscr" );
-        //r.setMesh( "$datadir/geo/cube_twoMaterials.geo", "MatTwo", "", { "BdryFixedDiscr"} );
-        r.setMesh( "$datadir/geo/cube_twoMaterials.geo", "MatTwo");
+        if ( Environment::isMasterRank() )
+        {
+            BOOST_MESSAGE( "================================================================" );
+            BOOST_MESSAGE( fmt::format( "[test_required_elements_and_facets] required mat {}, required facet {}", mat, bdys ) );
+        }
+        TestRemesh<T::first_type::value, T::second_type::value> r("test_remesh_relations.json");
+        r.setMesh( fmt::format( "$cfgdir/domains_{}d.geo", T::first_type::value ), mat, bdys, bdys );
+        r.execute( ioption( "niter" ) );
     }
-    r.execute( 1 );
 }
 
 BOOST_AUTO_TEST_SUITE_END()
