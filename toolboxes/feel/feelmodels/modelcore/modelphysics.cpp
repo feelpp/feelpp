@@ -471,7 +471,46 @@ ModelPhysicThermoElectric<Dim>::tabulateInformations( nl::json const& jsonInfo, 
 }
 
 
+template <uint16_type Dim>
+void
+ModelPhysicFluid<Dim>::DynamicViscosity::setup( nl::json const& jarg )
+{
+    bool isMultifluid = false;
 
+    if ( jarg.is_string() )
+    {
+        this->setLaw( jarg.template get<std::string>() );
+    }
+    else if ( jarg.is_object() )
+    {
+        CHECK( jarg.contains( "law" ) && jarg.at( "law" ).is_string() ) << "invalid law";
+        this->setLaw( jarg.at( "law" ).template get<std::string>() )
+
+        if ( jarg.contains( "multifluid" ) )
+        {
+            auto const& jarg_multifluid =  jarg.at("multifluid");
+            if ( jarg_multifluid.is_boolean() )
+                isMultifluid = jarg_multifluid.template get<bool>();
+            else if ( jarg_multifluid.is_number_unsigned() )
+                isMultifluid = jarg_multifluid.template get<int>() > 0;
+            else if ( jarg_multifluid.is_string() )
+                isMultifluid = boost::lexical_cast<bool>( jarg_multifluid.template get<std::string>() );
+        }
+    }
+
+    this->setMultifluid( isMultifluid );
+}
+
+template <uint16_type Dim>
+void
+ModelPhysicFluid<Dim>::DynamicViscosity::setMultifluid( bool b )
+{
+    M_isMultifluid = b; 
+    if( M_isMultifluid )
+    {
+        this->addMaterialPropertyDescription( "heaviside", "heaviside", { std::make_pair(1,1) } );
+    }
+}
 
 template <uint16_type Dim>
 ModelPhysicFluid<Dim>::ModelPhysicFluid( ModelPhysics<Dim> const& mphysics, std::string const& modeling, std::string const& type, std::string const& name, ModelModel const& model )
@@ -479,7 +518,7 @@ ModelPhysicFluid<Dim>::ModelPhysicFluid( ModelPhysics<Dim> const& mphysics, std:
     super_type( modeling, type, name, mphysics, model ),
     M_equation( "Navier-Stokes" ),
     M_gravityForceEnabled( boption(_name="use-gravity-force",_prefix=mphysics.prefix(),_vm=mphysics.clovm()) ),
-    M_dynamicViscosity( new DynamicViscosity( soption(_name="viscosity.law",_prefix=mphysics.prefix(),_vm=mphysics.clovm()) ) ),
+    M_dynamicViscosity( soption(_name="viscosity.law",_prefix=mphysics.prefix(),_vm=mphysics.clovm()), this ),
     M_turbulence( this )
 {
 
@@ -528,9 +567,7 @@ ModelPhysicFluid<Dim>::ModelPhysicFluid( ModelPhysics<Dim> const& mphysics, std:
 
         if ( j_setup.contains("viscosity_law") )
         {
-            auto const& j_setup_viscosity_law = j_setup.at("viscosity_law");
-            CHECK( j_setup_viscosity_law.is_string() ) << "viscosity_law must be a string";
-            M_dynamicViscosity->setLaw( j_setup_viscosity_law.template get<std::string>() );
+            M_dynamicViscosity.setup( j_setup.at("viscosity_law") );
         }
 
         if ( j_setup.contains("turbulence") )
@@ -651,12 +688,53 @@ ModelPhysicMultifluid<Dim>::ModelPhysicMultifluid( ModelPhysics<Dim> const& mphy
         {
             auto const& j_setup_nfluids = j_setup.at( "nfluids" );
             if( j_setup_nfluids.is_number_unsigned() )
-                M_nFluids = j_setup_nfluids.template get<int>();
-            else if( j_setup_nfluids.string() )
+                M_nFluids = j_setup_nfluids.template get<unsigned int>();
+            else if( j_setup_nfluids.is_string() )
                 M_nFluids = std::stoi( j_setup_nfluids.template get<std::string>() );
         }
         CHECK( M_nFluids >= 2 ) << "invalid number of fluids (" << M_nFluids << ")";
+
+#if 0
+        if ( j_setup.contains( "outer_fluids" ) )
+        {
+            auto const& j_outerfluids = j_setup.at( "outer_fluids" );
+            if ( j_outerfluids.is_string() )
+                M_outerFluids.insert( j_outerfluids.get<std::string>() );
+            else if ( j_outerfluids.is_array() )
+            {
+                for ( auto const& [j_outerfluidskey,j_outerfluidsval]: j_outerfluids.items() )
+                    if ( j_outerfluidsval.is_string() )
+                        M_outerFluids.insert( j_outerfluidsval.get<std::string>() );
+            }
+        }
+        else
+        {
+            // default: fluid
+            M_outerFluids.insert( "fluid" );
+        }
+
+        if ( j_setup.contains( "inner_fluids" ) )
+        {
+            auto const& j_innerfluids = j_setup.at( "inner_fluids" );
+            if ( j_innerfluids.is_string() )
+                M_innerFluids.insert( j_innerfluids.get<std::string>() );
+            else if ( j_innerfluids.is_array() )
+            {
+                for ( auto const& [j_innerfluidskey,j_innerfluidsval]: j_innerfluids.items() )
+                    if ( j_innerfluidsval.is_string() )
+                        M_innerFluids.insert( j_innerfluidsval.get<std::string>() );
+            }
+        }
+        else
+        {
+            // default: fluid%i
+            for( uint32_t n = 0; n < M_nFluids - 1; ++n)
+            {
+                M_innerFluids.insert( fmt::format( "fluid{}", n ) );
+            }
+        }
     }
+#endif
 
     this->updateMaterialPropertyDescription();
 }
@@ -665,20 +743,30 @@ template <uint16_type Dim>
 void
 ModelPhysicMultifluid<Dim>::updateInformationObject( nl::json & p ) const
 {
-    super_type::updateInformationObject( p );
+    super_type::updateInformationObject( p["Generic"] );
 }
 template <uint16_type Dim>
 tabulate_informations_ptr_t
 ModelPhysicMultifluid<Dim>::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
 {
-    return super_type::tabulateInformations( jsonInfo, tabInfoProp );
+    auto tabInfo = TabulateInformationsSections::New( tabInfoProp );
+    if ( jsonInfo.contains("Generic") )
+    {
+        super_type::updateTabulateInformationsBasic( jsonInfo.at("Generic"), tabInfo, tabInfoProp );
+        super_type::updateTabulateInformationsSubphysics( jsonInfo.at("Generic"), tabInfo, tabInfoProp );
+        super_type::updateTabulateInformationsParameters( jsonInfo.at("Generic"), tabInfo, tabInfoProp );
+    }
+    return tabInfo;
 }
 
 template <uint16_type Dim>
 void
 ModelPhysicMultifluid<Dim>::updateMaterialPropertyDescription()
 {
-    auto const addMaterialPropertyDescriptionFluid = [this]( const std::string & prefix ) {
+    material_property_shape_dim_type scalarShape = std::make_pair(1,1);
+    material_property_shape_dim_type matrixShape = std::make_pair(nDim,nDim);
+
+    auto const addMaterialPropertyDescriptionFluid = [this, scalarShape, matrixShape]( const std::string & prefix ) {
         this->addMaterialPropertyDescription( prefixvm( prefix, "dynamic-viscosity", "_" ), prefixvm( prefix, "mu", "_" ), { scalarShape } );
         this->addMaterialPropertyDescription( prefixvm( prefix, "turbulent-dynamic-viscosity", "_" ), prefixvm( prefix, "mu_t", "_" ), { scalarShape } );
         this->addMaterialPropertyDescription( prefixvm( prefix, "turbulent-kinetic-energy", "_" ), prefixvm( prefix, "tke", "_" ), { scalarShape } );
@@ -695,13 +783,11 @@ ModelPhysicMultifluid<Dim>::updateMaterialPropertyDescription()
         this->addMaterialPropertyDescription( prefixvm( prefix, "carreau-yasuda-law-a", "_" ), prefixvm( prefix, "mu_carreau_yasuda_law_a", "_" ), { scalarShape } );
     };
 
-    // External fluid
-    addMaterialPropertyDescriptionFluid( "fluid" );
-    // Internal fluids
+    // Fluids
     for ( uint32_t n = 0; n < this->nFluids(); ++n )
     {
-        std::string const lsKeyword = fmt::format( "levelset{}", n );
-        addMaterialPropertyDescriptionFluid( lsKeyword );
+        std::string const fluidKeyword = fmt::format( "fluid{}", n );
+        addMaterialPropertyDescriptionFluid( fluidKeyword );
     }
 }
 

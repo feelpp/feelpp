@@ -100,6 +100,16 @@ public :
     //! return the map of subphysics
     std::map<physic_id_type,std::shared_ptr<ModelPhysic<nDim>>> const& subphysics() const { return M_subphysics; }
 
+    //! return a subphysic from its id (type, name), null shared_ptr if not found)
+    std::shared_ptr<ModelPhysic<nDim>> subphysic( std::string const& type, std::string & name ) const 
+    { 
+        auto subphysicIt = M_subphysics.find( physic_id_type( type, name ) );
+        if ( subphysicIt != M_subphysics.end() )
+            return subphysicIt->second;
+        else
+            return std::shared_ptr<ModelPhysic<nDim>>{};
+    }
+
     //! return a subphysic from the type of physic (the first one found, and return null shared ptr if not found)
     std::shared_ptr<ModelPhysic<nDim>> subphysicFromType( std::string const& type ) const
         {
@@ -467,16 +477,18 @@ public :
 
     struct DynamicViscosity
     {
-        DynamicViscosity( std::string const& ln, ModelPhysicFluid<Dim> * mphysic ):
-            M_lawName( ln ),
-            M_modelPhysicFluid( mphysics )
+        DynamicViscosity( std::string const& law, self_type * mparent ):
+            M_lawName( law ),
+            M_parent( mparent )
         {
-            //CHECK( this->checkLawName() ) << "invalid law name " << ln;
+            CHECK( this->checkLaw() ) << "invalid law name " << law;
         }
         DynamicViscosity( DynamicViscosity const& ) = default;
         DynamicViscosity( DynamicViscosity && ) = default;
 
-        void setLaw( std::string const& ln ) { M_lawName = ln; CHECK( this->checkLawName() ) << "invalid law name " << ln; }
+        void setup( nl::json const& jarg );
+
+        void setLaw( std::string const& ln ) { M_lawName = ln; CHECK( this->checkLaw() ) << "invalid law name " << ln; }
         std::string const& lawName() const { return M_lawName; }
 
         template< typename LawType >
@@ -487,16 +499,21 @@ public :
         bool isCarreauLaw() const { return this->isLaw<CarreauLaw>(); }
         bool isCarreauYasudaLaw() const { return this->isLaw<CarreauYasudaLaw>(); }
 
+        bool isMultifluid() const { return M_isMultifluid; }
+        void setMultifluid( bool b );
+
+        bool isConstant() const { return ( this->isNewtonianLaw() && !this->isMultifluid() ); }
+
     private:
-        bool checkLawName() const
+        bool checkLaw() const
         {
-            //return ( this->isNewtonianLaw() || this->isPowerLaw() || this->isCarreauLaw() || this->isCarreauYasudaLaw() );
-            return true;
+            return ( this->isNewtonianLaw() || this->isPowerLaw() || this->isCarreauLaw() || this->isCarreauYasudaLaw() );
         }
 
     private:
         std::string M_lawName;
-        ModelPhysicFluid<Dim> * M_modelPhysicFluid;
+        selt_type * M_parent;
+        bool M_isMultifluid = false;
     };
 
     struct Turbulence
@@ -614,7 +631,10 @@ public :
     bool gravityForceEnabled() const { return M_gravityForceEnabled; }
     auto const& gravityForceExpr() const { return M_gravityForceExpr.template expr<Dim,1>(); }
 
-    virtual DynamicViscosity const& dynamicViscosity() const { return *M_dynamicViscosity; }
+    void setupDynamicViscosity( nl::json const& jarg );
+    DynamicViscosity const& dynamicViscosity() const { return M_dynamicViscosity; }
+    DynamicViscosity & dynamicViscosity() { return M_dynamicViscosity; }
+
     Turbulence const& turbulence() const { return M_turbulence; }
     Turbulence & turbulence() { return M_turbulence; }
 
@@ -631,19 +651,18 @@ protected :
     bool M_gravityForceEnabled;
     ModelExpression M_gravityForceExpr;
 
-    std::unique_ptr<DynamicViscosity> M_dynamicViscosity;
+    DynamicViscosity M_dynamicViscosity;
     Turbulence M_turbulence;
 };
 
-namespace DynamicViscosityLaw {
-    struct Multifluid: Law { static constexpr std::string_view name = "multifluid"; };
-}
-
 template <uint16_type Dim>
-class ModelPhysicMultifluid : public ModelPhysicFluid<Dim>
+class ModelPhysicMultifluid: public ModelPhysic<Dim>
 {
     using super_type = ModelPhysicFluid<Dim>;
     using self_type = ModelPhysicMultifluid<Dim>;
+    using modelphysic_fluid_type = ModelPhysicFluid<Dim>;
+    using modelphysic_fluid_ptrtype = std::shared_ptr<modelphysic_fluid_type>;
+
 public:
     ModelPhysicMultifluid( ModelPhysics<Dim> const& mphysics, std::string const& modeling, std::string const& type, std::string const& name, ModelModel const& model = ModelModel{} );
     ModelPhysicMultifluid( ModelPhysicMultifluid const& ) = default;
@@ -891,7 +910,7 @@ public:
 
     //ModelPhysics() = default;
     explicit ModelPhysics( std::string const& modeling ) : ModelBase(""), M_physicModeling( modeling ) { M_physicType = this->keyword(); }
-    explicit ModelPhysics( std::string const& modeling, std::string const& type ) : ModelBase(""), M_physicModeling( modeling ), M_physicsType( type ) { }
+    ModelPhysics( std::string const& modeling, std::string const& type ) : ModelBase(""), M_physicModeling( modeling ), M_physicsType( type ) { }
     ModelPhysics( std::string const& modeling, ModelBase const& mbase ) : ModelBase(mbase), M_physicModeling( modeling ), M_physicType( mbase.keyword() ) {}
     ModelPhysics( std::string const& modeling, ModelBase && mbase ) : ModelBase(std::move(mbase)), M_physicModeling( modeling ) { M_physicType = this->keyword(); }
     ModelPhysics( ModelPhysics const& ) = default;
