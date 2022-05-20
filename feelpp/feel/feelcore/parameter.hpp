@@ -153,6 +153,12 @@ using pre = NA::named_argument_t<struct pre_tag>;
 using post = NA::named_argument_t<struct post_tag>;
 
 // parameter for adapt
+using required_elts = NA::named_argument_t<struct required_elts_tag>;
+using required_facets = NA::named_argument_t<struct required_facets_tag>;
+using parent = NA::named_argument_t<struct parent_tag>;
+using params = NA::named_argument_t<struct params_tag>;
+using keep_relation = NA::named_argument_t<struct keep_relation_tag>;
+
 using metric = NA::named_argument_t<struct metric_tag>;
 using model = NA::named_argument_t<struct model_tag>;
 using geotracking = NA::named_argument_t<struct geotracking_tag>;
@@ -442,6 +448,12 @@ inline constexpr auto& _pre = NA::identifier<na::pre>;
 inline constexpr auto& _post = NA::identifier<na::post>;
 
 // parameter for adapt
+inline constexpr auto& _required_elts = NA::identifier<na::required_elts>;
+inline constexpr auto& _required_facets = NA::identifier<na::required_facets>;
+inline constexpr auto& _parent = NA::identifier<na::parent>;
+inline constexpr auto& _params = NA::identifier<na::params>;
+inline constexpr auto& _keep_relation = NA::identifier<na::keep_relation>;
+
 inline constexpr auto& _metric = NA::identifier<na::metric>;
 inline constexpr auto& _model = NA::identifier<na::model>;
 inline constexpr auto& _geotracking = NA::identifier<na::geotracking>;
