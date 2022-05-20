@@ -1,0 +1,13 @@
+{
+    "remesh":{
+        "verbose":-1,
+        "debug": 0,
+        "opnbdy": 0,
+        "required": {
+            "keep_relation": false,
+            "facets": ["RequiredBoundaryOfRequiredElements","OtherRequiredBoundary"],
+            "elements": [ "MatTwo" ]
+        }
+
+    }
+}

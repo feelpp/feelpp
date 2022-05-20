@@ -307,7 +307,7 @@
                 "stopOnFailure": false,
                 "repeat":{
                     "mode":"until-pass",
-                    "count":2
+                    "count":3
                 }
             }
         },
