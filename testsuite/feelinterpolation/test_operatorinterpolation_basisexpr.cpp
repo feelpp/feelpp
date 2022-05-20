@@ -98,7 +98,7 @@ auto executeTestBaseGrad( std::string const& caseName,
     auto grad_exact = vec(-Py(),-Px());
     //auto grad_exact = vec( exprDomain.template diff<1>("x"), exprDomain.template diff<1>("y") );
 
-    std::string executeTestName = fmt::format("executeTest1_{}_{}_{}",caseName,tagDomain,tagImage);
+    std::string executeTestName = fmt::format("executeTestGrad_{}_{}_{}",caseName,tagDomain,tagImage);
 
     double errorL2 = normL2(_range=rangeInterp,_expr=idv(u2)-grad_exact);
     BOOST_MESSAGE(fmt::format("{} : errorL2={}",executeTestName,errorL2));
@@ -195,26 +195,31 @@ BOOST_AUTO_TEST_CASE( test_id )
     executeTestId( "case0_3_elt", spacePchv1, "Pchv2", spacePchv2, "Pchv2", rangeElements, e, e );
 
     executeTestId( "case0_0_face_interface", spacePchv1, "Pchv1", spacePchv1, "Pchv1", rangeFacesInterface, e, e );
-#if 0 // issue with lagrange order>1
     executeTestId( "case0_1_face_interface", spacePchv1, "Pchv1", spacePchv2, "Pchv2", rangeFacesInterface, e, e );
     executeTestId( "case0_2_face_interface", spacePchv1, "Pchv2", spacePchv2, "Pchv1", rangeFacesInterface, e, e );
     executeTestId( "case0_3_face_interface", spacePchv1, "Pchv2", spacePchv2, "Pchv2", rangeFacesInterface, e, e );
-#endif
+
+    //--------------------------------------
+    // case 1 : supports intersection = Omega2
+    // use submesh
+    executeTestId( "case1_0_elt_sm", spacePchv1, "Pchv1", spacePchv1_omega2_submesh, "Pchv1", rangeSubmeshOmega2Elt/*rangeEltOmega2*/, e, eOmega2 );
 
     //--------------------------------------
     // case 2 : image submesh = interface
     executeTestId( "case2_elt_ism", spacePchv1, "Pchv1", spacePchv1_interface_submesh, "Pchv1", rangeSubmeshInterfaceElt, e, eInterface );
     executeTestId( "case2_face_interface_dsm", spacePchv1_interface_submesh, "Pchv1", spacePchv1, "Pchv1", rangeFacesInterface, eInterface, e );
-    executeTestId( "case2_face_interface_range_dsm", spacePchv1_interface_submesh, "Pchv1", spacePchv1_omega2_range, "Pchv1", rangeFacesInterface, eInterface, e );
+    if ( Environment::numberOfProcessors() == 1  )
+        executeTestId( "case2_face_interface_range_dsm", spacePchv1_interface_submesh, "Pchv1", spacePchv1_omega2_range, "Pchv1", rangeFacesInterface, eInterface, e );
     executeTestId( "case2_elt_dsm_ism", spacePchv1_interface_submesh, "Pchv1", spacePchv1_interface_submesh, "Pchv1", rangeSubmeshInterfaceElt, eInterface, eInterface );
 
     //--------------------------------------
     // case 3 : supports disjoint , intersection = interface
-    executeTestId( "case3_face_interface", spacePchv1_omega1_range, "Pchv1", spacePchv1_omega2_range, "Pchv1", rangeFacesInterface, e, e );
+    if ( Environment::numberOfProcessors() == 1  )
+        executeTestId( "case3_face_interface", spacePchv1_omega1_range, "Pchv1", spacePchv1_omega2_range, "Pchv1", rangeFacesInterface, e, e );
 
 
     e->save();
-    //eOmega2->save();
+    eOmega2->save();
     eInterface->save();
 
 
@@ -285,18 +290,23 @@ BOOST_AUTO_TEST_CASE( test_grad )
     executeTestGrad( "case0_face_interface", spacePch1, "Pch1", spaceNed1h, "Ned1h", rangeFacesInterface, e, e );
     executeTestGrad( "case0_face_interface", spacePch2, "Pch2", spacePchv1, "Pchv1", rangeFacesInterface, e, e );
 
+    //--------------------------------------
     // case 1 : supports intersection = Omega2
     // use submesh
     executeTestGrad( "case1_elt_sm", spacePch1, "Pch1", spaceNed1h_omega2_submesh, "Ned1h", rangeSubmeshOmega2Elt/*rangeEltOmega2*/, e, eOmega2 );
     executeTestGrad( "case1_elt_sm", spacePch2, "Pch2", spacePchv1_omega2_submesh, "Pchv1", rangeSubmeshOmega2Elt/*rangeEltOmega2*/, e, eOmega2 );
-    executeTestGrad( "case1_face_interface_sm", spacePch1, "Pch1", spaceNed1h_omega2_submesh, "Ned1h", rangeSubmeshOmega2FacesInterface, e, eOmega2 );
+    if ( Environment::numberOfProcessors() == 1  )
+        executeTestGrad( "case1_face_interface_sm", spacePch1, "Pch1", spaceNed1h_omega2_submesh, "Ned1h", rangeSubmeshOmega2FacesInterface, e, eOmega2 );
     executeTestGrad( "case1_face_interface_sm", spacePch2, "Pch2", spacePchv1_omega2_submesh, "Pchv1", rangeSubmeshOmega2FacesInterface, e, eOmega2 );
 
     // use space range
-    executeTestGrad( "case1_elt_range", spacePch1, "Pch1", spaceNed1h_omega2_range, "Ned1h", rangeEltOmega2, e, e );
+    if ( Environment::numberOfProcessors() == 1  )
+        executeTestGrad( "case1_elt_range", spacePch1, "Pch1", spaceNed1h_omega2_range, "Ned1h", rangeEltOmega2, e, e );
     executeTestGrad( "case1_elt_range", spacePch2, "Pch2", spacePchv1_omega2_range, "Pchv1", rangeEltOmega2, e, e );
-    executeTestGrad( "case1_face_interface_range", spacePch1, "Pch1", spaceNed1h_omega2_range, "Ned1h", rangeFacesInterface, e, e );
-    executeTestGrad( "case1_face_interface_range", spacePch2, "Pch2", spacePchv1_omega2_range, "Pchv1", rangeFacesInterface, e, e );
+    if ( Environment::numberOfProcessors() == 1  )
+        executeTestGrad( "case1_face_interface_range", spacePch1, "Pch1", spaceNed1h_omega2_range, "Ned1h", rangeFacesInterface, e, e );
+    if ( Environment::numberOfProcessors() == 1  )
+        executeTestGrad( "case1_face_interface_range", spacePch2, "Pch2", spacePchv1_omega2_range, "Pchv1", rangeFacesInterface, e, e );
 
     //--------------------------------------
     // case 2 : image submesh = interface
@@ -311,8 +321,11 @@ BOOST_AUTO_TEST_CASE( test_grad )
 
     //--------------------------------------
     // case 3 : supports disjoint , intersection = interface
-    executeTestGrad( "case3_face_interface", spacePch1_omega1_range, "Pch1", spaceNed1h_omega2_range, "Ned1h", rangeFacesInterface, e, e );
-    executeTestGrad( "case3_face_interface", spacePch2_omega1_range, "Pch2", spacePchv1_omega2_range, "Pchv1", rangeFacesInterface, e, e );
+    if ( Environment::numberOfProcessors() == 1  )
+    {
+        executeTestGrad( "case3_face_interface", spacePch1_omega1_range, "Pch1", spaceNed1h_omega2_range, "Ned1h", rangeFacesInterface, e, e );
+        executeTestGrad( "case3_face_interface", spacePch2_omega1_range, "Pch2", spacePchv1_omega2_range, "Pchv1", rangeFacesInterface, e, e );
+    }
 
 
     e->save();
