@@ -1153,33 +1153,48 @@ private :
     material_property_scalar_expr_type M_mu0Expr, M_muInfExpr, M_lambdaExpr, M_nExpr, M_aExpr;
 };
 
-template< typename ExprType>
+template< typename ExprType >
 class FluidMecDynamicViscosityMultifluid : public FluidMecDynamicViscosityBase<ExprType>
 {
     using super_type = FluidMecDynamicViscosityBase<ExprType>;
 public :
     using expr_type = typename super_type::expr_type;
     using this_type = FluidMecDynamicViscosityMultifluid<ExprType>;
+
     using material_property_scalar_expr_type = typename expr_type::template material_property_expr_type<1,1>;
+
+    using fluidmec_sub_dynamicviscosity_impl_type = FluidMecDynamicViscosityImpl<
+        typename expr_type::expr_evaluate_velocity_opertors_type,
+        typename expr_type::finite_element_velocity_type,
+        typename expr_type::model_physic_fluid_type,
+        typename expr_type::symbols_expr_type,
+        expr_type::expr_apply_type,
+        expr_type::expr_operator_type,
+        false // no multifluid >;
+    using fluidmec_sub_dynamicviscosity_impl_ptrtype = std::shared_ptr<fluidmec_sub_dynamicviscosity_impl_type>;
 
     FluidMecDynamicViscosityMultifluid( ExprType const& expr ):
         super_type( expr ),
-        M_exprDynamicViscosity( expr.template materialPropertyExpr<1,1>("dynamic-viscosity") )
+        M_fluidMecSubDynamicViscosityImpl( new fluidmec_sub_dynamicviscosity_impl_type( expr.exprEvaluateVelocityOperatorsPtr(), expr.modelPhysic(), expr.materialProperties(), expr.polynomialOrder(), expr.symbolsExpr() ) ),
+        M_exprHeaviside( expr.template materialPropertyExpr<1,1>("heaviside") )
     {}
 
     FluidMecDynamicViscosityMultifluid( FluidMecDynamicViscosityMultifluid const& ) = default;
     FluidMecDynamicViscosityMultifluid( FluidMecDynamicViscosityMultifluid && ) = default;
 
-    bool dependsOnVelocityField() const override { return false; }
+    fluidmec_sub_dynamicviscosity_impl_type const& exprSubDynamicViscosity() const { return *M_fluidMecSubDynamicViscosityImpl; }
+    material_property_scalar_expr_type const& exprHeaviside() const { return M_exprHeaviside; }
 
-    size_type dynamicContext() const override { return Feel::vf::dynamicContext( M_exprDynamicViscosity ); }
+    bool dependsOnVelocityField() const override { return M_fluidMecSubDynamicViscosityImpl->dependsOnVelocityField(); }
 
-    uint16_type polynomialOrder() const override { return M_exprDynamicViscosity.polynomialOrder(); }
+    size_type dynamicContext() const override { return M_fluidMecSubDynamicViscosityImpl->dynamicContext() | Feel::vf::dynamicContext( M_exprHeaviside ); }
+
+    uint16_type polynomialOrder() const override { return M_fluidMecSubDynamicViscosityImpl->polynomialOrder() + M_exprHeaviside.polynomialOrder(); }
 
     template <typename TheSymbolExprType>
     bool hasSymbolDependency( std::string const& symb, TheSymbolExprType const& se ) const
     {
-        return M_exprDynamicViscosity.hasSymbolDependency( symb, se );
+        return M_fluidMecSubDynamicViscosityImpl->hasSymbolDependency( symb, se ) || M_exprHeaviside.hasSymbolDependency( symb, se );
     }
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
@@ -1201,17 +1216,20 @@ public :
         tensor( this_type const& expr, typename this_type::super_type::template tensor_main_type<Geo_t,Basis_i_t,Basis_j_t> const& tensorExprMain, Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu ):
             super_type( geom,fev,feu ),
             M_expr( expr ),
-            M_muExprTensor( this->expr().exprDynamicViscosity().evaluator( geom ) )
+            M_muExprTensor( this->expr().exprSubDynamicViscosity().evaluator( geom ) ),
+            M_heavisideExprTensor( this->expr().exprHeaviside().evaluator( geom ) )
         {}
         tensor( this_type const& expr, typename this_type::super_type::template tensor_main_type<Geo_t,Basis_i_t,Basis_j_t> const& tensorExprMain, Geo_t const& geom, Basis_i_t const& fev ):
             super_type( geom,fev ),
             M_expr( expr ),
-            M_muExprTensor( this->expr().exprDynamicViscosity().evaluator( geom ) )
+            M_muExprTensor( this->expr().exprSubDynamicViscosity().evaluator( geom ) ),
+            M_heavisideExprTensor( this->expr().exprHeaviside().evaluator( geom ) )
         {}
         tensor( this_type const& expr, typename this_type::super_type::template tensor_main_type<Geo_t,Basis_i_t,Basis_j_t> const& tensorExprMain, Geo_t const& geom ):
             super_type( geom ),
             M_expr( expr ),
-            M_muExprTensor( this->expr().exprDynamicViscosity().evaluator( geom ) )
+            M_muExprTensor( this->expr().exprSubDynamicViscosity().evaluator( geom ) ),
+            M_heavisideExprTensor( this->expr().exprHeaviside().evaluator( geom ) )
         {}
 
         template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
@@ -1220,7 +1238,8 @@ public :
                 Geo_t const& geom, const TheArgsType&... theInitArgs ):
             super_type( geom ),
             M_expr( expr ),
-            M_muExprTensor( std::true_type{}, exprExpanded.exprDynamicViscosity(), ttse, expr.exprDynamicViscosity(), geom, theInitArgs... )
+            M_muExprTensor( std::true_type{}, exprExpanded.exprHeaviside(), ttse, expr.exprSubDynamicViscosity(), geom, theInitArgs... ),
+            M_heavisideExprTensor( std::true_type{}, exprExpanded.exprHeaviside(), ttse, expr.exprHeaviside(), geom, theInitArgs... )
         {}
 
 
@@ -1229,6 +1248,7 @@ public :
         void update( Geo_t const& geom ) override
         {
             M_muExprTensor.update( geom );
+            M_heavisideExprTensor.update( geom );
             this->updateImpl();
         }
 
@@ -1236,7 +1256,8 @@ public :
         void update( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
                 Geo_t const& geom, const TheArgsType&... theUpdateArgs )
         {
-            M_muExprTensor.update( std::true_type{}, exprExpanded.exprDynamicViscosity(), ttse, geom, theUpdateArgs... );
+            M_muExprTensor.update( std::true_type{}, exprExpanded.exprSubDynamicViscosity(), ttse, geom, theUpdateArgs... );
+            M_heavisideExprTensor.update( std::true_type{}, exprExpanded.exprHeaviside(), ttse, geom, theUpdateArgs... );
             this->updateImpl();
         }
 
@@ -1249,9 +1270,10 @@ public :
             for ( uint16_type q = 0; q < nPoints; ++q )
             {
                 if constexpr ( expr_type::isExprOpID() )
-                    M_localEval[q](0,0) = M_muExprTensor.evalq(0,0,q);
+                    M_localEval[q](0,0) = M_muExprTensor.evalq(0,0,q) * M_heavisideExprTensor.evalq(0,0,q);
                 else
                 {
+                    CHECK( false ) << "todo: grad(H) not implemented";
                     for ( uint16_type c1 = 0; c1 < expr_type::nDim; ++c1 )
                         M_localEval[q](0,c1) = M_muExprTensor.evalq(0,c1,q);
                 }
@@ -1317,13 +1339,15 @@ public :
 
     private :
         this_type const& M_expr;
-        typename material_property_scalar_expr_type::template tensor<Geo_t/*, Basis_i_t, Basis_j_t*/>  M_muExprTensor;
+        typename fluidmec_sub_dynamicviscosity_impl_type::template tensor<Geo_t/*, Basis_i_t, Basis_j_t*/>  M_muExprTensor;
+        typename material_property_scalar_expr_type::template tensor<Geo_t/*, Basis_i_t, Basis_j_t*/>  M_heavisideExprTensor;
         array_shape_type M_localEval;
     };
 
 
 private:
-    material_property_scalar_expr_type M_exprDynamicViscosity;
+    fluidmec_sub_dynamicviscosity_impl_ptrtype M_fluidMecSubDynamicViscosityImpl;
+    material_property_scalar_expr_type M_exprHeaviside;
 
 };
 
@@ -1420,27 +1444,30 @@ FluidMecDynamicViscosityBase<ExprType>::updateEvaluator( std::true_type /**/, st
 }
 
 
-template<typename ExprEvaluateFieldOperatorsType, typename FiniteElementVelocityType, typename ModelPhysicFluidType, typename SymbolsExprType, ExprApplyType ExprApplied, ExprOperatorType ExprOp = ExprOperatorType::ID>
+template<typename ExprEvaluateFieldOperatorsType, typename FiniteElementVelocityType, typename ModelPhysicFluidType, typename SymbolsExprType, ExprApplyType ExprApplied, ExprOperatorType ExprOp = ExprOperatorType::ID, bool EnableMultifluid = true >
 class FluidMecDynamicViscosityImpl// : public Feel::vf::ExprDynamicBase
 {
 public:
 
-    typedef FluidMecDynamicViscosityImpl<ExprEvaluateFieldOperatorsType,FiniteElementVelocityType,ModelPhysicFluidType,SymbolsExprType,ExprApplied,ExprOp> this_type;
+    typedef FluidMecDynamicViscosityImpl<ExprEvaluateFieldOperatorsType,FiniteElementVelocityType,ModelPhysicFluidType,SymbolsExprType,ExprApplied,ExprOp,EnableMultifluid> this_type;
 
     static const size_type context_velocity = vm::JACOBIAN|vm::KB|vm::GRAD;
     static const size_type context = context_velocity|vm::DYNAMIC;
 
+    using expr_evaluate_velocity_opertors_type = ExprEvaluateFieldOperatorsType;
+    using finite_element_velocity_type = FiniteElementVelocityType;
     using model_physic_fluid_type = ModelPhysicFluidType;
     using symbols_expr_type = SymbolsExprType;
+    static constexpr ExprApplyType expr_apply_type = ExprApplied;
+    static constexpr ExprOperatorType expr_operator_type = ExprOp;
+    static constexpr bool enable_multifluid = EnableMultifluid;
 
     static constexpr bool is_applied_as_eval = (ExprApplied == ExprApplyType::EVAL);
     static constexpr bool is_applied_as_jacobian = (ExprApplied == ExprApplyType::JACOBIAN);
 
     static constexpr ExprOperatorType exprOp = ExprOp;
 
-    using expr_evaluate_velocity_opertors_type = ExprEvaluateFieldOperatorsType;
     using value_type = typename expr_evaluate_velocity_opertors_type::value_type;
-
     static constexpr uint16_type nDim = model_physic_fluid_type::nDim;
 
     template <int M,int N>
@@ -1515,6 +1542,8 @@ public:
             return M_se.symbolsExpression();
     }
 
+    symbols_expr_type const& symbolsExpr() const { return M_se; }
+
     bool dependsOnVelocityField() const { return M_exprDynamicViscosityBase->dependsOnVelocityField(); }
 
     size_type dynamicContext() const
@@ -1527,14 +1556,17 @@ public:
     {
         if ( M_polynomialOrder != invalid_uint16_type_value )
             return M_polynomialOrder;
-        uint16_type orderGradVelocity = M_exprEvaluateVelocityOperators->exprGrad().polynomialOrder();
 
+#if 0 //Thibaut:WHY ?
+        uint16_type orderGradVelocity = M_exprEvaluateVelocityOperators->exprGrad().polynomialOrder();
         uint16_type res = 2*(orderGradVelocity+1); // default value for non newtonian
         if ( this->dynamicViscosity().isNewtonianLaw() )
         {
             res = M_exprDynamicViscosityBase->polynomialOrder();
         }
         return res;
+#endif
+        return M_exprDynamicViscosityBase->polynomialOrder();
     }
 
     //! expression is polynomial?
@@ -1559,7 +1591,7 @@ public:
     {
         auto newse = Feel::vf::symbolsExpr( this->symbolsExpressionWithoutTensorContext(), se );
         using new_se_type = std::decay_t<decltype(newse)>;
-        using new_this_type = FluidMecDynamicViscosityImpl<ExprEvaluateFieldOperatorsType,FiniteElementVelocityType,ModelPhysicFluidType,new_se_type,ExprApplied,ExprOp>;
+        using new_this_type = FluidMecDynamicViscosityImpl<ExprEvaluateFieldOperatorsType,FiniteElementVelocityType,ModelPhysicFluidType,new_se_type,ExprApplied,ExprOp,EnableMultifluid>;
         return new_this_type( M_exprEvaluateVelocityOperators,M_physicFluid,M_matProps,M_polynomialOrder,newse );
     }
 
@@ -1574,6 +1606,8 @@ public:
 
     std::shared_ptr<expr_dynamic_viscosity_base_type> exprDynamicViscosityBase() const { return M_exprDynamicViscosityBase; }
     std::shared_ptr<expr_evaluate_velocity_opertors_type> exprEvaluateVelocityOperatorsPtr() const { return M_exprEvaluateVelocityOperators; }
+
+    model_physic_fluid_type const& modelPhysic() const { return M_physicFluid; }
 
     auto const& dynamicViscosity() const { return M_physicFluid.dynamicViscosity(); }
     MaterialProperties const& materialProperties() const { return M_matProps; }
@@ -1757,6 +1791,14 @@ private :
     void initExprDynamicViscosityBase()
     {
         auto const& dynamicViscosity = this->dynamicViscosity();
+        if constexpr ( enable_multifluid )
+        {
+            if( dynamicViscosity.isMultifluid() )
+            {
+                M_exprDynamicViscosityBase.reset( new FluidMecDynamicViscosityMultifluid<this_type>( *this ) );
+                return;
+            }
+        }
         if ( dynamicViscosity.isNewtonianLaw() )
             M_exprDynamicViscosityBase.reset( new FluidMecDynamicViscosityNewtonian<this_type>( *this ) );
         else if ( dynamicViscosity.isPowerLaw() )
