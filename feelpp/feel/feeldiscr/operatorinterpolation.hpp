@@ -524,8 +524,8 @@ struct PrecomputeDomainBasisFunction
 #endif
             M_tensorExpr->update( mapgmc( M_gmc), mapfec( M_fec ) );
 
-
-            if ( M_isSameMesh && ( imageElt.id() == domainElt.id() ) )
+            // WARNING : here this case is turn to off in waiting the fix in Lagrange::interpolateBasisFunction for example
+            if ( false && M_isSameMesh && ( imageElt.id() == domainElt.id() ) )
             {
                 M_XhImage->fe()->interpolateBasisFunction( *M_tensorExpr, M_IhLoc );
             }
@@ -538,34 +538,6 @@ struct PrecomputeDomainBasisFunction
                 std::vector<uint16_type> mapImageChangeDimFaceDofPointToImageDofPoint( M_gmc->nPoints(), invalid_v<uint16_type> );
                 upMatchingDofPoints( M_gmc, M_gmcImageElt, mapImageChangeDimFaceDofPointToImageDofPoint );
                 M_XhImage->fe()->interpolateBasisFunction( *M_tensorExpr, M_IhLoc, mapImageChangeDimFaceDofPointToImageDofPoint );
-
-
-                // std::vector<uint16_type> mapImageChangeDimFaceDofPointToImageDofPoint( M_gmc->nPoints(), invalid_v<uint16_type> );
-                // double dofPtCompareTol = std::max( 1e-15, imageElt.hMin() * 1e-5 );
-                // for ( uint16_type jloc_d = 0; jloc_d < M_gmc->nPoints(); ++jloc_d )
-                // {
-                //     auto const& domainGlobDofPt = M_gmc->xReal( jloc_d );
-                //     bool find = false;
-                //     size_type thelocDofToFind = invalid_v<size_type>;
-                //     for ( uint16_type jloc_i = 0; jloc_i < image_fe_type::nLocalDof; ++jloc_i )
-                //     {
-                //         auto const& imageGlobDofPt = M_gmcImageElt->xReal( jloc_i );
-                //         bool find2 = true;
-                //         for ( uint16_type d = 0; d < DomainSpaceType::nRealDim; ++d )
-                //         {
-                //             find2 = find2 && ( std::abs( imageGlobDofPt[d] - domainGlobDofPt[d] ) < dofPtCompareTol );
-                //         }
-                //         if ( find2 )
-                //         {
-                //             mapImageChangeDimFaceDofPointToImageDofPoint[ jloc_d ] = jloc_i;
-                //             find = true;
-                //             break;
-                //         }
-                //     }
-                //     CHECK( find ) << "[OperatorInterpolation::update] Compatible dof not found";
-                // }
-
-                // M_XhImage->fe()->interpolateBasisFunction( *M_tensorExpr, M_IhLoc, mapImageChangeDimFaceDofPointToImageDofPoint ); // HERE
             }
 
         }
@@ -576,9 +548,6 @@ struct PrecomputeDomainBasisFunction
         {
             uint16_type nPoint1 = gmc1->nPoints();
             uint16_type nPoint2 = gmc2->nPoints();
-            //std::vector<uint16_type> mapImageChangeDimFaceDofPointToImageDofPoint( M_gmc->nPoints()/*image_fe_changedim_type::nLocalDof*/, invalid_v<uint16_type> );
-
-            //double dofPtCompareTol = std::max( 1e-15, imageElt.hMin() * 1e-5 );
             double dofPtCompareTol = std::max( 1e-15, std::min( gmc1->element().hMin(), gmc2->element().hMin() ) * 1e-5 );
             for ( uint16_type jloc_d = 0; jloc_d < nPoint1; ++jloc_d )
             {
@@ -602,7 +571,6 @@ struct PrecomputeDomainBasisFunction
                 }
                 CHECK( find ) << "[OperatorInterpolation::update] Compatible dof not found";
             }
-
         }
 
     template <typename InterpOnType,//typename ImageEltType,
@@ -621,66 +589,11 @@ struct PrecomputeDomainBasisFunction
             uint16_type __face_id = interpOnFace.faceIdInElement();
             auto const& elt = interpOnFace.element();
             M_gmc->template update<context>( elt, __face_id );
-#if 0
-            std::vector<uint16_type> mapImageDofPointToImageChangeDimFaceDofPoint( image_fe_changedim_type::nLocalDof, invalid_v<uint16_type> );
-            std::vector<uint16_type> mapImageChangeDimFaceDofPointToImageDofPoint( image_fe_changedim_type::nLocalDof, invalid_v<uint16_type> );
 
-            double dofPtCompareTol = std::max( 1e-15, imageElt.hMin() * 1e-5 );
-            for ( uint16_type jloc = 0; jloc < image_fe_type::nLocalDof; ++jloc )
-            {
-                auto const& imageGlobDofPt = M_gmcImageElt->xReal( jloc );
-                bool find = false;
-                size_type thelocDofToFind = invalid_v<size_type>;
-                for ( uint16_type jloc_cdf = 0; jloc_cdf < image_fe_type::nLocalDof/*image_fe_changedim_type::nLocalDof*/; ++jloc_cdf )
-                {
-                    auto const& domainGlobDofPt = M_gmc->xReal( jloc_cdf );
-                    bool find2 = true;
-                    for ( uint16_type d = 0; d < DomainSpaceType::nRealDim; ++d )
-                    {
-                        find2 = find2 && ( std::abs( imageGlobDofPt[d] - domainGlobDofPt[d] ) < dofPtCompareTol );
-                    }
-                    if ( find2 )
-                    {
-                        mapImageDofPointToImageChangeDimFaceDofPoint[jloc] = jloc_cdf;
-                        mapImageChangeDimFaceDofPointToImageDofPoint[ jloc_cdf ] = jloc;
-                        //thelocDofToFind = jloc;
-                        find = true;
-                        break;
-                    }
-                }
-                CHECK( find ) << "[OperatorInterpolation::update] Compatible dof not found";
-            }
-#elif 0 // LAST GOOD
-            std::vector<uint16_type> mapImageChangeDimFaceDofPointToImageDofPoint( M_gmc->nPoints()/*image_fe_changedim_type::nLocalDof*/, invalid_v<uint16_type> );
-            double dofPtCompareTol = std::max( 1e-15, imageElt.hMin() * 1e-5 );
-            for ( uint16_type jloc_d = 0; jloc_d < M_gmc->nPoints(); ++jloc_d )
-            {
-                auto const& domainGlobDofPt = M_gmc->xReal( jloc_d );
-                bool find = false;
-                size_type thelocDofToFind = invalid_v<size_type>;
-                for ( uint16_type jloc_i = 0; jloc_i < image_fe_type::nLocalDof/*image_fe_changedim_type::nLocalDof*/; ++jloc_i )
-                {
-                    auto const& imageGlobDofPt = M_gmcImageElt->xReal( jloc_i );
-                    bool find2 = true;
-                    for ( uint16_type d = 0; d < DomainSpaceType::nRealDim; ++d )
-                    {
-                        find2 = find2 && ( std::abs( imageGlobDofPt[d] - domainGlobDofPt[d] ) < dofPtCompareTol );
-                    }
-                    if ( find2 )
-                    {
-                        mapImageChangeDimFaceDofPointToImageDofPoint[ jloc_d ] = jloc_i;
-                        find = true;
-                        break;
-                    }
-                }
-                CHECK( find ) << "[OperatorInterpolation::update] Compatible dof not found";
-            }
-#else
             std::vector<uint16_type> mapImageChangeDimFaceDofPointToImageDofPoint( M_gmc->nPoints()/*image_fe_changedim_type::nLocalDof*/, invalid_v<uint16_type> );
             upMatchingDofPoints( M_gmc, M_gmcImageElt, mapImageChangeDimFaceDofPointToImageDofPoint );
 
 
-#endif
 
 #if 1
             //auto image_fe = M_XhImage->fe();
@@ -699,7 +612,7 @@ struct PrecomputeDomainBasisFunction
             M_tensorExpr->update( mapgmc( M_gmc), mapfec( M_fec ) );
 
 
-            M_XhImage->fe()->interpolateBasisFunction/*OnDof*/( *M_tensorExpr, M_IhLoc, mapImageChangeDimFaceDofPointToImageDofPoint );// mapImageDofPointToImageChangeDimFaceDofPoint );
+            M_XhImage->fe()->interpolateBasisFunction( *M_tensorExpr, M_IhLoc, mapImageChangeDimFaceDofPointToImageDofPoint );
 
 
             // CHECK(false) << "TODO";
@@ -732,43 +645,6 @@ private :
             {
                 this->initCommon( interpFromElt, M_XhImage->fe() );
             }
-#if 0
-            auto const& elt = interpFromElt.element();
-
-            if ( M_tensorExpr )
-                return;
-            if constexpr ( DomainSpaceType::nDim == ImageSpaceType::nDim )
-            {
-                // auto const& elt = *M_XhDomain->mesh()->beginElementWithProcessId();
-                domain_gm_ptrtype gm = M_XhDomain->gm();
-
-                //geopc_ptrtype geopc( new geopc_type( gm, imageSpace->fe()->dual().points() ) );
-                auto refPts = M_XhImage->fe()->dual().points();
-                auto geopc = gm->preCompute( gm, refPts );
-                auto fepc = M_XhDomain->fe()->preCompute( M_XhDomain->fe(), refPts /*gmc->xRefs()*/ );
-
-                domain_gmc_ptrtype gmc = gm->template context<context>( elt, geopc );
-                fecontext_ptrtype fec( new fecontext_type( M_XhDomain->fe(), gmc, fepc /*geopc*/ ) );
-
-                M_gmc = gm->template context<context>( elt, geopc );
-                M_fec.reset( new fecontext_type( M_XhDomain->fe(), gmc, fepc /*geopc*/ ) );
-
-                map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0>>( M_gmc ) );
-                map_fec_type mapfec( fusion::make_pair<vf::detail::gmc<0>>( M_fec ) );
-                //t_expr_type texpr( M_expr, mapgmc, mapfec );
-                M_tensorExpr = std::make_shared<t_expr_type>( M_expr, mapgmc, mapfec );
-
-                using shape = typename t_expr_type::shape;
-                M_IhLoc = Eigen::MatrixXd::Zero( fe_type::is_product ? fe_type::nComponents * fe_type::nLocalDof : fe_type::nLocalDof,
-                                                 image_fe_type::is_product ? image_fe_type::nComponents * image_fe_type::nLocalDof : image_fe_type::nLocalDof );
-                M_XhImage->fe()->interpolateBasisFunction( *M_tensorExpr, M_IhLoc );
-            }
-            else
-            {
-                CHECK( false ) << "TODO";
-                // TODO
-            }
-#endif
         }
     template <typename InterpOnType,typename TheImageFeType,
               std::enable_if_t<InterpOnType::onEntity() == ElementsType::MESH_ELEMENTS,bool> = true >
@@ -777,7 +653,6 @@ private :
             auto const& elt = interpFromElt.element();
             domain_gm_ptrtype gm = M_XhDomain->gm();
 
-            //geopc_ptrtype geopc( new geopc_type( gm, imageSpace->fe()->dual().points() ) );
             auto refPts = image_fe->dual().points();
             auto geopc = gm->preCompute( gm, refPts );
             auto fepc = M_XhDomain->fe()->preCompute( M_XhDomain->fe(), refPts /*gmc->xRefs()*/ );
@@ -790,7 +665,6 @@ private :
 
             map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0>>( M_gmc ) );
             map_fec_type mapfec( fusion::make_pair<vf::detail::gmc<0>>( M_fec ) );
-            //t_expr_type texpr( M_expr, mapgmc, mapfec );
             M_tensorExpr = std::make_shared<t_expr_type>( M_expr, mapgmc, mapfec );
 
             using shape = typename t_expr_type::shape;
@@ -944,6 +818,7 @@ struct DomainEltIdFromImageEltId
     using size_type = typename domain_mesh_type::size_type;
     using index_type = typename domain_mesh_type::index_type;
 
+#if 0
     struct ReturnFromElement
     {
         static constexpr ElementsType onEntity() { return ElementsType::MESH_ELEMENTS; }
@@ -999,18 +874,36 @@ struct DomainEltIdFromImageEltId
 
         bool empty() const { return M_elements.empty(); }
 
-        void addElement( std::shared_ptr<MeshSupport<domain_mesh_type>> meshSupport, typename domain_vector_mesh_element_type::value_type const& elt )
+        bool addElement( std::shared_ptr<MeshSupport<domain_mesh_type>> meshSupport, typename domain_vector_mesh_element_type::value_type const& elt )
             {
                 if ( meshSupport->isPartialSupport() )
                 {
                     index_type eltId = unwrap_ref( elt ).id();
                     if ( meshSupport->hasElement( eltId ) && !meshSupport->hasGhostElement( eltId ) )
+                    {
                         M_elements.push_back( ReturnFromElement{elt} );
+                        return true;
+                    }
                 }
                 else
                 {
                     M_elements.push_back( ReturnFromElement{elt} );
+                    return true;
                 }
+                return false;
+            }
+
+        void keepOnly( index_type domainId )
+            {
+                auto itFindId = std::find_if(M_elements.begin(), M_elements.end(), [&domainId]( auto const& rfe ){ return rfe.element().id() == domainId; });
+                if ( itFindId != M_elements.end() )
+                {
+                    auto rfeFound = std::move(*itFindId);
+                    M_elements.clear();
+                    M_elements.push_back( std::move( rfeFound ) );
+                }
+                else
+                    CHECK( false ) << "elt id not found";
             }
 
     private :
@@ -1038,24 +931,135 @@ struct DomainEltIdFromImageEltId
 
         bool empty() const { return M_elements.empty(); }
 
-        void addElement( std::shared_ptr<MeshSupport<domain_mesh_type>> meshSupport, typename domain_vector_mesh_element_type::value_type const& elt, uint16_type faceIdInElt )
+        bool addElement( std::shared_ptr<MeshSupport<domain_mesh_type>> meshSupport, typename domain_vector_mesh_element_type::value_type const& elt, uint16_type faceIdInElt )
             {
                 if ( meshSupport->isPartialSupport() )
                 {
                     index_type eltId = unwrap_ref( elt ).id();
                     if ( meshSupport->hasElement( eltId ) && !meshSupport->hasGhostElement( eltId ) )
+                    {
                         M_elements.push_back( ReturnFromFace{elt, faceIdInElt} );
+                        return true;
+                    }
                 }
                 else
                 {
                     M_elements.push_back( ReturnFromFace{elt, faceIdInElt} );
+                    return true;
                 }
+                return false;
             }
+        void keepOnly( index_type domainId )
+            {
+                auto itFindId = std::find_if(M_elements.begin(), M_elements.end(), [&domainId]( auto const& rfe ){ return rfe.element().id() == domainId; });
+                if ( itFindId != M_elements.end() )
+                {
+                    auto rfeFound = std::move(*itFindId);
+                    M_elements.clear();
+                    M_elements.push_back( std::move( rfeFound ) );
+                }
+                else
+                    CHECK( false ) << "elt id not found";
+            }
+
     private:
         std::vector<ReturnFromFace> M_elements;
         typename image_vector_mesh_element_type::value_type M_imageElement;
         uint16_type M_faceIdInImageElement = invalid_v<uint16_type> ;
     };
+#else
+
+    template <int TheCoDim>
+    struct ReturnDomainEntities
+    {
+        static constexpr ElementsType onEntity() { return TheCoDim==0?ElementsType::MESH_ELEMENTS:ElementsType::MESH_FACES; }
+
+        ReturnDomainEntities( typename domain_vector_mesh_element_type::value_type const& elt, uint16_type faceIdInElement = invalid_v<uint16_type> )
+            :
+            M_element( elt ),
+            M_faceIdInElement( faceIdInElement )
+            {}
+        ReturnDomainEntities( ReturnDomainEntities && ) = default;
+        ReturnDomainEntities( ReturnDomainEntities const& ) = default;
+
+        auto const& element() const { return unwrap_ref( M_element ); }
+        uint16_type faceIdInElement() const { return M_faceIdInElement; }
+        auto const& face() const { return this->element().face( faceIdInElement() ); }
+
+    private :
+        typename domain_vector_mesh_element_type::value_type M_element;
+        uint16_type M_faceIdInElement;
+
+    };
+
+    using ReturnFromElement = ReturnDomainEntities<0>;
+    using ReturnFromFace = ReturnDomainEntities<1>;
+
+
+
+    template <int TheCoDim>
+    struct ReturnType
+    {
+        using domain_entities_type = ReturnDomainEntities<TheCoDim>;
+        static constexpr ElementsType onEntity() { return domain_entities_type::onEntity(); }
+
+        ReturnType( typename image_vector_mesh_element_type::value_type imageElement,
+                    uint16_type faceIdInImageElement = invalid_v<uint16_type> )
+            :
+            M_imageElement( imageElement ),
+            M_faceIdInImageElement( faceIdInImageElement )
+            {}
+
+        auto const& imageElement() const { return unwrap_ref( M_imageElement ); }
+        uint16_type faceIdInImageElement() const { return M_faceIdInImageElement; }
+
+        std::vector<domain_entities_type> const& elements() const { return M_elements; }
+
+        bool empty() const { return M_elements.empty(); }
+
+        bool addElement( std::shared_ptr<MeshSupport<domain_mesh_type>> meshSupport, typename domain_vector_mesh_element_type::value_type const& elt, uint16_type faceIdInElement = invalid_v<uint16_type> )
+            {
+                if ( meshSupport->isPartialSupport() )
+                {
+                    index_type eltId = unwrap_ref( elt ).id();
+                    if ( meshSupport->hasElement( eltId ) && !meshSupport->hasGhostElement( eltId ) )
+                    {
+                        M_elements.push_back( domain_entities_type{elt,faceIdInElement} );
+                        return true;
+                    }
+                }
+                else
+                {
+                    M_elements.push_back( domain_entities_type{elt,faceIdInElement} );
+                    return true;
+                }
+                return false;
+            }
+
+        void keepOnly( index_type domainId )
+            {
+                auto itFindId = std::find_if(M_elements.begin(), M_elements.end(), [&domainId]( auto const& rfe ){ return rfe.element().id() == domainId; });
+                if ( itFindId != M_elements.end() )
+                {
+                    auto rfeFound = std::move(*itFindId);
+                    M_elements.clear();
+                    M_elements.push_back( std::move( rfeFound ) );
+                }
+                else
+                    CHECK( false ) << "elt id not found";
+            }
+
+    private :
+        std::vector<domain_entities_type> M_elements;
+        typename image_vector_mesh_element_type::value_type M_imageElement;
+        uint16_type M_faceIdInImageElement = invalid_v<uint16_type> ;
+    };
+
+    using ReturnFromElements = ReturnType<0>;
+    using ReturnFromFaces = ReturnType<1>;
+
+
+#endif
 
     DomainEltIdFromImageEltId( std::shared_ptr<domain_space_type> XhDomain, std::shared_ptr<image_space_type> XhImage )
         :
@@ -1096,8 +1100,8 @@ struct DomainEltIdFromImageEltId
             {
                 if ( M_hasMeshSupportPartialImage )
                 {
-                    //if ( M_meshSupportImage->hasElement( imageFace.element0().id() ) && !M_meshSupportImage->hasGhostElement( imageFace.element0().id() ) )
-                    if ( !M_meshSupportImage->hasGhostElement( imageFace.element0().id() ) )
+                    //if ( !M_meshSupportImage->hasGhostElement( imageFace.element0().id() ) )
+                    if ( M_meshSupportImage->hasElement( imageFace.element0().id() ) && !M_meshSupportImage->hasGhostElement( imageFace.element0().id() ) )
                         imageElts.push_back( boost::cref( imageFace.element0() ) );
                 }
                 else if ( !imageFace.element0().isGhostCell() )
@@ -1110,8 +1114,8 @@ struct DomainEltIdFromImageEltId
             {
                 if ( M_hasMeshSupportPartialImage )
                 {
-                    //if ( M_meshSupportImage->hasElement( imageFace.element1().id() ) && !M_meshSupportImage->hasGhostElement( imageFace.element1().id() ) )
-                    if ( !M_meshSupportImage->hasGhostElement( imageFace.element1().id() ) )
+                    //if ( !M_meshSupportImage->hasGhostElement( imageFace.element1().id() ) )
+                    if ( M_meshSupportImage->hasElement( imageFace.element1().id() ) && !M_meshSupportImage->hasGhostElement( imageFace.element1().id() ) )
                         imageElts.push_back( boost::cref( imageFace.element1() ) );
                 }
                 else if ( !imageFace.element1().isGhostCell() )
@@ -1133,43 +1137,49 @@ private :
      */
     template <int ApplyType, typename MeshEntityType,
               std::enable_if_t< ApplyType == 0 && std::is_same_v<MeshEntityType,typename image_mesh_type::element_type>, bool> = true >
-    auto apply( MeshEntityType const& imageEntity, image_vector_mesh_element_type const& imageElts ) const
+    auto apply( MeshEntityType const& imageElt, image_vector_mesh_element_type const& imageElts ) const
         {
-            ReturnFromElements res{ boost::cref( imageEntity )};
+            std::vector<ReturnFromElements> res;
 
-            for ( auto const& imageElt : imageElts )
+            if ( imageElts.empty() )
+                return res;
+
+            auto imageEltWrap = boost::cref( imageElt );
+            ReturnFromElements rfe{ imageEltWrap };
+
+            size_type imageEltId = unwrap_ref(imageElt).id();
+            std::optional<typename domain_vector_mesh_element_type::value_type> domainElt;
+            if ( M_isSameMesh )
             {
-                size_type imageEltId = unwrap_ref(imageElt).id();
-                std::optional<typename domain_vector_mesh_element_type::value_type> domainElt;
-                if ( M_isSameMesh )
-                {
-                    domainElt = imageElt;
-                }
-                else if ( M_image_related_to_domain )
-                {
-                    index_type domainRelationEltId = M_meshImage->subMeshToMesh( imageEltId );
-                    VLOG(2) << "[image_related_to_domain] image element id: "  << imageEltId << " domain element id : " << domainRelationEltId << "\n";
-                    domainElt = boost::cref( M_meshDomain->element( domainRelationEltId ) );
-
-                }
-                else if ( M_domain_related_to_image )
-                {
-                    index_type domainRelationEltId = M_meshDomain->meshToSubMesh( imageEltId );
-                    VLOG(2) << "[domain_related_to_image] image element id: "  << imageEltId << " domain element id : " << domainRelationEltId << "\n";
-                    domainElt = boost::cref( M_meshDomain->element( domainRelationEltId ) );
-                }
-                else if( M_domain_sibling_of_image )
-                {
-                    index_type domainRelationEltId = M_meshDomain->meshToSubMesh( M_meshImage, imageEltId );
-                    DVLOG(1) << "[domain_sibling_of_image] image element id: "  << imageEltId << " domain element id : " << domainRelationEltId << "\n";
-                    domainElt = boost::cref( M_meshDomain->element( domainRelationEltId ) );
-                }
-
-                if ( !domainElt )
-                    continue;
-
-                res.addElement( M_meshSupportDomain, *domainElt );
+                domainElt = imageEltWrap;
             }
+            else if ( M_image_related_to_domain )
+            {
+                index_type domainRelationEltId = M_meshImage->subMeshToMesh( imageEltId );
+                VLOG(2) << "[image_related_to_domain] image element id: "  << imageEltId << " domain element id : " << domainRelationEltId << "\n";
+                domainElt = boost::cref( M_meshDomain->element( domainRelationEltId ) );
+
+            }
+            else if ( M_domain_related_to_image )
+            {
+                index_type domainRelationEltId = M_meshDomain->meshToSubMesh( imageEltId );
+                VLOG(2) << "[domain_related_to_image] image element id: "  << imageEltId << " domain element id : " << domainRelationEltId << "\n";
+                domainElt = boost::cref( M_meshDomain->element( domainRelationEltId ) );
+            }
+            else if( M_domain_sibling_of_image )
+            {
+                index_type domainRelationEltId = M_meshDomain->meshToSubMesh( M_meshImage, imageEltId );
+                DVLOG(1) << "[domain_sibling_of_image] image element id: "  << imageEltId << " domain element id : " << domainRelationEltId << "\n";
+                domainElt = boost::cref( M_meshDomain->element( domainRelationEltId ) );
+            }
+
+            if ( !domainElt )
+                return res;
+
+            rfe.addElement( M_meshSupportDomain, *domainElt );
+
+            if ( !rfe.elements().empty() )
+                res.push_back( std::move( rfe ) );
 
             return res;
         }
@@ -1182,13 +1192,14 @@ private :
               std::enable_if_t< ApplyType == 0 && std::is_same_v<MeshEntityType,typename image_mesh_type::face_type>, bool> = true >
     auto apply( MeshEntityType const& imageFace, image_vector_mesh_element_type const& imageElts ) const
         {
-            ReturnFromFaces res{ imageElts.front() };
+            std::vector<ReturnFromFaces> res;
 
-            std::optional<typename domain_vector_mesh_element_type::value_type> domainElt;
-            std::optional<boost::reference_wrapper<typename domain_mesh_type::face_type const>> domainFace;
+            std::map<index_type,index_type> mapImageToDomainEltId;
 
             for ( auto const& imageElt : imageElts )
             {
+                ReturnFromFaces rff{ imageElt };//imageElts.front() };
+
                 size_type imageEltId = unwrap_ref(imageElt).id();
 
                 uint16_type faceIdInElt = invalid_v<uint16_type>;
@@ -1197,44 +1208,76 @@ private :
                 else if ( imageFace.isConnectedTo1() && imageFace.idElement1() == imageEltId )
                     faceIdInElt = imageFace.pos_second();
 
-                uint16_type domainFaceIdInElt = faceIdInElt;
-
-                if ( M_isSameMesh ) // same mesh
+                for ( uint16_type connectId = 0; connectId < 2 ;++connectId )
                 {
-                    domainFace = boost::cref( imageFace );
-                    domainElt = imageElt;
-                    domainFaceIdInElt = faceIdInElt;
+                    if ( connectId == 0 && !imageFace.isConnectedTo0() )
+                        continue;
+                    else if ( connectId == 1 && !imageFace.isConnectedTo1() )
+                        continue;
+
+                    auto const& imageEltConnected = imageFace.element( connectId );
+                    index_type imageEltConnectedId = imageEltConnected.id();
+
+                    uint16_type faceIdInEltConnected = connectId == 0? imageFace.idInElement0() : imageFace.idInElement1();
+
+                    std::optional<typename domain_vector_mesh_element_type::value_type> domainElt;
+                    uint16_type domainFaceIdInElt = faceIdInEltConnected;//faceIdInElt;
+
+                    if ( M_isSameMesh )
+                    {
+                        domainElt = boost::cref( imageEltConnected );
+                        domainFaceIdInElt = faceIdInEltConnected;
+                    }
+                    else
+                    {
+                        // TODO CHECK domainFaceIdInElt is equal to faceIdInElt else find the good one
+                        if ( M_image_related_to_domain )
+                        {
+                            index_type domainRelationEltId = M_meshImage->subMeshToMesh( imageEltConnectedId );
+                            VLOG(2) << "[image_related_to_domain] image element id: "  << imageEltConnectedId << " domain element id : " << domainRelationEltId << "\n";
+                            domainElt = boost::cref( M_meshDomain->element( domainRelationEltId ) );
+                            domainFaceIdInElt = faceIdInEltConnected;
+                        }
+                        else if ( M_domain_related_to_image )
+                        {
+                            index_type domainRelationEltId = M_meshDomain->meshToSubMesh( imageEltConnectedId );
+                            VLOG(2) << "[domain_related_to_image] image element id: "  << imageEltConnectedId << " domain element id : " << domainRelationEltId << "\n";
+                            domainElt = boost::cref( M_meshDomain->element( domainRelationEltId ) );
+                            domainFaceIdInElt = faceIdInEltConnected;
+                        }
+                        else if( M_domain_sibling_of_image )
+                        {
+                            index_type domainRelationEltId = M_meshDomain->meshToSubMesh( M_meshImage, imageEltConnectedId );
+                            DVLOG(1) << "[domain_sibling_of_image] image element id: "  << imageEltConnectedId << " domain element id : " << domainRelationEltId << "\n";
+                            domainElt = boost::cref( M_meshDomain->element( domainRelationEltId ) );
+                            domainFaceIdInElt = faceIdInEltConnected;
+                        }
+                    }
+
+                    if ( !domainElt )
+                        continue;
+
+                    bool isAdded = rff.addElement( M_meshSupportDomain, *domainElt, domainFaceIdInElt );
+                    if ( isAdded )
+                        mapImageToDomainEltId[imageEltConnectedId] = unwrap_ref( *domainElt ).id();
                 }
-                else
+
+
+                // if continue space and size > 1 : take only one (and if possible the same as image)
+                if ( domain_space_type::is_continuous )
                 {
-                    // TODO CHECK domainFaceIdInElt is equal to faceIdInElt else find the good one
-                    if ( M_image_related_to_domain )
+                    if ( rff.elements().size() > 1 )
                     {
-                        index_type domainRelationEltId = M_meshImage->subMeshToMesh( imageEltId );
-                        VLOG(2) << "[image_related_to_domain] image element id: "  << imageEltId << " domain element id : " << domainRelationEltId << "\n";
-                        domainElt = boost::cref( M_meshDomain->element( domainRelationEltId ) );
-                        domainFaceIdInElt = faceIdInElt;
+                        auto itFind = mapImageToDomainEltId.find( imageEltId );
+                        index_type idKeep = itFind != mapImageToDomainEltId.end() ?
+                            itFind->second : rff.elements().front().element().id();
+                        rff.keepOnly( idKeep );
                     }
-                    else if ( M_domain_related_to_image )
-                    {
-                        index_type domainRelationEltId = M_meshDomain->meshToSubMesh( imageEltId );
-                        VLOG(2) << "[domain_related_to_image] image element id: "  << imageEltId << " domain element id : " << domainRelationEltId << "\n";
-                        domainElt = boost::cref( M_meshDomain->element( domainRelationEltId ) );
-                        domainFaceIdInElt = faceIdInElt;
-                    }
-                    else if( M_domain_sibling_of_image )
-                    {
-                        index_type domainRelationEltId = M_meshDomain->meshToSubMesh( M_meshImage, imageEltId );
-                        DVLOG(1) << "[domain_sibling_of_image] image element id: "  << imageEltId << " domain element id : " << domainRelationEltId << "\n";
-                        domainElt = boost::cref( M_meshDomain->element( domainRelationEltId ) );
-                        domainFaceIdInElt = faceIdInElt;
-                    }
+                    CHECK( rff.elements().size() <= 1 ) << "to many domain elements";
                 }
 
-                if ( !domainElt )
-                    continue;
-
-                res.addElement( M_meshSupportDomain, *domainElt, domainFaceIdInElt );
+                if ( !rff.elements().empty() )
+                    res.push_back( std::move( rff ) );
             }
 
             return res;
@@ -1249,7 +1292,9 @@ private :
               std::enable_if_t< ApplyType == 1 && std::is_same_v<MeshEntityType,typename image_mesh_type::element_type>, bool> = true >
     auto apply( MeshEntityType const& imageElt, image_vector_mesh_element_type const& imageElts ) const
         {
-            ReturnFromFaces res{ boost::cref( imageElt ) };
+            std::vector<ReturnFromFaces> res;
+
+            ReturnFromFaces rff{ boost::cref( imageElt ) };
             //ReturnFromFaces res;
             index_type imageEltId = imageElt.id();
             std::optional<boost::reference_wrapper<typename domain_mesh_type::face_type const>> domainFace;
@@ -1268,12 +1313,25 @@ private :
 
             auto const& thedomainFace = unwrap_ref( *domainFace );
             if ( thedomainFace.isConnectedTo0() )
-                res.addElement( M_meshSupportDomain, boost::cref(thedomainFace.element0()), thedomainFace.idInElement0() );
-#if 0
+                rff.addElement( M_meshSupportDomain, boost::cref(thedomainFace.element0()), thedomainFace.idInElement0() );
             if ( thedomainFace.isConnectedTo1() )
-                res.addElement( M_meshSupportDomain, boost::cref(thedomainFace.element1()), thedomainFace.idInElement1() );
-#endif
-            //    res.addElement( *domainElt, domainFaceIdInElt, M_meshSupportDomain );
+                rff.addElement( M_meshSupportDomain, boost::cref(thedomainFace.element1()), thedomainFace.idInElement1() );
+
+
+            // if continue space and size > 1 : take only one (and if possible the same as image)
+            if ( domain_space_type::is_continuous )
+            {
+                if ( rff.elements().size() > 1 )
+                {
+                    index_type idKeep = rff.elements().front().element().id();
+                    rff.keepOnly( idKeep );
+                }
+                CHECK( rff.elements().size() <= 1 ) << "to many domain elements";
+            }
+
+            if ( !rff.elements().empty() )
+                res.push_back( std::move( rff ) );
+
 
             return res;
         }
@@ -1286,24 +1344,31 @@ private :
               std::enable_if_t< ApplyType == -1 && std::is_same_v<MeshEntityType,typename image_mesh_type::face_type>, bool> = true >
     auto apply( MeshEntityType const& imageFace, image_vector_mesh_element_type const& imageElts ) const
         {
-            ReturnFromElements res{ imageElts.front() };
+            std::vector<ReturnFromElements> res;
 
-            std::optional<typename domain_vector_mesh_element_type::value_type> domainElt;
-
-            if ( M_image_related_to_domain )
+            for ( auto const& imageElt : imageElts )
             {
-            }
-            else if ( M_domain_related_to_image )
-            {
-                index_type domainElementId = M_meshDomain->meshToSubMesh( imageFace.id() );
-                CHECK( domainElementId != invalid_v<index_type> ) << "invalid relation";
-                domainElt = boost::cref( M_meshDomain->element( domainElementId ) );
-            }
-            if ( !domainElt )
-                return res;
+                ReturnFromElements rfe{ imageElt };
 
-            res.addElement( M_meshSupportDomain, *domainElt );
+                std::optional<typename domain_vector_mesh_element_type::value_type> domainElt;
 
+                if ( M_image_related_to_domain )
+                {
+                }
+                else if ( M_domain_related_to_image )
+                {
+                    index_type domainElementId = M_meshDomain->meshToSubMesh( imageFace.id() );
+                    CHECK( domainElementId != invalid_v<index_type> ) << "invalid relation";
+                    domainElt = boost::cref( M_meshDomain->element( domainElementId ) );
+                }
+                if ( !domainElt )
+                    return res;
+
+                rfe.addElement( M_meshSupportDomain, *domainElt );
+
+                if ( !rfe.elements().empty() )
+                    res.push_back( std::move( rfe ) );
+            }
             return res;
 
         }
@@ -2011,22 +2076,19 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     // element are the same, this compute are done only one times
     // For other fe like Nedelec,Raviart-Thomas this assembly must
     // done for each element
-    //return;//
 
 
     Feel::detail::DomainEltIdFromImageEltId<DomainSpaceType,ImageSpaceType> deifiei( this->domainSpace(), this->dualImageSpace() );
 
     //using range_entity_type =  std::decay_t<decltype( unwrap_ref( std::declval<typename iterator_type::value_type>() ) )>; //filter_entity_t<decltype(M_listRange.begin())>;
     using range_entity_type = typename boost::unwrap_reference<std::decay_t<typename iterator_type::value_type>>::type; //filter_entity_t<decltype(M_listRange.begin())>;
-    static constexpr ElementsType deifiei_apply_on_entity = std::decay_t<decltype( deifiei.apply( std::declval<range_entity_type>() ) )>::onEntity();
+    static constexpr ElementsType deifiei_apply_on_entity = std::decay_t<decltype( deifiei.apply( std::declval<range_entity_type>() ).front() )>::onEntity();
     static constexpr int codimUsed = (deifiei_apply_on_entity == ElementsType::MESH_ELEMENTS)? 0 : 1;
-    //ElementsType onEntity() { return ElementsType::MESH_ELEMENTS; }
-              //using toto = decltype( boost::get<1>(M_listRange.begin()->begin()
     auto uDomain = this->domainSpace()->element();
     //auto expr = interpolation_type::operand(uDomain);
     auto expr = M_interptype.operand(uDomain);
     auto MlocEvalBasisNEW = Feel::detail::precomputeDomainBasisFunction<codimUsed>( this->domainSpace(), this->dualImageSpace(), expr );
-    //return;///////
+
     Eigen::MatrixXd IhLoc;
 
 
@@ -2164,32 +2226,28 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
             for( auto const& theImageEltWrap : itListRange )
             {
                 auto const& theImageElt = boost::unwrap_ref(theImageEltWrap);
-                auto domains_eid_set = deifiei.apply( theImageElt );
-                if ( domains_eid_set.empty() )
-                    continue;
 
-                //std::cout << "MAIN new dof" << std::endl;
-#if 1
-                //uint16_type ilocprime = invalid_v<uint16_type>;
-                if ( opToApply == OpToApplyEnum::ASSEMBLY_MATRIX )
+
+                auto meshEntitiesImageToDomain = deifiei.apply( theImageElt );
+                for ( auto const& domains_eid_set : meshEntitiesImageToDomain )
                 {
-                    /*ilocprime =*/ MlocEvalBasisNEW->update( domains_eid_set );// domain_elt/* this->domainSpace()->mesh()->element( domain_eid )*/,  theImageElt, iloc, i,comp );
-                    //ilocprime = iloc;
-                    IhLoc = MlocEvalBasisNEW->interpolant();
-                }
-#endif
+                    if ( domains_eid_set.empty() )
+                        continue;
+
+                    //auto const& theImageElt = domains_eid_set.imageElement();
+
+                    if ( opToApply == OpToApplyEnum::ASSEMBLY_MATRIX )
+                    {
+                        MlocEvalBasisNEW->update( domains_eid_set );
+                        IhLoc = MlocEvalBasisNEW->interpolant();
+                    }
 
 
-                for( auto const& ldof : imagedof->localDof( theImageElt/*curElt.id()*/ ) )
-                //for ( uint16_type iloc = 0; iloc < nLocalDofInDualImageElt; ++iloc )
-                {
-                    //int nc = (image_basis_type::is_product)? image_basis_type::nComponents : 1;
-                    //for ( uint16_type comp = 0; comp < nc; ++comp )
+                    // TODO get local dof from elt and maybe with face/edge/point id
+                    for( auto const& ldof : imagedof->localDof( theImageElt ) )
                     {
                         index_type i = invalid_v<index_type>;
                         uint16_type iloc = invalid_v<uint16_type>;
-                        //uint16_type comp = invalid_v<uint16_type>;
-                        //if constexpr ( boost::tuples::template element<0, std::decay_t<decltype(itListRange)> >::type::value == MESH_FACES )
                         if constexpr ( idim_type::value == MESH_FACES )
                         {
                             i = ldof.index();
@@ -2206,13 +2264,6 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                             //comp = ldof.first.component( image_basis_type::nLocalDof ); // TODO
                         }
                         uint16_type comp = iloc/image_basis_type::nLocalDof;
-                        //std::cout << "MAIN i="<<i<<" iloc="<<iloc << " comp="<<comp<<std::endl;
-
-                        //index_type compDofTableImage = ldof.first.component( nLocalDofPerComponent );//TODO
-
-                        //uint16_type compDofTableImage = (image_basis_type::is_product)? comp : 0;
-                        //auto const& thedofImage = imagedof->localToGlobal( theImageElt, iloc, compDofTableImage );
-                        //size_type i = thedofImage.index();
 
                         if ( dof_done[i].empty() )
                         {
@@ -2232,41 +2283,20 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                                 row.template get<1>() = il1;
                             }
 
-                            //for ( auto const& domain_elt : domains_eid_set )
                             for ( auto const& domain_elt : domains_eid_set.elements() )
                             {
-                                //index_type domain_eid = unwrap_ref( domain_elt ).id();
                                 index_type domain_eid = domain_elt.element().id();
                                 auto const& s = domaindof->localToGlobalSigns( domain_eid );
-#if 0
-                                uint16_type ilocprime = invalid_v<uint16_type>;
-                                if ( opToApply == OpToApplyEnum::ASSEMBLY_MATRIX )
-                                {
-                                    /*ilocprime =*/ MlocEvalBasisNEW->update( domain_elt/* this->domainSpace()->mesh()->element( domain_eid )*/,  theImageElt, iloc, i,comp );
-                                    ilocprime = iloc;
-                                    IhLoc = MlocEvalBasisNEW->interpolant();
-                                }
-#else
-                                uint16_type ilocprime = iloc;
-#endif
-                                //for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
                                 for( auto const& ldof_domain : domaindof->localDof( domain_eid ) )
                                 {
                                     index_type j = ldof_domain.second.index();
                                     uint16_type jloc = ldof_domain.first.localDof();
                                     uint16_type cdomain = ldof_domain.first.component( domain_basis_type::nLocalDof );
 
-                                    //std::cout << "ldof_domain j=" << j << " jloc="<<jloc << " cdomain=" << cdomain << std::endl;
-
                                     if ( domain_basis_type::is_product &&
                                          image_basis_type::is_product &&
                                          ( M_interptype.interpolationOperand() == interpolation_operand_type::ID )
                                          && cdomain != comp ) continue;
-
-                                    //std::cout << "ldof_domain j=" << j << " jloc="<<jloc << " cdomain=" << cdomain << std::endl;
-
-                                    // get column
-                                    //const size_type j = domaindof->localToGlobal( domain_eid, jloc, cdomain ).index();
 
                                     if ( opToApply == OpToApplyEnum::BUILD_GRAPH )
                                     {
@@ -2276,22 +2306,17 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                                     }
                                     else if ( opToApply == OpToApplyEnum::ASSEMBLY_MATRIX )
                                     {
-                                        const value_type val = s(jloc)*IhLoc( jloc,//cdomain*domain_basis_type::nLocalDof+jloc,
-                                                                              ilocprime );
-#if 0
-                                        this->matPtr()->set( i,j,val );
-#else
+                                        const value_type val = s(jloc)*IhLoc( jloc,iloc );
                                         this->matPtr()->set( dofIdToContainerIdRow[i], dofIdToContainerIdCol[j], val );
-#endif
                                     }
                                 }
-                                break;/////WARING ONLY FOR CONTINUE!!!!
+                                //break;/////WARING ONLY FOR CONTINUE!!!!
                             }  // for ( auto const& domain_elt : domains_eid_set.elements() )
 
                             dof_done[i].insert( comp );
                         } // if ( !dof_done[i] )
-                    } // for ( uint16_type comp ... )
-                } // for ( uint16_type iloc ... )
+                    } // for( auto const& ldof : imagedof->localDof( theImageElt ) )
+                } /// for ( auto const& domains_eid_set : meshEntitiesImageToDomain )
 
             } // for ( ; it != en; ++ it )
         } // for ( ; itListRange!=enListRange ; ++itListRange)
