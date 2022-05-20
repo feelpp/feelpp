@@ -91,7 +91,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidual( 
                                _geomap=this->geomap() );
             }
 
-            bool doAssemblyStressTensor = ( physicFluidData->dynamicViscosity().isNewtonianLaw() && !physicFluidData->turbulence().isEnabled() )? BuildNonCstPart && !UseJacobianLinearTerms : BuildNonCstPart;
+            bool doAssemblyStressTensor = ( physicFluidData->dynamicViscosity().isConstant() && !physicFluidData->turbulence().isEnabled() )? BuildNonCstPart && !UseJacobianLinearTerms : BuildNonCstPart;
             if ( doAssemblyStressTensor )
             {
                 auto const StressTensorExpr = Feel::FeelModels::fluidMecStressTensor(u/*gradv(u)*/,idv(p),*physicFluidData,matProps,false/*true*/,se);

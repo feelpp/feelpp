@@ -191,8 +191,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
                            _expr= -idv(p)*div(v),
                            _geomap=this->geomap() );
         }
-        if ( ( dynamicViscosity.isNewtonianLaw() && BuildNonCstPart && !UseJacobianLinearTerms ) ||
-             ( !dynamicViscosity.isNewtonianLaw() && BuildNonCstPart ) )
+        if ( ( dynamicViscosity.isConstant() && BuildNonCstPart && !UseJacobianLinearTerms ) ||
+             ( !dynamicViscosity.isConstant() && BuildNonCstPart ) )
         {
             auto const StressTensorExpr = Feel::FeelModels::fluidMecNewtonianStressTensor(gradv(u),idv(p),*this->materialProperties(),matName,false/*true*/);
             // sigma : grad(v) on Omega

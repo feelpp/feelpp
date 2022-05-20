@@ -196,7 +196,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobian( 
                                _expr= -idt(p)*div(v),
                                _geomap=this->geomap() );
 
-            bool doAssemblyStressTensor = ( physicFluidData->dynamicViscosity().isNewtonianLaw() && !physicFluidData->turbulence().isEnabled() )? BuildCstPart : BuildNonCstPart;
+            bool doAssemblyStressTensor = ( physicFluidData->dynamicViscosity().isConstant() && !physicFluidData->turbulence().isEnabled() )? BuildCstPart : BuildNonCstPart;
             if ( doAssemblyStressTensor )
             {
                 auto StressTensorExprJac = Feel::FeelModels::fluidMecViscousStressTensorJacobian(/*gradv(u),*/u,*physicFluidData,matProps,se);

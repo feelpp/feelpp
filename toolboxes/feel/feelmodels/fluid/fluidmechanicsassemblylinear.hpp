@@ -108,8 +108,8 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
 
             // stress tensor sigma : grad(v)
             this->timerTool("Solve").start();
-            if ( ( physicFluidData->dynamicViscosity().isNewtonianLaw() && BuildCstPart ) ||
-                 ( !physicFluidData->dynamicViscosity().isNewtonianLaw() && build_StressTensorNonNewtonian ) )
+            if ( ( physicFluidData->dynamicViscosity().isConstant() && BuildCstPart ) ||
+                 ( !physicFluidData->dynamicViscosity().isConstant() && build_StressTensorNonNewtonian ) )
             {
                 if ( physicFluidData->equation() == "Navier-Stokes" )
                 {

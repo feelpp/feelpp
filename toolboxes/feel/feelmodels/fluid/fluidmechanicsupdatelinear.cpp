@@ -134,8 +134,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
             auto const& range = rangeData.second;
             auto const& dynamicViscosity = this->materialProperties()->dynamicViscosity(matName);
 
-            if ( ( dynamicViscosity.isNewtonianLaw() && BuildCstPart ) ||
-                 ( !dynamicViscosity.isNewtonianLaw() && build_StressTensorNonNewtonian ) )
+            if ( ( dynamicViscosity.isConstant() && BuildCstPart ) ||
+                 ( !dynamicViscosity.isConstant() && build_StressTensorNonNewtonian ) )
             {
                 if ( fieldVelocityPressureExtrapolated )
                 {
