@@ -47,7 +47,9 @@ public:
     static const uint16_type nRealDim = mesh_type::nRealDim;
 
     //--------------------------------------------------------------------//
-    // Materials properties
+    // Model physics and materials properties
+    using model_physics_type = ModelPhysics<nDim>;
+    using model_physics_ptrtype = std::shared_ptr<model_physics_type>;
     typedef MaterialsProperties<mesh_type::nRealDim> materialsproperties_type;
     typedef std::shared_ptr<materialsproperties_type> materialsproperties_ptrtype;
 
@@ -169,7 +171,9 @@ public:
     std::vector<levelset_model_ptrtype> const& levelsetModels() const { return M_levelsetModels; }
     std::vector<levelset_model_ptrtype> & levelsetModels() { return M_levelsetModels; }
     levelset_model_ptrtype const& levelsetModel( index_type i ) const { return M_levelsetModels.at(i); }
+
     size_type nLevelsets() const { return M_levelsetModels.size(); }
+    size_type nFluids() const { return this->nLevelsets() + 1; }
 
     // Global levelset
     auto globalLevelsetExpr() const {

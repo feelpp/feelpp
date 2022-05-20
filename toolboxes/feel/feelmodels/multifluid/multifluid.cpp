@@ -87,17 +87,16 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     M_fluidModel = std::make_shared<fluid_model_type>(
             prefixvm(this->prefix(),"fluid"), "fluid", this->worldCommPtr(),
             this->subPrefix(), this->repository() );
-    for( index_type i = 0; i < M_nLevelsets; ++i )
-    {
-        std::string const lsKeyword = fmt::format( "levelset{}", i );
-        std::string const lsPrefix = prefixvm( this->prefix(), lsKeyword );
-        M_levelsetModels.push_back( std::make_shared<levelset_model_type>(
-                lsPrefix, lsKeyword, this->worldCommPtr(),
-                this->subPrefix(), this->repository() )
-                );
-    }
+    //for( index_type i = 0; i < M_nLevelsets; ++i )
+    //{
+        //std::string const lsKeyword = fmt::format( "levelset{}", i );
+        //std::string const lsPrefix = prefixvm( this->prefix(), lsKeyword );
+        //M_levelsetModels.push_back( std::make_shared<levelset_model_type>(
+                //lsPrefix, lsKeyword, this->worldCommPtr(),
+                //this->subPrefix(), this->repository() )
+                //);
+    //}
 
-    // Physics
     this->initPhysics(
         this->shared_from_this(),
         [this]( typename super_physics_type::PhysicsTree & physicsTree ) {
@@ -106,6 +105,30 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
             for( auto const& lsModel: M_levelsetModels )
                 physicsTree.updatePhysics( lsModel, this->modelProperties().models() );
         } );
+    //using physic_id_type = typename model_physics_type::physic_id_type;
+    //std::map< physic_id_type, std::shared_ptr<ModelPhysic<nDim>> > innerFluidsPhysics;
+    //std::string fluidType = M_fluidModel->keyword();
+    //for ( auto const& [physicId, physic]: this->physicsFromCurrentType() )
+    //{
+        //for( uint32_t n = 0; n < this->nFluids() - 1; ++n )
+        //{
+            //std::string fluidName = fmt::format( "fluid{}", n );
+            //innerFluidsPhysics[physic_id_type( { "fluid", fluidName } )] = ModelPhysic<nDim>::New( M_fluidModel, "fluid", fluidType, fluidName, this->modelProperties().models() );
+            //innerFluidsPhysics[fluidKeyword] = std::make_shared< ModelPhysics< nDim > >( "fluid", fluidKeyword );
+            //physicsTree.addChild( M_modelPhysicsFluids[fluidKeyword], models );
+        //}
+        //M_fluidModel->addPhysics( );
+    //}
+    // Set multifluid density and viscosity for inner and outer fluids
+    for ( auto const& [physicId, physic]: this->physicsFromCurrentType() )
+    {
+        for ( auto subphysic: physic->subphysicsFromType( M_fluidModel->physicType() ) )
+        {
+            auto subphysicFluid = std::dynamic_pointer_cast<ModelPhysicFluid<nDim>>(subphysic);
+            CHECK( subphysicFluid ) << "invalid fluid physic ptr cast";
+            subphysicFluid->dynamicViscosity()->setMultifluid( true );
+        }
+    }
 
     // Physical properties
     if ( !M_materialsProperties )
@@ -142,7 +165,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
             "{{ {0}_{1}_0, {0}_{1}_1, {0}_{1}_2 }}:{0}_{1}_0:{0}_{1}_1:{0}_{1}_2",
             M_fluidModel->keyword(), fluidVelocitySymbolUsed 
             );
-    for( levelset_model_ptrtype const& lsModel: M_levelsetModels )
+    for ( levelset_model_ptrtype const& lsModel: M_levelsetModels )
         lsModel->setAdvectionVelocityExpr( velConvExprStr );
 
     // Update constant parameters
@@ -1127,11 +1150,30 @@ MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
 MULTIFLUID_CLASS_TEMPLATE_TYPE::updatePhysics( typename super_physics_type::PhysicsTreeNode & physicsTree, ModelModels const& models )
 {
-    physicsTree.addChild( M_fluidModel, models );
-    for( auto const& lsModel: M_levelsetModels )
-        physicsTree.addChild( lsModel, models );
+    auto currentPhysic = std::dynamic_pointer_cast<ModelPhysicMultifluid<nDim>>( physicsTree.physic() );
+    CHECK( currentPhysic ) << "wrong physic: expected multifluid, got " << physicsTree.physic()->name();
 
-    physicsTree.updateMaterialSupportFromChildren( "intersect" );
+    physicsTree.addChild( M_fluidModel, models );
+
+    //for( uint32_t n = 0; n < currentPhysic->nFluids() - 1; ++n )
+    //{
+        //std::string fluidKeyword = fmt::format( "fluid{}", n );
+        //M_modelPhysicsFluids[fluidKeyword] = std::make_shared< ModelPhysics< nDim > >( "fluid", fluidKeyword );
+        //physicsTree.addChild( M_modelPhysicsFluids[fluidKeyword], models );
+    //}
+
+    for( uint32_t n = 0; n < currentPhysic->nFluids() - 1; ++n )
+    {
+        std::string const levelsetKeyword = fmt::format( "levelset{}", n );
+        std::string const levelsetPrefix = prefixvm( this->prefix(), levelsetKeyword );
+        levelset_model_ptrtype levelsetModel = std::make_shared<levelset_model_type>(
+                levelsetPrefix, levelsetKeyword, this->worldCommPtr(),
+                this->subPrefix(), this->repository() );
+        M_levelsetModels.push_back( levelsetModel );
+        physicsTree.addChild( levelsetModel, models );
+    }
+
+    //physicsTree.updateMaterialSupportFromChildren( "intersect" );
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
