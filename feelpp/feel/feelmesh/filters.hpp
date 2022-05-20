@@ -111,7 +111,7 @@ WorldComm const& worldComm( RangeT const& range )
  * @return int the rank of the entity range
  */
 template <typename RangeT,std::enable_if_t<is_range_v<RangeT>,int> = 0>
-int rank( RangeT const& range )
+rank_type rank( RangeT const& range )
 {
     return worldComm( range ).globalRank();
 }
