@@ -827,8 +827,13 @@ public:
             std::vector<uint16_type> mapExprPointToDofPoint( nLocalFaceDof );
             for ( int lfd = 0;lfd < nLocalFaceDof;++lfd )
             {
-                if ( lfd < (face_type::numVertices * nDofPerVertex) )
-                    mapExprPointToDofPoint[lfd] = reference_convex_type::e2p(faceIdInElt,lfd);
+                if ( reference_convex_type::nDim == 2 )
+                {
+                    if ( lfd < (face_type::numVertices * nDofPerVertex) )
+                        mapExprPointToDofPoint[lfd] = reference_convex_type::e2p(faceIdInElt,lfd);
+                    else
+                        CHECK( false ) << "TODO";
+                }
                 else
                     CHECK( false ) << "TODO";
             }
