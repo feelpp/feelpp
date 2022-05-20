@@ -239,7 +239,7 @@ class reducedbasis():
         return normHatE / np.sqrt(alp)
 
     def computeEffectivity(self, mu, precalc=None, size=None):
-        """computes effectivity = \Delta_N / ||e(mu)|_X
+        """computes effectivity = Delta_N / ||e(mu)|_X
 
         Args:
             mu (ParameterSpaceElement): parameter
@@ -281,12 +281,13 @@ class reducedbasis():
     """
     Save and load results
     """
-    def saveReducedBasis(self, path, force=False):
+    def saveReducedBasis(self, path, force=False, check=True):
         """save the reduced basis in files
 
         Args:
             path (str): path of the directory whre data are to be saved
             force (bool, optional): Force saving, even if files are already present. Defaults to False.
+            check (bool, optional): Check that the exported values are correct (only in sequential). Defaults to True
         """
         if os.path.isdir(path) and not force:
             if self.worldComm.isMasterRank():
@@ -298,6 +299,8 @@ class reducedbasis():
 
         if self.worldComm.isMasterRank():
             print(f"[reducedbasis] saving reduced basis to {os.getcwd()}/reducedbasis.json ...", end=" ")
+
+        jsonPath = f"{os.getcwd()}/reducedbasis.json"
 
         if self.worldComm.isMasterRank():
             h5f = h5py.File(path+"/reducedbasis.h5", "w")
@@ -325,10 +328,15 @@ class reducedbasis():
             h5f.create_dataset("alphaMubar", data=np.array([self.alphaMubar]))
             h5f.create_dataset("gammaMubar", data=np.array([self.gammaMubar]))
 
-
             h5f.close()
-        if self.worldComm.isMasterRank():
+
             print("Done !")
+
+            if check and feelpp.Environment.isSequential():
+                print("[reducedbasis] Checking that the exported basis is correct...")
+                self.checkSaved(jsonPath)
+                print("[reducedbasis] Check is ok !")
+
         return f"{os.getcwd()}/reducedbasis.json"
 
 
@@ -377,6 +385,7 @@ class reducedbasis():
         self.alphaMubar = h5f["alphaMubar"][0]
         self.gammaMubar = h5f["gammaMubar"][0]
         betaA_bar_np = np.array(self.betaA_bar)
+
         def alphaLB(mu):
             # From a parameter
             betaMu = self.model.computeBetaQm(mu)[0][0]
@@ -403,6 +412,42 @@ class reducedbasis():
         if self.worldComm.isMasterRank():
             print(f"[reduced basis] Basis loaded from {path}")
         self.setInitialized = True
+
+
+    def checkSaved(self, path):
+        """Checks that the basis has been exported correctly
+
+        Args:
+            path (string): path to the reducedbasis.json file
+        """
+
+        rbLoaded = reducedbasis(None)
+        rbLoaded.loadReducedBasis(path, self.model)
+
+        for n in self.mubar.parameterNames():
+            assert self.mubar.parameterNamed(n) == rbLoaded.mubar.parameterNamed(n)
+
+        assert( self.Qa == rbLoaded.Qa )
+        assert( self.Qf == rbLoaded.Qf )
+        assert( self.N == rbLoaded.N )
+
+        for q in range(rbLoaded.Qa):
+            assert( (self.ANq[q] == rbLoaded.ANq[q]).all() ), f"q = {q}"
+        for p in range(rbLoaded.Qf):
+            assert( (self.FNp[p] == rbLoaded.FNp[p]).all() ), f"p = {p}"
+
+        assert( (self.SS == rbLoaded.SS).all() ), "SS"
+        assert( (self.SL == rbLoaded.SL).all() ), "SL"
+        assert( (self.LL == rbLoaded.LL).all() ), "LL"
+        
+        if self.DeltaMax is None:
+            assert rbLoaded.DeltaMax is None, "DeltaMax"
+        else:
+            assert( (self.DeltaMax == rbLoaded.DeltaMax).all() ), "DeltaMax"
+
+        assert self.alphaMubar == rbLoaded.alphaMubar, "alphaMubar"
+        assert self.gammaMubar == rbLoaded.gammaMubar, "gammaMubar"
+
 
     def getSize(self, threshold):
         """Get size of the basis for a desired threshold error
