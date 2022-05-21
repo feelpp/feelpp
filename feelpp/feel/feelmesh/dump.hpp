@@ -28,12 +28,12 @@ namespace Feel
 {
 
 template <typename MeshT, typename = std::enable_if_t<is_mesh_v<MeshT>>>
-void dump( std::shared_ptr<MeshT> const& mesh )
+void dump( std::shared_ptr<MeshT> const& mesh, std::string const& header = {} )
 {
     //if ( mesh->worldComm().localRank() == 0 )
     {
         using namespace Feel;
-        Feel::cout << "========================================" << std::endl;
+        Feel::cout << fmt::format( "===================[ {} ]===================", header ) << std::endl;
         Feel::cout << "Information about the mesh:";
         Feel::cout << "      number of elements in memory : " << mesh->numGlobalElements() << std::endl;
         Feel::cout << "      number of faces in memory : " << mesh->numGlobalFaces() << std::endl;
@@ -61,7 +61,7 @@ void dump( std::shared_ptr<MeshT> const& mesh )
                 Feel::cout << "      number of marked faces " << name << " with tag " << data[0] << " : " << nelts << std::endl;
             }
         }
-        Feel::cout << "========================================" << std::endl;
+        Feel::cout << fmt::format( "===================[ {} ]===================", header ) << std::endl;
     }
 }
 

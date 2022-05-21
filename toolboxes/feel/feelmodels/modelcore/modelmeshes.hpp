@@ -23,6 +23,12 @@ namespace FeelModels
 template <typename IndexType>
 class ModelMeshes;
 
+/**
+ * @brief Common class for Mesh Models
+ * @ingroup ModelCore
+ * 
+ * @tparam IndexType 
+ */
 template <typename IndexType>
 class ModelMeshCommon
 {
@@ -166,6 +172,13 @@ private:
     std::shared_ptr<ModelBase> M_meshMotionTool;
 };
 
+
+/**
+ * @brief Mesh Model class
+ * @ingroup ModelCore
+ * 
+ * @tparam IndexType
+ */
 template <typename IndexType>
 class ModelMesh
 {
@@ -455,6 +468,12 @@ private:
     std::optional<MeshMotionSetup> M_meshMotionSetup;
 };
 
+/**
+ * @brief Mesh Model Collection
+ * @ingroup ModelCore
+ * 
+ * @tparam IndexType 
+ */
 template <typename IndexType>
 class ModelMeshes : protected std::map<std::string,std::shared_ptr<ModelMesh<IndexType>>>,
                     virtual public ModelBase

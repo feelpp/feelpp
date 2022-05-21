@@ -62,7 +62,9 @@ namespace Feel
 namespace FeelModels
 {
 /**
- * Handles some numerical model aspects: timestepping, mesh and properties
+ * @brief Handles some numerical model aspects: timestepping, mesh and properties
+ * @ingroup ModelCore
+ * 
  */
 class ModelNumerical : virtual public ModelBase,
                        public ModelAlgebraic,

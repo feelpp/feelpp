@@ -45,3 +45,5 @@ The code is known to work on the following compilers:
 - clang >= 7.0
 - GCC >= 9.0
 
+More information [here](https://docs.feelpp.org/user/0.109/install/sources.html).
+

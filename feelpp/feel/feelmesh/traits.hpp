@@ -5,6 +5,8 @@
   Author(s): Christophe Prud'homme <prudhomm@zion>
        Date: 2005-08-27
 
+  Copyright (C) 2011-2022 Feel++ Consortium
+  Copyright (C) 2011-2022 University of Strasbourg
   Copyright (C) 2005,2006 EPFL
 
   This library is free software; you can redistribute it and/or
@@ -39,6 +41,7 @@ namespace Feel
 {
 /**
  * \class MeshTraits
+ * \ingroup Mesh
  * \brief Traits for meshes
  *
  * @author Christophe Prud'homme

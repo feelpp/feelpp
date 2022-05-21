@@ -68,7 +68,12 @@ struct TimeStepInfo : public std::tuple<double, double, optional_double_t>
     double error() const { return e(); }
 };
 
-
+/**
+ * @ingroup SpaceTime
+ * @class TimeSet
+ * \brief Handles a set of time steps
+ * 
+ */
 class TimeSet : public std::vector<TimeStepInfo>
 {
 public:

@@ -104,7 +104,10 @@ auto toExpr( eigen_matrix_type<RowDim, RowCol> const& em )
 
 
 
-
+/**
+ * @brief Interpolation Helper class for remeshing
+ * @ingroup Fluid
+ */
 class RemeshInterpolation
 {
 public:
@@ -293,8 +296,12 @@ namespace FeelModels
 {
 
 /**
- * Fluid Mechanics Toolbox
- * \ingroup Toolboxes
+ * @brief Fluid Mechanics Toolbox
+ * \ingroup Fluid
+ *
+ * @tparam ConvexType
+ * @tparam BasisVelocityType
+ * @tparam BasisPressureType
  */
 template< typename ConvexType, typename BasisVelocityType,
           typename BasisPressureType = Lagrange< (BasisVelocityType::nOrder>1)? (BasisVelocityType::nOrder-1):BasisVelocityType::nOrder, Scalar,Continuous,PointSetFekete> >
@@ -510,6 +517,11 @@ public:
     class BodyBoundaryCondition;
     class BodySetBoundaryCondition;
 
+    /**
+     * @brief Body base  class
+     * @ingroup Fluid
+     * 
+     */
     class Body //: public ModelPhysics<nDim>,
     //  public std::enable_shared_from_this<Body>
     {
@@ -890,7 +902,10 @@ public:
         element_velocity_ptrtype M_fieldElasticVelocity;
     };
 
-
+    /**
+     * @brief Body Articulation 
+     * @ingroup Fluid
+     */
     class BodyArticulation
     {
     public :
@@ -1184,7 +1199,10 @@ public:
         bdf_trace_angular_velocity_ptrtype M_bdfAngularVelocity;
     };
 
-    // bc body
+    /**
+     * @brief Boudary Condition for a Body
+     * @ingroup Fluid
+     */
     class BodyBoundaryCondition
     {
         using self2_type = BodyBoundaryCondition;
@@ -1586,7 +1604,11 @@ public:
     };
 
 
-
+    /**
+     * @brief boundary conditions for a set of bodies
+     * @ingroup Fluid
+     * 
+     */
     class BodySetBoundaryCondition : public std::map<std::string,BodyBoundaryCondition>
     {
         bool M_internal_elasticVelocity_is_v0 = false;
