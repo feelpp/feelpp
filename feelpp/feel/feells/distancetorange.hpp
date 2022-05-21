@@ -376,12 +376,11 @@ DistanceToRange< FunctionSpaceType >::eltsTouchingFaces( range_faces_type const&
     for( ; face_it != face_en ; ++face_it )
     {
         auto const& face = boost::unwrap_ref( *face_it );
-        size_type const faceId = face.id();
-        if ( face.isConnectedTo0() )
+        if ( face.isConnectedTo0() && !face.element0().isGhostCell() )
         {
             M_eltsTouchingFaces->push_back( boost::cref( face.element0() ) );
         }
-        if ( face.isConnectedTo1() )
+        if ( face.isConnectedTo1() && !face.element1().isGhostCell() )
         {
             M_eltsTouchingFaces->push_back( boost::cref( face.element1() ) );
         }
