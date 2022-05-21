@@ -11,14 +11,11 @@
             "displayName": "Default Config",
             "description": "Default build using Ninja generator",
             "generator": "Unix Makefiles",
-            "binaryDir": "${sourceDir}/build/default",
+            "binaryDir": "${sourceDir}/build/default/${hostSystemName}",
             "cacheVariables": {
                 "CMAKE_CXX_COMPILER": "clang++",
                 "CMAKE_BUILD_TYPE": "Release",
-                "FEELPP_ENABLE_TOOLBOXES": {
-                    "type": "BOOL",
-                    "value": "ON"
-                },
+                "FEELPP_ENABLE_TOOLBOXES":"ON",
                 "FEELPP_ENABLE_MOR": "ON",
                 "FEELPP_ENABLE_FEELPP_PYTHON": "ON",
                 "FEELPP_ENABLE_FMILIB": "OFF",
@@ -34,6 +31,34 @@
             }
         },
         {
+            "name": "default-homebrew",
+            "displayName": "Default Homebrew Config",
+            "description": "Default build using Ninja generator",
+            "generator": "Unix Makefiles",
+            "binaryDir": "${sourceDir}/build/default/${hostSystemName}",
+            "cacheVariables": {
+                "Python_FIND_FRAMEWORK": "FIRST",
+                "CMAKE_CXX_COMPILER": "clang++",
+                "CMAKE_BUILD_TYPE": "Release",
+                "FEELPP_ENABLE_TOOLBOXES": {
+                    "type": "BOOL",
+                    "value": "ON"
+                },
+                "FEELPP_ENABLE_MOR": "ON",
+                "FEELPP_ENABLE_FEELPP_PYTHON": "ON",
+                "FEELPP_ENABLE_FMILIB": "OFF",
+                "FEELPP_ENABLE_BENCHMARKS": "ON"
+            },
+            "environment": {
+            },
+            "vendor": {
+                "example.com/ExampleIDE/1.0": {
+                    "autoFormat": true
+                }
+            }
+        },
+        {
+            
             "name": "dbg",
             "displayName": "Debug Config",
             "description": "Debug build using Ninja generator",
@@ -196,7 +221,7 @@
         {
             "name": "default",
             "configurePreset": "default",
-            "jobs": 10
+            "jobs": 4
         },
         {
             "name": "dbg",
