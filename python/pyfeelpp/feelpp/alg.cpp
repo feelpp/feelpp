@@ -241,6 +241,7 @@ PYBIND11_MODULE(_alg, m )
         .def( "size", &Vector<double>::size, "return   Vector size" )
         .def( "clear", &Vector<double>::clear, "clear  vector" )
         .def( "zero", static_cast<void ( Vector<double>::* )()>( &Vector<double>::zero ), "zero  vector" )
+        .def( "set", &Vector<double>::set, "set i-th value")
         .def(
             "to_petsc", []( std::shared_ptr<Vector<double>> const& m )
             { return toPETSc( m ); },
