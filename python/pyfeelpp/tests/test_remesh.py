@@ -2,6 +2,7 @@ import feelpp
 import sys
 import pytest
 from pathlib import Path
+import json
 
 def run(m, geo):
     mesh_name, e_meas, e_s_1, e_s_2, e_s_bdy = geo
@@ -16,7 +17,7 @@ def run(m, geo):
     e.save()
 
     new_mesh, cpt = feelpp.remesh(
-        mesh, "gradedls({},{})".format(0.02, 0.1), [], ["Gamma_1"], None)
+        mesh=mesh, metric="gradedls({},{})".format(0.02, 0.1), required_elts=[], required_facets=["Gamma_1"], params='{"remesh":{ "verbose":-1}}')
 
     Xh = feelpp.functionSpace(mesh=new_mesh)
     metric = Xh.element()

@@ -22,6 +22,8 @@
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
+
+#include <boost/preprocessor/cat.hpp>
 #include <mmg/libmmg.h>
 #include <parmmg/libparmmg.h>
 #include <variant>
@@ -50,33 +52,41 @@ remesh_options( std::string const& prefix )
     // clang-format on
     return mmgoptions;
 }
+
 template<int topoDim, int realDim>
-void setMMGOptions( std::string const& prefix, std::variant<MMG5_pMesh, PMMG_pParMesh> mesh_, MMG5_pSol sol )
+void setMMGOptions( nl::json const& params, std::variant<MMG5_pMesh, PMMG_pParMesh> mesh_, MMG5_pSol sol )
 {
-#if 0    
+    if ( !params.contains( "remesh") )
+        return;
+
     if ( std::holds_alternative<MMG5_pMesh>( mesh_ ) )
     {
         auto mesh = std::get<MMG5_pMesh>( mesh_ );
         if constexpr ( topoDim == 3 )
         {
-            if ( countoption( prefixvm( prefix, "remesh.verbose" ) ) )
-                MMG3D_Set_iparameter( mesh, sol, MMG3D_IPARAM_verbose, ioption( prefixvm( prefix, "remesh.verbose" ) ) ); /*!< [-1..10], Tune level of verbosity */
-            if ( countoption( prefixvm( prefix, "remesh.debug" ) ) )
-                MMG3D_Set_iparameter( mesh, sol, MMG3D_IPARAM_debug, ioption( prefixvm( prefix, "remesh.debug" ) ) ); /*!< [1/0], Turn on/off debug mode */
+            if ( params["remesh"].contains("verbose") )
+                MMG3D_Set_iparameter( mesh, sol, MMG3D_IPARAM_verbose, params["/remesh/verbose"_json_pointer].get<int>() ); /*!< [-1..10], Tune level of verbosity */
+            if ( params["remesh"].contains("debug") )
+                MMG3D_Set_iparameter( mesh, sol, MMG3D_IPARAM_debug, params["/remesh/debug"_json_pointer].get<int>() ); /*!< [1/0], Turn on/off debug mode */
 
-            if ( Environment::vm().count( prefixvm( prefix, "remesh.hmin" ) ) )
-                MMG3D_Set_dparameter( mesh, sol, MMG3D_DPARAM_hmin, doption( _name = "remesh.hmin", _prefix = prefix ) );
-            if ( Environment::vm().count( prefixvm( prefix, "remesh.hmax" ) ) )
-                MMG3D_Set_dparameter( mesh, sol, MMG3D_DPARAM_hmax, doption( _name = "remesh.hmax", _prefix = prefix ) );
-            if ( Environment::vm().count( prefixvm( prefix, "remesh.hsiz" ) ) )
-                MMG3D_Set_dparameter( mesh, sol, MMG3D_DPARAM_hsiz, doption( _name = "remesh.hsiz", _prefix = prefix ) );
-              
-            //MMG3D_Set_iparameter( M_mmg_mesh, M_mmg_sol, MMG3D_IPARAM_verbose, value<MmgOption::Verbose>() );
-            //MMG3D_Set_iparameter( M_mmg_mesh, M_mmg_sol, MMG3D_IPARAM_mem, value<MmgOption::Mem>() );
-    
+            if ( params["remesh"].contains( "hmin" ) )
+                MMG3D_Set_dparameter( mesh, sol, MMG3D_DPARAM_hmin, params["/remesh/hmin"_json_pointer].get<double>() );
+            if ( params["remesh"].contains( "hmax" ) )
+                MMG3D_Set_dparameter( mesh, sol, MMG3D_DPARAM_hmax, params["/remesh/hmax"_json_pointer].get<double>() );
+            if ( params["remesh"].contains( "hsiz" ) )
+                MMG3D_Set_dparameter( mesh, sol, MMG3D_DPARAM_hsiz, params["/remesh/hsiz"_json_pointer].get<double>() );
+            if ( params["remesh"].contains( "nosizreq" ) )
+                MMG3D_Set_iparameter( mesh, sol, MMG3D_IPARAM_nosizreq, params["/remesh/nosizreq"_json_pointer].get<int>() );
+            if ( params["remesh"].contains( "hgradreq" ) )
+                MMG3D_Set_dparameter( mesh, sol, MMG3D_DPARAM_hgradreq, params["/remesh/hgradreq"_json_pointer].get<double>() );
+            if ( params["remesh"].contains( "opnbdy" ) )
+                MMG3D_Set_iparameter( mesh, sol, MMG3D_IPARAM_opnbdy, params["/remesh/opnbdy"_json_pointer].get<int>() );
+            if ( params["remesh"].contains( "angle" ) )
+                MMG3D_Set_iparameter( mesh, sol, MMG3D_IPARAM_angle, params["/remesh/angle"_json_pointer].get<int>() );
         }
         else if constexpr ( topoDim == 2 && realDim == 3 )
         {
+#if 0            
             if ( countoption( prefixvm(prefix,"remesh.verbose") ) )
                 MMGS_Set_iparameter( mesh, sol, MMGS_IPARAM_verbose, ioption( prefixvm(prefix,"remesh.verbose") ) ); /*!< [-1..10], Tune level of verbosity */
             if ( countoption(  prefixvm(prefix,"remesh.debug" )) )
@@ -87,34 +97,35 @@ void setMMGOptions( std::string const& prefix, std::variant<MMG5_pMesh, PMMG_pPa
                 MMGS_Set_dparameter( mesh, sol, MMGS_DPARAM_hmax, doption( _name = "remesh.hmax", _prefix = prefix ) );
             if ( Environment::vm().count( prefixvm( prefix, "remesh.hsiz" ) ) )
                 MMGS_Set_dparameter( mesh, sol, MMGS_DPARAM_hsiz, doption( _name = "remesh.hsiz", _prefix = prefix ) );
+#endif                
         }
         else if constexpr ( topoDim == 2 && realDim == 2 )
         {
-            if ( countoption( prefixvm( prefix, "remesh.verbose" ) ) )
-                MMG2D_Set_iparameter( mesh, sol, MMG2D_IPARAM_verbose, ioption( prefixvm( prefix, "remesh.verbose" ) ) ); /*!< [-1..10], Tune level of verbosity */
-            if ( countoption( prefixvm( prefix, "remesh.debug" ) ) )
-                MMG2D_Set_iparameter( mesh, sol, MMG2D_IPARAM_debug, ioption( prefixvm( prefix, "remesh.debug" ) ) ); /*!< [1/0], Turn on/off debug mode */
+            if ( params["remesh"].contains( "verbose" ) )
+                MMG2D_Set_iparameter( mesh, sol, MMG2D_IPARAM_verbose, params["/remesh/verbose"_json_pointer].get<int>() ); /*!< [-1..10], Tune level of verbosity */
+            if ( params["remesh"].contains( "debug" ) )
+                MMG2D_Set_iparameter( mesh, sol, MMG2D_IPARAM_debug, params["/remesh/debug"_json_pointer].get<int>() ); /*!< [1/0], Turn on/off debug mode */
 
-            if (  Environment::vm().count( prefixvm(prefix, "remesh.hmin" ) ) )
-                MMG2D_Set_dparameter( mesh, sol, MMG2D_DPARAM_hmin, doption( _name="remesh.hmin", _prefix=prefix ) );
-            if (  Environment::vm().count( prefixvm(prefix, "remesh.hmax" ) ) )
-                MMG2D_Set_dparameter( mesh, sol, MMG2D_DPARAM_hmax, doption( _name="remesh.hmax", _prefix=prefix ) );
-            if (  Environment::vm().count( prefixvm(prefix, "remesh.hsiz" ) ) )
-                MMG2D_Set_dparameter( mesh, sol, MMG2D_DPARAM_hsiz, doption( _name="remesh.hsiz", _prefix=prefix ) );
-            if ( Environment::vm().count( prefixvm( prefix, "remesh.nosizreq" ) ) )
-                MMG2D_Set_iparameter( mesh, sol, MMG2D_IPARAM_nosizreq, ioption( _name="remesh.nosizreq", _prefix=prefix ) );
-            if ( Environment::vm().count( prefixvm( prefix, "remesh.hgradreq" ) ) )
-                MMG2D_Set_dparameter( mesh, sol, MMG2D_DPARAM_hgradreq, doption( _name = "remesh.hgradreq", _prefix = prefix ) );
-            if ( Environment::vm().count( prefixvm( prefix, "remesh.hausd" ) ) )
-                MMG2D_Set_dparameter( mesh, sol, MMG2D_DPARAM_hausd, doption( _name = "remesh.hausd", _prefix = prefix ) );
-
+            if ( params["remesh"].contains( "hmin" ) )
+                MMG2D_Set_dparameter( mesh, sol, MMG2D_DPARAM_hmin, params["/remesh/hmin"_json_pointer].get<double>() );
+            if ( params["remesh"].contains( "hmax" ) )
+                MMG2D_Set_dparameter( mesh, sol, MMG2D_DPARAM_hmax, params["/remesh/hmax"_json_pointer].get<double>() );
+            if ( params["remesh"].contains( "hsiz" ) )
+                MMG2D_Set_dparameter( mesh, sol, MMG2D_DPARAM_hsiz, params["/remesh/hsiz"_json_pointer].get<double>() );
+            if ( params["remesh"].contains( "nosizreq" ) )
+                MMG2D_Set_iparameter( mesh, sol, MMG2D_IPARAM_nosizreq, params["/remesh/nosizreq"_json_pointer].get<int>() );
+            if ( params["remesh"].contains( "hgradreq" ) )
+                MMG2D_Set_dparameter( mesh, sol, MMG2D_DPARAM_hgradreq, params["/remesh/hgradreq"_json_pointer].get<int>() );
+            if ( params["remesh"].contains( "opnbdy" ) )
+                MMG2D_Set_iparameter( mesh, sol, MMG2D_IPARAM_opnbdy, params["/remesh/opnbdy"_json_pointer].get<int>() );
+            if ( params["remesh"].contains( "angle" ) )
+                MMG2D_Set_iparameter( mesh, sol, MMG2D_IPARAM_angle, params["/remesh/angle"_json_pointer].get<int>() );
         }
     }
-#endif
         
 }
 
-template void setMMGOptions<2,2>( std::string const& prefix, std::variant<MMG5_pMesh, PMMG_pParMesh> mesh, MMG5_pSol sol );
-template void setMMGOptions<2,3>( std::string const& prefix, std::variant<MMG5_pMesh,  PMMG_pParMesh> mesh, MMG5_pSol sol );
-template void setMMGOptions<3,3>( std::string const& prefix, std::variant<MMG5_pMesh, PMMG_pParMesh> mesh, MMG5_pSol sol );
+template void setMMGOptions<2,2>( nl::json const& j, std::variant<MMG5_pMesh, PMMG_pParMesh> mesh, MMG5_pSol sol );
+template void setMMGOptions<2,3>( nl::json const& j, std::variant<MMG5_pMesh,  PMMG_pParMesh> mesh, MMG5_pSol sol );
+template void setMMGOptions<3,3>( nl::json const& j, std::variant<MMG5_pMesh, PMMG_pParMesh> mesh, MMG5_pSol sol );
 }

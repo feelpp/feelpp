@@ -137,6 +137,7 @@ void defToolboxMor(py::module &m)
                            c.fixedPoint(N, mu, uNs, uNdus, uNolds, uNduolds, outputs, 0, false);
                            return uNs[0];
                        })
+        .def("primalReducedBasis", [](CRB<CRBModel<mor_t> >& c) { return c.model()->rBFunctionSpace()->primalRB(); }, "returns the primal reduced basis")
         ;
     std::string crbnew_name = std::string("crb_toolboxmor_") + std::to_string(nDim) +std::string("d");
     m.def(crbnew_name.c_str(), [](std::shared_ptr<CRBModel<mor_t> >& m, std::string const& name = "toolboxmor"/*, crb::stage stage = crb::stage::online*/) { return CRB<CRBModel<mor_t> >::New(name, m, crb::stage::offline); }," return a pointer on crb");
