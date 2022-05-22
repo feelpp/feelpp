@@ -161,3 +161,17 @@ dsmodel*
 request.
 status.
 feelpp/feel/feelcore/git.cpp
+.mordicus-env
+mor/BenchmarkGrepl/benchmarkgrepl-linear-elliptic1app.cpp
+mor/BenchmarkGrepl/benchmarkgrepl-linear-elliptic2app.cpp
+mor/BenchmarkGrepl/benchmarkgrepl-linear-elliptic3app.cpp
+mor/BenchmarkGrepl/benchmarkgrepl-nonlinear-elliptic1-2Dapp.cpp
+mor/BenchmarkGrepl/benchmarkgrepl-nonlinear-elliptic1-3Dapp.cpp
+mor/BenchmarkGrepl/benchmarkgrepl-nonlinear-elliptic2-2Dapp.cpp
+mor/BenchmarkGrepl/benchmarkgrepl-nonlinear-elliptic2-3Dapp.cpp
+mor/BenchmarkGrepl/benchmarkgrepl-nonlinear-elliptic3-2Dapp.cpp
+mor/BenchmarkGrepl/benchmarkgrepl-nonlinear-elliptic3-3Dapp.cpp
+mor/BenchmarkGrepl/benchmarkgrepl-nonlinear-parabolic3app.cpp
+mor/heat1d/heat1dapp.cpp
+mor/unsteady_heat1d/unsteadyHeat1dapp.cpp
+
