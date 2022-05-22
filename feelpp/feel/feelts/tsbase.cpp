@@ -49,6 +49,7 @@ TSBase::TSBase()
     M_restartPath( "" ),
     M_restartStepBeforeLastSave( 0 ),
     M_restartAtLastSave( false ),
+    M_time_values_map{{ 0. }},
     M_saveInFile( true ),
     M_saveFreq( 1 ),
     M_rankProcInNameOfFiles( false ),
@@ -74,6 +75,7 @@ TSBase::TSBase( std::string name, std::string const& prefix, WorldComm const& wo
     M_restartPath( soption(_prefix=prefix,_name="ts.restart.path",_vm=vm) ),
     M_restartStepBeforeLastSave( ioption(_prefix=prefix,_name="ts.restart.step-before-last-save",_vm=vm) ),
     M_restartAtLastSave( boption(_prefix=prefix,_name="ts.restart.at-last-save",_vm=vm) ),
+    M_time_values_map{{ M_Ti }},
     M_saveInFile( boption(_prefix=prefix,_name="ts.save",_vm=vm) ),
     M_saveFreq( ioption(_prefix=prefix,_name="ts.save.freq",_vm=vm) ),
     M_rankProcInNameOfFiles( boption(_prefix=prefix,_name="ts.rank-proc-in-files-name",_vm=vm) ),
@@ -102,6 +104,7 @@ TSBase::TSBase( std::string name, std::string const& prefix, WorldComm const& wo
     M_restartPath( restart_path ),
     M_restartStepBeforeLastSave( ioption(_prefix=prefix,_name="ts.restart.step-before-last-save",_vm=vm) ),
     M_restartAtLastSave( restart_at_last_save ),
+    M_time_values_map(1),
     M_saveInFile( save ),
     M_saveFreq( freq ),
     M_rankProcInNameOfFiles( rank_proc_in_files_name ),
@@ -130,6 +133,7 @@ TSBase::TSBase( std::string name, WorldComm const& worldComm )
     M_restartPath( "" ),
     M_restartStepBeforeLastSave( 0 ),
     M_restartAtLastSave( false ),
+    M_time_values_map{{0.}},
     M_saveInFile( true ),
     M_saveFreq( 1 ),
     M_fileFormat( "binary" ),
@@ -242,7 +246,7 @@ TSBase::init()
 
             // modify Ti with last saved time
             if ( this->doRestartAtLastSave() )
-                M_Ti = M_time_values_map.back();
+                M_Ti = M_time_values_map(last);
 
             // modify Ti with ieme step before the last
             if ( this->restartStepBeforeLastSave() > 0 )
@@ -250,7 +254,7 @@ TSBase::init()
                 const int nbTimeStep = M_time_values_map.size();
                 CHECK( nbTimeStep-1-this->restartStepBeforeLastSave() >=0 ) << "error with restartStepBeforeLastSave " << this->restartStepBeforeLastSave()
                     << "must be less to " << nbTimeStep << std::endl;
-                M_Ti =  M_time_values_map[ nbTimeStep-1-this->restartStepBeforeLastSave() ];
+                M_Ti =  M_time_values_map(last-this->restartStepBeforeLastSave());
             }
 
             int iteration = 0;
@@ -258,7 +262,7 @@ TSBase::init()
             bool found = false;
 
             // Determine current iteration.
-            BOOST_FOREACH( auto time, M_time_values_map )
+            for( auto time : M_time_values_map )
             {
                 if ( math::abs( time-M_Ti ) < 1e-10 )
                 {
@@ -277,28 +281,30 @@ TSBase::init()
                 }
                 if (this->saveFreq()==1)
                 {
-                    M_time_values_map.resize( M_iteration+1 );
+                    M_time_values_map.conservativeResize( M_iteration+1 );
                 }
                 else // saveFreq != 1.
                 {
                     int nItBack = M_iteration % this->saveFreq();
                     M_iteration-=nItBack;
 
-                    M_time_values_map.resize( M_iteration+1 );
-                    M_Ti = M_time_values_map.back();
+                    M_time_values_map.conservativeResize( M_iteration+1 );
+                    M_Ti = M_time_values_map(last);
                 }
             }
             else // M_Ti not found.
             {
                 DVLOG(2) << "[TSBase::init()] initial time " << M_Ti << " not found\n";
-                M_time_values_map.clear();
+                M_time_values_map.conservativeResize(1);
+                M_time_values_map(0) = M_Ti;
             }
             DVLOG(2) << "[TSBase::init()] initial time is Ti=" << M_Ti << "\n";
             DVLOG(2) << "[TSBase::init()] file index: " << M_iteration << "\n";
         }
         else // Metadata path does not exist.
         {
-            M_time_values_map.clear();
+            M_time_values_map.conservativeResize(1);
+            M_time_values_map(0) = M_Ti;
         }
     } // restart
 } // init

@@ -35,6 +35,9 @@
 #include <sstream>
 #include <algorithm>
 
+#include <fmt/core.h>
+#include <fmt/ostream.h>
+
 //#include <boost/shared_array.hpp>
 #include <boost/lambda/lambda.hpp>
 #include <boost/lambda/bind.hpp>
@@ -121,8 +124,6 @@ public:
     typedef typename element_type::value_type value_type;
     typedef std::vector< element_ptrtype > unknowns_type;
     typedef typename node<value_type>::type node_type;
-
-    typedef typename super::time_iterator time_iterator;
 
     /**
      * Constructor
@@ -396,11 +397,71 @@ public:
         LOG(INFO) << "  time order : " << this->timeOrder() << "\n";
     }
 
-    eigen 
-    firstDifferences()
+    /**
+     * @brief compute the first backward difference
+     * @param t is a vector of two times ordered from highest to lowest
+	 * @param y is a vector older differences, [y_j,y_(j+1)]
+     * @return em_matrix_row_type 
+     */
+    eigen_vector_x_type<double>
+    firstDifference(eigen_vector_x_type<double> const& t, std::vector<eigen_vector_x_type<double>> const& y )
     {
-
+        return (y[0]-y[1])/(t(0)-t(1));
     }
+
+    /**
+     * @brief Construct a new backward differences object for m-1 steps
+     * 
+     * @param t vector of times from lowest to highest @c [t_n,t_n+1,....,t_n+m]
+     */
+    eigen_matrix_xx_row_type<>
+    backwardDifferences(eigen_vector_x_type<double> const& t)
+    {
+        int m = t.size()-1;
+        eigen_matrix_xx_row_type<> D(m+1,m+1);
+        for(int i = 0; i < m+1;++i)
+            for(int j = 0; j < m+1;++j)
+                D(i,j)=(i+1)==m+1-j;
+        fmt::print("D={}",D);
+
+        eigen_matrix_xx_row_type<> differences = eigen_matrix_xx_row_type<>::Zero(D.rows(),D.cols());
+        differences.row(0) = D.row(0);
+        for(int q=1; q < m+1;++q )
+            for(int j=0; j < m+1-q;++j )
+            {
+                eigen_vector_x_type<double> Ts(2);
+                Ts << t(m-j), t(m-j-q);
+                D.row(j) = firstDifference(Ts, {D.row(j), D.row(j+1)});
+                differences.row(q) = D.row(0);
+            }
+        return differences;  
+    }
+
+    std::tuple<eigen_vector_x_type<double>,eigen_matrix_xx_row_type<>,double>
+    backwardDifferences(eigen_vector_x_type<double> const& t, int order )
+    {
+        auto diffs = backwardDifferences(t);
+        int m = std::min( int(order), int(t.size())-1 );
+        if ( m < order )
+            throw std::logic_error(fmt::format("{} more time instants need to added to the time set",order-m ) );
+        double etaprod = 1, etasum = 0;
+        for(int i = 1; i < m; ++i)
+            etaprod *= t(m)-t(m-i);
+        for(int i = 1; i < m+1; ++i)
+            etasum += 1./(t(m)-t(m-i));
+        double eta = etaprod / etasum;
+        eigen_vector_x_type<double> alpha(t.size());
+        alpha.setZero();
+        for(int j = 1; j < order+1; ++j)
+        {
+            double etaprod = 1;
+            for(int i = 1; i < j; ++i)
+                etaprod *= t(m)-t(m-i);
+            alpha += etaprod*diffs.row(j);
+        }
+        return std::tuple{alpha,diffs,eta};
+    }
+
 private:
     void init();
 
@@ -715,7 +776,8 @@ template <typename SpaceType>
 void
 Bdf<SpaceType>::initialize( element_type const& u0 )
 {
-    M_time_values_map.clear();
+    M_time_values_map.conservativeResize(1);
+    M_time_values_map(0) = M_Ti;
     std::ostringstream ostr;
 
     if( M_rankProcInNameOfFiles )
@@ -724,8 +786,7 @@ Bdf<SpaceType>::initialize( element_type const& u0 )
         ostr << M_name << "-" << 0;
     //M_time_values_map.insert( std::make_pair( 0, boost::make_tuple( 0, ostr.str() ) ) );
     //M_time_values_map.push_back( 0 );
-    M_time_values_map.push_back( M_Ti );
-    std::for_each( M_unknowns.begin(), M_unknowns.end(), *boost::lambda::_1 = u0 );
+    std::for_each( M_unknowns.begin(), M_unknowns.end(), [&u0]( auto& e ) { *e = u0; } );
     this->computePolyAndPolyDeriv();
     this->saveCurrent();
 }
@@ -734,16 +795,14 @@ template <typename SpaceType>
 void
 Bdf<SpaceType>::initialize( unknowns_type const& uv0 )
 {
-    M_time_values_map.clear();
+    M_time_values_map.conservativeResize(1);
+    M_time_values_map(0) = M_Ti;
     std::ostringstream ostr;
 
     if( M_rankProcInNameOfFiles )
         ostr << M_name << "-" << 0<<"-proc"<<this->worldComm().globalRank()<<"on"<<this->worldComm().globalSize();
     else
         ostr << M_name << "-" << 0;
-    //M_time_values_map.insert( std::make_pair( 0, boost::make_tuple( 0, ostr.str() ) ) );
-    //M_time_values_map.push_back( 0);
-    M_time_values_map.push_back( M_Ti );
 
     if ( uv0.size() == 1 )
         std::for_each( M_unknowns.begin(), M_unknowns.end(), [&uv0]( element_ptrtype& v ) { *v = *uv0[0]; } );
@@ -993,11 +1052,11 @@ Bdf<SpaceType>::computePolyAndPolyDeriv()
         M_polyDeriv = M_space->elementPtr();
 
     M_poly->zero();
-    for ( uint8_type i = 0; i < this->timeOrder(); ++i )
+    for ( int i = 0; i < this->timeOrder(); ++i )
         M_poly->add(  this->polyCoefficient( i ),  *M_unknowns[ i ] );
 
     M_polyDeriv->zero();
-    for ( uint8_type i = 0; i < this->timeOrder(); ++i )
+    for ( int i = 0; i < this->timeOrder(); ++i )
         M_polyDeriv->add( this->polyDerivCoefficient( i+1 ), *M_unknowns[i] );
 }
 
