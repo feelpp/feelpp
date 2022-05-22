@@ -78,6 +78,21 @@
             "rho":"1"
         }
     },
+    "CRBOutputs":
+    {
+        "pointA":
+        {
+            "type": "point",
+            "coord": [0.5, 0, 0]
+        },
+        "post":
+        {
+            "type": "mean",
+            "markers": ["Post"],
+            "expr": "crb_u:crb_u",
+            "topodin": 3
+        }
+    },
     "InitialConditions":
     {
         "heat":

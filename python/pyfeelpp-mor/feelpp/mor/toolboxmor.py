@@ -5,12 +5,19 @@ import feelpp
 
 o = toolboxes_options("heat")
 o.add(makeToolboxMorOptions())
+sys.argv = ["toolbox-mor"]
 # sys.argv = ['--config-file opusheat/opusheat-heat.cfg']
 e = feelpp.Environment(sys.argv, opts=o)
 
-heatBox = heat(dim=2, order=1)
+feelpp.Environment.setConfigFile('thermal-fin/2d/thermal-fin.cfg')
+name = "thermal-fin-2d"
+
+dim = 2
+assert dim in [2,3]
+
+heatBox = heat(dim=dim, order=1)
 heatBox.init()
-model = toolboxmor_2d("test")
+model = toolboxmor(name=name, dim=dim, time_dependent=False)
 model.setFunctionSpaces( Vh=heatBox.spaceTemperature() )
 
 def assembleDEIM(mu):

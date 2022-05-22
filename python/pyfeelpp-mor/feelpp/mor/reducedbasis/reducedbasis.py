@@ -21,6 +21,8 @@ import feelpp
 
 
 def convertToPetscMat(Aq):
+    """convert a list of feelpp._alg.MatrixPetscDouble to a list of petsc4py.PETSc.Mat
+    """
     AqP = []
     for A in Aq:
         AqP.append(A.to_petsc().mat())
@@ -29,6 +31,8 @@ def convertToPetscMat(Aq):
     return AqP
 
 def convertToPetscVec(Fq):
+    """convert a list of feelpp._alg.VectorPetscDouble to a list of petsc4py.PETSc.Vec
+    """
     FqP = []
     for F in Fq:
         FqP.append(F.to_petsc().vec())
@@ -45,6 +49,7 @@ class reducedbasis():
         """
         self.Qa = 0
         self.Qf = 0
+        self.QLk = []
         self.N = 0
 
         if worldComm == None:
@@ -53,9 +58,12 @@ class reducedbasis():
             worldComm = worldComm
 
         self.model = model  # TODO : load online model
-        
+
         self.ANq    : np.ndarray   # tensor of shape (Qa, N, N)
         self.FNp    : np.ndarray   # tensor of shape (Qf, N)
+        self.LkNp   : list         # list of len n_output of tensors of shape (QLi, N)
+
+        self.N_output = 0
 
         self.SS = np.zeros((self.Qf, self.Qf))            # SS[p,p_] = (Sp,sp_)X
         self.SL     : np.ndarray    # shape (Qf, Qa, N)     SL[p,n,q] = (Sp,Lnq)X
@@ -146,12 +154,37 @@ class reducedbasis():
         else:
             return FN[:size]
 
+    def assembleLkN(self, k, beta, size=None):
+        """Assemble the rhs from a given vector of parameters
+           Lk = sum_q beta[q]*Lkq[q]
 
-    def getSolutions(self, mu, beta=None, size=None):
+        Args:
+            k (int): number of the i-th output
+            beta (list): list of parameters betaF
+
+        Returns:
+            PETSc.Vec: assemble vector
+        """
+
+        assert( len(beta) == self.QLk[k]), f"Number of param ({len(beta)}) should be {self.QLk[k]}"
+
+        LkN = np.einsum('p,pn->n', beta, self.LkNp[k])
+
+        if size is None:
+            return LkN
+        else:
+            return LkN[:size]
+
+
+
+
+    def getSolutions(self, mu, beta=None, k=-1, size=None):
         """Return solution uN and output sN
 
         Args:
-            mu (ParameterSpaceElement) : parameter
+            mu (ParameterSpaceElement): parameter
+            beta (list, optional) : coefficients of the decomposition, if they have already been computed
+            k (int, optional) : index of the output to be computed, if -1 the compliant output is computed
             size (int, optional): size of the sub-basis wanted. Defaults to None, meaning the whole basis is used.
 
         Returns:
@@ -164,7 +197,16 @@ class reducedbasis():
 
         sol = np.linalg.solve(A_mu, F_mu)
 
-        return sol, sol @ F_mu
+        if k == -1:
+            l = F_mu
+        else:
+            if 0 <= k and k < self.N_output:
+                l = self.assembleLk(k, beta[1][k+1][0])
+            else:
+                raise ValueError(f"Output {k} not valid")
+
+        return sol, sol @ l
+
 
 
 
@@ -304,11 +346,11 @@ class reducedbasis():
 
         if self.worldComm.isMasterRank():
             h5f = h5py.File(path+"/reducedbasis.h5", "w")
-            content = {'Qa': self.Qa, 'Qf': self.Qf, 'N': self.N, "path": path+"/reducedbasis.h5"}
+            content = {'Qa': self.Qa, 'Qf': self.Qf, 'N_output': self.N_output, "QLk": self.QLk, 'N': self.N, "path": path+"/reducedbasis.h5"}
             dict_mubar = {}
             for n in self.mubar.parameterNames(): dict_mubar[n] = self.mubar.parameterNamed(n)
             content["mubar"] = dict_mubar
-            
+
             f = open('reducedbasis.json', 'w')
             json.dump(content, f, indent = 4)
             f.close()
@@ -316,6 +358,9 @@ class reducedbasis():
 
             h5f.create_dataset("ANq", data=self.ANq)
             h5f.create_dataset("FNp", data=self.FNp)
+            for k in range(self.N_output):
+                h5f.create_dataset(f"L{k}Np", data=self.LkNp[k])
+
             h5f.create_dataset("SS", data=self.SS)
             h5f.create_dataset("SL", data=self.SL)
             h5f.create_dataset("LL", data=self.LL)
@@ -356,6 +401,8 @@ class reducedbasis():
         self.N = j['N']
         self.Qa = j['Qa']
         self.Qf = j['Qf']
+        self.N_output = j['N_output']
+        self.QLk = j['QLk']
         mubar = model.parameterSpace().element()
         mubar.setParameters(j["mubar"])
         self.setMubar(mubar)
@@ -364,6 +411,10 @@ class reducedbasis():
 
         self.ANq = h5f["ANq"][:]
         self.FNp = h5f["FNp"][:]
+        self.LkNp = []
+        for k in range(self.N_output):
+            Lkp = h5f[f"L{k}Np"][:]
+            self.LkNp.append(Lkp)
 
         self.SS = h5f["SS"][:]
         self.SL = h5f["SL"][:]
@@ -371,7 +422,10 @@ class reducedbasis():
 
         try:
             assert self.ANq.shape == (self.Qa, self.N, self.N), f"Wrong shape for ANq (excepted {(self.Qa, self.N, self.N)}, got {self.ANq.shape}"
-            assert self.FNp.shape == (self.Qf, self.N), f"Wrong shape for ANq (excepted {(self.Qf, self.N)}, got {self.FNp.shape}"
+            assert self.FNp.shape == (self.Qf, self.N), f"Wrong shape for FNp (excepted {(self.Qf, self.N)}, got {self.FNp.shape}"
+            for k in range(self.N_output):
+                assert self.LkNp[k].shape == (self.QLk[k], self.N), f"Wrong shape for L{k}Np (excepted {(self.QLk[k], self.N)}, got {self.LkNp[k].shape}"
+
             assert self.SS.shape == (self.Qf, self.Qf), f"Wrong shape for SS (excepted {(self.Qf, self.Qf)}, got {self.SS.shape}"
             assert self.SL.shape == (self.Qa, self.Qf, self.N), f"Wrong shape for SL (excepted {(self.Qa, self.Qf, self.N)}, got {self.SL.shape}"
             assert self.LL.shape == (self.Qa, self.N, self.Qa, self.N), f"Wrong shape for LL (excepted {(self.Qa, self.N, self.Qa, self.N)}, got {self.LL.shape}"
@@ -439,7 +493,7 @@ class reducedbasis():
         assert( (self.SS == rbLoaded.SS).all() ), "SS"
         assert( (self.SL == rbLoaded.SL).all() ), "SL"
         assert( (self.LL == rbLoaded.LL).all() ), "LL"
-        
+
         if self.DeltaMax is None:
             assert rbLoaded.DeltaMax is None, "DeltaMax"
         else:
@@ -472,18 +526,31 @@ class reducedbasisOffline(reducedbasis):
     """ Reduced basis for stationnary problem
     """
 
-    
+
     def __init__(self, Aq, Fq, model, mubar):
+        """Initializes the class
+
+        Args:
+            Aq (list): affine decomposition of the bilinear form (Aq = [A1, ..., AqA])
+            Fq (list): affine decomposition of the rhs AND the outputs Fq[0] = [F1, ..., FqF], F[i] = [Si1, ..., SiQsi]
+            model (feelmm.mor._toolboxmor): model of toolboxmor, initialized
+            mubar (parameterSpaceElement): parameter mubar
+        """
 
         super().__init__(model)
 
         self.setMubar(mubar)
 
         self.Aq = Aq
-        self.Fq = Fq
+        self.Fq = Fq[0]
+        # print(type(Aq), Aq)
+        # print(type(self.Fq), self.Fq)
+        self.Lkq= Fq[1:]
 
         self.Qa = len(Aq)
-        self.Qf = len(Fq)
+        self.Qf = len(Fq[0])
+        self.QLk= [len(Lkq) for Lkq in self.Lkq ]
+        self.N_output = len(self.QLk)
 
 
         self.SS = np.zeros((self.Qf, self.Qf))
@@ -511,10 +578,10 @@ class reducedbasisOffline(reducedbasis):
             self.reshist[its] = rnorm
             if self.worldComm.isMasterRank():
                 print("[petsc4py] Iteration {} Residual norm: {}".format(its,rnorm))
-        
+
         def monitor_nverbose(ksp, its, rnorm):
             self.reshist[its] = rnorm
-        
+
         self.monitorFunc = [monitor_nverbose, monitor]
 
         self.ksp.setMonitor(monitor_nverbose)
@@ -546,7 +613,7 @@ class reducedbasisOffline(reducedbasis):
         if self.worldComm.isMasterRank():
             print(f"[reducedbasis] Constant of continuity : {self.alphaMubar}")
         betaA_bar_np = np.array(self.betaA_bar[0])
-        
+
         def alphaLB(mu):
             # From a parameter
             betaMu = self.model.computeBetaQm(mu)[0][0]
@@ -573,7 +640,7 @@ class reducedbasisOffline(reducedbasis):
         # gammaMubar = 1
         if self.worldComm.isMasterRank():
             print(f"[reducedbasis] Constant of coercivity : {self.gammaMubar}")
-        
+
         def gammaUB(mu):
             # From a parameter
             betaMu = self.model.computeBetaQm(mu)[0][0]
@@ -591,7 +658,7 @@ class reducedbasisOffline(reducedbasis):
         self.isInitialized = True
 
 
-    
+
     def setVerbose(self, set=True):
         """Set verbose when system is solved
 
@@ -611,12 +678,12 @@ class reducedbasisOffline(reducedbasis):
         Returns:
             reducedBasis: an object with W as basis
         """
-        rb = reducedbasis(self.Aq, self.Fq, self.model, self.mubar, self.alphaLB)
+        rb = reducedbasis(self.Aq, self.Fq + self.Lkq, self.model, self.mubar, self.alphaLB)
         self.Z = W
         self.N = len(W)
 
         self.generateANq()
-        self.generateLNp()
+        self.generateLkNp()
         self.generateFNp()
 
         return rb
@@ -624,7 +691,7 @@ class reducedbasisOffline(reducedbasis):
 
     """
     Handle Gram-Schmidt orthogonalization
-    """   
+    """
     def scalarX(self, u, v):
         """Return the ernegy scalar product associed to the prolem
 
@@ -637,7 +704,7 @@ class reducedbasisOffline(reducedbasis):
         """
         # return v.dot( u )   # v.T @ scal @ u
         return v.dot( self.scal * u )   # v.T @ scal @ u
-    
+
     def normA(self, u):
         """Compute the energy norm of the given vector
 
@@ -648,7 +715,7 @@ class reducedbasisOffline(reducedbasis):
             float: ||u||_X
         """
         return np.sqrt(self.scalarX(u, u))
-    
+
     def orthonormalizeZ(self, nb=0):
         """Use Gram-Schmidt algorithm to orthonormalize the reduced basis
         (the optional argument is not needed)
@@ -708,6 +775,24 @@ class reducedbasisOffline(reducedbasis):
             F += self.Fq[q] * beta[q]
         return F
 
+    def assembleLk(self, k, beta):
+        """Assemble the rhs from a given vector of parameters
+           Lk = sum_q beta[q]*Lkq[q]
+
+        Args:
+            k (int): number of the i-th output
+            beta (list): list of parameters betaF
+
+        Returns:
+            PETSc.Vec: assemble vector
+        """
+
+        assert( len(beta) == self.QLk[k]), f"Number of param ({len(beta)}) should be {self.QLk[k]}"
+
+        L = self.Liq[k].duplicate()
+        for p in range(self.QLk[k]):
+            L += self.QLk[k] * beta[p]
+        return L
 
 
 
@@ -804,7 +889,7 @@ class reducedbasisOffline(reducedbasis):
                 for q in range(self.Qa):
                     self.ANq[q,i,j] = v.dot( self.Aq[q] * u )
                     # print(i, j, self.ANq[q][i,j]) # uT.A.u
-    
+
     def expandANq(self):
         """Expand the reduced matrices ANq
         """
@@ -814,15 +899,8 @@ class reducedbasisOffline(reducedbasis):
             for i,u in enumerate(self.Z):
                 self.ANq[q, -1, i] = u.dot( self.Aq[q] * self.Z[-1] )
                 self.ANq[q, i, -1] = self.Z[-1].dot( self.Aq[q] * u )
-    
-    def generateLNp(self):
-        """Generate the reduced vectors LNq
-        """
-        self.LNp = np.zeros((self.Qf, self.N))
-        for i,u in enumerate(self.Z):
-            for q in range(self.Qf):
-                self.LNp[q,i] = self.Fq[q].dot(u)
-    
+
+
     def generateFNp(self):
         """Generate the reduced vectors FNp
         """
@@ -830,16 +908,29 @@ class reducedbasisOffline(reducedbasis):
         for i,u in enumerate(self.Z):
             for q in range(self.Qf):
                 self.FNp[q,i] = self.Fq[q].dot(u)
-    
+
     def expandFNp(self):
         self.FNp = np.concatenate( (self.FNp, np.zeros((self.Qf,1))), axis=1)
         for q in range(self.Qf):
             self.FNp[q, -1] = self.Fq[q].dot(self.Z[-1])
 
-    def expandLNp(self):
-        self.LNp = np.concatenate( (self.LNp, np.zeros((self.Qf,1))), axis=1)
-        for q in range(self.Qf):
-            self.LNp[q, -1] = self.Fq[q].dot(self.Z[-1])
+    def generateLkNp(self):
+        """Generate the reduced vectors LkNp
+        """
+        self.LkNp = [[] for k in range(self.N_output)]
+        for k in range(self.N_output):
+            self.LkNp[k] = np.zeros((self.QLk[k], self.N))
+            for i,u in enumerate(self.Z):
+                for p in range(self.QLk[k]):
+                    # print(self.LkNp[k][p,i])
+                    # print(self.Lkq[k][p].dot(u))
+                    self.LkNp[k][p,i] = self.Lkq[k][p].dot(u)
+
+    def expandLkNp(self):
+        for k in range(self.N_output):
+            self.LkNp[k] = np.concatenate( (self.LkNp[k], np.zeros((self.QLk[k],1))), axis=1)
+            for q in range(self.Qf):
+                self.LkNp[k][q, -1] = self.Lkq[k][q].dot(self.Z[-1])
 
 
 
@@ -852,17 +943,19 @@ class reducedbasisOffline(reducedbasis):
         """
         self.generateZ(mus,orth)
         self.generateANq()
-        self.generateLNp()
+        self.generateLkNp()
         self.generateFNp()
 
     """
     Finite elements resolution
     """
-    def getSolutionsFE(self, mu, beta=None):
+    def getSolutionsFE(self, mu, beta=None, k=-1):
         """Computes the finite element solution (big problem)
 
         Args:
             mu (ParameterSpaceElement) : parameter
+            beta (list, optional) : coefficients of the decomposition, if they have already been computed
+            k (int, optional) : index of the output to be computed, if -1 the compliant output is computed
 
         Returns:
             tuple (PETSc.Vec,float) : (u, s)
@@ -871,7 +964,7 @@ class reducedbasisOffline(reducedbasis):
             beta = self.model.computeBetaQm(mu)
         A_mu = self.assembleA(beta[0][0])
         F_mu = self.assembleF(beta[1][0][0])
-        
+
         pc = self.ksp.getPC()
         pc.setType(self.PC_TYPE)
         self.reshist = {}
@@ -881,7 +974,14 @@ class reducedbasisOffline(reducedbasis):
         sol = F_mu.duplicate()
         self.ksp.solve(F_mu, sol)
 
-        return sol, sol.dot(F_mu)
+        print("k=", k)
+        if k == -1:
+            l = F_mu
+        else:
+            if 0 <= k and k < self.N_output:
+                l = self.assembleLk(k, beta[1][k+1][0])
+
+        return sol, sol.dot(l)
 
 
     """
@@ -891,7 +991,7 @@ class reducedbasisOffline(reducedbasis):
         """Compute the offline errors associated to right hand side, independant of N
         """
         self.Sp = []
-        
+
         # compute solutions of scal * Sp = Fp
         pc = self.ksp.getPC()
         pc.setType(self.PC_TYPE)
@@ -922,7 +1022,7 @@ class reducedbasisOffline(reducedbasis):
                 self.reshist = {}
                 self.ksp.solve(-Aq*ksi, sol)
                 self.Lnq[n,q] = sol.copy()
-        
+
         self.SL = np.zeros((self.Qa, self.Qf, self.N))
         self.LL = np.zeros((self.Qa, self.N, self.Qa, self.N))
         for q in range(self.Qa):
@@ -981,6 +1081,7 @@ class reducedbasisOffline(reducedbasis):
             beta_ = self.model.computeBetaQm(mu)
             betaA = beta_[0][0]
             betaF = beta_[1][0][0]
+            bataLk= beta_[1][1:]
             AN_mu = self.assembleAN(betaA)
             FN_mu = self.assembleFN(betaF)
 
@@ -988,6 +1089,7 @@ class reducedbasisOffline(reducedbasis):
         else:
             betaA = precalc["betaA"]
             betaF = precalc["betaF"]
+            betaLk= precalc["betaLk"]
             uN = precalc["uN"]
 
         A_mu = self.assembleA(betaA)
@@ -997,12 +1099,12 @@ class reducedbasisOffline(reducedbasis):
         pc.setType(self.PC_TYPE)
         self.ksp.setOperators(self.scal)
         self.reshist = {}
-        
+
         E = self.Fq[0].duplicate()
         u_proj = self.projFE(uN)
 
         self.ksp.solve(F_mu - A_mu * u_proj, E)
-        
+
         return self.normA(E)
 
 
@@ -1041,15 +1143,15 @@ class reducedbasisOffline(reducedbasis):
                 u_proj[i] += self.Z[j][i] * uN[j]
         u_proj.assemble()
         return u_proj
-        
+
     def RB_toNumpy(self):
-        """Return the basis as a NumPy matrix
+        """Return the basis as a NumPy matrix (the quantities as copied)
         """
         RB = np.zeros((self.NN, self.N))
         for i, u in enumerate(self.Z):
             RB[:,i] = u[:]
         return RB
-    
+
 
 
 
@@ -1090,7 +1192,7 @@ class reducedbasisOffline(reducedbasis):
 
         # t_init = time.process_time()
         # ts = []
-        
+
         while Delta > eps_tol and self.N < Nmax:
 
             S.append(mu)
@@ -1119,7 +1221,7 @@ class reducedbasisOffline(reducedbasis):
                 # self.generateLNp()
                 self.expandANq()
                 self.expandFNp()
-                self.expandLNp()
+                self.expandLkNp()
 
 
             mu_max = 0
@@ -1200,7 +1302,15 @@ class reducedbasisOffline(reducedbasis):
 
 
 
-    def generatePOD(self, Xi_train, eps_tol=1e-6):
+    def generatePOD(self, Xi_train, output=-1, eps_tol=1e-6):
+        """Generated the reduced basis using POD algorithm
+
+        Args:
+            Xi_train (list): set of train parameters
+            output (int, optional): quantity of interest for the output. Defaults to -1.
+            eps_tol (float, optional): tolerance for the RIC. Defaults to 1e-6.
+        """
+
         if self.worldComm.isMasterRank():
             print("[reducedBasis] Start POD algorithm")
         self.N = 0
@@ -1262,6 +1372,6 @@ class reducedbasisOffline(reducedbasis):
 
         self.orthonormalizeZ()
         self.generateANq()
-        self.generateLNp()
+        self.generateLkNp()
         self.generateFNp()
 

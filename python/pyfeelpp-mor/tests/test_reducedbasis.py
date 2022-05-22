@@ -84,16 +84,14 @@ def init_model(prefix, case, casefile, dim, use_cache, time_dependent):
 
     Dmu = model.parameterSpace()
     mubar = Dmu.element()
-    print(mubar)
 
-    modelProperties = heatBox.modelProperties()
-    param = modelProperties.parameters()
-    for p in param:
-        print(p[1].name())
-        if p[1].hasMinMax():
-            mubar.setParameterNamed(p[1].name(), p[1].value())
+    model_path = "$cfgdir/"+os.path.splitext(os.path.basename(casefile))[0] + ".json"
+    model_properties = feelpp.ModelProperties(worldComm=feelpp.Environment.worldCommPtr())
+    model_properties.setup(model_path)
+    model_parameter = model_properties.parameters()
+    default_parameter = model_parameter.toParameterValues()
 
-    print(mubar)
+    mubar.setParameters(default_parameter)
 
     heatBoxDEIM = heat(dim=dim, order=1)
     meshDEIM = model.getDEIMReducedMesh()
@@ -280,9 +278,13 @@ def test_reducedbasis_sample(prefix, case, casefile, dim, use_cache, time_depend
     heatBox, model, decomposition, mubar, assembleMDEIM, assembleDEIM = init_environment(prefix, case, casefile, dim, use_cache, time_dependent)
 
     Aq = decomposition[0]
-    Fq = decomposition[1]
+    Fq_ = decomposition[1]
 
-    rb = reducedbasisOffline(convertToPetscMat(Aq[0]), convertToPetscVec(Fq[0][0]), model, mubar)
+    Fq = []
+    for f in Fq_:
+        Fq.append(convertToPetscVec(f[0]))
+
+    rb = reducedbasisOffline(convertToPetscMat(Aq[0]), Fq, model, mubar)
 
     print("\nCompute basis and orthonormalize it")
     def listOfParams(n):
@@ -334,9 +336,13 @@ def test_reducedbasis_greedy(prefix, case, casefile, dim, use_cache, time_depend
     heatBox, model, decomposition, mubar, assembleMDEIM, assembleDEIM = init_environment(prefix, case, casefile, dim, use_cache, time_dependent)
 
     Aq = decomposition[0]
-    Fq = decomposition[1]
+    Fq_ = decomposition[1]
 
-    rb = reducedbasisOffline(convertToPetscMat(Aq[0]), convertToPetscVec(Fq[0][0]), model, mubar)
+    Fq = []
+    for f in Fq_:
+        Fq.append(convertToPetscVec(f[0]))
+
+    rb = reducedbasisOffline(convertToPetscMat(Aq[0]), Fq, model, mubar)
 
     print("\nCompute basis and orthonormalize it")
     def listOfParams(n):
@@ -382,9 +388,13 @@ def test_reducedbasis_pod(prefix, case, casefile, dim, use_cache, time_dependent
     heatBox, model, decomposition, mubar, assembleMDEIM, assembleDEIM = init_environment(prefix, case, casefile, dim, use_cache, time_dependent)
 
     Aq = decomposition[0]
-    Fq = decomposition[1]
+    Fq_ = decomposition[1]
 
-    rb = reducedbasisOffline(convertToPetscMat(Aq[0]), convertToPetscVec(Fq[0][0]), model, mubar)
+    Fq = []
+    for f in Fq_:
+        Fq.append(convertToPetscVec(f[0]))
+
+    rb = reducedbasisOffline(convertToPetscMat(Aq[0]), Fq, model, mubar)
 
     print("\nCompute basis and orthonormalize it")
     def listOfParams(n):
