@@ -9,17 +9,14 @@
         {
             "name": "default",
             "displayName": "Default Config",
-            "description": "Default build using Ninja generator",
+            "description": "Default build using Makefile generator",
             "generator": "Unix Makefiles",
-            "binaryDir": "${sourceDir}/build/default",
+            "binaryDir": "${sourceDir}/build/default/${hostSystemName}",
             "cacheVariables": {
                 "CMAKE_C_COMPILER": "clang",
                 "CMAKE_CXX_COMPILER": "clang++",
                 "CMAKE_BUILD_TYPE": "Release",
-                "FEELPP_ENABLE_TOOLBOXES": {
-                    "type": "BOOL",
-                    "value": "ON"
-                },
+                "FEELPP_ENABLE_TOOLBOXES":"ON",
                 "FEELPP_ENABLE_MOR": "ON",
                 "FEELPP_ENABLE_FEELPP_PYTHON": "ON",
                 "FEELPP_ENABLE_FMILIB": "OFF",
@@ -35,9 +32,37 @@
             }
         },
         {
+            "name": "default-homebrew",
+            "displayName": "Default Homebrew Config",
+            "description": "Default build using Ninja generator",
+            "generator": "Unix Makefiles",
+            "binaryDir": "${sourceDir}/build/default/${hostSystemName}",
+            "cacheVariables": {
+                "Python_FIND_FRAMEWORK": "FIRST",
+                "CMAKE_CXX_COMPILER": "clang++",
+                "CMAKE_BUILD_TYPE": "Release",
+                "FEELPP_ENABLE_TOOLBOXES": {
+                    "type": "BOOL",
+                    "value": "ON"
+                },
+                "FEELPP_ENABLE_MOR": "ON",
+                "FEELPP_ENABLE_FEELPP_PYTHON": "ON",
+                "FEELPP_ENABLE_FMILIB": "OFF",
+                "FEELPP_ENABLE_BENCHMARKS": "ON"
+            },
+            "environment": {
+            },
+            "vendor": {
+                "example.com/ExampleIDE/1.0": {
+                    "autoFormat": true
+                }
+            }
+        },
+        {
+            
             "name": "dbg",
             "displayName": "Debug Config",
-            "description": "Debug build using Ninja generator",
+            "description": "Debug build using Makefile generator",
             "generator": "Unix Makefiles",
             "binaryDir": "${sourceDir}/build/dbg",
             "cacheVariables": {
@@ -208,7 +233,7 @@
         {
             "name": "default",
             "configurePreset": "default",
-            "jobs": 10
+            "jobs": 4
         },
         {
             "name": "dbg",
@@ -322,9 +347,9 @@
             "execution": {
                 "noTestsAction": "error",
                 "stopOnFailure": false,
-                "repeat": {
-                    "mode": "until-pass",
-                    "count": 2
+                "repeat":{
+                    "mode":"until-pass",
+                    "count":3
                 }
             }
         },

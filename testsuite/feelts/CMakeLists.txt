@@ -22,8 +22,10 @@
 #
 #
 set_directory_properties(PROPERTIES LABEL testts )
+feelpp_add_test( ts )
 feelpp_add_test( bdf )
 feelpp_add_test( bdf2 CFG test_bdf2.cfg INCLUDES ${CMAKE_SOURCE_DIR} )
+feelpp_add_test( bdf_adaptive CFG test_bdf2.cfg INCLUDES ${CMAKE_SOURCE_DIR} )
 feelpp_add_test( bdf3 CFG test_bdf3.cfg NO_MPI_TEST SKIP_TEST )
 feelpp_add_test( bdf_reverse NO_MPI_TEST INCLUDES ${CMAKE_SOURCE_DIR} )
 feelpp_add_test( bdf_forward NO_MPI_TEST INCLUDES ${CMAKE_SOURCE_DIR} )

@@ -27,6 +27,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <pybind11/eigen.h>
+#include <feel/feelcore/pybind11_json.hpp>
 
 #include <feel/feelmesh/filters.hpp>
 #include <feel/feeldiscr/mesh.hpp>
@@ -260,14 +261,19 @@ void defMesh(py::module &m)
             py::arg( "required_facets" )=std::vector<std::string>{}, py::arg( "parent" ) = static_cast<mesh_ptr_t>(nullptr),
             "create a Remesher data structure" );
         m.def(
-            "remesh", []( mesh_ptr_t const& r, std::string const& metric_expr, std::vector<std::string> const& req_elts, std::vector<std::string> const& req_facets, mesh_ptr_t  const& parent ) {
-                return remesh( r, metric_expr, req_elts, req_facets, parent );
+            "remesh", []( mesh_ptr_t const& r, 
+                          std::string const& metric_expr, 
+                          std::vector<std::string> const& req_elts, 
+                          std::vector<std::string> const& req_facets, 
+                          mesh_ptr_t  const& parent, std::string const& prefix, nl::json const& j ) {
+                return remesh( _mesh=r, _metric=metric_expr, _required_elts=req_elts, _required_facets=req_facets, _parent=parent, _prefix=prefix, _params=j );
             },
             py::return_value_policy::copy,
             py::arg( "mesh" ), 
             py::arg( "metric" ), 
             py::arg( "required_elts" )=std::vector<std::string>{},  
             py::arg( "required_facets" )=std::vector<std::string>{}, py::arg( "parent" ) = static_cast<mesh_ptr_t>(nullptr),
+            py::arg( "prefix" )=std::string{},py::arg( "params" )=nl::json{},
             "create a Remesher data structure" );
     }
     m.def(

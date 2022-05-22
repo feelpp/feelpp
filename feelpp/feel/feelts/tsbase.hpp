@@ -67,6 +67,8 @@ namespace fs = boost::filesystem;
 enum TSState { TS_UNITIALIZED = 0, TS_RUNNING, TS_STOPPED };
 enum TSStragegy { TS_STRATEGY_DT_CONSTANT,TS_STRATEGY_DT_ADAPTATIVE};
 
+using Eigen::last;
+
 /**
  * \ingroup SpaceTime
  * \brief base class for time sets
@@ -76,9 +78,8 @@ class TSBase
 {
     friend class boost::serialization::access;
 public:
-    typedef std::vector<double>::iterator time_iterator;
-    typedef std::vector<double>::const_iterator time_const_iterator;
-    typedef std::vector<double> time_values_map_type;
+    
+    using time_values_map_type = Eigen::VectorXd;
 
     TSBase();
     TSBase( std::string name, std::string const& prefix, WorldComm const& worldComm, po::variables_map const& vm = Environment::vm() );
@@ -111,14 +112,7 @@ public:
 
         //DVLOG(2) << "[BDF::serialize] time orders size: " << M_time_orders.size() << "\n";
         DVLOG(2) << "[BDF::serialize] time values size: " << M_time_values_map.size() << "\n";
-
-        for ( auto it = M_time_values_map.begin(), en = M_time_values_map.end(); it!=en; ++it )
-        {
-            //LOG(INFO) << "[Bdf] order " << i << "=" << M_time_orders[i] << "\n";
-            DVLOG(2) << "[Bdf::serialize] value " << *it << "\n";
-
-        }
-
+        DVLOG(2) << "[Bdf::serialize] value " << M_time_values_map << "\n";
         DVLOG(2) << "[BDF::serialize] serialize BDFBase done\n";
     }
 
@@ -141,7 +135,7 @@ public:
         return M_Tf;
     }
 
-    //! return the final step
+    //! return the current time step
     double timeStep() const
     {
         return M_dt;
@@ -174,21 +168,22 @@ public:
     //! return the current time
     double time() const
     {
-        return M_time;
+        return M_time_values_map(last);
     }
+
+    //! reset the current set of times
+    auto const& times() const { return M_time_values_map; }
 
     //! return the current iteration
     int iteration() const
     {
-        return M_iteration;
+        return M_time_values_map.size();
     }
 
     //! return the number of iteration
     const int iterationNumber() const
     {
-        if( M_dt == 0)
-            return 0;
-        return static_cast<int>( std::abs((M_Tf-M_Ti)/M_dt) );
+        return M_time_values_map.size()-1;
     }
 
     //! return the real time in seconds spent in the iteration
@@ -208,14 +203,27 @@ public:
         return M_time_values_map;
     }
 
+    /**
+     * @brief add time  with increment dt from last one
+     * 
+     * @param dt time increment
+     * @return double new last time
+     */
+    double addTime( double dt ) const
+    {
+        M_time_values_map.conservativeResize( M_time_values_map.size()+1 );
+        M_time_values_map(M_time_values_map.size()-1) = M_time_values_map(last-1)+dt;
+        return M_time_values_map(last);
+    }
+
     //! start the bdf
     double start()
     {
         M_state = TS_RUNNING;
         M_timer.start();
         // if initiliaze has been called M_iteration start to 1 else 0
-        M_iteration = M_time_values_map.size();//1;
-        M_time = M_Ti+this->timeStep();
+        M_iteration = M_time_values_map.size();
+        addTime(this->timeStep());
         return M_Ti;
     }
 
@@ -224,7 +232,7 @@ public:
     {
         M_state = TS_RUNNING;
         M_timer.start();
-        M_time = M_Ti+this->timeStep();
+        addTime(this->timeStep());
         ++M_iteration;
         return M_Ti;
     }
@@ -236,7 +244,7 @@ public:
 
         if ( M_Tf>M_Ti )
         {
-            if ( M_time > M_Tf )
+            if ( this->time() > M_Tf )
             {
                 M_state = TS_STOPPED;
                 finished=true;
@@ -245,7 +253,7 @@ public:
 
         else
         {
-            if ( M_time < M_Tf )
+            if ( this->time() < M_Tf )
             {
                 M_state = TS_STOPPED;
                 finished=true;
@@ -271,14 +279,12 @@ public:
         M_timer.start();
         if ( M_displayStats )
             Environment::saveTimers( true );
-        M_time += M_dt;
         ++M_iteration;
-        return M_time;
+        return addTime(this->timeStep());
     }
 
     virtual void shiftRight()
     {
-        M_time_values_map.push_back( this->time() );
         //update();
     }
 
@@ -527,7 +533,7 @@ protected:
     //std::vector<int> M_time_orders;
 
     //! vector that holds the time value at each bdf step
-    time_values_map_type M_time_values_map;
+    mutable time_values_map_type M_time_values_map;
 
     //! path to the directory to store the functions
     fs::path M_path_save;

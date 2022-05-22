@@ -119,10 +119,12 @@ void defDiscr(py::module &m, std::string const& suffix = "")
         .def("nLocalDofWithGhost",static_cast<size_type(space_t::*)() const>(&space_t::nLocalDofWithGhost), "get the number of degrees of freedom over the current subdomain withthe ghost")
         .def("nLocalDofWithoutGhost",static_cast<size_type(space_t::*)() const>(&space_t::nLocalDofWithoutGhost), "get the number of degrees of freedom over the current subdomain without the ghost")
         .def("basisName",static_cast<std::string (space_t::*)() const>(&space_t::basisName), "get the basis function name")
+        .def("mapPtr",&space_t::mapPtr, "return the datamap")
 
         .def("mesh",static_cast<mesh_ptr_t const&(space_t::*)() const>(&space_t::mesh), "get the mesh of the function space")
         .def("element",static_cast<element_t (space_t::*)(std::string const&, std::string const&)>(&space_t::element), "get an element of the function space", py::arg("name")="u", py::arg("desc")="u")
         .def("elementFromExpr",static_cast<element_t (space_t::*)(std::string const&, std::string const&, std::string const& )>(&space_t::elementFromExpr), "get an element of the function space interpolating the expression", py::arg("expr"),py::arg("name")="u", py::arg("desc")="u")
+        .def("elementFromVec",static_cast<element_t (space_t::*)(std::shared_ptr<Vector<double>> const&, int)>(&space_t::element), "get an element from a vector")
         ;
 
     // Element
