@@ -13,6 +13,7 @@ HOME = os.environ['HOME']
 parser = argparse.ArgumentParser()
 parser.add_argument('--config-file', help="path to cfg file", type=str)
 parser.add_argument('--odir', help="path to output directory", type=str)
+parser.add_argument('--case', help="name of the case", type=str)
 parser.add_argument('--dim', help="dimension of the case", type=int)
 parser.add_argument('--time-dependant', help="time dependand case", type=bool, default=False)
 parser.add_argument('--algo', help="compute using greedy algorithm (default 1) 0 : From sample, 1 : Greedy, 2 : POD", type=int, default=1)
@@ -81,6 +82,20 @@ def generate_basis(worldComm=None, config=None):
 
 
     feelpp.Environment.setConfigFile(f'{config.config_file}')
+
+    model_path = "$cfgdir/"+os.path.splitext(os.path.basename(config.config_file))[0] + ".json"
+
+    crb_model_properties = CRBModelProperties(worldComm=feelpp.Environment.worldCommPtr())
+    crb_model_properties.setup(model_path)
+    crb_model_outputs = crb_model_properties.outputs()
+
+    output_names = []
+    for n, _ in crb_model_outputs:
+        output_names.append(n)
+    
+    if worldComm.isMasterRank():
+        print(f"[generatebasis] Outputs of the models are {output_names}")
+
 
     # Set the toolboxes
     heatBox = heat(dim=config.dim, order=1)
@@ -158,11 +173,13 @@ def generate_basis(worldComm=None, config=None):
 
     affineDecomposition = model.getAffineDecomposition()
     Aq = affineDecomposition[0]
-    Fq = affineDecomposition[1]
+    Fq_ = affineDecomposition[1]
 
-    rb = mor_rb.reducedbasisOffline(mor_rb.convertToPetscMat(Aq[0]),
-                                    mor_rb.convertToPetscVec(Fq[0][0]),
-                                    model, mubar)
+    Fq = []
+    for f in Fq_:
+        Fq.append(mor_rb.convertToPetscVec(f[0]))
+
+    rb = mor_rb.reducedbasisOffline(mor_rb.convertToPetscMat(Aq[0]), Fq, model, mubar, output_names=output_names)
     rb.setVerbose(False)
     if worldComm.isMasterRank():
         print("Size of the big problem :", rb.NN)
@@ -212,12 +229,12 @@ if __name__ == '__main__':
     dim = args.dim
     config_file = args.config_file
     time_dependant = args.time_dependant
-    odir = args.odir
+    odir = args.odir if args.odir is not None else "$name"
     algo = args.algo
     size = args.train_size
     tol = args.tol
     split = config_file.split('/')
-    case = '/'.join(split[:-1])
+    case = args.case if args.case is not None else "generate_basis"
 
     config = generateBasisConfig(dim, config_file, time_dependant, odir, case, algo, size, tol)
 

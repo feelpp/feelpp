@@ -64,6 +64,7 @@ class reducedbasis():
         self.LkNp   : list         # list of len n_output of tensors of shape (QLi, N)
 
         self.N_output = 0
+        self.output_names : list
 
         self.SS = np.zeros((self.Qf, self.Qf))            # SS[p,p_] = (Sp,sp_)X
         self.SL     : np.ndarray    # shape (Qf, Qa, N)     SL[p,n,q] = (Sp,Lnq)X
@@ -208,6 +209,21 @@ class reducedbasis():
         return sol, sol @ l
 
 
+    def getOutputName(self, k):
+        """Get the name of the k-th output
+
+        Args:
+            k (int): index of the output
+
+        Returns:
+            str: name of the output
+        """
+        if k == -1:
+            return "Compliant case"
+        else:
+            return self.output_names[k]
+
+
 
 
     def computeOnlineError(self, mu, precalc=None, size=None):
@@ -346,7 +362,7 @@ class reducedbasis():
 
         if self.worldComm.isMasterRank():
             h5f = h5py.File(path+"/reducedbasis.h5", "w")
-            content = {'Qa': self.Qa, 'Qf': self.Qf, 'N_output': self.N_output, "QLk": self.QLk, 'N': self.N, "path": path+"/reducedbasis.h5"}
+            content = {'Qa': self.Qa, 'Qf': self.Qf, 'N_output': self.N_output, "QLk": self.QLk, "output_names": self.output_names, 'N': self.N, "path": path+"/reducedbasis.h5"}
             dict_mubar = {}
             for n in self.mubar.parameterNames(): dict_mubar[n] = self.mubar.parameterNamed(n)
             content["mubar"] = dict_mubar
@@ -403,6 +419,7 @@ class reducedbasis():
         self.Qf = j['Qf']
         self.N_output = j['N_output']
         self.QLk = j['QLk']
+        self.output_names = j['output_names']
         mubar = model.parameterSpace().element()
         mubar.setParameters(j["mubar"])
         self.setMubar(mubar)
@@ -527,7 +544,7 @@ class reducedbasisOffline(reducedbasis):
     """
 
 
-    def __init__(self, Aq, Fq, model, mubar):
+    def __init__(self, Aq, Fq, model, mubar, output_names=None):
         """Initializes the class
 
         Args:
@@ -535,6 +552,7 @@ class reducedbasisOffline(reducedbasis):
             Fq (list): affine decomposition of the rhs AND the outputs Fq[0] = [F1, ..., FqF], F[i] = [Si1, ..., SiQsi]
             model (feelmm.mor._toolboxmor): model of toolboxmor, initialized
             mubar (parameterSpaceElement): parameter mubar
+            outputs_names (list): list of the names of the diffetent outputs, in the order given by the environment
         """
 
         super().__init__(model)
@@ -551,6 +569,10 @@ class reducedbasisOffline(reducedbasis):
         self.Qf = len(Fq[0])
         self.QLk= [len(Lkq) for Lkq in self.Lkq ]
         self.N_output = len(self.QLk)
+        if output_names is None:
+            self.output_names = [f"output{i}" for i in range(self.N_output)]
+        else:
+            self.output_names = output_names
 
 
         self.SS = np.zeros((self.Qf, self.Qf))
@@ -974,7 +996,6 @@ class reducedbasisOffline(reducedbasis):
         sol = F_mu.duplicate()
         self.ksp.solve(F_mu, sol)
 
-        print("k=", k)
         if k == -1:
             l = F_mu
         else:

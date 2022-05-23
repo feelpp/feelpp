@@ -240,7 +240,9 @@ PYBIND11_MODULE( _mor, m )
 
     py::class_<CRBModelOutput>(m,"CRBModelOutput")
         .def(py::init<worldcomm_ptr_t const&>(),
-             py::arg("worldComm"));
+             py::arg("worldComm"))
+        .def("name", &CRBModelOutput::name, "name of the output")
+        .def("type", &CRBModelOutput::type, "type of the output");
     py::class_<CRBModelOutputs>(m,"CRBModelOutputs")
         .def(py::init<worldcomm_ptr_t const&>(),
              py::arg("worldComm"))

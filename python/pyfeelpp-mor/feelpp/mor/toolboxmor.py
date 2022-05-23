@@ -1,4 +1,4 @@
-import sys
+import sys, os
 from feelpp.toolboxes.heat import *
 from feelpp.mor import *
 import feelpp
@@ -9,8 +9,20 @@ sys.argv = ["toolbox-mor"]
 # sys.argv = ['--config-file opusheat/opusheat-heat.cfg']
 e = feelpp.Environment(sys.argv, opts=o)
 
-feelpp.Environment.setConfigFile('thermal-fin/2d/thermal-fin.cfg')
+casefile = 'thermal-fin/2d/thermal-fin.cfg'
+feelpp.Environment.setConfigFile(casefile)
 name = "thermal-fin-2d"
+
+model_path = "$cfgdir/"+os.path.splitext(os.path.basename(casefile))[0] + ".json"
+crb_model_properties = CRBModelProperties(worldComm=feelpp.Environment.worldCommPtr())
+crb_model_properties.setup(model_path)
+
+outputs = crb_model_properties.outputs()
+outputs_names = []
+outputs_objs = []
+for n, o in outputs:
+    outputs_names.append(n)
+    outputs_objs.append(o)
 
 dim = 2
 assert dim in [2,3]
