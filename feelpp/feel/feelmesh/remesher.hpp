@@ -79,13 +79,16 @@ remesh_options( std::string const& prefix );
 
 /**
  * @brief set MMG options from command line
+ * @ingroup Mesh
+ * @tparam topoDim topological dimension
+ * @tparam realDim real dimension
  * 
  * @param prefix prefix to discriminate between different remeshers
  * @param sol mmg solution
- * @param mesh mmg mesh
+ * @param mesh mmg mesh 
  */
 template <int topoDim, int realDim>
-void setMMGOptions( std::string const& prefix, std::variant<MMG5_pMesh, PMMG_pParMesh> mesh, MMG5_pSol sol );
+void setMMGOptions( nl::json const& j, std::variant<MMG5_pMesh, PMMG_pParMesh> mesh, MMG5_pSol sol );
 
 /**
  * @brief Class that handles remeshing in sequential using mmg and parallel using parmmg
@@ -117,7 +120,8 @@ class Remesh
             boost::any const& required_element_markers,
             boost::any const& required_facet_markers,
             std::shared_ptr<MeshType> const& parent = nullptr,
-            std::string const& prefix = {} );
+            std::string const& prefix = {},
+            nl::json const& params = {} );
     Remesh( Remesh const& r ) = default;
     Remesh( Remesh&& r ) = default;
 
@@ -223,6 +227,37 @@ class Remesh
     mesh_ptrtype mmg2Mesh( mmg_mesh_t const& m_in );
     mesh_ptrtype mmg2Mesh() { return mmg2Mesh( M_mmg_mesh ); }
 
+    /**
+     * @brief Set the Keep Relation For Required Entities 
+     * 
+     * @param keep 0 do not keep relation, 1 keep
+     */
+    void setKeepRelationForRequiredEntities( bool keep ) { 
+        keep_relation_required_ = keep; 
+    }
+
+    /**
+     * @brief Set the Preserve Floating Interface 
+     * 
+     * @param preserve 0 or 1 
+     */
+    void setPreserveFloatingInterface( bool preserve ) 
+    {
+        if ( std::holds_alternative<MMG5_pMesh>( M_mmg_mesh ) )
+        {
+            auto mesh = std::get<MMG5_pMesh>( M_mmg_mesh );
+            if constexpr ( dimension_v<MeshType> == 3 )
+            {
+                MMG3D_Set_iparameter( mesh, M_mmg_sol, MMG3D_IPARAM_opnbdy, preserve );
+            }
+            if constexpr ( dimension_v<MeshType> == 2 && real_dimension_v<MeshType> == 2 )
+            {
+                MMG2D_Set_iparameter( mesh, M_mmg_sol, MMG2D_IPARAM_opnbdy, preserve );
+            }
+        }
+        else
+        {}
+    }
   private:
     void setParameters();
     void setCommunicatorAPI();
@@ -234,6 +269,7 @@ class Remesh
   private:
     std::shared_ptr<MeshType> M_mesh, M_parent_mesh;
     std::string M_prefix;
+    nl::json M_params;
     RemeshMode M_mode = RemeshMode::PARMMG;
     mmg_mesh_t M_mmg_mesh;
     MMG5_pSol M_mmg_sol;
@@ -242,6 +278,7 @@ class Remesh
     std::unordered_map<int, int> pt_id;
     std::unordered_map<int, std::pair<int, int>> face_id;
 
+    bool keep_relation_required_;
     boost::any M_required_element_markers;
     boost::any M_required_facet_markers;
     std::mutex mutex_;
@@ -268,18 +305,43 @@ Remesh<MeshType>::Remesh( std::shared_ptr<MeshType> const& mesh,
                           boost::any const& required_element_markers,
                           boost::any const& required_facet_markers,
                           std::shared_ptr<MeshType> const& parent,
-                          std::string const& prefix )
+                          std::string const& prefix,
+                          nl::json const& params )
     : M_mesh( mesh ),
       M_parent_mesh( parent ),
       M_prefix( prefix ),
+      M_params( params ),
       M_mode( RemeshMode::MMG ),
       M_mmg_mesh(),
       M_mmg_sol( nullptr ),
       M_mmg_met( nullptr ),
+      keep_relation_required_( false ),
       M_required_element_markers( required_element_markers ),
       M_required_facet_markers( required_facet_markers ),
       M_smd( new smd_type( M_parent_mesh ? M_parent_mesh : M_mesh ) )
 {
+    if ( params.contains("remesh") )
+    {
+        if ( params["remesh"].contains("required" ) )
+        {
+            if ( M_params["remesh"]["required"].contains("elements") )
+            {
+                M_required_element_markers = M_params["remesh"]["required"]["elements"].get<std::vector<std::string>>();
+            }
+            if ( M_params["remesh"]["required"].contains( "facets" ) )
+            {
+                M_required_facet_markers = M_params["remesh"]["required"]["facets"].get < std::vector<std::string>>();
+            }
+            if ( M_params["remesh"]["required"].contains( "keep_relation" ) )
+                keep_relation_required_ = M_params["remesh"]["required"]["keep_relation"].get <bool>();
+            if ( !M_params["remesh"]["required"]["facets"].get < std::vector<std::string>>().empty() &&
+                  keep_relation_required_ )
+            {
+                // this is necessary otherwise the hack to keep the relation and require facets will fail 
+                M_params["remesh"]["opnbdy"] = 1;
+            }
+        }
+    }
     if ( M_parent_mesh && M_parent_mesh->isRelatedTo( M_mesh ) == false )
         throw std::logic_error( "invalid parent mesh" );
     else if ( M_parent_mesh && M_parent_mesh->isRelatedTo( M_mesh ) )
@@ -301,6 +363,7 @@ Remesh<MeshType>::Remesh( std::shared_ptr<MeshType> const& mesh,
                              MMG5_ARG_ppMesh, &m, MMG5_ARG_ppMet, &M_mmg_sol,
                              MMG5_ARG_end );
         M_mmg_mesh = m;
+        setParameters();
     }
     else
     {
@@ -443,7 +506,7 @@ Remesh<MeshType>::mesh2Mmg( std::shared_ptr<MeshType> const& m_in )
     int nTetrahedra = ( dimension_v<MeshType> == 3 ) ? nelements( elements( m_in ) ) : 0;
     int nPrisms = 0;
     auto boundary_and_marked_faces = concatenate( boundaryfaces( m_in ), markedfaces( m_in, M_required_facet_markers ) );
-    int nTriangles = ( dimension_v<MeshType> == 3 ) ? ( ( m_in->worldCommPtr()->localSize() > 1 ) ? nelements( boundary_and_marked_faces ) + nelements( interprocessfaces( m_in ) ) : m_in->numFaces() ) : nelements( elements( m_in ) );
+    int nTriangles = ( dimension_v<MeshType> == 3 ) ? m_in->numFaces() : nelements( elements( m_in ) ); //( dimension_v<MeshType> == 3 ) ? ( ( m_in->worldCommPtr()->localSize() > 1 ) ? nelements( boundary_and_marked_faces ) + nelements( interprocessfaces( m_in ) ) : m_in->numFaces() ) : nelements( elements( m_in ) );
     int nQuadrilaterals = 0;
     int nEdges = ( dimension_v<MeshType> == 2 ) ? m_in->numFaces() : 0;
 
@@ -547,9 +610,9 @@ Remesh<MeshType>::mesh2Mmg( std::shared_ptr<MeshType> const& m_in )
             auto const& [key, elt] = boost::unwrap_ref( welt );
             int eltMarker = elt.hasMarker() ? mapMarkerToMmgFragmentId_elements.at( elt.marker() ) : -1;
             required = elt.hasMarker()? elt.marker().hasOneOf( required_element_ids ) : false;
-            int& id_elt = required ? next_free_req : next_free_nreq;
+            int& id_elt = ( required ) ? next_free_req : next_free_nreq;
             M_id2tag[id_elt].first = eltMarker;
-            int lab_or_id = required ? id_elt : eltMarker;
+            int lab_or_id = ( keep_relation_required_ && required ) ? id_elt : eltMarker;
             if constexpr ( dimension_v<MeshType> == 3 )
             {
                 if ( MMG3D_Set_tetrahedron( std::get<MMG5_pMesh>( M_mmg_mesh ),
@@ -599,7 +662,7 @@ Remesh<MeshType>::mesh2Mmg( std::shared_ptr<MeshType> const& m_in )
                     throw std::logic_error( "Error in MMG2D_Set_requiredTriangle" );
                 }
             }
-            if ( required )
+            if ( keep_relation_required_ && required )
             {
                 if ( M_parent_mesh )
                 {
@@ -641,7 +704,7 @@ Remesh<MeshType>::mesh2Mmg( std::shared_ptr<MeshType> const& m_in )
             required = face.hasMarker()? face.marker().hasOneOf( required_facet_ids ) : false;
             int& id_elt = required ? f_next_free_req : f_next_free_nreq;
             M_id2tag_face[id_elt].first = faceMarker;
-            int lab_or_id = required ? id_elt : faceMarker;
+            int lab_or_id = ( keep_relation_required_ && required ) ? id_elt : faceMarker;
             if constexpr ( dimension_v<MeshType> == 3 )
             {
 
@@ -678,7 +741,7 @@ Remesh<MeshType>::mesh2Mmg( std::shared_ptr<MeshType> const& m_in )
                     throw std::logic_error( "Error in MMG2D_Set_requiredEdge" );
                 }
             }
-            if ( required )
+            if ( keep_relation_required_ && required )
             {
                 if ( M_parent_mesh )
                 {
@@ -881,7 +944,7 @@ Remesh<MeshType>::mmg2Mesh( mmg_mesh_t const& mesh )
                 if ( MMG3D_Get_vertex( std::get<MMG5_pMesh>( mesh ), &( n[0] ), &( n[1] ), &( n[2] ),
                                        &( tag ), &( corner ), &( required ) ) != 1 )
                 {
-                    cout << "Unable to get mesh vertex " << k << endl;
+                    LOG(ERROR) << fmt::format("Unable to get mesh vertex {} ", k) << std::endl;
                     ier = MMG5_STRONGFAILURE;
                 }
             }
@@ -890,7 +953,7 @@ Remesh<MeshType>::mmg2Mesh( mmg_mesh_t const& mesh )
                 if ( MMGS_Get_vertex( std::get<MMG5_pMesh>( mesh ), &( n[0] ), &( n[1] ), &( n[2] ),
                                       &( tag ), &( corner ), &( required ) ) != 1 )
                 {
-                    cout << "Unable to get mesh vertex " << k << endl;
+                    LOG(ERROR) << fmt::format( "Unable to get mesh vertex {} ", k ) << std::endl;
                     ier = MMG5_STRONGFAILURE;
                 }
             }
@@ -900,7 +963,7 @@ Remesh<MeshType>::mmg2Mesh( mmg_mesh_t const& mesh )
                 if ( MMG2D_Get_vertex( std::get<MMG5_pMesh>( mesh ), &( n[0] ), &( n[1] ),
                                        &( tag ), &( corner ), &( required ) ) != 1 )
                 {
-                    cout << "Unable to get mesh 2D vertex " << k << endl;
+                    LOG(ERROR) << fmt::format( "Unable to get mesh vertex {} ", k ) << std::endl;
                     ier = MMG5_STRONGFAILURE;
                 }
             }
@@ -920,7 +983,7 @@ Remesh<MeshType>::mmg2Mesh( mmg_mesh_t const& mesh )
         if constexpr ( dimension_v<MeshType> == 3 )
         {
             int req_elts = nelements( markedelements( M_mesh, M_required_element_markers ) );
-            std::cout << fmt::format( "[mmg->feelpp] number of required elements: {}, tag", req_elts ) << std::endl;
+            LOG(INFO) << fmt::format( "[mmg->feelpp] number of required elements: {}", req_elts ) << std::endl;
             int next_free_req = 1;
             int next_free_nreq = req_elts + 1;
             for ( int k = 1; k <= nTetrahedra; k++ )
@@ -931,12 +994,12 @@ Remesh<MeshType>::mmg2Mesh( mmg_mesh_t const& mesh )
                                             &( iv[2] ), &( iv[3] ),
                                             &( lab ), &( required ) ) != 1 )
                 {
-                    std::cout << "Unable to get mesh tetra " << k << std::endl;
+                    LOG( ERROR ) << "Unable to get mesh tetra " << k << std::endl;
                     ier = MMG5_STRONGFAILURE;
                 }
-                int& id_elt = required ? next_free_req : next_free_nreq;
+                int& id_elt = k;//required ? next_free_req : next_free_nreq;
                 using element_type = typename mesh_t::element_type;
-                int mmgFragmentId = required ? M_id2tag[lab].first : lab;
+                int mmgFragmentId = ( keep_relation_required_ &&  required ) ? M_id2tag[lab].first : lab;
                 element_type newElem;
                 newElem.setId( id_elt );
                 if ( mmgFragmentId >= 0 )
@@ -950,16 +1013,25 @@ Remesh<MeshType>::mmg2Mesh( mmg_mesh_t const& mesh )
                 for ( int i = 0; i < 4; i++ )
                     newElem.setPoint( i, out->point( iv[i] ) );
                 out->addElement( newElem, false );
-                if ( required )
+                if ( keep_relation_required_ && required )
                 {
                     M_smd->bm.insert( typename smd_type::bm_type::value_type( id_elt, M_id2tag[lab].second ) );
                     //std::cout << fmt::format( "[mmg->feelpp] required elt  {} tag,id: {}", id_elt, M_id2tag[lab] ) << std::endl;
                 }
-                ++id_elt;
+                //++id_elt;
             }
         }
-        int f_req_elts = nelements( markedfaces( M_mesh, M_required_facet_markers ) );
-        std::cout << fmt::format( "[mmg->feelpp] number of required facets: {}, tag", f_req_elts ) << std::endl;
+        int f_req_elts = 0; 
+        if constexpr ( dimension_v<MeshType> == 3 )
+        {
+            f_req_elts = nelements( markedfaces( M_mesh, M_required_facet_markers ) );
+            LOG(INFO) << fmt::format( "[mmg->feelpp] number of required facets: {}", f_req_elts ) << std::endl;
+        }
+        else  if constexpr ( dimension_v<MeshType> == 2 )
+        {
+            f_req_elts = nelements( markedelements( M_mesh, M_required_element_markers ) );
+            LOG(INFO) << fmt::format( "[mmg->feelpp] number of required elements: {}", f_req_elts ) << std::endl;
+        }
         int f_next_free_req = 1;
         int f_next_free_nreq = f_req_elts + 1;
         for ( int k = 1; k <= nTriangles; k++ )
@@ -971,13 +1043,14 @@ Remesh<MeshType>::mmg2Mesh( mmg_mesh_t const& mesh )
                                          &( iv[0] ), &( iv[1] ), &( iv[2] ),
                                          &( lab ), &( required ) ) != 1 )
                 {
-                    std::cout << "Unable to get mesh triangle " << k << std::endl;
+                    LOG(ERROR) << "Unable to get mesh triangle " << k << std::endl;
                     ier = MMG5_STRONGFAILURE;
                 }
+                
                 using face_type = typename mesh_t::face_type;
                 face_type newElem;
-                int& id_elt = required ? f_next_free_req : f_next_free_nreq;
-                int mmgFragmentId = required ? M_id2tag_face[lab].first : lab;
+                int& id_elt = k;//required ? f_next_free_req : f_next_free_nreq;
+                int mmgFragmentId = ( keep_relation_required_ && required ) ? M_id2tag_face[lab].first : lab;
                 newElem.setId( id_elt );
                 if ( mmgFragmentId >= 0 )
                 {
@@ -990,7 +1063,7 @@ Remesh<MeshType>::mmg2Mesh( mmg_mesh_t const& mesh )
                 for ( int i = 0; i < 3; i++ )
                     newElem.setPoint( i, out->point( iv[i] ) );
                 out->addFace( newElem );
-                id_elt++;
+                //id_elt++;
             }
             if constexpr ( dimension_v<MeshType> == 2 && real_dimension_v<MeshType> == 2 )
             {
@@ -998,12 +1071,12 @@ Remesh<MeshType>::mmg2Mesh( mmg_mesh_t const& mesh )
                                          &( iv[0] ), &( iv[1] ), &( iv[2] ),
                                          &( lab ), &( required ) ) != 1 )
                 {
-                    std::cout << "Unable to get mesh triangle " << k << std::endl;
+                    LOG( ERROR ) << "Unable to get mesh triangle " << k << std::endl;
                     ier = MMG5_STRONGFAILURE;
                 }
                 using element_type = typename mesh_t::element_type;
                 element_type newElem;
-                int mmgFragmentId = required ? M_id2tag[lab].first : lab;
+                int mmgFragmentId = ( keep_relation_required_ && required ) ? M_id2tag[lab].first : lab;
                 newElem.setId( k );
                 if ( mmgFragmentId >= 0 )
                 {
@@ -1016,12 +1089,17 @@ Remesh<MeshType>::mmg2Mesh( mmg_mesh_t const& mesh )
                 for ( int i = 0; i < 3; i++ )
                     newElem.setPoint( i, out->point( iv[i] ) );
                 out->addElement( newElem, false );
-                if ( required )
+                if ( keep_relation_required_ && required )
                 {
                     M_smd->bm.insert( typename smd_type::bm_type::value_type( k, M_id2tag[lab].second ) );
                     //std::cout << fmt::format( "[mmg->feelpp] required elt  {} tag,id: {}", id_elt, M_id2tag[lab] ) << std::endl;
                 }
             }
+        }
+        if constexpr ( dimension_v<MeshType> == 2 )
+        {
+            int f_req_elts = nelements( markedfaces( M_mesh, M_required_facet_markers ) );
+            LOG(INFO) << fmt::format( "[mmg->feelpp] number of required facets: {}", f_req_elts ) << std::endl;
         }
         for ( int k = 1; k <= nEdges; k++ )
         {
@@ -1032,11 +1110,11 @@ Remesh<MeshType>::mmg2Mesh( mmg_mesh_t const& mesh )
                                      &( iv[0] ), &( iv[1] ),
                                      &( lab ), &( isridge ), &( required ) ) != 1 )
                 {
-                    std::cout << "Unable to get mesh triangle " << k << std::endl;
+                    LOG( ERROR ) << "Unable to get mesh triangle " << k << std::endl;
                     ier = MMG5_STRONGFAILURE;
                 }
                 using face_type = typename mesh_t::face_type;
-                int mmgFragmentId = required ? M_id2tag_face[lab].first : lab;
+                int mmgFragmentId = ( keep_relation_required_ && required ) ? M_id2tag_face[lab].first : lab;
                 face_type newElem;
                 newElem.setId( k );
                 if ( mmgFragmentId >= 0 )
@@ -1078,7 +1156,7 @@ Remesh<MeshType>::mmg2Mesh( mmg_mesh_t const& mesh )
                 if ( PMMG_Get_vertex( std::get<PMMG_pParMesh>( mesh ), &( n[0] ), &( n[1] ), &( n[2] ),
                                       &( tag ), &( corner ), &( required ) ) != 1 )
                 {
-                    cout << "Unable to get mesh vertex " << k << endl;
+                    LOG(ERROR) << "Unable to get mesh vertex " << k << std::endl;
                     ier = MMG5_STRONGFAILURE;
                 }
             }
@@ -1100,7 +1178,7 @@ Remesh<MeshType>::mmg2Mesh( mmg_mesh_t const& mesh )
                                            &( iv[2] ), &( iv[3] ),
                                            &( lab ), &( required ) ) != 1 )
                 {
-                    std::cout << "Unable to get mesh tetra " << k << std::endl;
+                    LOG(ERROR) << "Unable to get mesh tetra " << k << std::endl;
                     ier = MMG5_STRONGFAILURE;
                 }
 
@@ -1125,7 +1203,7 @@ Remesh<MeshType>::mmg2Mesh( mmg_mesh_t const& mesh )
                                         &( iv[0] ), &( iv[1] ), &( iv[2] ),
                                         &( lab ), &( required ) ) != 1 )
                 {
-                    std::cout << "Unable to get mesh triangle " << k << std::endl;
+                    LOG(ERROR) << "Unable to get mesh triangle " << k << std::endl;
                     ier = MMG5_STRONGFAILURE;
                 }
                 using face_type = typename mesh_t::face_type;
@@ -1208,24 +1286,7 @@ Remesh<MeshType>::mmg2Mesh( mmg_mesh_t const& mesh )
 template <typename MeshType>
 void Remesh<MeshType>::setParameters()
 {
-    setMMGOptions<dimension_v<MeshType>, real_dimension_v<MeshType>>( M_prefix, M_mmg_mesh, M_mmg_sol );
-#if 0
-    if constexpr ( dimension_v<MeshType> == 3 )
-    {
-        MMG3D_Set_iparameter(M_mmg_mesh,M_mmg_sol,MMG3D_IPARAM_verbose, value<MmgOption::Verbose>());
-        MMG3D_Set_iparameter(M_mmg_mesh,M_mmg_sol,MMG3D_IPARAM_mem, value<MmgOption::Mem>());
-        MMG3D_Set_dparameter(M_mmg_mesh,M_mmg_sol,MMG3D_DPARAM_hmin, value<MmgOption::Hmin>());
-        MMG3D_Set_dparameter(M_mmg_mesh,M_mmg_sol,MMG3D_DPARAM_hmax, value<MmgOption::Hmax>());
-        MMG3D_Set_dparameter(M_mmg_mesh,M_mmg_sol,MMG3D_DPARAM_hsiz, value<MmgOption::Hsiz>());
-    }
-    else if constexpr ( dimension_v<MeshType> == 2 && real_dimension_v<MeshType> == 3  )
-    {
-    }
-    else if constexpr ( dimension_v<MeshType> == 2 && real_dimension_v<MeshType> == 2  )
-    {
-
-    }
-#endif
+    setMMGOptions<dimension_v<MeshType>, real_dimension_v<MeshType>>( M_params, M_mmg_mesh, M_mmg_sol );
     if ( std::holds_alternative<PMMG_pParMesh>( M_mmg_mesh ) )
     {
 #if 0        
