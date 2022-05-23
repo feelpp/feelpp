@@ -49,20 +49,23 @@ public :
     template<typename T>
     void checkBDFTimeLoop( T& ts )
     {
-        ts->setTimeInitial( 0 );
-        ts->setTimeStep( 0.1 );
-        fmt::print("times: {}", ts->times() );
-        ts->setTimeFinal( 1 );
-        //for( double t = ts->start(); !ts->isFinished() ; ts->setTimeStep( ts->timeStep()+0.1 ), t=ts->next() )
-        for( double t = ts->start(); !ts->isFinished(); ts->setTimeStep( ts->timeStep()+0.1 ),t=ts->next() )
+        for( int o = 1; o < 5; ++o)
         {
-            fmt::print("===========================================================\n");
-            fmt::print("t={} iteration:{} times={}\n",t, ts->iteration(), ts->times());
-            fmt::print("bdf: {}\n", ts->backwardDifferences(ts->times().tail(3),2) );
+            ts->setOrder( o );
+            ts->setTimeInitial( 0 );
+            ts->setTimeStep( 0.1 );
+            fmt::print("times: {}", ts->times() );
+            ts->setTimeFinal( 1 );
+            for( double t = ts->start(); !ts->isFinished(); t=ts->next() )
+            {
+                fmt::print("===========================================================\n");
+                fmt::print("t={} iteration:{} times={}\n",t, ts->iteration(), ts->times());
+                //fmt::print("bdf: {}\n", ts->backwardDifferences(ts->times().tail(3),2) );
+            }
         }
     }
     template<typename T>
-    void checkBDFCoefficients( T const& mybdf )
+    void checkBackwardDifferences( T const& mybdf )
     {
         eigen_vector_x_type<double> Ts(5);
         Ts << .1,.2,.3,.4,.5;
@@ -113,6 +116,7 @@ public :
         BOOST_CHECK_CLOSE(alpha4(0), 1./(4.*dt),1e-12);
 
     }
+
     void run() override
     {
         auto mesh = createGMSHMesh( _mesh=new Mesh<Simplex<Dim,1>>,
@@ -126,7 +130,7 @@ public :
         auto solution = Xh->element();
         auto mybdf = bdf( _space=Xh, _name="mybdf" );
 
-        checkBDFCoefficients( mybdf );
+        checkBackwardDifferences( mybdf );
 
         checkBDFTimeLoop( mybdf );
     }

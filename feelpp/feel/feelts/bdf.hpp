@@ -64,13 +64,31 @@
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feeldiscr/operatorinterpolation.hpp>
 #include <feel/feelts/tsbase.hpp>
-
+#include <range/v3/algorithm/for_each.hpp>
+#include <range/v3/view/all.hpp>
+#include <range/v3/view/iota.hpp>
 namespace Feel
 {
 namespace ublas = boost::numeric::ublas;
 namespace fs = boost::filesystem;
 
 enum BDFTimeScheme { BDF_ORDER_ONE=1, BDF_ORDER_TWO, BDF_ORDER_THREE, BDF_ORDER_FOUR, BDF_MAX_ORDER = 4 };
+
+/**
+ * @brief compute time array of size @p n from constant time step @p dt starting at @p ti
+ * @ingroup SpaceTime
+ * @return the time array
+ */
+eigen_vector_x_type<double>
+timesFromConstantStep( int n, double ti, double dt )
+{
+    eigen_vector_x_type<double> ts( n );
+    ranges::for_each( ranges::views::ints(0,n),
+                      [dt,ti,&ts]( int i ){
+                            ts[i] = ti-(i+1)*dt;
+                      });
+    return ts;
+}
 
 /**
  * \class Bdf
@@ -120,10 +138,13 @@ public:
     typedef std::shared_ptr<space_type>  space_ptrtype;
     typedef typename space_type::element_type element_type;
     typedef typename space_type::element_ptrtype element_ptrtype;
-    typedef typename space_type::return_type return_type;
     typedef typename element_type::value_type value_type;
+    template <typename container_type>
+    using element_t = typename space_type::template Element<value_type, container_type>;
+    typedef typename space_type::return_type return_type;
     typedef std::vector< element_ptrtype > unknowns_type;
     typedef typename node<value_type>::type node_type;
+    using times_t = eigen_vector_x_type<double>;
 
     /**
      * Constructor
@@ -174,12 +195,11 @@ public:
     //! return a deep copy of the bdf object
     bdf_ptrtype deepCopy() const
     {
-        auto b = bdf_ptrtype( new bdf_type( *this ) );
+        auto b = std::make_shared<bdf_type>( *this );
 
-        for ( auto it = b->M_unknowns.begin(), en = b->M_unknowns.end(); it != en; ++ it )
-        {
-            *it = element_ptrtype( new element_type( M_space ) );
-        }
+        std::for_each( b->M_unknowns.begin(), b->M_unknowns.end(), 
+                       [this]( auto& e )
+                       { e = std::make_shared<element_type>( M_space ); } );
 
         return b;
     }
@@ -277,7 +297,7 @@ public:
      * @param u_curr 
      */
     template<typename container_type>
-    auto filter( typename space_type::template Element<value_type, container_type> & u_curr );
+    auto filter( element_t<container_type> & u_curr );
 
     /**
        Update the vectors of the previous time steps by shifting on the right
@@ -285,7 +305,7 @@ public:
        @param u_curr current (new) value of the state vector
     */
     template<typename container_type>
-    void shiftRight( typename space_type::template Element<value_type, container_type> & u_curr );
+    void shiftRight( element_t<container_type> & u_curr );
 
     /**
      * Move to next time step (solution not shifted).
@@ -312,7 +332,7 @@ public:
      */
     template<typename container_type>
     double
-    next( typename space_type::template Element<value_type, container_type> & u_curr )
+    next( element_t<container_type> & u_curr )
     {
         this->shiftRight( u_curr );
 
@@ -404,25 +424,25 @@ public:
      * @return em_matrix_row_type 
      */
     eigen_vector_x_type<double>
-    firstDifference(eigen_vector_x_type<double> const& t, std::vector<eigen_vector_x_type<double>> const& y )
+    firstDifference( times_t const& t, std::vector<times_t> const& y )
     {
         return (y[0]-y[1])/(t(0)-t(1));
     }
 
     /**
      * @brief Construct a new backward differences object for m-1 steps
-     * 
+     *
      * @param t vector of times from lowest to highest @c [t_n,t_n+1,....,t_n+m]
+     * @return the divided differences table for m-1 steps
      */
     eigen_matrix_xx_row_type<>
-    backwardDifferences(eigen_vector_x_type<double> const& t)
+    backwardDifferences(times_t const& t)
     {
         int m = t.size()-1;
         eigen_matrix_xx_row_type<> D(m+1,m+1);
         for(int i = 0; i < m+1;++i)
             for(int j = 0; j < m+1;++j)
                 D(i,j)=(i+1)==m+1-j;
-        fmt::print("D={}",D);
 
         eigen_matrix_xx_row_type<> differences = eigen_matrix_xx_row_type<>::Zero(D.rows(),D.cols());
         differences.row(0) = D.row(0);
@@ -437,6 +457,13 @@ public:
         return differences;  
     }
 
+    /**
+     * @brief compute the coefficients of the interpolation polynomial and its derivate
+     * 
+     * @param t time set
+     * @param order order of the interpolation polynomial
+     * @return std::tuple<eigen_vector_x_type<double>,eigen_matrix_xx_row_type<>,double> the first is the polynomial coefficient, the derivative coefficients, the newton difference table and the fitler coefficient 
+     */
     std::tuple<eigen_vector_x_type<double>,eigen_matrix_xx_row_type<>,double>
     backwardDifferences(eigen_vector_x_type<double> const& t, int order )
     {
@@ -461,7 +488,7 @@ public:
         }
         return std::tuple{alpha,diffs,eta};
     }
-
+    
 private:
     void init();
 
@@ -476,11 +503,21 @@ private:
         ar & boost::serialization::base_object<TSBase>( *this );
     }
 
-    //! compute BDF coefficients
-    void computeCoefficients();
+    /**
+     * @brief compute BDF coefficients from times
+     * 
+     * The different times may yield a constant or non-constant time step
+     * 
+     * @param ts set of times to compute the coefficients from
+     */
+    void computeCoefficients( times_t const& ts );
 
     //! compute extrapolation field and rhs part of bdf scheme
-    void computePolyAndPolyDeriv();
+    /**
+     * @brief compute the extrapolation and derivative
+     * @param ts set of times to compute the coefficients from
+     */
+    void computePolyAndPolyDeriv( times_t const& ts );
 
 private:
 
@@ -507,10 +544,10 @@ private:
     unknowns_type M_unknowns;
 
     //! Coefficients \f$ \alpha_i \f$ of the time bdf discretization
-    std::vector<ublas::vector<double> > M_alpha;
+    std::vector<times_t> M_alpha;
 
     //! Coefficients \f$ \beta_i \f$ of the extrapolation
-    std::vector<ublas::vector<double> > M_beta;
+    std::vector<times_t> M_beta;
 
     //! extrapolation field and rhs part of bdf scheme
     element_ptrtype M_poly, M_polyDeriv;
@@ -534,17 +571,17 @@ Bdf<SpaceType>::Bdf( space_ptrtype const& __space,
     M_beta( BDF_MAX_ORDER ),
     M_numberOfConsecutiveSave( M_order )
 {
-    computeCoefficients();
+    auto ts = timesFromConstantStep( M_order, this->timeInitial(), this->timeStep() );
+    computeCoefficients( ts );
 
     CHECK( this->numberOfConsecutiveSave() >= this->bdfOrder() ) << "numberOfConsecutiveSave is too small, should be >= bdfOrder";
     M_unknowns.resize( std::max(this->bdfOrder(), this->numberOfConsecutiveSave()) );
-    for ( uint8_type __i = 0; __i < M_unknowns.size(); ++__i )
-    {
-        M_unknowns[__i] = element_ptrtype( new element_type( M_space ) );
-        M_unknowns[__i]->zero();
-    }
-
-    this->computePolyAndPolyDeriv();
+    std::for_each( M_unknowns.begin(), M_unknowns.end(),
+                   [this]( auto& elt ) {
+                       elt = std::make_shared<element_type>( M_space );
+                       elt->zero();
+                   } );
+    this->computePolyAndPolyDeriv(ts);
 }
 
 template <typename SpaceType>
@@ -563,17 +600,18 @@ Bdf<SpaceType>::Bdf( space_ptrtype const& __space, std::string const& name, std:
     M_beta( BDF_MAX_ORDER ),
     M_numberOfConsecutiveSave( n_consecutive_save )
 {
-    computeCoefficients();
+    auto ts = timesFromConstantStep( M_order, ti, dt );
+    computeCoefficients( ts );
 
     CHECK( this->numberOfConsecutiveSave() >= this->bdfOrder() ) << "numberOfConsecutiveSave is too small, should be >= bdfOrder";
     M_unknowns.resize( std::max(this->bdfOrder()+1, this->numberOfConsecutiveSave()) );
-    for ( uint8_type __i = 0; __i < M_unknowns.size(); ++__i )
-    {
-        M_unknowns[__i] = element_ptrtype( new element_type( M_space ) );
-        M_unknowns[__i]->zero();
-    }
+    std::for_each( M_unknowns.begin(), M_unknowns.end(),
+                   [this]( auto& elt ) {
+                       elt = std::make_shared<element_type>( M_space );
+                       elt->zero();
+                   } );
 
-    this->computePolyAndPolyDeriv();
+    this->computePolyAndPolyDeriv( ts );
 }
 
 
@@ -596,8 +634,9 @@ Bdf<SpaceType>::Bdf( Bdf const& b )
 
 template <typename SpaceType>
 void
-Bdf<SpaceType>::computeCoefficients()
+Bdf<SpaceType>::computeCoefficients( times_t const& ts )
 {
+#if 0
     for ( int i = 0; i < BDF_MAX_ORDER; ++i )
     {
         M_alpha[ i ].resize( i+2 );
@@ -646,6 +685,19 @@ Bdf<SpaceType>::computeCoefficients()
             M_beta[i][ 3 ] = -1.;
         }
     }
+#else
+    auto [alpha,BD,eta] = backwardDifferences( ts, M_order );
+    for ( int i = 0; i <= M_order; ++i )
+    {
+        M_alpha[i].resize( M_order + 1 );
+        M_beta[i].resize( M_order );
+    }
+    for ( int i = 0; i <= M_order; ++i )
+    {
+            M_alpha[i] = - alpha/alpha(Eigen::last-i); 
+            M_beta[i] = - BD.row( i )/BD(i,i); 
+    }
+#endif
 }
 
 template <typename SpaceType>
@@ -809,7 +861,7 @@ Bdf<SpaceType>::initialize( unknowns_type const& uv0 )
     else if ( uv0.size() > 1 )
         std::copy( uv0.begin(), uv0.end(), M_unknowns.begin() );
 
-    this->computePolyAndPolyDeriv();
+    this->computePolyAndPolyDeriv(this->lastTimes(M_order));
     this->saveCurrent();
 }
 
@@ -857,7 +909,7 @@ double
 Bdf<SpaceType>::restart()
 {
     this->init();
-    this->computePolyAndPolyDeriv();
+    this->computePolyAndPolyDeriv(this->lastTimes(M_order));
 
     double ti = super::restart();
 
@@ -989,7 +1041,7 @@ Bdf<SpaceType>::loadCurrent()
 template <typename SpaceType>
 template<typename container_type>
 auto
-Bdf<SpaceType>::filter( typename space_type::template Element<value_type, container_type> & __new_unk )
+Bdf<SpaceType>::filter( element_t<container_type> & __new_unk )
 {
 
     if ( M_order_cur == 1 )
@@ -1004,7 +1056,7 @@ Bdf<SpaceType>::filter( typename space_type::template Element<value_type, contai
 template <typename SpaceType>
 template<typename container_type>
 void
-Bdf<SpaceType>::shiftRight( typename space_type::template Element<value_type, container_type> & __new_unk )
+Bdf<SpaceType>::shiftRight( element_t<container_type> & __new_unk )
 {
     DVLOG(2) << "shiftRight: inserting time " << this->time() << "s\n";
     super::shiftRight();
@@ -1044,7 +1096,7 @@ Bdf<SpaceType>::poly() const
 
 template <typename SpaceType>
 void
-Bdf<SpaceType>::computePolyAndPolyDeriv()
+Bdf<SpaceType>::computePolyAndPolyDeriv( times_t const& ts )
 {
     if ( !M_poly )
         M_poly = M_space->elementPtr();
@@ -1057,7 +1109,7 @@ Bdf<SpaceType>::computePolyAndPolyDeriv()
 
     M_polyDeriv->zero();
     for ( int i = 0; i < this->timeOrder(); ++i )
-        M_polyDeriv->add( this->polyDerivCoefficient( i+1 ), *M_unknowns[i] );
+        M_polyDeriv->add( this->polyDerivCoefficient( i ), *M_unknowns[i] );
 }
 
 template <typename SpaceType>
