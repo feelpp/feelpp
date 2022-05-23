@@ -9,10 +9,11 @@
         {
             "name": "default",
             "displayName": "Default Config",
-            "description": "Default build using Ninja generator",
+            "description": "Default build using Makefile generator",
             "generator": "Unix Makefiles",
             "binaryDir": "${sourceDir}/build/default",
             "cacheVariables": {
+                "CMAKE_C_COMPILER": "clang",
                 "CMAKE_CXX_COMPILER": "clang++",
                 "CMAKE_BUILD_TYPE": "Release",
                 "FEELPP_ENABLE_TOOLBOXES": {
@@ -36,7 +37,7 @@
         {
             "name": "dbg",
             "displayName": "Debug Config",
-            "description": "Debug build using Ninja generator",
+            "description": "Debug build using Makefile generator",
             "generator": "Unix Makefiles",
             "binaryDir": "${sourceDir}/build/dbg",
             "cacheVariables": {
@@ -306,7 +307,7 @@
                 "stopOnFailure": false,
                 "repeat":{
                     "mode":"until-pass",
-                    "count":2
+                    "count":3
                 }
             }
         },
