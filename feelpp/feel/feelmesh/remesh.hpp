@@ -23,56 +23,73 @@
 */
 #pragma once
 
+#include <feel/feeldiscr/pch.hpp>
+#include <feel/feelfilters/partitionio.hpp>
+#include <feel/feelmesh/metric.hpp>
+#include <feel/feelmesh/remesher.hpp>
 #include <fmt/core.h>
 #include <regex>
-#include <feel/feelmesh/remesher.hpp>
-#include <feel/feeldiscr/pch.hpp>
-#include <feel/feelmesh/metric.hpp>
-#include <feel/feelfilters/partitionio.hpp>
 namespace Feel
 {
 /**
+ * @brief list of arguments type for remesh named parameters functions
+ *
+ * @tparam T
+ */
+template <typename T>
+using args_remesh_type = NA::arguments<
+    typename na::mesh::template required_as_t<std::shared_ptr<T>>,
+    typename na::metric::template required_as_t<std::string>,
+    typename na::required_elts::template required_as_t<std::vector<std::string>>,
+    typename na::required_facets::template required_as_t<std::vector<std::string>>,
+    typename na::parent::template required_as_t<std::shared_ptr<T>>,
+    typename na::vm::template required_as_t<po::variables_map const&>,
+    typename na::verbose::template required_as_t<int>>;
+
+
+/**
  * @brief given a metric and required elements/facets, remesh a mesh
- * 
+ *
  * @tparam MeshT type of the mesh to be remeshed
  * @param r mesh to be remeshed
  * @param metric_expr metric expression
  * @param req_elts required elements set
  * @param req_facets  required facets set
  * @param parent parent mesh (possibly nullptr)
- * @return std::shared_ptr<MeshT> 
+ * @return std::shared_ptr<MeshT>
  */
 template <typename MeshT>
-std::tuple<std::shared_ptr<MeshT>,int>
-remesh( std::shared_ptr<MeshT> const& r,
+std::tuple<std::shared_ptr<MeshT>, int>
+remeshImpl( std::shared_ptr<MeshT> const& r,
         std::string const& metric_expr,
         std::vector<std::string> const& req_elts,
         std::vector<std::string> const& req_facets,
-        std::shared_ptr<MeshT> const& parent )
+        std::shared_ptr<MeshT> const& parent,
+        nl::json const& params )
 {
     static int cpt = 0;
     using mesh_t = MeshT;
     using mesh_ptr_t = std::shared_ptr<mesh_t>;
     if ( r->worldComm().localSize() == 1 )
     {
-        auto R = std::make_shared<Remesh<mesh_t>>( r, req_elts, req_facets, parent );
+        auto R = std::make_shared<Remesh<mesh_t>>( r, req_elts, req_facets, parent, std::string{}, params );
         auto P1h = Pch<1>( r );
 
-        if ( std::smatch sm; 
-             std::regex_match( metric_expr, sm, std::regex( "gradedls\\((.*),(.*)\\)" ) )  )
+        if ( std::smatch sm;
+             std::regex_match( metric_expr, sm, std::regex( "gradedls\\((.*),(.*)\\)" ) ) )
         {
             double hclose = std::stod( sm[1] );
             double hfar = std::stod( sm[2] );
-            LOG(INFO) << fmt::format( "[remesh] gradedfromls hclose={} hfar={}", hclose, hfar, 0. ) << std::endl;
+            LOG( INFO ) << fmt::format( "[remesh] gradedfromls hclose={} hfar={}", hclose, hfar, 0. ) << std::endl;
             R->setMetric( gradedfromls( P1h, markedfaces( r, req_facets ), hclose, hfar, 0. ) );
         }
-        else if ( std::smatch sm; 
-             std::regex_match( metric_expr, sm, std::regex( "gradedls\\((.*),(.*),(.*)\\)" ) )  )
+        else if ( std::smatch sm;
+                  std::regex_match( metric_expr, sm, std::regex( "gradedls\\((.*),(.*),(.*)\\)" ) ) )
         {
             double hclose = std::stod( sm[1] );
             double hfar = std::stod( sm[2] );
             double cst = std::stod( sm[3] );
-            LOG(INFO) << fmt::format( "[remesh] gradedfromls hclose={} hfar={} percent={}", hclose, hfar, cst ) << std::endl;
+            LOG( INFO ) << fmt::format( "[remesh] gradedfromls hclose={} hfar={} percent={}", hclose, hfar, cst ) << std::endl;
             R->setMetric( gradedfromls( P1h, markedfaces( r, req_facets ), hclose, hfar, cst ) );
         }
         else
@@ -123,4 +140,46 @@ remesh( std::shared_ptr<MeshT> const& r,
         return std::tuple{ meshAdaptPara, ++cpt };
     }
 }
+
+/**
+ * @brief remesh with named arguments
+ * @ingroup Mesh
+ *
+ * @tparam MeshType
+ * @param _mesh mesh to be adapted
+ * @param _required_elts list of markers of required elements
+ * @param _required_facets list of markers of required facets
+ * @param _parent parent mesh if relation is built
+ *
+ * @code {.cpp}
+ * // adapt mesh with constant mesh size
+ * auto adapted_mesh = remesh( _mesh=mesh, _metric="0.1" );
+ * // adapt mesh with constant mesh size with required elements marked omega
+ * auto adapted_mesh = remesh( _mesh=mesh, _metric="0.1", _required_elts=std::vector{{"omega"}} );
+ * @endcode
+ *
+ * @return std::shared_ptr<MeshType>
+ */
+template <typename... Ts>
+auto remesh( Ts&&... v )
+{
+    auto args = NA::make_arguments( std::forward<Ts>( v )... );
+    auto&& mesh = args.get( _mesh );
+    auto&& metric = args.get( _metric );
+    using mesh_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype( mesh )>>>;
+
+    auto args0 = std::move( args )
+                     .add_default_arguments( NA::make_default_argument( _vm, Environment::vm() ),
+                                             NA::make_default_argument( _parent, std::shared_ptr<mesh_type>{} ),
+                                             NA::make_default_argument( _required_elts, std::vector<std::string>{} ),
+                                             NA::make_default_argument( _required_facets, std::vector<std::string>{} ),
+                                             NA::make_default_argument( _params, nl::json{} ) );
+
+    po::variables_map const& vm = args0.get( _vm );
+    auto required_elts = args0.get( _required_elts );
+    auto required_facets = args0.get( _required_facets );
+    auto&& parent = args0.get( _parent );
+    auto&& params = args0.get( _params );
+    return remeshImpl<mesh_type>( mesh, metric, required_elts, required_facets, parent, params );
 }
+} // namespace Feel
