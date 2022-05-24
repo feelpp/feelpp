@@ -79,10 +79,14 @@ void setMMGOptions( nl::json const& params, std::variant<MMG5_pMesh, PMMG_pParMe
                 MMG3D_Set_iparameter( mesh, sol, MMG3D_IPARAM_nosizreq, params["/remesh/nosizreq"_json_pointer].get<int>() );
             if ( params["remesh"].contains( "hgradreq" ) )
                 MMG3D_Set_dparameter( mesh, sol, MMG3D_DPARAM_hgradreq, params["/remesh/hgradreq"_json_pointer].get<double>() );
+            if ( params["remesh"].contains( "nosurf" ) )
+                MMG3D_Set_iparameter( mesh, sol, MMG3D_IPARAM_nosurf, params["/remesh/nosurf"_json_pointer].get<int>() );
             if ( params["remesh"].contains( "opnbdy" ) )
                 MMG3D_Set_iparameter( mesh, sol, MMG3D_IPARAM_opnbdy, params["/remesh/opnbdy"_json_pointer].get<int>() );
             if ( params["remesh"].contains( "angle" ) )
                 MMG3D_Set_iparameter( mesh, sol, MMG3D_IPARAM_angle, params["/remesh/angle"_json_pointer].get<int>() );
+            if ( params["remesh"].contains( "hausd" ) )
+                MMG3D_Set_dparameter( mesh, sol, MMG3D_DPARAM_hausd, params["/remesh/hausd"_json_pointer].get<double>() );
         }
         else if constexpr ( topoDim == 2 && realDim == 3 )
         {
@@ -116,10 +120,14 @@ void setMMGOptions( nl::json const& params, std::variant<MMG5_pMesh, PMMG_pParMe
                 MMG2D_Set_iparameter( mesh, sol, MMG2D_IPARAM_nosizreq, params["/remesh/nosizreq"_json_pointer].get<int>() );
             if ( params["remesh"].contains( "hgradreq" ) )
                 MMG2D_Set_dparameter( mesh, sol, MMG2D_DPARAM_hgradreq, params["/remesh/hgradreq"_json_pointer].get<int>() );
+            if ( params["remesh"].contains( "nosurf" ) )
+                MMG2D_Set_iparameter( mesh, sol, MMG2D_IPARAM_nosurf, params["/remesh/nosurf"_json_pointer].get<int>() );
             if ( params["remesh"].contains( "opnbdy" ) )
                 MMG2D_Set_iparameter( mesh, sol, MMG2D_IPARAM_opnbdy, params["/remesh/opnbdy"_json_pointer].get<int>() );
             if ( params["remesh"].contains( "angle" ) )
                 MMG2D_Set_iparameter( mesh, sol, MMG2D_IPARAM_angle, params["/remesh/angle"_json_pointer].get<int>() );
+            if ( params["remesh"].contains( "hausd" ) )
+                MMG2D_Set_dparameter( mesh, sol, MMG2D_DPARAM_hausd, params["/remesh/hausd"_json_pointer].get<double>() );
         }
     }
         
