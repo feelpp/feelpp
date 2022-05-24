@@ -219,25 +219,28 @@ private :
 
     struct DistanceToRangeSetup
     {
-        DistanceToRangeSetup( std::string const& name, nl::json const& jarg )
-            :
-            M_name( name )
-            {
-                auto itFind = jarg.find("markers");
-                if ( itFind == jarg.end() )
-                    itFind = jarg.find("marker");
-                if ( itFind != jarg.end() )
-                {
-                    ModelMarkers mm;
-                    mm.setup( *itFind );
-                    M_markers = mm;
-                }
-            }
+        struct Normalization {
+            Normalization( std::string const& name, std::string const& type ) : M_name( name ), M_type( type ) {}
+            Normalization( std::string const& name, std::string const& type, std::pair<ModelExpression,ModelExpression> const& range ) : M_name( name ), M_type( type ), M_range( range ) {}
+            std::string const& name() const { return M_name; }
+            std::string const& type() const { return M_type; }
+            std::pair<ModelExpression,ModelExpression> const& range() const { return M_range.value(); }
+            static std::optional<Normalization> create( ModelMeshes<IndexType> const& mMeshes, nl::json const& jarg );
+        private :
+            std::string M_name;
+            std::string M_type;
+            std::optional<std::pair<ModelExpression,ModelExpression>> M_range;
+        };
+
+        DistanceToRangeSetup( std::string const& name, ModelMeshes<IndexType> const& mMeshes, nl::json const& jarg );
         std::string const& name() const { return M_name; }
         std::set<std::string> const& markers() const { return M_markers; }
+        std::vector<Normalization> const& normalizations() const { return M_normalizations; }
+
     private :
         std::string M_name;
         std::set<std::string> M_markers;
+        std::vector<Normalization> M_normalizations;
     };
     struct MeshMotionSetup
     {
@@ -414,6 +417,9 @@ public :
     ModelMesh( ModelMesh const& ) = default;
     ModelMesh( ModelMesh && ) = default;
 
+    //! return json metadata
+    nl::json const& metadata() const { return M_metadata; }
+
     void setup( nl::json const& jarg, ModelMeshes<IndexType> const& mMeshes );
 
     void setupRestart( ModelMeshes<IndexType> const& mMeshes );
@@ -531,7 +537,7 @@ public :
         }
 
 
-    void updateInformationObject( nl::json & p ) const;
+    void updateInformationObject( nl::json & p, std::string const& prefix_symbol ) const;
 
     static tabulate_informations_ptr_t tabulateInformations( nl::json const& p, TabulateInformationProperties const& tabInfoProp );
 
@@ -615,10 +621,11 @@ public :
 
 private:
     std::string M_name;
+    nl::json M_metadata;
+
     std::shared_ptr<ModelMeshCommon<IndexType>> M_mmeshCommon;
+
     std::map<std::string,collection_data_by_mesh_entity_type> M_codbme;
-
-
 
     std::vector<FieldsSetup> M_fieldsSetup;
     std::vector<DistanceToRangeSetup> M_distanceToRangeSetup;
@@ -753,7 +760,8 @@ public:
             mMesh->updateTime( time );
     }
 
-    void updateInformationObject( nl::json & p ) const override;
+    void updateInformationObject( nl::json & p ) const override { this->updateInformationObject( p, "meshes" ); }
+    void updateInformationObject( nl::json & p, std::string const& prefix_symbol ) const;
 
     tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
 
@@ -797,6 +805,33 @@ public:
     void applyRemesh( std::string const& meshName, std::shared_ptr<MeshType> const& newMesh )
         {
             this->modelMesh( meshName ).applyRemesh( newMesh );
+        }
+
+    std::string repository_meshes() const { return (fs::path(this->repository().root())/fmt::format("{}.meshes",this->keyword())).string(); }
+
+    void saveMetadata() const
+        {
+            nl::json metadata;
+            for ( auto const& [meshName,mMesh] : *this )
+            {
+                metadata[meshName] = mMesh->metadata();
+            }
+
+
+            if ( this->worldComm().isMasterRank() )
+            {
+                if ( !fs::exists( this->repository_meshes()) )
+                    fs::create_directories( this->repository_meshes() );
+
+                //M_tmpDir = (fs::path(mMeshes.repository().root())/"meshes")/"tmp";
+                std::ofstream ofile( (fs::path(this->repository_meshes())/"metadata.json").string(), std::ios::trunc);
+                if ( ofile )
+                {
+                    ofile << metadata.dump(1);
+                    ofile.close();
+                }
+            }
+
         }
 };
 
