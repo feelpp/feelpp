@@ -35,10 +35,14 @@ ModelMesh<IndexType>::MeshAdaptation::Setup::Setup( ModelMeshes<IndexType> const
             throw std::runtime_error(  fmt::format("invalid metric type {}", j_metric ) );
     }
 
-    for ( std::string const& keepMarkerKey : { "keep-markers" } )
+    for ( std::string const& keepMarkerKey : { "required_markers" } )
     {
         if ( jarg.contains( keepMarkerKey ) )
-            M_requiredMarkers.insert( jarg.at( keepMarkerKey ).template get<std::string>() );
+        {
+            ModelMarkers _markers;
+            _markers.setup( jarg.at(keepMarkerKey)/*, indexes*/ );
+            M_requiredMarkers.insert( _markers.begin(),_markers.end() );
+        }
     }
 
     nl::json events;

@@ -604,7 +604,7 @@ public :
                      continue;
 
                  if ( M_functionApplyRemesh )
-                     std::invoke( M_functionApplyRemesh, out );
+                     std::invoke( M_functionApplyRemesh, oldmesh, out );
                  else
                      this->applyRemesh( out );
 
@@ -613,7 +613,7 @@ public :
         }
 
 
-    using function_apply_remesh = std::function<void ( mesh_base_ptrtype )>;
+    using function_apply_remesh = std::function<void ( mesh_base_ptrtype,mesh_base_ptrtype )>;
     void setFunctionApplyRemesh( function_apply_remesh f ) { M_functionApplyRemesh = f; }
 
     template <typename MeshType>
