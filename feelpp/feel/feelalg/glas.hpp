@@ -473,8 +473,11 @@ clean( T& t,
 {
     std::for_each( t.data().begin(),
                    t.data().end(),
-                   lambda::if_then( lambda::_1  < lambda::constant( treshold ) && lambda::_1  > -lambda::constant( treshold ),
-                                    lambda::_1 = lambda::constant( new_value ) ) );
+                   [new_value,treshold]( auto& t )
+                   {
+                       if ( std::abs( t ) < treshold )
+                            t = new_value;
+                   } );
 }
 
 template<typename T>
@@ -515,7 +518,7 @@ randomize( T& t )
 
     std::for_each( t.data().begin(),
                    t.data().end(),
-                   lambda::_1 = lambda::bind<value_type>( uni ) );
+                   [&uni]( auto& t ){ t = uni; } );
 
 }
 
