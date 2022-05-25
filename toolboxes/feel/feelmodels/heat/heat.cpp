@@ -71,7 +71,11 @@ HEAT_CLASS_TEMPLATE_TYPE::initMesh()
         super_type::super_model_meshes_type::setupRestart( this->keyword() );
     super_type::super_model_meshes_type::updateForUse<mesh_type>( this->keyword() );
 
-    super_type::super_model_meshes_type::modelMesh( this->keyword() ).setFunctionApplyRemesh( [this]( typename super_type::super_model_meshes_type::mesh_base_ptrtype m ) { this->applyRemesh( std::dynamic_pointer_cast<mesh_type>( m ) ); } );
+    super_type::super_model_meshes_type::modelMesh( this->keyword() ).setFunctionApplyRemesh(
+        [this]( typename super_type::super_model_meshes_type::mesh_base_ptrtype mnew,
+                typename super_type::super_model_meshes_type::mesh_base_ptrtype mold ) { this->applyRemesh( std::dynamic_pointer_cast<mesh_type>( mold ),
+                                                                                                            std::dynamic_pointer_cast<mesh_type>( mnew ) ); }
+                                                                                             );
 
     CHECK( this->mesh() ) << "mesh generation fail";
 
@@ -263,9 +267,16 @@ HEAT_CLASS_TEMPLATE_TYPE::initAlgebraicModel()
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
-HEAT_CLASS_TEMPLATE_TYPE::applyRemesh( mesh_ptrtype const& newMesh )
+HEAT_CLASS_TEMPLATE_TYPE::applyRemesh( mesh_ptrtype oldMesh, mesh_ptrtype newMesh, bool buildModelAlgebraicFactory )
 {
+    this->log("Heat","applyRemesh", "start" );
+#if 0
+#if 0
     mesh_ptrtype oldMesh = this->mesh();
+#else
+    mesh_ptrtype oldMesh = M_Xh->mesh();
+#endif
+#endif
 
     // material prop
     this->materialsProperties()->removeMesh( oldMesh );
@@ -273,7 +284,6 @@ HEAT_CLASS_TEMPLATE_TYPE::applyRemesh( mesh_ptrtype const& newMesh )
 
     //this->setMesh( newMesh );
     super_type::super_model_meshes_type::applyRemesh( this->keyword(), newMesh );
-
 
     // function space and fields
     space_temperature_ptrtype old_Xh = M_Xh;
@@ -299,8 +309,9 @@ HEAT_CLASS_TEMPLATE_TYPE::applyRemesh( mesh_ptrtype const& newMesh )
     this->removeAllAlgebraicDataAndTools();
     this->initAlgebraicModel();
 
-    this->initAlgebraicFactory(); // TODO : Theta time scheme
-
+    if ( buildModelAlgebraicFactory )
+        this->initAlgebraicFactory(); // TODO : Theta time scheme
+    this->log("Heat","applyRemesh", "finish" );
 }
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS

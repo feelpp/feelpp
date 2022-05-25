@@ -107,6 +107,8 @@ private :
     void loadParameterFromOptionsVm();
     void initMesh();
     void initPostProcess() override;
+    void initAlgebraicModel();
+    void initAlgebraicFactory();
     void updatePhysics( typename super_physics_type::PhysicsTreeNode & physicsTree, ModelModels const& models ) override;
 public :
     // update for use
@@ -125,6 +127,8 @@ public :
 
     mesh_ptrtype mesh() const { return super_type::super_model_meshes_type::mesh<mesh_type>( this->keyword() ); }
     void setMesh( mesh_ptrtype const& mesh ) { super_type::super_model_meshes_type::setMesh( this->keyword(), mesh ); }
+
+    void applyRemesh( mesh_ptrtype oldMesh, mesh_ptrtype newMesh );
 
     heat_model_ptrtype const& heatModel() const { return M_heatModel; }
     heat_model_ptrtype heatModel() { return M_heatModel; }
