@@ -139,7 +139,7 @@ class Heat : public ModelNumerical,
         void setMesh( mesh_ptrtype const& mesh ) { super_type::super_model_meshes_type::setMesh( this->keyword(), mesh ); }
         elements_reference_wrapper_t<mesh_type> const& rangeMeshElements() const { return M_rangeMeshElements; }
 
-        void applyRemesh( mesh_ptrtype const& newMesh );
+        void applyRemesh( mesh_ptrtype oldMesh, mesh_ptrtype newMesh, bool buildModelAlgebraicFactory = true );
 
         space_temperature_ptrtype const& spaceTemperature() const { return M_Xh; }
         element_temperature_ptrtype const& fieldTemperaturePtr() const { return M_fieldTemperature; }

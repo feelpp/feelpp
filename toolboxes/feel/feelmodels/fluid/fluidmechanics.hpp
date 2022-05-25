@@ -1997,7 +1997,7 @@ private :
 public :
     void init( bool buildModelAlgebraicFactory=true );
     void initAlgebraicFactory();
-    void applyRemesh( mesh_ptrtype const& newMesh );
+    void applyRemesh( mesh_ptrtype oldMesh, mesh_ptrtype newMesh, bool buildModelAlgebraicFactory = true );
 
     void createFunctionSpacesNormalStress();
     void createFunctionSpacesSourceAdded();
