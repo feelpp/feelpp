@@ -28,7 +28,7 @@
 #include <feel/feells/distancetorange.hpp>
 #include <feel/feelmesh/metric.hpp>
 #include <feel/feelvf/vf.hpp>
-#include <pybind11/pybind11.h>
+#include <feel/feelpython/pybind11/pybind11.h>
 
 #include <fmt/core.h>
 #include <mpi4py/mpi4py.h>
