@@ -33,8 +33,8 @@ extern "C"
 }
 #endif
 #if defined(FEELPP_HAS_PYBIND11)
-#include <pybind11/pybind11.h>
-#include <pybind11/embed.h>
+#include <feel/feelpython/pybind11/pybind11.h>
+#include <feel/feelpython/pybind11/embed.h>
 #endif
 
 #include <boost/program_options.hpp>

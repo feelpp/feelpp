@@ -21,7 +21,7 @@
 //! @date 23 Sept 2021
 //! @copyright 2021 Feel++ Consortium
 //!
-#include <pybind11/pybind11.h>
+#include <feel/feelpython/pybind11/pybind11.h>
 
 #include <fmt/core.h>
 #include <mpi4py/mpi4py.h>

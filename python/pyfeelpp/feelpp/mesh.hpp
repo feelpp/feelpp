@@ -24,9 +24,9 @@
 #ifndef FEELPP_PYFEELPP_MESH_HPP
 #define FEELPP_PYFEELPP_MESH_HPP 1
 #include <regex>
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
-#include <pybind11/eigen.h>
+#include <feel/feelpython/pybind11/pybind11.h>
+#include <feel/feelpython/pybind11/stl.h>
+#include <feel/feelpython/pybind11/eigen.h>
 #include <feel/feelcore/pybind11_json.hpp>
 
 #include <feel/feelmesh/filters.hpp>
