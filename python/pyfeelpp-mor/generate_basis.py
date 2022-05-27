@@ -66,19 +66,23 @@ def generate_basis(worldComm=None, config=None):
     if config.algo not in [0,1,2]:
         raise ValueError(f"Algo {config.algo} not valid")
 
-    name = config.case.replace("/","-") + "-" + "-np_" +  str(feelpp.Environment.numberOfProcessors())
+    name = config.case.replace("/","-")# + "-np_" +  str(feelpp.Environment.numberOfProcessors())
     name = name.replace('--', '-')
     if "$name" in config.odir:
         config.odir = config.odir.replace("$name", name)
 
 
     if worldComm.isMasterRank():
-        print("==============================================")
-        print("Generation of the reduced basis")
-        print("           Config-file :", f"{config.config_file}")
-        print("Data will be stored in :", feelpp.Environment.rootRepository()+"/"+config.odir)
-        print("Current working directory is ", os.getcwd())
-        print("===============================================")
+        cwd = os.getcwd()
+        config_file = f"{config.config_file}"
+        store = feelpp.Environment.rootRepository()+"/"+config.odir
+        box_size = max(33, 26+len(cwd), 26+len(config_file), 30+len(store) ) + 1
+        print( "╔"+box_size * "═"+"╗")
+        print( "║ Generation of the reduced basis".ljust(box_size) + " ║")
+        print(f"║            Config-file : {config_file}".ljust(box_size) + " ║")
+        print(f"║ Data will be stored in : {store}".ljust(box_size) + " ║")
+        print(f"║ Current working directory is {cwd}".ljust(box_size) + " ║")
+        print( "╚"+box_size * "═"+"╝")
 
 
     feelpp.Environment.setConfigFile(f'{config.config_file}')
@@ -216,6 +220,7 @@ def generate_basis(worldComm=None, config=None):
 
 
 if __name__ == '__main__':
+    config = feelpp.globalRepository("generate_basis")
     # config = feelpp.globalRepository(f'{dir}')
     if 'generate_basis.py' in sys.argv[0]:
         sys.argv = sys.argv[1:]
@@ -224,7 +229,7 @@ if __name__ == '__main__':
     o = toolboxes_options("heat")
     o.add(makeToolboxMorOptions())
 
-    e = feelpp.Environment(sys.argv, opts=o)
+    e = feelpp.Environment(sys.argv, opts=o, config=config)
 
     dim = args.dim
     config_file = args.config_file

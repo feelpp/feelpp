@@ -50,21 +50,22 @@ class reducedbasis():
         self.Qa = 0
         self.Qf = 0
         self.QLk = []
+        self.N_output = 0
+        self.output_names : list
+        
         self.N = 0
 
         if worldComm == None:
             self.worldComm = feelpp.Environment.worldCommPtr()
         else:
-            worldComm = worldComm
+            self.worldComm = worldComm
 
         self.model = model  # TODO : load online model
 
         self.ANq    : np.ndarray   # tensor of shape (Qa, N, N)
         self.FNp    : np.ndarray   # tensor of shape (Qf, N)
-        self.LkNp   : list         # list of len n_output of tensors of shape (QLi, N)
+        self.LkNp   : list         # list of len n_output of tensors of shape (QLk, N)
 
-        self.N_output = 0
-        self.output_names : list
 
         self.SS = np.zeros((self.Qf, self.Qf))            # SS[p,p_] = (Sp,sp_)X
         self.SL     : np.ndarray    # shape (Qf, Qa, N)     SL[p,n,q] = (Sp,Lnq)X
@@ -86,10 +87,26 @@ class reducedbasis():
                 print("[reducedbasis] WARNING : Lower bound not initialized yet")
             return 1
 
+        def gammaUB(mu):
+            if self.worldComm.isMasterRank():
+                print("[reducedbasis] WARNING : Upper bound not initialized yet")
+            return 1
+
+        def gammaUB_(beta):
+            if self.worldComm.isMasterRank():
+                print("[reducedbasis] WARNING : Upper bound not initialized yet")
+            return 1
+
+        self.alphaMubar = 1
+        self.gammaMubar = 1
+
         self.alphaLB = alphaLB
         self.alphaLB_ = alphaLB_
+        self.gammaUB = gammaUB
+        self.gammaUB_ = gammaUB_
 
         self.isInitilized = False
+        self.mubar = None
 
 
     def setMubar(self, mubar):
@@ -202,7 +219,7 @@ class reducedbasis():
             l = F_mu
         else:
             if 0 <= k and k < self.N_output:
-                l = self.assembleLk(k, beta[1][k+1][0])
+                l = self.assembleLkN(k, beta[1][k+1][0])
             else:
                 raise ValueError(f"Output {k} not valid")
 
@@ -353,7 +370,7 @@ class reducedbasis():
             return
         elif not os.path.isdir(path):
             if self.worldComm.isMasterRank():
-                os.mkdir(path)
+                os.makedirs(path, exist_ok=True)
 
         if self.worldComm.isMasterRank():
             print(f"[reducedbasis] saving reduced basis to {os.getcwd()}/reducedbasis.json ...", end=" ")
@@ -951,7 +968,7 @@ class reducedbasisOffline(reducedbasis):
     def expandLkNp(self):
         for k in range(self.N_output):
             self.LkNp[k] = np.concatenate( (self.LkNp[k], np.zeros((self.QLk[k],1))), axis=1)
-            for q in range(self.Qf):
+            for q in range(self.QLk[k]):
                 self.LkNp[k][q, -1] = self.Lkq[k][q].dot(self.Z[-1])
 
 

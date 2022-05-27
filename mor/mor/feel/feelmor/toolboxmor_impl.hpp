@@ -408,39 +408,45 @@ ToolboxMor<SpaceType, Options>::initModel()
     auto PsetV = this->Dmu->sampling();
     std::string supersamplingname =(boost::format("DmuDEim-P%1%-Ne%2%-generated-by-master-proc") % this->Dmu->dimension() % M_trainsetDeimSize ).str();
     std::ifstream file ( supersamplingname );
+    Feel::cout << tc::blue << "[ToolboxMor] DEIM sampling file \"" << get_current_dir_name() << "/" << supersamplingname;
     bool all_proc_same_sampling=true;
     if( ! file )
     {
+        Feel::cout << "\" not found. Now creating one\n" << tc::reset;
         PsetV->randomize( M_trainsetDeimSize , all_proc_same_sampling , supersamplingname );
         PsetV->writeOnFile( supersamplingname );
     }
     else
     {
+        Feel::cout << "\" found.\n" << tc::reset;
         PsetV->clear();
         PsetV->readFromFile(supersamplingname);
     }
     M_deim = Feel::deim( _model=std::dynamic_pointer_cast<self_type>(this->shared_from_this()), _sampling=PsetV, _prefix="vec");
     this->addDeim(M_deim);
     this->deim()->run();
-    Feel::cout << tc::green << "ToolboxMor DEIM construction finished!!" << tc::reset << std::endl;
+    Feel::cout << tc::green << "[ToolboxMor] DEIM construction finished!!" << tc::reset << std::endl;
 
     auto PsetM = this->Dmu->sampling();
     supersamplingname =(boost::format("DmuMDEim-P%1%-Ne%2%-generated-by-master-proc") % this->Dmu->dimension() % M_trainsetMdeimSize ).str();
     std::ifstream fileM ( supersamplingname );
+    Feel::cout << tc::blue << "[ToolboxMor] MDEIM sampling file \"" << get_current_dir_name() << "/" << supersamplingname;
     if( ! fileM )
     {
+        Feel::cout << "\" not found. Now creating one\n" << tc::reset;
         PsetM->randomize( M_trainsetMdeimSize , all_proc_same_sampling , supersamplingname );
         PsetM->writeOnFile( supersamplingname );
     }
     else
     {
+        Feel::cout << "\" found.\n" << tc::reset;
         PsetM->clear();
         PsetM->readFromFile(supersamplingname);
     }
     M_mdeim = Feel::mdeim( _model=std::dynamic_pointer_cast<self_type>(this->shared_from_this()), _sampling=PsetM, _prefix="mat");
     this->addMdeim(M_mdeim);
     this->mdeim()->run();
-    Feel::cout << tc::green << "ToolboxMor MDEIM construction finished!!" << tc::reset << std::endl;
+    Feel::cout << tc::green << "[ToolboxMor] MDEIM construction finished!!" << tc::reset << std::endl;
 
     // outputs
     int i = 1;
@@ -456,7 +462,7 @@ ToolboxMor<SpaceType, Options>::initModel()
             auto dO = Feel::deim( _model=std::dynamic_pointer_cast<self_type>(this->shared_from_this()), _sampling=PsetV, _prefix="output_"+name, _tag=i);
             this->addDeim(dO);
             this->deim(i)->run();
-            Feel::cout << tc::green << "ToolboxMor DEIM for output " << name << " construction finished!!" << tc::reset << std::endl;
+            Feel::cout << tc::green << "[ToolboxMor] DEIM for output " << name << " construction finished!!" << tc::reset << std::endl;
             i++;
         }
         else 
