@@ -21,9 +21,9 @@
 //! @date 25 Jul 2018
 //! @copyright 2018 Feel++ Consortium
 //!
-#include <feel/feelcore/pybind11_json.hpp>
 #include <feel/feelpython/pybind11/pybind11.h>
 #include <feel/feelpython/pybind11/stl.h>
+#include <feel/feelpython/pybind11/json.h>
 #include <vector>
 #include <feel/feelmodels/modelcore/modelbase.hpp>
 #include <feel/feelmodels/modelcore/modelalgebraic.hpp>
