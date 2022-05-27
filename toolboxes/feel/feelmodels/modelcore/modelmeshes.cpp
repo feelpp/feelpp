@@ -355,8 +355,14 @@ ModelMesh<IndexType>::setup( nl::json const& jarg, ModelMeshes<IndexType> const&
         }
         else if ( j_meshadapt.is_array() )
         {
-            // TODO
+            for ( auto const& [j_meshadaptkey,j_meshadaptval] : j_meshadapt.items() )
+            {
+                typename MeshAdaptation::Setup mas( mMeshes, j_meshadaptval );
+                M_meshAdaptationSetup.push_back( std::move( mas ) );
+            }
         }
+        else
+            throw std::runtime_error( "meshadaptation JSON value should be a an object or an array" );
     }
 }
 
