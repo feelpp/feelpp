@@ -301,7 +301,11 @@ HEAT_CLASS_TEMPLATE_TYPE::applyRemesh( mesh_ptrtype oldMesh, mesh_ptrtype newMes
     if ( M_bdfTemperature )
         M_bdfTemperature->applyRemesh( M_Xh, matrixInterpolation_temperature );
 
-    // TODO : stabilization gls
+    // stabilization GLS familily
+    if ( M_stabilizationGLSParameter )
+    {
+        M_stabilizationGLSParameter->applyRemesh( this->mesh() );
+    }
 
     // TODO : post process ??
 
