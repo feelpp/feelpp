@@ -10,6 +10,7 @@ source $(dirname $0)/common.sh
 ## {image_name} {base_image} {distro} {feelpp_version} {docker_version} {extra tags...}
 
 DEBIAN_VERSIONS=(
+    11
     10
     testing
     sid
