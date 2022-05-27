@@ -8,6 +8,7 @@ steps:
       matrix:
        - "ubuntu:22.04"
        - "ubuntu:20.04"
+       - "debian:11"
       if: build.message !~ /skip feelpp/
       agents:
         docker: true
