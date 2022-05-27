@@ -25,7 +25,7 @@
 //!
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/feel.hpp>
-#include <feel/feelcore/pybind11_json.hpp>
+#include <feel/feelpython/pybind11/json.h>
 #include <feel/feelcore/repository.hpp>
 #include <mpi4py/mpi4py.h>
 #include <feel/feelpython/pybind11/pybind11.h>
