@@ -22,7 +22,7 @@
 //! @copyright 2017 Feel++ Consortium
 //!
 #include <iostream>
-
+#include <fmt/core.h>
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/serialization/map.hpp>
@@ -81,7 +81,7 @@ pyexprFromFile( std::string const& pyfilename, std::map<std::string, std::map<st
         }
         catch ( const pybind11::error_already_set& ex )
         {
-            std::cerr << ex.what() << '\n';
+            std::cerr << fmt::format( "[feelpp.pybind11.error_already_set] python interpreter failed : {}", ex.what() ) << std::endl;
             throw;
         }
     }
@@ -141,7 +141,7 @@ pyexprFromFile( std::string const& pyfilename, std::map<std::string, std::string
         }
         catch ( const pybind11::error_already_set& ex )
         {
-            std::cerr << ex.what() << '\n';
+            std::cerr << fmt::format( "[feelpp.pybind11.error_already_set] python interpreter failed : {}", ex.what() ) << std::endl;
             throw;
         }
     }
@@ -175,7 +175,7 @@ pyexpr( std::string const& pycode, std::vector<std::string> const& vars, std::ma
         }
         catch ( const pybind11::error_already_set& ex )
         {
-            std::cerr << ex.what() << '\n';
+            std::cerr << fmt::format( "[feelpp.pybind11.error_already_set] python interpreter failed : {}", ex.what() ) << std::endl;
             throw;
         }
     }
