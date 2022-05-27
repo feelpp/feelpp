@@ -1,10 +1,14 @@
 steps:
- - name: ':$TARGET, ${CXX} :docker: :rocket:'
+ - label: '${CXX} :docker: :rocket: feelpp {{matrix}} build'
    command: feelpp/tools/scripts/buildkite/install-feelpp.sh feelpp
+   env:
+    TARGET: "{{matrix}}"
+   matrix:
+    - "ubuntu:22.04"
+    - "ubuntu:20.04"
    if: build.message !~ /skip feelpp/
    agents:
      docker: true
-#   artifact_paths: Testing/junit-*.xml
  - wait: ~
    if: build.message !~ /skip feelpp/
    continue_on_failure: false
