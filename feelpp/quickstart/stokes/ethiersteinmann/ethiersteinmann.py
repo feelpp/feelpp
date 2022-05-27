@@ -41,7 +41,7 @@ if exact:
     print("grad(velocity)=",grad_velocity);
     
     # strain
-    strain = 0.5 * ( grad_velocity+transpose(grad_velocity) )
+    strain = Matrix( 0.5 * ( grad_velocity+transpose(grad_velocity) ) )
     print("strain=",strain);
     
     # stress
