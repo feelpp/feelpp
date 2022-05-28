@@ -84,8 +84,7 @@ void run()
                                               _expr=idv( trace_trace_projection_g ) ).evaluate()( 0,0 );
     double ttmean_g = trace_trace_integrate/trace_trace_measure;
     double mean_g = trace_trace_integrate_g/trace_trace_measure;
-    std::cout << "mean_g= " << mean_g << std::endl;
-    std::cout << "ttmean_g= " << ttmean_g << std::endl;
+    BOOST_MESSAGE( fmt::format( "mean_g={}, ttmean_g={}\n",mean_g,ttmean_g ) ); 
 
 
     auto zero_extension = vf::project( _space=TXh,_range=boundaryfaces( TXh->mesh() ),_expr=idv( trace_trace_projection_g ) );
@@ -95,20 +94,20 @@ void run()
     auto op_lift = opLift( _domainSpace=Xh,_backend=backend,_penaldir=100. );
     auto glift = op_lift->project( _expr=idv( const_extension ), _range=markedfaces( mesh,6 ) );
 
-    double boundary_error = integrate( _range=markedfaces( mesh,6 ), _expr=idv( glift )-idv( const_extension ) ).evaluate()( 0,0 );
+    double boundary_error = integrate( _range=markedfaces( mesh,6 ), _expr=idv( glift )-idv( const_extension ) ).evaluate().norm();
     //auto laplacian_error = integrate( elements( mesh ), trace( hessv( glift ) ) ).evaluate()( 0,0 );
 
-    auto const_extention_error1 = integrate( _range=boundaryfaces( TXh->mesh() ),
-                                             _expr=idv( trace_trace_projection_g )-idv( const_extension ) ).evaluate()( 0,0 );
-    auto const_extention_error2 = integrate( _range=elements( TXh->mesh() ), _expr=ttmean_g-idv( const_extension ) ).evaluate()( 0,0 );
+    double const_extention_error1 = integrate( _range=boundaryfaces( TXh->mesh() ),
+                                             _expr=idv( trace_trace_projection_g )-idv( const_extension ) ).evaluate().norm();
+    double const_extention_error2 = integrate( _range=elements( TXh->mesh() ), _expr=ttmean_g-idv( const_extension ) ).evaluate().norm();
 
 
 
-    std::cout << "boundary_error= " << boundary_error << std::endl;
-    std::cout << "const_extention_error1= " << const_extention_error1 << std::endl;
-    std::cout << "const_extention_error2= " << const_extention_error2 << std::endl;
+    BOOST_MESSAGE( fmt::format("        boundary_error={}\n",boundary_error ) );
+    BOOST_MESSAGE( fmt::format("const_extention_error1={}\n",const_extention_error1 ) );
+    BOOST_MESSAGE( fmt::format("const_extention_error2={}\n", const_extention_error2 ) );
 
-    BOOST_CHECK_SMALL( boundary_error,1e-4 );
+    BOOST_CHECK_SMALL( boundary_error,2e-4 );
     BOOST_CHECK_CLOSE( domain_measure, 1, 1e-10 );
     BOOST_CHECK_CLOSE( trace_measure, 1, 1e-12 );
     BOOST_CHECK_CLOSE( trace_trace_measure, 4, 1e-12 );
