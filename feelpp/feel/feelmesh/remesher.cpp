@@ -37,9 +37,11 @@ remesh_options( std::string const& prefix )
     Feel::po::options_description mmgoptions( "Remesh Options" );
     // clang-format off
     mmgoptions.add_options()
+        ( prefixvm( prefix, "remesh.json").c_str(),Feel::po::value<std::string>()->default_value(""), "name of the json option remesh file")
         ( prefixvm( prefix, "remesh.save").c_str(),Feel::po::value<std::string>()->default_value(""), "name of the filename prefix to save")
         ( prefixvm( prefix, "remesh.verbose").c_str(),Feel::po::value<int>(), "[-1..10], Tune level of verbosity")
         ( prefixvm( prefix, "remesh.debug").c_str(),Feel::po::value<int>(), "Turn on/off debug mode")
+        ( prefixvm( prefix, "remesh.nosurf").c_str(),Feel::po::value<int>(), "Turn on/off surface remeshing")
 
         ( prefixvm( prefix, "remesh.hmin").c_str(),Feel::po::value<double>(), "[val], Minimal mesh size")
         ( prefixvm( prefix, "remesh.hmax").c_str(),Feel::po::value<double>(), "[val], Maximal mesh size")
