@@ -240,11 +240,16 @@ void defMesh(py::module &m)
             },
             py::arg( "mesh" ), "create a Remesher data structure", py::return_value_policy::copy );
         m.def(
+            "remesher", []( mesh_ptr_t const& r, nl::json const& j )
+            { return std::make_shared<Remesh<mesh_t>>( r, j ); },
+            py::arg( "mesh" ), py::arg("params"), "create a Remesher data structure parametrized with a json", py::return_value_policy::copy );
+#if 0              
+        m.def(
             "remesher", []( mesh_ptr_t const& r, std::vector<std::string> const& req_elts ) {
                 return std::make_shared<Remesh<mesh_t>>( r, req_elts );
             },
             py::return_value_policy::copy,py::arg( "mesh" ), py::arg( "required_elts" ), "create a Remesher data structure" );
-#if 0            
+          
         m.def(
             "remesher", []( mesh_ptr_t const& r, std::vector<std::string> const& req_elts, std::vector<std::string> const& req_facets ) {
                 return std::make_shared<Remesh<mesh_t>>(  r, req_elts, req_facets );
