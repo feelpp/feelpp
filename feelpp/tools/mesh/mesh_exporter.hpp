@@ -38,7 +38,7 @@
 namespace Feel
 {
 template <typename mesh_t>
-void doExport(std::shared_ptr<mesh_t>& mesh = nullptr )
+void doExport(std::shared_ptr<mesh_t> mesh = {} )
 {
     if ( !mesh )
         mesh = loadMesh( _mesh = new mesh_t );
