@@ -25,16 +25,14 @@
 //!
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/feel.hpp>
-#include <feel/feelcore/pybind11_json.hpp>
+#include <feel/feelpython/pybind11/json.h>
 #include <feel/feelcore/repository.hpp>
 #include <mpi4py/mpi4py.h>
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
-#include <pybind11/stl_bind.h>
-#include "mpi_caster.hpp"
-#include <boost/parameter/binding.hpp>
-#include <boost/parameter/keyword.hpp>
-#include <boost/parameter/preprocessor.hpp>
+#include <feel/feelpython/pybind11/pybind11.h>
+#include <feel/feelpython/pybind11/stl.h>
+#include <feel/feelpython/pybind11/stl_bind.h>
+#include <feel/feelpython/pybind11/mpi.h>
+
 //#include <boost/parameter/python.hpp>
 #include <boost/mpl/vector.hpp>
 

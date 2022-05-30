@@ -25,7 +25,7 @@
 #include <feel/feelmodels/coefficientformpdes/coefficientformpdes.hpp>
 #include <feel/feelmodels/coefficientformpdes/coefficientformpdes_registered_type.hpp>
 #include <feel/feelmodels/modelcore/modelnumerical.hpp>
-#include <pybind11/pybind11.h>
+#include <feel/feelpython/pybind11/pybind11.h>
 
 namespace py = pybind11;
 using namespace Feel;

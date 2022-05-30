@@ -23,9 +23,9 @@
 //! @date 01 Nov 2020
 //! @copyright 2020 Feel++ Consortium
 //!
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
-#include <pybind11/eigen.h>
+#include <feel/feelpython/pybind11/pybind11.h>
+#include <feel/feelpython/pybind11/stl.h>
+#include <feel/feelpython/pybind11/eigen.h>
 
 #include<feel/feelcore/environment.hpp>
 #include<feel/feelfilters/hbf.hpp>
