@@ -36,9 +36,10 @@
 #include <feel/feelmesh/remesh.hpp>
 #endif
 #include <feel/feelcore/json.hpp>
+#include "mesh_exporter.hpp"
 
 //#include <feel/feelfilters/savegmshmesh.hpp>
-#include "dump.hpp"
+#include <feel/feelmesh/dump.hpp>
 
 namespace Feel {
 
@@ -86,12 +87,19 @@ void partition( std::vector<int> const& nParts, nl::json const& partconfig )
                         h_=hs.at( soption("remesh.h"));
                     met.on( _range=elements(mesh), _expr=cst(h_)  );
                 }
+                nl::json j;
+                if ( !soption( "remesh.json" ).empty() )
+                {
+                    std::ifstream ifs( soption( "remesh.json" ).c_str() );
+                    ifs >> j;
+                }
+                    
 #if defined( FEELPP_HAS_MMG ) && defined( FEELPP_HAS_PARMMG ) 
-                auto r =  remesher( mesh );
-                r.setMetric( met );
-                auto out = r.execute();
-                out->updateForUse();
-                mesh = out;
+                std::string metr = soption( "remesh.metric" );
+                LOG(INFO) << fmt::format( "metric:{}\n",soption( "remesh.metric" ));
+                LOG(INFO) << fmt::format( "h:{}\n",soption( "remesh.h" ));
+                auto [out,c] = remesh( _mesh = mesh, _metric = metr, _params = j );
+                mesh=out;
 #else
                 fmt::print( fg( fmt::color::crimson ) | fmt::emphasis::bold, 
                             "mmg and parmmg are not configured with feelpp!\n"
@@ -177,6 +185,8 @@ void partition( std::vector<int> const& nParts, nl::json const& partconfig )
             io.write( partitionMesh( mesh, nPartition, partitionByRange, partconfig ) );
             toc("paritioning and save on disk done",FLAGS_v>0);
         }
+
+        doExport(mesh);
     }
 
 }
