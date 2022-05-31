@@ -39,7 +39,7 @@
 #include <string>
 
 #ifdef FEELPP_HAS_HDF5
-
+#undef OMPI_SKIP_MPICXX
 #include <hdf5.h>
 
 //Tell the compiler to restore the warning previously silented
