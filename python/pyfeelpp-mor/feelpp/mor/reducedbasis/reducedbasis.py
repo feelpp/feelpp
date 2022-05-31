@@ -561,7 +561,7 @@ class reducedbasisOffline(reducedbasis):
     """
 
 
-    def __init__(self, Aq, Fq, model, mubar, output_names=None):
+    def __init__(self, Aq, Fq, model, mubar, output_names=None, compute_lower_bound=True):
         """Initializes the class
 
         Args:
@@ -628,27 +628,31 @@ class reducedbasisOffline(reducedbasis):
         pc.setType(self.PC_TYPE)
 
 
-        E = SLEPc.EPS()
-        E.create()
-        E.setOperators(self.Abar, self.scal)
+        if compute_lower_bound:
+            E = SLEPc.EPS()
+            E.create()
+            E.setOperators(self.Abar, self.scal)
 
-        # for mubarbar:
-        #   Compute the smallest eignevalue and keep it in memory for online stage TODO
-        #   now it is only made with {mubarbar} = {mubar}
+            # for mubarbar:
+            #   Compute the smallest eignevalue and keep it in memory for online stage TODO
+            #   now it is only made with {mubarbar} = {mubar}
 
-        E.setFromOptions()
-        E.setWhichEigenpairs(E.Which.SMALLEST_MAGNITUDE)
-        E.setDimensions(1)
+            E.setFromOptions()
+            E.setWhichEigenpairs(E.Which.SMALLEST_MAGNITUDE)
+            E.setDimensions(1)
 
 
-        E.solve()
+            E.solve()
 
-        nCv = E.getConverged()
-        if self.worldComm.isMasterRank():
-            print(f"[slepc4py] number of (smaller) eigenvalues computed : {nCv}")
+            nCv = E.getConverged()
+            if self.worldComm.isMasterRank():
+                print(f"[slepc4py] number of (smaller) eigenvalues computed : {nCv}")
 
-        self.alphaMubar = E.getEigenvalue(0).real
-        # alphaMubar = 1
+            self.alphaMubar = E.getEigenvalue(0).real
+        
+        else:
+            self.alphaMubar = 1
+
         if self.worldComm.isMasterRank():
             print(f"[reducedbasis] Constant of continuity : {self.alphaMubar}")
         betaA_bar_np = np.array(self.betaA_bar[0])
@@ -662,32 +666,29 @@ class reducedbasisOffline(reducedbasis):
             # From a decomposition
             return self.alphaMubar * np.min( betaA / betaA_bar_np )
 
-        self.alphaLB = alphaLB
-        self.alphaLB_ = alphaLB_
+        if compute_lower_bound:
+            E.setFromOptions()
+            E.setWhichEigenpairs(E.Which.LARGEST_MAGNITUDE)
+            E.setDimensions(1)
+            E.solve()
 
+            nCv = E.getConverged()
+            if self.worldComm.isMasterRank():
+                print(f"[slepc4py] number of eigenvalues computed : {nCv}")
 
-        E.setFromOptions()
-        E.setWhichEigenpairs(E.Which.LARGEST_MAGNITUDE)
-        E.setDimensions(1)
-        E.solve()
+            self.gammaMubar = E.getEigenvalue(0).real
+            # gammaMubar = 1
+            if self.worldComm.isMasterRank():
+                print(f"[reducedbasis] Constant of coercivity : {self.gammaMubar}")
 
-        nCv = E.getConverged()
-        if self.worldComm.isMasterRank():
-            print(f"[slepc4py] number of eigenvalues computed : {nCv}")
+            def gammaUB(mu):
+                # From a parameter
+                betaMu = self.model.computeBetaQm(mu)[0][0]
+                return self.gammaMubar * np.max( betaMu / betaA_bar_np )
 
-        self.gammaMubar = E.getEigenvalue(0).real
-        # gammaMubar = 1
-        if self.worldComm.isMasterRank():
-            print(f"[reducedbasis] Constant of coercivity : {self.gammaMubar}")
-
-        def gammaUB(mu):
-            # From a parameter
-            betaMu = self.model.computeBetaQm(mu)[0][0]
-            return self.gammaMubar * np.max( betaMu / betaA_bar_np )
-
-        def gammaUB_(betaA):
-            # From a decomposition
-            return self.gammaMubar * np.max( betaA / betaA_bar_np )
+            def gammaUB_(betaA):
+                # From a decomposition
+                return self.gammaMubar * np.max( betaA / betaA_bar_np )
 
         self.alphaLB = alphaLB
         self.alphaLB_ = alphaLB_
