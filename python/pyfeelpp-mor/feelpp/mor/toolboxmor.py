@@ -17,12 +17,15 @@ model_path = "$cfgdir/"+os.path.splitext(os.path.basename(casefile))[0] + ".json
 crb_model_properties = CRBModelProperties(worldComm=feelpp.Environment.worldCommPtr())
 crb_model_properties.setup(model_path)
 
+model_properties = feelpp.ModelProperties(worldComm=feelpp.Environment.worldCommPtr())
+model_properties.setup(model_path)
+
 outputs = crb_model_properties.outputs()
-outputs_names = []
-outputs_objs = []
+output_names = []
+output_objs = []
 for n, o in outputs:
-    outputs_names.append(n)
-    outputs_objs.append(o)
+    output_names.append(n)
+    output_objs.append(o)
 
 dim = 2
 assert dim in [2,3]
@@ -48,7 +51,7 @@ model.setAssembleDEIM(fct=assembleDEIM)
 model.setAssembleMDEIM(fct=assembleMDEIM)
 model.initModel()
 
-heatBoxDEIM=heat(dim=2,order=1)
+heatBoxDEIM=heat(dim=dim,order=1)
 meshDEIM = model.getDEIMReducedMesh()
 heatBoxDEIM.setMesh(meshDEIM)
 heatBoxDEIM.init()
@@ -61,7 +64,7 @@ def assembleOnlineDEIM(mu):
 
 model.setOnlineAssembleDEIM(assembleOnlineDEIM)
 
-heatBoxMDEIM=heat(dim=2,order=1)
+heatBoxMDEIM=heat(dim=dim,order=1)
 meshMDEIM = model.getMDEIMReducedMesh()
 heatBoxMDEIM.setMesh(meshMDEIM)
 heatBoxMDEIM.init()
