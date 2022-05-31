@@ -102,27 +102,27 @@ void defFM(py::module &m)
             },
             "save GMSH mesh"
         )   
-
+        
         .def(
-            "addContactForce",[](const fm_t& t)
+            "addContactForceModel",[](const fm_t& t)
             {
                 auto add_force_term = [&t](FeelModels::ModelAlgebraic::DataUpdateLinear & data) 
                 { 
-                    contactforce<0>(t, data);
+                    contactForceModels<0>(t, data);
                 };
 
                 t.algebraicFactory()->addFunctionLinearAssembly(add_force_term);
 
             },
             "add function linear assembly"
-        )         
-                
+        ) 
+        
         .def(
-            "addContactForceRes",[](const fm_t& t)
+            "addContactForceResModel",[](const fm_t& t)
             {
                 auto add_force_term = [&t](FeelModels::ModelAlgebraic::DataUpdateResidual & data) 
                 { 
-                    contactforce<1>(t, data);
+                    contactForceModels<1>(t, data);
                 };  
 
                 t.algebraicFactory()->addFunctionResidualAssembly(add_force_term) ;
@@ -132,32 +132,12 @@ void defFM(py::module &m)
         )
 
         .def(
-            "addContactForceArticulatedBody",[](const fm_t& t)
+            "reset_executionTime",[](const fm_t& t)
             {
-                auto add_force_term = [&t](FeelModels::ModelAlgebraic::DataUpdateLinear & data) 
-                { 
-                    contactforceArticulatedBody<0>(t, data);
-                };
-
-                t.algebraicFactory()->addFunctionLinearAssembly(add_force_term);
-
+                reset_executionTime(t);
             },
-            "add function linear assembly"
-        )         
-                
-        .def(
-            "addContactForceResArticulatedBody",[](const fm_t& t)
-            {
-                auto add_force_term = [&t](FeelModels::ModelAlgebraic::DataUpdateResidual & data) 
-                { 
-                    contactforceArticulatedBody<1>(t, data);
-                };  
-
-                t.algebraicFactory()->addFunctionResidualAssembly(add_force_term) ;
-
-            },
-            "add function residual assembly"
-        )
+            "Initialization of execution time"
+        ) 
         ;
         
 }
