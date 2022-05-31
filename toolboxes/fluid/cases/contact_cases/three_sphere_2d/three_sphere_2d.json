@@ -112,42 +112,20 @@
             }
         }
     },
-    "Contact":
+    "CollisionForce":  
     {
         "body":
         {
-            "CircleCenter":
-             {
-                "radius" : 0.125,
-                "rho" : 0.0225,
-                "eps" : 0,
-                "eps_" : 0,
-                "epsW" : 0.00000275,
-                "epsW_" : 0.00000275,
-                "width" : 6.0,
-                "height" : 2.0
-            },
-            "CircleRight":
-             {
-                "radius" : 0.125,
-                "rho" : 0.0225,
-                "eps" : 0,
-                "eps_" : 0,
-                "epsW" : 0.00000275,
-                "epsW_" : 0.00000275,
-                "width" : 6.0,
-                "height" : 2.0
-            },
-            "CircleLeft":
-             {
-                "radius" : 0.125,
-                "rho" : 0.0225,
-                "eps" : 0,
-                "eps_" : 0,
-                "epsW" : 0.00000275,
-                "epsW_" : 0.00000275,
-                "width" : 6.0,
-                "height" : 2.0
+            "setup": 
+            {
+                "model":"contactAvoidance",
+                "type":"articulatedBody", 
+                "forceParam":
+                {
+                    "forceRange":0.03, 
+                    "epsBody":0.00001,  
+                    "epsWall":0.00000005
+                }
             }
         }
     },
