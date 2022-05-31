@@ -21,9 +21,9 @@
 //! @date 25 Jul 2018
 //! @copyright 2018 Feel++ Consortium
 //!
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
-#include <pybind11/functional.h>
+#include <feel/feelpython/pybind11/pybind11.h>
+#include <feel/feelpython/pybind11/stl.h>
+#include <feel/feelpython/pybind11/functional.h>
 #include <feel/feelmodels/modelcore/modelnumerical.hpp>
 #include <feel/feelmodels/fluid/fluidmechanics.hpp>
 #include <feel/feelfilters/savegmshmesh.hpp>
