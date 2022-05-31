@@ -113,6 +113,8 @@ class Remesh
     }
     Remesh( std::shared_ptr<MeshType> const& mesh )
         : Remesh( mesh, std::vector<std::string>{}, std::vector<std::string>{} ) {}
+    Remesh( std::shared_ptr<MeshType> const& mesh, nl::json const& params )
+        : Remesh( mesh, std::vector<std::string>{}, std::vector<std::string>{}, nullptr, std::string{}, params ) {}
     Remesh( std::shared_ptr<MeshType> const& mesh,
             boost::any const& required_element_markers )
         : Remesh( mesh, required_element_markers, std::vector<std::string>{} ) {}
