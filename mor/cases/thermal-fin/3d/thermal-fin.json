@@ -1,5 +1,3 @@
-// -*- mode: javascript -*-
-// Source for the values of rho, Cp, h : https://docs.lib.purdue.edu/iracc/1338/
 {
     "Name": "Themal Fin 3d",
     "ShortName":"ThermalFin3d",
@@ -80,11 +78,52 @@
             }
         }
     },
+
+    "CRBOutputs":
+    {
+        "pointA":
+        {
+            "type": "point",
+            "coord": [0.5, 0.5, 1]
+        },
+        "post":
+        {
+            "type": "mean",
+            "markers": ["Post"],
+            "expr": "crb_u:crb_u",
+            "topodim": 2
+        }
+    },
+
     "PostProcess":
     {
-        "Exports":
+        "use-model-name":1,
+        "heat":
         {
-            "fields":["temperature","pid"]
+            "Exports":
+            {
+                "fields":["temperature","pid"]
+            },
+            "Measures":
+            {
+                "Statistics":
+                {
+                    "post":
+                    {
+                        "type":"mean",
+                        "markers":["Post"],
+                        "field": "temperature"
+                    }
+                },
+                "Points":
+                {
+                    "pointA":
+                    {
+                        "coord": "{0.5, 0.5, 1}",
+                        "expressions": { "TA": "heat_T:heat_T"}
+                    }
+                }
+            }
         }
     }
 }

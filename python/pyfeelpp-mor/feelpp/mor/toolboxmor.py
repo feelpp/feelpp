@@ -2,15 +2,29 @@ import sys, os
 from feelpp.toolboxes.heat import *
 from feelpp.mor import *
 import feelpp
+import json
 
 o = toolboxes_options("heat")
 o.add(makeToolboxMorOptions())
 sys.argv = ["toolbox-mor"]
 # sys.argv = ['--config-file opusheat/opusheat-heat.cfg']
-e = feelpp.Environment(sys.argv, opts=o)
+config = feelpp.globalRepository("toolboxmor")
+e = feelpp.Environment(sys.argv, opts=o, config=config)
 
+# casefile = '/data/home/saigre/eye2brain/data/eye/heat/eye-linearized.cfg'
 casefile = 'thermal-fin/2d/thermal-fin.cfg'
+# casefile = 'thermal-fin/3d/thermal-fin.cfg'
+
+# casefile_eim = 'thermal-fin/3d/thermal-fin-eim.cfg'
 feelpp.Environment.setConfigFile(casefile)
+json_path = feelpp.Environment.expand('$cfgdir') + "/thermal-fin.json"
+
+f = open(json_path, 'r')
+j = json.load(f)
+try:
+    j.pop('PostProcess')
+except KeyError as e:
+    print(f"There was no section {e} in the model")
 name = "thermal-fin-2d"
 
 model_path = "$cfgdir/"+os.path.splitext(os.path.basename(casefile))[0] + ".json"
@@ -51,7 +65,8 @@ model.setAssembleDEIM(fct=assembleDEIM)
 model.setAssembleMDEIM(fct=assembleMDEIM)
 model.initModel()
 
-heatBoxDEIM=heat(dim=dim,order=1)
+heatBoxDEIM = heat(dim=dim,order=1)
+heatBoxDEIM.setModelProperties(j)
 meshDEIM = model.getDEIMReducedMesh()
 heatBoxDEIM.setMesh(meshDEIM)
 heatBoxDEIM.init()
@@ -64,7 +79,8 @@ def assembleOnlineDEIM(mu):
 
 model.setOnlineAssembleDEIM(assembleOnlineDEIM)
 
-heatBoxMDEIM=heat(dim=dim,order=1)
+heatBoxMDEIM = heat(dim=dim,order=1)
+heatBoxMDEIM.setModelProperties(j)
 meshMDEIM = model.getMDEIMReducedMesh()
 heatBoxMDEIM.setMesh(meshMDEIM)
 heatBoxMDEIM.init()
