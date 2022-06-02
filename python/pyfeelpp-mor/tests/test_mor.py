@@ -49,7 +49,17 @@ def test_init_from_ModelPropeties(casefile, mudefault_th, mumin_th, mumax_th,  i
 
     # Get the default parameter from ModelProperties
     model_properties = feelpp.ModelProperties(worldComm=feelpp.Environment.worldCommPtr())
+    model_properties.setup(model_path)    # Get the CRBParameters from CRBModelProperties
+    crb_model_properties = CRBModelProperties(worldComm=feelpp.Environment.worldCommPtr())
+    crb_model_properties.setup(model_path)
+    crb_modelParameters = crb_model_properties.parameters()
+    Dmu = feelpp.mor._mor.ParameterSpace.New(crb_modelParameters, feelpp.Environment.worldCommPtr())
+
+    # Get the default parameter from ModelProperties
+    model_properties = feelpp.ModelProperties(worldComm=feelpp.Environment.worldCommPtr())
     model_properties.setup(model_path)
+    model_parameter = model_properties.parameters()
+    default_parameter = model_parameter.toParameterValues()
     model_parameter = model_properties.parameters()
     default_parameter = model_parameter.toParameterValues()
 
@@ -69,6 +79,25 @@ def test_init_from_ModelPropeties(casefile, mudefault_th, mumin_th, mumax_th,  i
         assert( mubar.parameterNamed(p) == mudefault_th[p] )
         assert( mumin.parameterNamed(p) == mumin_th[p] )
         assert( mumax.parameterNamed(p) == mumax_th[p] )
+
+@pytest.mark.parametrize("casefile,Mu", [cases_params[-1][:2]], ids=[cases_ids[-1]])
+def test_output_and_crb_output(casefile, Mu, init_feelpp):
+    e = init_feelpp
+    feelpp.Environment.setConfigFile(casefile)
+
+    model_path = "$cfgdir/"+os.path.splitext(os.path.basename(casefile))[0] + ".json"
+
+    # Get the CRBParameters from CRBModelProperties
+    crb_model_properties = CRBModelProperties(worldComm=feelpp.Environment.worldCommPtr())
+    crb_model_properties.setup(model_path)
+    crb_modelParameters = crb_model_properties.parameters()
+    Dmu = feelpp.mor._mor.ParameterSpace.New(crb_modelParameters, feelpp.Environment.worldCommPtr())
+
+    # Get the default parameter from ModelProperties
+    model_properties = feelpp.ModelProperties(worldComm=feelpp.Environment.worldCommPtr())
+    model_properties.setup(model_path)
+    model_parameter = model_properties.parameters()
+    default_parameter = model_parameter.toParameterValues()
 
 
 
