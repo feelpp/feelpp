@@ -25,7 +25,11 @@ try:
     j.pop('PostProcess')
 except KeyError as e:
     print(f"There was no section {e} in the model")
+f.close()
+
+# name = "HE3D"
 name = "thermal-fin-2d"
+# name = "thermal-fin-3d"
 
 model_path = "$cfgdir/"+os.path.splitext(os.path.basename(casefile))[0] + ".json"
 crb_model_properties = CRBModelProperties(worldComm=feelpp.Environment.worldCommPtr())
@@ -120,3 +124,13 @@ print(betaF)
 # crb.offline()
 
 print("cool")
+
+
+# import feelpp.mor.reducedbasis.reducedbasis as mor_rb
+
+# modelParameters = heatBox.modelProperties().parameters()
+# default_parameter = modelParameters.toParameterValues()
+# mubar = Dmu.element(True, False)
+# mubar.setParameters(default_parameter)
+
+# rb = mor_rb.reducedbasisOffline(mor_rb.convertToPetscMat(Aq[0]), Fq, model, mubar, output_names=output_names)

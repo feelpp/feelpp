@@ -4,6 +4,7 @@ from feelpp.toolboxes.heat import *
 from feelpp.toolboxes.core import *
 from feelpp.mor import *
 import feelpp
+import json
 
 
 import argparse
@@ -88,6 +89,14 @@ def generate_basis(worldComm=None, config=None):
     feelpp.Environment.setConfigFile(f'{config.config_file}')
 
     model_path = "$cfgdir/"+os.path.splitext(os.path.basename(config.config_file))[0] + ".json"
+    f = open(json_path, 'r')
+    j = json.load(f)
+    try:
+        j.pop('PostProcess')
+    except KeyError as e:
+        print(f"There was no section {e} in the model")
+
+    f.close()
 
     crb_model_properties = CRBModelProperties(worldComm=feelpp.Environment.worldCommPtr())
     crb_model_properties.setup(model_path)
@@ -133,11 +142,13 @@ def generate_basis(worldComm=None, config=None):
     model.initModel()
 
     heatBoxDEIM = heat(dim=config.dim, order=1)
+    heatBoxDEIM.setModelProperties(j)
     meshDEIM = model.getDEIMReducedMesh()
     heatBoxDEIM.setMesh(meshDEIM)
     heatBoxDEIM.init()
 
     heatBoxMDEIM = heat(dim=config.dim, order=1)
+    heatBoxMDEIM.setModelProperties(j)
     meshMDEIM = model.getMDEIMReducedMesh()
     heatBoxMDEIM.setMesh(meshMDEIM)
     heatBoxMDEIM.init()
@@ -220,17 +231,11 @@ def generate_basis(worldComm=None, config=None):
 
 
 if __name__ == '__main__':
-    config = feelpp.globalRepository("generate_basis")
     # config = feelpp.globalRepository(f'{dir}')
     if 'generate_basis.py' in sys.argv[0]:
         sys.argv = sys.argv[1:]
+
     args = parser.parse_args(sys.argv)
-    sys.argv = ['generate-basis']
-    o = toolboxes_options("heat")
-    o.add(makeToolboxMorOptions())
-
-    e = feelpp.Environment(sys.argv, opts=o, config=config)
-
     dim = args.dim
     config_file = args.config_file
     time_dependant = args.time_dependant
@@ -240,6 +245,14 @@ if __name__ == '__main__':
     tol = args.tol
     split = config_file.split('/')
     case = args.case if args.case is not None else "generate_basis"
+
+    config = feelpp.globalRepository(f"generate_basis-{case}")
+    sys.argv = [f'generate-basis-{case}']
+    o = toolboxes_options("heat")
+    o.add(makeToolboxMorOptions())
+
+    e = feelpp.Environment(sys.argv, opts=o, config=config)
+
 
     config = generateBasisConfig(dim, config_file, time_dependant, odir, case, algo, size, tol)
 

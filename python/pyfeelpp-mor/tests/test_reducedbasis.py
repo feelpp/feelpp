@@ -1,7 +1,7 @@
 import shutil, os
 import pytest
-import pandas as pd
 import time
+import json
 
 
 from mpi4py import MPI
@@ -93,7 +93,24 @@ def init_model(prefix, case, casefile, dim, use_cache, time_dependent):
 
     mubar.setParameters(default_parameter)
 
+    f = open(model_path.replace("$cfgdir", feelpp.Environment.expand("$cfgdir")), "r")
+    j = json.load(f)
+    f.close()
+    try:
+        j.pop('PostProcess')
+    except KeyError as e:
+        print(f"There was no section {e} in the model")
+    
+    crb_model_properties = CRBModelProperties(worldComm=feelpp.Environment.worldCommPtr())
+    crb_model_properties.setup(model_path)
+    crb_model_outputs = crb_model_properties.outputs()
+
+    output_names = []
+    for n, _ in crb_model_outputs:
+        output_names.append(n)
+
     heatBoxDEIM = heat(dim=dim, order=1)
+    heatBoxDEIM.setModelProperties(j)
     meshDEIM = model.getDEIMReducedMesh()
     heatBoxDEIM.setMesh(meshDEIM)
     heatBoxDEIM.init()
@@ -107,6 +124,7 @@ def init_model(prefix, case, casefile, dim, use_cache, time_dependent):
     model.setOnlineAssembleDEIM(assembleOnlineDEIM)
 
     heatBoxMDEIM = heat(dim=dim, order=1)
+    heatBoxDEIM.setModelProperties(j)
     meshMDEIM = model.getMDEIMReducedMesh()
     heatBoxMDEIM.setMesh(meshMDEIM)
     heatBoxMDEIM.init()
@@ -122,16 +140,16 @@ def init_model(prefix, case, casefile, dim, use_cache, time_dependent):
     model.postInitModel()
     model.setInitialized(True)
 
-    return heatBox, model, time_dependent, mubar, assembleMDEIM, assembleDEIM
+    return heatBox, model, time_dependent, mubar, assembleMDEIM, assembleDEIM, output_names
 
 
 def init_environment(prefix, case, casefile, dim, use_cache, time_dependent):
-    heatBox, model, time_dependent, mubar, assembleMDEIM, assembleDEIM = init_model(prefix, case, casefile, dim, use_cache, time_dependent)
+    heatBox, model, time_dependent, mubar, assembleMDEIM, assembleDEIM, output_names = init_model(prefix, case, casefile, dim, use_cache, time_dependent)
 
     decomposition = model.getAffineDecomposition()
     assert len(decomposition) == [2,3][time_dependent]
 
-    return heatBox, model, decomposition, mubar, assembleMDEIM, assembleDEIM
+    return heatBox, model, decomposition, mubar, assembleMDEIM, assembleDEIM, output_names
 
 
 def compar_from_sampling(rb, xi_test):
@@ -194,7 +212,12 @@ def compar_sols(rb, assembleMDEIM, heatBox):
     assert(len(beta) == 2)
     assembleMDEIM(mu)
     heatBox.solve()
+
     s_tb = feelpp.mean(range=feelpp.markedfaces(heatBox.mesh(), "Gamma_root"), expr=heatBox.fieldTemperature())[0]
+    heatBox.exportResults()
+    meas = heatBox.postProcessMeasures().values()
+
+    meas_names = list(meas.keys())
 
     _,sN = rb.getSolutionsFE(mu)
     
@@ -203,8 +226,22 @@ def compar_sols(rb, assembleMDEIM, heatBox):
     assert norm < 1e-10, f"relative error {norm} is too high"
 
 
+    for k in range(rb.N_output):
+
+        output = rb.getOutputName(k)
+        i = 0
+        while output not in meas_names[i]: i += 1
+        _, s_eim = rb.getSolutionsFE(mu, k=k)
+        s_tb = meas[meas_names[i]]
+
+        norm = abs(s_eim - s_tb ) / abs(s_tb)
+        print(f"k={k} relErr = {norm}\n||s_tb|| = {s_tb}, ||s_eim|| = {s_eim}")
+        # assert norm < 1e-10, f"relative error {norm} is too high for output {output}" 
+
+
+
 def compar_solFE(rb, assembleMDEIM, heatBox):
-    """Compares the construction of the matrix to the toolbox one
+    """Compares the solution of the FE to the one of the RB
     """
     model = rb.model
     Dmu = model.parameterSpace()
@@ -275,7 +312,7 @@ def save_and_load(rb):
 @pytest.mark.parametrize("prefix,case,casefile,dim,use_cache,time_dependent", cases_params, ids=cases_ids)
 def test_reducedbasis_sample(prefix, case, casefile, dim, use_cache, time_dependent, init_feelpp):
     e = init_feelpp    
-    heatBox, model, decomposition, mubar, assembleMDEIM, assembleDEIM = init_environment(prefix, case, casefile, dim, use_cache, time_dependent)
+    heatBox, model, decomposition, mubar, assembleMDEIM, assembleDEIM, output_names = init_environment(prefix, case, casefile, dim, use_cache, time_dependent)
 
     Aq = decomposition[0]
     Fq_ = decomposition[1]
@@ -284,7 +321,7 @@ def test_reducedbasis_sample(prefix, case, casefile, dim, use_cache, time_depend
     for f in Fq_:
         Fq.append(convertToPetscVec(f[0]))
 
-    rb = reducedbasisOffline(convertToPetscMat(Aq[0]), Fq, model, mubar)
+    rb = reducedbasisOffline(convertToPetscMat(Aq[0]), Fq, model, mubar, output_names=output_names)
 
     print("\nCompute basis and orthonormalize it")
     def listOfParams(n):
@@ -309,22 +346,28 @@ def test_reducedbasis_sample(prefix, case, casefile, dim, use_cache, time_depend
     # compute_time_for_offline_solution(rb)
     # compute_time_for_online_error_computation(rb)
 
-    print("\nCompar matrix")
+    if feelpp.Environment.isMasterRank():
+        print("\nCompar matrix")
     compar_matrix(rb, assembleMDEIM)
 
-    print("\nCompar Rhs")
+    if feelpp.Environment.isMasterRank():
+        print("\nCompar Rhs")
     compar_rhs(rb, assembleDEIM)
 
-    print("\nCompar solutions")
+    if feelpp.Environment.isMasterRank():
+        print("\nCompar solutions")
     compar_sols(rb, assembleDEIM, heatBox)
 
-    print("\nCompar FE solutions")
+    if feelpp.Environment.isMasterRank():
+        print("\nCompar FE solutions")
     compar_solFE(rb, assembleDEIM, heatBox)
 
-    print("\n Save and reload basis")
+    if feelpp.Environment.isMasterRank():
+        print("\n Save and reload basis")
     save_and_load(rb)
 
-    print("\nTest on effectivity")
+    if feelpp.Environment.isMasterRank():
+        print("\nTest on effectivity")
     effectivity(rb)
 
 
@@ -333,7 +376,7 @@ def test_reducedbasis_sample(prefix, case, casefile, dim, use_cache, time_depend
 @pytest.mark.parametrize("prefix,case,casefile,dim,use_cache,time_dependent", cases_params, ids=cases_ids)
 def test_reducedbasis_greedy(prefix, case, casefile, dim, use_cache, time_dependent, init_feelpp):
     e = init_feelpp
-    heatBox, model, decomposition, mubar, assembleMDEIM, assembleDEIM = init_environment(prefix, case, casefile, dim, use_cache, time_dependent)
+    heatBox, model, decomposition, mubar, assembleMDEIM, assembleDEIM, output_names = init_environment(prefix, case, casefile, dim, use_cache, time_dependent, output_names=output_names)
 
     Aq = decomposition[0]
     Fq_ = decomposition[1]
@@ -358,25 +401,29 @@ def test_reducedbasis_greedy(prefix, case, casefile, dim, use_cache, time_depend
     assert( rb.test_orth() )
     assert( rb.DeltaMax[-1] < 1e-4 )
 
-
-    print("\nCompute offline error")
+    if feelpp.Environment.isMasterRank():
+        print("\nCompute offline error")
     rb.computeOfflineErrorRhs()
     rb.computeOfflineError()
 
-
-    print("\nCompar matrix")
+    if feelpp.Environment.isMasterRank():
+        print("\nCompar matrix")
     compar_matrix(rb, assembleMDEIM)
 
-    print("\nCompar Rhs")
+    if feelpp.Environment.isMasterRank():
+        print("\nCompar Rhs")
     compar_rhs(rb, assembleDEIM)
 
-    print("\nCompar solutions")
+    if feelpp.Environment.isMasterRank():
+        print("\nCompar solutions")
     compar_sols(rb, assembleDEIM, heatBox)
 
-    print("\nCompar FE solutions")
+    if feelpp.Environment.isMasterRank():
+        print("\nCompar FE solutions")
     compar_solFE(rb, assembleDEIM, heatBox)
 
-    print("\n Save and reload basis")
+    if feelpp.Environment.isMasterRank():
+        print("\n Save and reload basis")
     save_and_load(rb)
 
 
@@ -385,7 +432,7 @@ def test_reducedbasis_greedy(prefix, case, casefile, dim, use_cache, time_depend
 @pytest.mark.parametrize("prefix,case,casefile,dim,use_cache,time_dependent", cases_params, ids=cases_ids)
 def test_reducedbasis_pod(prefix, case, casefile, dim, use_cache, time_dependent, init_feelpp):
     e = init_feelpp    
-    heatBox, model, decomposition, mubar, assembleMDEIM, assembleDEIM = init_environment(prefix, case, casefile, dim, use_cache, time_dependent)
+    heatBox, model, decomposition, mubar, assembleMDEIM, assembleDEIM, output_names = init_environment(prefix, case, casefile, dim, use_cache, time_dependent, output_names=output_names)
 
     Aq = decomposition[0]
     Fq_ = decomposition[1]
@@ -410,24 +457,30 @@ def test_reducedbasis_pod(prefix, case, casefile, dim, use_cache, time_dependent
     assert( rb.DeltaMax[-1] < 1e-3 )
 
 
-    print("\nCompute offline error")
+    if feelpp.Environment.isMasterRank():
+        print("\nCompute offline error")
     rb.computeOfflineErrorRhs()
     rb.computeOfflineError()
 
 
-    print("\nCompar matrix")
+    if feelpp.Environment.isMasterRank():
+        print("\nCompar matrix")
     compar_matrix(rb, assembleMDEIM)
 
-    print("\nCompar Rhs")
+    if feelpp.Environment.isMasterRank():
+        print("\nCompar Rhs")
     compar_rhs(rb, assembleDEIM)
 
-    print("\nCompar solutions")
+    if feelpp.Environment.isMasterRank():
+        print("\nCompar solutions")
     compar_sols(rb, assembleDEIM, heatBox)
 
-    print("\nCompar FE solutions")
+    if feelpp.Environment.isMasterRank():
+        print("\nCompar FE solutions")
     compar_solFE(rb, assembleDEIM, heatBox)
 
-    print("\n Save and reload basis")
+    if feelpp.Environment.isMasterRank():
+        print("\n Save and reload basis")
     save_and_load(rb)
 
 

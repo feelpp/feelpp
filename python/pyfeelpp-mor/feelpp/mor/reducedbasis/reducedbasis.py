@@ -74,8 +74,6 @@ class reducedbasis():
 
         ## For greedy memory
         self.DeltaMax = None
-        if self.worldComm.isMasterRank():
-            print("[reducedbasis] rb initialized")
 
         def alphaLB(mu):
             if self.worldComm.isMasterRank():
@@ -107,6 +105,9 @@ class reducedbasis():
 
         self.isInitilized = False
         self.mubar = None
+
+        if self.worldComm.isMasterRank():
+            print("[reducedbasis] Online rb initialized")
 
 
     def setMubar(self, mubar):
@@ -236,7 +237,7 @@ class reducedbasis():
             str: name of the output
         """
         if k == -1:
-            return "Compliant case"
+            return "Compliant"
         else:
             return self.output_names[k]
 
@@ -697,6 +698,8 @@ class reducedbasisOffline(reducedbasis):
 
         self.isInitialized = True
 
+        if self.worldComm.isMasterRank():
+            print("[reducedbasis] Offline rb initialized")
 
 
     def setVerbose(self, set=True):
@@ -829,7 +832,7 @@ class reducedbasisOffline(reducedbasis):
 
         assert( len(beta) == self.QLk[k]), f"Number of param ({len(beta)}) should be {self.QLk[k]}"
 
-        L = self.Liq[k].duplicate()
+        L = self.Lkq[k][0].duplicate()
         for p in range(self.QLk[k]):
             L += self.QLk[k] * beta[p]
         return L
