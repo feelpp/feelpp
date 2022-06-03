@@ -32,7 +32,11 @@ extern "C"
 #ifdef __cplusplus
 }
 #endif
-#include <pybind11/embed.h>
+#if defined(FEELPP_HAS_PYBIND11)
+#include <feel/feelpython/pybind11/pybind11.h>
+#include <feel/feelpython/pybind11/embed.h>
+#endif
+
 #include <boost/program_options.hpp>
 #include <boost/preprocessor/stringize.hpp>
 #include <boost/tokenizer.hpp>

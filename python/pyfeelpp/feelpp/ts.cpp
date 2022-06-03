@@ -21,8 +21,8 @@
 //! @date 15 Jun 2017
 //! @copyright 2017 Feel++ Consortium
 //!
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
+#include <feel/feelpython/pybind11/pybind11.h>
+#include <feel/feelpython/pybind11/stl.h>
 #include <fmt/core.h>
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelts/tsbase.hpp>
