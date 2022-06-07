@@ -682,14 +682,17 @@ class reducedbasisOffline(reducedbasis):
             if self.worldComm.isMasterRank():
                 print(f"[reducedbasis] Constant of coercivity : {self.gammaMubar}")
 
-            def gammaUB(mu):
-                # From a parameter
-                betaMu = self.model.computeBetaQm(mu)[0][0]
-                return self.gammaMubar * np.max( betaMu / betaA_bar_np )
+        else:
+            self.gammaMubar = 1
 
-            def gammaUB_(betaA):
-                # From a decomposition
-                return self.gammaMubar * np.max( betaA / betaA_bar_np )
+        def gammaUB(mu):
+            # From a parameter
+            betaMu = self.model.computeBetaQm(mu)[0][0]
+            return self.gammaMubar * np.max( betaMu / betaA_bar_np )
+
+        def gammaUB_(betaA):
+            # From a decomposition
+            return self.gammaMubar * np.max( betaA / betaA_bar_np )
 
         self.alphaLB = alphaLB
         self.alphaLB_ = alphaLB_
