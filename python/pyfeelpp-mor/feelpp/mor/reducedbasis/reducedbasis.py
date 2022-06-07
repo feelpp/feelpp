@@ -650,12 +650,12 @@ class reducedbasisOffline(reducedbasis):
                 print(f"[slepc4py] number of (smaller) eigenvalues computed : {nCv}")
 
             self.alphaMubar = E.getEigenvalue(0).real
+            if self.worldComm.isMasterRank():
+                print(f"[reducedbasis] Constant of continuity : {self.alphaMubar}")
         
         else:
             self.alphaMubar = 1
 
-        if self.worldComm.isMasterRank():
-            print(f"[reducedbasis] Constant of continuity : {self.alphaMubar}")
         betaA_bar_np = np.array(self.betaA_bar[0])
 
         def alphaLB(mu):
@@ -678,18 +678,20 @@ class reducedbasisOffline(reducedbasis):
                 print(f"[slepc4py] number of eigenvalues computed : {nCv}")
 
             self.gammaMubar = E.getEigenvalue(0).real
-            # gammaMubar = 1
             if self.worldComm.isMasterRank():
                 print(f"[reducedbasis] Constant of coercivity : {self.gammaMubar}")
 
-            def gammaUB(mu):
-                # From a parameter
-                betaMu = self.model.computeBetaQm(mu)[0][0]
-                return self.gammaMubar * np.max( betaMu / betaA_bar_np )
+        else:
+            self.gammaMubar = 1
 
-            def gammaUB_(betaA):
-                # From a decomposition
-                return self.gammaMubar * np.max( betaA / betaA_bar_np )
+        def gammaUB(mu):
+            # From a parameter
+            betaMu = self.model.computeBetaQm(mu)[0][0]
+            return self.gammaMubar * np.max( betaMu / betaA_bar_np )
+
+        def gammaUB_(betaA):
+            # From a decomposition
+            return self.gammaMubar * np.max( betaA / betaA_bar_np )
 
         self.alphaLB = alphaLB
         self.alphaLB_ = alphaLB_
