@@ -931,9 +931,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::applyRemesh( mesh_ptrtype oldMesh, mesh_ptrtype newMesh, bool buildModelAlgebraicFactory )
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::applyRemesh( mesh_ptrtype oldMesh, mesh_ptrtype newMesh, std::shared_ptr<RemeshInterpolation> remeshInterp )
 {
-    RemeshInterpolation remeshInterp;
+    //RemeshInterpolation remeshInterp;
 
     this->log("FluidMechanics","applyRemesh", "start" );
 #if 0
@@ -960,13 +960,13 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::applyRemesh( mesh_ptrtype oldMesh, mesh_ptrt
     this->log("FluidMechanics","applyRemesh", "functionspace done" );
 
     // createInterpolationOp
-    auto matrixInterpolation_velocity = remeshInterp.computeMatrixInterpolation( old_spaceVelocity, M_XhVelocity, M_rangeMeshElements );
-    remeshInterp.registeringBlockIndex( this->keyword(), this->startSubBlockSpaceIndex("velocity"), old_spaceVelocity, M_XhVelocity );
-    remeshInterp.interpolate( old_fieldVelocity, M_fieldVelocity );
+    auto matrixInterpolation_velocity = remeshInterp->computeMatrixInterpolation( old_spaceVelocity, M_XhVelocity, M_rangeMeshElements );
+    remeshInterp->registeringBlockIndex( this->keyword(), this->startSubBlockSpaceIndex("velocity"), old_spaceVelocity, M_XhVelocity );
+    remeshInterp->interpolate( old_fieldVelocity, M_fieldVelocity );
 
-    auto matrixInterpolation_pressure = remeshInterp.computeMatrixInterpolation( old_spacePressure, M_XhPressure, M_rangeMeshElements );
-    remeshInterp.registeringBlockIndex( this->keyword(), this->startSubBlockSpaceIndex("pressure"), old_spacePressure, M_XhPressure );
-    remeshInterp.interpolate( old_fieldPressure, M_fieldPressure );
+    auto matrixInterpolation_pressure = remeshInterp->computeMatrixInterpolation( old_spacePressure, M_XhPressure, M_rangeMeshElements );
+    remeshInterp->registeringBlockIndex( this->keyword(), this->startSubBlockSpaceIndex("pressure"), old_spacePressure, M_XhPressure );
+    remeshInterp->interpolate( old_fieldPressure, M_fieldPressure );
 
     this->log("FluidMechanics","applyRemesh", "interpolation velocity/pressure done" );
 
@@ -983,7 +983,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::applyRemesh( mesh_ptrtype oldMesh, mesh_ptrt
 
 
     // body bc
-    M_bodySetBC.applyRemesh( *this, remeshInterp );
+    M_bodySetBC.applyRemesh( *this, *remeshInterp );
     this->log("FluidMechanics","applyRemesh", "body bc done" );
 
     // velocity imposed by using a lagrange multiplier
@@ -998,9 +998,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::applyRemesh( mesh_ptrtype oldMesh, mesh_ptrt
         M_XhDirichletLM = space_trace_velocity_type::New( _mesh=M_meshDirichletLM );
         M_fieldDirichletLM = M_XhDirichletLM->elementPtr();
 
-        auto matrixInterpolation_lmvelocitybc = remeshInterp.computeMatrixInterpolation( old_XhDirichletLM, M_XhDirichletLM );
-        remeshInterp.registeringBlockIndex( this->keyword(), this->startSubBlockSpaceIndex("dirichletlm"), old_XhDirichletLM, M_XhDirichletLM );
-        remeshInterp.interpolate( old_fieldDirichletLM, M_fieldDirichletLM );
+        auto matrixInterpolation_lmvelocitybc = remeshInterp->computeMatrixInterpolation( old_XhDirichletLM, M_XhDirichletLM );
+        remeshInterp->registeringBlockIndex( this->keyword(), this->startSubBlockSpaceIndex("dirichletlm"), old_XhDirichletLM, M_XhDirichletLM );
+        remeshInterp->interpolate( old_fieldDirichletLM, M_fieldDirichletLM );
     }
 
     // pressure bc
@@ -1018,13 +1018,13 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::applyRemesh( mesh_ptrtype oldMesh, mesh_ptrt
         if constexpr ( nDim == 3 )
             M_fieldLagrangeMultiplierPressureBC2 = M_spaceLagrangeMultiplierPressureBC->elementPtr();
 
-        auto matrixInterpolation_lmpressurebc = remeshInterp.computeMatrixInterpolation( old_spaceLagrangeMultiplierPressureBC, M_spaceLagrangeMultiplierPressureBC );
-        remeshInterp.registeringBlockIndex( this->keyword(), this->startSubBlockSpaceIndex("pressurelm1"), old_spaceLagrangeMultiplierPressureBC, M_spaceLagrangeMultiplierPressureBC );
-        remeshInterp.interpolate( old_fieldLagrangeMultiplierPressureBC1, M_fieldLagrangeMultiplierPressureBC1 );
+        auto matrixInterpolation_lmpressurebc = remeshInterp->computeMatrixInterpolation( old_spaceLagrangeMultiplierPressureBC, M_spaceLagrangeMultiplierPressureBC );
+        remeshInterp->registeringBlockIndex( this->keyword(), this->startSubBlockSpaceIndex("pressurelm1"), old_spaceLagrangeMultiplierPressureBC, M_spaceLagrangeMultiplierPressureBC );
+        remeshInterp->interpolate( old_fieldLagrangeMultiplierPressureBC1, M_fieldLagrangeMultiplierPressureBC1 );
         if constexpr ( nDim == 3 )
         {
-            remeshInterp.registeringBlockIndex( this->keyword(), this->startSubBlockSpaceIndex("pressurelm2"), old_spaceLagrangeMultiplierPressureBC, M_spaceLagrangeMultiplierPressureBC );
-            remeshInterp.interpolate( old_fieldLagrangeMultiplierPressureBC2, M_fieldLagrangeMultiplierPressureBC2 );
+            remeshInterp->registeringBlockIndex( this->keyword(), this->startSubBlockSpaceIndex("pressurelm2"), old_spaceLagrangeMultiplierPressureBC, M_spaceLagrangeMultiplierPressureBC );
+            remeshInterp->interpolate( old_fieldLagrangeMultiplierPressureBC2, M_fieldLagrangeMultiplierPressureBC2 );
         }
     }
 
@@ -1059,6 +1059,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::applyRemesh( mesh_ptrtype oldMesh, mesh_ptrt
     // TODO : post process ??
 
     // algebraic data/tools
+    bool buildModelAlgebraicFactory = this->algebraicFactory() ? true : false;
     vector_ptrtype old_vectorPreviousSolution = M_vectorPreviousSolution;
     vector_ptrtype old_timeStepThetaSchemePreviousContrib = M_timeStepThetaSchemePreviousContrib;
     this->removeAllAlgebraicDataAndTools();
@@ -1068,13 +1069,13 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::applyRemesh( mesh_ptrtype oldMesh, mesh_ptrt
 
     if ( old_timeStepThetaSchemePreviousContrib )
     {
-        remeshInterp.interpolateBlockVector( this->keyword(), old_timeStepThetaSchemePreviousContrib, M_timeStepThetaSchemePreviousContrib, *this->algebraicBlockVectorSolution() );
+        remeshInterp->interpolateBlockVector( this->keyword(), old_timeStepThetaSchemePreviousContrib, M_timeStepThetaSchemePreviousContrib, *this->algebraicBlockVectorSolution() );
         this->log("FluidMechanics","applyRemesh", "timeStepThetaSchemePreviousContrib done" );
     }
 
     if ( old_vectorPreviousSolution )
     {
-        remeshInterp.interpolateBlockVector( this->keyword(), old_vectorPreviousSolution, M_vectorPreviousSolution, *this->algebraicBlockVectorSolution() );
+        remeshInterp->interpolateBlockVector( this->keyword(), old_vectorPreviousSolution, M_vectorPreviousSolution, *this->algebraicBlockVectorSolution() );
         this->log("FluidMechanics","applyRemesh", "vectorPreviousSolution done" );
     }
 

@@ -297,7 +297,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
 HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
-HEATFLUID_CLASS_TEMPLATE_TYPE::applyRemesh( mesh_ptrtype oldMesh, mesh_ptrtype newMesh )
+HEATFLUID_CLASS_TEMPLATE_TYPE::applyRemesh( mesh_ptrtype oldMesh, mesh_ptrtype newMesh, std::shared_ptr<RemeshInterpolation> remeshInterp )
 {
     this->log("HeatFluid","applyRemesh", "start");
     //mesh_ptrtype oldMesh = this->mesh();
@@ -310,8 +310,8 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::applyRemesh( mesh_ptrtype oldMesh, mesh_ptrtype n
     super_type::super_model_meshes_type::applyRemesh( this->keyword(), newMesh );
 
     // subtoolboxes
-    M_heatModel->applyRemesh( oldMesh, newMesh, false );
-    M_fluidModel->applyRemesh( oldMesh, newMesh, false );
+    M_heatModel->applyRemesh( oldMesh, newMesh, remeshInterp );
+    M_fluidModel->applyRemesh( oldMesh, newMesh, remeshInterp );
 
     // reset algebraic data/tools
     this->removeAllAlgebraicDataAndTools();
@@ -442,8 +442,10 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
 
     if ( !M_useNaturalConvection || M_useSemiImplicitTimeScheme )
     {
-        M_heatModel->initAlgebraicFactory();
-        M_fluidModel->initAlgebraicFactory();
+        if ( !M_heatModel->algebraicFactory() )
+            M_heatModel->initAlgebraicFactory();
+        if ( !M_fluidModel->algebraicFactory() )
+            M_fluidModel->initAlgebraicFactory();
         M_heatModel->algebraicFactory()->setFunctionLinearAssembly( std::bind( &self_type::updateLinear_Heat,
                                                                                std::ref( *this ), std::placeholders::_1 ) );
         M_heatModel->algebraicFactory()->setFunctionResidualAssembly( std::bind( &self_type::updateResidual_Heat,
@@ -599,16 +601,24 @@ HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
 HEATFLUID_CLASS_TEMPLATE_TYPE::updateTimeStep()
 {
+#if 1 // AT END OF TIME STEP
+    using mesh_adaptation_type = typename super_type::super_model_meshes_type::mesh_adaptation_type;
+    this->template updateMeshAdaptation<mesh_type>( this->keyword(),
+                                                    mesh_adaptation_type::createEvent<mesh_adaptation_type::Event::Type::each_time_step>( this->time(),this->timeStepBase()->iteration() ),
+                                                    this->symbolsExpr() );
+#endif
     this->updateTimeStepCurrentResidual();
     this->heatModel()->updateTimeStep();
     this->fluidModel()->updateTimeStep();
     this->updateTime( this->fluidModel()->time() );
     this->updateParameterValues();
 
+#if 1 // AT BEGIN OF TIME STEP
     using mesh_adaptation_type = typename super_type::super_model_meshes_type::mesh_adaptation_type;
     this->template updateMeshAdaptation<mesh_type>( this->keyword(),
                                                     mesh_adaptation_type::createEvent<mesh_adaptation_type::Event::Type::each_time_step>( this->time(),this->timeStepBase()->iteration() ),
                                                     this->symbolsExpr() );
+#endif
 
 }
 HEATFLUID_CLASS_TEMPLATE_DECLARATIONS

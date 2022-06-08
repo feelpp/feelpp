@@ -267,9 +267,11 @@ HEAT_CLASS_TEMPLATE_TYPE::initAlgebraicModel()
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
-HEAT_CLASS_TEMPLATE_TYPE::applyRemesh( mesh_ptrtype oldMesh, mesh_ptrtype newMesh, bool buildModelAlgebraicFactory )
+HEAT_CLASS_TEMPLATE_TYPE::applyRemesh( mesh_ptrtype oldMesh, mesh_ptrtype newMesh, std::shared_ptr<RemeshInterpolation> remeshInterp )
 {
     this->log("Heat","applyRemesh", "start" );
+
+    //RemeshInterpolation remeshInterp;
 #if 0
 #if 0
     mesh_ptrtype oldMesh = this->mesh();
@@ -291,12 +293,17 @@ HEAT_CLASS_TEMPLATE_TYPE::applyRemesh( mesh_ptrtype oldMesh, mesh_ptrtype newMes
     this->initFunctionSpaces();
 
     // createInterpolationOp
+#if 1
+    auto matrixInterpolation_temperature = remeshInterp->computeMatrixInterpolation( old_Xh, M_Xh, M_rangeMeshElements );
+    remeshInterp->registeringBlockIndex( this->keyword(), this->startSubBlockSpaceIndex("temperature"), old_Xh, M_Xh );
+    remeshInterp->interpolate( old_fieldTemperature, M_fieldTemperature );
+#else
     auto opI_temperature = opInterpolation(_domainSpace=old_Xh,
                                            _imageSpace=M_Xh,
                                            _range=M_rangeMeshElements );
     auto matrixInterpolation_temperature = opI_temperature->matPtr();
     matrixInterpolation_temperature->multVector( *old_fieldTemperature, *M_fieldTemperature );
-
+#endif
     // time stepping
     if ( M_bdfTemperature )
         M_bdfTemperature->applyRemesh( M_Xh, matrixInterpolation_temperature );
@@ -309,12 +316,25 @@ HEAT_CLASS_TEMPLATE_TYPE::applyRemesh( mesh_ptrtype oldMesh, mesh_ptrtype newMes
 
     // TODO : post process ??
 
+    // algebraic data/tools
+    vector_ptrtype old_timeStepThetaSchemePreviousContrib = M_timeStepThetaSchemePreviousContrib;
+    bool buildModelAlgebraicFactory = this->algebraicFactory() ? true : false;
     // reset algebraic data/tools
     this->removeAllAlgebraicDataAndTools();
     this->initAlgebraicModel();
 
     if ( buildModelAlgebraicFactory )
+    {
         this->initAlgebraicFactory(); // TODO : Theta time scheme
+
+        if ( old_timeStepThetaSchemePreviousContrib && M_timeStepThetaSchemePreviousContrib )
+        {
+            this->log("Heat","applyRemesh", "interpolate timeStepThetaSchemePreviousContrib" );
+            remeshInterp->interpolateBlockVector( this->keyword(), old_timeStepThetaSchemePreviousContrib, M_timeStepThetaSchemePreviousContrib, *this->algebraicBlockVectorSolution() );
+            this->log("Heat","applyRemesh", "interpolate timeStepThetaSchemePreviousContrib done" );
+        }
+    }
+
     this->log("Heat","applyRemesh", "finish" );
 }
 
@@ -776,6 +796,13 @@ HEAT_CLASS_TEMPLATE_TYPE::updateTimeStep()
     this->timerTool("TimeStepping").setAdditionalParameter("time",this->currentTime());
     this->timerTool("TimeStepping").start();
 
+#if 1 // AT END OF TIME STEP
+    using mesh_adaptation_type = typename super_type::super_model_meshes_type::mesh_adaptation_type;
+    this->template updateMeshAdaptation<mesh_type>( this->keyword(),
+                                                    mesh_adaptation_type::createEvent<mesh_adaptation_type::Event::Type::each_time_step>( this->time(),M_bdfTemperature->iteration() ),
+                                                    this->symbolsExpr() );
+#endif
+
     // some time stepping require to compute residual without time derivative
     this->updateTimeStepCurrentResidual();
 
@@ -798,12 +825,12 @@ HEAT_CLASS_TEMPLATE_TYPE::updateTimeStep()
         this->setNeedToRebuildCstPart(true);
 
     this->updateParameterValues();
-
+#if 0
     using mesh_adaptation_type = typename super_type::super_model_meshes_type::mesh_adaptation_type;
     this->template updateMeshAdaptation<mesh_type>( this->keyword(),
                                                     mesh_adaptation_type::createEvent<mesh_adaptation_type::Event::Type::each_time_step>( this->time(),M_bdfTemperature->iteration() ),
                                                     this->symbolsExpr() );
-
+#endif
     this->timerTool("TimeStepping").stop("updateTimeStep");
     if ( this->scalabilitySave() ) this->timerTool("TimeStepping").save();
     this->log("Heat","updateTimeStep", "finish");
