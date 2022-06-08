@@ -25,6 +25,7 @@
 #include <fmt/core.h>
 #include <fmt/color.h>
 #include <feel/feelcore/environment.hpp>
+#include <feel/feelpython/pybind11/pybind11.h>
 
 namespace Feel
 {
@@ -88,6 +89,10 @@ void handleExceptions()
                                         e.what(), 
                                         boost::core::demangle(e.source_type().name()), 
                                         boost::core::demangle(e.target_type().name())), e );
+    }
+    catch ( const pybind11::error_already_set& e )
+    {
+        print_and_trace( fmt::format( "[feelpp.pybind11.error_already_set] python interpreter failed : {}\n", e.what() ), e );
     }
     catch(const boost::filesystem::filesystem_error& e)
     {

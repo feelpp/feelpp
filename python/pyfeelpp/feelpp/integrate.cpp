@@ -21,7 +21,7 @@
 //! @date 23 Jul 2021
 //! @copyright 2017 Feel++ Consortium
 //!
-#include <pybind11/pybind11.h>
+#include <feel/feelpython/pybind11/pybind11.h>
 
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feeldiscr/meshstructured.hpp>
@@ -29,7 +29,7 @@
 #include <feel/feelmesh/filters.hpp>
 #include <feel/feelvf/vf.hpp>
 #include <mpi4py/mpi4py.h>
-#include <pybind11/eigen.h>
+#include <feel/feelpython/pybind11/eigen.h>
 #include <feel/feelcore/environment.hpp>
            namespace py = pybind11;
 

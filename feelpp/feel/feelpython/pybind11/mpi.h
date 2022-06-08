@@ -3,7 +3,7 @@
 
 #include <boost/mpi/communicator.hpp>
 #include <mpi4py/mpi4py.h>
-#include <pybind11/pybind11.h>
+#include <feel/feelpython/pybind11/pybind11.h>
 
 // Import mpi4py on demand
 #define VERIFY_MPI4PY(func)                                                    \

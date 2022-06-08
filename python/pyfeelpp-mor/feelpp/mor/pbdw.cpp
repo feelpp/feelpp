@@ -17,9 +17,9 @@
 //! Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 //!
 //!
-#include <pybind11/pybind11.h>
-#include <pybind11/eigen.h>
-#include <pybind11/stl.h>
+#include <feel/feelpython/pybind11/pybind11.h>
+#include <feel/feelpython/pybind11/eigen.h>
+#include <feel/feelpython/pybind11/stl.h>
 
 #include <feel/feelmor/pbdw.hpp>
 
