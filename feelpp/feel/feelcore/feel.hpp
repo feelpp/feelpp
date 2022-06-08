@@ -89,8 +89,6 @@
 
 #include <boost/math/constants/constants.hpp>
 
-#include <boost/lambda/lambda.hpp>
-#include <boost/lambda/bind.hpp>
 #if defined(__clang__)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdivision-by-zero"
@@ -173,7 +171,6 @@ namespace Feel
 namespace assign = boost::assign;
 namespace fs = boost::filesystem;
 namespace mpl = boost::mpl;
-namespace lambda = boost::lambda;
 namespace po = boost::program_options;
 namespace hana=boost::hana;
 using namespace boost::hana::literals;

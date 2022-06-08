@@ -22,7 +22,7 @@
 //! @copyright 2020 Feel++ Consortium
 //!
 #pragma once
-
+#include <optional>
 #define JSON_DIAGNOSTICS FEELPP_ENABLE_JSON_DIAGNOSTICS
 #include <feel/feelcore/_json.hpp>
 namespace Feel
@@ -53,7 +53,7 @@ struct adl_serializer<boost::filesystem::path>
 //
 // std::optional
 //
-#include <optional>
+
 template <class T>
 void to_json( nlohmann::json& j, const std::optional<T>& v )
 {

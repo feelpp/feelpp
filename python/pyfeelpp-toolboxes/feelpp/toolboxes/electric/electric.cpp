@@ -21,7 +21,7 @@
 //! @date 25 Jul 2018
 //! @copyright 2018 Feel++ Consortium
 //!
-#include <pybind11/pybind11.h>
+#include <feel/feelpython/pybind11/pybind11.h>
 
 #include <feel/feelmodels/modelcore/modelnumerical.hpp>
 #include <feel/feelmodels/electric/electric.hpp>

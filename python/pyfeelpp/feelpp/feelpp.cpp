@@ -23,7 +23,7 @@
 //!
 #include <iostream>
 
-#include <pybind11/pybind11.h>
+#include <feel/feelpython/pybind11/pybind11.h>
 #include <feel/feelinfo.h>
 #include <feel/feelcore/info.hpp>
 
