@@ -607,7 +607,7 @@ class reducedbasisOffline(reducedbasis):
 
         # KSP to solve
         self.KSP_TYPE = PETSc.KSP.Type.GMRES
-        self.PC_TYPE = PETSc.PC.Type.LU
+        self.PC_TYPE = PETSc.PC.Type.GAMG
 
         self.ksp = PETSc.KSP()
         self.ksp.create(PETSc.COMM_SELF)
