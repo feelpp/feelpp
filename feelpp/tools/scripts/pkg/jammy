@@ -17,6 +17,8 @@ petsc-dev
 slepc-dev
 python3-petsc4py-real
 python3-slepc4py-real
+python3-petsc4py-real3.15
+python3-slepc4py-real3.15
 libhdf5-openmpi-dev
 libnlopt-dev
 libgsl-dev
