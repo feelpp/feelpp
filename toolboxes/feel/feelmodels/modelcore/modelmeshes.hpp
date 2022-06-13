@@ -353,9 +353,14 @@ public :
                     M_eventEachTimeStep_condition.setParameterValues( paramValues );
                 }
 
+            void updateInformationObject( nl::json & jsonInfo ) const;
+
+            static tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp );
+
             friend struct Execute;
         private:
 
+            nl::json M_remesherSetup;
             std::set<std::string> M_requiredMarkers;
             std::set<typename Event::Type> M_executionEvents;
             size_type M_eventEachTimeStep_frequency;
