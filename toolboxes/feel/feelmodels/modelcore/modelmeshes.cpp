@@ -694,6 +694,17 @@ ModelMesh<IndexType>::updateInformationObject( nl::json & p, std::string const& 
             p.emplace( "filename", M_mmeshCommon->meshFilename() );
     }
 
+    nl::json::array_t j_meshAdapArray;
+    for ( auto const& mas : M_meshAdaptationSetup )
+    {
+        nl::json j_meshAdap;
+        mas.updateInformationObject( j_meshAdap );
+        if ( !j_meshAdap.is_null() )
+            j_meshAdapArray.push_back( std::move(j_meshAdap) );
+    }
+    if ( !j_meshAdapArray.empty() )
+        p["MeshAdaptation"] = std::move( j_meshAdapArray );
+
     // TODO here : other types
     using geoshape_list_type = boost::mp11::mp_list< boost::mp11::mp_identity_t<Simplex<2>>,
                                                      boost::mp11::mp_identity_t<Simplex<3>> >;
@@ -791,6 +802,15 @@ ModelMesh<IndexType>::tabulateInformations( nl::json const& jsonInfo, TabulateIn
 
             tabInfo->add("Discretization", tabInfoDiscr );
         }
+    }
+
+
+    if ( jsonInfo.contains( "MeshAdaptation" ) )
+    {
+        auto tabInfoMeshAdaptation = TabulateInformationsSections::New( tabInfoProp );
+        for ( auto const& [j_meshadaptkey,j_meshadaptval ] : jsonInfo.at( "MeshAdaptation" ).items() )
+            tabInfoMeshAdaptation->add( "", MeshAdaptation::Setup::tabulateInformations( j_meshadaptval, tabInfoProp/*.newByIncreasingVerboseLevel()*/ ) );
+        tabInfo->add("Mesh Adaptation", tabInfoMeshAdaptation );
     }
 
     // fields

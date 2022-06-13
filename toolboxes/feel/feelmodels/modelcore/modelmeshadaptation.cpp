@@ -45,6 +45,12 @@ ModelMesh<IndexType>::MeshAdaptation::Setup::Setup( ModelMeshes<IndexType> const
         }
     }
 
+
+    if ( jarg.contains( "setup" ) )
+    {
+        M_remesherSetup = jarg.at( "setup" );
+    }
+
     nl::json events;
     for ( std::string const& eventKey : { "event","events" } )
     {
@@ -95,6 +101,69 @@ ModelMesh<IndexType>::MeshAdaptation::Setup::Setup( ModelMeshes<IndexType> const
     M_tmpDir = (fs::path(mMeshes.repository().root())/"meshes")/"tmp";
 }
 
+template <typename IndexType>
+void
+ModelMesh<IndexType>::MeshAdaptation::Setup::updateInformationObject( nl::json & jsonInfo ) const
+{
+     auto [exprStr,compInfo] = M_metric.exprInformations();
+     jsonInfo["metric"] = exprStr;
+     jsonInfo["required_markers"] = M_requiredMarkers;
+     if ( M_remesherSetup.is_object() )
+         jsonInfo["remesher_setup"] = M_remesherSetup;
+
+     std::map<typename Event::Type,std::string> mapEventEnumToString = { { Event::Type::never,"never" },
+                                                                         { Event::Type::after_import,"after_import" },
+                                                                         { Event::Type::after_init,"after_init" },
+                                                                         { Event::Type::never,"each_time_step" } };
+     std::vector<std::string> eventsStr;
+     for ( auto event : M_executionEvents )
+         eventsStr.push_back( mapEventEnumToString.at(event) );
+     if ( !eventsStr.empty() )
+         jsonInfo["events"] = eventsStr;
+}
+
+template <typename IndexType>
+tabulate_informations_ptr_t
+ModelMesh<IndexType>::MeshAdaptation::Setup::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp )
+{
+    auto tabInfo = TabulateInformationsSections::New( tabInfoProp );
+
+    Feel::Table tableInfoBasic;
+    TabulateInformationTools::FromJSON::addAllKeyToValues( tableInfoBasic, jsonInfo, tabInfoProp );
+
+    if ( jsonInfo.contains("required_markers") )
+    {
+        Feel::Table tabInfoMarkers = TabulateInformationTools::FromJSON::createTableFromArray( jsonInfo.at("required_markers"), true );
+        if ( tabInfoMarkers.nRow() > 0 )
+            tableInfoBasic.add_row( { "required_markers", tabInfoMarkers } );
+    }
+
+    if ( jsonInfo.contains("events") )
+    {
+        Feel::Table tabInfoEvents = TabulateInformationTools::FromJSON::createTableFromArray( jsonInfo.at("events"), true );
+        if ( tabInfoEvents.nRow() > 0 )
+            tableInfoBasic.add_row( { "events", tabInfoEvents } );
+    }
+
+    tableInfoBasic.format()
+        .setShowAllBorders( false )
+        .setColumnSeparator(":")
+        .setHasRowSeparator( false );
+
+    if ( tableInfoBasic.nRow() > 0 )
+        tabInfo->add( "", TabulateInformations::New( tableInfoBasic, tabInfoProp ) );
+
+    if ( jsonInfo.contains("remesher_setup") )
+    {
+        auto const& j_remesher_setup = jsonInfo.at("remesher_setup");
+        Feel::Table tableInfoRemesherSetup;
+        TabulateInformationTools::FromJSON::addAllKeyToValues( tableInfoRemesherSetup, j_remesher_setup, tabInfoProp );
+        if ( tableInfoRemesherSetup.nRow() > 0 )
+            tabInfo->add( "remesher_setup", TabulateInformations::New( tableInfoRemesherSetup, tabInfoProp.newByIncreasingVerboseLevel() ) );
+    }
+
+    return tabInfo;
+}
 
 template <typename IndexType>
 template <typename MeshType>
@@ -115,7 +184,7 @@ ModelMesh<IndexType>::MeshAdaptation::Execute::executeImpl( std::shared_ptr<Mesh
 
     if ( inputMesh->worldComm().localSize() == 1 )
     {
-        auto r = remesher( inputMesh, requiredMarkersElements, requiredMarkersFaces );
+        auto r = remesher( inputMesh, requiredMarkersElements, requiredMarkersFaces, {}, {}, { {"remesh", M_mas.M_remesherSetup } } );
 
         r.setMetric( *scalarMetricField );
 
@@ -153,7 +222,7 @@ ModelMesh<IndexType>::MeshAdaptation::Execute::executeImpl( std::shared_ptr<Mesh
                                          //_update=update_,  TODO test FACE_MINIMAL
                                          _straighten=false );
 
-            auto r = remesher( inputMeshSeq, requiredMarkersElements, requiredMarkersFaces );
+            auto r = remesher( inputMeshSeq, requiredMarkersElements, requiredMarkersFaces, {}, {}, { {"remesh", M_mas.M_remesherSetup } } );
 #if 1
             //auto VhSeq = Pch<1>( inputMeshSeq );
             auto VhSeq = scalar_metric_field_type::functionspace_type::New(_mesh=inputMeshSeq );
