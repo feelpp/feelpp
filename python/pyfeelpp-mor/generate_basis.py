@@ -1,10 +1,10 @@
-import feelpp.mor.reducedbasis.reducedbasis as mor_rb
+import feelpp.mor.reducedbasis.reducedbasisOffline as mor_rb
 import sys, os
 from feelpp.toolboxes.heat import *
 from feelpp.toolboxes.core import *
 from feelpp.mor import *
 import feelpp
-import json
+import json5 as json
 
 
 import argparse
@@ -17,15 +17,18 @@ parser.add_argument('--odir', help="path to output directory", type=str)
 parser.add_argument('--case', help="name of the case", type=str)
 parser.add_argument('--dim', help="dimension of the case", type=int)
 parser.add_argument('--time-dependant', help="time dependand case", type=bool, default=False)
-parser.add_argument('--algo', help="compute using greedy algorithm (default 1) 0 : From sample, 1 : Greedy, 2 : POD", type=int, default=1)
+parser.add_argument('--algo', help="compute using greedy algorithm (default 1) 0 : From sample, 1 : Greedy, 2 : POD",
+    type=int, default=1)
 parser.add_argument('--train-size', help="size of the (random) training set", type=int, default=40)
 parser.add_argument('--tol', help="tolerance for generating", type=float, default=1e-6)
+parser.add_argument('--compute-bounds', help="compute bounds", type=bool, default=True)
 
 algos_names = ["generation_from_sample", "greedy", "POD_modes"]
 
 class generateBasisConfig():
 
-    def __init__(self, dim=None, config_file=None, time_dependant=False, odir=None, case=None, algo=1, size=40, tol=1e-6):
+    def __init__(self, dim=None, config_file=None, time_dependant=False, odir=None,
+                 case=None, algo=1, size=40, tol=1e-6, compute_bounds=True):
         self.dim = dim
         self.config_file = config_file
         self.time_dependant = time_dependant
@@ -34,6 +37,7 @@ class generateBasisConfig():
         self.algo = algo
         self.size = size
         self.tol = tol
+        self.compute_bounds = compute_bounds
 
 
 
@@ -51,7 +55,8 @@ def generate_basis(worldComm=None, config=None):
         ValueError: if value for algorithm is not valid (see documentation)
 
     Returns:
-        feelpp.mor.reducedbasis.reducedbasis.reducedbasisOffline: Object dealing with the reduced basis. The content is also saved on disk
+        feelpp.mor.reducedbasis.reducedbasis.reducedbasisOffline: Object dealing with the reduced basis.
+        The content is also saved on disk
     """
 
     if config is None:
@@ -89,7 +94,7 @@ def generate_basis(worldComm=None, config=None):
     feelpp.Environment.setConfigFile(f'{config.config_file}')
 
     model_path = "$cfgdir/"+os.path.splitext(os.path.basename(config.config_file))[0] + ".json"
-    f = open(json_path, 'r')
+    f = open(model_path.replace("$cfgdir", feelpp.Environment.expand('$cfgdir')), 'r')
     j = json.load(f)
     try:
         j.pop('PostProcess')
@@ -194,7 +199,8 @@ def generate_basis(worldComm=None, config=None):
     for f in Fq_:
         Fq.append(mor_rb.convertToPetscVec(f[0]))
 
-    rb = mor_rb.reducedbasisOffline(mor_rb.convertToPetscMat(Aq[0]), Fq, model, mubar, output_names=output_names)
+    rb = mor_rb.reducedbasisOffline(mor_rb.convertToPetscMat(Aq[0]), Fq, model, mubar,
+            output_names=output_names, compute_lower_bound=config.compute_bounds)
     rb.setVerbose(False)
     if worldComm.isMasterRank():
         print("Size of the big problem :", rb.NN)
@@ -245,6 +251,7 @@ if __name__ == '__main__':
     tol = args.tol
     split = config_file.split('/')
     case = args.case if args.case is not None else "generate_basis"
+    compute_bounds = args.compute_bounds
 
     config = feelpp.globalRepository(f"generate_basis-{case}")
     sys.argv = [f'generate-basis-{case}']
@@ -254,6 +261,6 @@ if __name__ == '__main__':
     e = feelpp.Environment(sys.argv, opts=o, config=config)
 
 
-    config = generateBasisConfig(dim, config_file, time_dependant, odir, case, algo, size, tol)
+    config = generateBasisConfig(dim, config_file, time_dependant, odir, case, algo, size, tol, compute_bounds)
 
     generate_basis(config=config)

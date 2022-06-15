@@ -24,5 +24,5 @@
 cmake_minimum_required(VERSION 3.3)
 project(mor-reducedbasis)
 
-install(FILES  __init__.py reducedbasis.py reducedbasis_time.py DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/mor/reducedbasis)
+install(FILES  __init__.py reducedbasis.py reducedbasisOffline.py DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/mor/reducedbasis)
 
