@@ -114,7 +114,7 @@ ModelMesh<IndexType>::MeshAdaptation::Setup::updateInformationObject( nl::json &
      std::map<typename Event::Type,std::string> mapEventEnumToString = { { Event::Type::never,"never" },
                                                                          { Event::Type::after_import,"after_import" },
                                                                          { Event::Type::after_init,"after_init" },
-                                                                         { Event::Type::never,"each_time_step" } };
+                                                                         { Event::Type::each_time_step,"each_time_step" } };
      std::vector<std::string> eventsStr;
      for ( auto event : M_executionEvents )
          eventsStr.push_back( mapEventEnumToString.at(event) );
