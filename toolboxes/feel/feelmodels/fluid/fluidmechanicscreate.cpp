@@ -1066,12 +1066,14 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::applyRemesh( mesh_ptrtype oldMesh, mesh_ptrt
     this->initAlgebraicModel();
     if ( buildModelAlgebraicFactory )
         this->initAlgebraicFactory();
-
+#if 0
+    // TODO : try a way to go back to previous time
     if ( old_timeStepThetaSchemePreviousContrib )
     {
         remeshInterp->interpolateBlockVector( this->keyword(), old_timeStepThetaSchemePreviousContrib, M_timeStepThetaSchemePreviousContrib, *this->algebraicBlockVectorSolution() );
         this->log("FluidMechanics","applyRemesh", "timeStepThetaSchemePreviousContrib done" );
     }
+#endif
 
     if ( old_vectorPreviousSolution )
     {

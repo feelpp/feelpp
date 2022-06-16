@@ -326,13 +326,15 @@ HEAT_CLASS_TEMPLATE_TYPE::applyRemesh( mesh_ptrtype oldMesh, mesh_ptrtype newMes
     if ( buildModelAlgebraicFactory )
     {
         this->initAlgebraicFactory(); // TODO : Theta time scheme
-
+#if 0
+        // TODO : try a way to go back to previous time
         if ( old_timeStepThetaSchemePreviousContrib && M_timeStepThetaSchemePreviousContrib )
         {
             this->log("Heat","applyRemesh", "interpolate timeStepThetaSchemePreviousContrib" );
             remeshInterp->interpolateBlockVector( this->keyword(), old_timeStepThetaSchemePreviousContrib, M_timeStepThetaSchemePreviousContrib, *this->algebraicBlockVectorSolution() );
             this->log("Heat","applyRemesh", "interpolate timeStepThetaSchemePreviousContrib done" );
         }
+#endif
     }
 
     this->log("Heat","applyRemesh", "finish" );
