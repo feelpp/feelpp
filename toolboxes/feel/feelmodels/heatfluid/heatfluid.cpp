@@ -613,7 +613,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateTimeStep()
     this->updateTime( this->fluidModel()->time() );
     this->updateParameterValues();
 
-#if 1 // AT BEGIN OF TIME STEP
+#if 0 // AT BEGIN OF TIME STEP
     using mesh_adaptation_type = typename super_type::super_model_meshes_type::mesh_adaptation_type;
     this->template updateMeshAdaptation<mesh_type>( this->keyword(),
                                                     mesh_adaptation_type::createEvent<mesh_adaptation_type::Event::Type::each_time_step>( this->time(),this->timeStepBase()->iteration() ),
