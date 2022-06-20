@@ -30,7 +30,7 @@ def has_petsc4py():
 
 class InitFeelpp:
     def __init__(self,config):
-        
+
         try:
             shutil.rmtree(feelpp.Environment.rootRepository() + '/pyfeelppmor-tests')
         except FileNotFoundError:
