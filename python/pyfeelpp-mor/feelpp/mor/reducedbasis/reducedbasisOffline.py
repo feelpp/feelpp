@@ -18,31 +18,31 @@ class reducedbasisOffline(reducedbasis):
 
         super().__init__(model)
 
-        self.setMubar(mubar)
+        self.setMubar(mubar)        # default parameter
 
-        self.Aq = Aq
-        self.Fq = Fq[0]
-        self.Lkq= Fq[1:]
+        self.Aq = Aq                # affine decomposition of A
+        self.Fq = Fq[0]             # affine decomposition of F
+        self.Lkq= Fq[1:]            # affine decompositions of Lk
 
-        self.Qa = len(Aq)
-        self.Qf = len(Fq[0])
-        self.QLk= [len(Lkq) for Lkq in self.Lkq ]
-        self.N_output = len(self.QLk)
+        self.Qa = len(Aq)                           # size of the decomposition of A
+        self.Qf = len(Fq[0])                        # size of the decomposition of F
+        self.QLk= [len(Lkq) for Lkq in self.Lkq ]   # sizes of the decompositions of Lk
+        self.N_output = len(self.QLk)               # number of outputs
         if output_names is None:
             self.output_names = [f"output{i}" for i in range(self.N_output)]
         else:
-            self.output_names = output_names
+            self.output_names = output_names        # names of the outputs
 
 
-        self.SS = np.zeros((self.Qf, self.Qf))
+        self.SS = np.zeros((self.Qf, self.Qf))      # SS[p,p_] = (S^p, S^p_)
 
-        self.NN = Aq[0].size[0]
+        self.NN = Aq[0].size[0]     # size of the FE problem
 
         A_tmp = self.assembleA(self.betaA_bar[0])
         AT_tmp = A_tmp.copy()
         AT_tmp.transpose()
 
-        self.scal = 0.5*(A_tmp + AT_tmp)
+        self.scal = 0.5*(A_tmp + AT_tmp)        # scalar product for the energy norm
         self.Abar = self.assembleA(self.betaA_bar[0])
 
 

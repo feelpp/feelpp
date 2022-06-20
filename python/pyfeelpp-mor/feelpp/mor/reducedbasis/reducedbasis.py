@@ -47,13 +47,13 @@ class reducedbasis():
         Args:
             model (ToolboxMor_{2|3}D): model DEIM used for the decomposition
         """
-        self.Qa = 0
-        self.Qf = 0
-        self.QLk = []
-        self.N_output = 0
-        self.output_names : list
+        self.Qa = 0                 # size of the decomposition of A
+        self.Qf = 0                 # size of the decomposition of F
+        self.QLk = []               # sizes of the decompositions of Lk
+        self.N_output = 0           # number of outputs 
+        self.output_names : list    # names of the outputs
         
-        self.N = 0
+        self.N = 0      # size of the rediced basis
 
         if worldComm == None:
             self.worldComm = feelpp.Environment.worldCommPtr()
