@@ -460,14 +460,6 @@ public :
 private :
 };
 
-namespace DynamicViscosityLaw {
-    struct Law {};
-    struct NewtonianLaw: Law { static constexpr std::string_view name = "newtonian"; };
-    struct PowerLaw: Law { static constexpr std::string_view name = "power_law"; };
-    struct CarreauLaw: Law { static constexpr std::string_view name = "carreau_law"; };
-    struct CarreauYasudaLaw: Law { static constexpr std::string_view name = "carreau-yasuda_law"; };
-}
-
 template <uint16_type Dim>
 class ModelPhysicFluid : public ModelPhysic<Dim>
 {
@@ -477,6 +469,12 @@ public :
 
     struct DynamicViscosity
     {
+        struct Law {};
+        struct NewtonianLaw: Law { static constexpr std::string_view name = "newtonian"; };
+        struct PowerLaw: Law { static constexpr std::string_view name = "power_law"; };
+        struct CarreauLaw: Law { static constexpr std::string_view name = "carreau_law"; };
+        struct CarreauYasudaLaw: Law { static constexpr std::string_view name = "carreau-yasuda_law"; };
+
         DynamicViscosity( std::string const& law, self_type * mparent ):
             M_lawName( law ),
             M_parent( mparent )
@@ -494,7 +492,7 @@ public :
         template< typename LawType >
         bool isLaw() const { return ( this->lawName() == LawType::name ); }
 
-        bool isNewtonianLaw() const { return this->isLaw<Newtonian>(); }
+        bool isNewtonianLaw() const { return this->isLaw<NewtonianLaw>(); }
         bool isPowerLaw() const { return this->isLaw<PowerLaw>(); }
         bool isCarreauLaw() const { return this->isLaw<CarreauLaw>(); }
         bool isCarreauYasudaLaw() const { return this->isLaw<CarreauYasudaLaw>(); }
@@ -512,7 +510,7 @@ public :
 
     private:
         std::string M_lawName;
-        selt_type * M_parent;
+        self_type * M_parent;
         bool M_isMultifluid = false;
     };
 
@@ -658,10 +656,10 @@ protected :
 template <uint16_type Dim>
 class ModelPhysicMultifluid: public ModelPhysic<Dim>
 {
-    using super_type = ModelPhysicFluid<Dim>;
+    using super_type = ModelPhysic<Dim>;
     using self_type = ModelPhysicMultifluid<Dim>;
-    using modelphysic_fluid_type = ModelPhysicFluid<Dim>;
-    using modelphysic_fluid_ptrtype = std::shared_ptr<modelphysic_fluid_type>;
+    using super_type::nDim;
+    using material_property_shape_dim_type = typename super_type::material_property_shape_dim_type;
 
 public:
     ModelPhysicMultifluid( ModelPhysics<Dim> const& mphysics, std::string const& modeling, std::string const& type, std::string const& name, ModelModel const& model = ModelModel{} );
@@ -910,7 +908,7 @@ public:
 
     //ModelPhysics() = default;
     explicit ModelPhysics( std::string const& modeling ) : ModelBase(""), M_physicModeling( modeling ) { M_physicType = this->keyword(); }
-    ModelPhysics( std::string const& modeling, std::string const& type ) : ModelBase(""), M_physicModeling( modeling ), M_physicsType( type ) { }
+    ModelPhysics( std::string const& modeling, std::string const& type ) : ModelBase(""), M_physicModeling( modeling ), M_physicType( type ) { }
     ModelPhysics( std::string const& modeling, ModelBase const& mbase ) : ModelBase(mbase), M_physicModeling( modeling ), M_physicType( mbase.keyword() ) {}
     ModelPhysics( std::string const& modeling, ModelBase && mbase ) : ModelBase(std::move(mbase)), M_physicModeling( modeling ) { M_physicType = this->keyword(); }
     ModelPhysics( ModelPhysics const& ) = default;

@@ -484,7 +484,7 @@ ModelPhysicFluid<Dim>::DynamicViscosity::setup( nl::json const& jarg )
     else if ( jarg.is_object() )
     {
         CHECK( jarg.contains( "law" ) && jarg.at( "law" ).is_string() ) << "invalid law";
-        this->setLaw( jarg.at( "law" ).template get<std::string>() )
+        this->setLaw( jarg.at( "law" ).template get<std::string>() );
 
         if ( jarg.contains( "multifluid" ) )
         {
@@ -508,7 +508,7 @@ ModelPhysicFluid<Dim>::DynamicViscosity::setMultifluid( bool b )
     M_isMultifluid = b; 
     if( M_isMultifluid )
     {
-        this->addMaterialPropertyDescription( "heaviside", "heaviside", { std::make_pair(1,1) } );
+        M_parent->addMaterialPropertyDescription( "heaviside", "heaviside", { std::make_pair(1,1) } );
     }
 }
 
@@ -733,8 +733,8 @@ ModelPhysicMultifluid<Dim>::ModelPhysicMultifluid( ModelPhysics<Dim> const& mphy
                 M_innerFluids.insert( fmt::format( "fluid{}", n ) );
             }
         }
-    }
 #endif
+    }
 
     this->updateMaterialPropertyDescription();
 }
