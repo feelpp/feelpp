@@ -25,10 +25,10 @@
 
 #include <Eigen/Core>
 #include <boost/shared_ptr.hpp>
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
-//#include <pybind11/eigen.h>
-//#include <pybind11/numpy.h>
+#include <feel/feelpython/pybind11/pybind11.h>
+#include <feel/feelpython/pybind11/stl.h>
+//#include <feel/feelpython/pybind11/eigen.h>
+//#include <feel/feelpython/pybind11/numpy.h>
 
 
 #include <feel/feelcore/feel.hpp>

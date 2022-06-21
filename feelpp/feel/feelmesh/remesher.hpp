@@ -113,6 +113,8 @@ class Remesh
     }
     Remesh( std::shared_ptr<MeshType> const& mesh )
         : Remesh( mesh, std::vector<std::string>{}, std::vector<std::string>{} ) {}
+    Remesh( std::shared_ptr<MeshType> const& mesh, nl::json const& params )
+        : Remesh( mesh, std::vector<std::string>{}, std::vector<std::string>{}, nullptr, std::string{}, params ) {}
     Remesh( std::shared_ptr<MeshType> const& mesh,
             boost::any const& required_element_markers )
         : Remesh( mesh, required_element_markers, std::vector<std::string>{} ) {}
@@ -295,9 +297,10 @@ Remesh<MeshType> remesher( std::shared_ptr<MeshType> const& m,
                            boost::any required_element_markers = std::vector<int>{},
                            boost::any required_facet_markers = std::vector<int>{},
                            std::shared_ptr<MeshType> const& parent = {},
-                           std::string const& prefix = {} )
+                           std::string const& prefix = {},
+                           nl::json const& params = {} )
 {
-    return Remesh<MeshType>{ m, required_element_markers, required_facet_markers, parent, prefix };
+    return Remesh<MeshType>{ m, required_element_markers, required_facet_markers, parent, prefix, params };
 }
 
 template <typename MeshType>

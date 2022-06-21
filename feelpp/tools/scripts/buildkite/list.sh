@@ -10,6 +10,7 @@ source $(dirname $0)/common.sh
 ## {image_name} {base_image} {distro} {feelpp_version} {docker_version} {extra tags...}
 
 DEBIAN_VERSIONS=(
+    11
     10
     testing
     sid
@@ -18,6 +19,7 @@ DEBIAN_VERSIONS=(
 LATEST_DEBIAN=${DEBIAN_VERSIONS[${#DEBIAN_VERSIONS[@]} - 2]}
 
 UBUNTU_VERSIONS=(
+    22.04
     20.04
     19.10
     19.04

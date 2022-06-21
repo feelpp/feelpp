@@ -1,0 +1,12 @@
+{
+    "remesh":{
+        "verbose":-1,
+        "debug": 0,
+        "nosurf": 1,
+        "required": {
+            "facets": ["RequiredBoundaryOfRequiredElements","OtherRequiredBoundary"],
+            "elements": [ "MatTwo" ]
+        }
+
+    }
+}

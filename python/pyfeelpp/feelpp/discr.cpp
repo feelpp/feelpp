@@ -22,8 +22,9 @@
 //! @copyright 2018 Feel++ Consortium
 //!
 #include <fmt/core.h>
-#include <pybind11/pybind11.h>
-#include <pybind11/eigen.h>
+#include <feel/feelpython/pybind11/pybind11.h>
+#include <feel/feelpython/pybind11/eigen.h>
+#include <feel/feelpython/pybind11/stl_bind.h>
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feeldiscr/pchv.hpp>
 #include <feel/feeldiscr/pdh.hpp>
@@ -36,7 +37,7 @@
 #include <feel/feelvf/normh1.hpp>
 #include <feel/feelvf/ginac.hpp>
 #include <mpi4py/mpi4py.h>
-#include <pybind11/stl_bind.h>
+
 
 namespace py = pybind11;
 using namespace Feel;
@@ -137,7 +138,7 @@ void defDiscr(py::module &m, std::string const& suffix = "")
         .def( "min", static_cast<double ( element_t::* )() const>( &element_t::min ), "get the minimum of the element vector representation" )
         .def( "max", static_cast<double ( element_t::* )() const>( &element_t::max ), "get the maximum of the element vector representation" )
         .def( "save", &element_t::saveImpl, py::arg( "path" ), py::arg( "name" ), py::arg( "type" ) = "default", py::arg( "suffix" ) = "", py::arg( "sep" ) = "", "save functionspace element in file " )
-        .def( "load", &element_t::loadImpl, py::arg( "path" ), py::arg( "name" ), py::arg( "type" ) = "default", py::arg( "suffix" ) = "", py::arg( "sep" ) = "", "load functionspace element from file " )
+        .def( "load", &element_t::loadImpl, py::arg( "path" ), py::arg( "name" ), py::arg( "type" ) = "default", py::arg( "suffix" ) = "", py::arg( "sep" ) = "", py::arg("space_path") = "", "load functionspace element from file " )
         .def( py::self + py::self )
         .def( py::self - py::self )
         .def( double() + py::self )

@@ -157,6 +157,95 @@ ModelMeshCommon<IndexType>::ImportConfig::tabulateInformations( nl::json const& 
 }
 
 template <typename IndexType>
+ModelMesh<IndexType>::DistanceToRangeSetup::DistanceToRangeSetup( std::string const& name, ModelMeshes<IndexType> const& mMeshes, nl::json const& jarg )
+    :
+    M_name( name )
+{
+    auto itFind = jarg.find("markers");
+    if ( itFind == jarg.end() )
+        itFind = jarg.find("marker");
+    if ( itFind != jarg.end() )
+    {
+        ModelMarkers mm;
+        mm.setup( *itFind );
+        M_markers = mm;
+    }
+
+    if ( jarg.contains( "normalization" ) )
+    {
+        auto const& j_normalization = jarg.at( "normalization" );
+
+        auto createNormalization = [this,&mMeshes]( nl::json const& jargLambda )
+                                       {
+                                           if ( auto optn = Normalization::create( mMeshes,jargLambda ) )
+                                           {
+                                               M_normalizations.push_back( std::move( optn.value() ) );
+                                           }
+                                           else
+                                               throw std::runtime_error( "wrong json with normalization" );
+                                       };
+
+        if ( j_normalization.is_string() || j_normalization.is_object() )
+        {
+            createNormalization( j_normalization );
+        }
+        else if ( j_normalization.is_array() )
+        {
+            for ( auto const& [j_normalizationkey,j_normalizationval] : j_normalization.items() )
+                createNormalization( j_normalizationval );
+        }
+    }
+}
+
+template <typename IndexType>
+std::optional<typename ModelMesh<IndexType>::DistanceToRangeSetup::Normalization>
+ModelMesh<IndexType>::DistanceToRangeSetup::Normalization::create( ModelMeshes<IndexType> const& mMeshes, nl::json const& jarg )
+{
+    std::string type, name;
+    std::optional< std::pair<ModelExpression,ModelExpression> > range;
+    if ( jarg.is_string() )
+        type = jarg.template get<std::string>();
+    else if ( jarg.is_object() )
+    {
+        if ( jarg.contains("type") )
+            type = jarg.at("type").template get<std::string>();
+        if ( jarg.contains("name") )
+            name = jarg.at("name").template get<std::string>();
+        if ( jarg.contains("range") )
+        {
+            auto const& j_range = jarg.at("range");
+            if ( !j_range.is_array() )
+                throw std::runtime_error( "range should be an array" );
+            if ( j_range.size() != 2 )
+                throw std::runtime_error( "range should be an array of size 2" );
+            ModelExpression mexpr_a, mexpr_b;
+            mexpr_a.setExpr( j_range[0], mMeshes.worldComm(), mMeshes.repository().expr()/*, indexes*/ );
+            mexpr_b.setExpr( j_range[1], mMeshes.worldComm(), mMeshes.repository().expr()/*, indexes*/ );
+            if ( !mexpr_a.hasExpr<1,1>() )
+                throw std::runtime_error( "no scalar expr left bound in range" );
+            if ( !mexpr_b.hasExpr<1,1>() )
+                throw std::runtime_error( "no scalar expr left bound in range" );
+
+            range = std::make_pair( std::move(mexpr_a),std::move(mexpr_b) );
+        }
+    }
+    if ( name.empty() )
+        name = type;
+
+    if ( type == "min_max" )
+    {
+        if ( !range )
+            range = std::make_pair( ModelExpression{0.},ModelExpression{1.} );
+        return Normalization{ name,"min_max", *range };
+    }
+    else if ( type == "mean" )
+    {
+        return Normalization{ name,"mean" };
+    }
+    return {};
+}
+
+template <typename IndexType>
 ModelMesh<IndexType>::MeshMotionSetup::MeshMotionSetup( ModelMeshes<IndexType> const& mMeshes, nl::json const& jarg )
 {
     if ( jarg.contains("ComputationalDomain") )
@@ -245,7 +334,7 @@ ModelMesh<IndexType>::setup( nl::json const& jarg, ModelMeshes<IndexType> const&
         for ( auto const& el : jarg.at("DistanceToRange").items() )
         {
             std::string const& dataName = el.key();
-            DistanceToRangeSetup dtrs(dataName,el.value() );
+            DistanceToRangeSetup dtrs(dataName,mMeshes,el.value() );
             M_distanceToRangeSetup.push_back( std::move( dtrs ) );
         }
     }
@@ -266,8 +355,14 @@ ModelMesh<IndexType>::setup( nl::json const& jarg, ModelMeshes<IndexType> const&
         }
         else if ( j_meshadapt.is_array() )
         {
-            // TODO
+            for ( auto const& [j_meshadaptkey,j_meshadaptval] : j_meshadapt.items() )
+            {
+                typename MeshAdaptation::Setup mas( mMeshes, j_meshadaptval );
+                M_meshAdaptationSetup.push_back( std::move( mas ) );
+            }
         }
+        else
+            throw std::runtime_error( "meshadaptation JSON value should be a an object or an array" );
     }
 }
 
@@ -381,6 +476,15 @@ ModelMesh<IndexType>::updateForUse( ModelMeshes<IndexType> const& mMeshes )
 
         this->setMesh( meshLoaded, meshFilename );
 
+        if ( meshLoaded )
+        {
+            if ( !M_metadata.contains("preprocess") )
+                M_metadata["preprocess"] = json::array();
+
+            nl::json importMeta = { { "event","import" }, { "filename",meshFilename } };
+            M_metadata["preprocess"].push_back( std::move( importMeta ) );
+        }
+
         if ( meshLoaded && !meshFilename.empty() && mMeshes.worldComm().isMasterRank() )
         {
             fs::path thedir = mMeshes.rootRepository();//fs::path( fileSavePath ).parent_path();
@@ -492,44 +596,51 @@ ModelMesh<IndexType>::updateDistanceToRange()
         *u = distanceToRange( _space=Vh, _range=rangeFaces );
         M_distanceToRanges[dtrs.name()] = u;
 
-        std::string normalizationType = "min-max";
-        if ( normalizationType == "min-max" || normalizationType == "mean" )
+        for ( auto const& normalization : dtrs.normalizations() )
         {
-            double uMax = u->max();
-            double uMin = u->min();
-
-            // min-max normalization : u_normalized \in [0,1] with u_normalized = (u-min(u))/(max(u)-min(u)
-            if ( normalizationType == "min-max" )
+            std::string const& normalizationType = normalization.type();
+            if ( normalizationType == "min_max" || normalizationType == "mean" )
             {
-                std::cout << "uMax=" << uMax << " uMin=" << uMin << std::endl;
-                auto uNormalizedMinMax = Vh->elementPtr();
-                *uNormalizedMinMax = *u;
-                //*uNormalizedMinMax -= uMin;
-                uNormalizedMinMax->add( -uMin );
-                *uNormalizedMinMax *= 1./(uMax-uMin);
-                if ( false )
+                double uMax = u->max();
+                double uMin = u->min();
+
+                // min_max normalization : u_normalized \in [0,1] with u_normalized = (u-min(u))/(max(u)-min(u)
+                if ( normalizationType == "min_max" )
                 {
-                    // u_normalized_ab = a + u_normalized*(b-a)
-                    double a = 0, b = 1;
-                    *uNormalizedMinMax *= (b-a);
-                    uNormalizedMinMax->add( a );
+                    //std::cout << "uMax=" << uMax << " uMin=" << uMin << std::endl;
+                    auto uNormalizedMinMax = Vh->elementPtr();
+                    *uNormalizedMinMax = *u;
+                    //*uNormalizedMinMax -= uMin;
+                    uNormalizedMinMax->add( -uMin );
+                    *uNormalizedMinMax *= 1./(uMax-uMin);
+                    if ( true )
+                    {
+                        // u_normalized_ab = a + u_normalized*(b-a)
+                        auto const& [aExpr,bExpr] = normalization.range();
+                        double a = aExpr.template expr<1,1>().evaluate()(0,0);
+                        double b = bExpr.template expr<1,1>().evaluate()(0,0);
+                        if ( b < a )
+                            throw std::runtime_error( fmt::format("b={} less than a={}",a,b) );
+                        //double a = 0, b = 1;
+                        *uNormalizedMinMax *= (b-a);
+                        uNormalizedMinMax->add( a );
+                    }
+                    M_distanceToRanges[fmt::format("{}_normalized_{}",dtrs.name(),normalization.name())] = uNormalizedMinMax;
                 }
-                M_distanceToRanges[fmt::format("{}_normalized_minmax",dtrs.name())] = uNormalizedMinMax;
-            }
 
-            // mean normalization :  u_normalized = (u-average(u))/(max(u)-min(u))
-            if ( normalizationType == "mean" )
-            {
-                double average = mean(_range=elements(support(u->functionSpace())),_expr=idv(u))(0,0);
-                auto uNormalizedMean = Vh->elementPtr();
-                *uNormalizedMean = *u;
-                //*uNormalizedMean -= average;
-                uNormalizedMean->add( -average );
-                *uNormalizedMean *= 1./(uMax-uMin);
-                M_distanceToRanges[fmt::format("{}_normalized_mean",dtrs.name())] = uNormalizedMean;
+                // mean normalization :  u_normalized = (u-average(u))/(max(u)-min(u))
+                if ( normalizationType == "mean" )
+                {
+                    double average = mean(_range=elements(support(u->functionSpace())),_expr=idv(u))(0,0);
+                    auto uNormalizedMean = Vh->elementPtr();
+                    *uNormalizedMean = *u;
+                    //*uNormalizedMean -= average;
+                    uNormalizedMean->add( -average );
+                    *uNormalizedMean *= 1./(uMax-uMin);
+                    M_distanceToRanges[fmt::format("{}_normalized_{}",dtrs.name(),normalization.name())] = uNormalizedMean;
+                }
             }
         }
-
     }
 }
 
@@ -572,7 +683,7 @@ ModelMesh<IndexType>::applyRemesh( std::shared_ptr<MeshType> const& newMesh )
 
 template <typename IndexType>
 void
-ModelMesh<IndexType>::updateInformationObject( nl::json & p ) const
+ModelMesh<IndexType>::updateInformationObject( nl::json & p, std::string const& prefix_symbol ) const
 {
     if ( M_mmeshCommon->hasMesh() )
     {
@@ -582,6 +693,26 @@ ModelMesh<IndexType>::updateInformationObject( nl::json & p ) const
         if ( !M_mmeshCommon->meshFilename().empty() )
             p.emplace( "filename", M_mmeshCommon->meshFilename() );
     }
+
+    nl::json::array_t j_meshAdapArray;
+    for ( auto const& mas : M_meshAdaptationSetup )
+    {
+        nl::json j_meshAdap;
+        mas.updateInformationObject( j_meshAdap );
+        if ( !j_meshAdap.is_null() )
+            j_meshAdapArray.push_back( std::move(j_meshAdap) );
+    }
+    if ( !j_meshAdapArray.empty() )
+        p["MeshAdaptation"] = std::move( j_meshAdapArray );
+
+    // TODO here : other types
+    using geoshape_list_type = boost::mp11::mp_list< boost::mp11::mp_identity_t<Simplex<2>>,
+                                                     boost::mp11::mp_identity_t<Simplex<3>> >;
+    boost::mp11::mp_for_each<geoshape_list_type>( [this,&p,&prefix_symbol]( auto I ){
+                                                      using _mesh_type = typename Mesh<std::decay_t<decltype(I)>>::type;
+                                                      if ( this->mesh<_mesh_type>() )
+                                                          this->modelFields<_mesh_type>( "",prefix_symbol ).updateInformationObject( p["Fields"] );
+                                                  } );
 }
 
 template <typename IndexType>
@@ -672,6 +803,20 @@ ModelMesh<IndexType>::tabulateInformations( nl::json const& jsonInfo, TabulateIn
             tabInfo->add("Discretization", tabInfoDiscr );
         }
     }
+
+
+    if ( jsonInfo.contains( "MeshAdaptation" ) )
+    {
+        auto tabInfoMeshAdaptation = TabulateInformationsSections::New( tabInfoProp );
+        for ( auto const& [j_meshadaptkey,j_meshadaptval ] : jsonInfo.at( "MeshAdaptation" ).items() )
+            tabInfoMeshAdaptation->add( "", MeshAdaptation::Setup::tabulateInformations( j_meshadaptval, tabInfoProp/*.newByIncreasingVerboseLevel()*/ ) );
+        tabInfo->add("Mesh Adaptation", tabInfoMeshAdaptation );
+    }
+
+    // fields
+    if ( jsonInfo.contains("Fields") )
+        tabInfo->add( "Fields", TabulateInformationTools::FromJSON::tabulateInformationsModelFields( jsonInfo.at("Fields"), tabInfoProp ) );
+
     return tabInfo;
 }
 
@@ -698,11 +843,11 @@ ModelMeshes<IndexType>::setup( nl::json const& jarg, std::set<std::string> const
 
 template <typename IndexType>
 void
-ModelMeshes<IndexType>::updateInformationObject( nl::json & p ) const
+ModelMeshes<IndexType>::updateInformationObject( nl::json & p, std::string const& prefix_symbol ) const
 {
     for ( auto & [meshName,mMesh] : *this )
     {
-        mMesh->updateInformationObject( p[meshName] );
+        mMesh->updateInformationObject( p[meshName], prefixvm( prefix_symbol, meshName, "_" ) );
     }
 }
 

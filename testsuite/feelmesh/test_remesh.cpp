@@ -366,6 +366,28 @@ typedef boost::mpl::list<
     std::pair<boost::mpl::int_<2>, boost::mpl::int_<2>>,
     std::pair<boost::mpl::int_<3>, boost::mpl::int_<3>>>
     dim_types;
+BOOST_AUTO_TEST_CASE_TEMPLATE( test_curved, T, dim_types )
+{
+    using namespace Feel;
+
+    auto bdys = std::vector{ { "OtherRequiredBoundary"s, "RequiredBoundaryOfRequiredElements"s } };
+    for ( std::string mat : std::vector{ { "", "MatTwo" } } )
+    {
+        if ( Environment::isMasterRank() )
+        {
+            BOOST_MESSAGE( "================================================================" );
+            BOOST_MESSAGE( fmt::format( "[test_curved] required mat {}, required facet {}", mat, bdys ) );
+        }
+        TestRemesh<T::first_type::value, T::second_type::value> r( "test_remesh_curved.json" );
+        r.setMesh( fmt::format( "$cfgdir/domains_{}d_curved.geo", T::first_type::value ), mat, bdys, bdys );
+        r.execute( ioption( "niter" ) );
+    }
+}
+
+typedef boost::mpl::list<
+    std::pair<boost::mpl::int_<2>, boost::mpl::int_<2>>,
+    std::pair<boost::mpl::int_<3>, boost::mpl::int_<3>>>
+    dim_types;
 BOOST_AUTO_TEST_CASE_TEMPLATE( test_required_elements_and_facets_with_relations, T, dim_types )
 {
     using namespace Feel;
