@@ -58,6 +58,7 @@ struct FEELPP_EXPORT ModelMaterial : public CommObject
 {
     using super = CommObject;
     using material_property_type = ModelMaterialProperty;
+    using material_properties_type = std::map<std::string, material_property_type >;
 
     ModelMaterial( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
     ModelMaterial( ModelMaterial const& ) = default;
@@ -86,9 +87,17 @@ struct FEELPP_EXPORT ModelMaterial : public CommObject
 
     bool hasProperty( std::string const& prop ) const;
 
-    std::map<std::string,material_property_type> & properties() { return M_materialProperties; }
-    std::map<std::string,material_property_type> const& properties() const { return M_materialProperties; }
+    material_properties_type & properties() { return M_materialProperties; }
+    material_properties_type const& properties() const { return M_materialProperties; }
     material_property_type const& property( std::string const& prop ) const;
+
+    bool hasSubMaterial( std::string const& subMat ) const;
+    std::map<std::string, material_properties_type> & subMaterialProperties() { return M_subMaterialProperties; }
+    std::map<std::string, material_properties_type> const& subMaterialProperties() const { return M_subMaterialProperties; }
+    material_properties_type const& subMaterialProperties( std::string const& subMat ) const;
+    void setSubMaterialProperty( std::string const& subMat, std::string const& property, nl::json const& jarg, ModelIndexes const& indexes = ModelIndexes() );
+    void setSubMaterialProperty( std::string const& subMat, std::string const& property, std::string const& e );
+    bool hasSubMaterialProperty( std::string const& submat, std::string const& prop ) const;
 
     bool hasPhysics() const { return !M_physics.empty(); }
     bool hasPhysics( std::string const& physic ) const { return M_physics.find(physic) != M_physics.end(); }
@@ -109,8 +118,9 @@ private:
     std::string M_name; /*!< Material name*/
     std::string M_directoryLibExpr;
 
-    //! mat propeteries
-    std::map<std::string, material_property_type > M_materialProperties;
+    //! mat properties
+    material_properties_type M_materialProperties;
+    std::map<std::string, material_properties_type> M_subMaterialProperties;
     //! material physics
     std::set<std::string> M_physics;
     //! mesh markers

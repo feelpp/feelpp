@@ -59,6 +59,7 @@ ModelMaterial::ModelMaterial( std::string const& name, nl::json const& jarg, wor
     M_directoryLibExpr( directoryLibExpr ),
     M_meshMarkers( name )
 {
+    std::regex index_pattern { "index[1-9][0-9]*" }; // motif
 
     std::optional<nl::json> j_fileLoaded;
     if ( jarg.contains("filename") )
@@ -92,14 +93,35 @@ ModelMaterial::ModelMaterial( std::string const& name, nl::json const& jarg, wor
         }
     }
 
+    if ( jarg.contains("submaterials") )
+    {
+        auto const& j_submat = jarg.at("submaterials");
+        if ( j_submat.is_object() )
+        {
+            for ( auto const& [jargkey,jargval]: j_submat.items() )
+            {
+                CHECK( jargval.is_object() ) << "submaterial properties must be an object";
+
+                std::string subMatName = indexes.replace( jargkey );
+                for ( auto const& [jpropkey,jpropval]: jargval.items() )
+                {
+                    std::string const& propName = indexes.replace( jpropkey );
+                    if ( jpropval.empty() || std::regex_match( propName, index_pattern ) )
+                        continue;
+                    VLOG(1) << "subPropName: " << propName;
+                    this->setSubMaterialProperty( subMatName, propName, jpropval, indexes );
+                }
+            }
+        }
+    }
+
 
     std::map<std::string,double> constantMaterialProperty;
     auto addMatPropLambda = [&constantMaterialProperty,&indexes,this]( nl::json const& jarg ) {
-                                std::regex index_pattern { "index[1-9][0-9]*" }; // motif
                                 for ( auto const& [jargkey,jargval] : jarg.items() )
                                 {
                                     std::string const& propName = indexes.replace( jargkey );
-                                    if ( propName == "markers" || propName == "physics" || propName == "name" || propName == "filename" )
+                                    if ( propName == "markers" || propName == "physics" || propName == "name" || propName == "filename" || propName == "submaterials" )
                                         continue;
                                     if ( jargval.empty() )
                                         continue;
@@ -158,6 +180,40 @@ ModelMaterial::setParameterValues( std::map<std::string,double> const& mp )
 {
     for ( auto & [matName,matProp] : M_materialProperties )
         matProp.setParameterValues( mp );
+}
+
+bool
+ModelMaterial::hasSubMaterial( std::string const& subMat ) const
+{
+    return M_subMaterialProperties.find( subMat ) != M_subMaterialProperties.end();
+}
+
+ModelMaterial::material_properties_type const&
+ModelMaterial::subMaterialProperties( std::string const& subMat ) const
+{
+    if ( !this->hasSubMaterial( subMat ) )
+        throw std::out_of_range( fmt::format("sub-material {} is not registered", subMat) );
+    return M_subMaterialProperties.at( subMat );
+}
+
+void
+ModelMaterial::setSubMaterialProperty( std::string const& submat, std::string const& property, nl::json const& jarg, ModelIndexes const& indexes )
+{
+    M_subMaterialProperties[submat][property].setup( jarg,this->worldComm(),M_directoryLibExpr,indexes );
+}
+
+void
+ModelMaterial::setSubMaterialProperty( std::string const& submat, std::string const& property, std::string const& e )
+{
+    nl::json j_matprop( { { "expr",e } } );
+    this->setSubMaterialProperty( subMat, property, j_matprop );
+}
+
+bool
+ModelMaterial::hasSubMaterialProperty( std::string const& submat, std::string const& prop ) const
+{
+    return this->hasSubMaterial(submat) 
+        && M_subMaterialProperties[submat].find( prop ) != M_subMaterialProperties[submat].end();
 }
 
 
