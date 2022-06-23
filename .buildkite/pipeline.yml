@@ -8,7 +8,7 @@ steps:
       matrix:
        - "ubuntu:22.04"
        - "ubuntu:20.04"
-       - "debian:11"
+#       - "debian:11"
       if: build.message !~ /skip feelpp/
       agents:
         docker: true
@@ -36,7 +36,7 @@ steps:
       matrix:
        - "ubuntu:22.04"
        - "ubuntu:20.04"
-       - "debian:11"
+#       - "debian:11"
       if: |
         build.message !~ /skip tests/ &&
         build.message !~ /skip components/ 
@@ -51,7 +51,7 @@ steps:
       matrix:
        - "ubuntu:22.04"
        - "ubuntu:20.04"
-       - "debian:11"
+#       - "debian:11"
       if: |
         build.message !~ /skip toolboxes/ &&
         build.message !~ /skip components/
@@ -67,7 +67,7 @@ steps:
       matrix:
        - "ubuntu:22.04"
        - "ubuntu:20.04"
-       - "debian:11"
+#       - "debian:11"
       if: |
         (build.message !~ /skip mor/) &&
         (build.message !~ /skip components/)
@@ -83,7 +83,7 @@ steps:
       matrix:
        - "ubuntu:22.04"
        - "ubuntu:20.04"   
-       - "debian:11"
+#       - "debian:11"
       if: |
         (build.message !~ /skip python/) &&
         (build.message !~ /skip components/)
