@@ -117,7 +117,7 @@ ModelMaterial::ModelMaterial( std::string const& name, nl::json const& jarg, wor
 
 
     std::map<std::string,double> constantMaterialProperty;
-    auto addMatPropLambda = [&constantMaterialProperty,&indexes,this]( nl::json const& jarg ) {
+    auto addMatPropLambda = [&constantMaterialProperty,&indexes,&index_pattern,this]( nl::json const& jarg ) {
                                 for ( auto const& [jargkey,jargval] : jarg.items() )
                                 {
                                     std::string const& propName = indexes.replace( jargkey );
@@ -206,14 +206,14 @@ void
 ModelMaterial::setSubMaterialProperty( std::string const& submat, std::string const& property, std::string const& e )
 {
     nl::json j_matprop( { { "expr",e } } );
-    this->setSubMaterialProperty( subMat, property, j_matprop );
+    this->setSubMaterialProperty( submat, property, j_matprop );
 }
 
 bool
 ModelMaterial::hasSubMaterialProperty( std::string const& submat, std::string const& prop ) const
 {
     return this->hasSubMaterial(submat) 
-        && M_subMaterialProperties[submat].find( prop ) != M_subMaterialProperties[submat].end();
+        && M_subMaterialProperties.at(submat).find( prop ) != M_subMaterialProperties.at(submat).end();
 }
 
 

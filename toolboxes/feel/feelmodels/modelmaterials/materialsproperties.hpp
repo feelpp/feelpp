@@ -37,7 +37,15 @@ class MaterialProperties : public std::map<std::string, MaterialProperty>
 {
 public :
     explicit MaterialProperties( std::string const& name ) : M_materialName( name ) {}
-    MaterialProperties( MaterialProperties const& ) = default;
+    MaterialProperties( MaterialProperties const& matProp ): 
+        M_materialName( matProp.M_materialName ),
+        M_markers( matProp.M_markers )
+    {
+        for ( auto const& [subMatName, subMatProps]: matProp.M_subMaterialProperties )
+        {
+            M_subMaterialProperties.emplace( subMatName, std::make_unique<MaterialProperties>( *subMatProps ) );
+        }
+    }
     MaterialProperties( MaterialProperties && ) = default;
 
     void add( std::string const& propName, ModelExpression const& expr )
@@ -74,9 +82,37 @@ public :
 
     std::string const& materialName() const { return M_materialName; }
 
+    std::map<std::string, std::unique_ptr<MaterialProperties>> const& subMaterialProperties() const { return M_subMaterialProperties; }
+    MaterialProperties const& subMaterialProperties( std::string const& subMatName ) const
+    {
+        auto itFind = M_subMaterialProperties.find( subMatName );
+        CHECK( itFind != M_subMaterialProperties.end() ) << "sub material " << subMatName << " not found";
+        return *(itFind->second);
+    }
+    MaterialProperties & subMaterialProperties( std::string const& subMatName )
+    {
+        auto [it, inserted] = M_subMaterialProperties.try_emplace( subMatName, nullptr );
+        if( inserted )
+            it->second = std::make_unique<MaterialProperties>( subMatName );
+        return *it->second;
+    }
+    void addSubMaterialProperties( std::string const& subMatName, MaterialProperties const& subMatProps ) 
+    {
+        auto [it, inserted] = M_subMaterialProperties.try_emplace( subMatName, nullptr );
+        CHECK( inserted ) << "sub material " << subMatName << " already exists";
+        if( inserted )
+            it->second = std::make_unique<MaterialProperties>( subMatProps );
+    }
+    void addSubMaterialProperty( std::string const& subMatName, std::string const& propName, ModelExpression const& expr )
+    {
+        M_subMaterialProperties[subMatName]->add( propName, expr );
+    }
+
+
 private :
     std::string M_materialName;
     std::set<std::string> M_markers;
+    std::map<std::string, std::unique_ptr<MaterialProperties>> M_subMaterialProperties;
 };
 
 struct MaterialsOnMeshBase;
@@ -183,6 +219,20 @@ public :
                     if ( itFindSymbolInDesc != propSymbolToPropNameInDescription.end() )
                         propName = itFindSymbolInDesc->second;
                     this->addProperty( matProperties, propName, propExpr.mexpr() );
+                }
+
+                // Add sub-material properties
+                for ( auto const& [subMatName, subMatProps]: mat.subMaterialProperties() )
+                {
+                    auto & subMatProperties = matProperties.subMaterialProperties( subMatName );
+                    for ( auto const& [propSymbol, propExpr]: subMatProps )
+                    {
+                        std::string propName = propSymbol;
+                        auto itFindSymbolInDesc = propSymbolToPropNameInDescription.find( propSymbol );
+                        if ( itFindSymbolInDesc != propSymbolToPropNameInDescription.end() )
+                            propName = itFindSymbolInDesc->second;
+                        this->addProperty( subMatProperties, propName, propExpr.mexpr() );
+                    }
                 }
 
                 // TODO : move in heat toolbox
