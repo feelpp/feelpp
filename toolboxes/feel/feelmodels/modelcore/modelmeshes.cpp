@@ -171,6 +171,9 @@ ModelMesh<IndexType>::DistanceToRangeSetup::DistanceToRangeSetup( std::string co
         M_markers = mm;
     }
 
+    if ( jarg.contains( "max_distance" ) )
+        M_maxDistance.setExpr( jarg.at( "max_distance" ), mMeshes.worldComm(), mMeshes.repository().expr()/*, indexes*/ );
+
     if ( jarg.contains( "normalization" ) )
     {
         auto const& j_normalization = jarg.at( "normalization" );
@@ -593,7 +596,7 @@ ModelMesh<IndexType>::updateDistanceToRange()
         auto Vh = M_mmeshCommon->template createFunctionSpace<distange_to_range_space_type>( basis );
         auto u = Vh->elementPtr();
         auto rangeFaces = dtrs.markers().empty()? boundaryfaces(themesh) : markedfaces( themesh, dtrs.markers() );
-        *u = distanceToRange( _space=Vh, _range=rangeFaces );
+        *u = distanceToRange( _space=Vh, _range=rangeFaces, _max_distance = dtrs.maxDistance() );
         M_distanceToRanges[dtrs.name()] = u;
 
         for ( auto const& normalization : dtrs.normalizations() )
