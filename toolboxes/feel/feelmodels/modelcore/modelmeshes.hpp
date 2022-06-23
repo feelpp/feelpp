@@ -236,11 +236,13 @@ private :
         std::string const& name() const { return M_name; }
         std::set<std::string> const& markers() const { return M_markers; }
         std::vector<Normalization> const& normalizations() const { return M_normalizations; }
+        double maxDistance() const { return M_maxDistance.template hasExpr<1,1>()? M_maxDistance.template expr<1,1>().evaluate()(0,0) : -1.; }
 
     private :
         std::string M_name;
         std::set<std::string> M_markers;
         std::vector<Normalization> M_normalizations;
+        ModelExpression M_maxDistance;
     };
     struct MeshMotionSetup
     {
