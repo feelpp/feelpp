@@ -223,7 +223,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initMaterialProperties()
     for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
     {
         auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<nDim>>(physicData);
-        if ( physicFluidData->dynamicViscosity().isNewtonianLaw() )
+        if ( physicFluidData->dynamicViscosity().isConstant() )
             continue;
         for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
         {
