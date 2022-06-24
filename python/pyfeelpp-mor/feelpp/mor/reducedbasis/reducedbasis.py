@@ -226,6 +226,42 @@ class reducedbasis():
 
         return sol, sol @ l
 
+    def getOutputs(self, mu, ks, beta=None, size=None):
+        """Computes and returns the outputs sNk
+
+        Args:
+            mu (ParameterSpaceElement): parameter
+            ks (list): list containing the indexes of the outputs to be computed
+            beta (list, optional): coefficients of the decomposition, if they have already been computed. Defaults to None.
+            size (int, optional): Size of the subbasis wanted. Defaults to None.
+
+        Returns:
+            lists: list of outputs sN_k for each k in ks
+        """
+
+        n = len(ks)
+        outputs = np.zeros(n)
+
+        if beta is None:
+            beta = self.model.computeBetaQm(mu)
+        A_mu = self.assembleAN(beta[0][0], size=size)
+        F_mu = self.assembleFN(beta[1][0][0], size=size)
+
+        sol = np.linalg.solve(A_mu, F_mu)
+
+        for i in range(n):
+            k = outputs[i]
+            if k == -1:
+                l = F_mu
+            else:
+                if 0 <= k and k < self.N_output:
+                    l = self.assembleLkN(k, beta[1][k+1][0])
+                else:
+                    l = np.zeros_like(F_mu)
+            outputs[k] = sol @ l
+
+        return outputs
+
 
     def getOutputName(self, k):
         """Get the name of the k-th output
