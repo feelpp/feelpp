@@ -104,6 +104,7 @@ public :
     typedef std::function<tensor_ptrtype ( parameter_type const& mu)> assemble_function_type;
 
     typedef Eigen::MatrixXd matrixN_type;
+    typedef Eigen::FullPivLU<matrixN_type> solver_type;
     typedef Eigen::VectorXd vectorN_type;
 
     typedef boost::tuple<parameter_type,double> bestfit_type;
@@ -360,12 +361,13 @@ protected :
             M = M_M;
         vectorN_type rhs (M);
         vectorN_type coeff (M);
-        if ( M > 0 )
-        {
-            for ( int i=0; i<M; i++ )
-                rhs(i) = evaluate( T, online ? M_indexR[i]:M_index[i], online );
+
+        for ( int i=0; i<M; ++i )
+            rhs(i) = evaluate( T, online ? M_indexR[i]:M_index[i], online );
+        if ( M == M_M )
+            coeff = M_B_Lu.solve( rhs );
+        else
             coeff = M_B.block(0,0,M,M).fullPivLu().solve( rhs );
-        }
 
         return coeff;
     }
@@ -426,6 +428,7 @@ protected :
     int M_M, M_user_max, M_n_rb;
     double M_tol, M_Atol, M_max_value;
     matrixN_type M_B;
+    solver_type M_B_Lu;
     std::vector< tensor_ptrtype > M_bases;
 
     std::vector<indice_type> M_index, M_indexR, M_ldofs;
@@ -734,6 +737,8 @@ DEIMBase<ParameterSpaceType,SpaceType,TensorType>::addNewVector( parameter_type 
     //this->saveDB();
     LOG(INFO) << this->name() + " : addNewVector() end";
     toc( this->name() +" : Add new vector" );
+
+    M_B_Lu = M_B.block(0, 0, M_M, M_M).fullPivLu();
 } // addNewvector
 
 
@@ -762,7 +767,7 @@ double
 DEIMBase<ParameterSpaceType,SpaceType,TensorType>::evaluate( sparse_matrix_ptrtype M, std::pair<int,int> const& idx, bool seq )
 {
     int i = idx.first;
-    int j =idx.second;
+    int j = idx.second;
     double value=0;
 
     if ( seq )
