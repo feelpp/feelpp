@@ -4,7 +4,11 @@
     "Models":
     {
         "fluid":{
-            "equations":"Navier-Stokes"
+            "setup":
+            {
+                "equation":"Navier-Stokes",
+                "formulation":"emac" // "convective","skew-symmetric","conservative","rotational","emac"
+            }
         }
     },
     "Meshes":
@@ -48,7 +52,7 @@
                     "expr":"{0,0}"
                 }
             },
-            "outlet":
+            "normal_stress":
             {
                 "outlet":
                 {

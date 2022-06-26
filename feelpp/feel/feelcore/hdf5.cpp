@@ -241,6 +241,23 @@ void Feel::HDF5::read( const std::string& tableName,
     H5Sclose (memspace);
 }
 
+void Feel::HDF5::read_elements( const std::string& tableName,
+                                hid_t& memDataType, hsize_t currentCount[], hsize_t num_elem, const hsize_t * coord,
+                                void* buffer, int nbDims )
+{
+    tableHandle& currentTable = M_tableList[tableName];
+
+    hid_t memspace = H5Screate_simple (nbDims, currentCount, currentCount);
+
+    H5Sselect_elements( currentTable.filespace, H5S_SELECT_SET, num_elem, coord );
+
+    H5Dread (currentTable.dataset, memDataType, memspace,
+             currentTable.filespace, currentTable.plist,
+             buffer);
+
+    H5Sclose (memspace);
+}
+
 void Feel::HDF5::closeTable( const std::string& tableName )
 {
     tableHandle& currentTable = M_tableList[tableName];

@@ -354,11 +354,12 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobian( 
     // peusdo transient continuation
     if ( BuildNonCstPart && data.hasInfo( "use-pseudo-transient-continuation" ) )
     {
-#if 1
         double pseudoTimeStepDelta = data.doubleInfo("pseudo-transient-continuation.delta");
+#if 0
         CHECK( M_stabilizationGLSParameterConvectionDiffusion ) << "aie";
         auto XhP0d = M_stabilizationGLSParameterConvectionDiffusion->fieldTau().functionSpace();
         auto norm2_uu = XhP0d->element(); // TODO : improve this (maybe create an expression instead)
+#if 0
         //norm2_uu.on(_range=M_rangeMeshElements,_expr=norm2(idv(u))/h());
         auto fieldNormu = u->functionSpace()->compSpace()->element( norm2(idv(u)) );
         auto maxu = fieldNormu.max( XhP0d );
@@ -366,6 +367,9 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobian( 
         //auto maxuy = u[ComponentType::Y].max( this->materialProperties()->fieldRho().functionSpace() );
         //norm2_uu.on(_range=M_rangeMeshElements,_expr=norm2(vec(idv(maxux),idv(maxux)))/h());
         norm2_uu.on(_range=M_rangeMeshElements,_expr=idv(maxu)/h());
+#else
+        norm2_uu.on(_range=M_rangeMeshElements,_expr=norm2(idv(u))/h());
+#endif
 
         bilinearFormVV_PatternDefault +=
             integrate(_range=M_rangeMeshElements,
@@ -374,7 +378,10 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobian( 
                       //_expr=(1./pseudoTimeStepDelta)*inner(idt(u),id(u)),
                       _geomap=this->geomap() );
 #else
-        CHECK( false ) << "TODO VINCENT";
+        bilinearFormVV_PatternDefault +=
+            integrate(_range=M_rangeMeshElements,
+                      _expr=(1./pseudoTimeStepDelta)*inner(idt(u),id(u)),
+                      _geomap=this->geomap() );
 #endif
     }
     //--------------------------------------------------------------------------------------------------//

@@ -258,6 +258,15 @@ public :
     bool manageParameterValuesOfModelProperties() const { return M_manageParameterValuesOfModelProperties; }
     void setManageParameterValuesOfModelProperties( bool b ) { M_manageParameterValuesOfModelProperties = b; }
 
+    auto symbolsExprParameter() const
+        {
+            if ( this->hasModelProperties() )
+                return this->modelProperties().parameters().symbolsExpr();
+            else
+                return std::decay_t<decltype(this->modelProperties().parameters().symbolsExpr())>{};
+        }
+
+
 private :
     // worldcomm
     worldcomm_ptr_t M_worldComm;

@@ -51,6 +51,7 @@
 #include <feel/feelvf/unaryfunctor.hpp>
 #include <feel/feelvf/binaryfunctor.hpp>
 #include <feel/feelvf/arithmetic.hpp>
+#include <feel/feelvf/cst.hpp>
 
 namespace Feel
 {

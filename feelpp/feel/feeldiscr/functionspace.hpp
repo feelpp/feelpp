@@ -4118,7 +4118,8 @@ public:
                 std::string const& type = args.get_else(_type,"default");
                 std::string const& suffix = args.get_else(_suffix,"");
                 std::string const& sep = args.get_else(_sep,"");
-                return loadImpl( Environment::expand( path ), name, type, suffix, sep );
+                std::string const& space_path = args.get_else(_space_path,"");
+                return loadImpl( Environment::expand( path ), name, type, suffix, sep, space_path );
             }
 
         //!
@@ -4127,8 +4128,9 @@ public:
         //! @param type file type binary, ascii, hdf5, xml
         //! @param suffix filename suffix to use
         //! @param sep separator to use in filename
+        //! @param space_path path to space file related to input file path
         //!
-        bool loadImpl( std::string const& path, std::string const& name, std::string const& type = "binary", std::string const& suffix = "", std::string const& sep = "" )
+        bool loadImpl( std::string const& path, std::string const& name, std::string const& type = "binary", std::string const& suffix = "", std::string const& sep = "", std::string const& space_path = "" )
         {
             std::ostringstream oss;
             fs::path p;
@@ -4178,6 +4180,9 @@ public:
                 return 0;
             }
 
+            std::optional<std::vector<index_type>> spacesRelation;
+            if ( !space_path.empty() )
+                spacesRelation = this->functionSpace()->relationFromFile( space_path );
 
             if ( typeUsed == "binary" || typeUsed == "text" || typeUsed == "xml" )
             {
@@ -4203,7 +4208,7 @@ public:
             else if ( typeUsed == "hdf5" )
             {
 #ifdef FEELPP_HAS_HDF5
-                this->loadHDF5( p.string() );
+                this->loadHDF5( p.string(), spacesRelation );
 #else
                 CHECK( false ) << "Feel++ is not compiled with hdf5";
 #endif
@@ -5481,6 +5486,182 @@ public:
         LOG(INFO) << "         n Global Dof : " << nDof() << "\n";
         LOG(INFO) << "         n Local  Dof : " << nLocalDof() << "\n";
     }
+
+    /**
+     * @brief save on disk some informations in json + hdF5 files as doftable (require HDF5 support)
+     *
+     * @param filepath path of the json files generated (extension can be automatically added if not given)
+     */
+    template <typename TT=functionspace_type,std::enable_if_t< !TT::is_composite, bool> = true >
+    void save( std::string const& filepathstr ) const
+        {
+            fs::path argfilepath = filepathstr;
+            fs::path jsonfilepath = argfilepath.replace_extension("json");
+            fs::path h5filepath = argfilepath.replace_extension("h5");
+
+            auto const& mpicomm = this->worldComm().localComm();
+            rank_type mpirank = this->worldComm().localRank();
+
+            if ( this->worldComm().isMasterRank() )
+            {
+                fs::path filedir = (jsonfilepath.is_relative()? fs::absolute(jsonfilepath) : jsonfilepath).parent_path();
+                if ( !fs::exists( filedir ) )
+                    fs::create_directories( filedir );
+            }
+            this->worldComm().barrier();
+
+            // save json file
+            nl::json jdata;
+            this->updateInformationObject( jdata["info"] );
+            if ( this->worldComm().isMasterRank() )
+            {
+                fs::ofstream ojson( jsonfilepath );
+                ojson << jdata.dump(/*1*/);
+            }
+
+            // serialize doftable
+            std::vector<uint> doftableSerialization;
+            auto meshsupport = this->template meshSupport<0>();
+            auto dof = this->dof();
+            std::vector<index_type> dd;
+            for ( auto const& eltWrap : elements(meshsupport) )
+            {
+                auto const& elt = unwrap_ref(eltWrap);
+                doftableSerialization.push_back( elt.id() );
+                for ( int p=0;p<elt.nVertices();++p )
+                    doftableSerialization.push_back( elt.point(p).id() );
+
+                auto dofMapping = dof->localDof( elt.id() );
+                dd.resize( std::distance( Feel::begin(dofMapping),Feel::end(dofMapping ) ) );
+                for( auto const& ldof : dofMapping )
+                {
+                    index_type thedof = ldof.second.index();
+                    uint16_type thelocdof = ldof.first.localDof();
+                    index_type thedofgp = dof->mapGlobalProcessToGlobalCluster( thedof );
+                    dd[thelocdof] = thedofgp;
+                }
+
+                doftableSerialization.insert( doftableSerialization.end(), dd.begin(), dd.end() );
+            }
+
+
+            // get size/position data of hdf5 file
+            index_type local_sum = doftableSerialization.size();
+            std::vector<index_type> processTolocalSum;
+            mpi::all_gather( mpicomm, local_sum,processTolocalSum );
+            index_type global_sum = std::accumulate(processTolocalSum.begin(), processTolocalSum.end(), 0);
+            index_type offset = std::accumulate(processTolocalSum.begin(), std::next( processTolocalSum.begin(), mpirank) , 0);
+
+            // save hdf5 file
+            HDF5 hdf5;
+            hdf5.openFile( h5filepath.string(), mpicomm, false );
+
+            bool useTransposedStorage = true;
+            const int dimsComp0 = (useTransposedStorage)? 1 : 0;
+            const int dimsComp1 = (useTransposedStorage)? 0 : 1;
+
+            std::string tableName = "doftable";
+            hsize_t dimsElt[2];
+            dimsElt[dimsComp0] = global_sum;
+            dimsElt[dimsComp1] = 1;
+            hsize_t dimsElt2[2];
+            dimsElt2[dimsComp0] = local_sum;
+            dimsElt2[dimsComp1] = 1;
+            hsize_t offsetElt[2];
+            offsetElt[dimsComp0] = offset;
+            offsetElt[dimsComp1] = 0;
+
+            hdf5.createTable( tableName, H5T_NATIVE_UINT, dimsElt );
+            if ( !doftableSerialization.empty() )
+                hdf5.write( tableName, H5T_NATIVE_UINT, dimsElt2, offsetElt, doftableSerialization.data() );
+            hdf5.closeTable( tableName );
+
+            hdf5.closeFile();
+        }
+
+    /**
+     * @brief get realtion with current doftable and one stored on disk (mesh points should be same)
+     *
+     * @param filepath path of the json files on the disk
+     */
+    template <typename TT=functionspace_type,std::enable_if_t< !TT::is_composite, bool> = true >
+    std::vector<index_type> relationFromFile( std::string const& filepathstr ) const
+        {
+            fs::path argfilepath = filepathstr;
+            fs::path jsonfilepath = argfilepath.replace_extension("json");
+            fs::path h5filepath = argfilepath.replace_extension("h5");
+
+            // fetch current mapping : (pt ids in elt) -> (dof in process ordered by local dof)
+            using doftable_relation_type = std::unordered_map<std::vector /*set*/<index_type>, std::vector<index_type>, Feel::HashTables::HasherContainers<index_type>>;
+            doftable_relation_type currentDofTableMapping;
+            std::vector<index_type> ptIds;
+            std::vector<index_type> dd;
+            auto meshsupport = this->template meshSupport<0>();
+            auto dof = this->dof();
+            for ( auto const& eltWrap : elements(meshsupport) )
+            {
+                auto const& elt = unwrap_ref(eltWrap);
+                ptIds.resize( elt.nVertices() );
+                for ( int p=0;p<elt.nVertices();++p )
+                    ptIds[p] = elt.point(p).id();
+
+                auto dofMapping = dof->localDof( elt.id() );
+                dd.resize( std::distance( Feel::begin(dofMapping),Feel::end(dofMapping ) ) );
+                for( auto const& ldof : dofMapping )
+                {
+                    index_type thedof = ldof.second.index();
+                    uint16_type thelocdof = ldof.first.localDof();
+                    dd[thelocdof] = thedof;
+                }
+
+                currentDofTableMapping.insert( {ptIds, dd} );
+            }
+
+            // read hdf5 file
+            HDF5 hdf5;
+#if 0
+            hdf5.openFile( h5filepath.string(), (subComm)? *subComm : this->comm().comm(), true );
+#else
+            hdf5.openFile( h5filepath.string(), this->worldComm().comm(), true );
+#endif
+            std::string tableName = "doftable";
+            hsize_t dimsGlob[2];
+            hsize_t offsetElt[2] = {0,0};
+            hdf5.openTable( tableName, dimsGlob );
+
+            std::vector<uint> dataReaded( dimsGlob[0]*dimsGlob[1] );
+
+            hdf5.read( tableName, H5T_NATIVE_UINT, dimsGlob, offsetElt, dataReaded.data() );
+
+            hdf5.closeTable( tableName );
+            hdf5.closeFile();
+
+            // update mapping
+            uint16_type nVerticesInElt = ptIds.size();
+            uint16_type nDofByElt = dd.size();
+            std::vector<index_type> mappingWithFile( dof->nLocalDofWithGhost(), invalid_v<index_type> );
+
+            for ( size_type k=0; k<dataReaded.size(); )
+            {
+                index_type eltId = dataReaded[k++];
+                ptIds.resize( nVerticesInElt );
+                for ( int p=0;p<nVerticesInElt;++p )
+                    ptIds[p] = dataReaded[k++];
+                auto const& curentLpDofs = currentDofTableMapping.at( ptIds );
+
+                for ( int ld=0;ld<nDofByElt;++ld )
+                    mappingWithFile[ curentLpDofs[ld] ] = dataReaded[k++];
+            }
+
+            return mappingWithFile;
+        }
+
+    template <typename TT=functionspace_type,std::enable_if_t< TT::is_composite, bool> = true >
+    std::vector<index_type> relationFromFile( std::string const& filepathstr ) const
+        {
+            CHECK( false ) << "composite case not implemented";
+            return {};
+        }
 
     //@}
 
