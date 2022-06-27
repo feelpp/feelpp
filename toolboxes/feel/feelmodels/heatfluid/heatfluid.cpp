@@ -96,6 +96,12 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::initMesh()
         super_type::super_model_meshes_type::setupRestart( this->keyword() );
     super_type::super_model_meshes_type::updateForUse<mesh_type>( this->keyword() );
 
+    super_type::super_model_meshes_type::modelMesh( this->keyword() ).setFunctionApplyRemesh(
+        [this]( typename super_type::super_model_meshes_type::mesh_base_ptrtype mold,
+                typename super_type::super_model_meshes_type::mesh_base_ptrtype mnew ) { this->applyRemesh( std::dynamic_pointer_cast<mesh_type>( mold ),
+                                                                                                            std::dynamic_pointer_cast<mesh_type>( mnew ) ); }
+                                                                                             );
+
     CHECK( this->mesh() ) << "mesh generation fail";
 
     double tElpased = this->timerTool("Constructor").stop("initMesh");
@@ -196,8 +202,6 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     // physical properties
     if ( !M_materialsProperties )
     {
-        //auto paramValues = this->modelProperties().parameters().toParameterValues();
-        //this->modelProperties().materials().setParameterValues( paramValues );
         M_materialsProperties.reset( new materialsproperties_type( this->shared_from_this() ) );
         M_materialsProperties->updateForUse( this->modelProperties().materials() );
     }
@@ -263,13 +267,121 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     // update initial conditions
     this->updateInitialConditions( this->symbolsExpr() );
 
-
     // solver
     if ( M_solverName == "automatic" )
     {
         M_solverName = "Newton";
     }
 
+    // algebraic model
+    this->initAlgebraicModel();
+
+    // mesh adaptation at event after_init
+    using mesh_adaptation_type = typename super_type::super_model_meshes_type::mesh_adaptation_type;
+    this->template updateMeshAdaptation<mesh_type>( this->keyword(),
+                                                    mesh_adaptation_type::createEvent<mesh_adaptation_type::Event::Type::after_init>(),
+                                                    this->symbolsExpr() );
+
+    // algebraic solver
+    if ( buildModelAlgebraicFactory )
+        this->initAlgebraicFactory();
+
+
+    this->setIsUpdatedForUse( true );
+
+    double tElapsedInit = this->timerTool("Constructor").stop("init");
+    if ( this->scalabilitySave() ) this->timerTool("Constructor").save();
+    this->log("HeatFluid","init",(boost::format("finish in %1% s")%tElapsedInit).str() );
+}
+
+
+HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+HEATFLUID_CLASS_TEMPLATE_TYPE::applyRemesh( mesh_ptrtype oldMesh, mesh_ptrtype newMesh, std::shared_ptr<RemeshInterpolation> remeshInterp )
+{
+    this->log("HeatFluid","applyRemesh", "start");
+    //mesh_ptrtype oldMesh = this->mesh();
+
+    // material prop
+    this->materialsProperties()->removeMesh( oldMesh );
+    this->materialsProperties()->addMesh( newMesh );
+
+    // model mesh
+    super_type::super_model_meshes_type::applyRemesh( this->keyword(), newMesh );
+
+    // subtoolboxes
+    M_heatModel->applyRemesh( oldMesh, newMesh, remeshInterp );
+    M_fluidModel->applyRemesh( oldMesh, newMesh, remeshInterp );
+
+    // reset algebraic data/tools
+    this->removeAllAlgebraicDataAndTools();
+    this->initAlgebraicModel();
+
+    this->initAlgebraicFactory(); // TODO : Theta time scheme
+    this->log("HeatFluid","applyRemesh", "finish");
+}
+
+HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+HEATFLUID_CLASS_TEMPLATE_TYPE::initPostProcess()
+{
+    this->log("HeatFluid","initPostProcess", "start");
+    this->timerTool("Constructor").start();
+
+    // need to not include export fields of material of subphysics
+    std::set<std::string> ppExportsAllFieldsAvailableHeat = Feel::FeelModels::detail::set_difference( this->heatModel()->postProcessExportsAllFieldsAvailable(),
+                                                                                                      this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->mesh(),this->heatModel()->physicsAvailable() ) );
+    std::set<std::string> ppExportsAllFieldsAvailablefluid = Feel::FeelModels::detail::set_difference( this->fluidModel()->postProcessExportsAllFieldsAvailable(),
+                                                                                                       this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->mesh(),this->fluidModel()->physicsAvailable() ) );
+   std::set<std::string> ppExportsAllFieldsAvailable;
+   for ( auto const& s : ppExportsAllFieldsAvailableHeat )
+       ppExportsAllFieldsAvailable.insert( prefixvm( this->heatModel()->keyword(), s) );
+   for ( auto const& s : ppExportsAllFieldsAvailablefluid )
+       ppExportsAllFieldsAvailable.insert( prefixvm( this->fluidModel()->keyword(), s) );
+    this->setPostProcessExportsAllFieldsAvailable( ppExportsAllFieldsAvailable );
+    this->addPostProcessExportsAllFieldsAvailable( this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->mesh(),this->physicsAvailable() ) );
+    this->setPostProcessExportsPidName( "pid" );
+    super_type::initPostProcess();
+
+    if ( !this->postProcessExportsFields().empty() )
+    {
+#if 0
+        std::string geoExportType="static";//change_coords_only, change, static
+#else
+        bool useStaticExporter = boption(_name="exporter.use-static-mesh",_prefix=this->prefix());
+        std::string geoExportType = useStaticExporter? "static":"change";
+#endif
+        M_exporter = exporter( _mesh=this->mesh(),
+                               _name="Export",
+                               _geo=geoExportType,
+                               _path=this->exporterPath() );
+
+        if ( this->doRestart() && this->restartPath().empty() )
+        {
+            if ( M_exporter->doExport() )
+                M_exporter->restart(this->timeInitial());
+        }
+    }
+
+    auto se = this->symbolsExpr();
+    this->template initPostProcessMeshes<mesh_type>( se );
+
+    // start or restart the export of measures
+    if ( !this->isStationary() )
+    {
+        if ( this->doRestart() )
+            this->postProcessMeasures().restart( this->timeInitial() );
+    }
+
+
+    double tElpased = this->timerTool("Constructor").stop("createExporters");
+    this->log("HeatFluid","initPostProcess",(boost::format("finish in %1% s")%tElpased).str() );
+}
+
+HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+HEATFLUID_CLASS_TEMPLATE_TYPE::initAlgebraicModel()
+{
     // backend
     this->initAlgebraicBackend();
 
@@ -303,34 +415,37 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     if ( ( M_fluidModel->timeStepping() == "Theta" || M_heatModel->timeStepping() == "Theta" ) &&
          ( M_fluidModel->stabilizationGLS() || M_heatModel->stabilizationGLS() ) )
         M_timeStepThetaSchemePreviousSolution = this->backend()->newVector( bvs->vectorMonolithic()->mapPtr() );
+}
 
-    // algebraic solver
-    if ( buildModelAlgebraicFactory )
+HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+HEATFLUID_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
+{
+    if ( M_useNaturalConvection && !M_useSemiImplicitTimeScheme )
     {
-        if ( M_useNaturalConvection && !M_useSemiImplicitTimeScheme )
-        {
-            auto algebraicFactory = std::make_shared<model_algebraic_factory_type>( this->shared_from_this(),this->backend() );
-            this->setAlgebraicFactory( algebraicFactory );
-            if ( M_fluidModel->hasOperatorPCD() )
-                algebraicFactory->preconditionerTool()->attachOperatorPCD( "pcd", M_fluidModel->operatorPCD() );
+        auto algebraicFactory = std::make_shared<model_algebraic_factory_type>( this->shared_from_this(),this->backend() );
+        this->setAlgebraicFactory( algebraicFactory );
+        if ( M_fluidModel->hasOperatorPCD() )
+            algebraicFactory->preconditionerTool()->attachOperatorPCD( "pcd", M_fluidModel->operatorPCD() );
 
-            if ( ( M_fluidModel->timeStepping() == "Theta" ) || ( M_heatModel->timeStepping() == "Theta" ) )
+        if ( ( M_fluidModel->timeStepping() == "Theta" ) || ( M_heatModel->timeStepping() == "Theta" ) )
+        {
+            M_timeStepThetaSchemePreviousContrib = this->backend()->newVector( this->algebraicBlockVectorSolution()->vectorMonolithic()->mapPtr() );
+            algebraicFactory->addVectorResidualAssembly( M_timeStepThetaSchemePreviousContrib, 1.0, "Theta-Time-Stepping-Previous-Contrib", true );
+            algebraicFactory->addVectorLinearRhsAssembly( M_timeStepThetaSchemePreviousContrib, -1.0, "Theta-Time-Stepping-Previous-Contrib", false );
+            if ( M_fluidModel->stabilizationGLS() || M_heatModel->stabilizationGLS() )
             {
-                M_timeStepThetaSchemePreviousContrib = this->backend()->newVector( this->algebraicBlockVectorSolution()->vectorMonolithic()->mapPtr() );
-                algebraicFactory->addVectorResidualAssembly( M_timeStepThetaSchemePreviousContrib, 1.0, "Theta-Time-Stepping-Previous-Contrib", true );
-                algebraicFactory->addVectorLinearRhsAssembly( M_timeStepThetaSchemePreviousContrib, -1.0, "Theta-Time-Stepping-Previous-Contrib", false );
-                if ( M_fluidModel->stabilizationGLS() || M_heatModel->stabilizationGLS() )
-                {
-                    algebraicFactory->dataInfos().addVectorInfo( "time-stepping.previous-solution", M_timeStepThetaSchemePreviousSolution );
-                }
+                algebraicFactory->dataInfos().addVectorInfo( "time-stepping.previous-solution", M_timeStepThetaSchemePreviousSolution );
             }
         }
     }
 
     if ( !M_useNaturalConvection || M_useSemiImplicitTimeScheme )
     {
-        M_heatModel->initAlgebraicFactory();
-        M_fluidModel->initAlgebraicFactory();
+        if ( !M_heatModel->algebraicFactory() )
+            M_heatModel->initAlgebraicFactory();
+        if ( !M_fluidModel->algebraicFactory() )
+            M_fluidModel->initAlgebraicFactory();
         M_heatModel->algebraicFactory()->setFunctionLinearAssembly( std::bind( &self_type::updateLinear_Heat,
                                                                                std::ref( *this ), std::placeholders::_1 ) );
         M_heatModel->algebraicFactory()->setFunctionResidualAssembly( std::bind( &self_type::updateResidual_Heat,
@@ -351,64 +466,6 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
                                                                                                      std::ref( *this ), std::placeholders::_1 ) );
     }
 
-    this->setIsUpdatedForUse( true );
-
-    double tElapsedInit = this->timerTool("Constructor").stop("init");
-    if ( this->scalabilitySave() ) this->timerTool("Constructor").save();
-    this->log("HeatFluid","init",(boost::format("finish in %1% s")%tElapsedInit).str() );
-}
-
-
-HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
-void
-HEATFLUID_CLASS_TEMPLATE_TYPE::initPostProcess()
-{
-    this->log("HeatFluid","initPostProcess", "start");
-    this->timerTool("Constructor").start();
-
-    // need to not include export fields of material of subphysics
-    std::set<std::string> ppExportsAllFieldsAvailableHeat = Feel::FeelModels::detail::set_difference( this->heatModel()->postProcessExportsAllFieldsAvailable(),
-                                                                                                      this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->mesh(),this->heatModel()->physicsAvailable() ) );
-    std::set<std::string> ppExportsAllFieldsAvailablefluid = Feel::FeelModels::detail::set_difference( this->fluidModel()->postProcessExportsAllFieldsAvailable(),
-                                                                                                       this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->mesh(),this->fluidModel()->physicsAvailable() ) );
-   std::set<std::string> ppExportsAllFieldsAvailable;
-   for ( auto const& s : ppExportsAllFieldsAvailableHeat )
-       ppExportsAllFieldsAvailable.insert( prefixvm( this->heatModel()->keyword(), s) );
-   for ( auto const& s : ppExportsAllFieldsAvailablefluid )
-       ppExportsAllFieldsAvailable.insert( prefixvm( this->fluidModel()->keyword(), s) );
-    this->setPostProcessExportsAllFieldsAvailable( ppExportsAllFieldsAvailable );
-    this->addPostProcessExportsAllFieldsAvailable( this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->mesh(),this->physicsAvailable() ) );
-    this->setPostProcessExportsPidName( "pid" );
-    super_type::initPostProcess();
-
-    if ( !this->postProcessExportsFields().empty() )
-    {
-        std::string geoExportType="static";//change_coords_only, change, static
-        M_exporter = exporter( _mesh=this->mesh(),
-                               _name="Export",
-                               _geo=geoExportType,
-                               _path=this->exporterPath() );
-
-        if ( this->doRestart() && this->restartPath().empty() )
-        {
-            if ( M_exporter->doExport() )
-                M_exporter->restart(this->timeInitial());
-        }
-    }
-
-    auto se = this->symbolsExpr();
-    this->template initPostProcessMeshes<mesh_type>( se );
-
-    // start or restart the export of measures
-    if ( !this->isStationary() )
-    {
-        if ( this->doRestart() )
-            this->postProcessMeasures().restart( this->timeInitial() );
-    }
-
-
-    double tElpased = this->timerTool("Constructor").stop("createExporters");
-    this->log("HeatFluid","initPostProcess",(boost::format("finish in %1% s")%tElpased).str() );
 }
 
 
@@ -544,11 +601,25 @@ HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
 HEATFLUID_CLASS_TEMPLATE_TYPE::updateTimeStep()
 {
+#if 1 // AT END OF TIME STEP
+    using mesh_adaptation_type = typename super_type::super_model_meshes_type::mesh_adaptation_type;
+    this->template updateMeshAdaptation<mesh_type>( this->keyword(),
+                                                    mesh_adaptation_type::createEvent<mesh_adaptation_type::Event::Type::each_time_step>( this->time(),this->timeStepBase()->iteration() ),
+                                                    this->symbolsExpr() );
+#endif
     this->updateTimeStepCurrentResidual();
     this->heatModel()->updateTimeStep();
     this->fluidModel()->updateTimeStep();
     this->updateTime( this->fluidModel()->time() );
     this->updateParameterValues();
+
+#if 0 // AT BEGIN OF TIME STEP
+    using mesh_adaptation_type = typename super_type::super_model_meshes_type::mesh_adaptation_type;
+    this->template updateMeshAdaptation<mesh_type>( this->keyword(),
+                                                    mesh_adaptation_type::createEvent<mesh_adaptation_type::Event::Type::each_time_step>( this->time(),this->timeStepBase()->iteration() ),
+                                                    this->symbolsExpr() );
+#endif
+
 }
 HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -610,6 +681,8 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::exportResults( double time )
     auto exprExport = hana::concat( M_materialsProperties->exprPostProcessExports( this->mesh(),this->physicsAvailable(),se ),
                                     hana::concat( M_heatModel->exprPostProcessExportsToolbox( se,M_heatModel->keyword() ),
                                                   M_fluidModel->exprPostProcessExports( se,M_fluidModel->keyword() ) ) );
+    if ( M_exporter && M_exporter->exporterGeometry() == EXPORTER_GEOMETRY_CHANGE ) // TODO mv this code
+        M_exporter->defaultTimeSet()->setMesh( this->mesh() );
     this->executePostProcessExports( M_exporter, time, mfields, se, exprExport );
 
 
