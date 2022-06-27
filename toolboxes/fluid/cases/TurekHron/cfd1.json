@@ -6,8 +6,8 @@
         "fluid":{
             "setup":
             {
-                "equation":"Navier-Stokes",
-                "formulation":"emac" // "convective","skew-symmetric","conservative","rotational","emac"
+                "equation":"Navier-Stokes"
+                //"formulation":"emac" // "convective","skew-symmetric","conservative","rotational","emac"
             }
         }
     },
