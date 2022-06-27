@@ -30,18 +30,20 @@
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feelmesh/concatenate.hpp>
 #include <feel/feelmesh/submeshdata.hpp>
+#if defined( FEELPP_HAS_MMG ) && defined( FEELPP_HAS_PARMMG )
 #include <mmg/libmmg.h>
 #include <parmmg/libparmmg.h>
+#endif
 #include <variant>
 
 namespace Feel
 {
 /**
  * @brief  a pairing function is a process to uniquely encode two natural numbers into a single natural number.
- * 
- * @param a 
- * @param b 
- * @return constexpr int 
+ *
+ * @param a
+ * @param b
+ * @return constexpr int
  */
 constexpr int cantor_pairing( int a, int b )
 {
@@ -49,12 +51,12 @@ constexpr int cantor_pairing( int a, int b )
 }
 /**
  * @brief compute cantor pairing recursively for number of natural numbers > 2
- * 
+ *
  * @tparam T integrer type
  * @param a integer to be paired with
  * @param b integer to be paired with
  * @param ts remaining pack that will be treated recursively
- * @return constexpr int 
+ * @return constexpr int
  */
 template <typename... T>
 constexpr int cantor_pairing( int a, int b, T&&... ts )
@@ -70,29 +72,31 @@ enum class RemeshMode
 
 /**
  * @brief build command line options for remesh
- * 
- * @param prefix 
- * @return Feel::po::options_description 
+ *
+ * @param prefix
+ * @return Feel::po::options_description
  */
 Feel::po::options_description
 remesh_options( std::string const& prefix );
+
+#if defined( FEELPP_HAS_MMG ) && defined( FEELPP_HAS_PARMMG )
 
 /**
  * @brief set MMG options from command line
  * @ingroup Mesh
  * @tparam topoDim topological dimension
  * @tparam realDim real dimension
- * 
+ *
  * @param prefix prefix to discriminate between different remeshers
  * @param sol mmg solution
- * @param mesh mmg mesh 
+ * @param mesh mmg mesh
  */
 template <int topoDim, int realDim>
 void setMMGOptions( nl::json const& j, std::variant<MMG5_pMesh, PMMG_pParMesh> mesh, MMG5_pSol sol );
 
 /**
  * @brief Class that handles remeshing in sequential using mmg and parallel using parmmg
- * 
+ *
  * @tparam MeshType mesh type to be remeshed
  */
 template <typename MeshType>
@@ -230,20 +234,20 @@ class Remesh
     mesh_ptrtype mmg2Mesh() { return mmg2Mesh( M_mmg_mesh ); }
 
     /**
-     * @brief Set the Keep Relation For Required Entities 
-     * 
+     * @brief Set the Keep Relation For Required Entities
+     *
      * @param keep 0 do not keep relation, 1 keep
      */
-    void setKeepRelationForRequiredEntities( bool keep ) { 
-        keep_relation_required_ = keep; 
+    void setKeepRelationForRequiredEntities( bool keep ) {
+        keep_relation_required_ = keep;
     }
 
     /**
-     * @brief Set the Preserve Floating Interface 
-     * 
-     * @param preserve 0 or 1 
+     * @brief Set the Preserve Floating Interface
+     *
+     * @param preserve 0 or 1
      */
-    void setPreserveFloatingInterface( bool preserve ) 
+    void setPreserveFloatingInterface( bool preserve )
     {
         if ( std::holds_alternative<MMG5_pMesh>( M_mmg_mesh ) )
         {
@@ -339,7 +343,7 @@ Remesh<MeshType>::Remesh( std::shared_ptr<MeshType> const& mesh,
             if ( !M_params["remesh"]["required"]["facets"].get < std::vector<std::string>>().empty() &&
                   keep_relation_required_ )
             {
-                // this is necessary otherwise the hack to keep the relation and require facets will fail 
+                // this is necessary otherwise the hack to keep the relation and require facets will fail
                 M_params["remesh"]["opnbdy"] = 1;
             }
         }
@@ -1023,7 +1027,7 @@ Remesh<MeshType>::mmg2Mesh( mmg_mesh_t const& mesh )
                 //++id_elt;
             }
         }
-        int f_req_elts = 0; 
+        int f_req_elts = 0;
         if constexpr ( dimension_v<MeshType> == 3 )
         {
             f_req_elts = nelements( markedfaces( M_mesh, M_required_facet_markers ) );
@@ -1048,7 +1052,7 @@ Remesh<MeshType>::mmg2Mesh( mmg_mesh_t const& mesh )
                     LOG(ERROR) << "Unable to get mesh triangle " << k << std::endl;
                     ier = MMG5_STRONGFAILURE;
                 }
-                
+
                 using face_type = typename mesh_t::face_type;
                 face_type newElem;
                 int& id_elt = k;//required ? f_next_free_req : f_next_free_nreq;
@@ -1227,7 +1231,7 @@ Remesh<MeshType>::mmg2Mesh( mmg_mesh_t const& mesh )
         }
         out->setMarkerNames( M_mesh->markerNames() );
         out->updateForUse();
-#if 0        
+#if 0
         int current_pid = M_mesh->worldComm().localRank();
         int interf = 0;
         std::vector<mesh_ptr_t> ghost_out( neigh_interface.size() );
@@ -1237,7 +1241,7 @@ Remesh<MeshType>::mmg2Mesh( mmg_mesh_t const& mesh )
         {
             ext_elements_t<mesh_t> range_ghost;
             range_element_ptr_t<mesh_t> r( new range_element_t<mesh_t>() );
-#if 0            
+#if 0
             // now extract elements shared elements
             for ( auto const& welt : elements( out ) )
             {
@@ -1247,7 +1251,7 @@ Remesh<MeshType>::mmg2Mesh( mmg_mesh_t const& mesh )
             }
 #else
             auto rfaces = markedfaces(out, 1234567 );
-            LOG(INFO) << fmt::format("interface with {} nfaces interface {} nfaces marked {} ", 
+            LOG(INFO) << fmt::format("interface with {} nfaces interface {} nfaces marked {} ",
                                      pid, sz, nelements(rfaces));
             for( auto const& wf : rfaces )
             {
@@ -1291,7 +1295,7 @@ void Remesh<MeshType>::setParameters()
     setMMGOptions<dimension_v<MeshType>, real_dimension_v<MeshType>>( M_params, M_mmg_mesh, M_mmg_sol );
     if ( std::holds_alternative<PMMG_pParMesh>( M_mmg_mesh ) )
     {
-#if 0        
+#if 0
         /* Set number of iterations */
         if ( !PMMG_Set_iparameter( std::get<PMMG_pParMesh>( M_mmg_mesh ), PMMG_IPARAM_niter, 1 ) )
         {
@@ -1372,7 +1376,7 @@ void Remesh<MeshType>::setCommunicatorAPI()
                     local_sorted[fid] = { ids_other[std::pair{ f.id(), pid }], f.id() };
 #if 0
                 local[fid] = face_id[f.id()].first;
-               
+
                 global[fid] = 0;//face_id[f.id()].second;
 
 #endif
@@ -1450,4 +1454,7 @@ Remesh<MeshType>::getCommunicatorAPI()
     delete[] local_faces;
     return std::tuple{ neighbor_ent, local_face_index, face_to_interface };
 }
+
+#endif // FEELPP_HAS_MMG && FEELPP_HAS_PARMMG
+
 } // namespace Feel
