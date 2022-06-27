@@ -551,7 +551,7 @@ void VectorUblasBase<T>::saveHDF5( const std::string & filename, const std::stri
 }
 
 template< typename T >
-void VectorUblasBase<T>::loadHDF5( const std::string & filename, const std::string & tableName )
+void VectorUblasBase<T>::loadHDF5( const std::string & filename, const std::string & tableName, std::optional<std::vector<index_type>> const& mappingFromInput )
 {
     bool useTransposedStorage = true;
     const int dimsComp0 = (useTransposedStorage)? 1 : 0;
@@ -577,13 +577,6 @@ void VectorUblasBase<T>::loadHDF5( const std::string & filename, const std::stri
         hsize_t dimsElt2[2];
         dimsElt2[dimsComp0] = dm.nLocalDofWithoutGhost();
         dimsElt2[dimsComp1] = 1;
-        hsize_t offsetElt[2];
-        size_type offsetCount = 0;
-        for (rank_type p=0 ; p < this->comm().localRank() ; ++p )
-            offsetCount += dm.nLocalDofWithoutGhost( p );
-
-        offsetElt[dimsComp0] = offsetCount;
-        offsetElt[dimsComp1] = 0;
 
         std::vector<double> dataStorage( dm.nLocalDofWithoutGhost() );
 
@@ -595,7 +588,28 @@ void VectorUblasBase<T>::loadHDF5( const std::string & filename, const std::stri
         CHECK( dimsGlob[dimsComp0] == dm.nDof() ) << "invalid table dimension";
         CHECK( dimsGlob[dimsComp1] == 1 ) << "invalid table dimension";
 
-        hdf5.read( tableName, H5T_NATIVE_DOUBLE, dimsElt2, offsetElt, dataStorage.data()/*&(M_vec[0])*/ );
+        if ( mappingFromInput )
+        {
+            // convert to hdf5 input (currently dim=2)
+            // warning : use only non ghost dofs (we guesss that all ghost dofs are placed to the end)
+            std::vector<hsize_t> mappingFromInput_hdf5( dm.nLocalDofWithoutGhost()*2,0);
+            for (int k=0;k<dm.nLocalDofWithoutGhost();++k)
+                mappingFromInput_hdf5[k*2+dimsComp0] = (*mappingFromInput)[k];
+
+            hdf5.read_elements( tableName, H5T_NATIVE_DOUBLE, dimsElt2, dm.nLocalDofWithoutGhost(), mappingFromInput_hdf5.data(), dataStorage.data() );
+        }
+        else
+        {
+            hsize_t offsetElt[2];
+            size_type offsetCount = 0;
+            for (rank_type p=0 ; p < this->comm().localRank() ; ++p )
+                offsetCount += dm.nLocalDofWithoutGhost( p );
+
+            offsetElt[dimsComp0] = offsetCount;
+            offsetElt[dimsComp1] = 0;
+
+            hdf5.read( tableName, H5T_NATIVE_DOUBLE, dimsElt2, offsetElt, dataStorage.data()/*&(M_vec[0])*/ );
+        }
 
         hdf5.closeTable( tableName );
 
