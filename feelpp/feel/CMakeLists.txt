@@ -78,7 +78,7 @@ target_link_libraries( feelpp PUBLIC feelpp_contrib )
 target_include_directories(feelpp PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/..>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
-  $<INSTALL_INTERFACE:include/feelpp> )  
+  $<INSTALL_INTERFACE:include/feelpp> )
 
 IF ( FEELPP_ENABLE_JSON_DIAGNOSTICS )
   target_compile_definitions( feelpp PUBLIC  FEELPP_ENABLE_JSON_DIAGNOSTICS=1 )
@@ -280,6 +280,8 @@ get_property(INC_DIR_LIST TARGET feelpp PROPERTY PRIVATE_LINK_LIBRARIES)
 message(STATUS "[feelpp]: private libs ${INC_DIR_LIST}")
 get_property(INC_DIR_LIST TARGET feelpp PROPERTY PUBLIC_LINK_LIBRARIES)
 message(STATUS "[feelpp]: public libs ${INC_DIR_LIST}")
+get_property(INC_DIR_LIST TARGET feelpp PROPERTY LINK_LIBRARIES)
+message(STATUS "[feelpp]: libs ${INC_DIR_LIST}")
 
 #target_link_libraries(feelpp ${FEELPP_LIBRARIES})
 if( FEELPP_ENABLE_PCH )
