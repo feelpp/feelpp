@@ -50,8 +50,10 @@ install(TARGETS napp EXPORT feelpp-contrib-export-targets
 message(STATUS "------------------------------------------------------------")
 message(STATUS "Configuring FMT")
 
-find_package(FMT REQUIRED)
-if ( FMT_FOUND )
+
+option( FEELPP_USE_EXTERNAL_FMT "USE_EXTERNAL_FMT" OFF )
+if ( FEELPP_USE_EXTERNAL_FMT )
+  find_package(FMT REQUIRED)
   message(STATUS "[feelpp] FMT Includes: ${FMT_INCLUDE_DIRS}")
   message(STATUS "[feelpp] FMT Libraries: ${FMT_LIBRARIES}")
   target_link_libraries( feelpp_contrib INTERFACE fmt::fmt )
