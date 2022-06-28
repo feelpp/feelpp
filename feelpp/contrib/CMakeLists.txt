@@ -1,4 +1,4 @@
-###  CMakeLists.txt; coding: utf-8 --- 
+###  CMakeLists.txt; coding: utf-8 ---
 
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 01 Sep 2018
@@ -35,7 +35,7 @@ endif()
 message(STATUS "------------------------------------------------------------")
 message(STATUS "Configuring NAPP")
 set(FETCHCONTENT_SOURCE_DIR_NAPP ${CMAKE_CURRENT_SOURCE_DIR}/napp)
-FetchContent_Declare(napp GIT_REPOSITORY https://github.com/vincentchabannes/napp.git GIT_TAG 1cba0026b9ea7581902017074071a0da1a2e7a94) #v0.1.0 )
+FetchContent_Declare(napp GIT_REPOSITORY https://github.com/vincentchabannes/napp.git GIT_TAG 8184b0896f758126b1cb8a76a2798e3575de42ff) #v0.1.0 )
 set(NAPP_CONFIG_INSTALL_DIR "${CMAKE_INSTALL_DATADIR}/feel/cmake/modules")
 FetchContent_MakeAvailable(napp)
 target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_NAPP )
@@ -49,8 +49,17 @@ install(TARGETS napp EXPORT feelpp-contrib-export-targets
 
 message(STATUS "------------------------------------------------------------")
 message(STATUS "Configuring FMT")
+
+
+option( FEELPP_USE_EXTERNAL_FMT "USE_EXTERNAL_FMT" OFF )
+if ( FEELPP_USE_EXTERNAL_FMT )
+  find_package(FMT REQUIRED)
+  message(STATUS "[feelpp] FMT Includes: ${FMT_INCLUDE_DIRS}")
+  message(STATUS "[feelpp] FMT Libraries: ${FMT_LIBRARIES}")
+  target_link_libraries( feelpp_contrib INTERFACE fmt::fmt )
+else()
 set(FETCHCONTENT_SOURCE_DIR_FMT ${CMAKE_CURRENT_SOURCE_DIR}/fmt)
-FetchContent_Declare(fmt GIT_REPOSITORY https://github.com/feelpp/fmt.git GIT_TAG b6f4ceaed0a0a24ccf575fab6c56dd50ccf6f1a9) 
+FetchContent_Declare(fmt GIT_REPOSITORY https://github.com/feelpp/fmt.git GIT_TAG b6f4ceaed0a0a24ccf575fab6c56dd50ccf6f1a9)
 
 set(FMT_INSTALL ON)
 set(FMT_CMAKE_DIR "${CMAKE_INSTALL_DATADIR}/feel/cmake/modules")
@@ -67,6 +76,7 @@ install(TARGETS fmt EXPORT feelpp-contrib-export-targets
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
     )
+endif()
 
 message(STATUS "------------------------------------------------------------")
 message(STATUS "Configuring GFlags")
@@ -92,7 +102,7 @@ if ( FEELPP_HAS_GFLAGS )
   target_link_libraries(feelpp_contrib INTERFACE feelpp_gflags)
 
   set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} GFlags/Contrib")
-  
+
   # for GLog
   set(gflags_LIBRARIES feelpp_gflags)
   set(gflags_FOUND 1)
@@ -185,7 +195,7 @@ if ( MKL_FOUND )
   target_link_libraries(eigen INTERFACE ${MKL_LIBRARIES})  # error with cmake < 3.13, see CMP0079, use instead feelpp_contrib
   #target_link_libraries(feelpp_contrib INTERFACE ${MKL_LIBRARIES})
   #target_include_directories(eigen INTERFACE ${MKL_INCLUDE_DIRS})
-  
+
 endif()
 
 SET(FEELPP_HAS_EIGEN3 1)
@@ -386,10 +396,10 @@ if ( FEELPP_ENABLE_FMI4CPP )
   set( FMI4CPP_DOC_INSTALL_DIR "share/doc/feelpp/fmi4cpp")
   set(FETCHCONTENT_SOURCE_DIR_FMI4CPP ${CMAKE_CURRENT_SOURCE_DIR}/fmi4cpp)
   # patch includes fix for 18.04 compilation
-  FetchContent_Declare(fmi4cpp GIT_REPOSITORY https://github.com/feelpp/fmi4cpp.git GIT_TAG 645b6a35b1c166ace666c5d387d5a88b074ace18) 
+  FetchContent_Declare(fmi4cpp GIT_REPOSITORY https://github.com/feelpp/fmi4cpp.git GIT_TAG 645b6a35b1c166ace666c5d387d5a88b074ace18)
 
   FetchContent_MakeAvailable(fmi4cpp)
-  add_library(feelpp_fmi4cpp INTERFACE)  
+  add_library(feelpp_fmi4cpp INTERFACE)
   set_target_properties(fmi4cpp PROPERTIES OUTPUT_NAME "feelpp_fmi4cpp")
   target_link_libraries(feelpp_fmi4cpp INTERFACE fmi4cpp)
   target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_FMI4CPP )
@@ -476,7 +486,7 @@ if( FEELPP_CONTRIB_PREPARE_SUCCEED )
     $<INSTALL_INTERFACE:include/feelpp> )
   set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} Indicators/Contrib")
 endif()
-  
+
 message(STATUS "------------------------------------------------------------")
 message(STATUS "Configuring Boost")
 add_subdirectory( boost )
@@ -582,8 +592,8 @@ if( FEELPP_CONTRIB_PREPARE_SUCCEED )
   set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} Mmg/Contrib")
   if ( SCOTCH_FOUND )
     target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_SCOTCH )
-  endif() 
-  
+  endif()
+
 
   # setup parmmg only if mmg is ok
   feelppContribPrepare( parmmg )
@@ -592,7 +602,7 @@ if( FEELPP_CONTRIB_PREPARE_SUCCEED )
     SET ( LIBPARMMG_SHARED ON )
     SET( DOWNLOAD_MMG OFF )
     SET( DOWNLOAD_METIS ${FEELPP_PARMMG_DOWNLOAD_METIS} )
-    
+
 #    SET(MMG_DIR ${CMAKE_CURRENT_SOURCE_DIR}/mmg)
 #    SET(MMG_BUILDDIR ${CMAKE_CURRENT_BINARY_DIR}/mmg)
 #    SET(MMG_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/mmg)
@@ -611,14 +621,14 @@ if ( FEELPP_ENABLE_CPR )
   message(STATUS "Configuring CPR")
   set(FETCHCONTENT_SOURCE_DIR_CPR ${CMAKE_CURRENT_SOURCE_DIR}/cpr)
   # patch includes fix for 18.04 compilation
-  FetchContent_Declare(cpr GIT_REPOSITORY https://github.com/feelpp/cpr.git GIT_TAG e554da6bde33edc35f1c28bd8197ae50bdf4a4d4) 
+  FetchContent_Declare(cpr GIT_REPOSITORY https://github.com/feelpp/cpr.git GIT_TAG e554da6bde33edc35f1c28bd8197ae50bdf4a4d4)
   set( USE_SYSTEM_CURL ON )
   set( BUILD_CPR_TESTS OFF )
   if ( NOT ${CMAKE_INSTALL_INCLUDEDIR} MATCHES "feelpp$")
       set( CMAKE_INSTALL_INCLUDEDIR "${CMAKE_INSTALL_INCLUDEDIR}/feelpp")
   endif()
   FetchContent_MakeAvailable(cpr)
-  add_library(feelpp_cpr INTERFACE)  
+  add_library(feelpp_cpr INTERFACE)
   set_target_properties(cpr PROPERTIES OUTPUT_NAME "feelpp_cpr")
   target_link_libraries(feelpp_cpr INTERFACE cpr)
   target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_CPR )
@@ -646,7 +656,7 @@ endif()
 #   set(SPDLOG_FMT_EXTERNAL OFF)
 #   set(SPDLOG_INSTALL ON)
 #   set(export_dest_dir "${CMAKE_INSTALL_DATADIR}/feel/cmake/modules")
-#   FetchContent_Declare(   
+#   FetchContent_Declare(
 #       spdlog
 #       GIT_REPOSITORY https://github.com/feelpp/spdlog.git
 #       GIT_TAG        8a74f3b3df73f73ad883640ec27027c4309bf570)
@@ -668,8 +678,8 @@ endif()
 #         )
 #   target_link_libraries( feelpp_contrib INTERFACE feelpp_spdlog )
 #   set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} SPDLOG")
-# endif(FEELPP_ENABLE_SPDLOG) 
-# 
+# endif(FEELPP_ENABLE_SPDLOG)
+#
 option( FEELPP_ENABLE_TASKFLOW "Enable TASKFLOW" ON )
 if ( FEELPP_ENABLE_TASKFLOW )
   message(STATUS "------------------------------------------------------------")

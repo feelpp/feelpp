@@ -133,7 +133,7 @@ macro(mor_add_library)
   add_library(${execname}  SHARED  ${mor_LIB_SRCS} )
   set_target_properties(${execname} PROPERTIES VERSION 1 SOVERSION 1)
   target_compile_options(${execname} PRIVATE -fvisibility=hidden)
-  
+
   target_include_directories( ${execname} PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<INSTALL_INTERFACE:include/feelpp/mor/${mor_LIB_NAME}>  )
