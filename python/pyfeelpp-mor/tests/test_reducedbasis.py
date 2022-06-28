@@ -78,9 +78,6 @@ def init_model(prefix, case, casefile, dim, use_cache, time_dependent):
         return heatBox.assembleMatrix()
 
     model.setAssembleDEIM(fct=assembleDEIM)
-
-
-    model.setAssembleDEIM(fct=assembleDEIM)
     model.setAssembleMDEIM(fct=assembleMDEIM)
 
     model.initModel()
@@ -130,7 +127,7 @@ def init_model(prefix, case, casefile, dim, use_cache, time_dependent):
     heatBoxDEIM.setModelProperties(j)
     meshMDEIM = model.getMDEIMReducedMesh()
     heatBoxMDEIM.setMesh(meshMDEIM)
-    heatBoxMDEIM.init()         # DOESN'T WORK WITH THE 2D CASE
+    heatBoxMDEIM.init()
 
     def assembleOnlineMDEIM(mu):
         for i in range(0, mu.size()):
@@ -517,10 +514,10 @@ def compute_time_for_offline_solution(rb):
         sol = np.linalg.solve(A_mu, F_mu)
         t4 = time.process_time()
 
-        t_computeBetaQm = t1-t0
-        t_assembleAN = t2-t1
-        t_assembleFN = t3 - t2
-        t_solve = t4 - t3
+        t_computeBetaQm += t1 - t0
+        t_assembleAN += t2 - t1
+        t_assembleFN += t3 - t2
+        t_solve += t4 - t3
 
     f.write(f"computeBetaQm {t_computeBetaQm/N}\nassembleAN {t_assembleAN/N}\nassembleFN {t_assembleFN/N}\nsolve {t_solve/N}")
     f.close()

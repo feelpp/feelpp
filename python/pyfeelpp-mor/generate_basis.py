@@ -139,9 +139,6 @@ def generate_basis(worldComm=None, config=None):
         return heatBox.assembleMatrix()
 
     model.setAssembleDEIM(fct=assembleDEIM)
-
-
-    model.setAssembleDEIM(fct=assembleDEIM)
     model.setAssembleMDEIM(fct=assembleMDEIM)
 
     model.initModel()
