@@ -21,6 +21,8 @@ from feelpp.mor.reducedbasis.reducedbasisOffline import *
 
 #        (( prefix, case, casefile, dim, use_cache, time_dependant), name     )
 cases = [
+         (('testcase', 'square/2d', 'testcase2d.cfg', 2, False, False), 'testcase-2d'),
+         #(('testcase', 'square/3d', 'testcase3d.cfg', 3, False, False), 'testcase-3d'),
          (('testcase', 'thermal-fin/2d', 'thermal-fin.cfg', 2, False, False), 'thermal-fin-2d'),
          (('testcase', 'thermal-fin/2d', 'thermal-fin.cfg', 2, True, False), 'thermal-fin-2d-cached'),
          (('testcase', 'thermal-fin/3d', 'thermal-fin.cfg', 3, False, False), 'thermal-fin-3d'),
