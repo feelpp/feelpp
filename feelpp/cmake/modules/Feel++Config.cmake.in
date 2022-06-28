@@ -91,6 +91,9 @@ set(FEELPP_PYTHON_MODULE_PATH "@FEELPP_PYTHON_MODULE_PATH@")
 set(FEELPP_HAS_OCTAVE "@FEELPP_HAS_OCTAVE@")
 set(FEELPP_HAS_GLPK "@FEELPP_HAS_GLPK@")
 
+set(FEELPP_HAS_MMG "@FEELPP_HAS_MMG@")
+set(FEELPP_HAS_PARMMG "@FEELPP_HAS_PARMMG@")
+
 
 set(FEELPP_HAS_ASCIIDOCTOR "@FEELPP_HAS_ASCIIDOCTOR@")
 if (FEELPP_HAS_ASCIIDOCTOR)
@@ -229,7 +232,7 @@ if (NOT FEELPP_DONT_SETUP_CMAKE)
 
   feelpp_set_options( Feelpp::feelpp_contrib "Feel++" )
   feelpp_set_options( Feelpp::feelpp "Feel++" )
-  
+
 
 endif()
 
