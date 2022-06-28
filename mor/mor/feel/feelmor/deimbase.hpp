@@ -362,12 +362,15 @@ protected :
         vectorN_type rhs (M);
         vectorN_type coeff (M);
 
+        if (M > 0)
+        {
         for ( int i=0; i<M; ++i )
             rhs(i) = evaluate( T, online ? M_indexR[i]:M_index[i], online );
         if ( M == M_M )
             coeff = M_B_Lu.solve( rhs );
         else
             coeff = M_B.block(0,0,M,M).fullPivLu().solve( rhs );
+        }
 
         return coeff;
     }
@@ -680,6 +683,7 @@ DEIMBase<ParameterSpaceType,SpaceType,TensorType>::reAssembleFromDb()
     for ( auto const& mu : M_mus )
     {
         Feel::cout << name()+" : reassemble for mu=" << mu.toString()<<std::endl;
+        M_B_Lu = M_B.block(0, 0, M_M, M_M).fullPivLu();
         tensor_ptrtype Phi = residual( mu );
 
         auto vec_max = vectorMaxAbs( Phi );
@@ -695,6 +699,7 @@ DEIMBase<ParameterSpaceType,SpaceType,TensorType>::reAssembleFromDb()
     }
     M_solutions.clear();
     rebuildMap();
+    M_B_Lu = M_B.block(0, 0, M_M, M_M).fullPivLu();
     cout <<"===========================================\n";
     cout << this->name() + " : Stopping greedy algorithm. Number of basis function : "<<M_M<<std::endl;
     LOG(INFO) << "DEIM reAssemblefromdb end\n";
