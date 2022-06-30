@@ -63,16 +63,16 @@ std::string strsymbol( std::vector<symbol> const& f )
 ex parse( std::string const& str, std::vector<symbol> const& syms, std::vector<symbol> const& params )
 {
     using namespace Feel;
-    LOG(INFO) << "Parsing " << str << " using GiNaC with " << syms.size() << " symbols";
-    LOG(INFO) <<" . symbols : "  << strsymbol(syms);
-    LOG(INFO) <<" . parameters : "  << strsymbol(params);
+    VLOG(1) << "Parsing " << str << " using GiNaC with " << syms.size() << " symbols";
+    VLOG(1) <<" . symbols : "  << strsymbol(syms);
+    VLOG(1) <<" . parameters : "  << strsymbol(params);
 
     using GiNaC::symbol;
     using GiNaC::symtab;
     using GiNaC::parser;
     using GiNaC::parse_error;
     symtab table;
-    LOG(INFO) <<"Inserting symbols in symbol table";
+    VLOG(1) <<"Inserting symbols in symbol table";
 
     std::vector<symbol> total_syms;
     boost::for_each( syms, [&table, &total_syms]( symbol const& param )
@@ -81,18 +81,18 @@ ex parse( std::string const& str, std::vector<symbol> const& syms, std::vector<s
                          table[param.get_name()] = param;
                      } );
 
-    LOG(INFO) <<"Inserting params and in symbol table: " << strsymbol(total_syms);
+    VLOG(1) <<"Inserting params and in symbol table: " << strsymbol(total_syms);
 
     boost::for_each( params, [&table, &total_syms]( symbol const& param )
                      {
                          total_syms.push_back(symbol(param));
                          table[param.get_name()] = param;
                      } );
-    LOG(INFO) << " . table : " << table;
-    LOG(INFO) <<"Defining parser";
+    VLOG(1) << " . table : " << table;
+    VLOG(1) <<"Defining parser";
     parser reader(table ,option(_name="ginac.strict-parser").as<bool>()); // true to ensure that no more symbols are added
 
-    LOG(INFO) <<"parse expression\n";
+    VLOG(1) <<"parse expression\n";
     ex e; // = reader(str);
     try
     {
@@ -110,7 +110,7 @@ ex parse( std::string const& str, std::vector<symbol> const& syms, std::vector<s
     {
         std::cerr << "Exception of unknown type!\n";
     }
-    LOG(INFO) << "e=" << e << "\n";
+    VLOG(1) << "e=" << e << "\n";
     return e;
 }
 
@@ -125,7 +125,7 @@ parse( std::string const& str, std::string const& seps, std::vector<symbol> cons
     using GiNaC::symtab;
     using GiNaC::parse_error;
 
-    LOG(INFO) << "Parsing " << str << " using GiNaC";
+    VLOG(1) << "Parsing " << str << " using GiNaC";
     std::vector<std::string> fields;
     boost::split( fields, str, boost::is_any_of(seps), boost::token_compress_on );
     int fsize = fields.size();
@@ -147,13 +147,13 @@ parse( std::string const& str, std::string const& seps, std::vector<symbol> cons
                    [&syms] ( std::string const& sym ) { syms.push_back( symbol(sym) ); } );
 
 
-    LOG(INFO) << " . Number of symbols " << syms.size() << "\n";
-    LOG(INFO) << " . symbols : "  << strsymbol(syms);
-    LOG(INFO) << " . Number of params " << params.size() << "\n";
-    LOG(INFO) << " . symbols : "  << strsymbol(params);
+    VLOG(1) << " . Number of symbols " << syms.size() << "\n";
+    VLOG(1) << " . symbols : "  << strsymbol(syms);
+    VLOG(1) << " . Number of params " << params.size() << "\n";
+    VLOG(1) << " . symbols : "  << strsymbol(params);
 
     symtab table;
-    LOG(INFO) <<"Inserting symbols in symbol table";
+    VLOG(1) <<"Inserting symbols in symbol table";
 #if 0
     table["x"]=syms[0];
     if ( syms.size() == 2 )
@@ -173,7 +173,7 @@ parse( std::string const& str, std::string const& seps, std::vector<symbol> cons
                          table.insert({param.get_name(), param});
                      } );
 
-    LOG(INFO) <<"Inserting params and in symbol table : " << strsymbol(total_syms);
+    VLOG(1) <<"Inserting params and in symbol table : " << strsymbol(total_syms);
 
     boost::for_each( params, [&table, &total_syms]( symbol const& param )
                      {
@@ -182,26 +182,26 @@ parse( std::string const& str, std::string const& seps, std::vector<symbol> cons
                      } );
 #if 0
     for ( auto it=table.begin(),en=table.end() ; it!=en ; ++it )
-        LOG(INFO) <<" - table : "  << it->first << "\t" << it->second;
+        VLOG(1) <<" - table : "  << it->first << "\t" << it->second;
 #else
-    LOG(INFO) << " . table : " << table;
+    VLOG(1) << " . table : " << table;
 #endif
 
-    LOG(INFO) <<"Defining parser";
+    VLOG(1) <<"Defining parser";
     parser reader(table ,option(_name="ginac.strict-parser").as<bool>()); // true to ensure that no more symbols are added
 
-    LOG(INFO) <<"parse expression: " << strexpr;
+    VLOG(1) <<"parse expression: " << strexpr;
     if ( boost::algorithm::contains( strexpr, "// Not supported in C" ) )
     {
-        LOG(INFO) <<"invalid code: " << table;
+        VLOG(1) <<"invalid code: " << table;
         throw std::invalid_argument( fmt::format( "invalid code: ", table ) );
     }
     ex e; // = reader(str);
     try
     {
-        LOG( INFO ) << "parse expression 2: " << strexpr;
+        VLOG(1) << "parse expression 2: " << strexpr;
         e = reader(strexpr);
-        LOG( INFO ) << "parse expression 3: " << strexpr;
+        VLOG(1) << "parse expression 3: " << strexpr;
     }
     catch (std::invalid_argument& err)
     {
@@ -215,7 +215,7 @@ parse( std::string const& str, std::string const& seps, std::vector<symbol> cons
         throw;
     }
 
-    LOG(INFO) << "e=" << e << "\n";
+    VLOG(1) << "e=" << e << "\n";
     return {e,syms};
 }
 
@@ -364,7 +364,7 @@ curl( ex const& f, std::vector<symbol> const& l )
 matrix
 curl( matrix const& f, std::vector<symbol> const& l )
 {
-	LOG(INFO) << "matrix version\n";
+	VLOG(1) << "matrix version\n";
     CHECK(0) << "not implemented yet\n";
     return matrix{};
 }
@@ -419,7 +419,7 @@ laplacian( ex const& f, std::vector<symbol> const& l )
 matrix
 laplacian( std::string const& s, std::vector<symbol> const& l )
 {
-    LOG(INFO) << "compute laplacian of " << s << std::endl;
+    VLOG(1) << "compute laplacian of " << s << std::endl;
     return laplacian( parse( s, l ), l );
 }
 matrix
