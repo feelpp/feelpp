@@ -1,4 +1,3 @@
-
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*-
 
    This file is part of the Feel library
@@ -187,7 +186,7 @@ parse( std::string const& str, std::string const& seps, std::vector<symbol> cons
 #else
     LOG(INFO) << " . table : " << table;
 #endif
-    
+
     LOG(INFO) <<"Defining parser";
     parser reader(table ,option(_name="ginac.strict-parser").as<bool>()); // true to ensure that no more symbols are added
 
@@ -508,7 +507,8 @@ matrix substitute(matrix const &f, symbol const& s, ex const& g )
     return ff;
 }
 
-int totalDegree( GiNaC::ex const& expr, std::vector<std::pair<GiNaC::symbol,int>> const& symbolsDegree )
+#if 0
+int totalDegree( GiNaC::ex const& expr, std::vector<std::pair<GiNaC::symbol,Feel::uint16_type>> const& symbolsDegree )
 {
     int res = 0;
     for ( int sd=0;sd<symbolsDegree.size();++sd )
@@ -516,7 +516,7 @@ int totalDegree( GiNaC::ex const& expr, std::vector<std::pair<GiNaC::symbol,int>
         GiNaC::symbol symbDegree = symbolsDegree[sd].first;
         int unitDegree = symbolsDegree[sd].second;
         int mydegree = expr.degree( symbDegree )*unitDegree;
-        std::vector<std::pair<GiNaC::symbol,int>> newSymbolsDegree;
+        std::vector<std::pair<GiNaC::symbol,Feel::uint16_type>> newSymbolsDegree;
         for (int k=0;k<symbolsDegree.size();++k)
         {
             if ( sd == k ) continue;
@@ -527,6 +527,90 @@ int totalDegree( GiNaC::ex const& expr, std::vector<std::pair<GiNaC::symbol,int>
     }
     return res;
 }
+
+#else
+
+// update total degree from a symbol (the first) and all subsymbols dependencies
+// implementation based on a heap .
+void totalDegreeImpl( std::vector<std::tuple<std::reference_wrapper<const GiNaC::symbol>,std::optional<GiNaC::ex>,std::vector<int>,Feel::uint16_type> > & symbolsDegree )
+{
+    using namespace Feel;
+    GiNaC::symbol symbDegreeComputation;
+    std::vector<int> heapSymbolIds = {0};
+    int currentSymbolId = heapSymbolIds.back();
+    while ( !heapSymbolIds.empty() )
+    {
+        currentSymbolId = heapSymbolIds.back();
+        auto & thesymbolData = symbolsDegree.at( currentSymbolId );
+        if ( std::get<3>(thesymbolData) != invalid_v<uint16_type> )
+        {
+            heapSymbolIds.pop_back();
+            continue;
+        }
+
+        auto const& symbolDeps = std::get<2>( thesymbolData );
+        std::vector<int> needSymbolIds;
+        bool canBeComputed = true;
+        for ( int k : symbolDeps )
+        {
+            auto & thesubsymbolData = symbolsDegree.at( k );
+            if ( std::get<3>( thesubsymbolData ) == invalid_v<uint16_type> )
+            {
+                needSymbolIds.push_back( k );
+                canBeComputed = false;
+            }
+        }
+
+        if ( canBeComputed )
+        {
+            auto symbolEx = std::get<1>( thesymbolData );
+            for ( int k : symbolDeps )
+            {
+                auto const& thesubsymbolData = symbolsDegree.at( k );
+                auto const& subsymbol = std::get<0>( thesubsymbolData ).get();
+                uint16_type symbolDegree = std::get<3>( thesubsymbolData );
+                // susbtitute subsymbol wtih symbDegreeComputation
+                *symbolEx = symbolEx->subs( subsymbol == pow(symbDegreeComputation,symbolDegree) );
+            }
+            // compute degree with symbDegreeComputation
+            int mydegree = symbolEx->degree( symbDegreeComputation );
+            std::get<3>( thesymbolData ) = mydegree;
+            heapSymbolIds.pop_back();
+        }
+        else
+        {
+            for ( int k : needSymbolIds )
+                heapSymbolIds.push_back( k );
+        }
+    }
+
+}
+
+
+int totalDegree( GiNaC::ex const& expr, std::vector<std::pair<GiNaC::symbol,Feel::uint16_type>> const& symbolsDegreeIn )
+{
+    using namespace Feel;
+
+    GiNaC::symbol symbCurentExpr;
+    std::vector<std::tuple<std::reference_wrapper<const GiNaC::symbol>,std::optional<GiNaC::ex>,std::vector<int>,uint16_type> > symbolsDegree;
+    std::vector<int> subsymbolIds;
+    for (int k=0;k<symbolsDegreeIn.size();++k)
+        subsymbolIds.push_back( k+1 );
+
+    symbolsDegree.push_back( std::make_tuple( std::cref(symbCurentExpr),
+                                              std::make_optional<GiNaC::ex>( expr ),
+                                              subsymbolIds, invalid_v<uint16_type> ) );
+    for ( auto const& [symb,deg] : symbolsDegreeIn )
+        symbolsDegree.push_back( std::make_tuple( std::cref(symb),
+                                                  std::optional<GiNaC::ex>{},
+                                                  std::vector<int>{}, deg ) );
+
+    totalDegreeImpl(symbolsDegree);
+
+    return std::get<3>( symbolsDegree.front() );
+}
+
+#endif
 
 std::vector<std::pair< bool,double> >
 toNumericValues( ex const& expr )
