@@ -1943,7 +1943,10 @@ public:
 #if !defined(NDEBUG)
         M_mu.check();
 #endif
-        return M_expr( idv(*M_u), gradv(*M_u2) );
+        if constexpr ( model_use_nosolve )
+            return M_expr;
+        else
+            return M_expr( idv(*M_u), gradv(*M_u2) );
     }
 
     auto expr( parameter_type const& mu, model_solution_type const& u ) const
