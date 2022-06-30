@@ -788,7 +788,7 @@ private:
     template<typename FE1,typename FE2,typename ElemContType>
     void assembleWithRelationDifferentMeshType( vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form, mpl::int_<MESH_ELEMENTS> /**/ ) const
         {
-            DLOG(INFO) << "Intergrator::assembleWithRelationDifferentMeshType mortar case:" << FE1::is_mortar||FE2::is_mortar;
+            DLOG(INFO) << "Intergrator::assembleWithRelationDifferentMeshType mortar case:" << (FE1::is_mortar || FE2::is_mortar);
             assembleWithRelationDifferentMeshType( __form, mpl::int_<MESH_ELEMENTS>(), mpl::bool_<FE1::is_mortar||FE2::is_mortar>() );
         }
     template<typename FE1,typename FE2,typename ElemContType>
@@ -806,7 +806,7 @@ private:
     template<typename FE1,typename FE2,typename ElemContType>
     void assembleInCaseOfInterpolate(vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form, mpl::int_<MESH_ELEMENTS> /**/ ) const
         {
-            DLOG(INFO) << "Intergrator::assembleInCaseOfInterpolate :" << FE1::is_mortar||FE2::is_mortar;
+            DLOG(INFO) << "Intergrator::assembleInCaseOfInterpolate :" << (FE1::is_mortar || FE2::is_mortar);
             assembleInCaseOfInterpolate( __form, mpl::int_<MESH_ELEMENTS>(), mpl::bool_<FE1::is_mortar||FE2::is_mortar>() );
         }
 
@@ -814,7 +814,7 @@ private:
     template<typename FE1,typename FE2,typename ElemContType>
     void assembleInCaseOfInterpolate(vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form, mpl::int_<MESH_FACES> /**/ ) const
         {
-            DLOG(INFO) << "Intergrator::assembleInCaseOfInterpolate mortar case:" << FE1::is_mortar||FE2::is_mortar;
+            DLOG(INFO) << "Intergrator::assembleInCaseOfInterpolate mortar case:" << (FE1::is_mortar || FE2::is_mortar );
             assembleInCaseOfInterpolate( __form, mpl::int_<MESH_FACES>(), mpl::bool_<FE1::is_mortar||FE2::is_mortar>() );
         }
     template<typename FE1,typename FE2,typename ElemContType>
