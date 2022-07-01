@@ -27,8 +27,8 @@
    \author Stephane Veys <stephane.veys@imag.fr>
    \date 2013-02-22
 */
-#ifndef ___ModelCrbBase_H
-#define ___ModelCrbBase_H 1
+#ifndef FEELPP_MOR_ModelCrbBase_H
+#define FEELPP_MOR_ModelCrbBase_H
 
 #include <feel/feelmor/crbmodeldb.hpp>
 //#include <feel/feelmor/parameterspace.hpp>
@@ -703,12 +703,12 @@ public :
         M_funs_d.push_back( fund );
     }
 
-    virtual funs_type scalarContinuousEim () const
+    virtual funs_type const& scalarContinuousEim() const
     {
         return M_funs;
     }
 
-    virtual funsd_type scalarDiscontinuousEim () const
+    virtual funsd_type const& scalarDiscontinuousEim() const
     {
         return M_funs_d;
     }
