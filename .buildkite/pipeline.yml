@@ -21,7 +21,7 @@ steps:
  #      artifacts: Testing/junit-*.xml
  #      fail-build-on-error: true
  #  if: build.message !~ /skip feelpp/
- - group: "feelpp ${CXX} :hammer: :docker:"
+ - group: "feelpp ${CXX} :hammer: :package:"
    steps:
     - trigger: "pkg-feelpp"
       label: ":package: :ubuntu: 22.04/jammy Feel++ ${BUILDKITE_BRANCH}"
