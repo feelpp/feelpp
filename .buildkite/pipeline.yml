@@ -24,18 +24,32 @@ steps:
  - group: "feelpp ${CXX} :hammer: :docker:"
    steps:
     - trigger: "pkg-feelpp"
-      label: ":package: :debian: :ubuntu: Feel++ ${BUILDKITE_BRANCH}"
+      label: ":package: :ubuntu: 22.04/jammy Feel++ ${BUILDKITE_BRANCH}"
       async: true
       if: |
         ( pipeline.slug=="feelpp" && ( build.branch == "develop" || build.branch == "master" )) && 
         build.message !~ /skip pkg/
-      matrix:
-       - "jammy"
-       - "focal"
-       - "bullseye"
       build:
         env:
-          DIST: "{{matrix}}"
+          DIST: "jammy"
+    - trigger: "pkg-feelpp"
+      label: ":package: :ubuntu: 20.04/focal Feel++ ${BUILDKITE_BRANCH}"
+      async: true
+      if: |
+        ( pipeline.slug=="feelpp" && ( build.branch == "develop" || build.branch == "master" )) && 
+        build.message !~ /skip pkg/
+      build:
+        env:
+          DIST: "focal"
+    - trigger: "pkg-feelpp"
+      label: ":package: :debian: 11/bullseye Feel++ ${BUILDKITE_BRANCH}"
+      async: true
+      if: |
+        ( pipeline.slug=="feelpp" && ( build.branch == "develop" || build.branch == "master" )) && 
+        build.message !~ /skip pkg/
+      build:
+        env:
+          DIST: "bullseye"
  - wait
  - group: "feelpp-testsuite ${CXX} :hammer: :docker:"
    steps:
