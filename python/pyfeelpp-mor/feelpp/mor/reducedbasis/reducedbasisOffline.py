@@ -5,7 +5,7 @@ class reducedbasisOffline(reducedbasis):
     """
 
 
-    def __init__(self, Aq, Fq, model, mubar, output_names=None, compute_lower_bound=True):
+    def __init__(self, Aq, Fq, model, mubar, output_names=None, use_dual_norm=False):
         """Initializes the class
 
         Args:
@@ -70,7 +70,7 @@ class reducedbasisOffline(reducedbasis):
         pc.setType(self.PC_TYPE)
 
 
-        if compute_lower_bound:
+        if not use_dual_norm:
             E = SLEPc.EPS()
             E.create()
             E.setOperators(self.Abar, self.scal)
@@ -94,21 +94,19 @@ class reducedbasisOffline(reducedbasis):
             if self.worldComm.isMasterRank():
                 print(f"[reducedbasis] Constant of continuity : {self.alphaMubar}")
         
-        else:
-            self.alphaMubar = 1
 
-        betaA_bar_np = np.array(self.betaA_bar[0])
+            betaA_bar_np = np.array(self.betaA_bar[0])
 
-        def alphaLB(mu):
-            # From a parameter
-            betaMu = self.model.computeBetaQm(mu)[0][0]
-            return self.alphaMubar * np.min( betaMu / betaA_bar_np )
+            def alphaLB(mu):
+                # From a parameter
+                betaMu = self.model.computeBetaQm(mu)[0][0]
+                return self.alphaMubar * np.min( betaMu / betaA_bar_np )
 
-        def alphaLB_(betaA):
-            # From a decomposition
-            return self.alphaMubar * np.min( betaA / betaA_bar_np )
+            def alphaLB_(betaA):
+                # From a decomposition
+                return self.alphaMubar * np.min( betaA / betaA_bar_np )
 
-        if compute_lower_bound:
+
             E.setFromOptions()
             E.setWhichEigenpairs(E.Which.LARGEST_MAGNITUDE)
             E.setDimensions(1)
@@ -122,17 +120,21 @@ class reducedbasisOffline(reducedbasis):
             if self.worldComm.isMasterRank():
                 print(f"[reducedbasis] Constant of coercivity : {self.gammaMubar}")
 
+
+            def gammaUB(mu):
+                # From a parameter
+                betaMu = self.model.computeBetaQm(mu)[0][0]
+                return self.gammaMubar * np.max( betaMu / betaA_bar_np )
+
+            def gammaUB_(betaA):
+                # From a decomposition
+                return self.gammaMubar * np.max( betaA / betaA_bar_np )
+
         else:
-            self.gammaMubar = 1
-
-        def gammaUB(mu):
-            # From a parameter
-            betaMu = self.model.computeBetaQm(mu)[0][0]
-            return self.gammaMubar * np.max( betaMu / betaA_bar_np )
-
-        def gammaUB_(betaA):
-            # From a decomposition
-            return self.gammaMubar * np.max( betaA / betaA_bar_np )
+            alphaLB = lambda mu: 1
+            alphaLB_ = lambda beta: 1
+            gammaUB = lambda mu: 1
+            gammaUB_ = lambda beta: 1
 
         self.alphaLB = alphaLB
         self.alphaLB_ = alphaLB_

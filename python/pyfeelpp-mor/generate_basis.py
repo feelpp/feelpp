@@ -21,14 +21,14 @@ parser.add_argument('--algo', help="compute using greedy algorithm (default 1) 0
     type=int, default=1)
 parser.add_argument('--train-size', help="size of the (random) training set", type=int, default=40)
 parser.add_argument('--tol', help="tolerance for generating", type=float, default=1e-6)
-parser.add_argument('--compute-bounds', help="compute bounds", type=bool, default=True)
+parser.add_argument('--use-dual-norm', help="use dual norm for the error bound", type=int, default=0)
 
 algos_names = ["generation_from_sample", "greedy", "POD_modes"]
 
 class generateBasisConfig():
 
     def __init__(self, dim=None, config_file=None, time_dependant=False, odir=None,
-                 case=None, algo=1, size=40, tol=1e-6, compute_bounds=True):
+                 case=None, algo=1, size=40, tol=1e-6, use_dual_norm=False):
         self.dim = dim
         self.config_file = config_file
         self.time_dependant = time_dependant
@@ -37,7 +37,7 @@ class generateBasisConfig():
         self.algo = algo
         self.size = size
         self.tol = tol
-        self.compute_bounds = compute_bounds
+        self.use_dual_norm = use_dual_norm
 
 
 
@@ -197,7 +197,7 @@ def generate_basis(worldComm=None, config=None):
         Fq.append(mor_rb.convertToPetscVec(f[0]))
 
     rb = mor_rb.reducedbasisOffline(mor_rb.convertToPetscMat(Aq[0]), Fq, model, mubar,
-            output_names=output_names, compute_lower_bound=config.compute_bounds)
+            output_names=output_names, use_dual_norm=config.use_dual_norm)
     rb.setVerbose(False)
     if worldComm.isMasterRank():
         print("Size of the big problem :", rb.NN)
@@ -248,7 +248,7 @@ if __name__ == '__main__':
     tol = args.tol
     split = config_file.split('/')
     case = args.case if args.case is not None else "generate_basis"
-    compute_bounds = args.compute_bounds
+    use_dual_norm = args.use_dual_norm == 1
 
     config = feelpp.globalRepository(f"generate_basis-{case}")
     sys.argv = [f'generate-basis-{case}']
@@ -258,6 +258,6 @@ if __name__ == '__main__':
     e = feelpp.Environment(sys.argv, opts=o, config=config)
 
 
-    config = generateBasisConfig(dim, config_file, time_dependant, odir, case, algo, size, tol, compute_bounds)
+    config = generateBasisConfig(dim, config_file, time_dependant, odir, case, algo, size, tol, use_dual_norm)
 
     generate_basis(config=config)

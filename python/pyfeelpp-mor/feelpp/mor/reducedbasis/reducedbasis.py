@@ -41,11 +41,13 @@ def convertToPetscVec(Fq):
 
 class reducedbasis():
 
-    def __init__(self, model, worldComm=None) -> None:
+    def __init__(self, model, worldComm=None, use_dual_norm=False) -> None:
         """Initialise the object
 
         Args:
             model (ToolboxMor_{2|3}D): model DEIM used for the decomposition
+            worldComm (MPI.Intracomm, optional): MPI communicator. Defaults to None, meaning the communicator is feelpp.Environment.worldCommPtr()
+            use_dual_norm (bool, optional): use the dual norm for the computation of error. Defaults to False meaning the full error is computed.
         """
         self.Qa = 0                 # size of the decomposition of A
         self.Qf = 0                 # size of the decomposition of F
@@ -75,28 +77,38 @@ class reducedbasis():
         ## For greedy memory
         self.DeltaMax = None
 
-        def alphaLB(mu):
-            if self.worldComm.isMasterRank():
-                print("[reducedbasis] WARNING : Lower bound not initialized yet")
-            return 1
+        self.use_dual_norm = use_dual_norm
 
-        def alphaLB_(beta):
-            if self.worldComm.isMasterRank():
-                print("[reducedbasis] WARNING : Lower bound not initialized yet")
-            return 1
+        if not self.use_dual_norm:
+            self.alphaMubar = 1
+            self.gammaMubar = 1
 
-        def gammaUB(mu):
-            if self.worldComm.isMasterRank():
-                print("[reducedbasis] WARNING : Upper bound not initialized yet")
-            return 1
+            def alphaLB(mu):
+                if self.worldComm.isMasterRank():
+                    print("[reducedbasis] WARNING : Lower bound not initialized yet")
+                return self.alphaMubar
 
-        def gammaUB_(beta):
-            if self.worldComm.isMasterRank():
-                print("[reducedbasis] WARNING : Upper bound not initialized yet")
-            return 1
+            def alphaLB_(beta):
+                if self.worldComm.isMasterRank():
+                    print("[reducedbasis] WARNING : Lower bound not initialized yet")
+                return self.alphaMubar
 
-        self.alphaMubar = 1
-        self.gammaMubar = 1
+            def gammaUB(mu):
+                if self.worldComm.isMasterRank():
+                    print("[reducedbasis] WARNING : Upper bound not initialized yet")
+                return self.gammaMubar
+
+            def gammaUB_(beta):
+                if self.worldComm.isMasterRank():
+                    print("[reducedbasis] WARNING : Upper bound not initialized yet")
+                return self.gammaMubar
+
+        else:
+            alphaLB = lambda mu: 1
+            alphaLB_ = lambda beta: 1
+            gammaUB = lambda mu: 1
+            gammaUB_ = lambda beta: 1
+
 
         self.alphaLB = alphaLB
         self.alphaLB_ = alphaLB_
@@ -139,10 +151,6 @@ class reducedbasis():
         assert( len(beta) == self.Qa ), f"Number of param ({len(beta)}) should be {self.Qa}"
 
         AN = np.einsum('q,qnm->nm', beta, self.ANq, optimize=True)
-        # AN = self.ANq[0].copy()
-        # AN.fill(0)
-        # for q in range(0, self.Qa):
-        #     AN += self.ANq[q] * beta[q]
 
         if size is None:
             return AN
@@ -163,10 +171,6 @@ class reducedbasis():
         assert( len(beta) == self.Qf ), f"Number of param ({len(beta)}) should be {self.Qf}"
 
         FN = np.einsum('p,pn->n', beta, self.FNp, optimize=True)
-        # FN = self.FNp[0].copy()
-        # FN.fill(0)
-        # for q in range(0, self.Qf):
-        #     FN += self.FNp[q] * beta[q]
 
         if size is None:
             return FN
@@ -409,21 +413,22 @@ class reducedbasis():
             if self.worldComm.isMasterRank():
                 os.makedirs(path, exist_ok=True)
 
-        if self.worldComm.isMasterRank():
-            print(f"[reducedbasis] saving reduced basis to {os.getcwd()}/reducedbasis.json ...", end=" ")
-
         jsonPath = f"{os.getcwd()}/reducedbasis.json"
+        if self.worldComm.isMasterRank():
+            print(f"[reducedbasis] saving reduced basis to {jsonPath}...", end=" ")
+
 
         if self.worldComm.isMasterRank():
             h5f = h5py.File(path+"/reducedbasis.h5", "w")
-            content = {'Qa': self.Qa, 'Qf': self.Qf, 'N_output': self.N_output, "QLk": self.QLk, "output_names": self.output_names, 'N': self.N, "path": path+"/reducedbasis.h5"}
+            content = {
+                'Qa': self.Qa, 'Qf': self.Qf, 'N_output': self.N_output,
+                "QLk": self.QLk, "output_names": self.output_names, 'N': self.N,
+                "path": path+"/reducedbasis.h5",
+                "use_dual_norm": self.use_dual_norm,
+            }
             dict_mubar = {}
             for n in self.mubar.parameterNames(): dict_mubar[n] = self.mubar.parameterNamed(n)
             content["mubar"] = dict_mubar
-
-            f = open('reducedbasis.json', 'w')
-            json.dump(content, f, indent = 4)
-            f.close()
 
 
             h5f.create_dataset("ANq", data=self.ANq)
@@ -440,8 +445,9 @@ class reducedbasis():
             else:
                 h5f.create_dataset("DeltaMax", data=np.array([]))
 
-            h5f.create_dataset("alphaMubar", data=np.array([self.alphaMubar]))
-            h5f.create_dataset("gammaMubar", data=np.array([self.gammaMubar]))
+            if not self.use_dual_norm:
+                h5f.create_dataset("alphaMubar", data=np.array([self.alphaMubar]))
+                h5f.create_dataset("gammaMubar", data=np.array([self.gammaMubar]))
 
             h5f.close()
 
@@ -511,23 +517,33 @@ class reducedbasis():
         self.gammaMubar = h5f["gammaMubar"][0]
         betaA_bar_np = np.array(self.betaA_bar)
 
-        def alphaLB(mu):
-            # From a parameter
-            betaMu = self.model.computeBetaQm(mu)[0][0]
-            return self.alphaMubar * np.min( betaMu / betaA_bar_np )
+        use_dual_norm = j['use_dual_norm']
 
-        def alphaLB_(betaA):
-            # From a decomposition
-            return self.alphaMubar * np.min( betaA / betaA_bar_np )
+        if use_dual_norm:
 
-        def gammaUB(mu):
-            # From a parameter
-            betaMu = self.model.computeBetaQm(mu)[0][0]
-            return self.gammaMubar * np.max( betaMu / betaA_bar_np )
+            def alphaLB(mu):
+                # From a parameter
+                betaMu = self.model.computeBetaQm(mu)[0][0]
+                return self.alphaMubar * np.min( betaMu / betaA_bar_np )
 
-        def gammaUB_(betaA):
-            # From a decomposition
-            return self.gammaMubar * np.max( betaA / betaA_bar_np )
+            def alphaLB_(betaA):
+                # From a decomposition
+                return self.alphaMubar * np.min( betaA / betaA_bar_np )
+
+            def gammaUB(mu):
+                # From a parameter
+                betaMu = self.model.computeBetaQm(mu)[0][0]
+                return self.gammaMubar * np.max( betaMu / betaA_bar_np )
+
+            def gammaUB_(betaA):
+                # From a decomposition
+                return self.gammaMubar * np.max( betaA / betaA_bar_np )
+
+        else:
+            alphaLB = lambda mu: 1
+            alphaLB_ = lambda beta: 1
+            gammaUB = lambda mu: 1
+            gammaUB_ = lambda beta: 1
 
         self.alphaLB = alphaLB
         self.alphaLB_ = alphaLB_
