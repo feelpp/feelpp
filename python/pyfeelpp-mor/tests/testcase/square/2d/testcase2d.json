@@ -7,12 +7,23 @@
         "heat":[
             {
                 "name":"heat",
-                "materials":["Omega_1","Omega_2"],
+                "materials":["Omega_1"],
                 "setup": {
                     "heat-sources":
                     {
                         "type":"heat-source",
-                        "expr":"P:P"
+                        "expr":"2*k_1*k_1:k_1"
+                    }
+                }
+            },
+            {
+                "name":"heat2",
+                "materials":["Omega_2"],
+                "setup": {
+                    "heat-sources":
+                    {
+                        "type":"heat-source",
+                        "expr":"2*k_2*k_2:k_2"
                     }
                 }
             }
@@ -28,11 +39,8 @@
 	},
 	"Parameters":
     {
-        "phi":"1",
-		"Tdir":"25",
-        "P":"2",
-        "k_1":"10",
-		"k_2":"10"
+        "k_1":"1",
+		"k_2":"5"
     },
 	"Meshes":
     {
@@ -41,7 +49,7 @@
             "Import":
             {
                 "filename":"$cfgdir/2sqr.geo",
-				"hsize": 0.01
+				"hsize": 0.1
             },
             "DistanceToRange":
             {
@@ -88,7 +96,7 @@
 			"temperature":
 			{
 				"Gamma_dir": {
-					"expr": "k_1+273.15:k_1"
+					"expr": "4*k_1:k_1"
 				}
 			},
             "flux": 
@@ -100,7 +108,7 @@
                     "expr": "0"
                 },
 				"Gamma_neu":{
-					"expr": "2*k_2*k_2:k_2"
+					"expr": "4*k_2*k_2:k_2"
 				}
             }
         }
@@ -112,25 +120,25 @@
 			"type":"point",
 			"coord": [0,0,0]
 		},
-		"T_Omega1_C":
+		"T_Omega1":
 		{
 			"type":"mean",
 			"markers": ["Omega_1"],
-            "expr": "crb_u-273.15:crb_u",
+            "expr": "crb_u:crb_u",
             "topodim": 3
 		},
-		"T_Omega2_C":
+		"T_Omega2":
 		{
 			"type":"mean",
 			"markers": ["Omega_2"],
-            "expr": "crb_u-273.15:crb_u",
+            "expr": "crb_u:crb_u",
             "topodim": 3
 		},
-		"T_int_C":
+		"T_int":
 		{
 			"type":"mean",
 			"markers": ["Gamma_int"],
-            "expr": "crb_u-273.15:crb_u",
+            "expr": "crb_u:crb_u",
             "topodim": 2
 		}
 	},
@@ -141,7 +149,6 @@
 			{
 				"fields":["temperature","pid"],
 				"expr": {
-						"T_C": "heat_T-273.15:heat_T",
 						"flux":
 						{
 							"expr":"{-materials_k * heat_grad_T_0,-materials_k * heat_grad_T_1,-materials_k * heat_grad_T_2}:materials_k:heat_grad_T_0:heat_grad_T_1:heat_grad_T_2",
