@@ -442,6 +442,17 @@ public :
      */
     std::map<std::string,std::string> const& additionalModelFiles() const { return M_additionalModelFiles; }
 
+    std::map<std::string,std::tuple<std::variant<fs::path,nl::json>,std::string>> const& additionalModelData() const { return M_additionalModelData; }
+    std::map<std::string,std::tuple<std::variant<fs::path,nl::json>,std::string>> & additionalModelData() { return M_additionalModelData; }
+
+
+    template <typename TheDataType>
+    void addModelData( std::string const& key, TheDataType && data, std::string const& relativePath = "" )
+        {
+            M_additionalModelData[key] = std::make_tuple( std::forward<TheDataType>( data ), relativePath );
+        }
+
+
     /**
      * add file to copy in database
      */
@@ -787,6 +798,13 @@ public :
             std::string const& key = filenamePair.first;
             std::string const& filename = filenamePair.second;
             ptreeModelFile.add("filename",filename );
+            ptreeModelFiles.add_child( key, ptreeModelFile );
+        }
+        for ( auto const& [key,dataAndPath] : this->additionalModelData() )
+        {
+            auto const& [data,relativeFilePath] = dataAndPath;
+            boost::property_tree::ptree ptreeModelFile;
+            ptreeModelFile.add("filename",relativeFilePath );
             ptreeModelFiles.add_child( key, ptreeModelFile );
         }
         ptree.add_child( "additional-model-files", ptreeModelFiles );
@@ -2251,6 +2269,8 @@ protected :
     bool M_isOnlineModel;
 private :
     std::map<std::string,std::string > M_additionalModelFiles;
+    // id -> ( data (copy path of file or write json), relative path in db)
+    std::map<std::string,std::tuple<std::variant<fs::path,nl::json>,std::string>> M_additionalModelData;
 };
 
 

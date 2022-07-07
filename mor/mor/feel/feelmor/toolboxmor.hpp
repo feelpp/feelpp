@@ -63,6 +63,8 @@ public:
      * @return mdeim_function_type the function assembling the lhs
      */
     virtual mdeim_function_type mdeimOnlineFunction(mesh_ptrtype const& mesh) = 0;
+
+    virtual nl::json const& toolboxSetupData() const = 0;
 };
 
 /**
@@ -85,6 +87,8 @@ class DeimMorModelToolbox : public DeimMorModelBase<typename ToolboxType::mesh_t
     using sparse_matrix_ptrtype = typename super_type::sparse_matrix_ptrtype;
     using deim_function_type = typename super_type::deim_function_type;
     using mdeim_function_type = typename super_type::mdeim_function_type;
+
+    using toolbox_init_function_type = std::function<toolbox_ptrtype(mesh_ptrtype)>;
 
 public:
     /**
@@ -115,6 +119,14 @@ public:
     deim_function_type deimOnlineFunction(mesh_ptrtype const& mesh) override;
     mdeim_function_type mdeimOnlineFunction(mesh_ptrtype const& mesh) override;
 
+    void setToolboxInitFunction( toolbox_init_function_type fun ) { M_toolboxInitFunction = fun; }
+
+    nl::json const& toolboxSetupData() const override {
+        if ( !M_tb || !M_tb->hasModelProperties() )
+            throw std::runtime_error( "no model properties" );
+        return M_tb->modelProperties().jsonData();
+    }
+
 private:
     std::string M_prefix;
     toolbox_ptrtype M_tb;
@@ -126,6 +138,8 @@ private:
     toolbox_ptrtype M_tbMdeim;
     vector_ptrtype M_rhsMdeim;
     sparse_matrix_ptrtype M_matMdeim;
+
+    toolbox_init_function_type M_toolboxInitFunction;
 };
 
 /**

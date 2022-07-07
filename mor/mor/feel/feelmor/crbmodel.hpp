@@ -26,8 +26,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2009-08-09
  */
-#ifndef __CRBModel_H
-#define __CRBModel_H 1
+#ifndef FEELPP_MOR_CRBModel_H
+#define FEELPP_MOR_CRBModel_H
 
 //#include <boost/shared_ptr.hpp>
 
@@ -1141,6 +1141,38 @@ public:
                     M_model->addModelFile( inputFilenamePair.first, relativeDbPath.string() );
                 }
                 M_model->worldComm().barrier();
+            }
+
+
+            if ( !M_model->additionalModelData().empty() )
+            {
+                for ( auto & [key,dataAndPath] : M_model->additionalModelData() )
+                {
+                    auto & [data,relPath] = dataAndPath;
+                    //std::string relPath = relPathIn;
+                    if ( relPath.empty() )
+                    {
+                        if ( std::holds_alternative<nl::json>( data ) )
+                            relPath = "feelpp_nofilename.json";
+                    }
+                    fs::path newFilePath = fs::path(dir)/relPath;
+                    fs::path parentNewFilePath = newFilePath.parent_path();
+
+                    if ( M_model->worldComm().isMasterRank() )
+                    {
+                        if ( !fs::exists( parentNewFilePath ) )
+                            fs::create_directories( parentNewFilePath );
+                        if ( std::holds_alternative<nl::json>( data ) )
+                        {
+                            auto jsonData = std::get<nl::json>( data );
+                            fs::ofstream o(newFilePath);
+                            o << jsonData.dump(/*1*/);
+                        }
+                        else
+                        {}
+                    }
+                    M_model->worldComm().barrier();
+                }
             }
         }
 
