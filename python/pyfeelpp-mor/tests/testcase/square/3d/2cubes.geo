@@ -1,4 +1,4 @@
-h=0.05;
+h=0.1;
 
 // Face arriere
 
@@ -53,7 +53,7 @@ Line(16) = {2,8};
 Line(17) = {4,10};
 Line(18) = {3,9};
 Line(19) = {5,11};
-Line(20) = {6,12}:
+Line(20) = {6,12};
 
 Line Loop(25) = {15,-8,-17,1};
 Line Loop(26) = {15,9,-16,-2};
@@ -72,7 +72,7 @@ Plane Surface(89) = {29};
 Plane Surface(90) = {30};
 
 Line Loop(31) = {17,-11,-18,4};
-Place Surface(91) = {31};
+Plane Surface(91) = {31};
 
 // Cube 1
 
@@ -84,11 +84,11 @@ Volume(1) = {1};
 Surface Loop(2) = {88,91,90,89,82,84};
 Volume(2) = {2};
 
-Physical Surface("Gamma_1",101} = {85,81,83,87};
-Physical Surface("Gamma_2",102} = {88,90,82,84};
-Physical Surface("Gamma_dir") = {86};
-Physical Surface("Gamma_neu") = {89};
-Physical Surface("Gamma_int",104} = {91};
+Physical Surface("Gamma_1",101) = {85,81,83,87};
+Physical Surface("Gamma_2",102) = {88,90,82,84};
+Physical Surface("Gamma_dir",103) = {86};
+Physical Surface("Gamma_neu",104) = {89};
+Physical Surface("Gamma_int",105) = {91};
 
 Physical Volume("Omega_1",201) = {1};
 Physical Volume("Omega_2",202) = {2};
