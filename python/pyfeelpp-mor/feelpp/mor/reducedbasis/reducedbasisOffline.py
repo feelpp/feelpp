@@ -279,7 +279,7 @@ class reducedbasisOffline(reducedbasis):
 
         L = self.Lkq[k][0].duplicate()
         for p in range(self.QLk[k]):
-            L += self.QLk[k] * beta[p]
+            L += self.Lkq[k][p] * beta[p]
         return L
 
 
