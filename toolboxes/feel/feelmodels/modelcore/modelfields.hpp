@@ -12,6 +12,8 @@
 #include <feel/feelcore/feeltypes.hpp>
 #include <feel/feelcore/traits.hpp>
 #include <feel/feelvf/symbolsexpr.hpp>
+#include <feel/feelvf/operators.hpp>
+#include <feel/feelvf/norm2.hpp>
 #include <feel/feelvf/inner.hpp>
 
 #include <feel/feelmodels/modelcore/trialssymbolsexpr.hpp>

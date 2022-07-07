@@ -11,7 +11,60 @@
     "Parameters":
     {
         "ubar":"2",
-        "chi":"t<2:t"
+        "chi":"t<2:t",
+
+
+
+        // "hfar":0.03,
+        "hclose":"hfar/5:hfar",
+
+        // "mymetric":"hclose+(hfar-hclose)*meshes_heatfluid_distanceToRange_walls_normalized_min_max:hclose:hfar:meshes_heatfluid_distanceToRange_walls_normalized_min_max",
+
+        // new metric
+        //"ddd":"min(meshes_heatfluid_distanceToRange_walls_normalized_min_max, 1-thediff_normalized):meshes_heatfluid_distanceToRange_walls_normalized_min_max:thediff_normalized",
+        //"thediff_normalized":"abs(max(heat_T,293.15)-293.15)/(293.15+1):heat_T",
+        "thediff_normalized":"min(1,abs(max(heat_T,293.15)-293.15)/(1) ):heat_T",
+        //"mymetric2":"hclose+(hfar-hclose)*ddd:hclose:hfar:ddd",
+        "mymetric2":"hfar+(hclose/3-hfar)*thediff_normalized:hclose:hfar:thediff_normalized",
+        //"mymetric3":"min(meshes_heatfluid_distanceToRange_walls_normalized_min_max,mymetric2):meshes_heatfluid_distanceToRange_walls_normalized_min_max:mymetric2",
+        "mymetric3":"min(mymetric,mymetric2):mymetric:mymetric2",
+
+        //"inlet_temperature":"( 293.15-10*(y-0.15)*(y-0.25)/(0.2^2) )*(y>0.15)*(y<0.25)+(293.15*(y<(0.15-1e-9)))+(293.15*(y>(0.25-1e-9))):y"
+        // gaussian
+        //"sigma":0.0001,
+        "sigma":0.02,
+        "inlet_y_center":0.2,
+        //"inlet_temperature_added":"(1./4000)*(1/(sigma*sqrt(2*pi)))*exp(-(y-inlet_y_center)^2/(2*sigma^2)):y:inlet_y_center:sigma"
+        "inlet_temperature_added":"(1./20)*(1/(sigma*sqrt(2*pi)))*exp(-(y-inlet_y_center)^2/(2*sigma^2)):y:inlet_y_center:sigma"
+        //"inlet_temperature_added":"(1/(0.0001*sqrt(2*pi)))*exp(-(y-inlet_y_center)^2/(2*0.0001^2)):y:inlet_y_center:sigma"
+
+        ,
+
+
+
+        "hfar":0.03,
+        "hclose_wall1":"hfar/5:hfar",
+        "hclose_wall2":"hfar/10:hfar",
+        "d2r_bounded_wall1":"min(meshes_heatfluid_distanceToRange_wall1_normalized_min_max,0.2)/0.2:meshes_heatfluid_distanceToRange_wall1_normalized_min_max",
+        "mymetric_wall1":"hclose_wall1+(hfar-hclose_wall1)*d2r_bounded_wall1:hclose_wall1:hfar:d2r_bounded_wall1",
+        "d2r_bounded_wall2":"min(meshes_heatfluid_distanceToRange_wall2_normalized_min_max,0.2)/0.2:meshes_heatfluid_distanceToRange_wall2_normalized_min_max",
+        "mymetric_wall2":"hclose_wall2+(hfar-hclose_wall2)*d2r_bounded_wall2:hclose_wall2:hfar:d2r_bounded_wall2",
+
+
+
+        "mymetric_wall_1_2":"min(mymetric_wall1,mymetric_wall2):mymetric_wall1:mymetric_wall2",
+        //"mymetric_full":"min(mymetric_wall_1_2,mymetric2):mymetric_wall_1_2:mymetric2"
+        "mymetric_full":"min(mymetric_wall_1_2,mymetric_grad_t):mymetric_wall_1_2:mymetric_grad_t",
+
+
+        "mygrad_t_magnitude":"sqrt(heat_grad_T_0^2+heat_grad_T_1^2):heat_grad_T_0:heat_grad_T_1",
+
+        "mygrad_t_normalized":"min(40,mygrad_t_magnitude)/40:mygrad_t_magnitude",
+
+        "mygrad_t_normalized_log":"(log(mygrad_t_normalized+0.01) - log(0.01))/(log(1+0.01)-log(0.01)):mygrad_t_normalized",
+        
+        //"mymetric_grad_t":"hfar+(hclose/3-hfar)*mygrad_t_normalized:hclose:hfar:mygrad_t_normalized"
+        "mymetric_grad_t":"hfar+(hclose/3-hfar)*mygrad_t_normalized_log:hclose:hfar:mygrad_t_normalized_log"
     },
     "Meshes":
     {
@@ -21,7 +74,62 @@
             {
                 "filename":"$cfgdir/cfd.geo",
                 "hsize":0.03 //0.01
-            }
+            },
+            "DistanceToRange":
+            {
+                "walls":
+                {
+                    "markers":["wall1","wall2"],
+                    "normalization":["min_max","mean"]
+                },
+                "wall1":
+                {
+                    "markers":"wall1",
+                    "normalization":"min_max"
+                },
+                "wall2":
+                {
+                    "markers":["wall2","line-downstream"],
+                    "normalization":"min_max"
+                }
+            },
+            "MeshAdaptation":[
+                {
+                    //"metric":"mymetric:mymetric",
+                    //"metric":"mymetric3:mymetric3",
+                    "metric":"mymetric_wall_1_2:mymetric_wall_1_2",
+                    "events":{
+                        "after_import":{}
+                        //"after_init":{}
+                        //"each_time_step":{}
+                    },
+                    "setup":{
+                        "verbose":-1//-1
+                        // ,"opnbdy":1 // NOT WORKING
+                    }
+                },
+                {
+                    //"metric":"mymetric:mymetric",
+                    //"metric":"mymetric3:mymetric3",
+                    "metric":"mymetric_full:mymetric_full",
+                    "required_markers":["wall2","wall1","line-downstream"],
+                    "events":{
+                        //"after_import":{}
+                        "after_init":{}
+                        //"each_time_step":{}
+                    }
+                },
+                {
+                    //"metric":"mymetric3:mymetric3",
+                    "metric":"mymetric_full:mymetric_full",
+                    "required_markers":["wall2","wall1","inlet","line-downstream"],
+                    "events":{
+                        "each_time_step":{
+                            "frequency":4//40000//4//25//100
+                        }
+                    }
+                }
+            ]
         }
     },
     "Materials":
@@ -31,6 +139,9 @@
             "mu":"1.0",
             "k":"2.9e-5",
             "Cp":"4185"
+
+            ,"beta":"0"
+
         }
     },
     "InitialConditions":
@@ -41,6 +152,10 @@
                     "myic":{
                         "markers":"Fluid",
                         "expr":293.15
+                    },
+                    "myic2":{
+                        "markers":"inlet",
+                        "expr":"293.15+inlet_temperature_added:inlet_temperature_added"
                     }
                 }
             }
@@ -54,7 +169,8 @@
             {
                 "inlet":
                 {
-                    "expr":"{ 1.5*ubar*(4./0.1681)*y*(0.41-y)*( ((1-cos(pi*t/2))/2)*chi + (1-chi) ),0}:ubar:y:t:chi"
+                    //"expr":"{ 1.5*ubar*(4./0.1681)*y*(0.41-y)*( ((1-cos(pi*t/2))/2)*chi + (1-chi) ),0}:ubar:y:t:chi"
+                    "expr":"{ (t>0.02)*1.5*ubar*(4./0.1681)*y*(0.41-y)*( ((1-cos(pi*t/2))/2)*chi + (1-chi) ),0}:ubar:y:t:chi"
                 },
                 "wall1":
                 {
@@ -65,7 +181,7 @@
                     "expr":"{0,0}"
                 }
             },
-            "outlet":
+            "normal_stress":
             {
                 "outlet":
                 {
@@ -80,8 +196,18 @@
                 "inlet":
                 {
                     //"expr":"300*(y>0.15)*(y<0.25)+(293.15*(y<(0.15-1e-9)))+(293.15*(y>(0.25-1e-9))):y"
-                    "expr":"( 293.15-10*(y-0.15)*(y-0.25)/(0.2^2) )*(y>0.15)*(y<0.25)+(293.15*(y<(0.15-1e-9)))+(293.15*(y>(0.25-1e-9))):y"
+                    //"expr":"( 293.15-10*(y-0.15)*(y-0.25)/(0.2^2) )*(y>0.15)*(y<0.25)+(293.15*(y<(0.15-1e-9)))+(293.15*(y>(0.25-1e-9))):y"
+
+                    "expr":"293.15+inlet_temperature_added:inlet_temperature_added"
                     //"expr":"293.15"
+                }
+            },
+            "convective_heat_flux":
+            {
+                "wall2":
+                {
+                    "h": 4000,//"10",
+                    "Text": 293.15
                 }
             }
         }
@@ -92,7 +218,11 @@
         {
             "Exports":
             {
-                "fields":["fluid.velocity","fluid.pressure","heat.temperature","pid"]
+                "fields":["fluid.velocity","fluid.pressure","heat.temperature","pid"],
+                "AAexpr":{
+                    "inlet_temperature":"293.15+inlet_temperature_added:inlet_temperature_added",
+                    "thediff_normalized":"thediff_normalized:thediff_normalized"
+                }
             }
         },
         "fluid":

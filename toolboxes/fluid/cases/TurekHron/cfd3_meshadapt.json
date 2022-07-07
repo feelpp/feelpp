@@ -1,0 +1,68 @@
+{
+    "Meshes":
+    {
+        "fluid":
+        {
+            "DistanceToRange":
+            {
+                "wall1":
+                {
+                    "markers":"wall1",
+                    "normalization":"min_max"
+                },
+                "wall2":
+                {
+                    "markers":["wall2","line-downstream"],
+                    "normalization":"min_max"
+                }
+            },
+            "MeshAdaptation":[
+                {
+                    "metric":"min(mymetric_wall1,mymetric_wall2):mymetric_wall1:mymetric_wall2",
+                    "events":{
+                        "after_import":{}
+                        //"after_init":{}
+                    }
+                },
+                {
+                    "metric":"mymetric:mymetric",
+                    "required_markers":["wall2","wall1"],
+                    "AAevents":{
+                        "each_time_step":{
+                            "frequency":40//10
+                            //"condition":"t>0.3:t"
+                            //"times":[0.3,0.6]
+                            //"times":[ [0.3,0.1,0.6,3] ]
+                        }
+                        // "time_checkpoints":{
+                        //     "values":"0.3",
+                        //     "condition":"t<10:t"
+                        // }
+                    }
+                }]
+        }
+    },
+    "Parameters":
+    {
+        "hfar":0.03,
+        "hclose_wall1":"hfar/5:hfar",
+        "hclose_wall2":"hfar/10:hfar",
+        "d2r_bounded_wall1":"min(meshes_fluid_distanceToRange_wall1_normalized_min_max,0.2)/0.2:meshes_fluid_distanceToRange_wall1_normalized_min_max",
+        "mymetric_wall1":"hclose_wall1+(hfar-hclose_wall1)*d2r_bounded_wall1:hclose_wall1:hfar:d2r_bounded_wall1",
+        "d2r_bounded_wall2":"min(meshes_fluid_distanceToRange_wall2_normalized_min_max,0.2)/0.2:meshes_fluid_distanceToRange_wall2_normalized_min_max",
+        "mymetric_wall2":"hclose_wall2+(hfar-hclose_wall2)*d2r_bounded_wall2:hclose_wall2:hfar:d2r_bounded_wall2"
+    },
+    "PostProcess":
+    {
+        "fluid":
+        {
+            "Exports":
+            {
+                "expr":{
+                    "d2r_wall2":"meshes_fluid_distanceToRange_wall2:meshes_fluid_distanceToRange_wall2",
+                    "d2r_wall2_normalized_minmax":"meshes_fluid_distanceToRange_wall2_normalized_min_max:meshes_fluid_distanceToRange_wall2_normalized_min_max"
+                }
+            }
+        }
+    }
+}
