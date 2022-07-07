@@ -17,9 +17,9 @@ HEAT_CLASS_TEMPLATE_TYPE::Heat( std::string const& prefix,
                                 std::string const& subPrefix,
                                 ModelBaseRepository const& modelRep )
     :
-    super_type( prefix, keyword, worldComm, subPrefix, modelRep ),
+    super_type( prefix, keyword, worldComm, subPrefix, modelRep, ModelBaseCommandLineOptions( heat_options( prefix ) ) ),
     ModelPhysics<nDim>( "heat" ),
-    ModelBase( prefix, keyword, worldComm, subPrefix, modelRep )
+    ModelBase( prefix, keyword, worldComm, subPrefix, modelRep, ModelBaseCommandLineOptions( heat_options( prefix ) ) )
 {
     this->log("Heat","constructor", "start" );
 
@@ -44,18 +44,19 @@ HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
 HEAT_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 {
-    M_useExtendedDoftable = boption(_name="use-extended-doftable",_prefix=this->prefix());
+    M_useExtendedDoftable = boption(_name="use-extended-doftable",_prefix=this->prefix(),_vm=this->clovm());
 
-    M_stabilizationGLS = boption(_name="stabilization-gls",_prefix=this->prefix());
-    M_stabilizationGLSType = soption(_name="stabilization-gls.type",_prefix=this->prefix());
+    M_stabilizationGLS = boption(_name="stabilization-gls",_prefix=this->prefix(),_vm=this->clovm());
+    M_stabilizationGLSType = soption(_name="stabilization-gls.type",_prefix=this->prefix(),_vm=this->clovm());
 
-    M_stabilizationGLS_checkConductivityDependencyOnCoordinates = boption(_name="stabilization-gls.check-conductivity-dependency-on-coordinates",_prefix=this->prefix());
+    M_stabilizationGLS_checkConductivityDependencyOnCoordinates = boption(_name="stabilization-gls.check-conductivity-dependency-on-coordinates",
+                                                                          _prefix=this->prefix(),_vm=this->clovm());
 
     // time stepping
-    M_timeStepping = soption(_name="time-stepping",_prefix=this->prefix());
-    M_timeStepThetaValue = doption(_name="time-stepping.theta.value",_prefix=this->prefix());
+    M_timeStepping = soption(_name="time-stepping",_prefix=this->prefix(),_vm=this->clovm());
+    M_timeStepThetaValue = doption(_name="time-stepping.theta.value",_prefix=this->prefix(),_vm=this->clovm());
 
-    M_solverName = soption(_name="solver",_prefix=this->prefix());
+    M_solverName = soption(_name="solver",_prefix=this->prefix(),_vm=this->clovm());
 }
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
@@ -78,6 +79,7 @@ HEAT_CLASS_TEMPLATE_TYPE::initMesh()
                                                                                              );
 
     CHECK( this->mesh() ) << "mesh generation fail";
+    this->log("Heat","initMesh", fmt::format("mesh numGlobalElements : {}", this->mesh()->numGlobalElements()));
 
     double tElpased = this->timerTool("Constructor").stop("initMesh");
     this->log("Heat","initMesh",(boost::format("finish in %1% s")%tElpased).str() );
@@ -120,6 +122,7 @@ HEAT_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
         M_rangeMeshElements = markedelements(this->mesh(), mom->markers( this->physicsAvailableFromCurrentType() ));
         M_Xh = space_temperature_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm(),_range=M_rangeMeshElements, _extended_doftable=M_useExtendedDoftable );
     }
+    this->log("Heat","initFunctionSpaces", fmt::format("temperature space ndof : {}",M_Xh->nDof()) );
 
     //M_fieldTemperature.reset( new element_temperature_type(M_Xh,"temperature"));
     M_fieldTemperature =  M_Xh->elementPtr( "temperature" );
@@ -351,7 +354,7 @@ HEAT_CLASS_TEMPLATE_TYPE::initTimeStep()
 
     int bdfOrder = 1;
     if ( M_timeStepping == "BDF" )
-        bdfOrder = ioption(_prefix=this->prefix(),_name="bdf.order");
+        bdfOrder = ioption(_prefix=this->prefix(),_name="bdf.order",_vm=this->clovm());
     int nConsecutiveSave = std::max( 3, bdfOrder ); // at least 3 is required when restart with theta scheme
 
     M_bdfTemperature = this->createBdf( this->spaceTemperature(),"temperature", bdfOrder, nConsecutiveSave, myFileFormat );
@@ -395,7 +398,7 @@ HEAT_CLASS_TEMPLATE_TYPE::initPostProcess()
 #if 0
         std::string geoExportType="static";//change_coords_only, change, static
 #else
-        bool useStaticExporter = boption(_name="exporter.use-static-mesh",_prefix=this->prefix());
+        bool useStaticExporter = boption(_name="exporter.use-static-mesh",_prefix=this->prefix(),_vm=this->clovm());
         std::string geoExportType = useStaticExporter? "static":"change";
 #endif
         M_exporter = exporter( _mesh=this->mesh(),
