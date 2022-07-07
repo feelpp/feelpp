@@ -75,17 +75,27 @@ template<typename ToolboxType>
 typename DeimMorModelToolbox<ToolboxType>::deim_function_type
 DeimMorModelToolbox<ToolboxType>::deimOnlineFunction(mesh_ptrtype const& mesh)
 {
-    M_tbDeim = std::make_shared<toolbox_type>(M_prefix);
-    M_tbDeim->setMesh(mesh);
-    M_tbDeim->init();
+    if ( M_toolboxInitFunction )
+    {
+        M_tbDeim = M_toolboxInitFunction( mesh );
+    }
+    else
+    {
+        M_tbDeim = std::make_shared<toolbox_type>(M_prefix);
+        M_tbDeim->setMesh(mesh);
+        M_tbDeim->init();
+        //M_tbDeim->printAndSaveInfo();
+    }
     M_rhsDeim = M_tbDeim->algebraicFactory()->rhs()->clone();
     M_matDeim = M_tbDeim->algebraicFactory()->matrix();
     deim_function_type assembleDEIM =
-        [&tbDeim=M_tbDeim,&rhs=M_rhsDeim,&mat=M_matDeim](parameter_type const& mu)
+        [tbDeim=M_tbDeim,rhsB=M_rhsDeim,matB=M_matDeim](parameter_type const& mu)
             {
                 for( int i = 0; i < mu.size(); ++i )
                     tbDeim->addParameterInModelProperties(mu.parameterName(i), mu(i));
                 tbDeim->updateParameterValues();
+                auto mat = matB;
+                auto rhs = rhsB;
                 rhs->zero();
                 tbDeim->algebraicFactory()->applyAssemblyLinear( tbDeim->algebraicBlockVectorSolution()->vectorMonolithic(), mat, rhs, {"ignore-assembly.lhs"} );
                 return rhs;
@@ -97,17 +107,27 @@ template<typename ToolboxType>
 typename DeimMorModelToolbox<ToolboxType>::mdeim_function_type
 DeimMorModelToolbox<ToolboxType>::mdeimOnlineFunction(mesh_ptrtype const& mesh)
 {
-    M_tbMdeim = std::make_shared<toolbox_type>(M_prefix);
-    M_tbMdeim->setMesh(mesh);
-    M_tbMdeim->init();
+    if ( M_toolboxInitFunction )
+    {
+        M_tbMdeim = M_toolboxInitFunction( mesh );
+    }
+    else
+    {
+        M_tbMdeim = std::make_shared<toolbox_type>(M_prefix);
+        M_tbMdeim->setMesh(mesh);
+        M_tbMdeim->init();
+        //M_tbMdeim->printAndSaveInfo();
+    }
     M_rhsMdeim = M_tbMdeim->algebraicFactory()->rhs()->clone();
     M_matMdeim = M_tbMdeim->algebraicFactory()->matrix();
     mdeim_function_type assembleMDEIM =
-        [&tbMdeim=M_tbMdeim,&rhs=M_rhsMdeim,&mat=M_matMdeim](parameter_type const& mu)
+        [tbMdeim=M_tbMdeim,rhsB=M_rhsMdeim,matB=M_matMdeim](parameter_type const& mu)
             {
                 for( int i = 0; i < mu.size(); ++i )
                     tbMdeim->addParameterInModelProperties(mu.parameterName(i), mu(i));
                 tbMdeim->updateParameterValues();
+                auto mat = matB;
+                auto rhs = rhsB;
                 mat->zero();
                 tbMdeim->algebraicFactory()->applyAssemblyLinear( tbMdeim->algebraicBlockVectorSolution()->vectorMonolithic(), mat, rhs, {"ignore-assembly.rhs"} );
                 return mat;
@@ -353,6 +373,8 @@ ToolboxMor<SpaceType, Options>::setupSpecificityModel( boost::property_tree::ptr
     this->Dmu = parameterspace_type::New(parameters);
     auto parameterNames = std::set<std::string>(this->Dmu->parameterNames().begin(), this->Dmu->parameterNames().end());
 
+    //std::cout << tc::green << "ToolboxMor DEIM Parameter names : " << parameterNames << tc::reset << std::endl;
+
     M_deim = Feel::deim( _model=std::dynamic_pointer_cast<self_type>(this->shared_from_this()), _prefix="vec");
     this->addDeim(M_deim);
     Feel::cout << tc::green << "ToolboxMor DEIM construction finished!!" << tc::reset << std::endl;
@@ -478,6 +500,14 @@ template<typename SpaceType, int Options>
 void
 ToolboxMor<SpaceType, Options>::initToolbox(std::shared_ptr<DeimMorModelBase<mesh_type>> model )
 {
+    // HERE VINCENT
+    try {
+        auto const& tbSetupData = model->toolboxSetupData();
+        this->addModelData( "toolbox_json_setup", tbSetupData, "toolbox_model/setup.json" );
+    }
+    catch ( std::runtime_error const& err )
+    {}
+
     this->setAssembleDEIM(model->deimFunction());
     this->setAssembleMDEIM(model->mdeimFunction());
 
