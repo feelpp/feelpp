@@ -205,7 +205,7 @@ def gmshGenerate(dim, fname):
     return mshname
 
 
-def create_rectangle(prefix="rectangle"):
+def create_rectangle(filename="rectangle"):
     """create the mesh of the rectangle [0,1]x[0,2] with z=0
 
     Args:
