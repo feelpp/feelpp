@@ -260,7 +260,7 @@ BOOST_AUTO_TEST_CASE( test_loadParameterSpace )
     BOOST_CHECK( mumax.parameterNamed("p1") == 3 );
     BOOST_CHECK( mumax.parameterNamed("p2") == 10 );
 }
-BOOST_AUTO_TEST_CASE( test_loadWrongParameterSpace, * boost::unit_test::expected_failures(1) )
+BOOST_AUTO_TEST_CASE( test_loadWrongParameterSpace )
 {
     using namespace Feel;
     using parameterspace_type = ParameterSpace<>;
@@ -272,6 +272,13 @@ BOOST_AUTO_TEST_CASE( test_loadWrongParameterSpace, * boost::unit_test::expected
     istr >> p;
     auto parameters = CRBModelParameters();
     parameters.setPTree(p);
-    auto Dmu = parameterspace_type::New(parameters);
+    try
+    {
+        auto Dmu = parameterspace_type::New(parameters);
+    }
+    catch(const std::logic_error& e)
+    {
+        BOOST_CHECK( e.what() == std::string("All parameters are constant, no sampling will be done\n") );
+    }
 }
 BOOST_AUTO_TEST_SUITE_END()
