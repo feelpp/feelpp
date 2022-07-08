@@ -120,21 +120,21 @@
 			"type":"point",
 			"coord": [0,0,0]
 		},
-		"T_Omega1_C":
+		"T_Omega1":
 		{
 			"type":"mean",
 			"markers": ["Omega_1"],
             "expr": "crb_u:crb_u",
             "topodim": 3
 		},
-		"T_Omega2_C":
+		"T_Omega2":
 		{
 			"type":"mean",
 			"markers": ["Omega_2"],
             "expr": "crb_u:crb_u",
             "topodim": 3
 		},
-		"T_int_C":
+		"T_int":
 		{
 			"type":"mean",
 			"markers": ["Gamma_int"],
