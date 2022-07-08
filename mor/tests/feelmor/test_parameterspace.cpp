@@ -54,7 +54,7 @@ FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
 
 BOOST_AUTO_TEST_SUITE( parameterspace )
 
-BOOST_AUTO_TEST_CASE( test1 )
+BOOST_AUTO_TEST_CASE( testSampling )
 {
     using namespace Feel;
     typedef ParameterSpace</*4*/> parameterspace_type;
@@ -206,7 +206,7 @@ BOOST_AUTO_TEST_CASE( test1 )
     BOOST_CHECK( muMinRes2(0) == 2 && muMinRes2(1) == 3 && muMinRes2(2) == 0 && muMinRes2(3) == 5 );
     BOOST_CHECK( muMaxRes2(0) == 6 && muMaxRes2(1) == 7 && muMaxRes2(2) == 8 && muMaxRes2(3) == 9 );
 }
-BOOST_AUTO_TEST_CASE( test2 )
+BOOST_AUTO_TEST_CASE( test_generateParameterSpace )
 {
     using namespace Feel;
     typedef ParameterSpace</*4*/> parameterspace_type;
@@ -234,7 +234,7 @@ BOOST_AUTO_TEST_CASE( test2 )
         BOOST_CHECK( muspace->parameterName(d) == muspaceReloaded->parameterName(d) );
     }
 }
-BOOST_AUTO_TEST_CASE( test3 )
+BOOST_AUTO_TEST_CASE( test_loadParameterSpace )
 {
     using namespace Feel;
     using parameterspace_type = ParameterSpace<>;
@@ -260,7 +260,7 @@ BOOST_AUTO_TEST_CASE( test3 )
     BOOST_CHECK( mumax.parameterNamed("p1") == 3 );
     BOOST_CHECK( mumax.parameterNamed("p2") == 10 );
 }
-BOOST_AUTO_TEST_CASE( test4, * boost::unit_test::expected_failures(1) )
+BOOST_AUTO_TEST_CASE( test_loadWrongParameterSpace, * boost::unit_test::expected_failures(1) )
 {
     using namespace Feel;
     using parameterspace_type = ParameterSpace<>;
