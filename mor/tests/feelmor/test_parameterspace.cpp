@@ -35,6 +35,7 @@ makeOptions()
     po::options_description modelopt( "test parameter space options" );
     modelopt.add_options()
         ("json_filename" , Feel::po::value<std::string>()->default_value( "$cfgdir/parameterspace.json" ), "json file" )
+        ("json_filename_wrong", Feel::po::value<std::string>()->default_value( "$cfgdir/parameterspace_wrong.json"), "json file for a wrong parametrization" )
         ;
     return  modelopt.add( Feel::feel_options() ) ;
 }
@@ -258,5 +259,19 @@ BOOST_AUTO_TEST_CASE( test3 )
     auto mumax = Dmu->max();
     BOOST_CHECK( mumax.parameterNamed("p1") == 3 );
     BOOST_CHECK( mumax.parameterNamed("p2") == 10 );
+}
+BOOST_AUTO_TEST_CASE( test4, * boost::unit_test::expected_failures(1) )
+{
+    using namespace Feel;
+    using parameterspace_type = ParameterSpace<>;
+    namespace pt =  boost::property_tree;
+
+    auto json = removeComments(readFromFile(Environment::expand(soption("json_filename_wrong"))));
+    std::istringstream istr( json );
+    nl::json p;
+    istr >> p;
+    auto parameters = CRBModelParameters();
+    parameters.setPTree(p);
+    auto Dmu = parameterspace_type::New(parameters);
 }
 BOOST_AUTO_TEST_SUITE_END()
