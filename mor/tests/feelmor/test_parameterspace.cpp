@@ -23,6 +23,7 @@
 
 #define BOOST_TEST_MODULE parameterspace testsuite
 #include <feel/feelcore/testsuite.hpp>
+#include <regex>
 
 #include <feel/feelmor/parameterspace.hpp>
 
@@ -278,7 +279,8 @@ BOOST_AUTO_TEST_CASE( test_loadWrongParameterSpace )
     }
     catch(const std::logic_error& e)
     {
-        BOOST_CHECK( e.what() == std::string("All parameters are constant, no sampling will be done\n") );
+        std::regex r = std::regex("invalid range parameter (.*)\n");
+        BOOST_CHECK( std::regex_match(e.what(), r) );
     }
 }
 BOOST_AUTO_TEST_SUITE_END()
