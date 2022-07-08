@@ -1511,18 +1511,17 @@ public:
         this->setDimension( modelParameters.size() );
 
         int i = 0;
-        bool isValid = false;
         for( auto const& parameterPair : modelParameters )
         {
             setParameterName( i, parameterPair.second.name() );
             M_min(i) = parameterPair.second.min();
             M_max(i) = parameterPair.second.max();
-            isValid = isValid || ( parameterPair.second.min() < parameterPair.second.max() );
+
+            if (!( parameterPair.second.min() < parameterPair.second.max() ))
+                throw std::logic_error( fmt::format("invalid range parameter {}\n",parameterPair.second.name()) );
             ++i;
         }
 
-        if ( !isValid )
-            throw std::logic_error( "All parameters are constant, no sampling will be done\n" );
     }
 
     //! destructor
