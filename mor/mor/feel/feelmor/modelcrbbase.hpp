@@ -30,6 +30,7 @@
 #ifndef FEELPP_MOR_ModelCrbBase_H
 #define FEELPP_MOR_ModelCrbBase_H
 
+#include <feel/feelcore/context.hpp>
 #include <feel/feelmor/crbmodeldb.hpp>
 //#include <feel/feelmor/parameterspace.hpp>
 //#include <feel/feeldiscr/functionspace.hpp>
@@ -301,6 +302,109 @@ public :
     typedef Bdf<space_type>  bdf_type;
     typedef std::shared_ptr<bdf_type> bdf_ptrtype;
 
+    class AdditionalModelData
+    {
+        enum class State { in_memory=( 1 << 0 ), on_disk=( 1 << 1 ) };
+    public:
+        template <typename TheDataType>
+        AdditionalModelData( TheDataType && data, std::string const& relativeFilePath = "" )
+            :
+            M_data( std::forward<TheDataType>( data ) ),
+            M_relativeFilePathInDatabase( relativeFilePath ),
+            M_state( 0 )
+            {
+                if ( this->has<nl::json>() )
+                {
+                    this->setInMemory();
+                    this->setType( "JSON" );
+                }
+            }
+
+        static AdditionalModelData create_from_database_file_path( std::string const& relativeFilePath, std::string const& type )
+            {
+                return AdditionalModelData( std::integral_constant<int,0>{}, relativeFilePath, type );
+            }
+        AdditionalModelData( AdditionalModelData const& ) = default;
+        AdditionalModelData( AdditionalModelData && ) = default;
+        AdditionalModelData& operator=( AdditionalModelData const& ) = default;
+        AdditionalModelData& operator=( AdditionalModelData && ) = default;
+
+        template <typename TheDataType>
+        bool has() const { return std::holds_alternative<TheDataType>( M_data ); }
+
+        template <typename TheDataType>
+        TheDataType const& data() const { return std::get<TheDataType>( M_data ); }
+        template <typename TheDataType>
+        TheDataType & data() { return std::get<TheDataType>( M_data ); }
+
+        std::string const& relativeFilePathInDatabase() const { return M_relativeFilePathInDatabase; }
+        void setRelativeFilePathInDatabase( std::string const& f ) { M_relativeFilePathInDatabase = f; }
+
+        bool isInMemory() const { return M_state.test( (uint16_type) State::in_memory ); }
+        bool isOnDisk() const { return M_state.test( (uint16_type) State::on_disk ); }
+        void setInMemory() { M_state.set( (uint16_type) State::in_memory ); }
+        void setOnDisk() { M_state.set( (uint16_type) State::on_disk ); }
+
+        std::string const& type() const { return M_type; }
+        void setType( std::string const& type )
+            {
+                std::set<std::string> typeManaged = { "JSON", "path" };
+                if ( typeManaged.find( type ) == typeManaged.end() )
+                    throw std::runtime_error( fmt::format( "invalid type : {}.",type ) );
+                M_type = type;
+            }
+
+        void prepareSave()
+            {
+                if ( !this->relativeFilePathInDatabase().empty() )
+                    return;
+                if ( this->template has<nl::json>() )
+                    M_relativeFilePathInDatabase = "feelpp_nofilename.json";
+                else if ( this->template has<fs::path>() )
+                {
+                    M_relativeFilePathInDatabase = (fs::path("modeldata")/this->template data<fs::path>().filename()).string();
+                }
+            }
+
+        template <typename TheDataType>
+        TheDataType & fetch_data( std::string const& dbDir )
+            {
+                if ( !this->has<TheDataType>() )
+                {
+                    fs::path relativeFilePath = fs::path(M_relativeFilePathInDatabase);
+                    fs::path fullFilePath = fs::path(dbDir)/relativeFilePath;
+                    if ( !fs::exists( fullFilePath ) )
+                        throw std::runtime_error(fmt::format("[AdditionalModelData::fetch_data] file not found : {}",fullFilePath.string()));
+
+                    if ( std::is_same_v<TheDataType,nl::json> )
+                    {
+                        std::ifstream ifs( fullFilePath );
+                        M_data = nl::json::parse(ifs);
+                    }
+                    else if ( std::is_same_v<TheDataType,fs::path> )
+                        M_data = fs::path( fullFilePath );
+                }
+                return this->data<TheDataType>();
+            }
+
+    private :
+        AdditionalModelData( std::integral_constant<int,0> /**/ , std::string const& relativeFilePath, std::string const& type )
+            :
+            //M_type( type ),
+            M_relativeFilePathInDatabase( relativeFilePath ),
+            M_state( 0 )
+            {
+                this->setType( type );
+            }
+
+    private :
+        std::string M_type;
+        std::variant<fs::path,nl::json> M_data;
+        std::string M_relativeFilePathInDatabase;
+        Feel::meta::Context<uint16_type> M_state;
+    };
+
+
     ModelCrbBase() = delete;
     ModelCrbBase( std::string const& name,  worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(), std::string const& prefix = "" )
         :
@@ -399,6 +503,9 @@ public :
 
     void setPrefix( std::string const& prefix ) { M_prefix = prefix; }
 
+    CRBModelDB const& crbModelDb() const { return M_crbModelDb; }
+
+
     /**
      * Define the model as an online (sequential) model
      * used for the computation of coefficient during the online phase
@@ -437,36 +544,51 @@ public :
      */
     void setSymbolicExpressionBuildDir( std::string const& dir ) { M_symbolicExpressionBuildDir=dir; }
 
-    /**
-     * list of files to copy in database
-     */
-    std::map<std::string,std::string> const& additionalModelFiles() const { return M_additionalModelFiles; }
 
-    std::map<std::string,std::tuple<std::variant<fs::path,nl::json>,std::string>> const& additionalModelData() const { return M_additionalModelData; }
-    std::map<std::string,std::tuple<std::variant<fs::path,nl::json>,std::string>> & additionalModelData() { return M_additionalModelData; }
+    //! return map of data required by the model and available or will be in the database
+    std::map<std::string,AdditionalModelData> const& additionalModelData() const { return M_additionalModelData; }
 
+    //! return map of data required by the model and available or will be in the database
+    std::map<std::string,AdditionalModelData> & additionalModelData() { return M_additionalModelData; }
 
-    template <typename TheDataType>
+    template <typename TheDataType,std::enable_if_t< std::is_same_v<TheDataType,AdditionalModelData>, bool> = true>
+    void addModelData( std::string const& key, TheDataType && data )
+        {
+            M_additionalModelData.insert_or_assign( key, std::forward<TheDataType>( data ) );
+        }
+
+    template <typename TheDataType,std::enable_if_t< !std::is_same_v<TheDataType,AdditionalModelData>, bool> = true>
     void addModelData( std::string const& key, TheDataType && data, std::string const& relativePath = "" )
         {
-            M_additionalModelData[key] = std::make_tuple( std::forward<TheDataType>( data ), relativePath );
+            M_additionalModelData.insert_or_assign( key, AdditionalModelData( std::forward<TheDataType>( data ), relativePath ) );
         }
+    bool hasModelData( std::string const& key ) const
+        {
+            return ( M_additionalModelData.find( key ) != M_additionalModelData.end() );
+        }
+
+    //! return data required by the model and available or will be in the database
+    AdditionalModelData const& additionalModelData( std::string const& key ) const { return M_additionalModelData.at( key ); }
+    //! return data required by the model and available or will be in the database
+    AdditionalModelData & additionalModelData( std::string const& key ) { return M_additionalModelData.at( key ); }
 
 
     /**
      * add file to copy in database
      */
+    FEELPP_DEPRECATED
     void addModelFile( std::string const& key, std::string const& filename )
         {
-            M_additionalModelFiles[key] = filename;
+            this->addModelData( key, fs::path(filename) );
         }
 
     /**
      * return true if model has registered a file with this key
      */
+    FEELPP_DEPRECATED
     bool hasModelFile( std::string const& key ) const
         {
-            return ( M_additionalModelFiles.find( key ) != M_additionalModelFiles.end() );
+            return this->hasModelData( key );
         }
 
 
@@ -792,22 +914,17 @@ public :
         ptree.add_child( "parameter_space", ptreeParameterSpace );
 
         boost::property_tree::ptree ptreeModelFiles;
-        for ( auto const& filenamePair : this->additionalModelFiles() )
+        for ( auto const& [key,mdata] : this->additionalModelData() )
         {
             boost::property_tree::ptree ptreeModelFile;
-            std::string const& key = filenamePair.first;
-            std::string const& filename = filenamePair.second;
-            ptreeModelFile.add("filename",filename );
+            if ( !mdata.isOnDisk() )
+                continue;
+            ptreeModelFile.add( "filename",mdata.relativeFilePathInDatabase() );
+            ptreeModelFile.add( "type", mdata.type() );
             ptreeModelFiles.add_child( key, ptreeModelFile );
         }
-        for ( auto const& [key,dataAndPath] : this->additionalModelData() )
-        {
-            auto const& [data,relativeFilePath] = dataAndPath;
-            boost::property_tree::ptree ptreeModelFile;
-            ptreeModelFile.add("filename",relativeFilePath );
-            ptreeModelFiles.add_child( key, ptreeModelFile );
-        }
-        ptree.add_child( "additional-model-files", ptreeModelFiles );
+        if ( !ptreeModelFiles.empty() )
+            ptree.add_child( "additional-model-files", ptreeModelFiles );
 
         boost::property_tree::ptree ptreeEim;
         for ( auto const& eimObject : this->scalarContinuousEim() )
@@ -919,25 +1036,33 @@ public :
     }
     void setup( boost::property_tree::ptree const& ptree, std::string const& dbDir )
     {
+        // convert boost::ptree to nl::json
+        std::ostringstream pt_ostr;
+        write_json( pt_ostr, ptree );
+        std::istringstream pt_istream( pt_ostr.str() );
+        nl::json jarg;
+        pt_istream >> jarg;
+
         auto const& ptreeParameterSpace = ptree.get_child( "parameter_space" );
         Dmu->setup( ptreeParameterSpace );
 
-        auto ptreeModelFiles = ptree.get_child_optional( "additional-model-files" );
-        if ( ptreeModelFiles )
-            for ( auto const& ptreeModelFilePair : *ptreeModelFiles/*ptree.get_child( "additional-model-files" )*/ )
+        if ( jarg.contains( "additional-model-files" ) )
+        {
+            auto const& jaddmdata = jarg.at( "additional-model-files" );
+            if ( jaddmdata.is_object() )
             {
-                std::string const& key = ptreeModelFilePair.first;
-                auto const& ptreeModelFile = ptreeModelFilePair.second;
-                std::string filenameAdded  = ptreeModelFile.template get<std::string>( "filename" );
-                fs::path filenameAddedPath = fs::path( filenameAdded );
-                if ( !dbDir.empty() && filenameAddedPath.is_relative() )
-                    filenameAddedPath = fs::path(dbDir) / filenameAddedPath;
-
-                // filenameAdded = (fs::path(dbDir)/fs::path(filenameAdded).filename()).string();
-
-                // std::cout << "additional-model-files : key=" << key << " filename=" << filenameAddedPath.string() << "\n";
-                this->addModelFile( key, filenameAddedPath.string()/*filenameAdded*/ );
+                for ( auto const& [jaddmdatakey,jaddmdataval] : jaddmdata.items() )
+                {
+                    std::string filename = jaddmdataval.at("filename").template get<std::string>();
+                    std::string type;
+                    if ( jaddmdataval.contains("type") )
+                        type = jaddmdataval.at("type").template get<std::string>();
+                    else
+                        type = "path";
+                    this->addModelData( jaddmdatakey, AdditionalModelData::create_from_database_file_path( filename, type ) );
+                }
             }
+        }
 
         auto ptreeAffineDecomposition = ptree.get_child_optional( "affine-decomposition" );
         if ( ptreeAffineDecomposition )
@@ -2268,9 +2393,8 @@ protected :
 
     bool M_isOnlineModel;
 private :
-    std::map<std::string,std::string > M_additionalModelFiles;
-    // id -> ( data (copy path of file or write json), relative path in db)
-    std::map<std::string,std::tuple<std::variant<fs::path,nl::json>,std::string>> M_additionalModelData;
+    std::map<std::string,AdditionalModelData> M_additionalModelData;
+
 };
 
 

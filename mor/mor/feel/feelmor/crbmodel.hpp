@@ -1126,53 +1126,35 @@ public:
             if ( !M_model )
                 return;
 
-            if ( !M_model->additionalModelFiles().empty() )
-            {
-                for ( auto const& inputFilenamePair : M_model->additionalModelFiles() )
-                {
-                    std::string const& inputFilename = inputFilenamePair.second;
-                    fs::path inputPath = inputFilename;
-                    fs::path relativeDbPath = fs::path(inputFilename).filename();
-                    fs::path copyPath = fs::path(dir)/relativeDbPath;
-                    boost::system::error_code ec;
-                    if ( M_model->worldComm().isMasterRank() )
-                        fs::copy_file( inputPath, copyPath, fs::copy_option::overwrite_if_exists, ec );
-                    // replace entry with copy path
-                    M_model->addModelFile( inputFilenamePair.first, relativeDbPath.string() );
-                }
-                M_model->worldComm().barrier();
-            }
-
-
             if ( !M_model->additionalModelData().empty() )
             {
-                for ( auto & [key,dataAndPath] : M_model->additionalModelData() )
+                for ( auto & [key,mdata] : M_model->additionalModelData() )
                 {
-                    auto & [data,relPath] = dataAndPath;
-                    //std::string relPath = relPathIn;
-                    if ( relPath.empty() )
-                    {
-                        if ( std::holds_alternative<nl::json>( data ) )
-                            relPath = "feelpp_nofilename.json";
-                    }
+                    // TODO move this code in AdditionalModelData class
+                    mdata.prepareSave();
+                    std::string const& relPath = mdata.relativeFilePathInDatabase();
                     fs::path newFilePath = fs::path(dir)/relPath;
                     fs::path parentNewFilePath = newFilePath.parent_path();
-
                     if ( M_model->worldComm().isMasterRank() )
                     {
                         if ( !fs::exists( parentNewFilePath ) )
                             fs::create_directories( parentNewFilePath );
-                        if ( std::holds_alternative<nl::json>( data ) )
+                        if ( mdata.template has<nl::json>() )
                         {
-                            auto jsonData = std::get<nl::json>( data );
+                            auto const& jsonData = mdata.template data<nl::json>();
                             fs::ofstream o(newFilePath);
                             o << jsonData.dump(/*1*/);
                         }
-                        else
-                        {}
+                        else if ( mdata.template has<fs::path>() )
+                        {
+                            fs::path const& inputPath = mdata.template data<fs::path>();
+                            boost::system::error_code ec;
+                            fs::copy_file( inputPath, newFilePath, fs::copy_option::overwrite_if_exists, ec );
+                        }
                     }
-                    M_model->worldComm().barrier();
+                    mdata.setOnDisk();
                 }
+                M_model->worldComm().barrier();
             }
         }
 

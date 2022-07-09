@@ -63,8 +63,6 @@ public:
      * @return mdeim_function_type the function assembling the lhs
      */
     virtual mdeim_function_type mdeimOnlineFunction(mesh_ptrtype const& mesh) = 0;
-
-    virtual nl::json const& toolboxSetupData() const = 0;
 };
 
 /**
@@ -120,12 +118,6 @@ public:
     mdeim_function_type mdeimOnlineFunction(mesh_ptrtype const& mesh) override;
 
     void setToolboxInitFunction( toolbox_init_function_type fun ) { M_toolboxInitFunction = fun; }
-
-    nl::json const& toolboxSetupData() const override {
-        if ( !M_tb || !M_tb->hasModelProperties() )
-            throw std::runtime_error( "no model properties" );
-        return M_tb->modelProperties().jsonData();
-    }
 
 private:
     std::string M_prefix;
@@ -343,7 +335,6 @@ class FEELPP_EXPORT ToolboxMor : public ModelCrbBase< ParameterSpace<>, SpaceTyp
 
 private:
 
-    std::string M_propertyPath;
     std::shared_ptr<CRBModelProperties> M_modelProperties;
 
     int M_trainsetDeimSize;
