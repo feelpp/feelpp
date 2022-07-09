@@ -1,5 +1,7 @@
 #include <fmt/core.h>
 #include <fmt/compile.h>
+
+#include "toolboxmor_heat_plugin.hpp"
 #include <feel/feelmor/toolboxmor.hpp>
 #include <feel/feelmodels/heat/heat.hpp>
 
@@ -103,7 +105,7 @@ int runSimulation()
 
     using deim_function_type = typename rb_model_type::deim_function_type;
     using mdeim_function_type = typename rb_model_type::mdeim_function_type;
-
+#if 0
     auto heatBox = heat_tb_type::New(_prefix="heat");
     heatBox->init();
     heatBox->printAndSaveInfo();
@@ -112,6 +114,11 @@ int runSimulation()
     model->setFunctionSpaces(heatBox->spaceTemperature());
     auto heatBoxModel = DeimMorModelToolbox<heat_tb_type>::New(heatBox);
     model->initToolbox(heatBoxModel);
+#else
+    using rb_model_heat_type = ToolboxMorPlugin<heat_tb_type>;
+    auto model = rb_model_heat_type::createReducedBasisModel();
+    auto heatBox = model->offlineToolbox();
+#endif
 
     crb_model_ptrtype crbModel = std::make_shared<crb_model_type>(model);
     crb_ptrtype crb = crb_type::New(soption("toolboxmor.name"), crbModel, crb::stage::offline);
@@ -267,7 +274,7 @@ int main( int argc, char** argv)
         int dimension = ioption(_name="case.dimension");
         std::string discretization = soption(_name="case.discretization");
         
-
+#if 0
         int status = 0;
         hana::for_each( Pc_t<>,
                         [&discretization, &dimension, &status]( auto const& d ) {
@@ -277,6 +284,13 @@ int main( int argc, char** argv)
                             if ( dimension == _dim && discretization == _discretization )
                                 status = runSimulation<_dim, _torder>();
                         } );
+#else
+        int status = 0;
+        if ( dimension == 2 )
+            status = runSimulation<2,1>();
+        // else
+        //     status = runSimulation<3,1>();
+#endif
         return status;
     }
     catch( ... )
