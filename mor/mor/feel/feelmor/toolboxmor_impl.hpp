@@ -361,14 +361,17 @@ ToolboxMor<SpaceType, Options>::setupSpecificityModel( boost::property_tree::ptr
 {
     Feel::cout << "setupSpecificityModel" << std::endl;
 
-    if( this->hasModelFile("property-file") )
-        M_propertyPath = this->additionalModelFiles().find("property-file")->second;
+    M_modelProperties = std::make_shared<CRBModelProperties>( Environment::exprRepository(), this->worldCommPtr()/*subWorldCommSeqPtr()*/ );
+    if ( this->hasModelData( "crb_properties" ) )
+    {
+        auto & mdata = this->additionalModelData("crb_properties");
+        auto const& jsonData = mdata.template fetch_data<nl::json>( dbDir/*this->crbModelDb().dbRepository()*/ );
+        M_modelProperties->setup( jsonData );
+    }
     else
-        Feel::cerr << "Warning!! the database does not contain the property file! Expect bugs!"
-                   << std::endl;
+        throw std::runtime_error( "the database does not contain the crb_properties file" );
 
-    M_modelProperties = std::make_shared<CRBModelProperties>(); // TODO : put directoryLibExpr and worldcomm
-    M_modelProperties->setup( M_propertyPath );
+
     auto parameters = M_modelProperties->parameters();
     this->Dmu = parameterspace_type::New(parameters);
     auto parameterNames = std::set<std::string>(this->Dmu->parameterNames().begin(), this->Dmu->parameterNames().end());
@@ -399,7 +402,7 @@ ToolboxMor<SpaceType, Options>::setupSpecificityModel( boost::property_tree::ptr
             Feel::cout << tc::green << "ToolboxMor DEIM for output " << name << " construction finished!!" << tc::reset << std::endl;
             i++;
         }
-        else 
+        else
             M_outputDeim[name] = 0;
     }
 
@@ -410,13 +413,15 @@ template<typename SpaceType, int Options>
 void
 ToolboxMor<SpaceType, Options>::initModel()
 {
-    M_propertyPath = Environment::expand( soption("toolboxmor.filename"));
+    std::string propertyPath = Environment::expand( soption("toolboxmor.filename"));
     M_trainsetDeimSize = ioption("toolboxmor.trainset-deim-size");
     M_trainsetMdeimSize = ioption("toolboxmor.trainset-mdeim-size");
-    this->addModelFile("property-file", M_propertyPath);
 
-    M_modelProperties = std::make_shared<CRBModelProperties>(); // TODO : put directoryLibExpr and worldcomm
-    M_modelProperties->setup( M_propertyPath );
+    M_modelProperties = std::make_shared<CRBModelProperties>( Environment::exprRepository(), this->worldCommPtr() );
+    M_modelProperties->setup( propertyPath );
+    this->addModelData( "crb_properties", M_modelProperties->jsonData(), "toolboxmor.crb_properties.json" );
+
+
     auto parameters = M_modelProperties->parameters();
     this->Dmu = parameterspace_type::New(parameters);
     auto parameterNames = std::set<std::string>(this->Dmu->parameterNames().begin(), this->Dmu->parameterNames().end());
@@ -500,14 +505,6 @@ template<typename SpaceType, int Options>
 void
 ToolboxMor<SpaceType, Options>::initToolbox(std::shared_ptr<DeimMorModelBase<mesh_type>> model )
 {
-    // HERE VINCENT
-    try {
-        auto const& tbSetupData = model->toolboxSetupData();
-        this->addModelData( "toolbox_json_setup", tbSetupData, "toolbox_model/setup.json" );
-    }
-    catch ( std::runtime_error const& err )
-    {}
-
     this->setAssembleDEIM(model->deimFunction());
     this->setAssembleMDEIM(model->mdeimFunction());
 
