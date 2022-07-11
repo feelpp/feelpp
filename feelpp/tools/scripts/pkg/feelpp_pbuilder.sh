@@ -14,13 +14,14 @@ echo "--- apt update"
 apt-get update
 apt-get -y install apt-transport-https ca-certificates gnupg software-properties-common wget
 
-echo "--- get repo signaures"
-wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc  | apt-key add -
-wget -O - http://apt.feelpp.org/apt.gpg | apt-key add -
 
 echo "--- add-apt-repository  "
 add-apt-repository  'deb [trusted=yes] http://apt.feelpp.org/$FLAVOR/$DIST $DIST $CHANNEL'
-if test ! "$DIST" = "bullseye"; then
+echo "--- get repo signatures"
+wget -O - http://apt.feelpp.org/apt.gpg | apt-key add -
+
+if test "$DIST" = "focal"; then    
+    wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc  | apt-key add -
     add-apt-repository  'deb https://apt.kitware.com/$FLAVOR/ $DIST main'
 fi
 if [ "$DIST" = "bullseye" ]; then

@@ -176,3 +176,4 @@ mor/heat1d/heat1dapp.cpp
 mor/unsteady_heat1d/unsteadyHeat1dapp.cpp
 
 gmsh-config.err
+python/pyfeelpp/feelpp/__init__.py

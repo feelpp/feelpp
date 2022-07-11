@@ -13,17 +13,16 @@
             "generator": "Unix Makefiles",
             "binaryDir": "${sourceDir}/build/default",
             "cacheVariables": {
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/build/default/install/",
                 "CMAKE_C_COMPILER": "clang",
                 "CMAKE_CXX_COMPILER": "clang++",
                 "CMAKE_BUILD_TYPE": "Release",
-                "FEELPP_ENABLE_TOOLBOXES": {
-                    "type": "BOOL",
-                    "value": "ON"
-                },
+                "FEELPP_ENABLE_TOOLBOXES": "ON",
                 "FEELPP_ENABLE_MOR": "ON",
                 "FEELPP_ENABLE_FEELPP_PYTHON": "ON",
                 "FEELPP_ENABLE_FMILIB": "OFF",
-                "FEELPP_ENABLE_BENCHMARKS": "ON"
+                "FEELPP_ENABLE_BENCHMARKS": "ON",
+                "FEELPP_USE_EXTERNAL_EIGEN3": "OFF"
             },
             "environment": {
                 "MY_ENVIRONMENT_VARIABLE": "Test"
@@ -197,7 +196,7 @@
         {
             "name": "default",
             "configurePreset": "default",
-            "jobs": 10
+            "jobs": 25
         },
         {
             "name": "dbg",
