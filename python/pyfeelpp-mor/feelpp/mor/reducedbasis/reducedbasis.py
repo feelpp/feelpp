@@ -431,6 +431,11 @@ class reducedbasis():
             content["mubar"] = dict_mubar
 
 
+            f = open('reducedbasis.json', 'w')
+            json.dump(content, f, indent = 4)
+            f.close()
+            
+
             h5f.create_dataset("ANq", data=self.ANq)
             h5f.create_dataset("FNp", data=self.FNp)
             for k in range(self.N_output):

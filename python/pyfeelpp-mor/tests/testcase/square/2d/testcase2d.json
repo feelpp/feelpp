@@ -6,7 +6,7 @@
     {
         "heat":[
             {
-                "name":"heat",
+                "name":"heat1",
                 "materials":["Omega_1"],
                 "setup": {
                     "heat-sources":
@@ -49,7 +49,7 @@
             "Import":
             {
                 "filename":"$cfgdir/2sqr.geo",
-				"hsize": 0.1
+				"hsize": 0.05
             },
             "DistanceToRange":
             {
