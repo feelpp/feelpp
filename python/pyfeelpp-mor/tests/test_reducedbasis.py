@@ -124,7 +124,7 @@ def init_model(prefix, case, casefile, dim, use_cache, time_dependent):
     model.setOnlineAssembleDEIM(assembleOnlineDEIM)
 
     heatBoxMDEIM = heat(dim=dim, order=1)
-    heatBoxDEIM.setModelProperties(j)
+    heatBoxMDEIM.setModelProperties(j)
     meshMDEIM = model.getMDEIMReducedMesh()
     heatBoxMDEIM.setMesh(meshMDEIM)
     heatBoxMDEIM.init()
@@ -213,17 +213,12 @@ def compar_sols(rb, assembleMDEIM, heatBox):
     assembleMDEIM(mu)
     heatBox.solve()
 
-    s_tb = feelpp.mean(range=feelpp.markedfaces(heatBox.mesh(), "Gamma_root"), expr=heatBox.fieldTemperature())[0]
     heatBox.exportResults()
     meas = heatBox.postProcessMeasures().values()
 
     meas_names = list(meas.keys())
 
     _,sN = rb.getSolutionsFE(mu)
-    
-    # norm = abs(sN - s_tb ) / abs(s_tb)
-    # print(f"relErr = {norm}\n||s_tb|| = {s_tb}, ||s_rb|| = {sN}")
-    # assert norm < 1e-10, f"relative error {norm} is too high"
 
     print(rb.N_output)
 
@@ -389,7 +384,7 @@ def test_reducedbasis_greedy(prefix, case, casefile, dim, use_cache, time_depend
     for f in Fq_:
         Fq.append(convertToPetscVec(f[0]))
 
-    rb = reducedbasisOffline(convertToPetscMat(Aq[0]), Fq, model, mubar)
+    rb = reducedbasisOffline(convertToPetscMat(Aq[0]), Fq, model, mubar, use_dual_norm=True)
 
     print("\nCompute basis and orthonormalize it")
     def listOfParams(n):
