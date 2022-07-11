@@ -204,10 +204,6 @@ if (NOT FEELPP_DONT_SETUP_CMAKE)
   set(BUILD_SHARED_LIBS ON)
   find_dependency(Boost ${BOOST_MIN_VERSION} REQUIRED COMPONENTS ${BOOST_COMPONENTS_REQUIRED})
   set(BUILD_SHARED_LIBS ${__org})
-
-  if ( FEELPP_HAS_EIGEN3 AND FEELPP_USE_EXTERNAL_EIGEN3 )
-    find_dependency( Eigen3 )
-  endif()
   
   if ( FEELPP_HAS_ANN )
     find_dependency( ANN )
