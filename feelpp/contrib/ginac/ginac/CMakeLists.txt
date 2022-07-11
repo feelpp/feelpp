@@ -154,10 +154,10 @@ add_definitions(-DLIBEXECDIR="${LIBEXECDIR}/")
 set_target_properties(feelpp_ginac PROPERTIES
 	SOVERSION ${ginaclib_soversion}
 	VERSION ${ginaclib_version})
-target_link_libraries(feelpp_ginac ${CLN_LIBRARIES} ${CMAKE_DL_LIBS} ${Boost_MPI_LIBRARY} ${Boost_SERIALIZATION_LIBRARY} ${Boost_FILESYSTEM_LIBRARY} ${Boost_SYSTEM_LIBRARY} ${MPI_LIBRARIES})
+target_link_libraries(feelpp_ginac cln::cln ${CMAKE_DL_LIBS} ${Boost_MPI_LIBRARY} ${Boost_SERIALIZATION_LIBRARY} ${Boost_FILESYSTEM_LIBRARY} ${Boost_SYSTEM_LIBRARY} ${MPI_LIBRARIES})
 target_include_directories(feelpp_ginac
   PUBLIC
-  ${CLN_INCLUDE_DIR}
+  # ${CLN_INCLUDE_DIR}
   $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/..>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/>
@@ -190,8 +190,8 @@ set(ginaclib_public_parser_headers
 install(FILES ${ginaclib_public_parser_headers} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/ginac/parser" COMPONENT Devel)
 ## End Feel++ modification
 
-if ( PYTHONINTERP_FOUND )
-  set(GINAC_PYTHON_EXECUTABLE ${PYTHON_EXECUTABLE} )
+if ( Python3_FOUND )
+  set(GINAC_PYTHON_EXECUTABLE ${Python3_EXECUTABLE} )
 else()
   find_program(GINAC_PYTHON_EXECUTABLE NAMES python)
   if ( NOT GINAC_PYTHON_EXECUTABLE )
