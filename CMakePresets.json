@@ -22,7 +22,7 @@
                 "FEELPP_ENABLE_FEELPP_PYTHON": "ON",
                 "FEELPP_ENABLE_FMILIB": "OFF",
                 "FEELPP_ENABLE_BENCHMARKS": "ON",
-                "FEELPP_USE_EXTERNAL_EIGEN3": "ON"
+                "FEELPP_USE_EXTERNAL_EIGEN3": "OFF"
             },
             "environment": {
                 "MY_ENVIRONMENT_VARIABLE": "Test"
