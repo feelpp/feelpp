@@ -38,7 +38,7 @@ MathJax.Hub.Config({
  <tr id="projectrow">
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign">
-   <div id="projectname">Feel++<span id="projectnumber">&#160;0.110.0-rc.1</span>
+   <div id="projectname">Feel++<span id="projectnumber">&#160;0.110.0-rc.4</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -884,6 +884,18 @@ boost::optional&lt; <a class="el" href="namespaceFeel.html#a77ae9830c105b0634078
 <tr class="memitem:afffa0b79cbc4509146c7d362bdc8706c"><td class="memItemLeft" align="right" valign="top"><a id="afffa0b79cbc4509146c7d362bdc8706c" name="afffa0b79cbc4509146c7d362bdc8706c"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>printInfo</b> () const</td></tr>
 <tr class="separator:afffa0b79cbc4509146c7d362bdc8706c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5dc1f8bdc9ee769f5e7506314b6167c6"><td class="memTemplParams" colspan="2">template&lt;typename TT  = functionspace_type, std::enable_if_t&lt; !TT::is_composite, <a class="el" href="classbool.html">bool</a> &gt;  = true&gt; </td></tr>
+<tr class="memitem:a5dc1f8bdc9ee769f5e7506314b6167c6"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classFeel_1_1FunctionSpace.html#a5dc1f8bdc9ee769f5e7506314b6167c6">save</a> (std::string const &amp;filepathstr) const</td></tr>
+<tr class="memdesc:a5dc1f8bdc9ee769f5e7506314b6167c6"><td class="mdescLeft">&#160;</td><td class="mdescRight">save on disk some informations in json + hdF5 files as doftable (require HDF5 support)  <a href="classFeel_1_1FunctionSpace.html#a5dc1f8bdc9ee769f5e7506314b6167c6">More...</a><br /></td></tr>
+<tr class="separator:a5dc1f8bdc9ee769f5e7506314b6167c6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a19ae583706fdb2998aad1d4614a2fe88"><td class="memTemplParams" colspan="2">template&lt;typename TT  = functionspace_type, std::enable_if_t&lt; !TT::is_composite, <a class="el" href="classbool.html">bool</a> &gt;  = true&gt; </td></tr>
+<tr class="memitem:a19ae583706fdb2998aad1d4614a2fe88"><td class="memTemplItemLeft" align="right" valign="top">std::vector&lt; index_type &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classFeel_1_1FunctionSpace.html#a19ae583706fdb2998aad1d4614a2fe88">relationFromFile</a> (std::string const &amp;filepathstr) const</td></tr>
+<tr class="memdesc:a19ae583706fdb2998aad1d4614a2fe88"><td class="mdescLeft">&#160;</td><td class="mdescRight">get realtion with current doftable and one stored on disk (mesh points should be same)  <a href="classFeel_1_1FunctionSpace.html#a19ae583706fdb2998aad1d4614a2fe88">More...</a><br /></td></tr>
+<tr class="separator:a19ae583706fdb2998aad1d4614a2fe88"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a19ae583706fdb2998aad1d4614a2fe88"><td class="memTemplParams" colspan="2"><a id="a19ae583706fdb2998aad1d4614a2fe88" name="a19ae583706fdb2998aad1d4614a2fe88"></a>
+template&lt;typename TT  = functionspace_type, std::enable_if_t&lt; TT::is_composite, <a class="el" href="classbool.html">bool</a> &gt;  = true&gt; </td></tr>
+<tr class="memitem:a19ae583706fdb2998aad1d4614a2fe88"><td class="memTemplItemLeft" align="right" valign="top">std::vector&lt; index_type &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>relationFromFile</b> (std::string const &amp;filepathstr) const</td></tr>
+<tr class="separator:a19ae583706fdb2998aad1d4614a2fe88"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9606ca4c8167991e5cde79d9cd79b334"><td class="memItemLeft" align="right" valign="top"><a id="a9606ca4c8167991e5cde79d9cd79b334" name="a9606ca4c8167991e5cde79d9cd79b334"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>FunctionSpace</b> (<a class="el" href="classFeel_1_1FunctionSpace.html">FunctionSpace</a> const &amp;__fe)</td></tr>
 <tr class="separator:a9606ca4c8167991e5cde79d9cd79b334"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -2264,6 +2276,66 @@ template&lt;typename A0 , typename A1 , typename A2 , typename A3 , typename A4 
       </table>
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>the <a class="el" href="structFeel_1_1Region.html">Region</a> Tree </dd></dl>
+
+</div>
+</div>
+<a id="a19ae583706fdb2998aad1d4614a2fe88" name="a19ae583706fdb2998aad1d4614a2fe88"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a19ae583706fdb2998aad1d4614a2fe88">&#9670;&nbsp;</a></span>relationFromFile()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename A0 , typename A1  = parameter::void_, typename A2  = parameter::void_, typename A3  = parameter::void_, typename A4  = parameter::void_&gt; </div>
+<div class="memtemplate">
+template&lt;typename TT  = functionspace_type, std::enable_if_t&lt; !TT::is_composite, <a class="el" href="classbool.html">bool</a> &gt;  = true&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt; index_type &gt; <a class="el" href="classFeel_1_1FunctionSpace.html">Feel::FunctionSpace</a>&lt; A0, A1, A2, A3, A4 &gt;::relationFromFile </td>
+          <td>(</td>
+          <td class="paramtype">std::string const &amp;&#160;</td>
+          <td class="paramname"><em>filepathstr</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>get realtion with current doftable and one stored on disk (mesh points should be same) </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">filepath</td><td>path of the json files on the disk </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a5dc1f8bdc9ee769f5e7506314b6167c6" name="a5dc1f8bdc9ee769f5e7506314b6167c6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5dc1f8bdc9ee769f5e7506314b6167c6">&#9670;&nbsp;</a></span>save()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename A0 , typename A1  = parameter::void_, typename A2  = parameter::void_, typename A3  = parameter::void_, typename A4  = parameter::void_&gt; </div>
+<div class="memtemplate">
+template&lt;typename TT  = functionspace_type, std::enable_if_t&lt; !TT::is_composite, <a class="el" href="classbool.html">bool</a> &gt;  = true&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classFeel_1_1FunctionSpace.html">Feel::FunctionSpace</a>&lt; A0, A1, A2, A3, A4 &gt;::save </td>
+          <td>(</td>
+          <td class="paramtype">std::string const &amp;&#160;</td>
+          <td class="paramname"><em>filepathstr</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>save on disk some informations in json + hdF5 files as doftable (require HDF5 support) </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">filepath</td><td>path of the json files generated (extension can be automatically added if not given) </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>

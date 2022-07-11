@@ -33,7 +33,7 @@ var searchData=
   ['topodim_30',['topodim',['../group__Traits.html#gad49d4c069c0294ed87f17f835fba7702',1,'Feel']]],
   ['topologicaldimension_31',['topologicalDimension',['../classFeel_1_1Simplex.html#a3abef82bae1164fe694296a9eb08517e',1,'Feel::Simplex::topologicalDimension()'],['../classFeel_1_1Hypercube.html#a16dbb03ef025eee7a10e7bad24493a45',1,'Feel::Hypercube::topologicalDimension()']]],
   ['tostring_32',['toString',['../classFeel_1_1ExprBase.html#a62b88f526979da08053c2383f4efd255',1,'Feel::ExprBase']]],
-  ['totaldegree_33',['totalDegree',['../ginac_8hpp.html#a67b1d63a39ae93b210f13df93cf00ce2',1,'GiNaC']]],
+  ['totaldegree_33',['totalDegree',['../ginac_8hpp.html#af8a315906328b512bd3e6fc14799e606',1,'GiNaC']]],
   ['totext_34',['toText',['../classFeel_1_1ExprBase.html#a918e21a78c1379860bb514e3715d82c7',1,'Feel::ExprBase']]],
   ['trace_35',['trace',['../classFeel_1_1FunctionSpace.html#a98ddac7c7f6135df39187946ca18d6b5',1,'Feel::FunctionSpace::trace()'],['../trace_8hpp.html#a63271d11f31a90d805f14f9128986e22',1,'Feel::vf::trace()'],['../classFeel_1_1Mesh.html#ab9119fb7e8480622450e910113a2b071',1,'Feel::Mesh::trace() const'],['../classFeel_1_1Mesh.html#a742737b5369e9eaccd9cd340b3667539',1,'Feel::Mesh::trace(RangeT const &amp;range, mpl::int_&lt; TheTag &gt;) const']]],
   ['trans_36',['trans',['../trans_8hpp.html#a73f66163b62c17b26257ea3a4184cde8',1,'Feel::vf']]],

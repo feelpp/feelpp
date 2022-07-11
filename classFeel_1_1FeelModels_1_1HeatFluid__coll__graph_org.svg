@@ -19,12 +19,12 @@
 <polyline fill="none" stroke="black" points="534.25,-93.5 686.25,-93.5 "/>
 <text text-anchor="middle" x="610.25" y="-81.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 <polyline fill="none" stroke="black" points="534.25,-74.5 686.25,-74.5 "/>
-<text text-anchor="start" x="542.25" y="-62.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ buildBlockMatrixGraph()</text>
-<text text-anchor="start" x="542.25" y="-51.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ checkResults()</text>
-<text text-anchor="start" x="542.25" y="-40.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ exportResults()</text>
+<text text-anchor="start" x="542.25" y="-62.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ applyRemesh()</text>
+<text text-anchor="start" x="542.25" y="-51.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ buildBlockMatrixGraph()</text>
+<text text-anchor="start" x="542.25" y="-40.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ checkResults()</text>
 <text text-anchor="start" x="542.25" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ exportResults()</text>
-<text text-anchor="start" x="542.25" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ fluidModel()</text>
-<text text-anchor="start" x="542.25" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 50 more...</text>
+<text text-anchor="start" x="542.25" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ exportResults()</text>
+<text text-anchor="start" x="542.25" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 51 more...</text>
 </a>
 </g>
 </g>
@@ -51,7 +51,7 @@
 <text text-anchor="start" x="80.25" y="-201.5" font-family="Helvetica,sans-Serif" font-size="10.00">AllNamesAvailable()</text>
 <text text-anchor="start" x="80.25" y="-190.5" font-family="Helvetica,sans-Serif" font-size="10.00"># initPostProcess()</text>
 <text text-anchor="start" x="80.25" y="-179.5" font-family="Helvetica,sans-Serif" font-size="10.00"># initPostProcessMeshes()</text>
-<text text-anchor="start" x="80.25" y="-168.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 10 more...</text>
+<text text-anchor="start" x="80.25" y="-168.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 9 more...</text>
 </a>
 </g>
 </g>
@@ -75,7 +75,7 @@
 <text text-anchor="start" x="49.75" y="-642.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ clovm()</text>
 <text text-anchor="start" x="49.75" y="-631.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ createWorldsComm()</text>
 <text text-anchor="start" x="49.75" y="-620.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ hasModelProperties()</text>
-<text text-anchor="start" x="49.75" y="-609.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 53 more...</text>
+<text text-anchor="start" x="49.75" y="-609.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 54 more...</text>
 </a>
 </g>
 </g>
@@ -125,7 +125,7 @@
 <text text-anchor="start" x="233.75" y="-460.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ initMeasurePointsEvaluation</text>
 <text text-anchor="start" x="233.75" y="-449.5" font-family="Helvetica,sans-Serif" font-size="10.00">Tool()</text>
 <text text-anchor="start" x="233.75" y="-438.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ measurePointsEvaluationTool()</text>
-<text text-anchor="start" x="233.75" y="-427.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 23 more...</text>
+<text text-anchor="start" x="233.75" y="-427.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 27 more...</text>
 </a>
 </g>
 </g>

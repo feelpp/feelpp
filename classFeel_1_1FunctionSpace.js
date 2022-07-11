@@ -76,6 +76,8 @@ var classFeel_1_1FunctionSpace =
     [ "rangeElements", "classFeel_1_1FunctionSpace.html#a215ed9a680749e88bac703013fce29e7", null ],
     [ "rebuildDofPoints", "classFeel_1_1FunctionSpace.html#ac421a861046e08913f5268356e3fd6a7", null ],
     [ "regionTree", "classFeel_1_1FunctionSpace.html#aa5946f378c1d4013cd7bc07e91fa6cf0", null ],
+    [ "relationFromFile", "classFeel_1_1FunctionSpace.html#a19ae583706fdb2998aad1d4614a2fe88", null ],
+    [ "save", "classFeel_1_1FunctionSpace.html#a5dc1f8bdc9ee769f5e7506314b6167c6", null ],
     [ "shallowCopy", "classFeel_1_1FunctionSpace.html#a3125708860e1a8486623a61835c28365", null ],
     [ "trace", "classFeel_1_1FunctionSpace.html#a98ddac7c7f6135df39187946ca18d6b5", null ],
     [ "updateInformationObject", "classFeel_1_1FunctionSpace.html#a79ab3bb7910174c73d4e9ee6be0243ba", null ],

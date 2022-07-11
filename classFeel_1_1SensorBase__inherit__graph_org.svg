@@ -58,25 +58,26 @@
 <g id="node5" class="node">
 <title>Node5</title>
 <g id="a_node5"><a xlink:href="classFeel_1_1SensorPointwise.html" target="_top" xlink:title="pointwise type sensor">
-<polygon fill="white" stroke="black" points="139.5,-6 139.5,-129 263.5,-129 263.5,-6 139.5,-6"/>
-<text text-anchor="start" x="147.5" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::SensorPointwise</text>
-<text text-anchor="middle" x="201.5" y="-106" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; Space &gt;</text>
-<polyline fill="none" stroke="black" points="139.5,-99 263.5,-99 "/>
-<text text-anchor="middle" x="201.5" y="-87" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="139.5,-80 263.5,-80 "/>
-<text text-anchor="start" x="147.5" y="-68" font-family="Helvetica,sans-Serif" font-size="10.00">+ init()</text>
-<text text-anchor="start" x="147.5" y="-57" font-family="Helvetica,sans-Serif" font-size="10.00">+ position()</text>
-<text text-anchor="start" x="147.5" y="-46" font-family="Helvetica,sans-Serif" font-size="10.00">+ SensorPointwise()</text>
-<text text-anchor="start" x="147.5" y="-35" font-family="Helvetica,sans-Serif" font-size="10.00">+ SensorPointwise()</text>
-<text text-anchor="start" x="147.5" y="-24" font-family="Helvetica,sans-Serif" font-size="10.00">+ setPosition()</text>
-<text text-anchor="start" x="147.5" y="-13" font-family="Helvetica,sans-Serif" font-size="10.00">+ ~SensorPointwise()</text>
+<polygon fill="white" stroke="black" points="139.5,-0.5 139.5,-134.5 263.5,-134.5 263.5,-0.5 139.5,-0.5"/>
+<text text-anchor="start" x="147.5" y="-122.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::SensorPointwise</text>
+<text text-anchor="middle" x="201.5" y="-111.5" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; Space &gt;</text>
+<polyline fill="none" stroke="black" points="139.5,-104.5 263.5,-104.5 "/>
+<text text-anchor="middle" x="201.5" y="-92.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polyline fill="none" stroke="black" points="139.5,-85.5 263.5,-85.5 "/>
+<text text-anchor="start" x="147.5" y="-73.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ init()</text>
+<text text-anchor="start" x="147.5" y="-62.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ position()</text>
+<text text-anchor="start" x="147.5" y="-51.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ SensorPointwise()</text>
+<text text-anchor="start" x="147.5" y="-40.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ SensorPointwise()</text>
+<text text-anchor="start" x="147.5" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ setPosition()</text>
+<text text-anchor="start" x="147.5" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ to_json()</text>
+<text text-anchor="start" x="147.5" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ ~SensorPointwise()</text>
 </a>
 </g>
 </g>
 <!-- Node1&#45;&gt;Node5 -->
 <g id="edge4" class="edge">
 <title>Node1&#45;&gt;Node5</title>
-<path fill="none" stroke="midnightblue" d="M201.5,-161.02C201.5,-150.32 201.5,-139.46 201.5,-129.11"/>
+<path fill="none" stroke="midnightblue" d="M201.5,-160.95C201.5,-152.16 201.5,-143.25 201.5,-134.62"/>
 <polygon fill="none" stroke="midnightblue" points="198,-161.19 201.5,-171.19 205,-161.19 198,-161.19"/>
 </g>
 <!-- Node6 -->

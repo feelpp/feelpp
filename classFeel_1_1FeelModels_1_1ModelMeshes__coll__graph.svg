@@ -71,7 +71,7 @@ var sectionId = 'dynsection-1';
 <text text-anchor="start" x="51" y="-40.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ initMeasurePointsEvaluation</text>
 <text text-anchor="start" x="51" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">Tool()</text>
 <text text-anchor="start" x="51" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ measurePointsEvaluationTool()</text>
-<text text-anchor="start" x="51" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 23 more...</text>
+<text text-anchor="start" x="51" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 27 more...</text>
 </a>
 </g>
 </g>
@@ -148,7 +148,7 @@ var sectionId = 'dynsection-1';
 <text text-anchor="start" x="127" y="-212.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ clovm()</text>
 <text text-anchor="start" x="127" y="-201.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ createWorldsComm()</text>
 <text text-anchor="start" x="127" y="-190.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ hasModelProperties()</text>
-<text text-anchor="start" x="127" y="-179.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 53 more...</text>
+<text text-anchor="start" x="127" y="-179.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 54 more...</text>
 </a>
 </g>
 </g>

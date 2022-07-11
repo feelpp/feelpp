@@ -27,7 +27,7 @@ var searchData=
   ['mesh3d_24',['Mesh3D',['../classFeel_1_1Mesh3D.html',1,'Feel']]],
   ['mesh_3c_20geoshape_2c_20double_2c_200_2c_20uint32_5ftype_20_3e_25',['Mesh&lt; GeoShape, double, 0, uint32_type &gt;',['../classFeel_1_1Mesh.html',1,'Feel']]],
   ['mesh_5ftype_26',['mesh_type',['../structFeel_1_1mesh__type.html',1,'Feel']]],
-  ['meshadaptation_27',['MeshAdaptation',['../classFeel_1_1MeshAdaptation.html',1,'Feel']]],
+  ['meshadaptation_27',['MeshAdaptation',['../structFeel_1_1FeelModels_1_1ModelMesh_1_1MeshAdaptation.html',1,'Feel::FeelModels::ModelMesh&lt; IndexType &gt;::MeshAdaptation'],['../classFeel_1_1MeshAdaptation.html',1,'Feel::MeshAdaptation&lt; Dim, Order, OrderGeo &gt;']]],
   ['meshbase_28',['MeshBase',['../classFeel_1_1MeshBase.html',1,'Feel']]],
   ['meshbase_3c_20index_5ftype_20_3e_29',['MeshBase&lt; index_type &gt;',['../classFeel_1_1MeshBase.html',1,'Feel']]],
   ['meshbase_3c_20uint32_5ftype_20_3e_30',['MeshBase&lt; uint32_type &gt;',['../classFeel_1_1MeshBase.html',1,'Feel']]],

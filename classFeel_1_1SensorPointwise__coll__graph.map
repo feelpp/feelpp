@@ -1,5 +1,5 @@
 <map id="Feel::SensorPointwise&lt; Space &gt;" name="Feel::SensorPointwise&lt; Space &gt;">
-<area shape="rect" id="node1" title="pointwise type sensor" alt="" coords="89,677,255,843"/>
+<area shape="rect" id="node1" title="pointwise type sensor" alt="" coords="89,677,255,857"/>
 <area shape="rect" id="node2" href="$classFeel_1_1SensorBase.html" title="base class for sensors" alt="" coords="77,463,267,628"/>
 <area shape="rect" id="node3" href="$classFeel_1_1FsFunctionalLinear.html" title=" " alt="" coords="5,220,184,385"/>
 <area shape="rect" id="node4" href="$classFeel_1_1FsFunctional.html" title=" " alt="" coords="22,5,162,171"/>

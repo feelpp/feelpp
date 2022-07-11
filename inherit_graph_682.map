@@ -1,7 +1,4 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" title=" " alt="" coords="5,115,168,141"/>
-<area shape="rect" id="node2" href="$structFeel_1_1FeelModels_1_1ModelFieldsFindTag_1_1is__same__tag.html" title=" " alt="" coords="226,5,442,61"/>
-<area shape="rect" id="node3" href="$structnlohmann_1_1detail_1_1negation.html" title=" " alt="" coords="216,85,452,112"/>
-<area shape="rect" id="node4" href="$structstd_1_1tuple__size_3_01boost_1_1hana_1_1tuple_3_01Types_8_8_8_01_4_01_4.html" title=" " alt="" coords="235,137,433,178"/>
-<area shape="rect" id="node5" href="$classstd_1_1tuple__size_3_1_1nlohmann_1_1detail_1_1iteration__proxy__value_3_01IteratorType_01_4_01_4.html" title=" " alt="" coords="234,203,434,259"/>
+<area shape="rect" id="node1" href="$classstd_1_1conditional_3_01std_1_1is__base__of__v_3_01MeshStructuredBase_00_01MeshT_01_4_00_01sf38de804df90ca37fb2eb29ea870681d.html" title=" " alt="" coords="5,13,164,39"/>
+<area shape="rect" id="node2" href="$structFeel_1_1is__mesh__structured.html" title="trait type to detect a MeshStructured mesh" alt="" coords="212,5,396,47"/>
 </map>

@@ -38,7 +38,7 @@ MathJax.Hub.Config({
  <tr id="projectrow">
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign">
-   <div id="projectname">Feel++<span id="projectnumber">&#160;0.110.0-rc.1</span>
+   <div id="projectname">Feel++<span id="projectnumber">&#160;0.110.0-rc.4</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -102,7 +102,8 @@ $(document).ready(function(){initNavTree('group__Mesh.html',''); initResizable()
 <div class="header">
   <div class="summary">
 <a href="#nested-classes">Classes</a> &#124;
-<a href="#enum-members">Enumerations</a>  </div>
+<a href="#enum-members">Enumerations</a> &#124;
+<a href="#func-members">Functions</a>  </div>
   <div class="headertitle"><div class="title">Mesh<div class="ingroups"><a class="el" href="group__Feelpp.html">Feelpp</a></div></div></div>
 </div><!--header-->
 <div class="contents">
@@ -155,6 +156,12 @@ Classes</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1MeshTraits.html">Feel::MeshTraits&lt; MeshType &gt;</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Traits for meshes.  <a href="structFeel_1_1MeshTraits.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1SubFaceOf.html">Feel::SubFaceOf&lt; ElementType &gt;</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">description of a subface or facet (topological d-1) of an element of topologicql dimension d  <a href="classFeel_1_1SubFaceOf.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1SubFaceOfBase.html">Feel::SubFaceOfBase</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="structFeel_1_1Tag.html">Tag</a> base class.  <a href="structFeel_1_1SubFaceOfBase.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="enum-members" name="enum-members"></a>
@@ -215,6 +222,19 @@ Enumerations</h2></td></tr>
 <br />
  }</td></tr>
 <tr class="separator:gab3dcb9174b244819d7b003186b7da3be"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
+Functions</h2></td></tr>
+<tr class="memitem:ga11f6177c58adf8bebf116edbcae4c2d7"><td class="memTemplParams" colspan="2">template&lt;typename MeshType , typename IteratorType &gt; </td></tr>
+<tr class="memitem:ga11f6177c58adf8bebf116edbcae4c2d7"><td class="memTemplItemLeft" align="right" valign="top">ext_elements_t&lt; MeshType &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__Mesh.html#ga11f6177c58adf8bebf116edbcae4c2d7">Feel::idelements</a> (MeshType const &amp;imesh, IteratorType begin, IteratorType end)</td></tr>
+<tr class="separator:ga11f6177c58adf8bebf116edbcae4c2d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga6394537813e21ec32dee0d6ffd8f6ffe"><td class="memTemplParams" colspan="2">template&lt;typename... Ts&gt; </td></tr>
+<tr class="memitem:ga6394537813e21ec32dee0d6ffd8f6ffe"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__Mesh.html#ga6394537813e21ec32dee0d6ffd8f6ffe">Feel::remesh</a> (Ts &amp;&amp;... v)</td></tr>
+<tr class="memdesc:ga6394537813e21ec32dee0d6ffd8f6ffe"><td class="mdescLeft">&#160;</td><td class="mdescRight">remesh with named arguments  <a href="group__Mesh.html#ga6394537813e21ec32dee0d6ffd8f6ffe">More...</a><br /></td></tr>
+<tr class="separator:ga6394537813e21ec32dee0d6ffd8f6ffe"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gab4cf21b17bddf97ac6b13289cc329ae8"><td class="memTemplParams" colspan="2">template&lt;typename RangeT , std::enable_if_t&lt; is_range_v&lt; RangeT &gt;, <a class="el" href="classint.html">int</a> &gt;  = 0&gt; </td></tr>
+<tr class="memitem:gab4cf21b17bddf97ac6b13289cc329ae8"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1WorldComm.html">WorldComm</a> const &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__Mesh.html#gab4cf21b17bddf97ac6b13289cc329ae8">Feel::worldComm</a> (RangeT const &amp;<a class="el" href="group__Core.html#ga9ac2567d303c357e7c0de44280697997">range</a>)</td></tr>
+<tr class="separator:gab4cf21b17bddf97ac6b13289cc329ae8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <p >Mesh classes and algorithms provided by the library. </p>
@@ -231,7 +251,7 @@ Enumerations</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p><code>#include &lt;/nvme0/prudhomm/actions-runner/_work/feelpp/feelpp/feelpp/feel/feelmesh/entities.hpp&gt;</code></p>
+<p><code>#include &lt;/nvme0/prudhomm/actions-runner-3/_work/feelpp/feelpp/feelpp/feel/feelmesh/entities.hpp&gt;</code></p>
 <table class="fieldtable">
 <tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="ga5df59a8b1a63f40c3c1d5a65162254d5ab58df77c4224c0712d878f278a68ffb3" name="ga5df59a8b1a63f40c3c1d5a65162254d5ab58df77c4224c0712d878f278a68ffb3"></a>MESH_ENTITY_INTERNAL&#160;</td><td class="fielddoc"><p >internal entity </p>
 </td></tr>
@@ -253,7 +273,7 @@ Enumerations</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p><code>#include &lt;<a class="el" href="meshbase_8hpp.html">/nvme0/prudhomm/actions-runner/_work/feelpp/feelpp/feelpp/feel/feelmesh/meshbase.hpp</a>&gt;</code></p>
+<p><code>#include &lt;<a class="el" href="meshbase_8hpp.html">/nvme0/prudhomm/actions-runner-3/_work/feelpp/feelpp/feelpp/feel/feelmesh/meshbase.hpp</a>&gt;</code></p>
 
 <p><a class="el" href="classFeel_1_1Mesh.html" title="unifying mesh class">Mesh</a> components enum. </p>
 <p >Components of a mesh that can be enabled or disabled when calling <code>updateForUse()</code> </p>
@@ -272,7 +292,7 @@ Enumerations</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p><code>#include &lt;/nvme0/prudhomm/actions-runner/_work/feelpp/feelpp/feelpp/feel/feelmesh/entities.hpp&gt;</code></p>
+<p><code>#include &lt;/nvme0/prudhomm/actions-runner-3/_work/feelpp/feelpp/feelpp/feel/feelmesh/entities.hpp&gt;</code></p>
 <table class="fieldtable">
 <tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="ga8a2b0de2d64f5281612ba8d3077fbfd6af7c4e3a56f51e73b3ddb049c6a05ec66" name="ga8a2b0de2d64f5281612ba8d3077fbfd6af7c4e3a56f51e73b3ddb049c6a05ec66"></a>GEOMETRY_POINT&#160;</td><td class="fielddoc"><p >point entity </p>
 </td></tr>
@@ -287,6 +307,118 @@ Enumerations</h2></td></tr>
 <tr><td class="fieldname"><a id="ga8a2b0de2d64f5281612ba8d3077fbfd6ac4e0f60e28b63a4d720202b5bee0bea9" name="ga8a2b0de2d64f5281612ba8d3077fbfd6ac4e0f60e28b63a4d720202b5bee0bea9"></a>GEOMETRY_5&#160;</td><td class="fielddoc"><p >hypercube entity </p>
 </td></tr>
 </table>
+
+</div>
+</div>
+<h2 class="groupheader">Function Documentation</h2>
+<a id="ga11f6177c58adf8bebf116edbcae4c2d7" name="ga11f6177c58adf8bebf116edbcae4c2d7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga11f6177c58adf8bebf116edbcae4c2d7">&#9670;&nbsp;</a></span>idelements()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename MeshType , typename IteratorType &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">ext_elements_t&lt; MeshType &gt; Feel::idelements </td>
+          <td>(</td>
+          <td class="paramtype">MeshType const &amp;&#160;</td>
+          <td class="paramname"><em>imesh</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">IteratorType&#160;</td>
+          <td class="paramname"><em>begin</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">IteratorType&#160;</td>
+          <td class="paramname"><em>end</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>#include &lt;<a class="el" href="filters_8hpp.html">/nvme0/prudhomm/actions-runner-3/_work/feelpp/feelpp/feelpp/feel/feelmesh/filters.hpp</a>&gt;</code></p>
+<dl class="section return"><dt>Returns</dt><dd>build a list of elements based on iterators [begin,end) from a mesh <code>imesh</code> </dd></dl>
+
+<p class="reference">References <a class="el" href="namespaceFeel.html#ad6b99fb9a2316b213400f07d4cfa837a">Feel::edges()</a>, and <a class="el" href="namespaceFeel.html#ab3a0f136b2980f14f6111a9daf2fa483">Feel::invalid_rank_type_value</a>.</p>
+
+</div>
+</div>
+<a id="ga6394537813e21ec32dee0d6ffd8f6ffe" name="ga6394537813e21ec32dee0d6ffd8f6ffe"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga6394537813e21ec32dee0d6ffd8f6ffe">&#9670;&nbsp;</a></span>remesh()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename... Ts&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">auto Feel::remesh </td>
+          <td>(</td>
+          <td class="paramtype">Ts &amp;&amp;...&#160;</td>
+          <td class="paramname"><em>v</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>#include &lt;/nvme0/prudhomm/actions-runner-3/_work/feelpp/feelpp/feelpp/feel/feelmesh/remesh.hpp&gt;</code></p>
+
+<p>remesh with named arguments </p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">MeshType</td><td></td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">_mesh</td><td>mesh to be adapted </td></tr>
+    <tr><td class="paramname">_required_elts</td><td>list of markers of required elements </td></tr>
+    <tr><td class="paramname">_required_facets</td><td>list of markers of required facets </td></tr>
+    <tr><td class="paramname">_parent</td><td>parent mesh if relation is built</td></tr>
+  </table>
+  </dd>
+</dl>
+<div class="fragment"><div class="line"><span class="comment">// adapt mesh with constant mesh size</span></div>
+<div class="line"><span class="keyword">auto</span> adapted_mesh = <a class="code hl_function" href="group__Mesh.html#ga6394537813e21ec32dee0d6ffd8f6ffe">remesh</a>( _mesh=mesh, _metric=<span class="stringliteral">&quot;0.1&quot;</span> );</div>
+<div class="line"><span class="comment">// adapt mesh with constant mesh size with required elements marked omega</span></div>
+<div class="line"><span class="keyword">auto</span> adapted_mesh = <a class="code hl_function" href="group__Mesh.html#ga6394537813e21ec32dee0d6ffd8f6ffe">remesh</a>( _mesh=mesh, _metric=<span class="stringliteral">&quot;0.1&quot;</span>, _required_elts=std::vector{{<span class="stringliteral">&quot;omega&quot;</span>}} );</div>
+<div class="ttc" id="agroup__Mesh_html_ga6394537813e21ec32dee0d6ffd8f6ffe"><div class="ttname"><a href="group__Mesh.html#ga6394537813e21ec32dee0d6ffd8f6ffe">Feel::remesh</a></div><div class="ttdeci">auto remesh(Ts &amp;&amp;... v)</div><div class="ttdoc">remesh with named arguments</div><div class="ttdef"><b>Definition:</b> remesh.hpp:165</div></div>
+</div><!-- fragment --><dl class="section return"><dt>Returns</dt><dd>std::shared_ptr&lt;MeshType&gt; </dd></dl>
+
+</div>
+</div>
+<a id="gab4cf21b17bddf97ac6b13289cc329ae8" name="gab4cf21b17bddf97ac6b13289cc329ae8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gab4cf21b17bddf97ac6b13289cc329ae8">&#9670;&nbsp;</a></span>worldComm()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename RangeT , std::enable_if_t&lt; is_range_v&lt; RangeT &gt;, <a class="el" href="classint.html">int</a> &gt;  = 0&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classFeel_1_1WorldComm.html">WorldComm</a> const  &amp; Feel::worldComm </td>
+          <td>(</td>
+          <td class="paramtype">RangeT const &amp;&#160;</td>
+          <td class="paramname"><em>range</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>#include &lt;<a class="el" href="filters_8hpp.html">/nvme0/prudhomm/actions-runner-3/_work/feelpp/feelpp/feelpp/feel/feelmesh/filters.hpp</a>&gt;</code></p>
+<dl class="section return"><dt>Returns</dt><dd>the worldcomm associated to the mesh stored in the range </dd></dl>
+
+<p class="reference">Referenced by <a class="el" href="classFeel_1_1MeshBase.html#a1ed60f60a82b72efd8624027150ccc45">Feel::MeshBase&lt; IndexT &gt;::isPartitioned()</a>, and <a class="el" href="classFeel_1_1Bdf.html#abcfa94b54300905ab8664cd2e6a411e8">Feel::Bdf&lt; SpaceType &gt;::start()</a>.</p>
 
 </div>
 </div>

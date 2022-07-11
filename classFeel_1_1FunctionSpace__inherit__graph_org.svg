@@ -44,7 +44,7 @@
 <text text-anchor="start" x="157.5" y="-139.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_mesh</text>
 <text text-anchor="start" x="157.5" y="-128.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_periodicity</text>
 <text text-anchor="start" x="157.5" y="-117.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_ref_fe</text>
-<text text-anchor="start" x="157.5" y="-106.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 20 more...</text>
+<text text-anchor="start" x="157.5" y="-106.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 23 more...</text>
 <text text-anchor="start" x="157.5" y="-95.5" font-family="Helvetica,sans-Serif" font-size="10.00">* context()</text>
 <text text-anchor="start" x="157.5" y="-84.5" font-family="Helvetica,sans-Serif" font-size="10.00">* contextBasis()</text>
 <text text-anchor="start" x="157.5" y="-73.5" font-family="Helvetica,sans-Serif" font-size="10.00">* FunctionSpace()</text>

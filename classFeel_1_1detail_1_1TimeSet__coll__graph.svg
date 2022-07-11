@@ -358,8 +358,8 @@ var sectionId = 'dynsection-0';
 <text text-anchor="start" x="811.5" y="-734.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_functionspaces</text>
 <text text-anchor="start" x="811.5" y="-723.5" font-family="Helvetica,sans-Serif" font-size="10.00">* procDistMap</text>
 <text text-anchor="start" x="811.5" y="-712.5" font-family="Helvetica,sans-Serif" font-size="10.00">* printInfo()</text>
-<text text-anchor="start" x="811.5" y="-701.5" font-family="Helvetica,sans-Serif" font-size="10.00">* FunctionSpace()</text>
-<text text-anchor="start" x="811.5" y="-690.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 10 more...</text>
+<text text-anchor="start" x="811.5" y="-701.5" font-family="Helvetica,sans-Serif" font-size="10.00">* save()</text>
+<text text-anchor="start" x="811.5" y="-690.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 13 more...</text>
 <text text-anchor="start" x="811.5" y="-679.5" font-family="Helvetica,sans-Serif" font-size="10.00">* context()</text>
 <text text-anchor="start" x="811.5" y="-668.5" font-family="Helvetica,sans-Serif" font-size="10.00">* contextBasis()</text>
 <text text-anchor="start" x="811.5" y="-657.5" font-family="Helvetica,sans-Serif" font-size="10.00">* FunctionSpace()</text>

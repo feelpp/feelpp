@@ -259,8 +259,8 @@
 <text text-anchor="start" x="923.5" y="-630.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_functionspaces</text>
 <text text-anchor="start" x="923.5" y="-619.5" font-family="Helvetica,sans-Serif" font-size="10.00">* procDistMap</text>
 <text text-anchor="start" x="923.5" y="-608.5" font-family="Helvetica,sans-Serif" font-size="10.00">* printInfo()</text>
-<text text-anchor="start" x="923.5" y="-597.5" font-family="Helvetica,sans-Serif" font-size="10.00">* FunctionSpace()</text>
-<text text-anchor="start" x="923.5" y="-586.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 10 more...</text>
+<text text-anchor="start" x="923.5" y="-597.5" font-family="Helvetica,sans-Serif" font-size="10.00">* save()</text>
+<text text-anchor="start" x="923.5" y="-586.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 13 more...</text>
 <text text-anchor="start" x="923.5" y="-575.5" font-family="Helvetica,sans-Serif" font-size="10.00">* context()</text>
 <text text-anchor="start" x="923.5" y="-564.5" font-family="Helvetica,sans-Serif" font-size="10.00">* contextBasis()</text>
 <text text-anchor="start" x="923.5" y="-553.5" font-family="Helvetica,sans-Serif" font-size="10.00">* FunctionSpace()</text>

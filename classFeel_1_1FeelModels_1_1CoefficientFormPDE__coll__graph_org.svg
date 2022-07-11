@@ -81,7 +81,7 @@
 <text text-anchor="start" x="576" y="-438.5" font-family="Helvetica,sans-Serif" font-size="10.00">AllNamesAvailable()</text>
 <text text-anchor="start" x="576" y="-427.5" font-family="Helvetica,sans-Serif" font-size="10.00"># initPostProcess()</text>
 <text text-anchor="start" x="576" y="-416.5" font-family="Helvetica,sans-Serif" font-size="10.00"># initPostProcessMeshes()</text>
-<text text-anchor="start" x="576" y="-405.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 10 more...</text>
+<text text-anchor="start" x="576" y="-405.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 9 more...</text>
 </a>
 </g>
 </g>
@@ -105,7 +105,7 @@
 <text text-anchor="start" x="478.5" y="-934.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ clovm()</text>
 <text text-anchor="start" x="478.5" y="-923.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ createWorldsComm()</text>
 <text text-anchor="start" x="478.5" y="-912.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ hasModelProperties()</text>
-<text text-anchor="start" x="478.5" y="-901.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 53 more...</text>
+<text text-anchor="start" x="478.5" y="-901.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 54 more...</text>
 </a>
 </g>
 </g>
@@ -155,7 +155,7 @@
 <text text-anchor="start" x="431.5" y="-714" font-family="Helvetica,sans-Serif" font-size="10.00">+ initMeasurePointsEvaluation</text>
 <text text-anchor="start" x="431.5" y="-703" font-family="Helvetica,sans-Serif" font-size="10.00">Tool()</text>
 <text text-anchor="start" x="431.5" y="-692" font-family="Helvetica,sans-Serif" font-size="10.00">+ measurePointsEvaluationTool()</text>
-<text text-anchor="start" x="431.5" y="-681" font-family="Helvetica,sans-Serif" font-size="10.00">and 23 more...</text>
+<text text-anchor="start" x="431.5" y="-681" font-family="Helvetica,sans-Serif" font-size="10.00">and 27 more...</text>
 </a>
 </g>
 </g>
@@ -823,8 +823,8 @@
 <text text-anchor="start" x="2385" y="-1204.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_functionspaces</text>
 <text text-anchor="start" x="2385" y="-1193.5" font-family="Helvetica,sans-Serif" font-size="10.00">* procDistMap</text>
 <text text-anchor="start" x="2385" y="-1182.5" font-family="Helvetica,sans-Serif" font-size="10.00">* printInfo()</text>
-<text text-anchor="start" x="2385" y="-1171.5" font-family="Helvetica,sans-Serif" font-size="10.00">* FunctionSpace()</text>
-<text text-anchor="start" x="2385" y="-1160.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 10 more...</text>
+<text text-anchor="start" x="2385" y="-1171.5" font-family="Helvetica,sans-Serif" font-size="10.00">* save()</text>
+<text text-anchor="start" x="2385" y="-1160.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 13 more...</text>
 <text text-anchor="start" x="2385" y="-1149.5" font-family="Helvetica,sans-Serif" font-size="10.00">* context()</text>
 <text text-anchor="start" x="2385" y="-1138.5" font-family="Helvetica,sans-Serif" font-size="10.00">* contextBasis()</text>
 <text text-anchor="start" x="2385" y="-1127.5" font-family="Helvetica,sans-Serif" font-size="10.00">* FunctionSpace()</text>

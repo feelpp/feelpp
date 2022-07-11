@@ -46,7 +46,7 @@ if (edges && edges.length) {
         </defs>
 
 <script type="text/javascript">
-var viewWidth = 335;
+var viewWidth = 320;
 var viewHeight = 1052;
 var sectionId = 'dynsection-0';
 </script>
@@ -54,25 +54,25 @@ var sectionId = 'dynsection-0';
 <svg id="graph" class="graph">
 <g id="viewport">
 <title>Feel::FunctionSpaceBase</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-1048 331,-1048 331,4 -4,4"/>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-1048 315.5,-1048 315.5,4 -4,4"/>
 <!-- Node1 -->
 <g id="node1" class="node">
 <title>Node1</title>
 <g id="a_node1"><a xlink:title="base class for FunctionSpace">
-<polygon fill="#bfbfbf" stroke="black" points="90,-479.5 90,-624.5 227,-624.5 227,-479.5 90,-479.5"/>
-<text text-anchor="middle" x="158.5" y="-612.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FunctionSpaceBase</text>
-<polyline fill="none" stroke="black" points="90,-605.5 227,-605.5 "/>
-<text text-anchor="middle" x="158.5" y="-593.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="90,-586.5 227,-586.5 "/>
-<text text-anchor="start" x="98" y="-574.5" font-family="Helvetica,sans-Serif" font-size="10.00">* super</text>
-<text text-anchor="start" x="98" y="-563.5" font-family="Helvetica,sans-Serif" font-size="10.00">* super2</text>
-<text text-anchor="start" x="98" y="-552.5" font-family="Helvetica,sans-Serif" font-size="10.00">* FunctionSpaceBase()</text>
-<text text-anchor="start" x="98" y="-541.5" font-family="Helvetica,sans-Serif" font-size="10.00">* FunctionSpaceBase()</text>
-<text text-anchor="start" x="98" y="-530.5" font-family="Helvetica,sans-Serif" font-size="10.00">* FunctionSpaceBase()</text>
-<text text-anchor="start" x="98" y="-519.5" font-family="Helvetica,sans-Serif" font-size="10.00">* FunctionSpaceBase()</text>
-<text text-anchor="start" x="98" y="-508.5" font-family="Helvetica,sans-Serif" font-size="10.00">* ~FunctionSpaceBase()</text>
-<text text-anchor="start" x="98" y="-497.5" font-family="Helvetica,sans-Serif" font-size="10.00">* operator=()</text>
-<text text-anchor="start" x="98" y="-486.5" font-family="Helvetica,sans-Serif" font-size="10.00">* mapPtr()</text>
+<polygon fill="#bfbfbf" stroke="black" points="74.5,-479.5 74.5,-624.5 211.5,-624.5 211.5,-479.5 74.5,-479.5"/>
+<text text-anchor="middle" x="143" y="-612.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FunctionSpaceBase</text>
+<polyline fill="none" stroke="black" points="74.5,-605.5 211.5,-605.5 "/>
+<text text-anchor="middle" x="143" y="-593.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polyline fill="none" stroke="black" points="74.5,-586.5 211.5,-586.5 "/>
+<text text-anchor="start" x="82.5" y="-574.5" font-family="Helvetica,sans-Serif" font-size="10.00">* super</text>
+<text text-anchor="start" x="82.5" y="-563.5" font-family="Helvetica,sans-Serif" font-size="10.00">* super2</text>
+<text text-anchor="start" x="82.5" y="-552.5" font-family="Helvetica,sans-Serif" font-size="10.00">* FunctionSpaceBase()</text>
+<text text-anchor="start" x="82.5" y="-541.5" font-family="Helvetica,sans-Serif" font-size="10.00">* FunctionSpaceBase()</text>
+<text text-anchor="start" x="82.5" y="-530.5" font-family="Helvetica,sans-Serif" font-size="10.00">* FunctionSpaceBase()</text>
+<text text-anchor="start" x="82.5" y="-519.5" font-family="Helvetica,sans-Serif" font-size="10.00">* FunctionSpaceBase()</text>
+<text text-anchor="start" x="82.5" y="-508.5" font-family="Helvetica,sans-Serif" font-size="10.00">* ~FunctionSpaceBase()</text>
+<text text-anchor="start" x="82.5" y="-497.5" font-family="Helvetica,sans-Serif" font-size="10.00">* operator=()</text>
+<text text-anchor="start" x="82.5" y="-486.5" font-family="Helvetica,sans-Serif" font-size="10.00">* mapPtr()</text>
 </a>
 </g>
 </g>
@@ -80,12 +80,12 @@ var sectionId = 'dynsection-0';
 <g id="node5" class="node">
 <title>Node5</title>
 <g id="a_node5"><a xlink:href="classFeel_1_1FunctionSpace.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="0,-0.5 0,-442.5 155,-442.5 155,-0.5 0,-0.5"/>
+<polygon fill="white" stroke="black" points="0,-0.5 0,-442.5 134,-442.5 134,-0.5 0,-0.5"/>
 <text text-anchor="start" x="8" y="-430.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FunctionSpace</text>
-<text text-anchor="middle" x="77.5" y="-419.5" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; A0, A1, A2, A3, A4 &gt;</text>
-<polyline fill="none" stroke="black" points="0,-412.5 155,-412.5 "/>
-<text text-anchor="middle" x="77.5" y="-400.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="0,-393.5 155,-393.5 "/>
+<text text-anchor="middle" x="67" y="-419.5" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; A0, A1, A2, A3, A4 &gt;</text>
+<polyline fill="none" stroke="black" points="0,-412.5 134,-412.5 "/>
+<text text-anchor="middle" x="67" y="-400.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polyline fill="none" stroke="black" points="0,-393.5 134,-393.5 "/>
 <text text-anchor="start" x="8" y="-381.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ initHead()</text>
 <text text-anchor="start" x="8" y="-370.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ initList()</text>
 <text text-anchor="start" x="8" y="-359.5" font-family="Helvetica,sans-Serif" font-size="10.00">* MeshesListType</text>
@@ -109,9 +109,9 @@ var sectionId = 'dynsection-0';
 <text text-anchor="start" x="8" y="-161.5" font-family="Helvetica,sans-Serif" font-size="10.00">* ComponentSpace</text>
 <text text-anchor="start" x="8" y="-150.5" font-family="Helvetica,sans-Serif" font-size="10.00">* FunctionSpace()</text>
 <text text-anchor="start" x="8" y="-139.5" font-family="Helvetica,sans-Serif" font-size="10.00">* printInfo()</text>
-<text text-anchor="start" x="8" y="-128.5" font-family="Helvetica,sans-Serif" font-size="10.00">* updateInformationObject()</text>
-<text text-anchor="start" x="8" y="-117.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_worldsComm</text>
-<text text-anchor="start" x="8" y="-106.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 20 more...</text>
+<text text-anchor="start" x="8" y="-128.5" font-family="Helvetica,sans-Serif" font-size="10.00">* save()</text>
+<text text-anchor="start" x="8" y="-117.5" font-family="Helvetica,sans-Serif" font-size="10.00">* relationFromFile()</text>
+<text text-anchor="start" x="8" y="-106.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 23 more...</text>
 <text text-anchor="start" x="8" y="-95.5" font-family="Helvetica,sans-Serif" font-size="10.00">* FunctionSpace()</text>
 <text text-anchor="start" x="8" y="-84.5" font-family="Helvetica,sans-Serif" font-size="10.00">* FunctionSpace()</text>
 <text text-anchor="start" x="8" y="-73.5" font-family="Helvetica,sans-Serif" font-size="10.00">* FunctionSpace()</text>
@@ -127,145 +127,145 @@ var sectionId = 'dynsection-0';
 <!-- Node1&#45;&gt;Node5 -->
 <g id="edge4" class="edge">
 <title>Node1&#45;&gt;Node5</title>
-<path fill="none" stroke="midnightblue" d="M138.4,-469.48C136.29,-460.93 134.08,-451.98 131.81,-442.76"/>
-<polygon fill="none" stroke="midnightblue" points="135.03,-470.44 140.82,-479.32 141.83,-468.77 135.03,-470.44"/>
+<path fill="none" stroke="midnightblue" d="M124.14,-469.48C122.16,-460.93 120.09,-451.98 117.96,-442.76"/>
+<polygon fill="none" stroke="midnightblue" points="120.75,-470.36 126.42,-479.32 127.57,-468.78 120.75,-470.36"/>
 </g>
 <!-- Node6 -->
 <g id="node6" class="node">
 <title>Node6</title>
 <g id="a_node6"><a xlink:href="classFeel_1_1FunctionSpace.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="black" points="173.5,-0.5 173.5,-442.5 307.5,-442.5 307.5,-0.5 173.5,-0.5"/>
-<text text-anchor="start" x="181.5" y="-430.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FunctionSpace</text>
-<text text-anchor="middle" x="240.5" y="-419.5" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; A0, A1, A2, A3, A4 &gt;</text>
-<polyline fill="none" stroke="black" points="173.5,-412.5 307.5,-412.5 "/>
-<text text-anchor="middle" x="240.5" y="-400.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="173.5,-393.5 307.5,-393.5 "/>
-<text text-anchor="start" x="181.5" y="-381.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ initHead()</text>
-<text text-anchor="start" x="181.5" y="-370.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ initList()</text>
-<text text-anchor="start" x="181.5" y="-359.5" font-family="Helvetica,sans-Serif" font-size="10.00">* MeshesListType</text>
-<text text-anchor="start" x="181.5" y="-348.5" font-family="Helvetica,sans-Serif" font-size="10.00">* mesh_0_type</text>
-<text text-anchor="start" x="181.5" y="-337.5" font-family="Helvetica,sans-Serif" font-size="10.00">* index_type</text>
-<text text-anchor="start" x="181.5" y="-326.5" font-family="Helvetica,sans-Serif" font-size="10.00">* size_type</text>
-<text text-anchor="start" x="181.5" y="-315.5" font-family="Helvetica,sans-Serif" font-size="10.00">* mesh_type</text>
-<text text-anchor="start" x="181.5" y="-304.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 30 more...</text>
-<text text-anchor="start" x="181.5" y="-293.5" font-family="Helvetica,sans-Serif" font-size="10.00">* real_type</text>
-<text text-anchor="start" x="181.5" y="-282.5" font-family="Helvetica,sans-Serif" font-size="10.00">* node_type</text>
-<text text-anchor="start" x="181.5" y="-271.5" font-family="Helvetica,sans-Serif" font-size="10.00">* functionspace_type</text>
-<text text-anchor="start" x="181.5" y="-260.5" font-family="Helvetica,sans-Serif" font-size="10.00">* space_type</text>
-<text text-anchor="start" x="181.5" y="-249.5" font-family="Helvetica,sans-Serif" font-size="10.00">* functionspace_ptrtype</text>
-<text text-anchor="start" x="181.5" y="-238.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 53 more...</text>
-<text text-anchor="start" x="181.5" y="-227.5" font-family="Helvetica,sans-Serif" font-size="10.00">* elements_ptrtype</text>
-<text text-anchor="start" x="181.5" y="-216.5" font-family="Helvetica,sans-Serif" font-size="10.00">* ptsInContext()</text>
-<text text-anchor="start" x="181.5" y="-205.5" font-family="Helvetica,sans-Serif" font-size="10.00">* periodicity()</text>
-<text text-anchor="start" x="181.5" y="-194.5" font-family="Helvetica,sans-Serif" font-size="10.00">* qDim()</text>
-<text text-anchor="start" x="181.5" y="-183.5" font-family="Helvetica,sans-Serif" font-size="10.00">* nDof()</text>
-<text text-anchor="start" x="181.5" y="-172.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 75 more...</text>
-<text text-anchor="start" x="181.5" y="-161.5" font-family="Helvetica,sans-Serif" font-size="10.00">* ComponentSpace</text>
-<text text-anchor="start" x="181.5" y="-150.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_worldsComm</text>
-<text text-anchor="start" x="181.5" y="-139.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_mesh</text>
-<text text-anchor="start" x="181.5" y="-128.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_periodicity</text>
-<text text-anchor="start" x="181.5" y="-117.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_ref_fe</text>
-<text text-anchor="start" x="181.5" y="-106.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 20 more...</text>
-<text text-anchor="start" x="181.5" y="-95.5" font-family="Helvetica,sans-Serif" font-size="10.00">* context()</text>
-<text text-anchor="start" x="181.5" y="-84.5" font-family="Helvetica,sans-Serif" font-size="10.00">* contextBasis()</text>
-<text text-anchor="start" x="181.5" y="-73.5" font-family="Helvetica,sans-Serif" font-size="10.00">* FunctionSpace()</text>
-<text text-anchor="start" x="181.5" y="-62.5" font-family="Helvetica,sans-Serif" font-size="10.00">* FunctionSpace()</text>
-<text text-anchor="start" x="181.5" y="-51.5" font-family="Helvetica,sans-Serif" font-size="10.00">* FunctionSpace()</text>
-<text text-anchor="start" x="181.5" y="-40.5" font-family="Helvetica,sans-Serif" font-size="10.00">* shallowCopy()</text>
-<text text-anchor="start" x="181.5" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">* init()</text>
-<text text-anchor="start" x="181.5" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 10 more...</text>
-<text text-anchor="start" x="181.5" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">* operator()()</text>
+<polygon fill="white" stroke="black" points="152,-0.5 152,-442.5 286,-442.5 286,-0.5 152,-0.5"/>
+<text text-anchor="start" x="160" y="-430.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FunctionSpace</text>
+<text text-anchor="middle" x="219" y="-419.5" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; A0, A1, A2, A3, A4 &gt;</text>
+<polyline fill="none" stroke="black" points="152,-412.5 286,-412.5 "/>
+<text text-anchor="middle" x="219" y="-400.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polyline fill="none" stroke="black" points="152,-393.5 286,-393.5 "/>
+<text text-anchor="start" x="160" y="-381.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ initHead()</text>
+<text text-anchor="start" x="160" y="-370.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ initList()</text>
+<text text-anchor="start" x="160" y="-359.5" font-family="Helvetica,sans-Serif" font-size="10.00">* MeshesListType</text>
+<text text-anchor="start" x="160" y="-348.5" font-family="Helvetica,sans-Serif" font-size="10.00">* mesh_0_type</text>
+<text text-anchor="start" x="160" y="-337.5" font-family="Helvetica,sans-Serif" font-size="10.00">* index_type</text>
+<text text-anchor="start" x="160" y="-326.5" font-family="Helvetica,sans-Serif" font-size="10.00">* size_type</text>
+<text text-anchor="start" x="160" y="-315.5" font-family="Helvetica,sans-Serif" font-size="10.00">* mesh_type</text>
+<text text-anchor="start" x="160" y="-304.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 30 more...</text>
+<text text-anchor="start" x="160" y="-293.5" font-family="Helvetica,sans-Serif" font-size="10.00">* real_type</text>
+<text text-anchor="start" x="160" y="-282.5" font-family="Helvetica,sans-Serif" font-size="10.00">* node_type</text>
+<text text-anchor="start" x="160" y="-271.5" font-family="Helvetica,sans-Serif" font-size="10.00">* functionspace_type</text>
+<text text-anchor="start" x="160" y="-260.5" font-family="Helvetica,sans-Serif" font-size="10.00">* space_type</text>
+<text text-anchor="start" x="160" y="-249.5" font-family="Helvetica,sans-Serif" font-size="10.00">* functionspace_ptrtype</text>
+<text text-anchor="start" x="160" y="-238.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 53 more...</text>
+<text text-anchor="start" x="160" y="-227.5" font-family="Helvetica,sans-Serif" font-size="10.00">* elements_ptrtype</text>
+<text text-anchor="start" x="160" y="-216.5" font-family="Helvetica,sans-Serif" font-size="10.00">* ptsInContext()</text>
+<text text-anchor="start" x="160" y="-205.5" font-family="Helvetica,sans-Serif" font-size="10.00">* periodicity()</text>
+<text text-anchor="start" x="160" y="-194.5" font-family="Helvetica,sans-Serif" font-size="10.00">* qDim()</text>
+<text text-anchor="start" x="160" y="-183.5" font-family="Helvetica,sans-Serif" font-size="10.00">* nDof()</text>
+<text text-anchor="start" x="160" y="-172.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 75 more...</text>
+<text text-anchor="start" x="160" y="-161.5" font-family="Helvetica,sans-Serif" font-size="10.00">* ComponentSpace</text>
+<text text-anchor="start" x="160" y="-150.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_worldsComm</text>
+<text text-anchor="start" x="160" y="-139.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_mesh</text>
+<text text-anchor="start" x="160" y="-128.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_periodicity</text>
+<text text-anchor="start" x="160" y="-117.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_ref_fe</text>
+<text text-anchor="start" x="160" y="-106.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 23 more...</text>
+<text text-anchor="start" x="160" y="-95.5" font-family="Helvetica,sans-Serif" font-size="10.00">* context()</text>
+<text text-anchor="start" x="160" y="-84.5" font-family="Helvetica,sans-Serif" font-size="10.00">* contextBasis()</text>
+<text text-anchor="start" x="160" y="-73.5" font-family="Helvetica,sans-Serif" font-size="10.00">* FunctionSpace()</text>
+<text text-anchor="start" x="160" y="-62.5" font-family="Helvetica,sans-Serif" font-size="10.00">* FunctionSpace()</text>
+<text text-anchor="start" x="160" y="-51.5" font-family="Helvetica,sans-Serif" font-size="10.00">* FunctionSpace()</text>
+<text text-anchor="start" x="160" y="-40.5" font-family="Helvetica,sans-Serif" font-size="10.00">* shallowCopy()</text>
+<text text-anchor="start" x="160" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">* init()</text>
+<text text-anchor="start" x="160" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 10 more...</text>
+<text text-anchor="start" x="160" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">* operator()()</text>
 </a>
 </g>
 </g>
 <!-- Node1&#45;&gt;Node6 -->
 <g id="edge5" class="edge">
 <title>Node1&#45;&gt;Node6</title>
-<path fill="none" stroke="midnightblue" d="M178.85,-469.48C180.98,-460.93 183.22,-451.98 185.52,-442.76"/>
-<polygon fill="none" stroke="midnightblue" points="175.42,-468.77 176.39,-479.32 182.21,-470.46 175.42,-468.77"/>
+<path fill="none" stroke="midnightblue" d="M161.86,-469.48C163.84,-460.93 165.91,-451.98 168.04,-442.76"/>
+<polygon fill="none" stroke="midnightblue" points="158.43,-468.78 159.58,-479.32 165.25,-470.36 158.43,-468.78"/>
 </g>
 <!-- Node2 -->
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:href="classFeel_1_1CommObject.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="#bfbfbf" points="25,-749.5 25,-861.5 132,-861.5 132,-749.5 25,-749.5"/>
-<text text-anchor="middle" x="78.5" y="-849.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::CommObject</text>
-<polyline fill="none" stroke="#bfbfbf" points="25,-842.5 132,-842.5 "/>
-<text text-anchor="middle" x="78.5" y="-830.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="#bfbfbf" points="25,-823.5 132,-823.5 "/>
-<text text-anchor="start" x="33" y="-811.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ comm()</text>
-<text text-anchor="start" x="33" y="-800.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ CommObject()</text>
-<text text-anchor="start" x="33" y="-789.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ CommObject()</text>
-<text text-anchor="start" x="33" y="-778.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ CommObject()</text>
-<text text-anchor="start" x="33" y="-767.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ CommObject()</text>
-<text text-anchor="start" x="33" y="-756.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 13 more...</text>
+<polygon fill="white" stroke="#bfbfbf" points="9.5,-749.5 9.5,-861.5 116.5,-861.5 116.5,-749.5 9.5,-749.5"/>
+<text text-anchor="middle" x="63" y="-849.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::CommObject</text>
+<polyline fill="none" stroke="#bfbfbf" points="9.5,-842.5 116.5,-842.5 "/>
+<text text-anchor="middle" x="63" y="-830.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polyline fill="none" stroke="#bfbfbf" points="9.5,-823.5 116.5,-823.5 "/>
+<text text-anchor="start" x="17.5" y="-811.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ comm()</text>
+<text text-anchor="start" x="17.5" y="-800.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ CommObject()</text>
+<text text-anchor="start" x="17.5" y="-789.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ CommObject()</text>
+<text text-anchor="start" x="17.5" y="-778.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ CommObject()</text>
+<text text-anchor="start" x="17.5" y="-767.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ CommObject()</text>
+<text text-anchor="start" x="17.5" y="-756.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 13 more...</text>
 </a>
 </g>
 </g>
 <!-- Node2&#45;&gt;Node1 -->
 <g id="edge1" class="edge">
 <title>Node2&#45;&gt;Node1</title>
-<path fill="none" stroke="midnightblue" d="M99.14,-739.63C110.32,-704.48 124.16,-660.96 135.66,-624.79"/>
-<polygon fill="none" stroke="midnightblue" points="95.75,-738.72 96.06,-749.31 102.42,-740.84 95.75,-738.72"/>
+<path fill="none" stroke="midnightblue" d="M83.64,-739.63C94.82,-704.48 108.66,-660.96 120.16,-624.79"/>
+<polygon fill="none" stroke="midnightblue" points="80.25,-738.72 80.56,-749.31 86.92,-740.84 80.25,-738.72"/>
 </g>
 <!-- Node3 -->
 <g id="node3" class="node">
 <title>Node3</title>
 <g id="a_node3"><a xlink:href="classFeel_1_1JournalWatcher.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="#bfbfbf" points="150,-661.5 150,-949.5 327,-949.5 327,-661.5 150,-661.5"/>
-<text text-anchor="middle" x="238.5" y="-937.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::JournalWatcher</text>
-<polyline fill="none" stroke="#bfbfbf" points="150,-930.5 327,-930.5 "/>
-<text text-anchor="middle" x="238.5" y="-918.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="#bfbfbf" points="150,-911.5 327,-911.5 "/>
-<text text-anchor="start" x="158" y="-899.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_journal_is_connected</text>
-<text text-anchor="start" x="158" y="-888.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_category</text>
-<text text-anchor="start" x="158" y="-877.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_name</text>
-<text text-anchor="start" x="158" y="-866.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_function_updateInformation</text>
-<text text-anchor="start" x="158" y="-855.5" font-family="Helvetica,sans-Serif" font-size="10.00">Object</text>
-<text text-anchor="start" x="158" y="-844.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_informationObject</text>
-<text text-anchor="start" x="158" y="-833.5" font-family="Helvetica,sans-Serif" font-size="10.00">* S_counterObjectByCategory</text>
-<text text-anchor="start" x="158" y="-822.5" font-family="Helvetica,sans-Serif" font-size="10.00">* JournalWatcher()</text>
-<text text-anchor="start" x="158" y="-811.5" font-family="Helvetica,sans-Serif" font-size="10.00">* JournalWatcher()</text>
-<text text-anchor="start" x="158" y="-800.5" font-family="Helvetica,sans-Serif" font-size="10.00">* JournalWatcher()</text>
-<text text-anchor="start" x="158" y="-789.5" font-family="Helvetica,sans-Serif" font-size="10.00">* JournalWatcher()</text>
-<text text-anchor="start" x="158" y="-778.5" font-family="Helvetica,sans-Serif" font-size="10.00">* ~JournalWatcher()</text>
-<text text-anchor="start" x="158" y="-767.5" font-family="Helvetica,sans-Serif" font-size="10.00">* journalIsConnected()</text>
-<text text-anchor="start" x="158" y="-756.5" font-family="Helvetica,sans-Serif" font-size="10.00">* journalWatcherInstanceName()</text>
-<text text-anchor="start" x="158" y="-745.5" font-family="Helvetica,sans-Serif" font-size="10.00">* journalSection()</text>
-<text text-anchor="start" x="158" y="-734.5" font-family="Helvetica,sans-Serif" font-size="10.00">* informationObject()</text>
-<text text-anchor="start" x="158" y="-723.5" font-family="Helvetica,sans-Serif" font-size="10.00">* journalConnect()</text>
-<text text-anchor="start" x="158" y="-712.5" font-family="Helvetica,sans-Serif" font-size="10.00">* journalDisconnect()</text>
-<text text-anchor="start" x="158" y="-701.5" font-family="Helvetica,sans-Serif" font-size="10.00">* updateInformationObject()</text>
-<text text-anchor="start" x="158" y="-690.5" font-family="Helvetica,sans-Serif" font-size="10.00">* setInformationObject()</text>
-<text text-anchor="start" x="158" y="-679.5" font-family="Helvetica,sans-Serif" font-size="10.00">* putInformationObject()</text>
-<text text-anchor="start" x="158" y="-668.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 4 more...</text>
+<polygon fill="white" stroke="#bfbfbf" points="134.5,-661.5 134.5,-949.5 311.5,-949.5 311.5,-661.5 134.5,-661.5"/>
+<text text-anchor="middle" x="223" y="-937.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::JournalWatcher</text>
+<polyline fill="none" stroke="#bfbfbf" points="134.5,-930.5 311.5,-930.5 "/>
+<text text-anchor="middle" x="223" y="-918.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polyline fill="none" stroke="#bfbfbf" points="134.5,-911.5 311.5,-911.5 "/>
+<text text-anchor="start" x="142.5" y="-899.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_journal_is_connected</text>
+<text text-anchor="start" x="142.5" y="-888.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_category</text>
+<text text-anchor="start" x="142.5" y="-877.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_name</text>
+<text text-anchor="start" x="142.5" y="-866.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_function_updateInformation</text>
+<text text-anchor="start" x="142.5" y="-855.5" font-family="Helvetica,sans-Serif" font-size="10.00">Object</text>
+<text text-anchor="start" x="142.5" y="-844.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_informationObject</text>
+<text text-anchor="start" x="142.5" y="-833.5" font-family="Helvetica,sans-Serif" font-size="10.00">* S_counterObjectByCategory</text>
+<text text-anchor="start" x="142.5" y="-822.5" font-family="Helvetica,sans-Serif" font-size="10.00">* JournalWatcher()</text>
+<text text-anchor="start" x="142.5" y="-811.5" font-family="Helvetica,sans-Serif" font-size="10.00">* JournalWatcher()</text>
+<text text-anchor="start" x="142.5" y="-800.5" font-family="Helvetica,sans-Serif" font-size="10.00">* JournalWatcher()</text>
+<text text-anchor="start" x="142.5" y="-789.5" font-family="Helvetica,sans-Serif" font-size="10.00">* JournalWatcher()</text>
+<text text-anchor="start" x="142.5" y="-778.5" font-family="Helvetica,sans-Serif" font-size="10.00">* ~JournalWatcher()</text>
+<text text-anchor="start" x="142.5" y="-767.5" font-family="Helvetica,sans-Serif" font-size="10.00">* journalIsConnected()</text>
+<text text-anchor="start" x="142.5" y="-756.5" font-family="Helvetica,sans-Serif" font-size="10.00">* journalWatcherInstanceName()</text>
+<text text-anchor="start" x="142.5" y="-745.5" font-family="Helvetica,sans-Serif" font-size="10.00">* journalSection()</text>
+<text text-anchor="start" x="142.5" y="-734.5" font-family="Helvetica,sans-Serif" font-size="10.00">* informationObject()</text>
+<text text-anchor="start" x="142.5" y="-723.5" font-family="Helvetica,sans-Serif" font-size="10.00">* journalConnect()</text>
+<text text-anchor="start" x="142.5" y="-712.5" font-family="Helvetica,sans-Serif" font-size="10.00">* journalDisconnect()</text>
+<text text-anchor="start" x="142.5" y="-701.5" font-family="Helvetica,sans-Serif" font-size="10.00">* updateInformationObject()</text>
+<text text-anchor="start" x="142.5" y="-690.5" font-family="Helvetica,sans-Serif" font-size="10.00">* setInformationObject()</text>
+<text text-anchor="start" x="142.5" y="-679.5" font-family="Helvetica,sans-Serif" font-size="10.00">* putInformationObject()</text>
+<text text-anchor="start" x="142.5" y="-668.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 4 more...</text>
 </a>
 </g>
 </g>
 <!-- Node3&#45;&gt;Node1 -->
 <g id="edge2" class="edge">
 <title>Node3&#45;&gt;Node1</title>
-<path fill="none" stroke="midnightblue" d="M189.9,-651.7C186.93,-642.38 184.03,-633.27 181.27,-624.58"/>
-<polygon fill="none" stroke="midnightblue" points="186.64,-653.01 193.01,-661.48 193.31,-650.89 186.64,-653.01"/>
+<path fill="none" stroke="midnightblue" d="M174.4,-651.7C171.43,-642.38 168.53,-633.27 165.77,-624.58"/>
+<polygon fill="none" stroke="midnightblue" points="171.14,-653.01 177.51,-661.48 177.81,-650.89 171.14,-653.01"/>
 </g>
 <!-- Node4 -->
 <g id="node4" class="node">
 <title>Node4</title>
 <g id="a_node4"><a xlink:title=" ">
-<polygon fill="white" stroke="#bfbfbf" points="185,-986.5 185,-1043.5 292,-1043.5 292,-986.5 185,-986.5"/>
-<text text-anchor="middle" x="238.5" y="-1031.5" font-family="Helvetica,sans-Serif" font-size="10.00">Event::SlotHandler</text>
-<polyline fill="none" stroke="#bfbfbf" points="185,-1024.5 292,-1024.5 "/>
-<text text-anchor="middle" x="238.5" y="-1012.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="#bfbfbf" points="185,-1005.5 292,-1005.5 "/>
-<text text-anchor="middle" x="238.5" y="-993.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polygon fill="white" stroke="#bfbfbf" points="169.5,-986.5 169.5,-1043.5 276.5,-1043.5 276.5,-986.5 169.5,-986.5"/>
+<text text-anchor="middle" x="223" y="-1031.5" font-family="Helvetica,sans-Serif" font-size="10.00">Event::SlotHandler</text>
+<polyline fill="none" stroke="#bfbfbf" points="169.5,-1024.5 276.5,-1024.5 "/>
+<text text-anchor="middle" x="223" y="-1012.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polyline fill="none" stroke="#bfbfbf" points="169.5,-1005.5 276.5,-1005.5 "/>
+<text text-anchor="middle" x="223" y="-993.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>
 </g>
 <!-- Node4&#45;&gt;Node3 -->
 <g id="edge3" class="edge">
 <title>Node4&#45;&gt;Node3</title>
-<path fill="none" stroke="midnightblue" d="M238.5,-976.38C238.5,-968.29 238.5,-959.28 238.5,-949.76"/>
-<polygon fill="none" stroke="midnightblue" points="235,-976.45 238.5,-986.45 242,-976.45 235,-976.45"/>
+<path fill="none" stroke="midnightblue" d="M223,-976.38C223,-968.29 223,-959.28 223,-949.76"/>
+<polygon fill="none" stroke="midnightblue" points="219.5,-976.45 223,-986.45 226.5,-976.45 219.5,-976.45"/>
 </g>
 </g>
 </svg>

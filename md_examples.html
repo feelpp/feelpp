@@ -38,7 +38,7 @@ MathJax.Hub.Config({
  <tr id="projectrow">
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign">
-   <div id="projectname">Feel++<span id="projectnumber">&#160;0.110.0-rc.1</span>
+   <div id="projectname">Feel++<span id="projectnumber">&#160;0.110.0-rc.4</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -203,9 +203,9 @@ Hello, Stokes</h2>
 <div class="ttc" id="agroup__DSEL-Variational-Formulation_html_gaa7b95d2d10a5d0e4457740daa190a6e0"><div class="ttname"><a href="group__DSEL-Variational-Formulation.html#gaa7b95d2d10a5d0e4457740daa190a6e0">Feel::form1</a></div><div class="ttdeci">auto form1(Ts &amp;&amp;... v)</div><div class="ttdoc">create a linear form using named arguments</div><div class="ttdef"><b>Definition:</b> form.hpp:79</div></div>
 <div class="ttc" id="agroup__DSEL-Variational-Formulation_html_gaae0194bba0f2f858c384597706e3c59e"><div class="ttname"><a href="group__DSEL-Variational-Formulation.html#gaae0194bba0f2f858c384597706e3c59e">Feel::form2</a></div><div class="ttdeci">auto form2(Ts &amp;&amp;... v)</div><div class="ttdoc">create a bi-linear form using named arguments</div><div class="ttdef"><b>Definition:</b> form.hpp:115</div></div>
 <div class="ttc" id="anamespaceFeel_html_a5cd00556a1c26cfc9ee56213c8121868"><div class="ttname"><a href="namespaceFeel.html#a5cd00556a1c26cfc9ee56213c8121868">Feel::div</a></div><div class="ttdeci">ElementType div(ElementType const &amp;v1, ElementType const &amp;v2, typename boost::enable_if&lt; boost::is_base_of&lt; FunctionSpaceBase::ElementBase, ElementType &gt; &gt;::type *dummy=0)</div><div class="ttdoc">Computes the element wise division of two vectors and eventually in parallel.</div><div class="ttdef"><b>Definition:</b> elementdiv.hpp:45</div></div>
-<div class="ttc" id="anamespaceFeel_html_a70e9593e01ccdba4f55d7ca7d77f0262"><div class="ttname"><a href="namespaceFeel.html#a70e9593e01ccdba4f55d7ca7d77f0262">Feel::markedfaces</a></div><div class="ttdeci">markedfaces_t&lt; MeshType &gt; markedfaces(MeshType const &amp;mesh)</div><div class="ttdef"><b>Definition:</b> filters.hpp:379</div></div>
+<div class="ttc" id="anamespaceFeel_html_a70e9593e01ccdba4f55d7ca7d77f0262"><div class="ttname"><a href="namespaceFeel.html#a70e9593e01ccdba4f55d7ca7d77f0262">Feel::markedfaces</a></div><div class="ttdeci">markedfaces_t&lt; MeshType &gt; markedfaces(MeshType const &amp;mesh)</div><div class="ttdef"><b>Definition:</b> filters.hpp:438</div></div>
 <div class="ttc" id="anamespaceFeel_html_aad75bc3dcabd553f9b7fc2aa214666e2"><div class="ttname"><a href="namespaceFeel.html#aad75bc3dcabd553f9b7fc2aa214666e2">Feel::checker</a></div><div class="ttdeci">Checker checker(Ts &amp;&amp;... v)</div><div class="ttdoc">check create function</div><div class="ttdef"><b>Definition:</b> checker.hpp:279</div></div>
-<div class="ttc" id="anamespaceFeel_html_abdab447afcf746e7e621c56c1d6dc06b"><div class="ttname"><a href="namespaceFeel.html#abdab447afcf746e7e621c56c1d6dc06b">Feel::elements</a></div><div class="ttdeci">elements_pid_t&lt; MeshType &gt; elements(MeshType const &amp;mesh)</div><div class="ttdef"><b>Definition:</b> filters.hpp:63</div></div>
+<div class="ttc" id="anamespaceFeel_html_abdab447afcf746e7e621c56c1d6dc06b"><div class="ttname"><a href="namespaceFeel.html#abdab447afcf746e7e621c56c1d6dc06b">Feel::elements</a></div><div class="ttdeci">elements_pid_t&lt; MeshType &gt; elements(MeshType const &amp;mesh)</div><div class="ttdef"><b>Definition:</b> filters.hpp:122</div></div>
 <div class="ttc" id="aon_8hpp_html_ac948958b68a6ab39e788fa5bf64347cc"><div class="ttname"><a href="on_8hpp.html#ac948958b68a6ab39e788fa5bf64347cc">Feel::vf::on</a></div><div class="ttdeci">detail auto on(Ts &amp;&amp;... v)</div><div class="ttdoc">projection/interpolation of an expresion onto a nodal functionspace</div><div class="ttdef"><b>Definition:</b> on.hpp:1090</div></div>
 </div><!-- fragment --><p >We can now call this functions with different velocity/pressure function spaces:</p><ul>
 <li>P1P0, P1P0 which aren't inf-sup stable</li>

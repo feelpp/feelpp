@@ -6,7 +6,7 @@ var namespaces_dup =
     [ "Feel", "namespaceFeel.html", "namespaceFeel" ],
     [ "GiNaC", null, [
       [ "toNumericValues", "ginac_8cpp.html#a3742a50c1149140a912a9ebdceb4bf2e", null ],
-      [ "totalDegree", "ginac_8hpp.html#a67b1d63a39ae93b210f13df93cf00ce2", null ]
+      [ "totalDegree", "ginac_8hpp.html#af8a315906328b512bd3e6fc14799e606", null ]
     ] ],
     [ "nlohmann", "namespacenlohmann.html", "namespacenlohmann" ],
     [ "pybind11", null, [

@@ -23,7 +23,7 @@
 <text text-anchor="start" x="1152" y="-1021.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ clovm()</text>
 <text text-anchor="start" x="1152" y="-1010.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ createWorldsComm()</text>
 <text text-anchor="start" x="1152" y="-999.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ hasModelProperties()</text>
-<text text-anchor="start" x="1152" y="-988.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 53 more...</text>
+<text text-anchor="start" x="1152" y="-988.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 54 more...</text>
 </a>
 </g>
 </g>
@@ -43,7 +43,7 @@
 <text text-anchor="start" x="902" y="-834" font-family="Helvetica,sans-Serif" font-size="10.00">+ initMeasurePointsEvaluation</text>
 <text text-anchor="start" x="902" y="-823" font-family="Helvetica,sans-Serif" font-size="10.00">Tool()</text>
 <text text-anchor="start" x="902" y="-812" font-family="Helvetica,sans-Serif" font-size="10.00">+ measurePointsEvaluationTool()</text>
-<text text-anchor="start" x="902" y="-801" font-family="Helvetica,sans-Serif" font-size="10.00">and 23 more...</text>
+<text text-anchor="start" x="902" y="-801" font-family="Helvetica,sans-Serif" font-size="10.00">and 27 more...</text>
 </a>
 </g>
 </g>
@@ -76,7 +76,7 @@
 <text text-anchor="start" x="902.5" y="-569.5" font-family="Helvetica,sans-Serif" font-size="10.00">AllNamesAvailable()</text>
 <text text-anchor="start" x="902.5" y="-558.5" font-family="Helvetica,sans-Serif" font-size="10.00"># initPostProcess()</text>
 <text text-anchor="start" x="902.5" y="-547.5" font-family="Helvetica,sans-Serif" font-size="10.00"># initPostProcessMeshes()</text>
-<text text-anchor="start" x="902.5" y="-536.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 10 more...</text>
+<text text-anchor="start" x="902.5" y="-536.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 9 more...</text>
 </a>
 </g>
 </g>
@@ -271,7 +271,7 @@
 <text text-anchor="start" x="1752" y="-834" font-family="Helvetica,sans-Serif" font-size="10.00">+ initMeasurePointsEvaluation</text>
 <text text-anchor="start" x="1752" y="-823" font-family="Helvetica,sans-Serif" font-size="10.00">Tool()</text>
 <text text-anchor="start" x="1752" y="-812" font-family="Helvetica,sans-Serif" font-size="10.00">+ measurePointsEvaluationTool()</text>
-<text text-anchor="start" x="1752" y="-801" font-family="Helvetica,sans-Serif" font-size="10.00">and 23 more...</text>
+<text text-anchor="start" x="1752" y="-801" font-family="Helvetica,sans-Serif" font-size="10.00">and 27 more...</text>
 </a>
 </g>
 </g>
@@ -573,12 +573,12 @@
 <polyline fill="none" stroke="black" points="1613.5,-391 1765.5,-391 "/>
 <text text-anchor="start" x="1621.5" y="-379" font-family="Helvetica,sans-Serif" font-size="10.00">+ nDim</text>
 <polyline fill="none" stroke="black" points="1613.5,-372 1765.5,-372 "/>
-<text text-anchor="start" x="1621.5" y="-360" font-family="Helvetica,sans-Serif" font-size="10.00">+ buildBlockMatrixGraph()</text>
-<text text-anchor="start" x="1621.5" y="-349" font-family="Helvetica,sans-Serif" font-size="10.00">+ checkResults()</text>
-<text text-anchor="start" x="1621.5" y="-338" font-family="Helvetica,sans-Serif" font-size="10.00">+ exportResults()</text>
+<text text-anchor="start" x="1621.5" y="-360" font-family="Helvetica,sans-Serif" font-size="10.00">+ applyRemesh()</text>
+<text text-anchor="start" x="1621.5" y="-349" font-family="Helvetica,sans-Serif" font-size="10.00">+ buildBlockMatrixGraph()</text>
+<text text-anchor="start" x="1621.5" y="-338" font-family="Helvetica,sans-Serif" font-size="10.00">+ checkResults()</text>
 <text text-anchor="start" x="1621.5" y="-327" font-family="Helvetica,sans-Serif" font-size="10.00">+ exportResults()</text>
-<text text-anchor="start" x="1621.5" y="-316" font-family="Helvetica,sans-Serif" font-size="10.00">+ fluidModel()</text>
-<text text-anchor="start" x="1621.5" y="-305" font-family="Helvetica,sans-Serif" font-size="10.00">and 50 more...</text>
+<text text-anchor="start" x="1621.5" y="-316" font-family="Helvetica,sans-Serif" font-size="10.00">+ exportResults()</text>
+<text text-anchor="start" x="1621.5" y="-305" font-family="Helvetica,sans-Serif" font-size="10.00">and 51 more...</text>
 </a>
 </g>
 </g>

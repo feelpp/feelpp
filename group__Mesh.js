@@ -311,6 +311,11 @@ var group__Mesh =
       [ "M_markername", "classFeel_1_1MeshBase.html#af3c545665ed90d1eabf264355187ace4", null ]
     ] ],
     [ "Feel::MeshTraits< MeshType >", "structFeel_1_1MeshTraits.html", null ],
+    [ "Feel::SubFaceOf< ElementType >", "classFeel_1_1SubFaceOf.html", [
+      [ "Element", "structFeel_1_1SubFaceOf_1_1Element.html", null ],
+      [ "isGhostFace", "classFeel_1_1SubFaceOf.html#a74100e0096b22d2ea119f4d053f7a230", null ]
+    ] ],
+    [ "Feel::SubFaceOfBase", "structFeel_1_1SubFaceOfBase.html", null ],
     [ "Feel::GeoEntityContext", "group__Mesh.html#ga5df59a8b1a63f40c3c1d5a65162254d5", [
       [ "Feel::MESH_ENTITY_INTERNAL", "namespaceFeel.html#ga5df59a8b1a63f40c3c1d5a65162254d5ab58df77c4224c0712d878f278a68ffb3", null ],
       [ "Feel::MESH_ENTITY_BOUNDARY", "namespaceFeel.html#ga5df59a8b1a63f40c3c1d5a65162254d5a8cf391070355f4b58e4187176f4eccc2", null ]
@@ -323,5 +328,8 @@ var group__Mesh =
       [ "Feel::GEOMETRY_VOLUME", "namespaceFeel.html#ga8a2b0de2d64f5281612ba8d3077fbfd6a4a5fafdedda4a8b1f802bddd58dc612a", null ],
       [ "Feel::GEOMETRY_4", "namespaceFeel.html#ga8a2b0de2d64f5281612ba8d3077fbfd6a54503d8991db83b0881690920230a997", null ],
       [ "Feel::GEOMETRY_5", "namespaceFeel.html#ga8a2b0de2d64f5281612ba8d3077fbfd6ac4e0f60e28b63a4d720202b5bee0bea9", null ]
-    ] ]
+    ] ],
+    [ "Feel::idelements", "group__Mesh.html#ga11f6177c58adf8bebf116edbcae4c2d7", null ],
+    [ "Feel::remesh", "group__Mesh.html#ga6394537813e21ec32dee0d6ffd8f6ffe", null ],
+    [ "Feel::worldComm", "group__Mesh.html#gab4cf21b17bddf97ac6b13289cc329ae8", null ]
 ];

@@ -12,7 +12,15 @@ var group__ModelCore =
     [ "Feel::FeelModels::ModelBaseUpload", "structFeel_1_1FeelModels_1_1ModelBaseUpload.html", null ],
     [ "Feel::FeelModels::ModelContext< ModelFieldsType, SymbolsExprType, TrialSymbolsExprType >", "structFeel_1_1FeelModels_1_1ModelContext.html", null ],
     [ "Feel::FeelModels::ModelGenericPDE< Dim >", "classFeel_1_1FeelModels_1_1ModelGenericPDE.html", null ],
-    [ "Feel::FeelModels::ModelMesh< IndexType >", "classFeel_1_1FeelModels_1_1ModelMesh.html", null ],
+    [ "Feel::FeelModels::ModelMesh< IndexType >", "classFeel_1_1FeelModels_1_1ModelMesh.html", [
+      [ "MeshAdaptation", "structFeel_1_1FeelModels_1_1ModelMesh_1_1MeshAdaptation.html", [
+        [ "Event", "structFeel_1_1FeelModels_1_1ModelMesh_1_1MeshAdaptation_1_1Event.html", null ],
+        [ "EventAfterImport", "structFeel_1_1FeelModels_1_1ModelMesh_1_1MeshAdaptation_1_1EventAfterImport.html", null ],
+        [ "EventAfterInit", "structFeel_1_1FeelModels_1_1ModelMesh_1_1MeshAdaptation_1_1EventAfterInit.html", null ],
+        [ "EventEachTimeStep", "structFeel_1_1FeelModels_1_1ModelMesh_1_1MeshAdaptation_1_1EventEachTimeStep.html", null ]
+      ] ],
+      [ "metadata", "classFeel_1_1FeelModels_1_1ModelMesh.html#a0053d713dea2b785249a02da45612a92", null ]
+    ] ],
     [ "Feel::FeelModels::ModelMeshCommon< IndexType >", "classFeel_1_1FeelModels_1_1ModelMeshCommon.html", [
       [ "ImportConfig", "classFeel_1_1FeelModels_1_1ModelMeshCommon_1_1ImportConfig.html", null ]
     ] ],

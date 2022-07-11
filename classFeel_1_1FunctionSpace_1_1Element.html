@@ -38,7 +38,7 @@ MathJax.Hub.Config({
  <tr id="projectrow">
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign">
-   <div id="projectname">Feel++<span id="projectnumber">&#160;0.110.0-rc.1</span>
+   <div id="projectname">Feel++<span id="projectnumber">&#160;0.110.0-rc.4</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -1088,9 +1088,9 @@ template&lt;typename ... Ts&gt; </td></tr>
 template&lt;typename ... Ts&gt; </td></tr>
 <tr class="memitem:a6f6b7e9609cfed23aeaed925c8d79eba"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classbool.html">bool</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><b>load</b> (Ts &amp;&amp;... v)</td></tr>
 <tr class="separator:a6f6b7e9609cfed23aeaed925c8d79eba"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a35ce80988cfa11dbc180586965569ed4"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#a35ce80988cfa11dbc180586965569ed4">loadImpl</a> (std::string const &amp;path, std::string const &amp;<a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#a06551754ff467fb6eaff07d75a85774a">name</a>, std::string const &amp;type=&quot;binary&quot;, std::string const &amp;suffix=&quot;&quot;, std::string const &amp;sep=&quot;&quot;)</td></tr>
-<tr class="memdesc:a35ce80988cfa11dbc180586965569ed4"><td class="mdescLeft">&#160;</td><td class="mdescRight">load function space element from file  <a href="classFeel_1_1FunctionSpace_1_1Element.html#a35ce80988cfa11dbc180586965569ed4">More...</a><br /></td></tr>
-<tr class="separator:a35ce80988cfa11dbc180586965569ed4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae1934e604b9e26efe61641d102263d8d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#ae1934e604b9e26efe61641d102263d8d">loadImpl</a> (std::string const &amp;path, std::string const &amp;<a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#a06551754ff467fb6eaff07d75a85774a">name</a>, std::string const &amp;type=&quot;binary&quot;, std::string const &amp;suffix=&quot;&quot;, std::string const &amp;sep=&quot;&quot;, std::string const &amp;space_path=&quot;&quot;)</td></tr>
+<tr class="memdesc:ae1934e604b9e26efe61641d102263d8d"><td class="mdescLeft">&#160;</td><td class="mdescRight">load function space element from file  <a href="classFeel_1_1FunctionSpace_1_1Element.html#ae1934e604b9e26efe61641d102263d8d">More...</a><br /></td></tr>
+<tr class="separator:ae1934e604b9e26efe61641d102263d8d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a35889833963d6a1037a21b96c5dd0e04"><td class="memItemLeft" align="right" valign="top"><a id="a35889833963d6a1037a21b96c5dd0e04" name="a35889833963d6a1037a21b96c5dd0e04"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>printMatlab</b> (std::string fname, <a class="el" href="classbool.html">bool</a> gmsh=false) const override</td></tr>
 <tr class="separator:a35889833963d6a1037a21b96c5dd0e04"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1611,8 +1611,8 @@ template&lt;typename ContextType &gt; </div>
 
 </div>
 </div>
-<a id="a35ce80988cfa11dbc180586965569ed4" name="a35ce80988cfa11dbc180586965569ed4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a35ce80988cfa11dbc180586965569ed4">&#9670;&nbsp;</a></span>loadImpl()</h2>
+<a id="ae1934e604b9e26efe61641d102263d8d" name="ae1934e604b9e26efe61641d102263d8d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae1934e604b9e26efe61641d102263d8d">&#9670;&nbsp;</a></span>loadImpl()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1649,7 +1649,13 @@ template&lt;typename T  = double, typename Cont  = VectorUblas&lt;T&gt;&gt; </di
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">std::string const &amp;&#160;</td>
-          <td class="paramname"><em>sep</em> = <code>&quot;&quot;</code>&#160;</td>
+          <td class="paramname"><em>sep</em> = <code>&quot;&quot;</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::string const &amp;&#160;</td>
+          <td class="paramname"><em>space_path</em> = <code>&quot;&quot;</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -1666,6 +1672,7 @@ template&lt;typename T  = double, typename Cont  = VectorUblas&lt;T&gt;&gt; </di
     <tr><td class="paramname">type</td><td>file type binary, ascii, hdf5, xml </td></tr>
     <tr><td class="paramname">suffix</td><td>filename suffix to use </td></tr>
     <tr><td class="paramname">sep</td><td>separator to use in filename </td></tr>
+    <tr><td class="paramname">space_path</td><td>path to space file related to input file path </td></tr>
   </table>
   </dd>
 </dl>

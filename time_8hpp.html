@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.3"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Feel++: /nvme0/prudhomm/actions-runner/_work/feelpp/feelpp/feelpp/feel/feelvf/time.hpp File Reference</title>
+<title>Feel++: /nvme0/prudhomm/actions-runner-3/_work/feelpp/feelpp/feelpp/feel/feelvf/time.hpp File Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -38,7 +38,7 @@ MathJax.Hub.Config({
  <tr id="projectrow">
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign">
-   <div id="projectname">Feel++<span id="projectnumber">&#160;0.110.0-rc.1</span>
+   <div id="projectname">Feel++<span id="projectnumber">&#160;0.110.0-rc.4</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -173,7 +173,7 @@ template&lt;typename ExprT &gt; </div>
 <p >The following code times the intermediary results of the evaluation of \(\int_\Omega x y\)</p>
 <div class="fragment"><div class="line"><span class="keyword">auto</span> e = Px()*Py();</div>
 <div class="line">std::cout &lt;&lt; integrate( _range=<a class="code hl_function" href="namespaceFeel.html#abdab447afcf746e7e621c56c1d6dc06b">elements</a>(mesh), _expr=<a class="code hl_function" href="time_8hpp.html#aa4e352ae47fbd22d9e9f2f3dd7e1c872">time</a>(e,<span class="stringliteral">&quot;e=&quot;</span>) ).evaluate();</div>
-<div class="ttc" id="anamespaceFeel_html_abdab447afcf746e7e621c56c1d6dc06b"><div class="ttname"><a href="namespaceFeel.html#abdab447afcf746e7e621c56c1d6dc06b">Feel::elements</a></div><div class="ttdeci">elements_pid_t&lt; MeshType &gt; elements(MeshType const &amp;mesh)</div><div class="ttdef"><b>Definition:</b> filters.hpp:63</div></div>
+<div class="ttc" id="anamespaceFeel_html_abdab447afcf746e7e621c56c1d6dc06b"><div class="ttname"><a href="namespaceFeel.html#abdab447afcf746e7e621c56c1d6dc06b">Feel::elements</a></div><div class="ttdeci">elements_pid_t&lt; MeshType &gt; elements(MeshType const &amp;mesh)</div><div class="ttdef"><b>Definition:</b> filters.hpp:122</div></div>
 <div class="ttc" id="atime_8hpp_html_aa4e352ae47fbd22d9e9f2f3dd7e1c872"><div class="ttname"><a href="time_8hpp.html#aa4e352ae47fbd22d9e9f2f3dd7e1c872">Feel::vf::time</a></div><div class="ttdeci">Expr&lt; TimeExpr&lt; ExprT &gt; &gt; time(ExprT v, std::string t=&quot;&quot;)</div><div class="ttdoc">time an expression during evaluation.</div><div class="ttdef"><b>Definition:</b> time.hpp:274</div></div>
 </div><!-- fragment --><dl class="section return"><dt>Returns</dt><dd>the expression that was timeed. </dd></dl>
 

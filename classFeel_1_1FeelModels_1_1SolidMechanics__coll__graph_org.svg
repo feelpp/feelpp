@@ -52,7 +52,7 @@
 <text text-anchor="start" x="78.16" y="-212.5" font-family="Helvetica,sans-Serif" font-size="10.00">AllNamesAvailable()</text>
 <text text-anchor="start" x="78.16" y="-201.5" font-family="Helvetica,sans-Serif" font-size="10.00"># initPostProcess()</text>
 <text text-anchor="start" x="78.16" y="-190.5" font-family="Helvetica,sans-Serif" font-size="10.00"># initPostProcessMeshes()</text>
-<text text-anchor="start" x="78.16" y="-179.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 10 more...</text>
+<text text-anchor="start" x="78.16" y="-179.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 9 more...</text>
 </a>
 </g>
 </g>
@@ -76,7 +76,7 @@
 <text text-anchor="start" x="47.66" y="-708.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ clovm()</text>
 <text text-anchor="start" x="47.66" y="-697.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ createWorldsComm()</text>
 <text text-anchor="start" x="47.66" y="-686.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ hasModelProperties()</text>
-<text text-anchor="start" x="47.66" y="-675.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 53 more...</text>
+<text text-anchor="start" x="47.66" y="-675.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 54 more...</text>
 </a>
 </g>
 </g>
@@ -126,7 +126,7 @@
 <text text-anchor="start" x="231.66" y="-471.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ initMeasurePointsEvaluation</text>
 <text text-anchor="start" x="231.66" y="-460.5" font-family="Helvetica,sans-Serif" font-size="10.00">Tool()</text>
 <text text-anchor="start" x="231.66" y="-449.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ measurePointsEvaluationTool()</text>
-<text text-anchor="start" x="231.66" y="-438.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 23 more...</text>
+<text text-anchor="start" x="231.66" y="-438.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 27 more...</text>
 </a>
 </g>
 </g>

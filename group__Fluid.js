@@ -92,8 +92,8 @@ var group__Fluid =
       [ "updateElasticVelocityWithRotation", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a8f36d61ff85979a4178036813657c689", null ]
     ] ],
     [ "Feel::FeelModels::FluidMechanics< ConvexType, BasisVelocityType, BasisPressureType >::BodySetBoundaryCondition", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodySetBoundaryCondition.html", null ],
-    [ "Feel::RemeshInterpolation", "classFeel_1_1RemeshInterpolation.html", [
-      [ "registeringBlockIndex", "classFeel_1_1RemeshInterpolation.html#aafe0e6e998590101785b75d74a8b9cc4", null ],
-      [ "registeringBlockIndex", "classFeel_1_1RemeshInterpolation.html#a038e6de57d3b65de5aecd5c06b01912b", null ]
+    [ "Feel::FeelModels::RemeshInterpolation", "classFeel_1_1FeelModels_1_1RemeshInterpolation.html", [
+      [ "registeringBlockIndex", "classFeel_1_1FeelModels_1_1RemeshInterpolation.html#a802d246005158665c921962b559118f6", null ],
+      [ "registeringBlockIndex", "classFeel_1_1FeelModels_1_1RemeshInterpolation.html#ad9e5d48b390cf549ca10dbafd6d7f217", null ]
     ] ]
 ];

@@ -18,5 +18,5 @@ var ginac_8hpp =
     [ "expr", "ginac_8hpp.html#a90c402c8bcf7add7bce683bed91f2dbc", null ],
     [ "expr", "ginac_8hpp.html#a6dc26bf80edac7042e98db12bbc9a423", null ],
     [ "toNumericValues", "ginac_8hpp.html#a3742a50c1149140a912a9ebdceb4bf2e", null ],
-    [ "totalDegree", "ginac_8hpp.html#a67b1d63a39ae93b210f13df93cf00ce2", null ]
+    [ "totalDegree", "ginac_8hpp.html#af8a315906328b512bd3e6fc14799e606", null ]
 ];
