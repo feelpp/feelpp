@@ -7,7 +7,7 @@
 
  Copyright (C) 2008-2012 Universite Joseph Fourier (Grenoble I)
  Copyright (C) 2011-present Feel++ Consortium
- 
+
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
  License as published by the Free Software Foundation; either
@@ -378,7 +378,7 @@ public :
 
                     if ( std::is_same_v<TheDataType,nl::json> )
                     {
-                        std::ifstream ifs( fullFilePath );
+                        std::ifstream ifs( fullFilePath.string() );
                         M_data = nl::json::parse(ifs);
                     }
                     else if ( std::is_same_v<TheDataType,fs::path> )
