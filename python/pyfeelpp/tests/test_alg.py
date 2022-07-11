@@ -33,9 +33,10 @@ def test_alg(init_feelpp):
         # scalar product with itself
         d=w.dot(w)
         assert(abs(d) == w.getSize())
-   
+ 
 
-def test_backend_vector():
+def test_backend_vector(init_feelpp):
+    e = init_feelpp
     feelpp.Environment.changeRepository(
         directory="pyfeelpp-tests/alg/test_vector")
     wc = feelpp.Environment.worldCommPtr()
@@ -46,7 +47,8 @@ def test_backend_vector():
         assert(v.size()==10)
 
 
-def test_backend_matrix():
+def test_backend_matrix(init_feelpp):
+    e = init_feelpp
     feelpp.Environment.changeRepository(
         directory="pyfeelpp-tests/alg/test_backend_matrix")
     wc = feelpp.Environment.worldCommPtr()
