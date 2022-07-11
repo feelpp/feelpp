@@ -19,12 +19,12 @@ wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc  | apt-key add
 wget -O - http://apt.feelpp.org/apt.gpg | apt-key add -
 
 echo "--- add-apt-repository  "
+add-apt-repository  'deb [trusted=yes] http://apt.feelpp.org/$FLAVOR/$DIST $DIST $CHANNEL'
 if test ! "$DIST" = "bullseye"; then
-    add-apt-repository  'deb [trusted=yes] http://apt.feelpp.org/$FLAVOR/$DIST $DIST $CHANNEL'
     add-apt-repository  'deb https://apt.kitware.com/$FLAVOR/ $DIST main'
 fi
 if [ "$DIST" = "bullseye" ]; then
-add-apt-repository  'deb http://deb.debian.org/debian $DIST-backports main'
+    add-apt-repository  'deb http://deb.debian.org/debian $DIST-backports main'
 fi
 
 echo "--- apt update"
