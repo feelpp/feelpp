@@ -13,6 +13,7 @@ chrpath
 libcurl4-openssl-dev
 libboost-all-dev
 libcln-dev
+libeigen3-dev
 petsc-dev
 slepc-dev
 python3-petsc4py-real
