@@ -1,4 +1,3 @@
-
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*-
 
  This file is part of the Feel++ library
@@ -24,8 +23,10 @@
  */
 
 #include <boost/preprocessor/cat.hpp>
+#if defined( FEELPP_HAS_MMG ) && defined( FEELPP_HAS_PARMMG )
 #include <mmg/libmmg.h>
 #include <parmmg/libparmmg.h>
+#endif
 #include <variant>
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/environment.hpp>
@@ -54,6 +55,8 @@ remesh_options( std::string const& prefix )
     // clang-format on
     return mmgoptions;
 }
+
+#if defined( FEELPP_HAS_MMG ) && defined( FEELPP_HAS_PARMMG )
 
 template<int topoDim, int realDim>
 void setMMGOptions( nl::json const& params, std::variant<MMG5_pMesh, PMMG_pParMesh> mesh_, MMG5_pSol sol )
@@ -92,7 +95,7 @@ void setMMGOptions( nl::json const& params, std::variant<MMG5_pMesh, PMMG_pParMe
         }
         else if constexpr ( topoDim == 2 && realDim == 3 )
         {
-#if 0            
+#if 0
             if ( countoption( prefixvm(prefix,"remesh.verbose") ) )
                 MMGS_Set_iparameter( mesh, sol, MMGS_IPARAM_verbose, ioption( prefixvm(prefix,"remesh.verbose") ) ); /*!< [-1..10], Tune level of verbosity */
             if ( countoption(  prefixvm(prefix,"remesh.debug" )) )
@@ -103,7 +106,7 @@ void setMMGOptions( nl::json const& params, std::variant<MMG5_pMesh, PMMG_pParMe
                 MMGS_Set_dparameter( mesh, sol, MMGS_DPARAM_hmax, doption( _name = "remesh.hmax", _prefix = prefix ) );
             if ( Environment::vm().count( prefixvm( prefix, "remesh.hsiz" ) ) )
                 MMGS_Set_dparameter( mesh, sol, MMGS_DPARAM_hsiz, doption( _name = "remesh.hsiz", _prefix = prefix ) );
-#endif                
+#endif
         }
         else if constexpr ( topoDim == 2 && realDim == 2 )
         {
@@ -132,10 +135,11 @@ void setMMGOptions( nl::json const& params, std::variant<MMG5_pMesh, PMMG_pParMe
                 MMG2D_Set_dparameter( mesh, sol, MMG2D_DPARAM_hausd, params["/remesh/hausd"_json_pointer].get<double>() );
         }
     }
-        
+
 }
 
 template void setMMGOptions<2,2>( nl::json const& j, std::variant<MMG5_pMesh, PMMG_pParMesh> mesh, MMG5_pSol sol );
 template void setMMGOptions<2,3>( nl::json const& j, std::variant<MMG5_pMesh,  PMMG_pParMesh> mesh, MMG5_pSol sol );
 template void setMMGOptions<3,3>( nl::json const& j, std::variant<MMG5_pMesh, PMMG_pParMesh> mesh, MMG5_pSol sol );
+#endif
 }
