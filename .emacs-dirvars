@@ -9,7 +9,9 @@
          (eval . ( (c-set-offset 'innamespace '0) ))
          (show-trailing-whitespace . t)
          (indicate-empty-lines . t)
-;;         (eval . (add-hook 'write-file-hooks 'delete-trailing-whitespace) )
-         (fill-column . 80))))
- 
+         ;;         (eval . (add-hook 'write-file-hooks 'delete-trailing-whitespace) )
+         (whitespace-line-column . 400)
+         ;; (fill-column . 80)
+         )))
+
 debian-changelog-mailing-address: "christophe.prudhomme@feelpp.org"
