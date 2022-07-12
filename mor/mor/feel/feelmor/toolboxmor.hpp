@@ -15,7 +15,7 @@ namespace po = boost::program_options;
 FEELPP_EXPORT po::options_description
 makeToolboxMorOptions();
 FEELPP_EXPORT AboutData
-makeToolboxMorAbout( std::string const& str = "opusheat-tb" );
+makeToolboxMorAbout( std::string const& str = "toolboxmor_app" );
 
 /**
  * @brief Model for ToolboxMor
