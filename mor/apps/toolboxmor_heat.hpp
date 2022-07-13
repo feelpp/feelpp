@@ -1,7 +1,7 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4*/
 
-#ifndef FEELPP_MOR_TOOLBOXMOR_PLUGIN_HPP
-#define FEELPP_MOR_TOOLBOXMOR_PLUGIN_HPP
+#ifndef FEELPP_MOR_TOOLBOXMOR_HEAT_HPP
+#define FEELPP_MOR_TOOLBOXMOR_HEAT_HPP
 
 #include <feel/feelmor/toolboxmor.hpp>
 
@@ -9,15 +9,15 @@ namespace Feel
 {
 
 template<typename ToolboxType, int Options = 0>
-class FEELPP_EXPORT ToolboxMorPlugin : public ToolboxMor<typename ToolboxType::space_temperature_type,Options>
+class FEELPP_EXPORT ToolboxMorHeat : public ToolboxMor<typename ToolboxType::space_temperature_type,Options>
 {
     using super_type = ToolboxMor<typename ToolboxType::space_temperature_type,Options>;
-    using self_type = ToolboxMorPlugin<ToolboxType,Options>;
+    using self_type = ToolboxMorHeat<ToolboxType,Options>;
   public:
     using toolbox_type = ToolboxType;
     using toolbox_ptrtype = std::shared_ptr<ToolboxType>;
 
-    explicit ToolboxMorPlugin( std::string const& name = "ToolboxMor"/*"ToolboxMorHeat"*/, std::string const& prefix = "" );
+    explicit ToolboxMorHeat( std::string const& name = "ToolboxMor"/*"ToolboxMorHeat"*/, std::string const& prefix = "" );
 
     void initOffline( toolbox_ptrtype toolbox );
     void initOnline();
