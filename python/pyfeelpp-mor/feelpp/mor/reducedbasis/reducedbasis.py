@@ -236,7 +236,8 @@ class reducedbasis():
         Args:
             mu (ParameterSpaceElement): parameter
             ks (list): list containing the indexes of the outputs to be computed
-            beta (list, optional): coefficients of the decomposition, if they have already been computed. Defaults to None.
+            beta (list, optional): coefficients of the decomposition, if they have already been computed.\
+                Defaults to None.
             size (int, optional): Size of the subbasis wanted. Defaults to None.
 
         Returns:
@@ -289,7 +290,8 @@ class reducedbasis():
 
         Args:
             mu (ParameterSpaceElement): parameter
-            precalc (dict, optional): Dict containing the values of betaA, betaF and uN if these values have already been calculated. Defaults to None.\
+            precalc (dict, optional): Dict containing the values of betaA, betaF and uN if these values have already\
+                been calculated. Defaults to None.\
                 If None is given, the quantities are calculated in the function
 
         Returns:
@@ -340,7 +342,8 @@ class reducedbasis():
 
         Args:
             mu (ParameterSpaceElement): parameter
-            precalc (dict, optional): Dict containing the values of betaA, betaF and uN if these values have already been calculated. Defaults to None.\
+            precalc (dict, optional): Dict containing the values of betaA, betaF and uN if these values have already\
+                been calculated. Defaults to None.\
                 If None is given, the quantities are calculated in the function
             size (int, optional): size of the sub-basis considered
 
@@ -359,7 +362,8 @@ class reducedbasis():
 
         Args:
             mu (ParameterSpaceElement): parameter
-            precalc (dict, optional): Dict containing the values of betaA, betaF and uN if these values have already been calculated. Defaults to None.\
+            precalc (dict, optional): Dict containing the values of betaA, betaF and uN if these values have already\
+                been calculated. Defaults to None.\
                 If None is given, the quantities are calculated in the function
             size (int, optional): size of the sub-basis considered
 
@@ -379,7 +383,8 @@ class reducedbasis():
                                                                     ^^^^^^^^^^
         Args:
             mu (ParameterSpaceElement): parameter
-            precalc (dict, optional): Dict containing the values of betaA, betaF and uN if these values have already been calculated. Defaults to None.\
+            precalc (dict, optional): Dict containing the values of betaA, betaF and uN if these values have already\
+                been calculated. Defaults to None.\
                 If None is given, the quantities are calculated in the function
 
         Return:
@@ -413,9 +418,9 @@ class reducedbasis():
             if self.worldComm.isMasterRank():
                 os.makedirs(path, exist_ok=True)
 
-        jsonPath = f"{os.getcwd()}/reducedbasis.json"
+        jsonPath = f"{path}/reducedbasis.json"
         if self.worldComm.isMasterRank():
-            print(f"[reducedbasis] saving reduced basis to {jsonPath}...", end=" ")
+            print(f"[reducedbasis] saving reducedbasis.json to {jsonPath} ...", end=" ")
 
 
         if self.worldComm.isMasterRank():
@@ -431,7 +436,7 @@ class reducedbasis():
             content["mubar"] = dict_mubar
 
 
-            f = open('reducedbasis.json', 'w')
+            f = open(f'{path}/reducedbasis.json', 'w')
             json.dump(content, f, indent = 4)
             f.close()
             
@@ -503,14 +508,20 @@ class reducedbasis():
         self.LL = h5f["LL"][:]
 
         try:
-            assert self.ANq.shape == (self.Qa, self.N, self.N), f"Wrong shape for ANq (excepted {(self.Qa, self.N, self.N)}, got {self.ANq.shape}"
-            assert self.FNp.shape == (self.Qf, self.N), f"Wrong shape for FNp (excepted {(self.Qf, self.N)}, got {self.FNp.shape}"
+            assert self.ANq.shape == (self.Qa, self.N, self.N),\
+                    f"Wrong shape for ANq (excepted {(self.Qa, self.N, self.N)}, got {self.ANq.shape}"
+            assert self.FNp.shape == (self.Qf, self.N),\
+                    f"Wrong shape for FNp (excepted {(self.Qf, self.N)}, got {self.FNp.shape}"
             for k in range(self.N_output):
-                assert self.LkNp[k].shape == (self.QLk[k], self.N), f"Wrong shape for L{k}Np (excepted {(self.QLk[k], self.N)}, got {self.LkNp[k].shape}"
+                assert self.LkNp[k].shape == (self.QLk[k], self.N),\
+                    f"Wrong shape for L{k}Np (excepted {(self.QLk[k], self.N)}, got {self.LkNp[k].shape}"
 
-            assert self.SS.shape == (self.Qf, self.Qf), f"Wrong shape for SS (excepted {(self.Qf, self.Qf)}, got {self.SS.shape}"
-            assert self.SL.shape == (self.Qa, self.Qf, self.N), f"Wrong shape for SL (excepted {(self.Qa, self.Qf, self.N)}, got {self.SL.shape}"
-            assert self.LL.shape == (self.Qa, self.N, self.Qa, self.N), f"Wrong shape for LL (excepted {(self.Qa, self.N, self.Qa, self.N)}, got {self.LL.shape}"
+            assert self.SS.shape == (self.Qf, self.Qf),\
+                    f"Wrong shape for SS (excepted {(self.Qf, self.Qf)}, got {self.SS.shape}"
+            assert self.SL.shape == (self.Qa, self.Qf, self.N),\
+                    f"Wrong shape for SL (excepted {(self.Qa, self.Qf, self.N)}, got {self.SL.shape}"
+            assert self.LL.shape == (self.Qa, self.N, self.Qa, self.N),\
+                    f"Wrong shape for LL (excepted {(self.Qa, self.N, self.Qa, self.N)}, got {self.LL.shape}"
         except AssertionError as e:
             print(f"[reduced basis] [{self.worldComm.localRank()}] Something went wrong when loading {path} : {e}")
 
@@ -524,7 +535,7 @@ class reducedbasis():
 
         use_dual_norm = j['use_dual_norm']
 
-        if use_dual_norm:
+        if not use_dual_norm:
 
             def alphaLB(mu):
                 # From a parameter
