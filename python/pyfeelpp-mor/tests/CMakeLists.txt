@@ -59,3 +59,22 @@ foreach (test 2d 3d)
             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
       )
 endforeach()
+
+# test_eim
+foreach( test 2d 3d )
+      add_test (NAME feelpp_mor_python-tests-eim-${test}
+            COMMAND ${CMAKE_COMMAND} -E env
+            LD_LIBRARY_PATH=${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}:$ENV{LD_LIBRARY_PATH}
+            PYTHONPATH=${CMAKE_INSTALL_PREFIX}/${FEELPP_PYTHON_MODULE_PATH}
+            ${PYTHON_EXECUTABLE} -m pytest test_eim.py -s -vv -k ${test}
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+      )
+
+      add_test (NAME feelpp_mor_python-tests-mpi-eim-${test}
+            COMMAND ${CMAKE_COMMAND} -E env
+            LD_LIBRARY_PATH=${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}:$ENV{LD_LIBRARY_PATH}
+            PYTHONPATH=${CMAKE_INSTALL_PREFIX}/${FEELPP_PYTHON_MODULE_PATH}
+            mpirun -np 2 ${PYTHON_EXECUTABLE} -m pytest test_eim.py -s -vv -k ${test}
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+      )
+endforeach()
