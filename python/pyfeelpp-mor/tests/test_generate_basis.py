@@ -27,8 +27,9 @@ def test_compute_basis_sample(prefix, case, casefile, dim, time_dependent, init_
     casefile = casefile
     config_file = CWD + "/" + prefix + "/" + case + "/" + casefile
     odir = "crbdb/$name/sample"
+    use_dual_norm = True
 
-    config = g.generateBasisConfig(dim, config_file, time_dependant, odir, case, algo, size)
+    config = g.generateBasisConfig(dim, config_file, time_dependant, odir, case, algo, size, use_dual_norm)
 
     # compute and save the basis
     g.generate_basis(config=config)
@@ -48,8 +49,9 @@ def test_compute_basis_greedy(prefix, case, casefile, dim, time_dependent, init_
     config_file = CWD + "/" + prefix + "/" + case + "/" + casefile
     odir = "crbdb/$name/greedy"
     tol = 1e-3
+    use_dual_norm = True
 
-    config = g.generateBasisConfig(dim, config_file, time_dependant, odir, case, algo, size, tol)
+    config = g.generateBasisConfig(dim, config_file, time_dependant, odir, case, algo, size, tol, use_dual_norm)
 
     # compute and save the basis
     g.generate_basis(config=config)
@@ -69,8 +71,9 @@ def test_compute_basis_POD(prefix, case, casefile, dim, time_dependent, init_fee
     config_file = CWD + "/" + prefix + "/" + case + "/" + casefile
     odir = "crbdb/$name/POD"
     tol = 1e-3
+    use_dual_norm = True
 
-    config = g.generateBasisConfig(dim, config_file, time_dependant, odir, case, algo, size, tol)
+    config = g.generateBasisConfig(dim, config_file, time_dependant, odir, case, algo, size, tol, use_dual_norm)
 
 
     # compute and save the basis

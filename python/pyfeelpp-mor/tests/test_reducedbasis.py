@@ -1,7 +1,7 @@
 import shutil, os
 import pytest
 import time
-import json5 as json
+import json5
 
 
 from mpi4py import MPI
@@ -19,36 +19,21 @@ import feelpp
 # when reducedOffline is loaded, reducedbasis is automatically loaded
 from feelpp.mor.reducedbasis.reducedbasisOffline import *
 
-#        (( prefix, case, casefile, dim, use_cache, time_dependant), name     )
+#        (( prefix, case, casefile, dim, time_dependant), name     )
 cases = [
-         (('testcase', 'square/2d', 'testcase2d.cfg', 2, False, False), 'testcase-2d'),
-         (('testcase', 'square/3d', 'testcase3d.cfg', 3, False, False), 'testcase-3d'),
-         (('testcase', 'thermal-fin/2d', 'thermal-fin.cfg', 2, False, False), 'thermal-fin-2d'),
-         (('testcase', 'thermal-fin/2d', 'thermal-fin.cfg', 2, True, False), 'thermal-fin-2d-cached'),
-         (('testcase', 'thermal-fin/3d', 'thermal-fin.cfg', 3, False, False), 'thermal-fin-3d'),
-         (('testcase', 'thermal-fin/3d', 'thermal-fin.cfg', 3, True, False), 'thermal-fin-3d-cached')
+         (('testcase', 'square/2d', 'testcase2d.cfg', 2, False), 'testcase-2d'),
+         (('testcase', 'square/3d', 'testcase3d.cfg', 3, False), 'testcase-3d'),
+         (('testcase', 'thermal-fin/2d', 'thermal-fin.cfg', 2, False), 'thermal-fin-2d'),
+         (('testcase', 'thermal-fin/3d', 'thermal-fin.cfg', 3, False), 'thermal-fin-3d'),
         ]
 cases_params, cases_ids = list(zip(*cases))
 
 
 
-def init_toolbox(prefix, case, casefile, dim, use_cache):
+def init_toolbox(prefix, case, casefile, dim):
 
-    if not use_cache:
-        print('removing cache...')
-        name = case.replace("/","-") + "-np_" +  str(feelpp.Environment.numberOfProcessors())
-        # try:
-        #     shutil.rmtree(feelpp.Environment.rootRepository() + '/pyfeelppmor-tests')
-        # except FileNotFoundError:
-        #     print(f"Deletion of {feelpp.Environment.rootRepository()}/pyfeelppmor-tests did not succeded : Directory doesn't exist")
-        try:
-            shutil.rmtree(feelpp.Environment.rootRepository() + "/crbdb/" + name)
-        except FileNotFoundError:
-            print(f"Deletion of {feelpp.Environment.rootRepository()}/crbdb/{name} did not succeded : Directory doesn't exist")
 
-    print("Current working directory is",  os.getcwd())
     feelpp.Environment.setConfigFile(f'{prefix}/{case}/{casefile}')
-    feelpp.Environment.changeRepository(directory=f'{prefix}/{case}')
 
     heatBox = heat(dim=dim, order=1)
     heatBox.init()
@@ -57,8 +42,8 @@ def init_toolbox(prefix, case, casefile, dim, use_cache):
 
 
 
-def init_model(prefix, case, casefile, dim, use_cache, time_dependent):
-    heatBox, dim = init_toolbox(prefix, case, casefile, dim, use_cache)
+def init_model(prefix, case, casefile, dim, time_dependent):
+    heatBox, dim = init_toolbox(prefix, case, casefile, dim)
     name = case.replace("/","-") + "-np_" +  str(feelpp.Environment.numberOfProcessors())
     model = toolboxmor(name=name, dim=dim, time_dependent=time_dependent)
 
@@ -94,7 +79,7 @@ def init_model(prefix, case, casefile, dim, use_cache, time_dependent):
     mubar.setParameters(default_parameter)
 
     f = open(model_path.replace("$cfgdir", feelpp.Environment.expand("$cfgdir")), "r")
-    j = json.load(f)
+    j = json5.load(f)
     f.close()
     try:
         j.pop('PostProcess')
@@ -143,8 +128,8 @@ def init_model(prefix, case, casefile, dim, use_cache, time_dependent):
     return heatBox, model, time_dependent, mubar, assembleMDEIM, assembleDEIM, output_names
 
 
-def init_environment(prefix, case, casefile, dim, use_cache, time_dependent):
-    heatBox, model, time_dependent, mubar, assembleMDEIM, assembleDEIM, output_names = init_model(prefix, case, casefile, dim, use_cache, time_dependent)
+def init_environment(prefix, case, casefile, dim, time_dependent):
+    heatBox, model, time_dependent, mubar, assembleMDEIM, assembleDEIM, output_names = init_model(prefix, case, casefile, dim, time_dependent)
 
     decomposition = model.getAffineDecomposition()
     assert len(decomposition) == [2,3][time_dependent]
@@ -306,11 +291,11 @@ def save_and_load(rb):
 
 
 
-@pytest.mark.parametrize("prefix,case,casefile,dim,use_cache,time_dependent", cases_params, ids=cases_ids)
-def test_reducedbasis_sample(prefix, case, casefile, dim, use_cache, time_dependent, init_feelpp):
+@pytest.mark.parametrize("prefix,case,casefile,dim,time_dependent", cases_params, ids=cases_ids)
+def test_reducedbasis_sample(prefix, case, casefile, dim, time_dependent, init_feelpp):
     e = init_feelpp    
     heatBox, model, decomposition, mubar, assembleMDEIM, assembleDEIM, output_names = \
-        init_environment(prefix, case, casefile, dim, use_cache, time_dependent)
+        init_environment(prefix, case, casefile, dim, time_dependent)
 
     Aq = decomposition[0]
     Fq_ = decomposition[1]
@@ -371,11 +356,11 @@ def test_reducedbasis_sample(prefix, case, casefile, dim, use_cache, time_depend
 
 
 
-@pytest.mark.parametrize("prefix,case,casefile,dim,use_cache,time_dependent", cases_params, ids=cases_ids)
-def test_reducedbasis_greedy(prefix, case, casefile, dim, use_cache, time_dependent, init_feelpp):
+@pytest.mark.parametrize("prefix,case,casefile,dim,time_dependent", cases_params, ids=cases_ids)
+def test_reducedbasis_greedy(prefix, case, casefile, dim, time_dependent, init_feelpp):
     e = init_feelpp
     heatBox, model, decomposition, mubar, assembleMDEIM, assembleDEIM, output_names = \
-        init_environment(prefix, case, casefile, dim, use_cache, time_dependent)
+        init_environment(prefix, case, casefile, dim, time_dependent)
 
     Aq = decomposition[0]
     Fq_ = decomposition[1]
@@ -428,11 +413,11 @@ def test_reducedbasis_greedy(prefix, case, casefile, dim, use_cache, time_depend
 
 
 
-@pytest.mark.parametrize("prefix,case,casefile,dim,use_cache,time_dependent", cases_params, ids=cases_ids)
-def test_reducedbasis_pod(prefix, case, casefile, dim, use_cache, time_dependent, init_feelpp):
+@pytest.mark.parametrize("prefix,case,casefile,dim,time_dependent", cases_params, ids=cases_ids)
+def test_reducedbasis_pod(prefix, case, casefile, dim, time_dependent, init_feelpp):
     e = init_feelpp    
     heatBox, model, decomposition, mubar, assembleMDEIM, assembleDEIM, output_names = \
-        init_environment(prefix, case, casefile, dim, use_cache, time_dependent)
+        init_environment(prefix, case, casefile, dim, time_dependent)
 
     Aq = decomposition[0]
     Fq_ = decomposition[1]
