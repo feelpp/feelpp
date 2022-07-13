@@ -414,6 +414,19 @@ public:
             for ( double t=timeInitial();t<=(timeFinal()+1e-9);t+=timeStep() )
                 ++M_numberOfTimeStep;
         }
+
+
+
+        if ( countoption( _name="crb.copy-files-inside-db.path",_prefix=this->prefix() ) > 0 )
+        {
+            int cpt = 0;
+            for ( std::string const& filepathstr : vsoption( _name="crb.copy-files-inside-db.path",_prefix=this->prefix() ) )
+            {
+                auto filepath = fs::path( Environment::expand(filepathstr) );
+                M_model->addModelData( fmt::format("copy_files_inside_db_{}",cpt++), filepath );
+            }
+        }
+
     }
 
     //@}
