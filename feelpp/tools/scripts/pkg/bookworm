@@ -2,7 +2,6 @@ quilt
 debhelper
 cmake
 clang
-llvm-13-linker-tools
 dh-python
 python3
 python3-dev
@@ -18,8 +17,8 @@ petsc-dev
 slepc-dev
 python3-petsc4py-real
 python3-slepc4py-real
-python3-petsc4py-real3.15
-python3-slepc4py-real3.15
+python3-petsc4py-real3.16
+python3-slepc4py-real3.16
 libhdf5-openmpi-dev
 libnlopt-dev
 libgsl-dev

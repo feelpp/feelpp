@@ -7,7 +7,7 @@
 
   Copyright (C) 2007-2012 Université Joseph Fourier (Grenoble I)
   Copyright (C) 2011-present Feel++ Consortium
-  
+
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
   License as published by the Free Software Foundation; either
@@ -270,7 +270,7 @@ Backend<T,SizeT>::build( BackendType bt, std::string const& prefix, worldcomm_pt
 }
 
 template<>
-inline void 
+inline void
 Backend<double>::attachPreconditioner()
 {
     auto p = Feel::preconditioner( _prefix=this->prefix(),
@@ -390,7 +390,7 @@ Backend<T,SizeT>::nlSolve( sparse_matrix_ptrtype& A,
 
         // configure reusePC,reuseJac in non linear solver
         int typeReusePrec = 1,typeReuseJac = 1 ;
-#if FEELPP_HAS_PETSC 
+#if FEELPP_HAS_PETSC
 #if PETSC_VERSION_LESS_THAN(3,5,0)
         // if first time or rebuild prec at first newton step, need to get matStructInitial
         if ( reusePC && (!M_reusePrecIsBuild || M_reusePrecRebuildAtFirstNewtonStep) )
@@ -774,7 +774,7 @@ void updateBackendKSPOptions( po::options_description & _options, std::string co
         ( prefixvm( prefix,kspctx+"ksp-use-initial-guess-nonzero" ).c_str(),
           (useDefaultValue)?Feel::po::value<bool>()->default_value( false ):Feel::po::value<bool>(),
           "tells the iterative solver that the initial guess is nonzero" )
-        
+
         // Default value : "" let the default behavior
 #if FEELPP_HAS_PETSC
         ( prefixvm( prefix,kspctx+"ksp-norm-type" ).c_str(),
@@ -966,8 +966,8 @@ po::options_description backend_options( std::string const& prefix )
         ( prefixvm( prefix,"pc-factor-shift-type" ).c_str(),
           Feel::po::value<std::string>()->default_value( "none" ),
           "adds a particular type of quantity to the diagonal of the matrix during numerical factorization, thus the matrix has nonzero pivots (none, nonzero, positive_definite, inblocks)" )
-#if FEELPP_HAS_PETSC
-#if defined(FEELPP_HAS_MUMPS) && PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,2,0 )
+#if defined(FEELPP_HAS_PETSC)
+#if defined(PETSC_HAVE_MUMPS)
         ( prefixvm( prefix,"pc-factor-mat-solver-package-type" ).c_str(),
           Feel::po::value<std::string>()->default_value( "mumps" ),
           "sets the software that is used to perform the factorization (petsc,umfpack, spooles, petsc, superlu, superlu_dist, mumps,...)" )
@@ -978,7 +978,7 @@ po::options_description backend_options( std::string const& prefix )
 #endif
 #else
         ( prefixvm( prefix,"pc-factor-mat-solver-package-type" ).c_str(),
-          Feel::po::value<std::string>()->default_value( "mumps" ),
+          Feel::po::value<std::string>()->default_value( "feelpp" /*"mumps"*/ ),
           "sets the software that is used to perform the factorization (petsc,umfpack, spooles, petsc, superlu, superlu_dist, mumps,...)" )
 #endif
         ( prefixvm( prefix,"fieldsplit-type" ).c_str(), Feel::po::value<std::string>()->default_value( "additive" ),
@@ -999,6 +999,6 @@ po::options_description backend_options( std::string const& prefix )
  */
 template class Backend<double,uint32_type>;
 template class Backend<std::complex<double>,uint32_type>;
-    
+
 
 } // namespace Feel

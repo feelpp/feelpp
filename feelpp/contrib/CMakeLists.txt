@@ -169,6 +169,13 @@ endif()
 
 
 include(FetchContent)
+
+option( FEELPP_USE_EXTERNAL_EIGEN3 "USE_EXTERNAL_EIGEN3" OFF )
+if ( FEELPP_USE_EXTERNAL_EIGEN3 )
+  FIND_PACKAGE(Eigen3 REQUIRED)
+  add_library(Eigen3::Eigen ALIAS eigen)
+else()
+
 set(EIGEN_BUILD_DOC OFF)
 set(BUILD_TESTING OFF)
 set(EIGEN_LEAVE_TEST_IN_ALL_TARGET 0)
@@ -186,8 +193,6 @@ target_include_directories( feelpp_contrib BEFORE
       $<INSTALL_INTERFACE:include/feelpp/eigen/unsupported>
       )
 
-target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_EIGEN3 )
-target_link_libraries(feelpp_contrib INTERFACE Eigen3::Eigen )
 # there is an issue with eigen+mkl
 if ( MKL_FOUND )
   target_include_directories( eigen  INTERFACE ${MKL_INCLUDE_DIRS})
@@ -195,11 +200,15 @@ if ( MKL_FOUND )
   target_link_libraries(eigen INTERFACE ${MKL_LIBRARIES})  # error with cmake < 3.13, see CMP0079, use instead feelpp_contrib
   #target_link_libraries(feelpp_contrib INTERFACE ${MKL_LIBRARIES})
   #target_include_directories(eigen INTERFACE ${MKL_INCLUDE_DIRS})
-
 endif()
+endif()
+
+target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_EIGEN3 )
+target_link_libraries(feelpp_contrib INTERFACE Eigen3::Eigen )
 
 SET(FEELPP_HAS_EIGEN3 1)
 SET(FEELPP_HAS_EIGEN3 1 PARENT_SCOPE)
+
 if ( FEELPP_HAS_EIGEN3 )
   #add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/contrib/eigen)
   unset(INCLUDE_INSTALL_DIR CACHE)
@@ -207,7 +216,6 @@ if ( FEELPP_HAS_EIGEN3 )
   unset(PKGCONFIG_INSTALL_DIR CACHE)
 endif()
 message(STATUS "[feelpp] eigen3 headers: ${EIGEN3_INCLUDE_DIR}" )
-
 
 #FIND_PACKAGE(Eigen2 REQUIRED)
 #INCLUDE_DIRECTORIES( ${Eigen2_INCLUDE_DIR} )
@@ -693,7 +701,7 @@ if ( FEELPP_ENABLE_TASKFLOW )
   message(STATUS "[feelpp-taskflow] cmake dir: ${CMAKE_INSTALL_DATADIR}/feel/cmake/modules")
   FetchContent_MakeAvailable(taskflow)
   add_library(feelpp_taskflow INTERFACE)
-  set_target_properties(Taskflow PROPERTIES OUTPUT_NAME "feelpp_taskflow")
+  #set_target_properties(Taskflow PROPERTIES OUTPUT_NAME "feelpp_taskflow")
   target_link_libraries(feelpp_taskflow INTERFACE Taskflow )
   add_library(Feelpp::feelpp_taskflow ALIAS feelpp_taskflow)
   target_include_directories(feelpp_taskflow INTERFACE
