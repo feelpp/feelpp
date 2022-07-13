@@ -24,6 +24,7 @@
 
 
 mor_add_library( heat3d SRCS heat3d.cpp  EXEC CRB_LIB_HEAT3D )
+target_compile_definitions(${CRB_LIB_HEAT3D} PRIVATE FEELPP_MOR_PLUGIN_NAME=heat3d FEELPP_MOR_PLUGIN_LIBNAME=${CRB_LIB_HEAT3D})
 install(FILES heat3d.hpp DESTINATION include/feelpp/crb/heat3d COMPONENT Devel)
 
 set(FEELPP_CRB_HEAT3D_LIBRARIES ${CRB_LIB_HEAT3D} PARENT_SCOPE)
