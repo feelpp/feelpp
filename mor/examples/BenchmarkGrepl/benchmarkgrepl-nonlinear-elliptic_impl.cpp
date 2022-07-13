@@ -12,7 +12,10 @@ BenchmarkGreplNonlinearElliptic<Order,Dim>::BenchmarkGreplNonlinearElliptic(std:
     M_use_newton( boption(_name="crb.use-newton") ),
     M_useSerErrorEstimation( boption(_name="ser.error-estimation") ),
     M_use_deim( false )
-{}
+{
+    this->setPluginName( BOOST_PP_STRINGIZE(FEELPP_MOR_PLUGIN_NAME) + fmt::format("{}dP{}",Dim,Order) );
+    this->setPluginLibName( BOOST_PP_STRINGIZE(FEELPP_MOR_PLUGIN_LIBNAME) );
+}
 
 
 template<int Order, int Dim>
