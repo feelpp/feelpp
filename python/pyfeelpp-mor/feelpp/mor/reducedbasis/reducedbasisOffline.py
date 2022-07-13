@@ -327,7 +327,7 @@ class reducedbasisOffline(reducedbasis):
         v.assemble()
 
 
-        for i,mu in enumerate(tqdm(mus, desc=f"[reducedBasis] Offline generation of the basis", ascii=False, ncols=120)):
+        for i,mu in enumerate(tqdm(mus,desc=f"[reducedBasis] Offline generation of the basis", ascii=False, ncols=120)):
             beta = self.model.computeBetaQm(mu)
             A = self.assembleA(beta[0][0])
             F = self.assembleF(beta[1][0][0])
@@ -368,34 +368,30 @@ class reducedbasisOffline(reducedbasis):
     def generateANq(self):
         """Generate the reduced matrices ANq
         """
-        # self.ANq = []
-        # for q in range(self.Qa):
-        #     self.ANq.append(np.zeros((self.N,self.N)))
         self.ANq = np.zeros((self.Qa, self.N, self.N))
-        for i,u in enumerate(self.Z):
-            for j,v in enumerate(self.Z):
+        for i, ksi in enumerate(self.Z):
+            for j, ksi_ in enumerate(self.Z):
                 for q in range(self.Qa):
-                    self.ANq[q,i,j] = v.dot( self.Aq[q] * u )
-                    # print(i, j, self.ANq[q][i,j]) # uT.A.u
+                    self.ANq[q,i,j] = ksi_.dot( self.Aq[q] * ksi )
 
     def expandANq(self):
         """Expand the reduced matrices ANq
         """
-        self.ANq = np.concatenate( (self.ANq, np.zeros((self.Qa, self.N-1, 1))), axis=2)    # N has already been increased
+        self.ANq = np.concatenate( (self.ANq, np.zeros((self.Qa, self.N-1, 1))), axis=2)  # N has already been increased
         self.ANq = np.concatenate( (self.ANq, np.zeros((self.Qa, 1, self.N))), axis=1)
         for q in range(self.Qa):
-            for i,u in enumerate(self.Z):
-                self.ANq[q, -1, i] = u.dot( self.Aq[q] * self.Z[-1] )
-                self.ANq[q, i, -1] = self.Z[-1].dot( self.Aq[q] * u )
+            for i, ksi in enumerate(self.Z):
+                self.ANq[q, -1, i] = ksi.dot( self.Aq[q] * self.Z[-1] )
+                self.ANq[q, i, -1] = self.Z[-1].dot( self.Aq[q] * ksi )
 
 
     def generateFNp(self):
         """Generate the reduced vectors FNp
         """
         self.FNp = np.zeros((self.Qf, self.N))
-        for i,u in enumerate(self.Z):
+        for i, ksi in enumerate(self.Z):
             for q in range(self.Qf):
-                self.FNp[q,i] = self.Fq[q].dot(u)
+                self.FNp[q,i] = self.Fq[q].dot(ksi)
 
     def expandFNp(self):
         self.FNp = np.concatenate( (self.FNp, np.zeros((self.Qf,1))), axis=1)
@@ -408,13 +404,13 @@ class reducedbasisOffline(reducedbasis):
         self.LkNp = [[] for k in range(self.N_output)]
         for k in range(self.N_output):
             self.LkNp[k] = np.zeros((self.QLk[k], self.N))
-            for i,u in enumerate(self.Z):
+            for i, ksi in enumerate(self.Z):
                 for p in range(self.QLk[k]):
-                    # print(self.LkNp[k][p,i])
-                    # print(self.Lkq[k][p].dot(u))
-                    self.LkNp[k][p,i] = self.Lkq[k][p].dot(u)
+                    self.LkNp[k][p,i] = self.Lkq[k][p].dot(ksi)
 
     def expandLkNp(self):
+        """Expand the reduced vectors LkNp
+        """
         for k in range(self.N_output):
             self.LkNp[k] = np.concatenate( (self.LkNp[k], np.zeros((self.QLk[k],1))), axis=1)
             for q in range(self.QLk[k]):
@@ -557,7 +553,8 @@ class reducedbasisOffline(reducedbasis):
 
         Args:
             mu (ParameterSpaceElement): parameter
-            precalc (dict, optional): Dict containing the values of betaA, betaF and uN if these values have already been calculated. Defaults to None.\
+            precalc (dict, optional): Dict containing the values of betaA, betaF and uN if these values have already\
+                been calculated. Defaults to None.\
                 If None is given, the quantities are calculated in the function
 
         Returns:
@@ -808,7 +805,7 @@ class reducedbasisOffline(reducedbasis):
 
         betas = {}
         solEF = {}
-        for i,mu in enumerate(tqdm(Xi_train, desc=f"[reducedbasis] Computing offline solutions", ascii=False, ncols=120)):
+        for i,mu in enumerate(tqdm(Xi_train,desc=f"[reducedbasis] Computing offline solutions", ascii=False,ncols=120)):
             betas[mu] = self.model.computeBetaQm(mu)
             solEF[mu], _ = self.getSolutionsFE(mu, betas[mu])
 
