@@ -318,6 +318,10 @@ public :
                     this->setInMemory();
                     this->setType( "JSON" );
                 }
+                else if ( this->has<fs::path>() )
+                {
+                    this->setType( "path" );
+                }
             }
 
         static AdditionalModelData create_from_database_file_path( std::string const& relativeFilePath, std::string const& type )
@@ -362,7 +366,7 @@ public :
                     M_relativeFilePathInDatabase = "feelpp_nofilename.json";
                 else if ( this->template has<fs::path>() )
                 {
-                    M_relativeFilePathInDatabase = (fs::path("modeldata")/this->template data<fs::path>().filename()).string();
+                    M_relativeFilePathInDatabase = (fs::path("external_data")/this->template data<fs::path>().filename()).string();
                 }
             }
 
@@ -908,6 +912,13 @@ public :
     void updatePropertyTree( boost::property_tree::ptree & ptree ) const
     {
         ptree.add( "name", this->modelName());
+        boost::property_tree::ptree ptreePlugin;
+        if ( !M_pluginName.empty() )
+            ptreePlugin.add( "name", M_pluginName);
+        if ( !M_pluginLibName.empty() )
+            ptreePlugin.add( "libname", M_pluginLibName);
+        if ( !ptreePlugin.empty() )
+            ptree.add_child( "plugin", ptreePlugin );
 
         boost::property_tree::ptree ptreeParameterSpace;
         this->parameterSpace()->updatePropertyTree( ptreeParameterSpace );
@@ -1488,15 +1499,10 @@ public :
 
     virtual betaqm_type computeBetaQm( parameter_type const& mu ,  double time , bool only_terms_time_dependent=false)
     {
-        return computeBetaQm( mu, mpl::bool_< is_time_dependent >(), time , only_terms_time_dependent );
-    }
-    betaqm_type computeBetaQm( parameter_type const& mu , mpl::bool_<true>, double time , bool only_terms_time_dependent=false )
-    {
-        return boost::make_tuple( M_betaMqm, M_betaAqm, M_betaFqm );
-    }
-    betaqm_type computeBetaQm( parameter_type const& mu , mpl::bool_<false>, double time , bool only_terms_time_dependent=false )
-    {
-        return boost::make_tuple( M_betaAqm, M_betaFqm );
+        if constexpr( is_time_dependent )
+            return boost::make_tuple( M_betaMqm, M_betaAqm, M_betaFqm );
+        else
+            return boost::make_tuple( M_betaAqm, M_betaFqm );
     }
 
     virtual betaqm_type computePicardBetaQm( parameter_type const& mu ,  double time , bool only_terms_time_dependent=false)
@@ -2307,6 +2313,9 @@ public:
     bool hasDisplacementField() const { return M_has_displacement_field; }
     void setHasDisplacementField( bool const _hwf ) { M_has_displacement_field=_hwf; }
 
+protected:
+    void setPluginName( std::string const& name ) { M_pluginName = name; }
+    void setPluginLibName( std::string const& libname ) { M_pluginLibName = libname; }
 
 protected :
     std::string M_prefix;
@@ -2394,6 +2403,8 @@ protected :
     bool M_isOnlineModel;
 private :
     std::map<std::string,AdditionalModelData> M_additionalModelData;
+
+    std::string M_pluginName, M_pluginLibName;
 
 };
 
