@@ -20,6 +20,7 @@ cases = [
          (('testcase/thermal-fin/2d/thermal-fin.cfg', 'thermal-fin-2d', 2), 'thermal-fin-2d'),
          (('testcase/square/2d/testcase2d.cfg', 'square-2d', 2), 'square-2d'),
          (('testcase/thermal-fin/3d/thermal-fin.cfg', 'thermal-fin-3d', 3), 'thermal-fin-3d'),
+         (('testcase/square/3d/testcase3d.cfg', 'square-3d', 3), 'square-3d'),
         ]
 cases_params, cases_ids = list(zip(*cases))
 
@@ -53,7 +54,7 @@ class AffineDecomposition():
         F = self.Fp[k][0].duplicate()
         F.set(0)
 
-        for p in range(len(self.Fq[k])):
+        for p in range(len(self.Fp[k])):
             F += self.Fp[k][p] * beta[p]
 
         return F
@@ -120,6 +121,11 @@ def init_toolboxmor(casefile, name, dim):
     crb_model_properties = CRBModelProperties(worldComm=feelpp.Environment.worldCommPtr())
     crb_model_properties.setup(json_path)
 
+    outputs = crb_model_properties.outputs()
+    output_names = []
+    for n, _ in outputs:
+        output_names.append(n)
+
     model_properties = feelpp.ModelProperties(worldComm=feelpp.Environment.worldCommPtr())
     model_properties.setup(json_path)
 
@@ -178,13 +184,13 @@ def init_toolboxmor(casefile, name, dim):
     model.postInitModel()
     model.setInitialized(True)
 
-    return model, heatBox, assembleDEIM, assembleMDEIM
+    return model, heatBox, assembleDEIM, assembleMDEIM, output_names
 
 @pytest.mark.parametrize("casefile,name,dim", cases_params, ids=cases_ids)
-def test_eim(casefile, name, dim, init_feelpp):
+def test_matrix(casefile, name, dim, init_feelpp):
     e = init_feelpp
 
-    model, heatBox, assembleDEIM, assembleMDEIM = init_toolboxmor(casefile, name, dim)
+    model, heatBox, assembleDEIM, assembleMDEIM, _ = init_toolboxmor(casefile, name, dim)
 
     [Aq0, Fq0] = model.getAffineDecomposition()
     Aq = convertToPetscMat(Aq0[0])
@@ -193,31 +199,121 @@ def test_eim(casefile, name, dim, init_feelpp):
     AD = AffineDecomposition(Aq, Fq)
     ES = EimSolver()
 
-
-    print("∥A(mu)∥ , ∥F(mu)∥ , ∥u(mu)∥ ")
     for i in range(10):
         mu = model.parameterSpace().element()
-        [betaA, betaF] = model.computeBetaQm(mu)
-
-        F_eim = AD.computeF(betaF[0][0])
-        F_tb = assembleDEIM(mu).vec()
-        diffF = F_eim - F_tb
-        nRelF = diffF.norm()/F_tb.norm()
-        # assert(nRelF < 1e-12)
-
+        [betaA, _] = model.computeBetaQm(mu)
 
         A_eim = AD.computeA(betaA[0])
         A_tb = assembleMDEIM(mu).mat()
         A_tb.assemble()
         diffA = A_eim - A_tb
         nRelA = diffA.norm()/A_tb.norm()
-        # assert(nRelA < 1e-12)
+
+        if rank == 0:
+            print(f"{mu} : {nRelA:.2e}")
+
+        assert(nRelA < 1e-12)
+
+@pytest.mark.parametrize("casefile,name,dim", cases_params, ids=cases_ids)
+def test_rhs(casefile, name, dim, init_feelpp):
+    e = init_feelpp
+
+    model, heatBox, assembleDEIM, assembleMDEIM, _ = init_toolboxmor(casefile, name, dim)
+
+    [Aq0, Fq0] = model.getAffineDecomposition()
+    Aq = convertToPetscMat(Aq0[0])
+    Fq = convertToPetscVec(Fq0)
+
+    AD = AffineDecomposition(Aq, Fq)
+    ES = EimSolver()
+
+    for i in range(10):
+        mu = model.parameterSpace().element()
+        [_, betaF] = model.computeBetaQm(mu)
+
+        F_eim = AD.computeF(betaF[0][0])
+        F_tb = assembleDEIM(mu).vec()
+        diffF = F_eim - F_tb
+        nRelF = diffF.norm()/F_tb.norm()
+
+        if rank == 0:
+            print(f"{mu} : {nRelF:.2e}")
+        
+        assert(nRelF < 1e-12)
+
+@pytest.mark.parametrize("casefile,name,dim", cases_params, ids=cases_ids)
+def test_solution(casefile, name, dim, init_feelpp):
+    e = init_feelpp
+
+    model, heatBox, assembleDEIM, assembleMDEIM, _ = init_toolboxmor(casefile, name, dim)
+
+    [Aq0, Fq0] = model.getAffineDecomposition()
+    Aq = convertToPetscMat(Aq0[0])
+    Fq = convertToPetscVec(Fq0)
+
+    AD = AffineDecomposition(Aq, Fq)
+    ES = EimSolver()
+
+    for i in range(10):
+        mu = model.parameterSpace().element()
+        [betaA, betaF] = model.computeBetaQm(mu)
+
+        F_eim = AD.computeF(betaF[0][0])
+        F_tb = assembleDEIM(mu).vec()
+
+        A_eim = AD.computeA(betaA[0])
+        A_tb = assembleMDEIM(mu).mat()
+        A_tb.assemble()
 
         heatBox.solve()
-        # u_tb = heatBox.fieldTemperature().to_petsc().vec()
-        u_tb = ES.solve(A_tb, F_tb)
+        u_tb = heatBox.fieldTemperature().to_petsc().vec()
+        # u_tb = ES.solve(A_tb, F_tb)
         u_eim = ES.solve(A_eim, F_eim)
         diffU = u_eim - u_tb
         nRelU = diffU.norm()/u_tb.norm()
 
-        print(f"{nRelA:.2e}, {nRelF:.2e}, {nRelU:.2e}")
+        if rank == 0:
+            print(f"{mu} : {nRelU:.2e}")
+
+        assert(nRelU < 1e-12)
+
+
+@pytest.mark.parametrize("casefile,name,dim", cases_params, ids=cases_ids)
+def test_output(casefile, name, dim, init_feelpp):
+    e = init_feelpp
+
+    model, heatBox, assembleDEIM, assembleMDEIM, output_names = init_toolboxmor(casefile, name, dim)
+
+    [Aq0, Fq0] = model.getAffineDecomposition()
+    Aq = convertToPetscMat(Aq0[0])
+    Fq = convertToPetscVec(Fq0)
+
+    AD = AffineDecomposition(Aq, Fq)
+    ES = EimSolver()
+
+    for i in range(10):
+        mu = model.parameterSpace().element()
+        [betaA, betaF] = model.computeBetaQm(mu)
+
+        F_eim = AD.computeF(betaF[0][0])
+        # F_tb = assembleDEIM(mu).vec()
+
+        A_eim = AD.computeA(betaA[0])
+        # A_tb = assembleMDEIM(mu).mat()
+        # A_tb.assemble()
+
+        heatBox.solve()
+        heatBox.exportResults()
+        
+        outputs_tb = heatBox.postProcessMeasures().values()
+        # u_tb = ES.solve(A_tb, F_tb)
+        u_eim = ES.solve(A_eim, F_eim)
+
+        for k, o in enumerate(output_names):
+            l_eim = AD.computeLK(betaF[k+1][0], k+1)    # k = 0 corresponds to rhs
+            output_eim = l_eim.dot(u_eim)
+
+            nRelS = abs(output_eim - outputs_tb[o])/outputs_tb[o]
+            print(f"{mu}, {o} : eim:{output_eim:.2e}, tb:{outputs_tb[o]:.2e}, rel:{nRelS:.2e}")
+
+            assert(nRelS < 1e-12)
