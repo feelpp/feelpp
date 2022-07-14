@@ -29,20 +29,20 @@
             }
         ]
     },
-	"CRBParameters":
+    "CRBParameters":
     {
-		"k_2":
-		{
-			"min": "1",
-			"max": "20"
-		}
-	},
-	"Parameters":
+        "k_2":
+        {
+            "min": "1",
+            "max": "20"
+        }
+    },
+    "Parameters":
     {
         "k_1":"1",
-		"k_2":"5"
+        "k_2":"5"
     },
-	"Meshes":
+    "Meshes":
     {
         "heat":
         {
@@ -74,88 +74,116 @@
             }
         }
     },
-	"Materials":
-	{
-		"Omega_1":
-		{
-			"k":"k_1:k_1",
-			"Cp":"1.4e6",
-			"rho":"1"
-		},
-		"Omega_2":
-		{
-			"k":"k_2:k_2",
-			"Cp":"1.4e6",
-			"rho":"1"
-		}
-	},
-	"BoundaryConditions": 
-	{
+    "Materials":
+    {
+        "Omega_1":
+        {
+            "k":"k_1:k_1",
+            "Cp":"1.4e6",
+            "rho":"1"
+        },
+        "Omega_2":
+        {
+            "k":"k_2:k_2",
+            "Cp":"1.4e6",
+            "rho":"1"
+        }
+    },
+    "BoundaryConditions": 
+    {
         "heat": 
-		{
-			"temperature":
-			{
-				"Gamma_dir": {
-					"expr": "4*k_1:k_1"
-				}
-			},
+        {
+            "temperature":
+            {
+                "Gamma_dir": {
+                    "expr": "4*k_1:k_1"
+                }
+            },
             "flux": 
-			{
-				"Gamma_1": {
+            {
+                "Gamma_1": {
                     "expr": "0"
                 },
                 "Gamma_2": {
                     "expr": "0"
                 },
-				"Gamma_neu":{
-					"expr": "4*k_2*k_2:k_2"
-				}
+                "Gamma_neu":{
+                    "expr": "4*k_2*k_2:k_2"
+                }
             }
         }
     },
-	"CRBOutputs":
-	{
-		"PointO":
-		{
-			"type":"point",
-			"coord": [0,0,0]
-		},
-		"T_Omega1_C":
-		{
-			"type":"mean",
-			"markers": ["Omega_1"],
+    "CRBOutputs":
+    {
+        "Points_pointO_expr_TO":
+        {
+            "type":"point",
+            "coord": [0,0,0]
+        },
+        "Statistics_Omega1_mean":
+        {
+            "type":"mean",
+            "markers": ["Omega_1"],
             "expr": "crb_u:crb_u",
             "topodim": 3
-		},
-		"T_Omega2_C":
-		{
-			"type":"mean",
-			"markers": ["Omega_2"],
+        },
+        "Statistics_Omega_2_mean":
+        {
+            "type":"mean",
+            "markers": ["Omega_2"],
             "expr": "crb_u:crb_u",
             "topodim": 3
-		},
-		"T_int_C":
-		{
-			"type":"mean",
-			"markers": ["Gamma_int"],
+        },
+        "Statistics_Gamma_int_mean":
+        {
+            "type":"mean",
+            "markers": ["Gamma_int"],
             "expr": "crb_u:crb_u",
             "topodim": 2
-		}
-	},
-	"PostProcess":
+        }
+    },
+    "PostProcess":
     {
-		"heat":{
-			"Exports":
-			{
-				"fields":["temperature","pid"],
-				"expr": {
-						"flux":
-						{
-							"expr":"{-materials_k * heat_grad_T_0,-materials_k * heat_grad_T_1,-materials_k * heat_grad_T_2}:materials_k:heat_grad_T_0:heat_grad_T_1:heat_grad_T_2",
-							"representation":["element","nodal"]
-						}
-					}
-			}
-		}
+        "use-model-name":1,
+        "heat":
+        {
+            "Exports":
+            {
+                "fields":["temperature","pid"]
+            },
+            "Measures":
+            {
+                "Statistics":
+                {
+                    "Omega1":
+                    {
+                        "type":"mean",
+                        "markers":["Omega_1"],
+                        "field": "temperature"
+                    },
+                    "Omega_2":
+                    {
+                        "type":"mean",
+                        "markers":["Omega_2"],
+                        "field": "temperature"
+                    },
+                    "Gamma_int":
+                    {
+                        "type":"mean",
+                        "markers":["Gamma_int"],
+                        "field": "temperature"
+                    }
+                },
+                "Points":
+                {
+                    "pointO":
+                    {
+                        "coord": "{0, 0, 0}",
+                        "expressions": { "TO": "heat_T:heat_T"}
+                    }
+                }
+            }
+
+        }
     }
 }

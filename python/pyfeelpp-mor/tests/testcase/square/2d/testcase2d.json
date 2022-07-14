@@ -114,26 +114,26 @@
     },
     "CRBOutputs":
     {
-        "PointO":
+        "Points_pointO_expr_TA":
         {
             "type":"point",
             "coord": [0,0,0]
         },
-        "T_Omega1":
+        "Statistics_T_Omega1_mean":
         {
             "type":"mean",
             "markers": ["Omega_1"],
             "expr": "crb_u:crb_u",
             "topodim": 3
         },
-        "T_Omega2":
+        "Statistics_T_Omega2_mean":
         {
             "type":"mean",
             "markers": ["Omega_2"],
             "expr": "crb_u:crb_u",
             "topodim": 3
         },
-        "T_int":
+        "Statistics_T_int_mean":
         {
             "type":"mean",
             "markers": ["Gamma_int"],

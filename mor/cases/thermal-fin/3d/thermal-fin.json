@@ -81,12 +81,12 @@
 
     "CRBOutputs":
     {
-        "pointA":
+        "Points_pointA_expr_TA":
         {
             "type": "point",
             "coord": [0.5, 0.5, 1]
         },
-        "post":
+        "Statistics_post_mean":
         {
             "type": "mean",
             "markers": ["Post"],
