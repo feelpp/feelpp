@@ -15,11 +15,12 @@ HEAT_CLASS_TEMPLATE_TYPE::Heat( std::string const& prefix,
                                 std::string const& keyword,
                                 worldcomm_ptr_t const& worldComm,
                                 std::string const& subPrefix,
-                                ModelBaseRepository const& modelRep )
+                                ModelBaseRepository const& modelRep,
+                                ModelBaseCommandLineOptions const& modelOptions )
     :
-    super_type( prefix, keyword, worldComm, subPrefix, modelRep, ModelBaseCommandLineOptions( heat_options( prefix ) ) ),
+    super_type( prefix, keyword, worldComm, subPrefix, modelRep, modelOptions ),
     ModelPhysics<nDim>( "heat" ),
-    ModelBase( prefix, keyword, worldComm, subPrefix, modelRep, ModelBaseCommandLineOptions( heat_options( prefix ) ) )
+    ModelBase( prefix, keyword, worldComm, subPrefix, modelRep, modelOptions )
 {
     this->log("Heat","constructor", "start" );
 
