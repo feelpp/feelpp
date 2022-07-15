@@ -63,8 +63,10 @@ void printToolboxApplication( std::string const& toolboxName, worldcomm_t const&
 
 struct ModelBaseCommandLineOptions
 {
+    using init_function_type = std::function<void(po::options_description const&,po::variables_map &)>;
     ModelBaseCommandLineOptions() = default;
-    explicit ModelBaseCommandLineOptions( po::options_description const& _options );
+    explicit ModelBaseCommandLineOptions( po::options_description const& _options, init_function_type func={} );
+    explicit ModelBaseCommandLineOptions( po::variables_map const& vm );
     ModelBaseCommandLineOptions( ModelBaseCommandLineOptions const& ) = default;
     ModelBaseCommandLineOptions( ModelBaseCommandLineOptions && ) = default;
 
