@@ -10,13 +10,13 @@ from feelpp.mor import *
 # desc : (('path/to/cfg/file', {mudefault}, {mumin}, {mumax}), 'name-of-the-test')
 cases = [
          (('testcase/thermal-fin/2d/thermal-fin.cfg',
-           {"k_1": 0.1, "k_2": 0.1, "k_3": 0.1, "k_4": 0.1, "k_0": 1, "Bi": 0.01},
-           {"k_1": 0.1, "k_2": 0.1, "k_3": 0.1, "k_4": 0.1, "k_0": 1, "Bi": 0.01},
-           {"k_1": 10, "k_2": 10, "k_3": 10, "k_4": 10, "k_0": 1, "Bi": 1}), 'thermal-fin-2d'),
+           {"k_1": 0.1, "k_2": 0.1, "k_3": 0.1, "k_4": 0.1, "Bi": 0.01},
+           {"k_1": 0.1, "k_2": 0.1, "k_3": 0.1, "k_4": 0.1, "Bi": 0.01},
+           {"k_1": 10, "k_2": 10, "k_3": 10, "k_4": 10, "Bi": 1}), 'thermal-fin-2d'),
          (('testcase/thermal-fin/3d/thermal-fin.cfg',
-           {"k_1": 0.1, "k_0": 1, "Bi": 0.01},
-           {"k_1": 0.1, "k_0": 1, "Bi": 0.01},
-           {"k_1": 10, "k_0": 1, "Bi": 1}), 'thermal-fin-3d'),
+           {"k_1": 0.1, "Bi": 0.01},
+           {"k_1": 0.1, "Bi": 0.01},
+           {"k_1": 10, "Bi": 1}), 'thermal-fin-3d'),
          (('testcase/testcase/test.cfg',
             {"k_1": 5, "k_2": 2, "k_3": 10, "k_4": 0.1},
             {"k_1": 0.1, "k_2": 0.1, "k_3": 0.1, "k_4": 0.1},
@@ -76,9 +76,9 @@ def test_init_from_ModelPropeties(casefile, mudefault_th, mumin_th, mumax_th,  i
 
 
     for p in mumin_th:
-        assert( mubar.parameterNamed(p) == mudefault_th[p] )
-        assert( mumin.parameterNamed(p) == mumin_th[p] )
-        assert( mumax.parameterNamed(p) == mumax_th[p] )
+        assert( mubar.parameterNamed(p) == mudefault_th[p] ), p
+        assert( mumin.parameterNamed(p) == mumin_th[p] ), p
+        assert( mumax.parameterNamed(p) == mumax_th[p] ), p
 
 @pytest.mark.parametrize("casefile,Mu", [cases_params[-1][:2]], ids=[cases_ids[-1]])
 def test_output_and_crb_output(casefile, Mu, init_feelpp):
