@@ -30,9 +30,11 @@ Christophe Prud'homme <https://github.com/prudhomm[@prudhomm]>; Vincent Chabanne
 |===                                                                                                                                                                              
 | Name | Description | Default value
 
-| plugin.dir | directory where the plugin(online codes) are stored | <{feelpp} install prefix>/lib
-| plugin.name | name of the online code | N/A
-| plugin.db | root directory of the CRB DB | `$HOME/feel/crbdb`
+| plugin.dir | directory where the plugin(online library) are stored | <{feelpp} install prefix>/lib
+| crbmodel.name | name of the online code | N/A
+| crbmodel.db.id | id of crbmodel (called by the `name` arg) registered | N/A
+| crbmodel.db.last | name of the online code (use last created(=1) or modified(=2))  | 2
+| crbmodel.db.root_directory | root directory of the CRB DB | `${repository}/crbdb`
 |===
 
 Some CRB DB are stored on GitHub at link:http://www.github.com/feelpp/crbdb[].
@@ -41,17 +43,17 @@ Some CRB DB are stored on GitHub at link:http://www.github.com/feelpp/crbdb[].
 
 Evaluate output from one parameter::
 ----
-feelpp_crb_onlinerun --plugin.name heat3d --parameter 110 140 124 193.3 34000 29300 62000 0.23
+feelpp_mor_onlinerun --crbmodel.name heat3d --parameter 110 140 124 193.3 34000 29300 62000 0.23
 ----
 
 Evaluate outputs from a sampling::
 ----
-./bin/feelpp_crb_onlinerun --plugin.name heat3d --sampling.size=64
+feelpp_mor_onlinerun --crbmodel.name heat3d --sampling.size=64
 ----
 
 Evaluate outputs and export finite element solution for each parameter::
 ----
-feelpp_crb_onlinerun --plugin.name heat3d --sampling.size=64 --crb.load-elements-database=1
+feelpp_mor_onlinerun --crbmodel.name heat3d --sampling.size=64 --crb.load-elements-database=1
 ----
 
 
