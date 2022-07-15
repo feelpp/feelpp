@@ -61,7 +61,7 @@ ToolboxMorHeat<ToolboxType,Options>::initOnline()
 
     heatBoxModel->setToolboxInitFunction(
         [modelProps](   /*auto*/ typename toolbox_type::mesh_ptrtype  mesh ) {
-            auto tbDeim = std::make_shared<toolbox_type>( "heat"/*M_prefix*/);
+            auto tbDeim = toolbox_type::New( _prefix="heat"/*M_prefix*/);
             tbDeim->setModelProperties( modelProps );
             tbDeim->setMesh(mesh);
             tbDeim->init();
