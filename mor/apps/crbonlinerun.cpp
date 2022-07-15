@@ -27,6 +27,7 @@
 
 #include <feel/feelmor/options.hpp>
 #include <feel/feelmor/crbplugin_interface.hpp>
+#include <feel/feelmor/crbmodeldb.hpp>
 
 #include <iostream>
 
@@ -279,30 +280,62 @@ loadPlugin()
 {
     using namespace Feel;
     namespace dll=boost::dll;
-    std::string dirname = Environment::expand( soption(_name="plugin.dir") );
-    std::string pluginname = Environment::expand( soption(_name="plugin.name") );
 
-    std::string pluginlibname = "";
-    if ( Environment::vm().count("plugin.libname") )
-        pluginlibname = soption(_name="plugin.libname");
+    std::string crbmodelName = Environment::expand( soption(_name="crbmodel.name") );
+    CRBModelDB crbmodelDB{ crbmodelName, uuids::nil_uuid() };
 
-    auto plugin = factoryCRBPlugin( pluginname, pluginlibname, dirname );
-    std::cout << "Loaded the plugin " << plugin->name() << std::endl;
-    bool loadFiniteElementDatabase = boption(_name="crb.load-elements-database");
+    std::string pluginname;
+    std::string pluginlibname;
 
-    std::string jsonfilename;
-    if ( ioption("plugin.last" ) )
+    std::string jsonPathStr;
+
+    if ( countoption(_name="crbmodel.db.id") )
     {
-        plugin->loadDBLast( static_cast<crb::last>(ioption("plugin.last")), (loadFiniteElementDatabase)? crb::load::all : crb::load::rb );
+        std::string crbmodel_dbid = Environment::expand( soption(_name="crbmodel.db.id") );
+        crbmodelDB.updateIdFromId( crbmodel_dbid );
+    }
+    else if ( ioption(_name="crbmodel.db.last" ) )
+    {
+        crbmodelDB.updateIdFromDBLast( static_cast<crb::last>(ioption("crbmodel.db.last")) );
     }
     else
     {
-        std::string plugindbid = Environment::expand( soption(_name="plugin.dbid") );
-        std::string jsonfilename = (fs::path(Environment::expand( soption(_name="plugin.db") )) / fs::path(pluginname) / fs::path(plugindbid) / (pluginname+".crb.json")).string() ;
-        std::cout << " . using db " << jsonfilename << std::endl;
-
-        plugin->loadDB( jsonfilename, (loadFiniteElementDatabase)? crb::load::all : crb::load::rb );
+        throw std::runtime_error( "no crbmodel selection, crbmodel.db.id or crbmodel.db.last should be defined" );
     }
+
+    std::cout << "crbmodelDB.dbRepository()=" << crbmodelDB.dbRepository() << std::endl;
+
+    fs::path jsonPath = fs::path(crbmodelDB.dbRepository())/fmt::format("{}.crb.json",crbmodelDB.name());
+    jsonPathStr = jsonPath.string();
+    if ( !fs::exists( jsonPath ) )
+        throw std::runtime_error(fmt::format("crb db JSON file not found : {}",jsonPathStr));
+
+    // TODO : move this part in CRBModelDB class
+    std::ifstream ifs( jsonPathStr );
+    nl::json jarg = nl::json::parse(ifs,nullptr,true,true);
+    if ( jarg.contains( "crbmodel" ) )
+    {
+        auto const& j_crbmodel = jarg.at( "crbmodel" );
+        std::string modelname = j_crbmodel.at( "name" ).get<std::string>();
+        if ( j_crbmodel.contains( "plugin" ) )
+        {
+            auto const& j_plugin = j_crbmodel.at( "plugin" );
+            pluginname = j_plugin.at( "name" ).get<std::string>();
+            pluginlibname = j_plugin.at( "libname" ).get<std::string>();
+        }
+    }
+
+
+    std::cout << "plugin name : " << pluginname << " libname : " << pluginlibname << std::endl;
+
+    std::string pluginlibdir = Environment::expand( soption(_name="plugin.dir") );
+    std::cout << "pluginlibdir="<<pluginlibdir<<std::endl;
+    auto plugin = factoryCRBPlugin( pluginname, pluginlibname, pluginlibdir );
+    std::cout << "Loaded the plugin " << plugin->name() << std::endl;
+
+    bool loadFiniteElementDatabase = boption(_name="crb.load-elements-database");
+    plugin->loadDB( jsonPathStr, (loadFiniteElementDatabase)? crb::load::all : crb::load::rb );
+
     return plugin;
 }
 
@@ -312,11 +345,16 @@ int main(int argc, char**argv )
 	po::options_description crbonlinerunoptions( "crb online run options" );
 	crbonlinerunoptions.add_options()
         ( "plugin.dir", po::value<std::string>()->default_value(Info::libdir()) , "plugin directory" )
-        ( "plugin.name", po::value<std::string>(), "CRB online code name" )
-        ( "plugin.libname", po::value<std::string>(), "CRB online libname" )
-        ( "plugin.dbid", po::value<std::string>(), "CRB online code id" )
-        ( "plugin.last", po::value<int>()->default_value( 2 ), "use last created(=1) or modified(=2) or not (=0)" )
-        ( "plugin.db", po::value<std::string>()->default_value( "${repository}/crbdb" ), "root directory of the CRB database " )
+        ( "crbmodel.name", po::value<std::string>(), "CRB online code name" )
+        ( "crbmodel.db.id", po::value<std::string>(), "CRB online code id" )
+        ( "crbmodel.db.last", po::value<int>()->default_value( 2 ), "use last created(=1) or modified(=2) or not (=0)" )
+        ( "crbmodel.db.root_directory", po::value<std::string>()->default_value( "${repository}/crbdb" ), "root directory of the CRB database " )
+
+        //( "plugin.name", po::value<std::string>(), "CRB online code name" )
+        //( "plugin.libname", po::value<std::string>(), "CRB online libname" )
+        //( "plugin.dbid", po::value<std::string>(), "CRB online code id" )
+        //( "plugin.last", po::value<int>()->default_value( 2 ), "use last created(=1) or modified(=2) or not (=0)" )
+        //( "plugin.db", po::value<std::string>()->default_value( "${repository}/crbdb" ), "root directory of the CRB database " )
         ( "parameter", po::value<std::vector<double> >()->multitoken(), "database filename" )
         ( "sampling.size", po::value<int>()->default_value( 10 ), "size of sampling" )
         ( "sampling.type", po::value<std::string>()->default_value( "random" ), "type of sampling" )
@@ -354,7 +392,9 @@ int main(int argc, char**argv )
         return 0;
     }
     if ( Environment::vm().count( "query" ) == 0 )
+    {
         runCrbOnline( { loadPlugin() } );
+    }
     else
     {
         runCrbOnlineQuery();
