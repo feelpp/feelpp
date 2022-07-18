@@ -15,11 +15,12 @@ class reducedbasisOffline(reducedbasis):
         """Initializes the class
 
         Args:
-            Aq (list): affine decomposition of the bilinear form (Aq = [A1, ..., AqA])
-            Fq (list): affine decomposition of the rhs AND the outputs Fq[0] = [F1, ..., FqF], F[i] = [Si1, ..., SiQsi]
-            model (feelmm.mor._toolboxmor): model of toolboxmor, initialized
-            mubar (parameterSpaceElement): parameter mubar
-            outputs_names (list): list of the names of the diffetent outputs, in the order given by the environment
+            Aq (list)                      : affine decomposition of the bilinear form (Aq = [A1, ..., AqA])
+            Fq (list)                      : affine decomposition of the rhs AND the outputs Fq[0] = [F1, ..., FqF], F[i] = [Si1, ..., SiQsi]
+            model (feelpp.mor._toolboxmor) : model of toolboxmor, initialized
+            mubar (parameterSpaceElement)  : parameter mubar
+            outputs_names (list)           : list of the names of the diffetent outputs, in the order given by the environment
+            **kwargs                       : other arguments
         """
 
         super().__init__(**kwargs)

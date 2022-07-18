@@ -6,10 +6,17 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
     Class for the offline part of the reduced basis method for the time-dependent problem
     """
     def __init__(self, *, Mr, **kwargs):
+        """Initialize the reduced basis method for the time-dependent problem
+
+        Args:
+            Mr (list of PETScMat) : affine decomposition of the mass matrix M
+            **kwargs              : keyword arguments for the reducedbasisTime class
+        """
         warnings.warn("This class is still in construction. Correction from the previous version are in progress")
         super().__init__(**kwargs)
 
         self.Mr = Mr
+        self.Qm = len(Mr)
 
         self.Fkp : dict # size K*Qf : Fkp[k,p] <-> F^{k,p}
         self.Mnr : dict # size N*Qm : Mnr[k,p] <-> M^{n,r}

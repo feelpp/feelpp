@@ -15,13 +15,9 @@ class reducedbasisTime(reducedbasis):
         """Initialise the object
 
         Args:
-            `Aq` (list of PETSc.Mat)       : matrices Aq given by the affine decomposition
-            `Fp` (list of PETSc.Vec)       : vectors Fq given by the decomposition of right-hand side
-            `model` (ToolboxMor_{2|3}D)    : model DEIM used for the decomposition
-            `mubar` (ParameterSpaceElement): parameter mu_bar for the enrgy norm
-            `alphaLB` (func)               : function mu ↦ alphaLB(mu)
-            `tf` (float)                   : final time
-            `K` (int)                      : number of time iterations
+            tf (float) : final time
+            K (int)    : number of time iterations
+            **kwargs   : keyword arguments for the reducedbasis class
         """
 
         warnings.warn("This class is still in construction. Correction from the previous version are in progress")

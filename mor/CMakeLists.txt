@@ -98,7 +98,7 @@ ENDIF()
 
 
 OPTION(FEELPP_ENABLE_TESTS "enable Feel++ tests" ON)
-if (FEELPP_ENABLE_TESTS  )
+if ( FEELPP_ENABLE_TESTS  )
   add_subdirectory(tests)
 endif()
 
