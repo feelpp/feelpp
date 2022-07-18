@@ -1790,6 +1790,7 @@ CRBSCM<TruthModelType>::load( Archive & ar, const unsigned int version )
     else
     {
         ar & M_mu_ref;
+        M_mu_ref.setParameterSpace( M_model->parameterSpace() );
         ar & M_C_eigenvalues;
     }
 
