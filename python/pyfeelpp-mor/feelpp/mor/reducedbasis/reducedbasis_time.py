@@ -11,7 +11,7 @@ def taille_dict(d):
 
 class reducedbasisTime(reducedbasis):
 
-    def __init__(self, model, tf, K, worldComm=None) -> None:
+    def __init__(self, *, tf, K, **kwargs) -> None:
         """Initialise the object
 
         Args:
@@ -24,9 +24,9 @@ class reducedbasisTime(reducedbasis):
             `K` (int)                      : number of time iterations
         """
 
-        warnings("This class is still in construction. Correction from the previous version are in progress")
+        warnings.warn("This class is still in construction. Correction from the previous version are in progress")
 
-        super().__init__(model, worldComm=worldComm)
+        super().__init__(**kwargs)
         
         self.Qm = 0         # size of the decomposition of the mass matrix M
 

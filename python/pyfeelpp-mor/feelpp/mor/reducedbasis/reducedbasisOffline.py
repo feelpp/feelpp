@@ -11,7 +11,7 @@ class reducedbasisOffline(reducedbasis):
     """
 
 
-    def __init__(self, Aq, Fq, model, mubar, output_names=None, use_dual_norm=False):
+    def __init__(self, Aq, Fq, mubar, output_names=None, **kwargs):
         """Initializes the class
 
         Args:
@@ -22,7 +22,7 @@ class reducedbasisOffline(reducedbasis):
             outputs_names (list): list of the names of the diffetent outputs, in the order given by the environment
         """
 
-        super().__init__(model)
+        super().__init__(**kwargs)
 
         self.setMubar(mubar)        # default parameter
 
@@ -76,7 +76,7 @@ class reducedbasisOffline(reducedbasis):
         pc.setType(self.PC_TYPE)
 
 
-        if not use_dual_norm:
+        if not self.use_dual_norm:
             E = SLEPc.EPS()
             E.create()
             E.setOperators(self.Abar, self.scal)

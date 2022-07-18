@@ -35,7 +35,7 @@ def convertToPetscVec(Fq):
 
 class reducedbasis():
 
-    def __init__(self, model, worldComm=None, use_dual_norm=False) -> None:
+    def __init__(self, model, worldComm=None, use_dual_norm=False, **kwargs) -> None:
         """Initialise the object
 
         Args:
@@ -43,6 +43,7 @@ class reducedbasis():
             worldComm (MPI.Intracomm, optional): MPI communicator. Defaults to None, meaning the communicator is feelpp.Environment.worldCommPtr()
             use_dual_norm (bool, optional): use the dual norm for the computation of error. Defaults to False meaning the full error is computed.
         """
+        super().__init__(**kwargs)
         self.Qa = 0                 # size of the decomposition of A
         self.Qf = 0                 # size of the decomposition of F
         self.QLk = []               # sizes of the decompositions of Lk
