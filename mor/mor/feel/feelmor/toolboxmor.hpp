@@ -350,6 +350,7 @@ private:
     std::map<std::string, int> M_outputDeim;
     std::vector<std::string> M_outputDeimName;
 
+    std::shared_ptr<DeimMorModelBase<mesh_type>> M_deimMorModel;
 }; // class ToolboxMor
 
 } // namespace Feel
