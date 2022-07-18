@@ -81,7 +81,7 @@ DeimMorModelToolbox<ToolboxType>::deimOnlineFunction(mesh_ptrtype const& mesh)
     }
     else
     {
-        M_tbDeim = std::make_shared<toolbox_type>(M_prefix);
+        M_tbDeim = toolbox_type::New(_prefix=M_prefix);
         M_tbDeim->setMesh(mesh);
         M_tbDeim->init();
         //M_tbDeim->printAndSaveInfo();
@@ -89,16 +89,15 @@ DeimMorModelToolbox<ToolboxType>::deimOnlineFunction(mesh_ptrtype const& mesh)
     M_rhsDeim = M_tbDeim->algebraicFactory()->rhs()->clone();
     M_matDeim = M_tbDeim->algebraicFactory()->matrix();
     deim_function_type assembleDEIM =
-        [tbDeim=M_tbDeim,rhsB=M_rhsDeim,matB=M_matDeim](parameter_type const& mu)
+        [this](parameter_type const& mu)
             {
                 for( int i = 0; i < mu.size(); ++i )
-                    tbDeim->addParameterInModelProperties(mu.parameterName(i), mu(i));
-                tbDeim->updateParameterValues();
-                auto mat = matB;
-                auto rhs = rhsB;
-                rhs->zero();
-                tbDeim->algebraicFactory()->applyAssemblyLinear( tbDeim->algebraicBlockVectorSolution()->vectorMonolithic(), mat, rhs, {"ignore-assembly.lhs"} );
-                return rhs;
+                    M_tbDeim->addParameterInModelProperties(mu.parameterName(i), mu(i));
+                M_tbDeim->updateParameterValues();
+                M_rhsDeim->zero();
+                M_tbDeim->algebraicFactory()->applyAssemblyLinear( M_tbDeim->algebraicBlockVectorSolution()->vectorMonolithic(),
+                                                                   M_matDeim, M_rhsDeim, {"ignore-assembly.lhs"} );
+                return M_rhsDeim;
             };
     return assembleDEIM;
 }
@@ -113,7 +112,7 @@ DeimMorModelToolbox<ToolboxType>::mdeimOnlineFunction(mesh_ptrtype const& mesh)
     }
     else
     {
-        M_tbMdeim = std::make_shared<toolbox_type>(M_prefix);
+        M_tbMdeim = toolbox_type::New(_prefix=M_prefix);
         M_tbMdeim->setMesh(mesh);
         M_tbMdeim->init();
         //M_tbMdeim->printAndSaveInfo();
@@ -121,16 +120,15 @@ DeimMorModelToolbox<ToolboxType>::mdeimOnlineFunction(mesh_ptrtype const& mesh)
     M_rhsMdeim = M_tbMdeim->algebraicFactory()->rhs()->clone();
     M_matMdeim = M_tbMdeim->algebraicFactory()->matrix();
     mdeim_function_type assembleMDEIM =
-        [tbMdeim=M_tbMdeim,rhsB=M_rhsMdeim,matB=M_matMdeim](parameter_type const& mu)
+        [this](parameter_type const& mu)
             {
                 for( int i = 0; i < mu.size(); ++i )
-                    tbMdeim->addParameterInModelProperties(mu.parameterName(i), mu(i));
-                tbMdeim->updateParameterValues();
-                auto mat = matB;
-                auto rhs = rhsB;
-                mat->zero();
-                tbMdeim->algebraicFactory()->applyAssemblyLinear( tbMdeim->algebraicBlockVectorSolution()->vectorMonolithic(), mat, rhs, {"ignore-assembly.rhs"} );
-                return mat;
+                    M_tbMdeim->addParameterInModelProperties(mu.parameterName(i), mu(i));
+                M_tbMdeim->updateParameterValues();
+                M_matMdeim->zero();
+                M_tbMdeim->algebraicFactory()->applyAssemblyLinear( M_tbMdeim->algebraicBlockVectorSolution()->vectorMonolithic(),
+                                                                    M_matMdeim, M_rhsMdeim, {"ignore-assembly.rhs"} );
+                return M_matMdeim;
             };
     return assembleMDEIM;
 }
@@ -521,8 +519,10 @@ template<typename SpaceType, int Options>
 void
 ToolboxMor<SpaceType, Options>::initOnlineToolbox(std::shared_ptr<DeimMorModelBase<mesh_type>> model )
 {
-    this->setOnlineAssembleDEIM(model->deimOnlineFunction(this->getDEIMReducedMesh()));
-    this->setOnlineAssembleMDEIM(model->mdeimOnlineFunction(this->getMDEIMReducedMesh()));
+    M_deimMorModel = model;
+    this->setOnlineAssembleDEIM(M_deimMorModel/*model*/->deimOnlineFunction(this->getDEIMReducedMesh()));
+    this->setOnlineAssembleMDEIM(M_deimMorModel/*model*/->mdeimOnlineFunction(this->getMDEIMReducedMesh()));
+    //this->setInitialized(true);
 }
 
 template<typename SpaceType, int Options>
