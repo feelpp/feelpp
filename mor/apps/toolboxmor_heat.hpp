@@ -4,6 +4,7 @@
 #define FEELPP_MOR_TOOLBOXMOR_HEAT_HPP
 
 #include <feel/feelmor/toolboxmor.hpp>
+#include <feel/feelmodels/modelproperties.hpp>
 
 namespace Feel
 {
@@ -29,6 +30,7 @@ class FEELPP_EXPORT ToolboxMorHeat : public ToolboxMor<typename ToolboxType::spa
     static std::shared_ptr<self_type> createReducedBasisModel();
   private :
     toolbox_ptrtype M_offlineToolbox;
+    std::shared_ptr<ModelProperties> M_onlineModelProperties;
 };
 
 }

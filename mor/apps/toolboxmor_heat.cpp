@@ -51,18 +51,18 @@ ToolboxMorHeat<ToolboxType,Options>::initOnline()
 {
     auto heatBoxModel = DeimMorModelToolbox<toolbox_type>::New("heat");
 
-    auto modelProps = std::make_shared<ModelProperties>();// this->repository().expr(),this->worldCommPtr(), this->prefix(), this->clovm() );
+    M_onlineModelProperties = std::make_shared<ModelProperties>();// this->repository().expr(),this->worldCommPtr(), this->prefix(), this->clovm() );
     if( this->hasModelData("toolbox_json_setup") )
     {
         auto & mdata = this->additionalModelData("toolbox_json_setup");
         auto const& jsonData = mdata.template fetch_data<nl::json>( this->crbModelDb().dbRepository() );
-        modelProps->setup( jsonData );
+        M_onlineModelProperties->setup( jsonData );
     }
 
     heatBoxModel->setToolboxInitFunction(
-        [modelProps](   /*auto*/ typename toolbox_type::mesh_ptrtype  mesh ) {
+        [this](   /*auto*/ typename toolbox_type::mesh_ptrtype  mesh ) {
             auto tbDeim = toolbox_type::New( _prefix="heat"/*M_prefix*/);
-            tbDeim->setModelProperties( modelProps );
+            tbDeim->setModelProperties( M_onlineModelProperties );
             tbDeim->setMesh(mesh);
             tbDeim->init();
             //tbDeim->printAndSaveInfo();
