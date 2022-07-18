@@ -396,13 +396,14 @@ class reducedbasis():
     """
     Save and load results
     """
-    def saveReducedBasis(self, path, force=False, check=True):
+    def saveReducedBasis(self, path, force=False, check=True, notDoneYet=False):
         """save the reduced basis in files
 
         Args:
             path (str): path of the directory whre data are to be saved
             force (bool, optional): Force saving, even if files are already present. Defaults to False.
             check (bool, optional): Check that the exported values are correct (only in sequential). Defaults to True
+            notDoneYet (bool, optional): Tells if we are still adding data to files saved. Defaults to False.
         """
         if os.path.isdir(path) and not force:
             if self.worldComm.isMasterRank():
@@ -453,24 +454,33 @@ class reducedbasis():
                 h5f.create_dataset("alphaMubar", data=np.array([self.alphaMubar]))
                 h5f.create_dataset("gammaMubar", data=np.array([self.gammaMubar]))
 
-            h5f.close()
+            # we do not close the file if we will add something else (in reducedbasis_time)
+            if notDoneYet:
+                return h5f, content
+            else:
+                f = open('reducedbasis.json', 'w')
+                json.dump(content, f, indent = 4)
+                f.close()
 
-            print("Done !")
+                h5f.close()
 
-            if check and feelpp.Environment.isSequential():
-                print("[reducedbasis] Checking that the exported basis is correct...")
-                self.checkSaved(jsonPath)
-                print("[reducedbasis] Check is ok !")
+                print("Done !")
+
+                if check and feelpp.Environment.isSequential():
+                    print("[reducedbasis] Checking that the exported basis is correct...")
+                    self.checkSaved(jsonPath)
+                    print("[reducedbasis] Check is ok !")
 
         return f"{os.getcwd()}/reducedbasis.json"
 
 
-    def loadReducedBasis(self, path, model):
+    def loadReducedBasis(self, path, model, notDoneYet=False):
         """Load reduced basis from json
 
         Args:
             path (str): path to the json description file
             model (toolboxmor): toolboxmor used to create the model
+            notDoneYet (bool, optional): Tells if we are still adding data to files saved. Defaults to False.
         """
         f = open(path, "r")
         j = json.load(f)
@@ -559,6 +569,11 @@ class reducedbasis():
         self.alphaLB_ = alphaLB_
         self.gammaUB = gammaUB
         self.gammaUB_ = gammaUB_
+
+        if notDoneYet:
+            return h5f, j
+        else:
+            h5f.close()
 
         if self.worldComm.isMasterRank():
             print(f"[reduced basis] Basis loaded from {path}")

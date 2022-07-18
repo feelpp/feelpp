@@ -5,9 +5,9 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
     """
     Class for the offline part of the reduced basis method for the time-dependent problem
     """
-    def __init__(self, Aq, Fq, Mr, model, mubar, output_names=None, compute_lower_bound=True):
-        warnings("This class is still in construction. Correction from the previous version are in progress")
-        super().__init__(Aq, Fq, model, mubar, output_names, compute_lower_bound)
+    def __init__(self, Aq, Fq, Mr, model, mubar, output_names=None, use_dual_norm=False):
+        warnings.warn("This class is still in construction. Correction from the previous version are in progress")
+        super().__init__(Aq, Fq, model, mubar, output_names, use_dual_norm)
 
         self.Mr = Mr
 

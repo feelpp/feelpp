@@ -11,7 +11,7 @@ def taille_dict(d):
 
 class reducedbasisTime(reducedbasis):
 
-    def __init__(self, Aq, Fp, model, mubar, alphaLB, Mr, tf, K) -> None:
+    def __init__(self, model, tf, K, worldComm=None) -> None:
         """Initialise the object
 
         Args:
@@ -20,20 +20,19 @@ class reducedbasisTime(reducedbasis):
             `model` (ToolboxMor_{2|3}D)    : model DEIM used for the decomposition
             `mubar` (ParameterSpaceElement): parameter mu_bar for the enrgy norm
             `alphaLB` (func)               : function mu ↦ alphaLB(mu)
-            `Mr` (list of PETSc.Mat)       : matrices Mq of mass for the scalar product
             `tf` (float)                   : final time
             `K` (int)                      : number of time iterations
         """
 
         warnings("This class is still in construction. Correction from the previous version are in progress")
 
-        super().__init__(model)
-        self.Qm = len(Mr)
-        # self.MN : spsp.csc_matrix
+        super().__init__(model, worldComm=worldComm)
+        
+        self.Qm = 0         # size of the decomposition of the mass matrix M
 
-        self.tf = tf
-        self.K  = K
-        self.dt = tf / K
+        self.tf = tf        # final time
+        self.K  = K         # number of time iterations
+        self.dt = tf / K    # time step
 
         self.MNr : np.ndarray # tensor of chape (Qm, N, N)
 
@@ -155,7 +154,8 @@ class reducedbasisTime(reducedbasis):
         Args:
             mu (ParameterSpaceElement): parameter
             g (np.ndarray): right-hand side time-dependant function
-            computeEnergyNorm (bool): computes the energy normsuring the resolution (stroed in self.EnNorm). Dafault to False
+            computeEnergyNorm (bool): computes the energy normsuring the resolution (stroed in self.EnNorm).\
+                Defaults to False
 
         Returns:
             float: Δ_N^k
@@ -199,3 +199,42 @@ class reducedbasisTime(reducedbasis):
 
         return self.DeltaN[-1]
 
+
+    """
+    Save and load functions
+    """
+    def saveReducedBasis(self, path, force=False, check=True):
+        h5f, content = super().saveReducedBasis(path, force=force, notDoneYet=True)
+        jsonPath = f"{os.getcwd()}/reducedbasis.json"
+
+        if self.worldComm.isMasterRank():
+
+            content['Qm'] = self.Qm
+            content['tf'] = self.tf
+            content['K'] = self.K
+
+            f = open(jsonPath, 'w')
+            json.dump(content, f, indent=4)
+            f.close()
+
+            h5f.create_dataset("MNr", data=self.MNr)
+
+            h5f.close() 
+            print("Done !")
+
+            if check and feelpp.Environment.isSequential():
+                print("[reducedbasis] Checking that the exported basis is correct...")
+                self.checkSaved(jsonPath)
+                print("[reducedbasis] Check is ok !")
+
+
+    def loadReducedBasis(self, path, model):
+        h5f, j = super().loadReducedBasis(path, model, notDoneYet=True)
+
+        self.tf = j['tf']
+        self.K = j['K']
+        self.dt = self.tf / self.K
+
+        self.MNr = h5f['MNr'][:]
+
+        h5f.close()
