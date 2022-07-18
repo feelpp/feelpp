@@ -1,5 +1,11 @@
 from .reducedbasis import *
 
+from petsc4py import PETSc
+from slepc4py import SLEPc
+slepc4py.init(sys.argv)
+
+from tqdm import tqdm
+
 class reducedbasisOffline(reducedbasis):
     """ Reduced basis for stationnary problem
     """

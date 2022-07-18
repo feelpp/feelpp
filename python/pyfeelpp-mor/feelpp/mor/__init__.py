@@ -14,6 +14,7 @@ def toolboxmor( name, dim=2, time_dependent=False, prefix="" ):
     Keyword arguments:
     name -- name of the model
     dim -- the dimension (default: 2)
+    time_dependent -- the model is time dependent (default: False)
     prefix -- the prefix of the model
     """
     key='toolboxmor'

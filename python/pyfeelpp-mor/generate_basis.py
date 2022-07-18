@@ -189,14 +189,15 @@ def generate_basis(worldComm=None, config=None):
         mubar.view()
 
     affineDecomposition = model.getAffineDecomposition()
-    Aq = affineDecomposition[0]
+    Aq_ = affineDecomposition[0]
     Fq_ = affineDecomposition[1]
 
+    Aq = mor_rb.convertToPetscMat(Aq_[0])
     Fq = []
     for f in Fq_:
         Fq.append(mor_rb.convertToPetscVec(f[0]))
 
-    rb = mor_rb.reducedbasisOffline(mor_rb.convertToPetscMat(Aq[0]), Fq, model, mubar,
+    rb = mor_rb.reducedbasisOffline(Aq, Fq, model, mubar,
             output_names=output_names, use_dual_norm=config.use_dual_norm)
     rb.setVerbose(False)
     if worldComm.isMasterRank():

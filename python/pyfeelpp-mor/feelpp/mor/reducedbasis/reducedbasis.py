@@ -4,16 +4,10 @@
 
 import sys, slepc4py
 import numpy as np
-from petsc4py import PETSc
-from slepc4py import SLEPc
-slepc4py.init(sys.argv)
 # import plotly.graph_objects as go
 import sys, os
 import h5py
 import json
-from tqdm import tqdm
-from scipy.sparse.linalg import splu, spsolve
-# import time
 
 import feelpp
 
