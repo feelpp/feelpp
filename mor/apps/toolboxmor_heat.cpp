@@ -16,40 +16,29 @@ ToolboxMorHeat<ToolboxType,Options>::ToolboxMorHeat( std::string const& name, st
 }
 
 template<typename ToolboxType, int Options>
-std::shared_ptr<typename ToolboxMorHeat<ToolboxType,Options>::self_type>
-ToolboxMorHeat<ToolboxType,Options>::createReducedBasisModel()
-{
-    auto heatBox = toolbox_type::New(_prefix="heat");
-    heatBox->init();
-    heatBox->printAndSaveInfo();
-
-    auto model = std::make_shared<self_type>(soption("toolboxmor.name"));
-    model->initOffline( heatBox );
-
-    return model;
-}
-
-template<typename ToolboxType, int Options>
 void
-ToolboxMorHeat<ToolboxType,Options>::initOffline( toolbox_ptrtype toolbox )
+ToolboxMorHeat<ToolboxType,Options>::initModel()
 {
-    M_offlineToolbox = toolbox;
-    this->setFunctionSpaces( toolbox->spaceTemperature() );
-    auto heatBoxModel = DeimMorModelToolbox<toolbox_type>::New( toolbox );
+    M_offlineToolbox = toolbox_type::New(_prefix="heat");
+    M_offlineToolbox->init();
+    M_offlineToolbox->printAndSaveInfo();
+
+    this->setFunctionSpaces( M_offlineToolbox->spaceTemperature() );
 
     if ( M_offlineToolbox->hasModelProperties() )
         this->addModelData( "toolbox_json_setup", M_offlineToolbox->modelProperties().jsonData(), "toolbox_model/setup.json" );
 
-    this->initToolbox(heatBoxModel);
+    auto heatBoxModel = DeimMorModelToolbox<toolbox_type>::New( M_offlineToolbox );
+    this->initOfflineToolbox( heatBoxModel );
 
-    this->initOnline();// maybe give here heatBoxModel
+    //this->initOnline();// maybe give here heatBoxModel
 }
 
 template<typename ToolboxType, int Options>
 void
-ToolboxMorHeat<ToolboxType,Options>::initOnline()
+ToolboxMorHeat<ToolboxType,Options>::initOnlineToolbox( std::shared_ptr<DeimMorModelBase<typename super_type::mesh_type>> heatBoxModel )
 {
-    auto heatBoxModel = DeimMorModelToolbox<toolbox_type>::New("heat");
+    //auto heatBoxModel = DeimMorModelToolbox<toolbox_type>::New("heat");
 
     M_onlineModelProperties = std::make_shared<ModelProperties>();// this->repository().expr(),this->worldCommPtr(), this->prefix(), this->clovm() );
     if( this->hasModelData("toolbox_json_setup") )
@@ -59,17 +48,17 @@ ToolboxMorHeat<ToolboxType,Options>::initOnline()
         M_onlineModelProperties->setup( jsonData );
     }
 
-    heatBoxModel->setToolboxInitFunction(
+    std::dynamic_pointer_cast<DeimMorModelToolbox<toolbox_type>>( heatBoxModel )->setToolboxInitFunction(
         [this](   /*auto*/ typename toolbox_type::mesh_ptrtype  mesh ) {
             auto tbDeim = toolbox_type::New( _prefix="heat"/*M_prefix*/);
             tbDeim->setModelProperties( M_onlineModelProperties );
             tbDeim->setMesh(mesh);
             tbDeim->init();
-            //tbDeim->printAndSaveInfo();
+            tbDeim->printAndSaveInfo();
             return tbDeim;
         });
 
-    this->initOnlineToolbox(heatBoxModel);
+    super_type::initOnlineToolbox(heatBoxModel);
 }
 
 template<typename ToolboxType, int Options>
@@ -77,7 +66,9 @@ void
 ToolboxMorHeat<ToolboxType,Options>::setupSpecificityModel( boost::property_tree::ptree const& ptree, std::string const& dbDir )
 {
     super_type::setupSpecificityModel( ptree,dbDir );
-    this->initOnline();
+    auto heatBoxModel = DeimMorModelToolbox<toolbox_type>::New("heat");
+    this->initOnlineToolbox( heatBoxModel );
+    //this->initOnline();
 }
 
 

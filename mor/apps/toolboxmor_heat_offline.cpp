@@ -88,39 +88,28 @@ int runSimulation()
     using space_type = typename heat_tb_type::space_temperature_type;
 
     using rb_model_type = ToolboxMor<space_type>;
-    using rb_model_ptrtype = std::shared_ptr<rb_model_type>;
+    //using rb_model_ptrtype = std::shared_ptr<rb_model_type>;
     using crb_model_type = CRBModel<rb_model_type>;
-    using crb_model_ptrtype = std::shared_ptr<crb_model_type>;
+    // using crb_model_ptrtype = std::shared_ptr<crb_model_type>;
     using crb_type = CRB<crb_model_type>;
-    using crb_ptrtype = std::shared_ptr<crb_type>;
-    using wn_type = typename crb_type::wn_type;
+    // using crb_ptrtype = std::shared_ptr<crb_type>;
+    // using wn_type = typename crb_type::wn_type;
     using vectorN_type = Eigen::VectorXd;
-    using export_vector_wn_type = typename crb_type::export_vector_wn_type;
-    using mesh_type = typename rb_model_type::mesh_type;
-    using mesh_ptrtype = typename rb_model_type::mesh_ptrtype;
-    using parameter_type = typename rb_model_type::parameter_type;
-    using sampling_type = typename crb_type::sampling_type;
-    using sampling_ptrtype = std::shared_ptr<sampling_type>;
+    // using export_vector_wn_type = typename crb_type::export_vector_wn_type;
+    // using mesh_type = typename rb_model_type::mesh_type;
+    // using mesh_ptrtype = typename rb_model_type::mesh_ptrtype;
+    // using parameter_type = typename rb_model_type::parameter_type;
+    // using sampling_type = typename crb_type::sampling_type;
+    // using sampling_ptrtype = std::shared_ptr<sampling_type>;
 
-    using deim_function_type = typename rb_model_type::deim_function_type;
-    using mdeim_function_type = typename rb_model_type::mdeim_function_type;
-#if 0
-    auto heatBox = heat_tb_type::New(_prefix="heat");
-    heatBox->init();
-    heatBox->printAndSaveInfo();
+    // using deim_function_type = typename rb_model_type::deim_function_type;
+    // using mdeim_function_type = typename rb_model_type::mdeim_function_type;
 
-    rb_model_ptrtype model = std::make_shared<rb_model_type>(soption("toolboxmor.name"));
-    model->setFunctionSpaces(heatBox->spaceTemperature());
-    auto heatBoxModel = DeimMorModelToolbox<heat_tb_type>::New(heatBox);
-    model->initToolbox(heatBoxModel);
-#else
     using rb_model_heat_type = ToolboxMorHeat<heat_tb_type>;
-    auto model = rb_model_heat_type::createReducedBasisModel();
-    auto heatBox = model->offlineToolbox();
-#endif
-
-    crb_model_ptrtype crbModel = std::make_shared<crb_model_type>(model);
-    crb_ptrtype crb = crb_type::New(soption("toolboxmor.name"), crbModel, crb::stage::offline);
+    //auto model = rb_model_heat_type::createReducedBasisModel();
+    auto model = std::make_shared<rb_model_heat_type>(soption("toolboxmor.name"));
+    auto crbModel = std::make_shared<crb_model_type>(soption("toolboxmor.name"),model,crb::stage::offline);
+    auto crb = crb_type::New(soption("toolboxmor.name"), crbModel, crb::stage::offline);
 
     tic();
     crb->offline();
@@ -128,6 +117,8 @@ int runSimulation()
 
     if( !boption("toolboxmor.do-cvg") )
         return 0;
+
+    auto heatBox = model->offlineToolbox();
 
     // convergence study
     int N = crb->dimension();
@@ -154,7 +145,8 @@ int runSimulation()
         }
     }
 
-    sampling_ptrtype sampling( new sampling_type( crbModel->parameterSpace() ) );
+    //sampling_ptrtype sampling( new sampling_type( crbModel->parameterSpace() ) );
+    auto sampling = std::make_shared<typename crb_type::sampling_type>( crbModel->parameterSpace() );
     int size = ioption("toolboxmor.sampling-size");
     sampling->clear();
     sampling->randomize( size, true );

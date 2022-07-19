@@ -20,14 +20,13 @@ class FEELPP_EXPORT ToolboxMorHeat : public ToolboxMor<typename ToolboxType::spa
 
     explicit ToolboxMorHeat( std::string const& name = "ToolboxMor"/*"ToolboxMorHeat"*/, std::string const& prefix = "" );
 
-    void initOffline( toolbox_ptrtype toolbox );
-    void initOnline();
-
     toolbox_ptrtype offlineToolbox() const { return M_offlineToolbox; }
 
+    void initModel() override;
+    void initOnlineToolbox( std::shared_ptr<DeimMorModelBase<typename super_type::mesh_type>> heatBoxModel ) override;
+    //void initOnline();
     void setupSpecificityModel( boost::property_tree::ptree const& ptree, std::string const& dbDir ) override;
 
-    static std::shared_ptr<self_type> createReducedBasisModel();
   private :
     toolbox_ptrtype M_offlineToolbox;
     std::shared_ptr<ModelProperties> M_onlineModelProperties;
