@@ -313,7 +313,7 @@ ToolboxMor<SpaceType, Options>::assembleOutputIntegrate( parameter_type const& m
             f += integrate( _range=range, _expr=exU*id(u)+exGU0*dx(u)+exGU1*dy(u)+exGU2*dz(u)+exDNU*dn(u) );
         }
     }
-    return f.vectorPtr();    
+    return f.vectorPtr();
 }
 
 template<typename SpaceType, int Options>
@@ -409,7 +409,7 @@ ToolboxMor<SpaceType, Options>::setupSpecificityModel( boost::property_tree::ptr
 
 template<typename SpaceType, int Options>
 void
-ToolboxMor<SpaceType, Options>::initModel()
+ToolboxMor<SpaceType, Options>::initModelImpl()
 {
     std::string propertyPath = Environment::expand( soption("toolboxmor.filename"));
     M_trainsetDeimSize = ioption("toolboxmor.trainset-deim-size");
@@ -484,44 +484,44 @@ ToolboxMor<SpaceType, Options>::initModel()
             Feel::cout << tc::green << "ToolboxMor DEIM for output " << name << " construction finished!!" << tc::reset << std::endl;
             i++;
         }
-        else 
+        else
             M_outputDeim[name] = 0;
     }
 
 } // ToolboxMor<SpaceType, Options>::initModel
 
-template<typename SpaceType, int Options>
-void
-ToolboxMor<SpaceType, Options>::initOnlineModel( std::shared_ptr<super_type> const& model )
-{
-    auto tbModel = std::dynamic_pointer_cast<self_type>(model);
-    this->M_modelProperties = tbModel->modelProperties();
-    this->M_outputDeimName = tbModel->outputDeimName();
-}
+// template<typename SpaceType, int Options>
+// void
+// ToolboxMor<SpaceType, Options>::initOnlineModel( std::shared_ptr<super_type> const& model )
+// {
+//     auto tbModel = std::dynamic_pointer_cast<self_type>(model);
+//     this->M_modelProperties = tbModel->modelProperties();
+//     this->M_outputDeimName = tbModel->outputDeimName();
+// }
 
 template<typename SpaceType, int Options>
 void
-ToolboxMor<SpaceType, Options>::initToolbox(std::shared_ptr<DeimMorModelBase<mesh_type>> model )
+ToolboxMor<SpaceType, Options>::initOfflineToolbox(std::shared_ptr<DeimMorModelBase<mesh_type>> model )
 {
-    this->setAssembleDEIM(model->deimFunction());
-    this->setAssembleMDEIM(model->mdeimFunction());
+    M_deimMorOfflineModel = model;
+    this->setAssembleDEIM(M_deimMorOfflineModel->deimFunction());
+    this->setAssembleMDEIM(M_deimMorOfflineModel->mdeimFunction());
 
-    this->initModel();
+    this->initModelImpl();
 
-    this->setOnlineAssembleDEIM(model->deimOnlineFunction(this->getDEIMReducedMesh()));
-    this->setOnlineAssembleMDEIM(model->mdeimOnlineFunction(this->getMDEIMReducedMesh()));
+    this->initOnlineToolbox( model->createOnline() );
 
     this->postInitModel();
-    this->setInitialized(true);
+    //this->setInitialized(true);
 }
 
 template<typename SpaceType, int Options>
 void
 ToolboxMor<SpaceType, Options>::initOnlineToolbox(std::shared_ptr<DeimMorModelBase<mesh_type>> model )
 {
-    M_deimMorModel = model;
-    this->setOnlineAssembleDEIM(M_deimMorModel/*model*/->deimOnlineFunction(this->getDEIMReducedMesh()));
-    this->setOnlineAssembleMDEIM(M_deimMorModel/*model*/->mdeimOnlineFunction(this->getMDEIMReducedMesh()));
+    M_deimMorOnlineModel = model;
+    this->setOnlineAssembleDEIM(M_deimMorOnlineModel->deimOnlineFunction(this->getDEIMReducedMesh()));
+    this->setOnlineAssembleMDEIM(M_deimMorOnlineModel->mdeimOnlineFunction(this->getMDEIMReducedMesh()));
     //this->setInitialized(true);
 }
 

@@ -216,13 +216,23 @@ public:
      */
     //@{
 
-    CRBModel( crb::stage stage, int level = 0 )
+    CRBModel( std::string const& name, crb::stage stage, int level = 0 )
         :
-        CRBModel( std::make_shared<model_type>(), stage, level )
-    {
-    }
-    CRBModel( model_ptrtype const& model, crb::stage stage, int level = 0 )
+        CRBModel( name, Environment::randomUUID( true ), stage, level )
+    {}
+    CRBModel( std::string const& name, uuids::uuid const& uid, crb::stage stage, int level = 0 )
         :
+        CRBModel( std::make_shared<CRBModelDB>(name,uid),
+                  std::make_shared<model_type>(), stage, level )
+        {}
+    CRBModel( std::string const& name, model_ptrtype const& model, crb::stage stage, int level = 0 )
+        :
+        CRBModel( std::make_shared<CRBModelDB>(name,Environment::randomUUID( true )), model, stage, level )
+        {}
+
+    CRBModel( std::shared_ptr<CRBModelDB> crbModelDb, model_ptrtype const& model, crb::stage stage, int level = 0 )
+        :
+        M_crbModelDb( crbModelDb ),
         M_level( level ),
         M_Aqm(),
         M_InitialGuessV(),
@@ -253,6 +263,53 @@ public:
         M_outputIndex(ioption(_prefix=M_prefix,_name="crb.output-index")),
         M_useLinearModel(boption(_prefix=M_prefix,_name="crb.use-linear-model"))
         {
+
+            M_model->attach( M_crbModelDb );
+            bool M_rebuildDb = boption(_prefix=M_prefix,_name="crb.rebuild-database");
+            int M_dbLoad = ioption(_prefix=M_prefix, _name="crb.db.load" );
+            std::string M_dbFilename = soption(_prefix=M_prefix, _name="crb.db.filename");
+            std::string M_dbId = soption(_prefix=M_prefix,_name="crb.db.id");
+            int M_dbUpdate = ioption(_prefix=M_prefix, _name="crb.db.update" );
+            if ( !M_rebuildDb )
+            {
+                switch ( M_dbLoad )
+                {
+                case 0 :
+                    M_crbModelDb->updateIdFromDBFilename( M_dbFilename );
+                    break;
+                case 1:
+                    M_crbModelDb->updateIdFromDBLast( crb::last::created );
+                    break;
+                case 2:
+                    M_crbModelDb->updateIdFromDBLast( crb::last::modified );
+                    break;
+                case 3:
+                    M_crbModelDb->updateIdFromId( M_dbId );
+                    break;
+                }
+            }
+            else
+            {
+                switch ( M_dbUpdate )
+                {
+                case 0 :
+                    M_crbModelDb->updateIdFromDBFilename( M_dbFilename );
+                    break;
+                case 1:
+                    M_crbModelDb->updateIdFromDBLast( crb::last::created );
+                    break;
+                case 2:
+                    M_crbModelDb->updateIdFromDBLast( crb::last::modified );
+                    break;
+                case 3:
+                    M_crbModelDb->updateIdFromId( M_dbId );
+                    break;
+                default:
+                    // don't do anything and let the system pick up a new unique id
+                    break;
+                }
+            }
+
             if ( stage == crb::stage::offline )
                 this->init();
         }
@@ -2881,6 +2938,7 @@ public:
 
 protected:
 
+    std::shared_ptr<CRBModelDB> M_crbModelDb;
     std::string M_prefix;
     int M_level = 0;
 

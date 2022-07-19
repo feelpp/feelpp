@@ -416,26 +416,33 @@ public :
         {}
     ModelCrbBase( std::string const& name, uuids::uuid const& uid, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(), std::string const& prefix = "" )
         :
+        ModelCrbBase( std::make_shared<CRBModelDB>( name, uid ), worldComm, prefix )
+        {}
+    ModelCrbBase( std::shared_ptr<CRBModelDB> const& crbModelDb, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(), std::string const& prefix = "" )
+        :
         super( worldComm ),
         M_prefix(prefix),
         Dmu( parameterspace_type::New( 0,worldComm ) ),
         XN( new rbfunctionspace_type( worldComm ) ),
         M_backend( backend() ),
-        M_crbModelDb( name, uid ),
+        //M_crbModelDb( name, uid ),
+        M_crbModelDb( crbModelDb ),
         M_is_initialized( false ),
         M_has_displacement_field( false ),
-        M_rebuildDb(boption(_prefix=M_prefix,_name="crb.rebuild-database")),
-        M_dbLoad(ioption(_prefix=M_prefix, _name="crb.db.load" )),
-        M_dbFilename(soption(_prefix=M_prefix, _name="crb.db.filename")),
-        M_dbId(soption(_prefix=M_prefix,_name="crb.db.id")),
-        M_dbUpdate(ioption(_prefix=M_prefix, _name="crb.db.update" )),
+
+        // M_rebuildDb(boption(_prefix=M_prefix,_name="crb.rebuild-database")),
+        // M_dbLoad(ioption(_prefix=M_prefix, _name="crb.db.load" )),
+        // M_dbFilename(soption(_prefix=M_prefix, _name="crb.db.filename")),
+        // M_dbId(soption(_prefix=M_prefix,_name="crb.db.id")),
+        // M_dbUpdate(ioption(_prefix=M_prefix, _name="crb.db.update" )),
+
         M_serEimFreq(ioption(_prefix=M_prefix,_name = "ser.eim-frequency")),
         M_serRbFreq(ioption(_prefix=M_prefix,_name = "ser.rb-frequency")),
         M_serErrorEstimation(boption(_prefix=M_prefix,_name="ser.error-estimation")),
         M_crbUseNewton(boption(_prefix=M_prefix,_name="crb.use-newton")),
         M_isOnlineModel(false)
     {
-
+#if 0
         if ( !M_rebuildDb )
         {
             switch ( M_dbLoad )
@@ -475,7 +482,8 @@ public :
                 break;
             }
         }
-
+#endif
+#if 0
         if ( this->worldComm().isMasterRank() )
         {
             fs::path modeldir = M_crbModelDb.dbRepository();
@@ -489,6 +497,7 @@ public :
             write_json( jsonpath, ptree );
         }
         this->worldComm().barrier();
+#endif
     }
 
     virtual ~ModelCrbBase() {}
@@ -496,19 +505,19 @@ public :
     /**
      * \return the name of the model
      */
-    std::string const& modelName() const { return M_crbModelDb.name(); }
+    std::string const& modelName() const { return M_crbModelDb->name(); }
 
     /**
      * set the model name
      */
-    void setModelName( std::string const& name ) { M_crbModelDb.setName( name ); }
+    //void setModelName( std::string const& name ) { M_crbModelDb.setName( name ); }
 
     std::string const& prefix() const { return M_prefix; }
 
     void setPrefix( std::string const& prefix ) { M_prefix = prefix; }
 
-    CRBModelDB const& crbModelDb() const { return M_crbModelDb; }
-
+    CRBModelDB const& crbModelDb() const { return *M_crbModelDb; }
+    void attach( std::shared_ptr<CRBModelDB> crbModelDb ) { M_crbModelDb = crbModelDb; }
 
     /**
      * Define the model as an online (sequential) model
@@ -529,14 +538,14 @@ public :
     //!
     //! unique id for CRB Model
     //!
-    uuids::uuid  uuid() const { return M_crbModelDb.uuid(); }
+    uuids::uuid  uuid() const { return M_crbModelDb->uuid(); }
 
     //!
     //! set uuid for CRB Model
     //! @warning be extra careful here, \c setId should be called before any
     //! CRB type object is created because they use the id
     //!
-    void setId( uuids::uuid const& i ) { M_crbModelDb.setId( i ); }
+    //void setId( uuids::uuid const& i ) { M_crbModelDb.setId( i ); }
 
     /**
      * return directory path where symbolic expression (ginac) are built
@@ -2326,7 +2335,7 @@ protected :
 
     backend_ptrtype M_backend;
 
-    CRBModelDB M_crbModelDb;
+    std::shared_ptr<CRBModelDB> M_crbModelDb;
 
     funs_type M_funs;
     funsd_type M_funs_d;
@@ -2390,11 +2399,11 @@ protected :
     std::map<int,double> M_eim_error_aq;
     std::vector< std::map<int,double> > M_eim_error_fq;
 
-    bool M_rebuildDb;
-    int M_dbLoad;
-    std::string M_dbFilename;
-    std::string M_dbId;
-    int M_dbUpdate;
+    // bool M_rebuildDb;
+    // int M_dbLoad;
+    // std::string M_dbFilename;
+    // std::string M_dbId;
+    // int M_dbUpdate;
     int M_serEimFreq;
     int M_serRbFreq;
     bool M_serErrorEstimation;
