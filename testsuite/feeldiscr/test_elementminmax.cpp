@@ -43,7 +43,7 @@
 #include <feel/feelfilters/domain.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelvf/vf.hpp>
-
+#include <feel/feeldiscr/minmax.hpp>
 
 using namespace Feel;
 
