@@ -101,21 +101,21 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
         for k in range(self.K):
             for p in range(self.Qf):
                 for p_ in range(self.Qf):
-                    self.FF[k, p, p_] = self.scalarA(self.Fkp[k,p], self.Fkp[k,p_])
+                    self.FF[k, p, p_] = self.scalarX(self.Fkp[k,p], self.Fkp[k,p_])
             
                 for n in range(self.N):
                     for r in range(self.Qm):
-                        self.FM[k,p,r,n] = self.scalarA(self.Fkp[k,p], self.Mnr[n,r])
+                        self.FM[k,p,r,n] = self.scalarX(self.Fkp[k,p], self.Mnr[n,r])
                     for q in range(self.Qa):
-                        self.FL[k,p,q,n] = self.scalarA(self.Lnq[n,q], self.Fkp[k,p])
+                        self.FL[k,p,q,n] = self.scalarX(self.Lnq[n,q], self.Fkp[k,p])
         
         for n in range(self.N):
             for r in range(self.Qm):
                 for n_ in range(self.N):
                     for q in range(self.Qa):
-                        self.ML[r,n,q,n_] = self.scalarA(self.Lnq[n,q], self.Mnr[n,r])
+                        self.ML[r,n,q,n_] = self.scalarX(self.Lnq[n,q], self.Mnr[n,r])
                     for r_ in range(self.Qm):
-                        self.MM[r,n,r_,n_] = self.scalarA(self.Mnr[n,r], self.Mnr[n_,r_])
+                        self.MM[r,n,r_,n_] = self.scalarX(self.Mnr[n,r], self.Mnr[n_,r_])
 
     def expandOffline(self):
         super().expandOffline()
@@ -140,23 +140,23 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
         for k in range(self.K):
             for p in range(self.p):
                 for r in range(self.Qm):
-                    self.FM[k,p,r,-1] = self.scalarA(self.Fkp[k,p], self.Mnr[self.N,r])
+                    self.FM[k,p,r,-1] = self.scalarX(self.Fkp[k,p], self.Mnr[self.N,r])
                 for q in range(self.Qa):
-                    self.FL[k,p,q,-1] = self.scalarA(self.Lnq[self.N,q], self.Fkp[k,p])
+                    self.FL[k,p,q,-1] = self.scalarX(self.Lnq[self.N,q], self.Fkp[k,p])
         
         for r in range(self.Qm):
             for q in range(self.Qa):
-                self.ML[r, -1, q, -1] = self.scalarA(self.Lnq[self.N,q], self.Mnr[self.N,r])
+                self.ML[r, -1, q, -1] = self.scalarX(self.Lnq[self.N,q], self.Mnr[self.N,r])
             for r_ in range(self.Qm):
                 for n in range(self.N):
-                    self.MM[-1,r,n,r_] = self.scalarA(self.Mnr[n,r], self.Mnr[self.N,r_])
-                    self.MM[-1,r,n,r_] = self.scalarA(self.Mnr[self.N,r], self.Mnr[n,r_])
+                    self.MM[-1,r,n,r_] = self.scalarX(self.Mnr[n,r], self.Mnr[self.N,r_])
+                    self.MM[-1,r,n,r_] = self.scalarX(self.Mnr[self.N,r], self.Mnr[n,r_])
 
 
     """
     Offline generation of the basis
     """
-    def generateBasis(self, musk, g=lambda k:1 if k==0 else 0, orth=True) -> None:
+    def generateBasis(self, musk, orth=True) -> None:
         """Generates the reduced basis matrix from different parameters and different instants
 
         Args:
@@ -168,6 +168,10 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
         self.N = taille_dict(musk)
         self.Z = []
         ind = 0
+
+        def g(k): return 1
+        # def g(k): return 1 if k == 0 else 0
+        # def g(k): return 1 - float(np.cos(k*self.dt))
 
         for mu in musk:
             beta = self.model.computeBetaQm(mu)
@@ -255,7 +259,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
         for k in range(1, self.K):
             t.append(k * self.dt)
 
-            solN = sl.lu_solve(matLu, g[k] * self.dt * FNmu + MNmu @ uN)
+            solN = matLu.solve(g[k] * self.dt * FNmu + MNmu @ uN)
             uN = solN.copy()
 
             rhs = float(g[k]) * self.dt * Fmu + Mmu * u

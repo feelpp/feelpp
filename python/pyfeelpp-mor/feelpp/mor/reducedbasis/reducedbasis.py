@@ -432,7 +432,7 @@ class reducedbasis():
             content["mubar"] = dict_mubar
 
 
-            f = open(f'{path}/reducedbasis.json', 'w')
+            f = open(jsonPath, 'w')
             json.dump(content, f, indent = 4)
             f.close()
             
@@ -459,7 +459,7 @@ class reducedbasis():
             if notDoneYet:
                 return h5f, content
             else:
-                f = open('reducedbasis.json', 'w')
+                f = open(jsonPath, 'w')
                 json.dump(content, f, indent = 4)
                 f.close()
 
@@ -534,13 +534,13 @@ class reducedbasis():
         tmpDeltaMax = h5f["DeltaMax"][:]
         self.DeltaMax = None if tmpDeltaMax.shape == (0,) else tmpDeltaMax
 
-        self.alphaMubar = h5f["alphaMubar"][0]
-        self.gammaMubar = h5f["gammaMubar"][0]
-        betaA_bar_np = np.array(self.betaA_bar)
-
         use_dual_norm = j['use_dual_norm']
 
         if not use_dual_norm:
+
+            self.alphaMubar = h5f["alphaMubar"][0]
+            self.gammaMubar = h5f["gammaMubar"][0]
+            betaA_bar_np = np.array(self.betaA_bar)
 
             def alphaLB(mu):
                 # From a parameter
@@ -612,8 +612,9 @@ class reducedbasis():
         else:
             assert( (self.DeltaMax == rbLoaded.DeltaMax).all() ), "DeltaMax"
 
-        assert self.alphaMubar == rbLoaded.alphaMubar, "alphaMubar"
-        assert self.gammaMubar == rbLoaded.gammaMubar, "gammaMubar"
+        if not self.use_dual_norm:
+            assert self.alphaMubar == rbLoaded.alphaMubar, "alphaMubar"
+            assert self.gammaMubar == rbLoaded.gammaMubar, "gammaMubar"
 
 
     def getSize(self, threshold):
