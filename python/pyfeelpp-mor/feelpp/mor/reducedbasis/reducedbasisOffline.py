@@ -639,8 +639,8 @@ class reducedbasisOffline(reducedbasis):
         """Return the basis as a NumPy matrix (the quantities as copied)
         """
         RB = np.zeros((self.NN, self.N))
-        for i, u in enumerate(self.Z):
-            RB[:,i] = u[:]
+        for i, ksi in enumerate(self.Z):
+            RB[:,i] = ksi[:]
         return RB
 
 
