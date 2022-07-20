@@ -49,6 +49,7 @@
 
 //#include <feel/feelfilters/gmsh.hpp>
 
+#include <feel/feelmor/crbmodeldb.hpp>
 #include <feel/feelmor/crbmodelbase.hpp>
 
 namespace Feel
