@@ -1,8 +1,8 @@
 import feelpp.mor.reducedbasis.reducedbasis_timeOffline as mor_rb
 import sys, os
 from feelpp.toolboxes.heat import *
-from feelpp.toolboxes.core import *
-from feelpp.mor import *
+import feelpp.toolboxes.core as core
+import feelpp.mor as mor
 import feelpp
 import json5 as json
 import numpy as np
@@ -103,7 +103,7 @@ def generate_basis(worldComm=None, config=None):
 
     f.close()
 
-    crb_model_properties = CRBModelProperties(worldComm=feelpp.Environment.worldCommPtr())
+    crb_model_properties = mor.CRBModelProperties(worldComm=feelpp.Environment.worldCommPtr())
     crb_model_properties.setup(model_path)
     crb_model_outputs = crb_model_properties.outputs()
 
@@ -122,7 +122,7 @@ def generate_basis(worldComm=None, config=None):
     modelParameters = heatBox.modelProperties().parameters()
     default_parameter = modelParameters.toParameterValues()
 
-    model = toolboxmor(name=name, dim=config.dim, time_dependent=config.time_dependant)
+    model = mor.toolboxmor(name=name, dim=config.dim, time_dependent=config.time_dependant)
     model.setFunctionSpaces( Vh=heatBox.spaceTemperature() )
 
 
@@ -287,8 +287,8 @@ if __name__ == '__main__':
 
     config = feelpp.globalRepository(f"generate_basis-{case}")
     sys.argv = [f'generate-basis-{case}']
-    o = toolboxes_options("heat")
-    o.add(makeToolboxMorOptions())
+    o = core.toolboxes_options("heat")
+    o.add(mor.makeToolboxMorOptions())
 
     e = feelpp.Environment(sys.argv, opts=o, config=config)
 

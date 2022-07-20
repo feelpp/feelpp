@@ -156,7 +156,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
     """
     Offline generation of the basis
     """
-    def generateBasis(self, musk, orth=True) -> None:
+    def generateBasis(self, musk, g=lambda k:1 if k==0 else 0, orth=True) -> None:
         """Generates the reduced basis matrix from different parameters and different instants
 
         Args:
@@ -168,10 +168,6 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
         self.N = taille_dict(musk)
         self.Z = []
         ind = 0
-
-        def g(k): return 1
-        # def g(k): return 1 if k == 0 else 0
-        # def g(k): return 1 - float(np.cos(k*self.dt))
 
         for mu in musk:
             beta = self.model.computeBetaQm(mu)
@@ -259,7 +255,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
         for k in range(1, self.K):
             t.append(k * self.dt)
 
-            solN = matLu.solve(g[k] * self.dt * FNmu + MNmu @ uN)
+            solN = sl.lu_solve(matLu, g[k] * self.dt * FNmu + MNmu @ uN)
             uN = solN.copy()
 
             rhs = float(g[k]) * self.dt * Fmu + Mmu * u
