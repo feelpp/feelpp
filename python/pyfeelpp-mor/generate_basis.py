@@ -1,11 +1,11 @@
-import feelpp.mor.reducedbasis.reducedbasisOffline as mor_rb
+import feelpp.mor.reducedbasis.reducedbasis_timeOffline as mor_rb
 import sys, os
 from feelpp.toolboxes.heat import *
 from feelpp.toolboxes.core import *
 from feelpp.mor import *
 import feelpp
 import json5 as json
-
+import numpy as np
 
 import argparse
 
@@ -16,7 +16,7 @@ parser.add_argument('--config-file', help="path to cfg file", type=str)
 parser.add_argument('--odir', help="path to output directory", type=str)
 parser.add_argument('--case', help="name of the case", type=str)
 parser.add_argument('--dim', help="dimension of the case", type=int)
-parser.add_argument('--time-dependant', help="time dependand case", type=bool, default=False)
+parser.add_argument('--time-dependant', help="time dependand case", type=int, default=0)
 parser.add_argument('--algo', help="compute using greedy algorithm (default 1) 0 : From sample, 1 : Greedy, 2 : POD",
     type=int, default=1)
 parser.add_argument('--train-size', help="size of the (random) training set", type=int, default=40)
@@ -197,33 +197,67 @@ def generate_basis(worldComm=None, config=None):
     for f in Fq_:
         Fq.append(mor_rb.convertToPetscVec(f[0]))
 
-    rb = mor_rb.reducedbasisOffline(Aq, Fq, model, mubar,
+    if config.time_dependant:
+        Mq_ = affineDecomposition[2]
+        Mq = mor_rb.convertToPetscMat(Mq_[0])
+        K=20 ; tf=2
+        rb = mor_rb.reducedbasisTimeOffline(Aq=Aq, Fq=Fq, Mr=Mq, model=model, mubar=mubar,
+            output_names=output_names, use_dual_norm=config.use_dual_norm, tf=tf, K=K)
+    else:
+        rb = mor_rb.reducedbasisOffline(Aq=Aq, Fq=Fq, model=model, mubar=mubar,
             output_names=output_names, use_dual_norm=config.use_dual_norm)
+
     rb.setVerbose(False)
     if worldComm.isMasterRank():
         print("Size of the big problem :", rb.NN)
 
+    # mu = model.parameterSpace().element()
+    # print(model.computeBetaQm(mu))
+ 
+    if time_dependant:
+        mu0 = Dmu.element()
+        mu1 = Dmu.element()
+        mu2 = Dmu.element()
+        musk = {mu0: [2, 10], mu1: [3, 7, 8], mu2: [4, 5, 6]}
+        if worldComm.isMasterRank():
+            print("[generate_basis] Start generation of the basis")
 
-    mus = listOfParams(config.size)
-    if worldComm.isMasterRank():
-        print("[generate_basis] Start generation of the basis using algo", algos_names[config.algo])
-    if config.algo == 0:
-        rb.computeOfflineReducedBasis(mus)
+        rb.generateBasis(musk)
 
-    elif config.algo == 1:
-        mu_0 = Dmu.element()
-        rb.greedy(mu_0, mus, eps_tol=config.tol)
+        if worldComm.isMasterRank():
+            print("[generate_basis] basis generated ! Now computing errors")
 
-    elif config.algo == 2:
-        rb.generatePOD(mus, eps_tol=config.tol)
+        def g(k): return 1
+
+        glist = np.array(np.zeros((21)))
+        for k in range(21):
+            np.append(glist,[g(k)])
+
+        rb.computeOfflineErrorRhs()
+        rb.computeOfflineError(glist)
+
     else:
-        pass
+        mus = listOfParams(config.size)
+        if worldComm.isMasterRank():
+            print("[generate_basis] Start generation of the basis using algo", algos_names[config.algo])
 
-    if worldComm.isMasterRank():
-        print("[generate_basis] basis generated ! Now computing errors")
+        if config.algo == 0:
+            rb.computeOfflineReducedBasis(mus)
 
-    rb.computeOfflineErrorRhs()
-    rb.computeOfflineError()
+        elif config.algo == 1:
+            mu_0 = Dmu.element()
+            rb.greedy(mu_0, mus, eps_tol=config.tol)
+
+        elif config.algo == 2:
+            rb.generatePOD(mus, eps_tol=config.tol)
+        else:
+            pass
+
+        if worldComm.isMasterRank():
+            print("[generate_basis] basis generated ! Now computing errors")
+
+        rb.computeOfflineErrorRhs()
+        rb.computeOfflineError()
 
     if worldComm.isMasterRank():
         print("[generate_basis] Done !")
@@ -242,7 +276,7 @@ if __name__ == '__main__':
     args = parser.parse_args(sys.argv)
     dim = args.dim
     config_file = args.config_file
-    time_dependant = args.time_dependant
+    time_dependant = args.time_dependant == 1
     odir = args.odir if args.odir is not None else "$name"
     algo = args.algo
     size = args.train_size
