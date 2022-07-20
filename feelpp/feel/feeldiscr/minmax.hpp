@@ -29,7 +29,7 @@ namespace Feel {
  * 
  * @code {.cpp}
  * auto v = Xh->element();
- * auto [min_v,arg_min_v] = min(_range=elements(mesh),_element=v);
+ * auto [min_v,arg_min_v] = minelt(_range=elements(mesh),_element=v);
  * @endcode
  * 
  * @return the min value and the dof point coordinates
@@ -85,7 +85,7 @@ auto minelt( Ts&&... v )
  *
  * @code {.cpp}
  * auto v = Xh->element();
- * auto [max_v,arg_max_v] = max(_range=elements(mesh),_element=v);
+ * auto [max_v,arg_max_v] = maxelt(_range=elements(mesh),_element=v);
  * @endcode
  *
  * @return the max value and the dof point coordinates
