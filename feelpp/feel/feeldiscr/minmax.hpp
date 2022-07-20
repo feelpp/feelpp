@@ -11,6 +11,9 @@
  */
 #pragma once
 
+#include <feel/feelalg/glas.hpp>
+#include <feel/feelcore/parameter.hpp>
+#include <feel/feelcore/serialization.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 
 namespace Feel {
@@ -26,16 +29,21 @@ namespace Feel {
  * 
  * @code {.cpp}
  * auto v = Xh->element();
- * auto [min_v,arg_min_v] = min(elements(mesh),v);
+ * auto [min_v,arg_min_v] = min(_range=elements(mesh),_element=v);
  * @endcode
  * 
  * @return the min value and the dof point coordinates
  */
-template<typename RangeT, typename ElementT>
-std::tuple<typename ElementT::value_type, eigen_vector_type<ElementT::nRealDim>> min( RangeT const& r, ElementT const& e )
+template <typename... Ts>
+auto minelt( Ts&&... v )
 {
-    using value_type = typename ElementT::value_type;
-    using functionspace_type = typename ElementT::functionspace_type;
+    auto args = NA::make_arguments( std::forward<Ts>( v )... );
+    auto && r = args.get(_range);
+    auto && e = args.get(_element);
+
+    using value_type = typename decay_type<decltype(e)>::value_type;
+    using functionspace_type = typename decay_type<decltype(e)>::functionspace_type;
+    constexpr int nRealDim = functionspace_type::nRealDim;
     double min_v{std::numeric_limits<value_type>::max()};
     int min_id{ 0 };
 
@@ -55,15 +63,15 @@ std::tuple<typename ElementT::value_type, eigen_vector_type<ElementT::nRealDim>>
             }
         }
     }
-    auto local_min = std::tuple{min_v,e.functionspace()->dof()->dofPoint(min_id).template get<0>()};
-    std::vector<std::tuple<value_type,eigen_vector_type<ElementT::nRealDim>>> all_min;
-    mpi::all_gather( e.functionSpace()->worldComm(),
-                      local_min,
-                      all_min );
+    auto [pt,thedof,comp] = e.functionSpace()->dof()->dofPoint(min_id);
+    eigen_vector_type<nRealDim> e_pt = emap<value_type>( pt );
+    auto local_min = std::tuple{min_v,e_pt};
+    std::vector<std::tuple<value_type,eigen_vector_type<nRealDim>>> all_min(e.functionSpace()->worldComm().globalSize());
+    mpi::all_gather( e.functionSpace()->worldComm().globalComm(), local_min, all_min );
     return *std::min_element( all_min.begin(), all_min.end(), 
                                 []( auto const& a, auto const& b  ){
-                                    return a.template get<0>() < b.template get<0>();
-                            } );
+                                    return std::get<0>(a) < std::get<0>(b); }
+                             );
 }
 
 /**
@@ -102,7 +110,7 @@ std::tuple<typename ElementT::value_type, typename ElementT::value_type, eigen_v
         }
     }
     auto local_minmax = std::tuple{minmax_v,e.functionspace()->dof()->dofPoint(min_id).template get<0>()};
-    std::vector<std::tuple<value_type,eigen_vector_type<ElementT::nRealDim>>> all_minmax;
+    std::vector<std::tuple<value_type,eigen_vector_type<nRealDim>>> all_minmax;
     mpi::all_gather( e.functionSpace()->worldComm(),
                         local_minmax,
                         all_minmax );
