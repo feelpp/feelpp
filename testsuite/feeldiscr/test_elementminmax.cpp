@@ -82,6 +82,8 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( elementminmax1, T, dim_types )
     BOOST_CHECK_SMALL( minimum, 2e-1 );
     auto [min_r,arg_min_r] = minelt(_range=elements(mesh), _element=u);
     BOOST_CHECK_SMALL( min_r, 2e-1 );
+    auto [max_r,arg_max_r] = maxelt(_range=elements(mesh), _element=u);
+    BOOST_CHECK_CLOSE( max_r, 1, 2e-1 );
     const double eps = 1000*Feel::type_traits<double>::epsilon();
 
     
