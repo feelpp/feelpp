@@ -255,7 +255,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
         for k in range(1, self.K):
             t.append(k * self.dt)
 
-            solN = matLu.solve(g[k] * self.dt * FNmu + MNmu @ uN)
+            solN = sl.lu_solve(matLu, g[k] * self.dt * FNmu + MNmu @ uN)
             uN = solN.copy()
 
             rhs = float(g[k]) * self.dt * Fmu + Mmu * u
