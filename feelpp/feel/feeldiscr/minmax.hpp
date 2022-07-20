@@ -75,6 +75,60 @@ auto minelt( Ts&&... v )
 }
 
 /**
+ * @brief compute the max of the element of a function space at DOF points over the range @p r
+ *
+ * @tparam RangeT range type to iterate on
+ * @tparam ElementT type of finite element function
+ *
+ * @param r range of element
+ * @param e element of a function space
+ *
+ * @code {.cpp}
+ * auto v = Xh->element();
+ * auto [max_v,arg_max_v] = max(_range=elements(mesh),_element=v);
+ * @endcode
+ *
+ * @return the max value and the dof point coordinates
+ */
+template <typename... Ts>
+auto maxelt( Ts&&... v )
+{
+    auto args = NA::make_arguments( std::forward<Ts>( v )... );
+    auto&& r = args.get( _range );
+    auto&& e = args.get( _element );
+
+    using value_type = typename decay_type<decltype( e )>::value_type;
+    using functionspace_type = typename decay_type<decltype( e )>::functionspace_type;
+    constexpr int nRealDim = functionspace_type::nRealDim;
+    double max_v{ std::numeric_limits<value_type>::min() };
+    int max_id{ 0 };
+
+    for ( auto const& rangeElt : r )
+    {
+        auto const& meshElt = boost::unwrap_ref( rangeElt );
+        index_type eid = meshElt.id();
+
+        for ( uint16_type local_id = 0; local_id < functionspace_type::fe_type::nLocalDof; ++local_id )
+        {
+            int dofpn = e.functionSpace()->dof()->localToGlobal( eid, local_id, 0 ).index();
+            value_type d = e( dofpn );
+            if ( max_v < d )
+            {
+                max_v = d;
+                max_id = dofpn;
+            }
+        }
+    }
+    auto [pt, thedof, comp] = e.functionSpace()->dof()->dofPoint( max_id );
+    eigen_vector_type<nRealDim> e_pt = emap<value_type>( pt );
+    auto local_max = std::tuple{ max_v, e_pt };
+    std::vector<std::tuple<value_type, eigen_vector_type<nRealDim>>> all_max( e.functionSpace()->worldComm().globalSize() );
+    mpi::all_gather( e.functionSpace()->worldComm().globalComm(), local_max, all_max );
+    return *std::max_element( all_max.begin(), all_max.end(),
+                              []( auto const& a, auto const& b )
+                              { return std::get<0>( a ) > std::get<0>( b ); } );
+}
+/**
  * @brief compute the min of the element over the range @p r
  * 
  * @tparam RangeT range type to iterate on
