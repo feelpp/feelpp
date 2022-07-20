@@ -1035,7 +1035,7 @@ class KDTreeBaseClass
             middleSplit_(obj, left, right - left, idx, cutfeat, cutval, bbox);
 
             node->node_type.sub.divfeat = cutfeat;
-
+            
             BoundingBox left_bbox(bbox);
             left_bbox[cutfeat].high = cutval;
             node->child1 = divideTree(obj, left, left + idx, left_bbox);
@@ -1044,8 +1044,8 @@ class KDTreeBaseClass
             right_bbox[cutfeat].low = cutval;
             node->child2 = divideTree(obj, left + idx, right, right_bbox);
 
-            node->node_type.sub.divlow  = left_bbox[cutfeat].high;
-            node->node_type.sub.divhigh = right_bbox[cutfeat].low;
+            node->node_type.sub.divlow  = left_bbox[cutfeat].high ;
+            node->node_type.sub.divhigh = right_bbox[cutfeat].low ;
 
             for (Dimension i = 0; i < (DIM > 0 ? DIM : obj.dim); ++i)
             {
