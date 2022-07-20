@@ -78,12 +78,14 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( elementminmax1, T, dim_types )
 
     double maximum = u.max();
     double minimum = u.min();
-    const double eps = 1000*Feel::type_traits<double>::epsilon();
-
-#if defined(USE_BOOST_TEST)
     BOOST_CHECK_CLOSE( maximum, 1.0, 2e-1 );
     BOOST_CHECK_SMALL( minimum, 2e-1 );
-#endif
+    auto [min_r,arg_min_r] = minelt(_range=elements(mesh), _element=u);
+    BOOST_CHECK_SMALL( min_r, 2e-1 );
+    const double eps = 1000*Feel::type_traits<double>::epsilon();
+
+    
+
 }
 
 BOOST_AUTO_TEST_CASE_TEMPLATE( elementminmax2, T, dim_types )
@@ -135,13 +137,4 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( elementminmax2, T, dim_types )
 
 BOOST_AUTO_TEST_SUITE_END()
 
-#if 0
-int BOOST_TEST_CALL_DECL
-main( int argc, char* argv[] )
-{
-    Feel::Environment env( argc, argv );
-    int ret = ::boost::unit_test::unit_test_main( &init_unit_test, argc, argv );
 
-    return ret;
-}
-#endif
