@@ -372,9 +372,9 @@ ToolboxMor<SpaceType, Options>::initModel()
     }
 
     auto PsetV = this->Dmu->sampling();
-    std::string supersamplingname =(boost::format("DmuDEim-P%1%-Ne%2%-generated-by-master-proc") % this->Dmu->dimension() % M_trainsetDeimSize ).str();
+    std::string supersamplingname = fmt::format("{}/DmuDEim-P{}-Ne{}-generated-by-master-proc", this->M_crbModelDb.dbRepository(), this->Dmu->dimension(), M_trainsetDeimSize );
     std::ifstream file ( supersamplingname );
-    Feel::cout << tc::blue << "[ToolboxMor] DEIM sampling file \"" << get_current_dir_name() << "/" << supersamplingname;
+    Feel::cout << tc::blue << "[ToolboxMor] DEIM sampling file \"" << supersamplingname;
     bool all_proc_same_sampling=true;
     if( ! file )
     {
@@ -394,9 +394,9 @@ ToolboxMor<SpaceType, Options>::initModel()
     Feel::cout << tc::green << "[ToolboxMor] DEIM construction finished!!" << tc::reset << std::endl;
 
     auto PsetM = this->Dmu->sampling();
-    supersamplingname =(boost::format("DmuMDEim-P%1%-Ne%2%-generated-by-master-proc") % this->Dmu->dimension() % M_trainsetMdeimSize ).str();
+    supersamplingname = fmt::format("{}/DmuMDEim-P{}-Ne{}-generated-by-master-proc", this->M_crbModelDb.dbRepository(), this->Dmu->dimension(), M_trainsetMdeimSize );
     std::ifstream fileM ( supersamplingname );
-    Feel::cout << tc::blue << "[ToolboxMor] MDEIM sampling file \"" << get_current_dir_name() << "/" << supersamplingname;
+    Feel::cout << tc::blue << "[ToolboxMor] MDEIM sampling file \"" << supersamplingname;
     if( ! fileM )
     {
         Feel::cout << "\" not found. Now creating one\n" << tc::reset;
