@@ -1,16 +1,12 @@
 SetFactory("OpenCASCADE");
-Box(1) = {-1, -1, -1, 2, 2, 2};
-Sphere(2) = {0, 0, 0, 0.5, -Pi/2, Pi/2, 2*Pi};
+h=0.1;
+Box(1) = {-0.5, -0.5, -0.5, 1, 1, 1};
+Sphere(2) = {0, 0, 0, 0.25, -Pi/2, Pi/2, 2*Pi};
 
-Delete{Volume{1};}
-Surface Loop(4) = {1, 3, 5, 4, 2, 6};
-Surface Loop(5) = {7};
-Volume(4) = {4, 5};
+S[]=BooleanFragments{ Volume{1}; Delete; }{Volume{2}; Delete;};
+Characteristic Length{ PointsOf{ Volume{ : }; } } = h;
 
-Characteristic Length{ PointsOf{ Volume{2}; } } = 0.125;//+
-Characteristic Length{ PointsOf{ Volume{4}; } } = 0.125;//+
-
-Physical Surface("BoxWalls") = {3, 1, 4, 2,5,6};
-Physical Surface("SphereBoundary") = {7};
-Physical Volume("Fluid") = {4};
-Physical Volume("Sphere") = {2};
+Physical Surface("OuterBoundary") = {3, 1, 4, 2,5,6};
+Physical Surface("InnerBoundary") = {7};
+Physical Volume("Outer") = {4};
+Physical Volume("Inner") = {2};
