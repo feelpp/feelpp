@@ -22,13 +22,14 @@ parser.add_argument('--algo', help="compute using greedy algorithm (default 1) 0
 parser.add_argument('--train-size', help="size of the (random) training set", type=int, default=40)
 parser.add_argument('--tol', help="tolerance for generating", type=float, default=1e-6)
 parser.add_argument('--use-dual-norm', help="use dual norm for the error bound", type=int, default=0)
+parser.add_argument('--param', help="parameter to use", type=str)
 
 algos_names = ["generation_from_sample", "greedy", "POD_modes"]
 
 class generateBasisConfig():
 
     def __init__(self, dim=None, config_file=None, time_dependant=False, odir=None,
-                 case=None, algo=1, size=40, tol=1e-6, use_dual_norm=False):
+                 case=None, algo=1, size=40, tol=1e-6, use_dual_norm=False, param=None):
         self.dim = dim
         self.config_file = config_file
         self.time_dependant = time_dependant
@@ -38,6 +39,27 @@ class generateBasisConfig():
         self.size = size
         self.tol = tol
         self.use_dual_norm = use_dual_norm
+
+        if param is not None:
+            fp = open(param)
+            self.param = json.load(fp)
+            fp.close()
+        else:
+            self.param = None
+
+    def getMusk(self, model):
+        if self.param is None:
+            return None
+        
+        assert len(self.param['ks']) == len(self.param['mus'])
+        n = len(self.param['ks'])
+        musk = {}
+        for i in range(n):
+            mu = model.parameterSpace().element()
+            mu.setParameters(self.param['mus'][i])
+            musk[mu] = self.param['ks'][i]
+        return musk
+
 
 
 
@@ -200,9 +222,13 @@ def generate_basis(worldComm=None, config=None):
     if config.time_dependant:
         Mq_ = affineDecomposition[2]
         Mq = mor_rb.convertToPetscMat(Mq_[0])
-        K=20 ; tf=2
+
+        tf = config.param['tf']
+        K = config.param['K']
+        
         rb = mor_rb.reducedbasisTimeOffline(Aq=Aq, Fq=Fq, Mr=Mq, model=model, mubar=mubar,
-            output_names=output_names, use_dual_norm=config.use_dual_norm, tf=tf, K=K)
+                output_names=output_names, use_dual_norm=config.use_dual_norm, tf=tf, K=K)
+
     else:
         rb = mor_rb.reducedbasisOffline(Aq=Aq, Fq=Fq, model=model, mubar=mubar,
             output_names=output_names, use_dual_norm=config.use_dual_norm)
@@ -213,12 +239,12 @@ def generate_basis(worldComm=None, config=None):
 
     # mu = model.parameterSpace().element()
     # print(model.computeBetaQm(mu))
+
  
-    if time_dependant:
-        mu0 = Dmu.element()
-        mu1 = Dmu.element()
-        mu2 = Dmu.element()
-        musk = {mu0: [2, 10], mu1: [3, 7, 8], mu2: [4, 5, 6]}
+    if config.time_dependant:
+
+
+        musk = config.getMusk(model)
         if worldComm.isMasterRank():
             print("[generate_basis] Start generation of the basis")
 
@@ -284,6 +310,7 @@ if __name__ == '__main__':
     split = config_file.split('/')
     case = args.case if args.case is not None else "generate_basis"
     use_dual_norm = args.use_dual_norm == 1
+    param = args.param if args.param is not None else None
 
     config = feelpp.globalRepository(f"generate_basis-{case}")
     sys.argv = [f'generate-basis-{case}']
@@ -293,6 +320,6 @@ if __name__ == '__main__':
     e = feelpp.Environment(sys.argv, opts=o, config=config)
 
 
-    config = generateBasisConfig(dim, config_file, time_dependant, odir, case, algo, size, tol, use_dual_norm)
+    config = generateBasisConfig(dim, config_file, time_dependant, odir, case, algo, size, tol, use_dual_norm, param)
 
     generate_basis(config=config)
