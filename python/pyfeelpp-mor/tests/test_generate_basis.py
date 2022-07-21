@@ -6,7 +6,9 @@ import feelpp.mor.generate_basis as g
 #        (( prefix, case, casefile, dim, time_dependant), name     )
 cases = [
          (('testcase', 'thermal-fin/2d', 'thermal-fin.cfg', 2, False), 'thermal-fin-2d'),
+        #  (('testcase', 'thermal-fin/2d', 'thermal-fin.cfg', 2, True), 'thermal-fin-2d-ts'),
          (('testcase', 'thermal-fin/3d', 'thermal-fin.cfg', 3, False), 'thermal-fin-3d'),
+        #  (('testcase', 'thermal-fin/3d', 'thermal-fin.cfg', 3, True), 'thermal-fin-3d-ts'),
         ]
 cases_params, cases_ids = list(zip(*cases))
 
@@ -28,8 +30,10 @@ def test_compute_basis_sample(prefix, case, casefile, dim, time_dependent, init_
     config_file = CWD + "/" + prefix + "/" + case + "/" + casefile
     odir = "crbdb/$name/sample"
     use_dual_norm = True
+    param = f"{CWD}/{prefix}/{case}/param.json"
 
-    config = g.generateBasisConfig(dim, config_file, time_dependant, odir, case, algo, size, use_dual_norm)
+    config = g.generateBasisConfig(dim=dim, config_file=config_file, time_dependant=time_dependant, odir=odir, \
+                    case=case, algo=algo, size=size, use_dual_norm=use_dual_norm, param=param)
 
     # compute and save the basis
     g.generate_basis(config=config)
@@ -50,8 +54,10 @@ def test_compute_basis_greedy(prefix, case, casefile, dim, time_dependent, init_
     odir = "crbdb/$name/greedy"
     tol = 1e-3
     use_dual_norm = True
+    param = f"{CWD}/{prefix}/{case}/param.json"
 
-    config = g.generateBasisConfig(dim, config_file, time_dependant, odir, case, algo, size, tol, use_dual_norm)
+    config = g.generateBasisConfig(dim=dim, config_file=config_file, time_dependant=time_dependant, odir=odir, \
+                    case=case, algo=algo, size=size, use_dual_norm=use_dual_norm, param=param)
 
     # compute and save the basis
     g.generate_basis(config=config)
@@ -72,8 +78,10 @@ def test_compute_basis_POD(prefix, case, casefile, dim, time_dependent, init_fee
     odir = "crbdb/$name/POD"
     tol = 1e-3
     use_dual_norm = True
+    param = f"{CWD}/{prefix}/{case}/param.json"
 
-    config = g.generateBasisConfig(dim, config_file, time_dependant, odir, case, algo, size, tol, use_dual_norm)
+    config = g.generateBasisConfig(dim=dim, config_file=config_file, time_dependant=time_dependant, odir=odir, \
+                    case=case, algo=algo, size=size, use_dual_norm=use_dual_norm, param=param)
 
 
     # compute and save the basis

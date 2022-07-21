@@ -211,6 +211,7 @@ def generate_basis(worldComm=None, config=None):
         mubar.view()
 
     affineDecomposition = model.getAffineDecomposition()
+    assert len(affineDecomposition) == [2, 3][config.time_dependant]
     Aq_ = affineDecomposition[0]
     Fq_ = affineDecomposition[1]
 
@@ -219,50 +220,15 @@ def generate_basis(worldComm=None, config=None):
     for f in Fq_:
         Fq.append(mor_rb.convertToPetscVec(f[0]))
 
-    if config.time_dependant:
-        Mq_ = affineDecomposition[2]
-        Mq = mor_rb.convertToPetscMat(Mq_[0])
+    if not config.time_dependant:
 
-        tf = config.param['tf']
-        K = config.param['K']
-        
-        rb = mor_rb.reducedbasisTimeOffline(Aq=Aq, Fq=Fq, Mr=Mq, model=model, mubar=mubar,
-                output_names=output_names, use_dual_norm=config.use_dual_norm, tf=tf, K=K)
-
-    else:
         rb = mor_rb.reducedbasisOffline(Aq=Aq, Fq=Fq, model=model, mubar=mubar,
-            output_names=output_names, use_dual_norm=config.use_dual_norm)
+                output_names=output_names, use_dual_norm=config.use_dual_norm)
 
-    rb.setVerbose(False)
-    if worldComm.isMasterRank():
-        print("Size of the big problem :", rb.NN)
-
-    # mu = model.parameterSpace().element()
-    # print(model.computeBetaQm(mu))
-
- 
-    if config.time_dependant:
-
-
-        musk = config.getMusk(model)
+        rb.setVerbose(False)
         if worldComm.isMasterRank():
-            print("[generate_basis] Start generation of the basis")
+            print("Size of the finite element problem :", rb.NN)
 
-        rb.generateBasis(musk)
-
-        if worldComm.isMasterRank():
-            print("[generate_basis] basis generated ! Now computing errors")
-
-        def g(k): return 1
-
-        glist = np.array(np.zeros((21)))
-        for k in range(21):
-            np.append(glist,[g(k)])
-
-        rb.computeOfflineErrorRhs()
-        rb.computeOfflineError(glist)
-
-    else:
         mus = listOfParams(config.size)
         if worldComm.isMasterRank():
             print("[generate_basis] Start generation of the basis using algo", algos_names[config.algo])
@@ -283,10 +249,44 @@ def generate_basis(worldComm=None, config=None):
             print("[generate_basis] basis generated ! Now computing errors")
 
         rb.computeOfflineErrorRhs()
-        rb.computeOfflineError()
+        rb.computeOfflineError()            
+
+
+    else:
+        Mq_ = affineDecomposition[2]
+        Mq = mor_rb.convertToPetscMat(Mq_[0])
+
+        tf = config.param['tf']
+        K = config.param['K']
+        
+        rb = mor_rb.reducedbasisTimeOffline(Aq=Aq, Fq=Fq, Mr=Mq, model=model, mubar=mubar,
+                output_names=output_names, use_dual_norm=config.use_dual_norm, tf=tf, K=K)
+
+        rb.setVerbose(False)
+        if worldComm.isMasterRank():
+            print("Size of the finite element problem :", rb.NN)
+
+
+        musk = config.getMusk(model)
+        if worldComm.isMasterRank():
+            print("[generate_basis] Start generation of the basis")
+
+        rb.generateBasis(musk)
+
+        if worldComm.isMasterRank():
+            print("[generate_basis] basis generated ! Now computing errors")
+
+        def g(k): return 1
+        g = np.vectorize(g)
+
+        ts = np.linspace(0, tf, K+1)
+        glist = g(ts)
+
+        rb.computeOfflineErrorRhs()
+        rb.computeOfflineError(glist)
 
     if worldComm.isMasterRank():
-        print("[generate_basis] Done !")
+        print(f"[generate_basis] Done ! Size of the reduced problem : {rb.N}")
 
     s = rb.saveReducedBasis(feelpp.Environment.rootRepository()+"/"+config.odir, force=True)
 
