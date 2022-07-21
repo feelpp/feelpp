@@ -6,7 +6,7 @@ import pytest
 
 
 def run(m, geo):
-    mesh_name, e_meas, e_s_1, e_s_2, e_s_bdy=geo
+    mesh_name, dim, e_meas, e_s_1, e_s_2, e_s_bdy=geo
     mesh= feelpp.load(m, mesh_name, 0.1)
 
     M=measure(range=feelpp.elements(mesh))
