@@ -83,7 +83,7 @@ void check( std::shared_ptr<mesh_type> const& mesh, std::map<std::string,double>
     }
     auto check_with_marker = [&]( std::string m )
     {
-        if ( mesh->hasMarker( m ) )
+        if ( mesh->hasMarker( m ) && mesh->markerDim( m ) == mesh_type::nRealDim )
         {
             auto [min_r, arg_min_r] = minelt( _range = markedelements( mesh, m ), _element = u );
             auto minmax_r = minmaxelt( _range = markedelements( mesh, m ), _element = u );
@@ -101,11 +101,35 @@ void check( std::shared_ptr<mesh_type> const& mesh, std::map<std::string,double>
             BOOST_CHECK_CLOSE( max_r, minmax[fmt::format( "max{}", m )] , 2e-1 );
             BOOST_CHECK_CLOSE( std::get<0>(minmax_r[1]), minmax[fmt::format( "max{}", m )] , 2e-1 );
         }
+        // facet tests
+        if ( mesh->hasMarker( m ) && mesh->markerDim( m ) == mesh_type::nRealDim-1 )
+        {
+            //auto [min_r, arg_min_r] = minelt( _range = markedfaces( mesh, m ), _element = u );
+            auto minmax_r = minmaxelt( _range = markedfaces( mesh, m ), _element = u );
+            if ( std::abs( minmax[fmt::format("min{}",m)] ) < 1e-10 )
+            {
+                //BOOST_CHECK_SMALL( min_r, 2e-1  );
+                BOOST_CHECK_SMALL( std::get<0>(minmax_r[0]), 2e-1 );
+            }
+            else
+            {
+                //BOOST_CHECK_CLOSE( min_r, minmax[fmt::format("min{}",m)], 2e-1 );
+                BOOST_CHECK_CLOSE( std::get<0>(minmax_r[0]), minmax[fmt::format("min{}",m)], 2e-1 );
+            }
+            //auto [max_r, arg_max_r] = maxelt( _range = markedelements( mesh,m ), _element = u );
+            //BOOST_CHECK_CLOSE( max_r, minmax[fmt::format( "max{}", m )] , 2e-1 );
+            BOOST_CHECK_CLOSE( std::get<0>(minmax_r[1]), minmax[fmt::format( "max{}", m )] , 2e-1 );
+        }
     };
     BOOST_TEST_MESSAGE( "check with marker Inner" );
     check_with_marker( "Inner" );   // check the inner part of the mesh
     BOOST_TEST_MESSAGE( "check with marker Outer" );
     check_with_marker( "Outter" );  // check the outter marker
+    BOOST_TEST_MESSAGE( "check with marker InnerBoundary" );
+    check_with_marker( "InnerBoundary" );  // check the outter marker
+    BOOST_TEST_MESSAGE( "check with marker OutterBoundary" );
+    check_with_marker( "OutterBoundary" );  // check the outter marker
+
 }
 
 typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2>,boost::mpl::int_<3> > dim_types;
@@ -142,10 +166,15 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( elementminmax2, T, dim_t2 )
     mesh_ptrtype mesh = loadMesh(_mesh=new mesh_type,
                                  _filename=fmt::format("test_elementminmax{}d.geo", T::value) );
 
-    double max_v = std::sqrt( 2*0.5*0.5 + ( T::value == 3 )*0.5*0.5);
+    double max_v = ( T::value == 3 )?0.25:std::sqrt( 2 * 0.5 * 0.5);
     double maxInner_v = 0.25;
-
-    check<mesh_type>( mesh, { { "min", 0. }, { "max", max_v }, { "minInner", 0. }, { "maxInner", maxInner_v }, { "minOutter", maxInner_v }, { "maxOutter", max_v } } );
+    double minInnerBoundary = maxInner_v;
+    double maxInnerBoundary = maxInner_v;
+    double minOutterBoundary = std::sqrt(0.5*0.5);
+    double maxOutterBoundary = max_v;
+    check<mesh_type>( mesh, { { "min", 0. }, { "max", max_v }, { "minInner", 0. }, { "maxInner", maxInner_v }, { "minOutter", maxInner_v }, { "maxOutter", max_v }, 
+                              {"minInnerBoundary",minInnerBoundary}, {"maxInnerBoundary",maxInnerBoundary},
+                              {"minOutterBoundary",minOutterBoundary}, {"maxOutterBoundary",maxOutterBoundary} } );
 }
 BOOST_AUTO_TEST_CASE_TEMPLATE( elementminmax3, T, dim_types )
 {
