@@ -100,7 +100,8 @@ auto opselt( Ts&&... v )
     for ( auto [i, op_v] : enumerate( ops_v ) )
     {
         int index = i;
-        auto [pt, thedof, comp] = e.functionSpace()->dof()->dofPoint( op_id[i] );
+        //auto [pt, thedof, comp] = e.functionSpace()->dof()->dofPoint( op_id[i] );
+        auto pt = e.functionSpace()->dof()->dofPoint( op_id[i] ).template get<0>();
         eigen_vector_type<nRealDim> e_pt = emap<value_type>( pt );
         auto local_op = std::tuple{ op_v, e_pt };
         res[i] = mpi::all_reduce( e.functionSpace()->worldComm().globalComm(), local_op,
