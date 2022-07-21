@@ -16,6 +16,7 @@
 #include <feel/feelcore/enumerate.hpp>
 #include <feel/feelcore/serialization.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feeldiscr/facet.hpp>
 
 namespace Feel {
 
@@ -153,6 +154,8 @@ auto opselt( Ts&&... v )
 
     using value_type = typename decay_type<decltype( e )>::value_type;
     using functionspace_type = typename decay_type<decltype( e )>::functionspace_type;
+    using range_t = decay_type<decltype(r)>;
+    using mesh_t = typename functionspace_type::mesh_type;
     constexpr int nRealDim = functionspace_type::nRealDim;
     value_type v_min = std::numeric_limits<value_type>::min();
     value_type v_max = std::numeric_limits<value_type>::max();
@@ -161,11 +164,7 @@ auto opselt( Ts&&... v )
         op_v = ops[i]( v_min, v_max ) ? v_max : v_min;
     std::vector<int> op_id( ops.size(), 0 );
 
-    for ( auto const& rangeElt : r )
-    {
-        auto const& meshElt = boost::unwrap_ref( rangeElt );
-        index_type eid = meshElt.id();
-
+    auto find_local_op_elts = [&e,&ops, &ops_v, &op_id]( int eid ){ 
         for ( uint16_type local_id = 0; local_id < functionspace_type::fe_type::nLocalDof; ++local_id )
         {
             int dofpn = e.functionSpace()->dof()->localToGlobal( eid, local_id, 0 ).index();
@@ -179,6 +178,36 @@ auto opselt( Ts&&... v )
                     op_id[i] = dofpn;
                 }
             }
+        }
+    };
+    auto find_local_op_facets = [&e, &ops, &ops_v, &op_id]( int eid )
+    {
+        for ( auto const& ldof : e.functionSpace()->dof()->faceLocalDof( eid ) )
+        {
+            index_type dofpn = ldof.index();
+            value_type d = e( dofpn );
+
+            for( auto [i,op_v] : enumerate(ops_v) )
+            {
+                if ( ops[i]( d, op_v ) )
+                {
+                    op_v = d;
+                    op_id[i] = dofpn;
+                }
+            }
+        }
+    };
+    for ( auto const& rangeElt : r )
+    {
+        auto const& meshElt = boost::unwrap_ref( rangeElt );
+        
+        if constexpr( std::is_same_v<range_t, faces_reference_wrapper_t<mesh_t>> )
+        {
+            find_local_op_facets( meshElt.id() );
+        }
+        else
+        {
+            find_local_op_elts( meshElt.id() );
         }
     }
     std::vector<std::tuple<value_type,eigen_vector_type<nRealDim>>> res( ops.size() );
