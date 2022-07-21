@@ -164,27 +164,11 @@ auto opselt( Ts&&... v )
         op_v = ops[i]( v_min, v_max ) ? v_max : v_min;
     std::vector<int> op_id( ops.size(), 0 );
 
-    auto find_local_op_elts = [&e,&ops, &ops_v, &op_id]( int eid ){ 
-        for ( uint16_type local_id = 0; local_id < functionspace_type::fe_type::nLocalDof; ++local_id )
-        {
-            int dofpn = e.functionSpace()->dof()->localToGlobal( eid, local_id, 0 ).index();
-            value_type d = e( dofpn );
-
-            for( auto [i,op_v] : enumerate(ops_v) )
-            {
-                if ( ops[i]( d, op_v ) )
-                {
-                    op_v = d;
-                    op_id[i] = dofpn;
-                }
-            }
-        }
-    };
-    auto find_local_op_facets = [&e, &ops, &ops_v, &op_id]( int eid )
+    auto find_local_op = [&e, &ops, &ops_v, &op_id]( auto localdoftable, auto getDofId )
     {
-        for ( auto const& ldof : e.functionSpace()->dof()->faceLocalDof( eid ) )
+        for ( auto const& ldof : localdoftable )
         {
-            index_type dofpn = ldof.index();
+            index_type dofpn = getDofId(ldof);
             value_type d = e( dofpn );
 
             for( auto [i,op_v] : enumerate(ops_v) )
@@ -197,17 +181,19 @@ auto opselt( Ts&&... v )
             }
         }
     };
+
     for ( auto const& rangeElt : r )
     {
         auto const& meshElt = boost::unwrap_ref( rangeElt );
         
         if constexpr( std::is_same_v<range_t, faces_reference_wrapper_t<mesh_t>> )
         {
-            find_local_op_facets( meshElt.id() );
+            find_local_op( e.functionSpace()->dof()->faceLocalDof( meshElt.id() ), []( auto const& ldof )
+                           { return ldof.index(); } );
         }
         else
         {
-            find_local_op_elts( meshElt.id() );
+            find_local_op( e.functionSpace()->dof()->localDof( meshElt.id() ), []( auto const& ldof ){ return ldof.second.index(); } );
         }
     }
     std::vector<std::tuple<value_type,eigen_vector_type<nRealDim>>> res( ops.size() );
