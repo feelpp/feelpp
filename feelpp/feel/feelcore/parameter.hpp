@@ -151,7 +151,7 @@ using depends = NA::named_argument_t<struct depends_tag>;
 using optimize3d_netgen = NA::named_argument_t<struct optimize3d_netgen_tag>;
 using pre = NA::named_argument_t<struct pre_tag>;
 using post = NA::named_argument_t<struct post_tag>;
-
+using op = NA::named_argument_t<struct op_tag>;
 // parameter for adapt
 using required_elts = NA::named_argument_t<struct required_elts_tag>;
 using required_facets = NA::named_argument_t<struct required_facets_tag>;
@@ -447,7 +447,7 @@ inline constexpr auto& _depends = NA::identifier<na::depends>;
 inline constexpr auto& _optimize3d_netgen = NA::identifier<na::optimize3d_netgen>;
 inline constexpr auto& _pre = NA::identifier<na::pre>;
 inline constexpr auto& _post = NA::identifier<na::post>;
-
+inline constexpr auto& _op = NA::identifier<na::op>;
 // parameter for adapt
 inline constexpr auto& _required_elts = NA::identifier<na::required_elts>;
 inline constexpr auto& _required_facets = NA::identifier<na::required_facets>;
