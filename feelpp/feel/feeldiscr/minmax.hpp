@@ -13,6 +13,7 @@
 
 #include <feel/feelalg/glas.hpp>
 #include <feel/feelcore/parameter.hpp>
+#include <feel/feelcore/enumerate.hpp>
 #include <feel/feelcore/serialization.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 
@@ -20,32 +21,36 @@ namespace Feel {
 
 /**
  * @brief compute the min of the element of a function space at DOF points over the range @p r
+ * @ingroup Discretization
  * 
- * @tparam RangeT range type to iterate on
- * @tparam ElementT type of finite element function
- * 
- * @param r range of element
- * @param e element of a function space
- * 
+ * @tparam Ts variadic template holding the type list of arguments
+ *
+ * @param _range range of element
+ * @param _element element of a function space
+ * @param _op operation to apply to the element
+ *
  * @code {.cpp}
  * auto v = Xh->element();
- * auto [min_v,arg_min_v] = minelt(_range=elements(mesh),_element=v);
+ * auto [op_v,arg_op_v] = minelt(_range=elements(mesh),_element=v,_op=[](auto const& a, auto const& b){ return a < b; });
  * @endcode
- * 
- * @return the min value and the dof point coordinates
+ *
+ * @return the value and the dof point coordinates
  */
 template <typename... Ts>
-auto minelt( Ts&&... v )
+auto opelt( Ts&&... v )
 {
     auto args = NA::make_arguments( std::forward<Ts>( v )... );
     auto && r = args.get(_range);
     auto && e = args.get(_element);
+    auto && op = args.get(_op);
 
     using value_type = typename decay_type<decltype(e)>::value_type;
     using functionspace_type = typename decay_type<decltype(e)>::functionspace_type;
     constexpr int nRealDim = functionspace_type::nRealDim;
-    double min_v{std::numeric_limits<value_type>::max()};
-    int min_id{ 0 };
+    value_type v_min = std::numeric_limits<value_type>::min();
+    value_type v_max = std::numeric_limits<value_type>::max();
+    double op_v{op(v_min,v_max)?v_max:v_min};
+    int op_id{ 0 };
 
     for ( auto const& rangeElt : r )
     {
@@ -56,27 +61,49 @@ auto minelt( Ts&&... v )
         {
             int dofpn = e.functionSpace()->dof()->localToGlobal( eid, local_id, 0 ).index();
             value_type d =e( dofpn );
-            if ( min_v > d )
+            
+            if ( op( d, op_v ) )
             {
-                min_v = d;
-                min_id = dofpn;
+                op_v = d;
+                op_id = dofpn;
             }
         }
     }
-    auto [pt,thedof,comp] = e.functionSpace()->dof()->dofPoint(min_id);
+    auto [pt,thedof,comp] = e.functionSpace()->dof()->dofPoint(op_id);
     eigen_vector_type<nRealDim> e_pt = emap<value_type>( pt );
-    auto local_min = std::tuple{min_v,e_pt};
-    std::vector<std::tuple<value_type,eigen_vector_type<nRealDim>>> all_min(e.functionSpace()->worldComm().globalSize());
-    mpi::all_gather( e.functionSpace()->worldComm().globalComm(), local_min, all_min );
-    return *std::min_element( all_min.begin(), all_min.end(), 
-                                []( auto const& a, auto const& b  ){
-                                    return std::get<0>(a) < std::get<0>(b); }
-                             );
+    auto local_op = std::tuple{op_v,e_pt};
+    return mpi::all_reduce( e.functionSpace()->worldComm().globalComm(), local_op, 
+                            [&op]( auto const& a, auto const& b ){ return op(std::get<0>(a),std::get<0>(b))?a:b; } );
 }
-
+/**
+ * @brief compute the min of the element of a function space at DOF points over the range @p r
+ * @ingroup Discretization
+ * 
+ * @tparam RangeT range type to iterate on
+ * @tparam ElementT type of finite element function
+ *
+ * @param r range of element
+ * @param e element of a function space
+ *
+ * @code {.cpp}
+ * auto v = Xh->element();
+ * auto [min_v,arg_min_v] = minelt(_range=elements(mesh),_element=v);
+ * @endcode
+ *
+ * @return the min value and the dof point coordinates
+ */
+template <typename... Ts>
+auto minelt( Ts&&... v )
+{
+    auto args = NA::make_arguments( std::forward<Ts>( v )... );
+    auto && r = args.get(_range);
+    auto && e = args.get(_element);
+    return  opelt( _range=r, _element=e, _op=[]( auto const& a, auto const& b ){ return a < b; } );
+}
 /**
  * @brief compute the max of the element of a function space at DOF points over the range @p r
- *
+ * @ingroup Discretization
+ * 
  * @tparam RangeT range type to iterate on
  * @tparam ElementT type of finite element function
  *
@@ -94,14 +121,45 @@ template <typename... Ts>
 auto maxelt( Ts&&... v )
 {
     auto args = NA::make_arguments( std::forward<Ts>( v )... );
+    auto && r = args.get(_range);
+    auto && e = args.get(_element);
+    return  opelt( _range=r, _element=e, _op=[]( auto const& a, auto const& b ){ return a > b; } );
+}
+
+/**
+ * @brief compute the min of the element of a function space at DOF points over the range @p r
+ * @ingroup Discretization
+ *
+ * @tparam Ts variadic template holding the type list of arguments
+ *
+ * @param _range range of element
+ * @param _element element of a function space
+ * @param _op operation to apply to the element
+ *
+ * @code {.cpp}
+ * auto v = Xh->element();
+ * auto [op_v,arg_op_v] = minelt(_range=elements(mesh),_element=v,_op=[](auto const& a, auto const& b){ return a < b; });
+ * @endcode
+ *
+ * @return the value and the dof point coordinates
+ */
+template <typename... Ts>
+auto opselt( Ts&&... v )
+{
+    auto args = NA::make_arguments( std::forward<Ts>( v )... );
     auto&& r = args.get( _range );
     auto&& e = args.get( _element );
+    auto&& ops = args.get( _op ); // a vector of op
 
     using value_type = typename decay_type<decltype( e )>::value_type;
     using functionspace_type = typename decay_type<decltype( e )>::functionspace_type;
     constexpr int nRealDim = functionspace_type::nRealDim;
-    double max_v{ std::numeric_limits<value_type>::min() };
-    int max_id{ 0 };
+    value_type v_min = std::numeric_limits<value_type>::min();
+    value_type v_max = std::numeric_limits<value_type>::max();
+    std::vector<double> ops_v( ops.size() );
+    for( auto [i,op_v] : enumerate(ops_v) )
+        op_v = ops[i]( v_min, v_max ) ? v_max : v_min;
+    std::vector<int> op_id( ops.size(), 0 );
 
     for ( auto const& rangeElt : r )
     {
@@ -112,70 +170,63 @@ auto maxelt( Ts&&... v )
         {
             int dofpn = e.functionSpace()->dof()->localToGlobal( eid, local_id, 0 ).index();
             value_type d = e( dofpn );
-            if ( max_v < d )
+
+            for( auto [i,op_v] : enumerate(ops_v) )
             {
-                max_v = d;
-                max_id = dofpn;
+                if ( ops[i]( d, op_v ) )
+                {
+                    op_v = d;
+                    op_id[i] = dofpn;
+                }
             }
         }
     }
-    auto [pt, thedof, comp] = e.functionSpace()->dof()->dofPoint( max_id );
-    eigen_vector_type<nRealDim> e_pt = emap<value_type>( pt );
-    auto local_max = std::tuple{ max_v, e_pt };
-    std::vector<std::tuple<value_type, eigen_vector_type<nRealDim>>> all_max( e.functionSpace()->worldComm().globalSize() );
-    mpi::all_gather( e.functionSpace()->worldComm().globalComm(), local_max, all_max );
-    return *std::max_element( all_max.begin(), all_max.end(),
-                              []( auto const& a, auto const& b )
-                              { return std::get<0>( a ) > std::get<0>( b ); } );
+    std::vector<std::tuple<value_type,eigen_vector_type<nRealDim>>> res( ops.size() );
+    for(auto [i,op_v] : enumerate(ops_v) )
+    {
+        int index = i;
+        auto [pt,thedof,comp] = e.functionSpace()->dof()->dofPoint(op_id[i]);
+        eigen_vector_type<nRealDim> e_pt = emap<value_type>( pt );
+        auto local_op = std::tuple{op_v,e_pt};
+        res[i] = mpi::all_reduce( e.functionSpace()->worldComm().globalComm(), local_op, 
+                                 [&ops,index]( auto const& a, auto const& b ){ return ops[index](std::get<0>(a),std::get<0>(b))?a:b; } );
+    }
+    return res;
 }
+
 /**
- * @brief compute the min of the element over the range @p r
- * 
+ * @brief compute the min of the element of a function space at DOF points over the range @p r
+ * @ingroup Discretization
+ *
  * @tparam RangeT range type to iterate on
+ * @tparam ElementT type of finite element function
+ *
+ * @param r range of element
+ * @param e element of a function space
+ *
+ * @code {.cpp}
+ * auto v = Xh->element();
+ * auto r = minmaxelt(_range=elements(mesh),_element=v);
+ * for( auto const& [o_v,arg_o_v] : enumerate(r) )
+ * {
+ *      std::cout << "i: " << o_v << ", " << arg_o_v << std::endl;
+ * }
+ * r[0]; // min
+ * r[1]; // max
+ * @endcode
+ *
  * @return the min value and the dof point coordinates
  */
-template <typename RangeT, typename ElementT>
-std::tuple<typename ElementT::value_type, typename ElementT::value_type, eigen_vector_type<ElementT::nRealDim>, eigen_vector_type<ElementT::nRealDim>> minmax( RangeT const& r )
+template <typename... Ts>
+auto minmaxelt( Ts&&... v )
 {
-#if 0
-    using value_type = typename ElementT::value_type;
-    eigen_matrix_type<2> minmax_v{std::numeric_limits<value_type>::max(),std::numeric_limits<value_type>::min()};
-    std::pair<int,int> minmax_id{ 0, 0 };
-    auto& [min_v_id,max_v_id] = minmax_id;
-    for ( auto const& rangeElt : r )
-    {
-        auto const& meshElt = boost::unwrap_ref( rangeElt );
-        index_type eid = meshElt.id();
-
-        for ( uint16_type local_id=0; local_id < functionspace_type::fe_type::nLocalDof; ++local_id )
-        {
-            int dofpn = e.functionSpace()->dof()->localToGlobal( eid, local_id, 0 ).index();
-            value_type d = this->operator()( dofpn );
-            if ( minmax_v[0] > d )
-            {
-                minmax_v[0] = d;
-                min_v_id = dofpn;
-            }
-            if ( minmax_v[1] < d )
-            {
-                minmax_v[1] = d;
-                max_v_id = dofpn;
-            }
-        }
-    }
-    auto local_minmax = std::tuple{minmax_v,e.functionspace()->dof()->dofPoint(min_id).template get<0>()};
-    std::vector<std::tuple<value_type,eigen_vector_type<nRealDim>>> all_minmax;
-    mpi::all_gather( e.functionSpace()->worldComm(),
-                        local_minmax,
-                        all_minmax );
-    return std::pair{ *std::min_element( all_minmax.begin(), all_minmax.end(), 
-                                []( auto const& a, auto const& b  ){
-                                    return a.get<0>()[0] < b.get<0>()[0];
-                            } ),
-                        *std::max_element( all_minmax.begin(), all_minmax.end(), 
-                                []( auto const& a, auto const& b  ){
-                                    return a.get<0>()[1] < b.get<0>()[1];
-                            } ) };
-#endif                            
+    auto args = NA::make_arguments( std::forward<Ts>( v )... );
+    auto && r = args.get(_range);
+    auto && e = args.get(_element);
+    using value_type = typename decay_type<decltype( e )>::value_type;
+    return  opselt( _range=r, _element=e, _op=std::vector<bool (*)(value_type const&,value_type const&)>{ 
+                                                            { []( value_type const& a, value_type const& b ){ return a < b; },
+                                                              []( value_type const& a, value_type const& b ){ return a > b; } } } );
 }
-}
+    
+} // namespace Feel
