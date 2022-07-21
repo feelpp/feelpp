@@ -1,0 +1,86 @@
+:feelpp: Feel++
+= feelpp_remotedata(1)
+Thomas Saigre <https://github.com/thomas-saigre[@thomas-saigre]>
+:manmanual: feelpp_sync_case
+:man-linkstyle: pass:[blue R < >]
+
+
+== NAME
+
+{manmanual} - sync case result directory run with {feelpp} on a remote server.
+
+
+== SYNOPSIS
+
+{manmanual} is a simple application which can download results from a case run on a remote server.
+
+
+== DESCRIPTION
+
+Default values can be set in the .feelppconfig file, present in the home directory.
+A section "dist" should be added, containing the following informations :
+
+[source,json]
+----
+"dist":
+{
+    "login":"<USER NAME>",
+    "server":"<ADRESS OF SERVER>",
+    "name":"<SHORT NAME>"
+}
+----
+
+* login is the username on the remote server
+* server is the adress of the remote server
+* name is a short name for the remote server
+
+If none is set, the default directory where data are saved is ${global_root}/${name}, where ${global_root} is the default path where feel results are exported (set in the file .feelppconfig)
+
+
+== OPTIONS
+
+=== Options
+
+{manmanual} requires some options.
+
+.Table of command-line {manmanual} options
+|===
+| Name      | Description                                    | Default value
+
+| dir       | path in remote server where the directory lies |
+| login     | name of user on remote server                  | in .feelppconfig
+| server    | name of the remote server                      | in .feelppconfig
+| local-dir | local path where files are copied              | feel directory
+| vb        | display rsync log                              | 0
+|===
+
+== EXAMPLES
+
+=== Download mode
+
+* Download data with remote setting from .feelppconfig
+
+[source,shell]
+----
+feelpp_sync_case --dir /home/user/feel/toolboxes/heatfluid/ForcedConvection/TurekHron/cfd3/np_24
+----
+
+* Download data with specific remote server
+
+[source,shell]
+----
+feelpp_sync_case --dir /home/user/feel/toolboxes/heatfluid/ForcedConvection/TurekHron/cfd3/np_24 --login feelpp --server my.remote.server.fr
+----
+
+* Download data to a specific directory
+
+[source,shell]
+----
+feelpp_sync_case --dir /home/user/feel/toolboxes/heatfluid/ForcedConvection/TurekHron/cfd3/np_24 --local-dir ~/Downloads/feelFromRemote
+----
+
+
+== COPYING
+
+Copyright \(C) 2022 {feelpp} Consortium. +
+Free use of this software is granted under the terms of the GPLv3 License.
