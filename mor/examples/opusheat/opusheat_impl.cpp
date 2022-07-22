@@ -1,4 +1,3 @@
-
 #include <opusheat.hpp>
 
 
@@ -33,7 +32,10 @@ template<bool IsStationary>
 OpusHeat<IsStationary>::OpusHeat()
     :
     super_type((IsStationary)?"OpusHeat_stationary":"OpusHeat")
-{}
+{
+    this->setPluginName( BOOST_PP_STRINGIZE(FEELPP_MOR_PLUGIN_NAME) + std::string("P1G1") );
+    this->setPluginLibName( BOOST_PP_STRINGIZE(FEELPP_MOR_PLUGIN_LIBNAME) );
+}
 
 template<bool IsStationary>
 void
@@ -378,5 +380,3 @@ OpusHeat<IsStationary>::output( int output_index, parameter_type const& mu, elem
 }
 
 }
-
-
