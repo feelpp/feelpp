@@ -31,7 +31,7 @@
 #define FEELPP_DISCR_REDUCEDBASISSPACE_H 1
 
 #include <feel/feelmor/crb.hpp>
-
+#include <feel/feelalg/vectoreigen.hpp>
 
 namespace Feel
 {
@@ -1393,7 +1393,7 @@ public :
      *  u_N ( \mu ) = \sum_i^N u_i ( \mu ) \xi_i( x )
      *  where \xi_i( x ) are basis function
      */
-    template<typename T = double,  typename Cont = Eigen::Matrix<T,Eigen::Dynamic,1> >
+    template<typename T = double,  typename Cont = VectorEigen<T>> //Eigen::Matrix<T,Eigen::Dynamic,1> >
     class Element
         :
         public Cont,boost::addable<Element<T,Cont> >, boost::subtractable<Element<T,Cont> >, public FunctionSpaceBase::ElementBase
@@ -1474,11 +1474,11 @@ public :
 
         Element( rbspace_ptrtype const& rbspace , std::string const& name="u")
             :
+            super( rbspace->dimension() ), // TODO VINCENT : use a datamap defined in rbspace
             M_femfunctionspace( rbspace->functionSpace() ),
             M_rbspace( rbspace ),
             M_name( name )
             {
-                this->resize( M_rbspace.dimension() );
             }
 
         /**
@@ -1504,13 +1504,13 @@ public :
                 M_rbspace = rbspace;
             }
 
-        /*
-         * return the size of the element
-         */
-        int size() const
-            {
-                return super::size();
-            }
+        // /*
+        //  * return the size of the element
+        //  */
+        // int size() const
+        //     {
+        //         return super::size();
+        //     }
 
         /**
          * \return the container read-only
@@ -1534,32 +1534,31 @@ public :
                 return this->operator()( i );
             }
 
-        void setCoefficient( int index , double value )
+        void setCoefficient( int i , double value )
             {
-                int size=super::size();
-                FEELPP_ASSERT( index < size )(index)(size).error("invalid index");
-                this->operator()( index ) = value;
+                super::set(i,value);
+                // DCHECK( i < this->size() ) << "invalid index " << i << " with size="<<this->size();
+                // this->operator()( i ) = value;
             }
 
-        value_type operator()( size_t i ) const
-            {
-                int size=super::size();
-                FEELPP_ASSERT( i < size )(i)(size).error("invalid index");
-                return super::operator()( i );
-            }
+        // value_type operator()( size_t i ) const
+        //     {
+        //         DCHECK( i < this->size() ) << "invalid index " << i << " with size="<<this->size();
+        //         return super::operator()( i );
+        //     }
 
 
-        int localSize() const
-            {
-                return super::size();
-            }
+        // int localSize() const
+        //     {
+        //         return super::size();
+        //     }
 
-        value_type& operator()( size_t i )
-            {
-                int size = super::size();
-                FEELPP_ASSERT( i < size )(i)(size).error("invalid index");
-                return super::operator()( i );
-            }
+        // value_type& operator()( size_t i )
+        //     {
+        //         int size = super::size();
+        //         FEELPP_ASSERT( i < size )(i)(size).error("invalid index");
+        //         return super::operator()( i );
+        //     }
 
         Element& operator+=( Element const& _e )
             {
@@ -1869,6 +1868,8 @@ public :
             {
                 return M_femfunctionspace;
             }
+
+
 
     private:
         functionspace_ptrtype M_femfunctionspace;

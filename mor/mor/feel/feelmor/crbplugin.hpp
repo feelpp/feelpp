@@ -263,7 +263,7 @@ public:
         {
             DCHECK( M_crb ) << "DB not loaded";
             auto uRBforExpansion = M_crb->model()->rBFunctionSpace()->element();
-            uRBforExpansion.container() = uRB;
+            uRBforExpansion.container().vec() = uRB;
             M_crb->model()->rBFunctionSpace()->expansion( uRBforExpansion, uFE, N );
         }
 
@@ -279,7 +279,7 @@ public:
             auto const& solution = res.coefficients();
             auto uN = M_crb->model()->rBFunctionSpace()->element();
             //auto const& uN = solutions.template get<0>();
-            uN.container() = solution;//.get<0>().back();
+            uN.container().vec() = solution;//.get<0>().back();
             auto sol = M_crb->model()->rBFunctionSpace()->expansion( uN );
             fieldExporter->add( name, sol );
         }

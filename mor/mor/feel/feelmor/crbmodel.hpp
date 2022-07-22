@@ -471,6 +471,12 @@ public:
             M_numberOfTimeStep=0;
             for ( double t=timeInitial();t<=(timeFinal()+1e-9);t+=timeStep() )
                 ++M_numberOfTimeStep;
+
+            // TODO VINCENT : maybe not the good place and must be rebuild at each rbspace update
+            M_onlineTimeStepping = bdf(_space=this->rBFunctionSpace(),
+                                       _initial_time=this->timeInitial(),_final_time=this->timeFinal(),
+                                       _time_step=this->timeStep(),
+                                       _save=false);
         }
 
 
@@ -1186,6 +1192,22 @@ public:
 
             ptree.add_child( "affine-decomposition", ptreeAffineDecomposition );
         }
+
+
+        if ( !this->isSteady() )
+        {
+            nl::json j_timestepping;
+            j_timestepping["time_step"] = this->bdfModel()->timeStep();
+            j_timestepping["time_initial"] = this->bdfModel()->timeInitial();
+            j_timestepping["time_final"] = this->bdfModel()->timeFinal();
+
+            boost::property_tree::ptree pt_timestepping;
+            std::istringstream istr( j_timestepping.dump() );
+            boost::property_tree::read_json( istr, pt_timestepping );
+
+            ptree.add_child( "time_stepping", pt_timestepping );
+        }
+
     }
 
     /**
@@ -1235,15 +1257,16 @@ public:
      */
     void loadJson( std::string const& filename, std::string const& childname = "" )
         {
-            // first the underlying model
-            M_model->loadJson( filename, "crbmodel" );
-
             if ( !fs::exists( filename ) )
             {
                 LOG(INFO) << "Could not find " << filename << std::endl;
                 return;
             }
 
+            // first the underlying model
+            M_model->loadJson( filename, "crbmodel" );
+
+#if 0 // VINCENT
             auto json_str_wo_comments = removeComments(readFromFile(filename));
             //LOG(INFO) << "json file without comment:" << json_str_wo_comments;
 
@@ -1257,7 +1280,11 @@ public:
                 auto const& ptreeChild = ptree.get_child( childname );
                 this->setup( ptreeChild );
             }
-
+#else
+            std::ifstream ifs( filename );
+            nl::json jparsed = nl::json::parse(ifs,nullptr,true,true);
+            this->setup( childname.empty()? jparsed : jparsed.at( childname ) );
+#endif
         }
 
     void setup( boost::property_tree::ptree const& ptree )
@@ -1294,6 +1321,108 @@ public:
 
             M_alreadyCountAffineDecompositionTerms = true;
             M_is_initialized=true;
+        }
+    void setup( nl::json const& jarg )
+        {
+            if ( jarg.contains( "affine-decomposition" ) )
+            {
+                M_mMaxA.clear();
+                M_mMaxM.clear();
+                M_mMaxF.clear();
+                M_Ql.clear();
+                M_mMaxLinearDecompositionA.clear();
+
+                auto const& j_affdec = jarg.at( "affine-decomposition" );
+                if ( j_affdec.contains( "mMaxA" ) )
+                {
+                    for ( auto const& [j_mMaxA_key,j_mMaxA_val] : j_affdec.at( "mMaxA" ).items() )
+                    {
+                        if ( j_mMaxA_val.is_number_integer() )
+                            M_mMaxA.push_back( j_mMaxA_val.template get<int>() );
+                        else if ( j_mMaxA_val.is_string() )
+                            if ( !j_mMaxA_val.template get<std::string>().empty() )
+                                M_mMaxA.push_back( std::stoi( j_mMaxA_val.template get<std::string>() ) );
+                    }
+                }
+                M_Qa = M_mMaxA.size();
+
+                if ( j_affdec.contains( "mMaxM" ) )
+                {
+                    for ( auto const& [j_mMaxM_key,j_mMaxM_val] : j_affdec.at( "mMaxM" ).items() )
+                    {
+                        if ( j_mMaxM_val.is_number_integer() )
+                            M_mMaxM.push_back( j_mMaxM_val.template get<int>() );
+                        else if ( j_mMaxM_val.is_string() )
+                            if ( !j_mMaxM_val.template get<std::string>().empty() )
+                            M_mMaxM.push_back( std::stoi( j_mMaxM_val.template get<std::string>() ) );
+                    }
+                }
+                M_Qm = M_mMaxM.size();
+
+                if ( j_affdec.contains( "mMaxF" ) )
+                {
+                    for ( auto const& [j_mMaxF_key,j_mMaxF_val] : j_affdec.at( "mMaxF" ).items() )
+                    {
+                        std::vector<int> sizeloaded;
+                        for ( auto const& [j_mMaxF_sub_key,j_mMaxF_sub_val] : j_mMaxF_val.items() )
+                        {
+                            if ( j_mMaxF_sub_val.is_number_integer() )
+                                sizeloaded.push_back( j_mMaxF_sub_val.template get<int>() );
+                            else if ( j_mMaxF_sub_val.is_string() )
+                                if ( !j_mMaxF_sub_val.template get<std::string>().empty() )
+                                    sizeloaded.push_back( std::stoi( j_mMaxF_sub_val.template get<std::string>() ) );
+                        }
+                        M_mMaxF.push_back( sizeloaded );
+                        M_Ql.push_back( sizeloaded.size() );
+                    }
+                }
+                M_Nl = M_mMaxF.size();
+
+                if ( j_affdec.contains( "mMaxLinearDecompositionA" ) )
+                {
+                    for ( auto const& [j_mMaxLinearDecompositionA_key,j_mMaxLinearDecompositionA_val] : j_affdec.at( "mMaxLinearDecompositionA" ).items() )
+                    {
+                        if ( j_mMaxLinearDecompositionA_val.is_number_integer() )
+                            M_mMaxLinearDecompositionA.push_back( j_mMaxLinearDecompositionA_val.template get<int>() );
+                        else if ( j_mMaxLinearDecompositionA_val.is_string() )
+                            if ( !j_mMaxLinearDecompositionA_val.template get<std::string>().empty() )
+                                M_mMaxLinearDecompositionA.push_back( std::stoi( j_mMaxLinearDecompositionA_val.template get<std::string>() ) );
+                    }
+                }
+                M_QLinearDecompositionA = M_mMaxLinearDecompositionA.size();
+
+                M_alreadyCountAffineDecompositionTerms = true;
+            }
+
+            M_is_initialized=true;
+        }
+
+    void postOnlineSetup( nl::json const& jarg )
+        {
+            //std::cout << "postOnlineSetup : " << jarg.dump(1) << std::endl;
+
+            if ( jarg.contains( "time_stepping" ) )
+            {
+                auto const& j_timestepping = jarg.at( "time_stepping" );
+
+                std::map<std::string,double> mapTimeDataDouble;
+                for ( std::string const& dataName : {"time_step","time_initial","time_final"} )
+                {
+                    auto const& j_timestepping_dn = j_timestepping.at( dataName );
+                    if ( j_timestepping_dn.is_string() )
+                        mapTimeDataDouble[dataName] = std::stod( j_timestepping_dn.template get<std::string>() );
+                    else if ( j_timestepping_dn.is_number() )
+                        mapTimeDataDouble[dataName] = j_timestepping_dn.template get<double>();
+                }
+                M_onlineTimeStepping = bdf(_space=this->rBFunctionSpace(),
+                                           _initial_time=mapTimeDataDouble.at("time_initial"),
+                                           _final_time=mapTimeDataDouble.at("time_final"),
+                                           _time_step=mapTimeDataDouble.at("time_step"),
+                                           _save=false);
+            }
+
+            //M_model->postOnlineSetup( jarg, *this );
+
         }
 
     /**
@@ -2864,15 +2993,18 @@ public:
         return M_model->writeVectorsExtremumsRatio( vector1, vector2, filename );
     }
 
+    std::shared_ptr<TSBase> onlineTimeStepping() const { return M_onlineTimeStepping; }
+
     bdf_ptrtype /*const&*/ bdfModel() const
     {
         return M_model->bdfModel();
     }
 
-    int numberOfTimeStep() const override { return M_numberOfTimeStep; }
+    int numberOfTimeStep() const override { return 100+1; } // return M_numberOfTimeStep; }
 
     double timeStep() const override
     {
+        return 5;//VINCENT
         double timestep = 1e30;
         if ( !this->isSteady() )
             timestep = this->bdfModel()->timeStep();
@@ -2880,6 +3012,7 @@ public:
     }
     double timeInitial() const override
     {
+        return 0;//VINCENT
         double timeinitial = 0.;
         if ( !this->isSteady() )
             timeinitial = this->bdfModel()->timeInitial();
@@ -2887,6 +3020,7 @@ public:
     }
     double timeFinal() const override
     {
+        return 500;//VINCENT
         double timefinal=1e30;
         if ( !this->isSteady() )
             timefinal = this->bdfModel()->timeFinal();
@@ -2894,6 +3028,7 @@ public:
     }
     int timeOrder() const
     {
+        return 1;//VINCENT
         int order = 0;
         if ( !this->isSteady() )
             order = this->bdfModel()->timeOrder();
@@ -3043,6 +3178,8 @@ protected:
     bool M_fixedpointVerbose;
     int M_outputIndex;
     bool M_useLinearModel;
+
+    std::shared_ptr<TSBase> M_onlineTimeStepping;
 };
 
 

@@ -1147,6 +1147,8 @@ public :
     }
 
     virtual void setupSpecificityModel( boost::property_tree::ptree const& ptree, std::string const& dbDir ) {}
+    //virtual void postOnlineSetup( nl::json const& jarg, CRBModelBase & crbmodel ) {}
+
     virtual void updateSpecificityModel( boost::property_tree::ptree & ptree ) const {}
 
     virtual void initModel() = 0;
