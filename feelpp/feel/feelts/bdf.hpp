@@ -467,7 +467,7 @@ Bdf<SpaceType>::Bdf( space_ptrtype const& __space,
     for ( uint8_type __i = 0; __i < M_unknowns.size(); ++__i )
     {
         M_unknowns[__i] = element_ptrtype( new element_type( M_space ) );
-        M_unknowns[__i]->zero();
+        M_unknowns[__i]->setZero();
     }
 
     this->computePolyAndPolyDeriv();
@@ -496,7 +496,7 @@ Bdf<SpaceType>::Bdf( space_ptrtype const& __space, std::string const& name, std:
     for ( uint8_type __i = 0; __i < M_unknowns.size(); ++__i )
     {
         M_unknowns[__i] = element_ptrtype( new element_type( M_space ) );
-        M_unknowns[__i]->zero();
+        M_unknowns[__i]->setZero();
     }
 
     this->computePolyAndPolyDeriv();
@@ -589,7 +589,7 @@ Bdf<SpaceType>::init()
             if ( !M_unknowns[__i] )
             {
                 M_unknowns[__i] = M_space->elementPtr();
-                M_unknowns[__i]->zero();
+                M_unknowns[__i]->setZero();
             }
         }
     }
@@ -965,11 +965,11 @@ Bdf<SpaceType>::computePolyAndPolyDeriv()
     if ( !M_polyDeriv )
         M_polyDeriv = M_space->elementPtr();
 
-    M_poly->zero();
+    M_poly->setZero();
     for ( uint8_type i = 0; i < this->timeOrder(); ++i )
         M_poly->add(  this->polyCoefficient( i ),  *M_unknowns[ i ] );
 
-    M_polyDeriv->zero();
+    M_polyDeriv->setZero();
     for ( uint8_type i = 0; i < this->timeOrder(); ++i )
         M_polyDeriv->add( this->polyDerivCoefficient( i+1 ), *M_unknowns[i] );
 }
@@ -979,7 +979,7 @@ void
 Bdf<SpaceType>::updateDerivative( element_type & u, int i ) const
 {
     CHECK( M_unknowns.size() >= (this->timeOrder()+1+i) );
-    u.zero();
+    u.setZero();
     u.add( this->polyDerivCoefficient( 0 ), *M_unknowns[i] );
     for ( uint8_type k = 0; k < this->timeOrder(); ++k )
         u.add( -this->polyDerivCoefficient( k+1 ), *M_unknowns[i+k+1] );
