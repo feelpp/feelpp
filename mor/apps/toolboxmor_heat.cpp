@@ -22,6 +22,8 @@ ToolboxMorHeat<ToolboxType,Options>::initModel()
     M_offlineToolbox = toolbox_type::New(_prefix="heat");
     M_offlineToolbox->init();
     M_offlineToolbox->printAndSaveInfo();
+    if ( false )
+        M_offlineToolbox->solve();
 
     this->setFunctionSpaces( M_offlineToolbox->spaceTemperature() );
 
@@ -54,7 +56,7 @@ ToolboxMorHeat<ToolboxType,Options>::initOnlineToolbox( std::shared_ptr<DeimMorM
             tbDeim->setModelProperties( M_onlineModelProperties );
             tbDeim->setMesh(mesh);
             tbDeim->init();
-            tbDeim->printAndSaveInfo();
+            //tbDeim->printAndSaveInfo();
             return tbDeim;
         });
 
