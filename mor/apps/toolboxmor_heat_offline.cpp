@@ -62,7 +62,7 @@ void writeStats(std::ostream& out, std::vector<double> const& min, std::vector<d
     }
 }
 
-std::vector<double> computeOutputs(std::vector<std::vector<std::vector<Eigen::VectorXd>>> const& Lqm_pr, 
+std::vector<double> computeOutputs(std::vector<std::vector<std::vector<Eigen::VectorXd>>> const& Lqm_pr,
                                    std::vector<std::vector<std::vector<double>>> const& beta,
                                    Eigen::VectorXd const& uN)
 {
@@ -264,7 +264,7 @@ int main( int argc, char** argv)
 
         int dimension = ioption(_name="case.dimension");
         std::string discretization = soption(_name="case.discretization");
-        
+
 #if 0
         int status = 0;
         hana::for_each( Pc_t<>,
@@ -279,8 +279,8 @@ int main( int argc, char** argv)
         int status = 0;
         if ( dimension == 2 )
             status = runSimulation<2,1>();
-        // else
-        //     status = runSimulation<3,1>();
+        else
+            status = runSimulation<3,1>();
 #endif
         return status;
     }
