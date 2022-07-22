@@ -3,7 +3,7 @@
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2009-11-11
 #
-#  Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
+#  Copyright (C) 2009 Universitï¿½ Joseph Fourier (Grenoble I)
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -29,4 +29,5 @@ feelpp_add_application( heatsink SRCS heatsink.cpp LABELS doc CFG heatsink.cfg G
 feelpp_add_application( ground2DP2 SRCS ground.cpp  LABELS doc DEFS FEELPP_DIM=2 FEELPP_ORDER=2
   CFG ground.cfg ground-realistic.cfg ground-realistic-2.cfg GEO ground2D.geo  )
 
-#feelpp_add_application( muwave SRCS muwave.cpp LABELS doc GEO )
+feelpp_add_application( rht SRCS rht.cpp LABELS doc  )
+feelpp_add_testcase(cases PREFIX doc_heat)
