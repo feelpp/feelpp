@@ -312,7 +312,25 @@ public:
             }
 
             if ( stage == crb::stage::offline )
+            {
+                // create a first crb.json file if not exist already
+                if ( this->worldComm().isMasterRank() )
+                {
+                    fs::path jsonPath = fs::path(M_crbModelDb->dbRepository())/M_crbModelDb->jsonFilename();
+                    if ( !fs::exists( jsonPath.parent_path() ) )
+                        fs::create_directories( jsonPath.parent_path() );
+                    if ( !fs::exists( jsonPath ) )
+                    {
+                        nl::json j_init;
+                        j_init["uuid"] = uuids::to_string(this->uuid());
+                        std::ofstream o(jsonPath.string());
+                        o << j_init.dump(/*1*/);
+                    }
+                }
+                this->worldComm().barrier();
+
                 this->init();
+            }
         }
 
 
