@@ -25,6 +25,7 @@
 #include <boost/dll.hpp>
 #include <boost/algorithm/string/split.hpp>
 
+#include <feel/feelcore/table.hpp>
 #include <feel/feelmor/options.hpp>
 #include <feel/feelmor/crbplugin_interface.hpp>
 #include <feel/feelmor/crbmodeldb.hpp>
@@ -60,11 +61,11 @@ loadPlugin( std::string const& name, std::string const& id )
     bool loadFiniteElementDatabase = boption(_name="crb.load-elements-database");
 
     std::string jsonfilename = (fs::path(Environment::expand( soption(_name="plugin.db") )) / fs::path(pluginname) / fs::path(id) / (pluginname+".crb.json")).string() ;
-            
+
     std::cout << " . using db " << jsonfilename << std::endl;
-    
+
     plugin->loadDB( jsonfilename, (loadFiniteElementDatabase)? crb::load::all : crb::load::rb );
-    
+
     return plugin;
 }
 
@@ -100,12 +101,12 @@ void runCrbOnlineQuery()
 
     using namespace bsoncxx::builder::basic;
     document document{};
-    
-    
+
+
     auto collection = conn["feelpp"]["crbdb"];
 
     typedef std::vector< std::string > split_vector_type;
-    
+
     split_vector_type SplitVec; // #2: Search for tokens
     std::string q = Feel::soption("query");
     boost::split( SplitVec, q, boost::is_any_of(","), boost::token_compress_on );
@@ -139,12 +140,12 @@ void runCrbOnlineCompare()
 
     using namespace bsoncxx::builder::basic;
     document document{};
-    
-    
+
+
     auto collection = conn["feelpp"]["crbdb"];
 
     typedef std::vector< std::string > split_vector_type;
-    
+
     split_vector_type SplitVec; // #2: Search for tokens
     std::string q = Feel::soption("compare");
     boost::split( SplitVec, q, boost::is_any_of(","), boost::token_compress_on );
@@ -160,7 +161,7 @@ void runCrbOnlineCompare()
     auto cursor = collection.find(document.extract());
 
     std::vector<std::shared_ptr<Feel::CRBPluginAPI>> plugins;
-    
+
     for (auto&& doc : cursor) {
         //std::cout << bsoncxx::to_json(doc) << std::endl;
         LOG(INFO) << "crbmodel.name: " << doc["crbmodel"]["name"].get_utf8().value.to_string() << std::endl;
@@ -224,10 +225,23 @@ runCrbOnline( std::vector<std::shared_ptr<Feel::CRBPluginAPI>> plugin )
 
     std::vector<double> inputParameter;
     if ( Environment::vm().count("parameter"))
-        inputParameter = Environment::vm()["parameter"].as<std::vector<double> >();
+    {
+        auto inputParameterParsed = Environment::vm()["parameter"].as<std::vector<std::string> >();
+
+        if ( inputParameterParsed.size() == 1 )
+        {
+            std::vector<std::string > stringParsedSplitted;
+            boost::split( stringParsedSplitted, inputParameterParsed.front(), boost::is_any_of(" "), boost::token_compress_on );
+            inputParameterParsed = stringParsedSplitted;
+        }
+
+        for ( std::string const& paramParsed : inputParameterParsed )
+            inputParameter.push_back( std::stod(paramParsed) );
+    }
+    //inputParameter = Environment::vm()["parameter"].as<std::vector<double> >();
     if ( !inputParameter.empty() )
     {
-        CHECK( inputParameter.size() == muspace->dimension() ) << "parameter has a wrong size : "<< inputParameter.size() << " but must be " << muspace->dimension();
+        CHECK( inputParameter.size() == muspace->dimension() ) << "parameter has a wrong size : "<< inputParameter.size() << " but must be " << muspace->dimension() << ":"<<inputParameter;
         auto mu = muspace->element();
         for ( uint16_type d=0;d<muspace->dimension();++d)
             mu(d)=inputParameter[d];
@@ -245,14 +259,23 @@ runCrbOnline( std::vector<std::shared_ptr<Feel::CRBPluginAPI>> plugin )
 
     int rbDim = ioption(_name="rb-dim");
     int nSamples = mysampling->size();
+
+    Feel::Table tableOutputResults;
+    std::vector<std::string> tableRowHeader = muspace->parameterNames();
+    tableRowHeader.push_back( "output");
+    tableOutputResults.add_row( tableRowHeader );
+    tableOutputResults.format().setFirstRowIsHeader( true );
+
+    std::vector<double> tableRowValues(tableRowHeader.size());
+
     for ( int k=0;k<nSamples;++k )
     {
         auto const& mu = (*mysampling)[k];
         std::ostringstream ostrmu;
         for ( uint16_type d=0;d<muspace->dimension();++d)
             ostrmu << mu(d) << " ";
-        std::cout << "--------------------------------------\n";
-        std::cout << "mu["<<k<<"] : " << ostrmu.str() << "\n";
+        // std::cout << "--------------------------------------\n";
+        // std::cout << "mu["<<k<<"] : " << ostrmu.str() << "\n";
         //auto mu = crb->Dmu()->element();
         //std::cout << "input mu\n" << mu << "\n";
         for( auto const& p : plugin )
@@ -260,13 +283,38 @@ runCrbOnline( std::vector<std::shared_ptr<Feel::CRBPluginAPI>> plugin )
             auto crbResult = p->run( mu, time_crb, online_tol, rbDim, print_rb_matrix);
             auto resOuptut = boost::get<0>( crbResult );
             auto resError = boost::get<0>( boost::get<6>( crbResult ) );
-            std::cout << "output " << resOuptut.back() << " " << resError.back() << "\n";
+            //std::cout << "output " << resOuptut.back() << " " << resError.back() << "\n";
+
+            int curRowValIndex = 0;
+            for ( uint16_type d=0;d<muspace->dimension();++d)
+                tableRowValues[curRowValIndex++] = mu(d);
+            if ( !resOuptut.empty() )
+                tableRowValues[curRowValIndex++] = resOuptut.back();
+            tableOutputResults.add_row( tableRowValues );
 
             if ( loadFiniteElementDatabase )
             {
                 p->exportField( (boost::format("sol-%1%")%k).str(), crbResult );
             }
         }
+    }
+
+    bool printResults = true;
+    if ( printResults )
+        std::cout << tableOutputResults << std::endl;
+    bool saveResults = true;
+
+    std::string outputResultPath = "output.csv";
+    if ( Environment::vm().count("output_results.save.path") )
+        outputResultPath = soption(_name="output_results.save.path");
+    outputResultPath = Environment::expand( outputResultPath );
+    if ( !fs::exists( fs::path(outputResultPath).parent_path() ) && !fs::path(outputResultPath).parent_path().empty() )
+        fs::create_directories( fs::path(outputResultPath).parent_path() );
+
+    if ( saveResults )
+    {
+        std::ofstream ofs( outputResultPath );
+        tableOutputResults.exportCSV( ofs );
     }
     if ( loadFiniteElementDatabase )
         plugin[0]->saveExporter();
@@ -342,8 +390,8 @@ loadPlugin()
 int main(int argc, char**argv )
 {
     using namespace Feel;
-	po::options_description crbonlinerunoptions( "crb online run options" );
-	crbonlinerunoptions.add_options()
+    po::options_description crbonlinerunoptions( "crb online run options" );
+    crbonlinerunoptions.add_options()
         ( "plugin.dir", po::value<std::string>()->default_value(Info::libdir()) , "plugin directory" )
         ( "crbmodel.name", po::value<std::string>(), "CRB online code name" )
         ( "crbmodel.db.id", po::value<std::string>(), "CRB online code id" )
@@ -355,15 +403,18 @@ int main(int argc, char**argv )
         //( "plugin.dbid", po::value<std::string>(), "CRB online code id" )
         //( "plugin.last", po::value<int>()->default_value( 2 ), "use last created(=1) or modified(=2) or not (=0)" )
         //( "plugin.db", po::value<std::string>()->default_value( "${repository}/crbdb" ), "root directory of the CRB database " )
-        ( "parameter", po::value<std::vector<double> >()->multitoken(), "database filename" )
+        //( "parameter", po::value<std::vector<double> >()->multitoken(), "database filename" )
+        ( "parameter", po::value<std::vector<std::string> >()->multitoken(), "database filename" )
         ( "sampling.size", po::value<int>()->default_value( 10 ), "size of sampling" )
         ( "sampling.type", po::value<std::string>()->default_value( "random" ), "type of sampling" )
         ( "rb-dim", po::value<int>()->default_value( -1 ), "reduced basis dimension used (-1 use the max dim)" )
+        ( "output_results.save.path", po::value<std::string>(), "output_results.save.path" )
+
         ( "query", po::value<std::string>(), "query string for mongodb DB feelpp.crbdb" )
         ( "compare", po::value<std::string>(), "compare results from query in mongodb DB feelpp.crbdb" )
         ( "list", "list registered DB in mongoDB  in feelpp.crbdb" )
-	 	;
-	po::options_description crbonlinerunliboptions( "crb online run lib options" );
+        ;
+    po::options_description crbonlinerunliboptions( "crb online run lib options" );
 #if 1
     crbonlinerunliboptions.add(crbOptions())
         .add(crbSEROptions())
@@ -374,7 +425,7 @@ int main(int argc, char**argv )
         .add(backend_options("backend-l2"))
         ;
 #endif
-	Environment env( _argc=argc, _argv=argv,
+    Environment env( _argc=argc, _argv=argv,
                      _desc=crbonlinerunoptions,
                      _desc_lib=crbonlinerunliboptions.add( feel_options() ),
                      _about=about(_name="crbonlinerun",
