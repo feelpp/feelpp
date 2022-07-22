@@ -1,0 +1,108 @@
+{
+    "Name": "Square thermal-fin splitted",
+    "ShortName": "SquareNIRB",
+
+    "Meshes":
+    {
+        "heat":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/square.geo",
+                "hsize": 0.1
+            }
+        }
+    },
+
+    "CRBParameters":
+    {
+        "k0":
+        {
+            "min": 0.1,
+            "max": 1
+        },
+        "k1":
+        {
+            "min": 0.1,
+            "max": 1
+        },
+        "k2":
+        {
+            "min": 0.1,
+            "max": 1
+        },
+        "k3":
+        {
+            "min": 0.1,
+            "max": 1
+        }
+    },
+
+    "Parameters":
+    {
+        "k0": 10,
+        "k1": 0.1,
+        "k2": 1,
+        "k3": 0.1,
+        "Bi": 1
+    },
+
+    "Materials":
+    {
+        "Fin0":
+        {
+            "k":"k0:k0", // [W / (m * K)]
+            "rho":"1", // [kg / m^3]
+            "Cp":"1" // [J / (kg * K)]
+        },
+        "Fin1":
+        {
+            "k":"k1:k1", // [W / (m * K)]
+            "rho":"1", // [kg / m^3]
+            "Cp":"1" // [J / (kg * K)]
+        },
+        "Fin2":
+        {
+            "k":"k2:k2", // [W / (m * K)]
+            "rho":"1", // [kg / m^3]
+            "Cp":"1" // [J / (kg * K)]
+        },
+        "Fin3":
+        {
+            "k":"k3:k3", // [W / (m * K)]
+            "rho":"1", // [kg / m^3]
+            "Cp":"1" // [J / (kg * K)]
+        }
+    },
+
+    "BoundaryConditions":
+    {
+        "heat": 
+        {
+            "flux": 
+            {
+                "Tflux": {
+                    "expr": "1"
+                }
+            },
+            "convective_heat_flux":
+            {
+                "Tfourier":
+                {
+                    "h":"Bi:Bi",
+                    "Text":"0"
+                }
+            }
+        }
+    },
+
+    "PostProcess":
+    {
+        "heat":{
+            "Exports":
+            {
+                "fields":["temperature","pid"]
+            }
+        }
+    }
+}
