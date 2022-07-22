@@ -46,14 +46,14 @@
     {
         "heat":
         {
-            "temperature": 
+            "temperature":
             {
-                "Expression": 
+                "Expression":
                 {
-                    "init": 
+                    "init":
                     {
-                        "markers":["Omega_0","Omega_1","Omega_2","Omega_3","Omega_4"], 
-                        "expr":"300" 
+                        "markers":["Post","Fin_1","Fin_2","Fin_3","Fin_4"],
+                        "expr":0//"300"
                     }
                 }
             }
