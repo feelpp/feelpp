@@ -66,11 +66,6 @@ double view_factor_perp_walls_exact(double length, double width,double separatio
     return view_factor_bottom_to_side_wall;
 }
 
-double PointtoCircle_exact(double H, double R)
-{
-    double h = H/R;
-    return 1./(1.+h*h);
-}
 
 
 FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
