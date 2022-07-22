@@ -44,7 +44,7 @@ namespace Feel {
  * @return the vector of results and associated dof point coordinates
  */
 template <typename... Ts>
-auto opselt( Ts&&... v )
+[[nodiscard]] auto opselt( Ts&&... v )
 {
     auto args = NA::make_arguments( std::forward<Ts>( v )... );
     auto&& r = args.get( _range );
@@ -130,7 +130,7 @@ auto opselt( Ts&&... v )
  * @return the value and the dof point coordinates
  */
 template <typename... Ts>
-auto opelt( Ts&&... v )
+[[nodiscard]] auto opelt( Ts&&... v )
 {
     auto args = NA::make_arguments( std::forward<Ts>( v )... );
     auto && r = args.get(_range);
@@ -159,7 +159,7 @@ auto opelt( Ts&&... v )
  * @return the min value and the dof point coordinates
  */
 template <typename... Ts>
-auto minelt( Ts&&... v )
+[[nodiscard]] auto minelt( Ts&&... v )
 {
     auto args = NA::make_arguments( std::forward<Ts>( v )... );
     auto && r = args.get(_range);
@@ -184,7 +184,7 @@ auto minelt( Ts&&... v )
  * @return the max value and the dof point coordinates
  */
 template <typename... Ts>
-auto maxelt( Ts&&... v )
+[[nodiscard]] auto maxelt( Ts&&... v )
 {
     auto args = NA::make_arguments( std::forward<Ts>( v )... );
     auto && r = args.get(_range);
@@ -217,7 +217,7 @@ auto maxelt( Ts&&... v )
  * @return the min value and the dof point coordinates
  */
 template <typename... Ts>
-auto minmaxelt( Ts&&... v )
+[[nodiscard]] auto minmaxelt( Ts&&... v )
 {
     auto args = NA::make_arguments( std::forward<Ts>( v )... );
     auto && r = args.get(_range);
