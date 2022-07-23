@@ -493,7 +493,6 @@ DEIMBase<ParameterSpaceType,SpaceType,TensorType>::DEIMBase(  space_ptrtype Xh, 
     M_sampling_mode( soption( _name=prefixvm( M_prefix, "deim.default-sampling-mode" ), _vm=vm ) ),
     M_vm(vm)
 {
-    using Feel::cout;
     LOG(INFO) <<"DEIMBase constructor begin\n";
 
     if ( dbfilename.empty() )
@@ -534,7 +533,6 @@ template <typename ParameterSpaceType, typename SpaceType, typename TensorType>
 void
 DEIMBase<ParameterSpaceType,SpaceType,TensorType>::run()
 {
-    using Feel::cout;
     LOG(INFO) <<"DEIM run function begin\n";
 
     if ( M_write_nl_solutions )
@@ -584,16 +582,19 @@ DEIMBase<ParameterSpaceType,SpaceType,TensorType>::run()
             M_trainset->clear();
             M_trainset->readFromFile(file_name);
         }
-        cout << "DEIM sampling created\n";
+        if ( this->worldComm().isMasterRank() )
+            std::cout << "DEIM sampling created\n";
     }
-    cout << name() + " Offline sampling size = "<< M_trainset->size()<<std::endl;
+    if ( this->worldComm().isMasterRank() )
+        std::cout << name() + " Offline sampling size = "<< M_trainset->size()<<std::endl;
 
     int sampling_size = M_trainset->size();
     if ( M_user_max>sampling_size )
     {
-        cout << name()+" : Sampling size (="<< sampling_size
-             << ") smaller than deim.dimension-max (=" << M_user_max
-             << "), dimension max is now " << sampling_size << std::endl;
+        if ( this->worldComm().isMasterRank() )
+            std::cout << name()+" : Sampling size (="<< sampling_size
+                      << ") smaller than deim.dimension-max (=" << M_user_max
+                      << "), dimension max is now " << sampling_size << std::endl;
         M_user_max = sampling_size;
     }
 
@@ -607,8 +608,9 @@ DEIMBase<ParameterSpaceType,SpaceType,TensorType>::run()
         if ( M_M==0 )
         {
             auto mu = M_trainset->max().template get<0>();
-            cout <<"===========================================\n";
-            cout << name() +" : Start algorithm with mu="<< mu.toString() <<std::endl;
+            if ( this->worldComm().isMasterRank() )
+                std::cout <<"===========================================\n"
+                          << name() +" : Start algorithm with mu="<< mu.toString() <<std::endl;
             addNewVector(mu);
         }
     }
@@ -621,7 +623,8 @@ DEIMBase<ParameterSpaceType,SpaceType,TensorType>::run()
             mMax = M_M + M_ser_frequency;
             if ( mMax>M_user_max)
             {
-                cout << this->name() + " : max number of basis reached\n";
+                if ( this->worldComm().isMasterRank() )
+                    std::cout << this->name() + " : max number of basis reached\n";
                 this->setOfflineStep(false);
             }
         }
@@ -636,10 +639,11 @@ DEIMBase<ParameterSpaceType,SpaceType,TensorType>::run()
         if ( M_max_value!=0 )
             r_error = error/M_max_value;
 
-        cout << this->name() + " : Current max error="<<error <<", Atol="<< M_Atol
-             << ", relative max error="<< r_error <<", Rtol="<< M_tol
-             <<", for mu="<< mu.toString() <<std::endl;
-        cout <<"===========================================\n";
+        if ( this->worldComm().isMasterRank() )
+            std::cout << this->name() + " : Current max error="<<error <<", Atol="<< M_Atol
+                      << ", relative max error="<< r_error <<", Rtol="<< M_tol
+                      <<", for mu="<< mu.toString() << std::endl
+                      <<"===========================================" << std::endl;
 
         if ( error<M_Atol || r_error<M_tol )
         {
@@ -648,7 +652,8 @@ DEIMBase<ParameterSpaceType,SpaceType,TensorType>::run()
             break;
         }
 
-        cout << this->name() + " : Construction of basis "<<M_M+1<<"/"<<mMax<<", with mu="<<mu.toString()<<std::endl;
+        if ( this->worldComm().isMasterRank() )
+            cout << this->name() + " : Construction of basis "<<M_M+1<<"/"<<mMax<<", with mu="<<mu.toString()<<std::endl;
 
         addNewVector(mu);
     }
@@ -658,8 +663,9 @@ DEIMBase<ParameterSpaceType,SpaceType,TensorType>::run()
 
     this->saveDB();
 
-    cout <<"===========================================\n";
-    cout << this->name() + " : Stopping greedy algorithm. Number of basis function : "<<M_M<<std::endl;
+    if ( this->worldComm().isMasterRank() )
+        std::cout <<"===========================================\n"
+                  << this->name() + " : Stopping greedy algorithm. Number of basis function : "<<M_M<<std::endl;
 
     LOG(INFO) <<"DEIM run function end\n";
     toc(this->name() + " : Offline Total Time");

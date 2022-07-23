@@ -1,4 +1,3 @@
-#include <boost/dll/alias.hpp> // for BOOST_DLL_ALIAS   
 #include <feel/feelmor/crbplugin.hpp>
 #include <linearelasticity3d.hpp>
 
@@ -29,9 +28,10 @@ makeLinearElasticity3dAbout( std::string const& str )
 
 LinearElasticity3d::LinearElasticity3d()
     :
-    super_type( "LinearElasticity" )
+    super_type( "LinearElasticity3d" )
 {
-    
+    this->setPluginName( BOOST_PP_STRINGIZE(FEELPP_MOR_PLUGIN_NAME) + std::string("P1G1") );
+    this->setPluginLibName( BOOST_PP_STRINGIZE(FEELPP_MOR_PLUGIN_LIBNAME) );
 }
 
 void
@@ -218,5 +218,5 @@ LinearElasticity3d::output( int output_index, parameter_type const& mu , element
     return output;
 }
 
-FEELPP_CRB_PLUGIN( LinearElasticity3d, linearelasticity3d )
+FEELPP_CRB_PLUGIN( LinearElasticity3d, BOOST_PP_CAT(FEELPP_MOR_PLUGIN_NAME,P1G1) )
 } // namespace Feel
