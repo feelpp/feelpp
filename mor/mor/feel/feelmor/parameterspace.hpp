@@ -168,6 +168,7 @@ public:
          */
         std::string parameterName( int d ) const
             {
+                CHECK( M_space ) << "no parameter space";
                 return M_space->parameterName(d);
             }
 
@@ -177,6 +178,7 @@ public:
          */
         std::vector<std::string> const& parameterNames() const
         {
+            CHECK( M_space ) << "no parameter space";
             return M_space->parameterNames();
         }
 
