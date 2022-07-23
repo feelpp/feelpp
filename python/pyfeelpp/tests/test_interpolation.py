@@ -34,7 +34,7 @@ def setToolbox(h, geo_path, model):
     mesh = feelpp.load(mesh_, geo_path, h)
 
     # set mesh and model properties
-    tb = heat(dim=2, order=1)
+    tb = heat(dim=2, order=2)
     tb.setMesh(mesh)
     tb.setModelProperties(model)
 
@@ -43,16 +43,16 @@ def setToolbox(h, geo_path, model):
     return tb
 
 
-def createInterpolator(source, image):
+def createInterpolator(image_tb,domain_tb):
     """Create an interpolator between two toolboxes
     
     Args:
         source (Toolbox): coarse toolbox
         image (Toolbox): fine toolbox
     """
-    Vh_coarse = source.spaceTemperature()
-    Vh_fine = image.spaceTemperature()
-    interpolator = fi.interpolator(domain = Vh_coarse, image = Vh_fine, range = source.rangeMeshElements())
+    Vh_image = image_tb.spaceTemperature()
+    Vh_domain = domain_tb.spaceTemperature()
+    interpolator = fi.interpolator(domain = Vh_domain, image = Vh_image, range = image_tb.rangeMeshElements())
     return interpolator
 
 @pytest.mark.parametrize("cfg_path, geo_path, model_path", cases_params, ids=cases_ids)
@@ -78,14 +78,31 @@ def test_interpolate_constant(cfg_path, geo_path, model_path):
     tbCoarse = setToolbox(H, geo_path, model)
     tbFine = setToolbox(h, geo_path, model)
 
-    I_fineToCoarse = createInterpolator(tbFine, tbCoarse)
-    I_coarseToFine = createInterpolator(tbCoarse, tbFine)
+    I_fineToCoarse = createInterpolator(domain_tb=tbFine, image_tb=tbCoarse)
+    I_coarseToFine = createInterpolator(domain_tb=tbCoarse, image_tb=tbFine)
 
-    u = tbCoarse.spaceTemperature().element()
-    u.on(feelpp.elements(tbFine.mesh()), feelpp.expr("1"))
+    u_coarse = tbCoarse.spaceTemperature().element()
+    u_fine = tbFine.spaceTemperature().element()
 
-    print(u.min(), u.max())
+    def check_interp(I, u_domain, u_image, u_check_min, u_check_max):
+        print("min:{}, max:{}".format(u_domain.min(), u_domain.max()))
+        assert abs(u_domain.min()-u_check_min) < 1e-12
+        assert abs(u_domain.max()-u_check_max) < 1e-12
+        u_image = I.interpolate(u_domain)
+        assert abs(u_image.min()-u_check_min) < 1e-12
+        assert abs(u_image.max()-u_check_max) < 1e-12
 
+    u_coarse.on(feelpp.elements(tbCoarse.mesh()), feelpp.expr("1")) 
+    check_interp(I_coarseToFine, u_coarse, u_fine, 1, 1)   
+    u_fine.on(feelpp.elements(tbFine.mesh()), feelpp.expr("3")) 
+    check_interp(I_fineToCoarse, u_fine, u_coarse, 3, 3)
 
-    # failing...
-    u_fine = I_fineToCoarse.interpolate(u)
+    u_coarse.on(feelpp.elements(tbCoarse.mesh()), feelpp.expr("x+y:x:y"))
+    check_interp(I_coarseToFine, u_coarse, u_fine, 0, 2)
+    u_fine.on(feelpp.elements(tbFine.mesh()), feelpp.expr("x+y:x:y"))
+    check_interp(I_fineToCoarse, u_fine, u_coarse, 0, 2)
+
+    u_coarse.on(feelpp.elements(tbCoarse.mesh()), feelpp.expr("x^2-3*y^2:x:y"))
+    check_interp(I_coarseToFine, u_coarse, u_fine, -3, 1)
+    u_fine.on(feelpp.elements(tbFine.mesh()), feelpp.expr("-3*x^2+y^2:x:y"))
+    check_interp(I_fineToCoarse, u_fine, u_coarse, -3, 1)
