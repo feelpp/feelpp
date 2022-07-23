@@ -8,7 +8,10 @@ template<int Order>
 BenchmarkGreplLinearElliptic<Order>::BenchmarkGreplLinearElliptic()
     :
     super_type( "BenchMarkGreplLinearElliptic" + std::to_string(Order) )
-{}
+{
+    this->setPluginName( BOOST_PP_STRINGIZE(FEELPP_MOR_PLUGIN_NAME) + fmt::format("P{}",Order) );
+    this->setPluginLibName( BOOST_PP_STRINGIZE(FEELPP_MOR_PLUGIN_LIBNAME) );
+}
 
 template<int Order>
 void BenchmarkGreplLinearElliptic<Order>::setupSpecificityModel( boost::property_tree::ptree const& ptree, std::string const& dbDir )
@@ -405,12 +408,11 @@ double BenchmarkGreplLinearElliptic<Order>::output( int output_index, parameter_
 
 
 
-
-FEELPP_CRB_PLUGIN_TEMPLATE( BenchmarkGreplLinearElliptic1, BenchmarkGreplLinearElliptic<1>, benchmarkgrepllinearelliptic1 )
-FEELPP_CRB_PLUGIN_TEMPLATE( BenchmarkGreplLinearElliptic2, BenchmarkGreplLinearElliptic<2>, benchmarkgrepllinearelliptic2 )
-FEELPP_CRB_PLUGIN_TEMPLATE( BenchmarkGreplLinearElliptic3, BenchmarkGreplLinearElliptic<3>, benchmarkgrepllinearelliptic3 )
-
 template class BenchmarkGreplLinearElliptic<1>;
 template class BenchmarkGreplLinearElliptic<2>;
 template class BenchmarkGreplLinearElliptic<3>;
+
+FEELPP_CRB_PLUGIN_TEMPLATE( BenchmarkGreplLinearEllipticP1, BenchmarkGreplLinearElliptic<1>, BOOST_PP_CAT(FEELPP_MOR_PLUGIN_NAME,P1) )
+FEELPP_CRB_PLUGIN_TEMPLATE( BenchmarkGreplLinearEllipticP2, BenchmarkGreplLinearElliptic<2>, BOOST_PP_CAT(FEELPP_MOR_PLUGIN_NAME,P2) )
+FEELPP_CRB_PLUGIN_TEMPLATE( BenchmarkGreplLinearEllipticP3, BenchmarkGreplLinearElliptic<3>, BOOST_PP_CAT(FEELPP_MOR_PLUGIN_NAME,P3) )
 }
