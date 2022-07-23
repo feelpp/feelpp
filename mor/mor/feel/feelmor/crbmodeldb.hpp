@@ -59,6 +59,29 @@ public :
     static uuids::uuid idFromDBLast( std::string const& name, crb::last last, std::string const& root = Environment::rootRepository() );
     static uuids::uuid idFromId( std::string const& name, std::string const& uid, std::string const& root = Environment::rootRepository() );
 
+    template <typename ... Ts>
+    static std::shared_ptr<CRBModelDB> New( Ts && ... v )
+        {
+            auto args = NA::make_arguments( std::forward<Ts>(v)... );
+            std::string const& filename = args.get(_filename);
+
+            std::string modelname;
+            std::ifstream ifs( filename );
+            nl::json jarg = nl::json::parse(ifs,nullptr,true,true);
+            if ( jarg.contains( "crbmodel" ) )
+            {
+                auto const& j_crbmodel = jarg.at( "crbmodel" );
+                modelname = j_crbmodel.at( "name" ).get<std::string>();
+            }
+            uuids::uuid uid = uuids::nil_uuid();
+            if ( jarg.contains( "uuid" ) )
+                uid = boost::lexical_cast<uuids::uuid>( jarg.at( "uuid" ).template get<std::string>() );
+
+            // TODO root_dir?
+            return std::make_shared<CRBModelDB>( modelname,uid );
+        }
+private :
+    static std::string jsonFilename( std::string const& name );
 private :
     std::string M_name;
     std::string M_root;
