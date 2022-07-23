@@ -78,7 +78,9 @@ macro(genLibBase)
       ${filepath} ${FEELMODELS_GENLIB_APPLICATION_DIR}/${filename} )
   endforeach()
 
-  
+
+
+  # TODO VINCENT : use feelpp_toolboxes_add_library
    # message (CODEGEN_SOURCES   :    ${CODEGEN_SOURCES})
    # message( CODEGEN_FILES_TO_COPY  ${CODEGEN_FILES_TO_COPY})
   # generate library
@@ -89,6 +91,7 @@ macro(genLibBase)
     )
   add_dependencies(${LIB_APPLICATION_NAME} ${TARGET_COPY_FILES})
   target_link_libraries(${LIB_APPLICATION_NAME} ${LIB_DEPENDS} )
+  add_library(Feelpp::${LIB_APPLICATION_NAME} ALIAS ${LIB_APPLICATION_NAME} )  # to match exported target
   set_target_properties(${LIB_APPLICATION_NAME} PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${FEELMODELS_GENLIB_APPLICATION_DIR}")
   set_property(TARGET ${LIB_APPLICATION_NAME} PROPERTY MACOSX_RPATH ON)
 

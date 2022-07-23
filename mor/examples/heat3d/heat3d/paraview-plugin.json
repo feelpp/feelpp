@@ -1,0 +1,103 @@
+{
+    "user-parameters":
+    {
+        "description":
+        {
+            "Conductivity_central":
+            {
+                "min":100,
+                "max":200,
+                "default":125,
+                "unit":"W/(m.K)",
+                "label":"central",
+                "group":"Thermal Conductivity"
+            },
+            "Conductivity_base1":
+            {
+                "min":100,
+                "max":200,
+                "default":100,
+                "unit":"W/(m.K)",
+                "label":"base1",
+                "group":"Thermal Conductivity"
+            },
+            "Conductivity_base2":
+            {
+                "min":100,
+                "max":200,
+                "default":150,
+                "unit":"W/(m.K)",
+                "label":"base2",
+                "group":"Thermal Conductivity"
+            },
+            "Conductivity_base3":
+            {
+                "min":100,
+                "max":200,
+                "default":200,
+                "unit":"W/(m.K)",
+                "label":"base3",
+                "group":"Thermal Conductivity"
+            },
+            "Temperature_base1":
+            {
+                "min":293,
+                "max":310,
+                "default":293,
+                "unit":"K",
+                "label":"base1",
+                "group":"Temperature imposed"
+            },
+            "Temperature_base2":
+            {
+                "min":293,
+                "max":310,
+                "default":302,
+                "unit":"K",
+                "label":"base2",
+                "group":"Temperature imposed"
+            },
+            "Temperature_base3":
+            {
+                "min":293,
+                "max":310,
+                "default":310,
+                "unit":"K",
+                "label":"base3",
+                "group":"Temperature imposed"
+            },
+            "Flux_cylinder":
+            {
+                "min":-1e3,
+                "max":1e3,
+                "default":160,
+                "unit":"",
+                "label":"inside cylinder",
+                "group":"Flux imposed"
+            }
+        },
+        "group-ordering":["Thermal Conductivity","Temperature imposed","Flux imposed"],
+        "relations":
+        {
+            "mu0":"Conductivity_central:Conductivity_central",
+            "mu1":"Conductivity_base1:Conductivity_base1",
+            "mu2":"Conductivity_base2:Conductivity_base2",
+            "mu3":"Conductivity_base3:Conductivity_base3",
+            "mu4":"Conductivity_base1*Temperature_base1:Conductivity_base1:Temperature_base1",
+            "mu5":"Conductivity_base2*Temperature_base2:Conductivity_base2:Temperature_base2",
+            "mu6":"Conductivity_base3*Temperature_base3:Conductivity_base3:Temperature_base3",
+            "mu7":"Flux_cylinder:Flux_cylinder"
+        }
+    },
+    "outputs":
+    {
+        "unit":"K",
+        "unit-ref":"K",
+        "label":"Mean temperature"
+    },
+    "visualization":
+    {
+        "fields":["Temperature"],
+        "default-field":"Temperature"
+    }
+}

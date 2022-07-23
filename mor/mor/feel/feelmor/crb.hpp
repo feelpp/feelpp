@@ -2190,6 +2190,25 @@ CRB<TruthModelType>::offlineSolve( element_type& u, element_type& udu, parameter
 {
     if ( M_model->isSteady()  )
     {
+        tic();
+        if ( boption(_prefix=M_prefix,_name="crb.solve-fem-monolithic") )
+            u = M_model->solve(mu);
+        else if( M_use_newton )
+            u = offlineNewtonPrimal( mu );
+        else
+            u = offlineFixedPointPrimal( mu );
+        toc("Solve primal problem");
+
+        if( M_solve_dual_problem )
+        {
+            if ( M_use_newton )
+                return;
+            tic();
+            udu = offlineFixedPointDual( mu , dual_initial_field );
+            toc("Solve dual problem");
+        }
+
+#if 0
         // TODO VINCENT : fix use of dual problem
         if ( M_model->hasEim() && boption(_prefix=M_prefix,_name="crb.solve-fem-monolithic") )
         {
@@ -2197,7 +2216,6 @@ CRB<TruthModelType>::offlineSolve( element_type& u, element_type& udu, parameter
         }
         else if( ! M_use_newton )
         {
-            tic();
             u = offlineFixedPointPrimal( mu );//, A  );
             toc("Solve primal problem");
 
@@ -2214,6 +2232,7 @@ CRB<TruthModelType>::offlineSolve( element_type& u, element_type& udu, parameter
             u = offlineNewtonPrimal( mu );
             toc("Solve primal problem");
         }
+#endif
     }//steady
     else
     {
