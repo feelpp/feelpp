@@ -2,6 +2,7 @@ import feelpp.mor.reducedbasis.reducedbasis_timeOffline as mor_rb
 import sys, os
 from feelpp.toolboxes.heat import *
 import feelpp.toolboxes.core as core
+from feelpp.operators import mass
 import feelpp.mor as mor
 import feelpp
 import json5 as json
@@ -253,13 +254,14 @@ def generate_basis(worldComm=None, config=None):
 
 
     else:
-        Mq_ = affineDecomposition[2]
-        Mq = mor_rb.convertToPetscMat(Mq_[0])
+        M = mass(trial=heatBox.spaceTemperature(), test=heatBox.spaceTemperature(), range=feelpp.elements(heatBox.mesh()))
+        M = M.to_petsc().mat()
+        M.assemble()
 
         tf = config.param['tf']
         K = config.param['K']
         
-        rb = mor_rb.reducedbasisTimeOffline(Aq=Aq, Fq=Fq, Mr=Mq, model=model, mubar=mubar,
+        rb = mor_rb.reducedbasisTimeOffline(Aq=Aq, Fq=Fq, Mr=[M], model=model, mubar=mubar,
                 output_names=output_names, use_dual_norm=config.use_dual_norm, tf=tf, K=K)
 
         rb.setVerbose(False)

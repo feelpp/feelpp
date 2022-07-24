@@ -17,6 +17,9 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
 
         self.Mr = Mr
         self.Qm = len(Mr)
+        if self.Qm > 0:
+            warnings.warn(f"The decomposition of the mass matrix should be of size 1, not {self.Qm}.\
+                When assembleM will be called, only Mr[0] will be returned")
 
         self.Fkp : dict # size K*Qf : Fkp[k,p] <-> F^{k,p}
         self.Mnr : dict # size N*Qm : Mnr[k,p] <-> M^{n,r}
@@ -34,10 +37,11 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
         """
         assert( len(beta) == self.Qm ), f"Number of param ({len(beta)}) should be {self.Qm}"
 
-        M = self.Mr[0].duplicate()
-        for r in range(0, self.Qm):
-            M += self.Aq[r] * beta[r]
-        return M
+        # The decopmposition of the mass matrix is not correct yet
+        # M = self.Mr[0].duplicate()
+        # for r in range(0, self.Qm):
+        #     M += self.Aq[r] * beta[r]
+        return self.Mr[0]
 
 
     def computeOfflineReducedBasis(self, mus, orth=True):

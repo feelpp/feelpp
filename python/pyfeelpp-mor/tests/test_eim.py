@@ -190,7 +190,7 @@ def init_toolboxmor(casefile, name, dim):
 def test_matrix(casefile, name, dim, init_feelpp):
     e = init_feelpp
 
-    model, heatBox, assembleDEIM, assembleMDEIM, _ = init_toolboxmor(casefile, name, dim)
+    model, _, _, assembleMDEIM, _ = init_toolboxmor(casefile, name, dim)
 
     [Aq0, Fq0] = model.getAffineDecomposition()
     Aq = convertToPetscMat(Aq0[0])
@@ -218,7 +218,7 @@ def test_matrix(casefile, name, dim, init_feelpp):
 def test_rhs(casefile, name, dim, init_feelpp):
     e = init_feelpp
 
-    model, heatBox, assembleDEIM, assembleMDEIM, _ = init_toolboxmor(casefile, name, dim)
+    model, _, assembleDEIM, _, _ = init_toolboxmor(casefile, name, dim)
 
     [Aq0, Fq0] = model.getAffineDecomposition()
     Aq = convertToPetscMat(Aq0[0])
@@ -237,7 +237,7 @@ def test_rhs(casefile, name, dim, init_feelpp):
         nRelF = diffF.norm()/F_tb.norm()
 
         if rank == 0:
-            print(f"{mu} : {nRelF:.2e}")
+            print(f"|{mu} : {nRelF:.2e}")
         
         assert(nRelF < 1e-12)
 

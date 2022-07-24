@@ -29,7 +29,7 @@ def has_petsc4py():
         return False
 
 class InitFeelpp:
-    def __init__(self,config):
+    def __init__(self, config):
 
         try:
             shutil.rmtree(feelpp.Environment.rootRepository() + '/pyfeelppmor-tests')
