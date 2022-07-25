@@ -304,7 +304,7 @@ def test_reducedbasis_sample(prefix, case, casefile, dim, time_dependent, init_f
     for f in Fq_:
         Fq.append(convertToPetscVec(f[0]))
 
-    rb = reducedbasisOffline(convertToPetscMat(Aq[0]), Fq, model, mubar, output_names=output_names)
+    rb = reducedbasisOffline(Aq=convertToPetscMat(Aq[0]), Fq=Fq, model=model, mubar=mubar, output_names=output_names)
 
     print("\nCompute basis and orthonormalize it")
     def listOfParams(n):
@@ -369,7 +369,7 @@ def test_reducedbasis_greedy(prefix, case, casefile, dim, time_dependent, init_f
     for f in Fq_:
         Fq.append(convertToPetscVec(f[0]))
 
-    rb = reducedbasisOffline(convertToPetscMat(Aq[0]), Fq, model, mubar, use_dual_norm=True)
+    rb = reducedbasisOffline(Aq=convertToPetscMat(Aq[0]), Fq=Fq, model=model, mubar=mubar, use_dual_norm=True)
 
     print("\nCompute basis and orthonormalize it")
     def listOfParams(n):
@@ -426,7 +426,7 @@ def test_reducedbasis_pod(prefix, case, casefile, dim, time_dependent, init_feel
     for f in Fq_:
         Fq.append(convertToPetscVec(f[0]))
 
-    rb = reducedbasisOffline(convertToPetscMat(Aq[0]), Fq, model, mubar)
+    rb = reducedbasisOffline(Aq=convertToPetscMat(Aq[0]), Fq=Fq, model=model, mubar=mubar)
 
     print("\nCompute basis and orthonormalize it")
     def listOfParams(n):
@@ -564,41 +564,3 @@ def compute_time_for_online_error_computation(rb):
 
     f.write(f"computeBetaQm {t_computeBetaQm/N:e}\nassemble {t_assemble/N:e}\nsolve {t_solve/N:e}\ncomputeNumpy {t_compute_numpy/N:e}\ncomputeLoop {t_compute_loop/N:e}")
     f.close()
-
-
-
-
-
-# # @pytest.mark.greedy
-# # @pytest.mark.dependency(depends=['test_runGreedy'])
-# # def test_cvgError(xi_test=None):
-# #     if xi_test is None:
-# #         xi_test = listOfParams(50)
-# #     nb = len(xi_test)
-
-# #     df = pd.DataFrame(columns=['minS', 'maxS', 'meanS', 'minU', 'maxU', 'meanU'],
-# #                       index = list(range(1,pytest.rbGreedy.N+1)))
-
-# #     # print("size minS maxS meanS minU maxU meanU")
-
-# #     for size in range(1,pytest.rbGreedy.N+1):
-# #         S = np.zeros(nb)
-# #         U = np.zeros(nb)
-
-# #         for i in range(nb):
-# #             uN, sN = pytest.rbGreedy.getSolutions(xi_test[i], size=size)
-# #             u , s  = pytest.rbGreedy.getSolutionsFE(xi_test[i])
-
-# #             u_proj = pytest.rbGreedy.projFE(uN)
-
-# #             S[i] = np.abs(sN - s)/np.abs(s)
-# #             U[i] = pytest.rbGreedy.normA(u - u_proj)/pytest.rbGreedy.normA(u)
-
-# #         df.loc[size] = pd.Series({'minS':np.min(S), 'maxS':np.max(S), 'meanS':np.mean(S),
-# #                                   'minU':np.min(U), 'maxU':np.max(U), 'meanU':np.mean(U)})
-# #         # print(size, np.min(S), np.max(S), np.mean(S), np.min(U), np.max(U), np.mean(U))
-# #     return df
-
-
-
-
