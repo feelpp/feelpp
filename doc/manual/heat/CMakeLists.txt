@@ -29,5 +29,8 @@ feelpp_add_application( heatsink SRCS heatsink.cpp LABELS doc CFG heatsink.cfg G
 feelpp_add_application( ground2DP2 SRCS ground.cpp  LABELS doc DEFS FEELPP_DIM=2 FEELPP_ORDER=2
   CFG ground.cfg ground-realistic.cfg ground-realistic-2.cfg GEO ground2D.geo  )
 
-feelpp_add_application( rht SRCS rht.cpp LABELS doc  )
+add_custom_target(feelpp_doc_rht)
+feelpp_add_application( rht_2dp1 SRCS rht.cpp LABELS doc DEFS FEELPP_DIM=2 FEELPP_ORDER=1 )
+feelpp_add_application( rht_3dp1 SRCS rht.cpp LABELS doc DEFS FEELPP_DIM=3 FEELPP_ORDER=1)
+add_dependencies(feelpp_doc_rht feelpp_doc_rht_2dp1 feelpp_doc_rht_3dp1)
 feelpp_add_testcase(cases PREFIX doc_heat)

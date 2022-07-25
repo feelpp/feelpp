@@ -41,7 +41,7 @@
     "Meshes": {
         "heat": {
             "Import": {
-                "filename": "$cfgdir/fin.geo",
+                "filename": "$cfgdir/../fin.geo",
                 "partition": 0
             }
         }
@@ -93,8 +93,19 @@
                 }
             },
             "radiative_heat_flux": {
-                "cavity_1": {
-
+                "Cavity_1": {
+                    "markers": ["Cavity_1_1","Cavity_1_2"],
+                    "viewfactor": {
+                        "type": "RayTracing" // or "UnobstructedPlanar"
+                        // add other configs/parametrization here
+                    }
+                },
+                "Cavity_2": {
+                    "markers": ["Cavity_2_1","Cavity_2_2"],
+                    "viewfactor": {
+                        "type": "raytracing"
+                        // add other configs/parametrization here
+                    }
                 }
             }
         }
