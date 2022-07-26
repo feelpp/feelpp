@@ -1,5 +1,6 @@
 from .reducedbasis import *
 import scipy.linalg as sl
+from tqdm import tqdm
 import warnings
 
 
@@ -58,8 +59,8 @@ class reducedbasisTime(reducedbasis):
         """
         assert( len(beta) == self.Qm ), f"Number of param ({len(beta)}) should be {self.Qm}"
 
-        MN = np.einsum('r,rnm->nm', beta, self.MNr)
-        return MN
+        # MN = np.einsum('r,rnm->nm', beta, self.MNr)
+        return self.MNr[0]
 
 
     """Solve for a given parameter

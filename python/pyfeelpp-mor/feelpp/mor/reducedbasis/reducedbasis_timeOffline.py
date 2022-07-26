@@ -40,7 +40,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
         # The decopmposition of the mass matrix is not correct yet
         # M = self.Mr[0].duplicate()
         # for r in range(0, self.Qm):
-        #     M += self.Aq[r] * beta[r]
+        #     M += self.Mr[r] * beta[r]
         return self.Mr[0]
 
 
