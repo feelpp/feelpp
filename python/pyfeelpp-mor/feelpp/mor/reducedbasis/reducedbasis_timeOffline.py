@@ -86,7 +86,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
 
         for k in range(self.K):
             for p in range(self.Qf):
-                rhs = self.Fq[p] * g[k+1]
+                rhs = self.Fq[p] * g((k+1)*self.dt)
                 self.reshist = {}
                 self.ksp.solve(rhs, sol)
                 self.Fkp[k, p] = sol.copy()
@@ -125,12 +125,12 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
     def expandOffline(self):
         super().expandOffline()
         # self.Fkp and self.FF are independant of N, so they don't change
-        self.FM = np.concatenate( (self.FM, np.zeros(self.K, self.Qf, self.Qm, 1)), axis=3 )
-        self.FL = np.concatenate( (self.FL, np.zeros(self.K, self.Qf, self.Qa, 1)), axis=3 )
-        self.ML = np.concatenate( ( self.ML, np.zeros( (self.Qm, 1, self.Qa, self.N) ) ), axis=1 )
-        self.ML = np.concatenate( ( self.ML, np.zeros( (self.Qm, self.N+1, self.Qa, 1) ) ), axis=3 )
-        self.MM = np.concatenate( ( self.MM, np.zeros( (self.Qm, 1, self.Qm, self.N) ) ), axis=1 )
-        self.MM = np.concatenate( ( self.MM, np.zeros( (self.Qm, self.N+1, self.Qm, 1) ) ), axis=3 )
+        self.FM = np.concatenate( (self.FM,  np.zeros( (self.K, self.Qf, self.Qm, 1)   )), axis=3 )
+        self.FL = np.concatenate( (self.FL,  np.zeros( (self.K, self.Qf, self.Qa, 1)   )), axis=3 )
+        self.ML = np.concatenate( ( self.ML, np.zeros( (self.Qm, 1, self.Qa, self.N)   )), axis=1 )
+        self.ML = np.concatenate( ( self.ML, np.zeros( (self.Qm, self.N+1, self.Qa, 1) )), axis=3 )
+        self.MM = np.concatenate( ( self.MM, np.zeros( (self.Qm, 1, self.Qm, self.N)   )), axis=1 )
+        self.MM = np.concatenate( ( self.MM, np.zeros( (self.Qm, self.N+1, self.Qm, 1) )), axis=3 )
 
         pc = self.ksp.getPC()
         pc.setType(self.PC_TYPE)
@@ -143,7 +143,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
             self.Mnr[self.N, r] = sol.copy()
         
         for k in range(self.K):
-            for p in range(self.p):
+            for p in range(self.Qf):
                 for r in range(self.Qm):
                     self.FM[k,p,r,-1] = self.scalarX(self.Fkp[k,p], self.Mnr[self.N,r])
                 for q in range(self.Qa):
@@ -272,10 +272,21 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
 
 
     def computePODMode(self, mu, g, R=1):
+        """compute the POD modes for a given parameter
+
+        Args:
+            mu (parameterSpaceElement): Paramter used
+            g (function): function
+            R (int, optional): Number of POD modes to compute. Defaults to 1.
+
+        Returns:
+            list: list of POD modes
+        """
         C, uk = self.computeCorrelationMatrix(mu, g)
         values, vector = sl.eigh(C)
         ind = np.argsort(values)[::-1]
         res = []
+        # TODO : add only 90% of the modes
         for r in range(R):
             psi_max = vector[ind[r]]
             POD = self.Z[0].duplicate()
@@ -297,7 +308,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
             eps_tol (float): critère d'arrêt.Default to 1e-6
 
         Returns:
-            
+            TO BE SPECIFIED
         """
         SN = []
 
@@ -305,7 +316,8 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
         Delta_max = 1 + eps_tol
 
         self.computeOfflineReducedBasis([mu0])
-        # self.computeOfflineError(g)
+        self.computeOfflineErrorRhs()
+        self.computeOfflineError(g)
 
         maxs = []
 
@@ -318,12 +330,9 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
             POD = self.computePODMode(mu, g, R=R)
             for ksi in POD:
                 self.Z.append(ksi)
+                self.expandOffline()
                 self.N += 1
 
-            # self.expand_offline_error()
-
-            print("self.Z", self.Z)
-            
             self.generateANq()
             self.generateFNp()
             self.generateLkNp()
