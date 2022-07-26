@@ -1,5 +1,6 @@
 from .reducedbasis_time import *
 from .reducedbasisOffline import *
+import scipy.linalg as sl
 
 class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
     """
@@ -208,6 +209,132 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
         self.generateMNr()
 
 
+    """Functions dealing with the POD-greedy algorithm
+    """
+
+    def computeCorrelationMatrix(self, mu, g, to_numpy=True):
+        """Computed the correlation matrix for POD-greedy algorithm
+
+        Args:
+            mu (ParameterSpaceElement): parameter used
+            g (function): rhs function
+            to_numpy (bool): if True, returns a numpy array, else a PETSc matrix
+
+        Returns:
+            np.ndarray (or PETSc.Mat): Correlation matrix C(mu)
+        """
+        eK = PETSc.Mat().create()
+        eK.setSizes([self.NN, self.K])
+        eK.setFromOptions()
+        eK.setUp()
+
+        uk = []
+
+        betaA, betaF, betaM = self.model.computeBetaQm(mu)
+            
+        Amu = self.assembleA(betaA[0])
+        Fmu = self.assembleF(betaF[0][0])
+        Mmu = self.assembleM(betaM[0])
+
+        mat = Mmu + self.dt * Amu
+        self.ksp.setOperators(mat)
+
+        u = self.Fq[0].duplicate()
+        u.set(0)
+
+        self.Z_to_matrix()
+        ZT = self.Z_matrix.duplicate()
+        ZT = ZT.transpose()
+        ZZTX = self.Z_matrix * ZT * self.Abar
+
+        # build the matrix of error projections e^k(mu) = u^k(mu) - Z * ZT * Abar * u^k(mu)
+        for k in range(self.K):
+
+            rhs = g((k+1)*self.dt) * self.dt * Fmu + Mmu * u
+            self.ksp.setConvergenceHistory()
+            sol = self.Fq[0].duplicate()
+            sol.set(0)
+            self.ksp.solve(rhs, sol)
+            
+            eK[:,k] = sol - ZZTX * sol
+            u = sol.copy()
+            uk.append(sol.copy())
+        
+        eK.assemble()
+        eKT = eK.copy()
+        eKT = eKT.transpose()
+
+        C = (eKT * self.Abar * eK) * 1./self.K
+        if to_numpy:
+            return C[:,:], uk
+        else:
+            return C, uk
+
+
+    def computePODMode(self, mu, g, R=1):
+        C, uk = self.computeCorrelationMatrix(mu, g)
+        values, vector = sl.eigh(C)
+        ind = np.argsort(values)[::-1]
+        res = []
+        for r in range(R):
+            psi_max = vector[ind[r]]
+            POD = self.Z[0].duplicate()
+            POD.set(0)
+            for k in range(self.K):
+                POD += float(psi_max[k]) * uk[k]
+            res.append(POD)
+        return res
+                
+        
+
+    def generateBasisPODGreedy(self, mu0, mu_train, g, eps_tol=1e-6, R=1):
+        """Run POD(t)-Greedy(µ) algorithm
+
+        Args:
+            mu0 (float): intitial parameter
+            mu_train (list of ParameterSpaceElement): parameter train set
+            g (function): function g
+            eps_tol (float): critère d'arrêt.Default to 1e-6
+
+        Returns:
+            
+        """
+        SN = []
+
+        mu_star = mu0
+        Delta_max = 1 + eps_tol
+
+        self.computeOfflineReducedBasis([mu0])
+        # self.computeOfflineError(g)
+
+        maxs = []
+
+        while Delta_max > eps_tol:
+
+            mu = mu_star
+            SN.append(mu_star)
+
+            # POD(t) step
+            POD = self.computePODMode(mu, g, R=R)
+            for ksi in POD:
+                self.Z.append(ksi)
+                self.N += 1
+
+            # self.expand_offline_error()
+
+            print("self.Z", self.Z)
+            
+            self.generateANq()
+            self.generateFNp()
+            self.generateLkNp()
+            self.generateMNr()
+
+            mu_max = None
+            Delta_max = -np.float('inf')
+
+            # Greedy(µ) step
+            Delta_max = 0
+        return 0
     def solveTimeForStudy(self, mu, g):
         """Computes both RB and FE solutions for a given parameter and a given time-dependent function
 
