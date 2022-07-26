@@ -1,3 +1,4 @@
+import warnings
 from .reducedbasis import *
 
 from petsc4py import PETSc
@@ -44,6 +45,7 @@ class reducedbasisOffline(reducedbasis):
         self.SS = np.zeros((self.Qf, self.Qf))      # SS[p,p_] = (S^p, S^p_)
 
         self.NN = Aq[0].size[0]     # size of the FE problem
+        self.Z_matrix = None        # matrix of the orthonormal basis of shape (NN, N)
 
         A_tmp = self.assembleA(self.betaA_bar[0])
         AT_tmp = A_tmp.copy()
@@ -347,6 +349,18 @@ class reducedbasisOffline(reducedbasis):
 
         if orth:
             self.orthonormalizeZ()
+
+    def Z_to_matrix(self):
+        """Convert the base matrix Z to a matrix of shape (NN,N)
+        """
+        warnings.warn("Only works in sequantial for now...")
+        self.Z_matrix = PETSc.Mat().create(comm=PETSc.COMM_WORLD)
+        self.Z_matrix.setSizes((self.NN, self.N))
+        self.Z_matrix.setFromOptions()
+        self.Z_matrix.setUp()
+        for i, ksi in enumerate(self.Z):
+            self.Z_matrix.setValuesBlocked(range(self.NN), i, ksi)
+        self.Z_matrix.assemble()
 
 
     def test_orth(self):
