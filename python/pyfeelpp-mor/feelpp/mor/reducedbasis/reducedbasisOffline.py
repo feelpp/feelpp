@@ -8,12 +8,11 @@ slepc4py.init(sys.argv)
 from tqdm import tqdm
 
 class reducedbasisOffline(reducedbasis):
-    """ Reduced basis for stationnary problem
+    """ 
+    Class for the offline part of the reduced basis method for stationnary problem
     """
-
-
     def __init__(self, Aq, Fq, mubar, output_names=None, **kwargs):
-        """Initializes the class
+        """Initialize the reduced basis method
 
         Args:
             Aq (list)                      : affine decomposition of the bilinear form (Aq = [A1, ..., AqA])
@@ -320,7 +319,7 @@ class reducedbasisOffline(reducedbasis):
 
 
     def generateZ(self, mus, orth=True):
-        """Generates the base matrix Z (of shape (NN,N))
+        """Generate the basis matrix Z (of shape (NN,N))
 
         Args:
             mus (list of ParameterSpaceElement): list of N parameters to evalutate offline
@@ -346,7 +345,7 @@ class reducedbasisOffline(reducedbasis):
             self.orthonormalizeZ()
 
     def Z_to_matrix(self):
-        """Convert the base matrix Z to a matrix of shape (NN,N)
+        """Convert the basis matrix Z to a matrix of shape (NN,N)
         """
         warnings.warn("Only works in sequantial for now...")
         self.Z_matrix = PETSc.Mat().create(comm=PETSc.COMM_WORLD)
@@ -359,8 +358,8 @@ class reducedbasisOffline(reducedbasis):
 
 
     def test_orth(self):
-        """Tests is the matrix Z is orthonormal
-            Computes the matrix of scalar products of vectors of the reduced basis
+        """Test if the matrix Z is orthonormal
+            Compute the matrix of scalar products of vectors of the reduced basis
             The returned matrix should be equal to the identity
 
         Returns:
@@ -434,7 +433,7 @@ class reducedbasisOffline(reducedbasis):
 
 
     def computeOfflineReducedBasis(self, mus, orth=True):
-        """Computes the reduced basis and reduces matrices from a set of parameters
+        """Compute the reduced basis and reduced matrices from a set of parameters
 
         Args:
             mus (list of ParameterSpaceElement) : list of parameters
@@ -449,10 +448,10 @@ class reducedbasisOffline(reducedbasis):
     Finite elements resolution
     """
     def getSolutionsFE(self, mu, beta=None, k=-1):
-        """Computes the finite element solution (big problem)
+        """Compute the finite element solution (big problem)
 
         Args:
-            mu (ParameterSpaceElement) : parameter
+            mu (ParameterSpaceElement) : parameter used
             beta (list, optional) : coefficients of the decomposition, if they have already been computed
             k (int, optional) : index of the output to be computed, if -1 the compliant output is computed
 
@@ -486,7 +485,7 @@ class reducedbasisOffline(reducedbasis):
     Error computation
     """
     def computeOfflineErrorRhs(self):
-        """Compute the offline errors associated to right hand side, independant of N
+        """Compute the offline errors associated to right hand side, independent of N
         """
         self.Sp = []
 
@@ -507,7 +506,7 @@ class reducedbasisOffline(reducedbasis):
                 self.SS[p,p_] = self.scalarX(Fp, Fp_)
 
     def computeOfflineError(self):
-        """Compute offline errors associated to the reduced basis, dependant of N
+        """Compute offline errors associated to the reduced basis, dependent of N
         """
         self.Lnq = {}
 
@@ -536,7 +535,7 @@ class reducedbasisOffline(reducedbasis):
         """Add errors to values computed in previous steps.
            Before this function is called, the last column of Z must be computed
         """
-        # self.Sp and self.SS are independant of N, so they don't change
+        # self.Sp and self.SS are independent of N, so they don't change
         pc = self.ksp.getPC()
         pc.setType(self.PC_TYPE)
         self.ksp.setOperators(self.scal)
@@ -564,10 +563,10 @@ class reducedbasisOffline(reducedbasis):
 
 
     def computeDirectError(self, mu, precalc=None):
-        """compute a posteriori error using a direct method (costly), from a parameter mu
+        """Compute a posteriori error using a direct method (costly), from a parameter mu
 
         Args:
-            mu (ParameterSpaceElement): parameter
+            mu (ParameterSpaceElement): parameter used
             precalc (dict, optional): Dict containing the values of betaA, betaF and uN if these values have already\
                 been calculated. Defaults to None.\
                 If None is given, the quantities are calculated in the function
@@ -612,7 +611,7 @@ class reducedbasisOffline(reducedbasis):
         """Compare solutions between reduced basis and finite element method
 
         Args:
-            mu (ParameterSpaceElement): parameter
+            mu (ParameterSpaceElement): parameter used
 
         Returns:
             float: norm || u_EF - u_RB ||_L2
@@ -702,7 +701,7 @@ class reducedbasisOffline(reducedbasis):
             mu_0 (ParameterSpaceElement): first parameter for the basis
             Dmu (list of ParameterSpaceElement): test sample, to take arguments
             eps_tol (float, optional): tolerance. Defaults to 1e-6.
-            Nmax (int, optional): Maximal size of the basis. Defaults to 40.
+            Nmax (int, optional): maximal size of the basis. Defaults to 40.
 
         Returns:
             list of ParameterSpaceElement: parameters for the basis
@@ -770,7 +769,7 @@ class reducedbasisOffline(reducedbasis):
 
 
     def generatePOD(self, Xi_train, output=-1, eps_tol=1e-6):
-        """Generated the reduced basis using POD algorithm
+        """Generate the reduced basis using POD algorithm
 
         Args:
             Xi_train (list): set of train parameters

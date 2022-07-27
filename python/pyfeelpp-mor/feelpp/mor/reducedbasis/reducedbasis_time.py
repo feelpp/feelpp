@@ -1,6 +1,5 @@
 from .reducedbasis import *
 import scipy.linalg as sl
-from tqdm import tqdm
 import warnings
 
 
@@ -13,7 +12,7 @@ def taille_dict(d):
 class reducedbasisTime(reducedbasis):
 
     def __init__(self, *, tf, K, **kwargs) -> None:
-        """Initialise the object
+        """Initialize the object
 
         Args:
             tf (float) : final time
@@ -67,11 +66,11 @@ class reducedbasisTime(reducedbasis):
     """
 
     def solveTime(self, mu, g, beta=None):
-        """Solves the time-dependant equation for a given parameter and time-dependant function
+        """Solve the time-dependent equation for a given parameter and time-dependent function
 
         Args:
-            mu (ParameterSpaceElement): parameter
-            g (np.ndarray): g function of the right-hand side (g[k]=g(k*dt))
+            mu (ParameterSpaceElement): parameter used
+            g (function): right-hand side time-dependent function
 
         Returns:
             np.ndarray: solution uN of the equation at time t = K*dt
@@ -87,7 +86,7 @@ class reducedbasisTime(reducedbasis):
         u = np.zeros(self.N)    # initial solution
 
         for k in range(1, self.K):
-            sol = sl.lu_solve(matLu, g(k*self.dt) * self.dt * FNmu + MNmu @ u)
+            sol = sl.lu_solve(matLu, g(k * self.dt) * self.dt * FNmu + MNmu @ u)
             u = sol.copy()
         return u
 
@@ -104,10 +103,10 @@ class reducedbasisTime(reducedbasis):
 
 
     def computeOnlineError_k(self, mu, uN, uNm1, k, precalc=None):
-        """Computes the online error SQUARED, for a parameter mu
+        """Compute the online error SQUARED, for a parameter mu
 
         Args:
-            mu (ParameterSpaceElement): parameter
+            mu (ParameterSpaceElement): parameter used
             uk (np.ndarray): solution at time k (of size N)
             ukm1 (np.ndarray): solution at time k-1
             k (int): index of current temps
@@ -146,11 +145,11 @@ class reducedbasisTime(reducedbasis):
 
 
     def computeOnlineError(self, mu, betas, g, computeEnergyNorm=False):
-        """Computes online bound error
+        """Compute online bound error
 
         Args:
-            mu (ParameterSpaceElement): parameter
-            g (np.ndarray): right-hand side time-dependant function
+            mu (ParameterSpaceElement): parameter used
+            g (function): right-hand side time-dependent function
             computeEnergyNorm (bool): computes the energy normsuring the resolution (stroed in self.EnNorm).\
                 Defaults to False
 

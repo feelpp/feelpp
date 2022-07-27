@@ -36,7 +36,7 @@ def convertToPetscVec(Fq):
 class reducedbasis():
 
     def __init__(self, model, worldComm=None, use_dual_norm=False, **kwargs) -> None:
-        """Initialise the object
+        """Initialize the object
 
         Args:
             model (ToolboxMor_{2|3}D): model DEIM used for the decomposition
@@ -200,7 +200,7 @@ class reducedbasis():
         """Return solution uN and output sN
 
         Args:
-            mu (ParameterSpaceElement): parameter
+            mu (ParameterSpaceElement): parameter used
             beta (list, optional) : coefficients of the decomposition, if they have already been computed
             k (int, optional) : index of the output to be computed, if -1 the compliant output is computed
             size (int, optional): size of the sub-basis wanted. Defaults to None, meaning the whole basis is used.
@@ -229,7 +229,7 @@ class reducedbasis():
         """Computes and returns the outputs sNk
 
         Args:
-            mu (ParameterSpaceElement): parameter
+            mu (ParameterSpaceElement): parameter used
             ks (list): list containing the indexes of the outputs to be computed
             beta (list, optional): coefficients of the decomposition, if they have already been computed.\
                 Defaults to None.
@@ -333,10 +333,10 @@ class reducedbasis():
 
 
     def computeEnergyBound(self, mu, precalc=None, size=None):
-        """computes ernergy bound
+        """compute ernergy bound
 
         Args:
-            mu (ParameterSpaceElement): parameter
+            mu (ParameterSpaceElement): parameter used
             precalc (dict, optional): Dict containing the values of betaA, betaF and uN if these values have already\
                 been calculated. Defaults to None.\
                 If None is given, the quantities are calculated in the function
@@ -353,10 +353,10 @@ class reducedbasis():
         return normHatE / np.sqrt(alp)
 
     def computeEffectivity(self, mu, precalc=None, size=None):
-        """computes effectivity = Delta_N / ||e(mu)|_X
+        """compute effectivity = Delta_N / ||e(mu)|_X
 
         Args:
-            mu (ParameterSpaceElement): parameter
+            mu (ParameterSpaceElement): parameter used
             precalc (dict, optional): Dict containing the values of betaA, betaF and uN if these values have already\
                 been calculated. Defaults to None.\
                 If None is given, the quantities are calculated in the function
@@ -374,10 +374,10 @@ class reducedbasis():
 
 
     def UB_LB(self, mu, precalc=None):
-        """computed the theorical bound for effectivity (1 ⩽ η(µ) ⩽ γ(µ)/α(µ) )
+        """Compute the theorical bound for effectivity (1 ⩽ η(µ) ⩽ γ(µ)/α(µ) )
                                                                     ^^^^^^^^^^
         Args:
-            mu (ParameterSpaceElement): parameter
+            mu (ParameterSpaceElement): parameter used
             precalc (dict, optional): Dict containing the values of betaA, betaF and uN if these values have already\
                 been calculated. Defaults to None.\
                 If None is given, the quantities are calculated in the function
@@ -398,7 +398,7 @@ class reducedbasis():
     Save and load results
     """
     def saveReducedBasis(self, path, force=False, check=True, notDoneYet=False):
-        """save the reduced basis in files
+        """Save the reduced basis in files
 
         Args:
             path (str): path of the directory whre data are to be saved
