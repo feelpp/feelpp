@@ -361,7 +361,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
 
             Delta = Delta_max
             mu_train.pop(i_star)
-            print(f"[reducedbasis] POD-Greedy algorithm, N={self.N}, Δ={Delta} (tol={eps_tol})")
+            print(f"[reducedbasis] POD-greedy algorithm, N={self.N}, Δ={Delta} (tol={eps_tol})")
 
     def solveTimeForStudy(self, mu, g):
         """Computes both RB and FE solutions for a given parameter and a given time-dependent function
