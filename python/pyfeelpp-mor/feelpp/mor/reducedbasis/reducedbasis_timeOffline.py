@@ -271,13 +271,14 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
             return C, uk
 
 
-    def computePODMode(self, mu, g, R=1):
+    def computePODMode(self, mu, g, R=1, delta=0.9):
         """compute the POD modes for a given parameter
 
         Args:
             mu (parameterSpaceElement): Paramter used
             g (function): function
             R (int, optional): Number of POD modes to compute. Defaults to 1.
+            delta (float, optional): representativiness of the Nm first POD modes
 
         Returns:
             list: list of POD modes
@@ -287,13 +288,34 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
         ind = np.argsort(values)[::-1]
         res = []
         # TODO : add only 90% of the modes
-        for r in range(R):
-            psi_max = vector[ind[r]]
-            POD = self.Z[0].duplicate()
-            POD.set(0)
-            for k in range(self.K):
-                POD += float(psi_max[k]) * uk[k]
-            res.append(POD)
+
+        # Compute basis using R first POD modes
+        if delta is None:
+            for r in range(R):
+                psi_max = vector[ind[r]]
+                POD = self.Z[0].duplicate()
+                POD.set(0)
+                for k in range(self.K):
+                    POD += float(psi_max[k]) * uk[k]
+                res.append(POD)
+        # Compute basis using delta
+        else:
+            sum_eigen = 0
+            for i in range (len(values)):
+                sum_eigen += values[r]
+
+            Nm = 0
+            sum_delta = 0
+            while sum_delta < delta * sum_eigen:
+                psi_max = vector[ind[Nm]]
+                POD = self.Z[0].duplicate()
+                POD.set(0)
+                for k in range(self.K):
+                    POD += float(psi_max[k]) * uk[k]
+                res.append(POD)
+                sum_delta += values[ind[Nm]]
+                Nm += 1
+
         return res
 
     def greedyStep(self, xi_train, betas, g):
