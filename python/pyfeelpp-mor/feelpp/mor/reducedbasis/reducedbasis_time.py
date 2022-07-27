@@ -87,7 +87,7 @@ class reducedbasisTime(reducedbasis):
         u = np.zeros(self.N)    # initial solution
 
         for k in range(1, self.K):
-            sol = sl.lu_solve(matLu, g[k] * self.dt * FNmu + MNmu @ u)
+            sol = sl.lu_solve(matLu, g(k*self.dt) * self.dt * FNmu + MNmu @ u)
             u = sol.copy()
         return u
 

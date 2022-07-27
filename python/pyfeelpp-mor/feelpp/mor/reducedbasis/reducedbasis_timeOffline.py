@@ -245,7 +245,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
         self.Z_to_matrix()
         ZT = self.Z_matrix.duplicate()
         ZT = ZT.transpose()
-        ZZTX = self.Z_matrix * ZT * self.Abar
+        ZZTX = self.Z_matrix * ZT * self.scal
 
         # build the matrix of error projections e^k(mu) = u^k(mu) - Z * ZT * Abar * u^k(mu)
         for k in range(self.K):
@@ -395,7 +395,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
         for k in range(1, self.K):
             t.append(k * self.dt)
 
-            solN = sl.lu_solve(matLu, g[k] * self.dt * FNmu + MNmu @ uN)
+            solN = sl.lu_solve(matLu, g(k*self.dt) * self.dt * FNmu + MNmu @ uN)
             uN = solN.copy()
 
             rhs = float(g[k]) * self.dt * Fmu + Mmu * u

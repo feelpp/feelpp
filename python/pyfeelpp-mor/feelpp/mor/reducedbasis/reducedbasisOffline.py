@@ -197,9 +197,8 @@ class reducedbasisOffline(reducedbasis):
             v (PETSC.Vec): second vector
 
         Returns:
-            float: v.T @ A @ u
+            float: (u, v)_X
         """
-        # return v.dot( u )   # v.T @ scal @ u
         return v.dot( self.scal * u )   # v.T @ scal @ u
 
     def normA(self, u):
@@ -246,7 +245,7 @@ class reducedbasisOffline(reducedbasis):
             beta (list): list of parameters betaA
 
         Returns:
-            PETSc.Mat: assemble matrix
+            PETSc.Mat: assembled matrix
         """
         assert( len(beta) == self.Qa ), f"Number of param ({len(beta)}) should be {self.Qa}"
 
@@ -335,7 +334,6 @@ class reducedbasisOffline(reducedbasis):
         v.set(0)
         v.assemble()
 
-
         for i,mu in enumerate(tqdm(mus,desc=f"[reducedBasis] Offline generation of the basis", ascii=False, ncols=120)):
             beta = self.model.computeBetaQm(mu)
             A = self.assembleA(beta[0][0])
@@ -343,9 +341,6 @@ class reducedbasisOffline(reducedbasis):
 
             sol = self.solveFE(A, F)
             self.Z.append(sol)
-            # print(i, self.Z[-1].min(), self.Z[-1].max())
-            # print(self.reshist)
-
 
         if orth:
             self.orthonormalizeZ()
@@ -404,7 +399,6 @@ class reducedbasisOffline(reducedbasis):
             for i, ksi in enumerate(self.Z):
                 self.ANq[q, -1, i] = ksi.dot( self.Aq[q] * self.Z[-1] )
                 self.ANq[q, i, -1] = self.Z[-1].dot( self.Aq[q] * ksi )
-
 
     def generateFNp(self):
         """Generate the reduced vectors FNp
@@ -664,6 +658,29 @@ class reducedbasisOffline(reducedbasis):
     """
     Greedy algorithm
     """
+    def greedyStep(self, Dmu, betas):
+        mu_max = 0
+        i_max = 0
+        Delta_max = -float('inf')
+
+        for i,mu_tmp in enumerate(tqdm(Dmu, desc=f"[reducedBasis] Greedy, step {self.N}", ascii=False, ncols=120)):
+            beta = betas[mu_tmp]
+            ANmu = self.assembleAN(beta[0][0])
+            uN,_ = self.getSolutions(mu_tmp, beta=beta)
+            norm_uMu = np.sqrt( uN.T @ ANmu @ uN )
+
+            precalc = {"betaA":beta[0][0], "betaF":beta[1][0][0], "uN":uN}
+
+            D_en = self.computeEnergyBound(mu_tmp, precalc=precalc)
+            Delta_tmp = D_en / norm_uMu
+
+            if Delta_tmp > Delta_max:
+                i_max = i
+                Delta_max = Delta_tmp
+                mu_max = mu_tmp
+
+        return Delta_max, i_max, mu_max
+
     def greedy(self, mu_0, Dmu, eps_tol=1e-6, Nmax=40):
         """Generate the basis, using the greedy algorithm
 
@@ -693,17 +710,9 @@ class reducedbasisOffline(reducedbasis):
         for i,mu in enumerate(tqdm(Dmu, desc=f"[reducedBasis] Computing betas", ascii=False, ncols=120)):
             betas[mu] = self.model.computeBetaQm(mu)
 
-        # fig = go.Figure()
-
-        # t_init = time.process_time()
-        # ts = []
-
         while Delta > eps_tol and self.N < Nmax:
 
             S.append(mu)
-
-            # self.computeOfflineReducedBasis(S)
-            # self.computeOfflineError()
 
             if self.N == 0:
                 self.computeOfflineReducedBasis(S)
@@ -721,63 +730,12 @@ class reducedbasisOffline(reducedbasis):
 
                 self.N += 1
 
-                # self.generateANq()
-                # self.generateFNp()
-                # self.generateLNp()
                 self.expandANq()
                 self.expandFNp()
                 self.expandLkNp()
 
+            Delta_max, i_max, mu_max = self.greedyStep(Dmu, betas)
 
-            mu_max = 0
-            i_max = 0
-            Delta_max = -float('inf')
-
-            # t_loop = time.process_time()
-            # t_sol = 0
-            # t_i = 0
-            # t_nrm = 0
-            # t_eb = 0
-            # t_tst = 0
-
-            for i,mu_tmp in enumerate(tqdm(Dmu, desc=f"[reducedBasis] Greedy, step {self.N}", ascii=False, ncols=120)):
-                beta = betas[mu_tmp]
-                ANmu = self.assembleAN(beta[0][0])
-                # t_sol0 = time.process_time()
-                uN,_ = self.getSolutions(mu_tmp, beta=beta)
-                # t_sol1 = time.process_time()
-                norm_uMu = np.sqrt( uN.T @ ANmu @ uN )
-                # t_nrm1 = time.process_time()
-
-                # ti0 = time.process_time()
-                precalc = {"betaA":beta[0][0], "betaF":beta[1][0][0], "uN":uN}
-                # ti1 = time.process_time()
-
-                # t_eb0 = time.process_time()
-                D_en = self.computeEnergyBound(mu_tmp, precalc=precalc)
-                Delta_tmp = D_en / norm_uMu
-                # t_eb1 = time.process_time()
-
-                # m.append(mu_tmp.parameterNamed('k_1'))
-                # l.append(Delta_tmp)
-
-                # t_tst0 = time.process_time()
-                if Delta_tmp > Delta_max:
-                    i_max = i
-                    Delta_max = Delta_tmp
-                    mu_max = mu_tmp
-                # t_tst1 = time.process_time()
-
-                # t_sol += t_sol1 - t_sol0
-                # t_nrm += t_nrm1 - t_sol1
-                # t_i += ti1 - ti0
-                # t_eb += t_eb1 - t_eb0
-                # t_tst += t_tst1 - t_tst0
-
-            # t_end_loop = time.process_time()
-            # ts.append((t_end_loop - t_loop))
-            # print(ts[-1], ts[-1]/len(Dmu))
-            # print(self.N, (t_sol)/len(Dmu), (t_nrm)/len(Dmu), (t_eb)/len(Dmu), (t_tst)/len(Dmu))
             Dmu.pop(i_max)
             Delta = Delta_max
             self.DeltaMax.append(Delta_max)
@@ -788,21 +746,11 @@ class reducedbasisOffline(reducedbasis):
         if self.worldComm.isMasterRank() and self.N == Nmax:
             print("[reducedBasis] Greedy algo : warning, max size reached")
 
-    #     fig.update_layout(
-    #         # title="Energy for ",
-    #         xaxis_title=r"$\mu$",
-    #         yaxis_title=r"$\Delta_N$",
-    #         legend_title=r"$N$"
-    #     )
-    #     fig.write_image("energy.png", scale=2)
-    #     fig.write_html("energy.html")
+
         if self.worldComm.isMasterRank():
             print("[reducedBasis] End greedy algorithm")
         self.DeltaMax = np.array(self.DeltaMax)
 
-        # t_end = time.process_time()
-        # print(ts)
-        # print(t_end - t_init)
         return S
 
 
