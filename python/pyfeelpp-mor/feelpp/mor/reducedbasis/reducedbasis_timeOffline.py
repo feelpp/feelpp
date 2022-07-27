@@ -46,7 +46,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
 
 
     def computeOfflineReducedBasis(self, mus, orth=True):
-        """Computes the reduced basis from a set of parameters
+        """Compute the reduced basis from a set of parameters
 
         Args:
             mus (list of ParameterSpaceElement): list of parameters
@@ -57,7 +57,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
 
     
     def generateMNr(self) -> None:
-        """Generates the reduced matrices MNr
+        """Generate the reduced matrices MNr
         """
         self.MNr = []
         for _ in range(self.Qm):
@@ -69,10 +69,10 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
 
 
     def computeOfflineError(self, g):
-        """Stores the offline data for error bound computation
+        """Store the offline data for error bound computation
 
         Args:
-            g (np.ndarray): right-hand side time-dependant function
+            g (function): right-hand side time-dependent function
         """
         super().computeOfflineError()   # compute LL
 
@@ -124,7 +124,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
 
     def expandOffline(self):
         super().expandOffline()
-        # self.Fkp and self.FF are independant of N, so they don't change
+        # self.Fkp and self.FF are independent of N, so they don't change
         self.FM = np.concatenate( (self.FM,  np.zeros( (self.K, self.Qf, self.Qm, 1)   )), axis=3 )
         self.FL = np.concatenate( (self.FL,  np.zeros( (self.K, self.Qf, self.Qa, 1)   )), axis=3 )
         self.ML = np.concatenate( ( self.ML, np.zeros( (self.Qm, 1, self.Qa, self.N)   )), axis=1 )
@@ -162,7 +162,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
     Offline generation of the basis
     """
     def generateBasis(self, musk, g=lambda k:1 if k==0 else 0, orth=True) -> None:
-        """Generates the reduced basis matrix from different parameters and different instants
+        """Generate the reduced basis matrix from different parameters and different instants
 
         Args:
             musk (dict): dict as {mu:[k0,k1,...], ...} where ki are sorted instants
@@ -213,11 +213,11 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
     """
 
     def computeCorrelationMatrix(self, mu, g, to_numpy=True):
-        """Computed the correlation matrix for POD-greedy algorithm
+        """Compute the correlation matrix for POD-greedy algorithm
 
         Args:
             mu (ParameterSpaceElement): parameter used
-            g (function): rhs function
+            g (function): right-hand side time-dependent function
             to_numpy (bool): if True, returns a numpy array, else a PETSc matrix
 
         Returns:
@@ -271,13 +271,13 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
             return C, uk
 
 
-    def computePODMode(self, mu, g, R=1, delta=0.9):
-        """compute the POD modes for a given parameter
+    def computePODMode(self, mu, g, R=1, delta=None):
+        """Compute the POD modes for a given parameter
 
         Args:
-            mu (parameterSpaceElement): Paramter used
-            g (function): function
-            R (int, optional): Number of POD modes to compute. Defaults to 1.
+            mu (parameterSpaceElement): parameter used
+            g (function): right-hand side time-dependent function
+            R (int, optional): number of POD modes to compute. Defaults to 1.
             delta (float, optional): representativiness of the Nm first POD modes
 
         Returns:
@@ -335,14 +335,16 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
                 Delta_max = Delta_tmp
         return Delta_max, i_max, mu_max
 
-    def generateBasisPODGreedy(self, mu0, mu_train, g, eps_tol=1e-6, R=1):
+    def generateBasisPODGreedy(self, mu0, mu_train, g, eps_tol=1e-6, R=1, delta=0.9):
         """Run POD(t)-Greedy(µ) algorithm
 
         Args:
-            mu0 (float): intitial parameter
+            mu0 (float): initial parameter
             mu_train (list of ParameterSpaceElement): parameter train set
-            g (function): function g
-            eps_tol (float): critère d'arrêt.Default to 1e-6
+            g (function): right-hand side time-dependent function
+            eps_tol (float): stopping criterion.Default to 1e-6
+            R (int, optional): number of POD modes to compute.
+            delta (float, optional): representativiness of the Nm first POD modes
 
         Returns:
             TO BE SPECIFIED
@@ -366,7 +368,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
             SN.append(mu_star)
 
             # POD(t) step
-            POD = self.computePODMode(mu, g, R=R)
+            POD = self.computePODMode(mu, g, R=R, delta=delta)
             for ksi in POD:
                 self.Z.append(ksi)
                 self.expandOffline()
@@ -386,11 +388,11 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
             print(f"[reducedbasis] POD-Greedy algorithm, N={self.N}, Δ={Delta} (tol={eps_tol})")
 
     def solveTimeForStudy(self, mu, g):
-        """Computes both RB and FE solutions for a given parameter and a given time-dependent function
+        """Compute both RB and FE solutions for a given parameter and a given time-dependent function
 
         Args:
-            mu (parameterSpaceElement): parameter
-            g (np.ndarray): function g
+            mu (parameterSpaceElement): parameter used
+            g (function): right-hand side time-dependent function
 
         Returns:
             tuple: results
@@ -435,11 +437,12 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
 
         for k in range(1, self.K):
             t.append(k * self.dt)
+            gk = g(k * self.dt)
 
-            solN = sl.lu_solve(matLu, g(k*self.dt) * self.dt * FNmu + MNmu @ uN)
+            solN = sl.lu_solve(matLu, gk * self.dt * FNmu + MNmu @ uN)
             uN = solN.copy()
 
-            rhs = float(g[k]) * self.dt * Fmu + Mmu * u
+            rhs = float(gk) * self.dt * Fmu + Mmu * u
             self.ksp.setConvergenceHistory()
             sol = self.Fq[0].duplicate()
             sol.set(0)
