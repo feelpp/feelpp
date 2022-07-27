@@ -278,7 +278,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
             mu (parameterSpaceElement): Paramter used
             g (function): function
             R (int, optional): Number of POD modes to compute. Defaults to 1.
-            delta (float, optional): representativiness of the Nm first POD modes
+            delta (float, optional): representativiness of the Nm first POD modes. If None, the R greatest POD modes are computed
 
         Returns:
             list: list of POD modes
@@ -287,7 +287,6 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
         values, vector = sl.eigh(C)
         ind = np.argsort(values)[::-1]
         res = []
-        # TODO : add only 90% of the modes
 
         # Compute basis using R first POD modes
         if delta is None:
@@ -300,9 +299,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
                 res.append(POD)
         # Compute basis using delta
         else:
-            sum_eigen = 0
-            for i in range (len(values)):
-                sum_eigen += values[r]
+            sum_eigen = values.sum()
 
             Nm = 0
             sum_delta = 0
@@ -316,13 +313,16 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
                 sum_delta += values[ind[Nm]]
                 Nm += 1
 
+        s = ["","s"][len(res)>1]
+        print(f"[reducedbasis] POD-greedy, POD step : {len(res)} mode{s} computed")
+
         return res
 
     def greedyStep(self, xi_train, betas, g):
         mu_max = None
         i_max = 0
         Delta_max = -np.float('inf')
-        for i,mu in enumerate(tqdm(xi_train,desc=f"[reducedBasis] POD-greedy, greey step", ascii=False, ncols=120)):
+        for i,mu in enumerate(tqdm(xi_train,desc=f"[reducedBasis] POD-greedy, greedy step", ascii=False, ncols=120)):
 
             uN = self.solveTime(mu, g)
 
