@@ -154,8 +154,8 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
                 self.ML[r, -1, q, -1] = self.scalarX(self.Lnq[self.N,q], self.Mnr[self.N,r])
             for r_ in range(self.Qm):
                 for n in range(self.N):
-                    self.MM[-1,r,n,r_] = self.scalarX(self.Mnr[n,r], self.Mnr[self.N,r_])
-                    self.MM[-1,r,n,r_] = self.scalarX(self.Mnr[self.N,r], self.Mnr[n,r_])
+                    self.MM[r,n,r_,-1] = self.scalarX(self.Mnr[n,r], self.Mnr[self.N,r_])
+                    self.MM[r,-1,r_,n] = self.scalarX(self.Mnr[self.N,r], self.Mnr[n,r_])
 
 
     """
@@ -295,8 +295,23 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
                 POD += float(psi_max[k]) * uk[k]
             res.append(POD)
         return res
-                
-        
+
+    def greedyStep(self, xi_train, betas, g):
+        mu_max = None
+        i_max = 0
+        Delta_max = -np.float('inf')
+        for i,mu in enumerate(tqdm(xi_train,desc=f"[reducedBasis] POD-greedy, greey step", ascii=False, ncols=120)):
+
+            uN = self.solveTime(mu, g)
+
+            Delta = self.computeOnlineError(mu, betas, g, computeEnergyNorm=True)
+            Delta_tmp = Delta / self.EnNorm[-1]
+
+            if Delta_tmp > Delta_max:
+                i_max = i
+                mu_max = mu
+                Delta_max = Delta_tmp
+        return Delta_max, i_max, mu_max
 
     def generateBasisPODGreedy(self, mu0, mu_train, g, eps_tol=1e-6, R=1):
         """Run POD(t)-Greedy(µ) algorithm
@@ -315,11 +330,13 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
         mu_star = mu0
         Delta_max = 1 + eps_tol
 
+        betas = {}
+        for i,mu in enumerate(tqdm(mu_train, desc=f"[reducedBasis] Computing betas", ascii=False, ncols=120)):
+            betas[mu] = self.model.computeBetaQm(mu)
+
         self.computeOfflineReducedBasis([mu0])
         self.computeOfflineErrorRhs()
         self.computeOfflineError(g)
-
-        maxs = []
 
         while Delta_max > eps_tol:
 
@@ -338,12 +355,14 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
             self.generateLkNp()
             self.generateMNr()
 
-            mu_max = None
-            Delta_max = -np.float('inf')
 
             # Greedy(µ) step
-            Delta_max = 0
-        return 0
+            Delta_max, i_star, mu_star = self.greedyStep(mu_train, betas, g)
+
+            Delta = Delta_max
+            mu_train.pop(i_star)
+            print(f"[reducedbasis] POD-Greedy algorithm, N={self.N}, Δ={Delta} (tol={eps_tol})")
+
     def solveTimeForStudy(self, mu, g):
         """Computes both RB and FE solutions for a given parameter and a given time-dependent function
 
