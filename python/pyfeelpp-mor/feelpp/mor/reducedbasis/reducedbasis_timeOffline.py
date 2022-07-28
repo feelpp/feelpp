@@ -18,9 +18,8 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
 
         self.Mr = Mr
         self.Qm = len(Mr)
-        if self.Qm > 0:
-            warnings.warn(f"The decomposition of the mass matrix should be of size 1, not {self.Qm}.\
-                When assembleM will be called, only Mr[0] will be returned")
+        if self.Qm > 1:
+            warnings.warn(f"The decomposition of the mass matrix should be of size 1, not {self.Qm}. When assembleM will be called, only Mr[0] will be returned")
 
         self.Fkp : dict # size K*Qf : Fkp[k,p] <-> F^{k,p}
         self.Mnr : dict # size N*Qm : Mnr[k,p] <-> M^{n,r}
@@ -256,7 +255,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
             sol.set(0)
             self.ksp.solve(rhs, sol)
             
-            eK[:,k] = sol - ZZTX * sol
+            eK[:,k] = sol# - ZZTX * sol
             u = sol.copy()
             uk.append(sol.copy())
         
@@ -264,7 +263,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
         eKT = eK.copy()
         eKT = eKT.transpose()
 
-        C = (eKT * self.Abar * eK) * 1./self.K
+        C = (eKT * self.scal * eK) * 1./self.K      # C_{ij} = ( u_i(µ), u_j(µ) )_X
         if to_numpy:
             return C[:,:], uk
         else:
