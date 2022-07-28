@@ -84,7 +84,7 @@ class reducedbasisOffline(reducedbasis):
             E.setOperators(self.Abar, self.scal)
 
             # for mubarbar:
-            #   Compute the smallest eignevalue and keep it in memory for online stage TODO
+            #   Compute the smallest eigenvalue and keep it in memory for online stage TODO
             #   now it is only made with {mubarbar} = {mubar}
 
             E.setFromOptions()
@@ -785,7 +785,7 @@ class reducedbasisOffline(reducedbasis):
 
         for i,mu in enumerate(Xi_train):
             for j,nu in enumerate(Xi_train):
-                C[i,j] = self.scalarX(solEF[mu], solEF[nu])
+                C[i,j] = self.scalarX(solEF[mu], solEF[nu]) * 1./N_train
         C.assemble()
 
         E = SLEPc.EPS()
@@ -815,8 +815,8 @@ class reducedbasisOffline(reducedbasis):
             phi.set(0)
             for i in range(nCv):
                 E.getEigenvector(self.N-1, eigenvect)
-                p = float(eigenvect[i]) * solEF[Xi_train[i]]
-                phi += p
+                phi += float(eigenvect[i]) * solEF[Xi_train[i]]
+            phi = phi * 1./np.sqrt(N_train)
             self.Z.append(phi.copy())
 
             Delta = 1 - eigenval[:self.N].sum()/eigenval.sum()

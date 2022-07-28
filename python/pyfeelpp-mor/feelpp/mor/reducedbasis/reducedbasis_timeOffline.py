@@ -1,6 +1,7 @@
 from .reducedbasis_time import *
 from .reducedbasisOffline import *
 import scipy.linalg as sl
+from tqdm import tqdm
 
 class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
     """
@@ -247,7 +248,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
         ZT = ZT.transpose()
         ZZTX = self.Z_matrix * ZT * self.scal
 
-        # build the matrix of error projections e^k(mu) = u^k(mu) - Z * ZT * Abar * u^k(mu)
+        # build the matrix of error projections e^k(mu) = u^k(mu) - Z * ZT * scal * u^k(mu)
         for k in range(self.K):
 
             rhs = g((k+1)*self.dt) * self.dt * Fmu + Mmu * u
@@ -264,7 +265,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
         eKT = eK.copy()
         eKT = eKT.transpose()
 
-        C = (eKT * self.Abar * eK) * 1./self.K
+        C = (eKT * self.scal * eK) * 1./self.K
         if to_numpy:
             return C[:,:], uk
         else:
@@ -297,12 +298,11 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
                 POD.set(0)
                 for k in range(self.K):
                     POD += float(psi_max[k]) * uk[k]
+                POD = POD * 1./np.sqrt(self.K)
                 res.append(POD)
         # Compute basis using delta
         else:
-            sum_eigen = 0
-            for i in range (len(values)):
-                sum_eigen += values[r]
+            sum_eigen = values.sum()
 
             Nm = 0
             sum_delta = 0
@@ -312,6 +312,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
                 POD.set(0)
                 for k in range(self.K):
                     POD += float(psi_max[k]) * uk[k]
+                POD = POD * 1./np.sqrt(self.K)
                 res.append(POD)
                 sum_delta += values[ind[Nm]]
                 Nm += 1
@@ -323,10 +324,12 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
         i_max = 0
         Delta_max = -np.float('inf')
         for i,mu in enumerate(tqdm(xi_train,desc=f"[reducedBasis] POD-greedy, greey step", ascii=False, ncols=120)):
+            
+            beta = betas[mu]
 
-            uN = self.solveTime(mu, g)
+            uN = self.solveTime(mu, g, beta)
 
-            Delta = self.computeOnlineError(mu, betas, g, computeEnergyNorm=True)
+            Delta = self.computeOnlineError(mu, beta, g, computeEnergyNorm=True)
             Delta_tmp = Delta / self.EnNorm[-1]
 
             if Delta_tmp > Delta_max:
@@ -364,11 +367,10 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
 
         while Delta_max > eps_tol:
 
-            mu = mu_star
             SN.append(mu_star)
 
             # POD(t) step
-            POD = self.computePODMode(mu, g, R=R, delta=delta)
+            POD = self.computePODMode(mu_star, g, R=R, delta=delta)
             for ksi in POD:
                 self.Z.append(ksi)
                 self.expandOffline()
