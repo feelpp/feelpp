@@ -65,7 +65,7 @@ template <typename... Ts>
  * 
  * @code
  * auto Xh=Pch<2>(mesh);
- * auto ctx = context(_space=Xh,_type=on_elements_t());
+ * auto ctx = context(_geomap=Xh->gm(),_type=on_elements_t(),_pointset=Xh->fe()->points());
  * @endcode
  * 
  * @return the context
@@ -74,33 +74,29 @@ template <typename... Ts>
 [[nodiscard]] auto context( Ts&&... v )
 {
     auto args = NA::make_arguments( std::forward<Ts>( v )... );
-    auto&& space = args.get( _space );
+    auto&& geomap = args.get( _geomap );
     auto&& type = args.get( _type );
-
-    auto&& pointset = args.get_else( _pointset, [&space]( int, int) { return space->fe()->points(); } );
+    auto&& element = args.get( _element );
+    auto&& pointset = args.get( _pointset );
     auto&& context_at_compile_time = args.get_else( _context_at_compile_time, POINT );
     auto&& context_at_run_time = args.get_else( _context, 0 );
+    using gm_type = decay_type<decltype( geomap )>;
 
-    auto mesh = space->mesh();
-    using gm_type = typename decay_type<decltype( mesh )>::gm_type;
+    
     if constexpr ( std::is_same_v<decay_type<decltype(type)>, on_elements_t> ) 
     {
-        auto const& initElt = mesh->beginElement()->second;
-        auto geopc = geomapPrecompute( _element=initElt, _type=on_elements_t(), _geomap=space->gm(), _pointset=pointset );
-        auto ctx = space->gm()->template context<context_at_compile_time>( space->gm(), initElt, geopc, context_at_run_time );
+        auto geopc = geomapPrecompute( _element=element, _type=on_elements_t(), _geomap=geomap, _pointset=pointset );
+        auto ctx = geomap->template context<context_at_compile_time>( geomap, element, geopc, context_at_run_time );
         return ctx;
     }
     else if constexpr ( std::is_same_v<decay_type<decltype( type )>, on_facets_t> )
     {
-        using geoelement_t = typename decay_type<decltype(mesh)>::element_type;
-        auto const& initElt = mesh->beginElement()->second;
-        auto const& initFace = mesh->beginFace()->second;
         auto geopc = geomapPrecompute(
-            _element = initElt, _type = on_facets_t(), _geomap = space->gm(), _pointset = pointset );
+            _element = element.element(0), _type = on_facets_t(), _geomap = geomap, _pointset = pointset );
   
-        int face_id = initFace.pos_first();
+        int face_id = element.pos_first();
      
-        auto ctx = space->gm()->template context<context_at_compile_time>( space->gm(), initFace.element( 0 ), geopc, face_id, context_at_run_time );
+        auto ctx = geomap->template context<context_at_compile_time>( geomap, element.element( 0 ), geopc, face_id, context_at_run_time );
 
         return ctx;        
     }
