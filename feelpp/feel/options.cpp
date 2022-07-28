@@ -777,7 +777,7 @@ crbOptions( std::string const& prefix )
         ( prefixvm( prefix, "crb.use-fast-eim").c_str(),Feel::po::value<bool>()->default_value( true ), "use fast eim algo (with rbspace context)")
 
 
-
+        ( prefixvm( prefix,"crb.copy-files-inside-db.path" ).c_str(), po::value<std::vector<std::string>>()->multitoken(), "List of path file(s) that will be copied in database" )
         ;
 
     crboptions

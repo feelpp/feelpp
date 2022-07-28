@@ -3,12 +3,12 @@
 namespace Feel
 {
 
-FEELPP_CRB_PLUGIN_TEMPLATE( BenchmarkGreplNonlinearElliptic1_2D, BenchmarkGreplNonlinearElliptic<1 BOOST_PP_COMMA() 2>, benchmarkgreplnonlinearelliptic1_2d )
-FEELPP_CRB_PLUGIN_TEMPLATE( BenchmarkGreplNonlinearElliptic2_2D, BenchmarkGreplNonlinearElliptic<2 BOOST_PP_COMMA() 2>, benchmarkgreplnonlinearelliptic2_2d )
-FEELPP_CRB_PLUGIN_TEMPLATE( BenchmarkGreplNonlinearElliptic3_2D, BenchmarkGreplNonlinearElliptic<3 BOOST_PP_COMMA() 2>, benchmarkgreplnonlinearelliptic3_2d )
-
 template class BenchmarkGreplNonlinearElliptic<1,2>;
 template class BenchmarkGreplNonlinearElliptic<2,2>;
 template class BenchmarkGreplNonlinearElliptic<3,2>;
+
+FEELPP_CRB_PLUGIN_TEMPLATE( BenchmarkGreplNonlinearElliptic_2dP1, BenchmarkGreplNonlinearElliptic<1 BOOST_PP_COMMA() 2>, BOOST_PP_CAT(FEELPP_MOR_PLUGIN_NAME,2dP1) )
+FEELPP_CRB_PLUGIN_TEMPLATE( BenchmarkGreplNonlinearElliptic_2dP2, BenchmarkGreplNonlinearElliptic<2 BOOST_PP_COMMA() 2>, BOOST_PP_CAT(FEELPP_MOR_PLUGIN_NAME,2dP2) )
+FEELPP_CRB_PLUGIN_TEMPLATE( BenchmarkGreplNonlinearElliptic_2dP3, BenchmarkGreplNonlinearElliptic<3 BOOST_PP_COMMA() 2>, BOOST_PP_CAT(FEELPP_MOR_PLUGIN_NAME,2dP3) )
 
 }
