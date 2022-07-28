@@ -79,7 +79,7 @@ class reducedbasisTime(reducedbasis):
             beta = self.model.computeBetaQm(mu)
         ANmu = self.assembleAN(beta[0][0])
         FNmu = self.assembleFN(beta[1][0][0])
-        MNmu = np.array(self.assembleMN(beta[2][0]))
+        MNmu = np.array(self.assembleMN(beta[2][0])) # [2][0][0] ?
 
         mat = MNmu + self.dt * ANmu
         matLu = sl.lu_factor(mat)
@@ -144,7 +144,7 @@ class reducedbasisTime(reducedbasis):
         return s1 + 2 * (s2 + s3 + s4) + s5 + s6
 
 
-    def computeOnlineError(self, mu, betas, g, computeEnergyNorm=False):
+    def computeOnlineError(self, mu, beta, g, computeEnergyNorm=False):
         """Compute online bound error
 
         Args:
@@ -156,10 +156,9 @@ class reducedbasisTime(reducedbasis):
         Returns:
             float: Δ_N^k
         """
-        beta_ = betas[mu]
-        betaA = beta_[0][0]
-        betaF = beta_[1][0][0]
-        betaM = beta_[2][0]
+        betaA = beta[0][0]
+        betaF = beta[1][0][0]
+        betaM = beta[2][0]
         ANmu = self.assembleAN(betaA)
         FNmu = self.assembleFN(betaF)
         MNmu = self.assembleMN(betaM)
@@ -172,7 +171,7 @@ class reducedbasisTime(reducedbasis):
         mat = MNmu + self.dt * ANmu
         matLu = sl.lu_factor(mat)
 
-        alpm1 = 1 / np.sqrt(self.alphaLB_(beta_))
+        alpm1 = 1 / np.sqrt(self.alphaLB_(beta))
 
         aNorm = np.zeros(self.K)
         self.err[:] = 0
@@ -183,7 +182,7 @@ class reducedbasisTime(reducedbasis):
             self.EnNorm[:] = 0
         
         for k in range(1, self.K+1):
-            u_tmp = sl.lu_solve(matLu, g(k*self.dt) * self.dt * FNmu + MNmu @ u )
+            u_tmp = sl.lu_solve(matLu, g(k * self.dt) * self.dt * FNmu + MNmu @ u )
             precalc["uN"] = u_tmp
             precalc["uNm1"] = u
             self.err[k-1] = self.computeOnlineError_k(mu, u_tmp, u, k-1, precalc=precalc)
