@@ -106,10 +106,56 @@ int runHeat( nl::json const& specs )
         for ( auto& [bc, value] : specs["/BoundaryConditions/heat/radiative_heat_flux"_json_pointer].items() )
         {
             LOG( INFO ) << fmt::format( "radiative_heat_flux {}: {}", bc, value.dump() );
-            // auto h = value["h"].get<std::string>();
-            // auto Text = value["Text"].get<std::string>();
-            // a += integrate( _range = markedfaces( mesh, bc ), _expr = expr( h ) * id( v ) * idt( v ) );
-            // l += integrate( _range = markedfaces( mesh, bc ), _expr = expr( h ) * expr( Text ) * id( v ) );
+            auto sigma = value["sigma"].get<std::string>();
+            auto epsilon = value["epsilon"].get<std::string>();
+            auto Tref = value["Tref"].get<std::string>();
+
+            // Blackbody radiative condition
+            if ( specs["/BoundaryConditions/heat/radiative_heat_flux/{}/radiativeCondition"_json_pointer] == "BBC" )
+            {
+                auto Tref4 = expr( Tref ) * expr( Tref ) * expr( Tref ) * expr( Tref );
+
+                l += integrate( _range = markedfaces( mesh, bc ), 
+                        _expr = M_bdf->polyDerivCoefficent( 0 ) * expr( sigma ) * expr( epsilon ) * Tref4 * id( v ) );
+            }
+
+            // Closed enclosure
+            else if ( specs["/BoundaryConditions/heat/radiative_heat_flux/{}/rhtCondition"_json_pointer] == "closed_enclosure" )
+            {
+                // Load OR compute view factors
+                
+                // Build left hand side matrix LHSm
+                // delta_ij/epsilon_j - (1/epsilon_j -1)*F_ij
+
+                // Build right hand side matrix RHSm
+
+                // Compute inverse matrix LHSm : invLHSm, and M1 = invLHSm * RHSm
+
+            }
+
+            // Opened enclosure
+            else if ( specs["/BoundaryConditions/heat/radiative_heat_flux/{}/rhtCondition"_json_pointer] == "opened_enclosure" )
+            {
+                // Load OR compute view factors 
+                
+                // Build left hand side matrix LHSm
+                // delta_ij/epsilon_j - (1/epsilon_j -1)F_ij
+
+                // Build right hand side matrix RHSm
+                // sigma*(delta_ij - F_ij)
+
+                // Compute inverse matrix LHSm : invLHSm, and M1 = invLHSm * RHSm
+
+                // Build vecG = f_i(tk) * sigma * Tref**4
+
+                // Store invLHSm
+
+            }
+
+            else
+            {
+                // Return error: require rhtConditions
+            }
         }
     }
 
@@ -140,6 +186,38 @@ int runHeat( nl::json const& specs )
 
             lt += integrate( _range = markedelements( mesh, material.get<std::string>() ), 
                     _expr = expr( Rho ) * expr( Cp ) * idv( M_bdf->polyDeriv() ) * id( v ) );
+        }
+
+        if ( specs["/BoundaryConditions/heat"_json_pointer].contains( "radiative_heat_flux" ) )
+        {
+            for ( auto& [bc, value] : specs["/BoundaryConditions/heat/radiative_heat_flux"_json_pointer].items() )
+            {
+                auto sigma = value["sigma"].get<std::string>();
+                auto epsilon = value["epsilon"].get<std::string>();
+
+                // Blackbody radiative condition
+                if ( specs["/BoundaryConditions/heat/radiative_heat_flux/{}/rhtCondition"_json_pointer] == "BBC" )
+                {
+                    idvu3 = idv( M_bdf->polyDeriv() ) * idv( M_bdf->polyDeriv() ) * idv( M_bdf->polyDeriv() );
+
+                    at += integrate( _range = markedfaces( mesh, bc ),
+                            _expr = M_bdf->polyDerivCoefficent( 0 ) * expr( sigma ) * expr( epsilon ) * idv3 * idt( u ) * id( v ) );
+                }
+                // Enclosure (close or opened)
+                else
+                {
+                    // invLHSm: inverse matrix LHSm
+                    // M1: invLHSm * RHSm
+
+                    // Build F = (u**3(tk)) then compute M1 * F in idu3
+                    idu3 = idt( u ) * idt( u ) * idt( u );
+
+                    // Add to LHS bilinear form a
+
+                    at += integrate( _range = markedfaces( mesh, bc ),
+                            _expr = M_bdf->polyDerivCoefficent( 0 ) * expr( sigma ) * expr( epsilon ) * idu3 * idt( u ) * id( v ) );
+                }
+            }
         }
 
         at.solve( _rhs = lt, _solution = u );
