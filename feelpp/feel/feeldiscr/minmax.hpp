@@ -16,6 +16,7 @@
 #include <feel/feelcore/enumerate.hpp>
 #include <feel/feelcore/serialization.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feeldiscr/context.hpp>
 #include <feel/feeldiscr/facet.hpp>
 
 namespace Feel {
@@ -62,12 +63,29 @@ template <typename... Ts>
     for ( auto [i, op_v] : enumerate( ops_v ) )
         op_v = ops[i]( v_min, v_max ) ? v_max : v_min;
     std::vector<int> op_id( ops.size(), 0 );
+    std::vector<eigen_vector_type<nRealDim>> op_pt( ops.size() );
 
-    auto find_local_op = [&e, &ops, &ops_v, &op_id]( auto localdoftable, auto getDofId )
+    auto choose_ctx_type = []()
+    {
+        if constexpr ( std::is_same_v<range_t, faces_reference_wrapper_t<mesh_t>> )
+            return on_facets_t();
+        else
+            return on_elements_t();
+    };
+    auto pts = [&e]( auto f, auto p )
+    {
+        if constexpr ( std::is_same_v<range_t, faces_reference_wrapper_t<mesh_t>> )
+            return e.functionSpace()->fe()->points(f);
+        else
+            return e.functionSpace()->fe()->points();
+    };
+    auto ctx = context( _type = choose_ctx_type(), _space = e.functionSpace(), _pointset=pts );
+    //auto ctx = context( _type = on_elements_t(), _space = e.functionSpace() );
+    auto find_local_op = [&e, &ctx, &ops, &ops_v, &op_id, &op_pt]( auto localdoftable, auto getDofId )
     {
         for ( auto const& ldof : localdoftable )
         {
-            index_type dofpn = getDofId( ldof );
+            auto[localdof, dofpn] = getDofId( ldof );
             value_type d = e( dofpn );
 
             for ( auto [i, op_v] : enumerate( ops_v ) )
@@ -76,34 +94,35 @@ template <typename... Ts>
                 {
                     op_v = d;
                     op_id[i] = dofpn;
+                    op_pt[i] = emap<value_type>( ctx->xReal() ).col( localdof );
                 }
             }
         }
     };
-
+    
     for ( auto const& rangeElt : r )
     {
         auto const& meshElt = boost::unwrap_ref( rangeElt );
 
         if constexpr ( std::is_same_v<range_t, faces_reference_wrapper_t<mesh_t>> )
         {
+            auto [facet_connection_id, facet_id] = facetGlobalToLocal( meshElt, e.functionSpace()->dof() );
+            ctx->template update<POINT>( meshElt.element( facet_connection_id ), facet_id );
             find_local_op( e.functionSpace()->dof()->faceLocalDof( meshElt.id() ), []( auto const& ldof )
-                           { return ldof.index(); } );
+                           { return std::tuple{ldof.localDofInFace(),ldof.index()}; } );
         }
         else
         {
+            ctx->template update<POINT>( meshElt );
             find_local_op( e.functionSpace()->dof()->localDof( meshElt.id() ), []( auto const& ldof )
-                           { return ldof.second.index(); } );
+                           { return std::tuple{ldof.first.localDof(),ldof.second.index()}; } );
         }
     }
     std::vector<std::tuple<value_type, eigen_vector_type<nRealDim>>> res( ops.size() );
     for ( auto [i, op_v] : enumerate( ops_v ) )
     {
-        int index = i;
-        //auto [pt, thedof, comp] = e.functionSpace()->dof()->dofPoint( op_id[i] );
-        auto pt = e.functionSpace()->dof()->dofPoint( op_id[i] ).template get<0>();
-        eigen_vector_type<nRealDim> e_pt = emap<value_type>( pt );
-        auto local_op = std::tuple{ op_v, e_pt };
+        int index=i;
+        auto local_op = std::tuple{ op_v, op_pt[i] };
         res[i] = mpi::all_reduce( e.functionSpace()->worldComm().globalComm(), local_op,
                                   [&ops, index]( auto const& a, auto const& b )
                                   { return ops[index]( std::get<0>( a ), std::get<0>( b ) ) ? a : b; } );
