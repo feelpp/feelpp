@@ -276,10 +276,10 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
         """Compute the POD modes for a given parameter
 
         Args:
-            mu (parameterSpaceElement): parameter used
+            mu (parameterSpaceElement): paramter used
             g (function): right-hand side time-dependent function
             R (int, optional): number of POD modes to compute. Defaults to 1.
-            delta (float, optional): representativiness of the Nm first POD modes
+            delta (float, optional): representativiness of the Nm first POD modes. If None, the R greatest POD modes are computed
 
         Returns:
             list: list of POD modes
@@ -288,7 +288,6 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
         values, vector = sl.eigh(C)
         ind = np.argsort(values)[::-1]
         res = []
-        # TODO : add only 90% of the modes
 
         # Compute basis using R first POD modes
         if delta is None:
@@ -316,6 +315,9 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
                 res.append(POD)
                 sum_delta += values[ind[Nm]]
                 Nm += 1
+
+        s = ["","s"][len(res)>1]
+        print(f"[reducedbasis] POD-greedy, POD step : {len(res)} mode{s} computed")
 
         return res
 
@@ -387,7 +389,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
 
             Delta = Delta_max
             mu_train.pop(i_star)
-            print(f"[reducedbasis] POD-Greedy algorithm, N={self.N}, Δ={Delta} (tol={eps_tol})")
+            print(f"[reducedbasis] POD-greedy algorithm, N={self.N}, Δ={Delta} (tol={eps_tol})")
 
     def solveTimeForStudy(self, mu, g):
         """Compute both RB and FE solutions for a given parameter and a given time-dependent function

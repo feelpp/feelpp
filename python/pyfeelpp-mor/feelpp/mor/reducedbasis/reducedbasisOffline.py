@@ -642,6 +642,20 @@ class reducedbasisOffline(reducedbasis):
         u_proj.assemble()
         return u_proj
 
+    def projRB(self, u):
+        """Project the finite element solution in RB space
+        Args:
+            u (PETSc.Vec): reduced solution of size NN
+
+        Returns:
+            np.ndarray: projection in RB space of size N
+        """
+        u_proj = np.zeros((self.N))
+        for i, ksi in enumerate(self.Z):
+            u_proj = ksi.dot(u)
+        return u_proj
+ 
+
     def RB_toNumpy(self):
         """Return the basis as a NumPy matrix (the quantities as copied)
         """
