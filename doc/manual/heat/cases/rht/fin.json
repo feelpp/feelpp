@@ -121,80 +121,144 @@
                     "h": "Bi:Bi",
                     "Text": "Tref_C+273.15:Tref_C"
                 }
+            }, 
+            "radiative_enclosure_heat_flux": {
+                "Cavity_1_1": {
+                    "enclosure": "open", // ou close
+                    "markers_materials": [
+                        ["Gamma_Post_1_1","Post"],
+                        ["Gamma_bot_1_1","Fin_1"]
+                    ],
+                    "Tref": "Tref_C+273.15:Tref_C",
+                    "sigma": "sigma:sigma",
+                    "viewfactors": {
+                        "type": "raytracing",
+                        "filename": "$cfgdir/viewfactors.dat"
+                    }
+                },
+                "Cavity_1_2": {
+                    "enclosure": "open",
+                    "markers_materials": [
+                        ["Gamma_Post_1_2","Post"],
+                        ["Gamma_bot_1_2","Fin_1"]
+                    ],
+                    "Tref": "Tref_C+273.15:Tref_C",
+                    "sigma": "sigma:sigma",
+                    "viewfactors": {
+                        "type": "raytracing",
+                        "filename": "$cfgdir/viewfactors.dat"
+                    }
+                },
+                "Cavity_2_1": {
+                    "enclosure": "open",
+                    "markers_materials": [
+                        ["Gamma_Post_2_1","Post"],
+                        ["Gamma_bot_2_1","Fin_2"],
+                        ["Gamma_top_1_1","Fin_1"]
+                    ],
+                    "Tref": "Tref_C+273.15:Tref_C",
+                    "sigma": "sigma:sigma",
+                    "viewfactors": {
+                        "type": "raytracing",
+                        "filename": "$cfgdir/viewfactors.dat"
+                    }
+                },
+                "Cavity_2_2": {
+                    "enclosure": "open",
+                    "markers_materials": [
+                        ["Gamma_Post_2_2","Post"],
+                        ["Gamma_bot_2_2","Fin_2"],
+                        ["Gamma_top_1_2","Fin_1"]
+                    ],
+                    "Tref": "Tref_C+273.15:Tref_C",
+                    "sigma": "sigma:sigma",
+                    "viewfactors": {
+                        "type": "raytracing",
+                        "filename": "$cfgdir/viewfactors.dat"
+                    }
+                },
+                "Cavity_3_1": {
+                    "enclosure": "open",
+                    "markers_materials": [
+                        ["Gamma_Post_3_1","Post"],
+                        ["Gamma_bot_3_1","Fin_3"],
+                        ["Gamma_top_2_1","Fin_2"],
+                    ],
+                    "Tref": "Tref_C+273.15:Tref_C",
+                    "sigma": "sigma:sigma",
+                    "viewfactors": {
+                        "type": "raytracing",
+                        "filename": "$cfgdir/viewfactors.dat"
+                    }
+                },
+                "Cavity_3_2": {
+                    "enclosure": "open",
+                    "markers_materials": [
+                        ["Gamma_Post_3_2","Post"],
+                        ["Gamma_bot_3_2","Fin_3"],
+                        ["Gamma_top_2_2","Fin_2"]
+                    ],
+                    "Tref": "Tref_C+273.15:Tref_C",
+                    "sigma": "sigma:sigma",
+                    "viewfactors": {
+                        "type": "raytracing",
+                        "filename": "$cfgdir/viewfactors.dat"
+                    }
+                },
+                "Cavity_4_1": {
+                    "enclosure": "open",
+                    "markers_materials": [
+                        ["Gamma_Post_4_1","Post"],
+                        ["Gamma_bot_4_1","Fin_4"],
+                        ["Gamma_top_3_1","Fin_3"],
+                    ],
+                    "Tref": "Tref_C+273.15:Tref_C",
+                    "sigma": "sigma:sigma",
+                    "viewfactors": {
+                        "type": "raytracing",
+                        "filename": "$cfgdir/viewfactors.dat"
+                    }
+                },
+                "Cavity_4_2": {
+                    "enclosure": "open",
+                    "markers_materials": [
+                        ["Gamma_Post_4_2","Post"],
+                        ["Gamma_bot_4_2","Fin_4"],
+                        ["Gamma_top_3_1","Fin_3"]
+                    ],
+                    "Tref": "Tref_C+273.15:Tref_C",
+                    "sigma": "sigma:sigma",
+                    "viewfactors": {
+                        "type": "raytracing",
+                        "filename": "$cfgdir/viewfactors.dat"
+                    }
+                }
             },
-            "radiative_heat_flux": {
-                "Cavity_1": {
-                    "rhtCondition": "opened_enclosure",
-                    "markers": [
-                        "Gamma_Post_1",
-                        "Gamma_bot_1"
-                    ],
+            "radiative_blackbody_heat_flux": { // epsilon * sigma (T**4 - Tref**4)
+                "Gamma_BBC_Fin_1": {
+                    "markers": ["Gamma_B_1_1","Gamma_B_1_2"],
                     "Tref": "Tref_C+273.15:Tref_C",
                     "sigma": "sigma:sigma",
-                    "epsilon": ["1","0.5"],
-                    "viewfactors": {
-                        "type": "raytracing",
-                        "filename": "$cfgdir/viewfactors.dat"
-                    }
+                    "material": "Fin_1"
                 },
-                "Cavity_2": {
-                    "rhtCondition": "opened_enclosure",
-                    "markers": [
-                        "Gamma_Post_2",
-                        "Gamma_bot_2",
-                        "Gamma_up_1"
-                    ],
+                "Gamma_BBC_Fin_2": {
+                    "markers": ["Gamma_B_2_1", "Gamma_B_2_2"],
                     "Tref": "Tref_C+273.15:Tref_C",
                     "sigma": "sigma:sigma",
-                    "epsilon": ["1","0.5","0.5"],
-                    "viewfactors": {
-                        "type": "raytracing",
-                        "filename": "$cfgdir/viewfactors.dat"
-                    }
+                    "material": "Fin_2"
+                } ,
+                "Gamma_BBC_Fin_3": {
+                    "markers": ["Gamma_B_3_1", "Gamma_B_3_2"],
+                    "Tref": "Tref_C+273.15:Tref_C",
+                    "sigma": "sigma:sigma",
+                    "material": "Fin_3"
                 },
-                "Cavity_3": {
-                    "rhtCondition": "opened_enclosure",
-                    "markers": [
-                        "Gamma_Post_3",
-                        "Gamma_bot_3",
-                        "Gamma_up_2"
-                    ],
+                "Gamma_BBC_Fin_4": {
+                    "markers": ["Gamma_B_4_1", "Gamma_B_4_2","Gamma_top_4"],
                     "Tref": "Tref_C+273.15:Tref_C",
                     "sigma": "sigma:sigma",
-                    "epsilon": ["1","0.5","0.5"],
-                    "viewfactors": {
-                        "type": "raytracing",
-                        "filename": "$cfgdir/viewfactors.dat"
-                    }
-                },
-                "Cavity_4": {
-                    "rhtCondition": "opened_enclosure",
-                    "markers": [
-                        "Gamma_Post_4",
-                        "Gamma_bot_4",
-                        "Gamma_up_3"
-                    ],
-                    "Tref": "Tref_C+273.15:Tref_C",
-                    "sigma": "sigma:sigma",
-                    "epsilon": ["1","0.5","0.5"],
-                    "viewfactors": {
-                        "type": "raytracing",
-                        "filename": "$cfgdir/viewfactors.dat"
-                    }
-                },
-                "Gamma_BBC": {
-                    "rhtCondition": "BBC",
-                    "markers": [
-                        "Gamma_up_4",
-                        "Gamma_B_1",
-                        "Gamma_B_2",
-                        "Gamma_B_3",
-                        "Gamma_B_4"
-                    ],
-                    "Tref": "Tref_C+273.15:Tref_C",
-                    "sigma": "sigma:sigma",
-                    "epsilon": ["0.5","0.5","0.5","0.5","0.5"]
-                }          
+                    "material": "Fin_4"
+                }
             }
         }
     },
