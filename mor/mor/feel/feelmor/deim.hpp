@@ -73,7 +73,10 @@ private :
     vector_ptrtype modelAssemble( parameter_type const& mu, bool online=false ) override
     {
         if ( online )
+        {
+            CHECK( this->M_online_model ) << "this->M_online_model not init : " << this->M_tag;
             return this->M_online_model->assembleForDEIM(mu,this->M_tag);
+        }
         return this->M_model->assembleForDEIM(mu,this->M_tag);
     }
 

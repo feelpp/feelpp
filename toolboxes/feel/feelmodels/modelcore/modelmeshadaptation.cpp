@@ -184,16 +184,14 @@ ModelMesh<IndexType>::MeshAdaptation::Execute::executeImpl( std::shared_ptr<Mesh
 
     if ( inputMesh->worldComm().localSize() == 1 )
     {
+#if defined( FEELPP_HAS_MMG ) && defined( FEELPP_HAS_PARMMG )
         auto r = remesher( inputMesh, requiredMarkersElements, requiredMarkersFaces, {}, {}, { {"remesh", M_mas.M_remesherSetup } } );
-
         r.setMetric( *scalarMetricField );
-
-        // auto metExpr = expr( mas.metricExpr().template expr<1,1>(), se );
-        // auto Vh = Pch<1>( oldmesh );
-        // auto met = Vh->element();
-        // met.on(_range=elements(oldmesh),_expr=metExpr );
-        // r.setMetric( met );
         return r.execute();
+#else
+        CHECK( false ) << "no mmg/parmmg support";
+        return {};
+#endif
     }
     else
     {
@@ -221,31 +219,21 @@ ModelMesh<IndexType>::MeshAdaptation::Execute::executeImpl( std::shared_ptr<Mesh
                                          _filename=imeshParaPath,
                                          //_update=update_,  TODO test FACE_MINIMAL
                                          _straighten=false );
-
+#if defined( FEELPP_HAS_MMG ) && defined( FEELPP_HAS_PARMMG )
             auto r = remesher( inputMeshSeq, requiredMarkersElements, requiredMarkersFaces, {}, {}, { {"remesh", M_mas.M_remesherSetup } } );
-#if 1
-            //auto VhSeq = Pch<1>( inputMeshSeq );
+
             auto VhSeq = scalar_metric_field_type::functionspace_type::New(_mesh=inputMeshSeq );
             auto metFieldSeq = VhSeq->elementPtr();
             metFieldSeq->load(_path=scalarMetricFieldPath,_space_path=spacefileName);
-            // //auto metExpr = expr( M_mas.metricExpr().template expr<1,1>(), se );
-            // auto metExpr = M_mas.metricExpr().template expr<1,1>();
-            // metField->on( _range=elements(inputMeshSeq),_expr=metExpr );
             r.setMetric( *metFieldSeq );
-#else
-            using scalar_metric_field_type = typename std::decay_t<decltype( unwrap_ptr( Pch<1>( inputMesh ) ) )>::element_type;
-            auto m = std::dynamic_pointer_cast<scalar_metric_field_type>( M_scalarMetricField );
-            auto Vh = Pch<1>( inputMeshSeq );
-            auto opI = opInterpolation(_domainSpace=m->functionSpace(),
-                                       _imageSpace=Vh );
-            auto matrixInterpolation = opI->matPtr();
-            auto metField = Vh->elementPtr();
-            matrixInterpolation->multVector( *m, *metField );
-#endif
+
             auto outputMeshSeq = r.execute();
             using io_t = PartitionIO<MeshType>;
             io_t io( omeshParaPath );
             io.write( partitionMesh( outputMeshSeq, nPartition/*, partitionByRange, partconfig*/ ) );
+#else
+            CHECK( false ) << "no mmg/parmmg support";
+#endif
         }
 
         inputMesh->worldComm().barrier();
@@ -268,5 +256,3 @@ template std::shared_ptr<Mesh<Simplex<3,1>>> ModelMesh<uint32_type>::MeshAdaptat
 
 } // namespace FeelModel
 } // namespace Feel
-
-
