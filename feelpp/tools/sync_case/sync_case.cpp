@@ -96,7 +96,8 @@ int main( int argc, char** argv )
         ( "login", po::value<std::string>()->default_value( "" ), "name of user on remote server" )
         ( "server", po::value<std::string>()->default_value( "" ), "name of the remote server" )
         ( "local-dir", po::value<std::string>()->default_value( "" ),
-                "local path where files are copied (default to ${feeldir})" )
+                "local path where files are copied (default to ${feeldir}/${name})" )
+        ( "casename", po::value<std::string>()->default_value( "" ), "name of the case to synchronize" )
         ( "vb", po::value<int>()->default_value( 0 ), "verbose mode" )
 		;
 
@@ -120,7 +121,8 @@ int main( int argc, char** argv )
     const auto cfg = Repository::Config();
     const std::string server = (soption("server") == "") ? cfg.dist.server : soption("server");
     const std::string login = (soption("login") == "") ? cfg.dist.login : soption("login");
-    const std::string local_dir = (soption("local-dir") == "") ? cfg.global_root.string() + "/" + cfg.dist.name : soption("local-dir");
+    const std::string local_dir = ( (soption("local-dir") == "") ? cfg.global_root.string() + "/" + cfg.dist.name : soption("local-dir") )
+        + "/" + soption("casename");
 
     if ( server == "" || login == "" )
     {
