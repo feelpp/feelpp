@@ -42,7 +42,7 @@ class generateBasisConfig():
 
         if param is not None:
             fp = open(param)
-            self.param = json.load(fp)
+            self.param = feelpp.read_json(fp)
             fp.close()
         else:
             self.param = None
