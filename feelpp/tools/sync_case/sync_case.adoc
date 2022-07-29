@@ -34,7 +34,8 @@ A section "dist" should be added, containing the following informations :
 * server is the adress of the remote server
 * name is a short name for the remote server
 
-If none is set, the default directory where data are saved is ${global_root}/${name}, where ${global_root} is the default path where feel results are exported (set in the file .feelppconfig)
+If none is set, the default directory where data are saved is ${global_root}/${name}, where ${global_root} is the default path where feel results are exported (set in the file .feelppconfig).
+A case name of the case can be given as an argument, to save data in a subdirectory ${casename}.
 
 
 == OPTIONS
@@ -50,7 +51,8 @@ If none is set, the default directory where data are saved is ${global_root}/${n
 | dir       | path in remote server where the directory lies |
 | login     | name of user on remote server                  | in .feelppconfig
 | server    | name of the remote server                      | in .feelppconfig
-| local-dir | local path where files are copied              | feel directory
+| local-dir | local path where files are copied              | feel directory / server name
+| casename  | name of the case synchronized                  | ""
 | vb        | display rsync log                              | 0
 |===
 
