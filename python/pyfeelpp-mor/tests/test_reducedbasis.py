@@ -1,7 +1,6 @@
 import shutil, os
 import pytest
 import time
-import json5
 
 
 from mpi4py import MPI
@@ -78,9 +77,7 @@ def init_model(prefix, case, casefile, dim, time_dependent):
 
     mubar.setParameters(default_parameter)
 
-    f = open(model_path.replace("$cfgdir", feelpp.Environment.expand("$cfgdir")), "r")
-    j = json5.load(f)
-    f.close()
+    j = feelpp.read_json(model_path.replace("$cfgdir", feelpp.Environment.expand("$cfgdir")))
     try:
         j.pop('PostProcess')
     except KeyError as e:

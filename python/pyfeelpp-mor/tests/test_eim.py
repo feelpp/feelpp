@@ -1,6 +1,5 @@
 import sys, os
 import pytest
-import json5 as json
 
 from mpi4py import MPI
 comm = MPI.COMM_WORLD
@@ -110,13 +109,11 @@ def init_toolboxmor(casefile, name, dim):
     feelpp.Environment.setConfigFile(casefile)
     json_path = feelpp.Environment.expand("$cfgdir")+"/"+os.path.splitext(os.path.basename(casefile))[0] + ".json"
 
-    f = open(json_path, 'r')
-    j = json.load(f)
+    j = feelpp.read_json(json_path)
     try:
         j.pop('PostProcess')
     except KeyError as e:
         print(f"There was no section {e} in the model")
-    f.close()
 
     crb_model_properties = CRBModelProperties(worldComm=feelpp.Environment.worldCommPtr())
     crb_model_properties.setup(json_path)

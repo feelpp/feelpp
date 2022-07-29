@@ -5,7 +5,6 @@ import feelpp.toolboxes.core as core
 from feelpp.operators import mass
 import feelpp.mor as mor
 import feelpp
-import json5 as json
 import numpy as np
 
 import argparse
@@ -117,14 +116,12 @@ def generate_basis(worldComm=None, config=None):
     feelpp.Environment.setConfigFile(f'{config.config_file}')
 
     model_path = "$cfgdir/"+os.path.splitext(os.path.basename(config.config_file))[0] + ".json"
-    f = open(model_path.replace("$cfgdir", feelpp.Environment.expand('$cfgdir')), 'r')
-    j = json.load(f)
+    j = feelpp.read_json(model_path)
     try:
         j.pop('PostProcess')
     except KeyError as e:
         print(f"There was no section {e} in the model")
 
-    f.close()
 
     crb_model_properties = mor.CRBModelProperties(worldComm=feelpp.Environment.worldCommPtr())
     crb_model_properties.setup(model_path)

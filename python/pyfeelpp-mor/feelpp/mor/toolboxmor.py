@@ -2,7 +2,7 @@ import sys, os
 from feelpp.toolboxes.heat import *
 from feelpp.mor import *
 import feelpp
-import json
+import numpy as np
 
 o = toolboxes_options("heat")
 o.add(makeToolboxMorOptions())
@@ -19,13 +19,11 @@ casefile = 'thermal-fin/2d/thermal-fin.cfg'
 feelpp.Environment.setConfigFile(casefile)
 json_path = feelpp.Environment.expand('$cfgdir') + "/thermal-fin.json"
 
-f = open(json_path, 'r')
-j = json.load(f)
+j = feelpp.read_json(json_path)
 try:
     j.pop('PostProcess')
 except KeyError as e:
     print(f"There was no section {e} in the model")
-f.close()
 
 # name = "HE3D"
 name = "thermal-fin-2d"
