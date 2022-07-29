@@ -41,9 +41,7 @@ class generateBasisConfig():
         self.use_dual_norm = use_dual_norm
 
         if param is not None:
-            fp = open(param)
-            self.param = feelpp.read_json(fp)
-            fp.close()
+            self.param = feelpp.read_json(param)
         else:
             self.param = None
 
