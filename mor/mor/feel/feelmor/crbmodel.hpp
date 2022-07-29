@@ -26,8 +26,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2009-08-09
  */
-#ifndef __CRBModel_H
-#define __CRBModel_H 1
+#ifndef FEELPP_MOR_CRBModel_H
+#define FEELPP_MOR_CRBModel_H
 
 //#include <boost/shared_ptr.hpp>
 
@@ -49,6 +49,7 @@
 
 //#include <feel/feelfilters/gmsh.hpp>
 
+#include <feel/feelmor/crbmodeldb.hpp>
 #include <feel/feelmor/crbmodelbase.hpp>
 
 namespace Feel
@@ -216,13 +217,23 @@ public:
      */
     //@{
 
-    CRBModel( crb::stage stage, int level = 0 )
+    CRBModel( std::string const& name, crb::stage stage, int level = 0 )
         :
-        CRBModel( std::make_shared<model_type>(), stage, level )
-    {
-    }
-    CRBModel( model_ptrtype const& model, crb::stage stage, int level = 0 )
+        CRBModel( name, Environment::randomUUID( true ), stage, level )
+    {}
+    CRBModel( std::string const& name, uuids::uuid const& uid, crb::stage stage, int level = 0 )
         :
+        CRBModel( std::make_shared<CRBModelDB>(name,uid),
+                  std::make_shared<model_type>(), stage, level )
+        {}
+    CRBModel( std::string const& name, model_ptrtype const& model, crb::stage stage, int level = 0 )
+        :
+        CRBModel( std::make_shared<CRBModelDB>(name,Environment::randomUUID( true )), model, stage, level )
+        {}
+
+    CRBModel( std::shared_ptr<CRBModelDB> crbModelDb, model_ptrtype const& model, crb::stage stage, int level = 0 )
+        :
+        M_crbModelDb( crbModelDb ),
         M_level( level ),
         M_Aqm(),
         M_InitialGuessV(),
@@ -253,8 +264,73 @@ public:
         M_outputIndex(ioption(_prefix=M_prefix,_name="crb.output-index")),
         M_useLinearModel(boption(_prefix=M_prefix,_name="crb.use-linear-model"))
         {
+
+            M_model->attach( M_crbModelDb );
+            bool M_rebuildDb = boption(_prefix=M_prefix,_name="crb.rebuild-database");
+            int M_dbLoad = ioption(_prefix=M_prefix, _name="crb.db.load" );
+            std::string M_dbFilename = soption(_prefix=M_prefix, _name="crb.db.filename");
+            std::string M_dbId = soption(_prefix=M_prefix,_name="crb.db.id");
+            int M_dbUpdate = ioption(_prefix=M_prefix, _name="crb.db.update" );
+            if ( !M_rebuildDb )
+            {
+                switch ( M_dbLoad )
+                {
+                case 0 :
+                    M_crbModelDb->updateIdFromDBFilename( M_dbFilename );
+                    break;
+                case 1:
+                    M_crbModelDb->updateIdFromDBLast( crb::last::created );
+                    break;
+                case 2:
+                    M_crbModelDb->updateIdFromDBLast( crb::last::modified );
+                    break;
+                case 3:
+                    M_crbModelDb->updateIdFromId( M_dbId );
+                    break;
+                }
+            }
+            else
+            {
+                switch ( M_dbUpdate )
+                {
+                case 0 :
+                    M_crbModelDb->updateIdFromDBFilename( M_dbFilename );
+                    break;
+                case 1:
+                    M_crbModelDb->updateIdFromDBLast( crb::last::created );
+                    break;
+                case 2:
+                    M_crbModelDb->updateIdFromDBLast( crb::last::modified );
+                    break;
+                case 3:
+                    M_crbModelDb->updateIdFromId( M_dbId );
+                    break;
+                default:
+                    // don't do anything and let the system pick up a new unique id
+                    break;
+                }
+            }
+
             if ( stage == crb::stage::offline )
+            {
+                // create a first crb.json file if not exist already
+                if ( this->worldComm().isMasterRank() )
+                {
+                    fs::path jsonPath = fs::path(M_crbModelDb->dbRepository())/M_crbModelDb->jsonFilename();
+                    if ( !fs::exists( jsonPath.parent_path() ) )
+                        fs::create_directories( jsonPath.parent_path() );
+                    if ( !fs::exists( jsonPath ) )
+                    {
+                        nl::json j_init;
+                        j_init["uuid"] = uuids::to_string(this->uuid());
+                        std::ofstream o(jsonPath.string());
+                        o << j_init.dump(/*1*/);
+                    }
+                }
+                this->worldComm().barrier();
+
                 this->init();
+            }
         }
 
 
@@ -414,6 +490,19 @@ public:
             for ( double t=timeInitial();t<=(timeFinal()+1e-9);t+=timeStep() )
                 ++M_numberOfTimeStep;
         }
+
+
+
+        if ( countoption( _name="crb.copy-files-inside-db.path",_prefix=this->prefix() ) > 0 )
+        {
+            int cpt = 0;
+            for ( std::string const& filepathstr : vsoption( _name="crb.copy-files-inside-db.path",_prefix=this->prefix() ) )
+            {
+                auto filepath = fs::path( Environment::expand(filepathstr) );
+                M_model->addModelData( fmt::format("copy_files_inside_db_{}",cpt++), filepath );
+            }
+        }
+
     }
 
     //@}
@@ -1126,19 +1215,33 @@ public:
             if ( !M_model )
                 return;
 
-            if ( !M_model->additionalModelFiles().empty() )
+            if ( !M_model->additionalModelData().empty() )
             {
-                for ( auto const& inputFilenamePair : M_model->additionalModelFiles() )
+                for ( auto & [key,mdata] : M_model->additionalModelData() )
                 {
-                    std::string const& inputFilename = inputFilenamePair.second;
-                    fs::path inputPath = inputFilename;
-                    fs::path relativeDbPath = fs::path(inputFilename).filename();
-                    fs::path copyPath = fs::path(dir)/relativeDbPath;
-                    boost::system::error_code ec;
+                    // TODO move this code in AdditionalModelData class
+                    mdata.prepareSave();
+                    std::string const& relPath = mdata.relativeFilePathInDatabase();
+                    fs::path newFilePath = fs::path(dir)/relPath;
+                    fs::path parentNewFilePath = newFilePath.parent_path();
                     if ( M_model->worldComm().isMasterRank() )
-                        fs::copy_file( inputPath, copyPath, fs::copy_option::overwrite_if_exists, ec );
-                    // replace entry with copy path
-                    M_model->addModelFile( inputFilenamePair.first, relativeDbPath.string() );
+                    {
+                        if ( !fs::exists( parentNewFilePath ) )
+                            fs::create_directories( parentNewFilePath );
+                        if ( mdata.template has<nl::json>() )
+                        {
+                            auto const& jsonData = mdata.template data<nl::json>();
+                            fs::ofstream o(newFilePath);
+                            o << jsonData.dump(/*1*/);
+                        }
+                        else if ( mdata.template has<fs::path>() )
+                        {
+                            fs::path const& inputPath = mdata.template data<fs::path>();
+                            boost::system::error_code ec;
+                            fs::copy_file( inputPath, newFilePath, fs::copy_option::overwrite_if_exists, ec );
+                        }
+                    }
+                    mdata.setOnDisk();
                 }
                 M_model->worldComm().barrier();
             }
@@ -2854,6 +2957,7 @@ public:
 
 protected:
 
+    std::shared_ptr<CRBModelDB> M_crbModelDb;
     std::string M_prefix;
     int M_level = 0;
 

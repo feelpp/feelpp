@@ -34,11 +34,11 @@ bdy[] = CombinedBoundary { {{ eltDim }}{:}; };
 Physical {{ eltDimM1 }}("Gamma_ext") = bdy[0];
 
 For ii In { 1 : (#bdy[]-1) }
-    If (bdy[ii] != {{ diffVal }})
+    If (Abs(bdy[ii]) != {{ diffVal }})
         Printf("boundary number %g = %g", ii, Abs(bdy[ii]));
         Physical {{ eltDimM1 }}("Gamma_ext") += Abs(bdy[ii]);   
     Else
-        Physical {{ eltDimM1 }}("Gamma_root") = bdy[ii];
+        Physical {{ eltDimM1 }}("Gamma_root") = Abs(bdy[ii]);
     EndIf
 EndFor
 

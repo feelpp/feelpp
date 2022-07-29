@@ -122,15 +122,18 @@ class Heat : public ModelNumerical,
                 std::string const& keyword = args.get_else(_keyword,"heat");
                 worldcomm_ptr_t worldcomm = args.get_else(_worldcomm,Environment::worldCommPtr());
                 auto && repository = args.get_else(_repository,ModelBaseRepository{});
-                return std::make_shared<self_type>( prefix, keyword, worldcomm, "", repository );
+                auto && vm = args.get_else(_vm, create_program_options( prefix ) );
+                return std::make_shared<self_type>( prefix, keyword, worldcomm, "", repository, ModelBaseCommandLineOptions{vm} );
             }
 
+        static Feel::po::options_description create_program_options( std::string const& prefix = "heat" ) { return heat_options( prefix );}
 
         Heat( std::string const& prefix,
               std::string const& keyword = "heat",
               worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
               std::string const& subPrefix  = "",
-              ModelBaseRepository const& modelRep = ModelBaseRepository() );
+              ModelBaseRepository const& modelRep = ModelBaseRepository(),
+              ModelBaseCommandLineOptions const& modelOptions = ModelBaseCommandLineOptions{} );
 
         std::shared_ptr<self_type> shared_from_this() { return std::dynamic_pointer_cast<self_type>( super_type::shared_from_this() ); }
 

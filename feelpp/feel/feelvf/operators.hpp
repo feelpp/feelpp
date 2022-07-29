@@ -769,7 +769,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                         }                                               \
                     }                                                   \
                     M_mzero.setZero();                                  \
-                    if( !M_same_mesh )                                  \
+                    if( !M_same_mesh && M_expr.e().functionSpace()->mesh() ) \
                         M_expr.e().functionSpace()->mesh()->tool_localization()->updateForUse(); \
                 }                                                       \
                 void updateCtxIfSameGeom( Geo_t const& geom )           \

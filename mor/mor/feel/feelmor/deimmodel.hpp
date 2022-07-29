@@ -35,6 +35,39 @@
 namespace Feel
 {
 
+template <typename ModelType>
+class DEIMOnlineModel
+{
+public:
+    using model_type = ModelType;
+    using space_type = typename model_type::space_type;
+    using space_ptrtype = std::shared_ptr<space_type>;
+    using element_type = typename model_type::element_type;
+    using parameter_type = typename model_type::parameter_type;
+    using vector_ptrtype = typename model_type::vector_ptrtype;
+    using sparse_matrix_ptrtype = typename model_type::sparse_matrix_ptrtype;
+
+    space_ptrtype functionSpace() const { return M_functionSpace; }
+    void setFunctionSpaces( space_ptrtype functionSpace ) { M_functionSpace = functionSpace; }
+
+    using deim_function_type = std::function<vector_ptrtype(parameter_type const&)>;
+    using mdeim_function_type = std::function<sparse_matrix_ptrtype(parameter_type const&)>;
+
+    void setAssembleDEIM( deim_function_type const& fct ) { M_assembleForDEIM = fct; }
+    void setAssembleMDEIM( mdeim_function_type const& fct ) { M_assembleForMDEIM = fct; }
+
+    sparse_matrix_ptrtype assembleForMDEIM( parameter_type const& mu, int const& tag ) { return M_assembleForMDEIM(mu); }
+    vector_ptrtype assembleForDEIM( parameter_type const& mu, int const& tag ) { return M_assembleForDEIM(mu); }
+    vector_ptrtype assembleForDEIMnl( parameter_type const& mu, element_type const& u, int const& tag ) { return {}; }
+    sparse_matrix_ptrtype assembleForMDEIMnl( parameter_type const& mu, element_type const& u, int const& tag ) { return {}; }
+
+
+private:
+    space_ptrtype M_functionSpace;
+    deim_function_type M_assembleForDEIM;
+    mdeim_function_type M_assembleForMDEIM;
+};
+
 /**
  * Class inherited from DEIMBase
  * It contains the model
@@ -68,6 +101,9 @@ public :
     static const bool by_block = model_type::by_block;
     static const int n_block = space_type::nSpaces;
 
+    using online_model_type = DEIMOnlineModel<model_type>;
+    using online_model_ptrtype = std::shared_ptr<online_model_type>;
+
     //! Default Constructor
     DEIMModel() : super_type()
         {}
@@ -98,7 +134,8 @@ public :
         }
 
     //! \return the online model
-    model_ptrtype & onlineModel() { return M_online_model; }
+    online_model_ptrtype onlineModel() { return  M_online_model; }
+
     //! \return the model
     model_ptrtype & model() { return M_model; }
 
@@ -177,13 +214,17 @@ protected :
 
     virtual space_ptrtype newInterpolationSpace( mesh_ptrtype const& mesh ) override
         {
-            return space_type::New( _mesh=mesh,
-                                    _range=M_online_model->functionspaceMeshSupport( mesh ) );
+            return space_type::New( _mesh=mesh
+                                    //_range=M_online_model->functionspaceMeshSupport( mesh )
+                                    //_range=M_online_model->functionSpace()->template meshSupport<0>() // TODO maybe VINCENT?
+                                    );
         }
 
 
 protected :
-    model_ptrtype M_model, M_online_model;
+    model_ptrtype M_model;
+    online_model_ptrtype M_online_model;
+
     int M_tag;
     std::vector<std::vector<int>> M_subN;
     using super_type::M_write_nl_solutions;
@@ -320,9 +361,8 @@ DEIMModel<ModelType,TensorType>::DEIMModel( model_ptrtype model, sampling_ptrtyp
     M_model( model ),
     M_tag( tag )
 {
-    this->M_online_model = model_ptrtype( new model_type( model->prefix() ) );
-    //this->M_online_model->setModelOnlineDeim( prefixvm(this->M_prefix,"deim-online"), this->M_vm );
-    this->M_online_model->setOnlineModel();
+
+    M_online_model = std::make_shared<online_model_type>();
 
     if ( !this->M_rebuild )
     {
@@ -338,7 +378,6 @@ DEIMModel<ModelType,TensorType>::DEIMModel( model_ptrtype model, sampling_ptrtyp
         cout << this->name() + " : option deim.rebuild-database=true : start greedy algorithm from beginning\n";
     if ( Rh )
         M_online_model->setFunctionSpaces( Rh );
-    this->M_online_model->initOnlineModel(M_model);
 } //DEIMModel
 
 
@@ -348,6 +387,7 @@ DEIMModel<ModelType,TensorType>::init()
 {
     if ( this->M_rebuild )
     {
+        CHECK( this->M_trainset ) << "M_trainset is not Initialized";
         auto mu = this->M_trainset->max().template get<0>();
         auto T = this->assemble(mu);
         if (!T)
