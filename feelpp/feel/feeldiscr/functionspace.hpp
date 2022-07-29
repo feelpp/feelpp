@@ -6376,47 +6376,54 @@ void FunctionSpace<A0, A1, A2, A3, A4>::updateInformationObject( nl::json& p ) c
             return;
 
         p["nSpace"] = functionspace_type::nSpaces;
+
         if ( this->mesh() )
             p["mesh"] = this->mesh()->journalSection().to_string();
 
-        std::string shape;
-        if ( is_scalar )
-            shape = "scalar";
-        else if ( is_vectorial )
-            shape = "vectorial";
-        else if ( is_tensor2 )
-            shape = "tensor2";
-        else if ( is_tensor2symm )
-            shape = "tensor2symm";
-        p.emplace( "basis", nl::json( { { "name", basisName() },
-                                        { "order", basisOrder().front() },
-                                        { "shape", shape },
-                                        { "is_continuous", is_continuous },
-                                        { "nComponents", nComponents },
-                                        { "nComponents1", nComponents1 },
-                                        { "nComponents2", nComponents2 },
-                                        { "nLocalDof", fe_type::nLocalDof } } ) );
-        if ( is_tensor2symm )
-            p["/basis/nRealComponents"_json_pointer] = nRealComponents;
-
-        nl::json subPt;
-        subPt["nDof"] = this->nDof();
-        rank_type nProc = this->worldComm().localSize();
-        if ( nProc > 1 )
+        if ( M_ref_fe )
         {
-            nl::json::array_t subPt1, subPt2, subPt3;
-            for ( rank_type p = 0; p < nProc; ++p )
-            {
-                subPt1.push_back( this->dof()->nLocalDofWithGhost( p ) );
-                subPt2.push_back( this->dof()->nLocalDofWithoutGhost( p ) );
-                subPt3.push_back( this->dof()->nLocalGhosts( p ) );
-            }
-            subPt.emplace( "nLocalDofWithGhost", subPt1 );
-            subPt.emplace( "nLocalDofWithoutGhost", subPt2 );
-            subPt.emplace( "nLocalGhost", subPt3 );
-            subPt.emplace( "extended-doftable", this->dof()->buildDofTableMPIExtended() );
+            std::string shape;
+            if ( is_scalar )
+                shape = "scalar";
+            else if ( is_vectorial )
+                shape = "vectorial";
+            else if ( is_tensor2 )
+                shape = "tensor2";
+            else if ( is_tensor2symm )
+                shape = "tensor2symm";
+            p.emplace( "basis", nl::json( { { "name", basisName() },
+                                            { "order", basisOrder().front() },
+                                            { "shape", shape },
+                                            { "is_continuous", is_continuous },
+                                            { "nComponents", nComponents },
+                                            { "nComponents1", nComponents1 },
+                                            { "nComponents2", nComponents2 },
+                                            { "nLocalDof", fe_type::nLocalDof } } ) );
+            if ( is_tensor2symm )
+                p["/basis/nRealComponents"_json_pointer] = nRealComponents;
         }
-        p.emplace( "doftable", std::move( subPt ) );
+
+        if ( M_dof ) // sometime not define (example online rbspace)
+        {
+            nl::json subPt;
+            subPt["nDof"] = this->nDof();
+            rank_type nProc = this->worldComm().localSize();
+            if ( nProc > 1 )
+            {
+                nl::json::array_t subPt1, subPt2, subPt3;
+                for ( rank_type p = 0; p < nProc; ++p )
+                {
+                    subPt1.push_back( this->dof()->nLocalDofWithGhost( p ) );
+                    subPt2.push_back( this->dof()->nLocalDofWithoutGhost( p ) );
+                    subPt3.push_back( this->dof()->nLocalGhosts( p ) );
+                }
+                subPt.emplace( "nLocalDofWithGhost", subPt1 );
+                subPt.emplace( "nLocalDofWithoutGhost", subPt2 );
+                subPt.emplace( "nLocalGhost", subPt3 );
+                subPt.emplace( "extended-doftable", this->dof()->buildDofTableMPIExtended() );
+            }
+            p.emplace( "doftable", std::move( subPt ) );
+        }
     }
     else // composite case
     {
@@ -6428,7 +6435,8 @@ void FunctionSpace<A0, A1, A2, A3, A4>::updateInformationObject( nl::json& p ) c
         mpl::range_c<int, 0, functionspace_type::nSpaces> keySpaces;
         boost::fusion::for_each( keySpaces, UpdateInformationObject<functionspace_type>( *this, subPt ) );
         p.emplace( "nSpace", functionspace_type::nSpaces );
-        p.emplace( "nDof", this->nDof() );
+        if ( M_dof )
+            p.emplace( "nDof", this->nDof() );
         p.emplace( "subfunctionspaces", subPt );
     }
 }

@@ -647,23 +647,26 @@ CRBElementsDB<ModelType>::loadHDF5DB()
     WN.resize( M_N );
     WNdu.resize( M_N );
 
-    mesh_ptrtype mesh;
     space_ptrtype Xh;
-
-    if ( !M_model )
-    {
-        LOG(INFO) << "[load] model not initialized, loading fdb files...\n";
-        mesh = mesh_type::New();
-        bool is_mesh_loaded = mesh->load( _name="mymesh",_path=this->dbLocalPath(),_type="binary" );
-        Xh = space_type::New( mesh );
-        LOG(INFO) << "[load] loading fdb files done.\n";
-    }
+    if ( M_rbSpace && M_rbSpace->functionSpace() )
+        Xh = M_rbSpace->functionSpace();
     else
     {
-        LOG(INFO) << "[load] get mesh/Xh from model...\n";
-        mesh = M_model->functionSpace()->mesh();
-        Xh = M_model->functionSpace();
-        LOG(INFO) << "[load] get mesh/Xh from model done.\n";
+        if ( !M_model )
+        {
+            LOG(INFO) << "[load] model not initialized, loading fdb files...\n";
+            auto mesh = mesh_type::New();
+            bool is_mesh_loaded = mesh->load( _name="mymesh",_path=this->dbLocalPath(),_type="binary" );
+            Xh = space_type::New( mesh );
+            LOG(INFO) << "[load] loading fdb files done.\n";
+        }
+        else
+        {
+            LOG(INFO) << "[load] get mesh/Xh from model...\n";
+            auto mesh = M_model->functionSpace()->mesh();
+            Xh = M_model->functionSpace();
+            LOG(INFO) << "[load] get mesh/Xh from model done.\n";
+        }
     }
 
 

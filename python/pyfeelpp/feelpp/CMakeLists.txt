@@ -1,5 +1,5 @@
 add_custom_target(pyfeelpp)
-
+configure_file(__init__.py.in ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py @ONLY)
 feelpp_add_pymodule(feelpp SRCS feelpp.cpp DESTINATION feelpp )
 feelpp_add_pymodule(core SRCS core.cpp remotedata.cpp  DESTINATION feelpp )
 feelpp_add_pymodule(alg SRCS alg.cpp DESTINATION feelpp )
