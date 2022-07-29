@@ -166,6 +166,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
 
         Args:
             musk (dict): dict as {mu:[k0,k1,...], ...} where ki are sorted instants
+            orth (bool, optional): orthonormalize the reduced basis. Defaults to True.
         """
 
         warnings.warn("reducedbasis_time::reducedbasisTimeOffline::generateBasis has not yet been corrected or tested")
@@ -182,7 +183,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
             mat = Mmu + self.dt * Amu
 
             u = Fmu.duplicate()
-            u.set(0)    # initial solution TODO
+            u.set(0)    # initial condition TODO
 
             mx = musk[mu][-1]
             cur = 0
@@ -240,7 +241,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
         self.ksp.setOperators(mat)
 
         u = self.Fq[0].duplicate()
-        u.set(0)
+        u.set(0)     # initial condition TODO
 
         self.Z_to_matrix()
         ZT = self.Z_matrix.duplicate()
@@ -264,7 +265,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
         eKT = eK.copy()
         eKT = eKT.transpose()
 
-        C = (eKT * self.scal * eK) * 1./self.K      # C_{ij} = ( u_i(µ), u_j(µ) )_X
+        C = (eKT * self.scal * eK) * 1./self.K      # C_{ij} = 1/K * ( u_i(µ), u_j(µ) )_X
         if to_numpy:
             return C[:,:], uk
         else:
@@ -275,7 +276,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
         """Compute the POD modes for a given parameter
 
         Args:
-            mu (parameterSpaceElement): paramter used
+            mu (parameterSpaceElement): parameter used
             g (function): right-hand side time-dependent function
             R (int, optional): number of POD modes to compute. Defaults to 1.
             delta (float, optional): representativiness of the Nm first POD modes. If None, the R greatest POD modes are computed
@@ -324,7 +325,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
         mu_max = None
         i_max = 0
         Delta_max = -np.float('inf')
-        for i,mu in enumerate(tqdm(xi_train,desc=f"[reducedBasis] POD-greedy, greey step", ascii=False, ncols=120)):
+        for i,mu in enumerate(tqdm(xi_train,desc=f"[reducedBasis] POD-greedy, greedy step", ascii=False, ncols=120)):
             
             beta = betas[mu]
 
@@ -417,8 +418,8 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
         bigMat = Mmu + self.dt * Amu
         self.ksp.setOperators(bigMat)
 
-        uN = np.zeros(self.N)
-        u = self.Fq[0].duplicate()
+        uN = np.zeros(self.N)      # initial condition TODO
+        u = self.Fq[0].duplicate() # initial condition TODO
 
         ones = self.Fq[0].duplicate()
         ones.set(1)

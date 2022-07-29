@@ -183,7 +183,6 @@ class reducedbasis():
         Returns:
             PETSc.Vec: assemble vector
         """
-
         assert( len(beta) == self.QLk[k]), f"Number of param ({len(beta)}) should be {self.QLk[k]}"
 
         LkN = np.einsum('p,pn->n', beta, self.LkNp[k])
@@ -226,7 +225,7 @@ class reducedbasis():
         return sol, sol @ l
 
     def getOutputs(self, mu, ks, beta=None, size=None):
-        """Computes and returns the outputs sNk
+        """Compute and return the outputs sNk
 
         Args:
             mu (ParameterSpaceElement): parameter used
@@ -288,6 +287,7 @@ class reducedbasis():
             precalc (dict, optional): Dict containing the values of betaA, betaF and uN if these values have already\
                 been calculated. Defaults to None.\
                 If None is given, the quantities are calculated in the function
+            size (int, optional): size of the sub-basis considered
 
         Returns:
             float: a posteriori error SQUARED

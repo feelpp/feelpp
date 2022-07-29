@@ -71,6 +71,8 @@ class reducedbasisTime(reducedbasis):
         Args:
             mu (ParameterSpaceElement): parameter used
             g (function): right-hand side time-dependent function
+            beta (list, optional) : coefficients of the decomposition, if they have already been computed
+
 
         Returns:
             np.ndarray: solution uN of the equation at time t = K*dt
@@ -79,11 +81,11 @@ class reducedbasisTime(reducedbasis):
             beta = self.model.computeBetaQm(mu)
         ANmu = self.assembleAN(beta[0][0])
         FNmu = self.assembleFN(beta[1][0][0])
-        MNmu = np.array(self.assembleMN(beta[2][0])) # [2][0][0] ?
+        MNmu = np.array(self.assembleMN(beta[2][0]))
 
         mat = MNmu + self.dt * ANmu
         matLu = sl.lu_factor(mat)
-        u = np.zeros(self.N)    # initial solution
+        u = np.zeros(self.N)    # initial solution TODO
 
         for k in range(1, self.K):
             sol = sl.lu_solve(matLu, g(k * self.dt) * self.dt * FNmu + MNmu @ u)
@@ -103,7 +105,7 @@ class reducedbasisTime(reducedbasis):
 
 
     def computeOnlineError_k(self, mu, uN, uNm1, k, precalc=None):
-        """Compute the online error SQUARED, for a parameter mu
+        """Compute the online error SQUARED, from a parameter mu, at time k
 
         Args:
             mu (ParameterSpaceElement): parameter used
@@ -145,10 +147,11 @@ class reducedbasisTime(reducedbasis):
 
 
     def computeOnlineError(self, mu, beta, g, computeEnergyNorm=False):
-        """Compute online bound error
+        """Compute online bound error, from a parameter mu
 
         Args:
             mu (ParameterSpaceElement): parameter used
+            beta (list) : coefficients of the decomposition
             g (function): right-hand side time-dependent function
             computeEnergyNorm (bool): computes the energy normsuring the resolution (stroed in self.EnNorm).\
                 Defaults to False
@@ -177,7 +180,7 @@ class reducedbasisTime(reducedbasis):
         self.err[:] = 0
         self.DeltaN[:] = 0
 
-        u = np.zeros(self.N)    # initial condition
+        u = np.zeros(self.N)    # initial condition TODO
         if computeEnergyNorm:
             self.EnNorm[:] = 0
         
@@ -201,6 +204,13 @@ class reducedbasisTime(reducedbasis):
     Save and load functions
     """
     def saveReducedBasis(self, path, force=False, check=True):
+        """Save the reduced basis in files
+
+        Args:
+            path (str): path of the directory whre data are to be saved
+            force (bool, optional): Force saving, even if files are already present. Defaults to False.
+            check (bool, optional): Check that the exported values are correct (only in sequential). Defaults to True
+        """
         h5f, content = super().saveReducedBasis(path, force=force, notDoneYet=True)
         jsonPath = f"{os.getcwd()}/reducedbasis.json"
 
@@ -226,6 +236,12 @@ class reducedbasisTime(reducedbasis):
 
 
     def loadReducedBasis(self, path, model):
+        """Load reduced basis from json
+
+        Args:
+            path (str): path to the json description file
+            model (toolboxmor): toolboxmor used to create the model
+        """
         h5f, j = super().loadReducedBasis(path, model, notDoneYet=True)
 
         self.tf = j['tf']

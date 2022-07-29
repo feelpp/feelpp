@@ -437,7 +437,7 @@ class reducedbasisOffline(reducedbasis):
 
         Args:
             mus (list of ParameterSpaceElement) : list of parameters
-            orth (bool, optional): orthonormalize or not the reduced basis. Defaults to True.
+            orth (bool, optional): orthonormalize the reduced basis. Defaults to True.
         """
         self.generateZ(mus,orth)
         self.generateANq()
