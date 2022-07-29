@@ -397,7 +397,7 @@ ToolboxMor<SpaceType, Options>::initModelImpl()
     }
 
     auto PsetV = this->Dmu->sampling();
-    std::string supersamplingname = fmt::format("{}/DmuDEim-P{}-Ne{}-generated-by-master-proc", this->M_crbModelDb.dbRepository(), this->Dmu->dimension(), M_trainsetDeimSize );
+    std::string supersamplingname = fmt::format("DmuDEim-P{}-Ne{}-generated-by-master-proc", this->Dmu->dimension(), M_trainsetDeimSize );
     std::ifstream file ( supersamplingname );
     Feel::cout << tc::blue << "[ToolboxMor] DEIM sampling file \"" << supersamplingname;
     bool all_proc_same_sampling=true;
@@ -419,7 +419,7 @@ ToolboxMor<SpaceType, Options>::initModelImpl()
     Feel::cout << tc::green << "[ToolboxMor] DEIM construction finished!!" << tc::reset << std::endl;
 
     auto PsetM = this->Dmu->sampling();
-    supersamplingname = fmt::format("{}/DmuMDEim-P{}-Ne{}-generated-by-master-proc", this->M_crbModelDb.dbRepository(), this->Dmu->dimension(), M_trainsetMdeimSize );
+    supersamplingname = fmt::format("DmuMDEim-P{}-Ne{}-generated-by-master-proc", this->Dmu->dimension(), M_trainsetMdeimSize );
     std::ifstream fileM ( supersamplingname );
     Feel::cout << tc::blue << "[ToolboxMor] MDEIM sampling file \"" << supersamplingname;
     if( ! fileM )
