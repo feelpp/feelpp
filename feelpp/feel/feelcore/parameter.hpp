@@ -151,7 +151,7 @@ using depends = NA::named_argument_t<struct depends_tag>;
 using optimize3d_netgen = NA::named_argument_t<struct optimize3d_netgen_tag>;
 using pre = NA::named_argument_t<struct pre_tag>;
 using post = NA::named_argument_t<struct post_tag>;
-
+using op = NA::named_argument_t<struct op_tag>;
 // parameter for adapt
 using required_elts = NA::named_argument_t<struct required_elts_tag>;
 using required_facets = NA::named_argument_t<struct required_facets_tag>;
@@ -275,6 +275,7 @@ using currentElt = NA::named_argument_t<struct currentElt_tag>;
 using newElt = NA::named_argument_t<struct newElt_tag>;
 using space = NA::named_argument_t<struct space_tag>;
 using space2 = NA::named_argument_t<struct space2_tag>;
+using space_path = NA::named_argument_t<struct space_path_tag>;
 using initial_theta = NA::named_argument_t<struct initial_theta_tag>;
 using min_theta = NA::named_argument_t<struct min_theta_tag>;
 using forceRelaxation = NA::named_argument_t<struct forceRelaxation_tag>;
@@ -446,7 +447,7 @@ inline constexpr auto& _depends = NA::identifier<na::depends>;
 inline constexpr auto& _optimize3d_netgen = NA::identifier<na::optimize3d_netgen>;
 inline constexpr auto& _pre = NA::identifier<na::pre>;
 inline constexpr auto& _post = NA::identifier<na::post>;
-
+inline constexpr auto& _op = NA::identifier<na::op>;
 // parameter for adapt
 inline constexpr auto& _required_elts = NA::identifier<na::required_elts>;
 inline constexpr auto& _required_facets = NA::identifier<na::required_facets>;
@@ -570,6 +571,7 @@ inline constexpr auto& _currentElt = NA::identifier<na::currentElt>;
 inline constexpr auto& _newElt = NA::identifier<na::newElt>;
 inline constexpr auto& _space = NA::identifier<na::space>;
 inline constexpr auto& _space2 = NA::identifier<na::space2>;
+inline constexpr auto& _space_path = NA::identifier<na::space_path>;
 inline constexpr auto& _initial_theta = NA::identifier<na::initial_theta>;
 inline constexpr auto& _min_theta = NA::identifier<na::min_theta>;
 inline constexpr auto& _forceRelaxation = NA::identifier<na::forceRelaxation>;

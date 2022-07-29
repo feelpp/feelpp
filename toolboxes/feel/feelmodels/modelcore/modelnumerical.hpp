@@ -255,14 +255,6 @@ class ModelNumerical : virtual public ModelBase,
 
         virtual void initPostProcess();
 
-        auto symbolsExprParameter() const
-            {
-                if ( this->hasModelProperties() )
-                    return this->modelProperties().parameters().symbolsExpr();
-                else
-                    return std::decay_t<decltype(this->modelProperties().parameters().symbolsExpr())>{};
-            }
-
         template <typename MeshType,typename SymbolsExprType>
         void initPostProcessMeshes( SymbolsExprType const& se )
             {

@@ -22,14 +22,13 @@
 #
 #
 
+set( FEELPP_MOR_CONFIG_FILE  ${CMAKE_CURRENT_BINARY_DIR}/Feel++-MORConfig.cmake)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Feel++-MORConfig.cmake.in ${FEELPP_MOR_CONFIG_FILE} @ONLY)
+install(FILES ${FEELPP_MOR_CONFIG_FILE} DESTINATION share/feelpp/mor/cmake COMPONENT Devel)
+
 
 set( modules
   ${CMAKE_CURRENT_SOURCE_DIR}/feelpp.macros.mor.cmake
   )
 
 INSTALL(FILES ${modules} DESTINATION share/feelpp/mor/cmake/ COMPONENT Devel)
-
-
-
-
-

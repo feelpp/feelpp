@@ -15,11 +15,12 @@ HEAT_CLASS_TEMPLATE_TYPE::Heat( std::string const& prefix,
                                 std::string const& keyword,
                                 worldcomm_ptr_t const& worldComm,
                                 std::string const& subPrefix,
-                                ModelBaseRepository const& modelRep )
+                                ModelBaseRepository const& modelRep,
+                                ModelBaseCommandLineOptions const& modelOptions )
     :
-    super_type( prefix, keyword, worldComm, subPrefix, modelRep ),
+    super_type( prefix, keyword, worldComm, subPrefix, modelRep, modelOptions ),
     ModelPhysics<nDim>( "heat" ),
-    ModelBase( prefix, keyword, worldComm, subPrefix, modelRep )
+    ModelBase( prefix, keyword, worldComm, subPrefix, modelRep, modelOptions )
 {
     this->log("Heat","constructor", "start" );
 
@@ -44,18 +45,19 @@ HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
 HEAT_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 {
-    M_useExtendedDoftable = boption(_name="use-extended-doftable",_prefix=this->prefix());
+    M_useExtendedDoftable = boption(_name="use-extended-doftable",_prefix=this->prefix(),_vm=this->clovm());
 
-    M_stabilizationGLS = boption(_name="stabilization-gls",_prefix=this->prefix());
-    M_stabilizationGLSType = soption(_name="stabilization-gls.type",_prefix=this->prefix());
+    M_stabilizationGLS = boption(_name="stabilization-gls",_prefix=this->prefix(),_vm=this->clovm());
+    M_stabilizationGLSType = soption(_name="stabilization-gls.type",_prefix=this->prefix(),_vm=this->clovm());
 
-    M_stabilizationGLS_checkConductivityDependencyOnCoordinates = boption(_name="stabilization-gls.check-conductivity-dependency-on-coordinates",_prefix=this->prefix());
+    M_stabilizationGLS_checkConductivityDependencyOnCoordinates = boption(_name="stabilization-gls.check-conductivity-dependency-on-coordinates",
+                                                                          _prefix=this->prefix(),_vm=this->clovm());
 
     // time stepping
-    M_timeStepping = soption(_name="time-stepping",_prefix=this->prefix());
-    M_timeStepThetaValue = doption(_name="time-stepping.theta.value",_prefix=this->prefix());
+    M_timeStepping = soption(_name="time-stepping",_prefix=this->prefix(),_vm=this->clovm());
+    M_timeStepThetaValue = doption(_name="time-stepping.theta.value",_prefix=this->prefix(),_vm=this->clovm());
 
-    M_solverName = soption(_name="solver",_prefix=this->prefix());
+    M_solverName = soption(_name="solver",_prefix=this->prefix(),_vm=this->clovm());
 }
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
@@ -71,7 +73,14 @@ HEAT_CLASS_TEMPLATE_TYPE::initMesh()
         super_type::super_model_meshes_type::setupRestart( this->keyword() );
     super_type::super_model_meshes_type::updateForUse<mesh_type>( this->keyword() );
 
+    super_type::super_model_meshes_type::modelMesh( this->keyword() ).setFunctionApplyRemesh(
+        [this]( typename super_type::super_model_meshes_type::mesh_base_ptrtype mnew,
+                typename super_type::super_model_meshes_type::mesh_base_ptrtype mold ) { this->applyRemesh( std::dynamic_pointer_cast<mesh_type>( mold ),
+                                                                                                            std::dynamic_pointer_cast<mesh_type>( mnew ) ); }
+                                                                                             );
+
     CHECK( this->mesh() ) << "mesh generation fail";
+    this->log("Heat","initMesh", fmt::format("mesh numGlobalElements : {}", this->mesh()->numGlobalElements()));
 
     double tElpased = this->timerTool("Constructor").stop("initMesh");
     this->log("Heat","initMesh",(boost::format("finish in %1% s")%tElpased).str() );
@@ -114,6 +123,7 @@ HEAT_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
         M_rangeMeshElements = markedelements(this->mesh(), mom->markers( this->physicsAvailableFromCurrentType() ));
         M_Xh = space_temperature_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm(),_range=M_rangeMeshElements, _extended_doftable=M_useExtendedDoftable );
     }
+    this->log("Heat","initFunctionSpaces", fmt::format("temperature space ndof : {}",M_Xh->nDof()) );
 
     //M_fieldTemperature.reset( new element_temperature_type(M_Xh,"temperature"));
     M_fieldTemperature =  M_Xh->elementPtr( "temperature" );
@@ -219,8 +229,14 @@ HEAT_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         M_solverName = isNonLinear? "Newton" : "Linear";
     }
 
-
+    // algebraic model
     this->initAlgebraicModel();
+
+    // mesh adaptation at event after_init
+    using mesh_adaptation_type = typename super_type::super_model_meshes_type::mesh_adaptation_type;
+    this->template updateMeshAdaptation<mesh_type>( this->keyword(),
+                                                    mesh_adaptation_type::createEvent<mesh_adaptation_type::Event::Type::after_init>(),
+                                                    this->symbolsExpr() );
 
     // algebraic solver
     if ( buildModelAlgebraicFactory )
@@ -255,15 +271,25 @@ HEAT_CLASS_TEMPLATE_TYPE::initAlgebraicModel()
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
-HEAT_CLASS_TEMPLATE_TYPE::applyRemesh( mesh_ptrtype const& newMesh )
+HEAT_CLASS_TEMPLATE_TYPE::applyRemesh( mesh_ptrtype oldMesh, mesh_ptrtype newMesh, std::shared_ptr<RemeshInterpolation> remeshInterp )
 {
+    this->log("Heat","applyRemesh", "start" );
+
+    //RemeshInterpolation remeshInterp;
+#if 0
+#if 0
     mesh_ptrtype oldMesh = this->mesh();
+#else
+    mesh_ptrtype oldMesh = M_Xh->mesh();
+#endif
+#endif
 
     // material prop
     this->materialsProperties()->removeMesh( oldMesh );
     this->materialsProperties()->addMesh( newMesh );
 
-    this->setMesh( newMesh );
+    //this->setMesh( newMesh );
+    super_type::super_model_meshes_type::applyRemesh( this->keyword(), newMesh );
 
     // function space and fields
     space_temperature_ptrtype old_Xh = M_Xh;
@@ -271,26 +297,51 @@ HEAT_CLASS_TEMPLATE_TYPE::applyRemesh( mesh_ptrtype const& newMesh )
     this->initFunctionSpaces();
 
     // createInterpolationOp
+#if 1
+    auto matrixInterpolation_temperature = remeshInterp->computeMatrixInterpolation( old_Xh, M_Xh, M_rangeMeshElements );
+    remeshInterp->registeringBlockIndex( this->keyword(), this->startSubBlockSpaceIndex("temperature"), old_Xh, M_Xh );
+    remeshInterp->interpolate( old_fieldTemperature, M_fieldTemperature );
+#else
     auto opI_temperature = opInterpolation(_domainSpace=old_Xh,
                                            _imageSpace=M_Xh,
                                            _range=M_rangeMeshElements );
     auto matrixInterpolation_temperature = opI_temperature->matPtr();
     matrixInterpolation_temperature->multVector( *old_fieldTemperature, *M_fieldTemperature );
-
+#endif
     // time stepping
     if ( M_bdfTemperature )
         M_bdfTemperature->applyRemesh( M_Xh, matrixInterpolation_temperature );
 
-    // TODO : stabilization gls
+    // stabilization GLS familily
+    if ( M_stabilizationGLSParameter )
+    {
+        M_stabilizationGLSParameter->applyRemesh( this->mesh() );
+    }
 
     // TODO : post process ??
 
+    // algebraic data/tools
+    vector_ptrtype old_timeStepThetaSchemePreviousContrib = M_timeStepThetaSchemePreviousContrib;
+    bool buildModelAlgebraicFactory = this->algebraicFactory() ? true : false;
     // reset algebraic data/tools
     this->removeAllAlgebraicDataAndTools();
     this->initAlgebraicModel();
 
-    this->initAlgebraicFactory(); // TODO : Theta time scheme
+    if ( buildModelAlgebraicFactory )
+    {
+        this->initAlgebraicFactory(); // TODO : Theta time scheme
+#if 0
+        // TODO : try a way to go back to previous time
+        if ( old_timeStepThetaSchemePreviousContrib && M_timeStepThetaSchemePreviousContrib )
+        {
+            this->log("Heat","applyRemesh", "interpolate timeStepThetaSchemePreviousContrib" );
+            remeshInterp->interpolateBlockVector( this->keyword(), old_timeStepThetaSchemePreviousContrib, M_timeStepThetaSchemePreviousContrib, *this->algebraicBlockVectorSolution() );
+            this->log("Heat","applyRemesh", "interpolate timeStepThetaSchemePreviousContrib done" );
+        }
+#endif
+    }
 
+    this->log("Heat","applyRemesh", "finish" );
 }
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
@@ -304,7 +355,7 @@ HEAT_CLASS_TEMPLATE_TYPE::initTimeStep()
 
     int bdfOrder = 1;
     if ( M_timeStepping == "BDF" )
-        bdfOrder = ioption(_prefix=this->prefix(),_name="bdf.order");
+        bdfOrder = ioption(_prefix=this->prefix(),_name="bdf.order",_vm=this->clovm());
     int nConsecutiveSave = std::max( 3, bdfOrder ); // at least 3 is required when restart with theta scheme
 
     M_bdfTemperature = this->createBdf( this->spaceTemperature(),"temperature", bdfOrder, nConsecutiveSave, myFileFormat );
@@ -348,7 +399,7 @@ HEAT_CLASS_TEMPLATE_TYPE::initPostProcess()
 #if 0
         std::string geoExportType="static";//change_coords_only, change, static
 #else
-        bool useStaticExporter = boption(_name="exporter.use-static-mesh",_prefix=this->prefix());
+        bool useStaticExporter = boption(_name="exporter.use-static-mesh",_prefix=this->prefix(),_vm=this->clovm());
         std::string geoExportType = useStaticExporter? "static":"change";
 #endif
         M_exporter = exporter( _mesh=this->mesh(),
@@ -642,6 +693,8 @@ HEAT_CLASS_TEMPLATE_TYPE::setParameterValues( std::map<std::string,double> const
     for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
         physicData->setParameterValues( paramValues );
 
+    super_type::super_model_meshes_type::setParameterValues( paramValues );
+
     M_boundaryConditions->setParameterValues( paramValues );
 
     this->log("Heat","setParameterValues", "finish");
@@ -749,6 +802,13 @@ HEAT_CLASS_TEMPLATE_TYPE::updateTimeStep()
     this->timerTool("TimeStepping").setAdditionalParameter("time",this->currentTime());
     this->timerTool("TimeStepping").start();
 
+#if 1 // AT END OF TIME STEP
+    using mesh_adaptation_type = typename super_type::super_model_meshes_type::mesh_adaptation_type;
+    this->template updateMeshAdaptation<mesh_type>( this->keyword(),
+                                                    mesh_adaptation_type::createEvent<mesh_adaptation_type::Event::Type::each_time_step>( this->time(),M_bdfTemperature->iteration() ),
+                                                    this->symbolsExpr() );
+#endif
+
     // some time stepping require to compute residual without time derivative
     this->updateTimeStepCurrentResidual();
 
@@ -771,7 +831,12 @@ HEAT_CLASS_TEMPLATE_TYPE::updateTimeStep()
         this->setNeedToRebuildCstPart(true);
 
     this->updateParameterValues();
-
+#if 0
+    using mesh_adaptation_type = typename super_type::super_model_meshes_type::mesh_adaptation_type;
+    this->template updateMeshAdaptation<mesh_type>( this->keyword(),
+                                                    mesh_adaptation_type::createEvent<mesh_adaptation_type::Event::Type::each_time_step>( this->time(),M_bdfTemperature->iteration() ),
+                                                    this->symbolsExpr() );
+#endif
     this->timerTool("TimeStepping").stop("updateTimeStep");
     if ( this->scalabilitySave() ) this->timerTool("TimeStepping").save();
     this->log("Heat","updateTimeStep", "finish");

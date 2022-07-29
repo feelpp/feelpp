@@ -41,20 +41,29 @@ template<typename ToolboxType>
 typename DeimMorModelToolbox<ToolboxType>::deim_function_type
 DeimMorModelToolbox<ToolboxType>::deimOnlineFunction(mesh_ptrtype const& mesh)
 {
-    M_tbDeim = std::make_shared<toolbox_type>(M_prefix);
-    M_tbDeim->setMesh(mesh);
-    M_tbDeim->init();
+    if ( M_toolboxInitFunction )
+    {
+        M_tbDeim = M_toolboxInitFunction( mesh );
+    }
+    else
+    {
+        M_tbDeim = toolbox_type::New(_prefix=M_prefix);
+        M_tbDeim->setMesh(mesh);
+        M_tbDeim->init();
+        //M_tbDeim->printAndSaveInfo();
+    }
     M_rhsDeim = M_tbDeim->algebraicFactory()->rhs()->clone();
     M_matDeim = M_tbDeim->algebraicFactory()->matrix();
     deim_function_type assembleDEIM =
-        [&tbDeim=M_tbDeim,&rhs=M_rhsDeim,&mat=M_matDeim](parameter_type const& mu)
+        [this](parameter_type const& mu)
             {
                 for( int i = 0; i < mu.size(); ++i )
-                    tbDeim->addParameterInModelProperties(mu.parameterName(i), mu(i));
-                tbDeim->updateParameterValues();
-                rhs->zero();
-                tbDeim->algebraicFactory()->applyAssemblyLinear( tbDeim->algebraicBlockVectorSolution()->vectorMonolithic(), mat, rhs, {"ignore-assembly.lhs"} );
-                return rhs;
+                    M_tbDeim->addParameterInModelProperties(mu.parameterName(i), mu(i));
+                M_tbDeim->updateParameterValues();
+                M_rhsDeim->zero();
+                M_tbDeim->algebraicFactory()->applyAssemblyLinear( M_tbDeim->algebraicBlockVectorSolution()->vectorMonolithic(),
+                                                                   M_matDeim, M_rhsDeim, {"ignore-assembly.lhs"} );
+                return M_rhsDeim;
             };
     return assembleDEIM;
 }
@@ -63,20 +72,29 @@ template<typename ToolboxType>
 typename DeimMorModelToolbox<ToolboxType>::mdeim_function_type
 DeimMorModelToolbox<ToolboxType>::mdeimOnlineFunction(mesh_ptrtype const& mesh)
 {
-    M_tbMdeim = std::make_shared<toolbox_type>(M_prefix);
-    M_tbMdeim->setMesh(mesh);
-    M_tbMdeim->init();
+    if ( M_toolboxInitFunction )
+    {
+        M_tbMdeim = M_toolboxInitFunction( mesh );
+    }
+    else
+    {
+        M_tbMdeim = toolbox_type::New(_prefix=M_prefix);
+        M_tbMdeim->setMesh(mesh);
+        M_tbMdeim->init();
+        //M_tbMdeim->printAndSaveInfo();
+    }
     M_rhsMdeim = M_tbMdeim->algebraicFactory()->rhs()->clone();
     M_matMdeim = M_tbMdeim->algebraicFactory()->matrix();
     mdeim_function_type assembleMDEIM =
-        [&tbMdeim=M_tbMdeim,&rhs=M_rhsMdeim,&mat=M_matMdeim](parameter_type const& mu)
+        [this](parameter_type const& mu)
             {
                 for( int i = 0; i < mu.size(); ++i )
-                    tbMdeim->addParameterInModelProperties(mu.parameterName(i), mu(i));
-                tbMdeim->updateParameterValues();
-                mat->zero();
-                tbMdeim->algebraicFactory()->applyAssemblyLinear( tbMdeim->algebraicBlockVectorSolution()->vectorMonolithic(), mat, rhs, {"ignore-assembly.rhs"} );
-                return mat;
+                    M_tbMdeim->addParameterInModelProperties(mu.parameterName(i), mu(i));
+                M_tbMdeim->updateParameterValues();
+                M_matMdeim->zero();
+                M_tbMdeim->algebraicFactory()->applyAssemblyLinear( M_tbMdeim->algebraicBlockVectorSolution()->vectorMonolithic(),
+                                                                    M_matMdeim, M_rhsMdeim, {"ignore-assembly.rhs"} );
+                return M_matMdeim;
             };
     return assembleMDEIM;
 }
@@ -261,7 +279,7 @@ ToolboxMor<SpaceType, Options>::assembleOutputIntegrate( parameter_type const& m
             f += integrate( _range=range, _expr=exU*id(u)+exGU0*dx(u)+exGU1*dy(u)+exGU2*dz(u)+exDNU*dn(u) );
         }
     }
-    return f.vectorPtr();    
+    return f.vectorPtr();
 }
 
 template<typename SpaceType, int Options>
@@ -307,17 +325,22 @@ ToolboxMor<SpaceType, Options>::setupSpecificityModel( boost::property_tree::ptr
 {
     Feel::cout << "setupSpecificityModel" << std::endl;
 
-    if( this->hasModelFile("property-file") )
-        M_propertyPath = this->additionalModelFiles().find("property-file")->second;
+    M_modelProperties = std::make_shared<CRBModelProperties>( Environment::exprRepository(), this->worldCommPtr()/*subWorldCommSeqPtr()*/ );
+    if ( this->hasModelData( "crb_properties" ) )
+    {
+        auto & mdata = this->additionalModelData("crb_properties");
+        auto const& jsonData = mdata.template fetch_data<nl::json>( dbDir/*this->crbModelDb().dbRepository()*/ );
+        M_modelProperties->setup( jsonData );
+    }
     else
-        Feel::cerr << "Warning!! the database does not contain the property file! Expect bugs!"
-                   << std::endl;
+        throw std::runtime_error( "the database does not contain the crb_properties file" );
 
-    M_modelProperties = std::make_shared<CRBModelProperties>(); // TODO : put directoryLibExpr and worldcomm
-    M_modelProperties->setup( M_propertyPath );
+
     auto parameters = M_modelProperties->parameters();
     this->Dmu = parameterspace_type::New(parameters);
     auto parameterNames = std::set<std::string>(this->Dmu->parameterNames().begin(), this->Dmu->parameterNames().end());
+
+    //std::cout << tc::green << "ToolboxMor DEIM Parameter names : " << parameterNames << tc::reset << std::endl;
 
     M_deim = Feel::deim( _model=std::dynamic_pointer_cast<self_type>(this->shared_from_this()), _prefix="vec");
     this->addDeim(M_deim);
@@ -343,7 +366,7 @@ ToolboxMor<SpaceType, Options>::setupSpecificityModel( boost::property_tree::ptr
             Feel::cout << tc::green << "ToolboxMor DEIM for output " << name << " construction finished!!" << tc::reset << std::endl;
             i++;
         }
-        else 
+        else
             M_outputDeim[name] = 0;
     }
 
@@ -352,15 +375,17 @@ ToolboxMor<SpaceType, Options>::setupSpecificityModel( boost::property_tree::ptr
 
 template<typename SpaceType, int Options>
 void
-ToolboxMor<SpaceType, Options>::initModel()
+ToolboxMor<SpaceType, Options>::initModelImpl()
 {
-    M_propertyPath = Environment::expand( soption("toolboxmor.filename"));
+    std::string propertyPath = Environment::expand( soption("toolboxmor.filename"));
     M_trainsetDeimSize = ioption("toolboxmor.trainset-deim-size");
     M_trainsetMdeimSize = ioption("toolboxmor.trainset-mdeim-size");
-    this->addModelFile("property-file", M_propertyPath);
 
-    M_modelProperties = std::make_shared<CRBModelProperties>(); // TODO : put directoryLibExpr and worldcomm
-    M_modelProperties->setup( M_propertyPath );
+    M_modelProperties = std::make_shared<CRBModelProperties>( Environment::exprRepository(), this->worldCommPtr() );
+    M_modelProperties->setup( propertyPath );
+    this->addModelData( "crb_properties", M_modelProperties->jsonData(), "toolboxmor.crb_properties.json" );
+
+
     auto parameters = M_modelProperties->parameters();
     this->Dmu = parameterspace_type::New(parameters);
     auto parameterNames = std::set<std::string>(this->Dmu->parameterNames().begin(), this->Dmu->parameterNames().end());
@@ -431,43 +456,45 @@ ToolboxMor<SpaceType, Options>::initModel()
             Feel::cout << tc::green << "[ToolboxMor] DEIM for output " << name << " construction finished!!" << tc::reset << std::endl;
             i++;
         }
-        else 
+        else
             M_outputDeim[name] = 0;
     }
 
 } // ToolboxMor<SpaceType, Options>::initModel
 
-template<typename SpaceType, int Options>
-void
-ToolboxMor<SpaceType, Options>::initOnlineModel( std::shared_ptr<super_type> const& model )
-{
-    auto tbModel = std::dynamic_pointer_cast<self_type>(model);
-    this->M_modelProperties = tbModel->modelProperties();
-    this->M_outputDeimName = tbModel->outputDeimName();
-}
+// template<typename SpaceType, int Options>
+// void
+// ToolboxMor<SpaceType, Options>::initOnlineModel( std::shared_ptr<super_type> const& model )
+// {
+//     auto tbModel = std::dynamic_pointer_cast<self_type>(model);
+//     this->M_modelProperties = tbModel->modelProperties();
+//     this->M_outputDeimName = tbModel->outputDeimName();
+// }
 
 template<typename SpaceType, int Options>
 void
-ToolboxMor<SpaceType, Options>::initToolbox(std::shared_ptr<DeimMorModelBase<mesh_type>> model )
+ToolboxMor<SpaceType, Options>::initOfflineToolbox(std::shared_ptr<DeimMorModelBase<mesh_type>> model )
 {
-    this->setAssembleDEIM(model->deimFunction());
-    this->setAssembleMDEIM(model->mdeimFunction());
+    M_deimMorOfflineModel = model;
+    this->setAssembleDEIM(M_deimMorOfflineModel->deimFunction());
+    this->setAssembleMDEIM(M_deimMorOfflineModel->mdeimFunction());
 
-    this->initModel();
+    this->initModelImpl();
 
-    this->setOnlineAssembleDEIM(model->deimOnlineFunction(this->getDEIMReducedMesh()));
-    this->setOnlineAssembleMDEIM(model->mdeimOnlineFunction(this->getMDEIMReducedMesh()));
+    this->initOnlineToolbox( model->createOnline() );
 
     this->postInitModel();
-    this->setInitialized(true);
+    //this->setInitialized(true);
 }
 
 template<typename SpaceType, int Options>
 void
 ToolboxMor<SpaceType, Options>::initOnlineToolbox(std::shared_ptr<DeimMorModelBase<mesh_type>> model )
 {
-    this->setOnlineAssembleDEIM(model->deimOnlineFunction(this->getDEIMReducedMesh()));
-    this->setOnlineAssembleMDEIM(model->mdeimOnlineFunction(this->getMDEIMReducedMesh()));
+    M_deimMorOnlineModel = model;
+    this->setOnlineAssembleDEIM(M_deimMorOnlineModel->deimOnlineFunction(this->getDEIMReducedMesh()));
+    this->setOnlineAssembleMDEIM(M_deimMorOnlineModel->mdeimOnlineFunction(this->getMDEIMReducedMesh()));
+    //this->setInitialized(true);
 }
 
 template<typename SpaceType, int Options>

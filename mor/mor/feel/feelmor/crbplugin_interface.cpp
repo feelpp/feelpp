@@ -62,7 +62,7 @@ factoryCRBPlugin( std::string const& pluginname, std::string const& pluginlibnam
 #endif
         std::string libname = pluginlibname;
         if ( libname.empty() )
-            libname = ("libfeelpp_crb_" + pluginname + libext);
+            libname = ("libfeelpp_mor_" + pluginname + libext);
         fs::path pname = fs::path(dirname) / libname;
         //std::cout << "loading " << pname.string() << std::endl;
 

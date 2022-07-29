@@ -187,22 +187,30 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateInHousePre
             }
             if ( data.hasInfo( "use-pseudo-transient-continuation" ) )
             {
-#if 0
                 //Feel::cout << "updsate PCD : use-pseudo-transient-continuation\n";
                 //Warning : it's a copy past, should be improve : TODO!
                 double pseudoTimeStepDelta = data.doubleInfo("pseudo-transient-continuation.delta");
-                auto norm2_uu = this->materialProperties()->fieldRho().functionSpace()->element(); // TODO : improve this (maybe create an expression instead)
+#if 0
+
+                CHECK( M_stabilizationGLSParameterConvectionDiffusion ) << "aie";
+                auto XhP0d = M_stabilizationGLSParameterConvectionDiffusion->fieldTau().functionSpace();
+                auto norm2_uu = XhP0d->element(); // TODO : improve this (maybe create an expression instead)
+#if 0
                 //norm2_uu.on(_range=M_rangeMeshElements,_expr=norm2(idv(u))/h());
-                auto fieldNormu = u.functionSpace()->compSpace()->element( norm2(idv(u)) );
-                auto maxu = fieldNormu.max( this->materialProperties()->fieldRho().functionSpace() );
+                auto fieldNormu = u->functionSpace()->compSpace()->element( norm2(idv(u)) );
+                auto maxu = fieldNormu.max( XhP0d );
                 //auto maxux = u[ComponentType::X].max( this->materialProperties()->fieldRho().functionSpace() );
                 //auto maxuy = u[ComponentType::Y].max( this->materialProperties()->fieldRho().functionSpace() );
                 //norm2_uu.on(_range=M_rangeMeshElements,_expr=norm2(vec(idv(maxux),idv(maxux)))/h());
                 norm2_uu.on(_range=M_rangeMeshElements,_expr=idv(maxu)/h());
+#else
+                norm2_uu.on(_range=M_rangeMeshElements,_expr=norm2(idv(u))/h());
+#endif
 
                 myOpPCD->updateFpMass( therange, (1./pseudoTimeStepDelta)*idv(norm2_uu) );
 #else
-                CHECK(false) << "TODO : require P0d space, maybe try to find another alternative";
+                myOpPCD->updateFpMass( therange, (1./pseudoTimeStepDelta) );
+                //CHECK(false) << "TODO : require P0d space, maybe try to find another alternative";
 #endif
             }
         }

@@ -8,7 +8,7 @@ INSTALL( FILES ${CMAKE_CURRENT_BINARY_DIR}/feelmodelscoreconstconfig.hpp DESTINA
 
 
 set( FEELPP_TOOLBOXES_CORE_SRC  options.cpp log.cpp timertool.cpp
-  modelbase.cpp modelalgebraic.cpp modelnumerical.cpp modelphysics.cpp modelgenericpde.cpp modelmeshes.cpp
+  modelbase.cpp modelalgebraic.cpp modelnumerical.cpp modelphysics.cpp modelgenericpde.cpp modelmeshes.cpp modelmeshadaptation.cpp
   modelalgebraicfactory.cpp markermanagement.cpp modelmeasures.cpp genericboundaryconditions.cpp )
 
 if( FEELPP_MODELS_HAS_MESHALE )
