@@ -29,14 +29,16 @@
 
 using namespace Feel;
 
-std::string repeat(std::string s, const int n)
-{
-    std::string s1 = s;
-    for (int i=1; i<n; ++i) s += s1;
-    return s;
-}
-
-
+/**
+ * Execute the rsync command to synchronize the case
+ *
+ * @param dir the directory to synchronize
+ * @param login the remote user name to synchronize with
+ * @param server the host to synchronize with
+ * @param local_dir the local directory where file will be synchronized
+ * 
+ * @return the exit status of the rsync command
+ */
 int sync(const std::string dir, const std::string login, const std::string server, const std::string local_dir,
          int verbose = 0)
 {
@@ -72,22 +74,6 @@ int sync(const std::string dir, const std::string login, const std::string serve
 
     const std::string full_source = login + "@" + server + ":" + dir;
 
-#if 0   // better to use the Table class
-    const std::string app_name = "feelpp_sync_case";
-    const int size = std::max(std::max(full_source.size(), local_dir.size()) + 16, app_name.size()+4)+1;
-    Feel::cout << "╔" + repeat( "═", size-2 ) << "╗" << std::endl;
-    Feel::cout << "║" << repeat(" ", (size-app_name.size())/2) << app_name << 
-        std::setw(size+1-(size-app_name.size())/2-app_name.size()) << "║" << std::endl;
-    Feel::cout << "╠════════════╦" << repeat("═", size - 15) << "╣" << std::endl;
-    Feel::cout << "║ Source dir ║ " << full_source << std::setw(size-full_source.size() - 13) << "║" << std::endl;
-    Feel::cout << "║ Target dir ║ " << local_dir << std::setw(size-local_dir.size() - 13) << "║" << std::endl;
-    Feel::cout << "╠════════════╬" << repeat("═", size-15) << "╣" << std::endl;
-    Feel::cout << "║ Status     ║ ";
-    if (e == 0) Feel::cout << tc::green << "Done ✓  ";
-    else Feel::cout << tc::red << "Failed ✘";
-    Feel::cout << std::setw(size-19) << tc::reset << "║" << std::endl;
-    Feel::cout << "╚════════════╩" << repeat("═", size - 15) << "╝" << std::endl;
-#else
     Table summary;
     summary.add_row( { "feelpp_sync_case" } );
     summary( 0, 0 ).format().setFontAlign( Font::Align::center );
@@ -97,7 +83,6 @@ int sync(const std::string dir, const std::string login, const std::string serve
     data.add_row( { "Status", (e == 0) ? "\x1B[32mDone ✓\033[0m" : "\x1B[31mFailed ✘\033[0m" } );
     summary.add_row({data});
     cout << summary << std::endl;
-#endif
 
     return e;
 }
