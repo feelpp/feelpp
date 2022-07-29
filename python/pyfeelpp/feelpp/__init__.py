@@ -1,4 +1,5 @@
 import sys,time
+import json, re
 from ._feelpp import  *
 from ._core import *
 from ._alg import *
@@ -236,3 +237,17 @@ def create_box():
         gmsh.model.setPhysicalName(2, gamma_3, "Gamma_3")
     mshname = gmshGenerate(3, "box")
     return mshname, 1, 1.5, 1.5, 7
+
+
+def read_json(path):
+    file = open(path, 'r')
+    data =  file.read()
+    file.close()
+
+    clear_data = re.sub('//.*', '', data)
+    clear_data = re.sub('/\*([\s\S]*?)\*/', '', clear_data)
+
+    print(clear_data)
+
+    j = json.loads(clear_data)
+    return j
