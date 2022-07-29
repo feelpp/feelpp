@@ -329,8 +329,6 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
             
             beta = betas[mu]
 
-            uN = self.solveTime(mu, g, beta)
-
             Delta = self.computeOnlineError(mu, beta, g, computeEnergyNorm=True)
             Delta_tmp = Delta / self.EnNorm[-1]
 

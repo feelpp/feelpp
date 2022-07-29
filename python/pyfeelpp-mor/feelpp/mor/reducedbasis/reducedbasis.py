@@ -196,7 +196,7 @@ class reducedbasis():
 
 
     def getSolutions(self, mu, beta=None, k=-1, size=None):
-        """Return solution uN and output sN
+        """Return solution uN and output sN, from a parameter mu
 
         Args:
             mu (ParameterSpaceElement): parameter used
@@ -284,8 +284,8 @@ class reducedbasis():
 
         Args:
             mu (ParameterSpaceElement): parameter
-            precalc (dict, optional): Dict containing the values of betaA, betaF and uN if these values have already\
-                been calculated. Defaults to None.\
+            precalc (dict, optional): Dict containing the values of betaA, betaF and uN\
+                if these values have already been calculated. Defaults to None.\
                 If None is given, the quantities are calculated in the function
             size (int, optional): size of the sub-basis considered
 
@@ -337,8 +337,8 @@ class reducedbasis():
 
         Args:
             mu (ParameterSpaceElement): parameter used
-            precalc (dict, optional): Dict containing the values of betaA, betaF and uN if these values have already\
-                been calculated. Defaults to None.\
+            precalc (dict, optional): Dict containing the values of betaA, betaF and uN
+                if these values have already been calculated. Defaults to None.\
                 If None is given, the quantities are calculated in the function
             size (int, optional): size of the sub-basis considered
 
@@ -357,8 +357,8 @@ class reducedbasis():
 
         Args:
             mu (ParameterSpaceElement): parameter used
-            precalc (dict, optional): Dict containing the values of betaA, betaF and uN if these values have already\
-                been calculated. Defaults to None.\
+            precalc (dict, optional): Dict containing the values of betaA, betaF and uN\
+                if these values have already been calculated. Defaults to None.\
                 If None is given, the quantities are calculated in the function
             size (int, optional): size of the sub-basis considered
 
@@ -378,8 +378,8 @@ class reducedbasis():
                                                                     ^^^^^^^^^^
         Args:
             mu (ParameterSpaceElement): parameter used
-            precalc (dict, optional): Dict containing the values of betaA, betaF and uN if these values have already\
-                been calculated. Defaults to None.\
+            precalc (dict, optional): Dict containing the values of betaA, betaF and uN\
+                if these values have already been calculated. Defaults to None.\
                 If None is given, the quantities are calculated in the function
 
         Return:

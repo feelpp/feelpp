@@ -104,14 +104,18 @@ class reducedbasisTime(reducedbasis):
 
 
 
-    def computeOnlineError_k(self, mu, uN, uNm1, k, precalc=None):
+    def computeOnlineError_k(self, mu, ukm1, k, g, precalc=None):
         """Compute the online error SQUARED, from a parameter mu, at time k
 
         Args:
             mu (ParameterSpaceElement): parameter used
-            uk (np.ndarray): solution at time k (of size N)
-            ukm1 (np.ndarray): solution at time k-1
-            k (int): index of current temps
+            ukm1 (np.ndarray, optional): solution at time k-1
+            k (int): index of current time
+            g (function): right-hand side time-dependent function
+            precalc (dict, optional): Dict containing the values of betaA, betaF, betaM, uN and uNm1\
+                if these values have already been calculated. Defaults to None.\
+                If None is given, the quantities are calculated in the function
+
 
         Returns:
             float: ||hat{e}^k||^2
@@ -120,12 +124,17 @@ class reducedbasisTime(reducedbasis):
             beta_ = self.model.computeBetaQm(mu)
             betaA = beta_[0][0]
             betaF = beta_[1][0][0]
-            betaM = beta_[2]
-            A_mu = self.assembleAN(betaA)
-            F_mu = self.assembleFN(betaF)
-            M_mu = self.assembleMN(betaM)
+            betaM = beta_[2][0]
+            ANmu = self.assembleAN(betaA)
+            FNmu = self.assembleFN(betaF)
+            MNmu = np.array(self.assembleMN(betaM))
 
-            uN = np.linalg.solve(A_mu, F_mu) # ?
+            uNm1 = ukm1
+
+            mat = MNmu + self.dt * ANmu
+            rhs = g(k * self.dt) * self.dt * FNmu + MNmu @ uNm1
+
+            uN = np.linalg.solve(mat, rhs)
         else:
             betaA = precalc["betaA"]
             betaF = precalc["betaF"]
@@ -164,7 +173,7 @@ class reducedbasisTime(reducedbasis):
         betaM = beta[2][0]
         ANmu = self.assembleAN(betaA)
         FNmu = self.assembleFN(betaF)
-        MNmu = self.assembleMN(betaM)
+        MNmu = np.array(self.assembleMN(betaM))
         precalc = {
             "betaA": betaA,
             "betaF": betaF,
@@ -188,7 +197,7 @@ class reducedbasisTime(reducedbasis):
             u_tmp = sl.lu_solve(matLu, g(k * self.dt) * self.dt * FNmu + MNmu @ u )
             precalc["uN"] = u_tmp
             precalc["uNm1"] = u
-            self.err[k-1] = self.computeOnlineError_k(mu, u_tmp, u, k-1, precalc=precalc)
+            self.err[k-1] = self.computeOnlineError_k(mu, u, k, g, precalc=precalc)
             u = np.array(u_tmp).flatten()
 
             self.DeltaN[k-1] = alpm1 * np.sqrt(self.dt * self.err[:k].sum())
