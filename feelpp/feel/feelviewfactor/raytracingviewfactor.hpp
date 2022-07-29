@@ -15,7 +15,8 @@
 
 namespace Feel {
 
-class RayTracingViewFactor : public ViewFactorBase
+template <typename MeshType>
+class RayTracingViewFactor : public ViewFactorBase<MeshType>
 {
 public:
     using value_type = double;

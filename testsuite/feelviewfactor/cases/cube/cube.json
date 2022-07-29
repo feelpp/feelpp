@@ -1,0 +1,8 @@
+{
+    "viewfactor": {
+        "type": "UnobstructedPlanar",
+        "markers":["Gamma_6","Gamma_7","Gamma_8","Gamma_9","Gamma_10","Gamma_11"],
+        "description": "The viewfactor of a closed cavity."
+    }
+    
+}
