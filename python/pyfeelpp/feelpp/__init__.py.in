@@ -1,5 +1,6 @@
 import sys
 import os
+import json, re
 petsc_dir = '@FEELPP_PETSC_DIR@' or '/usr/lib/petsc'
 petsc_dir = os.path.join(os.getenv('PETSC_DIR')
                          or petsc_dir, 'lib/python3/dist-packages')
@@ -259,3 +260,18 @@ def create_box(filename="box"):
         gmsh.model.setPhysicalName(2, gamma_3, "Gamma_3")
     mshname = gmshGenerate(3, filename)
     return mshname, 3, 1, 1.5, 1.5, 7
+
+
+
+def read_json(path):
+    file = open(path, 'r')
+    data =  file.read()
+    file.close()
+
+    clear_data = re.sub('//.*', '', data)
+    clear_data = re.sub('/\*([\s\S]*?)\*/', '', clear_data)
+
+    print(clear_data)
+
+    j = json.loads(clear_data)
+    return j
