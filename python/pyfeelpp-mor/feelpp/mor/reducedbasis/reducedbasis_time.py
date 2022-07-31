@@ -54,7 +54,7 @@ class reducedbasisTime(reducedbasis):
             beta (list): list of parameters betaM
 
         Returns:
-            PETSc.Mat: assembled matrix
+            np.ndarray: assembled matrix
         """
         assert( len(beta) == self.Qm ), f"Number of param ({len(beta)}) should be {self.Qm}"
 
@@ -81,7 +81,7 @@ class reducedbasisTime(reducedbasis):
             beta = self.model.computeBetaQm(mu)
         ANmu = self.assembleAN(beta[0][0])
         FNmu = self.assembleFN(beta[1][0][0])
-        MNmu = np.array(self.assembleMN(beta[2][0]))
+        MNmu = self.assembleMN(beta[2][0])
 
         mat = MNmu + self.dt * ANmu
         matLu = sl.lu_factor(mat)
@@ -127,7 +127,7 @@ class reducedbasisTime(reducedbasis):
             betaM = beta_[2][0]
             ANmu = self.assembleAN(betaA)
             FNmu = self.assembleFN(betaF)
-            MNmu = np.array(self.assembleMN(betaM))
+            MNmu = self.assembleMN(betaM)
 
             uNm1 = ukm1
 
@@ -173,7 +173,7 @@ class reducedbasisTime(reducedbasis):
         betaM = beta[2][0]
         ANmu = self.assembleAN(betaA)
         FNmu = self.assembleFN(betaF)
-        MNmu = np.array(self.assembleMN(betaM))
+        MNmu = self.assembleMN(betaM)
         precalc = {
             "betaA": betaA,
             "betaF": betaF,
