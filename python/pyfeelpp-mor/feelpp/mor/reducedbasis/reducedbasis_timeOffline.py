@@ -3,6 +3,11 @@ from .reducedbasisOffline import *
 import scipy.linalg as sl
 from tqdm import tqdm
 
+def ric(val, N):
+    total = val.sum()
+    res = val[:N].sum()
+    return res / total
+
 class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
     """
     Class for the offline part of the reduced basis method for the time-dependent problem
@@ -244,7 +249,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
         u.set(0)     # initial condition TODO
 
         self.Z_to_matrix()
-        ZT = self.Z_matrix.duplicate()
+        ZT = self.Z_matrix.copy()
         ZT = ZT.transpose()
         ZZTX = self.Z_matrix * ZT * self.scal
 
@@ -302,6 +307,9 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
         # Compute basis using delta
         else:
             sum_eigen = values.sum()
+
+            # Assert that the 3 largest eigenvalues have more than 90% of the energy
+            assert(ric(values[ind], 3) > 0.9)
 
             Nm = 0
             sum_delta = 0
