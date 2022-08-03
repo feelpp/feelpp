@@ -144,9 +144,9 @@ class reducedbasisTime(reducedbasis):
 
         diff = ((uN.flatten() - uNm1.flatten()) / self.dt).T
 
-        s1 = betaF @ self.FF[k] @ betaF
-        s2 = np.einsum('p,r,n,prn', betaF, betaM, diff, self.FM[k])
-        s3 = np.einsum('p,q,n,pqn', betaF, betaA, uN, self.FL[k])
+        s1 = betaF @ self.FF[k-1] @ betaF
+        s2 = np.einsum('p,r,n,prn', betaF, betaM, diff, self.FM[k-1])
+        s3 = np.einsum('p,q,n,pqn', betaF, betaA, uN, self.FL[k-1])
         s4 = np.einsum('r,p,n,m,rnpm', betaM, betaA, diff, uN, self.ML)
         s5 = np.einsum('r,s,n,m,rnsm', betaM, betaM, diff, diff, self.MM)
         s6 = np.einsum('q,r,n,m,qnrm', betaA, betaA, uN, uN, self.LL)
@@ -197,7 +197,7 @@ class reducedbasisTime(reducedbasis):
             u_tmp = sl.lu_solve(matLu, g(k * self.dt) * self.dt * FNmu + MNmu @ u )
             precalc["uN"] = u_tmp
             precalc["uNm1"] = u
-            self.err[k-1] = self.computeOnlineError_k(mu, u, k, g, precalc=precalc)
+            self.err[k-1] = self.computeOnlineError_k(mu, u, k, g, precalc=precalc) # NB e_k is stored in err[k-1]
             u = np.array(u_tmp).flatten()
 
             self.DeltaN[k-1] = alpm1 * np.sqrt(self.dt * self.err[:k].sum())
