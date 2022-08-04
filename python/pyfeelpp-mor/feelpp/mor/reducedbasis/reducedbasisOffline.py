@@ -100,7 +100,7 @@ class reducedbasisOffline(reducedbasis):
 
             self.alphaMubar = E.getEigenvalue(0).real
             if self.worldComm.isMasterRank():
-                print(f"[reducedbasis] Constant of continuity : {self.alphaMubar}")
+                print(f"[reducedbasis] Constant of coercivity : {self.alphaMubar}")
         
 
             betaA_bar_np = np.array(self.betaA_bar[0])
@@ -126,7 +126,7 @@ class reducedbasisOffline(reducedbasis):
 
             self.gammaMubar = E.getEigenvalue(0).real
             if self.worldComm.isMasterRank():
-                print(f"[reducedbasis] Constant of coercivity : {self.gammaMubar}")
+                print(f"[reducedbasis] Constant of continuity : {self.gammaMubar}")
 
 
             def gammaUB(mu):

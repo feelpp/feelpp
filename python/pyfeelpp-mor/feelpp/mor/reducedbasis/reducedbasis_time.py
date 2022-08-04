@@ -162,7 +162,7 @@ class reducedbasisTime(reducedbasis):
             mu (ParameterSpaceElement): parameter used
             beta (list) : coefficients of the decomposition
             g (function): right-hand side time-dependent function
-            computeEnergyNorm (bool): computes the energy normsuring the resolution (stroed in self.EnNorm).\
+            computeEnergyNorm (bool): computes the energy normsuring the resolution (stored in self.EnNorm).\
                 Defaults to False
 
         Returns:
