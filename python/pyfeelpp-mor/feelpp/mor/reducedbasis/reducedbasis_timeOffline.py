@@ -67,10 +67,10 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
         self.MNr = []
         for _ in range(self.Qm):
             self.MNr.append(np.zeros((self.N, self.N)))
-        for i,u in enumerate(self.Z):
-            for j,v in enumerate(self.Z):
+        for i,ksi in enumerate(self.Z):
+            for j,ksi_ in enumerate(self.Z):
                 for r in range(self.Qm):
-                    self.MNr[r][i,j] = v.dot( self.Mr[r] * u)
+                    self.MNr[r][i,j] = ksi_.dot( self.Mr[r] * ksi)
 
 
     def computeOfflineError(self, g):
@@ -86,7 +86,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
 
         pc = self.ksp.getPC()
         pc.setType(self.PC_TYPE)
-        self.ksp.setOperators(self.Abar)
+        self.ksp.setOperators(self.scal)
         sol = self.Fq[0].duplicate()
 
         for k in range(self.K):
@@ -99,7 +99,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
         for n, ksi in enumerate(self.Z):
             for r, Mr in enumerate(self.Mr):
                 self.reshist = {}
-                self.ksp.solve( Mr * ksi, sol)
+                self.ksp.solve( -Mr * ksi, sol)
                 self.Mnr[n, r] = sol.copy()
             
         self.FF = np.zeros((self.K, self.Qf, self.Qf))
@@ -139,7 +139,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
 
         pc = self.ksp.getPC()
         pc.setType(self.PC_TYPE)
-        self.ksp.setOperators(self.Abar)
+        self.ksp.setOperators(self.scal)
 
         for r, Mr in enumerate(self.Mr):
             sol = self.Fq[0].duplicate()
@@ -218,7 +218,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
     """Functions dealing with the POD-greedy algorithm
     """
 
-    def computeCorrelationMatrix(self, mu, g, to_numpy=True):
+    def computeCorrelationMatrix(self, mu, g, to_numpy=True, proj=True):
         """Compute the correlation matrix for POD-greedy algorithm
 
         Args:
@@ -248,10 +248,11 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
         u = self.Fq[0].duplicate()
         u.set(0)     # initial condition TODO
 
-        self.Z_to_matrix()
-        ZT = self.Z_matrix.copy()
-        ZT = ZT.transpose()
-        ZZTX = self.Z_matrix * ZT * self.scal
+        if proj:
+            self.Z_to_matrix()
+            ZT = self.Z_matrix.copy()
+            ZT = ZT.transpose()
+            ZZTX = self.Z_matrix * ZT * self.scal
 
         # build the matrix of error projections e^k(mu) = u^k(mu) - Z * ZT * scal * u^k(mu)
         for k in range(self.K):
@@ -262,7 +263,10 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
             sol.set(0)
             self.ksp.solve(rhs, sol)
             
-            eK[:,k] = sol# - ZZTX * sol
+            if proj:
+                eK[:,k] = sol - ZZTX * sol
+            else:
+                eK[:,k] = sol
             u = sol.copy()
             uk.append(sol.copy())
         
@@ -277,7 +281,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
             return C, uk
 
 
-    def computePODMode(self, mu, g, R=1, delta=None):
+    def computePODMode(self, mu, g, R=1, delta=None, proj=True):
         """Compute the POD modes for a given parameter
 
         Args:
@@ -289,7 +293,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
         Returns:
             list: list of POD modes
         """
-        C, uk = self.computeCorrelationMatrix(mu, g)
+        C, uk = self.computeCorrelationMatrix(mu, g, proj=proj)
         values, vector = sl.eigh(C)
         ind = np.argsort(values)[::-1]
         res = []
@@ -304,7 +308,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
                     POD += float(psi_max[k]) * uk[k]
                 POD = POD * 1./np.sqrt(self.K)
                 res.append(POD)
-        # Compute basis using delta
+        # Compute basis using ric
         else:
             sum_eigen = values.sum()
 
@@ -369,21 +373,28 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
         for i,mu in enumerate(tqdm(mu_train, desc=f"[reducedBasis] Computing betas", ascii=False, ncols=120)):
             betas[mu] = self.model.computeBetaQm(mu)
 
-        self.computeOfflineReducedBasis([mu0])
+        #self.computeOfflineReducedBasis([mu0])
+        #self.computeOfflineError(g)
         self.computeOfflineErrorRhs()
-        self.computeOfflineError(g)
-
+        
         while Delta_max > eps_tol:
 
             SN.append(mu_star)
 
             # POD(t) step
-            POD = self.computePODMode(mu_star, g, R=R, delta=delta)
-            for ksi in POD:
-                self.Z.append(ksi)
-                self.expandOffline()
-                self.N += 1
-
+            if self.N == 0:
+                POD = self.computePODMode(mu_star, g, R=R, delta=delta, proj=False)
+                for ksi in POD:
+                    self.Z.append(ksi)
+                    self.N += 1
+                self.computeOfflineError(g)
+            else:
+                POD = self.computePODMode(mu_star, g, R=R, delta=delta, proj=True)
+                for ksi in POD:
+                    self.Z.append(ksi)
+                    self.expandOffline()
+                    self.N += 1
+            
             self.generateANq()
             self.generateFNp()
             self.generateLkNp()

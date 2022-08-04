@@ -110,7 +110,7 @@ class reducedbasis():
         self.gammaUB = gammaUB
         self.gammaUB_ = gammaUB_
 
-        self.isInitilized = False
+        self.isInitialized = False
         self.mubar = None
 
         if self.worldComm.isMasterRank():
@@ -333,7 +333,7 @@ class reducedbasis():
 
 
     def computeEnergyBound(self, mu, precalc=None, size=None):
-        """compute ernergy bound
+        """compute energy bound
 
         Args:
             mu (ParameterSpaceElement): parameter used
@@ -350,7 +350,7 @@ class reducedbasis():
             alp = self.alphaLB(mu)
         else:
             alp = self.alphaLB_(precalc["betaA"])
-        return normHatE / np.sqrt(alp)
+        return np.sqrt(normHatE / alp)
 
     def computeEffectivity(self, mu, precalc=None, size=None):
         """compute effectivity = Delta_N / ||e(mu)|_X
