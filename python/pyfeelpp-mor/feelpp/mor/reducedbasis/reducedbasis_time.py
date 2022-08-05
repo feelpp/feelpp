@@ -58,8 +58,8 @@ class reducedbasisTime(reducedbasis):
         """
         assert( len(beta) == self.Qm ), f"Number of param ({len(beta)}) should be {self.Qm}"
 
-        # MN = np.einsum('r,rnm->nm', beta, self.MNr)
-        return self.MNr[0]
+        MN = np.einsum('r,rnm->nm', beta, self.MNr)
+        return MN
 
 
     """Solve for a given parameter
@@ -125,6 +125,7 @@ class reducedbasisTime(reducedbasis):
             betaA = beta_[0][0]
             betaF = beta_[1][0][0]
             betaM = beta_[2][0]
+            assert betaM == [1]
             ANmu = self.assembleAN(betaA)
             FNmu = self.assembleFN(betaF)
             MNmu = self.assembleMN(betaM)
@@ -171,6 +172,7 @@ class reducedbasisTime(reducedbasis):
         betaA = beta[0][0]
         betaF = beta[1][0][0]
         betaM = beta[2][0]
+        assert betaM == [1]
         ANmu = self.assembleAN(betaA)
         FNmu = self.assembleFN(betaF)
         MNmu = self.assembleMN(betaM)

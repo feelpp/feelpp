@@ -64,13 +64,13 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
     def generateMNr(self) -> None:
         """Generate the reduced matrices MNr
         """
-        self.MNr = []
-        for _ in range(self.Qm):
-            self.MNr.append(np.zeros((self.N, self.N)))
+        if self.Qm > 1:
+            warnings.warn("Qm should have a decomposition of size 1")
+        self.MNr = np.zeros((self.Qm, self.N, self.N))
         for i, ksi in enumerate(self.Z):
             for j, ksi_ in enumerate(self.Z):
                 for r in range(self.Qm):
-                    self.MNr[r][i,j] = ksi_.dot( self.Mr[r] * ksi)
+                    self.MNr[r,i,j] = ksi_.dot( self.Mr[r] * ksi)
 
 
     def computeOfflineError(self, g):
@@ -324,7 +324,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
                 for k in range(self.K):
                     POD += float(psi_max[k]) * uk[k]
                 POD = POD #* 1./np.sqrt(self.K)
-                res.append(POD)
+                res.append(POD.copy())
                 sum_delta += values[ind[Nm]]
                 Nm += 1
 
