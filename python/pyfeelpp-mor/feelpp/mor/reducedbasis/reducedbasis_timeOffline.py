@@ -67,8 +67,8 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
         self.MNr = []
         for _ in range(self.Qm):
             self.MNr.append(np.zeros((self.N, self.N)))
-        for i,ksi in enumerate(self.Z):
-            for j,ksi_ in enumerate(self.Z):
+        for i, ksi in enumerate(self.Z):
+            for j, ksi_ in enumerate(self.Z):
                 for r in range(self.Qm):
                     self.MNr[r][i,j] = ksi_.dot( self.Mr[r] * ksi)
 
@@ -158,7 +158,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
             for q in range(self.Qa):
                 self.ML[r, -1, q, -1] = self.scalarX(self.Lnq[self.N,q], self.Mnr[self.N,r])
             for r_ in range(self.Qm):
-                for n in range(self.N):
+                for n in range(self.N+1):
                     self.MM[r,n,r_,-1] = self.scalarX(self.Mnr[n,r], self.Mnr[self.N,r_])
                     self.MM[r,-1,r_,n] = self.scalarX(self.Mnr[self.N,r], self.Mnr[n,r_])
 
@@ -269,7 +269,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
                 eK[:,k] = sol
             u = sol.copy()
             uk.append(sol.copy())
-        
+
         eK.assemble()
         eKT = eK.copy()
         eKT = eKT.transpose()
@@ -319,11 +319,11 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
             sum_delta = 0
             while sum_delta < delta * sum_eigen:
                 psi_max = vector[ind[Nm]]
-                POD = self.Z[0].duplicate()
+                POD = self.Fq[0].duplicate()
                 POD.set(0)
                 for k in range(self.K):
                     POD += float(psi_max[k]) * uk[k]
-                POD = POD * 1./np.sqrt(self.K)
+                POD = POD #* 1./np.sqrt(self.K)
                 res.append(POD)
                 sum_delta += values[ind[Nm]]
                 Nm += 1
@@ -365,6 +365,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
             TO BE SPECIFIED
         """
         SN = []
+        self.Z = []
 
         mu_star = mu0
         Delta_max = 1 + eps_tol
@@ -419,11 +420,11 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
             tuple: results
         """
 
-        warnings.warn("reducedbasis_time::reducedbasisTimeOffline::solveTimeForStudy has not yet been corrected or tested")
         beta = self.model.computeBetaQm(mu)
+
         ANmu = self.assembleAN(beta[0][0])
         FNmu = self.assembleFN(beta[1][0][0])
-        MNmu = np.array(self.assembleMN(beta[2][0]))
+        MNmu = self.assembleMN(beta[2][0])
 
         Amu = self.assembleA(beta[0][0])
         Fmu = self.assembleF(beta[1][0][0])
@@ -437,6 +438,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
 
         uN = np.zeros(self.N)      # initial condition TODO
         u = self.Fq[0].duplicate() # initial condition TODO
+        u.set(0)
 
         ones = self.Fq[0].duplicate()
         ones.set(1)
@@ -479,7 +481,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
             
             tmpN[k] = uplus.dot( Amu * uplus )
             tmp[k] = u.dot( Amu * u )
-            tmpDiff[k] = diff.dot(Amu * diff)
+            tmpDiff[k] = diff.dot( Amu * diff )
 
             normN.append( np.sqrt(uplus.dot(Mmu * uplus) + self.dt * tmpN.sum()) )
             norm.append( np.sqrt(u.dot(Mmu * u) + self.dt * tmp.sum()) )
