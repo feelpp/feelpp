@@ -409,12 +409,13 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
             mu_train.pop(i_star)
             print(f"[reducedbasis] POD-greedy algorithm, N={self.N}, Δ={Delta} (tol={eps_tol})")
 
-    def solveTimeForStudy(self, mu, g):
+    def solveTimeForStudy(self, mu, g, k=-1):
         """Compute both RB and FE solutions for a given parameter and a given time-dependent function
 
         Args:
             mu (parameterSpaceElement): parameter used
             g (function): right-hand side time-dependent function
+            k (int, optional): index of the output to be computed, if -1 the compliant output is computed. Default to -1
 
         Returns:
             tuple: results
@@ -440,9 +441,15 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
         u = self.Fq[0].duplicate() # initial condition TODO
         u.set(0)
 
-        ones = self.Fq[0].duplicate()
-        ones.set(1)
-        onesN = np.ones(self.N)
+        if k == -1:
+            l = Fmu
+            lN = FNmu
+        else:
+            if 0 <= k and k < self.N_output:
+                l = self.assembleLk(k, beta[1][k+1][0])
+                lN = self.assembleLkN(k, beta[1][k+1][0])
+            else:
+                raise ValueError(f"Output {k} not valid")
 
         t = []
         sN = []
@@ -472,8 +479,8 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
             self.ksp.solve(rhs, sol)
             u = sol.copy()
 
-            sN.append(onesN @ MNmu @ uN)
-            s.append(ones.dot(Mmu * u))
+            sN.append( uN @ lN)
+            s.append( u.dot(l) )
             sDiff.append(np.abs(s[-1] - sN[-1]))
 
             uplus = self.projFE(uN)

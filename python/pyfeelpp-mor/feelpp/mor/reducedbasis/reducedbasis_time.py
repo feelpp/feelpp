@@ -93,6 +93,45 @@ class reducedbasisTime(reducedbasis):
         return u
 
 
+    def solveTimeOutput(self, mu, g, k=-1, beta=None) -> np.ndarray:
+        """Solve the time-dependent equation for a given parameter and time-dependent function
+            and return the value of output over time
+
+        Args:
+            mu (ParameterSpaceElement): parameter used
+            g (function): right-hand side time-dependent function
+            k (int, optional): index of the output to be computed, if -1 the compliant output is computed. Default to -1
+            beta (list, optional) : coefficients of the decomposition, if they have already been computed
+
+        Returns:
+            np.ndarray: array s where s[k] = output sN(µ) at time t = k*dt
+        """
+        if beta is None:
+            beta = self.model.computeBetaQm(mu)
+        ANmu = self.assembleAN(beta[0][0])
+        FNmu = self.assembleFN(beta[1][0][0])
+        MNmu = self.assembleMN(beta[2][0])
+
+        mat = MNmu + self.dt * ANmu
+        matLu = sl.lu_factor(mat)
+        u = np.zeros(self.N)    # initial solution TODO
+        s = np.zeros(self.K+1)
+
+        if k == -1:
+            lN = FNmu
+        else:
+            if 0 <= k and k < self.N_output:
+                lN = self.assembleLkN(k, beta[1][k+1][0])
+            else:
+                raise ValueError(f"Output {k} not valid")
+
+        for k in range(1, self.K):
+            sol = sl.lu_solve(matLu, g(k * self.dt) * self.dt * FNmu + MNmu @ u)
+            u = sol.copy()
+            s[k+1] = u @ lN
+
+        return s
+
 
     """
     Error handling

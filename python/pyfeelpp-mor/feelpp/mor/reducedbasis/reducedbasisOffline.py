@@ -477,6 +477,8 @@ class reducedbasisOffline(reducedbasis):
         else:
             if 0 <= k and k < self.N_output:
                 l = self.assembleLk(k, beta[1][k+1][0])
+            else:
+                raise ValueError(f"Output {k} not valid")
 
         return sol, sol.dot(l)
 
