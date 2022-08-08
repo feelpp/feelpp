@@ -49,7 +49,6 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
         #     M += self.Mr[r] * beta[r]
         return self.Mr[0]
 
-
     def computeOfflineReducedBasis(self, mus, orth=True):
         """Compute the reduced basis from a set of parameters
 
@@ -60,7 +59,6 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
         super().computeOfflineReducedBasis(mus, orth=orth)
         self.generateMNr()
 
-    
     def generateMNr(self) -> None:
         """Generate the reduced matrices MNr
         """
@@ -95,13 +93,13 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
                 self.reshist = {}
                 self.ksp.solve(rhs, sol)
                 self.Fkp[k, p] = sol.copy()
-        
+
         for n, ksi in enumerate(self.Z):
             for r, Mr in enumerate(self.Mr):
                 self.reshist = {}
                 self.ksp.solve( -Mr * ksi, sol)
                 self.Mnr[n, r] = sol.copy()
-            
+
         self.FF = np.zeros((self.K, self.Qf, self.Qf))
         self.FM = np.zeros((self.K, self.Qf, self.Qm, self.N))
         self.FL = np.zeros((self.K, self.Qf, self.Qa, self.N))
@@ -112,13 +110,13 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
             for p in range(self.Qf):
                 for p_ in range(self.Qf):
                     self.FF[k, p, p_] = self.scalarX(self.Fkp[k,p], self.Fkp[k,p_])
-            
+
                 for n in range(self.N):
                     for r in range(self.Qm):
                         self.FM[k,p,r,n] = self.scalarX(self.Fkp[k,p], self.Mnr[n,r])
                     for q in range(self.Qa):
                         self.FL[k,p,q,n] = self.scalarX(self.Lnq[n,q], self.Fkp[k,p])
-        
+
         for n in range(self.N):
             for r in range(self.Qm):
                 for n_ in range(self.N):
@@ -146,14 +144,14 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
             self.reshist = {}
             self.ksp.solve(-Mr*self.Z[-1], sol)
             self.Mnr[self.N, r] = sol.copy()
-        
+
         for k in range(self.K):
             for p in range(self.Qf):
                 for r in range(self.Qm):
                     self.FM[k,p,r,-1] = self.scalarX(self.Fkp[k,p], self.Mnr[self.N,r])
                 for q in range(self.Qa):
                     self.FL[k,p,q,-1] = self.scalarX(self.Lnq[self.N,q], self.Fkp[k,p])
-        
+
         for r in range(self.Qm):
             for q in range(self.Qa):
                 self.ML[r, -1, q, -1] = self.scalarX(self.Lnq[self.N,q], self.Mnr[self.N,r])
@@ -162,6 +160,69 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
                     self.MM[r,n,r_,-1] = self.scalarX(self.Mnr[n,r], self.Mnr[self.N,r_])
                     self.MM[r,-1,r_,n] = self.scalarX(self.Mnr[self.N,r], self.Mnr[n,r_])
 
+    def computeDirectError(self, mu, beta, g, computeEnergyNorm=False):
+        """Compute the error bound using the direct method
+
+        Args:
+            mu (float): regularization parameter
+            g (function): right-hand side time-dependent function
+        """
+        Amu = self.assembleA(beta[0][0])
+        Fmu = self.assembleF(beta[1][0][0])
+        Mmu = self.assembleM(beta[2][0])
+
+        ANmu = self.assembleAN(beta[0][0])
+        FNmu = self.assembleFN(beta[1][0][0])
+        MNmu = self.assembleMN(beta[2][0])
+
+        AZ = Amu * self.Z_matrix
+        MZ = Mmu * self.Z_matrix
+        matN = MNmu + self.dt * ANmu
+        matLu = sl.lu_factor(matN)
+        alpm1 = 1 / np.sqrt(self.alphaLB(mu))
+
+        uN = np.zeros(self.N)
+        vN = PETSc.Vec().create()
+        vN.setSizes(self.N)
+        vN.setFromOptions()
+        vN.setUp()
+        vN_tmp = PETSc.Vec().create()
+        vN_tmp.setSizes(self.N)
+        vN_tmp.setFromOptions()
+        vN_tmp.setUp()
+
+
+        errDir = np.zeros(self.K)
+        DeltaDir = np.zeros(self.K)
+        aNorm = np.zeros(self.K)
+
+        for k in range(1, self.K+1):
+            gk = g(k * self.dt)
+            uN_tmp = sl.lu_solve(matLu, gk * self.dt * FNmu + MNmu @ uN)
+
+            self.ksp.setOperators(self.Abar)
+            self.ksp.setConvergenceHistory()
+            sol = self.Fq[0].duplicate()
+            vN.setValues(range(self.N), uN)
+            vN_tmp.setValues(range(self.N), uN_tmp)
+
+            t1 = float(gk) * Fmu
+            v2 = t1.duplicate()
+            MZ.mult( (vN_tmp-vN) / self.dt, v2) # v2 = MZ * (uN_tmp-uN) / self.dt
+            v3 = t1.duplicate()
+            AZ.mult(vN_tmp, v3)                 # v3 = AZ * uN_tmp
+
+            self.ksp.solve(t1 - v2 - v3, sol)
+            uN = uN_tmp.copy()
+
+            aNorm[k-1] = uN.T @ ANmu @ uN
+            errDir[k-1] = self.scalarX(sol, sol)
+            DeltaDir[k-1] = alpm1 * np.sqrt(self.dt * errDir[:k].sum())
+
+            if computeEnergyNorm:
+                self.EnNorm[k-1] = np.sqrt(uN.T @ MNmu @ uN + self.dt * aNorm.sum())
+
+        return DeltaDir[-1]
 
     """
     Offline generation of the basis
@@ -237,7 +298,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
         uk = []
 
         betaA, betaF, betaM = self.model.computeBetaQm(mu)
-            
+
         Amu = self.assembleA(betaA[0])
         Fmu = self.assembleF(betaF[0][0])
         Mmu = self.assembleM(betaM[0])
@@ -262,11 +323,12 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
             sol = self.Fq[0].duplicate()
             sol.set(0)
             self.ksp.solve(rhs, sol)
-            
+
             if proj:
                 eK[:,k] = sol - ZZTX * sol
             else:
                 eK[:,k] = sol
+
             u = sol.copy()
             uk.append(sol.copy())
 
@@ -302,7 +364,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
         if delta is None:
             for r in range(R):
                 psi_max = vector[ind[r]]
-                POD = self.Z[0].duplicate()
+                POD = self.Fq[0].duplicate()
                 POD.set(0)
                 for k in range(self.K):
                     POD += float(psi_max[k]) * uk[k]
@@ -334,14 +396,26 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
         return res
 
     def greedyStep(self, xi_train, betas, g):
+        """Run the greedy step to select the parameter
+
+        Args:
+            xi_train (list): list of parameters used for training
+            betas (dict): dict containing the beta matrices for each parameter
+            g (function): right-hand side time-dependent function
+
+        Returns:
+            tuple: Delta_max maximal error bound, i_max index of the parameter in xi_train, mu_max parameter selected
+        """
         mu_max = None
         i_max = 0
         Delta_max = -np.float('inf')
+        self.Z_to_matrix()
         for i,mu in enumerate(tqdm(xi_train,desc=f"[reducedBasis] POD-greedy, greedy step", ascii=False, ncols=120)):
-            
+
             beta = betas[mu]
 
-            Delta = self.computeOnlineError(mu, beta, g, computeEnergyNorm=True)
+            # Delta = self.computeOnlineError(mu, beta, g, computeEnergyNorm=True)
+            Delta = self.computeDirectError(mu, beta, g, computeEnergyNorm=True)   # /!\ Z_to_matirx must be called before this function
             Delta_tmp = Delta / self.EnNorm[-1]
 
             if Delta_tmp > Delta_max:
@@ -350,7 +424,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
                 Delta_max = Delta_tmp
         return Delta_max, i_max, mu_max
 
-    def generateBasisPODGreedy(self, mu0, mu_train, g, eps_tol=1e-6, R=1, delta=0.9):
+    def generateBasisPODGreedy(self, mu0, mu_train, g, eps_tol=1e-6, R=1, delta=None, doNotUseGreedy=False):
         """Run POD(t)-Greedy(µ) algorithm
 
         Args:
@@ -374,10 +448,8 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
         for i,mu in enumerate(tqdm(mu_train, desc=f"[reducedBasis] Computing betas", ascii=False, ncols=120)):
             betas[mu] = self.model.computeBetaQm(mu)
 
-        #self.computeOfflineReducedBasis([mu0])
-        #self.computeOfflineError(g)
         self.computeOfflineErrorRhs()
-        
+
         while Delta_max > eps_tol:
 
             SN.append(mu_star)
@@ -395,15 +467,20 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
                     self.Z.append(ksi)
                     self.expandOffline()
                     self.N += 1
-            
+
             self.generateANq()
             self.generateFNp()
             self.generateLkNp()
             self.generateMNr()
 
 
-            # Greedy(µ) step
-            Delta_max, i_star, mu_star = self.greedyStep(mu_train, betas, g)
+            if doNotUseGreedy:
+                i_star = np.random.randint(len(mu_train))
+                mu_star = mu_train[i_star]
+                Delta_max = Delta_max / 10
+            else:
+                # Greedy(µ) step
+                Delta_max, i_star, mu_star = self.greedyStep(mu_train, betas, g)
 
             Delta = Delta_max
             mu_train.pop(i_star)
@@ -485,7 +562,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
 
             uplus = self.projFE(uN)
             diff = u - uplus
-            
+
             tmpN[k] = uplus.dot( Amu * uplus )
             tmp[k] = u.dot( Amu * u )
             tmpDiff[k] = diff.dot( Amu * diff )
