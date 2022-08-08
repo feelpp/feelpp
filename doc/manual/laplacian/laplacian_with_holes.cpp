@@ -84,7 +84,7 @@ namespace Feel
    second vector to perform the scalar product.
 
    To introduce the homogeneous dirichlet conditions on the boundary, we use the
-   function \c on(). Once the variationnal formulation and the boundary conditions
+   function \c on(). Once the variational formulation and the boundary conditions
    are set, we call the solver with \c solve().
 
    \section LaplacianWithHoles_Results Results

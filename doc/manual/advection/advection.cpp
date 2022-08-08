@@ -140,7 +140,7 @@ createRing( int Dim, int Order, double meshSize, std::string const& convex )
 }
 
 /**
- * Advection Solver using discontinous approximation spaces
+ * Advection Solver using discontinuous approximation spaces
  *
  * solve \f$ -\beta\cdot\nabla u + \mu u = f\f$ on \f$\Omega\f$ and \f$u= g\f$ on \f$\Gamma_{in}\f$
  */
