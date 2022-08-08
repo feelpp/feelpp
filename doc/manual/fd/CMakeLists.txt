@@ -25,6 +25,6 @@ set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
 include_directories(./)
 
-# use the --test option to make sure that in ctest the executation takes only a short time
+# use the --test option to make sure that in ctest the execution takes only a short time
 feelpp_add_application(penalisation2 SRCS penalisation2.cpp GEO mesh_2d.geo CFG penalisation2.cfg LABELS doc TEST --test=1)
 feelpp_add_application(penalisation3 SRCS penalisation3.cpp GEO mesh_3d.geo CFG penalisation3.cfg LABELS doc TEST --test=1)
