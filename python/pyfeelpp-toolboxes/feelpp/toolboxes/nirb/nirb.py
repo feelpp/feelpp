@@ -82,18 +82,18 @@ def assembleToolbox(tb, mu):
 
 
 
-def createInterpolator(image_tb,domain_tb):
+def createInterpolator(image_tb, domain_tb):
     """Create an interpolator between two toolboxes
     
     Args:
-        source (Toolbox): coarse toolbox
-        image (Toolbox): fine toolbox
+        image_tb (Toolbox): image toolbox
+        domain_tb (Toolbox): source toolbox
 
     Returns:
         OperatorInterpolation: interpolator object
     """
     Vh_image = image_tb.spaceTemperature()
     Vh_domain = domain_tb.spaceTemperature()
-    interpolator = fi.interpolator(domain = Vh_domain, image = Vh_image, range = image_tb.rangeMeshElements())
+    interpolator = fi.interpolator(domain = Vh_image, image = Vh_domain, range = image_tb.rangeMeshElements())
     return interpolator
 
