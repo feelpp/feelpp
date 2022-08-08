@@ -291,7 +291,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
             np.ndarray (or PETSc.Mat): Correlation matrix C(mu)
         """
         eK = PETSc.Mat().create()
-        eK.setSizes([self.NN, self.K])
+        eK.setSizes((self.NN, self.K))
         eK.setFromOptions()
         eK.setUp()
 
@@ -309,15 +309,14 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
         u = self.Fq[0].duplicate()
         u.set(0)     # initial condition TODO
 
+        # build the matrix of error projections e^k(mu) = u^k(mu) - Z * ZT * scal * u^k(mu)
         if proj:
             self.Z_to_matrix()
             ZT = self.Z_matrix.copy()
             ZT = ZT.transpose()
             ZZTX = self.Z_matrix * ZT * self.scal
 
-        # build the matrix of error projections e^k(mu) = u^k(mu) - Z * ZT * scal * u^k(mu)
         for k in range(self.K):
-
             rhs = g((k+1)*self.dt) * self.dt * Fmu + Mmu * u
             self.ksp.setConvergenceHistory()
             sol = self.Fq[0].duplicate()
@@ -325,9 +324,9 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
             self.ksp.solve(rhs, sol)
 
             if proj:
-                eK[:,k] = sol - ZZTX * sol
+                eK.setValuesBlocked(range(self.NN), k, sol - ZZTX * sol)
             else:
-                eK[:,k] = sol
+                eK.setValuesBlocked(range(self.NN), k, sol)
 
             u = sol.copy()
             uk.append(sol.copy())
@@ -375,7 +374,8 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
             sum_eigen = values.sum()
 
             # Assert that the 3 largest eigenvalues have more than 90% of the energy
-            assert(ric(values[ind], 3) > 0.9)
+            if not ric(values[ind], 3) > 0.9:
+                warnings.warn("The 3 largest eigenvalues have less than 90% of the energy")
 
             Nm = 0
             sum_delta = 0
