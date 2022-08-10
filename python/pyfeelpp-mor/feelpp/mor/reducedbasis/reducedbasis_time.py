@@ -33,9 +33,8 @@ class reducedbasisTime(reducedbasis):
         self.MNr : np.ndarray # tensor of chape (Qm, N, N)
 
 
-        self.FF = np.zeros((K, self.Qf, self.Qf)) #       FF[k,p,p_]    = (Fkp,Fkp_)X
-        self.FM : np.ndarray    # shape (K, Qf, Qm, N)    FM[k,p,r,n]   = (Fkp, Mrn)X
-        self.FL : np.ndarray    # shape (K, Qf, Qa, N)    FL[k,p,q,n]   = (Lnq, Fkp)X
+        self.FM : np.ndarray    # shape (Qf, Qm, N)    FM[p,r,n]   = (Fp, Mrn)X
+        self.FL : np.ndarray    # shape (Qf, Qa, N)    FL[p,q,n]   = (Lnq, Fp)X
         self.ML : np.ndarray    # shape (Qm, N, Qa, N)    ML[r,n,q,n_]  = (Lnq, Mrn_)X
         self.MM : np.ndarray    # shape (Qm, N, Qm, N)    MM[q,n,q_,n_] = (Mrn, Mr_n_)X
 
@@ -184,9 +183,11 @@ class reducedbasisTime(reducedbasis):
 
         diff = ((uN.flatten() - uNm1.flatten()) / self.dt).T
 
-        s1 = betaF @ self.FF[k-1] @ betaF
-        s2 = np.einsum('p,r,n,prn', betaF, betaM, diff, self.FM[k-1])
-        s3 = np.einsum('p,q,n,pqn', betaF, betaA, uN, self.FL[k-1])
+        gk = g(k * self.dt)
+
+        s1 = gk**2 * betaF @ self.SS @ betaF
+        s2 = gk * np.einsum('p,r,n,prn', betaF, betaM, diff, self.FM)
+        s3 = gk * np.einsum('p,q,n,pqn', betaF, betaA, uN, self.FL)
         s4 = np.einsum('r,p,n,m,rnpm', betaM, betaA, diff, uN, self.ML)
         s5 = np.einsum('r,s,n,m,rnsm', betaM, betaM, diff, diff, self.MM)
         s6 = np.einsum('q,r,n,m,qnrm', betaA, betaA, uN, uN, self.LL)

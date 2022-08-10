@@ -27,8 +27,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
         if self.Qm > 1:
             warnings.warn(f"The decomposition of the mass matrix should be of size 1, not {self.Qm}. When assembleM will be called, only Mr[0] will be returned")
 
-        self.Fkp : dict # size K*Qf : Fkp[k,p] <-> F^{k,p}
-        self.Mnr : dict # size N*Qm : Mnr[k,p] <-> M^{n,r}
+        self.Mnr : dict # size N*Qm : Mnr[n,r] <-> M^{n,r}
 
 
     def assembleM(self, beta):
@@ -71,7 +70,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
                     self.MNr[r,i,j] = ksi_.dot( self.Mr[r] * ksi)
 
 
-    def computeOfflineError(self, g):
+    def computeOfflineError(self):
         """Store the offline data for error bound computation
 
         Args:
@@ -79,7 +78,6 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
         """
         super().computeOfflineError()   # compute LL
 
-        self.Fkp = {}
         self.Mnr = {}
 
         pc = self.ksp.getPC()
@@ -100,22 +98,17 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
                 self.ksp.solve( -Mr * ksi, sol)
                 self.Mnr[n, r] = sol.copy()
 
-        self.FF = np.zeros((self.K, self.Qf, self.Qf))
-        self.FM = np.zeros((self.K, self.Qf, self.Qm, self.N))
-        self.FL = np.zeros((self.K, self.Qf, self.Qa, self.N))
+        self.FM = np.zeros((self.Qf, self.Qm, self.N))
+        self.FL = np.zeros((self.Qf, self.Qa, self.N))
         self.ML = np.zeros((self.Qm, self.N, self.Qa, self.N))
         self.MM = np.zeros((self.Qm, self.N, self.Qm, self.N))
 
-        for k in range(self.K):
-            for p in range(self.Qf):
-                for p_ in range(self.Qf):
-                    self.FF[k, p, p_] = self.scalarX(self.Fkp[k,p], self.Fkp[k,p_])
-
-                for n in range(self.N):
-                    for r in range(self.Qm):
-                        self.FM[k,p,r,n] = self.scalarX(self.Fkp[k,p], self.Mnr[n,r])
-                    for q in range(self.Qa):
-                        self.FL[k,p,q,n] = self.scalarX(self.Lnq[n,q], self.Fkp[k,p])
+        for p in range(self.Qf):
+            for n in range(self.N):
+                for r in range(self.Qm):
+                    self.FM[p,r,n] = self.scalarX(self.Sp[p], self.Mnr[n,r])
+                for q in range(self.Qa):
+                    self.FL[p,q,n] = self.scalarX(self.Lnq[n,q], self.Sp[p])
 
         for n in range(self.N):
             for r in range(self.Qm):
@@ -127,9 +120,8 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
 
     def expandOffline(self):
         super().expandOffline()
-        # self.Fkp and self.FF are independent of N, so they don't change
-        self.FM = np.concatenate( (self.FM,  np.zeros( (self.K, self.Qf, self.Qm, 1)   )), axis=3 )
-        self.FL = np.concatenate( (self.FL,  np.zeros( (self.K, self.Qf, self.Qa, 1)   )), axis=3 )
+        self.FM = np.concatenate( (self.FM,  np.zeros( (self.Qf, self.Qm, 1)   )), axis=2 )
+        self.FL = np.concatenate( (self.FL,  np.zeros( (self.Qf, self.Qa, 1)   )), axis=2 )
         self.ML = np.concatenate( ( self.ML, np.zeros( (self.Qm, 1, self.Qa, self.N)   )), axis=1 )
         self.ML = np.concatenate( ( self.ML, np.zeros( (self.Qm, self.N+1, self.Qa, 1) )), axis=3 )
         self.MM = np.concatenate( ( self.MM, np.zeros( (self.Qm, 1, self.Qm, self.N)   )), axis=1 )
@@ -145,12 +137,11 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
             self.ksp.solve(-Mr*self.Z[-1], sol)
             self.Mnr[self.N, r] = sol.copy()
 
-        for k in range(self.K):
-            for p in range(self.Qf):
-                for r in range(self.Qm):
-                    self.FM[k,p,r,-1] = self.scalarX(self.Fkp[k,p], self.Mnr[self.N,r])
-                for q in range(self.Qa):
-                    self.FL[k,p,q,-1] = self.scalarX(self.Lnq[self.N,q], self.Fkp[k,p])
+        for p in range(self.Qf):
+            for r in range(self.Qm):
+                self.FM[p,r,-1] = self.scalarX(self.Sp[p], self.Mnr[self.N,r])
+            for q in range(self.Qa):
+                self.FL[p,q,-1] = self.scalarX(self.Lnq[self.N,q], self.Sp[p])
 
         for r in range(self.Qm):
             for q in range(self.Qa):
@@ -165,6 +156,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
 
         Args:
             mu (float): regularization parameter
+            beta (list): affine decomposition coefficients for parameter mu
             g (function): right-hand side time-dependent function
         """
         Amu = self.assembleA(beta[0][0])
@@ -414,8 +406,9 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
 
             beta = betas[mu]
 
+            # /!\ Z_to_matirx must be called before calling the next line
             # Delta = self.computeOnlineError(mu, beta, g, computeEnergyNorm=True)
-            Delta = self.computeDirectError(mu, beta, g, computeEnergyNorm=True)   # /!\ Z_to_matirx must be called before this function
+            Delta = self.computeDirectError(mu, beta, g, computeEnergyNorm=True)
             Delta_tmp = Delta / self.EnNorm[-1]
 
             if Delta_tmp > Delta_max:
@@ -436,7 +429,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
             delta (float, optional): representativiness of the Nm first POD modes
 
         Returns:
-            TO BE SPECIFIED
+            list of parameters selected
         """
         SN = []
         self.Z = []
@@ -460,7 +453,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
                 for ksi in POD:
                     self.Z.append(ksi)
                     self.N += 1
-                self.computeOfflineError(g)
+                self.computeOfflineError()
             else:
                 POD = self.computePODMode(mu_star, g, R=R, delta=delta, proj=True)
                 for ksi in POD:
@@ -485,6 +478,8 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
             Delta = Delta_max
             mu_train.pop(i_star)
             print(f"[reducedbasis] POD-greedy algorithm, N={self.N}, Δ={Delta} (tol={eps_tol})")
+
+        return SN
 
     def solveTimeForStudy(self, mu, g, k=-1):
         """Compute both RB and FE solutions for a given parameter and a given time-dependent function
