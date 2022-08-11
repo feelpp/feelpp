@@ -85,13 +85,6 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
         self.ksp.setOperators(self.scal)
         sol = self.Fq[0].duplicate()
 
-        for k in range(self.K):
-            for p in range(self.Qf):
-                rhs = self.Fq[p] * g((k+1)*self.dt)
-                self.reshist = {}
-                self.ksp.solve(rhs, sol)
-                self.Fkp[k, p] = sol.copy()
-
         for n, ksi in enumerate(self.Z):
             for r, Mr in enumerate(self.Mr):
                 self.reshist = {}
@@ -187,12 +180,13 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
         errDir = np.zeros(self.K)
         DeltaDir = np.zeros(self.K)
         aNorm = np.zeros(self.K)
+        
+        self.ksp.setOperators(self.scal)
 
         for k in range(1, self.K+1):
             gk = g(k * self.dt)
             uN_tmp = sl.lu_solve(matLu, gk * self.dt * FNmu + MNmu @ uN)
 
-            self.ksp.setOperators(self.Abar)
             self.ksp.setConvergenceHistory()
             sol = self.Fq[0].duplicate()
             vN.setValues(range(self.N), uN)
