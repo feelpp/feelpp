@@ -561,3 +561,49 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
             normDiff.append( np.sqrt(diff.dot(Mmu * diff) + self.dt * tmpDiff.sum()) )
 
         return t, sN, s, sDiff, normN, norm, normDiff
+
+    """
+    Checks functions, for debugging purposes
+    """
+
+    def checkDecomposition(self, mu):
+        beta = self.model.computeBetaQm(mu)
+
+        ANmu = self.assembleAN(beta[0][0])
+        FNmu = self.assembleFN(beta[1][0][0])
+        MNmu = self.assembleMN(beta[2][0])
+
+        Amu = self.assembleA(beta[0][0])
+        Fmu = self.assembleF(beta[1][0][0])
+        Mmu = self.assembleM(beta[2][0])
+
+        vN = np.ones(self.N)
+        vN_p = PETSc.Vec().createWithArray(vN)
+        vN_p.setUp()
+
+        v = self.Fq[0].duplicate()
+        v.set(1)
+
+        # Check the matrix A
+        print("Checking the matrix A")
+        ANmu_p = Amu.ptap(self.Z_matrix)
+        check = vN.T @ ANmu @ vN
+        check_p = vN.dot(ANmu_p * vN_p)
+
+        print(abs(check - check_p))
+
+        # Check the matrix M
+        print("Checking the matrix M")
+        MNmu_p = MNmu.ptap(self.Z_matrix)
+        check = vN.T @ MNmu @ vN
+        check_p = vN.dot(MNmu_p * vN_p)
+
+        print(abs(check - check_p))
+
+        # Check the matrix F
+        print("Checking the matrix F")
+        FNmu_p = FNmu.ptap(self.Z_matrix)
+        check = vN.T @ FNmu @ vN
+        check_p = vN.dot(FNmu_p * vN_p)
+
+        print(abs(check - check_p))
