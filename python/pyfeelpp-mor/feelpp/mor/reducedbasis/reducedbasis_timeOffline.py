@@ -310,9 +310,14 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
             self.ksp.solve(rhs, sol)
 
             if proj:
-                eK.setValuesBlocked(range(self.NN), k, sol - ZZTX * sol)
+                v = sol - ZZTX * sol
+                # eK.setValuesBlocked(range(self.NN), k, sol - ZZTX * sol)
+                for i in range(self.NN):
+                    eK.setValue(i, k, v[i])
             else:
-                eK.setValuesBlocked(range(self.NN), k, sol)
+                # eK.setValuesBlocked(range(self.NN), k, sol)
+                for i in range(self.NN):
+                    eK.setValue(i, k, sol[i])
 
             u = sol.copy()
             uk.append(sol.copy())
@@ -566,7 +571,8 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
     Checks functions, for debugging purposes
     """
 
-    def checkDecomposition(self, mu):
+    def checkDecomposition(self, mu, tol=1e-10):
+        print("[reducedbasis] Checking decomposition with parameter µ={}".format(mu))
         beta = self.model.computeBetaQm(mu)
 
         ANmu = self.assembleAN(beta[0][0])
@@ -584,26 +590,133 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
         v = self.Fq[0].duplicate()
         v.set(1)
 
+        ZT = self.Z_matrix.copy()
+        ZT = ZT.transpose()
+
+        checksum = 0
+        ncheck = 0
+
         # Check the matrix A
-        print("Checking the matrix A")
-        ANmu_p = Amu.ptap(self.Z_matrix)
+        # ANmu_p = Amu.ptap(self.Z_matrix)
+        ANmu_p = ZT * Amu * self.Z_matrix
         check = vN.T @ ANmu @ vN
         check_p = vN.dot(ANmu_p * vN_p)
-
-        print(abs(check - check_p))
+        print("    Check the matrix A", abs(check - check_p))
+        checksum += abs(check - check_p); ncheck += 1
 
         # Check the matrix M
-        print("Checking the matrix M")
-        MNmu_p = MNmu.ptap(self.Z_matrix)
+        # MNmu_p = Mmu.ptap(self.Z_matrix)
+        MNmu_p = ZT * Mmu * self.Z_matrix
         check = vN.T @ MNmu @ vN
         check_p = vN.dot(MNmu_p * vN_p)
-
-        print(abs(check - check_p))
+        print("    Check the matrix M", abs(check - check_p))
+        checksum += abs(check - check_p); ncheck += 1
 
         # Check the matrix F
-        print("Checking the matrix F")
-        FNmu_p = FNmu.ptap(self.Z_matrix)
-        check = vN.T @ FNmu @ vN
-        check_p = vN.dot(FNmu_p * vN_p)
+        # FNmu_p = Fmu.ptap(self.Z_matrix)
+        FNmu_p = ZT * Fmu
+        check = FNmu @ vN
+        check_p = vN_p.dot( FNmu_p )
+        print("    Check the vector F", abs(check - check_p))
+        checksum += abs(check - check_p); ncheck += 1
+        checksum += abs(check - check_p); ncheck += 1
 
-        print(abs(check - check_p))
+        assert checksum / ncheck < tol, "Check failed"
+
+    def checkError(self, mu, g, tol=1e-10):
+        print("[reducedbasis] Checking error µ={}".format(mu))
+        beta = self.model.computeBetaQm(mu)
+        betaA = beta[0][0]
+        betaF = beta[1][0][0]
+        betaM = beta[2][0]
+
+        Amu = self.assembleA(betaA)
+        Fmu = self.assembleF(betaF)
+        Mmu = self.assembleM(betaM)
+
+        ANmu = self.assembleAN(betaA)
+        FNmu = self.assembleFN(betaF)
+        MNmu = self.assembleMN(betaM)
+
+        AZ = Amu * self.Z_matrix
+        MZ = Mmu * self.Z_matrix
+        matN = MNmu + self.dt * ANmu
+        matLu = sl.lu_factor(matN)
+        alpm1 = 1 / np.sqrt(self.alphaLB(mu))
+
+        checksum = 0
+        ncheck = 0
+
+        uN_km1 = np.zeros(self.N)
+        u_km1 = self.Fq[0].duplicate()
+        u_km1.set(0)
+
+        diff_p = PETSc.Vec().create()
+        diff_p.setSizes(self.N)
+        diff_p.setFromOptions()
+        diff_p.setUp()
+        u_p = diff_p.duplicate()
+        rhs = self.Fq[0].duplicate()
+
+        ONES = self.Fq[0].duplicate()
+        ONES.set(1)
+
+        pc = self.ksp.getPC()
+        sol = self.Fq[0].duplicate()
+        pc.setType(self.PC_TYPE)
+        self.ksp.setOperators(self.scal)
+        self.ksp.solve(Fmu, sol)
+
+        sol_dec = self.Fq[0].duplicate()
+        sol_dec.set(0)
+        for p in range(self.Qf):
+            sol_dec += betaF[p] * self.Sp[p]
+        check = ONES.dot(sol)
+        check_dec = ONES.dot(sol_dec)
+        print("    Check the error on F", abs(check - check_dec))
+        checksum += abs(check - check_dec); ncheck += 1
+
+        for k in range(self.K):
+            gk = g(k * self.dt)
+
+            # computation of the solution
+            uN_k = sl.lu_solve(matLu, gk * self.dt * FNmu + MNmu @ uN_km1)
+
+            # computation of Mk
+            diff_N = (uN_k - uN_km1) / self.dt
+            diff_p.setValues(range(self.N), diff_N)
+            (Mmu * self.Z_matrix).mult( diff_p, rhs )
+            self.ksp.solve(-rhs, sol)
+            Mk = sol.copy()
+
+            # computation of Mk_dec
+            Mk_dec = self.Fq[0].duplicate()
+            Mk_dec.set(0)
+            for r in range(self.Qm):
+                for n in range(self.N):
+                    Mk_dec += betaM[r] * self.Mnr[n,r] * diff_N[n]
+            
+            check = ONES.dot(Mk)
+            check_dec = ONES.dot(Mk_dec)
+            print(f"    Check the error on M{k}", abs(check - check_dec))
+            checksum += abs(check - check_dec); ncheck += 1
+
+            # computation of Lk
+            u_p.setValues(range(self.N), uN_k)
+            (Amu * self.Z_matrix).mult( u_p, rhs )
+            self.ksp.solve(-rhs, sol)
+            Lk = sol.copy()
+
+            # computation of Lk_dec
+            Lk_dec = self.Fq[0].duplicate()
+            Lk_dec.set(0)
+            for q in range(self.Qa):
+                for n in range(self.N):
+                    Lk_dec += betaA[q] * self.Lnq[n,q] * uN_k[n]
+
+            check = ONES.dot(Lk)
+            check_dec = ONES.dot(Lk_dec)
+            print(f"    Check the error on L{k}", abs(check - check_dec))
+            checksum += abs(check - check_dec); ncheck += 1
+
+        assert checksum / ncheck < tol, "Check failed"
