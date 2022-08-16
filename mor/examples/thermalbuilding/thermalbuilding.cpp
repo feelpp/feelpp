@@ -56,7 +56,10 @@ makeThermalBuildingAbout( std::string const& str )
 ThermalBuilding::ThermalBuilding()
     :
     super_type( "ThermalBuilding" )
-{}
+{
+    this->setPluginName( BOOST_PP_STRINGIZE(FEELPP_MOR_PLUGIN_NAME) + std::string("P1G1") );
+    this->setPluginLibName( BOOST_PP_STRINGIZE(FEELPP_MOR_PLUGIN_LIBNAME) );
+}
 
 void
 ThermalBuilding::initBetaQ()
@@ -186,7 +189,7 @@ ThermalBuilding::assembleData()
 
     // init matrix/vectors
     for (int k = 0 ; k<this->M_Aq.size() ; ++k)
-        this->M_Aq[k] = backend()->newMatrix( this->Xh, this->Xh );
+        this->M_Aq[k] = backend()->newMatrix( _test=this->Xh, _trial=this->Xh );
     for (int k = 0 ; k<this->M_Fq[0].size() ; ++k)
         this->M_Fq[0][k] = backend()->newVector( this->Xh );
     this->M_Fq[1][0] = backend()->newVector( this->Xh );
@@ -280,7 +283,7 @@ ThermalBuilding::output( int output_index, parameter_type const& mu , element_ty
     }
     else if ( output_index == 1 )
     {
-        output = mean(markedelements(mesh,"air" ),idv(u))(0,0);
+        output = mean(_range=markedelements(mesh,"air" ),_expr=idv(u))(0,0);
         std::cout << " ThermalBuilding::output " << output << "\n";
     }
     // else if ( output_index == 2 )
@@ -292,5 +295,5 @@ ThermalBuilding::output( int output_index, parameter_type const& mu , element_ty
     return output;
 
 }
-FEELPP_CRB_PLUGIN( ThermalBuilding, thermalbuilding )
+FEELPP_CRB_PLUGIN( ThermalBuilding, BOOST_PP_CAT(FEELPP_MOR_PLUGIN_NAME,P1G1) )
 } // namespace Feel

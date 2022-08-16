@@ -131,7 +131,13 @@ void removeTrailingSlash( std::string & s )
 }
 }
 
-ModelBaseCommandLineOptions::ModelBaseCommandLineOptions( po::options_description const& _options )
+
+ModelBaseCommandLineOptions::ModelBaseCommandLineOptions( po::variables_map const& vm )
+    :
+    M_vm( vm ) // TODO check if equal to Environment::vm()
+{}
+
+ModelBaseCommandLineOptions::ModelBaseCommandLineOptions( po::options_description const& _options, init_function_type func )
 {
     M_vm.emplace();
     auto mycmdparser = Environment::commandLineParser();
@@ -144,6 +150,8 @@ ModelBaseCommandLineOptions::ModelBaseCommandLineOptions( po::options_descriptio
         std::istringstream & iss = std::get<1>( configFile );
         po::store(po::parse_config_file(iss, _options,true), *M_vm);
     }
+    if ( func )
+        std::invoke(func, _options, *M_vm );
     po::notify(*M_vm);
 }
 

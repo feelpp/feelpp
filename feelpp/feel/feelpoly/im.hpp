@@ -183,9 +183,21 @@ IMT const& im( IMT const& the_im, std::enable_if_t<std::is_base_of<PointSetBase,
     return the_im;
 }
 
-//!
-//! build a quadrature formula from a @p mesh and a polynomial order @p O to integrate exactly
-//!
+
+/**
+ * @brief build a quadrature formula from a @p mesh and a polynomial order @p O to integrate exactly
+ * @ingroup Quadrature
+ * 
+ * @code
+ * 
+ * @endcode
+ * 
+ * @tparam MeshT type of the mesh
+ * @tparam T numerical type of the quadrature
+ * @param mesh mesh to integrate on
+ * @param O polynomial order integrated exactly
+ * @return im_t<typename MeshT::element_type,T> the quadrature formula 
+ */
 template<typename MeshT,typename T = double>
 im_t<typename MeshT::element_type,T> im( std::shared_ptr<MeshT> mesh, uint16_type O )
 {
