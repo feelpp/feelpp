@@ -50,35 +50,30 @@
         "Mat_0": {
             "k": "1",
             "Cp": "4e6",
-            "rho": "1",
-            "epsilon": "0.5"
+            "rho": "1"
         },
         "Mat_1": {
             "k": "2",
             "Cp": "1e6",
-            "rho": "1",
-            "epsilon": "0.2"
+            "rho": "1"
         },
         "Mat_2": {
             "k": "4",
             "Cp": "2e6",
-            "rho": "1",
-            "epsilon": "0.4"
+            "rho": "1"
         },
         "Mat_3": {
             "k": "6",
             "Cp": "3e6",
-            "rho": "1",
-            "epsilon": "0.6"
+            "rho": "1"
         },
         "Mat_4": {
             "k": "8",
             "Cp": "4e6",
-            "rho": "1",
-            "epsilon": "0.8"
+            "rho": "1"
         }
     },
-    "Quoting":{ // NEW SECTION: optical charateristics linked with boundaries markers
+    "Quoting":{ // NEW SECTION: optical features linked with boundaries markers
         "Gamma_0": {
             "markers": ["Gamma_C_0"],
             "emissivity": "0.9"
@@ -134,7 +129,7 @@
                 "Cavity_open": {
                     "enclosure": "open", // opened enclosure ie exchange with a blackbody at Tref
                     "hidden": "0", // 1 if hidden faces, else 0
-                    "markers_materials": ["Gamma_O_1", "Gamma_O_2"], // list of boundary linked with quoting
+                    "markers": ["Gamma_O_1", "Gamma_O_2"], // list of boundary linked with quoting
                     "Tref": "Trad_C+273.15:Trad_C",
                     "sigma": "sigma:sigma",
                     "viewfactors": {
@@ -144,7 +139,7 @@
                 },
                 "Cavity_close_1": {
                     "enclosure": "close", // closed enclosure
-                    "markers_materials": ["Gamma_C_3", "Gamma_C_4"], // list of boundary linked with quoting
+                    "markers": ["Gamma_C_3", "Gamma_C_4"], // list of boundary linked with quoting
                     "hidden": "0", // 1 if hidden faces, else 0
                     "sigma": "sigma:sigma",
                     "viewfactors": {
