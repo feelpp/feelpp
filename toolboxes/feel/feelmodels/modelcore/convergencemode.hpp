@@ -30,10 +30,18 @@ runHConvergence(std::string const& prefix,
     {
         double meshSize = meshSizes[k];
         std::string runSubdir = (boost::format("run_h%1%")%k).str();
-        Feel::Environment::setOptionValue( prefix+".gmsh.hsize", meshSize );
+
+        auto vmToolbox = FeelModels::ModelBaseCommandLineOptions( ToolboxType::create_program_options( prefix ),
+                                                                  [&prefix,&meshSize]( po::options_description const& _options, po::variables_map & vm ){
+                                                                      std::istringstream iss( fmt::format("{}={}",prefixvm(prefix,"gmsh.hsize"), meshSize ) );
+                                                                      po::store(po::parse_config_file(iss, _options,true), vm);
+                                                                  } ).vm();
 
         auto tb = ToolboxType::New( _prefix=prefix,
-                                    _repository=Feel::FeelModels::ModelBaseRepository( (fs::path(Environment::appRepository())/runSubdir).string(), false, Environment::exprRepository() ) );
+                                    _repository=Feel::FeelModels::ModelBaseRepository( (fs::path(Environment::appRepository())/runSubdir).string(),
+                                                                                       false, Environment::exprRepository() ),
+                                    _vm=vmToolbox);
+
         status = runToolboxSimulation( tb );
         if ( status != 0 )
             return status;
