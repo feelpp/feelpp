@@ -19,10 +19,10 @@
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelvf/form.hpp>
 #include <feel/feelvf/vf.hpp>
+#include <feel/feelts/bdf.hpp>
 
 namespace Feel
 {
-
 inline Feel::po::options_description
 makeOptions()
 {
@@ -31,15 +31,27 @@ makeOptions()
 
         // mesh parameters
         ( "specs", Feel::po::value<std::string>(),
-          "json spec file for rht" );
+          "json spec file for rht" )
 
-        ( "steady", Feel::po::value<std::bool>()->defaut_value( 1 ),
+        ( "steady", Feel::po::value<bool>()->default_value( 1 ),
           "if 1: steady else unsteady" );
 
     return options.add( Feel::feel_options() );
 }
 
-template <int Dim = 2, int Order = 1>
+void compute_MC(){
+    // Compute view factors with MC raytracing method
+}
+                    
+void compute_integral(){
+    // Compute view factors with integral method
+}
+
+void loadVF(){
+    // Load view factors
+}
+
+template <int Dim = FEELPP_DIM, int Order = FEELPP_ORDER>
 int runHeat( nl::json const& specs )
 {
     auto mesh = loadMesh( _mesh = new Mesh<Simplex<Dim>>, _filename = specs["/Meshes/heat/Import/filename"_json_pointer].get<std::string>() );
@@ -68,7 +80,7 @@ int runHeat( nl::json const& specs )
         auto k = specs[nl::json::json_pointer( mat )].get<std::string>();
 
         a += integrate( _range = markedelements( mesh, material.get<std::string>() ), 
-                _expr = M_bdf->polyDerivCoefficient( 0 )  * gradt( v ) * trans( expr( k ) * grad( u ) ) );
+                _expr = inner( M_bdf->polyDerivCoefficient( 0 ) * grad( v ) , expr( k ) * gradt( u ) ) );
     }
 
     // BC Neumann
@@ -107,12 +119,23 @@ int runHeat( nl::json const& specs )
         for ( auto& [bc, value] : specs["/BoundaryConditions/heat/radiative_blackbody_heat_flux"_json_pointer].items() )
         {
             LOG( INFO ) << fmt::format( "radiative_blackbody_heat_flux {}: {}", bc, value.dump() );
+            
+            // auto path = "/BoundaryConditions/heat/radiative_blackbody_heat_flux/"+bc;
+            // auto sigma = "5.67e-8";
+            // if ( specs["/BoundaryConditions/heat/radiative_blackbody_heat_flux/{}"_json_pointer].contains( "sigma" ) )
             auto sigma = value["sigma"].get<std::string>();
-            auto epsilon = value["epsilon"].get<std::string>();
             auto Tref = value["Tref"].get<std::string>();
+            std::cout << value["markers"];
 
+            // Recover the emissivity epsilon of the material linked to the marked face
+            auto epsilon = value["emissivity"].get<std::string>();
+            //for ( auto& [key, quote] : specs["/Quoting"_json_pointer].items() )
+
+            auto idtu4 = idt( u ) * idt( u ) * idt( u ) * idt( u );
             auto Tref4 = expr( Tref ) * expr( Tref ) * expr( Tref ) * expr( Tref );
 
+            a += integrate( _range = markedfaces( mesh, bc ),
+                    _expr = M_bdf->polyDerivCoefficient( 0 ) * expr( sigma ) * expr( epsilon ) * idtu4 * id( v ) * idt( u ) );
             l += integrate( _range = markedfaces( mesh, bc ), 
                     _expr = M_bdf->polyDerivCoefficient( 0 ) * expr( sigma ) * expr( epsilon ) * Tref4 * id( v ) );
         }
@@ -127,75 +150,31 @@ int runHeat( nl::json const& specs )
             if ( specs["/BoundaryConditions/heat/radiative_enclosure_heat_flux/{}/enclosure"_json_pointer] == "close" )
             {
                 LOG( INFO ) << fmt::format( "radiative_closed_enclosure_heat_flux {}: {}", bc, value.dump() );
-
-                if ( specs["/BoundaryConditions/heat/radiative_enclosure_heat_flux/{}"_json_pointer].contains( "sigma" ) )
-                {
-                    auto sigma = value["sigma"].get<std::string>();
-                }
-                else
-                {
-                    // Message: default value of sigma will be used, sigma = 5.67e-8 W.m^-2.K^-4
-                    auto sigma = 5.67e-8;
-                }
                 
-                for (  )
+                // auto path = "/BoundaryConditions/heat/radiative_enclosure_heat_flux/"+bc;
+                // auto sigma = "5.67e-8";
+                // if ( specs["/BoundaryConditions/heat/radiative_enclosure_heat_flux/{}"_json_pointer].contains( "sigma" ) )
+                auto sigma = value["sigma"].get<std::string>();
+                
+                // Load OR compute view factors
+                if ( specs["/BoundaryConditions/heat/radiative_enclosure_heat_flux/{}"_json_pointer].contains( "viewfactors" ) )
                 {
-                    // Load OR compute view factors
-                    if ( specs["/BoundaryConditions/heat/radiative_enclosure_heat_flux/{}"_json_pointer].contains( "viewfactors" ) )
+                    if ( specs["/BoundaryConditions/heat/radiative_enclosure_heat_flux/{}/viewfactors"_json_pointer].contains( "status" ) )
                     {
-                        if ( specs["/BoundaryConditions/heat/radiative_enclosure_heat_flux/{}/viewfactors"_json_pointer].contains( "status" ) )
+                        if ( specs["/BoundaryConditions/heat/radiative_enclosure_heat_flux/{}/viewfactors/status"_json_pointer] == "load" )
                         {
-                            if ( specs["/BoundaryConditions/heat/radiative_enclosure_heat_flux/{}/viewfactors/status"_json_pointer] == "load" )
+                            if ( specs["/BoundaryConditions/heat/radiative_enclosure_heat_flux/{}/viewfactors"_json_pointer].contains( "filename" ) )
                             {
-                                if ( specs["/BoundaryConditions/heat/radiative_enclosure_heat_flux/{}/viewfactors"_json_pointer].contains( "filename" ) )
-                                {
-                                    // file where view factors are saved
-                                    // Message: view factors are loading from filename
-                                    goto loadVF;
-                                }
-                                else
-                                {
-                                    // return error: need filename
-                                }
+                                // file where view factors are saved
+                                // Message: view factors are loading from filename
+                                loadVF();
                             }
-                            if ( specs["/BoundaryConditions/heat/radiative_enclosure_heat_flux/{}/viewfactors/status"_json_pointer] == "compute" )
+                            else
                             {
-                                if ( specs["/BoundaryConditions/heat/radiative_enclosure_heat_flux/{}/viewfactors"_json_pointer].contains( "filename" ) )
-                                {
-                                    // file where view factors will be saved
-                                    // Message: view factors will be saved in file
-                                }
-                                else
-                                {
-                                    // filename == None
-                                    // Message: view factors will NOT be saved
-                                }
-                                if ( specs["/BoundaryConditions/heat/radiative_enclosure_heat_flux/{}/viewfactors"_json_pointer].contains( "type" ) )
-                                {
-                                    if ( specs["/BoundaryConditions/heat/radiative_enclosure_heat_flux/{}/viewfactors/type"_json_pointer].contains( "raytracing" ) )
-                                    {
-                                        // Message: compute using MC method
-                                        goto compute_MC;
-                                    }
-                                    else if ( specs["/BoundaryConditions/heat/radiative_enclosure_heat_flux/{}/viewfactors/type"_json_pointer].contains( "unobstructed" ) )
-                                    {
-                                        // Message: compute using integral method
-                                        goto compute_integral;
-                                    }
-                                    else
-                                    {
-                                        // Message default case: compute using MC method
-                                        goto compute_MC;
-                                    }
-                                }
-                                else
-                                {
-                                    // Message default case: compute using MC method
-                                    goto compute_MC;
-                                }
+                                // return error: need filename
                             }
                         }
-                        else
+                        else if ( specs["/BoundaryConditions/heat/radiative_enclosure_heat_flux/{}/viewfactors/status"_json_pointer] == "compute" )
                         {
                             if ( specs["/BoundaryConditions/heat/radiative_enclosure_heat_flux/{}/viewfactors"_json_pointer].contains( "filename" ) )
                             {
@@ -207,41 +186,76 @@ int runHeat( nl::json const& specs )
                                 // filename == None
                                 // Message: view factors will NOT be saved
                             }
-                            // Message default case: compute using MC method
-                            goto compute_MC;
+                            if ( specs["/BoundaryConditions/heat/radiative_enclosure_heat_flux/{}/viewfactors"_json_pointer].contains( "type" ) )
+                            {
+                                if ( specs["/BoundaryConditions/heat/radiative_enclosure_heat_flux/{}/viewfactors/type"_json_pointer].contains( "raytracing" ) )
+                                {
+                                    // Message: compute using MC method
+                                    compute_MC();
+                                }
+                                else if ( specs["/BoundaryConditions/heat/radiative_enclosure_heat_flux/{}/viewfactors/type"_json_pointer].contains( "unobstructed" ) )
+                                {
+                                    // Message: compute using integral method
+                                    compute_integral();
+                                }
+                                else
+                                {
+                                    // Message default case: compute using MC method
+                                    compute_MC();
+                                }
+                            }
+                            else
+                            {
+                                // Message default case: compute using MC method
+                                compute_MC();
+                            }
+                        }
+                        else
+                        {
+                            // Error message: need status compute or load
                         }
                     }
                     else
                     {
+                        if ( specs["/BoundaryConditions/heat/radiative_enclosure_heat_flux/{}/viewfactors"_json_pointer].contains( "filename" ) )
+                        {
+                            // file where view factors will be saved
+                            // Message: view factors will be saved in file
+                        }
+                        else
+                        {
+                            // filename == None
+                            // Message: view factors will NOT be saved
+                        }
                         // Message default case: compute using MC method
-                        goto compute_MC;
+                        compute_MC();
                     }
-
-                    compute_MC:
-                        // Compute view factors with MC raytracing method
-                    
-                    compute_integral:
-                        // Compute view factors with integral method
-
-                    loadVF:
-                        // Load view factors
-
-                    // Recover the emissivity epsilon of material linked to the marked face
-                    auto epsilon = value["epsilon"].get<std::string>();
-
-                    // Build left hand side matrix LHSm
-                    // delta_ij/epsilon_j - (1/epsilon_j -1)*F_ij
-
-                    // Build right hand side matrix RHSm
-
-                    // Compute inverse matrix LHSm : invLHSm, and M1 = invLHSm * RHSm
-
                 }
+                else // Default case: compute VF using MC method
+                {
+                    // Message default case: compute VF using MC method
+                    compute_MC();
+                }
+
+                // Recover the emissivity epsilon of material linked to the marked face
+                auto epsilon = value["emissivity"].get<std::string>();
+
+                // Build left hand side matrix LHSm
+                // delta_ij/epsilon_j - (1/epsilon_j -1)*F_ij
+
+                // Build right hand side matrix RHSm
+
+                // Compute inverse matrix LHSm : invLHSm, and M1 = invLHSm * RHSm
+
             }
             // Opened enclosure
             else if ( specs["/BoundaryConditions/heat/radiative_enclosure_heat_flux/{}/enclosure"_json_pointer] == "open" )
             {
-                LOG( INFO ) << fmt::format( "radiative_opened_enclosure_heat_flux {}: {}", bc, value.dump() );
+                LOG( INFO ) << fmt::format( "radiative_enclosure_heat_flux {}: {}", bc, value.dump() );
+                
+                // auto path = "/BoundaryConditions/heat/radiative_enclosure_heat_flux/"+bc;
+                // auto sigma = "5.67e-8";
+                // if ( specs["/BoundaryConditions/heat/radiative_enclosure_heat_flux/{}"_json_pointer].contains( "sigma" ) )
                 auto sigma = value["sigma"].get<std::string>();
                 auto Tref = value["Tref"].get<std::string>();
 
@@ -249,59 +263,25 @@ int runHeat( nl::json const& specs )
                 {
 
                     if ( specs["/BoundaryConditions/heat/radiative_enclosure_heat_flux/{}/viewfactors"_json_pointer].contains( "status" ) )
+                    {
+                        // status: load view factors
+                        if ( specs["/BoundaryConditions/heat/radiative_enclosure_heat_flux/{}/viewfactors/status"_json_pointer] == "load" )
                         {
-                            if ( specs["/BoundaryConditions/heat/radiative_enclosure_heat_flux/{}/viewfactors/status"_json_pointer] == "load" )
+                            if ( specs["/BoundaryConditions/heat/radiative_enclosure_heat_flux/{}/viewfactors"_json_pointer].contains( "filename" ) )
                             {
-                                if ( specs["/BoundaryConditions/heat/radiative_enclosure_heat_flux/{}/viewfactors"_json_pointer].contains( "filename" ) )
-                                {
-                                    // file where view factors are saved
-                                    // Message: view factors are loading from filename
-                                    goto loadVF;
-                                }
-                                else
-                                {
-                                    // return error: need filename
-                                }
+                                // file where view factors are saved
+                                // Message: view factors are loading from filename
+                                loadVF();
                             }
-                            if ( specs["/BoundaryConditions/heat/radiative_enclosure_heat_flux/{}/viewfactors/status"_json_pointer] == "compute" )
+                            else
                             {
-                                if ( specs["/BoundaryConditions/heat/radiative_enclosure_heat_flux/{}/viewfactors"_json_pointer].contains( "filename" ) )
-                                {
-                                    // file where view factors will be saved
-                                    // Message: view factors will be saved in file
-                                }
-                                else
-                                {
-                                    // filename == None
-                                    // Message: view factors will NOT be saved
-                                }
-                                if ( specs["/BoundaryConditions/heat/radiative_enclosure_heat_flux/{}/viewfactors"_json_pointer].contains( "type" ) )
-                                {
-                                    if ( specs["/BoundaryConditions/heat/radiative_enclosure_heat_flux/{}/viewfactors/type"_json_pointer].contains( "raytracing" ) )
-                                    {
-                                        // Message: compute using MC method
-                                        goto compute_MC;
-                                    }
-                                    else if ( specs["/BoundaryConditions/heat/radiative_enclosure_heat_flux/{}/viewfactors/type"_json_pointer].contains( "unobstructed" ) )
-                                    {
-                                        // Message: compute using integral method
-                                        goto compute_integral;
-                                    }
-                                    else
-                                    {
-                                        // Message default case: compute using MC method
-                                        goto compute_MC;
-                                    }
-                                }
-                                else
-                                {
-                                    // Message default case: compute using MC method
-                                    goto compute_MC;
-                                }
+                                // return error: need filename
                             }
                         }
-                        else
+                        // status: compute view factors
+                        else if ( specs["/BoundaryConditions/heat/radiative_enclosure_heat_flux/{}/viewfactors/status"_json_pointer] == "compute" )
                         {
+                            // Saving or not
                             if ( specs["/BoundaryConditions/heat/radiative_enclosure_heat_flux/{}/viewfactors"_json_pointer].contains( "filename" ) )
                             {
                                 // file where view factors will be saved
@@ -312,27 +292,55 @@ int runHeat( nl::json const& specs )
                                 // filename == None
                                 // Message: view factors will NOT be saved
                             }
+                            // Computation method
+                            if ( specs["/BoundaryConditions/heat/radiative_enclosure_heat_flux/{}/viewfactors"_json_pointer].contains( "type" ) )
+                            {
+                                if ( specs["/BoundaryConditions/heat/radiative_enclosure_heat_flux/{}/viewfactors/type"_json_pointer].contains( "raytracing" ) )
+                                {
+                                    // Message: compute using MC method
+                                    compute_MC();
+                                }
+                                else if ( specs["/BoundaryConditions/heat/radiative_enclosure_heat_flux/{}/viewfactors/type"_json_pointer].contains( "unobstructed" ) )
+                                {
+                                    // Message: compute using integral method
+                                    compute_integral();
+                                }
+                                else
+                                {
+                                    // Message default case: compute using MC method
+                                    compute_MC();
+                                }
+                            }
+                            else
+                            {
+                                // Message default case: compute using MC method
+                                compute_MC();
+                            }
+                        }
+                        else // Default case if status is void
+                        {
                             // Message default case: compute using MC method
-                            goto compute_MC;
+                            compute_MC();
                         }
                     }
-                    else
+                    else // Default case if no status
                     {
+                        if ( specs["/BoundaryConditions/heat/radiative_enclosure_heat_flux/{}/viewfactors"_json_pointer].contains( "filename" ) )
+                        {
+                            // file where view factors will be saved
+                            // Message: view factors will be saved in file
+                        }
+                        else
+                        {
+                            // filename == None
+                            // Message: view factors will NOT be saved
+                        }
                         // Message default case: compute using MC method
-                        goto compute_MC;
+                        compute_MC();
                     }
-
-                    compute_MC:
-                        // Compute view factors with MC raytracing method
-                    
-                    compute_integral:
-                        // Compute view factors with integral method
-
-                    loadVF:
-                        // Load view factors
                     
                     // Recover the emissivity epsilon of material linked to the marked face
-                    auto epsilon = value["epsilon"].get<std::string>();
+                    auto epsilon = value["emissivity"].get<std::string>();
                     
                     // Build left hand side matrix LHSm
                     // delta_ij/epsilon_j - (1/epsilon_j -1)F_ij
@@ -368,10 +376,8 @@ int runHeat( nl::json const& specs )
     // Solve
     for ( M_bdf->start(); M_bdf->isFinished()==false; M_bdf->next(u) )
     {
-        lt.zero();
-        at.zero();
-        at += a;
-        lt += l;
+        at = a;
+        lt = l;
 
         for ( auto [key, material] : specs["/Models/heat/materials"_json_pointer].items() )
         {
@@ -384,22 +390,6 @@ int runHeat( nl::json const& specs )
                     _expr = expr( Rho ) * expr( Cp ) * idv( M_bdf->polyDeriv() ) * id( v ) );
         }
 
-        // Blackbody radiative condition
-        if ( specs["/BoundaryConditions/heat"_json_pointer].contains( "radiative_blackbody_heat_flux" ) )
-        {
-            for ( auto& [bc, value] : specs["/BoundaryConditions/heat/radiative_blackbody_heat_flux"_json_pointer].items() )
-            {
-                auto sigma = value["sigma"].get<std::string>();
-
-                // Recover the emissivity epsilon of material linked to the marked face
-                auto epsilon = value["epsilon"].get<std::string>();
-
-                auto idvu3 = idv( M_bdf->polyDeriv() ) * idv( M_bdf->polyDeriv() ) * idv( M_bdf->polyDeriv() );
-
-                at += integrate( _range = markedfaces( mesh, bc ),
-                        _expr = M_bdf->polyDerivCoefficient( 0 ) * expr( sigma ) * expr( epsilon ) * idv3 * idt( u ) * id( v ) );
-            }
-        }
         // Radiative enclosure
         if ( specs["/BoundaryConditions/heat"_json_pointer].contains( "radiative_enclosure_heat_flux" ) )
         {
@@ -408,7 +398,7 @@ int runHeat( nl::json const& specs )
                 auto sigma = value["sigma"].get<std::string>();
                 
                 // Recover the emissivity epsilon of material linked to the marked face
-                auto epsilon = value["epsilon"].get<std::string>();
+                auto epsilon = value["emissivity"].get<std::string>();
 
                 // invLHSm: inverse matrix LHSm
                 // M1: invLHSm * RHSm
