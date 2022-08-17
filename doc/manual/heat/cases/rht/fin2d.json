@@ -44,15 +44,15 @@
             "min":"1e-3",
             "max":"0.1"
         },
-        "phi": 1,
-        "Tref_C": 60,
-        "sigma": 5.67e-12,
-        "Tinit_C": 0
+        "phi": "1",
+        "Tref_C": "60",
+        "sigma": "5.67e-12",
+        "Tinit_C": "0"
     },
     "Meshes": {
         "heat": {
             "Import": {
-                "filename": "$cfgdir/fin.geo",
+                "filename": "$cfgdir/../fin.geo",
                 "partition": 0
             }
         }

@@ -56,7 +56,7 @@
     "Meshes": {
         "heat": {
             "Import": {
-                "filename": "$cfgdir/fin.geo",
+                "filename": "$cfgdir/../fin.geo",
                 "partition": 0
             }
         }
