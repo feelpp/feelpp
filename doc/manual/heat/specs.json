@@ -73,7 +73,7 @@
             "rho": "1"
         }
     },
-    "Quoting":{ // NEW SECTION: optical features linked with boundaries markers
+    "Coating":{ // NEW SECTION: optical features linked with boundaries markers
         "Gamma_0": {
             "markers": ["Gamma_C_0"],
             "emissivity": "0.9"
@@ -127,9 +127,7 @@
             }, 
             "radiative_enclosure_heat_flux": { // radiation in enclosure
                 "Cavity_open": {
-                    "enclosure": "open", // opened enclosure ie exchange with a blackbody at Tref
-                    "hidden": "0", // 1 if hidden faces, else 0
-                    "markers": ["Gamma_O_1", "Gamma_O_2"], // list of boundary linked with quoting
+                    "enclosure": "open", // opened enclosure ie exchange with a blackbody at Tref                    "markers": ["Gamma_O_1", "Gamma_O_2"], // list of boundary linked with coating
                     "Tref": "Trad_C+273.15:Trad_C",
                     "sigma": "sigma:sigma",
                     "viewfactors": {
@@ -139,8 +137,7 @@
                 },
                 "Cavity_close_1": {
                     "enclosure": "close", // closed enclosure
-                    "markers": ["Gamma_C_3", "Gamma_C_4"], // list of boundary linked with quoting
-                    "hidden": "0", // 1 if hidden faces, else 0
+                    "markers": ["Gamma_C_3", "Gamma_C_4"], // list of boundary linked with coating
                     "sigma": "sigma:sigma",
                     "viewfactors": {
                         "status": "compute", // to be compute using "type" and save
@@ -150,9 +147,7 @@
                 },
                 "Cavity_close_2": {
                     "enclosure": "close", // closed enclosure
-                    "markers": ["Gamma_C_0"], // list of boundary linked with quoting
-                    "hidden": "1", // hidden faces
-                    "sigma": "sigma:sigma",
+                    "markers": ["Gamma_C_0"], // list of boundary linked with coating                    "sigma": "sigma:sigma",
                     "viewfactors": {
                         "status": "compute", // to be compute using raytracing (because hidden faces)
                         "filename": "$cfgdir/viewfactors_c2.dat" // if None, not save
@@ -162,12 +157,12 @@
             "radiative_blackbody_heat_flux": { // blackbody RHT
                 // epsilon * sigma (T**4 - Tref**4)
                 "Gamma_BBC_1": {
-                    "markers": ["Gamma_B_11","Gamma_B_12"], // list of boundary linked with quoting
+                    "markers": ["Gamma_B_11","Gamma_B_12"], // list of boundary linked with coating
                     "Tref": "Tref_C+273.15:Tref_C",
                     "sigma": "sigma:sigma"
                 },
                 "Gamma_BBC_2": {
-                    "markers": ["Gamma_B_2"], // list of boundary linked with quoting
+                    "markers": ["Gamma_B_2"], // list of boundary linked with coating
                     "Tref": "Tref_C+273.15:Tref_C",
                     "sigma": "sigma:sigma"
                 }
