@@ -46,7 +46,7 @@ makeOptions()
     ( "Bimin", Feel::po::value<double>()->default_value( 0.01 ), "minimum value of Biot number" )
     ( "Bimax", Feel::po::value<double>()->default_value( 1 ), "maximum value of Biot number" )
 
-    ( "N", Feel::po::value<int>()->default_value( 1 ), "number of samples withing parameter space" )
+    ( "N", Feel::po::value<int>()->default_value( 1 ), "number of samples within parameter space" )
 
     ;
     return thermalfinoptions;

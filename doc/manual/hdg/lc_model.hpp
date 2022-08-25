@@ -512,7 +512,7 @@ LaminaCribrosa<Dim, Order, G_Order, E_Order>::assemble0d( int i )
 	for( auto const& pairMat : this->modelProperties().materials() )
     {
        	auto material = pairMat.second;
-        auto RR = material.getScalar("RR");       // Resistence of the buffer
+        auto RR = material.getScalar("RR");       // Resistance of the buffer
         auto CC = material.getScalar("CC");       // Capacitance of the buffer
 
 	    // -1/(R |Gamma_I|) <u_I, mu2>_Gamma_I
