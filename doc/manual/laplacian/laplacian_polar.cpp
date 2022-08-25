@@ -41,8 +41,8 @@ namespace Feel
 
    Two examples are available to solve the Laplacian in two coordinate systems (cartesian and polar) having the same solution.
 
-   - `feelpp_doc_laplacian_polar` polar coodinate system
-   - `feelpp_doc_laplacian_cartesian` cartesian coodinate system
+   - `feelpp_doc_laplacian_polar` polar coordinate system
+   - `feelpp_doc_laplacian_cartesian` cartesian coordinate system
 
    The default arguments(and configuration) should work seamlessly.
 
