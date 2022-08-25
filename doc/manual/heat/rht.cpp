@@ -129,7 +129,7 @@ int runHeat( nl::json const& specs )
 
             // Recover the emissivity epsilon of the material linked to the marked face
             auto epsilon = value["emissivity"].get<std::string>();
-            //for ( auto& [key, quote] : specs["/Quoting"_json_pointer].items() )
+            //for ( auto& [key, coat] : specs["/Coating"_json_pointer].items() )
 
             auto idtu4 = idt( u ) * idt( u ) * idt( u ) * idt( u );
             auto Tref4 = expr( Tref ) * expr( Tref ) * expr( Tref ) * expr( Tref );

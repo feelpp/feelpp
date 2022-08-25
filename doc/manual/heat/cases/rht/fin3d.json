@@ -88,7 +88,7 @@
             "rho": "1"
         }
     },
-    "Quoting":{
+    "Coating":{
         "Gamma_Post": {
             "markers": ["Gamma_Post_1", "Gamma_Post_2", "Gamma_Post_3", "Gamma_Post_4"],
             "epsilon": "0.9"
