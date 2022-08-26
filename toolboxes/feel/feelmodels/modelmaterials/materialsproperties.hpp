@@ -6,10 +6,15 @@
 
 #include <feel/feelvf/cst.hpp>
 #include <feel/feelvf/ones.hpp>
+#include <feel/feelmesh/meshbase.hpp>
 #include <feel/feelmodels/modelexpression.hpp>
 #include <feel/feelmodels/modelmaterials.hpp>
 #include <feel/feelmodels/modelvf/exprselectorbymeshelement.hpp>
 #include <feel/feelmodels/modelcore/modelphysics.hpp>
+
+#include <map>
+#include <set>
+#include <string>
 
 namespace Feel
 {
@@ -35,47 +40,32 @@ private :
 
 class MaterialProperties : public std::map<std::string, MaterialProperty>
 {
+    using super_type = std::map<std::string, MaterialProperty>;
 public :
     explicit MaterialProperties( std::string const& name ) : M_materialName( name ) {}
-    MaterialProperties( MaterialProperties const& matProp ): 
-        M_materialName( matProp.M_materialName ),
-        M_markers( matProp.M_markers )
-    {
-        for ( auto const& [subMatName, subMatProps]: matProp.M_subMaterialProperties )
-        {
-            M_subMaterialProperties.emplace( subMatName, std::make_unique<MaterialProperties>( *subMatProps ) );
-        }
-    }
+    MaterialProperties( MaterialProperties const& matProp );
     MaterialProperties( MaterialProperties && ) = default;
 
-    void add( std::string const& propName, ModelExpression const& expr )
-        {
-            auto itFind = this->find( propName );
-            if ( itFind != this->end() )
-                this->erase( itFind );
-            this->emplace(propName, MaterialProperty(propName, expr) );
-        }
+    void add( std::string const& propName, ModelExpression const& expr );
 
-    bool has( std::string const& propName ) const
-        {
-            if ( this->find( propName ) != this->end() )
-                return true;
-            return false;
-        }
+    bool has( std::string const& propName ) const;
 
     MaterialProperty const&
-    property( std::string const& propName ) const
-        {
-            auto itFind = this->find( propName );
-            CHECK( itFind != this->end() ) << "material property" << propName << " not found";
-            return itFind->second;
-        }
+    property( std::string const& propName ) const;
 
-    void setParameterValues( std::map<std::string,double> const& mp )
-        {
-            for ( auto & [propName,matProp] : *this )
-                matProp.setParameterValues( mp );
-        }
+    void setParameterValues( std::map<std::string,double> const& mp );
+
+    std::shared_ptr<ModelMaterialLaw> law( std::string const& l ) const;
+    template< typename LawType >
+    std::shared_ptr<LawType> law( std::string const& l ) const
+    {
+        return std::static_pointer_cast<LawType>( this->law( l ) );
+    }
+
+    std::map<std::string, std::shared_ptr<ModelMaterialLaw>> const& laws() const { return M_materialLaws; }
+
+    void setLaws( std::map<std::string, std::shared_ptr<ModelMaterialLaw>> const& laws ) { M_materialLaws = laws; }
+    void setLaw( std::string const& lawName, std::shared_ptr<ModelMaterialLaw> const& law ) { M_materialLaws[lawName] = law; }
 
     std::set<std::string> markers() const { return M_markers; }
     void setMarkers( std::set<std::string> const& m ) { M_markers = m; }
@@ -83,34 +73,14 @@ public :
     std::string const& materialName() const { return M_materialName; }
 
     std::map<std::string, std::unique_ptr<MaterialProperties>> const& subMaterialProperties() const { return M_subMaterialProperties; }
-    MaterialProperties const& subMaterialProperties( std::string const& subMatName ) const
-    {
-        auto itFind = M_subMaterialProperties.find( subMatName );
-        CHECK( itFind != M_subMaterialProperties.end() ) << "sub material " << subMatName << " not found";
-        return *(itFind->second);
-    }
-    MaterialProperties & subMaterialProperties( std::string const& subMatName )
-    {
-        auto [it, inserted] = M_subMaterialProperties.try_emplace( subMatName, nullptr );
-        if( inserted )
-            it->second = std::make_unique<MaterialProperties>( subMatName );
-        return *it->second;
-    }
-    void addSubMaterialProperties( std::string const& subMatName, MaterialProperties const& subMatProps ) 
-    {
-        auto [it, inserted] = M_subMaterialProperties.try_emplace( subMatName, nullptr );
-        CHECK( inserted ) << "sub material " << subMatName << " already exists";
-        if( inserted )
-            it->second = std::make_unique<MaterialProperties>( subMatProps );
-    }
-    void addSubMaterialProperty( std::string const& subMatName, std::string const& propName, ModelExpression const& expr )
-    {
-        M_subMaterialProperties[subMatName]->add( propName, expr );
-    }
-
+    MaterialProperties const& subMaterialProperties( std::string const& subMatName ) const;
+    MaterialProperties & subMaterialProperties( std::string const& subMatName );
+    void addSubMaterialProperties( std::string const& subMatName, MaterialProperties const& subMatProps );
+    void addSubMaterialProperty( std::string const& subMatName, std::string const& propName, ModelExpression const& expr );
 
 private :
     std::string M_materialName;
+    std::map<std::string, std::shared_ptr<ModelMaterialLaw>> M_materialLaws;
     std::set<std::string> M_markers;
     std::map<std::string, std::unique_ptr<MaterialProperties>> M_subMaterialProperties;
 };
@@ -212,6 +182,10 @@ public :
                 // attach markers
                 matProperties.setMarkers( itFindMat->second );
 
+                // add material laws
+                matProperties.setLaws( mat.laws() );
+
+                // add properties
                 for ( auto const& [propSymbol,propExpr] : mat.properties() )
                 {
                     std::string propName = propSymbol;
@@ -339,67 +313,72 @@ public :
             return this->physicToMaterials( std::set<physic_id_type>({ physicId }) );
         }
 
+    void addPhysicToMaterial( physic_id_type const& physicId, std::string const& matName )
+    {
+        M_materialsNames[physicId].insert( matName );
+    }
+
     //! return true if the physic is defined in a material
     bool hasPhysic( physic_id_type const& physicId ) const
-        {
-            return M_materialsNames.find( physicId ) != M_materialsNames.end();
-        }
+    {
+        return M_materialsNames.find( physicId ) != M_materialsNames.end();
+    }
 
 
     //! return the physics that are used in the material \matName from \physicsCollection
     std::map<physic_id_type,typename modelphysics_type::model_physic_ptrtype> physicsFromMaterial( std::string const& matName, std::map<physic_id_type,typename modelphysics_type::model_physic_ptrtype> const& physicsCollection ) const
+    {
+        std::map<physic_id_type,typename modelphysics_type::model_physic_ptrtype> res;
+        for ( auto const& [physicId,physicData] : physicsCollection )
         {
-            std::map<physic_id_type,typename modelphysics_type::model_physic_ptrtype> res;
-            for ( auto const& [physicId,physicData] : physicsCollection )
-            {
-                auto const& matNames = this->physicToMaterials( physicId );
-                if ( matNames.find( matName ) == matNames.end() )
-                    continue;
-                res[physicId] = physicData;
-            }
-            return res;
+            auto const& matNames = this->physicToMaterials( physicId );
+            if ( matNames.find( matName ) == matNames.end() )
+                continue;
+            res[physicId] = physicData;
         }
+        return res;
+    }
 
 
     void addProperty( MaterialProperties & matProperties, std::string const& propName, ModelExpression const& propExpr, bool onlyInPhysicDescription = false )
+    {
+        auto itFindPropPhysicDesc = M_materialPropertyPhysicDescription.find( propName );
+        if ( itFindPropPhysicDesc != M_materialPropertyPhysicDescription.end() )
         {
-            auto itFindPropPhysicDesc = M_materialPropertyPhysicDescription.find( propName );
-            if ( itFindPropPhysicDesc != M_materialPropertyPhysicDescription.end() )
+            auto const& desc = itFindPropPhysicDesc->second;
+            bool findProp = false;
+            for ( auto [nComp1,nComp2] : desc.shapes() )
             {
-                auto const& desc = itFindPropPhysicDesc->second;
-                bool findProp = false;
-                for ( auto [nComp1,nComp2] : desc.shapes() )
+                if ( propExpr.hasExpr(nComp1,nComp2) )
                 {
-                    if ( propExpr.hasExpr(nComp1,nComp2) )
-                    {
-                        matProperties.add( propName/*symbol*/, propExpr );
-                        findProp = true;
-                        break;
-                    }
+                    matProperties.add( propName/*symbol*/, propExpr );
+                    findProp = true;
+                    break;
                 }
-                CHECK( findProp ) << "shape of the material property " << propName << " is not compatible with the physic";
-                M_materialPropertyDescription.try_emplace( propName,desc );
             }
-            else if ( !onlyInPhysicDescription )
-            {
-                std::string const& propSymbol = propName;
-                hana::for_each( ModelExpression::expr_shapes, [this,&propName,&propExpr,&propSymbol,&matProperties]( auto const& e_ij )
-                                {
-                                    constexpr int ni = std::decay_t<decltype(hana::at_c<0>(e_ij))>::value;
-                                    constexpr int nj = std::decay_t<decltype(hana::at_c<1>(e_ij))>::value;
-                                    if ( propExpr.template hasExpr<ni,nj>() )
-                                    {
-                                        matProperties.add( propName, propExpr );
-                                        auto propShape = MaterialPropertyDescription::shape(ni,nj);
-                                        auto itFindPropDesc = M_materialPropertyDescription.find( propName);
-                                        if( itFindPropDesc == M_materialPropertyDescription.end() )
-                                            M_materialPropertyDescription.emplace( propName, MaterialPropertyDescription( propSymbol, { propShape } ) );
-                                        else
-                                            itFindPropDesc->second.add( propShape );
-                                    }
-                                });
-            }
+            CHECK( findProp ) << "shape of the material property " << propName << " is not compatible with the physic";
+            M_materialPropertyDescription.try_emplace( propName,desc );
         }
+        else if ( !onlyInPhysicDescription )
+        {
+            std::string const& propSymbol = propName;
+            hana::for_each( ModelExpression::expr_shapes, [this,&propName,&propExpr,&propSymbol,&matProperties]( auto const& e_ij )
+                    {
+                    constexpr int ni = std::decay_t<decltype(hana::at_c<0>(e_ij))>::value;
+                    constexpr int nj = std::decay_t<decltype(hana::at_c<1>(e_ij))>::value;
+                    if ( propExpr.template hasExpr<ni,nj>() )
+                    {
+                    matProperties.add( propName, propExpr );
+                    auto propShape = MaterialPropertyDescription::shape(ni,nj);
+                    auto itFindPropDesc = M_materialPropertyDescription.find( propName);
+                    if( itFindPropDesc == M_materialPropertyDescription.end() )
+                    M_materialPropertyDescription.emplace( propName, MaterialPropertyDescription( propSymbol, { propShape } ) );
+                    else
+                    itFindPropDesc->second.add( propShape );
+                    }
+                    });
+        }
+    }
 
     std::map<std::string,MaterialProperties> const& materialNameToProperties() const { return M_materialNameToProperties; }
 
@@ -411,170 +390,184 @@ public :
 
     MaterialProperties const&
     materialProperties( std::string const& matName ) const
-        {
-            auto itFindMatProp = M_materialNameToProperties.find( matName );
-            CHECK( itFindMatProp != M_materialNameToProperties.end() ) << "material name not registered : " << matName;
-            return itFindMatProp->second;
-        }
+    {
+        auto itFindMatProp = M_materialNameToProperties.find( matName );
+        CHECK( itFindMatProp != M_materialNameToProperties.end() ) << "material name not registered : " << matName;
+        return itFindMatProp->second;
+    }
 
     MaterialProperties &
     materialProperties( std::string const& matName )
+    {
+        auto itFindMatProp = M_materialNameToProperties.find( matName );
+        CHECK( itFindMatProp != M_materialNameToProperties.end() ) << "material name not registered : " << matName;
+        return itFindMatProp->second;
+    }
+
+    void addMaterialProperties( MaterialProperties const& matProps, std::set<physic_id_type> const& physicsIds = std::set<physic_id_type>{} )
+    {
+        // Add material properties
+        std::string const& matName = matProps.materialName();
+        auto [it, inserted] = M_materialNameToProperties.try_emplace( matName, matProps );
+        CHECK( inserted ) << "material " << matName << " was already present and thus not inserted";
+        // Register material to physics
+        for( physic_id_type const& physicId: physicsIds )
         {
-            auto itFindMatProp = M_materialNameToProperties.find( matName );
-            CHECK( itFindMatProp != M_materialNameToProperties.end() ) << "material name not registered : " << matName;
-            return itFindMatProp->second;
+            M_materialsNames[physicId].insert( matName );
         }
+    }
+
 
     //! return true is the property \propName is defined in at leat one material
     bool hasMaterialProperty( std::string const& propName ) const
+    {
+        for ( auto const& [matName,matProps] : M_materialNameToProperties )
         {
-            for ( auto const& [matName,matProps] : M_materialNameToProperties )
-            {
-                if ( matProps.has( propName ) )
-                    return true;
-            }
-            return false;
+            if ( matProps.has( propName ) )
+                return true;
         }
+        return false;
+    }
 
     //! return true is the property \propName is defined in material \matName
     bool hasProperty( std::string const& matName, std::string const& propName ) const
-        {
-            if ( !this->hasMaterial( matName ) )
-                return false;
-            return this->materialProperties( matName ).has( propName );
-        }
+    {
+        if ( !this->hasMaterial( matName ) )
+            return false;
+        return this->materialProperties( matName ).has( propName );
+    }
 
     //! return the property \propName which is defined in material \matName
     MaterialProperty const&
     materialProperty( std::string const& matName, std::string const& propName ) const
-        {
-            CHECK( this->hasProperty( matName, propName ) ) << "material property " << propName << " is not registered in material " << matName;
-            return this->materialProperties( matName ).property( propName );
-        }
+    {
+        CHECK( this->hasProperty( matName, propName ) ) << "material property " << propName << " is not registered in material " << matName;
+        return this->materialProperties( matName ).property( propName );
+    }
 
     //! return true is the property \propName has the same expression shape (M \times N) in all materials
     template <int M,int N>
     bool materialPropertyHasSameExprShapeInAllMaterials( std::string const& propName ) const
+    {
+        auto itFindPropDesc = M_materialPropertyDescription.find( propName );
+        if ( itFindPropDesc == M_materialPropertyDescription.end() )
+            return false;
+
+        // look if the prop has only one shape available and exists
+        auto const& theShapes = std::get<1>( itFindPropDesc->second );
+        if ( theShapes.size() == 1 )
+            if ( theShapes[0].first == M && theShapes[0].second == N && this->hasMaterialProperty( propName ) )
+                return true;
+
+        // else loop on prop for each material
+        bool findProp = false ;
+        for ( auto & [matName,matProps] : M_materialNameToProperties )
         {
-            auto itFindPropDesc = M_materialPropertyDescription.find( propName );
-            if ( itFindPropDesc == M_materialPropertyDescription.end() )
+            if ( !matProps.has( propName ) )
+                continue;
+            findProp = true;
+            if ( !matProps.property( propName ).template hasExpr<M,N>() )
                 return false;
-
-            // look if the prop has only one shape available and exists
-            auto const& theShapes = std::get<1>( itFindPropDesc->second );
-            if ( theShapes.size() == 1 )
-                if ( theShapes[0].first == M && theShapes[0].second == N && this->hasMaterialProperty( propName ) )
-                    return true;
-
-            // else loop on prop for each material
-            bool findProp = false ;
-            for ( auto & [matName,matProps] : M_materialNameToProperties )
-            {
-                if ( !matProps.has( propName ) )
-                    continue;
-                findProp = true;
-                if ( !matProps.property( propName ).template hasExpr<M,N>() )
-                    return false;
-            }
-            return findProp;
         }
+        return findProp;
+    }
 
     //! return true is the property \propName is defined as a scalar expression in all materials
     bool materialPropertyIsScalarInAllMaterials( std::string const& propName ) const
-        {
-            return this->materialPropertyHasSameExprShapeInAllMaterials<1,1>( propName );
-        }
+    {
+        return this->materialPropertyHasSameExprShapeInAllMaterials<1,1>( propName );
+    }
 
 
     //! return true is the property \propName is defined as a scalar or a matrix TheDim x TheDim in all materials
     template <int TheDim>
     bool materialPropertyIsScalarOrMatrixInAllMaterials( std::string const& propName ) const
-        {
-            auto itFindPropDesc = M_materialPropertyDescription.find( propName );
-            if ( itFindPropDesc == M_materialPropertyDescription.end() )
-                return false;
-            auto const& theShapes = std::get<1>( itFindPropDesc->second );
-            if ( theShapes.size() != 2 )
-                return false;
-            if ( theShapes[0].first == 1 && theShapes[0].second == 1 && theShapes[1].first == TheDim && theShapes[1].second == TheDim )
-                return true;
-            if ( theShapes[1].first == 1 && theShapes[1].second == 1 && theShapes[0].first == TheDim && theShapes[0].second == TheDim )
-                return true;
+    {
+        auto itFindPropDesc = M_materialPropertyDescription.find( propName );
+        if ( itFindPropDesc == M_materialPropertyDescription.end() )
             return false;
-        }
+        auto const& theShapes = std::get<1>( itFindPropDesc->second );
+        if ( theShapes.size() != 2 )
+            return false;
+        if ( theShapes[0].first == 1 && theShapes[0].second == 1 && theShapes[1].first == TheDim && theShapes[1].second == TheDim )
+            return true;
+        if ( theShapes[1].first == 1 && theShapes[1].second == 1 && theShapes[0].first == TheDim && theShapes[0].second == TheDim )
+            return true;
+        return false;
+    }
 
     //! return true if the  property \propName depends on symbol named \symbolStr
     bool hasMaterialPropertyDependingOnSymbol( std::string const& propName, std::string const& symbolStr ) const
+    {
+        for ( auto & [matName,matProps] : M_materialNameToProperties )
         {
-            for ( auto & [matName,matProps] : M_materialNameToProperties )
-            {
-                if ( !matProps.has( propName ) )
-                    continue;
-                auto const& matProp = matProps.property( propName );
+            if ( !matProps.has( propName ) )
+                continue;
+            auto const& matProp = matProps.property( propName );
 
-                if ( matProp.hasSymbolDependency( symbolStr ) )
-                    return true;
-            }
-            return false;
+            if ( matProp.hasSymbolDependency( symbolStr ) )
+                return true;
         }
+        return false;
+    }
 
     template <int TheDim, typename SymbolsExprType = symbols_expression_empty_t>
     auto materialPropertyExprScalarOrMatrix( std::string const& propName, SymbolsExprType const& se = symbols_expression_empty_t{} ) const
+    {
+        auto Id = eye<TheDim,TheDim>();
+        using _expr_scalar_type = std::decay_t< decltype( ModelExpression{}.template expr<1,1>() ) >;
+        using _expr_matrix_type = std::decay_t< decltype( ModelExpression{}.template expr<TheDim,TheDim>() ) >;
+        using _expr_scalar_as_matrix_type = std::decay_t< decltype(_expr_scalar_type{}*Id) >;
+        std::vector<std::pair<std::string,_expr_scalar_as_matrix_type>> exprs_scalar_as_matrix;
+        std::vector<std::pair<std::string,_expr_matrix_type>> exprs_matrix;
+
+        for ( auto const& [matName,matProps] : this->materialNameToProperties() )
         {
-            auto Id = eye<TheDim,TheDim>();
-            using _expr_scalar_type = std::decay_t< decltype( ModelExpression{}.template expr<1,1>() ) >;
-            using _expr_matrix_type = std::decay_t< decltype( ModelExpression{}.template expr<TheDim,TheDim>() ) >;
-            using _expr_scalar_as_matrix_type = std::decay_t< decltype(_expr_scalar_type{}*Id) >;
-            std::vector<std::pair<std::string,_expr_scalar_as_matrix_type>> exprs_scalar_as_matrix;
-            std::vector<std::pair<std::string,_expr_matrix_type>> exprs_matrix;
+            if ( !matProps.has( propName ) )
+                continue;
+            auto const& matProp = matProps.property( propName );
 
-            for ( auto const& [matName,matProps] : this->materialNameToProperties() )
+            if ( matProp.template hasExpr<TheDim,TheDim>() )
             {
-                if ( !matProps.has( propName ) )
-                    continue;
-                auto const& matProp = matProps.property( propName );
-
-                if ( matProp.template hasExpr<TheDim,TheDim>() )
-                {
-                    auto const& matPropExpr = matProp.template expr<TheDim,TheDim>();
-                    exprs_matrix.push_back( std::make_pair( matName, matPropExpr ) );
-                }
-                else if ( matProp.hasExprScalar() )
-                {
-                    auto const& matPropExpr = matProp.exprScalar();
-                    exprs_scalar_as_matrix.push_back( std::make_pair( matName, matPropExpr*Id ) );
-                }
+                auto const& matPropExpr = matProp.template expr<TheDim,TheDim>();
+                exprs_matrix.push_back( std::make_pair( matName, matPropExpr ) );
             }
-
-            if constexpr ( std::is_same_v<SymbolsExprType,symbols_expression_empty_t> )
-                return expr<typename MeshBase<>/*mesh_type*/::index_type>( M_exprSelectorByMeshElementMapping, exprs_scalar_as_matrix, exprs_matrix );
-            else
-                return expr<typename MeshBase<>/*mesh_type*/::index_type>( M_exprSelectorByMeshElementMapping, exprs_scalar_as_matrix, exprs_matrix ).applySymbolsExpr( se );
+            else if ( matProp.hasExprScalar() )
+            {
+                auto const& matPropExpr = matProp.exprScalar();
+                exprs_scalar_as_matrix.push_back( std::make_pair( matName, matPropExpr*Id ) );
+            }
         }
+
+        if constexpr ( std::is_same_v<SymbolsExprType,symbols_expression_empty_t> )
+            return expr<typename MeshBase<>/*mesh_type*/::index_type>( M_exprSelectorByMeshElementMapping, exprs_scalar_as_matrix, exprs_matrix );
+        else
+            return expr<typename MeshBase<>/*mesh_type*/::index_type>( M_exprSelectorByMeshElementMapping, exprs_scalar_as_matrix, exprs_matrix ).applySymbolsExpr( se );
+    }
 
     template <int M,int N, typename SymbolsExprType = symbols_expression_empty_t>
     auto materialPropertyExpr( std::string const& propName, SymbolsExprType const& se = symbols_expression_empty_t{} ) const
+    {
+        using _expr_type = std::decay_t< decltype( ModelExpression{}.template expr<M,N>() ) >;
+        std::vector<std::pair<std::string,_expr_type>> theExprs;
+        for ( auto const& [matName,matProps] : this->materialNameToProperties() )
         {
-            using _expr_type = std::decay_t< decltype( ModelExpression{}.template expr<M,N>() ) >;
-            std::vector<std::pair<std::string,_expr_type>> theExprs;
-            for ( auto const& [matName,matProps] : this->materialNameToProperties() )
+            if ( !matProps.has( propName ) )
+                continue;
+            auto const& matProp = matProps.property( propName );
+
+            if ( matProp.template hasExpr<M,N>() )
             {
-                if ( !matProps.has( propName ) )
-                    continue;
-                auto const& matProp = matProps.property( propName );
-
-                if ( matProp.template hasExpr<M,N>() )
-                {
-                    auto const& matPropExpr = matProp.template expr<M,N>();
-                    theExprs.push_back( std::make_pair( matName, matPropExpr ) );
-                }
+                auto const& matPropExpr = matProp.template expr<M,N>();
+                theExprs.push_back( std::make_pair( matName, matPropExpr ) );
             }
-
-            if constexpr ( std::is_same_v<SymbolsExprType,symbols_expression_empty_t> )
-                return expr<typename MeshBase<>/*mesh_type*/::index_type>( M_exprSelectorByMeshElementMapping, theExprs );
-            else
-                return expr<typename MeshBase<>/*mesh_type*/::index_type>( M_exprSelectorByMeshElementMapping, theExprs ).applySymbolsExpr( se );
         }
+
+        if constexpr ( std::is_same_v<SymbolsExprType,symbols_expression_empty_t> )
+            return expr<typename MeshBase<>/*mesh_type*/::index_type>( M_exprSelectorByMeshElementMapping, theExprs );
+        else
+            return expr<typename MeshBase<>/*mesh_type*/::index_type>( M_exprSelectorByMeshElementMapping, theExprs ).applySymbolsExpr( se );
+    }
 
     // thermal conductivity
     bool hasThermalConductivity( std::string const& matName ) const
