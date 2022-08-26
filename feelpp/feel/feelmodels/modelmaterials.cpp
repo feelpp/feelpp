@@ -93,6 +93,18 @@ ModelMaterial::ModelMaterial( std::string const& name, nl::json const& jarg, wor
         }
     }
 
+    if ( jarg.contains("laws") )
+    {
+        auto const& j_laws = jarg.at("laws");
+        if ( j_laws.is_object() )
+        {
+            for ( auto const& [jlawkey, jlawval]: j_laws.items() )
+            {
+                this->setLaw( jlawkey, jlawval );
+            }
+        }
+    }
+
     if ( jarg.contains("submaterials") )
     {
         auto const& j_submat = jarg.at("submaterials");
@@ -118,28 +130,28 @@ ModelMaterial::ModelMaterial( std::string const& name, nl::json const& jarg, wor
 
     std::map<std::string,double> constantMaterialProperty;
     auto addMatPropLambda = [&constantMaterialProperty,&indexes,&index_pattern,this]( nl::json const& jarg ) {
-                                for ( auto const& [jargkey,jargval] : jarg.items() )
-                                {
-                                    std::string const& propName = indexes.replace( jargkey );
-                                    if ( propName == "markers" || propName == "physics" || propName == "name" || propName == "filename" || propName == "submaterials" )
-                                        continue;
-                                    if ( jargval.empty() )
-                                        continue;
-                                    if ( std::regex_match( propName, index_pattern ) )
-                                        continue;
+        for ( auto const& [jargkey,jargval] : jarg.items() )
+        {
+            std::string const& propName = indexes.replace( jargkey );
+            if ( propName == "markers" || propName == "physics" || propName == "name" || propName == "filename" || propName == "submaterials" )
+                continue;
+            if ( jargval.empty() )
+                continue;
+            if ( std::regex_match( propName, index_pattern ) )
+                continue;
 
-                                    VLOG(1) << "propName: " << propName;
+            VLOG(1) << "propName: " << propName;
 
-                                    this->setProperty( propName,jargval,indexes );
+            this->setProperty( propName,jargval,indexes );
 #if 0 // VINCENT CHECK IF REALLY NECESSARY
-                                    if ( this->hasPropertyConstant( propName ) && this->hasPropertyExprScalar( propName ) )
-                                    {
-                                        VLOG(1) << "key: " << propName << " value: " << this->property( propName ).value() << "  constant prop";
-                                        constantMaterialProperty[propName] = this->property( propName ).value();
-                                    }
+            if ( this->hasPropertyConstant( propName ) && this->hasPropertyExprScalar( propName ) )
+            {
+                VLOG(1) << "key: " << propName << " value: " << this->property( propName ).value() << "  constant prop";
+                constantMaterialProperty[propName] = this->property( propName ).value();
+            }
 #endif
-                                }
-                            };
+        }
+    };
 
     if ( j_fileLoaded )
         addMatPropLambda( *j_fileLoaded );
@@ -173,6 +185,34 @@ ModelMaterial::setProperty( std::string const& property, std::string const& e )
 {
     nl::json j_matprop( { { "expr",e } } );
     this->setProperty( property, j_matprop );
+}
+
+bool
+ModelMaterial::hasLaw( std::string const& law ) const
+{
+    return M_materialLaws.find( law ) != M_materialLaws.end();
+}
+
+ModelMaterial::material_law_ptrtype const&
+ModelMaterial::law( std::string const& law ) const
+{
+    if ( !this->hasLaw( law ) )
+        throw std::out_of_range( fmt::format("law {} is not registered", law) );
+    return M_materialLaws.at( law );
+}
+
+void
+ModelMaterial::setLaw( std::string const& law, nl::json const& jarg )
+{
+    auto [it, inserted] = M_materialLaws.try_emplace( law, ModelMaterialLawFactory::instance().createObject( law ) );
+    it->second->setup( jarg );
+}
+
+void
+ModelMaterial::setLaw( std::string const& law, std::string const& e )
+{
+    nl::json j_matlaw( { e } );
+    this->setLaw( law, j_matlaw );
 }
 
 void

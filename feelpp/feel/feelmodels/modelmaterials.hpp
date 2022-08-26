@@ -27,6 +27,7 @@
 
 #include <vector>
 #include <feel/feelcore/commobject.hpp>
+#include <feel/feelcore/factory.hpp>
 #include <feel/feelmodels/modelexpression.hpp>
 #include <feel/feelmodels/modelmarkers.hpp>
 
@@ -54,11 +55,27 @@ struct FEELPP_EXPORT ModelMaterialProperty
     nl::json M_data;
 };
 
+struct FEELPP_EXPORT ModelMaterialLaw
+{
+    public:
+        ModelMaterialLaw() = default;
+        ModelMaterialLaw( ModelMaterialLaw const& ) = default;
+        ModelMaterialLaw( ModelMaterialLaw && ) = default;
+        virtual ~ModelMaterialLaw() = default;
+
+        virtual void setup( nl::json const& jarg ) = 0;
+};
+
 struct FEELPP_EXPORT ModelMaterial : public CommObject
 {
     using super = CommObject;
     using material_property_type = ModelMaterialProperty;
     using material_properties_type = std::map<std::string, material_property_type >;
+    using material_law_type = ModelMaterialLaw;
+    using material_law_ptrtype = std::shared_ptr<ModelMaterialLaw>;
+    using material_laws_type = std::map<std::string, material_law_ptrtype >;
+
+    using ModelMaterialLawFactory = Feel::Singleton<Feel::Factory<ModelMaterialLaw, std::string>>;
 
     ModelMaterial( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
     ModelMaterial( ModelMaterial const& ) = default;
@@ -91,6 +108,13 @@ struct FEELPP_EXPORT ModelMaterial : public CommObject
     material_properties_type const& properties() const { return M_materialProperties; }
     material_property_type const& property( std::string const& prop ) const;
 
+    bool hasLaw( std::string const& law ) const;
+    material_laws_type & laws() { return M_materialLaws; }
+    material_laws_type const& laws() const { return M_materialLaws; }
+    material_law_ptrtype const& law( std::string const& law ) const;
+    void setLaw( std::string const& law, nl::json const& jarg );
+    void setLaw( std::string const& law, std::string const& e );
+
     bool hasSubMaterial( std::string const& subMat ) const;
     std::map<std::string, material_properties_type> & subMaterialProperties() { return M_subMaterialProperties; }
     std::map<std::string, material_properties_type> const& subMaterialProperties() const { return M_subMaterialProperties; }
@@ -121,6 +145,8 @@ private:
     //! mat properties
     material_properties_type M_materialProperties;
     std::map<std::string, material_properties_type> M_subMaterialProperties;
+    //! mat laws
+    material_laws_type M_materialLaws;
     //! material physics
     std::set<std::string> M_physics;
     //! mesh markers
