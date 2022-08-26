@@ -4,20 +4,21 @@
 #include <feel/feelmodels/modelvf/exprtensorbase.hpp>
 #include <feel/feelmodels/modelvf/exprevaluatefieldoperators.hpp>
 
+#include <feel/feelmodels/fluid/fluidmechanicsmaterialproperties.hpp>
+
 namespace Feel
 {
 namespace FeelModels
 {
 
 // Forward declaration
-template<typename ExprEvaluateFieldOperatorsType, typename FiniteElementVelocityType, typename ModelPhysicFluidType, typename SymbolsExprType, ExprApplyType ExprApplied, ExprOperatorType ExprOp, bool EnableMultifluid >
+template<typename ExprEvaluateFieldOperatorsType, typename FiniteElementVelocityType, typename SymbolsExprType, ExprApplyType ExprApplied, ExprOperatorType ExprOp >
 class FluidMecDynamicViscosityImpl;
 
 template< typename ExprType>
 struct FluidMecDynamicViscosityBase
 {
     using expr_type = ExprType;
-    static constexpr bool enable_multifluid = expr_type::enable_multifluid;
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
     using tensor_main_type = typename expr_type::template tensor<Geo_t,Basis_i_t,Basis_j_t>;
@@ -1168,39 +1169,41 @@ public :
 
     using material_property_scalar_expr_type = typename expr_type::template material_property_expr_type<1,1>;
 
-    using fluidmec_sub_dynamicviscosity_impl_type = FluidMecDynamicViscosityImpl<
+    using fluidmec_dynamicviscosity_impl_type = FluidMecDynamicViscosityImpl<
         typename expr_type::expr_evaluate_velocity_opertors_type,
         typename expr_type::finite_element_velocity_type,
-        typename expr_type::model_physic_fluid_type,
         typename expr_type::symbols_expr_type,
         expr_type::expr_apply_type,
-        expr_type::expr_operator_type,
-        false // no multifluid 
+        expr_type::expr_operator_type
             >;
-    using fluidmec_sub_dynamicviscosity_impl_ptrtype = std::shared_ptr<fluidmec_sub_dynamicviscosity_impl_type>;
+    using fluidmec_dynamicviscosity_impl_ptrtype = std::shared_ptr<fluidmec_dynamicviscosity_impl_type>;
 
-    FluidMecDynamicViscosityMultifluid( ExprType const& expr ):
-        super_type( expr ),
-        M_fluidMecSubDynamicViscosityImpl( new fluidmec_sub_dynamicviscosity_impl_type( expr.exprEvaluateVelocityOperatorsPtr(), expr.modelPhysic(), expr.materialProperties(), expr.polynomialOrder(), expr.symbolsExpr() ) ),
-        M_exprHeaviside( expr.template materialPropertyExpr<1,1>("heaviside") )
+    FluidMecDynamicViscosityMultifluid( ExprType const& ex ):
+        super_type( ex ),
+        //M_fluidMecInnerDynamicViscosityImpl( new fluidmec_dynamicviscosity_impl_type( ex.exprEvaluateVelocityOperatorsPtr(), ex.dynamicViscosityLaw(), ex.materialProperties(), ex.polynomialOrder(), ex.symbolsExpr() ) ),
+        M_fluidMecInnerDynamicViscosityImpl( new fluidmec_dynamicviscosity_impl_type( ex.exprEvaluateVelocityOperatorsPtr(), *ex.materialProperties().subMaterialProperties( "inner_fluid" ).template law<DynamicViscosityLaw>( "dynamic-viscosity" ), ex.materialProperties().subMaterialProperties( "inner_fluid" ), ex.polynomialOrder(), ex.symbolsExpr() ) ),
+        M_fluidMecOuterDynamicViscosityImpl( new fluidmec_dynamicviscosity_impl_type( ex.exprEvaluateVelocityOperatorsPtr(), *ex.materialProperties().subMaterialProperties( "outer_fluid" ).template law<DynamicViscosityLaw>( "dynamic-viscosity" ), ex.materialProperties().subMaterialProperties( "outer_fluid" ), ex.polynomialOrder(), ex.symbolsExpr() ) ),
+        //M_exprHeaviside( ex.template materialPropertyExpr<1,1>("heaviside") )
+        M_exprHeaviside( expr( ex.materialProperties().subMaterialProperties( "inner_fluid" ).property( "heaviside" ).template expr<1,1>(), ex.symbolsExpr() ) )
     {}
 
     FluidMecDynamicViscosityMultifluid( FluidMecDynamicViscosityMultifluid const& ) = default;
     FluidMecDynamicViscosityMultifluid( FluidMecDynamicViscosityMultifluid && ) = default;
 
-    fluidmec_sub_dynamicviscosity_impl_type const& exprSubDynamicViscosity() const { return *M_fluidMecSubDynamicViscosityImpl; }
+    fluidmec_dynamicviscosity_impl_type const& exprInnerDynamicViscosity() const { return *M_fluidMecInnerDynamicViscosityImpl; }
+    fluidmec_dynamicviscosity_impl_type const& exprOuterDynamicViscosity() const { return *M_fluidMecOuterDynamicViscosityImpl; }
     material_property_scalar_expr_type const& exprHeaviside() const { return M_exprHeaviside; }
 
-    bool dependsOnVelocityField() const override { return M_fluidMecSubDynamicViscosityImpl->dependsOnVelocityField(); }
+    bool dependsOnVelocityField() const override { return M_fluidMecInnerDynamicViscosityImpl->dependsOnVelocityField() || M_fluidMecOuterDynamicViscosityImpl->dependsOnVelocityField(); }
 
-    size_type dynamicContext() const override { return M_fluidMecSubDynamicViscosityImpl->dynamicContext() | Feel::vf::dynamicContext( M_exprHeaviside ); }
+    size_type dynamicContext() const override { return M_fluidMecInnerDynamicViscosityImpl->dynamicContext() | M_fluidMecOuterDynamicViscosityImpl->dynamicContext() | Feel::vf::dynamicContext( M_exprHeaviside ); }
 
-    uint16_type polynomialOrder() const override { return M_fluidMecSubDynamicViscosityImpl->polynomialOrder() + M_exprHeaviside.polynomialOrder(); }
+    uint16_type polynomialOrder() const override { return std::max( M_fluidMecInnerDynamicViscosityImpl->polynomialOrder(), M_fluidMecOuterDynamicViscosityImpl->polynomialOrder() ) + M_exprHeaviside.polynomialOrder(); }
 
     template <typename TheSymbolExprType>
     bool hasSymbolDependency( std::string const& symb, TheSymbolExprType const& se ) const
     {
-        return M_fluidMecSubDynamicViscosityImpl->hasSymbolDependency( symb, se ) || M_exprHeaviside.hasSymbolDependency( symb, se );
+        return M_fluidMecInnerDynamicViscosityImpl->hasSymbolDependency( symb, se ) || M_fluidMecOuterDynamicViscosityImpl->hasSymbolDependency( symb, se ) || M_exprHeaviside.hasSymbolDependency( symb, se );
     }
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
@@ -1219,25 +1222,28 @@ public :
         using array_shape_type = typename super_type::new_array_shape_type;
         using ret_type = typename super_type::ret_type;
 
-        using mu_expr_tensor_type = typename fluidmec_sub_dynamicviscosity_impl_type::template tensor<Geo_t, Basis_i_t, Basis_j_t>;
+        using mu_expr_tensor_type = typename fluidmec_dynamicviscosity_impl_type::template tensor<Geo_t, Basis_i_t, Basis_j_t>;
         using heaviside_expr_tensor_type = typename material_property_scalar_expr_type::template tensor<Geo_t/*, Basis_i_t, Basis_j_t*/>;
 
         tensor( this_type const& expr, typename this_type::super_type::template tensor_main_type<Geo_t,Basis_i_t,Basis_j_t> const& tensorExprMain, Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu ):
             super_type( geom,fev,feu ),
             M_expr( expr ),
-            M_muExprTensor( this->expr().exprSubDynamicViscosity(), geom ),
+            M_muInnerExprTensor( this->expr().exprInnerDynamicViscosity(), geom ),
+            M_muOuterExprTensor( this->expr().exprOuterDynamicViscosity(), geom ),
             M_heavisideExprTensor( this->expr().exprHeaviside().evaluator( geom ) )
         {}
         tensor( this_type const& expr, typename this_type::super_type::template tensor_main_type<Geo_t,Basis_i_t,Basis_j_t> const& tensorExprMain, Geo_t const& geom, Basis_i_t const& fev ):
             super_type( geom,fev ),
             M_expr( expr ),
-            M_muExprTensor( this->expr().exprSubDynamicViscosity(), geom ),
+            M_muInnerExprTensor( this->expr().exprInnerDynamicViscosity(), geom ),
+            M_muOuterExprTensor( this->expr().exprOuterDynamicViscosity(), geom ),
             M_heavisideExprTensor( this->expr().exprHeaviside().evaluator( geom ) )
         {}
         tensor( this_type const& expr, typename this_type::super_type::template tensor_main_type<Geo_t,Basis_i_t,Basis_j_t> const& tensorExprMain, Geo_t const& geom ):
             super_type( geom ),
             M_expr( expr ),
-            M_muExprTensor( this->expr().exprSubDynamicViscosity(), geom ),
+            M_muInnerExprTensor( this->expr().exprInnerDynamicViscosity(), geom ),
+            M_muOuterExprTensor( this->expr().exprOuterDynamicViscosity(), geom ),
             M_heavisideExprTensor( this->expr().exprHeaviside().evaluator( geom ) )
         {}
 
@@ -1247,7 +1253,8 @@ public :
                 Geo_t const& geom, const TheArgsType&... theInitArgs ):
             super_type( geom ),
             M_expr( expr ),
-            M_muExprTensor( std::true_type{}, exprExpanded.exprSubDynamicViscosity(), ttse, expr.exprSubDynamicViscosity(), geom, theInitArgs... ),
+            M_muInnerExprTensor( std::true_type{}, exprExpanded.exprInnerDynamicViscosity(), ttse, expr.exprInnerDynamicViscosity(), geom, theInitArgs... ),
+            M_muOuterExprTensor( std::true_type{}, exprExpanded.exprOuterDynamicViscosity(), ttse, expr.exprOuterDynamicViscosity(), geom, theInitArgs... ),
             M_heavisideExprTensor( std::true_type{}, exprExpanded.exprHeaviside(), ttse, expr.exprHeaviside(), geom, theInitArgs... )
         {}
 
@@ -1256,7 +1263,8 @@ public :
 
         void update( Geo_t const& geom ) override
         {
-            M_muExprTensor.update( geom );
+            M_muInnerExprTensor.update( geom );
+            M_muOuterExprTensor.update( geom );
             M_heavisideExprTensor.update( geom );
             this->updateImpl();
         }
@@ -1265,7 +1273,8 @@ public :
         void update( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
                 Geo_t const& geom, const TheArgsType&... theUpdateArgs )
         {
-            M_muExprTensor.update( std::true_type{}, exprExpanded.exprSubDynamicViscosity(), ttse, geom, theUpdateArgs... );
+            M_muInnerExprTensor.update( std::true_type{}, exprExpanded.exprInnerDynamicViscosity(), ttse, geom, theUpdateArgs... );
+            M_muOuterExprTensor.update( std::true_type{}, exprExpanded.exprOuterDynamicViscosity(), ttse, geom, theUpdateArgs... );
             M_heavisideExprTensor.update( std::true_type{}, exprExpanded.exprHeaviside(), ttse, geom, theUpdateArgs... );
             this->updateImpl();
         }
@@ -1279,12 +1288,12 @@ public :
             for ( uint16_type q = 0; q < nPoints; ++q )
             {
                 if constexpr ( expr_type::isExprOpID() )
-                    M_localEval[q](0,0) = M_muExprTensor.evalq(0,0,q) * M_heavisideExprTensor.evalq(0,0,q);
+                    M_localEval[q](0,0) = ( M_muInnerExprTensor.evalq(0,0,q) - M_muOuterExprTensor.evalq(0,0,q) ) * M_heavisideExprTensor.evalq(0,0,q);
                 else
                 {
                     CHECK( false ) << "todo: grad(H) not implemented";
                     for ( uint16_type c1 = 0; c1 < expr_type::nDim; ++c1 )
-                        M_localEval[q](0,c1) = M_muExprTensor.evalq(0,c1,q) * M_heavisideExprTensor.evalq(0,c1,q);
+                        M_localEval[q](0,c1) = M_muInnerExprTensor.evalq(0,c1,q) * M_heavisideExprTensor.evalq(0,c1,q);
                 }
             }
         }
@@ -1348,14 +1357,16 @@ public :
 
     private :
         this_type const& M_expr;
-        mu_expr_tensor_type M_muExprTensor;
+        mu_expr_tensor_type M_muInnerExprTensor;
+        mu_expr_tensor_type M_muOuterExprTensor;
         heaviside_expr_tensor_type M_heavisideExprTensor;
         array_shape_type M_localEval;
     };
 
 
 private:
-    fluidmec_sub_dynamicviscosity_impl_ptrtype M_fluidMecSubDynamicViscosityImpl;
+    fluidmec_dynamicviscosity_impl_ptrtype M_fluidMecInnerDynamicViscosityImpl;
+    fluidmec_dynamicviscosity_impl_ptrtype M_fluidMecOuterDynamicViscosityImpl;
     material_property_scalar_expr_type M_exprHeaviside;
 
 };
@@ -1366,24 +1377,20 @@ template <typename TheSymbolExprType>
 bool
 FluidMecDynamicViscosityBase<ExprType>::hasSymbolDependency( std::string const& symb, TheSymbolExprType const& se ) const
 {
-    auto const& dynamicViscosity = this->expr().dynamicViscosity();
-    if constexpr ( enable_multifluid )
-    {
-        if ( dynamicViscosity.isMultifluid() )
-        {
-            return static_cast<FluidMecDynamicViscosityMultifluid<expr_type> const&>(*this).hasSymbolDependency( symb, se );
-        }
-    }
-    if ( dynamicViscosity.isNewtonianLaw() )
+    auto const& dynamicViscosityLaw = this->expr().dynamicViscosityLaw();
+    if ( dynamicViscosityLaw.isNewtonianLaw() )
         return static_cast<FluidMecDynamicViscosityNewtonian<expr_type> const&>(*this).hasSymbolDependency( symb, se );
-    else if ( dynamicViscosity.isPowerLaw() )
+    else if ( dynamicViscosityLaw.isPowerLaw() )
         return static_cast<FluidMecDynamicViscosityPowerLaw<expr_type> const&>(*this).hasSymbolDependency( symb, se );
-    else if ( dynamicViscosity.isCarreauLaw() )
+    else if ( dynamicViscosityLaw.isCarreauLaw() )
         return static_cast<FluidMecDynamicViscosityCarreau<expr_type> const&>(*this).hasSymbolDependency( symb, se );
-    else if ( dynamicViscosity.isCarreauYasudaLaw() )
+    else if ( dynamicViscosityLaw.isCarreauYasudaLaw() )
         return static_cast<FluidMecDynamicViscosityCarreauYasuda<expr_type> const&>(*this).hasSymbolDependency( symb, se );
+    else if ( dynamicViscosityLaw.isMultifluidLaw() )
+        return static_cast<FluidMecDynamicViscosityMultifluid<expr_type> const&>(*this).hasSymbolDependency( symb, se );
+
     else
-        CHECK ( false ) << "invalid viscosity model : "<< dynamicViscosity.lawName() <<"\n";
+        CHECK ( false ) << "invalid viscosity model : "<< dynamicViscosityLaw.lawName() <<"\n";
     return false;
 }
 
@@ -1394,24 +1401,20 @@ template<typename Geo_t, typename Basis_i_t, typename Basis_j_t,typename... TheA
 std::shared_ptr<typename FluidMecDynamicViscosityBase<ExprType>::template tensor_base_type<Geo_t,Basis_i_t,Basis_j_t> >
 FluidMecDynamicViscosityBase<ExprType>::evaluator( tensor_main_type<Geo_t,Basis_i_t,Basis_j_t> const& tensorExprMain, const TheArgsType&... theInitArgs ) const
 {
-    auto const& dynamicViscosity = this->expr().dynamicViscosity();
-    if constexpr ( enable_multifluid )
-    {
-        if ( dynamicViscosity.isMultifluid() )
-        {
-            return std::make_shared< typename FluidMecDynamicViscosityMultifluid<expr_type>::template tensor<Geo_t,Basis_i_t,Basis_j_t>>( static_cast<FluidMecDynamicViscosityMultifluid<expr_type> const&>(*this), tensorExprMain, theInitArgs... );
-        }
-    }
-    if ( dynamicViscosity.isNewtonianLaw() )
+    auto const& dynamicViscosityLaw = this->expr().dynamicViscosityLaw();
+    if ( dynamicViscosityLaw.isNewtonianLaw() )
         return std::make_shared< typename FluidMecDynamicViscosityNewtonian<expr_type>::template tensor<Geo_t,Basis_i_t,Basis_j_t>>( static_cast<FluidMecDynamicViscosityNewtonian<expr_type> const&>(*this), tensorExprMain, theInitArgs... );
-    else if ( dynamicViscosity.isPowerLaw() )
+    else if ( dynamicViscosityLaw.isPowerLaw() )
         return std::make_shared< typename FluidMecDynamicViscosityPowerLaw<expr_type>::template tensor<Geo_t,Basis_i_t,Basis_j_t>>( static_cast<FluidMecDynamicViscosityPowerLaw<expr_type> const&>(*this), tensorExprMain, theInitArgs... );
-    else if ( dynamicViscosity.isCarreauLaw() )
+    else if ( dynamicViscosityLaw.isCarreauLaw() )
         return std::make_shared< typename FluidMecDynamicViscosityCarreau<expr_type>::template tensor<Geo_t,Basis_i_t,Basis_j_t>>( static_cast<FluidMecDynamicViscosityCarreau<expr_type> const&>(*this), tensorExprMain, theInitArgs... );
-    else if ( dynamicViscosity.isCarreauYasudaLaw() )
+    else if ( dynamicViscosityLaw.isCarreauYasudaLaw() )
         return std::make_shared< typename FluidMecDynamicViscosityCarreauYasuda<expr_type>::template tensor<Geo_t,Basis_i_t,Basis_j_t>>( static_cast<FluidMecDynamicViscosityCarreauYasuda<expr_type> const&>(*this), tensorExprMain, theInitArgs... );
+    else if ( dynamicViscosityLaw.isMultifluidLaw() )
+        return std::make_shared< typename FluidMecDynamicViscosityMultifluid<expr_type>::template tensor<Geo_t,Basis_i_t,Basis_j_t>>( static_cast<FluidMecDynamicViscosityMultifluid<expr_type> const&>(*this), tensorExprMain, theInitArgs... );
+
     else
-        CHECK ( false ) << "invalid viscosity model : "<< dynamicViscosity.lawName() <<"\n";
+        CHECK ( false ) << "invalid viscosity model : "<< dynamicViscosityLaw.lawName() <<"\n";
     return std::shared_ptr<tensor_base_type<Geo_t,Basis_i_t,Basis_j_t> >{};
 }
 
@@ -1423,28 +1426,23 @@ FluidMecDynamicViscosityBase<ExprType>::evaluator( std::true_type/**/, tensor_ma
 {
     using expr_expanded_type = typename TheExprExpandedType::expr_type;
 
-    auto const& dynamicViscosity = this->expr().dynamicViscosity();
-    if constexpr ( enable_multifluid )
-    {
-        if ( dynamicViscosity.isMultifluid() )
-        {
-            return std::make_shared< typename FluidMecDynamicViscosityMultifluid<expr_type>::template tensor<Geo_t,Basis_i_t,Basis_j_t>>( std::true_type{}, static_cast<FluidMecDynamicViscosityMultifluid<expr_expanded_type> const&>(exprExpanded), ttse, static_cast<FluidMecDynamicViscosityMultifluid<expr_type> const&>(*this), tensorExprMain, theInitArgs... );
-        }
-    }
-    if ( dynamicViscosity.isNewtonianLaw() )
+    auto const& dynamicViscosityLaw = this->expr().dynamicViscosityLaw();
+    if ( dynamicViscosityLaw.isNewtonianLaw() )
         return std::make_shared< typename FluidMecDynamicViscosityNewtonian<expr_type>::template tensor<Geo_t,Basis_i_t,Basis_j_t>>( std::true_type{}, static_cast<FluidMecDynamicViscosityNewtonian<expr_expanded_type> const&>(exprExpanded), ttse, static_cast<FluidMecDynamicViscosityNewtonian<expr_type> const&>(*this), tensorExprMain, theInitArgs... );
 
-    else if ( dynamicViscosity.isPowerLaw() )
+    else if ( dynamicViscosityLaw.isPowerLaw() )
         return std::make_shared< typename FluidMecDynamicViscosityPowerLaw<expr_type>::template tensor<Geo_t,Basis_i_t,Basis_j_t>>( std::true_type{}, static_cast<FluidMecDynamicViscosityPowerLaw<expr_expanded_type> const&>(exprExpanded), ttse, static_cast<FluidMecDynamicViscosityPowerLaw<expr_type> const&>(*this), tensorExprMain, theInitArgs... );
 
-    else if ( dynamicViscosity.isCarreauLaw() )
+    else if ( dynamicViscosityLaw.isCarreauLaw() )
         return std::make_shared< typename FluidMecDynamicViscosityCarreau<expr_type>::template tensor<Geo_t,Basis_i_t,Basis_j_t>>( std::true_type{}, static_cast<FluidMecDynamicViscosityCarreau<expr_expanded_type> const&>(exprExpanded), ttse, static_cast<FluidMecDynamicViscosityCarreau<expr_type> const&>(*this), tensorExprMain, theInitArgs... );
 
-    else if ( dynamicViscosity.isCarreauYasudaLaw() )
+    else if ( dynamicViscosityLaw.isCarreauYasudaLaw() )
         return std::make_shared< typename FluidMecDynamicViscosityCarreauYasuda<expr_type>::template tensor<Geo_t,Basis_i_t,Basis_j_t>>( std::true_type{}, static_cast<FluidMecDynamicViscosityCarreauYasuda<expr_expanded_type> const&>(exprExpanded), ttse, static_cast<FluidMecDynamicViscosityCarreauYasuda<expr_type> const&>(*this), tensorExprMain, theInitArgs... );
+    else if ( dynamicViscosityLaw.isMultifluidLaw() )
+        return std::make_shared< typename FluidMecDynamicViscosityMultifluid<expr_type>::template tensor<Geo_t,Basis_i_t,Basis_j_t>>( std::true_type{}, static_cast<FluidMecDynamicViscosityMultifluid<expr_expanded_type> const&>(exprExpanded), ttse, static_cast<FluidMecDynamicViscosityMultifluid<expr_type> const&>(*this), tensorExprMain, theInitArgs... );
 
     else
-        CHECK ( false ) << "invalid viscosity model : "<< dynamicViscosity.lawName() <<"\n";
+        CHECK ( false ) << "invalid viscosity model : "<< dynamicViscosityLaw.lawName() <<"\n";
     return std::shared_ptr<tensor_base_type<Geo_t,Basis_i_t,Basis_j_t> >{};
 }
 
@@ -1456,49 +1454,43 @@ FluidMecDynamicViscosityBase<ExprType>::updateEvaluator( std::true_type /**/, st
                                                          Geo_t const& geom, const TheArgsType&... theUpdateArgs )
 {
     using expr_expanded_type = typename TheExprExpandedType::expr_type;
-    auto const& dynamicViscosity = this->expr().dynamicViscosity();
-    if constexpr ( enable_multifluid )
-    {
-        if ( dynamicViscosity.isMultifluid() )
-        {
-            std::static_pointer_cast<typename FluidMecDynamicViscosityMultifluid<expr_type>::template tensor<Geo_t,Basis_i_t,Basis_j_t>>( tensorToUpdate )->update( std::true_type{}, static_cast<FluidMecDynamicViscosityMultifluid<expr_expanded_type> const&>(exprExpanded), ttse, geom, theUpdateArgs... );
-            return;
-        }
-    }
-    if ( dynamicViscosity.isNewtonianLaw() )
+    auto const& dynamicViscosityLaw = this->expr().dynamicViscosityLaw();
+    if ( dynamicViscosityLaw.isNewtonianLaw() )
         std::static_pointer_cast<typename FluidMecDynamicViscosityNewtonian<expr_type>::template tensor<Geo_t,Basis_i_t,Basis_j_t>>( tensorToUpdate )->update( std::true_type{}, static_cast<FluidMecDynamicViscosityNewtonian<expr_expanded_type> const&>(exprExpanded), ttse, geom, theUpdateArgs... );
 
-    else if ( dynamicViscosity.isPowerLaw() )
+    else if ( dynamicViscosityLaw.isPowerLaw() )
         std::static_pointer_cast<typename FluidMecDynamicViscosityPowerLaw<expr_type>::template tensor<Geo_t,Basis_i_t,Basis_j_t>>( tensorToUpdate )->update( std::true_type{}, static_cast<FluidMecDynamicViscosityPowerLaw<expr_expanded_type> const&>(exprExpanded), ttse, geom, theUpdateArgs... );
 
-    else if ( dynamicViscosity.isCarreauLaw() )
+    else if ( dynamicViscosityLaw.isCarreauLaw() )
         std::static_pointer_cast<typename FluidMecDynamicViscosityCarreau<expr_type>::template tensor<Geo_t,Basis_i_t,Basis_j_t>>( tensorToUpdate )->update( std::true_type{}, static_cast<FluidMecDynamicViscosityCarreau<expr_expanded_type> const&>(exprExpanded), ttse, geom, theUpdateArgs... );
 
-    else if ( dynamicViscosity.isCarreauYasudaLaw() )
+    else if ( dynamicViscosityLaw.isCarreauYasudaLaw() )
         std::static_pointer_cast<typename FluidMecDynamicViscosityCarreauYasuda<expr_type>::template tensor<Geo_t,Basis_i_t,Basis_j_t>>( tensorToUpdate )->update( std::true_type{}, static_cast<FluidMecDynamicViscosityCarreauYasuda<expr_expanded_type> const&>(exprExpanded), ttse, geom, theUpdateArgs... );
 
+    else if ( dynamicViscosityLaw.isMultifluidLaw() )
+        std::static_pointer_cast<typename FluidMecDynamicViscosityMultifluid<expr_type>::template tensor<Geo_t,Basis_i_t,Basis_j_t>>( tensorToUpdate )->update( std::true_type{}, static_cast<FluidMecDynamicViscosityMultifluid<expr_expanded_type> const&>(exprExpanded), ttse, geom, theUpdateArgs... );
+
     else
-        CHECK ( false ) << "invalid viscosity model : "<< dynamicViscosity.lawName() <<"\n";
+        CHECK ( false ) << "invalid viscosity model : "<< dynamicViscosityLaw.lawName() <<"\n";
 }
 
 
-template<typename ExprEvaluateFieldOperatorsType, typename FiniteElementVelocityType, typename ModelPhysicFluidType, typename SymbolsExprType, ExprApplyType ExprApplied, ExprOperatorType ExprOp = ExprOperatorType::ID, bool EnableMultifluid = true >
+template<typename ExprEvaluateFieldOperatorsType, typename FiniteElementVelocityType, typename SymbolsExprType, ExprApplyType ExprApplied, ExprOperatorType ExprOp = ExprOperatorType::ID >
 class FluidMecDynamicViscosityImpl// : public Feel::vf::ExprDynamicBase
 {
 public:
 
-    typedef FluidMecDynamicViscosityImpl<ExprEvaluateFieldOperatorsType,FiniteElementVelocityType,ModelPhysicFluidType,SymbolsExprType,ExprApplied,ExprOp,EnableMultifluid> this_type;
+    typedef FluidMecDynamicViscosityImpl<ExprEvaluateFieldOperatorsType,FiniteElementVelocityType,SymbolsExprType,ExprApplied,ExprOp> this_type;
 
     static const size_type context_velocity = vm::JACOBIAN|vm::KB|vm::GRAD;
     static const size_type context = context_velocity|vm::DYNAMIC;
 
     using expr_evaluate_velocity_opertors_type = ExprEvaluateFieldOperatorsType;
     using finite_element_velocity_type = FiniteElementVelocityType;
-    using model_physic_fluid_type = ModelPhysicFluidType;
+    using dynamic_viscosity_law_type = DynamicViscosityLaw;
     using symbols_expr_type = SymbolsExprType;
     static constexpr ExprApplyType expr_apply_type = ExprApplied;
     static constexpr ExprOperatorType expr_operator_type = ExprOp;
-    static constexpr bool enable_multifluid = EnableMultifluid;
 
     static constexpr bool is_applied_as_eval = (ExprApplied == ExprApplyType::EVAL);
     static constexpr bool is_applied_as_jacobian = (ExprApplied == ExprApplyType::JACOBIAN);
@@ -1506,7 +1498,7 @@ public:
     static constexpr ExprOperatorType exprOp = ExprOp;
 
     using value_type = typename expr_evaluate_velocity_opertors_type::value_type;
-    static constexpr uint16_type nDim = model_physic_fluid_type::nDim;
+    static constexpr uint16_type nDim = expr_evaluate_velocity_opertors_type::nDim;
 
     template <int M,int N>
     using material_property_expr_type = std::decay_t<decltype( expr( ModelExpression{}.template expr<M,N>(),symbols_expr_type{} ) )>;
@@ -1535,12 +1527,12 @@ public:
 
 
     FluidMecDynamicViscosityImpl( std::shared_ptr<expr_evaluate_velocity_opertors_type> exprEvaluateVelocityOperators,
-                                  model_physic_fluid_type const& physicFluid,
+                                  dynamic_viscosity_law_type const& dynamicViscosityLaw,
                                   MaterialProperties const& matProps,
                                   uint16_type polyOrder,
                                   SymbolsExprType const& se ):
         M_exprEvaluateVelocityOperators( exprEvaluateVelocityOperators ),
-        M_physicFluid( physicFluid ),
+        M_dynamicViscosityLaw( dynamicViscosityLaw ),
         M_matProps( matProps ),
         M_polynomialOrder( polyOrder ),
         M_se( se )
@@ -1550,7 +1542,7 @@ public:
 
     FluidMecDynamicViscosityImpl( FluidMecDynamicViscosityImpl const & op ):
         M_exprEvaluateVelocityOperators( op.M_exprEvaluateVelocityOperators ),
-        M_physicFluid( op.M_physicFluid ),
+        M_dynamicViscosityLaw( op.M_dynamicViscosityLaw ),
         M_matProps( op.M_matProps ),
         M_polynomialOrder( op.M_polynomialOrder ),
         M_se( op.M_se )
@@ -1560,7 +1552,7 @@ public:
 
     FluidMecDynamicViscosityImpl( FluidMecDynamicViscosityImpl && op ):
         M_exprEvaluateVelocityOperators( std::move( op.M_exprEvaluateVelocityOperators ) ),
-        M_physicFluid( std::move( op.M_physicFluid ) ),
+        M_dynamicViscosityLaw( std::move( op.M_dynamicViscosityLaw ) ),
         M_matProps( std::move( op.M_matProps ) ),
         M_polynomialOrder( std::move( op.M_polynomialOrder ) ),
         M_se( std::move( op.M_se ) )
@@ -1598,13 +1590,16 @@ public:
 #if 0 //Thibaut:WHY ?
         uint16_type orderGradVelocity = M_exprEvaluateVelocityOperators->exprGrad().polynomialOrder();
         uint16_type res = 2*(orderGradVelocity+1); // default value for non newtonian
-        if ( this->dynamicViscosity().isNewtonianLaw() )
+        if ( this->dynamicViscosityLaw().isNewtonianLaw() )
         {
             res = M_exprDynamicViscosityBase->polynomialOrder();
         }
         return res;
 #endif
-        return M_exprDynamicViscosityBase->polynomialOrder();
+        if( M_exprDynamicViscosityBase )
+            return M_exprDynamicViscosityBase->polynomialOrder();
+        else
+            return M_polynomialOrder;
     }
 
     //! expression is polynomial?
@@ -1629,8 +1624,8 @@ public:
     {
         auto newse = Feel::vf::symbolsExpr( this->symbolsExpressionWithoutTensorContext(), se );
         using new_se_type = std::decay_t<decltype(newse)>;
-        using new_this_type = FluidMecDynamicViscosityImpl<ExprEvaluateFieldOperatorsType,FiniteElementVelocityType,ModelPhysicFluidType,new_se_type,ExprApplied,ExprOp,EnableMultifluid>;
-        return new_this_type( M_exprEvaluateVelocityOperators,M_physicFluid,M_matProps,M_polynomialOrder,newse );
+        using new_this_type = FluidMecDynamicViscosityImpl<ExprEvaluateFieldOperatorsType,FiniteElementVelocityType,new_se_type,ExprApplied,ExprOp>;
+        return new_this_type( M_exprEvaluateVelocityOperators,M_dynamicViscosityLaw,M_matProps,M_polynomialOrder,newse );
     }
 
     template <int diffOrder, typename TheSymbolExprType>
@@ -1645,15 +1640,11 @@ public:
     std::shared_ptr<expr_dynamic_viscosity_base_type> exprDynamicViscosityBase() const { return M_exprDynamicViscosityBase; }
     std::shared_ptr<expr_evaluate_velocity_opertors_type> exprEvaluateVelocityOperatorsPtr() const { return M_exprEvaluateVelocityOperators; }
 
-    model_physic_fluid_type const& modelPhysic() const { return M_physicFluid; }
-
-    auto const& dynamicViscosity() const { return M_physicFluid.dynamicViscosity(); }
+    dynamic_viscosity_law_type const& dynamicViscosityLaw() const { return M_dynamicViscosityLaw; }
     MaterialProperties const& materialProperties() const { return M_matProps; }
 
     template <int M,int N>
     material_property_expr_type<M,N> materialPropertyExpr( std::string const& prop ) const { return expr( this->materialProperties().property( prop ).template expr<M,N>(), M_se ); }
-
-
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
     struct tensor
@@ -1828,49 +1819,43 @@ public:
 private :
     void initExprDynamicViscosityBase()
     {
-        auto const& dynamicViscosity = this->dynamicViscosity();
-        if constexpr ( enable_multifluid )
-        {
-            if( dynamicViscosity.isMultifluid() )
-            {
-                M_exprDynamicViscosityBase.reset( new FluidMecDynamicViscosityMultifluid<this_type>( *this ) );
-                return;
-            }
-        }
-        if ( dynamicViscosity.isNewtonianLaw() )
+        auto const& dynamicViscosityLaw = this->dynamicViscosityLaw();
+        if ( dynamicViscosityLaw.isNewtonianLaw() )
             M_exprDynamicViscosityBase.reset( new FluidMecDynamicViscosityNewtonian<this_type>( *this ) );
-        else if ( dynamicViscosity.isPowerLaw() )
+        else if ( dynamicViscosityLaw.isPowerLaw() )
             M_exprDynamicViscosityBase.reset( new FluidMecDynamicViscosityPowerLaw<this_type>( *this ) );
-        else if ( dynamicViscosity.isCarreauLaw() )
+        else if ( dynamicViscosityLaw.isCarreauLaw() )
             M_exprDynamicViscosityBase.reset( new FluidMecDynamicViscosityCarreau<this_type>( *this ) );
-        else if ( dynamicViscosity.isCarreauYasudaLaw() )
+        else if ( dynamicViscosityLaw.isCarreauYasudaLaw() )
             M_exprDynamicViscosityBase.reset( new FluidMecDynamicViscosityCarreauYasuda<this_type>( *this ) );
+        else if( dynamicViscosityLaw.isMultifluidLaw() )
+            M_exprDynamicViscosityBase.reset( new FluidMecDynamicViscosityMultifluid<this_type>( *this ) );
         else
-            CHECK ( false ) << "invalid viscosity model : "<< dynamicViscosity.lawName() <<"\n";
+            CHECK ( false ) << "invalid viscosity model : "<< dynamicViscosityLaw.lawName() <<"\n";
     }
 
 private:
     std::shared_ptr<expr_dynamic_viscosity_base_type> M_exprDynamicViscosityBase;
     std::shared_ptr<expr_evaluate_velocity_opertors_type> M_exprEvaluateVelocityOperators;
-    model_physic_fluid_type const& M_physicFluid;
+    dynamic_viscosity_law_type const& M_dynamicViscosityLaw;
     MaterialProperties const& M_matProps;
     uint16_type M_polynomialOrder;
     SymbolsExprType M_se;
 };
 
-template<class ExprGradVelocityType, class ModelPhysicFluidType,typename SymbolsExprType = symbols_expression_empty_t >
+template<class ExprGradVelocityType, typename SymbolsExprType = symbols_expression_empty_t >
 inline
 auto
 fluidMecViscosity( Expr<ExprGradVelocityType> const& grad_u,
-                   ModelPhysicFluidType const& physicFluid,
+                   DynamicViscosityLaw const& dynamicViscosityLaw,
                    MaterialProperties const& matProps,
                    SymbolsExprType const& se = symbols_expression_empty_t{},
                    uint16_type polyOrder = invalid_uint16_type_value )
 {
     using expr_evaluate_velocity_opertors_type = ExprEvaluateFieldOperatorGradFromExpr<Expr<ExprGradVelocityType>>;
-    typedef FluidMecDynamicViscosityImpl<expr_evaluate_velocity_opertors_type,std::nullptr_t,ModelPhysicFluidType,SymbolsExprType,ExprApplyType::EVAL> fmstresstensor_t;
+    typedef FluidMecDynamicViscosityImpl<expr_evaluate_velocity_opertors_type, std::nullptr_t, SymbolsExprType, ExprApplyType::EVAL> fmstresstensor_t;
     auto exprEvaluateVelocityOperators = std::make_shared<expr_evaluate_velocity_opertors_type>( grad_u );
-    return Expr< fmstresstensor_t >(  fmstresstensor_t( exprEvaluateVelocityOperators,physicFluid,matProps,polyOrder,se ) );
+    return Expr< fmstresstensor_t >(  fmstresstensor_t( exprEvaluateVelocityOperators, dynamicViscosityLaw, matProps, polyOrder, se ) );
 }
 
 } // namespace FeelModels

@@ -17,6 +17,7 @@ public:
 
 
     using model_physic_fluid_type = ModelPhysicFluidType;
+    using dynamic_viscosity_law_type = DynamicViscosityLaw;
     using symbols_expr_type = SymbolsExprType;
     using expr_evaluate_velocity_opertors_type = ExprEvaluateFieldOperatorsType;
     using value_type = typename expr_evaluate_velocity_opertors_type::value_type;
@@ -51,16 +52,16 @@ public:
 
     using material_property_scalar_expr_type = material_property_expr_type<1,1>;
 
-    using expr_dynamic_viscosity_impl_type = FluidMecDynamicViscosityImpl<expr_evaluate_velocity_opertors_type,FiniteElementVelocityType,ModelPhysicFluidType,SymbolsExprType,
-                                                                          is_applied_as_jacobian? ExprApplyType::JACOBIAN : ExprApplyType::EVAL,
-                                                                          //mpl::int_< this_type::specific_expr_type::value == ExprApplyType::EVAL? ExprApplyType::EVAL : ExprApplyType::JACOBIAN>
-                                                                          ExprOperatorType::ID>;
+    using expr_dynamic_viscosity_impl_type = FluidMecDynamicViscosityImpl<expr_evaluate_velocity_opertors_type,FiniteElementVelocityType,SymbolsExprType,
+          is_applied_as_jacobian? ExprApplyType::JACOBIAN : ExprApplyType::EVAL,
+          //mpl::int_< this_type::specific_expr_type::value == ExprApplyType::EVAL? ExprApplyType::EVAL : ExprApplyType::JACOBIAN>
+          ExprOperatorType::ID>;
     using expr_dynamic_viscosity_type = Expr<expr_dynamic_viscosity_impl_type>;
 
-    using expr_grad_dynamic_viscosity_impl_type = FluidMecDynamicViscosityImpl<expr_evaluate_velocity_opertors_type,FiniteElementVelocityType,ModelPhysicFluidType,SymbolsExprType,
-                                                                               is_applied_as_jacobian? ExprApplyType::JACOBIAN : ExprApplyType::EVAL,
-                                                                               //mpl::int_< this_type::specific_expr_type::value == ExprApplyType::EVAL? ExprApplyType::EVAL : ExprApplyType::JACOBIAN>,
-                                                                               ExprOperatorType::GRAD>;
+    using expr_grad_dynamic_viscosity_impl_type = FluidMecDynamicViscosityImpl<expr_evaluate_velocity_opertors_type,FiniteElementVelocityType,SymbolsExprType,
+          is_applied_as_jacobian? ExprApplyType::JACOBIAN : ExprApplyType::EVAL,
+          //mpl::int_< this_type::specific_expr_type::value == ExprApplyType::EVAL? ExprApplyType::EVAL : ExprApplyType::JACOBIAN>,
+          ExprOperatorType::GRAD>;
     using expr_grad_dynamic_viscosity_type = Expr<expr_grad_dynamic_viscosity_impl_type>;
 
     using expr_grad_material_property_scalar_type = std::decay_t<decltype( grad<expr_evaluate_velocity_opertors_type::field_clean_type::nDim>( material_property_scalar_expr_type{} ) )>;
@@ -83,13 +84,14 @@ public:
         M_se( se )
     {
         M_exprEvaluateVelocityOperators->setEnableLaplacian( true );
-        M_exprDynamicViscosity.emplace( expr_dynamic_viscosity_impl_type( M_exprEvaluateVelocityOperators,physicFluid,matProps,invalid_uint16_type_value,se ) );
+        dynamic_viscosity_law_type const& dynamicViscosityLaw = *std::dynamic_pointer_cast<dynamic_viscosity_law_type>( M_matProps.law( "dynamic-viscosity" ) );
+        M_exprDynamicViscosity.emplace( expr_dynamic_viscosity_impl_type( M_exprEvaluateVelocityOperators,dynamicViscosityLaw,matProps,invalid_uint16_type_value,se ) );
 
         bool dynamicViscosityDependsOnCoordinatesInSpace = M_exprDynamicViscosity->template hasSymbolDependencyOnCoordinatesInSpace<expr_evaluate_velocity_opertors_type::field_clean_type::nRealDim>() && checkViscosityDependencyOnCoordinates;
         if ( dynamicViscosityDependsOnCoordinatesInSpace )
         {
             M_exprEvaluateVelocityOperators->setEnableGrad( true );
-            M_exprGradDynamicViscosity.emplace( expr_grad_dynamic_viscosity_impl_type( M_exprEvaluateVelocityOperators,physicFluid,matProps,invalid_uint16_type_value,se ) );
+            M_exprGradDynamicViscosity.emplace( expr_grad_dynamic_viscosity_impl_type( M_exprEvaluateVelocityOperators,dynamicViscosityLaw,matProps,invalid_uint16_type_value,se ) );
         }
 
         if ( this->turbulence().isEnabled() )

@@ -49,6 +49,7 @@ public:
 
     using expr_id_pressure_type = ExprIdPressureType;
     using model_physic_fluid_type = ModelPhysicFluidType;
+    using dynamic_viscosity_law_type = DynamicViscosityLaw;
     using symbols_expr_type = SymbolsExprType;
     //using specific_expr_type = SpecificExprType;
     using expr_evaluate_velocity_opertors_type = ExprEvaluateFieldOperatorsType;
@@ -81,7 +82,7 @@ public:
 
     using material_property_scalar_expr_type = material_property_expr_type<1,1>;
 
-    using expr_dynamic_viscosity_type = FluidMecDynamicViscosityImpl<expr_evaluate_velocity_opertors_type,FiniteElementVelocityType,ModelPhysicFluidType,SymbolsExprType,ExprApplied>;
+    using expr_dynamic_viscosity_type = FluidMecDynamicViscosityImpl<expr_evaluate_velocity_opertors_type,FiniteElementVelocityType,SymbolsExprType,ExprApplied>;
 
 
     FluidMecStressTensorImpl( std::shared_ptr<expr_evaluate_velocity_opertors_type> exprEvalVelocityOperators,
@@ -101,7 +102,8 @@ public:
         M_se( se )
     {
         M_exprEvaluateVelocityOperators->setEnableGrad( true );
-        M_exprDynamicVisocity.emplace( M_exprEvaluateVelocityOperators,physicFluid,matProps,invalid_uint16_type_value,se );
+        dynamic_viscosity_law_type const& dynamicViscosityLaw = *std::dynamic_pointer_cast<dynamic_viscosity_law_type>( M_matProps.law( "dynamic-viscosity" ) );
+        M_exprDynamicVisocity.emplace( M_exprEvaluateVelocityOperators,dynamicViscosityLaw,matProps,invalid_uint16_type_value,se );
         if ( this->turbulence().isEnabled() )
         {
             M_exprTurbulentDynamicVisocity.emplace( this->materialPropertyExpr<1,1>("turbulent-dynamic-viscosity") );
