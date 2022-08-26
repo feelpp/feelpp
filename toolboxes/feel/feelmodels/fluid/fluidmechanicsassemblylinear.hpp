@@ -105,16 +105,17 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
         {
             auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
             auto const& matProps = this->materialsProperties()->materialProperties( matName );
+            auto dynamicViscosityLawPtr = std::static_pointer_cast<dynamic_viscosity_law_type>( matProps.law( "dynamic-viscosity" ) );
 
             // stress tensor sigma : grad(v)
             this->timerTool("Solve").start();
-            if ( ( physicFluidData->dynamicViscosity().isConstant() && BuildCstPart ) ||
-                 ( !physicFluidData->dynamicViscosity().isConstant() && build_StressTensorNonNewtonian ) )
+            if ( ( dynamicViscosityLawPtr->isConstant() && BuildCstPart ) ||
+                 ( !dynamicViscosityLawPtr->isConstant() && build_StressTensorNonNewtonian ) )
             {
                 if ( physicFluidData->equation() == "Navier-Stokes" )
                 {
                     // TODO : not good with turbulence!!
-                    auto myViscosity = Feel::FeelModels::fluidMecViscosity(gradv(beta_u),*physicFluidData,matProps,se);
+                    auto myViscosity = Feel::FeelModels::fluidMecViscosity(gradv(beta_u),*dynamicViscosityLawPtr,matProps,se);
                     bilinearFormVV +=
                         integrate( _range=range,
                                    _expr= timeSteppingScaling*2*myViscosity*inner(deft,grad(v)),
@@ -125,7 +126,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
                     // case with steady Stokes
                     CHECK( physicFluidData->dynamicViscosity().isNewtonianLaw() ) << "not allow with non newtonian law";
 
-                    auto myViscosity = Feel::FeelModels::fluidMecViscosity( vf::zero<nDim,nDim>(),*physicFluidData,matProps,se);
+                    auto myViscosity = Feel::FeelModels::fluidMecViscosity( vf::zero<nDim,nDim>(),*dynamicViscosityLawPtr,matProps,se);
                     bilinearFormVV +=
                         integrate( _range=range,
                                    _expr= timeSteppingScaling*2*myViscosity*inner(deft,grad(v)),

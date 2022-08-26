@@ -28,7 +28,9 @@ exprResidualImpl( FluidMechanicsType const& fm, ModelPhysicFluid<FluidMechanicsT
 
     using expr_density_type = std::decay_t<decltype( expr( matProps.property("density").template expr<1,1>(), se ) )>;
 
-    auto muExpr = Feel::FeelModels::fluidMecViscosity(gradv(u),physicFluidData,matProps,se);
+    using dynamic_viscosity_law_type = DynamicViscosityLaw;
+    auto dynamicViscosityLawPtr = std::static_pointer_cast<dynamic_viscosity_law_type>( matProps.law( "dynamic-viscosity" ) );
+    auto muExpr = Feel::FeelModels::fluidMecViscosity(gradv(u), *dynamicViscosityLawPtr, matProps, se);
 
     using expr_convection_residual_type = std::decay_t<decltype( timeSteppingScaling*expr_density_type{}*gradv(u)*idv(beta_u) )>;
     using expr_viscous_stress_residual_type = std::decay_t<decltype( -timeSteppingScaling*fluidMecDivViscousStressTensor(u,physicFluidData,matProps,fm.worldComm(),fm.repository().expr(),se) )>;
@@ -150,7 +152,8 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDES
 
     using expr_density_uconv_type = std::decay_t<decltype( expr_density_type{}*idv(beta_u) )>;
 
-    auto muExpr = Feel::FeelModels::fluidMecViscosity(gradv(u),physicFluidData,matProps,se);
+    auto dynamicViscosityLawPtr = std::static_pointer_cast<dynamic_viscosity_law_type>( matProps.law( "dynamic-viscosity" ) );
+    auto muExpr = Feel::FeelModels::fluidMecViscosity(gradv(u),*dynamicViscosityLawPtr,matProps,se);
     using expr_viscosity_type = std::decay_t<decltype( muExpr )>;
     using expr_coeff_null_type = std::decay_t<decltype( cst(0.) )>;
 
@@ -333,10 +336,11 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDES
 template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType>
 template <typename ModelContextType,typename RangeType,typename... ExprAddedType>
 void
-FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobianStabilizationGLS( DataUpdateJacobian & data, ModelContextType const& mctx,
-                                                                                                ModelPhysicFluid<nDim> const& physicFluidData,
-                                                                                                MaterialProperties const& matProps, RangeType const& range,
-                                                                                                const ExprAddedType&... exprsAddedInResidual ) const
+FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobianStabilizationGLS( 
+        DataUpdateJacobian & data, ModelContextType const& mctx,
+        ModelPhysicFluid<nDim> const& physicFluidData,
+        MaterialProperties const& matProps, RangeType const& range,
+        const ExprAddedType&... exprsAddedInResidual ) const
 {
     sparse_matrix_ptrtype& J = data.jacobian();
 
@@ -379,7 +383,8 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobianSt
 
 
     using expr_density_type = std::decay_t<decltype( expr( matProps.property("density").template expr<1,1>(), se ) )>;
-    auto muExpr = Feel::FeelModels::fluidMecViscosity(gradv(u),physicFluidData,matProps,se);
+    auto dynamicViscosityLawPtr = std::static_pointer_cast<dynamic_viscosity_law_type>( matProps.law( "dynamic-viscosity" ) );
+    auto muExpr = Feel::FeelModels::fluidMecViscosity(gradv(u), *dynamicViscosityLawPtr, matProps, se);
 
     // jacobian of residual
     using expr_convection_residual_type = std::decay_t<decltype( timeSteppingScaling*expr_density_type{}*(gradt(u)*idv(u)+gradv(u)*idt(u)) )>;
@@ -506,10 +511,11 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobianSt
 template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType>
 template <typename ModelContextType,typename RangeType,typename... ExprAddedType>
 void
-FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidualStabilizationGLS( DataUpdateResidual & data, ModelContextType const& mctx,
-                                                                                                ModelPhysicFluid<nDim> const& physicFluidData,
-                                                                                                MaterialProperties const& matProps, RangeType const& range,
-                                                                                                const ExprAddedType&... exprsAddedInResidual ) const
+FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidualStabilizationGLS( 
+        DataUpdateResidual & data, ModelContextType const& mctx,
+        ModelPhysicFluid<nDim> const& physicFluidData,
+        MaterialProperties const& matProps, RangeType const& range,
+        const ExprAddedType&... exprsAddedInResidual ) const
 {
     vector_ptrtype& R = data.residual();
     bool buildCstPart = data.buildCstPart();
@@ -546,7 +552,8 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidualSt
     using expr_density_type = std::decay_t<decltype( expr( matProps.property("density").template expr<1,1>(), se ) )>;
     using expr_density_uconv_type = std::decay_t<decltype( expr_density_type{}*idv(beta_u) )>;
 
-    auto muExpr = Feel::FeelModels::fluidMecViscosity(gradv(u),physicFluidData,matProps,se);
+    auto dynamicViscosityLawPtr = std::static_pointer_cast<dynamic_viscosity_law_type>( matProps.law( "dynamic-viscosity" ) );
+    auto muExpr = Feel::FeelModels::fluidMecViscosity(gradv(u), *dynamicViscosityLawPtr, matProps, se);
     using expr_viscosity_type = std::decay_t<decltype( muExpr )>;
     using expr_coeff_null_type = std::decay_t<decltype( cst(0.) )>;
 

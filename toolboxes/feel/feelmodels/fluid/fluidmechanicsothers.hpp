@@ -102,7 +102,8 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateInHousePre
         {
             auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
             auto const& matProps = this->materialsProperties()->materialProperties( matName );
-            auto coeff = cst(1.)/fluidMecViscosity(gradv(u),*physicFluidData,matProps,se);
+            auto dynamicViscosityLawPtr = std::static_pointer_cast<dynamic_viscosity_law_type>( matProps.law( "dynamic-viscosity" ) );
+            auto coeff = cst(1.)/fluidMecViscosity(gradv(u), *dynamicViscosityLawPtr, matProps, se);
             massbf += integrate( _range=range, _expr=coeff*inner( idt(p),id(p) ) );
         }
     }
@@ -138,7 +139,8 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateInHousePre
             auto const& therange = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
             auto const& matProps = this->materialsProperties()->materialProperties( matName );
             auto const& rhoExpr = expr( this->materialsProperties()->density( matName ).template expr<1,1>(), se );
-            auto muExpr = Feel::FeelModels::fluidMecViscosity(gradv(u),*physicFluidData,matProps,se);
+            auto dynamicViscosityLawPtr = std::static_pointer_cast<dynamic_viscosity_law_type>( matProps.law( "dynamic-viscosity" ) );
+            auto muExpr = Feel::FeelModels::fluidMecViscosity(gradv(u), *dynamicViscosityLawPtr, matProps, se);
 
             if ( physicFluidData->equation() == "Stokes" || physicFluidData->equation() == "StokesTransient" )
             {

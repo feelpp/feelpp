@@ -81,6 +81,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidual( 
         {
             auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
             auto const& matProps = this->materialsProperties()->materialProperties( matName );
+            auto dynamicViscosityLawPtr = std::static_pointer_cast<dynamic_viscosity_law_type>( matProps.law( "dynamic-viscosity" ) );
 
             // stress tensor sigma : grad(v)
             if ( !timeSteppingEvaluateResidualWithoutTimeDerivative && BuildNonCstPart && !UseJacobianLinearTerms )
@@ -91,7 +92,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidual( 
                                _geomap=this->geomap() );
             }
 
-            bool doAssemblyStressTensor = ( physicFluidData->dynamicViscosity().isConstant() && !physicFluidData->turbulence().isEnabled() )? BuildNonCstPart && !UseJacobianLinearTerms : BuildNonCstPart;
+            bool doAssemblyStressTensor = ( dynamicViscosityLawPtr->isConstant() && !physicFluidData->turbulence().isEnabled() )? BuildNonCstPart && !UseJacobianLinearTerms : BuildNonCstPart;
             if ( doAssemblyStressTensor )
             {
                 auto const StressTensorExpr = Feel::FeelModels::fluidMecStressTensor(u/*gradv(u)*/,idv(p),*physicFluidData,matProps,false/*true*/,se);

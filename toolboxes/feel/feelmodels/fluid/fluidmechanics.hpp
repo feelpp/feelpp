@@ -410,6 +410,7 @@ public:
     typedef MaterialsProperties<nRealDim> materialsproperties_type;
     typedef std::shared_ptr<materialsproperties_type> materialsproperties_ptrtype;
 
+    using dynamic_viscosity_law_type = DynamicViscosityLaw;
 
     typedef bases<Lagrange<nOrderVelocity, Vectorial,Continuous,PointSetFekete> > basis_vectorial_PN_type;
     typedef FunctionSpace<mesh_type, basis_vectorial_PN_type> space_vectorial_PN_type;
@@ -2393,8 +2394,8 @@ public :
                                typename std::enable_if_t< is_functionspace_element_v< unwrap_ptr_t<VelocityFieldType> > >* = nullptr ) const
         {
             using _viscosity_expr_type = std::decay_t<decltype(Feel::FeelModels::fluidMecViscosity(gradv(u),
-                                                                                                   *std::static_pointer_cast<ModelPhysicFluid<nDim>>( this->physicsFromCurrentType().begin()->second ),
-                                                                                                   MaterialProperties{""},se))>;
+                        dynamic_viscosity_law_type{""},
+                        MaterialProperties{""},se))>;
             std::vector<std::pair<std::string,_viscosity_expr_type>> theExprs;
             for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
             {
@@ -2403,7 +2404,8 @@ public :
                 {
                     auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
                     auto const& matProps = this->materialsProperties()->materialProperties( matName );
-                    auto const viscosityExpr = Feel::FeelModels::fluidMecViscosity(gradv(u),*physicFluidData,matProps,se);
+                    auto dynamicViscosityLawPtr = std::static_pointer_cast<dynamic_viscosity_law_type>( matProps.law( "dynamic-viscosity" ) );
+                    auto const viscosityExpr = Feel::FeelModels::fluidMecViscosity(gradv(u),*dynamicViscosityLawPtr,matProps,se);
                     theExprs.push_back( std::make_pair( matName, viscosityExpr ) );
                 }
             }
@@ -2422,11 +2424,12 @@ public :
     auto dynamicViscosityExpr( VelocityFieldType const& u, std::string const& matName, SymbolsExprType const& se = symbols_expression_empty_t{},
                                typename std::enable_if_t< is_functionspace_element_v< unwrap_ptr_t<VelocityFieldType> > >* = nullptr ) const
         {
-            auto mphysics = this->materialsProperties()->physicsFromMaterial( matName, this->physicsFromCurrentType() );
-            CHECK( mphysics.size() == 1 ) << "something wrong";
-            auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<nDim>>(mphysics.begin()->second);
+            //auto mphysics = this->materialsProperties()->physicsFromMaterial( matName, this->physicsFromCurrentType() );
+            //CHECK( mphysics.size() == 1 ) << "something wrong";
+            //auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<nDim>>(mphysics.begin()->second);
             auto const& matProps = this->materialsProperties()->materialProperties( matName );
-            return Feel::FeelModels::fluidMecViscosity(gradv(u),*physicFluidData,matProps,se);
+            auto dynamicViscosityLawPtr = std::static_pointer_cast<dynamic_viscosity_law_type>( matProps.law( "dynamic-viscosity" ) );
+            return Feel::FeelModels::fluidMecViscosity( gradv(u), *dynamicViscosityLawPtr, matProps, se );
         }
 
     template <typename SymbolsExprType = symbols_expression_empty_t>

@@ -26,13 +26,61 @@
 #define FEELPP_TOOLBOXES_FLUIDMECHANICS_MATERIALPROPERTIES_HPP 1
 
 //#include <feel/feelmodels/modelvf/fluidmecstresstensor.hpp>
-#include <feel/feelmodels/modelexpression.hpp>
+//#include <feel/feelmodels/modelexpression.hpp>
+#include <feel/feelmodels/modelmaterials.hpp>
 
 namespace Feel
 {
 namespace FeelModels
 {
 
+struct DynamicViscosityLaw: public ModelMaterialLaw
+{
+    using super_type = ModelMaterialLaw;
+
+    struct Law {};
+    struct NewtonianLaw: Law { static constexpr std::string_view name = "newtonian"; };
+    struct PowerLaw: Law { static constexpr std::string_view name = "power_law"; };
+    struct CarreauLaw: Law { static constexpr std::string_view name = "carreau_law"; };
+    struct CarreauYasudaLaw: Law { static constexpr std::string_view name = "carreau-yasuda_law"; };
+    struct MultifluidLaw: Law { static constexpr std::string_view name = "multifluid"; };
+
+    DynamicViscosityLaw( std::string const& law ):
+        super_type( ),
+        M_lawName( law )
+    {
+        CHECK( this->checkLaw() ) << "invalid law name " << law;
+    }
+    DynamicViscosityLaw( DynamicViscosityLaw const& ) = default;
+    DynamicViscosityLaw( DynamicViscosityLaw && ) = default;
+
+    void setup( nl::json const& jarg ) override;
+
+    void setLaw( std::string const& ln ) { M_lawName = ln; CHECK( this->checkLaw() ) << "invalid law name " << ln; }
+    std::string const& lawName() const { return M_lawName; }
+
+    template< typename LawType >
+    bool isLaw() const { return ( this->lawName() == LawType::name ); }
+
+    bool isNewtonianLaw() const { return this->isLaw<NewtonianLaw>(); }
+    bool isPowerLaw() const { return this->isLaw<PowerLaw>(); }
+    bool isCarreauLaw() const { return this->isLaw<CarreauLaw>(); }
+    bool isCarreauYasudaLaw() const { return this->isLaw<CarreauYasudaLaw>(); }
+    bool isMultifluidLaw() const { return this->isLaw<MultifluidLaw>(); }
+
+    bool isConstant() const { return this->isNewtonianLaw(); }
+
+private:
+    bool checkLaw() const
+    {
+        return ( this->isNewtonianLaw() || this->isPowerLaw() || this->isCarreauLaw() || this->isCarreauYasudaLaw() || this->isMultifluidLaw() );
+    }
+
+private:
+    std::string M_lawName;
+};
+
+#if 0
 /**
  * Power Law parameters
  */
@@ -648,6 +696,7 @@ private :
     double M_densityDefaultValue;
     std::map<std::string, ModelExpressionScalar> M_densityByMaterial;
 };
+#endif
 
 } // namespace FeelModels
 } // namespace Feel

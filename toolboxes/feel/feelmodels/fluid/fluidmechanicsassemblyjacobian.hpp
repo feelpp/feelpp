@@ -188,6 +188,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobian( 
         {
             auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
             auto const& matProps = this->materialsProperties()->materialProperties( matName );
+            auto dynamicViscosityLawPtr = std::static_pointer_cast<dynamic_viscosity_law_type>( matProps.law( "dynamic-viscosity" ) );
 
             // stress tensor sigma : grad(v)
             if ( BuildCstPart )
@@ -196,7 +197,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobian( 
                                _expr= -idt(p)*div(v),
                                _geomap=this->geomap() );
 
-            bool doAssemblyStressTensor = ( physicFluidData->dynamicViscosity().isConstant() && !physicFluidData->turbulence().isEnabled() )? BuildCstPart : BuildNonCstPart;
+            bool doAssemblyStressTensor = ( dynamicViscosityLawPtr->isConstant() && !physicFluidData->turbulence().isEnabled() )? BuildCstPart : BuildNonCstPart;
             if ( doAssemblyStressTensor )
             {
                 auto StressTensorExprJac = Feel::FeelModels::fluidMecViscousStressTensorJacobian(/*gradv(u),*/u,*physicFluidData,matProps,se);

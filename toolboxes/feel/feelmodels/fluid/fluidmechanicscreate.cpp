@@ -222,16 +222,18 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initMaterialProperties()
     // modif expression of a material properties with non newtonian cases
     for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
     {
-        auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<nDim>>(physicData);
-        if ( physicFluidData->dynamicViscosity().isConstant() )
-            continue;
         for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
         {
-            std::string _viscositySymbol = (boost::format("%1%_%2%_mu")%this->keyword() %matName).str();
-            std::string newMuExprStr = (boost::format("%1%:%1%")%_viscositySymbol ).str();
-            ModelExpression newMuExpr;
-            newMuExpr.setExpr( newMuExprStr, this->worldComm(), this->repository().expr() );
-            this->materialsProperties()->addProperty( this->materialsProperties()->materialProperties( matName ), "dynamic-viscosity", newMuExpr, true );
+            auto const& matProps = this->materialsProperties()->materialProperties( matName );
+            auto dynamicViscosityLawPtr = std::static_pointer_cast<dynamic_viscosity_law_type>( matProps.law( "dynamic-viscosity" ) );
+            if ( !dynamicViscosityLawPtr->isConstant() )
+            {
+                std::string _viscositySymbol = (boost::format("%1%_%2%_mu")%this->keyword() %matName).str();
+                std::string newMuExprStr = (boost::format("%1%:%1%")%_viscositySymbol ).str();
+                ModelExpression newMuExpr;
+                newMuExpr.setExpr( newMuExprStr, this->worldComm(), this->repository().expr() );
+                this->materialsProperties()->addProperty( this->materialsProperties()->materialProperties( matName ), "dynamic-viscosity", newMuExpr, true );
+            }
         }
     }
 
