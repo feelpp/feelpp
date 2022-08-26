@@ -672,6 +672,11 @@ public:
     uint32_t nFluids() const { return M_nFluids; }
     void setNFluids( uint32_t n ) { M_nFluids = n; this->updateMaterialPropertyDescription(); }
 
+    std::string const& outerFluid() const { return M_outerFluid; }
+    void setOuterFluid( std::string const& name ) { M_outerFluid = name; }
+    std::set<std::string> const& innerFluids() const { return M_innerFluids; }
+    void setInnerFluids( std::set<std::string> const& names ) { M_innerFluids = names; }
+
     //! set parameter values in expression
     void setParameterValues( std::map<std::string, double> const& mp ) override
     {
@@ -682,6 +687,8 @@ private:
     void updateMaterialPropertyDescription();
 
     uint32_t M_nFluids;
+    std::string M_outerFluid;
+    std::set<std::string> M_innerFluids;
 };
 
 template <uint16_type Dim>

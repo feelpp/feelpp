@@ -694,23 +694,18 @@ ModelPhysicMultifluid<Dim>::ModelPhysicMultifluid( ModelPhysics<Dim> const& mphy
         }
         CHECK( M_nFluids >= 2 ) << "invalid number of fluids (" << M_nFluids << ")";
 
-#if 0
-        if ( j_setup.contains( "outer_fluids" ) )
+        if ( j_setup.contains( "outer_fluid" ) )
         {
-            auto const& j_outerfluids = j_setup.at( "outer_fluids" );
-            if ( j_outerfluids.is_string() )
-                M_outerFluids.insert( j_outerfluids.get<std::string>() );
-            else if ( j_outerfluids.is_array() )
-            {
-                for ( auto const& [j_outerfluidskey,j_outerfluidsval]: j_outerfluids.items() )
-                    if ( j_outerfluidsval.is_string() )
-                        M_outerFluids.insert( j_outerfluidsval.get<std::string>() );
-            }
+            auto const& j_outerfluid = j_setup.at( "outer_fluid" );
+            if ( j_outerfluid.is_string() )
+                M_outerFluid = j_outerfluid.get<std::string>();
+            else
+                CHECK( false ) << "outer_fluid must be a string";
         }
         else
         {
             // default: fluid
-            M_outerFluids.insert( "fluid" );
+            M_outerFluid = "fluid";
         }
 
         if ( j_setup.contains( "inner_fluids" ) )
@@ -733,9 +728,14 @@ ModelPhysicMultifluid<Dim>::ModelPhysicMultifluid( ModelPhysics<Dim> const& mphy
                 M_innerFluids.insert( fmt::format( "fluid{}", n ) );
             }
         }
-#endif
     }
 
+    // Set outer and inner fludis as materials used by MultifluidPhysic
+    std::set<std::string> materialNames = M_innerFluids;
+    materialNames.insert( M_outerFluid );
+    this->addMaterialNames( materialNames );
+
+    // Update properties description
     this->updateMaterialPropertyDescription();
 }
 
