@@ -486,7 +486,6 @@ private:
     op_lagrangeP1_ptrtype M_opLagrangeP1iso;
     //--------------------------------------------------------------------//
     fluid_model_ptrtype M_fluidModel;
-    size_type M_nLevelsets;
     std::vector<levelset_model_ptrtype> M_levelsetModels;
 
     levelset_space_manager_ptrtype M_levelsetSpaceManager;

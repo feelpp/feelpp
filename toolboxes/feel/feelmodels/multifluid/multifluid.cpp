@@ -78,7 +78,6 @@ MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
 MULTIFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 {
-    CHECK( M_nLevelsets >= 1 ) << "Multifluid must contain at least 1 levelset.\n";
     this->log("MultiFluid", "init", "start");
     this->timerTool("Constructor").start();
 
@@ -119,16 +118,6 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         //}
         //M_fluidModel->addPhysics( );
     //}
-    // Set multifluid density and viscosity for inner and outer fluids
-    for ( auto const& [physicId, physic]: this->physicsFromCurrentType() )
-    {
-        for ( auto subphysic: physic->subphysicsFromType( M_fluidModel->physicType() ) )
-        {
-            auto subphysicFluid = std::dynamic_pointer_cast<ModelPhysicFluid<nDim>>(subphysic);
-            CHECK( subphysicFluid ) << "invalid fluid physic ptr cast";
-            subphysicFluid->dynamicViscosity()->setMultifluid( true );
-        }
-    }
 
     // Physical properties
     if ( !M_materialsProperties )
@@ -137,6 +126,87 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         //this->modelProperties().materials().setParameterValues( paramValues );
         M_materialsProperties.reset( new materialsproperties_type( this->shared_from_this() ) );
         M_materialsProperties->updateForUse( this->modelProperties().materials() );
+    }
+
+    // Add outer and (inner-outer) materials to fluid model
+    // and attach outer and inner fluids as subMaterial to all (inner-outer) fluids for density/viscosity evaluation
+    // and set multifluid density and viscosity laws
+    using physic_id_type = typename model_physics_type::physic_id_type;
+    for ( auto const& [physicId, physic]: this->physicsFromCurrentType() )
+    {
+        auto physicMultifluid = std::static_pointer_cast<ModelPhysicMultifluid<nDim>>( physic );
+        std::string const& outerMatName = physicMultifluid->outerFluid();
+        auto const& outerMatProps = this->materialsProperties()->materialProperties( outerMatName );
+
+        auto subphysicsFluid = physic->subphysicsFromType( M_fluidModel->physicType() );
+
+        for ( auto subphysic: subphysicsFluid )
+        {
+            this->materialsProperties()->addPhysicToMaterial( subphysic->id(), outerMatName );
+        }
+
+        for( std::string const& innerMatName: physicMultifluid->innerFluids() )
+        {
+            auto const& innerMatProps = this->materialsProperties()->materialProperties( innerMatName );
+            std::string innerOuterMatName = "inner_outer_" + innerMatName;
+            MaterialProperties innerOuterMatProps( innerOuterMatName );
+            innerOuterMatProps.setMarkers( innerMatProps.markers() );
+            innerOuterMatProps.setLaws( innerMatProps.laws() );
+            std::shared_ptr<DynamicViscosityLaw> dynamicViscosityLaw = std::make_shared<DynamicViscosityLaw>( "multifluid" );
+            innerOuterMatProps.setLaw( "dynamic-viscosity", dynamicViscosityLaw );
+            innerOuterMatProps.addSubMaterialProperties( "inner_fluid", innerMatProps );
+            innerOuterMatProps.addSubMaterialProperties( "outer_fluid", outerMatProps );
+
+            this->materialsProperties()->addMaterialProperties( innerOuterMatProps );
+            for ( auto subphysic: subphysicsFluid )
+            {
+                this->materialsProperties()->addPhysicToMaterial( subphysic->id(), innerOuterMatName );
+            }
+        }
+    }
+    //// Set multifluid density and viscosity for inner fluids
+    //for ( auto const& [physicId, physic]: this->physicsFromCurrentType() )
+    //{
+        //for ( auto subphysic: physic->subphysicsFromType( M_fluidModel->physicType() ) )
+        //{
+            //auto subphysicFluid = std::dynamic_pointer_cast<ModelPhysicFluid<nDim>>(subphysic);
+            //CHECK( subphysicFluid ) << "invalid fluid physic ptr cast";
+            //subphysicFluid->dynamicViscosity().setMultifluid( true );
+        //}
+    //}
+    // Set levelset options
+    M_enableInextensibility = false;
+    M_hasInextensibility.clear();
+    M_hasInextensibilityLM = false;
+    M_inextensibilityMethod.clear();
+    M_inextensibilityGamma.clear();
+    M_levelsetRedistEvery.clear();
+    for( index_type i = 0; i < this->nLevelsets(); ++i )
+    {
+        std::string const lsKeyword = fmt::format( "levelset{}", i );
+        std::string const lsPrefix = prefixvm( this->prefix(), lsKeyword );
+
+        // Inextensibility
+        bool hasInextensibility = boption( _name="enable-inextensibility", _prefix=lsPrefix );
+        M_hasInextensibility.push_back( hasInextensibility );
+
+        if( hasInextensibility ) M_enableInextensibility = true;
+
+        std::string inextensibilityMethod = soption( _name="inextensibility-method", _prefix=lsPrefix );
+        CHECK( inextensibilityMethod == "penalty" || inextensibilityMethod == "lagrange-multiplier" ) 
+            << "invalid inextensiblity-method " << inextensibilityMethod
+            << ", should be \"penalty\" or \"lagrange-multiplier\"" << std::endl;
+        M_inextensibilityMethod.push_back( inextensibilityMethod );
+
+        if( hasInextensibility && inextensibilityMethod == "lagrange-multiplier" )
+            M_hasInextensibilityLM = true;
+
+        double inextensibilityGamma = doption( _name="inextensibility-gamma", _prefix=lsPrefix );
+        M_inextensibilityGamma.push_back( inextensibilityGamma );
+
+        // Redistanciation
+        int redistEvery = ioption( _name="redist-every", _prefix=lsPrefix );
+        M_levelsetRedistEvery.push_back( redistEvery );
     }
 
     // Mesh
@@ -266,8 +336,6 @@ MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
 MULTIFLUID_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
 {
-    M_nLevelsets = ioption( _name="nlevelsets", _prefix=this->prefix() );
-
     M_usePicardIterations = boption( _name="use-picard-iterations", _prefix=this->prefix() );
 
     M_hasInterfaceForcesModel = false;
@@ -277,34 +345,6 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
     // Global levelset parameters
     // TODO
 
-    M_enableInextensibility = false;
-    for( index_type i = 0; i < M_nLevelsets; ++i )
-    {
-        std::string const lsKeyword = fmt::format( "levelset{}", i );
-        std::string const lsPrefix = prefixvm( this->prefix(), lsKeyword );
-
-        // Inextensibility
-        bool hasInextensibility = boption( _name="enable-inextensibility", _prefix=lsPrefix );
-        M_hasInextensibility.push_back( hasInextensibility );
-
-        if( hasInextensibility ) M_enableInextensibility = true;
-
-        std::string inextensibilityMethod = soption( _name="inextensibility-method", _prefix=lsPrefix );
-        CHECK( inextensibilityMethod == "penalty" || inextensibilityMethod == "lagrange-multiplier" ) 
-            << "invalid inextensiblity-method " << inextensibilityMethod
-            << ", should be \"penalty\" or \"lagrange-multiplier\"" << std::endl;
-        M_inextensibilityMethod.push_back( inextensibilityMethod );
-
-        if( hasInextensibility && inextensibilityMethod == "lagrange-multiplier" )
-            M_hasInextensibilityLM = true;
-
-        double inextensibilityGamma = doption( _name="inextensibility-gamma", _prefix=lsPrefix );
-        M_inextensibilityGamma.push_back( inextensibilityGamma );
-
-        // Redistanciation
-        int redistEvery = ioption( _name="redist-every", _prefix=lsPrefix );
-        M_levelsetRedistEvery.push_back( redistEvery );
-    }
 }
 
 #if 0
@@ -502,7 +542,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateInextensibilityLM()
 {
     this->log("MultiFluid", "updateInextensibilityLM", "start");
     M_inextensibleLevelsets.clear();
-    for( size_type i = 0; i < M_nLevelsets; ++i )
+    for( size_type i = 0; i < this->nLevelsets(); ++i )
     {
         if( this->hasInextensibility(i) )
         {
