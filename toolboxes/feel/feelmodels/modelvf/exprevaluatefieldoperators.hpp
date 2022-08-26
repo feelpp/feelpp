@@ -15,6 +15,8 @@ public :
     using this_type = ExprEvaluateFieldOperators<FieldType>;
     using field_type = FieldType;
     using field_clean_type = unwrap_ptr_t<field_type>;
+    static constexpr uint16_type nDim = field_clean_type::nDim;
+
     using expr_id_type = std::decay_t<decltype(idv(field_type{}))>;
     using expr_grad_type = std::decay_t<decltype(gradv(field_type{}))>;
     using expr_laplacian_type = std::decay_t<decltype(laplacianv(field_type{}))>;
@@ -249,6 +251,8 @@ public :
     using this_type = ExprEvaluateFieldOperatorGradFromExpr<ExprGradType>;
     using expr_grad_type = ExprGradType;
     using value_type = typename ExprGradType::value_type;
+    static constexpr uint16_type nDim = expr_grad_type::functionspace_type::nDim;
+
     ExprEvaluateFieldOperatorGradFromExpr( expr_grad_type const& exprGrad )
         :
         M_enableGrad( false ),
