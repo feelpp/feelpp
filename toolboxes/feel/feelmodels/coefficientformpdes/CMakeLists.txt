@@ -1,9 +1,9 @@
 
 
-feelpp_toolboxes_add_library( coefficientformpdebase SRCS coefficientformpdebase.cpp coefficientformpdeboundaryconditions.cpp LINK_LIBRARIES feelpp_modelcore )
+feelpp_toolboxes_add_library( coefficientformpdebase SRCS coefficientformpdebase.cpp coefficientformpdeboundaryconditions.cpp LINK_LIBRARIES feelpp_modelcore feelpp_modelmaterials )
 
 
-if (1)
+if (0)
 set( _UNKNOWN_BASIS_TYPE_LIST
   #"Lagrange<0,Scalar,Continuous,PointSetFekete>"
   "Lagrange<1,Scalar,Continuous,PointSetFekete>" "Lagrange<2,Scalar,Continuous,PointSetFekete>"
