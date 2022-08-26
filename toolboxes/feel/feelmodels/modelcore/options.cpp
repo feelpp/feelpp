@@ -645,7 +645,7 @@ multifluid_options(std::string const& prefix, unsigned int nls)
 {
     Feel::po::options_description multifluidOptions("MultiFluid options");
     multifluidOptions.add_options()
-        (prefixvm(prefix,"nlevelsets").c_str(), Feel::po::value<int>()->default_value( 1 ), "number of levelsets")
+        (prefixvm(prefix,"nfluids").c_str(), Feel::po::value<int>()->default_value( 2 ), "number of fluids")
 
         (prefixvm(prefix, "use-picard-iterations").c_str(), Feel::po::value<bool>()->default_value( false ), "solve NS-LS coupling with non-linear Picard iterations")
 
