@@ -179,7 +179,7 @@ private:
     /* thermal coeff */
     double therm_coeff;
 
-    /* ambien temperature, and heat flux (Q) */
+    /* ambient temperature, and heat flux (Q) */
     double Tamb;
     double heat_flux;
 
@@ -381,7 +381,7 @@ main( int argc, char** argv )
     /* define application */
     typedef Feel::HeatSink<nDim, nOrder> heat_sink_type;
 
-    /* instanciate */
+    /* instantiate */
     heat_sink_type heatsink;
 
     /* run */

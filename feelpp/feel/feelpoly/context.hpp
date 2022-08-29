@@ -39,32 +39,32 @@ namespace Feel
 namespace vm
 {
 
-const size_type JACOBIAN                 = ( 1<<0 );
-const size_type KB                       = ( 1<<1 );
-const size_type KB2                      = ( 1<<2 );
-const size_type FIRST_DERIVATIVE         = ( 1<<3 );
-const size_type GRAD                     = ( 1<<4 );
-const size_type SECOND_DERIVATIVE        = ( 1<<5 );
-const size_type HESSIAN                  = ( 1<<6 );
-const size_type LAPLACIAN                = ( 1<<7 );
-const size_type MEASURE                  = ( 1<<8 );
-const size_type NORMAL                   = ( 1<<9 );
-const size_type TANGENT                  = ( 1<<10 );
-const size_type FIRST_DERIVATIVE_NORMAL  = ( 1<<11 );
-const size_type POINT                    = ( 1<<12 );
-const size_type SYMM                     = ( 1<<13 );
-const size_type UNSYMM                   = ( 1<<14 );
-const size_type DIV                      = ( 1<<15 );
-const size_type CURL                     = ( 1<<16 );
-const size_type INTERPOLANT              = ( 1<<17 );
-const size_type BASIS_FUNCTION           = ( 1<<18 );
-const size_type MASS                     = ( 1<<20 );
-const size_type STIFFNESS                = ( 1<<21 );
-const size_type NORMAL_COMPONENT         = ( 1<<22 );
-const size_type LOCAL_BASIS              = ( 1<<23 );
-const size_type TRACE                    = ( 1<<24 );
-const size_type DYNAMIC                  = ( 1<<25 );
-const size_type DYNAMIC_BASIS_FUNCTION   = ( 1<<26 );
+inline constexpr size_type JACOBIAN                 = ( 1<<0 );
+inline constexpr size_type KB                       = ( 1<<1 );
+inline constexpr size_type KB2                      = ( 1<<2 );
+inline constexpr size_type FIRST_DERIVATIVE         = ( 1<<3 );
+inline constexpr size_type GRAD                     = ( 1<<4 );
+inline constexpr size_type SECOND_DERIVATIVE        = ( 1<<5 );
+inline constexpr size_type HESSIAN                  = ( 1<<6 );
+inline constexpr size_type LAPLACIAN                = ( 1<<7 );
+inline constexpr size_type MEASURE                  = ( 1<<8 );
+inline constexpr size_type NORMAL                   = ( 1<<9 );
+inline constexpr size_type TANGENT                  = ( 1<<10 );
+inline constexpr size_type FIRST_DERIVATIVE_NORMAL  = ( 1<<11 );
+inline constexpr size_type POINT                    = ( 1<<12 );
+inline constexpr size_type SYMM                     = ( 1<<13 );
+inline constexpr size_type UNSYMM                   = ( 1<<14 );
+inline constexpr size_type DIV                      = ( 1<<15 );
+inline constexpr size_type CURL                     = ( 1<<16 );
+inline constexpr size_type INTERPOLANT              = ( 1<<17 );
+inline constexpr size_type BASIS_FUNCTION           = ( 1<<18 );
+inline constexpr size_type MASS                     = ( 1<<20 );
+inline constexpr size_type STIFFNESS                = ( 1<<21 );
+inline constexpr size_type NORMAL_COMPONENT         = ( 1<<22 );
+inline constexpr size_type LOCAL_BASIS              = ( 1<<23 );
+inline constexpr size_type TRACE                    = ( 1<<24 );
+inline constexpr size_type DYNAMIC                  = ( 1<<25 );
+inline constexpr size_type DYNAMIC_BASIS_FUNCTION   = ( 1<<26 );
 
 #define FEELPP_DEFINE_CONTEXT(ctx_v,ctx)                                \
     template<size_type Context>                                         \
