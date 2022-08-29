@@ -11,7 +11,7 @@ class reducedbasisOffline(reducedbasis):
     """ 
     Class for the offline part of the reduced basis method for stationnary problem
     """
-    def __init__(self, Aq, Fq, mubar, output_names=None, **kwargs):
+    def __init__(self, Aq, Fq, mubar, output_names=None, ksp_tol=1e-10, **kwargs):
         """Initialize the reduced basis method
 
         Args:
@@ -20,6 +20,7 @@ class reducedbasisOffline(reducedbasis):
             model (feelpp.mor._toolboxmor) : model of toolboxmor, initialized
             mubar (parameterSpaceElement)  : parameter mubar
             outputs_names (list)           : list of the names of the diffetent outputs, in the order given by the environment
+            ksp_tol (float)                : tolerance for the ksp solver
             **kwargs                       : other arguments
         """
 
@@ -61,6 +62,7 @@ class reducedbasisOffline(reducedbasis):
         self.ksp = PETSc.KSP()
         self.ksp.create(PETSc.COMM_SELF)
         self.ksp.setType(self.KSP_TYPE)
+        self.ksp.setTolerances(rtol=ksp_tol)
         self.reshist = {}
 
         def monitor(ksp, its, rnorm):

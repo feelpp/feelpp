@@ -67,6 +67,7 @@ class EimSolver():
         self.ksp = PETSc.KSP()
         self.ksp.create(PETSc.COMM_SELF)
         self.ksp.setType(self.KSP_TYPE)
+        self.ksp.setTolerances(rtol=1e-14)
 
     def solve(self, mat, rhs):
         pc = self.ksp.getPC()
@@ -185,6 +186,8 @@ def init_toolboxmor(casefile, name, dim):
 
 @pytest.mark.parametrize("casefile,name,dim", cases_params, ids=cases_ids)
 def test_matrix(casefile, name, dim, init_feelpp):
+    """Tests the assembly of the matrix, comparing to the Toolbox one
+    """
     e = init_feelpp
 
     model, _, _, assembleMDEIM, _ = init_toolboxmor(casefile, name, dim)
@@ -213,6 +216,8 @@ def test_matrix(casefile, name, dim, init_feelpp):
 
 @pytest.mark.parametrize("casefile,name,dim", cases_params, ids=cases_ids)
 def test_rhs(casefile, name, dim, init_feelpp):
+    """Tests the assembly of the rhs, comparing to the Toolbox one
+    """
     e = init_feelpp
 
     model, _, assembleDEIM, _, _ = init_toolboxmor(casefile, name, dim)
@@ -240,6 +245,8 @@ def test_rhs(casefile, name, dim, init_feelpp):
 
 @pytest.mark.parametrize("casefile,name,dim", cases_params, ids=cases_ids)
 def test_solution(casefile, name, dim, init_feelpp):
+    """Tests the solution of the problem, comparing to the Toolbox one to the EIM one
+    """
     e = init_feelpp
 
     model, heatBox, assembleDEIM, assembleMDEIM, _ = init_toolboxmor(casefile, name, dim)
