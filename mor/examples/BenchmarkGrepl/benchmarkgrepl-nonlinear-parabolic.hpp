@@ -147,8 +147,6 @@ class BenchmarkGreplNonLinearParabolic :
 public:
 
     typedef ModelCrbBase<ParameterDefinition, FunctionSpaceDefinition<Order>, TimeDependent, EimDefinition<ParameterDefinition,FunctionSpaceDefinition<Order> > > super_type;
-    typedef typename super_type::funs_type funs_type;
-    typedef typename super_type::funsd_type funsd_type;
 
     typedef double value_type;
 
@@ -192,12 +190,6 @@ public:
         return ostr.str();
     }
 
-    //\return the list of EIM objects
-    virtual funs_type scalarContinuousEim() const
-    {
-        return M_funs;
-    }
-
     /**
      * \brief compute the theta coefficient for both bilinear and linear form
      * \param mu parameter to evaluate the coefficients
@@ -235,19 +227,20 @@ public:
        this->M_betaMqm[0].resize(1);
        this->M_betaMqm[0][0]=1;
 
-       /* 
-        * Rhs 
+       /*
+        * Rhs
         * We give the coefficient of the EIM expansion here
         */
+       int M = this->scalarContinuousEim()[0]->mMax();
       this->M_betaFqm.resize(1);
       this->M_betaFqm[0].resize(1);
-      this->M_betaFqm[0][0].resize(M_funs[0]->mMax()+1);
-      auto _beta = M_funs[0]->beta(mu);
-      for(int i = 0; i < M_funs[0]->mMax(); i++)
-        this->M_betaFqm[0][0][i] = _beta(i);
-        
-      this->M_betaFqm[0][0][M_funs[0]->mMax()] = 1.;
-        
+      this->M_betaFqm[0][0].resize(M+1);
+      auto _beta = this->scalarContinuousEim()[0]->beta(mu);
+      for(int i = 0; i < M; i++)
+          this->M_betaFqm[0][0][i] = _beta(i);
+
+      this->M_betaFqm[0][0][M] = 1.;
+
       return boost::make_tuple( this->M_betaMqm, this->M_betaAqm, this->M_betaFqm );
     }
 
@@ -283,8 +276,6 @@ private:
     space_ptrtype Xh;
     element_ptrtype pT;
     parameter_type M_mu;
-
-    funs_type M_funs;
 
     sparse_matrix_ptrtype M_monoA;
     std::vector<vector_ptrtype> M_monoF;
@@ -384,6 +375,7 @@ void BenchmarkGreplNonLinearParabolic<Order>::initModel()
                       *exp( -(Pz()*Pz())/(cst_ref(M_mu(2))*cst_ref(M_mu(2)))),
                       _sampling=Pset,
                       _name="eim_g" );
+    this->addEim( eim_g );
     toc("EIM",FLAGS_v>0);
     /*
      * To evaluate the eim expansion
@@ -407,7 +399,6 @@ void BenchmarkGreplNonLinearParabolic<Order>::initModel()
       cpt++;
     }
     }
-    M_funs.push_back( eim_g );
 
     /*
      * Basically, we solve
@@ -503,20 +494,25 @@ void BenchmarkGreplNonLinearParabolic<Order>::assemble()
     // g = sum_{i=1}^{mMax} w_m(mu) g(x)
     // w_m -> computeBeta
     tic();
+    auto eim_g = this->scalarContinuousEim()[0];
+    int M = eim_g->mMax();
     this->M_Fqm.resize( 1 );
     this->M_Fqm[0].resize( 1 );
-    this->M_Fqm[0][0].resize(M_funs[0]->mMax()+1);
-    for(int i=0; i < M_funs[0]->mMax(); i++)
+    this->M_Fqm[0][0].resize(M+1);
+    for(int i=0; i < M; i++)
     {
       this->M_Fqm[0][0][i] = backend()->newVector( Xh );
-      form1(_test=Xh, _vector = this->M_Fqm[0][0][i] ) = integrate(_range=elements(mesh),_expr=doption("control_input")*inner(idv(M_funs[0]->q(i)),id(u))); //control_input = u
+      form1(_test=Xh, _vector = this->M_Fqm[0][0][i] ) =
+          integrate(_range=elements(mesh),
+                    _expr=doption("control_input")*inner(idv(eim_g->q(i)),id(u))); //control_input = u
     }
     toc("Rhs", FLAGS_v>0);
     tic();
-    this->M_Fqm[0][0][M_funs[0]->mMax()] = backend()->newVector( Xh );
+    this->M_Fqm[0][0][M] = backend()->newVector( Xh );
     // This can be removed - I left it to let us impose non homogeneous boundary conditions.
-    form1(_test=Xh, _vector=this->M_Fqm[0][0][M_funs[0]->mMax()]) = integrate(_range=markedfaces(mesh,"Dirichlet"),
-                   _expr=doption("gamma")*cst(0.)*id( u )/hFace() // Penalisation 
+    form1(_test=Xh, _vector=this->M_Fqm[0][0][M]) =
+        integrate(_range=markedfaces(mesh,"Dirichlet"),
+                  _expr=doption("gamma")*cst(0.)*id( u )/hFace() // Penalisation
         );
     toc("Rhs(bc)", FLAGS_v>0);
 

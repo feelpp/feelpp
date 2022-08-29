@@ -155,6 +155,7 @@ class FEELPP_EXPORT BenchmarkGreplNonlinearElliptic :
 
     //! initialization of the model
     void initModel() override;
+    void updateSpecificityModel( boost::property_tree::ptree & ptree ) const override;
     void setupSpecificityModel( boost::property_tree::ptree const& ptree, std::string const& dbDir ) override;
 
     //@}
@@ -189,17 +190,17 @@ class FEELPP_EXPORT BenchmarkGreplNonlinearElliptic :
     beta_type
     computeBetaQm( element_type const& T,parameter_type const& mu ) override
     {
-        std::vector<vectorN_type*> betas;
+        std::vector<vectorN_type> betas;
         if ( M_use_deim )
         {
             auto beta = this->deim()->beta(mu,T);
-            betas.push_back( &beta );
+            betas.push_back( std::move( beta ) );
         }
 
         else
         {
             auto beta = this->scalarContinuousEim()[0]->beta( mu , T );
-            betas.push_back( &beta );
+            betas.push_back( std::move( beta ) );
         }
 
         fillBetaQm(betas, mu);
@@ -213,17 +214,17 @@ class FEELPP_EXPORT BenchmarkGreplNonlinearElliptic :
     beta_type
     computeBetaQm( vectorN_type const& urb, parameter_type const& mu ) override
     {
-        std::vector<vectorN_type*> betas;
+        std::vector<vectorN_type> betas;
         if ( M_use_deim )
         {
             auto beta = this->deim()->beta(mu,urb);
-            betas.push_back( &beta );
+            betas.push_back( std::move( beta ) );
         }
 
         else
         {
             auto beta = this->scalarContinuousEim()[0]->beta( mu ,urb );
-            betas.push_back( &beta );
+            betas.push_back( std::move( beta ) );
         }
 
         fillBetaQm(betas, mu);
@@ -237,17 +238,17 @@ class FEELPP_EXPORT BenchmarkGreplNonlinearElliptic :
     beta_type
     computeBetaQm( parameter_type const& mu ) override
     {
-        std::vector<vectorN_type*> betas;
+        std::vector<vectorN_type> betas;
         if ( M_use_deim )
         {
             auto beta = this->deim()->beta(mu);
-            betas.push_back( &beta );
+            betas.push_back( std::move( beta ) );
         }
 
         else
         {
             auto beta = this->scalarContinuousEim()[0]->beta(mu);
-            betas.push_back( &beta );
+            betas.push_back( std::move( beta ) );
         }
 
         fillBetaQm(betas, mu);
@@ -261,17 +262,17 @@ class FEELPP_EXPORT BenchmarkGreplNonlinearElliptic :
     beta_type
     computePicardBetaQm( element_type const& T,parameter_type const& mu ) override
     {
-        std::vector<vectorN_type*> betas;
+        std::vector<vectorN_type> betas;
         if ( M_use_deim )
         {
             auto beta = this->deim()->beta(mu,T);
-            betas.push_back( &beta );
+            betas.push_back( std::move( beta ) );
         }
 
         else
         {
             auto beta = this->scalarContinuousEim()[0]->beta(mu,T);
-            betas.push_back( &beta );
+            betas.push_back( std::move( beta ) );
         }
 
         fillBetaQm(betas, mu);
@@ -282,17 +283,17 @@ class FEELPP_EXPORT BenchmarkGreplNonlinearElliptic :
     beta_type
     computePicardBetaQm( parameter_type const& mu ) override
     {
-        std::vector<vectorN_type*> betas;
+        std::vector<vectorN_type> betas;
         if ( M_use_deim )
         {
             auto beta = this->deim()->beta(mu);
-            betas.push_back( &beta );
+            betas.push_back( std::move( beta ) );
         }
 
         else
         {
             auto beta = this->scalarContinuousEim()[0]->beta(mu);
-            betas.push_back( &beta );
+            betas.push_back( std::move( beta ) );
         }
 
         fillBetaQm(betas, mu);
@@ -329,7 +330,7 @@ class FEELPP_EXPORT BenchmarkGreplNonlinearElliptic :
         }
     }
 
-    void fillBetaQm(std::vector<vectorN_type*> betas, parameter_type const& mu)
+    void fillBetaQm(std::vector<vectorN_type> const& betas, parameter_type const& mu)
     {
         int M;
         if ( M_use_deim )
@@ -337,7 +338,7 @@ class FEELPP_EXPORT BenchmarkGreplNonlinearElliptic :
         else
             M = this->scalarContinuousEim()[0]->mMax();
 
-        auto beta_g=*betas[0];
+        auto const& beta_g = betas[0];
 
         if( M_use_newton )
         {

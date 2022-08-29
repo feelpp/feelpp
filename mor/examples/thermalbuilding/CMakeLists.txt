@@ -1,4 +1,4 @@
-###  CMakeLists.txt; coding: utf-8 --- 
+###  CMakeLists.txt; coding: utf-8 ---
 
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 12 Jun 2017
@@ -24,6 +24,7 @@
 
 
 mor_add_library( thermalbuilding SRCS thermalbuilding.cpp EXEC CRB_LIB_THERMALBUILDING )
+target_compile_definitions(${CRB_LIB_THERMALBUILDING} PRIVATE FEELPP_MOR_PLUGIN_NAME=thermalbuilding FEELPP_MOR_PLUGIN_LIBNAME=${CRB_LIB_THERMALBUILDING})
 install(FILES thermalbuilding.hpp DESTINATION include/feelpp/crb/thermalbuilding COMPONENT Devel)
 set(FEELPP_CRB_thermalbuilding_LIBRARIES ${CRB_LIB_THERMALBUILDING} PARENT_SCOPE)
 set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_thermalbuilding_LIBRARIES PARENT_SCOPE)
