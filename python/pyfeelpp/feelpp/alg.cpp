@@ -314,8 +314,7 @@ PYBIND11_MODULE(_alg, m )
 //        .def(py::self *= py::self)
 //        .def(py::self /= py::self)
         .def( "to_petsc", [](VectorUblas<double> &v){ return toPETSc( v ); }, "cast a VectorDouble to a VectorPetscDouble" );
-
-        ;
+        .def_static( "createFromPETSc", &VectorUblas<double>::createView, "create a VectorUblas<double> from a VectorPETScDouble", py::arg("vec") );
 
     m.def( "backend_options", &Feel::backend_options, py::arg("prefix"), "create a backend options descriptions with prefix" );
     
