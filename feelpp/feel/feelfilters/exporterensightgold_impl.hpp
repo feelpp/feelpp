@@ -1376,7 +1376,7 @@ ExporterEnsightGold<MeshType,N>::writeVariableFiles( timeset_ptrtype __ts, step_
     LOG(INFO) << "ExporterEnsightGold::writeVariableFiles Nodal: " << nNodalFields;
     LOG(INFO) << "ExporterEnsightGold::writeVariableFiles Element: " << nElementFields;
 
-    // prepare some common informations
+    // prepare some common information
     auto __firstActiveStep = __ts->firstActiveStep();
     bool isFirstStep = (__step->activeIndex() == __firstActiveStep->activeIndex());
     std::ostringstream ossFilenameStepIndex;

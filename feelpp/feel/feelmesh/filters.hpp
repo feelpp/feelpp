@@ -255,7 +255,7 @@ boundaryelements( MeshType const& mesh, uint16_type entity_min_dim = 0, uint16_t
  *
  * \ingroup MeshIterators
  * \return a pair of iterators to iterate over elements of the mesh
- * which are stricly within the domain that is to say they do not
+ * which are strictly within the domain that is to say they do not
  * share a face with the boundary
  */
 template<typename MeshType>

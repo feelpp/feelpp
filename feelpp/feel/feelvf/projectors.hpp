@@ -235,7 +235,7 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
 
 
 /**
- * \brief nodal projection of \p __expr onto the the subspace of \p __functionspace described by the range \p range_it
+ * \brief nodal projection of \p __expr onto the subspace of \p __functionspace described by the range \p range_it
  *
  * \return the element of the space \p __functionspace resulting from the nodal projection of \p __expr over the range \p __range_it
  */
@@ -276,7 +276,7 @@ project( std::shared_ptr<FunctionSpaceType> const& __functionspace, Expr<ExprT> 
 }
 
 /**
- * \brief nodal projection of \p __expr onto the the subspace of \p __functionspace described by the range \p range_it
+ * \brief nodal projection of \p __expr onto the subspace of \p __functionspace described by the range \p range_it
  *
  * \return the element of the space \p __functionspace resulting from the nodal projection of \p __expr over the range \p __range_it
  */
@@ -326,7 +326,7 @@ project( FunctionSpaceType const& __functionspace, Expr<ExprT> const& __expr,
 }
 
 /**
- * \brief nodal projection of \p __expr onto the the subspace of \p __functionspace described by the range \p range_it
+ * \brief nodal projection of \p __expr onto the subspace of \p __functionspace described by the range \p range_it
  *
  * \return the element of the space \p __functionspace resulting from the nodal projection of \p __expr over the range \p __range_it
  */

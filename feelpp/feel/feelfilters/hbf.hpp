@@ -152,7 +152,7 @@ public:
     typedef dof_table::right_const_iterator feelpp_dof_const_iterator;
 
     /**
-     * build the correspondance data structure
+     * build the correspondence data structure
      * \param nx indicates the number of nodes in x direction
      * \param ny indicates the number of nodes in y direction
      * the number of cells is nx-1 and ny-1 in the x and y direction respectively
@@ -203,7 +203,7 @@ public:
     typedef dof_table::value_type dof_relation;
 
     /**
-     * build the correspondance data structure
+     * build the correspondence data structure
      * \param nx indicates the number of nodes in x direction
      * \param ny indicates the number of nodes in y direction
      * the number of cells is nx-1 and ny-1 in the x and y direction respectively

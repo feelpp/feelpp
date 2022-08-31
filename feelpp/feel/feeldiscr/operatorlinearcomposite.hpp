@@ -378,7 +378,7 @@ public :
     }
 
 
-    //Acces to operator
+    //Access to operator
     super_ptrtype & operatorlinear(int q)
     {
         int q_max = M_operators1.size();

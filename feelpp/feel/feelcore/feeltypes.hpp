@@ -44,7 +44,7 @@
 
   Feel defines a number of integer type that have controlled bit
   size. These types are constructed automatically by Feel in order to have
-  platform independant integer types.
+  platform independent integer types.
 
   Here is the list of signed integers:
 
