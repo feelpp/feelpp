@@ -136,7 +136,7 @@ public:
     
     /**
      * Repartitions the \p Mesh into \p n parts.  This
-     * is required since some partitoning algorithms can repartition
+     * is required since some partitioning algorithms can repartition
      * more efficiently than computing a new partitioning from scratch.
      * The default behavior is to simply call this->partition(mesh,n)
      */
@@ -144,7 +144,7 @@ public:
 
     /**
      * Repartitions the \p Mesh into \p Environment::numberOfProcessors() parts.
-     * This is required since some partitoning algorithms can repartition more
+     * This is required since some partitioning algorithms can repartition more
      * efficiently than computing a new partitioning from scratch.
      */
     void repartition (mesh_ptrtype mesh);
@@ -172,7 +172,7 @@ protected:
     /**
      * Trivially "partitions" the mesh for one processor.
      * Simply loops through the elements and assigns all of them
-     * to processor 0.  Is is provided as a separate function
+     * to processor 0.  It is provided as a separate function
      * so that derived classes may use it without reimplementing it.
      */
     void singlePartition (mesh_ptrtype mesh);

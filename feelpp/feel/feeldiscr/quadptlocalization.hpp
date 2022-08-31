@@ -265,7 +265,7 @@ public :
         auto elt_it = this->beginElement();
         for ( size_type i=0; i<theIdElt; ++i ) ++elt_it;
 #endif
-        // get only usefull quad point and reoder
+        // get only useful quad point and reoder
         uint16_type nContextPt = indexLocalToQuad.size();
         matrix_node_type const& quadPtsRef = this->im().points();
         matrix_node_type newquadPtsRef( quadPtsRef.size1() , nContextPt );
@@ -311,7 +311,7 @@ public :
 #endif
         auto const& faceCur = boost::unwrap_ref( *elt_it );
 
-        // get only usefull quad point and reoder
+        // get only useful quad point and reoder
         const uint16_type nContextPt = indexLocalToQuad.size();
         const uint16_type __face_id_in_elt_0 = faceCur.pos_first();
         DCHECK( __face_id_in_elt_0 != invalid_uint16_type_value ) << "Invalid face id fooor element " << faceCur.id() << " from element " << faceCur.element( 0 ).id();
@@ -929,7 +929,7 @@ public :
         std::vector<std::list<boost::tuple< size_type,size_type,node_type> > > testEltToPtsQuad( nEltTest );
         this->localization( mpl::int_<iDim>(),meshTest,testEltToPtsQuad );
 
-        //build a efficent container : M_resLinear
+        //build a efficient container : M_resLinear
         size_type theIdEltTest = 0;
         auto eltTest_it = testEltToPtsQuad.begin();
         auto eltTest_en = testEltToPtsQuad.end();
@@ -984,7 +984,7 @@ public :
                             trialEltToPtsQuad,
                             EltCoupled );
 
-        //build a efficent container : M_resBilinear
+        //build a efficient container : M_resBilinear
         auto eltCoupled_it = EltCoupled.begin();
         auto eltCoupled_en = EltCoupled.end();
         size_type theIdEltTest = 0;

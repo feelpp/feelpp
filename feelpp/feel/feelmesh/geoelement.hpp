@@ -813,7 +813,7 @@ public:
     typedef typename super::permutation_type permutation_type;
 
     /**
-     * default constructor, make it explicit to avoid implict
+     * default constructor, make it explicit to avoid implicit
      * inversion to \c size_type
      */
     explicit GeoElement1D( size_type id = 0 )
@@ -826,7 +826,7 @@ public:
         M_vertices.fill( nullptr );
     }
     /**
-     * copy consttructor
+     * copy constructor
      */
     GeoElement1D( GeoElement1D const& g ) = default;
     GeoElement1D( GeoElement1D && g )
@@ -1121,7 +1121,7 @@ public:
     typedef typename super2::element_connectivity_type element_connectivity_type;
 
     /**
-     * default constructor, make it explicit to avoid implict
+     * default constructor, make it explicit to avoid implicit
      * inversion to \c size_type
      */
     explicit GeoElement2D( size_type id = 0 )
@@ -1134,7 +1134,7 @@ public:
     }
 
     /**
-     * copy consttructor
+     * copy constructor
      */
     GeoElement2D( GeoElement2D const& g ) = default;
     GeoElement2D( GeoElement2D && g ) = default;
@@ -1487,7 +1487,7 @@ public:
     }
 
     /**
-     * copy/move consttructors
+     * copy/move constructors
      */
     GeoElement3D( GeoElement3D const& g ) = default;
     GeoElement3D( GeoElement3D && g ) = default;
@@ -1841,7 +1841,7 @@ hasFaceWithMarker( EltType const& e, boost::any const& flag,
  * 
  * @tparam EltType element type to be checked
  * @param e element to be checked
- * @param flags vector of strings cotnaining the markers
+ * @param flags vector of strings containing the markers
  * @return bool true if has face with at least one of the markers, false otherwise
  */
 template<typename EltType>

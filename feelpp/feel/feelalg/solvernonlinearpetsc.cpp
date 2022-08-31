@@ -887,7 +887,7 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
         jac = dynamic_cast<MatrixPetscMPI<T>*>( jac_in.get() );
         x = dynamic_cast<VectorPetscMPI<T>*>( x_in.get() );
         r = dynamic_cast<VectorPetscMPI<T>*>( r_in.get() );
-        //usefull in __feel_petsc_snes_jacobian and __feel_petsc_snes_residual
+        //useful in __feel_petsc_snes_jacobian and __feel_petsc_snes_residual
     }
     else
     {
