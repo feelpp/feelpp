@@ -251,13 +251,14 @@ PYBIND11_MODULE(_alg, m )
         .def( py::init<int, std::shared_ptr<WorldComm>>() )
         .def( py::init<int, int, std::shared_ptr<WorldComm>>() )
         .def( py::init<datamap_ptr_t<uint32_type>, bool>() )
+        .def( py::init<Vec, bool>(), "create a VectorPETSc from a Vec", py::arg( "vec" ), py::arg( "duplicate" ) = false )
+        .def( py::init<Vec, datamap_ptr_t<uint32_type>, bool>(), "create a VectorPETSc from a Vec and a datamap", py::arg( "vec" ), py::arg( "dm" ), py::arg( "duplicate" ) = false )
         .def( "clone", &VectorPetsc<double>::clone, "return  PETSc Vector clone" )
         .def( "size", &VectorPetsc<double>::size, "return  PETSc Vector size" )
         .def( "clear", &VectorPetsc<double>::clear, "clear PETSc vector" )
-        .def( "zero", static_cast<void ( VectorPetsc<double>::* )()>(&VectorPetsc<double>::zero), "zero PETSc vector" )
+        .def( "zero", static_cast<void ( VectorPetsc<double>::* )()>( &VectorPetsc<double>::zero ), "zero PETSc vector" )
 
-        .def( "vec", static_cast<Vec ( VectorPetsc<double>::* )() const>( &VectorPetsc<double>::vec ), "return a PETSc Vector" )
-        ;
+        .def( "vec", static_cast<Vec ( VectorPetsc<double>::* )() const>( &VectorPetsc<double>::vec ), "return a PETSc Vector" );
     py::class_<MatrixSparse<double>, PyMatrixSparseDouble, std::shared_ptr<MatrixSparse<double>>>( m, "MatrixSparseDouble" )
         .def( py::init<>() )
         .def( "clone", &MatrixSparse<double>::clone, "return  MatrixSparse clone" )
