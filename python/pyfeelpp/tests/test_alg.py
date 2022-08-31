@@ -64,17 +64,22 @@ def test_createFromPETSc(init_feelpp):
     from mpi4py import MPI
     wc = MPI.COMM_WORLD
 
-    N = 1500
+    N = 150
     v = PETSc.Vec().create(comm=wc)
     v.setSizes(N)
     v.setUp()
     v.setFromOptions()
     v.set(67)
-    v[45] = 45
+    v[45] = 450
 
     v_petsc = feelpp.VectorPetscDouble(v)
+    v_petsc.vec().assemble()
+    v_petsc.vec().view()
+    assert( v_petsc.size()     == N   )
+    assert( v_petsc.vec()[45]  == 450 )
+    assert( v_petsc.vec()[148] == 67  )
+    
     v_ublas = feelpp._alg.VectorUBlas.createFromPETSc(v_petsc)
-
-    assert( v_ublas.size() == N  )
-    assert( v_ublas[45]    == 45 )
-    assert( v_ublas[172]   == 67 )
+    assert( v_ublas.size() == N   )
+    assert( v_ublas[45]    == 450 )
+    assert( v_ublas[148]   == 67  )
