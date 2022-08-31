@@ -72,7 +72,8 @@ def test_createFromPETSc(init_feelpp):
     v.set(67)
     v[45] = 45
 
-    v_ublas = feelpp._alg.VectorUBlas.createFromPETSc(v)
+    v_petsc = feelpp.VectorPetscDouble(v)
+    v_ublas = feelpp._alg.VectorUBlas.createFromPETSc(v_petsc)
 
     assert( v_ublas.size() == N  )
     assert( v_ublas[45]    == 45 )
