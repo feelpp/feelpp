@@ -1,4 +1,5 @@
 import sys, os
+import feelpp.toolboxes.core as core
 from nirb import *
 
 
@@ -8,7 +9,7 @@ if __name__ == "__main__":
 
     # set the feelpp environment
     config = feelpp.globalRepository("nirb")
-    e=feelpp.Environment(sys.argv, opts = toolboxes_options("heat"), config=config)
+    e = feelpp.Environment(sys.argv, opts = core.toolboxes_options("heat"), config=config)
 
     # fineness of two grids
     H = 0.1
@@ -41,20 +42,21 @@ if __name__ == "__main__":
     temperatureFine = tbFine.fieldTemperature()
     temperatureCorase = tbCoarse.fieldTemperature()
 
-    print("Size of field temperature :")
-    print("    fine :", temperatureCorase.size())
-    print("  coarse :", temperatureFine.size())
+    print("Size of coarse space :", temperatureCorase.size())
+    print("Size of fine space   :", temperatureFine.size())
 
     I1 = createInterpolator(tbFine, tbCoarse)
     temperatureInterpolate = I1.interpolate(temperatureFine)
 
-    print("Interpolate fine to coarse :")
-    print("size :", temperatureInterpolate.size())
-    print("Norm :", (temperatureInterpolate - temperatureCorase).to_petsc().vec().norm() )
+    print("Interpolation Fine -> Coarse")
+    print("  Size of interpolated :", temperatureInterpolate.size())
+    assert temperatureInterpolate.size() == temperatureCorase.size()
+    print("  Norm :", (temperatureInterpolate - temperatureCorase).to_petsc().vec().norm() )
 
     I2 = createInterpolator(tbCoarse, tbFine)
     temperatureCoraseInterpolate = I2.interpolate(temperatureCorase)
 
-    print("Interpolate coarse to fine :")
-    print('size :', temperatureCoraseInterpolate.size())
-    print('Norm :', (temperatureCoraseInterpolate - temperatureFine).to_petsc().vec().norm())
+    print("Interpolation Coarse -> Fine")
+    print("  Size of interpolated :", temperatureCoraseInterpolate.size())
+    assert temperatureCoraseInterpolate.size() == temperatureFine.size()
+    print('  Norm :', (temperatureCoraseInterpolate - temperatureFine).to_petsc().vec().norm())

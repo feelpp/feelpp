@@ -1,6 +1,6 @@
 import feelpp
 import feelpp.mor as mor
-from feelpp.toolboxes.heat import *
+import feelpp.toolboxes.heat as heat
 import feelpp.interpolation as fi
 import json5 as json
 
@@ -40,7 +40,7 @@ def setToolbox(h, geo_path, model, dim=2, order=2):
     mesh = feelpp.load(mesh_, geo_path, h)
 
     # set mesh and model properties
-    tb = heat(dim=dim, order=order)
+    tb = heat.heat(dim=dim, order=order)
     tb.setMesh(mesh)
     tb.setModelProperties(model)
 
@@ -82,12 +82,12 @@ def assembleToolbox(tb, mu):
 
 
 
-def createInterpolator(image_tb,domain_tb):
+def createInterpolator(domain_tb, image_tb):
     """Create an interpolator between two toolboxes
     
     Args:
-        source (Toolbox): coarse toolbox
-        image (Toolbox): fine toolbox
+        domain_tb (Toolbox): coarse toolbox
+        image_tb  (Toolbox): fine toolbox
 
     Returns:
         OperatorInterpolation: interpolator object
@@ -96,4 +96,3 @@ def createInterpolator(image_tb,domain_tb):
     Vh_domain = domain_tb.spaceTemperature()
     interpolator = fi.interpolator(domain = Vh_domain, image = Vh_image, range = image_tb.rangeMeshElements())
     return interpolator
-
