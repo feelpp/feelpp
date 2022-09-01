@@ -94,5 +94,5 @@ def createInterpolator(domain_tb, image_tb):
     """
     Vh_image = image_tb.spaceTemperature()
     Vh_domain = domain_tb.spaceTemperature()
-    interpolator = fi.interpolator(domain = Vh_domain, image = Vh_image, range = image_tb.rangeMeshElements())
+    interpolator = fi.interpolator(domain = Vh_image, image = Vh_domain, range = image_tb.rangeMeshElements())
     return interpolator

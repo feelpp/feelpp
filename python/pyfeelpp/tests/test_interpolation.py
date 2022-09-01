@@ -92,6 +92,12 @@ def test_interpolate_constant(cfg_path, geo_path, model_path):
         assert abs(u_image.min()-u_check_min) < 1e-12
         assert abs(u_image.max()-u_check_max) < 1e-12
 
+    def check_norm_inter(I, u_domain, u_image_truth):
+        u_image = I.interpolate(u_domain)
+        diff = (u_image - u_image_truth).to_petsc().vec()
+        print("||u_truth - u_inter||2 :", diff.norm())
+        assert diff.norm() < 1e-12
+
     u_coarse.on(feelpp.elements(tbCoarse.mesh()), feelpp.expr("1")) 
     check_interp(I_coarseToFine, u_coarse, u_fine, 1, 1)   
     u_fine.on(feelpp.elements(tbFine.mesh()), feelpp.expr("3")) 
@@ -106,3 +112,8 @@ def test_interpolate_constant(cfg_path, geo_path, model_path):
     check_interp(I_coarseToFine, u_coarse, u_fine, -3, 1)
     u_fine.on(feelpp.elements(tbFine.mesh()), feelpp.expr("-3*x^2+y^2:x:y"))
     check_interp(I_fineToCoarse, u_fine, u_coarse, -3, 1)
+
+    u_coarse.on(feelpp.elements(tbCoarse.mesh()), feelpp.expr("x^2-3*y^2:x:y"))
+    u_fine.on(feelpp.elements(tbFine.mesh()), feelpp.expr("x^2-3*y^2:x:y"))
+    check_norm_inter(I_coarseToFine, u_coarse, u_fine)
+    check_norm_inter(I_fineToCoarse, u_fine, u_coarse)
