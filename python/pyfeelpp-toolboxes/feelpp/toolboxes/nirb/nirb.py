@@ -1,6 +1,7 @@
 import feelpp
 import feelpp.mor as mor
 import feelpp.toolboxes.heat as heat
+import feelpp.toolboxes.fluid as fluid
 import feelpp.interpolation as fi
 import json5 as json
 
@@ -21,7 +22,7 @@ def loadModel(model_path):
     return model
 
 
-def setToolbox(h, geo_path, model, dim=2, order=2):
+def setToolbox(h, geo_path, model, dim=2, order=2, type_tb="heat"):
     """Set up the toolbox object for the given model and mesh
 
     Args:
@@ -30,6 +31,7 @@ def setToolbox(h, geo_path, model, dim=2, order=2):
         model (str): path to the model file
         dim (int): dimension of the mesh
         order (int): order of the finite elements
+        type_tb (str): name of the toolbox {"heat"|"fluid"}
 
     Returns:
         Toolbox: toolbox object
@@ -40,7 +42,13 @@ def setToolbox(h, geo_path, model, dim=2, order=2):
     mesh = feelpp.load(mesh_, geo_path, h)
 
     # set mesh and model properties
-    tb = heat.heat(dim=dim, order=order)
+    if type_tb == "heat":
+        tb = heat.heat(dim=dim, order=order)
+    elif type_tb == "fluid":
+        tb = fluid.fluid(dim=dim)
+    else:
+        raise ValueError("Unknown toolbox")
+
     tb.setMesh(mesh)
     tb.setModelProperties(model)
 
@@ -80,9 +88,28 @@ def assembleToolbox(tb, mu):
 
     tb.updateParameterValues()
 
+def getField(toolbox, type_tb):
+    """Get field of interest from the toolbox
+
+    Args:
+        toolbox (Toolbox): Tolbox object
+        type_tb (str): name of the toolbox {"heat"|"fluid"}
+
+    Raises:
+        ValueError: Unknow toolbox
+
+    Returns:
+        feelpp_.discr.Element_*: field of the solution
+    """
+    if type_tb == "heat":
+        return toolbox.fieldTemperature()
+    elif type_tb == "fluid":
+        return toolbox.fieldVelocity()
+    else:
+        raise ValueError("Unknown toolbox")
 
 
-def createInterpolator(domain_tb, image_tb):
+def createInterpolator(domain_tb, image_tb, type_tb):
     """Create an interpolator between two toolboxes
     
     Args:
@@ -92,7 +119,11 @@ def createInterpolator(domain_tb, image_tb):
     Returns:
         OperatorInterpolation: interpolator object
     """
-    Vh_image = image_tb.spaceTemperature()
-    Vh_domain = domain_tb.spaceTemperature()
-    interpolator = fi.interpolator(domain = Vh_image, image = Vh_domain, range = image_tb.rangeMeshElements())
+    if type_tb == "heat":
+        Vh_image = image_tb.spaceTemperature()
+        Vh_domain = domain_tb.spaceTemperature()
+    elif type_tb == "fluid":
+        Vh_image = image_tb.functionSpaceVelocity()
+        Vh_domain = domain_tb.functionSpaceVelocity()
+    interpolator = fi.interpolator(domain = Vh_domain, image = Vh_image, range = image_tb.rangeMeshElements())
     return interpolator
