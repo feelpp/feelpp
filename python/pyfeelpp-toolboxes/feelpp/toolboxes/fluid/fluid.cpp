@@ -60,7 +60,7 @@ void defFM(py::module &m)
         .def("setMesh",static_cast<void (fm_t::*)(typename fm_t::mesh_ptrtype const&)>(&fm_t::setMesh), "set the mesh of the toolbox",py::arg("mesh"))
         .def("updateParameterValues", &fm_t::updateParameterValues, "update parameter values" )
         // function spaces and elements
-        .def("functionSpaceVelocity",&fm_t::functionSpaceVelocity, "get the velocity function space")
+        .def("spaceVelocity",&fm_t::functionSpaceVelocity, "get the velocity function space")
         //.def("fieldVelocity",static_cast<typename fm_t::element_velocity_ptrtype& (fm_t::*)()>(&fm_t::fieldVelocityPtr), "get the velocity field")
         .def("fieldVelocity",[]( std::shared_ptr<fm_t>& self ) {
             self->fieldVelocityPtr()->printMatlab("velocityptr.m");
@@ -76,7 +76,7 @@ void defFM(py::module &m)
             []( std::shared_ptr<fm_t>& self, typename fm_t::element_pressure_ptrtype& p ) {
                 self->fieldPressure() = *p;
             }, "set the pressure field", py::arg("field"))
-        .def("functionSpacePressure",&fm_t::functionSpacePressure, "get the pressure function space")
+        .def("spacePressure",&fm_t::functionSpacePressure, "get the pressure function space")
         .def("fieldPressure",static_cast<typename fm_t::element_pressure_ptrtype const& (fm_t::*)() const>(&fm_t::fieldPressurePtr), "get the pressure field")
 
         // time stepping
