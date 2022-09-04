@@ -7,14 +7,16 @@ def test_interpolation(tbCoarse, tbFine, function, type_tb):
     if type_tb == "heat":
         u_coarse = tbCoarse.spaceTemperature().element()
         u_fine = tbFine.spaceTemperature().element()
+        u_coarse.on(feelpp.elements(tbCoarse.mesh()), feelpp.expr(function))
+        u_fine.on(feelpp.elements(tbFine.mesh()), feelpp.expr(function))
     elif type_tb == "fluid":
         u_coarse = tbCoarse.spaceVelocity().element()
         u_fine = tbFine.spaceVelocity().element()
+        u_coarse.on(feelpp.elements(tbCoarse.mesh()), feelpp.expr(function, dim=2))
+        u_fine.on(feelpp.elements(tbFine.mesh()), feelpp.expr(function, dim=2))
     else:
         raise ValueError("type_tb must be 'heat' or 'fluid'")
 
-    u_coarse.on(feelpp.elements(tbCoarse.mesh()), feelpp.expr(function))
-    u_fine.on(feelpp.elements(tbFine.mesh()), feelpp.expr(function))
 
     I = createInterpolator(tbCoarse, tbFine, type_tb=type_tb)
     u_fine_inter = I.interpolate(u_coarse)

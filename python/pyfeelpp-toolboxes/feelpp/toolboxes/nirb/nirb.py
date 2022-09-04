@@ -123,7 +123,7 @@ def createInterpolator(domain_tb, image_tb, type_tb):
         Vh_image = image_tb.spaceTemperature()
         Vh_domain = domain_tb.spaceTemperature()
     elif type_tb == "fluid":
-        Vh_image = image_tb.functionSpaceVelocity()
-        Vh_domain = domain_tb.functionSpaceVelocity()
+        Vh_image = image_tb.spaceVelocity()
+        Vh_domain = domain_tb.spaceVelocity()
     interpolator = fi.interpolator(domain = Vh_domain, image = Vh_image, range = image_tb.rangeMeshElements())
     return interpolator
