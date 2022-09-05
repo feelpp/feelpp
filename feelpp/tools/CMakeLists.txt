@@ -27,6 +27,7 @@ add_subdirectory( mesh )
 add_subdirectory( plot )
 add_subdirectory( fmi )
 add_subdirectory( databases )
+add_subdirectory( sync_case )
 
 add_subdirectory(scripts)
 install(DIRECTORY lsan DESTINATION share/feelpp)
