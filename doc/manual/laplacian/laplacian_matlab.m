@@ -5,7 +5,7 @@ F1=F;
 # load function with gmsh dof numbering
 ug;
 F2=F;
-# load correspondance between feel++ and gmsh
+# load correspondence between feel++ and gmsh
 # first column Feel++ and second column gmsh
 M=load("feelpp2msh.m");
 # renumber F2(gmsh) so that it matches feel++ numbering

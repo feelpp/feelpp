@@ -174,7 +174,7 @@ namespace Feel
             M_convergence=doConvergence;
         }
 
-        //! set the convergence interations
+        //! set the convergence iterations
         void setnumberOfConvergenceSteps( int n)
         {
             M_convergence_max=n;
@@ -193,7 +193,7 @@ namespace Feel
             vars = symbols<Dim>();
             std::vector<std::string> lst_params;
             boost::split(lst_params, M_exact_params, boost::is_any_of(";"));
-            LOG(INFO) << "Loading additionnal parameters : ";
+            LOG(INFO) << "Loading additional parameters : ";
             boost::for_each(lst_params, [](const std::string &s){LOG(INFO) << s << ", ";});
             LOG(INFO) << std::endl;
             parameters = symbols(lst_params);
@@ -221,7 +221,7 @@ namespace Feel
 
         void setRhs(t_edp_type * edp)
         {
-            FEELPP_ASSERT( parameters.size() ).error( "setRhs: inconsistant numbers of parameters" );
+            FEELPP_ASSERT( parameters.size() ).error( "setRhs: inconsistent numbers of parameters" );
             rhs = (*edp)(exact, vars, parameters);
             LOG(INFO) << "computed rhs is : " << rhs << "\n";
 
@@ -320,8 +320,8 @@ namespace Feel
             // check if exact is defined
             FEELPP_ASSERT( M_rhs.size() ).error( "undefined rhs" );
 
-            // check if values is consistant with params
-            FEELPP_ASSERT( parameters.size() == 1 ).error( "inconsistant values and parameters size" );
+            // check if values is consistent with params
+            FEELPP_ASSERT( parameters.size() == 1 ).error( "inconsistent values and parameters size" );
 
             ex tmp_sol = rhs;
             tmp_sol = substitute(tmp_sol, parameters[0], value);
@@ -337,8 +337,8 @@ namespace Feel
             // check if exact is defined
             FEELPP_ASSERT( M_rhs.size() ).error( "undefined exact solution" );
 
-            // check if values is consistant with params
-            FEELPP_ASSERT( values.size() == parameters.size() ).error( "inconsistant values and parameters size" );
+            // check if values is consistent with params
+            FEELPP_ASSERT( values.size() == parameters.size() ).error( "inconsistent values and parameters size" );
 
             ex tmp_sol = rhs;
             for (unsigned int i=0; i<values.size(); i++) // may use boost zip iterator
@@ -365,8 +365,8 @@ namespace Feel
             // check if exact is defined
             FEELPP_ASSERT( M_exact.size() ).error( "undefined exact solution" );
 
-            // check if values is consistant with params
-            FEELPP_ASSERT( parameters.size() == 1 ).error( "inconsistant values and parameters size" );
+            // check if values is consistent with params
+            FEELPP_ASSERT( parameters.size() == 1 ).error( "inconsistent values and parameters size" );
 
             ex tmp_sol = exact;
             tmp_sol = substitute(tmp_sol, parameters[0], value);
@@ -382,8 +382,8 @@ namespace Feel
             // check if exact is defined
             FEELPP_ASSERT( M_exact.size() ).error( "undefined exact solution" );
 
-            // check if values is consistant with params
-            FEELPP_ASSERT( values.size() == parameters.size() ).error( "inconsistant values and parameters size" );
+            // check if values is consistent with params
+            FEELPP_ASSERT( values.size() == parameters.size() ).error( "inconsistent values and parameters size" );
 
             ex tmp_sol = exact;
             for (unsigned int i=0; i<values.size(); i++) // may use boost zip iterator
@@ -491,7 +491,7 @@ namespace Feel
         }
         /****************/
 
-        // may add optionnal weight for AXI???
+        // may add optional weight for AXI???
         double L2_error(const space_ptrtype & Xh, const element_type & T) const
         {
             // replace params by specified values

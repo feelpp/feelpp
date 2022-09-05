@@ -50,8 +50,8 @@ CMakeListe.txt   # the file for cmake to build, do not modify
 
 In order to install \feel on Unix systems (other than Mac OS X, in you have a Macintosh, please go to ~\ref{macosx}), you have to install many dependencies
 before. Those libraries and programs are necessary for the
-compilation and installation of the \feel librairies.
-This is the list of all the librairies you must have installed on your
+compilation and installation of the \feel libraries.
+This is the list of all the libraries you must have installed on your
 computer, and the \lstinline|*-dev| packages for some of them. \\
 \underline{Required packages}:
 \begin{itemize}
@@ -73,7 +73,7 @@ computing available at \url{http://www.geuz.org/gmsh}}
 \item Google perftools
 \item Paraview\footnote{Paraview is a few parallel scientific data
     visualisation plateform, \url{http://www.paraview.org}}, this is
-  not stricly required to run \feel programs but it is somehow
+  not strictly required to run \feel programs but it is somehow
   necessary for visualisation
 \item Python ($\geq$ 2.5) for the validation tools
 \end{itemize}
@@ -125,14 +125,14 @@ order to know what is going on with \feel on Ubuntu
 
 \subsection{Compilers}
 
-In order to \feel and \cmake work properly, you have to install differents compilers :
+In order to \feel and \cmake work properly, you have to install different compilers :
 \begin{itemize}
 \item Gcc \\
   The first step is to install the latest version of Xcode. If your computer is
   recent, you can install it with your DVD that came with your machine (not the
   OS DVD, but the applications one). You don't have to install the complete
   Xcode (you can uncheck iOS SDK for example, it's not necessary here and
-  requiers a lot of memory). Xcode will provide your computer all basic tools to
+  requires a lot of memory). Xcode will provide your computer all basic tools to
   compile such as gcc 4.2. It's the first step, you'll see later how to easily
   install gcc 4.5 or later using MacPorts.
 \item Fortran \\
@@ -151,12 +151,12 @@ In order to \feel and \cmake work properly, you have to install differents compi
 \subsection{MacPorts}
 
 \paragraph{Introduction}
-MacPorts is an open-source community projet which aims to design an easy-to-use
-system for compiling, installing and upgrading open-source softwares on Mac OS X
+MacPorts is an open-source community project which aims to design an easy-to-use
+system for compiling, installing and upgrading open-source software on Mac OS X
 operating system. It is distributed under
 \href{http://opensource.org/licenses/bsd-license.php}{BSD License} and
-facilitate the access to thousands of ports (softwares) without installing or
-compiling open-source softwares.  MacPorts provides a single software tree which
+facilitate the access to thousands of ports (software) without installing or
+compiling open-source software.  MacPorts provides a single software tree which
 includes the latest stable releases of approximately 8050 ports targeting the
 current Mac OS X release (10.6 or 10.5). If you want more information, please
 visite their \href{http://www.macports.org/}{website}.
@@ -180,7 +180,7 @@ installed).%At the end of the installation, you can check if your PATH has been 
 
 \paragraph{Key commands}
 In your command-line, the software MacPorts is called by the command \lstinline|port|.
-Here is a list of key commands for using MacPorts, if you want more informations please go to \href{http://guide.macports.org/#using.port}{MacPorts Commands}.
+Here is a list of key commands for using MacPorts, if you want more information please go to \href{http://guide.macports.org/#using.port}{MacPorts Commands}.
 \begin{itemize}
 \item \lstinline|sudo port -v selfupdate|
 	This action should be used regularly to update the local tree with the global MacPorts ports. The option \lstinline|-v| enables verbose which generates verbose messages.
@@ -193,7 +193,7 @@ Here is a list of key commands for using MacPorts, if you want more informations
 \item \lstinline|port installed|
 	This action displays all ports installed and their versions, variants and activation status. You can also use the \lstinline|-v| option to also display the platform and CPU architecture(s) for which the ports were built, and any variants which were explicitly negated.
 \item \lstinline|sudo port upgrade mypackage|
-	This action updgrades installed ports and their dependencies when a \lstinline|Portfile| in the repository has been updated. To avoid the upgrade of a port's dependencies, use the option \lstinline|-n|.
+	This action upgrades installed ports and their dependencies when a \lstinline|Portfile| in the repository has been updated. To avoid the upgrade of a port's dependencies, use the option \lstinline|-n|.
 \end{itemize}
 
 \paragraph{Portfile}
@@ -324,7 +324,7 @@ The best way is to have a directory (\lstinline|FEEL| for example) in which you 
 \begin{lstlisting}
 	feel/
 \end{lstlisting}
-where \lstinline|feel| is the top directory where the source have been downloaded. Placed in \lstinline|FEEL|, you can create the build directory (\lstinline|feel.opt| for example) and lauch cmake with :
+where \lstinline|feel| is the top directory where the source have been downloaded. Placed in \lstinline|FEEL|, you can create the build directory (\lstinline|feel.opt| for example) and launch cmake with :
 \begin{unixcom}
   mkdir feel.opt
   cd feel.opt
@@ -351,7 +351,7 @@ Once Cmake has made its work, you are now able to compile the library with
 
 % \subsection{Compiling Feel with the AutoTools}
 
-% Go in the same folder in wich you have done the checkout and type the following
+% Go in the same folder in which you have done the checkout and type the following
 % commands :
 
 % \subsubsection{From tarball}

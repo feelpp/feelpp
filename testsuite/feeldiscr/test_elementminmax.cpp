@@ -104,7 +104,7 @@ void check( std::shared_ptr<mesh_type> const& mesh, std::map<std::string,double>
         // facet tests
         if ( mesh->hasMarker( m ) && mesh->markerDim( m ) == mesh_type::nRealDim-1 )
         {
-            //auto [min_r, arg_min_r] = minelt( _range = markedfaces( mesh, m ), _element = u );
+            BOOST_TEST_MESSAGE( "Checking facet minmax for marker " << m );
             auto minmax_r = minmaxelt( _range = markedfaces( mesh, m ), _element = u );
             if ( std::abs( minmax[fmt::format("min{}",m)] ) < 1e-10 )
             {
