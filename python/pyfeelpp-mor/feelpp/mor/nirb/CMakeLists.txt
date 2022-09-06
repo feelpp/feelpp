@@ -1,9 +1,9 @@
 ###  CMakeLists.txt; coding: utf-8 --- 
 
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-#       Date: 06 Aug 2018
+#  Author(s): Ali Elarif <ali.elarif@cemosis.fr>
+#       Date: 06 Sep 2022
 #
-#  Copyright (C) 2018 Feel++ Consortium
+#  Copyright (C) 2022 Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -23,6 +23,7 @@
 #
 cmake_minimum_required(VERSION 3.3)
 
-feelpp_add_pymodule(nirb DESTINATION feelpp/toolboxes/nirb LINK_LIBRARIES Feelpp::feelpp_toolbox_nirb_lib)
-install(FILES  main.py nirb.py DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/toolboxes/nirb)
+message(STATUS "[pyfeelpp-mor] add pymodule nirb")
+
+install(FILES  main.py nirb.py DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/mor/nirb)
 
