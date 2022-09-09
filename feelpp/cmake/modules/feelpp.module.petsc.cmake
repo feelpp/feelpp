@@ -5,10 +5,14 @@ if ( APPLE )
   message(STATUS "clang rt 2: ${PETSC_CLANG_RT.OSX_LIB} ; ${PETSC_TO_LIBRARY_LIB} ; ")
 endif()
 
-FIND_PACKAGE( PETSc REQUIRED)
-if ( NOT PETSC_FOUND )
-  return()
-endif()
+pkg_search_module(PETSC REQUIRED IMPORTED_TARGET "PETSc>=3.7.0")
+pkg_get_variable(PETSC_INCLUDES PETSc includedir)
+message(STATUS "Found PETSc ${PETSC_VERSION}; includes: ${PETSC_INCLUDES}")
+
+#FIND_PACKAGE( PETSc REQUIRED)
+#if ( NOT PETSC_FOUND )
+#  return()
+#endif()
 
 #add_definitions( -DFEELPP_HAS_PETSC -DFEELPP_HAS_PETSC_H )
 set(FEELPP_HAS_PETSC 1)
@@ -36,7 +40,6 @@ find_path( PETSC_CMAKE_CONFIG_PACKAGE_DIR ${PETSC_CMAKE_CONFIG_PACKAGE_FILENAME}
 #message("PETSC_CMAKE_CONG_PACKAGE_DIR=${PETSC_CMAKE_CONFIG_PACKAGE_DIR}")
 if (NOT EXISTS ${PETSC_CMAKE_CONFIG_PACKAGE_DIR}/${PETSC_CMAKE_CONFIG_PACKAGE_FILENAME})
   macro (PETSC_TEST_CONF_MACRO petscmacro result)
-    set (CMAKE_REQUIRED_INCLUDES ${PETSC_DIR}/include)
 
     set(_petsc_check_${result} )
     # uncoment for force detection

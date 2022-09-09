@@ -1,6 +1,6 @@
 add_library(feelpp_contrib INTERFACE)
 
-
+find_package(PkgConfig REQUIRED)
 
 set(FEELPP_HAS_GFLAGS 1)
 set(FEELPP_HAS_GLOG 1)
