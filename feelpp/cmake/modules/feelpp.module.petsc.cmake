@@ -85,7 +85,7 @@ if ( PETSC_HAVE_MUMPS )
   set(FEELPP_HAS_MUMPS 1)
   set(FEELPP_PETSC_ENABLED_OPTIONS "${FEELPP_PETSC_ENABLED_OPTIONS} MUMPS")
 else()
-  message( FATAL_ERROR "PETSc should be compiled with MUMPS")
+  message( STATUS "PETSc should be compiled with MUMPS")
 endif()
 
 if ( PETSC_HAVE_PARMETIS )
