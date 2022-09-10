@@ -198,6 +198,8 @@ if (NOT FEELPP_DONT_SETUP_CMAKE)
   include(CMakeFindDependencyMacro)
 
   find_dependency(MPI REQUIRED)
+  find_dependency(PkgConfig REQUIRED)
+  pkg_search_module(PETSC REQUIRED IMPORTED_TARGET "PETSc>=3.7.0")
 
   # workaround bug https://github.com/boostorg/boost_install/issues/5
   set(__org ${BUILD_SHARED_LIBS})
