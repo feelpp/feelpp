@@ -102,10 +102,8 @@ bool isOnProcessor( std::vector<rank_type> ghosts, rank_type partition, rank_typ
 }
 
 } // detail
-} // Feel
 
 
-#if !defined( FEELPP_HAS_GMSH_H)
 // From Gmsh - Common/StringUtils.h
 void SwapBytes(char *array, int size, int n)
 {
@@ -118,7 +116,11 @@ void SwapBytes(char *array, int size, int n)
     }
     delete [] x;
 }
-#endif
+
+} // Feel
+
+
+
 
 #if defined( FEELPP_HAS_GMSH_API )
 int getInfoMSH(const int typeMSH, std::string & elementName)
