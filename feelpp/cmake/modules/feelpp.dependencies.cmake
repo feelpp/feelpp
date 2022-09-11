@@ -141,6 +141,8 @@ else()
   set( FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION ON)
 endif()
 
+find_package(PkgConfig REQUIRED)
+
 # enable mpi mode
 IF ( FEELPP_ENABLE_MPI_MODE )
   SET( FEELPP_ENABLE_MPI_MODE 1 )
