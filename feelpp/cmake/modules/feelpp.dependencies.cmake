@@ -449,11 +449,11 @@ if ( FEELPP_ENABLE_HDF5 )
 
 
       else(HDF5_IS_PARALLEL)
-        MESSAGE(STATUS "[feelpp] HDF5 has been found but is not parallel, HDF5 is not enabled in Feel++")
+        MESSAGE(FATAL_ERROR "[feelpp] HDF5 has been found but is not parallel, HDF5 is not enabled in Feel++")
       endif( HDF5_IS_PARALLEL)
 
   else(HDF5_FOUND)
-    MESSAGE(STATUS "[feelpp] no HDF5 found")
+    MESSAGE(FATAL_ERROR "[feelpp] no HDF5 found")
   endif( HDF5_FOUND)
 
 endif(FEELPP_ENABLE_HDF5)
