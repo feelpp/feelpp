@@ -40,11 +40,25 @@ namespace Feel
 //!  // load the columns "time" and "ft" into a map<>
 //!  auto m = loadXYFromCSV( "data.csv", "time", "ft" );
 //! \endcode
-std::map<double,double>
+std::map<std::vector<double>, double>
 loadXYFromCSV( std::string const& filename,
-               std::string const& abscissa,
+               std::vector<std::string> const& abscissas,
                std::string const& ordinate );
 
-
+inline std::map<double,double>
+loadXYFromCSV( std::string const& filename,
+               std::string const& abscissa,
+               std::string const& ordinate )
+{
+    std::map<std::vector<double>, double> rs = loadXYFromCSV( filename, std::vector{ abscissa }, ordinate );
+    std::map<double,double> m;
+    for( auto const& [key,value] : rs )
+    {
+        m[key[0]] = value;
+    }
+    return m;
 }
+
+
+} // Feel
 #endif

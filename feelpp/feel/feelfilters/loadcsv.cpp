@@ -35,19 +35,20 @@
 
 namespace Feel {
 
-std::map<double,double>
+std::map<std::vector<double>,double>
 loadXYFromCSV( std::string const& filename,
-               std::string const& abscissa,
+               std::vector<std::string> const& abscissas,
                std::string const& ordinate )
 {
     std::ifstream in(filename.c_str());
-    if (!in.is_open()) return std::map<double,double>();
+    if (!in.is_open()) return std::map<std::vector<double>,double>();
 
     typedef boost::tokenizer< boost::escaped_list_separator<char> > Tokenizer;
 
     std::vector< std::string > vec;
     std::string line;
-    std::map<double,double> data;
+    std::map<std::vector<double>,double> data;
+    std::vector<double> d_abscissas;
     int i_abs = 0;
     int i_ord = 1;
     int count = 0;
@@ -56,6 +57,7 @@ loadXYFromCSV( std::string const& filename,
         count ++;
         
         vec.clear();
+        d_abscissas.clear();
 
         Tokenizer tok(line);
         vec.assign(tok.begin(),tok.end());
@@ -67,15 +69,23 @@ loadXYFromCSV( std::string const& filename,
         boost::trim(vec[1]);
         if ( count == 1 )
         {
-            auto it_abs = std::find( vec.begin(), vec.end(), abscissa );
+           
             auto it_ord = std::find( vec.begin(), vec.end(), ordinate );
-            if ( it_abs == vec.end() || it_ord == vec.end() )
-                throw std::logic_error( "Invalid data lookiup in CSV file " + filename + " (" + abscissa + "," + ordinate + ")" );
-            i_abs = std::distance( vec.begin(), it_abs );
+            if ( it_ord == vec.end() )
+                throw std::logic_error( "Invalid ordinate data lookiup in CSV file " + filename + " (" + ordinate + ")" );
             i_ord = std::distance( vec.begin(), it_ord );
+
+            for( auto abscissa : abscissas )
+            {
+                auto it_abs = std::find( vec.begin(), vec.end(), abscissa );
+                if ( it_abs == vec.end()  )
+                    throw std::logic_error( "Invalid abscissa data lookiup in CSV file " + filename + " (" + abscissa + ")" );
+                i_abs = std::distance( vec.begin(), it_abs );
+                d_abscissas.push_back( std::stod( vec[i_abs] ) );
+            }
             continue;
         }
-        data.insert( std::make_pair( std::stod(vec[i_abs]), std::stod(vec[i_ord]) ) );
+        data.insert( std::make_pair( d_abscissas, std::stod(vec[i_ord]) ) );
     }
     LOG(INFO) << "done reading CSV file " << filename;
     return data;
