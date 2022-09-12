@@ -115,9 +115,13 @@ def test_param_not_in_range(casefile, Mu,  init_feelpp):
     mu = Dmu.element()
     # just set values
     mu.setParameters(Mu)
+    val0 = mu(0)
+    valBi = mu.parameterNamed("Bi")
 
     mu.setParameter(0, 5000)
-    assert( mu(0) != 5000)
+    assert( mu(0) != 5000 )
+    assert( mu(0) == val0 )
 
     mu.setParameterNamed('Bi', -666)
-    assert( mu.parameterNamed('Bi') != -666 )
+    assert( mu.parameterNamed('Bi') != -666  )
+    assert( mu.parameterNamed('Bi') == valBi )
