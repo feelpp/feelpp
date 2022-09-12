@@ -55,3 +55,4 @@ endif()
 feelpp_add_test( exprevaluator LINK_LIBRARIES Feelpp::feelpp_mor )
 
 feelpp_add_test( crbmodelproperties LINK_LIBRARIES Feelpp::feelpp_mor CLI "--json.filename ${CMAKE_CURRENT_SOURCE_DIR}/feelpp.json")
+feelpp_add_test( outputs LINK_LIBRARIES Feelpp::feelpp_mor CLI "--json.filename ${CMAKE_CURRENT_SOURCE_DIR}/feelpp.json")
