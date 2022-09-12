@@ -1,11 +1,23 @@
+# -*- coding: utf-8 -*-
+## utilis function for NIRB
+## Thomas Saigre, Ali Elarif
+## 09/2022
+
+import os
 import feelpp
 import feelpp.mor as mor
 import feelpp.toolboxes.heat as heat
 import feelpp.toolboxes.fluid as fluid
 import feelpp.interpolation as fi
 import json5 as json
+from petsc4py import PETSc
 
 
+############################################################################################################
+#                                                                                                          #
+# Feel++ utils functions                                                                                   #
+#                                                                                                          #
+############################################################################################################
 
 def loadModel(model_path):
     """Load the model from given modle path
@@ -109,9 +121,25 @@ def getField(toolbox, type_tb):
         raise ValueError("Unknown toolbox")
 
 
+def getSolution(tb, mu, type_tb):
+    """Get the solution of the toolbox tb for the parameter mu
+
+    Args:
+        tb (Toolbox): Toolbox object
+        mu (parameterSpaceElement): parameter
+        type_tb (str): name of the toolbox {"heat"|"fluid"}
+
+    Returns:
+        feelpp_.discr.Element_*: field of the solution
+    """
+    assembleToolbox(tb, mu)
+    tb.solve()
+    return getField(tb, type_tb)
+
+
 def createInterpolator(domain_tb, image_tb, type_tb):
     """Create an interpolator between two toolboxes
-    
+
     Args:
         domain_tb (Toolbox): coarse toolbox
         image_tb  (Toolbox): fine toolbox
@@ -127,3 +155,37 @@ def createInterpolator(domain_tb, image_tb, type_tb):
         Vh_domain = domain_tb.spaceVelocity()
     interpolator = fi.interpolator(domain = Vh_domain, image = Vh_image, range = image_tb.rangeMeshElements())
     return interpolator
+
+
+############################################################################################################
+#                                                                                                          #
+# PETSc handling functions                                                                                 #
+#                                                                                                          #
+############################################################################################################
+
+
+def LoadPetscArrayBin(filename):
+    """Load a PETSc array from filename, written in binary format
+
+    Args:
+        filename (str): path to file to load
+
+    Returns:
+        petsc4py.Mat: loaded array
+    """
+    outputfile = os.path.join(filename)
+    viewer = PETSc.Viewer().createBinary(outputfile, 'r')
+    PetscAray = PETSc.Mat().load(viewer)
+    return PetscAray
+
+def SavePetscArrayBin(filename, PetscAray):
+    """Save a PETSc array to filename, in binary format
+
+    Args:
+        filename (str): path to file to save
+        PetscAray (petsc4py.Mat): array to save
+    """
+    outputfile = os.path.join(filename)
+
+    viewer = PETSc.Viewer().createBinary(outputfile, 'w')
+    viewer(PetscAray)
