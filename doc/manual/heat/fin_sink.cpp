@@ -39,7 +39,7 @@ using namespace Feel;
 
 /**
  * makefin creates the .geo file and returns a gmsh pointer type.
- * Be carefull, the problem considered here is dimensional
+ * Be careful, the problem considered here is dimensional
  *
  * \arg hsize : size of the mesh
  * \arg width : the width of the fin

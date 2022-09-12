@@ -48,5 +48,34 @@
             "coord":[0.2,0.1],
             "expr":"crb_u*2:crb_u"
         }
+    },
+
+    "Outputs":
+    {
+        "myoutput":
+        {
+            "type":"mean",
+            "markers":["marker1","marker2"],
+            "topodim":3
+        },
+        "flux":
+        {
+            "type":"integrate",
+            "markers":"face1",
+            "topodim":2,
+            "expr":"crb_grad_u_0*nx+crb_grad_u_1*ny:crb_grad_u_0:crb_grad_u_1:nx:ny"
+        },
+        "sensor":
+        {
+            "type":"sensor",
+            "coord":[0.2,0.1],
+            "radius":0.1
+        },
+        "point_A":
+        {
+            "type":"point",
+            "coord":[0.2,0.1],
+            "expr":"crb_u*2:crb_u"
+        }
     }
 }

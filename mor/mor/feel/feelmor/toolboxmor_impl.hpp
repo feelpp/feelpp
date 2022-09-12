@@ -403,7 +403,7 @@ ToolboxMor<SpaceType, Options>::initModelImpl()
     bool all_proc_same_sampling=true;
     if( ! file )
     {
-        Feel::cout << "\" not found. Now creating one\n" << tc::reset;
+        this->worldComm().barrier();
         PsetV->randomize( M_trainsetDeimSize , all_proc_same_sampling , supersamplingname );
         PsetV->writeOnFile( supersamplingname );
     }
@@ -424,7 +424,7 @@ ToolboxMor<SpaceType, Options>::initModelImpl()
     Feel::cout << tc::blue << "[ToolboxMor] MDEIM sampling file \"" << supersamplingname;
     if( ! fileM )
     {
-        Feel::cout << "\" not found. Now creating one\n" << tc::reset;
+        this->worldComm().barrier();
         PsetM->randomize( M_trainsetMdeimSize , all_proc_same_sampling , supersamplingname );
         PsetM->writeOnFile( supersamplingname );
     }
