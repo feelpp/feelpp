@@ -185,6 +185,7 @@ def init_toolboxmor(casefile, name, dim):
 
 @pytest.mark.parametrize("casefile,name,dim", cases_params, ids=cases_ids)
 def test_matrix(casefile, name, dim, init_feelpp):
+    # os.system("rm -rf /home/saigre/Documents/FEELTEST/pyfeelppmor-tests")
     e = init_feelpp
 
     model, _, _, assembleMDEIM, _ = init_toolboxmor(casefile, name, dim)
@@ -194,8 +195,8 @@ def test_matrix(casefile, name, dim, init_feelpp):
     Fq = convertToPetscVec(Fq0)
 
     AD = AffineDecomposition(Aq, Fq)
-    ES = EimSolver()
 
+    print("|test_matrix")
     for i in range(10):
         mu = model.parameterSpace().element()
         [betaA, _] = model.computeBetaQm(mu)
@@ -207,12 +208,13 @@ def test_matrix(casefile, name, dim, init_feelpp):
         nRelA = diffA.norm()/A_tb.norm()
 
         if rank == 0:
-            print(f"{mu} : {nRelA:.2e}")
+            print(f"|{mu} : {nRelA:.2e}")
 
         assert(nRelA < 1e-12)
 
 @pytest.mark.parametrize("casefile,name,dim", cases_params, ids=cases_ids)
 def test_rhs(casefile, name, dim, init_feelpp):
+    # os.system("rm -rf /home/saigre/Documents/FEELTEST/pyfeelppmor-tests")
     e = init_feelpp
 
     model, _, assembleDEIM, _, _ = init_toolboxmor(casefile, name, dim)
@@ -222,8 +224,8 @@ def test_rhs(casefile, name, dim, init_feelpp):
     Fq = convertToPetscVec(Fq0)
 
     AD = AffineDecomposition(Aq, Fq)
-    ES = EimSolver()
 
+    print("|test_rhs")
     for i in range(10):
         mu = model.parameterSpace().element()
         [_, betaF] = model.computeBetaQm(mu)
@@ -240,6 +242,7 @@ def test_rhs(casefile, name, dim, init_feelpp):
 
 @pytest.mark.parametrize("casefile,name,dim", cases_params, ids=cases_ids)
 def test_solution(casefile, name, dim, init_feelpp):
+    # os.system("rm -rf /home/saigre/Documents/FEELTEST/pyfeelppmor-tests")
     e = init_feelpp
 
     model, heatBox, assembleDEIM, assembleMDEIM, _ = init_toolboxmor(casefile, name, dim)
@@ -251,6 +254,7 @@ def test_solution(casefile, name, dim, init_feelpp):
     AD = AffineDecomposition(Aq, Fq)
     ES = EimSolver()
 
+    print("|test_solution")
     for i in range(10):
         mu = model.parameterSpace().element()
         [betaA, betaF] = model.computeBetaQm(mu)
@@ -270,13 +274,14 @@ def test_solution(casefile, name, dim, init_feelpp):
         nRelU = diffU.norm()/u_tb.norm()
 
         if rank == 0:
-            print(f"{mu} : {nRelU:.2e}")
+            print(f"|{mu} : {nRelU:.2e}")
 
         assert(nRelU < 1e-12)
 
 
 @pytest.mark.parametrize("casefile,name,dim", cases_params, ids=cases_ids)
 def test_output(casefile, name, dim, init_feelpp):
+    # os.system("rm -rf /home/saigre/Documents/FEELTEST/pyfeelppmor-tests")
     e = init_feelpp
 
     model, heatBox, assembleDEIM, assembleMDEIM, output_names = init_toolboxmor(casefile, name, dim)
@@ -288,6 +293,7 @@ def test_output(casefile, name, dim, init_feelpp):
     AD = AffineDecomposition(Aq, Fq)
     ES = EimSolver()
 
+    print("|test_output")
     for i in range(10):
         mu = model.parameterSpace().element()
         [betaA, betaF] = model.computeBetaQm(mu)
@@ -311,6 +317,6 @@ def test_output(casefile, name, dim, init_feelpp):
             output_eim = l_eim.dot(u_eim)
 
             nRelS = abs(output_eim - outputs_tb[o])/outputs_tb[o]
-            print(f"{mu}, {o} : eim:{output_eim:.2e}, tb:{outputs_tb[o]:.2e}, rel:{nRelS:.2e}")
+            print(f"|{mu}, {o} : eim:{output_eim:.2e}, tb:{outputs_tb[o]:.2e}, rel:{nRelS:.2e}")
 
             assert(nRelS < 1e-12)
