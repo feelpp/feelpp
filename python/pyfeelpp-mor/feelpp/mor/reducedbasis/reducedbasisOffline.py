@@ -349,13 +349,24 @@ class reducedbasisOffline(reducedbasis):
     def Z_to_matrix(self):
         """Convert the basis matrix Z to a matrix of shape (NN,N)
         """
-        warnings.warn("Only works in sequantial for now...")
-        self.Z_matrix = PETSc.Mat().create(comm=PETSc.COMM_WORLD)
-        self.Z_matrix.setSizes((self.NN, self.N))
-        self.Z_matrix.setFromOptions()
-        self.Z_matrix.setUp()
-        for i, ksi in enumerate(self.Z):
-            self.Z_matrix.setValuesBlocked(range(self.NN), i, ksi)
+        if False:
+            warnings.warn("Need to update PETSc")
+            self.Z_matrix = PETSc.Mat().createDense((self.NN, self.N), comm=PETSc.COMM_WORLD)
+            self.Z_matrix.setFromOptions()
+            self.Z_matrix.setUp()
+            for i, ksi in enumerate(self.Z):
+                r = self.Z_matrix.getDenseColumnVec(i)
+                ksi.copy(r)
+                self.Z_matrix.restoreDenseColumnVec(i)
+        else:
+            self.Z_matrix = PETSc.Mat().create(comm=PETSc.COMM_WORLD)
+            self.Z_matrix.setSizes((self.NN, self.N))
+            self.Z_matrix.setFromOptions()
+            self.Z_matrix.setUp()
+            for i in range(self.NN):
+                for j in range(self.N):
+                    self.Z_matrix.setValue(i, j, self.Z[j][i])
+                # self.Z_matrix.setValues(i, range(self.N), self.Z[i])
         self.Z_matrix.assemble()
 
 
