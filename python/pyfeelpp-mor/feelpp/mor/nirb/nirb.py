@@ -10,10 +10,16 @@ from utils import *
 import feelpp.mor as mor
 import feelpp.operators as FppOp
 # from NIRBinitCase import *
-import Mordicus.Modules.Cemosis.DataCompressors.SnapshotReducedBasis as SRB
+import numpy as np 
 
 
 import sys, os
+
+from mpi4py import MPI
+comm = MPI.COMM_WORLD
+rank = comm.Get_rank()
+size = comm.Get_size()
+
 
 class NIRB():
 
@@ -73,9 +79,11 @@ class NIRB():
         self.tbFine = setToolbox(self.h, self.geo_path, self.model, dim=self.dimension,
                                       order=self.order, type_tb=self.toolboxOption)
         self.Dmu = loadParameterSpace(self.model_path)
+        self.onlineParam = self.Dmu.element() 
+        self.Ndofs = self.tbFine.mesh().numGlobalPoints()
 
         if feelpp.Environment.isMasterRank():
-            print(f"[NIRB] Number of nodes on the fine mesh : {self.tbFine.mesh().numGlobalPoints()}")
+            print(f"[NIRB] Number of nodes on the fine mesh : {self.Ndofs}")
 
 
     def initRectification(self):
@@ -106,8 +114,8 @@ class NIRB():
             for mu in vector_mu:
                 if feelpp.Environment.isMasterRank():
                     print(f"Running simulation with mu = {mu}")
-                self.fineSnapShotList.append(getSolution(self.tbFine, mu))
-                self.coarseSnapShotList.append(getSolution(self.tbCoarse, mu))
+                self.fineSnapShotList.append(getSolution(self.tbFine, mu, type_tb=self.toolboxOption))
+                self.coarseSnapShotList.append(getSolution(self.tbCoarse, mu, type_tb=self.toolboxOption))
 
         else:
             for mu in vector_mu:
@@ -123,56 +131,307 @@ class NIRB():
         """Assemble L2 and H1 operators, stored in self.l2ScalarProduct and self.h1ScalarProduct
         """
         if self.l2ScalarProductMatrix is None or self.h1ScalarProductMatrix is None:
-            Vh = feelpp.functionSpace(mesh=self.tbFine.mesh())
+            Vh = feelpp.functionSpace(mesh=self.tbFine.mesh(), order=self.order)
             self.l2ScalarProductMatrix = FppOp.mass(test=Vh, trial=Vh, range=feelpp.elements(self.tbFine.mesh()))
             self.h1ScalarProductMatrix = FppOp.stiffness(test=Vh, trial=Vh, range=feelpp.elements(self.tbFine.mesh()))
+            self.l2ScalarProductMatrix.mat().assemble()
+            self.h1ScalarProductMatrix.mat().assemble()
 
     def generateReducedBasis(self):
-        """Generate the reduced basis, and store it in self.reducedOrderBasisU
+        """Generate the reduced basis, and store it in self.reducedBasis
         """
         # @ali : in the first code, there was a if calling the same function
-        self.reducedOrderBasisU = SRB.PODReducedBasisPETSc(self.fineSnapShotList, self.l2ScalarProductMatrix)
-        self.N = self.reducedOrderBasisU.size[0]
+        # self.reducedBasis = SRB.PODReducedBasisPETSc(self.fineSnapShotList, self.l2ScalarProductMatrix)
+        self.reducedBasis = self.PODReducedBasis() 
+        self.N = self.reducedBasis.size[0]
         if feelpp.Environment.isMasterRank():
             print(f"[NIRB] Number of modes : {self.N}")
         if self.doRectification:
-            interpolateOperator = createInterpolator(self.tbFine, self.tbCoarse, type_tb=self.toolboxOption)
-            coarseSnapInterList = []
-            for snap in self.coarseSnapShotList:
-                coarseSnapInterList.append(interpolateOperator.interpolate(snap))
-            self.RectificationMat = SRB.Rectification(coarseSnapInterList, self.fineSnapShotList,
-                                        self.l2ScalarProductMatrix, self.h1ScalarProductMatrix)
+            self.RectificationMat = self.Rectification()
 
-    def checkOrthonormalized(self, tol=1e-8):
-        """Check if the reduced basis is orthonormalized. Only L2 norm is checked.
+
+    def PODReducedBasis(self, tolerance=1.e-6):
+        """
+        Computes the reducedOrderBasis using the POD algorithm, from a given list of snapshots contained in self.fineSnapShotList 
+        
+        Parameters
+        ----------
+        tolerance (float) : tolerance of the eigen value problem 
+            target accuracy of the data compression
+
+        Returns
+        -------
+        ReducedBasis (petsc.Mat) : the reduced basis, of size (numberOfModes, numberOfDOFs)
+        """
+
+        Nsnap = len(self.fineSnapShotList)
+        correlationMatrix = PETSc.Mat().create()
+        correlationMatrix.setSizes([Nsnap,Nsnap])
+        correlationMatrix.setFromOptions()
+        correlationMatrix.setUp()
+
+        for i, snap1 in enumerate(self.fineSnapShotList):
+            for j, snap2 in enumerate(self.fineSnapShotList):
+                    correlationMatrix[i,j] = self.scalarL2(snap1.to_petsc().vec(),snap2.to_petsc().vec())
+
+        correlationMatrix.assemble()
+
+        eigenValues, eigenVectors =  TruncatedEigenV(correlationMatrix, tolerance) # truncate only eigenvalu >0 
+
+        Nmode = len(eigenVectors)
+        for i in range(Nmode):
+            eigenVectors[i] /= np.sqrt(eigenValues[i])
+        
+        LS = []
+        for i in range(Nsnap):
+            LS.append(self.fineSnapShotList[i].to_petsc().vec()[:])
+
+
+        reducedOrderBasis = PETSc.Mat().createDense(size=(Nmode,self.Ndofs))
+        reducedOrderBasis.setFromOptions()
+        reducedOrderBasis.setUp()
+        reducedOrderBasis.assemble()
+
+        vec = np.zeros(self.Ndofs)
+
+        for i in range(Nmode):
+            vec.fill(0.)
+            for j in range(Nsnap): 
+                vec += eigenVectors[i][j]*LS[j]
+            
+            reducedOrderBasis[i,:] = vec 
+
+        reducedOrderBasis.assemble()
+
+        # if (h1ScalarProduct != None): 
+        #     BiOrthonormalization(reducedOrderBasis, snapshotCorrelationOperator.mat(), h1ScalarProduct.mat())
+
+        return reducedOrderBasis
+
+    def Rectification(self, lambd=1e-10):
+        """ Compute the rectification matrix R given by : 
+                R = B_h*(B_H)^-1 
+                with B_h[i,j] = <U_h(s_i),\phi_j >
+                and B_H[i,j] = <U_H(s_i),\phi_j >
+        Args : 
+        lambd (float) : Tikonov regularization parameter 
+        """
+        assert self.N == self.reducedBasis.size[0], f"need computation of reduced basis" 
+        
+        interpolateOperator = createInterpolator(self.tbCoarse, self.tbFine, type_tb=self.toolboxOption)
+        CoarseSnaps = []
+        for snap in self.coarseSnapShotList:
+            CoarseSnaps.append(interpolateOperator.interpolate(snap))
+
+        BH = np.zeros((self.N,self.N)) 
+        Bh = BH.copy()
+
+
+        R = PETSc.Mat().createDense(size=(self.N,self.N))
+        R.setFromOptions()
+        R.setUp()
+        R.assemble()
+    
+        lfine = []
+        lcoarse = []
+
+        Udof,Usnap = self.reducedBasis.createVecs()
+
+        for i in range(self.N):
+            lfine.append(self.fineSnapShotList[i].to_petsc().vec())
+            lcoarse.append(CoarseSnaps[i].to_petsc().vec())
+            
+        CM = self.l2ScalarProductMatrix.mat()
+        
+        for i in range(self.N): 
+            CM.mult(lfine[i],Udof)
+            self.reducedBasis.mult(Udof,Usnap)
+            Bh[i,:] = Usnap[:]
+
+            CM.mult(lcoarse[i],Udof)
+            self.reducedBasis.mult(Udof,Usnap)
+            BH[i,:] = Usnap[:]
+            
+
+        #regularization (AT@A +lambda I_d)^-1
+        for i in range(self.N):
+            R[i,:]=(np.linalg.inv(BH.transpose()@BH+lambd*np.eye(self.N))@BH.transpose()@Bh[:,i])
+
+        return R
+        
+
+    """
+    Handle Gram-Schmidt orthogonalization
+    """   
+    def scalarL2(self, u, v):
+        """Return the ernegy scalar product associed to the L2 scalar product matrix (mass matrix)
+                    int_X(u v)
+
+        Args:
+            u (PETSc.Vec): vector
+            v (PETSC.Vec): second vector
+
+        Returns:
+            float: v.T @ A @ u
+        """
+        return v.dot( self.l2ScalarProductMatrix.mat() * u )   # v.T @ A @ u
+    
+    def scalarH1(self, u, v):
+        """Return the ernegy scalar product associed to the H1 scalar product matrix 
+                    int_X(\nabla u \nabla v)
+
+        Args:
+            u (PETSc.Vec): vector
+            v (PETSC.Vec): second vector
+
+        Returns:
+            float: v.T @ A @ u
+        """
+        return v.dot( self.h1ScalarProductMatrix.mat() * u )   # v.T @ A @ u
+
+    def normL2(self, u):
+        """Compute the L2 norm of the given vector
+
+        Args:
+            u (PETSc.Vec): vector
+
+        Returns:
+            float: ||u||_X
+        """
+        return np.sqrt(self.scalarL2(u, u))
+ 
+    def normH1(self, u):
+        """Compute the H1 norm of the given vector
+
+        Args:
+            u (PETSc.Vec): vector
+
+        Returns:
+            float: ||u||_X
+        """
+        return np.sqrt(self.scalarH1(u, u))
+
+    def orthonormalizeH1(self, nb=0):
+        """Use Gram-Schmidt algorithm to orthonormalize the reduced basis using H1 norm
+        (the optional argument is not needed)
+        """
+        ub,vb = self.reducedBasis.createVecs()
+        Z = []
+        for i in range(self.N):
+            ub[:] = self.reducedBasis[i,:]
+            Z.append(ub)
+
+        Z[0] /= self.normH1(Z[0])
+
+        for n in range(1, len(Z)):
+            s = Z[0].duplicate()
+            s.set(0)
+            for m in range(n):
+                s += self.scalarH1(Z[n], Z[m]) * Z[m]
+            z_tmp = Z[n] - s
+            Z[n] = z_tmp / self.normH1(z_tmp)
+        
+        for i in range(self.N):
+            self.reducedBasis[i,:] = Z[i][:]
+
+        self.reducedBasis.assemble()
+
+        if not (self.checkH1Orthonormalized() ) and nb < 10:
+            self.orthonormalizeH1(nb=nb+1)
+        elif rank == 0:
+            # pass
+            print(f"[NIRB] Gram-Schmidt H1 orthonormalization done after {nb+1} step"+['','s'][nb>0])
+
+    def orthonormalizeL2(self, nb=0):
+        """Use Gram-Schmidt algorithm to orthonormalize the reduced basis using L2 norm 
+        (the optional argument is not needed)
+        """
+        ub,vb = self.reducedBasis.createVecs()
+        Z = []
+        for i in range(self.N):
+            ub[:] = self.reducedBasis[i,:]
+            Z.append(ub)
+
+        Z[0] /= self.normL2(Z[0])
+
+        for n in range(1, len(Z)):
+            s = Z[0].duplicate()
+            s.set(0)
+            for m in range(n):
+                s += self.scalarL2(Z[n], Z[m]) * Z[m]
+            z_tmp = Z[n] - s
+            Z[n] = z_tmp / self.normL2(z_tmp)
+        
+        for i in range(self.N):
+            self.reducedBasis[i,:] = Z[i][:]
+
+        self.reducedBasis.assemble()
+
+        if not (self.checkL2Orthonormalized() ) and nb < 10:
+            self.orthonormalizeL2(nb=nb+1)
+        elif rank == 0:
+            # pass
+            print(f"[NIRB] Gram-Schmidt L2 orthonormalization done after {nb+1} step"+['','s'][nb>0])
+
+
+    def checkH1Orthonormalized(self, tol=1e-8):
+        """Check if the reduced basis is H1 orthonormalized.
+
+        Args:
+            tol (float, optional): Tolerance. Defaults to 1e-8.
+        """
+        h1ScalPetsc = self.h1ScalarProductMatrix.to_petsc().mat()
+        # with the current version of petsc, we need to transpose the matrix
+        self.reducedBasis.transpose()
+        matH1 = h1ScalPetsc.PtAP(self.reducedBasis)
+        self.reducedBasis.transpose()
+
+        for i in range(self.N):
+            for j in range(self.N):
+                if i == j:
+                    if abs(matH1[i, j] - 1) < tol:
+                        return False 
+                    # assert abs(matH1[i, j] - 1) < tol, f"H1 [{i}, {j}] {matH1[i, j]}"
+                else:
+                    if abs(matH1[i, j]) < tol :
+                        return False
+                    # assert abs(matH1[i, j]) < tol, f"H1 [{i}, {j}] {matH1[i, j]}"
+        return True 
+
+    def checkL2Orthonormalized(self, tol=1e-8):
+        """Check if the reduced basis is L2 orthonormalized.
 
         Args:
             tol (float, optional): Tolerance. Defaults to 1e-8.
         """
         l2ScalPetsc = self.l2ScalarProductMatrix.to_petsc().mat()
-        h1ScalPetsc = self.h1ScalarProductMatrix.to_petsc().mat()
+        # h1ScalPetsc = self.h1ScalarProductMatrix.to_petsc().mat()
         # with the current version of petsc, we need to transpose the matrix
-        self.reducedOrderBasisU.transpose()
-        matL2 = l2ScalPetsc.PtAP(self.reducedOrderBasisU)
-        matH1 = h1ScalPetsc.PtAP(self.reducedOrderBasisU)
-        self.reducedOrderBasisU.transpose()
+        self.reducedBasis.transpose()
+        matL2 = l2ScalPetsc.PtAP(self.reducedBasis)
+        # matH1 = h1ScalPetsc.PtAP(self.reducedBasis)
+        self.reducedBasis.transpose()
 
         for i in range(self.N):
             for j in range(self.N):
                 if i == j:
-                    assert abs(matL2[i, j] - 1) < tol, f"L2 [{i}, {j}] {matL2[i, j]}"
+                    if abs(matL2[i, j] - 1) < tol:
+                        return False 
+                    # assert abs(matL2[i, j] - 1) < tol, f"L2 [{i}, {j}] {matL2[i, j]}"
                     # assert abs(matH1[i, j] - 1) < tol, f"H1 [{i}, {j}] {matH1[i, j]}"
                 else:
-                    assert abs(matL2[i, j]) < tol, f"L2 [{i}, {j}] {matL2[i, j]}"
+                    if abs(matL2[i, j]) < tol :
+                        return False
+                    # assert abs(matL2[i, j]) < tol, f"L2 [{i}, {j}] {matL2[i, j]}"
                     # assert abs(matH1[i, j]) < tol, f"H1 [{i}, {j}] {matH1[i, j]}"
-
+        return True 
 
     def saveData(self):
         """Save the data generated by the offline phase
         """
         SavePetscArrayBin("massMatrix.dat", self.l2ScalarProductMatrix.mat())
         SavePetscArrayBin("stiffnessMatrix.dat", self.h1ScalarProductMatrix.mat())
-        SavePetscArrayBin("reducedBasisU.dat", self.reducedOrderBasisU)
+        SavePetscArrayBin("reducedBasisU.dat", self.reducedBasis)
         if self.doRectification:
             SavePetscArrayBin("rectificationMatrix.dat", self.RectificationMat)
         if feelpp.Environment.isMasterRank():
@@ -181,6 +440,84 @@ class NIRB():
 
     ### ONLINE PHASE ###
 
+    def computeErrors(self, mu=None, exporter=None):
+        """Compute errors between nirb solution and FE solution computed in fine mesh
+
+        Args : 
+        mu () : parameters 
+        """
+        if mu is None:
+            mu = self.onlineParam 
+
+        fineSol = getSolution(self.tbFine, mu, type_tb=self.toolboxOption)
+
+        # Export fine solution 
+        if exporter is not None:
+            if self.order==1:
+                exporter.addP1c("U_fine", fineSol)
+            elif self.order==2:
+                exporter.addP2c("U_fine", fineSol)
+
+        diffSolve = fineSol.to_petsc().vec() - self.onlineSol.to_petsc().vec() 
+        
+        # diffInterp = (fineSol - self.interpSol).to_petsc().vec() 
+        
+        error = []
+        error.append(self.N)
+        error.append(diffSolve.norm())
+        error.append(diffSolve.norm(PETSc.NormType.NORM_INFINITY))
+        return error 
+
+    def getCompressedSol(self,solution=None):
+        """
+        get the projection of given solution from fine mesh into the reduced space 
+
+        Parameters
+        ----------
+        solution (feelpp._discr.Element) : the solution to be projected 
+
+        return : 
+        uc (petsc.Vec) : the compressed solution, of size (self.N)
+        """
+        if solution is None:
+            solution = self.interpSol 
+
+        ur,uc = self.reducedBasis.createVecs()
+
+        self.l2ScalarProductMatrix.mult(solution.to_petsc().vec(),ur)
+        self.reducedBasis.mult(ur,uc)
+        self.compressedSol = uc 
+        return self.compressedSol
+
+    def getInterpSol(self):
+        """Get the interpolate solution from coarse mesh to fine one 
+        """
+        self.interpSol = self.solveOnline()
+
+    def getOnlineSol(self,exporter=None):
+        """Get the Online nirb approximate solution 
+        """
+        Xh = feelpp.functionSpace(mesh=self.tbFine.mesh(), order=self.order)
+        resPETSc = Xh.element().to_petsc()
+
+        if self.doRectification:
+                coef = self.compressedSol.copy()
+                self.RectificationMat.mult(self.compressedSol,coef)
+                self.reducedBasis.multTranspose(coef, resPETSc.vec())
+                print("[NIRB] Solution computed with Rectification post-process ")
+        else :
+                self.reducedBasis.multTranspose(self.compressedSol, resPETSc.vec())
+        
+        self.onlineSol = Xh.element(resPETSc)
+
+        if exporter is not None:
+            if self.order==1:
+                exporter.addP1c("U_nirb", self.onlineSol)
+            elif self.order==2:
+                exporter.addP2c("U_nirb", self.onlineSol)
+                        
+        return self.onlineSol
+
     def loadData(self):
         """Load the data generated by the offline phase
         """
@@ -188,19 +525,23 @@ class NIRB():
         self.l2ScalarProductMatrix.assemble()
         self.h1ScalarProductMatrix = LoadPetscArrayBin("stiffnessMatrix.dat")
         self.h1ScalarProductMatrix.assemble()
-        self.reducedOrderBasisU = LoadPetscArrayBin("reducedBasisU.dat")
-        self.reducedOrderBasisU.assemble()
-        self.N = self.reducedOrderBasisU.size[0]
+        self.reducedBasis = LoadPetscArrayBin("reducedBasisU.dat")
+        self.reducedBasis.assemble()
+        self.N = self.reducedBasis.size[0]
         if self.doRectification:
             self.RectificationMat = LoadPetscArrayBin("rectificationMatrix.dat")
             self.RectificationMat.assemble()
         if feelpp.Environment.isMasterRank():
             print(f"[NIRB] Data loaded from {os.getcwd()}")
 
-    def solveOnline(self, mu, exporter=None):
+    def solveOnline(self, mu=None, exporter=None):
         """Solve the online problem with the given parameter mu
+            Solve in Coarse mesh and interpolate in fine mesh 
         """
-        coarseSol = getSolution(self.tbCoarse, mu)
+        if mu is None :
+            mu = self.onlineParam 
+
+        coarseSol = getSolution(self.tbCoarse, mu, type_tb=self.toolboxOption)
         interpolationOperator = createInterpolator(self.tbCoarse, self.tbFine, type_tb=self.toolboxOption)
         interpolatedSol = interpolationOperator.interpolate(coarseSol)
 
@@ -210,4 +551,5 @@ class NIRB():
                 exporter.addP1c("U_interp", interpolatedSol)
             elif self.order == 2:
                 exporter.addP2c("U_interp", interpolatedSol)
+        
         return interpolatedSol
