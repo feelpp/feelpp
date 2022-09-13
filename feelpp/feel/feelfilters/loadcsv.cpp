@@ -35,19 +35,18 @@
 
 namespace Feel {
 
-std::map<std::vector<double>,double>
+std::vector<Eigen::VectorXd>
 loadXYFromCSV( std::string const& filename,
-               std::vector<std::string> const& abscissas,
-               std::string const& ordinate )
+               std::vector<std::string> const& abscissas )
 {
     std::ifstream in(filename.c_str());
-    if (!in.is_open()) return std::map<std::vector<double>,double>();
+    if (!in.is_open()) return std::vector<Eigen::VectorXd>();
 
     typedef boost::tokenizer< boost::escaped_list_separator<char> > Tokenizer;
 
     std::vector< std::string > vec;
     std::string line;
-    std::map<std::vector<double>,double> data;
+    std::vector<Eigen::VectorXd> data;
     std::vector<double> d_abscissas;
     int i_abs = 0;
     int i_ord = 1;
@@ -69,12 +68,6 @@ loadXYFromCSV( std::string const& filename,
         boost::trim(vec[1]);
         if ( count == 1 )
         {
-           
-            auto it_ord = std::find( vec.begin(), vec.end(), ordinate );
-            if ( it_ord == vec.end() )
-                throw std::logic_error( "Invalid ordinate data lookiup in CSV file " + filename + " (" + ordinate + ")" );
-            i_ord = std::distance( vec.begin(), it_ord );
-
             for( auto abscissa : abscissas )
             {
                 auto it_abs = std::find( vec.begin(), vec.end(), abscissa );
@@ -83,9 +76,10 @@ loadXYFromCSV( std::string const& filename,
                 i_abs = std::distance( vec.begin(), it_abs );
                 d_abscissas.push_back( std::stod( vec[i_abs] ) );
             }
+
             continue;
         }
-        data.insert( std::make_pair( d_abscissas, std::stod(vec[i_ord]) ) );
+        data.push_back( Eigen::Map<Eigen::VectorXd>(d_abscissas.data(), d_abscissas.size() ) );
     }
     LOG(INFO) << "done reading CSV file " << filename;
     return data;

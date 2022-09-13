@@ -26,6 +26,8 @@
 
 #include <map>
 #include <string>
+#include <vector>
+#include <Eigen/Core>
 
 namespace Feel
 {
@@ -40,21 +42,20 @@ namespace Feel
 //!  // load the columns "time" and "ft" into a map<>
 //!  auto m = loadXYFromCSV( "data.csv", "time", "ft" );
 //! \endcode
-std::map<std::vector<double>, double>
+std::vector<Eigen::VectorXd>
 loadXYFromCSV( std::string const& filename,
-               std::vector<std::string> const& abscissas,
-               std::string const& ordinate );
+               std::vector<std::string> const& data );
 
 inline std::map<double,double>
 loadXYFromCSV( std::string const& filename,
                std::string const& abscissa,
                std::string const& ordinate )
 {
-    std::map<std::vector<double>, double> rs = loadXYFromCSV( filename, std::vector{ abscissa }, ordinate );
+    auto rs = loadXYFromCSV( filename, std::vector{ abscissa, ordinate });
     std::map<double,double> m;
-    for( auto const& [key,value] : rs )
+    for( auto const& value : rs )
     {
-        m[key[0]] = value;
+        m[value[0]] = value[1];
     }
     return m;
 }
