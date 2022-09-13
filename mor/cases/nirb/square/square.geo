@@ -35,8 +35,8 @@ Line Loop(20)={12,4,5,-10};
 Plane Surface(20)={20};
 
 //physicalentities
-Physical Line("Tflux")={1,2};
-Physical Line("Tfourier")={3,4,5,6,7,8};
+Physical Line("Tflux")={1};
+Physical Line("Tfourier")={2,3,4,5,6,7,8};
 Physical Surface("Fin0")={16};
 Physical Surface("Fin1")={18};
 Physical Surface("Fin2")={14};
