@@ -567,6 +567,50 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
 
         return t, sN, s, sDiff, normN, norm, normDiff
 
+    def solveTimeFE(self, mu, g, k=-1, beta=None):
+        """Compute both RB and FE solutions for a given parameter and a given time-dependent function
+
+        Args:
+            mu (parameterSpaceElement): parameter used
+            g (function): right-hand side time-dependent function
+            k (int, optional): index of the output to be computed, if -1 the compliant output is computed. Default to -1
+
+        Returns:
+            tuple: results
+        """
+
+        if beta is None:
+            beta = self.model.computeBetaQm(mu)
+        Amu = self.assembleA(beta[0][0])
+        Fmu = self.assembleF(beta[1][0][0])
+        Mmu = self.assembleM(beta[2][0])
+
+        bigMat = Mmu + self.dt * Amu
+        self.ksp.setOperators(bigMat)
+
+        u = self.Fq[0].duplicate() # initial condition TODO
+        u.set(0)
+
+        if k == -1:
+            l = Fmu
+        else:
+            if 0 <= k and k < self.N_output:
+                l = self.assembleLk(k, beta[1][k+1][0])
+            else:
+                raise ValueError(f"Output {k} not valid")
+
+        for k in range(1, self.K):
+            gk = g(k * self.dt)
+
+            rhs = float(gk) * self.dt * Fmu + Mmu * u
+            self.ksp.setConvergenceHistory()
+            sol = self.Fq[0].duplicate()
+            sol.set(0)
+            self.ksp.solve(rhs, sol)
+            u = sol.copy()
+
+        return u
+
     """
     Checks functions, for debugging purposes
     """
@@ -593,36 +637,47 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
         ZT = self.Z_matrix.copy()
         ZT = ZT.transpose()
 
-        checksum = 0
-        ncheck = 0
-
+        nfailed = 0
         # Check the matrix A
         # ANmu_p = Amu.ptap(self.Z_matrix)
         ANmu_p = ZT * Amu * self.Z_matrix
         check = vN.T @ ANmu @ vN
         check_p = vN.dot(ANmu_p * vN_p)
-        print("    Check the matrix A", abs(check - check_p))
-        checksum += abs(check - check_p); ncheck += 1
+        try: assert abs(check - check_p) < tol, f"Check the matrix A failed {abs(check - check_p)}"
+        except AssertionError as e:
+            print(e)
 
         # Check the matrix M
         # MNmu_p = Mmu.ptap(self.Z_matrix)
         MNmu_p = ZT * Mmu * self.Z_matrix
         check = vN.T @ MNmu @ vN
         check_p = vN.dot(MNmu_p * vN_p)
-        print("    Check the matrix M", abs(check - check_p))
-        checksum += abs(check - check_p); ncheck += 1
+        try: assert abs(check - check_p) < tol, f"Check decomposition of the matrix M failed : {abs(check - check_p)}"
+        except AssertionError as e:
+            nfailed += 1
+            print(e)
 
         # Check the matrix F
         # FNmu_p = Fmu.ptap(self.Z_matrix)
         FNmu_p = ZT * Fmu
         check = FNmu @ vN
         check_p = vN_p.dot( FNmu_p )
-        print("    Check the vector F", abs(check - check_p))
-        checksum += abs(check - check_p); ncheck += 1
-        checksum += abs(check - check_p); ncheck += 1
+        try: assert abs(check - check_p) < tol, f"Check decomposition of F failed : {abs(check - check_p)}"
+        except AssertionError as e:
+            nfailed += 1
+            print(e)
 
-        assert checksum / ncheck < tol, "Check failed"
+        assert nfailed == 0, f"{nfailed} checks failed"
 
+    def checkError(self, mu, g, tol=1e-10, fspace=None):
+        """Check the error 
+
+        Args:
+            mu (parameterSpaceElement): parameter used
+            g (function): right hand side time-dependent function
+            tol (float, optional): Tolerance. Defaults to 1e-10.
+            fspace = {"Xh", "mesh"} (dict, optional): Funcional space assotiated to the toolbox. Defaults to None.
+        """
     def checkError(self, mu, g, tol=1e-10):
         print("[reducedbasis] Checking error µ={}".format(mu))
         beta = self.model.computeBetaQm(mu)
@@ -644,9 +699,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
         matLu = sl.lu_factor(matN)
         alpm1 = 1 / np.sqrt(self.alphaLB(mu))
 
-        checksum = 0
-        ncheck = 0
-
+        nfailed = 0
         uN_km1 = np.zeros(self.N)
         u_km1 = self.Fq[0].duplicate()
         u_km1.set(0)
@@ -673,8 +726,16 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
             sol_dec += betaF[p] * self.Sp[p]
         check = ONES.dot(sol)
         check_dec = ONES.dot(sol_dec)
-        print("    Check the error on F", abs(check - check_dec))
-        checksum += abs(check - check_dec); ncheck += 1
+        try: assert abs(check - check_dec) < tol, f"Check F1 failed : {abs(check - check_dec)}"
+        except AssertionError as e:
+            nfailed += 1
+            print(e)
+        check = sol.norm()
+        check_dec = sol_dec.norm()
+        try: assert abs(check - check_dec) < tol, f"Check F2 failed : {abs(check - check_dec)}"
+        except AssertionError as e:
+            nfailed += 1
+            print(e)
 
         for k in range(self.K):
             gk = g(k * self.dt)
@@ -698,8 +759,10 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
             
             check = ONES.dot(Mk)
             check_dec = ONES.dot(Mk_dec)
-            print(f"    Check the error on M{k}", abs(check - check_dec))
-            checksum += abs(check - check_dec); ncheck += 1
+            try: assert abs(check - check_dec) < tol, f"Check on M ({k}) failed : {abs(check - check_dec)}"
+            except AssertionError as e:
+                nfailed += 1
+                print(e)
 
             # computation of Lk
             u_p.setValues(range(self.N), uN_k)
@@ -716,7 +779,11 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
 
             check = ONES.dot(Lk)
             check_dec = ONES.dot(Lk_dec)
-            print(f"    Check the error on L{k}", abs(check - check_dec))
-            checksum += abs(check - check_dec); ncheck += 1
+            try: assert abs(check - check_dec) < tol, f"Check on A1 ({k}) failed : {abs(check - check_dec)}"
+            except AssertionError as e:
+                nfailed += 1
+                print(e)
 
         assert checksum / ncheck < tol, "Check failed"
+
+        assert nfailed == 0, f"{nfailed} tests failed"
