@@ -29,6 +29,7 @@
 #include <feel/feelmor/options.hpp>
 #include <feel/feelmor/crbplugin_interface.hpp>
 #include <feel/feelmor/crbmodeldb.hpp>
+#include <feel/feelfilters/loadcsv.hpp>
 
 #include <iostream>
 
@@ -238,6 +239,13 @@ runCrbOnline( std::vector<std::shared_ptr<Feel::CRBPluginAPI>> plugin )
         for ( std::string const& paramParsed : inputParameterParsed )
             inputParameter.push_back( std::stod(paramParsed) );
     }
+    else if( Environment::vm().count( "load" ) )
+    {
+        std::string fname = Environment::vm()["load"].as<std::string>();
+        auto r = loadXYFromCSV( fname, muspace->parameterNames() );
+        for(auto const& p : r)
+            mysampling->push_back( p );
+    }
     //inputParameter = Environment::vm()["parameter"].as<std::vector<double> >();
     if ( !inputParameter.empty() )
     {
@@ -247,7 +255,7 @@ runCrbOnline( std::vector<std::shared_ptr<Feel::CRBPluginAPI>> plugin )
             mu(d)=inputParameter[d];
         mysampling->push_back( mu );
     }
-    else
+    else if ( mysampling->empty() )
     {
         int nSample = ioption(_name="sampling.size");
         std::string sampler = soption("sampling.type");
@@ -405,6 +413,7 @@ int main(int argc, char**argv )
         //( "plugin.db", po::value<std::string>()->default_value( "${repository}/crbdb" ), "root directory of the CRB database " )
         //( "parameter", po::value<std::vector<double> >()->multitoken(), "database filename" )
         ( "parameter", po::value<std::vector<std::string> >()->multitoken(), "database filename" )
+        ( "load", po::value<std::string>(), "parameters from csv file" )
         ( "sampling.size", po::value<int>()->default_value( 10 ), "size of sampling" )
         ( "sampling.type", po::value<std::string>()->default_value( "random" ), "type of sampling" )
         ( "rb-dim", po::value<int>()->default_value( -1 ), "reduced basis dimension used (-1 use the max dim)" )
