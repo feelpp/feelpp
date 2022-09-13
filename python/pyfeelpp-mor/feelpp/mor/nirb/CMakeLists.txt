@@ -25,5 +25,5 @@ cmake_minimum_required(VERSION 3.3)
 
 message(STATUS "[pyfeelpp-mor] add pymodule nirb")
 
-install(FILES  main.py nirb.py DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/mor/nirb)
+install(FILES  main.py nirb.py utils.py DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/mor/nirb)
 
