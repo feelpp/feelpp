@@ -444,50 +444,7 @@ class NIRB():
         if feelpp.Environment.isMasterRank():
             print(f"[NIRB] Data saved in {os.getcwd()}")
 
-
-        # print("[nirb save] l2mat", self.l2ScalarProductMatrix.mat()[:,:])
-        # print("[nirb save] h1mat", self.h1ScalarProductMatrix.mat()[:,:])
-        # print("[nirb save] reduc", self.reducedBasis[:,:])
-
     ### ONLINE PHASE ###
-
-    def computeErrors(self, mu=None, exporter=None):
-        """Compute errors between nirb solution and FE solution computed in fine mesh
-
-        Args : 
-        mu () : parameters 
-        """
-        if mu is None:
-            mu = self.onlineParam 
-        
-        assert self.onlineSol != None, f"NIRB online solution is needed "
-
-        print("[nirb computeError] online sol", self.onlineSol.to_petsc().vec()[:] )
-
-        inan = np.argwhere(np.isnan(self.onlineSol.to_petsc().vec()[:]))
-        
-        print("[nirb computeError] online sol is nan", inan)
-
-        fineSol = getSolution(self.tbFine, mu, type_tb=self.toolboxOption)
-        
-        print("[nirb computeError] fine sol", fineSol.to_petsc().vec()[:] )
-
-        # Export fine solution 
-        if exporter is not None:
-            if self.order==1:
-                exporter.addP1c("U_fine", fineSol)
-            elif self.order==2:
-                exporter.addP2c("U_fine", fineSol)
-
-        diffSolve = fineSol.to_petsc().vec() - self.onlineSol.to_petsc().vec() 
-        
-        print("[nirb computeError] diff sol", diffSolve[:] )
-        
-        error = []
-        error.append(self.N)
-        error.append(diffSolve.norm())
-        error.append(diffSolve.norm(PETSc.NormType.NORM_INFINITY))
-        return error
 
     def getCompressedSol(self,solution=None):
         """
@@ -508,7 +465,6 @@ class NIRB():
         self.l2ScalarProductMatrix.mult(solution.to_petsc().vec(),ur)
         self.reducedBasis.mult(ur,uc)
         self.compressedSol = uc 
-        print("[nirb compressSol]", self.compressedSol[:])
         return self.compressedSol
 
     def getInterpSol(self):
@@ -516,6 +472,35 @@ class NIRB():
         """
         self.interpSol = self.solveOnline()
         return self.interpSol 
+
+    def computeErrors(self, mu=None, exporter=None):
+        """Compute errors between nirb solution and FE solution computed in fine mesh
+
+           Args :
+           mu : 
+           exporter : feelpp.exporter to export data for visualization 
+        """
+        if mu == None:
+            mu =self.onlineParam
+
+        fineSol = getSolution(self.tbFine, mu, type_tb=self.toolboxOption)
+        # fineSol = self.interpSol 
+
+        diffSol = (fineSol - self.onlineSol).to_petsc().vec()
+        
+        # # Export fine solution 
+        if exporter is not None:
+            if self.order==1:
+                exporter.addP1c("U_fine", fineSol)
+            elif self.order==2:
+                exporter.addP2c("U_fine", fineSol)
+
+        error = []
+        error.append(self.N)
+        error.append(diffSol.norm())
+        error.append(diffSol.norm(PETSc.NormType.NORM_INFINITY))
+
+        return error 
 
     def getOnlineSol(self,exporter=None):
         """Get the Online nirb approximate solution 
@@ -538,8 +523,7 @@ class NIRB():
                 exporter.addP1c("U_nirb", self.onlineSol)
             elif self.order==2:
                 exporter.addP2c("U_nirb", self.onlineSol)
-
-        print("[nirb onlinesol]", self.onlineSol.to_petsc().vec()[:])         
+       
         return self.onlineSol
 
     def loadData(self):
@@ -557,10 +541,6 @@ class NIRB():
             self.RectificationMat.assemble()
         if feelpp.Environment.isMasterRank():
             print(f"[NIRB] Data loaded from {os.getcwd()}")
-        
-        # print("[nirb load] l2mat", self.l2ScalarProductMatrix[:,:])
-        # print("[nirb load] h1mat", self.h1ScalarProductMatrix[:,:])
-        # print("[nirb load] reduc", self.reducedBasis[:,:])
 
     def solveOnline(self, mu=None, exporter=None):
         """Solve the online problem with the given parameter mu
