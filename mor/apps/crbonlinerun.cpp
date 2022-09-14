@@ -275,6 +275,7 @@ runCrbOnline( std::vector<std::shared_ptr<Feel::CRBPluginAPI>> plugin )
     Feel::Table tableOutputResults;
     std::vector<std::string> tableRowHeader = muspace->parameterNames();
     tableRowHeader.push_back( "output");
+    tableRowHeader.push_back( "time(s)");
     tableOutputResults.add_row( tableRowHeader );
     tableOutputResults.format().setFirstRowIsHeader( true );
 
@@ -282,6 +283,7 @@ runCrbOnline( std::vector<std::shared_ptr<Feel::CRBPluginAPI>> plugin )
 
     for ( int k=0;k<nSamples;++k )
     {
+        
         auto const& mu = (*mysampling)[k];
         std::ostringstream ostrmu;
         for ( uint16_type d=0;d<muspace->dimension();++d)
@@ -292,16 +294,18 @@ runCrbOnline( std::vector<std::shared_ptr<Feel::CRBPluginAPI>> plugin )
         //std::cout << "input mu\n" << mu << "\n";
         for( auto const& p : plugin )
         {
+            tic();
             auto crbResult = p->run( mu, time_crb, online_tol, rbDim, print_rb_matrix);
             auto resOuptut = boost::get<0>( crbResult );
             auto resError = boost::get<0>( boost::get<6>( crbResult ) );
             //std::cout << "output " << resOuptut.back() << " " << resError.back() << "\n";
-
+            double t = toc("rb_online", FLAGS_v>0);
             int curRowValIndex = 0;
             for ( uint16_type d=0;d<muspace->dimension();++d)
                 tableRowValues[curRowValIndex++] = mu(d);
             if ( !resOuptut.empty() )
                 tableRowValues[curRowValIndex++] = resOuptut.back();
+            tableRowValues[curRowValIndex++] = t;
             tableOutputResults.add_row( tableRowValues );
 
             if ( loadFiniteElementDatabase )
