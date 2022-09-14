@@ -22,7 +22,7 @@ if __name__ == "__main__":
 
     nirb_model = NIRB(dim, H, h, toolboxesOptions, cfg_path, model_path, geo_path, doRectification=doRectification)
 
-    nirb_model.initProblem(3,computeCoarse=computeCoarse)
+    nirb_model.initProblem(5,computeCoarse=computeCoarse)
     nirb_model.generateOperators()
     nirb_model.generateReducedBasis()
 
@@ -35,12 +35,12 @@ if __name__ == "__main__":
     print(f"[NIRB] Offline part Done !")
 
     nirb_model.loadData()
-    uc = nirb_model.getInterpSol()
-    uc = nirb_model.getCompressedSol()
+    nirb_model.getInterpSol()
+    nirb_model.getCompressedSol()
     nirb_model.getOnlineSol() 
-    print("[nirb main] online sol befor error", nirb_model.onlineSol.to_petsc().vec()[:])
-    error = nirb_model.computeErrors() 
-    print("[nirb main] online sol after error", nirb_model.onlineSol.to_petsc().vec()[:])
+    # online1 = nirb_model.onlineSol.to_petsc().vec()[:] # en commentant cette ligne ça produite des nan à la solution onlineSol après computeErrors 
+
+    error = nirb_model.computeErrors()
 
     print("----------- Errors ----------------------")
     print(f"Nb mode = {error[0]}")
