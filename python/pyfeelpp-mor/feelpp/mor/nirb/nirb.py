@@ -59,6 +59,8 @@ class NIRB():
 
         self.l2ScalarProductMatrix = None
         self.h1ScalarProductMatrix = None
+        self.tbCoarse = None 
+        self.onlineSol = None 
 
         self.initFeelpp()
         if self.doRectification:
@@ -111,6 +113,7 @@ class NIRB():
         vector_mu = s.getVector()
 
         if computeCoarse:
+            assert self.tbCoarse is not None, f"Coarse toolbox needed for computing coarse Snapshot. set doRectification->True"
             for mu in vector_mu:
                 if feelpp.Environment.isMasterRank():
                     print(f"Running simulation with mu = {mu}")
@@ -342,6 +345,8 @@ class NIRB():
             # pass
             print(f"[NIRB] Gram-Schmidt H1 orthonormalization done after {nb+1} step"+['','s'][nb>0])
 
+        print("[nirb orthoH1] reduc", self.reducedBasis[:,:])
+
     def orthonormalizeL2(self, nb=0):
         """Use Gram-Schmidt algorithm to orthonormalize the reduced basis using L2 norm 
         (the optional argument is not needed)
@@ -372,6 +377,8 @@ class NIRB():
         elif rank == 0:
             # pass
             print(f"[NIRB] Gram-Schmidt L2 orthonormalization done after {nb+1} step"+['','s'][nb>0])
+        
+        print("[nirb orthoL2] reduc", self.reducedBasis[:,:])
 
 
     def checkH1Orthonormalized(self, tol=1e-8):
@@ -438,6 +445,10 @@ class NIRB():
             print(f"[NIRB] Data saved in {os.getcwd()}")
 
 
+        # print("[nirb save] l2mat", self.l2ScalarProductMatrix.mat()[:,:])
+        # print("[nirb save] h1mat", self.h1ScalarProductMatrix.mat()[:,:])
+        # print("[nirb save] reduc", self.reducedBasis[:,:])
+
     ### ONLINE PHASE ###
 
     def computeErrors(self, mu=None, exporter=None):
@@ -448,8 +459,18 @@ class NIRB():
         """
         if mu is None:
             mu = self.onlineParam 
+        
+        assert self.onlineSol != None, f"NIRB online solution is needed "
+
+        print("[nirb computeError] online sol", self.onlineSol.to_petsc().vec()[:] )
+
+        inan = np.argwhere(np.isnan(self.onlineSol.to_petsc().vec()[:]))
+        
+        print("[nirb computeError] online sol is nan", inan)
 
         fineSol = getSolution(self.tbFine, mu, type_tb=self.toolboxOption)
+        
+        print("[nirb computeError] fine sol", fineSol.to_petsc().vec()[:] )
 
         # Export fine solution 
         if exporter is not None:
@@ -460,13 +481,13 @@ class NIRB():
 
         diffSolve = fineSol.to_petsc().vec() - self.onlineSol.to_petsc().vec() 
         
-        # diffInterp = (fineSol - self.interpSol).to_petsc().vec() 
+        print("[nirb computeError] diff sol", diffSolve[:] )
         
         error = []
         error.append(self.N)
         error.append(diffSolve.norm())
         error.append(diffSolve.norm(PETSc.NormType.NORM_INFINITY))
-        return error 
+        return error
 
     def getCompressedSol(self,solution=None):
         """
@@ -487,12 +508,14 @@ class NIRB():
         self.l2ScalarProductMatrix.mult(solution.to_petsc().vec(),ur)
         self.reducedBasis.mult(ur,uc)
         self.compressedSol = uc 
+        print("[nirb compressSol]", self.compressedSol[:])
         return self.compressedSol
 
     def getInterpSol(self):
         """Get the interpolate solution from coarse mesh to fine one 
         """
         self.interpSol = self.solveOnline()
+        return self.interpSol 
 
     def getOnlineSol(self,exporter=None):
         """Get the Online nirb approximate solution 
@@ -515,7 +538,8 @@ class NIRB():
                 exporter.addP1c("U_nirb", self.onlineSol)
             elif self.order==2:
                 exporter.addP2c("U_nirb", self.onlineSol)
-                        
+
+        print("[nirb onlinesol]", self.onlineSol.to_petsc().vec()[:])         
         return self.onlineSol
 
     def loadData(self):
@@ -533,6 +557,10 @@ class NIRB():
             self.RectificationMat.assemble()
         if feelpp.Environment.isMasterRank():
             print(f"[NIRB] Data loaded from {os.getcwd()}")
+        
+        # print("[nirb load] l2mat", self.l2ScalarProductMatrix[:,:])
+        # print("[nirb load] h1mat", self.h1ScalarProductMatrix[:,:])
+        # print("[nirb load] reduc", self.reducedBasis[:,:])
 
     def solveOnline(self, mu=None, exporter=None):
         """Solve the online problem with the given parameter mu
