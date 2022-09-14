@@ -29,7 +29,9 @@
 #include <vector>
 #include <string>
 #include <algorithm>    
-#include <iterator>     
+#include <iterator>
+#include <fmt/core.h>
+#include <fmt/ranges.h>     
 #include <boost/algorithm/string.hpp>
 #include <boost/tokenizer.hpp>
 
@@ -42,45 +44,57 @@ loadXYFromCSV( std::string const& filename,
     std::ifstream in(filename.c_str());
     if (!in.is_open()) return std::vector<Eigen::VectorXd>();
 
-    typedef boost::tokenizer< boost::escaped_list_separator<char> > Tokenizer;
+    using Tokenizer = boost::tokenizer< boost::char_separator<char> >;
 
     std::vector< std::string > vec;
     std::string line;
     std::vector<Eigen::VectorXd> data;
-    std::vector<double> d_abscissas;
-    int i_abs = 0;
-    int i_ord = 1;
+    std::vector<int> i_abscissas;
+    i_abscissas.reserve( abscissas.size() );
+    std::vector<double> values( abscissas.size() );
+    values.reserve( abscissas.size() );
+    std::cout << fmt::format( "load {} from {} ", abscissas, filename ) << std::endl;
+    boost::char_separator<char> els( " ;," );
     int count = 0;
     while (std::getline(in,line))
     {
         count ++;
         
         vec.clear();
-        d_abscissas.clear();
+        values.clear();
 
-        Tokenizer tok(line);
+        Tokenizer tok(line, els);
         vec.assign(tok.begin(),tok.end());
-
+        std::cout << fmt::format( "count : {} vec {} size {}", count, fmt::join( vec, " " ), vec.size() ) << std::endl;
         if (vec.size() < 2) continue;
 
         
-        boost::trim(vec[0]);
-        boost::trim(vec[1]);
+        std::for_each(vec.begin(), vec.end(), [](std::string & s) { boost::trim(s); });
+
         if ( count == 1 )
         {
             for( auto abscissa : abscissas )
             {
+                std::cout << fmt::format("Check abscissa _{}_ ", abscissa ) << std::endl;
                 auto it_abs = std::find( vec.begin(), vec.end(), abscissa );
                 if ( it_abs == vec.end()  )
-                    throw std::logic_error( "Invalid abscissa data lookiup in CSV file " + filename + " (" + abscissa + ")" );
-                i_abs = std::distance( vec.begin(), it_abs );
-                d_abscissas.push_back( std::stod( vec[i_abs] ) );
+                    throw std::logic_error( "Invalid abscissa data lookup in CSV file " + filename + " (" + abscissa + ")" );
+                int i_abs = std::distance( vec.begin(), it_abs );
+                std::cout << fmt::format( "Check abscissa _{}_: {} ", abscissa, i_abs ) << std::endl;
+                i_abscissas.push_back( i_abs );
+                
             }
-
+            LOG(INFO) << fmt::format( "[loadcsv] indices {}",  i_abscissas ) << std::endl;
             continue;
         }
-        data.push_back( Eigen::Map<Eigen::VectorXd>(d_abscissas.data(), d_abscissas.size() ) );
+        std::cout << fmt::format( "count : {} i_abscissas {} ", count, fmt::join( i_abscissas, " " ) ) << std::endl;
+        for( auto index : i_abscissas )
+        {
+            values.push_back( std::stod( vec[index] ) );
+        }
+        data.push_back( Eigen::Map<Eigen::VectorXd>( values.data(), values.size() ) );
     }
+    LOG(INFO) << fmt::format( "[loadcsv] csv data loaded: {}",  data ) << std::endl;
     LOG(INFO) << "done reading CSV file " << filename;
     return data;
 }
