@@ -202,7 +202,7 @@ class reducedbasisOffline(reducedbasis):
         """
         return v.dot( self.scal * u )   # v.T @ scal @ u
 
-    def normA(self, u):
+    def normX(self, u):
         """Compute the energy norm of the given vector
 
         Args:
@@ -217,14 +217,14 @@ class reducedbasisOffline(reducedbasis):
         """Use Gram-Schmidt algorithm to orthonormalize the reduced basis
         (the optional argument is not needed)
         """
-        self.Z[0] /= self.normA(self.Z[0])
+        self.Z[0] /= self.normX(self.Z[0])
         for n in range(1, len(self.Z)):
             s = self.Z[0].duplicate()
             s.set(0)
             for m in range(n):
                 s += self.scalarX(self.Z[n], self.Z[m]) * self.Z[m]
             z_tmp = self.Z[n] - s
-            self.Z[n] = z_tmp / self.normA(z_tmp)
+            self.Z[n] = z_tmp / self.normX(z_tmp)
         # if not (self.test_orth() == np.eye(self.N)).all() and nb < 2:
         if not (self.test_orth() ) and nb < 10:
             self.orthonormalizeZ(nb=nb+1)
@@ -618,7 +618,7 @@ class reducedbasisOffline(reducedbasis):
 
         self.ksp.solve(F_mu - A_mu * u_proj, E)
 
-        return self.normA(E)
+        return self.normX(E)
 
 
 
