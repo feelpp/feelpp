@@ -26,11 +26,11 @@
 #include <boost/algorithm/string/split.hpp>
 
 #include <feel/feelcore/table.hpp>
-#include <feel/feelmor/options.hpp>
-#include <feel/feelmor/crbplugin_interface.hpp>
-#include <feel/feelmor/crbmodeldb.hpp>
 #include <feel/feelfilters/loadcsv.hpp>
-
+#include <feel/feelmor/crbmodeldb.hpp>
+#include <feel/feelmor/crbplugin_interface.hpp>
+#include <feel/feelmor/options.hpp>
+#include <fmt/ranges.h>
 #include <iostream>
 
 #if defined(FEELPP_HAS_MONGOCXX )
@@ -243,8 +243,12 @@ runCrbOnline( std::vector<std::shared_ptr<Feel::CRBPluginAPI>> plugin )
     {
         std::string fname = Environment::vm()["load"].as<std::string>();
         auto r = loadXYFromCSV( fname, muspace->parameterNames() );
+        auto mu = muspace->element();
         for(auto const& p : r)
-            mysampling->push_back( p );
+        {
+            mu = p;
+            mysampling->push_back( mu );
+        }
     }
     //inputParameter = Environment::vm()["parameter"].as<std::vector<double> >();
     if ( !inputParameter.empty() )
