@@ -20,12 +20,10 @@ comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 size = comm.Get_size()
 
+class ToolboxModel():
 
-class NIRB():
-
-    def __init__(self, dimension, H, h, toolboxOption, cfg_path, model_path, geo_path,
-        method="POD", order=1, doRectification=True) -> None:
-        """Initialize the NIRB class
+    def __init__(self, dimension, H, h, toolboxOption, cfg_path, model_path, geo_path, order=1) -> None:
+        """Initialize the toolbox model class
 
         Args:
             dimension (int): dimension of the case
@@ -44,27 +42,26 @@ class NIRB():
 
         assert dimension in [2,3]
         self.dimension = dimension
-        assert method in ["POD", "Greedy"]
+        # assert method in ["POD", "Greedy"]
         self.H = H
         self.h = h if h is not None else H**2
-        self.method = method
+        # self.method = method
         self.order = order
 
-        self.doRectification = doRectification
+        # self.doRectification = doRectification
 
         self.toolboxOption = toolboxOption
         self.cfg_path = cfg_path
         self.model_path = model_path
         self.geo_path = geo_path
 
-        self.l2ScalarProductMatrix = None
-        self.h1ScalarProductMatrix = None
         self.tbCoarse = None 
+        self.tbFine   = None 
         self.onlineSol = None 
 
         self.initFeelpp()
-        if self.doRectification:
-            self.initRectification()
+        # if self.doRectification:
+            # self.initRectification()
         if feelpp.Environment.isMasterRank():
             print(f"[NIRB] Initialization done")
 
@@ -88,13 +85,104 @@ class NIRB():
             print(f"[NIRB] Number of nodes on the fine mesh : {self.Ndofs}")
 
 
-    def initRectification(self):
+    def initCoarseToolbox(self):
         """Initialize the rectification problem
         """
         self.tbCoarse = setToolbox(self.H, self.geo_path, self.model, dim=self.dimension,
                                         order=self.order, type_tb=self.toolboxOption)
         if feelpp.Environment.isMasterRank():
             print(f"[NIRB] Number of nodes on the coarse mesh : {self.tbCoarse.mesh().numGlobalPoints()}")
+
+
+class nirbOffline(ToolboxModel):
+
+    def __init__(self, dimension, H, h, toolboxOption, cfg_path, model_path, geo_path,
+        method="POD", order=1, doRectification=True) -> None:
+        """Initialize the NIRB class
+
+        Args:
+            dimension (int): dimension of the case
+            H (float): coarse mesh size
+            h (float): fine mesh size
+            toolboxOption (str): toolbox used (heat or fluid)
+            cfg_path (str): path to cfg file
+            model_path (str): path to json file
+            geo_path (str): path to geo file
+            method (str, optional): method used to generate the basis. Defaults to "POD".
+            order (int, optional): order of discretization. Defaults to 1.
+            doRectification (bool, optional): set rectification. Defaults to True.
+        """
+
+        super().__init__(dimension, H, h, toolboxOption, cfg_path, model_path, geo_path, order)
+
+        assert method in ["POD", "Greedy"]
+        self.method = method
+        self.doRectification = doRectification
+
+        self.l2ScalarProductMatrix = None
+        self.h1ScalarProductMatrix = None
+        self.N = 0 # number of modes 
+
+        if self.doRectification:
+            super().initCoarseToolbox()
+        if feelpp.Environment.isMasterRank():
+            print(f"[NIRB] Initialization done")
+
+
+
+    def BiOrthonormalization(self):
+        """Bi-orthonormalization of reduced basis 
+        """
+        
+
+        K = np.zeros((self.N,self.N)) 
+        M = K.copy()
+
+        # K = PETSc.Mat().createDense(size=(self.N,self.N))
+        # K.setFromOptions()
+        # K.setUp()
+        # K.assemble()
+        # M = K.copy()
+
+        Udof, Umode = self.reducedBasis.createVecs()
+        xr = Udof.copy()
+
+        for i in range(self.N):
+            xr[:] = self.reducedBasis[i,:]
+            self.h1ScalarProductMatrix.mat().mult(xr,Udof)
+            self.reducedBasis.mult(Udof,Umode)
+            K[i,:] = Umode[:]
+
+            self.l2ScalarProductMatrix.mat().mult(xr,Udof)
+            self.reducedBasis.mult(Udof,Umode)
+            M[i,:] = Umode[:]
+        
+        from scipy import linalg
+
+        vc,vr=linalg.eigh(K, b=M) #eigenvalues
+        eigenValues = vc.real 
+        idx = eigenValues.argsort()[::-1]
+        eigenValues = eigenValues[idx]
+        eigenVectors = vr[:, idx]
+        
+        for i in range(self.N):
+            eigenVectors[i,:] /= np.sqrt(eigenValues[i])
+        
+        
+        eigenMatrix = PETSc.Mat().createDense([self.N,self.N])
+        eigenMatrix.setFromOptions()
+        eigenMatrix.setUp()
+
+        eigenMatrix[:,:] = eigenVectors.transpose()[:,:]
+
+        eigenMatrix.assemble()
+        
+        bb = self.reducedBasis.copy() 
+        eigenMatrix.matMult(bb,self.reducedBasis)
+
+        bb.destroy()
+        eigenMatrix.destroy() 
+        
 
 
     def initProblem(self, numberOfInitSnapshots, samplingMode="log-random", computeCoarse=False):
@@ -105,6 +193,9 @@ class NIRB():
             samplingMode (str, optional): sampling mode in the parameter space. Defaults to "log-random".
             computeCoarse (bool, optional): compute snapshots for coarse toolbox, used for rectification. Defaults to False.
         """
+        if self.doRectification:
+            computeCoarse=True 
+
         self.fineSnapShotList = []
         self.coarseSnapShotList = []
 
@@ -143,8 +234,6 @@ class NIRB():
     def generateReducedBasis(self):
         """Generate the reduced basis, and store it in self.reducedBasis
         """
-        # @ali : in the first code, there was a if calling the same function
-        # self.reducedBasis = SRB.PODReducedBasisPETSc(self.fineSnapShotList, self.l2ScalarProductMatrix)
         self.reducedBasis = self.PODReducedBasis() 
         self.N = self.reducedBasis.size[0]
         if feelpp.Environment.isMasterRank():
@@ -444,34 +533,43 @@ class NIRB():
         if feelpp.Environment.isMasterRank():
             print(f"[NIRB] Data saved in {os.getcwd()}")
 
-    ### ONLINE PHASE ###
 
-    def getCompressedSol(self,solution=None):
+
+### ONLINE PHASE ###
+
+class nirbOnline(ToolboxModel):
+
+    def __init__(self, dimension, H, h, toolboxOption, cfg_path, model_path, geo_path,
+        order=1, doRectification=True) -> None:
+        """Initialize the NIRB online class
+
+        Args:
+            dimension (int): dimension of the case
+            H (float): coarse mesh size
+            h (float): fine mesh size
+            toolboxOption (str): toolbox used (heat or fluid)
+            cfg_path (str): path to cfg file
+            model_path (str): path to json file
+            geo_path (str): path to geo file
+            method (str, optional): method used to generate the basis. Defaults to "POD".
+            order (int, optional): order of discretization. Defaults to 1.
+            doRectification (bool, optional): set rectification. Defaults to True.
         """
-        get the projection of given solution from fine mesh into the reduced space 
 
-        Parameters
-        ----------
-        solution (feelpp._discr.Element) : the solution to be projected 
+        super().__init__(dimension, H, h, toolboxOption, cfg_path, model_path, geo_path, order)
 
-        return : 
-        uc (petsc.Vec) : the compressed solution, of size (self.N)
-        """
-        if solution is None:
-            solution = self.interpSol 
+        self.doRectification = doRectification
 
-        ur,uc = self.reducedBasis.createVecs()
+        self.l2ScalarProductMatrix = None
+        self.h1ScalarProductMatrix = None
+        self.N = 0
 
-        self.l2ScalarProductMatrix.mult(solution.to_petsc().vec(),ur)
-        self.reducedBasis.mult(ur,uc)
-        self.compressedSol = uc 
-        return self.compressedSol
+        # super().initFeelpp()
+        super().initCoarseToolbox()
 
-    def getInterpSol(self):
-        """Get the interpolate solution from coarse mesh to fine one 
-        """
-        self.interpSol = self.solveOnline()
-        return self.interpSol 
+        if feelpp.Environment.isMasterRank():
+            print(f"[NIRB] Initialization done")
+
 
     def computeErrors(self, mu=None, exporter=None):
         """Compute errors between nirb solution and FE solution computed in fine mesh
@@ -501,6 +599,33 @@ class NIRB():
         error.append(diffSol.norm(PETSc.NormType.NORM_INFINITY))
 
         return error 
+
+    def getCompressedSol(self,solution=None):
+        """
+        get the projection of given solution from fine mesh into the reduced space 
+
+        Parameters
+        ----------
+        solution (feelpp._discr.Element) : the solution to be projected 
+
+        return : 
+        uc (petsc.Vec) : the compressed solution, of size (self.N)
+        """
+        if solution is None:
+            solution = self.interpSol 
+
+        ur,uc = self.reducedBasis.createVecs()
+
+        self.l2ScalarProductMatrix.mult(solution.to_petsc().vec(),ur)
+        self.reducedBasis.mult(ur,uc)
+        self.compressedSol = uc 
+        return self.compressedSol
+
+    def getInterpSol(self):
+        """Get the interpolate solution from coarse mesh to fine one 
+        """
+        self.interpSol = self.solveOnline()
+        return self.interpSol 
 
     def getOnlineSol(self,exporter=None):
         """Get the Online nirb approximate solution 
@@ -548,6 +673,8 @@ class NIRB():
         """
         if mu is None :
             mu = self.onlineParam 
+        if self.tbCoarse is None:
+            super().initCoarseToolbox()
 
         coarseSol = getSolution(self.tbCoarse, mu, type_tb=self.toolboxOption)
         interpolationOperator = createInterpolator(self.tbCoarse, self.tbFine, type_tb=self.toolboxOption)

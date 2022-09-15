@@ -273,3 +273,16 @@ def TruncatedEigenV(matrix, epsilon = None, nbModes = None):
             nbModes = index[0][0]
     
     return eigenValues[0:nbModes], eigenVectors[0:nbModes]
+
+
+############################################################################################################
+#                                                                                                          #
+# IO handling functions                                                                                    #
+#                                                                                                          #
+############################################################################################################
+def WriteVecAppend(filename, array):
+    """ Write an array or list in filename with append mode 
+            the vector value will be writen horizontally 
+    """
+    with open(filename, 'a+') as file:
+        file.write(' '.join(str(i) for i in list(array))+"\n")
