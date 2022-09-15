@@ -239,9 +239,9 @@ runCrbOnline( std::vector<std::shared_ptr<Feel::CRBPluginAPI>> plugin )
         for ( std::string const& paramParsed : inputParameterParsed )
             inputParameter.push_back( std::stod(paramParsed) );
     }
-    else if( Environment::vm().count( "load" ) )
+    else if( Environment::vm().count( "parameter.filename" ) )
     {
-        std::string fname = Environment::vm()["load"].as<std::string>();
+        std::string fname = Environment::vm()["parameter.filename"].as<std::string>();
         auto r = loadXYFromCSV( fname, muspace->parameterNames() );
         auto mu = muspace->element();
         for(auto const& p : r)
@@ -421,7 +421,7 @@ int main(int argc, char**argv )
         //( "plugin.db", po::value<std::string>()->default_value( "${repository}/crbdb" ), "root directory of the CRB database " )
         //( "parameter", po::value<std::vector<double> >()->multitoken(), "database filename" )
         ( "parameter", po::value<std::vector<std::string> >()->multitoken(), "database filename" )
-        ( "load", po::value<std::string>(), "parameters from csv file" )
+        ( "parameter.filename", po::value<std::string>(), "parameters from csv file" )
         ( "sampling.size", po::value<int>()->default_value( 10 ), "size of sampling" )
         ( "sampling.type", po::value<std::string>()->default_value( "random" ), "type of sampling" )
         ( "rb-dim", po::value<int>()->default_value( -1 ), "reduced basis dimension used (-1 use the max dim)" )
