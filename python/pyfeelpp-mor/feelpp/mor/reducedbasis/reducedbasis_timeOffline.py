@@ -330,14 +330,14 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
             return C, uk
 
 
-    def computePODMode(self, mu, g, R=1, delta=None, proj=True):
+    def computePODMode(self, mu, g, R=1, ric_threshold=None, proj=True):
         """Compute the POD modes for a given parameter
 
         Args:
             mu (parameterSpaceElement): parameter used
             g (function): right-hand side time-dependent function
             R (int, optional): number of POD modes to compute. Defaults to 1.
-            delta (float, optional): representativiness of the Nm first POD modes. If None, the R greatest POD modes are computed
+            ric_threshold (float, optional): representativiness of the Nm first POD modes. If None, the R greatest POD modes are computed
 
         Returns:
             list: list of POD modes
@@ -348,7 +348,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
         res = []
 
         # Compute basis using R first POD modes
-        if delta is None:
+        if ric_threshold is None:
             for r in range(R):
                 psi_max = vector[ind[r]]
                 POD = self.Fq[0].duplicate()
@@ -367,7 +367,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
 
             Nm = 0
             sum_delta = 0
-            while sum_delta < delta * sum_eigen:
+            while sum_delta < ric_threshold * sum_eigen:
                 psi_max = vector[ind[Nm]]
                 POD = self.Fq[0].duplicate()
                 POD.set(0)
@@ -413,7 +413,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
                 Delta_max = Delta_tmp
         return Delta_max, i_max, mu_max
 
-    def generateBasisPODGreedy(self, mu0, mu_train, g, eps_tol=1e-6, R=1, delta=None, doNotUseGreedy=False, 
+    def generateBasisPODGreedy(self, mu0, mu_train, g, eps_tol=1e-6, R=1, ric_threshold=None, doNotUseGreedy=False, 
             check_error=False, fspace=None):
         """Run POD(t)-Greedy(µ) algorithm
 
@@ -423,7 +423,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
             g (function): right-hand side time-dependent function
             eps_tol (float): stopping criterion.Default to 1e-6
             R (int, optional): number of POD modes to compute.
-            delta (float, optional): representativiness of the Nm first POD modes
+            ric_threshold (float, optional): representativiness of the Nm first POD modes
             doNotUseGreedy (bool, optional): if True, the greedy step is not used. Defaults to False.
             check_error (bool, optional): if True, the error is computed at each iteration. Defaults to False.
             space (function, optional): function to compute the space error, advised if check_error=True Defaults to None.
@@ -449,13 +449,13 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
 
             # POD(t) step
             if self.N == 0:
-                POD = self.computePODMode(mu_star, g, R=R, delta=delta, proj=False)
+                POD = self.computePODMode(mu_star, g, R=R, ric_threshold=ric_threshold, proj=False)
                 for ksi in POD:
                     self.Z.append(ksi)
                     self.N += 1
                 self.computeOfflineError()
             else:
-                POD = self.computePODMode(mu_star, g, R=R, delta=delta, proj=True)
+                POD = self.computePODMode(mu_star, g, R=R, ric_threshold=ric_threshold, proj=True)
                 for ksi in POD:
                     self.Z.append(ksi)
                     self.expandOffline()
