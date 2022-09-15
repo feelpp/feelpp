@@ -138,7 +138,9 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
 
         for r in range(self.Qm):
             for q in range(self.Qa):
-                self.ML[r, -1, q, -1] = self.scalarX(self.Lnq[self.N,q], self.Mnr[self.N,r])
+                for n in range(self.N+1):
+                    self.ML[r, n, q, -1] = self.scalarX(self.Lnq[n,q], self.Mnr[self.N,r])
+                    self.ML[r, -1, q, n] = self.scalarX(self.Lnq[self.N,q], self.Mnr[n,r])
             for r_ in range(self.Qm):
                 for n in range(self.N+1):
                     self.MM[r,n,r_,-1] = self.scalarX(self.Mnr[n,r], self.Mnr[self.N,r_])
@@ -310,14 +312,9 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
             self.ksp.solve(rhs, sol)
 
             if proj:
-                v = sol - ZZTX * sol
-                # eK.setValuesBlocked(range(self.NN), k, sol - ZZTX * sol)
-                for i in range(self.NN):
-                    eK.setValue(i, k, v[i])
+                eK.setValuesBlocked(range(self.NN), k, sol - ZZTX * sol)
             else:
-                # eK.setValuesBlocked(range(self.NN), k, sol)
-                for i in range(self.NN):
-                    eK.setValue(i, k, sol[i])
+                eK.setValuesBlocked(range(self.NN), k, sol)
 
             u = sol.copy()
             uk.append(sol.copy())
@@ -401,7 +398,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
         i_max = 0
         Delta_max = -np.float('inf')
         self.Z_to_matrix()
-        for i,mu in enumerate(tqdm(xi_train,desc=f"[reducedBasis] POD-greedy, greedy step", ascii=False, ncols=120)):
+        for i,mu in enumerate(tqdm(xi_train,desc=f"[reducedbasis] POD-greedy, greedy step", ascii=False, ncols=120)):
 
             beta = betas[mu]
 
@@ -616,6 +613,12 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
     """
 
     def checkDecomposition(self, mu, tol=1e-10):
+        """Check the affine decomposition of the model
+
+        Args:
+            mu (parameterSpaceElement): parameter used
+            tol (float, optional): tolerance. Defaults to 1e-10.
+        """
         print("[reducedbasis] Checking decomposition with parameter µ={}".format(mu))
         beta = self.model.computeBetaQm(mu)
 
@@ -678,7 +681,6 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
             tol (float, optional): Tolerance. Defaults to 1e-10.
             fspace = {"Xh", "mesh"} (dict, optional): Funcional space assotiated to the toolbox. Defaults to None.
         """
-    def checkError(self, mu, g, tol=1e-10):
         print("[reducedbasis] Checking error µ={}".format(mu))
         beta = self.model.computeBetaQm(mu)
         betaA = beta[0][0]

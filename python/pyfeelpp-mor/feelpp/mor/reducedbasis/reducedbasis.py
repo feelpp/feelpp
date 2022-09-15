@@ -66,7 +66,7 @@ class reducedbasis():
 
         self.SS = np.zeros((self.Qf, self.Qf))            # SS[p,p_] = (Sp,sp_)X
         self.SL     : np.ndarray    # shape (Qf, Qa, N)     SL[p,n,q] = (Sp,Lnq)X
-        self.LL     : np.ndarray    # shape (Qa, N, Qa, N)  LL[n,p,n_,p_] = (Lnq,Ln_p_)X
+        self.LL     : np.ndarray    # shape (Qa, N, Qa, N)  LL[n,q,n_,q_] = (Lnq,Ln_q_)X
 
 
         ## For greedy memory

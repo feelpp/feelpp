@@ -33,10 +33,10 @@ class reducedbasisTime(reducedbasis):
         self.MNr : np.ndarray # tensor of chape (Qm, N, N)
 
 
-        self.FM : np.ndarray    # shape (Qf, Qm, N)    FM[p,r,n]   = (Fp, Mrn)X
-        self.FL : np.ndarray    # shape (Qf, Qa, N)    FL[p,q,n]   = (Lnq, Fp)X
-        self.ML : np.ndarray    # shape (Qm, N, Qa, N)    ML[r,n,q,n_]  = (Lnq, Mrn_)X
-        self.MM : np.ndarray    # shape (Qm, N, Qm, N)    MM[q,n,q_,n_] = (Mrn, Mr_n_)X
+        self.FM : np.ndarray    # shape (Qf, Qm, N)     FM[p,r,n]   = (Sp, Mrn)X
+        self.FL : np.ndarray    # shape (Qf, Qa, N)     FL[p,q,n]   = (Lnq, Sp)X
+        self.ML : np.ndarray    # shape (Qm, N, Qa, N)  ML[r,n,q,n_]  = (Lnq, Mrn_)X
+        self.MM : np.ndarray    # shape (Qm, N, Qm, N)  MM[r,n,r_,n_] = (Mrn, Mr_n_)X
 
         # quantities depending on mu, but stored to avoid re-computation
         self.err = np.zeros(K)          # online error
@@ -154,10 +154,10 @@ class reducedbasisTime(reducedbasis):
                 if these values have already been calculated. Defaults to None.\
                 If None is given, the quantities are calculated in the function
 
-
         Returns:
             float: ||hat{e}^k||^2
         """
+        gk = float(g(k * self.dt))
         if precalc is None:
             beta_ = self.model.computeBetaQm(mu)
             betaA = beta_[0][0]
@@ -171,7 +171,7 @@ class reducedbasisTime(reducedbasis):
             uNm1 = ukm1
 
             mat = MNmu + self.dt * ANmu
-            rhs = g(k * self.dt) * self.dt * FNmu + MNmu @ uNm1
+            rhs = gk* self.dt * FNmu + MNmu @ uNm1
 
             uN = np.linalg.solve(mat, rhs)
         else:
@@ -183,15 +183,15 @@ class reducedbasisTime(reducedbasis):
 
         diff = ((uN.flatten() - uNm1.flatten()) / self.dt).T
 
-        gk = g(k * self.dt)
-
-        s1 = gk**2 * betaF @ self.SS @ betaF
+        s1 = gk**2 * float(betaF @ self.SS @ betaF)
         s2 = gk * np.einsum('p,r,n,prn', betaF, betaM, diff, self.FM)
         s3 = gk * np.einsum('p,q,n,pqn', betaF, betaA, uN, self.FL)
         s4 = np.einsum('r,p,n,m,rnpm', betaM, betaA, diff, uN, self.ML)
         s5 = np.einsum('r,s,n,m,rnsm', betaM, betaM, diff, diff, self.MM)
         s6 = np.einsum('q,r,n,m,qnrm', betaA, betaA, uN, uN, self.LL)
 
+        # Uncomment this line to display the decomposition of the error (for debugging)
+        # print("Onl.", s1, s2, s3, s4, s5, s6)
 
         return s1 + 2 * (s2 + s3 + s4) + s5 + s6
 
