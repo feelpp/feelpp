@@ -413,7 +413,8 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
                 Delta_max = Delta_tmp
         return Delta_max, i_max, mu_max
 
-    def generateBasisPODGreedy(self, mu0, mu_train, g, eps_tol=1e-6, R=1, delta=None, doNotUseGreedy=False):
+    def generateBasisPODGreedy(self, mu0, mu_train, g, eps_tol=1e-6, R=1, delta=None, doNotUseGreedy=False, 
+            check_error=False, fspace=None):
         """Run POD(t)-Greedy(µ) algorithm
 
         Args:
@@ -423,6 +424,9 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
             eps_tol (float): stopping criterion.Default to 1e-6
             R (int, optional): number of POD modes to compute.
             delta (float, optional): representativiness of the Nm first POD modes
+            doNotUseGreedy (bool, optional): if True, the greedy step is not used. Defaults to False.
+            check_error (bool, optional): if True, the error is computed at each iteration. Defaults to False.
+            space (function, optional): function to compute the space error, advised if check_error=True Defaults to None.
 
         Returns:
             list of parameters selected
@@ -434,7 +438,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
         Delta_max = 1 + eps_tol
 
         betas = {}
-        for i,mu in enumerate(tqdm(mu_train, desc=f"[reducedBasis] Computing betas", ascii=False, ncols=120)):
+        for i,mu in enumerate(tqdm(mu_train, desc=f"[reducedbasis] Computing betas", ascii=False, ncols=120)):
             betas[mu] = self.model.computeBetaQm(mu)
 
         self.computeOfflineErrorRhs()
@@ -473,6 +477,14 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
 
             Delta = Delta_max
             mu_train.pop(i_star)
+
+            if check_error:
+                self.checkError(SN[-1], g, tol=1e-8, fspace=fspace)
+                s = self.model.parameterSpace().sampling()
+                s.sampling(50, "log-random")
+                for mu in s.getVector():
+                    self.checkError(mu, g, tol=1e-8, fspace=fspace)
+
             print(f"[reducedbasis] POD-greedy algorithm, N={self.N}, Δ={Delta} (tol={eps_tol})")
 
         return SN
@@ -717,22 +729,28 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
         ONES.set(1)
 
         pc = self.ksp.getPC()
-        sol = self.Fq[0].duplicate()
+        solF = self.Fq[0].duplicate()
         pc.setType(self.PC_TYPE)
         self.ksp.setOperators(self.scal)
-        self.ksp.solve(Fmu, sol)
+        self.ksp.solve(Fmu, solF)
 
+        if fspace is not None:
+            u = fspace["Xh"].element()
+            u.on(range=feelpp.elements(fspace["mesh"]), expr=feelpp.expr("x:x"))
+            v = u.to_petsc().vec()
+
+        # Check (1) on F : sol = sum_p betaF[p] * Sp[p]
         sol_dec = self.Fq[0].duplicate()
         sol_dec.set(0)
         for p in range(self.Qf):
             sol_dec += betaF[p] * self.Sp[p]
-        check = ONES.dot(sol)
+        check = ONES.dot(solF)
         check_dec = ONES.dot(sol_dec)
         try: assert abs(check - check_dec) < tol, f"Check F1 failed : {abs(check - check_dec)}"
         except AssertionError as e:
             nfailed += 1
             print(e)
-        check = sol.norm()
+        check = solF.norm()
         check_dec = sol_dec.norm()
         try: assert abs(check - check_dec) < tol, f"Check F2 failed : {abs(check - check_dec)}"
         except AssertionError as e:
@@ -740,17 +758,19 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
             print(e)
 
         for k in range(self.K):
-            gk = g(k * self.dt)
+            sol = self.Fq[0].duplicate()
+            gk = float(g(k * self.dt))
 
             # computation of the solution
             uN_k = sl.lu_solve(matLu, gk * self.dt * FNmu + MNmu @ uN_km1)
 
             # computation of Mk
+            solM = self.Fq[0].duplicate()
             diff_N = (uN_k - uN_km1) / self.dt
             diff_p.setValues(range(self.N), diff_N)
-            (Mmu * self.Z_matrix).mult( diff_p, rhs )
-            self.ksp.solve(-rhs, sol)
-            Mk = sol.copy()
+            MZ.mult( diff_p, rhs )
+            self.ksp.solve(-rhs, solM)
+            Mk = solM.copy()
 
             # computation of Mk_dec
             Mk_dec = self.Fq[0].duplicate()
@@ -759,6 +779,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
                 for n in range(self.N):
                     Mk_dec += betaM[r] * self.Mnr[n,r] * diff_N[n]
             
+            # (2)
             check = ONES.dot(Mk)
             check_dec = ONES.dot(Mk_dec)
             try: assert abs(check - check_dec) < tol, f"Check on M ({k}) failed : {abs(check - check_dec)}"
@@ -767,10 +788,11 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
                 print(e)
 
             # computation of Lk
+            solA = self.Fq[0].duplicate()
             u_p.setValues(range(self.N), uN_k)
-            (Amu * self.Z_matrix).mult( u_p, rhs )
-            self.ksp.solve(-rhs, sol)
-            Lk = sol.copy()
+            AZ.mult( u_p, rhs )
+            self.ksp.solve(-rhs, solA)
+            Lk = solA.copy()
 
             # computation of Lk_dec
             Lk_dec = self.Fq[0].duplicate()
@@ -779,6 +801,7 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
                 for n in range(self.N):
                     Lk_dec += betaA[q] * self.Lnq[n,q] * uN_k[n]
 
+            # (3)
             check = ONES.dot(Lk)
             check_dec = ONES.dot(Lk_dec)
             try: assert abs(check - check_dec) < tol, f"Check on A1 ({k}) failed : {abs(check - check_dec)}"
@@ -786,6 +809,139 @@ class reducedbasisTimeOffline(reducedbasisOffline, reducedbasisTime):
                 nfailed += 1
                 print(e)
 
-        assert checksum / ncheck < tol, "Check failed"
+            if fspace is not None:
+                check = v.dot(Lk)
+                check_dec = v.dot(Lk_dec)
+                try: assert abs(check - check_dec) < tol, f"Check on A2 ({k}) failed : {abs(check - check_dec)}"
+                except AssertionError as e:
+                    nfailed += 1
+                    print(e)
 
+            # (4) computation of Ek
+            Ek = self.Fq[0].duplicate()
+            rk = self.Fq[0].duplicate()
+            rk.set(0)
+            t1 = gk * Fmu
+            t2 = self.Fq[0].duplicate()
+            MZ.mult(diff_p, t2)
+            t3 = self.Fq[0].duplicate()
+            AZ.mult(u_p, t3)
+            rk = t1 - t2 - t3
+            self.ksp.solve(rk, Ek)
+
+            Ek_dec = self.Fq[0].duplicate()
+            Ek_dec.set(0)
+            for p in range(self.Qf): 
+                Ek_dec += gk * betaF[p] * self.Sp[p]
+            for n in range(self.N):
+                for r in range(self.Qm):
+                    Ek_dec += betaM[r] * self.Mnr[n,r] * diff_N[n]
+                for q in range(self.Qa):
+                    Ek_dec += betaA[q] * self.Lnq[n,q] * uN_k[n]
+            
+            check = ONES.dot(Ek)
+            check_dec = ONES.dot(Ek_dec)
+            try: assert abs(check - check_dec) < tol, f"Check SUM1 ({k}) failed : {abs(check - check_dec)}"
+            except AssertionError as e:
+                nfailed += 1
+                print(e)
+
+            if fspace is not None:
+                check = v.dot(Ek)
+                check_dec = v.dot(Ek_dec)
+                try: assert abs(check - check_dec) < tol, f"Check SUM2 ({k}) failed : {abs(check - check_dec)}"
+                except AssertionError as e:
+                    nfailed += 1
+                    print(e)
+
+            # (5)
+
+            rk_dec = self.Fq[0].duplicate()
+            rk_dec.set(0)
+            for p in range(self.Qf):
+                rk_dec += gk * betaF[p] * self.Fq[p]
+            for n in range(self.N):
+                for r in range(self.Qm):
+                    rk_dec -= self.Mr[r] * self.Z[n] * diff_N[n] * betaM[r]
+                for q in range(self.Qa):
+                    rk_dec -= self.Aq[q] * self.Z[n] * uN_k[n] * betaA[q] 
+            check = rk.norm()
+            check_dec = rk_dec.norm()
+            try: assert abs(check - check_dec) < tol, f"Check E1 ({k}) failed : {abs(check - check_dec)}"
+            except AssertionError as e:
+                nfailed += 1
+                print(e)
+            check = ONES.dot(rk)
+            check_dec = ONES.dot(rk_dec)
+            try: assert abs(check - check_dec) < tol, f"Check E2 ({k}) failed : {abs(check - check_dec)}"
+            except AssertionError as e:
+                nfailed += 1
+                print(e)
+
+            # (6)
+            ###########
+            #   Onl. (if line decomented in reducedbasis_time.py::computeOnlineError_k) :
+            #       Terms of the error decomposition computed using einsum
+            #   Dec. Terms of the error, with scalar products computed here
+            #   Dec2 Terms of the erros, with scalar products computed offline
+            #   Dir. Terms of the error, using direct computation
+            #
+            normEk = self.scalarX(Ek, Ek)
+            precalc = {"betaA": betaA, "betaM": betaM, "betaF": betaF, "uNm1": uN_km1, "uN": uN_k}
+            normEk_onl = self.computeOnlineError_k(mu, None, k, g, precalc)
+            s1 = 0; s2 = 0; s3 = 0; s4 = 0; s5 = 0; s6 = 0
+            s1_bis = 0; s2_bis = 0; s3_bis = 0; s4_bis = 0; s5_bis = 0; s6_bis = 0
+            for p in range(self.Qf):
+                for p_ in range(self.Qf):
+                    s1     += gk**2 * betaF[p] * betaF[p_] * self.scalarX(self.Sp[p], self.Sp[p_])
+                    s1_bis += gk**2 * betaF[p] * betaF[p_] * self.SS[p, p_]
+            for p in range(self.Qf):
+                for r in range(self.Qm):
+                    for n in range(self.N):
+                        s2     += gk * betaF[p] * betaM[r] * diff_N[n] * self.scalarX(self.Sp[p], self.Mnr[n,r])
+                        s2_bis += gk * betaF[p] * betaM[r] * diff_N[n] * self.FM[p, r, n]
+            for p in range(self.Qf):
+                for q in range(self.Qa):
+                    for n in range(self.N):
+                        s3     += gk * betaF[p] * betaA[q] * uN_k[n] * self.scalarX(self.Sp[p], self.Lnq[n,q])
+                        s3_bis += gk * betaF[p] * betaA[q] * uN_k[n] * self.FL[p, q, n]
+            for r in range(self.Qm):
+                for q in range(self.Qa):
+                    for n in range(self.N):
+                        for n_ in range(self.N):
+                            s4     += betaM[r] * betaA[q] * diff_N[n] * uN_k[n_] * self.scalarX(self.Mnr[n,r], self.Lnq[n_,q])
+                            s4_bis += betaM[r] * betaA[q] * diff_N[n] * uN_k[n_] * self.ML[r, n, q, n_]
+            for r in range(self.Qm):
+                for r_ in range(self.Qm):
+                    for n in range(self.N):
+                        for n_ in range(self.N):
+                            s5     += betaM[r] * betaM[r_] * diff_N[n] * diff_N[n_] * self.scalarX(self.Mnr[n,r], self.Mnr[n_,r_])
+                            s5_bis += betaM[r] * betaM[r_] * diff_N[n] * diff_N[n_] * self.MM[r, n, r_, n_]
+            for q in range(self.Qa):
+                for q_ in range(self.Qa):
+                    for n in range(self.N):
+                        for n_ in range(self.N):
+                            s6     += betaA[q] * betaA[q_] * uN_k[n] * uN_k[n_] * self.scalarX(self.Lnq[n,q], self.Lnq[n_,q_])
+                            s6_bis += betaA[q] * betaA[q_] * uN_k[n] * uN_k[n_] * self.LL[q, n, q_, n_]
+
+            s1_direct = gk**2 * self.scalarX(solF, solF)
+            s2_direct = gk * self.scalarX(solF, solM)
+            s3_direct = gk * self.scalarX(solF, solA)
+            s4_direct = self.scalarX(solM, solA)
+            s5_direct = self.scalarX(solM, solM)
+            s6_direct = self.scalarX(solA, solA)
+
+            norEk_dir   = s1_direct + 2*(s2_direct + s3_direct + s4_direct) + s5_direct + s6_direct
+            normEk_dec  = s1 + 2*s2 + 2*s3 + 2* s4 + s5 + s6
+            normEk_dec2 = s1_bis + 2*s2_bis + 2*s3_bis + 2*s4 + s5_bis + s6_bis
+
+
+            try: assert abs(normEk - normEk_onl) < tol, f"Check ||E|| ({k}) failed : {abs(normEk - normEk_onl)}"
+            except AssertionError as e:
+                print("Dec.", s1, s2, s3, s4, s5, s6)
+                print("Dec2", s1_bis, s2_bis, s3_bis, s4_bis, s5_bis, s6_bis)
+                print("Dir.", s1_direct, s2_direct, s3_direct, s4_direct, s5_direct, s6_direct)
+                print(normEk, normEk_onl, normEk_dec, normEk_dec2, norEk_dir)
+                nfailed += 1
+                print(e)
         assert nfailed == 0, f"{nfailed} tests failed"
