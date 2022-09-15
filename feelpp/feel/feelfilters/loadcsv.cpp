@@ -29,55 +29,73 @@
 #include <vector>
 #include <string>
 #include <algorithm>    
-#include <iterator>     
+#include <iterator>
+#include <fmt/core.h>
+#include <fmt/ranges.h>     
 #include <boost/algorithm/string.hpp>
 #include <boost/tokenizer.hpp>
 
 namespace Feel {
 
-std::map<double,double>
+std::vector<Eigen::VectorXd>
 loadXYFromCSV( std::string const& filename,
-               std::string const& abscissa,
-               std::string const& ordinate )
+               std::vector<std::string> const& abscissas )
 {
     std::ifstream in(filename.c_str());
-    if (!in.is_open()) return std::map<double,double>();
+    if (!in.is_open()) return std::vector<Eigen::VectorXd>();
 
-    typedef boost::tokenizer< boost::escaped_list_separator<char> > Tokenizer;
+    using Tokenizer = boost::tokenizer< boost::char_separator<char> >;
 
     std::vector< std::string > vec;
     std::string line;
-    std::map<double,double> data;
-    int i_abs = 0;
-    int i_ord = 1;
+    std::vector<Eigen::VectorXd> data;
+    std::vector<int> i_abscissas;
+    i_abscissas.reserve( abscissas.size() );
+    std::vector<double> values( abscissas.size() );
+    values.reserve( abscissas.size() );
+    LOG(INFO) << fmt::format( "[loadcsv] load {} from {} ", abscissas, filename ) << std::endl;
+    boost::char_separator<char> els( " ;," );
     int count = 0;
     while (std::getline(in,line))
     {
         count ++;
         
         vec.clear();
+        values.clear();
 
-        Tokenizer tok(line);
+        Tokenizer tok(line, els);
         vec.assign(tok.begin(),tok.end());
-
+        VLOG(3) << fmt::format( "[loadcsv] count : {} vec {} size {}", count, fmt::join( vec, " " ), vec.size() ) << std::endl;
         if (vec.size() < 2) continue;
 
         
-        boost::trim(vec[0]);
-        boost::trim(vec[1]);
+        std::for_each(vec.begin(), vec.end(), [](std::string & s) { boost::trim(s); });
+
         if ( count == 1 )
         {
-            auto it_abs = std::find( vec.begin(), vec.end(), abscissa );
-            auto it_ord = std::find( vec.begin(), vec.end(), ordinate );
-            if ( it_abs == vec.end() || it_ord == vec.end() )
-                throw std::logic_error( "Invalid data lookiup in CSV file " + filename + " (" + abscissa + "," + ordinate + ")" );
-            i_abs = std::distance( vec.begin(), it_abs );
-            i_ord = std::distance( vec.begin(), it_ord );
+            for( auto abscissa : abscissas )
+            {
+                VLOG(3) << fmt::format( "[loadcsv] Check abscissa _{}_ ", abscissa ) << std::endl;
+                auto it_abs = std::find( vec.begin(), vec.end(), abscissa );
+                if ( it_abs == vec.end()  )
+                    throw std::logic_error( "Invalid abscissa data lookup in CSV file " + filename + " (" + abscissa + ")" );
+                int i_abs = std::distance( vec.begin(), it_abs );
+                VLOG(3) << fmt::format( "[loadcsv] Check abscissa _{}_: {} ", abscissa, i_abs ) << std::endl;
+                i_abscissas.push_back( i_abs );
+                
+            }
+            LOG(INFO) << fmt::format( "[loadcsv] indices {}",  i_abscissas ) << std::endl;
             continue;
         }
-        data.insert( std::make_pair( std::stod(vec[i_abs]), std::stod(vec[i_ord]) ) );
+        VLOG( 3 ) << fmt::format( "[loadcsv] count : {} i_abscissas {} ", count, fmt::join( i_abscissas, " " ) ) << std::endl;
+        for( auto index : i_abscissas )
+        {
+            values.push_back( std::stod( vec[index] ) );
+        }
+        data.push_back( Eigen::Map<Eigen::VectorXd>( values.data(), values.size() ) );
     }
-    LOG(INFO) << "done reading CSV file " << filename;
+    LOG(INFO) << fmt::format( "[loadcsv] csv data loaded: {}",  data ) << std::endl;
+    LOG(INFO) << "[loadcsv] done reading CSV file " << filename;
     return data;
 }
 
