@@ -1,8 +1,6 @@
-# from timeit import timeit
-from timeit import default_timer as timer
-import time 
-from nirb import *
-from utils import WriteVecAppend 
+from timeit import timeit
+from feelpp.mor.nirb.nirb import *
+from feelpp.mor.nirb.utils import WriteVecAppend
 
 if __name__ == "__main__":
 
@@ -18,18 +16,17 @@ if __name__ == "__main__":
     cfg_path = f"{modelsFolder}{modelfile[toolboxesOptions]}.cfg"
     geo_path = f"{modelsFolder}{modelfile[toolboxesOptions]}.geo"
     model_path = f"{modelsFolder}{modelfile[toolboxesOptions]}.json"
-    
-    doRectification=True  
 
-    start=time.perf_counter()
+    start=timeit() 
+    doRectification=False
 
     nirb_on = nirbOnline(dim, H, h, toolboxesOptions, cfg_path, model_path, geo_path, doRectification=doRectification)
 
     nirb_on.loadData()
     nirb_on.getInterpSol()
     nirb_on.getCompressedSol()
-    nirb_on.getOnlineSol() 
-    online1 = nirb_on.onlineSol.to_petsc().vec()[:] # en commentant cette ligne ça produite des nan à la solution onlineSol après computeErrors 
+    nirb_on.getOnlineSol()
+    online1 = nirb_on.onlineSol.to_petsc().vec()[:] # en commentant cette ligne ça produite des nan à la solution onlineSol après computeErrors
 
     error = nirb_on.computeErrors()
 
@@ -43,7 +40,8 @@ if __name__ == "__main__":
     print(f"Inf norm = {error[2]}")
 
 
-    finish = time.perf_counter()
+    finish = timeit() 
+
     perf = []
     perf.append(nirb_on.N)
     perf.append(finish-start)
