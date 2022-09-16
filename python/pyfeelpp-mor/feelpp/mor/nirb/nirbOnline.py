@@ -1,4 +1,6 @@
-from timeit import timeit
+# from timeit import timeit
+from timeit import default_timer as timer
+import time 
 from nirb import *
 from utils import WriteVecAppend 
 
@@ -17,9 +19,10 @@ if __name__ == "__main__":
     geo_path = f"{modelsFolder}{modelfile[toolboxesOptions]}.geo"
     model_path = f"{modelsFolder}{modelfile[toolboxesOptions]}.json"
     
-    doRectification=False 
+    doRectification=True  
 
-    start=timeit()
+    start=time.perf_counter()
+
     nirb_on = nirbOnline(dim, H, h, toolboxesOptions, cfg_path, model_path, geo_path, doRectification=doRectification)
 
     nirb_on.loadData()
@@ -40,18 +43,18 @@ if __name__ == "__main__":
     print(f"Inf norm = {error[2]}")
 
 
-    finish = timeit()
+    finish = time.perf_counter()
     perf = []
     perf.append(nirb_on.N)
     perf.append(finish-start)
 
-    file='online_time_exec.txt'
+    file='nirbOnline_time_exec.txt'
     WriteVecAppend(file,perf)
 
     if doRectification:
-        file='online_error_rectif.txt'
+        file='nirb_error_rectif.txt'
     else :
-        file='online_error.txt'
+        file='nirb_error.txt'
     WriteVecAppend(file,error)
 
     print(f"[NIRB] Online Elapsed time =", finish-start)

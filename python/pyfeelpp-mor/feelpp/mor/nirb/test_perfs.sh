@@ -6,7 +6,7 @@ removeOldDatas="rm -r ${dataFolder}"
 
 # ${removeOldDatas}
 
-Nsnap="2 4 8 16 32 64 128"
+Nsnap="1 2 4 6 10 12 14 16 20 25 30 35 40 45 50 60 70"
 
 Rectification=0
 biorthonormal=0
