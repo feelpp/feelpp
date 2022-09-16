@@ -1,6 +1,6 @@
 from timeit import timeit
 from feelpp.mor.nirb.nirb import *
-from feelpp.mor.nirb.utils import WriteVecAppend
+from feelpp.mor.nirb.utils import WriteVecAppend, init_feelpp_environment
 
 if __name__ == "__main__":
 
@@ -10,17 +10,18 @@ if __name__ == "__main__":
     dim = 2
 
     PWD = os.getcwd()
-    toolboxesOptions='heat'
+    toolboxType='heat'
     modelfile={'heat':'square/square', 'fluid':'lid-driven-cavity/cfd2d'}
     modelsFolder = f"{PWD}/model/"
-    cfg_path = f"{modelsFolder}{modelfile[toolboxesOptions]}.cfg"
-    geo_path = f"{modelsFolder}{modelfile[toolboxesOptions]}.geo"
-    model_path = f"{modelsFolder}{modelfile[toolboxesOptions]}.json"
+    cfg_path = f"{modelsFolder}{modelfile[toolboxType]}.cfg"
+    geo_path = f"{modelsFolder}{modelfile[toolboxType]}.geo"
+    model_path = f"{modelsFolder}{modelfile[toolboxType]}.json"
 
+    e = init_feelpp_environment(toolboxType, cfg_path)
     start=timeit() 
     doRectification=False
 
-    nirb_on = nirbOnline(dim, H, h, toolboxesOptions, cfg_path, model_path, geo_path, doRectification=doRectification)
+    nirb_on = nirbOnline(dim, H, h, toolboxType, cfg_path, model_path, geo_path, doRectification=doRectification)
 
     nirb_on.loadData()
     nirb_on.getInterpSol()

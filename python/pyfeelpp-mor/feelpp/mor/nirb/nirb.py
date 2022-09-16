@@ -5,15 +5,16 @@
 
 
 import feelpp
-import feelpp.toolboxes.core as core
 from .utils import *
-import feelpp.mor as mor
 import feelpp.operators as FppOp
 # from NIRBinitCase import *
 import numpy as np
+import feelpp.toolboxes.heat as heat
+import feelpp.toolboxes.fluid as fluid
+import feelpp.interpolation as fi
 
 
-import sys, os
+import os
 
 from mpi4py import MPI
 comm = MPI.COMM_WORLD
@@ -38,8 +39,6 @@ class ToolboxModel():
             doRectification (bool, optional): set rectification. Defaults to True.
         """
 
-        self.e = None      # Feel++ environment
-
         assert dimension in [2,3]
         self.dimension = dimension
         # assert method in ["POD", "Greedy"]
@@ -60,21 +59,16 @@ class ToolboxModel():
         self.tbFine   = None
         self.onlineSol = None
 
-        self.initFeelpp()
+        self.initModel()
         # if self.doRectification:
             # self.initRectification()
         if feelpp.Environment.isMasterRank():
             print(f"[NIRB] Initialization done")
 
 
-    def initFeelpp(self):
-        """Initialize Feel++ environment
+    def initModel(self):
+        """Initialize the model
         """
-        config = feelpp.globalRepository(f"nirb/{self.toolboxType}")
-        opts = core.toolboxes_options(self.toolboxType).add(mor.makeToolboxMorOptions())
-        self.e = feelpp.Environment(sys.argv, config=config, opts=opts)
-        self.e.setConfigFile(self.cfg_path)
-
         self.model = loadModel(self.model_path)
         self.tbFine = self.setToolbox(self.h)
         self.Dmu = loadParameterSpace(self.model_path)
