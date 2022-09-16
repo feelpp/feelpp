@@ -1,5 +1,5 @@
-from nirb import *
-from utils import WriteVecAppend
+from feelpp.mor.nirb.nirb import *
+from feelpp.mor.nirb.utils import WriteVecAppend
 import timeit
 
 if __name__ == "__main__":
