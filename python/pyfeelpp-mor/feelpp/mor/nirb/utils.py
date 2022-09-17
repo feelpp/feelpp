@@ -29,7 +29,7 @@ def init_feelpp_environment(toolboxType, config_file, argv=['feelpp-mor-nirb']):
         argv (list, optional): list of arguments to give to Feel++ environment. Defaults to ['feelpp-mor-nirb'].
 
     Returns:
-        _type_: Environment
+        feelpp._core.Environment: Environment
     """
     config = feelpp.globalRepository(f"nirb/{toolboxType}")
     opts = core.toolboxes_options(toolboxType).add(mor.makeToolboxMorOptions())
