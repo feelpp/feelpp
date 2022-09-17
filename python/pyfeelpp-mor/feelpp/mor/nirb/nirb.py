@@ -685,7 +685,7 @@ class nirbOnline(ToolboxModel):
 
         return error
 
-    def getCompressedSol(self,solution=None):
+    def getCompressedSol(self, solution=None):
         """
         get the projection of given solution from fine mesh into the reduced space
 
@@ -718,7 +718,7 @@ class nirbOnline(ToolboxModel):
         self.interpSol = self.solveOnline(mu)
         return self.interpSol
 
-    def getOnlineSol(self,exporter=None):
+    def getOnlineSol(self, exporter=None):
         """Get the Online nirb approximate solution
         """
         resPETSc = self.Xh.element().to_petsc()
