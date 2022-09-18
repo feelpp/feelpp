@@ -3,6 +3,7 @@
 ## Thomas Saigre, Ali Elarif
 ## 09/2022
 
+from errno import EINPROGRESS
 import os
 import feelpp
 import feelpp.mor as mor
@@ -154,38 +155,38 @@ def TruncatedEigenV(matrix, epsilon = None, nbModes = None):
     eigenValues = eigenValues[idx]
     eigenVectors = [eigenVectors[i] for i in idx]
 
-    if nbModes == None:
-        if epsilon == None:
-            nbModes  = matrix.size[0]
-        else:
-            nbModes = 0
-            bound = (epsilon ** 2) * eigenValues[0]
-            for e in eigenValues:
-                if e > bound:
-                    nbModes += 1
-            id_max2 = 0
-            bound = (1 - epsilon ** 2) * np.sum(eigenValues)
-            temp = 0
-            for e in eigenValues:
-                temp += e
-                if temp < bound:
-                    id_max2 += 1  # pragma: no cover
+    # if nbModes == None:
+    #     if epsilon == None:
+    #         nbModes  = matrix.size[0]
+    #     else:
+    #         nbModes = 0
+    #         bound = (epsilon ** 2) * eigenValues[0]
+    #         for e in eigenValues:
+    #             if e > bound:
+    #                 nbModes += 1
+    #         id_max2 = 0
+    #         bound = (1 - epsilon ** 2) * np.sum(eigenValues)
+    #         temp = 0
+    #         for e in eigenValues:
+    #             temp += e
+    #             if temp < bound:
+    #                 id_max2 += 1  # pragma: no cover
 
-            nbModes = max(nbModes, id_max2)
+    #         nbModes = max(nbModes, id_max2)
 
-    if nbModes > matrix.size[0]:
-        print("nbModes taken to max possible value of "+str(matrix.shape[0])+" instead of provided value "+str(nbModes))
-        nbModes = matrix.size[0]
+    # if nbModes > matrix.size[0]:
+    #     print("nbModes taken to max possible value of "+str(matrix.shape[0])+" instead of provided value "+str(nbModes))
+    #     nbModes = matrix.size[0]
 
-    index = np.where(eigenValues<0)
-    if len(eigenValues[index])>0:
-        if index[0][0]<nbModes:
-            #print(nbModes, index[0][0])
-            print("removing numerical noise from eigenvalues, nbModes is set to "+str(index[0][0])+" instead of "+str(nbModes))
-            nbModes = index[0][0]
+    # index = np.where(eigenValues<0)
+    # if len(eigenValues[index])>0:
+    #     if index[0][0]<nbModes:
+    #         #print(nbModes, index[0][0])
+    #         print("removing numerical noise from eigenvalues, nbModes is set to "+str(index[0][0])+" instead of "+str(nbModes))
+    #         nbModes = index[0][0]
     
-    return eigenValues[0:nbModes], eigenVectors[0:nbModes]
-
+    return eigenValues, eigenVectors
+    # return eigenValues[0:nbModes], eigenVectors[0:nbModes]
 
 ############################################################################################################
 #                                                                                                          #
