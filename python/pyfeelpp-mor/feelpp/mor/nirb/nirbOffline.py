@@ -2,6 +2,7 @@ import sys
 from feelpp.mor.nirb.nirb import *
 from feelpp.mor.nirb.utils import WriteVecAppend, init_feelpp_environment
 import timeit
+import time 
 
 if __name__ == "__main__":
 
@@ -26,7 +27,7 @@ if __name__ == "__main__":
         nbSnap = int(sys.argv[1])
 
 
-    star=timeit.timeit()
+    star=time.time()
 
     nirb_off = nirbOffline(dim, H, h, toolboxType, cfg_path, model_path, geo_path, doRectification=doRectification)
 
@@ -38,11 +39,15 @@ if __name__ == "__main__":
     # nirb_off.orthonormalizeL2()
     # nirb_off.orthonormalizeH1()
     nirb_off.saveData()
+
+    
     print("Is L2 orthonormalized ?", nirb_off.checkL2Orthonormalized())
     print("Is H1 orthonormalized ? ", nirb_off.checkH1Orthonormalized())
 
+    # finish = time()
+    finish = time.time()
+    
 
-    finish = timeit.timeit()
 
     perf = []
     perf.append(nbSnap)
