@@ -1,7 +1,8 @@
 from distutils.log import error
 from timeit import timeit
+from time import time
 from feelpp.mor.nirb.nirb import *
-from feelpp.mor.nirb.utils import WriteVecAppend
+from feelpp.mor.nirb.utils import WriteVecAppend, init_feelpp_environment
 
 if __name__ == "__main__":
 
@@ -11,18 +12,18 @@ if __name__ == "__main__":
     dim = 2
 
     PWD = os.getcwd()
-    toolboxesOptions='heat'
+    toolboxType='heat'
     modelfile={'heat':'square/square', 'fluid':'lid-driven-cavity/cfd2d'}
     modelsFolder = f"{PWD}/model/"
-    cfg_path = f"{modelsFolder}{modelfile[toolboxesOptions]}.cfg"
-    geo_path = f"{modelsFolder}{modelfile[toolboxesOptions]}.geo"
-    model_path = f"{modelsFolder}{modelfile[toolboxesOptions]}.json"
+    cfg_path = f"{modelsFolder}{modelfile[toolboxType]}.cfg"
+    geo_path = f"{modelsFolder}{modelfile[toolboxType]}.geo"
+    model_path = f"{modelsFolder}{modelfile[toolboxType]}.json"
 
-    start=timeit() 
-    doRectification=True 
+    e = init_feelpp_environment(toolboxType, cfg_path)
+    # start = timeit()
+    doRectification=False
 
-    nirb_on = nirbOnline(dim, H, h, toolboxesOptions, cfg_path, model_path, geo_path, doRectification=doRectification)
-    exporter = feelpp.exporter(mesh=nirb_on.tbFine.mesh(), name="feelpp_nirb")
+    nirb_on = nirbOnline(dim, H, h, toolboxType, cfg_path, model_path, geo_path, doRectification=doRectification)
 
     nirb_on.loadData()
     nirb_on.getInterpSol()
@@ -44,19 +45,69 @@ if __name__ == "__main__":
     print('error =', error)
 
 
-    finish = timeit() 
+    # finish = timeit()
+    Dmu = nirb_on.Dmu
+    Nsample = 50
+    s = Dmu.sampling()
+    s.sampling(Nsample, 'log-random')
+    mus = s.getVector()
 
-    perf = []
-    perf.append(nirb_on.N)
-    perf.append(finish-start)
+    err = np.zeros(Nsample)
+    start = time()
+    for i,mu in enumerate(mus):
+        uH = nirb_on.solveOnline(mu)
+        uh = nirb_on.getSolution(nirb_on.tbFine, mu)
+        err[i] = (uH-uh).l2Norm()
+    finish = time()
 
-    file='nirbOnline_time_exec.txt'
-    WriteVecAppend(file,perf)
+    time_toolbox_start = time()
+    for mu in mus:
+        uh = nirb_on.getSolution(nirb_on.tbFine, mu)
+    time_toolbox_finish = time()
+    time_toolbox_elapsed = (time_toolbox_finish - time_toolbox_start) / Nsample
+
+
+    time_nirb_start = time()
+    for mu in mus:
+        nirb_on.getInterpSol(mu)
+        nirb_on.getCompressedSol()
+        uHh = nirb_on.getOnlineSol()
+    time_nirb_finish = time()
+    time_nirb_elapsed = (time_nirb_finish - time_nirb_start) / Nsample
+
+    WriteVecAppend('nirbOnline_time_exec.dat', [nirb_on.N, time_toolbox_elapsed, time_nirb_elapsed])
+
+    """
+    # errors = np.zeros((Nsample, 3))
+    errors = []
+    for i, mu in enumerate(mus):
+        nirb_on.getInterpSol(mu)
+        nirb_on.getCompressedSol()
+        uHhN = nirb_on.getOnlineSol()
+        online1 = nirb_on.onlineSol.to_petsc().vec()[:] # en commentant cette ligne ça produite des nan à la solution onlineSol après computeErrors
+
+        err = nirb_on.computeErrors()
+        print(err)
+        if not(err[1] > 1e-10 or err[2] > 1e-10 or err[1] == nan or err[2] == nan):
+            errors.append(err)
+        # errors[i,:] = nirb_on.computeErrors()
+        
+        online2 = nirb_on.onlineSol.to_petsc().vec()[:]
+    errors = np.array(errors)
+    print(errors)
+    print("\n")
+    error_min = errors.min(axis=0)
+    error_mean = errors.mean(axis=0)
+    error_max = errors.max(axis=0)
+
+    error = np.concatenate((error_min, error_mean[1:], error_max[1:]))
+    """
+
 
     if doRectification:
-        file='nirb_error_rectif.txt'
+        file='nirb_error_rectif.dat'
     else :
-        file='nirb_error.txt'
+        file='nirb_error.dat'
     WriteVecAppend(file,error)
 
     print(f"[NIRB] Online Elapsed time =", finish-start)
