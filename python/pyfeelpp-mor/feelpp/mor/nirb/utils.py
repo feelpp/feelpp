@@ -7,13 +7,11 @@ from errno import EINPROGRESS
 import os
 import feelpp
 import feelpp.mor as mor
-import feelpp.toolboxes.heat as heat
-import feelpp.toolboxes.fluid as fluid
-import feelpp.interpolation as fi
+import feelpp.toolboxes.core as core
 import json5 as json
 from petsc4py import PETSc
 from slepc4py import SLEPc
-import numpy as np 
+import numpy as np
 
 
 ############################################################################################################
@@ -21,6 +19,25 @@ import numpy as np
 # Feel++ utils functions                                                                                   #
 #                                                                                                          #
 ############################################################################################################
+
+
+def init_feelpp_environment(toolboxType, config_file, argv=['feelpp-mor-nirb']):
+    """Initialize Feel++ environment
+
+    Args:
+        toolboxType (str): Toolbox used
+        config_file (str): path to cfg file
+        argv (list, optional): list of arguments to give to Feel++ environment. Defaults to ['feelpp-mor-nirb'].
+
+    Returns:
+        feelpp._core.Environment: Environment
+    """
+    config = feelpp.globalRepository(f"nirb/{toolboxType}")
+    opts = core.toolboxes_options(toolboxType).add(mor.makeToolboxMorOptions())
+    e = feelpp.Environment(argv, config=config, opts=opts)
+    e.setConfigFile(config_file)
+    return e
+
 
 def loadModel(model_path):
     """Load the model from given modle path
