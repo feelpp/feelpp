@@ -17,7 +17,7 @@ if __name__ == "__main__":
     geo_path = f"{modelsFolder}{modelfile[toolboxesOptions]}.geo"
     model_path = f"{modelsFolder}{modelfile[toolboxesOptions]}.json"
 
-    doRectification=False
+    doRectification=True 
     nbSnap = 10
     if len(sys.argv)>1:
         nbSnap = int(sys.argv[1])
@@ -29,12 +29,11 @@ if __name__ == "__main__":
 
     nirb_off.initProblem(nbSnap)
     nirb_off.generateOperators()
-    nirb_off.generateReducedBasis()
-
+    nirb_off.generateReducedBasis(regulParam=1.e-10)
     # nirb_off.BiOrthonormalization()
 
-    # nirb_model.orthonormalizeL2()
-    # nirb_model.orthonormalizeH1()
+    # nirb_off.orthonormalizeL2()
+    # nirb_off.orthonormalizeH1()
     nirb_off.saveData()
     print("Is L2 orthonormalized ?", nirb_off.checkL2Orthonormalized())
     print("Is H1 orthonormalized ? ", nirb_off.checkH1Orthonormalized())
