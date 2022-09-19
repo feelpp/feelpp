@@ -66,7 +66,7 @@ if __name__ == "__main__":
         uHh = nirb_on.getOnlineSol()
         print(i, 'ok')
         online1 = nirb_on.onlineSol.to_petsc().vec()[:]
-        uh = nirb_on.getSolution(nirb_on.tbFine, mu)
+        uh = nirb_on.getToolboxSolution(nirb_on.tbFine, mu)
         err[i,0] = (uHh - uh).l2Norm()
         err[i,1] = (uHh - uh).linftyNorm()
         err[i,2] = (uH - uh).l2Norm()
@@ -81,20 +81,20 @@ if __name__ == "__main__":
     
     print("[NIRB online] error = ", error)
 
-        
-        
+
+
     """
     err = np.zeros(Nsample)
     start = time()
     for i,mu in enumerate(mus):
         uH = nirb_on.solveOnline(mu)
-        uh = nirb_on.getSolution(nirb_on.tbFine, mu)
+        uh = nirb_on.getToolboxSolution(nirb_on.tbFine, mu)
         err[i] = (uH-uh).l2Norm()
     finish = time()
 
     time_toolbox_start = time()
     for mu in mus:
-        uh = nirb_on.getSolution(nirb_on.tbFine, mu)
+        uh = nirb_on.getToolboxSolution(nirb_on.tbFine, mu)
     time_toolbox_finish = time()
     time_toolbox_elapsed = (time_toolbox_finish - time_toolbox_start) / Nsample
 

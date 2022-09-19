@@ -136,7 +136,7 @@ class ToolboxModel():
             raise ValueError("Unknown toolbox")
 
 
-    def getSolution(self, tb, mu):
+    def getToolboxSolution(self, tb, mu):
         """Get the solution of the toolbox tb for the parameter mu
 
         Args:
@@ -285,14 +285,14 @@ class nirbOffline(ToolboxModel):
             for mu in vector_mu:
                 if feelpp.Environment.isMasterRank():
                     print(f"Running simulation with mu = {mu}")
-                self.fineSnapShotList.append(self.getSolution(self.tbFine, mu))
-                self.coarseSnapShotList.append(self.getSolution(self.tbCoarse, mu))
+                self.fineSnapShotList.append(self.getToolboxSolution(self.tbFine, mu))
+                self.coarseSnapShotList.append(self.getToolboxSolution(self.tbCoarse, mu))
 
         else:
             for mu in vector_mu:
                 if feelpp.Environment.isMasterRank():
                     print(f"Running simulation with mu = {mu}")
-                self.fineSnapShotList.append(self.getSolution(self.tbFine, mu))
+                self.fineSnapShotList.append(self.getToolboxSolution(self.tbFine, mu))
 
         if feelpp.Environment.isMasterRank():
             print(f"[NIRB] Number of snapshot computed : {len(self.fineSnapShotList)}" )
@@ -663,8 +663,8 @@ class nirbOnline(ToolboxModel):
         """
         if mu == None:
             mu =self.onlineParam
-        
-        fineSol = self.getSolution(self.tbFine, mu)
+
+        fineSol = self.getToolboxSolution(self.tbFine, mu)
         # fineSol = self.interpSol
 
         error = []
@@ -721,7 +721,7 @@ class nirbOnline(ToolboxModel):
 
         Args:
             mu (ParameterSpaceElement): parameter
-        
+
         Returns:
             interpSol (feelpp._discr.Element): interpolated solution on fine mesh
         """
@@ -775,7 +775,7 @@ class nirbOnline(ToolboxModel):
         if self.tbCoarse is None:
             super().initCoarseToolbox()
 
-        coarseSol = self.getSolution(self.tbCoarse, mu)
+        coarseSol = self.getToolboxSolution(self.tbCoarse, mu)
         interpolatedSol = self.interpolationOperator.interpolate(coarseSol)
 
         # Export
