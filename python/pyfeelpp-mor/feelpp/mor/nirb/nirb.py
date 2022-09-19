@@ -55,8 +55,8 @@ class ToolboxModel():
         self.model_path = model_path
         self.geo_path = geo_path
 
-        self.tbCoarse = None
-        self.tbFine   = None
+        self.tbCoarse  = None
+        self.tbFine    = None
         self.onlineSol = None
 
         self.initModel()
@@ -311,9 +311,9 @@ class nirbOffline(ToolboxModel):
     def generateReducedBasis(self, tolerance=1.e-6, regulParam=1.e-10):
         """Generate the reduced basis, and store it in self.reducedBasis
 
-            Args : 
-            tolerance(float), optional : the tolerance value for 
-            regulParam(float), optional : the regularization parameter for rectification 
+        Args :
+            tolerance(float), optional : the tolerance value for
+            regulParam(float), optional : the regularization parameter for rectification
         """
         self.reducedBasis = self.PODReducedBasis(tolerance=tolerance)
         self.N = self.reducedBasis.size[0]
@@ -648,6 +648,7 @@ class nirbOnline(ToolboxModel):
 
         self.interpolationOperator = self.createInterpolator(self.tbCoarse, self.tbFine)
         self.Xh = feelpp.functionSpace(mesh=self.tbFine.mesh(), order=self.order)
+        self.exporter = None
 
         if feelpp.Environment.isMasterRank():
             print(f"[NIRB] Initialization done")
@@ -727,7 +728,7 @@ class nirbOnline(ToolboxModel):
         self.interpSol = self.solveOnline(mu)
         return self.interpSol
 
-    def getOnlineSol(self, exporter=None):
+    def getOnlineSol(self):
         """Get the Online nirb approximate solution
         """
         resPETSc = self.Xh.element().to_petsc()
@@ -742,11 +743,7 @@ class nirbOnline(ToolboxModel):
 
         self.onlineSol = self.Xh.element(resPETSc)
 
-        if exporter is not None:
-            if self.order==1:
-                exporter.addP1c("U_nirb", self.onlineSol)
-            elif self.order==2:
-                exporter.addP2c("U_nirb", self.onlineSol)
+        # to export, call self.exportField(onlineSol, "U_nirb")
 
         return self.onlineSol
 
@@ -769,7 +766,7 @@ class nirbOnline(ToolboxModel):
             self.RectificationMat = LoadPetscArrayBin("rectificationMatrix.dat")
             self.RectificationMat.assemble()
 
-    def solveOnline(self, mu=None, exporter=None):
+    def solveOnline(self, mu=None):
         """Solve the online problem with the given parameter mu
             Solve in Coarse mesh and interpolate in fine mesh
         """
@@ -782,10 +779,28 @@ class nirbOnline(ToolboxModel):
         interpolatedSol = self.interpolationOperator.interpolate(coarseSol)
 
         # Export
-        if exporter is not None:
-            if self.order == 1:
-                exporter.addP1c("U_interp", interpolatedSol)
-            elif self.order == 2:
-                exporter.addP2c("U_interp", interpolatedSol)
+        # call self.exportField(interpolatedSol, "U_interp")
 
         return interpolatedSol
+
+
+    def initExporter(self, name, toolbox="fine"):
+        if toolbox == "fine":
+            self.exporter = feelpp.Exporter(self.tbFine.mesh(), name)
+        elif toolbox == "coarse":
+            self.exporter = feelpp.Exporter(self.tbCoarse.mesh(), name)
+
+    def exportField(self, field, name):
+        if self.exporter is not None:
+            if self.order == 1:
+                self.exporter.addP1c(name, field)
+            elif self.order == 2:
+                self.exporter.addP2c(name, field)
+        else:
+            print("Exporter not initialized, pease call initExporter() first")
+
+    def saveExporter(self):
+        if self.exporter is not None:
+            self.exporter.save()
+        else:
+            print("Exporter not initialized, pease call initExporter() first")
