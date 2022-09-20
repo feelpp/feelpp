@@ -34,11 +34,11 @@ bdy[] = CombinedBoundary { Volume{:}; };
 Physical Surface("Gamma_ext") = bdy[0];
 
 For ii In { 1 : (#bdy[]-1) }
-    If (bdy[ii] != 5)
+    If (Abs(bdy[ii]) != 5)
         Printf("boundary number %g = %g", ii, Abs(bdy[ii]));
         Physical Surface("Gamma_ext") += Abs(bdy[ii]);   
     Else
-        Physical Surface("Gamma_root") = bdy[ii];
+        Physical Surface("Gamma_root") = Abs(bdy[ii]);
     EndIf
 EndFor
 

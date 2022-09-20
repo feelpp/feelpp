@@ -1,5 +1,3 @@
-from distutils.log import error
-from timeit import timeit
 from time import time
 from feelpp.mor.nirb.nirb import *
 from feelpp.mor.nirb.utils import WriteVecAppend, init_feelpp_environment
