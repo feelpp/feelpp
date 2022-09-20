@@ -59,6 +59,8 @@ class ToolboxModel():
         self.tbFine    = None
         self.onlineSol = None
 
+        self.Xh = None
+
         self.initModel()
         # if self.doRectification:
             # self.initRectification()
@@ -71,6 +73,7 @@ class ToolboxModel():
         """
         self.model = loadModel(self.model_path)
         self.tbFine = self.setToolbox(self.h)
+        self.Xh = feelpp.functionSpace(mesh=self.tbFine.mesh(), order=self.order)
         self.Dmu = loadParameterSpace(self.model_path)
         self.onlineParam = self.Dmu.element()
         self.Ndofs = self.tbFine.mesh().numGlobalPoints()
@@ -301,9 +304,9 @@ class nirbOffline(ToolboxModel):
         """Assemble L2 and H1 operators, stored in self.l2ScalarProduct and self.h1ScalarProduct
         """
         if self.l2ScalarProductMatrix is None or self.h1ScalarProductMatrix is None:
-            Vh = feelpp.functionSpace(mesh=self.tbFine.mesh(), order=self.order)
-            self.l2ScalarProductMatrix = FppOp.mass(test=Vh, trial=Vh, range=feelpp.elements(self.tbFine.mesh()))
-            self.h1ScalarProductMatrix = FppOp.stiffness(test=Vh, trial=Vh, range=feelpp.elements(self.tbFine.mesh()))
+            # Vh = feelpp.functionSpace(mesh=self.tbFine.mesh(), order=self.order)
+            self.l2ScalarProductMatrix = FppOp.mass(test=self.Xh, trial=self.Xh, range=feelpp.elements(self.tbFine.mesh()))
+            self.h1ScalarProductMatrix = FppOp.stiffness(test=self.Xh, trial=self.Xh, range=feelpp.elements(self.tbFine.mesh()))
             self.l2ScalarProductMatrix.to_petsc().mat().assemble()
             self.h1ScalarProductMatrix.to_petsc().mat().assemble()
 
@@ -347,7 +350,7 @@ class nirbOffline(ToolboxModel):
                     correlationMatrix[i,j] = self.scalarL2(snap1.to_petsc().vec(),snap2.to_petsc().vec())
 
         correlationMatrix.assemble()
-        eigenValues, eigenVectors =  TruncatedEigenV(correlationMatrix, tolerance) # truncate only eigenvalu >0
+        eigenValues, eigenVectors =  TruncatedEigenV(correlationMatrix, tolerance) # truncate only eigenvalue >0
 
         Nmode = len(eigenVectors)
         for i in range(Nmode):
@@ -384,7 +387,7 @@ class nirbOffline(ToolboxModel):
 
         Args :
             lambd (float) : Tikonov regularization parameter
-        
+
         Returns :
             R (petsc.Mat) : the rectification matrix
         """
@@ -656,7 +659,6 @@ class nirbOnline(ToolboxModel):
         super().initCoarseToolbox()
 
         self.interpolationOperator = self.createInterpolator(self.tbCoarse, self.tbFine)
-        self.Xh = feelpp.functionSpace(mesh=self.tbFine.mesh(), order=self.order)
         self.exporter = None
 
         if feelpp.Environment.isMasterRank():
