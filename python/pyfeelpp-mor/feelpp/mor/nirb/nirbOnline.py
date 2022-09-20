@@ -5,7 +5,7 @@ from feelpp.mor.nirb.utils import WriteVecAppend, init_feelpp_environment
 if __name__ == "__main__":
 
     # fineness of two grids
-    H = 0.1  # CoarseMeshSize
+    H = 0.001  # CoarseMeshSize
     h = H**2 # fine mesh size
     dim = 2
 
@@ -51,11 +51,10 @@ if __name__ == "__main__":
 
     # finish = timeit()
     Dmu = nirb_on.Dmu
-    Nsample = 10
+    Nsample = 1
     s = Dmu.sampling()
     s.sampling(Nsample, 'log-random')
     mus = s.getVector()
-
     ## Compute mean error of a sampling of parameters 
     err = np.zeros((Nsample,4))
     for i,mu in enumerate(mus):

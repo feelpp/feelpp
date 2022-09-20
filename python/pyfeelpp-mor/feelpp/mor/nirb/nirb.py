@@ -225,11 +225,11 @@ class nirbOffline(ToolboxModel):
 
         for i in range(self.N):
             xr[:] = self.reducedBasis[i,:]
-            self.h1ScalarProductMatrix.mat().mult(xr,Udof)
+            self.h1ScalarProductMatrix.to_petsc().mat().mult(xr,Udof)
             self.reducedBasis.mult(Udof,Umode)
             K[i,:] = Umode[:]
 
-            self.l2ScalarProductMatrix.mat().mult(xr,Udof)
+            self.l2ScalarProductMatrix.to_petsc().mat().mult(xr,Udof)
             self.reducedBasis.mult(Udof,Umode)
             M[i,:] = Umode[:]
 
@@ -304,8 +304,8 @@ class nirbOffline(ToolboxModel):
             Vh = feelpp.functionSpace(mesh=self.tbFine.mesh(), order=self.order)
             self.l2ScalarProductMatrix = FppOp.mass(test=Vh, trial=Vh, range=feelpp.elements(self.tbFine.mesh()))
             self.h1ScalarProductMatrix = FppOp.stiffness(test=Vh, trial=Vh, range=feelpp.elements(self.tbFine.mesh()))
-            self.l2ScalarProductMatrix.mat().assemble()
-            self.h1ScalarProductMatrix.mat().assemble()
+            self.l2ScalarProductMatrix.to_petsc().mat().assemble()
+            self.h1ScalarProductMatrix.to_petsc().mat().assemble()
 
     def generateReducedBasis(self, tolerance=1.e-6, regulParam=1.e-10):
         """Generate the reduced basis, and store it in self.reducedBasis
@@ -413,7 +413,7 @@ class nirbOffline(ToolboxModel):
             lfine.append(self.fineSnapShotList[i].to_petsc().vec())
             lcoarse.append(CoarseSnaps[i].to_petsc().vec())
 
-        CM = self.l2ScalarProductMatrix.mat()
+        CM = self.l2ScalarProductMatrix.to_petsc().mat()
 
         for i in range(self.N):
             CM.mult(lfine[i],Udof)
@@ -446,7 +446,7 @@ class nirbOffline(ToolboxModel):
         Returns:
             float: v.T @ ML2 @ u
         """
-        return v.dot( self.l2ScalarProductMatrix.mat() * u )   # v.T @ ML2 @ u
+        return v.dot( self.l2ScalarProductMatrix.to_petsc().mat() * u )   # v.T @ A @ u
 
     def scalarH1(self, u, v):
         """Return the ernegy scalar product associed to the H1 scalar product matrix
@@ -459,7 +459,7 @@ class nirbOffline(ToolboxModel):
         Returns:
             float: v.T @ MH1 @ u
         """
-        return v.dot( self.h1ScalarProductMatrix.mat() * u )   # v.T @ MH1 @ u
+        return v.dot( self.h1ScalarProductMatrix.to_petsc().mat() * u )   # v.T @ A @ u
 
     def normL2(self, u):
         """Compute the L2 norm of the given vector
@@ -613,8 +613,8 @@ class nirbOffline(ToolboxModel):
         """
         if not os.path.exists(path):
             os.makedirs(path)
-        SavePetscArrayBin(os.path.join(path, "massMatrix.dat"), self.l2ScalarProductMatrix.mat())
-        SavePetscArrayBin(os.path.join(path, "stiffnessMatrix.dat"), self.h1ScalarProductMatrix.mat())
+        SavePetscArrayBin(os.path.join(path, "massMatrix.dat"), self.l2ScalarProductMatrix.to_petsc().mat())
+        SavePetscArrayBin(os.path.join(path, "stiffnessMatrix.dat"), self.h1ScalarProductMatrix.to_petsc().mat())
         SavePetscArrayBin(os.path.join(path, "reducedBasisU.dat"), self.reducedBasis)
         if self.doRectification:
             SavePetscArrayBin("rectificationMatrix.dat", self.RectificationMat)
