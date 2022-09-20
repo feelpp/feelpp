@@ -750,7 +750,7 @@ class nirbOnline(ToolboxModel):
         resPETSc = self.Xh.element().to_petsc()
 
         if self.doRectification:
-            coef = self.compressedSol.copy()
+            coef = self.compressedSol.duplicate()
             self.RectificationMat.mult(self.compressedSol,coef)
             self.reducedBasis.multTranspose(coef, resPETSc.vec())
             print("[NIRB] Solution computed with Rectification post-process ")
