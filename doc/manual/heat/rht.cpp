@@ -80,7 +80,7 @@ int runHeat( nl::json const& specs )
         auto k = specs[nl::json::json_pointer( mat )].get<std::string>();
 
         a += integrate( _range = markedelements( mesh, material.get<std::string>() ), 
-                _expr = inner( M_bdf->polyDerivCoefficient( 0 ) * grad( v ) , expr( k ) * gradt( u ) ) );
+                _expr = M_bdf->polyDerivCoefficient( 0 ) * expr( k ) * gradt( u ) * trans( grad( v ) ) );
     }
 
     // BC Neumann
@@ -120,24 +120,40 @@ int runHeat( nl::json const& specs )
         {
             LOG( INFO ) << fmt::format( "radiative_blackbody_heat_flux {}: {}", bc, value.dump() );
             
-            // auto path = "/BoundaryConditions/heat/radiative_blackbody_heat_flux/"+bc;
-            // auto sigma = "5.67e-8";
+            std::cout << value["markers"];
+            std::cout << value["sigma"];
+            std::cout << value["Tref"];
+
+            // Default value of sigma = 5.67e-8 W.m⁻2.K⁻4
             // if ( specs["/BoundaryConditions/heat/radiative_blackbody_heat_flux/{}"_json_pointer].contains( "sigma" ) )
             auto sigma = value["sigma"].get<std::string>();
             auto Tref = value["Tref"].get<std::string>();
-            std::cout << value["markers"];
-
-            // Recover the emissivity epsilon of the material linked to the marked face
-            auto epsilon = value["emissivity"].get<std::string>();
-            //for ( auto& [key, coat] : specs["/Coating"_json_pointer].items() )
-
-            auto idtu4 = idt( u ) * idt( u ) * idt( u ) * idt( u );
             auto Tref4 = expr( Tref ) * expr( Tref ) * expr( Tref ) * expr( Tref );
 
-            a += integrate( _range = markedfaces( mesh, bc ),
-                    _expr = M_bdf->polyDerivCoefficient( 0 ) * expr( sigma ) * expr( epsilon ) * idtu4 * id( v ) * idt( u ) );
-            l += integrate( _range = markedfaces( mesh, bc ), 
-                    _expr = M_bdf->polyDerivCoefficient( 0 ) * expr( sigma ) * expr( epsilon ) * Tref4 * id( v ) );
+            // Recover the emissivity epsilon of the material linked to the marked face
+            // auto epsilon = value["emissivity"].get<std::string>();
+            for ( auto mark :  value.at("markers") )
+            {
+                auto done = 0;
+                for ( auto& [key, coat] : specs["/Coating"_json_pointer].items() )
+                {
+                    std::cout << coat["markers"];
+
+                    for ( auto markcoat : coat.at("markers") )
+                    {
+                        if ( mark == markcoat )
+                        {
+                            auto epsilon = coat["emissivity"].get<std::string>();
+
+                            l += integrate( _range = markedfaces( mesh, bc ), 
+                                    _expr = M_bdf->polyDerivCoefficient( 0 ) * expr( sigma ) * expr( epsilon ) * Tref4 * id( v ) );
+                            done = 1;
+                            break;
+                        }
+                    }
+                    if ( done ){ break; }
+                }
+            }
         }
     }
 
@@ -150,6 +166,9 @@ int runHeat( nl::json const& specs )
             if ( specs["/BoundaryConditions/heat/radiative_enclosure_heat_flux/{}/enclosure"_json_pointer] == "close" )
             {
                 LOG( INFO ) << fmt::format( "radiative_closed_enclosure_heat_flux {}: {}", bc, value.dump() );
+
+                std::cout << value["markers"];
+                std::cout << value["sigma"];
                 
                 // auto path = "/BoundaryConditions/heat/radiative_enclosure_heat_flux/"+bc;
                 // auto sigma = "5.67e-8";
@@ -238,20 +257,42 @@ int runHeat( nl::json const& specs )
                 }
 
                 // Recover the emissivity epsilon of material linked to the marked face
-                auto epsilon = value["emissivity"].get<std::string>();
+                // auto epsilon = value["emissivity"].get<std::string>();
+                for ( auto mark :  value.at("markers") )
+                {
+                    auto done = 0;
+                    for ( auto& [key, coat] : specs["/Coating"_json_pointer].items() )
+                    {
+                        std::cout << coat["markers"];
 
-                // Build left hand side matrix LHSm
-                // delta_ij/epsilon_j - (1/epsilon_j -1)*F_ij
+                        for ( auto markcoat : coat.at("markers") )
+                        {
+                            if ( mark == markcoat )
+                            {
+                                auto epsilon = coat["emissivity"].get<std::string>();
 
-                // Build right hand side matrix RHSm
+                                // Build left hand side matrix LHSm
+                                // delta_ij/epsilon_j - (1/epsilon_j -1)*F_ij
 
-                // Compute inverse matrix LHSm : invLHSm, and M1 = invLHSm * RHSm
+                                // Build right hand side matrix RHSm
 
+                                // Compute inverse matrix LHSm : invLHSm, and M1 = invLHSm * RHSm
+
+                                done = 1;
+                                break;
+                            }
+                        }
+                        if ( done ){ break; }
+                    }
+                }
             }
             // Opened enclosure
             else if ( specs["/BoundaryConditions/heat/radiative_enclosure_heat_flux/{}/enclosure"_json_pointer] == "open" )
             {
                 LOG( INFO ) << fmt::format( "radiative_enclosure_heat_flux {}: {}", bc, value.dump() );
+
+                std::cout << value["markers"];
+                std::cout << value["sigma"];
                 
                 // auto path = "/BoundaryConditions/heat/radiative_enclosure_heat_flux/"+bc;
                 // auto sigma = "5.67e-8";
@@ -261,7 +302,6 @@ int runHeat( nl::json const& specs )
 
                 for ( auto& [bc, value] : specs["/BoundaryConditions/heat/radiative_enclosure_heat_flux"_json_pointer].items() )
                 {
-
                     if ( specs["/BoundaryConditions/heat/radiative_enclosure_heat_flux/{}/viewfactors"_json_pointer].contains( "status" ) )
                     {
                         // status: load view factors
@@ -339,21 +379,40 @@ int runHeat( nl::json const& specs )
                         compute_MC();
                     }
                     
-                    // Recover the emissivity epsilon of material linked to the marked face
-                    auto epsilon = value["emissivity"].get<std::string>();
-                    
-                    // Build left hand side matrix LHSm
-                    // delta_ij/epsilon_j - (1/epsilon_j -1)F_ij
+                    // Recover the emissivity epsilon of the material linked to the marked face
+                    // auto epsilon = value["emissivity"].get<std::string>();
+                    for ( auto mark :  value.at("markers") )
+                    {
+                        auto done = 0;
+                        for ( auto& [key, coat] : specs["/Coating"_json_pointer].items() )
+                        {
+                            std::cout << coat["markers"];
 
-                    // Build right hand side matrix RHSm
-                    // sigma*(delta_ij - F_ij)
+                            for ( auto markcoat : coat.at("markers") )
+                            {
+                                if ( mark == markcoat )
+                                {
+                                    auto epsilon = coat["emissivity"].get<std::string>();
+                            
+                                    // Build left hand side matrix LHSm
+                                    // delta_ij/epsilon_j - (1/epsilon_j -1)F_ij
 
-                    // Compute inverse matrix LHSm : invLHSm, and M1 = invLHSm * RHSm
+                                    // Build right hand side matrix RHSm
+                                    // sigma*(delta_ij - F_ij)
 
-                    // Build vecG = f_i(tk) * sigma * Tref**4
+                                    // Compute inverse matrix LHSm : invLHSm, and M1 = invLHSm * RHSm
 
-                    // Store invLHSm
-                    
+                                    // Build vecG = f_i(tk) * sigma * Tref**4
+
+                                    // Store invLHSm
+
+                                    done = 1;
+                                    break;
+                                }
+                            }
+                            if ( done ){ break; }
+                        }
+                    }                    
                 }
             }
             else
@@ -390,25 +449,81 @@ int runHeat( nl::json const& specs )
                     _expr = expr( Rho ) * expr( Cp ) * idv( M_bdf->polyDeriv() ) * id( v ) );
         }
 
+        // Blackbody radiative condition
+        if ( specs["/BoundaryConditions/heat"_json_pointer].contains( "radiative_blackbody_heat_flux" ) )
+        {
+            for ( auto& [bc, value] : specs["/BoundaryConditions/heat/radiative_blackbody_heat_flux"_json_pointer].items() )
+            {
+                // Default value of sigma = 5.67e-8 W.m⁻2.K⁻4
+                // if ( specs["/BoundaryConditions/heat/radiative_blackbody_heat_flux/{}"_json_pointer].contains( "sigma" ) )
+                auto sigma = value["sigma"].get<std::string>();
+
+                // Recover the emissivity epsilon of the material linked to the marked face
+                // auto epsilon = value["emissivity"].get<std::string>();
+                for ( auto mark :  value.at("markers") )
+                {
+                    auto done = 0;
+                    for ( auto& [key, coat] : specs["/Coating"_json_pointer].items() )
+                    {
+                        for ( auto markcoat : coat.at("markers") )
+                        {
+                            if ( mark == markcoat )
+                            {
+                                auto epsilon = coat["emissivity"].get<std::string>();
+                                
+                                auto idvu3 = idv( M_bdf->polyDeriv() ) * idv( M_bdf->polyDeriv() ) * idv( M_bdf->polyDeriv() );
+
+                                a += integrate( _range = markedfaces( mesh, bc ),
+                                        _expr = M_bdf->polyDerivCoefficient( 0 ) * expr( sigma ) * expr( epsilon ) * idvu3 * idt( u ) * id( v ));
+                                done = 1;
+                                break;
+                            }
+                        }
+                        if ( done ){ break; }
+                    }    
+                }
+            }
+        }
+
         // Radiative enclosure
         if ( specs["/BoundaryConditions/heat"_json_pointer].contains( "radiative_enclosure_heat_flux" ) )
         {
             for ( auto& [bc, value] : specs["/BoundaryConditions/heat/radiative_enclosure_heat_flux"_json_pointer].items() )
             {
+                // Default value of sigma = 5.67e-8 W.m⁻2.K⁻4
+                // if ( specs["/BoundaryConditions/heat/radiative_blackbody_heat_flux/{}"_json_pointer].contains( "sigma" ) )
                 auto sigma = value["sigma"].get<std::string>();
                 
                 // Recover the emissivity epsilon of material linked to the marked face
-                auto epsilon = value["emissivity"].get<std::string>();
+                // auto epsilon = value["emissivity"].get<std::string>();
+                for ( auto mark :  value.at("markers") )
+                {
+                    auto done = 0;
+                    for ( auto& [key, coat] : specs["/Coating"_json_pointer].items() )
+                    {
+                        for ( auto markcoat : coat.at("markers") )
+                        {
+                            if ( mark == markcoat )
+                            {
+                                auto epsilon = coat["emissivity"].get<std::string>();
+                                
 
-                // invLHSm: inverse matrix LHSm
-                // M1: invLHSm * RHSm
+                                // invLHSm: inverse matrix LHSm
+                                // M1: invLHSm * RHSm
 
-                // Build F = (u**3(tk)) then compute M1 * F in idtu3
-                auto idtu3 = idt( u ) * idt( u ) * idt( u );
+                                // Build F = (u**3(tk)) then compute M1 * F in idtu3
+                                auto idvu3 = idv( M_bdf->polyDeriv() ) * idv( M_bdf->polyDeriv() ) * idv( M_bdf->polyDeriv() );
 
-                // Add to LHS bilinear form a
-                at += integrate( _range = markedfaces( mesh, bc ),
-                        _expr = M_bdf->polyDerivCoefficient( 0 ) * expr( sigma ) * expr( epsilon ) * idtu3 * idt( u ) * id( v ) );
+                                // Add to LHS bilinear form a
+                                at += integrate( _range = markedfaces( mesh, bc ),
+                                        _expr = M_bdf->polyDerivCoefficient( 0 ) * expr( sigma ) * expr( epsilon ) * idvu3 * idt( u ) * id( v ) );
+                                done = 1;
+                                break;
+                            }
+                        }
+                        if ( done ){ break; }
+                    }   
+                }
             }
         }
 
