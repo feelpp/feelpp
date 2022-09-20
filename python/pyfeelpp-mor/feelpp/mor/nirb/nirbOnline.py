@@ -2,10 +2,82 @@ from time import time
 from feelpp.mor.nirb.nirb import *
 from feelpp.mor.nirb.utils import WriteVecAppend, init_feelpp_environment
 
+
+def ComputeErrors(nirb_on, mu):
+    """Compute the error between nirb solution and FE one for 
+        a given parameter 
+    Args:
+        nirb_on (class): initialized nirbOnline class 
+        mu (ParameterSpaceElement) : parameter 
+
+    return : 
+    list: containing
+        - the number reduced basis N
+        - the errors L2 and Linf between nirb solution and FE fine solution
+        - the errors L2 and Linf between inteprolated FE coarse solution and FE fine solution
+    list : 
+    """
+
+    uHh, _ = nirb_on.getOnlineSol(mu)
+    uH = nirb_on.getInterpSol(mu)
+    uh = nirb_on.getToolboxSolution(nirb_on.tbFine, mu)
+    
+    error = [nirb_on.N]
+
+    error.append((uHh - uh).l2Norm())
+    error.append((uHh - uh).linftyNorm())
+    error.append((uH - uh).l2Norm())
+    error.append((uH - uh).linftyNorm())
+
+    return error 
+
+def ComputeErrorSampling(nirb_on, Nsample=1, samplingType='log-random'):
+    """Compute the mean error between nirb solution and FE one for 
+        a given number of parameter 
+    Args:
+        nirb_on (class): initialized nirbOnline class 
+        Nsample (int): number of parameter. Defaults to 1.  
+        samplingType (str, optional): type of sampling distribution. Defaults to 'log-random'.
+
+    return : 
+    list: containing
+        - the number reduced basis N
+        - the errors L2 and Linf between nirb solution and FE fine solution
+        - the errors L2 and Linf between inteprolated FE coarse solution and FE fine solution
+    list : 
+    """
+
+    # finish = timeit()
+    Dmu = nirb_on.Dmu
+    s = Dmu.sampling()
+    s.sampling(Nsample, samplingType)
+    mus = s.getVector()
+
+    err = np.zeros((Nsample,4))
+    for i,mu in enumerate(mus):
+        uH = nirb_on.getInterpSol(mu)
+        uHh, _ = nirb_on.getOnlineSol(mu)
+        uh = nirb_on.getToolboxSolution(nirb_on.tbFine, mu)
+        
+        err[i,0] = (uHh - uh).l2Norm()
+        err[i,1] = (uHh - uh).linftyNorm()
+        err[i,2] = (uH - uh).l2Norm()
+        err[i,3] = (uH - uh).linftyNorm()
+
+    err_mean = err.mean(axis=0)
+    error = [nirb_on.N]
+    error.append(err_mean[0])
+    error.append(err_mean[1])
+    error.append(err_mean[2])
+    error.append(err_mean[3])
+
+    return error
+
+
 if __name__ == "__main__":
 
     # fineness of two grids
-    H = 0.001  # CoarseMeshSize
+    H = 0.1  # CoarseMeshSize
     h = H**2 # fine mesh size
     dim = 2
 
@@ -19,65 +91,23 @@ if __name__ == "__main__":
 
     e = init_feelpp_environment(toolboxType, cfg_path)
     
-    start = time()
+    # start = time()
 
     doRectification=False
 
     nirb_on = nirbOnline(dim, H, h, toolboxType, cfg_path, model_path, geo_path, doRectification=doRectification)
 
+    mu = nirb_on.Dmu.element() 
     nirb_on.loadData()
+    # uHh = nirb_on.getOnlineSol(mu)
 
-    ## Compute NIRB error with one parameter 
-    """ 
-    # nirb_on.getInterpSol()
-    # nirb_on.getCompressedSol()
-    # nirb_on.getOnlineSol()
+    Nsample = 10
 
-    # online1 = nirb_on.onlineSol.to_petsc().vec()[:] # en commentant cette ligne ça produite des nan à la solution onlineSol après computeErrors
-  
-    # error = nirb_on.computeErrors()
+    error1 = ComputeErrors(nirb_on, mu)
+    errorN = ComputeErrorSampling(nirb_on, Nsample=Nsample)
+    print("[NIRB online] error 1 param = ", error1)
+    print(f"[NIRB online] error {Nsample} param = ", errorN)
     
-    # online2 = nirb_on.onlineSol.to_petsc().vec()[:]
-
-    # print("[nirb main] diff online sol befor/after error", np.max(np.abs(online1-online2)))
-
-    # print("----------- Errors ----------------------")
-    # print(f"Nb mode = {error[0]}")
-    # print(f"L2 norm= {error[1]}")
-    # print(f"Inf norm = {error[2]}")
-    # print('error =', error)
-    """
-
-
-    # finish = timeit()
-    Dmu = nirb_on.Dmu
-    Nsample = 1
-    s = Dmu.sampling()
-    s.sampling(Nsample, 'log-random')
-    mus = s.getVector()
-    ## Compute mean error of a sampling of parameters 
-    err = np.zeros((Nsample,4))
-    for i,mu in enumerate(mus):
-        uH = nirb_on.getInterpSol(mu)
-        nirb_on.getCompressedSol()
-        uHh = nirb_on.getOnlineSol()
-        print(i, 'ok')
-        online1 = nirb_on.onlineSol.to_petsc().vec()[:]
-        uh = nirb_on.getToolboxSolution(nirb_on.tbFine, mu)
-        err[i,0] = (uHh - uh).l2Norm()
-        err[i,1] = (uHh - uh).linftyNorm()
-        err[i,2] = (uH - uh).l2Norm()
-        err[i,3] = (uH - uh).linftyNorm()
-        print(i, 'okk')
-    err_mean = err.mean(axis=0)
-    error = [nirb_on.N]
-    error.append(err_mean[0])
-    error.append(err_mean[1])
-    error.append(err_mean[2])
-    error.append(err_mean[3])
-    
-    print("[NIRB online] error = ", error)
-
 
 
     """
@@ -136,13 +166,13 @@ if __name__ == "__main__":
     error = np.concatenate((error_min, error_mean[1:], error_max[1:]))
     """
 
-    finish = time() 
+    # finish = time() 
 
     if doRectification:
         file='nirb_error_rectif.dat'
     else :
         file='nirb_error.dat'
-    WriteVecAppend(file,error)
+    WriteVecAppend(file,error1)
 
-    print(f"[NIRB] Online Elapsed time =", finish-start)
+    # print(f"[NIRB] Online Elapsed time =", finish-start)
     print(f"[NIRB] Online part Done !!")
