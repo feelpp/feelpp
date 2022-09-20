@@ -55,8 +55,8 @@ class ToolboxModel():
         self.model_path = model_path
         self.geo_path = geo_path
 
-        self.tbCoarse = None
-        self.tbFine   = None
+        self.tbCoarse  = None
+        self.tbFine    = None
         self.onlineSol = None
 
         self.initModel()
@@ -136,7 +136,7 @@ class ToolboxModel():
             raise ValueError("Unknown toolbox")
 
 
-    def getSolution(self, tb, mu):
+    def getToolboxSolution(self, tb, mu):
         """Get the solution of the toolbox tb for the parameter mu
 
         Args:
@@ -211,7 +211,6 @@ class nirbOffline(ToolboxModel):
         """Bi-orthonormalization of reduced basis
         """
 
-
         K = np.zeros((self.N,self.N))
         M = K.copy()
 
@@ -285,14 +284,14 @@ class nirbOffline(ToolboxModel):
             for mu in vector_mu:
                 if feelpp.Environment.isMasterRank():
                     print(f"Running simulation with mu = {mu}")
-                self.fineSnapShotList.append(self.getSolution(self.tbFine, mu))
-                self.coarseSnapShotList.append(self.getSolution(self.tbCoarse, mu))
+                self.fineSnapShotList.append(self.getToolboxSolution(self.tbFine, mu))
+                self.coarseSnapShotList.append(self.getToolboxSolution(self.tbCoarse, mu))
 
         else:
             for mu in vector_mu:
                 if feelpp.Environment.isMasterRank():
                     print(f"Running simulation with mu = {mu}")
-                self.fineSnapShotList.append(self.getSolution(self.tbFine, mu))
+                self.fineSnapShotList.append(self.getToolboxSolution(self.tbFine, mu))
 
         if feelpp.Environment.isMasterRank():
             print(f"[NIRB] Number of snapshot computed : {len(self.fineSnapShotList)}" )
@@ -311,9 +310,9 @@ class nirbOffline(ToolboxModel):
     def generateReducedBasis(self, tolerance=1.e-6, regulParam=1.e-10):
         """Generate the reduced basis, and store it in self.reducedBasis
 
-            Args : 
-            tolerance(float), optional : the tolerance value for 
-            regulParam(float), optional : the regularization parameter for rectification 
+        Args :
+            tolerance(float), optional : the tolerance value for
+            regulParam(float), optional : the regularization parameter for rectification
         """
         self.reducedBasis = self.PODReducedBasis(tolerance=tolerance)
         self.N = self.reducedBasis.size[0]
@@ -329,7 +328,7 @@ class nirbOffline(ToolboxModel):
 
         Parameters
         ----------
-        tolerance (float) : tolerance of the eigen value problem
+            tolerance (float) : tolerance of the eigen value problem
             target accuracy of the data compression
 
         Returns
@@ -382,8 +381,12 @@ class nirbOffline(ToolboxModel):
                 R = B_h*(B_H)^-1
                 with B_h[i,j] = <U_h(s_i),\phi_j >
                 and B_H[i,j] = <U_H(s_i),\phi_j >
+
         Args :
-        lambd (float) : Tikonov regularization parameter
+            lambd (float) : Tikonov regularization parameter
+        
+        Returns :
+            R (petsc.Mat) : the rectification matrix
         """
         assert self.N == self.reducedBasis.size[0], f"need computation of reduced basis"
 
@@ -441,7 +444,7 @@ class nirbOffline(ToolboxModel):
             v (PETSC.Vec): second vector
 
         Returns:
-            float: v.T @ A @ u
+            float: v.T @ ML2 @ u
         """
         return v.dot( self.l2ScalarProductMatrix.to_petsc().mat() * u )   # v.T @ A @ u
 
@@ -454,7 +457,7 @@ class nirbOffline(ToolboxModel):
             v (PETSC.Vec): second vector
 
         Returns:
-            float: v.T @ A @ u
+            float: v.T @ MH1 @ u
         """
         return v.dot( self.h1ScalarProductMatrix.to_petsc().mat() * u )   # v.T @ A @ u
 
@@ -465,7 +468,7 @@ class nirbOffline(ToolboxModel):
             u (PETSc.Vec): vector
 
         Returns:
-            float: ||u||_X
+            float: ||u||_L2
         """
         return np.sqrt(self.scalarL2(u, u))
 
@@ -476,7 +479,7 @@ class nirbOffline(ToolboxModel):
             u (PETSc.Vec): vector
 
         Returns:
-            float: ||u||_X
+            float: ||u||_H1
         """
         return np.sqrt(self.scalarH1(u, u))
 
@@ -549,6 +552,9 @@ class nirbOffline(ToolboxModel):
 
         Args:
             tol (float, optional): Tolerance. Defaults to 1e-8.
+
+        Returns:
+            bool: True if the reduced basis is H1 orthonormalized
         """
         h1ScalPetsc = self.h1ScalarProductMatrix.to_petsc().mat()
         # with the current version of petsc, we need to transpose the matrix
@@ -573,6 +579,9 @@ class nirbOffline(ToolboxModel):
 
         Args:
             tol (float, optional): Tolerance. Defaults to 1e-8.
+
+        Returns:
+            bool: True if the reduced basis is L2 orthonormalized
         """
         l2ScalPetsc = self.l2ScalarProductMatrix.to_petsc().mat()
         # h1ScalPetsc = self.h1ScalarProductMatrix.to_petsc().mat()
@@ -648,6 +657,7 @@ class nirbOnline(ToolboxModel):
 
         self.interpolationOperator = self.createInterpolator(self.tbCoarse, self.tbFine)
         self.Xh = feelpp.functionSpace(mesh=self.tbFine.mesh(), order=self.order)
+        self.exporter = None
 
         if feelpp.Environment.isMasterRank():
             print(f"[NIRB] Initialization done")
@@ -659,11 +669,18 @@ class nirbOnline(ToolboxModel):
         Args:
             mu (ParameterSpaceElement) : parameter
             exporter (feelpp.exporter) : Exporter to export data for visualization
+
+        Returns:
+            list: containing
+                - the size of the reduced basis N
+                - the errors Linf and L2 between nirb solution and FE fine solution
+                - the errors Linf and L2 between inteprolated FE coarse solution and FE fine solution
+                - the errors Linf and L2 between inteprolated FE coarse solution and nirb solution
         """
         if mu == None:
             mu =self.onlineParam
-        
-        fineSol = self.getSolution(self.tbFine, mu)
+
+        fineSol = self.getToolboxSolution(self.tbFine, mu)
         # fineSol = self.interpSol
 
         error = []
@@ -708,26 +725,26 @@ class nirbOnline(ToolboxModel):
         if solution is None:
             solution = self.interpSol
 
-        ur,uc = self.reducedBasis.createVecs()
+        ur,uc = self.reducedBasis.createVecs()      # Get vectors with the same parallel layout as the matrix
 
         self.l2ScalarProductMatrix.mult(solution.to_petsc().vec(),ur)
         self.reducedBasis.mult(ur,uc)
         self.compressedSol = uc
         return self.compressedSol
 
-    def getInterpSol(self, mu=None):
+    def getInterpSol(self, mu):
         """Get the interpolate solution from coarse mesh to fine one
 
         Args:
             mu (ParameterSpaceElement): parameter
-        
+
         Returns:
             interpSol (feelpp._discr.Element): interpolated solution on fine mesh
         """
         self.interpSol = self.solveOnline(mu)
         return self.interpSol
 
-    def getOnlineSol(self, exporter=None):
+    def getOnlineSol(self):
         """Get the Online nirb approximate solution
         """
         resPETSc = self.Xh.element().to_petsc()
@@ -742,11 +759,7 @@ class nirbOnline(ToolboxModel):
 
         self.onlineSol = self.Xh.element(resPETSc)
 
-        if exporter is not None:
-            if self.order==1:
-                exporter.addP1c("U_nirb", self.onlineSol)
-            elif self.order==2:
-                exporter.addP2c("U_nirb", self.onlineSol)
+        # to export, call self.exportField(onlineSol, "U_nirb")
 
         return self.onlineSol
 
@@ -769,23 +782,61 @@ class nirbOnline(ToolboxModel):
             self.RectificationMat = LoadPetscArrayBin("rectificationMatrix.dat")
             self.RectificationMat.assemble()
 
-    def solveOnline(self, mu=None, exporter=None):
-        """Solve the online problem with the given parameter mu
+    def solveOnline(self, mu=None):
+        """Retrun the interpolated FE-solution from coarse mesh to fine one u_{Hh}^calN(\mu)
             Solve in Coarse mesh and interpolate in fine mesh
+
+        Args:
+            mu (ParameterSpaceElement, optional): parameter. Defaults to None.
+
+        Returns:
+            feelpp._discr.Element: interpolated solution on fine mesh
         """
         if mu is None :
             mu = self.onlineParam
         if self.tbCoarse is None:
             super().initCoarseToolbox()
 
-        coarseSol = self.getSolution(self.tbCoarse, mu)
+        coarseSol = self.getToolboxSolution(self.tbCoarse, mu)
         interpolatedSol = self.interpolationOperator.interpolate(coarseSol)
 
         # Export
-        if exporter is not None:
-            if self.order == 1:
-                exporter.addP1c("U_interp", interpolatedSol)
-            elif self.order == 2:
-                exporter.addP2c("U_interp", interpolatedSol)
+        # call self.exportField(interpolatedSol, "U_interp")
 
         return interpolatedSol
+
+
+    def initExporter(self, name, toolbox="fine"):
+        """init feelpp exporter
+
+        Args:
+            name (str): name of the exporter
+            toolbox (str, optional): mesh to use, "fine" or "coarse". Defaults to "fine".
+        """
+        if toolbox == "fine":
+            self.exporter = feelpp.Exporter(self.tbFine.mesh(), name)
+        elif toolbox == "coarse":
+            self.exporter = feelpp.Exporter(self.tbCoarse.mesh(), name)
+
+    def exportField(self, field, name):
+        """export a field to the exporter, if it has already been initialized
+
+        Args:
+            field (feelpp._discr.Element): field to export
+            name (str): name of the field
+        """
+        if self.exporter is not None:
+            if self.order == 1:
+                self.exporter.addP1c(name, field)
+            elif self.order == 2:
+                self.exporter.addP2c(name, field)
+        else:
+            print("Exporter not initialized, pease call initExporter() first")
+
+    def saveExporter(self):
+        """save the exporter to disk
+        """
+        if self.exporter is not None:
+            self.exporter.save()
+        else:
+            print("Exporter not initialized, pease call initExporter() first")

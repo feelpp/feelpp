@@ -1,7 +1,6 @@
 import sys
 from feelpp.mor.nirb.nirb import *
 from feelpp.mor.nirb.utils import WriteVecAppend, init_feelpp_environment
-import timeit
 import time 
 
 if __name__ == "__main__":
