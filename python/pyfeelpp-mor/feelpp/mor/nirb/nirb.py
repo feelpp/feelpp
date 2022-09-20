@@ -57,7 +57,6 @@ class ToolboxModel():
 
         self.tbCoarse  = None
         self.tbFine    = None
-        self.onlineSol = None
 
         self.initModel()
         # if self.doRectification:
@@ -72,7 +71,6 @@ class ToolboxModel():
         self.model = loadModel(self.model_path)
         self.tbFine = self.setToolbox(self.h)
         self.Dmu = loadParameterSpace(self.model_path)
-        self.onlineParam = self.Dmu.element()
         self.Ndofs = self.tbFine.mesh().numGlobalPoints()
 
         if feelpp.Environment.isMasterRank():
@@ -650,9 +648,9 @@ class nirbOnline(ToolboxModel):
 
         self.l2ScalarProductMatrix = None
         self.h1ScalarProductMatrix = None
+        self.reducedBasis = None 
         self.N = 0
 
-        # super().initFeelpp()
         super().initCoarseToolbox()
 
         self.interpolationOperator = self.createInterpolator(self.tbCoarse, self.tbFine)
@@ -663,74 +661,79 @@ class nirbOnline(ToolboxModel):
             print(f"[NIRB] Initialization done")
 
 
-    def computeErrors(self, mu=None, exporter=None):
-        """Compute errors between nirb solution and FE solution computed in fine mesh
+    # def computeErrors(self, mu=None, exporter=None):
+    #     """Compute errors between nirb solution and FE solution computed in fine mesh
 
-        Args:
-            mu (ParameterSpaceElement) : parameter
-            exporter (feelpp.exporter) : Exporter to export data for visualization
+    #     Args:
+    #         mu (ParameterSpaceElement) : parameter
+    #         exporter (feelpp.exporter) : Exporter to export data for visualization
 
-        Returns:
-            list: containing
-                - the size of the reduced basis N
-                - the errors Linf and L2 between nirb solution and FE fine solution
-                - the errors Linf and L2 between inteprolated FE coarse solution and FE fine solution
-                - the errors Linf and L2 between inteprolated FE coarse solution and nirb solution
-        """
-        if mu == None:
-            mu =self.onlineParam
+    #     Returns:
+    #         list: containing
+    #             - the size of the reduced basis N
+    #             - the errors Linf and L2 between nirb solution and FE fine solution
+    #             - the errors Linf and L2 between inteprolated FE coarse solution and nirb solution
+    #             - the errors Linf and L2 between inteprolated FE coarse solution and FE fine solution
+    #     """
+    #     if mu == None:
+    #         mu =self.onlineParam
 
-        fineSol = self.getToolboxSolution(self.tbFine, mu)
-        # fineSol = self.interpSol
+    #     fineSol = self.getToolboxSolution(self.tbFine, mu)
+    #     # fineSol = self.interpSol
 
-        error = []
-        error.append(self.N)
+    #     error = []
+    #     error.append(self.N)
 
-        # norm(U_h - U_h^N)
-        diffSol = (fineSol - self.onlineSol).to_petsc().vec()
-        error.append(diffSol.norm())
-        error.append(diffSol.norm(PETSc.NormType.NORM_INFINITY))
+    #     # norm(U_h - U_h^N)
+    #     diffSol = (fineSol - self.onlineSol).to_petsc().vec()
+    #     error.append(diffSol.norm())
+    #     error.append(diffSol.norm(PETSc.NormType.NORM_INFINITY))
 
-        # norm(U_H - U_h)
-        diffSol = (fineSol - self.interpSol).to_petsc().vec()
-        error.append(diffSol.norm())
-        error.append(diffSol.norm(PETSc.NormType.NORM_INFINITY))
+    #     # norm(U_H - U_h)
+    #     diffSol = (fineSol - self.interpSol).to_petsc().vec()
+    #     error.append(diffSol.norm())
+    #     error.append(diffSol.norm(PETSc.NormType.NORM_INFINITY))
 
-        # norm(U_H - U_h^N)
-        diffSol = (self.interpSol - self.onlineSol).to_petsc().vec()
-        error.append(diffSol.norm())
-        error.append(diffSol.norm(PETSc.NormType.NORM_INFINITY))
+    #     # norm(U_H - U_h^N)
+    #     diffSol = (self.interpSol - self.onlineSol).to_petsc().vec()
+    #     error.append(diffSol.norm())
+    #     error.append(diffSol.norm(PETSc.NormType.NORM_INFINITY))
 
 
-        # # Export fine solution
-        if exporter is not None:
-            if self.order==1:
-                exporter.addP1c("U_fine", fineSol)
-            elif self.order==2:
-                exporter.addP2c("U_fine", fineSol)
+        # # # Export fine solution
+        # if exporter is not None:
+        #     if self.order==1:
+        #         exporter.addP1c("U_fine", fineSol)
+        #     elif self.order==2:
+        #         exporter.addP2c("U_fine", fineSol)
 
-        return error
+        # return error
 
-    def getCompressedSol(self, solution=None):
+    def getCompressedSol(self, mu=None, solution=None):
         """
         get the projection of given solution from fine mesh into the reduced space
 
         Parameters
         ----------
         solution (feelpp._discr.Element) : the solution to be projected
+        mu (ParameterSpaceElement) : parameter to compute the solution if not given 
 
         return :
-        uc (petsc.Vec) : the compressed solution, of size (self.N)
+        compressedSol (petsc.Vec) : the compressed solution, of size (self.N)
         """
+        assert (mu != None) or (solution != None), f"One of the arguments must be given: solution or mu"
+
         if solution is None:
-            solution = self.interpSol
+            sol = self.getInterpSol(mu)
+        else :
+            sol = solution
 
-        ur,uc = self.reducedBasis.createVecs()      # Get vectors with the same parallel layout as the matrix
+        ur,compressedSol = self.reducedBasis.createVecs()      # Get vectors with the same parallel layout as the matrix
 
-        self.l2ScalarProductMatrix.mult(solution.to_petsc().vec(),ur)
-        self.reducedBasis.mult(ur,uc)
-        self.compressedSol = uc
-        return self.compressedSol
+        self.l2ScalarProductMatrix.mult(sol.to_petsc().vec(),ur)
+        self.reducedBasis.mult(ur,compressedSol)
+
+        return compressedSol
 
     def getInterpSol(self, mu):
         """Get the interpolate solution from coarse mesh to fine one
@@ -741,27 +744,32 @@ class nirbOnline(ToolboxModel):
         Returns:
             interpSol (feelpp._discr.Element): interpolated solution on fine mesh
         """
-        self.interpSol = self.solveOnline(mu)
-        return self.interpSol
+        interpSol = self.solveOnline(mu)[1]
+        return interpSol
 
-    def getOnlineSol(self):
+    def getOnlineSol(self,mu):
         """Get the Online nirb approximate solution
         """
         resPETSc = self.Xh.element().to_petsc()
 
+        # resPETSc, u = self.reducedBasis.createVecs()
+
+        compressedSol = self.getCompressedSol(mu)
+
         if self.doRectification:
-            coef = self.compressedSol.copy()
-            self.RectificationMat.mult(self.compressedSol,coef)
+            coef = compressedSol.copy()
+            self.RectificationMat.mult(compressedSol,coef)
             self.reducedBasis.multTranspose(coef, resPETSc.vec())
             print("[NIRB] Solution computed with Rectification post-process ")
         else :
-            self.reducedBasis.multTranspose(self.compressedSol, resPETSc.vec())
+            self.reducedBasis.multTranspose(compressedSol, resPETSc.vec())
 
-        self.onlineSol = self.Xh.element(resPETSc)
+        onlineSol = self.Xh.element(resPETSc)
 
         # to export, call self.exportField(onlineSol, "U_nirb")
 
-        return self.onlineSol
+        # No raison to return resPETSc but it makes it work (TO CHECK)
+        return onlineSol, resPETSc
 
     def loadData(self, path="./"):
         """Load the data generated by the offline phase
@@ -782,18 +790,17 @@ class nirbOnline(ToolboxModel):
             self.RectificationMat = LoadPetscArrayBin("rectificationMatrix.dat")
             self.RectificationMat.assemble()
 
-    def solveOnline(self, mu=None):
+    def solveOnline(self, mu):
         """Retrun the interpolated FE-solution from coarse mesh to fine one u_{Hh}^calN(\mu)
             Solve in Coarse mesh and interpolate in fine mesh
 
         Args:
-            mu (ParameterSpaceElement, optional): parameter. Defaults to None.
+            mu (ParameterSpaceElement): parameter.
 
         Returns:
+            feelpp._discr.Element: FE solution on coarse mesh
             feelpp._discr.Element: interpolated solution on fine mesh
         """
-        if mu is None :
-            mu = self.onlineParam
         if self.tbCoarse is None:
             super().initCoarseToolbox()
 
@@ -803,7 +810,7 @@ class nirbOnline(ToolboxModel):
         # Export
         # call self.exportField(interpolatedSol, "U_interp")
 
-        return interpolatedSol
+        return coarseSol, interpolatedSol
 
 
     def initExporter(self, name, toolbox="fine"):
@@ -839,4 +846,4 @@ class nirbOnline(ToolboxModel):
         if self.exporter is not None:
             self.exporter.save()
         else:
-            print("Exporter not initialized, pease call initExporter() first")
+            print("Exporter not initialized, please call initExporter() first")
