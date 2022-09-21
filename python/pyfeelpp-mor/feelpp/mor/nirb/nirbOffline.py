@@ -20,7 +20,7 @@ if __name__ == "__main__":
 
     e = init_feelpp_environment(toolboxType, cfg_path)
 
-    doRectification=True 
+    doRectification=True  
     nbSnap = 10
     if len(sys.argv)>1:
         nbSnap = int(sys.argv[1])

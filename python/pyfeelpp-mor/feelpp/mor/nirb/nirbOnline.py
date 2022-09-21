@@ -93,7 +93,7 @@ if __name__ == "__main__":
     
     # start = time()
 
-    doRectification=False
+    doRectification=True
 
     nirb_on = nirbOnline(dim, H, h, toolboxType, cfg_path, model_path, geo_path, doRectification=doRectification)
 
@@ -110,32 +110,37 @@ if __name__ == "__main__":
     
 
 
-    """
-    err = np.zeros(Nsample)
-    start = time()
-    for i,mu in enumerate(mus):
-        uH = nirb_on.solveOnline(mu)
-        uh = nirb_on.getToolboxSolution(nirb_on.tbFine, mu)
-        err[i] = (uH-uh).l2Norm()
-    finish = time()
+    
+
+    Dmu = nirb_on.Dmu
+    s = Dmu.sampling()
+    Ns = 1
+    s.sampling(Ns, 'log-random')
+    mus = s.getVector()
+
+    # err = np.zeros(Nsample)
+    # start = time()
+    # for i,mu in enumerate(mus):
+    #     uH = nirb_on.solveOnline(mu)
+    #     uh = nirb_on.getToolboxSolution(nirb_on.tbFine, mu)
+    #     err[i] = (uH-uh).l2Norm()
+    # finish = time()
 
     time_toolbox_start = time()
     for mu in mus:
         uh = nirb_on.getToolboxSolution(nirb_on.tbFine, mu)
     time_toolbox_finish = time()
-    time_toolbox_elapsed = (time_toolbox_finish - time_toolbox_start) / Nsample
+    time_toolbox_elapsed = (time_toolbox_finish - time_toolbox_start) / Ns
 
 
     time_nirb_start = time()
     for mu in mus:
-        nirb_on.getInterpSol(mu)
-        nirb_on.getCompressedSol()
-        uHh = nirb_on.getOnlineSol()
+        uHh = nirb_on.getOnlineSol(mu)
     time_nirb_finish = time()
-    time_nirb_elapsed = (time_nirb_finish - time_nirb_start) / Nsample
+    time_nirb_elapsed = (time_nirb_finish - time_nirb_start) / Ns
 
     WriteVecAppend('nirbOnline_time_exec.dat', [nirb_on.N, time_toolbox_elapsed, time_nirb_elapsed])
-    """
+    print(f"[NIRB online] Elapsed toolbox_time = {time_toolbox_elapsed} nirb_time = {time_nirb_elapsed}")
    
     """ 
     # errors = np.zeros((Nsample, 3))
@@ -169,10 +174,14 @@ if __name__ == "__main__":
     # finish = time() 
 
     if doRectification:
-        file='nirb_error_rectif.dat'
+        file1='nirb_error_rectif1.dat'
+        fileN=f'nirb_error_rectif{Nsample}.dat'
     else :
-        file='nirb_error.dat'
-    WriteVecAppend(file,error1)
+        file1='nirb_error1.dat'
+        fileN=f'nirb_error{Nsample}.dat'
+        
+    WriteVecAppend(file1,error1)
+    WriteVecAppend(fileN,errorN)
 
     # print(f"[NIRB] Online Elapsed time =", finish-start)
     print(f"[NIRB] Online part Done !!")
