@@ -225,9 +225,9 @@ class nirbOffline(ToolboxModel):
         xr = Udof.copy()
 
         for i in range(self.N):
-            xr[:] = self.reducedBasis[i,:]
+            xr[:] = self.reducedBasis[:,i]
             self.h1ScalarProductMatrix.to_petsc().mat().mult(xr,Udof)
-            self.reducedBasis.mult(Udof,Umode)
+            self.reducedBasis.mult(Udof,Umode)  # ??
             K[i,:] = Umode[:]
 
             self.l2ScalarProductMatrix.to_petsc().mat().mult(xr,Udof)
@@ -250,7 +250,7 @@ class nirbOffline(ToolboxModel):
         eigenMatrix.setFromOptions()
         eigenMatrix.setUp()
 
-        eigenMatrix[:,:] = eigenVectors.transpose()[:,:]
+        eigenMatrix[:,:] = eigenVectors[:,:]
 
         eigenMatrix.assemble()
 
@@ -316,7 +316,7 @@ class nirbOffline(ToolboxModel):
             regulParam(float), optional : the regularization parameter for rectification
         """
         self.reducedBasis = self.PODReducedBasis(tolerance=tolerance)
-        self.N = self.reducedBasis.size[0]
+        self.N = self.reducedBasis.size[1]
         if feelpp.Environment.isMasterRank():
             print(f"[NIRB] Number of modes : {self.N}")
         if self.doRectification:
@@ -359,7 +359,7 @@ class nirbOffline(ToolboxModel):
             LS.append(self.fineSnapShotList[i].to_petsc().vec()[:])
 
 
-        reducedOrderBasis = PETSc.Mat().createDense(size=(Nmode,self.Ndofs))
+        reducedOrderBasis = PETSc.Mat().createDense(size=(self.Ndofs, Nmode))
         reducedOrderBasis.setFromOptions()
         reducedOrderBasis.setUp()
         reducedOrderBasis.assemble()
@@ -371,7 +371,7 @@ class nirbOffline(ToolboxModel):
             for j in range(Nsnap):
                 vec += eigenVectors[i][j]*LS[j]
 
-            reducedOrderBasis[i,:] = vec
+            reducedOrderBasis[:,i] = vec
 
         reducedOrderBasis.assemble()
 
@@ -389,7 +389,7 @@ class nirbOffline(ToolboxModel):
         Returns :
             R (petsc.Mat) : the rectification matrix
         """
-        assert self.N == self.reducedBasis.size[0], f"need computation of reduced basis"
+        assert self.N == self.reducedBasis.size[1], f"need computation of reduced basis"
 
         interpolateOperator = self.createInterpolator(self.tbCoarse, self.tbFine)
         CoarseSnaps = []
@@ -418,11 +418,11 @@ class nirbOffline(ToolboxModel):
 
         for i in range(self.N):
             CM.mult(lfine[i],Udof)
-            self.reducedBasis.mult(Udof,Usnap)
+            self.reducedBasis.mult(Udof,Usnap)  # ??
             Bh[i,:] = Usnap[:]
 
             CM.mult(lcoarse[i],Udof)
-            self.reducedBasis.mult(Udof,Usnap)
+            self.reducedBasis.mult(Udof,Usnap)  # ??
             BH[i,:] = Usnap[:]
 
 
@@ -491,7 +491,7 @@ class nirbOffline(ToolboxModel):
         ub,vb = self.reducedBasis.createVecs()
         Z = []
         for i in range(self.N):
-            ub[:] = self.reducedBasis[i,:]
+            ub[:] = self.reducedBasis[:,i]
             Z.append(ub)
 
         # Z[0] /= self.normH1(Z[0])
@@ -505,7 +505,7 @@ class nirbOffline(ToolboxModel):
             Z[n] = z_tmp / self.normH1(z_tmp)
 
         for i in range(self.N):
-            self.reducedBasis[i,:] = Z[i][:]
+            self.reducedBasis[:,i] = Z[i][:]
 
         self.reducedBasis.assemble()
 
@@ -523,7 +523,7 @@ class nirbOffline(ToolboxModel):
         ub,vb = self.reducedBasis.createVecs()
         Z = []
         for i in range(self.N):
-            ub[:] = self.reducedBasis[i,:]
+            ub[:] = self.reducedBasis[:,i]
             Z.append(ub)
 
         # Z[0] /= self.normL2(Z[0])
@@ -537,7 +537,7 @@ class nirbOffline(ToolboxModel):
             Z[n] = z_tmp / self.normL2(z_tmp)
 
         for i in range(self.N):
-            self.reducedBasis[i,:] = Z[i][:]
+            self.reducedBasis[:,i] = Z[i][:]
 
         self.reducedBasis.assemble()
 
@@ -558,10 +558,7 @@ class nirbOffline(ToolboxModel):
             bool: True if the reduced basis is H1 orthonormalized
         """
         h1ScalPetsc = self.h1ScalarProductMatrix.to_petsc().mat()
-        # with the current version of petsc, we need to transpose the matrix
-        self.reducedBasis.transpose()
         matH1 = h1ScalPetsc.PtAP(self.reducedBasis)
-        self.reducedBasis.transpose()
 
         for i in range(self.N):
             for j in range(self.N):
@@ -586,11 +583,7 @@ class nirbOffline(ToolboxModel):
         """
         l2ScalPetsc = self.l2ScalarProductMatrix.to_petsc().mat()
         # h1ScalPetsc = self.h1ScalarProductMatrix.to_petsc().mat()
-        # with the current version of petsc, we need to transpose the matrix
-        self.reducedBasis.transpose()
         matL2 = l2ScalPetsc.PtAP(self.reducedBasis)
-        # matH1 = h1ScalPetsc.PtAP(self.reducedBasis)
-        self.reducedBasis.transpose()
 
         for i in range(self.N):
             for j in range(self.N):
@@ -730,10 +723,10 @@ class nirbOnline(ToolboxModel):
         else :
             sol = solution
 
-        ur,compressedSol = self.reducedBasis.createVecs()      # Get vectors with the same parallel layout as the matrix
+        compressedSol,ur = self.reducedBasis.createVecs()      # Get vectors with the same parallel layout as the matrix
 
         self.l2ScalarProductMatrix.mult(sol.to_petsc().vec(),ur)
-        self.reducedBasis.mult(ur,compressedSol)
+        self.reducedBasis.mult(ur, compressedSol)           # ???
 
         return compressedSol
 
@@ -754,17 +747,17 @@ class nirbOnline(ToolboxModel):
         """
         resPETSc = self.Xh.element().to_petsc()
 
-        # resPETSc, u = self.reducedBasis.createVecs()
+        # resPETSc, u = self.reducedBasis.createVecs()  # ??
 
         compressedSol = self.getCompressedSol(mu)
 
         if self.doRectification:
             coef = compressedSol.copy()
             self.RectificationMat.mult(compressedSol,coef)
-            self.reducedBasis.multTranspose(coef, resPETSc.vec())
+            self.reducedBasis.mult(coef, resPETSc.vec())
             print("[NIRB] Solution computed with Rectification post-process ")
         else :
-            self.reducedBasis.multTranspose(compressedSol, resPETSc.vec())
+            self.reducedBasis.mult(compressedSol, resPETSc.vec())
 
         onlineSol = self.Xh.element(resPETSc)
 
@@ -787,7 +780,7 @@ class nirbOnline(ToolboxModel):
         self.h1ScalarProductMatrix.assemble()
         self.reducedBasis = LoadPetscArrayBin(os.path.join(path, "reducedBasisU.dat"))
         self.reducedBasis.assemble()
-        self.N = self.reducedBasis.size[0]
+        self.N = self.reducedBasis.size[1]
         if self.doRectification:
             self.RectificationMat = LoadPetscArrayBin("rectificationMatrix.dat")
             self.RectificationMat.assemble()
