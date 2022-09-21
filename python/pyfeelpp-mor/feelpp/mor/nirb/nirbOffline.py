@@ -6,7 +6,7 @@ import time
 if __name__ == "__main__":
 
     # fineness of two grids
-    H = 0.1  # CoarseMeshSize
+    H = 0.25  # CoarseMeshSize
     h = H**2 # Fine mesh size
     dim = 2
 
@@ -22,9 +22,11 @@ if __name__ == "__main__":
 
     doRectification=True  
     nbSnap = 10
-    if len(sys.argv)>1:
+    if len(sys.argv)>=2:
         nbSnap = int(sys.argv[1])
-
+        if len(sys.argv)>=3: 
+            H = float(sys.argv[2])
+            h = H**2
 
     star=time.time()
 
