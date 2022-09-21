@@ -364,25 +364,29 @@ class nirbOffline(ToolboxModel):
         reducedOrderBasis.setUp()
         reducedOrderBasis.assemble()
 
-        reducedOrderBasis.transpose()
+        # reducedOrderBasis.transpose()
 
-        vec = PETSc.Vec().create(comm=PETSc.COMM_WORLD)
-        vec.setSizes(self.Ndofs)
-        vec.setFromOptions()
-        vec.setUp()
+        # vec = PETSc.Vec().create(comm=PETSc.COMM_WORLD)
+        # vec.setSizes(self.Ndofs)
+        # vec.setFromOptions()
+        # vec.setUp()
+
+        vec = np.zeros(self.Ndofs)
 
         for i in range(Nmode):
-            vec.set(0.)
+            vec.fill(0.)
             for j in range(Nsnap):
                 vec += float(eigenVectors[i][j])*LS[j]
 
-            r = reducedOrderBasis.getDenseColumnVec(i)
-            vec.copy(r)
-            reducedOrderBasis.restoreDenseColumnVec(i)
+            reducedOrderBasis[:,i] = vec 
+
+            # r = reducedOrderBasis.getDenseColumnVec(i)
+            # vec.copy(r)
+            # reducedOrderBasis.restoreDenseColumnVec(i)
 
 
         reducedOrderBasis.assemble()
-        reducedOrderBasis.transpose()
+        # reducedOrderBasis.transpose()
 
         return reducedOrderBasis
 
@@ -417,7 +421,7 @@ class nirbOffline(ToolboxModel):
         lfine = []
         lcoarse = []
 
-        Udof,Usnap = self.reducedBasis.createVecs()
+        Usnap, Udof = self.reducedBasis.createVecs()
 
         for i in range(self.N):
             lfine.append(self.fineSnapShotList[i].to_petsc().vec())
@@ -427,11 +431,11 @@ class nirbOffline(ToolboxModel):
 
         for i in range(self.N):
             CM.mult(lfine[i],Udof)
-            self.reducedBasis.mult(Udof,Usnap)  # ??
+            self.reducedBasis.multTranspose(Udof,Usnap)  # ??
             Bh[i,:] = Usnap[:]
 
             CM.mult(lcoarse[i],Udof)
-            self.reducedBasis.mult(Udof,Usnap)  # ??
+            self.reducedBasis.multTranspose(Udof,Usnap)  # ??
             BH[i,:] = Usnap[:]
 
 
@@ -735,7 +739,7 @@ class nirbOnline(ToolboxModel):
         compressedSol,ur = self.reducedBasis.createVecs()      # Get vectors with the same parallel layout as the matrix
 
         self.l2ScalarProductMatrix.mult(sol.to_petsc().vec(),ur)
-        self.reducedBasis.mult(ur, compressedSol)           # ???
+        self.reducedBasis.multTranspose(ur, compressedSol)           # ???
 
         return compressedSol
 
