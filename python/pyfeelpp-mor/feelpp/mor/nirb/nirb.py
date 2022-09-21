@@ -346,31 +346,40 @@ class nirbOffline(ToolboxModel):
 
         correlationMatrix.assemble()
         eigenValues, eigenVectors =  TruncatedEigenV(correlationMatrix, tolerance) # truncate only eigenvalu >0
-
+        
         Nmode = len(eigenVectors)
         for i in range(Nmode):
             eigenVectors[i] /= np.sqrt(np.abs(eigenValues[i]))
 
         LS = []
         for i in range(Nsnap):
-            LS.append(self.fineSnapShotList[i].to_petsc().vec()[:])
+            LS.append(self.fineSnapShotList[i].to_petsc().vec())
 
 
-        reducedOrderBasis = PETSc.Mat().createDense(size=(Nmode,self.Ndofs))
+        reducedOrderBasis = PETSc.Mat().createDense(size=(Nmode,self.Ndofs), comm=PETSc.COMM_WORLD)
         reducedOrderBasis.setFromOptions()
         reducedOrderBasis.setUp()
         reducedOrderBasis.assemble()
 
-        vec = np.zeros(self.Ndofs)
+        reducedOrderBasis.transpose()
+
+        vec = PETSc.Vec().create(comm=PETSc.COMM_WORLD)
+        vec.setSizes(self.Ndofs)
+        vec.setFromOptions()
+        vec.setUp()
 
         for i in range(Nmode):
-            vec.fill(0.)
+            vec.set(0.)
             for j in range(Nsnap):
-                vec += eigenVectors[i][j]*LS[j]
+                vec += float(eigenVectors[i][j])*LS[j]
 
-            reducedOrderBasis[i,:] = vec
+            r = reducedOrderBasis.getDenseColumnVec(i)
+            vec.copy(r)
+            reducedOrderBasis.restoreDenseColumnVec(i)
+
 
         reducedOrderBasis.assemble()
+        reducedOrderBasis.transpose()
 
         return reducedOrderBasis
 
