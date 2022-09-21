@@ -1,10 +1,10 @@
 ###  CMakeLists.txt; coding: utf-8 --- 
 
 
-set(PYFILES conftest.py test_mor.py)
+set(PYFILES conftest.py test_mor.py test_nirb.py)
 install(FILES ${PYFILES} DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp)
 
-foreach(test mor )
+foreach( test mor nirb )
   add_test (NAME feelpp_mor_python-tests-${test}
     COMMAND ${CMAKE_COMMAND} -E env
           LD_LIBRARY_PATH=${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}:$ENV{LD_LIBRARY_PATH}
@@ -12,6 +12,7 @@ foreach(test mor )
           ${PYTHON_EXECUTABLE} -m pytest test_${test}.py -s -vv
           WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
   )
+  #[===[
   add_test (NAME feelpp_mor_python-tests-mpi-${test}
     COMMAND ${CMAKE_COMMAND} -E env
           LD_LIBRARY_PATH=${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}:$ENV{LD_LIBRARY_PATH}
@@ -19,4 +20,5 @@ foreach(test mor )
           mpirun -np 2 ${PYTHON_EXECUTABLE} -m pytest test_${test}.py -s -vv
           WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
   )
+  ]===]
 endforeach()

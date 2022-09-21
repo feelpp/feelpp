@@ -58,10 +58,9 @@ def createInterpolator(image_tb,domain_tb):
 @pytest.mark.parametrize("cfg_path, geo_path, model_path", cases_params, ids=cases_ids)
 def test_interpolate_constant(cfg_path, geo_path, model_path):
 
-    PWD=os.getcwd()
-    cfg_path = os.path.join(PWD, cfg_path)
-    geo_path = os.path.join(PWD, geo_path)
-    model_path = os.path.join(PWD, model_path)
+    cfg_path = os.path.join(os.path.dirname(__file__), cfg_path)
+    geo_path = os.path.join(os.path.dirname(__file__), geo_path)
+    model_path = os.path.join(os.path.dirname(__file__), model_path)
 
     config = feelpp.globalRepository("nirb")
     e=feelpp.Environment(["pyfeelpp-test-nirb"], opts = toolboxes_options("heat"), config=config)
