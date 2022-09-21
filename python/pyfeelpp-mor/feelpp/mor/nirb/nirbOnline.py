@@ -1,6 +1,8 @@
+from inspect import Parameter
 from time import time
 from feelpp.mor.nirb.nirb import *
 from feelpp.mor.nirb.utils import WriteVecAppend, init_feelpp_environment
+import sys 
 
 
 def ComputeErrors(nirb_on, mu):
@@ -30,6 +32,38 @@ def ComputeErrors(nirb_on, mu):
     error.append((uH - uh).linftyNorm())
 
     return error 
+
+def ComputeErrorsH(nirb_on, tbRef, mu, path=None, name=None):
+    """Compute the error between nirb solution and a reference one given from 
+           a very fine mesh in respect to mesh size 
+
+    Args:
+        nirb_on (class nirbOnline, initialized): nirb online instance 
+        tbRef (class ToolBoxModel, initialize): reference toolbox 
+        mu (ParameterSpaceElement): parameter 
+        path (str) : a path to load the reference solution
+        name (str) : the name of the reference solution 
+    """
+
+    uHh, _ = nirb_on.getOnlineSol(mu) # nirb solution 
+    uh = nirb_on.getToolboxSolution(nirb_on.tbFine, mu) # FE solution 
+
+    if (path != None) and (name != None): 
+        uref = tbRef.Xh.element()
+        uref.load(path,name)
+    else :
+        uref = tbRef.getToolboxSolution(tbRef.tbFine, mu) # get reference sol 
+
+    Op = tbRef.createInterpolator(tbRef.tbFine, nirb_on.tbFine)
+    Uref_int = Op.interpolate(uref)
+
+    error = [nirb_on.tbFine.mesh().hAverage()]
+    error.append((Uref_int - uHh).l2Norm())
+    error.append((Uref_int - uHh).linftyNorm())
+    error.append((Uref_int - uh).l2Norm())
+    error.append((Uref_int - uh).linftyNorm())
+
+    return error
 
 def ComputeErrorSampling(nirb_on, Nsample=1, samplingType='log-random'):
     """Compute the mean error between nirb solution and FE one for 
@@ -77,9 +111,10 @@ def ComputeErrorSampling(nirb_on, Nsample=1, samplingType='log-random'):
 if __name__ == "__main__":
 
     # fineness of two grids
-    H = 0.1  # CoarseMeshSize
+    H = 0.25  # CoarseMeshSize
     h = H**2 # fine mesh size
     dim = 2
+    order=1
 
     PWD = os.getcwd()
     toolboxType='heat'
@@ -90,16 +125,38 @@ if __name__ == "__main__":
     model_path = f"{modelsFolder}{modelfile[toolboxType]}.json"
 
     e = init_feelpp_environment(toolboxType, cfg_path)
+
+    if len(sys.argv)>=2: 
+        H = float(sys.argv[1])
+        h = H**2
+
+    ### Solve in very fine mesh 
+    msh_path=f"/data/home/elarif/squareref.msh" # link to a very fine mesh as reference 
+    tbRef = ToolboxModel(dim, H, h, toolboxType, cfg_path, model_path, msh_path, order)
+
+    mu_ref = tbRef.Dmu.element()
+    mu_ref.setParameters(tbRef.model['Parameters']) # Get defaults parameters from json file 
     
-    # start = time()
+    """ We can solve the fine problem ones and save the solution in a file to load every changement of mesh size 
+        or recompute this solution in each iteration (costly) """
+    # uh = tbRef.getToolboxSolution(tbRef.tbFine, mu)
+    path = f"nirb_ref_{toolboxType}_sol"
+    name = 'FE_sol_ref'
+    # uh.save(path,'FE_sol_ref')
 
-    doRectification=True
 
-    nirb_on = nirbOnline(dim, H, h, toolboxType, cfg_path, model_path, geo_path, doRectification=doRectification)
 
+    doRectification=False
+
+    nirb_on = nirbOnline(dim, H, h, toolboxType, cfg_path, model_path, geo_path, order=order, doRectification=doRectification)
+    
+    
     mu = nirb_on.Dmu.element() 
     nirb_on.loadData()
     # uHh = nirb_on.getOnlineSol(mu)
+
+    errorH = ComputeErrorsH(nirb_on, tbRef, mu_ref, path, name) # With solution saved in path/name.h5 
+    # errorH = ComputeErrorsH(nirb_on, tbRef, mu_ref) # With computing the solution 
 
     Nsample = 10
 
@@ -107,11 +164,12 @@ if __name__ == "__main__":
     errorN = ComputeErrorSampling(nirb_on, Nsample=Nsample)
     print("[NIRB online] error 1 param = ", error1)
     print(f"[NIRB online] error {Nsample} param = ", errorN)
+    print(f'[NIRB online] mesh size, error = ', errorH)
     
 
 
     
-
+    """
     Dmu = nirb_on.Dmu
     s = Dmu.sampling()
     Ns = 1
@@ -141,7 +199,7 @@ if __name__ == "__main__":
 
     WriteVecAppend('nirbOnline_time_exec.dat', [nirb_on.N, time_toolbox_elapsed, time_nirb_elapsed])
     print(f"[NIRB online] Elapsed toolbox_time = {time_toolbox_elapsed} nirb_time = {time_nirb_elapsed}")
-   
+    """ 
     """ 
     # errors = np.zeros((Nsample, 3))
     errors = []
@@ -176,12 +234,15 @@ if __name__ == "__main__":
     if doRectification:
         file1='nirb_error_rectif1.dat'
         fileN=f'nirb_error_rectif{Nsample}.dat'
+        fileH=f'nirb_error_rectifH.dat'
     else :
         file1='nirb_error1.dat'
         fileN=f'nirb_error{Nsample}.dat'
+        fileH=f'nirb_errorH.dat'
         
     WriteVecAppend(file1,error1)
     WriteVecAppend(fileN,errorN)
+    WriteVecAppend(fileH,errorH)
 
     # print(f"[NIRB] Online Elapsed time =", finish-start)
     print(f"[NIRB] Online part Done !!")
