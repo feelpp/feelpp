@@ -264,6 +264,14 @@ def create_box(filename="box"):
 
 
 def read_json(path):
+    """read a json file with comments in it, using json package
+    
+    Args:
+        path (str): path of the json file
+    
+    Returns:
+        dict: loaded model, as a dictionary
+    """
     file = open(path, 'r')
     data =  file.read()
     file.close()
