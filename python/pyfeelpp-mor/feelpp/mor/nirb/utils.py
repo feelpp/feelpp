@@ -8,7 +8,6 @@ import os
 import feelpp
 import feelpp.mor as mor
 import feelpp.toolboxes.core as core
-import json5 as json
 from petsc4py import PETSc
 from slepc4py import SLEPc
 import numpy as np
@@ -38,20 +37,6 @@ def init_feelpp_environment(toolboxType, config_file, argv=['feelpp-mor-nirb']):
     e.setConfigFile(config_file)
     return e
 
-
-def loadModel(model_path):
-    """Load the model from given modle path
-
-    Args:
-        model_path (str): path to the model file (JSON)
-
-    Returns:
-        json: model loaded
-    """
-    f = open(model_path, "r")
-    model = json.load(f)
-    f.close()
-    return model
 
 
 def loadParameterSpace(model_path):

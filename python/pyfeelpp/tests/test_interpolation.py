@@ -4,27 +4,11 @@ import pytest
 from feelpp.toolboxes.core import *
 from feelpp.toolboxes.heat import *
 import feelpp.interpolation as fi
-import json5 as json
 
 cases = [
          (('cases/nirb/square/square.cfg', 'cases/nirb/square/square.geo', 'cases/nirb/square/square.json'), 'square-2d'),
         ]
 cases_params, cases_ids = list(zip(*cases))
-
-
-def loadModel(model_path):
-    """Load the model from given modle path
-
-    Args:
-        model_path (str): path to the model file (JSON)
-
-    Returns:
-        json: model loaded
-    """
-    f = open(model_path, "r")
-    model = json.load(f)
-    f.close()
-    return model
 
 
 def setToolbox(h, geo_path, model):
@@ -72,7 +56,7 @@ def test_interpolate_constant(cfg_path, geo_path, model_path):
     # load the model
     e.setConfigFile(cfg_path)
 
-    model = loadModel(model_path)
+    model = feelpp.read_json(model_path)
 
     tbCoarse = setToolbox(H, geo_path, model)
     tbFine = setToolbox(h, geo_path, model)

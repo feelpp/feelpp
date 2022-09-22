@@ -70,7 +70,7 @@ class ToolboxModel():
     def initModel(self):
         """Initialize the model
         """
-        self.model = loadModel(self.model_path)
+        self.model = feelpp.read_json(self.model_path)
         self.tbFine = self.setToolbox(self.h)
         self.Xh = feelpp.functionSpace(mesh=self.tbFine.mesh(), order=self.order)
         self.Dmu = loadParameterSpace(self.model_path)
