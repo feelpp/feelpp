@@ -356,10 +356,10 @@ class nirbOffline(ToolboxModel):
 
         LS = []
         for i in range(Nsnap):
-            LS.append(self.fineSnapShotList[i].to_petsc().vec())
+            LS.append(self.fineSnapShotList[i].to_petsc().vec()[:])
 
 
-        reducedOrderBasis = PETSc.Mat().createDense(size=(self.Ndofs, Nmode))
+        reducedOrderBasis = PETSc.Mat().createDense(size=(self.Ndofs, Nmode), comm=comm)
         reducedOrderBasis.setFromOptions()
         reducedOrderBasis.setUp()
         reducedOrderBasis.assemble()
@@ -423,20 +423,37 @@ class nirbOffline(ToolboxModel):
 
         Usnap, Udof = self.reducedBasis.createVecs()
 
+        # vec = PETSc.Vec().create(comm=comm)
+        # vec.setSizes(self.Ndofs)
+        # vec.setFromOptions()
+        # vec.setUp()
+
+        # Udof = PETSc.Vec().create(comm=comm)
+        # Udof.setSizes(self.Ndofs)
+        # Udof.setFromOptions()
+        # Udof.setUp()
+
+        # Usnap = PETSc.Vec().create(comm=comm)
+        # Usnap.setSizes(self.N)
+        # Usnap.setFromOptions()
+        # Usnap.setUp()
+        
         for i in range(self.N):
             lfine.append(self.fineSnapShotList[i].to_petsc().vec())
             lcoarse.append(CoarseSnaps[i].to_petsc().vec())
 
         CM = self.l2ScalarProductMatrix.to_petsc().mat()
 
+        Udof = lfine[0].copy() # To get the same subdivision in // 
+
         for i in range(self.N):
             CM.mult(lfine[i],Udof)
             self.reducedBasis.multTranspose(Udof,Usnap)  # ??
-            Bh[i,:] = Usnap[:]
+            Bh[i,:] = Usnap.getArray()
 
             CM.mult(lcoarse[i],Udof)
             self.reducedBasis.multTranspose(Udof,Usnap)  # ??
-            BH[i,:] = Usnap[:]
+            BH[i,:] = Usnap.getArray()
 
 
         #regularization (AT@A +lambda I_d)^-1
@@ -571,6 +588,7 @@ class nirbOffline(ToolboxModel):
             bool: True if the reduced basis is H1 orthonormalized
         """
         h1ScalPetsc = self.h1ScalarProductMatrix.to_petsc().mat()
+        print('rank ', rank, 'l2 mat size', h1ScalPetsc.local_size, 'mat basis size', self.reducedBasis.local_size)
         matH1 = h1ScalPetsc.PtAP(self.reducedBasis)
 
         for i in range(self.N):
@@ -595,7 +613,8 @@ class nirbOffline(ToolboxModel):
             bool: True if the reduced basis is L2 orthonormalized
         """
         l2ScalPetsc = self.l2ScalarProductMatrix.to_petsc().mat()
-        # h1ScalPetsc = self.h1ScalarProductMatrix.to_petsc().mat()
+        
+        print('rank ', rank, 'l2 mat size', l2ScalPetsc.local_size, 'mat basis size', self.reducedBasis.local_size)
         matL2 = l2ScalPetsc.PtAP(self.reducedBasis)
 
         for i in range(self.N):
@@ -817,7 +836,7 @@ class nirbOnline(ToolboxModel):
 
         # Export
         # call self.exportField(interpolatedSol, "U_interp")
-
+        
         return coarseSol, interpolatedSol
 
 
