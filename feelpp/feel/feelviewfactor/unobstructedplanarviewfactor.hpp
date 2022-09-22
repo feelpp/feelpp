@@ -62,7 +62,8 @@ UnobstructedPlanarViewFactor<MeshType>::compute()
     auto current_pts = [&the_im]( auto f, auto p )
     {
         return the_im.fpoints( f, p.value() );
-    };
+    };    
+
     for(auto const& [current_index,current_side] : enumerate(this->list_of_bdys_) )
     {
         if ( !this->mesh_->hasMarker( current_side ) )
@@ -72,8 +73,8 @@ UnobstructedPlanarViewFactor<MeshType>::compute()
         auto current_range = markedfaces( this->mesh_, current_side );
         if ( begin(current_range) != end(current_range) )
         {
-            auto current_ctx = context( _element = boost::unwrap_ref( *begin( current_range ) ), _type = on_facets_t(), _geomap = this->mesh_->gm(), _pointset = current_pts );
-
+            constexpr size_type context_v = vm::POINT|vm::NORMAL;
+            auto current_ctx = context( _element = boost::unwrap_ref( *begin( current_range ) ), _type = on_facets_t(), _geomap = this->mesh_->gm(),/* _context_at_compile_time = context_v, */_pointset = current_pts );
             for ( auto const& [remote_index, remote_side] : enumerate( this->list_of_bdys_ ) )
             {
                 if ( !this->mesh_->hasMarker( current_side ) )
@@ -83,18 +84,19 @@ UnobstructedPlanarViewFactor<MeshType>::compute()
 
                 // planar surface don't see themselves, hence the view factor is 0
                 if ( current_index == remote_index )
-                    this->vf_( current_index, remote_index ) = 0.0;
+                    this->vf_( current_index, remote_index ) = 0.0;                                        
                 else
                 {
                     auto remote_range = markedfaces( this->mesh_, remote_side );
                     if ( begin(remote_range) != end(remote_range ) )
-                    {
-                        auto remote_ctx = context( _element = boost::unwrap_ref( *begin( remote_range ) ), _type = on_facets_t(), _geomap = this->mesh_->gm(), _pointset = current_pts );
+                    {                        
+                        auto remote_ctx = context( _element = boost::unwrap_ref( *begin( remote_range ) ), _type = on_facets_t(), _geomap = this->mesh_->gm(), /* _context_at_compile_time = context_v,*/ _pointset = current_pts );
                         for( auto const& current_wface : markedfaces( this->mesh_, current_side ) )
                         {
                             auto const& current_face = boost::unwrap_ref( current_wface );
                             // get the area of the face
                             this->areas_[current_index] += current_face.measure();
+                            double face_area = current_face.measure();
                             auto const& current_pts = emap<value_type>( current_ctx->xReal() );
                             for( auto const& remote_wface : remote_range )
                             {
@@ -105,19 +107,20 @@ UnobstructedPlanarViewFactor<MeshType>::compute()
                                 
                                 auto const& remote_pts = emap<value_type>( remote_ctx->xReal() );
 
-                                for( auto const& [current_index,current_pt]: enumerate(current_pts.colwise()))
+                                for( auto const& [current_index_1,current_pt]: enumerate(current_pts.colwise()))
                                 {
-                                    for ( auto const& [remote_index, remote_pt] : enumerate( remote_pts.colwise() ) )
-                                    {
-                                        auto p2p = (current_pt - remote_pt);
+                                    for ( auto const& [remote_index_1, remote_pt] : enumerate( remote_pts.colwise() ) )
+                                    {                                        
+                                        auto p2p = (current_pts.col(current_index_1) - remote_pts.col(remote_index_1));                                                                             
                                         value_type dist = p2p.norm();
-                                        // get angles between the two faces
-                                        value_type cos1 = p2p.dot( current_ctx->normal(current_index) ) / dist; 
-                                        value_type cos2 = p2p.dot( remote_ctx->normal(remote_index) ) / dist;
+                                        // get angles between the two faces                                                                                
+                                        value_type cos1 = p2p.dot( current_ctx->normal(current_index_1) ) / dist;                                         
+                                        value_type cos2 = p2p.dot( remote_ctx->normal(remote_index_1) ) / dist;
+                                        
                                         // add contribution to integrals
                                         this->vf_( current_index, remote_index ) +=
-                                                    current_ctx->J( current_index )  * remote_ctx->J( remote_index ) * 
-                                                    std::abs( cos1 ) * std::abs( cos2 ) / std::pow( dist, this->exponent_ );
+                                                    current_ctx->J( current_index_1 )  * remote_ctx->J( remote_index_1 ) * 
+                                                    std::abs( cos1 ) * std::abs( cos2 ) / (std::pow( dist, this->exponent_ )*(this->divisor_*face_area));                                                                                            
                                     }
                                 }
                             }
