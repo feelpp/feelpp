@@ -37,7 +37,7 @@ parts = [2,3,6]
 
 @pytest.mark.parametrize("nparts", parts)
 def test_heat_ensemble(nparts):
-    c=feelpp.readcfg(os.path.dirname(__file__)+'/heat/Building/ThermalBridgesENISO10211/case2.cfg')    
+    c=feelpp.readCfg(os.path.dirname(__file__)+'/heat/Building/ThermalBridgesENISO10211/case2.cfg')    
     feelpp.Environment.setConfigFile(os.path.dirname(__file__)+'/heat/Building/ThermalBridgesENISO10211/case2.cfg')
     dim = int(c['feelpp']['case.dimension'])
     order = [int(s) for s in c['feelpp']['case.discretization'].split("P") if s.isdigit()][0]
