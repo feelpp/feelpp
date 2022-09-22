@@ -22,6 +22,6 @@
 #
 #
 set_directory_properties(PROPERTIES LABEL testviewfactor)
-feelpp_add_test(viewfactor NO_MPI_TEST  )
+feelpp_add_test(viewfactor NO_MPI_TEST CFG cases/viewfactor.cfg )
 feelpp_add_testcase(cases PREFIX testviewfactors)
 add_dependencies(feelpp_test_viewfactor testviewfactors_add_testcase_cases )
