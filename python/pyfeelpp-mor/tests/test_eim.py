@@ -205,7 +205,7 @@ def test_matrix(casefile, name, dim, init_feelpp):
         [betaA, _] = model.computeBetaQm(mu)
 
         A_eim = AD.computeA(betaA[0])
-        A_tb = assembleMDEIM(mu).mat()
+        A_tb = assembleMDEIM(mu).to_petsc().mat()
         A_tb.assemble()
         diffA = A_eim - A_tb
         nRelA = diffA.norm()/A_tb.norm()
@@ -236,7 +236,7 @@ def test_rhs(casefile, name, dim, init_feelpp):
         [_, betaF] = model.computeBetaQm(mu)
 
         F_eim = AD.computeF(betaF[0][0])
-        F_tb = assembleDEIM(mu).vec()
+        F_tb = assembleDEIM(mu).to_petsc().vec()
         diffF = F_eim - F_tb
         nRelF = diffF.norm()/F_tb.norm()
 
@@ -267,10 +267,10 @@ def test_solution(casefile, name, dim, init_feelpp):
         [betaA, betaF] = model.computeBetaQm(mu)
 
         F_eim = AD.computeF(betaF[0][0])
-        F_tb = assembleDEIM(mu).vec()
+        F_tb = assembleDEIM(mu).to_petsc().vec()
 
         A_eim = AD.computeA(betaA[0])
-        A_tb = assembleMDEIM(mu).mat()
+        A_tb = assembleMDEIM(mu).to_petsc().mat()
         A_tb.assemble()
 
         heatBox.solve()
