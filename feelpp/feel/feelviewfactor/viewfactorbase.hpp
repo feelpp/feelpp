@@ -12,6 +12,7 @@
 #pragma once
 
 #include <feel/feelalg/glas.hpp>
+#include <feel/feelcore/json.hpp>
 
 namespace Feel
 {
@@ -34,7 +35,7 @@ public:
     ViewFactorBase( mesh_ptr_t const& mesh, nl::json const& specs )
         : mesh_( mesh ),
           j_( specs ),
-          list_of_bdys_( specs["markers"].get<std::vector<std::string>>() ),
+          list_of_bdys_( specs["viewfactor"]["markers"].get<std::vector<std::string>>() ),
           vf_( list_of_bdys_.size(), list_of_bdys_.size() ),
           areas_( list_of_bdys_.size() )
     {}
@@ -43,7 +44,7 @@ public:
     ViewFactorBase& operator=( const ViewFactorBase& ) = default;
     ViewFactorBase& operator=( ViewFactorBase&& ) = default;
     virtual ~ViewFactorBase() = default;
-//    virtual void init( std::vector<std::string> const& list_of_bdys ) { list_of_bdys_ = list_of_bdys; }
+    //virtual void init( std::vector<std::string> const& list_of_bdys ) { list_of_bdys_ = list_of_bdys; vf_( list_of_bdys_.size(), list_of_bdys_.size() ); }
 
     /// this function computes the deviation from reciprocity defined as Fij - Aj/Ai * Fji
     value_type devReciprocity( unsigned int i, unsigned int j ) const;
