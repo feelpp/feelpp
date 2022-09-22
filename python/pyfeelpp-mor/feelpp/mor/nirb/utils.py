@@ -105,6 +105,8 @@ def SavePetscArrayBin(filename, PetscAray):
     outputfile = os.path.join(filename)
 
     viewer = PETSc.Viewer().createBinary(outputfile, 'w')
+    viewer.pushFormat(viewer.Format.NATIVE)
+    # viewer.PetscViewerPushFormat(PETSC_VIEWER_NATIVE)
     viewer(PetscAray)
 
 
