@@ -263,7 +263,7 @@ def create_box(filename="box"):
 
 
 
-def read_json(path):
+def readJson(path):
     """read a json file with comments in it, using json package
     
     Args:
