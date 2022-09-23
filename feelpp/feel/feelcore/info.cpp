@@ -94,6 +94,22 @@ Info::libdir()
 }
 
 char const*
+Info::plugindir()
+{
+    return stringize( FEELPP_PLUGINDIR );
+}
+
+char const*
+Info::casesdir()
+{
+    return stringize( FEELPP_CASESDIR );
+}
+char const*
+Info::toolboxcasesdir()
+{
+    return stringize( FEELPP_TOOLBOXCASESDIR );
+}
+char const*
 Info::datadir()
 {
     return stringize( FEELPP_DATADIR );
