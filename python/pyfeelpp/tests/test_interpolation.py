@@ -56,7 +56,7 @@ def test_interpolate_constant(cfg_path, geo_path, model_path):
     # load the model
     e.setConfigFile(cfg_path)
 
-    model = feelpp.read_json(model_path)
+    model = feelpp.readJson(model_path)
 
     tbCoarse = setToolbox(H, geo_path, model)
     tbFine = setToolbox(h, geo_path, model)
