@@ -26,7 +26,6 @@ if(DEFINED PROJECT_NAME)
   set( MOR_SUBPROJECT ON )
 endif()
 
-
 project(mor)
   
 
