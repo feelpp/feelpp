@@ -124,21 +124,21 @@
             "type":"mean",
             "markers": ["Omega_1"],
             "expr": "crb_u:crb_u",
-            "topodim": 3
+            "topodim": 2
         },
         "Statistics_T_Omega2_mean":
         {
             "type":"mean",
             "markers": ["Omega_2"],
             "expr": "crb_u:crb_u",
-            "topodim": 3
+            "topodim": 2
         },
         "Statistics_T_int_mean":
         {
             "type":"mean",
             "markers": ["Gamma_int"],
             "expr": "crb_u:crb_u",
-            "topodim": 2
+            "topodim": 1
         }
     },
     "PostProcess":
