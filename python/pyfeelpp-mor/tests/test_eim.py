@@ -293,9 +293,22 @@ def test_output(casefile, name, dim, init_feelpp):
 
     model, heatBox, assembleDEIM, assembleMDEIM, output_names = init_toolboxmor(casefile, name, dim)
 
+    # Xh = feelpp.functionSpace(mesh=heatBox.mesh(), order=1)
+    # u = Xh.element()
+    # u.on(range=feelpp.elements(heatBox.mesh()), expr=feelpp.expr("1"))
+
     [Aq0, Fq0] = model.getAffineDecomposition()
+
+    print(Fq0[1])
+    # print(f" f(1) = {Fq0[1][0][0].dot(u)}")
+    
+
     Aq = convertToPetscMat(Aq0[0])
     Fq = convertToPetscVec(Fq0)
+    u = Fq[1][0].duplicate()
+    u.set(1)
+    print(f" f(1) = {Fq[1][0].dot(u)}")
+
 
     AD = AffineDecomposition(Aq, Fq)
     ES = EimSolver()
@@ -306,24 +319,27 @@ def test_output(casefile, name, dim, init_feelpp):
         [betaA, betaF] = model.computeBetaQm(mu)
 
         F_eim = AD.computeF(betaF[0][0])
-        # F_tb = assembleDEIM(mu).vec()
+        F_tb = assembleDEIM(mu).vec()
 
         A_eim = AD.computeA(betaA[0])
-        # A_tb = assembleMDEIM(mu).mat()
-        # A_tb.assemble()
+        A_tb = assembleMDEIM(mu).mat()
+        A_tb.assemble()
 
         heatBox.solve()
         heatBox.exportResults()
         
         outputs_tb = heatBox.postProcessMeasures().values()
-        # u_tb = ES.solve(A_tb, F_tb)
+        u_tb = ES.solve(A_tb, F_tb)
         u_eim = ES.solve(A_eim, F_eim)
 
         for k, o in enumerate(output_names):
             l_eim = AD.computeLK(betaF[k+1][0], k+1)    # k = 0 corresponds to rhs
-            output_eim = l_eim.dot(u_eim)
+            output_tbeim = Fq[k+1][0].dot(u_eim)
+            output_tbtb = Fq[k+1][0].dot(u_tb)
+            output_eimtb = l_eim.dot(u_tb)
+            output_eimeim = l_eim.dot(u_eim)            # This is what we want to compare to the toolbox
 
-            nRelS = abs(output_eim - outputs_tb[o])/outputs_tb[o]
-            print(f"|{mu}, {o} : eim:{output_eim:.2e}, tb:{outputs_tb[o]:.2e}, rel:{nRelS:.2e}")
+            nRelS = abs(output_eimeim - outputs_tb[o])/outputs_tb[o]
+            print(f"|{mu}, {o} : eimeim:{output_eimeim:.2e}, eimtb:{output_eimtb:.2e}, tbeim:{output_tbeim:.2e}, tbtb:{output_tbtb:.2e} tb:{outputs_tb[o]:.2e}, rel:{nRelS:.2e}")
 
             assert(nRelS < 1e-12)

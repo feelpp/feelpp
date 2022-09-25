@@ -1,5 +1,6 @@
 #include <feel/feeldiscr/sensors.hpp>
-
+#include <fmt/ostream.h>
+#include <feel/feelcore/enumerate.hpp>
 namespace Feel
 {
 
@@ -234,19 +235,33 @@ ToolboxMor<SpaceType, Options>::assembleOutputMean( parameter_type const& mu, CR
         auto exGU1 = ex.diff<1>("crb_grad_u_1");
         auto exGU2 = ex.diff<1>("crb_grad_u_2");
         auto exDNU = ex.diff<1>("crb_dn_u");
+        LOG(INFO) << fmt::format("[ToolboxMor::assembleOutputMean] ex: {}", ex);
+        LOG(INFO) << fmt::format("[ToolboxMor::assembleOutputMean] exU: {}", exU);
+        LOG(INFO) << fmt::format("[ToolboxMor::assembleOutputMean] exGU0: {}", exGU0);
+        LOG(INFO) << fmt::format("[ToolboxMor::assembleOutputMean] exGU1: {}", exGU1);
+        LOG(INFO) << fmt::format("[ToolboxMor::assembleOutputMean] exGU2: {}", exGU2);
+        LOG(INFO) << fmt::format("[ToolboxMor::assembleOutputMean] exDNU: {}", exDNU);
         auto dim = output.dim();
+        LOG(INFO) << "[ToolboxMor::assembleOutputMean] assemble dim = " << dim << std::endl;
         if( dim == nDim )
         {
             auto range = markedelements(this->Xh->mesh(), output.markers());
-            double area = integrate( _range=range, _expr=cst(1.0) ).evaluate()(0,0) ;
-            f += integrate( _range=range, _expr=(exU*id(u)+exGU0*dx(u)+exGU1*dy(u)+exGU2*dz(u))/cst(area) );
+            double measure = integrate( _range=range, _expr=cst(1.0) ).evaluate()(0,0) ;
+            LOG(INFO) << "[ToolboxMor::assembleOutputMean] measure = " << measure << std::endl;
+            f += integrate( _range=range, _expr=(exU*id(u)+exGU0*dx(u)+exGU1*dy(u)+exGU2*dz(u))/cst(measure) );
+            u.on(_range=range, _expr=cst(1.));
+            LOG(INFO) << "[ToolboxMor::assembleOutputMean] f(1) = " << f(u) << std::endl;
         }
         else if( dim == nDim-1 )
         {
             auto range = markedfaces(this->Xh->mesh(), output.markers());
-            double area = integrate( _range=range, _expr=cst(1.0) ).evaluate()(0,0) ;
-            f += integrate( _range=range, _expr=(exU*id(u)+exGU0*dx(u)+exGU1*dy(u)+exGU2*dz(u)+exDNU*dn(u))/cst(area) );
+            double measure = integrate( _range=range, _expr=cst(1.0) ).evaluate()(0,0) ;
+            LOG(INFO) << "[ToolboxMor::assembleOutputMean] measure = " << measure << std::endl;
+            f += integrate( _range=range, _expr=(exU*id(u)+exGU0*dx(u)+exGU1*dy(u)+exGU2*dz(u)+exDNU*dn(u))/cst(measure) );
+            u.on(_range=range, _expr=cst(1.));
+            LOG(INFO) << "[ToolboxMor::assembleOutputMean] f(1) = " << f(u) << std::endl;
         }
+
     }
    return f.vectorPtr();
 }
@@ -323,7 +338,7 @@ template<typename SpaceType, int Options>
 void
 ToolboxMor<SpaceType, Options>::setupSpecificityModel( boost::property_tree::ptree const& ptree, std::string const& dbDir )
 {
-    Feel::cout << "setupSpecificityModel" << std::endl;
+    LOG(INFO) << "setupSpecificityModel" << std::endl;
 
     M_modelProperties = std::make_shared<CRBModelProperties>( Environment::exprRepository(), this->worldCommPtr()/*subWorldCommSeqPtr()*/ );
     if ( this->hasModelData( "crb_properties" ) )
@@ -344,11 +359,11 @@ ToolboxMor<SpaceType, Options>::setupSpecificityModel( boost::property_tree::ptr
 
     M_deim = Feel::deim( _model=std::dynamic_pointer_cast<self_type>(this->shared_from_this()), _prefix="vec");
     this->addDeim(M_deim);
-    Feel::cout << tc::green << "ToolboxMor DEIM construction finished!!" << tc::reset << std::endl;
+    LOG(INFO) << tc::green << "ToolboxMor DEIM construction finished!!" << tc::reset << std::endl;
 
     M_mdeim = Feel::mdeim( _model=std::dynamic_pointer_cast<self_type>(this->shared_from_this()), _prefix="mat");
     this->addMdeim(M_mdeim);
-    Feel::cout << tc::green << "ToolboxMor MDEIM construction finished!!" << tc::reset << std::endl;
+    LOG(INFO) << tc::green << "ToolboxMor MDEIM construction finished!!" << tc::reset << std::endl;
 
     // outputs
     int i = 1;
@@ -358,12 +373,12 @@ ToolboxMor<SpaceType, Options>::setupSpecificityModel( boost::property_tree::ptr
         M_outputName.push_back(name);
         if( (output.type() == "mean" || output.type() == "integrate") && output.expression().hasSymbolDependency(parameterNames) )
         {
-            Feel::cout << "output " << name << " depends on parameters" << std::endl;
+            LOG(INFO) << "output " << name << " depends on parameters" << std::endl;
             M_outputDeim[name] = i;
             M_outputDeimName.push_back(name);
             auto dO = Feel::deim( _model=std::dynamic_pointer_cast<self_type>(this->shared_from_this()), _prefix="output_"+name, _tag=i);
             this->addDeim(dO);
-            Feel::cout << tc::green << "ToolboxMor DEIM for output " << name << " construction finished!!" << tc::reset << std::endl;
+            LOG(INFO) << tc::green << "ToolboxMor DEIM for output " << name << " construction finished!!" << tc::reset << std::endl;
             i++;
         }
         else
@@ -390,16 +405,13 @@ ToolboxMor<SpaceType, Options>::initModelImpl()
     this->Dmu = parameterspace_type::New(parameters);
     auto parameterNames = std::set<std::string>(this->Dmu->parameterNames().begin(), this->Dmu->parameterNames().end());
 
-    if( Environment::worldComm().isMasterRank() )
-    {
-        std::cout << "Number of local dof " << this->Xh->nLocalDof() << "\n";
-        std::cout << "Number of dof " << this->Xh->nDof() << "\n";
-    }
+    LOG(INFO) << "[ToolboxMor] Number of local dof " << this->Xh->nLocalDof() << "\n";
+    LOG(INFO) << "[ToolboxMor] Number of dof " << this->Xh->nDof() << "\n";
 
     auto PsetV = this->Dmu->sampling();
     std::string supersamplingname = fmt::format("DmuDEim-P{}-Ne{}-generated-by-master-proc", this->Dmu->dimension(), M_trainsetDeimSize );
     std::ifstream file ( supersamplingname );
-    Feel::cout << tc::blue << "[ToolboxMor] DEIM sampling file \"" << supersamplingname;
+    LOG(INFO) << "[ToolboxMor] DEIM sampling file \"" << supersamplingname;
     bool all_proc_same_sampling=true;
     if( ! file )
     {
@@ -409,19 +421,19 @@ ToolboxMor<SpaceType, Options>::initModelImpl()
     }
     else
     {
-        Feel::cout << "\" found.\n" << tc::reset;
+        LOG(INFO) << "\" found.\n";
         PsetV->clear();
         PsetV->readFromFile(supersamplingname);
     }
     M_deim = Feel::deim( _model=std::dynamic_pointer_cast<self_type>(this->shared_from_this()), _sampling=PsetV, _prefix="vec");
     this->addDeim(M_deim);
     this->deim()->run();
-    Feel::cout << tc::green << "[ToolboxMor] DEIM construction finished!!" << tc::reset << std::endl;
+    LOG(INFO) << "[ToolboxMor] DEIM construction finished!!" << std::endl;
 
     auto PsetM = this->Dmu->sampling();
     supersamplingname = fmt::format("DmuMDEim-P{}-Ne{}-generated-by-master-proc", this->Dmu->dimension(), M_trainsetMdeimSize );
     std::ifstream fileM ( supersamplingname );
-    Feel::cout << tc::blue << "[ToolboxMor] MDEIM sampling file \"" << supersamplingname;
+    LOG(INFO) << "[ToolboxMor] MDEIM sampling file \"" << supersamplingname;
     if( ! fileM )
     {
         this->worldComm().barrier();
@@ -430,34 +442,38 @@ ToolboxMor<SpaceType, Options>::initModelImpl()
     }
     else
     {
-        Feel::cout << "\" found.\n" << tc::reset;
+        LOG(INFO) << "\" found.\n";
         PsetM->clear();
         PsetM->readFromFile(supersamplingname);
     }
     M_mdeim = Feel::mdeim( _model=std::dynamic_pointer_cast<self_type>(this->shared_from_this()), _sampling=PsetM, _prefix="mat");
     this->addMdeim(M_mdeim);
     this->mdeim()->run();
-    Feel::cout << tc::green << "[ToolboxMor] MDEIM construction finished!!" << tc::reset << std::endl;
+    LOG(INFO) << "[ToolboxMor] MDEIM construction finished!!" << std::endl;
 
     // outputs
     int i = 1;
     auto outputs = this->M_modelProperties->outputs().ofTypes({"integrate","mean","sensor"});
     for( auto const& [name,output] : outputs )
     {
+        LOG(INFO) << "[ToolboxMor] output " << name << " type " << output.type() << " expression " << output.expression() << "\n";
         M_outputName.push_back(name);
         if( (output.type() == "mean" || output.type() == "integrate") && output.expression().hasSymbolDependency(parameterNames) )
         {
-            Feel::cout << "output " << name << " depends on parameters" << std::endl;
+            LOG(INFO) << "[ToolboxMor] output " << name << " depends on parameters" << std::endl;
             M_outputDeim[name] = i;
             M_outputDeimName.push_back(name);
             auto dO = Feel::deim( _model=std::dynamic_pointer_cast<self_type>(this->shared_from_this()), _sampling=PsetV, _prefix="output_"+name, _tag=i);
             this->addDeim(dO);
             this->deim(i)->run();
-            Feel::cout << tc::green << "[ToolboxMor] DEIM for output " << name << " construction finished!!" << tc::reset << std::endl;
+            LOG(INFO) << tc::green << "[ToolboxMor] DEIM for output " << name << " construction finished!!" << tc::reset << std::endl;
             i++;
         }
         else
+        {
+            LOG(INFO) << "[ToolboxMor] output " << name << " does not depend on parameters" << std::endl;
             M_outputDeim[name] = 0;
+        }
     }
 
 } // ToolboxMor<SpaceType, Options>::initModel
@@ -579,8 +595,7 @@ ToolboxMor<SpaceType, Options>::assembleData()
 
     // output
     auto outputs = M_modelProperties->outputs().ofTypes({"integrate","mean","sensor","point"});
-    int output = 1;
-    for( auto const& outp : outputs )
+    for( auto [output, outp] : enumerate(outputs) )
     {
         auto out = outp.second;
         if( M_outputDeim[out.name()] )
@@ -588,25 +603,27 @@ ToolboxMor<SpaceType, Options>::assembleData()
             int M_O = this->deim(M_outputDeim[out.name()])->size();
             auto qo = this->deim(M_outputDeim[out.name()])->q();
             for( int i = 0; i < M_O; ++i )
-                this->M_Fqm[output][0][i] = qo[i];
+                this->M_Fqm[output+1][0][i] = qo[i];
         }
         else if( out.type() == "mean" )
         {
-            this->M_Fqm[output][0][0] = assembleOutputMean(mu, out);
+            this->M_Fqm[output+1][0][0] = assembleOutputMean(mu, out);
+            auto u = this->Xh->element();
+            u.on(_range=elements(this->mesh()), _expr=cst(1.));
+            LOG(INFO) << fmt::format("[ToolboxMor] f{}(1) = {}", output+1, dot( *this->M_Fqm[output+1][0][0], u));
         }
         else if( out.type() == "integrate")
         {
-            this->M_Fqm[output][0][0] = assembleOutputIntegrate(mu, out);
+            this->M_Fqm[output+1][0][0] = assembleOutputIntegrate(mu, out);
         }
         else if( out.type() == "sensor")
         {
-            this->M_Fqm[output][0][0] = assembleOutputSensor(mu, out);
+            this->M_Fqm[output+1][0][0] = assembleOutputSensor(mu, out);
         }
         else if( out.type() == "point")
         {
-            this->M_Fqm[output][0][0] = assembleOutputPoint(mu, out);
+            this->M_Fqm[output+1][0][0] = assembleOutputPoint(mu, out);
         }
-        output++;
     }
 
     // Energy matrix
@@ -654,7 +671,7 @@ ToolboxMor<SpaceType, Options>::output( int output_index, parameter_type const& 
             for( int m=0; m<mLQF(output_index, q); m++ )
             {
                 auto d = dot( *this->M_Fqm[output_index][q][m] , u );
-                // Feel::cout << "d["<< output_index << "][" << q << "][" << m << "] = " << d << "\n"
+                // LOG(INFO) << "d["<< output_index << "][" << q << "][" << m << "] = " << d << "\n"
                 //            << "beta = " << this->M_betaFqm[output_index][q][m] << std::endl;
                 s += this->M_betaFqm[output_index][q][m]*d;
             }
