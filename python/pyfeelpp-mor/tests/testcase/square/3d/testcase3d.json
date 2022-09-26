@@ -138,7 +138,7 @@
         {
             "type":"mean",
             "markers": ["Gamma_int"],
-            "expr": "crb_u:crb_u",
+            "expr": "crb_u/2:crb_u",    // as this is internal interface, we need to divide the value by cause because element are counted twice
             "topodim": 2
         }
     },

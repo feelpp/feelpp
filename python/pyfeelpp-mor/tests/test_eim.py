@@ -199,7 +199,8 @@ def test_matrix(casefile, name, dim, init_feelpp):
 
     AD = AffineDecomposition(Aq, Fq)
 
-    print("|test_matrix")
+    if rank == 0:
+        print("|test_matrix")
     for i in range(10):
         mu = model.parameterSpace().element()
         [betaA, _] = model.computeBetaQm(mu)
@@ -229,8 +230,9 @@ def test_rhs(casefile, name, dim, init_feelpp):
     Fq = convertToPetscVec(Fq0)
 
     AD = AffineDecomposition(Aq, Fq)
-
-    print("|test_rhs")
+    
+    if rank == 0:
+        print("|test_rhs")
     for i in range(10):
         mu = model.parameterSpace().element()
         [_, betaF] = model.computeBetaQm(mu)
@@ -261,7 +263,8 @@ def test_solution(casefile, name, dim, init_feelpp):
     AD = AffineDecomposition(Aq, Fq)
     ES = EimSolver()
 
-    print("|test_solution")
+    if rank == 0:
+        print("|test_solution")
     for i in range(10):
         mu = model.parameterSpace().element()
         [betaA, betaF] = model.computeBetaQm(mu)
@@ -293,36 +296,26 @@ def test_output(casefile, name, dim, init_feelpp):
 
     model, heatBox, assembleDEIM, assembleMDEIM, output_names = init_toolboxmor(casefile, name, dim)
 
-    # Xh = feelpp.functionSpace(mesh=heatBox.mesh(), order=1)
-    # u = Xh.element()
-    # u.on(range=feelpp.elements(heatBox.mesh()), expr=feelpp.expr("1"))
-
     [Aq0, Fq0] = model.getAffineDecomposition()
-
-    print(Fq0[1])
-    # print(f" f(1) = {Fq0[1][0][0].dot(u)}")
-    
-
     Aq = convertToPetscMat(Aq0[0])
     Fq = convertToPetscVec(Fq0)
-    u = Fq[1][0].duplicate()
-    u.set(1)
-    print(f" f(1) = {Fq[1][0].dot(u)}")
 
 
     AD = AffineDecomposition(Aq, Fq)
     ES = EimSolver()
 
-    print("|test_output")
+    if rank == 0:
+        print("|test_output")
     for i in range(10):
         mu = model.parameterSpace().element()
         [betaA, betaF] = model.computeBetaQm(mu)
 
         F_eim = AD.computeF(betaF[0][0])
         F_tb = assembleDEIM(mu).vec()
+        F_tb.assemble()
 
         A_eim = AD.computeA(betaA[0])
-        A_tb = assembleMDEIM(mu).mat()
+        A_tb = assembleMDEIM(mu).to_petsc().mat()
         A_tb.assemble()
 
         heatBox.solve()
@@ -340,6 +333,7 @@ def test_output(casefile, name, dim, init_feelpp):
             output_eimeim = l_eim.dot(u_eim)            # This is what we want to compare to the toolbox
 
             nRelS = abs(output_eimeim - outputs_tb[o])/outputs_tb[o]
-            print(f"|{mu}, {o} : eimeim:{output_eimeim:.2e}, eimtb:{output_eimtb:.2e}, tbeim:{output_tbeim:.2e}, tbtb:{output_tbtb:.2e} tb:{outputs_tb[o]:.2e}, rel:{nRelS:.2e}")
+            if rank == 0:
+                print(f"|{mu}, {o} : eimeim:{output_eimeim:.2e}, eimtb:{output_eimtb:.2e}, tbeim:{output_tbeim:.2e}, tbtb:{output_tbtb:.2e} tb:{outputs_tb[o]:.2e}, rel:{nRelS:.2e}")
 
-            assert(nRelS < 1e-12)
+            assert(nRelS < 1e-10)
