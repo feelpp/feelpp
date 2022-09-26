@@ -34,26 +34,32 @@ int main( int argc, char** argv )
                      _about = about( _name = "info",
                                      _author = "Feel++ Consortium",
                                      _email = "feelpp-devel@feelpp.org" ) );
-    std::cout << fmt::format("       Feel++ version: {}", Info::version() ) << std::endl;
-    std::cout << fmt::format(" Feel++ version major: {}", Info::versionMajor() ) << std::endl;
-    std::cout << fmt::format(" Feel++ version minor: {}", Info::versionMinor() ) << std::endl;
-    std::cout << fmt::format(" Feel++ version micro: {}", Info::versionMicro() ) << std::endl;
-    std::cout << fmt::format("Feel++ version string: {}", Info::versionString() ) << std::endl;
-    std::cout << fmt::format("       Feel++ buildid: {}", Info::buildId() ) << std::endl;
-    std::cout << fmt::format("        Feel++ prefix: {}", Info::prefix() ) << std::endl;
-    std::cout << fmt::format("        Feel++ libdir: {}", Info::libdir() ) << std::endl;
-    std::cout << fmt::format("     Feel++ plugindir: {}", Info::plugindir() ) << std::endl;
-    std::cout << fmt::format("       Feel++ datadir: {}", Info::datadir() ) << std::endl;
-    
+
+    std::cout << fmt::format("{:-^60}","[ version ]") << std::endl;
+    std::cout << fmt::format("       version: {}", Info::version() ) << std::endl;
+    std::cout << fmt::format(" version major: {}", Info::versionMajor() ) << std::endl;
+    std::cout << fmt::format(" version minor: {}", Info::versionMinor() ) << std::endl;
+    std::cout << fmt::format(" version micro: {}", Info::versionMicro() ) << std::endl;
+    std::cout << fmt::format("version string: {}", Info::versionString() ) << std::endl<< std::endl;
+    std::cout << fmt::format("       buildid: {}", Info::buildId() ) << std::endl;
+    std::cout << fmt::format("{:-^60}","[ directories ]") << std::endl;
+    std::cout << fmt::format("        prefix: {}", Info::prefix() ) << std::endl;
+    std::cout << fmt::format("        libdir: {}", Info::libdir() ) << std::endl;
+    std::cout << fmt::format("     plugindir: {}", Info::plugindir() ) << std::endl;
+    std::cout << fmt::format("       datadir: {}", Info::datadir() ) << std::endl<< std::endl;
+    std::cout << fmt::format("{:-^60}","[ repository ]") << std::endl;
+    std::cout << fmt::format("       root: {}", Environment::rootRepository() ) << std::endl;
+    std::cout << fmt::format("  downloads: {}", Environment::downloadsRepository() ) << std::endl;
+    std::cout << fmt::format("application: {}", Environment::appRepository() ) << std::endl<< std::endl;  
     if ( Info::gitMetadata().populated())
     {
-        std::cout << fmt::format( "******* Git ******* " ) << std::endl;
-        std::cout << fmt::format("      Feel++ git commit author: {} ",Info::gitMetadata().authorName()) << std::endl;
-        std::cout << fmt::format("Feel++ git commit author email: {} ",Info::gitMetadata().authorEmail()) << std::endl;
+        std::cout << fmt::format("{:-^60}","[ git ]") << std::endl;
+        std::cout << fmt::format("      git commit author: {} ",Info::gitMetadata().authorName()) << std::endl;
+        std::cout << fmt::format("git commit author email: {} ",Info::gitMetadata().authorEmail()) << std::endl<< std::endl;
     }
     else
     {
-        std::cout << "Feel++ git metadata not populated" << std::endl;
+        std::cout << "Feel++ git metadata not populated" << std::endl<< std::endl;
     }
     return 0;
 }
