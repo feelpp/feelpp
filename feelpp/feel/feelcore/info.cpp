@@ -34,6 +34,10 @@
 #include <feel/feelinfo.h>
 #include <feel/feelcore/info.hpp>
 
+#undef linux
+#undef gnu
+#undef x86_64
+
 #define stringize2(x) #x
 #define stringize(x) stringize2(x)
 
