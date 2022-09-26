@@ -151,7 +151,7 @@ macro(mor_add_library)
 
   if(mor_LIB_PLUGIN)
     INSTALL(TARGETS ${execname} EXPORT ${mor_LIB_EXPORT}
-      LIBRARY DESTINATION ${FEELPP_PLUGINDIR}
+      LIBRARY DESTINATION ${FEELPP_LIBDIR}
       INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/feelpp/mor/${mor_LIB_NAME}
       )
   else()
