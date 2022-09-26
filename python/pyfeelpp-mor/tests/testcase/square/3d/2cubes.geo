@@ -1,4 +1,4 @@
-h=0.1;
+h=0.3;
 
 // Face arriere
 
