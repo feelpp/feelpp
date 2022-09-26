@@ -57,9 +57,10 @@ factoryCRBPlugin( std::string const& pluginname, std::string const& pluginlibnam
     {
         std::string libname = pluginlibname;
         if ( libname.empty() )
-            libname = fmt::format("{}/libfeelpp_mor_plugin_{}",Info::plugindir(),pluginname);
-        fs::path pname = fs::path(pname).make_preferred();
-        LOG(INFO) << "[factoryCRBPlugin] loading " << pname.string() << std::endl;
+            libname = fmt::format("{}/libfeelpp_mor_plugin_{}",Info::libdir(),pluginname);
+        LOG(INFO) << fmt::format("[factoryCRBPlugin] plugin name: {} plugin libname: {} dirname: {}", pluginname, libname, dirname );
+        fs::path pname = ( fs::path( dirname ) / libname ).make_preferred();
+        LOG(INFO) << fmt::format("[factoryCRBPlugin] loading plugin: {}...", pname.string());google::FlushLogFiles(google::GLOG_INFO);
 
         Feel::detail::CRBPluginManager::instance().operator[]( pluginname ) = 
             boost::dll::import_alias<crbpluginapi_create_t>(pname, 
@@ -67,7 +68,7 @@ factoryCRBPlugin( std::string const& pluginname, std::string const& pluginlibnam
                                                             dll::load_mode::append_decorations );
         auto p = Feel::detail::CRBPluginManager::instance().find( pluginname );
         auto plugin = p->second();
-        LOG(INFO) << "[factoryCRBPlugin] loaded " << pname.string() << std::endl;
+        LOG(INFO) << fmt::format("[factoryCRBPlugin] loaded plugin: {}", pname.string() ); google::FlushLogFiles(google::GLOG_ERROR);
         return plugin;
     }
 }
