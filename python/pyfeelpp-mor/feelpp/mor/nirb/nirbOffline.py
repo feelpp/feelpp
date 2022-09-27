@@ -6,7 +6,7 @@ import time
 if __name__ == "__main__":
 
     # fineness of two grids
-    H = 0.25  # CoarseMeshSize
+    H = 0.1  # CoarseMeshSize
     h = H**2 # Fine mesh size
     dim = 2
 
@@ -20,7 +20,7 @@ if __name__ == "__main__":
 
     e = init_feelpp_environment(toolboxType, cfg_path)
 
-    doRectification=True  
+    doRectification=False  
     nbSnap = 10
     if len(sys.argv)>=2:
         nbSnap = int(sys.argv[1])
@@ -54,8 +54,8 @@ if __name__ == "__main__":
     perf.append(nbSnap)
     perf.append(finish-star)
 
-    file='nirbOffline_time_exec.txt'
-    WriteVecAppend(file,perf)
+    # file='nirbOffline_time_exec.txt'
+    # WriteVecAppend(file,perf)
 
     print(f"[NIRB] Offline Elapsed time = ", finish-star)
     print(f"[NIRB] Offline part Done !")
