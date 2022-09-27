@@ -26,7 +26,6 @@ if(DEFINED PROJECT_NAME)
   set( MOR_SUBPROJECT ON )
 endif()
 
-
 project(mor)
   
 
@@ -75,6 +74,7 @@ INCLUDE(CTest)
 ENABLE_TESTING()
 
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
+include(feelpp.dirs)
 include(feelpp.macros.mor)
 add_subdirectory(cmake)
 
