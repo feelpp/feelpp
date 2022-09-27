@@ -16,6 +16,7 @@
 #include <feel/feelpoly/im.hpp>
 #include <feel/feeldiscr/context.hpp>
 #include <feel/feelviewfactor/viewfactorbase.hpp>
+#include <feel/feelvf/vf.hpp>
 
 namespace Feel {
 
@@ -58,7 +59,7 @@ template<typename MeshType>
 void 
 UnobstructedPlanarViewFactor<MeshType>::compute()
 {
-    auto the_im = im( this->mesh_, 2 );
+    auto the_im = im( this->mesh_, this->j_["viewfactor"]["quadrature_order"] );
     auto current_pts = [&the_im]( auto f, auto p )
     {
         return the_im.fpoints( f, p.value() );
@@ -73,7 +74,7 @@ UnobstructedPlanarViewFactor<MeshType>::compute()
         auto current_range = markedfaces( this->mesh_, current_side );
         if ( begin(current_range) != end(current_range) )
         {
-            constexpr size_type context_v = vm::POINT|vm::NORMAL;
+            // constexpr size_type context_v = vm::POINT|vm::NORMAL;
             auto current_ctx = context( _element = boost::unwrap_ref( *begin( current_range ) ), _type = on_facets_t(), _geomap = this->mesh_->gm(),/* _context_at_compile_time = context_v, */_pointset = current_pts );
             for ( auto const& [remote_index, remote_side] : enumerate( this->list_of_bdys_ ) )
             {
@@ -97,6 +98,8 @@ UnobstructedPlanarViewFactor<MeshType>::compute()
                             // get the area of the face
                             this->areas_[current_index] += current_face.measure();
                             double face_area = current_face.measure();
+                            
+                            current_ctx->template update<vm::POINT|vm::NORMAL|vm::JACOBIAN>(current_face.element0(),current_face.idInElement0());
                             auto const& current_pts = emap<value_type>( current_ctx->xReal() );
                             for( auto const& remote_wface : remote_range )
                             {
@@ -104,7 +107,7 @@ UnobstructedPlanarViewFactor<MeshType>::compute()
                                 // get the area of the face
                                 //areas_[remote_index] += remote_face.measure();
                                 // compute the view factor
-                                
+                                remote_ctx->template update<vm::POINT|vm::NORMAL|vm::JACOBIAN>(remote_face.element0(),remote_face.idInElement0());
                                 auto const& remote_pts = emap<value_type>( remote_ctx->xReal() );
 
                                 for( auto const& [current_index_1,current_pt]: enumerate(current_pts.colwise()))
@@ -116,19 +119,20 @@ UnobstructedPlanarViewFactor<MeshType>::compute()
                                         // get angles between the two faces                                                                                
                                         value_type cos1 = p2p.dot( current_ctx->normal(current_index_1) ) / dist;                                         
                                         value_type cos2 = p2p.dot( remote_ctx->normal(remote_index_1) ) / dist;
-                                        
                                         // add contribution to integrals
                                         this->vf_( current_index, remote_index ) +=
+                                                    the_im.weight(current_face.idInElement0(),current_index_1) * the_im.weight(remote_face.idInElement0(),remote_index_1) * 
                                                     current_ctx->J( current_index_1 )  * remote_ctx->J( remote_index_1 ) * 
-                                                    std::abs( cos1 ) * std::abs( cos2 ) / (std::pow( dist, this->exponent_ )*(this->divisor_*face_area));                                                                                            
+                                                    std::abs( cos1 ) * std::abs( cos2 ) / (std::pow( dist, this->exponent_ )*(this->divisor_));                                                                                            
                                     }
                                 }
                             }
                         }
                     }
-                }
-            }
-        }
+                }                  
+                this->vf_( current_index, remote_index ) /= integrate(_range = current_range, _expr = cst(1.0) ).evaluate()(0,0);              
+            }            
+        }        
     }
 }
 } // namespace Feel

@@ -107,6 +107,15 @@ template <typename MeshType>
 typename ViewFactorBase<MeshType>::value_type
 ViewFactorBase<MeshType>::maxDevReciprocity() const
 {
-    return 1.;//vf_.array().rowwise()
+    value_type max_dev =0;
+    for (int i=0; i<this->vf_.rows();i++)
+    {
+        for (int j=0; j<i;j++)
+        {
+            auto r = std::abs(this->devReciprocity(i,j));
+            max_dev  = (max_dev< r) ?r:max_dev;
+        }
+    }
+    return max_dev;//vf_.array().rowwise()
 }
 } // namespace Feel
