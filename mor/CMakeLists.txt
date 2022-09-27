@@ -74,7 +74,7 @@ INCLUDE(CTest)
 ENABLE_TESTING()
 
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake ${FEELPP_DIR}/share/feelpp/feel/cmake/modules $ENV{FEELPP_DIR}/share/feelpp/feel/cmake/modules /usr/share/feelpp/feel/cmake/modules /usr/local/share/feelpp/feel/cmake/modules ${CMAKE_MODULE_PATH})
-include(feelpp.dirs)
+include(feelpp.dirs OPTIONAL)
 include(feelpp.macros.mor)
 add_subdirectory(cmake)
 
