@@ -408,7 +408,7 @@ int main(int argc, char**argv )
     using namespace Feel;
     po::options_description crbonlinerunoptions( "crb online run options" );
     crbonlinerunoptions.add_options()
-        ( "plugin.dir", po::value<std::string>()->default_value(Info::libdir()) , "plugin directory" )
+        ( "plugin.dir", po::value<std::string>()->default_value( ( fs::path(Info::prefix()) / Info::libdir() ).string() ) , "plugin directory" )
         ( "crbmodel.name", po::value<std::string>(), "CRB online code name" )
         ( "crbmodel.db.id", po::value<std::string>(), "CRB online code id" )
         ( "crbmodel.db.last", po::value<int>()->default_value( 2 ), "use last created(=1) or modified(=2) or not (=0)" )
