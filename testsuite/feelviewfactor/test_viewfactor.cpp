@@ -42,6 +42,43 @@ makeAbout()
 
 }
 
+double view_factor_parallel_walls_exact(double length, double width,double separation)
+{
+    double view_factor_bottom_to_top_wall=0.;
+    double a=length;
+    double b=width;
+    double c=separation;
+    double X = a/c;
+    double Y = b/c;
+    view_factor_bottom_to_top_wall = log(sqrt((1+X*X)*(1+Y*Y)/(1+X*X+Y*Y)));
+    view_factor_bottom_to_top_wall += X*sqrt(1+Y*Y)*atan(X/sqrt(1+Y*Y));
+    view_factor_bottom_to_top_wall += Y*sqrt(1+X*X)*atan(Y/sqrt(1+X*X));
+    view_factor_bottom_to_top_wall += -X*atan(X)-Y*atan(Y);
+    view_factor_bottom_to_top_wall *= 2/(M_PI*X*Y);
+
+    return view_factor_bottom_to_top_wall;
+}
+
+double view_factor_perp_walls_exact(double length, double width,double separation)
+{
+    double view_factor_bottom_to_side_wall=0.;
+    double a=separation;
+    double b=length;
+    double c=width;
+    double h = a/c;
+    double w = b/c;
+    view_factor_bottom_to_side_wall = h*atan(1/h)+w*atan(1/w);
+    view_factor_bottom_to_side_wall += -sqrt(h*h+w*w)*atan(1/sqrt(h*h+w*w));
+    double fact1 = (1+h*h)*(1+w*w)/(1+h*h+w*w);
+    double fact2 = w*w*(1+h*h+w*w)/(((1+w*w))*(h*h+w*w));
+    double fact3 = h*h*(1+h*h+w*w)/(((1+h*h))*(h*h+w*w));
+    view_factor_bottom_to_side_wall +=0.25*log(fact1*pow(fact2,w*w)*pow(fact3,h*h));    
+    view_factor_bottom_to_side_wall *= 1/(M_PI*w);
+
+    return view_factor_bottom_to_side_wall;
+}
+
+
 inline
 Feel::po::options_description
 makeOptions()
@@ -55,12 +92,7 @@ makeOptions()
 
 template<typename MeshType>
 void checkViewFactorEnclosure(std::string const& prefix)
-{
-    //auto mesh = loadMesh( _mesh=new MeshType, _filename=Environment::expand(soption(fmt::format("{}.gmsh.filename",prefix) ) ) );
-    // auto mesh = createGMSHMesh( _mesh=new MeshType,
-    //                                     _desc=domain( _name=Environment::expand(soption(fmt::format("{}.gmsh.filename",prefix) ) )  ,
-    //                                                   _dim=(prefix=="square"?2:3) ) );
-    
+{   
     auto mesh = loadMesh(_mesh=new MeshType, _filename =Environment::expand(soption(fmt::format("{}.gmsh.filename",prefix) ) )  );
     std::cout << Environment::expand(soption(fmt::format("{}.gmsh.filename",prefix) ) )<< std::endl;
     auto jsons = vsoption( fmt::format("{}.json.filename", prefix ) );
@@ -73,8 +105,14 @@ void checkViewFactorEnclosure(std::string const& prefix)
     UnobstructedPlanarViewFactor<MeshType> upvf( mesh, j );
     std::cout << "ok till here" << std::endl;
     upvf.compute();
+    BOOST_TEST_MESSAGE( fmt::format("Max dev reciprocity {}", upvf.maxDevReciprocity()));
     std::cout << "ok till here2" << std::endl;
     BOOST_TEST_MESSAGE( fmt::format("{}", upvf.viewFactors() ) );
+    auto row_sum_vf = upvf.viewFactors().rowwise().sum();
+    auto exact_vf = eigen_vector_x_col_type<double>::Ones(upvf.viewFactors().rows()) ;
+    auto difference_infNorm = (exact_vf-row_sum_vf).template lpNorm<Eigen::Infinity>();
+    BOOST_TEST_MESSAGE( fmt::format("View factors sum to one {}; infinity norm of 1 - rowwise sum {}; rowwise sum {} ", difference_infNorm<1e-3, difference_infNorm,row_sum_vf) );
+    BOOST_CHECK_MESSAGE( difference_infNorm<1e-3, fmt::format("Infinity norm of (1 - rowwise) sum is larger than 1e-3" ) );
 }
 
 FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
