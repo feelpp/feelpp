@@ -92,6 +92,7 @@ def LoadPetscArrayBin(filename):
     """
     outputfile = os.path.join(filename)
     viewer = PETSc.Viewer().createBinary(outputfile, 'r')
+    # PetscAray = PETSc.Mat().createDense()
     PetscAray = PETSc.Mat().load(viewer)
     return PetscAray
 
@@ -105,7 +106,11 @@ def SavePetscArrayBin(filename, PetscAray):
     outputfile = os.path.join(filename)
 
     viewer = PETSc.Viewer().createBinary(outputfile, 'w')
-    viewer.pushFormat(viewer.Format.NATIVE)
+    
+    # print(help(viewer.pushFormat))
+    # print(help(viewer.Format))
+
+    # viewer.pushFormat(viewer.Format.NATIVE)
     # viewer.PetscViewerPushFormat(PETSC_VIEWER_NATIVE)
     viewer(PetscAray)
 
