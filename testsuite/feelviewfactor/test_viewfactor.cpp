@@ -112,7 +112,31 @@ void checkViewFactorEnclosure(std::string const& prefix)
     auto exact_vf = eigen_vector_x_col_type<double>::Ones(upvf.viewFactors().rows()) ;
     auto difference_infNorm = (exact_vf-row_sum_vf).template lpNorm<Eigen::Infinity>();
     BOOST_TEST_MESSAGE( fmt::format("View factors sum to one {}; infinity norm of 1 - rowwise sum {}; rowwise sum {} ", difference_infNorm<1e-3, difference_infNorm,row_sum_vf) );
-    BOOST_CHECK_MESSAGE( difference_infNorm<1e-3, fmt::format("Infinity norm of (1 - rowwise) sum is larger than 1e-3" ) );
+    if(prefix=="square")
+        BOOST_CHECK_MESSAGE( difference_infNorm<1e-3, fmt::format("Infinity norm of (1 - rowwise) sum is larger than 1e-3" ) );
+    else if(prefix=="cube")
+    {
+        BOOST_CHECK_MESSAGE( difference_infNorm<5e-2, fmt::format("Infinity norm of (1 - rowwise) sum is larger than 4e-2" ) );
+    }
+    BOOST_CHECK_MESSAGE(upvf.maxDevReciprocity()<1e-10, fmt::format("Max dev reciprocity less than 1e-10"));
+    if(prefix=="cube")
+    {
+        auto vf_parallel_walls = view_factor_parallel_walls_exact(1.,1.,1.); // cube of side 1.
+        auto vf_perp_walls = view_factor_perp_walls_exact(1.,1.,1.); // cube of side 1.
+        BOOST_CHECK_MESSAGE( (upvf.viewFactors()(0,1)-vf_parallel_walls)/vf_parallel_walls <4e-2, fmt::format("Relative error view factors between parallel walls 0 1 is less than 4e-2 ") );
+        BOOST_CHECK_MESSAGE( (upvf.viewFactors()(2,3)-vf_parallel_walls)/vf_parallel_walls <4e-2, fmt::format("Relative error view factors between parallel walls 2 3 is less than 4e-2 ") );
+        BOOST_CHECK_MESSAGE( (upvf.viewFactors()(4,5)-vf_parallel_walls)/vf_parallel_walls <4e-2, fmt::format("Relative error view factors between parallel walls 4 5 is less than 4e-2 ") );
+        BOOST_CHECK_MESSAGE( (upvf.viewFactors()(0,2)-vf_perp_walls)/vf_perp_walls <4e-2, fmt::format("Relative error view factors between perp walls 0 2 is less than 4e-2 ") );
+        BOOST_CHECK_MESSAGE( (upvf.viewFactors()(0,3)-vf_perp_walls)/vf_perp_walls <4e-2, fmt::format("Relative error view factors between perp walls 0 3 is less than 4e-2 ") );
+        BOOST_CHECK_MESSAGE( (upvf.viewFactors()(0,4)-vf_perp_walls)/vf_perp_walls <4e-2, fmt::format("Relative error view factors between perp walls 0 4 is less than 4e-2 ") );
+        BOOST_CHECK_MESSAGE( (upvf.viewFactors()(0,5)-vf_perp_walls)/vf_perp_walls <4e-2, fmt::format("Relative error view factors between perp walls 0 5 is less than 4e-2 ") );
+        BOOST_CHECK_MESSAGE( (upvf.viewFactors()(1,3)-vf_perp_walls)/vf_perp_walls <4e-2, fmt::format("Relative error view factors between perp walls 1 3 is less than 4e-2 ") );
+        BOOST_CHECK_MESSAGE( (upvf.viewFactors()(1,4)-vf_perp_walls)/vf_perp_walls <4e-2, fmt::format("Relative error view factors between perp walls 1 4 is less than 4e-2 ") );
+        BOOST_CHECK_MESSAGE( (upvf.viewFactors()(1,5)-vf_perp_walls)/vf_perp_walls <4e-2, fmt::format("Relative error view factors between perp walls 1 5 is less than 4e-2 ") );
+        BOOST_CHECK_MESSAGE( (upvf.viewFactors()(2,4)-vf_perp_walls)/vf_perp_walls <4e-2, fmt::format("Relative error view factors between perp walls 2 4 is less than 4e-2 ") );
+        BOOST_CHECK_MESSAGE( (upvf.viewFactors()(2,5)-vf_perp_walls)/vf_perp_walls <4e-2, fmt::format("Relative error view factors between perp walls 2 5 is less than 4e-2 ") );
+        BOOST_CHECK_MESSAGE( (upvf.viewFactors()(3,5)-vf_perp_walls)/vf_perp_walls <4e-2, fmt::format("Relative error view factors between perp walls 3 5 is less than 4e-2 ") );
+    }
 }
 
 FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
