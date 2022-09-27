@@ -88,6 +88,7 @@ UnobstructedPlanarViewFactor<MeshType>::compute()
                     this->vf_( current_index, remote_index ) = 0.0;                                        
                 else
                 {
+                    this->vf_( current_index, remote_index ) = 0.0;
                     auto remote_range = markedfaces( this->mesh_, remote_side );
                     if ( begin(remote_range) != end(remote_range ) )
                     {                        
@@ -123,7 +124,7 @@ UnobstructedPlanarViewFactor<MeshType>::compute()
                                         this->vf_( current_index, remote_index ) +=
                                                     the_im.weight(current_face.idInElement0(),current_index_1) * the_im.weight(remote_face.idInElement0(),remote_index_1) * 
                                                     current_ctx->J( current_index_1 )  * remote_ctx->J( remote_index_1 ) * 
-                                                    std::abs( cos1 ) * std::abs( cos2 ) / (std::pow( dist, this->exponent_ )*(this->divisor_));                                                                                            
+                                                    std::abs( cos1 ) * std::abs( cos2 ) / (std::pow( dist, this->exponent_ )*(this->divisor_));
                                     }
                                 }
                             }
