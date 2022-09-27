@@ -1,6 +1,6 @@
 SetFactory("OpenCASCADE");
 //+
-h = 0.05;
+hs = 0.1;//0.005;
 
 Rectangle(1) = {-0.2, -0.2, 0, 1.4, 1.4, 0};
 Rectangle(2) = {0, 0, 0, 1, 1, 0};
@@ -25,3 +25,5 @@ Physical Curve("Gamma_41") = {9};
 Show "*";
 
 Physical Surface("Surface") = {1};
+
+Characteristic Length { PointsOf{ Surface{1}; }} = hs;

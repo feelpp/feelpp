@@ -1,13 +1,13 @@
 SetFactory("OpenCASCADE");
 //+
-h = 0.2;
+hs = 0.1;//0.025;
 
 Box(1) = {-0.2, -0.2, -0.2, 1.4, 1.4, 1.4};
 Box(2) = {0, 0, 0, 1, 1, 1};
 
 S[]=BooleanDifference{ Volume{1}; Delete; }{ Volume{2}; Delete;};//+
 
-Characteristic Length{ PointsOf{ Volume{ : }; } } = h;
+Characteristic Length{ PointsOf{ Volume{ : }; } } = hs;
 bdy[] = CombinedBoundary { Volume{1}; };
 
 For ii In { 0 : (#bdy[]-1) }
