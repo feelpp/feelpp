@@ -295,7 +295,7 @@ PYBIND11_MODULE(_alg, m )
         .def( py::init<datamap_ptr_t<uint32_type>, bool>() )
         .def( py::init<Vec, datamap_ptr_t<uint32_type>, bool>(), "create a VectorPETSc from a Vec and a datamap", py::arg( "vec" ), py::arg( "dm" ), py::arg( "duplicate" ) = false )
         ;
-
+#if 0
     py::class_<VectorPetscMPI<double>, Vector<double, uint32_type>, std::shared_ptr<VectorPetscMPI<double>>>( m, "VectorPetscMPIDouble" )
         .def( py::init<>() )
         .def( py::init<datamap_ptr_t<uint32_type>, bool>() )
@@ -306,7 +306,7 @@ PYBIND11_MODULE(_alg, m )
 
         .def( "vec", static_cast<Vec ( VectorPetsc<double>::* )() const>( &VectorPetsc<double>::vec ), "return a PETSc Vector" )
         ;
-
+#endif
     py::class_<MatrixSparse<double>, PyMatrixSparseDouble, std::shared_ptr<MatrixSparse<double>>>( m, "MatrixSparseDouble" )
         .def( py::init<>() )
         .def( "clone", &MatrixSparse<double>::clone, "return  MatrixSparse clone" )
@@ -335,8 +335,6 @@ PYBIND11_MODULE(_alg, m )
         .def( "size1", &MatrixPetsc<double>::size1, "return  PETSc Matrix row size" )
         .def( "size2", &MatrixPetsc<double>::size2, "return  PETSc Matrix column size" )
         .def( "shape", &MatrixPetsc<double>::shape, "return the shape of the matrix" )
-        .def( "clear", &MatrixPetsc<double>::clear, "clear")
-        .def( "zero", static_cast<void ( MatrixPetsc<double>::* )()>( &MatrixPetsc<double>::zero ), "zero" )
         .def( "rowStart", &MatrixPetsc<double>::rowStart, "return  PETSc Matrix row start" )
         .def( "rowStop", &MatrixPetsc<double>::rowStop, "return  PETSc Matrix row stop " )
         .def( "clear", &MatrixPetsc<double>::clear, "clear PETSc matrix" )
@@ -345,6 +343,7 @@ PYBIND11_MODULE(_alg, m )
         .def( "scale", static_cast<void ( MatrixPetsc<double>::* )( const double )>( &MatrixPetsc<double>::scale ), py::arg("scale")=1.0, "return a scaled PETSc sparse matrix" )
         .def( "addMatrix", static_cast<void ( MatrixPetsc<double>::* )( double, MatrixSparse<double> const&,  Feel::MatrixStructure)>( &MatrixPetsc<double>::addMatrix ), py::arg("scale")=1.0, py::arg("matrix"), py::arg("structure")=(int)Feel::SAME_NONZERO_PATTERN, "add a scaled PETSc sparse matrix" )
         ;
+#if 0
     py::class_<MatrixPetscMPI<double>, MatrixSparse<double>, std::shared_ptr<MatrixPetscMPI<double>>>( m, "MatrixPetscMPIDouble")
         .def( py::init<worldcomm_ptr_t>() )
         .def( py::init<datamap_ptr_t<uint32_type>, datamap_ptr_t<uint32_type>>() )
@@ -363,7 +362,7 @@ PYBIND11_MODULE(_alg, m )
         .def( "scale", static_cast<void ( MatrixPetsc<double>::* )( const double )>( &MatrixPetsc<double>::scale ), py::arg("scale")=1.0, "return a scaled PETSc sparse matrix" )
         .def( "addMatrix", static_cast<void ( MatrixPetsc<double>::* )( double, MatrixSparse<double> const&,  Feel::MatrixStructure)>( &MatrixPetsc<double>::addMatrix ), py::arg("scale")=1.0, py::arg("matrix"), py::arg("structure")=(int)Feel::SAME_NONZERO_PATTERN, "add a scaled PETSc sparse matrix" )
         ;
-
+#endif
     py::class_<VectorUblas<double>, Vector<double,uint32_type>, std::shared_ptr<VectorUblas<double>>> vublas(m,"VectorUBlas");
     vublas.def(py::init<>())
         .def(py::self + py::self )
