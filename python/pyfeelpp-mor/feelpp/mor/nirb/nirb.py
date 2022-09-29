@@ -348,7 +348,7 @@ class nirbOffline(ToolboxModel):
                     correlationMatrix[i,j] = self.scalarL2(snap1.to_petsc().vec(),snap2.to_petsc().vec())
 
         correlationMatrix.assemble()
-        eigenValues, eigenVectors =  TruncatedEigenV(correlationMatrix, tolerance) # truncate only eigenvalue >0
+        eigenValues, eigenVectors =  TruncatedEigenV(correlationMatrix, tolerance) 
 
         Nmode = len(eigenVectors)
         for i in range(Nmode):
@@ -356,7 +356,7 @@ class nirbOffline(ToolboxModel):
 
         LS = []
         for i in range(Nsnap):
-            LS.append(self.fineSnapShotList[i].to_petsc().vec()[:])
+            LS.append(self.fineSnapShotList[i].to_petsc().vec())
 
 
         reducedOrderBasis = PETSc.Mat().createDense(size=(self.Ndofs, Nmode), comm=comm)
@@ -364,21 +364,17 @@ class nirbOffline(ToolboxModel):
         reducedOrderBasis.setUp()
         reducedOrderBasis.assemble()
 
-        # reducedOrderBasis.transpose()
-
-        # vec = PETSc.Vec().create(comm=PETSc.COMM_WORLD)
-        # vec.setSizes(self.Ndofs)
-        # vec.setFromOptions()
-        # vec.setUp()
-
-        vec = np.zeros(self.Ndofs)
+        vec = PETSc.Vec().create(comm=PETSc.COMM_WORLD)
+        vec.setSizes(self.Ndofs)
+        vec.setFromOptions()
+        vec.setUp()
 
         for i in range(Nmode):
-            vec.fill(0.)
+            vec.set(0.)
             for j in range(Nsnap):
                 vec += float(eigenVectors[i][j])*LS[j]
 
-            reducedOrderBasis[:,i] = vec 
+            reducedOrderBasis[:,i] = vec[:]
 
             # r = reducedOrderBasis.getDenseColumnVec(i)
             # vec.copy(r)
@@ -422,21 +418,6 @@ class nirbOffline(ToolboxModel):
         lcoarse = []
 
         Usnap, Udof = self.reducedBasis.createVecs()
-
-        # vec = PETSc.Vec().create(comm=comm)
-        # vec.setSizes(self.Ndofs)
-        # vec.setFromOptions()
-        # vec.setUp()
-
-        # Udof = PETSc.Vec().create(comm=comm)
-        # Udof.setSizes(self.Ndofs)
-        # Udof.setFromOptions()
-        # Udof.setUp()
-
-        # Usnap = PETSc.Vec().create(comm=comm)
-        # Usnap.setSizes(self.N)
-        # Usnap.setFromOptions()
-        # Usnap.setUp()
         
         for i in range(self.N):
             lfine.append(self.fineSnapShotList[i].to_petsc().vec())
@@ -444,15 +425,13 @@ class nirbOffline(ToolboxModel):
 
         CM = self.l2ScalarProductMatrix.to_petsc().mat()
 
-        Udof = lfine[0].copy() # To get the same subdivision in // 
-
         for i in range(self.N):
             CM.mult(lfine[i],Udof)
-            self.reducedBasis.multTranspose(Udof,Usnap)  # ??
+            self.reducedBasis.multTranspose(Udof,Usnap) 
             Bh[i,:] = Usnap.getArray()
 
             CM.mult(lcoarse[i],Udof)
-            self.reducedBasis.multTranspose(Udof,Usnap)  # ??
+            self.reducedBasis.multTranspose(Udof,Usnap)
             BH[i,:] = Usnap.getArray()
 
 
@@ -588,7 +567,6 @@ class nirbOffline(ToolboxModel):
             bool: True if the reduced basis is H1 orthonormalized
         """
         h1ScalPetsc = self.h1ScalarProductMatrix.to_petsc().mat()
-        print('rank ', rank, 'l2 mat size', h1ScalPetsc.local_size, 'mat basis size', self.reducedBasis.local_size)
         matH1 = h1ScalPetsc.PtAP(self.reducedBasis)
 
         for i in range(self.N):
@@ -614,7 +592,6 @@ class nirbOffline(ToolboxModel):
         """
         l2ScalPetsc = self.l2ScalarProductMatrix.to_petsc().mat()
         
-        print('rank ', rank, 'l2 mat size', l2ScalPetsc.local_size, 'mat basis size', self.reducedBasis.local_size)
         matL2 = l2ScalPetsc.PtAP(self.reducedBasis)
 
         for i in range(self.N):
@@ -687,55 +664,6 @@ class nirbOnline(ToolboxModel):
         if feelpp.Environment.isMasterRank():
             print(f"[NIRB] Initialization done")
 
-
-    # def computeErrors(self, mu=None, exporter=None):
-    #     """Compute errors between nirb solution and FE solution computed in fine mesh
-
-    #     Args:
-    #         mu (ParameterSpaceElement) : parameter
-    #         exporter (feelpp.exporter) : Exporter to export data for visualization
-
-    #     Returns:
-    #         list: containing
-    #             - the size of the reduced basis N
-    #             - the errors Linf and L2 between nirb solution and FE fine solution
-    #             - the errors Linf and L2 between inteprolated FE coarse solution and nirb solution
-    #             - the errors Linf and L2 between inteprolated FE coarse solution and FE fine solution
-    #     """
-    #     if mu == None:
-    #         mu =self.onlineParam
-
-    #     fineSol = self.getToolboxSolution(self.tbFine, mu)
-    #     # fineSol = self.interpSol
-
-    #     error = []
-    #     error.append(self.N)
-
-    #     # norm(U_h - U_h^N)
-    #     diffSol = (fineSol - self.onlineSol).to_petsc().vec()
-    #     error.append(diffSol.norm())
-    #     error.append(diffSol.norm(PETSc.NormType.NORM_INFINITY))
-
-    #     # norm(U_H - U_h)
-    #     diffSol = (fineSol - self.interpSol).to_petsc().vec()
-    #     error.append(diffSol.norm())
-    #     error.append(diffSol.norm(PETSc.NormType.NORM_INFINITY))
-
-    #     # norm(U_H - U_h^N)
-    #     diffSol = (self.interpSol - self.onlineSol).to_petsc().vec()
-    #     error.append(diffSol.norm())
-    #     error.append(diffSol.norm(PETSc.NormType.NORM_INFINITY))
-
-
-        # # # Export fine solution
-        # if exporter is not None:
-        #     if self.order==1:
-        #         exporter.addP1c("U_fine", fineSol)
-        #     elif self.order==2:
-        #         exporter.addP2c("U_fine", fineSol)
-
-        # return error
-
     def getCompressedSol(self, mu=None, solution=None):
         """
         get the projection of given solution from fine mesh into the reduced space
@@ -778,8 +706,6 @@ class nirbOnline(ToolboxModel):
         """Get the Online nirb approximate solution
         """
         resPETSc = self.Xh.element().to_petsc()
-
-        # resPETSc, u = self.reducedBasis.createVecs()  # ??
 
         compressedSol = self.getCompressedSol(mu)
 

@@ -3,6 +3,8 @@ from time import time
 from feelpp.mor.nirb.nirb import *
 from feelpp.mor.nirb.utils import WriteVecAppend, init_feelpp_environment
 import sys 
+import pandas as pd 
+from pathlib import Path
 
 
 def ComputeErrors(nirb_on, mu):
@@ -27,9 +29,9 @@ def ComputeErrors(nirb_on, mu):
     error = [nirb_on.N]
 
     error.append((uHh - uh).l2Norm())
-    error.append((uHh - uh).linftyNorm())
+    error.append((uHh - uh).to_petsc().vec().norm(PETSc.NormType.NORM_INFINITY))
     error.append((uH - uh).l2Norm())
-    error.append((uH - uh).linftyNorm())
+    error.append((uH - uh).to_petsc().vec().norm(PETSc.NormType.NORM_INFINITY))
 
     return error 
 
@@ -59,26 +61,28 @@ def ComputeErrorsH(nirb_on, tbRef, mu, path=None, name=None):
 
     error = [nirb_on.tbFine.mesh().hAverage()]
     error.append((Uref_int - uHh).l2Norm())
-    error.append((Uref_int - uHh).linftyNorm())
+    error.append((Uref_int - uHh).to_petsc().vec().norm(PETSc.NormType.NORM_INFINITY))
     error.append((Uref_int - uh).l2Norm())
-    error.append((Uref_int - uh).linftyNorm())
+    error.append((Uref_int - uh).to_petsc().vec().norm(PETSc.NormType.NORM_INFINITY))
 
     return error
 
 def ComputeErrorSampling(nirb_on, Nsample=1, samplingType='log-random'):
-    """Compute the mean error between nirb solution and FE one for 
-        a given number of parameter 
+    """Compute the errors between nirb solution and FE one for 
+        a given number of parameters 
     Args:
         nirb_on (class): initialized nirbOnline class 
         Nsample (int): number of parameter. Defaults to 1.  
         samplingType (str, optional): type of sampling distribution. Defaults to 'log-random'.
 
     return : 
-    list: containing
-        - the number reduced basis N
-        - the errors L2 and Linf between nirb solution and FE fine solution
-        - the errors L2 and Linf between inteprolated FE coarse solution and FE fine solution
-    list : 
+    dict: containing
+        - dict['mu'] : the index of the parameter from 0... to Nsample
+        - dict['l2u-uHn'] : the l2 norm between FE solution (u) and the nirb solution (uHn)
+        - dict['lINFu-uHn'] : the infinity norm between FE solution (u) and the nirb solution (uHn)
+        - dict['l2u-uH'] : the l2 norm between both FE solution (u in the fine mesh) and (uH in the coarse mesh)
+        - dict['lINFu-uH'] : the infinity norm between both FE solution (u in the fine mesh) and (uH in the coarse mesh) 
+         
     """
 
     # finish = timeit()
@@ -94,24 +98,31 @@ def ComputeErrorSampling(nirb_on, Nsample=1, samplingType='log-random'):
         uh = nirb_on.getToolboxSolution(nirb_on.tbFine, mu)
         
         err[i,0] = (uHh - uh).l2Norm()
-        err[i,1] = (uHh - uh).linftyNorm()
+        err[i,1] = (uHh - uh).to_petsc().vec().norm(PETSc.NormType.NORM_INFINITY)
         err[i,2] = (uH - uh).l2Norm()
-        err[i,3] = (uH - uh).linftyNorm()
+        err[i,3] = (uH - uh).to_petsc().vec().norm(PETSc.NormType.NORM_INFINITY)
 
-    err_mean = err.mean(axis=0)
-    error = [nirb_on.N]
-    error.append(err_mean[0])
-    error.append(err_mean[1])
-    error.append(err_mean[2])
-    error.append(err_mean[3])
+    errors = {}
+    errors['mu'] = [*range(Nsample)] 
+    errors['l2u-uHn'] = err[:,0]
+    errors['lINFu-uHn'] = err[:,1]
+    errors['l2u-uH'] = err[:,2]
+    errors['lINFu-uH'] = err[:,3]
 
-    return error
+    # err_mean = err.mean(axis=0)
+    # error = [nirb_on.N]
+    # error.append(err_mean[0])
+    # error.append(err_mean[1])
+    # error.append(err_mean[2])
+    # error.append(err_mean[3])
+
+    return errors
 
 
 if __name__ == "__main__":
 
     # fineness of two grids
-    H = 0.25  # CoarseMeshSize
+    H = 0.1  # CoarseMeshSize
     h = H**2 # fine mesh size
     dim = 2
     order=1
@@ -130,20 +141,6 @@ if __name__ == "__main__":
         H = float(sys.argv[1])
         h = H**2
 
-    ### Solve in very fine mesh 
-    msh_path=f"/data/home/elarif/squareref.msh" # link to a very fine mesh as reference 
-    tbRef = ToolboxModel(dim, H, h, toolboxType, cfg_path, model_path, msh_path, order)
-
-    mu_ref = tbRef.Dmu.element()
-    mu_ref.setParameters(tbRef.model['Parameters']) # Get defaults parameters from json file 
-    
-    """ We can solve the fine problem ones and save the solution in a file to load every changement of mesh size 
-        or recompute this solution in each iteration (costly) """
-    # uh = tbRef.getToolboxSolution(tbRef.tbFine, mu)
-    path = f"nirb_ref_{toolboxType}_sol"
-    name = 'FE_sol_ref'
-    # uh.save(path,'FE_sol_ref')
-
 
 
     doRectification=False
@@ -155,16 +152,39 @@ if __name__ == "__main__":
     nirb_on.loadData()
     # uHh = nirb_on.getOnlineSol(mu)
 
-    errorH = ComputeErrorsH(nirb_on, tbRef, mu_ref, path, name) # With solution saved in path/name.h5 
-    # errorH = ComputeErrorsH(nirb_on, tbRef, mu_ref) # With computing the solution 
 
-    Nsample = 10
-
-    error1 = ComputeErrors(nirb_on, mu)
+    Nsample = 50
+    # error1 = ComputeErrors(nirb_on, mu)
     errorN = ComputeErrorSampling(nirb_on, Nsample=Nsample)
-    print("[NIRB online] error 1 param = ", error1)
-    print(f"[NIRB online] error {Nsample} param = ", errorN)
-    print(f'[NIRB online] mesh size, error = ', errorH)
+
+    df = pd.DataFrame(errorN)
+    file =Path(f"all_mu_errors/errors{nirb_on.N}.csv")
+    file.parent.mkdir(parents=True, exist_ok=True)
+    df.to_csv(file, index=False)
+
+    # print('[nirb on] err dic ', errorN['mu'])
+    # print('[nirb on] err dic uhn', errorN['l2u-uHn'])
+    # print("[NIRB online] error 1 param = ", error1)
+
+
+    # ### Solve in very fine mesh 
+    # msh_path=f"/data/home/elarif/squareref.msh" # link to a very fine mesh as reference 
+    # tbRef = ToolboxModel(dim, H, h, toolboxType, cfg_path, model_path, msh_path, order)
+
+    # mu_ref = tbRef.Dmu.element()
+    # mu_ref.setParameters(tbRef.model['Parameters']) # Get defaults parameters from json file 
+    
+    # """ We can solve the fine problem once and save the solution in a file to load every changement of mesh size 
+    #     or recompute this solution in each iteration (costly) """
+    # # uh = tbRef.getToolboxSolution(tbRef.tbFine, mu)
+    # path = f"nirb_ref_{toolboxType}_sol"
+    # name = 'FE_sol_ref'
+    # # uh.save(path,'FE_sol_ref')
+
+    # errorH = ComputeErrorsH(nirb_on, tbRef, mu_ref, path, name) # With solution saved in <path>/<name>.h5 
+    # # errorH = ComputeErrorsH(nirb_on, tbRef, mu_ref) # With computing the solution 
+
+    # print(f'[NIRB online] mesh size, error = ', errorH)
     
 
 
@@ -240,9 +260,9 @@ if __name__ == "__main__":
         fileN=f'nirb_error{Nsample}.dat'
         fileH=f'nirb_errorH.dat'
         
-    WriteVecAppend(file1,error1)
-    WriteVecAppend(fileN,errorN)
-    WriteVecAppend(fileH,errorH)
+    # WriteVecAppend(file1,error1)
+    # WriteVecAppend(fileN,errorN)
+    # WriteVecAppend(fileH,errorH)
 
     # print(f"[NIRB] Online Elapsed time =", finish-start)
     print(f"[NIRB] Online part Done !!")

@@ -8,6 +8,7 @@ removeOldDatas="rm -r ${dataFolder}"
 # ${removeOldDatas}
 
 Nsnap="1 2 4 6 10 12 14 16 20 25 30 35 40 45 50 70 80 100"
+meshSize="0.5 0.25 0.125 0.0625"
 Rectification=0
 biorthonormal=0
 
@@ -19,6 +20,7 @@ for n in $Nsnap;
 do
 
 Ns=$n
+# hsize=$n
 
 echo " ------------------------------------------ "  
 echo "  Restarting program with Ns = : $Ns "  
