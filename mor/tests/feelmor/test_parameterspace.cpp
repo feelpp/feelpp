@@ -37,6 +37,7 @@ makeOptions()
     modelopt.add_options()
         ("json_filename" , Feel::po::value<std::string>()->default_value( "$cfgdir/parameterspace.json" ), "json file" )
         ("json_filename_wrong", Feel::po::value<std::string>()->default_value( "$cfgdir/parameterspace_wrong.json"), "json file for a wrong parametrization" )
+        ("json_filename_wrong2", Feel::po::value<std::string>()->default_value( "$cfgdir/parameterspace_wrong2.json"), "json file for a wrong parametrization" )
         ;
     return  modelopt.add( Feel::feel_options() ) ;
 }
@@ -261,7 +262,7 @@ BOOST_AUTO_TEST_CASE( test_loadParameterSpace )
     BOOST_CHECK( mumax.parameterNamed("p1") == 3 );
     BOOST_CHECK( mumax.parameterNamed("p2") == 10 );
 }
-BOOST_AUTO_TEST_CASE( test_loadWrongParameterSpace )
+BOOST_AUTO_TEST_CASE( test_loadWrongParameterSpace_nointerval )
 {
     using namespace Feel;
     using parameterspace_type = ParameterSpace<>;
@@ -273,14 +274,42 @@ BOOST_AUTO_TEST_CASE( test_loadWrongParameterSpace )
     istr >> p;
     auto parameters = CRBModelParameters();
     parameters.setPTree(p);
+    int err = 0;
     try
     {
         auto Dmu = parameterspace_type::New(parameters);
     }
     catch(const std::logic_error& e)
     {
+        ++err;
         std::regex r = std::regex("invalid range parameter (.*)\n");
         BOOST_CHECK( std::regex_match(e.what(), r) );
     }
+    BOOST_CHECK( err != 0 );
+}
+BOOST_AUTO_TEST_CASE( test_loadWrongParameterSpace_invalidInterval )
+{
+    using namespace Feel;
+    using parameterspace_type = ParameterSpace<>;
+    namespace pt =  boost::property_tree;
+
+    auto json = removeComments(readFromFile(Environment::expand(soption("json_filename_wrong2"))));
+    std::istringstream istr( json );
+    nl::json p;
+    istr >> p;
+    auto parameters = CRBModelParameters();
+    parameters.setPTree(p);
+    int err = 0;
+    try
+    {
+        auto Dmu = parameterspace_type::New(parameters);
+    }
+    catch(const std::logic_error& e)
+    {
+        ++err;
+        std::regex r = std::regex("invalid range parameter (.*)\n");
+        BOOST_CHECK( std::regex_match(e.what(), r) );
+    }
+    BOOST_CHECK( err != 0 );
 }
 BOOST_AUTO_TEST_SUITE_END()
