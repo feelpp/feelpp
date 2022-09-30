@@ -273,9 +273,9 @@ public :
     //! return set of markers associated to boundary condition type \bc
     std::set<std::string> markers( std::string const& bc ) const;
 
-    //! defined element markers where disp imposed is given on initial mesh (not necessarly equal to ref mesh when we apply remesh)
+    //! defined element markers where disp imposed is given on initial mesh (not necessarily equal to ref mesh when we apply remesh)
     void setDisplacementImposedOnInitialDomainOverElements( std::string const& name, std::set<std::string> const& markers );
-    //! defined face markers where disp imposed is given on initial mesh (not necessarly equal to ref mesh when we apply remesh)
+    //! defined face markers where disp imposed is given on initial mesh (not necessarily equal to ref mesh when we apply remesh)
     void setDisplacementImposedOnInitialDomainOverFaces( std::string const& name, std::set<std::string> const& markers );
 
     /**

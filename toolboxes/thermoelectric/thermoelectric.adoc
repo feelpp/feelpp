@@ -90,7 +90,7 @@ feelpp/feelpp-toolboxes <5>
 mpirun --bind-to core -np 10 feelpp_toolbox_thermoelectric --case "github:{path:toolboxes/thermoelectric/ElectroMagnets/HL-31_H1}"
 ----
 
-.Explantion of the command line to execute feelpp_toolbox_thermoelectric
+.Explanation of the command line to execute feelpp_toolbox_thermoelectric
 ----
 mpirun --bind-to core <1>
   -np 10 <2>

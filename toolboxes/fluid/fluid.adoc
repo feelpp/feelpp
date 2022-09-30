@@ -90,7 +90,7 @@ feelpp/feelpp-toolboxes <5>
 mpirun --bind-to core -np 10 feelpp_toolbox_fluid --case "github:{path:toolboxes/fluid/TurekHron}"
 ----
 
-.Explantion of the command line to execute feelpp_toolbox_fluid
+.Explanation of the command line to execute feelpp_toolbox_fluid
 ----
 mpirun --bind-to core <1>
   -np 10 <2>

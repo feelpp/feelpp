@@ -90,7 +90,7 @@ feelpp/feelpp-toolboxes <5>
 mpirun --bind-to core -np 10 {{ toolbox_app }} --case {{ toolbox_default_case }}
 ----
 
-.Explantion of the command line to execute {{ toolbox_app }}
+.Explanation of the command line to execute {{ toolbox_app }}
 ----
 mpirun --bind-to core <1>
   -np 10 <2>
