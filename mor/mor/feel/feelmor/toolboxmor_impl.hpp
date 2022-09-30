@@ -338,6 +338,7 @@ template<typename SpaceType, int Options>
 void
 ToolboxMor<SpaceType, Options>::setupSpecificityModel( boost::property_tree::ptree const& ptree, std::string const& dbDir )
 {
+    Feel::cout << "ToolboxMor::setupSpecificityModel" << std::endl;
     LOG(INFO) << "setupSpecificityModel" << std::endl;
 
     M_modelProperties = std::make_shared<CRBModelProperties>( Environment::exprRepository(), this->worldCommPtr()/*subWorldCommSeqPtr()*/ );
@@ -359,11 +360,13 @@ ToolboxMor<SpaceType, Options>::setupSpecificityModel( boost::property_tree::ptr
 
     M_deim = Feel::deim( _model=std::dynamic_pointer_cast<self_type>(this->shared_from_this()), _prefix="vec");
     this->addDeim(M_deim);
-    LOG(INFO) << tc::green << "ToolboxMor DEIM construction finished!!" << tc::reset << std::endl;
+    Feel::cout << tc::green << "ToolboxMor DEIM construction finished!!" << tc::reset << std::endl;
+    LOG(INFO) << "ToolboxMor DEIM construction finished!!"  << std::endl;
 
     M_mdeim = Feel::mdeim( _model=std::dynamic_pointer_cast<self_type>(this->shared_from_this()), _prefix="mat");
     this->addMdeim(M_mdeim);
-    LOG(INFO) << tc::green << "ToolboxMor MDEIM construction finished!!" << tc::reset << std::endl;
+    Feel::cout << tc::green << "ToolboxMor MDEIM construction finished!!" << tc::reset << std::endl;
+    LOG(INFO) << "ToolboxMor MDEIM construction finished!!" << std::endl;
 
     // outputs
     int i = 1;
@@ -378,7 +381,8 @@ ToolboxMor<SpaceType, Options>::setupSpecificityModel( boost::property_tree::ptr
             M_outputDeimName.push_back(name);
             auto dO = Feel::deim( _model=std::dynamic_pointer_cast<self_type>(this->shared_from_this()), _prefix="output_"+name, _tag=i);
             this->addDeim(dO);
-            LOG(INFO) << tc::green << "ToolboxMor DEIM for output " << name << " construction finished!!" << tc::reset << std::endl;
+            Feel::cout << tc::green << "ToolboxMor DEIM for output " << name << " construction finished!!" << tc::reset << std::endl;
+            LOG(INFO) << "ToolboxMor DEIM for output " << name << " construction finished!!" << std::endl;
             i++;
         }
         else
@@ -405,12 +409,15 @@ ToolboxMor<SpaceType, Options>::initModelImpl()
     this->Dmu = parameterspace_type::New(parameters);
     auto parameterNames = std::set<std::string>(this->Dmu->parameterNames().begin(), this->Dmu->parameterNames().end());
 
+    Feel::cout << "Number of local dof " << this->Xh->nLocalDof() << std::endl;
+    Feel::cout << "Number of dof " << this->Xh->nDof() << std::endl;
     LOG(INFO) << "[ToolboxMor] Number of local dof " << this->Xh->nLocalDof() << "\n";
     LOG(INFO) << "[ToolboxMor] Number of dof " << this->Xh->nDof() << "\n";
 
     auto PsetV = this->Dmu->sampling();
     std::string supersamplingname = fmt::format("DmuDEim-P{}-Ne{}-generated-by-master-proc", this->Dmu->dimension(), M_trainsetDeimSize );
     std::ifstream file ( supersamplingname );
+    Feel::cout << tc::blue << "[ToolboxMor] DEIM sampling file \"" << supersamplingname;
     LOG(INFO) << "[ToolboxMor] DEIM sampling file \"" << supersamplingname;
     bool all_proc_same_sampling=true;
     if( ! file )
@@ -421,6 +428,7 @@ ToolboxMor<SpaceType, Options>::initModelImpl()
     }
     else
     {
+        Feel::cout << "\" found" << tc::reset << std::endl;
         LOG(INFO) << "\" found.\n";
         PsetV->clear();
         PsetV->readFromFile(supersamplingname);
@@ -428,11 +436,13 @@ ToolboxMor<SpaceType, Options>::initModelImpl()
     M_deim = Feel::deim( _model=std::dynamic_pointer_cast<self_type>(this->shared_from_this()), _sampling=PsetV, _prefix="vec");
     this->addDeim(M_deim);
     this->deim()->run();
+    Feel::cout << tc::green << "[ToolboxMor] DEIM construction finished!!" << tc::reset << std::endl;
     LOG(INFO) << "[ToolboxMor] DEIM construction finished!!" << std::endl;
 
     auto PsetM = this->Dmu->sampling();
     supersamplingname = fmt::format("DmuMDEim-P{}-Ne{}-generated-by-master-proc", this->Dmu->dimension(), M_trainsetMdeimSize );
     std::ifstream fileM ( supersamplingname );
+    Feel::cout << tc::blue << "[ToolboxMor] MDEIM sampling file \"" << supersamplingname;
     LOG(INFO) << "[ToolboxMor] MDEIM sampling file \"" << supersamplingname;
     if( ! fileM )
     {
@@ -442,6 +452,7 @@ ToolboxMor<SpaceType, Options>::initModelImpl()
     }
     else
     {
+        Feel::cout << "\" found" << tc::reset << std::endl;
         LOG(INFO) << "\" found.\n";
         PsetM->clear();
         PsetM->readFromFile(supersamplingname);
@@ -466,11 +477,13 @@ ToolboxMor<SpaceType, Options>::initModelImpl()
             auto dO = Feel::deim( _model=std::dynamic_pointer_cast<self_type>(this->shared_from_this()), _sampling=PsetV, _prefix="output_"+name, _tag=i);
             this->addDeim(dO);
             this->deim(i)->run();
-            LOG(INFO) << tc::green << "[ToolboxMor] DEIM for output " << name << " construction finished!!" << tc::reset << std::endl;
+            Feel::cout << tc::green << "[ToolboxMor] DEIM for output " << name << " construction finished!!" << tc::reset << std::endl;
+            LOG(INFO) << "[ToolboxMor] DEIM for output " << name << " construction finished!!" << std::endl;
             i++;
         }
         else
         {
+            Feel::cout << tc::green << "[ToolboxMor] output " << name << " does not depend on parameters" << tc::reset << std::endl;
             LOG(INFO) << "[ToolboxMor] output " << name << " does not depend on parameters" << std::endl;
             M_outputDeim[name] = 0;
         }
@@ -671,7 +684,7 @@ ToolboxMor<SpaceType, Options>::output( int output_index, parameter_type const& 
             for( int m=0; m<mLQF(output_index, q); m++ )
             {
                 auto d = dot( *this->M_Fqm[output_index][q][m] , u );
-                // LOG(INFO) << "d["<< output_index << "][" << q << "][" << m << "] = " << d << "\n"
+                // Feel::cout << "d["<< output_index << "][" << q << "][" << m << "] = " << d << "\n"
                 //            << "beta = " << this->M_betaFqm[output_index][q][m] << std::endl;
                 s += this->M_betaFqm[output_index][q][m]*d;
             }
