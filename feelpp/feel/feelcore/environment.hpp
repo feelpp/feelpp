@@ -46,20 +46,6 @@
 
 #include <feel/feelcore/feel.hpp>
 
-#if defined(FEELPP_ENABLE_PYTHON_WRAPPING)
-
-#if defined(FEELPP_HAS_PYBIND11)
-#include <pybind11/pybind11.h>
-#endif
-
-#if defined(FEELPP_HAS_BOOST_PYTHON)
-#include <boost/python.hpp>
-#include <boost/python/stl_iterator.hpp>
-
-//#include <mpi4py/mpi4py.h>
-#endif // FEELPP_HAS_BOOST_PYTHON
-#endif // FEELPP_ENABLE_PYTHON_WRAPPING
-
 
 #include <boost/uuid/uuid.hpp>            // uuid class
 #include <boost/uuid/uuid_generators.hpp> // generators
@@ -87,6 +73,10 @@
 #include <feel/feelcore/journalmanager.hpp>
 #include <feel/feelhwsys/hwsys.hpp>
 
+namespace pybind11
+{
+class list;
+}
 namespace Feel
 {
 namespace tc = termcolor;
@@ -95,6 +85,7 @@ namespace uuids =  boost::uuids;
 
 // boost::error_info typedef that holds the stacktrace:
 using traced = boost::error_info<struct tag_stacktrace, boost::stacktrace::stacktrace>;
+
 
 /**
  * @brief helper class for throwing any exception with stacktrace:
@@ -973,8 +964,14 @@ int countoption( Ts && ... v )
 {
     auto args = NA::make_arguments( std::forward<Ts>(v)... );
     po::variables_map const& vm = args.get_else(_vm, Environment::vm() );
-    return vm.count( Environment::option( std::forward<Ts>(v)... ).first );
-    //return vm.count(Environment::option( _name=name,_sub=sub,_prefix=prefix, _vm=vm ).first);
+    try
+    {
+        return vm.count( Environment::option( std::forward<Ts>(v)... ).first );
+    }
+    catch( std::invalid_argument const& e )
+    {
+        return 0;
+    }
 }
 
 

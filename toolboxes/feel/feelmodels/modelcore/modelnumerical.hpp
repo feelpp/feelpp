@@ -43,7 +43,6 @@
 #include <feel/feelvf/ginac.hpp>
 
 #include <feel/feeldiscr/discretizationsdescr.hpp>
-#include <feel/feelmodels/modelproperties.hpp>
 #include <feel/feelmodels/modelcore/modelmeasures.hpp>
 #include <feel/feelfit/fit.hpp>
 #include <feel/feelmodels/modelcore/markermanagement.hpp>
@@ -63,7 +62,9 @@ namespace Feel
 namespace FeelModels
 {
 /**
- * Handles some numerical model aspects: timestepping, mesh and properties
+ * @brief Handles some numerical model aspects: timestepping, mesh and properties
+ * @ingroup ModelCore
+ * 
  */
 class ModelNumerical : virtual public ModelBase,
                        public ModelAlgebraic,
@@ -162,32 +163,6 @@ class ModelNumerical : virtual public ModelBase,
                 return thebdf;
             }
 
-        bool hasModelProperties() const { return (M_modelProps)? true : false; }
-        std::shared_ptr<ModelProperties> modelPropertiesPtr() const { return M_modelProps; }
-        ModelProperties const& modelProperties() const { return *M_modelProps; }
-        ModelProperties & modelProperties() { return *M_modelProps; }
-        void setModelProperties( std::shared_ptr<ModelProperties> modelProps ) { M_modelProps = modelProps; }
-
-        /**
-         * @brief Set the Model Properties object from a filename
-         * 
-         * @param filename file name
-         */
-        void setModelProperties( std::string const& filename );
-
-        /**
-         * @brief Set the Model Properties object from a json struct
-         * the json may come from python 
-         * @param j json data structure
-         */
-        void setModelProperties( nl::json const& j );
-
-        void addParameterInModelProperties( std::string const& symbolName,double value );
-
-        bool manageParameterValues() const { return M_manageParameterValues; }
-        void setManageParameterValues( bool b ) { M_manageParameterValues = b; }
-        bool manageParameterValuesOfModelProperties() const { return M_manageParameterValuesOfModelProperties; }
-        void setManageParameterValuesOfModelProperties( bool b ) { M_manageParameterValuesOfModelProperties = b; }
 
 
         GeomapStrategyType geomap() const { return M_geomap; }
@@ -280,14 +255,6 @@ class ModelNumerical : virtual public ModelBase,
 
         virtual void initPostProcess();
 
-        auto symbolsExprParameter() const
-            {
-                if ( this->hasModelProperties() )
-                    return this->modelProperties().parameters().symbolsExpr();
-                else
-                    return std::decay_t<decltype(this->modelProperties().parameters().symbolsExpr())>{};
-            }
-
         template <typename MeshType,typename SymbolsExprType>
         void initPostProcessMeshes( SymbolsExprType const& se )
             {
@@ -306,6 +273,11 @@ class ModelNumerical : virtual public ModelBase,
         auto symbolsExprMeshes() const
             {
                 return super_model_meshes_type::template symbolsExpr<MeshType,AddFields>();
+            }
+        template <typename MeshType>
+        auto modelFieldsMeshes( std::string const& prefix_field = "", std::string const& prefix_symbol = "" ) const
+            {
+                return super_model_meshes_type::template modelFields<MeshType>( prefixvm( prefix_field, "meshes" ), prefixvm(prefix_symbol, "meshes", "_" ) );
             }
 
 
@@ -338,9 +310,6 @@ class ModelNumerical : virtual public ModelBase,
         bool M_tsSaveInFile;
         int M_tsSaveFreq;
         double M_timeCurrent;
-
-        std::shared_ptr<ModelProperties> M_modelProps;
-        bool M_manageParameterValues, M_manageParameterValuesOfModelProperties;
 
         std::string M_exporterPath;
         std::map<std::string,std::tuple< std::set<std::string>, std::set<std::string>, std::string > > M_postProcessExportsFields; // (fields, allFieldsAvailable,pidName)

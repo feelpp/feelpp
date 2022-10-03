@@ -4,7 +4,7 @@ feelpp_add_test( aitken NO_MPI_TEST )
 
 feelpp_add_test( disc NO_MPI_TEST )
 feelpp_add_test( element )
-feelpp_add_test( elementminmax )
+feelpp_add_test( elementminmax CFG test_elementminmax.cfg GEO test_elementminmax2d.geo test_elementminmax3d.geo )
 feelpp_add_test( element_serialize NO_MPI_TEST )
 feelpp_add_test( evaluator )
 
@@ -104,3 +104,5 @@ if ( FEELPP_HAS_VTK )
 endif()
 
 feelpp_add_test( sensors CFG sensors.cfg GEO sensorsdesc.json )
+
+feelpp_add_test( geometricspace )

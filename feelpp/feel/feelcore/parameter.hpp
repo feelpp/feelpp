@@ -151,8 +151,15 @@ using depends = NA::named_argument_t<struct depends_tag>;
 using optimize3d_netgen = NA::named_argument_t<struct optimize3d_netgen_tag>;
 using pre = NA::named_argument_t<struct pre_tag>;
 using post = NA::named_argument_t<struct post_tag>;
+using op = NA::named_argument_t<struct op_tag>;
 
 // parameter for adapt
+using required_elts = NA::named_argument_t<struct required_elts_tag>;
+using required_facets = NA::named_argument_t<struct required_facets_tag>;
+using parent = NA::named_argument_t<struct parent_tag>;
+using params = NA::named_argument_t<struct params_tag>;
+using keep_relation = NA::named_argument_t<struct keep_relation_tag>;
+
 using metric = NA::named_argument_t<struct metric_tag>;
 using model = NA::named_argument_t<struct model_tag>;
 using geotracking = NA::named_argument_t<struct geotracking_tag>;
@@ -241,6 +248,7 @@ using element2 = NA::named_argument_t<struct element2_tag>;
 using parameter = NA::named_argument_t<struct parameter_tag>;
 using sampling = NA::named_argument_t<struct sampling_tag>;
 using context = NA::named_argument_t<struct context_tag>;
+using context_at_compile_time = NA::named_argument_t<struct context_at_compile_time_tag>;
 using context2 = NA::named_argument_t<struct context2_tag>;
 using mpi_communications = NA::named_argument_t<struct mpi_communications_tag>;
 using properties_space = NA::named_argument_t<struct properties_space_tag>;
@@ -269,6 +277,7 @@ using currentElt = NA::named_argument_t<struct currentElt_tag>;
 using newElt = NA::named_argument_t<struct newElt_tag>;
 using space = NA::named_argument_t<struct space_tag>;
 using space2 = NA::named_argument_t<struct space2_tag>;
+using space_path = NA::named_argument_t<struct space_path_tag>;
 using initial_theta = NA::named_argument_t<struct initial_theta_tag>;
 using min_theta = NA::named_argument_t<struct min_theta_tag>;
 using forceRelaxation = NA::named_argument_t<struct forceRelaxation_tag>;
@@ -440,8 +449,14 @@ inline constexpr auto& _depends = NA::identifier<na::depends>;
 inline constexpr auto& _optimize3d_netgen = NA::identifier<na::optimize3d_netgen>;
 inline constexpr auto& _pre = NA::identifier<na::pre>;
 inline constexpr auto& _post = NA::identifier<na::post>;
-
+inline constexpr auto& _op = NA::identifier<na::op>;
 // parameter for adapt
+inline constexpr auto& _required_elts = NA::identifier<na::required_elts>;
+inline constexpr auto& _required_facets = NA::identifier<na::required_facets>;
+inline constexpr auto& _parent = NA::identifier<na::parent>;
+inline constexpr auto& _params = NA::identifier<na::params>;
+inline constexpr auto& _keep_relation = NA::identifier<na::keep_relation>;
+
 inline constexpr auto& _metric = NA::identifier<na::metric>;
 inline constexpr auto& _model = NA::identifier<na::model>;
 inline constexpr auto& _geotracking = NA::identifier<na::geotracking>;
@@ -530,6 +545,7 @@ inline constexpr auto& _element2 = NA::identifier<na::element2>;
 inline constexpr auto& _parameter = NA::identifier<na::parameter>;
 inline constexpr auto& _sampling = NA::identifier<na::sampling>;
 inline constexpr auto& _context = NA::identifier<na::context>;
+inline constexpr auto& _context_at_compile_time = NA::identifier<na::context_at_compile_time>;
 inline constexpr auto& _context2 = NA::identifier<na::context2>;
 inline constexpr auto& _mpi_communications = NA::identifier<na::mpi_communications>;
 inline constexpr auto& _properties_space = NA::identifier<na::properties_space>;
@@ -558,6 +574,7 @@ inline constexpr auto& _currentElt = NA::identifier<na::currentElt>;
 inline constexpr auto& _newElt = NA::identifier<na::newElt>;
 inline constexpr auto& _space = NA::identifier<na::space>;
 inline constexpr auto& _space2 = NA::identifier<na::space2>;
+inline constexpr auto& _space_path = NA::identifier<na::space_path>;
 inline constexpr auto& _initial_theta = NA::identifier<na::initial_theta>;
 inline constexpr auto& _min_theta = NA::identifier<na::min_theta>;
 inline constexpr auto& _forceRelaxation = NA::identifier<na::forceRelaxation>;

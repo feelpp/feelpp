@@ -29,6 +29,8 @@
 #ifndef __MeshEnums_H
 #define __MeshEnums_H 1
 
+#include <boost/mp11/integral.hpp>
+
 namespace  Feel
 {
 
@@ -44,6 +46,12 @@ enum ElementsType
     MESH_INTERNAL_EDGES = 4,     /**< internal edges */
     MESH_POINTS = 5              /**< points */
 };
+using on_elements_t = boost::mp11::mp_int<MESH_ELEMENTS>;
+using on_facets_t = boost::mp11::mp_int<MESH_FACES>;
+using on_internal_faces_t = boost::mp11::mp_int<MESH_INTERNAL_FACES>;
+using on_edges_t = boost::mp11::mp_int<MESH_FACES>;
+using on_points_t = boost::mp11::mp_int<MESH_POINTS>;
+
 
 enum MESH_CHANGES
 {

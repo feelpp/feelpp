@@ -4,13 +4,18 @@
     "Models":
     {
         "cfpdes":{
-            "equations":{
-                "name":"equation1",
-                "unknown":
-                {
+            "equations":"equation1"
+        },
+        "equation1":{
+            "setup":{
+                "unknown":{
                     "basis":"Pch1",
                     "name":"solution",
                     "symbol":"u"
+                },
+                "coefficients":{
+                    "c":"1e-8", // diffusion
+                    "beta":"{cos(alpha),sin(alpha)}:alpha" // convection
                 }
             }
         }
@@ -34,10 +39,7 @@
     {
         "mymat1":
         {
-            "markers":"Omega",
-            //"physics":"equation1",//"generic_pde"
-            "equation1_c":"1e-8", // diffusion
-            "equation1_beta":"{cos(alpha),sin(alpha)}:alpha" // convection
+            "markers":"Omega"
         }
     },
     "BoundaryConditions":

@@ -173,7 +173,7 @@ void addKeyToValues( Feel::Table &table, nl::json const& jsonInfo, TabulateInfor
             continue;
         auto const& valAtKey = jsonInfo.at(key);
 
-        if ( !valAtKey.is_primitive() )
+        if ( !valAtKey.is_primitive() || valAtKey.is_null() )
             continue;
         if ( valAtKey.is_string() )
             table.add_row( {key, valAtKey.get<std::string>()} );

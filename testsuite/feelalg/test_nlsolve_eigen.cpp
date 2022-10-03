@@ -42,6 +42,8 @@
 #include <Eigen/LU>
 #include <Eigen/Dense>
 
+#include <functional>
+
 
 #define FEELAPP( argc, argv, about, options )                           \
     Feel::Application app( argc, argv, about, options );                \
@@ -126,9 +128,8 @@ public:
 
     void run() override
         {
-            using namespace std::placeholders;
-            M_nlsolver->map_dense_residual = std::bind( &self_type::updateResidual, std::ref( *this ), _1, _2 );
-            M_nlsolver->map_dense_jacobian = std::bind( &self_type::updateJacobian, std::ref( *this ), _1, _2 );
+            M_nlsolver->map_dense_residual = std::bind( &self_type::updateResidual, std::ref( *this ), std::placeholders::_1, std::placeholders::_2 );
+            M_nlsolver->map_dense_jacobian = std::bind( &self_type::updateJacobian, std::ref( *this ), std::placeholders::_1, std::placeholders::_2 );
 
             //initial guess
             vectorN_type solution(2);
@@ -206,9 +207,8 @@ public:
 
     void run() override
         {
-            using namespace std::placeholders;
-            M_nlsolver->map_dense_residual = std::bind( &self_type::updateResidual, std::ref( *this ), _1, _2 );
-            M_nlsolver->map_dense_jacobian = std::bind( &self_type::updateJacobian, std::ref( *this ), _1, _2 );
+            M_nlsolver->map_dense_residual = std::bind( &self_type::updateResidual, std::ref( *this ), std::placeholders::_1, std::placeholders::_2 );
+            M_nlsolver->map_dense_jacobian = std::bind( &self_type::updateJacobian, std::ref( *this ), std::placeholders::_1, std::placeholders::_2 );
 
             //initial guess
             vectorN_type solution(2);

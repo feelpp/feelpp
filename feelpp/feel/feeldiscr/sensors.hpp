@@ -27,6 +27,7 @@
 
 #include <feel/feelvf/vf.hpp>
 #include <feel/feeldiscr/fsfunctionallinear.hpp>
+#include <feel/feeldiscr/geometricspace.hpp>
 #include <feel/feelcore/json.hpp>
 
 namespace Feel
@@ -109,7 +110,15 @@ public:
 
     using space_type = typename super_type::space_type;
     using space_ptrtype = typename super_type::space_ptrtype;
-    using node_t = typename space_type::mesh_type::node_type;
+    using mesh_type = typename space_type::mesh_type;
+    using node_t = typename mesh_type::node_type;
+    using geometricspace_type = GeometricSpace<mesh_type>;
+    using geometricspacectx_type = typename geometricspace_type::Context;
+    using gmc_type = typename geometricspace_type::gmc_type;
+    using gmc_ptrtype = std::shared_ptr<gmc_type>;
+    using gm_type = typename gmc_type::gm_type;
+    using geoelement_type = typename gmc_type::element_type;
+    using fe_type = typename space_type::fe_type;
 
     SensorPointwise() = default;
     SensorPointwise( space_ptrtype const& space, node_t const& p, std::string const& n = "pointwise"):
@@ -121,12 +130,70 @@ public:
 
     virtual ~SensorPointwise(){}
 
+    void setPosition( node_t const& p ) { M_position = p; this->init(); }
+    node_t const& position() const { return M_position; }
+
     void init() override
     {
-        // auto v=this->space()->element();
-        //auto expr=integrate(_range=elements(M_space->mesh()), _expr=id(v)*phi);
-        //super_type::operator=( expr );
-        // this->close();
+        auto space = this->space();
+        auto mesh = space->mesh();
+        auto geospace = std::make_shared<geometricspace_type>(mesh);
+        auto geospacectx = std::make_shared<geometricspacectx_type>( geospace );
+        geospacectx->add(M_position, false);
+        geospacectx->updateForUse();
+
+        auto u = space->element();
+        auto expr = id(u);
+        geospacectx->template updateGmcContext<std::decay_t<decltype(expr)>::context>();
+
+        using expr_type = std::decay_t<decltype(expr)>;
+        using expr_basis_t = typename expr_type::test_basis;
+        static constexpr size_type expr_context = expr_type::context;
+        // fe context
+        using fecontext_type = typename space_type::fe_type::template Context< expr_context, fe_type, gm_type, geoelement_type>;
+        using fecontext_ptrtype = std::shared_ptr<fecontext_type>;
+
+        for ( auto& [geoCtxId,geoCtx] : *geospacectx )
+        {
+            auto gmc = std::get<0>(geoCtx)->gmContext();
+            auto const& curCtxIdToPointIds = std::get<1>(geoCtx);
+            auto const& elt = gmc->element();
+            auto fepc = space->fe()->preCompute( space->fe(), gmc->xRefs() );
+            auto fec = std::make_shared<fecontext_type>( space->fe(), gmc, fepc );
+            auto mapgmc = Feel::vf::mapgmc( gmc );
+            auto mapfec = Feel::vf::mapfec( fec );
+            auto tExpr = expr.evaluator(mapgmc, mapfec);
+
+            // TODO check if next lines are really usefull?
+            fec->update( gmc );
+            tExpr.update( mapgmc, mapfec );
+
+            //Eigen::MatrixXd M_IhLoc = Vh->fe()->localInterpolants(1);
+            Eigen::MatrixXd IhLoc = Eigen::MatrixXd::Zero(expr_basis_t::nLocalDof,gmc->nPoints());
+            space->fe()->interpolateBasisFunction( tExpr, IhLoc );
+
+
+            for( auto const& ldof : space->dof()->localDof( elt.id() ) )
+            {
+                index_type index = ldof.second.index();
+
+                for ( uint16_type q=0;q<curCtxIdToPointIds.size();++q )
+                {
+                    this->containerPtr()->set( index, IhLoc( ldof.first.localDof(), q ) ); // TODO use datamap mapping
+                }
+            }
+        }
+
+        this->containerPtr()->close();
+    }
+
+    json to_json() const override
+    {
+        json j = super_type::to_json();
+        j["coord"] = json::array();
+        for(int i = 0; i < space_type::nDim; ++i)
+            j["coord"].push_back(M_position(i));
+        return j;
     }
 
 private:
@@ -173,6 +240,8 @@ public:
 
     virtual ~SensorGaussian(){}
 
+    void setPosition( node_t const& p ) { M_position = p; this->init(); }
+    node_t const& position() const { return M_position; }
     void setRadius( double radius ) { M_radius = radius; this->init(); }
     double radius() { return M_radius; }
 
@@ -256,7 +325,7 @@ public:
     void init() override
     {
         auto v = this->space()->element();
-        auto n = integrate(_range=elements(support(this->space())), _expr=cst(1.)).evaluate()(0,0);
+        auto n = integrate(_range=markedfaces(support(this->space()), M_markers), _expr=cst(1.)).evaluate()(0,0);
         form1( _test=this->space(), _vector=this->containerPtr() ) =
             integrate(_range=markedfaces(support(this->space()), M_markers), _expr=id(v)/n );
         this->close();

@@ -1,0 +1,64 @@
+{
+    "Name": "HDG method for Darcy ",
+    "ShortName":"HDG-Darcy",
+    "Models":{"equations":"hdg"},
+    "Parameters":
+    {
+        "Pa":"30",
+        "Pv":"20",
+        "blood_volume_fraction":"0.1567",
+        "Rcap":"3e-4",
+        "blood_viscosity":"10.01e-2"
+    },
+    "Functions":
+    {
+        "permeability":
+        {
+            "expr":"(blood_volume_fraction * Rcap * Rcap)/(8 * blood_viscosity):blood_volume_fraction:Rcap:blood_viscosity"
+        },
+        "source":
+        {
+            "expr":"0"
+        }
+    },
+    "BoundaryConditions":
+    {
+        "poisson":
+        {
+            "Neumann":
+            {
+                "outer_noZHcircle":
+                {
+                    "expr":"{0,0,0}"
+                },
+                "Top":
+                {
+                    "expr":"{0,0,0}"
+                },
+                "Bottom":
+                {
+                    "expr":"{0,0,0}"
+                }
+            },
+            "Dirichlet":
+            {
+                "outer_ZHcircle":
+                {
+                    "expr":"Pa:Pa"
+                },
+                "CRV":
+                {
+                    "expr":"Pv:Pv"
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "Exports":
+        {
+            "fields": ["flux", "potential", "multiplier"]
+        }
+    }
+}
+

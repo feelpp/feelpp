@@ -79,7 +79,7 @@ setup(
               'pyfeelpp.core','pyfeelpp.mesh','pyfeelpp.discr','pyfeelpp.ts','pyfeelpp.filters','pyfeelpp.vf','pyfeelpp.models','pyfeelpp.alg',
     ],
     #packages=['pyfeelpp','pyfeelpp.core' ],
-#    ext_modules=[Extension('pyfeelpp',['pyfeelpp/python.cpp'],include_dirs=@FEELPP_INCLUDE_DIRS@,libraries=@FEELPP_LIBRARIES@)
+#    ext_modules=[Extension('pyfeelpp',['pyfeel/feelpython.cpp'],include_dirs=@FEELPP_INCLUDE_DIRS@,libraries=@FEELPP_LIBRARIES@)
     ext_modules=[CMakeExtension('_pyfeelpp','@CMAKE_CURRENT_SOURCE_DIR@/pyfeelpp'),
                  CMakeExtension('_core','@CMAKE_CURRENT_SOURCE_DIR@/pyfeelpp/core'),
                  CMakeExtension('_mesh','@CMAKE_CURRENT_SOURCE_DIR@/pyfeelpp/mesh'),

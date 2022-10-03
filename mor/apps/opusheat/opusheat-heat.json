@@ -2,44 +2,47 @@
 {
     "Name": "Opus heat toolbox",
     "ShortName":"OpusHeat-tb",
-    "Parameters":
+    "CRBParameters":
     {
         "k_1":
         {
-            "value":"2",
             "min":"1",
             "max":"3"
         },
         "k_2":
         {
-            "value":"2",
             "min":"1",
             "max":"3"
         },
         "hcoeff":
         {
-            "value":"2",
             "min":"0.1",
             "max":"5"
         },
         "q_1":
         {
-            "value":"1e5",
             "min":"1e4",
             "max":"1e6"
         },
         "q_2":
         {
-            "value":"1e5",
             "min":"1e4",
             "max":"1e6"
         },
         "vinconv":
         {
-            "value":"15",
             "min":"1",
             "max":"30"
         }
+    },
+    "Parameters":
+    {
+        "k_1":"2",
+        "k_2":"2",
+        "hcoeff":"2",
+        "q_1":"1e5",
+        "q_2":"1e5",
+        "vinconv":"15"
     },
     "Models":
     {
@@ -117,9 +120,9 @@
     },
     "BoundaryConditions":
     {
-        "temperature":
+        "heat":
         {
-            "Dirichlet":
+            "temperature":
             {
                 "dirichlet":
                 {
@@ -127,14 +130,42 @@
                     "expr":"300"
                 }
             },
-            "Robin":
+            "convective_heat_flux":
             {
                 "Gamma_2":
                 {
-                    "expr1":"hcoeff:hcoeff",// h coeff
-                    "expr2":"300"// temperature exterior
+                    "h":"hcoeff:hcoeff",// h coeff
+                    "Text":"300"// temperature exterior
                 }
             }
+        }
+    },
+    "CRBOutputs":
+    {
+        "test":
+        {
+            "type":"mean",
+            "markers":"AIR",
+            "topodim":2,
+            "expr":"crb_u:crb_u"
+        },
+        "ref":
+        {
+            "type":"integrate",
+            "markers":"Gamma_1",
+            "topodim":1,
+            "expr":"k_1*crb_dn_u:k_1:crb_dn_u"
+        },
+        "sensor1":
+        {
+            "type":"sensor",
+            "radius":0.001,
+            "coord":[5e-3,5e-2,0]
+        },
+        "point1":
+        {
+            "type":"point",
+            "coord":[5e-3,5e-2,0]
         }
     },
     "PostProcess":
