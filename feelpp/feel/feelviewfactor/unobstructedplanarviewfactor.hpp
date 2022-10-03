@@ -78,9 +78,9 @@ UnobstructedPlanarViewFactor<MeshType>::compute()
             auto current_ctx = context( _element = boost::unwrap_ref( *begin( current_range ) ), _type = on_facets_t(), _geomap = this->mesh_->gm(),/* _context_at_compile_time = context_v, */_pointset = current_pts );
             for ( auto const& [remote_index, remote_side] : enumerate( this->list_of_bdys_ ) )
             {
-                if ( !this->mesh_->hasMarker( current_side ) )
+                if ( !this->mesh_->hasMarker( remote_side ) )
                 {
-                    throw std::logic_error( "remote boundary marker " + current_side + " does not exist in mesh" );
+                    throw std::logic_error( "remote boundary marker " + remote_side + " does not exist in mesh" );
                 }
 
                 // planar surface don't see themselves, hence the view factor is 0
@@ -89,6 +89,7 @@ UnobstructedPlanarViewFactor<MeshType>::compute()
                 else
                 {
                     this->vf_( current_index, remote_index ) = 0.0;
+                    this->areas_[current_index] = 0.0;
                     auto remote_range = markedfaces( this->mesh_, remote_side );
                     if ( begin(remote_range) != end(remote_range ) )
                     {                        
@@ -113,19 +114,54 @@ UnobstructedPlanarViewFactor<MeshType>::compute()
 
                                 for( auto const& [current_index_1,current_pt]: enumerate(current_pts.colwise()))
                                 {
-                                    for ( auto const& [remote_index_1, remote_pt] : enumerate( remote_pts.colwise() ) )
-                                    {                                        
-                                        auto p2p = (current_pts.col(current_index_1) - remote_pts.col(remote_index_1));                                                                             
-                                        value_type dist = p2p.norm();
-                                        // get angles between the two faces                                                                                
-                                        value_type cos1 = p2p.dot( current_ctx->normal(current_index_1) ) / dist;                                         
-                                        value_type cos2 = p2p.dot( remote_ctx->normal(remote_index_1) ) / dist;
-                                        // add contribution to integrals
-                                        this->vf_( current_index, remote_index ) +=
-                                                    the_im.weight(current_face.idInElement0(),current_index_1) * the_im.weight(remote_face.idInElement0(),remote_index_1) * 
-                                                    current_ctx->J( current_index_1 )  * remote_ctx->J( remote_index_1 ) * 
-                                                    std::abs( cos1 ) * std::abs( cos2 ) / (std::pow( dist, this->exponent_ )*(this->divisor_));
-                                    }
+                                    if(this->j_["viewfactor"]["algorithm"] == "DoubleAreaIntegration")
+                                    {
+                                        // Method 2AI - numerical integration of the double integral
+                                        for ( auto const& [remote_index_1, remote_pt] : enumerate( remote_pts.colwise() ) )
+                                        {                                        
+                                            auto p2p = (-current_pts.col(current_index_1) + remote_pts.col(remote_index_1));                                                                             
+                                            value_type dist = p2p.norm();
+                                            // get angles between the two faces                                                                                
+                                            value_type cos1 = p2p.dot( current_ctx->normal(current_index_1) ) / dist;                                         
+                                            value_type cos2 = -p2p.dot( remote_ctx->normal(remote_index_1) ) / dist;
+                                            // add contribution to integrals 
+                                            // w_near * w_far * Jac_near * Jac_far * cos1 * cos2 / (r^exponent * divisor)
+                                            this->vf_( current_index, remote_index ) +=
+                                                        the_im.weight(current_face.idInElement0(),current_index_1) * the_im.weight(remote_face.idInElement0(),remote_index_1) * 
+                                                        current_ctx->J( current_index_1 )  * remote_ctx->J( remote_index_1 ) * 
+                                                        cos1 *  cos2  / (std::pow( dist, this->exponent_ )*(this->divisor_));                                                                              
+                                        }   
+                                    }    
+                                    else if (this->j_["viewfactor"]["algorithm"] == "SingleAreaIntegration" && this->mesh_->dimension()==3)
+                                    {
+                                        // Method 1AI - Hottel and Sarofim, 1967. Radiative Transfer p.48
+                                        // F_12 = 1/(2pi A_1) \int_{A_2} \sum_i^{edges A_2} (g_i \cdot n_1)                                                                        
+                                        // Only for 3D
+                                        for (int i = 0; i< remote_face.nEdges() ; i++)
+                                        {
+                                            Eigen::VectorXd p0(3);
+                                            p0 << remote_face.point(i%3).node()[0],remote_face.point(i%3).node()[1],remote_face.point(i%3).node()[2];
+                                            Eigen::VectorXd p1(3);
+                                            p1 << remote_face.point((i+1)%3).node()[0],remote_face.point((i+1)%3).node()[1],remote_face.point((i+1)%3).node()[2];
+                                            auto p = current_pts.col(current_index_1);                                                                         
+
+                                            auto dot_p = (p0-p).dot(p1-p);
+                                            auto cross_p = ((p0-p).template head<3>()).cross((p1-p).template head<3>());
+                                            //auto cross_p = cross_product((p0-p),(p1-p));
+                                            double norm_cross_p = cross_p.norm();
+                                            Eigen::VectorXd normal_vec(3);
+                                            if(this->mesh_->dimension()==3)
+                                                normal_vec << current_ctx->normal(current_index_1)[0], current_ctx->normal(current_index_1)[1], current_ctx->normal(current_index_1)[2];
+                                            auto scalar_prod = cross_p.dot(normal_vec)/norm_cross_p;
+
+                                            this->vf_( current_index, remote_index ) += the_im.weight(current_face.idInElement0(),current_index_1) * 
+                                            current_ctx->J( current_index_1 )  * scalar_prod * (pi/2 - math::atan(dot_p/norm_cross_p))/ (2*pi);
+                                        }
+                                    } 
+                                    else 
+                                    {
+                                        throw std::logic_error( "Integration method not specified. Choose one between the available ones." );
+                                    }                                  
                                 }
                             }
                         }

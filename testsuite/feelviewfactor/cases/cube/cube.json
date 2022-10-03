@@ -1,7 +1,8 @@
 {
     "viewfactor": {
         "type": "UnobstructedPlanar",
-        "quadrature_order":2,
+        "algorithm":"SingleAreaIntegration",
+        "quadrature_order":3,
         "markers":["Gamma_0","Gamma_1","Gamma_2","Gamma_3","Gamma_4","Gamma_5"],
         "description": "The viewfactor of a closed cavity."
     }
