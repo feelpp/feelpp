@@ -39,7 +39,7 @@
 #include <string>
 
 #ifdef FEELPP_HAS_HDF5
-
+#undef OMPI_SKIP_MPICXX
 #include <hdf5.h>
 
 //Tell the compiler to restore the warning previously silented
@@ -232,6 +232,22 @@ public:
                void* buffer,
                int nbDims = 2 );
 
+    //! Read_element
+    /*!
+     * \param tableName a string containing the table name
+     * \param memDataType the type (described as an HDF5 machine native type)
+     *        of the data in the destination buffer
+     * \param currentCount an array of hsize_t of size two describing the shape
+     *        of the block to be read (see HDF5 documentation)
+     * \param num_elem number of elements to be selected
+     * \param coord a pointer to a buffer containing a serialized copy of a 2-dimensional array of zero-based values specifying the coordinates of the elements in the point selection
+     * \param buffer pointer to a memory region that represents the destination
+     *        of the read operation
+     * \param nbDims the number of dimensions of the array to store
+     */
+     void read_elements( const std::string& tableName,
+                         hid_t& memDataType, hsize_t currentCount[], hsize_t num_elem, const hsize_t * coord,
+                         void* buffer, int nbDims = 2 );
     //! Close an open group.
     /*
      * \param groupName A string containing the group name.

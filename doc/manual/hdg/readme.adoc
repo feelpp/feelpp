@@ -22,7 +22,7 @@ On the flux:
 
 == Advance usage
 
-The constructor can take a string paramter, if not empty, this string is used as a prefix for all options.
+The constructor can take a string parameter, if not empty, this string is used as a prefix for all options.
 
 The right hand side can be updated with `updatePotentialRHS` or `updateFluxRHS`, the former is to update $$\nabla\cdot\mathbf{u} = f$$ and the latter for $$\mathbf{u}+\sigma\nabla p = g$$. +
 The term containing the conductivity $$(\mathbf{u}/\sigma, \mathbf{v})$$ can be updated with `updateConductivityTerm`. +
@@ -31,7 +31,7 @@ For the conductivity, the json file can be used instead by using the override fu
 
 == Examples
 
-The simpliest way to use it:
+The simplest way to use it:
 
 [source,c++]
 ----

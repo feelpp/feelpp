@@ -78,7 +78,6 @@ public:
     typedef std::shared_ptr<space_magneticpotential_type> space_magneticpotential_ptrtype;
     typedef typename space_magneticpotential_type::element_type element_magneticpotential_type;
     typedef std::shared_ptr<element_magneticpotential_type> element_magneticpotential_ptrtype;
-    typedef typename space_magneticpotential_type::element_external_storage_type element_magneticpotential_external_storage_type;
 
     // function space magnetic-field
     // typedef Lagrange<nOrderPolyMagneticPotential-1, Vectorial,Discontinuous/*Continuous*/,PointSetFekete> basis_magneticfield_type;

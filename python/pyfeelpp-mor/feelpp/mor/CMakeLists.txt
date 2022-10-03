@@ -49,7 +49,7 @@ if (TARGET pyfeelppoolboxes)
     add_dependencies(pyfeelppmor pyfeelpptoolboxes)
 endif()
 
-set(PYFILES __init__.py online.py test_heat3d.py test_parameterspace.py )
+set(PYFILES __init__.py online.py test_heat3d.py test_parameterspace.py pbdw.py )
 install(FILES ${PYFILES} DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/mor)
 
 add_subdirectory(reducedbasis)

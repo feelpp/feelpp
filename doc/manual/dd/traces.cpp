@@ -103,7 +103,7 @@ Traces<Dim,Order>::run()
             << "problem : " << Xh->nDof() << " != " << Xh->nLocalDof() << " || "
             <<  l.size() << " != " << l.localSize();
 
-        // strange the line below doesn t work correctly, it's necesseray to have a double in cst -> a bug is found
+        // strange the line below doesn t work correctly, it's necessary to have a double in cst -> a bug is found
         //l = vf::project( Xh, elements(trace), cst( neighbor_subdomain+Environment::worldComm().globalRank() )/2. );
         l.on(_range=elements(trace), _expr=cst( (neighbor_subdomain+Environment::worldComm().globalRank())/2. ) );
 

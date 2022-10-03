@@ -168,8 +168,14 @@ po::options_description journal_options( std::string const& prefix="" );
 //! ptree options
 po::options_description ptree_options( std::string const& prefix="" );
 
+//! json options
+po::options_description json_options( std::string const& prefix = "" );
+
 //! empirical quadrature options
 po::options_description eq_options( std::string const& prefix="" );
+
+//! deim options
+po::options_description deimOptions( std::string const& prefix ="");
 
 //! geim options
 po::options_description geim_options( std::string const& prefix="" );

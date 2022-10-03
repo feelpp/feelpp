@@ -22,19 +22,16 @@
     },
     "BoundaryConditions":
     {
-        "electric-potential":
+        "electric":
         {
-            "Dirichlet":
+            "electric_potential":
             {
-                "V0":
-                {
-                    "expr":"0" // V_in
-                },
                 "V1":
                 {
                     "expr":"9" // V_out
                 }
-            }
+            },
+            "ground":{ "markers":["V0"] }
         }
     },
     "PostProcess":

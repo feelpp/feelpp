@@ -780,17 +780,10 @@ Application::processGenericOptions()
             std::cout << std::setw( 85+3 ) << std::setfill( '-' ) << "\n" << std::setfill( ' ' );
             std::for_each( M_about.authors().begin(),
                            M_about.authors().end(),
-                           std::cout
-                           << std::setw( 30 )
-                           << lambda::bind( &AboutPerson::name,
-                                            lambda::_1 )
-                           << " " << std::setw( 15 )
-                           << lambda::bind( &AboutPerson::task,
-                                            lambda::_1 )
-                           << " " << std::setw( 40 )
-                           << lambda::bind( &AboutPerson::emailAddress,
-                                            lambda::_1 )
-                           << "\n" );
+                           []( auto const& author )
+                           {
+                               std::cout << fmt::format("{:>30} {:>15} {:>40}\n",author.name(),author.task(),author.emailAddress());
+                           });
         }
 
         if ( M_vm.count( "help" ) )

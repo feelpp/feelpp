@@ -58,24 +58,24 @@
     },
     "BoundaryConditions":
     {
-        "temperature":
+        "heat":
         {
-            "Robin":
+            "convective_heat_flux":
             {
                 "alpha":
                 {
-                    "expr1":"h_alpha:h_alpha",// h coeff
-                    "expr2":"T0_alpha:T0_alpha"// temperature exterior
+                    "h":"h_alpha:h_alpha",// h coeff
+                    "Text":"T0_alpha:T0_alpha"// temperature exterior
                 },
                 "beta":
                 {
-                    "expr1":"h_beta:h_beta",// h coeff
-                    "expr2":"T0_beta:T0_beta"// temperature exterior
+                    "h":"h_beta:h_beta",// h coeff
+                    "Text":"T0_beta:T0_beta"// temperature exterior
                 },
                 "gamma":
                 {
-                    "expr1":"h_gamma:h_gamma",// h coeff
-                    "expr2":"T0_gamma:T0_gamma"// temperature exterior
+                    "h":"h_gamma:h_gamma",// h coeff
+                    "Text":"T0_gamma:T0_gamma"// temperature exterior
                 }
             }
         }

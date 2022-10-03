@@ -44,18 +44,34 @@
 #include <feel/feelmodels/modelmaterials/materialsproperties.hpp>
 
 #include <feel/feelmodels/modelcore/stabilizationglsparameterbase.hpp>
+#include <feel/feelmodels/modelcore/remeshinterpolation.hpp>
 
-#include <feel/feeldiscr/geometricspace.hpp>
+#include <feel/feelmodels/heat/heatboundaryconditions.hpp>
 
 namespace Feel
 {
 namespace FeelModels
 {
-
+/**
+ * @brief class for heat transfer toolbox
+ * @ingroup Heat
+ *
+ * @tparam ConvexType convex for the mesh
+ * @tparam BasisTemperatureType basis type for Temperature
+ *
+ * @code {.cpp}
+ * using heat_t = Heat< Simplex<nDim,1>, Lagrange<OrderT, Scalar,Continuous,PointSetFekete>>;
+ * auto heat = std::make_shared<heat_t>("heat");
+ * heat->init();
+ * heat->printAndSaveInfo();
+ * heat->solve();
+ * heat->exportResults();
+ * @endcode
+ *
+ */
 template< typename ConvexType, typename BasisTemperatureType>
 class Heat : public ModelNumerical,
-             public ModelPhysics<ConvexType::nDim>,
-             public std::enable_shared_from_this< Heat<ConvexType,BasisTemperatureType> >
+             public ModelPhysics<ConvexType::nDim>
     {
         typedef ModelPhysics<ConvexType::nDim> super_physics_type;
     public:
@@ -80,7 +96,6 @@ class Heat : public ModelNumerical,
         typedef std::shared_ptr<space_temperature_type> space_temperature_ptrtype;
         typedef typename space_temperature_type::element_type element_temperature_type;
         typedef std::shared_ptr<element_temperature_type> element_temperature_ptrtype;
-        typedef typename space_temperature_type::element_external_storage_type element_temperature_external_storage_type;
         // materials properties
         typedef MaterialsProperties<nRealDim> materialsproperties_type;
         typedef std::shared_ptr<materialsproperties_type> materialsproperties_ptrtype;
@@ -107,15 +122,20 @@ class Heat : public ModelNumerical,
                 std::string const& keyword = args.get_else(_keyword,"heat");
                 worldcomm_ptr_t worldcomm = args.get_else(_worldcomm,Environment::worldCommPtr());
                 auto && repository = args.get_else(_repository,ModelBaseRepository{});
-                return std::make_shared<self_type>( prefix, keyword, worldcomm, "", repository );
+                auto && vm = args.get_else(_vm, create_program_options( prefix ) );
+                return std::make_shared<self_type>( prefix, keyword, worldcomm, "", repository, ModelBaseCommandLineOptions{vm} );
             }
 
+        static Feel::po::options_description create_program_options( std::string const& prefix = "heat" ) { return heat_options( prefix );}
 
         Heat( std::string const& prefix,
               std::string const& keyword = "heat",
               worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
               std::string const& subPrefix  = "",
-              ModelBaseRepository const& modelRep = ModelBaseRepository() );
+              ModelBaseRepository const& modelRep = ModelBaseRepository(),
+              ModelBaseCommandLineOptions const& modelOptions = ModelBaseCommandLineOptions{} );
+
+        std::shared_ptr<self_type> shared_from_this() { return std::dynamic_pointer_cast<self_type>( super_type::shared_from_this() ); }
 
         //___________________________________________________________________________________//
         // mesh, space, element temperature
@@ -123,7 +143,7 @@ class Heat : public ModelNumerical,
         void setMesh( mesh_ptrtype const& mesh ) { super_type::super_model_meshes_type::setMesh( this->keyword(), mesh ); }
         elements_reference_wrapper_t<mesh_type> const& rangeMeshElements() const { return M_rangeMeshElements; }
 
-        void applyRemesh( mesh_ptrtype const& newMesh );
+        void applyRemesh( mesh_ptrtype oldMesh, mesh_ptrtype newMesh, std::shared_ptr<RemeshInterpolation> remeshInterp = std::make_shared<RemeshInterpolation>() );
 
         space_temperature_ptrtype const& spaceTemperature() const { return M_Xh; }
         element_temperature_ptrtype const& fieldTemperaturePtr() const { return M_fieldTemperature; }
@@ -141,10 +161,6 @@ class Heat : public ModelNumerical,
         materialsproperties_ptrtype & materialsProperties() { return M_materialsProperties; }
         void setMaterialsProperties( materialsproperties_ptrtype mp ) { M_materialsProperties = mp; }
 
-        // boundary condition + body forces
-        map_scalar_field<2> const& bcDirichlet() const { return M_bcDirichlet; }
-        map_scalar_field<2> const& bcNeumann() const { return M_bcNeumann; }
-        map_scalar_fields<2> const& bcRobin() const { return M_bcRobin; }
         //___________________________________________________________________________________//
         // time step scheme
         std::string const& timeStepping() const { return M_timeStepping; }
@@ -158,7 +174,6 @@ class Heat : public ModelNumerical,
         void updateInitialConditions( SymbolsExprType const& se );
         //___________________________________________________________________________________//
 
-        std::shared_ptr<std::ostringstream> getInfo() const override;
         void updateInformationObject( nl::json & p ) const override;
         tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
 
@@ -468,12 +483,8 @@ class Heat : public ModelNumerical,
         materialsproperties_ptrtype M_materialsProperties;
 
         // boundary conditions
-        map_scalar_field<2> M_bcDirichlet;
-        map_scalar_field<2> M_bcNeumann;
-        map_scalar_fields<2> M_bcRobin;
-        MarkerManagementDirichletBC M_bcDirichletMarkerManagement;
-        MarkerManagementNeumannBC M_bcNeumannMarkerManagement;
-        MarkerManagementRobinBC M_bcRobinMarkerManagement;
+        using boundary_conditions_type = HeatBoundaryConditions;
+        std::shared_ptr<boundary_conditions_type> M_boundaryConditions;
 
         // stabilization
         bool M_stabilizationGLS;

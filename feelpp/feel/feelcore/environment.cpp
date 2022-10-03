@@ -32,7 +32,11 @@ extern "C"
 #ifdef __cplusplus
 }
 #endif
-#include <pybind11/embed.h>
+#if defined(FEELPP_HAS_PYBIND11)
+#include <feel/feelpython/pybind11/pybind11.h>
+#include <feel/feelpython/pybind11/embed.h>
+#endif
+
 #include <boost/program_options.hpp>
 #include <boost/preprocessor/stringize.hpp>
 #include <boost/tokenizer.hpp>
@@ -103,7 +107,7 @@ void DebugWait(int rank)
     if(rank == 0) {
         std::cin >> a;
         std::cout << rank << ": Starting now\n";
-    } 
+    }
 
     MPI_Bcast(&a, 1, MPI_BYTE, 0, MPI_COMM_WORLD);
     std::cout << rank << ": Starting now\n";
@@ -309,7 +313,7 @@ Environment::Environment()
 //! Constructor
 Environment::Environment( int& argc, char**& argv )
     :
-    Environment( argc, argv, mpi::threading::single, feel_nooptions(), feel_options(), 
+    Environment( argc, argv, mpi::threading::single, feel_nooptions(), feel_options(),
                  makeAboutDefault(argv[0]), globalRepository( makeAboutDefault(argv[0]).appName() ) )
 {
 }
@@ -319,7 +323,7 @@ Environment::Environment( int& argc, char**& argv )
 #if defined(FEELPP_ENABLE_PYTHON_WRAPPING)
 struct PythonArgs
 {
-#if defined(FEELPP_HAS_BOOST_PYTHON) 
+#if defined(FEELPP_HAS_BOOST_PYTHON)
     PythonArgs( boost::python::list arg )
         {
             if ( argv == nullptr )
@@ -327,7 +331,7 @@ struct PythonArgs
                 /* Convert python options into argc/argv format */
 
                 argc = boost::python::len( arg );
-                
+
                 argv =new char* [argc+1];
                 boost::python::stl_input_iterator<std::string> begin( arg ), end;
                 int i=0;
@@ -358,7 +362,7 @@ struct PythonArgs
                 argv[i++] = strdup( std::string(pybind11::str(item) ).c_str() );
                 argv[argc]=nullptr;
             }
-            
+
         }
     static int argc;
     static char** argv;
@@ -465,7 +469,7 @@ Environment::Environment( int argc, char** argv,
     cout.attachWorldComm( S_worldcomm );
     cerr.attachWorldComm( S_worldcomm );
     clog.attachWorldComm( S_worldcomm );
-    
+
 #if 0
     // define root dir (example $HOME/feel or $FEELPP_REPOSITORY)
     for( auto const& var: std::map<std::string,std::string>{ { "FEELPP_REPOSITORY", ""} , {"FEELPP_WORKDIR",""}, {"WORK","feel"}, {"WORKDIR","feel"}, {"HOME","feel"} } )
@@ -504,7 +508,7 @@ Environment::Environment( int argc, char** argv,
 #endif
 
 
-    
+
 
     S_desc_app = std::make_shared<po::options_description>( desc );
     S_desc_lib = std::make_shared<po::options_description>( desc_lib );
@@ -566,7 +570,7 @@ Environment::Environment( int argc, char** argv,
     tic();
     cout << "[ Starting Feel++ ] " << tc::green << "application "  << about.appName()
          <<  " version " << about.version() << " date " << today << tc::reset << std::endl;
-    
+
 #if 0
     if ( S_vm.count( "nochdir" ) == 0 )
     {
@@ -601,14 +605,14 @@ Environment::Environment( int argc, char** argv,
         d /= S_vm["repository.case"].as<std::string>();
         directory = d.string();
     }
-    
+
     changeRepository( _directory = boost::format{ directory.string() } );
 #endif
 
     if ( S_vm.count( "dirs" ) == 1 )
     {
-        cout<< "- root: " << rootRepository() << std::endl 
-            << "-  app: " << appRepository() << std::endl 
+        cout<< "- root: " << rootRepository() << std::endl
+            << "-  app: " << appRepository() << std::endl
             // << "-  geo: " << geoRepository() << std::endl
             << "- home: " << expand("$home") << std::endl
             << "-  cfg: " << expand("$cfgdir") << std::endl
@@ -670,7 +674,7 @@ Environment::Environment( int argc, char** argv,
         journaldbconf.authsrc = S_vm["journal.database.authsrc"].as<std::string>();
     if( S_vm.count( "journal.database.collection" ) )
         journaldbconf.collection = S_vm["journal.database.collection"].as<std::string>();
-    Environment::journalDBConfig( journaldbconf ); 
+    Environment::journalDBConfig( journaldbconf );
     Feel::MongoCxx::instance();
 #endif
 
@@ -763,7 +767,7 @@ Environment::~Environment()
     cout << summary << std::endl;
     cout << "[ Stopping Feel++ ] " << tc::green << "application " << S_about.appName()
          << " execution time " << t << "s" << tc::reset << std::endl;
- 
+
 #if defined(FEELPP_HAS_HARTS)
     /* if we used hwloc, we free topology data */
     Environment::destroyHwlocTopology();
@@ -1620,7 +1624,7 @@ Environment::doOptions( int argc, char** argv,
         LOG( WARNING ) << "Command line or config file option parsing error: " << e.what() << "\n"
                        << "  o faulty option: " << e.get_option_name() << "\n"
                        << "Warning: the .cfg file or some options may not have been read properly\n";
-                       
+
     }
 
     catch ( boost::program_options::ambiguous_option const& e )
@@ -1688,7 +1692,7 @@ Environment::finalized()
     return mpi::environment::finalized();
 }
 
-mpi::threading::level 
+mpi::threading::level
 Environment::threadLevel()
 {
     return mpi::environment::thread_level();
@@ -1733,14 +1737,14 @@ Environment::findFile( std::string const& filename, std::vector<std::string> pat
     }
 
 #endif
-    
+
     auto filename_ = fs::path(filename).filename().string();
     for( auto const& ps : paths )
     {
-        
+
         fs::path p( Environment::expand(ps) );
         if ( fs::exists( p / filename_ ) )
-            
+
             return ( p / filename_ ).string();
     }
     // look in to paths list from end-1 to begin
@@ -1940,7 +1944,7 @@ Environment::changeRepositoryImpl( boost::format fmt, std::string const& logfile
          << " . " << Environment::about().appName() << " files are stored in " << tc::red << Environment::appRepository()
          << tc::reset << std::endl;
     cout << " .. logfiles :" << Environment::logsRepository() << std::endl;
-    
+
     // eventually cleanup
     if ( remove )
     {
@@ -2005,7 +2009,6 @@ Environment::updateInformationObject( nl::json & p ) const
                         { "major", PETSC_VERSION_MAJOR },
                         { "minor", PETSC_VERSION_MINOR },
                         { "subminor", PETSC_VERSION_SUBMINOR },
-                        { "patch", PETSC_VERSION_PATCH },
                         { "release", PETSC_VERSION_RELEASE }
                     } },
                 { "date", {

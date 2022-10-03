@@ -4,7 +4,11 @@
     "Models":
     {
         "fluid":{
-            "equations":"Navier-Stokes"
+            "setup":
+            {
+                "equation":"Navier-Stokes"
+                //"formulation":"emac" // "convective","skew-symmetric","conservative","rotational","emac"
+            }
         }
     },
     "Meshes":
@@ -31,9 +35,9 @@
     },
     "BoundaryConditions":
     {
-        "velocity":
+        "fluid":
         {
-            "Dirichlet":
+            "velocity":
             {
                 "inlet":
                 {
@@ -47,11 +51,8 @@
                 {
                     "expr":"{0,0}"
                 }
-            }
-        },
-        "fluid":
-        {
-            "outlet":
+            },
+            "normal_stress":
             {
                 "outlet":
                 {

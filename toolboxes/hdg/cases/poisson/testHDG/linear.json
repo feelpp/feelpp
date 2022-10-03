@@ -1,89 +1,94 @@
 {
-    "Name": "HDG-Mixed-Poisson coupled with an OpenModelica circuit model",
-    "ShortName":"MP_LC",
+    "Name": "HDG-Mixed-Poisson Test",
+    "ShortName":"MP",
     "Models": { "equations":"hdg"},
+    "Parameters":
+    {
+        "p_exact":"t+x+y:x:y:z:t",
+        "u1_exact":"-1:x:y:z:t",
+        "u2_exact":"-1:x:y:z:t"
+    },
     "Materials":
     {
         "omega":
         {
             "name":"simulation_domain",
-            "cond":"1"
+            "poisson_d":"1",
+            "poisson_c":"1",
+            "poisson_f":"1:x:y:t"
         }
     },
     "InitialConditions":
     {
-        "potential":
-        {
-            "Expression":
+        "poisson":{
+            "potential":
             {
-                "myic1":
+                "Expression":
                 {
-                    "markers":"omega",
-					"expr":"t+x:x:t"
+                    "myic1":
+                    {
+                        "markers":"omega",
+					    "expr":"p_exact:p_exact"
+                    }
                 }
             }
         }
     },
     "BoundaryConditions":
     {
-        "potential":
+        "poisson":
         {
-            "VolumicForces":
-            {
-                "omega":
-                {
-					"expr":"1:x:y:t"
-                }
-            },
             "Dirichlet":
             {
                 "bc":
 				{
                     "markers":["bottom","top","lateral"],
-					"expr":"t+x:x:t"
+					"expr":"p_exact:p_exact"
 				}
             }
         }
     },
     "PostProcess":
     {
-		"Exports":
-		{
-        	"fields":["potential","flux"]
-		},
-        "Measures":
-        {
-            "Norm":
-            {
-                "potential_error":
-                {
-                    "type":"L2-error",
-                    "field":"potential",
-                    "solution":"t+x:x:t",
-                    "markers":"omega"
-                },
-                "flux_error":
-                {
-                    "type":"L2-error",
-                    "field":"flux",
-                    "solution":"{-1,0}:x:t",
-                    "markers":"omega"
-                }
-            }
-        },
-        "Checkers":
-        {
+        "poisson":{
+		    "Exports":
+		    {
+        	    "fields":["potential","flux"]
+		    },
             "Measures":
             {
-                "Norm_potential_error_L2-error":
+                "Norm":
                 {
-                    "value":0,
-                    "tolerance":1e-7
-                },
-                "Norm_flux_error_L2-error":
+                    "potential_error":
+                    {
+                        "type":"L2-error",
+                        "field":"potential",
+                        "solution":"p_exact:p_exact",
+                        "markers":"omega"
+                    },
+                    "flux_error":
+                    {
+                        "type":"L2-error",
+                        "field":"flux",
+                        "solution":"{u1_exact,u2_exact}:u1_exact:u2_exact:u3_exact",
+                        "markers":"omega"
+                    }
+                }
+            },
+            "Checkers":
+            {
+                "Measures":
                 {
-                    "value":0,
-                    "tolerance":1e-7
+                    "Norm_potential_error_L2-error":
+                    {
+                        "value":0,
+                        "tolerance":1e-7
+                    },
+                    "Norm_flux_error_L2-error":
+                    {
+                        "value":0,
+                        "tolerance":1e-7
+                    }
                 }
             }
         }

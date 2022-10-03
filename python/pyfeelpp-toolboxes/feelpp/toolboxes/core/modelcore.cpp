@@ -21,9 +21,9 @@
 //! @date 25 Jul 2018
 //! @copyright 2018 Feel++ Consortium
 //!
-#include <feel/feelcore/pybind11_json.hpp>
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
+#include <feel/feelpython/pybind11/pybind11.h>
+#include <feel/feelpython/pybind11/stl.h>
+#include <feel/feelpython/pybind11/json.h>
 #include <vector>
 #include <feel/feelmodels/modelcore/modelbase.hpp>
 #include <feel/feelmodels/modelcore/modelalgebraic.hpp>
@@ -89,6 +89,12 @@ PYBIND11_MODULE(_modelcore, m )
         .def("printInfo", py::overload_cast<>(&ModelBase::printInfo,py::const_), "print model info")
         .def("saveInfo", py::overload_cast<>(&ModelBase::saveInfo,py::const_), "save model info")
         .def("printAndSaveInfo", &ModelBase::printAndSaveInfo, "print and save model info")
+
+        .def( "hasModelProperties", &ModelBase::hasModelProperties, "returns true if model properties are defined, false otherwise" )
+        .def( "modelProperties", &ModelBase::modelPropertiesPtr, "return model properties", py::return_value_policy::reference )
+        .def( "setModelProperties", static_cast<void ( ModelBase::* )( std::string const& )>( &ModelBase::setModelProperties ), "set model properties from filename", py::arg( "model" ) )
+        .def( "setModelProperties", static_cast<void ( ModelBase::* )( nl::json const& )>( &ModelBase::setModelProperties ), "set model properties from json", py::arg( "model" ) )
+        .def( "addParameterInModelProperties", &ModelBase::addParameterInModelProperties, "add new parameter in model properties" )
         ;
 
     py::class_<ModelAlgebraicFactory, std::shared_ptr<ModelAlgebraicFactory>>( m, "ModelAlgebraicFactory" )
@@ -115,7 +121,7 @@ PYBIND11_MODULE(_modelcore, m )
        .def( "values", static_cast<std::map<std::string, double> const& (ModelMeasuresStorage::*)() const>( &ModelMeasuresStorage::values ), "get the values in the default storage" )
        .def( "values", static_cast<std::map<std::string, double> const& (ModelMeasuresStorage::*)( std::string const& ) const>( &ModelMeasuresStorage::values ), py::arg( "name" ), "get the values in the storage 'name'" );
 
-    py::class_<ModelNumerical, std::shared_ptr<ModelNumerical>, ModelAlgebraic>( m, "ModelNumerical" )
+   py::class_<ModelNumerical, std::shared_ptr<ModelNumerical>, ModelAlgebraic>( m, "ModelNumerical", py::multiple_inheritance() )
        .def( py::init<std::string const&, worldcomm_ptr_t const&, std::string const&, ModelBaseRepository const&>(),
              py::arg( "prefix" ),
              py::arg( "worldComm" ),
@@ -126,12 +132,6 @@ PYBIND11_MODULE(_modelcore, m )
        .def( "setStationary", &ModelNumerical::setStationary, "set model steady state to true or false", py::arg( "state" ) )
        .def( "doRestart", &ModelNumerical::doRestart, "return if model is restarted, false otherwise" )
        .def( "setRestart", &ModelNumerical::setRestart, "set model restart status", py::arg( "state" ) )
-
-       .def( "hasModelProperties", &ModelNumerical::hasModelProperties, "returns true if model properties are defined, false otherwise" )
-       .def( "modelProperties", &ModelNumerical::modelPropertiesPtr, "return model properties", py::return_value_policy::reference )
-       .def( "setModelProperties", static_cast<void ( ModelNumerical::* )( std::string const& )>( &ModelNumerical::setModelProperties ), "set model properties from filename", py::arg( "model" ) )
-       .def( "setModelProperties", static_cast<void ( ModelNumerical::* )( nl::json const& )>( &ModelNumerical::setModelProperties ), "set model properties from json", py::arg( "model" ) )
-       .def( "addParameterInModelProperties", &ModelNumerical::addParameterInModelProperties, "add new parameter in model properties" )
 
        .def( "time", &ModelNumerical::time, "get the current time" )
        .def( "currentTime", &ModelNumerical::currentTime, "get the current time" )

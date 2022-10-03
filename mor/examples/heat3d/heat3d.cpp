@@ -2,8 +2,6 @@
 
 #include <heat3d.hpp>
 
-//#include <4fastsim/crbmodels/common/sourcecrbmodel.hpp>
-
 namespace Feel
 {
 
@@ -28,11 +26,13 @@ makeHeat3dAbout( std::string const& str )
     return about;
 }
 
-
 Heat3d::Heat3d()
     :
-    super_type( "Heat3d" )
-{}
+    super_type( "myHeat3d_P1G1" )
+{
+    this->setPluginName( BOOST_PP_STRINGIZE(FEELPP_MOR_PLUGIN_NAME) + std::string("P1G1") );
+    this->setPluginLibName( BOOST_PP_STRINGIZE(FEELPP_MOR_PLUGIN_LIBNAME) );
+}
 
 
 void
@@ -208,43 +208,7 @@ Heat3d::output( int output_index, parameter_type const& mu , element_type& u, bo
 
 }
 
-#if 0
-Heat3d::parameter_type
-Heat3d::crbParametersFromUserParameters( feelpp4fastsim::UserParameters const& userParam ) const
-{
-    parameter_type mu = Dmu->element(false);
-    mu(0)=userParam[0].valueInUnitRef();
-    mu(1)=userParam[1].valueInUnitRef();
-    mu(2)=userParam[2].valueInUnitRef();
-    mu(3)=userParam[3].valueInUnitRef();
-    mu(4)=mu(1)*userParam[4].valueInUnitRef();
-    mu(5)=mu(2)*userParam[5].valueInUnitRef();
-    mu(6)=mu(3)*userParam[6].valueInUnitRef();
-    mu(7)=userParam[7].valueInUnitRef();
-    return mu;
-}
 
-void
-Heat3d::updateFieldsExported( SourceCrbInterface * pvsource, element_type & feField, vtkSmartPointer<vtkUnstructuredGrid> vtkOutput )
-{
-    auto pvsourcecast = dynamic_cast< SourceCrbModel<Heat3d>* >( pvsource );
-    if ( pvsourcecast )
-    {
-        pvsourcecast->addFieldExported( "Temperature", feField, vtkOutput );
-    }
-}
-#endif
+FEELPP_CRB_PLUGIN( Heat3d, BOOST_PP_CAT(FEELPP_MOR_PLUGIN_NAME,P1G1) )
 
-FEELPP_CRB_PLUGIN( Heat3d, heat3d )
-/*
-include <boost/python.hpp>
-using namespace boost::python;
-
-BOOST_PYTHON_MODULE(heat3d)
-{
-    class_<Heat3d>("Heat3D")
-        .def("parameterSpace", &Heat3d::)
-        .def("set", &World::set)
-        ;
- }*/
 } // namespace Feel

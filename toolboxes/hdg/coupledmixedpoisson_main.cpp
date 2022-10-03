@@ -87,11 +87,13 @@ int main(int argc, char *argv[])
     int dimension = ioption(_name="case.dimension");
     std::string discretization = soption(_name="case.discretization");
 
-    auto dimt = hana::make_tuple(hana::int_c<2>,hana::int_c<3>);
+    auto dimt = hana::make_tuple(// hana::int_c<2>,
+                                 hana::int_c<3>);
 #if FEELPP_INSTANTIATION_ORDER_MAX >= 3
-    auto discretizationt = hana::make_tuple( hana::make_tuple("P1", hana::int_c<1> ),
-                                             hana::make_tuple("P2", hana::int_c<2> ),
-                                             hana::make_tuple("P3", hana::int_c<3> ) );
+    auto discretizationt = hana::make_tuple( hana::make_tuple("P1", hana::int_c<1> )// ,
+                                             // hana::make_tuple("P2", hana::int_c<2> ),
+                                             // hana::make_tuple("P3", hana::int_c<3> )
+                                             );
 #elif FEELPP_INSTANTIATION_ORDER_MAX >= 2
     auto discretizationt = hana::make_tuple( hana::make_tuple("P1", hana::int_c<1> ),
                                              hana::make_tuple("P2", hana::int_c<2> ) );

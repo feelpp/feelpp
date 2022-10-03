@@ -14,15 +14,15 @@ namespace FeelModels
 {
 
 //---------------------------------------------------------------------------------------------------//
-
+#if 0
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 std::shared_ptr<std::ostringstream>
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
 {
-    this->log("SolidMechanics","getInfo", "start" );
 
     std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
-
+#if 0
+    this->log("SolidMechanics","getInfo", "start" );
     std::string StateTemporal = (this->isStationary())? "Stationary" : "Transient";
     size_type nElt,nDof;
     if (this->hasSolidEquationStandard()) {/*nElt=M_mesh->numGlobalElements();*/ nDof=M_XhDisplacement->nDof();}
@@ -152,10 +152,10 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n";
 
     this->log("SolidMechanics","getInfo", "finish" );
-
+#endif
     return _ostr;
 }
-
+#endif
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) const
@@ -181,6 +181,9 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) cons
     {
         super_type::super_model_meshes_type::updateInformationObject( p["Meshes"] );
 
+        // Boundary Conditions
+        M_boundaryConditions->updateInformationObject( p["Boundary Conditions"] );
+
         subPt.clear();
         this->functionSpaceDisplacement()->updateInformationObject( subPt["Displacement"] );
         if ( this->hasDisplacementPressureFormulation() )
@@ -194,7 +197,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) cons
     }
 
     if ( this->hasSolidEquation1dReduced() )
-        M_solid1dReduced->updateInformationObject( p["Toolbox Solid 1d Reduced"] );
+        p["Toolbox Solid 1d Reduced"] = M_solid1dReduced->journalSection().to_string();
+    //M_solid1dReduced->updateInformationObject( p["Toolbox Solid 1d Reduced"] );
 
 }
 
@@ -223,6 +227,10 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonIn
     if ( this->materialsProperties() && jsonInfo.contains("Materials Properties") )
         tabInfo->add( "Materials Properties", this->materialsProperties()->tabulateInformations(jsonInfo.at("Materials Properties"), tabInfoProp ) );
 
+    // Boundary conditions
+    if ( jsonInfo.contains("Boundary Conditions") )
+        tabInfo->add( "Boundary Conditions", boundary_conditions_type::tabulateInformations( jsonInfo.at("Boundary Conditions"), tabInfoProp ) );
+
     // Meshes
     if ( jsonInfo.contains("Meshes") )
         tabInfo->add( "Meshes", super_type::super_model_meshes_type::tabulateInformations( jsonInfo.at("Meshes"), tabInfoProp ) );
@@ -250,7 +258,15 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonIn
 
     // Subtoolbox
     if ( this->hasSolidEquation1dReduced() && jsonInfo.contains( "Toolbox Solid 1d Reduced" ) )
-        tabInfo->add( "Toolbox Solid 1d Reduced", M_solid1dReduced->tabulateInformations( jsonInfo.at("Toolbox Solid 1d Reduced"), tabInfoProp ) );
+    {
+        nl::json::json_pointer jsonPointerSolid1d( jsonInfo.at( "Toolbox Solid 1d Reduced" ).template get<std::string>() );
+        if ( JournalManager::journalData().contains( jsonPointerSolid1d ) )
+        {
+            auto tabInfos_solid1d = M_solid1dReduced->tabulateInformations( JournalManager::journalData().at( jsonPointerSolid1d ), tabInfoProp );
+            //TabulateInformationsSections::cast( tabInfos_solid1d )->erase( "Materials Properties" );
+            tabInfo->add( "Toolbox Solid 1d Reduced", tabInfos_solid1d );
+        }
+    }
 
     return tabInfo;
 }
@@ -1002,6 +1018,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateParameterValues()
     this->modelProperties().parameters().updateParameterValues();
     auto paramValues = this->modelProperties().parameters().toParameterValues();
     this->materialsProperties()->updateParameterValues( paramValues );
+    for ( auto [physicName,physicData] : this->physics/*FromCurrentType*/() )
+        physicData->updateParameterValues( paramValues );
 
     this->setParameterValues( paramValues );
 }
@@ -1016,17 +1034,11 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::setParameterValues( std::map<std::string,dou
         this->materialsProperties()->setParameterValues( paramValues );
     }
 
-    this->M_bcDirichlet.setParameterValues( paramValues );
-    for ( auto & bcDirComp : this->M_bcDirichletComponents )
-        bcDirComp.second.setParameterValues( paramValues );
-    this->M_bcNeumannScalar.setParameterValues( paramValues );
-    this->M_bcNeumannVectorial.setParameterValues( paramValues );
-    this->M_bcNeumannTensor2.setParameterValues( paramValues );
-    this->M_bcNeumannEulerianFrameScalar.setParameterValues( paramValues );
-    this->M_bcNeumannEulerianFrameVectorial.setParameterValues( paramValues );
-    this->M_bcNeumannEulerianFrameTensor2.setParameterValues( paramValues );
-    this->M_bcRobin.setParameterValues( paramValues );
-    this->M_volumicForcesProperties.setParameterValues( paramValues );
+    for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
+        physicData->setParameterValues( paramValues );
+
+    if ( this->hasSolidEquationStandard() )
+        M_boundaryConditions->setParameterValues( paramValues );
 
     if ( this->hasSolidEquation1dReduced() )
         M_solid1dReduced->setParameterValues( paramValues );

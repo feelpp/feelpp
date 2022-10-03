@@ -36,22 +36,35 @@
 
 #include <feel/feelmodels/modelcore/modelnumerical.hpp>
 #include <feel/feelmodels/modelcore/modelphysics.hpp>
-#include <feel/feelmodels/modelcore/markermanagement.hpp>
 #include <feel/feelmodels/modelcore/options.hpp>
 #include <feel/feelmodels/modelmaterials/materialsproperties.hpp>
+#include <feel/feelmodels/electric/electricboundaryconditions.hpp>
 
 namespace Feel
 {
 namespace FeelModels
 {
-/** 
- * Toolbox Electric 
- * @ingroup Toolboxes
+/**
+ * @brief class for Electric toolbox
+ * @ingroup Electric
+ *
+ * @tparam ConvexType convex for the mesh
+ * @tparam BasisPotentialType basis type for electric potential
+ * 
+ * @code {.cpp}
+ * using electric_t = Electric< Simplex<nDim,1>, Lagrange<OrderT, Scalar,Continuous,PointSetFekete>>; 
+ * auto electric = std::make_shared<electric_t>("electric");
+ * electric->init();
+ * electric->printAndSaveInfo();
+ * electric->printAndSaveInfo();
+ * electric->solve();
+ * electric->exportResults();
+ * @endcode
+ * 
  */
 template< typename ConvexType, typename BasisPotentialType>
 class Electric : public ModelNumerical,
-                 public ModelPhysics<ConvexType::nDim>,
-                 public std::enable_shared_from_this< Electric<ConvexType,BasisPotentialType> >
+                 public ModelPhysics<ConvexType::nDim>
 {
     typedef ModelPhysics<ConvexType::nDim> super_physics_type;
 public:
@@ -75,7 +88,6 @@ public:
     typedef std::shared_ptr<space_electricpotential_type> space_electricpotential_ptrtype;
     typedef typename space_electricpotential_type::element_type element_electricpotential_type;
     typedef std::shared_ptr<element_electricpotential_type> element_electricpotential_ptrtype;
-    typedef typename space_electricpotential_type::element_external_storage_type element_electricpotential_external_storage_type;
 
     // materials properties
     typedef MaterialsProperties<nRealDim> materialsproperties_type;
@@ -98,7 +110,8 @@ public:
               std::string const& subPrefix = "",
               ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
-    std::shared_ptr<std::ostringstream> getInfo() const override;
+    std::shared_ptr<self_type> shared_from_this() { return std::dynamic_pointer_cast<self_type>( super_type::shared_from_this() ); }
+
     void updateInformationObject( nl::json & p ) const override;
     tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
 
@@ -205,7 +218,7 @@ public :
         }
     auto modelFields( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
         {
-            auto field_p = this->spaceElectricPotential()->elementPtr( *sol, rowStartInVector + this->startSubBlockSpaceIndex( "potential-electric" ) );
+            auto field_p = this->spaceElectricPotential()->elementPtr( *sol, rowStartInVector + this->startSubBlockSpaceIndex( "electric-potential" ) );
             return this->modelFields( field_p, prefix );
         }
     template <typename PotentialFieldType>
@@ -358,13 +371,8 @@ private :
     materialsproperties_ptrtype M_materialsProperties;
 
     // boundary conditions
-    map_scalar_field<2> M_bcDirichlet;
-    map_scalar_field<2> M_bcNeumann;
-    map_scalar_fields<2> M_bcRobin;
-    map_scalar_field<2> M_volumicForcesProperties;
-    MarkerManagementDirichletBC M_bcDirichletMarkerManagement;
-    MarkerManagementNeumannBC M_bcNeumannMarkerManagement;
-    MarkerManagementRobinBC M_bcRobinMarkerManagement;
+    using boundary_conditions_type = ElectricBoundaryConditions;
+    std::shared_ptr<boundary_conditions_type> M_boundaryConditions;
 
     // post-process
     export_ptrtype M_exporter;

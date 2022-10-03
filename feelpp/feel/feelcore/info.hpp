@@ -116,9 +116,15 @@ public:
     //!
     //! \brief libdir directory
     //!
-    //! The directory for installing libraries and plugins
+    //! The directory where libraries are installed
     //!
     static char const* libdir();
+
+    //! \brief plugindir directory
+    //!
+    //! The directory where plugins are installed
+    //!
+    static char const* plugindir();
 
     /**
      * \brief datadir directory
@@ -129,6 +135,20 @@ public:
     static char const* datadir();
 
     /**
+     * @brief casesdir directory
+     * 
+     * the directory where cases are installed
+     */
+    static char const* casesdir();
+
+    /**
+     * @brief toolboxcasesdir directory
+     *
+     * the directory where toolbox cases are installed
+     */
+    static char const* toolboxcasesdir();
+
+    /**
      * @brief get git metadata
      * 
      */
@@ -136,7 +156,7 @@ public:
 
 private:
 
-    constexpr static GitMetadata S_git;
+    constexpr static GitMetadata S_git{};
 
 }; // Info
 

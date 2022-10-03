@@ -52,8 +52,8 @@
 
 #include <feel/feelmodels/modelcore/options.hpp>
 
+#include <feel/feelmodels/solid/solidmechanicsboundaryconditions.hpp>
 #include <feel/feelmodels/modelvf/solidmecfirstpiolakirchhoff.hpp>
-
 #include <feel/feelmodels/solid/solidmechanics1dreduced.hpp>
 
 namespace Feel
@@ -61,13 +61,25 @@ namespace Feel
 namespace FeelModels
 {
 /**
- * Solid Mechanics Toolbox
- * \ingroup Toolboxes
+ * @brief class for Solid Mechanics toolbox
+ * @ingroup Solid
+ *
+ * @tparam ConvexType convex for the mesh
+ * @tparam BasisDisplacementType basis type for displacement
+ *
+ * @code {.cpp}
+ * using solid_t = SolidMechanics< Simplex<nDim,1>, Lagrange<OrderT, Vectorial,Continuous,PointSetFekete>>;
+ * auto solid = std::make_shared<solid_t>("solid");
+ * solid->init();
+ * solid->printAndSaveInfo();
+ * solid->solve();
+ * solid->exportResults();
+ * @endcode
+ *
  */
 template< typename ConvexType, typename BasisDisplacementType >
 class SolidMechanics : public ModelNumerical,
-                       public ModelPhysics<ConvexType::nDim>,
-                       public std::enable_shared_from_this< SolidMechanics<ConvexType,BasisDisplacementType> >
+                       public ModelPhysics<ConvexType::nDim>
 {
     typedef ModelPhysics<ConvexType::nDim> super_physics_type;
 public:
@@ -106,7 +118,6 @@ public:
     typedef std::shared_ptr<space_displacement_type> space_displacement_ptrtype;
     typedef typename space_displacement_type::element_type element_displacement_type;
     typedef std::shared_ptr<element_displacement_type> element_displacement_ptrtype;
-    typedef typename space_displacement_type::element_external_storage_type element_displacement_external_storage_type;
     typedef typename space_displacement_type::element_type element_vectorial_type;
     typedef std::shared_ptr<element_vectorial_type> element_vectorial_ptrtype;
     typedef typename space_displacement_type::component_functionspace_type space_displacement_scalar_type;
@@ -118,7 +129,6 @@ public:
     typedef std::shared_ptr<space_pressure_type> space_pressure_ptrtype;
     typedef typename space_pressure_type::element_type element_pressure_type;
     typedef std::shared_ptr<element_pressure_type> element_pressure_ptrtype;
-    typedef typename space_pressure_type::element_external_storage_type element_pressure_external_storage_type;
     //___________________________________________________________________________________//
     // vectorial constraint space
     typedef FunctionSpace<mesh_type, bases<basis_constraint_vec_type> > space_constraint_vec_type;
@@ -273,7 +283,7 @@ public:
                              std::string const& subPrefix = "",
                              ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
-    static std::string expandStringFromSpec( std::string const& expr );
+    std::shared_ptr<self_type> shared_from_this() { return std::dynamic_pointer_cast<self_type>( super_type::shared_from_this() ); }
 
 private :
 
@@ -282,6 +292,7 @@ private :
     void initMesh();
     void initFunctionSpaces();
     void initBoundaryConditions();
+    void updatePhysics( typename super_physics_type::PhysicsTreeNode & physicsTree, ModelModels const& models ) override;
 
     void createExporters();
 
@@ -300,7 +311,6 @@ public :
     void init( bool buildAlgebraicFactory = true );
     void solve( bool upVelAcc=true );
 
-    std::shared_ptr<std::ostringstream> getInfo() const override;
     void updateInformationObject( nl::json & p ) const override;
     tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
 
@@ -338,15 +348,6 @@ public :
     materialsproperties_ptrtype const& materialsProperties() const { return M_materialsProperties; }
     materialsproperties_ptrtype & materialsProperties() { return M_materialsProperties; }
     void setMaterialsProperties( materialsproperties_ptrtype mp ) { CHECK( !this->isUpdatedForUse() ) << "setMaterialsProperties can be called only before called isUpdatedForUse";  M_materialsProperties = mp; }
-
-
-    bool hasDirichletBC() const
-        {
-            return ( !M_bcDirichlet.empty() ||
-                     !M_bcDirichletComponents.find(Component::X)->second.empty() ||
-                     !M_bcDirichletComponents.find(Component::Y)->second.empty() ||
-                     !M_bcDirichletComponents.find(Component::Z)->second.empty() );
-        }
 
     std::string const& timeStepping() const { return M_timeStepping; }
 
@@ -529,9 +530,9 @@ public :
 
     auto modelFields( vector_ptrtype sol, size_type startBlockSpaceIndex = 0, std::string const& prefix = "" ) const
         {
-            std::shared_ptr<element_displacement_external_storage_type> field_d;
-            std::shared_ptr<element_displacement_external_storage_type> field_v;
-            std::shared_ptr<element_pressure_external_storage_type> field_p;
+            element_displacement_ptrtype field_d;
+            element_displacement_ptrtype field_v;
+            element_pressure_ptrtype field_p;
             if ( this->hasSolidEquationStandard() )
             {
                 field_d = this->functionSpaceDisplacement()->elementPtr( *sol, startBlockSpaceIndex + this->startSubBlockSpaceIndex( "displacement" ) );
@@ -689,8 +690,6 @@ public :
     std::string couplingFSIcondition() const { return M_couplingFSIcondition; }
     void couplingFSIcondition(std::string s) { M_couplingFSIcondition=s; }
 
-    std::set<std::string> const& markerNameFSI() const { return M_bcFSIMarkerManagement.markerFluidStructureInterfaceBC(); }
-
     void updateNormalStressFromStruct();
     //void updateStressCriterions();
 
@@ -747,23 +746,9 @@ private :
     // physical parameter
     materialsproperties_ptrtype M_materialsProperties;
 
-
     // boundary conditions
-    map_vector_field<nDim,1,2> M_bcDirichlet;
-    std::map<ComponentType,map_scalar_field<2> > M_bcDirichletComponents;
-    map_scalar_field<2> M_bcNeumannScalar,M_bcInterfaceFSI;
-    map_vector_field<nDim,1,2> M_bcNeumannVectorial;
-    map_matrix_field<nDim,nDim,2> M_bcNeumannTensor2;
-    map_vector_fields<nDim,1,2> M_bcRobin;
-    map_scalar_field<2> M_bcNeumannEulerianFrameScalar;
-    map_vector_field<nDim,1,2> M_bcNeumannEulerianFrameVectorial;
-    map_matrix_field<nDim,nDim,2> M_bcNeumannEulerianFrameTensor2;
-    map_vector_field<nDim,1,2> M_volumicForcesProperties;
-    MarkerManagementDirichletBC M_bcDirichletMarkerManagement;
-    MarkerManagementNeumannBC M_bcNeumannMarkerManagement;
-    MarkerManagementNeumannEulerianFrameBC M_bcNeumannEulerianFrameMarkerManagement;
-    MarkerManagementRobinBC M_bcRobinMarkerManagement;
-    MarkerManagementFluidStructureInterfaceBC M_bcFSIMarkerManagement;
+    using boundary_conditions_type = SolidMechanicsBoundaryConditions<nDim>;
+    std::shared_ptr<boundary_conditions_type> M_boundaryConditions;
 
     //-------------------------------------------//
     // standard model
