@@ -118,7 +118,7 @@ void checkViewFactorEnclosure(std::string const& prefix)
     {
         BOOST_CHECK_MESSAGE( difference_infNorm<5e-2, fmt::format("Infinity norm of (1 - rowwise) sum is larger than 4e-2" ) );
     }
-    BOOST_CHECK_MESSAGE(upvf.maxDevReciprocity()<1e-10, fmt::format("Max dev reciprocity less than 1e-10"));
+    BOOST_CHECK_MESSAGE(upvf.maxDevReciprocity()<1e-7, fmt::format("Max dev reciprocity less than 1e-7"));
     if(prefix=="cube")
     {
         auto vf_parallel_walls = view_factor_parallel_walls_exact(1.,1.,1.); // cube of side 1.
