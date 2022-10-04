@@ -183,7 +183,7 @@ private:
  * @tparam IndexType
  */
 template <typename IndexType>
-class ModelMesh
+class ModelMesh: public std::enable_shared_from_this<ModelMesh<IndexType>>
 {
 public :
     using index_type = IndexType;
@@ -320,6 +320,8 @@ public :
 
             std::set<std::string> const& requiredMarkers() const { return M_requiredMarkers; }
 
+            void setCurrentQualityValue(double q_min){M_min_quality_mas = q_min;}
+
             template <typename SymbolsExprType = symbols_expression_empty_t>
             bool isExecutedWhen( std::shared_ptr<Event> e, SymbolsExprType const& se = symbols_expression_empty_t{} ) const
                 {
@@ -333,6 +335,16 @@ public :
                         auto e_ets = std::dynamic_pointer_cast<EventEachTimeStep>( e );
                         if ( e_ets->currentIndex() == M_eventEachTimeStep_lastExecutionIndex )
                             return false;
+                        if((M_min_quality_mas>=M_eventEachTimeStep_quality))
+                        {
+                            LOG(INFO) << fmt::format("Computed minimal quality {} larger than threshold quality {}",M_min_quality_mas,M_eventEachTimeStep_quality);
+                            return false; 
+                        }
+                        // if(M_min_quality_mas< M_eventEachTimeStep_quality)
+                        // {
+                        //     LOG(INFO) << fmt::format("Computed minimal quality {}, Threshold quality {}",M_min_quality_mas,M_eventEachTimeStep_quality);
+                        //     return true;                        
+                        // }
                         if ( ( e_ets->currentIndex() % M_eventEachTimeStep_frequency ) != 0 )
                             return false;
                         if ( M_eventEachTimeStep_condition.template hasExpr<1,1>() )
@@ -341,6 +353,7 @@ public :
                             if ( std::abs(conditionExpr.evaluate()(0,0)) < 1e-12 )
                                 return false;
                         }
+                        
                         break;
                     }
                     default:
@@ -360,6 +373,8 @@ public :
             static tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp );
 
             friend struct Execute;
+            
+            double M_min_quality_mas=0.9;
         private:
 
             nl::json M_remesherSetup;
@@ -367,8 +382,9 @@ public :
             std::set<typename Event::Type> M_executionEvents;
             size_type M_eventEachTimeStep_frequency;
             size_type M_eventEachTimeStep_lastExecutionIndex;
+            double M_eventEachTimeStep_quality=1.0;            
             ModelExpression M_eventEachTimeStep_condition;
-            ModelExpression M_metric;
+            ModelExpression M_metric;            
             fs::path M_tmpDir; // store tmp mesh file in parallel, should be removed when ParMmg work!
         };
 
@@ -626,6 +642,14 @@ public :
     template <typename MeshType>
     void applyRemesh( std::shared_ptr<MeshType> const& newMesh );
 
+    void setCurrentQualityValue(double min_quality){
+         for(auto & i : M_meshAdaptationSetup) 
+            {
+                i.setCurrentQualityValue(min_quality);
+                LOG(INFO) << fmt::format("Current quality value {} vs actual value {}",i.M_min_quality_mas,min_quality);
+            }
+         }
+
 private:
     std::string M_name;
     nl::json M_metadata;
@@ -641,7 +665,6 @@ private:
     std::optional<MeshMotionSetup> M_meshMotionSetup;
     std::vector<typename MeshAdaptation::Setup> M_meshAdaptationSetup;
     function_apply_remesh M_functionApplyRemesh;
-
 };
 
 /**

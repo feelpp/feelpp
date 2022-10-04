@@ -94,6 +94,20 @@ ModelMesh<IndexType>::MeshAdaptation::Setup::Setup( ModelMeshes<IndexType> const
                 if ( !M_eventEachTimeStep_condition.template hasExpr<1,1>() )
                     throw std::runtime_error( fmt::format("invalid condition {}, should be a boolean scalar expr", j_ets_condition ) );
             }
+            if ( j_eventval.contains( "min_quality" ) )
+            {
+                auto const& j_ets_quality = j_eventval.at( "min_quality" );
+                if ( j_ets_quality.is_number_float() )
+                    M_eventEachTimeStep_quality =  j_ets_quality.template get<double>();
+                else if ( j_ets_quality.is_string() )
+                    M_eventEachTimeStep_quality = std::stoi( j_ets_quality.template get<std::string>() );
+                else
+                    throw std::runtime_error( fmt::format("invalid min_quality type {}", j_ets_quality ) );
+                if(M_eventEachTimeStep_quality>1 || M_eventEachTimeStep_quality< 0.1)
+                {
+                    throw std::runtime_error( fmt::format("invalid min_quality value {}; it should be in [0.1,1]", j_ets_quality ) );   
+                }
+            }
         }
         else
             throw std::runtime_error( fmt::format("invalid event {}", event ) );

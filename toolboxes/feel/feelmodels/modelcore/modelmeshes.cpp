@@ -556,7 +556,9 @@ ModelMesh<IndexType>::updateForUse( ModelMeshes<IndexType> const& mMeshes )
                                     _prefix=mMeshes.prefix(),
                                     _keyword=fmt::format("meshes_{}_meshmotion",M_name),
                                     _directory=mMeshes.repository() );
-
+                        
+            meshALE->attachModelMeshesptr(this->shared_from_this());            
+            
             auto const& cdm = M_meshMotionSetup->computationalDomainMarkers();
             if ( cdm.find( "@elements@" ) != cdm.end() )
                 meshALE->setWholeMeshAsComputationalDomain( M_name/*mMeshes.keyword()*/ );

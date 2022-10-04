@@ -32,6 +32,7 @@
 
 #include <feel/feelalg/backend.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feeldiscr/quality.hpp>
 //#include <feel/feelvf/vf.hpp>
 #include <feel/feelmesh/meshmover.hpp>
 #include <feel/feelts/bdf.hpp>
@@ -56,6 +57,9 @@ namespace Feel
 {
 namespace FeelModels
 {
+template <typename IndexType>
+class ModelMesh;
+
 
 template< class Convex >
 class MeshALE : public ModelBase
@@ -67,8 +71,8 @@ public :
     using self_ptrtype = std::shared_ptr<self_type>;
     using size_type = uint32_type;
     typedef Backend<double> backend_type;
-    typedef std::shared_ptr<backend_type> backend_ptrtype;
-
+    typedef std::shared_ptr<backend_type> backend_ptrtype;    
+    typedef ModelMesh<index_type> model_mesh_type;
     /*
      * Moving mesh typedefs
      */
@@ -206,7 +210,7 @@ public :
         void revertInitialDomain();
         void revertReferenceDomain();
         bool isOnInitialDomain() const { return M_isRevertInitialDomain; }
-
+        
 
         template <typename ExprType>
         void updateDisplacementImposed( ale_map_element_type & outputField, ExprType const& expr, range_faces_type const& range )
@@ -254,6 +258,8 @@ public :
     void init();
 
     void applyRemesh( mesh_ptrtype const& newMesh, std::vector<std::tuple<std::string,range_elements_type>> const& rangeElt );
+
+    void attachModelMeshesptr(std::shared_ptr<ModelMesh<index_type>> const& modelMesh_ptr);
 
     //! defined the whole mesh as a computational domain (compute disp from boundary)
     void setWholeMeshAsComputationalDomain( std::string const& name );
@@ -398,6 +404,7 @@ public :
                 cd.aleFactory()->updateMetricMeshAdaptation( e );
         }
 
+    std::shared_ptr<model_mesh_type> M_modelMesh_ptr;
 
 
     struct FieldTag
@@ -418,6 +425,8 @@ private :
     void initFunctionSpaces();
     void initTimeStep();
     void updateImpl();
+    void checkMovingMeshQuality();
+    
 
 private :
 
@@ -450,6 +459,11 @@ private :
 
     std::map<std::string,DisplacementImposedOnInitialDomainOverElements> M_displacementImposedOnInitialDomainOverElements;
     std::map<std::string,DisplacementImposedOnInitialDomainOverFaces> M_displacementImposedOnInitialDomainOverFaces;
+
+    double M_min_quality;
+
+    std::weak_ptr<model_mesh_type> M_modelMesh_ptr_weak;
+    
 };
 
 //------------------------------------------------------------------------------------------------//

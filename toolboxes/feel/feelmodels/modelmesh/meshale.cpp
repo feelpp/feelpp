@@ -28,6 +28,7 @@
  */
 
 #include <feel/feelmodels/modelmesh/meshale.hpp>
+#include <feel/feelmodels/modelcore/modelmeshes.hpp>
 
 namespace Feel
 {
@@ -128,6 +129,8 @@ MeshALE<Convex>::init()
         M_isOnReferenceMesh = true;
         M_isOnMovingMesh = false;
     }
+
+    this->checkMovingMeshQuality();
 
     this->log(prefixvm(this->prefix(),"MeshALE"),"init", "finish");
 }
@@ -562,8 +565,28 @@ MeshALE<Convex>::updateImpl()
     M_meshVelocity->scale( M_bdf_ale_identity->polyDerivCoefficient(0) );
     M_meshVelocity->add(-1.0,M_bdf_ale_identity->polyDeriv());
 
+    this->checkMovingMeshQuality();
+
 }
 
+// Compute the minimum of the mesh quality indication etaQ over the moving mesh
+template< class Convex >
+void
+MeshALE<Convex>::checkMovingMeshQuality()
+{
+    M_min_quality = etaQ(M_movingMesh)->min();
+    M_modelMesh_ptr->setCurrentQualityValue(M_min_quality);
+}
+
+// Attach pointer to ModelMeshes in order to pass mesh quality information as a trigger to mesh adaptation
+template< class Convex >
+void
+MeshALE<Convex>::attachModelMeshesptr(std::shared_ptr<ModelMesh<index_type>> const& modelMesh_ptr)
+{
+    M_modelMesh_ptr_weak = modelMesh_ptr;
+
+    M_modelMesh_ptr = M_modelMesh_ptr_weak.lock(); 
+}
 
 template< class Convex >
 MeshALE<Convex>::ComputationalDomain::ComputationalDomain( self_type const* meshALE )

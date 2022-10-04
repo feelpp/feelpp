@@ -74,6 +74,7 @@
                     "events":{
                         "each_time_step":{
                             "frequency":10
+                            // "min_quality":0.4
                         }
                     }
                 }]
