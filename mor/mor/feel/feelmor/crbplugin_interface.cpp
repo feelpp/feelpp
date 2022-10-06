@@ -55,24 +55,20 @@ factoryCRBPlugin( std::string const& pluginname, std::string const& pluginlibnam
     }
     else
     {
-#if defined( __APPLE__ )
-        std::string libext = ".dylib";
-#else
-        std::string libext = ".so";
-#endif
         std::string libname = pluginlibname;
         if ( libname.empty() )
-            libname = ("libfeelpp_crb_" + pluginname + libext);
-        fs::path pname = fs::path(dirname) / libname;
-        //std::cout << "loading " << pname.string() << std::endl;
+            libname = fmt::format("{}/libfeelpp_mor_plugin_{}",Info::libdir(),pluginname);
+        LOG(INFO) << fmt::format("[factoryCRBPlugin] plugin name: {} plugin libname: {} dirname: {}", pluginname, libname, dirname );
+        fs::path pname = ( fs::path( dirname ) / libname ).make_preferred();
+        LOG(INFO) << fmt::format("[factoryCRBPlugin] loading plugin: {}...", pname.string());google::FlushLogFiles(google::GLOG_INFO);
 
         Feel::detail::CRBPluginManager::instance().operator[]( pluginname ) = 
-            boost::dll::import_alias<crbpluginapi_create_t>(pname,
+            boost::dll::import_alias<crbpluginapi_create_t>(pname, 
                                                             "create_crbplugin_"+pluginname,
                                                             dll::load_mode::append_decorations );
         auto p = Feel::detail::CRBPluginManager::instance().find( pluginname );
         auto plugin = p->second();
-        //std::cout << "Loaded the plugin " << plugin->name().c_str() << std::endl;
+        LOG(INFO) << fmt::format("[factoryCRBPlugin] loaded plugin: {}", pname.string() ); google::FlushLogFiles(google::GLOG_ERROR);
         return plugin;
     }
 }

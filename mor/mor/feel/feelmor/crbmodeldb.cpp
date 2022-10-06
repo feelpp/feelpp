@@ -44,8 +44,15 @@ CRBModelDB::CRBModelDB( std::string const& name, uuids::uuid const& uid, std::st
 std::string
 CRBModelDB::jsonFilename() const
 {
-    return (boost::format("%1%.crbmodel.json")%this->name()).str();
+    return CRBModelDB::jsonFilename( this->name() );
 }
+
+std::string
+CRBModelDB::jsonFilename( std::string const& name )
+{
+    return fmt::format("{}.crb.json",name);
+}
+
 std::string
 CRBModelDB::dbRepository() const
 {
@@ -122,7 +129,7 @@ CRBModelDB::idFromDBLast( std::string const& name, crb::last last, std::string c
 
     for( auto const& dir: boost::make_iterator_range( fs::directory_iterator(dbbasedir),{} ) )
     {
-        fs::path dbfilename = dir.path() / fs::path(name + ".crbmodel.json");
+        fs::path dbfilename = dir.path() / CRBModelDB::jsonFilename( name );
         if (fs::exists( dbfilename ) )
         {
             fs::path uidpath = dir.path().filename();
@@ -175,7 +182,7 @@ CRBModelDB::idFromId( std::string const& name, std::string const& uid, std::stri
 
         if ( boost::ends_with( dbdir.string(), uid ) )
         {
-            fs::path dbfilename = dbdir / fs::path(name + ".crbmodel.json");
+            fs::path dbfilename = dbdir / CRBModelDB::jsonFilename( name );
             if (!fs::exists(dbfilename))
                 continue;
             return boost::lexical_cast<uuids::uuid>( dbdir.filename().string() );

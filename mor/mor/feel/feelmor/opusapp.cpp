@@ -32,22 +32,18 @@ namespace Feel
  */
 po::options_description opusapp_options( std::string const& prefix )
 {
-    std::string _prefix = prefix;
-
-    if ( !_prefix.empty() )
-        _prefix += ".";
-
-    po::options_description _options( "Application " + prefix + " options" );
-    _options.add_options()
-        ( ( _prefix+"run.mode" ).c_str(), Feel::po::value<int>()->default_value( 2 ), "execution mode: pfem=0, scm=1, crb=2" )
-        ( ( _prefix+"run.sampling.size" ).c_str(), Feel::po::value<int>()->default_value( 10 ), "size of sampling in parameter space" )
-        ( ( _prefix+"run.sampling.mode" ).c_str(), Feel::po::value<int>()->default_value( 10 ), "type of sampling in parameter space (random=0, equidistributed=1)" )
-        ( (_prefix+"how-compute-unkown-for-eim").c_str(), Feel::po::value<std::string>()->default_value("CRB-with-ad"), "CRB-with-ad or FEM-with-ad or FEM-without-ad (ad:affine decomposition)")
-        ( (_prefix+"export-solution").c_str(), Feel::po::value<bool>()->default_value(false), "export solution and error for each parameters if true")
-        ( (_prefix+"run.parameter").c_str(), Feel::po::value<std::vector<double>> ()->multitoken(), "a command line parameter for the online part")
+    po::options_description theoptions( "Application " + prefix + " options" );
+    theoptions.add_options()
+        ( prefixvm( prefix,"model-name" ).c_str(), Feel::po::value<std::string>()->default_value( "noname" ), "name of reduced model" )
+        ( prefixvm( prefix,"run.mode" ).c_str(), Feel::po::value<int>()->default_value( 2 ), "execution mode: pfem=0, scm=1, crb=2" )
+        ( prefixvm( prefix,"run.sampling.size" ).c_str(), Feel::po::value<int>()->default_value( 10 ), "size of sampling in parameter space" )
+        ( prefixvm( prefix,"run.sampling.mode" ).c_str(), Feel::po::value<int>()->default_value( 10 ), "type of sampling in parameter space (random=0, equidistributed=1)" )
+        ( prefixvm( prefix,"how-compute-unkown-for-eim").c_str(), Feel::po::value<std::string>()->default_value("CRB-with-ad"), "CRB-with-ad or FEM-with-ad or FEM-without-ad (ad:affine decomposition)")
+        ( prefixvm( prefix,"export-solution").c_str(), Feel::po::value<bool>()->default_value(false), "export solution and error for each parameters if true")
+        ( prefixvm( prefix,"run.parameter").c_str(), Feel::po::value<std::vector<double>> ()->multitoken(), "a command line parameter for the online part")
     ;
 
-    return _options;
+    return theoptions;
 }
 
 std::string _o( std::string const& prefix, std::string const& opt )

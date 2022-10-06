@@ -5,7 +5,7 @@ from pathlib import Path
 import json
 
 def run(m, geo):
-    mesh_name, e_meas, e_s_1, e_s_2, e_s_bdy = geo
+    mesh_name, dim, e_meas, e_s_1, e_s_2, e_s_bdy = geo
     mesh = feelpp.load(m, mesh_name, 0.2)
     
     e = feelpp.exporter(mesh=mesh, name=Path(mesh_name).stem, geo="change")

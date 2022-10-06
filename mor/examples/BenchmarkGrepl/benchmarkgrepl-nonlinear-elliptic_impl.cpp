@@ -11,13 +11,27 @@ BenchmarkGreplNonlinearElliptic<Order,Dim>::BenchmarkGreplNonlinearElliptic(std:
     super_type( "BenchMarkGreplNonlinearElliptic" + std::to_string(Order) + "_" + std::to_string(Dim) + "D" ),
     M_use_newton( boption(_name="crb.use-newton") ),
     M_useSerErrorEstimation( boption(_name="ser.error-estimation") ),
-    M_use_deim( boption("use-deim") )
-{}
+    M_use_deim( false )
+{
+    this->setPluginName( BOOST_PP_STRINGIZE(FEELPP_MOR_PLUGIN_NAME) + fmt::format("{}dP{}",Dim,Order) );
+    this->setPluginLibName( BOOST_PP_STRINGIZE(FEELPP_MOR_PLUGIN_LIBNAME) );
+}
+
+
+template<int Order, int Dim>
+void BenchmarkGreplNonlinearElliptic<Order,Dim>::updateSpecificityModel( boost::property_tree::ptree & ptree ) const
+{
+    ptree.add( "use-deim", M_use_deim );
+}
 
 
 template<int Order, int Dim>
 void BenchmarkGreplNonlinearElliptic<Order,Dim>::setupSpecificityModel( boost::property_tree::ptree const& ptree, std::string const& dbDir )
 {
+    auto ptreeSpecificityOfModel = ptree.get_child_optional( "specifity-of-model" );
+    CHECK( ptreeSpecificityOfModel ) << "invalid ptree : section specifity-of-model is missing";
+    M_use_deim = ptreeSpecificityOfModel->template get<bool>( "use-deim" );
+
     M_mu = this->Dmu->element();
 
     std::shared_ptr<space_type_eimg> Xh_eimg;
@@ -42,7 +56,7 @@ void BenchmarkGreplNonlinearElliptic<Order,Dim>::setupSpecificityModel( boost::p
 template<int Order, int Dim>
 void BenchmarkGreplNonlinearElliptic<Order,Dim>::initModel()
 {
-
+    M_use_deim = boption( _name="use-deim");
     if ( !this->Xh )
     {
         /*
@@ -307,10 +321,10 @@ BenchmarkGreplNonlinearElliptic<Order,Dim>::assembleResidualWithAffineDecomposit
         Rqm[0][1][m]->close();
     }
 
-    if( Dim == 2 )
+    if constexpr( Dim == 2 )
         form1( _test=Xh, _vector=Rqm[0][2][0] ) =
             integrate( _range= elements( mesh ), _expr=sin(2*M_PI*Px())*sin(2*M_PI*Py()) * id(v) );
-    else if( Dim == 3 )
+    else if constexpr( Dim == 3 )
         form1( _test=Xh, _vector=Rqm[0][2][0] ) =
             integrate( _range= elements( mesh ), _expr=sin(2*M_PI*Px())*sin(2*M_PI*Py())*sin(2*M_PI*Pz()) * id(v) );
 
@@ -404,10 +418,10 @@ BenchmarkGreplNonlinearElliptic<Order,Dim>::updateResidualMonolithic(vector_ptrt
     form1( _test=Xh, _vector=R ) +=
         integrate( _range= elements( mesh ), _expr= -mu(0)/mu(1)*( id(v)) );
 
-    if( Dim == 2 )
+    if constexpr ( Dim == 2 )
         form1( _test=Xh, _vector=R ) +=
             integrate( _range= elements( mesh ), _expr=-100*sin(2*M_PI*Px())*sin(2*M_PI*Py()) * id(v) );
-    else if( Dim == 3 )
+    else if constexpr( Dim == 3 )
         form1( _test=Xh, _vector=R ) +=
             integrate( _range= elements( mesh ), _expr=-100*sin(2*M_PI*Px())*sin(2*M_PI*Py())*sin(2*M_PI*Pz()) * id(v) );
 
@@ -464,12 +478,14 @@ void BenchmarkGreplNonlinearElliptic<Order,Dim>::assemble()
             this->M_Fqm[0][0][m]->close();
         }
 
-        if( Dim == 2 )
+        if constexpr( Dim == 2 )
             form1( _test=Xh, _vector=this->M_Fqm[0][1][0] ) =
-                integrate( _range= elements( mesh ),_expr=sin(2*M_PI*Px())*sin(2*M_PI*Py()) * id(v) );
-        else if ( Dim == 3 )
+                integrate( _range= elements( mesh ),
+                           _expr=sin(2*M_PI*Px())*sin(2*M_PI*Py()) * id(v) );
+        else if constexpr ( Dim == 3 )
             form1( _test=Xh, _vector=this->M_Fqm[0][1][0] ) =
-                integrate( _range= elements( mesh ),_expr=sin(2*M_PI*Px())*sin(2*M_PI*Py())*sin(2*M_PI*Pz()) * id(v) );
+                integrate( _range= elements( mesh ),
+                           _expr=sin(2*M_PI*Px())*sin(2*M_PI*Py())*sin(2*M_PI*Pz()) * id(v) );
         this->M_Fqm[0][1][0]->close();
 
         form1( _test=Xh, _vector=this->M_Fqm[1][0][0] ) =
@@ -499,12 +515,14 @@ BenchmarkGreplNonlinearElliptic<Order,Dim>::computeMonolithicFormulationU( param
                                                                 - (gradt(u)*vf::N())*id(v)
                                                                 - (grad(v)*vf::N())*idt(u) );
 
-    if( Dim == 2 )
+    if constexpr ( Dim == 2 )
         form1( _test=Xh, _vector=M_monoF[0] ) =
-            integrate( _range= elements( mesh ), _expr=-mu(0)/mu(1)*( exp( mu(1)*idv(solution) ) - 1 )*id(v) + 100*sin(2*M_PI*Px())*sin(2*M_PI*Py()) * id(v) );
-    else if ( Dim == 3 )
+            integrate( _range= elements( mesh ),
+                       _expr=-mu(0)/mu(1)*( exp( mu(1)*idv(solution) ) - 1 )*id(v) + 100*sin(2*M_PI*Px())*sin(2*M_PI*Py()) * id(v) );
+    else if constexpr ( Dim == 3 )
         form1( _test=Xh, _vector=M_monoF[0] ) =
-            integrate( _range= elements( mesh ), _expr=-mu(0)/mu(1)*( exp( mu(1)*idv(solution) ) - 1 )*id(v) + 100*sin(2*M_PI*Px())*sin(2*M_PI*Py())*sin(2*M_PI*Pz()) * id(v) );
+            integrate( _range= elements( mesh ),
+                       _expr=-mu(0)/mu(1)*( exp( mu(1)*idv(solution) ) - 1 )*id(v) + 100*sin(2*M_PI*Px())*sin(2*M_PI*Py())*sin(2*M_PI*Pz()) * id(v) );
 
     form1( _test=Xh, _vector=M_monoF[1] ) =
         integrate( _range= elements( mesh ), _expr=id(v) );
