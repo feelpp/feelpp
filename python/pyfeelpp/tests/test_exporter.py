@@ -3,7 +3,7 @@ import feelpp
 import pytest
 
 def run(m, geo):
-    mesh_name, e_meas, e_s_1, e_s_2, e_s_bdy = geo()
+    mesh_name, dim, e_meas, e_s_1, e_s_2, e_s_bdy = geo()
     m2d = feelpp.load(m, mesh_name, 0.1)
 
     Xh = feelpp.functionSpace(space="Pch", mesh=m2d, order=1)

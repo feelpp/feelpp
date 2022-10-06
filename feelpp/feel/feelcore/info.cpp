@@ -34,6 +34,10 @@
 #include <feel/feelinfo.h>
 #include <feel/feelcore/info.hpp>
 
+#undef linux
+#undef gnu
+#undef x86_64
+
 #define stringize2(x) #x
 #define stringize(x) stringize2(x)
 
@@ -93,6 +97,22 @@ Info::libdir()
     return stringize( FEELPP_LIBDIR );
 }
 
+char const*
+Info::plugindir()
+{
+    return stringize( FEELPP_PLUGINDIR );
+}
+
+char const*
+Info::casesdir()
+{
+    return stringize( FEELPP_CASESDIR );
+}
+char const*
+Info::toolboxcasesdir()
+{
+    return stringize( FEELPP_TOOLBOXCASESDIR );
+}
 char const*
 Info::datadir()
 {
