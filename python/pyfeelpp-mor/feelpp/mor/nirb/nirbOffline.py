@@ -20,7 +20,7 @@ if __name__ == "__main__":
 
     e = init_feelpp_environment(toolboxType, cfg_path)
 
-    doRectification=False  
+    doRectification=False 
     nbSnap = 10
     if len(sys.argv)>=2:
         nbSnap = int(sys.argv[1])
@@ -35,6 +35,7 @@ if __name__ == "__main__":
     nirb_off.initProblem(nbSnap)
     nirb_off.generateOperators()
     nirb_off.generateReducedBasis(regulParam=1.e-10)
+
     # nirb_off.BiOrthonormalization()
 
     # nirb_off.orthonormalizeL2()
@@ -42,8 +43,8 @@ if __name__ == "__main__":
     nirb_off.saveData()
 
     
-    print("Is L2 orthonormalized ?", nirb_off.checkL2Orthonormalized())
-    print("Is H1 orthonormalized ? ", nirb_off.checkH1Orthonormalized())
+    # print("Is L2 orthonormalized ?", nirb_off.checkL2Orthonormalized())
+    # print("Is H1 orthonormalized ? ", nirb_off.checkH1Orthonormalized())
 
     # finish = time()
     finish = time.time()

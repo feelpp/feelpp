@@ -96,25 +96,17 @@ def ComputeErrorSampling(nirb_on, Nsample=1, samplingType='log-random'):
         uH = nirb_on.getInterpSol(mu)
         uHh, _ = nirb_on.getOnlineSol(mu)
         uh = nirb_on.getToolboxSolution(nirb_on.tbFine, mu)
-        
         err[i,0] = (uHh - uh).l2Norm()
-        err[i,1] = (uHh - uh).to_petsc().vec().norm(PETSc.NormType.NORM_INFINITY)
+        err[i,1] = (uHh - uh).linftyNorm()
         err[i,2] = (uH - uh).l2Norm()
-        err[i,3] = (uH - uh).to_petsc().vec().norm(PETSc.NormType.NORM_INFINITY)
+        err[i,3] = (uH - uh).linftyNorm()
 
     errors = {}
-    errors['mu'] = [*range(Nsample)] 
+    errors['parameter'] = [*range(Nsample)] 
     errors['l2u-uHn'] = err[:,0]
     errors['lINFu-uHn'] = err[:,1]
     errors['l2u-uH'] = err[:,2]
     errors['lINFu-uH'] = err[:,3]
-
-    # err_mean = err.mean(axis=0)
-    # error = [nirb_on.N]
-    # error.append(err_mean[0])
-    # error.append(err_mean[1])
-    # error.append(err_mean[2])
-    # error.append(err_mean[3])
 
     return errors
 
@@ -140,14 +132,12 @@ if __name__ == "__main__":
     if len(sys.argv)>=2: 
         H = float(sys.argv[1])
         h = H**2
-
-
+    
 
     doRectification=False
 
     nirb_on = nirbOnline(dim, H, h, toolboxType, cfg_path, model_path, geo_path, order=order, doRectification=doRectification)
-    
-    
+
     mu = nirb_on.Dmu.element() 
     nirb_on.loadData()
     # uHh = nirb_on.getOnlineSol(mu)
@@ -158,13 +148,26 @@ if __name__ == "__main__":
     errorN = ComputeErrorSampling(nirb_on, Nsample=Nsample)
 
     df = pd.DataFrame(errorN)
-    file =Path(f"all_mu_errors/errors{nirb_on.N}.csv")
+    if doRectification:
+        file =Path(f"errorParamsRectif/errors{nirb_on.N}.csv")
+    else:
+        file =Path(f"errorParams/errors{nirb_on.N}.csv")
+
     file.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(file, index=False)
 
-    # print('[nirb on] err dic ', errorN['mu'])
-    # print('[nirb on] err dic uhn', errorN['l2u-uHn'])
-    # print("[NIRB online] error 1 param = ", error1)
+    print("[NIRB online] all computed errors ")
+    data_mean = df.mean(axis=0)
+    print("[NIRB online] Mean of errors ")
+    print(data_mean)
+    data_min = df.min(axis=0)
+    print("[NIRB online] Min of errors ")
+    print(data_min)
+    data_max = df.max(axis=0)
+    print("[NIRB online] Max of errors ")
+    print(data_max)
+    
+
 
 
     # ### Solve in very fine mesh 
@@ -261,7 +264,7 @@ if __name__ == "__main__":
         fileH=f'nirb_errorH.dat'
         
     # WriteVecAppend(file1,error1)
-    # WriteVecAppend(fileN,errorN)
+    # WriteVecAppend(fileN,errormean)
     # WriteVecAppend(fileH,errorH)
 
     # print(f"[NIRB] Online Elapsed time =", finish-start)

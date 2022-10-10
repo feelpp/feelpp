@@ -345,7 +345,8 @@ class nirbOffline(ToolboxModel):
 
         for i, snap1 in enumerate(self.fineSnapShotList):
             for j, snap2 in enumerate(self.fineSnapShotList):
-                    correlationMatrix[i,j] = self.scalarL2(snap1.to_petsc().vec(),snap2.to_petsc().vec())
+                    # correlationMatrix[i,j] = self.scalarL2(snap1.to_petsc().vec(),snap2.to_petsc().vec())
+                    correlationMatrix[i,j] = self.l2ScalarProductMatrix.energy(snap1,snap2)
 
         correlationMatrix.assemble()
         eigenValues, eigenVectors =  TruncatedEigenV(correlationMatrix, tolerance) 
