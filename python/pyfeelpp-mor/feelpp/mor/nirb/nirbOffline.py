@@ -1,14 +1,19 @@
 import sys
 from feelpp.mor.nirb.nirb import *
 from feelpp.mor.nirb.utils import WriteVecAppend, init_feelpp_environment
-import time 
+import time
+import json
 
 if __name__ == "__main__":
 
-    # fineness of two grids
-    H = 0.1  # CoarseMeshSize
-    h = H**2 # Fine mesh size
-    dim = 2
+    dim = 3
+    if dim == 2:
+        H = 0.1  # CoarseMeshSize
+        h = H**2 # Fine mesh size
+    else:
+        # fineness of two grids
+        H = 0.5  # CoarseMeshSize
+        h = 0.1  # Fine mesh size
 
     PWD = os.getcwd()
     toolboxType='heat'
@@ -17,6 +22,10 @@ if __name__ == "__main__":
     cfg_path = f"{modelsFolder}{modelfile[toolboxType]}.cfg"
     geo_path = f"{modelsFolder}{modelfile[toolboxType]}.geo"
     model_path = f"{modelsFolder}{modelfile[toolboxType]}.json"
+    if dim == 3:
+        cfg_path = f"{modelsFolder}/thermal-fin-3d/thermal-fin.cfg"
+        geo_path = f"{modelsFolder}/thermal-fin-3d/fin.geo"
+        model_path = f"{modelsFolder}/thermal-fin-3d/thermal-fin.json"
 
     e = init_feelpp_environment(toolboxType, cfg_path)
 
@@ -37,23 +46,21 @@ if __name__ == "__main__":
     nirb_off.generateReducedBasis(regulParam=1.e-10)
 
     # nirb_off.BiOrthonormalization()
+    finish = time.time()
 
     # nirb_off.orthonormalizeL2()
     # nirb_off.orthonormalizeH1()
     nirb_off.saveData()
 
-    
-    # print("Is L2 orthonormalized ?", nirb_off.checkL2Orthonormalized())
-    # print("Is H1 orthonormalized ? ", nirb_off.checkH1Orthonormalized())
-
-    # finish = time()
-    finish = time.time()
-    
-
+    print("Is L2 orthonormalized ?", nirb_off.checkL2Orthonormalized())
+    print("Is H1 orthonormalized ? ", nirb_off.checkH1Orthonormalized())
 
     perf = []
     perf.append(nbSnap)
     perf.append(finish-star)
+
+    info = nirb_off.getInformations()
+    print(json.dumps(info, sort_keys=True, indent=4))
 
     # file='nirbOffline_time_exec.txt'
     # WriteVecAppend(file,perf)
