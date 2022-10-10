@@ -298,6 +298,44 @@ class nirbOffline(ToolboxModel):
             print(f"[NIRB] Number of snapshot computed : {len(self.fineSnapShotList)}" )
 
 
+    def getReducedSolution(self, mu, N):
+        pass
+
+    def initProblemGreedy(self, Ntrain, crt, Nmax=500, samplingMode="log-random"):
+        Nmax = max(Nmax, Ntrain)
+        s = self.Dmu.sampling()
+        s.sampling(Ntrain, samplingMode)
+        Xi_train = s.getVector()
+
+        Delta = crt+1
+        mu0 = self.Dmu.parameterSpace().element()
+        S = [mu0]
+        self.fineSnapShotList = [self.getToolboxSolution(self.tbFine, mu0)]
+        N = 1
+
+        while Delta_star > crt or N <= Nmax:
+            M = N - 1
+            
+            Delta_star = -float('inf')
+
+            for i, mu in enumerate(Xi_train):
+                uHN = self.getReducedSolution(N, mu)
+                uHM = self.getReducedSolution(M, mu)
+
+                Delta = (uHN - uHM).l2Norm()
+
+                if Delta > Delta_star:
+                    Delta_star = Delta
+                    mu_star = mu
+                    idx = i
+            
+            S.append(mu_star)
+            del Xi_train[idx]
+        
+        if feelpp.Environment.isMasterRank():
+            print(f"[NIRB] Number of snapshot computed : {N}")
+
+
     def generateOperators(self):
         """Assemble L2 and H1 operators, stored in self.l2ScalarProduct and self.h1ScalarProduct
         """
