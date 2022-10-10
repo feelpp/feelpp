@@ -74,10 +74,34 @@ class ToolboxModel():
         self.tbFine = self.setToolbox(self.h)
         self.Xh = feelpp.functionSpace(mesh=self.tbFine.mesh(), order=self.order)
         self.Dmu = loadParameterSpace(self.model_path)
-        self.Ndofs = self.tbFine.mesh().numGlobalPoints()
+        self.Ndofs = self.getFieldSpace().nDof()
 
         if feelpp.Environment.isMasterRank():
             print(f"[NIRB] Number of nodes on the fine mesh : {self.Ndofs}")
+
+    def getFieldSpace(self, coarse=False):
+        """Get the field space
+
+        Args:
+            coarse (bool, optional): get the coarse space. Defaults to False.
+
+        Returns:
+            feelpp._discr.*: field space
+        """
+        if not coarse:
+            if self.toolboxType == "heat":
+                return self.tbFine.spaceTemperature()
+            elif self.toolboxType == "fluid":
+                return self.tbFine.spaceVelocity()
+            else:
+                raise ValueError("Unknown toolbox")
+        else:
+            if self.toolboxType == "heat":
+                return self.tbCoarse.spaceTemperature()
+            elif self.toolboxType == "fluid":
+                return self.tbCoarse.spaceVelocity()
+            else:
+                raise ValueError("Unknown toolbox")
 
 
     def initCoarseToolbox(self):
@@ -170,6 +194,24 @@ class ToolboxModel():
             Vh_domain = domain_tb.spaceVelocity()
         interpolator = fi.interpolator(domain = Vh_domain, image = Vh_image, range = image_tb.rangeMeshElements())
         return interpolator
+
+    def getInformations(self):
+        """Get information about the model
+
+        Returns:
+            dict: information about the model
+        """
+        info = {}
+        info["Ndofs"] = self.Ndofs
+        info["Nh"] = self.getFieldSpace().nDof()
+        if self.tbCoarse is not None:
+            info["NH"] = self.getFieldSpace(True).nDof()
+        info["H"] = self.H
+        info["h"] = self.h
+        info["order"] = self.order
+        info["toolboxType"] = self.toolboxType
+        info["dimension"] = self.dimension
+        return info
 
 
 class nirbOffline(ToolboxModel):
