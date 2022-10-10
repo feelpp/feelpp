@@ -195,6 +195,24 @@ class ToolboxModel():
         interpolator = fi.interpolator(domain = Vh_domain, image = Vh_image, range = image_tb.rangeMeshElements())
         return interpolator
 
+    def getInformations(self):
+        """Get information about the model
+
+        Returns:
+            dict: information about the model
+        """
+        info = {}
+        info["Ndofs"] = self.Ndofs
+        info["Nh"] = self.getFieldSpace().nDof()
+        if self.tbCoarse is not None:
+            info["NH"] = self.getFieldSpace(True).nDof()
+        info["H"] = self.H
+        info["h"] = self.h
+        info["order"] = self.order
+        info["toolboxType"] = self.toolboxType
+        info["dimension"] = self.dimension
+        return info
+
 
 class nirbOffline(ToolboxModel):
 

@@ -121,11 +121,15 @@ def ComputeErrorSampling(nirb_on, Nsample=1, samplingType='log-random'):
 
 if __name__ == "__main__":
 
-    # fineness of two grids
-    H = 0.1  # CoarseMeshSize
-    h = H**2 # fine mesh size
-    dim = 2
-    order=1
+    dim = 3
+    order = 1
+    if dim == 2:
+        H = 0.1  # CoarseMeshSize
+        h = H**2 # Fine mesh size
+    else:
+        # fineness of two grids
+        H = 0.5  # CoarseMeshSize
+        h = 0.1  # Fine mesh size
 
     PWD = os.getcwd()
     toolboxType='heat'
@@ -134,6 +138,10 @@ if __name__ == "__main__":
     cfg_path = f"{modelsFolder}{modelfile[toolboxType]}.cfg"
     geo_path = f"{modelsFolder}{modelfile[toolboxType]}.geo"
     model_path = f"{modelsFolder}{modelfile[toolboxType]}.json"
+    if dim == 3:
+        cfg_path = f"{modelsFolder}/thermal-fin-3d/thermal-fin.cfg"
+        geo_path = f"{modelsFolder}/thermal-fin-3d/fin.geo"
+        model_path = f"{modelsFolder}/thermal-fin-3d/thermal-fin.json"
 
     e = init_feelpp_environment(toolboxType, cfg_path)
 
