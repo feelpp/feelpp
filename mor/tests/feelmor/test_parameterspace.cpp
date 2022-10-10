@@ -23,6 +23,7 @@
 
 #define BOOST_TEST_MODULE parameterspace testsuite
 #include <feel/feelcore/testsuite.hpp>
+#include <regex>
 
 #include <feel/feelmor/parameterspace.hpp>
 
@@ -35,6 +36,8 @@ makeOptions()
     po::options_description modelopt( "test parameter space options" );
     modelopt.add_options()
         ("json_filename" , Feel::po::value<std::string>()->default_value( "$cfgdir/parameterspace.json" ), "json file" )
+        ("json_filename_wrong", Feel::po::value<std::string>()->default_value( "$cfgdir/parameterspace_wrong.json"), "json file for a wrong parametrization" )
+        ("json_filename_wrong2", Feel::po::value<std::string>()->default_value( "$cfgdir/parameterspace_wrong2.json"), "json file for a wrong parametrization" )
         ;
     return  modelopt.add( Feel::feel_options() ) ;
 }
@@ -53,7 +56,7 @@ FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
 
 BOOST_AUTO_TEST_SUITE( parameterspace )
 
-BOOST_AUTO_TEST_CASE( test1 )
+BOOST_AUTO_TEST_CASE( testSampling )
 {
     using namespace Feel;
     typedef ParameterSpace</*4*/> parameterspace_type;
@@ -205,7 +208,7 @@ BOOST_AUTO_TEST_CASE( test1 )
     BOOST_CHECK( muMinRes2(0) == 2 && muMinRes2(1) == 3 && muMinRes2(2) == 0 && muMinRes2(3) == 5 );
     BOOST_CHECK( muMaxRes2(0) == 6 && muMaxRes2(1) == 7 && muMaxRes2(2) == 8 && muMaxRes2(3) == 9 );
 }
-BOOST_AUTO_TEST_CASE( test2 )
+BOOST_AUTO_TEST_CASE( test_generateParameterSpace )
 {
     using namespace Feel;
     typedef ParameterSpace</*4*/> parameterspace_type;
@@ -233,7 +236,7 @@ BOOST_AUTO_TEST_CASE( test2 )
         BOOST_CHECK( muspace->parameterName(d) == muspaceReloaded->parameterName(d) );
     }
 }
-BOOST_AUTO_TEST_CASE( test3 )
+BOOST_AUTO_TEST_CASE( test_loadParameterSpace )
 {
     using namespace Feel;
     using parameterspace_type = ParameterSpace<>;
@@ -258,5 +261,55 @@ BOOST_AUTO_TEST_CASE( test3 )
     auto mumax = Dmu->max();
     BOOST_CHECK( mumax.parameterNamed("p1") == 3 );
     BOOST_CHECK( mumax.parameterNamed("p2") == 10 );
+}
+BOOST_AUTO_TEST_CASE( test_loadWrongParameterSpace_nointerval )
+{
+    using namespace Feel;
+    using parameterspace_type = ParameterSpace<>;
+    namespace pt =  boost::property_tree;
+
+    auto json = removeComments(readFromFile(Environment::expand(soption("json_filename_wrong"))));
+    std::istringstream istr( json );
+    nl::json p;
+    istr >> p;
+    auto parameters = CRBModelParameters();
+    parameters.setPTree(p);
+    int err = 0;
+    try
+    {
+        auto Dmu = parameterspace_type::New(parameters);
+    }
+    catch(const std::logic_error& e)
+    {
+        ++err;
+        std::regex r = std::regex("invalid range parameter (.*)\n");
+        BOOST_CHECK( std::regex_match(e.what(), r) );
+    }
+    BOOST_CHECK( err != 0 );
+}
+BOOST_AUTO_TEST_CASE( test_loadWrongParameterSpace_invalidInterval )
+{
+    using namespace Feel;
+    using parameterspace_type = ParameterSpace<>;
+    namespace pt =  boost::property_tree;
+
+    auto json = removeComments(readFromFile(Environment::expand(soption("json_filename_wrong2"))));
+    std::istringstream istr( json );
+    nl::json p;
+    istr >> p;
+    auto parameters = CRBModelParameters();
+    parameters.setPTree(p);
+    int err = 0;
+    try
+    {
+        auto Dmu = parameterspace_type::New(parameters);
+    }
+    catch(const std::logic_error& e)
+    {
+        ++err;
+        std::regex r = std::regex("invalid range parameter (.*)\n");
+        BOOST_CHECK( std::regex_match(e.what(), r) );
+    }
+    BOOST_CHECK( err != 0 );
 }
 BOOST_AUTO_TEST_SUITE_END()
