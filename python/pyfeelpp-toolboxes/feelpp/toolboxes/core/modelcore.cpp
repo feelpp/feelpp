@@ -29,6 +29,7 @@
 #include <feel/feelmodels/modelcore/modelalgebraic.hpp>
 #include <feel/feelmodels/modelcore/modelnumerical.hpp>
 #include <feel/feelmodels/modelcore/options.hpp>
+#include <feel/feelmodels/modelcore/remeshinterpolation.hpp>
 
 
 namespace py = pybind11;
@@ -148,5 +149,6 @@ PYBIND11_MODULE(_modelcore, m )
        .def( "checkResults", static_cast<bool ( ModelNumerical::* )() const>( &ModelNumerical::checkResults ), "check results in toolbox case if Checkers section present" )
 
        ;
+    py::class_<RemeshInterpolation>( m, "RemeshInterpolation" );
 }
 
