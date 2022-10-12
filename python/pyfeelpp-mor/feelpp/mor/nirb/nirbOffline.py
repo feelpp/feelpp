@@ -30,9 +30,13 @@ if __name__ == "__main__":
 
     star=time.time()
 
-    nirb_off = nirbOffline(dim, H, h, toolboxType, cfg_path, model_path, geo_path, doRectification=doRectification)
+    nirb_off = nirbOffline(dim, H, h, toolboxType, cfg_path, model_path, geo_path, doRectification=doRectification, initCoarse=True)
 
-    nirb_off.initProblem(nbSnap)
+    doGreedy = True
+    if doGreedy:
+        nirb_off.initProblemGreedy(1000, 1e-5, computeCoarse=True)
+    else:
+        nirb_off.initProblem(nbSnap)
     nirb_off.generateOperators()
     nirb_off.generateReducedBasis(regulParam=1.e-10)
     # nirb_off.BiOrthonormalization()
