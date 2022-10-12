@@ -26,10 +26,11 @@
 #include <boost/algorithm/string/split.hpp>
 
 #include <feel/feelcore/table.hpp>
-#include <feel/feelmor/options.hpp>
-#include <feel/feelmor/crbplugin_interface.hpp>
+#include <feel/feelfilters/loadcsv.hpp>
 #include <feel/feelmor/crbmodeldb.hpp>
-
+#include <feel/feelmor/crbplugin_interface.hpp>
+#include <feel/feelmor/options.hpp>
+#include <fmt/ranges.h>
 #include <iostream>
 
 #if defined(FEELPP_HAS_MONGOCXX )
@@ -238,6 +239,17 @@ runCrbOnline( std::vector<std::shared_ptr<Feel::CRBPluginAPI>> plugin )
         for ( std::string const& paramParsed : inputParameterParsed )
             inputParameter.push_back( std::stod(paramParsed) );
     }
+    else if( Environment::vm().count( "parameter.filename" ) )
+    {
+        std::string fname = Environment::vm()["parameter.filename"].as<std::string>();
+        auto r = loadXYFromCSV( fname, muspace->parameterNames() );
+        auto mu = muspace->element();
+        for(auto const& p : r)
+        {
+            mu = p;
+            mysampling->push_back( mu );
+        }
+    }
     //inputParameter = Environment::vm()["parameter"].as<std::vector<double> >();
     if ( !inputParameter.empty() )
     {
@@ -247,7 +259,7 @@ runCrbOnline( std::vector<std::shared_ptr<Feel::CRBPluginAPI>> plugin )
             mu(d)=inputParameter[d];
         mysampling->push_back( mu );
     }
-    else
+    else if ( mysampling->empty() )
     {
         int nSample = ioption(_name="sampling.size");
         std::string sampler = soption("sampling.type");
@@ -263,6 +275,7 @@ runCrbOnline( std::vector<std::shared_ptr<Feel::CRBPluginAPI>> plugin )
     Feel::Table tableOutputResults;
     std::vector<std::string> tableRowHeader = muspace->parameterNames();
     tableRowHeader.push_back( "output");
+    tableRowHeader.push_back( "time(s)");
     tableOutputResults.add_row( tableRowHeader );
     tableOutputResults.format().setFirstRowIsHeader( true );
 
@@ -270,6 +283,7 @@ runCrbOnline( std::vector<std::shared_ptr<Feel::CRBPluginAPI>> plugin )
 
     for ( int k=0;k<nSamples;++k )
     {
+        
         auto const& mu = (*mysampling)[k];
         std::ostringstream ostrmu;
         for ( uint16_type d=0;d<muspace->dimension();++d)
@@ -280,16 +294,18 @@ runCrbOnline( std::vector<std::shared_ptr<Feel::CRBPluginAPI>> plugin )
         //std::cout << "input mu\n" << mu << "\n";
         for( auto const& p : plugin )
         {
+            tic();
             auto crbResult = p->run( mu, time_crb, online_tol, rbDim, print_rb_matrix);
             auto resOuptut = boost::get<0>( crbResult );
             auto resError = boost::get<0>( boost::get<6>( crbResult ) );
             //std::cout << "output " << resOuptut.back() << " " << resError.back() << "\n";
-
+            double t = toc("rb_online", FLAGS_v>0);
             int curRowValIndex = 0;
             for ( uint16_type d=0;d<muspace->dimension();++d)
                 tableRowValues[curRowValIndex++] = mu(d);
             if ( !resOuptut.empty() )
                 tableRowValues[curRowValIndex++] = resOuptut.back();
+            tableRowValues[curRowValIndex++] = t;
             tableOutputResults.add_row( tableRowValues );
 
             if ( loadFiniteElementDatabase )
@@ -392,7 +408,7 @@ int main(int argc, char**argv )
     using namespace Feel;
     po::options_description crbonlinerunoptions( "crb online run options" );
     crbonlinerunoptions.add_options()
-        ( "plugin.dir", po::value<std::string>()->default_value(Info::libdir()) , "plugin directory" )
+        ( "plugin.dir", po::value<std::string>()->default_value( ( fs::path(Info::prefix()) / Info::libdir() ).string() ) , "plugin directory" )
         ( "crbmodel.name", po::value<std::string>(), "CRB online code name" )
         ( "crbmodel.db.id", po::value<std::string>(), "CRB online code id" )
         ( "crbmodel.db.last", po::value<int>()->default_value( 2 ), "use last created(=1) or modified(=2) or not (=0)" )
@@ -405,6 +421,7 @@ int main(int argc, char**argv )
         //( "plugin.db", po::value<std::string>()->default_value( "${repository}/crbdb" ), "root directory of the CRB database " )
         //( "parameter", po::value<std::vector<double> >()->multitoken(), "database filename" )
         ( "parameter", po::value<std::vector<std::string> >()->multitoken(), "database filename" )
+        ( "parameter.filename", po::value<std::string>(), "parameters from csv file" )
         ( "sampling.size", po::value<int>()->default_value( 10 ), "size of sampling" )
         ( "sampling.type", po::value<std::string>()->default_value( "random" ), "type of sampling" )
         ( "rb-dim", po::value<int>()->default_value( -1 ), "reduced basis dimension used (-1 use the max dim)" )

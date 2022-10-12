@@ -41,8 +41,17 @@
 /* define lib dir for feel installation */
 #cmakedefine FEELPP_LIBDIR @FEELPP_LIBDIR@
 
+/* define plugin dir for feel installation */
+#cmakedefine FEELPP_PLUGINDIR @FEELPP_PLUGINDIR@
+
 /* define data dir for feel installation */
 #cmakedefine FEELPP_DATADIR @FEELPP_DATADIR@
+
+/* define data dir for feel installation */
+#cmakedefine FEELPP_CASESDIR @FEELPP_CASESDIR@
+
+/* define data dir for feel installation */
+#cmakedefine FEELPP_TOOLBOXCASESDIR @FEELPP_TOOLBOXCASESDIR@
 
 /* define dir for source */
 #cmakedefine FEELPP_SOURCE_DIR @FEELPP_SOURCE_DIR@

@@ -7,7 +7,7 @@ if ( TARGET Feelpp::feelpp_toolbox_heat_lib )
   mor_add_library( toolbox_heat
     SRCS toolboxmor_heat.cpp
     LINK_LIBRARIES  Feelpp::feelpp_toolbox_heat_lib_2dP1G1 Feelpp::feelpp_toolbox_heat_lib_3dP1G1 Feelpp::feelpp_mor
-    EXEC CRB_LIB_TOOLBOX_HEAT )
+    EXEC CRB_LIB_TOOLBOX_HEAT PLUGIN )
   target_compile_definitions(${CRB_LIB_TOOLBOX_HEAT} PRIVATE FEELPP_MOR_PLUGIN_NAME=toolbox_heat FEELPP_MOR_PLUGIN_LIBNAME=${CRB_LIB_TOOLBOX_HEAT})
 
 

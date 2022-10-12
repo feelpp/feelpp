@@ -37,6 +37,7 @@ ouput.csv
 | crbmodel.db.last | name of the online code (use last created(=1) or modified(=2))  | 2
 | crbmodel.db.root_directory | root directory of the CRB DB | `${repository}/crbdb`
 | parameter | run online run these parameters (ordered from parameter space and list size equal to parameter space dimension) | N/A
+| parameter.filename | run online run with parameters from a CSV, semi-colon or space Separated Values file.  | N/A
 | sampling.size | number of online run (each run is setup from parameter take by a sampler, see sampling.type option | 10
 | sampling.type | type of sampling (random,...) | random
 | output_results.save.path | csv file path of the output results (can be relative or absolute file path and can use Feel++ keyword as `$repository`) | save results in `ouput.csv` file and use current directory of the application (`$repository/feelpp_mor_onlinerun/np_1/output.csv`)
@@ -52,6 +53,13 @@ feelpp_mor_onlinerun --crbmodel.name myheat3d_P1G1 --parameter "110 140 124 193.
 ----
 
 NOTE: we use quote in the parameter list in order to be sure that minus sign is well take into account
+
+Evaluate output from one parameter::
+----
+feelpp_mor_onlinerun --crbmodel.name myheat3d_P1G1 --parameter.filename t.csv
+----
+
+NOTE: The first line of the file must contain all the parameter names. The order of the parameters in the file will be detected automatically.
 
 Evaluate outputs from a sampling::
 ----
