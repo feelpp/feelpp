@@ -175,7 +175,7 @@ class ToolboxModel():
 class nirbOffline(ToolboxModel):
 
     def __init__(self, dimension, H, h, toolboxType, cfg_path, model_path, geo_path,
-        method="POD", order=1, doRectification=True) -> None:
+        method="POD", order=1, doRectification=True, initCoarse=False) -> None:
         """Initialize the NIRB class
 
         Args:
@@ -189,6 +189,7 @@ class nirbOffline(ToolboxModel):
             method (str, optional): method used to generate the basis. Defaults to "POD".
             order (int, optional): order of discretization. Defaults to 1.
             doRectification (bool, optional): set rectification. Defaults to True.
+            initCoarse (bool, optional): initialize the coarse toolbox. Defaults to False.
         """
 
         super().__init__(dimension, H, h, toolboxType, cfg_path, model_path, geo_path, order)
@@ -201,7 +202,7 @@ class nirbOffline(ToolboxModel):
         self.h1ScalarProductMatrix = None
         self.N = 0 # number of modes
 
-        if self.doRectification:
+        if self.doRectification or initCoarse:
             super().initCoarseToolbox()
         if feelpp.Environment.isMasterRank():
             print(f"[NIRB] Initialization done")
@@ -261,7 +262,6 @@ class nirbOffline(ToolboxModel):
         eigenMatrix.destroy()
 
 
-
     def initProblem(self, numberOfInitSnapshots, samplingMode="log-random", computeCoarse=False):
         """Initialize the problem
 
@@ -299,28 +299,66 @@ class nirbOffline(ToolboxModel):
 
 
     def getReducedSolution(self, mu, N):
-        pass
+        """Computed the reduced solution for a given parameter and a size of basis
 
-    def initProblemGreedy(self, Ntrain, crt, Nmax=500, samplingMode="log-random"):
+        Args:
+            mu (parameterSpaceElement): parameter
+            N (int): size of the sub-basis
+        
+        Returns:
+            PETSc.Vec: reduced solution u_H^N
+        """
+        coarseSol = self.getToolboxSolution(self.tbCoarse, mu).to_petsc().vec()
+        uHN = PETSc.Vec().create(comm=PETSc.COMM_WORLD)
+        uHN.setSizes(N)
+        uHN.setFromOptions()
+        uHN.setUp()
+
+        for i in range(N):
+            uHN[i] = self.coarseSnapShotList[i].to_petsc().vec().dot( coarseSol )
+        return uHN
+
+
+    def initProblemGreedy(self, Ntrain, eps, Nmax=500, samplingMode="log-random", computeCoarse=False):
+        """Initialize the problem, using a greedy loop
+
+        Args:
+            Ntrain (int): size of the train parameter set
+            eps (float): precision of the greedy loop
+            Nmax (int, optional): maximal number of iterations. Defaults to 500.
+            samplingMode (str, optional): sampling mode. Defaults to "log-random".
+            computeCoarse (bool, optional): compute snapshots for coarse toolbox, used for rectification. Defaults to False.
+
+        Raises:
+            Exception: Coarse toolbox has not been initialized
+        """
+        if self.tbCoarse is None:
+            raise Exception("Coarse toolbox needed for computing coarse Snapshot. set initCoarse->True in initialization")
         Nmax = max(Nmax, Ntrain)
         s = self.Dmu.sampling()
         s.sampling(Ntrain, samplingMode)
         Xi_train = s.getVector()
 
-        Delta = crt+1
-        mu0 = self.Dmu.parameterSpace().element()
-        S = [mu0]
-        self.fineSnapShotList = [self.getToolboxSolution(self.tbFine, mu0)]
-        N = 1
+        Delta_star = eps+1
+        S = []
+        self.fineSnapShotList = []
+        self.coarseSnapShotList = []
+        N = 0
+        for i in range(2):
+            mu0 = self.Dmu.element()
+            S.append(mu0)
+            self.fineSnapShotList.append( self.getToolboxSolution(self.tbFine, mu0) )
+            self.coarseSnapShotList.append( self.getToolboxSolution(self.tbCoarse, mu0) )
+            N += 1
 
-        while Delta_star > crt or N <= Nmax:
+        while Delta_star > eps or N <= Nmax:
             M = N - 1
             
             Delta_star = -float('inf')
 
             for i, mu in enumerate(Xi_train):
-                uHN = self.getReducedSolution(N, mu)
-                uHM = self.getReducedSolution(M, mu)
+                uHN = self.getReducedSolution(mu, N)
+                uHM = self.getReducedSolution(mu, M)
 
                 Delta = (uHN - uHM).l2Norm()
 
@@ -331,6 +369,12 @@ class nirbOffline(ToolboxModel):
             
             S.append(mu_star)
             del Xi_train[idx]
+            self.fineSnapShotList.append(self.getToolboxSolution(self.tbFine, mu_star))
+            N += 1
+            self.coarseSnapShotList.append(self.getToolboxSolution(self.tbCoarse, mu_star))
+            if feelpp.Environment.isMasterRank():
+                print(f"[nirb] Adding snapshot with mu = {mu_star}")
+                print(f"[nirb] Greedy loop done. N = {N}, Delta_star = {Delta_star}")
         
         if feelpp.Environment.isMasterRank():
             print(f"[NIRB] Number of snapshot computed : {N}")
@@ -406,6 +450,8 @@ class nirbOffline(ToolboxModel):
         vec.setSizes(self.Ndofs)
         vec.setFromOptions()
         vec.setUp()
+
+        print("LOOK AT ME", vec.size)
 
         for i in range(Nmode):
             vec.set(0.)
@@ -561,7 +607,6 @@ class nirbOffline(ToolboxModel):
         elif rank == 0:
             # pass
             print(f"[NIRB] Gram-Schmidt H1 orthonormalization done after {nb+1} step"+['','s'][nb>0])
-
 
     def orthonormalizeL2(self, nb=0):
         """Use Gram-Schmidt algorithm to orthonormalize the reduced basis using L2 norm
@@ -729,7 +774,7 @@ class nirbOnline(ToolboxModel):
         return compressedSol
 
     def getInterpSol(self, mu):
-        """Get the interpolate solution from coarse mesh to fine one
+        """Get the interpolated solution from coarse mesh to fine one
 
         Args:
             mu (ParameterSpaceElement): parameter
