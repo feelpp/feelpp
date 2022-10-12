@@ -93,7 +93,7 @@ void defFM(py::module &m)
         {
             std::shared_ptr<RemeshInterpolation> remeshInterp = std::make_shared<RemeshInterpolation>();
             self->applyRemesh(meshOld,meshNew,remeshInterp);            
-        }, "apply remesh to toolbox and regenerate the necessary data structure",py::arg("oldMesh"),py::arg("newMesh"))
+        }, "apply remesh to toolbox and regenerate the necessary data structure",py::arg("old"),py::arg("new"))
         ;
         
 }
