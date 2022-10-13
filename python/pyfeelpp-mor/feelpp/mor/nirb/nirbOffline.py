@@ -23,9 +23,9 @@ if __name__ == "__main__":
     geo_path = f"{modelsFolder}{modelfile[toolboxType]}.geo"
     model_path = f"{modelsFolder}{modelfile[toolboxType]}.json"
     if dim == 3:
-        cfg_path = f"{modelsFolder}/thermal-fin-3d/thermal-fin.cfg"
-        geo_path = f"{modelsFolder}/thermal-fin-3d/fin.geo"
-        model_path = f"{modelsFolder}/thermal-fin-3d/thermal-fin.json"
+        cfg_path = f"{modelsFolder}thermal-fin-3d/thermal-fin.cfg"
+        geo_path = f"{modelsFolder}thermal-fin-3d/fin.geo"
+        model_path = f"{modelsFolder}thermal-fin-3d/thermal-fin.json"
 
     e = init_feelpp_environment(toolboxType, cfg_path)
 
@@ -37,7 +37,7 @@ if __name__ == "__main__":
             H = float(sys.argv[2])
             h = H**2
 
-    star=time.time()
+    start = time.time()
 
     nirb_off = nirbOffline(dim, H, h, toolboxType, cfg_path, model_path, geo_path, doRectification=doRectification)
 
@@ -57,13 +57,13 @@ if __name__ == "__main__":
 
     perf = []
     perf.append(nbSnap)
-    perf.append(finish-star)
+    perf.append(finish-start)
 
     info = nirb_off.getInformations()
     print(json.dumps(info, sort_keys=True, indent=4))
 
-    # file='nirbOffline_time_exec.txt'
-    # WriteVecAppend(file,perf)
+    file = 'nirbOffline_time_exec.txt'
+    WriteVecAppend(file,perf)
 
-    print(f"[NIRB] Offline Elapsed time = ", finish-star)
+    print(f"[NIRB] Offline Elapsed time = ", finish-start)
     print(f"[NIRB] Offline part Done !")
