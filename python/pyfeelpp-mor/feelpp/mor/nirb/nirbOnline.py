@@ -22,7 +22,7 @@ def ComputeErrors(nirb_on, mu):
     list : 
     """
 
-    uHh, _ = nirb_on.getOnlineSol(mu)
+    uHh= nirb_on.getOnlineSol(mu)
     uH = nirb_on.getInterpSol(mu)
     uh = nirb_on.getToolboxSolution(nirb_on.tbFine, mu)
     
@@ -47,7 +47,7 @@ def ComputeErrorsH(nirb_on, tbRef, mu, path=None, name=None):
         name (str) : the name of the reference solution 
     """
 
-    uHh, _ = nirb_on.getOnlineSol(mu) # nirb solution 
+    uHh= nirb_on.getOnlineSol(mu) # nirb solution 
     uh = nirb_on.getToolboxSolution(nirb_on.tbFine, mu) # FE solution 
 
     if (path != None) and (name != None): 
@@ -77,7 +77,7 @@ def ComputeErrorSampling(nirb_on, Nsample=1, samplingType='log-random'):
 
     return : 
     dict: containing
-        - dict['mu'] : the index of the parameter from 0... to Nsample
+        - dict['parameter'] : the index of the parameter from 0... to Nsample
         - dict['l2u-uHn'] : the l2 norm between FE solution (u) and the nirb solution (uHn)
         - dict['lINFu-uHn'] : the infinity norm between FE solution (u) and the nirb solution (uHn)
         - dict['l2u-uH'] : the l2 norm between both FE solution (u in the fine mesh) and (uH in the coarse mesh)
@@ -94,7 +94,7 @@ def ComputeErrorSampling(nirb_on, Nsample=1, samplingType='log-random'):
     err = np.zeros((Nsample,4))
     for i,mu in enumerate(mus):
         uH = nirb_on.getInterpSol(mu)
-        uHh, _ = nirb_on.getOnlineSol(mu)
+        uHh= nirb_on.getOnlineSol(mu)
         uh = nirb_on.getToolboxSolution(nirb_on.tbFine, mu)
         err[i,0] = (uHh - uh).l2Norm()
         err[i,1] = (uHh - uh).linftyNorm()
@@ -113,7 +113,7 @@ def ComputeErrorSampling(nirb_on, Nsample=1, samplingType='log-random'):
 
 if __name__ == "__main__":
 
-    dim = 3
+    dim = 2
     order = 1
     if dim == 2:
         H = 0.1  # CoarseMeshSize
@@ -151,8 +151,9 @@ if __name__ == "__main__":
     # uHh = nirb_on.getOnlineSol(mu)
 
 
-    Nsample = 50
+    Nsample = 10
     # error1 = ComputeErrors(nirb_on, mu)
+    
     errorN = ComputeErrorSampling(nirb_on, Nsample=Nsample)
 
     df = pd.DataFrame(errorN)
@@ -164,17 +165,18 @@ if __name__ == "__main__":
     file.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(file, index=False)
 
-    print("[NIRB online] all computed errors ")
-    data_mean = df.mean(axis=0)
-    print("[NIRB online] Mean of errors ")
-    print(data_mean)
-    data_min = df.min(axis=0)
-    print("[NIRB online] Min of errors ")
-    print(data_min)
-    data_max = df.max(axis=0)
-    print("[NIRB online] Max of errors ")
-    print(data_max)
-    
+    if feelpp.Environment.isMasterRank():
+        print(f"[NIRB online] computed errors for {df.shape[0]} parameters ")
+        data_mean = df.mean(axis=0)
+        print("[NIRB online] Mean of errors ")
+        print(data_mean)
+        data_min = df.min(axis=0)
+        print("[NIRB online] Min of errors ")
+        print(data_min)
+        data_max = df.max(axis=0)
+        print("[NIRB online] Max of errors ")
+        print(data_max)
+        
 
 
 
