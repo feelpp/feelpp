@@ -5,6 +5,7 @@ var dir_201afb6b72871638822819f2c834f547 =
     [ "bases.hpp", "bases_8hpp.html", "bases_8hpp" ],
     [ "basisfunctions.hpp", "basisfunctions_8hpp.html", "basisfunctions_8hpp" ],
     [ "bdf2.hpp", "bdf2_8hpp.html", null ],
+    [ "context.hpp", "feeldiscr_2context_8hpp.html", "feeldiscr_2context_8hpp" ],
     [ "createsubmesh.hpp", "createsubmesh_8hpp.html", "createsubmesh_8hpp" ],
     [ "dh.hpp", "dh_8hpp.html", null ],
     [ "dof.hpp", "dof_8hpp.html", "dof_8hpp" ],
@@ -25,6 +26,7 @@ var dir_201afb6b72871638822819f2c834f547 =
     [ "doftablempi.hpp", "doftablempi_8hpp.html", null ],
     [ "dummy.cpp", "feeldiscr_2dummy_8cpp.html", null ],
     [ "expansion.hpp", "expansion_8hpp.html", "expansion_8hpp" ],
+    [ "facet.hpp", "facet_8hpp.html", "facet_8hpp" ],
     [ "fsfunctional.hpp", "fsfunctional_8hpp.html", [
       [ "Feel::FsFunctional< Space >", "classFeel_1_1FsFunctional.html", null ]
     ] ],
@@ -53,6 +55,7 @@ var dir_201afb6b72871638822819f2c834f547 =
     [ "mesh2.cpp", "mesh2_8cpp.html", null ],
     [ "mesh3.cpp", "mesh3_8cpp.html", null ],
     [ "meshimpl.hpp", "meshimpl_8hpp.html", "meshimpl_8hpp" ],
+    [ "minmax.hpp", "feeldiscr_2minmax_8hpp.html", "feeldiscr_2minmax_8hpp" ],
     [ "moch.hpp", "moch_8hpp.html", "moch_8hpp" ],
     [ "mortar.hpp", "mortar_8hpp.html", [
       [ "Feel::detail::mortar_base", "classFeel_1_1detail_1_1mortar__base.html", null ],

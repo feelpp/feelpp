@@ -766,6 +766,7 @@ var hierarchy =
     [ "Feel::remove_std_vector< std::vector< T > >", "structFeel_1_1remove__std__vector_3_01std_1_1vector_3_01T_01_4_01_4.html", null ],
     [ "Feel::Repository", "classFeel_1_1Repository.html", null ],
     [ "Feel::Repository::Config", "structFeel_1_1Repository_1_1Config.html", null ],
+    [ "Feel::Repository::Dist", "structFeel_1_1Repository_1_1Dist.html", null ],
     [ "Feel::Repository::Owner", "structFeel_1_1Repository_1_1Owner.html", null ],
     [ "Feel::Simget", "classFeel_1_1Simget.html", [
       [ "test_simget::sim", "classtest__simget_1_1sim.html", null ]

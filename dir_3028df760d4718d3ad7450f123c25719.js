@@ -43,7 +43,7 @@ var dir_3028df760d4718d3ad7450f123c25719 =
     [ "linearform.hpp", "linearform_8hpp.html", "linearform_8hpp" ],
     [ "linearformcontext.hpp", "linearformcontext_8hpp.html", null ],
     [ "matvec.hpp", "matvec_8hpp.html", "matvec_8hpp" ],
-    [ "minmax.hpp", "minmax_8hpp.html", "minmax_8hpp" ],
+    [ "minmax.hpp", "feelvf_2minmax_8hpp.html", "feelvf_2minmax_8hpp" ],
     [ "norm.hpp", "norm_8hpp.html", "norm_8hpp" ],
     [ "normh1.hpp", "normh1_8hpp.html", null ],
     [ "norml2.hpp", "norml2_8hpp.html", null ],

@@ -18,7 +18,7 @@ var searchData=
   ['meshbase_2ehpp_15',['meshbase.hpp',['../meshbase_8hpp.html',1,'']]],
   ['meshimpl_2ehpp_16',['meshimpl.hpp',['../meshimpl_8hpp.html',1,'']]],
   ['meshmover_2ecpp_17',['meshmover.cpp',['../meshmover_8cpp.html',1,'']]],
-  ['minmax_2ehpp_18',['minmax.hpp',['../minmax_8hpp.html',1,'']]],
+  ['minmax_2ehpp_18',['minmax.hpp',['../feelvf_2minmax_8hpp.html',1,'(Global Namespace)'],['../feeldiscr_2minmax_8hpp.html',1,'(Global Namespace)']]],
   ['moch_2ehpp_19',['moch.hpp',['../moch_8hpp.html',1,'']]],
   ['modelalgebraic_2ecpp_20',['modelalgebraic.cpp',['../modelalgebraic_8cpp.html',1,'']]],
   ['modelalgebraic_2ehpp_21',['modelalgebraic.hpp',['../modelalgebraic_8hpp.html',1,'']]],

@@ -344,37 +344,38 @@ var sectionId = 'dynsection-0';
 <g id="node12" class="node">
 <title>Node12</title>
 <g id="a_node12"><a xlink:href="classFeel_1_1FeelModels_1_1Heat.html" target="_top" xlink:title="class for heat transfer toolbox">
-<polygon fill="white" stroke="black" points="893.5,-232 893.5,-487 1074.5,-487 1074.5,-232 893.5,-232"/>
-<text text-anchor="start" x="901.5" y="-475" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::Heat</text>
-<text text-anchor="start" x="901.5" y="-464" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; ConvexType, BasisTemperature</text>
-<text text-anchor="middle" x="984" y="-453" font-family="Helvetica,sans-Serif" font-size="10.00">Type &gt;</text>
-<polyline fill="none" stroke="black" points="893.5,-446 1074.5,-446 "/>
-<text text-anchor="start" x="901.5" y="-434" font-family="Helvetica,sans-Serif" font-size="10.00">+ nDim</text>
-<text text-anchor="start" x="901.5" y="-423" font-family="Helvetica,sans-Serif" font-size="10.00">+ nOrderGeo</text>
-<text text-anchor="start" x="901.5" y="-412" font-family="Helvetica,sans-Serif" font-size="10.00">+ nOrderPoly</text>
-<text text-anchor="start" x="901.5" y="-401" font-family="Helvetica,sans-Serif" font-size="10.00">+ nOrderTemperature</text>
-<text text-anchor="start" x="901.5" y="-390" font-family="Helvetica,sans-Serif" font-size="10.00">+ nRealDim</text>
-<text text-anchor="start" x="901.5" y="-379" font-family="Helvetica,sans-Serif" font-size="10.00"># M_bdfTemperature</text>
-<text text-anchor="start" x="901.5" y="-368" font-family="Helvetica,sans-Serif" font-size="10.00"># M_boundaryConditions</text>
-<text text-anchor="start" x="901.5" y="-357" font-family="Helvetica,sans-Serif" font-size="10.00"># M_currentParameterValues</text>
-<text text-anchor="start" x="901.5" y="-346" font-family="Helvetica,sans-Serif" font-size="10.00"># M_exporter</text>
-<text text-anchor="start" x="901.5" y="-335" font-family="Helvetica,sans-Serif" font-size="10.00"># M_fieldTemperature</text>
-<text text-anchor="start" x="901.5" y="-324" font-family="Helvetica,sans-Serif" font-size="10.00">and 13 more...</text>
-<polyline fill="none" stroke="black" points="893.5,-317 1074.5,-317 "/>
-<text text-anchor="start" x="901.5" y="-305" font-family="Helvetica,sans-Serif" font-size="10.00">+ applyRemesh()</text>
-<text text-anchor="start" x="901.5" y="-294" font-family="Helvetica,sans-Serif" font-size="10.00">+ buildBlockMatrixGraph()</text>
-<text text-anchor="start" x="901.5" y="-283" font-family="Helvetica,sans-Serif" font-size="10.00">+ checkResults()</text>
-<text text-anchor="start" x="901.5" y="-272" font-family="Helvetica,sans-Serif" font-size="10.00">+ executePostProcessMeasures()</text>
-<text text-anchor="start" x="901.5" y="-261" font-family="Helvetica,sans-Serif" font-size="10.00">+ exportResults()</text>
-<text text-anchor="start" x="901.5" y="-250" font-family="Helvetica,sans-Serif" font-size="10.00">and 64 more...</text>
-<text text-anchor="start" x="901.5" y="-239" font-family="Helvetica,sans-Serif" font-size="10.00">+ New()</text>
+<polygon fill="white" stroke="black" points="893.5,-226.5 893.5,-492.5 1074.5,-492.5 1074.5,-226.5 893.5,-226.5"/>
+<text text-anchor="start" x="901.5" y="-480.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::Heat</text>
+<text text-anchor="start" x="901.5" y="-469.5" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; ConvexType, BasisTemperature</text>
+<text text-anchor="middle" x="984" y="-458.5" font-family="Helvetica,sans-Serif" font-size="10.00">Type &gt;</text>
+<polyline fill="none" stroke="black" points="893.5,-451.5 1074.5,-451.5 "/>
+<text text-anchor="start" x="901.5" y="-439.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ nDim</text>
+<text text-anchor="start" x="901.5" y="-428.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ nOrderGeo</text>
+<text text-anchor="start" x="901.5" y="-417.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ nOrderPoly</text>
+<text text-anchor="start" x="901.5" y="-406.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ nOrderTemperature</text>
+<text text-anchor="start" x="901.5" y="-395.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ nRealDim</text>
+<text text-anchor="start" x="901.5" y="-384.5" font-family="Helvetica,sans-Serif" font-size="10.00"># M_bdfTemperature</text>
+<text text-anchor="start" x="901.5" y="-373.5" font-family="Helvetica,sans-Serif" font-size="10.00"># M_boundaryConditions</text>
+<text text-anchor="start" x="901.5" y="-362.5" font-family="Helvetica,sans-Serif" font-size="10.00"># M_currentParameterValues</text>
+<text text-anchor="start" x="901.5" y="-351.5" font-family="Helvetica,sans-Serif" font-size="10.00"># M_exporter</text>
+<text text-anchor="start" x="901.5" y="-340.5" font-family="Helvetica,sans-Serif" font-size="10.00"># M_fieldTemperature</text>
+<text text-anchor="start" x="901.5" y="-329.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 13 more...</text>
+<polyline fill="none" stroke="black" points="893.5,-322.5 1074.5,-322.5 "/>
+<text text-anchor="start" x="901.5" y="-310.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ applyRemesh()</text>
+<text text-anchor="start" x="901.5" y="-299.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ buildBlockMatrixGraph()</text>
+<text text-anchor="start" x="901.5" y="-288.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ checkResults()</text>
+<text text-anchor="start" x="901.5" y="-277.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ executePostProcessMeasures()</text>
+<text text-anchor="start" x="901.5" y="-266.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ exportResults()</text>
+<text text-anchor="start" x="901.5" y="-255.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 64 more...</text>
+<text text-anchor="start" x="901.5" y="-244.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ create_program_options()</text>
+<text text-anchor="start" x="901.5" y="-233.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ New()</text>
 </a>
 </g>
 </g>
 <!-- Node6&#45;&gt;Node12 -->
 <g id="edge11" class="edge">
 <title>Node6&#45;&gt;Node12</title>
-<path fill="none" stroke="midnightblue" d="M924.54,-519.94C928.59,-509.07 932.72,-498 936.82,-487.02"/>
+<path fill="none" stroke="midnightblue" d="M924.5,-520.04C927.88,-510.97 931.32,-501.76 934.74,-492.58"/>
 <polygon fill="none" stroke="midnightblue" points="921.21,-518.84 921,-529.43 927.77,-521.28 921.21,-518.84"/>
 </g>
 <!-- Node13 -->

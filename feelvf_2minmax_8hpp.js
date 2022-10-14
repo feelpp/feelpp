@@ -1,4 +1,4 @@
-var minmax_8hpp =
+var feelvf_2minmax_8hpp =
 [
     [ "Feel::vf::OpMax< ExprT1, ExprT2 >", "classFeel_1_1vf_1_1OpMax.html", "classFeel_1_1vf_1_1OpMax" ],
     [ "Feel::vf::OpMax< ExprT1, ExprT2 >::HasTestFunction< Func >", "structFeel_1_1vf_1_1OpMax_1_1HasTestFunction.html", null ],

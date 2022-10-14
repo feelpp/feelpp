@@ -38,7 +38,7 @@ MathJax.Hub.Config({
  <tr id="projectrow">
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign">
-   <div id="projectname">Feel++<span id="projectnumber">&#160;0.110.0-rc.4</span>
+   <div id="projectname">Feel++<span id="projectnumber">&#160;0.110.0-rc.5</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -100,12 +100,14 @@ $(document).ready(function(){initNavTree('group__Discretization.html',''); initR
 </div>
 
 <div class="header">
+  <div class="summary">
+<a href="#func-members">Functions</a>  </div>
   <div class="headertitle"><div class="title">Discretization<div class="ingroups"><a class="el" href="group__Feelpp.html">Feelpp</a></div></div></div>
 </div><!--header-->
 <div class="contents">
 
 <p>Discretization classes and algorithms provided by the library.  
-</p>
+<a href="#details">More...</a></p>
 <div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Collaboration diagram for Discretization:</div>
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">
@@ -114,7 +116,350 @@ $(document).ready(function(){initNavTree('group__Discretization.html',''); initR
 <div class="center"><iframe scrolling="no" frameborder="0" src="group__Discretization.svg" width="236" height="36"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
+Functions</h2></td></tr>
+<tr class="memitem:ga3b2313166eeeb9ed1869b93c3087a0f7"><td class="memTemplParams" colspan="2">template&lt;typename FacetType &gt; </td></tr>
+<tr class="memitem:ga3b2313166eeeb9ed1869b93c3087a0f7"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__Discretization.html#ga3b2313166eeeb9ed1869b93c3087a0f7">Feel::facetGlobalToLocal</a> (FacetType &amp;&amp;f)</td></tr>
+<tr class="memdesc:ga3b2313166eeeb9ed1869b93c3087a0f7"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the local indexing of a facet from the global id  <a href="group__Discretization.html#ga3b2313166eeeb9ed1869b93c3087a0f7">More...</a><br /></td></tr>
+<tr class="separator:ga3b2313166eeeb9ed1869b93c3087a0f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gab4a4cfead5213795568f069bdcf4e835"><td class="memTemplParams" colspan="2">template&lt;typename FacetType , typename DofTableType &gt; </td></tr>
+<tr class="memitem:gab4a4cfead5213795568f069bdcf4e835"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__Discretization.html#gab4a4cfead5213795568f069bdcf4e835">Feel::facetGlobalToLocal</a> (FacetType &amp;&amp;f, DofTableType &amp;&amp;dof)</td></tr>
+<tr class="memdesc:gab4a4cfead5213795568f069bdcf4e835"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the local indexing of a facet from the global id and a doftable  <a href="group__Discretization.html#gab4a4cfead5213795568f069bdcf4e835">More...</a><br /></td></tr>
+<tr class="separator:gab4a4cfead5213795568f069bdcf4e835"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga23210be0660ed163219437701260e4ee"><td class="memTemplParams" colspan="2">template&lt;typename... Ts&gt; </td></tr>
+<tr class="memitem:ga23210be0660ed163219437701260e4ee"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__Discretization.html#ga23210be0660ed163219437701260e4ee">Feel::maxelt</a> (Ts &amp;&amp;... v)</td></tr>
+<tr class="memdesc:ga23210be0660ed163219437701260e4ee"><td class="mdescLeft">&#160;</td><td class="mdescRight">compute the max of the element of a function space at DOF points over the range <code>r</code>  <a href="group__Discretization.html#ga23210be0660ed163219437701260e4ee">More...</a><br /></td></tr>
+<tr class="separator:ga23210be0660ed163219437701260e4ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gac354bf0f9af28c2f4bb464bf49eccabd"><td class="memTemplParams" colspan="2">template&lt;typename... Ts&gt; </td></tr>
+<tr class="memitem:gac354bf0f9af28c2f4bb464bf49eccabd"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__Discretization.html#gac354bf0f9af28c2f4bb464bf49eccabd">Feel::minelt</a> (Ts &amp;&amp;... v)</td></tr>
+<tr class="memdesc:gac354bf0f9af28c2f4bb464bf49eccabd"><td class="mdescLeft">&#160;</td><td class="mdescRight">compute the min of the element of a function space at DOF points over the range <code>r</code>  <a href="group__Discretization.html#gac354bf0f9af28c2f4bb464bf49eccabd">More...</a><br /></td></tr>
+<tr class="separator:gac354bf0f9af28c2f4bb464bf49eccabd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga5bb7051513b50412427c81e806b45468"><td class="memTemplParams" colspan="2">template&lt;typename... Ts&gt; </td></tr>
+<tr class="memitem:ga5bb7051513b50412427c81e806b45468"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__Discretization.html#ga5bb7051513b50412427c81e806b45468">Feel::minmaxelt</a> (Ts &amp;&amp;... v)</td></tr>
+<tr class="memdesc:ga5bb7051513b50412427c81e806b45468"><td class="mdescLeft">&#160;</td><td class="mdescRight">compute the min of the element of a function space at DOF points over the range <code>r</code>  <a href="group__Discretization.html#ga5bb7051513b50412427c81e806b45468">More...</a><br /></td></tr>
+<tr class="separator:ga5bb7051513b50412427c81e806b45468"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga4e35dac0b54b50e6560b001d5aa28307"><td class="memTemplParams" colspan="2">template&lt;typename... Ts&gt; </td></tr>
+<tr class="memitem:ga4e35dac0b54b50e6560b001d5aa28307"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__Discretization.html#ga4e35dac0b54b50e6560b001d5aa28307">Feel::opelt</a> (Ts &amp;&amp;... v)</td></tr>
+<tr class="memdesc:ga4e35dac0b54b50e6560b001d5aa28307"><td class="mdescLeft">&#160;</td><td class="mdescRight">compute the min of the element of a function space at DOF points over the range <code>r</code>  <a href="group__Discretization.html#ga4e35dac0b54b50e6560b001d5aa28307">More...</a><br /></td></tr>
+<tr class="separator:ga4e35dac0b54b50e6560b001d5aa28307"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga2209f23301252d868f7204a09993e4c2"><td class="memTemplParams" colspan="2">template&lt;typename... Ts&gt; </td></tr>
+<tr class="memitem:ga2209f23301252d868f7204a09993e4c2"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__Discretization.html#ga2209f23301252d868f7204a09993e4c2">Feel::opselt</a> (Ts &amp;&amp;... v)</td></tr>
+<tr class="memdesc:ga2209f23301252d868f7204a09993e4c2"><td class="mdescLeft">&#160;</td><td class="mdescRight">compute the set of operations <code>ops</code> of the element of a function space at DOF points over the range <code>r</code>  <a href="group__Discretization.html#ga2209f23301252d868f7204a09993e4c2">More...</a><br /></td></tr>
+<tr class="separator:ga2209f23301252d868f7204a09993e4c2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <p >Discretization classes and algorithms provided by the library. </p>
+<h2 class="groupheader">Function Documentation</h2>
+<a id="ga3b2313166eeeb9ed1869b93c3087a0f7" name="ga3b2313166eeeb9ed1869b93c3087a0f7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga3b2313166eeeb9ed1869b93c3087a0f7">&#9670;&nbsp;</a></span>facetGlobalToLocal() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename FacetType &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">auto Feel::facetGlobalToLocal </td>
+          <td>(</td>
+          <td class="paramtype">FacetType &amp;&amp;&#160;</td>
+          <td class="paramname"><em>f</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>#include &lt;<a class="el" href="facet_8hpp.html">/nvme0/prudhomm/actions-runner/_work/feelpp/feelpp/feelpp/feel/feeldiscr/facet.hpp</a>&gt;</code></p>
+
+<p>get the local indexing of a facet from the global id </p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">FacetType</td><td>type of face </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">f</td><td>facet </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>a tuple containing the element 0 or 1 to which the facet belongs and the local index of the facet in this element </dd></dl>
+
+</div>
+</div>
+<a id="gab4a4cfead5213795568f069bdcf4e835" name="gab4a4cfead5213795568f069bdcf4e835"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gab4a4cfead5213795568f069bdcf4e835">&#9670;&nbsp;</a></span>facetGlobalToLocal() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename FacetType , typename DofTableType &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">auto Feel::facetGlobalToLocal </td>
+          <td>(</td>
+          <td class="paramtype">FacetType &amp;&amp;&#160;</td>
+          <td class="paramname"><em>f</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">DofTableType &amp;&amp;&#160;</td>
+          <td class="paramname"><em>dof</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>#include &lt;<a class="el" href="facet_8hpp.html">/nvme0/prudhomm/actions-runner/_work/feelpp/feelpp/feelpp/feel/feeldiscr/facet.hpp</a>&gt;</code></p>
+
+<p>get the local indexing of a facet from the global id and a doftable </p>
+<dl class="section warning"><dt>Warning</dt><dd>if the tuple {-1,-1} is returned it means with are on a partial mesh and the facet is in it</dd></dl>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">FacetType</td><td>type of facet </td></tr>
+    <tr><td class="paramname">DofTableType</td><td>type of doftable </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">f</td><td>facet </td></tr>
+    <tr><td class="paramname">dof</td><td>doftable </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>a tuple containing the element 0 or 1 to which the facet belongs and the local index of the facet in this element </dd></dl>
+
+</div>
+</div>
+<a id="ga23210be0660ed163219437701260e4ee" name="ga23210be0660ed163219437701260e4ee"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga23210be0660ed163219437701260e4ee">&#9670;&nbsp;</a></span>maxelt()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename... Ts&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">auto Feel::maxelt </td>
+          <td>(</td>
+          <td class="paramtype">Ts &amp;&amp;...&#160;</td>
+          <td class="paramname"><em>v</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>#include &lt;<a class="el" href="feeldiscr_2minmax_8hpp.html">/nvme0/prudhomm/actions-runner/_work/feelpp/feelpp/feelpp/feel/feeldiscr/minmax.hpp</a>&gt;</code></p>
+
+<p>compute the max of the element of a function space at DOF points over the range <code>r</code> </p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">RangeT</td><td>range type to iterate on </td></tr>
+    <tr><td class="paramname">ElementT</td><td>type of finite element function</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">r</td><td>range of element </td></tr>
+    <tr><td class="paramname">e</td><td>element of a function space</td></tr>
+  </table>
+  </dd>
+</dl>
+<div class="fragment"><div class="line"><span class="keyword">auto</span> v = Xh-&gt;element();</div>
+<div class="line"><span class="keyword">auto</span> [max_v,arg_max_v] = <a class="code hl_function" href="group__Discretization.html#ga23210be0660ed163219437701260e4ee">maxelt</a>(_range=<a class="code hl_function" href="namespaceFeel.html#abdab447afcf746e7e621c56c1d6dc06b">elements</a>(mesh),_element=v);</div>
+<div class="ttc" id="agroup__Discretization_html_ga23210be0660ed163219437701260e4ee"><div class="ttname"><a href="group__Discretization.html#ga23210be0660ed163219437701260e4ee">Feel::maxelt</a></div><div class="ttdeci">auto maxelt(Ts &amp;&amp;... v)</div><div class="ttdoc">compute the max of the element of a function space at DOF points over the range r</div><div class="ttdef"><b>Definition:</b> minmax.hpp:200</div></div>
+<div class="ttc" id="anamespaceFeel_html_abdab447afcf746e7e621c56c1d6dc06b"><div class="ttname"><a href="namespaceFeel.html#abdab447afcf746e7e621c56c1d6dc06b">Feel::elements</a></div><div class="ttdeci">elements_pid_t&lt; MeshType &gt; elements(MeshType const &amp;mesh)</div><div class="ttdef"><b>Definition:</b> filters.hpp:122</div></div>
+</div><!-- fragment --><dl class="section return"><dt>Returns</dt><dd>the max value and the dof point coordinates </dd></dl>
+
+</div>
+</div>
+<a id="gac354bf0f9af28c2f4bb464bf49eccabd" name="gac354bf0f9af28c2f4bb464bf49eccabd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gac354bf0f9af28c2f4bb464bf49eccabd">&#9670;&nbsp;</a></span>minelt()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename... Ts&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">auto Feel::minelt </td>
+          <td>(</td>
+          <td class="paramtype">Ts &amp;&amp;...&#160;</td>
+          <td class="paramname"><em>v</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>#include &lt;<a class="el" href="feeldiscr_2minmax_8hpp.html">/nvme0/prudhomm/actions-runner/_work/feelpp/feelpp/feelpp/feel/feeldiscr/minmax.hpp</a>&gt;</code></p>
+
+<p>compute the min of the element of a function space at DOF points over the range <code>r</code> </p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">RangeT</td><td>range type to iterate on </td></tr>
+    <tr><td class="paramname">ElementT</td><td>type of finite element function</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">r</td><td>range of element </td></tr>
+    <tr><td class="paramname">e</td><td>element of a function space</td></tr>
+  </table>
+  </dd>
+</dl>
+<div class="fragment"><div class="line"><span class="keyword">auto</span> v = Xh-&gt;element();</div>
+<div class="line"><span class="keyword">auto</span> [min_v,arg_min_v] = <a class="code hl_function" href="group__Discretization.html#gac354bf0f9af28c2f4bb464bf49eccabd">minelt</a>(_range=<a class="code hl_function" href="namespaceFeel.html#abdab447afcf746e7e621c56c1d6dc06b">elements</a>(mesh),_element=v);</div>
+<div class="ttc" id="agroup__Discretization_html_gac354bf0f9af28c2f4bb464bf49eccabd"><div class="ttname"><a href="group__Discretization.html#gac354bf0f9af28c2f4bb464bf49eccabd">Feel::minelt</a></div><div class="ttdeci">auto minelt(Ts &amp;&amp;... v)</div><div class="ttdoc">compute the min of the element of a function space at DOF points over the range r</div><div class="ttdef"><b>Definition:</b> minmax.hpp:175</div></div>
+</div><!-- fragment --><dl class="section return"><dt>Returns</dt><dd>the min value and the dof point coordinates </dd></dl>
+
+</div>
+</div>
+<a id="ga5bb7051513b50412427c81e806b45468" name="ga5bb7051513b50412427c81e806b45468"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga5bb7051513b50412427c81e806b45468">&#9670;&nbsp;</a></span>minmaxelt()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename... Ts&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">auto Feel::minmaxelt </td>
+          <td>(</td>
+          <td class="paramtype">Ts &amp;&amp;...&#160;</td>
+          <td class="paramname"><em>v</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>#include &lt;<a class="el" href="feeldiscr_2minmax_8hpp.html">/nvme0/prudhomm/actions-runner/_work/feelpp/feelpp/feelpp/feel/feeldiscr/minmax.hpp</a>&gt;</code></p>
+
+<p>compute the min of the element of a function space at DOF points over the range <code>r</code> </p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">RangeT</td><td>range type to iterate on </td></tr>
+    <tr><td class="paramname">ElementT</td><td>type of finite element function</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">r</td><td>range of element </td></tr>
+    <tr><td class="paramname">e</td><td>element of a function space</td></tr>
+  </table>
+  </dd>
+</dl>
+<div class="fragment"><div class="line"><span class="keyword">auto</span> v = Xh-&gt;element();</div>
+<div class="line"><span class="keyword">auto</span> r = <a class="code hl_function" href="group__Discretization.html#ga5bb7051513b50412427c81e806b45468">minmaxelt</a>(_range=<a class="code hl_function" href="namespaceFeel.html#abdab447afcf746e7e621c56c1d6dc06b">elements</a>(mesh),_element=v);</div>
+<div class="line"><span class="keywordflow">for</span>( <span class="keyword">auto</span> <span class="keyword">const</span>&amp; [o_v,arg_o_v] : <a class="code hl_function" href="namespaceFeel.html#a957bcceae9034d9d5f0b2f16aeaa7ed3">enumerate</a>(r) )</div>
+<div class="line">{</div>
+<div class="line">     std::cout &lt;&lt; <span class="stringliteral">&quot;i: &quot;</span> &lt;&lt; o_v &lt;&lt; <span class="stringliteral">&quot;, &quot;</span> &lt;&lt; arg_o_v &lt;&lt; std::endl;</div>
+<div class="line">}</div>
+<div class="line">r[0]; <span class="comment">// min</span></div>
+<div class="line">r[1]; <span class="comment">// max</span></div>
+<div class="ttc" id="agroup__Discretization_html_ga5bb7051513b50412427c81e806b45468"><div class="ttname"><a href="group__Discretization.html#ga5bb7051513b50412427c81e806b45468">Feel::minmaxelt</a></div><div class="ttdeci">auto minmaxelt(Ts &amp;&amp;... v)</div><div class="ttdoc">compute the min of the element of a function space at DOF points over the range r</div><div class="ttdef"><b>Definition:</b> minmax.hpp:233</div></div>
+<div class="ttc" id="anamespaceFeel_html_a957bcceae9034d9d5f0b2f16aeaa7ed3"><div class="ttname"><a href="namespaceFeel.html#a957bcceae9034d9d5f0b2f16aeaa7ed3">Feel::enumerate</a></div><div class="ttdeci">constexpr auto enumerate(T &amp;&amp;iterable, size_t start=0)</div><div class="ttdoc">create an index associated to a iterable object</div><div class="ttdef"><b>Definition:</b> enumerate.hpp:30</div></div>
+</div><!-- fragment --><dl class="section return"><dt>Returns</dt><dd>the min value and the dof point coordinates </dd></dl>
+
+</div>
+</div>
+<a id="ga4e35dac0b54b50e6560b001d5aa28307" name="ga4e35dac0b54b50e6560b001d5aa28307"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga4e35dac0b54b50e6560b001d5aa28307">&#9670;&nbsp;</a></span>opelt()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename... Ts&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">auto Feel::opelt </td>
+          <td>(</td>
+          <td class="paramtype">Ts &amp;&amp;...&#160;</td>
+          <td class="paramname"><em>v</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>#include &lt;<a class="el" href="feeldiscr_2minmax_8hpp.html">/nvme0/prudhomm/actions-runner/_work/feelpp/feelpp/feelpp/feel/feeldiscr/minmax.hpp</a>&gt;</code></p>
+
+<p>compute the min of the element of a function space at DOF points over the range <code>r</code> </p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">Ts</td><td>variadic template holding the type list of arguments</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">_range</td><td>range of element </td></tr>
+    <tr><td class="paramname">_element</td><td>element of a function space </td></tr>
+    <tr><td class="paramname">_op</td><td>operation to apply to the element</td></tr>
+  </table>
+  </dd>
+</dl>
+<div class="fragment"><div class="line"><span class="keyword">auto</span> v = Xh-&gt;element();</div>
+<div class="line"><span class="keyword">auto</span> [op_v,arg_op_v] = <a class="code hl_function" href="group__Discretization.html#gac354bf0f9af28c2f4bb464bf49eccabd">minelt</a>(_range=<a class="code hl_function" href="namespaceFeel.html#abdab447afcf746e7e621c56c1d6dc06b">elements</a>(mesh),_element=v,_op=[](<span class="keyword">auto</span> <span class="keyword">const</span>&amp; a, <span class="keyword">auto</span> <span class="keyword">const</span>&amp; b){ <span class="keywordflow">return</span> a &lt; b; });</div>
+</div><!-- fragment --><dl class="section return"><dt>Returns</dt><dd>the value and the dof point coordinates </dd></dl>
+
+</div>
+</div>
+<a id="ga2209f23301252d868f7204a09993e4c2" name="ga2209f23301252d868f7204a09993e4c2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga2209f23301252d868f7204a09993e4c2">&#9670;&nbsp;</a></span>opselt()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename... Ts&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">auto Feel::opselt </td>
+          <td>(</td>
+          <td class="paramtype">Ts &amp;&amp;...&#160;</td>
+          <td class="paramname"><em>v</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>#include &lt;<a class="el" href="feeldiscr_2minmax_8hpp.html">/nvme0/prudhomm/actions-runner/_work/feelpp/feelpp/feelpp/feel/feeldiscr/minmax.hpp</a>&gt;</code></p>
+
+<p>compute the set of operations <code>ops</code> of the element of a function space at DOF points over the range <code>r</code> </p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">Ts</td><td>variadic template holding the type list of arguments</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">_range</td><td>range of element </td></tr>
+    <tr><td class="paramname">_element</td><td>element of a function space </td></tr>
+    <tr><td class="paramname">_op</td><td>std::vector of operations(lambda functions) to apply to the element</td></tr>
+  </table>
+  </dd>
+</dl>
+<div class="fragment"><div class="line"><span class="keyword">auto</span> v = Xh-&gt;element();</div>
+<div class="line"><span class="keyword">auto</span> res = <a class="code hl_function" href="group__Discretization.html#gac354bf0f9af28c2f4bb464bf49eccabd">minelt</a>(_range=<a class="code hl_function" href="namespaceFeel.html#abdab447afcf746e7e621c56c1d6dc06b">elements</a>(mesh),_element=v,_op=[](<span class="keyword">auto</span> <span class="keyword">const</span>&amp; a, <span class="keyword">auto</span> <span class="keyword">const</span>&amp; b){ <span class="keywordflow">return</span> a &lt; b; });</div>
+<div class="line"><span class="comment">// loop on results</span></div>
+<div class="line"><span class="keywordflow">for</span>( <span class="keyword">auto</span> item: res )</div>
+<div class="line">{</div>
+<div class="line">  <span class="keyword">auto</span> [op_v, arg_op_v] = item;</div>
+<div class="line">  <span class="comment">// do something</span></div>
+<div class="line">}</div>
+</div><!-- fragment --><dl class="section return"><dt>Returns</dt><dd>the vector of results and associated dof point coordinates </dd></dl>
+
+</div>
+</div>
 </div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->

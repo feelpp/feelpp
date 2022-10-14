@@ -38,7 +38,7 @@ MathJax.Hub.Config({
  <tr id="projectrow">
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign">
-   <div id="projectname">Feel++<span id="projectnumber">&#160;0.110.0-rc.4</span>
+   <div id="projectname">Feel++<span id="projectnumber">&#160;0.110.0-rc.5</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -101,6 +101,7 @@ $(document).ready(function(){initNavTree('structFeel_1_1FeelModels_1_1ModelBaseC
 
 <div class="header">
   <div class="summary">
+<a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="structFeel_1_1FeelModels_1_1ModelBaseCommandLineOptions-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">Feel::FeelModels::ModelBaseCommandLineOptions Struct Reference</div></div>
@@ -111,10 +112,16 @@ $(document).ready(function(){initNavTree('structFeel_1_1FeelModels_1_1ModelBaseC
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">
 </div>
 <div id="dynsection-0-content" class="dyncontent" style="display:none;">
-<div class="center"><iframe scrolling="no" frameborder="0" src="structFeel_1_1FeelModels_1_1ModelBaseCommandLineOptions__coll__graph.svg" width="274" height="162"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+<div class="center"><iframe scrolling="no" frameborder="0" src="structFeel_1_1FeelModels_1_1ModelBaseCommandLineOptions__coll__graph.svg" width="274" height="176"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
+Public Types</h2></td></tr>
+<tr class="memitem:a7a75fb16a8537ba89b22d995d842ad5e"><td class="memItemLeft" align="right" valign="top"><a id="a7a75fb16a8537ba89b22d995d842ad5e" name="a7a75fb16a8537ba89b22d995d842ad5e"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>init_function_type</b> = std::function&lt; void(po::options_description const  &amp;, po::variables_map &amp;)&gt;</td></tr>
+<tr class="separator:a7a75fb16a8537ba89b22d995d842ad5e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a1a3061c775d3038f04b4ad2c4969f423"><td class="memItemLeft" align="right" valign="top"><a id="a1a3061c775d3038f04b4ad2c4969f423" name="a1a3061c775d3038f04b4ad2c4969f423"></a>
@@ -123,9 +130,12 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:ae84147fd34340ee26fe3c44b8547d298"><td class="memItemLeft" align="right" valign="top"><a id="ae84147fd34340ee26fe3c44b8547d298" name="ae84147fd34340ee26fe3c44b8547d298"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>ModelBaseCommandLineOptions</b> (<a class="el" href="structFeel_1_1FeelModels_1_1ModelBaseCommandLineOptions.html">ModelBaseCommandLineOptions</a> const &amp;)=default</td></tr>
 <tr class="separator:ae84147fd34340ee26fe3c44b8547d298"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a81c6a524489c72e1ee1262006061ffd3"><td class="memItemLeft" align="right" valign="top"><a id="a81c6a524489c72e1ee1262006061ffd3" name="a81c6a524489c72e1ee1262006061ffd3"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>ModelBaseCommandLineOptions</b> (po::options_description const &amp;_options)</td></tr>
-<tr class="separator:a81c6a524489c72e1ee1262006061ffd3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a35d3e144e2cef46a5f8238d6c2a7ef3c"><td class="memItemLeft" align="right" valign="top"><a id="a35d3e144e2cef46a5f8238d6c2a7ef3c" name="a35d3e144e2cef46a5f8238d6c2a7ef3c"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>ModelBaseCommandLineOptions</b> (po::options_description const &amp;_options, init_function_type func={})</td></tr>
+<tr class="separator:a35d3e144e2cef46a5f8238d6c2a7ef3c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a735c822f3c5fbf686421411e133b0a7c"><td class="memItemLeft" align="right" valign="top"><a id="a735c822f3c5fbf686421411e133b0a7c" name="a735c822f3c5fbf686421411e133b0a7c"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>ModelBaseCommandLineOptions</b> (po::variables_map const &amp;vm)</td></tr>
+<tr class="separator:a735c822f3c5fbf686421411e133b0a7c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af7db5f2a7d678ef5c705d0c2f7afb1d0"><td class="memItemLeft" align="right" valign="top"><a id="af7db5f2a7d678ef5c705d0c2f7afb1d0" name="af7db5f2a7d678ef5c705d0c2f7afb1d0"></a>
 po::variables_map const &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>vm</b> () const</td></tr>
 <tr class="separator:af7db5f2a7d678ef5c705d0c2f7afb1d0"><td class="memSeparator" colspan="2">&#160;</td></tr>

@@ -1,6 +1,7 @@
 var classFeel_1_1Repository =
 [
     [ "Config", "structFeel_1_1Repository_1_1Config.html", null ],
+    [ "Dist", "structFeel_1_1Repository_1_1Dist.html", null ],
     [ "Owner", "structFeel_1_1Repository_1_1Owner.html", null ],
     [ "cd", "classFeel_1_1Repository.html#af2a08c8d19c2df332926ce321fcdbbc1", null ],
     [ "config", "classFeel_1_1Repository.html#a7e528a9b5f293e66db6db6c6fab1a55c", null ],

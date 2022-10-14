@@ -14,9 +14,10 @@ var dir_f953484fe51916b7b30cc3393ae061de =
       [ "Feel::CommObject", "classFeel_1_1CommObject.html", "classFeel_1_1CommObject" ]
     ] ],
     [ "constants.hpp", "constants_8hpp.html", "constants_8hpp" ],
-    [ "context.hpp", "context_8hpp.html", "context_8hpp" ],
+    [ "context.hpp", "feelcore_2context_8hpp.html", "feelcore_2context_8hpp" ],
     [ "debug.hpp", "debug_8hpp.html", null ],
     [ "disablewarnings.hpp", "disablewarnings_8hpp.html", null ],
+    [ "enumerate.hpp", "enumerate_8hpp.html", "enumerate_8hpp" ],
     [ "environment.hpp", "environment_8hpp.html", "environment_8hpp" ],
     [ "feel.cpp", "feel_8cpp.html", "feel_8cpp" ],
     [ "feel.hpp", "feel_8hpp.html", "feel_8hpp" ],

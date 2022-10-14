@@ -5,7 +5,7 @@ var searchData=
   ['clean_2ehpp_2',['clean.hpp',['../clean_8hpp.html',1,'']]],
   ['commobject_2ehpp_3',['commobject.hpp',['../commobject_8hpp.html',1,'']]],
   ['constants_2ehpp_4',['constants.hpp',['../constants_8hpp.html',1,'']]],
-  ['context_2ehpp_5',['context.hpp',['../context_8hpp.html',1,'']]],
+  ['context_2ehpp_5',['context.hpp',['../feelcore_2context_8hpp.html',1,'(Global Namespace)'],['../feeldiscr_2context_8hpp.html',1,'(Global Namespace)']]],
   ['createsubmesh_2ehpp_6',['createsubmesh.hpp',['../createsubmesh_8hpp.html',1,'']]],
   ['cst_2ehpp_7',['cst.hpp',['../cst_8hpp.html',1,'']]]
 ];
