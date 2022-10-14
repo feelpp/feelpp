@@ -37,7 +37,6 @@ class ToolboxModel():
             order (int, optional): order of discretization. Defaults to 1.
             doRectification (bool, optional): set rectification. Defaults to True.
         """
-        print(dim, H, h)
         self.dimension = dim
         assert self.dimension in [2,3]
         self.H = H

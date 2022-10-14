@@ -131,8 +131,8 @@
 
     "nirb":
     {
-        "H": 0.1,
-        "h": "H**2:H",
+        "H": 0.5,
+        "h": 0.1,
         "dim": 2,
         "order": 1,
         "toolboxType": "heat",
