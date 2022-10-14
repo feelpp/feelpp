@@ -6,7 +6,8 @@ import json
 
 if __name__ == "__main__":
 
-    dim = 3
+    dim = 2
+    order = 2
     if dim == 2:
         H = 0.1  # CoarseMeshSize
         h = H**2 # Fine mesh size
@@ -30,7 +31,7 @@ if __name__ == "__main__":
     e = init_feelpp_environment(toolboxType, cfg_path)
 
     doRectification=False 
-    nbSnap = 10
+    nbSnap = 5
     if len(sys.argv)>=2:
         nbSnap = int(sys.argv[1])
         if len(sys.argv)>=3: 
@@ -39,7 +40,7 @@ if __name__ == "__main__":
 
     start = time.time()
 
-    nirb_off = nirbOffline(dim, H, h, toolboxType, cfg_path, model_path, geo_path, doRectification=doRectification)
+    nirb_off = nirbOffline(dim, H, h, toolboxType, cfg_path, model_path, geo_path, doRectification=doRectification, order=order)
 
     nirb_off.initProblem(nbSnap)
     nirb_off.generateOperators()
@@ -58,6 +59,9 @@ if __name__ == "__main__":
     perf = []
     perf.append(nbSnap)
     perf.append(finish-start)
+
+    file='nirbOffline_time_exec.txt'
+    WriteVecAppend(file,perf)
 
     info = nirb_off.getInformations()
     print(json.dumps(info, sort_keys=True, indent=4))
