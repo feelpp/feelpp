@@ -142,7 +142,7 @@ if __name__ == "__main__":
         h = H**2
     
 
-    doRectification=True
+    doRectification=False
 
     nirb_on = nirbOnline(dim, H, h, toolboxType, cfg_path, model_path, geo_path, order=order, doRectification=doRectification)
 

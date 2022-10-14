@@ -127,5 +127,19 @@
                 "fields":["temperature","pid"]
             }
         }
+    },
+
+    "nirb":
+    {
+        "H": 0.1,
+        "h": "H**2:H",
+        "dim": 2,
+        "order": 1,
+        "toolboxType": "heat",
+        "geo_path": "$cfgdir/....geo",
+        "model_path": "$cfgdir/....model",
+        "doRectification": true,
+        "doBiorthogonalization": false,
+        "nbSnapshots": 10
     }
 }
