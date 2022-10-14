@@ -133,7 +133,7 @@
     {
         "H": 0.5,
         "h": 0.1,
-        "dim": 2,
+        "dim": 3,
         "order": 1,
         "toolboxType": "heat",
         "geo_path": "$cfgdir/fin.geo",
