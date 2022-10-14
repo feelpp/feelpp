@@ -12,9 +12,9 @@ meshSize="0.5 0.25 0.125 0.0625"
 Rectification=0
 biorthonormal=0
 
-echo "N timeToolbox timeNirb" > "${dataFolder}/nirbOnline_time_exec.dat"
+# echo "N timeToolbox timeNirb" > "${dataFolder}/nirbOnline_time_exec.dat"
 # echo "N l2_min linf_min l2_mean linf_mean l2_max linf_max" > "${dataFolder}/nirb_error.dat"
-echo "N l2 linf" > "${dataFolder}/nirb_error.dat"
+# echo "N l2 linf" > "${dataFolder}/nirb_error.dat"
 
 for n in $Nsnap;
 do
@@ -26,7 +26,7 @@ echo " ------------------------------------------ "
 echo "  Restarting program with Ns = : $Ns "  
 echo " ------------------------------------------ "
 
-offline="python3 nirbOffline.py ${Ns}"
+offline="python3 nirbOffline.py $Ns"
 online="python3 nirbOnline.py"
 
 ${offline}

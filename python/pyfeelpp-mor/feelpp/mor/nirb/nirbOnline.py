@@ -142,7 +142,7 @@ if __name__ == "__main__":
         h = H**2
     
 
-    doRectification=False
+    doRectification=True
 
     nirb_on = nirbOnline(dim, H, h, toolboxType, cfg_path, model_path, geo_path, order=order, doRectification=doRectification)
 
@@ -151,7 +151,7 @@ if __name__ == "__main__":
     # uHh = nirb_on.getOnlineSol(mu)
 
 
-    Nsample = 10
+    Nsample = 50
     # error1 = ComputeErrors(nirb_on, mu)
     
     errorN = ComputeErrorSampling(nirb_on, Nsample=Nsample)
@@ -166,6 +166,7 @@ if __name__ == "__main__":
     df.to_csv(file, index=False)
 
     if feelpp.Environment.isMasterRank():
+        print(f"[NIRB online] with {nirb_on.N} snapshots ")
         print(f"[NIRB online] computed errors for {df.shape[0]} parameters ")
         data_mean = df.mean(axis=0)
         print("[NIRB online] Mean of errors ")

@@ -29,7 +29,7 @@ if __name__ == "__main__":
 
     e = init_feelpp_environment(toolboxType, cfg_path)
 
-    doRectification=False 
+    doRectification=True
     nbSnap = 5
     if len(sys.argv)>=2:
         nbSnap = int(sys.argv[1])
@@ -44,20 +44,6 @@ if __name__ == "__main__":
     nirb_off.initProblem(nbSnap)
     nirb_off.generateOperators()
     nirb_off.generateReducedBasis(regulParam=1.e-10)
-    
-
-    # minbasis = [f.min() for f in nirb_off.reducedBasis]
-    # maxbasis = [f.max() for f in nirb_off.reducedBasis]
-    # print('min basis', minbasis)
-    # print('max basis', maxbasis)
-
-    # minl2 = [f.min() for f in nirb_off.l2ProductBasis]
-    # maxl2 = [f.max() for f in nirb_off.l2ProductBasis]
-    # print('min l2 ', minl2)
-    # print('max l2 ', maxl2)
-
-    # print(nirb_off.l2ProductBasis)
-
     nirb_off.saveData(force=True)
 
 
