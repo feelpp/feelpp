@@ -12,6 +12,7 @@ import numpy as np
 import feelpp.toolboxes.heat as heat
 import feelpp.toolboxes.fluid as fluid
 import feelpp.interpolation as fi
+from tqdm import tqdm
 
 
 import os
@@ -309,10 +310,11 @@ class nirbOffline(ToolboxModel):
             PETSc.Vec: reduced solution u_H^N
         """
         coarseSol = self.getToolboxSolution(self.tbCoarse, mu).to_petsc().vec()
-        uHN = PETSc.Vec().create(comm=PETSc.COMM_WORLD)
-        uHN.setSizes(N)
-        uHN.setFromOptions()
-        uHN.setUp()
+        # uHN = PETSc.Vec().create(comm=PETSc.COMM_WORLD)
+        # uHN.setSizes(N)
+        # uHN.setFromOptions()
+        # uHN.setUp()
+        uHN = np.zeros(N)
 
         for i in range(N):
             uHN[i] = self.coarseSnapShotList[i].to_petsc().vec().dot( coarseSol )
@@ -356,11 +358,11 @@ class nirbOffline(ToolboxModel):
             
             Delta_star = -float('inf')
 
-            for i, mu in enumerate(Xi_train):
+            for i,mu in enumerate(tqdm(Xi_train,desc=f"[NIRB] Greedy selection", ascii=False, ncols=120)):
                 uHN = self.getReducedSolution(mu, N)
                 uHM = self.getReducedSolution(mu, M)
 
-                Delta = (uHN - uHM).l2Norm()
+                Delta = np.abs( uHN.mean() - uHM.mean() )
 
                 if Delta > Delta_star:
                     Delta_star = Delta
