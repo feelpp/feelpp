@@ -407,7 +407,6 @@ class nirbOffline(ToolboxModel):
 
         for i, snap1 in enumerate(self.fineSnapShotList):
             for j, snap2 in enumerate(self.fineSnapShotList):
-                    # correlationMatrix[i,j] = self.scalarL2(snap1.to_petsc().vec(),snap2.to_petsc().vec())
                     correlationMatrix[i,j] = self.l2ScalarProductMatrix.energy(snap1,snap2)
 
         correlationMatrix.assemble()
@@ -441,44 +440,24 @@ class nirbOffline(ToolboxModel):
         Returns :
             R (petsc.Mat) : the rectification matrix
         """
-        assert self.N == self.reducedBasis.size[1], f"need computation of reduced basis"
+        assert len(self.reducedBasis) !=0, f"need computation of reduced basis"
 
         interpolateOperator = self.createInterpolator(self.tbCoarse, self.tbFine)
-        CoarseSnaps = []
+        InterpCoarseSnaps = []
         for snap in self.coarseSnapShotList:
-            CoarseSnaps.append(interpolateOperator.interpolate(snap))
+            InterpCoarseSnaps.append(interpolateOperator.interpolate(snap))
 
-        BH = np.zeros((self.N,self.N))
-        Bh = BH.copy()
-
-
-        R = PETSc.Mat().createDense(size=(self.N,self.N))
-        R.setFromOptions()
-        R.setUp()
-        R.assemble()
-
-        lfine = []
-        lcoarse = []
-
-        Usnap, Udof = self.reducedBasis.createVecs()
-        
-        for i in range(self.N):
-            lfine.append(self.fineSnapShotList[i].to_petsc().vec())
-            lcoarse.append(CoarseSnaps[i].to_petsc().vec())
-
-        CM = self.l2ScalarProductMatrix.to_petsc().mat()
+        R = np.zeros((self.N,self.N))
+        BH = R.copy()
+        Bh = R.copy()
 
         for i in range(self.N):
-            CM.mult(lfine[i],Udof)
-            self.reducedBasis.multTranspose(Udof,Usnap) 
-            Bh[i,:] = Usnap.getArray()
-
-            CM.mult(lcoarse[i],Udof)
-            self.reducedBasis.multTranspose(Udof,Usnap)
-            BH[i,:] = Usnap.getArray()
+            for j in range(self.N):
+                BH[i,j] = self.l2ScalarProductMatrix.energy(InterpCoarseSnaps[i],self.reducedBasis[j])
+                Bh[i,j] = self.l2ScalarProductMatrix.energy(self.fineSnapShotList[i],self.reducedBasis[j])
 
 
-        #regularization (AT@A +lambda I_d)^-1
+        #Thikonov regularization (AT@A +lambda I_d)^-1
         for i in range(self.N):
             R[i,:]=(np.linalg.inv(BH.transpose()@BH+lambd*np.eye(self.N))@BH.transpose()@Bh[:,i])
 
@@ -688,11 +667,9 @@ class nirbOffline(ToolboxModel):
             vec = self.Xh.element(self.l2ProductBasis[i])
             vec.save(l2productPath, l2productFilename, suffix=str(i))
 
-        rectificationPath = path + '/rectification'
+        rectificationFile = 'rectification'
         if self.doRectification:
-            if feelpp.Environment.isMasterRank():
-                if not os.path.isdir(rectificationPath):
-                    os.mkdir(rectificationPath)
+            np.save(rectificationFile, self.RectificationMat)
 
         if feelpp.Environment.isMasterRank():
             print(f"[NIRB] Data saved in {os.path.abspath(path)}")
@@ -783,10 +760,12 @@ class nirbOnline(ToolboxModel):
 
 
         if self.doRectification:
-            # coef = compressedSol.copy()
-            # self.RectificationMat.mult(compressedSol,coef)
-            # self.reducedBasis.mult(coef, resPETSc.vec())
-            print("[NIRB] Solution computed with Rectification post-process ")
+            coef = self.RectificationMat@compressedSol
+            for i in range(self.N):
+                onlineSol = onlineSol + float(coef[i])*self.reducedBasis[i]
+            
+            if feelpp.Environment.isMasterRank():
+                print("[NIRB] Solution computed with Rectification post-process ")
         else :
             for i in range(self.N):
                 onlineSol = onlineSol + float(compressedSol[i])*self.reducedBasis[i]
@@ -839,12 +818,6 @@ class nirbOnline(ToolboxModel):
             vec = self.Xh.element()
             vec.load(reducedPath, reducedFilename, suffix=str(i))
             self.reducedBasis.append(vec)
-            
-        print("------- in load() -------")
-        minbasis = [f.min() for f in self.reducedBasis]
-        maxbasis = [f.max() for f in self.reducedBasis]
-        print('min basis', minbasis)
-        print('max basis', maxbasis)
         
         self.N = len(self.reducedBasis)
 
@@ -855,12 +828,9 @@ class nirbOnline(ToolboxModel):
 
         assert self.N == len(self.l2ProductBasis), f"{self.N} != {len(self.l2ProductBasis)} "
 
-        rectificationPath = path + '/rectification'
+        rectificationFile = 'rectification.npy'
         if self.doRectification:
-            if feelpp.Environment.isMasterRank():
-                if not os.path.isdir(rectificationPath):
-                    print(f"[NIRB] Error : Could not find path {rectificationPath}.")
-                    return None 
+            self.RectificationMat = np.load(rectificationFile)
 
         if feelpp.Environment.isMasterRank():
             print(f"[NIRB] Data loaded from {os.path.abspath(path)}")
