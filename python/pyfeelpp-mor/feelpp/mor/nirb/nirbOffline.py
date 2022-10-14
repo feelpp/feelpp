@@ -30,7 +30,8 @@ if __name__ == "__main__":
 
     e = init_feelpp_environment(toolboxType, cfg_path)
 
-    doRectification=False 
+    doRectification=False
+    doBiorthonormal=False  
     nbSnap = 5
     if len(sys.argv)>=2:
         nbSnap = int(sys.argv[1])
@@ -40,7 +41,8 @@ if __name__ == "__main__":
 
     star=time.time()
 
-    nirb_off = nirbOffline(dim, H, h, toolboxType, cfg_path, model_path, geo_path, doRectification=doRectification, order=order)
+    nirb_off = nirbOffline(dim, H, h, toolboxType, cfg_path, model_path, geo_path,
+                             doRectification=doRectification, order=order, doBiorthonormal=doBiorthonormal)
 
     nirb_off.initProblem(nbSnap)
     nirb_off.generateOperators()

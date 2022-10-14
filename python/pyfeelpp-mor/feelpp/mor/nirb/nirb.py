@@ -217,7 +217,7 @@ class ToolboxModel():
 class nirbOffline(ToolboxModel):
 
     def __init__(self, dimension, H, h, toolboxType, cfg_path, model_path, geo_path,
-        method="POD", order=1, doRectification=True) -> None:
+        method="POD", order=1, doRectification=True, doBiorthonormal=False) -> None:
         """Initialize the NIRB class
 
         Args:
@@ -231,6 +231,7 @@ class nirbOffline(ToolboxModel):
             method (str, optional): method used to generate the basis. Defaults to "POD".
             order (int, optional): order of discretization. Defaults to 1.
             doRectification (bool, optional): set rectification. Defaults to True.
+            doBiorthonormal (bool, optional): get bi-orthonormalization of reduced basis. Defaults to False.
         """
 
         super().__init__(dimension, H, h, toolboxType, cfg_path, model_path, geo_path, order)
@@ -238,6 +239,7 @@ class nirbOffline(ToolboxModel):
         assert method in ["POD", "Greedy"]
         self.method = method
         self.doRectification = doRectification
+        self.doBiorthonormal = doBiorthonormal
 
         self.l2ScalarProductMatrix = None
         self.h1ScalarProductMatrix = None
@@ -255,54 +257,36 @@ class nirbOffline(ToolboxModel):
     def BiOrthonormalization(self):
         """Bi-orthonormalization of reduced basis
         """
-
         K = np.zeros((self.N,self.N))
         M = K.copy()
 
-        # K = PETSc.Mat().createDense(size=(self.N,self.N))
-        # K.setFromOptions()
-        # K.setUp()
-        # K.assemble()
-        # M = K.copy()
-
-        Udof, Umode = self.reducedBasis.createVecs()
-        xr = Udof.copy()
-
         for i in range(self.N):
-            xr[:] = self.reducedBasis[:,i]
-            self.h1ScalarProductMatrix.to_petsc().mat().mult(xr,Udof)
-            self.reducedBasis.mult(Udof,Umode)  # ??
-            K[i,:] = Umode[:]
-
-            self.l2ScalarProductMatrix.to_petsc().mat().mult(xr,Udof)
-            self.reducedBasis.mult(Udof,Umode)
-            M[i,:] = Umode[:]
+            for j in range(self.N):
+                K[i,j] = self.h1ScalarProductMatrix.energy(self.reducedBasis[i],self.reducedBasis[j])
+                M[i,j] = self.l2ScalarProductMatrix.energy(self.reducedBasis[i],self.reducedBasis[j])
 
         from scipy import linalg
 
-        vc,vr=linalg.eigh(K, b=M) #eigenvalues
-        eigenValues = vc.real
+        eval,evec=linalg.eigh(a=K, b=M, overwrite_a=True, overwrite_b=True) #eigenvalues
+        eigenValues = eval.real
+        eigenVectors = evec 
         idx = eigenValues.argsort()[::-1]
         eigenValues = eigenValues[idx]
-        eigenVectors = vr[:, idx]
+        eigenVectors = evec[:, idx]
 
         for i in range(self.N):
-            eigenVectors[i,:] /= np.sqrt(eigenValues[i])
+            eigenVectors[:,i] /= np.sqrt(np.abs(eigenValues[i]))
 
+        oldbasis = self.reducedBasis.copy()
+        self.reducedBasis = []
 
-        eigenMatrix = PETSc.Mat().createDense([self.N,self.N])
-        eigenMatrix.setFromOptions()
-        eigenMatrix.setUp()
-
-        eigenMatrix[:,:] = eigenVectors[:,:]
-
-        eigenMatrix.assemble()
-
-        bb = self.reducedBasis.copy()
-        eigenMatrix.matMult(bb,self.reducedBasis)
-
-        bb.destroy()
-        eigenMatrix.destroy()
+        for i in range(self.N):
+            vec = self.Xh.element()
+            vec.setZero()
+            for j in range(self.N):
+                vec = vec + float(eigenVectors[j,i])*oldbasis[j]
+                
+            self.reducedBasis.append(vec)
 
 
 
@@ -366,6 +350,8 @@ class nirbOffline(ToolboxModel):
         
         if len(self.l2ProductBasis)==0:
             self.getl2ProductBasis()
+        if self.doBiorthonormal:
+            self.BiOrthonormalization()
         if self.doRectification:
             self.RectificationMat = self.Rectification(lambd=regulParam)
 

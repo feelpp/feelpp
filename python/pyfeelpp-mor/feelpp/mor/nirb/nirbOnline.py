@@ -114,7 +114,7 @@ def ComputeErrorSampling(nirb_on, Nsample=1, samplingType='log-random'):
 if __name__ == "__main__":
 
     dim = 2
-    order = 1
+    order = 2
     if dim == 2:
         H = 0.1  # CoarseMeshSize
         h = H**2 # Fine mesh size
@@ -151,7 +151,7 @@ if __name__ == "__main__":
     # uHh = nirb_on.getOnlineSol(mu)
 
 
-    Nsample = 50
+    Nsample = 5
     # error1 = ComputeErrors(nirb_on, mu)
     
     errorN = ComputeErrorSampling(nirb_on, Nsample=Nsample)
@@ -165,18 +165,32 @@ if __name__ == "__main__":
     file.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(file, index=False)
 
-    if feelpp.Environment.isMasterRank():
-        print(f"[NIRB online] with {nirb_on.N} snapshots ")
-        print(f"[NIRB online] computed errors for {df.shape[0]} parameters ")
-        data_mean = df.mean(axis=0)
-        print("[NIRB online] Mean of errors ")
-        print(data_mean)
-        data_min = df.min(axis=0)
-        print("[NIRB online] Min of errors ")
-        print(data_min)
-        data_max = df.max(axis=0)
-        print("[NIRB online] Max of errors ")
-        print(data_max)
+    statl2 = {}
+    statl2["N"] = [nirb_on.N]
+    statl2["Min"] = [df['l2u-uHn'].min()]
+    statl2["Max"] = [df['l2u-uHn'].max()]
+    statl2["Mean"] = [df['l2u-uHn'].mean()]
+
+    statdt = pd.DataFrame(statl2)
+    print("stat for l2 norm")
+    print(statdt.head())
+
+    file ="errorstatl2.csv"
+    statdt.to_csv(file, mode='a',index=False)
+
+
+    # if feelpp.Environment.isMasterRank():
+    #     print(f"[NIRB online] with {nirb_on.N} snapshots ")
+    #     print(f"[NIRB online] computed errors for {df.shape[0]} parameters ")
+    #     data_mean = df.mean(axis=0)
+    #     print("[NIRB online] Mean of errors ")
+    #     print(data_mean)
+    #     data_min = df.min(axis=0)
+    #     print("[NIRB online] Min of errors ")
+    #     print(data_min)
+    #     data_max = df.max(axis=0)
+    #     print("[NIRB online] Max of errors ")
+    #     print(data_max)
         
 
 
