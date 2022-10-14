@@ -136,8 +136,8 @@
         "dim": 2,
         "order": 1,
         "toolboxType": "heat",
-        "geo_path": "$cfgdir/....geo",
-        "model_path": "$cfgdir/....model",
+        "geo_path": "$cfgdir/fin.geo",
+        "model_path": "$cfgdir/thermal-fin.json",
         "doRectification": true,
         "doBiorthogonalization": false,
         "nbSnapshots": 10
