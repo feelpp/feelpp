@@ -321,7 +321,7 @@ class nirbOffline(ToolboxModel):
         return uHN
 
 
-    def initProblemGreedy(self, Ntrain, eps, Nmax=500, samplingMode="log-random", computeCoarse=False):
+    def initProblemGreedy(self, Ntrain, eps, Nmax=50, samplingMode="log-random", computeCoarse=False):
         """Initialize the problem, using a greedy loop
 
         Args:
@@ -336,7 +336,7 @@ class nirbOffline(ToolboxModel):
         """
         if self.tbCoarse is None:
             raise Exception("Coarse toolbox needed for computing coarse Snapshot. set initCoarse->True in initialization")
-        Nmax = max(Nmax, Ntrain)
+        Nmax = min(Nmax, Ntrain)
         s = self.Dmu.sampling()
         s.sampling(Ntrain, samplingMode)
         Xi_train = s.getVector()
@@ -353,12 +353,12 @@ class nirbOffline(ToolboxModel):
             self.coarseSnapShotList.append( self.getToolboxSolution(self.tbCoarse, mu0) )
             N += 1
 
-        while Delta_star > eps or N <= Nmax:
+        while Delta_star > eps and N < Nmax:
             M = N - 1
             
             Delta_star = -float('inf')
 
-            for i,mu in enumerate(tqdm(Xi_train,desc=f"[NIRB] Greedy selection", ascii=False, ncols=120)):
+            for i, mu in enumerate(tqdm(Xi_train,desc=f"[NIRB] Greedy selection", ascii=False, ncols=120)):
                 uHN = self.getReducedSolution(mu, N)
                 uHM = self.getReducedSolution(mu, M)
 
