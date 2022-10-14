@@ -116,7 +116,7 @@
         "geo_path": "$cfgdir/....geo",
         "model_path": "$cfgdir/....model",
         "doRectification": true,
-        "doBiorthogonalization": false,
+        "doBiorthonormal": false,
         "nbSnapshots": 10
     }
 
