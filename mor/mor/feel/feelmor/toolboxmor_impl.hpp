@@ -690,7 +690,7 @@ ToolboxMor<SpaceType, Options>::output( int output_index, parameter_type const& 
     }
     else
     {
-        throw std::logic_error( "[ToolboxMor::output] error with output_index : only 0 or 1 " );
+        throw std::logic_error( "[feelpp.mor.ToolboxMor.output] error with output_index : only 0 or 1 " );
     }
 
     return s ;
