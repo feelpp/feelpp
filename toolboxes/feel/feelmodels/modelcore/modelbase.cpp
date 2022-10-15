@@ -536,8 +536,8 @@ ModelBase::printInfo( tabulate_informations_ptr_t const& tabInfos ) const
 void
 ModelBase::saveInfo( tabulate_informations_ptr_t const& tabInfos ) const
 {
-    std::string filename_ascii = fmt::format( "{}-informations.txt",this->keyword() );
-    std::string filename_adoc = fmt::format( "{}-informations.adoc",this->keyword() );
+    std::string filename_ascii = fmt::format( "{}.information.txt",this->keyword() );
+    std::string filename_adoc = fmt::format( "{}.information.adoc",this->keyword() );
     std::string filepath_ascii = (fs::path(this->rootRepository())/filename_ascii).string();
     std::string filepath_adoc = (fs::path(this->rootRepository())/filename_adoc).string();
     if ( this->worldComm().isMasterRank() )
