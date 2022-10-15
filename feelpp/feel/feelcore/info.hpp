@@ -29,12 +29,15 @@
 
 #include <feel/feelcore/feelmacros.hpp>
 #include <feel/feelcore/git.hpp>
+#include <boost/filesystem/path.hpp>
 
 /**
  * Namespace for general FEEL functions.
  */
 namespace Feel
 {
+namespace fs = boost::filesystem;
+
 /**
  * \class Info
  * \brief information provider for versioning and installation directories
@@ -111,14 +114,33 @@ public:
      * /usr/local. When building the complete GNU system, the prefix
      * will be empty and /usr will be a symbolic link to /.
      */
-    static char const* prefix();
+    static fs::path prefix();
 
     //!
     //! \brief libdir directory
     //!
     //! The directory for installing libraries and plugins
     //!
-    static char const* libdir();
+    static fs::path libdir();
+
+    /**
+     * @brief relative libdir directory
+     * 
+     * @return fs::path relative path to libdir
+     */
+    static fs::path relativeLibdir();
+
+    //! \brief plugindir directory
+    //!
+    //! The directory where plugins are installed
+    //!
+    static fs::path plugindir();
+
+    /**
+     * @brief relative plugindir directory
+     * 
+     */
+    static fs::path relativePlugindir();
 
     /**
      * \brief datadir directory
@@ -126,7 +148,26 @@ public:
      * The directory for installing idiosyncratic read-only
      * architecture-independent data files for this program
      */
-    static char const* datadir();
+    static fs::path datadir();
+
+    /**
+     * @brief relative datadir directory
+     * 
+     */
+    static fs::path relativeDatadir();
+
+    /**
+     * @brief casesdir directory
+     * 
+     * the directory where cases are installed
+     */
+    static fs::path casesdir();
+
+    /**
+     * @brief relative casesdir directory
+     * 
+     */
+    static fs::path relativeCasesdir();
 
     /**
      * @brief get git metadata
