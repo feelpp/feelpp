@@ -4,7 +4,7 @@
 \section{Introduction}
 \label{faq:intro}
 
-This section includes the FAQ avaible on \href{https://trac.feelpp.org/wiki/FAQ}{Feel web site}, if you want to post a question, please visit it and follow the instruction to edit the FAQ.
+This section includes the FAQ available on \href{https://trac.feelpp.org/wiki/FAQ}{Feel web site}, if you want to post a question, please visit it and follow the instruction to edit the FAQ.
 %This part is directly inspired by the same FAQ section on \href{\feel web site}{http://www.feelpp.org/files}
 
 \section{Meshes}
@@ -49,7 +49,7 @@ Here is an example of how to create a mesh with a .geo file :
 
 
 \subsection{What are the different parameters of the function domain() ?}
-The function \lstinline!domain()! is located in \lstinline!feel/feel/feefilters/gmsh.hpp! and enables to generate a simple geometrical domain from required and optional parameters. Its avaible options are :
+The function \lstinline!domain()! is located in \lstinline!feel/feel/feefilters/gmsh.hpp! and enables to generate a simple geometrical domain from required and optional parameters. Its available options are :
 \begin{itemize}
 \item \lstinline!_name = "string"! gives the prefix of the gmsh geo and mesh files,
 \item \lstinline!_shape = "simplex", "hypercube", "ellipsoid"! gives the shape of the domain, it is one of these three possibilities
@@ -76,14 +76,14 @@ Take a look at the example which is in \lstinline!feel/examples/snippets/dofpoin
 \begin{itemize}
 
 \item medit (\lstinline!.mesh!) \\
-There is a small difference between medit meshes and gmsh ones. The medit reader of Gmsh is able to read medit meshes, the issue comes from markers for areas of the edges were we want to apply different boundary conditions. Gmsh is currently using the Physical Entities (physical line, area, volume). Unfortunetly, the medit reader of Gmsh considers the physical flag as null (to go deeper, you can check this part on \href{http://geuz.org/gmsh/doc/texinfo/gmsh.html#Elementary-vs-physical-entities}{Gmsh web site}). This option is took into account in \feel, the only modification is to put the optional parameter \lstinline!physical_are_elementary_regions! as \lstinline!true! in both functions \lstinline!createGMSHMesh! and/or \lstinline!loadGMSHMesh!. We have prepared a simple example which imports a \lstinline!medit! mesh with a surface and volume calculation on it. You can find it in \lstinline!feel/doc/manual/loadmesh.cpp!.
+There is a small difference between medit meshes and gmsh ones. The medit reader of Gmsh is able to read medit meshes, the issue comes from markers for areas of the edges were we want to apply different boundary conditions. Gmsh is currently using the Physical Entities (physical line, area, volume). Unfortunately, the medit reader of Gmsh considers the physical flag as null (to go deeper, you can check this part on \href{http://geuz.org/gmsh/doc/texinfo/gmsh.html#Elementary-vs-physical-entities}{Gmsh web site}). This option is took into account in \feel, the only modification is to put the optional parameter \lstinline!physical_are_elementary_regions! as \lstinline!true! in both functions \lstinline!createGMSHMesh! and/or \lstinline!loadGMSHMesh!. We have prepared a simple example which imports a \lstinline!medit! mesh with a surface and volume calculation on it. You can find it in \lstinline!feel/doc/manual/loadmesh.cpp!.
 
 Please not that furthers \lstinline!medit! meshes are presented in example in the directory \lstinline!/feel/data/medit/!. The \lstinline!geo! scripts are those which are produced by \feel when reading those meshes.
 
 \item Stl (\lstinline!.stl!) \\
 You can also use \lstinline!stl! files, those files are native to the stereolithography CAD software created by 3D Systems. These files describe only the surface geometry of a three dimensional object without any representation of color, texture or other common attributes. You have further examples of such files in \lstinline!feel/data/stl!.
 
-To use \feel with \lstinline!stl! files, you have to create a \lstinline!geo! script to enable gmsh to remesh the file. The \lstinline!stl! file you want to use has to be a volume mesh. The script is very small, you have all informations to make one at \href{https://geuz.org/trac/gmsh/wiki/STLRemeshing}{Gmsh/slt section} on their web site. Once it's done, you juste have to type
+To use \feel with \lstinline!stl! files, you have to create a \lstinline!geo! script to enable gmsh to remesh the file. The \lstinline!stl! file you want to use has to be a volume mesh. The script is very small, you have all information to make one at \href{https://geuz.org/trac/gmsh/wiki/STLRemeshing}{Gmsh/slt section} on their web site. Once it's done, you juste have to type
 \begin{unixcom}
 		gmsh stl_file_name.geo -3
 \end{unixcom}

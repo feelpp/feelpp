@@ -32,23 +32,23 @@ set(FEELPP_CRB_BenchmarkGrepl_LIBRARIES  feelpp-applications-crb-benchmarkgrepl-
 set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_BenchmarkGrepl_LIBRARIES PARENT_SCOPE)
 
 mor_add_library( benchmarkgrepl-linear-elliptic
-  SRCS benchmarkgrepl-linear-elliptic.cpp
+  SRCS benchmarkgrepl-linear-elliptic.cpp PLUGIN
   LINK_LIBRARIES feelpp-applications-crb-benchmarkgrepl-options
   EXEC CRB_LIB_BENCHMARKGREPL_LINEAR_ELLIPTIC )
 target_compile_definitions(${CRB_LIB_BENCHMARKGREPL_LINEAR_ELLIPTIC}
   PRIVATE FEELPP_MOR_PLUGIN_NAME=benchmarkgrepl_linear_elliptic FEELPP_MOR_PLUGIN_LIBNAME=${CRB_LIB_BENCHMARKGREPL_LINEAR_ELLIPTIC})
 
 mor_add_library( benchmarkgrepl-nonlinear-elliptic-2d
-  SRCS benchmarkgrepl-nonlinear-elliptic_inst2d.cpp
+  SRCS benchmarkgrepl-nonlinear-elliptic_inst2d.cpp PLUGIN
   LINK_LIBRARIES feelpp-applications-crb-benchmarkgrepl-options
   EXEC CRB_LIB_BENCHMARKGREPL_NONLINEAR_ELLIPTIC_2D )
 target_compile_definitions(${CRB_LIB_BENCHMARKGREPL_NONLINEAR_ELLIPTIC_2D}
   PRIVATE FEELPP_MOR_PLUGIN_NAME=benchmarkgrepl_nonlinear_elliptic_2d FEELPP_MOR_PLUGIN_LIBNAME=${CRB_LIB_BENCHMARKGREPL_NONLINEAR_ELLIPTIC_2D})
 
-mor_add_library( benchmarkgrepl-nonlinear-elliptic-3d
-  SRCS benchmarkgrepl-nonlinear-elliptic_inst3d.cpp
+mor_add_library(benchmarkgrepl-nonlinear-elliptic-3d
+  SRCS benchmarkgrepl-nonlinear-elliptic_inst3d.cpp PLUGIN
   LINK_LIBRARIES feelpp-applications-crb-benchmarkgrepl-options
-  EXEC CRB_LIB_BENCHMARKGREPL_NONLINEAR_ELLIPTIC_3D )
+  EXEC CRB_LIB_BENCHMARKGREPL_NONLINEAR_ELLIPTIC_3D)
 target_compile_definitions(${CRB_LIB_BENCHMARKGREPL_NONLINEAR_ELLIPTIC_3D}
   PRIVATE FEELPP_MOR_PLUGIN_NAME=benchmarkgrepl_nonlinear_elliptic_3d FEELPP_MOR_PLUGIN_LIBNAME=${CRB_LIB_BENCHMARKGREPL_NONLINEAR_ELLIPTIC_3D})
 

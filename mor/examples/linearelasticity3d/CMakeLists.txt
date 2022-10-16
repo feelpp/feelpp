@@ -23,7 +23,7 @@
 #
 
 
-mor_add_library( linearelasticity3d SRCS linearelasticity3d.cpp EXEC CRB_LIB_LINEARELASTICITY3D)
+mor_add_library( linearelasticity3d SRCS linearelasticity3d.cpp EXEC CRB_LIB_LINEARELASTICITY3D PLUGIN)
 target_compile_definitions(${CRB_LIB_LINEARELASTICITY3D} PRIVATE FEELPP_MOR_PLUGIN_NAME=linearelasticity3d FEELPP_MOR_PLUGIN_LIBNAME=${CRB_LIB_LINEARELASTICITY3D})
 install(FILES linearelasticity3d.hpp DESTINATION include/feelpp/crb/linearelasticity3d COMPONENT Devel)
 set(FEELPP_CRB_LINEARELASTICITY3D_LIBRARIES ${CRB_LIB_LINEARELASTICITY3D} PARENT_SCOPE)

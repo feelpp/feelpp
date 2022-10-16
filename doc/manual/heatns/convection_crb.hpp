@@ -265,7 +265,7 @@ public:
     // generate the mesh
     Feel::gmsh_ptrtype createMesh();
 
-    // Functions usefull for crb resolution :
+    // Functions useful for crb resolution :
 
     void initModel();
 
@@ -475,7 +475,7 @@ private:
     double M_current_Grashofs;
     double M_current_Prandtl;
 
-    // Variables usefull for crb resolution :
+    // Variables useful for crb resolution :
 
     double meshSize;
 
