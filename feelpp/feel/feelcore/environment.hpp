@@ -914,6 +914,7 @@ private:
     static fs::path S_scratchdir;
     static fs::path S_cfgdir;
     static AboutData S_about;
+    static inline bool S_initialized = false;
     static inline bool S_aborted = false;
     static inline bool S_init_python = true;
     static std::shared_ptr<po::command_line_parser> S_commandLineParser;
