@@ -29,7 +29,8 @@ def simulate(toolbox, export=True, buildModelAlgebraicFactory=True,data=None):
         toolbox.solve()
         if export:
             toolbox.exportResults()
-        meas.append(toolbox.postProcessMeasures().values())
+        if toolbox.postProcessMeasures().values():
+            meas.append(toolbox.postProcessMeasures().values())
     else:
         if not toolbox.doRestart():
             toolbox.exportResults(toolbox.timeInitial())
@@ -40,7 +41,8 @@ def simulate(toolbox, export=True, buildModelAlgebraicFactory=True,data=None):
                 print("time simulation: {}s/{}s with step: {}".format(toolbox.time(),toolbox.timeFinal(),toolbox.timeStep()))
                 print("============================================================\n")
             toolbox.solve()
-            meas.append(toolbox.postProcessMeasures().values())
+            if toolbox.postProcessMeasures().values():
+                meas.append(toolbox.postProcessMeasures().values())
             if export:
                 toolbox.exportResults()
             toolbox.updateTimeStep()
