@@ -76,7 +76,7 @@ class MyApp : public Application
     // max number of iterations : 10
     M_backend->nlSolve( J, U, R, 1e-10, 10 );
 
-    // the soluution was stored in U
+    // the solution was stored in U
     u = *U;
   }
   private:
@@ -87,7 +87,7 @@ class MyApp : public Application
 \end{lstlisting}
 
 The function \lstinline!updateJacobian! and \lstinline!updateResidual!
-implement the assmebly of the matrix $J$ (jacobian matrix) and the
+implement the assembly of the matrix $J$ (jacobian matrix) and the
 vector $R$ (residual vector) respectively.
 
 \subsection{A first nonlinear problem}

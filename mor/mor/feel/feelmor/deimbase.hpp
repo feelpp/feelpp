@@ -1087,6 +1087,7 @@ DEIMBase<ParameterSpaceType,SpaceType,TensorType>::saveDB()
         boost::archive::binary_oarchive oa( ofs );
         oa << *this;
     }
+    this->worldComm().barrier();
 }
 
 

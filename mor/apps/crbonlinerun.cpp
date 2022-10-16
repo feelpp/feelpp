@@ -27,10 +27,11 @@
 #include <boost/algorithm/string.hpp>
 
 #include <feel/feelcore/table.hpp>
-#include <feel/feelmor/options.hpp>
-#include <feel/feelmor/crbplugin_interface.hpp>
+#include <feel/feelfilters/loadcsv.hpp>
 #include <feel/feelmor/crbmodeldb.hpp>
-
+#include <feel/feelmor/crbplugin_interface.hpp>
+#include <feel/feelmor/options.hpp>
+#include <fmt/ranges.h>
 #include <iostream>
 
 #if defined(FEELPP_HAS_MONGOCXX )
@@ -239,6 +240,17 @@ runCrbOnline( std::vector<std::shared_ptr<Feel::CRBPluginAPI>> plugin )
         for ( std::string const& paramParsed : inputParameterParsed )
             inputParameter.push_back( std::stod(paramParsed) );
     }
+    else if( Environment::vm().count( "parameter.filename" ) )
+    {
+        std::string fname = Environment::vm()["parameter.filename"].as<std::string>();
+        auto r = loadXYFromCSV( fname, muspace->parameterNames() );
+        auto mu = muspace->element();
+        for(auto const& p : r)
+        {
+            mu = p;
+            mysampling->push_back( mu );
+        }
+    }
     //inputParameter = Environment::vm()["parameter"].as<std::vector<double> >();
     if ( !inputParameter.empty() )
     {
@@ -248,7 +260,7 @@ runCrbOnline( std::vector<std::shared_ptr<Feel::CRBPluginAPI>> plugin )
             mu(d)=inputParameter[d];
         mysampling->push_back( mu );
     }
-    else
+    else if ( mysampling->empty() )
     {
         int nSample = ioption(_name="sampling.size");
         std::string sampler = soption("sampling.type");
@@ -264,6 +276,7 @@ runCrbOnline( std::vector<std::shared_ptr<Feel::CRBPluginAPI>> plugin )
     Feel::Table tableOutputResults;
     std::vector<std::string> tableRowHeader = muspace->parameterNames();
     tableRowHeader.push_back( "output");
+    tableRowHeader.push_back( "time(s)");
     tableOutputResults.add_row( tableRowHeader );
     tableOutputResults.format().setFirstRowIsHeader( true );
 
@@ -271,6 +284,7 @@ runCrbOnline( std::vector<std::shared_ptr<Feel::CRBPluginAPI>> plugin )
 
     for ( int k=0;k<nSamples;++k )
     {
+        
         auto const& mu = (*mysampling)[k];
         std::ostringstream ostrmu;
         for ( uint16_type d=0;d<muspace->dimension();++d)
@@ -281,16 +295,18 @@ runCrbOnline( std::vector<std::shared_ptr<Feel::CRBPluginAPI>> plugin )
         //std::cout << "input mu\n" << mu << "\n";
         for( auto const& p : plugin )
         {
+            tic();
             auto crbResult = p->run( mu, time_crb, online_tol, rbDim, print_rb_matrix);
             auto resOuptut = boost::get<0>( crbResult );
             auto resError = boost::get<0>( boost::get<6>( crbResult ) );
             //std::cout << "output " << resOuptut.back() << " " << resError.back() << "\n";
-
+            double t = toc("rb_online", FLAGS_v>0);
             int curRowValIndex = 0;
             for ( uint16_type d=0;d<muspace->dimension();++d)
                 tableRowValues[curRowValIndex++] = mu(d);
             if ( !resOuptut.empty() )
                 tableRowValues[curRowValIndex++] = resOuptut.back();
+            tableRowValues[curRowValIndex++] = t;
             tableOutputResults.add_row( tableRowValues );
 
             if ( loadFiniteElementDatabase )

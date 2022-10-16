@@ -436,6 +436,7 @@ ToolboxMor<SpaceType, Options>::initModelImpl()
     bool all_proc_same_sampling=true;
     if( ! file )
     {
+        this->worldComm().barrier();
         PsetV->randomize( M_trainsetDeimSize , all_proc_same_sampling , supersamplingname );
         PsetV->writeOnFile( supersamplingname );
     }
@@ -454,6 +455,7 @@ ToolboxMor<SpaceType, Options>::initModelImpl()
     std::ifstream fileM ( supersamplingname );
     if( ! fileM )
     {
+        this->worldComm().barrier();
         PsetM->randomize( M_trainsetMdeimSize , all_proc_same_sampling , supersamplingname );
         PsetM->writeOnFile( supersamplingname );
     }

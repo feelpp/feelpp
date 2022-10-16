@@ -35,6 +35,10 @@
 #include <feel/feelcore/info.hpp>
 #include <boost/filesystem/operations.hpp>
 
+#undef linux
+#undef gnu
+#undef x86_64
+
 #define stringize2(x) #x
 #define stringize(x) stringize2(x)
 

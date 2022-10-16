@@ -57,11 +57,6 @@ factoryCRBPlugin( std::string const& pluginname, std::string const& pluginlibnam
     }
     else
     {
-#if defined( __APPLE__ )
-        std::string libext = ".dylib";
-#else
-        std::string libext = ".so";
-#endif
         std::string libname = pluginlibname;
         if ( libname.empty() )
             libname = fmt::format("libfeelpp_mor_plugin_{}",pluginname);
