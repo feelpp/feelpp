@@ -23,7 +23,7 @@ size = comm.Get_size()
 
 class ToolboxModel():
 
-    def __init__(self, dimension, H, h, toolboxType, cfg_path, model_path, geo_path, order=1) -> None:
+    def __init__(self, dim, H, h, toolboxType, model_path, geo_path, order=1, **kwargs) -> None:
         """Initialize the toolbox model class
 
         Args:
@@ -31,29 +31,22 @@ class ToolboxModel():
             H (float): coarse mesh size
             h (float): fine mesh size
             toolboxType (str): toolbox used (heat or fluid)
-            cfg_path (str): path to cfg file
             model_path (str): path to json file
             geo_path (str): path to geo file
             method (str, optional): method used to generate the basis. Defaults to "POD".
             order (int, optional): order of discretization. Defaults to 1.
             doRectification (bool, optional): set rectification. Defaults to True.
         """
-
-        assert dimension in [2,3]
-        self.dimension = dimension
-        # assert method in ["POD", "Greedy"]
+        self.dimension = dim
+        assert self.dimension in [2,3]
         self.H = H
-        self.h = h if h is not None else H**2
-        # self.method = method
+        self.h = h if h != "H**2:H" else self.H**2
         self.order = order
 
-        # self.doRectification = doRectification
-
         self.toolboxType = toolboxType
-        assert toolboxType in ["heat", "fluid"], "toolboxType must be 'heat' or 'fluid'"
-        self.cfg_path = cfg_path
-        self.model_path = model_path
-        self.geo_path = geo_path
+        assert self.toolboxType in ["heat", "fluid"], "toolboxType must be 'heat' or 'fluid'"
+        self.model_path = feelpp.Environment.expand(model_path)
+        self.geo_path = feelpp.Environment.expand(geo_path)
 
         self.tbCoarse  = None
         self.tbFine    = None
@@ -61,8 +54,6 @@ class ToolboxModel():
         self.Xh = None
 
         self.initModel()
-        # if self.doRectification:
-            # self.initRectification()
         if feelpp.Environment.isMasterRank():
             print(f"[NIRB] Initialization done")
 
@@ -216,8 +207,7 @@ class ToolboxModel():
 
 class nirbOffline(ToolboxModel):
 
-    def __init__(self, dimension, H, h, toolboxType, cfg_path, model_path, geo_path,
-        method="POD", order=1, doRectification=True) -> None:
+    def __init__(self, method="POD", doRectification=True, **kwargs) -> None:
         """Initialize the NIRB class
 
         Args:
@@ -225,7 +215,6 @@ class nirbOffline(ToolboxModel):
             H (float): coarse mesh size
             h (float): fine mesh size
             toolboxType (str): toolbox used (heat or fluid)
-            cfg_path (str): path to cfg file
             model_path (str): path to json file
             geo_path (str): path to geo file
             method (str, optional): method used to generate the basis. Defaults to "POD".
@@ -233,7 +222,7 @@ class nirbOffline(ToolboxModel):
             doRectification (bool, optional): set rectification. Defaults to True.
         """
 
-        super().__init__(dimension, H, h, toolboxType, cfg_path, model_path, geo_path, order)
+        super().__init__(**kwargs)
 
         assert method in ["POD", "Greedy"]
         self.method = method
@@ -673,8 +662,7 @@ class nirbOffline(ToolboxModel):
 
 class nirbOnline(ToolboxModel):
 
-    def __init__(self, dimension, H, h, toolboxType, cfg_path, model_path, geo_path,
-        order=1, doRectification=True) -> None:
+    def __init__(self, **kwargs):
         """Initialize the NIRB online class
 
         Args:
@@ -682,7 +670,6 @@ class nirbOnline(ToolboxModel):
             H (float): coarse mesh size
             h (float): fine mesh size
             toolboxType (str): toolbox used (heat or fluid)
-            cfg_path (str): path to cfg file
             model_path (str): path to json file
             geo_path (str): path to geo file
             method (str, optional): method used to generate the basis. Defaults to "POD".
@@ -690,9 +677,9 @@ class nirbOnline(ToolboxModel):
             doRectification (bool, optional): set rectification. Defaults to True.
         """
 
-        super().__init__(dimension, H, h, toolboxType, cfg_path, model_path, geo_path, order)
+        super().__init__(**kwargs)
 
-        self.doRectification = doRectification
+        self.doRectification = kwargs['doRectification']
 
         self.l2ScalarProductMatrix = None
         self.h1ScalarProductMatrix = None
