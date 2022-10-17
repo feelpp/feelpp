@@ -140,9 +140,6 @@ def plot_error(dir_name, Ns):
     tikzplotlib.save("plot.tex")
     plt.show()
 
-# plot_error('/data/scratch/saigre/feel-mbda/nirb/heat/np_1', [2, 3, 4, 5, 10, 15, 20, 25, 50, 100, 175, 200])
-plot_error('/data/home/elarif/feelppdb/nirb/heat/np_1', [1, 2, 4, 6, 10, 12, 14, 16, 20, 25, 30, 35, 40, 45, 50, 70, 80, 100])
-
 
 # %%
 def plot_time(csv_file):
