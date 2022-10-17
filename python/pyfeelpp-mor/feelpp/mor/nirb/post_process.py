@@ -5,7 +5,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import tikzplotlib
 
-def main(dir_name, Ns):
+# %%
+
+def plot_error(dir_name, Ns):
     N = len(Ns)
     # l2u-uHn, lINFu-uHn, l2u-uH, lINFu-uH
     mins2Nirb_norect = np.zeros(N)
@@ -76,11 +78,26 @@ def main(dir_name, Ns):
         maxsInfInt_rect[i] = df_rect["lINFu-uH"].max()
         moyInfInt_rect[i]  = df_rect["lINFu-uH"].mean()
 
-        
+    print("MinNitb_norect", mins2Nirb_norect)
+    print("MaxNitb_norect", maxs2Nirb_norect)
+    print("MoyNitb_norect", moy2Nirb_norect)
+
+    print("MinInfNitb_norect", minsInfNirb_norect)
+    print("MaxInfNitb_norect", maxsInfNirb_norect)
+    print("MoyInfNitb_norect", moyInfNirb_norect)
+
+    print("MinInt_rect", mins2Int_rect)
+    print("MaxInt_rect", maxs2Int_rect)
+    print("MoyInt_rect", moy2Int_rect)
+
+    print("MinInfInt_rect", minsInfInt_rect)
+    print("MaxInfInt_rect", maxsInfInt_rect)
+    print("MoyInfInt_rect", moyInfInt_rect)
+
 
     # Plot
     fig, ax = plt.subplots(1, 2, figsize=(20,10))
-    
+
     ax[0].plot(Ns, mins2Nirb_norect, c="tab:blue", label=r"$\Vert u_h - u_{hH}^N\Vert_{L^2}$ w/o rect.")
     ax[0].plot(Ns, maxs2Nirb_norect, c="tab:blue")
     ax[0].plot(Ns, moy2Nirb_norect, c="tab:blue")
@@ -97,6 +114,7 @@ def main(dir_name, Ns):
     ax[0].set_ylabel("Error")
     ax[0].set_xscale("log")
     ax[0].set_yscale("log")
+    ax[0].set_xlim(Ns[0], Ns[-1])
     ax[0].legend()
 
     ax[1].plot(Ns, minsInfNirb_norect, c="tab:blue", label=r"$\Vert u_h - u_{hH}^N\Vert_{\infty}$ w/o rect.")
@@ -115,13 +133,35 @@ def main(dir_name, Ns):
     ax[1].set_ylabel("Error")
     ax[1].set_xscale("log")
     ax[1].set_yscale("log")
+    ax[1].set_xlim(Ns[0], Ns[-1])
     ax[1].legend()
 
     # Save
+    tikzplotlib.save("plot.tex")
+    plt.show()
+
+# plot_error('/data/scratch/saigre/feel-mbda/nirb/heat/np_1', [2, 3, 4, 5, 10, 15, 20, 25, 50, 100, 175, 200])
+plot_error('/data/home/elarif/feelppdb/nirb/heat/np_1', [1, 2, 4, 6, 10, 12, 14, 16, 20, 25, 30, 35, 40, 45, 50, 70, 80, 100])
+
+
+# %%
+def plot_time(csv_file):
+    df = pd.read_csv(csv_file)
+    plt.axhline(df['time_toolbox'].mean(), c='k', linestyle='--', label='Fine toolbox')
+    plt.plot(df['N'], df['time_nirb'], '+-', label='NIRB w/o rect.')
+    plt.plot(df['N'], df['time_nirb_rect'], '+-', label='NIRB w/ rect.')
+
+    plt.xlabel('N')
+    plt.ylabel('Time (s)')
+    # plt.xscale('log')
+    plt.yscale('log')
+
+    plt.legend()
     plt.show()
     # tikzplotlib.save("plot.tex")
 
 # %%
 if __name__ == "__main__":
     import sys
-    main(sys.argv[1], sys.argv[2:])
+    plot_error(sys.argv[1], sys.argv[2:])
+    plot_time(sys.argv[1])

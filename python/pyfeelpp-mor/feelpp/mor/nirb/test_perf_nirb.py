@@ -31,7 +31,7 @@ def offline(N):
     nirb.saveData()
 
     perf = [N, finish-start]
-    file = 'nirbOffline_time_exec.txt'
+    file = 'nirbOffline_time_exec.dat'
     WriteVecAppend(file, perf)
 
     print(f"[NIRB] Offline Elapsed time = ", finish-start)
