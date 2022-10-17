@@ -279,7 +279,5 @@ def readJson(path):
     clear_data = re.sub('//.*', '', data)
     clear_data = re.sub('/\*([\s\S]*?)\*/', '', clear_data)
 
-    print(clear_data)
-
     j = json.loads(clear_data)
     return j
