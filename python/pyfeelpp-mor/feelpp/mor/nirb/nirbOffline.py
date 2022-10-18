@@ -56,7 +56,7 @@ if __name__ == "__main__":
     # nirb_off.orthonormalizeH1()
     # nirb_off.saveData()
 
-    # print("Is L2 orthonormalized ?", nirb_off.checkL2Orthonormalized())
+    print("Is L2 orthonormalized ?", nirb_off.checkL2Orthonormalized())
     # print("Is H1 orthonormalized ? ", nirb_off.checkH1Orthonormalized())
 
     perf = []

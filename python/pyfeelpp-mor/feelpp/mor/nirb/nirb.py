@@ -453,78 +453,23 @@ class nirbOffline(ToolboxModel):
     """
     Handle Gram-Schmidt orthogonalization
     """
-    def scalarL2(self, u, v):
-        """Return the ernegy scalar product associed to the L2 scalar product matrix (mass matrix)
-                    int_X(u v)
-
-        Args:
-            u (PETSc.Vec): vector
-            v (PETSC.Vec): second vector
-
-        Returns:
-            float: v.T @ ML2 @ u
-        """
-        return v.dot( self.l2ScalarProductMatrix.to_petsc().mat() * u )   # v.T @ A @ u
-
-    def scalarH1(self, u, v):
-        """Return the ernegy scalar product associed to the H1 scalar product matrix
-                    int_X(\nabla u \nabla v)
-
-        Args:
-            u (PETSc.Vec): vector
-            v (PETSC.Vec): second vector
-
-        Returns:
-            float: v.T @ MH1 @ u
-        """
-        return v.dot( self.h1ScalarProductMatrix.to_petsc().mat() * u )   # v.T @ A @ u
-
-    def normL2(self, u):
-        """Compute the L2 norm of the given vector
-
-        Args:
-            u (PETSc.Vec): vector
-
-        Returns:
-            float: ||u||_L2
-        """
-        return np.sqrt(self.scalarL2(u, u))
-
-    def normH1(self, u):
-        """Compute the H1 norm of the given vector
-
-        Args:
-            u (PETSc.Vec): vector
-
-        Returns:
-            float: ||u||_H1
-        """
-        return np.sqrt(self.scalarH1(u, u))
-
     def orthonormalizeH1(self, nb=0):
         """Use Gram-Schmidt algorithm to orthonormalize the reduced basis using H1 norm
         (the optional argument is not needed)
         """
-        ub,vb = self.reducedBasis.createVecs()
-        Z = []
-        for i in range(self.N):
-            ub[:] = self.reducedBasis[:,i]
-            Z.append(ub)
+        Z = self.reducedBasis.copy()
 
-        # Z[0] /= self.normH1(Z[0])
+        Z[0] = Z[0] * (1./self.h1ScalarProductMatrix.energy(Z[0],Z[0]))
 
-        for n in range(0, len(Z)):
-            s = Z[0].duplicate()
-            s.set(0)
+        for n in range(1, self.N):
+            s = self.Xh.element()
+            s.setZero()
             for m in range(n):
-                s += self.scalarH1(Z[n], Z[m]) * Z[m]
+                s = s + self.h1ScalarProductMatrix.energy(Z[n], Z[m]) * Z[m]
             z_tmp = Z[n] - s
-            Z[n] = z_tmp / self.normH1(z_tmp)
+            Z[n] = z_tmp * (1./self.h1ScalarProductMatrix.energy(z_tmp,z_tmp))
 
-        for i in range(self.N):
-            self.reducedBasis[:,i] = Z[i][:]
-
-        self.reducedBasis.assemble()
+        self.reducedBasis = Z
 
         if not (self.checkH1Orthonormalized() ) and nb < 10:
             self.orthonormalizeH1(nb=nb+1)
@@ -532,38 +477,30 @@ class nirbOffline(ToolboxModel):
             # pass
             print(f"[NIRB] Gram-Schmidt H1 orthonormalization done after {nb+1} step"+['','s'][nb>0])
 
-
     def orthonormalizeL2(self, nb=0):
         """Use Gram-Schmidt algorithm to orthonormalize the reduced basis using L2 norm
         (the optional argument is not needed)
         """
-        ub,vb = self.reducedBasis.createVecs()
-        Z = []
-        for i in range(self.N):
-            ub[:] = self.reducedBasis[:,i]
-            Z.append(ub)
 
-        # Z[0] /= self.normL2(Z[0])
+        Z = self.reducedBasis
 
-        for n in range(0, len(Z)):
-            s = Z[0].duplicate()
-            s.set(0)
+        Z[0] = Z[0] * (1./self.l2ScalarProductMatrix.energy(Z[0],Z[0]))
+
+        for n in range(1, self.N):
+            s = self.Xh.element()
+            s.setZero()
             for m in range(n):
-                s += self.scalarL2(Z[n], Z[m]) * Z[m]
+                s = s + self.l2ScalarProductMatrix.energy(Z[n], Z[m]) * Z[m]
             z_tmp = Z[n] - s
-            Z[n] = z_tmp / self.normL2(z_tmp)
+            Z[n] = z_tmp * (1./self.l2ScalarProductMatrix.energy(z_tmp,z_tmp))
 
-        for i in range(self.N):
-            self.reducedBasis[:,i] = Z[i][:]
-
-        self.reducedBasis.assemble()
+        # self.reducedBasis = Z
 
         if not (self.checkL2Orthonormalized() ) and nb < 10:
             self.orthonormalizeL2(nb=nb+1)
         elif rank == 0:
             # pass
             print(f"[NIRB] Gram-Schmidt L2 orthonormalization done after {nb+1} step"+['','s'][nb>0])
-
 
     def checkH1Orthonormalized(self, tol=1e-8):
         """Check if the reduced basis is H1 orthonormalized.
@@ -574,8 +511,8 @@ class nirbOffline(ToolboxModel):
         Returns:
             bool: True if the reduced basis is H1 orthonormalized
         """
-        h1ScalPetsc = self.h1ScalarProductMatrix.to_petsc().mat()
-        matH1 = h1ScalPetsc.PtAP(self.reducedBasis)
+        
+        matH1 = np.zeros((self.N,self.N))
 
         for i in range(self.N):
             for j in range(self.N):
@@ -589,7 +526,7 @@ class nirbOffline(ToolboxModel):
                     # assert abs(matH1[i, j]) < tol, f"H1 [{i}, {j}] {matH1[i, j]}"
         return True
 
-    def checkL2Orthonormalized(self, tol=1e-8):
+    def checkL2Orthonormalized(self, tol=1e-6):
         """Check if the reduced basis is L2 orthonormalized.
 
         Args:
@@ -598,22 +535,20 @@ class nirbOffline(ToolboxModel):
         Returns:
             bool: True if the reduced basis is L2 orthonormalized
         """
-        l2ScalPetsc = self.l2ScalarProductMatrix.to_petsc().mat()
         
-        matL2 = l2ScalPetsc.PtAP(self.reducedBasis)
+        assert len(self.l2ProductBasis) == len(self.reducedBasis) != 0 
+
+        matL2 = np.zeros((self.N,self.N))
 
         for i in range(self.N):
             for j in range(self.N):
+                matL2[i,j] = self.l2ProductBasis[i].to_petsc().dot(self.reducedBasis[j].to_petsc())
                 if i == j:
                     if abs(matL2[i, j] - 1) > tol:
                         return False
-                    # assert abs(matL2[i, j] - 1) < tol, f"L2 [{i}, {j}] {matL2[i, j]}"
-                    # assert abs(matH1[i, j] - 1) < tol, f"H1 [{i}, {j}] {matH1[i, j]}"
                 else:
                     if abs(matL2[i, j]) > tol :
                         return False
-                    # assert abs(matL2[i, j]) < tol, f"L2 [{i}, {j}] {matL2[i, j]}"
-                    # assert abs(matH1[i, j]) < tol, f"H1 [{i}, {j}] {matH1[i, j]}"
         return True
 
     def saveData(self, path="./", force=False):
