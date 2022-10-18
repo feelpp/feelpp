@@ -1,5 +1,5 @@
 from inspect import Parameter
-from time import time
+import time 
 from feelpp.mor.nirb.nirb import *
 from feelpp.mor.nirb.utils import WriteVecAppend, init_feelpp_environment
 import sys 
@@ -21,6 +21,7 @@ def ComputeErrors(nirb_on, mu):
         - the errors L2 and Linf between inteprolated FE coarse solution and FE fine solution
     list : 
     """
+    l2Mat, h1Mat = nirb_on.generateOperators(h1=True)
 
     uHh= nirb_on.getOnlineSol(mu)
     uH = nirb_on.getInterpSol(mu)
@@ -28,10 +29,15 @@ def ComputeErrors(nirb_on, mu):
     
     error = [nirb_on.N]
 
-    error.append((uHh - uh).l2Norm())
-    error.append((uHh - uh).to_petsc().vec().norm(PETSc.NormType.NORM_INFINITY))
-    error.append((uH - uh).l2Norm())
-    error.append((uH - uh).to_petsc().vec().norm(PETSc.NormType.NORM_INFINITY))
+    error.append(nirb_on.normL2(l2Mat, uHh-uh))
+    error.append(nirb_on.normH1(h1Mat, uHh-uh))
+    error.append(nirb_on.normL2(l2Mat, uH-uh))
+    error.append(nirb_on.normH1(h1Mat, uH-uh))
+
+    # error.append((uHh - uh).l2Norm())
+    # error.append((uHh - uh).to_petsc().vec().norm(PETSc.NormType.NORM_INFINITY))
+    # error.append((uH - uh).l2Norm())
+    # error.append((uH - uh).to_petsc().vec().norm(PETSc.NormType.NORM_INFINITY))
 
     return error 
 
@@ -78,11 +84,10 @@ def ComputeErrorSampling(nirb_on, Nsample=1, samplingType='log-random'):
     return : 
     dict: containing
         - dict['parameter'] : the index of the parameter from 0... to Nsample
-        - dict['l2u-uHn'] : the l2 norm between FE solution (u) and the nirb solution (uHn)
-        - dict['lINFu-uHn'] : the infinity norm between FE solution (u) and the nirb solution (uHn)
-        - dict['l2u-uH'] : the l2 norm between both FE solution (u in the fine mesh) and (uH in the coarse mesh)
-        - dict['lINFu-uH'] : the infinity norm between both FE solution (u in the fine mesh) and (uH in the coarse mesh) 
-         
+        - dict['l2(u-uHn)'] : the l2 norm between FE solution (u) and the nirb solution (uHn)
+        - dict['h1(u-uHn)'] : the h1 norm between FE solution (u) and the nirb solution (uHn)
+        - dict['l2(u-uH)'] : the l2 norm between both FE solution (u in the fine mesh) and (uH in the coarse mesh)
+        - dict['h1(u-uH)'] : the h1 norm between both FE solution (u in the fine mesh) and (uH in the coarse mesh)
     """
 
     # finish = timeit()
@@ -91,22 +96,25 @@ def ComputeErrorSampling(nirb_on, Nsample=1, samplingType='log-random'):
     s.sampling(Nsample, samplingType)
     mus = s.getVector()
 
+    l2Mat, h1Mat = nirb_on.generateOperators(h1=True)
+
     err = np.zeros((Nsample,4))
     for i,mu in enumerate(mus):
         uH = nirb_on.getInterpSol(mu)
         uHh= nirb_on.getOnlineSol(mu)
         uh = nirb_on.getToolboxSolution(nirb_on.tbFine, mu)
-        err[i,0] = (uHh - uh).l2Norm()
-        err[i,1] = (uHh - uh).linftyNorm()
-        err[i,2] = (uH - uh).l2Norm()
-        err[i,3] = (uH - uh).linftyNorm()
+
+        err[i,0] = nirb_on.normL2(l2Mat, uHh-uh)
+        err[i,1] = nirb_on.normH1(h1Mat, uHh-uh)
+        err[i,2] = nirb_on.normL2(l2Mat, uH-uh)
+        err[i,3] = nirb_on.normH1(h1Mat, uH-uh)
 
     errors = {}
     errors['parameter'] = [*range(Nsample)] 
-    errors['l2u-uHn'] = err[:,0]
-    errors['lINFu-uHn'] = err[:,1]
-    errors['l2u-uH'] = err[:,2]
-    errors['lINFu-uH'] = err[:,3]
+    errors['l2(u-uHn)'] = err[:,0]
+    errors['h1(u-uHn)'] = err[:,1]
+    errors['l2(u-uH)'] = err[:,2]
+    errors['h1(u-uH)'] = err[:,3]
 
     return errors
 
@@ -141,19 +149,30 @@ if __name__ == "__main__":
         H = float(sys.argv[1])
         h = H**2
     
+    start=time.time() 
 
-    doRectification=False
+    doRectification=True
 
     nirb_on = nirbOnline(dim, H, h, toolboxType, cfg_path, model_path, geo_path, order=order, doRectification=doRectification)
 
     mu = nirb_on.Dmu.element() 
     nirb_on.loadData()
-    # uHh = nirb_on.getOnlineSol(mu)
+    uHh = nirb_on.getOnlineSol(mu)
 
-
-    Nsample = 5
-    # error1 = ComputeErrors(nirb_on, mu)
+    finish = time.time()
     
+    perf = []
+    perf.append(nirb_on.N)
+    perf.append(finish-start)
+    if doRectification:
+        file='nirbOnline_time_exec_rectif.txt'
+    else :
+        file='nirbOnline_time_exec.txt'
+    WriteVecAppend(file,perf)
+
+
+    Nsample = 50
+    # error1 = ComputeErrors(nirb_on, mu)
     errorN = ComputeErrorSampling(nirb_on, Nsample=Nsample)
 
     df = pd.DataFrame(errorN)
@@ -164,20 +183,6 @@ if __name__ == "__main__":
 
     file.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(file, index=False)
-
-    statl2 = {}
-    statl2["N"] = [nirb_on.N]
-    statl2["Min"] = [df['l2u-uHn'].min()]
-    statl2["Max"] = [df['l2u-uHn'].max()]
-    statl2["Mean"] = [df['l2u-uHn'].mean()]
-
-    statdt = pd.DataFrame(statl2)
-    print("stat for l2 norm")
-    print(statdt.head())
-
-    file ="errorstatl2.csv"
-    statdt.to_csv(file, mode='a',index=False)
-
 
     # if feelpp.Environment.isMasterRank():
     #     print(f"[NIRB online] with {nirb_on.N} snapshots ")
@@ -277,20 +282,6 @@ if __name__ == "__main__":
     error = np.concatenate((error_min, error_mean[1:], error_max[1:]))
     """
 
-    # finish = time() 
-
-    if doRectification:
-        file1='nirb_error_rectif1.dat'
-        fileN=f'nirb_error_rectif{Nsample}.dat'
-        fileH=f'nirb_error_rectifH.dat'
-    else :
-        file1='nirb_error1.dat'
-        fileN=f'nirb_error{Nsample}.dat'
-        fileH=f'nirb_errorH.dat'
-        
-    # WriteVecAppend(file1,error1)
-    # WriteVecAppend(fileN,errormean)
-    # WriteVecAppend(fileH,errorH)
 
     # print(f"[NIRB] Online Elapsed time =", finish-start)
     print(f"[NIRB] Online part Done !!")
