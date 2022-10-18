@@ -1,0 +1,105 @@
+{
+    "Name": "Test case 2D",
+    "ShortName": "testcase2d",
+
+    "CRBParameters":
+    {
+        "k_2":
+        {
+            "min": "1",
+            "max": "20"
+        }
+    },
+
+    "Parameters":
+    {
+        "k_1":"1",
+        "k_2":"5"
+    },
+
+    "Meshes":
+    {
+        "heat":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/2squares.geo",
+                "hsize": 0.1
+            },
+            "DistanceToRange":
+            {
+                "boundary":{
+                    "markers":["Gamma_1","Gamma_2","Gamma_int","Gamma_dir","Gamma_neu"]
+                },
+                "Gamma_1":{
+                    "markers":["Gamma_1"]
+                },
+                "Gamma_2":{
+                    "markers":["Gamma_2"]
+                },
+                "Gamma_int":{
+                    "markers":["Gamma_int"]
+                },
+                "Gamma_dir":{
+                    "markers":["Gamma_dir"]
+                },
+                "Gamma_neu":{
+                    "markers":["Gamma_neu"]
+                }
+            }
+        }
+    },
+    "Materials":
+    {
+        "Omega_1":
+        {
+            "k":"k_1:k_1",
+            "Cp":"1.4e6",
+            "rho":"1"
+        },
+        "Omega_2":
+        {
+            "k":"k_2:k_2",
+            "Cp":"1.4e6",
+            "rho":"1"
+        }
+    },
+    "BoundaryConditions":
+    {
+        "heat": 
+        {
+            "temperature":
+            {
+                "Gamma_dir": {
+                    "expr": "4*k_1:k_1"
+                }
+            },
+            "flux": 
+            {
+                "Gamma_1": {
+                    "expr": "0"
+                },
+                "Gamma_2": {
+                    "expr": "0"
+                },
+                "Gamma_neu":{
+                    "expr": "4*k_2*k_2:k_2"
+                }
+            }
+        }
+    },
+
+    "nirb":
+    {
+        "H": 0.1,
+        "h": "H**2:H",
+        "dim": 2,
+        "order": 1,
+        "toolboxType": "heat",
+        "geo_path": "$cfgdir/square.geo",
+        "model_path": "$cfgdir/square.json",
+        "doRectification": true,
+        "doBiorthogonalization": false,
+        "nbSnapshots": 10
+    }
+}
