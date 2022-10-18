@@ -30,7 +30,7 @@ if __name__ == "__main__":
 
     e = init_feelpp_environment(toolboxType, cfg_path)
 
-    doRectification=False
+    doRectification=True 
     doBiorthonormal=False  
     nbSnap = 5
     if len(sys.argv)>=2:
@@ -49,77 +49,6 @@ if __name__ == "__main__":
     nirb_off.generateReducedBasis(regulParam=1.e-10)
     nirb_off.saveData(force=True)
 
-
-    # ######################################################################
-    # ### test clone 
-    # b = feelpp.backend(worldcomm=feelpp.Environment.worldCommPtr())
-    # v = b.newVector(dm=nirb_off.Xh.mapPtr())
-
-    # v.setConstant(1.0)
-
-
-    # print("------------------------------------------")
-    # print('type v :', type(v))
-    # vv = v.clone()
-    # print('type v clone ', type(vv))
-    # print('val v', v.vec()[:])
-    # print('val v clone', vv.vec()[:])
-
-
-    # print("------------------------------------------")
-    # w = nirb_off.Xh.element(v)
-    # print('type w:', type(w))
-    # w.setConstant(15.)
-    # ww = w.clone()
-    # print('type w clone ', type(ww))
-    # print('val w', w.to_petsc().vec()[:])
-    # print('val w clone', ww.to_petsc().vec()[:])
-
-    # print("------------------------------------------")
-
-    # x = w.clone()
-    # print('type x:', type(x))
-    # x.setConstant(30.)
-    # xx = x.clone()
-    # print('type x clone ', type(xx))
-    # print('val x', x.to_petsc().vec()[:])
-    # print('val x clone', xx.to_petsc().vec()[:])
-    # print("------------------------------------------")
-
-    # ######################################################################
-    # ### test addVector 
-    # b = feelpp.backend(worldcomm=feelpp.Environment.worldCommPtr())
-    # vv = b.newVector(dm=nirb_off.Xh.mapPtr()) # a petsc vector 
-    # ww = nirb_off.Xh.element(vv) # a Pch element
-    # kk = ww.clone()              # an Ublas vector 
-    
-    # v = vv
-
-    # u = nirb_off.reducedBasis[0]
-
-    # print('type u', type(u))
-    # print('type v :', type(v))
-
-    # mat = nirb_off.l2ScalarProductMatrix
-    # mat.zero()
-    # ww.setConstant(1.0)
-    # mat.setDiagonal(ww)
-    # print('mat =', mat.mat()[:,:])
-
-    # v.setConstant(1.0)
-    # u.setConstant(2.0)
-
-    # print("v before addVector :", v.to_petsc().vec()[:])
-    # print('u before addVector :', u.to_petsc().vec()[:])
-
-    # print("------------------------------------------")
-    # v.addVector(u, mat)
-    # print('u after addVector', u.to_petsc().vec()[:])
-    # print('v after addVector', v.to_petsc().vec()[:])
-    # print('type v after addVector', type(v))
-    # print("------------------------------------------")
-    
-    # ######################################################################
     
     finish = time.time()
 
