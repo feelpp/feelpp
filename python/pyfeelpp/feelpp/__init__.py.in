@@ -18,7 +18,7 @@ from ._ts import  *
 from ._vf import  *
 from ._models import *
 
-def readcfg(filename):
+def readCfg(filename):
     """read a Feel++ config file and get a ConfigParser to manipulate the options
 
     Args:

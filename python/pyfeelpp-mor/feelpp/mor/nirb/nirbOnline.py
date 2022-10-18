@@ -16,7 +16,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     config_file = args.config_file
 
-    cfg = feelpp.readcfg(config_file)
+    cfg = feelpp.readCfg(config_file)
     toolboxType = cfg['nirb']['toolboxType']
     e = init_feelpp_environment(toolboxType, config_file)
 
