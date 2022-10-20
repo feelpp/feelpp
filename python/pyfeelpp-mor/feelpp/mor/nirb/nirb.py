@@ -342,6 +342,7 @@ class nirbOffline(ToolboxModel):
         Xi_train = s.getVector()
 
         Delta_star = eps+1
+        Deltas_conv = []
         S = []
         self.fineSnapShotList = []
         self.coarseSnapShotList = []
@@ -374,10 +375,11 @@ class nirbOffline(ToolboxModel):
             self.fineSnapShotList.append(self.getToolboxSolution(self.tbFine, mu_star))
             N += 1
             self.coarseSnapShotList.append(self.getToolboxSolution(self.tbCoarse, mu_star))
+            Deltas_conv.append(Delta_star)
             if feelpp.Environment.isMasterRank():
                 print(f"[nirb] Adding snapshot with mu = {mu_star}")
                 print(f"[nirb] Greedy loop done. N = {N}, Delta_star = {Delta_star}")
-        
+
         if feelpp.Environment.isMasterRank():
             print(f"[NIRB] Number of snapshot computed : {N}")
 
