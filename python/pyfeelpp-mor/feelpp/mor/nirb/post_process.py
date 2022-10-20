@@ -347,16 +347,17 @@ if __name__ == "__main__":
     # plot_error(sys.argv[1], sys.argv[2:])
     # plot_time(sys.argv[1])
 
-
-    # dir ="/Users/elarif2/elarif/data/feelppdb/nirb/heat/np_1/errorParams50/"
-    # dirR ="/Users/elarif2/elarif/data/feelppdb/nirb/heat/np_1/errorParamsRectif50/"
-
-    dir  = str(sys.argv[1]) # directory containing errors w/O rectification 
-    dirR = str(sys.argv[2]) # // w/ rectification 
+    ### Read global datas 
+    file = "/data/home/elarif/nirbDatas/heat/errors50Params.csv"  # From gaya 
+    fileR = "/data/home/elarif/nirbDatas/heat/errors50ParamsRectif.csv"
+    
+    # file  = str(sys.argv[1]) # file containing errors w/O rectification 
+    # fileR = str(sys.argv[2]) # // w/ rectification 
     norm ='l2'
 
-    dfGlob  = concat_dataFrame(dir) # get global dataFrame w/O rectification 
-    dfGlobR = concat_dataFrame(dirR) # global dataFrame w/ rectification 
+    dfGlob = pd.read_csv(file, sep=',')
+    dfGlobR = pd.read_csv(fileR, sep=',')
+
 
     # %%   
     ### Get stats for 50 parameters 
@@ -372,8 +373,9 @@ if __name__ == "__main__":
 
     dkN = troncateNparam(dfGlob, 1) 
     dkNR = troncateNparam(dfGlobR, 1)
-    l2df, h1df   = getDataStat(dkN) # l1 and h1 error associated 
+
+    l2df, h1df   = getDataStat(dkN) # l1 and h1 error associated with statistical infos 
     l2dfR, h1dfR = getDataStat(dkNR) # // 
 
     plot_dataFrame(l2df)
-    compare_dataFrame(l2df, l2dfR, keys='Max')
+    compare_dataFrame(l2df, l2dfR, keys='Max', norm=norm)
