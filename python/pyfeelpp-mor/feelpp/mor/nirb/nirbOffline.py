@@ -34,7 +34,7 @@ if __name__ == "__main__":
 
     doGreedy = True
     if doGreedy:
-        nirb_off.initProblemGreedy(1000, 1e-5, computeCoarse=True)
+        nirb_off.initProblemGreedy(1000, 1e-5, Nmax=10, computeCoarse=True)
     else:
         nirb_off.initProblem(nbSnap)
     nirb_off.generateOperators()
