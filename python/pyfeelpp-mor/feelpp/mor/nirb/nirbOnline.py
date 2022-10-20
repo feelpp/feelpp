@@ -1,3 +1,5 @@
+from genericpath import isfile
+# from importlib.resources import path
 from inspect import Parameter
 import time 
 from feelpp.mor.nirb.nirb import *
@@ -5,7 +7,7 @@ from feelpp.mor.nirb.utils import WriteVecAppend, init_feelpp_environment
 import sys 
 import pandas as pd 
 from pathlib import Path
-
+import os 
 
 def ComputeErrors(nirb_on, mu):
     """Compute the error between nirb solution and FE one for 
@@ -29,10 +31,10 @@ def ComputeErrors(nirb_on, mu):
     
     error = [nirb_on.N]
 
-    error.append(nirb_on.normL2(l2Mat, uHh-uh))
-    error.append(nirb_on.normH1(h1Mat, uHh-uh))
-    error.append(nirb_on.normL2(l2Mat, uH-uh))
-    error.append(nirb_on.normH1(h1Mat, uH-uh))
+    error.append(nirb_on.normMat(l2Mat, uHh-uh))
+    error.append(nirb_on.normMat(h1Mat, uHh-uh))
+    error.append(nirb_on.normMat(l2Mat, uH-uh))
+    error.append(nirb_on.normMat(h1Mat, uH-uh))
 
     # error.append((uHh - uh).l2Norm())
     # error.append((uHh - uh).to_petsc().vec().norm(PETSc.NormType.NORM_INFINITY))
@@ -104,10 +106,10 @@ def ComputeErrorSampling(nirb_on, Nsample=1, samplingType='log-random'):
         uHh= nirb_on.getOnlineSol(mu)
         uh = nirb_on.getToolboxSolution(nirb_on.tbFine, mu)
 
-        err[i,0] = nirb_on.normL2(l2Mat, uHh-uh)
-        err[i,1] = nirb_on.normH1(h1Mat, uHh-uh)
-        err[i,2] = nirb_on.normL2(l2Mat, uH-uh)
-        err[i,3] = nirb_on.normH1(h1Mat, uH-uh)
+        err[i,0] = nirb_on.normMat(l2Mat, uHh-uh)
+        err[i,1] = nirb_on.normMat(h1Mat, uHh-uh)
+        err[i,2] = nirb_on.normMat(l2Mat, uH-uh)
+        err[i,3] = nirb_on.normMat(h1Mat, uH-uh)
 
     errors = {}
     errors['parameter'] = [*range(Nsample)] 
@@ -151,7 +153,7 @@ if __name__ == "__main__":
     
     start=time.time() 
 
-    doRectification=True
+    doRectification=False
 
     nirb_on = nirbOnline(dim, H, h, toolboxType, cfg_path, model_path, geo_path, order=order, doRectification=doRectification)
 
@@ -176,13 +178,17 @@ if __name__ == "__main__":
     errorN = ComputeErrorSampling(nirb_on, Nsample=Nsample)
 
     df = pd.DataFrame(errorN)
-    if doRectification:
-        file =Path(f"errorParamsRectif/errors{nirb_on.N}.csv")
-    else:
-        file =Path(f"errorParams/errors{nirb_on.N}.csv")
+    df['N'] = nirb_on.N
 
-    file.parent.mkdir(parents=True, exist_ok=True)
-    df.to_csv(file, index=False)
+    if doRectification:
+        file =f"errors{Nsample}Params.csv"
+    else:
+        file =f"errors{Nsample}Params.csv"
+
+    header = True 
+    if os.path.isfile(file):
+        header=False
+    df.to_csv(file, mode='a', index=False, header=header)
 
     # if feelpp.Environment.isMasterRank():
     #     print(f"[NIRB online] with {nirb_on.N} snapshots ")
