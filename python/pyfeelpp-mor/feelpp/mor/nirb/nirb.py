@@ -382,7 +382,7 @@ class nirbOffline(ToolboxModel):
 
         Returns
         -------
-        ReducedBasis (petsc.Mat) : the reduced basis, of size (numberOfModes, numberOfDOFs)
+        ReducedBasis (list) : the reduced basis, of size numberOfModes
         """
 
         Nsnap = len(self.fineSnapShotList)
@@ -457,7 +457,7 @@ class nirbOffline(ToolboxModel):
         """Use Gram-Schmidt algorithm to orthonormalize the reduced basis using H1 norm
         (the optional argument is not needed)
         """
-        Z = self.reducedBasis.copy()
+        Z = self.reducedBasis
 
         Z[0] = Z[0] * (1./self.h1ScalarProductMatrix.energy(Z[0],Z[0]))
 
@@ -494,7 +494,7 @@ class nirbOffline(ToolboxModel):
             z_tmp = Z[n] - s
             Z[n] = z_tmp * (1./self.l2ScalarProductMatrix.energy(z_tmp,z_tmp))
 
-        # self.reducedBasis = Z
+        self.reducedBasis = Z
 
         if not (self.checkL2Orthonormalized() ) and nb < 10:
             self.orthonormalizeL2(nb=nb+1)
@@ -697,7 +697,7 @@ class nirbOnline(ToolboxModel):
         return onlineSol
 
     def generateOperators(self,h1=False):
-        """Assemble L2 and H1 operators, stored in self.l2ScalarProduct and self.h1ScalarProduct
+        """Assemble L2 and H1 operators associated to the fine toolbox 
         """
         if h1:
             l2Mat = FppOp.mass(test=self.Xh, trial=self.Xh, range=feelpp.elements(self.tbFine.mesh()))
@@ -770,24 +770,15 @@ class nirbOnline(ToolboxModel):
         if feelpp.Environment.isMasterRank():
             print(f"[NIRB] Data loaded from {os.path.abspath(path)}")
 
-    def normL2(self, l2Mat, u):
-        """ Compute the L2 norm associated to L2 scalar product matrix in the fine mesh
+    def normMat(self, Mat, u):
+        """ Compute the norm associated to matrix Mat
 
         Args:
-            l2Mat (feelpp.__alg.SparseMatrix): the L2 matrix 
+            Mat (feelpp.__alg.SparseMatrix): the matrix 
             u (feelpp.__discr_Vector): the vector to compute the norm  
         """
-        return np.sqrt(np.abs(l2Mat.energy(u,u)))
+        return np.sqrt(np.abs(Mat.energy(u,u)))
 
-    def normH1(self, h1Mat, u):
-        """ Compute the L2 norm associated to L2 scalar product matrix in the fine mesh
-
-        Args:
-            h1Mat (feelpp.__alg.SparseMatrix): the L2 matrix 
-            u (feelpp.__discr_Vector): the vector to compute the norm  
-        """
-        return np.sqrt(np.abs(h1Mat.energy(u,u)))
-        
     def solveOnline(self, mu):
         """Retrun the interpolated FE-solution from coarse mesh to fine one u_{Hh}^calN(\mu)
             Solve in Coarse mesh and interpolate in fine mesh
