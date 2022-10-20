@@ -24,7 +24,7 @@ size = comm.Get_size()
 
 class ToolboxModel():
 
-    def __init__(self, dimension, H, h, toolboxType, cfg_path, model_path, geo_path, order=1) -> None:
+    def __init__(self, dim, H, h, toolboxType, model_path, geo_path, order=1, **kwargs) -> None:
         """Initialize the toolbox model class
 
         Args:
@@ -32,29 +32,22 @@ class ToolboxModel():
             H (float): coarse mesh size
             h (float): fine mesh size
             toolboxType (str): toolbox used (heat or fluid)
-            cfg_path (str): path to cfg file
             model_path (str): path to json file
             geo_path (str): path to geo file
             method (str, optional): method used to generate the basis. Defaults to "POD".
             order (int, optional): order of discretization. Defaults to 1.
             doRectification (bool, optional): set rectification. Defaults to True.
         """
-
-        assert dimension in [2,3]
-        self.dimension = dimension
-        # assert method in ["POD", "Greedy"]
+        self.dimension = dim
+        assert self.dimension in [2,3]
         self.H = H
-        self.h = h if h is not None else H**2
-        # self.method = method
+        self.h = h if h != "H**2:H" else self.H**2
         self.order = order
 
-        # self.doRectification = doRectification
-
         self.toolboxType = toolboxType
-        assert toolboxType in ["heat", "fluid"], "toolboxType must be 'heat' or 'fluid'"
-        self.cfg_path = cfg_path
-        self.model_path = model_path
-        self.geo_path = geo_path
+        assert self.toolboxType in ["heat", "fluid"], "toolboxType must be 'heat' or 'fluid'"
+        self.model_path = feelpp.Environment.expand(model_path)
+        self.geo_path = feelpp.Environment.expand(geo_path)
 
         self.tbCoarse  = None
         self.tbFine    = None
@@ -62,8 +55,6 @@ class ToolboxModel():
         self.Xh = None
 
         self.initModel()
-        # if self.doRectification:
-            # self.initRectification()
         if feelpp.Environment.isMasterRank():
             print(f"[NIRB] Initialization done")
 
@@ -75,10 +66,34 @@ class ToolboxModel():
         self.tbFine = self.setToolbox(self.h)
         self.Xh = feelpp.functionSpace(mesh=self.tbFine.mesh(), order=self.order)
         self.Dmu = loadParameterSpace(self.model_path)
-        self.Ndofs = self.tbFine.mesh().numGlobalPoints()
+        self.Ndofs = self.getFieldSpace().nDof()
 
         if feelpp.Environment.isMasterRank():
             print(f"[NIRB] Number of nodes on the fine mesh : {self.Ndofs}")
+
+    def getFieldSpace(self, coarse=False):
+        """Get the field space
+
+        Args:
+            coarse (bool, optional): get the coarse space. Defaults to False.
+
+        Returns:
+            feelpp._discr.*: field space
+        """
+        if not coarse:
+            if self.toolboxType == "heat":
+                return self.tbFine.spaceTemperature()
+            elif self.toolboxType == "fluid":
+                return self.tbFine.spaceVelocity()
+            else:
+                raise ValueError("Unknown toolbox")
+        else:
+            if self.toolboxType == "heat":
+                return self.tbCoarse.spaceTemperature()
+            elif self.toolboxType == "fluid":
+                return self.tbCoarse.spaceVelocity()
+            else:
+                raise ValueError("Unknown toolbox")
 
 
     def initCoarseToolbox(self):
@@ -172,11 +187,28 @@ class ToolboxModel():
         interpolator = fi.interpolator(domain = Vh_domain, image = Vh_image, range = image_tb.rangeMeshElements())
         return interpolator
 
+    def getInformations(self):
+        """Get information about the model
+
+        Returns:
+            dict: information about the model
+        """
+        info = {}
+        info["Ndofs"] = self.Ndofs
+        info["Nh"] = self.getFieldSpace().nDof()
+        if self.tbCoarse is not None:
+            info["NH"] = self.getFieldSpace(True).nDof()
+        info["H"] = self.H
+        info["h"] = self.h
+        info["order"] = self.order
+        info["toolboxType"] = self.toolboxType
+        info["dimension"] = self.dimension
+        return info
+
 
 class nirbOffline(ToolboxModel):
 
-    def __init__(self, dimension, H, h, toolboxType, cfg_path, model_path, geo_path,
-        method="POD", order=1, doRectification=True, initCoarse=False) -> None:
+    def __init__(self, method="POD", doRectification=True, initCoarse=False, **kwargs) -> None:
         """Initialize the NIRB class
 
         Args:
@@ -184,7 +216,6 @@ class nirbOffline(ToolboxModel):
             H (float): coarse mesh size
             h (float): fine mesh size
             toolboxType (str): toolbox used (heat or fluid)
-            cfg_path (str): path to cfg file
             model_path (str): path to json file
             geo_path (str): path to geo file
             method (str, optional): method used to generate the basis. Defaults to "POD".
@@ -193,7 +224,7 @@ class nirbOffline(ToolboxModel):
             initCoarse (bool, optional): initialize the coarse toolbox. Defaults to False.
         """
 
-        super().__init__(dimension, H, h, toolboxType, cfg_path, model_path, geo_path, order)
+        super().__init__(**kwargs)
 
         assert method in ["POD", "Greedy"]
         self.method = method
@@ -431,7 +462,8 @@ class nirbOffline(ToolboxModel):
 
         for i, snap1 in enumerate(self.fineSnapShotList):
             for j, snap2 in enumerate(self.fineSnapShotList):
-                    correlationMatrix[i,j] = self.scalarL2(snap1.to_petsc().vec(),snap2.to_petsc().vec())
+                    # correlationMatrix[i,j] = self.scalarL2(snap1.to_petsc().vec(),snap2.to_petsc().vec())
+                    correlationMatrix[i,j] = self.l2ScalarProductMatrix.energy(snap1,snap2)
 
         correlationMatrix.assemble()
         eigenValues, eigenVectors =  TruncatedEigenV(correlationMatrix, tolerance) 
@@ -454,8 +486,6 @@ class nirbOffline(ToolboxModel):
         vec.setSizes(self.Ndofs)
         vec.setFromOptions()
         vec.setUp()
-
-        print("LOOK AT ME", vec.size)
 
         for i in range(Nmode):
             vec.set(0.)
@@ -612,6 +642,7 @@ class nirbOffline(ToolboxModel):
             # pass
             print(f"[NIRB] Gram-Schmidt H1 orthonormalization done after {nb+1} step"+['','s'][nb>0])
 
+
     def orthonormalizeL2(self, nb=0):
         """Use Gram-Schmidt algorithm to orthonormalize the reduced basis using L2 norm
         (the optional argument is not needed)
@@ -717,8 +748,7 @@ class nirbOffline(ToolboxModel):
 
 class nirbOnline(ToolboxModel):
 
-    def __init__(self, dimension, H, h, toolboxType, cfg_path, model_path, geo_path,
-        order=1, doRectification=True) -> None:
+    def __init__(self, **kwargs):
         """Initialize the NIRB online class
 
         Args:
@@ -726,7 +756,6 @@ class nirbOnline(ToolboxModel):
             H (float): coarse mesh size
             h (float): fine mesh size
             toolboxType (str): toolbox used (heat or fluid)
-            cfg_path (str): path to cfg file
             model_path (str): path to json file
             geo_path (str): path to geo file
             method (str, optional): method used to generate the basis. Defaults to "POD".
@@ -734,9 +763,9 @@ class nirbOnline(ToolboxModel):
             doRectification (bool, optional): set rectification. Defaults to True.
         """
 
-        super().__init__(dimension, H, h, toolboxType, cfg_path, model_path, geo_path, order)
+        super().__init__(**kwargs)
 
-        self.doRectification = doRectification
+        self.doRectification = kwargs['doRectification']
 
         self.l2ScalarProductMatrix = None
         self.h1ScalarProductMatrix = None
