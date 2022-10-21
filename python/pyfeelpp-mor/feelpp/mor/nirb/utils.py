@@ -72,6 +72,30 @@ def assembleToolbox(tb, mu):
     tb.updateParameterValues()
 
 
+def samplingEqui(model_path,Ns,type='equidistribute'):
+    """ Get an equidistribute sampling of parameter 
+
+    Args:
+        model_path (str): model path 
+        Ns (int): number of snapshot 
+        type (str, optional): type of the equidistribution. Defaults to 'equidistribute'.
+    """
+    model = feelpp.readJson(model_path)
+    crb = model['CRBParameters']
+
+    Dmu = loadParameterSpace(model_path)
+    mu = Dmu.element()
+
+    key = crb.keys()
+    mus = []
+    dic = {}
+    for i in range(Ns): 
+        for k in key:
+            dic[k] = crb[k]['min'] + i*(crb[k]['max'] - crb[k]['min'])/float(Ns)
+        mu.setParameters(dic)
+        mus.append(mu)
+    
+    return mus 
 
 
 ############################################################################################################
