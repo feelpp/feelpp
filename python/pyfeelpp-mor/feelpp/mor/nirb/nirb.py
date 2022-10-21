@@ -674,6 +674,21 @@ class nirbOffline(ToolboxModel):
             # pass
             print(f"[NIRB] Gram-Schmidt L2 orthonormalization done after {nb+1} step"+['','s'][nb>0])
 
+    def orthonormalizeMatL2(self, Z):
+        N = len(Z)
+
+        if N == 1:
+            Z[0] /= self.normL2(Z[0])
+        else:
+            s = Z[0].clone()
+            s.setConstant(0)
+            for m in range(N):
+                s += self.scalarL2(Z[-1], Z[m]) * Z[m]
+            Z[-1] = (Z[-1] - s)
+            Z[-1] /= self.normL2(Z[-1])
+
+        return Z
+
 
     def checkH1Orthonormalized(self, tol=1e-8):
         """Check if the reduced basis is H1 orthonormalized.
