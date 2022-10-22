@@ -12,7 +12,7 @@ def simulate(toolbox, export=True, buildModelAlgebraicFactory=True,data=None):
         toolbox -- a toolbox which has been configured
 
     Returns:
-        a tuple (status,results) where status is a boolean(True if success, False otherwise) and results is a dictionary
+        a tuple (status,results) where status is a boolean(True if success, False otherwise) and results is a dictionary provided by the PostProcessing step 
 
     Example::
         feelpp.Environment.setConfigFile('toolboxs/laplace/l-shape/l-shape.cfg')
@@ -29,7 +29,7 @@ def simulate(toolbox, export=True, buildModelAlgebraicFactory=True,data=None):
         toolbox.solve()
         if export:
             toolbox.exportResults()
-        if toolbox.postProcessMeasures().values():
+        if not toolbox.postProcessMeasures().empty():
             meas.append(toolbox.postProcessMeasures().values())
     else:
         if not toolbox.doRestart():
@@ -41,7 +41,7 @@ def simulate(toolbox, export=True, buildModelAlgebraicFactory=True,data=None):
                 print("time simulation: {}s/{}s with step: {}".format(toolbox.time(),toolbox.timeFinal(),toolbox.timeStep()))
                 print("============================================================\n")
             toolbox.solve()
-            if toolbox.postProcessMeasures().values():
+            if not toolbox.postProcessMeasures().empty():
                 meas.append(toolbox.postProcessMeasures().values())
             if export:
                 toolbox.exportResults()
