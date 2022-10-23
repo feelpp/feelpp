@@ -30,8 +30,13 @@ jobs:
       run: |
         . /etc/profile.d/modules.sh
         module load mpi/openmpi-x86_64
+        mpicxx -v
     - name: Configure feelpp
-      run: cmake --preset feelpp
+      run: |
+        . /etc/profile.d/modules.sh
+        module load mpi/openmpi-x86_64
+        mpicxx -v
+        cmake --preset feelpp
     - name: Build feelpp
       run: cmake --build --preset feelpp -j 10
     - name: Test feelpp
