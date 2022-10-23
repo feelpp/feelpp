@@ -14,7 +14,13 @@ jobs:
     - run: echo ok go
 
   build:
-    runs-on: self-docker-fedora-36
+    strategy:
+      fail-fast: false
+      matrix: 
+        include:
+          - {os: fedora-36 }
+    name: ${{ matrix.os }} Build and Push Docker
+    runs-on: self-docker-${{ matrix.os }}
     needs: activate
     steps:
     - uses: actions/checkout@v3
