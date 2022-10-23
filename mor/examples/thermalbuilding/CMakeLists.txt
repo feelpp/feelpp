@@ -23,7 +23,7 @@
 #
 
 
-mor_add_library( thermalbuilding SRCS thermalbuilding.cpp EXEC CRB_LIB_THERMALBUILDING )
+mor_add_library( thermalbuilding SRCS thermalbuilding.cpp EXEC CRB_LIB_THERMALBUILDING PLUGIN )
 target_compile_definitions(${CRB_LIB_THERMALBUILDING} PRIVATE FEELPP_MOR_PLUGIN_NAME=thermalbuilding FEELPP_MOR_PLUGIN_LIBNAME=${CRB_LIB_THERMALBUILDING})
 install(FILES thermalbuilding.hpp DESTINATION include/feelpp/crb/thermalbuilding COMPONENT Devel)
 set(FEELPP_CRB_thermalbuilding_LIBRARIES ${CRB_LIB_THERMALBUILDING} PARENT_SCOPE)
