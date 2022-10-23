@@ -16,22 +16,39 @@ modelsFolder = f"{PWD}/model/"
 cfg_path = f"{modelsFolder}thermal-fin-3d/thermal-fin.cfg"
 geo_path = f"{modelsFolder}thermal-fin-3d/fin.geo"
 model_path = f"{modelsFolder}thermal-fin-3d/thermal-fin.json"
-doRectification = False
+doRectification = True
+doGreedy = False
+nirb_config = feelpp.readJson(model_path)['nirb']
+nirb_config['doRectification'] = doRectification
+nirb_config['doGreedy'] = doGreedy
 
+r = ["noRect","Rect"][doRectification]
+g = ["noGreedy","Greedy"][doGreedy]
+RESPATH = f"RESULTS/{toolboxType}/{r}/{g}"
 
 def offline(N):
+    """Generated the reduced basis for the given N
+       Generated a file nirbOffline_time_exec.dat containing the time to compute the reduced basis,
+         according to the number of samples N
+
+    Args:
+        N (int): number of snapshots (limit number if greedy algo is used)
+    """
 
     start = time.time()
-    nirb = nirbOffline(dim, H, h, toolboxType, cfg_path, model_path, geo_path, doRectification=doRectification)
-    nirb.initProblem(N)
+    nirb = nirbOffline(**nirb_config)
+    if doGreedy:
+        nirb.initProblemGreedy(1000, 1e-5, Nmax=N, computeCoarse=True, samplingMode="random")
+    else:
+        nirb.initProblem(N)
     nirb.generateOperators()
     nirb.generateReducedBasis(regulParam=1.e-10)
     finish = time.time()
 
-    nirb.saveData()
+    nirb.saveData(RESPATH)
 
-    perf = [N, finish-start]
-    file = 'nirbOffline_time_exec.dat'
+    perf = [nirb.N, finish-start]
+    file = RESPATH + '/nirbOffline_time_exec.dat'
     WriteVecAppend(file, perf)
 
     print(f"[NIRB] Offline Elapsed time = ", finish-start)
@@ -39,17 +56,18 @@ def offline(N):
 
 
 def online_error_sampling():
-    nirb = nirbOnline(dim, H, h, toolboxType, cfg_path, model_path, geo_path, doRectification=doRectification)
-    nirb.loadData()
+    """Compute the error between the toolbox solution and the NIRB solution for a sampling of parameters
+       Generates the file errorParams/errors${N}.csv containing the errors for each parameter, for a given value of N,
+          corresponding to the size of the reduced basis.
+    """
+    nirb = nirbOnline(**nirb_config)
+    nirb.loadData(RESPATH)
 
     Nsample = 50
     errorN = ComputeErrorSampling(nirb, Nsample=Nsample)
 
     df = pd.DataFrame(errorN)
-    if doRectification:
-        file = Path(f"errorParamsRectif/errors{nirb.N}.csv")
-    else:
-        file = Path(f"errorParams/errors{nirb.N}.csv")
+    file = Path(f"{RESPATH}/errorParams/errors{nirb.N}.csv")
     file.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(file, index=False)
     print(f"[NIRB online] Dataframe saved in {file}")
@@ -67,8 +85,12 @@ def online_error_sampling():
 
 
 def online_time_measure():
-    nirb = nirbOnline(dim, H, h, toolboxType, cfg_path, model_path, geo_path, doRectification=doRectification)
-    nirb.loadData()
+    """Measures the online time to compute solution, compared to the time taken by the toolbox
+       Generates the file nirbOnline_time_exec.dat containing the time to compute the NIRB solution and the toolbox solution,
+           according to the number of samples N
+    """
+    nirb = nirbOnline(**nirb_config)
+    nirb.loadData(RESPATH)
     
     Dmu = nirb.Dmu
     Ns = 50
@@ -90,7 +112,7 @@ def online_time_measure():
     time_nirb = (time_nirb_finish - time_nirb_start) / Ns
     print(f"[NIRB online] Time to compute {Ns} solutions with NIRB = ", time_nirb)
 
-    WriteVecAppend('nirbOnline_time_exec.dat', [nirb.N, time_toolbox, time_nirb])
+    WriteVecAppend(RESPATH+'/nirbOnline_time_exec.dat', [nirb.N, time_toolbox, time_nirb])
 
     
 
