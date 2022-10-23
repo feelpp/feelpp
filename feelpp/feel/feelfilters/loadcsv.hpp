@@ -26,9 +26,26 @@
 
 #include <map>
 #include <string>
+#include <vector>
+#include <Eigen/Core>
 
 namespace Feel
 {
+
+/**
+ * @brief load a set of columns from the CSV file \p filename
+ * \code {.cpp}
+ * auto r = loadXYFromCSV( "data.csv", { "x", "y" } );
+ * \endcode
+ * 
+ * 
+ * @param filename name of the CSV file
+ * @param data list of columns to load
+ * @return std::vector<Eigen::VectorXd> return a vector of Eigen::VectorXd
+ */
+std::vector<Eigen::VectorXd>
+loadXYFromCSV( std::string const& filename,
+               std::vector<std::string> const& data );
 
 //! load a XY dataset from a CSV file
 //! \param filename name of the CSV file
@@ -40,11 +57,20 @@ namespace Feel
 //!  // load the columns "time" and "ft" into a map<>
 //!  auto m = loadXYFromCSV( "data.csv", "time", "ft" );
 //! \endcode
-std::map<double,double>
+inline std::map<double,double>
 loadXYFromCSV( std::string const& filename,
                std::string const& abscissa,
-               std::string const& ordinate );
-
-
+               std::string const& ordinate )
+{
+    auto rs = loadXYFromCSV( filename, std::vector{ abscissa, ordinate });
+    std::map<double,double> m;
+    for( auto const& value : rs )
+    {
+        m[value[0]] = value[1];
+    }
+    return m;
 }
+
+
+} // Feel
 #endif
