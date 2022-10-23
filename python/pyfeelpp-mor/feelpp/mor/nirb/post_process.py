@@ -7,141 +7,75 @@ import tikzplotlib
 
 # %%
 
-def plot_error(dir_name, Ns):
-    N = len(Ns)
-    # l2u-uHn, lINFu-uHn, l2u-uH, lINFu-uH
-    mins2Nirb_norect = np.zeros(N)
-    maxs2Nirb_norect = np.zeros(N)
-    moy2Nirb_norect  = np.zeros(N)
+def plot_error(dirs, names, Ns):
+    """Plot errors obtained from many directories
 
-    minsInfNirb_norect = np.zeros(N)
-    maxsInfNirb_norect = np.zeros(N)
-    moyInfNirb_norect  = np.zeros(N)
+    Args:
+        dirs (list of str): list of path to export directories
+        names (list of str): list of names for the legend
+        Ns (list of int): sizes of the basis used for the computation of the errors
+    """
+    D = len(dirs)
+    assert(D == len(names))
+    NN = len(Ns)
 
-    mins2Int_norect = np.zeros(N)
-    maxs2Int_norect = np.zeros(N)
-    moy2Int_norect  = np.zeros(N)
+    cs = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan']
 
-    minsInfInt_norect = np.zeros(N)
-    maxsInfInt_norect = np.zeros(N)
-    moyInfInt_norect  = np.zeros(N)
-
-
-    mins2Nirb_rect = np.zeros(N)
-    maxs2Nirb_rect = np.zeros(N)
-    moy2Nirb_rect  = np.zeros(N)
-
-    minsInfNirb_rect = np.zeros(N)
-    maxsInfNirb_rect = np.zeros(N)
-    moyInfNirb_rect  = np.zeros(N)
-
-    mins2Int_rect = np.zeros(N)
-    maxs2Int_rect = np.zeros(N)
-    moy2Int_rect  = np.zeros(N)
-
-    minsInfInt_rect = np.zeros(N)
-    maxsInfInt_rect = np.zeros(N)
-    moyInfInt_rect  = np.zeros(N)
-
-    for i,N in enumerate(Ns):
-        df_norect = pd.read_csv(f"{dir_name}/errorParams/errors{N}.csv")
-        mins2Nirb_norect[i] = df_norect["l2u-uHn"].min()
-        maxs2Nirb_norect[i] = df_norect["l2u-uHn"].max()
-        moy2Nirb_norect[i]  = df_norect["l2u-uHn"].mean()
-
-        minsInfNirb_norect[i] = df_norect["lINFu-uHn"].min()
-        maxsInfNirb_norect[i] = df_norect["lINFu-uHn"].max()
-        moyInfNirb_norect[i]  = df_norect["lINFu-uHn"].mean()
-
-        mins2Int_norect[i] = df_norect["l2u-uH"].min()
-        maxs2Int_norect[i] = df_norect["l2u-uH"].max()
-        moy2Int_norect[i]  = df_norect["l2u-uH"].mean()
-
-        minsInfInt_norect[i] = df_norect["lINFu-uH"].min()
-        maxsInfInt_norect[i] = df_norect["lINFu-uH"].max()
-        moyInfInt_norect[i]  = df_norect["lINFu-uH"].mean()
-
-        df_rect = pd.read_csv(f"{dir_name}/errorParamsRectif/errors{N}.csv")
-        mins2Nirb_rect[i] = df_rect["l2u-uHn"].min()
-        maxs2Nirb_rect[i] = df_rect["l2u-uHn"].max()
-        moy2Nirb_rect[i]  = df_rect["l2u-uHn"].mean()
-
-        minsInfNirb_rect[i] = df_rect["lINFu-uHn"].min()
-        maxsInfNirb_rect[i] = df_rect["lINFu-uHn"].max()
-        moyInfNirb_rect[i]  = df_rect["lINFu-uHn"].mean()
-
-        mins2Int_rect[i] = df_rect["l2u-uH"].min()
-        maxs2Int_rect[i] = df_rect["l2u-uH"].max()
-        moy2Int_rect[i]  = df_rect["l2u-uH"].mean()
-
-        minsInfInt_rect[i] = df_rect["lINFu-uH"].min()
-        maxsInfInt_rect[i] = df_rect["lINFu-uH"].max()
-        moyInfInt_rect[i]  = df_rect["lINFu-uH"].mean()
-
-    print("MinNitb_norect", mins2Nirb_norect)
-    print("MaxNitb_norect", maxs2Nirb_norect)
-    print("MoyNitb_norect", moy2Nirb_norect)
-
-    print("MinInfNitb_norect", minsInfNirb_norect)
-    print("MaxInfNitb_norect", maxsInfNirb_norect)
-    print("MoyInfNitb_norect", moyInfNirb_norect)
-
-    print("MinInt_rect", mins2Int_rect)
-    print("MaxInt_rect", maxs2Int_rect)
-    print("MoyInt_rect", moy2Int_rect)
-
-    print("MinInfInt_rect", minsInfInt_rect)
-    print("MaxInfInt_rect", maxsInfInt_rect)
-    print("MoyInfInt_rect", moyInfInt_rect)
-
-
-    # Plot
     fig, ax = plt.subplots(1, 2, figsize=(20,10))
 
-    ax[0].plot(Ns, mins2Nirb_norect, c="tab:blue", label=r"$\Vert u_h - u_{hH}^N\Vert_{L^2}$ w/o rect.")
-    ax[0].plot(Ns, maxs2Nirb_norect, c="tab:blue")
-    ax[0].plot(Ns, moy2Nirb_norect, c="tab:blue")
-    ax[0].fill_between(Ns, mins2Nirb_norect, maxs2Nirb_norect, alpha=0.2)
-    ax[0].plot(Ns, mins2Nirb_rect, c="tab:orange", label=r"$\Vert u_h - u_{hH}^N\Vert_{L^2}$ w/ rect.")
-    ax[0].plot(Ns, maxs2Nirb_rect, c="tab:orange")
-    ax[0].plot(Ns, moy2Nirb_rect, c="tab:orange")
-    ax[0].fill_between(Ns, mins2Nirb_rect, maxs2Nirb_rect, alpha=0.2)
-    ax[0].axhline(mins2Int_norect[0], color="tab:green", linestyle="--", label=r"$\Vert u_h - u_H\Vert_{L^2}$")
-    ax[0].axhline(maxs2Int_norect[0], color="tab:green", linestyle="--")
-    ax[0].axhline(moy2Int_norect[0], color="tab:green", linestyle="--")
+    for d in range(D):
+        minsL2  = np.zeros(NN)
+        meansL2 = np.zeros(NN)
+        maxsL2  = np.zeros(NN)
+
+        minsLinf  = np.zeros(NN)
+        meansLinf = np.zeros(NN)
+        maxsLinf  = np.zeros(NN)
+
+        for i, N in enumerate(Ns):
+            df = pd.read_csv(f"{dirs[d]}/errorParams/errors{N}.csv")
+            minsL2[i]  = df["l2u-uHn"].min()
+            meansL2[i] = df["l2u-uHn"].mean()
+            maxsL2[i]  = df["l2u-uHn"].max()
+
+            minsLinf[i]  = df["lINFu-uHn"].min()
+            meansLinf[i] = df["lINFu-uHn"].mean()
+            maxsLinf[i]  = df["lINFu-uHn"].max()
+
+            print(f"[NIRB online] {names[d]}: N={N},\n\tmin L2 error = {minsL2[i]},\n\tmean L2 error = {meansL2[i]},\n\tmax L2 error = {maxsL2[i]}")
+            print(f"[NIRB online] {names[d]}: N={N},\n\tmin Linf error = {minsLinf[i]},\n\tmean Linf error = {meansLinf[i]},\n\tmax Linf error = {maxsLinf[i]}")
+
+        ax[0].plot(Ns, minsL2, c=cs[d], label=f"L2 {names[d]}")
+        ax[0].plot(Ns, meansL2, c=cs[d])
+        ax[0].plot(Ns, maxsL2, c=cs[d])
+        ax[0].fill_between(Ns, minsL2, maxsL2, alpha=0.2, color=cs[d])
+
+        ax[1].plot(Ns, minsLinf, c=cs[d], label=f"Linf {names[d]}")
+        ax[1].plot(Ns, meansLinf, c=cs[d])
+        ax[1].plot(Ns, maxsLinf, c=cs[d])
+        ax[1].fill_between(Ns, minsLinf, maxsLinf, alpha=0.2, color=cs[d])
+
+    # Plot
     ax[0].set_title(r"Error $L^2$")
     ax[0].set_xlabel("N")
     ax[0].set_ylabel("Error")
-    ax[0].set_xscale("log")
+    # ax[0].set_xscale("log")
     ax[0].set_yscale("log")
     ax[0].set_xlim(Ns[0], Ns[-1])
     ax[0].legend()
 
-    ax[1].plot(Ns, minsInfNirb_norect, c="tab:blue", label=r"$\Vert u_h - u_{hH}^N\Vert_{\infty}$ w/o rect.")
-    ax[1].plot(Ns, maxsInfNirb_norect, c="tab:blue")
-    ax[1].plot(Ns, moyInfNirb_norect, c="tab:blue")
-    ax[1].fill_between(Ns, minsInfNirb_norect, maxsInfNirb_norect, alpha=0.2)
-    ax[1].plot(Ns, minsInfNirb_rect, c="tab:orange", label=r"$\Vert u_h - u_{hH}^N\Vert_{\infty}$ w/ rect.")
-    ax[1].plot(Ns, maxsInfNirb_rect, c="tab:orange")
-    ax[1].plot(Ns, moyInfNirb_rect, c="tab:orange")
-    ax[1].fill_between(Ns, minsInfNirb_rect, maxsInfNirb_rect, alpha=0.2)
-    ax[1].axhline(minsInfInt_norect[0], color="tab:green", linestyle="--", label=r"$\Vert u_h - u_{hH}^N\Vert_{\infty}$")
-    ax[1].axhline(maxsInfInt_norect[0], color="tab:green", linestyle="--")
-    ax[1].axhline(moyInfInt_norect[0], color="tab:green", linestyle="--")
     ax[1].set_title(r"Error $L^\infty$")
     ax[1].set_xlabel("N")
     ax[1].set_ylabel("Error")
-    ax[1].set_xscale("log")
+    # ax[1].set_xscale("log")
     ax[1].set_yscale("log")
     ax[1].set_xlim(Ns[0], Ns[-1])
     ax[1].legend()
 
     # Save
-    tikzplotlib.save("plot.tex")
+    # tikzplotlib.save("plot.tex")
     plt.show()
 
-# plot_error('/data/scratch/saigre/feel-mbda/nirb/heat/np_1', [2, 3, 4, 5, 10, 15, 20, 25, 50, 100, 175, 200])
-plot_error('/data/home/elarif/feelppdb/nirb/heat/np_1', [1, 2, 4, 6, 10, 12, 14, 16, 20, 25, 30, 35, 40, 45, 50, 70, 80, 100])
 
 
 # %%
