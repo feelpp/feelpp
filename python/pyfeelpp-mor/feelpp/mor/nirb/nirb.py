@@ -384,6 +384,7 @@ class nirbOffline(ToolboxModel):
             self.fineSnapShotList.append( self.getToolboxSolution(self.tbFine, mu0) )
             self.coarseSnapShotList.append( self.getToolboxSolution(self.tbCoarse, mu0) )
             N += 1
+            self.orthonormalizeMatL2(self.coarseSnapShotList)
 
         while Delta_star > eps and N < Nmax:
             M = N - 1
@@ -406,6 +407,8 @@ class nirbOffline(ToolboxModel):
             self.fineSnapShotList.append(self.getToolboxSolution(self.tbFine, mu_star))
             N += 1
             self.coarseSnapShotList.append(self.getToolboxSolution(self.tbCoarse, mu_star))
+            self.orthonormalizeMatL2(self.coarseSnapShotList)
+
             Deltas_conv.append(Delta_star)
             if feelpp.Environment.isMasterRank():
                 print(f"[nirb] Adding snapshot with mu = {mu_star}")
@@ -675,17 +678,23 @@ class nirbOffline(ToolboxModel):
             print(f"[NIRB] Gram-Schmidt L2 orthonormalization done after {nb+1} step"+['','s'][nb>0])
 
     def orthonormalizeMatL2(self, Z):
+        """Ortohnormalize the matrix Z using L2 norm
+
+        Args:
+            Z (list of feelpp._discr.Element): list of feelpp functions
+
+        Returns:
+            Z: the matrix orthonormalized, inplace
+        """
         N = len(Z)
 
         if N == 1:
-            Z[0] /= self.normL2(Z[0])
+            Z[-1] *= 1 / Z[-1].l2Norm()
         else:
-            s = Z[0].clone()
-            s.setConstant(0)
+            s = Z[-1].clone().to_petsc().vec()
             for m in range(N):
-                s += self.scalarL2(Z[-1], Z[m]) * Z[m]
-            Z[-1] = (Z[-1] - s)
-            Z[-1] /= self.normL2(Z[-1])
+                Z[-1] -= s.dot( (Z[m].to_petsc().vec()) ) * Z[m]
+            Z[-1] *= 1 / Z[-1].l2Norm()
 
         return Z
 
