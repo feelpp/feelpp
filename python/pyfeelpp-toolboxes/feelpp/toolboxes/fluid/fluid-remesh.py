@@ -42,36 +42,9 @@ e = feelpp.Environment(sys.argv, opts=tb.toolboxes_options("fluid"),config=feelp
 # feelpp.Environment.setConfigFile('cases/rigid_body_paper_tests/3SS_planar_3D/3SS_planar_3D.cfg')
 # feelpp.Environment.setConfigFile('cases/rigid_body_paper_tests/3SS_planar_3D/preconditioner.cfg')
 
-# Falling two disks
-#feelpp.Environment.setConfigFile('cases/rigid_body_paper_tests/falling_two_disks/two_disks.cfg')
 
 # Falling one disk
 #feelpp.Environment.setConfigFile('cases/rigid_body_paper_tests/falling_one_disk/one_disk.cfg')
-
-# Falling three disks
-#feelpp.Environment.setConfigFile('cases/rigid_body_paper_tests/falling_three_disks/three_disks.cfg')
-
-# Falling six disks
-#feelpp.Environment.setConfigFile('cases/rigid_body_paper_tests/falling_six_disks/falling_six_disks.cfg')
-
-# Falling nine disks
-#feelpp.Environment.setConfigFile('cases/rigid_body_paper_tests/falling_nine_disks/falling_nine_disks.cfg')
-
-# Falling three sphere swimmer
-feelpp.Environment.setConfigFile('cases/contact_cases/three_sphere_2d/three_sphere_2d.cfg')
-
-# Falling multi disks
-#feelpp.Environment.setConfigFile('cases/rigid_body_paper_tests/falling_disks/falling_disks.cfg')
-
-# Falling sphere
-#feelpp.Environment.setConfigFile('cases/rigid_body_paper_tests/falling_sphere/falling_sphere.cfg')
-
-# Falling ellipsoid
-#feelpp.Environment.setConfigFile('cases/rigid_body_paper_tests/falling_ellipsoid_3d_Pan/falling_ellipsoid_3d_Pan.cfg')
-
-# Symmetric stenotic artery
-#feelpp.Environment.setConfigFile('cases/rigid_body_paper_tests/stenotic_artery/stenotic_artery.cfg')
-
 
 
 f = fluid(dim=2, orderVelocity=2, orderPressure=1)
@@ -127,28 +100,9 @@ f.printAndSaveInfo()
 #hclose = 0.01
 
 # Falling one disk
-#hfar = 0.2
-#hclose = 0.01
-
-# Falling ellipse
-#hfar = 0.05
-#hclose = 0.002
-
-# Falling ellipsoid
-#hfar = 0.06
-#hclose = 0.06
-
-# Falling sphere
-#hfar = 0.05
-#hclose = 0.05
-
-# Symmetric stenotic artery
-#hfar = 0.0002
-#hclose = 0.0000607
-
-# Falling three sphere swimmer
-hfar = 0.3
+hfar = 0.2
 hclose = 0.01
+
 
 def remesh_toolbox(f, hclose, hfar, parent_mesh):
     # 3 spheres
@@ -194,45 +148,9 @@ def remesh_toolbox(f, hclose, hfar, parent_mesh):
     # required_facets=["SphereCenter","SphereFirst","SphereSecond","SphereThird"]
     # required_elts=["SphCenter","SphFirst","SphSecond","SphThird"]
 
-    # Falling two disks
-    #required_facets=["DiskFirst","DiskSecond"]
-    #required_elts=["DFirst","DSecond"]
-
-    # Falling three disks
-    #required_facets=["DiskFirst","DiskSecond","DiskThird"]
-    #required_elts=["DFirst","DSecond","DThird"]
-
-    # Falling six disks
-    #required_facets=["DiskFirst","DiskSecond","DiskThird","DiskFourth","DiskFifth","DiskSixth"]
-    #required_elts=["DFirst","DSecond","DThird","DFourth","DFifth","DSixth"]
-
-    # Falling nine disks
-    #required_facets=["DiskFirst","DiskSecond","DiskThird","DiskFourth","DiskFifth","DiskSixth","DiskSeventh","DiskEighth","DiskNinth"]
-    #required_elts=["DFirst","DSecond","DThird","DFourth","DFifth","DSixth","DSeventh","DEighth","DNinth"]
-
     # Falling one disk
-    #required_facets=["DiskFirst"]
-    #required_elts=["DFirst"]
-
-    # Falling three sphere swimmer
-    required_facets=["CircleRight","CircleCenter","CircleLeft"]
-    required_elts=["CirRight","CirCenter","CirLeft"]
-
-    # Falling multi disks
-    #required_facets=["DiskFirst","DiskSecond","DiskThird","DiskFourth","DiskFifth"]
-    #required_elts=["DFirst","DSecond","DThird","DFourth","DFifth"]
-
-    # Falling ellipse
-    #required_facets=["Ellipsoid"]
-    #required_elts=["EllipsoidVolume"]
-
-    # Falling ellipsoid
-    #required_facets=["Ellipsoid"]
-    #required_elts=["EllipsoidVolume"]
-
-    # Symmetric stenotic artery
-    #required_facets=["Sphere1","Sphere2","Circles"]
-    #required_elts=["Sph1","Sph2"]
+    required_facets=["DiskFirst"]
+    required_elts=["DFirst"]
 
     Xh = feelpp.functionSpace(mesh=f.mesh())
     n_required_elts_before=feelpp.nelements(feelpp.markedelements(f.mesh(),required_elts))
@@ -270,13 +188,9 @@ f.startTimeStep()
 
 while not f.timeStepBase().isFinished():
     
-    #print("Time : ", f.time())
-
-    
     min_etaq = q.etaQ(f.mesh()).min()
     
     if min_etaq < 1.0:
-#    if f.timeStepBase().iteration() % 10 == 0:
         remesh_toolbox(f, hclose, hfar, None)
         f.addContactForceModel()
         f.addContactForceResModel()
@@ -292,15 +206,9 @@ while not f.timeStepBase().isFinished():
         print("time simulation: {}s iteration : {}\n".format(f.time(), f.timeStepBase().iteration()))
         #print("  -- mesh quality: {}s\n".format(min_etaq))
         print("============================================================\n")
-    #for i in range(2):
     
     f.solve()
     f.exportResults()
-    #sys.exit()
-    
+
     f.updateTimeStep()
 
-print("Nombre de remaillages : ", nbr_remesh)
-print("Temps des remaillages : ", time_remesh)
-
-#f.saveGMSHMesh("mymesh.msh")

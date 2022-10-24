@@ -26,7 +26,7 @@
 #include <feel/feelpython/pybind11/functional.h>
 #include <feel/feelmodels/modelcore/modelnumerical.hpp>
 #include <feel/feelmodels/fluid/fluidmechanics.hpp>
-#include <feel/feelfilters/savegmshmesh.hpp>
+#include <feel/feelmodels/modelcore/remeshinterpolation.hpp>
 #include <feel/feelcore/pybind11_json.hpp>
 #include "contactforce.hpp"
 
@@ -91,17 +91,12 @@ void defFM(py::module &m)
         .def("exportResults",static_cast<void (fm_t::*)( double )>(&fm_t::exportResults), "export the results of the fluid mechanics problem", py::arg("time"))
 
         // remesh
-        .def("applyRemesh",&fm_t::applyRemesh, "apply remesh to toolbox and regenerate the necessary data structure")
-
-        // save GMSH mesh        
-        .def(
-            "saveGMSHMesh",[](const fm_t& t, std::string name)
-            {
-                saveGMSHMesh(_mesh=t.mesh(),_filename=name);
-
-            },
-            "save GMSH mesh"
-        )   
+        .def("applyRemesh",
+        []( std::shared_ptr<fm_t>& self,typename fm_t::mesh_ptrtype meshOld, typename fm_t::mesh_ptrtype meshNew ) 
+        {
+            std::shared_ptr<RemeshInterpolation> remeshInterp = std::make_shared<RemeshInterpolation>();
+            self->applyRemesh(meshOld,meshNew,remeshInterp);            
+        }, "apply remesh to toolbox and regenerate the necessary data structure",py::arg("oldMesh"),py::arg("newMesh"))
         
         .def(
             "addContactForceModel",[](const fm_t& t)
@@ -138,6 +133,7 @@ void defFM(py::module &m)
             },
             "Initialization of execution time"
         ) 
+        
         ;
         
 }
@@ -151,5 +147,6 @@ PYBIND11_MODULE(_fluid, m )
     defFM<2,3,2,1>(m);
     defFM<3,2,1,1>(m);
     defFM<3,3,2,1>(m);
+
 }
 
