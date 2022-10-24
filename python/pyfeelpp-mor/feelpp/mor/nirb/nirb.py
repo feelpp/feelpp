@@ -676,25 +676,36 @@ class nirbOffline(ToolboxModel):
         elif rank == 0:
             # pass
             print(f"[NIRB] Gram-Schmidt L2 orthonormalization done after {nb+1} step"+['','s'][nb>0])
-
-    def orthonormalizeMatL2(self, Z):
+    def orthonormalizeMatL2(self, Z, scal="Lagrange"):
         """Ortohnormalize the matrix Z using L2 norm
 
         Args:
             Z (list of feelpp._discr.Element): list of feelpp functions
+            scal (str, optional): scalar product to use, should be "Lagrange", or "Euclide". Defaults to "Lagrange".
 
         Returns:
             Z: the matrix orthonormalized, inplace
         """
         N = len(Z)
 
-        if N == 1:
-            Z[-1] *= 1 / Z[-1].l2Norm()
+        if scal == "Lagrange":
+            if N == 1:
+                normS = Z[-1].to_petsc().vec().dot( self.l2ScalarProductMatrixCoarse.to_petsc().mat() * Z[-1].to_petsc().vec() )
+                Z[-1] *= 1 / np.sqrt(normS)
+            else:
+                s = Z[-1].clone().to_petsc().vec()
+                for m in range(N):
+                    Z[-1] -= s.dot( self.l2ScalarProductMatrixCoarse.to_petsc().mat() * Z[m].to_petsc().vec() ) * Z[m]
+                normS = Z[-1].to_petsc().vec().dot( self.l2ScalarProductMatrixCoarse.to_petsc().mat() * Z[-1].to_petsc().vec() )
+                Z[-1] *= 1 / np.sqrt(normS)
         else:
-            s = Z[-1].clone().to_petsc().vec()
-            for m in range(N):
-                Z[-1] -= s.dot( (Z[m].to_petsc().vec()) ) * Z[m]
-            Z[-1] *= 1 / Z[-1].l2Norm()
+            if N == 1:
+                Z[-1] *= 1 / Z[-1].l2Norm()
+            else:
+                s = Z[-1].clone().to_petsc().vec()
+                for m in range(N):
+                    Z[-1] -= s.dot( (Z[m].to_petsc().vec()) ) * Z[m]
+                Z[-1] *= 1 / Z[-1].l2Norm()
 
         return Z
 
