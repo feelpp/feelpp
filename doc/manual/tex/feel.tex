@@ -177,7 +177,7 @@ and here is the table which gathers all tools you may need:
   \lstinline!!! & $!g$ & element wise logical not  & & \\\hline\\
 
   \lstinline!+! & $f+g$ & tensor sum  & & \\
-  \lstinline!-! & $f-g$ & tensor substraction  & & \\
+  \lstinline!-! & $f-g$ & tensor subtraction  & & \\
   \lstinline!*! & $f*g$ & tensor product  & & \\
   \lstinline!/! & $f/g$ & tensor division ($g$ scalar field)  & & \\\hline\\
 
@@ -214,7 +214,7 @@ below. \\
 \end{itemize}
 The optional parameters are
 \begin{itemize}
- \item \lstinline!_quad!  = quadrature to use instead of the default one, wich means \lstinline!_Q<integer>()! where the integer is the polynomal order to integrate exactely
+ \item \lstinline!_quad!  = quadrature to use instead of the default one, which means \lstinline!_Q<integer>()! where the integer is the polynomial order to integrate exactly
  \item \lstinline!_geomap!  = type of geometric mapping to use, that is to say :
 	\begin{itemize}
   	\item \lstinline!GEOMAP_HO!  =  high order approximation (same of the mesh)
@@ -268,7 +268,7 @@ mean( _range, _expr, _quad, _geomap );
 \label{keywords:meshes}
 
 \feel enables full different ways to interact with the mesh on which you want to work. Mainly with the function \lstinline!integrate!, the various keywords we have established will make your program's code easier. The interoperability between \feel and \textsc{Gmsh} is huge and provides various access to any point, item, domain or almost anything you want in a mesh.
-The access to different items of a mesh is possible thanks to the filters which enable the access of only a mesh's part. Theses helpfull keywords are coded in \lstinline!feel/feelmesh/filters.hpp!, we are here going to describe most of them. \\ \\ To access one particular part of a mesh, you can use :
+The access to different items of a mesh is possible thanks to the filters which enable the access of only a mesh's part. These helpful keywords are coded in \lstinline!feel/feelmesh/filters.hpp!, we are here going to describe most of them. \\ \\ To access one particular part of a mesh, you can use :
 
 \begin{itemize}
 \item \lstinline!elements(mesh)!  corresponds to all the elements of a mesh
@@ -276,7 +276,7 @@ The access to different items of a mesh is possible thanks to the filters which 
 \item \lstinline!faces(mesh)!  corresponds to all the faces of the mesh.
 \item \lstinline!markedfaces(mesh)!  corresponds to all the faces of the mesh which are marked.
 \item \lstinline!boundaryfaces(mesh)!  corresponds to all elements that own a topological dimension one below the mesh. For example, if you mesh is a 2D one, \lstinline!boundaryfaces(mesh)! will return all the lines (because of dimension $2-1=1$). These elements which have one dimension less, are corresponding to the boundary faces.
-\item \lstinline!internalelements(mesh)!  corresponds to all the elements of the mesh which are stricly within the domain that is to say they do not share a face with the boundary.
+\item \lstinline!internalelements(mesh)!  corresponds to all the elements of the mesh which are strictly within the domain that is to say they do not share a face with the boundary.
 \item \lstinline!boundaryelements(mesh)!  corresponds to all the elements of the mesh which share a face with the boundary of the mesh.
 \item \lstinline!edges(mesh)!  corresponds to all the edges of the mesh.
 \item \lstinline!boundaryedges(mesh)!  corresponds to all boundary edges of the mesh.
@@ -312,7 +312,7 @@ normL2Squared( _range, _expr, _quad, _geomap );
  \item \lstinline!_geomap! = type of geometric mapping. Default = \lstinline!GEOMAP_OPT!
 \end{itemize}
 
-\noindent Exemples :\\
+\noindent Examples :\\
 With expression :
 \begin{lstlisting}
 double normL2_expr = normL2( _range=elements(mesh), \
@@ -357,7 +357,7 @@ normSemiH1( _range, _grad_expr, _quad, _geomap );
  \item \lstinline!_geomap! = type of geometric mapping. Default = \lstinline!GEOMAP_OPT!
 \end{itemize}
 
-\noindent Exemples :\\
+\noindent Examples :\\
 With expression :
 \begin{lstlisting}
 auto g = sin(2*pi*Px())*cos(2*pi*Py());
@@ -398,7 +398,7 @@ normLinf( _range, _expr, _pset, _geomap );
  \item \lstinline!_geomap! = type of geometric mapping. Default = \lstinline!GEOMAP_OPT!
 \end{itemize}
 
-\noindent Exemples :
+\noindent Examples :
 \begin{lstlisting}
 auto uMax = normLinf( _range=elements(mesh),\
 		     _expr=idv(u),\

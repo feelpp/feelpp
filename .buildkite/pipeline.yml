@@ -9,7 +9,8 @@ steps:
        - "ubuntu:22.04"
        - "ubuntu:20.04"
        - "debian:11"
-      if: build.message !~ /skip feelpp/
+      if: build.message !~ /skip feelpp/ &&
+          build.message !~ /skip components/ 
       agents:
         docker: true
  - wait: ~
@@ -20,12 +21,35 @@ steps:
  #      artifacts: Testing/junit-*.xml
  #      fail-build-on-error: true
  #  if: build.message !~ /skip feelpp/
- - trigger: "pkg-feelpp"
-   label: ":package: :debian: :ubuntu: Feel++ ${BUILDKITE_BRANCH}"
-   async: true
-   if: |
-     ( pipeline.slug=="feelpp" && ( build.branch == "develop" || build.branch == "master" )) && 
-     build.message !~ /skip feelpp/
+ - group: "feelpp ${CXX} :hammer: :package:"
+   steps:
+    - trigger: "pkg-feelpp"
+      label: ":package: :ubuntu: 22.04/jammy Feel++ ${BUILDKITE_BRANCH}"
+      async: true
+      if: |
+        ( pipeline.slug=="feelpp" && ( build.branch == "develop" || build.branch == "master" )) && 
+        build.message !~ /skip pkg/
+      build:
+        env:
+          DIST: "jammy"
+    - trigger: "pkg-feelpp"
+      label: ":package: :ubuntu: 20.04/focal Feel++ ${BUILDKITE_BRANCH}"
+      async: true
+      if: |
+        ( pipeline.slug=="feelpp" && ( build.branch == "develop" || build.branch == "master" )) && 
+        build.message !~ /skip pkg/
+      build:
+        env:
+          DIST: "focal"
+    - trigger: "pkg-feelpp"
+      label: ":package: :debian: 11/bullseye Feel++ ${BUILDKITE_BRANCH}"
+      async: true
+      if: |
+        ( pipeline.slug=="feelpp" && ( build.branch == "develop" || build.branch == "master" )) && 
+        build.message !~ /skip pkg/
+      build:
+        env:
+          DIST: "bullseye"
  - wait
  - group: "feelpp-testsuite ${CXX} :hammer: :docker:"
    steps:
@@ -36,6 +60,7 @@ steps:
       matrix:
        - "ubuntu:22.04"
        - "ubuntu:20.04"
+#       - "debian:11"
       if: |
         build.message !~ /skip tests/ &&
         build.message !~ /skip components/ 
@@ -50,6 +75,7 @@ steps:
       matrix:
        - "ubuntu:22.04"
        - "ubuntu:20.04"
+#       - "debian:11"
       if: |
         build.message !~ /skip toolboxes/ &&
         build.message !~ /skip components/
@@ -65,6 +91,7 @@ steps:
       matrix:
        - "ubuntu:22.04"
        - "ubuntu:20.04"
+#       - "debian:11"
       if: |
         (build.message !~ /skip mor/) &&
         (build.message !~ /skip components/)
@@ -80,6 +107,7 @@ steps:
       matrix:
        - "ubuntu:22.04"
        - "ubuntu:20.04"   
+#       - "debian:11"
       if: |
         (build.message !~ /skip python/) &&
         (build.message !~ /skip components/)

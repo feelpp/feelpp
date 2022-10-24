@@ -1551,6 +1551,7 @@ ModelAlgebraicFactory::updateNewtonIteration( int step, vector_ptrtype residual,
                 {
                     double curDelta = M_pseudoTransientContinuationDeltaAndResidual.back().first*M_pseudoTransientContinuationDeltaAndResidual.back().second/resNorm;
                     double newDelta = std::min( curDelta, M_pseudoTransientContinuationDeltaMax );
+                    this->model()->log( "ModelAlgebraicFactory","updateNewtonIteration SER residual", fmt::format("step={}, curDelta={}, newDelta={}, resNorm={}",step,curDelta,newDelta,resNorm) );
                     M_pseudoTransientContinuationDeltaAndResidual.push_back( std::make_pair(newDelta,resNorm ) );
                 }
             }
@@ -1571,23 +1572,25 @@ ModelAlgebraicFactory::updateNewtonIteration( int step, vector_ptrtype residual,
         else if ( M_pseudoTransientContinuationEvolutionMethod == "EXPur" )
         {
             double lambda = data.doubleInfos("linesearch.lambda" );
-            //std::cout << "QQ lambda="<< lambda << "\n";
             if ( step == 0 )
+            {
                 M_pseudoTransientContinuationDeltaAndResidual.push_back( std::make_pair(M_pseudoTransientContinuationDelta0,0. ) );
+                this->model()->log( "ModelAlgebraicFactory","updateNewtonIteration EXPur", fmt::format("step={}, lambda={}, newDelta={}",step,lambda,M_pseudoTransientContinuationDelta0) );
+            }
             else
             {
                 double beta1 = M_pseudoTransientContinuationExpurBetaHigh;
                 double beta2 = M_pseudoTransientContinuationExpurBetaLow;
                 double lastDelta = M_pseudoTransientContinuationDeltaAndResidual.back().first;
+                double newDelta = lastDelta;
                 if ( lambda >= M_pseudoTransientContinuationExpurThresholdHigh )
-                    M_pseudoTransientContinuationDeltaAndResidual.push_back( std::make_pair( beta1*lastDelta,0. ) );
+                    newDelta = beta1*lastDelta;
                 else if ( lambda <= M_pseudoTransientContinuationExpurThresholdLow )
-                    M_pseudoTransientContinuationDeltaAndResidual.push_back( std::make_pair( beta2*lastDelta,0. ) );
-                else
-                    M_pseudoTransientContinuationDeltaAndResidual.push_back( std::make_pair( lastDelta,0. ) );
+                    newDelta = beta2*lastDelta;
+                M_pseudoTransientContinuationDeltaAndResidual.push_back( std::make_pair( newDelta,0. ) );
+                this->model()->log( "ModelAlgebraicFactory","updateNewtonIteration EXPur", fmt::format("step={}, lambda={}, newDelta={}, lastDelta={}",step,lambda,newDelta,lastDelta) );
             }
         }
-        //std::cout << "CFL="<<M_pseudoTransientContinuationDeltaAndResidual.back().first<<"\n";
     }
 }
 

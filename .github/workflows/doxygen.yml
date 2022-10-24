@@ -22,7 +22,8 @@ jobs:
     steps:
     - uses: actions/checkout@v3
       with:
-        lfs: true
+        submodules: 'recursive'
+        lfs: 'true'
 #    - name: Update Dependencies
 #      run: |
 #        sudo apt install -y gpg
