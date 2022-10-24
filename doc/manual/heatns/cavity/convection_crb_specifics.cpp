@@ -294,7 +294,7 @@ int ConvectionCrb::mMaxA( int q )
     if ( q < 4 )
         return 1;
     else
-        throw std::logic_error( "[Model] ERROR : try to acces to mMaxA(q) with a bad value of q");
+        throw std::logic_error( "[Model] ERROR : trying to access mMaxA(q) with a bad value of q");
 }
 
 /**
@@ -316,7 +316,7 @@ int ConvectionCrb::mMaxF( int output_index, int q)
         if ( q < Ql(output_index) )
             return 1;
         else
-            throw std::logic_error( "[Model] ERROR : try to acces to mMaxF(output_index,q) with a bad value of q");
+            throw std::logic_error( "[Model] ERROR : trying to access mMaxF(output_index,q) with a bad value of q");
     }
     if( output_index == 2 )
     {
@@ -324,7 +324,7 @@ int ConvectionCrb::mMaxF( int output_index, int q)
         return eim_uu->mMax();
     }
     if( output_index > 2 )
-            throw std::logic_error( "[Model] ERROR : try to acces to mMaxF(output_index,q) with a bad value of output_index");
+            throw std::logic_error( "[Model] ERROR : trying to access mMaxF(output_index,q) with a bad value of output_index");
     return dumy;
 }
 

@@ -1,4 +1,11 @@
-import sys,time
+import sys
+import os
+petsc_dir = '@FEELPP_PETSC_DIR@' or '/usr/lib/petsc'
+petsc_dir = os.path.join(os.getenv('PETSC_DIR')
+                         or petsc_dir, 'lib/python3/dist-packages')
+petsc_dir in sys.path or sys.path.append(petsc_dir)
+
+import time
 from ._feelpp import  *
 from ._core import *
 from ._alg import *
@@ -198,7 +205,15 @@ def gmshGenerate(dim, fname):
     return mshname
 
 
-def create_rectangle():
+def create_rectangle(filename="rectangle"):
+    """create the mesh of the rectangle [0,1]x[0,2] with z=0
+
+    Args:
+        filename (str, optional):  prefix of the file name of the mesh. Defaults to "rectangle".
+
+    Returns:
+        _type_: file name, dimension, length of Gamma_1, length of Gamma_2, total surface, total length
+    """    
     mshname = None
     if Environment.isMasterRank():
         import gmsh
@@ -213,11 +228,19 @@ def create_rectangle():
         gmsh.model.setPhysicalName(1, gamma_1, "Gamma_1")
         gamma_2 = gmsh.model.addPhysicalGroup(1, [2, 4])
         gmsh.model.setPhysicalName(1, gamma_2, "Gamma_2")
-    mshname = gmshGenerate(2, "rectangle")
-    return mshname, 2, 2, 4, 6
+    mshname = gmshGenerate(2, filename)
+    return mshname, 2, 2, 2, 4, 6
 
 
-def create_box():
+def create_box(filename="box"):
+    """create the mesh of the box [0,1]x[0,2]x[0,0.5]
+
+    Args:
+        filename (str, optional): _description_. Defaults to "box".
+
+    Returns:
+        _type_: file name, dimension, measure of Gamma_1, measure of Gamma_2
+    """    
     mshname = None
     if Environment.isMasterRank():
         import gmsh
@@ -234,5 +257,5 @@ def create_box():
         gmsh.model.setPhysicalName(2, gamma_2, "Gamma_2")
         gamma_3 = gmsh.model.addPhysicalGroup(2, [5, 6])
         gmsh.model.setPhysicalName(2, gamma_3, "Gamma_3")
-    mshname = gmshGenerate(3, "box")
-    return mshname, 1, 1.5, 1.5, 7
+    mshname = gmshGenerate(3, filename)
+    return mshname, 3, 1, 1.5, 1.5, 7

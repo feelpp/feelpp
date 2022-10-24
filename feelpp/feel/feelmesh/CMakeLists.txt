@@ -28,9 +28,7 @@ SET( SRC
   functors.cpp
   meshbase.cpp
   remesher.cpp
-    )
+  )
 
 file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp detail/*.hpp)
 feel_append_src(feelmesh "${SRC};${HDR}")
-
-

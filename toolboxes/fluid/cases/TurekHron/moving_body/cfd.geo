@@ -50,7 +50,7 @@ Plane Surface(2) = {15};
 Line Loop(16) = {5, 6, -14};
 Plane Surface(17) = {16};
 
-Physical Line("FEELPP_GMSH_PHYSICALNAME_IGNORED") = {11};
+Physical Line("line-downstream") = {11};
 
 Physical Line("inlet") = {4};
 Physical Line("wall") = {1,3};

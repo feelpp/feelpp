@@ -31,7 +31,7 @@
 namespace Feel
 {
 /**
-   \page LaplacianDG Laplacian using Discontinous Galerkin
+   \page LaplacianDG Laplacian using Discontinuous Galerkin
    \author Feel++ Consortium
 
    <br>

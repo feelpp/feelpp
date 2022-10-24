@@ -199,9 +199,9 @@ OpusHeat<IsStationary>::assembleData()
     if( true ) //boption("do-not-use-operators-free") )
     {
         for (int k = 0 ; k<this->M_Aq.size() ; ++k)
-            this->M_Aq[k] = backend()->newMatrix( this->Xh, this->Xh );
+            this->M_Aq[k] = backend()->newMatrix( _test=this->Xh, _trial=this->Xh );
         if ( super_type::is_time_dependent )
-            this->M_Mq[0] = backend()->newMatrix( this->Xh, this->Xh );
+            this->M_Mq[0] = backend()->newMatrix( _test=this->Xh, _trial=this->Xh );
         for (int k = 0 ; k<this->M_Fq[0].size() ; ++k)
             this->M_Fq[0][k] = backend()->newVector( this->Xh );
         this->M_Fq[1][0] = backend()->newVector( this->Xh );

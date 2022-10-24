@@ -63,8 +63,10 @@ void printToolboxApplication( std::string const& toolboxName, worldcomm_t const&
 
 struct ModelBaseCommandLineOptions
 {
+    using init_function_type = std::function<void(po::options_description const&,po::variables_map &)>;
     ModelBaseCommandLineOptions() = default;
-    explicit ModelBaseCommandLineOptions( po::options_description const& _options );
+    explicit ModelBaseCommandLineOptions( po::options_description const& _options, init_function_type func={} );
+    explicit ModelBaseCommandLineOptions( po::variables_map const& vm );
     ModelBaseCommandLineOptions( ModelBaseCommandLineOptions const& ) = default;
     ModelBaseCommandLineOptions( ModelBaseCommandLineOptions && ) = default;
 
@@ -257,6 +259,15 @@ public :
     void setManageParameterValues( bool b ) { M_manageParameterValues = b; }
     bool manageParameterValuesOfModelProperties() const { return M_manageParameterValuesOfModelProperties; }
     void setManageParameterValuesOfModelProperties( bool b ) { M_manageParameterValuesOfModelProperties = b; }
+
+    auto symbolsExprParameter() const
+        {
+            if ( this->hasModelProperties() )
+                return this->modelProperties().parameters().symbolsExpr();
+            else
+                return std::decay_t<decltype(this->modelProperties().parameters().symbolsExpr())>{};
+        }
+
 
 private :
     // worldcomm

@@ -1,4 +1,3 @@
-
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*-
 
    This file is part of the Feel library
@@ -64,16 +63,16 @@ std::string strsymbol( std::vector<symbol> const& f )
 ex parse( std::string const& str, std::vector<symbol> const& syms, std::vector<symbol> const& params )
 {
     using namespace Feel;
-    LOG(INFO) << "Parsing " << str << " using GiNaC with " << syms.size() << " symbols";
-    LOG(INFO) <<" . symbols : "  << strsymbol(syms);
-    LOG(INFO) <<" . parameters : "  << strsymbol(params);
+    VLOG(1) << "Parsing " << str << " using GiNaC with " << syms.size() << " symbols";
+    VLOG(1) <<" . symbols : "  << strsymbol(syms);
+    VLOG(1) <<" . parameters : "  << strsymbol(params);
 
     using GiNaC::symbol;
     using GiNaC::symtab;
     using GiNaC::parser;
     using GiNaC::parse_error;
     symtab table;
-    LOG(INFO) <<"Inserting symbols in symbol table";
+    VLOG(1) <<"Inserting symbols in symbol table";
 
     std::vector<symbol> total_syms;
     boost::for_each( syms, [&table, &total_syms]( symbol const& param )
@@ -82,18 +81,18 @@ ex parse( std::string const& str, std::vector<symbol> const& syms, std::vector<s
                          table[param.get_name()] = param;
                      } );
 
-    LOG(INFO) <<"Inserting params and in symbol table: " << strsymbol(total_syms);
+    VLOG(1) <<"Inserting params and in symbol table: " << strsymbol(total_syms);
 
     boost::for_each( params, [&table, &total_syms]( symbol const& param )
                      {
                          total_syms.push_back(symbol(param));
                          table[param.get_name()] = param;
                      } );
-    LOG(INFO) << " . table : " << table;
-    LOG(INFO) <<"Defining parser";
+    VLOG(1) << " . table : " << table;
+    VLOG(1) <<"Defining parser";
     parser reader(table ,option(_name="ginac.strict-parser").as<bool>()); // true to ensure that no more symbols are added
 
-    LOG(INFO) <<"parse expression\n";
+    VLOG(1) <<"parse expression\n";
     ex e; // = reader(str);
     try
     {
@@ -111,7 +110,7 @@ ex parse( std::string const& str, std::vector<symbol> const& syms, std::vector<s
     {
         std::cerr << "Exception of unknown type!\n";
     }
-    LOG(INFO) << "e=" << e << "\n";
+    VLOG(1) << "e=" << e << "\n";
     return e;
 }
 
@@ -126,7 +125,7 @@ parse( std::string const& str, std::string const& seps, std::vector<symbol> cons
     using GiNaC::symtab;
     using GiNaC::parse_error;
 
-    LOG(INFO) << "Parsing " << str << " using GiNaC";
+    VLOG(1) << "Parsing " << str << " using GiNaC";
     std::vector<std::string> fields;
     boost::split( fields, str, boost::is_any_of(seps), boost::token_compress_on );
     int fsize = fields.size();
@@ -148,13 +147,13 @@ parse( std::string const& str, std::string const& seps, std::vector<symbol> cons
                    [&syms] ( std::string const& sym ) { syms.push_back( symbol(sym) ); } );
 
 
-    LOG(INFO) << " . Number of symbols " << syms.size() << "\n";
-    LOG(INFO) << " . symbols : "  << strsymbol(syms);
-    LOG(INFO) << " . Number of params " << params.size() << "\n";
-    LOG(INFO) << " . symbols : "  << strsymbol(params);
+    VLOG(1) << " . Number of symbols " << syms.size() << "\n";
+    VLOG(1) << " . symbols : "  << strsymbol(syms);
+    VLOG(1) << " . Number of params " << params.size() << "\n";
+    VLOG(1) << " . symbols : "  << strsymbol(params);
 
     symtab table;
-    LOG(INFO) <<"Inserting symbols in symbol table";
+    VLOG(1) <<"Inserting symbols in symbol table";
 #if 0
     table["x"]=syms[0];
     if ( syms.size() == 2 )
@@ -174,7 +173,7 @@ parse( std::string const& str, std::string const& seps, std::vector<symbol> cons
                          table.insert({param.get_name(), param});
                      } );
 
-    LOG(INFO) <<"Inserting params and in symbol table : " << strsymbol(total_syms);
+    VLOG(1) <<"Inserting params and in symbol table : " << strsymbol(total_syms);
 
     boost::for_each( params, [&table, &total_syms]( symbol const& param )
                      {
@@ -183,26 +182,26 @@ parse( std::string const& str, std::string const& seps, std::vector<symbol> cons
                      } );
 #if 0
     for ( auto it=table.begin(),en=table.end() ; it!=en ; ++it )
-        LOG(INFO) <<" - table : "  << it->first << "\t" << it->second;
+        VLOG(1) <<" - table : "  << it->first << "\t" << it->second;
 #else
-    LOG(INFO) << " . table : " << table;
+    VLOG(1) << " . table : " << table;
 #endif
-    
-    LOG(INFO) <<"Defining parser";
+
+    VLOG(1) <<"Defining parser";
     parser reader(table ,option(_name="ginac.strict-parser").as<bool>()); // true to ensure that no more symbols are added
 
-    LOG(INFO) <<"parse expression: " << strexpr;
+    VLOG(1) <<"parse expression: " << strexpr;
     if ( boost::algorithm::contains( strexpr, "// Not supported in C" ) )
     {
-        LOG(INFO) <<"invalid code: " << table;
+        VLOG(1) <<"invalid code: " << table;
         throw std::invalid_argument( fmt::format( "invalid code: ", table ) );
     }
     ex e; // = reader(str);
     try
     {
-        LOG( INFO ) << "parse expression 2: " << strexpr;
+        VLOG(1) << "parse expression 2: " << strexpr;
         e = reader(strexpr);
-        LOG( INFO ) << "parse expression 3: " << strexpr;
+        VLOG(1) << "parse expression 3: " << strexpr;
     }
     catch (std::invalid_argument& err)
     {
@@ -216,7 +215,7 @@ parse( std::string const& str, std::string const& seps, std::vector<symbol> cons
         throw;
     }
 
-    LOG(INFO) << "e=" << e << "\n";
+    VLOG(1) << "e=" << e << "\n";
     return {e,syms};
 }
 
@@ -365,7 +364,7 @@ curl( ex const& f, std::vector<symbol> const& l )
 matrix
 curl( matrix const& f, std::vector<symbol> const& l )
 {
-	LOG(INFO) << "matrix version\n";
+	VLOG(1) << "matrix version\n";
     CHECK(0) << "not implemented yet\n";
     return matrix{};
 }
@@ -420,7 +419,7 @@ laplacian( ex const& f, std::vector<symbol> const& l )
 matrix
 laplacian( std::string const& s, std::vector<symbol> const& l )
 {
-    LOG(INFO) << "compute laplacian of " << s << std::endl;
+    VLOG(1) << "compute laplacian of " << s << std::endl;
     return laplacian( parse( s, l ), l );
 }
 matrix
@@ -508,7 +507,8 @@ matrix substitute(matrix const &f, symbol const& s, ex const& g )
     return ff;
 }
 
-int totalDegree( GiNaC::ex const& expr, std::vector<std::pair<GiNaC::symbol,int>> const& symbolsDegree )
+#if 0
+int totalDegree( GiNaC::ex const& expr, std::vector<std::pair<GiNaC::symbol,Feel::uint16_type>> const& symbolsDegree )
 {
     int res = 0;
     for ( int sd=0;sd<symbolsDegree.size();++sd )
@@ -516,7 +516,7 @@ int totalDegree( GiNaC::ex const& expr, std::vector<std::pair<GiNaC::symbol,int>
         GiNaC::symbol symbDegree = symbolsDegree[sd].first;
         int unitDegree = symbolsDegree[sd].second;
         int mydegree = expr.degree( symbDegree )*unitDegree;
-        std::vector<std::pair<GiNaC::symbol,int>> newSymbolsDegree;
+        std::vector<std::pair<GiNaC::symbol,Feel::uint16_type>> newSymbolsDegree;
         for (int k=0;k<symbolsDegree.size();++k)
         {
             if ( sd == k ) continue;
@@ -527,6 +527,90 @@ int totalDegree( GiNaC::ex const& expr, std::vector<std::pair<GiNaC::symbol,int>
     }
     return res;
 }
+
+#else
+
+// update total degree from a symbol (the first) and all subsymbols dependencies
+// implementation based on a heap .
+void totalDegreeImpl( std::vector<std::tuple<std::reference_wrapper<const GiNaC::symbol>,std::optional<GiNaC::ex>,std::vector<int>,Feel::uint16_type> > & symbolsDegree )
+{
+    using namespace Feel;
+    GiNaC::symbol symbDegreeComputation;
+    std::vector<int> heapSymbolIds = {0};
+    int currentSymbolId = heapSymbolIds.back();
+    while ( !heapSymbolIds.empty() )
+    {
+        currentSymbolId = heapSymbolIds.back();
+        auto & thesymbolData = symbolsDegree.at( currentSymbolId );
+        if ( std::get<3>(thesymbolData) != invalid_v<uint16_type> )
+        {
+            heapSymbolIds.pop_back();
+            continue;
+        }
+
+        auto const& symbolDeps = std::get<2>( thesymbolData );
+        std::vector<int> needSymbolIds;
+        bool canBeComputed = true;
+        for ( int k : symbolDeps )
+        {
+            auto & thesubsymbolData = symbolsDegree.at( k );
+            if ( std::get<3>( thesubsymbolData ) == invalid_v<uint16_type> )
+            {
+                needSymbolIds.push_back( k );
+                canBeComputed = false;
+            }
+        }
+
+        if ( canBeComputed )
+        {
+            auto symbolEx = std::get<1>( thesymbolData );
+            for ( int k : symbolDeps )
+            {
+                auto const& thesubsymbolData = symbolsDegree.at( k );
+                auto const& subsymbol = std::get<0>( thesubsymbolData ).get();
+                uint16_type symbolDegree = std::get<3>( thesubsymbolData );
+                // susbtitute subsymbol wtih symbDegreeComputation
+                *symbolEx = symbolEx->subs( subsymbol == pow(symbDegreeComputation,symbolDegree) );
+            }
+            // compute degree with symbDegreeComputation
+            int mydegree = symbolEx->degree( symbDegreeComputation );
+            std::get<3>( thesymbolData ) = mydegree;
+            heapSymbolIds.pop_back();
+        }
+        else
+        {
+            for ( int k : needSymbolIds )
+                heapSymbolIds.push_back( k );
+        }
+    }
+
+}
+
+
+int totalDegree( GiNaC::ex const& expr, std::vector<std::pair<GiNaC::symbol,Feel::uint16_type>> const& symbolsDegreeIn )
+{
+    using namespace Feel;
+
+    GiNaC::symbol symbCurentExpr;
+    std::vector<std::tuple<std::reference_wrapper<const GiNaC::symbol>,std::optional<GiNaC::ex>,std::vector<int>,uint16_type> > symbolsDegree;
+    std::vector<int> subsymbolIds;
+    for (int k=0;k<symbolsDegreeIn.size();++k)
+        subsymbolIds.push_back( k+1 );
+
+    symbolsDegree.push_back( std::make_tuple( std::cref(symbCurentExpr),
+                                              std::make_optional<GiNaC::ex>( expr ),
+                                              subsymbolIds, invalid_v<uint16_type> ) );
+    for ( auto const& [symb,deg] : symbolsDegreeIn )
+        symbolsDegree.push_back( std::make_tuple( std::cref(symb),
+                                                  std::optional<GiNaC::ex>{},
+                                                  std::vector<int>{}, deg ) );
+
+    totalDegreeImpl(symbolsDegree);
+
+    return std::get<3>( symbolsDegree.front() );
+}
+
+#endif
 
 std::vector<std::pair< bool,double> >
 toNumericValues( ex const& expr )

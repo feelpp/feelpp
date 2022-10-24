@@ -1,4 +1,3 @@
-// -*- mode: javascript -*-
 {
     "Name": "Turek-Hron cfd3",
     "ShortName":"cfd3",
@@ -6,6 +5,7 @@
     {
         "fluid":{
             "equations":"Navier-Stokes"
+            //,"formulation":"emac" // "convective","skew-symmetric","conservative","rotational","emac"
         }
     },
     "Meshes":
@@ -41,16 +41,13 @@
                 {
                     "expr":"{ 1.5*ubar*(4./0.1681)*y*(0.41-y)*( ((1-cos(pi*t/2))/2)*chi + (1-chi) ),0}:ubar:y:t:chi"
                 },
-                "wall1":
+                "walls":
                 {
-                    "expr":"{0,0}"
-                },
-                "wall2":
-                {
+                    "markers":["wall1","wall2"],
                     "expr":"{0,0}"
                 }
             },
-            "outlet":
+            "normal_stress":
             {
                 "outlet":
                 {

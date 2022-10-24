@@ -1150,6 +1150,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStep()
     // update all expressions in bc or in house prec
     this->updateParameterValues();
 
+    using mesh_adaptation_type = typename super_type::super_model_meshes_type::mesh_adaptation_type;
+    this->template updateMeshAdaptation<mesh_type>( this->keyword(),
+                                                    mesh_adaptation_type::createEvent<mesh_adaptation_type::Event::Type::each_time_step>( this->time(),M_bdfVelocity->iteration() ),
+                                                    this->symbolsExpr() );
+
     this->timerTool("TimeStepping").stop("updateTimeStep");
     if ( this->scalabilitySave() ) this->timerTool("TimeStepping").save();
     this->log("FluidMechanics","updateTimeStep", "finish" );

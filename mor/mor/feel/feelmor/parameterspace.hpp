@@ -168,6 +168,7 @@ public:
          */
         std::string parameterName( int d ) const
             {
+                CHECK( M_space ) << "no parameter space";
                 return M_space->parameterName(d);
             }
 
@@ -177,6 +178,7 @@ public:
          */
         std::vector<std::string> const& parameterNames() const
         {
+            CHECK( M_space ) << "no parameter space";
             return M_space->parameterNames();
         }
 
@@ -1516,8 +1518,12 @@ public:
             setParameterName( i, parameterPair.second.name() );
             M_min(i) = parameterPair.second.min();
             M_max(i) = parameterPair.second.max();
+
+            if (!( parameterPair.second.min() < parameterPair.second.max() ))
+                throw std::logic_error( fmt::format("invalid range parameter {}\n",parameterPair.second.name()) );
             ++i;
         }
+
     }
 
     //! destructor
