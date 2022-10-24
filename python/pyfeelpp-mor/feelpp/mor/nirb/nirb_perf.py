@@ -61,7 +61,7 @@ def ComputeErrorsH(nirb_on, tbRef, mu, path=None, name=None):
 
     return error
 
-def ComputeErrorSampling(nirb_on, Nsample=1, samplingType='log-random'):
+def ComputeErrorSampling(nirb_on, Nsample=1, samplingType='log-random', Xi_test=None):
     """Compute the errors between nirb solution and FE one for 
         a given number of parameters 
     Args:
@@ -80,10 +80,14 @@ def ComputeErrorSampling(nirb_on, Nsample=1, samplingType='log-random'):
     """
 
     # finish = timeit()
-    Dmu = nirb_on.Dmu
-    s = Dmu.sampling()
-    s.sampling(Nsample, samplingType)
-    mus = s.getVector()
+    if Xi_test is None:
+        Dmu = nirb_on.Dmu
+        s = Dmu.sampling()
+        s.sampling(Nsample, samplingType)
+        mus = s.getVector()
+    else:
+        Nsample = len(Xi_test)
+        mus = Xi_test
 
     err = np.zeros((Nsample,4))
     for i,mu in enumerate(mus):

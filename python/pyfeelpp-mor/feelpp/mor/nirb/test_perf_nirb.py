@@ -6,11 +6,8 @@ import pandas as pd
 from pathlib import Path
 from nirb_perf import *
 
-H = 0.5  # CoarseMeshSize
-h = 0.1  # Fine mesh size
-dim = 3
 PWD = os.getcwd()
-toolboxType='heat'
+toolboxType = "heat"
 modelfile={'heat':'square/square', 'fluid':'lid-driven-cavity/cfd2d'}
 modelsFolder = f"{PWD}/model/"
 cfg_path = f"{modelsFolder}thermal-fin-3d/thermal-fin.cfg"
@@ -24,7 +21,7 @@ nirb_config['doGreedy'] = doGreedy
 
 r = ["noRect","Rect"][doRectification]
 g = ["noGreedy","Greedy"][doGreedy]
-RESPATH = f"RESULTS/{toolboxType}/{r}/{g}"
+RESPATH = f"RESULTS/{r}/{g}"
 
 def offline(N):
     """Generated the reduced basis for the given N
@@ -36,7 +33,7 @@ def offline(N):
     """
 
     start = time.time()
-    nirb = nirbOffline(**nirb_config)
+    nirb = nirbOffline(**nirb_config, initCoarse=doGreedy)
     if doGreedy:
         nirb.initProblemGreedy(1000, 1e-5, Nmax=N, computeCoarse=True, samplingMode="random")
     else:
@@ -55,7 +52,7 @@ def offline(N):
     print(f"[NIRB] Offline part Done !")
 
 
-def online_error_sampling():
+def online_error_sampling(Xi_test=None):
     """Compute the error between the toolbox solution and the NIRB solution for a sampling of parameters
        Generates the file errorParams/errors${N}.csv containing the errors for each parameter, for a given value of N,
           corresponding to the size of the reduced basis.
@@ -64,7 +61,7 @@ def online_error_sampling():
     nirb.loadData(RESPATH)
 
     Nsample = 50
-    errorN = ComputeErrorSampling(nirb, Nsample=Nsample)
+    errorN = ComputeErrorSampling(nirb, Nsample=Nsample, Xi_test=Xi_test)
 
     df = pd.DataFrame(errorN)
     file = Path(f"{RESPATH}/errorParams/errors{nirb.N}.csv")
