@@ -100,6 +100,7 @@ class ToolboxModel():
         """Initialize the rectification problem
         """
         self.tbCoarse = self.setToolbox(self.H)
+        self.XH = feelpp.functionSpace(mesh=self.tbCoarse.mesh(), order=self.order)
         if feelpp.Environment.isMasterRank():
             print(f"[NIRB] Number of nodes on the coarse mesh : {self.tbCoarse.mesh().numGlobalPoints()}")
 
@@ -385,6 +386,7 @@ class nirbOffline(ToolboxModel):
             self.coarseSnapShotList.append( self.getToolboxSolution(self.tbCoarse, mu0) )
             N += 1
             self.orthonormalizeMatL2(self.coarseSnapShotList)
+        Delta_0 = np.abs(self.getReducedSolution(Xi_train[0], 2).mean() - self.getReducedSolution(Xi_train[1], 1).mean())
 
         while Delta_star > eps and N < Nmax:
             M = N - 1
@@ -395,7 +397,7 @@ class nirbOffline(ToolboxModel):
                 uHN = self.getReducedSolution(mu, N)
                 uHM = self.getReducedSolution(mu, M)
 
-                Delta = np.abs( uHN.mean() - uHM.mean() )
+                Delta = np.abs( uHN.mean() - uHM.mean() ) / Delta_0
 
                 if Delta > Delta_star:
                     Delta_star = Delta
@@ -418,7 +420,7 @@ class nirbOffline(ToolboxModel):
             print(f"[NIRB] Number of snapshot computed : {N}")
 
 
-    def generateOperators(self):
+    def generateOperators(self, coarse=False):
         """Assemble L2 and H1 operators, stored in self.l2ScalarProduct and self.h1ScalarProduct
         """
         if self.l2ScalarProductMatrix is None or self.h1ScalarProductMatrix is None:
@@ -427,6 +429,12 @@ class nirbOffline(ToolboxModel):
             self.h1ScalarProductMatrix = FppOp.stiffness(test=self.Xh, trial=self.Xh, range=feelpp.elements(self.tbFine.mesh()))
             self.l2ScalarProductMatrix.to_petsc().mat().assemble()
             self.h1ScalarProductMatrix.to_petsc().mat().assemble()
+
+        if coarse:
+            self.l2ScalarProductMatrixCoarse = FppOp.mass(test=self.XH, trial=self.XH, range=feelpp.elements(self.tbCoarse.mesh()))
+            self.h1ScalarProductMatrixCoarse = FppOp.stiffness(test=self.XH, trial=self.XH, range=feelpp.elements(self.tbCoarse.mesh()))
+            self.l2ScalarProductMatrixCoarse.to_petsc().mat().assemble()
+            self.h1ScalarProductMatrixCoarse.to_petsc().mat().assemble()
 
     def generateReducedBasis(self, tolerance=1.e-6, regulParam=1.e-10):
         """Generate the reduced basis, and store it in self.reducedBasis

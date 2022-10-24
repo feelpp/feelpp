@@ -27,13 +27,13 @@ if __name__ == "__main__":
     start = time.time()
 
     nirb_off = nirbOffline(initCoarse=True, **config_nirb)
+    nirb_off.generateOperators(coarse=True)
 
-    doGreedy = True
+    doGreedy = config_nirb['greedy-generation']
     if doGreedy:
-        nirb_off.initProblemGreedy(1000, 1e-5, Nmax=10, computeCoarse=True)
+        res = nirb_off.initProblemGreedy(100, 1e-5, Nmax=10, computeCoarse=True, samplingMode="random")
     else:
         nirb_off.initProblem(nbSnap)
-    nirb_off.generateOperators()
     nirb_off.generateReducedBasis(regulParam=1.e-10)
 
     # nirb_off.BiOrthonormalization()
