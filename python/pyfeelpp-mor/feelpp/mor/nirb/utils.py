@@ -11,6 +11,7 @@ import feelpp.toolboxes.core as core
 from petsc4py import PETSc
 from slepc4py import SLEPc
 import numpy as np
+from mpi4py import MPI 
 
 
 ############################################################################################################
@@ -162,7 +163,7 @@ def TruncatedEigenV(matrix, epsilon = None, nbModes = None):
 
     # Get eigenpairs of the matrix 
     E = SLEPc.EPS() # SVD for singular value decomposition or EPS for Eigen Problem Solver  
-    E.create()  # create the solver
+    E.create(comm=MPI.COMM_SELF)  # create the solver in sequential 
 
     E.setOperators(matrix)
     E.setFromOptions()
@@ -177,7 +178,10 @@ def TruncatedEigenV(matrix, epsilon = None, nbModes = None):
     eigenVectors = E.getInvariantSubspace() # Get orthonormal basis associated to eigenvalues 
 
     for i in range(nbmaxEv):
-        eigenValues.append(float(E.getEigenvalue(i).real))
+        k = float(E.getEigenvalue(i).real)
+        if abs(k)<1.e-12:
+            k += 1.e-10
+        eigenValues.append(k)
     
     E.destroy() # destroy the solver object 
 
