@@ -30,7 +30,7 @@ if __name__ == "__main__":
 
     e = init_feelpp_environment(toolboxType, cfg_path)
 
-    doRectification=True 
+    doRectification=False 
     doBiorthonormal=False  
     nbSnap = 5
     if len(sys.argv)>=2:
@@ -42,7 +42,7 @@ if __name__ == "__main__":
     star=time.time()
 
     nirb_off = nirbOffline(dim, H, h, toolboxType, cfg_path, model_path, geo_path,
-                             doRectification=doRectification, order=order, doBiorthonormal=doBiorthonormal)
+                            doRectification=doRectification, order=order, doBiorthonormal=doBiorthonormal)
 
     nirb_off.initProblem(nbSnap)
     nirb_off.generateOperators()
@@ -57,13 +57,16 @@ if __name__ == "__main__":
     # nirb_off.saveData()
 
     print("Is L2 orthonormalized ?", nirb_off.checkL2Orthonormalized())
-    # print("Is H1 orthonormalized ? ", nirb_off.checkH1Orthonormalized())
+    print("Is H1 orthonormalized ? ", nirb_off.checkH1Orthonormalized())
 
     perf = []
     perf.append(nbSnap)
     perf.append(finish-star)
 
-    file='nirbOffline_time_exec.txt'
+    if doRectification:
+        file='nirbOffline_time_exec_rectif.txt'
+    else :
+        file='nirbOffline_time_exec.txt'
     WriteVecAppend(file,perf)
 
     info = nirb_off.getInformations()

@@ -31,8 +31,8 @@ def ComputeErrors(nirb_on, mu):
     
     error = [nirb_on.N]
 
-    error.append(nirb_on.normMat(l2Mat, uHh-uh))
-    error.append(nirb_on.normMat(h1Mat, uHh-uh))
+    error.append(nirb_on.normMat(l2Mat, uHh-uh)) # L2 norm 
+    error.append(nirb_on.normMat(h1Mat, uHh-uh)) # H1 norm 
     error.append(nirb_on.normMat(l2Mat, uH-uh))
     error.append(nirb_on.normMat(h1Mat, uH-uh))
 
@@ -172,11 +172,13 @@ if __name__ == "__main__":
         file='nirbOnline_time_exec.txt'
     WriteVecAppend(file,perf)
 
+    doRectification = False 
+    Nsample = 1
 
     Nsample = 50
     # error1 = ComputeErrors(nirb_on, mu)
     errorN = ComputeErrorSampling(nirb_on, Nsample=Nsample)
-
+    
     df = pd.DataFrame(errorN)
     df['N'] = nirb_on.N
 
