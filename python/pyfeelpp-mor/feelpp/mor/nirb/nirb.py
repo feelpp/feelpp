@@ -12,6 +12,7 @@ import numpy as np
 import feelpp.toolboxes.heat as heat
 import feelpp.toolboxes.fluid as fluid
 import feelpp.interpolation as fi
+import math 
 
 
 import os
@@ -303,10 +304,12 @@ class nirbOffline(ToolboxModel):
 
         self.fineSnapShotList = []
         self.coarseSnapShotList = []
-
+ 
         s = self.Dmu.sampling()
         s.sampling(numberOfInitSnapshots, samplingMode)
         vector_mu = s.getVector()
+        # vector_mu = samplingEqui(self.model_path, numberOfInitSnapshots)
+        # vector_mu = comm.Bcast(vector_mu, root=0)
 
         if computeCoarse:
             assert self.tbCoarse is not None, f"Coarse toolbox needed for computing coarse Snapshot. set doRectification->True"
@@ -386,8 +389,8 @@ class nirbOffline(ToolboxModel):
         """
 
         Nsnap = len(self.fineSnapShotList)
-        correlationMatrix = PETSc.Mat().create()
-        correlationMatrix.setSizes([Nsnap,Nsnap])
+
+        correlationMatrix = PETSc.Mat().createDense(size=Nsnap, comm=MPI.COMM_SELF) # create a dense matrix in sequential mode 
         correlationMatrix.setFromOptions()
         correlationMatrix.setUp()
 
@@ -397,10 +400,12 @@ class nirbOffline(ToolboxModel):
 
         correlationMatrix.assemble()
         eigenValues, eigenVectors =  TruncatedEigenV(correlationMatrix, tolerance) 
+        
 
         Nmode = len(eigenVectors)
+        
         for i in range(Nmode):
-            eigenVectors[i] /= np.sqrt(np.abs(eigenValues[i]))
+            eigenVectors[i].scale(1./math.sqrt(abs(eigenValues[i])))
 
         reducedBasis = []
 
@@ -408,8 +413,9 @@ class nirbOffline(ToolboxModel):
             vec = self.Xh.element()
             vec.setZero()
             for j in range(Nsnap):
-                vec = vec + float(eigenVectors[i][j])*self.fineSnapShotList[j]
-                
+                val = eigenVectors[i].getValue(j)
+                vec = vec + val*self.fineSnapShotList[j]
+
             reducedBasis.append(vec)
 
         return reducedBasis
@@ -769,6 +775,7 @@ class nirbOnline(ToolboxModel):
 
         if feelpp.Environment.isMasterRank():
             print(f"[NIRB] Data loaded from {os.path.abspath(path)}")
+            print(f"[NIRB] Number of basis functions loaded : {self.N}")
 
     def normMat(self, Mat, u):
         """ Compute the norm associated to matrix Mat
