@@ -46,12 +46,12 @@ def plot_error(dirs, names, Ns):
             print(f"[NIRB online] {names[d]}: N={N},\n\tmin Linf error = {minsLinf[i]},\n\tmean Linf error = {meansLinf[i]},\n\tmax Linf error = {maxsLinf[i]}")
 
         ax[0].plot(Ns, minsL2, c=cs[d], label=f"L2 {names[d]}")
-        ax[0].plot(Ns, meansL2, c=cs[d])
+        ax[0].plot(Ns, meansL2, '--', c=cs[d])
         ax[0].plot(Ns, maxsL2, c=cs[d])
         ax[0].fill_between(Ns, minsL2, maxsL2, alpha=0.2, color=cs[d])
 
         ax[1].plot(Ns, minsLinf, c=cs[d], label=f"Linf {names[d]}")
-        ax[1].plot(Ns, meansLinf, c=cs[d])
+        ax[1].plot(Ns, meansLinf, '--', c=cs[d])
         ax[1].plot(Ns, maxsLinf, c=cs[d])
         ax[1].fill_between(Ns, minsLinf, maxsLinf, alpha=0.2, color=cs[d])
 

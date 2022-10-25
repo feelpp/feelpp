@@ -378,12 +378,14 @@ class nirbOffline(ToolboxModel):
         S = []
         self.fineSnapShotList = []
         self.coarseSnapShotList = []
+        self.coarseSnapShotListGreedy = []
         N = 0
         for i in range(2):
             mu0 = self.Dmu.element()
             S.append(mu0)
-            self.fineSnapShotList.append( self.getToolboxSolution(self.tbFine, mu0) )
+            self.fineSnapShotList.append(   self.getToolboxSolution(self.tbFine  , mu0) )
             self.coarseSnapShotList.append( self.getToolboxSolution(self.tbCoarse, mu0) )
+            self.coarseSnapShotListGreedy.append(self.getToolboxSolution(self.tbCoarse, mu0) )
             N += 1
             self.orthonormalizeMatL2(self.coarseSnapShotList)
         Delta_0 = np.abs(self.getReducedSolution(Xi_train[0], 2).mean() - self.getReducedSolution(Xi_train[1], 1).mean())
@@ -406,10 +408,10 @@ class nirbOffline(ToolboxModel):
             
             S.append(mu_star)
             del Xi_train[idx]
-            self.fineSnapShotList.append(self.getToolboxSolution(self.tbFine, mu_star))
-            N += 1
+            self.fineSnapShotList.append(  self.getToolboxSolution(self.tbFine  , mu_star))
             self.coarseSnapShotList.append(self.getToolboxSolution(self.tbCoarse, mu_star))
-            self.orthonormalizeMatL2(self.coarseSnapShotList)
+            self.coarseSnapShotListGreedy.append(self.getToolboxSolution(self.tbCoarse, mu_star))
+            N += 1
 
             Deltas_conv.append(Delta_star)
             if feelpp.Environment.isMasterRank():
@@ -684,19 +686,19 @@ class nirbOffline(ToolboxModel):
         elif rank == 0:
             # pass
             print(f"[NIRB] Gram-Schmidt L2 orthonormalization done after {nb+1} step"+['','s'][nb>0])
-    def orthonormalizeMatL2(self, Z, scal="Lagrange"):
+    def orthonormalizeMatL2(self, Z, scal="L2"):
         """Ortohnormalize the matrix Z using L2 norm
 
         Args:
             Z (list of feelpp._discr.Element): list of feelpp functions
-            scal (str, optional): scalar product to use, should be "Lagrange", or "Euclide". Defaults to "Lagrange".
+            scal (str, optional): scalar product to use, should be "L2", or "Euclide". Defaults to "L2".
 
         Returns:
             Z: the matrix orthonormalized, inplace
         """
         N = len(Z)
 
-        if scal == "Lagrange":
+        if scal == "L2":
             if N == 1:
                 normS = Z[-1].to_petsc().vec().dot( self.l2ScalarProductMatrixCoarse.to_petsc().mat() * Z[-1].to_petsc().vec() )
                 Z[-1] *= 1 / np.sqrt(normS)
