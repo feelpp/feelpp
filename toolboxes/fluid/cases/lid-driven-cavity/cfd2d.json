@@ -155,9 +155,9 @@
         "h": "H**2:H",
         "dim": 2,
         "order": 1,
-        "toolboxType": "heat",
-        "geo_path": "$cfgdir/....geo",
-        "model_path": "$cfgdir/....model",
+        "toolboxType": "fluid",
+        "geo_path": "$cfgdir/cfd2d.geo",
+        "model_path": "$cfgdir/cfd2d.json",
         "doRectification": true,
         "doBiorthogonalization": false,
         "nbSnapshots": 10
