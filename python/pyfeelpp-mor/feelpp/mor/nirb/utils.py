@@ -71,6 +71,20 @@ def assembleToolbox(tb, mu):
 
     tb.updateParameterValues()
 
+def generatedAndSaveSampling(Dmu, size, path="./sampling.sample", samplingMode="log-random"):
+    """Generate a sampling and save it in the given path
+
+    Args:
+        Dmu (ParameterSpace): parameter space
+        size (int): size of the sampling
+        path (str, optional): path to save the sampling. Defaults to "/.sampling.sample".
+    """
+    s = Dmu.sampling()
+    s.sampling(size, samplingMode)
+    s.writeOnFile(path)
+    print("Sampling saved in ", path)
+
+
 
 
 
