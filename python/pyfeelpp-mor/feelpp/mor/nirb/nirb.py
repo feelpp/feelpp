@@ -353,15 +353,21 @@ class nirbOffline(ToolboxModel):
         return uHN
 
 
-    def initProblemGreedy(self, Ntrain, eps, Nmax=50, samplingMode="log-random", computeCoarse=False):
+    def initProblemGreedy(self, Ntrain, eps, Xi_train=None, Nmax=50, samplingMode="log-random", computeCoarse=False):
         """Initialize the problem, using a greedy loop
 
         Args:
             Ntrain (int): size of the train parameter set
             eps (float): precision of the greedy loop
+            Xi_train (list of ParameterSpaceElement, optional): Train set for algorithm. If None is given, a set of size Ntrain is generated. Defaults to None.
             Nmax (int, optional): maximal number of iterations. Defaults to 500.
             samplingMode (str, optional): sampling mode. Defaults to "log-random".
             computeCoarse (bool, optional): compute snapshots for coarse toolbox, used for rectification. Defaults to False.
+
+        Return: a tuple res where
+            res[0] contains the sample of paramters selected
+            res[1] contains a copy of Xi_train sample
+            res[2] contains the evolution of Delta_max
 
         Raises:
             Exception: Coarse toolbox has not been initialized
@@ -369,9 +375,11 @@ class nirbOffline(ToolboxModel):
         if self.tbCoarse is None:
             raise Exception("Coarse toolbox needed for computing coarse Snapshot. set initCoarse->True in initialization")
         Nmax = min(Nmax, Ntrain)
-        s = self.Dmu.sampling()
-        s.sampling(Ntrain, samplingMode)
-        Xi_train = s.getVector()
+        if Xi_train is None:
+            s = self.Dmu.sampling()
+            s.sampling(Ntrain, samplingMode)
+            Xi_train = s.getVector()
+        Xi_train_copy = Xi_train.copy()
 
         Delta_star = eps+1
         Deltas_conv = []
@@ -412,6 +420,7 @@ class nirbOffline(ToolboxModel):
             self.coarseSnapShotList.append(self.getToolboxSolution(self.tbCoarse, mu_star))
             self.coarseSnapShotListGreedy.append(self.getToolboxSolution(self.tbCoarse, mu_star))
             N += 1
+            self.orthonormalizeMatL2(self.coarseSnapShotListGreedy)
 
             Deltas_conv.append(Delta_star)
             if feelpp.Environment.isMasterRank():
@@ -420,6 +429,8 @@ class nirbOffline(ToolboxModel):
 
         if feelpp.Environment.isMasterRank():
             print(f"[NIRB] Number of snapshot computed : {N}")
+
+        return S, Xi_train_copy, Deltas_conv
 
 
     def generateOperators(self, coarse=False):
