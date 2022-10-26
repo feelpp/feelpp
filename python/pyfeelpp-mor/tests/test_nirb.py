@@ -42,7 +42,7 @@ def run_online(model_path, rect):
 
     mu = nirb_on.Dmu.element()
 
-    uHh, _ = nirb_on.getOnlineSol(mu)
+    uHh = nirb_on.getOnlineSol(mu)
     uH = nirb_on.getInterpSol(mu)
     uh = nirb_on.getToolboxSolution(nirb_on.tbFine, mu)
 
