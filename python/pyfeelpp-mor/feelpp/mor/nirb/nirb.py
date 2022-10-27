@@ -295,11 +295,12 @@ class nirbOffline(ToolboxModel):
         eigenMatrix.destroy()
 
 
-    def initProblem(self, numberOfInitSnapshots, samplingMode="log-random", computeCoarse=False):
+    def initProblem(self, numberOfInitSnapshots, Xi_train=None, samplingMode="log-random", computeCoarse=False):
         """Initialize the problem
 
         Args:
             numberOfInitSnapshots (int): number of snapshots to use for the initialization
+            Xi_train (list of ParameteœrSpaceElement, optional): Train set for algorithm. If None is given, a set of size Ntrain is generated. Defaults to None.
             samplingMode (str, optional): sampling mode in the parameter space.(random, log-random, log-equidistribute, equidistribute) Defaults to "log-random".
             computeCoarse (bool, optional): compute snapshots for coarse toolbox, used for rectification. Defaults to False.
         """
@@ -309,20 +310,21 @@ class nirbOffline(ToolboxModel):
         self.fineSnapShotList = []
         self.coarseSnapShotList = []
 
-        s = self.Dmu.sampling()
-        s.sampling(numberOfInitSnapshots, samplingMode)
-        vector_mu = s.getVector()
+        if Xi_train is None:
+            s = self.Dmu.sampling()
+            s.sampling(numberOfInitSnapshots, samplingMode)
+            Xi_train = s.getVector()
 
         if computeCoarse:
             assert self.tbCoarse is not None, f"Coarse toolbox needed for computing coarse Snapshot. set doRectification->True"
-            for mu in vector_mu:
+            for mu in Xi_train:
                 if feelpp.Environment.isMasterRank():
                     print(f"Running simulation with mu = {mu}")
                 self.fineSnapShotList.append(self.getToolboxSolution(self.tbFine, mu))
                 self.coarseSnapShotList.append(self.getToolboxSolution(self.tbCoarse, mu))
 
         else:
-            for mu in vector_mu:
+            for mu in Xi_train:
                 if feelpp.Environment.isMasterRank():
                     print(f"Running simulation with mu = {mu}")
                 self.fineSnapShotList.append(self.getToolboxSolution(self.tbFine, mu))
@@ -337,7 +339,7 @@ class nirbOffline(ToolboxModel):
         Args:
             mu (parameterSpaceElement): parameter
             N (int): size of the sub-basis
-        
+
         Returns:
             PETSc.Vec: reduced solution u_H^N
         """
@@ -395,12 +397,12 @@ class nirbOffline(ToolboxModel):
             self.coarseSnapShotList.append( self.getToolboxSolution(self.tbCoarse, mu0) )
             self.coarseSnapShotListGreedy.append(self.getToolboxSolution(self.tbCoarse, mu0) )
             N += 1
-            self.orthonormalizeMatL2(self.coarseSnapShotList)
+            self.orthonormalizeMatL2(self.coarseSnapShotListGreedy)
         Delta_0 = np.abs(self.getReducedSolution(Xi_train[0], 2).mean() - self.getReducedSolution(Xi_train[1], 1).mean())
 
         while Delta_star > eps and N < Nmax:
             M = N - 1
-            
+
             Delta_star = -float('inf')
 
             for i, mu in enumerate(tqdm(Xi_train,desc=f"[NIRB] Greedy selection", ascii=False, ncols=120)):
@@ -413,7 +415,7 @@ class nirbOffline(ToolboxModel):
                     Delta_star = Delta
                     mu_star = mu
                     idx = i
-            
+
             S.append(mu_star)
             del Xi_train[idx]
             self.fineSnapShotList.append(  self.getToolboxSolution(self.tbFine  , mu_star))
@@ -490,7 +492,7 @@ class nirbOffline(ToolboxModel):
                     correlationMatrix[i,j] = self.l2ScalarProductMatrix.energy(snap1,snap2)
 
         correlationMatrix.assemble()
-        eigenValues, eigenVectors =  TruncatedEigenV(correlationMatrix, tolerance) 
+        eigenValues, eigenVectors =  TruncatedEigenV(correlationMatrix, tolerance)
 
         Nmode = len(eigenVectors)
         for i in range(Nmode):
@@ -560,7 +562,7 @@ class nirbOffline(ToolboxModel):
         lcoarse = []
 
         Usnap, Udof = self.reducedBasis.createVecs()
-        
+
         for i in range(self.N):
             lfine.append(self.fineSnapShotList[i].to_petsc().vec())
             lcoarse.append(CoarseSnaps[i].to_petsc().vec())
@@ -569,7 +571,7 @@ class nirbOffline(ToolboxModel):
 
         for i in range(self.N):
             CM.mult(lfine[i],Udof)
-            self.reducedBasis.multTranspose(Udof,Usnap) 
+            self.reducedBasis.multTranspose(Udof,Usnap)
             Bh[i,:] = Usnap.getArray()
 
             CM.mult(lcoarse[i],Udof)
@@ -765,7 +767,7 @@ class nirbOffline(ToolboxModel):
             bool: True if the reduced basis is L2 orthonormalized
         """
         l2ScalPetsc = self.l2ScalarProductMatrix.to_petsc().mat()
-        
+
         matL2 = l2ScalPetsc.PtAP(self.reducedBasis)
 
         for i in range(self.N):
@@ -825,7 +827,7 @@ class nirbOnline(ToolboxModel):
 
         self.l2ScalarProductMatrix = None
         self.h1ScalarProductMatrix = None
-        self.reducedBasis = None 
+        self.reducedBasis = None
         self.N = 0
 
         super().initCoarseToolbox()
@@ -843,7 +845,7 @@ class nirbOnline(ToolboxModel):
         Parameters
         ----------
         solution (feelpp._discr.Element) : the solution to be projected
-        mu (ParameterSpaceElement) : parameter to compute the solution if not given 
+        mu (ParameterSpaceElement) : parameter to compute the solution if not given
 
         return :
         compressedSol (petsc.Vec) : the compressed solution, of size (self.N)
@@ -934,7 +936,7 @@ class nirbOnline(ToolboxModel):
 
         # Export
         # call self.exportField(interpolatedSol, "U_interp")
-        
+
         return coarseSol, interpolatedSol
 
 

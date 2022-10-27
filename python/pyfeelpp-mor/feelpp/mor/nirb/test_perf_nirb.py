@@ -23,7 +23,7 @@ r = ["noRect","Rect"][doRectification]
 g = ["noGreedy","Greedy"][doGreedy]
 RESPATH = f"RESULTS/{r}/{g}"
 
-def offline(N):
+def offline(N, load=None):
     """Generated the reduced basis for the given N
        Generated a file nirbOffline_time_exec.dat containing the time to compute the reduced basis,
          according to the number of samples N
@@ -34,10 +34,17 @@ def offline(N):
 
     start = time.time()
     nirb = nirbOffline(**nirb_config, initCoarse=doGreedy)
+    if load is not None:
+        s = nirb.Dmu.sampling()
+        N_train = s.readFromFile(load)
+        Xi_train = s.getVector()
+    else:
+        Xi_train = None
+
     if doGreedy:
         nirb.initProblemGreedy(1000, 1e-5, Nmax=N, computeCoarse=True, samplingMode="random")
     else:
-        nirb.initProblem(N)
+        nirb.initProblem(N, Xi_train=Xi_train)
     nirb.generateOperators()
     nirb.generateReducedBasis(regulParam=1.e-10)
     finish = time.time()
@@ -50,6 +57,7 @@ def offline(N):
 
     print(f"[NIRB] Offline Elapsed time = ", finish-start)
     print(f"[NIRB] Offline part Done !")
+    return nirb
 
 
 def online_error_sampling(Xi_test=None):
@@ -123,6 +131,8 @@ if __name__ == '__main__':
         N = int(N)
         print("\n\n-----------------------------")
         print(f"[NIRB] Test with N = {N}")
-        offline(N)
-        online_error_sampling()
+        nirb = offline(N, load='./sampling.sample')
+        s = nirb.Dmu.sampling()
+        N_train = s.readFromFile('./sampling.sample')
+        online_error_sampling(s.getVector())
         online_time_measure()
