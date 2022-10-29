@@ -1,6 +1,16 @@
 name: CI
 
-on: push
+on: 
+  schedule:
+    # run every day at 2am  
+    - cron: '0 2 * * 0' # fedora 36
+    - cron: '0 2 * * 1' # kinetic
+    - cron: '0 2 * * 2' # in the future fedora 37
+    - cron: '0 2 * * 3' # debian sid
+    - cron: '0 2 * * 4'
+    - cron: '0 2 * * 5'
+    - cron: '0 2 * * 6'
+
 
 jobs:
 
@@ -18,26 +28,24 @@ jobs:
       fail-fast: false
       matrix: 
         include:
-          - {os: fedora-36 }
-    name: ${{ matrix.os }} Build and Push Docker
-    runs-on: self-docker-${{ matrix.os }}
+          - {flavor: fedora, version: "36", dotw: 0}
+    name: ${{ matrix.flavor }}-${{ matrix.version }}
+    env:
+      os: ${{ matrix.flavor }}-${{ matrix.version }}
+    runs-on: self-docker-${{ env.os }}
+    if: github.event.schedule == format('0 2 * * {0}', ${{ matrix.dotw }} )
     needs: activate
     steps:
     - uses: actions/checkout@v3
       with:
         submodules: recursive
-    - name: Configure MPI
-      run: |
-        . /etc/profile.d/modules.sh
-        module load mpi/openmpi-x86_64
-        mpicxx -v
     - name: Configure feelpp
       run: |
         . /etc/profile.d/modules.sh
         module load mpi/openmpi-x86_64
         mpicxx -v
         cmake --preset feelpp
-    - name: Build feelpp
-      run: cmake --build --preset feelpp -j 10
-    - name: Test feelpp
-      run: ctest --preset feelpp -j 2
+#    - name: Build feelpp
+#      run: cmake --build --preset feelpp -j 10
+#    - name: Test feelpp
+#      run: ctest --preset feelpp -j 2

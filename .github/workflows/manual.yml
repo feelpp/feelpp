@@ -1,0 +1,45 @@
+name: CI
+
+on: 
+  workflow_dispatch:
+    inputs:
+      dist:
+        description: 'Distribution flavor'     
+        required: true
+        default: 'fedora'
+      version:
+        description: 'Version of the distribution'  
+        required: true
+        default: "36"
+
+jobs:
+
+  activate:
+    runs-on: self-ubuntu-20.04
+    if: |
+      github.repository == 'feelpp/feelpp' &&
+      !startsWith(github.event.head_commit.message, 'Release ') &&
+      !contains(github.event.head_commit.message, 'ci skip')
+    steps:
+    - run: echo ok go
+
+  build:
+    name: ${{ inputs.flavor }}-${{ inputs.version }}
+    env:
+      os: ${{ inputs.flavor }}-${{ inputs.version }}
+    runs-on: self-docker-${{ env.os }}
+    needs: activate
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: recursive
+    - name: Configure feelpp
+      run: |
+#        . /etc/profile.d/modules.sh
+#        module load mpi/openmpi-x86_64
+#        mpicxx -v
+        cmake --preset feelpp
+#    - name: Build feelpp
+#      run: cmake --build --preset feelpp -j 10
+#    - name: Test feelpp
+#      run: ctest --preset feelpp -j 2
