@@ -1,6 +1,6 @@
 name: Manual CI
 
-on: 
+on:
   workflow_dispatch:
     inputs:
       flavor:
