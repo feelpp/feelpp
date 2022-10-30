@@ -1,9 +1,9 @@
-name: CI
+name: Manual CI
 
-on: 
+on:
   workflow_dispatch:
     inputs:
-      dist:
+      flavor:
         description: 'Distribution flavor'     
         required: true
         default: 'fedora'
@@ -24,9 +24,9 @@ jobs:
     - run: echo ok go
 
   build:
-    name: ${{ inputs.flavor }}-${{ inputs.version }}
     env:
       os: ${{ inputs.flavor }}-${{ inputs.version }}
+    name: ${{ env.os }}  
     runs-on: self-docker-${{ env.os }}
     needs: activate
     steps:
@@ -39,7 +39,7 @@ jobs:
 #        module load mpi/openmpi-x86_64
 #        mpicxx -v
         cmake --preset feelpp
-#    - name: Build feelpp
-#      run: cmake --build --preset feelpp -j 10
-#    - name: Test feelpp
-#      run: ctest --preset feelpp -j 2
+    - name: Build feelpp
+      run: cmake --build --preset feelpp -j 10
+    - name: Test feelpp
+      run: ctest --preset feelpp -j 2
