@@ -12,7 +12,7 @@ on:
         description: 'Version of the distribution'  
         required: true
         default: "36"
-        options: ['20-04', '22-04', '22-10', '10', '11', 'testing', 'sid', '36', '37']
+        options: ['20.04', '22.04', '22.10', '10', '11', 'testing', 'sid', '36', '37']
 
 jobs:
 
