@@ -1,5 +1,5 @@
 name: Manual CI
-run-name: Build ${{ inputs.flavor }}-${{ inputs.version }}
+run-name: Build feelpp:${{ github.ref_name }} on ${{ inputs.flavor }}-${{ inputs.version }}
 on:
   workflow_dispatch:
     inputs:
