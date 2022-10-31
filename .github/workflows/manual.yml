@@ -7,10 +7,12 @@ on:
         description: 'Distribution flavor'     
         required: true
         default: 'fedora'
+        options: ['ubuntu', 'debian', 'fedora']
       version:
         description: 'Version of the distribution'  
         required: true
         default: "36"
+        options: ['20-04', '22-04', '22-10', '10', '11', 'testing', 'sid', '36', '37']
 
 jobs:
 
@@ -26,20 +28,18 @@ jobs:
   build:
     env:
       os: ${{ inputs.flavor }}-${{ inputs.version }}
-    name: ${{ env.os }}  
-    runs-on: self-docker-${{ env.os }}
+    name: ${{ inputs.flavor }}-${{ inputs.version }}
+    runs-on: self-docker-${{ inputs.flavor }}-${{ inputs.version }}
     needs: activate
     steps:
     - uses: actions/checkout@v3
       with:
         submodules: recursive
     - name: Configure feelpp
-      run: |
-#        . /etc/profile.d/modules.sh
-#        module load mpi/openmpi-x86_64
-#        mpicxx -v
-        cmake --preset feelpp
+      run: cmake --preset feelpp
     - name: Build feelpp
       run: cmake --build --preset feelpp -j 10
     - name: Test feelpp
       run: ctest --preset feelpp -j 2
+    - name: Install feelpp
+      run: cmake --install --preset feelpp
