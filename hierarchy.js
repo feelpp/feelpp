@@ -1243,11 +1243,6 @@ var hierarchy =
     [ "spirit::qi::grammar", null, [
       [ "Feel::strip_comments_grammar< Iterator >", "structFeel_1_1strip__comments__grammar.html", null ]
     ] ],
-    [ "std::binary_function", null, [
-      [ "Feel::Mesh< GeoShape, T, Tag, IndexT >::UpdateNumGlobalEntitiesForAllReduce", "structFeel_1_1Mesh_1_1UpdateNumGlobalEntitiesForAllReduce.html", null ],
-      [ "Feel::Mesh< GeoShape, T, Tag, IndexT >::UpdateSetForAllReduce< ContType >", "structFeel_1_1Mesh_1_1UpdateSetForAllReduce.html", null ],
-      [ "Feel::details::RemoveMarkerNameWithoutEntityForAllReduce< IndexT >", "structFeel_1_1details_1_1RemoveMarkerNameWithoutEntityForAllReduce.html", null ]
-    ] ],
     [ "std::bool_constant", null, [
       [ "Feel::is_ptr_or_shared_ptr< T >", "structFeel_1_1is__ptr__or__shared__ptr.html", null ],
       [ "Feel::is_shared_ptr< T >", "structFeel_1_1is__shared__ptr.html", null ],
@@ -1320,6 +1315,11 @@ var hierarchy =
       [ "nlohmann::detail::is_constructible_tuple< T1, T2 >", "structnlohmann_1_1detail_1_1is__constructible__tuple.html", null ],
       [ "nlohmann::detail::is_iterator_traits< T, typename >", "structnlohmann_1_1detail_1_1is__iterator__traits.html", null ],
       [ "nlohmann::detail::is_json_ref< typename >", "structnlohmann_1_1detail_1_1is__json__ref.html", null ]
+    ] ],
+    [ "std::function", null, [
+      [ "Feel::Mesh< GeoShape, T, Tag, IndexT >::UpdateNumGlobalEntitiesForAllReduce", "structFeel_1_1Mesh_1_1UpdateNumGlobalEntitiesForAllReduce.html", null ],
+      [ "Feel::Mesh< GeoShape, T, Tag, IndexT >::UpdateSetForAllReduce< ContType >", "structFeel_1_1Mesh_1_1UpdateSetForAllReduce.html", null ],
+      [ "Feel::details::RemoveMarkerNameWithoutEntityForAllReduce< IndexT >", "structFeel_1_1details_1_1RemoveMarkerNameWithoutEntityForAllReduce.html", null ]
     ] ],
     [ "std::hash< nlohmann::basic_json< ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType > >", "structstd_1_1hash_3_01nlohmann_1_1basic__json_3_01ObjectType_00_01ArrayType_00_01StringType_00_06d4f1ea19ce1bda8275363c404adf9a2.html", null ],
     [ "std::hash< std::tuple< TT... > >", "structstd_1_1hash_3_01std_1_1tuple_3_01TT_8_8_8_01_4_01_4.html", null ],

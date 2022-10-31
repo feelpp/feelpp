@@ -1,4 +1,13 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classstd_1_1conditional_3_01std_1_1is__base__of__v_3_01MeshStructuredBase_00_01MeshT_01_4_00_01sf38de804df90ca37fb2eb29ea870681d.html" title=" " alt="" coords="5,13,164,39"/>
-<area shape="rect" id="node2" href="$structFeel_1_1is__mesh__structured.html" title="trait type to detect a MeshStructured mesh" alt="" coords="212,5,396,47"/>
+<area shape="rect" id="node1" title=" " alt="" coords="5,177,120,203"/>
+<area shape="rect" id="node2" href="$classFeel_1_1FactoryDefaultError_1_1Exception.html" title=" " alt="" coords="168,97,405,153"/>
+<area shape="rect" id="node3" href="$classnlohmann_1_1detail_1_1exception.html" title="general exception of the basic_json class" alt="" coords="185,177,389,203"/>
+<area shape="rect" id="node9" title=" " alt="" coords="227,339,346,366"/>
+<area shape="rect" id="node4" href="$classnlohmann_1_1detail_1_1invalid__iterator.html" title="exception indicating errors with iterators" alt="" coords="459,5,643,47"/>
+<area shape="rect" id="node5" href="$classnlohmann_1_1detail_1_1other__error.html" title="exception indicating other library errors" alt="" coords="463,71,638,112"/>
+<area shape="rect" id="node6" href="$classnlohmann_1_1detail_1_1out__of__range.html" title="exception indicating access out of the defined range" alt="" coords="470,136,631,177"/>
+<area shape="rect" id="node7" href="$classnlohmann_1_1detail_1_1parse__error.html" title="exception indicating a parse error" alt="" coords="463,201,639,243"/>
+<area shape="rect" id="node8" href="$classnlohmann_1_1detail_1_1type__error.html" title="exception indicating executing a member function with a wrong type" alt="" coords="466,267,635,308"/>
+<area shape="rect" id="node10" href="$structFeel_1_1CheckerConvergenceFailed.html" title=" " alt="" coords="453,332,648,373"/>
+<area shape="rect" id="node11" href="$structFeel_1_1CheckerExactFailed.html" title=" " alt="" coords="459,398,643,425"/>
 </map>

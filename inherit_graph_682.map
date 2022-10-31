@@ -1,4 +1,4 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classstd_1_1conditional_3_01bool_07B1_1_1value_08_00_01conjunction_3_01Bn_8_8_8_01_4_00_01B1_01_4_1_1type.html" title=" " alt="" coords="5,13,164,39"/>
-<area shape="rect" id="node2" href="$structnlohmann_1_1detail_1_1conjunction_3_01B1_00_01Bn_8_8_8_01_4.html" title=" " alt="" coords="212,5,427,47"/>
+<area shape="rect" id="node1" href="$classstd_1_1conditional_3_01std_1_1is__base__of__v_3_01MeshStructuredBase_00_01MeshT_01_4_00_01sf38de804df90ca37fb2eb29ea870681d.html" title=" " alt="" coords="5,13,164,39"/>
+<area shape="rect" id="node2" href="$structFeel_1_1is__mesh__structured.html" title="trait type to detect a MeshStructured mesh" alt="" coords="212,5,396,47"/>
 </map>
