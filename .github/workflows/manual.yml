@@ -37,7 +37,12 @@ jobs:
         submodules: recursive
         clean: true
     - name: Configure feelpp
-      run: cmake --preset default 
+      run: |
+        if test "${{ inputs.flavor }}" = "fedora"; then
+          . /etc/profile.d/modules.sh
+          module load mpi/openmpi-x86_64
+        fi
+        cmake --preset default 
     - name:   Build feelpp
       run: cmake --build --preset default -j20
     - name: Package feelpp
