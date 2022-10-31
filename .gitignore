@@ -181,3 +181,5 @@ python/pyfeelpp/feelpp/__init__.py
 **/vendor
 **/Gemfile.lock
 **/doc.rb
+**/crbdb
+**/feelppdb
