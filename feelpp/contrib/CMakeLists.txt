@@ -293,21 +293,30 @@ message(STATUS "Configuring PYBind11")
 #  add_subdirectory(hpddm)
 #endif()
 option( FEELPP_ENABLE_PYBIND11 "Enable PYBIND11" ON )
-set(PYBIND11_CPP_STANDARD -std=c++${FEELPP_STD_CPP})
-if ( FEELPP_ENABLE_PYBIND11 )
-  feelppContribPrepare( pybind11 )
-  if ( FEELPP_CONTRIB_PREPARE_SUCCEED )
-    add_subdirectory(pybind11)
-    target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_PYBIND11 )
-    target_link_libraries(feelpp_contrib INTERFACE pybind11 )
-    #target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_PYBIND11=1 )
-    target_include_directories(feelpp_contrib INTERFACE
-      $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/contrib/pybind11/include>
-      $<INSTALL_INTERFACE:include/feelpp/pybind11> )
-    set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} PyBind11/Contrib")
+option(FEELPP_USE_EXTERNAL_PYBIND11 "USE_EXTERNAL_PYBIND11" OFF)
+
+if(FEELPP_USE_EXTERNAL_PYBIND11)
+  find_package(pybind11 CONFIG REQUIRED)
+  target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_PYBIND11)
+  target_link_libraries(feelpp_contrib INTERFACE pybind11::module)
+else()
+  set(PYBIND11_CPP_STANDARD -std=c++${FEELPP_STD_CPP})
+  if ( FEELPP_ENABLE_PYBIND11 )
+    feelppContribPrepare( pybind11 )
+    if ( FEELPP_CONTRIB_PREPARE_SUCCEED )
+      set(PYBIND11_INSTALL ON)
+      set(PYBIND11_CMAKECONFIG_INSTALL_DIR "${CMAKE_INSTALL_DATAROOTDIR}/feelpp/feel/cmake/modules/")
+      add_subdirectory(pybind11)
+      target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_PYBIND11 )
+      #target_link_libraries(feelpp_contrib INTERFACE pybind11::headers )
+      #target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_PYBIND11=1 )
+      target_include_directories(feelpp_contrib INTERFACE
+        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/contrib/pybind11/include>
+        $<INSTALL_INTERFACE:include/feelpp/pybind11> )
+      set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} PyBind11/Contrib")
+    endif()
   endif()
 endif()
-
 
 # MongoCXX
 message(STATUS "------------------------------------------------------------")
