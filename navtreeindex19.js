@@ -1,5 +1,7 @@
 var NAVTREEINDEX19 =
 {
+"pdhv_8hpp.html":[6,0,0,0,1,52],
+"pdhv_8hpp.html#a16ab372ab27a961f8fecd0dbfaf4f3a7":[6,0,0,0,1,52,2],
 "pdhv_8hpp.html#a4093d3f0879236f6a22b1d1ad28b773a":[6,0,0,0,1,52,1],
 "periodic_8hpp.html":[6,0,0,0,1,53],
 "points_8hpp.html":[6,0,0,0,2,24],
@@ -247,7 +249,5 @@ var NAVTREEINDEX19 =
 "structFeel_1_1GinacExprManagerDefaultFileNameDeleterImpl.html":[4,0,1,96],
 "structFeel_1_1GinacExprManagerDefaultFileNameDeleterImpl.html":[5,0,1,96],
 "structFeel_1_1GinacExprManagerDeleterImpl.html":[4,0,1,98],
-"structFeel_1_1GinacExprManagerDeleterImpl.html":[5,0,1,98],
-"structFeel_1_1GithubUser.html":[4,0,1,100],
-"structFeel_1_1GithubUser.html":[5,0,1,100]
+"structFeel_1_1GinacExprManagerDeleterImpl.html":[5,0,1,98]
 };

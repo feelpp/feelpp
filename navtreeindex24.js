@@ -1,5 +1,7 @@
 var NAVTREEINDEX24 =
 {
+"structnlohmann_1_1detail_1_1wide__string__input__helper_3_01BaseInputAdapter_00_012_01_4.html":[5,0,2,0,120],
+"structnlohmann_1_1detail_1_1wide__string__input__helper_3_01BaseInputAdapter_00_012_01_4.html":[4,0,3,0,120],
 "structnlohmann_1_1detail_1_1wide__string__input__helper_3_01BaseInputAdapter_00_014_01_4.html":[5,0,2,0,121],
 "structnlohmann_1_1detail_1_1wide__string__input__helper_3_01BaseInputAdapter_00_014_01_4.html":[4,0,3,0,121],
 "structnlohmann_1_1json__sax.html":[4,0,3,22],

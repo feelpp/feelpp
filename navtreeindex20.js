@@ -1,5 +1,7 @@
 var NAVTREEINDEX20 =
 {
+"structFeel_1_1GithubUser.html":[4,0,1,100],
+"structFeel_1_1GithubUser.html":[5,0,1,100],
 "structFeel_1_1HashTables_1_1HasherContainers.html":[5,0,1,5,0],
 "structFeel_1_1HashTables_1_1HasherContainers.html":[4,0,1,5,0],
 "structFeel_1_1Hypercube_1_1PolyDims.html":[5,0,1,103,0],
@@ -247,7 +249,5 @@ var NAVTREEINDEX20 =
 "structFeel_1_1detail_1_1PrecomputeDomainBasisFunction.html":[5,0,1,1,37],
 "structFeel_1_1detail_1_1PrecomputeDomainBasisFunction.html":[4,0,1,1,37],
 "structFeel_1_1detail_1_1RecvContainersOff.html":[5,0,1,1,40],
-"structFeel_1_1detail_1_1RecvContainersOff.html":[4,0,1,1,40],
-"structFeel_1_1detail_1_1SendContainersOn.html":[5,0,1,1,42],
-"structFeel_1_1detail_1_1SendContainersOn.html":[4,0,1,1,42]
+"structFeel_1_1detail_1_1RecvContainersOff.html":[4,0,1,1,40]
 };

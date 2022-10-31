@@ -1,5 +1,7 @@
 var NAVTREEINDEX23 =
 {
+"structnlohmann_1_1adl__serializer_3_01boost_1_1filesystem_1_1path_01_4.html":[5,0,2,3],
+"structnlohmann_1_1adl__serializer_3_01boost_1_1filesystem_1_1path_01_4.html":[4,0,3,3],
 "structnlohmann_1_1adl__serializer_3_01py_1_1bool___01_4.html":[5,0,2,4],
 "structnlohmann_1_1adl__serializer_3_01py_1_1bool___01_4.html":[4,0,3,4],
 "structnlohmann_1_1adl__serializer_3_01py_1_1detail_1_1item__accessor_01_4.html":[4,0,3,5],
@@ -247,7 +249,5 @@ var NAVTREEINDEX23 =
 "structnlohmann_1_1detail_1_1to__json__fn.html":[5,0,2,0,116],
 "structnlohmann_1_1detail_1_1to__json__fn.html":[4,0,3,0,116],
 "structnlohmann_1_1detail_1_1wide__string__input__helper.html":[5,0,2,0,119],
-"structnlohmann_1_1detail_1_1wide__string__input__helper.html":[4,0,3,0,119],
-"structnlohmann_1_1detail_1_1wide__string__input__helper_3_01BaseInputAdapter_00_012_01_4.html":[5,0,2,0,120],
-"structnlohmann_1_1detail_1_1wide__string__input__helper_3_01BaseInputAdapter_00_012_01_4.html":[4,0,3,0,120]
+"structnlohmann_1_1detail_1_1wide__string__input__helper.html":[4,0,3,0,119]
 };

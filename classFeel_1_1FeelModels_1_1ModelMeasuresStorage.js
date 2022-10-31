@@ -1,6 +1,7 @@
 var classFeel_1_1FeelModels_1_1ModelMeasuresStorage =
 [
     [ "directory", "classFeel_1_1FeelModels_1_1ModelMeasuresStorage.html#a85929d0fe575b39c766383cf9c1716a8", null ],
+    [ "empty", "classFeel_1_1FeelModels_1_1ModelMeasuresStorage.html#ae019f53f8c945fa9dfe907d1dbd7fea6", null ],
     [ "hasValue", "classFeel_1_1FeelModels_1_1ModelMeasuresStorage.html#a8a7f1254142ca4d25344a130a3525de4", null ],
     [ "hasValue", "classFeel_1_1FeelModels_1_1ModelMeasuresStorage.html#a3ee1fbc42a84ab127f7555c8c01888cc", null ],
     [ "isUpdated", "classFeel_1_1FeelModels_1_1ModelMeasuresStorage.html#ace7d1914d06bd4093ae1484006164fc9", null ],
