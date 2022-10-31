@@ -47,18 +47,18 @@ jobs:
           . /etc/profile.d/modules.sh
           module load mpi/openmpi-x86_64
         fi
-        cmake --preset ${{ matrix.preset }} 
+        cmake --preset ${{ inputs.preset }} 
     - name:   Build feelpp
-      run: cmake --build --preset ${{ matrix.preset }} -j20
+      run: cmake --build --preset ${{ inputs.preset }} -j20
     - name: Package feelpp
-      run: cmake --build --preset ${{ matrix.preset }} -t package
+      run: cmake --build --preset ${{ inputs.preset }} -t package
 #    - name: Upload feelpp
 #      uses: actions/upload-artifact@v2
 #      with:
 #        name: uploads
 #        path: build/
     - name: Test feelpp
-      run: ctest --preset ${{ matrix.preset }} -j 4
+      run: ctest --preset ${{ inputs.preset }} -j 4
 
 
 
