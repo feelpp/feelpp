@@ -1,17 +1,25 @@
 #!/usr/bin/ruby
 
-#require 'Liquid'
+require 'liquid'
 
-version_major=0
-version_minor=108
-version_micro=0
-version_string="#{version_major}.#{version_minor}"
+version_major="@FEELPP_VERSION_MAJOR@"
+version_minor="@FEELPP_VERSION_MINOR@"
+version_micro="@FEELPP_VERSION_MICRO@"
+version_extra="@FEELPP_VERSION_PRERELEASE@"
+version_string="@FEELPP_VERSION_STRING@"
+if version_extra.empty?
+  version_doc = "#{version_major}.#{version_minor}"
+else
+  version_doc = "latest"
+end
 version_min="v#{version_minor}"
 
 @template = Liquid::Template.parse(File.read(__dir__+"/template.adoc"))
 
 toolboxes =
-  { "solid" => "solid",
+  { 
+    "coefficientformpdes" => "coefficientformpdes",
+    "solid" => "solid",
     "fluid" => "fluid",
     "fsi" => "fsi",
     "hdg_poisson" => "hdg",
@@ -22,19 +30,22 @@ toolboxes =
     "electric" => "electric",
     "thermoelectric" => "thermoelectric"}
 
-toolbox_default_cases={ "solid" => "github:{path:toolboxes/solid/cantilever}",
-                        "fluid" => "github:{path:toolboxes/fluid/TurekHron}",
-                        "fsi" => "github:{path:toolboxes/fsi/TurekHron}",
-                        "hdg_poisson" => "github:{path:toolboxes/hdg/poisson/red}",
-                        "hdg_coupledpoisson" => "github:{path:toolboxes/hdg/coupledpoisson/1-linear/}",
-                        "hdg_elasticity" => "github:{path:toolboxes/hdg/elasticity/quarterturn}",
-                        "heat" => "github:{path:toolboxes/heat/Building/ThermalBridgesENISO10211}",
-                        "electric" => "github:{path:toolboxes/electric/ElectroMagnets/HL-31_H1}",
-                        "heatfluid" => "github:{path:toolboxes/heatfluid/NaturalConvection/cavity}",
-                        "thermoelectric" => "github:{path:toolboxes/thermoelectric/ElectroMagnets/HL-31_H1}" }
+toolbox_default_cases={ 
+                        "coefficientformpdes" => "github:{path:toolboxes/coefficientformpdes/cases/bratu}",
+                        "solid" => "github:{path:toolboxes/solid/cases/cantilever}",
+                        "fluid" => "github:{path:toolboxes/fluid/cases/TurekHron}",
+                        "fsi" => "github:{path:toolboxes/fsi/cases/TurekHron}",
+                        "hdg_poisson" => "github:{path:toolboxes/hdg/cases/poisson/red}",
+                        "hdg_coupledpoisson" => "github:{path:toolboxes/hdg/cases/coupledpoisson/1-linear/}",
+                        "hdg_elasticity" => "github:{path:toolboxes/hdg/cases/elasticity/quarterturn}",
+                        "heat" => "github:{path:toolboxes/heat/cases/Building/ThermalBridgesENISO10211}",
+                        "electric" => "github:{path:toolboxes/electric/cases/ElectroMagnets/HL-31_H1}",
+                        "heatfluid" => "github:{path:toolboxes/heatfluid/cases/NaturalConvection/cavity}",
+                        "thermoelectric" => "github:{path:toolboxes/thermoelectric/cases/ElectroMagnets/HL-31_H1}" }
 
 
-toolbox_default_cli_cases={ "solid" => "",
+toolbox_default_cli_cases={ "coefficientformpdes" => "",
+                            "solid" => "",
                             "fluid" => "",
                             "fsi" => "",
                             "hdg_poisson" => "",
@@ -45,7 +56,8 @@ toolbox_default_cli_cases={ "solid" => "",
                             "heatfluid" => "",
                             "thermoelectric" => "" }
 
-toolbox_desc={ "solid" => "solid mechanics",
+toolbox_desc={ "coefficientformpdes" => "Coefficient Form PDEs",
+               "solid" => "solid mechanics",
                "fluid" => "fluid mechanics",
                "fsi" => "fluid structure interaction",
                "hdg_poisson" => "hybridized discontinuous Galerkin Poisson",
@@ -57,7 +69,8 @@ toolbox_desc={ "solid" => "solid mechanics",
                "thermoelectric" => "thermoelectric" }
 
 toolbox_docs =
-  { "solid" => "csm",
+  { "coefficientformpdes" => "coefficientformpdes",
+    "solid" => "csm",
     "fluid" => "cfd",
     "fsi" => "fsi",
     "hdg_poisson" => "",
@@ -68,7 +81,8 @@ toolbox_docs =
     "electric" => "electric",
     "thermoelectric" => "thermoelectric"}
 
-toolbox_default_option_values ={ "solid" => ["3","P1"],
+toolbox_default_option_values ={ "coefficientformpdes" => ["3","P1"],
+                                 "solid" => ["3","P1"],
                                  "fluid" => ["3","P2P1G1"],
                                  "fsi" => ["3","P2P1"],
                                  "hdg_poisson" => ["3"],
@@ -79,7 +93,8 @@ toolbox_default_option_values ={ "solid" => ["3","P1"],
                                  "heatfluid" => ["3","P1-P2P1"],
                                  "thermoelectric" => ["3","P1"] }
 
-toolbox_possible_option_values ={ "solid" => ["2,3","P1,P2"],
+toolbox_possible_option_values ={ "coefficientformpdes" => ["2,3","P1,P2"],
+                                  "solid" => ["2,3","P1,P2"],
                                   "fluid" => ["2,3","P2P1G1,P2P1G2"],
                                   "fsi" => ["2,3","P2P1"],
                                   "hdg_poisson" => ["2,3"],
@@ -92,11 +107,12 @@ toolbox_possible_option_values ={ "solid" => ["2,3","P1,P2"],
 
 toolboxes.each do |app, prefix|
   puts ("toolbox #{app}: write #{prefix}/#{app}.adoc")
-  File.delete( "#{prefix}/feelpp_toolbox_#{app}.adoc" ) if File.exist?( "#{prefix}/feelpp_toolbox_#{app}.adoc" )
-  File.delete( "#{prefix}/#{app}.adoc" ) if File.exist?( "#{prefix}/#{app}.adoc" )
-  File.write("#{prefix}/#{app}.adoc", @template.render(
+  File.delete( "../../#{prefix}/feelpp_toolbox_#{app}.adoc" ) if File.exist?( "../../#{prefix}/feelpp_toolbox_#{app}.adoc" )
+  File.delete( "../../#{prefix}/#{app}.adoc" ) if File.exist?( "../../#{prefix}/#{app}.adoc" )
+  File.write("../../#{prefix}/#{app}.adoc", @template.render(
                "version_min" => "#{version_min}",
                "version_string" => "#{version_string}",
+               "version_doc" => "#{version_doc}",
                "toolbox_app" => "feelpp_toolbox_#{app}",
                "toolbox" => "#{app}",
                "toolbox_desc" => toolbox_desc["#{app}"],
