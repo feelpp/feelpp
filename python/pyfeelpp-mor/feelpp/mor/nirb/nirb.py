@@ -555,7 +555,6 @@ class nirbOffline(ToolboxModel):
             force (bool, optional): Force saving, even if files are already present. Defaults to False.
         """
 
-
         reducedPath = path +'/reducedBasis'
         reducedFilename = 'reducedBasis'
 
@@ -566,16 +565,15 @@ class nirbOffline(ToolboxModel):
             if os.path.isdir(path) and not force:
                 print(f"[NIRB] Directory {path} already exists. Rerun with force=True to force saving")
                 return
-            elif not os.path.isdir(path):
+            if not os.path.isdir(path):
                 os.mkdir(path)
             if not os.path.isdir(reducedPath):
                 os.mkdir(reducedPath)
             if not os.path.isdir(l2productPath):
                 os.mkdir(l2productPath)
-        
+
         comm.Barrier()
 
-        
         for i in range(len(self.reducedBasis)):
             self.reducedBasis[i].save(reducedPath, reducedFilename, suffix=str(i))
 
@@ -613,8 +611,8 @@ class nirbOnline(ToolboxModel):
 
         self.doRectification = kwargs['doRectification']
 
-        self.l2ProductBasis = None 
-        self.reducedBasis = None 
+        self.l2ProductBasis = None
+        self.reducedBasis = None
         self.N = 0
 
         super().initCoarseToolbox()
@@ -672,7 +670,6 @@ class nirbOnline(ToolboxModel):
 
         compressedSol = self.getCompressedSol(mu)
 
-
         if self.doRectification:
             coef = self.RectificationMat@compressedSol
             for i in range(self.N):
@@ -709,8 +706,10 @@ class nirbOnline(ToolboxModel):
 
         Args : 
             path (str, optional): Path where files are saved. Defaults to "./".
+        
+        Returns :
+            int: error code, 0 if all went well, 1 if not
         """
-
 
         reducedPath = path +'/reducedBasis'
         reducedFilename = 'reducedBasis'
@@ -721,20 +720,18 @@ class nirbOnline(ToolboxModel):
         if feelpp.Environment.isMasterRank():
             if not os.path.isdir(path):
                 print(f"[NIRB] Error : Could not find path {path}.")
-                return None 
+                return 1
             if not os.path.isdir(reducedPath):
                 print(f"[NIRB] Error : Could not find path {reducedPath}.")
-                return None 
+                return 1
             if not os.path.isdir(l2productPath):
                 print(f"[NIRB] Error : Could not find path {l2productPath}.")
-                return None 
-                    
+                return 1
 
         comm.Barrier()
 
         self.reducedBasis = []
         self.l2ProductBasis = []
-
 
         import glob
         Nreduce = len(glob.glob(os.path.join(reducedPath, "*.h5")))
@@ -763,6 +760,8 @@ class nirbOnline(ToolboxModel):
         if feelpp.Environment.isMasterRank():
             print(f"[NIRB] Data loaded from {os.path.abspath(path)}")
             print(f"[NIRB] Number of basis functions loaded : {self.N}")
+        
+        return 0
 
     def normMat(self, Mat, u):
         """ Compute the norm associated to matrix Mat
