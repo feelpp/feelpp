@@ -1,0 +1,59 @@
+name: Manual CI
+run-name: Build ${{ inputs.flavor }}-${{ inputs.version }}
+on:
+  workflow_dispatch:
+    inputs:
+      flavor:
+        description: 'Distribution flavor'     
+        required: true
+        default: 'fedora'
+        options: ['ubuntu', 'debian', 'fedora']
+      version:
+        description: 'Version of the distribution'  
+        required: true
+        default: "36"
+        options: ['20.04', '22.04', '22.10', '10', '11', 'testing', 'sid', '36', '37']
+
+jobs:
+
+  activate:
+    runs-on: self-ubuntu-20.04
+    if: |
+      github.repository == 'feelpp/feelpp' &&
+      !startsWith(github.event.head_commit.message, 'Release ') &&
+      !contains(github.event.head_commit.message, 'ci skip')
+    steps:
+    - run: echo ok go
+
+  build:
+    env:
+      os: ${{ inputs.flavor }}-${{ inputs.version }}
+    name: ${{ inputs.flavor }}-${{ inputs.version }}
+    runs-on: self-docker-${{ inputs.flavor }}-${{ inputs.version }}
+    needs: activate
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: recursive
+        clean: true
+    - name: Configure feelpp
+      run: |
+        if test "${{ inputs.flavor }}" = "fedora"; then
+          . /etc/profile.d/modules.sh
+          module load mpi/openmpi-x86_64
+        fi
+        cmake --preset default 
+    - name:   Build feelpp
+      run: cmake --build --preset default -j20
+    - name: Package feelpp
+      run: cmake --build --preset default -t package
+#    - name: Upload feelpp
+#      uses: actions/upload-artifact@v2
+#      with:
+#        name: uploads
+#        path: build/
+    - name: Test feelpp
+      run: ctest --preset default -j 4
+
+
+

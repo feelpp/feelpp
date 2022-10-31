@@ -181,3 +181,7 @@ mor/examples/linearelasticity3d/linearelasticity3dapp.cpp
 mor/examples/heat3d/heat3dapp.cpp
 **/crbdb
 **/feelppdb
+**/.bundle
+**/vendor
+**/Gemfile.lock
+**/doc.rb
