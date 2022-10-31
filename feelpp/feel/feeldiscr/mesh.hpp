@@ -426,9 +426,9 @@ class Mesh
         M_numGlobalElements = I[3];
     }
 
-    struct UpdateNumGlobalEntitiesForAllReduce : public std::binary_function<boost::tuple<std::vector<size_type>, std::vector<size_type>>,
-                                                                             boost::tuple<std::vector<size_type>, std::vector<size_type>>,
-                                                                             boost::tuple<std::vector<size_type>, std::vector<size_type>>>
+    struct UpdateNumGlobalEntitiesForAllReduce : public std::function<boost::tuple<std::vector<size_type>, std::vector<size_type>>(
+                                                                        boost::tuple<std::vector<size_type>, std::vector<size_type>> const&,
+                                                                        boost::tuple<std::vector<size_type>, std::vector<size_type>> const& )>
     {
         typedef boost::tuple<std::vector<size_type>, std::vector<size_type>> cont_type;
         cont_type operator()( cont_type const& x, cont_type const& y ) const
@@ -730,7 +730,7 @@ class Mesh
 
 
     template <typename ContType>
-    struct UpdateSetForAllReduce : public std::binary_function<ContType,ContType,ContType>
+    struct UpdateSetForAllReduce : public std::function<ContType(ContType const& ,ContType const&)>
     {
         using cont_type = ContType;
         cont_type operator()( cont_type const& x, cont_type const& y ) const

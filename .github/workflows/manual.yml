@@ -1,5 +1,5 @@
 name: Manual CI
-run-name: Build ${{ inputs.flavor }}-${{ inputs.version }}
+run-name: "[${{ inputs.flavor }}-${{ inputs.version }}] build ${{ github.ref_name }}"
 on:
   workflow_dispatch:
     inputs:
@@ -12,7 +12,12 @@ on:
         description: 'Version of the distribution'  
         required: true
         default: "36"
-        options: ['20.04', '22.04', '22.10', '10', '11', 'testing', 'sid', '36', '37']
+        options: ['20.04', '22.04', '22.10', '11', 'testing', 'sid', '36', '37']
+      preset:
+        description: 'Preset to use'  
+        required: false
+        default: "default"
+        options: ['default', 'feelpp']
 
 jobs:
 
@@ -37,18 +42,23 @@ jobs:
         submodules: recursive
         clean: true
     - name: Configure feelpp
-      run: cmake --preset default 
+      run: |
+        if test "${{ inputs.flavor }}" = "fedora"; then
+          . /etc/profile.d/modules.sh
+          module load mpi/openmpi-x86_64
+        fi
+        cmake --preset ${{ inputs.preset }} 
     - name:   Build feelpp
-      run: cmake --build --preset default -j20
+      run: cmake --build --preset ${{ inputs.preset }} -j20
     - name: Package feelpp
-      run: cmake --build --preset default -t package
+      run: cmake --build --preset ${{ inputs.preset }} -t package
 #    - name: Upload feelpp
 #      uses: actions/upload-artifact@v2
 #      with:
 #        name: uploads
 #        path: build/
     - name: Test feelpp
-      run: ctest --preset default -j 4
+      run: ctest --preset ${{ inputs.preset }} -j 4
 
 
 

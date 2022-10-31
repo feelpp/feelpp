@@ -177,5 +177,9 @@ mor/unsteady_heat1d/unsteadyHeat1dapp.cpp
 
 gmsh-config.err
 python/pyfeelpp/feelpp/__init__.py
+**/.bundle
+**/vendor
+**/Gemfile.lock
+**/doc.rb
 **/crbdb
 **/feelppdb
