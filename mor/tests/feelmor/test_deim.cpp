@@ -18,7 +18,6 @@ po::options_description makeOptions()
     po::options_description options( "Test DEIM Options" );
 
     options.add( feel_options() )
-        .add(deimOptions())
         .add(crbSEROptions());
     return options;
 }
@@ -64,6 +63,7 @@ public :
     typedef backend_type::vector_type vector_type;
     typedef backend_type::vector_ptrtype vector_ptrtype;
     typedef backend_type::sparse_matrix_type sparse_matrix_type;
+    typedef backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
     typedef typename mpl::if_<mpl::bool_<is_mat>,
                               sparse_matrix_type,
                               vector_type >::type tensor_type;
@@ -124,10 +124,7 @@ public :
         Ne[1] = 10;
         Pset->equidistributeProduct( Ne , true , "deim_test_sampling" );
 
-        Environment::setOptionValue("deim.rebuild-database", true );
-        initDeim( Pset );
-
-        M_deim->run();
+        initDeim( Pset, true );
         int m = M_deim->size();
         int real_m = is_mat? 4:3;
 
@@ -167,10 +164,9 @@ public :
 
 
         // We rebuild a new DEIM object with same uuid so he will reload the db
-        Environment::setOptionValue("deim.rebuild-database", false );
         if ( Environment::rank() == 0 )
             BOOST_TEST_MESSAGE( "Rebuild and check" );
-        initDeim( Pset );
+        initDeim( Pset, false );
 
         // Here we check if the betas are well computed without rebuilding the basis tensors
         int i = 0;
@@ -208,46 +204,49 @@ public :
 
     vector_ptrtype assembleForDEIM( parameter_type const& mu, int const& tag )
     {
-        return assembleForDEIM( mu, mpl::bool_<is_vect>() );
+        return assembleForDEIM_impl( Xh, V, mu );
     }
-    vector_ptrtype assembleForDEIM( parameter_type const& mu, mpl::bool_<false> )
+
+    vector_ptrtype assembleForDEIM_impl( space_ptrtype space, vector_ptrtype vec, parameter_type const& mu )
     {
-        auto mesh = Xh->mesh();
-        auto u = Xh->element();
+        auto mesh = space->mesh();
+        auto u = space->element();
 
-        auto f = form1( _test=Xh, _trial=Xh, _backend=M_backend, _vector=V );
-        f = integrate( _range=markedelements(mesh,"Omega1"), _expr=math::cos(mu[0])*id(u) );
-        f += integrate( _range=markedelements(mesh,"Omega2"), _expr=math::sin(mu[1])*id(u) );
-        f += integrate( _range=markedfaces(mesh,"Gamma1"), _expr=math::exp(mu[0])*mu[1]*id(u) );
+        auto f = form1( _test=space, _trial=space, _backend=M_backend, _vector=vec );
+        if constexpr ( is_vect )
+        {
+            f = integrate( _range=markedelements(mesh,"Omega1"), _expr=math::cos(mu[0])*trans(id(u))*oneX() );
+            f += integrate( _range=markedelements(mesh,"Omega2"), _expr=math::sin(mu[1])*trans(id(u))*oneY() );
+            f += integrate( _range=markedfaces(mesh,"Gamma1"),_expr=math::exp( mu[0])*mu[1]*trans(id(u))*N() );
+        }
+        else
+        {
+            f = integrate( _range=markedelements(mesh,"Omega1"), _expr=math::cos(mu[0])*id(u) );
+            f += integrate( _range=markedelements(mesh,"Omega2"), _expr=math::sin(mu[1])*id(u) );
+            f += integrate( _range=markedfaces(mesh,"Gamma1"), _expr=math::exp(mu[0])*mu[1]*id(u) );
+        }
 
-        return V;
-    }
-    vector_ptrtype assembleForDEIM( parameter_type const& mu, mpl::bool_<true> )
-    {
-        auto mesh = Xh->mesh();
-        auto u = Xh->element();
-
-        auto f = form1( _test=Xh, _trial=Xh, _backend=M_backend, _vector=V );
-        f = integrate( _range=markedelements(mesh,"Omega1"), _expr=math::cos(mu[0])*trans(id(u))*oneX() );
-        f += integrate( _range=markedelements(mesh,"Omega2"), _expr=math::sin(mu[1])*trans(id(u))*oneY() );
-        f += integrate( _range=markedfaces(mesh,"Gamma1"),_expr=math::exp( mu[0])*mu[1]*trans(id(u))*N() );
-
-        return V;
+        return vec;
     }
 
     sparse_matrix_ptrtype assembleForMDEIM( parameter_type const& mu, int const& tag )
     {
-        auto mesh = Xh->mesh();
-        auto u = Xh->element();
-        auto v = Xh->element();
+        return this->assembleForMDEIM_impl( Xh, M, mu );
+    }
 
-        auto f = form2( _test=Xh, _trial=Xh, _backend=M_backend, _matrix=M );
+    sparse_matrix_ptrtype assembleForMDEIM_impl( space_ptrtype space, sparse_matrix_ptrtype mat, parameter_type const& mu  )
+    {
+        auto mesh = space->mesh();
+        auto u = space->element();
+        auto const& v = u;
+
+        auto f = form2( _test=space, _trial=space, _backend=M_backend, _matrix=mat );
         f = integrate( _range=markedelements(mesh,"Omega1"), _expr=mu[0]*inner(id(u),idt(v)) );
         f += integrate( _range=markedelements(mesh,"Omega2"), _expr=mu[1]*inner(grad(u),gradt(v)) );
         f += integrate( _range=markedfaces(mesh,"Gamma2"), _expr=(mu[1]*mu[0] + mu[0]*mu[0])*inner(grad(u)*N(),idt(v)) );
         f += integrate( _range=markedfaces(mesh,"Gamma1"), _expr=(mu[1]*mu[1])*inner(id(u),idt(v)) );
 
-        return M;
+        return mat;
     }
 
     // These functions are only needed for compilation
@@ -272,7 +271,7 @@ public :
     {
         return "test_deim";
     }
-    void initOnlineModel()
+    void initOnlineModel(std::shared_ptr<self_type> const& model)
     {}
     typename space_type::mesh_support_vector_type
         functionspaceMeshSupport( mesh_ptrtype const& mesh ) const
@@ -280,19 +279,34 @@ public :
         return typename space_type::mesh_support_vector_type();
     }
  private :
-    void initDeim( sampling_ptrtype Pset )
+    void initDeim( sampling_ptrtype Pset, bool rebuild )
     {
-        return initDeim( Pset, mpl::bool_<is_mat>() );
+        initDeim( Pset, rebuild, mpl::bool_<is_mat>() );
+        M_deim->setRebuildDB( rebuild );
     }
-    void initDeim( sampling_ptrtype Pset, mpl::bool_<true> )
+    void initDeim( sampling_ptrtype Pset, bool rebuild, mpl::bool_<true> )
     {
-        M_deim = mdeim( _model=this->shared_from_this(),
-                        _sampling=Pset );
+        auto mydeim = mdeim( _model=this->shared_from_this(),
+                             _sampling=Pset );
+        if ( rebuild )
+            mydeim->run();
+        M_deim = mydeim;
+        M_online = M_backend->newMatrix(_test=mydeim->onlineModel()->functionSpace(),_trial=mydeim->onlineModel()->functionSpace());
+        mydeim->onlineModel()->setAssembleMDEIM( [this,mydeim]( parameter_type const& mu ) {
+                                                     return this->assembleForMDEIM_impl( mydeim->onlineModel()->functionSpace(), M_online, mu );
+                                                 } );
     }
-    void initDeim( sampling_ptrtype Pset, mpl::bool_<false> )
+    void initDeim( sampling_ptrtype Pset, bool rebuild, mpl::bool_<false> )
     {
-        M_deim = deim( _model=this->shared_from_this(),
-                       _sampling=Pset );
+        auto mydeim = deim( _model=this->shared_from_this(),
+                            _sampling=Pset );
+        if ( rebuild )
+            mydeim->run();
+        M_deim = mydeim;
+        V_online = M_backend->newVector( mydeim->onlineModel()->functionSpace() );
+        mydeim->onlineModel()->setAssembleDEIM( [this,mydeim]( parameter_type const& mu ) {
+                                                    return this->assembleForDEIM_impl( mydeim->onlineModel()->functionSpace(), V_online, mu );
+                                                } );
     }
 
     //! evaluate V= V+a*vec
@@ -315,8 +329,8 @@ private :
     space_ptrtype Xh;
     backend_ptrtype M_backend;
     parameterspace_ptrtype Dmu;
-    vector_ptrtype V;
-    sparse_matrix_ptrtype M;
+    vector_ptrtype V, V_online;
+    sparse_matrix_ptrtype M, M_online;
 
     uuids::uuid M_uuid;
     deim_ptrtype M_deim;

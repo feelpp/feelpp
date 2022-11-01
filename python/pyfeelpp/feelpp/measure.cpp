@@ -21,7 +21,7 @@
 //! @date 15 Jun 2017
 //! @copyright 2017 Feel++ Consortium
 //!
-#include <pybind11/pybind11.h>
+#include <feel/feelpython/pybind11/pybind11.h>
 
 
 #include <feel/feelmesh/filters.hpp>

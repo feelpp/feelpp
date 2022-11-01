@@ -13,7 +13,7 @@ Penalisation<Dim>::Penalisation():
     L1( 4. ),
     E( 2. ),
 /*TODO : in the mesh, call the boundary H1, H2 ...
-  and calculate here the lenghts and do not enter it in the code !
+  and calculate here the lengths and do not enter it in the code !
 */
     radius(       doption("radius"      ) ),
     epsilon(      doption("epsilon"     ) ),
@@ -236,7 +236,7 @@ void Penalisation<Dim>::updateChi()
                                ( vf::Py()-yp )*( vf::Py()-yp ) +
                                ( vf::Pz()-zp )*( vf::Pz()-zp ) );
     carac.on(_range=elements( mesh ),_expr=carac_expr );
-    LOG(INFO) << "caracteristic function built...\n";
+    LOG(INFO) << "characteristic function built...\n";
     p0.zero();
     p0 = integrate( _range=elements( mesh ),_expr=idv( carac ), _quad=_Q<6>() ).broken( P0h );
     LOG(INFO) << "p0 built...\n";

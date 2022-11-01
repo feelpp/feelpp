@@ -100,7 +100,7 @@ CRBDB::dbLocalPath() const
 fs::path
 CRBDB::lookForDB() const
 {
-    //std::cout << "db fdilename=" << this->dbFilename() << "\n";
+    //std::cout << "db localpath " << this->dbLocalPath() <<" db filename=" << this->dbFilename() << std::endl;
     // look in local repository $HOME/feel/db/crb/...
     if ( fs::exists( this->dbLocalPath() / this->dbFilename() ) )
     {

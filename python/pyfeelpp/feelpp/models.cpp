@@ -21,8 +21,8 @@
 //! @date 15 Jun 2017
 //! @copyright 2017 Feel++ Consortium
 //!
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
+#include <feel/feelpython/pybind11/pybind11.h>
+#include <feel/feelpython/pybind11/stl.h>
 #include <mpi4py/mpi4py.h>
 #include<feel/feelmodels/modelproperties.hpp>
 
@@ -164,6 +164,7 @@ PYBIND11_MODULE(_models, m )
     pyclass_name = "ModelProperties";
     py::class_<ModelProperties,std::shared_ptr<ModelProperties>>(m,pyclass_name.c_str())
         .def(py::init< std::string const&, worldcomm_ptr_t const&, std::string const&>(),"initialize ModelProperties",py::arg("directoryLibExpr")="",py::arg("worldComm"),py::arg("prefix")="")
+        .def("setup",static_cast<void(ModelProperties::*)(std::string const&)>(&ModelProperties::setup), "setup from a filename")
         .def("parameters",static_cast<ModelParameters& (ModelProperties::*)()>(&ModelProperties::parameters), "get parameters of the model",py::return_value_policy::reference)
         .def("materials",static_cast<ModelMaterials& (ModelProperties::*)()>(&ModelProperties::materials), "get the materials of the model",py::return_value_policy::reference);
 }

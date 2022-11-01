@@ -22,6 +22,11 @@ namespace Feel
 namespace FeelModels
 {
 
+/**
+ * @brief Description of Model Properties
+ * @ingroup ModelCore
+ * 
+ */
 class MaterialPropertyDescription : public std::tuple<std::string,std::vector<std::pair<uint16_type,uint16_type>>>
 {
     using super_type = std::tuple<std::string,std::vector<std::pair<uint16_type,uint16_type>>>;
@@ -71,6 +76,12 @@ class MaterialPropertyDescription : public std::tuple<std::string,std::vector<st
 template <uint16_type Dim>
 class ModelPhysics;
 
+/**
+ * @brief Physic of the Model
+ * @ingroup ModelCore
+ * 
+ * @tparam Dim real dimension
+ */
 template <uint16_type Dim>
 class ModelPhysic : public JournalWatcher
 {
@@ -317,6 +328,12 @@ private :
     std::map<std::string,ModelExpression> M_parameterNameToExpr;
 };
 
+/**
+ * @brief Heat Physic Model
+ * @ingroup ModelCore
+ * 
+ * @tparam Dim real dimension
+ */
 template <uint16_type Dim>
 class ModelPhysicHeat : public ModelPhysic<Dim>
 {
@@ -418,7 +435,12 @@ private:
     std::optional<Convection> M_convection;
 };
 
-
+/**
+ * @brief Electric Physic Model
+ * @ingroup ModelCore
+ * 
+ * @tparam Dim real dimension of the model
+ */
 template <uint16_type Dim>
 class ModelPhysicElectric : public ModelPhysic<Dim>
 {
@@ -434,6 +456,13 @@ public :
 private :
 };
 
+/**
+ * @brief ThermoElectric Physic Model
+ * @ingroup ModelCore
+ *
+ * @tparam Dim real dimension of the model
+ * @sa ThermoElectric
+ */
 template <uint16_type Dim>
 class ModelPhysicThermoElectric : public ModelPhysic<Dim>
 {
@@ -450,13 +479,21 @@ private :
 };
 
 
-
+/**
+ * @brief Fluid Physic Model
+ * @ingroup ModelCore
+ *
+ * @tparam Dim real dimension of the model
+ * @sa Fluid
+ */
 template <uint16_type Dim>
 class ModelPhysicFluid : public ModelPhysic<Dim>
 {
     using super_type = ModelPhysic<Dim>;
     using self_type = ModelPhysicFluid<Dim>;
 public :
+
+    enum class NavierStokesFormulation { Convective=0, SkewSymmetric, Conservative, Rotational, EMAC };
     struct DynamicViscosity
     {
         DynamicViscosity( std::string const& ln )
@@ -597,6 +634,8 @@ public :
     std::string const& equation() const { return M_equation; }
     void setEquation( std::string const& eq );
 
+    NavierStokesFormulation navierStokesFormulation() const { return M_navierStokesFormulation; }
+
     bool gravityForceEnabled() const { return M_gravityForceEnabled; }
     auto const& gravityForceExpr() const { return M_gravityForceExpr.template expr<Dim,1>(); }
 
@@ -614,6 +653,8 @@ public :
 
 private :
     std::string M_equation;
+    NavierStokesFormulation M_navierStokesFormulation;
+
     bool M_gravityForceEnabled;
     ModelExpression M_gravityForceExpr;
 
@@ -621,6 +662,13 @@ private :
     Turbulence M_turbulence;
 };
 
+/**
+ * @brief Solid Physic Model
+ * @ingroup ModelCore
+ *
+ * @tparam Dim real dimension of the model
+ * @sa Solid
+ */
 template <uint16_type Dim>
 class ModelPhysicSolid : public ModelPhysic<Dim>
 {
@@ -672,6 +720,13 @@ private :
     std::vector<BodyForces> M_bodyForces;
 };
 
+/**
+ * @brief Fluid Structure Interaction Physic Model
+ * @ingroup ModelCore
+ *
+ * @tparam Dim real dimension of the model
+ * @sa FSI
+ */
 template <uint16_type Dim>
 class ModelPhysicFSI : public ModelPhysic<Dim>
 {
@@ -691,7 +746,13 @@ private :
     std::set<std::string> M_interfaceFluid, M_interfaceSolid;
 };
 
-
+/**
+ * @brief CoefficientFormPDE Physic Model
+ * @ingroup ModelCore
+ *
+ * @tparam Dim real dimension of the model
+ * @sa CoefficientFormPDE
+ */
 template <uint16_type Dim>
 class ModelPhysicCoefficientFormPDE : public ModelPhysic<Dim>
 {
@@ -757,7 +818,13 @@ private :
     std::shared_ptr<infos_type> M_infos;
 };
 
-
+/**
+ * @brief CoefficientFormPDE set Physic Model
+ * @ingroup ModelCore
+ *
+ * @tparam Dim real dimension of the model
+ * @sa CoefficientFormPDE
+ */
 template <uint16_type Dim>
 class ModelPhysicCoefficientFormPDEs : public ModelPhysic<Dim>
 {
@@ -780,7 +847,12 @@ private :
     std::vector<std::tuple<std::string,std::shared_ptr<cfpde_infos_type>,std::shared_ptr<ModelPhysicCoefficientFormPDE<Dim>>>> M_pdes;
 };
 
-
+/**
+ * @brief Physic set Model
+ * @ingroup ModelCore
+ * 
+ * @tparam Dim 
+ */
 template <uint16_type Dim>
 class ModelPhysics : virtual public ModelBase
 {

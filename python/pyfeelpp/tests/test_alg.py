@@ -13,8 +13,6 @@ def test_alg(init_feelpp):
             print("vector size:",v.size())
         assert(v.size()==10)
 
-
-
         dm = feelpp.DataMap(wc)
         if feelpp.Environment.isMasterRank():
             print("dm size:", dm.nDof())
@@ -58,3 +56,30 @@ def test_backend_matrix():
         M=v.mat()
         M.zeroEntries()
 
+
+#def test_createFromPETSc(init_feelpp):
+#    e = init_feelpp
+#    feelpp.Environment.changeRepository(
+#        directory="pyfeelpp-tests/alg/test_createFromPETSc")
+#    from mpi4py import MPI
+#    wc = MPI.COMM_WORLD
+#
+#    N = 150
+#    v = PETSc.Vec().create(comm=wc)
+#    v.setSizes(N)
+#    v.setUp()
+#    v.setFromOptions()
+#    v.set(67)
+#    v[45] = 450
+#
+#    v_petsc = feelpp.VectorPetscDouble(v)
+#    v_petsc.vec().assemble()
+#    v_petsc.vec().view()
+#    assert( v_petsc.size()     == N   )
+#    assert( v_petsc.vec()[45]  == 450 )
+#    assert( v_petsc.vec()[148] == 67  )
+#    
+#     v_ublas = feelpp._alg.VectorUBlas.createFromPETSc(v_petsc)
+#     assert( v_ublas.size() == N   )
+#     assert( v_ublas[45]    == 450 )
+#     assert( v_ublas[148]   == 67  )

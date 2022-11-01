@@ -20,7 +20,14 @@ namespace Feel
 {
 namespace FeelModels
 {
-
+/**
+ * @brief class for a single CoefficientFormPDE 
+ * @ingroup CoefficientFormPDEs
+ *
+ * @tparam ConvexType convex for the mesh
+ * @tparam BasisUnknownType basis type for unknowns in an equation
+ * 
+ */
 template< typename ConvexType, typename BasisUnknownType>
 class CoefficientFormPDE : public CoefficientFormPDEBase<ConvexType>
 {
@@ -47,7 +54,6 @@ public:
     typedef std::shared_ptr<space_unknown_type> space_unknown_ptrtype;
     typedef typename space_unknown_type::element_type element_unknown_type;
     typedef std::shared_ptr<element_unknown_type> element_unknown_ptrtype;
-    typedef typename space_unknown_type::element_external_storage_type element_unknown_external_storage_type;
     static constexpr bool unknown_is_scalar = space_unknown_type::is_scalar;
     static constexpr bool unknown_is_vectorial = space_unknown_type::is_vectorial;
     // time scheme
@@ -147,7 +153,9 @@ public:
     auto modelFields( TheUnknownFieldType const& field_u, std::string const& prefix = "" ) const
         {
             return Feel::FeelModels::modelFields( modelField<FieldCtx::FULL>( FieldTag::unknown(this), prefix, this->unknownName(), field_u, this->unknownSymbol(), this->keyword() ),
-                                                  modelField<FieldCtx::FULL>( FieldTag::unknown_previous(this), prefix, this->unknownName()+"_previous", this->fieldUnknownPtr(), this->unknownSymbol() + "_previous", this->keyword() ) );
+                                                  modelField<FieldCtx::FULL>( FieldTag::unknown_previous(this), prefix, this->unknownName()+"_previous", this->fieldUnknownPtr(), this->unknownSymbol() + "_previous", this->keyword() ),
+                                                  modelField<FieldCtx::FULL>( FieldTag::unknown(this), prefix, this->unknownName()+"_remove_trial", field_u, this->unknownSymbol() + "_rt", this->keyword() )
+                                                  );
         }
 
     auto trialSelectorModelFields( size_type startBlockSpaceIndex = 0 ) const

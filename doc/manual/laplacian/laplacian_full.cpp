@@ -91,7 +91,7 @@ struct ExactSolution<3>
     typedef __typeof__( 3*M_PI*M_PI*sin( M_PI*Px() )*cos( M_PI*Py() )*cos( M_PI*Pz() ) ) laplacian_type;
 };
 /**
- * Laplacian Solver using discontinous approximation spaces
+ * Laplacian Solver using discontinuous approximation spaces
  *
  * solve \f$ -\Delta u = f\f$ on \f$\Omega\f$ and \f$u= g\f$ on \f$\Gamma\f$
  */

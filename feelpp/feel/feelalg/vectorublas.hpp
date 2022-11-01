@@ -2,12 +2,11 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2006-11-13
+  Author(s): Thibaut Metivet <thibaut.metivet@inria.fr>
+       Date: 2021-10-29
 
-  Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2007-2010 Université Joseph Fourier (Grenoble I)
-  Copyright (C) 2011-2016 Feel++ Consortium
+  Copyright (C) 2021 Feel++ Consortium
+  Copyright (C) 2021 INRIA
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -23,23 +22,14 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-/**
-   \file vectorublas.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2006-11-13
- */
-#ifndef __VectorUblas_H
-#define __VectorUblas_H 1
+#ifndef _FEELPP_VECTORUBLAS_HPP
+#define _FEELPP_VECTORUBLAS_HPP 1
 
-#include <set>
-#include <boost/operators.hpp>
-#include <boost/make_shared.hpp>
+#include <variant>
+
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/numeric/ublas/vector_proxy.hpp>
-#include <feel/feelcore/application.hpp>
 #include <feel/feelalg/vector.hpp>
-
-
 
 namespace Feel
 {
@@ -54,8 +44,7 @@ namespace detail
 // patch for shallow_array_adaptor from
 // http://stackoverflow.com/questions/1735841/initializing-a-ublas-vector-from-a-c-array
 template<typename T>
-class FEELPP_EXPORT shallow_array_adaptor
-    :
+class FEELPP_EXPORT shallow_array_adaptor:
         public boost::numeric::ublas::shallow_array_adaptor<T>
 {
 public:
@@ -63,6 +52,7 @@ public:
     typedef typename base_type::size_type                   size_type;
     typedef typename base_type::pointer                     pointer;
 
+    shallow_array_adaptor() : base_type() {}
     shallow_array_adaptor(size_type n) : base_type(n) {}
     shallow_array_adaptor(size_type n, pointer data) : base_type(n,data) {}
     shallow_array_adaptor(const shallow_array_adaptor& c) : base_type(c) {}
@@ -74,1296 +64,1247 @@ public:
     }
 };
 
+/*-----------------------------------------------------------------------------*/
+// Forward declarations
+template< typename T >
+class VectorUblasBase;
+template< typename T >
+class VectorUblasContiguousGhostsBase;
+template< typename T, typename Storage >
+class VectorUblasContiguousGhosts;
+template< typename T >
+class VectorUblasNonContiguousGhostsBase;
+template< typename T, typename Storage >
+class VectorUblasNonContiguousGhosts;
+template< typename T, typename Storage >
+class VectorUblasRange;
+template< typename T, typename Storage >
+class VectorUblasSlice;
+
 } // namespace detail
 
-/*!
- * \class VectorUblas
- * \brief interface to vector
- *
- * \code
- * VectorUblas<T> m;
- * \endcode
- *
- *  @author Christophe Prud'homme
- *  @see
- */
-template<typename T, typename Storage = ublas::vector<T> >
-class FEELPP_EXPORT VectorUblas
-    : public Vector<T>
-//    , boost::addable<VectorUblas<T,Storage> >
-//    , boost::subtractable<VectorUblas<T,Storage> >
-//    , boost::multipliable<VectorUblas<T,Storage>, T >
+template< typename T > class VectorUblas;
+
+template< typename T > 
+VectorUblas<T> element_product( const VectorUblas<T> & v1, const VectorUblas<T> & v2 );
+
+/*-----------------------------------------------------------------------------*/
+template< typename T >
+class FEELPP_EXPORT VectorUblas : public Vector<T>
 {
-    typedef Vector<T> super1;
-public:
-
-
-    /** @name Typedefs
-     */
-    //@{
-
-    typedef T value_type;
-    typedef typename type_traits<value_type>::real_type real_type;
-
-    typedef Storage vector_type;
-    typedef typename vector_type::difference_type difference_type;
-    typedef ublas::basic_range<typename vector_type::size_type, difference_type> range_type;
-    typedef ublas::basic_slice<typename vector_type::size_type, difference_type> slice_type;
-    typedef Vector<value_type> clone_type;
-    typedef std::shared_ptr<clone_type> clone_ptrtype;
-    typedef VectorUblas<value_type, Storage> this_type;
-    using self_t = this_type;
-    typedef typename vector_type::iterator iterator;
-    typedef typename vector_type::const_iterator const_iterator;
-
-    struct shallow_array_adaptor
-    {
-        typedef ublas::vector<value_type, Feel::detail::shallow_array_adaptor<value_type> > subtype;
-        typedef ublas::vector_range<subtype> rangesubtype;
-        typedef ublas::vector_slice<subtype> slicesubtype;
-        typedef VectorUblas<value_type,subtype> type;
-    };
-    static const bool is_shallow_array_adaptor_vector =
-        boost::is_same<vector_type,typename this_type::shallow_array_adaptor::subtype>::value ||
-        boost::is_same<vector_type,typename this_type::shallow_array_adaptor::rangesubtype>::value ||
-        boost::is_same<vector_type,typename this_type::shallow_array_adaptor::slicesubtype>::value;
-    static const bool is_extarray_vector = is_shallow_array_adaptor_vector;
-
-    struct range
-    {
-        typedef typename mpl::if_< mpl::bool_< is_shallow_array_adaptor_vector >,
-                                   typename this_type::shallow_array_adaptor::rangesubtype,
-                                   ublas::vector_range<ublas::vector<value_type> > >::type subtype;
-        typedef VectorUblas<value_type,subtype> type;
-    };
-
-    struct slice
-    {
-        typedef typename mpl::if_< mpl::bool_< is_shallow_array_adaptor_vector >,
-                                   typename this_type::shallow_array_adaptor::slicesubtype,
-                                   ublas::vector_slice<ublas::vector<value_type> > >::type subtype;
-        typedef VectorUblas<value_type,subtype> type;
-    };
-
-    static const bool is_range_vector = boost::is_same<vector_type,typename this_type::range::subtype>::value;
-    static const bool is_slice_vector = boost::is_same<vector_type,typename this_type::slice::subtype>::value;
-    static const bool has_non_contiguous_ghosts = is_range_vector || is_slice_vector || is_shallow_array_adaptor_vector;
-
-
-    typedef typename super1::datamap_type datamap_type;
-    typedef typename super1::datamap_ptrtype datamap_ptrtype;
-    using size_type = typename datamap_type::size_type;
-    //@}
-
-    /** @name Constructors, destructor
-     */
-    //@{
-
-    VectorUblas();
-
-    VectorUblas( size_type __s );
-
-    VectorUblas( datamap_ptrtype const& dm );
-
-    VectorUblas( size_type __s, size_type __n_local );
-
-    VectorUblas( VectorUblas const & m );
-
-    FEELPP_DEPRECATED VectorUblas( VectorUblas<value_type>& m, range_type const& range, datamap_ptrtype const& dm );
-    VectorUblas( VectorUblas<value_type>& m, range_type const& rangeActive, range_type const& rangeGhost, datamap_ptrtype const& dm );
-    VectorUblas( typename VectorUblas<value_type>::shallow_array_adaptor::type& m, range_type const& rangeActive, range_type const& rangeGhost, datamap_ptrtype const& dm );
-
-    FEELPP_DEPRECATED VectorUblas( VectorUblas<value_type>& m, slice_type const& range, datamap_ptrtype const& dm );
-    VectorUblas( VectorUblas<value_type>& m, slice_type const& sliceActive, slice_type const& sliceGhost, datamap_ptrtype const& dm );
-    VectorUblas( typename VectorUblas<value_type>::shallow_array_adaptor::type& m, slice_type const& sliceActive, slice_type const& sliceGhost, datamap_ptrtype const& dm );
-
-    FEELPP_DEPRECATED VectorUblas( ublas::vector<value_type>& m, range_type const& range );
-    VectorUblas( ublas::vector<value_type>& m, range_type const& range, datamap_ptrtype const& dm );
-
-    FEELPP_DEPRECATED VectorUblas( VectorUblas<value_type>& m, slice_type const& slice );
-
-    FEELPP_DEPRECATED VectorUblas( ublas::vector<value_type>& m, slice_type const& slice );
-    FEELPP_DEPRECATED VectorUblas( ublas::vector<value_type>& m, slice_type const& slice, datamap_ptrtype const& dm );
-    VectorUblas( ublas::vector<value_type>& mActive, slice_type const& sliceActive,
-                 ublas::vector<value_type>& mGhost, slice_type const& sliceGhost, datamap_ptrtype const& dm );
-    VectorUblas( typename this_type::shallow_array_adaptor::subtype& mActive, slice_type const& sliceActive,
-                 typename this_type::shallow_array_adaptor::subtype& mGhost, slice_type const& sliceGhost, datamap_ptrtype const& dm );
-
-    VectorUblas( size_type nActiveDof, value_type* arrayActiveDof,
-                 size_type nGhostDof, value_type* arrayGhostDof,
-                 datamap_ptrtype const& dm );
-
-    ~VectorUblas() override;
-
-    /**
-     * Change the dimension of the vector to \p N. The reserved memory
-     * for this vector remains unchanged if possible, to make things
-     * faster, but this may waste some memory, so take this in the
-     * back of your head.  However, if \p N==0 all memory is freed,
-     * i.e. if you want to resize the vector and release the memory
-     * not needed, you have to first call \p init(0) and then \p
-     * init(N). This cited behaviour is analogous to that of the STL
-     * containers.
-     *
-     * On \p fast==false, the vector is filled by zeros.
-     */
-    void init ( const size_type N,
-                const size_type n_local,
-                const bool      fast=false ) override;
-
-    /**
-     * call init with n_local = N,
-     */
-    void init ( const size_type n,
-                const bool      fast=false ) override;
-
-    /**
-     * init from a \p DataMap
-     */
-    void init( datamap_ptrtype const& dm ) override;
-
-
-    /**
-     * Creates a copy of this vector and returns it in an
-     * \p shared_ptr<>.
-     */
-    clone_ptrtype clone() const override
-    {
-        return clone_ptrtype( new this_type( *this ) );
-    }
-
-    //@}
-
-    /** @name Operator overloads
-     */
-    //@{
-
-    /**
-     *  \f$U = V\f$: copy all components.
-     */
-    Vector<value_type>& operator= ( const Vector<value_type> &V ) override;
-    Vector<value_type>& operator= ( const this_type &V );
-
-    template<typename AE>
-    VectorUblas<value_type, Storage>& operator=( ublas::vector_expression<AE> const& e )
-    {
-        M_vec.operator=( e );
-        return *this;
-    }
-
-    /**
-     * Access components, returns \p u(i).
-     */
-    T operator()( size_type i ) const override
-    {
-        checkIndex(i);
-        if ( has_non_contiguous_ghosts )
-        {
-            auto const& dm = this->map();
-            const size_type nLocalActiveDof = dm.nLocalDofWithoutGhost();
-            if ( i < nLocalActiveDof )
-                return M_vec.operator()( i );
-            else
-                return M_vecNonContiguousGhosts.operator()( i-nLocalActiveDof );
-        }
-        else
-            return M_vec.operator()( i-this->firstLocalIndex() );
-    }
-
-    /**
-     * Access components, returns \p u(i).
-     */
-    T& operator()( size_type i ) override
-    {
-        checkIndex(i);
-        if ( has_non_contiguous_ghosts )
-        {
-            auto const& dm = this->map();
-            const size_type nLocalActiveDof = dm.nLocalDofWithoutGhost();
-            if ( i < nLocalActiveDof )
-                return M_vec.operator()( i );
-            else
-                return M_vecNonContiguousGhosts.operator()( i-nLocalActiveDof );
-        }
-        else
-            return M_vec.operator()( i-this->firstLocalIndex() );
-    }
-
-    /**
-     * Access components, returns \p u(i).
-     */
-    T operator[]( size_type i ) const
-    {
-        //checkIndex(i);
-        //return M_vec.operator()( i-this->firstLocalIndex() );
-        return this->operator()( i );
-    }
-
-    /**
-     * Access components, returns \p u(i).
-     */
-    T& operator[]( size_type i )
-    {
-        //checkIndex(i);
-        //return M_vec.operator()( i-this->firstLocalIndex() );
-        return this->operator()( i );
-    }
-
-    /**
-     * Addition operator.
-     * Fast equivalent to \p U.add(1, V).
-     */
-    Vector<T>& operator+=( const Vector<T>& v ) override
-    {
-        add( 1., v );
-        return *this;
-    }
-    /**
-     * Addition operator.
-     */
-    self_t operator+( const self_t& v ) const
-    {
-        self_t w( *this );
-        w += v;
-        return w;
-    }
-    /**
-     * Addition operator with a scalar
-     */
-    self_t operator+( T const& f ) const
-    {
-        self_t v( *this );
-        v.setConstant( f );
-        v.add( 1., *this );
-        return v;
-    }
-    /**
-     * @brief operator f + v
-     * 
-     * @param f scalar
-     * @param v VectorUblas
-     * @return self_t new vector
-     */
-    friend self_t operator+(T f, const self_t &v) { self_t w( v ); w.setConstant( f ); w.add(1.,v); return w;  }
-
-    /**
-     * Subtraction operator.
-     * Fast equivalent to \p U.add(-1, V).
-     */
-    Vector<T>& operator-=( const Vector<T>& v ) override { add( -1., v ); return *this; }
-    /**
-     * Addition operator.
-     */
-    self_t operator-( const self_t& v ) const { self_t w( *this ); w -= v; return w; }
-    /**
-     * substraction operator with a scalar
-     */
-    self_t operator-( T const& f ) const
-    {
-        self_t v( *this );
-        v.setConstant( -f );
-        v.add( 1., *this );
-        return v;
-    }
-    /**
-     * @brief operator f - v
-     * 
-     * @param f scalar
-     * @param v VectorUblas
-     * @return self_t new vector
-     */
-    friend self_t operator-(T f, const self_t &v) { self_t w( v ); w.setConstant( f ); w.add(-1.,v); return w;  }
-
-    /**
-     * multiplication by a scalar value
-     */
-    Vector<T>& operator*=( T const& v )
-    {
-        this->scale( v );
-        return *this;
-    }
-    /**
-     * @return negative of this vector
-     */
-    self_t operator-() const
-    {
-        self_t v( *this );
-        v.scale( -1. );
-        return v;
-    }
-    /**
-     * @return v * f
-     */
-    self_t operator*( T f ) const
-    {
-        self_t v( *this );
-        v.scale( f );
-        return v;
-    }
-    /**
-     * @brief operator f * v
-     * 
-     * @param f scalar
-     * @param v VectorUblas
-     * @return self_t scaled vector
-     */
-    friend self_t operator*(T f, const self_t &v) { self_t w( v ); w.scale( f ); return w;  }
-
-    //@}
-
-    /** @name Accessors
-     */
-    //@{
-
-    iterator begin()
-    {
-        return M_vec.begin();
-    }
-    const_iterator begin() const
-    {
-        return M_vec.begin();
-    }
-
-    iterator end()
-    {
-        return M_vec.end();
-    }
-    const_iterator end() const
-    {
-        return M_vec.end();
-    }
-    iterator beginGhost()
-    {
-        return M_vecNonContiguousGhosts.begin();
-    }
-    const_iterator beginGhost() const
-    {
-        return M_vecNonContiguousGhosts.begin();
-    }
-
-    iterator endGhost()
-    {
-        return M_vecNonContiguousGhosts.end();
-    }
-    const_iterator endGhost() const
-    {
-        return M_vecNonContiguousGhosts.end();
-    }
-
-    /**
-     * if the vector is a range, return the first index of the range,
-     * otherwise returns 0
-     */
-    size_type start() const;
-
-    /**
-     * if the vector is a range, return the first index of the range,
-     * otherwise returns 0
-     */
-    size_type startNonContiguousGhosts() const;
-
-    /**
-     * return row_start, the index of the first
-     * vector row stored on this processor
-     */
-    unsigned int rowStart () const
-    {
-        checkInvariant();
-        return 0;
-    }
-
-    /**
-     * return row_stop, the index of the last
-     * vector row (+1) stored on this processor
-     */
-    size_type rowStop () const
-    {
-        checkInvariant();
-        return 0;
-    }
-
-    /**
-     * \return true if vector is initialized/usable, false otherwise
-     */
-    bool isInitialized() const override
-    {
-        return true;
-    }
-
-    /**
-     * \c close the ublas vector, that will copy the content of write
-     * optimized vector into a read optimized vector
-     */
-    void close () const;
-
-
-    /**
-     * see if vector has been closed
-     * and fully assembled yet
-     */
-    bool closed() const override
-    {
-        return true;
-    }
-
-
-    /**
-     * Returns the read optimized ublas vector.
-     */
-    vector_type const& vec () const
-    {
-        return M_vec;
-    }
-
-    /**
-     * Returns the read optimized ublas vector.
-     */
-    vector_type & vec ()
-    {
-        return M_vec;
-    }
-
-    /**
-     * Return ghost ublas vector (can be not used)
-     */
-    vector_type const& vecNonContiguousGhosts() const
-    {
-        return M_vecNonContiguousGhosts;
-    }
-
-    /**
-     * Return ghost ublas vector (can be not used)
-     */
-    vector_type & vecNonContiguousGhosts()
-    {
-        return M_vecNonContiguousGhosts;
-    }
-
-    /**
-     * update global values array
-     */
-    bool areGlobalValuesUpdated() const
-    {
-        return true;
-    }
-
-    /**
-     * update global values
-     */
-    void updateGlobalValues() const
-    {
-        //this->localize( M_global_values );
-        //M_global_values_updated = true;
-    }
-
-    /**
-     * get the \p i -th global value
-     */
-    value_type globalValue( size_type i ) const
-    {
-        return this->operator()( i );
-    }
-
-    //{ return M_global_values( i ); }
-
-    //@
-
-
-    /** @name  Mutators
-     */
-    //@{
-
-    /**
-     * outdate global values array e.g. they must be update
-     */
-    void outdateGlobalValues()
-    {
-        //M_global_values_updated = false;
-    }
-
-    /**
-     * set the entries to the constant \p v
-     */
-    void setConstant( value_type v ) override
-    {
-        M_vec = ublas::scalar_vector<double>( M_vec.size(), v );
-        if ( has_non_contiguous_ghosts )
-            M_vecNonContiguousGhosts = ublas::scalar_vector<double>( M_vecNonContiguousGhosts.size(), v );
-    }
-
-    //@}
-
-    /** @name  Methods
-     */
-    //@{
-
-    /**
-     * resize with size @p n
-     */
-    void resize( size_type n, bool preserve = true );
-
-    /**
-     * Release all memory and return
-     * to a state just like after
-     * having called the default
-     * constructor.
-     */
-    void clear () override;
-
-    /**
-     * Set all entries to 0. This method retains
-     * sparsity structure.
-     */
-    void zero () override
-    {
-        std::fill( this->begin(), this->end(), value_type( 0 ) );
-        if ( has_non_contiguous_ghosts )
-            std::fill( this->beginGhost(), this->endGhost(), value_type( 0 ) );
-    }
-
-    void zero ( size_type /*start1*/, size_type /*stop1*/ ) override
-    {
-        this->zero();
-        //ublas::project( (*this), ublas::range( start1, stop1 ) ) = ublas::zero_vector<value_type>( stop1 );
-    }
-
-    /**
-     * Add \p value to the value already accumulated
-     */
-    void add ( const size_type i, const value_type& value ) override
-    {
-#if !defined(NDEBUG)
-        checkInvariant();
-#endif
-        ( *this )( i ) += value;
-    }
-
-    /**
-     * v([i1,i2,...,in]) += [value1,...,valuen]
-     */
-    void addVector ( int* i, int n, value_type* v, size_type K = 0, size_type K2 = invalid_v<size_type> ) override
-    {
-        for ( int j = 0; j < n; ++j )
-            ( *this )( i[j] ) += v[j];
-    }
-
-    /**
-     * set to \p value
-     */
-    void set ( size_type i, const value_type& value ) override
-    {
-#if !defined(NDEBUG)
-        checkInvariant();
-#endif
-        ( *this )( i ) = value;
-    }
-
-    /**
-     * v([i1,i2,...,in]) = [value1,...,valuen]
-     */
-    void setVector ( int* i, int n, value_type* v ) override
-    {
-        for ( int j = 0; j < n; ++j )
-            ( *this )( i[j] ) = v[j];
-    }
-
-    /**
-     * \f$ U+=v \f$ where \p v is a std::vector<T>
-     * and you
-     * want to specify WHERE to add it
-     */
-    void addVector ( const std::vector<value_type>& v,
-                     const std::vector<size_type>& dof_indices ) override
-    {
-        FEELPP_ASSERT ( v.size() == dof_indices.size() ).error( "invalid dof indices" );
-
-        for ( size_type i=0; i<v.size(); i++ )
-            this->add ( dof_indices[i], v[i] );
-    }
-
-    /**
-     * \f$ U+=V \f$ where U and V are type
-     * \p NumericVector<T> and you
-     * want to specify WHERE to add
-     * the \p NumericVector<T> V
-     */
-    void addVector ( const Vector<value_type>& V,
-                     const std::vector<size_type>& dof_indices ) override
-    {
-        FEELPP_ASSERT ( V.size() == dof_indices.size() ).error( "invalid dof indices" );
-
-        for ( size_type i=0; i<V.size(); i++ )
-            this->add ( dof_indices[i], V( i ) );
-    }
-
-
-    /**
-     * \f$ U+=A*V\f$, add the product of a \p MatrixSparse \p A
-     * and a \p Vector \p V to \p this, where \p this=U.
-     */
-    void addVector ( const Vector<value_type>& /*V_in*/,
-                     const MatrixSparse<value_type>& /*A_in*/ ) override
-    {
-        FEELPP_ASSERT( 0 ).error( "invalid call, not implemented yet" );
-    }
-
-    /**
-     * \f$U+=V \f$ where U and V are type
-     * uvlas::vector<T> and you
-     * want to specify WHERE to add
-     * the DenseVector<T> V
-     */
-    void addVector ( const ublas::vector<value_type>& V,
-                     const std::vector<size_type>& dof_indices )
-    {
-        FEELPP_ASSERT ( V.size() == dof_indices.size() ).error( "invalid dof indices" );
-
-        for ( size_type i=0; i<V.size(); i++ )
-            this->add ( dof_indices[i], V( i ) );
-    }
-
-    /**
-     * \f$ U=v \f$ where v is a DenseVector<T>
-     * and you want to specify WHERE to insert it
-     */
-    void insert ( const std::vector<T>& /*v*/,
-                  const std::vector<size_type>& /*dof_indices*/ ) override
-    {
-        FEELPP_ASSERT( 0 ).error( "invalid call, not implemented yet" );
-    }
-
-    /**
-     * \f$U=V\f$, where U and V are type
-     * Vector<T> and you
-     * want to specify WHERE to insert
-     * the Vector<T> V
-     */
-    void insert ( const Vector<T>& /*V*/,
-                  const std::vector<size_type>& /*dof_indices*/ ) override
-    {
-        FEELPP_ASSERT( 0 ).error( "invalid call, not implemented yet" );
-    }
-
-
-    /**
-     * \f$ U+=V \f$ where U and V are type
-     * DenseVector<T> and you
-     * want to specify WHERE to insert
-     * the DenseVector<T> V
-     */
-    void insert ( const ublas::vector<T>& /*V*/,
-                  const std::vector<size_type>& /*dof_indices*/ ) override
-    {
-        FEELPP_ASSERT( 0 ).error( "invalid call, not implemented yet" );
-    }
-
-    /**
-     * Scale each element of the
-     * vector by the given factor.
-     */
-    void scale ( const T factor ) override
-    {
-        M_vec.operator *=( factor );
-        if ( has_non_contiguous_ghosts )
-            M_vecNonContiguousGhosts.operator *=( factor );
-
-    }
-
-    /**
-     * Print the contents of the vector in Matlab's
-     * sparse vector forvec. Optionally prints the
-     * vector to the file named \p name.  If \p name
-     * is not specified it is dumped to the screen.
-     */
-    void printMatlab( const std::string name="NULL", bool renumber = false ) const override;
-
-    void close() override {}
-
-    /**
-     * @return the minimum element in the vector.  In case of complex
-     * numbers, this returns the minimum Real part.
-     */
-    real_type min() const override
-    {
-        return this->min( true );
-    }
-    real_type min( bool parallel ) const
-    {
-        checkInvariant();
-
-        size_type nActiveDof = this->map().nLocalDofWithoutGhost();
-        size_type nGhostDof = this->map().nLocalGhosts();
-        real_type local_min = (nActiveDof>0)?
-            *std::min_element( M_vec.begin(), ( has_non_contiguous_ghosts || ( nGhostDof == 0 ) )? M_vec.end() : M_vec.begin()+nActiveDof ) :
-            std::numeric_limits<real_type>::max() ;
-        real_type global_min = local_min;
-
-#ifdef FEELPP_HAS_MPI
-        if ( parallel && this->comm().size() > 1 )
-        {
-            MPI_Allreduce ( &local_min, &global_min, 1,
-                            MPI_DOUBLE, MPI_MIN, this->comm() );
-        }
-#endif
-        return global_min;
-    }
-    /**
-     * @return the maximum element in the vector.  In case of complex
-     * numbers, this returns the maximum Real part.
-     */
-    real_type max() const override
-    {
-        return this->max( true );
-    }
-    real_type max( bool parallel ) const
-    {
-        checkInvariant();
-
-        size_type nActiveDof = this->map().nLocalDofWithoutGhost();
-        size_type nGhostDof = this->map().nLocalGhosts();
-        real_type local_max = (nActiveDof>0)?
-            *std::max_element( M_vec.begin(), ( has_non_contiguous_ghosts || ( nGhostDof == 0 ) )? M_vec.end() : M_vec.begin()+nActiveDof ) :
-            std::numeric_limits<real_type>::min() ;
-        real_type global_max = local_max;
-
-#ifdef FEELPP_HAS_MPI
-        if ( parallel && this->comm().size() > 1 )
-        {
-            MPI_Allreduce ( &local_max, &global_max, 1,
-                            MPI_DOUBLE, MPI_MAX, this->comm() );
-        }
-#endif
-        return global_max;
-    }
-
-    /**
-     * @return the \f$l_1\f$-norm of the vector, i.e.  the sum of the
-     * absolute values.
-     */
-    real_type l1Norm() const override
-    {
-        checkInvariant();
-
-        double local_l1 = 0;
-        if ( has_non_contiguous_ghosts || this->comm().size() == 1 )
-            local_l1 = ublas::norm_1( M_vec );
-        else
-            local_l1 = ublas::norm_1( ublas::project( M_vec, ublas::range( 0,this->map().nLocalDofWithoutGhost() ) ) );
-
-        double global_l1 = local_l1;
-
-#ifdef FEELPP_HAS_MPI
-
-        if ( this->comm().size() > 1 )
-        {
-            mpi::all_reduce( this->comm(), local_l1, global_l1, std::plus<double>() );
-        }
-
-#endif
-
-        return global_l1;
-
-    }
-
-    /**
-     * @return the \f$l_2\f$-norm of the vector, i.e.  the square root
-     * of the sum of the squares of the elements.
-     */
-    real_type l2Norm() const override
-    {
-        checkInvariant();
-        real_type local_norm2 = 0;
-
-        if ( has_non_contiguous_ghosts || this->comm().size() == 1 )
-        {
-            local_norm2 = ublas::inner_prod( M_vec, M_vec );
-        }
-        else
-        {
-            auto vecActiveDof = ublas::project( M_vec, ublas::range( 0,this->map().nLocalDofWithoutGhost() ) );
-            local_norm2 = ublas::inner_prod( vecActiveDof,vecActiveDof );
-        }
-        real_type global_norm2 = local_norm2;
-
-#ifdef FEELPP_HAS_MPI
-        if ( this->comm().size() > 1 )
-            mpi::all_reduce( this->comm(), local_norm2, global_norm2, std::plus<real_type>() );
-#endif
-
-        return math::sqrt( global_norm2 );
-    }
-
-    /**
-     * @return the maximum absolute value of the elements of this
-     * vector, which is the \f$l_\infty\f$-norm of a vector.
-     */
-    real_type linftyNorm() const override
-    {
-        checkInvariant();
-        real_type local_norminf = 0;
-        if ( has_non_contiguous_ghosts || this->comm().size() == 1 )
-            local_norminf = ublas::norm_inf( M_vec );
-        else
-            local_norminf = ublas::norm_inf( ublas::project( M_vec, ublas::range( 0,this->map().nLocalDofWithoutGhost() ) ) );
-
-        real_type global_norminf = local_norminf;
-
-#ifdef FEELPP_HAS_MPI
-        if ( this->comm().size() > 1 )
-        {
-            mpi::all_reduce( this->comm(), local_norminf, global_norminf, mpi::maximum<real_type>() );
-        }
-#endif
-        return global_norminf;
-    }
-
-
-    /**
-     * @return the sum of the vector.
-     */
-    value_type sum() const override
-    {
-        checkInvariant();
-        value_type local_sum = 0;
-
-        if ( has_non_contiguous_ghosts || this->comm().size() == 1 )
-        {
-            local_sum = ublas::sum( M_vec );
-        }
-        else
-        {
-            local_sum = ublas::sum( ublas::project( M_vec, ublas::range( 0,this->map().nLocalDofWithoutGhost() ) ) );
-        }
-        value_type global_sum = local_sum;
-#ifdef FEELPP_HAS_MPI
-        if ( this->comm().size() > 1 )
-            mpi::all_reduce( this->comm(), local_sum, global_sum, std::plus<value_type>() );
-#endif
-
-        return global_sum;
-    }
-
-    /**
-     * @compute sqrt on each element of the vector.
-     */
-    FEELPP_DONT_INLINE this_type sqrt() const;
-
-
-    /**
-     *@compute pow on each element of the vector.
-     */
-    this_type pow( int n ) const;
-
-
-    /**
-     * \f$U(0-DIM)+=s\f$.
-     * Addition of \p s to all components.
-     * \note \p s is a scalar and not a vector.
-     */
-    void add( const T& a ) override
-    {
-        checkInvariant();
-#if 1
-        for ( size_type i = 0; i < this->localSize(); ++i )
-            this->operator[]( i ) += a;
-        //M_vec.operator[]( i ) += a;
-
-        return;
-#else
-        M_vec += a*ublas::unit_vector<value_type>();
-        if ( has_non_contiguous_ghosts )
-            M_vecNonContiguousGhosts += a;
-#endif
-    }
-
-    /**
-     * \f$U+=V\f$.
-     * Simple vector addition, equal to the \p operator+=.
-     */
-    void add( const Vector<T>& v ) override
-    {
-        add( 1., v );
-        return;
-    }
-
-    /**
-     * \f$U+=a*V\f$.
-     * Simple vector addition, equal to the
-     * \p operator +=.
-     */
-    void add( const T& a, const Vector<T>& v ) override;
-
-    /**
-     * Creates a copy of the global vector in the
-     * local vector \p v_local.
-     */
-    void localize ( std::vector<value_type>& /*v_local*/ ) const
-    {
-        FEELPP_ASSERT( 0 ).error( "invalid call, not implemented yet" );
-    }
-
-    /**
-     * Creates a copy of the global vector in the
-     * local vector \p v_local.
-     */
-    void localize ( ublas::vector<value_type>& v_local ) const;
-    void localize ( ublas::vector<value_type,Feel::detail::shallow_array_adaptor<T> >& v_local ) const {}
-
-    /**
-     * Creates a copy of the global vector in the
-     * local vector \p v_local.
-     */
-    void localize ( ublas::vector_range<ublas::vector<value_type> >& v_local ) const;
-    void localize ( ublas::vector_range<ublas::vector<value_type,Feel::detail::shallow_array_adaptor<T> > >& v_local ) const {}
-
-    /**
-     * Creates a copy of the global vector in the
-     * local vector \p v_local.
-     */
-    void localize ( ublas::vector_slice<ublas::vector<value_type> >& v_local ) const;
-    void localize ( ublas::vector_slice<ublas::vector<value_type,Feel::detail::shallow_array_adaptor<T> > >& v_local ) const {}
-
-    /**
-     * Same, but fills a \p NumericVector<T> instead of
-     * a \p std::vector.
-     */
-    void localize ( Vector<T>& v_local ) const;
-
-    /**
-     * Creates a local vector \p v_local containing
-     * only information relevant to this processor, as
-     * defined by the \p send_list.
-     */
-    void localize ( Vector<T>& v_local,
-                    const std::vector<size_type>& send_list ) const;
-
-    /**
-     * Updates a local vector with selected values from neighboring
-     * processors, as defined by \p send_list.
-     */
-    void localize ( const size_type first_local_idx,
-                    const size_type last_local_idx,
-                    const std::vector<size_type>& send_list );
-
-    /**
-     * Creates a local copy of the global vector in
-     * \p v_local only on processor \p proc_id.  By
-     * default the data is sent to processor 0.  This method
-     * is useful for outputting data from one processor.
-     */
-    void localizeToOneProcessor ( ublas::vector<T>& v_local,
-                                  const size_type proc_id = 0 ) const;
-
-    /**
-     * Creates a local copy of the global vector in
-     * \p v_local only on processor \p proc_id.  By
-     * default the data is sent to processor 0.  This method
-     * is useful for outputting data from one processor.
-     */
-    void localizeToOneProcessor ( std::vector<T>& v_local,
-                                  const size_type proc_id = 0 ) const;
-
-
-    value_type dot( Vector<T> const& __v ) const override;
-    //@}
-
+    public:
+        // Typedefs
+        typedef VectorUblas<T> self_type;
+        typedef Vector<T> super_type;
+
+        using clone_ptrtype = typename super_type::clone_ptrtype;
+
+        typedef T value_type;
+        typedef typename type_traits<value_type>::real_type real_type;
+
+        typedef Feel::detail::VectorUblasBase<value_type> vector_impl_type;
+        typedef std::unique_ptr<vector_impl_type> vector_impl_ptrtype;
+        typedef std::unique_ptr<const vector_impl_type> vector_impl_cstptrtype;
+
+        typedef typename super_type::datamap_type datamap_type;
+        typedef typename super_type::datamap_ptrtype datamap_ptrtype;
+        using size_type = typename datamap_type::size_type;
+        
+        // Ublas range and slice types
+        typedef ublas::basic_range<typename ublas::vector<value_type>::size_type, typename ublas::vector<value_type>::difference_type> range_type;
+        typedef ublas::basic_slice<typename ublas::vector<value_type>::size_type, typename ublas::vector<value_type>::difference_type> slice_type;
+
+        // Iterators types
+        typedef typename Feel::detail::VectorUblasBase<T>::iterator_type iterator;
+        typedef typename Feel::detail::VectorUblasBase<T>::const_iterator_type const_iterator;
+
+    public:
+        // Constructors/Destructor
+        VectorUblas();
+        VectorUblas( size_type s );
+        VectorUblas( datamap_ptrtype const& dm );
+        VectorUblas( size_type s, size_type n_local );
+        //FEELPP_DEPRECATED VectorUblas( VectorUblas<value_type>& m, range_type const& range, datamap_ptrtype const& dm );
+        VectorUblas( VectorUblas<value_type>& v, range_type const& rangeActive, range_type const& rangeGhost, datamap_ptrtype const& dm );
+        //VectorUblas( typename VectorUblas<value_type>::shallow_array_adaptor::type& m, range_type const& rangeActive, range_type const& rangeGhost, datamap_ptrtype const& dm );
+        //FEELPP_DEPRECATED VectorUblas( VectorUblas<value_type>& m, slice_type const& range, datamap_ptrtype const& dm );
+        VectorUblas( VectorUblas<value_type>& v, slice_type const& sliceActive, slice_type const& sliceGhost, datamap_ptrtype const& dm );
+        //VectorUblas( typename VectorUblas<value_type>::shallow_array_adaptor::type& m, slice_type const& sliceActive, slice_type const& sliceGhost, datamap_ptrtype const& dm );
+        //FEELPP_DEPRECATED VectorUblas( ublas::vector<value_type>& m, range_type const& range );
+        VectorUblas( ublas::vector<value_type>& m, range_type const& range, datamap_ptrtype const& dm );
+        //FEELPP_DEPRECATED VectorUblas( VectorUblas<value_type>& m, slice_type const& slice );
+        //FEELPP_DEPRECATED VectorUblas( ublas::vector<value_type>& m, slice_type const& slice );
+        //FEELPP_DEPRECATED VectorUblas( ublas::vector<value_type>& m, slice_type const& slice, datamap_ptrtype const& dm );
+        VectorUblas( ublas::vector<T>& vActive, slice_type const& sliceActive,
+                     ublas::vector<T>& vGhost, slice_type const& sliceGhost, datamap_ptrtype const& dm );
+        //VectorUblas( typename this_type::shallow_array_adaptor::subtype& mActive, slice_type const& sliceActive,
+                     //typename this_type::shallow_array_adaptor::subtype& mGhost, slice_type const& sliceGhost, datamap_ptrtype const& dm );
+        VectorUblas( size_type nActiveDof, value_type * arrayActiveDof,
+                     size_type nGhostDof, value_type * arrayGhostDof,
+                     datamap_ptrtype const& dm );
+
+        VectorUblas( const VectorUblas<T> & other ): super_type( other ), M_vectorImpl( other.M_vectorImpl ? other.M_vectorImpl->clonePtr() : nullptr ) { }
+        VectorUblas( VectorUblas<T> && other ): super_type( std::move( other ) ) { swap( *this, other ); }
+        friend void swap( VectorUblas<T> & first, VectorUblas<T> & other ) { using std::swap; swap( first.M_vectorImpl, other.M_vectorImpl ); }
+
+        ~VectorUblas() override = default;
+
+        Vector<T> & operator=( const Vector<T> & v ) override;
+        //VectorUblas<T> & operator=( VectorUblas<T> other ) { swap( *this, other ); return *this; }
+        VectorUblas<T> & operator=( const VectorUblas<T> & other );
+
+        clone_ptrtype clone() const override { return clone_ptrtype( new self_type( *this ) ); }
+
+        // Storage API
+        void init( const size_type n, const size_type n_local, const bool fast = false ) override { return M_vectorImpl->init( n, n_local, fast ); }
+        void init( const size_type n, const bool fast = false ) override { return M_vectorImpl->init( n, fast ); }
+        void init( const datamap_ptrtype & dm ) override { return M_vectorImpl->init( dm ); }
+        
+        void resize( size_type n ) { return M_vectorImpl->resize( n ); }
+        void clear() override { return M_vectorImpl->clear(); }
+
+        void setMap( const datamap_ptrtype & dm ) { super_type::setMap( dm ); M_vectorImpl->setMap( dm ); }
+
+        const vector_impl_type & vectorImpl() const { return *M_vectorImpl; }
+
+        // Status API
+        bool isInitialized() const override { return true; }
+        void close() override { }
+        bool closed() const override { return true; }
+        bool areGlobalValuesUpdated() const { return true; }
+        void updateGlobalValues() const { }
+        void outdateGlobalValues() { }
+
+        //void checkInvariants() const { DCHECK( M_vectorImpl ) << "vector impl not initialized"; if( M_vectorImpl ) M_vectorImpl->checkInvariants(); }
+
+        // Operators API
+        virtual value_type operator()( size_type i ) const override { return M_vectorImpl->operator()( i ); }
+        virtual value_type& operator()( size_type i ) override { return M_vectorImpl->operator()( i ); }
+        value_type operator[]( size_type i ) const { return this->operator()( i ); }
+        value_type& operator[]( size_type i ) { return this->operator()( i ); }
+
+        Vector<T>& operator+=( const Vector<T>& v ) override { this->add( v ); return *this; }
+        Vector<T>& operator-=( const Vector<T>& v ) override { this->sub( v ); return *this; }
+        Vector<T>& operator*=( const value_type v ) { this->scale( v ); return *this; }
+
+        self_type operator+( const self_type & v ) const { return self_type( M_vectorImpl->operator+( *v.M_vectorImpl ) ); }
+        self_type operator+( value_type a ) const { return self_type( M_vectorImpl->operator+( a ) ); }
+        friend self_type operator+( value_type a, const self_type & v ) { return self_type( a + (*v.M_vectorImpl) ); }
+        self_type operator-( const self_type & v ) const { return self_type( M_vectorImpl->operator-( *v.M_vectorImpl ) ); }
+        self_type operator-( value_type a ) const { return self_type( M_vectorImpl->operator-( a ) ); }
+        friend self_type operator-( value_type a, const self_type & v ) { return self_type( a - (*v.M_vectorImpl) ); }
+        self_type operator-() const { return self_type( M_vectorImpl->operator-() ); }
+        self_type operator*( value_type a ) const { return self_type( M_vectorImpl->operator*( a ) ); }
+        friend self_type operator*( value_type a, const self_type & v ) { return self_type( a * (*v.M_vectorImpl) ); }
+
+        // Iterators API
+        auto begin() { return M_vectorImpl->begin(); }
+        auto begin() const { return M_vectorImpl->begin(); }
+        auto end() { return M_vectorImpl->end(); }
+        auto end() const { return M_vectorImpl->end(); }
+        
+        auto beginActive() { return M_vectorImpl->beginActive(); }
+        auto beginActive() const { return M_vectorImpl->beginActive(); }
+        auto endActive() { return M_vectorImpl->endActive(); }
+        auto endActive() const { return M_vectorImpl->endActive(); }
+
+        auto beginGhost() { return M_vectorImpl->beginGhost(); }
+        auto beginGhost() const { return M_vectorImpl->beginGhost(); }
+        auto endGhost() { return M_vectorImpl->endGhost(); }
+        auto endGhost() const { return M_vectorImpl->endGhost(); }
+
+        //size_type rowStart() const { return M_vectorImpl->rowStart(); }
+        //size_type rowStop() const { return M_vectorImpl->rowStop(); }
+
+        size_type startActive() const { return M_vectorImpl->startActive(); }
+        size_type startGhost() const { return M_vectorImpl->startGhost(); }
+        size_type start() const { return this->startActive(); }
+
+        // Setters API
+        void setConstant( value_type a ) override { return M_vectorImpl->setConstant( a ); }
+        void setZero() override { return M_vectorImpl->setZero(); }
+        void zero() override { return this->setZero(); }
+        void zero( size_type /*start*/, size_type /*stop*/ ) override { CHECK(false) << "unsupported"; }
+
+        void set( const size_type i, const value_type & value ) override { return M_vectorImpl->set( i, value ); }
+        void setVector( int * i, int n, value_type * v ) override { return M_vectorImpl->setVector( i, n, v ); }
+
+        void add( const size_type i, const value_type & value ) override { return M_vectorImpl->add( i, value ); }
+        void add( const value_type & value ) override { return M_vectorImpl->add( value ); }
+        void add( const Vector<T> & v ) override { return M_vectorImpl->add( v ); }
+        void add( const value_type & a, const Vector<T> & v ) override { return M_vectorImpl->add( a, v ); }
+        void addVector( int * i, int n, value_type * v, size_type K = 0, size_type K2 = invalid_v<size_type> ) override { return M_vectorImpl->addVector( i, n, v, K, K2 ); }
+        void addVector( const std::vector<value_type> & v, const std::vector<size_type> & dof_ids ) override { return M_vectorImpl->addVector( v, dof_ids ); }
+        void addVector( const Vector<T> & v, const std::vector<size_type> & dof_ids ) override { return M_vectorImpl->addVector( v, dof_ids ); }
+        void addVector( const ublas::vector<value_type> & v, const std::vector<size_type> & dof_ids ) { return M_vectorImpl->addVector( v, dof_ids ); }
+        void addVector( const Vector<T> & v, const MatrixSparse<value_type> & A ) override { return M_vectorImpl->addVector( v, A ); }
+        
+        void sub( const Vector<T> & v ) { return M_vectorImpl->sub( v ); }
+        void sub( const value_type & a, const Vector<T> & v ) { return M_vectorImpl->sub( a, v ); }
+
+        void insert( const std::vector<value_type> & v, const std::vector<size_type> & dof_ids ) override { return M_vectorImpl->insert( v, dof_ids ); }
+        void insert( const Vector<value_type> & v, const std::vector<size_type> & dof_ids ) override { return M_vectorImpl->insert( v, dof_ids ); }
+        void insert( const ublas::vector<value_type> & v, const std::vector<size_type> & dof_ids ) override { return M_vectorImpl->insert( v, dof_ids ); }
+
+        void scale( const value_type factor ) override { return M_vectorImpl->scale( factor ); }
+
+        // Utilities
+        real_type min() const override { return this->min( true ); }
+        real_type min( bool parallel ) const { return M_vectorImpl->min( parallel ); }
+        real_type max() const override { return this->max( true ); }
+        real_type max( bool parallel ) const { return M_vectorImpl->max( parallel ); }
+
+        real_type l1Norm() const override { return M_vectorImpl->l1Norm(); }
+        real_type l2Norm() const override { return M_vectorImpl->l2Norm(); }
+        real_type linftyNorm() const override { return M_vectorImpl->linftyNorm(); }
+
+        value_type sum() const override { return M_vectorImpl->sum(); }
+
+        value_type dot( const Vector<T> & v ) const override { return M_vectorImpl->dot( v ); }
+
+        self_type sqrt() const { return self_type( M_vectorImpl->sqrt() ); }
+        self_type pow( int n ) const { return self_type( M_vectorImpl->pow( n ) ); }
+        
+        // Exports
+        void printMatlab( const std::string filename = "NULL", bool renumber = false ) const override { return M_vectorImpl->printMatlab( filename, renumber ); }
 #ifdef FEELPP_HAS_HDF5
-    void saveHDF5( std::string const& filename, std::string tableName = "element", bool appendMode = false ) const;
-    void loadHDF5( std::string const& filename, std::string tableName = "element" );
+        FEELPP_DONT_INLINE
+        void saveHDF5( const std::string & filename, const std::string & tableName = "element", bool appendMode = false ) const { return M_vectorImpl->saveHDF5( filename, tableName, appendMode ); }
+        FEELPP_DONT_INLINE
+        void loadHDF5( const std::string & filename, const std::string & tableName = "element" ) { return M_vectorImpl->loadHDF5( filename, tableName ); }
+        FEELPP_DONT_INLINE
+        void loadHDF5( const std::string & filename, std::optional<std::vector<index_type>> const& mappingFromInput, const std::string & tableName = "element" ) { return M_vectorImpl->loadHDF5( filename, tableName, mappingFromInput ); }
 #endif
 
-    //! create a VectorUblas as a view of another Vector type (as VectorPetsc)
-    static
-    typename this_type::shallow_array_adaptor::type
-    createView( Vector<T> const& vec );
+        // Range and slice API
+        self_type range( const range_type & rangeActive, const range_type & rangeGhost, const datamap_ptrtype & dm ) { return self_type( *this, rangeActive, rangeGhost, dm ); }
+        self_type slice( const slice_type & sliceActive, const slice_type & sliceGhost, const datamap_ptrtype & dm ) { return self_type( *this, sliceActive, sliceGhost, dm ); }
 
-protected:
+        //! VectorUblas view on another Vector (eg a VectorPetsc)
+        static self_type createView( Vector<T> & vec );
 
-private:
+        // Localization (parallel global to one proc local)
+        void localizeToOneProcessor( ublas::vector<T> & v_local, const size_type proc_id = 0 ) const { return M_vectorImpl->localizeToOneProcessor( v_local, proc_id ); }
+        void localizeToOneProcessor( std::vector<T> & v_local, const size_type proc_id = 0 ) const { return M_vectorImpl->localizeToOneProcessor( v_local, proc_id ); }
 
-    template <typename OtherStorage>
-    void assignWithUblasImpl( VectorUblas<T,OtherStorage> const& v );
-    template <typename OtherStorage>
-    void addWithUblasImpl( const T& a, VectorUblas<T,OtherStorage> const& v );
-    template <typename OtherStorage>
-    value_type dotWithUblasImpl( VectorUblas<T,OtherStorage> const& v ) const;
+    protected:
+        VectorUblas( vector_impl_ptrtype && vectorImpl ): super_type( vectorImpl->mapPtr() ), M_vectorImpl( std::move( vectorImpl ) ) { }
 
-    /**
-     * check vector consistency
-     */
-    void checkInvariant() const;
+        friend self_type element_product<>( const self_type &, const self_type & );
+        
+    private:
+        vector_impl_ptrtype M_vectorImpl;
+};
 
-    inline void checkIndex( size_type i ) const
+namespace detail 
+{
+
+template< typename T >
+class FEELPP_EXPORT VectorUblasBase: public Vector<T>
+{
+    public:
+        // Typedefs
+        typedef Vector<T> super_type;
+        typedef VectorUblasBase<T> self_type;
+
+        using clone_ptrtype = typename super_type::clone_ptrtype;
+
+        typedef T value_type;
+        typedef typename type_traits<value_type>::real_type real_type;
+        typedef typename super_type::datamap_type datamap_type;
+        typedef typename super_type::datamap_ptrtype datamap_ptrtype;
+        using size_type = typename datamap_type::size_type;
+
+        // Actual storage variants
+        typedef ublas::vector<value_type> vector_storage_type;
+        typedef ublas::vector_range<vector_storage_type> vector_range_storage_type;
+        typedef ublas::vector_slice<vector_storage_type> vector_slice_storage_type;
+        typedef ublas::vector<value_type, Feel::detail::shallow_array_adaptor<value_type>> vector_map_storage_type;
+        typedef ublas::vector_range<vector_map_storage_type> vector_range_map_storage_type;
+        typedef ublas::vector_slice<vector_map_storage_type> vector_slice_map_storage_type;
+        typedef std::variant<
+            vector_storage_type,
+            vector_range_storage_type,
+            vector_slice_storage_type,
+            vector_map_storage_type,
+            vector_range_map_storage_type,
+            vector_slice_map_storage_type
+                > vector_variant_type;
+        typedef std::variant<
+            vector_storage_type *,
+            vector_range_storage_type *,
+            vector_slice_storage_type *,
+            vector_map_storage_type *,
+            vector_range_map_storage_type *,
+            vector_slice_map_storage_type *
+                > vector_ptr_variant_type;
+        typedef std::variant<
+            const vector_storage_type *,
+            const vector_range_storage_type *,
+            const vector_slice_storage_type *,
+            const vector_map_storage_type *,
+            const vector_range_map_storage_type *,
+            const vector_slice_map_storage_type *
+                > vector_cstptr_variant_type;
+
+        // Ublas range and slice types
+        typedef ublas::basic_range<typename vector_storage_type::size_type, typename vector_storage_type::difference_type> range_type;
+        typedef ublas::basic_slice<typename vector_storage_type::size_type, typename vector_storage_type::difference_type> slice_type;
+
+        // Iterator class
+        template< typename ValueType >
+        class iterator
         {
-            #if 0
-            DCHECK(  this->isInitialized() ) << "vector not initialized";
-            DCHECK (( i >= this->firstLocalIndex() ) &&
-                    ( i <=  this->lastLocalIndex() ) )
-                << "invalid index " << i << " min=" <<  this->firstLocalIndex() << " max=" << this->lastLocalIndex() ;
-            #endif
-        }
+            public:
+                using iterator_category = std::random_access_iterator_tag;
+                using value_type = std::decay_t<ValueType>;
+                using reference = ValueType &;
+                using difference_type = std::ptrdiff_t;
+                using pointer = ValueType *;
 
+            public:
+                template< typename It >
+                iterator( const It & it ): M_iteratorImpl( new iterator_impl<It>( it ) ) { }
+                iterator() = delete;
+                
+                iterator( const iterator & other ): M_iteratorImpl( other.M_iteratorImpl ? other.M_iteratorImpl->clone() : nullptr ) { }
+                iterator & swap( iterator & other ) { std::swap( M_iteratorImpl, other.M_iteratorImpl ); return *this; }
+                ~iterator() { if( M_iteratorImpl ) delete M_iteratorImpl; }
 
-private:
+                iterator & operator=( const iterator & other ) { swap( iterator( other ) ); return *this; }
 
-    //! vector with in first active dofs and then ghost, all dofs is contiguous, if Storage is not a view
-    //! else is Storage is a view, the vector represent only the active dofs contiguous
-    vector_type M_vec;
-    //! non contiguous ghost values : defined only with range view vector
-    vector_type M_vecNonContiguousGhosts;
+                reference operator*() const { return M_iteratorImpl->current(); }
+
+                iterator & operator++() { M_iteratorImpl->next(); return *this; }
+                iterator operator++(int) { iterator old = *this; operator++(); return old; }
+
+                iterator & operator--() { M_iteratorImpl->previous(); return *this; }
+                iterator operator--(int) { iterator old = *this; operator--(); return old; }
+
+                iterator & operator+=( difference_type n ) { M_iteratorImpl->incr( n ); return *this; }
+                iterator operator+( difference_type n ) { iterator tmp = *this; return tmp += n; }
+
+                iterator & operator-=( difference_type n ) { M_iteratorImpl->decr( n ); return *this; }
+                iterator operator-( difference_type n ) { iterator tmp = *this; return tmp -= n; }
+
+                difference_type operator-( const iterator & other ) const { return M_iteratorImpl->sub( *other.M_iteratorImpl ); }
+
+                bool operator==( const iterator & other ) const { return M_iteratorImpl->equal( *other.M_iteratorImpl ); }
+                bool operator!=( const iterator & other ) const { return !( *this == other ); }
+                bool operator<( const iterator & other ) const { return M_iteratorImpl->cmp( *other.M_iteratorImpl ); }
+                bool operator>( const iterator & other ) const { return other < *this; }
+                bool operator<=( const iterator & other ) const { return !( other < *this ); }
+                bool operator>=( const iterator & other ) const { return !( *this < other ); }
+
+            private:
+                class iterator_impl_base
+                {
+                    public:
+                        virtual ~iterator_impl_base() = default;
+
+                        virtual iterator_impl_base * clone() const = 0;
+
+                        virtual void assign( const iterator_impl_base & other ) = 0;
+
+                        virtual reference current() const = 0;
+                        virtual void next() = 0;
+                        virtual void incr( difference_type n ) = 0;
+                        virtual void previous() = 0;
+                        virtual void decr( difference_type n ) = 0;
+                        virtual difference_type sub( const iterator_impl_base & other ) const = 0;
+                        virtual bool equal( const iterator_impl_base & other ) const = 0;
+                        virtual bool cmp( const iterator_impl_base & other ) const = 0;
+                };
+                
+                template< typename It >
+                class iterator_impl: public iterator_impl_base
+                {
+                    public:
+                        iterator_impl( const It & it ) { M_it = it; }
+                        ~iterator_impl() override = default;
+                        iterator_impl<It> * clone() const override { return new iterator_impl<It>( M_it ); }
+
+                        void assign( const iterator_impl_base & other ) override { M_it = dynamic_cast<const iterator_impl<It>&>( other ).M_it; }
+
+                        reference current() const override { return *M_it; }
+                        void next() override { ++M_it; }
+                        void incr( difference_type n ) override { M_it += n; }
+                        void previous() override { --M_it; }
+                        void decr( difference_type n ) override { M_it -= n; }
+                        difference_type sub( const iterator_impl_base & other ) const override { return M_it.operator-( dynamic_cast<const iterator_impl<It>&>( other ).M_it ); }
+                        bool equal( const iterator_impl_base & other ) const override { return M_it.operator==( dynamic_cast<const iterator_impl<It>&>( other ).M_it ); }
+                        bool cmp( const iterator_impl_base & other ) const override { return M_it.operator<( dynamic_cast<const iterator_impl<It>&>( other ).M_it ); }
+
+                    private:
+                        It M_it;
+                };
+
+            private:
+                iterator_impl_base * M_iteratorImpl;
+        };
+
+        typedef iterator<value_type> iterator_type;
+        typedef iterator<const value_type> const_iterator_type;
+
+    public:
+        // Constructors/Destructor
+        VectorUblasBase( ) = default;
+        VectorUblasBase( const VectorUblasBase<T> & v ): super_type(v) { }
+        VectorUblasBase( size_type s );
+        VectorUblasBase( const datamap_ptrtype & dm );
+        VectorUblasBase( size_type s, size_type n_local );
+
+        ~VectorUblasBase() override = default;
+
+        Vector<T> & operator=( const Vector<T> & v ) override;
+        VectorUblasBase<T> & operator=( const VectorUblasBase<T> & v );
+
+        virtual clone_ptrtype clone() const override { return clone_ptrtype( this->clonePtr() ); }
+        virtual self_type * clonePtr() const = 0;
+        virtual self_type * emptyPtr() const = 0;
+
+        // Storage API
+        void init( const size_type n, const size_type n_local, const bool fast = false ) override;
+        void init( const size_type n, const bool fast = false ) override;
+        void init( const datamap_ptrtype & dm ) override;
+        
+        virtual void resize( size_type n ) = 0;
+        virtual void clear() override = 0;
+
+        // Status API
+        bool isInitialized() const override { return true; }
+        void close() override { }
+        bool closed() const override { return true; }
+        bool areGlobalValuesUpdated() const { return true; }
+        void updateGlobalValues() const { }
+        void outdateGlobalValues() { }
+
+        // Operators API
+        virtual value_type operator()( size_type i ) const override = 0;
+        virtual value_type& operator()( size_type i ) override = 0;
+        value_type operator[]( size_type i ) const { return this->operator()( i ); }
+        value_type& operator[]( size_type i ) { return this->operator()( i ); }
+
+        Vector<T>& operator+=( const Vector<T>& v ) override { this->add( v ); return *this; }
+        //VectorUblasExpression<T> operator+( const Vector<T>& v ) const;
+        Vector<T>& operator-=( const Vector<T>& v ) override { this->sub( v ); return *this; }
+        Vector<T>& operator*=( const value_type & a ) { this->scale( a ); return *this; }
+
+        std::unique_ptr<VectorUblasBase<T>> operator+( const self_type & v ) const;
+        std::unique_ptr<VectorUblasBase<T>> operator+( value_type a ) const;
+        friend std::unique_ptr<VectorUblasBase<T>> operator+( value_type a, const self_type & v ) { std::unique_ptr<VectorUblasBase<T>> res( v.emptyPtr() ); res->init( v.mapPtr() ); res->setConstant( a ); res->addVector( v ); return res; }
+        std::unique_ptr<VectorUblasBase<T>> operator-( const self_type & v ) const;
+        std::unique_ptr<VectorUblasBase<T>> operator-( value_type a ) const;
+        friend std::unique_ptr<VectorUblasBase<T>> operator-( value_type a, const self_type & v ) { std::unique_ptr<VectorUblasBase<T>> res( v.emptyPtr() ); res->init( v.mapPtr() ); res->setConstant( a ); res->subVector( v ); return res; }
+        std::unique_ptr<VectorUblasBase<T>> operator-() const;
+        std::unique_ptr<VectorUblasBase<T>> operator*( value_type a ) const;
+        friend std::unique_ptr<VectorUblasBase<T>> operator*( value_type a, const self_type & v ) { std::unique_ptr<VectorUblasBase<T>> res( v.clonePtr() ); res->scale( a ); return res; }
+
+        // Iterators API
+        virtual iterator_type begin() = 0;
+        virtual const_iterator_type begin() const = 0;
+        virtual iterator_type end() = 0;
+        virtual const_iterator_type end() const = 0;
+        
+        virtual iterator_type beginActive() = 0;
+        virtual const_iterator_type beginActive() const = 0;
+        virtual iterator_type endActive() = 0;
+        virtual const_iterator_type endActive() const = 0;
+
+        virtual iterator_type beginGhost() = 0;
+        virtual const_iterator_type beginGhost() const = 0;
+        virtual iterator_type endGhost() = 0;
+        virtual const_iterator_type endGhost() const = 0;
+        
+        virtual size_type startActive() const = 0;
+        virtual size_type startGhost() const = 0;
+
+        //virtual size_type start() const = 0;
+        //virtual size_type startNonContiguousGhosts() const = 0;
+
+        //size_type rowStart() const { checkInvariants(); return 0; }
+        //size_type rowStop() const { checkInvariants(); return 0; }
+
+        // Setters API
+        virtual void setConstant( value_type v ) override = 0;
+        virtual void setZero() override = 0;
+        void zero() override { this->setZero(); }
+        void zero( size_type /*start*/, size_type /*stop*/ ) override { CHECK(false) << "unsupported"; }
+
+        void set( const size_type i, const value_type & value ) override;
+        void set( const Vector<T> & v );
+        void setVector( int * i, int n, value_type * v ) override;
+
+        void add( const size_type i, const value_type & value ) override;
+        void add( const value_type & value ) override;
+        void add( const Vector<T> & v ) override;
+        void add( const value_type & a, const Vector<T> & v ) override;
+        void addVector( int * i, int n, value_type * v, size_type K = 0, size_type K2 = invalid_v<size_type> ) override;
+        void addVector( const std::vector<value_type> & v, const std::vector<size_type> & dof_ids ) override;
+        void addVector( const Vector<T> & v, const std::vector<size_type> & dof_ids ) override;
+        void addVector( const ublas::vector<value_type> & v, const std::vector<size_type> & dof_ids );
+        void addVector( const Vector<T> & /*v*/, const MatrixSparse<value_type> & /*A*/ ) override { FEELPP_ASSERT( 0 ).error( "not implemented" ); }
+
+        void sub( const Vector<T> & v );
+        void sub( const value_type & a, const Vector<T> & v );
+        virtual void sub( const value_type & a );
+        
+        virtual void scale( const value_type factor ) override = 0;
+
+        void insert( const std::vector<value_type> & /*v*/, const std::vector<size_type> & /*dof_ids*/ ) override { FEELPP_ASSERT( 0 ).error( "not implemented" ); }
+        void insert( const Vector<value_type> & /*v*/, const std::vector<size_type> & /*dof_ids*/ ) override { FEELPP_ASSERT( 0 ).error( "not implemented" ); }
+        void insert( const ublas::vector<value_type> & /*v*/, const std::vector<size_type> & /*dof_ids*/ ) override { FEELPP_ASSERT( 0 ).error( "not implemented" ); }
+
+        // Multiple dispatch operations
+        void setVector( const VectorUblasBase<T> & v ) { return v.applySetVector( *this ); }
+        virtual void setVector( const VectorUblasContiguousGhostsBase<T> & v ) = 0;
+        virtual void setVector( const VectorUblasNonContiguousGhostsBase<T> & v ) = 0;
+
+        void addVector( const VectorUblasBase<T> & v ) { return v.applyAddVector( *this ); }
+        virtual void addVector( const VectorUblasContiguousGhostsBase<T> & v ) = 0;
+        virtual void addVector( const VectorUblasNonContiguousGhostsBase<T> & v ) = 0;
+
+        void maddVector( const value_type & a, const VectorUblasBase<T> & v ) { return v.applyMaddVector( a, *this ); }
+        virtual void maddVector( const value_type & a, const VectorUblasContiguousGhostsBase<T> & v ) = 0;
+        virtual void maddVector( const value_type & a, const VectorUblasNonContiguousGhostsBase<T> & v ) = 0;
+
+        void subVector( const VectorUblasBase<T> & v ) { return v.applySubVector( *this ); }
+        virtual void subVector( const VectorUblasContiguousGhostsBase<T> & v ) = 0;
+        virtual void subVector( const VectorUblasNonContiguousGhostsBase<T> & v ) = 0;
+
+        virtual void msubVector( const value_type & a, const VectorUblasBase<T> & v ) { return v.applyMsubVector( a, *this ); }
+        virtual void msubVector( const value_type & a, const VectorUblasContiguousGhostsBase<T> & v ) = 0;
+        virtual void msubVector( const value_type & a, const VectorUblasNonContiguousGhostsBase<T> & v ) = 0;
+
+        void mulVector( const VectorUblasBase<T> & v ) { return v.applyMulVector( *this ); }
+        virtual void mulVector( const VectorUblasContiguousGhostsBase<T> & v ) = 0;
+        virtual void mulVector( const VectorUblasNonContiguousGhostsBase<T> & v ) = 0;
+
+        value_type dotVector( const VectorUblasBase<T> & v ) const { return v.applyDotVector( *this ); }
+        virtual value_type dotVector( const VectorUblasContiguousGhostsBase<T> & v ) const = 0;
+        virtual value_type dotVector( const VectorUblasNonContiguousGhostsBase<T> & v ) const = 0;
+
+#if FEELPP_HAS_PETSC
+        virtual void setVector( const VectorPetsc<T> & v ) = 0;
+        virtual void addVector( const VectorPetsc<T> & v ) = 0;
+        virtual void maddVector( const value_type & a, const VectorPetsc<T> & v ) = 0;
+        virtual void subVector( const VectorPetsc<T> & v ) = 0;
+        virtual void msubVector( const value_type & a, const VectorPetsc<T> & v ) = 0;
+        virtual value_type dotVector( const VectorPetsc<T> & v ) const = 0;
+#endif
+
+        // Utilities
+        real_type min() const override { return this->min( true ); }
+        virtual real_type min( bool parallel ) const = 0;
+        real_type max() const override { return this->max( true ); }
+        virtual real_type max( bool parallel ) const = 0;
+
+        virtual real_type l1Norm() const override = 0;
+        virtual real_type l2Norm() const override = 0;
+        virtual real_type linftyNorm() const override = 0;
+
+        virtual value_type sum() const override = 0;
+
+        value_type dot( const Vector<T> & v ) const override;
+
+        virtual std::unique_ptr<VectorUblasBase<T>> sqrt() const;
+        virtual std::unique_ptr<VectorUblasBase<T>> pow( int n ) const;
+        
+        // Exports
+        void printMatlab( const std::string filename = "NULL", bool renumber = false ) const override;
+#ifdef FEELPP_HAS_HDF5
+        void saveHDF5( const std::string & filename, const std::string & tableName = "element", bool appendMode = false ) const;
+        void loadHDF5( const std::string & filename, const std::string & tableName = "element", std::optional<std::vector<index_type>> const& mappingFromInput = {} );
+#endif
+
+        // Localization (parallel global to one proc local)
+        void localizeToOneProcessor( ublas::vector<T> & v_local, const size_type proc_id = 0 ) const;
+        void localizeToOneProcessor( std::vector<T> & v_local, const size_type proc_id = 0 ) const;
+        
+        // Range and slice API
+        std::unique_ptr<VectorUblasBase<T>> range( const range_type & rangeActive, const range_type & rangeGhost ) { return std::unique_ptr<VectorUblasBase<T>>( this->rangeImpl( rangeActive, rangeGhost ) ); }
+        std::unique_ptr<VectorUblasBase<T>> slice( const slice_type & sliceActive, const slice_type & sliceGhost ) { return std::unique_ptr<VectorUblasBase<T>>( this->sliceImpl( sliceActive, sliceGhost ) ); }
+
+        // Views
+#if FEELPP_HAS_PETSC
+        std::unique_ptr<VectorPetsc<T>> vectorPetsc() const { return std::unique_ptr<VectorPetsc<T>>( this->vectorPetscImpl() ); }
+#endif
+
+    protected:
+        virtual void checkInvariants() const = 0;
+
+        virtual void applySetVector( VectorUblasBase<T> & v ) const = 0;
+        virtual void applyAddVector( VectorUblasBase<T> & v ) const = 0;
+        virtual void applyMaddVector( const value_type & a, VectorUblasBase<T> & v ) const = 0;
+        virtual void applySubVector( VectorUblasBase<T> & v ) const = 0;
+        virtual void applyMsubVector( const value_type & a, VectorUblasBase<T> & v ) const = 0;
+        virtual void applyMulVector( VectorUblasBase<T> & v ) const = 0;
+        virtual value_type applyDotVector( const VectorUblasBase<T> & v ) const = 0;
+
+        virtual VectorUblasBase<T> * rangeImpl( const range_type & rangeActive, const range_type & rangeGhost ) = 0;
+        virtual VectorUblasBase<T> * sliceImpl( const slice_type & sliceActive, const slice_type & sliceGhost ) = 0;
+#if FEELPP_HAS_PETSC
+        virtual VectorPetsc<T> * vectorPetscImpl() const = 0;
+#endif
+};
+
+template< template < typename > class V, typename T >
+class SettableVectorUblas: public virtual VectorUblasBase<T>
+{
+    protected:
+        void applySetVector( VectorUblasBase<T> & b ) const override { return b.setVector( static_cast< const V<T>& >( *this ) ); }
+};
+template< template < typename > class V, typename T >
+class AddableVectorUblas: public virtual VectorUblasBase<T>
+{
+    protected:
+        void applyAddVector( VectorUblasBase<T> & b ) const override { return b.addVector( static_cast< const V<T>& >( *this ) ); }
+};
+template< template < typename > class V, typename T >
+class MaddableVectorUblas: public virtual VectorUblasBase<T>
+{
+    protected:
+        using typename VectorUblasBase<T>::value_type;
+        void applyMaddVector( const value_type & a, VectorUblasBase<T> & b ) const override { return b.maddVector( a, static_cast< const V<T>& >( *this ) ); }
+};
+template< template < typename > class V, typename T >
+class SubtractableVectorUblas: public virtual VectorUblasBase<T>
+{
+    protected:
+        void applySubVector( VectorUblasBase<T> & b ) const override { return b.subVector( static_cast< const V<T>& >( *this ) ); }
+};
+template< template < typename > class V, typename T >
+class MsubtractableVectorUblas: public virtual VectorUblasBase<T>
+{
+    protected:
+        using typename VectorUblasBase<T>::value_type;
+        void applyMsubVector( const value_type & a, VectorUblasBase<T> & b ) const override { return b.msubVector( a, static_cast< const V<T>& >( *this ) ); }
+};
+template< template < typename > class V, typename T >
+class MultipliableVectorUblas: public virtual VectorUblasBase<T>
+{
+    protected:
+        void applyMulVector( VectorUblasBase<T> & b ) const override { return b.mulVector( static_cast< const V<T>& >( *this ) ); }
+};
+template< template < typename > class V, typename T >
+class DottableVectorUblas: public virtual VectorUblasBase<T>
+{
+    protected:
+        typename VectorUblasBase<T>::value_type applyDotVector( const VectorUblasBase<T> & b ) const override { return b.dotVector( static_cast< const V<T>& >( *this ) ); }
+};
+
+/****************************************************************************/
+template< typename T >
+class VectorUblasContiguousGhostsBase: 
+    public SettableVectorUblas<VectorUblasContiguousGhostsBase, T>,
+    public AddableVectorUblas<VectorUblasContiguousGhostsBase, T>,
+    public MaddableVectorUblas<VectorUblasContiguousGhostsBase, T>,
+    public SubtractableVectorUblas<VectorUblasContiguousGhostsBase, T>,
+    public MsubtractableVectorUblas<VectorUblasContiguousGhostsBase, T>,
+    public MultipliableVectorUblas<VectorUblasContiguousGhostsBase, T>,
+    public DottableVectorUblas<VectorUblasContiguousGhostsBase, T>
+{
+    public:
+        // Typedefs
+        typedef VectorUblasBase<T> super_type;
+
+        using typename super_type::clone_ptrtype;
+
+        typedef T value_type;
+        typedef typename type_traits<value_type>::real_type real_type;
+        typedef typename super_type::datamap_type datamap_type;
+        typedef typename super_type::datamap_ptrtype datamap_ptrtype;
+        using size_type = typename datamap_type::size_type;
+
+        using typename super_type::vector_variant_type;
+        using typename super_type::vector_ptr_variant_type;
+        using typename super_type::vector_cstptr_variant_type;
+        using typename super_type::range_type;
+        using typename super_type::slice_type;
+
+    public:
+        // Constructors/Destructor
+        VectorUblasContiguousGhostsBase( ) = default;
+        ~VectorUblasContiguousGhostsBase() override = default;
+        using super_type::operator=;
+        
+        // Storage API
+        virtual void resize( size_type n ) override = 0;
+        virtual void clear() override = 0;
+
+        virtual vector_cstptr_variant_type vec() const = 0;
+
+        // Operators API
+        virtual value_type operator()( size_type i ) const override = 0;
+        virtual value_type& operator()( size_type i ) override = 0;
+
+        // Setters API
+        virtual void setConstant( value_type v ) override = 0;
+        virtual void setZero() override = 0;
+
+        virtual void scale( const value_type factor ) override = 0;
+
+        // Multiple dispatch operations
+        void setVector( const VectorUblasContiguousGhostsBase<T> & v ) override = 0;
+        void setVector( const VectorUblasNonContiguousGhostsBase<T> & v ) override = 0;
+
+        void addVector( const VectorUblasContiguousGhostsBase<T> & v ) override = 0;
+        void addVector( const VectorUblasNonContiguousGhostsBase<T> & v ) override = 0;
+
+        void maddVector( const value_type & a, const VectorUblasContiguousGhostsBase<T> & v ) override = 0;
+        void maddVector( const value_type & a, const VectorUblasNonContiguousGhostsBase<T> & v ) override = 0;
+        
+        void subVector( const VectorUblasContiguousGhostsBase<T> & v ) override = 0;
+        void subVector( const VectorUblasNonContiguousGhostsBase<T> & v ) override = 0;
+
+        void msubVector( const value_type & a, const VectorUblasContiguousGhostsBase<T> & v ) override = 0;
+        void msubVector( const value_type & a, const VectorUblasNonContiguousGhostsBase<T> & v ) override = 0;
+
+        void mulVector( const VectorUblasContiguousGhostsBase<T> & v ) override = 0;
+        void mulVector( const VectorUblasNonContiguousGhostsBase<T> & v ) override = 0;
+
+        value_type dotVector( const VectorUblasContiguousGhostsBase<T> & v ) const override = 0;
+        value_type dotVector( const VectorUblasNonContiguousGhostsBase<T> & v ) const override = 0;
+        
+        // Utilities
+        virtual real_type min( bool parallel ) const override = 0;
+        virtual real_type max( bool parallel ) const override = 0;
+
+        virtual real_type l1Norm() const override = 0;
+        virtual real_type l2Norm() const override = 0;
+        virtual real_type linftyNorm() const override = 0;
+
+        virtual value_type sum() const override = 0;
+
+    protected:
+        virtual vector_ptr_variant_type vec() = 0;
+
+        void checkInvariants() const override = 0;
+
+        VectorUblasBase<T> * rangeImpl( const range_type & rangeActive, const range_type & rangeGhost ) override = 0;
+        VectorUblasBase<T> * sliceImpl( const slice_type & sliceActive, const slice_type & sliceGhost ) override = 0;
+};
+
+template< typename T, typename Storage = ublas::vector<T> >
+class VectorUblasContiguousGhosts: public VectorUblasContiguousGhostsBase<T>
+{
+    public:
+        // Typedefs
+        typedef VectorUblasContiguousGhostsBase<T> super_type;
+        typedef VectorUblasBase<T> base_type;
+        typedef VectorUblasContiguousGhosts<T, Storage> self_type;
+
+        using typename super_type::clone_ptrtype;
+
+        typedef T value_type;
+        typedef typename type_traits<value_type>::real_type real_type;
+        typedef typename super_type::datamap_type datamap_type;
+        typedef typename super_type::datamap_ptrtype datamap_ptrtype;
+        using size_type = typename datamap_type::size_type;
+
+        typedef Storage storage_type;
+
+        using typename super_type::vector_storage_type;
+        using typename super_type::vector_range_storage_type;
+        using typename super_type::vector_slice_storage_type;
+        using typename super_type::vector_map_storage_type;
+        using typename super_type::vector_range_map_storage_type;
+        using typename super_type::vector_slice_map_storage_type;
+        // VectorUblasContiguousGhosts can only hold simple vector or vector view, no proxy
+        static_assert(
+                std::is_same_v< storage_type, vector_storage_type > ||
+                //std::is_same_v< storage_type, vector_range_storage_type > ||
+                //std::is_same_v< storage_type, vector_slice_storage_type > || 
+                std::is_same_v< storage_type, vector_map_storage_type >,
+                //std::is_same_v< storage_type, vector_range_map_storage_type > ||
+                //std::is_same_v< storage_type, vector_slice_map_storage_type >,
+                "unsupported storage type" );
+        static constexpr bool is_vector_slice = false;
+        static constexpr bool is_vector_range = false;
+        static constexpr bool is_vector_proxy = false;
+
+        using typename super_type::vector_variant_type;
+        using typename super_type::vector_ptr_variant_type;
+        using typename super_type::vector_cstptr_variant_type;
+        using typename super_type::range_type;
+        using typename super_type::slice_type;
+
+        using typename base_type::iterator_type;
+        using typename base_type::const_iterator_type;
+
+        friend VectorUblasRange<T, Storage>;
+        friend VectorUblasSlice<T, Storage>;
+
+    public:
+        VectorUblasContiguousGhosts( ): base_type() { }
+        VectorUblasContiguousGhosts( size_type s ): base_type(s) { }
+        VectorUblasContiguousGhosts( const datamap_ptrtype & dm ): base_type( dm ) { }
+        VectorUblasContiguousGhosts( size_type s, size_type n_local ): base_type( s, n_local ) { }
+
+        VectorUblasContiguousGhosts( const Storage & s, const datamap_ptrtype & dm ): base_type( dm ), M_vec( s ) { }
+        VectorUblasContiguousGhosts( Storage && s, const datamap_ptrtype & dm ): base_type( dm ), M_vec( std::move(s) ) { }
+        VectorUblasContiguousGhosts( VectorUblasContiguousGhosts<T> const& v ): base_type(v), M_vec( v.M_vec ) { }
+
+        ~VectorUblasContiguousGhosts() override = default;
+
+        using base_type::operator=;
+
+        using base_type::init;
+        void init( const size_type n, const size_type n_local, const bool fast = false ) override;
+
+        virtual self_type * clonePtr() const override;
+        virtual base_type * emptyPtr() const override;
+
+        // Storage API
+        virtual void resize( size_type n ) override;
+        virtual void clear() override;
+
+        virtual vector_cstptr_variant_type vec() const override { return &M_vec; }
+
+        // Operators API
+        virtual value_type operator()( size_type i ) const override;
+        virtual value_type& operator()( size_type i ) override;
+        
+        // Iterators API
+        virtual iterator_type begin() override { return iterator_type( M_vec.begin() ); }
+        virtual const_iterator_type begin() const override { return const_iterator_type( M_vec.begin() ); }
+        virtual iterator_type end() override { return iterator_type( M_vec.end() ); }
+        virtual const_iterator_type end() const override { return const_iterator_type( M_vec.end() ); }
+        
+        virtual iterator_type beginActive() override { return iterator_type( M_vec.begin() ); }
+        virtual const_iterator_type beginActive() const override { return const_iterator_type( M_vec.begin() ); }
+        virtual iterator_type endActive() override { return iterator_type( M_vec.find( this->map().nLocalDofWithoutGhost() ) ); }
+        virtual const_iterator_type endActive() const override { return const_iterator_type( M_vec.find( this->map().nLocalDofWithoutGhost() ) ); }
+
+        virtual iterator_type beginGhost() override { return iterator_type( M_vec.find( this->map().nLocalDofWithoutGhost() ) ); }
+        virtual const_iterator_type beginGhost() const override { return const_iterator_type( M_vec.find( this->map().nLocalDofWithoutGhost() ) ); }
+        virtual iterator_type endGhost() override { return iterator_type( M_vec.end() ); }
+        virtual const_iterator_type endGhost() const override { return const_iterator_type( M_vec.end() ); }
+        
+        size_type startActive() const override;
+        size_type startGhost() const override;
+
+        // Setters API
+        virtual void setConstant( value_type v ) override;
+        virtual void setZero() override;
+
+        virtual void add( const value_type & a ) override;
+        virtual void sub( const value_type & a ) override;
+        virtual void scale( const value_type factor ) override;
+
+        // Multiple dispatch operations
+        using base_type::setVector;
+        void setVector( const VectorUblasContiguousGhostsBase<T> & v ) override;
+        void setVector( const VectorUblasNonContiguousGhostsBase<T> & v ) override;
+
+        using base_type::addVector;
+        void addVector( const VectorUblasContiguousGhostsBase<T> & v ) override;
+        void addVector( const VectorUblasNonContiguousGhostsBase<T> & v ) override;
+
+        using base_type::maddVector;
+        void maddVector( const value_type & a, const VectorUblasContiguousGhostsBase<T> & v ) override;
+        void maddVector( const value_type & a, const VectorUblasNonContiguousGhostsBase<T> & v ) override;
+        
+        using base_type::subVector;
+        void subVector( const VectorUblasContiguousGhostsBase<T> & v ) override;
+        void subVector( const VectorUblasNonContiguousGhostsBase<T> & v ) override;
+
+        using base_type::msubVector;
+        void msubVector( const value_type & a, const VectorUblasContiguousGhostsBase<T> & v ) override;
+        void msubVector( const value_type & a, const VectorUblasNonContiguousGhostsBase<T> & v ) override;
+
+        using base_type::mulVector;
+        void mulVector( const VectorUblasContiguousGhostsBase<T> & v ) override;
+        void mulVector( const VectorUblasNonContiguousGhostsBase<T> & v ) override;
+
+        using base_type::dotVector;
+        value_type dotVector( const VectorUblasContiguousGhostsBase<T> & v ) const override;
+        value_type dotVector( const VectorUblasNonContiguousGhostsBase<T> & v ) const override;
+
+#if FEELPP_HAS_PETSC
+        virtual void setVector( const VectorPetsc<T> & v ) override;
+        virtual void addVector( const VectorPetsc<T> & v ) override;
+        virtual void maddVector( const value_type & a, const VectorPetsc<T> & v ) override;
+        virtual void subVector( const VectorPetsc<T> & v ) override;
+        virtual void msubVector( const value_type & a, const VectorPetsc<T> & v ) override;
+        virtual value_type dotVector( const VectorPetsc<T> & v ) const override;
+#endif
+        
+        // Utilities
+        virtual real_type min( bool parallel ) const override;
+        virtual real_type max( bool parallel ) const override;
+
+        virtual real_type l1Norm() const override;
+        virtual real_type l2Norm() const override;
+        virtual real_type linftyNorm() const override;
+
+        virtual value_type sum() const override;
+
+        virtual std::unique_ptr<VectorUblasBase<T>> sqrt() const override;
+        virtual std::unique_ptr<VectorUblasBase<T>> pow( int n ) const override;
+
+    protected:
+        virtual vector_ptr_variant_type vec() override { return &M_vec; }
+        
+        void checkInvariants() const override;
+         
+        VectorUblasBase<T> * rangeImpl( const range_type & rangeActive, const range_type & rangeGhost ) override;
+        VectorUblasBase<T> * sliceImpl( const slice_type & sliceActive, const slice_type & sliceGhost ) override;
+#if FEELPP_HAS_PETSC
+        VectorPetsc<T> * vectorPetscImpl() const override;
+#endif
+
+    protected:
+        storage_type M_vec;
 
 };
 
-
-template<typename T, typename Storage>
-template <typename OtherStorage>
-void
-VectorUblas<T,Storage>::assignWithUblasImpl( VectorUblas<T,OtherStorage> const& v )
+/****************************************************************************/
+template< typename T >
+class VectorUblasNonContiguousGhostsBase: 
+    public SettableVectorUblas<VectorUblasNonContiguousGhostsBase, T>,
+    public AddableVectorUblas<VectorUblasNonContiguousGhostsBase, T>,
+    public MaddableVectorUblas<VectorUblasNonContiguousGhostsBase, T>,
+    public SubtractableVectorUblas<VectorUblasNonContiguousGhostsBase, T>,
+    public MsubtractableVectorUblas<VectorUblasNonContiguousGhostsBase, T>,
+    public MultipliableVectorUblas<VectorUblasNonContiguousGhostsBase, T>,
+    public DottableVectorUblas<VectorUblasNonContiguousGhostsBase, T>
 {
-    size_type nLocalDofWithoutGhost = this->map().nLocalDofWithoutGhost();
-    size_type nLocalGhosts = this->map().nLocalGhosts();
-    size_type nLocalDofWithoutGhostV = v.map().nLocalDofWithoutGhost();
-    size_type nLocalGhostsV = v.map().nLocalGhosts();
+    public:
+        // Typedefs
+        typedef VectorUblasBase<T> super_type;
 
-    static const bool otherstorage_has_non_contiguous_ghosts = VectorUblas<T,OtherStorage>::has_non_contiguous_ghosts;
+        using typename super_type::clone_ptrtype;
 
-    if ( this->comm().localSize() == 1 )
-    {
-        this->vec() = v.vec();
-    }
-    else if ( has_non_contiguous_ghosts )
-    {
-        if ( otherstorage_has_non_contiguous_ghosts )
-        {
-            if ( nLocalDofWithoutGhost > 0 )
-                this->vec() = v.vec();
-            if ( nLocalGhosts > 0 )
-                this->vecNonContiguousGhosts() = v.vecNonContiguousGhosts();
-        }
-        else
-        {
-            if ( nLocalDofWithoutGhostV > 0 )
-                this->vec() = ublas::project( v.vec(), ublas::range( 0, nLocalDofWithoutGhostV ) );
-            if ( nLocalGhostsV > 0 )
-                this->vecNonContiguousGhosts() = ublas::project( v.vec(), ublas::range( nLocalDofWithoutGhostV, nLocalDofWithoutGhostV+nLocalGhostsV ) );
-        }
-    }
-    else
-    {
-        if ( otherstorage_has_non_contiguous_ghosts )
-        {
-            if ( nLocalDofWithoutGhost > 0 )
-                ublas::project( this->vec(), ublas::range( 0, nLocalDofWithoutGhost ) ) = v.vec();
-            if ( nLocalGhosts > 0 )
-                ublas::project( this->vec(), ublas::range( nLocalDofWithoutGhost, nLocalDofWithoutGhost+nLocalGhosts ) ) = v.vecNonContiguousGhosts();
-        }
-        else
-        {
-            this->vec() = v.vec();
-        }
-    }
+        typedef T value_type;
+        typedef typename type_traits<value_type>::real_type real_type;
+        typedef typename super_type::datamap_type datamap_type;
+        typedef typename super_type::datamap_ptrtype datamap_ptrtype;
+        using size_type = typename datamap_type::size_type;
 
-}
+        using typename super_type::vector_variant_type;
+        using typename super_type::vector_ptr_variant_type;
+        using typename super_type::vector_cstptr_variant_type;
+        using typename super_type::range_type;
+        using typename super_type::slice_type;
 
+    public:
+        // Constructors/Destructor
+        VectorUblasNonContiguousGhostsBase( ) = default;
+        ~VectorUblasNonContiguousGhostsBase() override = default;
+        using super_type::operator=;
+        
+        // Storage API
+        virtual void resize( size_type n ) override = 0;
+        virtual void clear() override = 0;
 
-template<typename T, typename Storage>
-template <typename OtherStorage>
-void
-VectorUblas<T,Storage>::addWithUblasImpl( const T& a, VectorUblas<T,OtherStorage> const& v )
+        virtual vector_cstptr_variant_type vec() const = 0;
+        virtual vector_cstptr_variant_type vecNonContiguousGhosts() const = 0;
+
+        // Operators API
+        virtual value_type operator()( size_type i ) const override = 0;
+        virtual value_type& operator()( size_type i ) override = 0;
+
+        // Setters API
+        virtual void setConstant( value_type v ) override = 0;
+        virtual void setZero() override = 0;
+
+        virtual void scale( const value_type factor ) override = 0;
+
+        // Multiple dispatch operations
+        void setVector( const VectorUblasContiguousGhostsBase<T> & v ) override = 0;
+        void setVector( const VectorUblasNonContiguousGhostsBase<T> & v ) override = 0;
+
+        void addVector( const VectorUblasContiguousGhostsBase<T> & v ) override = 0;
+        void addVector( const VectorUblasNonContiguousGhostsBase<T> & v ) override = 0;
+
+        void maddVector( const value_type & a, const VectorUblasContiguousGhostsBase<T> & v ) override = 0;
+        void maddVector( const value_type & a, const VectorUblasNonContiguousGhostsBase<T> & v ) override = 0;
+        
+        void subVector( const VectorUblasContiguousGhostsBase<T> & v ) override = 0;
+        void subVector( const VectorUblasNonContiguousGhostsBase<T> & v ) override = 0;
+
+        void msubVector( const value_type & a, const VectorUblasContiguousGhostsBase<T> & v ) override = 0;
+        void msubVector( const value_type & a, const VectorUblasNonContiguousGhostsBase<T> & v ) override = 0;
+
+        value_type dotVector( const VectorUblasContiguousGhostsBase<T> & v ) const override = 0;
+        value_type dotVector( const VectorUblasNonContiguousGhostsBase<T> & v ) const override = 0;
+
+        // Utilities
+        virtual real_type min( bool parallel ) const override = 0;
+        virtual real_type max( bool parallel ) const override = 0;
+
+        virtual real_type l1Norm() const override = 0;
+        virtual real_type l2Norm() const override = 0;
+        virtual real_type linftyNorm() const override = 0;
+
+        virtual value_type sum() const override = 0;
+
+    protected:
+        virtual vector_ptr_variant_type vec() = 0;
+        virtual vector_ptr_variant_type vecNonContiguousGhosts() = 0;
+        
+        void checkInvariants() const override = 0;
+ 
+        VectorUblasBase<T> * rangeImpl( const range_type & rangeActive, const range_type & rangeGhost ) override = 0;
+        VectorUblasBase<T> * sliceImpl( const slice_type & sliceActive, const slice_type & sliceGhost ) override = 0;
+
+};
+
+template< typename T, typename Storage = ublas::vector<T> >
+class VectorUblasNonContiguousGhosts: public VectorUblasNonContiguousGhostsBase<T>
 {
-    size_type nLocalDofWithoutGhost = this->map().nLocalDofWithoutGhost();
-    size_type nLocalGhosts = this->map().nLocalGhosts();
-    size_type nLocalDofWithoutGhostV = v.map().nLocalDofWithoutGhost();
-    size_type nLocalGhostsV = v.map().nLocalGhosts();
+    public:
+        // Typedefs
+        typedef VectorUblasNonContiguousGhostsBase<T> super_type;
+        typedef VectorUblasBase<T> base_type;
+        typedef VectorUblasNonContiguousGhosts<T, Storage> self_type;
 
-    static const bool otherstorage_has_non_contiguous_ghosts = VectorUblas<T,OtherStorage>::has_non_contiguous_ghosts;
+        using typename super_type::clone_ptrtype;
 
-    if ( this->comm().localSize() == 1 )
-    {
-        this->vec() += a*v.vec();
-    }
-    else if ( has_non_contiguous_ghosts )
-    {
-        if ( otherstorage_has_non_contiguous_ghosts )
-        {
-            if ( nLocalDofWithoutGhost > 0 )
-                this->vec() += a*v.vec();
-            if ( nLocalGhosts > 0 )
-                this->vecNonContiguousGhosts() += a*v.vecNonContiguousGhosts();
-        }
-        else
-        {
-            if ( nLocalDofWithoutGhostV > 0 )
-                this->vec() += a*ublas::project( v.vec(), ublas::range( 0, nLocalDofWithoutGhostV ) );
-            if ( nLocalGhostsV > 0 )
-                this->vecNonContiguousGhosts() += a*ublas::project( v.vec(), ublas::range( nLocalDofWithoutGhostV, nLocalDofWithoutGhostV+nLocalGhostsV ) );
-        }
-    }
-    else
-    {
-        if ( otherstorage_has_non_contiguous_ghosts )
-        {
-            if ( nLocalDofWithoutGhost > 0 )
-                ublas::project( this->vec(), ublas::range( 0, nLocalDofWithoutGhost ) ) += a*v.vec();
-            if ( nLocalGhosts > 0 )
-                ublas::project( this->vec(), ublas::range( nLocalDofWithoutGhost, nLocalDofWithoutGhost+nLocalGhosts ) ) += a*v.vecNonContiguousGhosts();
-        }
-        else
-        {
-            this->vec() += a*v.vec();
-        }
-    }
-}
+        typedef T value_type;
+        typedef typename type_traits<value_type>::real_type real_type;
+        typedef typename super_type::datamap_type datamap_type;
+        typedef typename super_type::datamap_ptrtype datamap_ptrtype;
+        using size_type = typename datamap_type::size_type;
 
-template<typename T, typename Storage>
-template <typename OtherStorage>
-typename VectorUblas<T,Storage>::value_type
-VectorUblas<T,Storage>::dotWithUblasImpl( VectorUblas<T,OtherStorage> const& v ) const
-{
-    static const bool otherstorage_has_non_contiguous_ghosts = VectorUblas<T,OtherStorage>::has_non_contiguous_ghosts;
-    value_type localResult = 0;
-    size_type nLocalDofWithoutGhost = this->map().nLocalDofWithoutGhost();
-    size_type nLocalDofWithoutGhostV = v.map().nLocalDofWithoutGhost();
+        typedef Storage storage_type;
+        
+        using typename super_type::vector_storage_type;
+        using typename super_type::vector_range_storage_type;
+        using typename super_type::vector_slice_storage_type;
+        using typename super_type::vector_map_storage_type;
+        using typename super_type::vector_range_map_storage_type;
+        using typename super_type::vector_slice_map_storage_type;
+        static_assert( 
+                std::is_same_v< storage_type, vector_storage_type > ||
+                std::is_same_v< storage_type, vector_range_storage_type > ||
+                std::is_same_v< storage_type, vector_slice_storage_type > || 
+                std::is_same_v< storage_type, vector_map_storage_type > ||
+                std::is_same_v< storage_type, vector_range_map_storage_type > ||
+                std::is_same_v< storage_type, vector_slice_map_storage_type >,
+                "unsupported storage type" );
+        static constexpr bool is_vector_range = 
+            std::is_same_v< storage_type, vector_range_storage_type > ||
+            std::is_same_v< storage_type, vector_range_map_storage_type >;
+        static constexpr bool is_vector_slice = 
+            std::is_same_v< storage_type, vector_slice_storage_type > || 
+            std::is_same_v< storage_type, vector_slice_map_storage_type >;
+        static constexpr bool is_vector_proxy = is_vector_range || is_vector_slice;
 
-    if ( this->comm().localSize() == 1 )
-    {
-        localResult = ublas::inner_prod( this->vec(), v.vec() );
-    }
-    else if ( has_non_contiguous_ghosts )
-    {
-        if ( otherstorage_has_non_contiguous_ghosts )
-        {
-            localResult = ublas::inner_prod( this->vec(), v.vec() );
-        }
-        else
-        {
-            localResult = ublas::inner_prod( this->vec(),
-                                             ublas::project( v.vec(), ublas::range( 0, nLocalDofWithoutGhostV ) ) );
-        }
-    }
-    else
-    {
-        if ( otherstorage_has_non_contiguous_ghosts )
-        {
-            localResult = ublas::inner_prod( ublas::project( this->vec(), ublas::range( 0, nLocalDofWithoutGhost ) ),
-                                             v.vec() );
-        }
-        else
-        {
-            localResult = ublas::inner_prod( ublas::project( this->vec(), ublas::range( 0, nLocalDofWithoutGhost ) ),
-                                             ublas::project( v.vec(), ublas::range( 0, nLocalDofWithoutGhostV ) ) );
-        }
-    }
+        using typename super_type::vector_variant_type;
+        using typename super_type::vector_ptr_variant_type;
+        using typename super_type::vector_cstptr_variant_type;
+        using typename super_type::range_type;
+        using typename super_type::slice_type;
 
-    value_type globalResult = localResult;
-#ifdef FEELPP_HAS_MPI
-    if ( this->comm().size() > 1 )
-        mpi::all_reduce( this->comm(), localResult, globalResult, std::plus<value_type>() );
+        using typename base_type::iterator_type;
+        using typename base_type::const_iterator_type;
+
+        friend VectorUblasRange<T, Storage>;
+        friend VectorUblasSlice<T, Storage>;
+
+    public:
+        VectorUblasNonContiguousGhosts( ): base_type() { }
+        VectorUblasNonContiguousGhosts( size_type s ): base_type(s) { }
+        VectorUblasNonContiguousGhosts( const datamap_ptrtype & dm ): base_type( dm ) { }
+        VectorUblasNonContiguousGhosts( size_type s, size_type n_local ): base_type( s, n_local ) { }
+
+        VectorUblasNonContiguousGhosts( const Storage & s, const Storage & sGhost, const datamap_ptrtype & dm ): base_type( dm ), M_vec( s ), M_vecNonContiguousGhosts( sGhost ) { }
+        VectorUblasNonContiguousGhosts( Storage && s, Storage && sGhost, const datamap_ptrtype & dm ): base_type( dm ), M_vec( std::move(s) ), M_vecNonContiguousGhosts( std::move(sGhost) ) { }
+
+        VectorUblasNonContiguousGhosts( VectorUblasNonContiguousGhosts<T, Storage> const& v ): base_type(v), M_vec( v.M_vec ), M_vecNonContiguousGhosts( v.M_vecNonContiguousGhosts ) { }
+
+        ~VectorUblasNonContiguousGhosts() override = default;
+
+        using base_type::operator=;
+        
+        using base_type::init;
+        void init( const size_type n, const size_type n_local, const bool fast = false ) override;
+
+        virtual self_type * clonePtr() const override;
+        virtual base_type * emptyPtr() const override;
+
+        // Storage API
+        virtual void resize( size_type n ) override;
+        virtual void clear() override;
+
+        virtual vector_cstptr_variant_type vec() const override { return &M_vec; }
+        virtual vector_cstptr_variant_type vecNonContiguousGhosts() const override { return &M_vecNonContiguousGhosts; }
+
+        // Operators API
+        virtual value_type operator()( size_type i ) const override;
+        virtual value_type& operator()( size_type i ) override;
+        
+        // Iterators API
+        virtual iterator_type begin() override { return iterator_type( M_vec.begin() ); }
+        virtual const_iterator_type begin() const override { return const_iterator_type( M_vec.begin() ); }
+        virtual iterator_type end() override { return iterator_type( M_vec.end() ); }
+        virtual const_iterator_type end() const override { return const_iterator_type( M_vec.end() ); }
+
+        virtual iterator_type beginActive() override { return iterator_type( M_vec.begin() ); }
+        virtual const_iterator_type beginActive() const override { return const_iterator_type( M_vec.begin() ); }
+        virtual iterator_type endActive() override { return iterator_type( M_vec.end() ); }
+        virtual const_iterator_type endActive() const override { return const_iterator_type( M_vec.end() ); }
+
+        virtual iterator_type beginGhost() override { return iterator_type( M_vecNonContiguousGhosts.begin() ); }
+        virtual const_iterator_type beginGhost() const override { return const_iterator_type( M_vecNonContiguousGhosts.begin() ); }
+        virtual iterator_type endGhost() override { return iterator_type( M_vecNonContiguousGhosts.end() ); }
+        virtual const_iterator_type endGhost() const override { return const_iterator_type( M_vecNonContiguousGhosts.end() ); }
+
+        size_type startActive() const override;
+        size_type startGhost() const override;
+
+        // Setters API
+        virtual void setConstant( value_type v ) override;
+        virtual void setZero() override;
+
+        virtual void add( const value_type & a ) override;
+        virtual void sub( const value_type & a ) override;
+        virtual void scale( const value_type factor ) override;
+
+        // Multiple dispatch operations
+        using base_type::setVector;
+        void setVector( const VectorUblasContiguousGhostsBase<T> & v ) override;
+        void setVector( const VectorUblasNonContiguousGhostsBase<T> & v ) override;
+
+        using base_type::addVector;
+        void addVector( const VectorUblasContiguousGhostsBase<T> & v ) override;
+        void addVector( const VectorUblasNonContiguousGhostsBase<T> & v ) override;
+
+        using base_type::maddVector;
+        void maddVector( const value_type & a, const VectorUblasContiguousGhostsBase<T> & v ) override;
+        void maddVector( const value_type & a, const VectorUblasNonContiguousGhostsBase<T> & v ) override;
+        
+        using base_type::subVector;
+        void subVector( const VectorUblasContiguousGhostsBase<T> & v ) override;
+        void subVector( const VectorUblasNonContiguousGhostsBase<T> & v ) override;
+
+        using base_type::msubVector;
+        void msubVector( const value_type & a, const VectorUblasContiguousGhostsBase<T> & v ) override;
+        void msubVector( const value_type & a, const VectorUblasNonContiguousGhostsBase<T> & v ) override;
+
+        using base_type::mulVector;
+        void mulVector( const VectorUblasContiguousGhostsBase<T> & v ) override;
+        void mulVector( const VectorUblasNonContiguousGhostsBase<T> & v ) override;
+
+        using base_type::dotVector;
+        value_type dotVector( const VectorUblasContiguousGhostsBase<T> & v ) const override;
+        value_type dotVector( const VectorUblasNonContiguousGhostsBase<T> & v ) const override;
+
+#if FEELPP_HAS_PETSC
+        virtual void setVector( const VectorPetsc<T> & v ) override;
+        virtual void addVector( const VectorPetsc<T> & v ) override;
+        virtual void maddVector( const value_type & a, const VectorPetsc<T> & v ) override;
+        virtual void subVector( const VectorPetsc<T> & v ) override;
+        virtual void msubVector( const value_type & a, const VectorPetsc<T> & v ) override;
+        virtual value_type dotVector( const VectorPetsc<T> & v ) const override;
 #endif
 
-    return globalResult;
-}
+        // Utilities
+        virtual real_type min( bool parallel ) const override;
+        virtual real_type max( bool parallel ) const override;
 
+        virtual real_type l1Norm() const override;
+        virtual real_type l2Norm() const override;
+        virtual real_type linftyNorm() const override;
 
-/**
- * Computes the element wise product of two vectors and eventually in parallel
- * \param v1 vector (eventually distributed)
- * \param v2 vector (eventually distributed)
- *
- * \return the element product of \p v1 and \p v2
- */
-template <typename T, typename Storage1, typename Storage2>
-VectorUblas<T>
-element_product( VectorUblas<T,Storage1> const& v1, VectorUblas<T,Storage2> const& v2 )
+        virtual value_type sum() const override;
+
+        virtual std::unique_ptr<VectorUblasBase<T>> sqrt() const override;
+        virtual std::unique_ptr<VectorUblasBase<T>> pow( int n ) const override;
+
+    protected:
+        virtual vector_ptr_variant_type vec() override { return &M_vec; }
+        virtual vector_ptr_variant_type vecNonContiguousGhosts() override { return &M_vecNonContiguousGhosts; }
+        
+        void checkInvariants() const override;
+         
+        VectorUblasBase<T> * rangeImpl( const range_type & rangeActive, const range_type & rangeGhost ) override;
+        VectorUblasBase<T> * sliceImpl( const slice_type & sliceActive, const slice_type & sliceGhost ) override;
+#if FEELPP_HAS_PETSC
+        VectorPetsc<T> * vectorPetscImpl() const override;
+#endif
+
+    protected:
+        storage_type M_vec;
+        storage_type M_vecNonContiguousGhosts;
+
+};
+
+template< typename T, typename Storage >
+class VectorUblasRange: public VectorUblasNonContiguousGhosts<T, ublas::vector_range<Storage> >
 {
-    FEELPP_ASSERT( v1.localSize() == v2.localSize() &&
-                   v1.size() == v2.size() )
-    ( v1.localSize() )( v2.localSize() )
-    ( v1.size() )( v2.size() ).error( "incompatible vector sizes" );
+    public:
+        typedef VectorUblasNonContiguousGhosts<T, ublas::vector_range<Storage>> super_type;
 
-    typedef typename type_traits<T>::real_type real_type;
+        typedef T value_type;
+        typedef typename type_traits<value_type>::real_type real_type;
+        typedef typename super_type::datamap_type datamap_type;
+        typedef typename super_type::datamap_ptrtype datamap_ptrtype;
+        using size_type = typename datamap_type::size_type;
+        
+        typedef Storage storage_type;
+        using typename super_type::vector_storage_type;
+        using typename super_type::vector_map_storage_type;
+        static_assert( 
+                std::is_same_v< storage_type, vector_storage_type > ||
+                std::is_same_v< storage_type, vector_map_storage_type >,
+                "range not supported for storage type" );
 
-    static const bool storage1_has_non_contiguous_ghosts = VectorUblas<T,Storage1>::has_non_contiguous_ghosts;
-    static const bool storage2_has_non_contiguous_ghosts = VectorUblas<T,Storage2>::has_non_contiguous_ghosts;
+        using typename super_type::vector_variant_type;
+        using typename super_type::vector_ptr_variant_type;
+        using typename super_type::vector_cstptr_variant_type;
+        using typename super_type::range_type;
+        using typename super_type::slice_type;
 
-    VectorUblas<real_type> _t( v1.mapPtr() );
+    public:
+        //VectorUblasRange( VectorUblasContiguousGhosts<T, Storage> & v, const range_type & rangeActive, const range_type & rangeGhost );
+        //VectorUblasRange( VectorUblasNonContiguousGhosts<T, Storage> & v, const range_type & rangeActive, const range_type & rangeGhost );
+        VectorUblasRange( Storage & v, const range_type & range, const datamap_ptrtype & dm );
+        VectorUblasRange( Storage & v, const range_type & rangeActive, const range_type & rangeGhost, const datamap_ptrtype & dm );
+        VectorUblasRange( Storage & vActive, const range_type & rangeActive, 
+                Storage & vGhost, const range_type & rangeGhost, const datamap_ptrtype & dm );
 
-    size_type nLocalDofWithoutGhost = _t.map().nLocalDofWithoutGhost();
-    size_type nLocalGhosts = _t.map().nLocalGhosts();
+};
 
-    if ( _t.comm().localSize() == 1 )
-    {
-        _t.vec() = ublas::element_prod( v1.vec(),v2.vec() );
-    }
-    else if ( storage1_has_non_contiguous_ghosts == storage2_has_non_contiguous_ghosts )
-    {
-        if ( storage1_has_non_contiguous_ghosts )
-        {
-            if ( nLocalDofWithoutGhost > 0 )
-                ublas::project( _t.vec(), ublas::range( 0, nLocalDofWithoutGhost ) ) =
-                    ublas::element_prod( v1.vec(),v2.vec() );
-            if ( nLocalGhosts > 0 )
-                ublas::project( _t.vec(), ublas::range( nLocalDofWithoutGhost,nLocalDofWithoutGhost+nLocalGhosts ) ) =
-                    ublas::element_prod( v1.vecNonContiguousGhosts(),v2.vecNonContiguousGhosts() );
-        }
-        else
-        {
-            _t.vec() = ublas::element_prod( v1.vec(),v2.vec() );
-        }
-    }
-    else if ( storage1_has_non_contiguous_ghosts )
-    {
-        size_type nLocalDofWithoutGhostV2 = v1.map().nLocalDofWithoutGhost();
-        size_type nLocalGhostsV2 = v1.map().nLocalGhosts();
-
-        if ( nLocalDofWithoutGhost > 0 )
-            ublas::project( _t.vec(), ublas::range( 0,nLocalDofWithoutGhost ) ) =
-                ublas::element_prod( v1.vec(),
-                                     ublas::project( v2.vec(), ublas::range( 0, nLocalDofWithoutGhostV2 ) ) );
-        if ( nLocalGhosts > 0 )
-            ublas::project( _t.vec(), ublas::range( nLocalDofWithoutGhost,nLocalDofWithoutGhost+nLocalGhosts ) ) =
-                ublas::element_prod( v1.vecNonContiguousGhosts(),
-                                     ublas::project( v2.vec(), ublas::range( nLocalDofWithoutGhostV2,nLocalDofWithoutGhostV2+nLocalGhostsV2 ) ) );
-    }
-    else if ( storage2_has_non_contiguous_ghosts )
-    {
-        size_type nLocalDofWithoutGhostV1 = v1.map().nLocalDofWithoutGhost();
-        size_type nLocalGhostsV1 = v1.map().nLocalGhosts();
-
-        if ( nLocalDofWithoutGhost > 0 )
-            ublas::project( _t.vec(), ublas::range( 0,nLocalDofWithoutGhost ) ) =
-                ublas::element_prod( ublas::project( v1.vec(), ublas::range( 0, nLocalDofWithoutGhostV1 ) ),
-                                     v2.vec() );
-        if ( nLocalGhosts > 0 )
-            ublas::project( _t.vec(), ublas::range( nLocalDofWithoutGhost,nLocalDofWithoutGhost+nLocalGhosts ) ) =
-                ublas::element_prod( ublas::project( v1.vec(), ublas::range( nLocalDofWithoutGhostV1,nLocalDofWithoutGhostV1+nLocalGhostsV1 ) ),
-                                     v2.vecNonContiguousGhosts() );
-    }
-    else
-    {
-        size_type s = v1.localSize();
-        size_type start = v1.firstLocalIndex();
-        for ( size_type i = 0; i < s; ++i )
-            _t.operator()( start+i ) = v1.operator()( start + i )* v2.operator()( start + i );
-    }
-
-    return _t;
-}
-
-/**
- * Computes the element wise product of two vectors and eventually in parallel
- * \param v1 vector (eventually distributed)
- * \param v2 vector (eventually distributed)
- *
- * \return the inner product of \p v1 and \p v2
- */
-template <typename T, typename Storage1, typename Storage2>
-VectorUblas<T>
-element_product( std::shared_ptr<VectorUblas<T,Storage1> > const& v1,
-                 std::shared_ptr<VectorUblas<T,Storage2> > const& v2 )
+template< typename T, typename Storage >
+class VectorUblasSlice: public VectorUblasNonContiguousGhosts<T, ublas::vector_slice<Storage> >
 {
-    return element_product( *v1, *v2 );
-}
+    public:
+        typedef VectorUblasNonContiguousGhosts<T, ublas::vector_slice<Storage>> super_type;
+
+        typedef T value_type;
+        typedef typename type_traits<value_type>::real_type real_type;
+        typedef typename super_type::datamap_type datamap_type;
+        typedef typename super_type::datamap_ptrtype datamap_ptrtype;
+        using size_type = typename datamap_type::size_type;
+        
+        typedef Storage storage_type;
+        using typename super_type::vector_storage_type;
+        using typename super_type::vector_map_storage_type;
+        static_assert( 
+                std::is_same_v< storage_type, vector_storage_type > ||
+                std::is_same_v< storage_type, vector_map_storage_type >,
+                "slice not supported for storage type" );
+
+        using typename super_type::vector_variant_type;
+        using typename super_type::vector_ptr_variant_type;
+        using typename super_type::vector_cstptr_variant_type;
+        using typename super_type::range_type;
+        using typename super_type::slice_type;
+
+    public:
+        //VectorUblasSlice( VectorUblasContiguousGhosts<T, Storage> & v, const slice_type & sliceActive, const slice_type & sliceGhost );
+        //VectorUblasSlice( VectorUblasNonContiguousGhosts<T, Storage> & v, const slice_type & sliceActive, const slice_type & sliceGhost );
+        VectorUblasSlice( Storage & v, const slice_type & slice, const datamap_ptrtype & dm );
+        VectorUblasSlice( Storage & v, slice_type const& sliceActive, slice_type const& sliceGhost, datamap_ptrtype const& dm );
+        VectorUblasSlice( Storage & vActive, slice_type const& sliceActive,
+                Storage & vGhost, slice_type const& sliceGhost, datamap_ptrtype const& dm );
+
+};
+
+} // detail
 
 /**
  * FEELPP_INSTANTIATE_VECTORUBLAS is never defined except in vectorublas.cpp
@@ -1371,18 +1312,21 @@ element_product( std::shared_ptr<VectorUblas<T,Storage1> > const& v1,
  * instantiation to the strict minimum
  */
 #if !defined( FEELPP_INSTANTIATE_VECTORUBLAS )
-extern template class VectorUblas<double,ublas::vector<double> >;
-extern template class VectorUblas<double,ublas::vector_range<ublas::vector<double> > >;
-extern template class VectorUblas<double,ublas::vector_slice<ublas::vector<double> > >;
-#endif
-
+extern template class VectorUblas<double>;
+namespace detail {
+extern template class VectorUblasBase< double >;
+extern template class VectorUblasContiguousGhosts< double, ublas::vector<double> >;
+extern template class VectorUblasNonContiguousGhosts< double, ublas::vector<double> >;
+extern template class VectorUblasRange< double, ublas::vector<double> >;
+extern template class VectorUblasSlice< double, ublas::vector<double> >;
 }
+#endif
+} // Feel
 
 #if FEELPP_HAS_PETSC
 #include <feel/feelalg/vectorpetsc.hpp>
 
-namespace Feel
-{
+namespace Feel {
 /**
  * returns a VectorPetsc from a VectorUblas
  *
@@ -1396,84 +1340,71 @@ namespace Feel
  *
  * \warning one must be careful that the VectorUblas will provide contiguous
  * data access.
+ * \warning VectorPetsc view is invalidated by VectorUblas re-assignment
  */
-template<typename T,typename Storage>
+//template< typename T >
+//inline VectorPetsc<T>
+//toPETSc( const VectorUblas<T> & v )
+//{
+    //using namespace detail;
+    //if ( v.comm().size() > 1 )
+    //{
+        //const VectorUblasContiguousGhosts<T> * vecContiguousGhosts = dynamic_cast<const VectorUblasContiguousGhosts<T> *>( & v.vectorImpl() );
+        //if ( vecContiguousGhosts )
+            //return VectorPetscMPI<T>( std::addressof( * vecContiguousGhosts->begin() ), vecContiguousGhosts->mapPtr() );
+
+        //const VectorUblasNonContiguousGhosts<T> * vecNonContiguousGhosts = dynamic_cast<const VectorUblasNonContiguousGhosts<T> *>( & v.vectorImpl() );
+        //if ( vecNonContiguousGhosts )
+            //return VectorPetscMPIRange<T>( std::addressof( * vecNonContiguousGhosts->beginActive() ), std::addressof( * vecNonContiguousGhosts->beginGhost() ), vecNonContiguousGhosts->mapPtr() );
+        
+        //else
+            //CHECK( false ) << "Unsupported VectorUblas for VectorPetsc view";
+    //}
+    //else
+        //return VectorPetsc<T>( std::addressof( * v.vectorImpl().begin() ), v.mapPtr() );
+//}
+
+template< typename T >
+inline std::shared_ptr<VectorPetsc<T>>
+toPETScPtr( const VectorUblas<T> & v )
+{
+    return std::shared_ptr<VectorPetsc<T>>( v.vectorImpl().vectorPetsc() );
+}
+
+template< typename T >
 inline VectorPetsc<T>
-toPETSc( VectorUblas<T,Storage> & v )
+toPETSc( const VectorUblas<T> & v )
 {
-    if ( v.comm().size() > 1 )
-    {
-        if ( VectorUblas<T,Storage>::is_range_vector || VectorUblas<T,Storage>::is_extarray_vector )
-            return VectorPetscMPIRange<T>( v );
-        else
-            return VectorPetscMPI<T>( v );
-    }
-    else
-        return VectorPetsc<T>( v );
+    return *toPETScPtr( v );
 }
-
-/**
- * returns a VectorPetsc shared_ptr from a VectorUblas
- *
- * here is a sample code:
- * @code
- * auto Xh = Pch<1>( mesh );
- * auto v = Xh->element();
- * auto b = backend(); // default backend is petsc type
- * auto vp = toPETScPtr( v ); // get the shared_ptr<VectorPetsc<>>
- * @endcode
- *
- * \warning one must be careful that the VectorUblas will provide contiguous
- * data access.
- */
-template<typename T,typename Storage>
-inline std::shared_ptr<VectorPetsc<T>>
-toPETScPtr( VectorUblas<T,Storage> const& v )
-{
-    if ( v.comm().size() > 1 )
-    {
-        if ( VectorUblas<T,Storage>::is_range_vector || VectorUblas<T,Storage>::is_extarray_vector )
-            return std::make_shared<VectorPetscMPIRange<T>>( v );
-        else
-            return std::make_shared<VectorPetscMPI<T>>( v );
-    }
-    else
-        return std::make_shared<VectorPetsc<T>>( v );
-}
-
-/**
- * returns a VectorPetsc shared_ptr from a VectorUblas
- *
- * here is a sample code:
- * @code
- * auto Xh = Pch<1>( mesh );
- * auto v = Xh->elementPtr();
- * auto b = backend(); // default backend is petsc type
- * auto vp = toPETSc( v ); // get the shared_ptr<VectorPetsc<>>
- * @endcode
- *
- * \warning one must be careful that the VectorUblas will provide contiguous
- * data access.
- */
-template<typename T,typename Storage>
-inline std::shared_ptr<VectorPetsc<T>>
-toPETSc( std::shared_ptr<VectorUblas<T,Storage>> & v )
-{
-    if ( v->comm().size() > 1 )
-    {
-        if ( VectorUblas<T,Storage>::is_range_vector || VectorUblas<T,Storage>::is_extarray_vector )
-            return std::make_shared<VectorPetscMPIRange<T>>( *v );
-        else
-            return std::make_shared<VectorPetscMPI<T>>( *v );
-    }
-    else
-        return std::make_shared<VectorPetsc<T>>( *v );
-}
-
-
 
 } // Feel
-#endif
 
+#endif // FEELPP_HAS_PETSC
 
-#endif /* __VectorUblas_H */
+namespace Feel {
+/* Utility functions */
+namespace detail {
+
+template< typename T >
+std::unique_ptr<VectorUblasBase<T>> 
+element_product( const VectorUblasBase<T> & v1, const VectorUblasBase<T> & v2 )
+{
+    VectorUblasContiguousGhosts<T> * prod = new VectorUblasContiguousGhosts<T>();
+    *prod = v1;
+    prod->mulVector( v2 );
+    return std::unique_ptr<VectorUblasBase<T>>( prod );
+}
+
+} //detail
+
+template< typename T >
+VectorUblas<T>
+element_product( const VectorUblas<T> & v1, const VectorUblas<T> & v2 )
+{
+    return VectorUblas<T>( Feel::detail::element_product( v1.vectorImpl(), v2.vectorImpl() ) );
+}
+
+} // Feel
+
+#endif /* _FEELPP_VECTORUBLAS_HPP */

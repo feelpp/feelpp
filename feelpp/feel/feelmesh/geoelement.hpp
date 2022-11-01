@@ -90,7 +90,18 @@ private:
         }
 };
 
+/**
+ * @brief Tag base class
+ * @ingroup Mesh
+ */
 struct SubFaceOfBase {};
+
+/**
+ * @brief description of a subface or facet (topological d-1) of an element of topologicql dimension d
+ * @ingroup Mesh
+ * 
+ * @tparam ElementType type of the element 
+ */
 template<typename ElementType>
 class SubFaceOf : public SubFaceOfBase
 {
@@ -264,6 +275,15 @@ public:
         return ( boost::get<0>( M_element1 ) != 0 );
     }
 
+    /**
+     * @brief say if the face is a ghost or not for process id @p p
+     * 
+     * a face is a ghost face on process rank @p p if the process id is greater than @p p
+     * 
+     * @param p the rank of the communicator
+     * @return true if the face is a ghost face 
+     * @return false otherwise
+     */
     bool
     isGhostFace( rank_type p ) const
     {
@@ -496,10 +516,6 @@ private:
 
 #endif
 
-//     *********** Geometrical Elements *****************
-/** \defgroup GeoEle Geometry Element classes
-    \ingroup Obsolet_Groups */
-/*@{*/
 
 /**
  * Class for Points and Vertices

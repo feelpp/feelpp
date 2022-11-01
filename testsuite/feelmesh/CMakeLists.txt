@@ -20,5 +20,8 @@ feelpp_add_test( submesh1d SRCS test_submesh1d.cpp CFG test_submesh1d.cfg GEO te
 # add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND} DEPENDS ${TESTS} )
 
 if ( FEELPP_HAS_PARMMG OR FEELPP_HAS_MMG )
-  feelpp_add_test( remesh CLI "--gmsh.hsize=0.2 --functions.s=0.1 --backend.rebuild=true --pc-type gamg --ksp-monitor=1 --pc-view=1" NO_MPI_TEST TIMEOUT 500)
+  feelpp_add_test( remesh CFG test_remesh.cfg  
+                   GEO domains_2d.geo domains_3d.geo domains_2d_curved.geo domains_3d_curved.geo domain_2d.geo  domain_3d.geo 
+                       test_remesh.json test_remesh_relations.json test_remesh_curved.json 
+                   TIMEOUT 500)
 endif()

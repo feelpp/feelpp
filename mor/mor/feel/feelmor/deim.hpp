@@ -59,10 +59,10 @@ public :
 
     DEIM( model_ptrtype model,
           sampling_ptrtype sampling, std::string prefix,
-          std::string const& dbfilename, std::string const& dbdirectory, int tag ) :
-        super_type( model, sampling, prefix, dbfilename, dbdirectory, tag )
+          std::string const& dbfilename, std::string const& dbdirectory, int tag, po::variables_map vm ) :
+        super_type( model, sampling, prefix, dbfilename, dbdirectory, tag, vm )
     {
-        this->M_store_tensors = boption( prefixvm( this->M_prefix, "deim.store-vectors") );
+        this->M_store_tensors = boption( _name=prefixvm( this->M_prefix, "deim.store-vectors"), _vm=this->M_vm );
         this->init();
     }
 
@@ -73,7 +73,10 @@ private :
     vector_ptrtype modelAssemble( parameter_type const& mu, bool online=false ) override
     {
         if ( online )
+        {
+            CHECK( this->M_online_model ) << "this->M_online_model not init : " << this->M_tag;
             return this->M_online_model->assembleForDEIM(mu,this->M_tag);
+        }
         return this->M_model->assembleForDEIM(mu,this->M_tag);
     }
 
@@ -133,12 +136,25 @@ auto deim( Ts && ... v )
     std::string const& directory = args.get_else(_directory,"");
     int tag = args.get_else(_tag,0);
     using model_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(model)>>>;
-    return std::make_shared<DEIM<model_type>>( model, sampling, prefix, filename, directory, tag );
+
+    po::variables_map vm;
+    auto _options = deimOptions(prefix);
+    auto mycmdparser = Environment::commandLineParser();
+    po::parsed_options parsed = mycmdparser.options( _options ).
+        style(po::command_line_style::allow_long | po::command_line_style::long_allow_adjacent | po::command_line_style::long_allow_next).
+        allow_unregistered().run();
+    po::store(parsed,vm);
+    for ( auto & configFile : Environment::configFiles() )
+    {
+        std::istringstream & iss = std::get<1>( configFile );
+        po::store(po::parse_config_file(iss, _options,true), vm);
+    }
+    po::notify(vm);
+
+    return std::make_shared<DEIM<model_type>>( model, sampling, prefix, filename, directory, tag, vm );
 }
 
 
-
-po::options_description deimOptions( std::string const& prefix ="");
 
 } //namespace Feel
 

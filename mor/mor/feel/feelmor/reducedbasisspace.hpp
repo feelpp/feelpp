@@ -736,6 +736,15 @@ public :
 #endif
         }
 
+    //! update informations for the current object
+    void updateInformationObject( nl::json & p ) const override
+        {
+            if ( p.contains( "fe_space" ) )
+                return;
+            super::updateInformationObject( p["fe_space"] );
+        }
+
+
     class ContextRB
         :
         public fespace_type::basis_context_type,

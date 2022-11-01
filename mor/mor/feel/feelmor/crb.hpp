@@ -561,6 +561,12 @@ public:
             return M_output_index;
         }
 
+    //! \return the output name
+    std::string const& outputName() const
+    {
+        return M_output_name;
+    }
+
     //! \return the dimension of the reduced basis space
     int dimension() const override
         {
@@ -623,7 +629,15 @@ public:
             //std::cout << "Database " << this->lookForDB() << " available and loaded\n";
 
         }
-
+    /**
+     * @brief Set the Output Name 
+     * 
+     * @param oname name of the outout
+     */
+    void setOutputName( std::string const& oname )
+    {
+        M_output_name = oname;
+    }
     //! set the crb error type
     void setCRBErrorType( CRBErrorType error )
         {
@@ -1514,6 +1528,7 @@ protected:
     backend_ptrtype M_backend_dual;
 
     int M_output_index;
+    std::string M_output_name;
 
     double M_tolerance;
 
@@ -2190,6 +2205,25 @@ CRB<TruthModelType>::offlineSolve( element_type& u, element_type& udu, parameter
 {
     if ( M_model->isSteady()  )
     {
+        tic();
+        if ( boption(_prefix=M_prefix,_name="crb.solve-fem-monolithic") )
+            u = M_model->solve(mu);
+        else if( M_use_newton )
+            u = offlineNewtonPrimal( mu );
+        else
+            u = offlineFixedPointPrimal( mu );
+        toc("Solve primal problem");
+
+        if( M_solve_dual_problem )
+        {
+            if ( M_use_newton )
+                return;
+            tic();
+            udu = offlineFixedPointDual( mu , dual_initial_field );
+            toc("Solve dual problem");
+        }
+
+#if 0
         // TODO VINCENT : fix use of dual problem
         if ( M_model->hasEim() && boption(_prefix=M_prefix,_name="crb.solve-fem-monolithic") )
         {
@@ -2197,7 +2231,6 @@ CRB<TruthModelType>::offlineSolve( element_type& u, element_type& udu, parameter
         }
         else if( ! M_use_newton )
         {
-            tic();
             u = offlineFixedPointPrimal( mu );//, A  );
             toc("Solve primal problem");
 
@@ -2214,6 +2247,7 @@ CRB<TruthModelType>::offlineSolve( element_type& u, element_type& udu, parameter
             u = offlineNewtonPrimal( mu );
             toc("Solve primal problem");
         }
+#endif
     }//steady
     else
     {
@@ -2248,10 +2282,10 @@ CRB<TruthModelType>::offlineNewtonPrimal( parameter_type const& mu )
 
     boost::tie( boost::tuples::ignore, M_Jqm, M_Rqm ) = M_model->computeAffineDecomposition();
 
-    M_backend_primal->nlSolver()->jacobian = boost::bind( &self_type::offlineUpdateJacobian,
-                                                          boost::ref( *this ), _1, _2, mu );
-    M_backend_primal->nlSolver()->residual = boost::bind( &self_type::offlineUpdateResidual,
-                                                          boost::ref( *this ), _1, _2, mu );
+    M_backend_primal->nlSolver()->jacobian = std::bind( &self_type::offlineUpdateJacobian,
+                                                          std::ref( *this ), std::placeholders::_1, std::placeholders::_2, mu );
+    M_backend_primal->nlSolver()->residual = std::bind( &self_type::offlineUpdateResidual,
+                                                          std::ref( *this ), std::placeholders::_1, std::placeholders::_2, mu );
 #if 0
     M_backend_primal->nlSolver()->setType( TRUST_REGION );
 #endif
@@ -4377,8 +4411,8 @@ CRB<TruthModelType>::newton(  size_type N, parameter_type const& mu , vectorN_ty
 
     computeProjectionInitialGuess( mu , N , uN );
 
-    M_nlsolver->map_dense_jacobian = boost::bind( &self_type::updateJacobian, boost::ref( *this ), _1, _2  , mu , N );
-    M_nlsolver->map_dense_residual = boost::bind( &self_type::updateResidual, boost::ref( *this ), _1, _2  , mu , N );
+    M_nlsolver->map_dense_jacobian = std::bind( &self_type::updateJacobian, std::ref( *this ), std::placeholders::_1, std::placeholders::_2  , mu , N );
+    M_nlsolver->map_dense_residual = std::bind( &self_type::updateResidual, std::ref( *this ), std::placeholders::_1, std::placeholders::_2  , mu , N );
     M_nlsolver->setType( TRUST_REGION );
     M_nlsolver->solve( map_J , map_uN , map_R, 1e-12, 100);
 
@@ -11567,6 +11601,7 @@ CRB<TruthModelType>::saveJson()
         ptreeCrb.add( "database-filename", this->dbFilename() );
         ptreeCrb.add( "has-solve-dual-problem",M_solve_dual_problem );
         ptreeCrb.add( "output-index", M_output_index );
+        ptreeCrb.add( "output-name", M_output_name );
         ptreeCrb.add( "error-type", M_error_type );
         ptree.add_child( "crb", ptreeCrb );
 

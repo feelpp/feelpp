@@ -26,7 +26,6 @@ if(DEFINED PROJECT_NAME)
   set( MOR_SUBPROJECT ON )
 endif()
 
-
 project(mor)
   
 
@@ -74,7 +73,8 @@ set(FEELPP_MOR_LIBRARIES)
 INCLUDE(CTest)
 ENABLE_TESTING()
 
-set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
+set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake ${FEELPP_DIR}/share/feelpp/feel/cmake/modules $ENV{FEELPP_DIR}/share/feelpp/feel/cmake/modules /usr/share/feelpp/feel/cmake/modules /usr/local/share/feelpp/feel/cmake/modules ${CMAKE_MODULE_PATH})
+include(feelpp.dirs OPTIONAL)
 include(feelpp.macros.mor)
 add_subdirectory(cmake)
 
@@ -88,7 +88,7 @@ if ( FEELPP_FOUND AND FEELPP_TOOLBOXES_FOUND )
 if ( FEELPP_ENABLE_MOR_MORDICUS )
   if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/mordicus/src/cpp )
     set(MORDICUS_ENABLE_CEMOSIS ON)
-    add_subdirectory(mordicus/src/cpp)
+    add_subdirectory(mordicus)
     message(STATUS "[feelpp-mor] Mordicus enabled")
   else()
     set(FEELPP_ENABLE_MOR_MORDICUS OFF)

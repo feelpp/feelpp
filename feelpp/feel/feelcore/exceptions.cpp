@@ -25,6 +25,7 @@
 #include <fmt/core.h>
 #include <fmt/color.h>
 #include <feel/feelcore/environment.hpp>
+#include <feel/feelpython/pybind11/pybind11.h>
 
 namespace Feel
 {
@@ -89,6 +90,10 @@ void handleExceptions()
                                         boost::core::demangle(e.source_type().name()), 
                                         boost::core::demangle(e.target_type().name())), e );
     }
+    catch ( const pybind11::error_already_set& e )
+    {
+        print_and_trace( fmt::format( "[feelpp.pybind11.error_already_set] python interpreter failed : {}\n", e.what() ), e );
+    }
     catch(const boost::filesystem::filesystem_error& e)
     {
         if ( e.code() == boost::system::errc::permission_denied )
@@ -106,7 +111,7 @@ void handleExceptions()
     }
     catch (const std::runtime_error & e) 
     {
-        print_and_trace( fmt::format( "[feel++.std.runtime_error] {}", e.what() ), e );
+        print_and_trace( fmt::format( "[feel++.std.runtime_error] {}\n", e.what() ), e );
     }
     catch ( const boost::mpi::exception& e )
     {
@@ -114,11 +119,11 @@ void handleExceptions()
     }
     catch ( const std::exception& e )
     {
-        print_and_trace( fmt::format( "[feel++.std.exception] {}", e.what() ), e );
+        print_and_trace( fmt::format( "[feel++.std.exception] {}\n", e.what() ), e );
     }
     catch(...)
     {
-        fmt::print( "[feel++.unknown.exception] caught unknown exception" );
+        fmt::print( "[feel++.unknown.exception] caught unknown exception\n" );
     }
 }    
 

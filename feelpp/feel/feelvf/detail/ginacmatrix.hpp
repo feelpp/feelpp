@@ -155,6 +155,9 @@ public:
 
     typedef Eigen::Matrix<double,Eigen::Dynamic,1> vec_type;
 
+    template<int __M, int __N, int __Order, typename __SymbolsExprType>
+        friend class GinacMatrix;
+
     template<typename... TheExpr>
     struct Lambda
     {
@@ -165,9 +168,16 @@ public:
     typename Lambda<TheExpr...>::type
     operator()( TheExpr... e  )
     {
+#if 0
         typename Lambda<TheExpr...>::type res( this->expression(), this->symbols(), this->fun(), this->exprDesc(), M_expr.applyLambda( e... ) );
         res.setParameterValues( this->symbolNameToValue() );
         return res;
+#else
+        if constexpr( is_symbols_expression_empty_v<symbols_expression_type> )
+            return *this;
+        else
+            return typename Lambda<TheExpr...>::type( *this, M_expr.applyLambda( e... ) );
+#endif
     }
 
     //@}
@@ -334,6 +344,24 @@ public:
             this->updateForUse();
         }
 
+
+  private:
+    template <int ParentOrder,typename ParentSymbolsExprType,typename SymbolsExpressionArgType>
+        GinacMatrix( GinacMatrix<M,N,ParentOrder,ParentSymbolsExprType> const& symbolicExpr, SymbolsExpressionArgType const& expr )
+        :
+        super( symbolicExpr ),
+        M_fun( symbolicExpr.M_fun ),
+        M_cfun( symbolicExpr.M_cfun ),
+        M_exprDesc( symbolicExpr.M_exprDesc ),
+        M_expr( expr ),
+        M_isPolynomial( false ),
+        M_polynomialOrder( Order ),
+        M_numericValue( evaluate_type::Zero() )
+    {
+        this->updateNumericExpression();
+        this->updateForUse();
+    }
+  public:
     GinacMatrix( GinacMatrix && fun ) = default;
     GinacMatrix( GinacMatrix const & fun ) = default;
 
@@ -660,7 +688,7 @@ public:
     //! return true if the expression can be evaluated (TODO : iterate over symbols expression)
     bool isEvaluable() const
     {
-        return M_isNumericExpression || ( M_indexSymbolXYZ.empty() && M_indexSymbolN.empty() & M_indexSymbolGeom.empty()&& (M_syms.size() == M_symbolNameToValue.size()) );
+        return M_isNumericExpression || ( M_indexSymbolXYZ.empty() && M_indexSymbolN.empty() && M_indexSymbolGeom.empty()&& (M_syms.size() == M_symbolNameToValue.size()) );
     }
     bool isConstant() const { return this->isEvaluable(); }
 
@@ -972,7 +1000,7 @@ public:
                     {
                         case 6:
                             M_x[comp.second] = M_gmc->h();
-                            
+
                             break;
                         case 7:
                             M_x[comp.second] = M_gmc->meas();
@@ -1125,7 +1153,7 @@ private :
         if ( M_isNumericExpression )
             return;
 
-        std::vector<std::pair<GiNaC::symbol,int>> symbTotalDegree;
+        std::vector<std::pair<GiNaC::symbol,uint16_type>> symbTotalDegree;
         for ( auto const& thesymbxyz : this->indexSymbolXYZ() )
             symbTotalDegree.push_back( std::make_pair( M_syms[thesymbxyz.second], 1 ) );
 

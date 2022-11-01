@@ -43,6 +43,7 @@ enum FaceLocation { INTERNAL = false, ON_BOUNDARY = true };
 
 /**
  * \enum GeoEntityContext
+ * @ingroup Mesh
  */
 enum GeoEntityContext
 {
@@ -52,6 +53,7 @@ enum GeoEntityContext
 
 /**
  * \enum ReferenceGeometry
+ * @ingroup Mesh
  *
  */
 enum ReferenceGeometry
@@ -66,7 +68,7 @@ enum ReferenceGeometry
 
 /**
  * \enum ReferenceShapes
- *
+ * @ingroup Mesh
  */
 enum ReferenceShapes
 {
@@ -84,11 +86,6 @@ enum ReferenceShapes
     SHAPE_SP4      = ( 1<<11 ),
     SHAPE_SP5      = ( 1<<12 )
 };
-
-/**
- * @defgroup GeoEntites Basis Reference Shapes
- \ingroup Obsolet_Groups */
-//@{
 
 /// \cond detail
 /**
@@ -214,7 +211,7 @@ private :
 
 /**
  * \typedef edge_permutation_type
- *
+ * @ingroup Mesh
  * defines an enum for the possible edge permutation with respect to
  * its parent elements
  */

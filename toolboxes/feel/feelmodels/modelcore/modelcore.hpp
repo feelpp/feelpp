@@ -29,7 +29,28 @@
 
 namespace Feel
 {
-/** @defgroup Toolboxes
+/**
+ * @defgroup Toolboxes
+ * @defgroup ModelCore
+ * @ingroup Toolboxes
+ *
+ * @defgroup CoefficientFormPDEs
+ * @ingroup Toolboxes
+ * 
+ * @defgroup Electric
+ * @ingroup Toolboxes
+ *
+ * @defgroup Fluid
+ * @ingroup Toolboxes
+ *
+ * @defgroup Heat
+ * @ingroup Toolboxes
+ * 
+ * @defgroup HeatFluid
+ * @ingroup Toolboxes
+ *
+ * @defgroup Solid
+ * @ingroup Toolboxes
  */
 #include <feel/feelmodels/modelcore/modelbase.hpp>
 #include <feel/feelmodels/modelcore/modelcontext.hpp>

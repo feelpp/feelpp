@@ -369,7 +369,7 @@ public:
             auto const& the_im1 = the_ims.second;
 #endif
 
-            
+
             //BOOST_STATIC_ASSERT( ( boost::is_same<expr_type,e_type> ) );
             auto i = Integrator<Elements, quad_type, expr_type, quad1_type>( M_elts, quad, new_expr, M_gt, quad1, M_use_tbb, M_use_harts, M_grainsize, M_partitioner, quadptloc_ptrtype() );
             DLOG(INFO) << " -- M_elts size=" << M_elts.size() << "\n";
@@ -797,7 +797,7 @@ private:
     template<typename FE1,typename FE2,typename ElemContType>
     void assembleWithRelationDifferentMeshType( vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form, mpl::int_<MESH_ELEMENTS> /**/ ) const
         {
-            LOG(INFO) << "Intergrator::assembleWithRelationDifferentMeshType mortar case:" << FE1::is_mortar||FE2::is_mortar;
+            DLOG(INFO) << "Intergrator::assembleWithRelationDifferentMeshType mortar case:" << (FE1::is_mortar || FE2::is_mortar);
             assembleWithRelationDifferentMeshType( __form, mpl::int_<MESH_ELEMENTS>(), mpl::bool_<FE1::is_mortar||FE2::is_mortar>() );
         }
     template<typename FE1,typename FE2,typename ElemContType>
@@ -815,7 +815,7 @@ private:
     template<typename FE1,typename FE2,typename ElemContType>
     void assembleInCaseOfInterpolate(vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form, mpl::int_<MESH_ELEMENTS> /**/ ) const
         {
-            LOG(INFO) << "Intergrator::assembleInCaseOfInterpolate :" << FE1::is_mortar||FE2::is_mortar;
+            DLOG(INFO) << "Intergrator::assembleInCaseOfInterpolate :" << (FE1::is_mortar || FE2::is_mortar);
             assembleInCaseOfInterpolate( __form, mpl::int_<MESH_ELEMENTS>(), mpl::bool_<FE1::is_mortar||FE2::is_mortar>() );
         }
 
@@ -823,7 +823,7 @@ private:
     template<typename FE1,typename FE2,typename ElemContType>
     void assembleInCaseOfInterpolate(vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form, mpl::int_<MESH_FACES> /**/ ) const
         {
-            LOG(INFO) << "Intergrator::assembleInCaseOfInterpolate mortar case:" << FE1::is_mortar||FE2::is_mortar;
+            DLOG(INFO) << "Intergrator::assembleInCaseOfInterpolate mortar case:" << (FE1::is_mortar || FE2::is_mortar );
             assembleInCaseOfInterpolate( __form, mpl::int_<MESH_FACES>(), mpl::bool_<FE1::is_mortar||FE2::is_mortar>() );
         }
     template<typename FE1,typename FE2,typename ElemContType>
@@ -914,7 +914,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( std::shared_ptr<Elem1> const& __u
     // run assemble process according to isRelated meshes
     const bool test_related_to_trial = __v->mesh()->isRelatedTo( __u->mesh() ) &&
         ( __u->mesh()->isRelatedTo( boost::unwrap_ref(*it).mesh() ) || __v->mesh()->isRelatedTo( boost::unwrap_ref(*it).mesh() ) );
-    LOG(INFO) << "[integrator::assemble bilinear form] with_relation_mesh (same_mesh: " << same_mesh_type::value
+    DLOG(INFO) << "[integrator::assemble bilinear form] with_relation_mesh (same_mesh: " << same_mesh_type::value
               << " test_related_to_trial: " << test_related_to_trial << ")\n";
     if ( test_related_to_trial )
     {
@@ -978,7 +978,7 @@ void
 Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_ELEMENTS> /**/, mpl::bool_<true> /**/, bool /*hasRelation*/ ) const
 {
     tic();
-    LOG(INFO) << "[integrator::assemble FormType& __form, mpl::int_<MESH_ELEMENTS> /**/, mpl::bool_<true>\n";
+    DLOG(INFO) << "[integrator::assemble FormType& __form, mpl::int_<MESH_ELEMENTS> /**/, mpl::bool_<true>\n";
 
 #if defined(FEELPP_HAS_TBB)
 
@@ -2028,7 +2028,7 @@ void
 Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form,
                                                                            mpl::int_<MESH_ELEMENTS> /**/, mpl::false_ ) const
 {
-    LOG(INFO) << "[integrator::assembleWithRelationDifferentMeshType] vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form, mpl::int_<MESH_ELEMENTS>\n";
+    DLOG(INFO) << "[integrator::assembleWithRelationDifferentMeshType] vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form, mpl::int_<MESH_ELEMENTS>\n";
 
     // typedef on integral mesh (expr) :
     typedef typename eval::gm_type gm_expr_type;
@@ -2247,7 +2247,7 @@ void
 Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form,
                                                                            mpl::int_<MESH_ELEMENTS> /**/, mpl::true_ ) const
 {
-    LOG(INFO) << "[integrator::assembleWithRelationDifferentMeshType(ELEMENTS)] mortar case\n";
+    DLOG(INFO) << "[integrator::assembleWithRelationDifferentMeshType(ELEMENTS)] mortar case\n";
 
     // typedef on integral mesh (expr) :
     typedef typename eval::gm_type gm_expr_type;
@@ -2317,7 +2317,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
     im1_range_type im1Range( M_im2.order() );
     im_formtest_type imTest( M_im.order() );
     im_formtrial_type imTrial( M_im.order() );
-    
+
 
     // mortar context
     static const bool has_mortar_test = FormType::test_space_type::is_mortar;
@@ -2422,7 +2422,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
                     if ( formc->isZero( eltTest.element0() /*idElt*/ ) )
                         continue;
 #endif
-                    LOG(INFO) << "elt "  << eltCur.id() << " bdy = " << eltCur.isOnBoundary();
+                    DLOG(INFO) << "elt "  << eltCur.id() << " bdy = " << eltCur.isOnBoundary();
                     switch ( M_gt )
                     {
                     default:
@@ -2512,7 +2512,7 @@ void
 Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form,
                                                                  mpl::int_<MESH_ELEMENTS> /**/, mpl::false_ ) const
 {
-    LOG(INFO) << "[integrator::assembleInCaseOfInterpolate] vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form, mpl::int_<MESH_ELEMENTS>\n";
+    DLOG(INFO) << "[integrator::assembleInCaseOfInterpolate] vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form, mpl::int_<MESH_ELEMENTS>\n";
 
     using im_range_type = im_t<typename eval::the_element_type, expression_value_type>;
     // typedef on integral mesh (expr) :
@@ -2684,7 +2684,7 @@ void
 Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form,
                                                                  mpl::int_<MESH_ELEMENTS> /**/, mpl::true_ ) const
 {
-    LOG(INFO) << "[integrator::assembleInCaseOfInterpolate] (elements) mortar case";
+    DLOG(INFO) << "[integrator::assembleInCaseOfInterpolate] (elements) mortar case";
     using im_range_type = im_t<typename eval::the_element_type, expression_value_type>;
     // typedef on integral mesh (expr) :
     typedef typename eval::gm_type gm_expr_type;
@@ -4003,8 +4003,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
     using im_range_type = im_t<typename eval::the_element_type, expression_value_type>;
     using im1_range_type = im_t<typename eval::the_element_type, expression_value_type>;
     using im_formtest_type = im_t<geoelement_formTest_type, expression_value_type>;
-    
-    
+
+
     im_range_type imRange( M_im.order() );
     im1_range_type im1Range( M_im2.order() );
     im_formtest_type imTest( M_im.order() );

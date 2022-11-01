@@ -11,6 +11,11 @@ namespace Feel
 namespace FeelModels
 {
 
+/**
+ * @brief Boundary Conditions in fluid mechanics
+ *
+ * @tparam Dim real dimension
+ */
 template <uint16_type Dim>
 class FluidMechanicsBoundaryConditions : public BoundaryConditionsBase
 {
