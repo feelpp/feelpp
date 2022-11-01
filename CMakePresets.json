@@ -40,6 +40,7 @@
             "generator": "Unix Makefiles",
             "binaryDir": "${sourceDir}/build/dbg",
             "cacheVariables": {
+                "CMAKE_C_COMPILER": "clang",
                 "CMAKE_CXX_COMPILER": "clang++",
                 "CMAKE_BUILD_TYPE": "Debug",
                 "FEELPP_ENABLE_TOOLBOXES": {
@@ -201,12 +202,7 @@
         {
             "name": "dbg",
             "configurePreset": "dbg",
-            "jobs": 10,
-            "targets": [
-                "feelpp",
-                "pyfeelpp",
-                "install"
-            ]
+            "jobs": 10
         },
         {
             "name": "feelpp",
@@ -293,6 +289,11 @@
                 "noTestsAction": "error",
                 "stopOnFailure": true
             }
+        },
+        {
+            "name": "dbg",
+            "configurePreset": "dbg",
+            "inherits": "default"
         },
         {
             "name": "feelpp",

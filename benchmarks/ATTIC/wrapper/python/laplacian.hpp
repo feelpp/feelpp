@@ -98,7 +98,7 @@ makeAbout()
  *
  * solve \f$ -\Delta u = f\f$ on \f$\Omega\f$ and \f$u= g\f$ on \f$\Gamma\f$
  */
-template<int Dim, int Order, int RDim = Dim, template<uint16_type,uint16_type,uint16_type> class Entity=Simplex>
+template<int Dim, int Order, int RDim = Dim, template<uint16_type,int,uint16_type> class Entity=Simplex>
 class Laplacian
     :
 public Application
@@ -218,7 +218,7 @@ private:
 
 }; // Laplacian
 
-template<int Dim, int Order, int RDim, template<uint16_type,uint16_type,uint16_type> class Entity>
+template<int Dim, int Order, int RDim, template<uint16_type,int,uint16_type> class Entity>
 typename Laplacian<Dim,Order,RDim,Entity>::mesh_ptrtype
 Laplacian<Dim,Order,RDim,Entity>::createMesh( double meshSize )
 {
@@ -244,7 +244,7 @@ Laplacian<Dim,Order,RDim,Entity>::createMesh( double meshSize )
     return mesh;
 } // Laplacian::createMesh
 
-template<int Dim, int Order, int RDim, template<uint16_type,uint16_type,uint16_type> class Entity>
+template<int Dim, int Order, int RDim, template<uint16_type,int,uint16_type> class Entity>
 void
 Laplacian<Dim, Order, RDim, Entity>::run()
 {
@@ -253,7 +253,7 @@ Laplacian<Dim, Order, RDim, Entity>::run()
     X[0] = doption("hsize");
     run( X.data(), X.size(), Y.data(), Y.size() );
 }
-template<int Dim, int Order, int RDim, template<uint16_type,uint16_type,uint16_type> class Entity>
+template<int Dim, int Order, int RDim, template<uint16_type,int,uint16_type> class Entity>
 void
 Laplacian<Dim, Order, RDim, Entity>::run( const double* X, unsigned long P,
         double* Y, unsigned long YN )
@@ -429,7 +429,7 @@ Laplacian<Dim, Order, RDim, Entity>::run( const double* X, unsigned long P,
 
 } // Laplacian::run
 
-template<int Dim, int Order, int RDim, template<uint16_type,uint16_type,uint16_type> class Entity>
+template<int Dim, int Order, int RDim, template<uint16_type,int,uint16_type> class Entity>
 void
 Laplacian<Dim, Order, RDim, Entity>::solve( sparse_matrix_ptrtype& D,
         element_type& u,
@@ -441,7 +441,7 @@ Laplacian<Dim, Order, RDim, Entity>::solve( sparse_matrix_ptrtype& D,
 } // Laplacian::solve
 
 
-template<int Dim, int Order, int RDim, template<uint16_type,uint16_type,uint16_type> class Entity>
+template<int Dim, int Order, int RDim, template<uint16_type,int,uint16_type> class Entity>
 void
 Laplacian<Dim, Order, RDim, Entity>::exportResults( element_type& U, element_type& v )
 {

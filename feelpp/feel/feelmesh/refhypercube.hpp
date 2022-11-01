@@ -34,7 +34,7 @@
 
 namespace Feel
 {
-template<uint16_type Dim, uint16_type Order, uint16_type RDim,  typename T>
+template<uint16_type Dim, int Order, uint16_type RDim,  typename T>
 class Reference<Hypercube<Dim, Order, RDim>, Dim, Order, RDim, T>
     :
 public Hypercube<Dim, Order, RDim>
@@ -47,17 +47,16 @@ public:
     //@{
 
     typedef Hypercube<Dim, Order, RDim> super;
-
-    static const uint16_type nDim = super::nDim;
-    static const uint16_type nOrder = super::nOrder;
-    static const uint16_type nRealDim = super::nRealDim;
-
-    static const uint16_type topological_dimension = super::topological_dimension;
-    static const uint16_type real_dimension = super::real_dimension;
-
     typedef super GeoShape;
-    static const size_type Shape = super::Shape;
-    static const size_type Geometry = super::Geometry;
+
+    inline static const uint16_type nDim = super::nDim;
+    inline static const int nOrder = super::nOrder;
+    inline static const bool is_order_dynamic = ( nOrder == Dynamic );
+    inline static const uint16_type nRealDim = super::nRealDim;
+    inline static const uint16_type topological_dimension = super::topological_dimension;
+    inline static const uint16_type real_dimension = super::real_dimension;
+    inline static const size_type Shape = super::Shape;
+    inline static const size_type Geometry = super::Geometry;
 
     typedef T value_type;
     typedef Reference<Hypercube<Dim, Order, RDim>, Dim, Order, RDim, T> self_type;
@@ -71,18 +70,17 @@ public:
     typedef typename super::face_to_point_t face_to_point_t;
     typedef typename super::face_to_edge_t face_to_edge_t;
 
-    static const uint16_type numVertices = super::numVertices;
-    static const uint16_type numFaces = super::numFaces;
-    static const uint16_type numGeometricFaces = super::numGeometricFaces;
-    static const uint16_type numTopologicalFaces = super::numTopologicalFaces;
-    static const uint16_type numEdges = super::numEdges;
-    static const uint16_type numNormals = super::numNormals;
-
-    static const uint16_type numPoints = super::numPoints;
-    static const uint16_type nbPtsPerVertex = super::nbPtsPerVertex;
-    static const uint16_type nbPtsPerEdge = super::nbPtsPerEdge;
-    static const uint16_type nbPtsPerFace = super::nbPtsPerFace;
-    static const uint16_type nbPtsPerVolume = super::nbPtsPerVolume;
+    inline static const int numVertices = super::numVertices;
+    inline static const int numFaces = super::numFaces;
+    inline static const int numGeometricFaces = super::numGeometricFaces;
+    inline static const int numTopologicalFaces = super::numTopologicalFaces;
+    inline static const int numEdges = super::numEdges;
+    inline static const int numNormals = super::numNormals;
+    inline static const int numPoints = super::numPoints;
+    inline static const int nbPtsPerVertex = super::nbPtsPerVertex;
+    inline static const int nbPtsPerEdge = super::nbPtsPerEdge;
+    inline static const int nbPtsPerFace = super::nbPtsPerFace;
+    inline static const int nbPtsPerVolume = super::nbPtsPerVolume;
 
     
     typedef typename node<value_type>::type node_type;
@@ -107,15 +105,17 @@ public:
     //@{
 
     Reference()
-        :
-        super(),
-        M_id( 0 ),
-        M_vertices( nRealDim, numVertices ),
-        M_points( nRealDim, numPoints ),
-        M_normals( numNormals ),
-        M_barycenter( nRealDim ),
-        M_barycenterfaces( nRealDim, numTopologicalFaces ),
-        M_meas( 0 )
+        : Reference( nOrder )
+    {}
+    Reference( int order )
+        : super(),
+          M_id( 0 ),
+          M_vertices( nRealDim, this->numberOfVertices() ),
+          M_points( nRealDim, this->numberOfPoints() ),
+          M_normals( numNormals ),
+          M_barycenter( nRealDim ),
+          M_barycenterfaces( nRealDim, this->numberOfTopologicalFaces() ),
+          M_meas( 0 )
     {
         M_vertices *= 0;
         M_points *= 0;
@@ -668,9 +668,18 @@ public:
         return points_type();
     }
 
+    template <size_type shape>
+    points_type
+    makeLattice( int interior ) const
+    {
+        if constexpr ( is_order_dynamic )
+            return makeLattice<shape>( Order, interior );
+        else
+            return makeLattice<shape>( M_order, interior );
+    }
     template<size_type shape>
     points_type
-    makeLattice( uint16_type interior = 0 ) const
+    makeLattice( int order, uint16_type interior ) const
     {
         if ( nOrder > 0 )
         {
@@ -686,6 +695,7 @@ public:
 
         else if ( nOrder == 0 )
             return glas::average( M_vertices );
+        return points_type{};
     }
     //@}
 
@@ -923,6 +933,8 @@ private:
     void computeMeasure();
 private:
 
+    int M_order;
+    
     uint16_type M_id;
 
     points_type M_vertices;
@@ -939,21 +951,11 @@ private:
     value_type M_meas;
 };
 
-template<uint16_type Dim, uint16_type Order, uint16_type RDim,  typename T>
-const uint16_type Reference<Hypercube<Dim, Order, RDim>, Dim, Order, RDim, T>::nbPtsPerVertex;
-template<uint16_type Dim, uint16_type Order, uint16_type RDim,  typename T>
-const uint16_type Reference<Hypercube<Dim, Order, RDim>, Dim, Order, RDim, T>::nbPtsPerEdge;
-template<uint16_type Dim, uint16_type Order, uint16_type RDim,  typename T>
-const uint16_type Reference<Hypercube<Dim, Order, RDim>, Dim, Order, RDim, T>::nbPtsPerFace;
-template<uint16_type Dim, uint16_type Order, uint16_type RDim,  typename T>
-const uint16_type Reference<Hypercube<Dim, Order, RDim>, Dim, Order, RDim, T>::numGeometricFaces;
-
-
 
 template<typename T> class Entity<SHAPE_QUAD, T>: public Reference<Hypercube<2, 1, 2>, 2, 1, 2, T> {};
 template<typename T> class Entity<SHAPE_HEXA, T>: public Reference<Hypercube<3, 1, 3>, 3, 1, 3, T> {};
 
-template<uint16_type Dim, uint16_type Order, uint16_type RDim,  typename T>
+template<uint16_type Dim, int Order, uint16_type RDim,  typename T>
 void
 Reference<Hypercube<Dim, Order, RDim>, Dim, Order, RDim, T>::computeBarycenters()
 {
@@ -966,7 +968,7 @@ Reference<Hypercube<Dim, Order, RDim>, Dim, Order, RDim, T>::computeBarycenters(
     }
 }
 
-template<uint16_type Dim, uint16_type Order, uint16_type RDim,  typename T>
+template<uint16_type Dim, int Order, uint16_type RDim,  typename T>
 void
 Reference<Hypercube<Dim, Order, RDim>, Dim, Order, RDim, T>::computeMeasure()
 {

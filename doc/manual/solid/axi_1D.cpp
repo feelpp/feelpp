@@ -87,7 +87,7 @@ public:
  * solve \f$-\epsilon \Delta u -\beta\cdot\nabla u + \mu u = f\f$ on \f$\Omega\f$ and \f$u= g\f$ on \f$\Gamma_{in}\f$
  */
 template<int Order,
-         template<uint16_type,uint16_type,uint16_type> class Entity = Simplex>
+         template<uint16_type,int,uint16_type> class Entity = Simplex>
 class Elaxi
     :
 public Application
@@ -171,7 +171,7 @@ private:
 }; // Elaxi
 
 
-template<int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
+template<int Order, template<uint16_type,int,uint16_type> class Entity>
 void
 Elaxi<Order, Entity>::run()
 {
@@ -385,7 +385,7 @@ Elaxi<Order, Entity>::run()
 } //run
 
 
-template<int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
+template<int Order, template<uint16_type,int,uint16_type> class Entity>
 void
 Elaxi<Order, Entity>::exportResults( double time, element_type& U )
 {

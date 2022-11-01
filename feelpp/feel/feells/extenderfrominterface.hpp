@@ -29,7 +29,7 @@
 
 namespace Feel {
 
-template<int Dim,int GeoOrder=1, template<uint16_type,uint16_type,uint16_type> class Convex = Simplex>
+template<int Dim,int GeoOrder=1, template<uint16_type,int,uint16_type> class Convex = Simplex>
 class ExtenderFromInterface
 {
 public:
@@ -73,7 +73,7 @@ private:
     std::vector<size_type> M_interf_id;
 }; // ExtenderFromInterface
 
-template<int Dim,int GeoOrder, template<uint16_type,uint16_type,uint16_type> class Convex>
+template<int Dim,int GeoOrder, template<uint16_type,int,uint16_type> class Convex>
 void
 ExtenderFromInterface<Dim,GeoOrder,Convex>::update( element_type const& phi )
 {
@@ -129,7 +129,7 @@ ExtenderFromInterface<Dim,GeoOrder,Convex>::update( element_type const& phi )
 
 }
 
-template<int Dim,int GeoOrder, template<uint16_type,uint16_type,uint16_type> class Convex>
+template<int Dim,int GeoOrder, template<uint16_type,int,uint16_type> class Convex>
 template<typename Storage>
 void
 ExtenderFromInterface<Dim,GeoOrder,Convex>::extendFromInterface( element_s_type<Storage>& field )

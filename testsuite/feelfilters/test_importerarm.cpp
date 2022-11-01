@@ -29,7 +29,7 @@
 // give a name to the testsuite
 #define BOOST_TEST_MODULE mesh filter testsuite
 #include <feel/feelcore/testsuite.hpp>
-#include <boost/mpl/list.hpp>
+
 
 #include <feel/feelcore/feel.hpp>
 
@@ -76,7 +76,7 @@ makeAbout()
 }
 
 
-template<int Dim, template <uint16_type,uint16_type,uint16_type> class Entity = Simplex>
+template<int Dim, template <uint16_type,int,uint16_type> class Entity = Simplex>
 void
 checkCreateGmshMesh( std::string const& shape, std::string const& convex = "Simplex" )
 {
@@ -111,11 +111,9 @@ FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
 
 BOOST_AUTO_TEST_SUITE( armsuite )
 
+using dim_t = boost::mp11::mp_list_c<int, 1,2,3>;
 
-    //typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2>,boost::mpl::int_<3> > dim_types;
-typedef boost::mpl::list<boost::mpl::int_<3> > dim_types;
-
-BOOST_AUTO_TEST_CASE_TEMPLATE( gmshsimplex, T, dim_types )
+BOOST_AUTO_TEST_CASE_TEMPLATE( gmshsimplex, T, dim_t )
 {
     checkCreateGmshMesh<T::value>( "simplex" );
 }

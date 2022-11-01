@@ -32,6 +32,7 @@
 #include <feel/feelcore/testsuite.hpp>
 #include <feel/feelcore/feel.hpp>
 #include <feel/feeltiming/timer.hpp>
+#include <feel/feelalg/glas.hpp>
 #include <feel/feelpoly/jacobi.hpp>
 #include <feel/feelpoly/expansions.hpp>
 #include <feel/feelpoly/dubiner.hpp>
@@ -39,6 +40,7 @@
 #include <feel/feelpoly/geomap.hpp>
 #include <feel/feelpoly/lagrange.hpp>
 
+using namespace Feel;
 unsigned int fact( unsigned int   n )
 {
     if ( n == 0 )
@@ -149,23 +151,38 @@ public:
     }
 };
 
-template<Feel::uint16_type N, typename T>
+template<int _N, typename T>
 class TestDubiner
 {
 public:
     typedef T value_type;
-    TestDubiner()
+    inline static const int N = _N;
+    Dubiner<2,2,N,Normalized<true>,T> dubexp;
+    using matrix_t = typename Dubiner<2,2,N,Normalized<true>,T>::matrix_type;
+
+    TestDubiner(): dubexp()
     {}
-    void operator()() const
+    TestDubiner(int N):dubexp(N)
+    {}
+    matrix_t evaluate() const
     {
-        using namespace Feel;
-        Dubiner<2,2,N,Normalized<true>,T> dubexp;
+        
+        
         ublas::matrix<T,ublas::column_major> pts( 2,2  );
         ublas::column( pts, 0 )  = ublas::scalar_vector<value_type>( pts.size2(), 1.0 );
         ublas::column( pts, 1 )  = ublas::scalar_vector<value_type>( pts.size2(), 1.0 );
-        std::cout << "[batch] dubexp at pts =  " << dubexp.evaluate( pts ) << "\n";
-        std::cout << "[batch] dubexp derivation at pts =  " << dubexp.derivate( pts ) << "\n";
-        Dubiner<2,2,N> dub;
+        BOOST_TEST_MESSAGE( "[batch] dubexp at pts =  " << dubexp.evaluate( pts ) << "\n" );
+        return dubexp.evaluate( pts );
+    }
+    matrix_t derivate() const
+    {
+        using namespace Feel;
+        
+        ublas::matrix<T,ublas::column_major> pts( 2,2  );
+        ublas::column( pts, 0 )  = ublas::scalar_vector<value_type>( pts.size2(), 1.0 );
+        ublas::column( pts, 1 )  = ublas::scalar_vector<value_type>( pts.size2(), 1.0 );
+        BOOST_TEST_MESSAGE( "[batch] dubexp derivation at pts =  " << dubexp.derivate( pts ) << "\n");
+        return dubexp.derivate( pts );
     }
 };
 
@@ -174,18 +191,21 @@ FEELPP_ENVIRONMENT_NO_OPTIONS
 
 BOOST_AUTO_TEST_SUITE( jacobi )
 
-typedef boost::mpl::list<boost::mpl::int_<0>,boost::mpl::int_<1>,boost::mpl::int_<2>,boost::mpl::int_<10> > test_types;
 
-BOOST_AUTO_TEST_CASE_TEMPLATE( test_jacobi_double, T, test_types )
+using order_t = boost::mp11::mp_list_c<int, 1,2,3,4,5,6,10>;
+BOOST_AUTO_TEST_CASE_TEMPLATE( test_jacobi_double, T, order_t )
 {
     BOOST_TEST_MESSAGE( "o- TestJacobi<" << T::value << ", double>()" );
     TestJacobi<T::value, double> a;
 }
 
-BOOST_AUTO_TEST_CASE_TEMPLATE( test_dubiner_double, T, test_types )
+BOOST_AUTO_TEST_CASE_TEMPLATE( test_dubiner_double, T, order_t )
 {
     BOOST_TEST_MESSAGE( "o- TestDubiner<" << T::value << ", double>()" );
     TestDubiner<T::value, double> d0;
+    TestDubiner<Dynamic, double> d1(T::value);
+    auto d = d0.evaluate();
+    BOOST_CHECK_SMALL((em(d0.evaluate())-em(d1.evaluate())).norm(), 1e-10);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

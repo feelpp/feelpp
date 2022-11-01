@@ -74,7 +74,7 @@ makeAbout()
 
 }
 
-template<int Dim, int O = 1, template<uint16_type,uint16_type,uint16_type> class C = Simplex>
+template<int Dim, int O = 1, template<uint16_type,int,uint16_type> class C = Simplex>
 class Test:
     public Simget
 {
@@ -108,7 +108,7 @@ public :
 };
 
 
-template<int Dim, int O = 1, template<uint16_type,uint16_type,uint16_type> class C = Simplex>
+template<int Dim, int O = 1, template<uint16_type,int,uint16_type> class C = Simplex>
 class TestV:
     public Simget
 {

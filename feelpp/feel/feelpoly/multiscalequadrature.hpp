@@ -46,10 +46,10 @@ namespace Feel
  * @author Thomas Lantz
  */
 
-template<class Convex, uint16_type Integration_Degree, typename T>
+template<class Convex, int Integration_Degree, typename T>
 class MultiScaleQuadrature : public PointSetQuadrature<Convex, T>  {};
 
-template< uint16_type Integration_Degree, typename T>
+template< int Integration_Degree, typename T>
 class MultiScaleQuadrature<Simplex<0,1> , Integration_Degree ,T >  : public PointSetQuadrature<Simplex<0,1>,  T>
 {
 public :
@@ -61,7 +61,7 @@ public :
     typedef typename super::nodes_type nodes_type;
     typedef typename super::weights_type weights_type;
 
-    static const uint16_type Degree = invalid_uint16_type_value;
+    static const int Degree = invalid_uint16_type_value;
     static const uint32_type Npoints = 1;
 
     MultiScaleQuadrature()
@@ -78,7 +78,7 @@ public :
 
 /** Multi Scale Quadrature on the segment [-1,1] **/
 
-template< uint16_type Integration_Degree, typename T>
+template< int Integration_Degree, typename T>
 class MultiScaleQuadrature<Hypercube<1,1>, Integration_Degree ,T >
     :
 public PointSetQuadrature<Hypercube<1,1>, T>
@@ -92,7 +92,7 @@ public :
     typedef typename super::nodes_type nodes_type;
     typedef typename super::weights_type weights_type;
 
-    static const uint16_type Degree = 1;
+    static const int Degree = 1;
     static const uint32_type Npoints = Integration_Degree;
 
     typedef MultiScaleQuadrature<Simplex<0,1>,Integration_Degree, T> face_quad_type;
@@ -169,7 +169,7 @@ public :
 
 /** Multi Scale Quadrature on the quadrangle [-1,1]x[-1,1] **/
 
-template< uint16_type Integration_Degree, typename T>
+template< int Integration_Degree, typename T>
 class MultiScaleQuadrature<Hypercube<2,1>, Integration_Degree ,T >
     :
 public PointSetQuadrature<Hypercube<2,1>, T>
@@ -185,7 +185,7 @@ public :
 
     typedef MultiScaleQuadrature<Hypercube<1,1>,Integration_Degree, T> face_quad_type;
 
-    static const uint16_type Degree = Integration_Degree;
+    static const int Degree = Integration_Degree;
     static const uint32_type Npoints =Integration_Degree*Integration_Degree;
 
 

@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2007-06-20
 
-  Copyright (C) 2007 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2007 Universitï¿½ Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -45,7 +45,7 @@ template<int Dim,
          int Order = 1,
          int RealDim = Dim,
          typename T = double,
-         template<uint16_type, uint16_type, uint16_type> class Entity = Simplex>
+         template<uint16_type, int, uint16_type> class Entity = Simplex>
 class GeoMapInverse
 {
 public:

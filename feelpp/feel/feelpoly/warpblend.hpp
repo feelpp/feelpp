@@ -45,7 +45,7 @@ namespace Feel
 {
 
 template< class Convex,
-          uint16_type Order,
+          int Order,
           typename T = double >
 class PointSetWarpBlend : public  PointSetInterpolation<Convex::nDim, Order, T, Simplex>
 {
@@ -58,6 +58,7 @@ public :
 
     static const uint32_type Dim = Convex::nDim;
     static const uint16_type nPoints1D = Order+1;
+    inline static const bool is_order_dynamic = Order == Dynamic;
 
     typedef typename super::return_type return_type;
 
@@ -71,25 +72,41 @@ public :
     typedef typename reference_convex_type::points_type points_type;
 
     reference_convex_type RefConv;
+    
+    int M_order;
 
     PointSetWarpBlend( int interior = 0 )
+        :
+        PointSetWarpBlend( Order, interior )
     {
-        PointSetEquiSpaced<Convex, Order, T> G( interior );
+        static_assert( !is_order_dynamic, "invalid constructor call, only valid for compile time order");
+    }
+    /**
+     * @brief Construct a new Point Set Warp Blend object
+     * 
+     * @param order order of the convex
+     * @param interior compute only interior points
+     */
+    PointSetWarpBlend( int order, int interior )
+        :
+        M_order( order )
+    {
+        PointSetEquiSpaced<Convex, Order, T> G( M_order, interior );
 
         points_type final_pts = G.points();
-
+        DVLOG( 4 ) << fmt::format( "[PointSetWarpBlend::PointSetWarpBlend({},{})] pts:{}\n", order, interior, em( G.points() ) );
         //Copies information about EquiSpaced points
         this->setEid( G.getEid() );
         this->setPtE( G.getPtE() );
 
         if ( Dim == 1 )
         {
-            PointSetGaussLobatto<Hypercube<1,1>, Order, value_type> gausslobatto( interior );
+            PointSetGaussLobatto<Hypercube<1,1>, Order, value_type> gausslobatto( M_order, interior );
 
             final_pts = gausslobatto.points();
         }
 
-        else if ( Order > 2 )
+        else if ( M_order > 2 )
         {
             entities = std::make_pair( RefConv.vertices(), equiVertices() );
 
@@ -100,7 +117,7 @@ public :
             {
                 uint16_type max_entity_dim = 1;
 
-                if ( Order > 3 )
+                if ( M_order > 3 )
                     max_entity_dim = 2;
 
                 blendAxis();
@@ -123,7 +140,7 @@ public :
                     }
                 }
 
-                if ( Order > 3 )
+                if ( M_order > 3 )
                 {
                     final_pts = putInPointset ( final_pts,
                                                 transformPoints<3>( G.pointsBySubEntity( 3, 0, 0 ) ),
@@ -134,7 +151,7 @@ public :
 
         this->setPoints( final_pts );
 
-        this->setName( "warpblend", Order );
+        this->setName( "warpblend", M_order );
     }
 
     ~PointSetWarpBlend() override {}
@@ -293,10 +310,10 @@ private :
 
     vector_type gll()
     {
-        vector_type gx( Order+1 );
-        vector_type gw( Order+1 );
+        vector_type gx(M_order+1 );
+        vector_type gw(M_order+1 );
 
-        details::dyna::gausslobattojacobi<value_type, vector_type, vector_type>( Order+1, gw, gx );
+        details::dyna::gausslobattojacobi<value_type, vector_type, vector_type>(M_order+1, gw, gx );
 
         return gx;
     }
@@ -342,10 +359,10 @@ private :
                                   };
 
         if ( d == 2 )
-            p = ( Order<=15 )?__alpha_2d[ Order ]:( 5./3. );
+            p = (M_order<=15 )?__alpha_2d[M_order]:( 5./3. );
 
         else
-            p = ( Order<=15 )?__alpha_3d[ Order ]:1.0;
+            p = (M_order<=15 )?__alpha_3d[M_order]:1.0;
 
         return p;
     }

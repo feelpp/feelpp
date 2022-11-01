@@ -31,6 +31,9 @@
 #define __RefEntity_H 1
 
 #include <stdexcept>
+
+#include <feel/feelalg/eigen.hpp>
+
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/io.hpp>
 
@@ -52,11 +55,11 @@ class Entity
  *
   * @see Simplex Hypercube
  */
-template<typename Geo, uint16_type Dim = 1, uint16_type Order = 1, uint16_type RDim = Dim, typename T = double>
+template<typename Geo, uint16_type Dim = 1, int Order = 1, uint16_type RDim = Dim, typename T = double>
 class Reference
 {};
 
-template<typename Geo, uint16_type Dim = 1, uint16_type Order = 1, uint16_type RDim = Dim, typename T = double>
+template<typename Geo, uint16_type Dim = 1, int Order = 1, uint16_type RDim = Dim, typename T = double>
 Reference<Geo,Geo::nDim, 1,  Geo::nRealDim,T>
 makeReferenceConvex()
 {
@@ -64,7 +67,7 @@ makeReferenceConvex()
 }
 
 
-template<typename Geo, uint16_type Dim, uint16_type Order, uint16_type RDim, typename T>
+template<typename Geo, uint16_type Dim, int Order, uint16_type RDim, typename T>
 std::ostream&
 operator<<( std::ostream& os,
             Reference<Geo, Dim, Order, RDim, T> const& ref )
@@ -172,8 +175,8 @@ namespace Feel {
  * Otherwise, value is equal to false.
  */
 template <typename T> struct is_reference_convex: std::false_type {};
-template <uint16_type Dim, uint16_type Order, uint16_type RDim, typename T> struct is_reference_convex<Reference<Simplex<Dim,Order,RDim>,Dim,Order,RDim,T>>: std::true_type {};
-template <uint16_type Dim, uint16_type Order, uint16_type RDim, typename T> struct is_reference_convex<Reference<Hypercube<Dim,Order,RDim>,Dim,Order,RDim,T>>: std::true_type {};
+template <uint16_type Dim, int Order, uint16_type RDim, typename T> struct is_reference_convex<Reference<Simplex<Dim,Order,RDim>,Dim,Order,RDim,T>>: std::true_type {};
+template <uint16_type Dim, int Order, uint16_type RDim, typename T> struct is_reference_convex<Reference<Hypercube<Dim,Order,RDim>,Dim,Order,RDim,T>>: std::true_type {};
 /**
  * Helper variable template
  * \return true is T is a \p Reference convex at compilation time, false otherwise

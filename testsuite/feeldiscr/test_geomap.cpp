@@ -53,7 +53,7 @@ double fx( node<double>::type const& __n )
 {
     return __n[0];
 }
-template<uint16_type Dim, template<uint16_type,uint16_type,uint16_type> class Entity>
+template<uint16_type Dim, template<uint16_type,int,uint16_type> class Entity>
 struct TestInterp
 {
     typedef Entity<Dim, 1,Dim> entity_type;

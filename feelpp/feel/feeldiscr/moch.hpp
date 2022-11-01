@@ -38,7 +38,7 @@ namespace Feel {
  * of degree (total or in each variable) less than k.
  */
 template<int Order,
-         template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
+         template<class, int, class> class Pts = PointSetEquiSpaced,
          typename MeshType>
 inline
 std::shared_ptr<FunctionSpace<MeshType,

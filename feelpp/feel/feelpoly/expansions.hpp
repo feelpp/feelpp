@@ -375,12 +375,14 @@ public:
  *
  * \author Christophe Prud'homme
  */
-template<uint16_type N, typename T = double>
+template<int _N, typename T = double>
 struct scalings
 {
     typedef T value_type;
     typedef ublas::matrix<value_type> matrix_type;
     typedef typename matrix_node<value_type>::type matrix_node_type;
+    inline static const bool is_order_dynamic = (_N==Dynamic);
+    inline static const int N = _N;
 
     /**
      * \brief evaluates scaling factors for Dubiner polynomials
@@ -389,6 +391,7 @@ struct scalings
      */
     scalings( ublas::vector<value_type> const& pts )
         :
+        M_N(N),
         M_s( N+1,  pts.size() )
     {
 #if 0
@@ -398,11 +401,34 @@ struct scalings
         ublas::row( M_s, 0 ) = ublas::scalar_vector<value_type>( pts.size(), 1.0 );
 #endif
 
-        if ( N > 0 )
+        if constexpr ( N > 0 )
         {
             ublas::row( M_s, 1 ) = 0.5 * ( ublas::row( M_s, 0 ) - pts );
 
             for ( uint16_type k = 2; k < N+1; ++k )
+            {
+                ublas::row( M_s, k ) = ublas::element_prod( ublas::row( M_s, k-1 ),
+                                        ublas::row( M_s, 1 ) );
+            }
+        }
+    }
+    scalings( int _Nd, ublas::vector<value_type> const& pts )
+        :
+        M_N(_Nd),
+        M_s( N+1,  pts.size() )
+    {
+#if 0
+        ublas::vector<value_type> one( ublas::scalar_vector<value_type>( pts.size(), 1.0 ) );
+        ublas::row( M_s, 0 ) = one;
+#else
+        ublas::row( M_s, 0 ) = ublas::scalar_vector<value_type>( pts.size(), 1.0 );
+#endif
+
+        if  ( M_N > 0 )
+        {
+            ublas::row( M_s, 1 ) = 0.5 * ( ublas::row( M_s, 0 ) - pts );
+
+            for ( uint16_type k = 2; k < M_N+1; ++k )
             {
                 ublas::row( M_s, k ) = ublas::element_prod( ublas::row( M_s, k-1 ),
                                         ublas::row( M_s, 1 ) );
@@ -414,6 +440,7 @@ struct scalings
         return M_s;
     }
 
+    int M_N;
     matrix_type M_s;
 };
 } // details

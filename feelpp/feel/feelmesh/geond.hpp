@@ -40,15 +40,15 @@ namespace Feel
 template <typename IndexT>
 class MeshBase;
 
-template <int Dim, int Order, int RealDim, template <uint16_type, uint16_type, uint16_type> class Entity, typename T>
+template <int Dim, int Order, int RealDim, template <uint16_type, int, uint16_type> class Entity, typename T>
 struct GT_Lagrange;
 
-template <class Convex, uint16_type O, typename T2>
+template <class Convex, int O, typename T2>
 class Gauss;
 template <int IMORDER,
           int DIM,
-          template <uint16_type, uint16_type, uint16_type> class Entity,
-          template <class Convex, uint16_type O, typename T2> class QPS,
+          template <uint16_type, int, uint16_type> class Entity,
+          template <class Convex, int O, typename T2> class QPS,
           typename T>
 struct IMGeneric;
 

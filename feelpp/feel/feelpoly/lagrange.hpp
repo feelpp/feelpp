@@ -61,7 +61,7 @@ namespace fem
 /// \cond detail
 namespace details
 {
-template<typename Basis, template<class, uint16_type, class> class PointSetType>
+template<typename Basis, template<class, int, class> class PointSetType>
 class LagrangeDual
     :
 public DualBasis<Basis>
@@ -83,7 +83,7 @@ public:
     // point set type associated with the functionals
     typedef PointSetType<convex_type, nOrder, value_type> pointset_type;
 
-    template< template<class, uint16_type, class> class TestPointSetType >
+    template< template<class, int, class> class TestPointSetType >
     inline static const bool is_pointset_v = std::is_base_of_v<TestPointSetType<convex_type, nOrder, value_type>,pointset_type >;
     inline static const uint16_type numPoints = reference_convex_type::numPoints;
     inline static const uint16_type nbPtsPerVertex = reference_convex_type::nbPtsPerVertex;
@@ -316,12 +316,12 @@ private:
  */
 template<uint16_type N,
          uint16_type RealDim,
-         uint16_type O,
+         int O,
          template<uint16_type Dim> class PolySetType,
          typename ContinuityType = Continuous,
          typename T = double,
-         template<uint16_type, uint16_type, uint16_type> class Convex = Simplex,
-         template<class, uint16_type, class> class Pts = PointSetFekete,
+         template<uint16_type, int, uint16_type> class Convex = Simplex,
+         template<class, int, class> class Pts = PointSetFekete,
          uint16_type TheTAG = 0 >
 class Lagrange
     :
@@ -758,10 +758,10 @@ private:
     std::vector<uint16_type> M_unsymm2symm;
 };
 } // namespace fem
-template<uint16_type Order,
+template<int Order,
          template<uint16_type Dim> class PolySetType = Scalar,
          typename ContinuityType = Continuous,
-         template<class, uint16_type, class> class Pts = PointSetFekete,
+         template<class, int, class> class Pts = PointSetFekete,
          uint16_type TheTAG=0 >
 class Lagrange
 {

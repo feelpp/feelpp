@@ -44,7 +44,7 @@ namespace Feel
 template<int Dim,
          typename BasisU,
          typename BasisU_Vec,
-         template<uint16_type,uint16_type,uint16_type> class Entity>
+         template<uint16_type,int,uint16_type> class Entity>
 class Curvature
     :
 public Simget
@@ -172,7 +172,7 @@ private:
 }; // Curvature
 
 
-    template<int Dim, typename BasisU, typename BasisU_Vec, template<uint16_type,uint16_type,uint16_type> class Entity>
+    template<int Dim, typename BasisU, typename BasisU_Vec, template<uint16_type,int,uint16_type> class Entity>
 void
 Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
 {

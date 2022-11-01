@@ -1,7 +1,7 @@
 /*
  This file is part of the Feel library
  Copyright (C) 2001,2002,2003,2004 EPFL, INRIA and Politechnico di Milano
- Copyright (C) 2006 Université Joseph Fourier (UJF)
+ Copyright (C) 2006 Universitï¿½ Joseph Fourier (UJF)
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -65,7 +65,7 @@ public:
         }
 
     value_type value() const {
-#if 1
+#if 0
         CHECK( !this->empty() ) << "no marker";
         return *this->begin();
 #else

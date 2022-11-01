@@ -41,17 +41,17 @@
 
 namespace Feel
 {
-template<class Convex,uint16_type O,typename T> class PointSetWarpBlend;
-template<uint16_type Dim,uint16_type RealDim,uint16_type Degree,typename NormalizationPolicy,typename T,template<class> class StoragePolicy> class Dubiner;
+template<class Convex,int O,typename T> class PointSetWarpBlend;
+template<uint16_type Dim,uint16_type RealDim, int Degree,typename NormalizationPolicy,typename T,template<class> class StoragePolicy> class Dubiner;
 
 template<uint16_type Dim,
-         uint16_type Degree,
+         int Degree,
          typename T,
          template<class> class StoragePolicy>
 class BoundaryAdapted;
 
 template<uint16_type Dim,
-         uint16_type Degree,
+         int Degree,
          typename T = double,
          template<class> class StoragePolicy = StorageUBlas>
 struct BoundaryAdaptedTraits
@@ -141,7 +141,7 @@ struct BoundaryAdaptedTag
  */
 
 template<uint16_type Dim,
-         uint16_type Degree,
+         int Degree,
          typename T = double,
          template<class> class StoragePolicy = StorageUBlas>
 class BoundaryAdapted : Basis<BoundaryAdaptedTag<Dim, Degree>, T>
@@ -446,7 +446,7 @@ private:
 };
 
 template<uint16_type Dim,
-         uint16_type Degree,
+         int Degree,
          typename T,
          template<class> class StoragePolicy>
 typename BoundaryAdapted<Dim, Degree,  T, StoragePolicy>::matrix_type
@@ -519,7 +519,7 @@ BoundaryAdapted<Dim, Degree,  T, StoragePolicy>::evaluate( points_type const& __
 
 
 template<uint16_type Dim,
-         uint16_type Degree,
+         int Degree,
          typename T,
          template<class> class StoragePolicy>
 template<typename AE>
@@ -626,7 +626,7 @@ BoundaryAdapted<Dim, Degree,  T, StoragePolicy>::derivate( ublas::matrix_express
 }
 
 template<uint16_type Dim,
-         uint16_type Degree,
+         int Degree,
          typename T,
          template<class> class StoragePolicy>
 typename BoundaryAdapted<Dim, Degree,  T, StoragePolicy>::matrix_type
@@ -819,7 +819,7 @@ BoundaryAdapted<Dim, Degree,  T, StoragePolicy>::evaluate( points_type const& __
 }
 
 template<uint16_type Dim,
-         uint16_type Degree,
+         int Degree,
          typename T,
          template<class> class StoragePolicy>
 template<typename AE>

@@ -34,12 +34,12 @@ template<typename Poly, template<uint16_type> class PolySetType > class Polynomi
 namespace detail
 {
 template<uint16_type Dim,
-         uint16_type Order,
+         int Order,
          uint16_type RealDim,
          template<uint16_type> class PolySetType,
          typename T,
          uint16_type TheTAG,
-         template<uint16_type,uint16_type,uint16_type> class Convex>
+         template<uint16_type,int,uint16_type> class Convex>
 class OrthonormalPolynomialSet;
 }
 /**
@@ -51,8 +51,8 @@ class OrthonormalPolynomialSet;
  *  @see
  */
 template<typename P,
-         template<class Pr,  template<class,uint16_type,class> class Pt> class PDual,
-         template<class,uint16_type,class> class Pts>
+         template<class Pr,  template<class,int,class> class Pt> class PDual,
+         template<class,int,class> class Pts>
 class FiniteElement :
     public mpl::if_<mpl::bool_<P::is_scalar>,
                     mpl::identity<PolynomialSet<P, Scalar> >,

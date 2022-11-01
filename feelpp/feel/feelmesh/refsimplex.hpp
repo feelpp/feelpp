@@ -32,7 +32,7 @@
 
 namespace Feel
 {
-template<uint16_type Dim, uint16_type Order, uint16_type RDim,  typename T>
+template<uint16_type Dim, int Order, uint16_type RDim,  typename T>
 class Reference<Simplex<Dim, Order, RDim>, Dim, Order, RDim, T>
     :
 public Simplex<Dim, Order, RDim>
@@ -43,17 +43,16 @@ public:
     /** @name Typedefs
      */
     //@{
-
-    static constexpr uint16_type nDim = super::nDim;
-    static constexpr uint16_type nOrder = super::nOrder;
-    static constexpr uint16_type nRealDim = super::nRealDim;
-
-    static const uint16_type topological_dimension = super::topological_dimension;
-    static const uint16_type real_dimension = super::real_dimension;
-
     typedef super GeoShape;
-    static const size_type Shape = super::Shape;
-    static const size_type Geometry = super::Geometry;
+
+    inline static const uint16_type nDim = super::nDim;
+    inline static const int nOrder = super::nOrder;
+    inline static const bool is_order_dynamic = (nOrder == Dynamic);
+    inline static const uint16_type nRealDim = super::nRealDim;
+    inline static const uint16_type topological_dimension = super::topological_dimension;
+    inline static const uint16_type real_dimension = super::real_dimension;
+    inline static const size_type Shape = super::Shape;
+    inline static const size_type Geometry = super::Geometry;
 
     typedef T value_type;
     typedef Reference<Simplex<Dim, Order, RDim>, Dim, Order, RDim, T> self_type;
@@ -70,18 +69,17 @@ public:
     typedef typename super::face_to_point_t face_to_point_t;
     typedef typename super::face_to_edge_t face_to_edge_t;
 
-    static const uint16_type numVertices = super::numVertices;
-    static const uint16_type numFaces = super::numFaces;
-    static const uint16_type numGeometricFaces = super::numGeometricFaces;
-    static const uint16_type numTopologicalFaces = super::numTopologicalFaces;
-    static const uint16_type numEdges = super::numEdges;
-    static const uint16_type numNormals = super::numNormals;
-
-    static const uint16_type numPoints = super::numPoints;
-    static const uint16_type nbPtsPerVertex = super::nbPtsPerVertex;
-    static const uint16_type nbPtsPerEdge = super::nbPtsPerEdge;
-    static const uint16_type nbPtsPerFace = super::nbPtsPerFace;
-    static const uint16_type nbPtsPerVolume = super::nbPtsPerVolume;
+    inline static const int numVertices = super::numVertices;
+    inline static const int numFaces = super::numFaces;
+    inline static const int numGeometricFaces = super::numGeometricFaces;
+    inline static const int numTopologicalFaces = super::numTopologicalFaces;
+    inline static const int numEdges = super::numEdges;
+    inline static const int numNormals = super::numNormals;
+    inline static const int numPoints = super::numPoints;
+    inline static const int nbPtsPerVertex = super::nbPtsPerVertex;
+    inline static const int nbPtsPerEdge = super::nbPtsPerEdge;
+    inline static const int nbPtsPerFace = super::nbPtsPerFace;
+    inline static const int nbPtsPerVolume = super::nbPtsPerVolume;
 
     typedef typename node<value_type>::type node_type;
     typedef typename matrix_node<value_type>::type points_type;
@@ -108,14 +106,20 @@ public:
 
     Reference()
         :
+        Reference(nOrder)    
+    {}
+
+    Reference(int order)
+        :
         super(),
+        M_order(order),
         M_id( 0 ),
-        M_vertices( nRealDim, numVertices ),
-        M_points( nRealDim, numPoints ),
+        M_vertices( nRealDim, this->numberOfVertices() ),
+        M_points( nRealDim, this->numberOfPoints()  ),
         M_normals( numNormals ),
-        M_edge_tangents( numEdges ),
+        M_edge_tangents( this->numberOfEdges() ),
         M_barycenter( nRealDim ),
-        M_barycenterfaces( nRealDim, numTopologicalFaces ),
+        M_barycenterfaces( nRealDim, this->numberOfTopologicalFaces() ),
         M_meas( 0 )
     {
         M_vertices *= 0;
@@ -131,7 +135,7 @@ public:
             M_vertices( 0, 0 ) = -1.0;
             M_vertices( 0, 1 ) =  1.0;
 
-            M_points = make_line_points();
+            M_points = make_line_points(order);
         }
 
         if ( nDim == 2 )
@@ -143,7 +147,7 @@ public:
             M_vertices( 0, 2 ) = -1.0;
             M_vertices( 1, 2 ) =  1.0;
 
-            M_points = make_triangle_points();
+            M_points = make_triangle_points(order);
         }
 
         if ( nDim == 3 )
@@ -161,7 +165,7 @@ public:
             M_vertices( 1, 3 ) = -1.0;
             M_vertices( 2, 3 ) =  1.0;
 
-            M_points = make_tetrahedron_points();
+            M_points = make_tetrahedron_points(order);
         }
 
         //std::cout << "P = " << M_points << "\n";
@@ -176,9 +180,10 @@ public:
     Reference( element_type const& e, uint16_type __f, uint16_type __p = permutation_type::IDENTITY )
         :
         super(),
+        M_order( nOrder ),
         M_id( __f ),
         M_vertices( nRealDim, numVertices ),
-        M_points( nRealDim, numPoints ),
+        M_points( nRealDim, this->numberOfPoints() ),
         M_normals( numNormals ),
         M_edge_tangents( numNormals ),
         M_barycenter( nRealDim ),
@@ -216,7 +221,7 @@ public:
                 ublas::column( M_vertices, iperm ) = e.vertex( element_type::f2p( __f, i ) );
             }
 
-            M_points = make_triangle_points();
+            M_points = make_triangle_points(M_order);
         }
         else if ( nDim == 1 )
         {
@@ -232,7 +237,7 @@ public:
                 ublas::column( M_vertices, iperm ) = e.vertex( element_type::e2p( __f, i ) );
             }
 
-            M_points = make_line_points();
+            M_points = make_line_points(M_order);
         }
 
         make_normals();
@@ -243,9 +248,10 @@ public:
     Reference( element_type const& e, uint16_type __f, mpl::int_<1>, uint16_type __p = edge_permutation_type::IDENTITY)
         :
         super(),
+        M_order(Order),
         M_id( __f ),
         M_vertices( nRealDim, numVertices ),
-        M_points( nRealDim, numPoints ),
+        M_points( nRealDim, this->numberOfPoints() ),
         M_normals( numNormals ),
         M_edge_tangents( numNormals ),
         M_barycenter( nRealDim ),
@@ -275,7 +281,7 @@ public:
             ublas::column( M_vertices, iperm ) = e.vertex( element_type::e2p( __f, i ) );
         }
 
-        M_points = make_line_points();
+        M_points = make_line_points(M_order);
 
         computeBarycenters();
         computeMeasure();
@@ -633,6 +639,13 @@ public:
 
     points_type makePoints( uint16_type topo_dim, uint16_type __id, int interior = 1 ) const
     {
+        if constexpr ( is_order_dynamic )
+            return makePoints(Order, topo_dim, __id, interior );
+        else
+            return makePoints(M_order, topo_dim, __id, interior );
+    }
+    points_type makePoints( int order, uint16_type topo_dim, uint16_type __id, int interior ) const
+    {
         // vertices
         if ( topo_dim == 0 )
         {
@@ -661,8 +674,8 @@ public:
 
             if ( topo_dim == 1 )
             {
-                Reference<Simplex<1, Order, 1>, 1, Order, 1, T> refline;
-                G = refline.template makeLattice<SHAPE_LINE>( interior );
+                Reference<Simplex<1, Order, 1>, 1, Order, 1, T> refline( M_order );
+                G = refline.template makeLattice<SHAPE_LINE>( M_order, interior );
                 pt_to_entity<Shape,1> p_to_e( __id );
                 points_type Gret( nRealDim, G.size2() );
 
@@ -674,8 +687,8 @@ public:
 
             else if ( topo_dim == 2 )
             {
-                Reference<Simplex<2, Order, 2>, 2, Order, 2, T> refface;
-                G = refface.template makeLattice<SHAPE_TRIANGLE>( interior );
+                Reference<Simplex<2, Order, 2>, 2, Order, 2, T> refface( M_order);
+                G = refface.template makeLattice<SHAPE_TRIANGLE>( M_order, interior );
                 pt_to_entity<Shape,2> p_to_e( __id );
                 points_type Gret( nRealDim, G.size2() );
 
@@ -688,24 +701,31 @@ public:
 
         return points_type();
     }
-
     template<size_type shape>
     points_type
-    makeLattice( uint16_type interior = 0 ) const
+    makeLattice( int interior  ) const
     {
-        if ( nOrder > 0 )
+        if constexpr ( is_order_dynamic )
+            return makeLattice<shape>(Order,interior);
+        else
+            return makeLattice<shape>(M_order,interior);
+    }
+    template<size_type shape>
+    points_type
+    makeLattice( int order, int interior ) const
+    {
+        if ( order > 0 )
         {
             if ( shape == SHAPE_LINE )
-                return make_line_points( interior );
+                return make_line_points( order, interior );
 
             else if ( shape == SHAPE_TRIANGLE )
-                return make_triangle_points( interior );
+                return make_triangle_points( order, interior );
 
             else if ( shape == SHAPE_TETRA )
-                return make_tetrahedron_points( interior );
+                return make_tetrahedron_points( order, interior );
         }
 
-        DCHECK ( nOrder == 0 ) << "Invalid polynomial order";
         return glas::average( M_vertices );
     }
 
@@ -819,38 +839,38 @@ public:
 
 private:
 
-    int n_line_points( int interior = 0 ) const
+    int n_line_points( int order, int interior = 0 ) const
     {
-        return std::max( 0, int( Order )+1-2*interior );
+        return std::max( 0, int( order )+1-2*interior );
     }
-    int n_triangle_points( int interior = 0 ) const
+    int n_triangle_points( int order, int interior = 0 ) const
     {
         if ( interior == 1 )
-            return std::max( 0, ( int( Order )+1-2*interior )*( int( Order )-2*interior )/2 );
+            return std::max( 0, ( int( order )+1-2*interior )*( int( order )-2*interior )/2 );
 
-        return ( Order+1 )*( Order+2 )/2;
+        return ( order+1 )*( order+2 )/2;
     }
-    int n_tetrahedron_points( int interior = 0 ) const
+    int n_tetrahedron_points( int order, int interior = 0 ) const
     {
         if ( interior == 1 )
-            return std::max( 0, ( int( Order )+1-2*interior )*( int( Order )-2*interior )*( int( Order )-1-2*interior )/6 );
+            return std::max( 0, ( int( order )+1-2*interior )*( int( order )-2*interior )*( int( order )-1-2*interior )/6 );
 
-        return ( Order+1 )*( Order+2 )*( Order+3 )/6;
+        return ( order+1 )*( order+2 )*( order+3 )/6;
     }
 
     points_type
-    make_line_points( int interior = 0 ) const
+    make_line_points( int order, int interior = 0 ) const
     {
-        if ( nOrder > 0 )
+        if ( order > 0 )
         {
             ublas::vector<node_type> h ( 1 );
             h( 0 ) = vertex( 1 ) - vertex( 0 );
 
-            points_type p( nRealDim, n_line_points( interior ) );
+            points_type p( nRealDim, n_line_points( order, interior ) );
 
-            for ( int i = interior, indp = 0; i < int( Order )+1-interior; ++i, ++indp )
+            for ( int i = interior, indp = 0; i < int( order )+1-interior; ++i, ++indp )
             {
-                ublas::column( p, indp ) = vertex( 0 ) + ( h( 0 ) * value_type( i ) )/value_type( Order );
+                ublas::column( p, indp ) = vertex( 0 ) + ( h( 0 ) * value_type( i ) )/value_type( order );
             }
 
             return p;
@@ -862,9 +882,9 @@ private:
     }
 
     points_type
-    make_triangle_points( int interior = 0 ) const
+    make_triangle_points( int order, int interior = 0 ) const
     {
-        if ( nOrder > 0 )
+        if ( order > 0 )
         {
             ublas::vector<node_type> h ( 2 );
             h *= 0;
@@ -872,14 +892,14 @@ private:
             h( 1 ) = vertex( 2 ) - vertex( 0 );
             //std::cout << "h = " << h << "\n";
             //DVLOG(2) << "n triangle pts = " << n_triangle_points( interior ) << "\n";
-            points_type G( nRealDim, n_triangle_points( interior ) );
+            points_type G( nRealDim, n_triangle_points( order, interior ) );
 
-            for ( int i = interior, p = 0; i < int( Order )+1-interior; ++i )
+            for ( int i = interior, p = 0; i < int( order )+1-interior; ++i )
             {
-                for ( int j = interior; j < int( Order ) + 1 - i-interior; ++j, ++p )
+                for ( int j = interior; j < int( order ) + 1 - i-interior; ++j, ++p )
                 {
                     ublas::column( G, p ) = vertex( 0 ) + ( value_type( j ) * h( 0 )+
-                                                            value_type( i ) * h( 1 ) )/ value_type( Order );
+                                                            value_type( i ) * h( 1 ) )/ value_type( order );
                 }
             }
 
@@ -891,26 +911,26 @@ private:
     }
 
     points_type
-    make_tetrahedron_points( int interior = 0 ) const
+    make_tetrahedron_points( int order, int interior = 0 ) const
     {
-        if ( nOrder > 0 )
+        if ( order > 0 )
         {
             ublas::vector<node_type> h ( 3 );
             h( 0 ) = vertex( 1 ) - vertex( 0 );
             h( 1 ) = vertex( 2 ) - vertex( 0 );
             h( 2 ) = vertex( 3 ) - vertex( 0 );
-            points_type G( 3, n_tetrahedron_points( interior ) );
+            points_type G( 3, n_tetrahedron_points( order, interior ) );
 
             //DVLOG(2) << "n tetra pts = " << n_tetrahedron_points( interior ) << "\n";
-            for ( int i = interior, p = 0; i < int( Order )+1-interior; ++i )
+            for ( int i = interior, p = 0; i < int( order )+1-interior; ++i )
             {
-                for ( int j = interior; j < int( Order ) + 1 - i - interior; ++j )
+                for ( int j = interior; j < int( order ) + 1 - i - interior; ++j )
                 {
-                    for ( int k = interior; k < int( Order ) + 1 - i - j - interior; ++k, ++p )
+                    for ( int k = interior; k < int( order ) + 1 - i - j - interior; ++k, ++p )
                     {
                         ublas::column( G, p ) = vertex( 0 ) + ( value_type( i ) * h( 2 ) +
                                                                 value_type( j ) * h( 1 ) +
-                                                                value_type( k ) * h( 0 ) ) / value_type( Order );
+                                                                value_type( k ) * h( 0 ) ) / value_type( order );
 
                     }
                 }
@@ -1087,6 +1107,7 @@ private:
     void computeMeasure();
 private:
 
+    int M_order;
     uint16_type M_id;
 
     points_type M_vertices;
@@ -1103,16 +1124,6 @@ private:
     value_type M_meas;
 };
 
-template<uint16_type Dim, uint16_type Order, uint16_type RDim,  typename T>
-const uint16_type Reference<Simplex<Dim, Order, RDim>, Dim, Order, RDim, T>::nbPtsPerVertex;
-template<uint16_type Dim, uint16_type Order, uint16_type RDim,  typename T>
-const uint16_type Reference<Simplex<Dim, Order, RDim>, Dim, Order, RDim, T>::nbPtsPerEdge;
-template<uint16_type Dim, uint16_type Order, uint16_type RDim,  typename T>
-const uint16_type Reference<Simplex<Dim, Order, RDim>, Dim, Order, RDim, T>::nbPtsPerFace;
-template<uint16_type Dim, uint16_type Order, uint16_type RDim,  typename T>
-const uint16_type Reference<Simplex<Dim, Order, RDim>, Dim, Order, RDim, T>::numGeometricFaces;
-
-
 
 template<typename T> class Entity<SHAPE_POINT, T>: public Reference<Simplex<0, 1, 1>,0,1, 1, T> {};
 template<typename T> class Entity<SHAPE_LINE, T>: public Reference<Simplex<1, 1, 1>,1,1, 1, T> {};
@@ -1120,7 +1131,7 @@ template<typename T> class Entity<SHAPE_TRIANGLE, T>: public Reference<Simplex<2
 template<typename T> class Entity<SHAPE_TETRA, T>: public Reference<Simplex<3, 1, 3>,3,1, 3, T> {};
 
 
-template<uint16_type Dim, uint16_type Order, uint16_type RDim,  typename T>
+template<uint16_type Dim, int Order, uint16_type RDim,  typename T>
 void
 Reference<Simplex<Dim, Order, RDim>, Dim, Order, RDim, T>::computeBarycenters()
 {
@@ -1132,7 +1143,7 @@ Reference<Simplex<Dim, Order, RDim>, Dim, Order, RDim, T>::computeBarycenters()
         ublas::column( M_barycenterfaces, f ) = ublas::column( glas::average( faceVertices( f ) ), 0 );
     }
 }
-template<uint16_type Dim, uint16_type Order, uint16_type RDim,  typename T>
+template<uint16_type Dim, int Order, uint16_type RDim,  typename T>
 void
 Reference<Simplex<Dim, Order, RDim>, Dim, Order, RDim, T>::computeMeasure()
 {

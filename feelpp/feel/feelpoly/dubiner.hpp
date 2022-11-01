@@ -31,9 +31,8 @@
 #define __Dubiner_H 1
 
 #include <vector>
-
-#include <boost/lambda/if.hpp>
-
+#include <fmt/core.h>
+#include <fmt/ostream.h>
 #include <feel/feelmesh/refentity.hpp>
 #include <feel/feelalg/glas.hpp>
 #include <feel/feelalg/lu.hpp>
@@ -49,7 +48,7 @@ namespace Feel
 
 template<uint16_type Dim,
          uint16_type RealDim,
-         uint16_type Degree,
+         int Degree,
          typename NormalizationPolicy,
          typename T,
          template<class> class StoragePolicy>
@@ -58,17 +57,18 @@ class Dubiner;
 
 template<uint16_type Dim,
          uint16_type RealDim,
-         uint16_type Degree,
+         int Degree,
          typename NormalizationPolicy = Normalized<true>,
          typename T = double,
          template<class> class StoragePolicy = StorageUBlas>
 struct DubinerTraits
 {
-    static const uint16_type nDim = Dim;
-    static const uint16_type nRealDim = RealDim;
-    static const uint16_type nOrder = Degree;
-    static const uint16_type nConvexOrderDiff = nDim+nOrder+1;
-    static const bool is_normalized = NormalizationPolicy::is_normalized;
+    inline static const uint16_type nDim = Dim;
+    inline static const uint16_type nRealDim = RealDim;
+    inline static const int nOrder = Degree;
+    inline static const bool is_order_dynamic = ( Degree == Dynamic );
+    inline static const int nConvexOrderDiff = (is_order_dynamic)?Dynamic:nDim+nOrder+1;
+    inline static const bool is_normalized = NormalizationPolicy::is_normalized;
 
     /** @name Typedefs
      */
@@ -79,7 +79,7 @@ struct DubinerTraits
      */
     typedef T value_type;
 
-    template<uint16_type order, typename V = value_type>
+    template<int order, typename V = value_type>
     struct Convex
     {
         typedef Simplex<nDim, order, nDim/*nRealDim*/> type;
@@ -93,7 +93,7 @@ struct DubinerTraits
         typedef DubinerTraits<Dim, RealDim, Degree, NormalizationPolicy, NewT, StoragePolicy> traits_type;
     };
 
-    template<uint16_type NewOrder>
+    template<int NewOrder>
     struct ChangeOrder
     {
         typedef Dubiner<Dim, RealDim, NewOrder, NormalizationPolicy, T, StoragePolicy> type;
@@ -109,9 +109,9 @@ struct DubinerTraits
     typedef typename Convex<nConvexOrderDiff>::type diff_convex_type;
     typedef typename Convex<nConvexOrderDiff>::reference_type diff_reference_convex_type;
 
-    typedef typename mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<2> >,
-            mpl::identity<PointSetWarpBlend<diff_convex_type, nConvexOrderDiff, value_type> >,
-            mpl::identity<PointSetEquiSpaced<diff_convex_type, nConvexOrderDiff, value_type> > >::type::type diff_pointset_type;
+    using diff_pointset_type = boost::mp11::mp_if_c<nDim==2,
+                                                    PointSetWarpBlend<diff_convex_type, nConvexOrderDiff, value_type>,
+                                                    PointSetEquiSpaced<diff_convex_type, nConvexOrderDiff, value_type>>;
 
     /*
      * storage policy
@@ -160,25 +160,26 @@ struct DubinerTag
  */
 template<uint16_type Dim,
          uint16_type RealDim,
-         uint16_type Degree,
+         int Degree = Dynamic,
          typename NormalizationPolicy = Normalized<true>,
          typename T = double,
          template<class> class StoragePolicy = StorageUBlas>
 class Dubiner
 
 {
-
+    
 public:
     typedef DubinerTraits<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy> traits_type;
 
-    static const uint16_type nDim = traits_type::nDim;
-    static const uint16_type nRealDim = traits_type::nRealDim;
-    static const uint16_type nOrder = traits_type::nOrder;
-    static const uint16_type nConvexOrderDiff = traits_type::nConvexOrderDiff;
-    static const bool is_normalized = traits_type::is_normalized;
-    static const bool isTransformationEquivalent = true;
-    static const bool isContinuous = false;
-    static const bool is_product = true;
+    inline static const int nDim = traits_type::nDim;
+    inline static const int nRealDim = traits_type::nRealDim;
+    inline static const int nOrder = traits_type::nOrder;
+    inline static const int nConvexOrderDiff = traits_type::nConvexOrderDiff;
+    inline static const bool is_order_dynamic = ( Degree == Dynamic );
+    inline static const bool is_normalized = traits_type::is_normalized;
+    inline static const bool isTransformationEquivalent = true;
+    inline static const bool isContinuous = false;
+    inline static const bool is_product = true;
     typedef Discontinuous continuity_type;
 
     /** @name Typedefs
@@ -232,6 +233,12 @@ public:
     
     ~Dubiner() = default;
 
+    /**
+     * @brief Construct a new Dubiner polynomial of dynamic degree \p Degree
+     * 
+     * @param degree polynomial degree
+     */
+    explicit Dubiner( int degree );
     //@}
 
     /** @name Operator overloads
@@ -272,18 +279,22 @@ public:
     /**
      * Number of polynomials in set
      */
-    size_type size() const
+    size_type size() const noexcept 
     {
-        return convex_type::polyDims( nOrder );
+        if constexpr ( is_order_dynamic )
+            return convex_type::polyDims( M_order );
+        else
+            return convex_type::polyDims( nOrder );
+
     }
 
     /**
      * \return the maximum degree of the Dubiner polynomial to be
      * constructed
      */
-    uint16_type degree() const
+    uint16_type degree() const noexcept
     {
-        return nOrder;
+        return M_order;
     }
 
     /**
@@ -339,10 +350,21 @@ public:
     {
 #if 0
         std::cout << "[Dubiner::coeff] coeff = "
-                  << ublas::identity_matrix<value_type>( reference_convex_type::polyDims( nOrder ), M_pts.size2() )
+                  << ublas::identity_matrix<value_type>( reference_convex_type::polyDims( M_order ), M_pts.size2() )
                   << "\n";
 #endif
-        return ublas::identity_matrix<value_type>( reference_convex_type::polyDims( nOrder ), M_pts.size2() );
+        return ublas::identity_matrix<value_type>( reference_convex_type::polyDims( M_order ), M_pts.size2() );
+    }
+
+
+    /**
+     * @brief evaluate the Dubiner polynomials at a set of points \p __pts
+     *
+     * \arg __x is a set of points
+     */
+    matrix_type evaluate( points_type const& __pts ) const
+    {
+        return evaluate( __pts, is_order_dynamic?M_order:nOrder ); 
     }
 
 
@@ -351,15 +373,28 @@ public:
      *
      * \arg __x is a set of points
      */
-    static matrix_type evaluate( points_type const& __pts )
+    matrix_type evaluate( points_type const& __pts, int order  ) const
     {
-        return evaluate( __pts, mpl::int_<nDim>() );
+         if constexpr ( is_order_dynamic )
+            return evaluate( __pts, M_order, mpl::int_<nDim>() );
+        else
+            return evaluate( __pts, nOrder, mpl::int_<nDim>() );
     }
 
     template<typename AE>
     static vector_matrix_type derivate( ublas::matrix_expression<AE>  const& __pts )
     {
-        return derivate( __pts, mpl::int_<nDim>() );
+        //static_assert(!is_order_dynamic, "Polynomial order must be known at compile time, it cannot be Dynamic");
+        return derivate( __pts, nOrder, mpl::int_<nDim>() );
+    }
+
+    template<typename AE>
+    vector_matrix_type derivate( ublas::matrix_expression<AE>  const& __pts, int order = Dynamic )
+    {
+        if ( is_order_dynamic )
+            return derivate( __pts, M_order, mpl::int_<nDim>() );
+        else
+            return derivate( __pts, nOrder, mpl::int_<nDim>() );
     }
 
     /**
@@ -391,7 +426,7 @@ private:
 
 
     static matrix_type
-    evaluate( points_type const& __pts, mpl::int_<0> )
+    evaluate( points_type const& __pts, int /*order*/, mpl::int_<0> )
         {
             matrix_type m(1,1);
             m(0,0)=1;
@@ -402,11 +437,11 @@ private:
      * the line
      */
     static matrix_type
-    evaluate( points_type const& __pts, mpl::int_<1> )
+    evaluate( points_type const& __pts, int order, mpl::int_<1> )
     {
-        matrix_type m ( JacobiBatchEvaluation<value_type>( nOrder, 0.0, 0.0, ublas::row( __pts, 0 ) ) );
+        matrix_type m ( JacobiBatchEvaluation<value_type>( order, 0.0, 0.0, ublas::row( __pts, 0 ) ) );
 
-        if ( is_normalized )
+        if constexpr ( is_normalized )
         {
             for ( uint16_type i = 0; i < m.size1(); ++i )
                 ublas::row( m, i ) *= math::sqrt( value_type( i )+0.5 );
@@ -417,7 +452,7 @@ private:
 
     template<typename AE>
     static vector_matrix_type
-    derivate( ublas::matrix_expression<AE> const& __pts, mpl::int_<0> )
+    derivate( ublas::matrix_expression<AE> const& __pts, int /*order*/, mpl::int_<0> )
         {
             vector_matrix_type m(1);
             m[0].resize(1,1);
@@ -430,14 +465,14 @@ private:
      */
     template<typename AE>
     static vector_matrix_type
-    derivate( ublas::matrix_expression<AE> const& __pts, mpl::int_<1> )
+    derivate( ublas::matrix_expression<AE> const& __pts, int order, mpl::int_<1> )
     {
         vector_matrix_type D( 1 );
-        D[0].resize( nOrder+1, __pts().size2() );
-        D[0] = JacobiBatchDerivation<value_type>( nOrder, 0.0, 0.0, ublas::row( __pts(),0 ) );
+        D[0].resize( order+1, __pts().size2() );
+        D[0] = JacobiBatchDerivation<value_type>( order, 0.0, 0.0, ublas::row( __pts(),0 ) );
 
-        if ( is_normalized )
-            for ( uint16_type i = 0; i < nOrder+1; ++i )
+        if constexpr ( is_normalized )
+            for ( uint16_type i = 0; i < order+1; ++i )
                 ublas::row( D[0], i ) *= math::sqrt( value_type( i )+0.5 );
 
         return D;
@@ -447,29 +482,31 @@ private:
      * Evaluation at a set of points of the expansion basis in 2D on
      * the triangle
      */
-    static matrix_type evaluate( points_type const& __pts, mpl::int_<2> );
+    static matrix_type evaluate( points_type const& __pts, int order, mpl::int_<2> );
 
     /**
      * derivation at a set of points of the expansion basis in 2D on
      * the triangle
      */
     template<typename AE>
-    static vector_matrix_type derivate( ublas::matrix_expression<AE> const& __pts, mpl::int_<2> );
+    static vector_matrix_type derivate( ublas::matrix_expression<AE> const& __pts, int order, mpl::int_<2> );
 
     /**
      * Evaluation at a set of points of the expansion basis in 3D on
      * the tetrahedron
      */
-    static matrix_type evaluate( points_type const& __pts, mpl::int_<3> );
+    static matrix_type evaluate( points_type const& __pts, int order, mpl::int_<3> );
 
     /**
      * derivation at a set of points of the expansion basis in 3D on
      * the tetrahedron
      */
     template<typename AE>
-    static vector_matrix_type derivate( ublas::matrix_expression<AE> const& __pts, mpl::int_<3> );
+    static vector_matrix_type derivate( ublas::matrix_expression<AE> const& __pts, int order, mpl::int_<3> );
 
 private:
+
+    int M_order;
     reference_convex_type M_refconvex;
     points_type M_pts;
 
@@ -483,27 +520,42 @@ private:
 
 template<uint16_type Dim,
          uint16_type RealDim,
-         uint16_type Degree,
+         int Degree,
          typename NormalizationPolicy,
          typename T,
          template<class> class StoragePolicy>
 Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::Dubiner()
     :
-    M_refconvex(),
+    Dubiner( Degree )
+{}
+
+template<uint16_type Dim,
+         uint16_type RealDim,
+         int Degree,
+         typename NormalizationPolicy,
+         typename T,
+         template<class> class StoragePolicy>
+Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::Dubiner(int order)
+    :
+    M_order( order ),
+    M_refconvex(order),
     M_pts( M_refconvex.makePoints( Dim, 0 ) ),
     M_D( Dim )
 {
-    reference_convex_type refconvex;
+    reference_convex_type refconvex( order );
     // constructor pointset for differentiation only in
     // the interior(1)
-    diff_pointset_type diff_pts( 1 );
-    matrix_type A( evaluate( diff_pts.points() ) );
-    
+    DVLOG( 4 ) << fmt::format( "[Dubiner({})] pts:{}\n", order, em( M_pts ) );
+    diff_pointset_type  diff_pts(nDim+M_order+1, 1 );
+    em_cmatrix_col_type<T> Ae = em(diff_pts.points());
+    DVLOG( 4 ) << fmt::format( "diff_pts: {}\n, diff_order: {}\n ", Ae, nDim + M_order + 1 );
+    matrix_type A( this->evaluate( diff_pts.points(), order ) );
+    DVLOG( 4 ) << fmt::format( "A: {}\n ", em_matrix_row_type<T>(A.data().begin(),A.size1(),A.size2()) );
     matrix_type D = ublas::identity_matrix<value_type>( A.size1(), A.size2()  );
     LU<matrix_type> lu( A );
     matrix_type C = lu.solve( D );
     
-    vector_matrix_type d ( derivate( diff_pts.points() ) );
+    vector_matrix_type d ( this->derivate( diff_pts.points(), order ) );
     for ( size_type i = 0; i < d.size(); ++i )
     {
         M_D[i] = ublas::prod( d[i], C );
@@ -514,14 +566,15 @@ Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::Dubiner()
 
 template<uint16_type Dim,
          uint16_type RealDim,
-         uint16_type Degree,
+         int Degree,
          typename NormalizationPolicy,
          typename T,
          template<class> class StoragePolicy>
 typename Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::matrix_type
-Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::evaluate( points_type const& __pts, mpl::int_<2> )
+Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::evaluate( points_type const& __pts, int order, mpl::int_<2> )
 {
-    matrix_type res( convex_type::polyDims( nOrder ), __pts.size2() );
+    DVLOG( 4 ) << fmt::format( "[Dubiner::evaluate] order: {} compile time order: {}, polynomialset size:{} \n", order, Degree, convex_type::polyDims( order ) );
+    matrix_type res( convex_type::polyDims( order ), __pts.size2() );
 
     details::etas<TRIANGLE, value_type> etas( __pts );
     ublas::vector<value_type> eta1s = ublas::row( etas(), 0 );
@@ -530,20 +583,20 @@ Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::evaluate( 
     //std::cout << "xis = " << __pts << "\n";
     //std::cout << "etas = " << etas() << "\n";
 
-    matrix_type as( JacobiBatchEvaluation<value_type>( nOrder, 0.0, 0.0, eta1s ) );
-    std::vector<matrix_type> bs( nOrder+1 );
+    matrix_type as( JacobiBatchEvaluation<value_type>( order, 0.0, 0.0, eta1s ) );
+    std::vector<matrix_type> bs( order+1 );
 
-    for ( int i = 0; i < nOrder+1; ++i )
+    for ( int i = 0; i < order+1; ++i )
     {
-        bs[ i ].resize( nOrder-i, eta2s.size() );
-        bs[ i ] = dyna::JacobiBatchEvaluation( nOrder-i, value_type( 2*i+1 ), value_type( 0.0 ), eta2s );
+        bs[ i ].resize( order-i, eta2s.size() );
+        bs[ i ] = dyna::JacobiBatchEvaluation( order-i, value_type( 2*i+1 ), value_type( 0.0 ), eta2s );
     }
 
 
-    details::scalings<nOrder, T> scalings( eta2s );
+    details::scalings<nOrder, T> scalings( order, eta2s );
 
 
-    for ( uint16_type cur = 0, k = 0; k < nOrder+1; ++k )
+    for ( uint16_type cur = 0, k = 0; k < order+1; ++k )
     {
         for ( uint16_type i = 0; i < k+1; ++i,++cur )
         {
@@ -571,17 +624,17 @@ Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::evaluate( 
 
 template<uint16_type Dim,
          uint16_type RealDim,
-         uint16_type Degree,
+         int Degree,
          typename NormalizationPolicy,
          typename T,
          template<class> class StoragePolicy>
 template<typename AE>
 typename Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::vector_matrix_type
-Dubiner<Dim, RealDim,  Degree, NormalizationPolicy, T, StoragePolicy>::derivate( ublas::matrix_expression<AE> const& __pts, mpl::int_<2> )
+Dubiner<Dim, RealDim,  Degree, NormalizationPolicy, T, StoragePolicy>::derivate( ublas::matrix_expression<AE> const& __pts, int order, mpl::int_<2> )
 {
     vector_matrix_type res( 2 );
-    res[0].resize( convex_type::polyDims( nOrder ), __pts().size2() );
-    res[1].resize( convex_type::polyDims( nOrder ), __pts().size2() );
+    res[0].resize( convex_type::polyDims( order ), __pts().size2() );
+    res[1].resize( convex_type::polyDims( order ), __pts().size2() );
 
     // transform wrapped coordinates in cartesian coordinates
     details::etas<TRIANGLE, value_type> etas( __pts );
@@ -592,29 +645,29 @@ Dubiner<Dim, RealDim,  Degree, NormalizationPolicy, T, StoragePolicy>::derivate(
     //std::cout << "etas = " << etas() << "\n";
 
     // evaluate Dubiner polynomials components
-    matrix_type as(  JacobiBatchEvaluation<value_type>( nOrder, 0.0, 0.0, eta1s ) );
-    matrix_type das( JacobiBatchDerivation<value_type>( nOrder, 0.0, 0.0, eta1s ) );
+    matrix_type as(  JacobiBatchEvaluation<value_type>( order, 0.0, 0.0, eta1s ) );
+    matrix_type das( JacobiBatchDerivation<value_type>( order, 0.0, 0.0, eta1s ) );
     //std::cout << "das= " << das <<  "\n";
-    std::vector<matrix_type> bs( nOrder+1 );
-    std::vector<matrix_type> dbs( nOrder+1 );
+    std::vector<matrix_type> bs( order+1 );
+    std::vector<matrix_type> dbs( order+1 );
 
-    for ( uint16_type i = 0; i < nOrder+1; ++i )
+    for ( uint16_type i = 0; i < order+1; ++i )
     {
-        bs[ i ].resize( nOrder-i, eta2s.size() );
-        dbs[ i ].resize( nOrder-i, eta2s.size() );
-        bs[ i ] = dyna::JacobiBatchEvaluation( nOrder-i, value_type( 2*i+1 ), value_type( 0.0 ), eta2s );
-        dbs[ i ] = dyna::JacobiBatchDerivation( nOrder-i, value_type( 2*i+1 ), value_type( 0.0 ), eta2s );
+        bs[ i ].resize( order-i, eta2s.size() );
+        dbs[ i ].resize( order-i, eta2s.size() );
+        bs[ i ] = dyna::JacobiBatchEvaluation( order-i, value_type( 2*i+1 ), value_type( 0.0 ), eta2s );
+        dbs[ i ] = dyna::JacobiBatchDerivation( order-i, value_type( 2*i+1 ), value_type( 0.0 ), eta2s );
 
         //std::cout << "dbs["<< i << "]= " << dbs[i] <<  "\n";
     }
 
-    details::scalings<nOrder, T> scalings( eta2s );
+    details::scalings<nOrder, T> scalings( order, eta2s );
     //std::cout << "scalings = " << scalings() << "\n";
     ublas::vector<value_type> one( ublas::scalar_vector<value_type>( eta1s.size(), 1.0 ) );
     ublas::vector<value_type> tmp( ublas::scalar_vector<value_type>( eta1s.size(), 1.0 ) );
 
     // assemble Dubiner polynomials components
-    for ( uint16_type k = 0, cur = 0; k < nOrder+1; ++k )
+    for ( uint16_type k = 0, cur = 0; k < order+1; ++k )
     {
         for ( uint16_type i = 0; i < k+1; ++i, ++cur )
         {
@@ -665,14 +718,14 @@ Dubiner<Dim, RealDim,  Degree, NormalizationPolicy, T, StoragePolicy>::derivate(
 
 template<uint16_type Dim,
          uint16_type RealDim,
-         uint16_type Degree,
+         int Degree,
          typename NormalizationPolicy,
          typename T,
          template<class> class StoragePolicy>
 typename Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::matrix_type
-Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::evaluate( points_type const& __pts, mpl::int_<3> )
+Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::evaluate( points_type const& __pts, int order, mpl::int_<3> )
 {
-    matrix_type res( convex_type::polyDims( nOrder ), __pts.size2() );
+    matrix_type res( convex_type::polyDims( order ), __pts.size2() );
 
     DCHECK( __pts.size1() == 3 ) << "invalid space dimension for point set, should be 3, it is currently " << __pts.size1();
 
@@ -684,28 +737,28 @@ Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::evaluate( 
     //std::cout << "xis = " << __pts << "\n";
     //std::cout << "etas = " << etas() << "\n";
 
-    matrix_type as( JacobiBatchEvaluation<value_type>( nOrder, 0.0, 0.0, eta1s ) );
-    std::vector<matrix_type> bs( nOrder+1 );
-    ublas::matrix<matrix_type> cs( nOrder+1, nOrder+1 );
+    matrix_type as( JacobiBatchEvaluation<value_type>( order, 0.0, 0.0, eta1s ) );
+    std::vector<matrix_type> bs( order+1 );
+    ublas::matrix<matrix_type> cs( order+1, order+1 );
 
-    for ( int i = 0; i < nOrder+1; ++i )
+    for ( int i = 0; i < order+1; ++i )
     {
-        bs[ i ].resize( nOrder-i, eta2s.size() );
-        bs[ i ] = dyna::JacobiBatchEvaluation( nOrder-i, value_type( 2*i+1 ), value_type( 0.0 ), eta2s );
+        bs[ i ].resize( order-i, eta2s.size() );
+        bs[ i ] = dyna::JacobiBatchEvaluation( order-i, value_type( 2*i+1 ), value_type( 0.0 ), eta2s );
 
-        for ( int j = 0; j < nOrder+1-i; ++j )
+        for ( int j = 0; j < order+1-i; ++j )
         {
-            cs( i, j ).resize( nOrder-i-j, eta3s.size() );
-            cs( i, j ) = dyna::JacobiBatchEvaluation( nOrder-i-j,
+            cs( i, j ).resize( order-i-j, eta3s.size() );
+            cs( i, j ) = dyna::JacobiBatchEvaluation( order-i-j,
                          value_type( 2*( i+j+1 ) ), value_type( 0.0 ), eta3s );
         }
     }
 
 
-    details::scalings<nOrder, T> scalings2( eta2s );
-    details::scalings<nOrder, T> scalings3( eta3s );
+    details::scalings<nOrder, T> scalings2( order, eta2s );
+    details::scalings<nOrder, T> scalings3( order, eta3s );
 
-    for ( uint16_type cur = 0, k = 0; k < nOrder+1; ++k )
+    for ( uint16_type cur = 0, k = 0; k < order+1; ++k )
     {
         for ( uint16_type i = 0; i < k+1; ++i )
         {
@@ -744,18 +797,18 @@ Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::evaluate( 
 
 template<uint16_type Dim,
          uint16_type RealDim,
-         uint16_type Degree,
+         int Degree,
          typename NormalizationPolicy,
          typename T,
          template<class> class StoragePolicy>
 template<typename AE>
 typename Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::vector_matrix_type
-Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::derivate( ublas::matrix_expression<AE> const& __pts, mpl::int_<3> )
+Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::derivate( ublas::matrix_expression<AE> const& __pts, int order, mpl::int_<3> )
 {
     vector_matrix_type res( 3 );
-    res[0].resize( convex_type::polyDims( nOrder ), __pts().size2() );
-    res[1].resize( convex_type::polyDims( nOrder ), __pts().size2() );
-    res[2].resize( convex_type::polyDims( nOrder ), __pts().size2() );
+    res[0].resize( convex_type::polyDims( order ), __pts().size2() );
+    res[1].resize( convex_type::polyDims( order ), __pts().size2() );
+    res[2].resize( convex_type::polyDims( order ), __pts().size2() );
 
     FEELPP_ASSERT( __pts().size1() == 3 )( __pts().size1() ).error( "invalid space dimension" );
 
@@ -767,41 +820,41 @@ Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::derivate( 
     //std::cout << "xis = " << __pts << "\n";
     //std::cout << "etas = " << etas() << "\n";
 
-    matrix_type as(  JacobiBatchEvaluation<value_type>( nOrder, 0.0, 0.0, eta1s ) );
-    matrix_type das( JacobiBatchDerivation<value_type>( nOrder, 0.0, 0.0, eta1s ) );
-    std::vector<matrix_type> bs( nOrder+1 );
-    std::vector<matrix_type> dbs( nOrder+1 );
-    ublas::matrix<matrix_type> cs( nOrder+1, nOrder+1 );
-    ublas::matrix<matrix_type> dcs( nOrder+1, nOrder+1 );
+    matrix_type as(  JacobiBatchEvaluation<value_type>( order, 0.0, 0.0, eta1s ) );
+    matrix_type das( JacobiBatchDerivation<value_type>( order, 0.0, 0.0, eta1s ) );
+    std::vector<matrix_type> bs( order+1 );
+    std::vector<matrix_type> dbs( order+1 );
+    ublas::matrix<matrix_type> cs( order+1, order+1 );
+    ublas::matrix<matrix_type> dcs( order+1, order+1 );
 
-    for ( int i = 0; i < nOrder+1; ++i )
+    for ( int i = 0; i < order+1; ++i )
     {
-        bs[ i ].resize( nOrder-i, eta2s.size() );
-        dbs[ i ].resize( nOrder-i, eta2s.size() );
-        bs[ i ] = dyna::JacobiBatchEvaluation( nOrder-i, value_type( 2*i+1 ), value_type( 0.0 ), eta2s );
-        dbs[ i ] = dyna::JacobiBatchDerivation( nOrder-i, value_type( 2*i+1 ), value_type( 0.0 ), eta2s );
+        bs[ i ].resize( order-i, eta2s.size() );
+        dbs[ i ].resize( order-i, eta2s.size() );
+        bs[ i ] = dyna::JacobiBatchEvaluation( order-i, value_type( 2*i+1 ), value_type( 0.0 ), eta2s );
+        dbs[ i ] = dyna::JacobiBatchDerivation( order-i, value_type( 2*i+1 ), value_type( 0.0 ), eta2s );
 
-        for ( int j = 0; j < nOrder+1-i; ++j )
+        for ( int j = 0; j < order+1-i; ++j )
         {
-            cs( i, j ).resize( nOrder-i-j, eta3s.size() );
-            dcs( i, j ).resize( nOrder-i-j, eta3s.size() );
-            cs( i, j ) = dyna::JacobiBatchEvaluation( nOrder-i-j,
+            cs( i, j ).resize( order-i-j, eta3s.size() );
+            dcs( i, j ).resize( order-i-j, eta3s.size() );
+            cs( i, j ) = dyna::JacobiBatchEvaluation( order-i-j,
                          value_type( 2*( i+j+1 ) ), value_type( 0.0 ), eta3s );
-            dcs( i, j ) = dyna::JacobiBatchDerivation( nOrder-i-j,
+            dcs( i, j ) = dyna::JacobiBatchDerivation( order-i-j,
                           value_type( 2*( i+j+1 ) ), value_type( 0.0 ), eta3s );
         }
     }
 
 
-    details::scalings<nOrder, T> scalings2( eta2s );
-    details::scalings<nOrder, T> scalings3( eta3s );
+    details::scalings<nOrder, T> scalings2( order, eta2s );
+    details::scalings<nOrder, T> scalings3( order, eta3s );
 
     //std::cout << "scalings = " << scalings() << "\n";
     ublas::vector<value_type> one( ublas::scalar_vector<value_type>( eta1s.size(), 1.0 ) );
     ublas::vector<value_type> tmp( ublas::scalar_vector<value_type>( eta1s.size(), 1.0 ) );
 
 
-    for ( uint16_type cur = 0, k = 0; k < nOrder+1; ++k )
+    for ( uint16_type cur = 0, k = 0; k < order+1; ++k )
     {
         for ( uint16_type i = 0; i < k+1; ++i )
         {

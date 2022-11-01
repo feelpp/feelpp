@@ -107,7 +107,7 @@ namespace Feel
 template<int Dim,
          typename BasisU,
          typename BasisP,
-         template<uint16_type,uint16_type,uint16_type> class Entity>
+         template<uint16_type,int,uint16_type> class Entity>
 class Stokes
     :
 public Application
@@ -201,7 +201,7 @@ private:
 }; // Stokes
 
 
-template<int Dim, typename BasisU, typename BasisP, template<uint16_type,uint16_type,uint16_type> class Entity>
+template<int Dim, typename BasisU, typename BasisP, template<uint16_type,int,uint16_type> class Entity>
 void
 Stokes<Dim, BasisU, BasisP, Entity>::run()
 {
@@ -416,7 +416,7 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     LOG(INFO) << "[dof] number of dof/proc(P): " << Xh->template functionSpace<1>()->nLocalDof()  << "\n";
 } // Stokes::run
 
-template<int Dim, typename BasisU, typename BasisP, template<uint16_type,uint16_type,uint16_type> class Entity>
+template<int Dim, typename BasisU, typename BasisP, template<uint16_type,int,uint16_type> class Entity>
 void
 Stokes<Dim, BasisU, BasisP, Entity>::solve( sparse_matrix_ptrtype const& D,
         element_type& u,
@@ -428,7 +428,7 @@ Stokes<Dim, BasisU, BasisP, Entity>::solve( sparse_matrix_ptrtype const& D,
     u = *U;
 } // Stokes::solve
 
-template<int Dim, typename BasisU, typename BasisP, template<uint16_type,uint16_type,uint16_type> class Entity>
+template<int Dim, typename BasisU, typename BasisP, template<uint16_type,int,uint16_type> class Entity>
 void
 Stokes<Dim, BasisU, BasisP, Entity>::exportResults( element_type& U, element_type& V )
 {

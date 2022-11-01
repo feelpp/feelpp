@@ -29,6 +29,7 @@
 #ifndef __Hypercube_H
 #define __Hypercube_H 1
 
+#include <feel/feelalg/eigen.hpp>
 #include <boost/detail/identifier.hpp>
 #include <feel/feelcore/traits.hpp>
 #include <feel/feelmesh/entities.hpp>
@@ -39,24 +40,52 @@
 namespace Feel
 {
 class HypercubeBase {};
-template<uint16_type Dim, uint16_type Order=1, uint16_type RDim = Dim>
+template<uint16_type Dim, int Order=1, uint16_type RDim = Dim>
 class Hypercube  : public Convex<Dim,Order,RDim>, HypercubeBase
-{
-    typedef mpl::vector_c<size_type, SHAPE_POINT, SHAPE_LINE, SHAPE_QUAD, SHAPE_HEXA, SHAPE_SP4, SHAPE_SP5> shapes_t;
-    typedef mpl::vector_c<size_type, GEOMETRY_POINT, GEOMETRY_LINE, GEOMETRY_SURFACE, GEOMETRY_VOLUME, GEOMETRY_4, GEOMETRY_5> geometries_t;
+{ 
+public:    
+    /**
+     * for Dim >= 3 : n edges = n(vertices) + n(faces) - 2
+     * thanks to Euler formula
+     */
+    inline static constexpr std::array<std::array<int,6>,4> topology = {{
+                { 1, 2, 4, 8, 16, 32  }, // vertices
+                { 0, 1, 4, 12, 32 }, // edges
+                { 0, 0, 1, 6, 24 }, // faces
+                { 0, 0, 0, 1, 8 } // volumes
+    }};
+    /**
+     * @brief number of facets per topological dimension
+     * 
+     */
+    inline static constexpr std::array<int,5> facets = { 0, 2, 4, 6, 24 };
+    inline static constexpr std::array<int, 5> normals = { 0, 2, 4, 6, 24 };
 
-    typedef mpl::vector_c<size_type, 1, 2, 4, 8, 16, 32> vertices_t;
-    typedef mpl::vector_c<size_type, 0, 1, 4, 12, 32> edges_t;
-    typedef mpl::vector_c<size_type, 0, 2, 4, 6, 24> faces_index_t;
-    typedef mpl::vector_c<uint16_type, 0, 0, 1, 6, 24> geo_faces_index_t;
-    typedef mpl::vector_c<uint16_type, 0, 2, 4, 6, 24> normals_t;
-    typedef mpl::vector_c<uint16_type, 0, 0, 0, 1, 8> volumes_t;
+    static constexpr std::array<std::array<int,4>,5> computeNumberPointsPerEntity(int O)
+    {
+        return std::array<std::array<int,4>,5>{{ 
+            { 1,   O+1,     ( O+1)*(O+1),       ( O+1 )*( O+1 )*( O+1 ) }, // all points
+            { 0, O+1-2,          (O+1-2),                         O+1-2 }, // edges
+            { 0,     0,    ( O-1 )*( O-1 ),               ( O-1 )*( O-1 ) }, // faces
+            { 0,     0,                    0,       ( O-1 )*( O-1 )*( O-1 ) }, // volumes
+            { 1, O+1-2,  (O+1-2)*( O+1-2 ), ( O+1-2 )*( O+1-2 )*( O+1-2 ) }, //( Order+1-2 )*( Order+1-2 )*( Order+1-2 )*( Order+1-2 ) }, // interior points
+        }};
+    }
 
-    typedef mpl::vector_c<size_type, 1, Order+1, ( Order+1 )*( Order+1 ), ( Order+1 )*( Order+1 )*( Order+1 ) , ( Order+1 )*( Order+1 )*( Order+1 )*( Order+1 )> points_t;
-    typedef mpl::vector_c<size_type, 0, Order+1-2, ( Order+1-2 )*( Order+1-2 ), ( Order+1-2 )*( Order+1-2 )*( Order+1-2 ) , ( Order+1-2 )*( Order+1-2 )*( Order+1-2 )*( Order+1-2 )> points_interior_t;
-    typedef mpl::vector_c<size_type, 0, Order+1-2,                   Order+1-2,                         ( Order+1-2 ), ( Order+1-2 )> points_edge_t;
-    typedef mpl::vector_c<size_type, 0,         0,     ( Order+1-2 )*( Order+1-2 ),             ( Order+1-2 )*( Order+1-2 ), ( Order+1-2 )*( Order+1-2 ) > points_face_t;
-    typedef mpl::vector_c<size_type, 0,         0,                           0, ( Order+1-2 )*( Order+1-2 )*( Order+1-2 ), ( Order+1-2 )*( Order+1-2 )*( Order+1-2 ) > points_volume_t;
+    /**
+     * @brief number of points per topological entity as well as total and total interior points
+     * 
+     */
+    template<int O=Order>
+    inline static constexpr std::array<std::array<int,4>,5> numPointsPerEntityAtCompileTime = computeNumberPointsPerEntity(O);
+    template<>
+    inline static constexpr std::array<std::array<int,4>,5> numPointsPerEntityAtCompileTime<0> = {{ 
+        { 1, 1, 1, 1}, // all points
+        { 0, 1, 0, 0 }, // edges
+        { 0, 0, 1, 0 }, // faces
+        { 0, 0, 0, 1 }, // volumes
+        { 0, 1, 1, 1 }, // interior points
+    }};
 
     template<uint16_type rdim>
     struct faces_t
@@ -72,53 +101,127 @@ class Hypercube  : public Convex<Dim,Order,RDim>, HypercubeBase
     typedef mpl::vector_c<uint16_type, 0, 1, 2, 8> permutations_t;
 
 public:
+  inline static constexpr std::array<int, 4> shapes{ { SHAPE_POINT, SHAPE_LINE, SHAPE_TRIANGLE, SHAPE_TETRA } };
+  inline static constexpr std::array<int, 4> geometries{ { GEOMETRY_POINT, GEOMETRY_LINE, GEOMETRY_SURFACE, GEOMETRY_VOLUME } };
 
-    static const bool is_simplex = false;
-    static const bool is_hypercube = true;
+  inline static const bool is_simplex = false;
+  inline static const bool is_hypercube = true;
+  inline static const size_type Shape = shapes[Dim];
+  inline static const size_type Geometry = geometries[Dim];
+  inline static const uint16_type nDim = Dim;
+  inline static const int nOrder = Order;
+  inline static const uint16_type nRealDim = RDim;
+  inline static const uint16_type topological_dimension = nDim;
+  inline static const uint16_type real_dimension = RDim;
+  inline static const bool is_order_dynamic = ( Order == Dynamic );
 
-    static const size_type Shape = mpl::at<shapes_t, mpl::int_<Dim> >::type::value;
-    static const size_type Geometry = mpl::at<geometries_t, mpl::int_<Dim> >::type::value;
+  typedef typename mpl::at<elements_t, mpl::int_<nDim>>::type element_type;
+  typedef typename mpl::at<typename faces_t<real_dimension>::type, mpl::int_<nDim>>::type topological_face_type;
+  typedef typename mpl::at<v_edges_t, mpl::int_<real_dimension>>::type edge_type;
 
-    inline static const uint16_type nDim = Dim;
-    static const uint16_type nOrder = Order;
-    static const uint16_type nRealDim = RDim;
+  static constexpr int numberOfVertices()
+  {
+      return computeNumberPointsPerEntity( 1 )[0][Dim];
+  }
+  static const int numVertices = numberOfVertices();
 
-    static const uint16_type topological_dimension = nDim;
-    static const uint16_type real_dimension = RDim;
+  static constexpr int numberOfGeometricFaces()
+  {
+      if constexpr ( nDim == 3 )
+          return 4;
+      else if constexpr ( nDim == 2 )
+          return 1;
+      else
+          return 0;
+  }
 
-    typedef typename mpl::at<elements_t, mpl::int_<nDim> >::type element_type;
-    typedef typename mpl::at<typename faces_t<real_dimension>::type, mpl::int_<nDim> >::type topological_face_type;
-    typedef typename mpl::at<v_edges_t, mpl::int_<real_dimension> >::type edge_type;
-    
-    static const uint16_type numVertices = mpl::at<vertices_t, mpl::int_<Dim> >::type::value;
-    static const uint16_type numEdges = mpl::at<edges_t, mpl::int_<Dim> >::type::value;
-    static const uint16_type numFaces = mpl::at<geo_faces_index_t, mpl::int_<Dim> >::type::value;
-    static const uint16_type numGeometricFaces = mpl::at<geo_faces_index_t, mpl::int_<nDim> >::type::value;
-    static const uint16_type numTopologicalFaces = mpl::at<faces_index_t, mpl::int_<nDim> >::type::value;
-    static const uint16_type numNormals = mpl::at<normals_t, mpl::int_<nDim> >::type::value;
-    static const uint16_type numVolumes = mpl::at<volumes_t, mpl::int_<nDim> >::type::value;
+  static const int numFaces = numberOfGeometricFaces();
+  static const int numGeometricFaces = numberOfGeometricFaces();
 
-    static const uint16_type nbPtsPerVertex = ( nOrder==0 )?0:1;
-    static const uint16_type nbPtsPerEdge = ( nOrder==0 )?( ( nDim==1 )?1:0 ):mpl::at<points_edge_t, mpl::int_<nDim> >::type::value;
-    static const uint16_type nbPtsPerFace = ( nOrder==0 )?( ( nDim==2 )?1:0 ):mpl::at<points_face_t, mpl::int_<nDim> >::type::value;
-    static const uint16_type nbPtsPerVolume = ( nOrder==0 )?( ( nDim==3 )?1:0 ):mpl::at<points_volume_t, mpl::int_<nDim> >::type::value;
-    static const uint16_type numPoints = ( numVertices * nbPtsPerVertex +
-                                           numEdges * nbPtsPerEdge +
-                                           numFaces * nbPtsPerFace +
-                                           numVolumes * nbPtsPerVolume );
+  static constexpr int numberOfTopologicalFaces()
+  {
+    return topology[2][Dim];
+  }
+  static const int numTopologicalFaces = numberOfTopologicalFaces();
 
-    static const uint16_type orderSquare = boost::mpl::if_<boost::mpl::greater< boost::mpl::int_<Order>,
-                             boost::mpl::int_<5> >,
-                             boost::mpl::int_<5>,
-                             typename boost::mpl::if_<boost::mpl::less< boost::mpl::int_<Order>,
-                             boost::mpl::int_<1> >,
-                             boost::mpl::int_<1>,
-                             boost::mpl::int_<Order>
-                             >::type
-                             >::type::value;
+  static constexpr int numberOfEdges()
+  {
+    return topology[1][Dim];
+  }
+  static const int numEdges = numberOfEdges();
+
+  static constexpr int numberOfVolumes()
+  {
+    return topology[3][Dim];
+  }
+  inline static const int numVolumes = numberOfVolumes();
+  inline static const int numNormals = normals[Dim];
+
+  static constexpr int numberOfPointsPerVertexAtCompileTime()
+  {
+      if constexpr ( !is_order_dynamic )
+      {
+          return ( nOrder == 0 ) ? 0 : 1;
+      }
+      else
+          return -1;
+  }
+  static constexpr int numberOfPointsPerEdgeAtCompileTime()
+  {
+      if constexpr ( !is_order_dynamic )
+      {
+          return numPointsPerEntityAtCompileTime<Order>[1][nDim];
+      }
+      else
+          return -1;
+  }
+  static constexpr int numberOfPointsPerFacetAtCompileTime()
+  {
+      if constexpr ( !is_order_dynamic )
+      {
+          return numPointsPerEntityAtCompileTime<Order>[2][nDim];
+      }
+      else
+          return -1;
+  }
+  static constexpr int numberOfPointsPerVolumeAtCompileTime()
+  {
+      if constexpr ( !is_order_dynamic )
+      {
+          return numPointsPerEntityAtCompileTime<Order>[3][nDim];
+      }
+      else
+          return -1;
+  }
+  static constexpr int numberOfPointsAtCompileTime()
+  {
+      if constexpr ( !is_order_dynamic )
+      {
+          // static_assert(numPoints==numPointsPerEntityAtCompileTime<Order>[0][nDim],"invalid number of points at compile time");
+          return numPointsPerEntityAtCompileTime<Order>[0][nDim];
+      }
+      else
+          return -1;
+  }
+
+  inline static constexpr int nbPtsPerVertex = numberOfPointsPerVertexAtCompileTime();
+  inline static constexpr int nbPtsPerEdge = numberOfPointsPerEdgeAtCompileTime();
+  inline static constexpr int nbPtsPerFace = numberOfPointsPerFacetAtCompileTime();
+  inline static constexpr int nbPtsPerVolume = numberOfPointsPerVolumeAtCompileTime();
+  inline static constexpr int numPoints = numberOfPointsAtCompileTime();
+  
+  static constexpr int orderSquare()
+  {
+      if constexpr ( Order > 5 )
+          return 5;
+      else if constexpr ( Order < 1 )
+          return 1;
+      return Order;
+    }
+    inline static const uint16_type nOrderSquare = orderSquare();
 
 
-    typedef mpl::vector<details::point<orderSquare>, details::line<orderSquare>, details::quad<orderSquare>, details::hexa<orderSquare> > map_entity_to_point_t;
+    typedef mpl::vector<details::point<orderSquare()>, details::line<orderSquare()>, details::quad<orderSquare()>, details::hexa<orderSquare()> > map_entity_to_point_t;
     typedef typename mpl::at<map_entity_to_point_t, mpl::int_<nDim> >::type edge_to_point_t;
     typedef typename mpl::at<map_entity_to_point_t, mpl::int_<nDim> >::type face_to_point_t;
     typedef typename mpl::at<map_entity_to_point_t, mpl::int_<nDim> >::type face_to_edge_t;
@@ -155,7 +258,21 @@ public:
     template<uint16_type shape_dim, uint16_type O = Order,  uint16_type R=nDim>
     using shape_t = Hypercube<shape_dim, O, R>;
 
-    Hypercube() = default;
+    Hypercube()
+        : Hypercube( Order ) {}
+    Hypercube( int order )
+        : M_order( order )
+    {
+        if constexpr ( is_order_dynamic )
+        {
+            if ( order == 0 )
+                numPointsPerEntity = numPointsPerEntityAtCompileTime<0>;
+            else
+            {
+                numPointsPerEntity = computeNumberPointsPerEntity( order );
+            }
+        }
+    }
     Hypercube( Hypercube const& ) = default;
     Hypercube( Hypercube && ) = default;
     Hypercube& operator=( Hypercube const& ) = default;
@@ -177,6 +294,62 @@ public:
         return real_dimension;
     }
 
+    /**
+     * Returns the number of points per vertex
+     */
+    constexpr int numberOfPointsPerVertex() const
+    {
+        if constexpr ( !is_order_dynamic )
+            return nbPtsPerVertex;
+        else
+            return ( M_order == 0 ) ? 0 : 1;
+    }
+
+    /**
+     * Returns the number of points per edge without the vertices
+     */
+    constexpr int numberOfPointsPerEdge() const
+    {
+        if constexpr ( !is_order_dynamic )
+            return nbPtsPerEdge;
+        else
+            return numPointsPerEntity[1][nDim];
+    }
+
+    /**
+     * Returns the number of points per face
+     */
+    constexpr int numberOfPointsPerFacet() const
+    {
+        if constexpr ( !is_order_dynamic )
+            return nbPtsPerFace;
+        else
+            return numPointsPerEntity[2][nDim];
+    }
+
+    /**
+     * Returns the number of points per volume
+     */
+    constexpr int numberOfPointsPerVolume() const
+    {
+        if constexpr ( !is_order_dynamic )
+            return nbPtsPerVolume;
+        else
+            return numPointsPerEntity[3][nDim];
+    }
+
+    /**
+     * @brief get the number of points in the Simplex
+     *
+     * @return int the number of points
+     */
+    constexpr int numberOfPoints() const
+    {
+        if constexpr ( !is_order_dynamic )
+            return numPoints;
+        else
+            return numPointsPerEntity[0][nDim];
+    }
     /**
      * Returns the number of points per vertex
      */
@@ -279,13 +452,11 @@ public:
     {
         return "hypercube";
     }
+private:
+    int M_order;
+    std::array<std::array<int,4>,5> numPointsPerEntity;
 };
 
-template<uint16_type Dim, uint16_type Order, uint16_type RDim >
-const uint16_type Hypercube<Dim, Order, RDim>::topological_dimension;
-
-template<uint16_type Dim, uint16_type Order, uint16_type RDim >
-const uint16_type Hypercube<Dim, Order, RDim>::nOrder;
 
 }
 #endif /* __Hypercube_H */

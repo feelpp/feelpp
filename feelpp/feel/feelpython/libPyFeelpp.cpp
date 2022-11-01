@@ -98,7 +98,7 @@ std::shared_ptr<MeshType> loadMesh_w (MeshType* mesh)
 
 template<int Order,
          typename T = double,
-         template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
+         template<class, int, class> class Pts = PointSetEquiSpaced,
          typename MeshType,
          int Tag = 0>
 

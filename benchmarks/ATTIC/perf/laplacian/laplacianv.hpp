@@ -60,7 +60,7 @@ namespace Feel
  */
 template<int Dim,
          typename BasisU,
-         template<uint16_type,uint16_type,uint16_type> class Entity>
+         template<uint16_type,int,uint16_type> class Entity>
 class LaplacianV
     :
 public Simget
@@ -136,7 +136,7 @@ private:
 }; // LaplacianV
 
 
-template<int Dim, typename BasisU, template<uint16_type,uint16_type,uint16_type> class Entity>
+template<int Dim, typename BasisU, template<uint16_type,int,uint16_type> class Entity>
 void
 LaplacianV<Dim, BasisU, Entity>::run()
 {
@@ -376,7 +376,7 @@ LaplacianV<Dim, BasisU, Entity>::run()
 } // LaplacianV::run
 
 
-template<int Dim, typename BasisU, template<uint16_type,uint16_type,uint16_type> class Entity>
+template<int Dim, typename BasisU, template<uint16_type,int,uint16_type> class Entity>
 void
 LaplacianV<Dim, BasisU, Entity>::exportResults( element_type& u, element_type& v )
 {

@@ -30,13 +30,14 @@
 #ifndef __RaviartThomas_H
 #define __RaviartThomas_H 1
 
-#include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/assign/std/vector.hpp> // for 'operator+=()'
-#include <boost/numeric/ublas/vector.hpp>
+#include <boost/mp11/utility.hpp>
 #include <boost/numeric/ublas/io.hpp>
+#include <boost/numeric/ublas/lu.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/matrix_proxy.hpp>
-#include <boost/numeric/ublas/lu.hpp>
+#include <boost/numeric/ublas/vector.hpp>
+#include <boost/ptr_container/ptr_vector.hpp>
 
 #include <boost/assign/list_of.hpp>
 #include <boost/assign/std/vector.hpp>
@@ -113,9 +114,9 @@ struct extract_all_poly_indices
 }// detail
 
 template<uint16_type N,
-         uint16_type O,
+         int O,
          typename T = double,
-         template<uint16_type, uint16_type, uint16_type> class Convex = Simplex,
+         template<uint16_type, int, uint16_type> class Convex = Simplex,
          uint16_type TheTAG = 0>
 class RaviartThomasPolynomialSet
     :
@@ -213,7 +214,7 @@ namespace detail
 
 
 template<typename Basis,
-         template<class, uint16_type, class> class PointSetType>
+         template<class, int, class> class PointSetType>
 class RaviartThomasDual
     :
 public DualBasis<Basis>
@@ -433,9 +434,9 @@ private:
  * @author Christophe Prud'homme
  */
 template<uint16_type N,
-         uint16_type O,
+         int O,
          typename T = double,
-         template<uint16_type, uint16_type, uint16_type> class Convex = Simplex,
+         template<uint16_type, int, uint16_type> class Convex = Simplex,
          uint16_type TheTAG=0 >
 class RaviartThomas
     :
@@ -456,10 +457,9 @@ public:
      */
     //@{
 
-    static const uint16_type nDim = N;
-    //static const bool isTransformationEquivalent = false;
-    static const bool isTransformationEquivalent = true;
-    static const bool isContinuous = true;
+    inline static constexpr uint16_type nDim = N;
+    inline static constexpr bool isTransformationEquivalent = true;
+    inline static constexpr bool isContinuous = true;
     typedef Continuous continuity_type;
     static const uint16_type TAG = TheTAG;
 
@@ -485,20 +485,18 @@ public:
     typedef typename reference_convex_type::points_type points_type;
     typedef typename convex_type::topological_face_type face_type;
 
-    static const uint16_type nOrder =  dual_space_type::nOrder;
-    static const uint16_type nbPtsPerVertex = 0;
-    static const uint16_type nbPtsPerEdge = dual_space_type::nbPtsPerEdge;
-    static const uint16_type nbPtsPerFace = dual_space_type::nbPtsPerFace;
-    static const uint16_type nbPtsPerVolume = dual_space_type::nbPtsPerVolume;
-    static const uint16_type numPoints = dual_space_type::numPoints;
-
-    static const uint16_type nLocalDof = dual_space_type::nLocalDof;
-
-    static const uint16_type nDofPerVertex = dual_space_type::nDofPerVertex;
-    static const uint16_type nDofPerEdge = dual_space_type::nDofPerEdge;
-    static const uint16_type nDofPerFace = dual_space_type::nDofPerFace;
-    static const uint16_type nDofPerVolume = dual_space_type::nDofPerVolume;
-    static const uint16_type nLocalFaceDof = ( face_type::numVertices * nDofPerVertex +
+    inline static constexpr uint16_type nOrder =  dual_space_type::nOrder;
+    inline static constexpr uint16_type nbPtsPerVertex = 0;
+    inline static constexpr uint16_type nbPtsPerEdge = dual_space_type::nbPtsPerEdge;
+    inline static constexpr uint16_type nbPtsPerFace = dual_space_type::nbPtsPerFace;
+    inline static constexpr uint16_type nbPtsPerVolume = dual_space_type::nbPtsPerVolume;
+    inline static constexpr uint16_type numPoints = dual_space_type::numPoints;
+    inline static constexpr uint16_type nLocalDof = dual_space_type::nLocalDof;
+    inline static constexpr uint16_type nDofPerVertex = dual_space_type::nDofPerVertex;
+    inline static constexpr uint16_type nDofPerEdge = dual_space_type::nDofPerEdge;
+    inline static constexpr uint16_type nDofPerFace = dual_space_type::nDofPerFace;
+    inline static constexpr uint16_type nDofPerVolume = dual_space_type::nDofPerVolume;
+    inline static constexpr uint16_type nLocalFaceDof = ( face_type::numVertices * nDofPerVertex +
                                                face_type::numEdges * nDofPerEdge +
                                                face_type::numFaces * nDofPerFace );
     //@}
@@ -879,27 +877,9 @@ protected:
 private:
 
 };
-template<uint16_type N,
-         uint16_type O,
-         typename T,
-         template<uint16_type, uint16_type, uint16_type> class Convex,
-         uint16_type TheTAG>
-const uint16_type RaviartThomas<N,O,T,Convex,TheTAG>::nDim;
-template<uint16_type N,
-         uint16_type O,
-         typename T,
-         template<uint16_type, uint16_type, uint16_type> class Convex,
-         uint16_type TheTAG >
-const uint16_type RaviartThomas<N,O,T,Convex,TheTAG>::nOrder;
-template<uint16_type N,
-         uint16_type O,
-         typename T,
-         template<uint16_type, uint16_type, uint16_type> class Convex,
-         uint16_type TheTAG>
-const uint16_type RaviartThomas<N,O,T,Convex,TheTAG>::nLocalDof;
 
 } // fem
-template<uint16_type Order,
+template<int Order,
          uint16_type TheTAG=0 >
 class RaviartThomas
 {
@@ -910,9 +890,9 @@ public:
              typename Convex = Simplex<N> >
     struct apply
     {
-        typedef typename mpl::if_<mpl::bool_<Convex::is_simplex>,
-                mpl::identity<fem::RaviartThomas<N,Order,T,Simplex,TheTAG> >,
-                mpl::identity<fem::RaviartThomas<N,Order,T,Hypercube,TheTAG> > >::type::type result_type;
+        using result_type = boost::mp11::mp_if_c<Convex::is_simplex,
+                                fem::RaviartThomas<N,Order,T,Simplex,TheTAG>,
+                                fem::RaviartThomas<N,Order,T,Hypercube,TheTAG> >;
         typedef result_type type;
     };
 

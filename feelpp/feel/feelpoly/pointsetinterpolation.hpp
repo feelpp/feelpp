@@ -29,6 +29,7 @@
 #ifndef __PointSetInterpolation_H
 #define __PointSetInterpolation_H 1
 
+#include <boost/mp11/utility.hpp>
 #include <feel/feelmesh/pointset.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/io.hpp>
@@ -46,9 +47,9 @@ namespace ublas = boost::numeric::ublas;
  * @see
  */
 template<uint16_type Dim,
-         uint16_type Order,
+         int Order,
          typename T,
-         template<uint16_type,uint16_type,uint16_type> class Convex = Simplex>
+         template<uint16_type,int,uint16_type> class Convex = Simplex>
 class PointSetInterpolation : public PointSet<Convex<Dim,Order,Dim>,T>
 {
     typedef PointSet<Convex<Dim,Order,Dim>,T> super;
@@ -66,24 +67,29 @@ public:
     typedef typename super::nodes_type nodes_type;
     typedef typename matrix_node<value_type>::type points_type;
 
-    static const bool is_simplex = convex_type::is_simplex;
-    static const bool is_hypercube = convex_type::is_hypercube;
+    
+   
 
-    static const uint32_type convexOrder = convex_type::nOrder;
-    static const uint32_type topological_dimension = convex_type::topological_dimension;
+    inline static const bool is_simplex = convex_type::is_simplex;
+    inline static const bool is_hypercube = convex_type::is_hypercube;
+    inline static const int convexOrder = convex_type::nOrder;
+    inline static const int topological_dimension = convex_type::topological_dimension;
+    inline static const bool is_order_dynamic = ( Order == Dynamic );
 
-    typedef mpl::if_< mpl::bool_< is_simplex >,
-            Simplex<Dim, Order, Dim> ,
-            Hypercube<Dim, Order, Dim> > conv_order_type;
+    using conv_order_type =  boost::mp11::mp_if_c<is_simplex,
+                                                  Simplex<Dim, Order, Dim>,
+                                                  Hypercube<Dim, Order, Dim>>;
 
+    inline static const int numPoints = conv_order_type::numPoints;
+    inline static const int nbPtsPerVertex = conv_order_type::nbPtsPerVertex;
+    inline static const int nbPtsPerEdge = conv_order_type::nbPtsPerEdge;
+    inline static const int nbPtsPerFace = conv_order_type::nbPtsPerFace;
+    inline static const int nbPtsPerVolume = conv_order_type::nbPtsPerVolume;
+    
+    /**
+     * Refeement element type
+     */
     typedef Reference<convex_type, Dim, convexOrder, Dim, value_type> RefElem;
-
-    static const uint32_type numPoints = conv_order_type::type::numPoints;
-
-    static const uint32_type nbPtsPerVertex = conv_order_type::type::nbPtsPerVertex;
-    static const uint32_type nbPtsPerEdge = conv_order_type::type::nbPtsPerEdge;
-    static const uint32_type nbPtsPerFace = conv_order_type::type::nbPtsPerFace;
-    static const uint32_type nbPtsPerVolume = conv_order_type::type::nbPtsPerVolume;
 
     RefElem RefConv;
 
@@ -99,18 +105,19 @@ public:
 
     PointSetInterpolation()
         :
-        super()
+        PointSetInterpolation( Order )
     {
-        M_eid.resize( topological_dimension + 1 );
-        M_pt_to_entity.resize( numPoints );
+        
     }
     PointSetInterpolation( size_type np )
         :
-        super( np )
+        super( np ),
+        M_convex()
     {
         M_eid.resize( topological_dimension + 1 );
-        M_pt_to_entity.resize( numPoints );
+        M_pt_to_entity.resize( M_convex.numberOfPoints() );
     }
+
     PointSetInterpolation( PointSetInterpolation & psi )
         :
         super( psi ),
@@ -321,7 +328,7 @@ private:
 
     index_map_type M_eid;
     std::vector<range_type> M_pt_to_entity;
-
+    convex_type M_convex;
 };
 }
 #endif /* __PointSetInterpolation_H */

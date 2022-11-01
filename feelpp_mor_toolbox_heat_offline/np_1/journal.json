@@ -1,0 +1,120 @@
+{
+ "Environment": {
+  "application": {
+   "name": "feelpp_mor_toolbox_heat_offline"
+  },
+  "hardware": {
+   "0a42d30e6fb7": {
+    "backend": "kwsys",
+    "domain_name": "0a42d30e6fb7",
+    "hostname": "0a42d30e6fb7",
+    "mem": {
+     "available": {
+      "host": "1056470852",
+      "physical": "927688",
+      "proc": "1056470852",
+      "virtual": "52"
+     },
+     "total": {
+      "host": "1056470852",
+      "physical": "1031709",
+      "virtual": "8191"
+     },
+     "used": {
+      "checkpoint-1": {
+       "host": "85587640",
+       "proc": "402940"
+      }
+     }
+    },
+    "os": {
+     "is_apple": "0",
+     "is_linux": "1",
+     "is_windows": "0",
+     "name": "Linux",
+     "platform": "x86_64",
+     "release": "5.4.0-113-generic",
+     "version": "#127-Ubuntu SMP Wed May 18 14:30:56 UTC 2022"
+    },
+    "proc": {
+     "apic_id": "0",
+     "cache_size": "512",
+     "clock_frequency": "3290.250977",
+     "cpu_id_support": "0",
+     "extended_name": "Unknown AMD family",
+     "family_id": "23",
+     "is_64bits": "1",
+     "logical_cpu_number": "192",
+     "logical_per_physical": "2",
+     "model_id": "49",
+     "physical_cpu_number": "96",
+     "serial_number": "",
+     "stepping_code": "0",
+     "type_id": "0",
+     "vendor_id": "Advanced Micro Devices",
+     "vendor_name": "AuthenticAMD"
+    }
+   }
+  },
+  "run": {
+   "command-line": "feelpp_mor_toolbox_heat_offline --config-file mor/apps/thermalfin/thermal-fin_2d.cfg",
+   "config-files": [],
+   "directories": {
+    "app": "/feelppdb/feelpp_mor_toolbox_heat_offline/np_1",
+    "downloads": "/feelppdb/feelpp_mor_toolbox_heat_offline/downloads",
+    "export": "/feelppdb/feelpp_mor_toolbox_heat_offline/np_1/exports",
+    "exprs": "/feelppdb/feelpp_mor_toolbox_heat_offline/exprs",
+    "logs": "/feelppdb/feelpp_mor_toolbox_heat_offline/np_1/logs"
+   },
+   "number_of_processors": 1,
+   "uuid": "6db0f93c-6fe9-4de2-b47d-6854d5ea1f4e"
+  },
+  "software": {
+   "boost": {
+    "version": "1_67"
+   },
+   "mpi": {
+    "library": {
+     "openmpi": {
+      "version": {
+       "major": 4,
+       "minor": 0,
+       "release": 3
+      }
+     }
+    },
+    "version": "3.1"
+   },
+   "petsc": {
+    "date": {
+     "release": "Sep, 29, 2019",
+     "version": "Feb, 04, 2020"
+    },
+    "version": {
+     "major": 3,
+     "minor": 12,
+     "release": 1,
+     "subminor": 4
+    }
+   }
+  }
+ },
+ "journal": {
+  "checkpoints": {
+   "checkpoint-1": {
+    "time": {
+     "gm": "Tue Sep 27 03:09:04 2022 GMT",
+     "local": "Tue Sep 27 03:09:04 2022 UTC",
+     "time_t": 1664248144
+    }
+   },
+   "number": 1
+  },
+  "time": {
+   "gm": "Tue Sep 27 03:09:04 2022 GMT",
+   "local": "Tue Sep 27 03:09:04 2022 UTC",
+   "time_t": 1664248144
+  },
+  "version": "0.1.0"
+ }
+}

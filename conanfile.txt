@@ -1,0 +1,7 @@
+[requires]                     # The Conan packages which are used in the application
+boost/1.77.0                   # Versions override versions upstream in the dependency graph
+
+[generators]                   # Generators create build system files that capture the dependency information,
+CMakeDeps
+CMakeToolchain
+

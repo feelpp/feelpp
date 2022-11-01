@@ -98,7 +98,7 @@ struct ExactSolution<3>
 template<int Dim,
          int Order,
          typename Cont,
-         template<uint16_type,uint16_type,uint16_type> class Entity,
+         template<uint16_type,int,uint16_type> class Entity,
          template<uint16_type> class FType>
 class Laplacian
     :
@@ -200,7 +200,7 @@ private:
 }; // Laplacian
 
 
-template<int Dim, int Order, typename Cont, template<uint16_type,uint16_type,uint16_type> class Entity, template<uint16_type> class FType>
+template<int Dim, int Order, typename Cont, template<uint16_type,int,uint16_type> class Entity, template<uint16_type> class FType>
 void
 Laplacian<Dim, Order, Cont, Entity, FType>::run()
 {
@@ -534,7 +534,7 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
 } // Laplacian::run
 
 
-template<int Dim, int Order, typename Cont, template<uint16_type,uint16_type,uint16_type> class Entity, template<uint16_type> class FType>
+template<int Dim, int Order, typename Cont, template<uint16_type,int,uint16_type> class Entity, template<uint16_type> class FType>
 template<typename f1_type, typename f2_type, typename f3_type>
 void
 Laplacian<Dim, Order, Cont, Entity,FType>::exportResults( double time,

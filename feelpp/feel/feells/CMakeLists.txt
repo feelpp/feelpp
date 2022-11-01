@@ -22,6 +22,6 @@
 #
 #
 
-set(SRC reinit_fms_inst_2d.cpp reinit_fms_inst_2d_g2.cpp reinit_fms_inst_3d.cpp reinit_fms_inst_3d_g2.cpp)
+# set(SRC reinit_fms_inst_2d.cpp reinit_fms_inst_2d_g2.cpp reinit_fms_inst_3d.cpp reinit_fms_inst_3d_g2.cpp)
 file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp)
 feel_append_src(feells "${SRC};${HDR}")

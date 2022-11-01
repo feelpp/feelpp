@@ -1,0 +1,4 @@
+Log file created at: 2022/09/27 03:09:04
+Running on machine: 0a42d30e6fb7
+Log line format: [IWEF]mmdd hh:mm:ss.uuuuuu threadid file:line] msg
+F0927 03:09:04.935883    38 heat.cpp:82] Check failed: this->mesh() mesh generation fail

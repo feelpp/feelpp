@@ -1,0 +1,345 @@
+{
+    "version": 3,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 21,
+        "patch": 0
+    },
+    "configurePresets": [
+        {
+            "name": "default",
+            "displayName": "Default Config",
+            "description": "Default build using Makefile generator",
+            "generator": "Unix Makefiles",
+            "binaryDir": "${sourceDir}/build/default",
+            "cacheVariables": {
+                "CMAKE_C_COMPILER": "clang",
+                "CMAKE_CXX_COMPILER": "clang++",
+                "CMAKE_BUILD_TYPE": "Release",
+                "FEELPP_ENABLE_TOOLBOXES": {
+                    "type": "BOOL",
+                    "value": "ON"
+                },
+                "FEELPP_ENABLE_MOR": "ON",
+                "FEELPP_ENABLE_FEELPP_PYTHON": "ON",
+                "FEELPP_ENABLE_FMILIB": "OFF",
+                "FEELPP_ENABLE_BENCHMARKS": "ON"
+            },
+            "environment": {
+                "MY_ENVIRONMENT_VARIABLE": "Test"
+            },
+            "vendor": {
+                "example.com/ExampleIDE/1.0": {
+                    "autoFormat": true
+                }
+            }
+        },
+        {
+            "name": "dbg",
+            "displayName": "Debug Config",
+            "description": "Debug build using Makefile generator",
+            "generator": "Unix Makefiles",
+            "binaryDir": "${sourceDir}/build/dbg",
+            "cacheVariables": {
+                "CMAKE_CXX_COMPILER": "clang++",
+                "CMAKE_BUILD_TYPE": "Debug",
+                "FEELPP_ENABLE_TOOLBOXES": {
+                    "type": "BOOL",
+                    "value": "OFF"
+                },
+                "FEELPP_ENABLE_MOR": "OFF"
+            },
+            "environment": {
+                "MY_ENVIRONMENT_VARIABLE": "Test"
+            },
+            "vendor": {
+                "example.com/ExampleIDE/1.0": {
+                    "autoFormat": true
+                }
+            }
+        },
+        {
+            "name": "feelpp",
+            "inherits": "default",
+            "displayName": "feelpp",
+            "description": "Build only the Feel++ library Component",
+            "generator": "Unix Makefiles",
+            "binaryDir": "${sourceDir}/build/feelpp",
+            "cacheVariables": {
+                "FEELPP_COMPONENT": "feelpp",
+                "FEELPP_ENABLE_MOR": "OFF",
+                "FEELPP_ENABLE_TOOLBOXES": "OFF",
+                "FEELPP_ENABLE_FEELPP_PYTHON": "OFF",
+                "FEELPP_ENABLE_TESTS": "OFF",
+                "FEELPP_ENABLE_FMILIB": "OFF",
+                "FEELPP_ENABLE_BENCHMARKS": "OFF"
+            }
+        },
+        {
+            "name": "toolboxes",
+            "inherits": "default",
+            "displayName": "toolboxes",
+            "description": "Build only the Feel++ Toolboxes Component",
+            "binaryDir": "${sourceDir}/build/toolboxes",
+            "cacheVariables": {
+                "FEELPP_COMPONENT": "toolboxes"
+            }
+        },
+        {
+            "name": "mor",
+            "inherits": "default",
+            "displayName": "mor",
+            "description": "Build only the Feel++ MOR Component",
+            "binaryDir": "${sourceDir}/build/mor",
+            "cacheVariables": {
+                "FEELPP_COMPONENT": "mor",
+                "FEELPP_ENABLE_RESEARCH": "OFF"
+            }
+        },
+        {
+            "name": "research-mor",
+            "inherits": "default",
+            "displayName": "resarch-mor",
+            "description": "Build only the Feel++ MOR and Research Components",
+            "binaryDir": "${sourceDir}/build/research-mor",
+            "cacheVariables": {
+                "FEELPP_COMPONENT": "mor",
+                "FEELPP_ENABLE_RESEARCH": "ON"
+            }
+        },
+        {
+            "name": "python",
+            "inherits": "default",
+            "displayName": "feelpp-python",
+            "description": "Build only the Feel++ python Component",
+            "binaryDir": "${sourceDir}/build/python",
+            "cacheVariables": {
+                "FEELPP_COMPONENT": "python",
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/build/python/install/"
+            }
+        },
+        {
+            "name": "feelpp-python",
+            "inherits": "default",
+            "displayName": "feelpp-python",
+            "description": "Build only the Feel++ python Component",
+            "binaryDir": "${sourceDir}/build/python",
+            "cacheVariables": {
+                "FEELPP_COMPONENT": "python",
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/build/python/install/"
+            }
+        },
+        {
+            "name": "feelpp-python-dbg",
+            "inherits": "default",
+            "displayName": "feelpp-python-dbg",
+            "description": "Build only the Feel++ python Component in Debug mode",
+            "binaryDir": "${sourceDir}/build/python-dbg",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "FEELPP_COMPONENT": "python"
+            }
+        },
+        {
+            "name": "testsuite",
+            "inherits": "default",
+            "displayName": "testsuite",
+            "description": "Build only the Feel++ testsuite Component",
+            "binaryDir": "${sourceDir}/build/testsuite",
+            "cacheVariables": {
+                "FEELPP_COMPONENT": "testsuite"
+            }
+        },
+        {
+            "name": "testsuite-install",
+            "inherits": "default",
+            "displayName": "testsuite using local install",
+            "description": "Build only the Feel++ testsuite Component",
+            "binaryDir": "${sourceDir}/build/testsuite-install",
+            "cacheVariables": {
+                "FEELPP_COMPONENT": "testsuite",
+                "FEELPP_DIR": "${sourceDir}/build/default/install/"
+            }
+        },
+        {
+            "name": "benchmarks",
+            "inherits": "default",
+            "displayName": "benchmarks",
+            "description": "Build only the Feel++ benchmarks Component",
+            "binaryDir": "${sourceDir}/build/benchmarks",
+            "cacheVariables": {
+                "FEELPP_COMPONENT": "benchmarks"
+            }
+        },
+        {
+            "name": "windows-only",
+            "inherits": "default",
+            "displayName": "Windows-only configuration",
+            "description": "This build is only available on Windows",
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            }
+        },
+        {
+            "name": "doxygen",
+            "inherits": "default",
+            "displayName": "doxygen",
+            "description": "Build Feel++ doxygen documentation",
+            "binaryDir": "${sourceDir}/build/doxygen",
+            "cacheVariables": {
+                "FEELPP_ENABLE_DOXYGEN": "ON"
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "default",
+            "configurePreset": "default",
+            "jobs": 10
+        },
+        {
+            "name": "dbg",
+            "configurePreset": "dbg",
+            "jobs": 10,
+            "targets": [
+                "feelpp",
+                "pyfeelpp",
+                "install"
+            ]
+        },
+        {
+            "name": "feelpp",
+            "configurePreset": "feelpp",
+            "inherits": "default",
+            "targets": [
+                "all",
+                "install"
+            ]
+        },
+        {
+            "name": "toolboxes",
+            "inherits": "default",
+            "configurePreset": "toolboxes",
+            "targets": [
+                "all",
+                "install"
+            ]
+        },
+        {
+            "name": "mor",
+            "inherits": "default",
+            "configurePreset": "mor",
+            "targets": [
+                "all",
+                "install"
+            ]
+        },
+        {
+            "name": "feelpp-python",
+            "inherits": "default",
+            "configurePreset": "feelpp-python",
+            "targets": [
+                "all",
+                "install"
+            ]
+        },
+        {
+            "name": "python",
+            "inherits": "default",
+            "configurePreset": "python",
+            "targets": [
+                "all",
+                "install"
+            ]
+        },
+        {
+            "name": "feelpp-python-dbg",
+            "inherits": "default",
+            "configurePreset": "feelpp-python-dbg",
+            "targets": [
+                "all",
+                "install"
+            ]
+        },
+        {
+            "name": "testsuite",
+            "configurePreset": "testsuite",
+            "inherits": "default",
+            "targets": [
+                "all"
+            ]
+        },
+        {
+            "name": "doxygen",
+            "configurePreset": "doxygen",
+            "targets": ["doxygen"]
+        }
+    ],
+    "testPresets": [
+        {
+            "name": "default",
+            "configurePreset": "default",
+            "filter":{
+                "include":{
+                    "name":"feelpp"
+                }
+            },
+            "output": {
+                "outputOnFailure": true
+            },
+            "execution": {
+                "jobs":2,
+                "noTestsAction": "error",
+                "stopOnFailure": true
+            }
+        },
+        {
+            "name": "feelpp",
+            "configurePreset": "feelpp",
+            "inherits":"default",
+            "output": {
+                "outputOnFailure": true
+            },
+            "execution": {
+                "noTestsAction": "error",
+                "stopOnFailure": false,
+                "repeat":{
+                    "mode":"until-pass",
+                    "count":3
+                }
+            }
+        },
+        {
+            "name": "toolboxes",
+            "configurePreset": "toolboxes",
+            "inherits": "feelpp"
+        },
+        {
+            "name": "mor",
+            "configurePreset": "mor",
+            "inherits": "feelpp"
+        },
+        {
+            "name": "python",
+            "configurePreset": "python",
+            "inherits": "feelpp"
+        },
+        {
+            "name": "feelpp-python",
+            "configurePreset": "feelpp-python",
+            "inherits": "feelpp"
+        },
+        {
+            "name": "testsuite",
+            "configurePreset": "testsuite",
+            "inherits": "feelpp"
+        }
+    ],
+    "vendor": {
+        "example.com/ExampleIDE/1.0": {
+            "autoFormat": false
+        }
+    }
+}

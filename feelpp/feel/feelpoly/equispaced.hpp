@@ -30,6 +30,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #ifndef __PointSetEquiSpaced_H
 #define __PointSetEquiSpaced_H 1
 
+#include <boost/mp11/utility.hpp>
+
 #include <feel/feelmesh/refentity.hpp>
 #include <feel/feelmesh/pointset.hpp>
 #include <feel/feelmesh/simplex.hpp>
@@ -49,7 +51,7 @@ namespace Feel
 {
 namespace ublas = boost::numeric::ublas;
 
-template<class Convex, uint16_type Order, typename T>
+template<class Convex, int Order, typename T>
 class PointSetEquiSpaced :  public PointSet< Convex, T>
 {
 
@@ -68,27 +70,27 @@ public :
 
     typedef typename matrix_node<value_type>::type points_type;
 
-    static const uint32_type Dim = Convex::nDim;
-    static const uint32_type convexOrder = Convex::nOrder;
-    static const uint32_type topological_dimension = Convex::topological_dimension;
-    static const uint32_type nRealDim = Convex::nRealDim;
+    inline static constexpr int Dim = Convex::nDim;
+    inline static constexpr int nOrder = Order;
+    inline static constexpr int convexOrder = Convex::nOrder;
+    inline static constexpr bool is_order_dynamic = (Order==Dynamic);
+    inline static constexpr uint32_type topological_dimension = Convex::topological_dimension;
+    inline static constexpr uint32_type nRealDim = Convex::nRealDim;
+    inline static constexpr size_type Shape = Convex::Shape;
+    inline static constexpr bool is_simplex = Convex::is_simplex;
+    inline static constexpr bool is_hypercube = Convex::is_hypercube;
 
-    static const size_type Shape = Convex::Shape;
-
-    static const bool is_simplex = Convex::is_simplex;
-    static const bool is_hypercube = Convex::is_hypercube;
-
-    typedef mpl::if_< mpl::bool_< is_simplex >,
-            Simplex<Dim, Order, /*nRealDim*/Dim> ,
-            Hypercube<Dim, Order, /*nRealDim*/Dim> > conv_order_type;
+    using convex_t = boost::mp11::mp_if_c<is_simplex,
+                                          Simplex<Dim, Order, /*nRealDim*/Dim>,
+                                          Hypercube<Dim, Order, /*nRealDim*/Dim>>;
 
     typedef Reference<Convex, Dim, convexOrder, Dim/*nRealDim*/, value_type> RefElem;
 
-    static const uint32_type numPoints = conv_order_type::type::numPoints;
-    static const uint32_type nbPtsPerVertex = conv_order_type::type::nbPtsPerVertex;
-    static const uint32_type nbPtsPerEdge = conv_order_type::type::nbPtsPerEdge;
-    static const uint32_type nbPtsPerFace = conv_order_type::type::nbPtsPerFace;
-    static const uint32_type nbPtsPerVolume = conv_order_type::type::nbPtsPerVolume;
+    inline static constexpr int numPoints = convex_t::numPoints;
+    inline static constexpr int nbPtsPerVertex = convex_t::nbPtsPerVertex;
+    inline static constexpr int nbPtsPerEdge = convex_t::nbPtsPerEdge;
+    inline static constexpr int nbPtsPerFace = convex_t::nbPtsPerFace;
+    inline static constexpr int nbPtsPerVolume = convex_t::nbPtsPerVolume;
 
     typedef typename Convex::edge_to_point_t edge_to_point_t;
     typedef typename Convex::face_to_point_t face_to_point_t;
@@ -99,17 +101,38 @@ public :
 
     RefElem RefConv;
 
+    /**
+     * @brief Construct a new Point Set Equi Spaced object
+     *
+     * @param interior if true compute only interior points
+     */
     PointSetEquiSpaced( int interior = 0 )
         :
-        super( numPoints, Dim ),
+        PointSetEquiSpaced( Order, interior )
+    {
+        static_assert( !is_order_dynamic, "invalid constructor call, only valid for compile time order");
+    }
+
+    /**
+     * @brief Construct a new Point Set EquiSpaced object
+     * 
+     * @param order order of the convex
+     * @param interior if true compute only interior points
+     */
+    PointSetEquiSpaced( int order, int interior )
+        :
+        super( convex_t::computeNumberPointsPerEntity(order)[0][Dim] ),
+        M_order( order ),
         M_eid()
     {
+        int Npts = numberOfPoints();
+        DVLOG(4) << fmt::format( "[PoinsetEquispaced(order:{},interior:{},dynamic:{})] generating npts: {} in dim: {}\n ", order,interior,is_order_dynamic,Npts, Dim );
         M_eid.resize( topological_dimension + 1 );
-        M_pt_to_entity.resize( numPoints );
+        M_pt_to_entity.resize( Npts );
 
-        nodes_type pts( Dim, numPoints );
+        nodes_type pts( Dim, Npts );
 
-        if ( interior == 0 && Order > 0 )
+        if ( interior == 0 && order > 0 )
         {
             // loop on each convex of topological dimension <= to the current convex
             // where we build the polynomial set
@@ -141,20 +164,28 @@ public :
             this->setPoints( pts );
         }
 
-        else if ( interior == 1 && Order > 0 )
+        else if ( interior == 1 && order > 0 )
             this->setPoints( makePoints( Dim, 0 ) );
 
-        else if ( Order == 0 )
+        else if ( order == 0 )
             this->setPoints( glas::average( RefConv.vertices() ) );
 
-        this->setName( "equispaced", Order );
+        this->setName( "equispaced", order );
     }
 
     ~PointSetEquiSpaced() override {}
 
+    constexpr int numberOfPoints() const
+    {
+        if constexpr ( is_order_dynamic )
+        {
+            return convex_t::computeNumberPointsPerEntity(M_order)[0][Dim];
+        }
+        else
+            return numPoints;
+    }
     ublas::matrix_range<nodes_type const> pointsByEntity( uint16_type e ) const
     {
-        FEELPP_ASSERT( M_eid[e].size() )( e ).error( "no points defined on this entity" );
 
         return ublas::project( this->points(),
                                ublas::range( 0,Dim ),
@@ -344,6 +375,7 @@ public :
 
 private:
 
+    int M_order;
     index_map_type M_eid;
     std::vector<range_type> M_pt_to_entity;
 
@@ -361,7 +393,7 @@ private:
         else if ( topo_dim == topological_dimension )
         {
             if ( __id == 0 )
-                return makeLattice<Shape>( interior );
+                return makeLattice<Shape>( M_order, interior );
 
             throw std::logic_error( "cannot make those points" );
             return points_type();
@@ -375,7 +407,7 @@ private:
 
             if ( topo_dim == 1 )
             {
-                G = makeLattice<SHAPE_LINE>( 1 );
+                G = makeLattice<SHAPE_LINE>( M_order, 1 );
                 Gret.resize( nRealDim, G.size2() );
 
                 if ( is_simplex )
@@ -401,7 +433,7 @@ private:
             {
                 if ( is_simplex )
                 {
-                    G = makeLattice<SHAPE_TRIANGLE>( 1 );
+                    G = makeLattice<SHAPE_TRIANGLE>( M_order, 1 );
                     Gret.resize( nRealDim, G.size2() );
                     pt_to_entity_tetrahedron<Shape, 2> p_to_e( __id );
 
@@ -411,7 +443,7 @@ private:
 
                 else
                 {
-                    G = makeLattice<SHAPE_QUAD>( 1 );
+                    G = makeLattice<SHAPE_QUAD>( M_order, 1 );
                     Gret.resize( nRealDim, G.size2() );
                     pt_to_entity_hexahedron<Shape, 2> p_to_e( __id );
 
@@ -427,85 +459,85 @@ private:
     }
 
     template<size_type shape>
-    points_type makeLattice( uint16_type interior = 0 )
+    points_type makeLattice( int order, int interior )
     {
         points_type G;
 
-        if ( Order > 0 )
+        if ( order > 0 )
         {
             if ( shape == SHAPE_LINE )
-                G = make_line_points( interior );
+                G = make_line_points( order, interior );
 
             else if ( shape == SHAPE_TRIANGLE )
-                G = make_triangle_points( interior );
+                G = make_triangle_points( order, interior );
 
             else if ( shape == SHAPE_TETRA )
-                G = make_tetrahedron_points( interior );
+                G = make_tetrahedron_points( order, interior );
 
             else if ( shape == SHAPE_QUAD )
-                return make_quad_points( interior );
+                return make_quad_points( order, interior );
 
             else if ( shape == SHAPE_HEXA )
-                return make_hexa_points( interior );
+                return make_hexa_points( order, interior );
         }
 
-        else if ( Order == 0 )
+        else if ( order == 0 )
             G = glas::average( RefConv.vertices() );
 
         return G;
     }
 
     //---------------------------------------------------------------------------------------------
-    int n_line_points( int interior = 0 )
+    int n_line_points( int order, int interior = 0 )
     {
-        return std::max( 0, int( Order )+1-2*interior );
+        return std::max( 0, int( order )+1-2*interior );
     }
-    int n_triangle_points( int interior = 0 )
+    int n_triangle_points( int order, int interior = 0 )
     {
         if ( interior == 1 )
-            return std::max( 0, ( int( Order )+1-2*interior )*( int( Order )-2*interior )/2 );
+            return std::max( 0, ( int( order )+1-2*interior )*( int( order )-2*interior )/2 );
 
-        return ( Order+1 )*( Order+2 )/2;
+        return ( order+1 )*( order+2 )/2;
     }
-    int n_tetrahedron_points( int interior = 0 )
+    int n_tetrahedron_points( int order, int interior = 0 )
     {
         if ( interior == 1 )
-            return std::max( 0, ( int( Order )+1-2*interior )*( int( Order )-2*interior )*( int( Order )-1-2*interior )/6 );
+            return std::max( 0, ( int( order )+1-2*interior )*( int( order )-2*interior )*( int( order )-1-2*interior )/6 );
 
-        return ( Order+1 )*( Order+2 )*( Order+3 )/6;
+        return ( order+1 )*( order+2 )*( order+3 )/6;
     }
 
-    int n_quad_points( int interior = 0 ) const
+    int n_quad_points( int order, int interior = 0 ) const
     {
         if ( interior == 1 )
-            return std::max( 0, ( int( Order )+1-2*interior )*( int( Order )+1-2*interior ) );
+            return std::max( 0, ( int( order )+1-2*interior )*( int( order )+1-2*interior ) );
 
-        return ( Order+1 )*( Order+1 );
+        return ( order+1 )*( order+1 );
     }
 
-    int n_hexa_points( int interior = 0 ) const
+    int n_hexa_points( int order, int interior = 0 ) const
     {
         if ( interior == 1 )
-            return std::max( 0, ( int( Order )+1-2*interior )*( int( Order )+1-2*interior )*( int( Order )+1-2*interior ) );
+            return std::max( 0, ( int( order )+1-2*interior )*( int( order )+1-2*interior )*( int( order )+1-2*interior ) );
 
-        return ( Order+1 )*( Order+1 )*( Order+1 );
+        return ( order+1 )*( order+1 )*( order+1 );
     }
 
     points_type
-    make_line_points( int interior = 0 )
+    make_line_points( int order, int interior = 0 )
     {
         points_type G;
 
-        if ( Order > 0 )
+        if ( order > 0 )
         {
             ublas::vector<node_type> h ( 1 );
             h( 0 ) = RefConv.vertex( 1 ) - RefConv.vertex( 0 );
 
-            G.resize( Dim, n_line_points( interior ) );
+            G.resize( Dim, n_line_points( order, interior ) );
 
-            for ( int i = interior, indp = 0; i < int( Order )+1-interior; ++i, ++indp )
+            for ( int i = interior, indp = 0; i < int( order )+1-interior; ++i, ++indp )
             {
-                ublas::column( G, indp ) = RefConv.vertex( 0 ) + ( h( 0 ) * value_type( i ) )/value_type( Order );
+                ublas::column( G, indp ) = RefConv.vertex( 0 ) + ( h( 0 ) * value_type( i ) )/value_type( order );
             }
         }
 
@@ -517,24 +549,24 @@ private:
     }
 
     points_type
-    make_triangle_points( int interior = 0 )
+    make_triangle_points( int order, int interior = 0 )
     {
         points_type G;
 
-        if ( Order > 0 )
+        if ( order > 0 )
         {
             ublas::vector<node_type> h ( 2 );
             h( 0 ) = RefConv.vertex( 1 ) - RefConv.vertex( 0 );
             h( 1 ) = RefConv.vertex( 2 ) - RefConv.vertex( 0 );
 
-            G.resize( Dim, n_triangle_points( interior ) );
+            G.resize( Dim, n_triangle_points( order, interior ) );
 
-            for ( int i = interior, p = 0; i < int( Order )+1-interior; ++i )
+            for ( int i = interior, p = 0; i < int( order )+1-interior; ++i )
             {
-                for ( int j = interior; j < int( Order ) + 1 - i-interior; ++j, ++p )
+                for ( int j = interior; j < int( order ) + 1 - i-interior; ++j, ++p )
                 {
                     ublas::column( G, p ) = RefConv.vertex( 0 ) + ( value_type( i ) * h( 1 )  +
-                                            value_type( j ) * h( 0 ) )/ value_type( Order );
+                                            value_type( j ) * h( 0 ) )/ value_type( order );
                 }
             }
         }
@@ -546,28 +578,28 @@ private:
     }
 
     points_type
-    make_tetrahedron_points( int interior = 0 )
+    make_tetrahedron_points( int order, int interior = 0 )
     {
         points_type G;
 
-        if ( Order > 0 )
+        if ( order > 0 )
         {
             ublas::vector<node_type> h ( 3 );
             h( 0 ) = RefConv.vertex( 1 ) - RefConv.vertex( 0 );
             h( 1 ) = RefConv.vertex( 2 ) - RefConv.vertex( 0 );
             h( 2 ) = RefConv.vertex( 3 ) - RefConv.vertex( 0 );
 
-            G.resize( Dim, n_tetrahedron_points( interior ) );
+            G.resize( Dim, n_tetrahedron_points( order, interior ) );
 
-            for ( int i = interior, p = 0; i < int( Order )+1-interior; ++i )
+            for ( int i = interior, p = 0; i < int( order )+1-interior; ++i )
             {
-                for ( int j = interior; j < int( Order ) + 1 - i - interior; ++j )
+                for ( int j = interior; j < int( order ) + 1 - i - interior; ++j )
                 {
-                    for ( int k = interior; k < int( Order ) + 1 - i - j - interior; ++k, ++p )
+                    for ( int k = interior; k < int( order ) + 1 - i - j - interior; ++k, ++p )
                     {
                         ublas::column( G, p ) = RefConv.vertex( 0 ) + ( value_type( i ) * h( 2 ) +
                                                 value_type( j ) * h( 1 ) +
-                                                value_type( k ) * h( 0 ) ) / value_type( Order );
+                                                value_type( k ) * h( 0 ) ) / value_type( order );
 
                     }
                 }
@@ -581,23 +613,23 @@ private:
     }
 
     points_type
-    make_quad_points( int interior = 0 )
+    make_quad_points( int order, int interior = 0 )
     {
-        if ( Order > 0 )
+        if ( order > 0 )
         {
             ublas::vector<node_type> h ( 2 );
             h( 0 ) = RefConv.vertex( 1 ) - RefConv.vertex( 0 );
             h( 1 ) = RefConv.vertex( 3 ) - RefConv.vertex( 0 );
 
             DVLOG(2) << "n quad pts = " << n_quad_points( interior ) << "\n";
-            points_type G( Dim, n_quad_points( interior ) );
+            points_type G( Dim, n_quad_points( order, interior ) );
 
-            for ( int i = interior, p = 0; i < int( Order )+1-interior; ++i )
+            for ( int i = interior, p = 0; i < int( order )+1-interior; ++i )
             {
-                for ( int j = interior; j < int( Order ) + 1 -interior; ++j, ++p )
+                for ( int j = interior; j < int( order ) + 1 -interior; ++j, ++p )
                 {
                     ublas::column( G, p ) = RefConv.vertex( 0 ) + ( value_type( i ) * h( 0 )  +
-                                            value_type( j ) * h( 1 ) )/ value_type( Order );
+                                            value_type( j ) * h( 1 ) )/ value_type( order );
                 }
             }
 
@@ -609,9 +641,9 @@ private:
     }
 
     points_type
-    make_hexa_points( int interior = 0 )
+    make_hexa_points( int order, int interior = 0 )
     {
-        if ( Order > 0 )
+        if ( order > 0 )
         {
             ublas::vector<node_type> h ( 3 );
             h( 0 ) = RefConv.vertex( 1 ) - RefConv.vertex( 0 );
@@ -619,17 +651,17 @@ private:
             h( 2 ) = RefConv.vertex( 4 ) - RefConv.vertex( 0 );
 
             points_type G( Dim, n_hexa_points( interior ) );
-            DVLOG(2) << "n hexa pts = " << n_hexa_points( interior ) << "\n";
+            DVLOG(2) << "n hexa pts = " << n_hexa_points( order, interior ) << "\n";
 
-            for ( int i = interior, p = 0; i < int( Order )+1-interior; ++i )
+            for ( int i = interior, p = 0; i < int( order )+1-interior; ++i )
             {
-                for ( int j = interior; j < int( Order ) + 1 - interior; ++j )
+                for ( int j = interior; j < int( order ) + 1 - interior; ++j )
                 {
-                    for ( int k = interior; k < int( Order ) + 1 - interior; ++k, ++p )
+                    for ( int k = interior; k < int( order ) + 1 - interior; ++k, ++p )
                     {
                         ublas::column( G, p ) = RefConv.vertex( 0 ) + ( value_type( i ) * h( 0 ) +
                                                 value_type( j ) * h( 1 ) +
-                                                value_type( k ) * h( 2 ) ) / value_type( Order );
+                                                value_type( k ) * h( 2 ) ) / value_type( order );
 
                     }
                 }

@@ -42,17 +42,17 @@
 namespace Feel
 {
 template< class Convex,
-          uint16_type Order,
+          int Order,
           typename T >
 class PointSetWarpBlend;
 
 template< class Convex,
-          uint16_type Order,
+          int Order,
           typename T >
 class PointSetGaussLobatto;
 
 template< class Convex,
-          uint16_type Order,
+          int Order,
           typename T = double >
 class PointSetFeketeSimplex : public  PointSetInterpolation<Convex::nDim, Order, T, Simplex>
 {
@@ -87,10 +87,15 @@ public :
     typedef std::vector<uint16_type> orbits_type;
 
     reference_convex_type RefConv;
-
+    
     PointSetFeketeSimplex( int interior = 0 )
+        :
+        PointSetFeketeSimplex( Order, interior )
     {
-        PointSetWarpBlend<Convex, Order, T> G( interior );
+    }
+    PointSetFeketeSimplex( int order, int interior = 0 )
+    {
+        PointSetWarpBlend<Convex, Order, T> G( order, interior );
 
         points_type final_pts = G.points();
 
@@ -115,7 +120,7 @@ public :
 
         this->setPoints( final_pts );
 
-        this->setName( "fekete", Order );
+        this->setName( "fekete", order );
     }
 
     ~PointSetFeketeSimplex() override {}
@@ -1246,23 +1251,23 @@ private :
  * Fekete point set class for simplices and simplex products
  */
 template< class Convex,
-          uint16_type Order,
+          int Order,
           typename T = double >
-class PointSetFekete : public mpl::if_<mpl::or_<mpl::equal_to<mpl::bool_<Convex::is_hypercube>, mpl::bool_<true> >,
-    mpl::equal_to<mpl::int_<Convex::nDim>, mpl::int_<1> > >,
-    mpl::identity<PointSetGaussLobatto<Convex,Order,T> >,
-    typename mpl::if_<mpl::equal_to<mpl::int_<Convex::nDim>, mpl::int_<3> >,
-    mpl::identity<PointSetWarpBlend<Convex,Order,T> >,
-    mpl::identity<PointSetFeketeSimplex<Convex,Order,T> > >::type >::type::type
+class PointSetFekete : public 
+    boost::mp11::mp_if_c<Convex::is_hypercube || Convex::nDim==1,
+        PointSetGaussLobatto<Convex,Order,T>,
+        boost::mp11::mp_if_c<Convex::nDim==3,
+            PointSetWarpBlend<Convex,Order,T>,
+            PointSetFeketeSimplex<Convex,Order,T>>>
 {
-    typedef typename mpl::if_<mpl::or_<mpl::equal_to<mpl::bool_<Convex::is_hypercube>, mpl::bool_<true> >,
-            mpl::equal_to<mpl::int_<Convex::nDim>, mpl::int_<1> > >,
-            mpl::identity<PointSetGaussLobatto<Convex,Order,T> >,
-            typename mpl::if_<mpl::equal_to<mpl::int_<Convex::nDim>, mpl::int_<3> >,
-            mpl::identity<PointSetWarpBlend<Convex,Order,T> >,
-            mpl::identity<PointSetFeketeSimplex<Convex,Order,T> > >::type>::type::type super;
+    using super = boost::mp11::mp_if_c<Convex::is_hypercube || Convex::nDim==1,
+                                       PointSetGaussLobatto<Convex,Order,T>,
+                                       boost::mp11::mp_if_c<Convex::nDim==3,
+                                                            PointSetWarpBlend<Convex,Order,T>,
+                                                            PointSetFeketeSimplex<Convex,Order,T>>>;
 public:
-    PointSetFekete( int interior = 0 ) : super( interior ) {}
+    PointSetFekete( int interior = 0 ) : super( Order, interior ) {}
+    PointSetFekete( int order, int interior = 0 ) : super( order, interior ) {}
 };
 
 } // Feel

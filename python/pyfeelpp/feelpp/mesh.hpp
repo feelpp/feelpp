@@ -156,7 +156,7 @@ void defMesh(py::module &m)
         
 
     // load mesh
-    m.def("load",&loadmesh<mesh_t>,"load a mesh from a file");
+    m.def("load",&loadmesh<mesh_t>,"load a mesh from a file",py::arg("mesh"),py::arg("filename"),py::arg("h")=0.1);
 
     m.def("elements", &elementsByPid<mesh_ptr_t>,"get iterator over the elements of the mesh", py::arg("mesh"));
     m.def("markedelements", &elementsByMarker<mesh_ptr_t>,"get iterator over the marked elements of the mesh", py::arg("mesh"),py::arg("tag"));

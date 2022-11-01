@@ -1,0 +1,9 @@
+:feelpp: Feel++
+= Packaging for {feelpp}
+
+== pbuilder image generation
+
+[source,shell]
+----
+DIST=jammy ./feelpp_pbuilder.sh
+----

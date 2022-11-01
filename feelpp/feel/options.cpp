@@ -388,6 +388,7 @@ po::options_description bdf_options( std::string const& prefix )
     po::options_description _options( "BDF (Backward Differences time discretization) options (" + prefix + ")" );
     _options.add_options()
     // solver options
+    ( prefixvm( prefix, "bdf.filter" ).c_str(), Feel::po::value<bool>()->default_value( false ), "filter bdf to get increased accuracy" )
     ( prefixvm( prefix, "bdf.time-initial" ).c_str(), Feel::po::value<double>()->default_value( 0.0 ), "initial time" )
     ( prefixvm( prefix, "bdf.time-final" ).c_str(), Feel::po::value<double>()->default_value( 1.0 ), "final time" )
     ( prefixvm( prefix, "bdf.time-step" ).c_str(), Feel::po::value<double>()->default_value( 1.0 ), "time step" )

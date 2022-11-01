@@ -98,7 +98,7 @@ makeAbout()
  *
  * solve \f$ -\Delta u = f\f$ on \f$\Omega\f$ and \f$u= g\f$ on \f$\Gamma\f$
  */
-template<int Dim, int Order, int RDim = Dim, typename ContinuityType = Continuous, template<uint16_type,uint16_type,uint16_type> class Entity=Simplex>
+template<int Dim, int Order, int RDim = Dim, typename ContinuityType = Continuous, template<uint16_type,int,uint16_type> class Entity=Simplex>
 class Laplacian
     :
 public ApplicationXML
@@ -253,7 +253,7 @@ private:
 
 }; // Laplacian
 
-template<int Dim, int Order, int RDim, typename ContinuityType, template<uint16_type,uint16_type,uint16_type> class Entity>
+template<int Dim, int Order, int RDim, typename ContinuityType, template<uint16_type,int,uint16_type> class Entity>
 void
 Laplacian<Dim, Order, RDim, ContinuityType, Entity>::run()
 {
@@ -433,7 +433,7 @@ Laplacian<Dim, Order, RDim, ContinuityType, Entity>::run()
 
 } // Laplacian::run
 
-template<int Dim, int Order, int RDim, typename ContinuityType, template<uint16_type,uint16_type,uint16_type> class Entity>
+template<int Dim, int Order, int RDim, typename ContinuityType, template<uint16_type,int,uint16_type> class Entity>
 void
 Laplacian<Dim, Order, RDim, ContinuityType, Entity>::exportResults( element_type& U, element_type& v )
 {

@@ -53,7 +53,7 @@ makeAbout()
     return about;
 }
 
-template <uint32_type OrderGeo>
+template <int OrderGeo>
 void test2dTo1d()
 {
     typedef Mesh<Simplex<2, OrderGeo, 2>> mesh_2d_type;
@@ -125,7 +125,7 @@ void test2dTo1d()
 //---------------------------------------------------------------------------------------------//
 //---------------------------------------------------------------------------------------------//
 
-template <uint32_type OrderGeo>
+template <int OrderGeo>
 void test2dTo2d()
 {
     typedef Mesh<Simplex<2, OrderGeo, 2>> mesh_type;
@@ -299,7 +299,7 @@ void test2dTo2d()
 
 } // test2dTo2d
 
-template <uint16_type OrderGeo>
+template <int OrderGeo>
 std::shared_ptr<Mesh<Simplex<2, OrderGeo>>>
     buildMeshSMD( mpl::int_<2> /**/ )
 {
@@ -315,7 +315,7 @@ std::shared_ptr<Mesh<Simplex<2, OrderGeo>>>
                               _name = ( boost::format( "rectangleSMD-%1%" ) % OrderGeo ).str() );
     return mesh;
 }
-template <uint16_type OrderGeo>
+template <int OrderGeo>
 std::shared_ptr<Mesh<Simplex<3, OrderGeo>>>
     buildMeshSMD( mpl::int_<3> /**/ )
 {
@@ -355,7 +355,7 @@ std::shared_ptr<Mesh<Simplex<3, OrderGeo>>>
     return mesh;
 }
 
-template <uint16_type Dim, uint16_type OrderGeo,int Order=3, template<class Convex, uint16_type OrderP, typename T> class PointSetT = PointSetFekete>
+template <uint16_type Dim, int OrderGeo,int Order=3, template<class Convex, int OrderP, typename T> class PointSetT = PointSetFekete>
 void testSMD( double tol )
 {
     BOOST_TEST_MESSAGE( "start test SMD " << Dim << "d Geo" << OrderGeo );

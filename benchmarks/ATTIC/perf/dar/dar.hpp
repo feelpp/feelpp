@@ -47,7 +47,7 @@ gmsh_ptrtype createRing( int Dim, int Order, double meshSize, std::string const&
 template<int Dim,
          int Order,
          typename Cont,
-         template<uint16_type,uint16_type,uint16_type> class Entity>
+         template<uint16_type,int,uint16_type> class Entity>
 class DAR
     :
 public Simget
@@ -111,7 +111,7 @@ private:
 
 }; // DAR
 
-template<int Dim, int Order, typename Cont, template<uint16_type,uint16_type,uint16_type> class Entity>
+template<int Dim, int Order, typename Cont, template<uint16_type,int,uint16_type> class Entity>
 void
 DAR<Dim, Order, Cont, Entity>::run()
 {
@@ -304,7 +304,7 @@ DAR<Dim, Order, Cont, Entity>::run()
     exporter->save();
 } // DAR::run
 
-template<int Dim, int Order, typename Cont, template<uint16_type,uint16_type,uint16_type> class Entity>
+template<int Dim, int Order, typename Cont, template<uint16_type,int,uint16_type> class Entity>
 template<typename f1_type, typename f2_type, typename f3_type>
 void
 DAR<Dim, Order, Cont, Entity>::exportResults( f1_type& U,

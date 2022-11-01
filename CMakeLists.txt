@@ -98,7 +98,6 @@ if(     NOT cmake_build_type_tolower STREQUAL "debug"
   message(FATAL_ERROR "Unknown build type \"${CMAKE_BUILD_TYPE}\". Allowed values are None, Debug, Release, MinSizeRel, RelWithDebInfo (case-insensitive), Asan, Coverage, DebugFull.")
 endif()
 
-
 #SET( CMAKE_CXX_FLAGS "-pipe -Wall -O2 ")
 #SET( CMAKE_C_FLAGS "-pipe -Wall -O2")
 

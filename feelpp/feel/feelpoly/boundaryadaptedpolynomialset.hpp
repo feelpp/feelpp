@@ -45,7 +45,7 @@ template<uint16_type Dim,
          uint16_type Order,
          template<uint16_type> class PolySetType = Scalar,
          typename T = double,
-         template<uint16_type,uint16_type,uint16_type> class Convex = Simplex>
+         template<uint16_type,int,uint16_type> class Convex = Simplex>
 class BoundaryAdaptedPolynomialSet
 {};
 

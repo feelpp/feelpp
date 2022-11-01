@@ -234,7 +234,7 @@ T coscos( typename Feel::node<T>::type const& t )
 template<Feel::uint16_type D,
          Feel::uint16_type N,
          typename T,
-         template<class Convex, Feel::uint16_type O, typename T2> class QPS = Feel::Gauss>
+         template<class Convex, int O, typename T2> class QPS = Feel::Gauss>
 class TestImPK
 {
 public:

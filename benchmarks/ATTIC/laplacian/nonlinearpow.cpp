@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2008-01-09
 
-  Copyright (C) 2008-2009 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2008-2009 Universitï¿½ Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -68,7 +68,7 @@ makeAbout()
                            "0.2",
                            "nD(n=1,2,3) NonLinearUL problem",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2008-2009 Université Joseph Fourier" );
+                           "Copyright (c) 2008-2009 Universitï¿½ Joseph Fourier" );
 
     about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;
@@ -86,7 +86,7 @@ using namespace Feel::vf;
  */
 template<int Dim,
          int Order = 1,
-         template<uint16_type,uint16_type,uint16_type> class Entity = Simplex>
+         template<uint16_type,int,uint16_type> class Entity = Simplex>
 class NonLinearPow
     :
 public ApplicationXML
@@ -177,7 +177,7 @@ private:
     export_ptrtype exporter;
 }; // NonLinearPow
 
-template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
+template<int Dim, int Order, template<uint16_type,int,uint16_type> class Entity>
 NonLinearPow<Dim,Order,Entity>::NonLinearPow( int argc, char** argv, AboutData const& ad, po::options_description const& od )
     :
     super( argc, argv, ad, od ),
@@ -221,7 +221,7 @@ NonLinearPow<Dim,Order,Entity>::NonLinearPow( int argc, char** argv, AboutData c
 }
 
 
-template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
+template<int Dim, int Order, template<uint16_type,int,uint16_type> class Entity>
 void
 NonLinearPow<Dim, Order, Entity>::updateResidual( const vector_ptrtype& X, vector_ptrtype& R )
 {
@@ -295,7 +295,7 @@ NonLinearPow<Dim, Order, Entity>::updateResidual( const vector_ptrtype& X, vecto
     R->close();
     LOG(INFO) << "[updateResidual] done in " << ti.elapsed() << "s\n";
 }
-template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
+template<int Dim, int Order, template<uint16_type,int,uint16_type> class Entity>
 void
 NonLinearPow<Dim, Order, Entity>::updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J )
 {
@@ -340,7 +340,7 @@ NonLinearPow<Dim, Order, Entity>::updateJacobian( const vector_ptrtype& X, spars
     LOG(INFO) << "[updateJacobian] done in " << ti.elapsed() << "s\n";
 }
 
-template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
+template<int Dim, int Order, template<uint16_type,int,uint16_type> class Entity>
 void
 NonLinearPow<Dim, Order, Entity>::run()
 {
@@ -421,7 +421,7 @@ NonLinearPow<Dim, Order, Entity>::run()
 
 } // NonLinearPow::run
 
-template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
+template<int Dim, int Order, template<uint16_type,int,uint16_type> class Entity>
 void
 NonLinearPow<Dim, Order, Entity>::solve( sparse_matrix_ptrtype& D, element_type& u, vector_ptrtype& F )
 {
@@ -434,7 +434,7 @@ NonLinearPow<Dim, Order, Entity>::solve( sparse_matrix_ptrtype& D, element_type&
 } // NonLinearPow::solve
 
 
-template<int Dim, int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
+template<int Dim, int Order, template<uint16_type,int,uint16_type> class Entity>
 void
 NonLinearPow<Dim, Order, Entity>::exportResults( element_type& U , element_type& UE )
 {

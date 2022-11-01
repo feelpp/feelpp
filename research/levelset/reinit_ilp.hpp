@@ -43,7 +43,7 @@ namespace Feel
 // An interface local projection reinitialization solver
 
 template<class Space,
-         template<uint16_type,uint16_type,uint16_type> class Entity>
+         template<uint16_type,int,uint16_type> class Entity>
 class ReinitializerILP
 {
 public:
@@ -109,7 +109,7 @@ private:
 
 
 template<class Space,
-         template<uint16_type,uint16_type,uint16_type> class Entity>
+         template<uint16_type,int,uint16_type> class Entity>
 typename ReinitializerILP<Space, Entity>::element_type
 ReinitializerILP<Space, Entity>::operator()
 ( element_type const& phi,

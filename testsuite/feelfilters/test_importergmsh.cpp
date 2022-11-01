@@ -58,7 +58,7 @@ using boost::unit_test::test_suite;
 using namespace Feel;
 
 
-template<int Dim, template <uint16_type,uint16_type,uint16_type> class Entity = Simplex>
+template<int Dim, template <uint16_type,int,uint16_type> class Entity = Simplex>
 void
 checkCreateGmshMesh( std::string const& shape, std::string const& convex = "Simplex" )
 {
@@ -86,23 +86,20 @@ FEELPP_ENVIRONMENT_NO_OPTIONS
 
 BOOST_AUTO_TEST_SUITE( gmshsuite )
 
-
-typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2>,boost::mpl::int_<3> > dim_types;
-//typedef boost::mpl::list<boost::mpl::int_<2> > dim_types;
-
-BOOST_AUTO_TEST_CASE_TEMPLATE( gmshsimplex, T, dim_types )
+using dim_t = boost::mp11::mp_list_c<int, 1,2,3>;
+BOOST_AUTO_TEST_CASE_TEMPLATE( gmshsimplex, T, dim_t )
 {
     checkCreateGmshMesh<T::value>( "simplex" );
 }
-BOOST_AUTO_TEST_CASE_TEMPLATE( gmshhypercube_simplex, T, dim_types )
+BOOST_AUTO_TEST_CASE_TEMPLATE( gmshhypercube_simplex, T, dim_t )
 {
     checkCreateGmshMesh<T::value>( "hypercube" );
 }
-BOOST_AUTO_TEST_CASE_TEMPLATE( gmshhypercube_hypercube, T, dim_types )
+BOOST_AUTO_TEST_CASE_TEMPLATE( gmshhypercube_hypercube, T, dim_t )
 {
     checkCreateGmshMesh<T::value, Hypercube>( "hypercube", "Hypercube" );
 }
-BOOST_AUTO_TEST_CASE_TEMPLATE( gmshellipsoid, T, dim_types )
+BOOST_AUTO_TEST_CASE_TEMPLATE( gmshellipsoid, T, dim_t )
 {
     checkCreateGmshMesh<T::value>( "ellipsoid" );
 }
@@ -214,7 +211,7 @@ BOOST_AUTO_TEST_CASE( gmshgeo_tbb )
 }
 #endif // FEELPP_HAS_TBB
 
-BOOST_AUTO_TEST_CASE_TEMPLATE( gmshimportexport, T, dim_types )
+BOOST_AUTO_TEST_CASE_TEMPLATE( gmshimportexport, T, dim_t )
 {
     if ( T::value==1 && Environment::worldComm().size()>1) return;
 

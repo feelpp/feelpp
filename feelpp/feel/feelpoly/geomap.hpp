@@ -99,10 +99,10 @@ struct GeomapInverse
     //GeomapInverse
 };
 
-template <uint16_type O,
+template <int O,
           template <uint16_type Dim> class PolySetType,
           typename ContinuityType,
-          template <class, uint16_type, class> class Pts,
+          template <class, int, class> class Pts,
           uint16_type TheTag>
 class Lagrange;
 
@@ -116,12 +116,12 @@ class Lagrange;
  *
  */
 template <uint16_type Dim,
-          uint16_type Order,
+          int Order,
           uint16_type RealDim,
           typename T = double,
-          template <uint16_type, uint16_type, uint16_type> class Entity = Simplex,
-          template <uint16_type, template <uint16_type RDim> class PolySetType, typename ContinuityType,
-                    template <class, uint16_type, class> class Pts, uint16_type> class PP = Lagrange>
+          template <uint16_type, int, uint16_type> class Entity = Simplex,
+          template <int, template <uint16_type RDim> class PolySetType, typename ContinuityType,
+                    template <class, int, class> class Pts, uint16_type> class PP = Lagrange>
 class GeoMap
     : public PP<Order, Scalar, Continuous, PointSetEquiSpaced, 0>::template apply<Dim, RealDim /*Dim*/, T, Entity<Dim, Order, /*RealDim*/ Dim>>::result_type //,
                                                                                                                                                              //public boost::enable_shared_from_this<GeoMap<Dim, Order, RealDim, T, Entity, PP > >
@@ -3282,7 +3282,7 @@ class GeoMap
 #include <boost/preprocessor/tuple/eat.hpp>
 #include <boost/preprocessor/tuple/to_list.hpp>
 
-template <int Dim, int Order, int RealDim, template <uint16_type, uint16_type, uint16_type> class Entity = Simplex, typename T = double>
+template <int Dim, int Order, int RealDim, template <uint16_type, int, uint16_type> class Entity = Simplex, typename T = double>
 struct GT_Lagrange
 {
 };
@@ -3366,7 +3366,7 @@ struct GT_QK
         : public GeoMap<FEELPP_GT_DIM( LDIMS ), LORDER, FEELPP_GT_REALDIM( LDIMS ), T, ENTITY, GEOM>            \
     {                                                                                                           \
         static const uint16_type nDim = FEELPP_GT_DIM( LDIMS );                                                 \
-        static const uint16_type order = LORDER;                                                                \
+        static const int order = LORDER;                                                                \
         static const uint16_type nRealDim = FEELPP_GT_REALDIM( LDIMS );                                         \
         static const uint16_type nRealDimCheck2d = mpl::if_<mpl::less_equal<mpl::int_<2>, mpl::int_<nRealDim>>, \
                                                             mpl::int_<nRealDim>,                                \
@@ -3431,7 +3431,7 @@ BOOST_PP_LIST_FOR_EACH_PRODUCT( FEELPP_GT_FACTORY_OP, 4, ( FEELPP_GEOMAP, FEELPP
 #undef FEELPP_REALDIMS
 #undef FEELPP_NEWDIMS
 
-template <typename Elem, template <uint16_type, uint16_type, uint16_type> class Entity = Simplex, typename T = double>
+template <typename Elem, template <uint16_type, int, uint16_type> class Entity = Simplex, typename T = double>
 class RealToReference
 {
   public:

@@ -31,7 +31,8 @@
 #define __Legendre_H 1
 
 #include <vector>
-
+#include <fmt/core.h>
+#include <fmt/ostream.h>
 #include <boost/lambda/if.hpp>
 
 #include <feel/feelmesh/refentity.hpp>
@@ -46,13 +47,13 @@
 namespace Feel
 {
 template< class Convex,
-          uint16_type Order,
+          int Order,
           typename T >
 class PointSetGaussLobatto;
 
 template<uint16_type Dim,
          uint16_type RealDim,
-         uint16_type Degree,
+         int Degree,
          typename NormalizationPolicy,
          typename T,
          template<class> class StoragePolicy>
@@ -61,17 +62,17 @@ class Legendre;
 
 template<uint16_type Dim,
          uint16_type RealDim,
-         uint16_type Degree,
+         int Degree,
          typename NormalizationPolicy = Normalized<true>,
          typename T = double,
          template<class> class StoragePolicy = StorageUBlas>
 struct LegendreTraits
 {
-    static const uint16_type nDim = Dim;
-    static const uint16_type nRealDim = RealDim;
-    static const uint16_type nOrder = Degree;
-    static const uint16_type nConvexOrderDiff = nOrder+2;
-    static const bool is_normalized = NormalizationPolicy::is_normalized;
+    inline static constexpr uint16_type nDim = Dim;
+    inline static constexpr uint16_type nRealDim = RealDim;
+    inline static constexpr int nOrder = Degree;
+    inline static constexpr int nConvexOrderDiff = nOrder+2;
+    inline static constexpr bool is_normalized = NormalizationPolicy::is_normalized;
 
     /** @name Typedefs
      */
@@ -82,7 +83,7 @@ struct LegendreTraits
      */
     typedef T value_type;
 
-    template<uint16_type order, typename V = value_type>
+    template<int order, typename V = value_type>
     struct Convex
     {
         typedef Hypercube<nDim, order, /*nRealDim*/nDim> type;
@@ -128,8 +129,8 @@ struct LegendreTraits
 template<int D, int O>
 struct LegendreTag
 {
-    static const int Dim = D;
-    static const int Order = O;
+    inline static constexpr int Dim = D;
+    inline static constexpr int Order = O;
 };
 /**
  * \class Legendre
@@ -154,7 +155,7 @@ struct LegendreTag
  */
 template<uint16_type Dim,
          uint16_type RealDim,
-         uint16_type Degree,
+         int Degree,
          typename NormalizationPolicy = Normalized<true>,
          typename T = double,
          template<class> class StoragePolicy = StorageUBlas>
@@ -163,14 +164,15 @@ class Legendre
 public:
 
     typedef LegendreTraits<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy> traits_type;
-    static const uint16_type nDim = Dim;
-    static const uint16_type nRealDim = RealDim;
-    static const uint16_type nOrder = Degree;
-    static const uint16_type nConvexOrder = nOrder+2;
-    static const bool is_normalized = NormalizationPolicy::is_normalized;
-    static const bool isTransformationEquivalent = true;
-    static const bool isContinuous = false;
-    static const bool is_product = true;
+    inline static constexpr uint16_type nDim = Dim;
+    inline static constexpr uint16_type nRealDim = RealDim;
+    inline static constexpr int nOrder = Degree;
+    inline static constexpr int nConvexOrder = nOrder+2;
+    inline static constexpr bool is_order_dynamic = (nOrder == Dynamic);
+    inline static constexpr bool is_normalized = NormalizationPolicy::is_normalized;
+    inline static constexpr bool isTransformationEquivalent = true;
+    inline static constexpr bool isContinuous = false;
+    inline static constexpr bool is_product = true;
     typedef Discontinuous continuity_type;
 
     /** @name Typedefs
@@ -214,21 +216,18 @@ public:
 
     Legendre()
         :
-        M_refconvex(),
-        M_pts( M_refconvex.makePoints( nDim, 0 ) )
+        Legendre( nOrder )
+    {
+    }
+    Legendre( int order )
+        : M_order( order ), 
+          M_refconvex( order ),
+          M_pts( M_refconvex.makePoints( nDim, 0 ) )
     {
         this->initDerivation();
     }
-    Legendre( Legendre const & d )
-        :
-        M_refconvex(),
-        M_pts( d.M_pts )
-    {
-
-    }
-
-    ~Legendre()
-    {}
+    Legendre( Legendre const & d ) = default;
+    ~Legendre() = default;
 
     //@}
 
@@ -278,7 +277,7 @@ public:
      * \return the maximum degree of the Legendre polynomial to be
      * constructed
      */
-    uint16_type degree() const
+    int degree() const
     {
         return nOrder;
     }
@@ -465,42 +464,32 @@ private:
 
     static void initDerivation();
 private:
+    //! polynomial order
+    int M_order;
+
+    //! convex where the polynomials are evaluated
     reference_convex_type M_refconvex;
+
+    //! points where the polynomials are evaluated
     points_type M_pts;
+
     /**
      * \c true if differentation matrix initialized, \c false
      * otherwise
      */
-    static bool _S_has_derivation;
+    inline static bool _S_has_derivation;
 
     /**
      * Derivation matrix
      * \note construct it only once per dubiner polynomials
      */
-    static std::vector<matrix_type> _S_D;
+    inline static std::vector<matrix_type> _S_D;
 
 }; // class Dubiner
 
 template<uint16_type Dim,
          uint16_type RealDim,
-         uint16_type Degree,
-         typename NormalizationPolicy,
-         typename T,
-         template<class> class StoragePolicy>
-bool Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::_S_has_derivation = false;
-
-template<uint16_type Dim,
-         uint16_type RealDim,
-         uint16_type Degree,
-         typename NormalizationPolicy,
-         typename T,
-         template<class> class StoragePolicy>
-std::vector<typename Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::matrix_type>
-Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::_S_D;
-
-template<uint16_type Dim,
-         uint16_type RealDim,
-         uint16_type Degree,
+         int Degree,
          typename NormalizationPolicy,
          typename T,
          template<class> class StoragePolicy>
@@ -525,11 +514,14 @@ Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::initDeriv
     {
         _S_has_derivation = true;
 
-        reference_convex_type refconvex;
+        reference_convex_type refconvex{nOrder};
+        LOG(INFO) << fmt::format("order: {}", nOrder) << std::endl;
         // constructor pointset for differentiation only in
         // the interior(1)
-        diff_pointset_type diff_pts( 1 );
+        diff_pointset_type diff_pts( nConvexOrder, 1 );
+        LOG(INFO) << fmt::format("diff_pts: {}", diff_pts) << std::endl;
         matrix_type A( evaluate( diff_pts.points() ) );
+        LOG(INFO) << fmt::format("A: {}", A) << std::endl;
 
 #if 1
         matrix_type D = ublas::identity_matrix<value_type>( A.size1(), A.size2()  );
@@ -551,7 +543,7 @@ Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::initDeriv
 
 template<uint16_type Dim,
          uint16_type RealDim,
-         uint16_type Degree,
+         int Degree,
          typename NormalizationPolicy,
          typename T,
          template<class> class StoragePolicy>
@@ -580,7 +572,7 @@ Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::evaluate(
 
 template<uint16_type Dim,
          uint16_type RealDim,
-         uint16_type Degree,
+         int Degree,
          typename NormalizationPolicy,
          typename T,
          template<class> class StoragePolicy>
@@ -614,7 +606,7 @@ Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::derivate(
 
 template<uint16_type Dim,
          uint16_type RealDim,
-         uint16_type Degree,
+         int Degree,
          typename NormalizationPolicy,
          typename T,
          template<class> class StoragePolicy>
@@ -651,7 +643,7 @@ Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::evaluate(
 
 template<uint16_type Dim,
          uint16_type RealDim,
-         uint16_type Degree,
+         int Degree,
          typename NormalizationPolicy,
          typename T,
          template<class> class StoragePolicy>

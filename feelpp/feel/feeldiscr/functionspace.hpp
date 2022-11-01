@@ -3078,7 +3078,6 @@ public:
         {
             return this->extremeValue( P0h, "min" );
         }
-
         template <typename ... CTX>
         basis_context_ptrtype
         selectContext( CTX const& ... ctx ) const

@@ -30,11 +30,11 @@
 #ifndef __GaussLobatto_H
 #define __GaussLobatto_H 1
 
+#include <stdexcept>
 #include <feel/feelmesh/refentity.hpp>
 
 #include <feel/feelcore/visitor.hpp>
 
-#include <stdexcept>
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/io.hpp>
 #include <boost/numeric/ublas/vector.hpp>
@@ -59,7 +59,7 @@ namespace ublas = boost::numeric::ublas;
 
 
 template<class Convex, typename T, typename IndexT> class PointSetQuadrature;
-template<int Dim, int Order, int RealDim, template<uint16_type,uint16_type,uint16_type> class Entity, typename T> struct GT_Lagrange;
+template<int Dim, int Order, int RealDim, template<uint16_type,int,uint16_type> class Entity, typename T> struct GT_Lagrange;
 
 /*!
  * \class GaussLobatto
@@ -75,11 +75,11 @@ template<int Dim, int Order, int RealDim, template<uint16_type,uint16_type,uint1
  * @author Gilles Steiner
  * @author Christophe Prud'homme
  */
-template<class Convex, uint16_type Integration_Degree, typename T>
+template<class Convex, int Integration_Degree, typename T>
 class GaussLobatto : public PointSetQuadrature<Convex, T, index_type>  {};
 
 /// \cond detail
-template< uint16_type Integration_Degree, typename T>
+template< int Integration_Degree, typename T>
 class GaussLobatto<Simplex<1,1> , Integration_Degree ,T >  : public PointSetQuadrature<Simplex<1,1> , T, index_type>
 {
 public :
@@ -112,7 +112,7 @@ public :
 
 /** Gauss-Lobatto x Left-Radau Quadrature on a triangle **/
 
-template< uint16_type Integration_Degree, typename T>
+template< int Integration_Degree, typename T>
 class GaussLobatto<Simplex<2,1> , Integration_Degree ,T >  : public PointSetQuadrature<Simplex<2,1> , T, index_type>
 {
 public :
@@ -176,7 +176,7 @@ public :
 
 /** Gauss-Lobatto x Left-Radau x Left-Radau Quadrature on a tetrahedra **/
 
-template< uint16_type Integration_Degree, typename T>
+template< int Integration_Degree, typename T>
 class GaussLobatto<Simplex<3,1> , Integration_Degree ,T >  : public PointSetQuadrature<Simplex<3,1> , T, index_type>
 {
 public :
@@ -253,7 +253,7 @@ public :
 
 /** GaussLobatto Quadrature on the quadrangle [-1,1]x[-1,1] **/
 
-template< uint16_type Integration_Degree, typename T>
+template< int Integration_Degree, typename T>
 class GaussLobatto<Hypercube<2,1>, Integration_Degree ,T >
     :
         public PointSetQuadrature<Hypercube<2,1>, T, index_type>
@@ -365,7 +365,7 @@ public :
  * @see
  */
 template< class Convex,
-          uint16_type Order,
+          int Order,
           typename T = double >
 class PointSetGaussLobatto : public PointSetInterpolation<Convex::nDim, Order, T, Hypercube>
 {
@@ -377,15 +377,14 @@ public:
 
     typedef T value_type;
 
-    static const uint32_type Dim = Convex::nDim;
-    static const uint32_type nPoints = Order+1;
-    static const uint32_type topological_dimension = Convex::topological_dimension;
-    static const uint32_type nRealDim = Convex::nRealDim;
+    inline static constexpr uint32_type Dim = Convex::nDim;
+    inline static constexpr uint32_type topological_dimension = Convex::topological_dimension;
+    inline static constexpr uint32_type nRealDim = Convex::nRealDim;
+    inline static constexpr bool is_order_dynamic = ( Order == Dynamic );
+    inline static constexpr size_type Shape = Convex::Shape;
 
-    static const size_type Shape = Convex::Shape;
-
-    static const bool is_simplex = Convex::is_simplex;
-    static const bool is_hypercube = Convex::is_hypercube;
+    inline static constexpr bool is_simplex = Convex::is_simplex;
+    inline static constexpr bool is_hypercube = Convex::is_hypercube;
 
     typedef Reference<Convex, Dim, Convex::nOrder, Convex::nDim/*Convex::nRealDim*/, value_type> reference_convex_type;
 
@@ -401,22 +400,34 @@ public:
     typedef typename Convex::face_to_edge_t face_to_edge_t;
 
     typedef Hypercube<Dim, Order, Dim> conv_order_type;
-    static const uint32_type numPoints = conv_order_type::numPoints;
+    inline static const int numPoints = conv_order_type::numPoints;
+    using convex_t = conv_order_type;
 
     reference_convex_type RefConv;
 
     typedef typename super::range_type range_type;
     typedef typename super::index_map_type index_map_type;
 
+    
     PointSetGaussLobatto( int interior = 0 )
+        :
+        PointSetGaussLobatto( Order, interior )
     {
-        FEELPP_ASSERT( is_hypercube || ( Dim == 1 )  ).error( "gauss lobatto points are just defined in simplex products" );
+    }
+    PointSetGaussLobatto( int order, int interior )
+        : super( convex_t::computeNumberPointsPerEntity( order )[0][Dim] ),
+          M_order( order )
+    {
+        LOG(INFO) << fmt::format("PointSetGaussLobatto::PointSetGaussLobatto order: {} ", M_order) << "\n";
+        if( !(is_hypercube || ( Dim == 1 ) ) )
+            throw std::logic_error("gauss lobatto points are just defined in hypercubes or in 1D");
 
-        nodes_type pts( Dim, numPoints );
+        nodes_type pts( Dim, this->numberOfPoints() );
 
-        calculate_gl_points( mpl::bool_< ( Order > 1 )>() );
+        calculate_gl_points(order);
+        LOG(INFO) << fmt::format("GL points: {}\n", gl_pts );
 
-        if ( interior == 0 && Order > 0 )
+        if ( interior == 0 &&  order > 0 )
         {
             for ( uint16_type d = 0, p = 0; d < topological_dimension+1; ++d )
             {
@@ -444,37 +455,66 @@ public:
             this->setPoints( pts );
         }
 
-        else if ( interior == 1 && Order > 0 )
+        else if ( interior == 1 && order > 0 )
             this->setPoints( makePoints( Dim, 0 ) );
 
-        else if ( Order == 0 )
+        else if ( order == 0 )
             this->setPoints( glas::average( RefConv.vertices() ) );
 
-        this->setName( "gausslobatto", Order );
+        LOG(INFO) << fmt::format("Gauss Lobatto pointset created order:{}, interior:{}: {}", M_order, interior, this->points() ) << std::endl;
+
+        this->setName( "gausslobatto", order );
 
         //std::cout << "end constructor...\n";
     }
 
     ~PointSetGaussLobatto() override {}
 
-private:
-
-    vector_type gl_pts;
-
-    void calculate_gl_points ( mpl::bool_<true> )
+    /**
+     * \return the number of points
+     */
+    [[nodiscard]] constexpr int numberOfPoints() const
     {
-        vector_type wx( Order+1 );
-        vector_type px( Order+1 );
-
-        Feel::details::gausslobattojacobi<Order+1, T, vector_type, vector_type >( wx, px );
-
-        ublas::vector_range<vector_type> inner_pts ( px, ublas::range( 1, px.size()-1 ) );
-
-        gl_pts = inner_pts;
+        if constexpr ( is_order_dynamic )
+        {
+            return convex_t::computeNumberPointsPerEntity( M_order )[0][Dim];
+        }
+        else
+            return numPoints;
     }
+    /**
+     * @brief order of the pointset at compile time
+     * 
+     */
+    [[nodiscard]] static constexpr int orderAtCompileTime()
+    {
+        return Order;
+    }
+    /**
+     * \return the order of the pointset
+     */
+    [[nodiscard]] int order() const
+    {
+        return M_order;
+    }
+private:
+  int M_order;
+  vector_type gl_pts;
 
-    void calculate_gl_points ( mpl::bool_<false> )
-    {}
+  void calculate_gl_points( int order )
+  {
+      if ( order > 1 )
+      {
+          vector_type wx( order + 1 );
+          vector_type px( order + 1 );
+
+          Feel::details::dyna::gausslobattojacobi<T, vector_type, vector_type>( order + 1, wx, px );
+
+          ublas::vector_range<vector_type> inner_pts( px, ublas::range( 1, px.size() - 1 ) );
+
+          gl_pts = inner_pts;
+      }
+    }
 
     points_type makePoints( uint16_type topo_dim, uint16_type __id )
     {
@@ -536,7 +576,7 @@ private:
     {
         points_type G;
 
-        if ( Order > 0 )
+        if ( M_order > 0 )
         {
             if ( shape == SHAPE_LINE )
                 G = make_line_points();
@@ -548,7 +588,7 @@ private:
                 return make_hexa_points();
         }
 
-        else if ( Order == 0 )
+        else if ( M_order == 0 )
             G = glas::average( RefConv.vertices() );
 
         return G;
@@ -556,18 +596,18 @@ private:
 
     int n_line_points()
     {
-        return std::max( 0, int( Order ) - 1 );
+        return std::max( 0, int( M_order ) - 1 );
     }
 
     int n_quad_points() const
     {
-        return std::max( 0, ( int( Order ) - 1 )*( int( Order ) - 1 ) );
+        return std::max( 0, ( int( M_order ) - 1 )*( int( M_order ) - 1 ) );
 
     }
 
     int n_hexa_points() const
     {
-        return std::max( 0, ( int( Order )-1 )*( int( Order )-1 )*( int( Order )-1 ) );
+        return std::max( 0, ( int( M_order )-1 )*( int( M_order )-1 )*( int( M_order )-1 ) );
     }
 
     points_type
@@ -575,7 +615,7 @@ private:
     {
         points_type G ( Dim, n_line_points() );
 
-        if ( Order > 1 )
+        if ( M_order > 1 )
         {
             vector_type ones ( ublas::scalar_vector<value_type>( G.size2(), value_type( 1 ) ) );
 
@@ -593,9 +633,9 @@ private:
     {
         points_type G( Dim, n_quad_points() );
 
-        if ( Order > 1 )
+        if ( M_order > 1 )
         {
-            uint16_type numInterior = Order - 1;
+            uint16_type numInterior = M_order - 1;
 
             for ( uint16_type i = 0,  k = 0; i < numInterior; ++i )
             {
@@ -620,9 +660,9 @@ private:
     {
         points_type G( Dim, n_hexa_points() );
 
-        if ( Order > 1 )
+        if ( M_order > 1 )
         {
-            uint16_type numInterior = Order - 1;
+            uint16_type numInterior = M_order - 1;
 
             for ( uint16_type i = 0,  k = 0; i < numInterior; ++i )
             {
@@ -728,5 +768,24 @@ private:
     };
 
 };
-} // Feel
+
+/**
+ * @brief stream operator for PointSetGaussLobatto
+ *
+ * @tparam Convex type of convex
+ * @tparam Order order at compile time 
+ * @tparam T numerical type
+ * @param os output stream
+ * @param q GL pointset
+ * @return std::ostream& the output stream
+ */
+template< class Convex, int Order,typename T>
+std::ostream& operator<<( std::ostream& os, PointSetGaussLobatto<Convex,Order,T> const& q )
+{
+    os << "PointSetGaussLobatto<"<< q.orderAtCompileTime() << "," << q.order() << "," << q.is_order_dynamic << ">( " << q.numberOfPoints() << "):\n" <<  q.points() << "\n";
+    return os;
+}
+
+} // namespace Feel
+
 #endif /* __GaussLobatto_H */

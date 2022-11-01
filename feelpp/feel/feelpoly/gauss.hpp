@@ -37,7 +37,7 @@
 
 namespace Feel
 {
-template<int Dim, int Order, int RealDim, template<uint16_type,uint16_type,uint16_type> class Entity, typename T> struct GT_Lagrange;
+template<int Dim, int Order, int RealDim, template<uint16_type,int,uint16_type> class Entity, typename T> struct GT_Lagrange;
 template<class Convex, typename T, typename IndexT> class PointSetQuadrature;
 
 /*!
@@ -54,12 +54,12 @@ template<class Convex, typename T, typename IndexT> class PointSetQuadrature;
  * @author Gilles Steiner
  * @author Christophe Prud'homme
  */
-template<class Convex, uint16_type Integration_Degree, typename T>
+template<class Convex, int Integration_Degree, typename T>
 class Gauss : public PointSetQuadrature<Convex, T, index_type>  {};
 
 /// \cond detail
 
-template< uint16_type Integration_Degree, typename T>
+template< int Integration_Degree, typename T>
 class Gauss<Simplex<0,1> , Integration_Degree ,T >  : public PointSetQuadrature<Simplex<0,1> , T, index_type>
 {
 public :
@@ -88,7 +88,7 @@ public :
 };
 
 /// \cond detail
-template< uint16_type Integration_Degree, typename T>
+template< int Integration_Degree, typename T>
 class Gauss<Simplex<1,1> , Integration_Degree ,T >  : public PointSetQuadrature<Simplex<1,1> , T, index_type>
 {
 public :
@@ -129,7 +129,7 @@ public :
 
 /** Gauss Quadrature on a triangle **/
 
-template< uint16_type Integration_Degree, typename T>
+template< int Integration_Degree, typename T>
 class Gauss<Simplex<2,1> , Integration_Degree ,T >  : public PointSetQuadrature<Simplex<2,1> , T, index_type>
 {
 public :
@@ -209,7 +209,7 @@ public :
 
 /** Gauss Quadrature on a tetrahedra **/
 
-template< uint16_type Integration_Degree, typename T>
+template< int Integration_Degree, typename T>
 class Gauss<Simplex<3,1> , Integration_Degree ,T >  : public PointSetQuadrature<Simplex<3,1> , T, index_type>
 {
 public :
@@ -280,7 +280,7 @@ public :
 
 /** Gauss Quadrature on Simplex Product **/
 
-template< uint16_type Integration_Degree, typename T>
+template< int Integration_Degree, typename T>
 class Gauss<Hypercube<1,1>, Integration_Degree ,T >
     :
 public PointSetQuadrature<Hypercube<1,1>, T, index_type>
@@ -339,7 +339,7 @@ public :
 };
 /** Gauss Quadrature on the quadrangle [-1,1]x[-1,1] **/
 
-template< uint16_type Integration_Degree, typename T>
+template< int Integration_Degree, typename T>
 class Gauss<Hypercube<2,1>, Integration_Degree ,T >
     :
     public PointSetQuadrature<Hypercube<2,1>, T, index_type>
@@ -400,7 +400,7 @@ public :
 
 /** Gauss Quadrature on the hexahedra [-1,1]x[-1,1]x[-1,1] **/
 
-template< uint16_type Integration_Degree, typename T>
+template< int Integration_Degree, typename T>
 class Gauss<Hypercube<3,1>, Integration_Degree ,T >
     :
     public PointSetQuadrature<Hypercube<3,1>, T, index_type>
@@ -454,7 +454,7 @@ public :
 };
 
 
-template< uint16_type Integration_Degree, typename T>
+template< int Integration_Degree, typename T>
 class Gauss<Hypercube<4,1>, Integration_Degree ,T >
     :
     public PointSetQuadrature<Hypercube<4,1>, T, index_type>
@@ -506,7 +506,7 @@ public :
 };
 
 
-template< uint16_type Integration_Degree, typename T>
+template< int Integration_Degree, typename T>
 class Gauss<Hypercube<5,1>, Integration_Degree ,T >
     :
     public PointSetQuadrature<Hypercube<5,1>, T, index_type>

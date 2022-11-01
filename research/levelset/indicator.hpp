@@ -43,7 +43,7 @@ namespace Feel
 // Class collecting
 
 template<class Space,
-         template<uint16_type,uint16_type,uint16_type> class Entity>
+         template<uint16_type,int,uint16_type> class Entity>
 class Indicator
 {
 public:
@@ -156,7 +156,7 @@ private:
 
 
 template<class Space,
-         template<uint16_type,uint16_type,uint16_type> class Entity>
+         template<uint16_type,int,uint16_type> class Entity>
 void
 Indicator<Space, Entity>::updateKappa( element_type const& phi )
 {
@@ -180,7 +180,7 @@ Indicator<Space, Entity>::updateKappa( element_type const& phi )
 
 
 template<class Space,
-         template<uint16_type,uint16_type,uint16_type> class Entity>
+         template<uint16_type,int,uint16_type> class Entity>
 void
 Indicator<Space, Entity>::update( element_type const& phi )
 {
@@ -197,7 +197,7 @@ Indicator<Space, Entity>::update( element_type const& phi )
 
 
 template<class Space,
-         template<uint16_type,uint16_type,uint16_type> class Entity>
+         template<uint16_type,int,uint16_type> class Entity>
 void
 Indicator<Space, Entity>::update( element_type const& phiNew,
                                   element_type const& phiOld )

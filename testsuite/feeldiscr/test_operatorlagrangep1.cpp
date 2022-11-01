@@ -2,6 +2,7 @@
 #define BOOST_TEST_MODULE operatorlagrangep1 testsuite
 #include <feel/feelcore/testsuite.hpp>
 
+#include <boost/mp11/utility.hpp>
 
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feeldiscr/pchv.hpp>
@@ -14,7 +15,7 @@
 
 using namespace Feel;
 
-template <int OrderLagP1,template<class, uint16_type, class> class PointSetType,typename MeshType>
+template <int OrderLagP1,template<class, int, class> class PointSetType,typename MeshType>
 void run_test_oplagp1( std::shared_ptr<MeshType> meshBase )
 {
     auto VhBase = Pch<OrderLagP1,double,PointSetType>( meshBase );
@@ -38,7 +39,7 @@ void run_test_oplagp1( std::shared_ptr<MeshType> meshBase )
 
 FEELPP_ENVIRONMENT_NO_OPTIONS
 
-typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2> > order_geo_types;
+using order_geo_types = boost::mp11::mp_list_c<int, 1, 2>;
 BOOST_AUTO_TEST_CASE_TEMPLATE( test_oplagp1_2d, T, order_geo_types )
 {
     static const int orderGeo = T::value;

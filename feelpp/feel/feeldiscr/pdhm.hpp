@@ -38,7 +38,7 @@ template<typename MeshType,
          int Order,
          template <uint16_type> class Pset = Tensor2,
          typename T = double,
-         template<class, uint16_type, class> class Pts = PointSetFekete,
+         template<class, int, class> class Pts = PointSetFekete,
          int Tag = 0>
 struct Pdhmg
 {
@@ -53,14 +53,14 @@ struct Pdhmg
 template<typename MeshType,
          int Order,
          typename T = double,
-         template<class, uint16_type, class> class Pts = PointSetFekete,
+         template<class, int, class> class Pts = PointSetFekete,
          int Tag = 0>
 using Pdhm = Pdhmg<MeshType,Order,Tensor2,T,Pts,Tag>;
 
 template<typename MeshType,
          int Order,
          typename T = double,
-         template<class, uint16_type, class> class Pts = PointSetFekete,
+         template<class, int, class> class Pts = PointSetFekete,
          int Tag = 0>
 using Pdhms = Pdhmg<MeshType,Order,Tensor2Symm,T,Pts,Tag>;
 
@@ -69,26 +69,26 @@ using Pdhms = Pdhmg<MeshType,Order,Tensor2Symm,T,Pts,Tag>;
 template<typename MeshType,
          int Order,
          typename T = double,
-         template<class, uint16_type, class> class Pts = PointSetFekete,
+         template<class, int, class> class Pts = PointSetFekete,
          int Tag = 0>
 using Pdhm_type = typename meta::Pdhm<MeshType,Order,T,Pts,Tag>::type;
 template<typename MeshType,
          int Order,
          typename T = double,
-         template<class, uint16_type, class> class Pts = PointSetFekete,
+         template<class, int, class> class Pts = PointSetFekete,
          int Tag = 0>
 using Pdhm_ptrtype = typename meta::Pdhm<MeshType,Order,T,Pts,Tag>::ptrtype;
 
 template<typename MeshType,
          int Order,
          typename T = double,
-         template<class, uint16_type, class> class Pts = PointSetFekete,
+         template<class, int, class> class Pts = PointSetFekete,
          int Tag = 0>
 using Pdhms_type = typename meta::Pdhms<MeshType,Order,T,Pts,Tag>::type;
 template<typename MeshType,
          int Order,
          typename T = double,
-         template<class, uint16_type, class> class Pts = PointSetFekete,
+         template<class, int, class> class Pts = PointSetFekete,
          int Tag = 0>
 using Pdhms_ptrtype = typename meta::Pdhms<MeshType,Order,T,Pts,Tag>::ptrtype;
 
@@ -100,7 +100,7 @@ using Pdhms_ptrtype = typename meta::Pdhms<MeshType,Order,T,Pts,Tag>::ptrtype;
  */
 template<int Order,
          typename T = double,
-         template<class, uint16_type, class> class Pts = PointSetFekete,
+         template<class, int, class> class Pts = PointSetFekete,
          typename MeshType,
          int Tag = 0>
 inline
@@ -118,7 +118,7 @@ Pdhm( std::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
  */
 template<int Order,
          typename T = double,
-         template<class, uint16_type, class> class Pts = PointSetFekete,
+         template<class, int, class> class Pts = PointSetFekete,
          typename MeshType,
          int Tag = 0>
 inline

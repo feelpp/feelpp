@@ -58,7 +58,7 @@ namespace Feel
  */
 template<int Dim,
          typename BasisU,
-         template<uint16_type,uint16_type,uint16_type> class Entity>
+         template<uint16_type,int,uint16_type> class Entity>
 class Tilted
     :
 public Simget
@@ -139,7 +139,7 @@ private:
 }; // Tilted
 
 
-template<int Dim, typename BasisU, template<uint16_type,uint16_type,uint16_type> class Entity>
+template<int Dim, typename BasisU, template<uint16_type,int,uint16_type> class Entity>
 void
 Tilted<Dim, BasisU, Entity>::run()
 {
@@ -478,7 +478,7 @@ Tilted<Dim, BasisU, Entity>::run()
 } // Tilted::run
 
 
-template<int Dim, typename BasisU, template<uint16_type,uint16_type,uint16_type> class Entity>
+template<int Dim, typename BasisU, template<uint16_type,int,uint16_type> class Entity>
 void
 Tilted<Dim, BasisU, Entity>::exportResults( element_type& u, element_type& v, p0_element_type& k, element_type& vbdy )
 {

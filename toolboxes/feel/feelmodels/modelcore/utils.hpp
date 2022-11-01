@@ -10,11 +10,11 @@ template<uint16_type, typename T> struct ChangeBasisOrder;
 
 template<
     uint16_type NewOrder,
-    template<uint16_type, template<uint16_type> class, typename, template<class, uint16_type, class> class, uint16_type > class BasisType,
+    template<uint16_type, template<uint16_type> class, typename, template<class, int, class> class, uint16_type > class BasisType,
     uint16_type Order,
     template<uint16_type> class PolySetType,
     typename ContinuityType,
-    template<class, uint16_type, class> class Pts,
+    template<class, int, class> class Pts,
     uint16_type Tag
         >
 struct ChangeBasisOrder<NewOrder, BasisType<Order, PolySetType, ContinuityType, Pts, Tag>>
@@ -26,11 +26,11 @@ template<template<uint16_type> class, typename T> struct ChangeBasisPolySet;
 
 template<
     template<uint16_type> class NewPolySetType,
-    template<uint16_type, template<uint16_type> class, typename, template<class, uint16_type, class> class, uint16_type > class BasisType,
+    template<uint16_type, template<uint16_type> class, typename, template<class, int, class> class, uint16_type > class BasisType,
     uint16_type Order,
     template<uint16_type> class PolySetType,
     typename ContinuityType,
-    template<class, uint16_type, class> class Pts,
+    template<class, int, class> class Pts,
     uint16_type Tag
     >
 struct ChangeBasisPolySet<NewPolySetType, BasisType<Order, PolySetType, ContinuityType, Pts, Tag>>
@@ -54,11 +54,11 @@ template<typename C, typename T> struct ChangeBasisContinuity;
 
 template<
     typename NewContinuityType,
-    template<uint16_type, template<uint16_type> class, typename, template<class, uint16_type, class> class, uint16_type > class BasisType,
+    template<uint16_type, template<uint16_type> class, typename, template<class, int, class> class, uint16_type > class BasisType,
     uint16_type Order,
     template<uint16_type> class PolySetType,
     typename ContinuityType,
-    template<class, uint16_type, class> class Pts,
+    template<class, int, class> class Pts,
     uint16_type Tag
         >
 struct ChangeBasisContinuity<NewContinuityType, BasisType<Order, PolySetType, ContinuityType, Pts, Tag>>

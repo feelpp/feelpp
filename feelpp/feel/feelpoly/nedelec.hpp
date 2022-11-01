@@ -39,6 +39,7 @@
 
 #include <boost/assign/list_of.hpp>
 #include <boost/assign/std/vector.hpp>
+#include <boost/mp11/utility.hpp>
 
 #include <boost/type_traits.hpp>
 
@@ -128,13 +129,13 @@ struct extract_all_poly_indices
 }// detail
 
 template<uint16_type N,
-         uint16_type O,
+         int O,
          NedelecKind Kind = NedelecKind::NED2,
          typename T = double,
          uint16_type TheTAG = 0 >
 class NedelecPolynomialSet{};
 
-template<uint16_type O,
+template<int O,
          typename T,
          uint16_type TheTAG>
 class NedelecPolynomialSet<2,O,NedelecKind::NED1,T,TheTAG>
@@ -165,7 +166,8 @@ public:
     typedef typename super::points_type points_type;
 
     static const uint16_type nDim = super::nDim;
-    static const uint16_type nOrder = super::nOrder;
+    static const int nOrder = super::nOrder;
+    inline static constexpr bool is_order_dynamic = ( nOrder == Dynamic );
     static const uint16_type nComponents = super::nComponents;
     static const bool is_product = false;
     NedelecPolynomialSet()
@@ -228,7 +230,7 @@ public:
 
 };
 
-template<uint16_type O,
+template<int O,
          typename T,
          uint16_type TheTAG >
 class NedelecPolynomialSet<3,O,NedelecKind::NED1,T,TheTAG>
@@ -258,10 +260,11 @@ public:
     typedef typename super::matrix_type matrix_type;
     typedef typename super::points_type points_type;
 
-    static const uint16_type nDim = super::nDim;
-    static const uint16_type nOrder = super::nOrder;
-    static const uint16_type nComponents = super::nComponents;
-    static const bool is_product = false;
+    inline static constexpr uint16_type nDim = super::nDim;
+    inline static constexpr uint16_type nOrder = super::nOrder;
+    inline static constexpr bool is_order_dynamic = (nOrder==Dynamic);
+    inline static constexpr uint16_type nComponents = super::nComponents;
+    inline static constexpr bool is_product = false;
     NedelecPolynomialSet()
         :
         super()
@@ -346,7 +349,7 @@ public:
 };
 
 template<uint16_type N,
-         uint16_type O,
+         int O,
          typename T,
          uint16_type TheTAG >
 class NedelecPolynomialSet<N,O,NedelecKind::NED2,T,TheTAG>
@@ -411,7 +414,7 @@ namespace detail
 {
 
 template<typename Basis,
-         template<class, uint16_type, class> class PointSetType>
+         template<class, int, class> class PointSetType>
 class NedelecDualFirstKind
     :
 public DualBasis<Basis>
@@ -662,7 +665,7 @@ private:
 
 
 template<typename Basis,
-         template<class, uint16_type, class> class PointSetType>
+         template<class, int, class> class PointSetType>
 class NedelecDualSecondKind
     :
 public DualBasis<Basis>
@@ -989,20 +992,20 @@ private:
 }// detail
 
 template<uint16_type N,
-         uint16_type O,
+         int O,
          NedelecKind Kind = NedelecKind::NED2,
          typename T = double,
          uint16_type TheTAG = 0 >
 struct NedelecBase
 {
-    typedef typename mpl::if_<mpl::bool_<(Kind == NedelecKind::NED2)>,
+    using type = boost::mp11::mp_if_c<Kind == NedelecKind::NED2,
                               FiniteElement<Feel::detail::OrthonormalPolynomialSet<N, O+1, N, Vectorial, T, TheTAG, Simplex>,
                                             fem::detail::NedelecDualSecondKind, PointSetEquiSpaced >,
                               // FiniteElement<NedelecPolynomialSet<N, O, NedelecKind::NED2, T>,
                               //               fem::detail::NedelecDualSecondKind,
                               //               PointSetEquiSpaced >,
                               FiniteElement<NedelecPolynomialSet<N, O, NedelecKind::NED1, T>,
-                                            fem::detail::NedelecDualFirstKind, PointSetEquiSpaced > >::type type;
+                                            fem::detail::NedelecDualFirstKind, PointSetEquiSpaced   > >;
 };
 
 /**
@@ -1019,7 +1022,7 @@ struct NedelecBase
  * @author Christophe Prud'homme
  */
 template<uint16_type N,
-         uint16_type O,
+         int O,
          NedelecKind Kind = NedelecKind::NED2,
          typename T = double,
          uint16_type TheTAG = 0 >
@@ -1039,27 +1042,26 @@ public:
      */
     //@{
 
-    static const uint16_type nDim = N;
+    inline static constexpr uint16_type nDim = N;
     //static const bool isTransformationEquivalent = false;
-    static const bool isTransformationEquivalent = true;
-    static const bool isContinuous = true;
-    static const NedelecKind kind = Kind;
+    inline static constexpr bool isTransformationEquivalent = true;
+    inline static constexpr bool isContinuous = true;
+    inline static constexpr NedelecKind kind = Kind;
+    inline static constexpr uint16_type TAG = TheTAG;
     typedef typename super::value_type value_type;
     typedef typename super::primal_space_type primal_space_type;
     typedef typename super::dual_space_type dual_space_type;
     typedef Continuous continuity_type;
-    static const uint16_type TAG = TheTAG;
-
     //static const polynomial_transformation_type transformation = POLYNOMIAL_CONTEXT_NEEDS_1ST_PIOLA_TRANSFORMATION;
 
     /**
      * Polynomial Set type: scalar or vectorial
      */
     typedef typename super::polyset_type polyset_type;
-    static const bool is_vectorial = polyset_type::is_vectorial;
-    static const bool is_scalar = polyset_type::is_scalar;
-    static const uint16_type nComponents = polyset_type::nComponents;
-    static const bool is_product = false;
+    inline static constexpr bool is_vectorial = polyset_type::is_vectorial;
+    inline static constexpr bool is_scalar = polyset_type::is_scalar;
+    inline static constexpr uint16_type nComponents = polyset_type::nComponents;
+    inline static constexpr bool is_product = false;
 
 
     typedef typename dual_space_type::convex_type convex_type;
@@ -1069,19 +1071,19 @@ public:
     typedef typename reference_convex_type::points_type points_type;
     typedef typename convex_type::topological_face_type face_type;
 
-    static const uint16_type nOrder =  dual_space_type::nOrder;
-    static const uint16_type nbPtsPerVertex = reference_convex_type::nbPtsPerVertex;
-    static const uint16_type nbPtsPerEdge = dual_space_type::nbPtsPerEdge;
-    static const uint16_type nbPtsPerFace = dual_space_type::nbPtsPerFace;
-    static const uint16_type nbPtsPerVolume = dual_space_type::nbPtsPerVolume;
-    static const uint16_type numPoints = dual_space_type::numPoints;
+    inline static constexpr uint16_type nOrder =  dual_space_type::nOrder;
+    inline static constexpr uint16_type nbPtsPerVertex = reference_convex_type::nbPtsPerVertex;
+    inline static constexpr uint16_type nbPtsPerEdge = dual_space_type::nbPtsPerEdge;
+    inline static constexpr uint16_type nbPtsPerFace = dual_space_type::nbPtsPerFace;
+    inline static constexpr uint16_type nbPtsPerVolume = dual_space_type::nbPtsPerVolume;
+    inline static constexpr uint16_type numPoints = dual_space_type::numPoints;
 
-    static const uint16_type nLocalDof = dual_space_type::nLocalDof;
-    static const uint16_type nDofPerVertex = dual_space_type::nDofPerVertex;
-    static const uint16_type nDofPerEdge = dual_space_type::nDofPerEdge;
-    static const uint16_type nDofPerFace = dual_space_type::nDofPerFace;
-    static const uint16_type nDofPerVolume = dual_space_type::nDofPerVolume;
-    static const uint16_type nLocalFaceDof = ( face_type::numVertices * nDofPerVertex +
+    inline static constexpr uint16_type nLocalDof = dual_space_type::nLocalDof;
+    inline static constexpr uint16_type nDofPerVertex = dual_space_type::nDofPerVertex;
+    inline static constexpr uint16_type nDofPerEdge = dual_space_type::nDofPerEdge;
+    inline static constexpr uint16_type nDofPerFace = dual_space_type::nDofPerFace;
+    inline static constexpr uint16_type nDofPerVolume = dual_space_type::nDofPerVolume;
+    inline static constexpr uint16_type nLocalFaceDof = ( face_type::numVertices * nDofPerVertex +
                                                face_type::numEdges * nDofPerEdge +
                                                face_type::numFaces * nDofPerFace );
 
@@ -1334,27 +1336,8 @@ protected:
 private:
 
 };
-template<uint16_type N,
-         uint16_type O,
-         NedelecKind Kind,
-         typename T,
-         uint16_type TheTAG >
-const uint16_type Nedelec<N,O,Kind,T,TheTAG>::nDim;
-template<uint16_type N,
-         uint16_type O,
-         NedelecKind Kind,
-         typename T,
-         uint16_type TheTAG >
-const uint16_type Nedelec<N,O,Kind,T,TheTAG>::nOrder;
-template<uint16_type N,
-         uint16_type O,
-         NedelecKind Kind,
-         typename T,
-         uint16_type TheTAG >
-const uint16_type Nedelec<N,O,Kind,T,TheTAG>::nLocalDof;
-
 } // fem
-template<uint16_type Order,
+template<int Order,
          NedelecKind Kind=NedelecKind::NED1,
          uint16_type TheTAG=0>
 class Nedelec
@@ -1379,14 +1362,9 @@ public:
     //typedef Lagrange<Order,Scalar> component_basis_type;
     typedef Lagrange<Order+1,Scalar> component_basis_type;
 
-    static const uint16_type nOrder =  Order;
-    static const NedelecKind kind =  Kind;
+    inline static constexpr int nOrder =  Order;
+    inline static constexpr NedelecKind kind =  Kind;
     static const uint16_type TAG = TheTAG;
 };
-template<uint16_type Order,
-         NedelecKind Kind,
-         uint16_type TheTAG>
-    const uint16_type Nedelec<Order,Kind,TheTAG>::nOrder;
-
 } // Feel
 #endif /* FEELPP_NEDELEC_HPP */

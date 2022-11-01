@@ -181,13 +181,42 @@ struct matrix_node
 template<typename T = double>
 using em_matrix_row_type = Eigen::Map<Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>>;
 
+template<typename T = double>
+using em_cmatrix_row_type = Eigen::Map<const Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>>;
+
 //! Eigen type to map matrix_node<>::type
 template<typename T = double>
 using em_matrix_col_type = Eigen::Map<Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic,Eigen::ColMajor>>;
 
+
 //! Eigen type to map matrix_node<>::type
 template<typename T = double>
 using em_cmatrix_col_type = Eigen::Map<const Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic,Eigen::ColMajor>>;
+
+/**
+ * @brief construct an eigen map from a ublas matrix colmajor
+ * 
+ * @param m ublas matrix in column major format
+ * @return em_cmatrix_col_type the eigen map
+ */
+template<typename T>
+em_cmatrix_col_type<T> em( ublas::matrix<T, ublas::column_major> const& m )
+{
+    return em_cmatrix_col_type<T>{ m.data().begin(), static_cast<int>(m.size1()), static_cast<int>(m.size2()) };
+}
+
+/**
+ * @brief construct an eigen map from a ublas matrix row major
+ * 
+ * @tparam T numerical type
+ * @param m ublas matrix
+ * @return em_cmatrix_row_type<T> eigen map
+ */
+template<typename T>
+em_cmatrix_row_type<T> em( ublas::matrix<T, ublas::row_major> const& m )
+{
+    return em_cmatrix_row_type<T>{ m.data().begin(), static_cast<int>(m.size1()), static_cast<int>(m.size2()) };
+}
 
 //! Eigen type to map node_type
 template<typename T = double>

@@ -6,7 +6,8 @@
        Date: 2009-04-30
 
   Copyright (C) 2009 Universite Joseph Fourier (Grenoble I)
-  Copyright (C) 2011-2015 Feel++ Consortium
+  Copyright (C) 2011-2022 Feel++ Consortium
+  Copyright (C) 2011-2022 Université de Strasbourg
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -31,7 +32,7 @@ class ConvexBase {};
 /**
  * @brief Convex base class
  */
-template<uint16_type Dim, uint16_type Order, uint16_type RDim = Dim>
+template<uint16_type Dim, int Order, uint16_type RDim = Dim>
 class Convex : public ConvexBase
 {
 public:
@@ -40,9 +41,9 @@ public:
     /** @name Constants
      */
     //@{
-    static const uint16_type nDim = Dim;
-    static const uint16_type nOrder = Order;
-    static const uint16_type nRealDim = RDim;
+    inline static const uint16_type nDim = Dim;
+    inline static const int nOrder = Order;
+    inline static const uint16_type nRealDim = RDim;
 
 
     //@}

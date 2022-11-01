@@ -97,7 +97,7 @@ public:
      */
     typedef T value_type;
 
-    template<uint16_type order, typename V = value_type>
+    template<int order, typename V = value_type>
     struct Convex
     {
         typedef typename mpl::if_<mpl::bool_<TheConvex::is_simplex>,
@@ -990,11 +990,11 @@ namespace detail
  *
  */
 template<uint16_type Dim,
-         uint16_type Order,
+         int Order,
          uint16_type RealDim,
          template<uint16_type> class PolySetType = Scalar,
          typename T = double,
-         template<uint16_type,uint16_type,uint16_type> class Convex = Simplex>
+         template<uint16_type,int,uint16_type> class Convex = Simplex>
 class MomentPolynomialSet
     :
 public PolynomialSet<Moment<Dim, Order, Convex<Dim,1,Dim>, T, StorageUBlas>, PolySetType >
@@ -1103,17 +1103,17 @@ public:
 };
 
 template<uint16_type Dim,
-         uint16_type Order,
+         int Order,
          uint16_type RealDim,
          template<uint16_type> class PolySetType,
          typename T,
-         template<uint16_type,uint16_type,uint16_type> class Convex>
+         template<uint16_type,int,uint16_type> class Convex>
 const uint16_type MomentPolynomialSet<Dim, Order, RealDim, PolySetType,T, Convex>::nLocalDof;
 
 } // detail
 /// \encond
 
-template<uint16_type Order,
+template<int Order,
          template<uint16_type Dim> class PolySetType = Scalar>
 class MomentPolynomialSet
 {

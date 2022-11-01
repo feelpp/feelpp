@@ -39,17 +39,17 @@ namespace detail
  *
  */
 template<uint16_type Dim,
-         uint16_type Order,
+         int Order,
          uint16_type RealDim,
          template<uint16_type> class PolySetType = Scalar,
          typename T = double,
          uint16_type TheTAG = 0,
-         template<uint16_type,uint16_type,uint16_type> class Convex = Simplex>
+         template<uint16_type,int,uint16_type> class Convex = Simplex>
 class OrthonormalPolynomialSet
 {};
 
 template<uint16_type Dim,
-         uint16_type Order,
+         int Order,
          uint16_type RealDim,
          template<uint16_type> class PolySetType,
          typename T,
@@ -231,7 +231,7 @@ private :
 };
 
 template<uint16_type Dim,
-         uint16_type Order,
+         int Order,
          uint16_type RealDim,
          template<uint16_type> class PolySetType,
          typename T,
@@ -240,7 +240,7 @@ const uint16_type OrthonormalPolynomialSet<Dim, Order, RealDim, PolySetType,T, T
 
 
 template<uint16_type Dim,
-         uint16_type Order,
+         int Order,
          uint16_type RealDim,
          template<uint16_type> class PolySetType,
          typename T,
@@ -366,7 +366,7 @@ public:
 };
 
 template<uint16_type Dim,
-         uint16_type Order,
+         int Order,
          uint16_type RealDim,
          template<uint16_type> class PolySetType,
          typename T,
@@ -375,7 +375,7 @@ const uint16_type OrthonormalPolynomialSet<Dim, Order, RealDim, PolySetType,T, T
 } // detail
 /// \encond
 
-template<uint16_type Order,
+template<int Order,
          template<uint16_type Dim> class PolySetType = Scalar,
          uint16_type TheTAG=0 >
 class OrthonormalPolynomialSet

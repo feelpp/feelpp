@@ -64,7 +64,7 @@ namespace Feel
 
 template<class Space,
          uint16_type imOrder = 3*boost::fusion::result_of::value_at_c<typename Space::basis_type, 0>::basis_type::nOrder-1,
-         template<uint16_type,uint16_type,uint16_type> class Entity = Simplex>
+         template<uint16_type,int,uint16_type> class Entity = Simplex>
 class Oseen
 {
 public:
@@ -258,7 +258,7 @@ private:
 }; // class Oseen
 
 template<class Space, uint16_type imOrder,
-         template<uint16_type,uint16_type,uint16_type> class Entity>
+         template<uint16_type,int,uint16_type> class Entity>
 Oseen<Space, imOrder, Entity>::Oseen( const space_ptrtype& space,
                                       const backend_ptrtype& backend,
                                       const std::set<flag_type>& dirichletFlags,
@@ -316,7 +316,7 @@ Oseen<Space, imOrder, Entity>::Oseen( const space_ptrtype& space,
 } // Oseen constructor
 
 template<class Space, uint16_type imOrder,
-         template<uint16_type,uint16_type,uint16_type> class Entity>
+         template<uint16_type,int,uint16_type> class Entity>
 Oseen<Space, imOrder, Entity>::Oseen( const space_ptrtype& space,
                                       const backend_ptrtype& backend,
                                       const std::set<flag_type>& dirichletFlags,
@@ -385,7 +385,7 @@ Oseen<Space, imOrder, Entity>::Oseen( const space_ptrtype& space,
 } // Oseen constructor
 
 template<class Space, uint16_type imOrder,
-         template<uint16_type,uint16_type,uint16_type> class Entity>
+         template<uint16_type,int,uint16_type> class Entity>
 void
 Oseen<Space, imOrder, Entity>::setDivDivCoeff( value_type divdivcoeff )
 {
@@ -406,7 +406,7 @@ Oseen<Space, imOrder, Entity>::setDivDivCoeff( value_type divdivcoeff )
     }
 }
 template<class Space, uint16_type imOrder,
-         template<uint16_type,uint16_type,uint16_type> class Entity>
+         template<uint16_type,int,uint16_type> class Entity>
 typename Oseen<Space, imOrder, Entity>::value_type
 Oseen<Space, imOrder, Entity>::stabilizationEnergy() const
 {
@@ -418,7 +418,7 @@ Oseen<Space, imOrder, Entity>::stabilizationEnergy() const
 
 
 template<class Space, uint16_type imOrder,
-         template<uint16_type,uint16_type,uint16_type> class Entity>
+         template<uint16_type,int,uint16_type> class Entity>
 template<typename ItRange, typename EsigmaInc,
          typename EnuInc, typename EnuAbs,
          typename Ebeta, typename Ef, typename Ec, typename Eg,
@@ -659,7 +659,7 @@ void Oseen<Space, imOrder, Entity>::update( const ItRange& itRange,
 } // update
 
 template<class Space, uint16_type imOrder,
-         template<uint16_type,uint16_type,uint16_type> class Entity>
+         template<uint16_type,int,uint16_type> class Entity>
 void Oseen<Space, imOrder, Entity>::solve()
 {
     // -- make sure solve is needed
@@ -690,7 +690,7 @@ void Oseen<Space, imOrder, Entity>::solve()
 
 
 template<class Space, uint16_type imOrder,
-         template<uint16_type,uint16_type,uint16_type> class Entity>
+         template<uint16_type,int,uint16_type> class Entity>
 void
 Oseen<Space, imOrder, Entity>::solveNonSym( sparse_matrix_ptrtype const& D,
         element_type  & u,

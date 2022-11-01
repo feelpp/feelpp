@@ -29,6 +29,7 @@
 #ifndef __Simplex_H
 #define __Simplex_H 1
 
+#include <feel/feelalg/eigen.hpp>
 #include <boost/detail/identifier.hpp>
 #include <feel/feelmesh/entities.hpp>
 #include <feel/feelmesh/convex.hpp>
@@ -42,20 +43,24 @@ namespace details
 template<int Order>
 struct points
 {
-    typedef mpl::vector_c<size_type, 1, Order+1, ( Order+1 )*( Order+2 )/2, ( Order+1 )*( Order+2 )*( Order+3 )/6 > type;
-    typedef mpl::vector_c<size_type, 0, Order+1-2, ( Order+1-2 )*( Order+2-2 )/2, ( Order+1-2 )*( Order+2-2 )*( Order+3-2 )/6 > interior_type;
-    typedef mpl::vector_c<size_type, 0, Order+1-2,                 Order+1-2,                             Order+1-2 > edge_type;
-    typedef mpl::vector_c<size_type, 0,         0, ( Order-1 )*( Order-2 )/2,             ( Order-1 )*( Order-2 )/2 > face_type;
-    typedef mpl::vector_c<size_type, 0,         0,                         0, ( Order-1 )*( Order-2 )*( Order-3 )/6 > volume_type;
+    static constexpr int n2D(int i) { return ( Order+1-i )*( Order+2-i )/2; }
+    static constexpr int n3D(int i) { return ( Order+1-i )*( Order+2-i )*( Order+3-i )/6; }
+    static constexpr int nPerFacet() { return ( Order-1 )*( Order-2 )/2; }
+    static constexpr int nPerVolume() { return ( Order-1 )*( Order-2 )*( Order-3 )/6; }
+    typedef mpl::vector_c<int, 1, Order+1  , n2D(0),n3D(0) > type;
+    typedef mpl::vector_c<int, 0, Order+1-2, n2D(2),n3D(2) > interior_type;
+    typedef mpl::vector_c<int, 0, Order+1-2, Order+1-2,Order+1-2 > edge_type;
+    typedef mpl::vector_c<int, 0,         0, nPerFacet(), nPerFacet() > face_type;
+    typedef mpl::vector_c<int, 0,         0, 0, nPerVolume() > volume_type;
 };
 template<>
 struct points<0>
 {
-    typedef mpl::vector_c<size_type, 1, 1, 1, 1> type;
-    typedef mpl::vector_c<size_type, 0, 1, 1, 1> interior_type;
-    typedef mpl::vector_c<size_type, 0, 1, 0, 0> edge_type;
-    typedef mpl::vector_c<size_type, 0, 0, 1, 0> face_type;
-    typedef mpl::vector_c<size_type, 0, 0, 0, 1> volume_type;
+    typedef mpl::vector_c<int, 1, 1, 1, 1> type;
+    typedef mpl::vector_c<int, 0, 1, 1, 1> interior_type;
+    typedef mpl::vector_c<int, 0, 1, 0, 0> edge_type;
+    typedef mpl::vector_c<int, 0, 0, 1, 0> face_type;
+    typedef mpl::vector_c<int, 0, 0, 0, 1> volume_type;
 };
 
 
@@ -69,20 +74,58 @@ class SimplexBase {};
  *  @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  */
 template<uint16_type Dim,
-         uint16_type Order = 1,
+         int Order = 1,
          uint16_type RDim = Dim>
 class Simplex : public Convex<Dim,Order,RDim>, SimplexBase
 {
-private:
+public:
     /**
      * for Dim >= 3 : n edges = n(vertices) + n(faces) - 2
      * thanks to Euler formula
      */
-    typedef mpl::vector_c<uint16_type, 0, 1, 3, ( 4 ) + ( 4 ) - 2> edges_t;
-    typedef mpl::vector_c<uint16_type, 0, 0, 1, 4> geo_faces_index_t;
-    typedef mpl::vector_c<uint16_type, 0, 2, 3, 4> faces_index_t;
-    typedef mpl::vector_c<uint16_type, 0, 0, 0, 1> volumes_t;
-    typedef mpl::vector_c<uint16_type, 0, 2, 3, 4> normals_t;
+    inline static constexpr std::array<std::array<int,4>,4> topology = {{
+                { 1, 2, 3, 4  }, // vertices
+                { 0, 1, 3, ( 4 ) + ( 4 ) - 2 }, // edges
+                { 0, 0, 1, 4 }, // faces
+                { 0, 0, 0, 1 } // volumes
+    }};
+    /**
+     * @brief number of facets per topological dimension
+     * 
+     */
+    inline static constexpr std::array<int,4> facets = { 0, 2, 3, 4 };
+
+    static constexpr std::array<std::array<int,4>,5> computeNumberPointsPerEntity(int O)
+    {
+        return std::array<std::array<int,4>,5>{{ 
+            { 1,   O+1,     ( O+1)*( O+2 )/2,       ( O+1 )*( O+2 )*( O+3 )/6 }, // all points
+            { 0, O+1-2,                O+1-2,                           O+1-2 }, // edges
+            { 0,     0,    ( O-1 )*( O-2 )/2,               ( O-1 )*( O-2 )/2 }, // faces
+            { 0,     0,                    0,       ( O-1 )*( O-2 )*( O-3 )/6 }, // volumes
+            { 1, O+1-2,  (O+1-2)*( O+2-2 )/2, ( O+1-2 )*( O+2-2 )*( O+3-2 )/6 }, // interior points
+        }};
+    }
+
+    /**
+     * @brief number of points per topological entity as well as total and total interior points
+     * 
+     */
+    template<int O=Order>
+    inline static constexpr std::array<std::array<int,4>,5> numPointsPerEntityAtCompileTime = computeNumberPointsPerEntity(O);
+    template<>
+    inline static constexpr std::array<std::array<int,4>,5> numPointsPerEntityAtCompileTime<0> = {{ 
+        { 1, 1, 1, 1}, // all points
+        { 0, 1, 0, 0 }, // edges
+        { 0, 0, 1, 0 }, // faces
+        { 0, 0, 0, 1 }, // volumes
+        { 0, 1, 1, 1 }, // interior points
+    }};
+
+    typedef mpl::vector_c<int, 0, 1, 3, ( 4 ) + ( 4 ) - 2> edges_t;
+    typedef mpl::vector_c<int, 0, 0, 1, 4> geo_faces_index_t;
+    typedef mpl::vector_c<int, 0, 2, 3, 4> faces_index_t;
+    typedef mpl::vector_c<int, 0, 0, 0, 1> volumes_t;
+    typedef mpl::vector_c<int, 0, 2, 3, 4> normals_t;
 
     typedef typename details::points<Order>::type points_t;
     typedef typename details::points<Order>::interior_type points_interior_t;
@@ -90,8 +133,9 @@ private:
     typedef typename details::points<Order>::face_type points_face_t;
     typedef typename details::points<Order>::volume_type points_volume_t;
 
-    typedef mpl::vector_c<size_type, SHAPE_POINT, SHAPE_LINE, SHAPE_TRIANGLE, SHAPE_TETRA> shapes_t;
-    typedef mpl::vector_c<size_type, GEOMETRY_POINT, GEOMETRY_LINE, GEOMETRY_SURFACE, GEOMETRY_VOLUME> geometries_t;
+    inline static constexpr std::array<int,4> shapes{ { SHAPE_POINT, SHAPE_LINE, SHAPE_TRIANGLE, SHAPE_TETRA } };
+    inline static constexpr std::array<int,4> geometries{ { GEOMETRY_POINT, GEOMETRY_LINE, GEOMETRY_SURFACE, GEOMETRY_VOLUME } };
+
 
     static constexpr int computeOrderTriangle() 
         {
@@ -119,15 +163,15 @@ private:
 
 public:
 
-    static const bool is_simplex = true;
-    static const bool is_hypercube = false;
+    inline static const bool is_simplex = true;
+    inline static const bool is_hypercube = false;
 
-    static const uint16_type nDim = Dim;
-    static const uint16_type nOrder = Order;
-    static const uint16_type nRealDim = RDim;
-
-    static const uint16_type topological_dimension = nDim;
-    static const uint16_type real_dimension = nRealDim;
+    inline static const uint16_type nDim = Dim;
+    inline static const int nOrder = Order;
+    inline static const uint16_type nRealDim = RDim;
+    inline static const bool is_order_dynamic = (Order == Dynamic);
+    inline static const uint16_type topological_dimension = nDim;
+    inline static const uint16_type real_dimension = nRealDim;
 
     /**
      * handle a shape 
@@ -148,7 +192,7 @@ public:
     static constexpr int shape_v = Simplex<shape_dim, O, R>::Shape;
 
     
-    static const size_type Geometry = mpl::at<geometries_t, mpl::int_<nDim> >::type::value;
+    inline static const int Geometry = geometries[nDim];
 
     typedef typename mpl::at<elements_t, mpl::int_<nDim> >::type element_type;
     typedef typename mpl::at<typename faces_t<real_dimension>::type, mpl::int_<nDim> >::type topological_face_type;
@@ -194,19 +238,61 @@ public:
             if constexpr ( nDim == 3 ) return 1;
             else return 0;
         }
-    static const int numVolumes = numberOfVolumes();
+    inline static const int numVolumes = numberOfVolumes();
+    inline static const int numNormals = mpl::at<normals_t, mpl::int_<nDim> >::type::value;
 
-    static const uint16_type numNormals = mpl::at<normals_t, mpl::int_<nDim> >::type::value;
-
-    static const uint16_type nbPtsPerVertex = ( nOrder==0 )?0:1;
-    static const uint16_type nbPtsPerEdge = mpl::at<points_edge_t, mpl::int_<nDim> >::type::value;
-    static const uint16_type nbPtsPerFace = mpl::at<points_face_t, mpl::int_<nDim> >::type::value;
-    static const uint16_type nbPtsPerVolume = mpl::at<points_volume_t, mpl::int_<nDim> >::type::value;
-    static const uint16_type numPoints = ( numVertices * nbPtsPerVertex +
-                                           numEdges * nbPtsPerEdge +
-                                           numFaces * nbPtsPerFace +
-                                           numVolumes * nbPtsPerVolume );
-
+    
+    static constexpr int numberOfPointsPerVertexAtCompileTime()
+    {
+        if constexpr ( !is_order_dynamic )
+        {
+            return ( nOrder == 0 ) ? 0 : 1;
+        }
+        else
+            return -1;
+    }
+    static constexpr int numberOfPointsPerEdgeAtCompileTime()
+    {
+        if constexpr ( !is_order_dynamic )
+        {
+            return numPointsPerEntityAtCompileTime<Order>[1][nDim];
+        }
+        else
+            return -1;
+    }
+    static constexpr int numberOfPointsPerFacetAtCompileTime()
+    {
+        if constexpr ( !is_order_dynamic )
+        {
+            return numPointsPerEntityAtCompileTime<Order>[2][nDim];
+        }
+        else
+            return -1;
+    }
+    static constexpr int numberOfPointsPerVolumeAtCompileTime()
+    {
+        if constexpr ( !is_order_dynamic )
+        {
+            return numPointsPerEntityAtCompileTime<Order>[3][nDim];
+        }
+        else
+            return -1;
+    }
+    static constexpr int numberOfPointsAtCompileTime()
+    {
+        if constexpr ( !is_order_dynamic )
+        {
+            //static_assert(numPoints==numPointsPerEntityAtCompileTime<Order>[0][nDim],"invalid number of points at compile time");
+            return numPointsPerEntityAtCompileTime<Order>[0][nDim];
+        }
+        else
+            return -1;
+    }
+    inline static constexpr int nbPtsPerVertex = numberOfPointsPerVertexAtCompileTime();
+    inline static constexpr int nbPtsPerEdge = numberOfPointsPerEdgeAtCompileTime();
+    inline static constexpr int nbPtsPerFace = numberOfPointsPerFacetAtCompileTime();
+    inline static constexpr int nbPtsPerVolume = numberOfPointsPerVolumeAtCompileTime();
+    inline static constexpr int numPoints = numberOfPointsAtCompileTime();
     typedef typename mpl::at<map_entity_to_point_t, mpl::int_<nDim> >::type edge_to_point_t;
     typedef typename mpl::at<map_entity_to_point_t, mpl::int_<nDim> >::type face_to_point_t;
     typedef typename mpl::at<map_entity_to_point_t, mpl::int_<nDim> >::type face_to_edge_t;
@@ -239,7 +325,19 @@ public:
     using PermutationSubEntity = typename mpl::at_c<permutation_by_subentity_type,N-1>::type;
 
 
-    Simplex() = default;
+    Simplex(): Simplex( Order ) {}
+    Simplex( int order ): M_order( order ) 
+    {
+        if constexpr ( is_order_dynamic )
+        {
+            if ( order == 0 )
+                numPointsPerEntity = numPointsPerEntityAtCompileTime<0>;
+            else
+            {
+                numPointsPerEntity = computeNumberPointsPerEntity(order);
+            }
+        }
+    }
     Simplex( Simplex const& ) = default;
     Simplex( Simplex && ) = default;
     Simplex& operator=( Simplex const& ) = default;
@@ -264,35 +362,59 @@ public:
     /**
      * Returns the number of points per vertex
      */
-    static uint16_type nPointsOnVertex()
+    constexpr int numberOfPointsPerVertex() const
     {
-        return nbPtsPerVertex;
+        if constexpr( !is_order_dynamic )
+            return nbPtsPerVertex;
+        else
+            return ( M_order == 0 ) ? 0 : 1;
     }
 
     /**
-     * Returns the number of points per edge
+     * Returns the number of points per edge without the vertices
      */
-    static uint16_type nPointsOnEdge()
+    constexpr int numberOfPointsPerEdge() const
     {
-        return nbPtsPerEdge;
+        if constexpr( !is_order_dynamic )
+            return nbPtsPerEdge;
+        else
+            return  numPointsPerEntity[1][nDim];
     }
 
     /**
      * Returns the number of points per face
      */
-    static uint16_type nPointsOnFace()
+    constexpr int numberOfPointsPerFacet() const
     {
-        return nbPtsPerFace;
+        if constexpr( !is_order_dynamic )
+            return nbPtsPerFace;
+        else
+            return numPointsPerEntity[2][nDim];
     }
 
     /**
      * Returns the number of points per volume
      */
-    static uint16_type nPointsOnVolume()
+    constexpr int numberOfPointsPerVolume() const
     {
-        return nbPtsPerVolume;
+        if constexpr( !is_order_dynamic )
+            return nbPtsPerVolume;
+        else
+            return numPointsPerEntity[3][nDim];
     }
 
+    /**
+     * @brief get the number of points in the Simplex 
+     * 
+     * @return int the number of points
+     */
+    constexpr int numberOfPoints() const
+    {
+        if constexpr ( !is_order_dynamic )
+            return numPoints;
+        else
+            return numPointsPerEntity[0][nDim];
+    }
     /**
      * \return the number of polynomials of total degree \c n on the
      * shape:
@@ -315,7 +437,7 @@ public:
         else if constexpr ( nDim == 3 )
             return std::max( 0, ( n+1 )*( n+2 )*( n+3 )/6 );
         
-        BOOST_STATIC_ASSERT( nDim == 0 || nDim == 1 || nDim == 2 || nDim == 3 );
+        static_assert( nDim == 0 || nDim == 1 || nDim == 2 || nDim == 3, "Invalid simplex topological dimension" );
         return -1;
     }
 
@@ -378,16 +500,10 @@ public:
     {
         return "simplex";
     }
+private:
+    int M_order;
+    std::array<std::array<int,4>,5> numPointsPerEntity;
 };
-
-template<uint16_type Dim, uint16_type Order, uint16_type RDim >
-const uint16_type Simplex<Dim, Order, RDim>::topological_dimension;
-
-template<uint16_type Dim, uint16_type Order, uint16_type RDim >
-const uint16_type Simplex<Dim, Order, RDim>::nDim;
-
-template<uint16_type Dim, uint16_type Order, uint16_type RDim >
-const uint16_type Simplex<Dim, Order, RDim>::nOrder;
 
 template<int Dim> struct Line : public Simplex<1, Dim> {};
 template<int Dim> struct Triangle : public Simplex<2, Dim> {};

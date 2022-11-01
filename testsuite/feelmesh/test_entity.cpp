@@ -335,7 +335,7 @@ BOOST_AUTO_TEST_CASE( test_tetra )
 BOOST_AUTO_TEST_CASE( test_interval_hypercube )
 {
     using namespace Feel;
-
+#if 0
     typedef GeoND<1,Hypercube<1, 1, 1> >::point_type point_type;
     // interval
     GeoND<1,Hypercube<1, 1, 1> > interval;
@@ -357,6 +357,9 @@ BOOST_AUTO_TEST_CASE( test_interval_hypercube )
     BOOST_CHECK_SMALL( ublas::norm_2( interval.normal( 1 )-G1 ), 1e-14 );
 
     BOOST_CHECK_SMALL( ( double )ublas::norm_frobenius( interval.G() - interval.vertices() ), 1e-14 );
+#else
+    Legendre<1,1,Dynamic> legendre( 1 );
+#endif    
 }
 BOOST_AUTO_TEST_CASE( test_quadrangle )
 {

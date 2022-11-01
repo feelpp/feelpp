@@ -29,6 +29,9 @@
 #ifndef __DenseLU_H
 #define __DenseLU_H 1
 
+#include <fmt/core.h>
+#include <fmt/ostream.h>
+
 #include <boost/mpl/int.hpp>
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/traits.hpp>
@@ -249,9 +252,7 @@ public :
     {
         __LU.assign(  A );
 
-        DVLOG(2) << "LU m = "<< m << "\n";
-        DVLOG(2) << "LU n = "<< n << "\n";
-
+        DVLOG( 4 ) << fmt::format( "LU in matrix A {}x{}\n", m, n );
 
         // Use a "left-looking", dot-product, Crout/Doolittle algorithm.
         for ( uint i = 0; i < m; i++ )

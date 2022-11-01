@@ -56,9 +56,9 @@ namespace ublas = boost::numeric::ublas;
 
 template< typename element_type,
           class Convex,
-          uint16_type Order,
+          int Order,
           typename T = double ,
-          template<class, uint16_type, class> class PointSetType = PointSetEquiSpaced>
+          template<class, int, class> class PointSetType = PointSetEquiSpaced>
 class PointSetMapped : public PointSetType<Convex, Order, T>
 {
 
