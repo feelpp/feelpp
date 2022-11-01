@@ -30,6 +30,8 @@
  */
 #include <sstream>
 
+#include <fmt/core.h>
+#include <iostream>
 #include <feel/feelconfig.h>
 #include <feel/feelinfo.h>
 #include <feel/feelcore/info.hpp>
@@ -131,7 +133,7 @@ Info::relativeCasesdir()
 fs::path
 Info::datadir()
 {
-    return prefix() / stringize( FEELPP_DATADIR );
+    return fs::path{ stringize( FEELPP_DATADIR ) };
 }
 
 fs::path
