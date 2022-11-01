@@ -185,3 +185,5 @@ mor/examples/heat3d/heat3dapp.cpp
 **/vendor
 **/Gemfile.lock
 **/doc.rb
+**/crbdb
+**/feelppdb
