@@ -1,5 +1,5 @@
 name: Scheduled CI
-run-name: 
+
 on: 
   schedule:
     # run every day at 2am  
@@ -39,10 +39,11 @@ jobs:
     env:
       os: ${{ matrix.flavor }}-${{ matrix.version }}
     runs-on: self-docker-${{ matrix.flavor }}-${{ matrix.version }}
-    if: github.event.schedule == format('{0}/7 * * * *', ${{ matrix.dotw }} )
+    
     needs: activate
     steps:
       - 
+        if: ${{ github.event.schedule == format('{0}/7 * * * *', matrix.dotw ) }}
         name: "[${{ github.event.schedule }}] ${{ matrix.flavor }}-${{ matrix.version }}"
         run: echo "build on ${{ matrix.dotw }}:"
 
