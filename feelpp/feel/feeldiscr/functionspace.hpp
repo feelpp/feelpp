@@ -2190,7 +2190,7 @@ public:
     template<typename T = double,  typename Cont = VectorUblas<T> >
     class Element
         :
-        public Cont,boost::addable<Element<T,Cont> >, boost::subtractable<Element<T,Cont> >, FunctionSpaceBase::ElementBase, basis_0_type::polyset_type
+        public Cont, boost::addable<Element<T,Cont> >, boost::subtractable<Element<T,Cont> >, FunctionSpaceBase::ElementBase, basis_0_type::polyset_type
     {
     public:
         typedef T value_type;
@@ -2201,7 +2201,8 @@ public:
             typedef T value_type;
             BOOST_MPL_ASSERT_NOT( ( boost::is_same<BasisType,mpl::void_> ) );
             typedef typename ChangeBasis<BasisType>::type::element_type fs_type;
-            typedef typename fs_type::template Element<value_type, typename Cont/*VectorUblas<T>*/::range::type > element_type;
+            //typedef typename fs_type::template Element<value_type, typename Cont::range::type > element_type;
+            typedef typename fs_type::template Element<value_type, Cont > element_type;
             typedef std::pair< keyType, std::shared_ptr<element_type> > the_type;
 
             typedef typename mpl::if_<mpl::bool_<FunctionSpace<A0,A1,A2,A3,A4>::is_composite>,
@@ -2213,7 +2214,8 @@ public:
         typedef typename mpl::transform<bases_list, rangeElementStorageType, ChangeElement<mpl::_1,mpl::_2>, mpl::back_inserter<fusion::vector<> > >::type element_vector_type;
 
         //typedef typename fusion::result_of::accumulate<bases_list, fusion::vector<>, ChangeElement<> >
-        typedef typename Cont/*VectorUblas<T>*/::range::type ct_type;
+        //typedef typename Cont[>VectorUblas<T><]::range::type ct_type;
+        typedef Cont ct_type;
 
         typedef Eigen::Matrix<value_type,Eigen::Dynamic,1> eigen_type;
 
@@ -2310,7 +2312,8 @@ public:
 
         typedef typename functionspace_type::component_functionspace_type component_functionspace_type;
         typedef typename functionspace_type::component_functionspace_ptrtype component_functionspace_ptrtype;
-        typedef typename component_functionspace_type::template Element<T,typename Cont/*VectorUblas<value_type>*/::slice::type> component_type;
+        //typedef typename component_functionspace_type::template Element<T,typename Cont[>VectorUblas<value_type><]::slice::type> component_type;
+        typedef typename component_functionspace_type::template Element<T, Cont> component_type;
 
         /**
          * geometry typedef
@@ -2425,6 +2428,11 @@ public:
             return *this;
         }
 
+        value_type globalValue( size_type i ) const
+        {
+            return this->operator()( i );
+        }
+
         /**
          * get the component of the element
          *
@@ -2477,95 +2485,44 @@ public:
         component_type
         comp( ComponentType i, ComponentType j = ComponentType::NO_COMPONENT ) const
         {
-            //return comp( i, mpl::bool_<boost::is_same<>is_composite>() );
-            return comp( i, j, typename mpl::not_< mpl::or_< boost::is_same<container_type,VectorUblas<value_type> >,
-                         boost::is_same<container_type,typename VectorUblas<value_type>::shallow_array_adaptor::type > > >::type() );
-
-        }
-        component_type
-        comp( ComponentType i, ComponentType j, mpl::bool_<true> ) const
-        {
             CHECK( i >= ComponentType::X && (int)i < nComponents1 ) << "Invalid component " << (int)i;
             int startSlice = ((int)i);
             std::string __name = this->name() + "_" + componentToString( i );
             if ( j != ComponentType::NO_COMPONENT )
             {
                 CHECK( j >= ComponentType::X && (int)j < nComponents2 ) << "Invalid component " << (int)j;
+
                 if ( is_tensor2symm )
                 {
                     startSlice = Feel::detail::symmetricIndex( (int)i, (int)j, nComponents1 );
                 }
                 else
-                    startSlice = ((int)i)*nComponents2+((int)j);
-                __name += "_" + componentToString( j );
-            }
-            //auto s = ublas::slice( startSlice, nComponents, M_functionspace->nLocalDofPerComponent() );
-            auto sActive = ublas::slice( this->container().start()+startSlice, nRealComponents, M_functionspace->nLocalDofWithoutGhostPerComponent() );
-            auto sGhost = ublas::slice( this->container().startNonContiguousGhosts()+startSlice, nRealComponents, M_functionspace->nLocalGhostPerComponent() );
-
-            //std::cout << "extract component " << (int)i << " start+i:" << start()+(int)i << "\n";
-
-            size_type startContainerIndex = start() + startSlice;
-            component_type c( compSpace(),
-                              typename component_type::container_type( this->vec().data().expression(), sActive,
-                                                                       this->vecNonContiguousGhosts().data().expression(), sGhost,
-                                                                       this->compSpace()->dof() ),
-                              __name,
-                              startContainerIndex,//start()+(size_type)i,
-                              i );
-            return c;
-        }
-        component_type
-        comp( ComponentType i, ComponentType j, mpl::bool_<false> ) const
-        {
-            CHECK( i >= ComponentType::X && (int)i < nComponents1 ) << "Invalid component " << (int)i;
-            int startSlice = ((int)i);
-            std::string __name = this->name() + "_" + componentToString( i );
-            if ( j != ComponentType::NO_COMPONENT )
-            {
-                CHECK( j >= ComponentType::X && (int)j < nComponents2 ) << "Invalid component " << (int)j;
-                if ( is_tensor2symm )
                 {
-                    startSlice = Feel::detail::symmetricIndex( (int)i, (int)j, nComponents1 );
-                }
-                else
                     startSlice = ((int)i)*nComponents2+((int)j);
+                }
                 __name += "_" + componentToString( j );
+
             }
-            //auto s = ublas::slice( startSlice, nComponents, M_functionspace->nLocalDofPerComponent() );
-            size_type startGhostDof = (container_type::is_shallow_array_adaptor_vector)? 0 : this->functionSpace()->dof()->nLocalDofWithoutGhost();
+
             auto sActive = ublas::slice( startSlice, nRealComponents, M_functionspace->nLocalDofWithoutGhostPerComponent() );
-            auto sGhost = ublas::slice( startGhostDof+startSlice, nRealComponents, M_functionspace->nLocalGhostPerComponent() );
+            auto sGhost = ublas::slice( startSlice, nRealComponents, M_functionspace->nLocalGhostPerComponent() );
 
-            //std::cout << "extract component " << (int)i << " start+i:" << start()+(int)i << "\n";
+            //std::cout << "extract component " << (int)i << " start+i:" << start()+(int)i << " slice size:" << s.size();
+
             size_type startContainerIndex = start() + startSlice;
+            // Warning: drop const-correctness to avoid redefining full "const"-Elements
+            // should be fixed...
             component_type c( compSpace(),
-                              //typename component_type::container_type( ( VectorUblas<value_type>& )*this, s, this->compSpace()->dof() ),
-                              //typename component_type::container_type( *this, sActive, sGhost, this->compSpace()->dof() ),
-                              typename component_type::container_type( ( container_type& )*this, sActive, sGhost, this->compSpace()->dof() ),
-                              //typename component_type::container_type( this->data().expression(), r ),
-                              __name,
-                              startContainerIndex,//start()+(size_type)i,
-                              i );
+                    const_cast<this_type *>(this)->container().slice( sActive, sGhost, this->compSpace()->dof() ),
+                    __name,
+                    startContainerIndex,
+                    i,j );
             return c;
         }
 
-        /**
-         * get the component of the element
-         *
-         * @param i component id
-         * @return the i-th component of the element
-         */
         component_type
         comp( ComponentType i, ComponentType j = ComponentType::NO_COMPONENT )
         {
-            //return comp( i, mpl::bool_<is_composite>() );
-            return comp( i, j, typename mpl::not_< mpl::or_< boost::is_same<container_type,VectorUblas<value_type> >,
-                         boost::is_same<container_type,typename VectorUblas<value_type>::shallow_array_adaptor::type > > >::type() );
-        }
-        component_type
-        comp( ComponentType i, ComponentType j, mpl::bool_<true> )
-        {
             CHECK( i >= ComponentType::X && (int)i < nComponents1 ) << "Invalid component " << (int)i;
             int startSlice = ((int)i);
             std::string __name = this->name() + "_" + componentToString( i );
@@ -2585,58 +2542,20 @@ public:
 
             }
 
-            //auto s = ublas::slice( startSlice, nComponents, M_functionspace->nLocalDofPerComponent() );
-            auto sActive = ublas::slice( this->container().start()+startSlice, nRealComponents, M_functionspace->nLocalDofWithoutGhostPerComponent() );
-            auto sGhost = ublas::slice( this->container().startNonContiguousGhosts()+startSlice, nRealComponents, M_functionspace->nLocalGhostPerComponent() );
-
-            //std::cout << "extract component " << (int)i << " start+i:" << start()+(int)i << " slice size:" << s.size();
-
-            size_type startContainerIndex = start() + startSlice;
-            component_type c( compSpace(),
-                              typename component_type::container_type( this->vec().data().expression(), sActive,
-                                                                       this->vecNonContiguousGhosts().data().expression(), sGhost,
-                                                                       this->compSpace()->dof() ),
-                              __name,
-                              startContainerIndex,//start()+(size_type)i,
-                              i,j );
-            return c;
-        }
-        component_type
-        comp( ComponentType i, ComponentType j, mpl::bool_<false> )
-        {
-            CHECK( i >= ComponentType::X && (int)i < nComponents1 ) << "Invalid component " << (int) i;
-            int startSlice = ((int)i);
-            std::string __name = this->name() + "_" + componentToString( i );
-            if ( j != ComponentType::NO_COMPONENT )
-            {
-                CHECK( j >= ComponentType::X && (int)j < nComponents2 ) << "Invalid component " << (int)j;
-                if ( is_tensor2symm )
-                {
-                    startSlice = Feel::detail::symmetricIndex( (int)i, (int)j, nComponents1 );
-                }
-                else
-                {
-                    startSlice = ((int)i)*nComponents2+((int)j);
-                }
-                __name += "_" + componentToString( j );
-            }
-
-            //auto s = ublas::slice( startSlice, nComponents, M_functionspace->nLocalDofPerComponent() );
-            size_type startGhostDof = (container_type::is_shallow_array_adaptor_vector)? 0 : this->functionSpace()->dof()->nLocalDofWithoutGhost();
             auto sActive = ublas::slice( startSlice, nRealComponents, M_functionspace->nLocalDofWithoutGhostPerComponent() );
-            auto sGhost = ublas::slice( startGhostDof+startSlice, nRealComponents, M_functionspace->nLocalGhostPerComponent() );
+            auto sGhost = ublas::slice( startSlice, nRealComponents, M_functionspace->nLocalGhostPerComponent() );
 
             //std::cout << "extract component " << (int)i << " start+i:" << start()+(int)i << " slice size:" << s.size();
 
             size_type startContainerIndex = start() + startSlice;
             component_type c( compSpace(),
-                              //typename component_type::container_type( ( VectorUblas<value_type>& )*this, s, this->compSpace()->dof() ),
-                              typename component_type::container_type( *this, sActive, sGhost, this->compSpace()->dof() ),
-                              __name,
-                              startContainerIndex,//start()+(size_type)i,
-                              i,j );
+                    this->container().slice( sActive, sGhost, this->compSpace()->dof() ),
+                    __name,
+                    startContainerIndex,
+                    i,j );
             return c;
         }
+
         component_type
         operator[]( ComponentType i )
             {
@@ -4199,7 +4118,8 @@ public:
                 std::string const& type = args.get_else(_type,"default");
                 std::string const& suffix = args.get_else(_suffix,"");
                 std::string const& sep = args.get_else(_sep,"");
-                return loadImpl( Environment::expand( path ), name, type, suffix, sep );
+                std::string const& space_path = args.get_else(_space_path,"");
+                return loadImpl( Environment::expand( path ), name, type, suffix, sep, space_path );
             }
 
         //!
@@ -4208,8 +4128,9 @@ public:
         //! @param type file type binary, ascii, hdf5, xml
         //! @param suffix filename suffix to use
         //! @param sep separator to use in filename
+        //! @param space_path path to space file related to input file path
         //!
-        bool loadImpl( std::string const& path, std::string const& name, std::string const& type = "binary", std::string const& suffix = "", std::string const& sep = "" )
+        bool loadImpl( std::string const& path, std::string const& name, std::string const& type = "binary", std::string const& suffix = "", std::string const& sep = "", std::string const& space_path = "" )
         {
             std::ostringstream oss;
             fs::path p;
@@ -4259,6 +4180,9 @@ public:
                 return 0;
             }
 
+            std::optional<std::vector<index_type>> spacesRelation;
+            if ( !space_path.empty() )
+                spacesRelation = this->functionSpace()->relationFromFile( space_path );
 
             if ( typeUsed == "binary" || typeUsed == "text" || typeUsed == "xml" )
             {
@@ -4284,7 +4208,7 @@ public:
             else if ( typeUsed == "hdf5" )
             {
 #ifdef FEELPP_HAS_HDF5
-                this->loadHDF5( p.string() );
+                this->loadHDF5( p.string(), spacesRelation );
 #else
                 CHECK( false ) << "Feel++ is not compiled with hdf5";
 #endif
@@ -4419,8 +4343,8 @@ public:
                 ar & boost::serialization::make_nvp( "family", family );
                 //std::cout << "saving family done" << std::endl;
 
-                typename container_type::const_iterator it = this->begin();
-                typename container_type::const_iterator en = this->end();
+                auto it = this->begin();
+                auto en = this->end();
 
                 for ( size_type i = 0; it != en; ++it, ++i )
                 {
@@ -4548,10 +4472,8 @@ public:
      */
     //@{
     typedef Element<value_type> element_type;
-    typedef Element<value_type> real_element_type;
-    typedef Element< value_type, typename VectorUblas<value_type>::shallow_array_adaptor::type > element_external_storage_type;
     typedef std::shared_ptr<element_type> element_ptrtype;
-    typedef std::shared_ptr<element_external_storage_type> element_external_storage_ptrtype;
+    typedef Element<value_type> real_element_type;
 
     typedef std::map< size_type, std::vector< size_type > > proc_dist_map_type;
 
@@ -5349,7 +5271,7 @@ public:
      * \param blockIdStart if vec was built from a VectorBlock, need to specify the id of first block
      * \return the element of the function space with value shared by the input vector
      */
-    Element< value_type, typename VectorUblas<value_type>::shallow_array_adaptor::type >
+    element_type
     element( std::shared_ptr<Vector<value_type> > const& vec, int blockIdStart = 0 )
     {
         return this->element( *vec, blockIdStart );
@@ -5360,7 +5282,7 @@ public:
      * \param blockIdStart if vec was built from a VectorBlock, need to specify the id of first block
      * \return the element of the function space which use the storage values of the input vector
      */
-    element_external_storage_type
+    element_type
     element( Vector<value_type> const& vec, int blockIdStart = 0 )
     {
 #if FEELPP_HAS_PETSC
@@ -5375,11 +5297,12 @@ public:
         size_type nGhostDof = this->dof()->nLocalGhosts();
         size_type nActiveDofFirstSubSpace = (is_composite)? this->template functionSpace<0>()->dof()->nLocalDofWithoutGhost() : nActiveDof;
         value_type* arrayGhostDof = (nGhostDof>0)? std::addressof( (*vecPetsc)( dmVec.dofIdToContainerId(blockIdStart,nActiveDofFirstSubSpace) ) ) : nullptr;
-        element_external_storage_type u( this->shared_from_this(),nActiveDof,arrayActiveDof,
-                                         nGhostDof, arrayGhostDof );
+        element_type u( this->shared_from_this(), 
+                nActiveDof, arrayActiveDof,
+                nGhostDof, arrayGhostDof );
 #else
         LOG(WARNING) << "element(Vector<value_type> const& vec, int blockIdStart): This function is disabled when Feel++ is not built with PETSc";
-        element_external_storage_type u;
+        element_type u;
 #endif
         return u;
     }
@@ -5389,7 +5312,7 @@ public:
      * \param blockIdStart if vec was built from a VectorBlock, need to specify the id of first block
      * \return the element of the function space which use the storage values of the input vector
      */
-    element_external_storage_ptrtype
+    element_ptrtype
     elementPtr( Vector<value_type> const& vec, int blockIdStart = 0 )
     {
 #if FEELPP_HAS_PETSC
@@ -5404,11 +5327,14 @@ public:
         size_type nGhostDof = this->dof()->nLocalGhosts();
         size_type nActiveDofFirstSubSpace = (is_composite)? this->template functionSpace<0>()->dof()->nLocalDofWithoutGhost() : nActiveDof;
         value_type* arrayGhostDof = (nGhostDof>0)? std::addressof( (*vecPetsc)( dmVec.dofIdToContainerId(blockIdStart,nActiveDofFirstSubSpace) ) ) : nullptr;
-        element_external_storage_ptrtype u( new element_external_storage_type( this->shared_from_this(),nActiveDof,arrayActiveDof,
-                                                                               nGhostDof, arrayGhostDof ) );
+        element_ptrtype u( new element_type( 
+                    this->shared_from_this(),
+                    nActiveDof, arrayActiveDof,
+                    nGhostDof, arrayGhostDof ) 
+                );
 #else
         LOG(WARNING) << "element(Vector<value_type> const& vec, int blockIdStart): This function is disabled when Feel++ is not built with PETSc";
-        element_external_storage_type u;
+        element_type u;
 #endif
         return u;
     }
@@ -5560,6 +5486,182 @@ public:
         LOG(INFO) << "         n Global Dof : " << nDof() << "\n";
         LOG(INFO) << "         n Local  Dof : " << nLocalDof() << "\n";
     }
+
+    /**
+     * @brief save on disk some informations in json + hdF5 files as doftable (require HDF5 support)
+     *
+     * @param filepath path of the json files generated (extension can be automatically added if not given)
+     */
+    template <typename TT=functionspace_type,std::enable_if_t< !TT::is_composite, bool> = true >
+    void save( std::string const& filepathstr ) const
+        {
+            fs::path argfilepath = filepathstr;
+            fs::path jsonfilepath = argfilepath.replace_extension("json");
+            fs::path h5filepath = argfilepath.replace_extension("h5");
+
+            auto const& mpicomm = this->worldComm().localComm();
+            rank_type mpirank = this->worldComm().localRank();
+
+            if ( this->worldComm().isMasterRank() )
+            {
+                fs::path filedir = (jsonfilepath.is_relative()? fs::absolute(jsonfilepath) : jsonfilepath).parent_path();
+                if ( !fs::exists( filedir ) )
+                    fs::create_directories( filedir );
+            }
+            this->worldComm().barrier();
+
+            // save json file
+            nl::json jdata;
+            this->updateInformationObject( jdata["info"] );
+            if ( this->worldComm().isMasterRank() )
+            {
+                fs::ofstream ojson( jsonfilepath );
+                ojson << jdata.dump(/*1*/);
+            }
+
+            // serialize doftable
+            std::vector<uint> doftableSerialization;
+            auto meshsupport = this->template meshSupport<0>();
+            auto dof = this->dof();
+            std::vector<index_type> dd;
+            for ( auto const& eltWrap : elements(meshsupport) )
+            {
+                auto const& elt = unwrap_ref(eltWrap);
+                doftableSerialization.push_back( elt.id() );
+                for ( int p=0;p<elt.nVertices();++p )
+                    doftableSerialization.push_back( elt.point(p).id() );
+
+                auto dofMapping = dof->localDof( elt.id() );
+                dd.resize( std::distance( Feel::begin(dofMapping),Feel::end(dofMapping ) ) );
+                for( auto const& ldof : dofMapping )
+                {
+                    index_type thedof = ldof.second.index();
+                    uint16_type thelocdof = ldof.first.localDof();
+                    index_type thedofgp = dof->mapGlobalProcessToGlobalCluster( thedof );
+                    dd[thelocdof] = thedofgp;
+                }
+
+                doftableSerialization.insert( doftableSerialization.end(), dd.begin(), dd.end() );
+            }
+
+
+            // get size/position data of hdf5 file
+            index_type local_sum = doftableSerialization.size();
+            std::vector<index_type> processTolocalSum;
+            mpi::all_gather( mpicomm, local_sum,processTolocalSum );
+            index_type global_sum = std::accumulate(processTolocalSum.begin(), processTolocalSum.end(), 0);
+            index_type offset = std::accumulate(processTolocalSum.begin(), std::next( processTolocalSum.begin(), mpirank) , 0);
+
+            // save hdf5 file
+            HDF5 hdf5;
+            hdf5.openFile( h5filepath.string(), mpicomm, false );
+
+            bool useTransposedStorage = true;
+            const int dimsComp0 = (useTransposedStorage)? 1 : 0;
+            const int dimsComp1 = (useTransposedStorage)? 0 : 1;
+
+            std::string tableName = "doftable";
+            hsize_t dimsElt[2];
+            dimsElt[dimsComp0] = global_sum;
+            dimsElt[dimsComp1] = 1;
+            hsize_t dimsElt2[2];
+            dimsElt2[dimsComp0] = local_sum;
+            dimsElt2[dimsComp1] = 1;
+            hsize_t offsetElt[2];
+            offsetElt[dimsComp0] = offset;
+            offsetElt[dimsComp1] = 0;
+
+            hdf5.createTable( tableName, H5T_NATIVE_UINT, dimsElt );
+            if ( !doftableSerialization.empty() )
+                hdf5.write( tableName, H5T_NATIVE_UINT, dimsElt2, offsetElt, doftableSerialization.data() );
+            hdf5.closeTable( tableName );
+
+            hdf5.closeFile();
+        }
+
+    /**
+     * @brief get realtion with current doftable and one stored on disk (mesh points should be same)
+     *
+     * @param filepath path of the json files on the disk
+     */
+    template <typename TT=functionspace_type,std::enable_if_t< !TT::is_composite, bool> = true >
+    std::vector<index_type> relationFromFile( std::string const& filepathstr ) const
+        {
+            fs::path argfilepath = filepathstr;
+            fs::path jsonfilepath = argfilepath.replace_extension("json");
+            fs::path h5filepath = argfilepath.replace_extension("h5");
+
+            // fetch current mapping : (pt ids in elt) -> (dof in process ordered by local dof)
+            using doftable_relation_type = std::unordered_map<std::vector /*set*/<index_type>, std::vector<index_type>, Feel::HashTables::HasherContainers<index_type>>;
+            doftable_relation_type currentDofTableMapping;
+            std::vector<index_type> ptIds;
+            std::vector<index_type> dd;
+            auto meshsupport = this->template meshSupport<0>();
+            auto dof = this->dof();
+            for ( auto const& eltWrap : elements(meshsupport) )
+            {
+                auto const& elt = unwrap_ref(eltWrap);
+                ptIds.resize( elt.nVertices() );
+                for ( int p=0;p<elt.nVertices();++p )
+                    ptIds[p] = elt.point(p).id();
+
+                auto dofMapping = dof->localDof( elt.id() );
+                dd.resize( std::distance( Feel::begin(dofMapping),Feel::end(dofMapping ) ) );
+                for( auto const& ldof : dofMapping )
+                {
+                    index_type thedof = ldof.second.index();
+                    uint16_type thelocdof = ldof.first.localDof();
+                    dd[thelocdof] = thedof;
+                }
+
+                currentDofTableMapping.insert( {ptIds, dd} );
+            }
+
+            // read hdf5 file
+            HDF5 hdf5;
+#if 0
+            hdf5.openFile( h5filepath.string(), (subComm)? *subComm : this->comm().comm(), true );
+#else
+            hdf5.openFile( h5filepath.string(), this->worldComm().comm(), true );
+#endif
+            std::string tableName = "doftable";
+            hsize_t dimsGlob[2];
+            hsize_t offsetElt[2] = {0,0};
+            hdf5.openTable( tableName, dimsGlob );
+
+            std::vector<uint> dataReaded( dimsGlob[0]*dimsGlob[1] );
+
+            hdf5.read( tableName, H5T_NATIVE_UINT, dimsGlob, offsetElt, dataReaded.data() );
+
+            hdf5.closeTable( tableName );
+            hdf5.closeFile();
+
+            // update mapping
+            uint16_type nVerticesInElt = ptIds.size();
+            uint16_type nDofByElt = dd.size();
+            std::vector<index_type> mappingWithFile( dof->nLocalDofWithGhost(), invalid_v<index_type> );
+
+            for ( size_type k=0; k<dataReaded.size(); )
+            {
+                index_type eltId = dataReaded[k++];
+                ptIds.resize( nVerticesInElt );
+                for ( int p=0;p<nVerticesInElt;++p )
+                    ptIds[p] = dataReaded[k++];
+                auto const& curentLpDofs = currentDofTableMapping.at( ptIds );
+
+                for ( int ld=0;ld<nDofByElt;++ld )
+                    mappingWithFile[ curentLpDofs[ld] ] = dataReaded[k++];
+            }
+
+            return mappingWithFile;
+        }
+
+    template <typename TT=functionspace_type,std::enable_if_t< TT::is_composite, bool> = true >
+    std::vector<index_type> relationFromFile( std::string const& filepathstr ) const
+        {
+            CHECK( false ) << "composite case not implemented";
+            return {};
+        }
 
     //@}
 
@@ -6275,47 +6377,54 @@ void FunctionSpace<A0, A1, A2, A3, A4>::updateInformationObject( nl::json& p ) c
             return;
 
         p["nSpace"] = functionspace_type::nSpaces;
+
         if ( this->mesh() )
             p["mesh"] = this->mesh()->journalSection().to_string();
 
-        std::string shape;
-        if ( is_scalar )
-            shape = "scalar";
-        else if ( is_vectorial )
-            shape = "vectorial";
-        else if ( is_tensor2 )
-            shape = "tensor2";
-        else if ( is_tensor2symm )
-            shape = "tensor2symm";
-        p.emplace( "basis", nl::json( { { "name", basisName() },
-                                        { "order", basisOrder().front() },
-                                        { "shape", shape },
-                                        { "is_continuous", is_continuous },
-                                        { "nComponents", nComponents },
-                                        { "nComponents1", nComponents1 },
-                                        { "nComponents2", nComponents2 },
-                                        { "nLocalDof", fe_type::nLocalDof } } ) );
-        if ( is_tensor2symm )
-            p["/basis/nRealComponents"_json_pointer] = nRealComponents;
-
-        nl::json subPt;
-        subPt["nDof"] = this->nDof();
-        rank_type nProc = this->worldComm().localSize();
-        if ( nProc > 1 )
+        if ( M_ref_fe )
         {
-            nl::json::array_t subPt1, subPt2, subPt3;
-            for ( rank_type p = 0; p < nProc; ++p )
-            {
-                subPt1.push_back( this->dof()->nLocalDofWithGhost( p ) );
-                subPt2.push_back( this->dof()->nLocalDofWithoutGhost( p ) );
-                subPt3.push_back( this->dof()->nLocalGhosts( p ) );
-            }
-            subPt.emplace( "nLocalDofWithGhost", subPt1 );
-            subPt.emplace( "nLocalDofWithoutGhost", subPt2 );
-            subPt.emplace( "nLocalGhost", subPt3 );
-            subPt.emplace( "extended-doftable", this->dof()->buildDofTableMPIExtended() );
+            std::string shape;
+            if ( is_scalar )
+                shape = "scalar";
+            else if ( is_vectorial )
+                shape = "vectorial";
+            else if ( is_tensor2 )
+                shape = "tensor2";
+            else if ( is_tensor2symm )
+                shape = "tensor2symm";
+            p.emplace( "basis", nl::json( { { "name", basisName() },
+                                            { "order", basisOrder().front() },
+                                            { "shape", shape },
+                                            { "is_continuous", is_continuous },
+                                            { "nComponents", nComponents },
+                                            { "nComponents1", nComponents1 },
+                                            { "nComponents2", nComponents2 },
+                                            { "nLocalDof", fe_type::nLocalDof } } ) );
+            if ( is_tensor2symm )
+                p["/basis/nRealComponents"_json_pointer] = nRealComponents;
         }
-        p.emplace( "doftable", std::move( subPt ) );
+
+        if ( M_dof ) // sometime not define (example online rbspace)
+        {
+            nl::json subPt;
+            subPt["nDof"] = this->nDof();
+            rank_type nProc = this->worldComm().localSize();
+            if ( nProc > 1 )
+            {
+                nl::json::array_t subPt1, subPt2, subPt3;
+                for ( rank_type p = 0; p < nProc; ++p )
+                {
+                    subPt1.push_back( this->dof()->nLocalDofWithGhost( p ) );
+                    subPt2.push_back( this->dof()->nLocalDofWithoutGhost( p ) );
+                    subPt3.push_back( this->dof()->nLocalGhosts( p ) );
+                }
+                subPt.emplace( "nLocalDofWithGhost", subPt1 );
+                subPt.emplace( "nLocalDofWithoutGhost", subPt2 );
+                subPt.emplace( "nLocalGhost", subPt3 );
+                subPt.emplace( "extended-doftable", this->dof()->buildDofTableMPIExtended() );
+            }
+            p.emplace( "doftable", std::move( subPt ) );
+        }
     }
     else // composite case
     {
@@ -6327,7 +6436,8 @@ void FunctionSpace<A0, A1, A2, A3, A4>::updateInformationObject( nl::json& p ) c
         mpl::range_c<int, 0, functionspace_type::nSpaces> keySpaces;
         boost::fusion::for_each( keySpaces, UpdateInformationObject<functionspace_type>( *this, subPt ) );
         p.emplace( "nSpace", functionspace_type::nSpaces );
-        p.emplace( "nDof", this->nDof() );
+        if ( M_dof )
+            p.emplace( "nDof", this->nDof() );
         p.emplace( "subfunctionspaces", subPt );
     }
 }

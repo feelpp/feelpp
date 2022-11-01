@@ -1,8 +1,9 @@
 #ifndef FEELPP_PYBIND11_PETSC
 #define FEELPP_PYBIND11_PETSC
 
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
+#include <iostream>
+#include <feel/feelpython/pybind11/pybind11.h>
+#include <feel/feelpython/pybind11/stl.h>
 
 #ifdef FEELPP_HAS_PETSC
 #include <petscdm.h>

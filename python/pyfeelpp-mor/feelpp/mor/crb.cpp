@@ -25,18 +25,20 @@
 
 #include <Eigen/Core>
 #include <boost/shared_ptr.hpp>
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
-//#include <pybind11/eigen.h>
-//#include <pybind11/numpy.h>
+#include <feel/feelpython/pybind11/pybind11.h>
+#include <feel/feelpython/pybind11/stl.h>
+//#include <feel/feelpython/pybind11/eigen.h>
+//#include <feel/feelpython/pybind11/numpy.h>
 
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelmor/crbenums.hpp>
+#include <feel/feelmor/crbmodeldb.hpp>
 #include <feel/feelmor/crbdata.hpp>
 #include <feel/feelmor/parameterspace.hpp>
 #include <feel/feelmor/crbplugin_interface.hpp>
 #include <feel/feelmor/options.hpp>
+#include <feel/feelmor/crbmodelproperties.hpp>
 
 namespace py = pybind11;
 PYBIND11_DECLARE_HOLDER_TYPE(T, std::shared_ptr<T>);
@@ -192,7 +194,7 @@ PYBIND11_MODULE( _mor, m )
 {
     m.def("makeCRBOptions", &makeCRBOptions, "Create CRB Options" );
     m.def("factoryCRBPlugin", &factoryCRBPlugin, "Factory for CRB plugins",
-          py::arg("name"),py::arg("libname")=std::string(""),py::arg("dirname")=Info::libdir() );
+          py::arg("name"),py::arg("libname")=std::string(""),py::arg("dirname")=Info::libdir().string() );
 
     py::enum_<crb::stage>(m, "CRBStage")
         .value("offline", crb::stage::offline)
@@ -219,6 +221,60 @@ PYBIND11_MODULE( _mor, m )
         .def("__iter__", [](std::vector<CRBResults> &v) {
                 return py::make_iterator(v.begin(), v.end());
             }, py::keep_alive<0, 1>()); /* Keep vector alive while iterator is used */
+
+
+    py::class_<CRBModelDB::MetaData>( m, "CRBModelDBMetaData" )
+        .def_readwrite("json_path", &CRBModelDB::MetaData::json_path)
+        .def_readwrite("model_name", &CRBModelDB::MetaData::model_name)
+        .def_readwrite("plugin_name", &CRBModelDB::MetaData::plugin_name)
+        .def_readwrite("plugin_libname", &CRBModelDB::MetaData::plugin_libname);
+
+    py::class_<CRBModelDB>( m, "CRBModelDB" )
+        .def( py::init<std::string const&, std::string const&>(), py::arg( "name" ), py::arg( "root" ) = Environment::rootRepository(), "Construct a CRBModelDB" )
+        .def( "name", &CRBModelDB::name )
+        .def( "rootRepository", &CRBModelDB::rootRepository )
+        .def( "uuid", &CRBModelDB::uuid )
+        .def( "jsonFilename", static_cast<std::string ( CRBModelDB::* )() const>( &CRBModelDB::jsonFilename ), "get the json metadata filename" )
+        .def( "dbRepository", static_cast<std::string ( CRBModelDB::* )() const>( &CRBModelDB::dbRepository ), "get the db repository" )
+        .def(
+            "loadDBMetaData", []( CRBModelDB& db, std::string const& from, std::string const& name )
+            { return db.loadDBMetaData( from, name ); },
+            py::arg( "attribute" ) = crb::attributeToString( crb::attribute::last_modified ), py::arg( "data" ) = std::nullopt )
+        .def( "loadDBPlugin", static_cast<std::shared_ptr<CRBPluginAPI> ( CRBModelDB::* )( CRBModelDB::MetaData const&, std::string ) const>( &CRBModelDB::loadDBPlugin ), py::arg( "metadata" ), py::arg( "load" ) = "rb", "load DB plugin", pybind11::return_value_policy::reference );
+    py::class_<CRBModelParameter>(m,"CRBModelParamater")
+        .def(py::init<>())
+        .def("name",&CRBModelParameter::name, "name of the parameter")
+        .def("value",&CRBModelParameter::value, "value of the parameter")
+        .def("min",&CRBModelParameter::min, "minimum of the parameter")
+        .def("max",&CRBModelParameter::max, "maximum of the parameter")
+        .def("description",&CRBModelParameter::description, "description of the parameter");
+    
+    py::class_<CRBModelParameters>(m,"CRBModelParameters")
+        .def(py::init<worldcomm_ptr_t const&>(),
+             py::arg("worldComm"))
+        .def("__len__", [](const CRBModelParameters &v) { return v.size(); })
+        .def("__iter__", [](CRBModelParameters &v) {
+            return py::make_iterator(v.begin(), v.end());
+        }, py::keep_alive<0,1>())
+        .def("at",static_cast<CRBModelParameter& (CRBModelParameters::*)(std::string const&)>(&CRBModelParameters::at), "parameter for key");
+
+    py::class_<CRBModelOutput>(m,"CRBModelOutput")
+        .def(py::init<worldcomm_ptr_t const&>(),
+             py::arg("worldComm"));
+    py::class_<CRBModelOutputs>(m,"CRBModelOutputs")
+        .def(py::init<worldcomm_ptr_t const&>(),
+             py::arg("worldComm"))
+        .def("__len__", [](const CRBModelOutputs &v) { return v.size(); })
+        .def("__iter__", [](CRBModelOutputs &v) {
+            return py::make_iterator(v.begin(), v.end());
+        }, py::keep_alive<0,1>())
+        .def("at",static_cast<CRBModelOutput& (CRBModelOutputs::*)(std::string const&)>(&CRBModelOutputs::at), "output for key");
+
+    py::class_<CRBModelProperties, std::shared_ptr<CRBModelProperties>>(m,"CRBModelProperties")
+        .def(py::init< std::string const&, worldcomm_ptr_t const&, std::string const&>(),"initialize ModelProperties",py::arg("directoryLibExpr")="",py::arg("worldComm"),py::arg("prefix")="")
+        .def("setup",static_cast<void(CRBModelProperties::*)(std::string const&)>(&CRBModelProperties::setup), "setup from a filename")
+        .def("parameters",static_cast<CRBModelParameters& (CRBModelProperties::*)()>(&CRBModelProperties::parameters), "get parameters of the model",py::return_value_policy::reference)
+        .def("outputs",static_cast<CRBModelOutputs& (CRBModelProperties::*)()>(&CRBModelProperties::outputs), "get outputs of the model");
 
     using ElementP = ParameterSpaceX::Element;
     py::class_<ElementP>(m,"ParameterSpaceElement")
@@ -272,7 +328,7 @@ PYBIND11_MODULE( _mor, m )
     py::class_<ParameterSpaceX,std::shared_ptr<ParameterSpaceX>>(m,"ParameterSpace")
         .def( py::init<>() )
         .def_static("create",&ParameterSpaceX::create )
-        .def_static("New", static_cast<std::shared_ptr<ParameterSpaceX> (*)(ModelParameters const&, std::shared_ptr<WorldComm> const&)>(&ParameterSpaceX::New))
+        .def_static("New", static_cast<std::shared_ptr<ParameterSpaceX> (*)(CRBModelParameters const&, std::shared_ptr<WorldComm> const&)>(&ParameterSpaceX::New))
         .def("sampling", &ParameterSpaceX::sampling)
         .def("element", &ParameterSpaceX::element, "return a parameter from the space\n  - broadcast : share the parameter to all processors\n  - apply_log : log random chosen parameter",
             py::arg("broadcast")=true, py::arg("apply_log")=false)
@@ -310,7 +366,14 @@ PYBIND11_MODULE( _mor, m )
         .def("run",py::overload_cast<ParameterSpaceX::Element const&,double,int,bool>(&CRBPluginAPI::run, py::const_),
              "run online code for a parameter mu", py::arg("mu"),py::arg("eps")=1e-6,py::arg("N")=-1,py::arg("print_reduced_matrix")=false)
         .def("run",py::overload_cast<std::vector<ParameterSpaceX::Element> const&,double,int,bool>(&CRBPluginAPI::run, py::const_),
-             "run online code for a parameter mu", py::arg("mu"),py::arg("eps")=1e-6,py::arg("N")=-1,py::arg("print_reduced_matrix")=false);
+             "run online code for a parameter mu", py::arg("mu"),py::arg("eps")=1e-6,py::arg("N")=-1,py::arg("print_reduced_matrix")=false)
+        .def("refCount", [](std::shared_ptr<CRBPluginAPI>& p){
+                return p.use_count();
+            },"reset plugin")
+        .def("reset", [](std::shared_ptr<CRBPluginAPI>& p){
+                p.reset();
+                std::cout << fmt::format("After reset(): use_count() = {}", p.use_count()) << std::endl;
+            },"reset plugin");
         //.def("run",&CRBPluginAPI::run)
 
 }

@@ -1,5 +1,5 @@
 add_custom_target(pyfeelpp)
-
+configure_file(__init__.py.in ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py @ONLY)
 feelpp_add_pymodule(feelpp SRCS feelpp.cpp DESTINATION feelpp )
 feelpp_add_pymodule(core SRCS core.cpp remotedata.cpp  DESTINATION feelpp )
 feelpp_add_pymodule(alg SRCS alg.cpp DESTINATION feelpp )
@@ -15,10 +15,10 @@ feelpp_add_pymodule(interpolation SRCS interpolation.cpp DESTINATION feelpp )
 feelpp_add_pymodule(operators SRCS operators.cpp operators1.cpp operators2.cpp operators3.cpp DESTINATION feelpp )
 feelpp_add_pymodule(models SRCS models.cpp DESTINATION feelpp )
 feelpp_add_pymodule(quality SRCS quality.cpp DESTINATION feelpp )
-
+feelpp_add_pymodule(timing SRCS timing.cpp DESTINATION feelpp)
 foreach(MODULE IN ITEMS core feelpp alg mesh discr exporter ls ts vf measure models integrate interpolation operators quality)
   add_dependencies(pyfeelpp _${MODULE})
 endforeach()
 
-set(PYFILES __init__.py integrate.py measure.py quality.py interpolation.py operators.py )
+set(PYFILES __init__.py integrate.py measure.py quality.py interpolation.py operators.py timing.py )
 install(FILES ${PYFILES} DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp)

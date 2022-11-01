@@ -61,8 +61,21 @@ namespace Feel
 namespace FeelModels
 {
 /**
- * Solid Mechanics Toolbox
- * \ingroup Toolboxes
+ * @brief class for Solid Mechanics toolbox
+ * @ingroup Solid
+ *
+ * @tparam ConvexType convex for the mesh
+ * @tparam BasisDisplacementType basis type for displacement
+ *
+ * @code {.cpp}
+ * using solid_t = SolidMechanics< Simplex<nDim,1>, Lagrange<OrderT, Vectorial,Continuous,PointSetFekete>>;
+ * auto solid = std::make_shared<solid_t>("solid");
+ * solid->init();
+ * solid->printAndSaveInfo();
+ * solid->solve();
+ * solid->exportResults();
+ * @endcode
+ *
  */
 template< typename ConvexType, typename BasisDisplacementType >
 class SolidMechanics : public ModelNumerical,
@@ -105,7 +118,6 @@ public:
     typedef std::shared_ptr<space_displacement_type> space_displacement_ptrtype;
     typedef typename space_displacement_type::element_type element_displacement_type;
     typedef std::shared_ptr<element_displacement_type> element_displacement_ptrtype;
-    typedef typename space_displacement_type::element_external_storage_type element_displacement_external_storage_type;
     typedef typename space_displacement_type::element_type element_vectorial_type;
     typedef std::shared_ptr<element_vectorial_type> element_vectorial_ptrtype;
     typedef typename space_displacement_type::component_functionspace_type space_displacement_scalar_type;
@@ -117,7 +129,6 @@ public:
     typedef std::shared_ptr<space_pressure_type> space_pressure_ptrtype;
     typedef typename space_pressure_type::element_type element_pressure_type;
     typedef std::shared_ptr<element_pressure_type> element_pressure_ptrtype;
-    typedef typename space_pressure_type::element_external_storage_type element_pressure_external_storage_type;
     //___________________________________________________________________________________//
     // vectorial constraint space
     typedef FunctionSpace<mesh_type, bases<basis_constraint_vec_type> > space_constraint_vec_type;
@@ -519,9 +530,9 @@ public :
 
     auto modelFields( vector_ptrtype sol, size_type startBlockSpaceIndex = 0, std::string const& prefix = "" ) const
         {
-            std::shared_ptr<element_displacement_external_storage_type> field_d;
-            std::shared_ptr<element_displacement_external_storage_type> field_v;
-            std::shared_ptr<element_pressure_external_storage_type> field_p;
+            element_displacement_ptrtype field_d;
+            element_displacement_ptrtype field_v;
+            element_pressure_ptrtype field_p;
             if ( this->hasSolidEquationStandard() )
             {
                 field_d = this->functionSpaceDisplacement()->elementPtr( *sol, startBlockSpaceIndex + this->startSubBlockSpaceIndex( "displacement" ) );

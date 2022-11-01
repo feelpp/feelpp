@@ -146,7 +146,6 @@ Electric<ConvexType,BasisPotentialType>::updateJacobian( DataUpdateJacobian & da
 {
     const vector_ptrtype& XVec = data.currentSolution();
     sparse_matrix_ptrtype& J = data.jacobian();
-    vector_ptrtype& RBis = data.vectorUsedInStrongDirichlet();
     bool buildCstPart = data.buildCstPart();
     bool buildNonCstPart = !buildCstPart;
 

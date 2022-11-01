@@ -78,7 +78,7 @@ target_link_libraries( feelpp PUBLIC feelpp_contrib )
 target_include_directories(feelpp PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/..>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
-  $<INSTALL_INTERFACE:include/feelpp> )  
+  $<INSTALL_INTERFACE:include/feelpp> )
 
 IF ( FEELPP_ENABLE_JSON_DIAGNOSTICS )
   target_compile_definitions( feelpp PUBLIC  FEELPP_ENABLE_JSON_DIAGNOSTICS=1 )
@@ -137,6 +137,12 @@ if ( Boost_FOUND )
     # Boost::filesystem
     BOOST_FILESYSTEM_VERSION=${BOOST_FILESYSTEM_VERSION}
     )
+
+  # Required on MacOS to circumvent error "Boost.Stacktrace requires `_Unwind_Backtrace` function"
+  if( APPLE )
+    target_compile_definitions(feelpp PUBLIC _GNU_SOURCE)
+  endif()
+
   if (BOOST_ENABLE_TEST_DYN_LINK)
     target_compile_definitions( feelpp PUBLIC BOOST_TEST_DYN_LINK )
   endif (BOOST_ENABLE_TEST_DYN_LINK)
@@ -187,8 +193,7 @@ if ( GOOGLE_PERFTOOLS_FOUND )
 endif()
 if (PETSC_FOUND)
   target_compile_definitions( feelpp PUBLIC FEELPP_HAS_PETSC FEELPP_HAS_PETSC_H )
-  target_include_directories( feelpp PUBLIC ${PETSC_PACKAGE_INCLUDES} ${PETSC_INCLUDE_DIR} ${PETSC_INCLUDE_CONF})
-  target_link_libraries( feelpp PUBLIC ${PETSC_LIBRARIES} ${PETSC_PACKAGE_LIBS} )
+  target_link_libraries(feelpp PUBLIC PkgConfig::PETSC)
 endif()
 if (SLEPC_FOUND)
   target_compile_definitions( feelpp PUBLIC FEELPP_HAS_SLEPC )
@@ -274,6 +279,8 @@ get_property(INC_DIR_LIST TARGET feelpp PROPERTY PRIVATE_LINK_LIBRARIES)
 message(STATUS "[feelpp]: private libs ${INC_DIR_LIST}")
 get_property(INC_DIR_LIST TARGET feelpp PROPERTY PUBLIC_LINK_LIBRARIES)
 message(STATUS "[feelpp]: public libs ${INC_DIR_LIST}")
+get_property(INC_DIR_LIST TARGET feelpp PROPERTY LINK_LIBRARIES)
+message(STATUS "[feelpp]: libs ${INC_DIR_LIST}")
 
 #target_link_libraries(feelpp ${FEELPP_LIBRARIES})
 if( FEELPP_ENABLE_PCH )
@@ -293,20 +300,20 @@ install(EXPORT FeelppTargets
   DESTINATION share/feelpp/feel/cmake/modules
   )
 
-#INSTALL(TARGETS feelpp DESTINATION lib/ COMPONENT Libs EXPORT feelpp-export-targets)
-#install(EXPORT feelpp-export-targets DESTINATION share/feelpp/feel/cmake/modules)
+# INSTALL(TARGETS feelpp DESTINATION lib/ COMPONENT Libs EXPORT feelpp-export-targets)
+# install(EXPORT feelpp-export-targets DESTINATION share/feelpp/feel/cmake/modules)
 
 # Handle static library if needed
 # if(FEELPP_ENABLE_BUILD_STATIC)
-#     add_library(feelpp-static STATIC options.cpp ${FEELPP_SRCS})
-#     set_target_properties(feelpp-static PROPERTIES OUTPUT_NAME "feelpp")
-#     set_target_properties(feelpp-static PROPERTIES VERSION ${FEELPP_SHARED_VERSION})
-#     set_property(TARGET feelpp-static PROPERTY LABELS feel++)
+# add_library(feelpp-static STATIC options.cpp ${FEELPP_SRCS})
+# set_target_properties(feelpp-static PROPERTIES OUTPUT_NAME "feelpp")
+# set_target_properties(feelpp-static PROPERTIES VERSION ${FEELPP_SHARED_VERSION})
+# set_property(TARGET feelpp-static PROPERTY LABELS feel++)
 
-#     target_link_libraries(feelpp-static ${FEELPP_LIBRARIES})
+# target_link_libraries(feelpp-static ${FEELPP_LIBRARIES})
 
-#     # Install feelpp
-#     INSTALL(TARGETS feelpp-static DESTINATION lib/ COMPONENT Bin)
+# # Install feelpp
+# INSTALL(TARGETS feelpp-static DESTINATION lib/ COMPONENT Bin)
 # endif()
 
 include(feelpp.lib.install)

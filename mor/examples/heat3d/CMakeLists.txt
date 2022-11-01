@@ -1,9 +1,9 @@
-###  CMakeLists.txt; coding: utf-8 --- 
+# ##  CMakeLists.txt; coding: utf-8 ---
 
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-#       Date: 12 Jun 2017
+# Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+# Date: 12 Jun 2017
 #
-#  Copyright (C) 2017 Feel++ Consortium
+# Copyright (C) 2017 Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -22,8 +22,8 @@
 #
 #
 
-
-mor_add_library( heat3d SRCS heat3d.cpp  EXEC CRB_LIB_HEAT3D )
+mor_add_library(heat3d SRCS heat3d.cpp EXEC CRB_LIB_HEAT3D PLUGIN )
+target_compile_definitions(${CRB_LIB_HEAT3D} PRIVATE FEELPP_MOR_PLUGIN_NAME=heat3d FEELPP_MOR_PLUGIN_LIBNAME=${CRB_LIB_HEAT3D})
 install(FILES heat3d.hpp DESTINATION include/feelpp/crb/heat3d COMPONENT Devel)
 
 set(FEELPP_CRB_HEAT3D_LIBRARIES ${CRB_LIB_HEAT3D} PARENT_SCOPE)

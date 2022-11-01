@@ -33,7 +33,31 @@ namespace Feel
 {
 namespace FeelModels
 {
-
+/**
+ * @brief class for conjuguate heat transfer toolbox
+ * @ingroup HeatFluid
+ *
+ * @tparam HeatType type of the heat transfer toolbox
+ * @tparam FluidType type of the fluid mechanics toolbox
+ *
+ * @code {.cpp}
+ * using heat_t FeelModels::Heat< Simplex<nDim,1>,
+ *                           Lagrange<OrderT, Scalar,Continuous,PointSetFekete> >;
+ * using fluid _t = FeelModels::FluidMechanics< Simplex<nDim,1>,
+ *                                     Lagrange<OrderV, Vectorial,Continuous,PointSetFekete>,
+ *                                     Lagrange<OrderP, Scalar,Continuous,PointSetFekete> >;
+ * using heatfluid_t = FeelModels::HeatFluid<heat_t, fluid_t>;
+ * auto heatFluid = std::make_shared<heatfluid_t>("heat-fluid");
+ * heatFluid->init();
+ * heatFluid->printAndSaveInfo(); * 
+ * if (heatFluid->isStationary() )
+ * {
+ *     heatFluid->solve();
+ *     heatFluid->exportResults();
+ * }
+ * @endcode
+ *
+ */
 template< typename HeatType, typename FluidType>
 class HeatFluid : public ModelNumerical,
                   public ModelPhysics<HeatType::convex_type::nDim>
@@ -83,6 +107,8 @@ private :
     void loadParameterFromOptionsVm();
     void initMesh();
     void initPostProcess() override;
+    void initAlgebraicModel();
+    void initAlgebraicFactory();
     void updatePhysics( typename super_physics_type::PhysicsTreeNode & physicsTree, ModelModels const& models ) override;
 public :
     // update for use
@@ -101,6 +127,8 @@ public :
 
     mesh_ptrtype mesh() const { return super_type::super_model_meshes_type::mesh<mesh_type>( this->keyword() ); }
     void setMesh( mesh_ptrtype const& mesh ) { super_type::super_model_meshes_type::setMesh( this->keyword(), mesh ); }
+
+    void applyRemesh( mesh_ptrtype oldMesh, mesh_ptrtype newMesh, std::shared_ptr<RemeshInterpolation> remeshInterp = std::make_shared<RemeshInterpolation>() );
 
     heat_model_ptrtype const& heatModel() const { return M_heatModel; }
     heat_model_ptrtype heatModel() { return M_heatModel; }
