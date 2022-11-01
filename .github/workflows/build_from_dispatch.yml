@@ -1,0 +1,51 @@
+name: Feel++ Builder
+run-name: "[${{ github.event.client_payload.flavor }}-${{ github.event.client_payload.version }}]"
+on: 
+  repository_dispatch:
+    types: [trigger-feelpp-build]
+
+jobs:
+
+  activate:
+    runs-on: ubuntu-latest
+    if: |
+      github.repository == 'feelpp/feelpp' &&
+      !startsWith(github.event.head_commit.message, 'Release ') &&
+      !contains(github.event.head_commit.message, 'ci skip')
+    steps:
+    - run: echo ok go
+
+  update_baseimage:
+    runs-on: self-docker-${{ github.event.client_payload.flavor }}-${{ github.event.client_payload.version }}
+    needs: activate
+    env:
+      flavor: ${{ github.event.client_payload.flavor }}
+      version: ${{ github.event.client_payload.version }}
+      tag: ${{ github.event.client_payload.flavor }}-${{ github.event.client_payload.version }}
+    name: feelpp-runner:${{ github.event.client_payload.flavor }}-${{ github.event.client_payload.version }}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+      - name: Configure feelpp
+        run: |
+          if test "${{ env.flavor }}" = "fedora"; then
+            . /etc/profile.d/modules.sh
+            module load mpi/openmpi-x86_64
+          fi
+          cmake --preset default 
+  #    - name:   Build feelpp
+  #      run: cmake --build --preset default -j20
+  #    - name:   Build feelpp
+  #      run: cmake --build --preset default -t install/fast
+  #    - name: Package feelpp
+  #      run: cmake --build --preset default -t package
+  #    - name: Upload feelpp
+  #      uses: actions/upload-artifact@v2
+  #      with:
+  #        name: uploads
+  #        path: build/
+  #    - name: Test feelpp
+  #      run: |
+  #        echo "PYTHONPATH=${{ github.workspace }}/build/default/install/lib/python3" >> $GITHUB_ENV
+  #        ctest --preset default -j 4
