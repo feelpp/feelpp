@@ -3,13 +3,13 @@ name: Scheduled CI
 on: 
   schedule:
     # run every day at 2am  
-    - cron: '0/7 * * * *'
-    - cron: '1/7 * * * *'
-    - cron: '2/7 * * * *' 
-    - cron: '3/7 * * * *'
-    - cron: '4/7 * * * *'
-    - cron: '5/7 * * * *'
-    - cron: '6/7 * * * *' 
+    - cron: '0 2 * * 0'
+    - cron: '0 2 * * 1'
+    - cron: '0 2 * * 2' 
+    - cron: '0 2 * * 3'
+    - cron: '0 2 * * 4'
+    - cron: '0 2 * * 5'
+    - cron: '0 2 * * 6' 
 
 
 jobs:
@@ -40,7 +40,7 @@ jobs:
     needs: activate
     steps:
       - 
-        if: ${{ github.event.schedule == format('{0}/7 * * * *', matrix.dotw ) }}
+        if: ${{ github.event.schedule == format('0 2 * * {0}', matrix.dotw ) }}
         name: "Trigger build [${{ github.event.schedule }}] ${{ matrix.flavor }}-${{ matrix.version }}"
         uses: peter-evans/repository-dispatch@v2
         with:

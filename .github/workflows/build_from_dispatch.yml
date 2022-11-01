@@ -34,18 +34,18 @@ jobs:
             module load mpi/openmpi-x86_64
           fi
           cmake --preset default 
-  #    - name:   Build feelpp
-  #      run: cmake --build --preset default -j20
-  #    - name:   Build feelpp
-  #      run: cmake --build --preset default -t install/fast
-  #    - name: Package feelpp
-  #      run: cmake --build --preset default -t package
-  #    - name: Upload feelpp
-  #      uses: actions/upload-artifact@v2
-  #      with:
-  #        name: uploads
-  #        path: build/
-  #    - name: Test feelpp
-  #      run: |
-  #        echo "PYTHONPATH=${{ github.workspace }}/build/default/install/lib/python3" >> $GITHUB_ENV
-  #        ctest --preset default -j 4
+      - name:   Build feelpp
+        run: cmake --build --preset default -j20
+      - name:   Build feelpp
+        run: cmake --build --preset default -t install/fast
+      - name: Package feelpp
+        run: cmake --build --preset default -t package
+   #   - name: Upload feelpp
+   #     uses: actions/upload-artifact@v2
+   #     with:
+   #       name: uploads
+   #       path: build/
+   #   - name: Test feelpp
+   #     run: |
+   #       echo "PYTHONPATH=${{ github.workspace }}/build/default/install/lib/python3" >> $GITHUB_ENV
+   #       ctest --preset default -j 4
