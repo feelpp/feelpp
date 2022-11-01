@@ -1,15 +1,15 @@
 name: Scheduled CI
-
+run-name: 
 on: 
   schedule:
     # run every day at 2am  
-    - cron: '0 2 * * 0' # Ubuntu kinetic
-    - cron: '0 2 * * 1' # Ubuntu jammy
-    - cron: '0 2 * * 2' # debian testing
-    - cron: '0 2 * * 3' # debian sid
-    - cron: '0 2 * * 4' # 
-    - cron: '0 2 * * 5'
-    - cron: '0 2 * * 6' # in the future fedora 37
+    - cron: '0/7 * * * *' # Ubuntu kinetic
+    - cron: '1/7 * * * *' # Ubuntu jammy
+    - cron: '2/7 * * * *' # debian testing
+    - cron: '3/7 * * * *' # debian sid
+    - cron: '4/7 * * * *' # 
+    - cron: '5/7 * * * *'
+    - cron: '6/7 * * * *' # in the future fedora 37
 
 
 jobs:
@@ -28,37 +28,42 @@ jobs:
       fail-fast: false
       matrix: 
         include:
-          - {flavor: ubuntu, version: "22.04", dotw: 0}
-          - {flavor: ubuntu, version: "22.10", dotw: 1}
-          - {flavor: debian, version: "testing", dotw: 2}
-          - {flavor: debian, version: "sid", dotw: 3}
-          - {flavor: fedora, version: "36", dotw: 4}
-          - {flavor: fedora, version: "37", dotw: 5}
+          - {flavor: ubuntu, version: "20.04", dotw: '0'}
+          - {flavor: ubuntu, version: "22.04", dotw: '1'}
+          - {flavor: ubuntu, version: "22.10", dotw: '2'}
+          - {flavor: debian, version: "testing", dotw: '3'}
+          - {flavor: debian, version: "sid", dotw: '4'}
+          - {flavor: fedora, version: "36", dotw: '5'}
+          - {flavor: fedora, version: "37", dotw: '6'}
     name: ${{ matrix.flavor }}-${{ matrix.version }}
     env:
       os: ${{ matrix.flavor }}-${{ matrix.version }}
     runs-on: self-docker-${{ matrix.flavor }}-${{ matrix.version }}
-    if: "github.event.schedule == format('0 2 * * {0}', ${{ matrix.dotw }} )"
+    if: github.event.schedule == format('{0}/7 * * * *', ${{ matrix.dotw }} )
     needs: activate
     steps:
-    - uses: actions/checkout@v3
-      with:
-        submodules: recursive
-    - name: Configure feelpp
-      run: |
-        if test "${{ inputs.flavor }}" = "fedora"; then
-          . /etc/profile.d/modules.sh
-          module load mpi/openmpi-x86_64
-        fi
-        cmake --preset default 
-    - name:   Build feelpp
-      run: cmake --build --preset default -j20
-    - name: Package feelpp
-      run: cmake --build --preset default -t package
-#    - name: Upload feelpp
-#      uses: actions/upload-artifact@v2
+      - 
+        name: "[${{ github.event.schedule }}] ${{ matrix.flavor }}-${{ matrix.version }}"
+        run: echo "build on ${{ matrix.dotw }}:"
+
+#    - uses: actions/checkout@v3
 #      with:
-#        name: uploads
-#        path: build/
-    - name: Test feelpp
-      run: ctest --preset default -j 4
+#        submodules: recursive
+#    - name: Configure feelpp
+#      run: |
+#        if test "${{ inputs.flavor }}" = "fedora"; then
+#          . /etc/profile.d/modules.sh
+#          module load mpi/openmpi-x86_64
+#        fi
+#        cmake --preset default 
+#    - name:   Build feelpp
+#      run: cmake --build --preset default -j20
+#    - name: Package feelpp
+#      run: cmake --build --preset default -t package
+##    - name: Upload feelpp
+##      uses: actions/upload-artifact@v2
+##      with:
+##        name: uploads
+##        path: build/
+#    - name: Test feelpp
+#      run: ctest --preset default -j 4
