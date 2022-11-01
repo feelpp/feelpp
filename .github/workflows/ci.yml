@@ -39,7 +39,7 @@ jobs:
     env:
       os: ${{ matrix.flavor }}-${{ matrix.version }}
     runs-on: self-docker-${{ matrix.flavor }}-${{ matrix.version }}
-    
+    if: ${{ github.event.schedule == format('{0}/7 * * * *', matrix.dotw ) }}
     needs: activate
     steps:
       - 
