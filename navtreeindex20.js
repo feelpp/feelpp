@@ -1,5 +1,11 @@
 var NAVTREEINDEX20 =
 {
+"structFeel_1_1GeometricSpaceBase.html":[4,0,1,91],
+"structFeel_1_1GeometricSpaceBase.html":[5,0,1,91],
+"structFeel_1_1GinacExprManagerDefaultFileNameDeleterImpl.html":[4,0,1,96],
+"structFeel_1_1GinacExprManagerDefaultFileNameDeleterImpl.html":[5,0,1,96],
+"structFeel_1_1GinacExprManagerDeleterImpl.html":[4,0,1,98],
+"structFeel_1_1GinacExprManagerDeleterImpl.html":[5,0,1,98],
 "structFeel_1_1GithubUser.html":[4,0,1,100],
 "structFeel_1_1GithubUser.html":[5,0,1,100],
 "structFeel_1_1HashTables_1_1HasherContainers.html":[5,0,1,5,0],
@@ -243,11 +249,5 @@ var NAVTREEINDEX20 =
 "structFeel_1_1detail_1_1NbDof.html":[4,0,1,1,31],
 "structFeel_1_1detail_1_1NbDof.html":[5,0,1,1,31],
 "structFeel_1_1detail_1_1NbDof_1_1result.html":[5,0,1,1,31,0],
-"structFeel_1_1detail_1_1NbDof_1_1result.html":[4,0,1,1,31,0],
-"structFeel_1_1detail_1_1NbDof_1_1result_3_01NbDof_07S_00_01T_08_4.html":[4,0,1,1,31,1],
-"structFeel_1_1detail_1_1NbDof_1_1result_3_01NbDof_07S_00_01T_08_4.html":[5,0,1,1,31,1],
-"structFeel_1_1detail_1_1PrecomputeDomainBasisFunction.html":[5,0,1,1,37],
-"structFeel_1_1detail_1_1PrecomputeDomainBasisFunction.html":[4,0,1,1,37],
-"structFeel_1_1detail_1_1RecvContainersOff.html":[5,0,1,1,40],
-"structFeel_1_1detail_1_1RecvContainersOff.html":[4,0,1,1,40]
+"structFeel_1_1detail_1_1NbDof_1_1result.html":[4,0,1,1,31,0]
 };

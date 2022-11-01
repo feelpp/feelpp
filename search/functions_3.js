@@ -3,7 +3,7 @@ var searchData=
   ['candownload_0',['canDownload',['../classFeel_1_1RemoteData_1_1Girder.html#aa9f26dff726563d6846df7497e21ae9c',1,'Feel::RemoteData::Girder::canDownload()'],['../structFeel_1_1RemoteData.html#a1bcf1311b39d7a8e370757558634c707',1,'Feel::RemoteData::canDownload()']]],
   ['cantor_5fpairing_1',['cantor_pairing',['../namespaceFeel.html#a836ab2c61887858548d7a4ec9783ca76',1,'Feel::cantor_pairing(int a, int b)'],['../namespaceFeel.html#a1645407bb64a135dc3e67a7b15e912c5',1,'Feel::cantor_pairing(int a, int b, T &amp;&amp;... ts)']]],
   ['canupload_2',['canUpload',['../classFeel_1_1RemoteData_1_1Girder.html#ae342212c88238f2933dfbbd28fd0ac76',1,'Feel::RemoteData::Girder::canUpload()'],['../structFeel_1_1RemoteData.html#a5f552843e37b0c9809f71a0f93149ec8',1,'Feel::RemoteData::canUpload()']]],
-  ['casesdir_3',['casesdir',['../classFeel_1_1Info.html#a5998fea307c96864cb2ef7b1a931b045',1,'Feel::Info']]],
+  ['casesdir_3',['casesdir',['../classFeel_1_1Info.html#a106644930f4a5ba5b9a82b6a12828b6e',1,'Feel::Info']]],
   ['cast_4',['cast',['../classFeel_1_1TabulateInformationsSections.html#a10f9f015b9749dbe2c2da755fe0a6256',1,'Feel::TabulateInformationsSections']]],
   ['cbegin_5',['cbegin',['../classnlohmann_1_1basic__json.html#ae508c13e3ad6ce445bcaf24a2bc7d039',1,'nlohmann::basic_json']]],
   ['cd_6',['cd',['../classFeel_1_1Repository.html#af2a08c8d19c2df332926ce321fcdbbc1',1,'Feel::Repository']]],
