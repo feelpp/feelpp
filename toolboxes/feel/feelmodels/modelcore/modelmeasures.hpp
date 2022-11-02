@@ -163,6 +163,9 @@ class ModelMeasuresStorage
 {
     using value_type = double;
 public :
+
+    static const inline std::string default_storage = "";
+    
     //enum class State { IN_MEMORY=0, ON_DISK, MODIFIED };
 
     ModelMeasuresStorage( std::string const& directory, worldcomm_ptr_t const& worldComm ) : M_directory( directory ), M_worldComm( worldComm ) {}
@@ -193,20 +196,23 @@ public :
         }
 
     //! return true if a measure with key @p key is present in default storage (empty string)
-    bool hasValue( std::string const& key ) const { return this->hasValue( "", key ); }
+    bool hasValue( std::string const& key ) const { return this->hasValue( default_storage, key ); }
     //! return true if a measure with key @p key is present in storage @p name
     bool hasValue( std::string const& name, std::string const& key ) const;
 
     //! return value of measure with key @p key from default storage (empty string)
-    value_type value( std::string const& key ) const { return this->value( "", key ); }
+    value_type value( std::string const& key ) const { return this->value( default_storage, key ); }
     //! return value of measure with key @p key from storage 'name'
     value_type value( std::string const& name, std::string const& key ) const;
 
     //! get the values dictionary from the default storage
-    std::map<std::string,value_type> const& values() const { return this->values(""); }
+    std::map<std::string,value_type> const& values() const { return this->values(default_storage); }
 
     //! get the values dictionary from the storage @p name
     std::map<std::string,value_type> const& values( std::string const& name ) const { return M_values.at( name ).values(); }
+
+    //! return true if there are no values in the storage \p name
+    bool empty( std::string const& name = default_storage ) const { return M_values.empty() || (M_values.find( name ) == M_values.end()); }
 
     //! get the times
     std::vector<double> const& times() const { return M_times; }
