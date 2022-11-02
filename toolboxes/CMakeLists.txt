@@ -95,6 +95,7 @@ INCLUDE(CTest)
 ENABLE_TESTING()
 
 add_subdirectory(cmake)
+add_subdirectory(tools/man)
 
 if ( FEELPP_FOUND )
 
