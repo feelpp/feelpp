@@ -71,11 +71,11 @@ int getInfoMSH(const int typeMSH, std::string & elementName);
 #else
 int getInfoMSH(const int typeMSH, const char **const name);
 #endif
-void SwapBytes(char *array, int size, int n);
+
 
 namespace Feel
 {
-
+void SwapBytes( char* array, int size, int n );
 namespace detail
 {
 #pragma GCC visibility push(hidden)

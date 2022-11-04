@@ -141,6 +141,28 @@ else()
   set( FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION ON)
 endif()
 
+function(get_linux_lsb_release_information)
+    find_program(LSB_RELEASE_EXEC lsb_release)
+    if(NOT LSB_RELEASE_EXEC)
+        message(WARNING "Could not detect lsb_release executable, can not gather required information")
+    else()
+      execute_process(COMMAND "${LSB_RELEASE_EXEC}" --short --id OUTPUT_VARIABLE LSB_RELEASE_ID_SHORT OUTPUT_STRIP_TRAILING_WHITESPACE)
+      execute_process(COMMAND "${LSB_RELEASE_EXEC}" --short --release OUTPUT_VARIABLE LSB_RELEASE_VERSION_SHORT OUTPUT_STRIP_TRAILING_WHITESPACE)
+      execute_process(COMMAND "${LSB_RELEASE_EXEC}" --short --codename OUTPUT_VARIABLE LSB_RELEASE_CODENAME_SHORT OUTPUT_STRIP_TRAILING_WHITESPACE)
+  
+      set(LSB_RELEASE_ID_SHORT "${LSB_RELEASE_ID_SHORT}" PARENT_SCOPE)
+      set(LSB_RELEASE_VERSION_SHORT "${LSB_RELEASE_VERSION_SHORT}" PARENT_SCOPE)
+      set(LSB_RELEASE_CODENAME_SHORT "${LSB_RELEASE_CODENAME_SHORT}" PARENT_SCOPE)
+    endif()
+endfunction()
+
+if(CMAKE_SYSTEM_NAME MATCHES "Linux")
+  get_linux_lsb_release_information()
+  message(STATUS "Linux ${LSB_RELEASE_ID_SHORT} ${LSB_RELEASE_VERSION_SHORT} ${LSB_RELEASE_CODENAME_SHORT}")
+endif()
+
+find_package(PkgConfig REQUIRED)
+
 # enable mpi mode
 IF ( FEELPP_ENABLE_MPI_MODE )
   SET( FEELPP_ENABLE_MPI_MODE 1 )
@@ -449,11 +471,11 @@ if ( FEELPP_ENABLE_HDF5 )
 
 
       else(HDF5_IS_PARALLEL)
-        MESSAGE(STATUS "[feelpp] HDF5 has been found but is not parallel, HDF5 is not enabled in Feel++")
+        MESSAGE(FATAL_ERROR "[feelpp] HDF5 has been found but is not parallel, HDF5 is not enabled in Feel++")
       endif( HDF5_IS_PARALLEL)
 
   else(HDF5_FOUND)
-    MESSAGE(STATUS "[feelpp] no HDF5 found")
+    MESSAGE(FATAL_ERROR "[feelpp] no HDF5 found")
   endif( HDF5_FOUND)
 
 endif(FEELPP_ENABLE_HDF5)

@@ -129,14 +129,12 @@ public:
     using method_t = AlgoT<crbmodel_type>;
     using mesh_t = typename model_t::mesh_type;
     using exporter_ptr_t = std::shared_ptr<Exporter<mesh_t> >;
-    
+
     CRBPlugin( std::string const& name )
         :
         M_name( name ),
         M_load( crb::load::none )
-        {
-            M_crb = method_t::New(name, crb::stage::online);
-        }
+        {}
 
     std::string const& name() const override
         {
@@ -144,30 +142,36 @@ public:
         }
     void loadDB( std::string const& filename, crb::load l ) override
         {
+            auto crbmodeldb = CRBModelDB::New( _filename=filename );
+            auto model = std::make_shared<model_t>();// crbmodeldb->name() );
+            auto crbmodel = std::make_shared<crbmodel_type>( crbmodeldb, model, crb::stage::online );
+            M_crb = method_t::New(/*M_name*/crbmodeldb->name(), crbmodel, crb::stage::online);
             M_load = l;
             M_crb->loadDB( filename, l );
         }
 
     void loadDBFromId( std::string const& id, crb::load l = crb::load::rb, std::string const& root = Environment::rootRepository() ) override
         {
+            CHECK( false ) << "TODO";
             M_load = l;
             M_crb->loadDBFromId( id, l, root );
         }
-    
+
     void loadDBLast( crb::last last = crb::last::modified, crb::load l = crb::load::rb, std::string const& root = Environment::rootRepository() ) override
         {
+            CHECK( false ) << "TODO";
             M_load = l;
             M_crb->loadDBLast( last, l, root );
         }
 
     bool isDBLoaded() const override { return M_load != crb::load::none; }
-    
+
     bool isReducedBasisModelDBLoaded() const override { return (M_load == crb::load::rb) || (M_load == crb::load::all); }
 
     bool isFiniteElementModelDBLoaded() const override { return (M_load == crb::load::fe) || (M_load == crb::load::all); }
 
     bool isAllLoaded() const override { return M_load == crb::load::all; }
-    
+
     std::shared_ptr<ParameterSpaceX> parameterSpace() const override
         {
             DCHECK( M_crb ) << "DB not loaded";
@@ -251,10 +255,10 @@ public:
     std::vector<CRBResults> run( std::vector<ParameterSpaceX::Element> const& S,
                                  double eps , int N, bool print_rb_matrix ) const override
         {
-            
+
             return M_crb->run( S, eps, N, print_rb_matrix );
         }
-    
+
     void expansion( vectorN_type const& uRB, Vector<double> & uFE,  int N ) const override
         {
             DCHECK( M_crb ) << "DB not loaded";
