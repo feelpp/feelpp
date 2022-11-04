@@ -131,7 +131,7 @@ endif()
 # # cln
 message(STATUS "------------------------------------------------------------")
 message(STATUS "Configuring CLN")
-option(FEELPP_USE_EXTERNAL_CLN "USE_EXTERNAL_FMT" OFF)
+option(FEELPP_USE_EXTERNAL_CLN "USE_EXTERNAL_CLN" OFF)
 
 if(FEELPP_USE_EXTERNAL_CLN)
   find_package(CLN REQUIRED)
