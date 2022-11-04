@@ -512,7 +512,7 @@ if(FEELPP_ENABLE_PYTHON)
   FIND_PACKAGE(Python3 COMPONENTS Interpreter Development)
   if(Python3_FOUND)
     execute_process(COMMAND
-      ${PYTHON3_EXECUTABLE}
+      ${Python3_EXECUTABLE}
       -c "import sys; print(sys.version[0:3])"
       OUTPUT_VARIABLE PYTHON_VERSION
       OUTPUT_STRIP_TRAILING_WHITESPACE)
@@ -521,7 +521,6 @@ if(FEELPP_ENABLE_PYTHON)
     SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} PythonInterp/${Python3_VERSION}" )
   endif()
 
-#  FIND_PACKAGE(PythonLibs 3 REQUIRED)
   if ( Python3_FOUND )
     message(STATUS "[feelpp] PythonLibs: ${Python3_INCLUDE_DIRS} ${Python3_LIBRARIES}")
 
@@ -565,7 +564,6 @@ if(FEELPP_ENABLE_PYTHON)
       message(STATUS "[feelpp] mo2fmu not found")
     endif()
   endif()
-
   if (DEFINED PYTHON_SITE_PACKAGES)
     set (FEELPP_PYTHON_MODULE_PATH ${PYTHON_SITE_PACKAGES})
   else ()
@@ -575,7 +573,7 @@ if(FEELPP_ENABLE_PYTHON)
                       OUTPUT_STRIP_TRAILING_WHITESPACE)
       
     if (_PYTHON_pythonlib_result)
-      message (SEND_ERROR "Could not run ${PYTHON3_EXECUTABLE}")
+      message (SEND_ERROR "Could not run ${Python3_EXECUTABLE}")
     endif ()
 
     get_filename_component (_ABS_PYTHON_MODULE_PATH ${_ABS_PYTHON_MODULE_PATH} ABSOLUTE)
