@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 3.13)
 
 configure_file( excompiler.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/excompiler.cpp)
 
@@ -188,10 +188,10 @@ set(ginaclib_public_parser_headers
       parser/parser.h
       parser/parse_context.h)
 install(FILES ${ginaclib_public_parser_headers} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/ginac/parser" COMPONENT Devel)
-## End Feel++ modification
 
-if ( PYTHONINTERP_FOUND )
-  set(GINAC_PYTHON_EXECUTABLE ${PYTHON_EXECUTABLE} )
+# # End Feel++ modification
+if( Python3_EXECUTABLE )
+  set(GINAC_PYTHON_EXECUTABLE ${Python3_EXECUTABLE} )
 else()
   find_program(GINAC_PYTHON_EXECUTABLE NAMES python)
   if ( NOT GINAC_PYTHON_EXECUTABLE )
