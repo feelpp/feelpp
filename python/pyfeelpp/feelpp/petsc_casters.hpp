@@ -13,7 +13,7 @@
 #include <petscvec.h>
 
 // pybind11 casters for PETSc/petsc4py objects
-#if 1 //FEELPP_HAS_PETSC4PY
+#if FEELPP_HAS_PETSC4PY
 #include <petsc4py/petsc4py.h>
 
 // Import petsc4py on demand
