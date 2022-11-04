@@ -297,7 +297,7 @@ PYBIND11_MODULE( _mor, m )
 
     py::class_<ParameterSpaceX::Sampling, std::shared_ptr<ParameterSpaceX::Sampling>>(m,"ParameterSpaceSampling")
         .def(py::init<std::shared_ptr<ParameterSpaceX>,int,std::shared_ptr<ParameterSpaceX::Sampling>>())
-        .def("sampling",&ParameterSpaceX::Sampling::sampling)
+        .def("sampling",&ParameterSpaceX::Sampling::sampling, "create a sampling with global number of samples", py::arg("n"), py::arg("samplingMode"))
         .def("__getitem__", &std_item<ParameterSpaceX::Sampling>::get,py::return_value_policy::reference)
         .def("__setitem__", &std_item<ParameterSpaceX::Sampling>::set)
         .def("getVector", &std_item<ParameterSpaceX::Sampling>::getVector)
