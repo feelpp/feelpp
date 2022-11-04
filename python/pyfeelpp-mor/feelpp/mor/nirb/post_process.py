@@ -23,6 +23,9 @@ def plot_error(dirs, names, Ns):
 
     fig, ax = plt.subplots(1, 2, figsize=(20,10))
 
+    errIntL2 = 0
+    errIntLinf = 0
+
     for d in range(D):
         minsL2  = np.zeros(NN)
         meansL2 = np.zeros(NN)
@@ -42,6 +45,9 @@ def plot_error(dirs, names, Ns):
             meansLinf[i] = df["lINFu-uHn"].mean()
             maxsLinf[i]  = df["lINFu-uHn"].max()
 
+            errIntL2 += df["l2u-uH"].mean()
+            errIntLinf += df["lINFu-uH"].mean()
+
             print(f"[NIRB online] {names[d]}: N={N},\n\tmin L2 error = {minsL2[i]},\n\tmean L2 error = {meansL2[i]},\n\tmax L2 error = {maxsL2[i]}")
             print(f"[NIRB online] {names[d]}: N={N},\n\tmin Linf error = {minsLinf[i]},\n\tmean Linf error = {meansLinf[i]},\n\tmax Linf error = {maxsLinf[i]}")
 
@@ -54,6 +60,9 @@ def plot_error(dirs, names, Ns):
         ax[1].plot(Ns, meansLinf, '--', c=cs[d])
         ax[1].plot(Ns, maxsLinf, c=cs[d])
         ax[1].fill_between(Ns, minsLinf, maxsLinf, alpha=0.2, color=cs[d])
+
+    ax[0].axhline(errIntL2 / D, c='k', linestyle='--', label=r"$\Vert u_H - u_h\Vert$")
+    ax[1].axhline(errIntLinf / D, c='k', linestyle='--', label=r"$\Vert u_H - u_h\Vert$")
 
     # Plot
     ax[0].set_title(r"Error $L^2$")

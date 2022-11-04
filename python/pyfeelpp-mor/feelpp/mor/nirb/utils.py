@@ -3,7 +3,6 @@
 ## Thomas Saigre, Ali Elarif
 ## 09/2022
 
-from errno import EINPROGRESS
 import os
 import feelpp
 import feelpp.mor as mor
