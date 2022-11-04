@@ -1,0 +1,42 @@
+:feelpp: Feel++
+= feelpp_info(1)
+Christophe Prud'homme <https://github.com/prudhomm[@prudhomm]>; 
+:manmanual: feelpp_info
+:man-linkstyle: pass:[blue R < >]
+
+
+== NAME
+
+{manmanual} - print some information {feelpp}
+
+
+== SYNOPSIS
+
+{manmanual} 
+
+== DESCRIPTION
+
+{manmanual} is a simple application which prints some informations about {feelpp} installation
+
+
+=== Options
+
+{manmanual} requires no options.
+
+== EXAMPLES
+
+[source,shell]
+.executing {feelpp}_info
+----
+feelpp_info
+----
+
+== SEE ALSO
+
+*{feelpp} Book:* http://book.feelpp.org
+
+== COPYING
+
+Copyright \(C) 2022 {feelpp} Consortium. +
+Free use of this software is granted under the terms of the GPLv3 License.
+
