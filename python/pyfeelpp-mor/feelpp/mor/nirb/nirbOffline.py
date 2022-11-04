@@ -50,8 +50,9 @@ if __name__ == "__main__":
     else:
         nirb_off.initProblem(nbSnap)
     nirb_off.generateReducedBasis(regulParam=1.e-10)
+    nirb_off.saveData(force=True)
 
-    # nirb_off.BiOrthonormalization()
+    
     finish = time.time()
 
     # nirb_off.orthonormalizeL2()
@@ -70,11 +71,15 @@ if __name__ == "__main__":
     file='nirbOffline_time_exec.txt'
     WriteVecAppend(file,perf)
 
-    info = nirb_off.getInformations()
-    print(json.dumps(info, sort_keys=True, indent=4))
-
-    file = 'nirbOffline_time_exec.txt'
+    if doRectification:
+        file='nirbOffline_time_exec_rectif.txt'
+    else :
+        file='nirbOffline_time_exec.txt'
     WriteVecAppend(file,perf)
 
-    print(f"[NIRB] Offline Elapsed time = ", finish-start)
-    print(f"[NIRB] Offline part Done !")
+    info = nirb_off.getInformations()
+
+    if feelpp.Environment.isMasterRank():
+        print(json.dumps(info, sort_keys=True, indent=4))
+        print(f"[NIRB] Offline Elapsed time = ", finish-start)
+        print(f"[NIRB] Offline part Done !")
