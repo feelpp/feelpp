@@ -18,7 +18,7 @@
     },
     "BoundaryConditions":
     {
-        "temperature":
+        "heat":
         {
             // "Dirichlet":
             // {
@@ -39,20 +39,20 @@
                 //     "expr":"-1/4*exp(2*(x+y)):x:y:z"
                 // }
             // },
-            "Robin":
+            "convective_heat_flux":
             {
                 "side1":
                 {
-                    "expr1":"2", // h
-                    "expr2":"0" // T_c
+                    "h":"2", // h
+                    "Text":"0" // T_c
                 },
                 "side3":
                 {
-                    "expr1":"-2",
-                    "expr2":"0"
+                    "h":"-2",
+                    "Text":"0"
                 }
             },
-            "Neumann":
+            "flux":
             {
                 "side2":
                 {
@@ -64,7 +64,7 @@
                 }
             }
         },
-        "electric-potential":
+        "electric":
         {
             "VolumicForces":
             {
@@ -73,7 +73,7 @@
                     "expr":"-2*exp(x+y):x:y:z"
                 }
             },
-            "Dirichlet":
+            "electric-potential":
             {
                 "side2":
                 {

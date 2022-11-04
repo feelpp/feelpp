@@ -111,7 +111,7 @@ void handleExceptions()
     }
     catch (const std::runtime_error & e) 
     {
-        print_and_trace( fmt::format( "[feel++.std.runtime_error] {}", e.what() ), e );
+        print_and_trace( fmt::format( "[feel++.std.runtime_error] {}\n", e.what() ), e );
     }
     catch ( const boost::mpi::exception& e )
     {
@@ -119,11 +119,11 @@ void handleExceptions()
     }
     catch ( const std::exception& e )
     {
-        print_and_trace( fmt::format( "[feel++.std.exception] {}", e.what() ), e );
+        print_and_trace( fmt::format( "[feel++.std.exception] {}\n", e.what() ), e );
     }
     catch(...)
     {
-        fmt::print( "[feel++.unknown.exception] caught unknown exception" );
+        fmt::print( "[feel++.unknown.exception] caught unknown exception\n" );
     }
 }    
 
