@@ -116,7 +116,7 @@
         "geo_path": "$cfgdir/square.geo",
         "model_path": "$cfgdir/square.json",
         "doRectification": true,
-        "doBiorthogonalization": false,
+        "doBiorthonormal": false,
         "nbSnapshots": 10,
         "greedy-generation": true
     }

@@ -28,7 +28,7 @@ def run_offline(model_path, rect):
     nirb_off.generateOperators()
     nirb_off.generateReducedBasis(regulParam=1.e-10)
 
-    nirb_off.saveData()
+    nirb_off.saveData(force=True)
 
     assert nirb_off.checkL2Orthonormalized(), "L2 orthonormalization failed"
     # assert nirb_off.checkH1Orthonormalized(), "H1 orthonormalization failed"
@@ -38,11 +38,12 @@ def run_online(model_path, rect):
     nirb_config = feelpp.readJson(model_path)['nirb']
     nirb_config['doRectification'] = rect
     nirb_on = nirbOnline(**nirb_config)
-    nirb_on.loadData()
+    err = nirb_on.loadData()
+    assert err == 0, "loadData failed"
 
     mu = nirb_on.Dmu.element()
 
-    uHh, _ = nirb_on.getOnlineSol(mu)
+    uHh = nirb_on.getOnlineSol(mu)
     uH = nirb_on.getInterpSol(mu)
     uh = nirb_on.getToolboxSolution(nirb_on.tbFine, mu)
 
