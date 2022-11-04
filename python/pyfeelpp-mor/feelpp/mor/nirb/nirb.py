@@ -13,6 +13,7 @@ import feelpp.toolboxes.heat as heat
 import feelpp.toolboxes.fluid as fluid
 import feelpp.interpolation as fi
 from tqdm import tqdm
+from random import choices
 
 
 import os
@@ -313,18 +314,20 @@ class nirbOffline(ToolboxModel):
         if Xi_train is None:
             s = self.Dmu.sampling()
             s.sampling(numberOfInitSnapshots, samplingMode)
-            Xi_train = s.getVector()
+            vector_mu = s.getVector()
+        else:
+            vector_mu = choices(Xi_train, k=numberOfInitSnapshots)
 
         if computeCoarse:
             assert self.tbCoarse is not None, f"Coarse toolbox needed for computing coarse Snapshot. set doRectification->True"
-            for mu in Xi_train:
+            for mu in vector_mu:
                 if feelpp.Environment.isMasterRank():
                     print(f"Running simulation with mu = {mu}")
                 self.fineSnapShotList.append(self.getToolboxSolution(self.tbFine, mu))
                 self.coarseSnapShotList.append(self.getToolboxSolution(self.tbCoarse, mu))
 
         else:
-            for mu in Xi_train:
+            for mu in vector_mu:
                 if feelpp.Environment.isMasterRank():
                     print(f"Running simulation with mu = {mu}")
                 self.fineSnapShotList.append(self.getToolboxSolution(self.tbFine, mu))
