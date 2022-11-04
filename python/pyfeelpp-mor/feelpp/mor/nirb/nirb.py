@@ -608,37 +608,28 @@ class nirbOffline(ToolboxModel):
         elif rank == 0:
             # pass
             print(f"[NIRB] Gram-Schmidt L2 orthonormalization done after {nb+1} step"+['','s'][nb>0])
-    def orthonormalizeMatL2(self, Z, scal="L2"):
+
+    def orthonormalizeMatL2(self, Z):
         """Ortohnormalize the matrix Z using L2 norm
 
         Args:
             Z (list of feelpp._discr.Element): list of feelpp functions
-            scal (str, optional): scalar product to use, should be "L2", or "Euclide". Defaults to "L2".
 
         Returns:
             Z: the matrix orthonormalized, inplace
         """
         N = len(Z)
 
-        if scal == "L2":
-            if N == 1:
-                normS = Z[-1].to_petsc().vec().dot( self.l2ScalarProductMatrixCoarse.to_petsc().mat() * Z[-1].to_petsc().vec() )
-                Z[-1] *= 1 / np.sqrt(normS)
-            else:
-                s = Z[-1].clone().to_petsc().vec()
-                for m in range(N):
-                    Z[-1] -= s.dot( self.l2ScalarProductMatrixCoarse.to_petsc().mat() * Z[m].to_petsc().vec() ) * Z[m]
-                normS = Z[-1].to_petsc().vec().dot( self.l2ScalarProductMatrixCoarse.to_petsc().mat() * Z[-1].to_petsc().vec() )
-                Z[-1] *= 1 / np.sqrt(normS)
+        if N == 1:
+            normS = self.l2ScalarProductMatrixCoarse.energy(Z[-1], Z[-1])
+            Z[-1] = 1 / np.sqrt(normS) * Z[-1]
         else:
-            if N == 1:
-                Z[-1] *= 1 / Z[-1].l2Norm()
-            else:
-                s = Z[-1].clone().to_petsc().vec()
-                for m in range(N):
-                    Z[-1] -= s.dot( (Z[m].to_petsc().vec()) ) * Z[m]
-                Z[-1] *= 1 / Z[-1].l2Norm()
-
+            s = self.XH.element()
+            s.setZero()
+            for m in range(N):
+                Z[-1] =  Z[-1] - self.l2ScalarProductMatrixCoarse.energy(Z[-1], Z[m]) * Z[m]
+            normS = self.l2ScalarProductMatrixCoarse.energy(Z[-1], Z[-1])
+            Z[-1] = 1 / np.sqrt(normS) * Z[-1]
         return Z
 
     def checkH1Orthonormalized(self, tol=1e-8):
