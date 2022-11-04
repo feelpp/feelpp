@@ -229,6 +229,8 @@ public:
             return std::make_shared<self_type>( prefix, physic, worldcomm, "", repository );
         }
 
+    static Feel::po::options_description create_program_options( std::string const& prefix = "hdg.poisson" ) { return mixedpoisson_options( prefix ); }
+
     // constructor
     MixedPoisson( std::string const& prefix = "hdg.poisson",
                   MixedPoissonPhysics const& physic = MixedPoissonPhysics::None,

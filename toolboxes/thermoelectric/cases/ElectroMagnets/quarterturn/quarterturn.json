@@ -53,26 +53,31 @@
     },
     "BoundaryConditions":
     {
-        "temperature":
+        "heat":
         {
-            "Robin":
+            "convective_heat_flux":
             {
                 "cooling":
                 {
                     "markers":["Rint","Rext"],
-                    "expr1":"param_h:param_h", // h
-                    "expr2":"Tw:Tw" // T_c
+                    "h":"param_h:param_h",
+                    "Text":"Tw:Tw"
+                }
+            },
+            "flux":
+            {
+                "insulation":
+                {
+                    "markers":["top","bottom","V0","V1"],
+                    "expr":"0"
                 }
             }
         },
-        "electric-potential":
+        "electric":
         {
-            "Dirichlet":
+            "ground":{ "markers":"V1" },
+            "electric_potential":
             {
-                "V1":
-                {
-                    "expr":"0" // V_in
-                },
                 "V0":
                 {
                     "expr":"dif:dif" // V_out

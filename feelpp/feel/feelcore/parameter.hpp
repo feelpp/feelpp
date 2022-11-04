@@ -151,6 +151,7 @@ using depends = NA::named_argument_t<struct depends_tag>;
 using optimize3d_netgen = NA::named_argument_t<struct optimize3d_netgen_tag>;
 using pre = NA::named_argument_t<struct pre_tag>;
 using post = NA::named_argument_t<struct post_tag>;
+using op = NA::named_argument_t<struct op_tag>;
 
 // parameter for adapt
 using required_elts = NA::named_argument_t<struct required_elts_tag>;
@@ -247,6 +248,7 @@ using element2 = NA::named_argument_t<struct element2_tag>;
 using parameter = NA::named_argument_t<struct parameter_tag>;
 using sampling = NA::named_argument_t<struct sampling_tag>;
 using context = NA::named_argument_t<struct context_tag>;
+using context_at_compile_time = NA::named_argument_t<struct context_at_compile_time_tag>;
 using context2 = NA::named_argument_t<struct context2_tag>;
 using mpi_communications = NA::named_argument_t<struct mpi_communications_tag>;
 using properties_space = NA::named_argument_t<struct properties_space_tag>;
@@ -447,7 +449,7 @@ inline constexpr auto& _depends = NA::identifier<na::depends>;
 inline constexpr auto& _optimize3d_netgen = NA::identifier<na::optimize3d_netgen>;
 inline constexpr auto& _pre = NA::identifier<na::pre>;
 inline constexpr auto& _post = NA::identifier<na::post>;
-
+inline constexpr auto& _op = NA::identifier<na::op>;
 // parameter for adapt
 inline constexpr auto& _required_elts = NA::identifier<na::required_elts>;
 inline constexpr auto& _required_facets = NA::identifier<na::required_facets>;
@@ -543,6 +545,7 @@ inline constexpr auto& _element2 = NA::identifier<na::element2>;
 inline constexpr auto& _parameter = NA::identifier<na::parameter>;
 inline constexpr auto& _sampling = NA::identifier<na::sampling>;
 inline constexpr auto& _context = NA::identifier<na::context>;
+inline constexpr auto& _context_at_compile_time = NA::identifier<na::context_at_compile_time>;
 inline constexpr auto& _context2 = NA::identifier<na::context2>;
 inline constexpr auto& _mpi_communications = NA::identifier<na::mpi_communications>;
 inline constexpr auto& _properties_space = NA::identifier<na::properties_space>;

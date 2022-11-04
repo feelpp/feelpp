@@ -7,7 +7,7 @@
 
  Copyright (C) 2008-2012 Universite Joseph Fourier (Grenoble I)
  Copyright (C) 2011-present Feel++ Consortium
- 
+
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
  License as published by the Free Software Foundation; either
@@ -27,9 +27,10 @@
    \author Stephane Veys <stephane.veys@imag.fr>
    \date 2013-02-22
 */
-#ifndef ___ModelCrbBase_H
-#define ___ModelCrbBase_H 1
+#ifndef FEELPP_MOR_ModelCrbBase_H
+#define FEELPP_MOR_ModelCrbBase_H
 
+#include <feel/feelcore/context.hpp>
 #include <feel/feelmor/crbmodeldb.hpp>
 //#include <feel/feelmor/parameterspace.hpp>
 //#include <feel/feeldiscr/functionspace.hpp>
@@ -301,6 +302,113 @@ public :
     typedef Bdf<space_type>  bdf_type;
     typedef std::shared_ptr<bdf_type> bdf_ptrtype;
 
+    class AdditionalModelData
+    {
+        enum class State { in_memory=( 1 << 0 ), on_disk=( 1 << 1 ) };
+    public:
+        template <typename TheDataType>
+        AdditionalModelData( TheDataType && data, std::string const& relativeFilePath = "" )
+            :
+            M_data( std::forward<TheDataType>( data ) ),
+            M_relativeFilePathInDatabase( relativeFilePath ),
+            M_state( 0 )
+            {
+                if ( this->has<nl::json>() )
+                {
+                    this->setInMemory();
+                    this->setType( "JSON" );
+                }
+                else if ( this->has<fs::path>() )
+                {
+                    this->setType( "path" );
+                }
+            }
+
+        static AdditionalModelData create_from_database_file_path( std::string const& relativeFilePath, std::string const& type )
+            {
+                return AdditionalModelData( std::integral_constant<int,0>{}, relativeFilePath, type );
+            }
+        AdditionalModelData( AdditionalModelData const& ) = default;
+        AdditionalModelData( AdditionalModelData && ) = default;
+        AdditionalModelData& operator=( AdditionalModelData const& ) = default;
+        AdditionalModelData& operator=( AdditionalModelData && ) = default;
+
+        template <typename TheDataType>
+        bool has() const { return std::holds_alternative<TheDataType>( M_data ); }
+
+        template <typename TheDataType>
+        TheDataType const& data() const { return std::get<TheDataType>( M_data ); }
+        template <typename TheDataType>
+        TheDataType & data() { return std::get<TheDataType>( M_data ); }
+
+        std::string const& relativeFilePathInDatabase() const { return M_relativeFilePathInDatabase; }
+        void setRelativeFilePathInDatabase( std::string const& f ) { M_relativeFilePathInDatabase = f; }
+
+        bool isInMemory() const { return M_state.test( (uint16_type) State::in_memory ); }
+        bool isOnDisk() const { return M_state.test( (uint16_type) State::on_disk ); }
+        void setInMemory() { M_state.set( (uint16_type) State::in_memory ); }
+        void setOnDisk() { M_state.set( (uint16_type) State::on_disk ); }
+
+        std::string const& type() const { return M_type; }
+        void setType( std::string const& type )
+            {
+                std::set<std::string> typeManaged = { "JSON", "path" };
+                if ( typeManaged.find( type ) == typeManaged.end() )
+                    throw std::runtime_error( fmt::format( "invalid type : {}.",type ) );
+                M_type = type;
+            }
+
+        void prepareSave()
+            {
+                if ( !this->relativeFilePathInDatabase().empty() )
+                    return;
+                if ( this->template has<nl::json>() )
+                    M_relativeFilePathInDatabase = "feelpp_nofilename.json";
+                else if ( this->template has<fs::path>() )
+                {
+                    M_relativeFilePathInDatabase = (fs::path("external_data")/this->template data<fs::path>().filename()).string();
+                }
+            }
+
+        template <typename TheDataType>
+        TheDataType & fetch_data( std::string const& dbDir )
+            {
+                if ( !this->has<TheDataType>() )
+                {
+                    fs::path relativeFilePath = fs::path(M_relativeFilePathInDatabase);
+                    fs::path fullFilePath = fs::path(dbDir)/relativeFilePath;
+                    if ( !fs::exists( fullFilePath ) )
+                        throw std::runtime_error(fmt::format("[AdditionalModelData::fetch_data] file not found : {}",fullFilePath.string()));
+
+                    if ( std::is_same_v<TheDataType,nl::json> )
+                    {
+                        std::ifstream ifs( fullFilePath.string() );
+                        M_data = nl::json::parse(ifs);
+                    }
+                    else if ( std::is_same_v<TheDataType,fs::path> )
+                        M_data = fs::path( fullFilePath );
+                }
+                return this->data<TheDataType>();
+            }
+
+    private :
+        AdditionalModelData( std::integral_constant<int,0> /**/ , std::string const& relativeFilePath, std::string const& type )
+            :
+            //M_type( type ),
+            M_relativeFilePathInDatabase( relativeFilePath ),
+            M_state( 0 )
+            {
+                this->setType( type );
+            }
+
+    private :
+        std::string M_type;
+        std::variant<fs::path,nl::json> M_data;
+        std::string M_relativeFilePathInDatabase;
+        Feel::meta::Context<uint16_type> M_state;
+    };
+
+
     ModelCrbBase() = delete;
     ModelCrbBase( std::string const& name,  worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(), std::string const& prefix = "" )
         :
@@ -308,26 +416,33 @@ public :
         {}
     ModelCrbBase( std::string const& name, uuids::uuid const& uid, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(), std::string const& prefix = "" )
         :
+        ModelCrbBase( std::make_shared<CRBModelDB>( name, uid ), worldComm, prefix )
+        {}
+    ModelCrbBase( std::shared_ptr<CRBModelDB> const& crbModelDb, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(), std::string const& prefix = "" )
+        :
         super( worldComm ),
         M_prefix(prefix),
         Dmu( parameterspace_type::New( 0,worldComm ) ),
         XN( new rbfunctionspace_type( worldComm ) ),
         M_backend( backend() ),
-        M_crbModelDb( name, uid ),
+        //M_crbModelDb( name, uid ),
+        M_crbModelDb( crbModelDb ),
         M_is_initialized( false ),
         M_has_displacement_field( false ),
-        M_rebuildDb(boption(_prefix=M_prefix,_name="crb.rebuild-database")),
-        M_dbLoad(ioption(_prefix=M_prefix, _name="crb.db.load" )),
-        M_dbFilename(soption(_prefix=M_prefix, _name="crb.db.filename")),
-        M_dbId(soption(_prefix=M_prefix,_name="crb.db.id")),
-        M_dbUpdate(ioption(_prefix=M_prefix, _name="crb.db.update" )),
+
+        // M_rebuildDb(boption(_prefix=M_prefix,_name="crb.rebuild-database")),
+        // M_dbLoad(ioption(_prefix=M_prefix, _name="crb.db.load" )),
+        // M_dbFilename(soption(_prefix=M_prefix, _name="crb.db.filename")),
+        // M_dbId(soption(_prefix=M_prefix,_name="crb.db.id")),
+        // M_dbUpdate(ioption(_prefix=M_prefix, _name="crb.db.update" )),
+
         M_serEimFreq(ioption(_prefix=M_prefix,_name = "ser.eim-frequency")),
         M_serRbFreq(ioption(_prefix=M_prefix,_name = "ser.rb-frequency")),
         M_serErrorEstimation(boption(_prefix=M_prefix,_name="ser.error-estimation")),
         M_crbUseNewton(boption(_prefix=M_prefix,_name="crb.use-newton")),
         M_isOnlineModel(false)
     {
-
+#if 0
         if ( !M_rebuildDb )
         {
             switch ( M_dbLoad )
@@ -367,7 +482,8 @@ public :
                 break;
             }
         }
-
+#endif
+#if 0
         if ( this->worldComm().isMasterRank() )
         {
             fs::path modeldir = M_crbModelDb.dbRepository();
@@ -381,6 +497,7 @@ public :
             write_json( jsonpath, ptree );
         }
         this->worldComm().barrier();
+#endif
     }
 
     virtual ~ModelCrbBase() {}
@@ -388,16 +505,19 @@ public :
     /**
      * \return the name of the model
      */
-    std::string const& modelName() const { return M_crbModelDb.name(); }
+    std::string const& modelName() const { return M_crbModelDb->name(); }
 
     /**
      * set the model name
      */
-    void setModelName( std::string const& name ) { M_crbModelDb.setName( name ); }
+    //void setModelName( std::string const& name ) { M_crbModelDb.setName( name ); }
 
     std::string const& prefix() const { return M_prefix; }
 
     void setPrefix( std::string const& prefix ) { M_prefix = prefix; }
+
+    CRBModelDB const& crbModelDb() const { return *M_crbModelDb; }
+    void attach( std::shared_ptr<CRBModelDB> crbModelDb ) { M_crbModelDb = crbModelDb; }
 
     /**
      * Define the model as an online (sequential) model
@@ -418,14 +538,14 @@ public :
     //!
     //! unique id for CRB Model
     //!
-    uuids::uuid  uuid() const { return M_crbModelDb.uuid(); }
+    uuids::uuid  uuid() const { return M_crbModelDb->uuid(); }
 
     //!
     //! set uuid for CRB Model
     //! @warning be extra careful here, \c setId should be called before any
     //! CRB type object is created because they use the id
     //!
-    void setId( uuids::uuid const& i ) { M_crbModelDb.setId( i ); }
+    //void setId( uuids::uuid const& i ) { M_crbModelDb.setId( i ); }
 
     /**
      * return directory path where symbolic expression (ginac) are built
@@ -437,25 +557,51 @@ public :
      */
     void setSymbolicExpressionBuildDir( std::string const& dir ) { M_symbolicExpressionBuildDir=dir; }
 
-    /**
-     * list of files to copy in database
-     */
-    std::map<std::string,std::string> const& additionalModelFiles() const { return M_additionalModelFiles; }
+
+    //! return map of data required by the model and available or will be in the database
+    std::map<std::string,AdditionalModelData> const& additionalModelData() const { return M_additionalModelData; }
+
+    //! return map of data required by the model and available or will be in the database
+    std::map<std::string,AdditionalModelData> & additionalModelData() { return M_additionalModelData; }
+
+    template <typename TheDataType,std::enable_if_t< std::is_same_v<TheDataType,AdditionalModelData>, bool> = true>
+    void addModelData( std::string const& key, TheDataType && data )
+        {
+            M_additionalModelData.insert_or_assign( key, std::forward<TheDataType>( data ) );
+        }
+
+    template <typename TheDataType,std::enable_if_t< !std::is_same_v<TheDataType,AdditionalModelData>, bool> = true>
+    void addModelData( std::string const& key, TheDataType && data, std::string const& relativePath = "" )
+        {
+            M_additionalModelData.insert_or_assign( key, AdditionalModelData( std::forward<TheDataType>( data ), relativePath ) );
+        }
+    bool hasModelData( std::string const& key ) const
+        {
+            return ( M_additionalModelData.find( key ) != M_additionalModelData.end() );
+        }
+
+    //! return data required by the model and available or will be in the database
+    AdditionalModelData const& additionalModelData( std::string const& key ) const { return M_additionalModelData.at( key ); }
+    //! return data required by the model and available or will be in the database
+    AdditionalModelData & additionalModelData( std::string const& key ) { return M_additionalModelData.at( key ); }
+
 
     /**
      * add file to copy in database
      */
+    FEELPP_DEPRECATED
     void addModelFile( std::string const& key, std::string const& filename )
         {
-            M_additionalModelFiles[key] = filename;
+            this->addModelData( key, fs::path(filename) );
         }
 
     /**
      * return true if model has registered a file with this key
      */
+    FEELPP_DEPRECATED
     bool hasModelFile( std::string const& key ) const
         {
-            return ( M_additionalModelFiles.find( key ) != M_additionalModelFiles.end() );
+            return this->hasModelData( key );
         }
 
 
@@ -703,12 +849,12 @@ public :
         M_funs_d.push_back( fund );
     }
 
-    virtual funs_type scalarContinuousEim () const
+    virtual funs_type const& scalarContinuousEim() const
     {
         return M_funs;
     }
 
-    virtual funsd_type scalarDiscontinuousEim () const
+    virtual funsd_type const& scalarDiscontinuousEim() const
     {
         return M_funs_d;
     }
@@ -775,21 +921,30 @@ public :
     void updatePropertyTree( boost::property_tree::ptree & ptree ) const
     {
         ptree.add( "name", this->modelName());
+        boost::property_tree::ptree ptreePlugin;
+        if ( !M_pluginName.empty() )
+            ptreePlugin.add( "name", M_pluginName);
+        if ( !M_pluginLibName.empty() )
+            ptreePlugin.add( "libname", M_pluginLibName);
+        if ( !ptreePlugin.empty() )
+            ptree.add_child( "plugin", ptreePlugin );
 
         boost::property_tree::ptree ptreeParameterSpace;
         this->parameterSpace()->updatePropertyTree( ptreeParameterSpace );
         ptree.add_child( "parameter_space", ptreeParameterSpace );
 
         boost::property_tree::ptree ptreeModelFiles;
-        for ( auto const& filenamePair : this->additionalModelFiles() )
+        for ( auto const& [key,mdata] : this->additionalModelData() )
         {
             boost::property_tree::ptree ptreeModelFile;
-            std::string const& key = filenamePair.first;
-            std::string const& filename = filenamePair.second;
-            ptreeModelFile.add("filename",filename );
+            if ( !mdata.isOnDisk() )
+                continue;
+            ptreeModelFile.add( "filename",mdata.relativeFilePathInDatabase() );
+            ptreeModelFile.add( "type", mdata.type() );
             ptreeModelFiles.add_child( key, ptreeModelFile );
         }
-        ptree.add_child( "additional-model-files", ptreeModelFiles );
+        if ( !ptreeModelFiles.empty() )
+            ptree.add_child( "additional-model-files", ptreeModelFiles );
 
         boost::property_tree::ptree ptreeEim;
         for ( auto const& eimObject : this->scalarContinuousEim() )
@@ -901,25 +1056,33 @@ public :
     }
     void setup( boost::property_tree::ptree const& ptree, std::string const& dbDir )
     {
+        // convert boost::ptree to nl::json
+        std::ostringstream pt_ostr;
+        write_json( pt_ostr, ptree );
+        std::istringstream pt_istream( pt_ostr.str() );
+        nl::json jarg;
+        pt_istream >> jarg;
+
         auto const& ptreeParameterSpace = ptree.get_child( "parameter_space" );
         Dmu->setup( ptreeParameterSpace );
 
-        auto ptreeModelFiles = ptree.get_child_optional( "additional-model-files" );
-        if ( ptreeModelFiles )
-            for ( auto const& ptreeModelFilePair : *ptreeModelFiles/*ptree.get_child( "additional-model-files" )*/ )
+        if ( jarg.contains( "additional-model-files" ) )
+        {
+            auto const& jaddmdata = jarg.at( "additional-model-files" );
+            if ( jaddmdata.is_object() )
             {
-                std::string const& key = ptreeModelFilePair.first;
-                auto const& ptreeModelFile = ptreeModelFilePair.second;
-                std::string filenameAdded  = ptreeModelFile.template get<std::string>( "filename" );
-                fs::path filenameAddedPath = fs::path( filenameAdded );
-                if ( !dbDir.empty() && filenameAddedPath.is_relative() )
-                    filenameAddedPath = fs::path(dbDir) / filenameAddedPath;
-
-                // filenameAdded = (fs::path(dbDir)/fs::path(filenameAdded).filename()).string();
-
-                // std::cout << "additional-model-files : key=" << key << " filename=" << filenameAddedPath.string() << "\n";
-                this->addModelFile( key, filenameAddedPath.string()/*filenameAdded*/ );
+                for ( auto const& [jaddmdatakey,jaddmdataval] : jaddmdata.items() )
+                {
+                    std::string filename = jaddmdataval.at("filename").template get<std::string>();
+                    std::string type;
+                    if ( jaddmdataval.contains("type") )
+                        type = jaddmdataval.at("type").template get<std::string>();
+                    else
+                        type = "path";
+                    this->addModelData( jaddmdatakey, AdditionalModelData::create_from_database_file_path( filename, type ) );
+                }
             }
+        }
 
         auto ptreeAffineDecomposition = ptree.get_child_optional( "affine-decomposition" );
         if ( ptreeAffineDecomposition )
@@ -1002,30 +1165,19 @@ public :
 
     virtual eim_interpolation_error_type eimInterpolationErrorEstimation( parameter_type const& mu , vectorN_type const& uN )
     {
-        return eimInterpolationErrorEstimation( mu, uN,  mpl::bool_<is_time_dependent>() );
-    }
-    eim_interpolation_error_type eimInterpolationErrorEstimation( parameter_type const& mu , vectorN_type const& uN , mpl::bool_<true> )
-    {
-        return boost::make_tuple( M_eim_error_mq , M_eim_error_aq, M_eim_error_fq);
-    }
-    eim_interpolation_error_type eimInterpolationErrorEstimation( parameter_type const& mu , vectorN_type const& uN , mpl::bool_<false> )
-    {
-        return boost::make_tuple( M_eim_error_aq, M_eim_error_fq);
+        if constexpr ( is_time_dependent )
+            return boost::make_tuple( M_eim_error_mq , M_eim_error_aq, M_eim_error_fq);
+        else
+            return boost::make_tuple( M_eim_error_aq, M_eim_error_fq);
     }
 
     virtual eim_interpolation_error_type eimInterpolationErrorEstimation( )
     {
-        return eimInterpolationErrorEstimation( mpl::bool_<is_time_dependent>() );
+        if constexpr ( is_time_dependent )
+            return boost::make_tuple( M_eim_error_mq , M_eim_error_aq, M_eim_error_fq);
+        else
+            return boost::make_tuple( M_eim_error_aq, M_eim_error_fq);
     }
-    eim_interpolation_error_type eimInterpolationErrorEstimation( mpl::bool_<true> )
-    {
-        return boost::make_tuple( M_eim_error_mq , M_eim_error_aq, M_eim_error_fq);
-    }
-    eim_interpolation_error_type eimInterpolationErrorEstimation( mpl::bool_<false> )
-    {
-        return boost::make_tuple( M_eim_error_aq, M_eim_error_fq);
-    }
-
 
     virtual std::vector< std::vector<sparse_matrix_ptrtype> > computeLinearDecompositionA()
     {
@@ -1084,17 +1236,10 @@ public :
 
     virtual affine_decomposition_type computeAffineDecomposition()
     {
-        return computeAffineDecomposition( mpl::bool_< is_time_dependent >() );
-    }
-
-    affine_decomposition_type computeAffineDecomposition( mpl::bool_<true> )
-    {
-        return boost::make_tuple( M_Mqm , M_Aqm , M_Fqm );
-    }
-
-    affine_decomposition_type computeAffineDecomposition( mpl::bool_<false> )
-    {
-        return boost::make_tuple( M_Aqm , M_Fqm );
+        if constexpr ( is_time_dependent )
+            return boost::make_tuple( M_Mqm, M_Aqm, M_Fqm );
+        else
+            return boost::make_tuple( M_Aqm, M_Fqm );
     }
 
     std::vector< std::vector<sparse_matrix_ptrtype> > getMqm()
@@ -1124,7 +1269,10 @@ public :
 
     virtual affine_decomposition_light_type computeAffineDecompositionLight()
     {
-        return computeAffineDecompositionLight( mpl::bool_< is_time_dependent >() );
+        if constexpr ( is_time_dependent )
+            return boost::make_tuple( M_Mq , M_Aq , M_Fq );
+        else
+            return boost::make_tuple( M_Aq , M_Fq );
     }
     affine_decomposition_light_type computeAffineDecompositionLight( mpl::bool_<true> )
     {
@@ -1137,43 +1285,36 @@ public :
 
     virtual monolithic_type computeMonolithicFormulation( parameter_type const& mu )
     {
-        return computeMonolithicFormulation( mu , mpl::bool_< is_time_dependent >() );
-    }
-    monolithic_type computeMonolithicFormulation( parameter_type const& mu, mpl::bool_<true> )
-    {
-        return boost::make_tuple( M_monoM , M_monoA , M_monoF );
-    }
-    monolithic_type computeMonolithicFormulation( parameter_type const& mu, mpl::bool_<false> )
-    {
-        return boost::make_tuple( M_monoA , M_monoF );
+        if constexpr ( is_time_dependent )
+        {
+            return boost::make_tuple( M_monoM , M_monoA , M_monoF );
+        }
+        else
+        {
+            return boost::make_tuple( M_monoA , M_monoF );
+        }
     }
 
     virtual monolithic_type computeMonolithicFormulationU( parameter_type const& mu, element_type const& u )
     {
-        return computeMonolithicFormulationU( mu , u, mpl::bool_< is_time_dependent >() );
-    }
-    monolithic_type computeMonolithicFormulationU( parameter_type const& mu, element_type const& u, mpl::bool_<true> )
-    {
-        return boost::make_tuple( M_monoM , M_monoA , M_monoF );
-    }
-    monolithic_type computeMonolithicFormulationU( parameter_type const& mu, element_type const& u, mpl::bool_<false> )
-    {
-        return boost::make_tuple( M_monoA , M_monoF );
+        if constexpr ( is_time_dependent )
+            return boost::make_tuple( M_monoM , M_monoA , M_monoF );
+        else
+            return boost::make_tuple( M_monoA , M_monoF );
     }
 
     virtual beta_vector_type computeBetaLinearDecompositionA( parameter_type const& mu ,  double time=0 )
     {
-        return computeBetaLinearDecompositionA( mu, mpl::bool_< is_time_dependent >(), time );
-    }
-    beta_vector_type computeBetaLinearDecompositionA( parameter_type const& mu, mpl::bool_<true>, double time )
-    {
-        auto tuple = computeBetaQm( mu , time );
-        return tuple.template get<1>();
-    }
-    beta_vector_type computeBetaLinearDecompositionA( parameter_type const& mu, mpl::bool_<false>, double time )
-    {
-        auto tuple = computeBetaQm( mu , time );
-        return tuple.template get<0>();
+        if constexpr ( is_time_dependent )
+        {
+            auto tuple = computeBetaQm( mu , time );
+            return tuple.template get<1>();
+        }
+        else
+        {
+            auto tuple = computeBetaQm( mu, time );
+            return tuple.template get<0>();
+        }
     }
 
     // Default updateResidual / updateJacobian functions
@@ -1345,15 +1486,10 @@ public :
 
     virtual betaqm_type computeBetaQm( parameter_type const& mu ,  double time , bool only_terms_time_dependent=false)
     {
-        return computeBetaQm( mu, mpl::bool_< is_time_dependent >(), time , only_terms_time_dependent );
-    }
-    betaqm_type computeBetaQm( parameter_type const& mu , mpl::bool_<true>, double time , bool only_terms_time_dependent=false )
-    {
-        return boost::make_tuple( M_betaMqm, M_betaAqm, M_betaFqm );
-    }
-    betaqm_type computeBetaQm( parameter_type const& mu , mpl::bool_<false>, double time , bool only_terms_time_dependent=false )
-    {
-        return boost::make_tuple( M_betaAqm, M_betaFqm );
+        if constexpr( is_time_dependent )
+            return boost::make_tuple( M_betaMqm, M_betaAqm, M_betaFqm );
+        else
+            return boost::make_tuple( M_betaAqm, M_betaFqm );
     }
 
     virtual betaqm_type computePicardBetaQm( parameter_type const& mu ,  double time , bool only_terms_time_dependent=false)
@@ -2164,6 +2300,9 @@ public:
     bool hasDisplacementField() const { return M_has_displacement_field; }
     void setHasDisplacementField( bool const _hwf ) { M_has_displacement_field=_hwf; }
 
+protected:
+    void setPluginName( std::string const& name ) { M_pluginName = name; }
+    void setPluginLibName( std::string const& libname ) { M_pluginLibName = libname; }
 
 protected :
     std::string M_prefix;
@@ -2174,7 +2313,7 @@ protected :
 
     backend_ptrtype M_backend;
 
-    CRBModelDB M_crbModelDb;
+    std::shared_ptr<CRBModelDB> M_crbModelDb;
 
     funs_type M_funs;
     funsd_type M_funs_d;
@@ -2238,11 +2377,11 @@ protected :
     std::map<int,double> M_eim_error_aq;
     std::vector< std::map<int,double> > M_eim_error_fq;
 
-    bool M_rebuildDb;
-    int M_dbLoad;
-    std::string M_dbFilename;
-    std::string M_dbId;
-    int M_dbUpdate;
+    // bool M_rebuildDb;
+    // int M_dbLoad;
+    // std::string M_dbFilename;
+    // std::string M_dbId;
+    // int M_dbUpdate;
     int M_serEimFreq;
     int M_serRbFreq;
     bool M_serErrorEstimation;
@@ -2250,7 +2389,10 @@ protected :
 
     bool M_isOnlineModel;
 private :
-    std::map<std::string,std::string > M_additionalModelFiles;
+    std::map<std::string,AdditionalModelData> M_additionalModelData;
+
+    std::string M_pluginName, M_pluginLibName;
+
 };
 
 
