@@ -732,8 +732,11 @@ option( FEELPP_ENABLE_TASKFLOW "Enable TASKFLOW" ON )
 if ( FEELPP_ENABLE_TASKFLOW )
   message(STATUS "------------------------------------------------------------")
   message(STATUS "Configuring TASKFLOW")
-#  set(FETCHCONTENT_SOURCE_DIR_TASKFLOW ${CMAKE_CURRENT_SOURCE_DIR}/taskflow)
+
+  # set(FETCHCONTENT_SOURCE_DIR_TASKFLOW ${CMAKE_CURRENT_SOURCE_DIR}/taskflow)
   # patch includes fix for 18.04 compilation
+  set(TF_BUILD_TESTS OFF)
+  set(TF_BUILD_EXAMPLES OFF)
   set(FETCHCONTENT_SOURCE_DIR_TASKFLOW ${CMAKE_CURRENT_SOURCE_DIR}/taskflow)
   FetchContent_Declare(taskflow GIT_REPOSITORY https://github.com/feelpp/taskflow.git GIT_TAG 0635a49230e8ace7d379cbbaa716c66543f3e516)
   set( BUILD_TASKFLOW_TESTS OFF )
