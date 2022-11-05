@@ -98,4 +98,4 @@ def test_discr(dim,geo,init_feelpp):
 def test_element(dim,geo,init_feelpp):
     feelpp.Environment.changeRepository(
         directory="pyfeelpp-tests/discr/test_{}d_element".format(dim))
-    run_element( feelpp.mesh(dim=dim, realdim=dim), geo(filename="boxelement" if dim==3 else "rectelement") 
+    run_element( feelpp.mesh(dim=dim, realdim=dim), geo(filename="boxelement" if dim==3 else "rectelement") )
