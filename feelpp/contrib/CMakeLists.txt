@@ -139,7 +139,7 @@ if(FEELPP_USE_EXTERNAL_CLN)
   message(STATUS "[feelpp] CLN Libraries: ${CLN_LIBRARIES}")
   target_link_libraries(feelpp_contrib INTERFACE ${CLN_LIBRARIES})
 else()
-  # set(FETCHCONTENT_SOURCE_DIR_CLN ${CMAKE_CURRENT_SOURCE_DIR}/cln)
+  set(FETCHCONTENT_SOURCE_DIR_CLN ${CMAKE_CURRENT_SOURCE_DIR}/cln)
   message(STATUS)
   FetchContent_Declare(cln GIT_REPOSITORY https://github.com/feelpp/cln.git GIT_TAG 41756c0ba619bf412de7558f493e827a07c2a6e3)
 
