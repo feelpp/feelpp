@@ -65,6 +65,7 @@ else()
   set(FEELPP_MOR_FOUND ON)
 endif()
 
+find_package(Python3 COMPONENTS Development)
 
 if ( FEELPP_HAS_PYTHON )
   message(STATUS "[feelpp-python] python module path:${FEELPP_PYTHON_MODULE_PATH}")
