@@ -286,7 +286,7 @@ def test_solution(casefile, name, dim, init_feelpp):
         if rank == 0:
             print(f"|{mu} : {nRelU:.2e}")
 
-        assert(nRelU < 1e-12)
+        assert(nRelU < 1e-10)
 
 
 @pytest.mark.parametrize("casefile,name,dim", cases_params, ids=cases_ids)

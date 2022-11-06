@@ -33,6 +33,7 @@ class InitFeelpp:
 
         try:
             shutil.rmtree(feelpp.Environment.rootRepository() + '/pyfeelppmor-tests')
+            print(f'Directory {feelpp.Environment.rootRepository()}/pyfeelppmor-tests removed')
         except FileNotFoundError:
             print(f"Deletion of {feelpp.Environment.rootRepository()}/pyfeelppmor-tests did not succeded : Directory doesn't exist")
 
@@ -48,7 +49,7 @@ class InitFeelpp:
             print('is master? ', feelpp.Environment.worldCommPtr().isMasterRank())
         except Exception as err:
             print('Exception caught while initializing Feel++: '.format(err))
-            return 
+            return
 
 
 @pytest.fixture(scope="session")
