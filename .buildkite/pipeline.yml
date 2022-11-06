@@ -42,6 +42,15 @@ steps:
         env:
           DIST: "focal"
     - trigger: "pkg-feelpp"
+      label: ":package: :ubuntu: 22.10/kinetic Feel++ ${BUILDKITE_BRANCH}"
+      async: true
+      if: |
+        ( pipeline.slug=="feelpp" && ( build.branch == "develop" || build.branch == "master" )) && 
+        build.message !~ /skip pkg/
+      build:
+        env:
+          DIST: "kinetic"
+    - trigger: "pkg-feelpp"
       label: ":package: :debian: 11/bullseye Feel++ ${BUILDKITE_BRANCH}"
       async: true
       if: |
@@ -50,6 +59,24 @@ steps:
       build:
         env:
           DIST: "bullseye"
+    - trigger: "pkg-feelpp"
+      label: ":package: :debian: testing Feel++ ${BUILDKITE_BRANCH}"
+      async: true
+      if: |
+        ( pipeline.slug=="feelpp" && ( build.branch == "develop" || build.branch == "master" )) && 
+        build.message !~ /skip pkg/
+      build:
+        env:
+          DIST: "testing"
+    - trigger: "pkg-feelpp"
+      label: ":package: :debian: sid Feel++ ${BUILDKITE_BRANCH}"
+      async: true
+      if: |
+        ( pipeline.slug=="feelpp" && ( build.branch == "develop" || build.branch == "master" )) && 
+        build.message !~ /skip pkg/
+      build:
+        env:
+          DIST: "sid"
  - wait
  - group: "feelpp-testsuite ${CXX} :hammer: :docker:"
    steps:
