@@ -8,7 +8,7 @@
 
 if(NOT PETSC4PY_INCLUDE_DIR)
   execute_process(COMMAND
-    ${PYTHON_EXECUTABLE} -c "import petsc4py; print(petsc4py.get_include())"
+    ${Python3_EXECUTABLE} -c "import petsc4py; print(petsc4py.get_include())"
     OUTPUT_VARIABLE PETSC4PY_INCLUDE_DIR
     RESULT_VARIABLE PETSC4PY_COMMAND_RESULT
     OUTPUT_STRIP_TRAILING_WHITESPACE)

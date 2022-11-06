@@ -76,3 +76,6 @@
 [submodule "feelpp/contrib/spdlog"]
 	path = feelpp/contrib/spdlog
 	url = https://github.com/feelpp/spdlog.git
+[submodule "feelpp/contrib/cln"]
+	path = feelpp/contrib/cln
+	url = https://github.com/feelpp/cln.git
