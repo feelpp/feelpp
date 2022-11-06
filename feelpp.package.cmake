@@ -49,7 +49,7 @@ string(TOUPPER ${FEELPP_COMPONENT} <output variable>)
 SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Feel++ (Finite Element method Embedded Library and language in C++)")
 SET(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_SOURCE_DIR}/README.adoc")
 SET(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/COPYING.adoc")
-set(CPACK_PACKAGE_DIRECTORY "${PROJECT_BINARY_DIR}/assets")
+#set(CPACK_PACKAGE_DIRECTORY "${PROJECT_BINARY_DIR}/assets")
 set(CPACK_PACKAGE_VENDOR "Cemosis")
 set(CPACK_PACKAGE_CONTACT "christophe.prudhomme@cemosis.fr")
 SET(CPACK_PACKAGE_VERSION_MAJOR "${FEELPP_VERSION_MAJOR}")
@@ -154,4 +154,7 @@ add_custom_target(dist
   VERBATIM
   USES_TERMINAL
 )
-add_dependencies(dist check_git)
+
+if(NOT FEELPP_COMPONENT OR "${FEELPP_COMPONENT}" EQUAL "feelpp")
+  add_dependencies(dist check_git)
+endif()
