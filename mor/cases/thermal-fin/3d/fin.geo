@@ -2,7 +2,7 @@ SetFactory("OpenCASCADE");
 //+
 h = 0.1;
 
-N = DefineNumber[ 1, Name "Parameters/N" ];
+N = DefineNumber[ 4, Name "Parameters/N" ];
 L = DefineNumber[ 2.5, Name "Parameters/L" ];
 t = DefineNumber[ 0.25, Name "Parameters/t" ];
 d = DefineNumber[ 0.75, Name "Parameters/d" ];

@@ -3,6 +3,21 @@
     "ShortName":"ThermalFin3d",
     "CRBParameters":
     {
+        "k_4":
+        {
+            "min":"0.1",
+            "max":"10"
+        },
+        "k_3":
+        {
+            "min":"0.1",
+            "max":"10"
+        },
+        "k_2":
+        {
+            "min":"0.1",
+            "max":"10"
+        },
         "k_1":
         {
             "min":"0.1",
@@ -21,12 +36,33 @@
     },
     "Parameters":
     {
+        "k_4":"0.1",
+        "k_3":"0.1",
+        "k_2":"0.1",
         "k_1": "0.1",
         "k_0": "1",
         "Bi": "0.01"
     },
     "Materials":
     {
+        "Fin_4":
+        {
+            "k":"k_4:k_4",
+            "Cp":"1.4e6",
+            "rho":"1"
+        },
+        "Fin_3":
+        {
+            "k":"k_3:k_3",
+            "Cp":"1.4e6",
+            "rho":"1"
+        },
+        "Fin_2":
+        {
+            "k":"k_2:k_2",
+            "Cp":"1.4e6",
+            "rho":"1"
+        },
         "Fin_1":
         {
             "k":"k_1:k_1",
@@ -50,7 +86,7 @@
                 {
                     "init":
                     {
-                        "markers":["Fin_1", "Post"],
+                        "markers":["Fin4", "Fin3", "Fin2", "Fin_1", "Post"],
                         "expr":"0"
                     }
                 }
@@ -91,7 +127,7 @@
             "type": "mean",
             "markers": ["Post"],
             "expr": "crb_u:crb_u",
-            "topodim": 2
+            "topodim": 3
         }
     },
 
