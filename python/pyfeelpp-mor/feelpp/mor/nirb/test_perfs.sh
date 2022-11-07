@@ -28,7 +28,7 @@ echo "  Restarting program with Ns = : $Ns "
 echo " ------------------------------------------ "
 
 offline="python3 nirbOffline.py --config-file model/square/square.cfg --N $Ns"
-online="python3 nirbOnline.py --config-file model/square/square.cfg "
+online="python3 nirbOnline.py --config-file model/square/square.cfg --N $Ns"
 
 ${offline}
 ${online}
