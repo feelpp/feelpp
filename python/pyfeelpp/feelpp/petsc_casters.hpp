@@ -10,6 +10,7 @@
 #include <petscmat.h>
 #include <petscsnes.h>
 #include <petscvec.h>
+#include <iostream>
 
 // pybind11 casters for PETSc/petsc4py objects
 #if 1 //FEELPP_HAS_PETSC4PY
