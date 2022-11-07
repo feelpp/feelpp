@@ -22,6 +22,7 @@
 #
 #
 
+add_subdirectory(info)
 add_subdirectory(remotedata)
 add_subdirectory( mesh )
 add_subdirectory( plot )

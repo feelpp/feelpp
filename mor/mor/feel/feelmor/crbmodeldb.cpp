@@ -82,6 +82,86 @@ CRBModelDB::updateIdFromId( std::string const& uid )
         M_uuid = myuid;
 }
 
+void
+CRBModelDB::updateId( crb::attribute from, std::optional<std::string> const& value )
+{
+    if ( from == crb::attribute::id )
+    {
+        CHECK( value ) << "invalid value, a uuid should be given";
+        this->updateIdFromId( value.value() );
+    }
+    else if ( from == crb::attribute::name )
+    {
+        CHECK( value ) << "invalid value, a filename should be given";
+        this->updateIdFromDBFilename( value.value() );
+    }
+    else if ( from == crb::attribute::last_created )
+    {
+        this->updateIdFromDBLast( crb::last::created );
+    }
+    else if ( from == crb::attribute::last_modified )
+    {
+        this->updateIdFromDBLast( crb::last::modified );
+    }
+#if 0    
+    else if ( from == crb::attribute::last_accessed )
+    {
+        this->updateIdFromDBLast( crb::last::accessed );
+    }
+#endif    
+    else
+    {
+        CHECK( false ) << "invalid attribute given to select the database";
+    }
+}
+
+CRBModelDB::MetaData
+CRBModelDB::loadDBMetaData( crb::attribute from, std::optional<std::string> const& value )
+{
+    this->updateId( from, value );
+
+    MetaData res;
+    res.json_path = fs::path( this->dbRepository() ) / fmt::format( "{}.crb.json", this->name() );
+    std::string jsonPathStr = res.json_path.string();
+    if ( !fs::exists( res.json_path ) )
+        throw std::runtime_error( fmt::format( "crb db JSON file not found : {}", jsonPathStr ) );
+
+    // TODO : move this part in CRBModelDB class
+    std::ifstream ifs( jsonPathStr );
+    nl::json jarg = nl::json::parse( ifs, nullptr, true, true );
+    if ( jarg.contains( "crbmodel" ) )
+    {
+        auto const& j_crbmodel = jarg.at( "crbmodel" );
+        res.model_name = j_crbmodel.at( "name" ).get<std::string>();
+        if ( j_crbmodel.contains( "plugin" ) )
+        {
+            auto const& j_plugin = j_crbmodel.at( "plugin" );
+            res.plugin_name = j_plugin.at( "name" ).get<std::string>();
+            res.plugin_libname = j_plugin.at( "libname" ).get<std::string>();
+        }
+    }
+    else
+    {
+        throw std::runtime_error( fmt::format( "crb db JSON file not valid : {}", jsonPathStr ) );
+    }
+    LOG(INFO) << "load crb db JSON file : " << jsonPathStr;
+    LOG(INFO) << "crb db model name : " << res.model_name;
+    LOG(INFO) << "crb db plugin name : " << res.plugin_name;
+    LOG(INFO) << "crb db plugin libname : " << res.plugin_libname;
+    
+    return res;
+}
+
+std::shared_ptr<CRBPluginAPI>
+CRBModelDB::loadDBPlugin( MetaData const& meta, std::string load ) const
+{
+    //auto meta = this->loadDBMetaData( from, value );
+    if ( meta.plugin_name.empty() )
+        throw std::runtime_error( fmt::format( "crb db JSON file not valid : {}", meta.json_path.string() ) );
+    auto p = factoryCRBPlugin( meta.plugin_name, meta.plugin_libname /*, meta.plugin_libdir*/ );
+    p->loadDB( meta.json_path.string(), crb::loadFromString( load ) );
+    return p;
+}
 uuids::uuid
 CRBModelDB::idFromDBFilename( std::string const& name, std::string const& filename )
 {

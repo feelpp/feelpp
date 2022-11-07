@@ -40,6 +40,8 @@ CRBModelOutput::CRBModelOutput( std::string name, nl::json const& jarg, worldcom
     M_name( name ),
     M_markers( name )
 {
+    Feel::cout << "[CRBModelOutput::CRBModelOutput]" << name << std::endl;
+    LOG(INFO) << "CRBModelOutput::CRBModelOutput : " << name << "\n";
     if ( jarg.contains("type") )
     {
         auto const& j_type = jarg.at("type");
@@ -155,7 +157,7 @@ CRBModelOutputs::setup()
     auto const& jarg = M_p;
     for ( auto const& [jargkey,jargval] : jarg.items() )
     {
-        LOG(INFO) << "CRBOutput :" << jargkey;
+        Feel::cout << "[CRBModelOutput::setup] Setup CRBOutput : " << jargkey << std::endl;
         if ( jargval.contains("filename") )
         {
             auto const& j_filename = jargval.at("filename");

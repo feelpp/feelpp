@@ -50,7 +50,7 @@ foreach (test 2d 3d)
             ${PYTHON_EXECUTABLE} -m pytest test_reducedbasis.py -s -vv -k ${test}
             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
       )
-
+      #[===[
       add_test (NAME feelpp_mor_python-tests-reducedbasis-mpi-${test}
             COMMAND ${CMAKE_COMMAND} -E env
             LD_LIBRARY_PATH=${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}:$ENV{LD_LIBRARY_PATH}
@@ -58,6 +58,7 @@ foreach (test 2d 3d)
             mpirun -np 2 ${PYTHON_EXECUTABLE} -m pytest test_reducedbasis.py -s -vv -k ${test}
             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
       )
+      ]===]
 endforeach()
 
 # test_eim

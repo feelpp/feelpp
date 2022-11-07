@@ -21,8 +21,8 @@ Line Loop(22) = {-15,-14,-17,-16};
 Plane Surface(81) = {21};
 Plane Surface(82) = {22};
 
-Physical Line("Gamma_1",91) = {11,13};
-Physical Line("Gamma_2",92) = {15,17};
+Physical Line("Gamma_1",91) = {17,13};
+Physical Line("Gamma_2",92) = {15,11};
 Physical Line("Gamma_dir",93) = {12};
 Physical Line("Gamma_int",94) = {14};
 Physical Line("Gamma_neu",95) = {16};

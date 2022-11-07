@@ -102,6 +102,8 @@ private :
                                           _range=idelements(mesh,this->M_elts_ids.begin(), this->M_elts_ids.end()),
                                           _context=EXTRACTION_KEEP_MESH_RELATION);
             saveGMSHMesh( _mesh=submesh, _filename=this->name(true)+"-submesh.msh" );
+            LOG(INFO) << fmt::format("[MDEIM::updateSubMesh] submesh saved to : {}", this->name(true)+"-submesh.msh");
+            Feel::cout << fmt::format("[MDEIM::updateSubMesh] submesh saved to : {}", this->name(true)+"-submesh.msh") << std::endl;
             auto seqmesh = loadMesh( _mesh=new mesh_type,
                                      _filename=this->name(true)+"-submesh.msh",
                                      _worldcomm= Environment::worldCommSeqPtr() );
