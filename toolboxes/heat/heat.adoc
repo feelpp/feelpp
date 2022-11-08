@@ -3,6 +3,7 @@
 Christophe Prud'homme <https://github.com/prudhomm[@prudhomm]>; Vincent Chabannes <https://github.com/vincentchabannes[@vincentchabannes]>
 :manmanual: feelpp_toolbox_heat
 :man-linkstyle: pass:[blue R < >]
+v0.110.0-rc.5: 
 
 
 == NAME
@@ -13,7 +14,10 @@ feelpp_toolbox_heat - heat transfer toolbox application
 == SYNOPSIS
 
 ----
-feelpp_toolbox_heat --case <directory to model case>
+feelpp_toolbox_heat 
+  [--heat.filename  <path to .json specification file>]
+  [--config-file <path to .cfg file]
+  [--case <directory to model case>] 
   [--case.dim 3]
   [--case.discretization P1]
   [--heat.ksp-monitor=<0,1>]
@@ -27,7 +31,7 @@ feelpp_toolbox_heat --case <directory to model case>
 
 == DESCRIPTION
 
-feelpp_toolbox_heat is an application which can run heat transfer model defined by a set of files : a geometry or mesh, a config file(`.cfg`) and  a model file(`.json`)
+feelpp_toolbox_heat is an application which can run heat transfer model defined by a set of files : a geometry or mesh, a config file(`.cfg`) and  a model file(`.json`)
 
 The execution steps are as follows:
 
@@ -47,6 +51,7 @@ feelpp_toolbox_heat requires some options.
 
 | case.dim | dimension of problem  | 3 | 2,3
 | case.discretization | discretization of problem  | P1 | P1,P2,P3
+| heat.filename | path to the .json specification case file  | *no default value* | *required from user*
 | heat.ksp-monitor | monitor the Krylov Subspace iterations  | 0 | 0,1
 | heat.ksp-view | view the Krylov Subspace structure  | 0 | 0,1
 | heat.ksp-type | change the Krylov Subspace method  | `gmres` | link:https://www.mcs.anl.gov/petsc/documentation/linearsolvertable.html[see PETSc documentation]
@@ -57,16 +62,16 @@ feelpp_toolbox_heat requires some options.
 
 |===
 
-NOTE:: 0 as option value means that the option is not enable, 1 means it is enabled.
+NOTE:: 0 as option value means that the option is not enabled, 1 means it is enabled.
 
 == EXAMPLES
 
-We are now using the `feelpp/feelpp-toolboxes:latest` docker images as described in link:http://docs.feelpp.org/user/0.108/install/containers/#_docker[] to demonstrate feelpp_toolbox_heat usage.
+We are now using the `feelpp/feelpp-toolboxes:latest` docker images as described in link:http://docs.feelpp.org/user/0.110.0-rc.5/install/containers/#_docker[] to demonstrate feelpp_toolbox_heat usage.
 
 [source,shell]
 .Starting the docker `feelpp/feelpp-toolboxes:latest`
 ----
-docker run --rm -ti -v $HOME/feel:/feel feelpp/feelpp-toolboxes
+docker run --rm -ti -v $HOME/feel:/feel ghcr.io/feelpp/feelpp-toolboxes:v0.110.0-rc.5 
 ----
 
 [source,shell]
@@ -87,7 +92,7 @@ feelpp/feelpp-toolboxes <5>
 
 .Example of a command line to execute feelpp_toolbox_heat
 ----
-mpirun --bind-to core -np 10 feelpp_toolbox_heat --case "github:{path:toolboxes/heat/Building/ThermalBridgesENISO10211}"
+mpirun --bind-to core -np 10 feelpp_toolbox_heat --case "github:{path:toolboxes/heat/cases/Building/ThermalBridgesENISO10211}"
 ----
 
 .Explantion of the command line to execute feelpp_toolbox_heat
@@ -95,7 +100,7 @@ mpirun --bind-to core -np 10 feelpp_toolbox_heat --case "github:{path:toolboxes/
 mpirun --bind-to core <1>
   -np 10 <2>
   <3>
-  --case "github:{path:toolboxes/heat/Building/ThermalBridgesENISO10211}" <4>
+  --case "github:{path:toolboxes/heat/cases/Building/ThermalBridgesENISO10211}" <4>
 ----
 <1> execute in parallel using MPI with processes bound to cores
 <2> execute in parallel usisng 10 processes
@@ -105,30 +110,30 @@ mpirun --bind-to core <1>
 Other test cases can be found
 
 - locally in /usr/share/feelpp/data/testcases/toolboxes/heat.
-- on-line http://docs.feelpp.org/cases/0.108/heat/README
+- on-line http://docs.feelpp.org/cases/latest/heat/README
 
 
 == RESOURCES
 
 {feelpp} Docs::
-http://docs.feelpp.org/toolboxes/0.108/
+http://docs.feelpp.org/toolboxes/latest/
 
 {feelpp} Cases for feelpp_toolbox_heat::
-http://docs.feelpp.org/cases/0.108/heat/README
+http://docs.feelpp.org/cases/latest/heat/README
 
 {feelpp} Toolbox Docs for feelpp_toolbox_heat::
-http://docs.feelpp.org/toolboxes/0.108/heat/
+http://docs.feelpp.org/toolboxes/latest/heat/
 
 == SEE ALSO
 
 {feelpp} Mesh Partitioner::
 Mesh partitioner for {feelpp} Toolboxes
-http://docs.feelpp.org/user/0.108/using/mesh_partitioner/
+http://docs.feelpp.org/user/latest/using/mesh_partitioner/
 
 
 {feelpp} Remote Tool::
 Access remote data(model cases, meshes) on Github and Girder in {feelpp} applications.
-http://docs.feelpp.org/user/0.108/using/remotedata/
+http://docs.feelpp.org/user/latest/using/remotedata/
 
 
 == COPYING
