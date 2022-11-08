@@ -65,7 +65,11 @@ else()
   set(FEELPP_MOR_FOUND ON)
 endif()
 
-find_package(Python3 COMPONENTS Development)
+find_package(Python3 COMPONENTS Interpreter Development)
+message(STATUS "[feelpp/python] Python3_EXECUTABLE: ${Python3_EXECUTABLE}")
+message(STATUS "[feelpp/python] Python3_INCLUDE_DIRS: ${Python3_INCLUDE_DIRS}")
+message(STATUS "[feelpp/python] Python3_LIBRARIES: ${Python3_LIBRARIES}")
+message(STATUS "[feelpp/python] Python3_VERSION: ${Python3_VERSION}")
 
 if ( FEELPP_HAS_PYTHON )
   message(STATUS "[feelpp-python] python module path:${FEELPP_PYTHON_MODULE_PATH}")
