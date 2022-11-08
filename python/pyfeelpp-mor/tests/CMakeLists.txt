@@ -12,7 +12,6 @@ foreach( test mor nirb )
           ${PYTHON_EXECUTABLE} -m pytest test_${test}.py -s -vv
           WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
   )
-  #[===[
   add_test (NAME feelpp_mor_python-tests-mpi-${test}
     COMMAND ${CMAKE_COMMAND} -E env
           LD_LIBRARY_PATH=${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}:$ENV{LD_LIBRARY_PATH}
@@ -20,5 +19,4 @@ foreach( test mor nirb )
           mpirun -np 2 ${PYTHON_EXECUTABLE} -m pytest test_${test}.py -s -vv
           WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
   )
-  ]===]
 endforeach()
