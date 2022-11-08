@@ -115,6 +115,10 @@ class PyVectorDouble : Vector<double,unsigned int>
         PYBIND11_OVERLOAD_PURE( void, super, scale, factor ); }
     void printMatlab(const std::string name, bool renumber) const override {
         PYBIND11_OVERLOAD_PURE( void, super, printMatlab, name, renumber ); }
+    // void saveHDF5( const std::string & filename, const std::string & tableName, bool appendMode ) const override {
+    //     PYBIND11_OVERLOAD_PURE( void, super, saveHDF5, filename, tableName, appendMode ); }
+    // void loadHDF5( const std::string & filename, const std::string & tableName, std::optional<std::vector<index_type>> const& mappingFromInput ) const override {
+    //     PYBIND11_OVERLOAD_PURE( void, super, loadHDF5, filename, tableName);}
 };
 
 class PyMatrixSparseDouble : MatrixSparse<double>
@@ -262,8 +266,11 @@ PYBIND11_MODULE(_alg, m )
         .def(
             "to_petsc", []( std::shared_ptr<Vector<double>> const& m )
             { return toPETSc( m ); },
-            "cast a VectorDouble to a VectorPetsc" );
-    ;
+            "cast a VectorDouble to a VectorPetsc" )
+        .def( "addVector", static_cast<void ( Vector<double>::* )
+        ( std::shared_ptr<Vector<double>> const& , std::shared_ptr<MatrixSparse<double>> const&  )
+        >( &Vector<double>::addVector ), "add the product of a MatrixSparse and a vector to this vector" )
+        ;
     py::class_<VectorPetsc<double>, Vector<double, uint32_type>, std::shared_ptr<VectorPetsc<double>>>( m, "VectorPetscDouble" )
         .def( py::init<>() )
         .def( py::init<int, std::shared_ptr<WorldComm>>() )
@@ -286,6 +293,7 @@ PYBIND11_MODULE(_alg, m )
         .def( "sum", &VectorPetsc<double>::sum, "sum of entries" )
         .def( "min", &VectorPetsc<double>::min, "min of entries" )
         .def( "max", &VectorPetsc<double>::max, "max of entries" )
+        .def( "dot", &VectorPetsc<double>::dot, "return dot product")
         .def( "l1Norm", &VectorPetsc<double>::l1Norm, "l1 norm of entries" )
         .def( "l2Norm", &VectorPetsc<double>::l2Norm, "l2 norm of entries" )
         .def( "linftyNorm", &VectorPetsc<double>::linftyNorm, "linfty norm of entries" )
@@ -335,6 +343,7 @@ PYBIND11_MODULE(_alg, m )
 
     py::class_<VectorUblas<double>, Vector<double,uint32_type>, std::shared_ptr<VectorUblas<double>>> vublas(m,"VectorUBlas");
     vublas.def(py::init<>())
+        .def( "clone", &VectorUblas<double>::clone, "return Ublas Vector clone" )
         .def(py::self + py::self )
         .def(py::self - py::self)
         .def(double() + py::self)

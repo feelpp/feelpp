@@ -6,11 +6,8 @@ import pandas as pd
 from pathlib import Path
 from nirb_perf import *
 
-H = 0.5  # CoarseMeshSize
-h = 0.1  # Fine mesh size
-dim = 3
 PWD = os.getcwd()
-toolboxType='heat'
+toolboxType = "heat"
 modelfile={'heat':'square/square', 'fluid':'lid-driven-cavity/cfd2d'}
 modelsFolder = f"{PWD}/model/"
 cfg_path = f"{modelsFolder}thermal-fin-3d/thermal-fin.cfg"
@@ -26,7 +23,7 @@ r = ["noRect","Rect"][doRectification]
 g = ["noGreedy","Greedy"][doGreedy]
 RESPATH = f"RESULTS/{r}/{g}"
 
-def offline(N):
+def offline(N, load=None):
     """Generated the reduced basis for the given N
        Generated a file nirbOffline_time_exec.dat containing the time to compute the reduced basis,
          according to the number of samples N
@@ -37,10 +34,17 @@ def offline(N):
 
     start = time.time()
     nirb = nirbOffline(**nirb_config, initCoarse=doGreedy)
+    if load is not None:
+        s = nirb.Dmu.sampling()
+        N_train = s.readFromFile(load)
+        Xi_train = s.getVector()
+    else:
+        Xi_train = None
+
     if doGreedy:
         nirb.initProblemGreedy(1000, 1e-5, Nmax=N, computeCoarse=True, samplingMode="random")
     else:
-        nirb.initProblem(N)
+        nirb.initProblem(N, Xi_train=Xi_train)
     nirb.generateOperators()
     nirb.generateReducedBasis(regulParam=1.e-10)
     finish = time.time()
@@ -53,9 +57,10 @@ def offline(N):
 
     print(f"[NIRB] Offline Elapsed time = ", finish-start)
     print(f"[NIRB] Offline part Done !")
+    return nirb
 
 
-def online_error_sampling():
+def online_error_sampling(Xi_test=None):
     """Compute the error between the toolbox solution and the NIRB solution for a sampling of parameters
        Generates the file errorParams/errors${N}.csv containing the errors for each parameter, for a given value of N,
           corresponding to the size of the reduced basis.
@@ -64,7 +69,7 @@ def online_error_sampling():
     nirb.loadData(RESPATH)
 
     Nsample = 50
-    errorN = ComputeErrorSampling(nirb, Nsample=Nsample)
+    errorN = ComputeErrorSampling(nirb, Nsample=Nsample, Xi_test=Xi_test)
 
     df = pd.DataFrame(errorN)
     file = Path(f"{RESPATH}/errorParams/errors{nirb.N}.csv")
@@ -130,8 +135,10 @@ if __name__ == '__main__':
         N = int(N)
         print("\n\n-----------------------------")
         print(f"[NIRB] Test with N = {N}")
-        offline(N)
-        online_error_sampling()
+        nirb = offline(N, load='./sampling.sample')
+        s = nirb.Dmu.sampling()
+        N_train = s.readFromFile('./sampling.sample')
+        online_error_sampling(s.getVector())
         online_time_measure()
 
     print("=============================================")

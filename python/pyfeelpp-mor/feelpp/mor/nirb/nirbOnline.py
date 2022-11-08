@@ -4,6 +4,7 @@ from feelpp.mor.nirb.utils import WriteVecAppend, init_feelpp_environment
 import sys
 import pandas as pd
 from pathlib import Path
+import os 
 from feelpp.mor.nirb.nirb_perf import *
 import argparse
 
@@ -24,37 +25,58 @@ if __name__ == "__main__":
     config_nirb = feelpp.readJson(nirb_file)['nirb']
     toolboxType = config_nirb['toolboxType']
 
+    start= time()
+    
     nirb_on = nirbOnline(**config_nirb)
 
     mu = nirb_on.Dmu.element()
     nirb_on.loadData()
+    uHh = nirb_on.getOnlineSol(mu)
+
+    finish = time()
+    
+    perf = []
+    perf.append(nirb_on.N)
+    perf.append(finish-start)
 
     doRectification = config_nirb['doRectification']
     Nsample = 50
 
+    if doRectification:
+        file='nirbOnline_time_exec_rectif.txt'
+    else :
+        file='nirbOnline_time_exec.txt'
+    WriteVecAppend(file,perf)
+
     # error1 = ComputeErrors(nirb_on, mu)
     errorN = ComputeErrorSampling(nirb_on, Nsample=Nsample)
-
-    df = pd.DataFrame(errorN)
-    if config_nirb['doRectification']:
-        file =Path(f"errorParamsRectif/errors{nirb_on.N}.csv")
-    else:
-        file =Path(f"errorParams/errors{nirb_on.N}.csv")
-
-    file.parent.mkdir(parents=True, exist_ok=True)
-    df.to_csv(file, index=False)
-
-    print("[NIRB online] all computed errors ")
-    data_mean = df.mean(axis=0)
-    print("[NIRB online] Mean of errors ")
-    print(data_mean)
-    data_min = df.min(axis=0)
-    print("[NIRB online] Min of errors ")
-    print(data_min)
-    data_max = df.max(axis=0)
-    print("[NIRB online] Max of errors ")
-    print(data_max)
     
+    df = pd.DataFrame(errorN)
+    df['N'] = nirb_on.N
+
+    if doRectification:
+        file =f"errors{Nsample}ParamsRectif.csv"
+    else:
+        file =f"errors{Nsample}Params.csv"
+
+    header = True 
+    if os.path.isfile(file):
+        header=False
+    df.to_csv(file, mode='a', index=False, header=header)
+
+    # if feelpp.Environment.isMasterRank():
+    #     print(f"[NIRB online] with {nirb_on.N} snapshots ")
+    #     print(f"[NIRB online] computed errors for {df.shape[0]} parameters ")
+    #     data_mean = df.mean(axis=0)
+    #     print("[NIRB online] Mean of errors ")
+    #     print(data_mean)
+    #     data_min = df.min(axis=0)
+    #     print("[NIRB online] Min of errors ")
+    #     print(data_min)
+    #     data_max = df.max(axis=0)
+    #     print("[NIRB online] Max of errors ")
+    #     print(data_max)
+        
 
 
 
@@ -107,20 +129,6 @@ if __name__ == "__main__":
     error = np.concatenate((error_min, error_mean[1:], error_max[1:]))
     """
 
-    # finish = time() 
-
-    if doRectification:
-        file1='nirb_error_rectif1.dat'
-        fileN=f'nirb_error_rectif{Nsample}.dat'
-        fileH=f'nirb_error_rectifH.dat'
-    else :
-        file1='nirb_error1.dat'
-        fileN=f'nirb_error{Nsample}.dat'
-        fileH=f'nirb_errorH.dat'
-        
-    # WriteVecAppend(file1,error1)
-    # WriteVecAppend(fileN,errormean)
-    # WriteVecAppend(fileH,errorH)
 
     # print(f"[NIRB] Online Elapsed time =", finish-start)
     print(f"[NIRB] Online part Done !!")
