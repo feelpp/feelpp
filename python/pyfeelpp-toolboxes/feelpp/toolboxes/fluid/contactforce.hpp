@@ -28,26 +28,42 @@ namespace ns {
     NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(CollisionForceParam,forceRange,epsBody,epsWall);
 }
 
+struct Distance_param
+{
+    int id_A;
+    int id_B;
+    RowVectord coord_A;
+    RowVectord coord_B;
+    double dist;        
+};
+
 /*
     Implementation of ContactAvoidance model for spherical shaped bodies
 */
 
 template<std::size_t residualType,typename FluidMechanics,typename DataType>
 void
-ContactAvoidanceSphericalType(FluidMechanics const& t, DataType & data, ns::CollisionForceParam forceParam, double &time)
+ContactAvoidanceSphericalType(FluidMechanics const& t, DataType & data, ns::CollisionForceParam forceParam, double &time, double &time_pre, double &time_detection, double &time_com)
 {
     tic();
+    
     // Define force parameters
+
     int const dim = t.nDim;
     double forceRange = forceParam.forceRange;
     double epsBody = forceParam.epsBody;
     double epsWall = forceParam.epsWall;  
     
-    // Get the number of bodies, boundary markers, radii and mass centers
+    // Pre-process phase
+
+    auto start_pre = std::chrono::high_resolution_clock::now();
+
     std::vector<RowVectord> massCenters;
     std::vector<std::string> marker_bodies;
     std::vector<double> radii;
     int nbr_bodies = 0;
+    std::vector<std::string> marker_fluid;
+    int nbr_fluid = 0;
 
     for ( auto const& [bpname,bpbc] : t.bodySetBC() )
     {
@@ -61,10 +77,6 @@ ContactAvoidanceSphericalType(FluidMechanics const& t, DataType & data, ns::Coll
             radii.push_back(sqrt(meas/(4*Pi)));
         nbr_bodies ++;
     }
-
-    // Associate remaining boundary to fluid
-    std::vector<std::string> marker_fluid;
-    int nbr_fluid = 0;
 
     for (auto m : t.mesh()->markerNames())
     {
@@ -86,51 +98,95 @@ ContactAvoidanceSphericalType(FluidMechanics const& t, DataType & data, ns::Coll
         }
     }
 
+    auto end_pre = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double, std::milli> float_pre = end_pre - start_pre;
+    time_pre = float_pre.count();
 
-    // Define repulsive force 
-    std::vector<RowVectord> repulsion_forces(nbr_bodies);
-    std::fill(repulsion_forces.begin(), repulsion_forces.end(), RowVectord::Zero(dim));
-    
+    // Collision detection phase
+
+    auto start_detection = std::chrono::high_resolution_clock::now();
+
+    auto Vh = Pch<1>(t.mesh()); 
+    std::vector<decltype( Vh->element() )> distToFluid;
+
+    for (int b_w = 0;b_w < nbr_fluid; b_w++)
+    {
+        distToFluid.push_back(distanceToRange(_space=Vh, _range=markedfaces(t.mesh(),marker_fluid[b_w]),_max_distance=2*forceRange));
+    }
+
+    // Define collision map
+    std::map<std::string,Distance_param> DistanceParam;
+
     for (int b_i = 0;b_i < nbr_bodies; b_i++)
     {
-        // Body-Body collision
         for (int b_j=b_i+1; b_j < nbr_bodies; b_j++)
         {
-            double dist_ij = sqrt((massCenters[b_j]-massCenters[b_i]).squaredNorm());
-            double activation = -(dist_ij-radii[b_i]-radii[b_j]-forceRange);
-
-            if (activation > 0 && dist_ij >= radii[b_i]+radii[b_j])
+            double dist_ij = sqrt((massCenters[b_j]-massCenters[b_i]).squaredNorm()) -radii[b_i] - radii[b_j];
+            if (dist_ij <= forceRange)
             {
-                RowVectord F_ij = 1/epsBody * std::pow(activation,2)*(massCenters[b_i]- massCenters[b_j]);
-                repulsion_forces[b_i] = repulsion_forces[b_i] + F_ij;
-                repulsion_forces[b_j] = repulsion_forces[b_j] - F_ij; 
+                std::string id = marker_bodies[b_i] + "_" + marker_bodies[b_j];
+                Distance_param d;
+                d.id_A = b_i;
+                d.id_B = b_j;
+                d.coord_A = massCenters[b_i];
+                d.coord_B = massCenters[b_j];
+                d.dist = dist_ij;
+                DistanceParam[id] = d;
+            }
+               
+        }
+
+        for (int b_w = 0;b_w < nbr_fluid; b_w++)
+        {
+            auto [minToBi,arg_minToBi] = minelt(_range=markedfaces(t.mesh(),marker_bodies[b_i]), _element=distToFluid[b_w]);
+
+            if (minToBi <= forceRange)
+            {    
+                std::string id = marker_bodies[b_i] + "_" + marker_fluid[b_w];
+
+                Distance_param d;
+                d.id_A = b_i;
+                d.id_B = -1; // Use id -1 for wall boundary
+                d.coord_A = arg_minToBi;
+                d.dist = minToBi;
+
+                auto distToBi = distanceToRange(_space=Vh, _range=markedfaces(t.mesh(),marker_bodies[b_i]),_max_distance=2*forceRange);                
+                auto [minToBw,arg_minToBw] = minelt(_range=markedfaces(t.mesh(),marker_fluid[b_w]), _element=distToBi);
+                d.coord_B = arg_minToBw;
+
+                DistanceParam[id] = d;
             }
         }
     }
+
+
+    auto end_detection = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double, std::milli> float_detection = end_detection - start_detection;
+    time_detection =  float_detection.count();
+
+    // Compute and insert lubrication force
     
-    // Body-Wall collision
-    auto Vh = Pch<1>(t.mesh());
-        
-    for (int b_w=0;b_w < nbr_fluid;b_w++)
+    auto start_com = std::chrono::high_resolution_clock::now();
+
+    std::vector<RowVectord> repulsion_forces(nbr_bodies);
+    std::fill(repulsion_forces.begin(), repulsion_forces.end(), RowVectord::Zero(dim));
+           
+    for (const auto& [key, value] : DistanceParam)
     {
-        auto distToBw = distanceToRange(_space=Vh, _range=markedfaces(t.mesh(),marker_fluid[b_w]),_max_distance=2*forceRange);
-                
-        for (int b_i=0;b_i<nbr_bodies;b_i++)
-        {
-            auto [minToBi,arg_minToBi] = minelt(_range=markedfaces(t.mesh(),marker_bodies[b_i]), _element=distToBw);
-
-            if (minToBi <= forceRange)
-            {   
-                auto distToBi = distanceToRange(_space=Vh, _range=markedfaces(t.mesh(),marker_bodies[b_i]),_max_distance=2*forceRange);                
-                auto [minToBw,arg_minToBw] = minelt(_range=markedfaces(t.mesh(),marker_bodies[b_w]), _element=distToBi);
-
-                RowVectord F_ij = 1/epsWall * std::pow(forceRange - minToBi,2)*(arg_minToBi - arg_minToBw);
-                repulsion_forces[b_i] = repulsion_forces[b_i] + F_ij;
-            }
+        if (value.id_B != -1)
+        {          
+            RowVectord F_ij = 1/epsBody * std::pow(forceRange - value.dist,2)*(value.coord_A - value.coord_B);
+            repulsion_forces[value.id_A] = repulsion_forces[value.id_A] + F_ij;
+            repulsion_forces[value.id_B] = repulsion_forces[value.id_B] - F_ij;           
         }
-        
-    }    
 
+        if (value.id_B == -1)
+        {
+            RowVectord F_ij = 1/epsWall * std::pow(forceRange - value.dist,2)*(value.coord_A - value.coord_B);
+            repulsion_forces[value.id_A] = repulsion_forces[value.id_A] + F_ij;
+        }
+    }
+    
     // Define rhs or residual                       
     auto r = [&data]() 
     { 
@@ -154,9 +210,6 @@ ContactAvoidanceSphericalType(FluidMechanics const& t, DataType & data, ns::Coll
         
             for (int d=0;d<dim;++d)
             {   
-                // Print repulsion force
-                std::cout << "Repulsion force : " << repulsion_forces[B][d] << " dim : " << d << " body : " << B << std::endl;
-                
                 if (residualType == 1) 
                     r()->add(basisToContainerGpTranslationalVelocityVector[d],-repulsion_forces[B][d]);  
                 else if (residualType == 0)
@@ -165,6 +218,11 @@ ContactAvoidanceSphericalType(FluidMechanics const& t, DataType & data, ns::Coll
         }
         B++;               
     }    
+
+    auto end_com = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double, std::milli> float_com = end_com - start_com;
+    time_com += float_com.count();
+
     time = toc("ContactAvoidanceSphericalType");
 }
 
@@ -173,36 +231,28 @@ ContactAvoidanceSphericalType(FluidMechanics const& t, DataType & data, ns::Coll
     Implementation of ContactAvoidance model for complex shaped bodies
 */
 
-struct Distance_param
-{
-    int id_A;
-    int id_B;
-    RowVectord coord_A;
-    RowVectord coord_B;
-    double dist;        
-};
-
 template<std::size_t residualType,typename FluidMechanics,typename DataType>
 void
-ContactAvoidanceComplexType(FluidMechanics const& t, DataType & data, ns::CollisionForceParam forceParam, double &time, double &time_dist, double &time_com, double &time_ins)
+ContactAvoidanceComplexType(FluidMechanics const& t, DataType & data, ns::CollisionForceParam forceParam, double &time, double &time_pre, double &time_detection, double &time_com)
 {
     tic();
 
-    auto start_com = std::chrono::high_resolution_clock::now();
-
     // Get collision parameters    
+
     double forceRange = forceParam.forceRange;
     double epsBody = forceParam.epsBody;
     double epsWall = forceParam.epsWall;
     int const dim = t.nDim;
     
-    // Associate boundary marker and mass center to each moving body
+    // Pre-process phase
+
+    auto start_pre = std::chrono::high_resolution_clock::now();
+
     std::vector<RowVectord> massCenters;
     std::vector<std::string> marker_bodies;
     int nbr_bodies = 0;
-    auto Vh = Pch<1>(t.mesh()); 
-    std::vector<decltype( Vh->element() )> distToBodies;
-    
+    std::vector<std::string> marker_fluid;
+    int nbr_fluid = 0;
 
     for ( auto const& [bpname,bpbc] : t.bodySetBC() )
     {
@@ -211,12 +261,6 @@ ContactAvoidanceComplexType(FluidMechanics const& t, DataType & data, ns::Collis
         nbr_bodies ++;
 
     }
-
-
-    // Associate remaining boundary to fluid
-    std::vector<std::string> marker_fluid;
-    std::vector<decltype( Vh->element() )> distToFluid;
-    int nbr_fluid = 0;
 
     for (auto m : t.mesh()->markerNames())
     {
@@ -238,12 +282,17 @@ ContactAvoidanceComplexType(FluidMechanics const& t, DataType & data, ns::Collis
         }
     }
 
-    auto end_com = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double, std::milli> float_com = end_com - start_com;
-    time_com = float_com.count();
+    auto end_pre = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double, std::milli> float_pre = end_pre - start_pre;
+    time_pre = float_pre.count();
    
+    // Collision detection phase
 
-    auto start_dist = std::chrono::high_resolution_clock::now();
+    auto start_detection = std::chrono::high_resolution_clock::now();
+
+    auto Vh = Pch<1>(t.mesh()); 
+    std::vector<decltype( Vh->element() )> distToBodies;
+    std::vector<decltype( Vh->element() )> distToFluid;
 
     for (int b_i = 0; b_i < nbr_bodies; b_i++)
     {
@@ -255,149 +304,119 @@ ContactAvoidanceComplexType(FluidMechanics const& t, DataType & data, ns::Collis
         distToFluid.push_back(distanceToRange(_space=Vh, _range=markedfaces(t.mesh(),marker_fluid[b_w]),_max_distance=2*forceRange));
     }
 
-    auto end_dist = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double, std::milli> float_dist = end_dist - start_dist;
-    time_dist =  float_dist.count();
-
-
-    auto start_com_ = std::chrono::high_resolution_clock::now();
-
-    // Define map containing distance parameters for body-body and body-wall interaction
+    // Define collision map
     std::map<std::string,Distance_param> DistanceParam;
 
     for (int b_i = 0; b_i < nbr_bodies; b_i++)
     {
-        // Compute distance function from b_i
-        // Body-body interaction
-        for (int b_j = 0;b_j < nbr_bodies; b_j++)
+        for (int b_j = b_i+1;b_j < nbr_bodies; b_j++)
         {
-            if ((b_i != b_j) && (b_i < b_j))
-            {
-                auto [minToBj,arg_minToBj] = minelt(_range=markedfaces(t.mesh(),marker_bodies[b_j]), _element=distToBodies[b_i]);
+            auto [minToBj,arg_minToBj] = minelt(_range=markedfaces(t.mesh(),marker_bodies[b_j]), _element=distToBodies[b_i]);
                 
-                // Verify if contact force is applied
-                if (minToBj <= forceRange)
-                {
-                        // Define new key
-                        std::string id = marker_bodies[b_i] + "_" + marker_bodies[b_j];
+            if (minToBj <= forceRange)
+            {
 
-                        // Store distance and coordinates 
-                        Distance_param d;
-                        d.id_A = b_i;
-                        d.id_B = b_j;
-                        d.coord_B = arg_minToBj;
-                        d.dist = minToBj;
+                std::string id = marker_bodies[b_i] + "_" + marker_bodies[b_j];
 
-                        // Compute coord_A
-                        auto [minToBi,arg_minToBi] = minelt(_range=markedfaces(t.mesh(),marker_bodies[b_i]), _element=distToBodies[b_j]);
-                        d.coord_A = arg_minToBi;
+                Distance_param d;
+                d.id_A = b_i;
+                d.id_B = b_j;
+                d.coord_B = arg_minToBj;
+                d.dist = minToBj;
 
-                        // Insert structure in map
-                        DistanceParam[id] = d;
-                }
-            }   
+                auto [minToBi,arg_minToBi] = minelt(_range=markedfaces(t.mesh(),marker_bodies[b_i]), _element=distToBodies[b_j]);
+                d.coord_A = arg_minToBi;
+
+                DistanceParam[id] = d;
+            }
+               
         }
 
-        // Body-Wall interaction
         for (int b_w = 0;b_w < nbr_fluid; b_w++)
         {
             auto [minToBw,arg_minToBw] = minelt(_range=markedfaces(t.mesh(),marker_fluid[b_w]), _element=distToBodies[b_i]);
 
-            // Verify if contact force is applied
             if (minToBw <= forceRange)
             {    
-                // Define key
                 std::string id = marker_bodies[b_i] + "_" + marker_fluid[b_w];
 
-                // Store distance and coordinates 
                 Distance_param d;
                 d.id_A = b_i;
                 d.id_B = -1; // Use id -1 for wall boundary
                 d.coord_B = arg_minToBw;
                 d.dist = minToBw;
 
-                // Compute coord_B
                 auto [minToBi,arg_minToBi] = minelt(_range=markedfaces(t.mesh(),marker_bodies[b_i]), _element=distToFluid[b_w]);
                 d.coord_A = arg_minToBi;
 
-                // Insert structure in map
                 DistanceParam[id] = d;
             }
         }
     }
+
+    auto end_detection = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double, std::milli> float_detection = end_detection - start_detection;
+    time_detection =  float_detection.count();
     
-    // Print map
-    /*
-    for (const auto& [key, value] : DistanceParam) 
-    {
-        std::cout << '[' << key << "] : " <<std::endl;
-        std::cout << "      id A : " << value.id_A << std::endl;
-        std::cout << "      id B : " << value.id_B << std::endl;
-        std::cout << "      coordinate A : " << value.coord_A << std::endl;
-        std::cout << "      coordinate B : " << value.coord_B << std::endl;
-        std::cout << "      Distance : " << value.dist << std::endl;
-    }
-    */
+    // Compute and insert lubrication force
     
-    // Compute contact force Fi for each body
+    auto start_com = std::chrono::high_resolution_clock::now();
+
     std::vector<RowVectord> repulsion_forces(nbr_bodies);
     std::fill(repulsion_forces.begin(), repulsion_forces.end(), RowVectord::Zero(dim));
 
-    // Compute contact points for each body
-    std::vector<RowVectord> contact_points(nbr_bodies);
-    std::fill(contact_points.begin(), contact_points.end(), RowVectord::Zero(dim));
+    std::vector<Eigen::Vector3d> rot(nbr_bodies);
+    std::fill(rot.begin(), rot.end(), Eigen::Vector3d::Zero());
 
     for (const auto& [key, value] : DistanceParam)
     {
-        
-        // Body-body interaction
-        if ((value.id_B != -1) && (forceRange - value.dist >= 0 ))
+        if (value.id_B != -1)
         {          
-            // Compute repulsion force
             RowVectord F_ij = 1/epsBody * std::pow(forceRange - value.dist,2)*(value.coord_A - value.coord_B);
             repulsion_forces[value.id_A] = repulsion_forces[value.id_A] + F_ij;
             repulsion_forces[value.id_B] = repulsion_forces[value.id_B] - F_ij; 
-            contact_points[value.id_A] = value.coord_A;
-            contact_points[value.id_B] = value.coord_B;             
+            
+            if (dim == 2)
+            {
+                // We define Eigen::Vector3d types to use the function cross()    
+                Eigen::Vector3d x_diff_F_i(value.coord_A[0] - massCenters[value.id_A][0],value.coord_A[1] - massCenters[value.id_A][1],0.);
+                Eigen::Vector3d x_diff_F_j(value.coord_B[0] - massCenters[value.id_B][0],value.coord_B[1] - massCenters[value.id_B][1],0.);
+                Eigen::Vector3d repulsion_force_i(F_ij[0],F_ij[1],0.);
+                Eigen::Vector3d repulsion_force_j(-F_ij[0],-F_ij[1],0.);
+                rot[value.id_A] = rot[value.id_A] - repulsion_force_i.cross(x_diff_F_i);
+                rot[value.id_B] = rot[value.id_B] - repulsion_force_j.cross(x_diff_F_j);
+            }    
+            else if (dim == 3)
+            {
+                Eigen::Vector3d x_diff_F_i = value.coord_A - massCenters[value.id_A]; 
+                Eigen::Vector3d x_diff_F_j = value.coord_B - massCenters[value.id_B]; 
+                Eigen::Vector3d repulsion_force_i = F_ij;
+                Eigen::Vector3d repulsion_force_j = -F_ij;
+                rot[value.id_A] = rot[value.id_A] - repulsion_force_i.cross(x_diff_F_i);
+                rot[value.id_B] = rot[value.id_B] - repulsion_force_j.cross(x_diff_F_j);                     
+            }     
         }
 
-        if ((value.id_B == -1) && (forceRange - value.dist > 0))// Body-Wall interaction
+        if (value.id_B == -1)
         {
-            // Compute repulsion force
             RowVectord F_ij = 1/epsWall * std::pow(forceRange - value.dist,2)*(value.coord_A - value.coord_B);
             repulsion_forces[value.id_A] = repulsion_forces[value.id_A] + F_ij;
-            contact_points[value.id_A] = value.coord_A;  
+
+            if (dim == 2)
+            {   
+                Eigen::Vector3d x_diff_F_i(value.coord_A[0] - massCenters[value.id_A][0],value.coord_A[1] - massCenters[value.id_A][1],0.);
+                Eigen::Vector3d repulsion_force_i(F_ij[0],F_ij[1],0.);
+                rot[value.id_A] = rot[value.id_A] - repulsion_force_i.cross(x_diff_F_i);
+            }    
+            else if (dim == 3)
+            {
+                Eigen::Vector3d x_diff_F_i = value.coord_A - massCenters[value.id_A]; 
+                Eigen::Vector3d repulsion_force_i = F_ij;
+                rot[value.id_A] = rot[value.id_A] - repulsion_force_i.cross(x_diff_F_i);                  
+            } 
         }
     }
-
-    // Compute rotation force
-    std::vector<RowVectord> rot(nbr_bodies);
-
-    for (int b_i = 0; b_i < nbr_bodies; b_i++)
-    {
-        if (dim == 2)
-        {
-            // We define Eigen::Vector3d types to use the function cross()    
-            Eigen::Vector3d x_diff_F(contact_points[b_i][0] - massCenters[b_i][0],contact_points[b_i][1] - massCenters[b_i][1],0.);
-            Eigen::Vector3d repulsion_force_B(repulsion_forces[b_i][0],repulsion_forces[b_i][1],0.);
-            rot[b_i] = - repulsion_force_B.cross(x_diff_F);
-        }        
-        else if (dim == 3)
-        {
-            Eigen::Vector3d x_diff_F = contact_points[b_i] - massCenters[b_i]; 
-            Eigen::Vector3d repulsion_force_B = repulsion_forces[b_i];
-            rot[b_i] = - repulsion_force_B.cross(x_diff_F);                     
-        }     
-    }
-
-    auto end_com_ = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double, std::milli> float_com_ = end_com_ - start_com_;
-    time_com += float_com_.count();
-
-    
-    auto start_ins = std::chrono::high_resolution_clock::now();
-
-    // Define rhs or residual                       
+                          
     auto r = [&data]() 
     { 
         if constexpr(residualType == 1) 
@@ -406,7 +425,6 @@ ContactAvoidanceComplexType(FluidMechanics const& t, DataType & data, ns::Collis
             return data.rhs();
     };
 
-    
     int B = 0;
     auto rowStartInVector = t.rowStartInVector();
 
@@ -463,10 +481,9 @@ ContactAvoidanceComplexType(FluidMechanics const& t, DataType & data, ns::Collis
         B++;
     }
 
-    auto end_ins = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double, std::milli> float_ins = end_ins - start_ins;
-    time_ins += float_ins.count();
-
+    auto end_com = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double, std::milli> float_com = end_com - start_com;
+    time_com += float_com.count();
 
     time = toc("ContactAvoidanceComplexType");
 }
@@ -478,21 +495,27 @@ ContactAvoidanceComplexType(FluidMechanics const& t, DataType & data, ns::Collis
 
 template<std::size_t residualType,typename FluidMechanics,typename DataType>
 void
-ContactAvoidanceArticulatedType(FluidMechanics const& t, DataType & data, ns::CollisionForceParam forceParam, double &time)
+ContactAvoidanceArticulatedType(FluidMechanics const& t, DataType & data, ns::CollisionForceParam forceParam, double &time, double &time_pre, double &time_detection, double &time_com)
 {
     tic();
-    // Define parameters dimension
+
+    // Define collision parameters 
     int const dim = t.nDim;
     double forceRange = forceParam.forceRange;
     double epsBody = forceParam.epsBody;
     double epsWall = forceParam.epsWall;
     
-    // Get the number of bodies, boundary markers, mass centers, radii and the gravity force with mass 
+    // Pre-process phase
+
+    auto start_pre = std::chrono::high_resolution_clock::now();
+
     std::vector<RowVectord> massCenters;
     std::vector<RowVectord> G;
     std::vector<std::string> marker_bodies;
     std::vector<RowVectord> GravityForce;
     int nbr_bodies = 0;
+    std::vector<std::string> marker_fluid;
+    int nbr_fluid = 0;
 
     for (auto const&nba : t.bodySetBC().nbodyArticulated())
     {
@@ -515,10 +538,6 @@ ContactAvoidanceArticulatedType(FluidMechanics const& t, DataType & data, ns::Co
             nbr_bodies ++;
         }
     }
- 
-    // Associate remaining boundary to fluid
-    std::vector<std::string> marker_fluid;
-    int nbr_fluid = 0;
 
     for (auto m : t.mesh()->markerNames())
     {
@@ -539,66 +558,107 @@ ContactAvoidanceArticulatedType(FluidMechanics const& t, DataType & data, ns::Co
             }    
         }
     }
- 
-    // Define repulsive force and contact points for body-wall interaction
-    std::vector<RowVectord> repulsion_forces(nbr_bodies);
-    std::fill(repulsion_forces.begin(), repulsion_forces.end(), RowVectord::Zero(dim));
- 
-    std::vector<RowVectord> contact_points(nbr_bodies);
-    std::fill(contact_points.begin(), contact_points.end(), RowVectord::Zero(dim));
- 
-    auto Vh = Pch<1>(t.mesh()); 
-    std::vector<decltype( Vh->element() )> distToBodies;
 
-    for (int b_i = 0; b_i < nbr_bodies; b_i++)
+    auto end_pre = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double, std::milli> float_pre = end_pre - start_pre;
+    time_pre = float_pre.count();
+   
+    // Collision detection phase
+
+    auto start_detection = std::chrono::high_resolution_clock::now();
+  
+    auto Vh = Pch<1>(t.mesh()); 
+    std::vector<decltype( Vh->element() )> distToFluid;
+
+    for (int b_w = 0; b_w < nbr_fluid; b_w++)
     {
-        distToBodies.push_back(distanceToRange(_space=Vh, _range=markedfaces(t.mesh(),marker_bodies[b_i]),_max_distance=2*forceRange));
+        distToFluid.push_back(distanceToRange(_space=Vh, _range=markedfaces(t.mesh(),marker_fluid[b_w]),_max_distance=2*forceRange));
     }
 
+    // Define collision map
+    std::map<std::string,Distance_param> DistanceParam;
 
-
-    for (int b_w=0;b_w < nbr_fluid;b_w++)
+    for (int b_w = 0; b_w < nbr_fluid; b_w++)
     {
-        auto distToBw = distanceToRange(_space=Vh, _range=markedfaces(t.mesh(),marker_fluid[b_w]),_max_distance=2*forceRange);
-
-        for (int b_i=0;b_i<nbr_bodies;b_i++)
+        for (int b_i = 0; b_i < nbr_bodies; b_i++)
         {
-            auto [minToBi,arg_minToBi] = minelt(_range=markedfaces(t.mesh(),marker_bodies[b_i]), _element=distToBw);
+            auto [minToBi,arg_minToBi] = minelt(_range=markedfaces(t.mesh(),marker_bodies[b_i]), _element=distToFluid[b_w]);
+                
             if (minToBi <= forceRange)
             {
-                contact_points[b_i] = arg_minToBi;
-                auto [minToBw,arg_minToBw] = minelt(_range=markedfaces(t.mesh(),marker_bodies[b_w]), _element=distToBodies[b_i]);
-                RowVectord F_ij = 1/epsWall * std::pow(forceRange - minToBi,2)*(arg_minToBi - arg_minToBw);
-                repulsion_forces[b_i] = repulsion_forces[b_i] + F_ij;
+
+                std::string id = marker_bodies[b_i] + "_" + marker_fluid[b_w];
+
+                Distance_param d;
+                d.id_A = b_i;
+                d.id_B = -1; // Use id -1 for wall boundary
+                d.coord_A = arg_minToBi;
+                d.dist = minToBi;
+
+                auto distToBi = distanceToRange(_space=Vh, _range=markedfaces(t.mesh(),marker_bodies[b_i]),_max_distance=2*forceRange);
+                auto [minToBw,arg_minToBw] = minelt(_range=markedfaces(t.mesh(),marker_fluid[b_w]), _element=distToBi);
+                d.coord_B = arg_minToBw;
+
+                DistanceParam[id] = d;
             }
+               
         }
+
     }
 
+    auto end_detection = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double, std::milli> float_detection = end_detection - start_detection;
+    time_detection =  float_detection.count();
 
-    // Compute rotation   
-    std::vector<RowVectord> rot(nbr_bodies);
+    // Compute and insert lubrication force
+    
+    auto start_com = std::chrono::high_resolution_clock::now();
+
+    std::vector<RowVectord> repulsion_forces(nbr_bodies);
+    std::fill(repulsion_forces.begin(), repulsion_forces.end(), RowVectord::Zero(dim));
+
+    std::vector<Eigen::Vector3d> rot(nbr_bodies);
+    std::fill(rot.begin(), rot.end(), Eigen::Vector3d::Zero());
+
+    for (const auto& [key, value] : DistanceParam)
+    {
+        if (value.id_B == -1)
+        {
+            RowVectord F_ij = 1/epsWall * std::pow(forceRange - value.dist,2)*(value.coord_A - value.coord_B);
+            repulsion_forces[value.id_A] = repulsion_forces[value.id_A] + F_ij;
+
+            if (dim == 2)
+            {   
+                Eigen::Vector3d x_diff_F_i(value.coord_A[0] - G[value.id_A][0],value.coord_A[1] - G[value.id_A][1],0.);
+                Eigen::Vector3d repulsion_force_i(F_ij[0],F_ij[1],0.);
+                rot[value.id_A] = rot[value.id_A] - repulsion_force_i.cross(x_diff_F_i);
+            }    
+            else if (dim == 3)
+            {
+                Eigen::Vector3d x_diff_F_i = value.coord_A - G[value.id_A]; 
+                Eigen::Vector3d repulsion_force_i = F_ij;
+                rot[value.id_A] = rot[value.id_A] - repulsion_force_i.cross(x_diff_F_i);                  
+            } 
+        }
+    }
 
     for (int b_i = 0; b_i < nbr_bodies; b_i++)
     {
         if (dim == 2)
         {
-            Eigen::Vector3d x_diff_F(contact_points[b_i][0] - G[b_i][0],contact_points[b_i][1] - G[b_i][1],0.);
-            Eigen::Vector3d x_diff_G(massCenters[b_i][0] - G[b_i][0],massCenters[b_i][1] - G[b_i][1],0.);
-            Eigen::Vector3d repulsion_force_B(repulsion_forces[b_i][0],repulsion_forces[b_i][1],0.);
-            Eigen::Vector3d gravity_force_B(GravityForce[b_i][0],GravityForce[b_i][1],0.);
-            rot[b_i] = - repulsion_force_B.cross(x_diff_F) + gravity_force_B.cross(x_diff_G);
+            Eigen::Vector3d x_diff_G_i(massCenters[b_i][0] - G[b_i][0],massCenters[b_i][1] - G[b_i][1],0.);
+            Eigen::Vector3d gravity_force_i(GravityForce[b_i][0],GravityForce[b_i][1],0.);
+            rot[b_i] = rot[b_i] + gravity_force_i.cross(x_diff_G_i);
 
         }        
         else if (dim == 3)
         {
-            Eigen::Vector3d x_diff_F = contact_points[b_i] - G[b_i];
-            Eigen::Vector3d x_diff_G = massCenters[b_i] - G[b_i];
-            Eigen::Vector3d repulsion_force_B = repulsion_forces[b_i];
-            Eigen::Vector3d gravity_force_B = GravityForce[b_i];
-                 
-            rot[b_i] = - repulsion_force_B.cross(x_diff_F) + gravity_force_B.cross(x_diff_G);                  
+            Eigen::Vector3d x_diff_G_i = massCenters[b_i] - G[b_i];
+            Eigen::Vector3d gravity_force_i = GravityForce[b_i];
+            rot[b_i] = rot[b_i] + gravity_force_i.cross(x_diff_G_i);                  
         }     
     }
+
 
     // Define rhs or residual                       
     auto r = [&data]() 
@@ -673,6 +733,10 @@ ContactAvoidanceArticulatedType(FluidMechanics const& t, DataType & data, ns::Co
             }
         }
     }
+
+    auto end_com = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double, std::milli> float_com = end_com - start_com;
+    time_com += float_com.count();
  
     time = toc("ContactAvoidanceArticulatedType");  
 }
@@ -688,15 +752,15 @@ class Execution_time
     public:
         static int nbr;
         static double total_time;
-        static double total_time_dist;
+        static double total_time_pre;
+        static double total_time_detection;
         static double total_time_com;
-        static double total_time_ins;
 };
 
 int Execution_time::nbr = 0;
 double Execution_time::total_time = 0.0;
-double  Execution_time::total_time_dist = 0.0;
-double  Execution_time::total_time_ins = 0.0;
+double  Execution_time::total_time_pre = 0.0;
+double  Execution_time::total_time_detection = 0.0;
 double  Execution_time::total_time_com = 0.0;
 
 template<typename FluidMechanics>
@@ -705,8 +769,8 @@ reset_executionTime(FluidMechanics const& t)
 {
     Execution_time::nbr = 0;
     Execution_time::total_time = 0.0;
-    Execution_time::total_time_dist = 0.0;
-    Execution_time::total_time_ins = 0.0;
+    Execution_time::total_time_pre = 0.0;
+    Execution_time::total_time_detection = 0.0;
     Execution_time::total_time_com = 0.0;
 }
 
@@ -732,10 +796,11 @@ contactForceModels(FluidMechanics const& t, DataType & data)
     // Get collision force model and type
     std::string model = jsonCollisionForce["model"].get<std::string>();
     std::string type = jsonCollisionForce["type"].get<std::string>();
+    
     double time = 0.;
-    double time_dist = 0;
-    double time_com = 0.0;
-    double time_ins = 0.;
+    double time_pre = 0;
+    double time_detection = 0.0;
+    double time_com = 0.;
 
     // Model case : contactAvoidance 
     if (model.compare("contactAvoidance") == 0)
@@ -745,21 +810,21 @@ contactForceModels(FluidMechanics const& t, DataType & data)
         if (type.compare("sphericalShapedBody") == 0)
         {
             ns::CollisionForceParam forceParam = jsonCollisionForce["forceParam"].get<ns::CollisionForceParam>();
-            ContactAvoidanceSphericalType<residualType>(t, data, forceParam, time);
+            ContactAvoidanceSphericalType<residualType>(t, data, forceParam, time, time_pre, time_detection, time_com);
         }
 
         // Type case : complexShapedBody
         if (type.compare("complexShapedBody") == 0)
         {
             ns::CollisionForceParam forceParam = jsonCollisionForce["forceParam"].get<ns::CollisionForceParam>();
-            ContactAvoidanceComplexType<residualType>(t, data, forceParam, time, time_dist, time_com, time_ins);
+            ContactAvoidanceComplexType<residualType>(t, data, forceParam, time, time_pre, time_detection, time_com);
         }
             
         // Type case : articulatedBody
         if (type.compare("articulatedBody") == 0)
         {
             ns::CollisionForceParam forceParam = jsonCollisionForce["forceParam"].get<ns::CollisionForceParam>();
-            ContactAvoidanceArticulatedType<residualType>(t, data, forceParam, time);
+            ContactAvoidanceArticulatedType<residualType>(t, data, forceParam, time, time_pre, time_detection, time_com);
         }
             
     }
@@ -769,9 +834,9 @@ contactForceModels(FluidMechanics const& t, DataType & data)
     // Execution time
     Execution_time::nbr += 1;        
     Execution_time::total_time += time;
-    Execution_time::total_time_dist += time_dist;
+    Execution_time::total_time_pre += time_pre;
+    Execution_time::total_time_detection += time_detection;
     Execution_time::total_time_com += time_com;
-    Execution_time::total_time_ins += time_ins;
 
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -779,9 +844,9 @@ contactForceModels(FluidMechanics const& t, DataType & data)
     if (rank == 0)
     {
         std::cout << "Total execution time for " << type << " function after " << Execution_time::nbr << " executions is " << Execution_time::total_time << std::endl;
-        std::cout << "Total execution time for distance function : " << Execution_time::total_time_dist << std::endl;
-        std::cout << "Total execution time for computation : " << Execution_time::total_time_com << std::endl;
-        std::cout << "Total execution time for insertion : " << Execution_time::total_time_ins << std::endl; 
+        std::cout << "Total execution time for pre-process phase : " << Execution_time::total_time_pre << std::endl;
+        std::cout << "Total execution time for contact detection : " << Execution_time::total_time_detection << std::endl;
+        std::cout << "Total execution time for force comutation : " << Execution_time::total_time_com << std::endl; 
     }
   
     
