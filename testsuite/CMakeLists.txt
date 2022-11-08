@@ -56,7 +56,11 @@ if (FEELPP_DISABLE_COMPILE_FAILURE )
 endif()
 message(STATUS "[feelpp/testsuite] disable compile failure: ${FEELPP_DISABLE_COMPILE_FAILURE}")
 
-
+find_package(Python3 COMPONENTS Interpreter Development )
+message(STATUS "[feelpp/testsuite] Python3_EXECUTABLE: ${Python3_EXECUTABLE}")
+message(STATUS "[feelpp/testsuite] Python3_INCLUDE_DIRS: ${Python3_INCLUDE_DIRS}")
+message(STATUS "[feelpp/testsuite] Python3_LIBRARIES: ${Python3_LIBRARIES}")
+message(STATUS "[feelpp/testsuite] Python3_VERSION: ${Python3_VERSION}")
 
 foreach( testdir core python math alg mesh poly filters material models interpolation integration discr ts vf leaks opt ls pde fit fmi event)
   add_custom_target( test${testdir} )
