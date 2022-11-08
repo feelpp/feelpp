@@ -29,6 +29,7 @@
 #if !defined(FEELPP_MOR_CRBENUMS_HPP)
 #define FEELPP_MOR_CRBENUMS_HPP 1
 
+#include <fmt/core.h>
 namespace Feel {
 
 namespace crb {
@@ -42,6 +43,44 @@ enum class stage
     online = 1
 };
 
+/**
+ * @brief get the string representation of the stage
+ *
+ * @param s the stage
+ * @return the string representation of the stage
+ */
+inline std::string stageToString( stage s )
+{
+    switch ( s )
+    {
+    case stage::offline:
+        return "offline";
+    case stage::online:
+        return "online";
+    }
+    LOG( WARNING ) << fmt::format( "unknown stage {} return offline", s );
+    return "offline";
+}
+
+/**
+ * @brief get the stage from the string representation
+ *
+ * @param s the string representation of the stage
+ * @return the stage
+ */
+inline stage stringToStage( std::string const& s )
+{
+    if ( s == "offline" )
+        return stage::offline;
+    else if ( s == "online" )
+        return stage::online;
+    else
+    {
+        LOG(WARNING) << fmt::format("unknown stage {} return offline", s );
+        return stage::offline;
+    }
+}
+
 enum class load
 {
     //! load none of the data
@@ -54,6 +93,49 @@ enum class load
     all = 3
 };
 
+/**
+ * get the string representation of the load enum
+ *
+ */
+inline std::string loadToString( crb::load l )
+{
+    switch ( l )
+    {
+    case crb::load::none:
+        return "none";
+    case crb::load::rb:
+        return "rb";
+    case crb::load::fe:
+        return "fe";
+    case crb::load::all:
+        return "all";
+    default:
+        LOG(WARNING) << fmt::format("unknown load enum {} returning rb", static_cast<int>( l ) );
+        return "rb";
+    }
+}
+
+/**
+ * get the load enum from the string representation
+ *
+ */
+inline crb::load loadFromString( std::string const& s )
+{
+    if ( s == "none" )
+        return crb::load::none;
+    else if ( s == "rb" )
+        return crb::load::rb;
+    else if ( s == "fe" )
+        return crb::load::fe;
+    else if ( s == "all" )
+        return crb::load::all;
+    else
+    {
+        LOG(WARNING) << fmt::format("unknown load string {} returning rb", s );
+        return crb::load::rb;
+    }
+}
+
 enum class last
 {
     //! last created
@@ -61,6 +143,112 @@ enum class last
     //! last modified
     modified = 2
 };
+
+/**
+ * @brief get string representation of the last enum
+ * 
+ * @param l last enum
+ * @return std::string representation of the last enum
+ */
+inline std::string lastToString( crb::last l )
+{
+    switch ( l )
+    {
+    case crb::last::created:
+        return "created";
+    case crb::last::modified:
+        return "modified";
+    default:
+        LOG(WARNING) << fmt::format("unknown last enum {} returning modified", static_cast<int>( l ) );
+        return "modified";
+    }
+}
+
+/**
+ * @brief get last enum from the string representation
+ * 
+ * @param s string representation of the last enum
+ * @return crb::last enum
+ */
+inline crb::last lastFromString( std::string const& s )
+{
+    if ( s == "created" )
+        return crb::last::created;
+    else if ( s == "modified" )
+        return crb::last::modified;
+    else
+    {
+        LOG(WARNING) << fmt::format("unknown last string {} returning modified", s );
+        return crb::last::modified;
+    }
+}
+
+/**
+ * @brief attribute of crb db to load
+ *
+ * an attribute is used to identify a DB to be loaded
+ */
+enum class attribute
+{
+    //! id attribute
+    id = 0,
+    //! name attribute
+    name = 1,
+    //! last created attribute
+    last_created = 2,
+    //! last modified attribute
+    last_modified = 3,
+};
+
+/**
+ * @brief get the string representation of the attribute
+ *
+ * @param a the attribute
+ * @return the string representation of the attribute
+ */
+inline std::string attributeToString( attribute a )
+{
+    switch ( a )
+    {
+    case attribute::id:
+        return "id";
+    case attribute::name:
+        return "name";
+    case attribute::last_created:
+        return "last_created";
+    case attribute::last_modified:
+        return "last_modified";
+    default:
+        LOG(WARNING) << fmt::format("unknown attribute enum {} returning last_modified", static_cast<int>( a ) );
+        return "last_modified";
+    }
+    return "unknown";
+}
+
+/**
+ * @brief get the attribute from the string representation
+ *
+ * @param s the string representation of the attribute
+ * @return the attribute
+ */
+inline attribute attributeFromString( std::string const& s )
+{
+    if ( s == "id" )
+        return attribute::id;
+    else if ( s == "name" )
+        return attribute::name;
+    else if ( s == "last_created" )
+        return attribute::last_created;
+    else if ( s == "last_modified" )
+        return attribute::last_modified;
+    else
+    {
+        LOG(WARNING) << fmt::format("unknown attribute string {} returning last_modified", s );
+        return attribute::last_modified;
+    }
+
+}
+
 } // crb
 
 /**

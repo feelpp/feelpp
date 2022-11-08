@@ -1165,30 +1165,19 @@ public :
 
     virtual eim_interpolation_error_type eimInterpolationErrorEstimation( parameter_type const& mu , vectorN_type const& uN )
     {
-        return eimInterpolationErrorEstimation( mu, uN,  mpl::bool_<is_time_dependent>() );
-    }
-    eim_interpolation_error_type eimInterpolationErrorEstimation( parameter_type const& mu , vectorN_type const& uN , mpl::bool_<true> )
-    {
-        return boost::make_tuple( M_eim_error_mq , M_eim_error_aq, M_eim_error_fq);
-    }
-    eim_interpolation_error_type eimInterpolationErrorEstimation( parameter_type const& mu , vectorN_type const& uN , mpl::bool_<false> )
-    {
-        return boost::make_tuple( M_eim_error_aq, M_eim_error_fq);
+        if constexpr ( is_time_dependent )
+            return boost::make_tuple( M_eim_error_mq , M_eim_error_aq, M_eim_error_fq);
+        else
+            return boost::make_tuple( M_eim_error_aq, M_eim_error_fq);
     }
 
     virtual eim_interpolation_error_type eimInterpolationErrorEstimation( )
     {
-        return eimInterpolationErrorEstimation( mpl::bool_<is_time_dependent>() );
+        if constexpr ( is_time_dependent )
+            return boost::make_tuple( M_eim_error_mq , M_eim_error_aq, M_eim_error_fq);
+        else
+            return boost::make_tuple( M_eim_error_aq, M_eim_error_fq);
     }
-    eim_interpolation_error_type eimInterpolationErrorEstimation( mpl::bool_<true> )
-    {
-        return boost::make_tuple( M_eim_error_mq , M_eim_error_aq, M_eim_error_fq);
-    }
-    eim_interpolation_error_type eimInterpolationErrorEstimation( mpl::bool_<false> )
-    {
-        return boost::make_tuple( M_eim_error_aq, M_eim_error_fq);
-    }
-
 
     virtual std::vector< std::vector<sparse_matrix_ptrtype> > computeLinearDecompositionA()
     {
@@ -1247,17 +1236,10 @@ public :
 
     virtual affine_decomposition_type computeAffineDecomposition()
     {
-        return computeAffineDecomposition( mpl::bool_< is_time_dependent >() );
-    }
-
-    affine_decomposition_type computeAffineDecomposition( mpl::bool_<true> )
-    {
-        return boost::make_tuple( M_Mqm , M_Aqm , M_Fqm );
-    }
-
-    affine_decomposition_type computeAffineDecomposition( mpl::bool_<false> )
-    {
-        return boost::make_tuple( M_Aqm , M_Fqm );
+        if constexpr ( is_time_dependent )
+            return boost::make_tuple( M_Mqm, M_Aqm, M_Fqm );
+        else
+            return boost::make_tuple( M_Aqm, M_Fqm );
     }
 
     std::vector< std::vector<sparse_matrix_ptrtype> > getMqm()
@@ -1287,7 +1269,10 @@ public :
 
     virtual affine_decomposition_light_type computeAffineDecompositionLight()
     {
-        return computeAffineDecompositionLight( mpl::bool_< is_time_dependent >() );
+        if constexpr ( is_time_dependent )
+            return boost::make_tuple( M_Mq , M_Aq , M_Fq );
+        else
+            return boost::make_tuple( M_Aq , M_Fq );
     }
     affine_decomposition_light_type computeAffineDecompositionLight( mpl::bool_<true> )
     {
@@ -1300,43 +1285,36 @@ public :
 
     virtual monolithic_type computeMonolithicFormulation( parameter_type const& mu )
     {
-        return computeMonolithicFormulation( mu , mpl::bool_< is_time_dependent >() );
-    }
-    monolithic_type computeMonolithicFormulation( parameter_type const& mu, mpl::bool_<true> )
-    {
-        return boost::make_tuple( M_monoM , M_monoA , M_monoF );
-    }
-    monolithic_type computeMonolithicFormulation( parameter_type const& mu, mpl::bool_<false> )
-    {
-        return boost::make_tuple( M_monoA , M_monoF );
+        if constexpr ( is_time_dependent )
+        {
+            return boost::make_tuple( M_monoM , M_monoA , M_monoF );
+        }
+        else
+        {
+            return boost::make_tuple( M_monoA , M_monoF );
+        }
     }
 
     virtual monolithic_type computeMonolithicFormulationU( parameter_type const& mu, element_type const& u )
     {
-        return computeMonolithicFormulationU( mu , u, mpl::bool_< is_time_dependent >() );
-    }
-    monolithic_type computeMonolithicFormulationU( parameter_type const& mu, element_type const& u, mpl::bool_<true> )
-    {
-        return boost::make_tuple( M_monoM , M_monoA , M_monoF );
-    }
-    monolithic_type computeMonolithicFormulationU( parameter_type const& mu, element_type const& u, mpl::bool_<false> )
-    {
-        return boost::make_tuple( M_monoA , M_monoF );
+        if constexpr ( is_time_dependent )
+            return boost::make_tuple( M_monoM , M_monoA , M_monoF );
+        else
+            return boost::make_tuple( M_monoA , M_monoF );
     }
 
     virtual beta_vector_type computeBetaLinearDecompositionA( parameter_type const& mu ,  double time=0 )
     {
-        return computeBetaLinearDecompositionA( mu, mpl::bool_< is_time_dependent >(), time );
-    }
-    beta_vector_type computeBetaLinearDecompositionA( parameter_type const& mu, mpl::bool_<true>, double time )
-    {
-        auto tuple = computeBetaQm( mu , time );
-        return tuple.template get<1>();
-    }
-    beta_vector_type computeBetaLinearDecompositionA( parameter_type const& mu, mpl::bool_<false>, double time )
-    {
-        auto tuple = computeBetaQm( mu , time );
-        return tuple.template get<0>();
+        if constexpr ( is_time_dependent )
+        {
+            auto tuple = computeBetaQm( mu , time );
+            return tuple.template get<1>();
+        }
+        else
+        {
+            auto tuple = computeBetaQm( mu, time );
+            return tuple.template get<0>();
+        }
     }
 
     // Default updateResidual / updateJacobian functions

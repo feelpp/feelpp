@@ -1,0 +1,143 @@
+:feelpp: Feel++
+= feelpp_toolbox_coefficientformpdes(1)
+Christophe Prud'homme <https://github.com/prudhomm[@prudhomm]>; Vincent Chabannes <https://github.com/vincentchabannes[@vincentchabannes]>
+:manmanual: feelpp_toolbox_coefficientformpdes
+:man-linkstyle: pass:[blue R < >]
+v0.110.0-rc.5: 
+
+
+== NAME
+
+feelpp_toolbox_coefficientformpdes - Coefficient Form PDEs toolbox application
+
+
+== SYNOPSIS
+
+----
+feelpp_toolbox_coefficientformpdes 
+  [--coefficientformpdes.filename  <path to .json specification file>]
+  [--config-file <path to .cfg file]
+  [--case <directory to model case>] 
+  [--case.dim 3]
+  [--case.discretization P1]
+  [--coefficientformpdes.ksp-monitor=<0,1>]
+  [--coefficientformpdes.ksp-view=<0,1>]
+  [--coefficientformpdes.ksp-type=<see below>]
+  [--coefficientformpdes.pc-view=<0,1>]
+  [--coefficientformpdes.pc-type=<see below>]
+  [--coefficientformpdes.snes-monitor=<0,1>]
+  [--coefficientformpdes.ksp-type=<see below>]
+----
+
+== DESCRIPTION
+
+feelpp_toolbox_coefficientformpdes is an application which can run Coefficient Form PDEs model defined by a set of files : a geometry or mesh, a config file(`.cfg`) and  a model file(`.json`)
+
+The execution steps are as follows:
+
+* load the model
+* load the mesh
+* setup model (materials, initial and boundary condition)
+* execute the steady or unsteady simulation
+* post-process the results, viewable in paraview or ensight 
+
+=== Options
+
+feelpp_toolbox_coefficientformpdes requires some options.
+
+.Table of command-line feelpp_toolbox_coefficientformpdes options
+|===
+| Name | Description | Default value | Possible Values
+
+| case.dim | dimension of problem  | 3 | 2,3
+| case.discretization | discretization of problem  | P1 | P1,P2
+| coefficientformpdes.filename | path to the .json specification case file  | *no default value* | *required from user*
+| coefficientformpdes.ksp-monitor | monitor the Krylov Subspace iterations  | 0 | 0,1
+| coefficientformpdes.ksp-view | view the Krylov Subspace structure  | 0 | 0,1
+| coefficientformpdes.ksp-type | change the Krylov Subspace method  | `gmres` | link:https://www.mcs.anl.gov/petsc/documentation/linearsolvertable.html[see PETSc documentation]
+| coefficientformpdes.pc-view | view the Krylov Subspace structure  | 0 | 0,1
+| coefficientformpdes.pc-type | change the Krylov Subspace strategy  | `lu` | link:https://www.mcs.anl.gov/petsc/documentation/linearsolvertable.html[see PETSc documentation]
+| coefficientformpdes.snes-monitor | if applicable, monitor the non-linear solver iterations  | 0 | 0,1
+| coefficientformpdes.snes-type | if applicable, change the non-linear solver iterations  | `newtonls` | link:https://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/SNES/SNESType.html[see PETSc documentation]
+
+|===
+
+NOTE:: 0 as option value means that the option is not enabled, 1 means it is enabled.
+
+== EXAMPLES
+
+We are now using the `feelpp/feelpp-toolboxes:latest` docker images as described in link:http://docs.feelpp.org/user/0.110.0-rc.5/install/containers/#_docker[] to demonstrate feelpp_toolbox_coefficientformpdes usage.
+
+[source,shell]
+.Starting the docker `feelpp/feelpp-toolboxes:latest`
+----
+docker run --rm -ti -v $HOME/feel:/feel ghcr.io/feelpp/feelpp-toolboxes:v0.110.0-rc.5 
+----
+
+[source,shell]
+.Explanations about the command line
+----
+docker run <1>
+--rm <2>
+-ti <3>
+-v $HOME/feel:/feel <4>
+feelpp/feelpp-toolboxes <5>
+----
+<1> run docker executable
+<2> remove container from docker once execution is done
+<3> run in interactive mode and enter the docker container
+<4> mount `$HOME/feel` on host to `/feel/` in docker: the results will be exported there
+<5> the docker container to execute, by default it uses the `latest` tag
+
+
+.Example of a command line to execute feelpp_toolbox_coefficientformpdes
+----
+mpirun --bind-to core -np 10 feelpp_toolbox_coefficientformpdes --case "github:{path:toolboxes/coefficientformpdes/cases/bratu}"
+----
+
+.Explantion of the command line to execute feelpp_toolbox_coefficientformpdes
+----
+mpirun --bind-to core <1>
+  -np 10 <2>
+  <3>
+  --case "github:{path:toolboxes/coefficientformpdes/cases/bratu}" <4>
+----
+<1> execute in parallel using MPI with processes bound to cores
+<2> execute in parallel usisng 10 processes
+<3> the name of the toolbox application
+<4> case directory containing the model files (geometry, config and json). This case file is available remotely on github.
+
+Other test cases can be found
+
+- locally in /usr/share/feelpp/data/testcases/toolboxes/coefficientformpdes.
+- on-line http://docs.feelpp.org/cases/latest/coefficientformpdes/README
+
+
+== RESOURCES
+
+{feelpp} Docs::
+http://docs.feelpp.org/toolboxes/latest/
+
+{feelpp} Cases for feelpp_toolbox_coefficientformpdes::
+http://docs.feelpp.org/cases/latest/coefficientformpdes/README
+
+{feelpp} Toolbox Docs for feelpp_toolbox_coefficientformpdes::
+http://docs.feelpp.org/toolboxes/latest/coefficientformpdes/
+
+== SEE ALSO
+
+{feelpp} Mesh Partitioner::
+Mesh partitioner for {feelpp} Toolboxes
+http://docs.feelpp.org/user/latest/using/mesh_partitioner/
+
+
+{feelpp} Remote Tool::
+Access remote data(model cases, meshes) on Github and Girder in {feelpp} applications.
+http://docs.feelpp.org/user/latest/using/remotedata/
+
+
+== COPYING
+
+Copyright \(C) 2020 {feelpp} Consortium. +
+Free use of this software is granted under the terms of the GPLv3 License.
+

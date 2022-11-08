@@ -128,13 +128,44 @@ if ( FEELPP_HAS_GLOG )
   set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} GLog/Contrib")
 endif()
 
+# # cln
+message(STATUS "------------------------------------------------------------")
+message(STATUS "Configuring CLN")
+option(FEELPP_USE_EXTERNAL_CLN "USE_EXTERNAL_CLN" OFF)
+
+if(FEELPP_USE_EXTERNAL_CLN)
+  find_package(CLN REQUIRED)
+  message(STATUS "[feelpp] CLN Includes: ${CLN_INCLUDE_DIRS}")
+  message(STATUS "[feelpp] CLN Libraries: ${CLN_LIBRARIES}")
+  target_link_libraries(feelpp_contrib INTERFACE ${CLN_LIBRARIES})
+else()
+  set(FETCHCONTENT_SOURCE_DIR_CLN ${CMAKE_CURRENT_SOURCE_DIR}/cln)
+  message(STATUS)
+  FetchContent_Declare(cln GIT_REPOSITORY https://github.com/feelpp/cln.git GIT_TAG 41756c0ba619bf412de7558f493e827a07c2a6e3)
+
+  FetchContent_MakeAvailable(cln)
+  set_target_properties(cln PROPERTIES OUTPUT_NAME "feelpp_cln")
+  target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_CLN)
+  target_include_directories(cln INTERFACE
+    $<BUILD_INTERFACE:${cln_SOURCE_DIR}/include/>
+    $<INSTALL_INTERFACE:include/feelpp>)
+  target_link_libraries(feelpp_contrib INTERFACE cln::cln)
+  install(TARGETS cln EXPORT feelpp-contrib-export-targets
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+  )
+endif()
+
 message(STATUS "------------------------------------------------------------")
 message(STATUS "Configuring Ginac")
 add_subdirectory(ginac)
 #
 # cln and ginac
 #
-find_package(CLN)
+#find_package(CLN)
+
 
 target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_GINAC IN_GINAC HAVE_LIBDL)
 
@@ -142,7 +173,7 @@ target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_GINAC IN_GINAC HA
 
 target_include_directories( feelpp_contrib BEFORE
   INTERFACE
-  ${CLN_INCLUDE_DIR}
+  # ${CLN_INCLUDE_DIR}
   $<BUILD_INTERFACE:${FEELPP_SOURCE_DIR}/contrib/ginac/>
   $<BUILD_INTERFACE:${FEELPP_BUILD_DIR}/ginac/>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/contrib/ginac/ginac>
@@ -293,21 +324,30 @@ message(STATUS "Configuring PYBind11")
 #  add_subdirectory(hpddm)
 #endif()
 option( FEELPP_ENABLE_PYBIND11 "Enable PYBIND11" ON )
-set(PYBIND11_CPP_STANDARD -std=c++${FEELPP_STD_CPP})
-if ( FEELPP_ENABLE_PYBIND11 )
-  feelppContribPrepare( pybind11 )
-  if ( FEELPP_CONTRIB_PREPARE_SUCCEED )
-    add_subdirectory(pybind11)
-    target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_PYBIND11 )
-    target_link_libraries(feelpp_contrib INTERFACE pybind11 )
-    #target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_PYBIND11=1 )
-    target_include_directories(feelpp_contrib INTERFACE
-      $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/contrib/pybind11/include>
-      $<INSTALL_INTERFACE:include/feelpp/pybind11> )
-    set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} PyBind11/Contrib")
+option(FEELPP_USE_EXTERNAL_PYBIND11 "USE_EXTERNAL_PYBIND11" OFF)
+
+if(FEELPP_USE_EXTERNAL_PYBIND11)
+  find_package(pybind11 CONFIG REQUIRED)
+  target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_PYBIND11)
+  target_link_libraries(feelpp_contrib INTERFACE pybind11::module)
+else()
+  set(PYBIND11_CPP_STANDARD -std=c++${FEELPP_STD_CPP})
+  if ( FEELPP_ENABLE_PYBIND11 )
+    feelppContribPrepare( pybind11 )
+    if ( FEELPP_CONTRIB_PREPARE_SUCCEED )
+      set(PYBIND11_INSTALL ON)
+      set(PYBIND11_CMAKECONFIG_INSTALL_DIR "${CMAKE_INSTALL_DATAROOTDIR}/feelpp/feel/cmake/modules/")
+      add_subdirectory(pybind11)
+      target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_PYBIND11 )
+      #target_link_libraries(feelpp_contrib INTERFACE pybind11::headers )
+      #target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_PYBIND11=1 )
+      target_include_directories(feelpp_contrib INTERFACE
+        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/contrib/pybind11/include>
+        $<INSTALL_INTERFACE:include/feelpp/pybind11> )
+      set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} PyBind11/Contrib")
+    endif()
   endif()
 endif()
-
 
 # MongoCXX
 message(STATUS "------------------------------------------------------------")
@@ -692,8 +732,11 @@ option( FEELPP_ENABLE_TASKFLOW "Enable TASKFLOW" ON )
 if ( FEELPP_ENABLE_TASKFLOW )
   message(STATUS "------------------------------------------------------------")
   message(STATUS "Configuring TASKFLOW")
-#  set(FETCHCONTENT_SOURCE_DIR_TASKFLOW ${CMAKE_CURRENT_SOURCE_DIR}/taskflow)
+
+  # set(FETCHCONTENT_SOURCE_DIR_TASKFLOW ${CMAKE_CURRENT_SOURCE_DIR}/taskflow)
   # patch includes fix for 18.04 compilation
+  set(TF_BUILD_TESTS OFF)
+  set(TF_BUILD_EXAMPLES OFF)
   set(FETCHCONTENT_SOURCE_DIR_TASKFLOW ${CMAKE_CURRENT_SOURCE_DIR}/taskflow)
   FetchContent_Declare(taskflow GIT_REPOSITORY https://github.com/feelpp/taskflow.git GIT_TAG 0635a49230e8ace7d379cbbaa716c66543f3e516)
   set( BUILD_TASKFLOW_TESTS OFF )
