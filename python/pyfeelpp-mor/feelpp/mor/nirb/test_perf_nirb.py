@@ -24,7 +24,7 @@ nirb_config['doGreedy'] = doGreedy
 
 r = ["noRect","Rect"][doRectification]
 g = ["noGreedy","Greedy"][doGreedy]
-RESPATH = f"RESULTS/{toolboxType}/{r}/{g}"
+RESPATH = f"RESULTS/{r}/{g}"
 
 def offline(N):
     """Generated the reduced basis for the given N
@@ -36,7 +36,7 @@ def offline(N):
     """
 
     start = time.time()
-    nirb = nirbOffline(**nirb_config)
+    nirb = nirbOffline(**nirb_config, initCoarse=doGreedy)
     if doGreedy:
         nirb.initProblemGreedy(1000, 1e-5, Nmax=N, computeCoarse=True, samplingMode="random")
     else:
@@ -118,6 +118,10 @@ def online_time_measure():
 
 if __name__ == '__main__':
 
+    print("=============================================")
+    print(f"Run test_perf_nirb, doRectification : {doRectification}, doGreedy : {doGreedy}")
+    print(f"Result dir : {RESPATH}")
+
 
     e = init_feelpp_environment(toolboxType, cfg_path)
     Ns = sys.argv[1:]
@@ -129,3 +133,8 @@ if __name__ == '__main__':
         offline(N)
         online_error_sampling()
         online_time_measure()
+
+    print("=============================================")
+    print(f"Run test_perf_nirb done, doRectification : {doRectification}, doGreedy : {doGreedy}")
+    print(f"Result are stored in : {RESPATH}")
+    print("=============================================")
