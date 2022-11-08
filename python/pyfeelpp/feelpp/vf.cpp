@@ -95,6 +95,18 @@ PYBIND11_MODULE(_vf, m )
             "evaluate", []( Expr<GinacMatrix<2,1,2>>& e, std::map<std::string, double /*value_type*/> const& m )
             { return e.evaluate( m ); },
             "evaluate the expression", py::arg( "mp" ) )
+        .def( "evaluate", [](  Expr<GinacMatrix<2,1,2>>& e, std::string const& s, Eigen::VectorXd const& x, bool parallel, worldcomm_ptr_t wc ) {
+                Eigen::VectorXd y(x.size());
+                std::transform( x.begin(), x.end(),  y.begin(), 
+                                  [&e,s,parallel,&wc](auto x) { 
+                                      e.setParameterValues( { { s, x } } );
+                                      return e.evaluate(parallel, wc)( 0, 0 ); 
+                                  } );
+                return y;
+            }, "evaluate the expression", py::arg( "parameter" ), py::arg( "values" ), py::arg( "parallel" ) = true, py::arg( "worldcomm" ) = Environment::worldCommPtr() )
+        .def("diff", []( Expr<GinacMatrix<2,1,2>>& e, std::string const& s ) { return e.diff<1>( s ); }, "differentiate the expression with respect to symbol s", py::arg( "symbol" ) )
+        .def("diff2", []( Expr<GinacMatrix<2,1,2>>& e, std::string const& s ) { return e.diff<2>( s ); }, "differentiate twice the expression with respect to symbol s", py::arg( "symbol" ) )
+        .def("__str__", []( Expr<GinacMatrix<2,1,2>> const& e ) { return str(e.expression()); }, "get the string representation" )
         ;
     pyclass_name = "ExprGinacMatrix312";
     py::class_<Expr<GinacMatrix<3, 1, 2>>>( m, pyclass_name.c_str() )
@@ -115,6 +127,19 @@ PYBIND11_MODULE(_vf, m )
             "evaluate", []( Expr<GinacMatrix<3, 1, 2>>& e, std::map<std::string, double /*value_type*/> const& m )
             { return e.evaluate( m ); },
             "evaluate the expression", py::arg( "mp" ) )
+        .def( "evaluate", [](  Expr<GinacMatrix<3,1,2>>& e, std::string const& s, Eigen::VectorXd const& x, bool parallel, worldcomm_ptr_t wc ) {
+                Eigen::VectorXd y(x.size());
+                std::transform( x.begin(), x.end(),  y.begin(), 
+                                  [&e,s,parallel,&wc](auto x) { 
+                                      e.setParameterValues( { { s, x } } );
+                                      return e.evaluate(parallel, wc)( 0, 0 ); 
+                                  } );
+                return y;
+            }, "evaluate the expression", py::arg( "parameter" ), py::arg( "values" ), py::arg( "parallel" ) = true, py::arg( "worldcomm" ) = Environment::worldCommPtr() )
+        .def("diff", []( Expr<GinacMatrix<3,1,2>>& e, std::string const& s ) { return e.diff<1>( s ); }, "differentiate the expression with respect to symbol s", py::arg( "symbol" ) )
+        .def("diff2", []( Expr<GinacMatrix<3,1,2>>& e, std::string const& s ) { return e.diff<2>( s ); }, "differentiate twice the expression with respect to symbol s", py::arg( "symbol" ) )
+        .def("__str__", []( Expr<GinacMatrix<3,1,2>> const& e ) { return str(e.expression()); }, "get the string representation" )
+
         ;
 
     m.def( "expr_", static_cast<Expr<GinacEx<2>> (*)( std::string const&, std::string const&, WorldComm const&, std::string const&)>(&expr),
