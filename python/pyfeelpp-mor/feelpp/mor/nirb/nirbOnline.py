@@ -45,7 +45,7 @@ if __name__ == "__main__":
     perf.append(finish-start)
 
     doRectification = config_nirb['doRectification']
-    Nsample = 2
+    Nsample = 50
 
     if doRectification:
         file='nirbOnline_time_exec_rectif.txt'
