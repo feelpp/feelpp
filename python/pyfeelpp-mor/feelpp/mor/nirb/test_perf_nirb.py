@@ -1,6 +1,6 @@
 import sys
 from feelpp.mor.nirb.nirb import *
-from feelpp.mor.nirb.utils import WriteVecAppend, init_feelpp_environment
+from feelpp.mor.nirb.utils import WriteVecAppend, init_feelpp_environment, generatedAndSaveSampling
 import time
 import pandas as pd
 from pathlib import Path
@@ -113,25 +113,6 @@ def online_time_measure():
 
     WriteVecAppend(RESPATH+'/nirbOnline_time_exec.dat', [nirb.N, time_toolbox, time_nirb])
 
-def generateSample(Dmu, N, samplingMode="random"):
-    """Generate a sample of parameters, and save it in a file sample.dat
-
-    Args:
-    -----
-        Dmu (feelpp.mor._mor.ParameterSpace): the parameter space
-        N (int): number of samples
-        samplingMode (str, optional): the sampling mode. Defaults to "random".
-
-    Returns:
-    --------
-        list of parameterSpaceElement: the sampling generated
-    """
-    s = Dmu.sampling()
-    s.sampling(N, samplingMode)
-    path = "./sample.dat"
-    s.writeOnFile(path)
-    return s.getVector()
-
 
 if __name__ == '__main__':
 
@@ -139,7 +120,7 @@ if __name__ == '__main__':
     Ns = sys.argv[1:]
 
     Dmu = loadParameterSpace(model_path)
-    Xi_train = generateSample(Dmu, 250, samplingMode="random")
+    Xi_train = generatedAndSaveSampling(Dmu, 250, samplingMode="random")
 
     for N in Ns:
         N = int(N)
