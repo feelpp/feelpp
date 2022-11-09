@@ -1,4 +1,4 @@
-###  CMakeLists.txt; coding: utf-8 --- 
+###  CMakeLists.txt; coding: utf-8 ---
 
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 01 Sep 2018
@@ -35,7 +35,7 @@ endif()
 message(STATUS "------------------------------------------------------------")
 message(STATUS "Configuring NAPP")
 set(FETCHCONTENT_SOURCE_DIR_NAPP ${CMAKE_CURRENT_SOURCE_DIR}/napp)
-FetchContent_Declare(napp GIT_REPOSITORY https://github.com/vincentchabannes/napp.git GIT_TAG 1cba0026b9ea7581902017074071a0da1a2e7a94) #v0.1.0 )
+FetchContent_Declare(napp GIT_REPOSITORY https://github.com/vincentchabannes/napp.git GIT_TAG 8184b0896f758126b1cb8a76a2798e3575de42ff) #v0.1.0 )
 set(NAPP_CONFIG_INSTALL_DIR "${CMAKE_INSTALL_DATADIR}/feel/cmake/modules")
 FetchContent_MakeAvailable(napp)
 target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_NAPP )
@@ -49,8 +49,17 @@ install(TARGETS napp EXPORT feelpp-contrib-export-targets
 
 message(STATUS "------------------------------------------------------------")
 message(STATUS "Configuring FMT")
+
+
+option( FEELPP_USE_EXTERNAL_FMT "USE_EXTERNAL_FMT" OFF )
+if ( FEELPP_USE_EXTERNAL_FMT )
+  find_package(FMT REQUIRED)
+  message(STATUS "[feelpp] FMT Includes: ${FMT_INCLUDE_DIRS}")
+  message(STATUS "[feelpp] FMT Libraries: ${FMT_LIBRARIES}")
+  target_link_libraries( feelpp_contrib INTERFACE fmt::fmt )
+else()
 set(FETCHCONTENT_SOURCE_DIR_FMT ${CMAKE_CURRENT_SOURCE_DIR}/fmt)
-FetchContent_Declare(fmt GIT_REPOSITORY https://github.com/feelpp/fmt.git GIT_TAG b6f4ceaed0a0a24ccf575fab6c56dd50ccf6f1a9) 
+FetchContent_Declare(fmt GIT_REPOSITORY https://github.com/feelpp/fmt.git GIT_TAG b6f4ceaed0a0a24ccf575fab6c56dd50ccf6f1a9)
 
 set(FMT_INSTALL ON)
 set(FMT_CMAKE_DIR "${CMAKE_INSTALL_DATADIR}/feel/cmake/modules")
@@ -67,6 +76,7 @@ install(TARGETS fmt EXPORT feelpp-contrib-export-targets
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
     )
+endif()
 
 message(STATUS "------------------------------------------------------------")
 message(STATUS "Configuring GFlags")
@@ -92,7 +102,7 @@ if ( FEELPP_HAS_GFLAGS )
   target_link_libraries(feelpp_contrib INTERFACE feelpp_gflags)
 
   set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} GFlags/Contrib")
-  
+
   # for GLog
   set(gflags_LIBRARIES feelpp_gflags)
   set(gflags_FOUND 1)
@@ -118,13 +128,44 @@ if ( FEELPP_HAS_GLOG )
   set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} GLog/Contrib")
 endif()
 
+# # cln
+message(STATUS "------------------------------------------------------------")
+message(STATUS "Configuring CLN")
+option(FEELPP_USE_EXTERNAL_CLN "USE_EXTERNAL_CLN" OFF)
+
+if(FEELPP_USE_EXTERNAL_CLN)
+  find_package(CLN REQUIRED)
+  message(STATUS "[feelpp] CLN Includes: ${CLN_INCLUDE_DIRS}")
+  message(STATUS "[feelpp] CLN Libraries: ${CLN_LIBRARIES}")
+  target_link_libraries(feelpp_contrib INTERFACE ${CLN_LIBRARIES})
+else()
+  set(FETCHCONTENT_SOURCE_DIR_CLN ${CMAKE_CURRENT_SOURCE_DIR}/cln)
+  message(STATUS)
+  FetchContent_Declare(cln GIT_REPOSITORY https://github.com/feelpp/cln.git GIT_TAG 41756c0ba619bf412de7558f493e827a07c2a6e3)
+
+  FetchContent_MakeAvailable(cln)
+  set_target_properties(cln PROPERTIES OUTPUT_NAME "feelpp_cln")
+  target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_CLN)
+  target_include_directories(cln INTERFACE
+    $<BUILD_INTERFACE:${cln_SOURCE_DIR}/include/>
+    $<INSTALL_INTERFACE:include/feelpp>)
+  target_link_libraries(feelpp_contrib INTERFACE cln::cln)
+  install(TARGETS cln EXPORT feelpp-contrib-export-targets
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+  )
+endif()
+
 message(STATUS "------------------------------------------------------------")
 message(STATUS "Configuring Ginac")
 add_subdirectory(ginac)
 #
 # cln and ginac
 #
-find_package(CLN)
+#find_package(CLN)
+
 
 target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_GINAC IN_GINAC HAVE_LIBDL)
 
@@ -132,7 +173,7 @@ target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_GINAC IN_GINAC HA
 
 target_include_directories( feelpp_contrib BEFORE
   INTERFACE
-  ${CLN_INCLUDE_DIR}
+  # ${CLN_INCLUDE_DIR}
   $<BUILD_INTERFACE:${FEELPP_SOURCE_DIR}/contrib/ginac/>
   $<BUILD_INTERFACE:${FEELPP_BUILD_DIR}/ginac/>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/contrib/ginac/ginac>
@@ -159,6 +200,13 @@ endif()
 
 
 include(FetchContent)
+
+option( FEELPP_USE_EXTERNAL_EIGEN3 "USE_EXTERNAL_EIGEN3" OFF )
+if ( FEELPP_USE_EXTERNAL_EIGEN3 )
+  FIND_PACKAGE(Eigen3 REQUIRED)
+  add_library(Eigen3::Eigen ALIAS eigen)
+else()
+
 set(EIGEN_BUILD_DOC OFF)
 set(BUILD_TESTING OFF)
 set(EIGEN_LEAVE_TEST_IN_ALL_TARGET 0)
@@ -176,8 +224,6 @@ target_include_directories( feelpp_contrib BEFORE
       $<INSTALL_INTERFACE:include/feelpp/eigen/unsupported>
       )
 
-target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_EIGEN3 )
-target_link_libraries(feelpp_contrib INTERFACE Eigen3::Eigen )
 # there is an issue with eigen+mkl
 if ( MKL_FOUND )
   target_include_directories( eigen  INTERFACE ${MKL_INCLUDE_DIRS})
@@ -185,11 +231,15 @@ if ( MKL_FOUND )
   target_link_libraries(eigen INTERFACE ${MKL_LIBRARIES})  # error with cmake < 3.13, see CMP0079, use instead feelpp_contrib
   #target_link_libraries(feelpp_contrib INTERFACE ${MKL_LIBRARIES})
   #target_include_directories(eigen INTERFACE ${MKL_INCLUDE_DIRS})
-  
 endif()
+endif()
+
+target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_EIGEN3 )
+target_link_libraries(feelpp_contrib INTERFACE Eigen3::Eigen )
 
 SET(FEELPP_HAS_EIGEN3 1)
 SET(FEELPP_HAS_EIGEN3 1 PARENT_SCOPE)
+
 if ( FEELPP_HAS_EIGEN3 )
   #add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/contrib/eigen)
   unset(INCLUDE_INSTALL_DIR CACHE)
@@ -197,7 +247,6 @@ if ( FEELPP_HAS_EIGEN3 )
   unset(PKGCONFIG_INSTALL_DIR CACHE)
 endif()
 message(STATUS "[feelpp] eigen3 headers: ${EIGEN3_INCLUDE_DIR}" )
-
 
 #FIND_PACKAGE(Eigen2 REQUIRED)
 #INCLUDE_DIRECTORIES( ${Eigen2_INCLUDE_DIR} )
@@ -275,26 +324,35 @@ message(STATUS "Configuring PYBind11")
 #  add_subdirectory(hpddm)
 #endif()
 option( FEELPP_ENABLE_PYBIND11 "Enable PYBIND11" ON )
-set(PYBIND11_CPP_STANDARD -std=c++${FEELPP_STD_CPP})
-if ( FEELPP_ENABLE_PYBIND11 )
-  feelppContribPrepare( pybind11 )
-  if ( FEELPP_CONTRIB_PREPARE_SUCCEED )
-    add_subdirectory(pybind11)
-    target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_PYBIND11 )
-    target_link_libraries(feelpp_contrib INTERFACE pybind11 )
-    #target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_PYBIND11=1 )
-    target_include_directories(feelpp_contrib INTERFACE
-      $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/contrib/pybind11/include>
-      $<INSTALL_INTERFACE:include/feelpp/pybind11> )
-    set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} PyBind11/Contrib")
+option(FEELPP_USE_EXTERNAL_PYBIND11 "USE_EXTERNAL_PYBIND11" OFF)
+
+if(FEELPP_USE_EXTERNAL_PYBIND11)
+  find_package(pybind11 CONFIG REQUIRED)
+  target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_PYBIND11)
+  target_link_libraries(feelpp_contrib INTERFACE pybind11::module)
+else()
+  set(PYBIND11_CPP_STANDARD -std=c++${FEELPP_STD_CPP})
+  if ( FEELPP_ENABLE_PYBIND11 )
+    feelppContribPrepare( pybind11 )
+    if ( FEELPP_CONTRIB_PREPARE_SUCCEED )
+      set(PYBIND11_INSTALL ON)
+      set(PYBIND11_CMAKECONFIG_INSTALL_DIR "${CMAKE_INSTALL_DATAROOTDIR}/feelpp/feel/cmake/modules/")
+      add_subdirectory(pybind11)
+      target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_PYBIND11 )
+      #target_link_libraries(feelpp_contrib INTERFACE pybind11::headers )
+      #target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_PYBIND11=1 )
+      target_include_directories(feelpp_contrib INTERFACE
+        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/contrib/pybind11/include>
+        $<INSTALL_INTERFACE:include/feelpp/pybind11> )
+      set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} PyBind11/Contrib")
+    endif()
   endif()
 endif()
-
 
 # MongoCXX
 message(STATUS "------------------------------------------------------------")
 message(STATUS "Configuring Mongo")
-option( FEELPP_ENABLE_MONGOCXX "Enable Mongocxx" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
+option( FEELPP_ENABLE_MONGOCXX "Enable Mongocxx" OFF ) #${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
 if ( FEELPP_ENABLE_MONGOCXX )
   feelppContribPrepare( mongocxx )
   if( FEELPP_CONTRIB_PREPARE_SUCCEED )
@@ -386,10 +444,10 @@ if ( FEELPP_ENABLE_FMI4CPP )
   set( FMI4CPP_DOC_INSTALL_DIR "share/doc/feelpp/fmi4cpp")
   set(FETCHCONTENT_SOURCE_DIR_FMI4CPP ${CMAKE_CURRENT_SOURCE_DIR}/fmi4cpp)
   # patch includes fix for 18.04 compilation
-  FetchContent_Declare(fmi4cpp GIT_REPOSITORY https://github.com/feelpp/fmi4cpp.git GIT_TAG 645b6a35b1c166ace666c5d387d5a88b074ace18) 
+  FetchContent_Declare(fmi4cpp GIT_REPOSITORY https://github.com/feelpp/fmi4cpp.git GIT_TAG 645b6a35b1c166ace666c5d387d5a88b074ace18)
 
   FetchContent_MakeAvailable(fmi4cpp)
-  add_library(feelpp_fmi4cpp INTERFACE)  
+  add_library(feelpp_fmi4cpp INTERFACE)
   set_target_properties(fmi4cpp PROPERTIES OUTPUT_NAME "feelpp_fmi4cpp")
   target_link_libraries(feelpp_fmi4cpp INTERFACE fmi4cpp)
   target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_FMI4CPP )
@@ -476,7 +534,7 @@ if( FEELPP_CONTRIB_PREPARE_SUCCEED )
     $<INSTALL_INTERFACE:include/feelpp> )
   set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} Indicators/Contrib")
 endif()
-  
+
 message(STATUS "------------------------------------------------------------")
 message(STATUS "Configuring Boost")
 add_subdirectory( boost )
@@ -582,8 +640,8 @@ if( FEELPP_CONTRIB_PREPARE_SUCCEED )
   set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} Mmg/Contrib")
   if ( SCOTCH_FOUND )
     target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_SCOTCH )
-  endif() 
-  
+  endif()
+
 
   # setup parmmg only if mmg is ok
   feelppContribPrepare( parmmg )
@@ -592,7 +650,7 @@ if( FEELPP_CONTRIB_PREPARE_SUCCEED )
     SET ( LIBPARMMG_SHARED ON )
     SET( DOWNLOAD_MMG OFF )
     SET( DOWNLOAD_METIS ${FEELPP_PARMMG_DOWNLOAD_METIS} )
-    
+
 #    SET(MMG_DIR ${CMAKE_CURRENT_SOURCE_DIR}/mmg)
 #    SET(MMG_BUILDDIR ${CMAKE_CURRENT_BINARY_DIR}/mmg)
 #    SET(MMG_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/mmg)
@@ -611,14 +669,14 @@ if ( FEELPP_ENABLE_CPR )
   message(STATUS "Configuring CPR")
   set(FETCHCONTENT_SOURCE_DIR_CPR ${CMAKE_CURRENT_SOURCE_DIR}/cpr)
   # patch includes fix for 18.04 compilation
-  FetchContent_Declare(cpr GIT_REPOSITORY https://github.com/feelpp/cpr.git GIT_TAG e554da6bde33edc35f1c28bd8197ae50bdf4a4d4) 
+  FetchContent_Declare(cpr GIT_REPOSITORY https://github.com/feelpp/cpr.git GIT_TAG e554da6bde33edc35f1c28bd8197ae50bdf4a4d4)
   set( USE_SYSTEM_CURL ON )
   set( BUILD_CPR_TESTS OFF )
   if ( NOT ${CMAKE_INSTALL_INCLUDEDIR} MATCHES "feelpp$")
       set( CMAKE_INSTALL_INCLUDEDIR "${CMAKE_INSTALL_INCLUDEDIR}/feelpp")
   endif()
   FetchContent_MakeAvailable(cpr)
-  add_library(feelpp_cpr INTERFACE)  
+  add_library(feelpp_cpr INTERFACE)
   set_target_properties(cpr PROPERTIES OUTPUT_NAME "feelpp_cpr")
   target_link_libraries(feelpp_cpr INTERFACE cpr)
   target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_CPR )
@@ -646,7 +704,7 @@ endif()
 #   set(SPDLOG_FMT_EXTERNAL OFF)
 #   set(SPDLOG_INSTALL ON)
 #   set(export_dest_dir "${CMAKE_INSTALL_DATADIR}/feel/cmake/modules")
-#   FetchContent_Declare(   
+#   FetchContent_Declare(
 #       spdlog
 #       GIT_REPOSITORY https://github.com/feelpp/spdlog.git
 #       GIT_TAG        8a74f3b3df73f73ad883640ec27027c4309bf570)
@@ -668,14 +726,17 @@ endif()
 #         )
 #   target_link_libraries( feelpp_contrib INTERFACE feelpp_spdlog )
 #   set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} SPDLOG")
-# endif(FEELPP_ENABLE_SPDLOG) 
-# 
+# endif(FEELPP_ENABLE_SPDLOG)
+#
 option( FEELPP_ENABLE_TASKFLOW "Enable TASKFLOW" ON )
 if ( FEELPP_ENABLE_TASKFLOW )
   message(STATUS "------------------------------------------------------------")
   message(STATUS "Configuring TASKFLOW")
-#  set(FETCHCONTENT_SOURCE_DIR_TASKFLOW ${CMAKE_CURRENT_SOURCE_DIR}/taskflow)
+
+  # set(FETCHCONTENT_SOURCE_DIR_TASKFLOW ${CMAKE_CURRENT_SOURCE_DIR}/taskflow)
   # patch includes fix for 18.04 compilation
+  set(TF_BUILD_TESTS OFF)
+  set(TF_BUILD_EXAMPLES OFF)
   set(FETCHCONTENT_SOURCE_DIR_TASKFLOW ${CMAKE_CURRENT_SOURCE_DIR}/taskflow)
   FetchContent_Declare(taskflow GIT_REPOSITORY https://github.com/feelpp/taskflow.git GIT_TAG 0635a49230e8ace7d379cbbaa716c66543f3e516)
   set( BUILD_TASKFLOW_TESTS OFF )
@@ -683,7 +744,7 @@ if ( FEELPP_ENABLE_TASKFLOW )
   message(STATUS "[feelpp-taskflow] cmake dir: ${CMAKE_INSTALL_DATADIR}/feel/cmake/modules")
   FetchContent_MakeAvailable(taskflow)
   add_library(feelpp_taskflow INTERFACE)
-  set_target_properties(Taskflow PROPERTIES OUTPUT_NAME "feelpp_taskflow")
+  #set_target_properties(Taskflow PROPERTIES OUTPUT_NAME "feelpp_taskflow")
   target_link_libraries(feelpp_taskflow INTERFACE Taskflow )
   add_library(Feelpp::feelpp_taskflow ALIAS feelpp_taskflow)
   target_include_directories(feelpp_taskflow INTERFACE

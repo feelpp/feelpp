@@ -24,11 +24,12 @@
 //! @copyright 2017 Feel++ Consortium
 //!
 
+#include <feel/feelpython/pybind11/pybind11.h>
+#include <feel/feelpython/pybind11/stl.h>
 
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
-
+#if defined(FEELPP_HAS_PETSC4PY)
 #include <petsc4py/petsc4py.h>
+#endif
 
 #include "petsc_casters.hpp"
 
@@ -43,7 +44,7 @@
 #include<feel/feelalg/vectorublas.hpp>
 #include <feel/feelalg/vectorpetsc.hpp>
 #include <feel/feelalg/matrixpetsc.hpp>
-#include <pybind11/stl_bind.h>
+#include <feel/feelpython/pybind11/stl_bind.h>
 
 
 namespace py = pybind11;
@@ -81,6 +82,11 @@ class PyVectorDouble : Vector<double,unsigned int>
         PYBIND11_OVERLOAD_PURE( super&, super, operator-=, V ); }
     void set(const size_type i, const value_type& value) override {
         PYBIND11_OVERLOAD_PURE( void, super, set, i, value ); }
+    void setZero() override { PYBIND11_OVERLOAD_PURE( void, super, setZero ); }
+    void setOnes() override{ PYBIND11_OVERLOAD_PURE( void, super, setOnes ); }
+    void pointwiseMult( const super& V, const super& W ) override { PYBIND11_OVERLOAD_PURE( void, super, pointwiseMult, V, W ); }
+    void pointwiseDivide( const super& V, const super& W ) override { PYBIND11_OVERLOAD_PURE( void, super, pointwiseDivide, V, W ); }
+    void abs() override { PYBIND11_OVERLOAD_PURE( void, super, abs ); }
     void setVector(int* i, int n, value_type* v) override {
         PYBIND11_OVERLOAD_PURE( void, super, setVector, i, n, v ); }
     void add(const size_type i, const value_type& value) override {
@@ -160,6 +166,7 @@ class PyMatrixSparseDouble : MatrixSparse<double>
                const size_type j,
                const value_type& value ) override {
         PYBIND11_OVERLOAD_PURE(void, super, set, i, j, value); }
+    
     void add ( const size_type i,
                const size_type j,
                const value_type& value ) override {
@@ -209,8 +216,10 @@ class PyMatrixSparseDouble : MatrixSparse<double>
 PYBIND11_MODULE(_alg, m )
 {
     using namespace Feel;
-
+#ifdef FEELPP_HAS_PETSC4PY
     if ( import_petsc4py()<0) return ;
+#endif // FEELPP_HAS_PETSC4PY
+    
 
     py::class_<datamap_t<uint32_type>, datamap_ptr_t<uint32_type>>( m, "DataMap" )
         .def( py::init<std::shared_ptr<WorldComm>>() )
@@ -241,6 +250,19 @@ PYBIND11_MODULE(_alg, m )
         .def( "size", &Vector<double>::size, "return   Vector size" )
         .def( "clear", &Vector<double>::clear, "clear  vector" )
         .def( "zero", static_cast<void ( Vector<double>::* )()>( &Vector<double>::zero ), "zero  vector" )
+        .def( "set", &Vector<double>::set, "set i-th value")
+        .def( "setZero", &Vector<double>::setZero, "set entries to 0")
+        .def( "setConstant", &Vector<double>::setConstant, "set entries to a constant value")
+        .def( "setOnes" , &Vector<double>::setOnes, "set entries to 1")
+        .def( "pointwiseMult", &Vector<double>::pointwiseMult, "pointwise multiplication")
+        .def( "pointwiseDivide", &Vector<double>::pointwiseDivide, "pointwise divide")
+        .def( "abs", &Vector<double>::abs, "pointwise absolute value")
+        .def( "sum", &Vector<double>::sum, "sum of entries")
+        .def( "min", &Vector<double>::min, "min of entries")
+        .def( "max", &Vector<double>::max, "max of entries")
+        .def( "l1Norm", &Vector<double>::l1Norm, "l1 norm of entries")
+        .def( "l2Norm", &Vector<double>::l2Norm, "l2 norm of entries")
+        .def( "linftyNorm", &Vector<double>::linftyNorm, "linfty norm of entries")
         .def(
             "to_petsc", []( std::shared_ptr<Vector<double>> const& m )
             { return toPETSc( m ); },
@@ -251,13 +273,33 @@ PYBIND11_MODULE(_alg, m )
         .def( py::init<int, std::shared_ptr<WorldComm>>() )
         .def( py::init<int, int, std::shared_ptr<WorldComm>>() )
         .def( py::init<datamap_ptr_t<uint32_type>, bool>() )
+        .def( py::init<Vec, bool>(), "create a VectorPETSc from a Vec", py::arg( "vec" ), py::arg( "duplicate" ) = false )
+        .def( py::init<Vec, datamap_ptr_t<uint32_type>, bool>(), "create a VectorPETSc from a Vec and a datamap", py::arg( "vec" ), py::arg( "dm" ), py::arg( "duplicate" ) = false )
+        .def( py::self += py::self )
+        .def( py::self -= py::self )
         .def( "clone", &VectorPetsc<double>::clone, "return  PETSc Vector clone" )
         .def( "size", &VectorPetsc<double>::size, "return  PETSc Vector size" )
         .def( "clear", &VectorPetsc<double>::clear, "clear PETSc vector" )
-        .def( "zero", static_cast<void ( VectorPetsc<double>::* )()>(&VectorPetsc<double>::zero), "zero PETSc vector" )
-
-        .def( "vec", static_cast<Vec ( VectorPetsc<double>::* )() const>( &VectorPetsc<double>::vec ), "return a PETSc Vector" )
+        .def( "zero", static_cast<void ( VectorPetsc<double>::* )()>( &VectorPetsc<double>::zero ), "zero PETSc vector" )
+        .def( "setZero", &VectorPetsc<double>::setZero, "set entries to 0" )
+        .def( "setConstant", &VectorPetsc<double>::setConstant, "set entries to a constant value" )
+        .def( "setOnes", &VectorPetsc<double>::setOnes, "set entries to 1" )
+        .def( "pointwiseMult", &VectorPetsc<double>::pointwiseMult, "pointwise multiplication" )
+        .def( "pointwiseDivide", &VectorPetsc<double>::pointwiseDivide, "pointwise divide" )
+        .def( "abs", &VectorPetsc<double>::abs, "pointwise absolute value" )
+        .def( "sum", &VectorPetsc<double>::sum, "sum of entries" )
+        .def( "min", &VectorPetsc<double>::min, "min of entries" )
+        .def( "max", &VectorPetsc<double>::max, "max of entries" )
+        .def( "l1Norm", &VectorPetsc<double>::l1Norm, "l1 norm of entries" )
+        .def( "l2Norm", &VectorPetsc<double>::l2Norm, "l2 norm of entries" )
+        .def( "linftyNorm", &VectorPetsc<double>::linftyNorm, "linfty norm of entries" )
+        .def( "vec", static_cast<Vec ( VectorPetsc<double>::* )() const>( &VectorPetsc<double>::vec ), "return a PETSc Vector" );
+    
+    py::class_<VectorPetscMPI<double>, VectorPetsc<double>, std::shared_ptr<VectorPetscMPI<double>>>( m, "VectorPetscMPIDouble" )
+        .def( py::init<datamap_ptr_t<uint32_type>, bool>() )
+        .def( py::init<Vec, datamap_ptr_t<uint32_type>, bool>(), "create a VectorPETSc from a Vec and a datamap", py::arg( "vec" ), py::arg( "dm" ), py::arg( "duplicate" ) = false )
         ;
+
     py::class_<MatrixSparse<double>, PyMatrixSparseDouble, std::shared_ptr<MatrixSparse<double>>>( m, "MatrixSparseDouble" )
         .def( py::init<>() )
         .def( "clone", &MatrixSparse<double>::clone, "return  MatrixSparse clone" )
@@ -313,10 +355,18 @@ PYBIND11_MODULE(_alg, m )
 //        .def(py::self /= double())
 //        .def(py::self *= py::self)
 //        .def(py::self /= py::self)
-        .def( "to_petsc", [](VectorUblas<double> &v){ return toPETSc( v ); }, "cast a VectorDouble to a VectorPetscDouble" );
+        .def( "sum", &VectorUblas<double>::sum, "sum of entries" )
+        .def( "min", static_cast<VectorUblas<double>::real_type ( VectorUblas<double>::* )() const>( &VectorUblas<double>::min ), "min of entries" )
+        .def( "max", static_cast<VectorUblas<double>::real_type ( VectorUblas<double>::* )() const>( &VectorUblas<double>::max ), "max of entries" )
+        .def( "l1Norm", &VectorUblas<double>::l1Norm, "l1 norm of entries" )
+        .def( "l2Norm", &VectorUblas<double>::l2Norm, "l2 norm of entries" )
+        .def( "linftyNorm", &VectorUblas<double>::linftyNorm, "linfty norm of entries" )
+        .def( "to_petsc", [](VectorUblas<double> &v){ return toPETSc( v );
+}, "c s ba VectorDouble to a VectorPetscDouble" )
+        .def_static( "createFromPETSc", &VectorUblas<double>::createView, "create a VectorUblas<double> from a VectorPETScDouble", py::arg("vec") );
 
-        ;
 
+    // add accessor to backend options
     m.def( "backend_options", &Feel::backend_options, py::arg("prefix"), "create a backend options descriptions with prefix" );
     
 #if 0

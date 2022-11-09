@@ -95,6 +95,7 @@ INCLUDE(CTest)
 ENABLE_TESTING()
 
 add_subdirectory(cmake)
+add_subdirectory(tools/man)
 
 if ( FEELPP_FOUND )
 
@@ -163,6 +164,10 @@ endif()
 
 message(STATUS "[toolboxes] Toolboxes enabled : ${TOOLBOXES}")
 
+OPTION(FEELPP_ENABLE_TESTS "enable Feel++ tests" ON)
+if (FEELPP_ENABLE_TESTS  )
+  add_subdirectory(tests)
+endif()
 
 if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
   include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/feelpp-toolboxes.package.cmake)

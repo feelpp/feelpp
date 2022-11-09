@@ -121,6 +121,13 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidual( 
             if ( BuildNonCstPart && physicFluidData->equation() == "Navier-Stokes" )
             {
                 auto densityExpr = expr( matProps.property("density").template expr<1,1>(), se );
+                auto const& beta_u = this->useSemiImplicitTimeScheme()? mctx.field( FieldTag::velocity_extrapolated(this), "velocity_extrapolated" ) : u;
+                auto convTerm = Feel::FeelModels::fluidMecConvectiveTerm( u,physicFluidData, beta_u, this->useSemiImplicitTimeScheme() );
+                linearFormV +=
+                    integrate( _range=range,
+                               _expr=timeSteppingScaling*densityExpr*inner( convTerm, id(v) ),
+                               _geomap=this->geomap() );
+#if 0
                 if ( this->useSemiImplicitTimeScheme() )
                 {
                     auto const& beta_u = this->useSemiImplicitTimeScheme()? mctx.field( FieldTag::velocity_extrapolated(this), "velocity_extrapolated" ) : u;
@@ -152,6 +159,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidual( 
                                        _geomap=this->geomap() );
                     }
                 }
+#endif
             }
 
 #if defined( FEELPP_MODELS_HAS_MESHALE )

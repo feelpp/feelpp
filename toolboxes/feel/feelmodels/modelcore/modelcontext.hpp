@@ -11,6 +11,14 @@ namespace Feel
 namespace FeelModels
 {
 
+/**
+ * @brief Context for Models
+ * @ingroup ModelCore
+ * 
+ * @tparam ModelFieldsType 
+ * @tparam SymbolsExprType 
+ * @tparam TrialSymbolsExprType 
+ */
 template <typename ModelFieldsType, typename SymbolsExprType, typename TrialSymbolsExprType = trials_symbols_expr_empty_t>
 struct ModelContext
 {
@@ -73,13 +81,34 @@ private :
 
 };
 
-
+/**
+ * @brief create a ModelContext
+ * @ingroup ModelCore
+ * 
+ * @tparam ModelFieldsType 
+ * @tparam SymbolsExprType 
+ * @param mfields 
+ * @param se 
+ * @return auto 
+ */
 template <typename ModelFieldsType, typename SymbolsExprType>
 auto modelContext( ModelFieldsType && mfields, SymbolsExprType && se )
 {
     return ModelContext<std::decay_t<ModelFieldsType>,std::decay_t<SymbolsExprType>>( std::forward<ModelFieldsType>(mfields), std::forward<SymbolsExprType>(se) );
 }
 
+/**
+ * @brief create a ModelContext
+ * @ingroup ModelCore
+ *
+ * @tparam ModelFieldsType
+ * @tparam SymbolsExprType
+ * @tparam TrialSymbolsExprType
+ * @param mfields
+ * @param se
+ * @param tse
+ * @return auto
+ */
 template <typename ModelFieldsType, typename SymbolsExprType, typename TrialSymbolsExprType>
 auto modelContext( ModelFieldsType && mfields, SymbolsExprType && se, TrialSymbolsExprType && tse )
 {

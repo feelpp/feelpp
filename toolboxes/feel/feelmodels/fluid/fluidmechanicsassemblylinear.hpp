@@ -160,6 +160,24 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
                 }
                 auto myVelXEXPR = vec( cst(myvelX), cst(0.) );
 #endif
+                auto convTerm = Feel::FeelModels::fluidMecConvectiveTermJacobian( u,physicFluidData,beta_u, true );
+                //bilinearFormVV_PatternDefault +=
+                bilinearFormVV +=
+                    integrate( _range=range,
+                               _expr= timeSteppingScaling*densityExpr*inner( convTerm, id(v) ),
+                               _geomap=this->geomap() );
+
+                if ( this->hasMeshMotion() )
+                {
+#if defined( FEELPP_MODELS_HAS_MESHALE )
+                    bilinearFormVV_PatternDefault +=
+                        integrate( _range=range,
+                                   _expr= -timeSteppingScaling*densityExpr*inner( gradt(u)*( idv( this->meshMotionTool()->velocity() )   /*+ myVelXEXPR*/ ), id(v) ),
+                                   _geomap=this->geomap() );
+#endif
+                }
+
+#if 0
                 if ( this->hasMeshMotion() )
                 {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
@@ -184,7 +202,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
                                    _expr= timeSteppingScaling*0.5*densityExpr*divt(u)*trans(idv(beta_u))*id(v),
                                    _geomap=this->geomap() );
                 }
-
+#endif
                 double timeElapsedConvection = this->timerTool("Solve").stop();
                 this->log("FluidMechanics","updateLinearPDE","assembly convection in "+(boost::format("%1% s") %timeElapsedConvection).str() );
             }

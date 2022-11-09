@@ -4,12 +4,12 @@
 \section{Becoming a Feel++ developer}
 \label{feeldevel}
 \subsection{Interest}
-Becoming a \feel developer makes library improvements possible, you may have several proposals which may be usefull. Taking part of the project will enable you to commit some modifications or new applications, we will be glad to count you among us. As an open-source project under GNU licence,  you will be able to commit and participate to the entire project and its various aspects. Our aim is that each user should be involved in the library's expansion. In the following part, you will see how you can become a \feel collaborator.
+Becoming a \feel developer makes library improvements possible, you may have several proposals which may be useful. Taking part of the project will enable you to commit some modifications or new applications, we will be glad to count you among us. As an open-source project under GNU licence,  you will be able to commit and participate to the entire project and its various aspects. Our aim is that each user should be involved in the library's expansion. In the following part, you will see how you can become a \feel collaborator.
 
 \subsection{Creating RSA keys}
 \label{sec:creation-rsa-keys}
 At the top of the manual, you have seen how to get the sources anonymously, if you want to checkout or commit properly, you will need an account on \href{https://forge.imag.fr/}. After the administrator approval, you have to demand the rights to see the project tree. \newline \newline
-Once it's done, you will have to create RSA keys to be able to connect to the server using ssh. To do that you have to type the commands : \verb|ssh-keygen| and accept the 3 questions without typing anything. The generated key is placed in \verb|~/.ssh/id_rsa.pub|, you just need to copy this file's content in your forge account. To make it, go on the Forge website and enter into your account's personnal page. At the bottom of the page, you'll have the possibility to edit your SSH keys, go into it and copy/paste the id\_rsa.pub content. Once it's done, the number of your SSH keys in that page should have increased. Now, you will be able to connect to the server within an hour.
+Once it's done, you will have to create RSA keys to be able to connect to the server using ssh. To do that you have to type the commands : \verb|ssh-keygen| and accept the 3 questions without typing anything. The generated key is placed in \verb|~/.ssh/id_rsa.pub|, you just need to copy this file's content in your forge account. To make it, go on the Forge website and enter into your account's personal page. At the bottom of the page, you'll have the possibility to edit your SSH keys, go into it and copy/paste the id\_rsa.pub content. Once it's done, the number of your SSH keys in that page should have increased. Now, you will be able to connect to the server within an hour.
 %\verb|ssh-keygen -t dsa| and \linebreak[2] \verb|ssh-keygen -t rsa| to create the keys. After that, you have to copy the \verb|id_dsa.pub| and \verb|id_rsa.pub| files in the My Page > Account Maintenance > Edit SSH Keys section of the LJKForge website. Those files are located in the \verb|~/.ssh/| folder of your computer. You will be able to connect to the server within an hour.
 \\ \\
 {\bfseries Important : } If you don't have the same login on your computer as on
@@ -36,12 +36,12 @@ downloaded and type the following command :
 % cd feel/benchmarks
 %  svn co svn+ssh://login@scm.forge.imag.fr/var/lib/gforge/chroot/scmrepos/svn/feel-test/feel-test/trunk validation
 %\end{unixcom}
-You are now able to checkout, commit or add the file your judge usefull using \verb|svn|, please don't forget to comment on your various actions. The first commit is subject to the approbation of one of the main developers.
+You are now able to checkout, commit or add the file your judge useful using \verb|svn|, please don't forget to comment on your various actions. The first commit is subject to the approbation of one of the main developers.
 
 
 \section{Programming environment}
 \label{sec:progr-envir}
-We present here a quick list of all namespaces and librairies proposed by \feel, refer to the
+We present here a quick list of all namespaces and libraries proposed by \feel, refer to the
 tutorial which starts at chapter ~\ref{chap:getting-started} how you can use them.
 \subsection{Boost C++ Libraries}
 \label{sec:boost-c++-libraries}
@@ -140,7 +140,7 @@ See {\tiny\texttt{http://www.mcs.anl.gov/petsc/petsc-as/snapshots/petsc-current/
 
 
 
-\section{Weak Dirichlet boudary conditions}
+\section{Weak Dirichlet boundary conditions}
 \label{sec:weak-dirichl-boud}
 
 \subsection{Basic idea}
@@ -182,9 +182,9 @@ See {\tiny\texttt{http://www.mcs.anl.gov/petsc/petsc-as/snapshots/petsc-current/
       \begin{remark}{Weak treatment: Advantages}
         \begin{itemize}
         \item uniform(weak) treatment of all boundary conditions type
-        \item if boundary condition is independant of time, the terms
+        \item if boundary condition is independent of time, the terms
           are assembled once for all
-        \item the boundary condition is not enforced exactely but the
+        \item the boundary condition is not enforced exactly but the
           convergence order remain optimal
         \end{itemize}
       \end{remark}
@@ -198,14 +198,14 @@ See {\tiny\texttt{http://www.mcs.anl.gov/petsc/petsc-as/snapshots/petsc-current/
 \subsubsection{Advantages, disadvantages}
   \begin{remark}{Strong treatment: Advantages}
     \begin{itemize}
-    \item Enforce exactely the boundary conditions
+    \item Enforce exactly the boundary conditions
     \end{itemize}
   \end{remark}
   \begin{remark}{Strong treatment : Disadvantages}
     \begin{itemize}
     \item Need to modify the matrix once assembled to reflect that
       the Dirichlet degree of freedom are actually known. Then
-          even if the boundary condition is independant of time, at
+          even if the boundary condition is independent of time, at
           every time step if there are terms depending on time that
           need reassembly (e.g. convection) the strong treatment needs to be reapplied.
         \item it can be expensive to apply depending on the type of
@@ -464,7 +464,7 @@ called \emph{Stabilisation Methods}, here some some examples:
         // internal faces of the mesh
         internalfaces(Xh->mesh()),
         // integration method
-        _Q<OrderOfPolynomialToBeIntegratedExactely>,
+        _Q<OrderOfPolynomialToBeIntegratedExactly>,
         // stabilisation term
         stab_coeff*(trans(jumpt(gradt(u)))*jump(grad(v))));
 \end{lstlisting}

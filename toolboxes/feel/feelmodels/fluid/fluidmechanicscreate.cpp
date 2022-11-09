@@ -198,6 +198,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initMesh()
         super_type::super_model_meshes_type::setupRestart( this->keyword() );
     super_type::super_model_meshes_type::updateForUse<mesh_type>( this->keyword() );
 
+    super_type::super_model_meshes_type::modelMesh( this->keyword() ).setFunctionApplyRemesh(
+        [this]( typename super_type::super_model_meshes_type::mesh_base_ptrtype mold,
+                typename super_type::super_model_meshes_type::mesh_base_ptrtype mnew ) { this->applyRemesh( std::dynamic_pointer_cast<mesh_type>( mold ),
+                                                                                                            std::dynamic_pointer_cast<mesh_type>( mnew ) ); }
+                                                                                             );
+
     CHECK( this->mesh() ) << "mesh generation fail";
 
     double tElapsed = this->timerTool("Constructor").stop("initMesh");
@@ -376,12 +382,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
     // init fluid inlet
     this->initFluidInlet();
 
-    for ( auto const& [bcId,bcData] : M_boundaryConditions->velocityImposed() )
-        bcData->updateDofEliminationIds( *this, "velocity", this->functionSpaceVelocity() );
-
-    for ( auto const& [bcName,bcData] : M_boundaryConditions->inlet() )
-        this->updateDofEliminationIds( "velocity", this->functionSpaceVelocity(), markedfaces(this->functionSpaceVelocity()->mesh(),bcData->markers()) );
-
     // Dirichlet bc using a lagrange multiplier
     if ( M_boundaryConditions->hasVelocityImposedLagrangeMultiplier() )
     {
@@ -411,8 +411,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
         M_fieldLagrangeMultiplierPressureBC1 = M_spaceLagrangeMultiplierPressureBC->elementPtr();
         if constexpr ( nDim == 3 )
             M_fieldLagrangeMultiplierPressureBC2 =  M_spaceLagrangeMultiplierPressureBC->elementPtr();
-
-        this->updateDofEliminationIds( "pressurebc-lm", M_spaceLagrangeMultiplierPressureBC, boundaryfaces(M_meshLagrangeMultiplierPressureBC) );
     }
 
 
@@ -429,41 +427,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
     }
     // init bc body
     M_bodySetBC.init( *this );
-    // body bc
-    for ( auto const& [bpname,bpbc] : M_bodySetBC )
-    {
-        if ( bpbc.hasTranslationalVelocityExpr() )
-        {
-#if 0
-            this->updateDofEliminationIds( "body-bc.translational-velocity",  bpbc.spaceTranslationalVelocity(),  elements( bpbc.mesh() ) );
-            // only do for one, dof ids are the same for all
-            break;
-#else
-            std::string spaceName = "body-bc."+bpbc.name()+".translational-velocity";
-            this->updateDofEliminationIds( spaceName,  bpbc.spaceTranslationalVelocity(),  elements( bpbc.mesh() ) );
-#endif
-        }
-
-        if ( bpbc.hasAngularVelocityExpr() )
-        {
-#if 0
-            this->updateDofEliminationIds( "body-bc.angular-velocity",  bpbc.spaceAngularVelocity(), elements( bpbc.mesh() ) );
-            // only do for one, dof ids are the same for all
-            break;
-#else
-            std::string spaceName = "body-bc."+bpbc.name()+".angular-velocity";
-            this->updateDofEliminationIds( spaceName, bpbc.spaceAngularVelocity(), elements( bpbc.mesh() ) );
-#endif
-        }
-
-        if ( true )
-        {
-            this->updateDofEliminationIds( "velocity", this->functionSpaceVelocity(), bpbc.rangeMarkedFacesOnFluid() );
-        }
-
-    }
-
-
 }
 //---------------------------------------------------------------------------------------------------------//
 
@@ -912,6 +875,17 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     // update initial conditions
     this->updateInitialConditions( this->symbolsExpr() );
 
+    // init algebraic model (alg backend, block index, block vector, InHousePreconditioner
+    this->initAlgebraicModel();
+
+
+    // mesh adaptation at event after_init
+    using mesh_adaptation_type = typename super_type::super_model_meshes_type::mesh_adaptation_type;
+    this->template updateMeshAdaptation<mesh_type>( this->keyword(),
+                                                    mesh_adaptation_type::createEvent<mesh_adaptation_type::Event::Type::after_init>(),
+                                                    this->symbolsExpr() );
+
+#if 0
     //-------------------------------------------------//
     // define start dof index ( lm , windkessel )
     this->initStartBlockIndexFieldsInMatrix();
@@ -922,7 +896,23 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     //-------------------------------------------------//
     // InHousePreconditioner : operatorPCD
     this->initInHousePreconditioner();
+#if 0
+        // backend
+    this->initAlgebraicBackend();
 
+    // define start dof index ( lm , windkessel )
+    this->initStartBlockIndexFieldsInMatrix();
+
+    // build solution block vector
+    this->buildBlockVector();
+
+    // dof eliminitation ids
+    this->updateAlgebraicDofEliminationIds();
+
+    // InHousePreconditioner : operatorPCD
+    this->initInHousePreconditioner();
+#endif
+#endif
     //-------------------------------------------------//
     // algebraric data : solver, preconditioner, matrix, vector
     if ( buildModelAlgebraicFactory )
@@ -943,13 +933,18 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::applyRemesh( mesh_ptrtype const& newMesh )
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::applyRemesh( mesh_ptrtype oldMesh, mesh_ptrtype newMesh, std::shared_ptr<RemeshInterpolation> remeshInterp )
 {
-    RemeshInterpolation remeshInterp;
+    //RemeshInterpolation remeshInterp;
 
     this->log("FluidMechanics","applyRemesh", "start" );
+#if 0
+#if 0
     mesh_ptrtype oldMesh = this->mesh();
-
+#else
+    mesh_ptrtype oldMesh = M_XhVelocity->mesh();
+#endif
+#endif
     // material prop
     this->materialsProperties()->removeMesh( oldMesh );
     this->materialsProperties()->addMesh( newMesh );
@@ -967,13 +962,13 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::applyRemesh( mesh_ptrtype const& newMesh )
     this->log("FluidMechanics","applyRemesh", "functionspace done" );
 
     // createInterpolationOp
-    auto matrixInterpolation_velocity = remeshInterp.computeMatrixInterpolation( old_spaceVelocity, M_XhVelocity, M_rangeMeshElements );
-    remeshInterp.registeringBlockIndex( this->keyword(), this->startSubBlockSpaceIndex("velocity"), old_spaceVelocity, M_XhVelocity );
-    remeshInterp.interpolate( old_fieldVelocity, M_fieldVelocity );
+    auto matrixInterpolation_velocity = remeshInterp->computeMatrixInterpolation( old_spaceVelocity, M_XhVelocity, M_rangeMeshElements );
+    remeshInterp->registeringBlockIndex( this->keyword(), this->startSubBlockSpaceIndex("velocity"), old_spaceVelocity, M_XhVelocity );
+    remeshInterp->interpolate( old_fieldVelocity, M_fieldVelocity );
 
-    auto matrixInterpolation_pressure = remeshInterp.computeMatrixInterpolation( old_spacePressure, M_XhPressure, M_rangeMeshElements );
-    remeshInterp.registeringBlockIndex( this->keyword(), this->startSubBlockSpaceIndex("pressure"), old_spacePressure, M_XhPressure );
-    remeshInterp.interpolate( old_fieldPressure, M_fieldPressure );
+    auto matrixInterpolation_pressure = remeshInterp->computeMatrixInterpolation( old_spacePressure, M_XhPressure, M_rangeMeshElements );
+    remeshInterp->registeringBlockIndex( this->keyword(), this->startSubBlockSpaceIndex("pressure"), old_spacePressure, M_XhPressure );
+    remeshInterp->interpolate( old_fieldPressure, M_fieldPressure );
 
     this->log("FluidMechanics","applyRemesh", "interpolation velocity/pressure done" );
 
@@ -988,8 +983,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::applyRemesh( mesh_ptrtype const& newMesh )
     if ( this->definePressureCst() )
         this->updateDefinePressureCst();
 
+
     // body bc
-    M_bodySetBC.applyRemesh( *this, remeshInterp );
+    M_bodySetBC.applyRemesh( *this, *remeshInterp );
     this->log("FluidMechanics","applyRemesh", "body bc done" );
 
     // velocity imposed by using a lagrange multiplier
@@ -1004,9 +1000,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::applyRemesh( mesh_ptrtype const& newMesh )
         M_XhDirichletLM = space_trace_velocity_type::New( _mesh=M_meshDirichletLM );
         M_fieldDirichletLM = M_XhDirichletLM->elementPtr();
 
-        auto matrixInterpolation_lmvelocitybc = remeshInterp.computeMatrixInterpolation( old_XhDirichletLM, M_XhDirichletLM );
-        remeshInterp.registeringBlockIndex( this->keyword(), this->startSubBlockSpaceIndex("dirichletlm"), old_XhDirichletLM, M_XhDirichletLM );
-        remeshInterp.interpolate( old_fieldDirichletLM, M_fieldDirichletLM );
+        auto matrixInterpolation_lmvelocitybc = remeshInterp->computeMatrixInterpolation( old_XhDirichletLM, M_XhDirichletLM );
+        remeshInterp->registeringBlockIndex( this->keyword(), this->startSubBlockSpaceIndex("dirichletlm"), old_XhDirichletLM, M_XhDirichletLM );
+        remeshInterp->interpolate( old_fieldDirichletLM, M_fieldDirichletLM );
     }
 
     // pressure bc
@@ -1024,13 +1020,13 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::applyRemesh( mesh_ptrtype const& newMesh )
         if constexpr ( nDim == 3 )
             M_fieldLagrangeMultiplierPressureBC2 = M_spaceLagrangeMultiplierPressureBC->elementPtr();
 
-        auto matrixInterpolation_lmpressurebc = remeshInterp.computeMatrixInterpolation( old_spaceLagrangeMultiplierPressureBC, M_spaceLagrangeMultiplierPressureBC );
-        remeshInterp.registeringBlockIndex( this->keyword(), this->startSubBlockSpaceIndex("pressurelm1"), old_spaceLagrangeMultiplierPressureBC, M_spaceLagrangeMultiplierPressureBC );
-        remeshInterp.interpolate( old_fieldLagrangeMultiplierPressureBC1, M_fieldLagrangeMultiplierPressureBC1 );
+        auto matrixInterpolation_lmpressurebc = remeshInterp->computeMatrixInterpolation( old_spaceLagrangeMultiplierPressureBC, M_spaceLagrangeMultiplierPressureBC );
+        remeshInterp->registeringBlockIndex( this->keyword(), this->startSubBlockSpaceIndex("pressurelm1"), old_spaceLagrangeMultiplierPressureBC, M_spaceLagrangeMultiplierPressureBC );
+        remeshInterp->interpolate( old_fieldLagrangeMultiplierPressureBC1, M_fieldLagrangeMultiplierPressureBC1 );
         if constexpr ( nDim == 3 )
         {
-            remeshInterp.registeringBlockIndex( this->keyword(), this->startSubBlockSpaceIndex("pressurelm2"), old_spaceLagrangeMultiplierPressureBC, M_spaceLagrangeMultiplierPressureBC );
-            remeshInterp.interpolate( old_fieldLagrangeMultiplierPressureBC2, M_fieldLagrangeMultiplierPressureBC2 );
+            remeshInterp->registeringBlockIndex( this->keyword(), this->startSubBlockSpaceIndex("pressurelm2"), old_spaceLagrangeMultiplierPressureBC, M_spaceLagrangeMultiplierPressureBC );
+            remeshInterp->interpolate( old_fieldLagrangeMultiplierPressureBC2, M_fieldLagrangeMultiplierPressureBC2 );
         }
     }
 
@@ -1065,21 +1061,25 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::applyRemesh( mesh_ptrtype const& newMesh )
     // TODO : post process ??
 
     // algebraic data/tools
+    bool buildModelAlgebraicFactory = this->algebraicFactory() ? true : false;
     vector_ptrtype old_vectorPreviousSolution = M_vectorPreviousSolution;
     vector_ptrtype old_timeStepThetaSchemePreviousContrib = M_timeStepThetaSchemePreviousContrib;
     this->removeAllAlgebraicDataAndTools();
     this->initAlgebraicModel();
-    this->initAlgebraicFactory();
-
+    if ( buildModelAlgebraicFactory )
+        this->initAlgebraicFactory();
+#if 0
+    // TODO : try a way to go back to previous time
     if ( old_timeStepThetaSchemePreviousContrib )
     {
-        remeshInterp.interpolateBlockVector( this->keyword(), old_timeStepThetaSchemePreviousContrib, M_timeStepThetaSchemePreviousContrib, *this->algebraicBlockVectorSolution() );
+        remeshInterp->interpolateBlockVector( this->keyword(), old_timeStepThetaSchemePreviousContrib, M_timeStepThetaSchemePreviousContrib, *this->algebraicBlockVectorSolution() );
         this->log("FluidMechanics","applyRemesh", "timeStepThetaSchemePreviousContrib done" );
     }
+#endif
 
     if ( old_vectorPreviousSolution )
     {
-        remeshInterp.interpolateBlockVector( this->keyword(), old_vectorPreviousSolution, M_vectorPreviousSolution, *this->algebraicBlockVectorSolution() );
+        remeshInterp->interpolateBlockVector( this->keyword(), old_vectorPreviousSolution, M_vectorPreviousSolution, *this->algebraicBlockVectorSolution() );
         this->log("FluidMechanics","applyRemesh", "vectorPreviousSolution done" );
     }
 
@@ -1114,7 +1114,51 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateAlgebraicDofEliminationIds()
 {
-    //this->updateBoundaryConditionsForUse();
+    // dof elimination bc
+    for ( auto const& [bcId,bcData] : M_boundaryConditions->velocityImposed() )
+        bcData->updateDofEliminationIds( *this, "velocity", this->functionSpaceVelocity() );
+
+    for ( auto const& [bcName,bcData] : M_boundaryConditions->inlet() )
+        this->updateDofEliminationIds( "velocity", this->functionSpaceVelocity(), markedfaces(this->functionSpaceVelocity()->mesh(),bcData->markers()) );
+
+    if ( !M_boundaryConditions->pressureImposed().empty() )
+    {
+        this->updateDofEliminationIds( "pressurebc-lm", M_spaceLagrangeMultiplierPressureBC, boundaryfaces(M_meshLagrangeMultiplierPressureBC) );
+    }
+
+    // body bc
+    for ( auto const& [bpname,bpbc] : M_bodySetBC )
+    {
+        if ( bpbc.hasTranslationalVelocityExpr() )
+        {
+#if 0
+            this->updateDofEliminationIds( "body-bc.translational-velocity",  bpbc.spaceTranslationalVelocity(),  elements( bpbc.mesh() ) );
+            // only do for one, dof ids are the same for all
+            break;
+#else
+            std::string spaceName = "body-bc."+bpbc.name()+".translational-velocity";
+            this->updateDofEliminationIds( spaceName,  bpbc.spaceTranslationalVelocity(),  elements( bpbc.mesh() ) );
+#endif
+        }
+
+        if ( bpbc.hasAngularVelocityExpr() )
+        {
+#if 0
+            this->updateDofEliminationIds( "body-bc.angular-velocity",  bpbc.spaceAngularVelocity(), elements( bpbc.mesh() ) );
+            // only do for one, dof ids are the same for all
+            break;
+#else
+            std::string spaceName = "body-bc."+bpbc.name()+".angular-velocity";
+            this->updateDofEliminationIds( spaceName, bpbc.spaceAngularVelocity(), elements( bpbc.mesh() ) );
+#endif
+        }
+
+        if ( true )
+        {
+            this->updateDofEliminationIds( "velocity", this->functionSpaceVelocity(), bpbc.rangeMarkedFacesOnFluid() );
+        }
+
+    }
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
@@ -1427,6 +1471,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
                                                                    (boost::format("body_%1%.moment_of_inertia")%bname).str(),
                                                                    (boost::format("body_%1%.moment_of_inertia_body_frame")%bname).str(),
                                                                    (boost::format("body_%1%.fluid_forces")%bname).str(), (boost::format("body_%1%.fluid_torques")%bname).str() } );
+    }
+    for( auto const& nba : M_bodySetBC.nbodyArticulated() )
+    {
+        this->addPostProcessMeasuresQuantitiesAllNamesAvailable( { (boost::format("nba_%1%.mass_center")%nba.name()).str(),
+                (boost::format("nba_%1%.rigid_rotation_angles")%nba.name()).str() } );
     }
     this->setPostProcessExportsPidName( "trace_mesh", "trace.pid" );
     this->setPostProcessSaveAllFieldsAvailable( {"velocity","pressure","vorticity"/*,"displacement"*/} );
@@ -3576,8 +3625,23 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodySetBoundaryCondition::initAlgebraicFacto
     auto matP = fluidToolbox.backend()->newBlockMatrix(_block=myblockMat, _copy_values=true);
 
     auto matQ = fluidToolbox.backend()->newIdentityMatrix( matP->mapColPtr(), matP->mapRowPtr() );
+    for ( auto & [bpname,bbc] : *this )
+    {
+        auto dofsBody = fluidToolbox.functionSpaceVelocity()->dofs( bbc.rangeMarkedFacesOnFluid() );
+        auto const& basisToContainerGpVelocity = matQ->mapCol().dofIdToContainerId( startBlockIndexVelocity );
+        for ( auto dofid : dofsBody )
+        {
+            matQ->set( basisToContainerGpVelocity[dofid],basisToContainerGpVelocity[dofid], 0.);
+        }
+    }
+    matQ->close();
 
-    algebraicFactory->initSolverPtAP( matP,matQ );
+    auto applyQ = [&fluidToolbox,matQ](vector_ptrtype const& Ud, vector_ptrtype & Ui){
+        matQ->multVector( *Ud, *Ui );
+        fluidToolbox.solverPtAP_applyQ(Ud,Ui);
+    };
+    algebraicFactory->initSolverPtAP( matP, applyQ );
+
 
     std::set<size_type> dofEliminationIdsPtAP;
     bool hasDofEliminationIdsPtAP = false;
@@ -3692,6 +3756,20 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodySetBoundaryCondition::updateAlgebraicFac
 
 }
 
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solverPtAP_applyQ( vector_ptrtype const& Ud, vector_ptrtype & Ui, size_type rowStartInVector ) const
+{
+    size_type startBlockIndexVelocity = this->startSubBlockSpaceIndex("velocity");
+    auto UiView = this->functionSpaceVelocity()->element(Ui,rowStartInVector+startBlockIndexVelocity);
+
+    for ( auto & [bpname,bbc] : M_bodySetBC )
+    {
+        if ( bbc.hasElasticVelocity() && !M_bodySetBC.internal_elasticVelocity_is_v0() )
+            UiView.on(_range=bbc.rangeMarkedFacesOnFluid(),_expr=idv(bbc.fieldElasticVelocityPtr()),_close=true ); // TODO sync all body in one call
+    }
+
+}
 
 } // namespace FeelModels
 } // namespace Feel

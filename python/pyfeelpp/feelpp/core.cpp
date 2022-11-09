@@ -25,16 +25,14 @@
 //!
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/feel.hpp>
-#include <feel/feelcore/pybind11_json.hpp>
+#include <feel/feelpython/pybind11/json.h>
 #include <feel/feelcore/repository.hpp>
 #include <mpi4py/mpi4py.h>
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
-#include <pybind11/stl_bind.h>
-#include "mpi_caster.hpp"
-#include <boost/parameter/binding.hpp>
-#include <boost/parameter/keyword.hpp>
-#include <boost/parameter/preprocessor.hpp>
+#include <feel/feelpython/pybind11/pybind11.h>
+#include <feel/feelpython/pybind11/stl.h>
+#include <feel/feelpython/pybind11/stl_bind.h>
+#include <feel/feelpython/pybind11/mpi.h>
+
 //#include <boost/parameter/python.hpp>
 #include <boost/mpl/vector.hpp>
 
@@ -76,12 +74,22 @@ PYBIND11_MODULE(_core, m )
         .def( "globalComm", &Feel::WorldComm::globalComm, "returns the global communicator" )
         .def( "globalSize", &Feel::WorldComm::globalSize, "returns the global communicator size" )
         .def( "selfComm", &Feel::WorldComm::selfComm, "returns the self communicator" )
-        .def( "barrier", []( std::shared_ptr<WorldComm> const& wc){
-                wc->barrier();
-            }, "create a barrier" )
-        .def( "to_comm", []( std::shared_ptr<WorldComm>& wc ){
-            return static_cast<boost::mpi::communicator>( *wc );
-            }, "return worldComm as MPI  communicator" );
+        .def( "isActive", static_cast<bool ( Feel::WorldComm::* )() const>( &Feel::WorldComm::isActive ), "returns true if current worldcomm is active in God worldcomm" )
+        .def( "isActive", static_cast<bool ( Feel::WorldComm::* )( int ) const>( &Feel::WorldComm::isActive ), "returns true if worldcomm rank is active in God worldcomm" )
+        .def(
+            "barrier", []( std::shared_ptr<WorldComm> const& wc )
+            { wc->barrier(); },
+            "create a barrier" )
+        .def(
+            "to_comm", []( std::shared_ptr<WorldComm>& wc )
+            { return static_cast<boost::mpi::communicator>( *wc ); },
+            "return worldComm as MPI  communicator" )
+        .def(
+            "split", []( std::shared_ptr<WorldComm>& wc, int n )
+            {
+                return wc->split(n);
+            },
+            py::arg( "njobs" ), py::return_value_policy::copy );
 
     py::class_<worldscomm_ptr_t>(m,"WorldsComm").def(py::init<>())
         .def("clear", &worldscomm_ptr_t::clear)
@@ -124,6 +132,7 @@ PYBIND11_MODULE(_core, m )
         .def( "globalRoot", &Feel::Repository::globalRoot, "return the global root directory" )
         .def( "geo", &Feel::Repository::geo, "return the geo directory of the repository" )
         .def( "directory", &Feel::Repository::directory, "return the directory relative to the root of the repository" )
+        .def( "directoryWithoutAppenders", &Feel::Repository::directoryWithoutAppenders, "return the directory relative to the root of the repository without appenders" )
         .def( "relativeDirectory", &Feel::Repository::relativeDirectory, "return the directory relative to the root of the repository" )
         .def( "isLocal", &Feel::Repository::isLocal, "return true if the repository is local" )
         .def( "isRelative", &Feel::Repository::isRelative, "return true if the repository is local" )
@@ -178,4 +187,18 @@ PYBIND11_MODULE(_core, m )
     
     m.def( "feel_options", &Feel::feel_options, py::arg("prefix")="", "create feelpp options with optional prefix" );
     m.def( "feel_nooptions", &Feel::feel_nooptions, "create feelpp options with optional prefix" );
+    m.def( "case_options", [](int dimension = 3, std::string discr="" ){
+        po::options_description o( "application case options" );
+        o.add_options()
+            ("case.dimension", Feel::po::value<int>()->default_value( 3 ), "dimension")
+            ("case.discretization", Feel::po::value<std::string>()->default_value( fmt::format("{}",discr).c_str() ), fmt::format("discretization : {}",discr).c_str() )
+        ;
+        return o;
+    });
+    //m.def( "countoption", []( std::string const& opt ){return countoption( opt, _vm=Environment::vm() ); }, py::arg("opt"));
+    m.def( "doption", []( std::string const& opt ){return doption( opt ); }, py::arg("opt"));
+    m.def( "ioption", []( std::string const& opt ){return ioption( opt ); }, py::arg("opt"));
+    m.def( "soption", []( std::string const& opt ){return soption( opt ); }, py::arg("opt"));
+    m.def( "vsoption", []( std::string const& opt ){return vsoption( opt ); }, py::arg("opt"));
+    m.def( "vdoption", []( std::string const& opt ){return vdoption( opt ); }, py::arg("opt"));
 }

@@ -6,12 +6,26 @@ namespace FeelModels
 namespace detail
 {
 
+/**
+ * @brief compile-time map to store registered types for CoefficientFormPDEs
+ * @ingroup CoefficientFormPDEs
+ */
 using map_geoshape_to_coefficient_form_PDEs_registered_type =
     boost::mpl::map<
 @FEELPP_TOOLBOX_COEFFICIENTFORMPDES_REGISTER_ALL_ENTRIES_CLASS_TYPE@
     >;
 }
 
+/**
+ * @brief helper class to generate the CoefficientFormPDEs
+ * @ingroup CoefficientFormPDEs
+ * @tparam ShapeType type of convex of the mesh
+ * 
+ * @code
+ * // get the \c CoefficientFormPDEs class type associated to \c Simplex<nDim,nOrderGeo>
+ * using cfpdes_t = coefficient_form_PDEs_t< Simplex<nDim,nOrderGeo> >;
+ * @endcode
+ */
 template <typename ShapeType>
 using coefficient_form_PDEs_t = typename boost::mpl::at< Feel::FeelModels::detail::map_geoshape_to_coefficient_form_PDEs_registered_type, ShapeType>::type;
 

@@ -217,7 +217,7 @@ private:
     int NbSnapshot,sizeRB;
     double muMin,muMax,mu;
 
-    // Paramater to set OFF or ON the "offline" procedure
+    // Parameter to set OFF or ON the "offline" procedure
 
     int Sampling;
     int SamplingCoarse;
@@ -228,7 +228,7 @@ private:
     // if Offline = 1 then ConstructNIRB is called
     // if Offline = 0 then ConstructNIRB is not called, the Nirb Basis function are read from a file
 
-    // Paramater to set OFF or ON the computation of the error between the F.E and the NIRB Methods
+    // Parameter to set OFF or ON the computation of the error between the F.E and the NIRB Methods
     int ComputeError;
     //if ComputeError = 1  == ON
     //if ComputeError = 0 == OFF
@@ -327,16 +327,16 @@ void NIRBTEST<PolynomialOrder>::run( const double* X, unsigned long P, double* Y
 
 
 
-    //STEP ONE : Construction of the "non intruisive reduced basis (nirb) functions"
+    //STEP ONE : Construction of the "non intrusive reduced basis (nirb) functions"
     //Computation of the X[3] snapshots solution on Xhfine
-    //Selection of X[2] fonctions to build the "reduced basis" using a POD technique
+    //Selection of X[2] functions to build the "reduced basis" using a POD technique
     //Orthogonalisation in L2 and H1 norm of "reduced basis function"
     //Save this final functions
 
 
-    //STEP ONE : Construction of the "non intruisive reduced basis (nirb) functions"
+    //STEP ONE : Construction of the "non intrusive reduced basis (nirb) functions"
     //Computation of the X[3] snapshots solution on Xhfine
-    //Selection of X[2] fonctions to build the "reduced basis" using a POD technique
+    //Selection of X[2] functions to build the "reduced basis" using a POD technique
     //Orthogonalisation in L2 and H1 norm of "reduced basis function"
     //Save this final functions
 
@@ -410,7 +410,7 @@ void NIRBTEST<PolynomialOrder>::run( const double* X, unsigned long P, double* Y
         }
     }
 
-    //STEP TWO : Approximation of the solution using the "nirb" functions for a choosen mu
+    //STEP TWO : Approximation of the solution using the "nirb" functions for a chosen mu
 
 
 
@@ -1244,7 +1244,7 @@ template< int PolynomialOrder>
 void NIRBTEST<PolynomialOrder> :: ConstructNIRB( space_ptrtype Xh, vector_of_element_type  &M_VNirbBasis, vector_of_element_type  &VNirbBasis )
 {
 
-    std :: cout << "OFFLINE PROCEDURE :  Construction of the 'non intruisive' reduced basis (nirb) " <<std::endl;
+    std :: cout << "OFFLINE PROCEDURE :  Construction of the 'non intrusive' reduced basis (nirb) " <<std::endl;
     Feel::Timer ti;
     double Time_snapshot = 0.;
 

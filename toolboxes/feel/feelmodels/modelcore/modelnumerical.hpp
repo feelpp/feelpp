@@ -62,7 +62,9 @@ namespace Feel
 namespace FeelModels
 {
 /**
- * Handles some numerical model aspects: timestepping, mesh and properties
+ * @brief Handles some numerical model aspects: timestepping, mesh and properties
+ * @ingroup ModelCore
+ * 
  */
 class ModelNumerical : virtual public ModelBase,
                        public ModelAlgebraic,
@@ -252,14 +254,6 @@ class ModelNumerical : virtual public ModelBase,
         void addPostProcessMeasuresQuantitiesAllNamesAvailable( std::set<std::string> const& inames ) { M_postProcessMeasuresQuantitiesAllNamesAvailable.insert( inames.begin(), inames.end() ); }
 
         virtual void initPostProcess();
-
-        auto symbolsExprParameter() const
-            {
-                if ( this->hasModelProperties() )
-                    return this->modelProperties().parameters().symbolsExpr();
-                else
-                    return std::decay_t<decltype(this->modelProperties().parameters().symbolsExpr())>{};
-            }
 
         template <typename MeshType,typename SymbolsExprType>
         void initPostProcessMeshes( SymbolsExprType const& se )
