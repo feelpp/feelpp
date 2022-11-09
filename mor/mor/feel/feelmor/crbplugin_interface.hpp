@@ -207,7 +207,7 @@ using crbpluginapi_create_ft = boost::function<crbpluginapi_create_t>;
 //!
 std::shared_ptr<CRBPluginAPI> factoryCRBPlugin( std::string const& n,
                                                   std::string const& pluginlibname = "",
-                                                  std::string const& dirname = Info::libdir()
+                                                  std::string const& dirname = Info::libdir().string()
                                                   );
 
 }

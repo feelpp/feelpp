@@ -26,18 +26,18 @@
     },
     "BoundaryConditions":
     {
-        "temperature":
+        "heat":
         {
-            "Robin":
+            "convective_heat_flux":
             {
                 "bitter_robin":
                 {
                     "markers":["Channel0","Channel1","TieRods","CoolingHoles"],
-                    "expr1":"0.08",
-                    "expr2":"293"
+                    "h":"0.08",
+                    "Text":"293"
                 }
             },
-            "Neumann":
+            "flux":
             {
                 "bitter_neumann":
                 {
@@ -46,17 +46,14 @@
                 }
             }
         },
-        "electric-potential":
+        "electric":
         {
-            "Dirichlet":
+            "ground":{ "markers":"V0" },
+            "electric-potential":
             {
                 "V1":
                 {
                     "expr":"-0.04"
-                },
-                "V0":
-                {
-                    "expr":"0"
                 }
             },
             "Neumann":

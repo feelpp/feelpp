@@ -2,42 +2,117 @@ import numpy as np
 from petsc4py import PETSc
 
 
-def ComputeErrors(nirb_on, mu):
-    """Compute the error between nirb solution and FE one for
-        a given parameter
+
+def ComputeErrors(nirb_on, mu, h1=False, relative=True):
+    """Compute the convergence errors of the projection of FE solution (in fine mesh) in the reduced space 
+        and the nirb solution with and without rectification for a given one parameter. 
+         The rectification matrix has to be defined (so make sure to set doRectification = True in offline and online phase)
 
     Args:
     -----
-        nirb_on (class): initialized nirbOnline class
-        mu (ParameterSpaceElement) : parameter
+        nirb_on (class): initialized nirbOnline class 
+        mu (ParameterSpaceElement) : parameter 
 
-    Return :
-    --------
-    list: containing
-        - the number reduced basis N
-        - the errors L2 and H1 between nirb solution and FE fine solution
-        - the errors L2 and H1 between inteprolated FE coarse solution and FE fine solution
-
+    return : 
+    ------
+    dict: containing
+        - dict['N'] : the number of basis function 
+        - dict['nirb'] : the L2 norm between True sol and nirb sol without rectification 
+        - dict['nirb_r'] : the L2 norm between True Sol and nirb sol with rectification 
+        - dict['fine'] : the L2 norm between True sol and projection of this True sol in reduced space. 
+        N.B : True sol = FE solution in the fine mesh  
     """
-    l2Mat, h1Mat = nirb_on.generateOperators(h1=True)
+    if h1: 
+        l2Mat, h1Mat = nirb_on.generateOperators(h1=True)
+    else :
+        l2Mat = nirb_on.generateOperators()
 
-    uHh= nirb_on.getOnlineSol(mu)
     uH = nirb_on.getInterpSol(mu)
     uh = nirb_on.getToolboxSolution(nirb_on.tbFine, mu)
+    
+    uNH = getNirbProjection(nirb_on, uH)
+    uNHr = getNirbProjection(nirb_on, uH, doRectification=True)
+    uNh = getNirbProjection(nirb_on, uh)
 
-    error = [nirb_on.N]
+    
+    error = {'l2(uh-uHn)':[],'l2(uh-uHn)rec':[],'l2(uh-uhn)':[],'l2(uh)':[], 'l2(uh-uH)':[]}
+    if h1:
+        error.update({'h1(uh-uHn)':[],'h1(uh-uHn)rec':[],'h1(uh-uhn)':[],'h1(uh)':[], 'h1(uh-uH)':[]})
+        
+    # error 
+    error['l2(uh-uHn)'].append(nirb_on.normMat(l2Mat, uNH-uh))
+    error['l2(uh-uHn)rec'].append(nirb_on.normMat(l2Mat, uNHr-uh))
+    error['l2(uh-uhn)'].append(nirb_on.normMat(l2Mat, uNh-uh))
+    error['l2(uh)'].append(nirb_on.normMat(l2Mat,uh))
+    error['l2(uh-uH)'].append(nirb_on.normMat(l2Mat, uH-uh))
+    if h1 : 
+        error['h1(uh-uHn)'].append(nirb_on.normMat(h1Mat, uNH-uh))
+        error['h1(uh-uHn)rec'].append(nirb_on.normMat(h1Mat, uNHr-uh))
+        error['h1(uh-uhn)'].append(nirb_on.normMat(h1Mat, uNh-uh))
+        error['h1(uh)'].append(nirb_on.normMat(h1Mat,uh))
+        error['h1(uh-uH)'].append(nirb_on.normMat(h1Mat, uH-uh)) 
 
-    error.append(nirb_on.normMat(l2Mat, uHh-uh)) # L2 norm
-    error.append(nirb_on.normMat(h1Mat, uHh-uh)) # H1 norm
-    error.append(nirb_on.normMat(l2Mat, uH-uh))
-    error.append(nirb_on.normMat(h1Mat, uH-uh))
-
-    # error.append((uHh - uh).l2Norm())
-    # error.append((uHh - uh).to_petsc().vec().norm(PETSc.NormType.NORM_INFINITY))
-    # error.append((uH - uh).l2Norm())
-    # error.append((uH - uh).to_petsc().vec().norm(PETSc.NormType.NORM_INFINITY))
 
     return error
+
+def ComputeErrorSampling(nirb_on, Nsample = 1, samplingType='log-random', h1=False):
+    """Compute the convergence errors of the projection of FE solution (in fine mesh) in the reduced space 
+        and the nirb solution with and without rectification for a given sampling of parameter. 
+         The rectification matrix has to be defined (so make sure to set doRectification = True in offline and online phase)
+
+    Args:
+        nirb_on (class): initialized nirbOnline class 
+        mu (ParameterSpaceElement) : parameter 
+
+    return : 
+    error (dict) : containing
+        - error['l2(uh-uHn)'] : the L2 norm between True sol and nirb sol without rectification 
+        - error['l2(uh-uHn)rec'] : the L2 norm between True Sol and nirb sol with rectification 
+        - error['l2(uh-uhn)'] : the L2 norm between True sol and projection of this True sol in reduced space. 
+        - error['l2(uh-uH)'] : the L2 norm between True sol and interpolate sol from coarse to fine mesh.
+
+        The same keys are given in case of h1 norm with 'h1' instead of 'l2' (exp : 'h1(uh - uHn)' ) 
+        N.B : True sol = FE solution in the fine mesh  
+    """
+    if h1: 
+        l2Mat, h1Mat = nirb_on.generateOperators(h1=True)
+    else :
+        l2Mat = nirb_on.generateOperators()
+
+    Dmu = nirb_on.Dmu
+    s = Dmu.sampling()
+    s.sampling(Nsample, samplingType)
+    mus = s.getVector()
+
+    error = {'l2(uh-uHn)':[],'l2(uh-uHn)rec':[],'l2(uh-uhn)':[],'l2(uh)':[], 'l2(uh-uH)':[]}
+    if h1:
+        error.update({'h1(uh-uHn)':[],'h1(uh-uHn)rec':[],'h1(uh-uhn)':[],'h1(uh)':[], 'h1(uh-uH)':[]})
+        
+
+    for i, mu in enumerate(mus): 
+
+        uH = nirb_on.getInterpSol(mu)
+        uh = nirb_on.getToolboxSolution(nirb_on.tbFine, mu)
+        
+        uNH = getNirbProjection(nirb_on, uH)
+        uNHr = getNirbProjection(nirb_on, uH, doRectification=True)
+        uNh = getNirbProjection(nirb_on, uh)
+
+        # error 
+        error['l2(uh-uHn)'].append(nirb_on.normMat(l2Mat, uNH-uh))
+        error['l2(uh-uHn)rec'].append(nirb_on.normMat(l2Mat, uNHr-uh))
+        error['l2(uh-uhn)'].append(nirb_on.normMat(l2Mat, uNh-uh))
+        error['l2(uh)'].append(nirb_on.normMat(l2Mat,uh))
+        error['l2(uh-uH)'].append(nirb_on.normMat(l2Mat, uH-uh))
+        if h1 : 
+            error['h1(uh-uHn)'].append(nirb_on.normMat(h1Mat, uNH-uh))
+            error['h1(uh-uHn)rec'].append(nirb_on.normMat(h1Mat, uNHr-uh))
+            error['h1(uh-uhn)'].append(nirb_on.normMat(h1Mat, uNh-uh))
+            error['h1(uh)'].append(nirb_on.normMat(h1Mat,uh))
+            error['h1(uh-uH)'].append(nirb_on.normMat(h1Mat, uH-uh))    
+
+    return error 
+
 
 def ComputeErrorsH(nirb_on, tbRef, mu, path=None, name=None):
     """Compute the error between nirb solution and a reference one given from
@@ -79,14 +154,14 @@ def ComputeErrorsH(nirb_on, tbRef, mu, path=None, name=None):
 
     return error
 
-def ComputeErrorSampling(nirb_on, Nsample=1, samplingType='log-random', Xi_test=None):
-    """Compute the errors between nirb solution and FE one for
-        a given number of parameters
-
+def ComputeErrorSamplingOld(nirb_on, Nsample=1, Xi_test=None, samplingType='log-random'):
+    """Compute the errors between nirb solution and FE one for 
+        a given number of parameters 
     Args:
     -----
         nirb_on (class): initialized nirbOnline class
         Nsample (int): number of parameter. Defaults to 1.
+        Xi_test (list): list of parameters. Defaults to None, in this case, a random sampling is done.
         samplingType (str, optional): type of sampling distribution. Defaults to 'log-random'.
 
     Return :
@@ -130,3 +205,30 @@ def ComputeErrorSampling(nirb_on, Nsample=1, samplingType='log-random', Xi_test=
     errors['h1(u-uH)'] = err[:,3]
 
     return errors
+
+
+def getNirbProjection(nirb_on,u,doRectification=False):
+    """Get the projection of a given discrete function in the reduced space with or without rectification
+
+    Args:
+        nirb_on (class): initialized nirbOnline class
+        u (feelpp._discr.element) : function 
+        doRectification (bool) : default to True  
+    """
+    if doRectification:
+        assert nirb_on.doRectification, f"set doRectification from nirb_on class"
+
+    coef = nirb_on.getCompressedSol(solution=u)
+
+    uNh = nirb_on.Xh.element()
+    uNh.setZero()
+
+    if doRectification:
+        coef = nirb_on.RectificationMat@coef
+        for i in range(nirb_on.N):
+            uNh = uNh + float(coef[i])*nirb_on.reducedBasis[i]
+    else :
+        for i in range(nirb_on.N):
+            uNh = uNh + float(coef[i])*nirb_on.reducedBasis[i]
+
+    return uNh 

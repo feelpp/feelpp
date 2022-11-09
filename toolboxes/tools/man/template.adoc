@@ -3,6 +3,7 @@
 Christophe Prud'homme <https://github.com/prudhomm[@prudhomm]>; Vincent Chabannes <https://github.com/vincentchabannes[@vincentchabannes]>
 :manmanual: {{ toolbox_app }}
 :man-linkstyle: pass:[blue R < >]
+v{{ version_string }}: 
 
 
 == NAME
@@ -13,7 +14,10 @@ Christophe Prud'homme <https://github.com/prudhomm[@prudhomm]>; Vincent Chabanne
 == SYNOPSIS
 
 ----
-{{ toolbox_app }} --case <directory to model case>
+{{ toolbox_app }} 
+  [--{{ toolbox}}.filename  <path to .json specification file>]
+  [--config-file <path to .cfg file]
+  [--case <directory to model case>] 
   [--case.dim {{ toolbox_default_option_values[0] }}]
   [--case.discretization {{ toolbox_default_option_values[1] }}]
   [--{{ toolbox }}.ksp-monitor=<0,1>]
@@ -27,7 +31,7 @@ Christophe Prud'homme <https://github.com/prudhomm[@prudhomm]>; Vincent Chabanne
 
 == DESCRIPTION
 
-{{ toolbox_app }} is an application which can run {{ toolbox_desc }} model defined by a set of files : a geometry or mesh, a config file(`.cfg`) and  a model file(`.json`)
+{{ toolbox_app }} is an application which can run {{ toolbox_desc }} model defined by a set of files : a geometry or mesh, a config file(`.cfg`) and  a model file(`.json`)
 
 The execution steps are as follows:
 
@@ -47,6 +51,7 @@ The execution steps are as follows:
 
 | case.dim | dimension of problem  | {{ toolbox_default_option_values[0] }} | {{ toolbox_possible_option_values[0] }}
 | case.discretization | discretization of problem  | {{ toolbox_default_option_values[1] }} | {{ toolbox_possible_option_values[1] }}
+| {{ toolbox }}.filename | path to the .json specification case file  | *no default value* | *required from user*
 | {{ toolbox }}.ksp-monitor | monitor the Krylov Subspace iterations  | 0 | 0,1
 | {{ toolbox }}.ksp-view | view the Krylov Subspace structure  | 0 | 0,1
 | {{ toolbox }}.ksp-type | change the Krylov Subspace method  | `gmres` | link:https://www.mcs.anl.gov/petsc/documentation/linearsolvertable.html[see PETSc documentation]
@@ -57,7 +62,7 @@ The execution steps are as follows:
 
 |===
 
-NOTE:: 0 as option value means that the option is not enable, 1 means it is enabled.
+NOTE:: 0 as option value means that the option is not enabled, 1 means it is enabled.
 
 == EXAMPLES
 
@@ -66,7 +71,7 @@ We are now using the `feelpp/feelpp-toolboxes:latest` docker images as described
 [source,shell]
 .Starting the docker `feelpp/feelpp-toolboxes:latest`
 ----
-docker run --rm -ti -v $HOME/feel:/feel feelpp/feelpp-toolboxes
+docker run --rm -ti -v $HOME/feel:/feel ghcr.io/feelpp/feelpp-toolboxes:v{{ version_string }} 
 ----
 
 [source,shell]
@@ -105,30 +110,30 @@ mpirun --bind-to core <1>
 Other test cases can be found
 
 - locally in /usr/share/feelpp/data/testcases/toolboxes/{{ toolbox }}.
-- on-line http://docs.feelpp.org/cases/{{ version_string }}/{{ toolbox_docs }}/README
+- on-line http://docs.feelpp.org/cases/{{ version_doc }}/{{ toolbox_docs }}/README
 
 
 == RESOURCES
 
 {feelpp} Docs::
-http://docs.feelpp.org/toolboxes/{{ version_string }}/
+http://docs.feelpp.org/toolboxes/{{ version_doc }}/
 
 {feelpp} Cases for {{ toolbox_app }}::
-http://docs.feelpp.org/cases/{{ version_string }}/{{ toolbox_docs }}/README
+http://docs.feelpp.org/cases/{{ version_doc }}/{{ toolbox_docs }}/README
 
 {feelpp} Toolbox Docs for {{ toolbox_app }}::
-http://docs.feelpp.org/toolboxes/{{ version_string }}/{{ toolbox_docs }}/
+http://docs.feelpp.org/toolboxes/{{ version_doc }}/{{ toolbox_docs }}/
 
 == SEE ALSO
 
 {feelpp} Mesh Partitioner::
 Mesh partitioner for {feelpp} Toolboxes
-http://docs.feelpp.org/user/{{ version_string }}/using/mesh_partitioner/
+http://docs.feelpp.org/user/{{ version_doc }}/using/mesh_partitioner/
 
 
 {feelpp} Remote Tool::
 Access remote data(model cases, meshes) on Github and Girder in {feelpp} applications.
-http://docs.feelpp.org/user/{{ version_string }}/using/remotedata/
+http://docs.feelpp.org/user/{{ version_doc }}/using/remotedata/
 
 
 == COPYING

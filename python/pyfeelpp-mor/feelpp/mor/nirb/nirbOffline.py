@@ -12,6 +12,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='NIRB Offline')
     parser.add_argument('--config-file', type=str, help='path to cfg file')
+    parser.add_argument("--N", help="Number of initial snapshots [default=10]", type=int, default=None)
 
     args = parser.parse_args()
     config_file = args.config_file
@@ -26,6 +27,9 @@ if __name__ == "__main__":
     doRectification  = config_nirb['doRectification']
     doGreedy         = config_nirb['greedy-generation']
     nbSnap = config_nirb['nbSnapshots']
+    nbSnap=args.N
+    if nbSnap==None:
+        nbSnap = config_nirb['nbSnapshots']
 
     r = ["noRect","Rect"][doRectification]
     g = ["noGreedy","Greedy"][doGreedy]
