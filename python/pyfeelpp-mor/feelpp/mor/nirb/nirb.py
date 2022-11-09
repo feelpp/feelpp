@@ -287,10 +287,15 @@ class nirbOffline(ToolboxModel):
         """Initialize the problem
 
         Args:
+        -----
             numberOfInitSnapshots (int): number of snapshots to use for the initialization
             Xi_train (list of ParameteœrSpaceElement, optional): Train set for algorithm. If None is given, a set of size Ntrain is generated. Defaults to None.
             samplingMode (str, optional): sampling mode in the parameter space.(random, log-random, log-equidistribute, equidistribute) Defaults to "log-random".
             computeCoarse (bool, optional): compute snapshots for coarse toolbox, used for rectification. Defaults to False.
+        
+        Returns:
+        --------
+            Xi_train (list of ParameterSpaceElement): parameters used for do build the basis
         """
         if self.doRectification:
             computeCoarse=True
@@ -322,6 +327,8 @@ class nirbOffline(ToolboxModel):
         if feelpp.Environment.isMasterRank():
             print(f"[NIRB] Number of snapshot computed : {len(self.fineSnapShotList)}" )
 
+        return vector_mu
+
 
     def getReducedSolution(self, mu, N):
         """Computed the reduced solution for a given parameter and a size of basis
@@ -349,6 +356,7 @@ class nirbOffline(ToolboxModel):
         """Initialize the problem, using a greedy loop
 
         Args:
+        -----
             Ntrain (int): size of the train parameter set
             eps (float): precision of the greedy loop
             Xi_train (list of ParameterSpaceElement, optional): Train set for algorithm. If None is given, a set of size Ntrain is generated. Defaults to None.
@@ -356,10 +364,12 @@ class nirbOffline(ToolboxModel):
             samplingMode (str, optional): sampling mode. Defaults to "log-random".
             computeCoarse (bool, optional): compute snapshots for coarse toolbox, used for rectification. Defaults to False.
 
-        Return: a tuple res where
-            res[0] contains the sample of paramters selected
-            res[1] contains a copy of Xi_train sample
-            res[2] contains the evolution of Delta_max
+        Return:
+        ------
+            a tuple res where
+            - res[0] contains the sample of paramters selected
+            - res[1] contains a copy of Xi_train sample
+            - res[2] contains the evolution of Delta_max
 
         Raises:
             Exception: Coarse toolbox has not been initialized
@@ -701,11 +711,11 @@ class nirbOffline(ToolboxModel):
                 print(f"[NIRB] Directory {path} already exists. Rerun with force=True to force saving")
                 return
             if not os.path.isdir(path):
-                os.mkdir(path)
+                os.makedirs(path)
             if not os.path.isdir(reducedPath):
-                os.mkdir(reducedPath)
+                os.makedirs(reducedPath)
             if not os.path.isdir(l2productPath):
-                os.mkdir(l2productPath)
+                os.makedirs(l2productPath)
 
         comm.Barrier()
 
@@ -854,13 +864,13 @@ class nirbOnline(ToolboxModel):
         
         if feelpp.Environment.isMasterRank():
             if not os.path.isdir(path):
-                print(f"[NIRB] Error : Could not find path {path}.")
+                print(f"[NIRB] Error : Could not find path {path}")
                 return 1
             if not os.path.isdir(reducedPath):
-                print(f"[NIRB] Error : Could not find path {reducedPath}.")
+                print(f"[NIRB] Error : Could not find path {reducedPath}")
                 return 1
             if not os.path.isdir(l2productPath):
-                print(f"[NIRB] Error : Could not find path {l2productPath}.")
+                print(f"[NIRB] Error : Could not find path {l2productPath}")
                 return 1
 
         comm.Barrier()
