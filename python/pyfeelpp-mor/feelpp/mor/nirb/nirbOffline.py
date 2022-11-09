@@ -31,9 +31,10 @@ if __name__ == "__main__":
 
     nirb_off = nirbOffline(**config_nirb)
 
+    regulParam = 1.e-10
     nirb_off.initProblem(nbSnap)
     nirb_off.generateOperators()
-    nirb_off.generateReducedBasis(regulParam=1.e-10)
+    nirb_off.generateReducedBasis(regulParam=regulParam)
     nirb_off.saveData(force=True)
 
     

@@ -4,31 +4,19 @@ from feelpp.mor.nirb.utils import WriteVecAppend, init_feelpp_environment
 import time
 import pandas as pd
 from pathlib import Path
-from nirb_perf import *
-
-H = 0.5  # CoarseMeshSize
-h = 0.1  # Fine mesh size
-dim = 3
-PWD = os.getcwd()
-toolboxType='heat'
-modelfile={'heat':'square/square', 'fluid':'lid-driven-cavity/cfd2d'}
-modelsFolder = f"{PWD}/model/"
-cfg_path = f"{modelsFolder}thermal-fin-3d/thermal-fin.cfg"
-geo_path = f"{modelsFolder}thermal-fin-3d/fin.geo"
-model_path = f"{modelsFolder}thermal-fin-3d/thermal-fin.json"
-doRectification = False
+from feelpp.mor.nirb.nirb_perf import *
+import argparse
 
 
-def offline(N):
+def offline(config_nirb, N):
 
     start = time.time()
-    nirb = nirbOffline(dim, H, h, toolboxType, cfg_path, model_path, geo_path, doRectification=doRectification)
+    nirb = nirbOffline(**config_nirb)
     nirb.initProblem(N)
     nirb.generateOperators()
     nirb.generateReducedBasis(regulParam=1.e-10)
     finish = time.time()
-
-    nirb.saveData()
+    nirb.saveData(force=True)
 
     perf = [N, finish-start]
     file = 'nirbOffline_time_exec.dat'
@@ -38,18 +26,15 @@ def offline(N):
     print(f"[NIRB] Offline part Done !")
 
 
-def online_error_sampling():
-    nirb = nirbOnline(dim, H, h, toolboxType, cfg_path, model_path, geo_path, doRectification=doRectification)
-    nirb.loadData()
+def online_error_sampling(config_file, nbSnap, Nsample=50):
 
-    Nsample = 50
-    errorN = ComputeErrorSampling(nirb, Nsample=Nsample)
+    nirb = nirbOnline(**config_file)
+    nirb.loadData(nbSnap=nbSnap)
 
-    df = pd.DataFrame(errorN)
-    if doRectification:
-        file = Path(f"errorParamsRectif/errors{nirb.N}.csv")
-    else:
-        file = Path(f"errorParams/errors{nirb.N}.csv")
+    errorN = ComputeErrorSampling(nirb, Nsample=Nsample, h1=True)
+
+    df = pd.DataFrame(errorN) 
+    file = Path(f"errors{Nsample}Params.csv")
     file.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(file, index=False)
     print(f"[NIRB online] Dataframe saved in {file}")
@@ -66,10 +51,11 @@ def online_error_sampling():
     print(data_max)
 
 
-def online_time_measure():
-    nirb = nirbOnline(dim, H, h, toolboxType, cfg_path, model_path, geo_path, doRectification=doRectification)
-    nirb.loadData()
+def online_time_measure(config_nirb, nbSnap):
     
+    nirb = nirbOnline(**config_nirb)
+    nirb.loadData(nbSnap=nbSnap)
+
     Dmu = nirb.Dmu
     Ns = 50
     s = Dmu.sampling()
@@ -96,14 +82,35 @@ def online_time_measure():
 
 if __name__ == '__main__':
 
+    parser = argparse.ArgumentParser(description='NIRB Online')
+    parser.add_argument('--config-file', type=str, help='path to cfg file')
+    parser.add_argument("--N", help="Number of initial snapshots [default=10]", type=list, default=None)
 
-    e = init_feelpp_environment(toolboxType, cfg_path)
-    Ns = sys.argv[1:]
+    args = parser.parse_args()
+    config_file = args.config_file
+
+    cfg = feelpp.readCfg(config_file)
+    toolboxType = cfg['nirb']['toolboxType']
+    e = init_feelpp_environment(toolboxType, config_file)
+
+    nirb_file = feelpp.Environment.expand(cfg['nirb']['filename'])
+    config_nirb = feelpp.readJson(nirb_file)['nirb']
+    toolboxType = config_nirb['toolboxType']
+
+    nbSnap=args.N
+    if nbSnap==None:
+        nbSnap = config_nirb['nbSnapshots']
+        
+    # Ns = sys.argv[1:]
+    # Ns = args.N 
+    Ns = [1, 2, 4, 6, 10, 12, 14, 16, 20, 25, 30, 35, 40, 45, 50]
+    # Ns = [1, 2]
+
 
     for N in Ns:
         N = int(N)
         print("\n\n-----------------------------")
         print(f"[NIRB] Test with N = {N}")
-        offline(N)
-        online_error_sampling()
-        online_time_measure()
+        offline(config_nirb, N)
+        online_error_sampling(config_nirb, N, Nsample=3)
+        online_time_measure(config_nirb, N)
