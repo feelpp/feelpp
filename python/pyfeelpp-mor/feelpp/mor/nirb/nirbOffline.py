@@ -10,6 +10,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='NIRB Offline')
     parser.add_argument('--config-file', type=str, help='path to cfg file')
+    parser.add_argument("--N", help="Number of initial snapshots [default=10]", type=int, default=None)
 
     args = parser.parse_args()
     config_file = args.config_file
@@ -21,8 +22,10 @@ if __name__ == "__main__":
     nirb_file = feelpp.Environment.expand(cfg['nirb']['filename'])
     config_nirb = feelpp.readJson(nirb_file)['nirb']
 
-    doRectification  = config_nirb['doRectification'] 
-    nbSnap = config_nirb['nbSnapshots']
+    doRectification  = config_nirb['doRectification']
+    nbSnap=args.N
+    if nbSnap==None:
+        nbSnap = config_nirb['nbSnapshots']
 
     start = time.time()
 
