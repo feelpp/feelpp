@@ -40,7 +40,7 @@ add_custom_target(pdf-ginac)
 
 set (CMAKE_CXX_STANDARD 11)
 
-find_package(CLN 1.2.2 REQUIRED)
+# find_package(CLN 1.2.2 REQUIRED)
 #include_directories(${CLN_INCLUDE_DIR})
 
 include(CheckIncludeFile)
