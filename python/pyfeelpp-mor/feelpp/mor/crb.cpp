@@ -33,6 +33,7 @@
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelmor/crbenums.hpp>
+#include <feel/feelmor/crbmodeldb.hpp>
 #include <feel/feelmor/crbdata.hpp>
 #include <feel/feelmor/parameterspace.hpp>
 #include <feel/feelmor/crbplugin_interface.hpp>
@@ -193,7 +194,7 @@ PYBIND11_MODULE( _mor, m )
 {
     m.def("makeCRBOptions", &makeCRBOptions, "Create CRB Options" );
     m.def("factoryCRBPlugin", &factoryCRBPlugin, "Factory for CRB plugins",
-          py::arg("name"),py::arg("libname")=std::string(""),py::arg("dirname")=Info::libdir() );
+          py::arg("name"),py::arg("libname")=std::string(""),py::arg("dirname")=Info::libdir().string() );
 
     py::enum_<crb::stage>(m, "CRBStage")
         .value("offline", crb::stage::offline)
@@ -221,6 +222,25 @@ PYBIND11_MODULE( _mor, m )
                 return py::make_iterator(v.begin(), v.end());
             }, py::keep_alive<0, 1>()); /* Keep vector alive while iterator is used */
 
+
+    py::class_<CRBModelDB::MetaData>( m, "CRBModelDBMetaData" )
+        .def_readwrite("json_path", &CRBModelDB::MetaData::json_path)
+        .def_readwrite("model_name", &CRBModelDB::MetaData::model_name)
+        .def_readwrite("plugin_name", &CRBModelDB::MetaData::plugin_name)
+        .def_readwrite("plugin_libname", &CRBModelDB::MetaData::plugin_libname);
+
+    py::class_<CRBModelDB>( m, "CRBModelDB" )
+        .def( py::init<std::string const&, std::string const&>(), py::arg( "name" ), py::arg( "root" ) = Environment::rootRepository(), "Construct a CRBModelDB" )
+        .def( "name", &CRBModelDB::name )
+        .def( "rootRepository", &CRBModelDB::rootRepository )
+        .def( "uuid", &CRBModelDB::uuid )
+        .def( "jsonFilename", static_cast<std::string ( CRBModelDB::* )() const>( &CRBModelDB::jsonFilename ), "get the json metadata filename" )
+        .def( "dbRepository", static_cast<std::string ( CRBModelDB::* )() const>( &CRBModelDB::dbRepository ), "get the db repository" )
+        .def(
+            "loadDBMetaData", []( CRBModelDB& db, std::string const& from, std::string const& name )
+            { return db.loadDBMetaData( from, name ); },
+            py::arg( "attribute" ) = crb::attributeToString( crb::attribute::last_modified ), py::arg( "data" ) = std::nullopt )
+        .def( "loadDBPlugin", static_cast<std::shared_ptr<CRBPluginAPI> ( CRBModelDB::* )( CRBModelDB::MetaData const&, std::string ) const>( &CRBModelDB::loadDBPlugin ), py::arg( "metadata" ), py::arg( "load" ) = "rb", "load DB plugin", pybind11::return_value_policy::reference );
     py::class_<CRBModelParameter>(m,"CRBModelParamater")
         .def(py::init<>())
         .def("name",&CRBModelParameter::name, "name of the parameter")
@@ -348,7 +368,14 @@ PYBIND11_MODULE( _mor, m )
         .def("run",py::overload_cast<ParameterSpaceX::Element const&,double,int,bool>(&CRBPluginAPI::run, py::const_),
              "run online code for a parameter mu", py::arg("mu"),py::arg("eps")=1e-6,py::arg("N")=-1,py::arg("print_reduced_matrix")=false)
         .def("run",py::overload_cast<std::vector<ParameterSpaceX::Element> const&,double,int,bool>(&CRBPluginAPI::run, py::const_),
-             "run online code for a parameter mu", py::arg("mu"),py::arg("eps")=1e-6,py::arg("N")=-1,py::arg("print_reduced_matrix")=false);
+             "run online code for a parameter mu", py::arg("mu"),py::arg("eps")=1e-6,py::arg("N")=-1,py::arg("print_reduced_matrix")=false)
+        .def("refCount", [](std::shared_ptr<CRBPluginAPI>& p){
+                return p.use_count();
+            },"reset plugin")
+        .def("reset", [](std::shared_ptr<CRBPluginAPI>& p){
+                p.reset();
+                std::cout << fmt::format("After reset(): use_count() = {}", p.use_count()) << std::endl;
+            },"reset plugin");
         //.def("run",&CRBPluginAPI::run)
 
 }

@@ -3,7 +3,7 @@ import sys
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import tikzplotlib
+# import tikzplotlib
 from os.path import dirname, basename, isfile, join
 import glob
 
@@ -110,51 +110,7 @@ def plot_time(csv_file):
 
 # %%
 ### Manage data Frame 
-
-def concat_dataFrame(dataDir, saveGlob=False, fileTosave=None):
-    """ conctatenate all df from directory dataDir in a one single dataFrame
-        by adding a series of the number of snapshot associated (the number of snap is integer N such that the file
-        contained in dataDir are named 'errorsN.csv')
-
-    Args:
-        dataDir (str): directory contaning all data Frame 
-        saveGlob (bool): To save Global data frame in files. Defaults to False. 
-        fileTosave (str) : file to save the global data frame. Defaults to None. 
-    """
-
-    files = glob.glob(join(dirname(dataDir), "*.csv"))
-    NsnapList = [int(basename(f)[6:][:-4]) for f in files if isfile(f)]
-    
-    Ns = len(NsnapList)
-
-    nk = NsnapList[0]
-    file = dataDir+f"errors{nk}.csv"
-    dfGlob = pd.read_csv(file, sep=',')
-    dfGlob['N'] = nk 
-    allSize = dfGlob.shape[0]
-    
-    for i in range(1,Ns):
-        nk = NsnapList[i]
-        file = dataDir+f"errors{nk}.csv"
-        df = pd.read_csv(file, sep=',')
-        df['N'] = nk
-        allSize += df.shape[0]
-        dfGlob = pd.concat([dfGlob, df])
-
-    assert allSize == dfGlob.shape[0], f" size sum = {allSize}, size Glob = {dfGlob.shape[0]}"
-
-    dfGlob.rename(columns={'l2u-uH':"l2(u-uH)", 'l2u-uHn':"l2(u-uHn)", 'lINFu-uH':"inf(u-uH)",
-                         'lINFu-uHn':'inf(u-uHn)'}, inplace=True)
-
-    
-    if saveGlob and fileTosave != None :
-        ## Save the global data frame in csv files
-        dfGlob.to_csv(fileTosave, sep=',')
-    
-    return dfGlob
-
-
-def getDataStat(df):
+def getDataStat(df, h1=True):
     """ Get some statistic infos from a given dataFrame df : 
         (Min, Max, Mean) in respect to number of snapshot series 
 
@@ -173,24 +129,52 @@ def getDataStat(df):
     dfmin = df.pivot_table(values=lkeys, index='N', aggfunc=np.min)
     dfmax = df.pivot_table(values=lkeys, index='N', aggfunc=np.max)
     
-    l2 = 'l2(u-uHn)'
-    h1 = 'h1(u-uHn)'
+    l2 = 'l2(uh-uHn)'
+    l2rec = 'l2(uh-uHn)rec'
+    l2uh = 'l2(uh-uhn)'
+
+    h1rec = 'h1(uh-uHn)rec'
+    h1 = 'h1(uh-uHn)'
+    h1uh = 'h1(uh-uhn)'
+
+    
     ## L2 norm 
     l2df = pd.DataFrame()
-    l2df['Min'] = dfmin[l2]
-    l2df['Max'] = dfmax[l2]
-    l2df['Mean'] = dfmean[l2]
-    l2df['l2(u-uH)'] = dfmean['l2(u-uH)']
 
-    ## H1 norm 
-    h1df = pd.DataFrame()
-    h1df['Min'] = dfmin[h1]
-    h1df['Max'] = dfmax[h1]
-    h1df['Mean'] = dfmean[h1]
-    h1df['h1(u-uH)'] = dfmean['h1(u-uH)']
+    l2df['Min'] = dfmin[l2]
+    l2df['Min_rec'] = dfmin[l2rec]
+    l2df['Min_uh'] = dfmin[l2uh]
+
+    l2df['Max'] = dfmax[l2]
+    l2df['Max_rec'] = dfmax[l2rec]
+    l2df['Max_uh'] = dfmax[l2uh]
     
+    l2df['Mean'] = dfmean[l2]
+    l2df['Mean_rec'] = dfmean[l2rec]
+    l2df['Mean_uh'] = dfmean[l2uh]
+
+    l2df['l2(uh-uH)'] = dfmean['l2(uh-uH)']
+
+    ## H1 norm
+    h1df = pd.DataFrame() 
+    if h1:
+
+        h1df['Min'] = dfmin[h1]
+        h1df['Min_rec'] = dfmin[h1rec]
+        h1df['Min_uh'] = dfmin[h1uh]
+
+        h1df['Max'] = dfmax[h1]
+        h1df['Max_rec'] = dfmax[h1rec]
+        h1df['Max_uh'] = dfmax[h1uh]
+        
+        h1df['Mean'] = dfmean[h1]
+        h1df['Mean_rec'] = dfmean[h1rec]
+        h1df['Mean_uh'] = dfmean[h1uh]
+
+        h1df['h1(uh-uH)'] = dfmean['h1(uh-uH)']
 
     return l2df, h1df
+
 
 def troncateNparam(df, Nparam=1, start='first'):
     """ get errors for given number of parameter (Nparam)
@@ -230,24 +214,24 @@ def plot_dataFrame(df, norm='L2'):
     Args:
         df (pandas.dataFrame): the dataFrame 
     """
-    x = df.index 
+    x = df.index
     keys = [k for k in df.keys() if k not in ['N', 'parameter']]
 
     for i in range(df.shape[1]-1):
         plt.scatter(x,df[keys[i]], label=str(keys[i]))
         plt.plot(x,df[keys[i]])
     
-    plt.legend()
-    plt.xscale('log')
+    plt.legend() 
     plt.yscale('log')
     plt.xlabel("Number of basis function (N)")
     plt.ylabel(f"{norm} norm of Errors (in log)")
-    plt.xlim(x[0], x[-1])
     plt.show()
 
-def compare_dataFrame(df,dg, keys='Mean', norm='l2'):
-    """compare 2 dataFrame in espect of given keys 
+def compare_dataStats(df, keys='Mean', norm='l2'):
+    """plot statiscal comparison of a dataFrame in respect of given keys 
         keys take 'Min', 'Max' or 'Mean'
+
+        This will plot computed errors with and without rectification 
 
     Args:
         df (pandas.dataFrame): _description_
@@ -256,30 +240,32 @@ def compare_dataFrame(df,dg, keys='Mean', norm='l2'):
     """
 
     xf = df.index
-    xg = dg.index
 
-    normUhn = {'l2':r"$\Vert u_h - u_{Hh}\Vert_{L_2}$" , 'h1': r"$\Vert u_h - u_{Hh}\Vert_{H_1}$"}
+    key_list = {'Mean':['Mean', 'Mean_rec', 'Mean_uh'], 'Max':['Max', 'Max_rec','Max_uh'],
+             'Min':['Min', 'Min_rec', 'Min_uh'] }
+
+    normUHn = {'l2':r"$\Vert u_h - u_{NH}\Vert_{L_2}$" , 'h1': r"$\Vert u_h - u_{NH}\Vert_{H_1}$"}
+    normUhn = {'l2':r"$\Vert u_h - u_{Nh}\Vert_{L_2}$" , 'h1': r"$\Vert u_h - u_{Nh}\Vert_{H_1}$"}
     normUh = {'l2':r"$\Vert u_h - u_{H}\Vert_{L_2}$" , 'h1': r"$\Vert u_h - u_{H}\Vert_{H_1}$"}
-    keyUh = {'l2': 'l2(u-uH)', 'h1':'h1(u-uH)'}
+    keyUh = {'l2': 'l2(uh-uH)', 'h1':'h1(uh-uH)'}
 
-    plt.scatter(xf, df[keys], c='red')
-    plt.scatter(xg, dg[keys], c='blue')
-    plt.plot(xf, df[keys], c='red')
-    plt.plot(xg, dg[keys], c='blue')
+    plt.scatter(xf, df[key_list[keys][0]], c='red', label=normUHn[norm] + 'w/o rectif')
+    plt.scatter(xf, df[key_list[keys][1]], c='blue', label=normUHn[norm] + 'w/o rectif')
+    plt.scatter(xf, df[key_list[keys][2]], c='green', label=normUhn[norm])
 
-    plt.plot(xf, df[keys], c='red', label=normUhn[norm] + 'w/O rectif')
-    plt.plot(xg, dg[keys], c='blue', label=normUhn[norm] + 'w/ rectif')
+    plt.plot(xf, df[key_list[keys][0]], c='red')
+    plt.plot(xf, df[key_list[keys][1]], c='blue')
+    plt.plot(xf, df[key_list[keys][2]], c='green')
 
-    plt.scatter(xf, df[keyUh[norm]], c='green')
-    plt.plot(xg, dg[keyUh[norm]], c='green', label=normUh[norm])
+    # interpolate norm 
+    plt.scatter(xf, df[keyUh[norm]], label=normUh[norm])
+    plt.plot(xf, df[keyUh[norm]])
 
     
     plt.legend()
-    plt.xscale('log')
     plt.yscale('log')
     plt.xlabel("Number of basis function (N)")
-    plt.ylabel(f"{norm} norm of Errors (in log)")
-    plt.xlim(xf[0], xf[-1])
+    plt.ylabel(f"{norm} norm of Errors (in log scale)")
     plt.show()
 
 
@@ -293,34 +279,46 @@ if __name__ == "__main__":
     # plot_time(sys.argv[1])
 
     ### Read global datas 
-    file = "/data/home/elarif/nirbDatas/heat/errors50Params.csv"  # From gaya 
-    fileR = "/data/home/elarif/nirbDatas/heat/errors50ParamsRectif.csv"
+    # file = "/data/home/elarif/nirbDatas/heat/errors50Params.csv"  # From gaya 
+    # fileR = "/data/home/elarif/nirbDatas/heat/errors50ParamsRectif.csv"
     
     # file  = str(sys.argv[1]) # file containing errors w/O rectification 
     # fileR = str(sys.argv[2]) # // w/ rectification 
-    norm ='l2'
+
+    # file = "/feel/feelppdb/nirb/heat/np_1/errorRelative.csv"
+    file = "/Users/elarif2/elarif/devel/docker.feel/feelppdb/nirb/heat/np_1/errors50Params.csv"
+    # norm ='l2'
 
     dfGlob = pd.read_csv(file, sep=',')
-    dfGlobR = pd.read_csv(fileR, sep=',')
+    # dfGlobR = pd.read_csv(fileR, sep=',')
 
 
     # %%   
     ### Get stats for 50 parameters 
 
     l2df, h1df   = getDataStat(dfGlob) # l1 and h1 error associated 
-    l2dfR, h1dfR = getDataStat(dfGlobR) # // 
+    # l2dfR, h1dfR = getDataStat(dfGlobR) # // 
 
-    plot_dataFrame(l2df)
-    compare_dataFrame(l2df, l2dfR, keys='Min')
+    # plot_dataFrame(l2df)
+    compare_dataStats(l2df, keys='Mean')
+
+    # %%
+    
+    # file = "/feel/feelppdb/nirb/heat/np_1/errorRelative.csv"
+    # file = "/Users/elarif2/elarif/devel/docker.feel/feelppdb/nirb/heat/np_1/errors50Params.csv"
+    # norm ='l2'
+
+    # dfGlob = pd.read_csv(file, sep=',')
+    # plot_dataFrame(dfGlob)
 
     # %%
     ## Tronctae into N parameter (N<=50)
 
-    dkN = troncateNparam(dfGlob, 1) 
-    dkNR = troncateNparam(dfGlobR, 1)
+    # dkN = troncateNparam(dfGlob, 1) 
+    # dkNR = troncateNparam(dfGlobR, 1)
 
-    l2df, h1df   = getDataStat(dkN) # l1 and h1 error associated with statistical infos 
-    l2dfR, h1dfR = getDataStat(dkNR) # // 
+    # l2df, h1df   = getDataStat(dkN) # l1 and h1 error associated with statistical infos 
+    # l2dfR, h1dfR = getDataStat(dkNR) # // 
 
-    plot_dataFrame(l2df)
-    compare_dataFrame(l2df, l2dfR, keys='Max', norm=norm)
+    # plot_dataFrame(l2df)
+    # compare_dataFrame(l2df, l2dfR, keys='Max', norm=norm)

@@ -179,3 +179,13 @@ gmsh-config.err
 python/pyfeelpp/feelpp/__init__.py
 *.msh
 **/.ipynb_checkpoints/**
+mor/examples/linearelasticity3d/linearelasticity3dapp.cpp
+mor/examples/heat3d/heat3dapp.cpp
+**/crbdb
+**/feelppdb
+**/.bundle
+**/vendor
+**/Gemfile.lock
+**/doc.rb
+**/crbdb
+**/feelppdb

@@ -1,6 +1,7 @@
 #ifndef FEELPP_PYBIND11_PETSC
 #define FEELPP_PYBIND11_PETSC
 
+#include <iostream>
 #include <feel/feelpython/pybind11/pybind11.h>
 #include <feel/feelpython/pybind11/stl.h>
 
@@ -10,6 +11,7 @@
 #include <petscmat.h>
 #include <petscsnes.h>
 #include <petscvec.h>
+#include <iostream>
 
 // pybind11 casters for PETSc/petsc4py objects
 #if 1 //FEELPP_HAS_PETSC4PY

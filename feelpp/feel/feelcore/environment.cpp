@@ -443,7 +443,12 @@ Environment::Environment( int argc, char** argv,
                           AboutData const& about,
                           Repository::Config const& config )
 {
-    if ( argc == 0 )
+    // we can initialized only once
+    if (S_initialized)
+        return;
+    S_initialized = true;
+    
+    if ( argc == 0 )    
     {
 #if BOOST_VERSION >= 105500
         M_env = std::make_unique<boost::mpi::environment>(lvl, false);
@@ -1679,7 +1684,7 @@ Environment::setConfigFile( std::string const& cfgfile )
 bool
 Environment::initialized()
 {
-    return mpi::environment::initialized() ;
+    return S_initialized;
 }
 
 bool Environment::aborted()
