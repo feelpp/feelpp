@@ -156,6 +156,11 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
             innerOuterMatProps.setLaw( "dynamic-viscosity", dynamicViscosityLaw );
             innerOuterMatProps.addSubMaterialProperties( "inner_fluid", innerMatProps );
             innerOuterMatProps.addSubMaterialProperties( "outer_fluid", outerMatProps );
+            
+            //TODO: ugly temporary hack->only allows for constant density (set outer-inner density=0)
+            ModelExpression innerOuterDensityExpr;
+            innerOuterDensityExpr.setExpr( 0.0 );
+            innerOuterMatProps.add( "density", innerOuterDensityExpr );
 
             this->materialsProperties()->addMaterialProperties( innerOuterMatProps );
             for ( auto subphysic: subphysicsFluid )
