@@ -6,30 +6,23 @@ import pandas as pd
 from pathlib import Path
 from nirb_perf import *
 
-PWD = os.getcwd()
-toolboxType = "heat"
-modelfile={'heat':'square/square', 'fluid':'lid-driven-cavity/cfd2d'}
-modelsFolder = f"{PWD}/model/"
-cfg_path = f"{modelsFolder}thermal-fin-3d/thermal-fin.cfg"
-geo_path = f"{modelsFolder}thermal-fin-3d/fin.geo"
-model_path = f"{modelsFolder}thermal-fin-3d/thermal-fin.json"
-doRectification = True
-doGreedy = False
-nirb_config = feelpp.readJson(model_path)['nirb']
-nirb_config['doRectification'] = doRectification
-nirb_config['doGreedy'] = doGreedy
 
-r = ["noRect","Rect"][doRectification]
-g = ["noGreedy","Greedy"][doGreedy]
-RESPATH = f"RESULTS/{r}/{g}"
 
-def offline(N, Xi_train=None):
+def offline(nirb_config, RESPATH, doGreedy, N, Xi_train=None):
     """Generated the reduced basis for the given N
        Generated a file nirbOffline_time_exec.dat containing the time to compute the reduced basis,
          according to the number of samples N
 
     Args:
+    -----
+        nirb_config (dict): configuration of the NIRB
+        RESPATH (str): path to the results
+        doGreedy (bool): if True, the greedy algorithm is used to generate the reduced basis
         N (int): number of snapshots (limit number if greedy algo is used)
+
+    Return:
+    --------
+        nirb (nirbOnline): NIRB object
     """
 
     start = time.time()
@@ -54,13 +47,20 @@ def offline(N, Xi_train=None):
     return nirb
 
 
-def online_error_sampling(Xi_test=None):
+def online_error_sampling(nirb_config, RESPATH, Xi_test=None):
     """Compute the error between the toolbox solution and the NIRB solution for a sampling of parameters
        Generates the file errorParams/errors${N}.csv containing the errors for each parameter, for a given value of N,
           corresponding to the size of the reduced basis.
+
+    Args:
+    -----
+        nirb_config (dict): configuration of the NIRB
+        RESPATH (str): path to the results
+        Xi_test (list): list of parameters to test. Default is None, in which case the parameters are generated randomly
     """
     nirb = nirbOnline(**nirb_config)
-    nirb.loadData(RESPATH)
+    err = nirb.loadData(RESPATH)
+    assert err == 0, "loadData failed"
 
     Nsample = 50
     errorN = ComputeErrorSampling(nirb, Nsample=Nsample, Xi_test=Xi_test)
@@ -83,10 +83,15 @@ def online_error_sampling(Xi_test=None):
     print(data_max)
 
 
-def online_time_measure():
+def online_time_measure(nirb_config, RESPATH):
     """Measures the online time to compute solution, compared to the time taken by the toolbox
        Generates the file nirbOnline_time_exec.dat containing the time to compute the NIRB solution and the toolbox solution,
            according to the number of samples N
+    
+    Args:
+    -----
+        nirb_config (dict): configuration of the NIRB
+        RESPATH (str): path to the results
     """
     nirb = nirbOnline(**nirb_config)
     nirb.loadData(RESPATH)
@@ -116,6 +121,23 @@ def online_time_measure():
 
 if __name__ == '__main__':
 
+    PWD = os.getcwd()
+    toolboxType = "heat"
+    modelfile={'heat':'square/square', 'fluid':'lid-driven-cavity/cfd2d'}
+    modelsFolder = f"{PWD}/model/"
+    cfg_path = f"{modelsFolder}thermal-fin-3d/thermal-fin.cfg"
+    geo_path = f"{modelsFolder}thermal-fin-3d/fin.geo"
+    model_path = f"{modelsFolder}thermal-fin-3d/thermal-fin.json"
+    doRectification = True
+    doGreedy = False
+    nirb_config = feelpp.readJson(model_path)['nirb']
+    nirb_config['doRectification'] = doRectification
+    nirb_config['doGreedy'] = doGreedy
+
+    r = ["noRect","Rect"][doRectification]
+    g = ["noGreedy","Greedy"][doGreedy]
+    RESPATH = f"RESULTS/{r}/{g}"
+
     e = init_feelpp_environment(toolboxType, cfg_path)
     Ns = sys.argv[1:]
 
@@ -126,10 +148,10 @@ if __name__ == '__main__':
         N = int(N)
         print("\n\n-----------------------------")
         print(f"[NIRB] Test with N = {N}")
-        nirb = offline(N, Xi_train=Xi_train)
+        nirb = offline(nirb_config, RESPATH, doGreedy, N, Xi_train=Xi_train)
         s = nirb.Dmu.sampling()
-        online_error_sampling(s.getVector())
-        online_time_measure()
+        online_error_sampling(nirb_config, RESPATH, Xi_test=s.getVector())
+        online_time_measure(nirb_config, RESPATH)
 
     if feelpp.Environment.isMasterRank():
         print("=============================================")
