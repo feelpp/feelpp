@@ -27,7 +27,9 @@
 #include <feel/feelpython/pybind11/pybind11.h>
 #include <feel/feelpython/pybind11/stl.h>
 
+#if defined(FEELPP_HAS_PETSC4PY)
 #include <petsc4py/petsc4py.h>
+#endif
 
 #include "petsc_casters.hpp"
 
@@ -218,8 +220,10 @@ class PyMatrixSparseDouble : MatrixSparse<double>
 PYBIND11_MODULE(_alg, m )
 {
     using namespace Feel;
-
+#ifdef FEELPP_HAS_PETSC4PY
     if ( import_petsc4py()<0) return ;
+#endif // FEELPP_HAS_PETSC4PY
+    
 
     py::class_<datamap_t<uint32_type>, datamap_ptr_t<uint32_type>>( m, "DataMap" )
         .def( py::init<std::shared_ptr<WorldComm>>() )

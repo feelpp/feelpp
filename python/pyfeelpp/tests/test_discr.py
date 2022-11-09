@@ -1,14 +1,17 @@
 import feelpp
 import sys
 import pytest
-
+from feelpp.timing import tic,toc
 
 
 def run(m, geo):
+    tic()
     mesh_name, dim, e_meas, e_s_1, e_s_2, e_s_bdy=geo
     m2d= feelpp.load(m, mesh_name, 0.1)
-    
+    toc("Mesh")
+    tic()
     Xh = feelpp.functionSpace(mesh=m2d)
+    toc("functionSpace")
 
     if feelpp.Environment.isMasterRank():
         print("Xh basisname: ", Xh.basisName())
@@ -21,11 +24,16 @@ def run(m, geo):
 
     assert m3 == m2d
 
+    tic()
     u = Xh.element()
-
+    toc("FunctionSpace::Element")
+    tic()
     u.on(range=feelpp.elements(m2d), expr=feelpp.expr("x:x"))
+    toc("FunctionSpace::Element::on")
+    tic()
     w = (2*u-u)-u
     l2_w = feelpp.normL2(range=feelpp.elements(m2d), expr=w)
+    toc("FunctionSpace::Element::normL2")
     print("norm(w)", l2_w)
     assert abs(l2_w) < 1e-12
     assert u.functionSpace() == Xh
@@ -82,7 +90,9 @@ geo_cases=[(2, feelpp.create_rectangle),
 def test_discr(dim,geo,init_feelpp):
     feelpp.Environment.changeRepository(
         directory="pyfeelpp-tests/discr/test_{}d".format(dim))
+    tic()
     run( feelpp.mesh(dim=dim,realdim=dim), geo() )
+    toc(f"run {dim}D")
 
 @pytest.mark.parametrize("dim,geo", geo_cases)
 def test_element(dim,geo,init_feelpp):

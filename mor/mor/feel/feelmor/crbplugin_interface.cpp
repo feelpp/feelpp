@@ -42,7 +42,9 @@ public:
     using crbplugin_manager_type = std::map<key_type, value_type>;
 
 };
-struct CRBPluginManager : public  Feel::Singleton<CRBPluginManagerImpl> {};
+struct CRBPluginManager : public  Feel::Singleton<CRBPluginManagerImpl> {
+    ~CRBPluginManager() {}
+};
 }
 
 std::shared_ptr<CRBPluginAPI>
@@ -57,19 +59,29 @@ factoryCRBPlugin( std::string const& pluginname, std::string const& pluginlibnam
     {
         std::string libname = pluginlibname;
         if ( libname.empty() )
-            libname = fmt::format("{}/libfeelpp_mor_plugin_{}",Info::libdir(),pluginname);
-        LOG(INFO) << fmt::format("[factoryCRBPlugin] plugin name: {} plugin libname: {} dirname: {}", pluginname, libname, dirname );
+            libname = fmt::format("libfeelpp_mor_plugin_{}",pluginname);
+        LOG( INFO ) << fmt::format( "[feelpp.mor.factoryCRBPlugin] plugin name: {} plugin libname: {} dirname: {}", pluginname, libname, dirname );
         fs::path pname = ( fs::path( dirname ) / libname ).make_preferred();
-        LOG(INFO) << fmt::format("[factoryCRBPlugin] loading plugin: {}...", pname.string());google::FlushLogFiles(google::GLOG_INFO);
+        LOG(INFO) << fmt::format("[feelpp.mor.factoryCRBPlugin] loading plugin: {}...", pname.string());google::FlushLogFiles(google::GLOG_INFO);
 
         Feel::detail::CRBPluginManager::instance().operator[]( pluginname ) = 
-            boost::dll::import_alias<crbpluginapi_create_t>(pname, 
-                                                            "create_crbplugin_"+pluginname,
-                                                            dll::load_mode::append_decorations );
+                 boost::dll::import_alias<crbpluginapi_create_t>(pname, 
+                                                                 "create_crbplugin_"+pluginname,
+                                                                 dll::load_mode::append_decorations );
+
         auto p = Feel::detail::CRBPluginManager::instance().find( pluginname );
-        auto plugin = p->second();
-        LOG(INFO) << fmt::format("[factoryCRBPlugin] loaded plugin: {}", pname.string() ); google::FlushLogFiles(google::GLOG_ERROR);
-        return plugin;
+        try 
+        {
+            auto plugin = p->second();
+            LOG( INFO ) << fmt::format( "[feelpp.mor.factoryCRBPlugin] loaded plugin: {}", pname.string() );
+            google::FlushLogFiles( google::GLOG_ERROR );
+            return plugin;
+        }
+        catch ( ... )
+        {
+            handleExceptions();
+        }
+        return nullptr;
     }
 }
 }
