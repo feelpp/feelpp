@@ -17,7 +17,7 @@ jobs:
 #        BRANCH: "master"
 #        MESSAGE: ":github: Triggered from a GitHub Action by Holo3 Project"
   build:
-    runs-on: self-ubuntu-20.04
+    runs-on: self-ubuntu-22.04
     if: "!contains(github.event.head_commit.message, 'doc skip')"
     steps:
     - uses: actions/checkout@v3
