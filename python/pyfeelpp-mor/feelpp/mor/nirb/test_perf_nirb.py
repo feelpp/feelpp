@@ -23,7 +23,7 @@ r = ["noRect","Rect"][doRectification]
 g = ["noGreedy","Greedy"][doGreedy]
 RESPATH = f"RESULTS/{r}/{g}"
 
-def offline(N, load=None):
+def offline(N, Xi_train=None):
     """Generated the reduced basis for the given N
        Generated a file nirbOffline_time_exec.dat containing the time to compute the reduced basis,
          according to the number of samples N
@@ -34,12 +34,6 @@ def offline(N, load=None):
 
     start = time.time()
     nirb = nirbOffline(**nirb_config, initCoarse=doGreedy)
-    if load is not None:
-        s = nirb.Dmu.sampling()
-        N_train = s.readFromFile(load)
-        Xi_train = s.getVector()
-    else:
-        Xi_train = None
 
     if doGreedy:
         nirb.initProblemGreedy(1000, 1e-5, Nmax=N, computeCoarse=True, samplingMode="random")
@@ -96,7 +90,7 @@ def online_time_measure():
     """
     nirb = nirbOnline(**nirb_config)
     nirb.loadData(RESPATH)
-    
+
     Dmu = nirb.Dmu
     Ns = 50
     s = Dmu.sampling()
@@ -119,29 +113,45 @@ def online_time_measure():
 
     WriteVecAppend(RESPATH+'/nirbOnline_time_exec.dat', [nirb.N, time_toolbox, time_nirb])
 
-    
+def generateSample(Dmu, N, samplingMode="random"):
+    """Generate a sample of parameters, and save it in a file sample.dat
+
+    Args:
+    -----
+        Dmu (feelpp.mor._mor.ParameterSpace): the parameter space
+        N (int): number of samples
+        samplingMode (str, optional): the sampling mode. Defaults to "random".
+
+    Returns:
+    --------
+        list of parameterSpaceElement: the sampling generated
+    """
+    s = Dmu.sampling()
+    s.sampling(N, samplingMode)
+    path = "./sample.dat"
+    s.writeOnFile(path)
+    return s.getVector()
+
 
 if __name__ == '__main__':
 
-    print("=============================================")
-    print(f"Run test_perf_nirb, doRectification : {doRectification}, doGreedy : {doGreedy}")
-    print(f"Result dir : {RESPATH}")
-
-
     e = init_feelpp_environment(toolboxType, cfg_path)
     Ns = sys.argv[1:]
+
+    Dmu = loadParameterSpace(model_path)
+    Xi_train = generateSample(Dmu, 250, samplingMode="random")
 
     for N in Ns:
         N = int(N)
         print("\n\n-----------------------------")
         print(f"[NIRB] Test with N = {N}")
-        nirb = offline(N, load='./sampling.sample')
+        nirb = offline(N, Xi_train=Xi_train)
         s = nirb.Dmu.sampling()
-        N_train = s.readFromFile('./sampling.sample')
         online_error_sampling(s.getVector())
         online_time_measure()
 
-    print("=============================================")
-    print(f"Run test_perf_nirb done, doRectification : {doRectification}, doGreedy : {doGreedy}")
-    print(f"Result are stored in : {RESPATH}")
-    print("=============================================")
+    if feelpp.Environment.isMasterRank():
+        print("=============================================")
+        print(f"Run test_perf_nirb done, doRectification : {doRectification}, doGreedy : {doGreedy}")
+        print(f"Result are stored in : {RESPATH}")
+        print("=============================================")
