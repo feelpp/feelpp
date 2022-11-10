@@ -36,7 +36,7 @@ def offline(nirb_config, RESPATH, doGreedy, N, Xi_train=None):
     nirb.generateReducedBasis(regulParam=1.e-10)
     finish = time.time()
 
-    nirb.saveData(RESPATH)
+    nirb.saveData(RESPATH, force=True)
 
     perf = [nirb.N, finish-start]
     file = RESPATH + '/nirbOffline_time_exec.dat'
@@ -47,20 +47,17 @@ def offline(nirb_config, RESPATH, doGreedy, N, Xi_train=None):
     return nirb
 
 
-def online_error_sampling(nirb_config, RESPATH, Xi_test=None):
+def online_error_sampling(nirb, RESPATH, Xi_test=None):
     """Compute the error between the toolbox solution and the NIRB solution for a sampling of parameters
        Generates the file errorParams/errors${N}.csv containing the errors for each parameter, for a given value of N,
           corresponding to the size of the reduced basis.
 
     Args:
     -----
-        nirb_config (dict): configuration of the NIRB
+        nirb_config (nirbOnline): configuration of the NIRB
         RESPATH (str): path to the results
         Xi_test (list): list of parameters to test. Default is None, in which case the parameters are generated randomly
     """
-    nirb = nirbOnline(**nirb_config)
-    err = nirb.loadData(path=RESPATH)
-    assert err == 0, "loadData failed"
 
     Nsample = 50
     errorN = ComputeErrorSampling(nirb, Nsample=Nsample, Xi_test=Xi_test)
@@ -83,39 +80,37 @@ def online_error_sampling(nirb_config, RESPATH, Xi_test=None):
     print(data_max)
 
 
-def online_time_measure(nirb_config, RESPATH):
+def online_time_measure(nirb, RESPATH):
     """Measures the online time to compute solution, compared to the time taken by the toolbox
        Generates the file nirbOnline_time_exec.dat containing the time to compute the NIRB solution and the toolbox solution,
            according to the number of samples N
     
     Args:
     -----
-        nirb_config (dict): configuration of the NIRB
+        nirb_config (nirbOnline): nirb object
         RESPATH (str): path to the results
     """
-    nirb = nirbOnline(**nirb_config)
-    err = nirb.loadData(path=RESPATH)
-    assert err == 0, "loadData failed"
-
     Dmu = nirb.Dmu
     Ns = 50
     s = Dmu.sampling()
     s.sampling(Ns, 'log-random')
     mus = s.getVector()
 
+    print("[NIRB online] Start toolbox time measure")
     time_toolbox_start = time.time()
     for mu in mus:
         uh = nirb.getToolboxSolution(nirb.tbFine, mu)
     time_toolbox_finish = time.time()
     time_toolbox = (time_toolbox_finish - time_toolbox_start) / Ns
-    print(f"[NIRB online] Time to compute {Ns} solutions with toolbox = ", time_toolbox)
+    print(f"[NIRB online] Average time to compute {Ns} solutions with toolbox = ", time_toolbox)
 
+    print("[NIRB online] Start NIRB online time measure")
     time_nirb_start = time.time()
     for mu in mus:
         uHh = nirb.getOnlineSol(mu)
     time_nirb_finish = time.time()
     time_nirb = (time_nirb_finish - time_nirb_start) / Ns
-    print(f"[NIRB online] Time to compute {Ns} solutions with NIRB = ", time_nirb)
+    print(f"[NIRB online] Average time to compute {Ns} solutions with NIRB = ", time_nirb)
 
     WriteVecAppend(RESPATH+'/nirbOnline_time_exec.dat', [nirb.N, time_toolbox, time_nirb])
 
@@ -151,8 +146,11 @@ if __name__ == '__main__':
         print("\n\n-----------------------------")
         print(f"[NIRB] Test with N = {N}")
         nirb = offline(nirb_config, RESPATH, doGreedy, N, Xi_train=Xi_train)
-        online_error_sampling(nirb_config, RESPATH, Xi_test=Xi_test)
-        online_time_measure(nirb_config, RESPATH)
+        nirb_on = nirbOnline(**nirb_config)
+        err = nirb_on.loadData(path=RESPATH)
+        assert err == 0, "loadData failed"
+        online_error_sampling(nirb_on, RESPATH, Xi_test=Xi_test)
+        online_time_measure(nirb_on, RESPATH)
 
     if feelpp.Environment.isMasterRank():
         print("=============================================")
