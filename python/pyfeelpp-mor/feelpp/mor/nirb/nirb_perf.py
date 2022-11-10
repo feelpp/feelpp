@@ -1,4 +1,5 @@
 import numpy as np
+from tqdm import tqdm
 from petsc4py import PETSc
 
 
@@ -91,7 +92,8 @@ def ComputeErrorSampling(nirb_on, Nsample = 1, Xi_test=None, samplingType='log-r
     if h1:
         error.update({'h1(uh-uHn)':[],'h1(uh-uHn)rec':[],'h1(uh-uhn)':[],'h1(uh)':[], 'h1(uh-uH)':[]})
 
-    for i, mu in enumerate(mus): 
+    # for i, mu in enumerate(mus): 
+    for i, mu in enumerate(tqdm(mus,desc=f"[NIRB] ComputeErrorSampling", ascii=False, ncols=120)):
 
         uH = nirb_on.getInterpSol(mu)
         uh = nirb_on.getToolboxSolution(nirb_on.tbFine, mu)
