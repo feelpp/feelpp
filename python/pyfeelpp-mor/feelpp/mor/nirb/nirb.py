@@ -51,10 +51,12 @@ class ToolboxModel():
         self.model_path = feelpp.Environment.expand(model_path)
         self.geo_path = feelpp.Environment.expand(geo_path)
 
-        self.tbCoarse  = None
-        self.tbFine    = None
+        self.tbCoarse  = None   # coarse toolbox
+        self.tbFine    = None   # fine toolbox
 
-        self.Xh = None
+        self.Xh = None          # fine function space
+
+        self.outdir = None      # output directory
 
         self.initModel()
         if feelpp.Environment.isMasterRank():
@@ -206,6 +208,8 @@ class ToolboxModel():
         info["order"] = self.order
         info["toolboxType"] = self.toolboxType
         info["dimension"] = self.dimension
+        if self.outdir is not None:
+            info["outdir"] = self.outdir
         return info
 
 
@@ -700,10 +704,10 @@ class nirbOffline(ToolboxModel):
             force (bool, optional): Force saving, even if files are already present. Defaults to False.
         """
 
-        reducedPath = path +'/reducedBasis'
+        reducedPath = os.path.join(path, '/reducedBasis')
         reducedFilename = 'reducedBasis'
 
-        l2productPath = path + '/l2productBasis'
+        l2productPath = os.path.join(path,  '/l2productBasis')
         l2productFilename = 'l2productBasis'
 
         if feelpp.Environment.isMasterRank():
@@ -726,12 +730,13 @@ class nirbOffline(ToolboxModel):
             vec = self.Xh.element(self.l2ProductBasis[i])
             vec.save(l2productPath, l2productFilename, suffix=str(i))
 
-        rectificationFile = 'rectification'
+        rectificationFile = os.path.join(path,'rectification')
         if self.doRectification:
             np.save(rectificationFile, self.RectificationMat)
 
+        self.outdir = os.path.abspath(path)
         if feelpp.Environment.isMasterRank():
-            print(f"[NIRB] Data saved in {os.path.abspath(path)}")
+            print(f"[NIRB] Data saved in {self.outdir}")
 
 ### ONLINE PHASE ###
 
@@ -778,6 +783,7 @@ class nirbOnline(ToolboxModel):
         mu (ParameterSpaceElement) : parameter to compute the solution if not given
 
         return :
+        --------
         compressedSol (numpy.ndarray) : the compressed solution, of size (self.N)
         """
         assert (mu != None) or (solution != None), f"One of the arguments must be given: solution or mu"
@@ -798,9 +804,11 @@ class nirbOnline(ToolboxModel):
         """Get the interpolated solution from coarse mesh to fine one
 
         Args:
+        -----
             mu (ParameterSpaceElement): parameter
 
         Returns:
+        --------
             interpSol (feelpp._discr.Element): interpolated solution on fine mesh
         """
         interpSol = self.solveOnline(mu)[1]
@@ -856,11 +864,12 @@ class nirbOnline(ToolboxModel):
         Returns :
             int: error code, 0 if all went well, 1 if not
         """
+        print(f"[NIRB] Loading data from {os.path.abspath(path)}")
 
-        reducedPath = path +'/reducedBasis'
+        reducedPath = os.path.join(path,'/reducedBasis')
         reducedFilename = 'reducedBasis'
 
-        l2productPath = path + '/l2productBasis'
+        l2productPath = os.path.join(path, '/l2productBasis')
         l2productFilename = 'l2productBasis'
         
         if feelpp.Environment.isMasterRank():
@@ -899,7 +908,7 @@ class nirbOnline(ToolboxModel):
             vec.load(l2productPath, l2productFilename, suffix=str(i))
             self.l2ProductBasis.append(vec)
 
-        rectificationFile = 'rectification.npy'
+        rectificationFile = os.path.join(path, 'rectification.npy')
         if self.doRectification:
             self.RectificationMat = np.load(rectificationFile)
 

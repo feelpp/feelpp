@@ -13,9 +13,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='NIRB Offline')
     parser.add_argument('--config-file', type=str, help='path to cfg file')
     parser.add_argument("--N", help="Number of initial snapshots [default=10]", type=int, default=None)
+    parser.add_argument("--outdir", help="output directory", type=str, default=None)
 
     args = parser.parse_args()
     config_file = args.config_file
+    outdir = args.outdir
 
     cfg = feelpp.readCfg(config_file)
     toolboxType = cfg['nirb']['toolboxType']
@@ -31,9 +33,12 @@ if __name__ == "__main__":
     if nbSnap==None:
         nbSnap = config_nirb['nbSnapshots']
 
-    r = ["noRect","Rect"][doRectification]
-    g = ["noGreedy","Greedy"][doGreedy]
-    RESPATH = f"RESULTS/{r}/{g}"
+    if outdir is None:
+        r = ["noRect","Rect"][doRectification]
+        g = ["noGreedy","Greedy"][doGreedy]
+        RESPATH = f"RESULTS/{r}/{g}"
+    else:
+        RESPATH = outdir
 
     start = time.time()
 
@@ -64,9 +69,6 @@ if __name__ == "__main__":
     nirb_off.saveData(RESPATH, force=True)
 
     finish = time.time()
-
-    # online_error_sampling(config_nirb, RESPATH, Xi_train)
-    online_error_sampling(config_nirb, RESPATH)
 
     print("Is L2 orthonormalized ?", nirb_off.checkL2Orthonormalized())
     print("Is H1 orthonormalized ? ", nirb_off.checkH1Orthonormalized())
