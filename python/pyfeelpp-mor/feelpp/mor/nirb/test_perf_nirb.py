@@ -59,7 +59,7 @@ def online_error_sampling(nirb_config, RESPATH, Xi_test=None):
         Xi_test (list): list of parameters to test. Default is None, in which case the parameters are generated randomly
     """
     nirb = nirbOnline(**nirb_config)
-    err = nirb.loadData(RESPATH)
+    err = nirb.loadData(path=RESPATH)
     assert err == 0, "loadData failed"
 
     Nsample = 50
@@ -94,7 +94,8 @@ def online_time_measure(nirb_config, RESPATH):
         RESPATH (str): path to the results
     """
     nirb = nirbOnline(**nirb_config)
-    nirb.loadData(RESPATH)
+    err = nirb.loadData(path=RESPATH)
+    assert err == 0, "loadData failed"
 
     Dmu = nirb.Dmu
     Ns = 50
@@ -143,14 +144,14 @@ if __name__ == '__main__':
 
     Dmu = loadParameterSpace(model_path)
     Xi_train = generatedAndSaveSampling(Dmu, 250, samplingMode="random")
+    Xi_test = generatedAndSaveSampling(Dmu, 50, path="Xi_test.sample", samplingMode="random")
 
     for N in Ns:
         N = int(N)
         print("\n\n-----------------------------")
         print(f"[NIRB] Test with N = {N}")
         nirb = offline(nirb_config, RESPATH, doGreedy, N, Xi_train=Xi_train)
-        s = nirb.Dmu.sampling()
-        online_error_sampling(nirb_config, RESPATH, Xi_test=s.getVector())
+        online_error_sampling(nirb_config, RESPATH, Xi_test=Xi_test)
         online_time_measure(nirb_config, RESPATH)
 
     if feelpp.Environment.isMasterRank():

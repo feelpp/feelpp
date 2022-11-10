@@ -55,7 +55,7 @@ def ComputeErrors(nirb_on, mu, h1=False, relative=True):
 
     return error
 
-def ComputeErrorSampling(nirb_on, Nsample = 1, samplingType='log-random', h1=False):
+def ComputeErrorSampling(nirb_on, Nsample = 1, Xi_test=None, samplingType='log-random', h1=False):
     """Compute the convergence errors of the projection of FE solution (in fine mesh) in the reduced space 
         and the nirb solution with and without rectification for a given sampling of parameter. 
          The rectification matrix has to be defined (so make sure to set doRectification = True in offline and online phase)
@@ -79,15 +79,17 @@ def ComputeErrorSampling(nirb_on, Nsample = 1, samplingType='log-random', h1=Fal
     else :
         l2Mat = nirb_on.generateOperators()
 
-    Dmu = nirb_on.Dmu
-    s = Dmu.sampling()
-    s.sampling(Nsample, samplingType)
-    mus = s.getVector()
+    if Xi_test is None :
+        Dmu = nirb_on.Dmu
+        s = Dmu.sampling()
+        s.sampling(Nsample, samplingType)
+        mus = s.getVector()
+    else :
+        mus = Xi_test
 
     error = {'l2(uh-uHn)':[],'l2(uh-uHn)rec':[],'l2(uh-uhn)':[],'l2(uh)':[], 'l2(uh-uH)':[]}
     if h1:
         error.update({'h1(uh-uHn)':[],'h1(uh-uHn)rec':[],'h1(uh-uhn)':[],'h1(uh)':[], 'h1(uh-uH)':[]})
-        
 
     for i, mu in enumerate(mus): 
 
