@@ -28,11 +28,11 @@ def offline(nirb_config, RESPATH, doGreedy, N, Xi_train=None):
     start = time.time()
     nirb = nirbOffline(**nirb_config, initCoarse=doGreedy)
 
+    nirb.generateOperators(coarse=True)
     if doGreedy:
-        nirb.initProblemGreedy(1000, 1e-5, Nmax=N, computeCoarse=True, samplingMode="random")
+        nirb.initProblemGreedy(500, 1e-5, Nmax=N, computeCoarse=True, samplingMode="random")
     else:
         nirb.initProblem(N, Xi_train=Xi_train)
-    nirb.generateOperators()
     nirb.generateReducedBasis(regulParam=1.e-10)
     finish = time.time()
 
@@ -139,7 +139,13 @@ if __name__ == '__main__':
 
     Dmu = loadParameterSpace(model_path)
     Xi_train = generatedAndSaveSampling(Dmu, 250, samplingMode="random")
-    Xi_test = generatedAndSaveSampling(Dmu, 50, path="Xi_test.sample", samplingMode="random")
+    if False:
+        Xi_test = generatedAndSaveSampling(Dmu, 50, path="Xi_test.sample", samplingMode="random")
+    else:
+        s = Dmu.sampling()
+        N = s.readFromFile("Xi_test.sample")
+        assert N == 50
+        Xi_test = s.getVector()
 
     for N in Ns:
         N = int(N)
