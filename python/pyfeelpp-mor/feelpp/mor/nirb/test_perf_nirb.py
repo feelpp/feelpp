@@ -91,7 +91,7 @@ def online_time_measure(nirb, RESPATH):
         RESPATH (str): path to the results
     """
     Dmu = nirb.Dmu
-    Ns = 50
+    Ns = 20
     s = Dmu.sampling()
     s.sampling(Ns, 'log-random')
     mus = s.getVector()
@@ -125,7 +125,7 @@ if __name__ == '__main__':
     geo_path = f"{modelsFolder}thermal-fin-3d/fin.geo"
     model_path = f"{modelsFolder}thermal-fin-3d/thermal-fin.json"
     doRectification = True
-    doGreedy = False
+    doGreedy = True
     nirb_config = feelpp.readJson(model_path)['nirb']
     nirb_config['doRectification'] = doRectification
     nirb_config['doGreedy'] = doGreedy

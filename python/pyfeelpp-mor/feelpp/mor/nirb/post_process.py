@@ -3,19 +3,20 @@ import sys
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-# import tikzplotlib
+import tikzplotlib
 from os.path import dirname, basename, isfile, join
 import glob
 
 # %%
 
-def plot_error(dirs, names, Ns):
+def plot_error(dirs, names, Ns, norm='l2'):
     """Plot errors obtained from many directories
 
     Args:
         dirs (list of str): list of path to export directories
         names (list of str): list of names for the legend
         Ns (list of int): sizes of the basis used for the computation of the errors
+        norm (str, optional): Norm to plot (l2 or h1). Defaults to l2.
     """
     D = len(dirs)
     assert(D == len(names))
@@ -23,73 +24,57 @@ def plot_error(dirs, names, Ns):
 
     cs = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan']
 
-    fig, ax = plt.subplots(1, 2, figsize=(20,10))
+    fig, ax = plt.subplots(1, 1, figsize=(20,10))
 
     errIntL2 = 0
     errIntLinf = 0
 
     for d in range(D):
-        minsL2  = np.zeros(NN)
-        meansL2 = np.zeros(NN)
-        maxsL2  = np.zeros(NN)
+        mins  = np.zeros(NN)
+        means = np.zeros(NN)
+        maxs  = np.zeros(NN)
 
-        minsLinf  = np.zeros(NN)
-        meansLinf = np.zeros(NN)
-        maxsLinf  = np.zeros(NN)
 
         for i, N in enumerate(Ns):
             df = pd.read_csv(f"{dirs[d]}/errorParams/errors{N}.csv")
-            minsL2[i]  = df["l2u-uHn"].min()
-            meansL2[i] = df["l2u-uHn"].mean()
-            maxsL2[i]  = df["l2u-uHn"].max()
+            mins[i]  = df[f"{norm}(uh-uHn)"].min()
+            means[i] = df[f"{norm}(uh-uHn)"].mean()
+            maxs[i]  = df[f"{norm}(uh-uHn)"].max()
 
-            minsLinf[i]  = df["lINFu-uHn"].min()
-            meansLinf[i] = df["lINFu-uHn"].mean()
-            maxsLinf[i]  = df["lINFu-uHn"].max()
 
-            errIntL2 += df["l2u-uH"].mean()
-            errIntLinf += df["lINFu-uH"].mean()
 
-            print(f"[NIRB online] {names[d]}: N={N},\n\tmin L2 error = {minsL2[i]},\n\tmean L2 error = {meansL2[i]},\n\tmax L2 error = {maxsL2[i]}")
-            print(f"[NIRB online] {names[d]}: N={N},\n\tmin Linf error = {minsLinf[i]},\n\tmean Linf error = {meansLinf[i]},\n\tmax Linf error = {maxsLinf[i]}")
+            errIntL2 += df[f"{norm}(uh-uH)"].mean()
 
-        ax[0].plot(Ns, minsL2, c=cs[d], label=f"L2 {names[d]}")
-        ax[0].plot(Ns, meansL2, '--', c=cs[d])
-        ax[0].plot(Ns, maxsL2, c=cs[d])
-        ax[0].fill_between(Ns, minsL2, maxsL2, alpha=0.2, color=cs[d])
+            print(f"[NIRB online] {names[d]}: N={N},\n\tmin L2 error = {mins[i]},\n\tmean {norm} error = {means[i]},\n\tmax {norm} error = {maxs[i]}")
 
-        ax[1].plot(Ns, minsLinf, c=cs[d], label=f"Linf {names[d]}")
-        ax[1].plot(Ns, meansLinf, '--', c=cs[d])
-        ax[1].plot(Ns, maxsLinf, c=cs[d])
-        ax[1].fill_between(Ns, minsLinf, maxsLinf, alpha=0.2, color=cs[d])
+        ax.plot(Ns, mins, c=cs[d], label=f"{norm} {names[d]}")
+        ax.plot(Ns, means, '--', c=cs[d])
+        ax.plot(Ns, maxs, c=cs[d])
+        ax.fill_between(Ns, mins, maxs, alpha=0.2, color=cs[d])
 
-    ax[0].axhline(errIntL2 / D, c='k', linestyle='--', label=r"$\Vert u_H - u_h\Vert$")
-    ax[1].axhline(errIntLinf / D, c='k', linestyle='--', label=r"$\Vert u_H - u_h\Vert$")
+
+    ax.axhline(errIntL2 / D, c='k', linestyle='--', label=r"$\Vert u_H - u_h\Vert$")
 
     # Plot
-    ax[0].set_title(r"Error $L^2$")
-    ax[0].set_xlabel("N")
-    ax[0].set_ylabel("Error")
-    # ax[0].set_xscale("log")
-    ax[0].set_yscale("log")
-    ax[0].set_xlim(Ns[0], Ns[-1])
-    ax[0].legend()
+    ax.set_title("Error " + [r"$H^1$", r"$L^2$"][norm=="l2"])
+    ax.set_xlabel("N")
+    ax.set_ylabel("Error")
+    # ax.set_xscale("log")
+    ax.set_yscale("log")
+    ax.set_xlim(Ns[0], Ns[-1])
+    ax.legend()
 
-    ax[1].set_title(r"Error $L^\infty$")
-    ax[1].set_xlabel("N")
-    ax[1].set_ylabel("Error")
-    # ax[1].set_xscale("log")
-    ax[1].set_yscale("log")
-    ax[1].set_xlim(Ns[0], Ns[-1])
-    ax[1].legend()
+
 
     # Save
-    # tikzplotlib.save("plot.tex")
+    tikzplotlib.save("plot.tex")
     plt.show()
 
 # plot_error('/data/scratch/saigre/feel-mbda/nirb/heat/np_1', [2, 3, 4, 5, 10, 15, 20, 25, 50, 100, 175, 200])
 #plot_error('/data/home/elarif/feelppdb/nirb/heat/np_1', [1, 2, 4, 6, 10, 12, 14, 16, 20, 25, 30, 35, 40, 45, 50, 70, 80, 100])
-
+plot_error(['/data/scratch/saigre/feel-nirb/nirb/heat/np_1/RESULTS/Rect/Greedy/', '/data/scratch/saigre/feel-nirb/nirb/heat/np_1/RESULTS/Rect/noGreedy/'],
+           ['w/ Greedy', 'w/o Greedy'],
+           [3, 4, 5, 6, 8, 10, 12, 15, 20, 25, 30, 35, 40, 50, 75, 80])
 
 # %%
 def plot_time(csv_file):
