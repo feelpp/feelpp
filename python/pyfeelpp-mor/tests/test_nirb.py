@@ -10,11 +10,11 @@ from feelpp.mor.nirb.nirb import *
 cases = [
         #  (('testcase/nirb/lid-driven-cavity/', 'cfd2d.cfg', 'cfd2d.json', False), 'lid-driven-cavity w/o rect.'),
         #  (('testcase/nirb/lid-driven-cavity/', 'cfd2d.cfg', 'cfd2d.json', True) , 'lid-driven-cavity rect'),
-         (('testcase/nirb/square', 'square.cfg', 'square.json', False, False), 'square2d w/o rect w/o greedy'),
-         (('testcase/nirb/square', 'square.cfg', 'square.json', True, False) , 'square2d rect w/o greedy'),
-         (('testcase/nirb/square', 'square.cfg', 'square.json', True, True) , 'square2d rect greedy'),
-        #  (('testcase/nirb/thermal-fin-3d', 'thermal-fin.cfg', 'thermal-fin.json', False), 'thermal-fin-3d w/o rect'),
-        #  (('testcase/nirb/thermal-fin-3d', 'thermal-fin.cfg', 'thermal-fin.json', True) , 'thermal-fin-3d rect'),
+         (('testcase/nirb/square', 'square.cfg', 'square.json', False, False), 'square2d w/o rect wogreedy'),
+         (('testcase/nirb/square', 'square.cfg', 'square.json', True, False) , 'square2d rect wogreedy'),
+         (('testcase/nirb/square', 'square.cfg', 'square.json', True, True) , 'square2d rect egreedy'),
+         (('testcase/nirb/thermal-fin-3d', 'thermal-fin.cfg', 'thermal-fin.json', False, False), 'thermal-fin-3d w/o rect wogreedy'),
+         (('testcase/nirb/thermal-fin-3d', 'thermal-fin.cfg', 'thermal-fin.json', True, False) , 'thermal-fin-3d rect wogreedy'),
         ]
 cases_params, cases_ids = list(zip(*cases))
 
