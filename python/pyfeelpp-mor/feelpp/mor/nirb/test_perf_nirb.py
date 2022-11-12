@@ -5,6 +5,7 @@ import time
 import pandas as pd
 from pathlib import Path
 from nirb_perf import *
+import argparse
 
 
 
@@ -60,7 +61,7 @@ def online_error_sampling(nirb, RESPATH, Xi_test=None):
     """
 
     Nsample = 50
-    errorN = ComputeErrorSampling(nirb, Nsample=Nsample, Xi_test=Xi_test)
+    errorN = ComputeErrorSampling(nirb, Nsample=Nsample, Xi_test=Xi_test, h1=True)
 
     df = pd.DataFrame(errorN)
     file = Path(f"{RESPATH}/errorParams/errors{nirb.N}.csv")
@@ -117,25 +118,38 @@ def online_time_measure(nirb, RESPATH):
 
 if __name__ == '__main__':
 
-    PWD = os.getcwd()
-    toolboxType = "heat"
-    modelfile={'heat':'square/square', 'fluid':'lid-driven-cavity/cfd2d'}
-    modelsFolder = f"{PWD}/model/"
-    cfg_path = f"{modelsFolder}thermal-fin-3d/thermal-fin.cfg"
-    geo_path = f"{modelsFolder}thermal-fin-3d/fin.geo"
-    model_path = f"{modelsFolder}thermal-fin-3d/thermal-fin.json"
-    doRectification = True
-    doGreedy = True
-    nirb_config = feelpp.readJson(model_path)['nirb']
-    nirb_config['doRectification'] = doRectification
-    nirb_config['doGreedy'] = doGreedy
+    parser = argparse.ArgumentParser(description='NIRB Online')
+    parser.add_argument('--config-file', type=str, help='path to cfg file')
+    parser.add_argument("--N", help="Number of initial snapshots [default=10]", type=list, default=None)
 
-    r = ["noRect","Rect"][doRectification]
-    g = ["noGreedy","Greedy"][doGreedy]
-    RESPATH = f"RESULTS/{r}/{g}"
+    args = parser.parse_args()
+    config_file = args.config_file
 
-    e = init_feelpp_environment(toolboxType, cfg_path)
-    Ns = sys.argv[1:]
+    cfg = feelpp.readCfg(config_file)
+    toolboxType = cfg['nirb']['toolboxType']
+    e = init_feelpp_environment(toolboxType, config_file)
+
+    model_path = feelpp.Environment.expand(cfg['nirb']['model_path'])
+
+    doGreedy = cfg['nirb']['greedy-generation']
+    doRectification = cfg['nirb']['rectification']
+    rectPath = ["noRect", "Rect"][doRectification]
+    greedyPath = ["noGreedy", "Greedy"][doGreedy]
+    RESPATH = f"results/{rectPath}/{greedyPath}"
+
+    nirb_file = feelpp.Environment.expand(cfg['nirb']['filename'])
+    config_nirb = feelpp.readJson(nirb_file)['nirb']
+    toolboxType = config_nirb['toolboxType']
+
+    nbSnap=args.N
+    if nbSnap==None:
+        nbSnap = config_nirb['nbSnapshots']
+        
+    # Ns = sys.argv[1:]
+    # Ns = args.N 
+    Ns = [1, 2, 4, 6, 10, 12, 14, 16, 20, 25, 30, 35, 40, 45, 50]
+    # Ns = [1, 2]
+
 
     Dmu = loadParameterSpace(model_path)
     Xi_train = generatedAndSaveSampling(Dmu, 250, samplingMode="random")
@@ -151,8 +165,8 @@ if __name__ == '__main__':
         N = int(N)
         print("\n\n-----------------------------")
         print(f"[NIRB] Test with N = {N}")
-        nirb = offline(nirb_config, RESPATH, doGreedy, N, Xi_train=Xi_train)
-        nirb_on = nirbOnline(**nirb_config)
+        nirb = offline(config_nirb, RESPATH, doGreedy, N, Xi_train=Xi_train)
+        nirb_on = nirbOnline(**config_nirb)
         err = nirb_on.loadData(path=RESPATH)
         assert err == 0, "loadData failed"
         online_error_sampling(nirb_on, RESPATH, Xi_test=Xi_test)

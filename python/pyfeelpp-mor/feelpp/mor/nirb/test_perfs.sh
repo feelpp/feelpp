@@ -7,7 +7,7 @@ removeOldDatas="rm -r ${dataFolder}"
 
 # ${removeOldDatas}
 
-Nsnap="1 2 4 6 10 12 14 16 20 25 30 35 40 45 50"
+Nsnap="1 2 6 10 12 14 16 20 25 30 35 40 45 50"
 # Nsnap="1 2 4"
 meshSize="0.5 0.25 0.125 0.0625"
 Rectification=0
