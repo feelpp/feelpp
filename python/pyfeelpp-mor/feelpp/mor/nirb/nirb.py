@@ -538,8 +538,8 @@ class nirbOffline(ToolboxModel):
     def Rectification(self, lambd=1e-10):
         """ Compute the rectification matrix R given by :
                 R = B_h*(B_H)^-1
-                with B_h[i,j] = <U_h(s_i),\phi_j >
-                and B_H[i,j] = <U_H(s_i),\phi_j >
+                with B_h[i,j] = <U_h(s_i),phi_j >
+                and B_H[i,j] = <U_H(s_i),phi_j >
 
         Args :
             lambd (float) : Tikonov regularization parameter
@@ -704,10 +704,10 @@ class nirbOffline(ToolboxModel):
             force (bool, optional): Force saving, even if files are already present. Defaults to False.
         """
 
-        reducedPath = os.path.join(path, '/reducedBasis')
+        reducedPath = os.path.join(path, 'reducedBasis')
         reducedFilename = 'reducedBasis'
 
-        l2productPath = os.path.join(path,  '/l2productBasis')
+        l2productPath = os.path.join(path,  'l2productBasis')
         l2productFilename = 'l2productBasis'
 
         if feelpp.Environment.isMasterRank():
@@ -928,7 +928,7 @@ class nirbOnline(ToolboxModel):
         return np.sqrt(np.abs(Mat.energy(u,u)))
 
     def solveOnline(self, mu):
-        """Retrun the interpolated FE-solution from coarse mesh to fine one u_{Hh}^calN(\mu)
+        """Retrun the interpolated FE-solution from coarse mesh to fine one u_{Hh}^calN(mu)
             Solve in Coarse mesh and interpolate in fine mesh
 
         Args:
