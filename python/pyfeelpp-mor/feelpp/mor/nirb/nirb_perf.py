@@ -13,15 +13,20 @@ def ComputeErrors(nirb_on, mu, h1=False, relative=True):
     -----
         nirb_on (class): initialized nirbOnline class 
         mu (ParameterSpaceElement) : parameter 
+        h1 (bool) : if True, also compute the h1 norm. Default to False
+        relative (bool) : if True, compute the relative error (error / norm of the true solution) default to True
 
     return : 
     ------
     dict: containing
-        - dict['N'] : the number of basis function 
-        - dict['nirb'] : the L2 norm between True sol and nirb sol without rectification 
-        - dict['nirb_r'] : the L2 norm between True Sol and nirb sol with rectification 
-        - dict['fine'] : the L2 norm between True sol and projection of this True sol in reduced space. 
-        N.B : True sol = FE solution in the fine mesh  
+        - error['l2(uh-uHn)'] : the L2 norm between True sol and nirb sol without rectification
+        - error['l2(uh-uHn)rec'] : the L2 norm between True Sol and nirb sol with rectification
+        - error['l2(uh-uhn)'] : the L2 norm between True sol and projection of this True sol in reduced space.
+        - error['l2(uh-uH)'] : the L2 norm between True sol and interpolate sol from coarse to fine mesh.
+        - error['l2(uh)'] : the L2 norm of the True sol
+        N.B : True sol = FE solution in the fine mesh.
+              If relativ is True, the error is divided by the norm of the True sol.
+              If h1 is True, the same norm are computed in h1 norm.
     """
     if h1: 
         l2Mat, h1Mat = nirb_on.generateOperators(h1=True)
@@ -41,17 +46,19 @@ def ComputeErrors(nirb_on, mu, h1=False, relative=True):
         error.update({'h1(uh-uHn)':[],'h1(uh-uHn)rec':[],'h1(uh-uhn)':[],'h1(uh)':[], 'h1(uh-uH)':[]})
         
     # error 
-    error['l2(uh-uHn)'].append(nirb_on.normMat(l2Mat, uNH-uh))
-    error['l2(uh-uHn)rec'].append(nirb_on.normMat(l2Mat, uNHr-uh))
-    error['l2(uh-uhn)'].append(nirb_on.normMat(l2Mat, uNh-uh))
+    rel = nirb_on.normMat(l2Mat,uh) if relative else 1
+    error['l2(uh-uHn)'].append(nirb_on.normMat(l2Mat, uNH-uh) / rel)
+    error['l2(uh-uHn)rec'].append(nirb_on.normMat(l2Mat, uNHr-uh) / rel)
+    error['l2(uh-uhn)'].append(nirb_on.normMat(l2Mat, uNh-uh) / rel)
     error['l2(uh)'].append(nirb_on.normMat(l2Mat,uh))
-    error['l2(uh-uH)'].append(nirb_on.normMat(l2Mat, uH-uh))
+    error['l2(uh-uH)'].append(nirb_on.normMat(l2Mat, uH-uh) / rel)
     if h1 : 
-        error['h1(uh-uHn)'].append(nirb_on.normMat(h1Mat, uNH-uh))
-        error['h1(uh-uHn)rec'].append(nirb_on.normMat(h1Mat, uNHr-uh))
-        error['h1(uh-uhn)'].append(nirb_on.normMat(h1Mat, uNh-uh))
+        rel = nirb_on.normMat(h1Mat,uh) if relative else 1
+        error['h1(uh-uHn)'].append(nirb_on.normMat(h1Mat, uNH-uh) / rel)
+        error['h1(uh-uHn)rec'].append(nirb_on.normMat(h1Mat, uNHr-uh) / rel)
+        error['h1(uh-uhn)'].append(nirb_on.normMat(h1Mat, uNh-uh) / rel)
         error['h1(uh)'].append(nirb_on.normMat(h1Mat,uh))
-        error['h1(uh-uH)'].append(nirb_on.normMat(h1Mat, uH-uh)) 
+        error['h1(uh-uH)'].append(nirb_on.normMat(h1Mat, uH-uh) / rel) 
 
 
     return error
