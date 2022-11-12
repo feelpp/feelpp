@@ -38,7 +38,7 @@ MathJax.Hub.Config({
  <tr id="projectrow">
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign">
-   <div id="projectname">Feel++<span id="projectnumber">&#160;0.110.0-rc.6</span>
+   <div id="projectname">Feel++<span id="projectnumber">&#160;0.110.2</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -916,8 +916,6 @@ template&lt;uint16_type Dim, typename GEOSHAPE , typename T  = double, typename 
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>the barycenter of the element </dd></dl>
 
-<p class="reference">References <a class="el" href="classFeel_1_1GeoND.html#a2ef4313b3b50827b644cd17a978bc581">Feel::GeoND&lt; Dim, GEOSHAPE, T, IndexT, POINTTYPE, UseMeasuresStorage &gt;::G()</a>.</p>
-
 </div>
 </div>
 <a id="a039a8c9d3cb24e0f8db68951a83ca12a" name="a039a8c9d3cb24e0f8db68951a83ca12a"></a>
@@ -961,8 +959,6 @@ template&lt;uint16_type Dim, typename GEOSHAPE , typename T  = double, typename 
       </table>
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>the barycenter at the faces of the element </dd></dl>
-
-<p class="reference">References <a class="el" href="classFeel_1_1GeoND.html#a443b41e6995c629dad55d2f717db2ef6">Feel::GeoND&lt; Dim, GEOSHAPE, T, IndexT, POINTTYPE, UseMeasuresStorage &gt;::fToP()</a>, and <a class="el" href="classFeel_1_1GeoND.html#a0d00797c6fb0a053c11dbff3a0435e26">Feel::GeoND&lt; Dim, GEOSHAPE, T, IndexT, POINTTYPE, UseMeasuresStorage &gt;::point()</a>.</p>
 
 </div>
 </div>
@@ -1065,8 +1061,6 @@ template&lt;uint16_type Dim, typename GEOSHAPE , typename T  = double, typename 
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>the local id of the point in the element </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="classFeel_1_1GeoND.html#aa20fdd5655f528679f462be596776829">Feel::GeoND&lt; Dim, GEOSHAPE, T, IndexT, POINTTYPE, UseMeasuresStorage &gt;::faceBarycenter()</a>.</p>
-
 </div>
 </div>
 <a id="a2ef4313b3b50827b644cd17a978bc581" name="a2ef4313b3b50827b644cd17a978bc581"></a>
@@ -1089,9 +1083,7 @@ template&lt;uint16_type Dim, typename GEOSHAPE , typename T  = double, typename 
 <p>matrix of geometric nodes retrieve the matrix of geometric nodes (Dim x NumPoints) the matrix is column oriented, the column i contains the coordinate of the i-th geometric node of the element </p>
 <dl class="section return"><dt>Returns</dt><dd>the matrix of geometric nodes </dd></dl>
 
-<p class="reference">References <a class="el" href="classFeel_1_1GeoND.html#a2ef4313b3b50827b644cd17a978bc581">Feel::GeoND&lt; Dim, GEOSHAPE, T, IndexT, POINTTYPE, UseMeasuresStorage &gt;::G()</a>.</p>
-
-<p class="reference">Referenced by <a class="el" href="classFeel_1_1GeoND.html#af02ee1626f5999d1c59e4faf7362886a">Feel::GeoND&lt; Dim, GEOSHAPE, T, IndexT, POINTTYPE, UseMeasuresStorage &gt;::barycenter()</a>, <a class="el" href="classFeel_1_1GeoND.html#a2ef4313b3b50827b644cd17a978bc581">Feel::GeoND&lt; Dim, GEOSHAPE, T, IndexT, POINTTYPE, UseMeasuresStorage &gt;::G()</a>, <a class="el" href="classFeel_1_1GeoND.html#afc3fc4fa65cec832f0e0ba9ea2293d8e">Feel::GeoND&lt; Dim, GEOSHAPE, T, IndexT, POINTTYPE, UseMeasuresStorage &gt;::h()</a>, <a class="el" href="classFeel_1_1GeoND.html#a67b3e14e0007473927b2aa4134169eae">Feel::GeoND&lt; Dim, GEOSHAPE, T, IndexT, POINTTYPE, UseMeasuresStorage &gt;::hFace()</a>, <a class="el" href="classFeel_1_1GeoND.html#a23044487f4df526f16acc2b20b997841">Feel::GeoND&lt; Dim, GEOSHAPE, T, IndexT, POINTTYPE, UseMeasuresStorage &gt;::hMin()</a>, <a class="el" href="classFeel_1_1GeoND.html#a1729449d342c04c3818c6ffba2e74ff3">Feel::GeoND&lt; Dim, GEOSHAPE, T, IndexT, POINTTYPE, UseMeasuresStorage &gt;::isAnticlockwiseOriented()</a>, <a class="el" href="classFeel_1_1GeoND.html#a98969a3cecb0879d9b8be11e38bcd1e0">Feel::GeoND&lt; Dim, GEOSHAPE, T, IndexT, POINTTYPE, UseMeasuresStorage &gt;::updateG()</a>, <a class="el" href="classFeel_1_1GeoND.html#a7243938877695f057a4bc2bcc6c2d315">Feel::GeoND&lt; Dim, GEOSHAPE, T, IndexT, POINTTYPE, UseMeasuresStorage &gt;::updateVertices()</a>, and <a class="el" href="classFeel_1_1GeoND.html#aa350af4a5f5d91d7c5b716c3506bb2fa">Feel::GeoND&lt; Dim, GEOSHAPE, T, IndexT, POINTTYPE, UseMeasuresStorage &gt;::vertices()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="classFeel_1_1GeoND.html#a98969a3cecb0879d9b8be11e38bcd1e0">Feel::GeoND&lt; Dim, GEOSHAPE, T, IndexT, POINTTYPE, UseMeasuresStorage &gt;::updateG()</a>, <a class="el" href="classFeel_1_1GeoND.html#a7243938877695f057a4bc2bcc6c2d315">Feel::GeoND&lt; Dim, GEOSHAPE, T, IndexT, POINTTYPE, UseMeasuresStorage &gt;::updateVertices()</a>, and <a class="el" href="classFeel_1_1GeoND.html#aa350af4a5f5d91d7c5b716c3506bb2fa">Feel::GeoND&lt; Dim, GEOSHAPE, T, IndexT, POINTTYPE, UseMeasuresStorage &gt;::vertices()</a>.</p>
 
 </div>
 </div>
@@ -1114,8 +1106,6 @@ template&lt;uint16_type Dim, typename GEOSHAPE , typename T  = double, typename 
 
 <p>get the max length of the edges of the element </p>
 <dl class="section return"><dt>Returns</dt><dd>the max length of the edges of the element </dd></dl>
-
-<p class="reference">References <a class="el" href="classFeel_1_1GeoEntity.html#a03e9632f661fb83d0d98a2d913b34250">Feel::GeoEntity&lt; GEOSHAPE, double &gt;::eToP()</a>, and <a class="el" href="classFeel_1_1GeoND.html#a2ef4313b3b50827b644cd17a978bc581">Feel::GeoND&lt; Dim, GEOSHAPE, T, IndexT, POINTTYPE, UseMeasuresStorage &gt;::G()</a>.</p>
 
 </div>
 </div>
@@ -1207,8 +1197,6 @@ template&lt;uint16_type Dim, typename GEOSHAPE , typename T  = double, typename 
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>the max length of the edges of the local face </dd></dl>
 
-<p class="reference">References <a class="el" href="classFeel_1_1GeoEntity.html#a03e9632f661fb83d0d98a2d913b34250">Feel::GeoEntity&lt; GEOSHAPE, double &gt;::eToP()</a>, <a class="el" href="classFeel_1_1GeoND.html#a2ef4313b3b50827b644cd17a978bc581">Feel::GeoND&lt; Dim, GEOSHAPE, T, IndexT, POINTTYPE, UseMeasuresStorage &gt;::G()</a>, and <a class="el" href="classFeel_1_1GeoEntity.html#a2de94e71e4777020762082291ee5f961">Feel::GeoEntity&lt; GEOSHAPE, double &gt;::nEdges()</a>.</p>
-
 </div>
 </div>
 <a id="a23044487f4df526f16acc2b20b997841" name="a23044487f4df526f16acc2b20b997841"></a>
@@ -1230,8 +1218,6 @@ template&lt;uint16_type Dim, typename GEOSHAPE , typename T  = double, typename 
 
 <p>get the minimum edge length in the element </p>
 <dl class="section return"><dt>Returns</dt><dd>the minimum edge length in the element </dd></dl>
-
-<p class="reference">References <a class="el" href="classFeel_1_1GeoEntity.html#a03e9632f661fb83d0d98a2d913b34250">Feel::GeoEntity&lt; GEOSHAPE, double &gt;::eToP()</a>, and <a class="el" href="classFeel_1_1GeoND.html#a2ef4313b3b50827b644cd17a978bc581">Feel::GeoND&lt; Dim, GEOSHAPE, T, IndexT, POINTTYPE, UseMeasuresStorage &gt;::G()</a>.</p>
 
 </div>
 </div>
@@ -1429,8 +1415,6 @@ template&lt;uint16_type Dim, typename GEOSHAPE , typename T  = double, typename 
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>the normal at the barycenter of the face <code>f</code> </dd></dl>
 
-<p class="reference">References <a class="el" href="classFeel_1_1GeoND.html#ac931cf0d42140a603e81cefaf74274d4">Feel::GeoND&lt; Dim, GEOSHAPE, T, IndexT, POINTTYPE, UseMeasuresStorage &gt;::gm1()</a>.</p>
-
 </div>
 </div>
 <a id="a7acc82fbf1ff3abca9d02a0bf1d8cb13" name="a7acc82fbf1ff3abca9d02a0bf1d8cb13"></a>
@@ -1450,8 +1434,6 @@ template&lt;uint16_type Dim, typename GEOSHAPE , typename T  = double, typename 
       </table>
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>the normals at the barycenter of the faces </dd></dl>
-
-<p class="reference">References <a class="el" href="classFeel_1_1GeoND.html#ac931cf0d42140a603e81cefaf74274d4">Feel::GeoND&lt; Dim, GEOSHAPE, T, IndexT, POINTTYPE, UseMeasuresStorage &gt;::gm1()</a>.</p>
 
 </div>
 </div>
@@ -1492,8 +1474,6 @@ template&lt;uint16_type Dim, typename GEOSHAPE , typename T  = double, typename 
       </table>
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>the number of point element neighbors </dd></dl>
-
-<p class="reference">References <a class="el" href="classFeel_1_1GeoND.html#aabba0a7860f5c85520486b36a9fc740c">Feel::GeoND&lt; Dim, GEOSHAPE, T, IndexT, POINTTYPE, UseMeasuresStorage &gt;::pointElementNeighborIds()</a>.</p>
 
 </div>
 </div>
@@ -1574,8 +1554,6 @@ template&lt;uint16_type Dim, typename GEOSHAPE , typename T  = double, typename 
       </table>
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>the set of ids of point element neighbors </dd></dl>
-
-<p class="reference">Referenced by <a class="el" href="classFeel_1_1GeoND.html#ae1827d60616b0c10a639d5dc2937359e">Feel::GeoND&lt; Dim, GEOSHAPE, T, IndexT, POINTTYPE, UseMeasuresStorage &gt;::numberOfPointElementNeighbors()</a>.</p>
 
 </div>
 </div>

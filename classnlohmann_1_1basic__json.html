@@ -38,7 +38,7 @@ MathJax.Hub.Config({
  <tr id="projectrow">
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign">
-   <div id="projectname">Feel++<span id="projectnumber">&#160;0.110.0-rc.6</span>
+   <div id="projectname">Feel++<span id="projectnumber">&#160;0.110.2</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -1063,7 +1063,7 @@ template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, 
 <p>create an empty value with a given type </p>
 <dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/basic_json/">https://json.nlohmann.me/api/basic_json/basic_json/</a> </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="classnlohmann_1_1basic__json.html#a76126242de262f6d38cadda19e0d13e1">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::swap()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="classnlohmann_1_1basic__json.html#a411e54cf8c67f0d66b682fb686be3913">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::__attribute__()</a>.</p>
 
 </div>
 </div>
@@ -1216,6 +1216,8 @@ template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, 
 
 <p>serialize to stream </p>
 <dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/operator_ltlt/">https://json.nlohmann.me/api/basic_json/operator_ltlt/</a> </dd></dl>
+
+<p class="reference">References <a class="el" href="classnlohmann_1_1basic__json.html#a19734fbc9c97d536832892ddacd6b62a">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::basic_json()</a>.</p>
 
 </div>
 </div>
@@ -2366,7 +2368,7 @@ template&lt;typename ValueTypeCV , typename ValueType  = detail::uncvref_t&lt;Va
 </dl>
 <dl class="section since"><dt>Since</dt><dd>version 2.1.0 </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="classFeel_1_1Repository.html#a48131f3b170576200de32906f53d7775">Feel::Repository::configure()</a>.</p>
+<p class="reference">References <a class="el" href="classnlohmann_1_1detail_1_1serializer.html#a95460ebd1a535a543e5a0ec52e00f48b">nlohmann::detail::serializer&lt; BasicJsonType &gt;::dump()</a>.</p>
 
 </div>
 </div>
@@ -2412,8 +2414,6 @@ template&lt;typename PointerType , typename std::enable_if&lt; std::is_pointer&l
 <p >@liveexample{The example below shows how pointers to internal values of a JSON value can be requested. Note that no type conversions are made and a <code>nullptr</code> is returned if the value and the requested pointer type does not match.,get__PointerType}</p>
 <dl class="section see"><dt>See also</dt><dd>see <a class="el" href="classnlohmann_1_1basic__json.html#a85222410e03d8f5c8ff9c78cf9f6b1b6">get_ptr()</a> for explicit pointer-member access</dd></dl>
 <dl class="section since"><dt>Since</dt><dd>version 1.0.0 </dd></dl>
-
-<p class="reference">References <a class="el" href="classnlohmann_1_1detail_1_1serializer.html#a95460ebd1a535a543e5a0ec52e00f48b">nlohmann::detail::serializer&lt; BasicJsonType &gt;::dump()</a>.</p>
 
 </div>
 </div>
@@ -2602,8 +2602,6 @@ template&lt;typename ReferenceType , typename std::enable_if&lt; std::is_referen
 
 <p>get a reference value (implicit) </p>
 <dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/get_ref/">https://json.nlohmann.me/api/basic_json/get_ref/</a> </dd></dl>
-
-<p class="reference">References <a class="el" href="group__DSEL-Variational-Formulation.html#ga804803997f88c76948f600cb3835b99d">val()</a>.</p>
 
 </div>
 </div>
@@ -3468,8 +3466,6 @@ template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, 
 <p>exchanges the values </p>
 <dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/swap/">https://json.nlohmann.me/api/basic_json/swap/</a> </dd></dl>
 
-<p class="reference">References <a class="el" href="classnlohmann_1_1basic__json.html#a19734fbc9c97d536832892ddacd6b62a">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::basic_json()</a>, and <a class="el" href="namespacenlohmann_1_1detail.html#a1ed8fc6239da25abcaf681d30ace4985a37a6259cc0c1dae299a7866489dff0bd">nlohmann::detail::null</a>.</p>
-
 </div>
 </div>
 <a id="aa242e339ebc7583e114f2167a83f8c90" name="aa242e339ebc7583e114f2167a83f8c90"></a>
@@ -3493,7 +3489,7 @@ template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, 
 <p>exchanges the values </p>
 <dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/swap/">https://json.nlohmann.me/api/basic_json/swap/</a> </dd></dl>
 
-<p class="reference">References <a class="el" href="namespacenlohmann_1_1detail.html#a1ed8fc6239da25abcaf681d30ace4985af1f713c9e000f5d3f280adbd124df4f5">nlohmann::detail::array</a>.</p>
+<p class="reference">References <a class="el" href="namespacenlohmann_1_1detail.html#a1ed8fc6239da25abcaf681d30ace4985af1f713c9e000f5d3f280adbd124df4f5">nlohmann::detail::array</a>, and <a class="el" href="namespacenlohmann_1_1detail.html#a1ed8fc6239da25abcaf681d30ace4985aa8cfde6331bd59eb2ac96f8911c4b666">nlohmann::detail::object</a>.</p>
 
 </div>
 </div>
@@ -3626,6 +3622,8 @@ template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, 
 <p>create a BSON serialization of a given JSON value </p>
 <dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/to_bson/">https://json.nlohmann.me/api/basic_json/to_bson/</a> </dd></dl>
 
+<p class="reference">References <a class="el" href="namespacenlohmann_1_1detail.html#a1ed8fc6239da25abcaf681d30ace4985a37a6259cc0c1dae299a7866489dff0bd">nlohmann::detail::null</a>.</p>
+
 </div>
 </div>
 <a id="a9ebed178fb7dad1a574bcb7c361fb1b8" name="a9ebed178fb7dad1a574bcb7c361fb1b8"></a>
@@ -3666,8 +3664,6 @@ template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, 
 
 <p>create a BSON serialization of a given JSON value </p>
 <dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/to_bson/">https://json.nlohmann.me/api/basic_json/to_bson/</a> </dd></dl>
-
-<p class="reference">References <a class="el" href="namespacestd.html#ae23c025cf50ad98d916e49a8f36fe9b7">std::swap()</a>.</p>
 
 </div>
 </div>
@@ -3782,8 +3778,6 @@ template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, 
 <p>create a CBOR serialization of a given JSON value </p>
 <dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/to_cbor/">https://json.nlohmann.me/api/basic_json/to_cbor/</a> </dd></dl>
 
-<p class="reference">References <a class="el" href="classnlohmann_1_1basic__json.html#a72f1c0ede41f166429ce3fe7c2ffefc0">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::m_value</a>.</p>
-
 </div>
 </div>
 <a id="ac59dfbee523c5340e41548764a8d26be" name="ac59dfbee523c5340e41548764a8d26be"></a>
@@ -3825,7 +3819,7 @@ template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, 
 <p>create a CBOR serialization of a given JSON value </p>
 <dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/to_cbor/">https://json.nlohmann.me/api/basic_json/to_cbor/</a> </dd></dl>
 
-<p class="reference">References <a class="el" href="classnlohmann_1_1basic__json.html#a72f1c0ede41f166429ce3fe7c2ffefc0">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::m_value</a>.</p>
+<p class="reference">References <a class="el" href="classnlohmann_1_1basic__json.html#a72f1c0ede41f166429ce3fe7c2ffefc0">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::m_value</a>, and <a class="el" href="namespacenlohmann_1_1detail.html#a1ed8fc6239da25abcaf681d30ace4985aa8cfde6331bd59eb2ac96f8911c4b666">nlohmann::detail::object</a>.</p>
 
 </div>
 </div>
@@ -3857,6 +3851,8 @@ template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, 
 
 <p>create a MessagePack serialization of a given JSON value </p>
 <dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/to_msgpack/">https://json.nlohmann.me/api/basic_json/to_msgpack/</a> </dd></dl>
+
+<p class="reference">References <a class="el" href="classnlohmann_1_1basic__json.html#a72f1c0ede41f166429ce3fe7c2ffefc0">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::m_value</a>.</p>
 
 </div>
 </div>
@@ -3899,8 +3895,6 @@ template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, 
 <p>create a MessagePack serialization of a given JSON value </p>
 <dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/to_msgpack/">https://json.nlohmann.me/api/basic_json/to_msgpack/</a> </dd></dl>
 
-<p class="reference">References <a class="el" href="classnlohmann_1_1basic__json.html#a72f1c0ede41f166429ce3fe7c2ffefc0">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::m_value</a>.</p>
-
 </div>
 </div>
 <a id="af57f7877fbef9881289fe2c8b31e37e1" name="af57f7877fbef9881289fe2c8b31e37e1"></a>
@@ -3941,8 +3935,6 @@ template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, 
 
 <p>create a MessagePack serialization of a given JSON value </p>
 <dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/to_msgpack/">https://json.nlohmann.me/api/basic_json/to_msgpack/</a> </dd></dl>
-
-<p class="reference">References <a class="el" href="classnlohmann_1_1basic__json.html#a72f1c0ede41f166429ce3fe7c2ffefc0">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::m_value</a>.</p>
 
 </div>
 </div>
@@ -3990,8 +3982,6 @@ template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, 
 
 <p>create a UBJSON serialization of a given JSON value </p>
 <dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/to_ubjson/">https://json.nlohmann.me/api/basic_json/to_ubjson/</a> </dd></dl>
-
-<p class="reference">References <a class="el" href="classnlohmann_1_1basic__json.html#a72f1c0ede41f166429ce3fe7c2ffefc0">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::m_value</a>.</p>
 
 </div>
 </div>
@@ -4207,6 +4197,8 @@ template&lt;class ValueType , typename std::enable_if&lt; <a class="el" href="st
 
 <p>access specified object element via JSON Pointer with default value </p>
 <dl class="section see"><dt>See also</dt><dd><a href="https://json.nlohmann.me/api/basic_json/value/">https://json.nlohmann.me/api/basic_json/value/</a> </dd></dl>
+
+<p class="reference">References <a class="el" href="namespacenlohmann_1_1detail.html#a5a76b60b26dc8c47256a996d18d967dfa567bc1d268f135496de3d5b946b691f3">nlohmann::detail::ignore</a>, <a class="el" href="namespacenlohmann_1_1detail.html#a5a76b60b26dc8c47256a996d18d967dfa9dde360102c103867bd2f45872f1129c">nlohmann::detail::replace</a>, and <a class="el" href="namespacenlohmann_1_1detail.html#a5a76b60b26dc8c47256a996d18d967dfa2133fd717402a7966ee88d06f9e0b792">nlohmann::detail::strict</a>.</p>
 
 </div>
 </div>
@@ -5139,8 +5131,8 @@ template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, 
 </div><div class="memdoc">
 <b>Initial value:</b><div class="fragment"><div class="line">{</div>
 <div class="line">        <span class="keywordflow">return</span> <a class="code hl_function" href="classnlohmann_1_1basic__json.html#a11641b35219676b225d9bd15c7677659">value</a>(ptr, <a class="code hl_typedef" href="classnlohmann_1_1basic__json.html#a33593865ffb1860323dcbd52425b90c8">string_t</a>(default_value))</div>
-<div class="ttc" id="aclassnlohmann_1_1basic__json_html_a11641b35219676b225d9bd15c7677659"><div class="ttname"><a href="classnlohmann_1_1basic__json.html#a11641b35219676b225d9bd15c7677659">nlohmann::basic_json::value</a></div><div class="ttdeci">ValueType value(const typename object_t::key_type &amp;key, const ValueType &amp;default_value) const</div><div class="ttdoc">access specified object element with default value</div><div class="ttdef"><b>Definition:</b> _json.hpp:16609</div></div>
-<div class="ttc" id="aclassnlohmann_1_1basic__json_html_a33593865ffb1860323dcbd52425b90c8"><div class="ttname"><a href="classnlohmann_1_1basic__json.html#a33593865ffb1860323dcbd52425b90c8">nlohmann::basic_json::string_t</a></div><div class="ttdeci">StringType string_t</div><div class="ttdoc">a type for a string</div><div class="ttdef"><b>Definition:</b> _json.hpp:14895</div></div>
+<div class="ttc" id="aclassnlohmann_1_1basic__json_html_a11641b35219676b225d9bd15c7677659"><div class="ttname"><a href="classnlohmann_1_1basic__json.html#a11641b35219676b225d9bd15c7677659">nlohmann::basic_json::value</a></div><div class="ttdeci">ValueType value(const typename object_t::key_type &amp;key, const ValueType &amp;default_value) const</div><div class="ttdoc">access specified object element with default value</div><div class="ttdef"><b>Definition:</b> _json.hpp:16606</div></div>
+<div class="ttc" id="aclassnlohmann_1_1basic__json_html_a33593865ffb1860323dcbd52425b90c8"><div class="ttname"><a href="classnlohmann_1_1basic__json.html#a33593865ffb1860323dcbd52425b90c8">nlohmann::basic_json::string_t</a></div><div class="ttdeci">StringType string_t</div><div class="ttdoc">a type for a string</div><div class="ttdef"><b>Definition:</b> _json.hpp:14892</div></div>
 </div><!-- fragment -->
 </div>
 </div>

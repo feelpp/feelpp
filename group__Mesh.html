@@ -38,7 +38,7 @@ MathJax.Hub.Config({
  <tr id="projectrow">
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign">
-   <div id="projectname">Feel++<span id="projectnumber">&#160;0.110.0-rc.6</span>
+   <div id="projectname">Feel++<span id="projectnumber">&#160;0.110.2</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -348,8 +348,6 @@ template&lt;typename MeshType , typename IteratorType &gt; </div>
 <p><code>#include &lt;<a class="el" href="filters_8hpp.html">/nvme0/prudhomm/actions-runner/_work/feelpp/feelpp/feelpp/feel/feelmesh/filters.hpp</a>&gt;</code></p>
 <dl class="section return"><dt>Returns</dt><dd>build a list of elements based on iterators [begin,end) from a mesh <code>imesh</code> </dd></dl>
 
-<p class="reference">References <a class="el" href="namespaceFeel.html#ad6b99fb9a2316b213400f07d4cfa837a">Feel::edges()</a>, and <a class="el" href="namespaceFeel.html#ab3a0f136b2980f14f6111a9daf2fa483">Feel::invalid_rank_type_value</a>.</p>
-
 </div>
 </div>
 <a id="ga6394537813e21ec32dee0d6ffd8f6ffe" name="ga6394537813e21ec32dee0d6ffd8f6ffe"></a>
@@ -392,7 +390,7 @@ template&lt;typename... Ts&gt; </div>
 <div class="line"><span class="keyword">auto</span> adapted_mesh = <a class="code hl_function" href="group__Mesh.html#ga6394537813e21ec32dee0d6ffd8f6ffe">remesh</a>( _mesh=mesh, _metric=<span class="stringliteral">&quot;0.1&quot;</span> );</div>
 <div class="line"><span class="comment">// adapt mesh with constant mesh size with required elements marked omega</span></div>
 <div class="line"><span class="keyword">auto</span> adapted_mesh = <a class="code hl_function" href="group__Mesh.html#ga6394537813e21ec32dee0d6ffd8f6ffe">remesh</a>( _mesh=mesh, _metric=<span class="stringliteral">&quot;0.1&quot;</span>, _required_elts=std::vector{{<span class="stringliteral">&quot;omega&quot;</span>}} );</div>
-<div class="ttc" id="agroup__Mesh_html_ga6394537813e21ec32dee0d6ffd8f6ffe"><div class="ttname"><a href="group__Mesh.html#ga6394537813e21ec32dee0d6ffd8f6ffe">Feel::remesh</a></div><div class="ttdeci">auto remesh(Ts &amp;&amp;... v)</div><div class="ttdoc">remesh with named arguments</div><div class="ttdef"><b>Definition:</b> remesh.hpp:165</div></div>
+<div class="ttc" id="agroup__Mesh_html_ga6394537813e21ec32dee0d6ffd8f6ffe"><div class="ttname"><a href="group__Mesh.html#ga6394537813e21ec32dee0d6ffd8f6ffe">Feel::remesh</a></div><div class="ttdeci">auto remesh(Ts &amp;&amp;... v)</div><div class="ttdoc">remesh with named arguments</div><div class="ttdef"><b>Definition:</b> remesh.hpp:164</div></div>
 </div><!-- fragment --><dl class="section return"><dt>Returns</dt><dd>std::shared_ptr&lt;MeshType&gt; </dd></dl>
 
 </div>
@@ -418,7 +416,7 @@ template&lt;typename RangeT , std::enable_if_t&lt; is_range_v&lt; RangeT &gt;, <
 <p><code>#include &lt;<a class="el" href="filters_8hpp.html">/nvme0/prudhomm/actions-runner/_work/feelpp/feelpp/feelpp/feel/feelmesh/filters.hpp</a>&gt;</code></p>
 <dl class="section return"><dt>Returns</dt><dd>the worldcomm associated to the mesh stored in the range </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="classFeel_1_1MeshBase.html#a1ed60f60a82b72efd8624027150ccc45">Feel::MeshBase&lt; IndexT &gt;::isPartitioned()</a>, and <a class="el" href="classFeel_1_1Bdf.html#abcfa94b54300905ab8664cd2e6a411e8">Feel::Bdf&lt; SpaceType &gt;::start()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="classFeel_1_1MeshBase.html#a1ed60f60a82b72efd8624027150ccc45">Feel::MeshBase&lt; IndexT &gt;::isPartitioned()</a>, <a class="el" href="classFeel_1_1Bdf.html#abdef91c238eba3ea230e45d509c2e608">Feel::Bdf&lt; SpaceType &gt;::loadCurrent()</a>, and <a class="el" href="classFeel_1_1Bdf.html#abcfa94b54300905ab8664cd2e6a411e8">Feel::Bdf&lt; SpaceType &gt;::start()</a>.</p>
 
 </div>
 </div>

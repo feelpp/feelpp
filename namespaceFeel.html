@@ -38,7 +38,7 @@ MathJax.Hub.Config({
  <tr id="projectrow">
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign">
-   <div id="projectname">Feel++<span id="projectnumber">&#160;0.110.0-rc.6</span>
+   <div id="projectname">Feel++<span id="projectnumber">&#160;0.110.2</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -4661,7 +4661,7 @@ template&lt;typename Base1 , typename Base2 , typename MeshType &gt; </div>
 
 <p>Define the type for P&lt;Order1&gt;P&lt;Order2&gt; </p>
 <div class="fragment"><div class="line"><a class="code hl_class" href="classFeel_1_1FunctionSpace.html">P2ch_type&lt;1,1,Mesh&lt;Simplex&lt;2&gt;</a>&gt;&gt; <span class="comment">// generates \f$P1P1\f$ over a mesh of triangles</span></div>
-<div class="ttc" id="aclassFeel_1_1FunctionSpace_html"><div class="ttname"><a href="classFeel_1_1FunctionSpace.html">Feel::FunctionSpace</a></div><div class="ttdef"><b>Definition:</b> functionspace.hpp:1475</div></div>
+<div class="ttc" id="aclassFeel_1_1FunctionSpace_html"><div class="ttname"><a href="classFeel_1_1FunctionSpace.html">Feel::FunctionSpace</a></div><div class="ttdef"><b>Definition:</b> functionspace.hpp:1471</div></div>
 </div><!-- fragment --> 
 </div>
 </div>
@@ -4897,8 +4897,6 @@ template&lt;typename MeshType , std::enable_if_t&lt; std::is_base_of_v&lt; <a cl
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>a pair of iterators to iterate over all boundary faces of the mesh </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="classFeel_1_1Mesh.html#a6a6926710e9a7ffb59c3a756c91488a3">Feel::Mesh&lt; GeoShape, T, Tag, IndexT &gt;::updateMarker2WithRange()</a>.</p>
-
 </div>
 </div>
 <a id="a7793cabd1778915a23b69cbb156d2049" name="a7793cabd1778915a23b69cbb156d2049"></a>
@@ -5124,8 +5122,6 @@ template&lt;typename MeshType &gt; </div>
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>a mapping between a id and pair of (range active element, range ghost elements) </dd></dl>
 
-<p class="reference">References <a class="el" href="namespaceFeel.html#a1372f4524450ec29bf6f239ded3a6054">markedelementsByType()</a>.</p>
-
 </div>
 </div>
 <a id="ab17b89f0643bc3b4a432c8d44dd15e7b" name="ab17b89f0643bc3b4a432c8d44dd15e7b"></a>
@@ -5159,8 +5155,8 @@ template&lt;typename IteratorType , typename Predicate &gt; </div>
 <p>Provides the complement of the set of entities given by <code></code>[begin(it),end(it)] with respect to the negation of predicate <code>pred</code>. </p>
 <div class="fragment"><div class="line"><span class="comment">// get all faces not marked by marker1 &quot;R&quot;</span></div>
 <div class="line"><span class="keyword">auto</span> set = <a class="code hl_function" href="namespaceFeel.html#ab17b89f0643bc3b4a432c8d44dd15e7b">complement</a>( <a class="code hl_function" href="namespaceFeel.html#a447e4f926bcdc43957a72c96dde8e71a">faces</a>(mesh), [&amp;mesh]( <span class="keyword">auto</span> <span class="keyword">const</span>&amp; e ) { <span class="keywordflow">return</span> e.marker() == mesh-&gt;markerName( <span class="stringliteral">&quot;R&quot;</span> ); });</div>
-<div class="ttc" id="anamespaceFeel_html_a447e4f926bcdc43957a72c96dde8e71a"><div class="ttname"><a href="namespaceFeel.html#a447e4f926bcdc43957a72c96dde8e71a">Feel::faces</a></div><div class="ttdeci">faces_pid_t&lt; MeshType &gt; faces(MeshType const &amp;mesh)</div><div class="ttdef"><b>Definition:</b> filters.hpp:375</div></div>
-<div class="ttc" id="anamespaceFeel_html_ab17b89f0643bc3b4a432c8d44dd15e7b"><div class="ttname"><a href="namespaceFeel.html#ab17b89f0643bc3b4a432c8d44dd15e7b">Feel::complement</a></div><div class="ttdeci">ext_entities_from_iterator_t&lt; IteratorType &gt; complement(IteratorType &amp;&amp;it, Predicate pred)</div><div class="ttdoc">Provides the complement of the set of entities given by [begin(it),end(it)] with respect to the negat...</div><div class="ttdef"><b>Definition:</b> complement.hpp:44</div></div>
+<div class="ttc" id="anamespaceFeel_html_a447e4f926bcdc43957a72c96dde8e71a"><div class="ttname"><a href="namespaceFeel.html#a447e4f926bcdc43957a72c96dde8e71a">Feel::faces</a></div><div class="ttdeci">faces_pid_t&lt; MeshType &gt; faces(MeshType const &amp;mesh)</div><div class="ttdef"><b>Definition:</b> filters.hpp:374</div></div>
+<div class="ttc" id="anamespaceFeel_html_ab17b89f0643bc3b4a432c8d44dd15e7b"><div class="ttname"><a href="namespaceFeel.html#ab17b89f0643bc3b4a432c8d44dd15e7b">Feel::complement</a></div><div class="ttdeci">ext_entities_from_iterator_t&lt; IteratorType &gt; complement(IteratorType &amp;&amp;it, Predicate pred)</div><div class="ttdoc">Provides the complement of the set of entities given by [begin(it),end(it)] with respect to the negat...</div><div class="ttdef"><b>Definition:</b> complement.hpp:43</div></div>
 </div><!-- fragment --> 
 </div>
 </div>
@@ -5198,9 +5194,9 @@ template&lt;typename IteratorType , typename... Args&gt; </div>
 <div class="line"><span class="keyword">auto</span> subset = <a class="code hl_function" href="namespaceFeel.html#a1411206eb551cee7af2dda6338cc2999">concatenate</a>( <a class="code hl_function" href="namespaceFeel.html#ab247f341a8496755e51ca1aa482f123c">internalfaces</a>(mesh), <a class="code hl_function" href="namespaceFeel.html#a70e9593e01ccdba4f55d7ca7d77f0262">markedfaces</a>(mesh,<span class="stringliteral">&quot;inlet&quot;</span>) );</div>
 <div class="line"><span class="comment">// it can then be used eg to create a submesh</span></div>
 <div class="line"><span class="keyword">auto</span> submesh = createSubmesh( mesh, subset );</div>
-<div class="ttc" id="anamespaceFeel_html_a1411206eb551cee7af2dda6338cc2999"><div class="ttname"><a href="namespaceFeel.html#a1411206eb551cee7af2dda6338cc2999">Feel::concatenate</a></div><div class="ttdeci">FEELPP_EXPORT Feel::concatenate_t&lt; IteratorType &gt; concatenate(IteratorType &amp;&amp;it, Args &amp;&amp;... args)</div><div class="ttdoc">this function takes a set of iterators over geometrical entities of the same type (e....</div><div class="ttdef"><b>Definition:</b> concatenate.hpp:54</div></div>
-<div class="ttc" id="anamespaceFeel_html_a70e9593e01ccdba4f55d7ca7d77f0262"><div class="ttname"><a href="namespaceFeel.html#a70e9593e01ccdba4f55d7ca7d77f0262">Feel::markedfaces</a></div><div class="ttdeci">markedfaces_t&lt; MeshType &gt; markedfaces(MeshType const &amp;mesh)</div><div class="ttdef"><b>Definition:</b> filters.hpp:438</div></div>
-<div class="ttc" id="anamespaceFeel_html_ab247f341a8496755e51ca1aa482f123c"><div class="ttname"><a href="namespaceFeel.html#ab247f341a8496755e51ca1aa482f123c">Feel::internalfaces</a></div><div class="ttdeci">internalfaces_t&lt; MeshType &gt; internalfaces(MeshType const &amp;mesh)</div><div class="ttdef"><b>Definition:</b> filters.hpp:517</div></div>
+<div class="ttc" id="anamespaceFeel_html_a1411206eb551cee7af2dda6338cc2999"><div class="ttname"><a href="namespaceFeel.html#a1411206eb551cee7af2dda6338cc2999">Feel::concatenate</a></div><div class="ttdeci">FEELPP_EXPORT Feel::concatenate_t&lt; IteratorType &gt; concatenate(IteratorType &amp;&amp;it, Args &amp;&amp;... args)</div><div class="ttdoc">this function takes a set of iterators over geometrical entities of the same type (e....</div><div class="ttdef"><b>Definition:</b> concatenate.hpp:53</div></div>
+<div class="ttc" id="anamespaceFeel_html_a70e9593e01ccdba4f55d7ca7d77f0262"><div class="ttname"><a href="namespaceFeel.html#a70e9593e01ccdba4f55d7ca7d77f0262">Feel::markedfaces</a></div><div class="ttdeci">markedfaces_t&lt; MeshType &gt; markedfaces(MeshType const &amp;mesh)</div><div class="ttdef"><b>Definition:</b> filters.hpp:437</div></div>
+<div class="ttc" id="anamespaceFeel_html_ab247f341a8496755e51ca1aa482f123c"><div class="ttname"><a href="namespaceFeel.html#ab247f341a8496755e51ca1aa482f123c">Feel::internalfaces</a></div><div class="ttdeci">internalfaces_t&lt; MeshType &gt; internalfaces(MeshType const &amp;mesh)</div><div class="ttdef"><b>Definition:</b> filters.hpp:516</div></div>
 </div><!-- fragment --> 
 </div>
 </div>
@@ -5417,8 +5413,6 @@ template&lt;typename MeshType , std::enable_if_t&lt; std::is_base_of_v&lt; <a cl
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>a pair of edge iterators (begin,end) </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="group__Mesh.html#ga11f6177c58adf8bebf116edbcae4c2d7">idelements()</a>.</p>
-
 </div>
 </div>
 <a id="abdab447afcf746e7e621c56c1d6dc06b" name="abdab447afcf746e7e621c56c1d6dc06b"></a>
@@ -5440,7 +5434,7 @@ template&lt;typename MeshType , std::enable_if_t&lt; std::is_base_of_v&lt; <a cl
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>a pair of iterators to iterate over elements with pid <code>flag</code> </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="classnlohmann_1_1detail_1_1binary__reader.html#a652bd78a42119c77fcf40c79451fccb3">nlohmann::detail::binary_reader&lt; BasicJsonType, InputAdapterType, SAX &gt;::__attribute__()</a>, <a class="el" href="classFeel_1_1TwoSpacesMap.html#acc802ee8303782b4ea6f45b1fdc4c003">Feel::TwoSpacesMap&lt; SpaceType &gt;::build()</a>, <a class="el" href="namespaceFeel.html#ae5a32c718addd9a235b0bff89af5f6c3">etaQ()</a>, <a class="el" href="namespaceFeel.html#a338e05dd5e37f3594666f0a00e029d3d">expr()</a>, <a class="el" href="namespaceFeel.html#ab9924f871d98695d8d0beb150a235eff">hMeasures()</a>, <a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics_1_1Body.html#a4f52fe9e135f1bcf26ee71b61bd70122">Feel::FeelModels::FluidMechanics&lt; ConvexType, BasisVelocityType, BasisPressureType &gt;::Body::initElasticVelocity()</a>, <a class="el" href="classFeel_1_1CNAB2.html#add03791c58e92fe6a714f31583a28340">Feel::CNAB2&lt; FieldType &gt;::l2Error()</a>, <a class="el" href="namespaceFeel.html#ab41461e608c4d0c9806e662a1aae5a72">nsrQ()</a>, <a class="el" href="classFeel_1_1Mesh0D.html#ae340fbdfd1511dbf168c251421a57dc3">Feel::Mesh0D&lt; Shape, T, IndexT &gt;::numLocalVertices()</a>, <a class="el" href="classFeel_1_1Localization.html#afb07ebe36fbcc5c9fd926641dd108d58">Feel::Localization&lt; MeshType &gt;::setMesh()</a>, and <a class="el" href="classFeel_1_1Localization.html#a7d54fa323c45777c5484ff5b0b9c1ce6">Feel::Localization&lt; MeshType &gt;::updateForUse()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="classnlohmann_1_1detail_1_1binary__reader.html#a652bd78a42119c77fcf40c79451fccb3">nlohmann::detail::binary_reader&lt; BasicJsonType, InputAdapterType, SAX &gt;::__attribute__()</a>, <a class="el" href="classFeel_1_1TwoSpacesMap.html#acc802ee8303782b4ea6f45b1fdc4c003">Feel::TwoSpacesMap&lt; SpaceType &gt;::build()</a>, <a class="el" href="namespaceFeel.html#ae5a32c718addd9a235b0bff89af5f6c3">etaQ()</a>, <a class="el" href="namespaceFeel.html#a338e05dd5e37f3594666f0a00e029d3d">expr()</a>, <a class="el" href="namespaceFeel.html#ab9924f871d98695d8d0beb150a235eff">hMeasures()</a>, <a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics_1_1Body.html#a4f52fe9e135f1bcf26ee71b61bd70122">Feel::FeelModels::FluidMechanics&lt; ConvexType, BasisVelocityType, BasisPressureType &gt;::Body::initElasticVelocity()</a>, <a class="el" href="namespaceFeel.html#ab41461e608c4d0c9806e662a1aae5a72">nsrQ()</a>, <a class="el" href="classFeel_1_1Mesh2D.html#a3bceb7918fc6aacd338b30a9bb43de2a">Feel::Mesh2D&lt; Shape, T, IndexT &gt;::numLocalFaces()</a>, <a class="el" href="classFeel_1_1Localization.html#afb07ebe36fbcc5c9fd926641dd108d58">Feel::Localization&lt; MeshType &gt;::setMesh()</a>, and <a class="el" href="classFeel_1_1Localization.html#a7d54fa323c45777c5484ff5b0b9c1ce6">Feel::Localization&lt; MeshType &gt;::updateForUse()</a>.</p>
 
 </div>
 </div>
@@ -5875,7 +5869,7 @@ template&lt;typename SpaceT , typename ExprT , std::enable_if_t&lt; std::is_base
 
 <p class="reference">References <a class="el" href="namespaceFeel.html#abdab447afcf746e7e621c56c1d6dc06b">elements()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="unary_8hpp.html#a39baf1d3415f74f0966fc5aa698ee2fd">Feel::vf::operator+()</a>, <a class="el" href="unary_8hpp.html#ac3080ce0e8d3b933e00f3585e557e736">Feel::vf::operator-()</a>, and <a class="el" href="classFeel_1_1FeelModels_1_1ModelBase.html#aa5ca72de8294d51b9a414b44d7dab92c">Feel::FeelModels::ModelBase::setModelProperties()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="classFeel_1_1FeelModels_1_1ModelPhysic.html#a8ad6b1535d61aea4a00c91a228767337">Feel::FeelModels::ModelPhysic&lt; Dim &gt;::addParameter()</a>, <a class="el" href="ginac_8hpp.html#a3650d458dc699b0a352661a51dd2f2fa">Feel::vf::diff()</a>, <a class="el" href="unary_8hpp.html#a39baf1d3415f74f0966fc5aa698ee2fd">Feel::vf::operator+()</a>, <a class="el" href="unary_8hpp.html#ac3080ce0e8d3b933e00f3585e557e736">Feel::vf::operator-()</a>, and <a class="el" href="classFeel_1_1FeelModels_1_1ModelBase.html#aa5ca72de8294d51b9a414b44d7dab92c">Feel::FeelModels::ModelBase::setModelProperties()</a>.</p>
 
 </div>
 </div>
@@ -5952,7 +5946,7 @@ template&lt;typename <a class="el" href="classC.html">C</a> &gt; </div>
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>the global MPI rank of the data structure <code>c</code> </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="classFeel_1_1TwoSpacesMap.html#ab6cc77605b59c2f52a4398d5e53b0569">Feel::TwoSpacesMap&lt; SpaceType &gt;::clusterToSequential()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="classFeel_1_1TwoSpacesMap.html#ab6cc77605b59c2f52a4398d5e53b0569">Feel::TwoSpacesMap&lt; SpaceType &gt;::clusterToSequential()</a>, and <a class="el" href="classFeel_1_1WorldComm.html#afbd5864205c0a3c6023de481410e3ccb">Feel::WorldComm::isMasterRank()</a>.</p>
 
 </div>
 </div>
@@ -6047,7 +6041,7 @@ template&lt;typename SpaceT , std::enable_if_t&lt; std::is_base_of_v&lt; <a clas
 <div class="line">{</div>
 <div class="line">  <a class="code hl_function" href="namespaceFeel.html#a2785f8892f89d072d026f84d0225fd50">handleExceptions</a>()</div>
 <div class="line">}</div>
-<div class="ttc" id="aclassFeel_1_1Environment_html"><div class="ttname"><a href="classFeel_1_1Environment.html">Feel::Environment</a></div><div class="ttdoc">Initialize, finalize, and query the Feel++ environment.</div><div class="ttdef"><b>Definition:</b> environment.hpp:168</div></div>
+<div class="ttc" id="aclassFeel_1_1Environment_html"><div class="ttname"><a href="classFeel_1_1Environment.html">Feel::Environment</a></div><div class="ttdoc">Initialize, finalize, and query the Feel++ environment.</div><div class="ttdef"><b>Definition:</b> environment.hpp:167</div></div>
 <div class="ttc" id="anamespaceFeel_html_a2785f8892f89d072d026f84d0225fd50"><div class="ttname"><a href="namespaceFeel.html#a2785f8892f89d072d026f84d0225fd50">Feel::handleExceptions</a></div><div class="ttdeci">void handleExceptions()</div><div class="ttdoc">handle exceptions using a Lippincott function this funnction allows to handle the exceptions thrown i...</div><div class="ttdef"><b>Definition:</b> exceptions.cpp:79</div></div>
 </div><!-- fragment --> 
 </div>
@@ -6235,8 +6229,6 @@ template&lt;typename MeshType &gt; </div>
 <dl class="section return"><dt>Returns</dt><dd>a pair of iterators to iterate over all internal edges of the mesh </dd></dl>
 
 <p class="reference">References <a class="el" href="namespaceFeel.html#ad1b57ad98050fb58fb91de4fd1ddd830">unwrap_ptr()</a>.</p>
-
-<p class="reference">Referenced by <a class="el" href="namespaceFeel.html#af4856aabc8edb9da0e76320ec7c0d31a">markedpoints()</a>.</p>
 
 </div>
 </div>
@@ -6436,9 +6428,9 @@ template&lt;typename IteratorType , typename... Args&gt; </div>
 <div class="line"><span class="keyword">auto</span> subset = <a class="code hl_function" href="namespaceFeel.html#aca803a191f8742d8bbd3a165cac73836">intersect</a>( <a class="code hl_function" href="namespaceFeel.html#a93edd48ccb6abecda7ce9fa360c73d2a">internalelements</a>(mesh), <a class="code hl_function" href="namespaceFeel.html#ac120aa5c05572bd2a1b983f0b66b4f69">markedelements</a>(mesh,<span class="stringliteral">&quot;omega&quot;</span>) );</div>
 <div class="line"><span class="comment">// it can then be used eg to create a submesh</span></div>
 <div class="line"><span class="keyword">auto</span> submesh = createSubmesh( mesh, subset );</div>
-<div class="ttc" id="anamespaceFeel_html_a93edd48ccb6abecda7ce9fa360c73d2a"><div class="ttname"><a href="namespaceFeel.html#a93edd48ccb6abecda7ce9fa360c73d2a">Feel::internalelements</a></div><div class="ttdeci">internalelements_t&lt; MeshType &gt; internalelements(MeshType const &amp;mesh)</div><div class="ttdef"><b>Definition:</b> filters.hpp:202</div></div>
-<div class="ttc" id="anamespaceFeel_html_ac120aa5c05572bd2a1b983f0b66b4f69"><div class="ttname"><a href="namespaceFeel.html#ac120aa5c05572bd2a1b983f0b66b4f69">Feel::markedelements</a></div><div class="ttdeci">markedelements_t&lt; MeshType &gt; markedelements(MeshType const &amp;mesh)</div><div class="ttdef"><b>Definition:</b> filters.hpp:262</div></div>
-<div class="ttc" id="anamespaceFeel_html_aca803a191f8742d8bbd3a165cac73836"><div class="ttname"><a href="namespaceFeel.html#aca803a191f8742d8bbd3a165cac73836">Feel::intersect</a></div><div class="ttdeci">FEELPP_EXPORT Feel::intersect_t&lt; IteratorType &gt; intersect(IteratorType &amp;&amp;it, Args &amp;&amp;... args)</div><div class="ttdoc">this function takes a set of iterators over geometrical entities of the same type (e....</div><div class="ttdef"><b>Definition:</b> intersect.hpp:53</div></div>
+<div class="ttc" id="anamespaceFeel_html_a93edd48ccb6abecda7ce9fa360c73d2a"><div class="ttname"><a href="namespaceFeel.html#a93edd48ccb6abecda7ce9fa360c73d2a">Feel::internalelements</a></div><div class="ttdeci">internalelements_t&lt; MeshType &gt; internalelements(MeshType const &amp;mesh)</div><div class="ttdef"><b>Definition:</b> filters.hpp:201</div></div>
+<div class="ttc" id="anamespaceFeel_html_ac120aa5c05572bd2a1b983f0b66b4f69"><div class="ttname"><a href="namespaceFeel.html#ac120aa5c05572bd2a1b983f0b66b4f69">Feel::markedelements</a></div><div class="ttdeci">markedelements_t&lt; MeshType &gt; markedelements(MeshType const &amp;mesh)</div><div class="ttdef"><b>Definition:</b> filters.hpp:261</div></div>
+<div class="ttc" id="anamespaceFeel_html_aca803a191f8742d8bbd3a165cac73836"><div class="ttname"><a href="namespaceFeel.html#aca803a191f8742d8bbd3a165cac73836">Feel::intersect</a></div><div class="ttdeci">FEELPP_EXPORT Feel::intersect_t&lt; IteratorType &gt; intersect(IteratorType &amp;&amp;it, Args &amp;&amp;... args)</div><div class="ttdoc">this function takes a set of iterators over geometrical entities of the same type (e....</div><div class="ttdef"><b>Definition:</b> intersect.hpp:52</div></div>
 </div><!-- fragment --> 
 </div>
 </div>
@@ -6484,12 +6476,8 @@ template&lt;typename IteratorType , typename... Args&gt; </div>
 
 <p>compute integer power </p>
 <div class="fragment"><div class="line">uint64_t i = <a class="code hl_function" href="namespaceFeel.html#aeae4be2a1bdc7033742a68a8574cf194">ipow</a>( 2, 3 );</div>
-<div class="ttc" id="anamespaceFeel_html_aeae4be2a1bdc7033742a68a8574cf194"><div class="ttname"><a href="namespaceFeel.html#aeae4be2a1bdc7033742a68a8574cf194">Feel::ipow</a></div><div class="ttdeci">constexpr int64_t ipow(int64_t base, int exp, int64_t result=1)</div><div class="ttdoc">compute integer power</div><div class="ttdef"><b>Definition:</b> feelmath.hpp:39</div></div>
+<div class="ttc" id="anamespaceFeel_html_aeae4be2a1bdc7033742a68a8574cf194"><div class="ttname"><a href="namespaceFeel.html#aeae4be2a1bdc7033742a68a8574cf194">Feel::ipow</a></div><div class="ttdeci">constexpr int64_t ipow(int64_t base, int exp, int64_t result=1)</div><div class="ttdoc">compute integer power</div><div class="ttdef"><b>Definition:</b> feelmath.hpp:38</div></div>
 </div><!-- fragment --> 
-<p class="reference">References <a class="el" href="namespaceFeel.html#aeae4be2a1bdc7033742a68a8574cf194">ipow()</a>.</p>
-
-<p class="reference">Referenced by <a class="el" href="namespaceFeel.html#aeae4be2a1bdc7033742a68a8574cf194">ipow()</a>.</p>
-
 </div>
 </div>
 <a id="a123f20e1a3831e374de2279014d262f4" name="a123f20e1a3831e374de2279014d262f4"></a>
@@ -6524,8 +6512,6 @@ template&lt;typename IteratorType , typename... Args&gt; </div>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Location </dd></dl>
-
-<p class="reference">References <a class="el" href="namespaceFeel.html#ad150a39999969f8618dff7d7ee98b8d6adc4d53aa0d117d8b189b36d161af4e96">absolute</a>, <a class="el" href="namespaceFeel.html#ad150a39999969f8618dff7d7ee98b8d6aba9f11ecc3497d9993b933fdc2bd61e5">git</a>, <a class="el" href="namespaceFeel.html#ad150a39999969f8618dff7d7ee98b8d6a9c70933aff6b2a6d08c687a6cbb6b765">global</a>, and <a class="el" href="namespaceFeel.html#ad150a39999969f8618dff7d7ee98b8d6a99c483e1d11b1a279a2a1a3960528487">relative</a>.</p>
 
 </div>
 </div>
@@ -6822,8 +6808,6 @@ template&lt;typename MeshType &gt; </div>
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>a pair of iterators to iterate over elements of the mesh with marker <code>flag</code> </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="namespaceFeel.html#a009acc335f4ebc610c23e8e84177ab5c">collectionOfMarkedelementsWithGhostsSplitted()</a>.</p>
-
 </div>
 </div>
 <a id="a79cf83a6ac888bb3267bfe8d8f0bb6b4" name="a79cf83a6ac888bb3267bfe8d8f0bb6b4"></a>
@@ -6995,8 +6979,6 @@ template&lt;typename MeshType &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>a pair of iterators (begin,end) for the set of marked points </dd></dl>
 
-<p class="reference">References <a class="el" href="namespaceFeel.html#a97b443da76236011da49df9a09d3de2d">internaledges()</a>.</p>
-
 </div>
 </div>
 <a id="a18f85cda52c985551f1b40846166b1fe" name="a18f85cda52c985551f1b40846166b1fe"></a>
@@ -7104,7 +7086,7 @@ template&lt;typename CollectionOfRangeT , std::enable_if_t&lt; is_range_v&lt; ty
 </dl>
 <p>The following code prints in the logfile the number of elements in the mesh that are marked with marker1 equal to 1:</p>
 <div class="fragment"><div class="line">LOG(INFO) &lt;&lt; <span class="stringliteral">&quot;number of elements = &quot;</span> &lt;&lt; <a class="code hl_function" href="namespaceFeel.html#a00e07ff1ab71ccbe6edeb6e4304358a3">nelements</a>( <a class="code hl_function" href="namespaceFeel.html#ac120aa5c05572bd2a1b983f0b66b4f69">markedelements</a>(mesh,{1,2,3}) ) &lt;&lt; <span class="stringliteral">&quot;\n&quot;</span>;</div>
-<div class="ttc" id="anamespaceFeel_html_a00e07ff1ab71ccbe6edeb6e4304358a3"><div class="ttname"><a href="namespaceFeel.html#a00e07ff1ab71ccbe6edeb6e4304358a3">Feel::nelements</a></div><div class="ttdeci">size_type nelements(RangeT const &amp;its, bool global=false, worldcomm_t const &amp;worldComm=Environment::worldComm())</div><div class="ttdef"><b>Definition:</b> filters.hpp:809</div></div>
+<div class="ttc" id="anamespaceFeel_html_a00e07ff1ab71ccbe6edeb6e4304358a3"><div class="ttname"><a href="namespaceFeel.html#a00e07ff1ab71ccbe6edeb6e4304358a3">Feel::nelements</a></div><div class="ttdeci">size_type nelements(RangeT const &amp;its, bool global=false, worldcomm_t const &amp;worldComm=Environment::worldComm())</div><div class="ttdef"><b>Definition:</b> filters.hpp:808</div></div>
 </div><!-- fragment --> 
 </div>
 </div>
@@ -7531,6 +7513,10 @@ template&lt;typename MeshType &gt; </div>
 <p>partition a mesh and provide a helper data struct navigate in the newly partitioned mesh </p>
 <dl class="section return"><dt>Returns</dt><dd>a std::unique_ptr to a <a class="el" href="classFeel_1_1MeshPartitionSet.html">MeshPartitionSet</a> </dd></dl>
 
+<p class="reference">References <a class="el" href="namespaceFeel.html#a8d616e47c5166bd403cd290de898b524">partitionMesh()</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="namespaceFeel.html#a8d616e47c5166bd403cd290de898b524">partitionMesh()</a>.</p>
+
 </div>
 </div>
 <a id="abdb57cba7ea4651c2e6abfd4a03a0e22" name="abdb57cba7ea4651c2e6abfd4a03a0e22"></a>
@@ -7552,6 +7538,8 @@ template&lt;typename MeshType &gt; </div>
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>the range of iterators [begin,end] over the points of the mesh </dd></dl>
 <dl class="section warning"><dt>Warning</dt><dd>this filter is not parallelized </dd></dl>
+
+<p class="reference">Referenced by <a class="el" href="classFeel_1_1Mesh3D.html#abae7809a2af9eaa5c79aa6b73d532305">Feel::Mesh3D&lt; Shape, T, IndexT &gt;::localEdgeId()</a>.</p>
 
 </div>
 </div>
@@ -7799,7 +7787,7 @@ template&lt;typename <a class="el" href="classC.html">C</a> &gt; </div>
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>the local MPI rank of the data structure <code>c</code> </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="classFeel_1_1WorldComm.html#a99f10bd89247bc33adffa817fac59e84">Feel::WorldComm::split()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="classFeel_1_1WorldComm.html#ae5a950d70bfa275540869ca949c87966">Feel::WorldComm::isActive()</a>, and <a class="el" href="classFeel_1_1WorldComm.html#a99f10bd89247bc33adffa817fac59e84">Feel::WorldComm::split()</a>.</p>
 
 </div>
 </div>
@@ -7868,8 +7856,6 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>real dimension of a type T </dd></dl>
-
-<p class="reference">Referenced by <a class="el" href="classFeel_1_1Hypercube.html#ab10128fb3a571cb7a5a47d06a231ffbc">Feel::Hypercube&lt; Dim, Order, RDim &gt;::dimension()</a>, and <a class="el" href="classFeel_1_1Simplex.html#abe7ce7a2bfefcf7609288a1ae7acd8e2">Feel::Simplex&lt; Dim, Order, RDim &gt;::dimension()</a>.</p>
 
 </div>
 </div>

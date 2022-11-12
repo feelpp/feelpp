@@ -38,7 +38,7 @@ MathJax.Hub.Config({
  <tr id="projectrow">
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign">
-   <div id="projectname">Feel++<span id="projectnumber">&#160;0.110.0-rc.6</span>
+   <div id="projectname">Feel++<span id="projectnumber">&#160;0.110.2</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -748,6 +748,8 @@ template&lt;typename SpaceType &gt; </div>
 <li>You might desire to read a bdf backward. Then you have to pass <code>setReverseLoad(true)</code> to load existing unknowns from last iteration! It is require after a restart if time loop sense changed. </li>
 </ul>
 
+<p class="reference">References <a class="el" href="classFeel_1_1WorldComm.html#a5089aa8980e3ae1ff3d384198d19a796">Feel::WorldComm::globalRank()</a>, and <a class="el" href="group__Mesh.html#gab4cf21b17bddf97ac6b13289cc329ae8">Feel::worldComm()</a>.</p>
+
 </div>
 </div>
 <a id="abf1f13f924da97e15ac6e626882aaaaf" name="abf1f13f924da97e15ac6e626882aaaaf"></a>
@@ -778,8 +780,6 @@ template&lt;typename SpaceType &gt; </div>
 <p>Move to next time step (solution not shifted). </p>
 
 <p>Reimplemented from <a class="el" href="classFeel_1_1TSBase.html#adb8d719396f180b5662039cc770a2daf">Feel::TSBase</a>.</p>
-
-<p class="reference">References <a class="el" href="classFeel_1_1Bdf.html#a5e465bd326153926ca37a424853a6c0f">Feel::Bdf&lt; SpaceType &gt;::shiftRight()</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="classFeel_1_1Bdf.html#acc3409181de12ed70489772a94fe7eaa">Feel::Bdf&lt; SpaceType &gt;::polyDerivCoefficient()</a>.</p>
 
@@ -873,7 +873,7 @@ template&lt;typename container_type &gt; </div>
   </dd>
 </dl>
 
-<p class="reference">Referenced by <a class="el" href="classFeel_1_1Bdf.html#abf1f13f924da97e15ac6e626882aaaaf">Feel::Bdf&lt; SpaceType &gt;::next()</a>, and <a class="el" href="classFeel_1_1Bdf.html#acc3409181de12ed70489772a94fe7eaa">Feel::Bdf&lt; SpaceType &gt;::polyDerivCoefficient()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="classFeel_1_1Bdf.html#acc3409181de12ed70489772a94fe7eaa">Feel::Bdf&lt; SpaceType &gt;::polyDerivCoefficient()</a>.</p>
 
 </div>
 </div>
