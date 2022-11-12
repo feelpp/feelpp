@@ -36,7 +36,7 @@ if __name__ == "__main__":
     
     nirb_on = nirbOnline(**config_nirb)
 
-    mu = nirb_on.Dmu.element()
+    mu = nirb_on.Dmu.mumin()
     nirb_on.loadData(path=RESPATH, nbSnap=nbSnap)
     uHh = nirb_on.getOnlineSol(mu)
 
