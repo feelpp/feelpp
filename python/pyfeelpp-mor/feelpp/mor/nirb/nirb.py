@@ -866,10 +866,10 @@ class nirbOnline(ToolboxModel):
         """
         print(f"[NIRB] Loading data from {os.path.abspath(path)}")
 
-        reducedPath = os.path.join(path,'/reducedBasis')
+        reducedPath = os.path.join(path,'reducedBasis')
         reducedFilename = 'reducedBasis'
 
-        l2productPath = os.path.join(path, '/l2productBasis')
+        l2productPath = os.path.join(path, 'l2productBasis')
         l2productFilename = 'l2productBasis'
         
         if feelpp.Environment.isMasterRank():
