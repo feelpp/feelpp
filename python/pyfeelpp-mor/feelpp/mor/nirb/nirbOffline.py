@@ -60,7 +60,7 @@ if __name__ == "__main__":
     nirb_off.generateOperators(coarse=True)
 
     if doGreedy:
-        _, Xi_train, _ = nirb_off.initProblemGreedy(100, 1e-5, Nmax=6, Xi_train=Xi_train, computeCoarse=True, samplingMode="random")
+        _, Xi_train, _ = nirb_off.initProblemGreedy(100, 1e-5, Nmax=config_nirb['nbSnapshots'], Xi_train=Xi_train, computeCoarse=True, samplingMode="random")
     else:
         Xi_train = nirb_off.initProblem(nbSnap)
     nirb_off.generateReducedBasis(regulParam=1.e-10)

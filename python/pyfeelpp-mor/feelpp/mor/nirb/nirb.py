@@ -333,26 +333,25 @@ class nirbOffline(ToolboxModel):
 
         return vector_mu
 
-
-    def getReducedSolution(self, mu, N):
+    def getReducedSolution(self, coarseSolutions, mu, N):
         """Computed the reduced solution for a given parameter and a size of basis
 
         Args:
+        -----
+            coarseSolutions (dict of Feel++ solutions): list of coarse solution
             mu (parameterSpaceElement): parameter
             N (int): size of the sub-basis
 
         Returns:
+        --------
             PETSc.Vec: reduced solution u_H^N
         """
-        coarseSol = self.getToolboxSolution(self.tbCoarse, mu).to_petsc().vec()
-        # uHN = PETSc.Vec().create(comm=PETSc.COMM_WORLD)
-        # uHN.setSizes(N)
-        # uHN.setFromOptions()
-        # uHN.setUp()
+        coarseSol = coarseSolutions[mu]
         uHN = np.zeros(N)
 
         for i in range(N):
-            uHN[i] = self.coarseSnapShotList[i].to_petsc().vec().dot( coarseSol )
+            # uHN[i] = self.coarseSnapShotList[i].to_petsc().vec().dot( coarseSol.to_petsc().vec() )
+            uHN[i] = self.l2ScalarProductMatrixCoarse.energy( self.reducedBasis[i], coarseSol )
         return uHN
 
 
@@ -394,6 +393,12 @@ class nirbOffline(ToolboxModel):
         self.coarseSnapShotList = []
         self.coarseSnapShotListGreedy = []
         N = 0
+
+        # Computation of coarse solutions
+        coarseSolutions = {}
+        for mu in tqdm(Xi_train, desc="[NIRB] Computing coarse solutions", ncols=120):
+            coarseSolutions[mu] = self.getToolboxSolution(self.tbCoarse, mu)
+
         for i in range(2):
             mu0 = self.Dmu.element()
             S.append(mu0)
@@ -402,7 +407,8 @@ class nirbOffline(ToolboxModel):
             self.coarseSnapShotListGreedy.append(self.getToolboxSolution(self.tbCoarse, mu0) )
             N += 1
             self.orthonormalizeMatL2(self.coarseSnapShotListGreedy)
-        Delta_0 = np.abs(self.getReducedSolution(Xi_train[0], 2).mean() - self.getReducedSolution(Xi_train[1], 1).mean())
+        Delta_0 = np.abs(self.getReducedSolution(coarseSolutions, Xi_train[0], 2).mean()
+                         - self.getReducedSolution(coarseSolutions, Xi_train[1], 1).mean())
 
         while Delta_star > eps and N < Nmax:
             M = N - 1
@@ -410,8 +416,8 @@ class nirbOffline(ToolboxModel):
             Delta_star = -float('inf')
 
             for i, mu in enumerate(tqdm(Xi_train,desc=f"[NIRB] Greedy selection", ascii=False, ncols=120)):
-                uHN = self.getReducedSolution(mu, N)
-                uHM = self.getReducedSolution(mu, M)
+                uHN = self.getReducedSolution(coarseSolutions, mu, N)
+                uHM = self.getReducedSolution(coarseSolutions, mu, M)
 
                 Delta = np.abs( uHN.mean() - uHM.mean() ) / Delta_0
 
@@ -435,6 +441,8 @@ class nirbOffline(ToolboxModel):
 
         if feelpp.Environment.isMasterRank():
             print(f"[NIRB] Number of snapshot computed : {N}")
+
+        print(Deltas_conv)
 
         return S, Xi_train_copy, Deltas_conv
 
