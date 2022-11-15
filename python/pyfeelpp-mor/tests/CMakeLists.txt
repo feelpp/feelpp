@@ -34,14 +34,14 @@ COMMAND ${CMAKE_COMMAND} -E env
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-add_test (NAME feelpp_mor_python-tests-nirb-greedy
+add_test (NAME feelpp_mor_python-tests-greedy-nirb
 COMMAND ${CMAKE_COMMAND} -E env
       LD_LIBRARY_PATH=${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}:$ENV{LD_LIBRARY_PATH}
       PYTHONPATH=${CMAKE_INSTALL_PREFIX}/${FEELPP_PYTHON_MODULE_PATH}
       ${PYTHON_EXECUTABLE} -m pytest test_nirb.py -s -vv -k egreedy
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
-add_test (NAME feelpp_mor_python-tests-mpi-nirb-greedy
+add_test (NAME feelpp_mor_python-tests-mpi-greedy-nirb
   COMMAND ${CMAKE_COMMAND} -E env
         LD_LIBRARY_PATH=${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}:$ENV{LD_LIBRARY_PATH}
         PYTHONPATH=${CMAKE_INSTALL_PREFIX}/${FEELPP_PYTHON_MODULE_PATH}

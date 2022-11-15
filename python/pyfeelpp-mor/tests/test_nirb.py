@@ -6,7 +6,7 @@ import pytest
 import feelpp
 from feelpp.mor.nirb.nirb import *
 
-# desc : ((toolboxtype, 'model_directory', cfg, json, geo, H, h, dimension, doRectification), 'name-of-the-test')
+# desc : ((toolboxtype, 'model_directory', cfg, json, geo, H, h, dimension, doRectification, doGreedy), 'name-of-the-test')
 cases = [
         #  (('testcase/nirb/lid-driven-cavity/', 'cfd2d.cfg', 'cfd2d.json', False), 'lid-driven-cavity w/o rect.'),
         #  (('testcase/nirb/lid-driven-cavity/', 'cfd2d.cfg', 'cfd2d.json', True) , 'lid-driven-cavity rect'),
@@ -16,6 +16,7 @@ cases = [
          (('testcase/nirb/thermal-fin-3d', 'thermal-fin.cfg', 'thermal-fin.json', False, False), 'thermal-fin-3d w/o rect wogreedy'),
          (('testcase/nirb/thermal-fin-3d', 'thermal-fin.cfg', 'thermal-fin.json', True, False) , 'thermal-fin-3d rect wogreedy'),
         ]
+# NB: for the name of the test, wogreedy is a keyword standing for "without greedy", and egreedy for "enable greedy" 
 cases_params, cases_ids = list(zip(*cases))
 
 
