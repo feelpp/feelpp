@@ -69,7 +69,7 @@ var sectionId = 'dynsection-1';
 <text text-anchor="start" x="55.5" y="-359.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ addTimer()</text>
 <text text-anchor="start" x="55.5" y="-348.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ clearSomeMemory()</text>
 <text text-anchor="start" x="55.5" y="-337.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ expand()</text>
-<text text-anchor="start" x="55.5" y="-326.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 10 more...</text>
+<text text-anchor="start" x="55.5" y="-326.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 12 more...</text>
 <text text-anchor="start" x="55.5" y="-315.5" font-family="Helvetica,sans-Serif" font-size="10.00">* worldcomm_type</text>
 <text text-anchor="start" x="55.5" y="-304.5" font-family="Helvetica,sans-Serif" font-size="10.00">* worldcomm_ptrtype</text>
 <text text-anchor="start" x="55.5" y="-293.5" font-family="Helvetica,sans-Serif" font-size="10.00">* Environment()</text>

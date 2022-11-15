@@ -1,5 +1,7 @@
 var NAVTREEINDEX21 =
 {
+"structFeel_1_1detail_1_1NbDof_1_1result.html":[5,0,1,1,31,0],
+"structFeel_1_1detail_1_1NbDof_1_1result.html":[4,0,1,1,31,0],
 "structFeel_1_1detail_1_1NbDof_1_1result_3_01NbDof_07S_00_01T_08_4.html":[4,0,1,1,31,1],
 "structFeel_1_1detail_1_1NbDof_1_1result_3_01NbDof_07S_00_01T_08_4.html":[5,0,1,1,31,1],
 "structFeel_1_1detail_1_1PrecomputeDomainBasisFunction.html":[5,0,1,1,37],
@@ -247,7 +249,5 @@ var NAVTREEINDEX21 =
 "structFeel_1_1vf_1_1Cast_1_1Lambda.html":[5,0,1,13,5,2],
 "structFeel_1_1vf_1_1Cast_1_1Lambda.html":[4,0,1,13,5,2],
 "structFeel_1_1vf_1_1Cast_1_1tensor.html":[4,0,1,13,5,3],
-"structFeel_1_1vf_1_1Cast_1_1tensor.html":[5,0,1,13,5,3],
-"structFeel_1_1vf_1_1Cast_1_1tensor_1_1expr.html":[4,0,1,13,5,3,0],
-"structFeel_1_1vf_1_1Cast_1_1tensor_1_1expr.html":[5,0,1,13,5,3,0]
+"structFeel_1_1vf_1_1Cast_1_1tensor.html":[5,0,1,13,5,3]
 };

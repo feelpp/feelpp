@@ -55,11 +55,12 @@ var searchData=
   ['localtoglobalid_52',['localToGlobalId',['../classFeel_1_1DofTable.html#a51cf71fd172498c005086ddbe4b29bca',1,'Feel::DofTable']]],
   ['localtoglobalindices_53',['localToGlobalIndices',['../classFeel_1_1DofTable.html#ac5a276a1788774a9a8e0451339e4e4ae',1,'Feel::DofTable::localToGlobalIndices() const'],['../classFeel_1_1DofTable.html#ab2d0f395bbf942759ab77b28a70abf15',1,'Feel::DofTable::localToGlobalIndices(size_type ElId) const'],['../classFeel_1_1DofTable.html#aa9f7d9a64a269dfdf73e401996df6ddf',1,'Feel::DofTable::localToGlobalIndices(size_type ElId, std::vector&lt; size_type &gt; const &amp;basisToContainerGlobalProcess) const']]],
   ['localtoglobalsigns_54',['localToGlobalSigns',['../classFeel_1_1DofTable.html#aa2c084f229d3f86abf854c32d8e57343',1,'Feel::DofTable']]],
-  ['location_55',['location',['../namespaceFeel.html#ab7b2ec45819eb31898d023f23b4bea18',1,'Feel::location(Location location_enum) noexcept'],['../namespaceFeel.html#a123f20e1a3831e374de2279014d262f4',1,'Feel::location(const std::string &amp;location_string) noexcept']]],
-  ['location_56',['Location',['../namespaceFeel.html#ad150a39999969f8618dff7d7ee98b8d6',1,'Feel']]],
+  ['location_55',['Location',['../namespaceFeel.html#ad150a39999969f8618dff7d7ee98b8d6',1,'Feel']]],
+  ['location_56',['location',['../namespaceFeel.html#a123f20e1a3831e374de2279014d262f4',1,'Feel::location(const std::string &amp;location_string) noexcept'],['../namespaceFeel.html#ab7b2ec45819eb31898d023f23b4bea18',1,'Feel::location(Location location_enum) noexcept']]],
   ['log_57',['log',['../classFeel_1_1PsLogger.html#a2f72736898d3212023d583d9bf131992',1,'Feel::PsLogger']]],
   ['logmemoryusage_58',['logMemoryUsage',['../classFeel_1_1Environment.html#a43c7e409ca67d5c89864bb5a91468fdf',1,'Feel::Environment']]],
   ['logs_59',['logs',['../classFeel_1_1Repository.html#aa41713ac6b41df6778094725c6cd61e2',1,'Feel::Repository']]],
   ['logsrepository_60',['logsRepository',['../classFeel_1_1Environment.html#ac2ba36cb9e6b5cc1df509104647d4ec5',1,'Feel::Environment']]],
-  ['ltstep_61',['ltstep',['../structFeel_1_1detail_1_1TimeSet_1_1ltstep.html',1,'Feel::detail::TimeSet']]]
+  ['logverbositylevel_61',['logVerbosityLevel',['../classFeel_1_1Environment.html#afb9a1d5d0f25b22bf6bd5c9bf03b4e0f',1,'Feel::Environment']]],
+  ['ltstep_62',['ltstep',['../structFeel_1_1detail_1_1TimeSet_1_1ltstep.html',1,'Feel::detail::TimeSet']]]
 ];

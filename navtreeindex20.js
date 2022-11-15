@@ -1,5 +1,7 @@
 var NAVTREEINDEX20 =
 {
+"structFeel_1_1GeoND_1_1GetImMeasure.html":[3,0,1,5,1],
+"structFeel_1_1GeoND_1_1tt.html":[3,0,1,5,2],
 "structFeel_1_1GeometricSpaceBase.html":[4,0,1,91],
 "structFeel_1_1GeometricSpaceBase.html":[5,0,1,91],
 "structFeel_1_1GinacExprManagerDefaultFileNameDeleterImpl.html":[4,0,1,96],
@@ -247,7 +249,5 @@ var NAVTREEINDEX20 =
 "structFeel_1_1detail_1_1NLocalDof_1_1result_3_01NLocalDof_07S_00_01T_08_4.html":[4,0,1,1,32,1],
 "structFeel_1_1detail_1_1NLocalDof_1_1result_3_01NLocalDof_07S_00_01T_08_4.html":[5,0,1,1,32,1],
 "structFeel_1_1detail_1_1NbDof.html":[4,0,1,1,31],
-"structFeel_1_1detail_1_1NbDof.html":[5,0,1,1,31],
-"structFeel_1_1detail_1_1NbDof_1_1result.html":[5,0,1,1,31,0],
-"structFeel_1_1detail_1_1NbDof_1_1result.html":[4,0,1,1,31,0]
+"structFeel_1_1detail_1_1NbDof.html":[5,0,1,1,31]
 };
