@@ -351,7 +351,7 @@ class nirbOffline(ToolboxModel):
 
         for i in range(N):
             # uHN[i] = self.coarseSnapShotList[i].to_petsc().vec().dot( coarseSol.to_petsc().vec() )
-            uHN[i] = self.l2ScalarProductMatrixCoarse.energy( self.reducedBasis[i], coarseSol )
+            uHN[i] = self.l2ScalarProductMatrixCoarse.energy( self.coarseSnapShotList[i], coarseSol )
         return uHN
 
 
