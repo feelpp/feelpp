@@ -692,12 +692,12 @@ class nirbOnline(ToolboxModel):
         if h1:
             l2Mat = FppOp.mass(test=self.Xh, trial=self.Xh, range=feelpp.elements(self.tbFine.mesh()))
             h1Mat = FppOp.stiffness(test=self.Xh, trial=self.Xh, range=feelpp.elements(self.tbFine.mesh()))
-            l2Mat.mat().assemble()
-            h1Mat.mat().assemble()
+            l2Mat.to_petsc().mat().assemble()
+            h1Mat.to_petsc().mat().assemble()
             return l2Mat, h1Mat
         else :
             l2Mat = FppOp.mass(test=self.Xh, trial=self.Xh, range=feelpp.elements(self.tbFine.mesh()))
-            l2Mat.mat().assemble()
+            l2Mat.to_petsc().mat().assemble()
             return l2Mat
 
     def loadData(self, nbSnap, path="./"):
