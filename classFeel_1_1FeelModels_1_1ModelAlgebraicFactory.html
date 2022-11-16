@@ -38,7 +38,7 @@ MathJax.Hub.Config({
  <tr id="projectrow">
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign">
-   <div id="projectname">Feel++<span id="projectnumber">&#160;0.110.2</span>
+   <div id="projectname">Feel++<span id="projectnumber">&#160;0.111.0-alpha.1</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -247,14 +247,14 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>addVectorResidualAsse
 <tr class="separator:acdb22dabc4e53350f1dada6e87092b37"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab52cd2c7311b155ce067f54cdc871cc9"><td class="memItemLeft" align="right" valign="top"><a id="ab52cd2c7311b155ce067f54cdc871cc9" name="ab52cd2c7311b155ce067f54cdc871cc9"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>applyAssemblyLinear</b> (const vector_ptrtype &amp;U, sparse_matrix_ptrtype &amp;lhs, vector_ptrtype &amp;<a class="el" href="classFeel_1_1FeelModels_1_1ModelAlgebraicFactory.html#aa0eda1d88139216cbab5b680f153415b">rhs</a>, std::vector&lt; std::string &gt; const &amp;infos=std::vector&lt; std::string &gt;(), <a class="el" href="classbool.html">bool</a> applyDofElimination=true) const</td></tr>
-<tr class="memdesc:ab52cd2c7311b155ce067f54cdc871cc9"><td class="mdescLeft">&#160;</td><td class="mdescRight">apply assembly of linear operators rhs and lhs (can be usefull for an external use) <br /></td></tr>
+<tr class="memdesc:ab52cd2c7311b155ce067f54cdc871cc9"><td class="mdescLeft">&#160;</td><td class="mdescRight">apply assembly of linear operators rhs and lhs (can be useful for an external use) <br /></td></tr>
 <tr class="separator:ab52cd2c7311b155ce067f54cdc871cc9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a967c183743fe588bea9b035352f44c5b"><td class="memItemLeft" align="right" valign="top"><a id="a967c183743fe588bea9b035352f44c5b" name="a967c183743fe588bea9b035352f44c5b"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>applyAssemblyLinear</b> (<a class="el" href="classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataUpdateLinear.html">ModelAlgebraic::DataUpdateLinear</a> &amp;dataLinear, <a class="el" href="classbool.html">bool</a> applyDofElimination=true) const</td></tr>
 <tr class="separator:a967c183743fe588bea9b035352f44c5b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afe4bb741d782fa7959e518c1400f0112"><td class="memItemLeft" align="right" valign="top"><a id="afe4bb741d782fa7959e518c1400f0112" name="afe4bb741d782fa7959e518c1400f0112"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>attachAuxiliarySparseMatrix</b> (std::string const &amp;key, sparse_matrix_ptrtype const &amp;mat)</td></tr>
-<tr class="memdesc:afe4bb741d782fa7959e518c1400f0112"><td class="mdescLeft">&#160;</td><td class="mdescRight">attach a sparse matrix to the precondtioner <br /></td></tr>
+<tr class="memdesc:afe4bb741d782fa7959e518c1400f0112"><td class="mdescLeft">&#160;</td><td class="mdescRight">attach a sparse matrix to the preconditioner <br /></td></tr>
 <tr class="separator:afe4bb741d782fa7959e518c1400f0112"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7bbb297c0a50c984ddef05a6e06e98bb"><td class="memItemLeft" align="right" valign="top"><a id="a7bbb297c0a50c984ddef05a6e06e98bb" name="a7bbb297c0a50c984ddef05a6e06e98bb"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>attachNearNullSpace</b> (<a class="el" href="classint.html">int</a> k, NullSpace&lt; value_type &gt; const &amp;nearNullSpace)</td></tr>
@@ -270,7 +270,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>attachNullSpace</b> (
 <tr class="separator:ad03db4a066334cef647459c9a942a154"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a09e4f1943e85831d2e650a20832a19d1"><td class="memItemLeft" align="right" valign="top"><a id="a09e4f1943e85831d2e650a20832a19d1" name="a09e4f1943e85831d2e650a20832a19d1"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>attachOperatorPCD</b> (std::string const &amp;key, typename preconditioner_type::operator_pcdbase_ptrtype const &amp;opPCD)</td></tr>
-<tr class="memdesc:a09e4f1943e85831d2e650a20832a19d1"><td class="mdescLeft">&#160;</td><td class="mdescRight">attach operator PCD to the precondtioner <br /></td></tr>
+<tr class="memdesc:a09e4f1943e85831d2e650a20832a19d1"><td class="mdescLeft">&#160;</td><td class="mdescRight">attach operator PCD to the preconditioner <br /></td></tr>
 <tr class="separator:a09e4f1943e85831d2e650a20832a19d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a914b48e3ec0c37550a269a63b7b4d7c2"><td class="memItemLeft" align="right" valign="top"><a id="a914b48e3ec0c37550a269a63b7b4d7c2" name="a914b48e3ec0c37550a269a63b7b4d7c2"></a>
 sparse_matrix_ptrtype const &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>auxiliarySparseMatrix</b> (std::string const &amp;key) const</td></tr>
