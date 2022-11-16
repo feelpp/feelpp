@@ -162,6 +162,33 @@ def plot_time(csv_file):
     plt.show()
     # tikzplotlib.save("plot.tex")
 
+def compare_time_parallel(csv_seq, csv_para):
+    """compare elapsed time between parallel computing and sequential one
+
+    Args:
+        csv_seq (str): csv file of sequential datas
+        csv_para (str): csv file of parallel datas 
+    """
+    dfseq = pd.read_csv(csv_seq)
+    dfpar = pd.read_csv(csv_para)
+
+    assert 'N' in dfseq.keys() 
+
+    lkeys = [k for k in dfseq.keys() if k != 'N']
+
+    s = 0 
+    for k in lkeys :
+        plt.figure(s)
+        plt.plot(dfseq['N'], dfseq[k], label= k + ' 1 proc')
+        plt.plot(dfpar['N'], dfpar[k], label= k + ' 4 proc')
+        plt.legend()
+        plt.grid('on')
+        plt.xlabel('Number of Basis functions (N)')
+        plt.ylabel('Time (s)')
+        s+=1
+        
+    plt.show()
+    # tikzplotlib.save("plot.tex")
 
 # %%
 ### Manage data Frame 
@@ -282,6 +309,30 @@ def plot_dataFrame(df, norm='L2'):
     plt.ylabel(f"{norm} norm of Errors (in log)")
     plt.show()
 
+def compare_dataFrams(listdf, keys='Mean', norm='l2'):
+
+    labels =["$\lambda = 1.e^{-1}$", "$\lambda = 1.e^{-3}$", "$\lambda = 1.e^{-6}$", "$\lambda = 1.e^{-10}$", "$\lambda = 0$"]
+    key_list = {'Mean':['Mean', 'Mean_rec', 'Mean_uh'], 'Max':['Max', 'Max_rec','Max_uh'],
+             'Min':['Min', 'Min_rec', 'Min_uh'] }
+
+    assert len(labels)>=len(listdf)
+
+    idk = 1
+    i=0
+    for df in listdf:
+        plt.scatter(df.index, df[key_list[keys][idk]], label=labels[i])
+        plt.plot(df.index, df[key_list[keys][idk]])
+        i+=1
+
+    plt.scatter(df.index, df[key_list[keys][0]], label="w/o rectif")
+    plt.plot(df.index, df[key_list[keys][0]])
+
+    plt.legend()
+    plt.yscale('log')
+    plt.xlabel("Number of basis function (N)")
+    plt.ylabel(f"{norm} norm of Errors (in log scale)")
+    plt.show()
+
 def compare_dataStats(df, keys='Mean', norm='l2'):
     """plot statiscal comparison of a dataFrame in respect of given keys 
         keys take 'Min', 'Max' or 'Mean'
@@ -341,21 +392,43 @@ if __name__ == "__main__":
     # fileR = str(sys.argv[2]) # // w/ rectification 
 
     # file = "/feel/feelppdb/nirb/heat/np_1/errorRelative.csv"
-    file = "/Users/elarif2/elarif/devel/docker.feel/feelppdb/nirb/heat/np_1/errors50Params.csv"
+    # file = "/Users/elarif2/elarif/devel/docker.feel/feelppdb/nirb/heat/np_1/errors50Params.csv"
     # norm ='l2'
 
-    dfGlob = pd.read_csv(file, sep=',')
+    # dfGlob = pd.read_csv(file, sep=',')
     # dfGlobR = pd.read_csv(fileR, sep=',')
 
+    #%% 
+    # Compare time 
+    # file1 = "/Users/elarif2/elarif/devel/docker.feel/feelppdb/nirb/heat/np_1/nirb_time_exec_rect.csv"
+    # file2 = "/Users/elarif2/elarif/devel/docker.feel/feelppdb/nirb/heat/np_4/nirb_time_exec_rect.csv"
 
+    # compare_time_parallel(file1, file2) 
     # %%   
     ### Get stats for 50 parameters 
 
-    l2df, h1df   = getDataStat(dfGlob) # l1 and h1 error associated 
+    # l2df, h1df   = getDataStat(dfGlob) # l1 and h1 error associated 
     # l2dfR, h1dfR = getDataStat(dfGlobR) # // 
 
     # plot_dataFrame(l2df)
-    compare_dataStats(l2df, keys='Mean')
+    # compare_dataStats(l2df, keys='Mean')
+
+    #%%
+    # Compare data Frame 
+    paths = "/Users/elarif2/elarif/devel/docker.feel/feelppdb/nirb/heat/np_1/"
+    shortfiles = ["errors50ParamsLambda1P1.csv", "errors50ParamsLambda3P1.csv","errors50ParamsLambda6P1.csv", 
+                    "errors50ParamsLambda10P1.csv", "errors50ParamsLambda0P1.csv"]
+    
+    listdfl2, listdfh1 = [], []
+
+    for st in shortfiles:
+        file = paths + st 
+        dfGlob = pd.read_csv(file, sep=',')
+        dl2, dh1 = getDataStat(dfGlob)
+        listdfl2.append(dl2)
+        listdfh1.append(dh1)
+    
+    compare_dataFrams(listdfl2)
 
     # %%
     
