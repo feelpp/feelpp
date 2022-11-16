@@ -35,10 +35,11 @@ def run_offline(model_path, rect):
 
 
 def run_online(model_path, rect):
+    nbSnap=6
     nirb_config = feelpp.readJson(model_path)['nirb']
     nirb_config['doRectification'] = rect
     nirb_on = nirbOnline(**nirb_config)
-    err = nirb_on.loadData()
+    err = nirb_on.loadData(nbSnap=nbSnap)
     assert err == 0, "loadData failed"
 
     mu = nirb_on.Dmu.element()
