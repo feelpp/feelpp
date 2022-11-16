@@ -55,7 +55,7 @@ AitkenRelaxationFSI<SolidType>::AitkenRelaxationFSI( solid_ptrtype solid,
                              _tolerance=tolPtFixe,
                              _min_theta=minTheta);
 
-        // redifine here! not in initialize funcion because not compile with incompressibiliy model
+        // redefine here! not in initialize funcion because not compile with incompressibiliy model
         /*auto currentEltSolid = vf::project(_space=M_solid->functionSpaceDisplacement(),
          _range=elements(M_solid->mesh()), 
          _expr=vf::idv(M_solid->getDisplacement()));*/

@@ -536,7 +536,7 @@ ModelNumerical::updatePostProcessExports( std::shared_ptr<ExporterType> exporter
                                 if constexpr ( std::is_base_of_v<ExprBase,decay_type<decltype(theexpr)>> )
                                 {
                                     using _expr_shape = typename std::decay_t<decltype(theexpr)>::template evaluator_t<typename  decay_type<ExporterType>::mesh_type::element_type>::shape;
-                                    if constexpr ( _expr_shape::is_tensor2 && _expr_shape::M > 1 && _expr_shape::N > 1 ) // tensor2 asym is not supported with ParaView -> export each components in wating
+                                    if constexpr ( _expr_shape::is_tensor2 && _expr_shape::M > 1 && _expr_shape::N > 1 ) // tensor2 asym is not supported with ParaView -> export each components in waiting
                                         {
                                             for ( int i=0;i<_expr_shape::M;++i )
                                                 for ( int j=0;j<_expr_shape::N;++j )
@@ -568,7 +568,7 @@ ModelNumerical::updatePostProcessExports( std::shared_ptr<ExporterType> exporter
                                                         constexpr int nj = std::decay_t<decltype(hana::at_c<1>(e_ij))>::value;
                                                         if ( theexprBIS.template hasExpr<ni,nj>() )
                                                         {
-                                                            if constexpr ( ni == nj && ni > 1 )  // tensor2 asym is not supported with ParaView -> export each components in wating 
+                                                            if constexpr ( ni == nj && ni > 1 )  // tensor2 asym is not supported with ParaView -> export each components in waiting 
                                                             {
                                                                 for ( int i=0;i<ni;++i )
                                                                     for ( int j=0;j<nj;++j )
