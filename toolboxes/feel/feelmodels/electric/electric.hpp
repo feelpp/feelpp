@@ -44,9 +44,23 @@ namespace Feel
 {
 namespace FeelModels
 {
-/** 
- * Toolbox Electric 
- * @ingroup Toolboxes
+/**
+ * @brief class for Electric toolbox
+ * @ingroup Electric
+ *
+ * @tparam ConvexType convex for the mesh
+ * @tparam BasisPotentialType basis type for electric potential
+ * 
+ * @code {.cpp}
+ * using electric_t = Electric< Simplex<nDim,1>, Lagrange<OrderT, Scalar,Continuous,PointSetFekete>>; 
+ * auto electric = std::make_shared<electric_t>("electric");
+ * electric->init();
+ * electric->printAndSaveInfo();
+ * electric->printAndSaveInfo();
+ * electric->solve();
+ * electric->exportResults();
+ * @endcode
+ * 
  */
 template< typename ConvexType, typename BasisPotentialType>
 class Electric : public ModelNumerical,
@@ -74,7 +88,6 @@ public:
     typedef std::shared_ptr<space_electricpotential_type> space_electricpotential_ptrtype;
     typedef typename space_electricpotential_type::element_type element_electricpotential_type;
     typedef std::shared_ptr<element_electricpotential_type> element_electricpotential_ptrtype;
-    typedef typename space_electricpotential_type::element_external_storage_type element_electricpotential_external_storage_type;
 
     // materials properties
     typedef MaterialsProperties<nRealDim> materialsproperties_type;

@@ -76,7 +76,7 @@ GiNaCBase::GiNaCBase( std::vector<GiNaC::symbol> const& syms )
             M_context = M_context | vm::POINT;
         if ( hasAnySymbolN() )
             M_context = M_context | vm::KB | vm::NORMAL;
-        if ( hasSymbol( "h" ) | hasSymbol( "measPEN" ) || hasSymbol( "meas" ) )
+        if ( hasSymbol( "h" ) || hasSymbol( "measPEN" ) || hasSymbol( "meas" ) )
             M_context = M_context | vm::MEASURE;
 }
 } // Feel::vf

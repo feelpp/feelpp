@@ -177,6 +177,9 @@ struct matrix_node
     typedef ublas::matrix<T, ublas::column_major>  type;
 };
 
+template <typename T = double>
+using matrix_node_t = ublas::matrix<T, ublas::column_major>;
+
 //! Eigen type to map matrix_type (row major)
 template<typename T = double>
 using em_matrix_row_type = Eigen::Map<Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>>;
@@ -189,9 +192,59 @@ using em_matrix_col_type = Eigen::Map<Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dyna
 template<typename T = double>
 using em_cmatrix_col_type = Eigen::Map<const Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic,Eigen::ColMajor>>;
 
+/**
+ * @brief get the eigen const map of a matrix node
+ *
+ * @tparam T  ublasnumerical type to wrap
+ * @param m matrix_node
+ * @return auto Eigen::Map
+ */
+template <typename T>
+auto emap( matrix_node_t<T>& m )
+{
+    return em_matrix_col_type<T>( m.data().begin(), m.size1(), m.size2() );
+}
+/**
+ * @brief get the eigen const map of a matrix node
+ *
+ * @tparam T  ublasnumerical type to wrap
+ * @param m matrix_node
+ * @return auto Eigen::Map
+ */
+template <typename T>
+auto emap( matrix_node_t<T> const& m )
+{
+    return em_cmatrix_col_type<T>( m.data().begin(), m.size1(), m.size2() );
+}
+
 //! Eigen type to map node_type
 template<typename T = double>
 using em_node_type = Eigen::Map<Eigen::Matrix<T,Eigen::Dynamic,1>>;
+
+/**
+ * @brief get the eigen const map of a matrix node
+ *
+ * @tparam T  ublasnumerical type to wrap
+ * @param m matrix_node
+ * @return auto Eigen::Map
+ */
+template <typename T>
+auto emap( node_t<T>& m )
+{
+    return em_matrix_col_type<T>( m.data().begin(), m.size(), 1 );
+}
+/**
+ * @brief get the eigen const map of a matrix node
+ *
+ * @tparam T  ublasnumerical type to wrap
+ * @param m matrix_node
+ * @return auto Eigen::Map
+ */
+template <typename T>
+auto emap( node_t<T> const& m )
+{
+    return em_cmatrix_col_type<T>( m.data().begin(), m.size(), 1 );
+}
 
 //!
 //! Tensor map to a ublas_type
@@ -492,8 +545,11 @@ clean( T& t,
 {
     std::for_each( t.data().begin(),
                    t.data().end(),
-                   lambda::if_then( lambda::_1  < lambda::constant( treshold ) && lambda::_1  > -lambda::constant( treshold ),
-                                    lambda::_1 = lambda::constant( new_value ) ) );
+                   [new_value,treshold]( auto& t )
+                   {
+                       if ( std::abs( t ) < treshold )
+                            t = new_value;
+                   } );
 }
 
 template<typename T>
@@ -534,7 +590,7 @@ randomize( T& t )
 
     std::for_each( t.data().begin(),
                    t.data().end(),
-                   lambda::_1 = lambda::bind<value_type>( uni ) );
+                   [&uni]( auto& t ){ t = uni; } );
 
 }
 

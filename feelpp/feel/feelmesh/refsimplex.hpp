@@ -808,7 +808,7 @@ public:
         }
 
         double dmin = *std::min_element( D.begin(), D.end() );
-        ublas::vector<double>::const_iterator Dit = std::find_if( D.begin(), D.end(), lambda::_1 < -5e-7 );
+        ublas::vector<double>::const_iterator Dit = std::find_if( D.begin(), D.end(), []( auto const& t ) { return t < -5e-7; }  );
 
         //VLOG(1) << "meas=" << meas_times << "\n";
         //return meas_times;

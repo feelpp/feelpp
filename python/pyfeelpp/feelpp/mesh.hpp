@@ -24,9 +24,10 @@
 #ifndef FEELPP_PYFEELPP_MESH_HPP
 #define FEELPP_PYFEELPP_MESH_HPP 1
 #include <regex>
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
-#include <pybind11/eigen.h>
+#include <feel/feelpython/pybind11/pybind11.h>
+#include <feel/feelpython/pybind11/stl.h>
+#include <feel/feelpython/pybind11/eigen.h>
+#include <feel/feelpython/pybind11/json.h>
 
 #include <feel/feelmesh/filters.hpp>
 #include <feel/feeldiscr/mesh.hpp>
@@ -49,13 +50,6 @@ namespace py = pybind11;
 
 using namespace Feel;
 
-template<typename MeshT>
-std::shared_ptr<MeshT>
-loadmesh( std::shared_ptr<MeshT> const& m, std::string const& n, double h )
-{
-    
-    return loadMesh( _mesh=new MeshT, _filename=n, _h=h );
-}
 
 template<typename MeshT>
 elements_pid_t<MeshT>
@@ -92,6 +86,28 @@ nFacesTuple( faces_reference_wrapper_t<MeshT> const& r, bool global )
     return nelements( r, global );
 }
 
+/**
+ * @fn load(mesh, name, h, verbose)
+ * @brief load a geometry or a mesh from a file
+ * @ingroup pyfeelpp
+ *
+ * @param filename the filename
+ * @param h the characteristic length (only in the case of the geometry)
+ * @param verbose the verbosity level (0: no output, 1: output, >1: mesh generation information if available)
+ *
+ * @code
+ * import feelpp
+ * m = feelpp.load(mesh=feelpp.mesh(dim=2),name="square.geo",verbose=1)
+ * @endcode
+ */
+
+/**
+ * @fn _mesh
+ * @brief Python Mesh bindings
+ *
+ * @tparam MeshT
+ * @param m
+ */
 template<typename MeshT>
 void defMesh(py::module &m)
 {
@@ -152,16 +168,22 @@ void defMesh(py::module &m)
     pyclass_name = std::string("mesh_support_vector_")+suffix;
     py::class_<fusion::vector<std::shared_ptr<MeshSupport<mesh_t>>>>(m,pyclass_name.c_str())
         .def(py::init<>());
-        
 
-    // load mesh
-    m.def("load",&loadmesh<mesh_t>,"load a mesh from a file");
+    m.def(
+        "load", 
+        []( mesh_ptr_t m, std::string const& n, double h, int verbose )
+        { 
+            return loadMesh( _mesh=new mesh_t, _filename=n, _h=h, _verbose=verbose );
+        },
+        "load a mesh from a file", py::arg("mesh"), py::arg("name"), py::arg("h")=0.1, py::arg("verbose") = 1 );
 
     m.def("elements", &elementsByPid<mesh_ptr_t>,"get iterator over the elements of the mesh", py::arg("mesh"));
     m.def("markedelements", &elementsByMarker<mesh_ptr_t>,"get iterator over the marked elements of the mesh", py::arg("mesh"),py::arg("tag"));
     m.def("boundaryfaces", &boundaryfacesByPid<mesh_ptr_t>,"get iterator over the boundary faces of the mesh", py::arg("mesh"));
-    m.def( "nelements", []( markedelements_t<mesh_ptr_t> const& range, bool global ) { return nelements( range, global ); }, "get the number of elements in range, the local one if global is false", py::arg( "range" ), py::arg( "global" ) = true );
-    m.def( "nelements", []( markedfaces_t<mesh_ptr_t> const& range, bool global ) { return nelements( range, global ); }, "get the number of facets in range, the local one if global is false", py::arg( "range" ), py::arg( "global" ) = true );
+    m.def( "nelements", []( markedelements_t<mesh_ptr_t> const& range, bool global ) {
+        return nelements( range, global ); }, "get the number of elements in range, the local one if global is false", py::arg( "range" ), py::arg( "global" ) = true );
+    m.def( "nelements", []( markedfaces_t<mesh_ptr_t> const& range, bool global ) {
+        return nelements( range, global ); }, "get the number of facets in range, the local one if global is false", py::arg( "range" ), py::arg( "global" ) = true );
 //    m.def("nfaces",(decltype(&nFacesTuple<mesh_ptr_t>))  &nFacesTuple<mesh_ptr_t>,"get the number of faces in range, the local one if global is false", py::arg("range"),py::arg("global") = true );
     //m.def("markedfaces", &markedfaces<mesh_t>,"get iterator over the marked faces of the mesh");
     m.def(
@@ -239,11 +261,16 @@ void defMesh(py::module &m)
             },
             py::arg( "mesh" ), "create a Remesher data structure", py::return_value_policy::copy );
         m.def(
+            "remesher", []( mesh_ptr_t const& r, nl::json const& j )
+            { return std::make_shared<Remesh<mesh_t>>( r, j ); },
+            py::arg( "mesh" ), py::arg("params"), "create a Remesher data structure parametrized with a json", py::return_value_policy::copy );
+#if 0              
+        m.def(
             "remesher", []( mesh_ptr_t const& r, std::vector<std::string> const& req_elts ) {
                 return std::make_shared<Remesh<mesh_t>>( r, req_elts );
             },
             py::return_value_policy::copy,py::arg( "mesh" ), py::arg( "required_elts" ), "create a Remesher data structure" );
-#if 0            
+          
         m.def(
             "remesher", []( mesh_ptr_t const& r, std::vector<std::string> const& req_elts, std::vector<std::string> const& req_facets ) {
                 return std::make_shared<Remesh<mesh_t>>(  r, req_elts, req_facets );
@@ -260,14 +287,19 @@ void defMesh(py::module &m)
             py::arg( "required_facets" )=std::vector<std::string>{}, py::arg( "parent" ) = static_cast<mesh_ptr_t>(nullptr),
             "create a Remesher data structure" );
         m.def(
-            "remesh", []( mesh_ptr_t const& r, std::string const& metric_expr, std::vector<std::string> const& req_elts, std::vector<std::string> const& req_facets, mesh_ptr_t  const& parent ) {
-                return remesh( r, metric_expr, req_elts, req_facets, parent );
+            "remesh", []( mesh_ptr_t const& r, 
+                          std::string const& metric_expr, 
+                          std::vector<std::string> const& req_elts, 
+                          std::vector<std::string> const& req_facets, 
+                          mesh_ptr_t  const& parent, std::string const& prefix, nl::json const& j ) {
+                return remesh( _mesh=r, _metric=metric_expr, _required_elts=req_elts, _required_facets=req_facets, _parent=parent, _prefix=prefix, _params=j );
             },
             py::return_value_policy::copy,
             py::arg( "mesh" ), 
             py::arg( "metric" ), 
             py::arg( "required_elts" )=std::vector<std::string>{},  
             py::arg( "required_facets" )=std::vector<std::string>{}, py::arg( "parent" ) = static_cast<mesh_ptr_t>(nullptr),
+            py::arg( "prefix" )=std::string{},py::arg( "params" )=nl::json{},
             "create a Remesher data structure" );
     }
     m.def(

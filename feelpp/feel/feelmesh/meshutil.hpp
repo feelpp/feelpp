@@ -26,7 +26,6 @@
 #include <feel/feelcore/feel.hpp>
 
 #include <feel/feelmesh/entities.hpp>
-#include <feel/feelmesh/bareitems.hpp>
 #include <feel/feelmesh/marker.hpp>
 
 

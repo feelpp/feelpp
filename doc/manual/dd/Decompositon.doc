@@ -13,7 +13,7 @@ namespace Feel {
 \section Introduction A Really Short Introduction
 In mathematics, numerical analysis, and numerical partial differential equations, domain decomposition methods solve
 a boundary value problem by splitting it into smaller boundary value problems on subdomains and iterating to coordinate
-the solution between the adjacent subdomains. A corse problem with one or fiew unknows per subdomain is used to further
+the solution between the adjacent subdomains. A corse problem with one or few unknowns per subdomain is used to further
 coordinate the solution between the subdomains globally.
 
 \section D1 A 1D Model
@@ -162,7 +162,7 @@ localProblem(element_type& u, Expr expr)
        L2erroru$_1$ = l2Error(u$_1$);
        L2erroru$_2$ = l2Error(u$_2$);
                                     
-    // increment the cunter
+    // increment the counter
         ++cpt;
   }
 
@@ -194,7 +194,7 @@ The numerical results presented in the following table correspond to the partiti
 
 <table class="manual">
 <tr>
-  <th>Nomber of iterations</th><td>\f$\mathbf {\| u_1-u_{ex}\|_{L_2} }\f$</td><td>\f$\mathbf{\| u_2-u_{ex}\|_{L_2}}\f$</td>
+  <th>Number of iterations</th><td>\f$\mathbf {\| u_1-u_{ex}\|_{L_2} }\f$</td><td>\f$\mathbf{\| u_2-u_{ex}\|_{L_2}}\f$</td>
 </tr>
 <tr>
   <td>11 </td><td> 2.52e-8 </td><td> 2.16e-8 </td>

@@ -7,7 +7,7 @@
 
   Copyright (C) 2011 Université Joseph Fourier (Grenoble I)
   Copyright (C) 2011-present Feel++ Consortium
-  
+
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
   License as published by the Free Software Foundation; either
@@ -128,6 +128,7 @@ public:
     OpusApp()
         :
         super(),
+        M_modelName( soption(_prefix=this->about().appName(),_name="model-name") ),
         M_mode( ( CRBModelMode )ioption(_name=_o( this->about().appName(),"run.mode" )) )
         {
             this->init();
@@ -141,6 +142,7 @@ public:
                .add( eimOptions() )
                .add( crbSEROptions() )
                .add( podOptions() )),
+        M_modelName( soption(_prefix=this->about().appName(),_name="model-name") ),
         M_mode( ( CRBModelMode )ioption(_name=_o( this->about().appName(),"run.mode" )) )
         {
             this->init();
@@ -154,6 +156,7 @@ public:
                .add( eimOptions() )
                .add( crbSEROptions() )
                .add( podOptions() )),
+        M_modelName( soption(_prefix=this->about().appName(),_name="model-name") ),
         M_mode( mode )
         {
             this->init();
@@ -167,6 +170,7 @@ public:
                .add( eimOptions() )
                .add( crbSEROptions() )
                .add( podOptions() )),
+        M_modelName( soption(_prefix=this->about().appName(),_name="model-name") ),
         M_mode( ( CRBModelMode )ioption(_name=_o( this->about().appName(),"run.mode" )) )
         {
             this->init();
@@ -179,6 +183,7 @@ public:
                .add( eimOptions() )
                .add( crbSEROptions() )
                .add( podOptions() )),
+        M_modelName( soption(_prefix=this->about().appName(),_name="model-name") ),
         M_mode( mode )
         {
             this->init();
@@ -211,7 +216,7 @@ public:
      */
     crb_ptrtype newCRB( int level=0 )
         {
-            model = std::make_shared<crbmodel_type>(crb::stage::offline,level);
+            model = std::make_shared<crbmodel_type>(M_modelName,crb::stage::offline,level);
             return crb_type::New(model->model()->modelName(), model, crb::stage::offline );
         }
     crb_ptrtype & crbPtr() { return crb; }
@@ -909,6 +914,7 @@ private:
     }
 
 private:
+    std::string M_modelName;
     CRBModelMode M_mode;
     crbmodel_ptrtype model;
 

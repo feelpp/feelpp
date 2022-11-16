@@ -59,6 +59,9 @@ int main( int argc, char** argv )
         ( "remesh", po::value<bool>()->default_value( 0 ), "remesh " )
         ( "remesh.metric", po::value<std::string>()->default_value( "" ), "remesh metric expression" )
         ( "remesh.h", po::value<std::string>()->default_value( "hmax" ), "remesh h size" )
+        ( "scalar_expr", po::value<std::vector<std::string>>()->default_value( {"g|sin(x):x|nodal|element"} ), "list of scalar expressions with name and representations" )
+        ( "vectorial_expr", po::value<std::vector<std::string>>()->default_value( {"gv|{sin(2*pi*x),sin(2*pi*x),sin(2*pi*x)}:x|nodal|element"} ), "list of vectorial  expressions with name and representations" )
+
 		;
 
     Environment env( _argc=argc, _argv=argv,

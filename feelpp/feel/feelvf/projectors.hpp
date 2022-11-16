@@ -378,12 +378,12 @@ struct project
 /**
  *
  * \brief projection/interpolation of an expresion onto a noal functionspace
- *
- * \arg space the function space to project onto
- * \arg range the range of mesh elements to apply the projection (the remaining parts are set to 0)
- * \arg expr the expression to project
- * \arg geomap the type of geomap to use (make sense only using high order meshes)
- * \arg sum sum the multiple nodal  contributions  if applicable (false by default)
+ * \ingroup DSEL-Variational-Formulation
+ * \arg _space the function space to project onto
+ * \arg _range the range of mesh elements to apply the projection (the remaining parts are set to 0)
+ * \arg _expr the expression to project
+ * \arg _geomap the type of geomap to use (make sense only using high order meshes)
+ * \arg _sum sum the multiple nodal  contributions  if applicable (false by default)
  */
 
 template <typename ... Ts>

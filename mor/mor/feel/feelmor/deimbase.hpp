@@ -160,7 +160,7 @@ protected :
                uuids::uuid const& uid, std::string const& modelname,
                std::string prefix, std::string const& dbfilename, std::string const& dbdirectory,
                worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
-               std::string const& prefixModel = "" );
+               std::string const& prefixModel = "", po::variables_map vm = Environment::vm() );
 
 public :
     //! Destructor
@@ -262,6 +262,7 @@ public :
 
     std::string const& prefixModel() const { return M_prefixModel; }
     void setPrefixModel( std::string const& prefix ) { M_prefixModel = prefix; }
+    void setRebuildDB(bool rebuild) { M_rebuild = rebuild; }
 
     std::vector<indice_type> const& index() const { return M_index; }
     std::vector<indice_type> const& indexR() const { return M_indexR; }
@@ -436,6 +437,7 @@ protected :
 
     bool M_rebuild, M_nl_assembly, M_store_tensors, M_write_nl_solutions, M_last_solve_is_ok;
     std::string M_write_nl_directory;
+    bool M_clean_nl_directory;
 
     crb_ptrtype M_crb;
     bool M_crb_built,M_offline_step, M_restart,M_use_ser,M_ser_use_rb;
@@ -449,11 +451,16 @@ protected :
     parameter_type M_last_mu;
     vectorN_type M_last_beta;
 
+    int M_sampling_size;
+    std::string M_sampling_mode;
+
+    po::variables_map M_vm;
+
 }; // Class DEIMBase
 
 
 template <typename ParameterSpaceType, typename SpaceType, typename TensorType>
-DEIMBase<ParameterSpaceType,SpaceType,TensorType>::DEIMBase(  space_ptrtype Xh, parameterspace_ptrtype Dmu, sampling_ptrtype sampling, uuids::uuid const& uid, std::string const& modelname, std::string prefix, std::string const& dbfilename, std::string const& dbdirectory, worldcomm_ptr_t const& worldComm, std::string const& prefixModel ) :
+DEIMBase<ParameterSpaceType,SpaceType,TensorType>::DEIMBase(  space_ptrtype Xh, parameterspace_ptrtype Dmu, sampling_ptrtype sampling, uuids::uuid const& uid, std::string const& modelname, std::string prefix, std::string const& dbfilename, std::string const& dbdirectory, worldcomm_ptr_t const& worldComm, std::string const& prefixModel, po::variables_map vm ) :
     super ( ( boost::format( "%1%DEIM%2%" ) %(is_matrix ? "M":"") %prefix  ).str(),
             "deim",
             uid,
@@ -463,26 +470,29 @@ DEIMBase<ParameterSpaceType,SpaceType,TensorType>::DEIMBase(  space_ptrtype Xh, 
     M_Dmu( Dmu ),
     M_trainset( sampling ),
     M_M(0),
-    M_user_max( ioption(  prefixvm( M_prefix, "deim.dimension-max" ) ) ),
+    M_user_max( ioption(  _name=prefixvm( M_prefix, "deim.dimension-max" ), _vm=vm ) ),
     M_n_rb( 0 ),
-    M_tol( doption( prefixvm( M_prefix, "deim.greedy.rtol") ) ),
-    M_Atol( doption( prefixvm( M_prefix, "deim.greedy.atol") ) ),
+    M_tol( doption( _name=prefixvm( M_prefix, "deim.greedy.rtol"), _vm=vm ) ),
+    M_Atol( doption( _name=prefixvm( M_prefix, "deim.greedy.atol"), _vm=vm ) ),
     M_max_value( -1 ),
-    M_rebuild( boption( prefixvm( M_prefix, "deim.rebuild-database") ) ),
+    M_rebuild( boption( _name=prefixvm( M_prefix, "deim.rebuild-database"), _vm=vm ) ),
     M_nl_assembly(false),
     M_store_tensors( false ),
-    M_write_nl_solutions( boption( prefixvm( M_prefix, "deim.elements.write") ) ),
+    M_write_nl_solutions( boption( _name=prefixvm( M_prefix, "deim.elements.write"), _vm=vm ) ),
     M_last_solve_is_ok( true ),
-    M_write_nl_directory( soption(prefixvm( M_prefix, "deim.elements.directory") ) ),
+    M_write_nl_directory( soption(_name=prefixvm( M_prefix, "deim.elements.directory"), _vm=vm ) ),
+    M_clean_nl_directory( boption( _name=prefixvm( M_prefix, "deim.elements.clean-directory"), _vm=vm ) ),
     M_crb_built( false ),
     M_offline_step( true ),
     M_restart( true ),
     M_use_ser( ioption(_prefix=M_prefixModel,_name="ser.eim-frequency") || ioption(_prefix=M_prefixModel,_name="ser.rb-frequency") ),
     M_ser_use_rb( false ),
     M_map( new spaces_map_type ),
-    M_last_mu( Dmu->element() )
+    M_last_mu( Dmu->element() ),
+    M_sampling_size( ioption( _name=prefixvm( M_prefix, "deim.default-sampling-size" ), _vm=vm ) ),
+    M_sampling_mode( soption( _name=prefixvm( M_prefix, "deim.default-sampling-mode" ), _vm=vm ) ),
+    M_vm(vm)
 {
-    using Feel::cout;
     LOG(INFO) <<"DEIMBase constructor begin\n";
 
     if ( dbfilename.empty() )
@@ -523,7 +533,6 @@ template <typename ParameterSpaceType, typename SpaceType, typename TensorType>
 void
 DEIMBase<ParameterSpaceType,SpaceType,TensorType>::run()
 {
-    using Feel::cout;
     LOG(INFO) <<"DEIM run function begin\n";
 
     if ( M_write_nl_solutions )
@@ -531,7 +540,7 @@ DEIMBase<ParameterSpaceType,SpaceType,TensorType>::run()
         if ( this->worldComm().isMasterRank() )
         {
             boost::filesystem::path dir( M_write_nl_directory );
-            if ( boost::filesystem::exists(dir) && boption( prefixvm( M_prefix, "deim.elements.clean-directory") ) )
+            if ( boost::filesystem::exists(dir) && M_clean_nl_directory )
             {
                 boost::filesystem::remove_all(dir);
                 boost::filesystem::create_directory(dir);
@@ -560,9 +569,9 @@ DEIMBase<ParameterSpaceType,SpaceType,TensorType>::run()
         M_trainset = M_Dmu->sampling();
     if ( M_trainset->empty() )
     {
-        int sampling_size = ioption( prefixvm( M_prefix, "deim.default-sampling-size" ) );
+        int sampling_size = M_sampling_size;
         std::string file_name = ( boost::format("deim_trainset_%1%") % sampling_size ).str();
-        std::string sampling_mode = soption( prefixvm( M_prefix, "deim.default-sampling-mode" ) );
+        std::string sampling_mode = M_sampling_mode;
         std::ifstream file ( file_name );
         if( ! file )
         {
@@ -573,16 +582,19 @@ DEIMBase<ParameterSpaceType,SpaceType,TensorType>::run()
             M_trainset->clear();
             M_trainset->readFromFile(file_name);
         }
-        cout << "DEIM sampling created\n";
+        if ( this->worldComm().isMasterRank() )
+            std::cout << "DEIM sampling created\n";
     }
-    cout << name() + " Offline sampling size = "<< M_trainset->size()<<std::endl;
+    if ( this->worldComm().isMasterRank() )
+        std::cout << name() + " Offline sampling size = "<< M_trainset->size()<<std::endl;
 
     int sampling_size = M_trainset->size();
     if ( M_user_max>sampling_size )
     {
-        cout << name()+" : Sampling size (="<< sampling_size
-             << ") smaller than deim.dimension-max (=" << M_user_max
-             << "), dimension max is now " << sampling_size << std::endl;
+        if ( this->worldComm().isMasterRank() )
+            std::cout << name()+" : Sampling size (="<< sampling_size
+                      << ") smaller than deim.dimension-max (=" << M_user_max
+                      << "), dimension max is now " << sampling_size << std::endl;
         M_user_max = sampling_size;
     }
 
@@ -596,8 +608,9 @@ DEIMBase<ParameterSpaceType,SpaceType,TensorType>::run()
         if ( M_M==0 )
         {
             auto mu = M_trainset->max().template get<0>();
-            cout <<"===========================================\n";
-            cout << name() +" : Start algorithm with mu="<< mu.toString() <<std::endl;
+            if ( this->worldComm().isMasterRank() )
+                std::cout <<"===========================================\n"
+                          << name() +" : Start algorithm with mu="<< mu.toString() <<std::endl;
             addNewVector(mu);
         }
     }
@@ -610,7 +623,8 @@ DEIMBase<ParameterSpaceType,SpaceType,TensorType>::run()
             mMax = M_M + M_ser_frequency;
             if ( mMax>M_user_max)
             {
-                cout << this->name() + " : max number of basis reached\n";
+                if ( this->worldComm().isMasterRank() )
+                    std::cout << this->name() + " : max number of basis reached\n";
                 this->setOfflineStep(false);
             }
         }
@@ -625,10 +639,11 @@ DEIMBase<ParameterSpaceType,SpaceType,TensorType>::run()
         if ( M_max_value!=0 )
             r_error = error/M_max_value;
 
-        cout << this->name() + " : Current max error="<<error <<", Atol="<< M_Atol
-             << ", relative max error="<< r_error <<", Rtol="<< M_tol
-             <<", for mu="<< mu.toString() <<std::endl;
-        cout <<"===========================================\n";
+        if ( this->worldComm().isMasterRank() )
+            std::cout << this->name() + " : Current max error="<<error <<", Atol="<< M_Atol
+                      << ", relative max error="<< r_error <<", Rtol="<< M_tol
+                      <<", for mu="<< mu.toString() << std::endl
+                      <<"===========================================" << std::endl;
 
         if ( error<M_Atol || r_error<M_tol )
         {
@@ -637,7 +652,8 @@ DEIMBase<ParameterSpaceType,SpaceType,TensorType>::run()
             break;
         }
 
-        cout << this->name() + " : Construction of basis "<<M_M+1<<"/"<<mMax<<", with mu="<<mu.toString()<<std::endl;
+        if ( this->worldComm().isMasterRank() )
+            cout << this->name() + " : Construction of basis "<<M_M+1<<"/"<<mMax<<", with mu="<<mu.toString()<<std::endl;
 
         addNewVector(mu);
     }
@@ -647,8 +663,9 @@ DEIMBase<ParameterSpaceType,SpaceType,TensorType>::run()
 
     this->saveDB();
 
-    cout <<"===========================================\n";
-    cout << this->name() + " : Stopping greedy algorithm. Number of basis function : "<<M_M<<std::endl;
+    if ( this->worldComm().isMasterRank() )
+        std::cout <<"===========================================\n"
+                  << this->name() + " : Stopping greedy algorithm. Number of basis function : "<<M_M<<std::endl;
 
     LOG(INFO) <<"DEIM run function end\n";
     toc(this->name() + " : Offline Total Time");
@@ -1070,6 +1087,7 @@ DEIMBase<ParameterSpaceType,SpaceType,TensorType>::saveDB()
         boost::archive::binary_oarchive oa( ofs );
         oa << *this;
     }
+    this->worldComm().barrier();
 }
 
 

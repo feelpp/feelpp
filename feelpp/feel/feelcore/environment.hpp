@@ -46,20 +46,6 @@
 
 #include <feel/feelcore/feel.hpp>
 
-#if defined(FEELPP_ENABLE_PYTHON_WRAPPING)
-
-#if defined(FEELPP_HAS_PYBIND11)
-#include <pybind11/pybind11.h>
-#endif
-
-#if defined(FEELPP_HAS_BOOST_PYTHON)
-#include <boost/python.hpp>
-#include <boost/python/stl_iterator.hpp>
-
-//#include <mpi4py/mpi4py.h>
-#endif // FEELPP_HAS_BOOST_PYTHON
-#endif // FEELPP_ENABLE_PYTHON_WRAPPING
-
 
 #include <boost/uuid/uuid.hpp>            // uuid class
 #include <boost/uuid/uuid_generators.hpp> // generators
@@ -87,6 +73,10 @@
 #include <feel/feelcore/journalmanager.hpp>
 #include <feel/feelhwsys/hwsys.hpp>
 
+namespace pybind11
+{
+class list;
+}
 namespace Feel
 {
 namespace tc = termcolor;
@@ -95,6 +85,7 @@ namespace uuids =  boost::uuids;
 
 // boost::error_info typedef that holds the stacktrace:
 using traced = boost::error_info<struct tag_stacktrace, boost::stacktrace::stacktrace>;
+
 
 /**
  * @brief helper class for throwing any exception with stacktrace:
@@ -781,6 +772,12 @@ public:
     //! get  \c variables_map from \c options_description \p desc
     //static po::variables_map vm( po::options_description const& desc );
 
+    //! get the log verbosity level
+    static int logVerbosityLevel() { return FLAGS_v; }
+
+    //! set the verbosity level of the VLOG macro
+    static void setLogVerbosityLevel( int logVerbosity );
+
     //! 
     //!  set log files
     //!  \param prefix prefix for log filenames
@@ -923,6 +920,7 @@ private:
     static fs::path S_scratchdir;
     static fs::path S_cfgdir;
     static AboutData S_about;
+    static inline bool S_initialized = false;
     static inline bool S_aborted = false;
     static inline bool S_init_python = true;
     static std::shared_ptr<po::command_line_parser> S_commandLineParser;

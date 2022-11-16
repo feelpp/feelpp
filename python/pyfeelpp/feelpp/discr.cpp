@@ -22,8 +22,9 @@
 //! @copyright 2018 Feel++ Consortium
 //!
 #include <fmt/core.h>
-#include <pybind11/pybind11.h>
-#include <pybind11/eigen.h>
+#include <feel/feelpython/pybind11/pybind11.h>
+#include <feel/feelpython/pybind11/eigen.h>
+#include <feel/feelpython/pybind11/stl_bind.h>
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feeldiscr/pchv.hpp>
 #include <feel/feeldiscr/pdh.hpp>
@@ -36,7 +37,7 @@
 #include <feel/feelvf/normh1.hpp>
 #include <feel/feelvf/ginac.hpp>
 #include <mpi4py/mpi4py.h>
-#include <pybind11/stl_bind.h>
+
 
 namespace py = pybind11;
 using namespace Feel;
@@ -119,10 +120,15 @@ void defDiscr(py::module &m, std::string const& suffix = "")
         .def("nLocalDofWithGhost",static_cast<size_type(space_t::*)() const>(&space_t::nLocalDofWithGhost), "get the number of degrees of freedom over the current subdomain withthe ghost")
         .def("nLocalDofWithoutGhost",static_cast<size_type(space_t::*)() const>(&space_t::nLocalDofWithoutGhost), "get the number of degrees of freedom over the current subdomain without the ghost")
         .def("basisName",static_cast<std::string (space_t::*)() const>(&space_t::basisName), "get the basis function name")
+        .def("mapPtr",&space_t::mapPtr, "return the datamap")
 
         .def("mesh",static_cast<mesh_ptr_t const&(space_t::*)() const>(&space_t::mesh), "get the mesh of the function space")
         .def("element",static_cast<element_t (space_t::*)(std::string const&, std::string const&)>(&space_t::element), "get an element of the function space", py::arg("name")="u", py::arg("desc")="u")
         .def("elementFromExpr",static_cast<element_t (space_t::*)(std::string const&, std::string const&, std::string const& )>(&space_t::elementFromExpr), "get an element of the function space interpolating the expression", py::arg("expr"),py::arg("name")="u", py::arg("desc")="u")
+        .def("element", []( std::shared_ptr<space_t> & Xh, Vector<double> const& v, int blockIdStart ) { return Xh->element( v );
+            }, py::arg("vec"), py::arg("start") = 0, "get an element from a vector")     
+        .def("element", []( std::shared_ptr<space_t> & Xh, VectorPetsc<double> const& v, int blockIdStart ) { return Xh->element( v, blockIdStart );
+            }, py::arg("vec"), py::arg("start") = 0, "get an element from a vector")      
         ;
 
     // Element
@@ -135,7 +141,7 @@ void defDiscr(py::module &m, std::string const& suffix = "")
         .def( "min", static_cast<double ( element_t::* )() const>( &element_t::min ), "get the minimum of the element vector representation" )
         .def( "max", static_cast<double ( element_t::* )() const>( &element_t::max ), "get the maximum of the element vector representation" )
         .def( "save", &element_t::saveImpl, py::arg( "path" ), py::arg( "name" ), py::arg( "type" ) = "default", py::arg( "suffix" ) = "", py::arg( "sep" ) = "", "save functionspace element in file " )
-        .def( "load", &element_t::loadImpl, py::arg( "path" ), py::arg( "name" ), py::arg( "type" ) = "default", py::arg( "suffix" ) = "", py::arg( "sep" ) = "", "load functionspace element from file " )
+        .def( "load", &element_t::loadImpl, py::arg( "path" ), py::arg( "name" ), py::arg( "type" ) = "default", py::arg( "suffix" ) = "", py::arg( "sep" ) = "", py::arg("space_path") = "", "load functionspace element from file " )
         .def( py::self + py::self )
         .def( py::self - py::self )
         .def( double() + py::self )
