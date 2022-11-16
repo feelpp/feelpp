@@ -114,41 +114,41 @@ PYBIND11_MODULE(_modelcore, m )
        // Algrebraic factory
        .def( "algebraicFactory", static_cast<typename ModelAlgebraic::model_algebraic_factory_ptrtype ( ModelAlgebraic::* )( std::string const& ) const>( &ModelAlgebraic::algebraicFactory ), py::arg( "name" ) = std::string{}, "get the algebraic factory" );
 
-   py::class_<ModelMeasuresStorage>( m, "ModelMeasuresStorage" )
-       .def( "hasValue", static_cast<bool ( ModelMeasuresStorage::* )( std::string const& ) const>( &ModelMeasuresStorage::hasValue ), py::arg( "key" ), "check if a value 'key' exists in the default storage" )
-       .def( "hasValue", static_cast<bool ( ModelMeasuresStorage::* )( std::string const&, std::string const& ) const>( &ModelMeasuresStorage::hasValue ), py::arg( "name" ), py::arg( "key" ), "check if a value 'key' exists in the storage 'name'" )
-       .def( "value", static_cast<double ( ModelMeasuresStorage::* )( std::string const& ) const>( &ModelMeasuresStorage::value ), py::arg( "key" ), "get the value 'key' from the default storage" )
-       .def( "value", static_cast<double ( ModelMeasuresStorage::* )( std::string const&, std::string const& ) const>( &ModelMeasuresStorage::value ), py::arg( "name" ), py::arg( "key" ), "get the value 'key' exists from the storage 'name'" )
-       .def( "values", static_cast<std::map<std::string, double> const& (ModelMeasuresStorage::*)() const>( &ModelMeasuresStorage::values ), "get the values in the default storage" )
-       .def( "values", static_cast<std::map<std::string, double> const& (ModelMeasuresStorage::*)( std::string const& ) const>( &ModelMeasuresStorage::values ), py::arg( "name" ), "get the values in the storage 'name'" );
+    py::class_<ModelMeasuresStorage>( m, "ModelMeasuresStorage" )
+        .def_readonly_static( "default_storage", &ModelMeasuresStorage::default_storage )
+        .def( "empty", static_cast<bool ( ModelMeasuresStorage::* )( std::string const& ) const>( &ModelMeasuresStorage::empty ), py::arg( "key" ) = ModelMeasuresStorage::default_storage, "return true if storage is empty, false otherwise" )
+        .def( "hasValue", static_cast<bool ( ModelMeasuresStorage::* )( std::string const& ) const>( &ModelMeasuresStorage::hasValue ), py::arg( "key" ), "check if a value 'key' exists in the default storage" )
+        .def( "hasValue", static_cast<bool ( ModelMeasuresStorage::* )( std::string const&, std::string const& ) const>( &ModelMeasuresStorage::hasValue ), py::arg( "name" ), py::arg( "key" ), "check if a value 'key' exists in the storage 'name'" )
+        .def( "value", static_cast<double ( ModelMeasuresStorage::* )( std::string const& ) const>( &ModelMeasuresStorage::value ), py::arg( "key" ), "get the value 'key' from the default storage" )
+        .def( "value", static_cast<double ( ModelMeasuresStorage::* )( std::string const&, std::string const& ) const>( &ModelMeasuresStorage::value ), py::arg( "name" ), py::arg( "key" ), "get the value 'key' exists from the storage 'name'" )
+        .def( "values", static_cast<std::map<std::string, double> const& (ModelMeasuresStorage::*)() const>( &ModelMeasuresStorage::values ), "get the values in the default storage" )
+        .def( "values", static_cast<std::map<std::string, double> const& (ModelMeasuresStorage::*)( std::string const& ) const>( &ModelMeasuresStorage::values ), py::arg( "name" ), "get the values in the storage 'name'" );
 
-   py::class_<ModelNumerical, std::shared_ptr<ModelNumerical>, ModelAlgebraic>( m, "ModelNumerical", py::multiple_inheritance() )
-       .def( py::init<std::string const&, worldcomm_ptr_t const&, std::string const&, ModelBaseRepository const&>(),
-             py::arg( "prefix" ),
-             py::arg( "worldComm" ),
-             py::arg( "subprefix" ) = std::string( "" ),
-             py::arg( "modelRep" ) = ModelBaseRepository(),
-             "Initialize ModelNumerical" )
-       .def( "isStationary", &ModelNumerical::isStationary, "return if steady state model, false otherwise" )
-       .def( "setStationary", &ModelNumerical::setStationary, "set model steady state to true or false", py::arg( "state" ) )
-       .def( "doRestart", &ModelNumerical::doRestart, "return if model is restarted, false otherwise" )
-       .def( "setRestart", &ModelNumerical::setRestart, "set model restart status", py::arg( "state" ) )
+    py::class_<ModelNumerical, std::shared_ptr<ModelNumerical>, ModelAlgebraic>( m, "ModelNumerical", py::multiple_inheritance() )
+        .def( py::init<std::string const&, worldcomm_ptr_t const&, std::string const&, ModelBaseRepository const&>(),
+              py::arg( "prefix" ),
+              py::arg( "worldComm" ),
+              py::arg( "subprefix" ) = std::string( "" ),
+              py::arg( "modelRep" ) = ModelBaseRepository(),
+              "Initialize ModelNumerical" )
+        .def( "isStationary", &ModelNumerical::isStationary, "return if steady state model, false otherwise" )
+        .def( "setStationary", &ModelNumerical::setStationary, "set model steady state to true or false", py::arg( "state" ) )
+        .def( "doRestart", &ModelNumerical::doRestart, "return if model is restarted, false otherwise" )
+        .def( "setRestart", &ModelNumerical::setRestart, "set model restart status", py::arg( "state" ) )
 
-       .def( "time", &ModelNumerical::time, "get the current time" )
-       .def( "currentTime", &ModelNumerical::currentTime, "get the current time" )
-       .def( "updateTime", &ModelNumerical::updateTime, "update the current time", py::arg( "time" ) )
-       .def( "timeInitial", &ModelNumerical::timeInitial, "get the initial time" )
-       .def( "setTimeInitial", &ModelNumerical::setTimeInitial, "set the initial time", py::arg( "time" ) )
-       .def( "timeFinal", &ModelNumerical::timeFinal, "get the final time" )
-       .def( "setTimeFinal", &ModelNumerical::setTimeFinal, "set the final time", py::arg( "time" ) )
-       .def( "timeStep", &ModelNumerical::timeStep, "get the time step" )
-       .def( "setTimeStep", &ModelNumerical::setTimeStep, "set the time step", py::arg( "step" ) )
+        .def( "time", &ModelNumerical::time, "get the current time" )
+        .def( "currentTime", &ModelNumerical::currentTime, "get the current time" )
+        .def( "updateTime", &ModelNumerical::updateTime, "update the current time", py::arg( "time" ) )
+        .def( "timeInitial", &ModelNumerical::timeInitial, "get the initial time" )
+        .def( "setTimeInitial", &ModelNumerical::setTimeInitial, "set the initial time", py::arg( "time" ) )
+        .def( "timeFinal", &ModelNumerical::timeFinal, "get the final time" )
+        .def( "setTimeFinal", &ModelNumerical::setTimeFinal, "set the final time", py::arg( "time" ) )
+        .def( "timeStep", &ModelNumerical::timeStep, "get the time step" )
+        .def( "setTimeStep", &ModelNumerical::setTimeStep, "set the time step", py::arg( "step" ) )
 
-       .def( "postProcessMeasures", static_cast<ModelMeasuresStorage& (ModelNumerical::*)()>( &ModelNumerical::postProcessMeasures ), "get measures from toolbox" )
+        .def( "postProcessMeasures", static_cast<ModelMeasuresStorage& (ModelNumerical::*)()>( &ModelNumerical::postProcessMeasures ), "get measures from toolbox" )
 
-       .def( "checkResults", static_cast<bool ( ModelNumerical::* )() const>( &ModelNumerical::checkResults ), "check results in toolbox case if Checkers section present" )
-
-       ;
-    py::class_<RemeshInterpolation>( m, "RemeshInterpolation" );
+        .def( "checkResults", static_cast<bool ( ModelNumerical::* )() const>( &ModelNumerical::checkResults ), "check results in toolbox case if Checkers section present" )
+        ;
 }
 
