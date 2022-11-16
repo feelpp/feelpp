@@ -30,6 +30,7 @@
 #ifndef FEELPP_MODELPOSTPROCESS_EXTRA_H
 #define FEELPP_MODELPOSTPROCESS_EXTRA_H 1
 
+#include <feel/feelcore/table.hpp>
 #include <feel/feelmodels/modelpostprocess.hpp>
 
 namespace Feel
@@ -37,86 +38,227 @@ namespace Feel
 namespace FeelModels
 {
 
-class ModelMeasuresIO
+class ModelMeasuresStorageValues
 {
+    using value_type = double;
 public :
-    ModelMeasuresIO( std::string const& pathFile, worldcomm_ptr_t const& worldComm /*= Environment::worldComm()*/ );
-    ModelMeasuresIO( ModelMeasuresIO const& ) = default;
-    void clear();
-    FEELPP_DEPRECATED void start() {}
-    void restart( std::string const& paramKey, double val );
-    void exportMeasures();
-    FEELPP_DEPRECATED void setParameter(std::string const& key,double val);
-    void setMeasure(std::string const& key,double val);
+    ModelMeasuresStorageValues( std::string const& name ) : M_name( name ) {}
+    ModelMeasuresStorageValues( ModelMeasuresStorageValues && ) = default;
+    ModelMeasuresStorageValues( ModelMeasuresStorageValues const& ) = default;
 
-    template <typename T>
-    void setMeasure( std::string const& key, std::vector<T> const& values ) { this->setMeasure( key, values.data(), values.size() ); }
+    template<typename T, std::enable_if_t< std::is_arithmetic_v<std::decay_t<T>>, bool> = true>
+    void setValue( std::string const& key, T && val )
+        {
+            M_data[key] = std::forward<T>( val );
+            M_stateUpdated = true;
+        }
+    //void setValue( std::string const& key, value_type val );
+    void setValue( std::map<std::string,value_type> const& keyToValues )
+        {
+            for ( auto const& [key,val] : keyToValues )
+                this->setValue(key,val);
+        }
 
-    template<typename Derived>
-    void setMeasure(std::string const& key, Eigen::MatrixBase<Derived> const& mat )
+    template<typename T, std::enable_if_t< is_eigen_matrix_v<T>, bool> = true>
+    void setValue(std::string const& key, T && mat )
         {
             if ( mat.rows() == 1 && mat.cols() == 1 )
-                this->setMeasure( key, mat(0,0) );
+                this->setValue( key, mat(0,0) );
             else if ( mat.rows() == 1 || mat.cols() == 1 )
                 for (int d=0;d<mat.rows()*mat.cols();++d)
-                    this->setMeasure( (boost::format("%1%_%2%")%key %d).str(), mat(d) );
+                    this->setValue( (boost::format("%1%_%2%")%key %d).str(), mat(d) );
             else
                 for (int i=0;i<mat.rows();++i)
                     for (int j=0;j<mat.cols();++j)
-                        this->setMeasure( (boost::format("%1%_%2%%3%")%key %i %j).str(), mat(i,j) );
+                        this->setValue( (boost::format("%1%_%2%%3%")%key %i %j).str(), mat(i,j) );
         }
-    template <typename T>
-    void setMeasure(std::string const& key, const T * data, int dim)
-        {
-            if ( dim == 1 )
-                this->setMeasure( key, data[0] );
-            else
-                for (int d=0;d<dim;++d)
-                    this->setMeasure( (boost::format("%1%_%2%")%key %d).str(), data[d] );
-        }
-    FEELPP_DEPRECATED void setMeasureComp( std::string const& key,std::vector<double> const& values );
-    void setMeasures( std::map<std::string,double> const& m );
-    FEELPP_DEPRECATED bool hasParameter( std::string const& key ) const { return this->hasMeasure( key ); }
-    bool hasMeasure( std::string const& key ) const { return M_dataNameToIndex.find( key ) != M_dataNameToIndex.end(); }
-    //! return measure from a key
-    double measure( std::string const& key ) const;
-    //! return the current measures in memory
-    std::map<std::string,double> currentMeasures() const;
-    //! return path of file where measures are stored
-    std::string const& pathFile() const { return M_pathFile; }
-    //! set path of file where measures are stored
-    void setPathFile( std::string const& s ) { M_pathFile = s; }
+
+    bool hasValue( std::string const& key ) const { return M_data.find( key ) != M_data.end(); }
+    value_type value( std::string const& key ) const { return M_data.at( key ); }
+    std::map<std::string,value_type> const& values() const { return M_data; }
+
+    void saveCSV( std::string const& directory, bool append = true );
+    void exportCSV( std::ostream &o );
+
+    bool isUpdated() const { return M_stateUpdated; }
+    void resetState() { M_stateUpdated = false; }
 
     //! update measures values into the mapping of values \mp
     void updateParameterValues( std::map<std::string,double> & mp, std::string const& prefix_symbol ) const;
+
+    //! restart measures
+    void restart( std::string const& directory, int restartIndex, bool isLastIndex = false );
+
 private :
-    void writeHeader();
-private :
-    std::shared_ptr<WorldComm> M_worldComm;
-    std::string M_pathFile;
-    std::map<std::string,uint16_type> M_dataNameToIndex;
-    std::vector<std::string> M_dataIndexToName;
-    std::vector<double> M_data;
-    bool M_addNewDataIsLocked;
+    friend class ModelMeasuresStorage;
+    std::string filename_CSV( fs::path const& pdir ) const
+        {
+            std::string filename = M_name.empty()? "values.csv" : fmt::format("values.{}.csv",M_name);
+            return (pdir/filename).string();
+        }
+
+    friend class boost::serialization::access;
+    template <class Archive>
+    void serialize( Archive& ar, const unsigned int version )
+        {
+            ar& BOOST_SERIALIZATION_NVP( M_data );
+            ar& BOOST_SERIALIZATION_NVP( M_keys );
+        }
+
+private:
+    std::string M_name;
+    std::map<std::string,value_type> M_data;
+    std::vector<std::string> M_keys;
+    bool M_stateUpdated = false;
 };
 
-class ModelMeasuresEvaluatorContext
+class ModelMeasuresStorageTable
 {
 public :
-    ModelMeasuresEvaluatorContext() = default;
-    ModelMeasuresEvaluatorContext( ModelMeasuresEvaluatorContext const& ) = default;
+    ModelMeasuresStorageTable( std::string const& name ) : M_name( name ) {}
+    ModelMeasuresStorageTable( ModelMeasuresStorageTable && ) = default;
+    ModelMeasuresStorageTable( ModelMeasuresStorageTable const& ) = default;
 
-    std::map<std::string, std::map<int,std::string> > const& mapFieldToMapCtxIdToName() const { return M_mapFieldToMapCtxIdToName; }
-    void add( std::string const& field, int ctxId, std::string const& name );
-    bool has( std::string const& field ) const;
-    bool has( std::string const& field, int ctxId ) const;
-    std::string const& name( std::string const& field, int ctxId ) const;
-    int ctxId( std::string const& field, std::string const& name ) const;
+    Feel::Table const& table() const { return M_table; }
+
+    void setTable( Feel::Table && table )
+        {
+            M_table = std::move( table );
+            M_stateUpdated = true;
+        }
+
+    void saveCSV( std::string const& directory, size_type index = invalid_v<size_type> );
+
+    bool isUpdated() const { return M_stateUpdated; }
+    void resetState() { M_stateUpdated = false; }
 private :
-    // for each field, store data names evaluted : field -> ( (ctxId1->dataName1), (ctxId2->dataName2),...)
-    std::map<std::string, std::map<int,std::string> > M_mapFieldToMapCtxIdToName;
-    std::string M_emptyString;
+    std::string filename_CSV( fs::path const& pdir,size_type index ) const
+        {
+            std::string filename_wide = M_name.empty()? "table" : fmt::format("table.{}",M_name);
+            std::string filename = index!= invalid_v<size_type>? fmt::format("{}.{}.csv",filename_wide,index) : fmt::format("{}.csv",filename_wide);
+            return (pdir/filename).string();
+        }
+
+private:
+    std::string M_name;
+    Feel::Table M_table;
+    bool M_stateUpdated = false;
 };
+
+
+// fwd declarations
+//class ModelMeasuresStorageValues;
+//class ModelMeasuresStorageTable;
+
+/**
+ * @brief Measure Storage class
+ * 
+ * The class stores values and tables in maps
+ * \code {.coo}
+ * code
+ * \endcode
+ * 
+ */
+class ModelMeasuresStorage
+{
+    using value_type = double;
+public :
+
+    static const inline std::string default_storage = "";
+    
+    //enum class State { IN_MEMORY=0, ON_DISK, MODIFIED };
+
+    ModelMeasuresStorage( std::string const& directory, worldcomm_ptr_t const& worldComm ) : M_directory( directory ), M_worldComm( worldComm ) {}
+    ModelMeasuresStorage( ModelMeasuresStorage && ) = default;
+    ModelMeasuresStorage( ModelMeasuresStorage const& ) = default;
+
+    //! set value \val related to the key nammed by \key (the measure storage is associated to the default name, i.e. empty string)
+    template<typename T>
+    void setValue(std::string const& key, T && val ) { this->setValue( "", key, std::forward<T>( val ) ); }
+    //! set value \val related to the key nammed by \key (the measure storage is associated to the \name)
+    template<typename T>
+    void setValue(std::string const& name,std::string const& key, T && val )
+        {
+            if ( M_values.find( name ) == M_values.end() )
+                M_values.emplace( std::make_pair( name, ModelMeasuresStorageValues(name) ) );
+            M_values.at( name ).setValue( key, std::forward<T>( val ) );
+        }
+    //! set a pair key/value defined by \keyVal (the measure storage is associated to the default name, i.e. empty string)
+    template<typename T>
+    void setKeyValue( T && keyVal ) { this->setKeyValue("",keyVal); }
+    //! set a pair key/value defined by \keyVal (the measure storage is associated to the \name)
+    template<typename T>
+    void setKeyValue(std::string const& name,T && keyVal )
+        {
+            if ( M_values.find( name ) == M_values.end() )
+                M_values.emplace( std::make_pair( name, ModelMeasuresStorageValues(name) ) );
+            M_values.at( name ).setValue( std::forward<T>( keyVal ) );
+        }
+
+    //! return true if a measure with key @p key is present in default storage (empty string)
+    bool hasValue( std::string const& key ) const { return this->hasValue( default_storage, key ); }
+    //! return true if a measure with key @p key is present in storage @p name
+    bool hasValue( std::string const& name, std::string const& key ) const;
+
+    //! return value of measure with key @p key from default storage (empty string)
+    value_type value( std::string const& key ) const { return this->value( default_storage, key ); }
+    //! return value of measure with key @p key from storage 'name'
+    value_type value( std::string const& name, std::string const& key ) const;
+
+    //! get the values dictionary from the default storage
+    std::map<std::string,value_type> const& values() const { return this->values(default_storage); }
+
+    //! get the values dictionary from the storage @p name
+    std::map<std::string,value_type> const& values( std::string const& name ) const { return M_values.at( name ).values(); }
+
+    //! return true if there are no values in the storage \p name
+    bool empty( std::string const& name = default_storage ) const { return M_values.empty() || (M_values.find( name ) == M_values.end()); }
+
+    //! get the times
+    std::vector<double> const& times() const { return M_times; }
+
+    void setTable( std::string const& name, Feel::Table && table );
+
+    //! save current measure at time @p time
+    void save( double time );
+
+    //! return true if at least one measure (value or table) has been set or updated
+    bool isUpdated() const;
+
+    //! reset state of measures storage : new measure modification will be turn on the updated state
+    void resetState();
+
+    //! update measures values into the mapping of values \mp
+    void updateParameterValues( std::map<std::string,double> & mp, std::string const& prefix_symbol ) const;
+
+    //! restart measures
+    void restart( double time );
+
+    //! get the directory where the measures are stored
+    fs::path directory() const { return fs::path(M_directory); }
+
+    //! get the metadata from the measure storage
+    nl::json metadata() const;
+private :
+    void restartSeqImpl( double time );
+
+private :
+    std::string M_directory;
+    worldcomm_ptr_t M_worldComm;
+    std::vector<double> M_times;
+    std::map<std::string,ModelMeasuresStorageValues> M_values;
+    std::map<std::string,ModelMeasuresStorageTable> M_tables;
+};
+
+
+
+
+
+
+
+
+
+
 
 class ModelMeasuresForces
 {
@@ -154,19 +296,17 @@ public :
     ModelMeasuresFlowRate& operator=( ModelMeasuresFlowRate && ) = default;
 
     std::string const& name() const { return M_name; }
-    std::list<std::string> const& meshMarkers() const { return M_meshMarkers; }
+    std::set<std::string> const& markers() const { return M_markers; }
     std::string const& direction() const { return M_direction; }
     bool useExteriorNormal() const { return M_direction == "exterior_normal"; }
 
-    void setName( std::string const& s ) { M_name = s; }
-    void addMarker( std::string const& mark );
     void setDirection( std::string const& dir );
 
-    void setup( pt::ptree const& _pt, std::string const& name );
+    void setup( nl::json const& jarg, std::string const& name, ModelIndexes const& indexes );
 
 private :
     std::string M_name;
-    std::list<std::string> M_meshMarkers;
+    ModelMarkers M_markers;
     std::string M_direction;
 };
 
@@ -184,13 +324,20 @@ public :
     std::set<std::string> const& markers() const { return M_markers; }
     std::string const& direction() const { return M_direction; }
     bool isOutward() const { return M_direction == "outward"; }
+    //! returnn requires markers connection
+    ModelMarkers const& requiresMarkersConnection() const { return M_requiresMarkersConnection; }
+    //! return internalfaces evalutation type (i.e. mean,sum,max,...)
+    std::string const& internalFacesEvalutationType() const { return M_internalFacesEvalutationType; }
 
-    void setup( pt::ptree const& _pt, std::string const& name, ModelIndexes const& indexes );
+    void setup( nl::json const& jarg, std::string const& name, ModelIndexes const& indexes );
 
 private :
     std::string M_name;
     ModelMarkers M_markers;
     std::string M_direction;
+    ModelMarkers M_requiresMarkersConnection;
+    std::string M_internalFacesEvalutationType;
+
 };
 
 

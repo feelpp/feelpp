@@ -52,8 +52,8 @@
 
 #include <feel/feelmodels/modelcore/options.hpp>
 
+#include <feel/feelmodels/solid/solidmechanicsboundaryconditions.hpp>
 #include <feel/feelmodels/modelvf/solidmecfirstpiolakirchhoff.hpp>
-
 #include <feel/feelmodels/solid/solidmechanics1dreduced.hpp>
 
 namespace Feel
@@ -61,14 +61,27 @@ namespace Feel
 namespace FeelModels
 {
 /**
- * Solid Mechanics Toolbox
- * \ingroup Toolboxes
+ * @brief class for Solid Mechanics toolbox
+ * @ingroup Solid
+ *
+ * @tparam ConvexType convex for the mesh
+ * @tparam BasisDisplacementType basis type for displacement
+ *
+ * @code {.cpp}
+ * using solid_t = SolidMechanics< Simplex<nDim,1>, Lagrange<OrderT, Vectorial,Continuous,PointSetFekete>>;
+ * auto solid = std::make_shared<solid_t>("solid");
+ * solid->init();
+ * solid->printAndSaveInfo();
+ * solid->solve();
+ * solid->exportResults();
+ * @endcode
+ *
  */
 template< typename ConvexType, typename BasisDisplacementType >
 class SolidMechanics : public ModelNumerical,
-                       public ModelPhysics<ConvexType::nDim>,
-                       public std::enable_shared_from_this< SolidMechanics<ConvexType,BasisDisplacementType> >
+                       public ModelPhysics<ConvexType::nDim>
 {
+    typedef ModelPhysics<ConvexType::nDim> super_physics_type;
 public:
     typedef ModelNumerical super_type;
     using size_type = typename super_type::size_type;
@@ -105,7 +118,6 @@ public:
     typedef std::shared_ptr<space_displacement_type> space_displacement_ptrtype;
     typedef typename space_displacement_type::element_type element_displacement_type;
     typedef std::shared_ptr<element_displacement_type> element_displacement_ptrtype;
-    typedef typename space_displacement_type::element_external_storage_type element_displacement_external_storage_type;
     typedef typename space_displacement_type::element_type element_vectorial_type;
     typedef std::shared_ptr<element_vectorial_type> element_vectorial_ptrtype;
     typedef typename space_displacement_type::component_functionspace_type space_displacement_scalar_type;
@@ -117,7 +129,6 @@ public:
     typedef std::shared_ptr<space_pressure_type> space_pressure_ptrtype;
     typedef typename space_pressure_type::element_type element_pressure_type;
     typedef std::shared_ptr<element_pressure_type> element_pressure_ptrtype;
-    typedef typename space_pressure_type::element_external_storage_type element_pressure_external_storage_type;
     //___________________________________________________________________________________//
     // vectorial constraint space
     typedef FunctionSpace<mesh_type, bases<basis_constraint_vec_type> > space_constraint_vec_type;
@@ -219,18 +230,7 @@ public:
     typedef Exporter<mesh_visu_ho_type> export_ho_type;
     typedef std::shared_ptr<export_ho_type> export_ho_ptrtype;
 #endif
-    // // context for evaluation
-    // typedef typename space_displacement_type::Context context_displacement_type;
-    // typedef std::shared_ptr<context_displacement_type> context_displacement_ptrtype;
-    // typedef typename space_pressure_type::Context context_pressure_type;
-    // typedef std::shared_ptr<context_pressure_type> context_pressure_ptrtype;
-    // typedef typename space_stress_scal_type::Context context_stress_scal_type;
-    // typedef std::shared_ptr<context_stress_scal_type> context_stress_scal_ptrtype;
 
-
-    // measure tools for points evaluation
-    typedef MeasurePointsEvaluation<space_displacement_type> measure_points_evaluation_type;
-    typedef std::shared_ptr<measure_points_evaluation_type> measure_points_evaluation_ptrtype;
 
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
@@ -283,7 +283,7 @@ public:
                              std::string const& subPrefix = "",
                              ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
-    static std::string expandStringFromSpec( std::string const& expr );
+    std::shared_ptr<self_type> shared_from_this() { return std::dynamic_pointer_cast<self_type>( super_type::shared_from_this() ); }
 
 private :
 
@@ -292,6 +292,7 @@ private :
     void initMesh();
     void initFunctionSpaces();
     void initBoundaryConditions();
+    void updatePhysics( typename super_physics_type::PhysicsTreeNode & physicsTree, ModelModels const& models ) override;
 
     void createExporters();
 
@@ -310,7 +311,6 @@ public :
     void init( bool buildAlgebraicFactory = true );
     void solve( bool upVelAcc=true );
 
-    std::shared_ptr<std::ostringstream> getInfo() const override;
     void updateInformationObject( nl::json & p ) const override;
     tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
 
@@ -349,15 +349,6 @@ public :
     materialsproperties_ptrtype & materialsProperties() { return M_materialsProperties; }
     void setMaterialsProperties( materialsproperties_ptrtype mp ) { CHECK( !this->isUpdatedForUse() ) << "setMaterialsProperties can be called only before called isUpdatedForUse";  M_materialsProperties = mp; }
 
-
-    bool hasDirichletBC() const
-        {
-            return ( !M_bcDirichlet.empty() ||
-                     !M_bcDirichletComponents.find(Component::X)->second.empty() ||
-                     !M_bcDirichletComponents.find(Component::Y)->second.empty() ||
-                     !M_bcDirichletComponents.find(Component::Z)->second.empty() );
-        }
-
     std::string const& timeStepping() const { return M_timeStepping; }
 
 #if 0
@@ -391,9 +382,6 @@ public :
     void updateTimeStep();
     void updateVelocity();
 
-    void initUserFunctions();
-    void updateUserFunctions( bool onlyExprWithTimeSymbol = false );
-
     // post process
     void initPostProcess() override;
 
@@ -420,7 +408,7 @@ public :
     template <typename SymbExprType>
     auto exprPostProcessExportsToolbox( SymbExprType const& se, std::string const& prefix ) const
         {
-            using _expr_firstPiolaKirchhof_type = std::decay_t<decltype(Feel::FeelModels::solidMecFirstPiolaKirchhoffTensor(this->fieldDisplacement(),M_fieldPressure,*std::shared_ptr<ModelPhysicSolid<nDim>>{}, this->materialsProperties()->materialProperties(""),se))>;
+            using _expr_firstPiolaKirchhof_type = std::decay_t<decltype(Feel::FeelModels::solidMecFirstPiolaKirchhoffTensor(this->fieldDisplacement(),M_fieldPressure,std::shared_ptr<ModelPhysicSolid<nDim>>{}, this->materialsProperties()->materialProperties(""),se))>;
             using _expr_vonmises_type = std::decay_t<decltype( vonmises(_expr_firstPiolaKirchhof_type{}) )>;
             using _expr_tresca_type = std::decay_t<decltype( tresca(_expr_firstPiolaKirchhof_type{}) )>;
             using _expr_princial_stress_type = std::decay_t<decltype( eig(_expr_firstPiolaKirchhof_type{}) )>;
@@ -439,7 +427,7 @@ public :
                         auto const& matProperties = this->materialsProperties()->materialProperties( matName );
                         auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(), matName );
 
-                        auto fpk = Feel::FeelModels::solidMecFirstPiolaKirchhoffTensor(u,M_fieldPressure,*physicSolidData,matProperties,se);
+                        auto fpk = Feel::FeelModels::solidMecFirstPiolaKirchhoffTensor(u,M_fieldPressure,physicSolidData,matProperties,se);
                         auto vonmisesExpr = vonmises( fpk );
                         mapExprVonMisses[prefixvm(prefix,"von-mises-criterion")].push_back( std::make_tuple( vonmisesExpr, range, "element" ) );
 
@@ -530,18 +518,6 @@ public :
     element_stress_tensor_type const& fieldStressTensor() const { return *M_fieldStressTensor; }
 
 
-    // fields defined in json
-    std::map<std::string,element_displacement_scalar_ptrtype> const& fieldsUserScalar() const { return M_fieldsUserScalar; }
-    std::map<std::string,element_displacement_ptrtype> const& fieldsUserVectorial() const { return M_fieldsUserVectorial; }
-    bool hasFieldUserScalar( std::string const& key ) const { return M_fieldsUserScalar.find( key ) != M_fieldsUserScalar.end(); }
-    bool hasFieldUserVectorial( std::string const& key ) const { return M_fieldsUserVectorial.find( key ) != M_fieldsUserVectorial.end(); }
-    element_displacement_scalar_ptrtype const& fieldUserScalarPtr( std::string const& key ) const {
-        CHECK( this->hasFieldUserScalar( key ) ) << "field name " << key << " not registered"; return M_fieldsUserScalar.find( key )->second; }
-    element_displacement_ptrtype const& fieldUserVectorialPtr( std::string const& key ) const {
-        CHECK( this->hasFieldUserVectorial( key ) ) << "field name " << key << " not registered"; return M_fieldsUserVectorial.find( key )->second; }
-    element_displacement_scalar_type const& fieldUserScalar( std::string const& key ) const { return *this->fieldUserScalarPtr( key ); }
-    element_displacement_type const& fieldUserVectorial( std::string const& key ) const { return *this->fieldUserVectorialPtr( key ); }
-
 
     //___________________________________________________________________________________//
     // toolbox fields
@@ -554,9 +530,9 @@ public :
 
     auto modelFields( vector_ptrtype sol, size_type startBlockSpaceIndex = 0, std::string const& prefix = "" ) const
         {
-            std::shared_ptr<element_displacement_external_storage_type> field_d;
-            std::shared_ptr<element_displacement_external_storage_type> field_v;
-            std::shared_ptr<element_pressure_external_storage_type> field_p;
+            element_displacement_ptrtype field_d;
+            element_displacement_ptrtype field_v;
+            element_pressure_ptrtype field_p;
             if ( this->hasSolidEquationStandard() )
             {
                 field_d = this->functionSpaceDisplacement()->elementPtr( *sol, startBlockSpaceIndex + this->startSubBlockSpaceIndex( "displacement" ) );
@@ -596,24 +572,65 @@ public :
     template <typename ModelFieldsType>
     auto symbolsExpr( ModelFieldsType const& mfields ) const
         {
+#if 1
             auto seToolbox = this->symbolsExprToolbox( mfields );
             auto seParam = this->symbolsExprParameter();
             auto seMat = this->materialsProperties()->symbolsExpr();
             auto seFields = mfields.symbolsExpr();
             return Feel::vf::symbolsExpr( seToolbox, seParam, seMat, seFields );
+#else
+            return symbols_expression_empty_t{};
+#endif
         }
     auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields( prefix ) ); }
 
     template <typename ModelFieldsType>
     auto symbolsExprToolbox( ModelFieldsType const& mfields ) const
         {
-            return symbols_expression_empty_t{};
+            using field_disp_type = std::decay_t<decltype( mfields.field( FieldTag::displacement(this), "displacement" ) )>;
+            using _expr_fpkt_type = std::decay_t<decltype(this->firstPiolaKirchhoffTensorExpr( std::declval<field_disp_type>() ))>;
+            symbol_expression_t<_expr_fpkt_type> se_fpkt;
+
+            if ( this->hasSolidEquationStandard() )
+            {
+                auto const& u = mfields.field( FieldTag::displacement(this), "displacement" );
+                std::string symbol_fpkt = fmt::format("{}_stress_P",this->keyword());
+                se_fpkt.add( symbol_fpkt, this->firstPiolaKirchhoffTensorExpr( u ), SymbolExprComponentSuffix(nDim,nDim) );
+            }
+            return Feel::vf::symbolsExpr( se_fpkt );
         }
 
     template <typename ModelFieldsType, typename TrialSelectorModelFieldsType>
     auto trialSymbolsExpr( ModelFieldsType const& mfields, TrialSelectorModelFieldsType const& tsmf ) const
         {
             return mfields.trialSymbolsExpr( tsmf );
+        }
+
+
+
+    template <typename DispFieldType,typename SymbolsExprType = symbols_expression_empty_t>
+    auto firstPiolaKirchhoffTensorExpr( DispFieldType const& u, SymbolsExprType const& se = symbols_expression_empty_t{} ) const
+        {
+            // TODO pressure
+            auto p = this->fieldPressurePtr();
+            using _stesstensor_expr_type = std::decay_t<decltype( Feel::FeelModels::solidMecFirstPiolaKirchhoffTensor(u,p,
+                                                                                                                      std::static_pointer_cast<ModelPhysicSolid<nDim>>( this->physicsFromCurrentType().begin()->second ),
+                                                                                                                      this->materialsProperties()->materialProperties(""),se) )>;
+            std::vector<std::pair<std::string,_stesstensor_expr_type>> theExprs;
+            for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
+            {
+                auto physicSolidData = std::static_pointer_cast<ModelPhysicSolid<nDim>>(physicData);
+                for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
+                {
+                    auto const& matProperties = this->materialsProperties()->materialProperties( matName );
+                    auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(), matName );
+
+                    auto stressTensorExpr = Feel::FeelModels::solidMecFirstPiolaKirchhoffTensor(u,p,physicSolidData,matProperties,se);
+                    theExprs.push_back( std::make_pair( matName, std::move( stressTensorExpr ) ) );
+                }
+            }
+            return expr<typename mesh_type::index_type>( this->materialsProperties()->exprSelectorByMeshElementMapping(), theExprs );
+
         }
 
     //___________________________________________________________________________________//
@@ -673,8 +690,6 @@ public :
     std::string couplingFSIcondition() const { return M_couplingFSIcondition; }
     void couplingFSIcondition(std::string s) { M_couplingFSIcondition=s; }
 
-    std::set<std::string> const& markerNameFSI() const { return M_bcFSIMarkerManagement.markerFluidStructureInterfaceBC(); }
-
     void updateNormalStressFromStruct();
     //void updateStressCriterions();
 
@@ -731,23 +746,9 @@ private :
     // physical parameter
     materialsproperties_ptrtype M_materialsProperties;
 
-
     // boundary conditions
-    map_vector_field<nDim,1,2> M_bcDirichlet;
-    std::map<ComponentType,map_scalar_field<2> > M_bcDirichletComponents;
-    map_scalar_field<2> M_bcNeumannScalar,M_bcInterfaceFSI;
-    map_vector_field<nDim,1,2> M_bcNeumannVectorial;
-    map_matrix_field<nDim,nDim,2> M_bcNeumannTensor2;
-    map_vector_fields<nDim,1,2> M_bcRobin;
-    map_scalar_field<2> M_bcNeumannEulerianFrameScalar;
-    map_vector_field<nDim,1,2> M_bcNeumannEulerianFrameVectorial;
-    map_matrix_field<nDim,nDim,2> M_bcNeumannEulerianFrameTensor2;
-    map_vector_field<nDim,1,2> M_volumicForcesProperties;
-    MarkerManagementDirichletBC M_bcDirichletMarkerManagement;
-    MarkerManagementNeumannBC M_bcNeumannMarkerManagement;
-    MarkerManagementNeumannEulerianFrameBC M_bcNeumannEulerianFrameMarkerManagement;
-    MarkerManagementRobinBC M_bcRobinMarkerManagement;
-    MarkerManagementFluidStructureInterfaceBC M_bcFSIMarkerManagement;
+    using boundary_conditions_type = SolidMechanicsBoundaryConditions<nDim>;
+    std::shared_ptr<boundary_conditions_type> M_boundaryConditions;
 
     //-------------------------------------------//
     // standard model
@@ -794,13 +795,6 @@ private :
     element_scalar_visu_ho_ptrtype M_pressureVisuHO;
     op_interpolation_visu_ho_pressure_ptrtype M_opIpressure;
 #endif
-    // post-process point evaluation
-    // context_displacement_ptrtype M_postProcessMeasuresContextDisplacement;
-    // context_pressure_ptrtype M_postProcessMeasuresContextPressure;
-    // context_stress_scal_ptrtype M_postProcessMeasuresContextStressScalar;
-
-    measure_points_evaluation_ptrtype M_measurePointsEvaluation;
-
 
     std::map<std::string,std::set<std::string> > M_postProcessVolumeVariation; // (name,list of markers)
     //-------------------------------------------//
@@ -830,9 +824,6 @@ private :
     bool M_useFSISemiImplicitScheme;
     std::string M_couplingFSIcondition;
 
-    // fields defined in json
-    std::map<std::string,element_displacement_scalar_ptrtype> M_fieldsUserScalar;
-    std::map<std::string,element_displacement_ptrtype> M_fieldsUserVectorial;
 
 }; // SolidMechanics
 
@@ -873,7 +864,6 @@ SolidMechanics<ConvexType,BasisDisplacementType>::executePostProcessMeasures( do
 {
     if ( !this->hasSolidEquationStandard() )
         return;
-    bool hasMeasure = false;
 
     //auto const& u = mfields.field( FieldTag::displacement(this), "displacement" );
 
@@ -885,24 +875,13 @@ SolidMechanics<ConvexType,BasisDisplacementType>::executePostProcessMeasures( do
         elements_reference_wrapper_t<mesh_type> vvrange = ( vvmarkers.size() == 1 && vvmarkers.begin()->empty() )?
             M_rangeMeshElements : markedelements( this->mesh(),vvmarkers );
         double volVar = this->computeVolumeVariation( vvrange );
-        this->postProcessMeasuresIO().setMeasure( vvname, volVar );
-        hasMeasure = true;
+        this->postProcessMeasures().setValue( vvname, volVar );
     }
 
-    bool hasMeasureNorm = this->updatePostProcessMeasuresNorm( this->mesh(), M_rangeMeshElements, symbolsExpr, mfields );
-    bool hasMeasureStatistics = this->updatePostProcessMeasuresStatistics( this->mesh(), M_rangeMeshElements, symbolsExpr, mfields );
-    bool hasMeasurePoint = this->updatePostProcessMeasuresPoint( M_measurePointsEvaluation, mfields );
+    model_measures_quantities_empty_t mquantities;
 
-    if ( hasMeasureNorm || hasMeasureStatistics || hasMeasurePoint )
-        hasMeasure = true;
-
-    if ( hasMeasure )
-    {
-        if ( !this->isStationary() )
-            this->postProcessMeasuresIO().setMeasure( "time", time );
-        this->postProcessMeasuresIO().exportMeasures();
-        this->upload( this->postProcessMeasuresIO().pathFile() );
-    }
+    // execute common post process and save measures
+    super_type::executePostProcessMeasures( time, this->mesh(), M_rangeMeshElements, symbolsExpr, mfields, mquantities );
 }
 
 

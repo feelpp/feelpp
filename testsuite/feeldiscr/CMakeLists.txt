@@ -4,7 +4,7 @@ feelpp_add_test( aitken NO_MPI_TEST )
 
 feelpp_add_test( disc NO_MPI_TEST )
 feelpp_add_test( element )
-feelpp_add_test( elementminmax )
+feelpp_add_test( elementminmax CFG test_elementminmax.cfg GEO test_elementminmax2d.geo test_elementminmax3d.geo )
 feelpp_add_test( element_serialize NO_MPI_TEST )
 feelpp_add_test( evaluator )
 
@@ -80,8 +80,8 @@ endif()
 feelpp_add_test( twolaplaciansdistributed )
 feelpp_add_test( masterworker_laplacian )
 
-feelpp_add_test( markerhdf5_2D SRCS test_markerhdf5 DEFS CHECKH5_DIM=2 GEO markerhdf5_2D.geo)
-feelpp_add_test( markerhdf5_3D SRCS test_markerhdf5 DEFS CHECKH5_DIM=3 GEO markerhdf5_3D.geo)
+feelpp_add_test( markerhdf5_2D SRCS test_markerhdf5.cpp DEFS CHECKH5_DIM=2 GEO markerhdf5_2D.geo)
+feelpp_add_test( markerhdf5_3D SRCS test_markerhdf5.cpp DEFS CHECKH5_DIM=3 GEO markerhdf5_3D.geo)
 
 feelpp_add_test( upmarker_faces )
 feelpp_add_test( listofrange )
@@ -95,7 +95,7 @@ feelpp_add_test( idelements)
 
 feelpp_add_test( twospacesmap )
 
-feelpp_add_test( on_dofs SRCS test_on_dofs GEO square_mmarked.geo CFG test_on_dofs.cfg )
+feelpp_add_test( on_dofs SRCS test_on_dofs.cpp GEO square_mmarked.geo CFG test_on_dofs.cfg )
 #! not functional yet
 # feelpp_add_test( element0D )
 
@@ -104,3 +104,5 @@ if ( FEELPP_HAS_VTK )
 endif()
 
 feelpp_add_test( sensors CFG sensors.cfg GEO sensorsdesc.json )
+
+feelpp_add_test( geometricspace )

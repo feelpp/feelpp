@@ -5,6 +5,8 @@
   Author(s): Christophe Prud'homme <prudhomm@zion>
        Date: 2005-08-27
 
+  Copyright (C) 2011-2022 Feel++ Consortium
+  Copyright (C) 2011-2022 University of Strasbourg
   Copyright (C) 2005,2006 EPFL
 
   This library is free software; you can redistribute it and/or
@@ -32,12 +34,14 @@
 #include <feel/feelcore/traits.hpp>
 #include <feel/feelmesh/simplex.hpp>
 #include <feel/feelmesh/hypercube.hpp>
-
+#include <boost/phoenix/stl/algorithm/detail/is_std_list.hpp>
+#include <feel/feelmesh/enums.hpp>
 
 namespace Feel
 {
 /**
  * \class MeshTraits
+ * \ingroup Mesh
  * \brief Traits for meshes
  *
  * @author Christophe Prud'homme
@@ -194,6 +198,172 @@ template <typename T> struct is_geoelement: std::false_type {};
  */
 template <typename... T>
 inline constexpr bool is_geoelement_v = is_geoelement<T...>::value;
+
+
+
+
+
+/**
+ * Filters
+ */
+
+template <typename T> struct is_filter: std::false_type {};
+
+template <typename... T> struct is_filter<boost::tuple<T...>>: std::true_type {};
+template <typename... T>
+constexpr bool is_filter_v = is_filter<T...>::value;
+
+/**
+ * a RangeType can be one or more filter/range objects of the same type, we
+ * extract the underlying type by first casting everything to a list and then
+ * retrieving consistently the type.
+ */
+template <typename RangeType>
+using range_t = typename mpl::if_< boost::is_std_list<RangeType>,
+                                   mpl::identity<RangeType>,
+                                   mpl::identity<std::list<RangeType> > >::type::type::value_type;
+
+template <typename RangeType>
+using entity_range_t = typename  boost::unwrap_reference<typename boost::tuples::template element<1,range_t<RangeType> >::type::value_type>::type;
+
+template<typename MeshType>
+using elements_reference_wrapper_t = boost::tuple<mpl::size_t<MESH_ELEMENTS>,
+                                                  typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
+                                                  typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
+                                                  typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype>;
+
+template<typename MeshType>
+using allelements_t = elements_reference_wrapper_t<MeshType>;
+
+template<typename MeshType>
+using elements_pid_t = elements_reference_wrapper_t<MeshType>;
+
+template<typename MeshType>
+using idelements_t = elements_reference_wrapper_t<MeshType>;
+
+template<typename MeshType>
+using ext_elements_t = elements_reference_wrapper_t<MeshType>;
+template <typename MeshType>
+using range_element_t = typename MeshTraits<MeshType>::elements_reference_wrapper_type;
+template <typename MeshType>
+using range_element_ptr_t = typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype;
+
+template <typename MeshType>
+using boundaryelements_t = elements_reference_wrapper_t<MeshType>;
+template<typename MeshType>
+using internalelements_t = elements_reference_wrapper_t<MeshType>;
+
+template<typename MeshType>
+using markedelements_t = elements_reference_wrapper_t<MeshType>;
+template<typename MeshType>
+using marked2elements_t = elements_reference_wrapper_t<MeshType>;
+template<typename MeshType>
+using marked3elements_t = elements_reference_wrapper_t<MeshType>;
+
+
+template<typename MeshType>
+using faces_reference_wrapper_t = boost::tuple<mpl::size_t<MESH_FACES>,
+                                                  typename MeshTraits<MeshType>::face_reference_wrapper_const_iterator,
+                                                  typename MeshTraits<MeshType>::face_reference_wrapper_const_iterator,
+                                                  typename MeshTraits<MeshType>::faces_reference_wrapper_ptrtype>;
+
+template<typename MeshType>
+using allfaces_t =  faces_reference_wrapper_t<MeshType>;
+
+template<typename MeshType>
+using idfaces_t =  faces_reference_wrapper_t<MeshType>;
+
+template<typename MeshType>
+using faces_pid_t = faces_reference_wrapper_t<MeshType>;
+
+template<typename MeshType>
+using ext_faces_t = faces_reference_wrapper_t<MeshType>;
+
+template<typename MeshType>
+using boundaryfaces_t = faces_reference_wrapper_t<MeshType>;
+template<typename MeshType>
+using internalfaces_t = faces_reference_wrapper_t<MeshType>;
+template<typename MeshType>
+using interprocessfaces_t =  faces_reference_wrapper_t<MeshType>;
+
+template<typename MeshType>
+using markedfaces_t = faces_reference_wrapper_t<MeshType>;
+template<typename MeshType>
+using marked2faces_t = faces_reference_wrapper_t<MeshType>;
+template<typename MeshType>
+using marked3faces_t = faces_reference_wrapper_t<MeshType>;
+
+
+template<typename MeshType>
+using edges_reference_wrapper_t = boost::tuple<mpl::size_t<MESH_EDGES>,
+                                                  typename MeshTraits<MeshType>::edge_reference_wrapper_const_iterator,
+                                                  typename MeshTraits<MeshType>::edge_reference_wrapper_const_iterator,
+                                                  typename MeshTraits<MeshType>::edges_reference_wrapper_ptrtype>;
+
+template<typename MeshType>
+using alledges_t = edges_reference_wrapper_t<MeshType>;
+
+template<typename MeshType>
+using pid_edges_t = edges_reference_wrapper_t<MeshType>;
+
+template<typename MeshType>
+using ext_edges_t =  edges_reference_wrapper_t<MeshType>;
+
+template<typename MeshType>
+using markededges_t = edges_reference_wrapper_t<MeshType>;
+template<typename MeshType>
+using boundaryedges_t = edges_reference_wrapper_t<MeshType>;
+template<typename MeshType>
+using internaledges_t = edges_reference_wrapper_t<MeshType>;
+
+template<typename MeshType>
+using points_reference_wrapper_t = boost::tuple<mpl::size_t<MESH_POINTS>,
+                                    typename MeshTraits<MeshType>::point_reference_wrapper_const_iterator,
+                                    typename MeshTraits<MeshType>::point_reference_wrapper_const_iterator,
+                                    typename MeshTraits<MeshType>::points_reference_wrapper_ptrtype>;
+template<typename MeshType>
+using allpoints_t = points_reference_wrapper_t<MeshType>;
+template<typename MeshType>
+using points_pid_t = points_reference_wrapper_t<MeshType>;
+template<typename MeshType>
+using markedpoints_t = points_reference_wrapper_t<MeshType>;
+template<typename MeshType>
+using boundarypoints_t = points_reference_wrapper_t<MeshType>;
+template<typename MeshType>
+using internalpoints_t = points_reference_wrapper_t<MeshType>;
+
+namespace detail
+{
+template <typename RangeType>
+struct submeshrangetype
+{
+    typedef typename mpl::if_< boost::is_std_list<RangeType>,
+                               mpl::identity<RangeType>,
+                               mpl::identity<std::list<RangeType> > >::type::type::value_type type;
+};
+}
+template<typename IteratorRangeT>
+using submeshrange_t = typename Feel::detail::submeshrangetype<IteratorRangeT>::type;
+
+
+template<typename IteratorType>
+using filter_enum_t = typename boost::tuples::element<0,typename meta::remove_all<IteratorType>::type >::type;
+template<typename IteratorType>
+using filter_iterator_t = typename boost::tuples::element<1,typename meta::remove_all<IteratorType>::type >::type;
+template<typename IteratorType>
+using filter_entity_t = typename boost::unwrap_reference<typename filter_iterator_t<IteratorType>::value_type>::type;
+template<typename IteratorType>
+using ext_entities_from_iterator_t = boost::tuple<filter_enum_t<IteratorType>,
+                                                  typename std::vector<boost::reference_wrapper<filter_entity_t<IteratorType> const> >::const_iterator,
+                                                  typename std::vector<boost::reference_wrapper<filter_entity_t<IteratorType> const> >::const_iterator,
+                                                  std::shared_ptr<std::vector<boost::reference_wrapper<filter_entity_t<IteratorType> const> > >
+                                                  >;
+
+template<typename MeshType>
+using elements_wrapper_t = typename MeshTraits<MeshType>::elements_reference_wrapper_type;
+template<typename MeshType>
+using elements_wrapper_ptr_t = typename MeshTraits<MeshType>::elements_reference_wrapper_ptr_type;
+
 
 
 } // Feel

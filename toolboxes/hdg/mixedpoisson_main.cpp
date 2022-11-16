@@ -43,7 +43,7 @@ int
 runMixedPoissonSimulation()
 {
     using namespace Feel;
-    auto MP = ToolboxType::New("hdg.poisson");
+    auto MP = ToolboxType::New(_prefix="hdg.poisson");
     return runToolboxSimulation( MP );
 }
 
@@ -74,7 +74,8 @@ int main(int argc, char *argv[])
     auto dimt = hana::make_tuple(hana::int_c<2>,hana::int_c<3>);
     auto discretizationt = hana::make_tuple( hana::make_tuple("P1", hana::int_c<1> ),
                                              hana::make_tuple("P2", hana::int_c<2> ),
-                                             hana::make_tuple("P3", hana::int_c<3> ));
+                                             hana::make_tuple("P3", hana::int_c<3> )
+                                             );
     int status = 1;
 
     if ( mode == "simulation" || mode == "h-convergence" )

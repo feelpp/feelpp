@@ -30,7 +30,6 @@
 #include <feel/feeldiscr/check.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelfilters/exporter.hpp>
-#include <tabulate/table.hpp>
 #include <feel/feelpython/pyexpr.hpp>
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelvf/print.hpp>
@@ -95,7 +94,7 @@ int hdg_laplacian()
     int tau_order =  ioption("hdg.tau.order");
 
     tic();
-    auto mesh = loadMesh( new Mesh<Simplex<Dim>> );
+    auto mesh = loadMesh( _mesh=new Mesh<Simplex<Dim>> );
     int nbIbc = nelements(markedfaces(mesh,"Ibc"),true) >= 1 ? 1 : 0;
     int nbIbcOde = nelements(markedfaces(mesh,"IbcOde"),true) >= 1 ? 2 : 0;
     std::map<std::string,std::pair<int,std::string>> ibcs;
@@ -158,7 +157,7 @@ int hdg_laplacian()
         if ( ibc_data.second == "IbcOde" && ibc_type == "Ibc" )
             ibc_exact_map[ibc_type] = 0;
         else
-            ibc_exact_map[ibc_type] = integrate(markedfaces(mesh,ibc_data.second), un).evaluate()(0,0);
+            ibc_exact_map[ibc_type] = integrate(_range=markedfaces(mesh,ibc_data.second), _expr=un).evaluate()(0,0);
 
     // ****** Hybrid-mixed formulation ******
     // We treat Vh, Wh, and Mh separately
@@ -561,22 +560,29 @@ int main( int argc, char** argv )
     // tag::env[]
     using namespace Feel;
 
-	Environment env( _argc=argc, _argv=argv,
-                     _desc=makeOptions(),
-                     _about=about(_name="qs_hdg_laplacian",
-                                  _author="Feel++ Consortium",
-                                  _email="feelpp-devel@feelpp.org"));
-    // end::env[]
-    if ( ioption( "order" ) == 1 )
-        return hdg_laplacian<FEELPP_DIM,1>();
-    if ( ioption( "order" ) == 2 )
-        return hdg_laplacian<FEELPP_DIM,2>();
+    try 
+    {
+	    Environment env( _argc=argc, _argv=argv,
+                         _desc=makeOptions(),
+                         _about=about(_name="qs_hdg_laplacian",
+                                      _author="Feel++ Consortium",
+                                      _email="feelpp-devel@feelpp.org"));
+        // end::env[]
+        if ( ioption( "order" ) == 1 )
+            return hdg_laplacian<FEELPP_DIM,1>();
+        if ( ioption( "order" ) == 2 )
+            return hdg_laplacian<FEELPP_DIM,2>();
 #if 0
-
-    if ( ioption( "order" ) == 3 )
-        return !hdg_laplacian<FEELPP_DIM,3>();
-    if ( ioption( "order" ) == 4 )
-        return !hdg_laplacian<FEELPP_DIM,4>();
+        if ( ioption( "order" ) == 3 )
+            return !hdg_laplacian<FEELPP_DIM,3>();
+        if ( ioption( "order" ) == 4 )
+            return !hdg_laplacian<FEELPP_DIM,4>();
 #endif
+        return 0;
+    }
+    catch( ... )
+    {
+        handleExceptions();
+    }
     return 1;
 }

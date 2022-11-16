@@ -15,12 +15,32 @@
         "omega":
         {
             "filename":"$cfgdir/omega.json",
-            "physics":"thermo-electric"
+            "physics":["heat","electric"],
+            "electric_c":"sigma:sigma",
+            "heat_c":"k:k"
         },
         "omega2":
         {
             "filename":"$cfgdir/omega.json",
-            "physics":"heat"
+            "physics":"heat",
+            "electric_c":"sigma:sigma",
+            "heat_c":"k:k"
+        }
+    },
+    "InitialConditions":
+    {
+        "heat":{
+            "temperature":
+            {
+                "Expression":
+                {
+                    "myic1":
+                    {
+                        "markers":["omega","omega2"],
+                        "expr": "293"
+                    }
+                }
+            }
         }
     },
     "BoundaryConditions":
@@ -35,7 +55,7 @@
         //         }
         //     }
         // },
-        "electric-potential":
+        "electric":
         {
             "Dirichlet":
             {
@@ -68,7 +88,7 @@
                 }
             }
         },
-        "temperature":
+        "heat":
         {
             "Robin":
             {
@@ -124,9 +144,19 @@
     },
     "PostProcess":
     {
-        "Exports":
+        "electric":
         {
-            "fields":["electric-potential","current-density","temperature","heat-flux"]
+            "Exports":
+            {
+                "fields": ["all"]
+            }
+        },
+        "heat":
+        {
+            "Exports":
+            {
+                "fields": ["all"]
+            }
         }
     }
 }

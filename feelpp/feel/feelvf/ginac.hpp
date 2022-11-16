@@ -48,10 +48,6 @@ extern template GiNaC::registered_class_info GiNaC::container<std::vector>::reg_
 // #endif
 // #endif
 
-#include <boost/fusion/container/vector.hpp>
-
-#include <boost/parameter/preprocessor.hpp>
-
 #include <boost/foreach.hpp>
 #include <boost/range/algorithm/for_each.hpp>
 
@@ -90,7 +86,7 @@ ex parse( std::string const& str, std::vector<symbol> const& syms, std::vector<s
 //! @param expr : a polynom expression
 //! @param symbolsDegree : vector of (symbol, unit degree for the symbol) which impact the total degree of polynomial
 //! @return total degree of a polynomial
-int totalDegree( ex const& expr, std::vector<std::pair<symbol,int>> const& symbolsDegree );
+int totalDegree( ex const& expr, std::vector<std::pair<symbol,Feel::uint16_type>> const& symbolsDegree );
 
 //! get real values of an expression (can be a list) if it is a numeric expression
 //! @param expr : the expression to test
@@ -161,6 +157,7 @@ public:
     Symbols(std::vector<std::string> const& s ):std::vector<symbol>(symbols(s)) {}
 };
 
+#if 0
 template<typename... Args>
 class Fields
     :
@@ -173,7 +170,7 @@ public:
     Fields( super const& m) : super( m ) {}
 
 };
-
+#endif
 } // Feel namespace
 
 
@@ -864,10 +861,10 @@ using scalar_field_expression=Expr<GinacEx<Order>>;
 
 /**
  * defines a dictionary of scalar fields
- * 
+ *
  * this data structure creates a dictionary of scalar fields, it associates a
  * string to a Ginac Expr of rank 0.
- * 
+ *
  * \code
  * auto e = expr("x+y:x:y");
  * auto z = expr("0:x:y");
@@ -891,7 +888,7 @@ struct map_scalar_field: public std::map<std::string,std::pair<scalar_field_expr
         for( auto & f : *this )
             f.second.first.setParameterValues( pv );
     }
-    
+
 };
 
 typedef std::map<std::string,Expr<GinacEx<2>>> map_scalar_field_type;
@@ -1035,11 +1032,11 @@ using matrix_field_expression=vector_field_expression<M,N,Order>;
 
 /**
  * defines a dictionary of vector fields
- * 
+ *
  * this data structure creates a dictionary of fields, it associates a string to
  * a Ginac Expr of rank 1 and a set of vector. In the case of vector fields the size of the vector
  * field must be given
- * 
+ *
  * \code
  * auto e = expr("{x,y}:x:y");
  * auto z = expr("{0,0}:x:y");

@@ -24,43 +24,40 @@
 CONFIGURE_FILE(feelconfig.h.in feelconfig.h  @ONLY)
 CONFIGURE_FILE(feelinfo.h.in feelinfo.h  @ONLY)
 
-
-SET(DIRS core timing math alg mesh partition poly opt crb discr ts filters material vf pde ls fit models python fmi hwsys event)
+# Define the two required variables before including
+# the source code for watching a git repository.
+set(PRE_CONFIGURE_FILE "feelcore/git.cpp.in")
+if ( GIT_EXECUTABLE )
+  set(POST_CONFIGURE_FILE "${CMAKE_CURRENT_BINARY_DIR}/feelcore/git.cpp")
+  include(GitWatcher)
+elseif( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/feelcore/git.cpp")
+  add_custom_target(check_git)
+  set(POST_CONFIGURE_FILE "${CMAKE_CURRENT_SOURCE_DIR}/feelcore/git.cpp")
+else()
+  set(GIT_RETRIEVED_STATE "false")
+  set(GIT_IS_DIRTY "false")
+  add_custom_target(check_git)
+  CONFIGURE_FILE(feelcore/git.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/feelcore/git.cpp @ONLY)
+  set(POST_CONFIGURE_FILE "${CMAKE_CURRENT_BINARY_DIR}/feelcore/git.cpp")
+endif()
+message(STATUS "[feelpp] post_configure_file: ${POST_CONFIGURE_FILE}")
+SET(DIRS core timing math alg mesh partition poly opt discr ts filters material vf pde ls fit models python fmi hwsys event)
 foreach(dir ${DIRS})
   add_subdirectory(feel${dir})
 endforeach()
-
-# add_subdirectory (feelcore)
-# add_subdirectory (feelmath)
-# add_subdirectory (feelalg)
-# add_subdirectory (feelmesh)
-# add_subdirectory (feelpartition)
-# add_subdirectory (feelpoly)
-# add_subdirectory (feelopt)
-# add_subdirectory (feelcrb)
-# add_subdirectory (feeldiscr)
-# add_subdirectory (feelmodels)
-# add_subdirectory (feelts)
-# add_subdirectory (feelfilters)
-# add_subdirectory (feelmaterial)
-# add_subdirectory (feelvf )
-# add_subdirectory (feelpde)
-# add_subdirectory (feells)
-#
-# add_subdirectory (feelpython)
-
 
 # Add target for dynamic library
 #add_library(feelpp-dynamic SHARED $<TARGET_OBJECTS:feelpp-core>)
 #if(FEELPP_ENABLE_BUILD_STATIC)
 #  add_library(feelpp STATIC options.cpp ${FEELPP_SRCS})
 #else()
-  add_library(feelpp SHARED options.cpp ${FEELPP_SRCS})
+  add_library(feelpp SHARED options.cpp ${POST_CONFIGURE_FILE} ${FEELPP_SRCS})
   set_target_properties(feelpp PROPERTIES VERSION ${FEELPP_SHARED_VERSION} SOVERSION ${FEELPP_SHARED_SOVERSION})
   set_property(TARGET feelpp PROPERTY MACOSX_RPATH ON)
   set_property(TARGET feelpp PROPERTY CXX_STANDARD ${FEELPP_STD_CPP})
 #endif()
 add_library(Feelpp::feelpp ALIAS feelpp )  # to match exported target
+add_dependencies(feelpp check_git)
 set_target_properties(feelpp PROPERTIES OUTPUT_NAME "feelpp")
 #set_target_properties(feelpp PROPERTIES COMPILE_FLAGS "-fvisibility=hidden")
 if ( ${CMAKE_VERSION} VERSION_GREATER 3.7.2 )
@@ -81,7 +78,11 @@ target_link_libraries( feelpp PUBLIC feelpp_contrib )
 target_include_directories(feelpp PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/..>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
-  $<INSTALL_INTERFACE:include/feelpp> )  
+  $<INSTALL_INTERFACE:include/feelpp> )
+
+IF ( FEELPP_ENABLE_JSON_DIAGNOSTICS )
+  target_compile_definitions( feelpp PUBLIC  FEELPP_ENABLE_JSON_DIAGNOSTICS=1 )
+ENDIF()
 
 IF (FEELPP_HAS_LIBDL)
   target_link_libraries( feelpp PRIVATE ${DL_LIBRARY} )
@@ -104,11 +105,17 @@ if ( MPI_FOUND )
   set_property( TARGET feelpp PROPERTY MPIEXEC_PREFLAGS ${MPIEXEC_PREFLAGS} )
   set_property( TARGET feelpp PROPERTY MPIEXEC_POSTFLAGS ${MPIEXEC_POSTFLAGS} )
 endif()
-if ( PYTHONLIBS_FOUND )
+
+message(CHECK_START "[feelpp] configuring python3 development")
+if(Python3_Development_FOUND)
+  
   target_compile_definitions( feelpp PUBLIC FEELPP_HAS_PYTHON )
   set_property( TARGET feelpp PROPERTY FEELPP_PYTHON_MODULE_PATH ${FEELPP_PYTHON_MODULE_PATH})
-  target_include_directories( feelpp PUBLIC ${PYTHON_INCLUDE_DIRS})
-  target_link_libraries( feelpp PRIVATE ${PYTHON_LIBRARIES} )
+  target_include_directories( feelpp PUBLIC ${Python3_INCLUDE_DIRS})
+  target_link_libraries( feelpp PRIVATE ${Python3_LIBRARIES} )
+  message(CHECK_PASS "succeeded")
+else()
+  message(CHECK_FAIL "failed")
 endif()
 if ( HDF5_FOUND AND HDF5_IS_PARALLEL )
   target_compile_definitions( feelpp PUBLIC FEELPP_HAS_HDF5 )
@@ -136,6 +143,12 @@ if ( Boost_FOUND )
     # Boost::filesystem
     BOOST_FILESYSTEM_VERSION=${BOOST_FILESYSTEM_VERSION}
     )
+
+  # Required on MacOS to circumvent error "Boost.Stacktrace requires `_Unwind_Backtrace` function"
+  if( APPLE )
+    target_compile_definitions(feelpp PUBLIC _GNU_SOURCE)
+  endif()
+
   if (BOOST_ENABLE_TEST_DYN_LINK)
     target_compile_definitions( feelpp PUBLIC BOOST_TEST_DYN_LINK )
   endif (BOOST_ENABLE_TEST_DYN_LINK)
@@ -186,8 +199,7 @@ if ( GOOGLE_PERFTOOLS_FOUND )
 endif()
 if (PETSC_FOUND)
   target_compile_definitions( feelpp PUBLIC FEELPP_HAS_PETSC FEELPP_HAS_PETSC_H )
-  target_include_directories( feelpp PUBLIC ${PETSC_PACKAGE_INCLUDES} ${PETSC_INCLUDE_DIR} ${PETSC_INCLUDE_CONF})
-  target_link_libraries( feelpp PUBLIC ${PETSC_LIBRARIES} ${PETSC_PACKAGE_LIBS} )
+  target_link_libraries(feelpp PUBLIC PkgConfig::PETSC)
 endif()
 if (SLEPC_FOUND)
   target_compile_definitions( feelpp PUBLIC FEELPP_HAS_SLEPC )
@@ -273,6 +285,8 @@ get_property(INC_DIR_LIST TARGET feelpp PROPERTY PRIVATE_LINK_LIBRARIES)
 message(STATUS "[feelpp]: private libs ${INC_DIR_LIST}")
 get_property(INC_DIR_LIST TARGET feelpp PROPERTY PUBLIC_LINK_LIBRARIES)
 message(STATUS "[feelpp]: public libs ${INC_DIR_LIST}")
+get_property(INC_DIR_LIST TARGET feelpp PROPERTY LINK_LIBRARIES)
+message(STATUS "[feelpp]: libs ${INC_DIR_LIST}")
 
 #target_link_libraries(feelpp ${FEELPP_LIBRARIES})
 if( FEELPP_ENABLE_PCH )
@@ -292,20 +306,20 @@ install(EXPORT FeelppTargets
   DESTINATION share/feelpp/feel/cmake/modules
   )
 
-#INSTALL(TARGETS feelpp DESTINATION lib/ COMPONENT Libs EXPORT feelpp-export-targets)
-#install(EXPORT feelpp-export-targets DESTINATION share/feelpp/feel/cmake/modules)
+# INSTALL(TARGETS feelpp DESTINATION lib/ COMPONENT Libs EXPORT feelpp-export-targets)
+# install(EXPORT feelpp-export-targets DESTINATION share/feelpp/feel/cmake/modules)
 
 # Handle static library if needed
 # if(FEELPP_ENABLE_BUILD_STATIC)
-#     add_library(feelpp-static STATIC options.cpp ${FEELPP_SRCS})
-#     set_target_properties(feelpp-static PROPERTIES OUTPUT_NAME "feelpp")
-#     set_target_properties(feelpp-static PROPERTIES VERSION ${FEELPP_SHARED_VERSION})
-#     set_property(TARGET feelpp-static PROPERTY LABELS feel++)
+# add_library(feelpp-static STATIC options.cpp ${FEELPP_SRCS})
+# set_target_properties(feelpp-static PROPERTIES OUTPUT_NAME "feelpp")
+# set_target_properties(feelpp-static PROPERTIES VERSION ${FEELPP_SHARED_VERSION})
+# set_property(TARGET feelpp-static PROPERTY LABELS feel++)
 
-#     target_link_libraries(feelpp-static ${FEELPP_LIBRARIES})
+# target_link_libraries(feelpp-static ${FEELPP_LIBRARIES})
 
-#     # Install feelpp
-#     INSTALL(TARGETS feelpp-static DESTINATION lib/ COMPONENT Bin)
+# # Install feelpp
+# INSTALL(TARGETS feelpp-static DESTINATION lib/ COMPONENT Bin)
 # endif()
 
 include(feelpp.lib.install)

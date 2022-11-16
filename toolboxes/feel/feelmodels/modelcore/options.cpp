@@ -45,8 +45,12 @@ Feel::po::options_description modelbase_options(std::string const& prefix)
         (prefixvm(prefix,"scalability-path").c_str(), Feel::po::value< std::string >(), "scalability-path")
         (prefixvm(prefix,"scalability-filename").c_str(), Feel::po::value< std::string >(), "scalability-filename")
         (prefixvm(prefix,"upload").c_str(), Feel::po::value< std::string >()->default_value(""), "upload decription")
+
+        //(prefixvm(prefix,"filename").c_str(), Feel::po::value<std::string>()->default_value( "" ), "json file describing model properties"
+        (prefixvm(prefix,"filename").c_str(), Feel::po::value<std::string>(), "json file describing model properties [DEPRECATED]" )
         ;
-    return appliBaseOptions;
+    return appliBaseOptions
+        .add( json_options( prefix ) );
 }
 
 Feel::po::options_description modelalgebraic_options(std::string const& prefix)
@@ -75,6 +79,9 @@ Feel::po::options_description modelalgebraic_options(std::string const& prefix)
         (prefixvm(prefix,"pseudo-transient-continuation.expur.beta-high").c_str(), Feel::po::value<double>()->default_value( 1.5 ), "pseudo-transient-continuation parameter : beta-high")
         (prefixvm(prefix,"pseudo-transient-continuation.expur.beta-low").c_str(), Feel::po::value<double>()->default_value( 0.1 ), "pseudo-transient-continuation parameter : beta-low")
 
+        (prefixvm(prefix,"solver.picard.relaxation-parameter").c_str(), Feel::po::value<double>()->default_value( 1.0 ), "solver.picard.relaxation-parameter")
+
+        (prefixvm(prefix,"solver.nonlinear.apply-dof-elimination-on-initial-guess").c_str(), Feel::po::value<bool>()->default_value( /*false*/true ), "solver.nonlinear.apply-dof-elimination-on-initial-guess")
         ;
     return appliBaseOptions.add( modelbase_options(prefix ) ).add( on_options( prefix ) );//.add( backend_options( prefix ) );
 }
@@ -84,7 +91,6 @@ Feel::po::options_description modelnumerical_options(std::string const& prefix)
 {
     Feel::po::options_description appliBaseOptions("Application Base options");
     appliBaseOptions.add_options()
-        (prefixvm(prefix,"filename").c_str(), Feel::po::value<std::string>()->default_value( "" ), "json file describing model properties" )
         //(prefixvm(prefix,"mesh.filename").c_str(), Feel::po::value< std::string >(), "input mesh or geo file")
         (prefixvm(prefix,"geomap").c_str(), Feel::po::value< std::string >()->default_value("opt"), "geomap strategy : ho, opt ")
 
@@ -99,8 +105,7 @@ Feel::po::options_description modelnumerical_options(std::string const& prefix)
         .add( mesh_options( prefix ) )
         .add( gmsh_options( prefix ) )
         .add( modelalgebraic_options( prefix ))
-        .add( backend_options( prefix ) )
-        .add( ptree_options( prefix ) );
+        .add( backend_options( prefix ) );
 }
 
 Feel::po::options_description
@@ -205,6 +210,8 @@ fluidMechanics_options(std::string const& prefix)
         (prefixvm(prefix,"stabilization-gls.parameter.eigenvalue.penal-lambdaK").c_str(), Feel::po::value<double>()->default_value( 0. ), "apply stabilization method")
         (prefixvm(prefix,"stabilization-gls.convection-diffusion.location.expressions").c_str(), Feel::po::value<std::string>(), "expression which determinate the location where stab is applied")
 
+        (prefixvm(prefix,"stabilization-gls.check-viscosity-dependency-on-coordinates").c_str(), Feel::po::value<bool>()->default_value( true ), "Debug option") // allow to not compute the derivativn of viscosity
+
         (prefixvm(prefix,"stabilisation-pspg").c_str(), Feel::po::value<bool>()->default_value( false ), "use stabilisation method")
         (prefixvm(prefix,"stabilisation-gls").c_str(), Feel::po::value<bool>()->default_value( false ), "use stabilisation method")
         (prefixvm(prefix,"stabilisation-cip-convection").c_str(), Feel::po::value<bool>()->default_value( false ), "use stabilisation method")
@@ -279,6 +286,8 @@ fluidMechanics_options(std::string const& prefix)
         .add( densityviscosity_options( prefix ) )
         .add( pcd_options( prefix ) )
         .add( coefficientformpdes_options( prefixvm(prefix,"turbulence") ) )
+
+        .add( modelnumerical_options( prefixvm(prefix,"body") ) )
         ;
 
     return fluidOptions;
@@ -379,10 +388,12 @@ heat_options(std::string const& prefix)
         (prefixvm(prefix,"rho").c_str(), Feel::po::value<double>()->default_value( 1 ), "density [ kg/(m^3) ]")
         (prefixvm(prefix,"heat-capacity").c_str(), Feel::po::value<double>()->default_value( 1 ), "heat-capacity [ J/(kg*K) ]")
         (prefixvm(prefix,"thermal-expansion").c_str(), Feel::po::value<double>()->default_value( 1e-4 ), "thermal-conductivity [ 1/K) ]")
-        (prefixvm(prefix,"use_velocity-convection").c_str(), Feel::po::value<bool>()->default_value( false ), "use-velocity-convection")
-        (prefixvm(prefix,"velocity-convection_is_incompressible").c_str(), Feel::po::value<bool>()->default_value( false ), "velocity-convection-is-incompressible")
-        (prefixvm(prefix,"velocity-convection").c_str(), Feel::po::value<std::string>(), "math expression")
+        // (prefixvm(prefix,"use_velocity-convection").c_str(), Feel::po::value<bool>()->default_value( false ), "use-velocity-convection")
+        // (prefixvm(prefix,"velocity-convection_is_incompressible").c_str(), Feel::po::value<bool>()->default_value( false ), "velocity-convection-is-incompressible")
+        // (prefixvm(prefix,"velocity-convection").c_str(), Feel::po::value<std::string>(), "math expression")
         (prefixvm(prefix,"initial-solution.temperature").c_str(), Feel::po::value<std::string>(), "math expression")
+
+        (prefixvm(prefix,"use-extended-doftable").c_str(), Feel::po::value<bool>()->default_value( false ), "use-extended-doftable")
 
         (prefixvm(prefix,"stabilization-gls").c_str(), Feel::po::value<bool>()->default_value( false ), "apply stabilization method")
         (prefixvm(prefix,"stabilization-gls.type").c_str(), Feel::po::value<std::string>()->default_value( "gls" ), "supg,gls,unusual-gls")
@@ -390,8 +401,12 @@ heat_options(std::string const& prefix)
         (prefixvm(prefix,"stabilization-gls.parameter.hsize.method").c_str(), Feel::po::value<std::string>()->default_value( "hmin" ), "hmin,h,meas")
         (prefixvm(prefix,"stabilization-gls.parameter.eigenvalue.penal-lambdaK").c_str(), Feel::po::value<double>()->default_value( 0. ), "apply stabilization method")
 
+        (prefixvm(prefix,"stabilization-gls.check-conductivity-dependency-on-coordinates").c_str(), Feel::po::value<bool>()->default_value( true ), "Debug option") // allow to not compute the derivativn of thermal conductivity
+
         (prefixvm(prefix,"time-stepping").c_str(), Feel::po::value< std::string >()->default_value("BDF"), "time integration schema : BDF, Theta")
         (prefixvm(prefix,"time-stepping.theta.value").c_str(), Feel::po::value< double >()->default_value(0.5), " Theta value")
+
+        (prefixvm(prefix,"solver").c_str(), Feel::po::value< std::string >()->default_value( "automatic" ), "numeric solver : automatic, Newton, Picard, Linear")
         ;
     return heatOptions.add( modelnumerical_options( prefix ) ).add( bdf_options( prefix ) ).add( ts_options( prefix ) );
 }
@@ -435,6 +450,7 @@ heatFluid_options(std::string const& prefix)
 {
     Feel::po::options_description heatFluidOptions("HeatFluid options");
     heatFluidOptions.add_options()
+        (prefixvm(prefix,"solver").c_str(), Feel::po::value< std::string >()->default_value( "automatic" ), "numeric solver : automatic, Newton, Picard")
         (prefixvm(prefix,"use-natural-convection").c_str(), Feel::po::value<bool>()->default_value( false ), "use natural convection")
         (prefixvm(prefix,"Boussinesq.ref-temperature").c_str(), Feel::po::value<double>()->default_value( 300. ), "Boussinesq ref-temperature T0")
         (prefixvm(prefix,"gravity-force").c_str(), Feel::po::value<std::string>(), "gravity-force : (default is {0,-9.80665} or {0,0,-9.80665}")
@@ -700,10 +716,12 @@ mixedpoisson_options( std::string const& prefix )
 {
     po::options_description desc_options("mixedpoisson options");
     desc_options.add_options()
+        (prefixvm(prefix,"solver").c_str(), Feel::po::value< std::string >()->default_value( "Linear" ), "numeric solver : Linear, Picard")
         ( prefixvm( prefix, "tau_constant" ).c_str(), po::value<double>()->default_value( 1.0 ), "stabilization constant for hybrid methods" )
         ( prefixvm( prefix, "use-sc" ).c_str(), po::value<bool>()->default_value( true ), "use static condensation" )
-        ( prefixvm( prefix, "time-stepping").c_str(), Feel::po::value< std::string >()->default_value("BDF"), "time integration schema : BDF, Theta")
+        ( prefixvm( prefix, "time-stepping").c_str(), Feel::po::value< std::string >()->default_value("BDF"), "time integration schema : BDF, Theta, Newmark")
         ( prefixvm( prefix, "time-stepping.theta.value").c_str(), Feel::po::value< double >()->default_value(0.5), " Theta value")
+        ( prefixvm( prefix, "use-near-null-space").c_str(), Feel::po::value<bool>()->default_value(true), "attach near null space for elasticity")
         ;
     return desc_options.add( modelnumerical_options( prefix ) ).add( bdf_options( prefix ) ).add( ts_options( prefix ) ).add( backend_options( prefix+".sc" ) );
 }

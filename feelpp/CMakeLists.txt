@@ -26,8 +26,6 @@ project(Feelpp)
 SET( CMAKE_MODULE_PATH  ${FEELPP_HOME_DIR}/feelpp/cmake/modules ${FEELPP_HOME_DIR}/feelpp/cmake/machines )
 
 include(feelpp.dirs)
-# set the Feel++ version
-include(feelpp.version)
 
 # Use of standard headers for GiNaC compiler (for supermuc this option should be OFF)
 option(USE_STANDARD_HEADERS_IN_GINAC_EXCOMPILER "Enable use of standard include headers in ginac-excompiler" ON)
@@ -57,7 +55,7 @@ endif(APPLE)
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES ".*Clang")
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftemplate-depth-1024 -Wno-inline" CACHE STRING "Default flags" )
-  SET(CMAKE_CXX_FLAGS_DEBUG "-g -O1 -fPIC " CACHE STRING "Debug flags" FORCE)
+  SET(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -fPIC " CACHE STRING "Debug flags" FORCE)
   SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g -O1" CACHE STRING "Release With Debug information flags" FORCE)
   SET(CMAKE_CXX_FLAGS_ASAN "-g3 -O0  -fsanitize=address,leak -fno-omit-frame-pointer -fno-optimize-sibling-calls " CACHE STRING "Asan flags" FORCE)
   SET(CMAKE_CXX_FLAGS_DEBUGFULL "-g -O0 -fno-omit-frame-pointer -fno-optimize-sibling-calls " CACHE STRING "Debug Full flags" FORCE)
@@ -192,6 +190,8 @@ if(NOT FEELPP_ENABLE_BUILD_STATIC)
 	set(CMAKE_C++_CREATE_SHARED_LIBRARY 1)
 endif()
 
+option(FEELPP_ENABLE_JSON_DIAGNOSTICS "enable extended json diagnostics" ON)
+
 # feel++ lib
 ADD_SUBDIRECTORY ( feel )
 
@@ -210,8 +210,7 @@ if ( FEELPP_HAS_QUICKSTART )
   add_custom_target(quickstart)
   add_subdirectory(quickstart)
 endif()
-include(feelpp.module.pyfeelpp)
-add_subdirectory(pyfeelpp)
+
 
 
 # The configuration File needs to be done at the very end otherwise we won't have the correct values for headers and libraries

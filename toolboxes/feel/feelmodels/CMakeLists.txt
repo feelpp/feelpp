@@ -41,9 +41,6 @@ add_dependencies(feelpp-models feelpp-models-mesh)
 
 add_custom_target(feelpp-models-common)
 add_dependencies(feelpp-models-common feelpp_modelcore feelpp_modelmesh)
-if( FEELPP_MODELS_HAS_MESHALE )
-  add_dependencies(feelpp-models-common feelpp_modelmeshale)
-endif()
 
 # generate models lib
 if ( FEELPP_TOOLBOXES_ENABLE_HEAT )
@@ -62,6 +59,7 @@ else()
   set(FEELPP_TOOLBOXES_ENABLE_FSI OFF)
 endif()
 if ( FEELPP_TOOLBOXES_ENABLE_FLUIDMECHANICS )
+  add_subdirectory( body )
   add_subdirectory(fluid)
 endif()
 if ( FEELPP_TOOLBOXES_ENABLE_FSI )

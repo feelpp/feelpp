@@ -39,6 +39,7 @@
 #include <feel/feelfilters/domain.hpp>
 #endif
 #include <feel/feelfilters/importeracusimrawmesh.hpp>
+#include <feel/feelfilters/importersamcefmesh.hpp>
 
 
 namespace Feel {
@@ -53,50 +54,54 @@ namespace Feel {
  * \arg update update the mesh data structure (build internal faces and edges) (default : true)
  * \arg physical_are_elementary_regions boolean to load specific meshes formats (default : false)
  */
-BOOST_PARAMETER_FUNCTION(
-    ( typename Feel::detail::mesh<Args>::ptrtype ), // return type
-    loadMesh,    // 2. function name
 
-    tag,           // 3. namespace of tag types
+template <typename T>
+using args_loadMesh_type = NA::arguments<
+    typename na::mesh::template required_as_t<std::shared_ptr<T>>,
+    typename na::prefix::template required_as_t<std::string const&>,
+    typename na::vm::template required_as_t<po::variables_map const&>,
+    typename na::filename::template required_as_t<std::string const&>,
+    typename na::desc::template required_as_t<std::shared_ptr<gmsh_type>>,
+    typename na::h::template required_as_t<double>,
+    typename na::scale::template required_as_t<double>,
+    typename na::straighten::template required_as_t<bool>,
+    typename na::refine::template required_as_t<int>,
+    typename na::update::template required_as_t<size_type>,
+    typename na::physical_are_elementary_regions::template required_as_t<bool>,
+    typename na::worldcomm::template required_as_t<worldcomm_ptr_t>,
+    typename na::force_rebuild::template required_as_t<bool>,
+    typename na::respect_partition::template required_as_t<bool>,
+    typename na::rebuild_partitions::template required_as_t<bool>,
+    typename na::rebuild_partitions_filename::template required_as_t<std::string const&>,
 
-    ( required
-      ( mesh, *)
-      ) // 4. one required parameter, and
+    typename na::partitions::template required_as_t<rank_type>,
+    typename na::partitioner::template required_as_t<int>,
+    typename na::savehdf5::template required_as_t<bool>,
+    typename na::partition_file::template required_as_t<int>,
+    typename na::depends::template required_as_t<std::string const&>,
+    typename na::verbose::template required_as_t<int>
+    >;
 
-    ( optional
-      ( prefix,(std::string), "" )
-      ( vm, ( po::variables_map const& ), Environment::vm() )
-      ( filename, *( boost::is_convertible<mpl::_,std::string> ), soption(_prefix=prefix,_name="gmsh.filename",_vm=vm) )
-      ( desc, *,std::shared_ptr<gmsh_type>() )  // geo() can't be used here as default !!
-
-      ( h,              *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="gmsh.hsize",_vm=vm) )
-      ( scale,          *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="mesh.scale",_vm=vm) )
-      ( straighten,          (bool), boption(_prefix=prefix,_name="gmsh.straighten",_vm=vm) )
-      ( refine,          *( boost::is_integral<mpl::_> ), ioption(_prefix=prefix,_name="gmsh.refine",_vm=vm) )
-      ( update,          *( boost::is_integral<mpl::_> ), MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES )
-      ( physical_are_elementary_regions,		   (bool), boption(_prefix=prefix,_name="gmsh.physical_are_elementary_regions",_vm=vm) )
-      ( worldcomm,       *, mesh->worldCommPtr() )
-      ( force_rebuild,   *( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="gmsh.rebuild",_vm=vm) )
-      ( respect_partition,	(bool), boption(_prefix=prefix,_name="gmsh.respect_partition",_vm=vm) )
-      ( rebuild_partitions,	(bool), boption(_prefix=prefix,_name="gmsh.partition",_vm=vm) )
-      ( rebuild_partitions_filename, *( boost::is_convertible<mpl::_,std::string> )	, "" )
-      ( partitions,      *( boost::is_integral<mpl::_> ), (worldcomm)?worldcomm->globalSize():1 )
-      ( partitioner,     *( boost::is_integral<mpl::_> ), ioption(_prefix=prefix,_name="gmsh.partitioner",_vm=vm) )
-      ( savehdf5,        *( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="gmsh.savehdf5",_vm=vm) )
-      ( partition_file,   *( boost::is_integral<mpl::_> ), 0 )
-      ( depends, *( boost::is_convertible<mpl::_,std::string> ), soption(_prefix=prefix,_name="gmsh.depends",_vm=vm) )
-      ( verbose,   (int), ioption(_prefix=prefix,_name="gmsh.verbosity",_vm=vm) )
-      )
-                         )
+template <typename MeshType>
+std::shared_ptr<MeshType>
+loadMeshImpl( args_loadMesh_type<MeshType> && args )
 {
+    auto && [mesh,prefix,vm,filename,desc,h,scale,straighten,refine,update,
+             physical_are_elementary_regions,worldcomm,force_rebuild,
+             respect_partition,rebuild_partitions,rebuild_partitions_filename,
+             partitions,partitioner,savehdf5,partition_file,depends,verbose] = args.get_all();
+
+    using _mesh_type = unwrap_ptr_t<std::decay_t<decltype(mesh)>>;
+    using _mesh_ptrtype = std::shared_ptr<_mesh_type>;
+
     using Feel::cout;
-    
+
 #if defined(__clang__)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunsequenced"
 #endif
-    typedef typename Feel::detail::mesh<Args>::type _mesh_type;
-    typedef typename Feel::detail::mesh<Args>::ptrtype _mesh_ptrtype;
+    // typedef typename Feel::detail::mesh<Args>::type _mesh_type;
+    // typedef typename Feel::detail::mesh<Args>::ptrtype _mesh_ptrtype;
 
     // look for mesh_name in various directories (executable directory, current directory. ...)
     // return an empty string if the file is not found
@@ -120,10 +125,11 @@ BOOST_PARAMETER_FUNCTION(
             mesh_name.extension() != ".med" &&
             mesh_name.extension() != ".arm" )
         << "Invalid filename " << filenameExpand << " it should have either the .geo. .json or .msh extension\n";
-
+    VLOG(1) << "[loadmesh] loading mesh " << filenameExpand << " from " << mesh_name.string() << " with extension " << mesh_name.extension() << " on " << worldcomm->localSize() << " processors\n";
 #if defined(FEELPP_HAS_GMSH_H)
     if ( mesh_name.extension() == ".geo" )
     {
+        VLOG(1) << fmt::format("[loadmesh] loading geometry from file {}", mesh_name.string());
 #if defined(FEELPP_HAS_HDF5)
         if ( boption(_name="mesh.load.enable") && soption(_name="mesh.load.format") == "json+h5" )
         {
@@ -273,6 +279,29 @@ BOOST_PARAMETER_FUNCTION(
 #endif
         return m;
     }
+
+
+    // Samcef Mesh (bacon script)
+    if ( mesh_name.extension() == ".dat"  )
+    {
+        if ( verbose )
+            cout << "[loadMesh] Loading mesh in format Samcef: " << fs::system_complete(mesh_name) << "\n";
+        LOG(INFO) << " Loading mesh in Samcef format " << fs::system_complete(mesh_name);
+        CHECK( mesh ) << "Invalid mesh pointer to load " << mesh_name;
+        _mesh_ptrtype m( mesh );
+        m->setWorldComm( worldcomm );
+        ImporterSamcefMesh<_mesh_type> i( mesh_name.string(), worldcomm );
+        i.visit( m.get() );
+        m->components().reset();
+        m->components().set( update );
+        m->updateForUse();
+#if defined(FEELPP_HAS_HDF5)
+        if ( savehdf5 )
+            m->saveHDF5( fs::path(filenameExpand).stem().string()+".json" );
+#endif
+        return m;
+    }
+
 #if defined( FEELPP_HAS_GMSH_H )
     mesh_name = soption(_name="gmsh.domain.shape");
 
@@ -312,6 +341,45 @@ BOOST_PARAMETER_FUNCTION(
 #pragma clang diagnostic pop
 #endif
 } // loadMesh
+
+template <typename ... Ts>
+auto
+loadMesh( Ts && ... v )
+{
+    auto args0 = NA::make_arguments( std::forward<Ts>(v)... )
+        .add_default_arguments( NA::make_default_argument( _prefix, "" ),
+                                NA::make_default_argument( _vm, Environment::vm() ),
+                                NA::make_default_argument( _desc, std::shared_ptr<gmsh_type>{} ),
+                                NA::make_default_argument( _update, MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES ),
+                                NA::make_default_argument( _rebuild_partitions_filename, "" ),
+                                NA::make_default_argument( _partition_file, 0 )
+                                );
+    auto && mesh = args0.get(_mesh);
+    std::string const& prefix = args0.get( _prefix );
+    po::variables_map const& vm = args0.get( _vm );
+
+    auto args1 = std::move( args0 ).add_default_arguments( NA::make_default_argument( _worldcomm, mesh->worldCommPtr() ) );
+    auto && worldcomm = args1.get( _worldcomm );
+
+    auto args = std::move( args1 ).add_default_arguments( NA::make_default_argument_invocable( _filename, [&prefix,&vm](){ return soption(_prefix=prefix,_name="gmsh.filename",_vm=vm); } ),
+                                                          NA::make_default_argument_invocable( _h, [&prefix,&vm](){ return doption(_prefix=prefix,_name="gmsh.hsize",_vm=vm); } ),
+                                                          NA::make_default_argument_invocable( _scale, [&prefix,&vm](){ return doption(_prefix=prefix,_name="mesh.scale",_vm=vm); } ),
+                                                          NA::make_default_argument_invocable( _straighten, [&prefix,&vm](){ return boption(_prefix=prefix,_name="gmsh.straighten",_vm=vm); } ),
+                                                          NA::make_default_argument_invocable( _refine, [&prefix,&vm](){ return ioption(_prefix=prefix,_name="gmsh.refine",_vm=vm); } ),
+                                                          NA::make_default_argument_invocable( _physical_are_elementary_regions, [&prefix,&vm](){ return boption(_prefix=prefix,_name="gmsh.physical_are_elementary_regions",_vm=vm); } ),
+                                                          NA::make_default_argument_invocable( _force_rebuild, [&prefix,&vm](){ return boption(_prefix=prefix,_name="gmsh.rebuild",_vm=vm); } ),
+                                                          NA::make_default_argument_invocable( _respect_partition, [&prefix,&vm](){ return boption(_prefix=prefix,_name="gmsh.respect_partition",_vm=vm); } ),
+                                                          NA::make_default_argument_invocable( _rebuild_partitions, [&prefix,&vm](){ return boption(_prefix=prefix,_name="gmsh.partition",_vm=vm); } ),
+                                                          NA::make_default_argument( _partitions, (worldcomm)?worldcomm->globalSize():1  ), //aiue
+                                                          NA::make_default_argument_invocable( _partitioner, [&prefix,&vm](){ return ioption(_prefix=prefix,_name="gmsh.partitioner",_vm=vm); } ),
+                                                          NA::make_default_argument_invocable( _savehdf5, [&prefix,&vm](){ return boption(_prefix=prefix,_name="gmsh.savehdf5",_vm=vm); } ),
+                                                          NA::make_default_argument_invocable( _depends, [&prefix,&vm](){ return soption(_prefix=prefix,_name="gmsh.depends",_vm=vm); } ),
+                                                          NA::make_default_argument_invocable( _verbose, [&prefix,&vm](){ return ioption(_prefix=prefix,_name="gmsh.verbosity",_vm=vm); } )
+                                                          );
+    using mesh_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(mesh)>>>;
+
+    return loadMeshImpl<mesh_type>( std::move( args ) );
+}
 
 } // Feel namespace
 

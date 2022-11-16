@@ -30,7 +30,8 @@
 
 using namespace Feel;
 
-FEELPP_ENVIRONMENT_NO_OPTIONS
+FEELPP_ENVIRONMENT_WITH_OPTIONS( Feel::makeAboutDefault("test_ptree_editions"),
+                                 ptree_options() )
 BOOST_AUTO_TEST_SUITE( ptree_editions )
 
 BOOST_AUTO_TEST_CASE( test_0 )

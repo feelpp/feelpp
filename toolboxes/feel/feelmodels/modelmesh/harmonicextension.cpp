@@ -168,7 +168,7 @@ HarmonicExtension<MeshType,Order>::init()
 
     this->log(this->prefix(),"init", "finish");
 }
-
+#if 0
 template< typename MeshType, int Order >
 std::shared_ptr<std::ostringstream>
 HarmonicExtension<MeshType,Order>::getInfo() const
@@ -181,7 +181,7 @@ HarmonicExtension<MeshType,Order>::getInfo() const
 
     return _ostr;
 }
-
+#endif
 
 template< typename MeshType, int Order >
 void
@@ -203,7 +203,7 @@ HarmonicExtension<MeshType,Order>::updateLinearPDE( DataUpdateLinear & data ) co
             //std::cout << " harmonic : use_adaptive_penalisation \n";
             /* Calculate penalization term due to Masud and Hughes \tau_e = \frac{1-V_{min}/V_{max}}{V_e/V_{max}} */
             auto XhP0 = M_XhP0;
-            auto Volume = integrate( rangeElt, meas() ).broken( XhP0 );
+            auto Volume = integrate( _range=rangeElt, _expr=meas() ).broken( XhP0 );
             double Vmin = Volume.min();
             double Vmax = Volume.max();
             auto tau = ((1.0 - Vmin/Vmax)/( idv(Volume)/Vmax ));

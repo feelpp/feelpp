@@ -71,14 +71,14 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_form2_faces, T, dim_t )
     BOOST_MESSAGE( "test_form2_faces starts for dim=" << T::value);
     auto meshnd = unitHypercube<T::value>();
     auto mesh = createSubmesh( _mesh=meshnd, _range=faces(meshnd), _update=0 );
-    size_type nFaceInParallelMeshnd = nelements(faces(meshnd),true) - nelements(interprocessfaces(meshnd),true)/2;
-    size_type nInternalFaceInPara1llelMeshnd = nelements(faces(meshnd),true) - nelements(interprocessfaces(meshnd),true)/2;
+    size_type nFaceInParallelMeshnd = nelements(faces(meshnd),true);
+    size_type nInternalFaceInPara1llelMeshnd = nelements(faces(meshnd),true);
     BOOST_CHECK_EQUAL( nelements(elements(mesh),true), nFaceInParallelMeshnd  );
     auto Vh=Pdhv<1>(meshnd,true);
     auto u = Vh->element();
     auto Wh=Pdh<1>(meshnd,true);
     auto p = Wh->element();
-    p.on(_range=elements(meshnd),_expr=cst(1.));
+    p.on(_range=elements(meshnd),_expr=cst(1.),_close=true);
     auto Mh=Pdh<1>(mesh,true);
     auto l=Mh->element();
     l.on(_range=elements(mesh),_expr=cst(1.));

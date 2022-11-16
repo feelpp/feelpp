@@ -1,0 +1,100 @@
+:feelpp: Feel++
+= feelpp_crb_onlinerun(1)
+Christophe Prud'homme <https://github.com/prudhomm[@prudhomm]>; Vincent Chabannes <https://github.com/vincentchabannes[@vincentchabannes]>
+:manmanual: feelpp_crb_onlinerun
+:man-linkstyle: pass:[blue R < >]
+
+
+== NAME
+
+{manmanual} - a tool to execute {feelpp} CRB online codes
+
+
+== SYNOPSIS
+
+{manmanual} is a simple application which can load a {feelpp} CRB online code, generate a parameter sampling and execute the online code for each point of the parameter sampling.
+{manmanual} can generate the finite element representation for visualisation purposes in e.g. Paraview.
+{manmanual} will print inside the terminal the output results and also save on csv format these results.
+ouput.csv
+
+== DESCRIPTION
+
+
+
+== OPTIONS
+
+=== Options
+
+{manmanual} requires some options.
+
+.Table of command-line {manmanual} options
+|===
+| Name | Description | Default value
+
+| plugin.dir | directory where the plugin(online library) are stored | <{feelpp} install prefix>/lib
+| crbmodel.name | name of the online code | N/A
+| crbmodel.db.id | id of crbmodel (called by the `name` arg) registered | N/A
+| crbmodel.db.last | name of the online code (use last created(=1) or modified(=2))  | 2
+| crbmodel.db.root_directory | root directory of the CRB DB | `${repository}/crbdb`
+| parameter | run online run these parameters (ordered from parameter space and list size equal to parameter space dimension) | N/A
+| parameter.filename | run online run with parameters from a CSV, semi-colon or space Separated Values file.  | N/A
+| sampling.size | number of online run (each run is setup from parameter take by a sampler, see sampling.type option | 10
+| sampling.type | type of sampling (random,...) | random
+| output_results.save.path | csv file path of the output results (can be relative or absolute file path and can use Feel++ keyword as `$repository`) | save results in `ouput.csv` file and use current directory of the application (`$repository/feelpp_mor_onlinerun/np_1/output.csv`)
+|===
+
+Some CRB DB are stored on GitHub at link:http://www.github.com/feelpp/crbdb[].
+
+== EXAMPLES
+
+Evaluate output from one parameter::
+----
+feelpp_mor_onlinerun --crbmodel.name myheat3d_P1G1 --parameter "110 140 124 193.3 34000 29300 62000 0.23"
+----
+
+NOTE: we use quote in the parameter list in order to be sure that minus sign is well take into account
+
+Evaluate output from one parameter::
+----
+feelpp_mor_onlinerun --crbmodel.name myheat3d_P1G1 --parameter.filename t.csv
+----
+
+NOTE: The first line of the file must contain all the parameter names. The order of the parameters in the file will be detected automatically.
+
+Evaluate outputs from a sampling::
+----
+feelpp_mor_onlinerun --crbmodel.name myheat3d_P1G1 --sampling.size=64
+----
+
+Evaluate outputs from a sampling::
+----
+feelpp_mor_onlinerun --crbmodel.name myheat3d_P1G1 --sampling.size=64
+----
+
+Evaluate outputs and export finite element solution for each parameter::
+----
+feelpp_mor_onlinerun --crbmodel.name heat3d --sampling.size=64 --crb.load-elements-database=1
+----
+
+Specify the plugin directory::
+----
+feelpp_mor_onlinerun --crbmodel.name heat3d --plugin.dir /usr/lib/x86_64-linux-gnu
+----
+
+Specify the output results csv path::
+----
+feelpp_mor_onlinerun --crbmodel.name heat3d  --output_results.save.path \$repository/myresults/toto.csv
+----
+
+NOTE: the antislash in the command line is required to prevent substution from shell
+
+
+
+== SEE ALSO
+
+*{feelpp} Book:* http://book.feelpp.org
+
+== COPYING
+
+Copyright \(C) 2017 {feelpp} Consortium. +
+Free use of this software is granted under the terms of the GPLv3 License.

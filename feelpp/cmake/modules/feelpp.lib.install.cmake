@@ -25,17 +25,20 @@
 # Installing
 #
 INCLUDE(InstallRequiredSystemLibraries)
+
+INSTALL(FILES ${CMAKE_SOURCE_DIR}/feelpp.version.cmake DESTINATION share/feelpp/feel/cmake/modules COMPONENT Devel)
+
 feelpp_list_subdirs(feeldirs ${CMAKE_CURRENT_SOURCE_DIR})
 
 foreach(includedir ${feeldirs})
-  FILE(GLOB files "${includedir}/*.hpp" )
+  FILE(GLOB files "${includedir}/*.h*" )
   FILE(GLOB cppfiles "${includedir}/*.cpp" )
   INSTALL(FILES ${files} ${cppfiles} DESTINATION include/feelpp/feel/${includedir} COMPONENT Devel)
   
   feelpp_list_subdirs(feelsubdirs ${CMAKE_CURRENT_SOURCE_DIR}/${includedir})
   #message(STATUS "====== subdir ${includedir} : ${feelsubdirs}")
   foreach(subincludedir ${feelsubdirs})
-    FILE(GLOB details "${includedir}/${subincludedir}/*.hpp")
+    FILE(GLOB details "${includedir}/${subincludedir}/*.h*")
     #message(STATUS "subdir ${includedir}/${subincludedir}: ${details}")
     INSTALL(FILES ${details} DESTINATION include/feelpp/feel/${includedir}/${subincludedir}/ COMPONENT Devel)
   endforeach()

@@ -27,8 +27,8 @@
    \author Stephane Veys <stephane.veys@imag.fr>
    \date 2013-04-26
  */
-#ifndef __OperatorLinearComposite_H
-#define __OperatorLinearComposite_H 1
+#ifndef FEELPP_DISCR_OPERATORLINEARCOMPOSITE_H
+#define FEELPP_DISCR_OPERATORLINEARCOMPOSITE_H 1
 
 #include <feel/feelcore/pslogger.hpp>
 #include <feel/feeldiscr/operatorlinear.hpp>
@@ -59,11 +59,6 @@ public :
     typedef FsFunctionalLinear<DualImageSpace> image_element_type;
     typedef typename super::domain_element_type domain_element_type;
     typedef typename super::dual_image_element_type dual_image_element_type;
-
-    typedef typename super::domain_element_range_type domain_element_range_type;
-    typedef typename super::domain_element_slice_type domain_element_slice_type;
-    typedef typename super::dual_image_element_range_type dual_image_element_range_type;
-    typedef typename super::dual_image_element_slice_type dual_image_element_slice_type;
 
     typedef OperatorLinearComposite<DomainSpace, DualImageSpace> this_type;
     typedef std::shared_ptr<this_type> this_ptrtype;
@@ -449,131 +444,6 @@ public :
         ie.container() = *_v2;
     }
 
-
-    void
-    apply( const domain_element_range_type & de,
-           typename dual_image_space_type::element_type & ie ) override
-    {
-        auto matrix = M_backend->newMatrix( _test=this->dualImageSpace(), _trial=this->domainSpace(), _pattern=M_pattern );
-        sumAllMatrices(matrix, true );
-        matrix->close();
-
-        vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
-        *_v1 = de;_v1->close();
-        vector_ptrtype _v2( M_backend->newVector( _test=ie.functionSpace() ) );
-        M_backend->prod( matrix, _v1, _v2 );
-        ie.container() = *_v2;
-    }
-
-    void
-    apply( const typename domain_space_type::element_type & de,
-           dual_image_element_range_type & ie ) override
-    {
-        auto matrix = M_backend->newMatrix( _test=this->dualImageSpace(), _trial=this->domainSpace(), _pattern=M_pattern );
-        sumAllMatrices( matrix, true );
-        matrix->close();
-
-        vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
-        *_v1 = de;_v1->close();
-        vector_ptrtype _v2( M_backend->newVector( _test=ie.functionSpace() ) );
-        M_backend->prod( matrix, _v1, _v2 );
-        ie.container() = *_v2;
-    }
-
-    void
-    apply( const domain_element_range_type & de,
-           dual_image_element_range_type & ie ) override
-    {
-        auto matrix = M_backend->newMatrix( _test=this->dualImageSpace(), _trial=this->domainSpace(), _pattern=M_pattern );
-        sumAllMatrices( matrix, true );
-        matrix->close();
-
-        vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
-        *_v1 = de;_v1->close();
-        vector_ptrtype _v2( M_backend->newVector( _test=ie.functionSpace() ) );
-        M_backend->prod( matrix, _v1, _v2 );
-        ie.container() = *_v2;
-    }
-
-    void
-    apply( const domain_element_slice_type & de,
-           typename dual_image_space_type::element_type & ie ) override
-    {
-
-        auto matrix = M_backend->newMatrix( _test=this->dualImageSpace(), _trial=this->domainSpace(), _pattern=M_pattern );
-        sumAllMatrices( matrix, true );
-        matrix->close();
-
-        vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
-        *_v1 = de;_v1->close();
-        vector_ptrtype _v2( M_backend->newVector( _test=ie.functionSpace() ) );
-        M_backend->prod( matrix, _v1, _v2 );
-        ie.container() = *_v2;
-    }
-
-
-    void
-    apply( const typename domain_space_type::element_type & de,
-           dual_image_element_slice_type & ie ) override
-    {
-        auto matrix = M_backend->newMatrix( _test=this->dualImageSpace(), _trial=this->domainSpace(), _pattern=M_pattern );
-        sumAllMatrices( matrix, true );
-        matrix->close();
-
-        vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
-        *_v1 = de;_v1->close();
-        vector_ptrtype _v2( M_backend->newVector( _test=ie.functionSpace() ) );
-        M_backend->prod( matrix, _v1, _v2 );
-        ie.container() = *_v2;
-    }
-
-    void
-    apply( /*const*/ domain_element_slice_type /*&*/ de,
-                     dual_image_element_slice_type /*&*/ ie ) override
-    {
-        auto matrix = M_backend->newMatrix( _test=this->dualImageSpace(), _trial=this->domainSpace(), _pattern=M_pattern );
-        sumAllMatrices( matrix, true );
-        matrix->close();
-
-        vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
-        *_v1 = de;_v1->close();
-        vector_ptrtype _v2( M_backend->newVector( _test=ie.functionSpace() ) );
-        M_backend->prod( matrix, _v1, _v2 );
-        ie.container() = *_v2;
-    }
-
-
-
-    void
-    apply( const domain_element_range_type & de,
-           dual_image_element_slice_type & ie ) override
-    {
-        auto matrix = M_backend->newMatrix( _test=this->dualImageSpace(), _trial=this->domainSpace(), _pattern=M_pattern );
-        sumAllMatrices( matrix, true );
-        matrix->close();
-
-        vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
-        *_v1 = de;_v1->close();
-        vector_ptrtype _v2( M_backend->newVector( _test=ie.functionSpace() ) );
-        M_backend->prod( matrix, _v1, _v2 );
-        ie.container() = *_v2;
-    }
-
-    void
-    apply( const domain_element_slice_type & de,
-           dual_image_element_range_type & ie ) override
-    {
-        auto matrix = M_backend->newMatrix( _test=this->dualImageSpace(), _trial=this->domainSpace(), _pattern=M_pattern );
-        sumAllMatrices( matrix, true );
-        matrix->close();
-
-        vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
-        *_v1 = de;_v1->close();
-        vector_ptrtype _v2( M_backend->newVector( _test=ie.functionSpace() ) );
-        M_backend->prod( matrix, _v1, _v2 );
-        ie.container() = *_v2;
-    }
-
     //! apply the inverse of the operator: \f$de = O^{-1} ie\f$
     void
     applyInverse( domain_element_type&      de,
@@ -614,44 +484,20 @@ private :
 };//class OperatorLinearComposite
 
 
-namespace detail
+template <typename ... Ts>
+auto opLinearComposite( Ts && ... v )
 {
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && domainSpace = args.get(_domainSpace);
+    auto && imageSpace = args.get(_imageSpace);
+    auto && backend = args.get_else_invocable(_backend, [](){ return Feel::backend(); } );
+    size_type pattern = args.get_else( _pattern, Pattern::COUPLED );
 
-template<typename Args>
-struct compute_opLinearComposite_return
-{
-    typedef typename boost::remove_reference<typename parameter::binding<Args, tag::domainSpace>::type>::type::element_type domain_space_type;
-    typedef typename boost::remove_reference<typename parameter::binding<Args, tag::imageSpace>::type>::type::element_type image_space_type;
-
-    typedef OperatorLinearComposite<domain_space_type, image_space_type> type;
-    typedef std::shared_ptr<OperatorLinearComposite<domain_space_type, image_space_type> > ptrtype;
-};
+    using domain_space_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(domainSpace)>>>;
+    using image_space_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(imageSpace)>>>;
+    return std::make_shared<OperatorLinearComposite<domain_space_type, image_space_type>>( domainSpace,imageSpace,backend,pattern );
 }
 
-BOOST_PARAMETER_FUNCTION(
-    ( typename Feel::detail::compute_opLinearComposite_return<Args>::ptrtype ), // 1. return type
-    opLinearComposite,                        // 2. name of the function template
-    tag,                                        // 3. namespace of tag types
-    ( required
-      ( domainSpace,    *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
-      ( imageSpace,     *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
-    ) // required
-    ( optional
-      //( backend,        *, Backend<typename Feel::detail::compute_opLinearComposite_return<Args>::domain_space_type::value_type>::build() )
-      ( backend,        *, backend() )
-      ( pattern,        *, (size_type)Pattern::COUPLED  )
-    ) // optionnal
-)
-{
-
-#if BOOST_VERSION < 105900
-    Feel::detail::ignore_unused_variable_warning( args );
-#endif
-    typedef typename Feel::detail::compute_opLinearComposite_return<Args>::type oplincomposite_type;
-    typedef typename Feel::detail::compute_opLinearComposite_return<Args>::ptrtype oplincomposite_ptrtype;
-    return oplincomposite_ptrtype ( new oplincomposite_type( domainSpace,imageSpace,backend,pattern) );
-
-} // opLinearComposite
 
 }//namespace Feel
 #endif

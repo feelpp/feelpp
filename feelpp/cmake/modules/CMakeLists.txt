@@ -1,9 +1,9 @@
-###  CMakeLists.txt; coding: utf-8 ---
+# ##  CMakeLists.txt; coding: utf-8 ---
 
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-#       Date: 2010-12-31
+# Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+# Date: 2010-12-31
 #
-#  Copyright (C) 2010 Université Joseph Fourier (Grenoble I)
+# Copyright (C) 2010 Université Joseph Fourier (Grenoble I)
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -22,12 +22,10 @@
 #
 #
 
-
-set( modules
-  ${CMAKE_CURRENT_SOURCE_DIR}/feelpp.version.cmake
+set(modules
+  ${CMAKE_CURRENT_SOURCE_DIR}/feelpp.dirs.cmake
   ${CMAKE_CURRENT_SOURCE_DIR}/feelpp.directive.cmake
   ${CMAKE_CURRENT_SOURCE_DIR}/feelpp.macros.cmake
-  ${CMAKE_CURRENT_SOURCE_DIR}/feelpp.macros.crb.cmake
   ${CMAKE_CURRENT_SOURCE_DIR}/feelpp.macros.om.cmake
   ${CMAKE_CURRENT_SOURCE_DIR}/feelpp.host.cmake
   ${CMAKE_CURRENT_SOURCE_DIR}/feelpp.precompiled.headers.cmake
@@ -38,7 +36,7 @@ set( modules
   ${CMAKE_CURRENT_SOURCE_DIR}/feelpp.sched.slurm.cmake
   ${CMAKE_CURRENT_SOURCE_DIR}/ParseArguments.cmake
   ${CMAKE_CURRENT_SOURCE_DIR}/cotire.cmake
-  )
+)
 
 if ( FEELPP_HAS_ANN )
   set(modules ${modules} ${CMAKE_CURRENT_SOURCE_DIR}/FindANN.cmake )

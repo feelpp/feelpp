@@ -89,6 +89,8 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::initMesh()
     this->log("ThermoElectric","initMesh", "start");
     this->timerTool("Constructor").start();
 
+    if ( this->modelProperties().jsonData().contains("Meshes") )
+        super_type::super_model_meshes_type::setup( this->modelProperties().jsonData().at("Meshes"), {this->keyword()} );
     if ( this->doRestart() )
         super_type::super_model_meshes_type::setupRestart( this->keyword() );
     super_type::super_model_meshes_type::updateForUse<mesh_type>( this->keyword() );
@@ -156,6 +158,26 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
     return myblockGraph;
 }
 
+THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
+void
+THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updatePhysics( typename super_physics_type::PhysicsTreeNode & physicsTree, ModelModels const& models )
+{
+    if ( !M_heatModel )
+    {
+        M_heatModel = std::make_shared<heat_model_type>(prefixvm(this->prefix(),"heat"), "heat", this->worldCommPtr(),
+                                                        this->subPrefix(), this->repository() );
+    }
+    if ( !M_electricModel )
+    {
+        M_electricModel = std::make_shared<electric_model_type>(prefixvm(this->prefix(),"electric"), "electric", this->worldCommPtr(),
+                                                                this->subPrefix(), this->repository() );
+    }
+
+    physicsTree.addChild( M_heatModel, models );
+    physicsTree.addChild( M_electricModel, models );
+
+    physicsTree.updateMaterialSupportFromChildren( "intersect" );
+}
 
 THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -164,18 +186,22 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->log("ThermoElectric","init", "start" );
     this->timerTool("Constructor").start();
 
+    this->initModelProperties();
+#if 0
     M_heatModel.reset( new heat_model_type(prefixvm(this->prefix(),"heat"), "heat", this->worldCommPtr(),
                                            this->subPrefix(), this->repository() ) );
     M_electricModel.reset( new electric_model_type(prefixvm(this->prefix(),"electric"), "electric", this->worldCommPtr(),
                                                    this->subPrefix(), this->repository() ) );
-
-    if ( this->physics().empty() )
-    {
-        typename ModelPhysics<mesh_type::nDim>::subphysic_description_type subPhyicsDesc;
-        subPhyicsDesc[M_heatModel->physicType()] = std::make_tuple( M_heatModel->keyword(), M_heatModel );
-        subPhyicsDesc[M_electricModel->physicType()] = std::make_tuple( M_electricModel->keyword(), M_electricModel );
-        this->initPhysics( this->keyword(), this->modelProperties().models(), subPhyicsDesc );
-    }
+#endif
+    // physics
+    this->initPhysics(
+        this->shared_from_this(),
+        [this]( typename super_physics_type::PhysicsTree & physicsTree ) {
+            physicsTree.updatePhysics( this->shared_from_this(), this->modelProperties().models() );
+            CHECK( M_heatModel && M_electricModel ) << "aiai";
+            physicsTree.updatePhysics( M_heatModel, this->modelProperties().models() );
+            physicsTree.updatePhysics( M_electricModel, this->modelProperties().models() );
+        } );
 
     // physical properties
     if ( !M_materialsProperties )
@@ -186,32 +212,29 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         M_materialsProperties->updateForUse( this->modelProperties().materials() );
     }
 
-    if ( !this->mesh() )
-        this->initMesh();
+    this->initMesh();
 
     this->materialsProperties()->addMesh( this->mesh() );
 
     // init heat toolbox
-    M_heatModel->setPhysics( this->physics( M_heatModel->physicType() ), M_heatModel->keyword() );
     M_heatModel->setManageParameterValues( false );
     if ( !M_heatModel->modelPropertiesPtr() )
     {
         M_heatModel->setModelProperties( this->modelPropertiesPtr() );
         M_heatModel->setManageParameterValuesOfModelProperties( false );
     }
-    M_heatModel->setMesh( this->mesh() );
+    M_heatModel->setModelMeshAsShared( this->modelMesh() );
     M_heatModel->setMaterialsProperties( M_materialsProperties );
     M_heatModel->init( false );
 
     // init electric toolbox
-    M_electricModel->setPhysics( this->physics( M_electricModel->physicType() ), M_electricModel->keyword() );
     M_electricModel->setManageParameterValues( false );
     if ( !M_electricModel->modelPropertiesPtr() )
     {
         M_electricModel->setModelProperties( this->modelPropertiesPtr() );
         M_electricModel->setManageParameterValuesOfModelProperties( false );
     }
-    M_electricModel->setMesh( this->mesh() );
+    M_electricModel->setModelMeshAsShared( this->modelMesh() );
     M_electricModel->setMaterialsProperties( M_materialsProperties );
     M_electricModel->init( false );
 
@@ -228,16 +251,19 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     if ( M_solverName == "Linear" || M_solverNewtonInitialGuessUseLinearHeat )
     {
         M_heatModel->initAlgebraicFactory();
-        M_heatModel->algebraicFactory()->setFunctionLinearAssembly( boost::bind( &self_type::updateLinear_Heat,
-                                                                                 boost::ref( *this ), _1 ) );
-        M_heatModel->algebraicFactory()->setFunctionResidualAssembly( boost::bind( &self_type::updateResidual_Heat,
-                                                                                   boost::ref( *this ), _1 ) );
+        M_heatModel->algebraicFactory()->setFunctionLinearAssembly( [this]( auto & data ) {
+                                                                        return this->updateLinear_Heat( data );
+                                                                    } );
+        M_heatModel->algebraicFactory()->setFunctionResidualAssembly( [this]( auto & data ) {
+                                                                        return this->updateResidual_Heat( data );
+                                                                    } );
     }
     if ( M_solverName == "Linear" || M_solverNewtonInitialGuessUseLinearElectric )
     {
         M_electricModel->initAlgebraicFactory();
-        M_electricModel->algebraicFactory()->setFunctionLinearAssembly( boost::bind( &self_type::updateLinear_Electric,
-                                                                                     boost::ref( *this ), _1 ) );
+        M_electricModel->algebraicFactory()->setFunctionLinearAssembly( [this]( auto & data ) {
+                                                                            return this->updateLinear_Electric( data );
+                                                                        } );                                    
     }
 
 
@@ -355,6 +381,8 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) cons
 
     super_type::super_model_meshes_type::updateInformationObject( p["Meshes"] );
 
+    super_physics_type::updateInformationObjectFromCurrentType( p["Physics"] );
+
     // p.put( "toolbox-heat", M_heatModel->journalSectionName() );
     // p.put( "toolbox-electric", M_electricModel->journalSectionName() );
 
@@ -398,6 +426,9 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonIn
     if ( jsonInfo.contains("Environment") )
         tabInfo->add( "Environment",  super_type::super_model_base_type::tabulateInformations( jsonInfo.at("Environment"), tabInfoProp ) );
 
+    if ( jsonInfo.contains("Physics") )
+        tabInfo->add( "Physics", super_physics_type::tabulateInformations( jsonInfo.at("Physics"), tabInfoProp ) );
+
     if ( this->materialsProperties() && jsonInfo.contains("Materials Properties") )
         tabInfo->add( "Materials Properties", this->materialsProperties()->tabulateInformations(jsonInfo.at("Materials Properties"), tabInfoProp ) );
 
@@ -439,7 +470,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonIn
 
     return tabInfo;
 }
-
+#if 0
 THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 std::shared_ptr<std::ostringstream>
 THERMOELECTRIC_CLASS_TEMPLATE_TYPE::getInfo() const
@@ -485,7 +516,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::getInfo() const
 #endif
     return _ostr;
 }
-
+#endif
 THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
 THERMOELECTRIC_CLASS_TEMPLATE_TYPE::startTimeStep()

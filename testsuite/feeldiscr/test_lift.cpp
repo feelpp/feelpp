@@ -150,7 +150,7 @@ TestLift<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
 
     if ( !this->vm().count( "nochdir" ) )
 
-        Environment::changeRepository( boost::format( "testsuite/feeldiscr/%1%/%2%-%3%/P%4%/h_%5%/" )
+        Environment::changeRepository( _directory=boost::format( "testsuite/feeldiscr/%1%/%2%-%3%/P%4%/h_%5%/" )
                                        % this->about().appName()
                                        % shape
                                        % Dim
@@ -187,26 +187,27 @@ TestLift<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
     auto F =  M_backend->newVector( Xh ) ;
 
     form1( _test=Xh, _vector=F, _init=true ) =
-        integrate( elements( mesh ), f*id( v ) ) ;
+        integrate( _range=elements( mesh ), _expr=f*id( v ) ) ;
 
     if ( this->comm().size() != 1 || weakdir )
         {
             form1( _test=Xh, _vector=F ) +=
-                integrate( markedfaces( mesh,"Dirichlet" ),
-                           g*( -grad( v )*vf::N()+penaldir*id( v )/hFace() ) );
+                integrate( _range=markedfaces( mesh,"Dirichlet" ),
+                           _expr=g*( -grad( v )*vf::N()+penaldir*id( v )/hFace() ) );
         }
     F->close();
 
-    auto D = M_backend->newMatrix( Xh, Xh ) ;
+    auto D = M_backend->newMatrix( _test=Xh, _trial=Xh ) ;
 
     form2( _test=Xh, _trial=Xh, _matrix=D, _init=true ) =
-        integrate( elements( mesh ), nu*gradt( u )*trans( grad( v ) ) );
+        integrate( _range=elements( mesh ), _expr=nu*gradt( u )*trans( grad( v ) ) );
 
     if ( this->comm().size() != 1 || weakdir )
         {
 
             form2( _test=Xh, _trial=Xh, _matrix=D ) +=
-                integrate( markedfaces( mesh,"Dirichlet" ),
+                integrate( _range=markedfaces( mesh,"Dirichlet" ),
+                           _expr=
                            -( gradt( u )*vf::N() )*id( v )
                            -( grad( v )*vf::N() )*idt( u )
                            +penaldir*id( v )*idt( u )/hFace() );
@@ -218,7 +219,7 @@ TestLift<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
             D->close();
 
             form2( _test=Xh, _trial=Xh, _matrix=D ) +=
-                on( markedfaces( mesh, "Dirichlet" ), u, F, g );
+                on( _range=markedfaces( mesh, "Dirichlet" ), _element=u, _rhs=F, _expr=g );
         }
 
     M_backend->solve( _matrix=D, _solution=u, _rhs=F );
@@ -234,17 +235,18 @@ TestLift<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
     /** apply operators on the function g */
     auto glift1 = op_lift1->project( _expr=trans( g ), _range=markedfaces( mesh,"Dirichlet" ) );
     auto glift2 = op_lift2->project( _expr=trans( g ), _range=markedfaces( mesh,"Dirichlet" ) );
-    auto glift2a = ( *op_lift2 )( _expr= trans(g), _range=markedfaces( mesh,"Dirichlet" ) );
+    auto glift2a = op_lift2->project( _expr= trans(g), _range=markedfaces( mesh,"Dirichlet" ) );
+    //auto glift2a = ( *op_lift2 )( _expr= trans(g), _range=markedfaces( mesh,"Dirichlet" ) );
 
     /** project the function g for export */
     auto gproj =  vf::project( _space=Xh, _range=elements( mesh ), _expr=g );
 
     /** compute errors */
-    double L2error2 =integrate( elements( mesh ),
-                                ( idv( u )-idv( glift2 ) )*( idv( u )-idv( glift2 ) ) ).evaluate()( 0,0 );
+    double L2error2 =integrate( _range=elements( mesh ),
+                                _expr=( idv( u )-idv( glift2 ) )*( idv( u )-idv( glift2 ) ) ).evaluate()( 0,0 );
 
-    double semi_H1error2 =integrate( elements( mesh ),
-                                     ( gradv( u )-gradv( glift2 ) )*trans( ( gradv( u )-gradv( glift2 ) ) ) ).evaluate()( 0,0 );
+    double semi_H1error2 =integrate( _range=elements( mesh ),
+                                     _expr=( gradv( u )-gradv( glift2 ) )*trans( ( gradv( u )-gradv( glift2 ) ) ) ).evaluate()( 0,0 );
 
     std::cout << " -- ||u-glift||_L2  =" << math::sqrt( L2error2 ) << "\n";
     std::cout << " -- ||u-glift||_H1  =" << math::sqrt( L2error2+semi_H1error2 ) << "\n";

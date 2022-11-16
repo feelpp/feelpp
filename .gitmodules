@@ -61,3 +61,21 @@
 [submodule "feelpp/contrib/fmt"]
 	path = feelpp/contrib/fmt
 	url = https://github.com/feelpp/fmt.git
+[submodule "feelpp/contrib/napp"]
+	path = feelpp/contrib/napp
+	url = https://github.com/vincentchabannes/napp.git
+[submodule "fmi4cpp"]
+	path = feelpp/contrib/fmi4cpp
+	url = https://github.com/feelpp/FMI4cpp.git
+[submodule "pythonfmu"]
+	path = feelpp/contrib/pythonfmu
+	url = https://github.com/feelpp/PythonFMU.git
+[submodule "feelpp/contrib/taskflow"]
+	path = feelpp/contrib/taskflow
+	url = https://github.com/feelpp/taskflow.git
+[submodule "feelpp/contrib/spdlog"]
+	path = feelpp/contrib/spdlog
+	url = https://github.com/feelpp/spdlog.git
+[submodule "feelpp/contrib/cln"]
+	path = feelpp/contrib/cln
+	url = https://github.com/feelpp/cln.git

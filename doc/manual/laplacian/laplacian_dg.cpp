@@ -31,7 +31,7 @@
 namespace Feel
 {
 /**
-   \page LaplacianDG Laplacian using Discontinous Galerkin
+   \page LaplacianDG Laplacian using Discontinuous Galerkin
    \author Feel++ Consortium
 
    <br>
@@ -74,22 +74,22 @@ int main(int argc, char**argv )
                     _pattern=size_type(Pattern::EXTENDED) );
     a = integrate(_range=elements(mesh),
                   _expr=gradt(u)*trans(grad(v)) );
-    a +=integrate( internalfaces( mesh ),
+    a +=integrate( _range=internalfaces( mesh ),
                    // - {grad(u)} . [v]
-                   -averaget( gradt( u ) )*jump( id( v ) )
+                   _expr=-averaget( gradt( u ) )*jump( id( v ) )
                    // - [u] . {grad(v)}
                    -average( grad( v ) )*jumpt( idt( u ) )
                    // penal*[u] . [v]/h_face
                    + 50* ( trans( jumpt( idt( u ) ) )*jump( id( v ) ) )/hFace() );
-    a += integrate( boundaryfaces( mesh ),
-                    ( - trans( id( v ) )*( gradt( u )*N() )
+    a += integrate( _range=boundaryfaces( mesh ),
+                    _expr=( - trans( id( v ) )*( gradt( u )*N() )
                       - trans( idt( u ) )*( grad( v )*N() )
                       + 50*trans( idt( u ) )*id( v )/hFace() ) );
 
     a.solve(_rhs=l,_solution=u);
 
     auto p = opProjection( _domainSpace=Xh, _imageSpace=Xh, _type=L2 );
-    auto uc = p->project( idv(u) );
+    auto uc = p->project( _expr=idv(u) );
 
     auto e = exporter( _mesh=mesh );
     e->add( "u", u );

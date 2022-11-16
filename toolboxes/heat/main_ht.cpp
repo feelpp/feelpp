@@ -58,6 +58,8 @@ main(int argc, char**argv )
         ("case.discretization", Feel::po::value<std::string>()->default_value( "P1" ), "discretization : P1,P2,P3 ")
         ("case.mode", Feel::po::value<std::string>()->default_value( "simulation" ), "mode : simulation, h-convergence")
         ("case.mode.h-convergence.hsize", po::value<std::vector<double> >()->multitoken(), "mesh hsize used in h-convergence" )
+        ("case.mode.h-convergence.measures", po::value<std::vector<std::string> >()->multitoken(), "measures names used in fit checker" )
+        ("case.mode.h-convergence.slopes", po::value<std::vector<double> >()->multitoken(), "reference slope for the fit checker" )
         ;
 
 	Environment env( _argc=argc, _argv=argv,
@@ -73,6 +75,7 @@ main(int argc, char**argv )
     std::string discretization = soption(_name="case.discretization");
 
     auto dimt = hana::make_tuple(hana::int_c<2>,hana::int_c<3>);
+
 #if FEELPP_INSTANTIATION_ORDER_MAX >= 3
     auto discretizationt = hana::make_tuple( hana::make_tuple("P1", hana::int_c<1> ),
                                              hana::make_tuple("P2", hana::int_c<2> ),

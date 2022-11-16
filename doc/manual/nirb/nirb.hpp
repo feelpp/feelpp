@@ -17,6 +17,7 @@
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelvf/vf.hpp>
 
+#if 0
 //#include <feel/feelalg/solvereigen.hpp>
 #include <cstdlib>
 #include <string>
@@ -31,7 +32,7 @@
 
 #include <vector>
 #include <algorithm>
-
+#endif
 #include<boost/range/algorithm/max_element.hpp>
 #include<boost/filesystem.hpp>
 
@@ -216,7 +217,7 @@ private:
     int NbSnapshot,sizeRB;
     double muMin,muMax,mu;
 
-    // Paramater to set OFF or ON the "offline" procedure
+    // Parameter to set OFF or ON the "offline" procedure
 
     int Sampling;
     int SamplingCoarse;
@@ -227,7 +228,7 @@ private:
     // if Offline = 1 then ConstructNIRB is called
     // if Offline = 0 then ConstructNIRB is not called, the Nirb Basis function are read from a file
 
-    // Paramater to set OFF or ON the computation of the error between the F.E and the NIRB Methods
+    // Parameter to set OFF or ON the computation of the error between the F.E and the NIRB Methods
     int ComputeError;
     //if ComputeError = 1  == ON
     //if ComputeError = 0 == OFF
@@ -271,7 +272,7 @@ void NIRBTEST<PolynomialOrder>::run( const double* X, unsigned long P, double* Y
     std::cout<< "Polynomial order : P" << PolynomialOrder <<std::endl;
 
     if ( !this->vm().count( "nochdir" ) )
-        Environment::changeRepository( boost::format( "%1%/P%2%/" )
+        Environment::changeRepository( _directory=boost::format( "%1%/P%2%/" )
                                        % this->about().appName()
                                        % PolynomialOrder );
 
@@ -326,16 +327,16 @@ void NIRBTEST<PolynomialOrder>::run( const double* X, unsigned long P, double* Y
 
 
 
-    //STEP ONE : Construction of the "non intruisive reduced basis (nirb) functions"
+    //STEP ONE : Construction of the "non intrusive reduced basis (nirb) functions"
     //Computation of the X[3] snapshots solution on Xhfine
-    //Selection of X[2] fonctions to build the "reduced basis" using a POD technique
+    //Selection of X[2] functions to build the "reduced basis" using a POD technique
     //Orthogonalisation in L2 and H1 norm of "reduced basis function"
     //Save this final functions
 
 
-    //STEP ONE : Construction of the "non intruisive reduced basis (nirb) functions"
+    //STEP ONE : Construction of the "non intrusive reduced basis (nirb) functions"
     //Computation of the X[3] snapshots solution on Xhfine
-    //Selection of X[2] fonctions to build the "reduced basis" using a POD technique
+    //Selection of X[2] functions to build the "reduced basis" using a POD technique
     //Orthogonalisation in L2 and H1 norm of "reduced basis function"
     //Save this final functions
 
@@ -399,7 +400,7 @@ void NIRBTEST<PolynomialOrder>::run( const double* X, unsigned long P, double* Y
         if ( SamplingCoarse )
         {
             std::cout << "Computation of Coarse snapshot " <<std::endl;
-            boost::timer ti;
+            Feel::Timer ti;
             ComputeSnapshot( XhCoarse,"_Coarse_" );
 
             double Time_snapshot_Coarse = ti.elapsed();
@@ -409,7 +410,7 @@ void NIRBTEST<PolynomialOrder>::run( const double* X, unsigned long P, double* Y
         }
     }
 
-    //STEP TWO : Approximation of the solution using the "nirb" functions for a choosen mu
+    //STEP TWO : Approximation of the solution using the "nirb" functions for a chosen mu
 
 
 
@@ -424,8 +425,8 @@ void NIRBTEST<PolynomialOrder>::run( const double* X, unsigned long P, double* Y
     auto uNirbCoarse = XhFine->element();   // Fine/Coarse Grid NIRB solution
     Eigen::VectorXd BetaiH( sizeRB );
     double TimeCoarse,TimeCoarsePostProcess,TimeFine;
-    boost::timer ti;
-    ti.restart();
+    Feel::Timer ti;
+    ti.start();
     uCoarseInterpolate = BuildCoarseInterpolation( XhFine,XhCoarse,p );
     TimeCoarse =  ti.elapsed();
     std :: cout << "Calculation of uCoarse and it's interpolation on XhFine :"   << TimeCoarse << " sec" <<std::endl;
@@ -441,11 +442,11 @@ void NIRBTEST<PolynomialOrder>::run( const double* X, unsigned long P, double* Y
     exporter2GridCoarse->save();
 
     auto uNirbCoarsePostProcess = XhFine->element();   // Fine/Coarse Grid NIRB solution
-    ti.restart();
+    ti.start();
     if (SamplingCoarse)
     {
         std::cout << "Computation of Coarse snapshot " <<std::endl;
-        boost::timer ti;
+        Feel::Timer ti;
         ComputeSnapshot( XhCoarse,"_Coarse_" );
 
         double Time_snapshot_Coarse = ti.elapsed();
@@ -470,7 +471,7 @@ void NIRBTEST<PolynomialOrder>::run( const double* X, unsigned long P, double* Y
         Eigen::VectorXd Betaih( sizeRB );
 
         auto u1Grid = XhFine->element();
-        ti.restart();
+        ti.start();
         u1Grid = BuildNirbSolution( XhFine,XhFine,MassMat_x_VuNirb,VNirbBasis,p,Betaih );
         TimeFine =  ti.elapsed();
         std::cout << "Construction of uNirbFine - Fine/Fine Grid  (saved in nirb1Grid): done "<<std::endl;
@@ -1202,18 +1203,18 @@ template< int PolynomialOrder>
 typename NIRBTEST<PolynomialOrder>::element_type NIRBTEST<PolynomialOrder> ::BuildCoarseInterpolation( space_ptrtype XhFine,space_ptrtype XhCoarse, double param )
 {
     //boost::timer ti;
-    //ti.restart();
+    //ti.start();
     auto uCoarse = XhCoarse->element();
     auto uCoarseInterpolate = XhFine->element();
     auto ui = XhFine->element();
     uCoarse = blackbox( XhCoarse,param );
     //std :: cout << "Calculation of uCoarse "   << ti.elapsed() << " sec" <<std::endl;
-    //ti.restart();
+    //ti.start();
     ////Interpolation of the coarse solution on the fine Mesh to compute the coefficiant BetaiH
 
     //auto opI = opInterpolation(_domainSpace=XhCoarse,_imageSpace=XhFine);
     //std :: cout << "Construction of the operator"   << ti.elapsed() << " sec" <<std::endl;
-    //ti.restart();
+    //ti.start();
     //opI->apply(uCoarse,uCoarseInterpolate);
     //std :: cout << "Application of the operator"   << ti.elapsed() << " sec" <<std::endl;
     interpolate ( XhFine,uCoarse,uCoarseInterpolate );
@@ -1243,8 +1244,8 @@ template< int PolynomialOrder>
 void NIRBTEST<PolynomialOrder> :: ConstructNIRB( space_ptrtype Xh, vector_of_element_type  &M_VNirbBasis, vector_of_element_type  &VNirbBasis )
 {
 
-    std :: cout << "OFFLINE PROCEDURE :  Construction of the 'non intruisive' reduced basis (nirb) " <<std::endl;
-    boost::timer ti;
+    std :: cout << "OFFLINE PROCEDURE :  Construction of the 'non intrusive' reduced basis (nirb) " <<std::endl;
+    Feel::Timer ti;
     double Time_snapshot = 0.;
 
     if ( Sampling )
@@ -1256,7 +1257,7 @@ void NIRBTEST<PolynomialOrder> :: ConstructNIRB( space_ptrtype Xh, vector_of_ele
         std::cout << "Time per snapshot: " << Time_snapshot/NbSnapshot << " sec " <<std::endl;
     }
 
-    ti.restart();
+    ti.start();
 
     //construction of elementary mass and stiffness matrix
     auto ui = Xh->element();
@@ -1272,12 +1273,12 @@ void NIRBTEST<PolynomialOrder> :: ConstructNIRB( space_ptrtype Xh, vector_of_ele
     double Time_Construct_Elementary_Matrix = ti.elapsed();
     std::cout << "Time to build elementary F.E matrix = " << Time_Construct_Elementary_Matrix << " sec " <<std::endl;
 
-    ti.restart();
+    ti.start();
     ChooseRBFunction( Xh,VNirbBasis,MassMatrix,StiffMatrix );
     double TimeChooseRB =  ti.elapsed();
     std::cout << "Choice of " << sizeRB << " reduced basis functions : done  -- ";
     std::cout << "Time: " << TimeChooseRB << " sec "<<std::endl;
-    ti.restart();
+    ti.start();
 
     //Orthogonalisation de Gram-schmidt
 
@@ -1331,7 +1332,7 @@ typename NIRBTEST<PolynomialOrder>::element_type NIRBTEST<PolynomialOrder>::blac
      -0.01*dnt(u)*id(v)-0.01*dn(v)*idt(u)+penaltyTerm*id(v)*idt(u)/hFace());
      */
 
-    form2( _test=Xh, _trial=Xh, _matrix=D ) += on( boundaryfaces( Xh->mesh() ), u, F,g );
+    form2( _test=Xh, _trial=Xh, _matrix=D ) += on( _range=boundaryfaces( Xh->mesh() ), _element=u, _rhs=F,_expr=g );
     backend_type::build(soption("backend"))->solve( _matrix=D, _solution=u, _rhs=F );
 
     return u;
@@ -1346,11 +1347,11 @@ Eigen::MatrixXd NIRBTEST<PolynomialOrder> :: BuildBetaH( space_ptrtype XhFine,
         space_ptrtype XhCoarse,vector_of_element_type  &M_VNirbBasis )
 {
 
-    //boost::timer ti;
-    //ti.restart();
+    //Feel::Timer ti;
+    //ti.start();
     //auto opI = opInterpolation(_domainSpace=XhCoarse,_imageSpace=XhFine);
     //std :: cout << "Construction of the operator"   << ti.elapsed() << " sec" <<std::endl;
-    //ti.restart();
+    //ti.start();
     auto uCoarse = XhCoarse->element();
     auto uCoarseInterpolation = XhFine->element();
 

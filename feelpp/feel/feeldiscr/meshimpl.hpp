@@ -338,6 +338,8 @@ void Mesh<Shape, T, Tag, IndexT>::updateForUse()
             }
         }
 
+        this->updateMeshFragmentation();
+
         this->updateNumGlobalElements<mesh_type>();
 
         if ( this->components().test( MESH_PROPAGATE_MARKERS ) )
@@ -3367,9 +3369,9 @@ void Mesh<Shape, T, Tag, IndexT>::Inverse::distribute( bool extrapolation )
 namespace details
 {
 template<typename IndexT = uint32_type>
-struct RemoveMarkerNameWithoutEntityForAllReduce : std::binary_function<std::vector<std::vector<IndexT>>,
-                                                                        std::vector<std::vector<IndexT>>,
-                                                                        std::vector<std::vector<IndexT>>>
+struct RemoveMarkerNameWithoutEntityForAllReduce : std::function<std::vector<std::vector<IndexT>>(
+                                                                 std::vector<std::vector<IndexT>> const&,
+                                                                 std::vector<std::vector<IndexT>> const& )>
 {
     typedef std::vector<std::vector<IndexT>> cont_type;
     cont_type operator()( cont_type const& x, cont_type const& y ) const

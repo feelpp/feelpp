@@ -1,7 +1,0 @@
-// -- mode: c++ --
-namespace Feel
-{
-/** \page info Infos   
-   - \subpage Types Feel   
-   - \subpage Macros Feel   
-*/

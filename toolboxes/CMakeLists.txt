@@ -35,7 +35,7 @@ set(FEELPP_TOOLBOXES_SHARED_SOVERSION 1.0)
 if ( CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR OR FEELPP_COMPONENT STREQUAL "toolboxes")
   find_package(Feel++ PATHS ${FEELPP_DIR}/share/feelpp/feel/cmake/modules $ENV{FEELPP_DIR}/share/feelpp/feel/cmake/modules /usr/share/feelpp/feel/cmake/modules /usr/local/share/feelpp/feel/cmake/modules )
   if(NOT FEELPP_FOUND)
-      message(FATAL_ERROR "Feel++ was not found on your system. Make sure to install it and specify the FEELPP_DIR to reference the installation directory.")
+      message(WARNING "Feel++ was not found on your system. Make sure to install it and specify the FEELPP_DIR to reference the installation directory.")
   else()
     message(STATUS "[feelpp-toolboxes] found Feel++ library")
   endif()
@@ -48,6 +48,7 @@ else()
   feelpp_get_environment()
   # usefull for pyfeelpp-toolboxes
   set(FEELPP_DIR ${CMAKE_INSTALL_PREFIX})
+  set(FEELPP_FOUND ON)
 endif()
 
 if ( FEELPP_HAS_PYTHON )
@@ -76,11 +77,11 @@ option(FEELPP_TOOLBOXES_ENABLE_THERMOELECTRIC "Enable/Disable ThermoElectric" ${
 option(FEELPP_TOOLBOXES_ENABLE_FLUIDMECHANICS "Enable/Disable FluidMechanics" ${FEELPP_TOOLBOXES_ENABLE})
 option(FEELPP_TOOLBOXES_ENABLE_SOLIDMECHANICS "Enable/Disable SolidMechanics" ${FEELPP_TOOLBOXES_ENABLE})
 option(FEELPP_TOOLBOXES_ENABLE_FSI "Enable/Disable FSI" ${FEELPP_TOOLBOXES_ENABLE})
-option(FEELPP_TOOLBOXES_ENABLE_ADVECTION "Enable/Disable Advection" ${FEELPP_TOOLBOXES_ENABLE})
-option(FEELPP_TOOLBOXES_ENABLE_LEVELSET "Enable/Disable LevelSet" ${FEELPP_TOOLBOXES_ENABLE})
+option(FEELPP_TOOLBOXES_ENABLE_ADVECTION "Enable/Disable Advection" OFF)# ${FEELPP_TOOLBOXES_ENABLE})
+option(FEELPP_TOOLBOXES_ENABLE_LEVELSET "Enable/Disable LevelSet" OFF)# ${FEELPP_TOOLBOXES_ENABLE})
 option(FEELPP_TOOLBOXES_ENABLE_MULTIFLUID "Enable/Disable MultiFluid" OFF ) # ${FEELPP_TOOLBOXES_ENABLE})
 option(FEELPP_TOOLBOXES_ENABLE_HDG "Enable/Disable HDG" ${FEELPP_TOOLBOXES_ENABLE})
-option(FEELPP_TOOLBOXES_ENABLE_MAXWELL "Enable/Disable Magnetostatic" ${FEELPP_TOOLBOXES_ENABLE})
+option(FEELPP_TOOLBOXES_ENABLE_MAXWELL "Enable/Disable Magnetostatic" OFF)
 #option(FEELPP_ENABLE_PCH_MODELS "Enable precompiled headers for models (pch)" OFF)
 
 set(FEELPP_TOOLBOXES_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
@@ -94,6 +95,10 @@ INCLUDE(CTest)
 ENABLE_TESTING()
 
 add_subdirectory(cmake)
+add_subdirectory(tools/man)
+
+if ( FEELPP_FOUND )
+
 add_subdirectory( feel/feelmodels )
 
 list(APPEND TOOLBOXES_CORE "modelalg" "modelmesh" "modelcore")
@@ -159,11 +164,14 @@ endif()
 
 message(STATUS "[toolboxes] Toolboxes enabled : ${TOOLBOXES}")
 
-# TOOLBOXES needs to be defined for pyfeelpp-toolboxes 
-add_subdirectory( pyfeelpp-toolboxes )
+OPTION(FEELPP_ENABLE_TESTS "enable Feel++ tests" ON)
+if (FEELPP_ENABLE_TESTS  )
+  add_subdirectory(tests)
+endif()
 
 if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
   include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/feelpp-toolboxes.package.cmake)
-  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/feelpp.version.cmake)
+#  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/feelpp.version.cmake)
 endif()
 
+endif( FEELPP_FOUND )

@@ -26,110 +26,108 @@
 #include <feel/feelcore/environment.hpp>
 
 #include <feel/feelmodels/modelpostprocess.hpp>
+#include <boost/property_tree/json_parser.hpp>
 
 namespace Feel {
 
-template <typename T>
-std::vector<T> as_vector(pt::ptree const& pt, pt::ptree::key_type const& key)
-{
-    std::vector<T> r;
-    for (auto& item : pt.get_child(key))
-        r.push_back(item.second.template get_value<T>());
-    return r;
-}
-
 void
-ModelPostprocessExports::setup( pt::ptree const& p )
+ModelPostprocessExports::setup( nl::json const& jarg  )
 {
-    if ( auto fields = p.get_child_optional("fields") )
+    if ( jarg.contains( "fields" ) )
     {
-        if ( fields->empty() ) // value case
-            M_fields.insert( fields->get_value<std::string>() );
-        else // array case
+        auto const& j_fields = jarg.at("fields");
+        if ( j_fields.is_string() )
+            M_fields.insert( j_fields.template get<std::string>() );
+        else if ( j_fields.is_array() )
         {
-            for ( auto const& item : *fields )
-            {
-                CHECK( item.first.empty() ) << "should be an array, not a subtree";
-                std::string const& fieldName = item.second.template get_value<std::string>();
-                M_fields.insert( fieldName );
-                LOG(INFO) << "add to postprocess field  " << fieldName;
-            }
+            for ( auto const& el : j_fields.items() )
+                if ( el.value().is_string() )
+                    M_fields.insert( el.value().get<std::string>() );
         }
     }
-    if ( auto formatOpt = p.get_optional<std::string>( "format" ) )
-        M_format = *formatOpt;
 
-    if ( auto exprTree = p.get_child_optional("expr") )
+    if ( jarg.contains( "format" ) )
     {
-        for ( auto const& item : *exprTree )
+        auto const& j_format = jarg.at("format");
+        if ( j_format.is_string() )
+            M_format = j_format.get<std::string>();
+    }
+
+    if ( jarg.contains( "expr" ) )
+    {
+        auto const& j_expr = jarg.at("expr");
+        for ( auto const& [key,jvalue] : j_expr.items() )
         {
-            std::string exprName = item.first;
+            std::string exprName = key;//item.first;
             std::set<std::string> representations, tags;
 
-            if ( item.second.empty() ) // name:expr
+            if ( jvalue.is_string() || jvalue.is_number() ) // name:expr
             {
                 ModelExpression modelexpr;
                 ModelMarkers markers;
-                modelexpr.setExpr( exprName,  *exprTree, this->worldComm(), M_directoryLibExpr/*,indexes*/ );
+                modelexpr.setExpr( jvalue, this->worldComm(), M_directoryLibExpr/*,indexes*/ );
                 CHECK( modelexpr.hasAtLeastOneExpr() ) << "expr not given correctly";
                 M_exprs.push_back( std::make_tuple(exprName,modelexpr,markers,representations,tags) );
             }
-            else
+            else if ( jvalue.is_object() )
             {
-                if ( auto repOpt = item.second.get_child_optional("representation") )
+                if ( jvalue.contains("representation") )
                 {
-                    if ( repOpt->empty() )
-                        representations.insert( repOpt->get_value<std::string>() );
-                    else
+                    auto const& j_representation = jvalue.at("representation");
+                    if ( j_representation.is_string() )
+                        representations.insert( j_representation.get<std::string>() );
+                    else if ( j_representation.is_array() )
                     {
-                        for ( auto const& therep : *repOpt )
+                        for ( auto const& [jrepkey,jrepval] : j_representation.items() )
                         {
-                            CHECK( therep.first.empty() ) << "should be an array, not a subtree";
-                            representations.insert( therep.second.template get_value<std::string>() );
+                            if ( jrepval.is_string() )
+                                representations.insert( jrepval.get<std::string>() );
                         }
                     }
                 }
 
-                if ( auto tagOpt = item.second.get_child_optional("tag") )
+                if ( jvalue.contains("tag") )
                 {
-                    if ( tagOpt->empty() )
-                        tags.insert( tagOpt->get_value<std::string>() );
-                    else
-                    {
-                        for ( auto const& thetag : *tagOpt )
-                            tags.insert( thetag.second.template get_value<std::string>() );
-                    }
+                    auto const& j_tag = jvalue.at("tag");
+                    if ( j_tag.is_string() )
+                        tags.insert( j_tag.get<std::string>() );
+                    else if ( j_tag.is_array() )
+                        for ( auto const& [tagkey,tagval] : j_tag.items() )
+                            if ( tagval.is_string() )
+                                tags.insert( tagval.get<std::string>() );
                 }
 
-                if ( item.second.get_child_optional("expr") )
+                if ( jvalue.contains("expr") )
                 {
                     ModelExpression modelexpr;
                     ModelMarkers markers;
-                    modelexpr.setExpr( "expr",  item.second, this->worldComm(), M_directoryLibExpr/*,indexes*/ );
-                    if ( auto ptmarkers = item.second.get_child_optional("markers") )
-                        markers.setPTree(*ptmarkers/*, indexes*/);
+                    modelexpr.setExpr( jvalue.at("expr"), this->worldComm(), M_directoryLibExpr/*,indexes*/ );
+                    if ( jvalue.contains("markers") )
+                        markers.setup( jvalue.at("markers") /*, indexes*/ );
                     CHECK( modelexpr.hasAtLeastOneExpr() ) << "expr not given correctly";
                     M_exprs.push_back( std::make_tuple(exprName,modelexpr,markers,representations,tags) );
                 }
 
-                if ( auto ptparts = item.second.get_child_optional("parts") )
+                if ( jvalue.contains("parts") )
                 {
-                    for ( auto const& itemPart : *ptparts )
+                    auto const& j_parts = jvalue.at("parts");
+                    CHECK ( j_parts.is_array() ) << "parts should an array";
+                    for ( auto const& [j_partskey,j_partsval] : j_parts.items() )
                     {
-                        CHECK( itemPart.first.empty() ) << "should be an array, not a subtree";
                         ModelExpression modelexpr;
                         ModelMarkers markers;
-                        modelexpr.setExpr( "expr",  itemPart.second, this->worldComm(), M_directoryLibExpr/*,indexes*/ );
-                        if ( auto ptmarkers = itemPart.second.get_child_optional("markers") )
-                            markers.setPTree(*ptmarkers/*, indexes*/);
+                        CHECK( j_partsval.contains("expr") ) << "expr is missing";
+                        modelexpr.setExpr( j_partsval.at("expr"), this->worldComm(), M_directoryLibExpr/*,indexes*/ );
+                        if ( j_partsval.contains("markers") )
+                            markers.setup( j_partsval.at("markers") /*, indexes*/ );
                         CHECK( modelexpr.hasAtLeastOneExpr() ) << "expr not given correctly";
                         M_exprs.push_back( std::make_tuple(exprName,modelexpr,markers,representations,tags) );
                     }
                 }
-            }
-
-        } // for ( auto const& item : *exprTree )
+            } // if ( jvalue.is_object() )
+        }
     }
+
 }
 
 void
@@ -140,48 +138,43 @@ ModelPostprocessExports::setParameterValues( std::map<std::string,double> const&
 }
 
 void
-ModelPostprocessQuantities::setup( pt::ptree const& p )
+ModelPostprocessQuantities::setup( nl::json const& jarg )
 {
-    if ( p.empty() ) // value case
-        M_quantities.insert( p.get_value<std::string>() );
-    else // array case
+    if ( jarg.is_string() )
+         M_quantities.insert( jarg.get<std::string>() );
+    else if ( jarg.is_array() )
     {
-        for ( auto const& item : p )
+        for ( auto const& [jargkey,jargval] : jarg.items() )
+            if ( jargval.is_string() )
+                M_quantities.insert( jargval.get<std::string>() );
+    }
+    else if ( jarg.is_object() )
+    {
+        if ( jarg.contains("names") )
         {
-            if ( item.first.empty() ) // array case
+            auto const& j_names = jarg.at("names");
+            if ( j_names.is_string() )
+                M_quantities.insert( j_names.get<std::string>() );
+            else if ( j_names.is_array() )
+                for ( auto const& [j_nameskey,j_namesval] : j_names.items() )
+                    if ( j_namesval.is_string() )
+                        M_quantities.insert( j_namesval.get<std::string>() );
+        }
+
+        if ( jarg.contains("expr") )
+        {
+            auto const& j_expr = jarg.at("expr");
+            for ( auto const& [j_exprkey,j_exprval] : j_expr.items() )
             {
-                //CHECK( item.first.empty() ) << "should be an array, not a subtree";
-                std::string const& fieldName = item.second.template get_value<std::string>();
-                M_quantities.insert( fieldName );
-            }
-            else if( item.first == "names" )
-            {
-                // markers : { name = mark }
-                if( item.second.empty() )
-                    M_quantities.insert( item.second.template get_value<std::string>() );
-                else
-                {
-                    // markers : { name = [mark1, mark2] }
-                    for( auto const& item2 : item.second )
-                        M_quantities.insert( item2.second.template get_value<std::string>() );
-                }
-            }
-            else if( item.first == "expr" )
-            {
-                for ( auto const& item2 : item.second )
-                {
-                    std::string exprName = item2.first;
-                    CHECK( !exprName.empty() ) << "expr name is empty or expr is an array";
-                    ModelExpression modelexpr;
-                    modelexpr.setExpr( exprName, item.second , this->worldComm(), M_directoryLibExpr/*,indexes*/ );
-                    CHECK( modelexpr.hasAtLeastOneExpr() ) << "expr not given correctly";
-                    M_exprs.emplace( std::make_pair( exprName, std::move(modelexpr) ) );
-                }
+                std::string const& exprName = j_exprkey;
+                CHECK( !exprName.empty() ) << "expr name is empty or expr is an array";
+                ModelExpression modelexpr;
+                modelexpr.setExpr( j_exprval, this->worldComm(), M_directoryLibExpr/*,indexes*/ );
+                CHECK( modelexpr.hasAtLeastOneExpr() ) << "expr not given correctly";
+                M_exprs.emplace( std::make_pair( exprName, std::move(modelexpr) ) );
             }
         }
     }
-
-    //LOG(INFO) << "add to postprocess quantity  " << fieldName;
 }
 
 void
@@ -192,147 +185,294 @@ ModelPostprocessQuantities::setParameterValues( std::map<std::string,double> con
 }
 
 void
-ModelPostprocessSave::setup( pt::ptree const& p )
+ModelPostprocessSave::setup( nl::json const& jarg )
 {
-    if ( auto fieldsPtree = p.get_child_optional("Fields") )
+    if ( jarg.contains( "Fields" ) )
     {
-        if ( auto fieldsNamesPtree = fieldsPtree->get_child_optional("names") )
+        auto const& j_fields = jarg.at("Fields");
+        if ( j_fields.contains("names") )
         {
-            if ( fieldsNamesPtree->empty() ) // value case
-                M_fieldsNames.insert( fieldsNamesPtree->get_value<std::string>() );
-            else // array case
+            auto const& j_fields_names = j_fields.at("names");
+            if ( j_fields_names.is_string() )
             {
-                for ( auto const& item : *fieldsNamesPtree )
-                {
-                    CHECK( item.first.empty() ) << "should be an array, not a subtree";
-                    std::string const& fieldName = item.second.template get_value<std::string>();
-                    M_fieldsNames.insert( fieldName );
-                }
+                M_fieldsNames.insert( j_fields_names.get<std::string>() );
+            }
+            else if ( j_fields_names.is_array() )
+            {
+                for ( auto const& [fieldnameskey,fieldnamesval] : j_fields_names.items() )
+                    if ( fieldnamesval.is_string() )
+                        M_fieldsNames.insert( fieldnamesval.get<std::string>() );
             }
         }
-        if ( auto formatOpt = fieldsPtree->get_optional<std::string>( "format" ) )
-            M_fieldsFormat = *formatOpt;
+        if ( j_fields.contains("format") )
+        {
+            auto const& j_fields_format = j_fields.at("format");
+            CHECK( j_fields_format.is_string() ) << "format should be a string";
+            M_fieldsFormat = j_fields_format.get<std::string>();
+        }
     }
 }
 
+void
+ModelPostprocessPointPosition::PointPosition::setup( nl::json const& jData, worldcomm_t const& world, std::string const& directoryLibExpr, ModelIndexes const& indexes )
+{
+    CHECK( jData.is_string() ) << "PointPosition json should be a string";
+    this->setup( jData.get<std::string>(), world, directoryLibExpr, indexes );
+}
+void
+ModelPostprocessPointPosition::PointPosition::setup( std::string const& coordExprStr, worldcomm_t const& world, std::string const& directoryLibExpr, ModelIndexes const& indexes )
+{
+    std::string coordExpr = indexes.replace( coordExprStr );
+
+    ModelExpression mexpr;
+    mexpr.setExpr( coordExpr, world, directoryLibExpr/*,indexes*/ );
+    CHECK( mexpr.isScalar() || mexpr.isVector() ) << "wrong kind of expression with coord";
+
+    this->setExpression( std::move( mexpr ) );
+}
 
 void
-ModelPostprocessPointPosition::setup( std::string const& name, ModelIndexes const& indexes )
+ModelPostprocessPointPosition::PointsOverCoordinates::setup( nl::json const& jarg, worldcomm_t const& world, std::string const& directoryLibExpr, ModelIndexes const& indexes )
 {
+    std::vector<std::string> coordExprs;
+    if ( jarg.is_string() )
+    {
+        coordExprs.push_back( jarg.get<std::string>() );
+    }
+    else if ( jarg.is_array() )
+    {
+        for ( auto const& el : jarg.items() )
+        {
+            CHECK( el.value().is_string() ) << "coord item should be a string";
+            coordExprs.push_back( el.value() );
+        }
+    }
 
-    // fields is necessary
-    if ( !M_p.get_child_optional("fields") )
-        return;
+    for ( std::string coordExprBase : coordExprs )
+    {
+        PointPosition ptPos;
+        ptPos.setup( coordExprBase, world, directoryLibExpr, indexes );
+        M_pointPositions.push_back( std::move( ptPos ) );
+    }
+}
 
-    bool hasCoord = (M_p.get_child_optional("coord"))?true:false;
-    bool hasMarker = (M_p.get_child_optional("marker"))?true:false;
+void
+ModelPostprocessPointPosition::PointsOverSegment::setup( nl::json const& jarg, worldcomm_t const& world, std::string const& directoryLibExpr, ModelIndexes const& indexes )
+{
+    CHECK( jarg.contains( "point1") ) << "PointsOverSegment json should be have entry : point1";
+    M_point1.setup( jarg.at( "point1"), world, directoryLibExpr, indexes );
+    CHECK( jarg.contains( "point2") ) << "PointsOverSegment json should be have entry : point2";
+    M_point2.setup( jarg.at( "point2"), world, directoryLibExpr, indexes );
+
+    if ( jarg.contains( "n_points" ) )
+    {
+        auto const& jNPoints = jarg.at( "n_points" );
+        if ( jNPoints.is_string() )
+            M_nPoints = std::stoi( jNPoints.get<std::string>() );
+        else if ( jNPoints.is_number_integer() )
+            M_nPoints = jNPoints.get<int>();
+    }
+}
+
+void
+ModelPostprocessPointPosition::PointsOverSegment::updatePointsSampling( coord_value_type const& pt1, coord_value_type const& pt2 )
+{
+    this->M_coordinates.resize( M_nPoints );
+
+    coord_value_type vec12 = pt2-pt1;
+
+    for (int k=0;k<M_nPoints;++k)
+    {
+        this->M_coordinates[k] = pt1 + (((double)k)/(M_nPoints-1))*vec12;
+        //std::cout << "pt["<<k<<"] = "<<M_pointsSampling[k] << std::endl;
+    }
+}
+
+void
+ModelPostprocessPointPosition::MeasuresOutput::setup( nl::json const& jarg )
+{
+    if ( jarg.contains( "name" ) )
+        M_name = jarg.at("name").get<std::string>();
+    if ( jarg.contains( "type" ) )
+        M_type = jarg.at("type").get<std::string>();
+}
+
+void
+ModelPostprocessPointPosition::setup( nl::json const& jarg, std::string const& name, ModelIndexes const& indexes )
+{
+    bool hasCoord = jarg.contains( "coord" );
+    bool hasMarker = jarg.contains( "marker" );
+
+#if 0
     // coord or marker is necessary
     if ( !hasCoord && !hasMarker )
         return;
-
-
-    this->pointPosition().setName( name );
+#endif
+    M_name = name;
     if ( hasMarker )
     {
+#if 0
+        // TODO
         std::string marker = M_p.get<std::string>( "marker" );
         this->pointPosition().setMeshMarker( marker );
+#endif
     }
     if ( hasCoord )
     {
-        std::string coordExpr = indexes.replace( M_p.get<std::string>( "coord" ) );
-        //std::cout << "coordExpr : "<< coordExpr << "\n";
+        nl::json const& jCoord = jarg.at( "coord" );
 
-        auto parseExpr = GiNaC::parse(coordExpr);
-        auto const& coordMatExpr = parseExpr.first.evalm();
-        auto const& coordExprSymbol = parseExpr.second;
-        int nComp = coordMatExpr.nops();
-        ModelPointPosition::coord_value_type coordData = ModelPointPosition::coord_value_type::Zero(3,1);
-        //for ( auto symbb : coordExprSymbol )
-        //    std::cout << "symbb " << symbb << "\n";
-        if ( coordExprSymbol.empty() || ( coordExprSymbol.size() == 1 && coordExprSymbol[0].get_name() == "0" ) )
-        {
-            int nComp = GiNaC::parse(coordExpr).first.evalm().nops();
-            //std::cout << "ncomp " << nComp << "\n";
-            for (int comp=0;comp<nComp;++comp )
-            {
-                std::string compExpr = str( coordMatExpr.op(comp) );
-                try
-                {
-                    coordData(comp) = std::stod( compExpr );
-                }
-                catch (std::invalid_argument& err)
-                {
-                    LOG(WARNING) << "cast fail from expr to double\n";
-                    coordData(comp) = 0;
-                }
-            }
-            LOG(INFO) << "point coord is a cst expr : " << coordData(0) << "," << coordData(1) << "," << coordData(2);
-            this->pointPosition().setValue( coordData );
-        }
-        else
-        {
-            LOG(INFO) << "point coord is a symbolic expr : " << coordExpr;
-            this->pointPosition().setExpression( coordExpr, M_directoryLibExpr, this->worldComm() );
-        }
+        auto poc = std::make_shared<PointsOverCoordinates>();
+        poc->setup( jCoord, this->worldComm(), M_directoryLibExpr, indexes );
+        if ( true ) // TODO : check if poc is good
+            M_pointsOverAllGeometry.push_back( std::move( poc ) );
+
     } // hasCoord
 
-    // store fields name
-    std::vector<std::string> fieldList = as_vector<std::string>( M_p, "fields" );
-    if ( fieldList.empty() )
+    bool hasOverGeo = jarg.contains( "over_geometry" );
+    if ( hasOverGeo )
     {
-        std::string fieldUnique = indexes.replace( M_p.get<std::string>( "fields" ) );
-        if ( !fieldUnique.empty() )
-            fieldList = { fieldUnique };
-    }
-    for( std::string const& field : fieldList )
-    {
-        // std::cout << "add field = " << field << "\n";
-        this->addFields( field );
+        auto const& jOverGeo = jarg.at( "over_geometry" );
+        for ( auto const& el : jOverGeo.items() )
+        {
+            //std::cout << "el.key() " << el.key() << std::endl;
+            if ( el.key() == "segment" )
+            {
+                CHECK( el.value().is_object() ) << "segment item should be an object";
+                auto pol = std::make_shared<PointsOverSegment>();
+                pol->setup( el.value(), this->worldComm(), M_directoryLibExpr, indexes );
+                // TODO check if pol is operational
+                if ( true )
+                    M_pointsOverAllGeometry.push_back( std::move( pol ) );
+            }
+        }
     }
 
+    if ( jarg.contains( "fields" ) )
+    {
+        auto const& jFields = jarg.at( "fields" );
+
+        std::vector<std::string> fieldList;
+        if ( jFields.is_string() )
+        {
+            fieldList.push_back( jFields.get<std::string>() );
+        }
+        else if ( jFields.is_array() )
+        {
+            for ( auto const& el : jFields.items() )
+            {
+                CHECK( el.value().is_string() ) << "fields item should be a string";
+                fieldList.push_back( el.value() );
+            }
+        }
+
+        for ( std::string field : fieldList )
+            this->addFields( indexes.replace( field ) );
+    }
+
+    if ( jarg.contains( "expressions" ) )
+    {
+        auto const& jExprs = jarg.at( "expressions" );
+
+        for ( auto const& el : jExprs.items() )
+        {
+            std::string const& exprName = el.key();
+            auto const& exprJson = el.value();
+            CHECK( exprJson.is_string() ) << "expr should be a string";
+            std::string const& exprStr = exprJson.get<std::string>();
+
+            ModelExpression mexpr;
+            mexpr.setExpr( exprStr, this->worldComm(), M_directoryLibExpr/*,indexes*/ );
+            CHECK( mexpr.hasAtLeastOneExpr() ) << "expr not given correctly";
+            //std::cout << "MYEXPR " << exprName << " : " << mexpr.exprToString() << std::endl;
+            M_exprs.emplace( exprName, std::move( mexpr ) );
+        }
+    }
+    if ( jarg.contains( "include_coordinates" ) )
+    {
+        auto const& j_include_coordinates = jarg.at("include_coordinates");
+        if ( j_include_coordinates.is_boolean() )
+            M_includeCoordinates = j_include_coordinates.get<bool>();
+        else if ( j_include_coordinates.is_number_unsigned() )
+            M_includeCoordinates = j_include_coordinates.get<int>() > 0;
+        else if ( j_include_coordinates.is_string() )
+            M_includeCoordinates = boost::lexical_cast<bool>( j_include_coordinates.get<std::string>() );
+    }
+
+    if ( jarg.contains( "output" ) )
+        M_measuresOutput.setup( jarg.at("output") );
+    if ( M_measuresOutput.name().empty() && M_measuresOutput.type() != "values" )
+        M_measuresOutput.setName( this->name() );
 }
 
 void
-ModelPostprocessNorm::setup( std::string const& name, ModelIndexes const& indexes )
+ModelPostprocessPointPosition::setParameterValues( std::map<std::string,double> const& mp )
+{
+    for ( auto & [exprName,mexpr] : M_exprs )
+        mexpr.setParameterValues( mp );
+
+    for ( auto & pointsOverGeometry : M_pointsOverAllGeometry )
+    {
+        if ( !pointsOverGeometry )
+            continue;
+        pointsOverGeometry->setParameterValues( mp );
+    }
+}
+
+void
+ModelPostprocessNorm::setup( nl::json const& jarg, std::string const& name, ModelIndexes const& indexes )
 {
     M_name = name;
 
-    if ( auto itField = M_p.get_optional<std::string>("field") )
-        M_field = indexes.replace( *itField );
-    else if ( auto ptexpr = M_p.get_child_optional("expr") )
+    if ( jarg.contains( "field" ) )
     {
-        M_expr.setExpr( "expr", M_p, this->worldComm(), M_directoryLibExpr, indexes );
-        if ( auto ptgradexpr = M_p.get_child_optional("grad_expr") )
-            M_gradExpr.setExpr( "grad_expr", M_p, this->worldComm(), M_directoryLibExpr, indexes );
+        auto const& j_field = jarg.at("field");
+        if ( j_field.is_string() )
+            M_field = indexes.replace( j_field.get<std::string>() );
+    }
+    else if ( jarg.contains( "expr" ) )
+    {
+        M_expr.setExpr( jarg.at("expr"), this->worldComm(), M_directoryLibExpr, indexes );
+        if ( jarg.contains( "grad_expr" ) )
+            M_gradExpr.setExpr( jarg.at( "grad_expr" ), this->worldComm(), M_directoryLibExpr, indexes );
     }
 
-    if ( auto ptmarkers = M_p.get_child_optional("markers") )
-        M_markers.setPTree(*ptmarkers,indexes);
+    if ( jarg.contains( "markers" ) )
+        M_markers.setup( jarg.at( "markers" ), indexes );
 
-    if ( auto pttype = M_p.get_child_optional("type") )
+    if ( jarg.contains( "type" ) )
     {
-        for( auto const& item : M_p.get_child("type") )
-            M_types.insert( indexes.replace( item.second.template get_value<std::string>() ) );
-        if( M_types.empty() )
-            M_types.insert( indexes.replace( M_p.get<std::string>("type") ) );
+        auto const& j_type = jarg.at( "type" );
+        if ( j_type.is_string() )
+            M_types.insert( indexes.replace( j_type.get<std::string>() ) );
+        else if ( j_type.is_array() )
+            for ( auto const& [j_typekey,j_typeval] : j_type.items() )
+                if ( j_typeval.is_string() )
+                    M_types.insert( indexes.replace( j_typeval.get<std::string>() ) );
     }
 
-    if ( auto itSol = M_p.get_optional<std::string>("solution") )
-        M_solution.setExpr( "solution", M_p, this->worldComm(), M_directoryLibExpr,indexes );
+    if ( jarg.contains( "solution" ) )
+        M_solution.setExpr( jarg.at( "solution" ), this->worldComm(), M_directoryLibExpr,indexes );
 
-    if ( auto itSol = M_p.get_optional<std::string>("grad_solution") )
-        M_gradSolution.setExpr( "grad_solution", M_p, this->worldComm(), M_directoryLibExpr,indexes );
+    if ( jarg.contains( "grad_solution" ) )
+        M_gradSolution.setExpr( jarg.at( "grad_solution" ), this->worldComm(), M_directoryLibExpr,indexes );
 
-    if ( auto itQuad = M_p.get_optional<int>("quad") )
+    if ( jarg.contains( "quad") )
     {
-        M_quadOrder = *itQuad;
-        if ( auto itQuad1 = M_p.get_optional<int>("quad1") )
-            M_quad1Order = *itQuad1;
-        else
-            M_quad1Order = M_quadOrder;
+        auto const& j_quad = jarg.at( "quad" );
+        if ( j_quad.is_number_integer() )
+            M_quadOrder = j_quad.get<int>();
+        else if ( j_quad.is_string() )
+            M_quadOrder = std::stoi( j_quad.get<std::string>() );
     }
-    else if ( auto itQuad1 = M_p.get_optional<int>("quad1") )
-        M_quad1Order = *itQuad1;
+
+    if ( jarg.contains( "quad1") )
+    {
+        auto const& j_quad1 = jarg.at( "quad1" );
+        if ( j_quad1.is_number_integer() )
+            M_quad1Order = j_quad1.get<int>();
+        else if ( j_quad1.is_string() )
+            M_quad1Order = std::stoi( j_quad1.get<std::string>() );
+    }
 }
 
 void
@@ -345,38 +485,63 @@ ModelPostprocessNorm::setParameterValues( std::map<std::string,double> const& mp
 }
 
 void
-ModelPostprocessStatistics::setup( std::string const& name, ModelIndexes const& indexes )
+ModelPostprocessStatistics::setup( nl::json const& jarg, std::string const& name, ModelIndexes const& indexes )
 {
     M_name = name;
 
-    if ( auto itField = M_p.get_optional<std::string>("field") )
-        M_field = indexes.replace( *itField );
-    else if ( auto ptexpr = M_p.get_child_optional("expr") )
+    if ( jarg.contains( "field" ) )
     {
-        M_expr.setExpr( "expr", M_p, this->worldComm(), M_directoryLibExpr, indexes );
+        auto const& j_field = jarg.at("field");
+        if ( j_field.is_string() )
+            M_field = indexes.replace( j_field.get<std::string>() );
+    }
+    else if ( jarg.contains( "expr" ) )
+    {
+        M_expr.setExpr( jarg.at("expr"), this->worldComm(), M_directoryLibExpr, indexes );
     }
 
-    if ( auto ptmarkers = M_p.get_child_optional("markers") )
-        M_markers.setPTree(*ptmarkers, indexes);
+    if ( jarg.contains( "markers" ) )
+        M_markers.setup( jarg.at( "markers" ), indexes );
 
-    if ( auto pttype = M_p.get_child_optional("type") )
+    if ( jarg.contains( "type" ) )
     {
-        for( auto const& item : M_p.get_child("type") )
-            M_types.insert( indexes.replace( item.second.template get_value<std::string>() ) );
-        if( M_types.empty() )
-            M_types.insert( indexes.replace( M_p.get<std::string>("type") ) );
+        auto const& j_type = jarg.at( "type" );
+        if ( j_type.is_string() )
+            M_types.insert( indexes.replace( j_type.get<std::string>() ) );
+        else if ( j_type.is_array() )
+            for ( auto const& [j_typekey,j_typeval] : j_type.items() )
+                if ( j_typeval.is_string() )
+                    M_types.insert( indexes.replace( j_typeval.get<std::string>() ) );
     }
 
-    if ( auto itQuad = M_p.get_optional<int>("quad") )
+    if ( jarg.contains( "quad") )
     {
-        M_quadOrder = *itQuad;
-        if ( auto itQuad1 = M_p.get_optional<int>("quad1") )
-            M_quad1Order = *itQuad1;
-        else
-            M_quad1Order = M_quadOrder;
+        auto const& j_quad = jarg.at( "quad" );
+        if ( j_quad.is_number_integer() )
+            M_quadOrder = j_quad.get<int>();
+        else if ( j_quad.is_string() )
+            M_quadOrder = std::stoi( j_quad.get<std::string>() );
     }
-    else if ( auto itQuad1 = M_p.get_optional<int>("quad1") )
-        M_quad1Order = *itQuad1;
+
+    if ( jarg.contains( "quad1") )
+    {
+        auto const& j_quad1 = jarg.at( "quad1" );
+        if ( j_quad1.is_number_integer() )
+            M_quad1Order = j_quad1.get<int>();
+        else if ( j_quad1.is_string() )
+            M_quad1Order = std::stoi( j_quad1.get<std::string>() );
+    }
+
+    if ( jarg.contains( "requires_markers_connection") )
+        M_requiresMarkersConnection.setup( jarg.at( "requires_markers_connection"), indexes );
+
+    if ( jarg.contains( "internalfaces_evaluation") )
+    {
+          auto const& j_ifevaltype = jarg.at( "internalfaces_evaluation");
+          if ( j_ifevaltype.is_string() )
+              M_internalFacesEvalutationType = indexes.replace( j_ifevaltype.get<std::string>() );
+    }
+
 }
 
 void
@@ -387,23 +552,27 @@ ModelPostprocessStatistics::setParameterValues( std::map<std::string,double> con
 
 
 void
-ModelPostprocessCheckerMeasure::setup( std::string const& name, ModelIndexes const& indexes )
+ModelPostprocessCheckerMeasure::setup( nl::json const& jarg, std::string const& name, ModelIndexes const& indexes )
 {
     M_name = name;
 
-    M_valueExpr.setExpr( "value", M_p, this->worldComm(), M_directoryLibExpr, indexes );
+    CHECK( jarg.contains("value") ) << "no value entry";
+    M_valueExpr.setExpr( jarg.at( "value" ), this->worldComm(), M_directoryLibExpr, indexes );
     CHECK( M_valueExpr.hasExprScalar() ) << "require value entry and the value should be a scalar expression";
-    //M_value = M_valueExpr.exprScalar().evaluate()(0,0);
 
-    if ( auto itTol = M_p.get_optional<double>("tolerance") )
-        M_tolerance = *itTol;
+    if ( jarg.contains("tolerance" ) )
+    {
+        M_toleranceExpr.setExpr( jarg.at( "tolerance" ), this->worldComm(), M_directoryLibExpr, indexes );
+        CHECK( M_toleranceExpr.hasExprScalar() ) << "tolerance entry should be a scalar expression";
+    }
+
 }
-std::tuple<bool,double>
-ModelPostprocessCheckerMeasure::run( double val ) const
-{
-    M_value = M_valueExpr.exprScalar().evaluate()(0,0);
-    return this->runImpl( val );
-}
+// std::tuple<bool,double>
+// ModelPostprocessCheckerMeasure::run( double val ) const
+// {
+//     M_value = M_valueExpr.exprScalar().evaluate()(0,0);
+//     return this->runImpl( val );
+// }
 std::tuple<bool,double>
 ModelPostprocessCheckerMeasure::runImpl( double val ) const
 {
@@ -424,39 +593,40 @@ void
 ModelPostprocessCheckerMeasure::setParameterValues( std::map<std::string,double> const& mp )
 {
     M_valueExpr.setParameterValues( mp );
-    //M_value = M_valueExpr.exprScalar().evaluate()(0,0);
+    M_toleranceExpr.setParameterValues( mp );
 }
 
 ModelPostprocess::ModelPostprocess( worldcomm_ptr_t const& world )
     :
     super( world ),
-    M_useModelName( false )
-{}
-
-ModelPostprocess::ModelPostprocess(pt::ptree const& p, worldcomm_ptr_t const& world )
-    :
-    super( world ),
-    M_useModelName( false )
+    M_useModelName( true )
 {}
 
 ModelPostprocess::~ModelPostprocess()
 {}
 
-pt::ptree
-ModelPostprocess::pTree( std::string const& name ) const
+bool
+ModelPostprocess::hasJsonProperties( std::string const& name ) const
+{
+    if ( !M_useModelName )
+        return true;
+    else
+        return M_p.contains(name);
+}
+
+nl::json const&
+ModelPostprocess::jsonProperties( std::string const& name ) const
 {
     if ( !M_useModelName )
         return M_p;
-    else if ( auto ptreeWithName = M_p.get_child_optional( name ) )
-        return *ptreeWithName;
-    pt::ptree ptree;
-    return ptree;
+    CHECK( M_p.contains(name) ) << "name " << name << "not in data structure";
+    return M_p.at( name );
 }
 
 void
-ModelPostprocess::setPTree( pt::ptree const& p )
+ModelPostprocess::setPTree( nl::json const& jarg )
 {
-    M_p = p;
+    M_p = jarg;
     setup();
 }
 
@@ -464,115 +634,145 @@ ModelPostprocess::setPTree( pt::ptree const& p )
 void
 ModelPostprocess::setup()
 {
-    if ( auto useModelName = M_p.get_optional<bool>("use-model-name") )
-        M_useModelName = *useModelName;
+    auto const& jarg = M_p;
+
+    if ( jarg.contains("use-model-name") )
+    {
+        auto const& j_useModelName = jarg.at("use-model-name");
+        if ( j_useModelName.is_boolean() )
+            M_useModelName = j_useModelName.template get<bool>();
+        else if ( j_useModelName.is_number_unsigned() )
+            M_useModelName = j_useModelName.template get<int>() > 0;
+        else if ( j_useModelName.is_string() )
+            M_useModelName = boost::lexical_cast<bool>( j_useModelName.template get<std::string>() );
+    }
 
     if ( M_useModelName )
     {
-        for( auto const& p1 : M_p )
+        for (auto const& el : jarg.items())
         {
-            this->setup( p1.first,p1.second );
+            if ( !el.value().is_object() )
+                continue;
+            this->setup( el.key(),el.value() );
         }
     }
     else
-        this->setup( "", M_p );
+        this->setup( "", jarg );
 }
 void
-ModelPostprocess::setup( std::string const& name, pt::ptree const& p  )
+ModelPostprocess::setup( std::string const& name, nl::json const& jarg )
 {
-    if ( auto exports = p.get_child_optional("Exports") )
+    auto itFindExports = jarg.find( "Exports" );
+    if ( itFindExports != jarg.end() )
     {
         ModelPostprocessExports ppexports( this->worldCommPtr() );
         ppexports.setDirectoryLibExpr( M_directoryLibExpr );
-        ppexports.setup( *exports );
+        ppexports.setup( itFindExports.value() );
         if ( !ppexports.fields().empty() || !ppexports.expressions().empty() )
-            M_exports[name] = ppexports;
-    }
-    if ( auto save = p.get_child_optional("Save") )
-    {
-        ModelPostprocessSave ppsave;
-        ppsave.setup( *save );
-        if ( !ppsave.fieldsNames().empty() )
-            M_save[name] = ppsave;
+            M_exports.emplace( std::make_pair(name, std::move( ppexports ) ) );
     }
 
-    if ( auto measures = p.get_child_optional("Measures") )
+    auto itFindSave = jarg.find( "Save" );
+    if ( itFindSave != jarg.end() )
     {
+        ModelPostprocessSave ppsave;
+        ppsave.setup( itFindSave.value() );
+        if ( !ppsave.fieldsNames().empty() )
+            M_save.emplace( std::make_pair(name, std::move( ppsave ) ) );
+    }
+
+    auto itFindMeasures = jarg.find( "Measures" );
+    if ( itFindMeasures != jarg.end() )
+    {
+        auto const& j_measures = itFindMeasures.value();
         for ( std::string const& quantitiesSectionName : { "Quantities", "quantities" } )
-            if ( auto quantities = measures->get_child_optional( quantitiesSectionName ) )
+            if ( j_measures.contains( quantitiesSectionName ) )
             {
                 ModelPostprocessQuantities ppquantities( this->worldCommPtr() );
                 ppquantities.setDirectoryLibExpr( M_directoryLibExpr );
-                ppquantities.setup( *quantities );
+                ppquantities.setup( j_measures.at( quantitiesSectionName ) );
                 if( !ppquantities.quantities().empty() || !ppquantities.expressions().empty() )
-                    M_measuresQuantities[name] = ppquantities;
+                    M_measuresQuantities.emplace( std::make_pair( name, std::move( ppquantities ) ) );
                 break;
             }
 
-        auto evalPoints = measures->get_child_optional("Points");
-        if ( evalPoints )
+        if ( j_measures.contains( "Points" ) )
         {
-            for( auto const& evalPoint : *evalPoints )
+            auto const& j_measures_points = j_measures.at( "Points" );
+            for ( auto const& [j_measures_pointskey,j_measures_pointsval] : j_measures_points.items() )
             {
-                auto indexesAllCases = ModelIndexes::generateAllCases( evalPoint.second );
+                auto indexesAllCases = ModelIndexes::generateAllCases( j_measures_pointsval );
                 for ( auto const& indexes : indexesAllCases )
                 {
                     ModelPostprocessPointPosition myPpPtPos( this->worldCommPtr() );
                     myPpPtPos.setDirectoryLibExpr( M_directoryLibExpr );
-                    myPpPtPos.setPTree( evalPoint.second, indexes.replace( evalPoint.first ), indexes );
-                    if ( !myPpPtPos.fields().empty() )
-                        M_measuresPoint[name].push_back( myPpPtPos );
+                    myPpPtPos.setup( j_measures_pointsval, indexes.replace( j_measures_pointskey ), indexes );
+                    if ( !myPpPtPos.fields().empty() || !myPpPtPos.expressions().empty() )
+                        M_measuresPoint[name].push_back( std::move(myPpPtPos) );
                 }
             }
         }
 
-        auto ptreeNorms = measures->get_child_optional("Norm");
-        if ( ptreeNorms )
+
+        for ( std::string const& normsSectionName : { "Norm","Norms" } )
         {
-            for( auto const& ptreeNorm : *ptreeNorms )
+            if ( j_measures.contains( normsSectionName ) )
             {
-                auto indexesAllCases = ModelIndexes::generateAllCases(  ptreeNorm.second );
-                for ( auto const& indexes : indexesAllCases )
+                auto const& j_measures_norms = j_measures.at( normsSectionName );
+                for ( auto const& [j_measures_normskey,j_measures_normsval] : j_measures_norms.items() )
                 {
-                    ModelPostprocessNorm ppNorm( this->worldCommPtr() );
-                    ppNorm.setDirectoryLibExpr( M_directoryLibExpr );
-                    ppNorm.setPTree( ptreeNorm.second, indexes.replace( ptreeNorm.first ), indexes );
-                    if ( ppNorm.hasField() || ppNorm.hasExpr() )
-                        M_measuresNorm[name].push_back( ppNorm );
+                    auto indexesAllCases = ModelIndexes::generateAllCases( j_measures_normsval );
+                    for ( auto const& indexes : indexesAllCases )
+                    {
+                        ModelPostprocessNorm ppNorm( this->worldCommPtr() );
+                        ppNorm.setDirectoryLibExpr( M_directoryLibExpr );
+                        ppNorm.setup( j_measures_normsval, indexes.replace( j_measures_normskey ), indexes );
+                        if ( ppNorm.hasField() || ppNorm.hasExpr() )
+                            M_measuresNorm[name].push_back( std::move( ppNorm ) );
+                    }
                 }
             }
         }
-        auto ptreeStatistics = measures->get_child_optional("Statistics");
-        if ( ptreeStatistics )
+
+
+        for ( std::string const& statisticsSectionName : { "Statistic","Statistics" } )
         {
-            for( auto const& ptreeStatistic : *ptreeStatistics )
+            if ( j_measures.contains( statisticsSectionName ) )
             {
-                auto indexesAllCases = ModelIndexes::generateAllCases( ptreeStatistic.second );
-                for ( auto const& indexes : indexesAllCases )
+                auto const& j_measures_statistics = j_measures.at( statisticsSectionName );
+                for ( auto const& [j_measures_statisticskey,j_measures_statisticsval] : j_measures_statistics.items() )
                 {
-                    ModelPostprocessStatistics ppStatistics( this->worldCommPtr() );
-                    ppStatistics.setDirectoryLibExpr( M_directoryLibExpr );
-                    ppStatistics.setPTree( ptreeStatistic.second, indexes.replace( ptreeStatistic.first ), indexes );
-                    if ( ppStatistics.hasField() || ppStatistics.hasExpr() )
-                        M_measuresStatistics[name].push_back( ppStatistics );
+                    auto indexesAllCases = ModelIndexes::generateAllCases( j_measures_statisticsval );
+                    for ( auto const& indexes : indexesAllCases )
+                    {
+                        ModelPostprocessStatistics ppStatistics( this->worldCommPtr() );
+                        ppStatistics.setDirectoryLibExpr( M_directoryLibExpr );
+                        ppStatistics.setup( j_measures_statisticsval, indexes.replace( j_measures_statisticskey ), indexes );
+                        if ( ppStatistics.hasField() || ppStatistics.hasExpr() )
+                            M_measuresStatistics[name].push_back( std::move( ppStatistics ) );
+                    }
                 }
             }
         }
     }
 
-    if ( auto checkers = p.get_child_optional("Checkers") )
+
+    auto itFindCheckers = jarg.find( "Checkers" );
+    if ( itFindCheckers != jarg.end() )
     {
-        if ( auto measures = checkers->get_child_optional("Measures") )
+        auto const& j_checkers = itFindCheckers.value();
+        if ( j_checkers.contains( "Measures" ) )
         {
-            for( auto const& ptreeCheckerMeasure : *measures )
+            auto const& j_checkers_measures = j_checkers.at( "Measures" );
+            for ( auto const& [j_checkers_measureskey,j_checkers_measuresval] : j_checkers_measures.items() )
             {
-                auto indexesAllCases = ModelIndexes::generateAllCases( ptreeCheckerMeasure.second );
+                auto indexesAllCases = ModelIndexes::generateAllCases( j_checkers_measuresval );
                 for ( auto const& indexes : indexesAllCases )
                 {
                     ModelPostprocessCheckerMeasure ppCheckerMeasure( this->worldCommPtr() );
                     ppCheckerMeasure.setDirectoryLibExpr( M_directoryLibExpr );
-                    ppCheckerMeasure.setPTree( ptreeCheckerMeasure.second, indexes.replace( ptreeCheckerMeasure.first ), indexes );
-                    M_checkersMeasure[name].push_back( ppCheckerMeasure );
+                    ppCheckerMeasure.setup( j_checkers_measuresval, indexes.replace( j_checkers_measureskey ), indexes );
+                    M_checkersMeasure[name].push_back( std::move(ppCheckerMeasure) );
                 }
             }
         }
@@ -701,6 +901,16 @@ ModelPostprocess::measuresQuantities( std::string const& name ) const
 }
 std::vector<ModelPostprocessPointPosition> const&
 ModelPostprocess::measuresPoint( std::string const& name ) const
+{
+    std::string nameUsed = (M_useModelName)? name : "";
+    //CHECK( this->hasMeasuresPoint( nameUsed ) ) << "no measures point with name:"<<name;
+    if ( this->hasMeasuresPoint( nameUsed ) )
+        return M_measuresPoint.find( nameUsed )->second;
+    else
+        return M_emptyMeasuresPoint;
+}
+std::vector<ModelPostprocessPointPosition> &
+ModelPostprocess::measuresPoint( std::string const& name )
 {
     std::string nameUsed = (M_useModelName)? name : "";
     //CHECK( this->hasMeasuresPoint( nameUsed ) ) << "no measures point with name:"<<name;

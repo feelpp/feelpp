@@ -27,8 +27,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-03-17
  */
-#ifndef __about_H
-#define __about_H 1
+#ifndef FEELPP_CORE_ABOUT_H
+#define FEELPP_CORE_ABOUT_H 1
 
 #include <vector>
 #include <string>
@@ -503,26 +503,27 @@ private:
  */
 FEELPP_EXPORT std::ostream& operator<<( std::ostream& os, AboutData const& about );
 
-BOOST_PARAMETER_FUNCTION(
-    (AboutData), about, tag,
-    ( required (name, *  ) )
-    ( optional
-      ( author,  *, "Feel++ Consortium"  )
-      ( task,  *, "developer"  )
-      ( email,  *, "feelpp-devel@feelpp.org"  )
-      ( desc, *, "Feel++ application" )
-      ( license, (int), AboutData::License_GPL_V3 )
-      ( copyright, *, "Copyright (C) Feel++ Consortium" )
-      ( home, *, "http://www.feelpp.org" )
-      ( bugs, *, "feelpp-devel@feelpp.org" )
-      ( version, *, Feel::Info::versionString() )
-        ))
+template <typename ... Ts>
+AboutData about( Ts && ... v )
 {
-    AboutData a( name, name, version, desc,
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    std::string const& name = args.get(_name );
+    std::string const& author = args.get_else( _author, "Feel++ Consortium" );
+    std::string const& task = args.get_else( _task, "developer" );
+    std::string const& email = args.get_else( _email, "feelpp-devel@feelpp.org" );
+    std::string const& desc = args.get_else( _desc, "Feel++ application" );
+    int license = args.get_else( _license, AboutData::License_GPL_V3 );
+    std::string const& copyright = args.get_else( _copyright, "Copyright (C) Feel++ Consortium" );
+    std::string const& home = args.get_else( _home, "http://www.feelpp.org" );
+    std::string const& bugs = args.get_else( _bugs, "feelpp-devel@feelpp.org" );
+    std::string const& version = args.get_else( _version, Feel::Info::versionString() );
+
+     AboutData a( name, name, version, desc,
                  license, copyright, "", home, bugs );
     a.addAuthor( author, task, email, home );
     return a;
 }
+
 
 }
 #endif /* __about_H */

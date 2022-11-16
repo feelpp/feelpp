@@ -122,7 +122,7 @@ TestSubMatrix<Dim>::run()
 {
 
     if ( !this->vm().count( "nochdir" ) )
-        Environment::changeRepository( boost::format( "testsuite/feeldiscr/%1%/%2%-%3%/P%4%/h_%5%/" )
+        Environment::changeRepository( _directory=boost::format( "testsuite/feeldiscr/%1%/%2%-%3%/P%4%/h_%5%/" )
                                        % this->about().appName()
                                        % shape
                                        % Dim
@@ -153,7 +153,7 @@ TestSubMatrix<Dim>::run()
     auto A = M_backend->newMatrix( _trial=Xh, _test=Xh ) ;
 
     form2( _trial=Xh, _test=Xh, _matrix=A ) =
-        integrate( elements( mesh ), gradt( u )*trans( grad( v ) ) );
+        integrate( _range=elements( mesh ), _expr=gradt( u )*trans( grad( v ) ) );
 
     A->close();
 

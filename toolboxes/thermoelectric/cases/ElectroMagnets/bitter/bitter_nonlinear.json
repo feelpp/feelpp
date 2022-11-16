@@ -9,6 +9,18 @@
         "alpha":3.6e-3,
         "Lorentz":2.47e-8
     },
+    "Meshes":
+    {
+        "thermoelectric":
+        {
+            "Import":
+            {
+                //"filename":"girder:{file:5e4688bcb0e95704757e263b}",
+                "filename":"girder:{file:5e4688bcb0e95704757e2638}", //fine
+                "partition":1
+            }
+        }
+    },
     "Materials":
     {
         "omega":
@@ -17,20 +29,32 @@
             "sigma":"sigma0/(1+alpha*(heat_T-T0))+0*heat_T:sigma0:alpha:T0:heat_T"
         }
     },
+    "InitialConditions":
+    {
+        "heat":{
+            "temperature":{
+                "Expression":{
+                    "myic1":{
+                        "expr":"293"
+                    }
+                }
+            }
+        }
+    },
     "BoundaryConditions":
     {
-        "temperature":
+        "heat":
         {
-            "Robin":
+            "convective_heat_flux":
             {
                 "bitter_robin":
                 {
                     "markers":["Channel0","Channel1","TieRods","CoolingHoles"],
-                    "expr1":"0.08",
-                    "expr2":"293"
+                    "h":"0.08",
+                    "Text":"293"
                 }
             },
-            "Neumann":
+            "flux":
             {
                 "bitter_neumann":
                 {
@@ -39,17 +63,14 @@
                 }
             }
         },
-        "electric-potential":
+        "electric":
         {
-            "Dirichlet":
+            "ground":{ "markers":"V0" },
+            "electric-potential":
             {
                 "V1":
                 {
                     "expr":"-0.04"
-                },
-                "V0":
-                {
-                    "expr":"0"
                 }
             },
             "Neumann":
@@ -64,8 +85,7 @@
     },
     "PostProcess":
     {
-        "use-model-name":1,
-        "thermo-electric":
+        "thermoelectric":
         {
             "Exports":
             {

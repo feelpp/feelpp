@@ -39,10 +39,10 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #include <feel/feelalg/backend.hpp>
 #include <feel/feelalg/operator.hpp>
 #include <feel/feelalg/preconditioner.hpp>
-#include <feel/feelmodels/modelproperties.hpp>
 #include <feel/feelalg/backendpetsc.hpp>
 
 #include <feel/feeldiscr/operatorinterpolation.hpp>
+#include <feel/feelpde/boundaryconditions.hpp>
 
 namespace Feel
 {
@@ -103,7 +103,7 @@ public:
      * \param A the full matrix
      */
     PreconditionerBlockMS( space_ptrtype Xh,
-                           ModelProperties model,
+                           BoundaryConditions const& bc,
                            std::string const& s,
                            sparse_matrix_ptrtype A,
                            value_type relax=1);
@@ -197,7 +197,7 @@ private:
     /// Warning: at this point the permittivity is set to one for the domain
     value_type M_er; // permittivity
 
-    ModelProperties M_model;
+    BoundaryConditions M_bc;
 
     std::string M_prefix;
     std::string M_prefix_11;
@@ -229,7 +229,7 @@ private:
 
     template < typename space_type >
 PreconditionerBlockMS<space_type>::PreconditionerBlockMS(space_ptrtype Xh,             // (u)x(p)
-                                                         ModelProperties model,        // model
+                                                         BoundaryConditions const& bc,
                                                          std::string const& p,         // prefix
                                                          sparse_matrix_ptrtype AA, value_type relax )    // The matrix
     :
@@ -244,10 +244,10 @@ PreconditionerBlockMS<space_type>::PreconditionerBlockMS(space_ptrtype Xh,      
         M_pin( M_backend->newVector( M_Qh )  ),
         M_pout( M_backend->newVector( M_Qh )  ),
         U( M_Xh, "U" ),
-        M_mass(M_backend->newMatrix(M_Vh,M_Vh)),
-        M_L(M_backend->newMatrix(M_Qh,M_Qh)),
+        M_mass(M_backend->newMatrix(_test=M_Vh,_trial=M_Vh)),
+        M_L(M_backend->newMatrix(_test=M_Qh,_trial=M_Qh)),
         M_er( 1. ),
-        M_model( model ),
+        M_bc( bc ),
         M_prefix( p ),
         M_prefix_11( p+".11" ),
         M_prefix_22( p+".22" ),
@@ -277,7 +277,7 @@ PreconditionerBlockMS<space_type>::PreconditionerBlockMS(space_ptrtype Xh,      
     M_11 = AA->createSubMatrix( M_Vh_indices, M_Vh_indices, true, true);
 
     /* Boundary conditions */
-    BoundaryConditions M_bc = M_model.boundaryConditions();
+
     //map_vector_field<FEELPP_DIM,1,2> m_dirichlet_u { M_bc.getVectorFields<FEELPP_DIM> ( "u", "Dirichlet" ) };
     map_scalar_field<2> m_dirichlet_p { M_bc.getScalarFields<2> ( "phi", "Dirichlet" ) };
 
@@ -335,8 +335,6 @@ PreconditionerBlockMS<space_type>::init( void )
     //Feel::cout << "Init preconditioner blockms\n";
     LOG(INFO) << "Init preconditioner blockms...\n";
     tic();
-    BoundaryConditions M_bc = M_model.boundaryConditions();
-
     LOG(INFO) << "Create sub Matrix\n";
     map_vector_field<FEELPP_DIM,1,2> m_dirichlet_u { M_bc.getVectorFields<FEELPP_DIM> ( "u", "Dirichlet" )};
     //map_scalar_field<2> m_dirichlet_p { M_bc.getScalarFields<2> ( "phi", "Dirichlet" ) };
@@ -482,34 +480,20 @@ PreconditionerBlockMS<space_type>::applyInverse ( const vector_type& X, vector_t
     return 0;
 }
 
-namespace meta
+template <typename ... Ts>
+auto blockms( Ts && ... v )
 {
-template< typename space_type >
-    struct blockms
-{
-    typedef PreconditionerBlockMS<space_type> type;
-    typedef std::shared_ptr<type> ptrtype;
-};
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && space = args.get(_space);
+    auto && matrix = args.get(_matrix);
+    //auto && bc = args.get(_bc);
+    auto && bc = args.get_else(_bc, BoundaryConditions{} );
+    std::string const& prefix = args.get_else(_prefix, "blockms" );
+
+    using space_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(space)>>>;
+    return std::make_shared<PreconditionerBlockMS<space_type>>( space, bc, prefix, matrix );
 }
-BOOST_PARAMETER_FUNCTION( ( typename meta::blockms<
-                                   typename parameter::value_type<Args, tag::space >::type::element_type
-                                   >::ptrtype ),
-                                 blockms,
-                                 tag,
-                                 ( required
-                                   ( space, *)
-                                   ( matrix, *)
-                                   ( model, *)
-                                 )
-                                 ( optional
-                                   ( prefix, *( boost::is_convertible<mpl::_,std::string> ), "blockms" )
-                                 )
-                               )
-{
-    typedef typename meta::blockms<typename parameter::value_type<Args, tag::space>::type::element_type>::ptrtype pblockms_t;
-    typedef typename meta::blockms<typename parameter::value_type<Args, tag::space>::type::element_type>::type blockms_t;
-    pblockms_t p( new blockms_t( space, model, prefix, matrix ) );
-    return p;
-} // blockms
+
+
 } // Feel
 #endif

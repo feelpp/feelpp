@@ -28,20 +28,40 @@
 # ifndef _FEELPP_HH_
 # define _FEELPP_HH_
 
+//! @defgroup Feelpp 
+//! Feel++ classes and methods
+
 //! @defgroup Core 
+//! @ingroup Feelpp
 //! Core classes provided by the library
 
 //! @defgroup Mesh
+//! @ingroup Feelpp
 //! Mesh classes and algorithms provided by the library
 
-//! @defgroup Discretization 
+//! @defgroup Discretization
+//! @ingroup Feelpp
 //! Discretization classes and algorithms provided by the library
 
 //! @defgroup Filters
+//! @ingroup Feelpp
 //! Filter classes provided by the library
 
 //! @defgroup DSEL-Variational-Formulation
+//! @ingroup Feelpp
 //! Variational forms provided by the library
+
+//! @defgroup SpaceTime
+//! @ingroup Feelpp
+//! Time stepping including space provided by the library
+
+//! @defgroup Timing
+//! @ingroup Feelpp
+//! Timing methods provided by the library
+
+//! @defgroup Traits
+//! @ingroup Feelpp
+//! Traits provided by the library
 
 #if defined(__APPLE__)
 #undef tolower
@@ -69,8 +89,6 @@
 
 #include <boost/math/constants/constants.hpp>
 
-#include <boost/lambda/lambda.hpp>
-#include <boost/lambda/bind.hpp>
 #if defined(__clang__)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdivision-by-zero"
@@ -91,7 +109,7 @@
 #include <boost/format.hpp>
 #include <boost/foreach.hpp>
 
-#include <boost/hana.hpp>
+#include <feel/feelcore/hana.hpp>
 #include <boost/ref.hpp>
 
 #include <boost/property_tree/ptree.hpp>
@@ -153,7 +171,6 @@ namespace Feel
 namespace assign = boost::assign;
 namespace fs = boost::filesystem;
 namespace mpl = boost::mpl;
-namespace lambda = boost::lambda;
 namespace po = boost::program_options;
 namespace hana=boost::hana;
 using namespace boost::hana::literals;

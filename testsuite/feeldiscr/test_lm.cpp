@@ -42,8 +42,8 @@ main( int argc, char** argv )
 
     auto mesh = unitSquare();
 
-    space_ptrtype Xh = space_type::New( mesh );
+    space_ptrtype Xh = space_type::New( _mesh=mesh );
 
     vector_ptrtype R( backend()->newVector( Xh ) );
-    sparse_matrix_ptrtype J( backend()->newMatrix( Xh,Xh ) );
+    sparse_matrix_ptrtype J( backend()->newMatrix( _test=Xh,_trial=Xh ) );
 }

@@ -46,7 +46,7 @@ makeOptions()
     ( "Bimin", Feel::po::value<double>()->default_value( 0.01 ), "minimum value of Biot number" )
     ( "Bimax", Feel::po::value<double>()->default_value( 1 ), "maximum value of Biot number" )
 
-    ( "N", Feel::po::value<int>()->default_value( 1 ), "number of samples withing parameter space" )
+    ( "N", Feel::po::value<int>()->default_value( 1 ), "number of samples within parameter space" )
 
     ;
     return thermalfinoptions;
@@ -75,7 +75,7 @@ int main( int argc, char** argv )
                      _about=makeAbout() );
 
 
-    Environment::changeRepository( boost::format( "%1%/%2%/" )
+    Environment::changeRepository( _directory=boost::format( "%1%/%2%/" )
                                    % Environment::about().appName()
                                    % option( _name="gmsh.hsize" ).as<double>() );
 
@@ -92,8 +92,8 @@ int main( int argc, char** argv )
     auto v = Xh->element();
 
     // flux a bottom of fin
-    auto f = form1( Xh );
-    f = integrate( markedfaces( mesh, "Tflux" ), id( v ) );
+    auto f = form1( _test=Xh );
+    f = integrate( _range=markedfaces( mesh, "Tflux" ), _expr=id( v ) );
 
 
     double Bimin = doption(_name="Bimin");
@@ -111,12 +111,12 @@ int main( int argc, char** argv )
         k( 1 , 1 ) = doption(_name="k3");
         std::map<std::string,double> material{ {"Mat0", k(0,0)}, {"Mat1",k(1,0)}, {"Mat2",k(0,1)},  {"Mat3",k(1,1)} };
 
-        auto a = form2( Xh, Xh );
+        auto a = form2( _test=Xh, _trial=Xh );
         for ( auto marker : material )
         {
             LOG(INFO) << "Material " << marker.first << " with conductivity " << marker.second;
-            a += integrate( markedelements( mesh, marker.first ),
-                            marker.second*gradt( u )*trans( grad( v ) ) );
+            a += integrate( _range=markedelements( mesh, marker.first ),
+                            _expr=marker.second*gradt( u )*trans( grad( v ) ) );
         }
 
         double Bi;
@@ -128,12 +128,12 @@ int main( int argc, char** argv )
 
         LOG(INFO) << "Bi = " << Bi << "\n";
 
-        a += integrate( markedfaces( mesh, "Tfourier" ), Bi*idt( u )*id( v ) );
+        a += integrate( _range=markedfaces( mesh, "Tfourier" ), _expr=Bi*idt( u )*id( v ) );
 
 
         a.solve( _solution=u, _rhs=f );
 
-        double moy_u = mean( markedfaces( mesh, "Tflux" ), idv( u ) )( 0,0 );
+        double moy_u = mean( _range=markedfaces( mesh, "Tflux" ), _expr=idv( u ) )( 0,0 );
         if (Environment::worldComm().isMasterRank())
         {
             std::cout.precision( 5 );

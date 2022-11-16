@@ -131,7 +131,13 @@ void removeTrailingSlash( std::string & s )
 }
 }
 
-ModelBaseCommandLineOptions::ModelBaseCommandLineOptions( po::options_description const& _options )
+
+ModelBaseCommandLineOptions::ModelBaseCommandLineOptions( po::variables_map const& vm )
+    :
+    M_vm( vm ) // TODO check if equal to Environment::vm()
+{}
+
+ModelBaseCommandLineOptions::ModelBaseCommandLineOptions( po::options_description const& _options, init_function_type func )
 {
     M_vm.emplace();
     auto mycmdparser = Environment::commandLineParser();
@@ -144,6 +150,8 @@ ModelBaseCommandLineOptions::ModelBaseCommandLineOptions( po::options_descriptio
         std::istringstream & iss = std::get<1>( configFile );
         po::store(po::parse_config_file(iss, _options,true), *M_vm);
     }
+    if ( func )
+        std::invoke(func, _options, *M_vm );
     po::notify(*M_vm);
 }
 
@@ -376,7 +384,7 @@ ModelBase::ModelBase( std::string const& prefix, std::string const& keyword,
                       ModelBaseRepository const& modelRep,
                       ModelBaseCommandLineOptions const& modelCmdLineOpt )
     :
-    super_type( "Toolboxes", prefix ),
+    super_type( "Toolboxes",keyword/*, prefix*/ ),
     M_worldComm(worldComm),
     M_worldsComm( {worldComm} ),
     M_localNonCompositeWorldsComm( { worldComm } ),
@@ -396,7 +404,9 @@ ModelBase::ModelBase( std::string const& prefix, std::string const& keyword,
     M_scalabilitySave( boption(_name="scalability-save",_prefix=this->prefix(),_vm=this->clovm()) ),
     M_scalabilityReinitSaveFile( boption(_name="scalability-reinit-savefile",_prefix=this->prefix(),_vm=this->clovm()) ),
     M_isUpdatedForUse( false ),
-    M_upload( soption(_name="upload",_prefix=this->prefix(),_vm=this->clovm()), this->repository().rootWithoutNumProc(), M_worldComm )
+    M_upload( soption(_name="upload",_prefix=this->prefix(),_vm=this->clovm()), this->repository().rootWithoutNumProc(), M_worldComm ),
+    M_manageParameterValues( true ),
+    M_manageParameterValuesOfModelProperties( true )
 {
     if (this->clovm().count(prefixvm(this->prefix(),"scalability-path")))
         M_scalabilityPath = soption(_name="scalability-path",_prefix=this->prefix(),_vm=this->clovm());
@@ -509,38 +519,31 @@ ModelBase::tabulateInformations() const
     auto tabInfo = this->tabulateInformations( jsonInfo, TabulateInformationProperties{} );
 
     auto tabRes = TabulateInformationsSections::New();
-    std::string title = (boost::format("Toolbox : %1%")%this->keyword()).str();
+    std::string title = fmt::format("Toolbox::{} - {} ",this->keyword(), "Use Case Study" );
     tabRes->add( title, tabInfo );
 
     return tabRes;
 }
 
-std::shared_ptr<std::ostringstream>
-ModelBase::getInfo() const
-{
-    std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
-    return _ostr;
-}
 void
 ModelBase::printInfo( tabulate_informations_ptr_t const& tabInfos ) const
 {
     if ( this->worldComm().isMasterRank() )
     {
-        std::cout << this->getInfo()->str();
-        std::cout << *tabInfos << std::endl;
+        std::cout << tabInfos->exporterAscii( true ) << std::endl;
     }
 }
 void
 ModelBase::saveInfo( tabulate_informations_ptr_t const& tabInfos ) const
 {
-    std::string filename_ascii = prefixvm(this->keyword(),"informations.txt");
-    std::string filename_adoc = prefixvm(this->keyword(),"informations.adoc");
+    std::string filename_ascii = fmt::format( "{}.information.txt",this->keyword() );
+    std::string filename_adoc = fmt::format( "{}.information.adoc",this->keyword() );
     std::string filepath_ascii = (fs::path(this->rootRepository())/filename_ascii).string();
     std::string filepath_adoc = (fs::path(this->rootRepository())/filename_adoc).string();
     if ( this->worldComm().isMasterRank() )
     {
         std::ofstream file_ascii( filepath_ascii, std::ios::out);
-        file_ascii << this->getInfo()->str();
+        file_ascii << tabInfos->exporterAscii();
         file_ascii.close();
 
         std::ofstream file_adoc( filepath_adoc, std::ios::out);
@@ -618,6 +621,43 @@ ModelBase::upload( std::string const& dataPath ) const
         M_upload.upload( dataPath );
 }
 
+void
+ModelBase::initModelProperties()
+{
+    if ( !M_modelProps )
+    {
+        M_modelProps = std::make_shared<ModelProperties>( this->repository().expr(),this->worldCommPtr(), this->prefix(),this->clovm() );
+        std::vector<std::string> jsonFilenames;
+        if ( countoption( _name="filename",_prefix=this->prefix(),_vm=this->clovm() ) > 0 )
+            jsonFilenames.push_back( soption( _name="filename",_prefix=this->prefix(),_vm=this->clovm() ) );
+        if ( countoption( _name="json.filename",_prefix=this->prefix(),_vm=this->clovm() ) > 0 )
+            for ( std::string const& filename : vsoption( _name="json.filename",_prefix=this->prefix(),_vm=this->clovm() ) )
+                jsonFilenames.push_back( filename );
+        M_modelProps->setup( jsonFilenames );
+    }
+}
+
+void
+ModelBase::setModelProperties( std::string const& filename )
+{
+    M_modelProps = std::make_shared<ModelProperties>( this->repository().expr(),
+                                                      this->worldCommPtr(), this->prefix(),this->clovm() );
+    M_modelProps->setup( filename );
+}
+
+void
+ModelBase::setModelProperties( nl::json const& json )
+{
+    M_modelProps = std::make_shared<ModelProperties>( json, this->repository().expr(),
+                                                      this->worldCommPtr(), this->prefix(),this->clovm() );
+}
+
+void
+ModelBase::addParameterInModelProperties( std::string const& symbolName,double value)
+{
+    if ( M_modelProps )
+        M_modelProps->parameters()[symbolName] = ModelParameter(symbolName,value);
+}
 
 
 } // namespace FeelModels

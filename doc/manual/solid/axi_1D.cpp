@@ -82,7 +82,7 @@ public:
 
 };
 /**
- * Diffussion Advection Reaction Solver
+ * Diffusion Advection Reaction Solver
  *
  * solve \f$-\epsilon \Delta u -\beta\cdot\nabla u + \mu u = f\f$ on \f$\Omega\f$ and \f$u= g\f$ on \f$\Gamma_{in}\f$
  */
@@ -166,7 +166,7 @@ private:
 
     std::shared_ptr<export_type> exporter;
 
-    std::map<std::string,std::pair<boost::timer,double> > timers;
+    std::map<std::string,std::pair<Feel::Timer,double> > timers;
     std::map<std::string,double> stats;
 }; // Elaxi
 
@@ -213,7 +213,7 @@ Elaxi<Order, Entity>::run()
     /*
      * The function space and some associate elements are then defined
      */
-    timers["init"].first.restart();
+    timers["init"].first.start();
     space_ptrtype Xh = space_type::New( mesh );
 
     //Xh->dof()->showMe();
@@ -233,7 +233,7 @@ Elaxi<Order, Entity>::run()
     element_1_type phi1 = Phi.template element<1>();
 
 
-    phi0=vf::project( Xh->template functionSpace<0>(),elements( mesh ), Py() );
+    phi0.on(_range=elements( mesh ), _expr=Py() );
     phi1.zero();
 
 
@@ -281,8 +281,8 @@ Elaxi<Order, Entity>::run()
     LOG(INFO) << "Data Summary:\n";
     size_type pattern = Pattern::COUPLED;
 
-    timers["assembly"].first.restart();
-    auto D = M_backend->newMatrix( Xh, Xh );
+    timers["assembly"].first.start();
+    auto D = M_backend->newMatrix( _test=Xh, _trial=Xh );
     std::cout << "====================Newton========================\n---->Start\n";
     LOG(INFO) << "====================Newton========================\n---->Start\n";
 
@@ -300,10 +300,10 @@ Elaxi<Order, Entity>::run()
 
 
 
-        timers["assembly"].first.restart();
+        timers["assembly"].first.start();
 
         form2( _test=Xh, _trial=Xh, _matrix=D ) =
-            integrate( elements( mesh ), 2.0*(
+            integrate( _range=elements( mesh ), _expr=2.0*(
                            //idt(u1)*id(v1)/Py()
                            idt( u0 )*id( v0 )/Py()
                            +dyt( u0 )*dy( v0 )*Py()
@@ -332,7 +332,7 @@ Elaxi<Order, Entity>::run()
 #endif
 
         form1( _test=Xh, _vector=newt_nl_source_term ) =
-            integrate( elements( mesh ), 2.0*(
+            integrate( _range=elements( mesh ), _expr=2.0*(
                            //idv(phi1)*id(v1)/Py()
                            dyv( phi1 )*dy( v1 )*val( Py() )
                        ) );
@@ -389,7 +389,7 @@ template<int Order, template<uint16_type,uint16_type,uint16_type> class Entity>
 void
 Elaxi<Order, Entity>::exportResults( double time, element_type& U )
 {
-    timers["export"].first.restart();
+    timers["export"].first.start();
 
 
     exporter->step( time )->setMesh( U.functionSpace()->mesh() );

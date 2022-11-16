@@ -50,6 +50,8 @@ BRANCHTAG=$(echo "${BRANCH}" | sed -e 's/\//-/g')
 CONTAINERS=${*:-feelpp-libs}
 echo $CONTAINERS
 
+echo $CR_PAT | docker login ghcr.io -u $CR_LOGIN --password-stdin
+echo "-- registered to ghcr.io..."
 
 for container in ${CONTAINERS}; do
     echo "--- Pushing Container ghcr.io/feelpp/${container}"
@@ -61,6 +63,8 @@ for container in ${CONTAINERS}; do
     echo "--- Pushing ghcr.io/feelpp/${container}:$tag"
 
     if [ "$noop" = "false" ]; then
+        docker push "ghcr.io/feelpp/${container}:$tag";
+        docker push "ghcr.io/feelpp/${container}:$tag";
         docker push "ghcr.io/feelpp/${container}:$tag";
     else
         echo "docker push \"ghcr.io/feelpp/${container}:$tag\"";
@@ -93,6 +97,8 @@ for container in ${CONTAINERS}; do
             echo "--- Pushing ghcr.io/feelpp/${container}:$aliastag"
             if [ "$noop" = "false" ]; then
                 docker tag "ghcr.io/feelpp/${container}:$tag" "ghcr.io/feelpp/${container}:$aliastag";
+                docker push "ghcr.io/feelpp/${container}:$aliastag";
+                docker push "ghcr.io/feelpp/${container}:$aliastag";
                 docker push "ghcr.io/feelpp/${container}:$aliastag";
             else
                 echo "docker tag \"ghcr.io/feelpp/${container}:$tag\" \"ghcr.io/feelpp/${container}:$aliastag\"";

@@ -85,9 +85,14 @@ public:
                        std::string prefixHeat = "heat",
                        std::string prefixElectric = "electric" );
     void init( mesh_ptrtype const& mesh = nullptr );
+    void printAndSaveInfo();
     void solve();
     void exportResults();
-    bool checkResults() const { return M_heatModel->checkResults() && M_electricModel->checkResults(); }
+    bool checkResults() const {
+        bool ch = M_heatModel->checkResults();
+        bool ce = M_electricModel->checkResults();
+        return ch && ce;
+    }
 
     mesh_ptrtype mesh() const { return M_mesh; }
     heat_ptrtype heatModel() const { return M_heatModel; }
@@ -132,8 +137,8 @@ ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::ThermoElectricHDG( std::string p
     M_outputMarker(soption(prefixvm( M_prefix, "output-marker")))
 {
     tic();
-    M_heatModel = heat_type::New(M_prefixHeat, MixedPoissonPhysics::Heat);
-    M_electricModel = electric_type::New(M_prefixElectric, MixedPoissonPhysics::Electric);
+    M_heatModel = heat_type::New(_prefix=M_prefixHeat, _physic=MixedPoissonPhysics::Heat);
+    M_electricModel = electric_type::New(_prefix=M_prefixElectric, _physic=MixedPoissonPhysics::Electric);
     toc("construct");
 }
 
@@ -145,7 +150,7 @@ ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::init( mesh_ptrtype const& mesh )
     if( mesh )
         M_mesh = mesh;
     else
-        M_mesh = loadMesh( new mesh_type );
+        M_mesh = loadMesh( _mesh=new mesh_type );
 
     M_heatModel->setMesh( M_mesh );
     M_heatModel->init();
@@ -159,6 +164,14 @@ ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::init( mesh_ptrtype const& mesh )
 
 template<int Dim, int OrderT, int OrderV, int OrderG>
 void
+ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::printAndSaveInfo()
+{
+    M_electricModel->printAndSaveInfo();
+    M_heatModel->printAndSaveInfo();
+}
+
+template<int Dim, int OrderT, int OrderV, int OrderG>
+void
 ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::updateLinear_Heat( Feel::FeelModels::ModelAlgebraic::DataUpdateLinear & data ) const
 {
     bool buildCstPart = data.buildCstPart();
@@ -166,6 +179,7 @@ ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::updateLinear_Heat( Feel::FeelMod
 
     auto mctx = this->modelContext();
     M_heatModel->updateLinearPDE( data, mctx );
+    auto const& symbolsExpr = mctx.symbolsExpr();
 
     auto F = std::dynamic_pointer_cast<condensed_vector_t<value_type>>(data.rhs());
     auto mesh = M_heatModel->mesh();
@@ -180,8 +194,11 @@ ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::updateLinear_Heat( Feel::FeelMod
         {
             for ( std::string const& matName : M_electricModel->materialsProperties()->physicToMaterials( physicName ) )
             {
+                auto coeff_c = M_electricModel->materialsProperties()->materialProperty( matName, M_electricModel->diffusionCoefficientName() );
+                auto coeff_c_expr = expr( coeff_c.expr(), symbolsExpr );
                 auto const& range = M_electricModel->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
-                blf(1_c) += integrate( _range=range, _expr=gradv(v)*idv(j)*id(phi) );
+                blf(1_c) += integrate( _range=range,
+                                       _expr=inner(idv(M_current),idv(M_current))/coeff_c_expr*id(phi) );
             }
         }
     }
@@ -234,10 +251,10 @@ ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::solve()
         M_temperature = M_heatModel->fieldPotential();
         M_tempFlux = M_heatModel->fieldFlux();
 
-        incrV = normL2( elements(M_mesh), idv(M_potential) - idv(oldPotential) );
-        incrT = normL2( elements(M_mesh), idv(M_temperature) - idv(oldTemperature) );
-        normV = normL2( elements(M_mesh), idv(oldPotential) );
-        normT = normL2( elements(M_mesh), idv(oldTemperature) );
+        incrV = normL2( _range=elements(M_mesh), _expr=idv(M_potential) - idv(oldPotential) );
+        incrT = normL2( _range=elements(M_mesh), _expr=idv(M_temperature) - idv(oldTemperature) );
+        normV = normL2( _range=elements(M_mesh), _expr=idv(oldPotential) );
+        normT = normL2( _range=elements(M_mesh), _expr=idv(oldTemperature) );
         relV = incrV/normV;
         relT = incrT/normT;
 
