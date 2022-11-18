@@ -29,6 +29,7 @@ def offline(config_nirb, N, regulParam=1.e-10):
 
     print(f"[NIRB offline] proc : {rank} Offline Elapsed time = ", res['nirb_offline'])
 
+<<<<<<< Updated upstream
     if feelpp.Environment.isMasterRank():
         file = 'nirbOffline_time_exec.dat'
         WriteVecAppend(file, perf)
@@ -38,12 +39,16 @@ def offline(config_nirb, N, regulParam=1.e-10):
     return res 
 
 def online_error_sampling(config_file, nbSnap, Nsample=50, verbose=True, save=False):
+=======
+def online_error_sampling(config_file, nbSnap, Nsample=50, verbose=False):
+>>>>>>> Stashed changes
 
     nirb = nirbOnline(**config_file)
     nirb.loadData(nbSnap=nbSnap)
 
     errorN = ComputeErrorSampling(nirb, Nsample=Nsample, h1=True)
 
+<<<<<<< Updated upstream
     df = pd.DataFrame(errorN)
     df['N'] = nirb.N 
 
@@ -71,6 +76,28 @@ def online_error_sampling(config_file, nbSnap, Nsample=50, verbose=True, save=Fa
 
 
 def online_time_measure(config_nirb, nbSnap, Nsample=50):
+=======
+    df = pd.DataFrame(errorN) 
+    file = Path(f"errors{Nsample}Params.csv")
+    file.parent.mkdir(parents=True, exist_ok=True)
+    df.to_csv(file, index=False)
+    if verbose:    
+        print(f"[NIRB online] Dataframe saved in {file}")
+
+        print("[NIRB online] all computed errors ")
+        data_mean = df.mean(axis=0)
+        print("[NIRB online] Mean of errors ")
+        print(data_mean)
+        data_min = df.min(axis=0)
+        print("[NIRB online] Min of errors ")
+        print(data_min)
+        data_max = df.max(axis=0)
+        print("[NIRB online] Max of errors ")
+        print(data_max)
+
+
+def online_time_measure(config_nirb, nbSnap):
+>>>>>>> Stashed changes
     
     nirb = nirbOnline(**config_nirb)
     nirb.loadData(nbSnap=nbSnap)
@@ -131,7 +158,11 @@ if __name__ == '__main__':
         
     # Ns = sys.argv[1:]
     # Ns = args.N 
+<<<<<<< Updated upstream
     Ns = [1, 2, 4, 6, 10, 12, 14, 16, 20, 25, 30, 35, 40, 45, 50] # number of basis functions 
+=======
+    Ns = [1, 2, 4, 6, 10, 12, 14, 16, 20, 25, 30, 35, 40, 45, 50]
+>>>>>>> Stashed changes
     Ns = [1, 2]
 
     save = True 
@@ -140,6 +171,7 @@ if __name__ == '__main__':
         N = int(N)
         print("\n\n-----------------------------")
         print(f"[NIRB] Test with N = {N}")
+<<<<<<< Updated upstream
         resOffline = offline(config_nirb, N, 1.e-10)
         online_error_sampling(config_nirb, N, Nsample=30, verbose=True)
         resOnline = online_time_measure(config_nirb, N, Nsample=30)
@@ -155,3 +187,8 @@ if __name__ == '__main__':
                     header=False
                 df.to_csv(file, mode='a', index=False, header=header)
 
+=======
+        offline(config_nirb, N)
+        # online_error_sampling(config_nirb, N)
+        online_time_measure(config_nirb, N)
+>>>>>>> Stashed changes

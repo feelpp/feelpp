@@ -501,6 +501,11 @@ if __name__ == "__main__":
     plot_dataFrame(l2df)
     compare_dataStats(l2df, keys='Mean')
 
+    # compare_dataStats(l2df, keys='Mean', norm='l2')
+    # compare_dataStats(l2dfRel, keys='Mean', norm='l2')
+    
+    # compare_dataStats(h1df, keys='Max', norm='h1')
+    # compare_dataStats(h1df, keys='Min', norm='h1')
     # %%
     ## Tronctae error datas into N parameter (N<=50)
     N = 5
