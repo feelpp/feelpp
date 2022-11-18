@@ -70,13 +70,13 @@ def online_error_sampling(config_file, nbSnap, Nsample=50, verbose=True, save=Fa
             print(data_max)
 
 
-def online_time_measure(config_nirb, nbSnap):
+def online_time_measure(config_nirb, nbSnap, Nsample=50):
     
     nirb = nirbOnline(**config_nirb)
     nirb.loadData(nbSnap=nbSnap)
 
     Dmu = nirb.Dmu
-    Ns = 50
+    Ns = Nsample
     s = Dmu.sampling()
     s.sampling(Ns, 'log-random')
     mus = s.getVector()
@@ -132,17 +132,17 @@ if __name__ == '__main__':
     # Ns = sys.argv[1:]
     # Ns = args.N 
     Ns = [1, 2, 4, 6, 10, 12, 14, 16, 20, 25, 30, 35, 40, 45, 50] # number of basis functions 
-    # Ns = [1, 2]
+    Ns = [1, 2]
 
-    save = False 
+    save = True 
 
     for N in Ns:
         N = int(N)
         print("\n\n-----------------------------")
         print(f"[NIRB] Test with N = {N}")
-        resOffline = offline(config_nirb, N, 1.e-1)
-        online_error_sampling(config_nirb, N, Nsample=50, verbose=True)
-        resOnline = online_time_measure(config_nirb, N)
+        resOffline = offline(config_nirb, N, 1.e-10)
+        online_error_sampling(config_nirb, N, Nsample=30, verbose=True)
+        resOnline = online_time_measure(config_nirb, N, Nsample=30)
 
         if save:
             if feelpp.Environment.isMasterRank():
