@@ -95,7 +95,7 @@ feelpp/feelpp-toolboxes <5>
 mpirun --bind-to core -np 10 feelpp_toolbox_fsi --case "github:{path:toolboxes/fsi/cases/TurekHron}"
 ----
 
-.Explantion of the command line to execute feelpp_toolbox_fsi
+.Explanation of the command line to execute feelpp_toolbox_fsi
 ----
 mpirun --bind-to core <1>
   -np 10 <2>

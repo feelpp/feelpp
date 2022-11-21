@@ -95,7 +95,7 @@ feelpp/feelpp-toolboxes <5>
 mpirun --bind-to core -np 10 feelpp_toolbox_heatfluid --case "github:{path:toolboxes/heatfluid/cases/NaturalConvection/cavity}"
 ----
 
-.Explantion of the command line to execute feelpp_toolbox_heatfluid
+.Explanation of the command line to execute feelpp_toolbox_heatfluid
 ----
 mpirun --bind-to core <1>
   -np 10 <2>

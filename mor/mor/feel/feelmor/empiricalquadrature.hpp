@@ -194,7 +194,7 @@ EmpiricalQuadrature<RangeType>::saveDatabase()
     }
     Environment::worldComm().barrier();
     dbFilenamePath /= "db_" + std::to_string(Environment::rank());
-    std::ofstream os(dbFilenamePath, std::ios::binary);
+    std::ofstream os(dbFilenamePath.string(), std::ios::binary);
     boost::archive::binary_oarchive oar(os);
     oar << M_indexes;
     oar << M_weights;
@@ -208,7 +208,7 @@ EmpiricalQuadrature<RangeType>::loadDatabase()
     dbFilenamePath /= "db_" + std::to_string(Environment::rank());
     if( fs::exists(dbFilenamePath) )
     {
-        std::ifstream is(dbFilenamePath, std::ios::binary);
+        std::ifstream is(dbFilenamePath.string(), std::ios::binary);
         boost::archive::binary_iarchive iar(is);
         iar >> M_indexes;
         iar >> M_weights;
