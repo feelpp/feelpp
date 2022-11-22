@@ -147,17 +147,16 @@ if __name__ == '__main__':
     toolboxType = cfg['nirb']['toolboxType']
     e = init_feelpp_environment(toolboxType, config_file)
 
-    model_path = feelpp.Environment.expand(cfg['nirb']['model_path'])
-
-    doGreedy = cfg['nirb']['greedy-generation']
-    doRectification = cfg['nirb']['rectification']
-    rectPath = ["noRect", "Rect"][doRectification]
-    greedyPath = ["noGreedy", "Greedy"][doGreedy]
-    RESPATH = f"results/{rectPath}/{greedyPath}"
-
     nirb_file = feelpp.Environment.expand(cfg['nirb']['filename'])
     config_nirb = feelpp.readJson(nirb_file)['nirb']
     toolboxType = config_nirb['toolboxType']
+
+    model_path = config_nirb['model_path']
+    doGreedy = config_nirb['greedy-generation']
+    doRectification = config_nirb['doRectification']
+    rectPath = ["noRect", "Rect"][doRectification]
+    greedyPath = ["noGreedy", "Greedy"][doGreedy]
+    RESPATH = f"results/{rectPath}/{greedyPath}"
 
     nbSnap=args.N
     if nbSnap==None:
@@ -166,7 +165,7 @@ if __name__ == '__main__':
     # Ns = sys.argv[1:]
     # Ns = args.N 
     Ns = [1, 2, 4, 6, 10, 12, 14, 16, 20, 25, 30, 35, 40, 45, 50] # number of basis functions 
-    Ns = [1, 2]
+    Ns = [1, 6]
 
     save = True 
 
@@ -203,5 +202,5 @@ if __name__ == '__main__':
     if feelpp.Environment.isMasterRank():
         print("=============================================")
         print(f"Run test_perf_nirb done, doRectification : {doRectification}, doGreedy : {doGreedy}")
-        print(f"Result are stored in : {RESPATH}")
+        print(f"Result are stored in : {os.path.abspath(RESPATH)}")
         print("=============================================")

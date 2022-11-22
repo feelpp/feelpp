@@ -18,7 +18,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     config_file = args.config_file
-    RESPATH = args.outdir if args.outdir is not None else "./"
+    outdir = args.outdir
 
     cfg = feelpp.readCfg(config_file)
     toolboxType = cfg['nirb']['toolboxType']
@@ -32,12 +32,18 @@ if __name__ == "__main__":
     if nbSnap==None:
         nbSnap = config_nirb['nbSnapshots']
 
+    if outdir is None:
+        RESPATH = config_nirb["outdir"]
+    else:
+        RESPATH = outdir
+
     start= time()
     
     nirb_on = nirbOnline(**config_nirb)
 
     mu = nirb_on.Dmu.mumin()
-    nirb_on.loadData(path=RESPATH, nbSnap=nbSnap)
+    err = nirb_on.loadData(path=RESPATH, nbSnap=nbSnap)
+    assert err == 0, "Error while loading data"
     uHh = nirb_on.getOnlineSol(mu)
 
     finish = time()
