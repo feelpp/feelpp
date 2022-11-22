@@ -118,6 +118,7 @@
         "doRectification": true,
         "doBiorthonormal": false,
         "nbSnapshots": 10,
-        "greedy-generation": true
+        "greedy-generation": true,
+        "outdir": "results/rect/greedy"
     }
 }

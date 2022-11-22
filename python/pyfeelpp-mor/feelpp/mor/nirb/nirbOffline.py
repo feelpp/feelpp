@@ -34,9 +34,7 @@ if __name__ == "__main__":
         nbSnap = config_nirb['nbSnapshots']
 
     if outdir is None:
-        r = ["noRect","Rect"][doRectification]
-        g = ["noGreedy","Greedy"][doGreedy]
-        RESPATH = f"RESULTS/{r}/{g}"
+        RESPATH = config_nirb["outdir"]
     else:
         RESPATH = outdir
 
