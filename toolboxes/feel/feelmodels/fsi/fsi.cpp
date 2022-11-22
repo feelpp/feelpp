@@ -459,7 +459,7 @@ FSI<FluidType,SolidType>::init()
 
     this->log("FSI","init","fsi functionspace [solid] done");
 
-    // save if reuse prec option at the begining
+    // save if reuse prec option at the beginning
     M_reusePrecOptFluid = M_fluidModel->backend()->reusePrec();
     M_reuseJacOptFluid = M_fluidModel->backend()->reuseJac();
     M_reuseJacRebuildAtFirstNewtonStepOptFluid = M_fluidModel->backend()->reuseJacRebuildAtFirstNewtonStep();
@@ -617,7 +617,7 @@ FSI<FluidType,SolidType>::initCouplingRobinNeumannGeneralized()
 #if 0
         else if ( true )
         {
-            // compute algebraic counterpart of the operator B (my work V2 but not enought accurate)
+            // compute algebraic counterpart of the operator B (my work V2 but not accurate enough)
             auto const& u = this->solidModel()->fieldDisplacement();
             auto massMatrixRestrictFSI = backend()->newMatrix(_test=Vh,_trial=Vh);
             form2(_test=Vh,_trial=Vh,_matrix=massMatrixRestrictFSI ) =
@@ -656,7 +656,7 @@ FSI<FluidType,SolidType>::initCouplingRobinNeumannGeneralized()
         }
         else
         {
-            // compute algebraic counterpart of the operator B (my work V1 but not enought accurate)
+            // compute algebraic counterpart of the operator B (my work V1 but not accurate enough)
             auto vecDiagMassLumpedRestrictedFSI = Vh->element();
             auto markedDofsOnFSI = Vh->element();
             for ( size_type k : dofsIdOnFSI )
