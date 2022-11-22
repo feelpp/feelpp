@@ -7,81 +7,91 @@ from pathlib import Path
 from nirb_perf import *
 import argparse
 
+from mpi4py import MPI
+comm = MPI.COMM_WORLD
+rank = comm.Get_rank()
 
-
-def offline(nirb_config, RESPATH, doGreedy, N, Xi_train=None):
-    """Generated the reduced basis for the given N
-       Generated a file nirbOffline_time_exec.dat containing the time to compute the reduced basis,
-         according to the number of samples N
+def offline(config_nirb, RESPATH, doGreedy, N, Xi_train=None, regulParam=1e-10):
+    """Run the offline phase of the NIRB method
 
     Args:
-    -----
-        nirb_config (dict): configuration of the NIRB
+        config_nirb (dict): configuration of the NIRB
         RESPATH (str): path to the results
         doGreedy (bool): if True, the greedy algorithm is used to generate the reduced basis
         N (int): number of snapshots (limit number if greedy algo is used)
-
-    Return:
-    --------
-        nirb (nirbOnline): NIRB object
+        Xi_train (list, optional): Set of parameters to train. Defaults to None.
+        regulParam (_type_, optional): _description_. Defaults to 1e-10.
     """
 
     start = time.time()
-    nirb = nirbOffline(**nirb_config, initCoarse=doGreedy)
-
+    nirb = nirbOffline(**config_nirb, initCoarse=doGreedy)
     nirb.generateOperators(coarse=True)
     if doGreedy:
         nirb.initProblemGreedy(500, 1e-5, Nmax=N, computeCoarse=True, samplingMode="random")
     else:
         nirb.initProblem(N, Xi_train=Xi_train)
-    nirb.generateReducedBasis(regulParam=1.e-10)
+    nirb.generateReducedBasis(regulParam=regulParam)
     finish = time.time()
 
     nirb.saveData(RESPATH, force=True)
 
-    perf = [nirb.N, finish-start]
-    file = RESPATH + '/nirbOffline_time_exec.dat'
-    WriteVecAppend(file, perf)
+    perf = [N, finish-start]
+    
+    res = {}
+    res['N'] = [N]
+    res['nirb_offline'] = [finish-start]
 
-    print(f"[NIRB] Offline Elapsed time = ", finish-start)
-    print(f"[NIRB] Offline part Done !")
-    return nirb
+    print(f"[NIRB offline] proc : {rank} Offline Elapsed time = ", res['nirb_offline'])
+
+    if feelpp.Environment.isMasterRank():
+        print(f"[NIRB] Offline Elapsed time = ", finish-start)
+        print(f"[NIRB] Offline part Done !")
+    
+    return res 
 
 
-def online_error_sampling(nirb, RESPATH, Xi_test=None):
+def online_error_sampling(nirb, RESPATH, Nsample=50, Xi_test=None, verbose=True, save=True):
     """Compute the error between the toolbox solution and the NIRB solution for a sampling of parameters
        Generates the file errorParams/errors${N}.csv containing the errors for each parameter, for a given value of N,
           corresponding to the size of the reduced basis.
-
     Args:
     -----
-        nirb_config (nirbOnline): configuration of the NIRB
+        nirb (nirbOnline): NIRB online object
         RESPATH (str): path to the results
+        Nsample (int, optional): number of parameters to sample. Defaults to 50.
         Xi_test (list): list of parameters to test. Default is None, in which case the parameters are generated randomly
+        verbose (bool, optional): if True, print the errors. Defaults to True.
+        save (bool, optional): if True, save the errors in a csv file. Defaults to False.
     """
 
     Nsample = 50
     errorN = ComputeErrorSampling(nirb, Nsample=Nsample, Xi_test=Xi_test, h1=True)
 
-    df = pd.DataFrame(errorN)
-    file = Path(f"{RESPATH}/errorParams/errors{nirb.N}.csv")
-    file.parent.mkdir(parents=True, exist_ok=True)
-    df.to_csv(file, index=False)
-    print(f"[NIRB online] Dataframe saved in {file}")
+    df = pd.DataFrame(errorN) 
+    df['N'] = nirb.N 
 
-    print("[NIRB online] all computed errors ")
-    data_mean = df.mean(axis=0)
-    print("[NIRB online] Mean of errors ")
-    print(data_mean)
-    data_min = df.min(axis=0)
-    print("[NIRB online] Min of errors ")
-    print(data_min)
-    data_max = df.max(axis=0)
-    print("[NIRB online] Max of errors ")
-    print(data_max)
+    if save:
+        if feelpp.Environment.isMasterRank():    
+            file = Path(f"{RESPATH}/errors{Nsample}Params.csv")
+            header = not os.path.isfile(file)
+            df.to_csv(file, mode='a', index=False, header=header)
+            print(f"[NIRB online] Dataframe saved in {file}")
+        
+    if verbose:
+        if feelpp.Environment.isMasterRank():
+            print("[NIRB online] all computed errors ")
+            data_mean = df.mean(axis=0)
+            print("[NIRB online] Mean of errors ")
+            print(data_mean)
+            data_min = df.min(axis=0)
+            print("[NIRB online] Min of errors ")
+            print(data_min)
+            data_max = df.max(axis=0)
+            print("[NIRB online] Max of errors ")
+            print(data_max)
 
 
-def online_time_measure(nirb, RESPATH):
+def online_time_measure(nirb, Nsample=50):
     """Measures the online time to compute solution, compared to the time taken by the toolbox
        Generates the file nirbOnline_time_exec.dat containing the time to compute the NIRB solution and the toolbox solution,
            according to the number of samples N
@@ -89,10 +99,10 @@ def online_time_measure(nirb, RESPATH):
     Args:
     -----
         nirb_config (nirbOnline): nirb object
-        RESPATH (str): path to the results
+        Nsample (int, optional): number of parameters to sample. Defaults to 50.
     """
     Dmu = nirb.Dmu
-    Ns = 20
+    Ns = Nsample
     s = Dmu.sampling()
     s.sampling(Ns, 'log-random')
     mus = s.getVector()
@@ -103,7 +113,7 @@ def online_time_measure(nirb, RESPATH):
         uh = nirb.getToolboxSolution(nirb.tbFine, mu)
     time_toolbox_finish = time.time()
     time_toolbox = (time_toolbox_finish - time_toolbox_start) / Ns
-    print(f"[NIRB online] Average time to compute {Ns} solutions with toolbox = ", time_toolbox)
+    print(f"[NIRB online] Time to compute {Ns} solutions with toolbox = ", time_toolbox)
 
     print("[NIRB online] Start NIRB online time measure")
     time_nirb_start = time.time()
@@ -111,10 +121,18 @@ def online_time_measure(nirb, RESPATH):
         uHh = nirb.getOnlineSol(mu)
     time_nirb_finish = time.time()
     time_nirb = (time_nirb_finish - time_nirb_start) / Ns
-    print(f"[NIRB online] Average time to compute {Ns} solutions with NIRB = ", time_nirb)
 
-    WriteVecAppend(RESPATH+'/nirbOnline_time_exec.dat', [nirb.N, time_toolbox, time_nirb])
+    res = {}
+    res['N'] = [nirb.N]
+    res['nirb_online'] = [time_nirb]
+    res['toolbox'] = [time_toolbox]
 
+    if feelpp.Environment.isMasterRank():
+        print(f"[NIRB online] Time to compute {Ns} solutions with NIRB = ", time_nirb)
+
+    return res
+
+    
 
 if __name__ == '__main__':
 
@@ -147,9 +165,10 @@ if __name__ == '__main__':
         
     # Ns = sys.argv[1:]
     # Ns = args.N 
-    Ns = [1, 2, 4, 6, 10, 12, 14, 16, 20, 25, 30, 35, 40, 45, 50]
-    # Ns = [1, 2]
+    Ns = [1, 2, 4, 6, 10, 12, 14, 16, 20, 25, 30, 35, 40, 45, 50] # number of basis functions 
+    Ns = [1, 2]
 
+    save = True 
 
     Dmu = loadParameterSpace(model_path)
     Xi_train = generatedAndSaveSampling(Dmu, 250, samplingMode="random")
@@ -165,12 +184,21 @@ if __name__ == '__main__':
         N = int(N)
         print("\n\n-----------------------------")
         print(f"[NIRB] Test with N = {N}")
-        nirb = offline(config_nirb, RESPATH, doGreedy, N, Xi_train=Xi_train)
+        resOffline = offline(config_nirb, RESPATH, doGreedy, N, Xi_train=None, regulParam=1e-10)
         nirb_on = nirbOnline(**config_nirb)
         err = nirb_on.loadData(path=RESPATH)
         assert err == 0, "loadData failed"
-        online_error_sampling(nirb_on, RESPATH, Xi_test=Xi_test)
-        online_time_measure(nirb_on, RESPATH)
+        online_error_sampling(nirb_on, RESPATH, Nsample=50, Xi_test=None, verbose=True, save=True)
+        resOnline = online_time_measure(nirb_on, Nsample=50)
+
+        if save:
+            if feelpp.Environment.isMasterRank():
+                res = resOnline
+                res['nirb_offline'] = resOffline['nirb_offline']
+                df = pd.DataFrame(res) 
+                file = Path(f"{RESPATH}/nirb_time_exec.csv")
+                header = not os.path.isfile(file)
+                df.to_csv(file, mode='a', index=False, header=header)
 
     if feelpp.Environment.isMasterRank():
         print("=============================================")

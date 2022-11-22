@@ -70,8 +70,9 @@ if __name__ == "__main__":
 
     finish = time.time()
 
-    print("Is L2 orthonormalized ?", nirb_off.checkL2Orthonormalized())
-    print("Is H1 orthonormalized ? ", nirb_off.checkH1Orthonormalized())
+    if feelpp.Environment.isMasterRank():
+        print("Is L2 orthonormalized ?", nirb_off.checkL2Orthonormalized())
+        print("Is H1 orthonormalized ? ", nirb_off.checkH1Orthonormalized())
 
     perf = []
     perf.append(nbSnap)
