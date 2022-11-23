@@ -13,6 +13,7 @@ import feelpp.toolboxes.heat as heat
 import feelpp.toolboxes.fluid as fluid
 import feelpp.interpolation as fi
 import math 
+import pathlib
 
 
 import os
@@ -24,7 +25,7 @@ size = comm.Get_size()
 
 class ToolboxModel():
 
-    def __init__(self, dim, H, h, toolboxType, model_path, geo_path, order=1, **kwargs) -> None:
+    def __init__(self, dim, H, h, toolboxType, model_path, finemesh_path, coarsemesh_path=None, order=1, **kwargs) -> None:
         """Initialize the toolbox model class
 
         Args:
@@ -33,7 +34,8 @@ class ToolboxModel():
             h (float): fine mesh size
             toolboxType (str): toolbox used (heat or fluid)
             model_path (str): path to json file
-            geo_path (str): path to geo file
+            finemesh_path (str): path to fine mesh file (if geo file, this will be the same as coarse mesh file)
+            coarsemesh_path(str): path to coarse mesh file. Defaults to None. 
             method (str, optional): method used to generate the basis. Defaults to "POD".
             order (int, optional): order of discretization. Defaults to 1.
             doRectification (bool, optional): set rectification. Defaults to True.
@@ -47,7 +49,14 @@ class ToolboxModel():
         self.toolboxType = toolboxType
         assert self.toolboxType in ["heat", "fluid"], "toolboxType must be 'heat' or 'fluid'"
         self.model_path = feelpp.Environment.expand(model_path)
-        self.geo_path = feelpp.Environment.expand(geo_path)
+        self.finemesh_path = feelpp.Environment.expand(finemesh_path)
+
+        if pathlib.Path(self.finemesh_path).suffix==".geo" :
+            self.coarsemesh_path = self.finemesh_path
+        else :
+            self.coarsemesh_path = coarsemesh_path 
+
+        assert self.coarsemesh_path != None, f"Set coarse mesh path"
 
         self.tbCoarse  = None
         self.tbFine    = None
@@ -99,12 +108,12 @@ class ToolboxModel():
     def initCoarseToolbox(self):
         """Initialize the rectification problem
         """
-        self.tbCoarse = self.setToolbox(self.H)
+        self.tbCoarse = self.setToolbox(self.H,mesh_path=self.coarsemesh_path)
         if feelpp.Environment.isMasterRank():
             print(f"[NIRB] Number of nodes on the coarse mesh : {self.tbCoarse.mesh().numGlobalPoints()}")
 
 
-    def setToolbox(self, hsize):
+    def setToolbox(self, hsize, mesh_path=None):
         """Set up the toolbox object for the given model and mesh
 
         Args:
@@ -113,10 +122,10 @@ class ToolboxModel():
         Returns:
             Toolbox: toolbox object
         """
-
+        if mesh_path==None: mesh_path=self.finemesh_path 
         # load meshes
         mesh_ = feelpp.mesh(dim=self.dimension, realdim=self.dimension)
-        mesh = feelpp.load(mesh_, self.geo_path, hsize)
+        mesh = feelpp.load(mesh_, mesh_path, hsize)
 
         # set mesh and model properties
         if self.toolboxType == "heat":
@@ -217,7 +226,7 @@ class nirbOffline(ToolboxModel):
             h (float): fine mesh size
             toolboxType (str): toolbox used (heat or fluid)
             model_path (str): path to json file
-            geo_path (str): path to geo file
+            finemesh_path (str): path to fine mesh file (if geo file, this will be the same as coarse mesh file)
             method (str, optional): method used to generate the basis. Defaults to "POD".
             order (int, optional): order of discretization. Defaults to 1.
             doRectification (bool, optional): set rectification. Defaults to True.
@@ -601,7 +610,7 @@ class nirbOnline(ToolboxModel):
             h (float): fine mesh size
             toolboxType (str): toolbox used (heat or fluid)
             model_path (str): path to json file
-            geo_path (str): path to geo file
+            finemesh_path (str): path to fine mesh file (if geo file, this will be the same as coarse mesh file)
             method (str, optional): method used to generate the basis. Defaults to "POD".
             order (int, optional): order of discretization. Defaults to 1.
             doRectification (bool, optional): set rectification. Defaults to True.
