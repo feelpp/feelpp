@@ -61,6 +61,15 @@ foreach (test 2d 3d)
       ]===]
 endforeach()
 
+#[===[
+add_test (NAME feelpp_mor_python-tests-reducedbasis-rbtime
+      COMMAND ${CMAKE_COMMAND} -E env
+      LD_LIBRARY_PATH=${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}:$ENV{LD_LIBRARY_PATH}
+      PYTHONPATH=${CMAKE_INSTALL_PREFIX}/${FEELPP_PYTHON_MODULE_PATH}
+      ${PYTHON_EXECUTABLE} -m pytest test_reducedbasis.py -s -vv -k time
+      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+]===]
 # test_eim
 foreach( test 2d 3d )
       add_test (NAME feelpp_mor_python-tests-eim-${test}

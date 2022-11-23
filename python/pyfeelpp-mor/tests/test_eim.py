@@ -271,6 +271,7 @@ def test_solution(casefile, name, dim, init_feelpp):
 
         F_eim = AD.computeF(betaF[0][0])
         F_tb = assembleDEIM(mu).to_petsc().vec()
+        F_tb.assemble()
 
         A_eim = AD.computeA(betaA[0])
         A_tb = assembleMDEIM(mu).to_petsc().mat()
@@ -278,13 +279,15 @@ def test_solution(casefile, name, dim, init_feelpp):
 
         heatBox.solve()
         u_tb = heatBox.fieldTemperature().to_petsc().vec()
-        # u_tb = ES.solve(A_tb, F_tb)
+        u_tb2 = ES.solve(A_tb, F_tb)
         u_eim = ES.solve(A_eim, F_eim)
         diffU = u_eim - u_tb
+        diffU2 = u_eim - u_tb2
         nRelU = diffU.norm()/u_tb.norm()
+        nRelU2 = diffU2.norm()/u_tb2.norm()
 
         if rank == 0:
-            print(f"|{mu} : {nRelU:.2e}")
+            print(f"|{mu} : {nRelU:.2e} {nRelU2:.2e}, tb {u_tb.norm():.2e}, tb2 {u_tb2.norm():.2e} eim {u_eim.norm():.2e}")
 
         assert(nRelU < 1e-10)
 
@@ -327,9 +330,9 @@ def test_output(casefile, name, dim, init_feelpp):
 
         for k, o in enumerate(output_names):
             l_eim = AD.computeLK(betaF[k+1][0], k+1)    # k = 0 corresponds to rhs
-            output_tbeim = Fq[k+1][0].dot(u_eim)
-            output_tbtb = Fq[k+1][0].dot(u_tb)
-            output_eimtb = l_eim.dot(u_tb)
+            output_tbeim = Fq[k+1][0].dot(u_eim)        # vector of toolbox * solution of eim
+            output_tbtb = Fq[k+1][0].dot(u_tb)          # vector of toolbox * solution of toolbox
+            output_eimtb = l_eim.dot(u_tb)              # vector of eim * solution of toolbox
             output_eimeim = l_eim.dot(u_eim)            # This is what we want to compare to the toolbox
 
             nRelS = abs(output_eimeim - outputs_tb[o])/outputs_tb[o]

@@ -23,6 +23,7 @@ cases = [
          (('testcase', 'square/2d', 'testcase2d.cfg', 2, False), 'testcase-2d'),
          (('testcase', 'square/3d', 'testcase3d.cfg', 3, False), 'testcase-3d'),
          (('testcase', 'thermal-fin/2d', 'thermal-fin.cfg', 2, False), 'thermal-fin-2d'),
+         (('testcase', 'thermal-fin/2d', 'thermal-fin.cfg', 2, True), 'thermal-fin-2d-time'),
          (('testcase', 'thermal-fin/3d', 'thermal-fin.cfg', 3, False), 'thermal-fin-3d'),
         ]
 cases_params, cases_ids = list(zip(*cases))

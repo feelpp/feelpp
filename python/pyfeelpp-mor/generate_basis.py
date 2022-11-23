@@ -194,12 +194,6 @@ def generate_basis(worldComm=None, config=None):
     Dmu = model.parameterSpace()
 
 
-    def listOfParams(n):
-        mus = []
-        for _ in range(n):
-            mus.append(Dmu.element(True, True))
-        return mus
-
     mubar = Dmu.element(True, False)
     mubar.setParameters(default_parameter)
     if worldComm.isMasterRank():
@@ -225,7 +219,9 @@ def generate_basis(worldComm=None, config=None):
         if worldComm.isMasterRank():
             print("Size of the finite element problem :", rb.NN)
 
-        mus = listOfParams(config.size)
+        s = Dmu.sampling()
+        s.sampling(config.size, "random")
+        mus = s.getVector()
         if worldComm.isMasterRank():
             print("[generate_basis] Start generation of the basis using algo", algos_names[config.algo])
 
