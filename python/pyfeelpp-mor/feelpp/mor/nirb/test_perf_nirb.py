@@ -43,7 +43,6 @@ def offline(config_nirb, RESPATH, doGreedy, N, Xi_train=None, regulParam=1e-10):
 
     print(f"[NIRB offline] proc : {rank} Offline Elapsed time = ", res['nirb_offline'])
 
-<<<<<<< Updated upstream
     if feelpp.Environment.isMasterRank():
         print(f"[NIRB] Offline Elapsed time = ", finish-start)
         print(f"[NIRB] Offline part Done !")
@@ -165,7 +164,6 @@ if __name__ == '__main__':
         
     # Ns = sys.argv[1:]
     # Ns = args.N 
-<<<<<<< Updated upstream
     Ns = [1, 2, 4, 6, 10, 12, 14, 16, 20, 25, 30, 35, 40, 45, 50] # number of basis functions 
     Ns = [1, 2]
 
