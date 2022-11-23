@@ -131,7 +131,7 @@ public :
     ALE( ALE const& ) = default;
 
     /**
-     * desctructor
+     * destructor
      */
     ~ALE() {}
 

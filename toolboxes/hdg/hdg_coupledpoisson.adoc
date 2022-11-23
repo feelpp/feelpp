@@ -95,7 +95,7 @@ feelpp/feelpp-toolboxes <5>
 mpirun --bind-to core -np 10 feelpp_toolbox_hdg_coupledpoisson --case "github:{path:toolboxes/hdg/cases/coupledpoisson/1-linear/}"
 ----
 
-.Explantion of the command line to execute feelpp_toolbox_hdg_coupledpoisson
+.Explanation of the command line to execute feelpp_toolbox_hdg_coupledpoisson
 ----
 mpirun --bind-to core <1>
   -np 10 <2>
