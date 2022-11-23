@@ -107,6 +107,7 @@
         "csignal": "cpp",
         "format": "cpp",
         "*.in": "cpp",
+        "*.py.in": "python",
         "texture": "cpp"
     },
     "C_Cpp.configurationWarnings": "Disabled",

@@ -559,7 +559,7 @@ std::vector<uint16_type>
 DofRelationshipMap<SpaceType1,SpaceType2>::mapTrianglePoints2Face(std::vector<uint16_type> const & mapPoint)
 {
     std::vector<uint16_type> mapFaces(1);// 1 faces
-    mapFaces[0]= 0; // trival : only 1 face
+    mapFaces[0]= 0; // trivial: only 1 face
 
     return mapFaces;
 }
@@ -569,7 +569,7 @@ std::vector<uint16_type>
 DofRelationshipMap<SpaceType1,SpaceType2>::mapQuadranglePoints2Face(std::vector<uint16_type> const & mapPoint)
 {
     std::vector<uint16_type> mapFaces(1);// 1 faces
-    mapFaces[0]= 0; // trival : only 1 face
+    mapFaces[0]= 0; // trivial: only 1 face
 
     return mapFaces;
 }

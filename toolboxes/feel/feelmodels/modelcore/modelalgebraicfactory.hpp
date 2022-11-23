@@ -166,14 +166,14 @@ namespace FeelModels
         void
         attachNearNullSpace( int k, NullSpace<value_type> const& nearNullSpace );
 
-        //! attach a sparse matrix to the precondtioner
+        //! attach a sparse matrix to the preconditioner
         void attachAuxiliarySparseMatrix( std::string const& key,sparse_matrix_ptrtype const& mat );
         //! return true if a sparse matrix has been attached
         bool hasAuxiliarySparseMatrix( std::string const& key ) const;
         //! return  a sparse matrix attached
         sparse_matrix_ptrtype const& auxiliarySparseMatrix( std::string const& key ) const;
 
-        //! attach operator PCD to the precondtioner
+        //! attach operator PCD to the preconditioner
         void attachOperatorPCD( std::string const& key, typename preconditioner_type::operator_pcdbase_ptrtype const& opPCD );
 
         //---------------------------------------------------------------------------------------------------------------//
@@ -199,7 +199,7 @@ namespace FeelModels
         //void rebuildCstLinearPDE( vector_ptrtype U );
 
 
-        //! apply assembly of linear operators rhs and lhs (can be usefull for an external use)
+        //! apply assembly of linear operators rhs and lhs (can be useful for an external use)
         void applyAssemblyLinear(const vector_ptrtype& U, sparse_matrix_ptrtype& lhs, vector_ptrtype& rhs,
                                  std::vector<std::string> const& infos = std::vector<std::string>(),
                                  bool applyDofElimination = true ) const;

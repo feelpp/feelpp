@@ -12,6 +12,8 @@ import numpy as np
 import feelpp.toolboxes.heat as heat
 import feelpp.toolboxes.fluid as fluid
 import feelpp.interpolation as fi
+from tqdm import tqdm
+from random import choices
 import math 
 import pathlib
 
@@ -61,7 +63,9 @@ class ToolboxModel():
         self.tbCoarse  = None
         self.tbFine    = None
 
-        self.Xh = None
+        self.Xh = None          # fine function space
+
+        self.outdir = None      # output directory
 
         self.initModel()
         if feelpp.Environment.isMasterRank():
@@ -109,6 +113,7 @@ class ToolboxModel():
         """Initialize the rectification problem
         """
         self.tbCoarse = self.setToolbox(self.H,mesh_path=self.coarsemesh_path)
+        self.XH = feelpp.functionSpace(mesh=self.tbCoarse.mesh(), order=self.order)
         if feelpp.Environment.isMasterRank():
             print(f"[NIRB] Number of nodes on the coarse mesh : {self.tbCoarse.mesh().numGlobalPoints()}")
 
@@ -212,12 +217,14 @@ class ToolboxModel():
         info["order"] = self.order
         info["toolboxType"] = self.toolboxType
         info["dimension"] = self.dimension
+        if self.outdir is not None:
+            info["outdir"] = self.outdir
         return info
 
 
 class nirbOffline(ToolboxModel):
 
-    def __init__(self, method="POD", doRectification=True, **kwargs) -> None:
+    def __init__(self, method="POD", doRectification=True, initCoarse=False, **kwargs) -> None:
         """Initialize the NIRB class
 
         Args:
@@ -230,6 +237,7 @@ class nirbOffline(ToolboxModel):
             method (str, optional): method used to generate the basis. Defaults to "POD".
             order (int, optional): order of discretization. Defaults to 1.
             doRectification (bool, optional): set rectification. Defaults to True.
+            initCoarse (bool, optional): initialize the coarse toolbox. Defaults to False.
             doBiorthonormal (bool, optional): get bi-orthonormalization of reduced basis. Defaults to False.
         """
 
@@ -246,7 +254,7 @@ class nirbOffline(ToolboxModel):
         self.reducedBasis = None # list containing the vector of reduced basis function
         self.N = 0 # number of modes
 
-        if self.doRectification:
+        if self.doRectification or initCoarse:
             super().initCoarseToolbox()
         if feelpp.Environment.isMasterRank():
             print(f"[NIRB] Initialization done")
@@ -288,26 +296,32 @@ class nirbOffline(ToolboxModel):
             self.reducedBasis.append(vec)
 
 
-
-    def initProblem(self, numberOfInitSnapshots, samplingMode="log-random", computeCoarse=False):
+    def initProblem(self, numberOfInitSnapshots, Xi_train=None, samplingMode="log-random", computeCoarse=False):
         """Initialize the problem
 
         Args:
+        -----
             numberOfInitSnapshots (int): number of snapshots to use for the initialization
+            Xi_train (list of ParameteœrSpaceElement, optional): Train set for algorithm. If None is given, a set of size Ntrain is generated. Defaults to None.
             samplingMode (str, optional): sampling mode in the parameter space.(random, log-random, log-equidistribute, equidistribute) Defaults to "log-random".
             computeCoarse (bool, optional): compute snapshots for coarse toolbox, used for rectification. Defaults to False.
+        
+        Returns:
+        --------
+            Xi_train (list of ParameterSpaceElement): parameters used for do build the basis
         """
         if self.doRectification:
             computeCoarse=True
 
         self.fineSnapShotList = []
         self.coarseSnapShotList = []
- 
-        s = self.Dmu.sampling()
-        s.sampling(numberOfInitSnapshots, samplingMode)
-        vector_mu = s.getVector()
-        # vector_mu = samplingEqui(self.model_path, numberOfInitSnapshots)
-        # vector_mu = comm.Bcast(vector_mu, root=0)
+
+        if Xi_train is None:
+            s = self.Dmu.sampling()
+            s.sampling(numberOfInitSnapshots, samplingMode)
+            vector_mu = s.getVector()
+        else:
+            vector_mu = choices(Xi_train, k=numberOfInitSnapshots)
 
         if computeCoarse:
             assert self.tbCoarse is not None, f"Coarse toolbox needed for computing coarse Snapshot. set doRectification->True"
@@ -326,8 +340,123 @@ class nirbOffline(ToolboxModel):
         if feelpp.Environment.isMasterRank():
             print(f"[NIRB] Number of snapshot computed : {len(self.fineSnapShotList)}" )
 
+        return vector_mu
 
-    def generateOperators(self):
+    def getReducedSolution(self, coarseSolutions, mu, N):
+        """Computed the reduced solution for a given parameter and a size of basis
+
+        Args:
+        -----
+            coarseSolutions (dict of Feel++ solutions): list of coarse solution
+            mu (parameterSpaceElement): parameter
+            N (int): size of the sub-basis
+
+        Returns:
+        --------
+            PETSc.Vec: reduced solution u_H^N
+        """
+        coarseSol = coarseSolutions[mu]
+        uHN = np.zeros(N)
+
+        for i in range(N):
+            # uHN[i] = self.coarseSnapShotList[i].to_petsc().vec().dot( coarseSol.to_petsc().vec() )
+            uHN[i] = self.l2ScalarProductMatrixCoarse.energy( self.coarseSnapShotList[i], coarseSol )
+        return uHN
+
+
+    def initProblemGreedy(self, Ntrain, eps, Xi_train=None, Nmax=50, samplingMode="log-random", computeCoarse=False):
+        """Initialize the problem, using a greedy loop
+
+        Args:
+        -----
+            Ntrain (int): size of the train parameter set
+            eps (float): precision of the greedy loop
+            Xi_train (list of ParameterSpaceElement, optional): Train set for algorithm. If None is given, a set of size Ntrain is generated. Defaults to None.
+            Nmax (int, optional): maximal number of iterations. Defaults to 500.
+            samplingMode (str, optional): sampling mode. Defaults to "log-random".
+            computeCoarse (bool, optional): compute snapshots for coarse toolbox, used for rectification. Defaults to False.
+
+        Return:
+        ------
+            a tuple res where
+            - res[0] contains the sample of paramters selected
+            - res[1] contains a copy of Xi_train sample
+            - res[2] contains the evolution of Delta_max
+
+        Raises:
+            Exception: Coarse toolbox has not been initialized
+        """
+        if self.tbCoarse is None:
+            raise Exception("Coarse toolbox needed for computing coarse Snapshot. set initCoarse->True in initialization")
+        Nmax = min(Nmax, Ntrain)
+        if Xi_train is None:
+            s = self.Dmu.sampling()
+            s.sampling(Ntrain, samplingMode)
+            Xi_train = s.getVector()
+        Xi_train_copy = Xi_train.copy()
+
+        Delta_star = eps+1
+        Deltas_conv = []
+        S = []
+        self.fineSnapShotList = []
+        self.coarseSnapShotList = []
+        self.coarseSnapShotListGreedy = []
+        N = 0
+
+        # Computation of coarse solutions
+        coarseSolutions = {}
+        for mu in tqdm(Xi_train, desc="[NIRB] Computing coarse solutions", ncols=120):
+            coarseSolutions[mu] = self.getToolboxSolution(self.tbCoarse, mu)
+
+        for i in range(2):
+            mu0 = self.Dmu.element()
+            S.append(mu0)
+            self.fineSnapShotList.append(   self.getToolboxSolution(self.tbFine  , mu0) )
+            self.coarseSnapShotList.append( self.getToolboxSolution(self.tbCoarse, mu0) )
+            self.coarseSnapShotListGreedy.append(self.getToolboxSolution(self.tbCoarse, mu0) )
+            N += 1
+            self.orthonormalizeMatL2(self.coarseSnapShotListGreedy)
+        Delta_0 = np.abs(self.getReducedSolution(coarseSolutions, Xi_train[0], 2).mean()
+                         - self.getReducedSolution(coarseSolutions, Xi_train[1], 1).mean())
+
+        while Delta_star > eps and N < Nmax:
+            M = N - 1
+
+            Delta_star = -float('inf')
+
+            for i, mu in enumerate(tqdm(Xi_train,desc=f"[NIRB] Greedy selection", ascii=False, ncols=120)):
+                uHN = self.getReducedSolution(coarseSolutions, mu, N)
+                uHM = self.getReducedSolution(coarseSolutions, mu, M)
+
+                Delta = np.abs( uHN.mean() - uHM.mean() ) / Delta_0
+
+                if Delta > Delta_star:
+                    Delta_star = Delta
+                    mu_star = mu
+                    idx = i
+
+            S.append(mu_star)
+            del Xi_train[idx]
+            self.fineSnapShotList.append(  self.getToolboxSolution(self.tbFine  , mu_star))
+            self.coarseSnapShotList.append(self.getToolboxSolution(self.tbCoarse, mu_star))
+            self.coarseSnapShotListGreedy.append(self.getToolboxSolution(self.tbCoarse, mu_star))
+            N += 1
+            self.orthonormalizeMatL2(self.coarseSnapShotListGreedy)
+
+            Deltas_conv.append(Delta_star)
+            if feelpp.Environment.isMasterRank():
+                print(f"[nirb] Adding snapshot with mu = {mu_star}")
+                print(f"[nirb] Greedy loop done. N = {N}, Delta_star = {Delta_star}")
+
+        if feelpp.Environment.isMasterRank():
+            print(f"[NIRB] Number of snapshot computed : {N}")
+
+        print(Deltas_conv)
+
+        return S, Xi_train_copy, Deltas_conv
+
+
+    def generateOperators(self, coarse=False):
         """Assemble L2 and H1 operators, stored in self.l2ScalarProduct and self.h1ScalarProduct
         """
         if self.l2ScalarProductMatrix is None or self.h1ScalarProductMatrix is None:
@@ -336,6 +465,12 @@ class nirbOffline(ToolboxModel):
             self.h1ScalarProductMatrix = FppOp.stiffness(test=self.Xh, trial=self.Xh, range=feelpp.elements(self.tbFine.mesh()))
             self.l2ScalarProductMatrix.to_petsc().mat().assemble()
             self.h1ScalarProductMatrix.to_petsc().mat().assemble()
+
+        if coarse:
+            self.l2ScalarProductMatrixCoarse = FppOp.mass(test=self.XH, trial=self.XH, range=feelpp.elements(self.tbCoarse.mesh()))
+            self.h1ScalarProductMatrixCoarse = FppOp.stiffness(test=self.XH, trial=self.XH, range=feelpp.elements(self.tbCoarse.mesh()))
+            self.l2ScalarProductMatrixCoarse.to_petsc().mat().assemble()
+            self.h1ScalarProductMatrixCoarse.to_petsc().mat().assemble()
 
     def generateReducedBasis(self, tolerance=1.e-6, regulParam=1.e-10):
         """Generate the reduced basis, and store it in the list self.reducedBasis
@@ -397,8 +532,7 @@ class nirbOffline(ToolboxModel):
                     correlationMatrix[i,j] = self.l2ScalarProductMatrix.energy(snap1,snap2)
 
         correlationMatrix.assemble()
-        eigenValues, eigenVectors =  TruncatedEigenV(correlationMatrix, tolerance) 
-        
+        eigenValues, eigenVectors =  TruncatedEigenV(correlationMatrix, tolerance)
 
         Nmode = len(eigenVectors)
         
@@ -421,8 +555,8 @@ class nirbOffline(ToolboxModel):
     def Rectification(self, lambd=1e-10):
         """ Compute the rectification matrix R given by :
                 R = B_h*(B_H)^-1
-                with B_h[i,j] = <U_h(s_i),\phi_j >
-                and B_H[i,j] = <U_H(s_i),\phi_j >
+                with B_h[i,j] = <U_h(s_i),phi_j >
+                and B_H[i,j] = <U_H(s_i),phi_j >
 
         Args :
             lambd (float) : Tikonov regularization parameter
@@ -506,6 +640,29 @@ class nirbOffline(ToolboxModel):
             # pass
             print(f"[NIRB] Gram-Schmidt L2 orthonormalization done after {nb+1} step"+['','s'][nb>0])
 
+    def orthonormalizeMatL2(self, Z):
+        """Ortohnormalize the matrix Z using L2 norm
+
+        Args:
+            Z (list of feelpp._discr.Element): list of feelpp functions
+
+        Returns:
+            Z: the matrix orthonormalized, inplace
+        """
+        N = len(Z)
+
+        if N == 1:
+            normS = self.l2ScalarProductMatrixCoarse.energy(Z[-1], Z[-1])
+            Z[-1] = 1 / np.sqrt(normS) * Z[-1]
+        else:
+            s = self.XH.element()
+            s.setZero()
+            for m in range(N):
+                Z[-1] =  Z[-1] - self.l2ScalarProductMatrixCoarse.energy(Z[-1], Z[m]) * Z[m]
+            normS = self.l2ScalarProductMatrixCoarse.energy(Z[-1], Z[-1])
+            Z[-1] = 1 / np.sqrt(normS) * Z[-1]
+        return Z
+
     def checkH1Orthonormalized(self, tol=1e-8):
         """Check if the reduced basis is H1 orthonormalized.
 
@@ -559,15 +716,15 @@ class nirbOffline(ToolboxModel):
         """ 
         Save the data generated by the offline phase
 
-        Args : 
+        Args :
             path (str, optional): Path where files are saved. Defaults to "./".
             force (bool, optional): Force saving, even if files are already present. Defaults to False.
         """
 
-        reducedPath = path +'/reducedBasis'
+        reducedPath = os.path.join(path, 'reducedBasis')
         reducedFilename = 'reducedBasis'
 
-        l2productPath = path + '/l2productBasis'
+        l2productPath = os.path.join(path,  'l2productBasis')
         l2productFilename = 'l2productBasis'
 
         if feelpp.Environment.isMasterRank():
@@ -575,11 +732,11 @@ class nirbOffline(ToolboxModel):
                 print(f"[NIRB] Directory {path} already exists. Rerun with force=True to force saving")
                 return
             if not os.path.isdir(path):
-                os.mkdir(path)
+                os.makedirs(path)
             if not os.path.isdir(reducedPath):
-                os.mkdir(reducedPath)
+                os.makedirs(reducedPath)
             if not os.path.isdir(l2productPath):
-                os.mkdir(l2productPath)
+                os.makedirs(l2productPath)
 
         comm.Barrier()
 
@@ -590,12 +747,13 @@ class nirbOffline(ToolboxModel):
             vec = self.Xh.element(self.l2ProductBasis[i])
             vec.save(l2productPath, l2productFilename, suffix=str(i))
 
-        rectificationFile = 'rectification'
+        rectificationFile = os.path.join(path,'rectification')
         if self.doRectification:
             np.save(rectificationFile, self.RectificationMat)
 
+        self.outdir = os.path.abspath(path)
         if feelpp.Environment.isMasterRank():
-            print(f"[NIRB] Data saved in {os.path.abspath(path)}")
+            print(f"[NIRB] Data saved in {self.outdir}")
 
 ### ONLINE PHASE ###
 
@@ -639,9 +797,10 @@ class nirbOnline(ToolboxModel):
         Parameters
         ----------
         solution (feelpp._discr.Element) : the solution to be projected
-        mu (ParameterSpaceElement) : parameter to compute the solution if not given 
+        mu (ParameterSpaceElement) : parameter to compute the solution if not given
 
         return :
+        --------
         compressedSol (numpy.ndarray) : the compressed solution, of size (self.N)
         """
         assert (mu != None) or (solution != None), f"One of the arguments must be given: solution or mu"
@@ -659,12 +818,14 @@ class nirbOnline(ToolboxModel):
         return compressedSol
 
     def getInterpSol(self, mu):
-        """Get the interpolate solution from coarse mesh to fine one
+        """Get the interpolated solution from coarse mesh to fine one
 
         Args:
+        -----
             mu (ParameterSpaceElement): parameter
 
         Returns:
+        --------
             interpSol (feelpp._discr.Element): interpolated solution on fine mesh
         """
         interpSol = self.solveOnline(mu)[1]
@@ -709,33 +870,34 @@ class nirbOnline(ToolboxModel):
             l2Mat.to_petsc().mat().assemble()
             return l2Mat
 
-    def loadData(self, nbSnap, path="./"):
+    def loadData(self, nbSnap=None, path="./"):
         """ 
         Load the data generated by the offline phase
 
         Args : 
+            nbSnap (int, optional) : number of basis function. If not given, all the basis are loaded
             path (str, optional): Path where files are saved. Defaults to "./".
-            nbSnap (int) : number of basis function 
         
         Returns :
             int: error code, 0 if all went well, 1 if not
         """
+        print(f"[NIRB] Loading data from {os.path.abspath(path)}")
 
-        reducedPath = path +'/reducedBasis'
+        reducedPath = os.path.join(path,'reducedBasis')
         reducedFilename = 'reducedBasis'
 
-        l2productPath = path + '/l2productBasis'
+        l2productPath = os.path.join(path, 'l2productBasis')
         l2productFilename = 'l2productBasis'
         
         if feelpp.Environment.isMasterRank():
             if not os.path.isdir(path):
-                print(f"[NIRB] Error : Could not find path {path}.")
+                print(f"[NIRB] Error : Could not find path {path}")
                 return 1
             if not os.path.isdir(reducedPath):
-                print(f"[NIRB] Error : Could not find path {reducedPath}.")
+                print(f"[NIRB] Error : Could not find path {reducedPath}")
                 return 1
             if not os.path.isdir(l2productPath):
-                print(f"[NIRB] Error : Could not find path {l2productPath}.")
+                print(f"[NIRB] Error : Could not find path {l2productPath}")
                 return 1
 
         comm.Barrier()
@@ -743,11 +905,13 @@ class nirbOnline(ToolboxModel):
         self.reducedBasis = []
         self.l2ProductBasis = []
 
-        # import glob
-        # Nreduce = len(glob.glob(os.path.join(reducedPath, "*.h5")))
-        # Nl2 = len(glob.glob(os.path.join(l2productPath, "*.h5")))
+        if nbSnap is None:
+            import glob
+            Nreduce = len(glob.glob(os.path.join(reducedPath, "*.h5")))
+            Nl2 = len(glob.glob(os.path.join(l2productPath, "*.h5")))
 
-        # assert Nreduce == Nl2, f"different number of files, {Nreduce} != {Nl2}"
+            assert Nreduce == Nl2, f"different number of files, {Nreduce} != {Nl2}"
+            nbSnap = Nreduce
 
         for i in range(nbSnap):
             vec = self.Xh.element()
@@ -761,7 +925,7 @@ class nirbOnline(ToolboxModel):
             vec.load(l2productPath, l2productFilename, suffix=str(i))
             self.l2ProductBasis.append(vec)
 
-        rectificationFile = 'rectification.npy'
+        rectificationFile = os.path.join(path, 'rectification.npy')
         if self.doRectification:
             self.RectificationMat = np.load(rectificationFile)
 
@@ -781,7 +945,7 @@ class nirbOnline(ToolboxModel):
         return np.sqrt(np.abs(Mat.energy(u,u)))
 
     def solveOnline(self, mu):
-        """Retrun the interpolated FE-solution from coarse mesh to fine one u_{Hh}^calN(\mu)
+        """Retrun the interpolated FE-solution from coarse mesh to fine one u_{Hh}^calN(mu)
             Solve in Coarse mesh and interpolate in fine mesh
 
         Args:
@@ -799,7 +963,7 @@ class nirbOnline(ToolboxModel):
 
         # Export
         # call self.exportField(interpolatedSol, "U_interp")
-        
+
         return coarseSol, interpolatedSol
 
 
