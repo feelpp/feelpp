@@ -96,7 +96,7 @@
         "dim": 2,
         "order": 1,
         "toolboxType": "heat",
-        "geo_path": "$cfgdir/square.geo",
+        "finemesh_path": "$cfgdir/square.geo",
         "model_path": "$cfgdir/square.json",
         "doRectification": true,
         "doBiorthogonalization": false,

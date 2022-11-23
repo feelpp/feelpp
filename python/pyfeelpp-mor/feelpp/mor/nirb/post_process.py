@@ -485,8 +485,11 @@ if __name__ == "__main__":
     # Warning to specifie this env path !!!!
     envpath = "/Users/elarif2/elarif/devel/docker.feel/feelppdb/nirb/heat/np_1/" 
 
-    #%% Get dataFrame from csv file 
+    #%% 
+    # Get dataFrame from csv file 
     file = envpath + "errors50ParamsLambda10P1.csv"
+    file = envpath + "errors30Params.csv"
+    file = envpath + "errors30ParamsLambda0.csv"
     # load absolute errors
     dfGlob = pd.read_csv(file, sep=',')
     # compute relative errors 
@@ -498,7 +501,7 @@ if __name__ == "__main__":
     l2df, h1df   = getDataStat(dfGlob) # l1 and h1 error associated 
     l2dfRel, h1dfRel = getDataStat(dfRel) # // 
 
-    plot_dataFrame(l2df)
+    # plot_dataFrame(l2df)
     compare_dataStats(l2df, keys='Mean')
 
     # compare_dataStats(l2df, keys='Mean', norm='l2')
@@ -513,8 +516,8 @@ if __name__ == "__main__":
     
     l2dfN, h1dfN   = getDataStat(dfN) # l1 and h1 error associated with statistical infos 
     
-    plot_dataFrame(l2dfN)
-    compare_dataStats(l2dfN, keys='Mean')
+    # plot_dataFrame(l2dfN)
+    compare_dataStats(l2dfN, keys='Min')
 
     #%%
     # Compare rectification according to regularization parameter (\lambda) 
