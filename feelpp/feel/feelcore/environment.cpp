@@ -1253,6 +1253,12 @@ Environment::generateOLFiles( int argc, char** argv, std::string const& appName 
 }
 
 void
+Environment::setLogVerbosityLevel( int v )
+{
+    LOG(INFO) << fmt::format( "set log verbosity level to {}, previously {}", v, Environment::logVerbosityLevel() );
+    FLAGS_v = v;
+}
+void
 Environment::processGenericOptions()
 {
     //     // leave this to subclasses or users

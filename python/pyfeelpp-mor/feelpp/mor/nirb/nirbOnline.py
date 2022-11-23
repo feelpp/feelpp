@@ -14,9 +14,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='NIRB Online')
     parser.add_argument('--config-file', type=str, help='path to cfg file')
     parser.add_argument("--N", help="Number of initial snapshots [default=10]", type=int, default=None)
+    parser.add_argument("--outdir", help="output directory", type=str, default=None)
 
     args = parser.parse_args()
     config_file = args.config_file
+    outdir = args.outdir
 
     cfg = feelpp.readCfg(config_file)
     toolboxType = cfg['nirb']['toolboxType']
@@ -30,12 +32,18 @@ if __name__ == "__main__":
     if nbSnap==None:
         nbSnap = config_nirb['nbSnapshots']
 
+    if outdir is None:
+        RESPATH = config_nirb["outdir"]
+    else:
+        RESPATH = outdir
+
     start= time()
     
     nirb_on = nirbOnline(**config_nirb)
 
-    mu = nirb_on.Dmu.element()
-    nirb_on.loadData(nbSnap=nbSnap)
+    mu = nirb_on.Dmu.mumin()
+    err = nirb_on.loadData(path=RESPATH, nbSnap=nbSnap)
+    assert err == 0, "Error while loading data"
     uHh = nirb_on.getOnlineSol(mu)
 
     finish = time()

@@ -3,7 +3,6 @@
 ## Thomas Saigre, Ali Elarif
 ## 09/2022
 
-from errno import EINPROGRESS
 import os
 import feelpp
 import feelpp.mor as mor
@@ -71,6 +70,26 @@ def assembleToolbox(tb, mu):
         tb.addParameterInModelProperties(mu.parameterName(i), mu(i))
 
     tb.updateParameterValues()
+
+def generatedAndSaveSampling(Dmu, size, path="./sampling.sample", samplingMode="log-random"):
+    """Generate a sampling and save it in the given path
+
+    Args:
+    -----
+        Dmu (ParameterSpace): parameter space
+        size (int): size of the sampling
+        path (str, optional): path to save the sampling. Defaults to "/.sampling.sample".
+
+    Returns:
+    --------
+        list of parameterSpaceElement: the sampling generated
+    """
+    s = Dmu.sampling()
+    s.sampling(size, samplingMode)
+    s.writeOnFile(path)
+    print("Sampling saved in ", path)
+    return s.getVector()
+
 
 
 def samplingEqui(model_path,Ns,type='equidistribute'):

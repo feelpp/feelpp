@@ -1,6 +1,6 @@
 {
-    "Name": "Test case 2D",
-    "ShortName": "testcase2d",
+    "Name": "2 Squares",
+    "ShortName": "2sqr",
 
     "CRBParameters":
     {
@@ -8,13 +8,19 @@
         {
             "min": "1",
             "max": "20"
-        }
+        }/*,
+        "Bi":
+        {
+            "min": "0.01",
+            "max": "1"
+        }*/
     },
 
     "Parameters":
     {
         "k_1":"1",
-        "k_2":"5"
+        "k_2":"5",
+        "Bi":"0.1"
     },
 
     "Meshes":
@@ -25,30 +31,10 @@
             {
                 "filename":"$cfgdir/2squares.geo",
                 "hsize": 0.1
-            },
-            "DistanceToRange":
-            {
-                "boundary":{
-                    "markers":["Gamma_1","Gamma_2","Gamma_int","Gamma_dir","Gamma_neu"]
-                },
-                "Gamma_1":{
-                    "markers":["Gamma_1"]
-                },
-                "Gamma_2":{
-                    "markers":["Gamma_2"]
-                },
-                "Gamma_int":{
-                    "markers":["Gamma_int"]
-                },
-                "Gamma_dir":{
-                    "markers":["Gamma_dir"]
-                },
-                "Gamma_neu":{
-                    "markers":["Gamma_neu"]
-                }
             }
         }
     },
+
     "Materials":
     {
         "Omega_1":
@@ -64,27 +50,32 @@
             "rho":"1"
         }
     },
+
     "BoundaryConditions":
     {
-        "heat": 
+        "heat":
         {
-            "temperature":
+            "flux":
             {
-                "Gamma_dir": {
-                    "expr": "4*k_1:k_1"
-                }
+                "Tflux": { "expr": "1" }
             },
-            "flux": 
+            "convective_heat_flux":
             {
-                "Gamma_1": {
-                    "expr": "0"
-                },
-                "Gamma_2": {
-                    "expr": "0"
-                },
-                "Gamma_neu":{
-                    "expr": "4*k_2*k_2:k_2"
+                "Tfourier":
+                {
+                    "h":"Bi:Bi",
+                    "Text":"0"
                 }
+            }
+        }
+    },
+
+    "PostProcess":
+    {
+        "heat":{
+            "Exports":
+            {
+                "fields":["temperature","pid"]
             }
         }
     },
@@ -96,8 +87,8 @@
         "dim": 2,
         "order": 1,
         "toolboxType": "heat",
-        "finemesh_path": "$cfgdir/square.geo",
-        "model_path": "$cfgdir/square.json",
+        "finemesh_path": "$cfgdir/2squares.geo",
+        "model_path": "$cfgdir/2squares.json",
         "doRectification": true,
         "doBiorthogonalization": false,
         "nbSnapshots": 10

@@ -129,7 +129,7 @@
                      "materials":
                      {
                          "names":["MySolid","MySolid2"]
-                         //"markers":["beam"] // optinal
+                         //"markers":["beam"] // optional
                      },
                      // "mass":"1",
                      // "mass-center":"{0.2,0.2}",

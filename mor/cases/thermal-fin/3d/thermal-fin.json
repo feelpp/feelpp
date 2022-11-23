@@ -140,6 +140,7 @@
         "model_path": "$cfgdir/thermal-fin.json",
         "doRectification": true,
         "doBiorthogonalization": false,
-        "nbSnapshots": 10
+        "nbSnapshots": 10,
+        "greedy-generation": true
     }
 }

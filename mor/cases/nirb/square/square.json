@@ -51,27 +51,27 @@
     {
         "Fin0":
         {
-            "k":"k0:k0", // [W / (m * K)]
-            "rho":"1", // [kg / m^3]
-            "Cp":"1" // [J / (kg * K)]
+            "k":"k0:k0",
+            "rho":"1",
+            "Cp":"1"
         },
         "Fin1":
         {
-            "k":"k1:k1", // [W / (m * K)]
-            "rho":"1", // [kg / m^3]
-            "Cp":"1" // [J / (kg * K)]
+            "k":"k1:k1",
+            "rho":"1",
+            "Cp":"1"
         },
         "Fin2":
         {
-            "k":"k2:k2", // [W / (m * K)]
-            "rho":"1", // [kg / m^3]
-            "Cp":"1" // [J / (kg * K)]
+            "k":"k2:k2",
+            "rho":"1",
+            "Cp":"1"
         },
         "Fin3":
         {
-            "k":"k3:k3", // [W / (m * K)]
-            "rho":"1", // [kg / m^3]
-            "Cp":"1" // [J / (kg * K)]
+            "k":"k3:k3",
+            "rho":"1",
+            "Cp":"1"
         }
     },
 
@@ -117,6 +117,8 @@
         "model_path": "$cfgdir/square.json",
         "doRectification": true,
         "doBiorthonormal": false,
-        "nbSnapshots": 10
+        "nbSnapshots": 10,
+        "greedy-generation": true,
+        "outdir": "results/rect/greedy"
     }
 }
