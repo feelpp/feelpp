@@ -140,8 +140,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
                << "\n     -- freq save       : " << myexporterFreq
                << "\n     -- fields exported : " << doExport_str;
     *_ostr << "\n   Processors"
-           << "\n     -- number of proc environnement : " << Environment::worldComm().globalSize()
-           << "\n     -- environement rank : " << Environment::worldComm().rank()
+           << "\n     -- number of proc environment : " << Environment::worldComm().globalSize()
+           << "\n     -- environment rank : " << Environment::worldComm().rank()
            << "\n     -- global rank : " << this->worldComm().globalRank()
            << "\n     -- local rank : " << this->worldComm().localRank()
            << "\n   Numerical Solver"
