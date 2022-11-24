@@ -975,9 +975,9 @@ class nirbOnline(ToolboxModel):
             toolbox (str, optional): mesh to use, "fine" or "coarse". Defaults to "fine".
         """
         if toolbox == "fine":
-            self.exporter = feelpp.Exporter(self.tbFine.mesh(), name)
+            self.exporter = feelpp.exporter(self.tbFine.mesh(), name)
         elif toolbox == "coarse":
-            self.exporter = feelpp.Exporter(self.tbCoarse.mesh(), name)
+            self.exporter = feelpp.exporter(self.tbCoarse.mesh(), name)
 
     def exportField(self, field, name):
         """export a field to the exporter, if it has already been initialized
