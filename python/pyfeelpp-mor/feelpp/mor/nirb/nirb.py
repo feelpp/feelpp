@@ -82,7 +82,7 @@ class ToolboxModel():
         self.Ndofs = self.getFieldSpace().nDof()
 
         if feelpp.Environment.isMasterRank():
-            print(f"[NIRB] Number of nodes on the fine mesh : {self.Ndofs}")
+            print(f"[NIRB] Number of nodes on the fine mesh : {self.tbFine.mesh().numGlobalPoints()}")
 
     def getFieldSpace(self, coarse=False):
         """Get the field space
