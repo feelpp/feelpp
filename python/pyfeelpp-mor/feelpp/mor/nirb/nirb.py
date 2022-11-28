@@ -405,7 +405,7 @@ class nirbOffline(ToolboxModel):
 
         # Computation of coarse solutions
         coarseSolutions = {}
-        for mu in tqdm(Xi_train, desc="[NIRB] Computing coarse solutions", ncols=120):
+        for mu in tqdm(Xi_train_copy, desc="[NIRB] Computing coarse solutions", ncols=120):
             coarseSolutions[mu] = self.getToolboxSolution(self.tbCoarse, mu)
 
         for i in range(2):
@@ -416,15 +416,15 @@ class nirbOffline(ToolboxModel):
             self.coarseSnapShotListGreedy.append(self.getToolboxSolution(self.tbCoarse, mu0) )
             N += 1
             self.orthonormalizeMatL2(self.coarseSnapShotListGreedy)
-        Delta_0 = np.abs(self.getReducedSolution(coarseSolutions, Xi_train[0], 2).mean()
-                         - self.getReducedSolution(coarseSolutions, Xi_train[1], 1).mean())
+        Delta_0 = np.abs(self.getReducedSolution(coarseSolutions, Xi_train_copy[0], 2).mean()
+                         - self.getReducedSolution(coarseSolutions, Xi_train_copy[1], 1).mean())
 
         while Delta_star > eps and N < Nmax:
             M = N - 1
 
             Delta_star = -float('inf')
 
-            for i, mu in enumerate(tqdm(Xi_train,desc=f"[NIRB] Greedy selection", ascii=False, ncols=120)):
+            for i, mu in enumerate(tqdm(Xi_train_copy,desc=f"[NIRB] Greedy selection", ascii=False, ncols=120)):
                 uHN = self.getReducedSolution(coarseSolutions, mu, N)
                 uHM = self.getReducedSolution(coarseSolutions, mu, M)
 
@@ -436,7 +436,7 @@ class nirbOffline(ToolboxModel):
                     idx = i
 
             S.append(mu_star)
-            del Xi_train[idx]
+            del Xi_train_copy[idx]
             self.fineSnapShotList.append(  self.getToolboxSolution(self.tbFine  , mu_star))
             self.coarseSnapShotList.append(self.getToolboxSolution(self.tbCoarse, mu_star))
             self.coarseSnapShotListGreedy.append(self.getToolboxSolution(self.tbCoarse, mu_star))
@@ -453,7 +453,7 @@ class nirbOffline(ToolboxModel):
 
         print(Deltas_conv)
 
-        return S, Xi_train_copy, Deltas_conv
+        return S, Xi_train, Deltas_conv
 
 
     def generateOperators(self, coarse=False):
