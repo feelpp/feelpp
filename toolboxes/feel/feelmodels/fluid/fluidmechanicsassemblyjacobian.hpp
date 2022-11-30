@@ -190,6 +190,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobian( 
         auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<nDim>>(physicData);
         for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
         {
+            this->log("FluidMechanics","updateJacobian", fmt::format( "assembly material {}", matName ));
             auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
             auto const& matProps = this->materialsProperties()->materialProperties( matName );
             auto dynamicViscosityLawPtr = std::static_pointer_cast<dynamic_viscosity_law_type>( matProps.law( "dynamic-viscosity" ) );
