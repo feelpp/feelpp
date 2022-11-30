@@ -27,6 +27,7 @@ set(SRC
   feelio.cpp
   application.cpp
   environment.cpp
+  cmdlineoptions.cpp
   exceptions.cpp
   repository.cpp
   simget.cpp
