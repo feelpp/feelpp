@@ -31,6 +31,8 @@ public :
         {}
     MaterialProperty( MaterialProperty const& ) = default;
     MaterialProperty( MaterialProperty && ) = default;
+    MaterialProperty & operator=( const MaterialProperty & ) = default;
+    MaterialProperty & operator=( MaterialProperty && ) = default;
 
     std::string const& name() const { return M_name; }
 private :
@@ -316,6 +318,10 @@ public :
     void addPhysicToMaterial( physic_id_type const& physicId, std::string const& matName )
     {
         M_materialsNames[physicId].insert( matName );
+    }
+    void setPhysicToMaterial( physic_id_type const& physicId, std::string const& matName )
+    {
+        M_materialsNames[physicId] = { matName };
     }
 
     //! return true if the physic is defined in a material
