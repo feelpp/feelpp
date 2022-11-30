@@ -588,7 +588,7 @@ public:
                         else
                             collectionOfGhostElements[part]->push_back(boost::cref(elt));
                     }
-                    break;
+                    //break;
                 }
             }
 
