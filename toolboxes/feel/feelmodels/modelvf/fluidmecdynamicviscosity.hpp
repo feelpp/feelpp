@@ -1180,30 +1180,79 @@ public :
 
     FluidMecDynamicViscosityMultifluid( ExprType const& ex ):
         super_type( ex ),
-        //M_fluidMecInnerDynamicViscosityImpl( new fluidmec_dynamicviscosity_impl_type( ex.exprEvaluateVelocityOperatorsPtr(), ex.dynamicViscosityLaw(), ex.materialProperties(), ex.polynomialOrder(), ex.symbolsExpr() ) ),
-        M_fluidMecInnerDynamicViscosityImpl( new fluidmec_dynamicviscosity_impl_type( ex.exprEvaluateVelocityOperatorsPtr(), *ex.materialProperties().subMaterialProperties( "inner_fluid" ).template law<DynamicViscosityLaw>( "dynamic-viscosity" ), ex.materialProperties().subMaterialProperties( "inner_fluid" ), ex.polynomialOrder(), ex.symbolsExpr() ) ),
-        M_fluidMecOuterDynamicViscosityImpl( new fluidmec_dynamicviscosity_impl_type( ex.exprEvaluateVelocityOperatorsPtr(), *ex.materialProperties().subMaterialProperties( "outer_fluid" ).template law<DynamicViscosityLaw>( "dynamic-viscosity" ), ex.materialProperties().subMaterialProperties( "outer_fluid" ), ex.polynomialOrder(), ex.symbolsExpr() ) ),
-        //M_exprHeaviside( ex.template materialPropertyExpr<1,1>("heaviside") )
-        M_exprHeaviside( expr( ex.materialProperties().subMaterialProperties( "inner_fluid" ).property( "heaviside" ).template expr<1,1>(), ex.symbolsExpr() ) )
-    {}
+        M_fluidMecOuterDynamicViscosityImpl(),
+        M_fluidMecInnerDynamicViscosityImpls(),
+        M_exprHeavisides()
+    {
+        auto const & matProps = ex.materialProperties();
+        auto const multifluidDynamicViscosityLawPtr = matProps.template law<DynamicViscosityLaw>( "dynamic-viscosity" );
+        auto const & multifluidLaw = multifluidDynamicViscosityLawPtr->template law<DynamicViscosityLaw::MultifluidLaw>();
+        // outer dynamic viscosity
+        auto const & outerSubMatProps = ex.materialProperties().subMaterialProperties( multifluidLaw.outerFluid );
+        auto const outerDynamicViscosityLawPtr = outerSubMatProps.template law<DynamicViscosityLaw>( "dynamic-viscosity" );
+        M_fluidMecOuterDynamicViscosityImpl.reset( new fluidmec_dynamicviscosity_impl_type( ex.exprEvaluateVelocityOperatorsPtr(), *outerDynamicViscosityLawPtr, outerSubMatProps, ex.polynomialOrder(), ex.symbolsExpr() ) );
+
+        // inner dynamic viscosities and heaviside functions
+        for( std::string const & innerFluid: multifluidLaw.innerFluids )
+        {
+            auto const & innerSubMatProps = ex.materialProperties().subMaterialProperties( innerFluid );
+            auto const innerDynamicViscosityLawPtr = innerSubMatProps.template law<DynamicViscosityLaw>( "dynamic-viscosity" );
+            M_fluidMecInnerDynamicViscosityImpls.emplace( innerFluid, new fluidmec_dynamicviscosity_impl_type( ex.exprEvaluateVelocityOperatorsPtr(), *innerDynamicViscosityLawPtr, innerSubMatProps, ex.polynomialOrder(), ex.symbolsExpr() ) );
+
+            M_exprHeavisides.emplace( innerFluid, expr( innerSubMatProps.property( "heaviside" ).template expr<1,1>(), ex.symbolsExpr() ) );
+        }
+    }
 
     FluidMecDynamicViscosityMultifluid( FluidMecDynamicViscosityMultifluid const& ) = default;
     FluidMecDynamicViscosityMultifluid( FluidMecDynamicViscosityMultifluid && ) = default;
 
-    fluidmec_dynamicviscosity_impl_type const& exprInnerDynamicViscosity() const { return *M_fluidMecInnerDynamicViscosityImpl; }
     fluidmec_dynamicviscosity_impl_type const& exprOuterDynamicViscosity() const { return *M_fluidMecOuterDynamicViscosityImpl; }
-    material_property_scalar_expr_type const& exprHeaviside() const { return M_exprHeaviside; }
+    fluidmec_dynamicviscosity_impl_type const& exprInnerDynamicViscosity( std::string const& innerMat ) const { return *(M_fluidMecInnerDynamicViscosityImpls.at( innerMat )); }
+    material_property_scalar_expr_type const& exprHeaviside( std::string const& innerMat ) const { return M_exprHeavisides.at( innerMat ); }
+    std::map<std::string, fluidmec_dynamicviscosity_impl_ptrtype> const& exprInnerDynamicViscosities() const { return M_fluidMecInnerDynamicViscosityImpls; }
+    std::map<std::string, material_property_scalar_expr_type> const& exprHeavisides() const { return M_exprHeavisides; }
 
-    bool dependsOnVelocityField() const override { return M_fluidMecInnerDynamicViscosityImpl->dependsOnVelocityField() || M_fluidMecOuterDynamicViscosityImpl->dependsOnVelocityField(); }
+    bool dependsOnVelocityField() const override 
+    { 
+        return M_fluidMecOuterDynamicViscosityImpl->dependsOnVelocityField() || std::any_of( M_fluidMecInnerDynamicViscosityImpls.begin(), M_fluidMecInnerDynamicViscosityImpls.end(), []( auto const & innerDynamicViscosityImplPair ) { return innerDynamicViscosityImplPair.second->dependsOnVelocityField(); } ); 
+    }
 
-    size_type dynamicContext() const override { return M_fluidMecInnerDynamicViscosityImpl->dynamicContext() | M_fluidMecOuterDynamicViscosityImpl->dynamicContext() | Feel::vf::dynamicContext( M_exprHeaviside ); }
+    size_type dynamicContext() const override 
+    { 
+        size_type context = M_fluidMecOuterDynamicViscosityImpl->dynamicContext();
+        for( auto const& [name, innerDynamicViscosityImpl]: M_fluidMecInnerDynamicViscosityImpls )
+            context |= innerDynamicViscosityImpl->dynamicContext();
+        for( auto const& [name, exprHeaviside]: M_exprHeavisides )
+            context |= Feel::vf::dynamicContext( exprHeaviside );
+        return context;
+    }
 
-    uint16_type polynomialOrder() const override { return std::max( M_fluidMecInnerDynamicViscosityImpl->polynomialOrder(), M_fluidMecOuterDynamicViscosityImpl->polynomialOrder() ) + M_exprHeaviside.polynomialOrder(); }
+    uint16_type polynomialOrder() const override 
+    { 
+        auto polynomialOrderPtrCmp = []( auto const& lhs, auto const& rhs ) 
+        { 
+            return lhs.second->polynomialOrder() < rhs.second->polynomialOrder(); 
+        };
+        auto polynomialOrderCmp = []( auto const& lhs, auto const& rhs ) 
+        { 
+            return lhs.second.polynomialOrder() < rhs.second.polynomialOrder(); 
+        };
+
+        return std::max( 
+                M_fluidMecOuterDynamicViscosityImpl->polynomialOrder(), 
+                std::max_element( M_fluidMecInnerDynamicViscosityImpls.begin(), M_fluidMecInnerDynamicViscosityImpls.end(), polynomialOrderPtrCmp )->second->polynomialOrder() )
+            + std::max_element( M_exprHeavisides.begin(), M_exprHeavisides.end(), polynomialOrderCmp )->second.polynomialOrder();
+    }
 
     template <typename TheSymbolExprType>
     bool hasSymbolDependency( std::string const& symb, TheSymbolExprType const& se ) const
     {
-        return M_fluidMecInnerDynamicViscosityImpl->hasSymbolDependency( symb, se ) || M_fluidMecOuterDynamicViscosityImpl->hasSymbolDependency( symb, se ) || M_exprHeaviside.hasSymbolDependency( symb, se );
+        bool hasDep = M_fluidMecOuterDynamicViscosityImpl->hasSymbolDependency( symb, se );
+        for( auto const& [name, innerDynamicViscosityImpl]: M_fluidMecInnerDynamicViscosityImpls )
+            hasDep |= innerDynamicViscosityImpl->hasSymbolDependency( symb, se );
+        for( auto const& [name, exprHeaviside]: M_exprHeavisides )
+            hasDep |= exprHeaviside.hasSymbolDependency( symb, se );
+        return hasDep;
     }
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
@@ -1225,27 +1274,51 @@ public :
         using mu_expr_tensor_type = typename fluidmec_dynamicviscosity_impl_type::template tensor<Geo_t, Basis_i_t, Basis_j_t>;
         using heaviside_expr_tensor_type = typename material_property_scalar_expr_type::template tensor<Geo_t/*, Basis_i_t, Basis_j_t*/>;
 
+        struct inner_expr_tensors_type
+        {
+            mu_expr_tensor_type muExprTensor;
+            heaviside_expr_tensor_type heavisideExprTensor;
+        };
+
         tensor( this_type const& expr, typename this_type::super_type::template tensor_main_type<Geo_t,Basis_i_t,Basis_j_t> const& tensorExprMain, Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu ):
             super_type( geom,fev,feu ),
             M_expr( expr ),
-            M_muInnerExprTensor( this->expr().exprInnerDynamicViscosity(), geom ),
-            M_muOuterExprTensor( this->expr().exprOuterDynamicViscosity(), geom ),
-            M_heavisideExprTensor( this->expr().exprHeaviside().evaluator( geom ) )
-        {}
+            M_muOuterExprTensor( this->expr().exprOuterDynamicViscosity(), geom )
+        {
+            for( auto const & [innerMatName, innerDynamicViscosity]: this->expr().exprInnerDynamicViscosities() )
+            {
+                M_innerExprTensors.emplace( innerMatName, inner_expr_tensors_type{ 
+                        mu_expr_tensor_type( *innerDynamicViscosity, geom ),
+                        heaviside_expr_tensor_type( this->expr().exprHeaviside( innerMatName ).evaluator( geom ) )
+                        } );
+            }
+        }
         tensor( this_type const& expr, typename this_type::super_type::template tensor_main_type<Geo_t,Basis_i_t,Basis_j_t> const& tensorExprMain, Geo_t const& geom, Basis_i_t const& fev ):
             super_type( geom,fev ),
             M_expr( expr ),
-            M_muInnerExprTensor( this->expr().exprInnerDynamicViscosity(), geom ),
-            M_muOuterExprTensor( this->expr().exprOuterDynamicViscosity(), geom ),
-            M_heavisideExprTensor( this->expr().exprHeaviside().evaluator( geom ) )
-        {}
+            M_muOuterExprTensor( this->expr().exprOuterDynamicViscosity(), geom )
+        {
+            for( auto const & [innerMatName, innerDynamicViscosity]: this->expr().exprInnerDynamicViscosities() )
+            {
+                M_innerExprTensors.emplace( innerMatName, inner_expr_tensors_type{ 
+                        mu_expr_tensor_type( *innerDynamicViscosity, geom ),
+                        heaviside_expr_tensor_type( this->expr().exprHeaviside( innerMatName ).evaluator( geom ) )
+                        } );
+            }
+        }
         tensor( this_type const& expr, typename this_type::super_type::template tensor_main_type<Geo_t,Basis_i_t,Basis_j_t> const& tensorExprMain, Geo_t const& geom ):
             super_type( geom ),
             M_expr( expr ),
-            M_muInnerExprTensor( this->expr().exprInnerDynamicViscosity(), geom ),
-            M_muOuterExprTensor( this->expr().exprOuterDynamicViscosity(), geom ),
-            M_heavisideExprTensor( this->expr().exprHeaviside().evaluator( geom ) )
-        {}
+            M_muOuterExprTensor( this->expr().exprOuterDynamicViscosity(), geom )
+        {
+            for( auto const & [innerMatName, innerDynamicViscosity]: this->expr().exprInnerDynamicViscosities() )
+            {
+                M_innerExprTensors.emplace( innerMatName, inner_expr_tensors_type{ 
+                        mu_expr_tensor_type( *innerDynamicViscosity, geom ),
+                        heaviside_expr_tensor_type( this->expr().exprHeaviside( innerMatName ).evaluator( geom ) )
+                        } );
+            }
+        }
 
         template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
         tensor( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
@@ -1253,19 +1326,30 @@ public :
                 Geo_t const& geom, const TheArgsType&... theInitArgs ):
             super_type( geom ),
             M_expr( expr ),
-            M_muInnerExprTensor( std::true_type{}, exprExpanded.exprInnerDynamicViscosity(), ttse, expr.exprInnerDynamicViscosity(), geom, theInitArgs... ),
-            M_muOuterExprTensor( std::true_type{}, exprExpanded.exprOuterDynamicViscosity(), ttse, expr.exprOuterDynamicViscosity(), geom, theInitArgs... ),
-            M_heavisideExprTensor( std::true_type{}, exprExpanded.exprHeaviside(), ttse, expr.exprHeaviside(), geom, theInitArgs... )
-        {}
+            M_muOuterExprTensor( std::true_type{}, exprExpanded.exprOuterDynamicViscosity(), ttse, expr.exprOuterDynamicViscosity(), geom, theInitArgs... )
+        {
+            for( auto const & [innerMatName, innerDynamicViscosity]: this->expr().exprInnerDynamicViscosities() )
+            {
+                M_innerExprTensors.emplace( innerMatName, inner_expr_tensors_type{ 
+                        mu_expr_tensor_type( std::true_type{}, exprExpanded.exprInnerDynamicViscosity( innerMatName ), ttse, expr.exprInnerDynamicViscosity( innerMatName ), geom, theInitArgs... ),
+                        heaviside_expr_tensor_type( std::true_type{}, exprExpanded.exprHeaviside( innerMatName ), ttse, expr.exprHeaviside( innerMatName ), geom, theInitArgs... )
+                        } );
+            }
+        }
 
 
         this_type const& expr() const { return M_expr; }
 
         void update( Geo_t const& geom ) override
         {
-            M_muInnerExprTensor.update( geom );
             M_muOuterExprTensor.update( geom );
-            M_heavisideExprTensor.update( geom );
+            for( auto & [innerMatName, innerExprTensors]: M_innerExprTensors )
+            {
+                innerExprTensors.heavisideExprTensor.update( geom );
+                innerExprTensors.muExprTensor.update( geom );
+                //TODO: optimization->do not compute inner tensor if heaviside is zero
+            }
+
             this->updateImpl();
         }
 
@@ -1273,9 +1357,14 @@ public :
         void update( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
                 Geo_t const& geom, const TheArgsType&... theUpdateArgs )
         {
-            M_muInnerExprTensor.update( std::true_type{}, exprExpanded.exprInnerDynamicViscosity(), ttse, geom, theUpdateArgs... );
             M_muOuterExprTensor.update( std::true_type{}, exprExpanded.exprOuterDynamicViscosity(), ttse, geom, theUpdateArgs... );
-            M_heavisideExprTensor.update( std::true_type{}, exprExpanded.exprHeaviside(), ttse, geom, theUpdateArgs... );
+            for( auto & [innerMatName, innerExprTensors]: M_innerExprTensors )
+            {
+                innerExprTensors.heavisideExprTensor.update( std::true_type{}, exprExpanded.exprHeaviside(innerMatName), ttse, geom, theUpdateArgs... );
+                innerExprTensors.muExprTensor.update( std::true_type{}, exprExpanded.exprInnerDynamicViscosity(innerMatName), ttse, geom, theUpdateArgs... );
+                //TODO: optimization->do not compute inner tensor if heaviside is zero
+            }
+
             this->updateImpl();
         }
 
@@ -1288,12 +1377,21 @@ public :
             for ( uint16_type q = 0; q < nPoints; ++q )
             {
                 if constexpr ( expr_type::isExprOpID() )
-                    M_localEval[q](0,0) = ( M_muInnerExprTensor.evalq(0,0,q) - M_muOuterExprTensor.evalq(0,0,q) ) * M_heavisideExprTensor.evalq(0,0,q);
+                {
+                    value_type muOuter = M_muOuterExprTensor.evalq(0,0,q);
+                    M_localEval[q](0,0) = muOuter;
+                    for( auto const& [innerMatName, innerExprTensors]: M_innerExprTensors )
+                    {
+                        value_type H = innerExprTensors.heavisideExprTensor.evalq(0,0,q);
+                        value_type muInner = innerExprTensors.muExprTensor.evalq(0,0,q);
+                        M_localEval[q](0,0) += ( muInner - muOuter ) * H;
+                    }
+                }
                 else
                 {
                     CHECK( false ) << "todo: grad(H) not implemented";
-                    for ( uint16_type c1 = 0; c1 < expr_type::nDim; ++c1 )
-                        M_localEval[q](0,c1) = M_muInnerExprTensor.evalq(0,c1,q) * M_heavisideExprTensor.evalq(0,c1,q);
+                    //for ( uint16_type c1 = 0; c1 < expr_type::nDim; ++c1 )
+                        //M_localEval[q](0,c1) = M_muInnerExprTensor.evalq(0,c1,q) * M_heavisideExprTensor.evalq(0,c1,q);
                 }
             }
         }
@@ -1357,17 +1455,16 @@ public :
 
     private :
         this_type const& M_expr;
-        mu_expr_tensor_type M_muInnerExprTensor;
         mu_expr_tensor_type M_muOuterExprTensor;
-        heaviside_expr_tensor_type M_heavisideExprTensor;
+        std::map<std::string, inner_expr_tensors_type> M_innerExprTensors;
         array_shape_type M_localEval;
     };
 
 
 private:
-    fluidmec_dynamicviscosity_impl_ptrtype M_fluidMecInnerDynamicViscosityImpl;
     fluidmec_dynamicviscosity_impl_ptrtype M_fluidMecOuterDynamicViscosityImpl;
-    material_property_scalar_expr_type M_exprHeaviside;
+    std::map<std::string, fluidmec_dynamicviscosity_impl_ptrtype> M_fluidMecInnerDynamicViscosityImpls;
+    std::map<std::string, material_property_scalar_expr_type> M_exprHeavisides;
 
 };
 
