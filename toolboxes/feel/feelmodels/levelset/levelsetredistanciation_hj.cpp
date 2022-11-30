@@ -23,6 +23,7 @@
 //!
 
 #include <feel/feelmodels/levelset/levelsetredistanciation_hj.hpp>
+#include <feel/feelmodels/modelcore/options.hpp>
 
 namespace Feel
 {
@@ -37,7 +38,7 @@ LEVELSETREDISTANCIATIONHJ_CLASS_TEMPLATE_TYPE::LevelSetRedistanciationHJ(
         functionspace_ptrtype const& space,
         std::string const& prefix )
 : 
-    super_type( space, prefix ),
+    super_type( space, prefix, CommandLineOptions( redistanciation_hj_options(prefix) ) ),
     //M_advectionHJ( new advectionhj_type( prefix, prefix, space->worldCommPtr() ) ),
     M_nGlobalIter(1)
 {

@@ -26,6 +26,7 @@
 #include <feel/feeldiscr/syncdofs.hpp>
 #include <feel/feells/distancepointtoface.hpp>
 #include <feel/feells/fastmarching_impl.hpp>
+#include <feel/feelmodels/modelcore/options.hpp>
 
 namespace Feel
 {
@@ -47,7 +48,7 @@ template<typename FunctionSpaceType>
 LevelSetRedistanciationFM<FunctionSpaceType>::LevelSetRedistanciationFM( 
         functionspace_ptrtype const& space,
         std::string const& prefix )
-    : super_type( space, prefix )
+    : super_type( space, prefix, CommandLineOptions( redistanciation_fm_options(prefix, false) ) )
 {
     // Load parameters
     this->loadParametersFromOptionsVm();
@@ -101,7 +102,7 @@ LevelSetRedistanciationFM<FunctionSpaceType>::projectorL2( bool buildOnTheFly ) 
     {
         auto backendName = prefixvm( this->prefix(), "projector-l2" );
         auto backendProjectorL2 = Backend<value_type>::build(
-                soption( _prefix=backendName, _name="backend" ),
+                soption( _prefix=backendName, _name="backend", _vm=this->clovm() ),
                 backendName,
                 this->functionSpace()->worldCommPtr()
                 );
@@ -121,10 +122,10 @@ LevelSetRedistanciationFM<FunctionSpaceType>::projectorSM( bool buildOnTheFly ) 
 {
     if( !M_projectorSM && buildOnTheFly )
     {
-        double projectorSMCoeff = this->functionSpace()->mesh()->hAverage() / functionSpaceOrder * doption( _name="smooth-coeff", _prefix=prefixvm(this->prefix(),"projector-sm") );
+        double projectorSMCoeff = this->functionSpace()->mesh()->hAverage() / functionSpaceOrder * doption( _name="smooth-coeff", _prefix=prefixvm(this->prefix(),"projector-sm"), _vm=this->clovm() );
         auto backendName = prefixvm( this->prefix(), "projector-sm" );
         auto backendProjectorSM = Backend<value_type>::build(
-                soption( _prefix=backendName, _name="backend" ),
+                soption( _prefix=backendName, _name="backend", _vm=this->clovm() ),
                 backendName,
                 this->functionSpace()->worldCommPtr()
                 );
@@ -143,7 +144,7 @@ template<typename FunctionSpaceType>
 void
 LevelSetRedistanciationFM<FunctionSpaceType>::loadParametersFromOptionsVm()
 {
-    const std::string fm_init_method = soption( _name="fm-init-method", _prefix=this->prefix() );
+    const std::string fm_init_method = soption( _name="fm-init-method", _prefix=this->prefix(), _vm=this->clovm() );
     CHECK(FastMarchingInitialisationMethodMap.left.count(fm_init_method)) << fm_init_method <<" is not in the list of possible fast-marching initialisation methods\n";
     M_fastMarchingInitialisationMethod = FastMarchingInitialisationMethodMap.left.at(fm_init_method);
 }

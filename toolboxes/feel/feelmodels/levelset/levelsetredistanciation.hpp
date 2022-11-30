@@ -28,6 +28,7 @@
 #include <memory>
 #include <string>
 
+#include <feel/feelcore/cmdlineoptions.hpp>
 #include <feel/feelvf/vf.hpp>
 
 namespace Feel {
@@ -63,14 +64,18 @@ class LevelSetRedistanciation
 
         //--------------------------------------------------------------------//
         // Constructor/Destructor
-        LevelSetRedistanciation( functionspace_ptrtype space, std::string const& prefix ) :
+        LevelSetRedistanciation( functionspace_ptrtype space, std::string const& prefix, 
+                CommandLineOptions cmdLineOpts = CommandLineOptions{} ) :
             M_space( space ),
             M_periodicity( boost::fusion::at_c<0>(space->periodicity()) ),
-            M_prefix( prefix )
+            M_prefix( prefix ),
+            M_cmdLineOpts( cmdLineOpts )
         {}
 
         // Prefix
         std::string const& prefix() const { return M_prefix; }
+        // Options
+        po::variables_map const& clovm() const { return M_cmdLineOpts.vm(); }
 
         // Space
         functionspace_ptrtype const& functionSpace() const { return M_space; }
@@ -83,6 +88,7 @@ class LevelSetRedistanciation
 
     protected:
         std::string M_prefix;
+        CommandLineOptions M_cmdLineOpts;
 
         functionspace_ptrtype M_space;
         periodicity_type M_periodicity;

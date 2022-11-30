@@ -26,8 +26,8 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::LevelSetBase(
         std::string const& subPrefix,
         ModelBaseRepository const& modelRep ) 
 :
-    super_type( prefix, keyword, worldComm, subPrefix, modelRep ),
-    ModelBase( prefix, keyword, worldComm, subPrefix, modelRep ),
+    super_type( prefix, keyword, worldComm, subPrefix, modelRep, ModelBaseCommandLineOptions(levelset_options(prefix)) ),
+    ModelBase( prefix, keyword, worldComm, subPrefix, modelRep, ModelBaseCommandLineOptions(levelset_options(prefix)) ),
     M_levelsetGradPhi( [this]( element_vectorial_ptrtype & gradPhi ) { this->updateGradPhi( gradPhi ); } ),
     M_levelsetModGradPhi( [this]( element_scalar_ptrtype & modGradPhi ) { this->updateModGradPhi( modGradPhi ); } ),
     M_levelsetNormal( [this]( element_vectorial_ptrtype & N ) { this->updateNormal( N ); } ),
@@ -323,15 +323,15 @@ LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSETBASE_CLASS_TEMPLATE_TYPE::initInterfaceQuantities()
 {
-    if( Environment::vm().count( prefixvm(this->prefix(),"thickness-interface").c_str() ) )
-        M_thicknessInterface = doption(prefixvm(this->prefix(),"thickness-interface"));
+    if( this->clovm().count( prefixvm(this->prefix(),"thickness-interface").c_str() ) )
+        M_thicknessInterface = doption( _name="thickness-interface", _prefix=this->prefix(), _vm=this->clovm() );
     else
         M_thicknessInterface = 1.5 * this->mesh()->hAverage();
 
-    M_useAdaptiveThicknessInterface = boption(prefixvm(this->prefix(),"use-adaptive-thickness"));
+    M_useAdaptiveThicknessInterface = boption( _name="use-adaptive-thickness", _prefix=this->prefix(), _vm=this->clovm() );
 
     if( Environment::vm().count( prefixvm(this->prefix(),"thickness-interface-rectangular-function").c_str() ) )
-        M_thicknessInterfaceRectangularFunction = doption(prefixvm(this->prefix(),"thickness-interface-rectangular-function")); 
+        M_thicknessInterfaceRectangularFunction = doption( _name="thickness-interface-rectangular-function", _prefix=this->prefix(), _vm=this->clovm() ); 
     else
         M_thicknessInterfaceRectangularFunction = M_thicknessInterface;
 
@@ -371,7 +371,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::initRedistanciation()
             }
             else
             {
-                thickness_heaviside =  doption( _name="thickness-heaviside", _prefix=prefixvm(this->prefix(), "redist-hj") );
+                thickness_heaviside =  doption( _name="thickness-heaviside", _prefix=prefixvm(this->prefix(), "redist-hj"), _vm=this->clovm() );
             }
             M_redistanciationHJ->setThicknessHeaviside( thickness_heaviside );
         }
@@ -503,36 +503,36 @@ LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSETBASE_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
 {
-    M_useRegularPhi = boption(_name=prefixvm(this->prefix(),"use-regularized-phi"));
-    M_useHeavisideDiracNodalProj = boption(_name=prefixvm(this->prefix(),"h-d-nodal-proj"));
+    M_useRegularPhi = boption(_name=prefixvm(this->prefix(),"use-regularized-phi"), _vm=this->clovm());
+    M_useHeavisideDiracNodalProj = boption(_name=prefixvm(this->prefix(),"h-d-nodal-proj"), _vm=this->clovm());
 
-    std::string redistmethod = soption( _name="redist-method", _prefix=this->prefix() );
+    std::string redistmethod = soption( _name="redist-method", _prefix=this->prefix(), _vm=this->clovm() );
     CHECK( LevelSetDistanceMethodIdMap.count( redistmethod ) ) << redistmethod << " is not in the list of possible redistanciation methods\n";
     M_redistanciationMethod = LevelSetDistanceMethodIdMap.at( redistmethod );
 
-    std::string distancemethod = soption( _name="distance-method", _prefix=this->prefix() );
+    std::string distancemethod = soption( _name="distance-method", _prefix=this->prefix(), _vm=this->clovm() );
     CHECK( LevelSetDistanceMethodIdMap.count( distancemethod ) ) << distancemethod << " is not in the list of possible redistanciation methods\n";
     M_distanceMethod = LevelSetDistanceMethodIdMap.at( distancemethod );
 
-    M_redistInitialValue = boption( _name="redist-initial-value", _prefix=this->prefix() );
+    M_redistInitialValue = boption( _name="redist-initial-value", _prefix=this->prefix(), _vm=this->clovm() );
 
-    const std::string gradPhiMethod = soption( _name="gradphi-method", _prefix=this->prefix() );
+    const std::string gradPhiMethod = soption( _name="gradphi-method", _prefix=this->prefix(), _vm=this->clovm() );
     CHECK(LevelSetDerivationMethodMap.left.count(gradPhiMethod)) << gradPhiMethod <<" is not in the list of possible gradphi derivation methods\n";
     M_gradPhiMethod = LevelSetDerivationMethodMap.left.at(gradPhiMethod);
 
-    if( Environment::vm( _name="modgradphi-method", _prefix=this->prefix() ).defaulted() &&
-        !Environment::vm( _name="gradphi-method", _prefix=this->prefix() ).defaulted() )
+    if( Environment::vm( _name="modgradphi-method", _prefix=this->prefix(), _vm=this->clovm() ).defaulted() &&
+        !Environment::vm( _name="gradphi-method", _prefix=this->prefix(), _vm=this->clovm() ).defaulted() )
     {
         M_modGradPhiMethod = M_gradPhiMethod;
     }
     else
     {
-        const std::string modGradPhiMethod = soption( _name="modgradphi-method", _prefix=this->prefix() );
+        const std::string modGradPhiMethod = soption( _name="modgradphi-method", _prefix=this->prefix(), _vm=this->clovm() );
         CHECK(LevelSetDerivationMethodMap.left.count(modGradPhiMethod)) << modGradPhiMethod <<" is not in the list of possible modgradphi derivation methods\n";
         M_modGradPhiMethod = LevelSetDerivationMethodMap.left.at(modGradPhiMethod);
     }
 
-    const std::string curvatureMethod = soption( _name="curvature-method", _prefix=this->prefix() );
+    const std::string curvatureMethod = soption( _name="curvature-method", _prefix=this->prefix(), _vm=this->clovm() );
     CHECK(LevelSetCurvatureMethodMap.left.count(curvatureMethod)) << curvatureMethod <<" is not in the list of possible curvature methods\n";
     M_curvatureMethod = LevelSetCurvatureMethodMap.left.at(curvatureMethod);
 
@@ -540,7 +540,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
             || M_curvatureMethod == LevelSetCurvatureMethod::DIFFUSION_ORDER2 )
         this->setUseCurvatureDiffusion( true );
 
-    M_useSpaceIsoPN = boption( _name="use-space-iso-pn", _prefix=this->prefix() );
+    M_useSpaceIsoPN = boption( _name="use-space-iso-pn", _prefix=this->prefix(), _vm=this->clovm() );
 }
 
 //----------------------------------------------------------------------------//
@@ -930,7 +930,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::smootherInterface() const
                 spaceInterface, spaceInterface,
                 Feel::backend(_name=prefixvm(this->prefix(),"smoother"), _worldcomm=this->worldCommPtr(), _rebuild=true), 
                 DIFF,
-                this->mesh()->hAverage()*doption(_name="smooth-coeff", _prefix=prefixvm(this->prefix(),"smoother"))/Order,
+                this->mesh()->hAverage()*doption(_name="smooth-coeff", _prefix=prefixvm(this->prefix(),"smoother"), _vm=this->clovm())/Order,
                 30);
         M_doUpdateSmootherInterface = false;
     }
@@ -952,7 +952,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::smootherInterfaceVectorial() const
                 spaceInterfaceVectorial, spaceInterfaceVectorial,
                 Feel::backend(_name=prefixvm(this->prefix(),"smoother-vec"), _worldcomm=this->worldCommPtr(), _rebuild=true),
                 DIFF, 
-                this->mesh()->hAverage()*doption(_name="smooth-coeff", _prefix=prefixvm(this->prefix(),"smoother-vec"))/Order,
+                this->mesh()->hAverage()*doption(_name="smooth-coeff", _prefix=prefixvm(this->prefix(),"smoother-vec"), _vm=this->clovm())/Order,
                 30);
         M_doUpdateSmootherInterfaceVectorial = false;
     }
