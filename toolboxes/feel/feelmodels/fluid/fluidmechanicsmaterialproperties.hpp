@@ -38,46 +38,58 @@ struct DynamicViscosityLaw: public ModelMaterialLaw
 {
     using super_type = ModelMaterialLaw;
 
-    struct Law {};
-    struct NewtonianLaw: Law { static constexpr std::string_view name = "newtonian"; };
-    struct PowerLaw: Law { static constexpr std::string_view name = "power_law"; };
-    struct CarreauLaw: Law { static constexpr std::string_view name = "carreau_law"; };
-    struct CarreauYasudaLaw: Law { static constexpr std::string_view name = "carreau-yasuda_law"; };
-    struct MultifluidLaw: Law { static constexpr std::string_view name = "multifluid"; };
+    struct Law { 
+        virtual ~Law() = default;
+        virtual std::string name() const = 0;
+    };
+    struct NewtonianLaw: Law { virtual std::string name() const override { return "newtonian"; } };
+    struct PowerLaw: Law { virtual std::string name() const override { return "power_law"; } };
+    struct CarreauLaw: Law { virtual std::string name() const override { return "carreau_law"; } };
+    struct CarreauYasudaLaw: Law { virtual std::string name() const override { return "carreau-yasuda_law"; } };
+    struct MultifluidLaw: Law { 
+        MultifluidLaw() = default;
+        MultifluidLaw( const std::string & oF, const std::set<std::string> & iFs ):
+            outerFluid{ oF }, innerFluids{ iFs }
+        {}
+        virtual std::string name() const override { return "multifluid"; }
+        uint32_t nFluids() const { return 1 + innerFluids.size(); }
+        std::string outerFluid;
+        std::set<std::string> innerFluids;
+    };
 
     DynamicViscosityLaw( std::string const& law ):
         super_type( ),
-        M_lawName( law )
-    {
-        CHECK( this->checkLaw() ) << "invalid law name " << law;
-    }
+        M_law( createLaw( law ) )
+    {}
+    DynamicViscosityLaw( std::unique_ptr<Law> && law ):
+        super_type( ),
+        M_law( std::move(law) )
+    {}
     DynamicViscosityLaw( DynamicViscosityLaw const& ) = default;
     DynamicViscosityLaw( DynamicViscosityLaw && ) = default;
 
     void setup( nl::json const& jarg ) override;
 
-    void setLaw( std::string const& ln ) { M_lawName = ln; CHECK( this->checkLaw() ) << "invalid law name " << ln; }
-    std::string const& lawName() const { return M_lawName; }
+    void setLaw( std::string const& law ) { M_law.reset( createLaw( law ) ); }
+    void setLaw( std::unique_ptr<Law> && law ) { M_law = std::move(law); }
+    template< typename DVLawT >
+    DVLawT const & law() const { return static_cast<DVLawT const &>( *M_law ); }
 
-    template< typename LawType >
-    bool isLaw() const { return ( this->lawName() == LawType::name ); }
+    std::string lawName() const { return M_law->name(); }
 
-    bool isNewtonianLaw() const { return this->isLaw<NewtonianLaw>(); }
-    bool isPowerLaw() const { return this->isLaw<PowerLaw>(); }
-    bool isCarreauLaw() const { return this->isLaw<CarreauLaw>(); }
-    bool isCarreauYasudaLaw() const { return this->isLaw<CarreauYasudaLaw>(); }
-    bool isMultifluidLaw() const { return this->isLaw<MultifluidLaw>(); }
+    bool isNewtonianLaw() const { return this->lawName() == "newtonian"; }
+    bool isPowerLaw() const { return this->lawName() == "power_law"; }
+    bool isCarreauLaw() const { return this->lawName() == "carreau_law"; }
+    bool isCarreauYasudaLaw() const { return this->lawName() == "carreau-yasuda_law"; }
+    bool isMultifluidLaw() const { return this->lawName() == "multifluid"; }
 
     bool isConstant() const { return this->isNewtonianLaw(); }
 
 private:
-    bool checkLaw() const
-    {
-        return ( this->isNewtonianLaw() || this->isPowerLaw() || this->isCarreauLaw() || this->isCarreauYasudaLaw() || this->isMultifluidLaw() );
-    }
+    static Law* createLaw( std::string const& law );
 
 private:
-    std::string M_lawName;
+    std::unique_ptr<Law> M_law;
 };
 
 #if 0
