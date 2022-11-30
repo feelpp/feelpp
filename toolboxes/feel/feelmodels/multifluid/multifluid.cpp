@@ -140,11 +140,33 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
         auto subphysicsFluid = physic->subphysicsFromType( M_fluidModel->physicType() );
 
+        // Create multifluid material
+        std::string multifluidMatName = physicMultifluid->name();
+        MaterialProperties multifluidMatProps( multifluidMatName );
+        multifluidMatProps.setMarkers( outerMatProps.markers() );
+        //multifluidMatProps.setLaws( outerMatProps.laws() ); // TODO: check appropriate laws for multifluid material
+        std::shared_ptr<DynamicViscosityLaw> dynamicViscosityLaw = std::make_shared<DynamicViscosityLaw>( 
+                std::make_unique<DynamicViscosityLaw::MultifluidLaw>( physicMultifluid->outerFluid(), physicMultifluid->innerFluids() )
+                );
+        multifluidMatProps.setLaw( "dynamic-viscosity", dynamicViscosityLaw );
+        //TODO: temporary hack -> use constant outer density, ignoring inner density
+        multifluidMatProps.emplace( "density", outerMatProps.property( "density" ) );
+        // Attach outer and inner fluids to multifluid material
+        multifluidMatProps.addSubMaterialProperties( outerMatName, outerMatProps );
+        for( std::string const& innerMatName: physicMultifluid->innerFluids() )
+        {
+            auto const& innerMatProps = this->materialsProperties()->materialProperties( innerMatName );
+            multifluidMatProps.addSubMaterialProperties( innerMatName, innerMatProps );
+        }
+        // Add multifluid material properties
+        this->materialsProperties()->addMaterialProperties( multifluidMatProps );
+        // Add fluid physics to multifluid material
         for ( auto subphysic: subphysicsFluid )
         {
-            this->materialsProperties()->addPhysicToMaterial( subphysic->id(), outerMatName );
+            this->materialsProperties()->setPhysicToMaterial( subphysic->id(), multifluidMatName );
         }
 
+#if 0
         for( std::string const& innerMatName: physicMultifluid->innerFluids() )
         {
             auto const& innerMatProps = this->materialsProperties()->materialProperties( innerMatName );
@@ -168,17 +190,9 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
                 this->materialsProperties()->addPhysicToMaterial( subphysic->id(), innerOuterMatName );
             }
         }
+#endif
     }
-    //// Set multifluid density and viscosity for inner fluids
-    //for ( auto const& [physicId, physic]: this->physicsFromCurrentType() )
-    //{
-        //for ( auto subphysic: physic->subphysicsFromType( M_fluidModel->physicType() ) )
-        //{
-            //auto subphysicFluid = std::dynamic_pointer_cast<ModelPhysicFluid<nDim>>(subphysic);
-            //CHECK( subphysicFluid ) << "invalid fluid physic ptr cast";
-            //subphysicFluid->dynamicViscosity().setMultifluid( true );
-        //}
-    //}
+
     // Set levelset options
     M_enableInextensibility = false;
     M_hasInextensibility.clear();
