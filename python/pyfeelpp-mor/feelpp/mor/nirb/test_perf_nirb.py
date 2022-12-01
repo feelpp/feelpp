@@ -11,11 +11,11 @@ from mpi4py import MPI
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 
-def offline(config_nirb, RESPATH, doGreedy, N, Xi_train=None, regulParam=1e-10):
+def offline(nirb, RESPATH, doGreedy, N, Xi_train=None, regulParam=1e-10):
     """Run the offline phase of the NIRB method
 
     Args:
-        config_nirb (dict): configuration of the NIRB
+        nirb (class): offline nirb object
         RESPATH (str): path to the results
         doGreedy (bool): if True, the greedy algorithm is used to generate the reduced basis
         N (int): number of snapshots (limit number if greedy algo is used)
@@ -24,24 +24,21 @@ def offline(config_nirb, RESPATH, doGreedy, N, Xi_train=None, regulParam=1e-10):
     """
 
     start = time.time()
-    nirb = nirbOffline(**config_nirb, initCoarse=doGreedy)
     nirb.generateOperators(coarse=True)
     if doGreedy:
-        nirb.initProblemGreedy(500, 1e-5, Nmax=N, computeCoarse=True, samplingMode="random")
+        nirb.initProblemGreedy(500, 1e-10, Xi_train=Xi_train, Nmax=N, computeCoarse=True, samplingMode="random")
     else:
         nirb.initProblem(N, Xi_train=Xi_train)
     nirb.generateReducedBasis(regulParam=regulParam)
-    finish = time.time()
 
     nirb.saveData(RESPATH, force=True)
-
-    perf = [N, finish-start]
+    finish = time.time()
     
+    comm.Barrier()
+
     res = {}
     res['N'] = [N]
     res['nirb_offline'] = [finish-start]
-
-    print(f"[NIRB offline] proc : {rank} Offline Elapsed time = ", res['nirb_offline'])
 
     if feelpp.Environment.isMasterRank():
         print(f"[NIRB] Offline Elapsed time = ", finish-start)
@@ -107,20 +104,19 @@ def online_time_measure(nirb, Nsample=50):
     s.sampling(Ns, 'log-random')
     mus = s.getVector()
 
-    print("[NIRB online] Start toolbox time measure")
     time_toolbox_start = time.time()
-    for mu in mus:
+    for mu in tqdm(mus,desc=f"[NIRB] Compute toolbox time mesure :", ascii=False, ncols=120):
         uh = nirb.getToolboxSolution(nirb.tbFine, mu)
     time_toolbox_finish = time.time()
     time_toolbox = (time_toolbox_finish - time_toolbox_start) / Ns
-    print(f"[NIRB online] Time to compute {Ns} solutions with toolbox = ", time_toolbox)
 
-    print("[NIRB online] Start NIRB online time measure")
     time_nirb_start = time.time()
-    for mu in mus:
+    for mu in tqdm(mus,desc=f"[NIRB] Compute online time mesure :", ascii=False, ncols=120):
         uHh = nirb.getOnlineSol(mu)
     time_nirb_finish = time.time()
     time_nirb = (time_nirb_finish - time_nirb_start) / Ns
+
+    comm.Barrier()
 
     res = {}
     res['N'] = [nirb.N]
@@ -129,6 +125,7 @@ def online_time_measure(nirb, Nsample=50):
 
     if feelpp.Environment.isMasterRank():
         print(f"[NIRB online] Time to compute {Ns} solutions with NIRB = ", time_nirb)
+        print(f"[NIRB online] Time to compute {Ns} solutions with toolbox = ", time_toolbox)
 
     return res
 
@@ -161,34 +158,62 @@ if __name__ == '__main__':
     nbSnap=args.N
     if nbSnap==None:
         nbSnap = config_nirb['nbSnapshots']
-        
-    # Ns = sys.argv[1:]
-    # Ns = args.N 
-    Ns = [1, 2, 4, 6, 10, 12, 14, 16, 20, 25, 30, 35, 40, 45, 50] # number of basis functions 
-    Ns = [1, 2]
+    
+    ### For time mesure in // computing
+    ## square9 2D 
+    # config_nirb['coarsemesh_path'] = f"$cfgdir/square9-coarse/square9_p{size}.json"
+    # config_nirb['finemesh_path'] = f"$cfgdir/square9-fine/square9_p{size}.json"
+    ## thermal fin 3D 
+    # config_nirb['coarsemesh_path'] = f"$cfgdir/thermal-coarse/thermal_p{size}.json"
+    # config_nirb['finemesh_path'] = f"$cfgdir/thermal-fine/thermal_p{size}.json"
 
-    save = True 
+    # nirb_off = nirbOffline(**config_nirb, initCoarse=doGreedy)
+    # nirb_on = nirbOnline(**config_nirb)
+
+    Ns = [1, 2, 5, 10, 16, 20, 25, 30, 35, 40, 45, 50, 60, 70, 80, 90, 100] # number of basis functions 
+    # Ns = [60, 70, 80, 90, 100]
+
+    save = False
 
     Dmu = loadParameterSpace(model_path)
-    Xi_train = generatedAndSaveSampling(Dmu, 250, samplingMode="random")
-    if False:
-        Xi_test = generatedAndSaveSampling(Dmu, 50, path="Xi_test.sample", samplingMode="random")
-    else:
+    Xi_train_path = "results/square9/sampling_train.sample"
+    Xi_test_path = "results/square9/sampling_test.sample"
+
+    if os.path.isfile(Xi_train_path):
         s = Dmu.sampling()
-        N = s.readFromFile("Xi_test.sample")
-        assert N == 50
-        Xi_test = s.getVector()
+        N = s.readFromFile(Xi_train_path)
+        # assert N == 50
+        Xi_train = s.getVector()    
+        if feelpp.Environment.isMasterRank():
+            print(f"[NIRB] Xi_train loaded from {Xi_train_path}") 
+    else :
+        Xi_train = generatedAndSaveSampling(Dmu, 200, path=Xi_train_path, samplingMode="log-random")
+
+    if os.path.isfile(Xi_test_path):
+        s = Dmu.sampling()
+        N = s.readFromFile(Xi_test_path)
+        # assert N == 50
+        Xi_test = s.getVector()  
+        if feelpp.Environment.isMasterRank():
+            print(f"[NIRB] Xi_test loaded from {Xi_test_path}")  
+    else :
+        Xi_test = generatedAndSaveSampling(Dmu, 50, path=Xi_test_path, samplingMode="log-random")
+
 
     for N in Ns:
         N = int(N)
         print("\n\n-----------------------------")
         print(f"[NIRB] Test with N = {N}")
-        resOffline = offline(config_nirb, RESPATH, doGreedy, N, Xi_train=None, regulParam=1e-10)
+        # generate nirb offline object :  
+        nirb_off = nirbOffline(**config_nirb, initCoarse=doGreedy)
+        resOffline = offline(nirb_off, RESPATH, doGreedy, N, Xi_train=Xi_train, regulParam=1e-10)
+        # get nirb online object
         nirb_on = nirbOnline(**config_nirb)
-        err = nirb_on.loadData(path=RESPATH)
+        err = nirb_on.loadData(nbSnap=nirb_off.N, path=RESPATH)
         assert err == 0, "loadData failed"
-        online_error_sampling(nirb_on, RESPATH, Nsample=50, Xi_test=None, verbose=True, save=True)
-        resOnline = online_time_measure(nirb_on, Nsample=50)
+
+        online_error_sampling(nirb_on, RESPATH, Nsample=50, Xi_test=Xi_test, verbose=False, save=True)
+        # resOnline = online_time_measure(nirb_on, Nsample=50)
 
         if save:
             if feelpp.Environment.isMasterRank():
