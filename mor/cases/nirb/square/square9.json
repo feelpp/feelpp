@@ -210,10 +210,12 @@
         "order": 1,
         "toolboxType": "heat",
         "finemesh_path": "$cfgdir/square9.geo",
-        // "coarsemesh_path": "$cfgdir/square9.geo",
+        "coarsemesh_path": "$cfgdir/square9.geo",
         "model_path": "$cfgdir/square9.json",
         "doRectification": true,
         "doBiorthonormal": false,
-        "nbSnapshots": 10
+        "nbSnapshots": 10,
+        "greedy-generation": true,
+        "outdir": "results/rect/greedy"
     }
 }

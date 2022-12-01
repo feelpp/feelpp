@@ -131,16 +131,18 @@
 
     "nirb":
     {
-        "H": 0.5,
-        "h": 0.1,
+        "H": 0.25,
+        "h": "H**2:H",
         "dim": 3,
         "order": 1,
         "toolboxType": "heat",
-        "finemesh_path": "$cfgdir/fin.geo",
+        "finemesh_path": "$cfgdir/thermal-fine-p1.json",
+        "coarsemesh_path": "$cfgdir/thermal-coarse-p1.json",
         "model_path": "$cfgdir/thermal-fin.json",
         "doRectification": true,
         "doBiorthogonalization": false,
         "nbSnapshots": 10,
-        "greedy-generation": true
+        "greedy-generation": false,
+        "outdir": "results3d/rect/noGreedy"
     }
 }

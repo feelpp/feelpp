@@ -1,6 +1,6 @@
 SetFactory("OpenCASCADE");
 //+
-h = 0.5;
+h = 0.03125;
 
 N = DefineNumber[ 4, Name "Parameters/N" ];
 L = DefineNumber[ 2.5, Name "Parameters/L" ];
@@ -42,5 +42,6 @@ For ii In { 1 : (#bdy[]-1) }
     EndIf
 EndFor
 
-// Mesh 2;
+//Mesh 2;
+//Save "savedmesh.msh";
 // Show "*";

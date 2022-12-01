@@ -1,6 +1,6 @@
 SetFactory("OpenCASCADE");
 //+
-h = 0.05;
+h = 0.0081;
 
 N = DefineNumber[ 3, Name "Parameters/N" ];
 L = DefineNumber[ 1, Name "Parameters/L" ];
@@ -39,19 +39,20 @@ EndFor
 
 bdy[] = CombinedBoundary { Surface{:}; };
 
-Physical Curve("Tfourier") = {4};
+Physical Curve("Tfourier") = {4, 7, 10, 9, 17, 24, 23, 21, 19};
 
-Physical Curve("Tflux") =  1;
+Physical Curve("Tflux") =  {1, 11, 18};
 
-For ii In { 1 : (#bdy[]-1) }
-    If (Abs(bdy[ii]) != 1)
-        Printf("boundary out number %g = %g", ii, Abs(bdy[ii]));
-        Physical Curve("Tfourier") += Abs(bdy[ii]);   
-    Else
-        Printf("boundary In number %g = %g", ii, Abs(bdy[ii]));
-        Physical Curve("Tflux") = Abs(bdy[ii]);
-    EndIf
-EndFor
+
+// For ii In { 1 : (#bdy[]-1) }
+//     If (Abs(bdy[ii]) != 1)
+//         Printf("boundary out number %g = %g", ii, Abs(bdy[ii]));
+//         Physical Curve("Tfourier") += Abs(bdy[ii]);   
+//     Else
+//         Printf("boundary In number %g = %g", ii, Abs(bdy[ii]));
+//         Physical Curve("Tflux") = Abs(bdy[ii]);
+//     EndIf
+// EndFor
 
 // Mesh 2;
 // Show "*";
