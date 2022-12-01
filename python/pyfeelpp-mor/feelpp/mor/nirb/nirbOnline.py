@@ -32,14 +32,26 @@ if __name__ == "__main__":
     if nbSnap==None:
         nbSnap = config_nirb['nbSnapshots']
 
+    model_path = config_nirb['model_path']
+    doGreedy = config_nirb['greedy-generation']
+    doRectification = config_nirb['doRectification']
+    rectPath = ["noRect", "Rect"][doRectification]
+    greedyPath = ["noGreedy", "Greedy"][doGreedy]
+
     if outdir is None:
-        RESPATH = config_nirb["outdir"]
+        # RESPATH = config_nirb["outdir"]
+        RESPATH = f"results/{rectPath}/{greedyPath}"
     else:
         RESPATH = outdir
 
-    start= time()
+
+    # # square9 2D 
+    # config_nirb['coarsemesh_path'] = f"$cfgdir/square9-coarse/square9_p{size}.json"
+    # config_nirb['finemesh_path'] = f"$cfgdir/square9-fine/square9_p{size}.json"
     
     nirb_on = nirbOnline(**config_nirb)
+
+    start= time()
 
     mu = nirb_on.Dmu.mumin()
     err = nirb_on.loadData(path=RESPATH, nbSnap=nbSnap)
@@ -56,39 +68,34 @@ if __name__ == "__main__":
     Nsample = 50
 
     if doRectification:
-        file='nirbOnline_time_exec_rectif.txt'
+        file=RESPATH+f'/nirbOnline_time_exec_np{size}_rectif.dat'
     else :
-        file='nirbOnline_time_exec.txt'
+        file=RESPATH+f'/nirbOnline_time_exec_np{size}.dat'
     WriteVecAppend(file,perf)
 
-    # error1 = ComputeErrors(nirb_on, mu)
-    errorN = ComputeErrorSampling(nirb_on, Nsample=Nsample, h1=True)
-    # errorR = ComputeErrors(nirb_on, mu)
+    # errorN = ComputeErrorSampling(nirb_on, Nsample=Nsample, h1=True)
+    errorN = ComputeErrors(nirb_on, mu)
 
     df = pd.DataFrame(errorN)
     df['N'] = nirb_on.N
 
-    file =f"errors{Nsample}Params.csv"
+    file =RESPATH +f"/errors{Nsample}Params.csv"
 
-    # file = f'errorRelative.csv'
-
-    header = True
-    if os.path.isfile(file):
-        header=False
+    header = not os.path.isfile(file)   
     df.to_csv(file, mode='a', index=False, header=header)
 
-    # if feelpp.Environment.isMasterRank():
-    #     print(f"[NIRB online] with {nirb_on.N} snapshots ")
-    #     print(f"[NIRB online] computed errors for {df.shape[0]} parameters ")
-    #     data_mean = df.mean(axis=0)
-    #     print("[NIRB online] Mean of errors ")
-    #     print(data_mean)
-    #     data_min = df.min(axis=0)
-    #     print("[NIRB online] Min of errors ")
-    #     print(data_min)
-    #     data_max = df.max(axis=0)
-    #     print("[NIRB online] Max of errors ")
-    #     print(data_max)
+    if feelpp.Environment.isMasterRank():
+        print(f"[NIRB online] with {nirb_on.N} snapshots ")
+        print(f"[NIRB online] computed errors for {df.shape[0]} parameters ")
+        data_mean = df.mean(axis=0)
+        print("[NIRB online] Mean of errors ")
+        print(data_mean)
+        # data_min = df.min(axis=0)
+        # print("[NIRB online] Min of errors ")
+        # print(data_min)
+        # data_max = df.max(axis=0)
+        # print("[NIRB online] Max of errors ")
+        # print(data_max)
        
 
 
