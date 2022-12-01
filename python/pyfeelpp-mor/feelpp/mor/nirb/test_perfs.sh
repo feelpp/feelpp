@@ -17,22 +17,46 @@ biorthonormal=0
 # echo "N l2_min linf_min l2_mean linf_mean l2_max linf_max" > "${dataFolder}/nirb_error.dat"
 # echo "N l2 linf" > "${dataFolder}/nirb_error.dat"
 
-for n in $Nsnap;
+# for n in $Nsnap;
+# do
+
+# Ns=$n
+# # hsize=$n
+
+# echo " ------------------------------------------ "  
+# echo "  Restarting program with Ns = : $Ns "  
+# echo " ------------------------------------------ "
+
+# offline="python3 nirbOffline.py --config-file model/square/square.cfg --N $Ns"
+# online="python3 nirbOnline.py --config-file model/square/square.cfg --N $Ns"
+
+# ${offline}
+# ${online}
+
+# done 
+
+
+Nproc="1 2 4 8 16 32"
+for n in $Nproc;
 do
 
-Ns=$n
-# hsize=$n
 
 echo " ------------------------------------------ "  
-echo "  Restarting program with Ns = : $Ns "  
+echo "  Restarting program with nb procs = : $n "  
 echo " ------------------------------------------ "
 
-offline="python3 nirbOffline.py --config-file model/square/square.cfg --N $Ns"
-online="python3 nirbOnline.py --config-file model/square/square.cfg --N $Ns"
+# offline="python3 nirbOffline.py --config-file model/square/square.cfg --N $Ns"
+# offline="mpirun -np $n python3 nirbOnline.py --config-file model/square/square9.cfg"
+# online="mpirun -np $n python3 nirbOnline.py --config-file model/square/square9.cfg"
 
-${offline}
-${online}
+# ${offline}
+# ${online}
 
+# test_para="mpiexec -n $n -bind-to core python3 test_perf_nirb_parallel.py --config-file model/square/square9.cfg"
+
+test_para="mpiexec -n $n -bind-to core python3 test_perf_nirb_parallel.py --config-file model/thermal-fin-3d/thermal-fin.cfg"
+
+${test_para}
 
 
 done 
