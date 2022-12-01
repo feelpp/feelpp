@@ -33,27 +33,45 @@ if __name__ == "__main__":
     if nbSnap==None:
         nbSnap = config_nirb['nbSnapshots']
 
+    model_path = config_nirb['model_path']
+    doGreedy = config_nirb['greedy-generation']
+    doRectification = config_nirb['doRectification']
+    rectPath = ["noRect", "Rect"][doRectification]
+    greedyPath = ["noGreedy", "Greedy"][doGreedy]
+
     if outdir is None:
-        RESPATH = config_nirb["outdir"]
+        # RESPATH = config_nirb["outdir"]
+        RESPATH = f"results/{rectPath}/{greedyPath}"
     else:
         RESPATH = outdir
 
-    start = time.time()
 
+    # del config_nirb['coarsemesh_path']
+    # del config_nirb['finemesh_path']
+    # # square9 2D 
+    # coarsemesh_path=f"$cfgdir/square9-coarse/square9_p{size}.json"
+    # finemesh_path  =f"$cfgdir/square9-fine/square9_p{size}.json"
+
+    # generate nirb object : 
+    
+    ### Initializa the nirb object 
+    # nirb_off = nirbOffline(finemesh_path=finemesh_path, coarsemesh_path=coarsemesh_path,**config_nirb, initCoarse=doGreedy)
     nirb_off = nirbOffline(initCoarse=True, **config_nirb)
 
+    # print(nirb_off.tbFine.mesh().hmax())
+    start = time.time()
     ###
     # Only once: generate and save a sampling
-    if False:
-        generatedAndSaveSampling(nirb_off.Dmu, 100)
-        sys.exit(0)
+    # if False:
+    #     generatedAndSaveSampling(nirb_off.Dmu, 100)
+    #     sys.exit(0)
     ###
     # If wanted: load the savec sampling to use it in algorithm generation
     Xi_train = None
-    if True:
-        s = nirb_off.Dmu.sampling()
-        N_train = s.readFromFile('./sampling.sample')
-        Xi_train = s.getVector()
+    # if True:
+    #     s = nirb_off.Dmu.sampling()
+    #     N_train = s.readFromFile('./sampling.sample')
+    #     Xi_train = s.getVector()
 
     nirb_off.generateOperators(coarse=True)
 
@@ -68,21 +86,18 @@ if __name__ == "__main__":
 
     finish = time.time()
 
-    if feelpp.Environment.isMasterRank():
-        print("Is L2 orthonormalized ?", nirb_off.checkL2Orthonormalized())
-        print("Is H1 orthonormalized ? ", nirb_off.checkH1Orthonormalized())
+    # if feelpp.Environment.isMasterRank():
+    #     print("Is L2 orthonormalized ?", nirb_off.checkL2Orthonormalized())
+    #     print("Is H1 orthonormalized ? ", nirb_off.checkH1Orthonormalized())
 
     perf = []
     perf.append(nbSnap)
     perf.append(finish-start)
 
-    file='nirbOffline_time_exec.txt'
-    WriteVecAppend(file,perf)
-
     if doRectification:
-        file='nirbOffline_time_exec_rectif.txt'
+        file=RESPATH+f'/nirbOffline_time_exec_np{size}_rectif.dat'
     else :
-        file='nirbOffline_time_exec.txt'
+        file=RESPATH+f'/nirbOffline_time_exec_np{size}.dat'
     WriteVecAppend(file, perf)
 
     info = nirb_off.getInformations()
