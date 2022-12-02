@@ -1384,7 +1384,7 @@ public :
                     {
                         value_type H = innerExprTensors.heavisideExprTensor.evalq(0,0,q);
                         value_type muInner = innerExprTensors.muExprTensor.evalq(0,0,q);
-                        M_localEval[q](0,0) += ( muInner - muOuter ) * H;
+                        M_localEval[q](0,0) += ( muInner - muOuter ) * (1.0 - H);
                     }
                 }
                 else
