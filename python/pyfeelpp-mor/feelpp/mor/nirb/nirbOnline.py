@@ -26,28 +26,20 @@ if __name__ == "__main__":
 
     nirb_file = feelpp.Environment.expand(cfg['nirb']['filename'])
     config_nirb = feelpp.readJson(nirb_file)['nirb']
-    toolboxType = config_nirb['toolboxType']
 
     nbSnap=args.N
     if nbSnap==None:
         nbSnap = config_nirb['nbSnapshots']
 
-    model_path = config_nirb['model_path']
     doGreedy = config_nirb['greedy-generation']
     doRectification = config_nirb['doRectification']
     rectPath = ["noRect", "Rect"][doRectification]
     greedyPath = ["noGreedy", "Greedy"][doGreedy]
 
     if outdir is None:
-        # RESPATH = config_nirb["outdir"]
         RESPATH = f"results/{rectPath}/{greedyPath}"
     else:
         RESPATH = outdir
-
-
-    # # square9 2D 
-    # config_nirb['coarsemesh_path'] = f"$cfgdir/square9-coarse/square9_p{size}.json"
-    # config_nirb['finemesh_path'] = f"$cfgdir/square9-fine/square9_p{size}.json"
     
     nirb_on = nirbOnline(**config_nirb)
 
@@ -64,7 +56,6 @@ if __name__ == "__main__":
     perf.append(nirb_on.N)
     perf.append(finish-start)
 
-    doRectification = config_nirb['doRectification']
     Nsample = 50
 
     if doRectification:
@@ -74,7 +65,7 @@ if __name__ == "__main__":
     WriteVecAppend(file,perf)
 
     # errorN = ComputeErrorSampling(nirb_on, Nsample=Nsample, h1=True)
-    errorN = ComputeErrors(nirb_on, mu)
+    errorN = ComputeErrors(nirb_on, mu, h1=True)
 
     df = pd.DataFrame(errorN)
     df['N'] = nirb_on.N

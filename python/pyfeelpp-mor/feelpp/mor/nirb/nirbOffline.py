@@ -26,39 +26,23 @@ if __name__ == "__main__":
     nirb_file = feelpp.Environment.expand(cfg['nirb']['filename'])
     config_nirb = feelpp.readJson(nirb_file)['nirb']
 
-    doRectification  = config_nirb['doRectification']
-    doGreedy         = config_nirb['greedy-generation']
-    nbSnap = config_nirb['nbSnapshots']
     nbSnap=args.N
     if nbSnap==None:
         nbSnap = config_nirb['nbSnapshots']
 
-    model_path = config_nirb['model_path']
     doGreedy = config_nirb['greedy-generation']
     doRectification = config_nirb['doRectification']
     rectPath = ["noRect", "Rect"][doRectification]
     greedyPath = ["noGreedy", "Greedy"][doGreedy]
 
     if outdir is None:
-        # RESPATH = config_nirb["outdir"]
         RESPATH = f"results/{rectPath}/{greedyPath}"
     else:
         RESPATH = outdir
-
-
-    # del config_nirb['coarsemesh_path']
-    # del config_nirb['finemesh_path']
-    # # square9 2D 
-    # coarsemesh_path=f"$cfgdir/square9-coarse/square9_p{size}.json"
-    # finemesh_path  =f"$cfgdir/square9-fine/square9_p{size}.json"
-
-    # generate nirb object : 
     
-    ### Initializa the nirb object 
-    # nirb_off = nirbOffline(finemesh_path=finemesh_path, coarsemesh_path=coarsemesh_path,**config_nirb, initCoarse=doGreedy)
+    ### Initializa the nirb object
     nirb_off = nirbOffline(initCoarse=True, **config_nirb)
 
-    # print(nirb_off.tbFine.mesh().hmax())
     start = time.time()
     ###
     # Only once: generate and save a sampling
