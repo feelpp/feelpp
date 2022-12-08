@@ -110,6 +110,7 @@
         "*.py.in": "python",
         "texture": "cpp"
     },
+    "jupyter.notebookFileRoot": "${workspaceFolder}/build/python/install/lib/python3/dist-packages",
     "C_Cpp.configurationWarnings": "Disabled",
     "C_Cpp.loggingLevel": "Debug",
     "C_Cpp.default.compilerPath" : "/usr/bin/clang++",
@@ -121,4 +122,5 @@
     ],
     "cmake.buildDirectory": "${workspaceFolder}/build-${buildKitVendor}${buildKitVersionMajor}-${variant:cpp}-${variant:toolboxes}-${variant:mor}-${variant:buildType}-${variant:webserver}-${variant:doxygen}-${variant:matplot}",
     "cmake.parallelJobs": 5
+    
 }
