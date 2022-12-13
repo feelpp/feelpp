@@ -186,6 +186,15 @@ elements( MeshType const& mesh )
 }
 
 /**
+ * @brief EXTRACT_ELEM
+ */
+enum class select_elements_from_expression {
+    with_positive_values = 1,
+    with_negative_values = 2,
+    with_changing_sign = 3
+};
+
+/**
  *
  * \ingroup MeshIterators
  * \return a pair of iterators to iterate over elements with pid \p flag and
@@ -193,7 +202,7 @@ elements( MeshType const& mesh )
  */
 template<typename MeshType,typename ExprType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0  >
 elements_pid_t<MeshType>
-elements( MeshType const& mesh, vf::Expr<ExprType> const& expr )
+elements( MeshType const& mesh, vf::Expr<ExprType> const& expr, select_elements selector = select_elements::with_positive_values, double threshold = 1e-9 )
 {
     rank_type pid = rank( mesh );
     typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype myelts( new typename MeshTraits<MeshType>::elements_reference_wrapper_type );
@@ -217,18 +226,40 @@ elements( MeshType const& mesh, vf::Expr<ExprType> const& expr )
                 continue;
             ctx->template update<context>( elt );
             expr_evaluator.update( vf::mapgmc( ctx ) );
-            bool addElt = true;
+            int elt_count_positive = 0, elt_count_negative = 0;
             for ( uint16_type q=0;q<ctx->nPoints();++q )
             {
                 double val = expr_evaluator.evalq( 0,0,q );
-                if ( val < 1e-9 )
+                if ( selector == select_elements::with_positive_values && val > -threshold )
                 {
-                    addElt = false;
+                    elt_count_positive++;
                     break;
                 }
+                else if ( selector == select_elements::with_negative_values && val < threshold )
+                {
+                    elt_count_negative++;
+                    break;
+                }
+                else if ( selector == select_elements::with_changing_signs ) 
+                {
+                    if ( val < 0 )
+                        elt_count_negative++
+                    else if ( val >= 0 )
+                        elt_count_positive++
+                }
             }
-            if ( addElt )
+            if ( ( selector == select_elements::with_positive_values ) && elt_count_postive > 0 )
+            {
                 myelts->push_back(boost::cref(elt));
+            }
+            else if ( ( selector == select_elements::with_negative_values ) && elt_count_negative > 0 )
+            {
+                myelts->push_back(boost::cref(elt));
+            }
+            else if ( ( selector == select_elements::with_changing_signs ) && ( elt_count_positive > 0 && elt_count_negative > 0 ) )
+            {
+                myelts->push_back(boost::cref(elt));
+            }
         }
     }
     myelts->shrink_to_fit();
