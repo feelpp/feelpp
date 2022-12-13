@@ -596,7 +596,28 @@ boundaryfaces( MeshType const& mesh  )
 {
     return Feel::detail::boundaryfaces( mesh, rank( mesh ) );
 }
+template <typename MeshType, std::enable_if_t<!std::is_base_of_v<MeshBase<>, unwrap_ptr_t<MeshType>>, int> = 0>
+boundaryfaces_t<MeshType>
+boundaryfaces( elements_pid_t<MeshType> const& r )
+{
+    typename MeshTraits<MeshType>::faces_reference_wrapper_ptrtype myelts( new typename MeshTraits<MeshType>::faces_reference_wrapper_type );
 
+    for ( auto const& e : r )
+    {
+        auto const& elt = boost::unwrap_ref( e );
+        auto const& eltfaces = elt.faces();
+        for ( auto const& face : eltfaces )
+        {
+            if ( face.isConnectedTo0() && !face.isConnectedTo1() )
+                myelts->push_back( boost::cref( face ) );
+        }
+    }
+    myelts->shrink_to_fit();
+    return boost::make_tuple( mpl::size_t<MESH_FACES>(),
+                              myelts->begin(),
+                              myelts->end(),
+                              myelts );
+}
 
 /**
  *
@@ -611,6 +632,28 @@ internalfaces( MeshType const& mesh )
     return Feel::detail::internalfaces( mesh, rank( mesh ) );
 }
 
+template <typename MeshType, std::enable_if_t<!std::is_base_of_v<MeshBase<>, unwrap_ptr_t<MeshType>>, int> = 0>
+internalfaces_t<MeshType>
+internalfaces( elements_pid_t<MeshType> const& r )
+{
+    typename MeshTraits<MeshType>::faces_reference_wrapper_ptrtype myelts( new typename MeshTraits<MeshType>::faces_reference_wrapper_type );
+
+    for(auto const&e : r )
+    {
+        auto const& elt = boost::unwrap_ref( e );
+        auto const& eltfaces = elt.faces();
+        for ( auto const& face : eltfaces )
+        {
+            if ( face.isConnectedTo0() && face.isConnectedTo1() )
+                myelts->push_back( boost::cref( face ) );
+        }
+    }
+    myelts->shrink_to_fit();
+    return boost::make_tuple( mpl::size_t<MESH_FACES>(),
+                              myelts->begin(),
+                              myelts->end(),
+                              myelts );
+}
 /**
  *
  * \ingroup MeshIterators
