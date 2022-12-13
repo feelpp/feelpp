@@ -70,9 +70,6 @@
 [submodule "pythonfmu"]
 	path = feelpp/contrib/pythonfmu
 	url = https://github.com/feelpp/PythonFMU.git
-[submodule "feelpp/contrib/taskflow"]
-	path = feelpp/contrib/taskflow
-	url = https://github.com/feelpp/taskflow.git
 [submodule "feelpp/contrib/spdlog"]
 	path = feelpp/contrib/spdlog
 	url = https://github.com/feelpp/spdlog.git
