@@ -191,7 +191,9 @@ elements( MeshType const& mesh )
 enum class select_elements_from_expression {
     with_positive_values = 1,
     with_negative_values = 2,
-    with_changing_sign = 3
+    with_changing_sign = 3,
+    with_value = 4,
+    with_value_range = 5
 };
 
 /**
@@ -200,10 +202,17 @@ enum class select_elements_from_expression {
  * \return a pair of iterators to iterate over elements with pid \p flag and
  *  verified expr > 0 for all nodes of the element
  */
-template<typename MeshType,typename ExprType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0  >
+template <typename MeshType, typename ExprType, typename... Ts, std::enable_if_t<std::is_base_of_v<MeshBase<>, decay_type<std::remove_pointer_t<MeshType>>>, int> = 0>
 elements_pid_t<MeshType>
-elements( MeshType const& mesh, vf::Expr<ExprType> const& expr, select_elements_from_expression selector = select_elements_from_expression::with_positive_values, double threshold = 1e-9 )
+elements( MeshType const& mesh, vf::Expr<ExprType> const& expr, Ts&&... v )
 {
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    select_elements_from_expression selector = args.get_else(_selector, select_elements_from_expression::with_positive_values);
+    auto && threshold = args.get_else(_threshold, 1e-9);
+    auto && value = args.get_else(_value, 0 );
+    auto && min = args.get_else(_min, 0 );
+    auto && max = args.get_else(_max, 1 );
+    using expr_t = decay_type<decltype( expr )>;
     rank_type pid = rank( mesh );
     typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype myelts( new typename MeshTraits<MeshType>::elements_reference_wrapper_type );
     auto const& imesh = Feel::unwrap_ptr( mesh );
@@ -216,7 +225,7 @@ elements( MeshType const& mesh, vf::Expr<ExprType> const& expr, select_elements_
         auto const& initElt = unwrap_ref( *it );
         typename mesh_type::reference_convex_type refConvex;
         auto geopc = gm->preCompute( refConvex.points() );
-        const size_type context = ExprType::context|vm::POINT;
+        const size_type context = expr_t::context|vm::POINT;
         auto ctx = gm->template context<context>( initElt, geopc );
         auto expr_evaluator = expr.evaluator( vf::mapgmc(ctx) );
         for ( ; it!=en;++it )
@@ -247,6 +256,19 @@ elements( MeshType const& mesh, vf::Expr<ExprType> const& expr, select_elements_
                     else if ( val >= 0 )
                         elt_count_positive++;
                 }
+                else if ( selector == select_elements_from_expression::with_value ) 
+                {
+                    if ( std::abs(val - value) < threshold )
+                    {
+                        elt_count_positive++;
+                        break;
+                    }
+                }
+                else if ( selector == select_elements_from_expression::with_value_range ) 
+                {
+                    if ( ( val > min-threshold ) && ( val < max+threshold ) )
+                        elt_count_positive++;
+                }
             }
             if ( ( selector == select_elements_from_expression::with_positive_values ) && elt_count_positive > 0 )
             {
@@ -257,6 +279,14 @@ elements( MeshType const& mesh, vf::Expr<ExprType> const& expr, select_elements_
                 myelts->push_back(boost::cref(elt));
             }
             else if ( ( selector == select_elements_from_expression::with_changing_sign ) && ( elt_count_positive > 0 && elt_count_negative > 0 ) )
+            {
+                myelts->push_back(boost::cref(elt));
+            }
+            else if ( ( selector == select_elements_from_expression::with_value ) && elt_count_positive > 0 )
+            {
+                myelts->push_back(boost::cref(elt));
+            }
+            else if ( ( selector == select_elements_from_expression::with_value_range ) && elt_count_positive > 0 )
             {
                 myelts->push_back(boost::cref(elt));
             }
