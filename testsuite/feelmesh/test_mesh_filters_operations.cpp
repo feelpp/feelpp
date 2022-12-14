@@ -85,10 +85,10 @@ BOOST_AUTO_TEST_CASE( test_range_from_levelset )
     using namespace Feel;
     auto mesh = loadMesh(_mesh=new Mesh<Simplex<2,1>>);
     auto phi = expr( "(-1+x^2+y^2)/4:x:y" );
-    auto circle = elements( mesh, phi, select_elements_from_expression::with_negative_values );
+    auto circle = elements( mesh, phi, _selector=select_elements_from_expression::with_negative_values );
     
     auto Cmesh = createSubmesh( _mesh = mesh, _range = circle );
-    auto band = elements( Cmesh, phi, select_elements_from_expression::with_changing_sign );
+    auto band = elements( Cmesh, phi, _selector = select_elements_from_expression::with_changing_sign );
     BOOST_CHECK( nelements( band, do_communication ) > 0 );
 
     auto Xh = Pch<1>( Cmesh );
