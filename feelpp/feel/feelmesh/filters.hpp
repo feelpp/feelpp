@@ -202,7 +202,7 @@ enum class select_elements_from_expression {
  */
 template<typename MeshType,typename ExprType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0  >
 elements_pid_t<MeshType>
-elements( MeshType const& mesh, vf::Expr<ExprType> const& expr, select_elements selector = select_elements::with_positive_values, double threshold = 1e-9 )
+elements( MeshType const& mesh, vf::Expr<ExprType> const& expr, select_elements_from_expression selector = select_elements_from_expression::with_positive_values, double threshold = 1e-9 )
 {
     rank_type pid = rank( mesh );
     typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype myelts( new typename MeshTraits<MeshType>::elements_reference_wrapper_type );
@@ -230,33 +230,33 @@ elements( MeshType const& mesh, vf::Expr<ExprType> const& expr, select_elements 
             for ( uint16_type q=0;q<ctx->nPoints();++q )
             {
                 double val = expr_evaluator.evalq( 0,0,q );
-                if ( selector == select_elements::with_positive_values && val > -threshold )
+                if ( selector == select_elements_from_expression::with_positive_values && val > -threshold )
                 {
                     elt_count_positive++;
                     break;
                 }
-                else if ( selector == select_elements::with_negative_values && val < threshold )
+                else if ( selector == select_elements_from_expression::with_negative_values && val < threshold )
                 {
                     elt_count_negative++;
                     break;
                 }
-                else if ( selector == select_elements::with_changing_signs ) 
+                else if ( selector == select_elements_from_expression::with_changing_sign ) 
                 {
                     if ( val < 0 )
-                        elt_count_negative++
+                        elt_count_negative++;
                     else if ( val >= 0 )
-                        elt_count_positive++
+                        elt_count_positive++;
                 }
             }
-            if ( ( selector == select_elements::with_positive_values ) && elt_count_postive > 0 )
+            if ( ( selector == select_elements_from_expression::with_positive_values ) && elt_count_positive > 0 )
             {
                 myelts->push_back(boost::cref(elt));
             }
-            else if ( ( selector == select_elements::with_negative_values ) && elt_count_negative > 0 )
+            else if ( ( selector == select_elements_from_expression::with_negative_values ) && elt_count_negative > 0 )
             {
                 myelts->push_back(boost::cref(elt));
             }
-            else if ( ( selector == select_elements::with_changing_signs ) && ( elt_count_positive > 0 && elt_count_negative > 0 ) )
+            else if ( ( selector == select_elements_from_expression::with_changing_sign ) && ( elt_count_positive > 0 && elt_count_negative > 0 ) )
             {
                 myelts->push_back(boost::cref(elt));
             }
@@ -596,9 +596,9 @@ boundaryfaces( MeshType const& mesh  )
 {
     return Feel::detail::boundaryfaces( mesh, rank( mesh ) );
 }
-template <typename MeshType, std::enable_if_t<!std::is_base_of_v<MeshBase<>, unwrap_ptr_t<MeshType>>, int> = 0>
+template <typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>, unwrap_ptr_t<MeshType>>, int> = 0>
 boundaryfaces_t<MeshType>
-boundaryfaces( elements_pid_t<MeshType> const& r )
+boundaryfaces( MeshType const& mesh, elements_pid_t<MeshType> const& r )
 {
     typename MeshTraits<MeshType>::faces_reference_wrapper_ptrtype myelts( new typename MeshTraits<MeshType>::faces_reference_wrapper_type );
 
@@ -606,10 +606,13 @@ boundaryfaces( elements_pid_t<MeshType> const& r )
     {
         auto const& elt = boost::unwrap_ref( e );
         auto const& eltfaces = elt.faces();
-        for ( auto const& face : eltfaces )
+        for ( auto it = eltfaces.first, en = eltfaces.second; it != en; ++it )
         {
-            if ( face.isConnectedTo0() && !face.isConnectedTo1() )
-                myelts->push_back( boost::cref( face ) );
+            auto const& face = *it;
+            if ( face->isConnectedTo0() && !face->isConnectedTo1() )
+            {
+                myelts->push_back( boost::cref( *face ) );
+            }
         }
     }
     myelts->shrink_to_fit();
@@ -632,20 +635,28 @@ internalfaces( MeshType const& mesh )
     return Feel::detail::internalfaces( mesh, rank( mesh ) );
 }
 
-template <typename MeshType, std::enable_if_t<!std::is_base_of_v<MeshBase<>, unwrap_ptr_t<MeshType>>, int> = 0>
+template <typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>, unwrap_ptr_t<MeshType>>, int> = 0>
 internalfaces_t<MeshType>
-internalfaces( elements_pid_t<MeshType> const& r )
+internalfaces( MeshType const& mesh, elements_pid_t<MeshType> const& r )
 {
     typename MeshTraits<MeshType>::faces_reference_wrapper_ptrtype myelts( new typename MeshTraits<MeshType>::faces_reference_wrapper_type );
-
+    // store face ids to know if a face is already in the list
+    std::set<int> fids;
     for(auto const&e : r )
     {
         auto const& elt = boost::unwrap_ref( e );
         auto const& eltfaces = elt.faces();
-        for ( auto const& face : eltfaces )
+        for(auto it = eltfaces.first, en = eltfaces.second; it != en; ++it)
         {
-            if ( face.isConnectedTo0() && face.isConnectedTo1() )
-                myelts->push_back( boost::cref( face ) );
+            auto const& face = *it;
+            if ( face->isConnectedTo0() && face->isConnectedTo1()  )
+            {
+                if ( fids.find( face->id() ) == fids.end() )
+                {
+                    fids.insert( face->id() );
+                    myelts->push_back( boost::cref( *face ) );
+                }
+            }
         }
     }
     myelts->shrink_to_fit();
@@ -1681,7 +1692,6 @@ fragmentationMarkedElements( MeshType const& mesh, EntityProcessType entity = En
     }
     return res;
 }
-
 
 } // namespace Feel
 
