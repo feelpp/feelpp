@@ -1,0 +1,128 @@
+{
+    "Name": "Rectangular cavity 2D RHT",
+    "ShortName": "rectangle2d",
+    "Models": {
+        "heat": {
+                "name": "heat",
+                "materials": [
+                    "Filling"
+                ]
+            }
+    },
+    "Parameters": {        
+        "sigma": 5.67e-8, // W⋅m-2⋅K−4
+        "Tinit_C":1700
+    },
+    "Meshes": {
+        "heat": {
+            "Import": {
+                "filename": "$cfgdir/rectangular_cavity.geo"            
+            }
+        }
+    },
+    "Materials": {
+        "Filling": {
+            "k": "400", // W/(m⋅K)
+            "Cp": "0", // J/(kg⋅K)
+            "rho": "8700" // kg/m3
+        }
+    },
+    "Coating":{
+        "Top": {
+            "markers": [
+                "InnerTop"
+            ],
+            "epsilon": "0.5"
+        },
+        "Bottom": {
+            "markers": [
+                "LowerTop"
+            ],
+            "epsilon": "0.5" 
+        },
+        "LeftRight": {
+            "markers": [
+                "LeftTop","RightTop"
+            ],
+            "epsilon": "0.5"
+        }
+    },
+    "InitialConditions": {
+        "heat": {
+            "temperature": {
+                "Expression": {
+                    "Tini": {
+                        "markers":["Filling"],
+                        "expr":"Tinit_C:Tinit_C"
+                    }
+                }
+            }
+        }
+    },
+    "BoundaryConditions": {
+        "heat": { 
+            "temperature":
+            {
+                "InnerTop":{
+                    "expr":"1400"
+                },
+                "LowerTop":{
+                    "expr":"600"
+                },
+                "LeftTop":{
+                    "expr":"1700"
+                },
+                "RightTop":{
+                    "expr":"1700"
+                }
+            },
+            "radiative_enclosure_heat_flux": {
+                "Cavity_1": {
+                    "enclosure": "closed",
+                    "markers": ["InnerTop", "LowerTop","LeftTop","RightTop"],
+                    "sigma": "sigma:sigma",
+                    "viewfactors": {
+                        "type": "raytracing",
+                        "markers": ["InnerTop", "LowerTop","LeftTop","RightTop"]
+                    }
+                }
+            }
+        }
+    },
+    "Checker":
+    {
+        "InnerTop_q":
+        {
+            "type":"average",
+            "markers":["InnerTop"],
+            "quantity":"flux",
+            "exact_value":-35767,
+            "rel_tolerance":0.1
+        },
+        "LowerTop_q":
+        {
+            "type":"average",
+            "markers":["LowerTop"],
+            "quantity":"flux",
+            "exact_value":-159040,
+            "rel_tolerance":0.1
+        },
+        "LeftTop_q":
+        {
+            "type":"average",
+            "markers":["LeftTop"],
+            "quantity":"flux",
+            "exact_value":97403,
+            "rel_tolerance":0.1
+        },
+        "RightTop_q":
+        {
+            "type":"average",
+            "markers":["RightTop"],
+            "quantity":"flux",
+            "exact_value":97403,
+            "rel_tolerance":0.1
+        }
+        
+    }
+}
