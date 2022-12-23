@@ -129,30 +129,30 @@ ParseGeoFromMemory( GModel* model, std::string const& name, std::string const& g
 }
 #endif
 Gmsh::Gmsh( int nDim, int nOrder, worldcomm_ptr_t const& worldComm )
-    :
-    super( worldComm ),
-    M_dimension( nDim ),
-    M_order( nOrder ),
-    M_version( FEELPP_GMSH_FORMAT_VERSION ),
-    M_format( GMSH_FORMAT_ASCII ),
-    M_in_memory( false ),
-    M_I( nDim ),
-    M_h( 0.1 ),
-    M_addmidpoint( true ),
-    M_usePhysicalNames( false ),
-    M_partitioner( (GMSH_PARTITIONER)GMSH_PARTITIONER_DEFAULT ),
-    M_partitions( worldComm->size() ),
-    M_partition_file( 0 ),
-    M_shear( 0 ),
-    M_recombine( 0 ),
-    //M_structured( false ),
-    M_structured( 2 ),
-    M_refine_levels( 0 ),
-    M_substructuring( false ),
-    M_periodic()
+    : super( worldComm ),
+      M_dimension( nDim ),
+      M_order( nOrder ),
+      M_version( FEELPP_GMSH_FORMAT_VERSION ),
+      M_format( GMSH_FORMAT_ASCII ),
+      M_in_memory( false ),
+      M_I( nDim ),
+      M_verbosity( 5 ),
+      M_h( 0.1 ),
+      M_addmidpoint( true ),
+      M_usePhysicalNames( false ),
+      M_partitioner( (GMSH_PARTITIONER)GMSH_PARTITIONER_DEFAULT ),
+      M_partitions( worldComm->size() ),
+      M_partition_file( 0 ),
+      M_shear( 0 ),
+      M_recombine( 0 ),
+      // M_structured( false ),
+      M_structured( 2 ),
+      M_refine_levels( 0 ),
+      M_substructuring( false ),
+      M_periodic()
 #if !defined( FEELPP_HAS_GMSH_API )
-    ,
-    M_gmodel( new GModel() )
+      ,
+      M_gmodel( new GModel() )
 #endif
 {
     this->setReferenceDomain();
@@ -167,6 +167,7 @@ Gmsh::Gmsh( Gmsh const & __g )
     M_geoParamMap( __g.M_geoParamMap ),
     M_in_memory( __g.M_in_memory ),
     M_I( __g.M_I ),
+    M_verbosity( __g.M_verbosity ),
     M_h( __g.M_h ),
     M_addmidpoint( __g.M_addmidpoint ),
     M_usePhysicalNames( __g.M_usePhysicalNames ),
@@ -204,6 +205,7 @@ Gmsh::operator=( Gmsh const& __g )
         M_format = __g.M_format;
         M_geoParamMap = __g.M_geoParamMap;
         M_in_memory = __g.M_in_memory;
+        M_verbosity = __g.M_verbosity;
         M_addmidpoint = __g.M_addmidpoint;
         M_usePhysicalNames = __g.M_usePhysicalNames;
         M_shear = __g.M_shear;
@@ -249,6 +251,13 @@ Gmsh::prefix( std::string const& __name, uint16_type __N ) const
     __p << __name << "-" << __N << "-" << this->order();
 
     return __p.str();
+}
+
+void
+Gmsh::setVerbosity( int val ) 
+{
+    LOG( INFO ) << fmt::format( "[gmsh::setVerbosity] old Verbosity : {}, new Verbosity : {} ", M_verbosity, val ) << std::endl;
+    M_verbosity = val;
 }
 
 std::string
@@ -663,11 +672,19 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric, 
 
 #if defined( FEELPP_HAS_GMSH_API )
 
+    gmsh::option::setNumber( "General.Verbosity", M_verbosity ); //
+    // if val is 0 then we disable all messages from gmsh
+    if ( M_verbosity == 0 )
+        gmsh::option::setNumber( "General.Terminal", 0 ); //
+    else
+        gmsh::option::setNumber( "General.Terminal", 1 ); //
+
     gmsh::model::add( _name );
     // load geofile
     gmsh::open( __geoname );
 
     // some options
+    
     gmsh::option::setNumber( "Mesh.ElementOrder",(double)M_order );
     gmsh::option::setNumber( "Mesh.Algorithm", (double)GMSH_ALGORITHM_2D::FRONTAL );
     gmsh::option::setNumber( "Mesh.Algorithm3D", (double)GMSH_ALGORITHM_3D::DELAUNAY );
