@@ -84,7 +84,7 @@ UnobstructedPlanarViewFactor<MeshType>::compute()
                 }
 
                 // planar surface don't see themselves, hence the view factor is 0
-                if ( current_index == remote_index )
+                if ( current_index == remote_index && this->j_["viewfactor"]["algorithm"] == "DoubleAreaIntegration")
                     this->vf_( current_index, remote_index ) = 0.0;                                        
                 else
                 {
@@ -168,6 +168,10 @@ UnobstructedPlanarViewFactor<MeshType>::compute()
                     }
                 }                  
                 this->vf_( current_index, remote_index ) /= integrate(_range = current_range, _expr = cst(1.0) ).evaluate()(0,0);              
+                if(this->j_["viewfactor"]["algorithm"] == "SingleAreaIntegration" && current_index==remote_index)
+                {
+                    this->vf_( current_index, remote_index ) = math::abs(1 + this->vf_( current_index, remote_index )) ;
+                }
             }            
         }        
     }
