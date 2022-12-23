@@ -177,19 +177,36 @@ def functionSpace( mesh, space="Pch", order=1, worldscomm=None):
     return _spaces[key]( mesh=mesh, worldsComm=worldscomm )
 
 
-def expr(e,dim=1,filename=None,worldComm=None,directory=None):
+def expr(e,row=1, col=1,filename=None,worldComm=None,directory=None):
+    """create expression with MxN components
+
+    Args:
+        e (string): expression string
+        row (int, optional): number of components. Defaults to 1.
+        col (int, optional): number of variables. Defaults to 1.
+        filename (_type_, optional): name of the file to store the compiled expression. Defaults to None.
+        worldComm (_type_, optional): communicator. Defaults to None.
+        directory (_type_, optional): directory to store the expressions. Defaults to None.
+
+    Returns:
+        Expression: an expression
+    """    
     if filename is None:
         filename=""
     if directory is None:
         directory=""
     if worldComm is None:
         worldComm=Environment.worldComm()
-    if dim==1:
-        return expr_(e,filename=filename,dir=directory,worldComm=worldComm)
-    elif dim==2:
-        return exprv2_(e,filename=filename,dir=directory,worldComm=worldComm)
-    elif dim == 3:
-        return exprv3_(e, filename=filename, dir=directory, worldComm=worldComm)
+    if row==1 and col==1:
+        return expr112_(e,filename=filename,dir=directory,worldComm=worldComm)
+    if row==2 and col==1:
+        return expr212_(e,filename=filename,dir=directory,worldComm=worldComm)
+    if row==3 and col==1:
+        return expr312_(e,filename=filename,dir=directory,worldComm=worldComm)
+    if row==2 and col==2:
+        return expr222_(e,filename=filename,dir=directory,worldComm=worldComm)
+    if row==3 and col==3:
+        return expr332_(e,filename=filename,dir=directory,worldComm=worldComm)
 
 def gmshGenerate(dim, fname):
     mshname = '{}-{}.msh'.format(fname,

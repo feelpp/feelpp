@@ -147,6 +147,10 @@ PYBIND11_MODULE(_core, m )
         .def( py::init<py::list>(),"Construct a Feel++ Environment")//,py::arg("arg"), py::arg("opts") = feel_nooptions())
         .def_static("initialized",&Feel::Environment::initialized, "return true if MPI is initialized, false otherwise",py::return_value_policy::copy)
         .def_static("finalized",&Feel::Environment::finalized, "return true if MPI is finalized, false otherwise",py::return_value_policy::copy)
+
+        .def_static("setLogVerbosityLevel",&Feel::Environment::setLogVerbosityLevel, "set the log verbosity level",py::arg("level"))
+        .def_static("logVerbosityLevel",&Feel::Environment::logVerbosityLevel, "return the log verbosity level")
+
         .def_static("numberOfProcessors",&Feel::Environment::numberOfProcessors, "return numberOfProcessors",py::return_value_policy::copy)
         .def_static("rank",&Feel::Environment::rank, "return process rank",py::return_value_policy::copy)
         .def_static("masterRank",&Feel::Environment::masterRank, "return master rank",py::return_value_policy::copy)

@@ -395,7 +395,7 @@ static void smoothstep_print_latex(const ex & x, const ex&  lo, const ex& hi,con
 
 static void smoothstep_print_csrc_float(const ex & x, const ex&  lo, const ex& hi,const print_context & c)												                                
 {
- 	c.s << "[]( const double& t ){ return t * t * (3.0 - 2.0 * t); }( std::clamp( "; 
+ 	c.s << "[]( const double& t ){ return t * t * (3.0 - 2.0 * t); }( std::clamp( "; 
 	c.s << "("; x.print(c); c.s << "-"; lo.print(c); c.s << ")/"; 
 	c.s << "("; hi.print(c); c.s << "-"; lo.print(c); c.s << ")"; 
 	c.s << ", 0.0, 1.0) )";
