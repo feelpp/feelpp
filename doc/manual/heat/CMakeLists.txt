@@ -32,6 +32,7 @@ feelpp_add_application( ground2DP2 SRCS ground.cpp  LABELS doc DEFS FEELPP_DIM=2
 add_custom_target(feelpp_doc_rht)
 feelpp_add_application( rht_2dp1 SRCS rht.cpp LABELS doc DEFS FEELPP_DIM=2 FEELPP_ORDER=1 )
 feelpp_add_application( rht_3dp1 SRCS rht.cpp LABELS doc DEFS FEELPP_DIM=3 FEELPP_ORDER=1)
-feelpp_add_application( rht_several_enclosures SRCS rht_several_enclosures.cpp LABELS doc DEFS FEELPP_DIM=2 FEELPP_ORDER=1 )
+feelpp_add_application( rht_several_enclosures_2d SRCS rht_several_enclosures.cpp LABELS doc DEFS FEELPP_DIM=2 FEELPP_ORDER=1 )
+feelpp_add_application( rht_several_enclosures_3d SRCS rht_several_enclosures.cpp LABELS doc DEFS FEELPP_DIM=3 FEELPP_ORDER=1 )
 add_dependencies(feelpp_doc_rht feelpp_doc_rht_2dp1 feelpp_doc_rht_3dp1)
 feelpp_add_testcase(cases PREFIX doc_heat)
