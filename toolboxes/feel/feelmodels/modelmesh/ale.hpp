@@ -84,7 +84,7 @@ public:
     typedef std::shared_ptr<metricmeshadaptation_type> metricmeshadaptation_ptrtype;
 
     /**
-     * constructor,copy,desctructor
+     * constructor,copy,destructor
      */
     explicit ALE( std::string const& prefix="",
                   worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr(),

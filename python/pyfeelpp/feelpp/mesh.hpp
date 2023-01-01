@@ -168,11 +168,12 @@ void defMesh(py::module &m)
     pyclass_name = std::string("mesh_support_vector_")+suffix;
     py::class_<fusion::vector<std::shared_ptr<MeshSupport<mesh_t>>>>(m,pyclass_name.c_str())
         .def(py::init<>());
-          
+
     m.def(
-        "load", []( std::shared_ptr<MeshT>& m, std::string const& n, double h, int verbose )
+        "load", 
+        []( mesh_ptr_t m, std::string const& n, double h, int verbose )
         { 
-            return loadMesh( _mesh = m, _filename = n, _h = h, _verbose = verbose ); 
+            return loadMesh( _mesh=new mesh_t, _filename=n, _h=h, _verbose=verbose );
         },
         "load a mesh from a file", py::arg("mesh"), py::arg("name"), py::arg("h")=0.1, py::arg("verbose") = 1 );
 

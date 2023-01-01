@@ -44,7 +44,7 @@ Feel::po::options_description modelbase_options(std::string const& prefix)
         (prefixvm(prefix,"scalability-reinit-savefile").c_str(), Feel::po::value<bool>()->default_value( false ), "reinit-savefile")
         (prefixvm(prefix,"scalability-path").c_str(), Feel::po::value< std::string >(), "scalability-path")
         (prefixvm(prefix,"scalability-filename").c_str(), Feel::po::value< std::string >(), "scalability-filename")
-        (prefixvm(prefix,"upload").c_str(), Feel::po::value< std::string >()->default_value(""), "upload decription")
+        (prefixvm(prefix,"upload").c_str(), Feel::po::value< std::string >()->default_value(""), "upload description")
 
         //(prefixvm(prefix,"filename").c_str(), Feel::po::value<std::string>()->default_value( "" ), "json file describing model properties"
         (prefixvm(prefix,"filename").c_str(), Feel::po::value<std::string>(), "json file describing model properties [DEPRECATED]" )
@@ -314,7 +314,7 @@ solidMechanics_options(std::string const& prefix)
         //(prefixvm(prefix,"time-rho").c_str(), Feel::po::value< double >()->default_value(0.8), " Generalized-Alpha parameter")
 
         (prefixvm(prefix,"time-initial.displacement.files.directory").c_str(), Feel::po::value<std::string>(), "initial displacemen")
-        (prefixvm(prefix,"time-initial.displacement.files.format").c_str(), Feel::po::value<std::string>()->default_value( "hdf5" ), "intial displacement file format")
+        (prefixvm(prefix,"time-initial.displacement.files.format").c_str(), Feel::po::value<std::string>()->default_value( "hdf5" ), "initial displacement file format")
 
         (prefixvm(prefix,"1dreduced-geofile").c_str(), Feel::po::value< std::string >(), "input geo file 1dreduced")
         (prefixvm(prefix,"1dreduced-thickness").c_str(), Feel::po::value< double >()->default_value(0.1), "1dreduced-thickness")
@@ -352,7 +352,7 @@ fluidStructInteraction_options( std::string const& prefix )
         (prefixvm(prefix,"fixpoint.min_theta").c_str(), Feel::po::value<double>()->default_value( 1.e-4 ), "min theta parameter")
         (prefixvm(prefix,"fixpoint.maxit").c_str(), Feel::po::value<int>()->default_value( 1000 ), "max iteration")
         (prefixvm(prefix,"fixpoint.minit-convergence").c_str(), Feel::po::value<int>()->default_value( 3 ), "max iteration")
-        // additionals options if reuse-prec or reuse-jac are actived
+        // additionals options if reuse-prec or reuse-jac are activated
         (prefixvm(prefix,"fluid.reuse-prec.rebuild-at-first-fsi-step").c_str(), Feel::po::value<bool>()->default_value( true ), " fsi fluid reuse-prec.rebuild-at-first-fsi-step")
         (prefixvm(prefix,"solid.reuse-prec.rebuild-at-first-fsi-step").c_str(), Feel::po::value<bool>()->default_value( true ), " fsi solid reuse-prec.rebuild-at-first-fsi-step")
         (prefixvm(prefix,"fluid.reuse-jac.rebuild-at-first-fsi-step").c_str(), Feel::po::value<bool>()->default_value( true ), " fsi fluid reuse-prec.rebuild-at-first-fsi-step")

@@ -145,7 +145,7 @@ updateFromHessian( MetricMeshAdaptationType & mma, ExprHessianType const& eHessi
         int m=0; // m=0-> L2, m=1->semi H1
         int n=2;//dimension
 
-        double exposant1 = 1.0*n/(2*(k+1-m)+n); // waring 1.0 and not 2.0 because we compute square of norm
+        double exposant1 = 1.0*n/(2*(k+1-m)+n); // warning 1.0 and not 2.0 because we compute square of norm
         double exposant2 = (2.0*(k+1-m)+n)/n;
 
         auto mesh = mma.mesh();
@@ -207,7 +207,7 @@ MetricMeshAdaptation<ConvexType>::update( element_scalar_type const& uScal )
         int m=0; // m=0-> L2, m=1->semi H1
         int n=2;//dimension
 
-        double exposant1 = 1.0*n/(2*(k+1-m)+n); // waring 1.0 and not 2.0 because we compute square of norm
+        double exposant1 = 1.0*n/(2*(k+1-m)+n); // warning 1.0 and not 2.0 because we compute square of norm
         double exposant2 = (2.0*(k+1-m)+n)/n;
 
         //auto eScal = expr( soption(_name="mesh-adaptation.scalar-weight.expr", _prefix=this->prefix() ) );
