@@ -209,7 +209,7 @@
 
    Counterpart to #FEELPP_EXPORT.
  */
-#if __GNUC__ - 0 > 3 || (__GNUC__ - 0 == 3 && __GNUC_MINOR__ - 0 > 2)
+#if ( __GNUC__ - 0 > 3 || (__GNUC__ - 0 == 3 && __GNUC_MINOR__ - 0 > 2) ) && !defined(__APPLE__)
 #define FEELPP_EXPORT __attribute__ ((visibility("default")))
 #define FEELPP_NO_EXPORT __attribute__ ((visibility("hidden")))
 #else
