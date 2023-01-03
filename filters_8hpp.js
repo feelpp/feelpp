@@ -4,6 +4,13 @@ var filters_8hpp =
     [ "Feel::is_tuple< boost::tuple< T... > >", "structFeel_1_1is__tuple_3_01boost_1_1tuple_3_01T_8_8_8_01_4_01_4.html", null ],
     [ "Feel::tuple_element< 0, boost::tuple< Head, Tail... > >", "structFeel_1_1tuple__element_3_010_00_01boost_1_1tuple_3_01Head_00_01Tail_8_8_8_01_4_01_4.html", null ],
     [ "Feel::tuple_element< I, boost::tuple< Head, Tail... > >", "structFeel_1_1tuple__element_3_01I_00_01boost_1_1tuple_3_01Head_00_01Tail_8_8_8_01_4_01_4.html", null ],
+    [ "select_elements_from_expression", "filters_8hpp.html#ab7f2deb2e5dc9ba06758a8b4c07f33e2", [
+      [ "with_positive_values", "filters_8hpp.html#ab7f2deb2e5dc9ba06758a8b4c07f33e2ae4cc60549cfa4680a69413e688b94831", null ],
+      [ "with_negative_values", "filters_8hpp.html#ab7f2deb2e5dc9ba06758a8b4c07f33e2a8fd15b77e08cec3e518566d39141c82a", null ],
+      [ "with_changing_sign", "filters_8hpp.html#ab7f2deb2e5dc9ba06758a8b4c07f33e2a294e1eb4e759fb09fed9df504c1cde93", null ],
+      [ "with_value", "filters_8hpp.html#ab7f2deb2e5dc9ba06758a8b4c07f33e2a3150aa298f8cf21450d1ffe260b17ac8", null ],
+      [ "with_value_range", "filters_8hpp.html#ab7f2deb2e5dc9ba06758a8b4c07f33e2a2e6ef37b9df82914524fe7a4c1a97f35", null ]
+    ] ],
     [ "allelements", "filters_8hpp.html#a3f3bf5e3898375acd065974fb2d788bc", null ],
     [ "boundaryedges", "filters_8hpp.html#a1b12bf4b55dc89efe8ecb6c373929847", null ],
     [ "boundaryelements", "filters_8hpp.html#abd72ebcb95f186d2cc2ea568c28a831a", null ],
@@ -15,7 +22,7 @@ var filters_8hpp =
     [ "elements", "filters_8hpp.html#abdab447afcf746e7e621c56c1d6dc06b", null ],
     [ "elements", "filters_8hpp.html#a092cfefd0b96a371f68850ab814bceec", null ],
     [ "elements", "filters_8hpp.html#a4088a4938a5563aedcfc6019f950cce0", null ],
-    [ "elements", "filters_8hpp.html#a25bf2666551920f721aeddc8d7371a6f", null ],
+    [ "elements", "filters_8hpp.html#abf439cd723a635437f1684f6b84c04eb", null ],
     [ "faces", "filters_8hpp.html#a447e4f926bcdc43957a72c96dde8e71a", null ],
     [ "fragmentationMarkedElements", "filters_8hpp.html#accc257e7fd2ac1d5537c03a15f45b600", null ],
     [ "idedelements", "filters_8hpp.html#a5557398e8465260a7cbcdc96706f830a", null ],

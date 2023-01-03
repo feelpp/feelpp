@@ -79,7 +79,8 @@ var NAVTREE =
       [ "File List", "files.html", "files_dup" ],
       [ "File Members", "globals.html", [
         [ "All", "globals.html", null ],
-        [ "Functions", "globals_func.html", null ]
+        [ "Functions", "globals_func.html", null ],
+        [ "Variables", "globals_vars.html", null ]
       ] ]
     ] ]
   ] ]
@@ -104,14 +105,14 @@ var NAVTREEINDEX =
 "classnlohmann_1_1basic__json.html#a946cc8f30d8b1d6609b57387b647fe53",
 "classnlohmann_1_1detail_1_1iteration__proxy__value.html#ab8e33bd01c285a1a80b737a1905ceb97",
 "environment_8hpp.html",
-"group__Core.html#Types",
-"namespaceFeel.html#a708ee35ee612b4a0ac660ea44a8638d4",
-"pchv_8hpp.html",
-"structFeel_1_1GeoND_1_1GetImMeasure.html",
-"structFeel_1_1detail_1_1NbDof_1_1result.html",
-"structFeel_1_1vf_1_1Cast_1_1tensor_1_1expr.html",
-"structnlohmann_1_1adl__serializer.html",
-"structnlohmann_1_1detail_1_1priority__tag_3_010_01_4.html"
+"ginacbase_8hpp.html",
+"namespaceFeel.html#a566f946adc847c2d452e0682edc9e98c",
+"operatorlinearfree_8hpp.html",
+"structFeel_1_1FunctionSpace_1_1ChangeToMeshPtr.html",
+"structFeel_1_1detail_1_1InitializeElement.html",
+"structFeel_1_1type__identity.html",
+"structFeel_1_1vf_1_1normLinfData.html#adc1f9bd312c44613920782d6513195bd",
+"structnlohmann_1_1detail_1_1negation.html"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

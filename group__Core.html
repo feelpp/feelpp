@@ -104,7 +104,8 @@ $(document).ready(function(){initNavTree('group__Core.html',''); initResizable()
 <a href="#nested-classes">Classes</a> &#124;
 <a href="#typedef-members">Typedefs</a> &#124;
 <a href="#enum-members">Enumerations</a> &#124;
-<a href="#func-members">Functions</a>  </div>
+<a href="#func-members">Functions</a> &#124;
+<a href="#var-members">Variables</a>  </div>
   <div class="headertitle"><div class="title">Core<div class="ingroups"><a class="el" href="group__Feelpp.html">Feelpp</a></div></div></div>
 </div><!--header-->
 <div class="contents">
@@ -216,6 +217,12 @@ Functions</h2></td></tr>
 <tr class="memitem:gaa90565f9cd5f52a52eeea0e4b7858b87"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__Core.html#gaa90565f9cd5f52a52eeea0e4b7858b87">Feel::sanitize</a> (std::string const  &amp;s)</td></tr>
 <tr class="memdesc:gaa90565f9cd5f52a52eeea0e4b7858b87"><td class="mdescLeft">&#160;</td><td class="mdescRight">trim string to remove special characters  <a href="group__Core.html#gaa90565f9cd5f52a52eeea0e4b7858b87">More...</a><br /></td></tr>
 <tr class="separator:gaa90565f9cd5f52a52eeea0e4b7858b87"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
+Variables</h2></td></tr>
+<tr class="memitem:gadb09701b29e693e3be3a506482791f31"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__Core.html#gadb09701b29e693e3be3a506482791f31">do_reduce</a> = true</td></tr>
+<tr class="memdesc:gadb09701b29e693e3be3a506482791f31"><td class="mdescLeft">&#160;</td><td class="mdescRight">Log if condition satisfied when <code>NDEBUG</code> is not defined.  <a href="group__Core.html#gadb09701b29e693e3be3a506482791f31">More...</a><br /></td></tr>
+<tr class="separator:gadb09701b29e693e3be3a506482791f31"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <p >Core classes provided by the library. </p>
@@ -618,6 +625,28 @@ template&lt;typename T &gt; </div>
   </table>
   </dd>
 </dl>
+
+</div>
+</div>
+<h2 class="groupheader">Variable Documentation</h2>
+<a id="gadb09701b29e693e3be3a506482791f31" name="gadb09701b29e693e3be3a506482791f31"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gadb09701b29e693e3be3a506482791f31">&#9670;&nbsp;</a></span>do_reduce</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">const <a class="el" href="classbool.html">bool</a> do_reduce = true</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>#include &lt;<a class="el" href="feel_8hpp.html">/nvme0/prudhomm/actions-runner/_work/feelpp/feelpp/feelpp/feel/feelcore/feel.hpp</a>&gt;</code></p>
+
+<p>Log if condition satisfied when <code>NDEBUG</code> is not defined. </p>
+<p >This macro is enabled only if <code>NDEBUG</code> is not defined which is to say that the macro will be activited when debugging</p>
+<div class="fragment"><div class="line">DVLOG_IF( INFO, param &lt; 10 ) &lt;&lt; <span class="stringliteral">&quot;print only if param &lt; 10&quot;</span>;</div>
+</div><!-- fragment --><p >enable reduce for mpi communication </p>
 
 </div>
 </div>

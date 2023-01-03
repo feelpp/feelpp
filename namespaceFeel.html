@@ -1848,6 +1848,17 @@ Enumerations</h2></td></tr>
 , <b>PARMMG</b> = 2
  }</td></tr>
 <tr class="separator:a1931d4a2a8333312c5d0424d09a7a803"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab7f2deb2e5dc9ba06758a8b4c07f33e2"><td class="memItemLeft" align="right" valign="top"><a id="ab7f2deb2e5dc9ba06758a8b4c07f33e2" name="ab7f2deb2e5dc9ba06758a8b4c07f33e2"></a>enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#ab7f2deb2e5dc9ba06758a8b4c07f33e2">select_elements_from_expression</a> { <br />
+&#160;&#160;<b>with_positive_values</b> = 1
+, <b>with_negative_values</b> = 2
+, <b>with_changing_sign</b> = 3
+, <b>with_value</b> = 4
+, <br />
+&#160;&#160;<b>with_value_range</b> = 5
+<br />
+ }</td></tr>
+<tr class="memdesc:ab7f2deb2e5dc9ba06758a8b4c07f33e2"><td class="mdescLeft">&#160;</td><td class="mdescRight">EXTRACT_ELEM. <br /></td></tr>
+<tr class="separator:ab7f2deb2e5dc9ba06758a8b4c07f33e2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a139b68ca6c6aad03e0374e6e87888b49"><td class="memItemLeft" align="right" valign="top"><a id="a139b68ca6c6aad03e0374e6e87888b49" name="a139b68ca6c6aad03e0374e6e87888b49"></a>enum class &#160;</td><td class="memItemRight" valign="bottom"><b>solution_t</b> { <b>unique</b>
 , <b>up_to_a_constant</b>
  }</td></tr>
@@ -2011,6 +2022,10 @@ template&lt;typename MeshType &gt; </td></tr>
 <tr class="memitem:aaeb5813eb951d9cfec50ce4a36292566"><td class="memTemplParams" colspan="2">template&lt;typename MeshType , std::enable_if_t&lt; std::is_base_of_v&lt; <a class="el" href="classFeel_1_1MeshBase.html">MeshBase</a>&lt;&gt;, unwrap_ptr_t&lt; MeshType &gt; &gt;, <a class="el" href="classint.html">int</a> &gt;  = 0&gt; </td></tr>
 <tr class="memitem:aaeb5813eb951d9cfec50ce4a36292566"><td class="memTemplItemLeft" align="right" valign="top">boundaryfaces_t&lt; MeshType &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#aaeb5813eb951d9cfec50ce4a36292566">boundaryfaces</a> (MeshType const &amp;mesh)</td></tr>
 <tr class="separator:aaeb5813eb951d9cfec50ce4a36292566"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1203531b691454e6e2706e751d6fb8bd"><td class="memTemplParams" colspan="2"><a id="a1203531b691454e6e2706e751d6fb8bd" name="a1203531b691454e6e2706e751d6fb8bd"></a>
+template&lt;typename MeshType , std::enable_if_t&lt; std::is_base_of_v&lt; <a class="el" href="classFeel_1_1MeshBase.html">MeshBase</a>&lt;&gt;, unwrap_ptr_t&lt; MeshType &gt; &gt;, <a class="el" href="classint.html">int</a> &gt;  = 0&gt; </td></tr>
+<tr class="memitem:a1203531b691454e6e2706e751d6fb8bd"><td class="memTemplItemLeft" align="right" valign="top">boundaryfaces_t&lt; MeshType &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>boundaryfaces</b> (MeshType const &amp;mesh, elements_pid_t&lt; MeshType &gt; const &amp;r)</td></tr>
+<tr class="separator:a1203531b691454e6e2706e751d6fb8bd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7793cabd1778915a23b69cbb156d2049"><td class="memTemplParams" colspan="2">template&lt;typename MeshType &gt; </td></tr>
 <tr class="memitem:a7793cabd1778915a23b69cbb156d2049"><td class="memTemplItemLeft" align="right" valign="top">boundarypoints_t&lt; MeshType &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#a7793cabd1778915a23b69cbb156d2049">boundarypoints</a> (MeshType const &amp;mesh)</td></tr>
 <tr class="separator:a7793cabd1778915a23b69cbb156d2049"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -2204,9 +2219,9 @@ template&lt;typename MeshType &gt; </td></tr>
 <tr class="memitem:a4088a4938a5563aedcfc6019f950cce0"><td class="memTemplParams" colspan="2">template&lt;typename MeshType , typename EntityRangeType &gt; </td></tr>
 <tr class="memitem:a4088a4938a5563aedcfc6019f950cce0"><td class="memTemplItemLeft" align="right" valign="top">elements_pid_t&lt; MeshType &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#a4088a4938a5563aedcfc6019f950cce0">elements</a> (MeshType const &amp;mesh, EntityRangeType const &amp;rangeEntity, <a class="el" href="namespaceFeel.html#a9e8a34e55922ab08cf593c8f9addd590">ElementsType</a> type=ElementsType::MESH_POINTS)</td></tr>
 <tr class="separator:a4088a4938a5563aedcfc6019f950cce0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a25bf2666551920f721aeddc8d7371a6f"><td class="memTemplParams" colspan="2">template&lt;typename MeshType , typename ExprType , std::enable_if_t&lt; std::is_base_of_v&lt; <a class="el" href="classFeel_1_1MeshBase.html">MeshBase</a>&lt;&gt;, unwrap_ptr_t&lt; MeshType &gt; &gt;, <a class="el" href="classint.html">int</a> &gt;  = 0&gt; </td></tr>
-<tr class="memitem:a25bf2666551920f721aeddc8d7371a6f"><td class="memTemplItemLeft" align="right" valign="top">elements_pid_t&lt; MeshType &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#a25bf2666551920f721aeddc8d7371a6f">elements</a> (MeshType const &amp;mesh, vf::Expr&lt; ExprType &gt; const &amp;<a class="el" href="namespaceFeel.html#a338e05dd5e37f3594666f0a00e029d3d">expr</a>)</td></tr>
-<tr class="separator:a25bf2666551920f721aeddc8d7371a6f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abf439cd723a635437f1684f6b84c04eb"><td class="memTemplParams" colspan="2">template&lt;typename MeshType , typename ExprType , typename... Ts, std::enable_if_t&lt; std::is_base_of_v&lt; <a class="el" href="classFeel_1_1MeshBase.html">MeshBase</a>&lt;&gt;, decay_type&lt; std::remove_pointer_t&lt; MeshType &gt; &gt; &gt;, <a class="el" href="classint.html">int</a> &gt;  = 0&gt; </td></tr>
+<tr class="memitem:abf439cd723a635437f1684f6b84c04eb"><td class="memTemplItemLeft" align="right" valign="top">elements_pid_t&lt; MeshType &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#abf439cd723a635437f1684f6b84c04eb">elements</a> (MeshType const &amp;mesh, vf::Expr&lt; ExprType &gt; const &amp;<a class="el" href="namespaceFeel.html#a338e05dd5e37f3594666f0a00e029d3d">expr</a>, Ts &amp;&amp;... v)</td></tr>
+<tr class="separator:abf439cd723a635437f1684f6b84c04eb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0a7635291366cea9d997cc9fa7dc9481"><td class="memTemplParams" colspan="2"><a id="a0a7635291366cea9d997cc9fa7dc9481" name="a0a7635291366cea9d997cc9fa7dc9481"></a>
 template&lt;typename MeshType &gt; </td></tr>
 <tr class="memitem:a0a7635291366cea9d997cc9fa7dc9481"><td class="memTemplItemLeft" align="right" valign="top">ext_elements_t&lt; MeshType &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>elementsWithMarkedFaces</b> (MeshType const &amp;imesh, boost::any const &amp;flag, EntityProcessType entity=EntityProcessType::LOCAL_ONLY)</td></tr>
@@ -2478,6 +2493,10 @@ template&lt;typename MeshSupportType , std::enable_if_t&lt; std::is_base_of_v&lt
 <tr class="memitem:ab247f341a8496755e51ca1aa482f123c"><td class="memTemplParams" colspan="2">template&lt;typename MeshType , std::enable_if_t&lt; std::is_base_of_v&lt; <a class="el" href="classFeel_1_1MeshBase.html">MeshBase</a>&lt;&gt;, unwrap_ptr_t&lt; MeshType &gt; &gt;, <a class="el" href="classint.html">int</a> &gt;  = 0&gt; </td></tr>
 <tr class="memitem:ab247f341a8496755e51ca1aa482f123c"><td class="memTemplItemLeft" align="right" valign="top">internalfaces_t&lt; MeshType &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#ab247f341a8496755e51ca1aa482f123c">internalfaces</a> (MeshType const &amp;mesh)</td></tr>
 <tr class="separator:ab247f341a8496755e51ca1aa482f123c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9f9ddee83c318e58569c0b6d63074003"><td class="memTemplParams" colspan="2"><a id="a9f9ddee83c318e58569c0b6d63074003" name="a9f9ddee83c318e58569c0b6d63074003"></a>
+template&lt;typename MeshType , std::enable_if_t&lt; std::is_base_of_v&lt; <a class="el" href="classFeel_1_1MeshBase.html">MeshBase</a>&lt;&gt;, unwrap_ptr_t&lt; MeshType &gt; &gt;, <a class="el" href="classint.html">int</a> &gt;  = 0&gt; </td></tr>
+<tr class="memitem:a9f9ddee83c318e58569c0b6d63074003"><td class="memTemplItemLeft" align="right" valign="top">internalfaces_t&lt; MeshType &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>internalfaces</b> (MeshType const &amp;mesh, elements_pid_t&lt; MeshType &gt; const &amp;r)</td></tr>
+<tr class="separator:a9f9ddee83c318e58569c0b6d63074003"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9aadda1dd4a1e50faef8b10bd2c1b249"><td class="memTemplParams" colspan="2">template&lt;typename MeshType &gt; </td></tr>
 <tr class="memitem:a9aadda1dd4a1e50faef8b10bd2c1b249"><td class="memTemplItemLeft" align="right" valign="top">internalpoints_t&lt; MeshType &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#a9aadda1dd4a1e50faef8b10bd2c1b249">internalpoints</a> (MeshType const &amp;mesh)</td></tr>
 <tr class="separator:a9aadda1dd4a1e50faef8b10bd2c1b249"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -3818,6 +3837,9 @@ constexpr auto &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>_matr
 <tr class="memitem:a820f60bd9949334308bdff5aef06f129"><td class="memItemLeft" align="right" valign="top"><a id="a820f60bd9949334308bdff5aef06f129" name="a820f60bd9949334308bdff5aef06f129"></a>
 constexpr auto &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>_matrixB</b> = NA::identifier&lt;na::matrixB&gt;</td></tr>
 <tr class="separator:a820f60bd9949334308bdff5aef06f129"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9e6745e8b6164442300b54f7f6586884"><td class="memItemLeft" align="right" valign="top"><a id="a9e6745e8b6164442300b54f7f6586884" name="a9e6745e8b6164442300b54f7f6586884"></a>
+constexpr auto &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>_max</b> = NA::identifier&lt;na::max&gt;</td></tr>
+<tr class="separator:a9e6745e8b6164442300b54f7f6586884"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adfd26663c4c687bda5fcbd39b795a957"><td class="memItemLeft" align="right" valign="top"><a id="adfd26663c4c687bda5fcbd39b795a957" name="adfd26663c4c687bda5fcbd39b795a957"></a>
 constexpr auto &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>_max_points_used</b> = NA::identifier&lt;na::max_points_used&gt;</td></tr>
 <tr class="separator:adfd26663c4c687bda5fcbd39b795a957"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -3830,6 +3852,9 @@ constexpr auto &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>_mesh
 <tr class="memitem:a0754a7d902973ba9daf51b7bf162a1ed"><td class="memItemLeft" align="right" valign="top"><a id="a0754a7d902973ba9daf51b7bf162a1ed" name="a0754a7d902973ba9daf51b7bf162a1ed"></a>
 constexpr auto &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>_metric</b> = NA::identifier&lt;na::metric&gt;</td></tr>
 <tr class="separator:a0754a7d902973ba9daf51b7bf162a1ed"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a11eca0019979b8b06c95e76a5d28113e"><td class="memItemLeft" align="right" valign="top"><a id="a11eca0019979b8b06c95e76a5d28113e" name="a11eca0019979b8b06c95e76a5d28113e"></a>
+constexpr auto &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>_min</b> = NA::identifier&lt;na::min&gt;</td></tr>
+<tr class="separator:a11eca0019979b8b06c95e76a5d28113e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4ab8115298e9b471b327572a38c21d2a"><td class="memItemLeft" align="right" valign="top"><a id="a4ab8115298e9b471b327572a38c21d2a" name="a4ab8115298e9b471b327572a38c21d2a"></a>
 constexpr auto &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>_min_theta</b> = NA::identifier&lt;na::min_theta&gt;</td></tr>
 <tr class="separator:a4ab8115298e9b471b327572a38c21d2a"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -4091,6 +4116,9 @@ constexpr auto &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>_scal
 <tr class="memitem:ac5bea3245a76514f0a026aaa617305d9"><td class="memItemLeft" align="right" valign="top"><a id="ac5bea3245a76514f0a026aaa617305d9" name="ac5bea3245a76514f0a026aaa617305d9"></a>
 constexpr auto &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>_script</b> = NA::identifier&lt;na::script&gt;</td></tr>
 <tr class="separator:ac5bea3245a76514f0a026aaa617305d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a36a9a6055d1a387f41ff0184a050637f"><td class="memItemLeft" align="right" valign="top"><a id="a36a9a6055d1a387f41ff0184a050637f" name="a36a9a6055d1a387f41ff0184a050637f"></a>
+constexpr auto &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>_selector</b> = NA::identifier&lt;na::selector&gt;</td></tr>
+<tr class="separator:a36a9a6055d1a387f41ff0184a050637f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac26ba0a8fc13caac271f85f4febcd4da"><td class="memItemLeft" align="right" valign="top"><a id="ac26ba0a8fc13caac271f85f4febcd4da" name="ac26ba0a8fc13caac271f85f4febcd4da"></a>
 constexpr auto &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>_sep</b> = NA::identifier&lt;na::sep&gt;</td></tr>
 <tr class="separator:ac26ba0a8fc13caac271f85f4febcd4da"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -4205,6 +4233,9 @@ constexpr auto &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>_use_
 <tr class="memitem:ad4db8845f05f6c6ca813e59624f09558"><td class="memItemLeft" align="right" valign="top"><a id="ad4db8845f05f6c6ca813e59624f09558" name="ad4db8845f05f6c6ca813e59624f09558"></a>
 constexpr auto &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>_usenames</b> = NA::identifier&lt;na::usenames&gt;</td></tr>
 <tr class="separator:ad4db8845f05f6c6ca813e59624f09558"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1d9887024fc4cb4b69e03551efb91dd7"><td class="memItemLeft" align="right" valign="top"><a id="a1d9887024fc4cb4b69e03551efb91dd7" name="a1d9887024fc4cb4b69e03551efb91dd7"></a>
+constexpr auto &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>_value</b> = NA::identifier&lt;na::value&gt;</td></tr>
+<tr class="separator:a1d9887024fc4cb4b69e03551efb91dd7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3ae2023a47bd68e9b7312062bcf6c337"><td class="memItemLeft" align="right" valign="top"><a id="a3ae2023a47bd68e9b7312062bcf6c337" name="a3ae2023a47bd68e9b7312062bcf6c337"></a>
 constexpr auto &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>_value_on_diagonal</b> = NA::identifier&lt;na::value_on_diagonal&gt;</td></tr>
 <tr class="separator:a3ae2023a47bd68e9b7312062bcf6c337"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -5155,7 +5186,7 @@ template&lt;typename IteratorType , typename Predicate &gt; </div>
 <p>Provides the complement of the set of entities given by <code></code>[begin(it),end(it)] with respect to the negation of predicate <code>pred</code>. </p>
 <div class="fragment"><div class="line"><span class="comment">// get all faces not marked by marker1 &quot;R&quot;</span></div>
 <div class="line"><span class="keyword">auto</span> set = <a class="code hl_function" href="namespaceFeel.html#ab17b89f0643bc3b4a432c8d44dd15e7b">complement</a>( <a class="code hl_function" href="namespaceFeel.html#a447e4f926bcdc43957a72c96dde8e71a">faces</a>(mesh), [&amp;mesh]( <span class="keyword">auto</span> <span class="keyword">const</span>&amp; e ) { <span class="keywordflow">return</span> e.marker() == mesh-&gt;markerName( <span class="stringliteral">&quot;R&quot;</span> ); });</div>
-<div class="ttc" id="anamespaceFeel_html_a447e4f926bcdc43957a72c96dde8e71a"><div class="ttname"><a href="namespaceFeel.html#a447e4f926bcdc43957a72c96dde8e71a">Feel::faces</a></div><div class="ttdeci">faces_pid_t&lt; MeshType &gt; faces(MeshType const &amp;mesh)</div><div class="ttdef"><b>Definition:</b> filters.hpp:374</div></div>
+<div class="ttc" id="anamespaceFeel_html_a447e4f926bcdc43957a72c96dde8e71a"><div class="ttname"><a href="namespaceFeel.html#a447e4f926bcdc43957a72c96dde8e71a">Feel::faces</a></div><div class="ttdeci">faces_pid_t&lt; MeshType &gt; faces(MeshType const &amp;mesh)</div><div class="ttdef"><b>Definition:</b> filters.hpp:435</div></div>
 <div class="ttc" id="anamespaceFeel_html_ab17b89f0643bc3b4a432c8d44dd15e7b"><div class="ttname"><a href="namespaceFeel.html#ab17b89f0643bc3b4a432c8d44dd15e7b">Feel::complement</a></div><div class="ttdeci">ext_entities_from_iterator_t&lt; IteratorType &gt; complement(IteratorType &amp;&amp;it, Predicate pred)</div><div class="ttdoc">Provides the complement of the set of entities given by [begin(it),end(it)] with respect to the negat...</div><div class="ttdef"><b>Definition:</b> complement.hpp:43</div></div>
 </div><!-- fragment --> 
 </div>
@@ -5195,8 +5226,8 @@ template&lt;typename IteratorType , typename... Args&gt; </div>
 <div class="line"><span class="comment">// it can then be used eg to create a submesh</span></div>
 <div class="line"><span class="keyword">auto</span> submesh = createSubmesh( mesh, subset );</div>
 <div class="ttc" id="anamespaceFeel_html_a1411206eb551cee7af2dda6338cc2999"><div class="ttname"><a href="namespaceFeel.html#a1411206eb551cee7af2dda6338cc2999">Feel::concatenate</a></div><div class="ttdeci">FEELPP_EXPORT Feel::concatenate_t&lt; IteratorType &gt; concatenate(IteratorType &amp;&amp;it, Args &amp;&amp;... args)</div><div class="ttdoc">this function takes a set of iterators over geometrical entities of the same type (e....</div><div class="ttdef"><b>Definition:</b> concatenate.hpp:53</div></div>
-<div class="ttc" id="anamespaceFeel_html_a70e9593e01ccdba4f55d7ca7d77f0262"><div class="ttname"><a href="namespaceFeel.html#a70e9593e01ccdba4f55d7ca7d77f0262">Feel::markedfaces</a></div><div class="ttdeci">markedfaces_t&lt; MeshType &gt; markedfaces(MeshType const &amp;mesh)</div><div class="ttdef"><b>Definition:</b> filters.hpp:437</div></div>
-<div class="ttc" id="anamespaceFeel_html_ab247f341a8496755e51ca1aa482f123c"><div class="ttname"><a href="namespaceFeel.html#ab247f341a8496755e51ca1aa482f123c">Feel::internalfaces</a></div><div class="ttdeci">internalfaces_t&lt; MeshType &gt; internalfaces(MeshType const &amp;mesh)</div><div class="ttdef"><b>Definition:</b> filters.hpp:516</div></div>
+<div class="ttc" id="anamespaceFeel_html_a70e9593e01ccdba4f55d7ca7d77f0262"><div class="ttname"><a href="namespaceFeel.html#a70e9593e01ccdba4f55d7ca7d77f0262">Feel::markedfaces</a></div><div class="ttdeci">markedfaces_t&lt; MeshType &gt; markedfaces(MeshType const &amp;mesh)</div><div class="ttdef"><b>Definition:</b> filters.hpp:498</div></div>
+<div class="ttc" id="anamespaceFeel_html_ab247f341a8496755e51ca1aa482f123c"><div class="ttname"><a href="namespaceFeel.html#ab247f341a8496755e51ca1aa482f123c">Feel::internalfaces</a></div><div class="ttdeci">internalfaces_t&lt; MeshType &gt; internalfaces(MeshType const &amp;mesh)</div><div class="ttdef"><b>Definition:</b> filters.hpp:601</div></div>
 </div><!-- fragment --> 
 </div>
 </div>
@@ -5235,8 +5266,6 @@ template&lt;typename... Ts&gt; </div>
 <div class="line"><span class="keyword">auto</span> ctx = <a class="code hl_function" href="namespaceFeel.html#aa913270cd2843deef2b86218e20a88f3">context</a>(_geomap=Xh-&gt;gm(),_type=on_elements_t(),_pointset=Xh-&gt;fe()-&gt;points());</div>
 <div class="ttc" id="anamespaceFeel_html_aa913270cd2843deef2b86218e20a88f3"><div class="ttname"><a href="namespaceFeel.html#aa913270cd2843deef2b86218e20a88f3">Feel::context</a></div><div class="ttdeci">auto context(Ts &amp;&amp;... v)</div><div class="ttdoc">get the the geometric mapping context associated to a functionspace</div><div class="ttdef"><b>Definition:</b> context.hpp:74</div></div>
 </div><!-- fragment --><dl class="section return"><dt>Returns</dt><dd>the context </dd></dl>
-
-<p class="reference">Referenced by <a class="el" href="namespaceFeel.html#a93edd48ccb6abecda7ce9fa360c73d2a">internalelements()</a>.</p>
 
 </div>
 </div>
@@ -5518,13 +5547,13 @@ template&lt;typename MeshType , typename EntityRangeType &gt; </div>
 
 </div>
 </div>
-<a id="a25bf2666551920f721aeddc8d7371a6f" name="a25bf2666551920f721aeddc8d7371a6f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a25bf2666551920f721aeddc8d7371a6f">&#9670;&nbsp;</a></span>elements() <span class="overload">[4/4]</span></h2>
+<a id="abf439cd723a635437f1684f6b84c04eb" name="abf439cd723a635437f1684f6b84c04eb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abf439cd723a635437f1684f6b84c04eb">&#9670;&nbsp;</a></span>elements() <span class="overload">[4/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename MeshType , typename ExprType , std::enable_if_t&lt; std::is_base_of_v&lt; <a class="el" href="classFeel_1_1MeshBase.html">MeshBase</a>&lt;&gt;, unwrap_ptr_t&lt; MeshType &gt; &gt;, <a class="el" href="classint.html">int</a> &gt;  = 0&gt; </div>
+template&lt;typename MeshType , typename ExprType , typename... Ts, std::enable_if_t&lt; std::is_base_of_v&lt; <a class="el" href="classFeel_1_1MeshBase.html">MeshBase</a>&lt;&gt;, decay_type&lt; std::remove_pointer_t&lt; MeshType &gt; &gt; &gt;, <a class="el" href="classint.html">int</a> &gt;  = 0&gt; </div>
       <table class="memname">
         <tr>
           <td class="memname">elements_pid_t&lt; MeshType &gt; Feel::elements </td>
@@ -5536,7 +5565,13 @@ template&lt;typename MeshType , typename ExprType , std::enable_if_t&lt; std::is
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">vf::Expr&lt; ExprType &gt; const &amp;&#160;</td>
-          <td class="paramname"><em>expr</em>&#160;</td>
+          <td class="paramname"><em>expr</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Ts &amp;&amp;...&#160;</td>
+          <td class="paramname"><em>v</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -6251,8 +6286,6 @@ template&lt;typename MeshType &gt; </div>
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>a pair of iterators to iterate over elements of the mesh which are stricly within the domain that is to say they do not share a face with the boundary </dd></dl>
 
-<p class="reference">References <a class="el" href="namespaceFeel.html#aa913270cd2843deef2b86218e20a88f3">context()</a>.</p>
-
 </div>
 </div>
 <a id="ab247f341a8496755e51ca1aa482f123c" name="ab247f341a8496755e51ca1aa482f123c"></a>
@@ -6428,8 +6461,8 @@ template&lt;typename IteratorType , typename... Args&gt; </div>
 <div class="line"><span class="keyword">auto</span> subset = <a class="code hl_function" href="namespaceFeel.html#aca803a191f8742d8bbd3a165cac73836">intersect</a>( <a class="code hl_function" href="namespaceFeel.html#a93edd48ccb6abecda7ce9fa360c73d2a">internalelements</a>(mesh), <a class="code hl_function" href="namespaceFeel.html#ac120aa5c05572bd2a1b983f0b66b4f69">markedelements</a>(mesh,<span class="stringliteral">&quot;omega&quot;</span>) );</div>
 <div class="line"><span class="comment">// it can then be used eg to create a submesh</span></div>
 <div class="line"><span class="keyword">auto</span> submesh = createSubmesh( mesh, subset );</div>
-<div class="ttc" id="anamespaceFeel_html_a93edd48ccb6abecda7ce9fa360c73d2a"><div class="ttname"><a href="namespaceFeel.html#a93edd48ccb6abecda7ce9fa360c73d2a">Feel::internalelements</a></div><div class="ttdeci">internalelements_t&lt; MeshType &gt; internalelements(MeshType const &amp;mesh)</div><div class="ttdef"><b>Definition:</b> filters.hpp:201</div></div>
-<div class="ttc" id="anamespaceFeel_html_ac120aa5c05572bd2a1b983f0b66b4f69"><div class="ttname"><a href="namespaceFeel.html#ac120aa5c05572bd2a1b983f0b66b4f69">Feel::markedelements</a></div><div class="ttdeci">markedelements_t&lt; MeshType &gt; markedelements(MeshType const &amp;mesh)</div><div class="ttdef"><b>Definition:</b> filters.hpp:261</div></div>
+<div class="ttc" id="anamespaceFeel_html_a93edd48ccb6abecda7ce9fa360c73d2a"><div class="ttname"><a href="namespaceFeel.html#a93edd48ccb6abecda7ce9fa360c73d2a">Feel::internalelements</a></div><div class="ttdeci">internalelements_t&lt; MeshType &gt; internalelements(MeshType const &amp;mesh)</div><div class="ttdef"><b>Definition:</b> filters.hpp:262</div></div>
+<div class="ttc" id="anamespaceFeel_html_ac120aa5c05572bd2a1b983f0b66b4f69"><div class="ttname"><a href="namespaceFeel.html#ac120aa5c05572bd2a1b983f0b66b4f69">Feel::markedelements</a></div><div class="ttdeci">markedelements_t&lt; MeshType &gt; markedelements(MeshType const &amp;mesh)</div><div class="ttdef"><b>Definition:</b> filters.hpp:322</div></div>
 <div class="ttc" id="anamespaceFeel_html_aca803a191f8742d8bbd3a165cac73836"><div class="ttname"><a href="namespaceFeel.html#aca803a191f8742d8bbd3a165cac73836">Feel::intersect</a></div><div class="ttdeci">FEELPP_EXPORT Feel::intersect_t&lt; IteratorType &gt; intersect(IteratorType &amp;&amp;it, Args &amp;&amp;... args)</div><div class="ttdoc">this function takes a set of iterators over geometrical entities of the same type (e....</div><div class="ttdef"><b>Definition:</b> intersect.hpp:52</div></div>
 </div><!-- fragment --> 
 </div>
@@ -7086,7 +7119,7 @@ template&lt;typename CollectionOfRangeT , std::enable_if_t&lt; is_range_v&lt; ty
 </dl>
 <p>The following code prints in the logfile the number of elements in the mesh that are marked with marker1 equal to 1:</p>
 <div class="fragment"><div class="line">LOG(INFO) &lt;&lt; <span class="stringliteral">&quot;number of elements = &quot;</span> &lt;&lt; <a class="code hl_function" href="namespaceFeel.html#a00e07ff1ab71ccbe6edeb6e4304358a3">nelements</a>( <a class="code hl_function" href="namespaceFeel.html#ac120aa5c05572bd2a1b983f0b66b4f69">markedelements</a>(mesh,{1,2,3}) ) &lt;&lt; <span class="stringliteral">&quot;\n&quot;</span>;</div>
-<div class="ttc" id="anamespaceFeel_html_a00e07ff1ab71ccbe6edeb6e4304358a3"><div class="ttname"><a href="namespaceFeel.html#a00e07ff1ab71ccbe6edeb6e4304358a3">Feel::nelements</a></div><div class="ttdeci">size_type nelements(RangeT const &amp;its, bool global=false, worldcomm_t const &amp;worldComm=Environment::worldComm())</div><div class="ttdef"><b>Definition:</b> filters.hpp:808</div></div>
+<div class="ttc" id="anamespaceFeel_html_a00e07ff1ab71ccbe6edeb6e4304358a3"><div class="ttname"><a href="namespaceFeel.html#a00e07ff1ab71ccbe6edeb6e4304358a3">Feel::nelements</a></div><div class="ttdeci">size_type nelements(RangeT const &amp;its, bool global=false, worldcomm_t const &amp;worldComm=Environment::worldComm())</div><div class="ttdef"><b>Definition:</b> filters.hpp:923</div></div>
 </div><!-- fragment --> 
 </div>
 </div>

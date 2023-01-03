@@ -188,5 +188,6 @@ var group__Core =
     [ "Feel::range", "group__Core.html#ga85b880786b296ce86548e22f126f33f9", null ],
     [ "Feel::range", "group__Core.html#ga9ac2567d303c357e7c0de44280697997", null ],
     [ "Feel::range", "group__Core.html#ga024e23db145273f363dfe1a77bfb8e33", null ],
-    [ "Feel::sanitize", "group__Core.html#gaa90565f9cd5f52a52eeea0e4b7858b87", null ]
+    [ "Feel::sanitize", "group__Core.html#gaa90565f9cd5f52a52eeea0e4b7858b87", null ],
+    [ "do_reduce", "group__Core.html#gadb09701b29e693e3be3a506482791f31", null ]
 ];

@@ -714,6 +714,13 @@ var namespaceFeel =
       [ "GEOMETRY_4", "namespaceFeel.html#ga8a2b0de2d64f5281612ba8d3077fbfd6a54503d8991db83b0881690920230a997", null ],
       [ "GEOMETRY_5", "namespaceFeel.html#ga8a2b0de2d64f5281612ba8d3077fbfd6ac4e0f60e28b63a4d720202b5bee0bea9", null ]
     ] ],
+    [ "select_elements_from_expression", "namespaceFeel.html#ab7f2deb2e5dc9ba06758a8b4c07f33e2", [
+      [ "with_positive_values", "namespaceFeel.html#ab7f2deb2e5dc9ba06758a8b4c07f33e2ae4cc60549cfa4680a69413e688b94831", null ],
+      [ "with_negative_values", "namespaceFeel.html#ab7f2deb2e5dc9ba06758a8b4c07f33e2a8fd15b77e08cec3e518566d39141c82a", null ],
+      [ "with_changing_sign", "namespaceFeel.html#ab7f2deb2e5dc9ba06758a8b4c07f33e2a294e1eb4e759fb09fed9df504c1cde93", null ],
+      [ "with_value", "namespaceFeel.html#ab7f2deb2e5dc9ba06758a8b4c07f33e2a3150aa298f8cf21450d1ffe260b17ac8", null ],
+      [ "with_value_range", "namespaceFeel.html#ab7f2deb2e5dc9ba06758a8b4c07f33e2a2e6ef37b9df82914524fe7a4c1a97f35", null ]
+    ] ],
     [ "Zone", "namespaceFeel.html#a277c080cab932bfd954d9e25fa59886c", [
       [ "LOCAL", "namespaceFeel.html#a277c080cab932bfd954d9e25fa59886ca54b4c4075463b2e02cd69f5cd139b5b2", null ],
       [ "GLOBAL", "namespaceFeel.html#a277c080cab932bfd954d9e25fa59886ca6eecfba72d12922ee1dead07a0ef3334", null ],
@@ -745,7 +752,7 @@ var namespaceFeel =
     [ "elements", "namespaceFeel.html#abdab447afcf746e7e621c56c1d6dc06b", null ],
     [ "elements", "namespaceFeel.html#a092cfefd0b96a371f68850ab814bceec", null ],
     [ "elements", "namespaceFeel.html#a4088a4938a5563aedcfc6019f950cce0", null ],
-    [ "elements", "namespaceFeel.html#a25bf2666551920f721aeddc8d7371a6f", null ],
+    [ "elements", "namespaceFeel.html#abf439cd723a635437f1684f6b84c04eb", null ],
     [ "entityMarkers", "namespaceFeel.html#a1b1e565a5142f5c83b4d1b5e54296063", null ],
     [ "enumerate", "namespaceFeel.html#a957bcceae9034d9d5f0b2f16aeaa7ed3", null ],
     [ "etaQ", "namespaceFeel.html#ae5a32c718addd9a235b0bff89af5f6c3", null ],
