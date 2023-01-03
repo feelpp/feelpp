@@ -7,7 +7,9 @@ foreach(TEST json git traits singleton enumerate factory debug context simget ${
   feelpp_add_test( ${TEST} )
 
 endforeach()
-feelpp_add_test(taskflow LINK_LIBRARIES Feelpp::feelpp_taskflow)
+if ( SPECX_FOUND )
+  feelpp_add_test(taskflow LINK_LIBRARIES Feelpp::feelpp_taskflow)
+endif()
 feelpp_add_test( range )
 
 feelpp_get_compile_definition(Feelpp::feelpp FEELPP_HAS_PETSC)
