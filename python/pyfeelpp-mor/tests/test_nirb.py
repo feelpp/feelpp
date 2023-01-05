@@ -11,17 +11,17 @@ cases = [
         #  (('testcase/nirb/lid-driven-cavity/', 'cfd2d.cfg', 'cfd2d.json', False), 'lid-driven-cavity w/o rect.'),
         #  (('testcase/nirb/lid-driven-cavity/', 'cfd2d.cfg', 'cfd2d.json', True) , 'lid-driven-cavity rect'),
          (('testcase/nirb/square', 'square.cfg', 'square.json', False, False), 'square2d w/o rect wogreedy'),
-        #  (('testcase/nirb/square', 'square.cfg', 'square.json', True, False) , 'square2d rect wogreedy'),
+         (('testcase/nirb/square', 'square.cfg', 'square.json', True, False) , 'square2d rect wogreedy'),
          (('testcase/nirb/square', 'square.cfg', 'square.json', True, True) , 'square2d rect egreedy'),
-        #  (('testcase/nirb/thermal-fin-3d', 'thermal-fin.cfg', 'thermal-fin.json', False, False), 'thermal-fin-3d w/o rect wogreedy'),
-        #  (('testcase/nirb/thermal-fin-3d', 'thermal-fin.cfg', 'thermal-fin.json', True, False) , 'thermal-fin-3d rect wogreedy'),
+         (('testcase/nirb/thermal-fin-3d', 'thermal-fin.cfg', 'thermal-fin.json', False, False), 'thermal-fin-3d w/o rect wogreedy'),
+         (('testcase/nirb/thermal-fin-3d', 'thermal-fin.cfg', 'thermal-fin.json', True, False) , 'thermal-fin-3d rect wogreedy'),
         ]
 # NB: for the name of the test, wogreedy is a keyword standing for "without greedy", and egreedy for "enable greedy" 
 cases_params, cases_ids = list(zip(*cases))
 
 
 def run_offline(model_path, rect, greedy):
-    nbSnap = 15
+    nbSnap = 6
     nirb_config = feelpp.readJson(model_path)['nirb']
     nirb_config['doRectification'] = rect
     nirb_off = nirbOffline(**nirb_config, initCoarse=True)
@@ -40,7 +40,7 @@ def run_offline(model_path, rect, greedy):
 
 
 def run_online(model_path, rect):
-    nbSnap=15
+    nbSnap=6
     nirb_config = feelpp.readJson(model_path)['nirb']
     nirb_config['doRectification'] = rect
     nirb_on = nirbOnline(**nirb_config)
