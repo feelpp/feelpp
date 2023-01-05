@@ -5,6 +5,7 @@ import time
 import json
 import argparse
 from test_perf_nirb import online_error_sampling
+import pandas as pd 
 
 
 if __name__ == "__main__":
@@ -30,6 +31,7 @@ if __name__ == "__main__":
     if nbSnap==None:
         nbSnap = config_nirb['nbSnapshots']
 
+    config_nirb['greedy-generation'] = False 
     doGreedy = config_nirb['greedy-generation']
     doRectification = config_nirb['doRectification']
     rectPath = ["noRect", "Rect"][doRectification]
@@ -40,8 +42,13 @@ if __name__ == "__main__":
     else:
         RESPATH = outdir
     
+
+
+    # config_nirb['coarsemesh_path'] = f"$cfgdir/square9coarse.msh"
+    # config_nirb['finemesh_path'] = f"$cfgdir/square9fine.msh"
+    
     ### Initializa the nirb object
-    nirb_off = nirbOffline(initCoarse=True, **config_nirb)
+    nirb_off = nirbOffline(initCoarse=doGreedy, **config_nirb)
 
     start = time.time()
     ###
@@ -56,22 +63,41 @@ if __name__ == "__main__":
     #     s = nirb_off.Dmu.sampling()
     #     N_train = s.readFromFile('./sampling.sample')
     #     Xi_train = s.getVector()
+    Xi_path = RESPATH + '/samplingtrain.sample'
+    if os.path.isfile(Xi_path):
+        s = nirb_off.Dmu.sampling()
+        N = s.readFromFile(Xi_path)
+        # assert N == nbSnap
+        if N== nbSnap:
+            Xi_train = s.getVector()
+        else:
+            Xi_train = generatedAndSaveSampling(nirb_off.Dmu, nbSnap, path=Xi_path, samplingMode="log-random")
+        if feelpp.Environment.isMasterRank():
+            print(f"[NIRB] Xi_train loaded from {Xi_path}") 
+    else :
+        Xi_train = generatedAndSaveSampling(nirb_off.Dmu, nbSnap, path=Xi_path, samplingMode="log-random")
 
     nirb_off.generateOperators(coarse=True)
 
     if doGreedy:
         _, Xi_train, _ = nirb_off.initProblemGreedy(100, 1e-5, Nmax=config_nirb['nbSnapshots'], Xi_train=Xi_train, computeCoarse=True, samplingMode="random")
     else:
-        Xi_train = nirb_off.initProblem(nbSnap)
+        Xi_train = nirb_off.initProblem(nbSnap, Xi_train=Xi_train)
     nirb_off.generateReducedBasis(regulParam=1.e-10)
-    # nirb_off.orthonormalizeL2()
-    # nirb_off.orthonormalizeH1()
+
     nirb_off.saveData(RESPATH, force=True)
 
+    Err = nirb_off.checkConvergence()
+
+    df = pd.DataFrame(Err)
+
+    file =RESPATH +f"/offlineConvError.csv"
+    df.to_csv(file, index=False, header=True)
+    
     finish = time.time()
 
-    # if feelpp.Environment.isMasterRank():
-    #     print("Is L2 orthonormalized ?", nirb_off.checkL2Orthonormalized())
+    if feelpp.Environment.isMasterRank():
+        print("Is L2 orthonormalized ?", nirb_off.checkL2Orthonormalized())
     #     print("Is H1 orthonormalized ? ", nirb_off.checkH1Orthonormalized())
 
     perf = []

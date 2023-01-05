@@ -1,6 +1,7 @@
 SetFactory("OpenCASCADE");
 //+
-h = 0.03125;
+h = 0.0625;
+Printf("Charateristic Length = %f", h);
 
 N = DefineNumber[ 4, Name "Parameters/N" ];
 L = DefineNumber[ 2.5, Name "Parameters/L" ];
