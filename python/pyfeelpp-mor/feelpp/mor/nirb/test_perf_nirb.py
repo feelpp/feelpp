@@ -26,7 +26,7 @@ def offline(nirb, RESPATH, doGreedy, N, Xi_train=None, regulParam=1e-10):
     start = time.time()
     nirb.generateOperators(coarse=True)
     if doGreedy:
-        nirb.initProblemGreedy(500, 1e-10, Xi_train=Xi_train, Nmax=N, computeCoarse=True, samplingMode="random")
+        nirb.initProblemGreedy(500, 1e-3, Xi_train=Xi_train, Nmax=100, computeCoarse=True, samplingMode="log-random")
     else:
         nirb.initProblem(N, Xi_train=Xi_train)
     nirb.generateReducedBasis(regulParam=regulParam)
@@ -60,8 +60,7 @@ def online_error_sampling(nirb, RESPATH, Nsample=50, Xi_test=None, verbose=True,
         verbose (bool, optional): if True, print the errors. Defaults to True.
         save (bool, optional): if True, save the errors in a csv file. Defaults to False.
     """
-
-    Nsample = 50
+    
     errorN = ComputeErrorSampling(nirb, Nsample=Nsample, Xi_test=Xi_test, h1=True)
 
     df = pd.DataFrame(errorN) 
@@ -146,8 +145,8 @@ if __name__ == '__main__':
 
     nirb_file = feelpp.Environment.expand(cfg['nirb']['filename'])
     config_nirb = feelpp.readJson(nirb_file)['nirb']
-    toolboxType = config_nirb['toolboxType']
 
+    # config_nirb['greedy-generation'] = False
     model_path = config_nirb['model_path']
     doGreedy = config_nirb['greedy-generation']
     doRectification = config_nirb['doRectification']
@@ -158,26 +157,26 @@ if __name__ == '__main__':
     nbSnap=args.N
     if nbSnap==None:
         nbSnap = config_nirb['nbSnapshots']
-    
+   
     ### For time mesure in // computing
     ## square9 2D 
-    # config_nirb['coarsemesh_path'] = f"$cfgdir/square9-coarse/square9_p{size}.json"
-    # config_nirb['finemesh_path'] = f"$cfgdir/square9-fine/square9_p{size}.json"
+    # config_nirb['coarsemesh_path'] = f"$cfgdir/square9coarse_p{size}.json"
+    # config_nirb['finemesh_path'] = f"$cfgdir/square9fine_p{size}.json"
+    # config_nirb['coarsemesh_path'] = f"$cfgdir/square9coarse.msh"
+    # config_nirb['finemesh_path'] = f"$cfgdir/square9fine.msh"
     ## thermal fin 3D 
-    # config_nirb['coarsemesh_path'] = f"$cfgdir/thermal-coarse/thermal_p{size}.json"
-    # config_nirb['finemesh_path'] = f"$cfgdir/thermal-fine/thermal_p{size}.json"
-
-    # nirb_off = nirbOffline(**config_nirb, initCoarse=doGreedy)
-    # nirb_on = nirbOnline(**config_nirb)
+    config_nirb['coarsemesh_path'] = f"$cfgdir/coarseMesh.msh"
+    config_nirb['finemesh_path'] = f"$cfgdir/fineMesh.msh"
 
     Ns = [1, 2, 5, 10, 16, 20, 25, 30, 35, 40, 45, 50, 60, 70, 80, 90, 100] # number of basis functions 
-    # Ns = [60, 70, 80, 90, 100]
-
-    save = False
+    Ns = [1, 2, 5, 8, 10, 16, 20, 25, 35, 30, 40, 45, 50]
+    Ns = range(1,102, 5)
+     
+    save = False 
 
     Dmu = loadParameterSpace(model_path)
-    Xi_train_path = "results/square9/sampling_train.sample"
-    Xi_test_path = "results/square9/sampling_test.sample"
+    Xi_train_path = RESPATH + f"/sampling_train3d.sample"
+    Xi_test_path = RESPATH + f"/sampling_test3d.sample"
 
     if os.path.isfile(Xi_train_path):
         s = Dmu.sampling()
@@ -197,28 +196,36 @@ if __name__ == '__main__':
         if feelpp.Environment.isMasterRank():
             print(f"[NIRB] Xi_test loaded from {Xi_test_path}")  
     else :
-        Xi_test = generatedAndSaveSampling(Dmu, 50, path=Xi_test_path, samplingMode="log-random")
+        Xi_test = generatedAndSaveSampling(Dmu, 20, path=Xi_test_path, samplingMode="log-random")
 
+    Nsample=len(Xi_test)
+    # Xi_test=None 
+    # Nsample=10
+    ## generate nirb offline object :  
+    nirb_off = nirbOffline(**config_nirb, initCoarse=doGreedy)
+    resOffline = offline(nirb_off, RESPATH, doGreedy, Ns[-1], Xi_train=Xi_train, regulParam=1e-10)
+    
+    comm.Barrier()
 
     for N in Ns:
         N = int(N)
         print("\n\n-----------------------------")
         print(f"[NIRB] Test with N = {N}")
-        # generate nirb offline object :  
-        nirb_off = nirbOffline(**config_nirb, initCoarse=doGreedy)
-        resOffline = offline(nirb_off, RESPATH, doGreedy, N, Xi_train=Xi_train, regulParam=1e-10)
-        # get nirb online object
+        # nirb_off = nirbOffline(**config_nirb, initCoarse=doGreedy)
+        # resOffline = offline(nirb_off, RESPATH, doGreedy, N, Xi_train=Xi_train, regulParam=1e-10)
+        ### get nirb online object
         nirb_on = nirbOnline(**config_nirb)
-        err = nirb_on.loadData(nbSnap=nirb_off.N, path=RESPATH)
+        err = nirb_on.loadData(nbSnap=N, path=RESPATH)
         assert err == 0, "loadData failed"
 
-        online_error_sampling(nirb_on, RESPATH, Nsample=50, Xi_test=Xi_test, verbose=False, save=True)
+        online_error_sampling(nirb_on, RESPATH, Nsample=Nsample, Xi_test=Xi_test, verbose=False, save=True)
         # resOnline = online_time_measure(nirb_on, Nsample=50)
 
         if save:
             if feelpp.Environment.isMasterRank():
                 res = resOnline
                 res['nirb_offline'] = resOffline['nirb_offline']
+                # res = resOffline
                 df = pd.DataFrame(res) 
                 file = Path(f"{RESPATH}/nirb_time_exec.csv")
                 header = not os.path.isfile(file)
@@ -228,4 +235,5 @@ if __name__ == '__main__':
         print("=============================================")
         print(f"Run test_perf_nirb done, doRectification : {doRectification}, doGreedy : {doGreedy}")
         print(f"Result are stored in : {os.path.abspath(RESPATH)}")
+        print(f"Elapsed time offline = {resOffline}")
         print("=============================================")

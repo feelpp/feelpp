@@ -50,6 +50,14 @@ if __name__ == "__main__":
     assert err == 0, "Error while loading data"
     uHh = nirb_on.getOnlineSol(mu)
 
+    exporter = False 
+    if exporter:    
+        dirname = "nirbSol"
+        nirb_on.initExporter(dirname, toolbox="fine")
+        fieldname = 'T'
+        nirb_on.exportField(uHh,fieldname)
+        nirb_on.saveExporter()
+
     finish = time()
     
     perf = []
@@ -64,29 +72,31 @@ if __name__ == "__main__":
         file=RESPATH+f'/nirbOnline_time_exec_np{size}.dat'
     WriteVecAppend(file,perf)
 
-    # errorN = ComputeErrorSampling(nirb_on, Nsample=Nsample, h1=True)
-    errorN = ComputeErrors(nirb_on, mu, h1=True)
+    error = False
+    if error :
+        # errorN = ComputeErrorSampling(nirb_on, Nsample=Nsample, h1=True)
+        errorN = ComputeErrors(nirb_on, mu, h1=True)
 
-    df = pd.DataFrame(errorN)
-    df['N'] = nirb_on.N
+        df = pd.DataFrame(errorN)
+        df['N'] = nirb_on.N
 
-    file =RESPATH +f"/errors{Nsample}Params.csv"
+        file =RESPATH +f"/errors{Nsample}Params.csv"
 
-    header = not os.path.isfile(file)   
-    df.to_csv(file, mode='a', index=False, header=header)
+        header = not os.path.isfile(file)   
+        df.to_csv(file, mode='a', index=False, header=header)
 
-    if feelpp.Environment.isMasterRank():
-        print(f"[NIRB online] with {nirb_on.N} snapshots ")
-        print(f"[NIRB online] computed errors for {df.shape[0]} parameters ")
-        data_mean = df.mean(axis=0)
-        print("[NIRB online] Mean of errors ")
-        print(data_mean)
-        # data_min = df.min(axis=0)
-        # print("[NIRB online] Min of errors ")
-        # print(data_min)
-        # data_max = df.max(axis=0)
-        # print("[NIRB online] Max of errors ")
-        # print(data_max)
+        if feelpp.Environment.isMasterRank():
+            print(f"[NIRB online] with {nirb_on.N} snapshots ")
+            print(f"[NIRB online] computed errors for {df.shape[0]} parameters ")
+            data_mean = df.mean(axis=0)
+            print("[NIRB online] Mean of errors ")
+            print(data_mean)
+            # data_min = df.min(axis=0)
+            # print("[NIRB online] Min of errors ")
+            # print(data_min)
+            # data_max = df.max(axis=0)
+            # print("[NIRB online] Max of errors ")
+            # print(data_max)
        
 
 
