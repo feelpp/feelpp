@@ -73,9 +73,9 @@ def plot_error(dirs, names, Ns, norm='l2'):
 
 # plot_error('/data/scratch/saigre/feel-mbda/nirb/heat/np_1', [2, 3, 4, 5, 10, 15, 20, 25, 50, 100, 175, 200])
 #plot_error('/data/home/elarif/feelppdb/nirb/heat/np_1', [1, 2, 4, 6, 10, 12, 14, 16, 20, 25, 30, 35, 40, 45, 50, 70, 80, 100])
-# plot_error(['/data/scratch/saigre/feel-nirb/nirb/heat/np_1/RESULTS/Rect/Greedy/', '/data/scratch/saigre/feel-nirb/nirb/heat/np_1/RESULTS/Rect/noGreedy/'],
-        #    ['w/ Greedy', 'w/o Greedy'],
-        #    [3, 4, 5, 6, 8, 10, 12, 15, 20, 25, 30, 35, 40, 50, 75, 80])
+plot_error(['/data/scratch/saigre/feel-nirb/nirb/heat/np_1/RESULTS/Rect/Greedy/', '/data/scratch/saigre/feel-nirb/nirb/heat/np_1/RESULTS/Rect/noGreedy/'],
+           ['w/ Greedy', 'w/o Greedy'],
+           [3, 4, 5, 6, 8, 10, 12, 15, 20, 25, 30, 35, 40, 50, 75, 80])
 
 def plot_time(dataFrame=None, csv_file=None):
     
@@ -100,41 +100,30 @@ def plot_time(dataFrame=None, csv_file=None):
     plt.show()
     # tikzplotlib.save("plot.tex")
 
-def compare_time(csv1, csv2, type='nirb_offline'):
-    """compare elapsed time between two methods 
+def compare_time_parallel(csv_seq, csv_para):
+    """compare elapsed time between parallel computing and sequential one
 
     Args:
-        csv1 (str): csv file of first method
-        csv2 (str): csv file of second method 
-        type (str): type of result to plot. Defaults to 'nirb_offline' ('nirb_online', 'toolbox') 
+        csv_seq (str): csv file of sequential datas
+        csv_para (str): csv file of parallel datas 
     """
-    df1 = pd.read_csv(csv1)
-    df2 = pd.read_csv(csv2)
+    dfseq = pd.read_csv(csv_seq)
+    dfpar = pd.read_csv(csv_para)
 
-    assert 'N' in df1.keys() 
-    assert type in df1.keys(), f'type not in keys'
+    assert 'N' in dfseq.keys() 
 
-    # lkeys = [k for k in df1.keys() if k != 'N']
-    print(df1.head())
-    
-    
-    plt.figure()
-    plt.plot(df1['N'], df1[type], label= type + ' w/o Greedy')
-    plt.plot(df2['N'], df2[type], label= type + ' w/ Greedy')
-    plt.legend()
-    plt.grid('on')
-    plt.xlabel('Number of Basis functions (N)')
-    plt.ylabel('Time (s)') 
+    lkeys = [k for k in dfseq.keys() if k != 'N']
 
-    #  for k in lkeys :
-    #     plt.figure(s)
-    #     plt.plot(df1['N'], df2[k], label= k + ' 1 proc')
-    #     plt.plot(df2['N'], df2[k], label= k + ' 4 proc')
-    #     plt.legend()
-    #     plt.grid('on')
-    #     plt.xlabel('Number of Basis functions (N)')
-    #     plt.ylabel('Time (s)')
-    #     s+=1
+    s = 0 
+    for k in lkeys :
+        plt.figure(s)
+        plt.plot(dfseq['N'], dfseq[k], label= k + ' 1 proc')
+        plt.plot(dfpar['N'], dfpar[k], label= k + ' 4 proc')
+        plt.legend()
+        plt.grid('on')
+        plt.xlabel('Number of Basis functions (N)')
+        plt.ylabel('Time (s)')
+        s+=1
         
     plt.show()
     # tikzplotlib.save("plot.tex")
@@ -346,17 +335,17 @@ def compare_dataStats(df, keys='Mean', norm='l2'):
     else :
         nm = f"$L_2$"
 
-    # plt.scatter(xf, df[key_list[keys][0]], c='red', label=normUHn[norm] + 'w/o rectif')
-    # plt.scatter(xf, df[key_list[keys][1]], c='blue', label=normUHn[norm] + 'w/ rectif')
-    # plt.scatter(xf, df[key_list[keys][2]], c='green', label=normUhn[norm])
+    plt.scatter(xf, df[key_list[keys][0]], c='red', label=normUHn[norm] + 'w/o rectif')
+    plt.scatter(xf, df[key_list[keys][1]], c='blue', label=normUHn[norm] + 'w/ rectif')
+    plt.scatter(xf, df[key_list[keys][2]], c='green', label=normUhn[norm])
 
-    plt.plot(xf, df[key_list[keys][0]], c='red', label='w/o rect')
-    plt.plot(xf, df[key_list[keys][1]], c='blue', label='w/ rect')
-    plt.plot(xf, df[key_list[keys][2]], c='green', label='exact')
+    plt.plot(xf, df[key_list[keys][0]], c='red')
+    plt.plot(xf, df[key_list[keys][1]], c='blue')
+    plt.plot(xf, df[key_list[keys][2]], c='green')
 
     # interpolate norm 
-    # plt.scatter(xf, df[keyUh[norm]], label=normUh[norm])
-    plt.plot(xf, df[keyUh[norm]], label='interp')
+    plt.scatter(xf, df[keyUh[norm]], label=normUh[norm])
+    plt.plot(xf, df[keyUh[norm]])
 
     
     plt.legend()
@@ -367,8 +356,7 @@ def compare_dataStats(df, keys='Mean', norm='l2'):
     plt.show()
 
 
-
-def compare_2dataStats(df,dg, keys='Mean', norm='l2', labelpk=False):
+def compare_2dataStats(df,dg, keys='Mean', norm='l2'):
     """compare two dataFrames in respect of given keys and norm 
         keys take 'Min', 'Max' or 'Mean' 
 
@@ -394,23 +382,13 @@ def compare_2dataStats(df,dg, keys='Mean', norm='l2', labelpk=False):
         nm = f"$H_1$"
     else :
         nm = f"$L_2$"
-    
-    if labelpk :
-        labeldf = '$\mathbb{P}_1$'
-        labeldg = '$\mathbb{P}_2$'
-    else :
-        labeldf = 'w/o greedy'
-        labeldg = 'w/ greedy'
 
-    order = df[key_list[keys][0]]/dg[key_list[keys][0]]
-    print(order)
-    plt.scatter(xf, df[key_list[keys][0]], marker='o', c='red', label=normUHn[norm] + ' w/o rect -'+ labeldf)
-    plt.scatter(xg, dg[key_list[keys][0]], marker='x', c='red', label=normUHn[norm] + ' w/o rect -'+ labeldg)
+    plt.scatter(xf, df[key_list[keys][0]], marker='o', c='red', label=normUHn[norm] + ' w/o rect - $\mathbb{P}_1$')
+    plt.scatter(xg, dg[key_list[keys][0]], marker='x', c='red', label=normUHn[norm] + ' w/o rect - $\mathbb{P}_2$')
 
-    plt.scatter(xf, df[key_list[keys][1]], marker='o', c='blue', label=normUHn[norm] + ' w/ rectif -'+labeldf)
-    plt.scatter(xg, dg[key_list[keys][1]], marker='x', c='blue', label=normUHn[norm] + ' w/ rectif -'+labeldg)
+    plt.scatter(xf, df[key_list[keys][1]], marker='o', c='blue', label=normUHn[norm] + ' w/ rectif - $\mathbb{P}_1$')
+    plt.scatter(xg, dg[key_list[keys][1]], marker='x', c='blue', label=normUHn[norm] + ' w/ rectif - $\mathbb{P}_2$')
 
-    plt.plot(xf, order, c='blue', label='Greedy/noGreedy')
     plt.plot(xf, df[key_list[keys][0]], c='red')
     plt.plot(xg, dg[key_list[keys][0]], c='red')
 
@@ -421,68 +399,6 @@ def compare_2dataStats(df,dg, keys='Mean', norm='l2', labelpk=False):
     plt.yscale('log')
     plt.xlabel("Number of basis function (N)")
     plt.ylabel(f"{nm} norm of Errors (in log scale)")
-    plt.grid()
-    # tikzplotlib.save(f"{keys}.tex")
-    plt.show()
-
-def compare_2dataFrame(df,dg, keys='Mean', norm='l2', dataLabel='pk'):
-    """compare two dataFrames in respect of given keys and norm 
-        keys take 'Min', 'Max' or 'Mean' 
-
-    Args:
-        df (pandas.dataFrame): _description_
-        dg (pandas.dataFrame): _description_
-        keys (str) : Min, Max or Mean 
-        norm (str) : the norm to be plotted (l2 or h1)
-        dataLabel (str) : the label of data to compare (pk : lagrange Pk interpolation, 'nested' : compare nested basis function
-                        vs no nested one, 'greedy' : compare Greedy algo Vs no Greedy)
-    """
-
-    xf = df.index
-    xg = dg.index 
-
-    if norm=='h1' or norm=='H1':
-        nm = f"$H_1$"
-    else :
-        nm = f"$L_2$"
-
-    key_list = {'Mean':['Mean', 'Mean_rec', 'Mean_uh'], 'Max':['Max', 'Max_rec','Max_uh'],
-             'Min':['Min', 'Min_rec', 'Min_uh'] }
-
-    normUHn = r"$\Vert u^\mathcal{N}_h - u^N_{Nh}\Vert_{{nm}}$"
-    
-    if dataLabel=='greedy' :
-        labeldf = ' w/ greedy'
-        labeldg = ' w/o greedy'
-    elif dataLabel=='nested':
-        labeldf = ' Nested'
-        labeldg = ' noNested'
-    else :
-        labeldf = '$\mathbb{P}_1$'
-        labeldg = '$\mathbb{P}_2$'
-
-
-    order = df[key_list[keys][0]]/dg[key_list[keys][0]]
-    
-    # plt.scatter(xf, df[key_list[keys][0]], marker='o', c='red', label=normUHn[norm] + ' w/o rect -'+ labeldf)
-    # plt.scatter(xg, dg[key_list[keys][0]], marker='x', c='red', label=normUHn[norm] + ' w/o rect -'+ labeldg)
-
-    # plt.scatter(xf, df[key_list[keys][1]], marker='o', c='blue', label=normUHn[norm] + ' w/ rectif -'+labeldf)
-    # plt.scatter(xg, dg[key_list[keys][1]], marker='x', c='blue', label=normUHn[norm] + ' w/ rectif -'+labeldg)
-
-    # plt.plot(xf, order, c='blue', label='Greedy/noGreedy')
-
-    plt.plot(xf, df[key_list[keys][0]], c='red', label= normUHn + labeldf)
-    plt.plot(xg, dg[key_list[keys][0]],'--', c='red', label=normUHn + labeldg)
-
-    plt.plot(xf, df[key_list[keys][1]], c='blue', label=labeldf )
-    plt.plot(xg, dg[key_list[keys][1]],'--', c='blue', label=labeldg)
-    
-    plt.legend()
-    plt.yscale('log')
-    plt.xlabel("Number of basis function (N)")
-    plt.ylabel(f"{nm} norm of Errors (in log scale)")
-    plt.grid()
     # tikzplotlib.save(f"{keys}.tex")
     plt.show()
 
@@ -496,46 +412,25 @@ if __name__ == "__main__":
     
     import sys 
 
-    envpath = "/data/home/elarif/feelppdb/nirb/perfs/RectHeat2d/square9old"
-
-    envpath = "/data/home/elarif/feelppdb/nirb/heat/np_1/results/Rect/"
-
-    csv1 = envpath + "noGreedy/nirb_time_exec.csv"
-    csv2 = envpath + "Greedy/nirb_time_exec.csv"
-    # compare_time(csv1, csv2, 'nirb_offline')
-
-    #%%
-    # Plot offline convergence error 
-    file = envpath + "noGreedy/offlineConvError.csv"
-    df = pd.read_csv(file, sep=',')
-    plot_dataFrame(df)
-
-    #%%
     # Warning to specifie this env path !!!!
     envpath = "/Users/elarif2/elarif/devel/docker.feel/feelppdb/nirb/heat/np_1/" 
-    envpath = "/data/home/elarif/feelppdb/nirb/heat/np_1/results/Rect/"
-    # envpath = "/data/home/elarif/feelppdb/nirb/perfs/RectHeat2d/square9old/"
- 
+
+    #%% 
     # Get dataFrame from csv file 
-    # file = envpath + "errors50ParamsLambda10P1.csv"
-    file = envpath + "Greedy/errors50Params.csv"
-    file = envpath + "noGreedy/errors20Params.csv"
+    file = envpath + "errors50ParamsLambda10P1.csv"
+    file = envpath + "errors30Params.csv"
+    file = envpath + "errors30ParamsLambda0.csv"
     # load absolute errors
-    # file = envpath + "noGreedy/offlineConvError.csv"
     dfGlob = pd.read_csv(file, sep=',')
-
-    # plot_dataFrame(dfGlob)
-
-    # # compute relative errors 
+    # compute relative errors 
     dfRel = getRelativeErrors(dfGlob)
 
-    # ### Get stats for all parameters 
+    #%%
+    ### Get stats for all parameters 
 
     l2df, h1df   = getDataStat(dfGlob) # l1 and h1 error associated 
     l2dfRel, h1dfRel = getDataStat(dfRel) # // 
 
-    # print(l2df.shape)
-    # print(l2df.index)
     # plot_dataFrame(l2df)
     compare_dataStats(l2df, keys='Mean')
 
@@ -546,44 +441,34 @@ if __name__ == "__main__":
     # compare_dataStats(h1df, keys='Min', norm='h1')
     # %%
     ## Tronctae error datas into N parameter (N<=50)
-    # N = 5
-    # dfN = troncateNparam(dfGlob, N) 
+    N = 5
+    dfN = troncateNparam(dfGlob, N) 
     
-    # l2dfN, h1dfN   = getDataStat(dfN) # l1 and h1 error associated with statistical infos 
+    l2dfN, h1dfN   = getDataStat(dfN) # l1 and h1 error associated with statistical infos 
     
-    # # plot_dataFrame(l2dfN)
-    # compare_dataStats(l2dfN, keys='Min')
+    # plot_dataFrame(l2dfN)
+    compare_dataStats(l2dfN, keys='Min')
 
     #%%
     # Compare rectification according to regularization parameter (\lambda) 
-    # shortfiles = ["errors50ParamsLambda1P1.csv", "errors50ParamsLambda3P1.csv","errors50ParamsLambda6P1.csv", 
-    #                 "errors50ParamsLambda10P1.csv", "errors50ParamsLambda0P1.csv"]
+    shortfiles = ["errors50ParamsLambda1P1.csv", "errors50ParamsLambda3P1.csv","errors50ParamsLambda6P1.csv", 
+                    "errors50ParamsLambda10P1.csv", "errors50ParamsLambda0P1.csv"]
     
-    # listdfl2, listdfh1 = [], []
+    listdfl2, listdfh1 = [], []
 
-    # for st in shortfiles:
-    #     file = envpath + st 
-    #     dfG = pd.read_csv(file, sep=',')
-    #     dl2, dh1 = getDataStat(dfG)
-    #     listdfl2.append(dl2)
-    #     listdfh1.append(dh1)
+    for st in shortfiles:
+        file = envpath + st 
+        dfG = pd.read_csv(file, sep=',')
+        dl2, dh1 = getDataStat(dfG)
+        listdfl2.append(dl2)
+        listdfh1.append(dh1)
     
-    # compare_dataFrams(listdfl2)
+    compare_dataFrams(listdfl2)
 
     # %%
     # Compare P1 vs P2 solvers  
-    
-    envpath = "/data/home/elarif/feelppdb/nirb/perfs/RectHeat2d/square9/"
-    envpath = "/data/home/elarif/feelppdb/nirb/heat/np_1/results/Rect/"
-
-    filep1 = envpath + "noGreedy/errors10ParamsEmboited.csv"
-    filep2 = envpath + "noGreedy/errors10ParamsNoEmboited.csv"
-
-    # filep1 = envpath + "Greedy/errors30Params.csv"
-    # filep2 = envpath + "noGreedy/errors30Params.csv"
-
-    # filep1 = envpath + "errors50ParamsLambda10P1.csv"
-    # filep2 = envpath + "errors50ParamsLambda10P2.csv"
+    filep1 = envpath + "errors50ParamsLambda10P1.csv"
+    filep2 = envpath + "errors50ParamsLambda10P2.csv"
 
     dfp1 = pd.read_csv(filep1, sep=',')
     dfRelp1 = getRelativeErrors(dfp1)
@@ -594,8 +479,7 @@ if __name__ == "__main__":
     l2p1, h1p1 = getDataStat(dfp1)
     l2p2, h1p2 = getDataStat(dfp2)
 
-    # compare_2dataStats(l2p1, l2p2, 'Max')
-    compare_2dataFrame(l2p1, l2p2, dataLabel='nested')
+    compare_2dataStats(l2p1, l2p2)
 
 
     # %%
