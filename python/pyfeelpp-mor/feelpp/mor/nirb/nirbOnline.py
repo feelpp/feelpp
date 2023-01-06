@@ -30,7 +30,7 @@ if __name__ == "__main__":
     nbSnap=args.N
     if nbSnap==None:
         nbSnap = config_nirb['nbSnapshots']
-    config_nirb['greedy-generation'] = False
+
     doGreedy = config_nirb['greedy-generation']
     doRectification = config_nirb['doRectification']
     rectPath = ["noRect", "Rect"][doRectification]
@@ -40,9 +40,6 @@ if __name__ == "__main__":
         RESPATH = f"results/{rectPath}/{greedyPath}"
     else:
         RESPATH = outdir
-    
-    config_nirb['coarsemesh_path'] = f"$cfgdir/coarseMesh.msh"
-    config_nirb['finemesh_path'] = f"$cfgdir/fineMesh.msh"
 
     nirb_on = nirbOnline(**config_nirb)
 
@@ -68,8 +65,6 @@ if __name__ == "__main__":
     perf.append(nirb_on.N)
     perf.append(finish-start)
 
-    Nsample = 50
-
     if doRectification:
         file=RESPATH+f'/nirbOnline_time_exec_np{size}_rectif.dat'
     else :
@@ -78,8 +73,9 @@ if __name__ == "__main__":
 
     error = False
     if error :
-        # errorN = ComputeErrorSampling(nirb_on, Nsample=Nsample, h1=True)
-        errorN = ComputeErrors(nirb_on, mu, h1=True)
+        Nsample = 50
+        errorN = ComputeErrorSampling(nirb_on, Nsample=Nsample, h1=True)
+        # errorN = ComputeErrors(nirb_on, mu, h1=True)
 
         df = pd.DataFrame(errorN)
         df['N'] = nirb_on.N
@@ -95,12 +91,12 @@ if __name__ == "__main__":
             data_mean = df.mean(axis=0)
             print("[NIRB online] Mean of errors ")
             print(data_mean)
-            # data_min = df.min(axis=0)
-            # print("[NIRB online] Min of errors ")
-            # print(data_min)
-            # data_max = df.max(axis=0)
-            # print("[NIRB online] Max of errors ")
-            # print(data_max)
+            data_min = df.min(axis=0)
+            print("[NIRB online] Min of errors ")
+            print(data_min)
+            data_max = df.max(axis=0)
+            print("[NIRB online] Max of errors ")
+            print(data_max)
        
 
 
