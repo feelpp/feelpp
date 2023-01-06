@@ -33,10 +33,14 @@ def run_offline(model_path, rect, greedy):
         _ = nirb_off.initProblem(nbSnap)
     nirb_off.generateReducedBasis(regulParam=1.e-10)
 
+    tolortho =1.e-8
+    nirb_off.orthonormalizeL2(tol=tolortho)
+    
+    assert nirb_off.checkL2Orthonormalized(tol=tolortho), "L2 orthonormalization failed"
+    # assert nirb_off.checkH1Orthonormalized(), "H1 orthonormalization failed"
+
     nirb_off.saveData(force=True)
 
-    assert nirb_off.checkL2Orthonormalized(), "L2 orthonormalization failed"
-    # assert nirb_off.checkH1Orthonormalized(), "H1 orthonormalization failed"
 
 
 def run_online(model_path, rect):
