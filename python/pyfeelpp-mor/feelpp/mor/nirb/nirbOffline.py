@@ -64,14 +64,16 @@ if __name__ == "__main__":
     else:
         Xi_train = nirb_off.initProblem(nbSnap)
     nirb_off.generateReducedBasis(regulParam=1.e-10)
-    # nirb_off.orthonormalizeL2()
+
+    tolortho = 1.e-8
+    nirb_off.orthonormalizeL2(tol=tolortho)
     # nirb_off.orthonormalizeH1()
     nirb_off.saveData(RESPATH, force=True)
 
     finish = time.time()
 
-    # if feelpp.Environment.isMasterRank():
-    #     print("Is L2 orthonormalized ?", nirb_off.checkL2Orthonormalized())
+    if feelpp.Environment.isMasterRank():
+        print("Is L2 orthonormalized ?", nirb_off.checkL2Orthonormalized(tol=tolortho))
     #     print("Is H1 orthonormalized ? ", nirb_off.checkH1Orthonormalized())
 
     perf = []
