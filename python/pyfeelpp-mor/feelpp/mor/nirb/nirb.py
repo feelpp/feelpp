@@ -21,12 +21,12 @@ import pathlib
 import os
 
 from mpi4py import MPI
-comm = MPI.COMM_WORLD
-rank = comm.Get_rank()
-size = comm.Get_size()
 
 class ToolboxModel():
-
+    """
+        class containing the common tools associated with the toolbox used 
+                    in the online and offline parts
+    """
     def __init__(self, dim, H, h, toolboxType, model_path, finemesh_path, coarsemesh_path=None, order=1, **kwargs) -> None:
         """Initialize the toolbox model class
 
@@ -53,6 +53,8 @@ class ToolboxModel():
         self.model_path = feelpp.Environment.expand(model_path)
         self.finemesh_path = feelpp.Environment.expand(finemesh_path)
 
+        self.worldcomm = feelpp.Environment.worldComm()
+
         if pathlib.Path(self.finemesh_path).suffix==".geo" :
             self.coarsemesh_path = self.finemesh_path
         else :
@@ -68,7 +70,7 @@ class ToolboxModel():
         self.outdir = None      # output directory
 
         self.initModel()
-        if feelpp.Environment.isMasterRank():
+        if self.worldcomm.isMasterRank():
             print(f"[NIRB] Initialization done")
 
 
@@ -81,7 +83,7 @@ class ToolboxModel():
         self.Dmu = loadParameterSpace(self.model_path)
         self.Ndofs = self.getFieldSpace().nDof()
 
-        if feelpp.Environment.isMasterRank():
+        if self.worldcomm.isMasterRank():
             print(f"[NIRB] Number of nodes on the fine mesh : {self.tbFine.mesh().numGlobalPoints()}")
 
     def getFieldSpace(self, coarse=False):
@@ -114,7 +116,7 @@ class ToolboxModel():
         """
         self.tbCoarse = self.setToolbox(self.H,mesh_path=self.coarsemesh_path)
         self.XH = feelpp.functionSpace(mesh=self.tbCoarse.mesh(), order=self.order)
-        if feelpp.Environment.isMasterRank():
+        if self.worldcomm.isMasterRank():
             print(f"[NIRB] Number of nodes on the coarse mesh : {self.tbCoarse.mesh().numGlobalPoints()}")
 
 
@@ -223,6 +225,12 @@ class ToolboxModel():
 
 
 class nirbOffline(ToolboxModel):
+    """
+    Generate the offline part of nirb method 
+
+    Args:
+        ToolboxModel (class): class associated to the toolbox model 
+    """
 
     def __init__(self, method="POD", doRectification=True, initCoarse=False, **kwargs) -> None:
         """Initialize the NIRB class
@@ -256,7 +264,7 @@ class nirbOffline(ToolboxModel):
 
         if self.doRectification or initCoarse:
             super().initCoarseToolbox()
-        if feelpp.Environment.isMasterRank():
+        if self.worldcomm.isMasterRank():
             print(f"[NIRB] Initialization done")
 
 
@@ -326,18 +334,18 @@ class nirbOffline(ToolboxModel):
         if computeCoarse:
             assert self.tbCoarse is not None, f"Coarse toolbox needed for computing coarse Snapshot. set doRectification->True"
             for mu in vector_mu:
-                if feelpp.Environment.isMasterRank():
+                if self.worldcomm.isMasterRank():
                     print(f"Running simulation with mu = {mu}")
                 self.fineSnapShotList.append(self.getToolboxSolution(self.tbFine, mu))
                 self.coarseSnapShotList.append(self.getToolboxSolution(self.tbCoarse, mu))
 
         else:
             for mu in vector_mu:
-                if feelpp.Environment.isMasterRank():
+                if self.worldcomm.isMasterRank():
                     print(f"Running simulation with mu = {mu}")
                 self.fineSnapShotList.append(self.getToolboxSolution(self.tbFine, mu))
 
-        if feelpp.Environment.isMasterRank():
+        if self.worldcomm.isMasterRank():
             print(f"[NIRB] Number of snapshot computed : {len(self.fineSnapShotList)}" )
 
         return vector_mu
@@ -444,11 +452,11 @@ class nirbOffline(ToolboxModel):
             self.orthonormalizeMatL2(self.coarseSnapShotListGreedy)
 
             Deltas_conv.append(Delta_star)
-            if feelpp.Environment.isMasterRank():
+            if self.worldcomm.isMasterRank():
                 print(f"[nirb] Adding snapshot with mu = {mu_star}")
                 print(f"[nirb] Greedy loop done. N = {N}, Delta_star = {Delta_star}")
 
-        if feelpp.Environment.isMasterRank():
+        if self.worldcomm.isMasterRank():
             print(f"[NIRB] Number of snapshot computed : {N}")
 
         print(Deltas_conv)
@@ -482,7 +490,7 @@ class nirbOffline(ToolboxModel):
         self.reducedBasis = self.PODReducedBasis(tolerance=tolerance)
         self.orthonormalizeL2()
         self.N = len(self.reducedBasis)
-        if feelpp.Environment.isMasterRank():
+        if self.worldcomm.isMasterRank():
             print(f"[NIRB] Number of modes : {self.N}")
         
         if len(self.l2ProductBasis)==0:
@@ -490,7 +498,7 @@ class nirbOffline(ToolboxModel):
         # if self.doBiorthonormal:
         #     self.BiOrthonormalization()
         if self.doRectification:
-            self.RectificationMat = self.Rectification(lambd=regulParam)
+            self.coeffCoarse, self.coeffFine = self.coeffRectification()
 
     def getl2ProductBasis(self):
         """get the L2 scalar product matrix with reduced basis function 
@@ -553,17 +561,16 @@ class nirbOffline(ToolboxModel):
 
         return reducedBasis
 
-    def Rectification(self, lambd=1e-10):
-        """ Compute the rectification matrix R given by :
-                R = B_h*(B_H)^-1
-                with B_h[i,j] = <U_h(s_i),phi_j >
-                and B_H[i,j] = <U_H(s_i),phi_j >
 
-        Args :
-            lambd (float) : Tikonov regularization parameter
+    def coeffRectification(self):
+        """ Compute the two matrixes used to get rectification matrix R given by :
+                
+                B_h[i,j] = <U_h(s_i),phi_j >
+                B_H[i,j] = <U_H(s_i),phi_j >
 
         Returns :
-            R (petsc.Mat) : the rectification matrix
+                B_h and B_H : the matrix of L2 scalar product between basis function and 
+                                fine and coarse snapshot 
         """
         assert len(self.reducedBasis) !=0, f"need computation of reduced basis"
 
@@ -572,22 +579,15 @@ class nirbOffline(ToolboxModel):
         for snap in self.coarseSnapShotList:
             InterpCoarseSnaps.append(interpolateOperator.interpolate(snap))
 
-        R = np.zeros((self.N,self.N))
-        BH = R.copy()
-        Bh = R.copy()
+        coeffCoarse = np.zeros((self.N, self.N))
+        coeffFine = np.zeros((self.N, self.N))
 
         for i in range(self.N):
             for j in range(self.N):
-                BH[i,j] = self.l2ScalarProductMatrix.energy(InterpCoarseSnaps[i],self.reducedBasis[j])
-                Bh[i,j] = self.l2ScalarProductMatrix.energy(self.fineSnapShotList[i],self.reducedBasis[j])
+                coeffCoarse[i,j] = self.l2ScalarProductMatrix.energy(InterpCoarseSnaps[i],self.reducedBasis[j])
+                coeffFine[i,j] = self.l2ScalarProductMatrix.energy(self.fineSnapShotList[i],self.reducedBasis[j])
 
-
-        #Thikonov regularization (AT@A +lambda I_d)^-1
-        for i in range(self.N):
-            R[i,:]=(np.linalg.inv(BH.transpose()@BH+lambd*np.eye(self.N))@BH.transpose()@Bh[:,i])
-
-        return R
-
+        return coeffCoarse, coeffFine
 
     """
     Handle Gram-Schmidt orthogonalization
@@ -612,7 +612,7 @@ class nirbOffline(ToolboxModel):
 
         if not (self.checkH1Orthonormalized() ) and nb < 10:
             self.orthonormalizeH1(nb=nb+1)
-        elif feelpp.Environment.isMasterRank():
+        elif self.worldcomm.isMasterRank():
             print(f"[NIRB] Gram-Schmidt H1 orthonormalization done after {nb+1} step"+['','s'][nb>0])
 
 
@@ -640,7 +640,7 @@ class nirbOffline(ToolboxModel):
 
         if not (self.checkL2Orthonormalized(tol=tol)) and nb < 10:
             self.orthonormalizeL2(nb=nb+1)
-        elif feelpp.Environment.isMasterRank():
+        elif self.worldcomm.isMasterRank():
             print(f"[NIRB] Gram-Schmidt L2 orthonormalization done after {nb+1} step"+['','s'][nb>0])
 
     def orthonormalizeMatL2(self, Z):
@@ -730,7 +730,7 @@ class nirbOffline(ToolboxModel):
         l2productPath = os.path.join(path,  'l2productBasis')
         l2productFilename = 'l2productBasis'
 
-        if feelpp.Environment.isMasterRank():
+        if self.worldcomm.isMasterRank():
             if os.path.isdir(path) and not force:
                 print(f"[NIRB] Directory {path} already exists. Rerun with force=True to force saving")
                 return
@@ -741,7 +741,7 @@ class nirbOffline(ToolboxModel):
             if not os.path.isdir(l2productPath):
                 os.makedirs(l2productPath)
 
-        comm.Barrier()
+        self.worldcomm.globalComm().Barrier()
 
         for i in range(len(self.reducedBasis)):
             self.reducedBasis[i].save(reducedPath, reducedFilename, suffix=str(i))
@@ -750,17 +750,25 @@ class nirbOffline(ToolboxModel):
             vec = self.Xh.element(self.l2ProductBasis[i])
             vec.save(l2productPath, l2productFilename, suffix=str(i))
 
-        rectificationFile = os.path.join(path,'rectification')
+        coeffCoarseFile = os.path.join(path,'coeffcoarse')
+        coeffFineFile = os.path.join(path,'coefffine')
         if self.doRectification:
-            np.save(rectificationFile, self.RectificationMat)
+            if self.worldcomm.isMasterRank():
+                np.save(coeffCoarseFile, self.coeffCoarse)
+                np.save(coeffFineFile, self.coeffFine)
 
         self.outdir = os.path.abspath(path)
-        if feelpp.Environment.isMasterRank():
+        if self.worldcomm.isMasterRank():
             print(f"[NIRB] Data saved in {self.outdir}")
 
 ### ONLINE PHASE ###
 
 class nirbOnline(ToolboxModel):
+    """a class to generate the online part of nirb method 
+
+    Args:
+        ToolboxModel (class): class associated to the toolbox model 
+    """
 
     def __init__(self, **kwargs):
         """Initialize the NIRB online class
@@ -790,7 +798,7 @@ class nirbOnline(ToolboxModel):
         self.interpolationOperator = self.createInterpolator(self.tbCoarse, self.tbFine)
         self.exporter = None
 
-        if feelpp.Environment.isMasterRank():
+        if self.worldcomm.isMasterRank():
             print(f"[NIRB] Initialization done")
 
     def getCompressedSol(self, mu=None, solution=None):
@@ -848,7 +856,7 @@ class nirbOnline(ToolboxModel):
             for i in range(self.N):
                 onlineSol = onlineSol + float(coef[i])*self.reducedBasis[i]
             
-            if feelpp.Environment.isMasterRank():
+            if self.worldcomm.isMasterRank():
                 print("[NIRB] Solution computed with Rectification post-process ")
         else :
             for i in range(self.N):
@@ -858,6 +866,25 @@ class nirbOnline(ToolboxModel):
 
 
         return onlineSol
+
+    def getRectification(self, coeffCoarse, coeffFine, lambd=1.e-10):
+        """compute rectification matrix associated to number of basis function selected 
+                in the online step.
+
+        Args:
+            coeffCoarse (numpy.array): the coefficient matrix gieven by (U^H_i, \phi_j)
+            coeffFine (numpy.array): the coefficient matrix (U^h_i,\phi_j)
+            lambd (float, optional): regularization parameter. Defaults to 1.e-10.
+        """
+        BH = coeffCoarse[:self.N, :self.N]
+        Bh = coeffFine[:self.N, :self.N]
+        R = np.zeros((self.N,self.N))
+
+        #Thikonov regularization (AT@A +lambda I_d)^-1@(AT@B)
+        for i in range(self.N):
+            R[i,:]=(np.linalg.inv(BH.transpose()@BH+lambd*np.eye(self.N))@BH.transpose()@Bh[:,i])
+
+        return R
 
     def generateOperators(self,h1=False):
         """Assemble L2 and H1 operators associated to the fine toolbox 
@@ -873,14 +900,14 @@ class nirbOnline(ToolboxModel):
             l2Mat.to_petsc().mat().assemble()
             return l2Mat
 
-    def loadData(self, nbSnap=None, path="./"):
+    def loadData(self, nbSnap=None, path="./", regulParam=1.e-10):
         """ 
         Load the data generated by the offline phase
 
         Args : 
             nbSnap (int, optional) : number of basis function. If not given, all the basis are loaded
             path (str, optional): Path where files are saved. Defaults to "./".
-        
+            regulParam (float, optional): regularization parameter of the rectification. Defaults to 1.e-10
         Returns :
             int: error code, 0 if all went well, 1 if not
         """
@@ -892,7 +919,7 @@ class nirbOnline(ToolboxModel):
         l2productPath = os.path.join(path, 'l2productBasis')
         l2productFilename = 'l2productBasis'
         
-        if feelpp.Environment.isMasterRank():
+        if self.worldcomm.isMasterRank():
             if not os.path.isdir(path):
                 print(f"[NIRB] Error : Could not find path {path}")
                 return 1
@@ -903,7 +930,7 @@ class nirbOnline(ToolboxModel):
                 print(f"[NIRB] Error : Could not find path {l2productPath}")
                 return 1
 
-        comm.Barrier()
+        self.worldcomm.globalComm().Barrier()
 
         self.reducedBasis = []
         self.l2ProductBasis = []
@@ -928,11 +955,14 @@ class nirbOnline(ToolboxModel):
             vec.load(l2productPath, l2productFilename, suffix=str(i))
             self.l2ProductBasis.append(vec)
 
-        rectificationFile = os.path.join(path, 'rectification.npy')
+        coeffCoarseFile = os.path.join(path,'coeffcoarse.npy')
+        coeffFineFile = os.path.join(path,'coefffine.npy')
         if self.doRectification:
-            self.RectificationMat = np.load(rectificationFile)
+            coeffCoarse = np.load(coeffCoarseFile)
+            coeffFine = np.load(coeffFineFile)
+            self.RectificationMat = self.getRectification(coeffCoarse, coeffFine, lambd=regulParam)
 
-        if feelpp.Environment.isMasterRank():
+        if self.worldcomm.isMasterRank():
             print(f"[NIRB] Data loaded from {os.path.abspath(path)}")
             print(f"[NIRB] Number of basis functions loaded : {self.N}")
         
