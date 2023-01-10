@@ -51,7 +51,7 @@ if __name__ == "__main__":
     uHh = nirb_on.getOnlineSol(mu)
     finish = time()
 
-    exporter = False  
+    exporter = True  
     if exporter:    
         dirname = "nirbSol"
         nirb_on.initExporter(dirname, toolbox="fine")
@@ -66,9 +66,9 @@ if __name__ == "__main__":
     perf.append(finish-start)
 
     if doRectification:
-        file=RESPATH+f'/nirbOnline_time_exec_np{size}_rectif.dat'
+        file=RESPATH+f'/nirbOnline_time_exec_np{nirb_on.worldcomm.globalSize()}_rectif.dat'
     else :
-        file=RESPATH+f'/nirbOnline_time_exec_np{size}.dat'
+        file=RESPATH+f'/nirbOnline_time_exec_np{nirb_on.worldcomm.globalSize()}.dat'
     WriteVecAppend(file,perf)
 
     error = False
@@ -85,7 +85,7 @@ if __name__ == "__main__":
         header = not os.path.isfile(file)   
         df.to_csv(file, mode='a', index=False, header=header)
 
-        if feelpp.Environment.isMasterRank():
+        if nirb_on.worldcomm.isMasterRank():
             print(f"[NIRB online] with {nirb_on.N} snapshots ")
             print(f"[NIRB online] computed errors for {df.shape[0]} parameters ")
             data_mean = df.mean(axis=0)
