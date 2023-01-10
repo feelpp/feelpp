@@ -4,7 +4,6 @@ from feelpp.mor.nirb.utils import WriteVecAppend, init_feelpp_environment, gener
 import time
 import json
 import argparse
-from test_perf_nirb import online_error_sampling
 
 
 if __name__ == "__main__":
@@ -72,8 +71,7 @@ if __name__ == "__main__":
 
     finish = time.time()
 
-    if feelpp.Environment.isMasterRank():
-        print("Is L2 orthonormalized ?", nirb_off.checkL2Orthonormalized(tol=tolortho))
+    print("Is L2 orthonormalized ?", nirb_off.checkL2Orthonormalized(tol=tolortho))
     #     print("Is H1 orthonormalized ? ", nirb_off.checkH1Orthonormalized())
 
     perf = []
@@ -81,14 +79,14 @@ if __name__ == "__main__":
     perf.append(finish-start)
 
     if doRectification:
-        file=RESPATH+f'/nirbOffline_time_exec_np{size}_rectif.dat'
+        file=RESPATH+f'/nirbOffline_time_exec_np{nirb_off.worldcomm.globalSize()}_rectif.dat'
     else :
-        file=RESPATH+f'/nirbOffline_time_exec_np{size}.dat'
+        file=RESPATH+f'/nirbOffline_time_exec_np{nirb_off.worldcomm.globalSize()}.dat'
     WriteVecAppend(file, perf)
 
     info = nirb_off.getInformations()
 
-    if feelpp.Environment.isMasterRank():
+    if nirb_off.worldcomm.isMasterRank():
         print(json.dumps(info, sort_keys=True, indent=4))
         print(f"[NIRB] Offline Elapsed time = ", finish-start)
         print(f"[NIRB] Offline part Done !")
