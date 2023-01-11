@@ -108,7 +108,11 @@
         "format": "cpp",
         "*.in": "cpp",
         "*.py.in": "python",
-        "texture": "cpp"
+        "texture": "cpp",
+        "charconv": "cpp",
+        "numbers": "cpp",
+        "scoped_allocator": "cpp",
+        "semaphore": "cpp"
     },
     "jupyter.notebookFileRoot": "${workspaceFolder}/build/python/install/lib/python3/dist-packages",
     "C_Cpp.configurationWarnings": "Disabled",
