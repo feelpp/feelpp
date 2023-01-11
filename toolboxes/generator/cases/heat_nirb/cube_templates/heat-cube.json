@@ -1,0 +1,108 @@
+// -*- mode: javascript -*-
+// Source for the values of rho, Cp, h : https://docs.lib.purdue.edu/iracc/1338/
+{
+    "Name": "Thermal Fin {{ dim }}d",
+    "ShortName":"ThermalFin{{ dim }}d",
+
+    "Meshes":
+    {
+        "heat":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/fin.geo",
+                "hsize": 0.1
+            }
+        }
+    },
+
+    "CRBParameters":
+    {
+        {% for item in fins %}"k_{{ item }}":
+        {
+            "value":"0.1",
+            "min":"0.1",
+            "max":"10"
+        },
+        {% endfor %}
+        "Bi":
+        {
+            "value":"0.01",
+            "min":"0.01",
+            "max":"1"
+        }
+    },
+
+    "Parameters":
+    {
+        "k0": 1,
+        {% for item in fins %}"k_{{ item }}": 0.1,
+        {% endfor %}"Bi": 0.1
+    },
+
+    "Materials":
+    {
+        {% for item in fins %}"mat_{{ item }}":
+        {
+            "k":"k_{{ item }}:k_{{ item }}",
+            "Cp":"1",
+            "rho":"1"
+        },
+        {% endfor %}
+    },
+    "InitialConditions":
+    {
+        "temperature": 
+        {
+            "Expression": 
+            {
+                "init": 
+                {
+                    "markers":[{% for item in fins %}"mat_{{ item }}", {% endfor %}], 
+                    "expr":"0" 
+                }
+            }
+        }
+    },
+    "BoundaryConditions":
+    {
+        "heat":
+        {
+            "flux":
+            {
+                "Tflux": {
+                    "expr": "1"
+                }
+            },
+            "convective_heat_flux":
+            {
+                "Tfourier":
+                {
+                    "h":"Bi:Bi",
+                    "Text":"0"
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "Exports":
+        {
+            "fields":["temperature","pid"]
+        }
+    },
+
+    "nirb":
+    {
+        "H": 0.1,
+        "h": "H**2:H",
+        "dim": {{dim}},
+        "order": 1,
+        "toolboxType": "heat",
+        "geo_path": "$cfgdir/cube.geo",
+        "model_path": "$cfgdir/heat-cube.json",
+        "doRectification": true,
+        "doBiorthonormal": false,
+        "nbSnapshots": 10
+    }
+}
