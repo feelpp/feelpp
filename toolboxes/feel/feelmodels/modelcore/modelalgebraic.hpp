@@ -431,7 +431,7 @@ public :
     bool hasStartSubBlockSpaceIndex( std::string const& name ) const { return (this->startSubBlockSpaceIndex( name ) != invalid_v<size_type>); }
     void setStartSubBlockSpaceIndex( std::string const& name, size_type s ) { M_startSubBlockSpaceIndex[name] = s; }
 
-    //! update data usefull for mpi synchronization of NewtonInitialGuess, impose value in residual or jacobian
+    //! update data useful for mpi synchronization of NewtonInitialGuess, impose value in residual or jacobian
     template <typename DataType>
     void updateDofEliminationIds( std::string const& spaceName, DataType & data ) const
         {

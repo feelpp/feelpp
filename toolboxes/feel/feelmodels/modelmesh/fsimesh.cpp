@@ -274,7 +274,7 @@ FSIMesh<ConvexType>::buildMeshesPartitioning()
                       << "From : " << this->mshPathFluidPart1() << "\n"
                       << "Write : " << this->mshPathFluidPartN() <<"\n";
 
-        // partioning mesh base
+        // partitioning mesh base
         Gmsh gmsh( mesh_type::nDim,
                    mesh_type::nOrder,
                    this->worldComm() );
@@ -289,7 +289,7 @@ FSIMesh<ConvexType>::buildMeshesPartitioning()
             std::cout << "partitioning structure submesh in " << this->nPartitions() << " part......\n"
                       << "From : " << this->mshPathSolidPart1() << "\n"
                       << "Write : " << this->mshPathSolidPartN() <<"\n";
-        // partioning mesh base
+        // partitioning mesh base
         Gmsh gmsh( mesh_type::nDim,
                    mesh_type::nOrder,
                    this->worldComm() );

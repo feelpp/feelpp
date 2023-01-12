@@ -1013,7 +1013,7 @@ public:
     };
 
     /**
-     * @brief Boudary Condition for a Body
+     * @brief Boundary Condition for a Body
      * @ingroup Fluid
      */
     class BodyBoundaryCondition
@@ -1727,7 +1727,7 @@ public:
     typedef std::shared_ptr<space_scalar_visu_ho_type> space_scalar_visu_ho_ptrtype;
     typedef typename space_scalar_visu_ho_type::element_type element_scalar_visu_ho_type;
     typedef std::shared_ptr<element_scalar_visu_ho_type> element_scalar_visu_ho_ptrtype;
-    // function space vectorial discontinuos
+    // function space vectorial discontinuous
     typedef FunctionSpace<mesh_visu_ho_type,bases<Lagrange<1, Vectorial,Discontinuous,PointSetFekete> > > space_vectorialdisc_visu_ho_type;
     typedef std::shared_ptr<space_vectorialdisc_visu_ho_type> space_vectorialdisc_visu_ho_ptrtype;
     typedef typename space_vectorialdisc_visu_ho_type::element_type element_vectorialdisc_visu_ho_type;
@@ -2961,7 +2961,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::BodyBoundaryCond
     }
     else
     {
-        CHECK( elasticBehavior.canUpdateDisplacement() ) << "we can't update the elastic velocity beacause canUpdateVelocity and canUpdateDisplacement are false";
+        CHECK( elasticBehavior.canUpdateDisplacement() ) << "we can't update the elastic velocity because canUpdateVelocity and canUpdateDisplacement are false";
         if constexpr ( ElasticBehaviorType::hasDisplacement )
         {
             auto dn = spaceDisp->element();
@@ -2991,7 +2991,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::BodyBoundaryCond
     }
     else
     {
-        CHECK( elasticBehavior.canUpdateVelocity() ) << "we can't update the elastic displacement beacause canUpdateVelocity and canUpdateDisplacement are false";
+        CHECK( elasticBehavior.canUpdateVelocity() ) << "we can't update the elastic displacement because canUpdateVelocity and canUpdateDisplacement are false";
         if constexpr ( ElasticBehaviorType::hasVelocity )
         {
 #if 1
