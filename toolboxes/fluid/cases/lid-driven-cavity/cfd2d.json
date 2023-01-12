@@ -25,14 +25,6 @@
         "d2r_bounded_wall":"min(meshes_fluid_distanceToRange_wall_normalized_min_max,0.2)/0.2:meshes_fluid_distanceToRange_wall_normalized_min_max",
         "mymetric_wall":"hclose_wall+(hfar-hclose_wall)*d2r_bounded_wall:hclose_wall:hfar:d2r_bounded_wall"
     },
-    "CRBParameters":
-    {
-        "Re":
-        {
-            "min": 400,
-            "max": 20000
-        }
-    },
     "Meshes":
     {
         "fluid":
@@ -40,8 +32,8 @@
             "Import":
             {
                 "filename":"$cfgdir/cfd2d.geo",//,
-                "hsize":0.5
-            }/*,
+                "hsize":0.01
+            },
             "DistanceToRange":
             {
                 "wall":
@@ -59,7 +51,7 @@
                 "setup":{
                     "verbose":1//-1
                 }
-            }*/
+            }
         }
     },
     "Materials":
@@ -147,20 +139,5 @@
                 }
             }
         }
-    },
-
-    "nirb":
-    {
-        "H": 0.1,
-        "h": "H**2:H",
-        "dim": 2,
-        "order": 1,
-        "toolboxType": "fluid",
-        "geo_path": "$cfgdir/cfd2d.geo",
-        "model_path": "$cfgdir/cfd2d.json",
-        "doRectification": true,
-        "doBiorthogonalization": false,
-        "nbSnapshots": 10
     }
-
 }
