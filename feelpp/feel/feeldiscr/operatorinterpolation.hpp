@@ -1156,6 +1156,8 @@ private :
             else if ( M_image_related_to_domain )
             {
                 index_type domainRelationEltId = M_meshImage->subMeshToMesh( imageEltId );
+                if ( domainRelationEltId == invalid_v<index_type> )
+                    return res;
                 VLOG(2) << "[image_related_to_domain] image element id: "  << imageEltId << " domain element id : " << domainRelationEltId << "\n";
                 domainElt = boost::cref( M_meshDomain->element( domainRelationEltId ) );
 
@@ -1163,12 +1165,16 @@ private :
             else if ( M_domain_related_to_image )
             {
                 index_type domainRelationEltId = M_meshDomain->meshToSubMesh( imageEltId );
+                if ( domainRelationEltId == invalid_v<index_type> )
+                    return res;
                 VLOG(2) << "[domain_related_to_image] image element id: "  << imageEltId << " domain element id : " << domainRelationEltId << "\n";
                 domainElt = boost::cref( M_meshDomain->element( domainRelationEltId ) );
             }
             else if( M_domain_sibling_of_image )
             {
                 index_type domainRelationEltId = M_meshDomain->meshToSubMesh( M_meshImage, imageEltId );
+                if ( domainRelationEltId == invalid_v<index_type> )
+                    return res;
                 DVLOG(1) << "[domain_sibling_of_image] image element id: "  << imageEltId << " domain element id : " << domainRelationEltId << "\n";
                 domainElt = boost::cref( M_meshDomain->element( domainRelationEltId ) );
             }
@@ -1234,6 +1240,8 @@ private :
                         if ( M_image_related_to_domain )
                         {
                             index_type domainRelationEltId = M_meshImage->subMeshToMesh( imageEltConnectedId );
+                            if ( domainRelationEltId == invalid_v<index_type> )
+                                continue;
                             VLOG(2) << "[image_related_to_domain] image element id: "  << imageEltConnectedId << " domain element id : " << domainRelationEltId << "\n";
                             domainElt = boost::cref( M_meshDomain->element( domainRelationEltId ) );
                             domainFaceIdInElt = faceIdInEltConnected;
@@ -1241,6 +1249,8 @@ private :
                         else if ( M_domain_related_to_image )
                         {
                             index_type domainRelationEltId = M_meshDomain->meshToSubMesh( imageEltConnectedId );
+                            if ( domainRelationEltId == invalid_v<index_type> )
+                                continue;
                             VLOG(2) << "[domain_related_to_image] image element id: "  << imageEltConnectedId << " domain element id : " << domainRelationEltId << "\n";
                             domainElt = boost::cref( M_meshDomain->element( domainRelationEltId ) );
                             domainFaceIdInElt = faceIdInEltConnected;
@@ -1248,6 +1258,8 @@ private :
                         else if( M_domain_sibling_of_image )
                         {
                             index_type domainRelationEltId = M_meshDomain->meshToSubMesh( M_meshImage, imageEltConnectedId );
+                            if ( domainRelationEltId == invalid_v<index_type> )
+                                continue;
                             DVLOG(1) << "[domain_sibling_of_image] image element id: "  << imageEltConnectedId << " domain element id : " << domainRelationEltId << "\n";
                             domainElt = boost::cref( M_meshDomain->element( domainRelationEltId ) );
                             domainFaceIdInElt = faceIdInEltConnected;
