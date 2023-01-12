@@ -111,7 +111,7 @@ macro(mor_add_library)
 
   PARSE_ARGUMENTS(mor_LIB
     "SRCS;LINK_LIBRARIES;PROJECT;EXEC;MAN;EXPORT"
-    "TEST;NOHEADER"
+    "TEST;NOHEADER;PLUGIN"
     ${ARGN}
     )
   CAR(mor_LIB_NAME ${mor_LIB_DEFAULT_ARGS})
@@ -122,16 +122,23 @@ macro(mor_add_library)
     MESSAGE("    Link libraries: ${mor_LIB_LINK_LIBRARIES}")
   endif()
 
-  if ( mor_LIB_PROJECT )
-    set(execname feelpp_mor_${mor_LIB_PROJECT}_${mor_LIB_NAME})
+  if ( mor_LIB_PLUGIN )
+    set(MOR_PREFIX "feelpp_mor_plugin")
   else()
-    set(execname feelpp_mor_${mor_LIB_NAME})
+    set(MOR_PLUGIN "feelpp_mor")
+  endif()
+  if ( mor_LIB_PROJECT )
+    set(execname ${MOR_PREFIX}_${mor_LIB_PROJECT}_${mor_LIB_NAME})
+  else()
+    set(execname ${MOR_PREFIX}_${mor_LIB_NAME})
   endif()
   if  (mor_LIB_EXEC )
     set( ${mor_LIB_EXEC} ${execname} )
   endif()
   add_library(${execname}  SHARED  ${mor_LIB_SRCS} )
-  set_target_properties(${execname} PROPERTIES VERSION 1 SOVERSION 1)
+  if ( NOT mor_LIB_PLUGIN )
+    set_target_properties(${execname} PROPERTIES VERSION 1 SOVERSION 1)
+  endif()
   # -fvisibility=hidden not always work (macos, toolbox_heat...)
   #target_compile_options(${execname} PRIVATE -fvisibility=hidden)
 
@@ -141,12 +148,18 @@ macro(mor_add_library)
 
   target_link_libraries( ${execname} PUBLIC ${mor_LIB_LINK_LIBRARIES} Feelpp::feelpp_mor   )
   set_property(TARGET ${execname} PROPERTY LABELS mor)
-  INSTALL(TARGETS ${execname} EXPORT ${mor_LIB_EXPORT}
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/feelpp/mor/${mor_LIB_NAME}
-    )
 
+  if(mor_LIB_PLUGIN)
+    INSTALL(TARGETS ${execname} EXPORT ${mor_LIB_EXPORT}
+      LIBRARY DESTINATION ${FEELPP_LIBDIR}
+      INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/feelpp/mor/${mor_LIB_NAME}
+      )
+  else()
+    INSTALL(TARGETS ${execname} EXPORT ${mor_LIB_EXPORT}
+      LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+      INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/feelpp/mor/${mor_LIB_NAME}
+      )
+  endif()
 endmacro(mor_add_library)
 #
 # mor_add_python_module

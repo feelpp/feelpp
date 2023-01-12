@@ -436,6 +436,7 @@ ToolboxMor<SpaceType, Options>::initModelImpl()
     bool all_proc_same_sampling=true;
     if( ! file )
     {
+        this->worldComm().barrier();
         PsetV->randomize( M_trainsetDeimSize , all_proc_same_sampling , supersamplingname );
         PsetV->writeOnFile( supersamplingname );
     }
@@ -454,6 +455,7 @@ ToolboxMor<SpaceType, Options>::initModelImpl()
     std::ifstream fileM ( supersamplingname );
     if( ! fileM )
     {
+        this->worldComm().barrier();
         PsetM->randomize( M_trainsetMdeimSize , all_proc_same_sampling , supersamplingname );
         PsetM->writeOnFile( supersamplingname );
     }
@@ -690,7 +692,7 @@ ToolboxMor<SpaceType, Options>::output( int output_index, parameter_type const& 
     }
     else
     {
-        throw std::logic_error( "[ToolboxMor::output] error with output_index : only 0 or 1 " );
+        throw std::logic_error( "[feelpp.mor.ToolboxMor.output] error with output_index : only 0 or 1 " );
     }
 
     return s ;

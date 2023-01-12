@@ -277,7 +277,7 @@ private :
     // prefix
     std::string M_prefix;
     std::string M_subPrefix;
-    // keyword (can be usefull in json for example)
+    // keyword (can be useful in json for example)
     std::string M_keyword;
     // directory
     ModelBaseRepository M_modelRepository;

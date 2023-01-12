@@ -251,16 +251,19 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     if ( M_solverName == "Linear" || M_solverNewtonInitialGuessUseLinearHeat )
     {
         M_heatModel->initAlgebraicFactory();
-        M_heatModel->algebraicFactory()->setFunctionLinearAssembly( boost::bind( &self_type::updateLinear_Heat,
-                                                                                 boost::ref( *this ), _1 ) );
-        M_heatModel->algebraicFactory()->setFunctionResidualAssembly( boost::bind( &self_type::updateResidual_Heat,
-                                                                                   boost::ref( *this ), _1 ) );
+        M_heatModel->algebraicFactory()->setFunctionLinearAssembly( [this]( auto & data ) {
+                                                                        return this->updateLinear_Heat( data );
+                                                                    } );
+        M_heatModel->algebraicFactory()->setFunctionResidualAssembly( [this]( auto & data ) {
+                                                                        return this->updateResidual_Heat( data );
+                                                                    } );
     }
     if ( M_solverName == "Linear" || M_solverNewtonInitialGuessUseLinearElectric )
     {
         M_electricModel->initAlgebraicFactory();
-        M_electricModel->algebraicFactory()->setFunctionLinearAssembly( boost::bind( &self_type::updateLinear_Electric,
-                                                                                     boost::ref( *this ), _1 ) );
+        M_electricModel->algebraicFactory()->setFunctionLinearAssembly( [this]( auto & data ) {
+                                                                            return this->updateLinear_Electric( data );
+                                                                        } );                                    
     }
 
 

@@ -696,7 +696,7 @@ public :
     void updatePreStress() { *U_displ_struct_prestress=*M_fieldDisplacement; }
 
 #if 0 // TODO
-    //usefull for 1d reduced model
+    //useful for 1d reduced model
     void updateInterfaceDispFrom1dDisp();
     void updateInterfaceVelocityFrom1dVelocity();
 

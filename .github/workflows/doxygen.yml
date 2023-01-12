@@ -17,12 +17,13 @@ jobs:
 #        BRANCH: "master"
 #        MESSAGE: ":github: Triggered from a GitHub Action by Holo3 Project"
   build:
-    runs-on: self-ubuntu-20.04
+    runs-on: self-ubuntu-22.04
     if: "!contains(github.event.head_commit.message, 'doc skip')"
     steps:
     - uses: actions/checkout@v3
       with:
-        lfs: true
+        submodules: 'recursive'
+        lfs: 'true'
 #    - name: Update Dependencies
 #      run: |
 #        sudo apt install -y gpg
@@ -37,7 +38,7 @@ jobs:
     - name: Build Doxygen
       run: cmake --build --preset doxygen
     - name: Deploy
-      uses: JamesIves/github-pages-deploy-action@v4.3.3
+      uses: JamesIves/github-pages-deploy-action@v4.4.1
       with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BRANCH: gh-pages # The branch the action should deploy to.

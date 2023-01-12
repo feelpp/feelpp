@@ -291,24 +291,17 @@
             "execution": {
                 "jobs":2,
                 "noTestsAction": "error",
-                "stopOnFailure": true
+                "stopOnFailure": false,
+                "repeat": {
+                    "mode": "until-pass",
+                    "count": 3
+                }
             }
         },
         {
             "name": "feelpp",
             "configurePreset": "feelpp",
-            "inherits":"default",
-            "output": {
-                "outputOnFailure": true
-            },
-            "execution": {
-                "noTestsAction": "error",
-                "stopOnFailure": false,
-                "repeat":{
-                    "mode":"until-pass",
-                    "count":3
-                }
-            }
+            "inherits":"default"
         },
         {
             "name": "toolboxes",

@@ -1,0 +1,123 @@
+{
+    "Name": "HeatFluid 2D",
+    "ShortName": "HeatFluid2D",
+    "Models":
+    {
+        "cfpdes":{
+            "equations":["momentum","mass","heat"]
+        },
+        "momentum":{
+            "setup":{
+                "unknown":{
+                    "basis":"Pchv2",
+                    "name":"velocity",
+                    "symbol":"u"
+                },
+                "coefficients":{
+                    "d":"materials_rho*Jac:materials_rho:Jac",
+		            "beta":"{materials_rho*momentum_u_0*Jac,materials_rho*momentum_u_1*Jac}:materials_rho:momentum_u_0:momentum_u_1:Jac",
+                    "gamma":"{mass_p*Jac-2*materials_mu*momentum_grad_u_00*Jac,-materials_mu*(momentum_grad_u_01+momentum_grad_u_10)*Jac,-materials_mu*(momentum_grad_u_01+momentum_grad_u_10)*Jac,mass_p*Jac-2*materials_mu*momentum_grad_u_11*Jac}:materials_mu:mass_p:momentum_grad_u_00:momentum_grad_u_10:momentum_grad_u_01:momentum_grad_u_11:Jac",
+		            "f":"{0,-materials_rho*g*materials_thermalexpansion*(heat_T-T0)*Jac}:materials_rho:g:materials_thermalexpansion:heat_T:T0:Jac"
+                }
+            }
+        },
+        "mass":{
+            "setup":{
+                "unknown":{
+                    "basis":"Pch1",
+                    "name":"pressure",
+                    "symbol":"p"
+                },
+                "coefficients":{
+                    "f":"-momentum_div_u*Jac:momentum_div_u:Jac"
+                }
+            }
+        },
+        "heat":{
+            "setup":{
+                "unknown":{
+                    "basis":"Pch2",
+                    "name":"temperature",
+                    "symbol":"T"
+                },
+                "coefficients":{
+                    "d":"materials_cp*materials_rho*Jac:materials_cp:materials_rho:Jac",
+		            "beta":"{materials_rho*momentum_u_0*Jac,materials_rho*momentum_u_1*Jac}:materials_rho:momentum_u_0:momentum_u_1:Jac",
+		            "c":"materials_thermalconductivity*Jac:materials_thermalconductivity:Jac"
+                }
+            }
+        }
+
+    },
+    "Parameters":
+    {
+        "Ra":3.4e5,
+        "Pr":0.71,
+	
+        "T0":"0",
+	    "g":"9.81",
+        "Jac":"1",
+        "ubar":"1.0"
+    },
+    "Meshes":
+    {
+        "cfpdes":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/cfd2d.geo",
+                "hsize":0.03
+            }
+        }
+    },
+    "Materials":
+    {
+        "fluid":
+        {
+            "markers":"Omega",
+            "rho":1,
+            "mu":"sqrt(Pr/Ra):Pr:Ra",
+            "cp":1,
+            "thermalconductivity":"1/sqrt(Ra*Pr):Pr:Ra",
+            "thermalexpansion":1
+        }
+    },
+    "BoundaryConditions":
+    {
+        "momentum":
+        {
+            "Dirichlet":
+            {
+                "wall": {
+                    "markers": ["wall_hot","wall_cold","insulated"],
+                    "expr":"{0,0}"
+                }
+            }
+        },
+        "heat":
+        {
+            "Dirichlet":
+            {
+                "hot_source": {
+                    "markers": ["wall_hot"],
+                    "expr":"0.5"
+                },
+                "cold_source": {
+                    "markers": ["wall_cold"],
+                    "expr":"-0.5"
+                }
+            }
+        }
+
+    },
+    "PostProcess":
+    {
+        "cfpdes":
+        {
+            "Exports":
+            {
+                "fields":["momentum.velocity","mass.pressure","heat.temperature","pid"]
+            }
+        }
+    }
+}
