@@ -134,6 +134,12 @@ public :
                                (boost::format("_p%1%.crbdb")%this->worldComm().globalRank()).str() );
             fs::path dbnamePath = fs::path( dbname );
             this->setDBFilename( dbnamePath.filename().string() );
+            
+            // get function space name (needed if nproc offline != nproc online)
+            std::string functionspaceName = ptree.template get<std::string>( "functionspace-filename" );
+            fs::path fsnamePath = fs::path( functionspaceName );
+            this->setFSFilename( fsnamePath.filename().string() );
+
             if ( dbnamePath.is_absolute() )
                 this->setDBDirectory( dbnamePath.parent_path().string() );
             else if ( !dbDir.empty() )
@@ -668,7 +674,24 @@ CRBElementsDB<ModelType>::loadHDF5DB()
             LOG(INFO) << "[load] get mesh/Xh from model done.\n";
         }
     }
-
+    // read the functionspace file 
+    fs::path functionspacePath = dbpath / fs::path(this->fsFilename());
+    std::string spacefileName = functionspacePath.string();
+    LOG(INFO) << fmt::format("Reading functionspace file {}",spacefileName);    
+    std::optional<std::vector<index_type>> spacesRelation;    
+    auto ch = (spacefileName.substr(0, spacefileName.find_last_of("."))).back();
+    std::string str_nbproc(1,ch);
+    int nproc_db = std::stoi(str_nbproc);    
+    LOG(INFO) << fmt::format("Number of processors for the saved database {}",nproc_db);
+    // load the relation between current dof table and on database file
+    if (  nproc_db !=this->worldComm().globalSize() )
+    {
+        if(auto *file = fopen(spacefileName.c_str(), "r"))
+        {
+            fclose(file);
+            spacesRelation = M_rbSpace->functionSpace()->relationFromFile( spacefileName );                
+        }
+    }
 
     LOG( INFO ) << "loading Elements DB (hdf5)";
     for(int i=0; i<M_N; i++)
@@ -678,14 +701,24 @@ CRBElementsDB<ModelType>::loadHDF5DB()
         auto & wni = WN[i];
         if ( !wni )
             wni = Xh->elementPtr( (boost::format( "fem-primal-%1%" ) % ( i ) ).str() );
-        wni->loadHDF5(hdf5File.str(), tableName.str());
+        
+        // if nproc offline != nproc online
+        if(this->worldComm().globalSize() != nproc_db)
+            wni->loadHDF5(hdf5File.str(),spacesRelation, tableName.str());
+        else
+            wni->loadHDF5(hdf5File.str(), tableName.str());
 
         tableName.str("");
         tableName << "WNdu[" << i << "]";
         auto & wndui = WNdu[i];
         if ( !wndui )
             wndui = Xh->elementPtr( (boost::format( "fem-dual-%1%" ) % ( i ) ).str() );
-        wndui->loadHDF5(hdf5File.str(), tableName.str());
+        
+        // if nproc offline != nproc online
+        if(this->worldComm().globalSize() != nproc_db)
+            wndui->loadHDF5(hdf5File.str(),spacesRelation, tableName.str());
+        else
+            wndui->loadHDF5(hdf5File.str(), tableName.str());
     }
     M_rbSpace->updatePrimalBasisForUse();
     M_rbSpace->updateDualBasisForUse();
