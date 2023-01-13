@@ -2571,6 +2571,15 @@ CRB<TruthModelType>::offline()
                 std::cout << "save Mesh : " << meshFilename << std::endl;
             M_model->rBFunctionSpace()->saveMesh( meshFilename );
         }
+        // save the rb function space
+        if ( true )
+        {
+            std::string functionSpaceFilenameBase = (boost::format("%1%_functionSpace_p%2%.json")%this->name() %this->worldComm().size()).str();
+            std::string functionSpaceFilename = (M_elements_database.dbLocalPath() / fs::path(functionSpaceFilenameBase)).string();
+            if( this->worldComm().isMasterRank() )
+                std::cout << "save Function Space : " << functionSpaceFilename << std::endl;
+            M_model->rBFunctionSpace()->functionSpace()->save( functionSpaceFilename );
+        }
         M_model->copyAdditionalModelFiles( this->dbDirectory() );
 
 
@@ -11581,6 +11590,10 @@ CRB<TruthModelType>::saveJson()
         std::string meshFilename = (boost::format("%1%_mesh_p%2%.json")%this->name() %this->worldComm().size()).str();
         ptreeReducedBasisSpace.add( "mesh-filename",meshFilename );
         ptreeReducedBasisSpace.add( "database-filename", M_elements_database.dbFilename() );
+        // add functionspace file (useful when nproc offline != nproc online)
+        std::string functionspaceFilename = (boost::format("%1%_functionSpace_p%2%.json")%this->name() %this->worldComm().size()).str();
+        ptreeReducedBasisSpace.add( "functionspace-filename", functionspaceFilename );
+        
         ptreeReducedBasisSpace.add( "dimension", M_N );
         if ( M_model && M_model->rBFunctionSpace() && M_model->rBFunctionSpace()->functionSpace() )
         {

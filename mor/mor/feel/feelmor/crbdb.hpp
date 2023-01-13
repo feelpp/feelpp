@@ -158,6 +158,11 @@ public:
     {
         return M_dbfilename;
     }
+    //! \return the functionspace filename
+    std::string const& fsFilename() const
+    {
+        return M_fsfilename;
+    }
     //! \return the abslute DB filename
     std::string absoluteDbFilename() const
     {
@@ -275,6 +280,12 @@ public:
     void setDBFilename( std::string const& filename )
     {
         M_dbfilename = filename;
+    }
+
+    //! set the name of the file containing the function space
+    void setFSFilename( std::string const& filename )
+    {
+        M_fsfilename = filename;
     }
 
     //! set DB directory
@@ -400,6 +411,7 @@ private:
     std::string M_ext;
     uuids::uuid M_uuid;
     std::string M_dbfilename;
+    std::string M_fsfilename;
     std::string M_dbDirectory;
     std::string M_dbSubDirectory;
     bool M_isloaded;
