@@ -5580,7 +5580,7 @@ public:
         }
 
     /**
-     * @brief get realtion with current doftable and one stored on disk (mesh points should be same)
+     * @brief get relation with current doftable and one stored on disk (mesh points should be same)
      *
      * @param filepath path of the json files on the disk
      */
