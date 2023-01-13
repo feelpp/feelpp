@@ -1151,7 +1151,10 @@ private :
             std::optional<typename domain_vector_mesh_element_type::value_type> domainElt;
             if ( M_isSameMesh )
             {
-                domainElt = imageEltWrap;
+                if constexpr ( std::is_same_v<typename domain_mesh_type::element_type,typename image_mesh_type::element_type> )
+                    domainElt = imageEltWrap;
+                else
+                    CHECK( false ) << "should not go here";
             }
             else if ( M_image_related_to_domain )
             {
@@ -1385,6 +1388,33 @@ private :
 
         }
 
+
+    /*
+     * - domain dim = image dim - 1
+     * - interpolation on mesh element (belong to image mesh)
+     */
+    template <int ApplyType, typename MeshEntityType,
+              std::enable_if_t< ApplyType == -1 && std::is_same_v<MeshEntityType,typename image_mesh_type::element_type>, bool> = true >
+    auto apply( MeshEntityType const& imageElt, image_vector_mesh_element_type const& imageElts ) const
+        {
+            std::vector<ReturnFromElements> res;
+            CHECK(false) << "not implemented\n";
+            return res;
+        }
+
+
+    /*
+     * - domain dim = image dim - 2
+     * - interpolation on mesh element (belong to image mesh)
+     */
+    template <int ApplyType, typename MeshEntityType,
+              std::enable_if_t< ApplyType == -2 /*&& std::is_same_v<MeshEntityType,typename image_mesh_type::face_type>*/, bool> = true >
+    auto apply( MeshEntityType const& imageFace, image_vector_mesh_element_type const& imageElts ) const
+        {
+            std::vector<ReturnFromElements> res;
+            CHECK(false) << "not implemented\n";
+            return res;
+        }
 #if 0
        template <int ApplyType, typename EntityType>
     std::set<size_type> //domain_vector_mesh_element_type
@@ -1486,7 +1516,7 @@ private :
        template <int ApplyType, typename EntityType>
     std::set<size_type> //domain_vector_mesh_element_type
     apply( EntityType const& imageEntity, image_vector_mesh_element_type const& imageElts,
-           typename std::enable_if_t< ApplyType == 2 >* = nullptr ) const
+           typename std::enable_if_t< ApplyType == 2 || ApplyType == -2 >* = nullptr ) const
         {
             std::set<size_type> idsFind;
             CHECK(false) << "not implemented\n";
