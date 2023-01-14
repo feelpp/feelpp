@@ -44,9 +44,9 @@ void defToolbox(py::module &m)
     using toolbox_t = FeelModels::HeatFluid< model_heat_type,model_fluid_type>;
     using toolbox_ptr_t = std::shared_ptr<toolbox_t>;
 
-    using space_heatfluid_temperature_t = typename toolbox_t::heat_model_type::space_temperature_type;
-    using element_heatfluid_temperature_t = typename toolbox_t::heat_model_type::element_temperature_type;
-    using element_heatfluid_temperature_ptr_t = typename toolbox_t::heat_model_type::element_temperature_ptrtype;
+    using space_temperature_t = typename toolbox_t::heat_model_type::space_temperature_type;
+    using element_temperature_t = typename toolbox_t::heat_model_type::element_temperature_type;
+    using element_temperature_ptr_t = typename toolbox_t::heat_model_type::element_temperature_ptrtype;
 //    using element_heatfluidpotential_ptr_t = typename toolbox_t::electric_model_type::element_electricpotential_ptrtype;
 
     std::string pyclass_name = fmt::format("HeatFluid_{}D_P{}_P{}P{}",nDim,OrderT,OrderV,OrderP);
@@ -64,19 +64,23 @@ void defToolbox(py::module &m)
 
         // mesh
         .def( "mesh", &toolbox_t::mesh, "get the mesh" )
+        .def( "setMesh", &toolbox_t::setMesh, "set the mesh", py::arg( "mesh" ) )
+        .def( "updateParameterValues", &toolbox_t::updateParameterValues, "update parameter values" )
         //.def( "rangeMeshElements", &toolbox_t::rangeMeshElements, "get the range of mesh elements" )
 
-        // elements
+        // temperature space and field
+        .def( "modelHeat", []( toolbox_ptr_t& t ) { return t->heatModel(); } , "get the fluid model" )
         .def( "spaceTemperature", []( toolbox_ptr_t& t ) { return t->heatModel()->spaceTemperature(); } , "get the temperature function space")
-#if 0        
-        .def( "fieldheatfluidPotential", static_cast<element_heatfluidpotential_t const& (toolbox_t::*)() const>(&toolbox_t::fieldheatfluidPotential), "returns the heatfluid potential field" )
-        .def( "fieldheatfluidPotentialPtr", static_cast<element_heatfluidpotential_ptr_t const& (toolbox_t::*)() const>(&toolbox_t::fieldheatfluidPotentialPtr), "returns the heatfluid potential field shared_ptr" )
-        .def( "spaceheatfluidField", &toolbox_t::spaceheatfluidField, "get the field function space")
-        .def( "fieldheatfluidField", static_cast<element_heatfluidfield_t const& (toolbox_t::*)() const>(&toolbox_t::fieldheatfluidField), "returns the heatfluid field" )
-        .def( "fieldheatfluidFieldPtr", static_cast<element_heatfluidfield_ptr_t const& (toolbox_t::*)() const>(&toolbox_t::fieldheatfluidFieldPtr), "returns the heatfluid field shared_ptr" )
-        .def( "fieldCurrentDensity", static_cast<element_heatfluidfield_t const& (toolbox_t::*)() const>(&toolbox_t::fieldCurrentDensity), "returns the current density" )
-        .def( "fieldCurrentDensityPtr", static_cast<element_heatfluidfield_ptr_t const& (toolbox_t::*)() const>(&toolbox_t::fieldCurrentDensityPtr), "returns the current density shared_ptr" )
-#endif
+        .def( "fieldTemperature", []( toolbox_ptr_t& t ) { return t->heatModel()->fieldTemperature(); } , "get the temperature function space")
+        .def( "fieldTemperaturePtr", []( toolbox_ptr_t& t ) { return t->heatModel()->fieldTemperaturePtr(); }, "returns the temperature field shared_ptr" )
+
+        // fluid space and fields
+        .def( "modelFluid", []( toolbox_ptr_t& t ) { return t->fluidModel(); } , "get the fluid model" )
+        .def( "spaceVelocity", []( toolbox_ptr_t& t ) { return t->fluidModel()->functionSpaceVelocity(); } , "get the velocity function space" )
+        .def( "spacePressure", []( toolbox_ptr_t& t ) { return t->fluidModel()->functionSpacePressure(); } , "get the pressure function space" )
+        .def( "fieldVelocity", []( toolbox_ptr_t& t ) { return t->fluidModel()->fieldVelocity(); } , "get the velocity field" )
+        .def( "fieldPressure", []( toolbox_ptr_t& t ) { return t->fluidModel()->fieldPressure(); } , "get the pressure field" )
+
         // solve
         .def("solve",&toolbox_t::solve, "solve the heatfluid mechanics problem, set boolean to true to update velocity and acceleration")
         .def("exportResults",static_cast<void (toolbox_t::*)()>(&toolbox_t::exportResults), "export the results of the heatfluid mechanics problem")

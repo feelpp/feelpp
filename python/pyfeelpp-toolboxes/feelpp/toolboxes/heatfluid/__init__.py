@@ -1,24 +1,24 @@
 import feelpp
 from feelpp.toolboxes.core import *
 
-has_te = False
+has_hf = False
 _heatfluids = None
 try:
     from _heatfluid import *
 
     _heatfluids={
-        'heatfluid(2,1)':HeatFluid_2D_P1_P1P1,
-        'heatfluid(2,2)':HeatFluid_2D_P1_P2P1,
-        'heatfluid(3,1)':HeatFluid_3D_P1_P1P1,
-        'heatfluid(3,2)':HeatFluid_3D_P1_P2P1,
+        'heatfluid(2,1,1,1)':HeatFluid_2D_P1_P1P1,
+        'heatfluid(2,1,2,1)':HeatFluid_2D_P1_P2P1,
+        'heatfluid(3,1,1,1)':HeatFluid_3D_P1_P1P1,
+        'heatfluid(3,1,2,1)':HeatFluid_3D_P1_P2P1,
     }
-    has_te = True
+    has_hf = True
 except ImportError as e:
     print('Import feelpp.toolboxes.heatfluid failed: Feel++ Toolbox heatfluid is not available')
     pass  # module doesn't exist, deal with it.
 
 
-def heatfluid(dim=2, orderPotential=1, worldComm=None, keyword="thermo-electric", subprefix="", modelRep=None):
+def heatfluid(dim=2, orderTemperature=1, orderVelocity=1, orderPressure=1, worldComm=None, keyword="thermo-electric", subprefix="", modelRep=None):
     """create a heatfluid toolbox solver
     Keyword arguments:
     dim -- the dimension (default: 2)
@@ -27,7 +27,7 @@ def heatfluid(dim=2, orderPotential=1, worldComm=None, keyword="thermo-electric"
     """
     if worldComm is None:
         worldComm = feelpp.Environment.worldCommPtr()
-    key='heatfluid('+str(dim)+','+str(orderPotential)+')'
+    key=f'heatfluid({dim},{orderTemperature},{orderVelocity},{orderPressure})'
     if worldComm.isMasterRank():
         print(key)
     if key not in _heatfluids:
