@@ -22,5 +22,5 @@
 #
 #
 feelpp_add_pymodule(heatfluid SRCS heatfluid.cpp DESTINATION feelpp/toolboxes/heatfluid LINK_LIBRARIES Feelpp::feelpp_toolbox_heatfluid_lib)
-install(FILES  __init__.py heatfluid.py DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/toolboxes/heatfluid)
+install(FILES  __init__.py DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/toolboxes/heatfluid)
 
