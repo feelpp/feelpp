@@ -54,7 +54,7 @@ void defToolbox(py::module &m)
     py::class_<toolbox_t,std::shared_ptr<toolbox_t>,ModelNumerical>(m,pyclass_name.c_str())
         .def(py::init<std::string const&,std::string const&,worldcomm_ptr_t const&,std::string const&, ModelBaseRepository const&>(),
              py::arg("prefix"),
-             py::arg("keyword")=std::string("thermo-electric"),
+             py::arg("keyword")=std::string("heat-fluid"),
              py::arg("worldComm")=Environment::worldCommPtr(),
              py::arg("subprefix")=std::string(""),
              py::arg("modelRep") = ModelBaseRepository(),
