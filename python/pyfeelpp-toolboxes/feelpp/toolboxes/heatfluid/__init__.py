@@ -23,7 +23,9 @@ def heatfluid(dim=2, orderTemperature=1, orderVelocity=1, orderPressure=1, world
     """create a heatfluid toolbox solver
     Keyword arguments:
     dim -- the dimension (default: 2)
-    orderPotential -- the polynomial order for the potential (default: 1)
+    orderTemperature -- the polynomial order for the temperature (default: 1)
+    orderVelocity -- the polynomial order for the velocity (default: 1)
+    orderPressure -- the polynomial order for the pressure (default: 1)
     worldComm -- the parallel communicator for the mesh (default: core.Environment::worldCommPtr())
     """
     if worldComm is None:
