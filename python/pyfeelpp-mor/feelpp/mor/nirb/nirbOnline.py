@@ -15,6 +15,9 @@ if __name__ == "__main__":
     parser.add_argument('--config-file', type=str, help='path to cfg file')
     parser.add_argument("--N", help="Number of initial snapshots [default=10]", type=int, default=None)
     parser.add_argument("--outdir", help="output directory", type=str, default=None)
+    parser.add_argument("--greedy", help="With or without Greedy [default=0]", type=int, default=0)
+    parser.add_argument("--exporter", help="Export nirb sol for vizualisation [default=0]", type=int, default=0)
+    parser.add_argument("--convergence", help="Get convergence error [default=1]", type=int, default=0)
 
     args = parser.parse_args()
     config_file = args.config_file
@@ -27,10 +30,21 @@ if __name__ == "__main__":
     nirb_file = feelpp.Environment.expand(cfg['nirb']['filename'])
     config_nirb = feelpp.readJson(nirb_file)['nirb']
 
+
+    greedy = args.greedy 
+    expo = args.exporter
+    conv = args.convergence
+
+    bo = [False, True]
+    exporter = bo[expo]
+    convergence = bo[conv]
+
     nbSnap=args.N
     if nbSnap==None:
         nbSnap = config_nirb['nbSnapshots']
 
+    config_nirb['greedy-generation'] = bo[greedy]
+    
     doGreedy = config_nirb['greedy-generation']
     doRectification = config_nirb['doRectification']
     rectPath = ["noRect", "Rect"][doRectification]
@@ -51,7 +65,7 @@ if __name__ == "__main__":
     uHh = nirb_on.getOnlineSol(mu)
     finish = time()
 
-    exporter = True  
+    
     if exporter:    
         dirname = "nirbSol"
         nirb_on.initExporter(dirname, toolbox="fine")
@@ -71,8 +85,8 @@ if __name__ == "__main__":
         file=RESPATH+f'/nirbOnline_time_exec_np{nirb_on.worldcomm.globalSize()}.dat'
     WriteVecAppend(file,perf)
 
-    error = False
-    if error :
+    
+    if convergence :
         Nsample = 50
         errorN = ComputeErrorSampling(nirb_on, Nsample=Nsample, h1=True)
         # errorN = ComputeErrors(nirb_on, mu, h1=True)
