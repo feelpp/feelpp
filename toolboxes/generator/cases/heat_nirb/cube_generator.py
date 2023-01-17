@@ -53,13 +53,16 @@ if args.dim == "2":
     ElementArgs = "{ s*L, r*h, 0, L, h, 0}"
     eltDim = "Surface"
     eltDimM1 = "Curve"
-    step = 1
     diffVal = 1
+    fourierVal = 4
 
 else:
-    print(f"Dim {args.dim} not implemented")
-
-    exit()
+    ElementShape = "Box"
+    ElementArgs = "{ s*L, r*h, 0, L, h, d}"
+    eltDim = "Volume"
+    eltDimM1 = "Surface"
+    diffVal = 3
+    fourierVal = 1
      
 
     
@@ -69,12 +72,14 @@ renderGeo = templateGeo.render(
     Nh = args.Nh,
     L = args.L,
     h = args.h,
+    d = args.d,
     ElementShape = ElementShape,
     ElementArgs = ElementArgs, 
-    step = step,
     eltDim = eltDim,
     eltDimM1 = eltDimM1,
     diffVal = diffVal,
+    dim = args.dim,
+    fourierVal = fourierVal
 )
 
 renderCfg = templateCfg.render(
