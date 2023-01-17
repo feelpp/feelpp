@@ -1,5 +1,5 @@
 :feelpp: Feel++
-= feelpp_mesh_exporter(1)
+= case_generator_thermal_fin
 Christophe Prud'homme <https://github.com/prudhomm[@prudhomm]>; Vincent Chabannes <https://github.com/vincentchabannes[@vincentchabannes]>; Thomas Saigre <https://github.com/thomas-saigre[@thomas-saigre]>
 :manmanual: feelpp_case_generator
 :tf:
