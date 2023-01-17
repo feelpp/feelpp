@@ -1514,6 +1514,7 @@ protected:
         {}
 
     virtual void saveRB();
+    virtual void savenewRBelement();
 
     std::string M_prefix;
 
@@ -3070,7 +3071,8 @@ CRB<TruthModelType>::offline()
         //save DB after adding an element
         tic();
         this->saveDB();
-        this->saveRB();
+        //this->saveRB();
+        this->savenewRBelement();
         toc("Saving the Database");
 
         toc("Total Time");
@@ -11517,6 +11519,15 @@ CRB<TruthModelType>::saveRB()
     M_elements_database.saveDB();
 }
 
+template<typename TruthModelType>
+void
+CRB<TruthModelType>::savenewRBelement()
+{
+    M_elements_database.setWn( boost::make_tuple( M_model->rBFunctionSpace()->primalRB() , M_model->rBFunctionSpace()->dualRB() ) );
+
+    M_elements_database.saveNewElementToDB();
+}
+
 
 
 template<typename TruthModelType>
@@ -11630,7 +11641,7 @@ CRB<TruthModelType>::saveJson()
                 ptree.add_child( "scmM", ptreeParameterScmM );
             }
         }
-
+        std::cout << "to write json" << std::endl;
         write_json( filenameJson, ptree );
     }
 }
@@ -11701,6 +11712,7 @@ CRB<TruthModelType>::saveDB()
         }
     }
     saveJson();
+    std::cout << "done save json" << std::endl;
 }
 
 template<typename TruthModelType>

@@ -102,13 +102,15 @@ CRBDB::lookForDB() const
 {
     //std::cout << "db localpath " << this->dbLocalPath() <<" db filename=" << this->dbFilename() << std::endl;
     // look in local repository $HOME/feel/db/crb/...
-    if ( fs::exists( this->dbLocalPath() / this->dbFilename() ) )
-    {
-        //std::cout << "[CRBDB::lookForDB] found database in " << this->dbLocalPath() << "\n";
-        return this->dbLocalPath() / this->dbFilename();
-    }
 
-    return fs::path();
+    // if ( fs::exists( this->dbLocalPath() / this->dbFilename() ) )
+    // {
+    //     //std::cout << "[CRBDB::lookForDB] found database in " << this->dbLocalPath() << "\n";
+    //     return this->dbLocalPath() / this->dbFilename();
+    // }
+
+    // return fs::path();
+    return this->dbLocalPath() / this->dbFilename();
 }
 
 bool
@@ -149,6 +151,10 @@ bool
 CRBDB::loadDB()
 {
     return false;
+}
+void
+CRBDB::saveNewElementToDB()
+{
 }
 
 fs::path

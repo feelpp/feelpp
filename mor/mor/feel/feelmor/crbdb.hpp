@@ -322,6 +322,11 @@ public:
     virtual void saveDB();
 
     /**
+     * save a new element to the CRB database
+     */
+    virtual void saveNewElementToDB();
+
+    /**
      * load the CRB database
      */
     virtual bool loadDB();
