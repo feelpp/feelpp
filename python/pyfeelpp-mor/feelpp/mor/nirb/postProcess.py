@@ -64,7 +64,7 @@ def compareTime(csv1, csv2, type='nirb_offline'):
     # tikzplotlib.save("compareTime.tex")
 
 ### Manage data Frame 
-def getDataStat(df, h1=True):
+def getDataStat(df, h1norm=True):
     """ Get some statistic infos from a given dataFrame df : 
         (Min, Max, Mean) in respect to number of snapshot series 
 
@@ -111,8 +111,9 @@ def getDataStat(df, h1=True):
     l2df['l2(uh-uH)'] = dfmean['l2(uh-uH)']
 
     ## H1 norm
-    h1df = pd.DataFrame() 
-    if h1:
+    if h1norm:
+
+        h1df = pd.DataFrame() 
 
         h1df['Min'] = dfmin[h1]
         h1df['Min_rec'] = dfmin[h1rec]

@@ -13,19 +13,21 @@ if __name__ == "__main__":
     #%% 
     # Get dataFrame from csv file 
     # file = dataPath + "errors50ParamsLambda10P1.csv"
-    file = dataPath + "Greedy/errors50Params.csv"
-    file = dataPath + "noGreedy/errors10ParamsLU.csv"
+    file = dataPath + "noGreedy/errors50Params.csv"
+    # file = dataPath + "noGreedy/errors10Params.csv"
+    # file = dataPath + "noGreedy/offlineError.csv"
     
     # load absolute errors
     # file = dataPath + "noGreedy/offlineConvError.csv"
     dfGlob = pd.read_csv(file, sep=',')
-
+    
     # # compute relative errors 
-    dfRel = getRelativeErrors(dfGlob)
+    # dfRel = getRelativeErrors(dfGlob)
 
     ### Get stats for all parameters 
-    l2df, h1df   = getDataStat(dfGlob) # l1 and h1 error associated 
-    l2dfRel, h1dfRel = getDataStat(dfRel) # // 
+    l2df  = getDataStat(dfGlob, h1norm=False) # l1 and h1 error associated 
+    # print(l2df.head())
+    # l2dfRel, h1dfRel = getDataStat(dfRel) # // 
 
     plotErrors(l2df, keys='Mean')
 
