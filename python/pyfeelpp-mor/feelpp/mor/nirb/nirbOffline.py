@@ -4,6 +4,7 @@ from feelpp.mor.nirb.utils import WriteVecAppend, init_feelpp_environment, gener
 import time
 import json
 import argparse
+import pandas as pd 
 
 
 if __name__ == "__main__":
@@ -13,6 +14,8 @@ if __name__ == "__main__":
     parser.add_argument('--config-file', type=str, help='path to cfg file')
     parser.add_argument("--N", help="Number of initial snapshots [default=10]", type=int, default=None)
     parser.add_argument("--outdir", help="output directory", type=str, default=None)
+    parser.add_argument("--greedy", help="With or without Greedy [default=0]", type=int, default=0)
+    parser.add_argument("--convergence", help="Get convergence error [default=1]", type=int, default=0)
 
     args = parser.parse_args()
     config_file = args.config_file
@@ -25,9 +28,17 @@ if __name__ == "__main__":
     nirb_file = feelpp.Environment.expand(cfg['nirb']['filename'])
     config_nirb = feelpp.readJson(nirb_file)['nirb']
 
+    greedy = args.greedy
+    conv = args.convergence
+
+    bo = [False, True]
+    convergence = bo[conv]
+
     nbSnap=args.N
     if nbSnap==None:
         nbSnap = config_nirb['nbSnapshots']
+
+    config_nirb['greedy-generation'] = bo[greedy]
 
     doGreedy = config_nirb['greedy-generation']
     doRectification = config_nirb['doRectification']
@@ -71,8 +82,27 @@ if __name__ == "__main__":
 
     finish = time.time()
 
-    print("Is L2 orthonormalized ?", nirb_off.checkL2Orthonormalized(tol=tolortho))
+    print(f"proc {nirb_off.worldcomm.localRank()} Is L2 orthonormalized ?", nirb_off.checkL2Orthonormalized(tol=tolortho))
     #     print("Is H1 orthonormalized ? ", nirb_off.checkH1Orthonormalized())
+
+    if convergence :
+        Xi_test_path = RESPATH + f"/sampling_test.sample"
+        if os.path.isfile(Xi_test_path):
+            s = nirb_off.Dmu.sampling()
+            N = s.readFromFile(Xi_test_path)
+            Xi_test = s.getVector()  
+            if nirb_off.worldcomm.isMasterRank():
+                print(f"[NIRB] Xi_test loaded from {Xi_test_path}")  
+        else :
+            Ns = 30
+            Xi_test = generatedAndSaveSampling(nirb_off.Dmu, Ns, path=Xi_test_path, samplingMode="log-random")
+            
+        Err = nirb_off.checkConvergence(Ns=30, Xi_test=Xi_test)
+        df = pd.DataFrame(Err)
+        file =RESPATH +f"/offlineError.csv"  
+        df.to_csv(file, index=False)
+        print(f"[NIRB] Offline error saved in {file}")
+
 
     perf = []
     perf.append(nbSnap)

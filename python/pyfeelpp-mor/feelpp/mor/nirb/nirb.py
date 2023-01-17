@@ -590,6 +590,90 @@ class nirbOffline(ToolboxModel):
         return coeffCoarse, coeffFine
 
     """
+    Check convergence 
+    """
+    def checkConvergence(self,Ns=10, Xi_test=None, regulParam=1.e-10):
+        """
+            check convergence of the offline step  
+        """
+        assert self.tbCoarse is not None, f"Coarse toolbox needed for computing coarse Snapshot. set doRectification->True"
+
+        
+        if self.worldcomm.isMasterRank():
+            print(f"[NIRB] Compute offline convergence error")
+
+        if Xi_test is None:
+            s = self.Dmu.sampling()
+            s.sampling(Ns,'log-random')
+            vector_mu = s.getVector()
+        else:
+            vector_mu = Xi_test
+
+        Ntest = len(vector_mu)
+
+        interpolationOperator = self.createInterpolator(self.tbCoarse, self.tbFine)
+
+        soltest =[]
+        soltestFine=[]
+        for mu in vector_mu:
+            soltestFine.append(self.getToolboxSolution(self.tbFine, mu))
+            uH = self.getToolboxSolution(self.tbCoarse, mu)
+            soltest.append(interpolationOperator.interpolate(uH))
+
+        tabcoef = np.zeros((Ntest, self.N))
+        tabcoefuh = np.zeros((Ntest, self.N))
+
+        for j in range(Ntest):
+            for k in range(self.N):
+                tabcoef[j,k] = self.l2ScalarProductMatrix.energy(soltest[j],self.reducedBasis[k])
+                tabcoefuh[j,k] = self.l2ScalarProductMatrix.energy(soltestFine[j],self.reducedBasis[k])
+
+        
+        Unirb = self.Xh.element()
+        UnirbRect = self.Xh.element()
+        Uhn = self.Xh.element()
+
+        Error = {'N':[], 'l2(uh-uHn)':[], 'l2(uh-uHn)rec':[], 'l2(uh-uhn)' : [], 'l2(uh-uH)':[]}
+
+        nb = 0
+        for i in tqdm(range(1,self.N+1,min(5,self.N)), desc=f"[NIRB] Compute convergence error:", ascii=False, ncols=100):
+            nb = i
+            # Get rectification matrix
+            BH = self.coeffCoarse[:nb, :nb]
+            Bh = self.coeffFine[:nb, :nb]
+            R = np.zeros((nb,nb)) 
+            for s in range(nb):
+                R[s,:]=(np.linalg.inv(BH.transpose()@BH+regulParam*np.eye(nb))@BH.transpose()@Bh[:,s])
+
+            for j in range(Ntest):
+                Unirb.setZero()
+                UnirbRect.setZero()
+                Uhn.setZero()
+                tabRect = R@tabcoef[j,:nb]
+
+                for k in range(nb): # get reduced sol in a basis function space 
+                    Unirb = Unirb + float(tabcoef[j,k])*self.reducedBasis[k]
+                    UnirbRect = UnirbRect + float(tabRect[k])*self.reducedBasis[k]
+                    Uhn = Uhn + float(tabcoefuh[j,k])*self.reducedBasis[k]
+
+                Unirb = Unirb - soltestFine[j]
+                UnirbRect = UnirbRect - soltestFine[j]
+                Uhint = soltestFine[j] - soltest[j]
+                Uhn = Uhn - soltestFine[j]
+                err1 = np.sqrt(abs(self.l2ScalarProductMatrix.energy(Unirb,Unirb)))
+                err2 = np.sqrt(abs(self.l2ScalarProductMatrix.energy(UnirbRect,UnirbRect))) 
+                err3 = np.sqrt(abs(self.l2ScalarProductMatrix.energy(Uhn,Uhn)))  
+                err4 = np.sqrt(abs(self.l2ScalarProductMatrix.energy(Uhint,Uhint))) 
+
+                Error['l2(uh-uHn)'].append(err1)
+                Error['l2(uh-uHn)rec'].append(err2)
+                Error['l2(uh-uhn)'].append(err3)
+                Error['l2(uh-uH)'].append(err4)
+                Error["N"].append(nb)
+
+        return Error
+    
+    """
     Handle Gram-Schmidt orthogonalization
     """
     def orthonormalizeH1(self, nb=0):
@@ -707,11 +791,11 @@ class nirbOffline(ToolboxModel):
                 matL2[i,j] = self.l2ScalarProductMatrix.energy(self.reducedBasis[i], self.reducedBasis[j])
                 if i == j:
                     if abs(matL2[i, j] - 1) > tol:
-                        print(f"[NIRB] not L2 ortho : pos = {i} {j} val = {abs(matL2[i,j] - 1.)} tol = {tol}")
+                        print(f"[NIRB] not L2 ortho : pos = [{i} , {j}] val = {abs(matL2[i,j] - 1.)} tol = {tol}")
                         return False
                 else:
                     if abs(matL2[i, j]) > tol :
-                        print(f"[NIRB] not L2 ortho : pos = {i} {j} val = {abs(matL2[i,j])} tol = {tol}")
+                        print(f"[NIRB] not L2 ortho : pos = [{i} , {j}] val = {abs(matL2[i,j])} tol = {tol}")
                         return False
         return True
 
@@ -750,12 +834,13 @@ class nirbOffline(ToolboxModel):
             vec = self.Xh.element(self.l2ProductBasis[i])
             vec.save(l2productPath, l2productFilename, suffix=str(i))
 
-        coeffCoarseFile = os.path.join(path,'coeffcoarse')
-        coeffFineFile = os.path.join(path,'coefffine')
+        nploc = self.worldcomm.localRank()
+        coeffCoarseFile = os.path.join(path,f"coeffcoarse_np{nploc}")
+        coeffFineFile = os.path.join(path,f"coefffine_np{nploc}")
         if self.doRectification:
-            if self.worldcomm.isMasterRank():
-                np.save(coeffCoarseFile, self.coeffCoarse)
-                np.save(coeffFineFile, self.coeffFine)
+            # if self.worldcomm.isMasterRank():
+            np.save(coeffCoarseFile, self.coeffCoarse)
+            np.save(coeffFineFile, self.coeffFine)
 
         self.outdir = os.path.abspath(path)
         if self.worldcomm.isMasterRank():
@@ -955,8 +1040,11 @@ class nirbOnline(ToolboxModel):
             vec.load(l2productPath, l2productFilename, suffix=str(i))
             self.l2ProductBasis.append(vec)
 
-        coeffCoarseFile = os.path.join(path,'coeffcoarse.npy')
-        coeffFineFile = os.path.join(path,'coefffine.npy')
+        # coeffCoarseFile = os.path.join(path,'coeffcoarse.npy')
+        # coeffFineFile = os.path.join(path,'coefffine.npy')
+        nploc = self.worldcomm.localRank()
+        coeffCoarseFile = os.path.join(path,f"coeffcoarse_np{nploc}.npy")
+        coeffFineFile = os.path.join(path,f"coefffine_np{nploc}.npy")
         if self.doRectification:
             coeffCoarse = np.load(coeffCoarseFile)
             coeffFine = np.load(coeffFineFile)
