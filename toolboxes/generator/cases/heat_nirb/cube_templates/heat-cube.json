@@ -1,8 +1,8 @@
 // -*- mode: javascript -*-
 // Source for the values of rho, Cp, h : https://docs.lib.purdue.edu/iracc/1338/
 {
-    "Name": "Thermal Fin {{ dim }}d",
-    "ShortName":"ThermalFin{{ dim }}d",
+    "Name": "Heat Cube {{ dim }}d",
+    "ShortName":"heat-cube{{ dim }}d",
 
     "Meshes":
     {
@@ -10,8 +10,9 @@
         {
             "Import":
             {
-                "filename":"$cfgdir/fin.geo",
-                "hsize": 0.1
+                "filename":"$cfgdir/cube.geo",
+                "hsize": 0.1,
+                "partition": 1
             }
         }
     },
@@ -35,7 +36,7 @@
 
     "Parameters":
     {
-        "k0": 1,
+        "k_1": 1,
         {% for item in fins %}"k_{{ item }}": 0.1,
         {% endfor %}"Bi": 0.1
     },
@@ -48,8 +49,14 @@
             "Cp":"1",
             "rho":"1"
         },
-        {% endfor %}
+        {% endfor %}"mat_1":
+        {
+            "k":"k_1:k_1",
+            "Cp":"1",
+            "rho":"1"
+        }
     },
+
     "InitialConditions":
     {
         "temperature": 
@@ -58,7 +65,7 @@
             {
                 "init": 
                 {
-                    "markers":[{% for item in fins %}"mat_{{ item }}", {% endfor %}], 
+                    "markers":[{% for item in fins %}"mat_{{ item }}", {% endfor %}"mat_1"], 
                     "expr":"0" 
                 }
             }
@@ -70,9 +77,7 @@
         {
             "flux":
             {
-                "Tflux": {
-                    "expr": "1"
-                }
+                "Tflux": { "expr": "1" }
             },
             "convective_heat_flux":
             {
@@ -84,11 +89,16 @@
             }
         }
     },
+
     "PostProcess":
     {
-        "Exports":
+        "use-model-name":1,
+        "heat" :
         {
-            "fields":["temperature","pid"]
+            "Exports":
+            {
+                "fields": ["temperature", "pid", "marker"]
+            }
         }
     },
 
