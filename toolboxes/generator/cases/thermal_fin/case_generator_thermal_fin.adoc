@@ -13,10 +13,10 @@ Christophe Prud'homme <https://github.com/prudhomm[@prudhomm]>; Vincent Chabanne
 
 == SYNOPSIS
 
-`{manmanual} [OPTIONS]`
+`python3 {manmanual} [OPTIONS]`
 
 
-== ReQUIREMENT
+== REQUIREMENT
 
 To run the Python script, you need to install the https://pypi.org/project/python-liquid[`python-liquid`] library.
 
@@ -24,9 +24,10 @@ To run the Python script, you need to install the https://pypi.org/project/pytho
 
 `{manmanual}` is an application which generates
 
-* a geometry associted to the case described below
-* the JSON model file associated
-* the config file to run the toolbox mor on this case, or the toolbox heat.
+* a geometry associted to the case described below,
+* the JSON model file associated,
+* the config file to run the toolbox mor on this case, or the toolbox heat,
+* the JSON CRB model file associated.
 
 
 === Options

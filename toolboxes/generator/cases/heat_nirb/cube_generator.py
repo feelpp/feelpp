@@ -44,6 +44,7 @@ def generate_cube_case():
     templateGeo = env.get_template("cube.geo")
     templateCfg = env.get_template("heat-cube.cfg")
     templateJson = env.get_template("heat-cube.json")
+    templateCrbJson = env.get_template("heat-cube-crb.json")
 
 
 
@@ -98,6 +99,13 @@ def generate_cube_case():
         modelfilename = modelfile
     )
 
+    renderCrbJson = templateCrbJson.render(
+        fins = fins,
+        dim = args.dim,
+        geofilename = meshfile,
+        modelfilename = modelfile
+    )
+
 
     fileGeo = open(args.odir+"cube.geo", "w")
     a = fileGeo.write(renderGeo)
@@ -111,6 +119,10 @@ def generate_cube_case():
     fileJson = open(args.odir+"heat-cube.json", "w")
     a = fileJson.write(renderJson)
     fileJson.close()
+
+    fileCrbJson = open(args.odir+"heat-cube-crb.json", "w")
+    a = fileCrbJson.write(renderCrbJson)
+    fileCrbJson.close()
 
 
 if __name__ == "__main__":

@@ -40,6 +40,7 @@ def generate_thermal_fin():
     templateGeo = env.get_template("fin.geo")
     templateCfg = env.get_template("thermal-fin.cfg")
     templateJson = env.get_template("thermal-fin.json")
+    templateCrbJson = env.get_template("thermal-fin-crb.json")
 
     renderGeo = ""
     renderCfg = ""
@@ -107,6 +108,11 @@ def generate_thermal_fin():
         dim = args.dim
     )
 
+    renderCrbJson = templateCrbJson.render(
+        fins = fins,
+        dim = args.dim
+    )
+
     # Write files
     fileGeo = open(args.odir+"fin.geo", "w")
     a = fileGeo.write(renderGeo)
@@ -116,10 +122,13 @@ def generate_thermal_fin():
     a = fileCfg.write(renderCfg)
     fileCfg.close()
 
-
     fileJson = open(args.odir+"thermal-fin.json", "w")
     a = fileJson.write(renderJson)
     fileJson.close()
+
+    fileCrbJson = open(args.odir+"thermal-fin-crb.json", "w")
+    a = fileCrbJson.write(renderCrbJson)
+    fileCrbJson.close()
 
 
 if __name__ == "__main__":
