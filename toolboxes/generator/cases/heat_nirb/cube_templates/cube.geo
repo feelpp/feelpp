@@ -1,11 +1,11 @@
 SetFactory("OpenCASCADE");
 //+
-h_size = 0.05;
+h = 0.05;
 
 Nv = DefineNumber[ {{ Nv }}, Name "Parameters/Nv" ];
 Nh = DefineNumber[ {{ Nh }}, Name "Parameters/Nh" ];
 L = DefineNumber[ {{ L }}, Name "Parameters/L" ];
-h = DefineNumber[ {{ h }}, Name "Parameters/h" ];
+height = DefineNumber[ {{ height }}, Name "Parameters/height" ];
 {% if dim == '3' -%}
 d = DefineNumber[ {{ d }}, Name "Parameters/d" ];
 {% endif %}
@@ -35,7 +35,7 @@ EndFor
 {% endif %}
 
 S[]=BooleanFragments{ {{ eltDim }}{1}; Delete; }{ {{ eltDim }}{2:Nh*Nv}; Delete;};
-Characteristic Length{ PointsOf{ Surface{ : }; } } = h_size;
+Characteristic Length{ PointsOf{ Surface{ : }; } } = h;
 
 {% if dim == '2' -%}
 For r In {1:Nv}

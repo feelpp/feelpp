@@ -11,7 +11,7 @@ def generate_cube_case():
     parser.add_argument("--Nh", help="number of fins in horizontal direction [default=3]", type=str, default="3")
     parser.add_argument("--Nd", help="number of fins in depth direction [default=3]", type=str, default="3")
     parser.add_argument("--L", help="width of a cube [default=1]", type=str, default="1")
-    parser.add_argument("--h", help="height of a cube [default=1]", type=str, default="1")
+    parser.add_argument("--height", help="height of a cube [default=1]", type=str, default="1")
     parser.add_argument("--d", help="depth of a cube (for 3D only) [default=1]", type=str, default="1")
     parser.add_argument("--dim", help="dimension of the case (2 or 3) [default=2]", type=str, default="2")
     parser.add_argument("--odir", help="output directory", type=str, default=".")
@@ -53,7 +53,7 @@ def generate_cube_case():
 
     if args.dim == "2":
         ElementShape = "Rectangle"
-        ElementArgs = "{ s*L, r*h, 0, L, h, 0}"
+        ElementArgs = "{ s*L, r*height, 0, L, height, 0}"
         eltDim = "Surface"
         eltDimM1 = "Curve"
         diffVal = 1
@@ -61,7 +61,7 @@ def generate_cube_case():
 
     else:
         ElementShape = "Box"
-        ElementArgs = "{ (r-1)*L, (s-1)*h, (t-1)*d, L, h, d}"
+        ElementArgs = "{ (r-1)*L, (s-1)*height, (t-1)*d, L, height, d}"
         eltDim = "Volume"
         eltDimM1 = "Surface"
         diffVal = 3
@@ -75,7 +75,7 @@ def generate_cube_case():
         Nh = args.Nh,
         Nd = args.Nd,
         L = args.L,
-        h = args.h,
+        height = args.height,
         d = args.d,
         ElementShape = ElementShape,
         ElementArgs = ElementArgs,
