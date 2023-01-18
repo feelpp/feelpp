@@ -12,7 +12,8 @@ d = DefineNumber[ {{ d }}, Name "Parameters/d" ];
 hmax=0.1;
 Mesh.CharacteristicLengthMax = hmax;
 
-// semi-boxes 
+// semi-boxes
+{% if dim == '2' -%}
 For r In {1:Nv}
     For s In {1:Nh}
         k = s + Nh * (r-1);
@@ -20,18 +21,39 @@ For r In {1:Nv}
         {{ ElementShape }}(k) = {{ ElementArgs }};
     EndFor
 EndFor
+{% else %}
+// see commit 250cf66 for the original version which was not working
+t = 0;
+// For z In {1:Nd}
+For r In {1:Nv}
+    For s In {1:Nh}
+        k = s + Nh * (r-1);
+        Printf("%g, %g, box = %g", s, r, k);
+        {{ ElementShape }}(k) = {{ ElementArgs }};
+    EndFor
+EndFor
+{% endif %}
 
 S[]=BooleanFragments{ {{ eltDim }}{1}; Delete; }{ {{ eltDim }}{2:Nh*Nv}; Delete;};
 Characteristic Length{ PointsOf{ Surface{ : }; } } = h;
 
-// Physical {{ eltDim }} (Sprintf("fin-%g",r)) = r+1;
+{% if dim == '2' -%}
 For r In {1:Nv}
     For s In {1:Nh}
         k = s + Nh * (r-1);
         Printf("Physical Surface = %g ", k);
         Physical {{ eltDim }}(Sprintf("mat_%g",k)) = {k};
-    EndFor 
-EndFor 
+    EndFor
+EndFor
+{% else %}
+For r In {1:Nv}
+    For s In {1:Nh}
+        k = s + Nh * (r-1);
+        Printf("Physical Surface = %g ", k);
+        Physical {{ eltDim }}(Sprintf("mat_%g",k)) = {k};
+    EndFor
+EndFor
+{% endif %}
 
 bdy[] = CombinedBoundary { {{ eltDim }}{:}; };
 
@@ -43,12 +65,11 @@ Physical {{ eltDimM1 }}("Tflux") =  {{ diffVal }};
 {% endif %}
 
 For ii In { 1 : (#bdy[]-1) }
-    Printf("boundary number %g = %g", ii, Abs(bdy[ii]));
     If (Abs(bdy[ii]) != {{ diffVal }})
-        Printf("    boundary OUT");
-        Physical {{ eltDimM1 }}("Tfourier") += Abs(bdy[ii]);   
+        Printf("boundary number %g = %g : boundary OUT", ii, Abs(bdy[ii]));
+        Physical {{ eltDimM1 }}("Tfourier") += Abs(bdy[ii]);
     Else
-        Printf("    boundary IN");
+        Printf("boundary number %g = %g : boundary IN", ii, Abs(bdy[ii]));
         Physical {{ eltDimM1 }}("Tflux") += Abs(bdy[ii]);
     EndIf
 EndFor
