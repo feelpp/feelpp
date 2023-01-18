@@ -36,8 +36,11 @@ EndFor
 bdy[] = CombinedBoundary { {{ eltDim }}{:}; };
 
 Physical {{ eltDimM1 }}("Tfourier") = {{ fourierVal }};
-
+{% if dim == '3' -%}
 Physical {{ eltDimM1 }}("Tflux") =  {};
+{% else %}
+Physical {{ eltDimM1 }}("Tflux") =  {{ diffVal }};
+{% endif %}
 
 For ii In { 1 : (#bdy[]-1) }
     Printf("boundary number %g = %g", ii, Abs(bdy[ii]));
