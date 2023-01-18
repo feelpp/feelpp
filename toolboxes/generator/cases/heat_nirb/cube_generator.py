@@ -61,7 +61,7 @@ def generate_cube_case():
 
     else:
         ElementShape = "Box"
-        ElementArgs = "{ (x-1)*L, (y-1)*h, (z-1)*d, L, h, d}"
+        ElementArgs = "{ (r-1)*L, (s-1)*h, (t-1)*d, L, h, d}"
         eltDim = "Volume"
         eltDimM1 = "Surface"
         diffVal = 3
