@@ -1,14 +1,14 @@
 :feelpp: Feel++
-= feelpp_mesh_exporter(1)
+= case_generator_thermal_fin
 Christophe Prud'homme <https://github.com/prudhomm[@prudhomm]>; Vincent Chabannes <https://github.com/vincentchabannes[@vincentchabannes]>; Thomas Saigre <https://github.com/thomas-saigre[@thomas-saigre]>
-:manmanual: feelpp_case_generator
-:tf:
+:manmanual: case_generator_thermal_fin
+:case: thermal fin
 :man-linkstyle: pass:[blue R < >]
 
 
 == NAME
 
-{manmanual} - a tool to generate configuration files for the case {tf} with {feelpp}.
+{manmanual} - a tool to generate configuration files for the case `{case}` with {feelpp}.
 
 
 == SYNOPSIS
