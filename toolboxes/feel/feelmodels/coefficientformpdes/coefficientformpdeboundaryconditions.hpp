@@ -50,7 +50,7 @@ public:
 
         void setParameterValues( std::map<std::string,double> const& paramValues ) { M_mexpr.setParameterValues( paramValues ); }
 
-        //! update informations
+        //! update information
         virtual void updateInformationObject( nl::json & p ) const;
         //! return tabulate information from json info
         static tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp );
@@ -90,7 +90,7 @@ public:
 
         void setParameterValues( std::map<std::string,double> const& paramValues ) { M_mexpr1.setParameterValues( paramValues ); M_mexpr2.setParameterValues( paramValues ); }
 
-        //! update informations
+        //! update information
         virtual void updateInformationObject( nl::json & p ) const;
         //! return tabulate information from json info
         static tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp );
@@ -139,7 +139,7 @@ public:
     //! setup bc from json
     void setup( nl::json const& jarg );
 
-    //! update informations
+    //! update information
     void updateInformationObject( nl::json & p ) const;
     //! return tabulate information from json info
     static tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp );

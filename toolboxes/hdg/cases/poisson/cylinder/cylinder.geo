@@ -1,6 +1,6 @@
 h = 0.1;
 r = 0.5;   // radius
-L = 5;     // lenght
+L = 5;     // length
 nbCut = 5; // number of part
 
 // radius

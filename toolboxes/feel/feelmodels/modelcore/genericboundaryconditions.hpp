@@ -145,7 +145,7 @@ public:
     //! return true if method is lagrange_multiplier
     bool isMethodLagrangeMultiplier() const { return this->isMethod( Method::lagrange_multiplier ); }
 
-    //! update informations
+    //! update information
     virtual void updateInformationObject( nl::json & p ) const;
     //! return tabulate information from json info
     static tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp );

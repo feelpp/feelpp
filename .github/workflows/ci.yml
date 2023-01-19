@@ -3,13 +3,13 @@ name: Scheduled CI
 on: 
   schedule:
     # run every day at 2am  
-    - cron: '0 2 * * 0'
-    - cron: '0 2 * * 1'
-    - cron: '0 2 * * 2' 
-    - cron: '0 2 * * 3'
-    - cron: '0 2 * * 4'
-    - cron: '0 2 * * 5'
-    - cron: '0 2 * * 6' 
+    - cron: '30 0 * * 0'
+    - cron: '30 0 * * 1'
+    - cron: '30 0 * * 2' 
+    - cron: '30 0 * * 3'
+    - cron: '30 0 * * 4'
+    - cron: '30 0 * * 5'
+    - cron: '30 0 * * 6' 
 
 
 jobs:
@@ -28,19 +28,19 @@ jobs:
       fail-fast: false
       matrix: 
         include:
-#          - {flavor: ubuntu, version: "20.04", dotw: '0'}
+          - {flavor: ubuntu, version: "20.04", dotw: '0'}
           - {flavor: ubuntu, version: "22.04", dotw: '1'}
           - {flavor: ubuntu, version: "22.10", dotw: '2'}
           - {flavor: debian, version: "testing", dotw: '3'}
           - {flavor: debian, version: "sid", dotw: '4'}
           - {flavor: fedora, version: "36", dotw: '5'}
-#          - {flavor: fedora, version: "37", dotw: '6'}
+          - {flavor: fedora, version: "37", dotw: '6'}
     name: Trigger build on ${{ matrix.flavor }}-${{ matrix.version }}
     runs-on: ubuntu-latest
     needs: activate
     steps:
       - 
-        if: ${{ github.event.schedule == format('0 2 * * {0}', matrix.dotw ) }}
+        if: ${{ github.event.schedule == format('30 0 * * {0}', matrix.dotw ) }}
         name: "Trigger build [${{ github.event.schedule }}] ${{ matrix.flavor }}-${{ matrix.version }}"
         uses: peter-evans/repository-dispatch@v2
         with:
