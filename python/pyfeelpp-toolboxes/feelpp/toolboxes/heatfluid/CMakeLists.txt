@@ -1,9 +1,9 @@
 ###  CMakeLists.txt; coding: utf-8 --- 
 
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-#       Date: 07 Apr 2019
+#       Date: 06 Aug 2018
 #
-#  Copyright (C) 2019 Feel++ Consortium
+#  Copyright (C) 2018 Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -21,14 +21,7 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-add_custom_target( benchs )
 
-feelpp_add_application( env SRCS 01-env.cpp LINK_LIBRARIES  benchmark EXEC B_ENV )
-feelpp_add_application( mesh SRCS 02-mesh.cpp LINK_LIBRARIES  benchmark EXEC B_MESH )
-feelpp_add_application( space SRCS 03-space.cpp LINK_LIBRARIES  benchmark EXEC B_SPACE )
-feelpp_add_application( integrate SRCS 04-integrate.cpp LINK_LIBRARIES  benchmark EXEC B_INTEGRATE )
-feelpp_add_application( gmc SRCS gmc.cpp LINK_LIBRARIES  benchmark EXEC B_GMC )
-if ( SPECX_FOUND )
-    feelpp_add_application( taskflow SRCS 99-taskflow.cpp LINK_LIBRARIES Feelpp::feelpp_taskflow )
-endif()
-add_dependencies( benchs ${B_ENV} ${B_MESH} ${B_SPACE} ${B_INTEGRATE} ${B_GMC})
+feelpp_add_pymodule(heatfluid SRCS heatfluid.cpp DESTINATION feelpp/toolboxes/heatfluid LINK_LIBRARIES Feelpp::feelpp_toolbox_heatfluid_lib)
+install(FILES  __init__.py DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/toolboxes/heatfluid)
+

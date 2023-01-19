@@ -52,7 +52,7 @@ public :
     std::map<std::string,faces_reference_wrapper_t<MeshType>> const& rangeMeshFacesByMaterial( std::string const& type ) const
         {
             auto itFindType = M_rangeMeshFacesByMaterial.find( type );
-            CHECK( itFindType != M_rangeMeshFacesByMaterial.end() ) << "type doesnot find " << type;
+            CHECK( itFindType != M_rangeMeshFacesByMaterial.end() ) << "type does not find " << type;
             return itFindType->second;
         }
 
