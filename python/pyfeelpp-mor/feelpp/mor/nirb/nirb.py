@@ -329,7 +329,8 @@ class nirbOffline(ToolboxModel):
             s.sampling(numberOfInitSnapshots, samplingMode)
             vector_mu = s.getVector()
         else:
-            vector_mu = choices(Xi_train, k=numberOfInitSnapshots)
+            # vector_mu = choices(Xi_train, k=numberOfInitSnapshots)
+            vector_mu = Xi_train[:numberOfInitSnapshots]
 
         if computeCoarse:
             assert self.tbCoarse is not None, f"Coarse toolbox needed for computing coarse Snapshot. set doRectification->True"
