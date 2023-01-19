@@ -837,14 +837,13 @@ class nirbOffline(ToolboxModel):
         for i in range(len(self.l2ProductBasis)):
             vec = self.Xh.element(self.l2ProductBasis[i])
             vec.save(l2productPath, l2productFilename, suffix=str(i))
-
-        nploc = self.worldcomm.localRank()
-        coeffCoarseFile = os.path.join(path,f"coeffcoarse_np{nploc}")
-        coeffFineFile = os.path.join(path,f"coefffine_np{nploc}")
+        
+        coeffCoarseFile = os.path.join(path,f"coeffcoarse")
+        coeffFineFile = os.path.join(path,f"coefffine")
         if self.doRectification:
-            # if self.worldcomm.isMasterRank():
-            np.save(coeffCoarseFile, self.coeffCoarse)
-            np.save(coeffFineFile, self.coeffFine)
+            if self.worldcomm.isMasterRank():
+                np.save(coeffCoarseFile, self.coeffCoarse)
+                np.save(coeffFineFile, self.coeffFine)
 
         self.outdir = os.path.abspath(path)
         if self.worldcomm.isMasterRank():
@@ -1045,11 +1044,11 @@ class nirbOnline(ToolboxModel):
             vec.load(l2productPath, l2productFilename, suffix=str(i))
             self.l2ProductBasis.append(vec)
 
-        # coeffCoarseFile = os.path.join(path,'coeffcoarse.npy')
-        # coeffFineFile = os.path.join(path,'coefffine.npy')
-        rank = self.worldcomm.localRank()
-        coeffCoarseFile = os.path.join(path,f"coeffcoarse_np{rank}.npy")
-        coeffFineFile = os.path.join(path,f"coefffine_np{rank}.npy")
+        coeffCoarseFile = os.path.join(path,'coeffcoarse.npy')
+        coeffFineFile = os.path.join(path,'coefffine.npy')
+        # rank = self.worldcomm.localRank()
+        # coeffCoarseFile = os.path.join(path,f"coeffcoarse_np{rank}.npy")
+        # coeffFineFile = os.path.join(path,f"coefffine_np{rank}.npy")
         if self.doRectification:
             coeffCoarse = np.load(coeffCoarseFile)
             coeffFine = np.load(coeffFineFile)
