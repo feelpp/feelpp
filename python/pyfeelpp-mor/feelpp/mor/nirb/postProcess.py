@@ -192,11 +192,13 @@ def troncateNparam(df, Nparam=1, start='first'):
 
 
 ### Functions to vizualise data Frame 
-def plotDataFrame(df, norm='L2'):
+def plotDataFrame(df, norm='l2', texSave=False):
     """ plot the content of a data frame  
 
     Args:
         df (pandas.dataFrame): the dataFrame 
+        norm (str) : which norm to display
+        texSave (bool) : save tex file or not. Defaults to False.  
     """
     x = df.index
     keys = [k for k in df.keys() if k not in ['N', 'parameter']]
@@ -214,7 +216,8 @@ def plotDataFrame(df, norm='L2'):
     plt.yscale('log')
     plt.xlabel("Number of basis function (N)")
     plt.ylabel(f"{nm} norm of Errors (in log)")
-    # tikzplotlib.save('plotDataFrame.tex')
+    if texSave :
+        tikzplotlib.save(f"plotError{keys}.tex")
     plt.show()
 
 def compareListOfDataFrams(listdf, keys='Mean', norm='l2'):
@@ -255,7 +258,7 @@ def compareListOfDataFrams(listdf, keys='Mean', norm='l2'):
     plt.show()
 
 
-def plotErrors(df, keys='Mean', norm='l2'):
+def plotErrors(df, keys='Mean', norm='l2', texSave=False):
     """plot nirb error given from a dataFrame 
         keys take 'Min', 'Max' or 'Mean'.
         This will plot computed errors with and without rectification 
@@ -263,7 +266,10 @@ def plotErrors(df, keys='Mean', norm='l2'):
 
     Args:
         df (pandas.dataFrame): _description_
-        keys (str) : Min, Max or Mean 
+        keys (str) : Min, Max or Mean. Defaults to Mean 
+        norm (str) : show which norm are displayed. Defaults to 'l2' norm 
+        texSave (bool) : say if save tex file or not. Defaults to False 
+
     """
 
     xf = df.index
@@ -299,11 +305,12 @@ def plotErrors(df, keys='Mean', norm='l2'):
     plt.yscale('log')
     plt.xlabel("Number of basis function (N)")
     plt.ylabel(f"{nm} norm of Errors (in log scale)")
-    # tikzplotlib.save(f"plotError{keys}.tex")
+    if texSave :
+        tikzplotlib.save(f"plotError{keys}.tex")
     plt.show()
 
 
-def compare2dataFrame(df,dg, keys='Mean', norm='l2', dataLabel='pk', labellist=None):
+def compare2dataFrame(df,dg, keys='Mean', norm='l2', dataLabel='pk', labellist=None, texSave=False):
     """compare two dataFrames in respect of given keys and norm 
         keys take 'Min', 'Max' or 'Mean' 
         the dataFrames df and dg should be the results of function getDataStat()
@@ -315,6 +322,8 @@ def compare2dataFrame(df,dg, keys='Mean', norm='l2', dataLabel='pk', labellist=N
         norm (str) : the norm to be plotted (l2 or h1)
         dataLabel (str) : the label of data to compare (pk : lagrange Pk interpolation, 'nested' : compare nested basis function
                         vs no nested one, 'greedy' : compare Greedy algo Vs no Greedy)
+        texSave(bool) : Say if saving tex file or not. Defaults to False 
+
     """
 
     xf = df.index
@@ -367,5 +376,7 @@ def compare2dataFrame(df,dg, keys='Mean', norm='l2', dataLabel='pk', labellist=N
     plt.xlabel("Number of basis function (N)")
     plt.ylabel(f"{nm} norm of Errors (in log scale)")
     plt.grid()
+    if texSave :
+        tikzplotlib.save(f"compareError{keys}.tex")
     # tikzplotlib.save(f"compareError{keys}.tex")
     plt.show()
