@@ -34,6 +34,10 @@
 
 namespace Feel
 {
+
+std::string findUser();
+fs::path findHome();
+
 enum class Location {
     unknown=0, ///! unknown directory
     global=10, ///! global repository
@@ -121,6 +125,15 @@ public:
         std::string email = {};
         NLOHMANN_DEFINE_TYPE_INTRUSIVE(Owner,name,email)
     };
+
+    struct Dist {
+        std::string login = {};
+        std::string server = {};
+        std::string name = {};
+        NLOHMANN_DEFINE_TYPE_INTRUSIVE(Dist,login,server,name)
+    };
+
+
     struct Config {
         Config();
         Config( nl::json const& j );
@@ -128,6 +141,7 @@ public:
         Config( fs::path d, Location l);
         Config( fs::path d, Location l, nl::json const& dat );
         Owner owner;
+        Dist dist;
         fs::path feelppdb = "feelppdb";
         Location location = Location::global;
         fs::path global_root;
@@ -137,7 +151,7 @@ public:
         fs::path geos = "geo";
         bool append_date = false;
         bool append_np = true;
-        NLOHMANN_DEFINE_TYPE_INTRUSIVE( Config, owner, feelppdb, location, global_root, directory, exprs, logs, geos, append_date, append_np )
+        NLOHMANN_DEFINE_TYPE_INTRUSIVE( Config, owner, dist, feelppdb, location, global_root, directory, exprs, logs, geos, append_date, append_np )
     };
 
     Repository() = default;

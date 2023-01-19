@@ -1518,8 +1518,12 @@ public:
             setParameterName( i, parameterPair.second.name() );
             M_min(i) = parameterPair.second.min();
             M_max(i) = parameterPair.second.max();
+
+            if (!( parameterPair.second.min() < parameterPair.second.max() ))
+                throw std::logic_error( fmt::format("invalid range parameter {}\n",parameterPair.second.name()) );
             ++i;
         }
+
     }
 
     //! destructor

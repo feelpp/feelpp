@@ -30,15 +30,23 @@
  */
 #include <sstream>
 
+#include <fmt/core.h>
+#include <iostream>
 #include <feel/feelconfig.h>
 #include <feel/feelinfo.h>
 #include <feel/feelcore/info.hpp>
+#include <boost/filesystem/operations.hpp>
+
+#undef linux
+#undef gnu
+#undef x86_64
 
 #define stringize2(x) #x
 #define stringize(x) stringize2(x)
 
 namespace Feel
 {
+
 char const*
 Info::buildId()
 {
@@ -81,22 +89,57 @@ Info::versionString()
     return stringize( FEELPP_VERSION_MAJOR ) "." stringize( FEELPP_VERSION_MINOR ) "." stringize( FEELPP_VERSION_MICRO )  stringize(FEELPP_VERSION_PRERELEASE) stringize(FEELPP_VERSION_METADATA) stringize(FEELPP_BUILDID);
 }
 
-char const*
+fs::path
 Info::prefix()
 {
-    return stringize( FEELPP_PREFIX ); 
+    return fs::path{stringize( FEELPP_PREFIX )}; 
 }
 
-char const*
+fs::path
 Info::libdir()
 {
-    return stringize( FEELPP_LIBDIR );
+    return prefix() / fs::path{stringize( FEELPP_LIBDIR )};
 }
 
-char const*
+fs::path
+Info::relativeLibdir()
+{
+    return fs::relative( libdir(), prefix() );
+}
+fs::path
+Info::plugindir()
+{
+    return prefix() / fs::path{stringize( FEELPP_LIBDIR )};
+}
+
+fs::path
+Info::relativePlugindir()
+{
+    return fs::relative( plugindir(), prefix() );
+}
+
+fs::path
+Info::casesdir()
+{
+    return prefix() / stringize( FEELPP_CASESDIR );
+}
+
+fs::path
+Info::relativeCasesdir()
+{
+    return fs::relative( casesdir(), prefix() );
+}
+
+fs::path
 Info::datadir()
 {
-    return stringize( FEELPP_DATADIR );
+    return fs::path{ stringize( FEELPP_DATADIR ) };
 }
 
+fs::path
+Info::relativeDatadir()
+{
+    return fs::relative( datadir(), prefix() );
+
 }
+} // Feel

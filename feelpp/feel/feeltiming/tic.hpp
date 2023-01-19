@@ -96,7 +96,14 @@ inline void tic()
 
 
 
-//! 
+/**
+ * @brief toc returns the time elapsed since the last tic
+ * 
+ * @param msh identifier of the timer
+ * @param _display if true (default) the time is displayed
+ * @param uiname user interface name
+ * @return double the time elapsed since the last tic
+ */
 inline double  toc( std::string const& msg = "",
                     bool _display = display, 
                     std::string const& uiname = "" )

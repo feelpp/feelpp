@@ -77,7 +77,7 @@ makeAbout()
 }
 
 /**
- * Sound Solver using discontinous approximation spaces
+ * Sound Solver using discontinuous approximation spaces
  *
  * solve \f$ -\Delta u = f\f$ on \f$\Omega\f$ and \f$u= g\f$ on \f$\Gamma\f$
  */
