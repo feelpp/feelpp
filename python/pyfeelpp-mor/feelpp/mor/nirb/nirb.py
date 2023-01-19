@@ -471,14 +471,14 @@ class nirbOffline(ToolboxModel):
             # Vh = feelpp.functionSpace(mesh=self.tbFine.mesh(), order=self.order)
             self.l2ScalarProductMatrix = FppOp.mass(test=self.Xh, trial=self.Xh, range=feelpp.elements(self.tbFine.mesh()))
             self.h1ScalarProductMatrix = FppOp.stiffness(test=self.Xh, trial=self.Xh, range=feelpp.elements(self.tbFine.mesh()))
-            self.l2ScalarProductMatrix.to_petsc().mat().assemble()
-            self.h1ScalarProductMatrix.to_petsc().mat().assemble()
+            self.l2ScalarProductMatrix.to_petsc().close() 
+            self.h1ScalarProductMatrix.to_petsc().close()
 
         if coarse:
             self.l2ScalarProductMatrixCoarse = FppOp.mass(test=self.XH, trial=self.XH, range=feelpp.elements(self.tbCoarse.mesh()))
             self.h1ScalarProductMatrixCoarse = FppOp.stiffness(test=self.XH, trial=self.XH, range=feelpp.elements(self.tbCoarse.mesh()))
-            self.l2ScalarProductMatrixCoarse.to_petsc().mat().assemble()
-            self.h1ScalarProductMatrixCoarse.to_petsc().mat().assemble()
+            self.l2ScalarProductMatrixCoarse.to_petsc().close() 
+            self.h1ScalarProductMatrixCoarse.to_petsc().close()
 
     def generateReducedBasis(self, tolerance=1.e-6, regulParam=1.e-10):
         """Generate the reduced basis, and store it in the list self.reducedBasis
@@ -581,7 +581,7 @@ class nirbOffline(ToolboxModel):
 
         coeffCoarse = np.zeros((self.N, self.N))
         coeffFine = np.zeros((self.N, self.N))
-
+        
         for i in range(self.N):
             for j in range(self.N):
                 coeffCoarse[i,j] = self.l2ScalarProductMatrix.energy(InterpCoarseSnaps[i],self.reducedBasis[j])
@@ -711,7 +711,7 @@ class nirbOffline(ToolboxModel):
 
         Z = self.reducedBasis
         Z[0] = Z[0] * (1./math.sqrt(abs(self.l2ScalarProductMatrix.energy(Z[0],Z[0]))))
-
+        
         for n in range(1, self.N):
             s = self.Xh.element()
             s.setZero()
@@ -977,12 +977,12 @@ class nirbOnline(ToolboxModel):
         if h1:
             l2Mat = FppOp.mass(test=self.Xh, trial=self.Xh, range=feelpp.elements(self.tbFine.mesh()))
             h1Mat = FppOp.stiffness(test=self.Xh, trial=self.Xh, range=feelpp.elements(self.tbFine.mesh()))
-            l2Mat.to_petsc().mat().assemble()
-            h1Mat.to_petsc().mat().assemble()
+            l2Mat.to_petsc().close()
+            h1Mat.to_petsc().close()
             return l2Mat, h1Mat
         else :
             l2Mat = FppOp.mass(test=self.Xh, trial=self.Xh, range=feelpp.elements(self.tbFine.mesh()))
-            l2Mat.to_petsc().mat().assemble()
+            l2Mat.to_petsc().close()
             return l2Mat
 
     def loadData(self, nbSnap=None, path="./", regulParam=1.e-10):
@@ -996,7 +996,6 @@ class nirbOnline(ToolboxModel):
         Returns :
             int: error code, 0 if all went well, 1 if not
         """
-        print(f"[NIRB] Loading data from {os.path.abspath(path)}")
 
         reducedPath = os.path.join(path,'reducedBasis')
         reducedFilename = 'reducedBasis'
@@ -1005,6 +1004,8 @@ class nirbOnline(ToolboxModel):
         l2productFilename = 'l2productBasis'
         
         if self.worldcomm.isMasterRank():
+            print(f"[NIRB] Loading data from {os.path.abspath(path)}")
+
             if not os.path.isdir(path):
                 print(f"[NIRB] Error : Could not find path {path}")
                 return 1
@@ -1042,9 +1043,9 @@ class nirbOnline(ToolboxModel):
 
         # coeffCoarseFile = os.path.join(path,'coeffcoarse.npy')
         # coeffFineFile = os.path.join(path,'coefffine.npy')
-        nploc = self.worldcomm.localRank()
-        coeffCoarseFile = os.path.join(path,f"coeffcoarse_np{nploc}.npy")
-        coeffFineFile = os.path.join(path,f"coefffine_np{nploc}.npy")
+        rank = self.worldcomm.localRank()
+        coeffCoarseFile = os.path.join(path,f"coeffcoarse_np{rank}.npy")
+        coeffFineFile = os.path.join(path,f"coefffine_np{rank}.npy")
         if self.doRectification:
             coeffCoarse = np.load(coeffCoarseFile)
             coeffFine = np.load(coeffFineFile)
