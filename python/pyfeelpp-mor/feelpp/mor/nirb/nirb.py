@@ -367,7 +367,6 @@ class nirbOffline(ToolboxModel):
         uHN = np.zeros(N)
 
         for i in range(N):
-            # uHN[i] = self.coarseSnapShotList[i].to_petsc().vec().dot( coarseSol.to_petsc().vec() )
             uHN[i] = self.l2ScalarProductMatrixCoarse.energy( self.coarseSnapShotList[i], coarseSol )
         return uHN
 
@@ -676,56 +675,61 @@ class nirbOffline(ToolboxModel):
     """
     Handle Gram-Schmidt orthogonalization
     """
-    def orthonormalizeH1(self, nb=0):
+    def orthonormalizeH1(self, nbMax=10, tol=1.e-8):
         """Use Gram-Schmidt algorithm to orthonormalize the reduced basis using H1 norm
         (the optional argument is not needed)
+        
+        Args : 
+            nbMax(int) : maximum number of orthonormalization process. Defaults to 10
+            tol(float) : tolerance for checking orhtonormalization. Defaults to 1.e-8
+
         """
         Z = self.reducedBasis
 
-        Z[0] = Z[0] * (1./math.sqrt(abs(self.h1ScalarProductMatrix.energy(Z[0],Z[0]))))
+        nb = 0
+        while not (self.checkH1Orthonormalized(tol=tol)) and nb < nbMax: 
+            Z[0] = Z[0] * (1./math.sqrt(abs(self.h1ScalarProductMatrix.energy(Z[0],Z[0]))))
 
-        for n in range(1, self.N):
-            s = self.Xh.element()
-            s.setZero()
-            for m in range(n):
-                s = s + self.h1ScalarProductMatrix.energy(Z[n], Z[m]) * Z[m]
-            z_tmp = Z[n] - s
-            Z[n] = z_tmp * (1./math.sqrt(abs(self.h1ScalarProductMatrix.energy(z_tmp,z_tmp))))
+            for n in range(1, self.N):
+                s = self.Xh.element()
+                s.setZero()
+                for m in range(n):
+                    s = s + self.h1ScalarProductMatrix.energy(Z[n], Z[m]) * Z[m]
+                z_tmp = Z[n] - s
+                Z[n] = z_tmp * (1./math.sqrt(abs(self.h1ScalarProductMatrix.energy(z_tmp,z_tmp))))
 
-        self.reducedBasis = Z
+            self.reducedBasis = Z
 
-        if not (self.checkH1Orthonormalized() ) and nb < 10:
-            self.orthonormalizeH1(nb=nb+1)
-        elif self.worldcomm.isMasterRank():
-            print(f"[NIRB] Gram-Schmidt H1 orthonormalization done after {nb+1} step"+['','s'][nb>0])
+        if self.worldcomm.isMasterRank():
+            print(f"[NIRB] Gram-Schmidt H1 orthonormalization done after {nb} step"+['','s'][nb>1])
 
 
-    def orthonormalizeL2(self, nb=0, tol=1.e-6):
+    def orthonormalizeL2(self, nbMax=10, tol=1.e-8):
         """Use Gram-Schmidt algorithm to orthonormalize the reduced basis using L2 norm
         (the optional argument is not needed)
 
         Args : 
-            nb (int) : number of orthonormalization to run
-            tol (float) : tolerence 
+            nbMax(int) : maximum number of orthonormalization process. Defaults to 10
+            tol (float) : tolerence for checking orthonormalization. Defaults to 1.e-8
         """
 
         Z = self.reducedBasis
-        Z[0] = Z[0] * (1./math.sqrt(abs(self.l2ScalarProductMatrix.energy(Z[0],Z[0]))))
-        
-        for n in range(1, self.N):
-            s = self.Xh.element()
-            s.setZero()
-            for m in range(n):
-                s = s + self.l2ScalarProductMatrix.energy(Z[n], Z[m]) * Z[m]
-            z_tmp = Z[n] - s
-            Z[n] = z_tmp * (1./math.sqrt(abs(self.l2ScalarProductMatrix.energy(z_tmp,z_tmp))))
+        nb = 0
+        while not (self.checkL2Orthonormalized(tol=tol)) and nb < nbMax:  
+            Z[0] = Z[0] * (1./math.sqrt(abs(self.l2ScalarProductMatrix.energy(Z[0],Z[0]))))  
+            for n in range(1, self.N):
+                s = self.Xh.element()
+                s.setZero()
+                for m in range(n):
+                    s = s + self.l2ScalarProductMatrix.energy(Z[n], Z[m]) * Z[m]
+                z_tmp = Z[n] - s
+                Z[n] = z_tmp * (1./math.sqrt(abs(self.l2ScalarProductMatrix.energy(z_tmp,z_tmp))))
 
-        self.reducedBasis = Z
+            self.reducedBasis = Z
+            nb +=1
 
-        if not (self.checkL2Orthonormalized(tol=tol)) and nb < 10:
-            self.orthonormalizeL2(nb=nb+1)
-        elif self.worldcomm.isMasterRank():
-            print(f"[NIRB] Gram-Schmidt L2 orthonormalization done after {nb+1} step"+['','s'][nb>0])
+        if self.worldcomm.isMasterRank():
+            print(f"[NIRB] Gram-Schmidt L2 orthonormalization done after {nb} step"+['','s'][nb>1])
 
     def orthonormalizeMatL2(self, Z):
         """Ortohnormalize the matrix Z using L2 norm
