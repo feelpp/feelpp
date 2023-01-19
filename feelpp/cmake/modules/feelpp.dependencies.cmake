@@ -141,6 +141,28 @@ else()
   set( FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION ON)
 endif()
 
+function(get_linux_lsb_release_information)
+    find_program(LSB_RELEASE_EXEC lsb_release)
+    if(NOT LSB_RELEASE_EXEC)
+        message(WARNING "Could not detect lsb_release executable, can not gather required information")
+    else()
+      execute_process(COMMAND "${LSB_RELEASE_EXEC}" --short --id OUTPUT_VARIABLE LSB_RELEASE_ID_SHORT OUTPUT_STRIP_TRAILING_WHITESPACE)
+      execute_process(COMMAND "${LSB_RELEASE_EXEC}" --short --release OUTPUT_VARIABLE LSB_RELEASE_VERSION_SHORT OUTPUT_STRIP_TRAILING_WHITESPACE)
+      execute_process(COMMAND "${LSB_RELEASE_EXEC}" --short --codename OUTPUT_VARIABLE LSB_RELEASE_CODENAME_SHORT OUTPUT_STRIP_TRAILING_WHITESPACE)
+  
+      set(LSB_RELEASE_ID_SHORT "${LSB_RELEASE_ID_SHORT}" PARENT_SCOPE)
+      set(LSB_RELEASE_VERSION_SHORT "${LSB_RELEASE_VERSION_SHORT}" PARENT_SCOPE)
+      set(LSB_RELEASE_CODENAME_SHORT "${LSB_RELEASE_CODENAME_SHORT}" PARENT_SCOPE)
+    endif()
+endfunction()
+
+if(CMAKE_SYSTEM_NAME MATCHES "Linux")
+  get_linux_lsb_release_information()
+  message(STATUS "Linux ${LSB_RELEASE_ID_SHORT} ${LSB_RELEASE_VERSION_SHORT} ${LSB_RELEASE_CODENAME_SHORT}")
+endif()
+
+find_package(PkgConfig REQUIRED)
+
 # enable mpi mode
 IF ( FEELPP_ENABLE_MPI_MODE )
   SET( FEELPP_ENABLE_MPI_MODE 1 )
@@ -449,11 +471,11 @@ if ( FEELPP_ENABLE_HDF5 )
 
 
       else(HDF5_IS_PARALLEL)
-        MESSAGE(STATUS "[feelpp] HDF5 has been found but is not parallel, HDF5 is not enabled in Feel++")
+        MESSAGE(FATAL_ERROR "[feelpp] HDF5 has been found but is not parallel, HDF5 is not enabled in Feel++")
       endif( HDF5_IS_PARALLEL)
 
   else(HDF5_FOUND)
-    MESSAGE(STATUS "[feelpp] no HDF5 found")
+    MESSAGE(FATAL_ERROR "[feelpp] no HDF5 found")
   endif( HDF5_FOUND)
 
 endif(FEELPP_ENABLE_HDF5)
@@ -485,26 +507,26 @@ endif()
 option( FEELPP_ENABLE_PYTHON "Enable Python Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
 if(FEELPP_ENABLE_PYTHON)
   #
-  # Python interp
+  # Python
   #
-  FIND_PACKAGE(PythonInterp 3  REQUIRED)
-  if(PYTHONINTERP_FOUND)
+  FIND_PACKAGE(Python3 COMPONENTS Interpreter Development)
+  if(Python3_FOUND)
     execute_process(COMMAND
-      ${PYTHON_EXECUTABLE}
+      ${Python3_EXECUTABLE}
       -c "import sys; print(sys.version[0:3])"
       OUTPUT_VARIABLE PYTHON_VERSION
       OUTPUT_STRIP_TRAILING_WHITESPACE)
 
-    message(STATUS "[feelpp] Found python version ${PYTHON_VERSION}")
-    SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} PythonInterp/${PYTHON_VERSION}" )
+    message(STATUS "[feelpp] Found python version ${Python3_VERSION} (${PYTHON_VERSION})")
+    SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} PythonInterp/${Python3_VERSION}" )
   endif()
 
-  FIND_PACKAGE(PythonLibs 3 REQUIRED)
-  if ( PYTHONLIBS_FOUND )
-    message(STATUS "[feelpp] PythonLibs: ${PYTHON_INCLUDE_DIRS} ${PYTHON_LIBRARIES}")
-    #INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_DIRS})
-    SET(FEELPP_LIBRARIES ${PYTHON_LIBRARIES} ${FEELPP_LIBRARIES})
-    SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} PythonLibs/${PYTHON_VERSION}" )
+  if ( Python3_FOUND )
+    message(STATUS "[feelpp] PythonLibs: ${Python3_INCLUDE_DIRS} ${Python3_LIBRARIES}")
+
+    # INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_DIRS})
+    SET(FEELPP_LIBRARIES ${Python3_LIBRARIES} ${FEELPP_LIBRARIES})
+    SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} PythonLibs/${Python3_VERSION}" )
     set( FEELPP_HAS_PYTHON 1 )
     
     # Check that sympy is available
@@ -542,23 +564,22 @@ if(FEELPP_ENABLE_PYTHON)
       message(STATUS "[feelpp] mo2fmu not found")
     endif()
   endif()
-
   if (DEFINED PYTHON_SITE_PACKAGES)
     set (FEELPP_PYTHON_MODULE_PATH ${PYTHON_SITE_PACKAGES})
   else ()
-    execute_process (COMMAND ${PYTHON_EXECUTABLE} -c "from distutils import sysconfig; print(sysconfig.get_python_lib(plat_specific=True, prefix='${CMAKE_INSTALL_PREFIX}'))"
+    execute_process (COMMAND ${Python3_EXECUTABLE} -c "from distutils import sysconfig; print(sysconfig.get_python_lib(plat_specific=True, prefix='${CMAKE_INSTALL_PREFIX}'))"
                       OUTPUT_VARIABLE _ABS_PYTHON_MODULE_PATH
                       RESULT_VARIABLE _PYTHON_pythonlib_result
                       OUTPUT_STRIP_TRAILING_WHITESPACE)
-
+      
     if (_PYTHON_pythonlib_result)
-      message (SEND_ERROR "Could not run ${PYTHON_EXECUTABLE}")
+      message (SEND_ERROR "Could not run ${Python3_EXECUTABLE}")
     endif ()
 
     get_filename_component (_ABS_PYTHON_MODULE_PATH ${_ABS_PYTHON_MODULE_PATH} ABSOLUTE)
     file (RELATIVE_PATH FEELPP_PYTHON_MODULE_PATH ${CMAKE_INSTALL_PREFIX} ${_ABS_PYTHON_MODULE_PATH})
   endif ()
-  set (FEELPP_PYTHON${PYTHON_VERSION_MAJOR}_MODULE_PATH ${FEELPP_PYTHON_MODULE_PATH})
+  set (FEELPP_PYTHON${Python3_VERSION_MAJOR}_MODULE_PATH ${FEELPP_PYTHON_MODULE_PATH})
   message(STATUS "[feelpp] python module path: ${FEELPP_PYTHON_MODULE_PATH}")
 endif(FEELPP_ENABLE_PYTHON)
 
@@ -573,7 +594,7 @@ SET(BOOST_MIN_VERSION "1.65.0")
 # First we try to find boost with the python components
 if(FEELPP_ENABLE_PYTHON_WRAPPING)
     # FIND_PACKAGE(Boost ${BOOST_MIN_VERSION} COMPONENTS python )
-    # if(Boost_PYTHON_FOUND)
+    # if(Boost_Python3_FOUND)
     #     set(FEELPP_HAS_BOOST_PYTHON 1)
     #     set(FEELPP_LIBRARIES ${Boost_PYTHON_LIBRARY} ${FEELPP_LIBRARIES})
     #     set(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Boost-Python-Wrapping" )

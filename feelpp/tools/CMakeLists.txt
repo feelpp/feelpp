@@ -22,11 +22,13 @@
 #
 #
 
+add_subdirectory(info)
 add_subdirectory(remotedata)
 add_subdirectory( mesh )
 add_subdirectory( plot )
 add_subdirectory( fmi )
 add_subdirectory( databases )
+add_subdirectory( sync_case )
 
 add_subdirectory(scripts)
 add_subdirectory(view_factor)
