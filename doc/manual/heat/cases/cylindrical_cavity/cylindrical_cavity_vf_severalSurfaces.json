@@ -1,0 +1,9 @@
+{
+    "viewfactor": {
+        "type": "UnobstructedPlanar",
+        "algorithm":"SingleAreaIntegration",
+        "quadrature_order":2,
+        "markers": ["CavityTop", "CavityBottom","CavitySide"],        
+        "description": "The viewfactor of a cylindrical cavity."
+    }
+}

@@ -41,7 +41,8 @@ namespace Feel
         using space_t = Pch_type<mesh_t, Order>;
         using space_ptr_t = Pch_ptrtype<mesh_t, Order>;
         using spacedisc_t = Pdh_type<mesh_trace_t, 1>;
-        using spacedisc_ptr_t = Pdh_ptrtype<mesh_trace_t, 1>;
+        using spacedisc_ptr_t = Pdh_ptrtype<mesh_trace_t, 0>;
+        using spacedisc_interm_ptr_t = Pdh_ptrtype<mesh_trace_t, 1>;
         static constexpr int nDim = Dim;
         using scalar_t =  double;
         using coord_t = Eigen::Matrix<double, Dim, 1>;
@@ -107,6 +108,7 @@ namespace Feel
         space_ptr_t M_Xh;
         spacevect_ptr_t M_Xhvec;
         spacedisc_ptr_t M_Xhd0;
+        spacedisc_interm_ptr_t M_Xhd1;
         mesh_ptr_t M_mesh;
         mesh_trace_ptr_t M_surface_submesh;
         std::vector<std::string> M_markers_list_vf;        
@@ -140,6 +142,7 @@ namespace Feel
             ( "steady", Feel::po::value<bool>()->default_value( 1 ),
             "if 1: steady else unsteady" );
         options.add( Feel::backend_options("interp1"));
+        options.add( Feel::backend_options("interp2"));
         options.add( Feel::backend_options("heatEq"));
         options.add( Feel::backend_options("Modesteq"));
 
@@ -294,8 +297,8 @@ namespace Feel
 
             lt += integrate( _range = markedelements( M_mesh, material.get<std::string>() ), 
                              //_expr = expr( Rho ) * expr( Cp ) * (((idv(M_bdf->polyDeriv()) + (cst(M_bdf->polyDerivCoefficient( 1 ))*( -idv(M_bdf->unknowns()[0]) + idv(T))) ))) * id( v ) );                   
-                             _expr = expr( Rho ) * expr( Cp ) *  (cst(M_bdf->polyDerivCoefficient( 1 ))*idv(T))* id( v ) );            
-                             //_expr = expr( Rho ) * expr( Cp ) * idv(M_bdf->polyDeriv())  * id( v ) );                          
+                             //_expr = expr( Rho ) * expr( Cp ) *  (cst(M_bdf->polyDerivCoefficient( 1 ))*idv(T))* id( v ) );            
+                             _expr = expr( Rho ) * expr( Cp ) * idv(M_bdf->polyDeriv())  * id( v ) );                          
         }
 
         // Blackbody radiative condition
@@ -512,12 +515,13 @@ namespace Feel
         M_Xhvec = spacevect_t::New(_mesh=M_mesh);  
         M_markers_list_vf = this->j_viewfactor["viewfactor"]["markers"].template get<std::vector<std::string>>() ;
         this->computeVF_and_save();        
-        M_surface_submesh = createSubmesh(_mesh=M_mesh,_range=markedfaces(M_mesh,M_markers_list_vf));
+        M_surface_submesh = createSubmesh(_mesh=M_mesh,_range=markedfaces(M_mesh,M_markers_list_vf),_update=0);
         if(M_mesh->isParentMeshOf(M_surface_submesh))
             LOG(INFO) << fmt::format("M_mesh is parent mesh of M_surface_submesh")<< std::endl;
 
         // Create a discontinuous space, linear per face, over the view-factor markers
-        M_Xhd0 = Pdh<1>(M_surface_submesh);
+        M_Xhd0 = Pdh<0>(M_surface_submesh,true);
+        M_Xhd1 = Pdh<1>(M_surface_submesh,true);
 
         // Create the matrices and vectors for the radiative problem with multiple surfaces
         M_D = backend()->newVector(M_Xhd0);
@@ -613,13 +617,21 @@ namespace Feel
         auto u = M_Xhd0->element();    
         
         auto flux_interp = M_Xhd0->element();
+        auto flux_interp_interm = M_Xhd1->element();
         auto vf_field = M_Xhd0->element();                
         
         // Interpolate the continous flux onto the discontinuous space
-        auto opI = opInterpolation(_domainSpace=M_Xh,
+        auto opI_contToDisc = opInterpolation(_domainSpace=M_Xh,
+                                    _imageSpace=M_Xhd1,
+                                    _backend=backend(_name="interp1",_rebuild=true),
+                                    _type=InterpolationConforme());
+        auto opI_1to0 = opInterpolation(_domainSpace=M_Xhd1,
                                     _imageSpace=M_Xhd0,
-                                    _backend=backend(_name="interp1",_rebuild=true));
-        opI->apply( *flux, flux_interp );
+                                    _backend=backend(_name="interp2",_rebuild=true),
+                                    _type=InterpolationConforme());     
+
+        opI_contToDisc->apply(*flux,flux_interp_interm);                                                       
+        opI_1to0->apply( flux_interp_interm, flux_interp );
        
         int i_mark=0; 
         int j_mark=0;
@@ -657,7 +669,7 @@ namespace Feel
 
                                     // auto q_scal_vf = integrate(_range=markedfaces(M_mesh,mark2), _expr=inner(cst(0.4)*idv(M_currentTempAndFlux.q())+cst(0.6)*idv(flux),idv(vf_field))).evaluate()(0,0);
                                     auto q_scal_vf = integrate(_range=markedfaces(M_mesh,mark2), _expr=inner(idv(flux),idv(vf_field))).evaluate()(0,0);
-                                    auto measure_mark2 = integrate( _range=markedfaces(M_mesh,mark),_expr= cst(1.) ).evaluate()(0,0);
+                                    auto measure_mark2 = integrate( _range=markedfaces(M_mesh,mark2),_expr= cst(1.) ).evaluate()(0,0);
                                     M_N_form += integrate( _range=markedfaces(M_mesh,mark),
                                         _expr = (cst(1.)/expr(epsilon_mark2)-cst(1.))/cst(measure_mark2) * cst(q_scal_vf) * id(v) );
                                     done = 1;
@@ -683,15 +695,22 @@ namespace Feel
         auto u = M_Xhd0->element();    
         
         auto T4_interp = M_Xhd0->element();
+        auto T4_interp_interm = M_Xhd1->element();
         auto vf_field = M_Xhd0->element();
 
         // Interpolate the continous temperature onto the discontinuous space    
-        auto opI = opInterpolation(_domainSpace=M_Xh,
+        auto opI_interm = opInterpolation(_domainSpace=M_Xh,
+                                    _imageSpace=M_Xhd1,                                    
+                                    _backend=backend(_name="interp1",_rebuild=true),
+                                    _type=InterpolationConforme());
+        auto opI_1to0 = opInterpolation(_domainSpace=M_Xhd1,
                                     _imageSpace=M_Xhd0,                                    
-                                    _backend=backend(_name="interp1",_rebuild=true));
+                                    _backend=backend(_name="interp2",_rebuild=true),
+                                    _type=InterpolationConforme());                                    
         auto field = M_Xh->element();
         field.on(_range=elements(M_mesh),_expr=idv(T)*idv(T)*idv(T)*idv(T));
-        opI->apply( field,T4_interp);
+        opI_interm->apply(field,T4_interp_interm);
+        opI_1to0->apply( T4_interp_interm,T4_interp);
 
         //  Loop over the emissivities and build the D right-hand side
         // Integrate term of the form sigma*T^4 - \int_bdry (sigma*T^4(x') dF(x,x'))
@@ -725,7 +744,7 @@ namespace Feel
         
                         auto T4_scal_vf = integrate(_range=markedfaces(M_mesh,mark2), _expr=inner(idv(T4_interp),idv(vf_field))).evaluate()(0,0);                                                        
                         
-                        auto measure_mark2 = integrate( _range=markedfaces(M_mesh,mark),_expr= cst(1.) ).evaluate()(0,0);
+                        auto measure_mark2 = integrate( _range=markedfaces(M_mesh,mark2),_expr= cst(1.) ).evaluate()(0,0);
                         
                         M_D_form += integrate( _range=markedfaces(M_mesh,mark),
                                         _expr= cst(-1)/cst(measure_mark2)*sigma*cst(T4_scal_vf) *id(v) );                                               
@@ -777,6 +796,7 @@ namespace Feel
         auto bil_form = form2(_test=M_Xhd0,_trial=M_Xhd0,_matrix=M_M,_backend=backend(_name="Modesteq"));
     
         auto q_disc=M_Xhd0->element();
+        auto q_disc_interm=M_Xhd1->element();
 
         // Solve the Modest equation with q from previous iteration and new temperature
         bil_form.solve(_rhs=lin_form,_solution=q_disc,_name="Modesteq");
@@ -788,10 +808,15 @@ namespace Feel
 
 
         // Interpolate the discontinuous solution onto the continuous space
-        auto opI = opInterpolation(_domainSpace=M_Xhd0,
+        auto opI1 = opInterpolation(_domainSpace=M_Xhd0,
+                                _imageSpace=M_Xhd1,
+                                _type=InterpolationConforme());
+        auto opI2 = opInterpolation(_domainSpace=M_Xhd1,
                                 _imageSpace=M_Xh,
-                                _range=markedfaces(M_mesh,M_markers_list_vf));
-        opI->apply( q_disc, *q );
+                                _range=markedfaces(M_mesh,M_markers_list_vf),
+                                _type=InterpolationConforme());                                
+        opI1->apply( q_disc, q_disc_interm );
+        opI2->apply( q_disc_interm, *q );
 
 
         // Initial guess for temperature and flux 
@@ -836,15 +861,21 @@ namespace Feel
             auto bil_form = form2(_test=M_Xhd0,_trial=M_Xhd0,_matrix=M_M,_backend=backend(_name="Modesteq"));
         
             auto q_disc=M_Xhd0->element();
+            auto q_disc_interm=M_Xhd1->element();
 
             // Solve the Modest equation with q from previous iteration and new temperature
             bil_form.solve(_rhs=lin_form,_solution=q_disc,_name="Modesteq");
 
             // Interpolate the discontinuous solution onto the continuous space
-            auto opI = opInterpolation(_domainSpace=M_Xhd0,
-                                    _imageSpace=M_Xh,
-                                    _range=markedfaces(M_mesh,M_markers_list_vf));
-            opI->apply( q_disc, *q );
+            auto opI1 = opInterpolation(_domainSpace=M_Xhd0,
+                                _imageSpace=M_Xhd1,
+                                _type=InterpolationConforme());
+            auto opI2 = opInterpolation(_domainSpace=M_Xhd1,
+                                _imageSpace=M_Xh,
+                                _range=markedfaces(M_mesh,M_markers_list_vf),
+                                _type=InterpolationConforme());                                
+            opI1->apply( q_disc, q_disc_interm );
+            opI2->apply( q_disc_interm, *q );
                     
             auto e_opInterp2 = exporter(_mesh=M_mesh,_name="insideLoop");
             double iter=0;
@@ -864,14 +895,19 @@ namespace Feel
         
                 auto lin_form = form1(_test=M_Xhd0,_vector=L);    
                 auto q_new_k_l_disc=M_Xhd0->element();       
+                auto q_new_k_l_disc_interm=M_Xhd1->element();       
         
                 bil_form.solve(_rhs=lin_form,_solution=q_new_k_l_disc,_name="Modesteq");
         
-                auto opI = opInterpolation(_domainSpace=M_Xhd0,
+                auto opI1 = opInterpolation(_domainSpace=M_Xhd0,
+                                _imageSpace=M_Xhd1,
+                                _type=InterpolationConforme());
+                auto opI2 = opInterpolation(_domainSpace=M_Xhd1,
                                     _imageSpace=M_Xh,
-                                    _range=markedfaces(M_mesh,M_markers_list_vf));
-
-                opI->apply( q_new_k_l_disc, *q_new_k_l );
+                                    _range=markedfaces(M_mesh,M_markers_list_vf),
+                                    _type=InterpolationConforme());   
+                opI1->apply(q_new_k_l_disc,q_new_k_l_disc_interm);
+                opI2->apply( q_new_k_l_disc_interm, *q_new_k_l );
 
                 // Check if the difference between two iterates of the Picard loop is small enough
                 norm_q_qnew = normL2(_range=markedfaces(M_mesh,M_markers_list_vf),
@@ -928,7 +964,7 @@ namespace Feel
         // The Picard loop has finished; save the temperature as T_{n} to proceed to next iteration
         std::cout << "end Picard iteration" << std::endl;
         auto newT = unwrap_ptr(M_currentTempAndFlux.T());
-        M_bdf->shiftRight(newT);
+        M_bdf->next(newT);        
 
     } // end RHT<Dim,Order>::solvePicardIteration()
 
@@ -948,7 +984,7 @@ namespace Feel
         //this->build_M_block();
 
         // Solve the time dependent heat transfer problem
-        for(;!M_bdf->isFinished();M_bdf->next())
+        for( ;!M_bdf->isFinished(); )
         {
             std::cout << fmt::format("It's time {} of the resolution of the heat equation",M_bdf->time()) <<std::endl;
 
