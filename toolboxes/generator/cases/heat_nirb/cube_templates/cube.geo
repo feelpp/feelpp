@@ -5,7 +5,7 @@ h = 0.05;
 Nv = DefineNumber[ {{ Nv }}, Name "Parameters/Nv" ];
 Nh = DefineNumber[ {{ Nh }}, Name "Parameters/Nh" ];
 L = DefineNumber[ {{ L }}, Name "Parameters/L" ];
-h = DefineNumber[ {{ h }}, Name "Parameters/h" ];
+height = DefineNumber[ {{ height }}, Name "Parameters/height" ];
 {% if dim == '3' -%}
 d = DefineNumber[ {{ d }}, Name "Parameters/d" ];
 {% endif %}
