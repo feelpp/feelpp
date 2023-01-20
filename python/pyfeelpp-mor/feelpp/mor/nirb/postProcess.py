@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import tikzplotlib
+import os
 from os.path import dirname, basename, isfile, join
 import glob
 
@@ -204,9 +205,9 @@ def plotDataFrame(df, norm='l2', texSave=False):
     keys = [k for k in df.keys() if k not in ['N', 'parameter']]
 
     if norm=='h1':
-        nm = f"$H_1$"
+        nm = f"$H^1$"
     else :
-        nm = f"$L_2$"
+        nm = f"$L^2$"
 
     for i in range(df.shape[1]-1):
         plt.scatter(x,df[keys[i]], label=str(keys[i]))
@@ -237,9 +238,9 @@ def compareListOfDataFrams(listdf, keys='Mean', norm='l2'):
     assert len(labels)>=len(listdf)
 
     if norm=='h1':
-        nm = f"$H_1$"
+        nm = f"$H^1$"
     else :
-        nm = f"$L_2$"
+        nm = f"$L^2$"
 
     idk = 1
     i=0
@@ -258,7 +259,7 @@ def compareListOfDataFrams(listdf, keys='Mean', norm='l2'):
     plt.show()
 
 
-def plotErrors(df, keys='Mean', norm='l2', texSave=False):
+def plotErrors(df, keys='Mean', norm='l2', texSave=False, name="plot.tex"):
     """plot nirb error given from a dataFrame 
         keys take 'Min', 'Max' or 'Mean'.
         This will plot computed errors with and without rectification 
@@ -277,16 +278,16 @@ def plotErrors(df, keys='Mean', norm='l2', texSave=False):
     key_list = {'Mean':['Mean', 'Mean_rec', 'Mean_uh'], 'Max':['Max', 'Max_rec','Max_uh'],
              'Min':['Min', 'Min_rec', 'Min_uh'] }
 
-    normUHn = {'l2':r"$\Vert u^\mathcal{N}_h - u^N_{Hh}\Vert_{L_2}$" , 'h1': r"$\Vert u^\mathcal{N}_h - u^N_{Hh}\Vert_{H_1}$"}
-    normUhn = {'l2':r"$\Vert u^\mathcal{N}_h - u^N_{h}\Vert_{L_2}$" , 'h1': r"$\Vert u^\mathcal{N}_h - u^N_{h}\Vert_{H_1}$"}
-    normUh = {'l2':r"$\Vert u^\mathcal{N}_h - u^\mathcal{N}_{Hh}\Vert_{L_2}$" , 'h1': r"$\Vert u^\mathcal{N}_h - u^\mathcal{N}_{Hh}\Vert_{H_1}$"}
+    normUHn = {'l2':r"$\Vert u^\mathcal{N}_h - u^N_{Hh}\Vert_{L^2}$" , 'h1': r"$\Vert u^\mathcal{N}_h - u^N_{Hh}\Vert_{H^1}$"}
+    normUhn = {'l2':r"$\Vert u^\mathcal{N}_h - u^N_{h}\Vert_{L^2}$" , 'h1': r"$\Vert u^\mathcal{N}_h - u^N_{h}\Vert_{H^1}$"}
+    normUh = {'l2':r"$\Vert u^\mathcal{N}_h - u^\mathcal{N}_{Hh}\Vert_{L^2}$" , 'h1': r"$\Vert u^\mathcal{N}_h - u^\mathcal{N}_{Hh}\Vert_{H^1}$"}
   
     keyUh = {'l2': 'l2(uh-uH)', 'h1':'h1(uh-uH)'}
 
     if norm=='h1':
-        nm = f"$H_1$"
+        nm = f"$H^1$"
     else :
-        nm = f"$L_2$"
+        nm = f"$L^2$"
 
     plt.scatter(xf, df[key_list[keys][0]], c='red', label=normUHn[norm] + 'w/o rect')
     plt.scatter(xf, df[key_list[keys][1]], c='blue', label=normUHn[norm] + 'w/ rect')
@@ -306,7 +307,8 @@ def plotErrors(df, keys='Mean', norm='l2', texSave=False):
     plt.xlabel("Number of basis function (N)")
     plt.ylabel(f"{nm} norm of Errors (in log scale)")
     if texSave :
-        tikzplotlib.save(f"plotError{keys}.tex")
+        tikzplotlib.save(name)
+        print(f"figure saved in {os.getcwd()}/{name}")
     plt.show()
 
 
@@ -330,11 +332,11 @@ def compare2dataFrame(df,dg, keys='Mean', norm='l2', dataLabel='pk', labellist=N
     xg = dg.index 
 
     if norm=='h1' or norm=='H1':
-        nm = f"$H_1$"
-        normUHn = r"$\Vert u^\mathcal{N}_h - u^N_{Nh}\Vert_{H_1}$"
+        nm = f"$H^1$"
+        normUHn = r"$\Vert u^\mathcal{N}_h - u^N_{Nh}\Vert_{H^1}$"
     else :
-        nm = f"$L_2$"
-        normUHn = r"$\Vert u^\mathcal{N}_h - u^N_{Nh}\Vert_{L_2}$"
+        nm = f"$L^2$"
+        normUHn = r"$\Vert u^\mathcal{N}_h - u^N_{Nh}\Vert_{L^2}$"
 
     key_list = {'Mean':['Mean', 'Mean_rec', 'Mean_uh'], 'Max':['Max', 'Max_rec','Max_uh'],
              'Min':['Min', 'Min_rec', 'Min_uh'] }
