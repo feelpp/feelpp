@@ -51,3 +51,5 @@ if (FEELPP_HAS_HDF5)
   feelpp_add_testcase( cases PREFIX mesh CATEGORY mesh  )
 endif (FEELPP_HAS_HDF5)
 
+feelpp_add_application( mesh_from_levelset SRCS mesh_from_levelset.cpp INCLUDE_IN_ALL DEFS EXEC mesh_from_levelset )
+

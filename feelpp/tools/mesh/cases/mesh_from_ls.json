@@ -1,0 +1,33 @@
+{
+    "meshes":
+    {
+        "ambiant_mesh":"cases/carre.geo",
+        "object_mesh":"cases/circle.geo",
+        "h_object":0.04
+    },
+    "position":
+    {
+        "translation_vector":[0.0,0.0],
+        "scaling_factor":1.0,
+        "rotation_angle":0.0
+    },
+    "remesh":
+    {
+        "local_remesh":1,
+        "tol_remesh":0.08,
+        "h_remesh":0.01
+    },
+    "ls":
+    {
+        "tol_ls":0
+    },
+    "filter":
+    {
+        "closest_filter":0
+    },
+    "postProcess":
+    {
+        "add_exports":1,
+        "add_checkers":1
+    }
+}

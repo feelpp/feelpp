@@ -652,8 +652,8 @@ template<typename MeshType, int N>
 boost::tuple<size_type,size_type>
 ExporterGmsh<MeshType,N>::numberOfGlobalEltAndIndex( mesh_ptrtype mesh ) const
 {
-    //auto allmarkedfaces = markedfaces( mesh );
-    auto allmarkedfaces = boundaryfaces( mesh );
+    auto allmarkedfaces = markedfaces( mesh );
+    //auto allmarkedfaces = boundaryfaces( mesh );
     size_type number_markedfaces= std::distance( allmarkedfaces.template get<1>(),allmarkedfaces.template get<2>() );
 
     auto eltOnProccess = elements( mesh );
@@ -709,8 +709,11 @@ ExporterGmsh<MeshType,N>::gmshSaveElements( std::ostream& out, mesh_ptrtype mesh
     int pid = 0;
     std::for_each( elt_it, elt_en, [&pid,&pids]( typename MeshType::element_type const& e ){ pids[e.id()]=pid++; });
 
-    //auto allmarkedfaces = markedfaces( mesh );
-    auto allmarkedfaces = boundaryfaces( mesh );
+    // count the number of elements
+    int n = std::distance(eltOnProccess.template get<1>(), eltOnProccess.template get<2>());
+
+    auto allmarkedfaces = markedfaces( mesh );
+    //auto allmarkedfaces = boundaryfaces( mesh );
     auto face_it = allmarkedfaces.template get<1>();
     auto face_end = allmarkedfaces.template get<2>();
 
