@@ -362,7 +362,7 @@ class nirbOffline(ToolboxModel):
 
         Returns:
         --------
-            PETSc.Vec: reduced solution u_H^N
+            numpy.array: reduced solution u_H^N
         """
         coarseSol = coarseSolutions[mu]
         uHN = np.zeros(N)
@@ -420,8 +420,9 @@ class nirbOffline(ToolboxModel):
             mu0 = self.Dmu.element()
             S.append(mu0)
             self.fineSnapShotList.append(   self.getToolboxSolution(self.tbFine  , mu0) )
-            self.coarseSnapShotList.append( self.getToolboxSolution(self.tbCoarse, mu0) )
-            self.coarseSnapShotListGreedy.append(self.getToolboxSolution(self.tbCoarse, mu0) )
+            uH = self.getToolboxSolution(self.tbCoarse, mu0)
+            self.coarseSnapShotList.append(uH)
+            self.coarseSnapShotListGreedy.append(uH)
             N += 1
             self.orthonormalizeMatL2(self.coarseSnapShotListGreedy)
         Delta_0 = np.abs(self.getReducedSolution(coarseSolutions, Xi_train_copy[0], 2).mean()
@@ -446,8 +447,9 @@ class nirbOffline(ToolboxModel):
             S.append(mu_star)
             del Xi_train_copy[idx]
             self.fineSnapShotList.append(  self.getToolboxSolution(self.tbFine  , mu_star))
-            self.coarseSnapShotList.append(self.getToolboxSolution(self.tbCoarse, mu_star))
-            self.coarseSnapShotListGreedy.append(self.getToolboxSolution(self.tbCoarse, mu_star))
+            uH = self.getToolboxSolution(self.tbCoarse, mu_star)
+            self.coarseSnapShotList.append(uH)
+            self.coarseSnapShotListGreedy.append(uH)
             N += 1
             self.orthonormalizeMatL2(self.coarseSnapShotListGreedy)
 
@@ -747,8 +749,6 @@ class nirbOffline(ToolboxModel):
             normS = self.l2ScalarProductMatrixCoarse.energy(Z[-1], Z[-1])
             Z[-1] = 1 / np.sqrt(normS) * Z[-1]
         else:
-            s = self.XH.element()
-            s.setZero()
             for m in range(N):
                 Z[-1] =  Z[-1] - self.l2ScalarProductMatrixCoarse.energy(Z[-1], Z[m]) * Z[m]
             normS = self.l2ScalarProductMatrixCoarse.energy(Z[-1], Z[-1])
