@@ -502,11 +502,36 @@ class nirbOffline(ToolboxModel):
         if self.doRectification:
             self.coeffCoarse, self.coeffFine = self.coeffRectification()
 
-    def getl2ProductBasis(self):
-        """get the L2 scalar product matrix with reduced basis function 
+    def addFunctionToBasis(self, snapshot, tolerance=1e-6):
+        """Add function to the reduced basis, previously generated
 
+        Args:
+            snapshot (feelpp_.discr.Element_*): function to add to the basis
+            tolerance (float, optional): tolerance of the eigen value problem target accuracy of the data compression. Defaults to 1e-6.
         """
-        assert self.reducedBasis is not None, f"reduced Basis have to be computed before"  
+
+        self.fineSnapShotList.append(snapshot)
+        self.reducedBasis = self.PODReducedBasis(tolerance=tolerance)
+        self.orthonormalizeL2()
+
+        self.N += 1
+        assert self.N == len(self.reducedBasis), f"Number of modes is not correct : {self.N} != {len(self.reducedBasis)}"
+
+        if self.worldcomm.isMasterRank():
+            print(f"[NIRB] Number of modes : {self.N}")
+
+        # we need to update the l2ProductBasis and the rectification coefficients
+        self.getl2ProductBasis()
+        # if self.doBiorthonormal:
+        #     self.BiOrthonormalization()
+        if self.doRectification:
+            self.coeffCoarse, self.coeffFine = self.coeffRectification()
+
+
+    def getl2ProductBasis(self):
+        """Get the L2 scalar product matrix with reduced basis function
+        """
+        assert self.reducedBasis is not None, f"reduced Basis have to be computed before"
 
         backend = feelpp.backend(worldcomm=feelpp.Environment.worldCommPtr())
 
@@ -515,7 +540,7 @@ class nirbOffline(ToolboxModel):
             vec = backend.newVector(dm=self.Xh.mapPtr()) # beacause the modification of vec will modify the referance at each iteration
             vec.setZero()
             vec.addVector(self.reducedBasis[i], self.l2ScalarProductMatrix)
-            self.l2ProductBasis.append(vec)        
+            self.l2ProductBasis.append(vec)
 
 
     def PODReducedBasis(self, tolerance=1.e-6):
@@ -524,8 +549,7 @@ class nirbOffline(ToolboxModel):
 
         Parameters
         ----------
-            tolerance (float) : tolerance of the eigen value problem
-            target accuracy of the data compression
+            tolerance (float) : tolerance of the eigen value problem target accuracy of the data compression
 
         Returns
         -------
@@ -534,7 +558,7 @@ class nirbOffline(ToolboxModel):
 
         Nsnap = len(self.fineSnapShotList)
 
-        correlationMatrix = PETSc.Mat().createDense(size=Nsnap, comm=MPI.COMM_SELF) # create a dense matrix in sequential mode 
+        correlationMatrix = PETSc.Mat().createDense(size=Nsnap, comm=MPI.COMM_SELF) # create a dense matrix in sequential mode
         correlationMatrix.setFromOptions()
         correlationMatrix.setUp()
 
@@ -546,7 +570,7 @@ class nirbOffline(ToolboxModel):
         eigenValues, eigenVectors =  TruncatedEigenV(correlationMatrix, tolerance)
 
         Nmode = len(eigenVectors)
-        
+
         for i in range(Nmode):
             eigenVectors[i].scale(1./math.sqrt(abs(eigenValues[i])))
 
