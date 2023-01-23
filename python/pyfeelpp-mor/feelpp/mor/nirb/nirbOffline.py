@@ -52,6 +52,7 @@ if __name__ == "__main__":
     
     ### Initializa the nirb object
     nirb_off = nirbOffline(initCoarse=True, **config_nirb)
+    nirb_off.initModel()
 
     start = time.time()
     ###

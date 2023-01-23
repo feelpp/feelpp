@@ -56,6 +56,7 @@ if __name__ == "__main__":
         RESPATH = outdir
 
     nirb_on = nirbOnline(**config_nirb)
+    nirb_on.initModel()
 
     start= time()
 
