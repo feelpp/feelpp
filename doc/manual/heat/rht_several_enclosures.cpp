@@ -40,9 +40,9 @@ namespace Feel
         using spacevect_ptr_t = Pchv_ptrtype<mesh_t, Order>;
         using space_t = Pch_type<mesh_t, Order>;
         using space_ptr_t = Pch_ptrtype<mesh_t, Order>;
-        using spacedisc_t = Pdh_type<mesh_trace_t, 1>;
-        using spacedisc_ptr_t = Pdh_ptrtype<mesh_trace_t, 0>;
-        using spacedisc_interm_ptr_t = Pdh_ptrtype<mesh_trace_t, 1>;
+        using spacedisc_t = Pdh_type<mesh_trace_t, Order-1>;
+        using spacedisc_ptr_t = Pdh_ptrtype<mesh_trace_t, Order-1>;
+        using spacedisc_interm_ptr_t = Pdh_ptrtype<mesh_trace_t, Order>;
         static constexpr int nDim = Dim;
         using scalar_t =  double;
         using coord_t = Eigen::Matrix<double, Dim, 1>;
@@ -51,7 +51,6 @@ namespace Feel
         using elementvect_ptr_t = typename spacevect_t::element_ptrtype;
         using element_t = typename space_t::element_type;
         using element_ptr_t = typename space_t::element_ptrtype;
-        using elementdisc_t = typename spacedisc_t::element_type;
         using elementdisc_ptr_t = typename spacedisc_t::element_ptrtype;
 
         RHT(nl::json specs, nl::json j_viewfactor)
@@ -131,16 +130,10 @@ namespace Feel
     {
         Feel::po::options_description options( "rht options" );
         options.add_options()
-
-            // mesh parameters
-            ( "specs", Feel::po::value<std::string>(),
-            "json spec file for rht" )
-
-            ("viewfactor", Feel::po::value<std::string>(),
-            "json spec file for viewfactor computation" )
-
-            ( "steady", Feel::po::value<bool>()->default_value( 1 ),
-            "if 1: steady else unsteady" );
+            ( "specs", Feel::po::value<std::string>(),"json spec file for rht" )
+            ("viewfactor", Feel::po::value<std::string>(),"json spec file for viewfactor computation" )
+            ( "steady", Feel::po::value<bool>()->default_value( 1 ),"if 1: steady else unsteady" )
+            ("deactivate-exporters",Feel::po::value<bool>()->default_value( false ),"deactivate exporters");
         options.add( Feel::backend_options("interp1"));
         options.add( Feel::backend_options("interp2"));
         options.add( Feel::backend_options("heatEq"));
@@ -514,14 +507,16 @@ namespace Feel
         M_Xh = space_t::New(_mesh=M_mesh);             
         M_Xhvec = spacevect_t::New(_mesh=M_mesh);  
         M_markers_list_vf = this->j_viewfactor["viewfactor"]["markers"].template get<std::vector<std::string>>() ;
+        tic();
         this->computeVF_and_save();        
+        toc("Computation of view factors");
         M_surface_submesh = createSubmesh(_mesh=M_mesh,_range=markedfaces(M_mesh,M_markers_list_vf),_update=0);
         if(M_mesh->isParentMeshOf(M_surface_submesh))
             LOG(INFO) << fmt::format("M_mesh is parent mesh of M_surface_submesh")<< std::endl;
 
         // Create a discontinuous space, linear per face, over the view-factor markers
-        M_Xhd0 = Pdh<0>(M_surface_submesh,true);
-        M_Xhd1 = Pdh<1>(M_surface_submesh,true);
+        M_Xhd0 = Pdh<Order-1>(M_surface_submesh,true);
+        M_Xhd1 = Pdh<Order>(M_surface_submesh,true);
 
         // Create the matrices and vectors for the radiative problem with multiple surfaces
         M_D = backend()->newVector(M_Xhd0);
@@ -545,12 +540,13 @@ namespace Feel
                 T->on(_range=markedelements(M_mesh,mark),_expr=T_init);
             }
         }
-
-        auto e_opInterp = exporter(_mesh=M_mesh,_name="init");
-        e_opInterp->addRegions();
-        e_opInterp->add("T",idv(T));        
-        e_opInterp->save();
-
+        if(!boption("deactivate-exporters"))
+        {
+            auto e_opInterp = exporter(_mesh=M_mesh,_name="init");
+            e_opInterp->addRegions();
+            e_opInterp->add("T",idv(T));        
+            e_opInterp->save();
+        }
         // Initialize the temperature and flux in the data structure needed for the Picard loop
         M_currentTempAndFlux.setT(T);
         M_currentTempAndFlux.setq(q);      
@@ -757,13 +753,14 @@ namespace Feel
                 }
             }
         }
-
-        auto e_opInterp = exporter(_mesh=M_mesh,_name="functD");
-        e_opInterp->addRegions();
-        e_opInterp->add("T4interp",idv(T4_interp));
-        e_opInterp->add("vfield",idv(vf_field),markedfaces(M_mesh,M_markers_list_vf));
-        e_opInterp->save();
-
+        if(!boption("deactivate-exporters"))
+        {
+            auto e_opInterp = exporter(_mesh=M_mesh,_name="functD");
+            e_opInterp->addRegions();
+            e_opInterp->add("T4interp",idv(T4_interp));
+            e_opInterp->add("vfield",idv(vf_field),markedfaces(M_mesh,M_markers_list_vf));
+            e_opInterp->save();
+        }
          
     } // end RHT<Dim,Order>::rebuild_D
 
@@ -896,9 +893,9 @@ namespace Feel
                 auto lin_form = form1(_test=M_Xhd0,_vector=L);    
                 auto q_new_k_l_disc=M_Xhd0->element();       
                 auto q_new_k_l_disc_interm=M_Xhd1->element();       
-        
+                tic();
                 bil_form.solve(_rhs=lin_form,_solution=q_new_k_l_disc,_name="Modesteq");
-        
+                toc("Solve radiative heat transfer on surfaces");
                 auto opI1 = opInterpolation(_domainSpace=M_Xhd0,
                                 _imageSpace=M_Xhd1,
                                 _type=InterpolationConforme());
@@ -918,12 +915,15 @@ namespace Feel
                 auto q_diff = M_Xh->element();
 
                 q_diff.on(_range=markedfaces(M_mesh,M_markers_list_vf),_expr=inner((idv(q_new_k_l)-idv(q)),(idv(q_new_k_l)-idv(q))));
-                //std::cout << "norm_q_init" << norm_q_init << std::endl;
-                e_opInterp2->step(iter)->add("q_disc",idv(q_new_k_l_disc),markedfaces(M_mesh,M_markers_list_vf));
-                e_opInterp2->step(iter)->add("q_new_k_l",idv(q_new_k_l),markedfaces(M_mesh,M_markers_list_vf));
-                e_opInterp2->step(iter)->add("q",idv(q),markedfaces(M_mesh,M_markers_list_vf));
-                e_opInterp2->step(iter)->add("qdiff",idv(q_diff),markedfaces(M_mesh,M_markers_list_vf));
-                e_opInterp2->save();
+                
+                if(!boption("deactivate-exporters"))
+                {
+                    e_opInterp2->step(iter)->add("q_disc",idv(q_new_k_l_disc),markedfaces(M_mesh,M_markers_list_vf));
+                    e_opInterp2->step(iter)->add("q_new_k_l",idv(q_new_k_l),markedfaces(M_mesh,M_markers_list_vf));
+                    e_opInterp2->step(iter)->add("q",idv(q),markedfaces(M_mesh,M_markers_list_vf));
+                    e_opInterp2->step(iter)->add("qdiff",idv(q_diff),markedfaces(M_mesh,M_markers_list_vf));
+                    e_opInterp2->save();
+                }
 
 
                 *q=*q_new_k_l;        
@@ -939,9 +939,9 @@ namespace Feel
             // *T_relaxed =0.1* (*T_new); 
             // *T_relaxed +=0.9* (*T);
             // this->solveHeatEquation(T_relaxed,q);  
-
+            tic();
             this->solveHeatEquation(T_new,q);  
-            
+            toc("Solve heat PDE");
             *T = *T_new;
 
             *T_new = *M_currentTempAndFlux.T();
@@ -953,11 +953,12 @@ namespace Feel
             norm_T_Tnew /= norm_T_init;
 
             std::cout << "norm_T_Tnew" << norm_T_Tnew << std::endl;
-
-            e_opInterp->step(iter_T)->add("oldT",idv(T));
-            e_opInterp->step(iter_T)->add("newT",idv(T_new));       
-            e_opInterp->save();
-
+            if(!boption("deactivate-exporters"))
+            {
+                e_opInterp->step(iter_T)->add("oldT",idv(T));
+                e_opInterp->step(iter_T)->add("newT",idv(T_new));       
+                e_opInterp->save();
+            }
             iter_T++; 
         }
         M_currentTempAndFlux.setq(q);
@@ -990,10 +991,12 @@ namespace Feel
 
             // Solve the heat transfer problem at each time instant by solving a Picard loop to ensure convergence
             // of temperature and fluxes
+            tic();
             this->solvePicardIteration();
-
+            toc("solve Picard iteration");
             // Export the temperature, and flux on the radiating surfaces
-            this->exportHeat();
+            if(!boption("deactivate-exporters"))
+                this->exportHeat();
         }
         this->checkResults();
     } // end RHT<Dim,Order>::execute()

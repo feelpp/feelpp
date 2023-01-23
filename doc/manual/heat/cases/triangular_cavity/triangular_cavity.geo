@@ -1,60 +1,74 @@
-// Gmsh project created on Fri Dec 16 10:05:59 2022
-
 h=0.025;
 
-SetFactory("OpenCASCADE");
 //+
-Rectangle(1) = {0, 0, 0, 4, 1, 0};
+Point(1) = {0, 0, 0, h};
 //+
-Rectangle(2) = {3.99, 0.98, 0, 1, 3, 0};
+Point(2) = {4, 0, 0, h};
 //+
+Point(3) = {4, 1, 0, h};
 //+
-Rectangle(3) = {0, 1, 0, 5, 1, 0};
+Point(4) = {0, 1, 0, h};
 //+
-Rotate {{0, 0, 1}, {0, 0, 1}, 36.87/180*Pi} {
-  Surface{3}; 
-}
+Point(5) = {5, 1, 0, h};
 //+
-Translate {0.61, 0.19, 0} {
-  Surface{3}; 
-}
-BooleanFragments{ Surface{3}; Delete; }{ Surface{2}; Delete; }
+Point(6) = {5, 4, 0, h};
 //+
-BooleanFragments{ Surface{4}; Delete; }{ Surface{1}; Delete; }
+Point(7) = {4, 4, 0, h};
 //+
-BooleanFragments{ Surface{6}; Delete; }{ Surface{2}; Delete; }
-
+Line(1) = {1, 2};
 //+
-Curve Loop(9) = {32, 12, 31, 30, 29, 33, -28};
+Line(2) = {2, 3};
 //+
-Plane Surface(9) = {9};
+Line(3) = {3, 4};
 //+
-Curve Loop(10) = {18, -17, -16, 15, 14, 13, -12};
+Line(4) = {4, 1};
 //+
-Plane Surface(10) = {10};
+Line(5) = {3, 5};
 //+
-Curve Loop(11) = {24, 28, 21, 27, 26, 25, 16, 17};
+Line(6) = {5, 6};
 //+
-Plane Surface(11) = {11};
+Line(7) = {6, 7};
 //+
-Physical Curve("RadiativeSurface1") = {24};
+Line(8) = {7, 3};
 //+
-Physical Curve("RadiativeSurface3") = {18};
+Line(9) = {4, 7};
 //+
-Physical Curve("RadiativeSurface2") = {32};
+Point(9) = {-0.6, 1.8, 0, h};
 //+
-Physical Surface("Rectangle2") = {9};
+Point(10) = {3.4, 4.8, 0, h};
 //+
-Physical Surface("Rectangle3") = {10};
+Line(10) = {9, 4};
 //+
-Physical Surface("Rectangle1") = {11};
+Line(11) = {9, 10};
 //+
-Physical Curve("FixedQ3") = {29};
+Line(12) = {10, 7};
 //+
-Physical Curve("Fixed_T") = {26};
+Curve Loop(1) = {11, 12, -9, -10};
 //+
-Physical Curve("FixedQ2") = {14};
-
-Delete{Surface{3:8};}
-
-Characteristic Length{PointsOf{Line{:};}} = h;
+Plane Surface(1) = {1};
+//+
+Curve Loop(2) = {8, 5, 6, 7};
+//+
+Plane Surface(2) = {2};
+//+
+Curve Loop(3) = {3, 4, 1, 2};
+//+
+Plane Surface(3) = {3};
+//+
+Physical Curve("RadiativeSurface1") = {3};
+//+
+Physical Curve("RadiativeSurface3") = {8};
+//+
+Physical Curve("RadiativeSurface2") = {9};
+//+
+Physical Surface("Rectangle2") = {1};
+//+
+Physical Surface("Rectangle3") = {2};
+//+
+Physical Surface("Rectangle1") = {3};
+//+
+Physical Curve("Fixed_T") = {1};
+//+
+Physical Curve("FixedQ2") = {11};
+//+
+Physical Curve("FixedQ3") = {6};
