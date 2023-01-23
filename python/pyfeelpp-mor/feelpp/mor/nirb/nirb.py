@@ -252,6 +252,7 @@ class nirbOffline(ToolboxModel):
         """Initialize the NIRB class
 
         Args:
+        -----
             dimension (int): dimension of the case
             H (float): coarse mesh size
             h (float): fine mesh size
@@ -294,6 +295,7 @@ class nirbOffline(ToolboxModel):
         """Set the model from a ToolboxModel object already initialized
 
         Args:
+        -----
             tb (ToolboxModel): ToolboxModel object
         """
 
@@ -318,7 +320,7 @@ class nirbOffline(ToolboxModel):
 
         eval,evec=linalg.eigh(a=K, b=M, overwrite_a=True, overwrite_b=True) #eigenvalues
         eigenValues = eval.real
-        eigenVectors = evec 
+        eigenVectors = evec
         idx = eigenValues.argsort()[::-1]
         eigenValues = eigenValues[idx]
         eigenVectors = evec[:, idx]
@@ -334,7 +336,7 @@ class nirbOffline(ToolboxModel):
             vec.setZero()
             for j in range(self.N):
                 vec = vec + float(eigenVectors[j,i])*oldbasis[j]
-                
+
             self.reducedBasis.append(vec)
 
 
@@ -347,7 +349,7 @@ class nirbOffline(ToolboxModel):
             Xi_train (list of ParameteœrSpaceElement, optional): Train set for algorithm. If None is given, a set of size Ntrain is generated. Defaults to None.
             samplingMode (str, optional): sampling mode in the parameter space.(random, log-random, log-equidistribute, equidistribute) Defaults to "log-random".
             computeCoarse (bool, optional): compute snapshots for coarse toolbox, used for rectification. Defaults to False.
-        
+
         Returns:
         --------
             Xi_train (list of ParameterSpaceElement): parameters used for do build the basis
