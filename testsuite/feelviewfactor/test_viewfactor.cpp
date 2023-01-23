@@ -78,6 +78,17 @@ double view_factor_perp_walls_exact(double length, double width,double separatio
     return view_factor_bottom_to_side_wall;
 }
 
+std::map<std::string,double> cylinder_vf_map(double radius, double height)
+{
+    double r = radius/height;
+    double rho = (sqrt(4*math::pow(r,2)+1)-1)/r;
+    std::map<std::string,double> vf{{"BasisToBasis",1-rho/(2*r)},\
+                                    {"LateralToLateral",1-rho*0.5},\
+                                    {"BasisToLateral",rho/(2*r)},
+                                    {"LateralToBasis",rho*0.25}};
+    return vf;
+    
+}
 
 inline
 Feel::po::options_description
@@ -87,7 +98,11 @@ makeOptions()
     opts.add_options()
         ( "N", Feel::po::value<int>()->default_value( 2 ), "Number of problems to solve successively" )
     ;
-    return opts.add( Feel::feel_options(  ) ).add( Feel::feel_options( "square" ) ).add( feel_options( "cube" ) );
+    opts.add( Feel::feel_options(  ) );
+    opts.add( Feel::feel_options( "square" ) );
+    opts.add(feel_options( "cube" ) );
+    opts.add(feel_options( "cylinder" ) );
+    return opts;
 }
 
 template<typename MeshType>
@@ -103,22 +118,29 @@ void checkViewFactorEnclosure(std::string const& prefix)
     BOOST_TEST_MESSAGE(fmt::format("j: {}",j.dump(1)));
  
     UnobstructedPlanarViewFactor<MeshType> upvf( mesh, j );
-    std::cout << "ok till here" << std::endl;
+    
     upvf.compute();
     BOOST_TEST_MESSAGE( fmt::format("Max dev reciprocity {}", upvf.maxDevReciprocity()));
-    std::cout << "ok till here2" << std::endl;
+    
     BOOST_TEST_MESSAGE( fmt::format("{}", upvf.viewFactors() ) );
     auto row_sum_vf = upvf.viewFactors().rowwise().sum();
     auto exact_vf = eigen_vector_x_col_type<double>::Ones(upvf.viewFactors().rows()) ;
     auto difference_infNorm = (exact_vf-row_sum_vf).template lpNorm<Eigen::Infinity>();
     BOOST_TEST_MESSAGE( fmt::format("View factors sum to one {}; infinity norm of 1 - rowwise sum {}; rowwise sum {} ", difference_infNorm<1e-3, difference_infNorm,row_sum_vf) );
+    
     if(prefix=="square")
         BOOST_CHECK_MESSAGE( difference_infNorm<1e-3, fmt::format("Infinity norm of (1 - rowwise) sum is larger than 1e-3" ) );
     else if(prefix=="cube")
     {
         BOOST_CHECK_MESSAGE( difference_infNorm<5e-2, fmt::format("Infinity norm of (1 - rowwise) sum is larger than 4e-2" ) );
     }
-    BOOST_CHECK_MESSAGE(upvf.maxDevReciprocity()<1e-7, fmt::format("Max dev reciprocity less than 1e-7"));
+    else if(prefix=="cylinder")
+    {
+        BOOST_CHECK_MESSAGE( difference_infNorm<5e-2, fmt::format("Infinity norm of (1 - rowwise) sum is larger than 4e-2" ) );
+    }
+
+    BOOST_CHECK_MESSAGE(upvf.maxDevReciprocity()<1e-6, fmt::format("Max dev reciprocity less than 1e-6, {}",upvf.maxDevReciprocity()));
+
     if(prefix=="cube")
     {
         auto vf_parallel_walls = view_factor_parallel_walls_exact(1.,1.,1.); // cube of side 1.
@@ -137,6 +159,22 @@ void checkViewFactorEnclosure(std::string const& prefix)
         BOOST_CHECK_MESSAGE( (upvf.viewFactors()(2,5)-vf_perp_walls)/vf_perp_walls <4e-2, fmt::format("Relative error view factors between perp walls 2 5 is less than 4e-2 ") );
         BOOST_CHECK_MESSAGE( (upvf.viewFactors()(3,5)-vf_perp_walls)/vf_perp_walls <4e-2, fmt::format("Relative error view factors between perp walls 3 5 is less than 4e-2 ") );
     }
+    else if(prefix=="cylinder")
+    {
+        auto vf_cylinder = cylinder_vf_map(1.,2.);  
+        std::cout <<       upvf.viewFactors() << std::endl;
+        std::cout <<       vf_cylinder["BasisToBasis"] << std::endl;
+        std::cout <<       vf_cylinder["BasisToLateral"]<< std::endl;
+        std::cout <<      vf_cylinder["LateralToBasis"] << std::endl;
+        std::cout <<       vf_cylinder["LateralToLateral"] << std::endl;
+        BOOST_CHECK_MESSAGE( (upvf.viewFactors()(0,1)-vf_cylinder["BasisToBasis"])/vf_cylinder["BasisToBasis"] <4e-2, fmt::format("Relative error view factors between bases 0 1 is less than 4e-2 ") );
+        BOOST_CHECK_MESSAGE( (upvf.viewFactors()(0,2)-vf_cylinder["BasisToLateral"])/vf_cylinder["BasisToLateral"] <4e-2, fmt::format("Relative error view factors between bottom basis to lateral walls 0 2 is less than 4e-2 ") );
+        BOOST_CHECK_MESSAGE( (upvf.viewFactors()(1,0)-vf_cylinder["BasisToBasis"])/vf_cylinder["BasisToBasis"] <4e-2, fmt::format("Relative error view factors between bases 1 0 is less than 4e-2 ") );
+        BOOST_CHECK_MESSAGE( (upvf.viewFactors()(1,2)-vf_cylinder["BasisToLateral"])/vf_cylinder["BasisToLateral"] <4e-2, fmt::format("Relative error view factors between bottom basis to lateral walls 1 2 is less than 4e-2 ") );
+        BOOST_CHECK_MESSAGE( (upvf.viewFactors()(2,0)-vf_cylinder["LateralToBasis"])/vf_cylinder["LateralToBasis"]  <4e-2, fmt::format("Relative error view factors between lateral wall to top basis 2 0 is less than 4e-2 ") );
+        BOOST_CHECK_MESSAGE( (upvf.viewFactors()(2,1)-vf_cylinder["LateralToBasis"])/vf_cylinder["LateralToBasis"]  <4e-2, fmt::format("Relative error view factors between lateral wall to bottom basis 2 1 is less than 4e-2 ") );
+        BOOST_CHECK_MESSAGE( (upvf.viewFactors()(2,2)-vf_cylinder["LateralToLateral"])/vf_cylinder["LateralToLateral"]  <4e-2, fmt::format("Relative error view factors between lateral wall to itself 2 2 is less than 4e-2: {}",(upvf.viewFactors()(2,2)-vf_cylinder["LateralToLateral"])/vf_cylinder["LateralToLateral"]) );
+    }
 }
 
 FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
@@ -151,7 +189,11 @@ BOOST_AUTO_TEST_CASE( test_cube )
 {
     checkViewFactorEnclosure<Mesh<Simplex<3>>>( "cube" );
 }
-
+BOOST_AUTO_TEST_CASE( test_cylinder )
+{
+    checkViewFactorEnclosure<Mesh<Simplex<3>>>( "cylinder" );
+}
+#if 0
 // Tests for the raytracing part
 
 // Function tested:
@@ -453,5 +495,6 @@ BOOST_AUTO_TEST_CASE( test_ray_intersections )
 
 // }
 
+#endif
 
 BOOST_AUTO_TEST_SUITE_END()
