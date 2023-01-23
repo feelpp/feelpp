@@ -115,7 +115,7 @@
         "semaphore": "cpp"
     },
     "jupyter.notebookFileRoot": "${workspaceFolder}/build/python/install/lib/python3/dist-packages",
-    "C_Cpp.configurationWarnings": "Disabled",
+    "C_Cpp.configurationWarnings": "disabled",
     "C_Cpp.loggingLevel": "Debug",
     "C_Cpp.default.compilerPath" : "/usr/bin/clang++",
     "C_Cpp.default.systemIncludePath" : ["${workspaceFolder}/feelpp","/usr/include","/usr/local/include"],
@@ -125,6 +125,7 @@
     
     ],
     "cmake.buildDirectory": "${workspaceFolder}/build-${buildKitVendor}${buildKitVersionMajor}-${variant:cpp}-${variant:toolboxes}-${variant:mor}-${variant:buildType}-${variant:webserver}-${variant:doxygen}-${variant:matplot}",
-    "cmake.parallelJobs": 5
+    "cmake.parallelJobs": 5,
+    "autoDocstring.docstringFormat": "numpy"
     
 }

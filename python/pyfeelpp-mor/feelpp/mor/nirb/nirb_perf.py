@@ -5,19 +5,19 @@ from petsc4py import PETSc
 
 
 def ComputeErrors(nirb_on, mu, h1=False, relative=True):
-    """Compute the convergence errors of the projection of FE solution (in fine mesh) in the reduced space 
-        and the nirb solution with and without rectification for a given one parameter. 
-         The rectification matrix has to be defined (so make sure to set doRectification = True in offline and online phase)
+    """Compute the convergence errors of the projection of FE solution (in fine mesh) in the reduced space
+        and the nirb solution with and without rectification for a given one parameter.
+        The rectification matrix has to be defined (so make sure to set doRectification = True in offline and online phase)
 
     Args:
     -----
-        nirb_on (class): initialized nirbOnline class 
-        mu (ParameterSpaceElement) : parameter 
+        nirb_on (class): initialized nirbOnline class
+        mu (ParameterSpaceElement) : parameter
         h1 (bool) : if True, also compute the h1 norm. Default to False
         relative (bool) : if True, compute the relative error (error / norm of the true solution) default to True
 
-    return : 
-    ------
+    Returns:
+    --------
     dict: containing
         - error['l2(uh-uHn)'] : the L2 norm between True sol and nirb sol without rectification
         - error['l2(uh-uHn)rec'] : the L2 norm between True Sol and nirb sol with rectification
@@ -64,25 +64,27 @@ def ComputeErrors(nirb_on, mu, h1=False, relative=True):
     return error
 
 def ComputeErrorSampling(nirb_on, Nsample = 1, Xi_test=None, samplingType='log-random', h1=False):
-    """Compute the convergence errors of the projection of FE solution (in fine mesh) in the reduced space 
-        and the nirb solution with and without rectification for a given sampling of parameter. 
-         The rectification matrix has to be defined (so make sure to set doRectification = True in offline and online phase)
+    """Compute the convergence errors of the projection of FE solution (in fine mesh) in the reduced space
+        and the nirb solution with and without rectification for a given sampling of parameter.
+        The rectification matrix has to be defined (so make sure to set doRectification = True in offline and online phase)
 
     Args:
-        nirb_on (class): initialized nirbOnline class 
-        mu (ParameterSpaceElement) : parameter 
+    -----
+        nirb_on (class): initialized nirbOnline class
+        mu (ParameterSpaceElement) : parameter
 
-    return : 
+    Returns:
+    --------
     error (dict) : containing
-        - error['l2(uh-uHn)'] : the L2 norm between True sol and nirb sol without rectification 
-        - error['l2(uh-uHn)rec'] : the L2 norm between True Sol and nirb sol with rectification 
-        - error['l2(uh-uhn)'] : the L2 norm between True sol and projection of this True sol in reduced space. 
+        - error['l2(uh-uHn)'] : the L2 norm between True sol and nirb sol without rectification
+        - error['l2(uh-uHn)rec'] : the L2 norm between True Sol and nirb sol with rectification
+        - error['l2(uh-uhn)'] : the L2 norm between True sol and projection of this True sol in reduced space.
         - error['l2(uh-uH)'] : the L2 norm between True sol and interpolate sol from coarse to fine mesh.
 
-        The same keys are given in case of h1 norm with 'h1' instead of 'l2' (exp : 'h1(uh - uHn)' ) 
-        N.B : True sol = FE solution in the fine mesh  
+        The same keys are given in case of h1 norm with 'h1' instead of 'l2' (exp : 'h1(uh - uHn)' )
+        N.B : True sol = FE solution in the fine mesh
     """
-    if h1: 
+    if h1:
         l2Mat, h1Mat = nirb_on.generateOperators(h1=True)
     else :
         l2Mat = nirb_on.generateOperators()
@@ -136,8 +138,8 @@ def ComputeErrorsH(nirb_on, tbRef, mu, path=None, name=None):
         mu (ParameterSpaceElement): parameter
         path (str) : a path to load the reference solution
         name (str) : the name of the reference solution
-    
-    Return :
+
+    Returns:
     --------
     list: containing
         - the number reduced basis N
@@ -166,8 +168,7 @@ def ComputeErrorsH(nirb_on, tbRef, mu, path=None, name=None):
     return error
 
 def ComputeErrorSamplingOld(nirb_on, Nsample=1, Xi_test=None, samplingType='log-random'):
-    """Compute the errors between nirb solution and FE one for 
-        a given number of parameters 
+    """Compute the errors between nirb solution and FE one for a given number of parameters
     Args:
     -----
         nirb_on (class): initialized nirbOnline class
@@ -175,7 +176,7 @@ def ComputeErrorSamplingOld(nirb_on, Nsample=1, Xi_test=None, samplingType='log-
         Xi_test (list): list of parameters. Defaults to None, in this case, a random sampling is done.
         samplingType (str, optional): type of sampling distribution. Defaults to 'log-random'.
 
-    Return :
+    Returns:
     --------
     dict: containing
         - dict['parameter'] : the index of the parameter from 0... to Nsample
@@ -218,13 +219,14 @@ def ComputeErrorSamplingOld(nirb_on, Nsample=1, Xi_test=None, samplingType='log-
     return errors
 
 
-def getNirbProjection(nirb_on,u,doRectification=False):
+def getNirbProjection(nirb_on, u, doRectification=False):
     """Get the projection of a given discrete function in the reduced space with or without rectification
 
-    Args:
+    Args
+    ----
         nirb_on (class): initialized nirbOnline class
-        u (feelpp._discr.element) : function 
-        doRectification (bool) : default to True  
+        u (feelpp._discr.element) : function
+        doRectification (bool) : default to True
     """
     if doRectification:
         assert nirb_on.doRectification, f"set doRectification from nirb_on class"
@@ -235,7 +237,7 @@ def getNirbProjection(nirb_on,u,doRectification=False):
     uNh.setZero()
 
     if doRectification:
-        coef = nirb_on.RectificationMat@coef
+        coef = nirb_on.RectificationMat @ coef
         for i in range(nirb_on.N):
             uNh = uNh + float(coef[i])*nirb_on.reducedBasis[i]
     else :

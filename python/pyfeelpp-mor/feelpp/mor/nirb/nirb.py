@@ -140,12 +140,14 @@ class ToolboxModel():
         """Set up the toolbox object for the given model and mesh
 
         Args:
+        -----
             hsize (float): size of the mesh
 
         Returns:
+        --------
             Toolbox: toolbox object
         """
-        if mesh_path==None: mesh_path=self.finemesh_path 
+        if mesh_path == None: mesh_path=self.finemesh_path
         # load meshes
         mesh_ = feelpp.mesh(dim=self.dimension, realdim=self.dimension)
         mesh = feelpp.load(mesh_, mesh_path, hsize)
@@ -521,8 +523,9 @@ class nirbOffline(ToolboxModel):
     def generateReducedBasis(self, tolerance=1.e-6, regulParam=1.e-10):
         """Generate the reduced basis, and store it in the list self.reducedBasis
 
-        Args :
-            tolerance(float), optional : the tolerance value for
+        Args:
+        -----
+            tolerance(float), optional : tolerance of the eigen value problem target accuracy of the data compression
             regulParam(float), optional : the regularization parameter for rectification
         """
         self.reducedBasis = self.PODReducedBasis(tolerance=tolerance)
@@ -530,7 +533,7 @@ class nirbOffline(ToolboxModel):
         self.N = len(self.reducedBasis)
         if self.worldcomm.isMasterRank():
             print(f"[NIRB] Number of modes : {self.N}")
-        
+
         if len(self.l2ProductBasis)==0:
             self.getl2ProductBasis()
         # if self.doBiorthonormal:
@@ -626,13 +629,13 @@ class nirbOffline(ToolboxModel):
 
     def coeffRectification(self):
         """ Compute the two matrixes used to get rectification matrix R given by :
-                
+
                 B_h[i,j] = <U_h(s_i),phi_j >
                 B_H[i,j] = <U_H(s_i),phi_j >
 
-        Returns :
-                B_h and B_H : the matrix of L2 scalar product between basis function and 
-                                fine and coarse snapshot 
+        Returns:
+        --------
+                B_h and B_H : the matrix of L2 scalar product between basis function and fine and coarse snapshot
         """
         assert len(self.reducedBasis) !=0, f"need computation of reduced basis"
 
@@ -652,15 +655,14 @@ class nirbOffline(ToolboxModel):
         return coeffCoarse, coeffFine
 
     """
-    Check convergence 
+    Check convergence
     """
     def checkConvergence(self,Ns=10, Xi_test=None, regulParam=1.e-10):
         """
-            check convergence of the offline step  
+            check convergence of the offline step
         """
         assert self.tbCoarse is not None, f"Coarse toolbox needed for computing coarse Snapshot. set doRectification->True"
 
-        
         if self.worldcomm.isMasterRank():
             print(f"[NIRB] Compute offline convergence error")
 
@@ -734,18 +736,18 @@ class nirbOffline(ToolboxModel):
                 Error["N"].append(nb)
 
         return Error
-    
+
     """
     Handle Gram-Schmidt orthogonalization
     """
     def orthonormalizeH1(self, nbMax=10, tol=1.e-8):
         """Use Gram-Schmidt algorithm to orthonormalize the reduced basis using H1 norm
         (the optional argument is not needed)
-        
-        Args : 
+
+        Args:
+        -----
             nbMax(int) : maximum number of orthonormalization process. Defaults to 10
             tol(float) : tolerance for checking orhtonormalization. Defaults to 1.e-8
-
         """
         Z = self.reducedBasis
 
@@ -771,7 +773,8 @@ class nirbOffline(ToolboxModel):
         """Use Gram-Schmidt algorithm to orthonormalize the reduced basis using L2 norm
         (the optional argument is not needed)
 
-        Args : 
+        Args:
+        -----
             nbMax(int) : maximum number of orthonormalization process. Defaults to 10
             tol (float) : tolerence for checking orthonormalization. Defaults to 1.e-8
         """
@@ -913,10 +916,11 @@ class nirbOffline(ToolboxModel):
 ### ONLINE PHASE ###
 
 class nirbOnline(ToolboxModel):
-    """a class to generate the online part of nirb method 
+    """A class to generate the online part of nirb method
 
     Args:
-        ToolboxModel (class): class associated to the toolbox model 
+    -----
+        ToolboxModel (class): class associated to the toolbox model
     """
 
     def __init__(self, **kwargs):
@@ -976,7 +980,7 @@ class nirbOnline(ToolboxModel):
         solution (feelpp._discr.Element) : the solution to be projected
         mu (ParameterSpaceElement) : parameter to compute the solution if not given
 
-        return :
+        Returns
         --------
         compressedSol (numpy.ndarray) : the compressed solution, of size (self.N)
         """
@@ -1034,10 +1038,11 @@ class nirbOnline(ToolboxModel):
         return onlineSol
 
     def getRectification(self, coeffCoarse, coeffFine, lambd=1.e-10):
-        """compute rectification matrix associated to number of basis function selected 
+        """Compute rectification matrix associated to number of basis function selected
                 in the online step.
 
         Args:
+        -----
             coeffCoarse (numpy.array): the coefficient matrix gieven by (U^H_i, \phi_j)
             coeffFine (numpy.array): the coefficient matrix (U^h_i,\phi_j)
             lambd (float, optional): regularization parameter. Defaults to 1.e-10.
@@ -1053,7 +1058,7 @@ class nirbOnline(ToolboxModel):
         return R
 
     def generateOperators(self,h1=False):
-        """Assemble L2 and H1 operators associated to the fine toolbox 
+        """Assemble L2 and H1 operators associated to the fine toolbox
         """
         if h1:
             l2Mat = FppOp.mass(test=self.Xh, trial=self.Xh, range=feelpp.elements(self.tbFine.mesh()))
@@ -1067,14 +1072,16 @@ class nirbOnline(ToolboxModel):
             return l2Mat
 
     def loadData(self, nbSnap=None, path="./", regulParam=1.e-10):
-        """ 
+        """
         Load the data generated by the offline phase
 
-        Args : 
+        Args:
+        -----
             nbSnap (int, optional) : number of basis function. If not given, all the basis are loaded
             path (str, optional): Path where files are saved. Defaults to "./".
             regulParam (float, optional): regularization parameter of the rectification. Defaults to 1.e-10
-        Returns :
+        Returns:
+        --------
             int: error code, 0 if all went well, 1 if not
         """
 
@@ -1083,7 +1090,7 @@ class nirbOnline(ToolboxModel):
 
         l2productPath = os.path.join(path, 'l2productBasis')
         l2productFilename = 'l2productBasis'
-        
+
         if self.worldcomm.isMasterRank():
             print(f"[NIRB] Loading data from {os.path.abspath(path)}")
 
@@ -1135,15 +1142,16 @@ class nirbOnline(ToolboxModel):
         if self.worldcomm.isMasterRank():
             print(f"[NIRB] Data loaded from {os.path.abspath(path)}")
             print(f"[NIRB] Number of basis functions loaded : {self.N}")
-        
+
         return 0
 
     def normMat(self, Mat, u):
         """ Compute the norm associated to matrix Mat
 
         Args:
-            Mat (feelpp.__alg.SparseMatrix): the matrix 
-            u (feelpp.__discr_Vector): the vector to compute the norm  
+        -----
+            Mat (feelpp.__alg.SparseMatrix): the matrix
+            u (feelpp.__discr_Vector): the vector to compute the norm
         """
         return np.sqrt(np.abs(Mat.energy(u,u)))
 
