@@ -7,23 +7,23 @@ import os
 from os.path import dirname, basename, isfile, join
 import glob
 
-## Functions to vizualise dataFrame 
+## Functions to vizualise dataFrame
 
 def plotTime(dataFrame=None, csv_file=None):
-    """plot execution time of nirb method given either in dataFrame or in csv file 
+    """Plot execution time of nirb method given either in dataFrame or in csv file
 
     Args:
+    -----
         dataFrame (pandas.dataFrame, optional): dataFrame of the execution time. Defaults to None.
         csv_file (str, optional): csv file of execution itme. Defaults to None.
     """
-    
-    # assert (dataFrame==None)and(csv_file==None) 
+
+    # assert (dataFrame==None)and(csv_file==None)
 
     if csv_file==None:
         df = dataFrame
     else :
         df = pd.read_csv(csv_file)
-    
 
     plt.plot(df['N'], df['toolbox'], '+', c='k', linestyle='--', label='Fine toolbox')
     plt.plot(df['N'], df['nirb_online'], '+-', label='NIRB w/o rect.')
@@ -39,41 +39,44 @@ def plotTime(dataFrame=None, csv_file=None):
     tikzplotlib.save("plotTime.tex")
 
 def compareTime(csv1, csv2, type='nirb_offline'):
-    """compare elapsed time between two methods 
+    """Compare elapsed time between two methods
 
     Args:
+    ----
         csv1 (str): csv file of first method
-        csv2 (str): csv file of second method 
-        type (str): type of result to plot. Defaults to 'nirb_offline' ('nirb_online', 'toolbox') 
+        csv2 (str): csv file of second method
+        type (str): type of result to plot. Defaults to 'nirb_offline' ('nirb_online', 'toolbox')
     """
     df1 = pd.read_csv(csv1)
     df2 = pd.read_csv(csv2)
 
-    assert 'N' in df1.keys() 
+    assert 'N' in df1.keys()
     assert type in df1.keys(), f'type not in keys'
-    
-    
+
+
     plt.figure()
     plt.plot(df1['N'], df1[type], label= type + ' w/o Greedy')
     plt.plot(df2['N'], df2[type], label= type + ' w/ Greedy')
     plt.legend()
     plt.grid('on')
     plt.xlabel('Number of Basis functions (N)')
-    plt.ylabel('Time (s)') 
-        
+    plt.ylabel('Time (s)')
+
     plt.show()
     # tikzplotlib.save("compareTime.tex")
 
-### Manage data Frame 
+### Manage data Frame
 def getDataStat(df, h1norm=True):
-    """ Get some statistic infos from a given dataFrame df : 
-        (Min, Max, Mean) in respect to number of snapshot series 
+    """Get some statistic infos from a given dataFrame df :
+        (Min, Max, Mean) in respect to number of snapshot series
 
     Args:
-        df (pandas.DataFrame) : the global data frame 
-        h1 (bool) : to get statistical infos in H1 norm 
-    
-    Return :
+    -----
+        df (pandas.DataFrame) : the global data frame
+        h1 (bool) : to get statistical infos in H1 norm
+
+    Returns:
+    --------
         l2df(pandas.DataFrame) : data frame associated to stat relative to L2 norm
         h1df(pandas.DataFrame) : data frame associated to stat relative to H1 norm
     """
@@ -136,10 +139,10 @@ def getDataStat(df, h1norm=True):
         
 
 def getRelativeErrors(df,h1=True):
-    """Compute the relative error on a given data Frame 
+    """Compute the relative error on a given data Frame
 
     Args:
-        df (pandas.dataFrame): dataFrame 
+        df (pandas.dataFrame): dataFrame
         h1 (bool, optional): if H1 norm is computed. Defaults to True.
     """
 
@@ -157,7 +160,7 @@ def getRelativeErrors(df,h1=True):
         for key in h1keys:
             dfRel[key]= df[key]/df['h1(uh)']
 
-    return dfRel 
+    return dfRel
 
 
 def troncateNparam(df, Nparam=1, start='first'):
@@ -165,8 +168,9 @@ def troncateNparam(df, Nparam=1, start='first'):
             Nparam <= 50
         the dataFrame df should be the result of function getDataStat()
     Args:
+    -----
         df (pandas.dataFrame): data frame
-        Nparam (int) : number of parameter to troncate from data frame. Defaults to 1. 
+        Nparam (int) : number of parameter to troncate from data frame. Defaults to 1.
         start (srt) : starting trocate for first, or last element of sampling of 50 parameters
     """
 
@@ -192,14 +196,15 @@ def troncateNparam(df, Nparam=1, start='first'):
     return dk 
 
 
-### Functions to vizualise data Frame 
+### Functions to vizualise data Frame
 def plotDataFrame(df, norm='l2', texSave=False):
-    """ plot the content of a data frame  
+    """ plot the content of a data frame
 
     Args:
-        df (pandas.dataFrame): the dataFrame 
+    -----
+        df (pandas.dataFrame): the dataFrame
         norm (str) : which norm to display
-        texSave (bool) : save tex file or not. Defaults to False.  
+        texSave (bool) : save tex file or not. Defaults to False.
     """
     x = df.index
     keys = [k for k in df.keys() if k not in ['N', 'parameter']]
@@ -222,11 +227,11 @@ def plotDataFrame(df, norm='l2', texSave=False):
     plt.show()
 
 def compareListOfDataFrams(listdf, keys='Mean', norm='l2'):
-    """Compare some data Frame containing in a list
-        the dataFrames should be the result of function getDataStat() 
+    """Compare some data Frame containing in a list the dataFrames should be the result of function getDataStat()
 
     Args:
-        listdf (list): list of data Frams 
+    -----
+        listdf (list): list of data Frams
         keys (str, optional): statistic to compare (Mean, Max, Min). Defaults to 'Mean'.
         norm (str, optional): type of norm to compare. Defaults to 'l2'.
     """
@@ -260,16 +265,16 @@ def compareListOfDataFrams(listdf, keys='Mean', norm='l2'):
 
 
 def plotErrors(df, keys='Mean', norm='l2', texSave=False, name="plot.tex"):
-    """plot nirb error given from a dataFrame 
-        keys take 'Min', 'Max' or 'Mean'.
-        This will plot computed errors with and without rectification 
-        the dataFrame df should be the result of function getDataStat()
+    """plot nirb error given from a dataFrame keys take 'Min', 'Max' or 'Mean'.
+        This will plot computed errors with and without rectification.
+        The dataFrame df should be the result of function getDataStat()
 
     Args:
+    -----
         df (pandas.dataFrame): _description_
-        keys (str) : Min, Max or Mean. Defaults to Mean 
-        norm (str) : show which norm are displayed. Defaults to 'l2' norm 
-        texSave (bool) : say if save tex file or not. Defaults to False 
+        keys (str) : Min, Max or Mean. Defaults to Mean
+        norm (str) : show which norm are displayed. Defaults to 'l2' norm
+        texSave (bool) : say if save tex file or not. Defaults to False
 
     """
 
@@ -313,23 +318,23 @@ def plotErrors(df, keys='Mean', norm='l2', texSave=False, name="plot.tex"):
 
 
 def compare2dataFrame(df,dg, keys='Mean', norm='l2', dataLabel='pk', labellist=None, texSave=False):
-    """compare two dataFrames in respect of given keys and norm 
-        keys take 'Min', 'Max' or 'Mean' 
+    """Compare two dataFrames in respect of given keys and norm         keys take 'Min', 'Max' or 'Mean'
         the dataFrames df and dg should be the results of function getDataStat()
 
     Args:
+    -----
         df (pandas.dataFrame): _description_
         dg (pandas.dataFrame): _description_
-        keys (str) : Min, Max or Mean 
+        keys (str) : Min, Max or Mean
         norm (str) : the norm to be plotted (l2 or h1)
         dataLabel (str) : the label of data to compare (pk : lagrange Pk interpolation, 'nested' : compare nested basis function
                         vs no nested one, 'greedy' : compare Greedy algo Vs no Greedy)
-        texSave(bool) : Say if saving tex file or not. Defaults to False 
+        texSave(bool) : Say if saving tex file or not. Defaults to False
 
     """
 
     xf = df.index
-    xg = dg.index 
+    xg = dg.index
 
     if norm=='h1' or norm=='H1':
         nm = f"$H^1$"
