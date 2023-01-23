@@ -14,7 +14,7 @@ import feelpp.toolboxes.fluid as fluid
 import feelpp.interpolation as fi
 from tqdm import tqdm
 from random import choices
-import math 
+import math
 import pathlib
 
 
@@ -24,7 +24,7 @@ from mpi4py import MPI
 
 class ToolboxModel():
     """
-        class containing the common tools associated with the toolbox used 
+        class containing the common tools associated with the toolbox used
                     in the online and offline parts
     """
     def __init__(self, dim, H, h, toolboxType, model_path, finemesh_path, coarsemesh_path=None, order=1, **kwargs) -> None:
@@ -37,7 +37,7 @@ class ToolboxModel():
             toolboxType (str): toolbox used (heat or fluid)
             model_path (str): path to json file
             finemesh_path (str): path to fine mesh file (if geo file, this will be the same as coarse mesh file)
-            coarsemesh_path(str): path to coarse mesh file. Defaults to None. 
+            coarsemesh_path(str): path to coarse mesh file. Defaults to None.
             method (str, optional): method used to generate the basis. Defaults to "POD".
             order (int, optional): order of discretization. Defaults to 1.
             doRectification (bool, optional): set rectification. Defaults to True.
@@ -58,7 +58,7 @@ class ToolboxModel():
         if pathlib.Path(self.finemesh_path).suffix==".geo" :
             self.coarsemesh_path = self.finemesh_path
         else :
-            self.coarsemesh_path = coarsemesh_path 
+            self.coarsemesh_path = coarsemesh_path
 
         assert self.coarsemesh_path != None, f"Set coarse mesh path"
 
@@ -69,9 +69,8 @@ class ToolboxModel():
 
         self.outdir = None      # output directory
 
-        self.initModel()
         if self.worldcomm.isMasterRank():
-            print(f"[NIRB] Initialization done")
+            print(f"[NIRB] ToolboxModel created, but the objects have not yet been initialized. Please call initModel() or setModel() to initialize the objects.")
 
 
     def initModel(self):
@@ -84,6 +83,23 @@ class ToolboxModel():
         self.Ndofs = self.getFieldSpace().nDof()
 
         if self.worldcomm.isMasterRank():
+            print(f"[NIRB] Initialization done")
+            print(f"[NIRB] Number of nodes on the fine mesh : {self.tbFine.mesh().numGlobalPoints()}")
+
+    def setModel(self, tb):
+        """Set model from a ToolboxModel object already initialized
+
+        Args:
+            tb (ToolboxModel): ToolboxModel object
+        """
+        self.model = tb.model
+        self.tbFine = tb.tbFine
+        self.Xh = tb.Xh
+        self.Dmu = tb.Dmu
+        self.Ndofs = tb.Ndofs
+
+        if self.worldcomm.isMasterRank():
+            print(f"[NIRB] Initialization done")
             print(f"[NIRB] Number of nodes on the fine mesh : {self.tbFine.mesh().numGlobalPoints()}")
 
     def getFieldSpace(self, coarse=False):
@@ -226,10 +242,10 @@ class ToolboxModel():
 
 class nirbOffline(ToolboxModel):
     """
-    Generate the offline part of nirb method 
+    Generate the offline part of nirb method
 
     Args:
-        ToolboxModel (class): class associated to the toolbox model 
+        ToolboxModel (class): class associated to the toolbox model
     """
 
     def __init__(self, method="POD", doRectification=True, initCoarse=False, **kwargs) -> None:
@@ -255,17 +271,35 @@ class nirbOffline(ToolboxModel):
         self.method = method
         self.doRectification = doRectification
         # self.doBiorthonormal = doBiorthonormal
+        self.initCoarse = initCoarse
 
         self.l2ScalarProductMatrix = None
         self.h1ScalarProductMatrix = None
-        self.l2ProductBasis = [] # list containing the vector given the column of (l2ScalarProductMatrix @ reeducedBasis) 
+        self.l2ProductBasis = [] # list containing the vector given the column of (l2ScalarProductMatrix @ reeducedBasis)
         self.reducedBasis = None # list containing the vector of reduced basis function
         self.N = 0 # number of modes
 
-        if self.doRectification or initCoarse:
-            super().initCoarseToolbox()
         if self.worldcomm.isMasterRank():
-            print(f"[NIRB] Initialization done")
+            print(f"[NIRB Offline] Initialization done")
+
+    def initModel(self):
+        """Initialize the model
+        """
+        super().initModel()
+
+        if self.doRectification or self.initCoarse:
+            super().initCoarseToolbox()
+
+    def setModel(self, tb):
+        """Set the model from a ToolboxModel object already initialized
+
+        Args:
+            tb (ToolboxModel): ToolboxModel object
+        """
+
+        super().setModel(tb)
+        if self.doRectification or self.initCoarse:
+            super().initCoarseToolbox()
 
 
 
@@ -906,13 +940,30 @@ class nirbOnline(ToolboxModel):
         self.reducedBasis = None
         self.N = 0
 
-        super().initCoarseToolbox()
-
-        self.interpolationOperator = self.createInterpolator(self.tbCoarse, self.tbFine)
         self.exporter = None
 
         if self.worldcomm.isMasterRank():
             print(f"[NIRB] Initialization done")
+    
+    def initModel(self):
+        """Initialize the model
+        """
+        super().initModel()
+        super().initCoarseToolbox()
+        self.interpolationOperator = self.createInterpolator(self.tbCoarse, self.tbFine)
+
+    def setModel(self, tb):
+        """Set the model from a ToolboxModel object already initialized
+
+        Args:
+            tb (ToolboxModel): ToolboxModel object
+        """
+        super().setModel(tb)
+        if tb.Coarse is None:
+            super().initCoarseToolbox()
+        self.tbCoarse = tb.tbCoarse
+
+    
 
     def getCompressedSol(self, mu=None, solution=None):
         """

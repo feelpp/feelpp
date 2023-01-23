@@ -7,7 +7,7 @@ import feelpp
 from feelpp.mor.nirb.nirb import *
 
 # desc : ((toolboxtype, 'model_directory', cfg, json, geo, H, h, dimension, doRectification, doGreedy), 'name-of-the-test')
-cases = [
+casesNirb = [
         #  (('testcase/nirb/lid-driven-cavity/', 'cfd2d.cfg', 'cfd2d.json', False), 'lid-driven-cavity w/o rect.'),
         #  (('testcase/nirb/lid-driven-cavity/', 'cfd2d.cfg', 'cfd2d.json', True) , 'lid-driven-cavity rect'),
          (('testcase/nirb/square', 'square.cfg', 'square.json', False, False), 'square2d w/o rect wogreedy'),
@@ -17,7 +17,13 @@ cases = [
          (('testcase/nirb/thermal-fin-3d', 'thermal-fin.cfg', 'thermal-fin.json', True, False) , 'thermal-fin-3d rect wogreedy'),
         ]
 # NB: for the name of the test, wogreedy is a keyword standing for "without greedy", and egreedy for "enable greedy" 
-cases_params, cases_ids = list(zip(*cases))
+cases_params_nirb, cases_ids_nirb = list(zip(*casesNirb))
+
+casesInit = [
+         (('testcase/nirb/square', 'square.cfg', 'square.json') , 'square-2D'),
+         (('testcase/nirb/thermal-fin-3d', 'thermal-fin.cfg', 'thermal-fin.json'), 'thermal-fin-3d'),
+        ]
+cases_paramsInit, cases_idsInit = list(zip(*casesInit))
 
 
 def run_offline(model_path, rect, greedy):
@@ -25,6 +31,7 @@ def run_offline(model_path, rect, greedy):
     nirb_config = feelpp.readJson(model_path)['nirb']
     nirb_config['doRectification'] = rect
     nirb_off = nirbOffline(**nirb_config, initCoarse=True)
+    nirb_off.initModel()
     nirb_off.generateOperators(coarse=True)
 
     if greedy:
@@ -48,6 +55,7 @@ def run_online(model_path, rect):
     nirb_config = feelpp.readJson(model_path)['nirb']
     nirb_config['doRectification'] = rect
     nirb_on = nirbOnline(**nirb_config)
+    nirb_on.initModel()
     err = nirb_on.loadData(nbSnap=nbSnap)
     assert err == 0, "loadData failed"
 
@@ -58,7 +66,7 @@ def run_online(model_path, rect):
     uh = nirb_on.getToolboxSolution(nirb_on.tbFine, mu)
 
 
-@pytest.mark.parametrize("dir,cfg,json,rect,greedy", cases_params, ids=cases_ids)
+@pytest.mark.parametrize("dir,cfg,json,rect,greedy", cases_params_nirb, ids=cases_ids_nirb)
 def test_nirb(dir, cfg, json, rect, greedy, init_feelpp):
     e = init_feelpp
     casefile = os.path.join(os.path.dirname(__file__), dir, cfg)
@@ -67,3 +75,24 @@ def test_nirb(dir, cfg, json, rect, greedy, init_feelpp):
 
     run_offline(model_path, rect, greedy)
     run_online(model_path, rect)
+
+@pytest.mark.parametrize("dir,cfg,json", cases_paramsInit, ids=cases_idsInit)
+def test_initializer(dir, cfg, json, init_feelpp):
+    e = init_feelpp
+    casefile = os.path.join(os.path.dirname(__file__), dir, cfg)
+    model_path = os.path.join(os.path.dirname(__file__), dir, json)
+
+    nirb_config = feelpp.readJson(model_path)['nirb']
+    nirb_config['doRectification'] = True
+    tbModel = ToolboxModel(**nirb_config)
+    tbModel.initModel()
+
+    nirb_off = nirbOffline(**nirb_config, initCoarse=True)
+    nirb_off.setModel(tbModel)
+    assert nirb_off.Xh == tbModel.Xh, "Xh not equal"
+    assert nirb_off.tbFine == tbModel.tbFine, "tbFine not equal"
+
+    nirb_on = nirbOnline(**nirb_config)
+    nirb_on.setModel(tbModel)
+    assert nirb_on.Xh == tbModel.Xh, "Xh not equal"
+    assert nirb_on.tbFine == tbModel.tbFine, "tbFine not equal"
