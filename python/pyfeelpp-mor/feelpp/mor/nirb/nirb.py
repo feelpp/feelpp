@@ -646,7 +646,7 @@ class nirbOffline(ToolboxModel):
 
         coeffCoarse = np.zeros((self.N, self.N))
         coeffFine = np.zeros((self.N, self.N))
-        
+
         for i in range(self.N):
             for j in range(self.N):
                 coeffCoarse[i,j] = self.l2ScalarProductMatrix.energy(InterpCoarseSnaps[i],self.reducedBasis[j])
@@ -692,7 +692,6 @@ class nirbOffline(ToolboxModel):
                 tabcoef[j,k] = self.l2ScalarProductMatrix.energy(soltest[j],self.reducedBasis[k])
                 tabcoefuh[j,k] = self.l2ScalarProductMatrix.energy(soltestFine[j],self.reducedBasis[k])
 
-        
         Unirb = self.Xh.element()
         UnirbRect = self.Xh.element()
         Uhn = self.Xh.element()
@@ -950,7 +949,7 @@ class nirbOnline(ToolboxModel):
 
         if self.worldcomm.isMasterRank():
             print(f"[NIRB] Initialization done")
-    
+
     def initModel(self):
         """Initialize the model
         """
@@ -969,9 +968,8 @@ class nirbOnline(ToolboxModel):
             super().initCoarseToolbox()
         self.tbCoarse = tb.tbCoarse
 
-    
 
-    def getCompressedSol(self, mu=None, solution=None):
+    def getCompressedSol(self, mu=None, solution=None, N=None):
         """
         get the projection of given solution from fine mesh into the reduced space
 
@@ -986,6 +984,8 @@ class nirbOnline(ToolboxModel):
         """
         assert (mu != None) or (solution != None), f"One of the arguments must be given: solution or mu"
 
+        if N is None: N = self.N
+
         if solution is None:
             sol = self.getInterpSol(mu)
         else :
@@ -993,7 +993,7 @@ class nirbOnline(ToolboxModel):
 
         compressedSol = np.zeros(self.N)
 
-        for i in range(self.N):
+        for i in range(N):
             compressedSol[i] = self.l2ProductBasis[i].to_petsc().dot(sol.to_petsc())
 
         return compressedSol
@@ -1001,39 +1001,51 @@ class nirbOnline(ToolboxModel):
     def getInterpSol(self, mu):
         """Get the interpolated solution from coarse mesh to fine one
 
-        Args:
-        -----
+        Parameters
+        ----------
             mu (ParameterSpaceElement): parameter
 
-        Returns:
-        --------
+        Returns
+        -------
             interpSol (feelpp._discr.Element): interpolated solution on fine mesh
         """
         interpSol = self.solveOnline(mu)[1]
         return interpSol
 
-    def getOnlineSol(self,mu):
+    def getOnlineSol(self, mu, N=None):
         """Get the Online nirb approximate solution
+
+        Parameters
+        ----------
+        mu : ParameterSpaceElement
+            parameter 
+        N : int, optional
+            Size of the basis, by default None. If None, the whole basis is used
+
+        Returns
+        -------
+        feelpp._discr.Element
+            NIRB online solution uHn^N
         """
+        if N is None: N = self.N
 
         onlineSol = self.Xh.element()
         onlineSol.setZero()
 
-        compressedSol = self.getCompressedSol(mu)
+        compressedSol = self.getCompressedSol(mu=mu)
 
         if self.doRectification:
-            coef = self.RectificationMat@compressedSol
-            for i in range(self.N):
-                onlineSol = onlineSol + float(coef[i])*self.reducedBasis[i]
-            
+            coef = self.RectificationMat @ compressedSol
+            for i in range(N):
+                onlineSol = onlineSol + float(coef[i]) * self.reducedBasis[i]
+
             if self.worldcomm.isMasterRank():
                 print("[NIRB] Solution computed with Rectification post-process ")
-        else :
-            for i in range(self.N):
-                onlineSol = onlineSol + float(compressedSol[i])*self.reducedBasis[i]
+        else:
+            for i in range(N):
+                onlineSol = onlineSol + float(compressedSol[i]) * self.reducedBasis[i]
 
         # to export, call self.exportField(onlineSol, "U_nirb")
-
 
         return onlineSol
 
