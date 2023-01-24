@@ -704,17 +704,17 @@ class nirbOffline(ToolboxModel):
             # Get rectification matrix
             BH = self.coeffCoarse[:nb, :nb]
             Bh = self.coeffFine[:nb, :nb]
-            R = np.zeros((nb,nb)) 
+            R = np.zeros((nb,nb))
             for s in range(nb):
-                R[s,:]=(np.linalg.inv(BH.transpose()@BH+regulParam*np.eye(nb))@BH.transpose()@Bh[:,s])
+                R[s,:] = (np.linalg.inv(BH.transpose() @ BH + regulParam*np.eye(nb))@BH.transpose()@Bh[:,s])
 
             for j in range(Ntest):
                 Unirb.setZero()
                 UnirbRect.setZero()
                 Uhn.setZero()
-                tabRect = R@tabcoef[j,:nb]
+                tabRect = R @ tabcoef[j,:nb]
 
-                for k in range(nb): # get reduced sol in a basis function space 
+                for k in range(nb): # get reduced sol in a basis function space
                     Unirb = Unirb + float(tabcoef[j,k])*self.reducedBasis[k]
                     UnirbRect = UnirbRect + float(tabRect[k])*self.reducedBasis[k]
                     Uhn = Uhn + float(tabcoefuh[j,k])*self.reducedBasis[k]
@@ -724,9 +724,9 @@ class nirbOffline(ToolboxModel):
                 Uhint = soltestFine[j] - soltest[j]
                 Uhn = Uhn - soltestFine[j]
                 err1 = np.sqrt(abs(self.l2ScalarProductMatrix.energy(Unirb,Unirb)))
-                err2 = np.sqrt(abs(self.l2ScalarProductMatrix.energy(UnirbRect,UnirbRect))) 
-                err3 = np.sqrt(abs(self.l2ScalarProductMatrix.energy(Uhn,Uhn)))  
-                err4 = np.sqrt(abs(self.l2ScalarProductMatrix.energy(Uhint,Uhint))) 
+                err2 = np.sqrt(abs(self.l2ScalarProductMatrix.energy(UnirbRect,UnirbRect)))
+                err3 = np.sqrt(abs(self.l2ScalarProductMatrix.energy(Uhn,Uhn)))
+                err4 = np.sqrt(abs(self.l2ScalarProductMatrix.energy(Uhint,Uhint)))
 
                 Error['l2(uh-uHn)'].append(err1)
                 Error['l2(uh-uHn)rec'].append(err2)
@@ -944,6 +944,9 @@ class nirbOnline(ToolboxModel):
         self.l2ProductBasis = None
         self.reducedBasis = None
         self.N = 0
+        self.RectificationMat = {}      # Dictionnary of rectification matrices : RectificationMat[Nb] for basis of size Nb
+        self.coeffCoarse = None         # Coefficients for the rectification matrix
+        self.coeffFine = None
 
         self.exporter = None
 
@@ -968,8 +971,7 @@ class nirbOnline(ToolboxModel):
             super().initCoarseToolbox()
         self.tbCoarse = tb.tbCoarse
 
-
-    def getCompressedSol(self, mu=None, solution=None, N=None):
+    def getCompressedSol(self, mu=None, solution=None, Nb=None):
         """
         get the projection of given solution from fine mesh into the reduced space
 
@@ -977,6 +979,7 @@ class nirbOnline(ToolboxModel):
         ----------
         solution (feelpp._discr.Element) : the solution to be projected
         mu (ParameterSpaceElement) : parameter to compute the solution if not given
+        Nb (int, optional) : Size of the basis, by default None. If None, the whole basis is used
 
         Returns
         --------
@@ -984,16 +987,16 @@ class nirbOnline(ToolboxModel):
         """
         assert (mu != None) or (solution != None), f"One of the arguments must be given: solution or mu"
 
-        if N is None: N = self.N
+        if Nb is None: Nb = self.N
 
         if solution is None:
             sol = self.getInterpSol(mu)
         else :
             sol = solution
 
-        compressedSol = np.zeros(self.N)
+        compressedSol = np.zeros(Nb)
 
-        for i in range(N):
+        for i in range(Nb):
             compressedSol[i] = self.l2ProductBasis[i].to_petsc().dot(sol.to_petsc())
 
         return compressedSol
@@ -1012,14 +1015,14 @@ class nirbOnline(ToolboxModel):
         interpSol = self.solveOnline(mu)[1]
         return interpSol
 
-    def getOnlineSol(self, mu, N=None):
+    def getOnlineSol(self, mu, Nb=None):
         """Get the Online nirb approximate solution
 
         Parameters
         ----------
         mu : ParameterSpaceElement
             parameter 
-        N : int, optional
+        Nb : int, optional
             Size of the basis, by default None. If None, the whole basis is used
 
         Returns
@@ -1027,45 +1030,54 @@ class nirbOnline(ToolboxModel):
         feelpp._discr.Element
             NIRB online solution uHn^N
         """
-        if N is None: N = self.N
+        if Nb is None: Nb = self.N
 
         onlineSol = self.Xh.element()
         onlineSol.setZero()
 
-        compressedSol = self.getCompressedSol(mu=mu)
+        compressedSol = self.getCompressedSol(mu=mu, Nb=Nb)
 
         if self.doRectification:
-            coef = self.RectificationMat @ compressedSol
-            for i in range(N):
+            if Nb not in self.RectificationMat:
+                self.RectificationMat[Nb] = self.getRectification(self.coeffCoarse, self.coeffFine, lambd=1.e-10, Nb=Nb)
+            coef = self.RectificationMat[Nb] @ compressedSol
+            for i in range(Nb):
                 onlineSol = onlineSol + float(coef[i]) * self.reducedBasis[i]
 
             if self.worldcomm.isMasterRank():
                 print("[NIRB] Solution computed with Rectification post-process ")
         else:
-            for i in range(N):
+            for i in range(Nb):
                 onlineSol = onlineSol + float(compressedSol[i]) * self.reducedBasis[i]
 
         # to export, call self.exportField(onlineSol, "U_nirb")
 
         return onlineSol
 
-    def getRectification(self, coeffCoarse, coeffFine, lambd=1.e-10):
+    def getRectification(self, coeffCoarse, coeffFine, lambd=1.e-10, Nb=None):
         """Compute rectification matrix associated to number of basis function selected
                 in the online step.
 
         Args:
         -----
             coeffCoarse (numpy.array): the coefficient matrix gieven by (U^H_i, \phi_j)
-            coeffFine (numpy.array): the coefficient matrix (U^h_i,\phi_j)
+            coeffFine (numpy.array): the coefficient matrix (U^h_i, \phi_j)
             lambd (float, optional): regularization parameter. Defaults to 1.e-10.
-        """
-        BH = coeffCoarse[:self.N, :self.N]
-        Bh = coeffFine[:self.N, :self.N]
-        R = np.zeros((self.N,self.N))
+            Nb (int, optional): number of basis function selected in the online step. Defaults to None, in which case all the basis are used.
 
-        #Thikonov regularization (AT@A +lambda I_d)^-1@(AT@B)
-        for i in range(self.N):
-            R[i,:]=(np.linalg.inv(BH.transpose()@BH+lambd*np.eye(self.N))@BH.transpose()@Bh[:,i])
+        Returns:
+        --------
+            R (numpy.array): the rectification matrix
+        """
+        if Nb is None: Nb = self.N
+
+        BH = coeffCoarse[:Nb, :Nb]
+        Bh = coeffFine[:Nb, :Nb]
+        R = np.zeros((Nb, Nb))
+
+        #Thikonov regularization (AT @ A + lambda I_d)^-1 @ (AT @ B)
+        for i in range(Nb):
+            R[i,:] = np.linalg.inv(BH.transpose() @ BH + lambd*np.eye(Nb)) @ BH.transpose() @ Bh[:,i]
 
         return R
 
@@ -1133,7 +1145,7 @@ class nirbOnline(ToolboxModel):
             vec = self.Xh.element()
             vec.load(reducedPath, reducedFilename, suffix=str(i))
             self.reducedBasis.append(vec)
-        
+
         self.N = nbSnap
 
         for i in range(nbSnap):
@@ -1147,9 +1159,9 @@ class nirbOnline(ToolboxModel):
         # coeffCoarseFile = os.path.join(path,f"coeffcoarse_np{rank}.npy")
         # coeffFineFile = os.path.join(path,f"coefffine_np{rank}.npy")
         if self.doRectification:
-            coeffCoarse = np.load(coeffCoarseFile)
-            coeffFine = np.load(coeffFineFile)
-            self.RectificationMat = self.getRectification(coeffCoarse, coeffFine, lambd=regulParam)
+            self.coeffCoarse = np.load(coeffCoarseFile)
+            self.coeffFine = np.load(coeffFineFile)
+            self.RectificationMat[self.N] = self.getRectification(self.coeffCoarse, self.coeffFine, lambd=regulParam)
 
         if self.worldcomm.isMasterRank():
             print(f"[NIRB] Data loaded from {os.path.abspath(path)}")
@@ -1171,10 +1183,12 @@ class nirbOnline(ToolboxModel):
         """Retrun the interpolated FE-solution from coarse mesh to fine one u_{Hh}^calN(mu)
             Solve in Coarse mesh and interpolate in fine mesh
 
-        Args:
+        Parameters
+        ----------
             mu (ParameterSpaceElement): parameter.
 
-        Returns:
+        Returns
+        -------
             feelpp._discr.Element: FE solution on coarse mesh
             feelpp._discr.Element: interpolated solution on fine mesh
         """
