@@ -28,7 +28,7 @@
 #include <feel/feelmodels/fluid/fluidmechanics.hpp>
 #include <feel/feelmodels/modelcore/remeshinterpolation.hpp>
 #include <feel/feelcore/pybind11_json.hpp>
-#include "contactforce.hpp"
+#include <contactforce.hpp>
 
 namespace py = pybind11;
 using namespace Feel;
