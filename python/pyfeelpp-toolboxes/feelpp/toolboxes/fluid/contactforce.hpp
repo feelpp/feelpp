@@ -1,15 +1,9 @@
-#include <feel/feelmodels/modelcore/modelnumerical.hpp>
 #include <feel/feelmodels/fluid/fluidmechanics.hpp>
-#include <feel/feelalg/glas.hpp>
 #include <feel/feelcore/json.hpp>
-#include <fmt/core.h>
-#include <Eigen/Geometry> 
-#include <feel/feelfilters/exporter.hpp>
 #include <feel/feells/distancetorange.hpp>
-#include <feel/feelcore/ptreetools.hpp>
 #include <feel/feeldiscr/minmax.hpp>
 #include <feel/feelvf/vf.hpp>
-#include <mpi.h>
+
 
 using namespace Feel;
 using namespace Feel::FeelModels;
@@ -843,10 +837,10 @@ contactForceModels(FluidMechanics const& t, DataType & data)
 
     if (rank == 0)
     {
-        std::cout << "Total execution time for " << type << " function after " << Execution_time::nbr << " executions is " << Execution_time::total_time << std::endl;
-        std::cout << "Total execution time for pre-process phase : " << Execution_time::total_time_pre << std::endl;
-        std::cout << "Total execution time for contact detection : " << Execution_time::total_time_detection << std::endl;
-        std::cout << "Total execution time for force comutation : " << Execution_time::total_time_com << std::endl; 
+        VLOG(3) << fmt::format( "Total execution time for {} function after {} executions is {}", type, Execution_time::nbr, Execution_time::total_time ) << std::endl;
+        VLOG(3) << fmt::format( "Total execution time for pre-process phase : {} ", Execution_time::total_time_pre ) << std::endl;
+        VLOG(3) << fmt::format( "Total execution time for contact detection : {}", Execution_time::total_time_detection ) << std::endl;
+        VLOG(3) << fmt::format( "Total execution time for force comutation : {}", Execution_time::total_time_com ) << std::endl;
     }
   
     
