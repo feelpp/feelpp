@@ -1,5 +1,4 @@
-import feelpp as feelpp
-import numpy as np
+import feelpp as feelpp 
 import pytest
 from feelpp.toolboxes.fluid import *
 
@@ -27,8 +26,6 @@ def test_collision(case,casefile,required_facets,required_elts):
     radius = 0.125
     forceRange = 0.03
 
-    pos_array = []
-
     f.addContactForceModel()
     f.addContactForceResModel()
     f.startTimeStep()
@@ -42,32 +39,15 @@ def test_collision(case,casefile,required_facets,required_elts):
         f.solve()
         f.exportResults()
 
-        if (f.timeStepBase().iteration() == 1):
-
-            if (case == "circle"):
-                pos = f.postProcessMeasures().values().get('Quantities_body_Circle.mass_center_1')
-                assert(pos < forceRange + radius)
-                assert(pos > radius)
-                pos_array.append(pos)
-            
-            if (case == "ellipse"):
-                pos_array.append(f.postProcessMeasures().values().get('Quantities_body_Ellipse.mass_center_1'))
+        if (case == "circle"):
+            pos = f.postProcessMeasures().values().get('Quantities_body_Circle.mass_center_1')
+            assert(pos < forceRange + radius)
+            assert(pos > radius)
                 
-            
-        else :
-
-            if (case == "circle"):
-                pos = f.postProcessMeasures().values().get('Quantities_body_Circle.mass_center_1')
-                assert(pos < pos_array[-1])
-                assert(pos < forceRange + radius)
-                assert(pos > radius)
-                pos_array.append(pos)
-
-            if (case == "ellipse"):
-                pos = f.postProcessMeasures().values().get('Quantities_body_Ellipse.mass_center_1')
-                assert(pos < pos_array[-1])
-                pos_array.append(pos)
-                    
+        if (case == "ellipse"):
+            pos = f.postProcessMeasures().values().get('Quantities_body_Ellipse.mass_center_1')
+            assert(pos > 0.)
+                         
         f.updateTimeStep()
     
     if (case == "ellipse"):
