@@ -82,6 +82,7 @@ def test_initializer(dir, cfg, json, init_feelpp):
     casefile = os.path.join(os.path.dirname(__file__), dir, cfg)
     model_path = os.path.join(os.path.dirname(__file__), dir, json)
 
+    feelpp.Environment.setConfigFile(casefile)
     nirb_config = feelpp.readJson(model_path)['nirb']
     nirb_config['doRectification'] = True
     tbModel = ToolboxModel(**nirb_config)
