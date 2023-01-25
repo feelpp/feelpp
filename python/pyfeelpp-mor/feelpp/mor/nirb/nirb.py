@@ -339,7 +339,7 @@ class nirbOffline(ToolboxModel):
             vec = self.Xh.element()
             vec.setZero()
             for j in range(self.N):
-                vec = vec + float(eigenVectors[j,i])*oldbasis[j]
+                vec.add(float(eigenVectors[j,i]), oldbasis[j])
 
             self.reducedBasis.append(vec)
 
@@ -633,8 +633,7 @@ class nirbOffline(ToolboxModel):
             vec = self.Xh.element()
             vec.setZero()
             for j in range(Nsnap):
-                val = eigenVectors[j,i]
-                vec = vec + val * self.fineSnapShotList[j]
+                vec.add(eigenVectors[j,i], self.fineSnapShotList[j])
 
             reducedBasis.append(vec)
             RIC.append(eigenValues[:i].sum() / sum_eigenValues)
@@ -732,14 +731,14 @@ class nirbOffline(ToolboxModel):
                 tabRect = R @ tabcoef[j,:nb]
 
                 for k in range(nb): # get reduced sol in a basis function space
-                    Unirb = Unirb + float(tabcoef[j,k])*self.reducedBasis[k]
-                    UnirbRect = UnirbRect + float(tabRect[k])*self.reducedBasis[k]
-                    Uhn = Uhn + float(tabcoefuh[j,k])*self.reducedBasis[k]
+                    Unirb.add(float(tabcoef[j,k]),self.reducedBasis[k])
+                    UnirbRect.add(float(tabRect[k]), self.reducedBasis[k])
+                    Uhn.add(float(tabcoefuh[j,k]),self.reducedBasis[k])
 
-                Unirb = Unirb - soltestFine[j]
-                UnirbRect = UnirbRect - soltestFine[j]
+                Unirb.add(-1, soltestFine[j])
+                UnirbRect.add(-1, soltestFine[j])
+                Uhn.add(-1, soltestFine[j])
                 Uhint = soltestFine[j] - soltest[j]
-                Uhn = Uhn - soltestFine[j]
                 err1 = np.sqrt(abs(self.l2ScalarProductMatrix.energy(Unirb,Unirb)))
                 err2 = np.sqrt(abs(self.l2ScalarProductMatrix.energy(UnirbRect,UnirbRect)))
                 err3 = np.sqrt(abs(self.l2ScalarProductMatrix.energy(Uhn,Uhn)))
@@ -775,7 +774,7 @@ class nirbOffline(ToolboxModel):
                 s = self.Xh.element()
                 s.setZero()
                 for m in range(n):
-                    s = s + self.h1ScalarProductMatrix.energy(Z[n], Z[m]) * Z[m]
+                    s.add(self.h1ScalarProductMatrix.energy(Z[n], Z[m]),  Z[m])
                 z_tmp = Z[n] - s
                 Z[n] = z_tmp * (1./math.sqrt(abs(self.h1ScalarProductMatrix.energy(z_tmp,z_tmp))))
 
@@ -802,7 +801,7 @@ class nirbOffline(ToolboxModel):
                 s = self.Xh.element()
                 s.setZero()
                 for m in range(n):
-                    s = s + self.l2ScalarProductMatrix.energy(Z[n], Z[m]) * Z[m]
+                    s.add(self.l2ScalarProductMatrix.energy(Z[n], Z[m]), Z[m])
                 z_tmp = Z[n] - s
                 Z[n] = z_tmp * (1./math.sqrt(abs(self.l2ScalarProductMatrix.energy(z_tmp,z_tmp))))
 
@@ -828,7 +827,7 @@ class nirbOffline(ToolboxModel):
             Z[-1] = 1 / np.sqrt(normS) * Z[-1]
         else:
             for m in range(N):
-                Z[-1] =  Z[-1] - self.l2ScalarProductMatrixCoarse.energy(Z[-1], Z[m]) * Z[m]
+                Z[-1].add(-self.l2ScalarProductMatrixCoarse.energy(Z[-1], Z[m]), Z[m])
             normS = self.l2ScalarProductMatrixCoarse.energy(Z[-1], Z[-1])
             Z[-1] = 1 / np.sqrt(normS) * Z[-1]
         return Z
@@ -1058,13 +1057,13 @@ class nirbOnline(ToolboxModel):
                 self.RectificationMat[Nb] = self.getRectification(self.coeffCoarse, self.coeffFine, lambd=1.e-10, Nb=Nb)
             coef = self.RectificationMat[Nb] @ compressedSol
             for i in range(Nb):
-                onlineSol = onlineSol + float(coef[i]) * self.reducedBasis[i]
+                onlineSol.add(float(coef[i]), self.reducedBasis[i])
 
             if self.worldcomm.isMasterRank():
                 print("[NIRB] Solution computed with Rectification post-process ")
         else:
             for i in range(Nb):
-                onlineSol = onlineSol + float(compressedSol[i]) * self.reducedBasis[i]
+                onlineSol.add(float(compressedSol[i]), self.reducedBasis[i])
 
         # to export, call self.exportField(onlineSol, "U_nirb")
 
