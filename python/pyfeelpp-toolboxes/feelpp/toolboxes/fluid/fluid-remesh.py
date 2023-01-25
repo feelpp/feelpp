@@ -166,7 +166,7 @@ def remesh_toolbox(f, hclose, hfar, parent_mesh):
     n_required_facets_after=feelpp.nelements(feelpp.markedfaces(new_mesh,required_facets))
     print(" . [after remesh]  n required elts: {}".format(n_required_elts_after))
     print(" . [after remesh] n required facets: {}".format(n_required_facets_after))
-    f.applyRemesh(new_mesh)
+    f.applyRemesh(f.mesh(),new_mesh)
 
 
 parent_mesh=f.mesh()
@@ -200,7 +200,7 @@ while not f.timeStepBase().isFinished():
         nbr_remesh += 1
         time_remesh.append(f.time())
     
-
+  
     if feelpp.Environment.isMasterRank():
         print("============================================================\n")
         print("time simulation: {}s iteration : {}\n".format(f.time(), f.timeStepBase().iteration()))
