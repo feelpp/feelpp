@@ -16,6 +16,7 @@ from tqdm import tqdm
 from random import choices
 import math
 import pathlib
+from scipy.linalg import eigh
 
 
 import os
@@ -281,6 +282,7 @@ class nirbOffline(ToolboxModel):
         self.l2ProductBasis = [] # list containing the vector given the column of (l2ScalarProductMatrix @ reeducedBasis)
         self.reducedBasis = None # list containing the vector of reduced basis function
         self.N = 0 # number of modes
+        self.correlationMatrix = None # correlation matrix of the snapshot Mat[i,j] = <U_i, U_j>
 
         if self.worldcomm.isMasterRank():
             print(f"[NIRB Offline] Initialization done")
@@ -528,7 +530,7 @@ class nirbOffline(ToolboxModel):
             tolerance(float), optional : tolerance of the eigen value problem target accuracy of the data compression
             regulParam(float), optional : the regularization parameter for rectification
         """
-        self.reducedBasis = self.PODReducedBasis(tolerance=tolerance)
+        self.reducedBasis, RIC= self.PODReducedBasis(tolerance=tolerance)
         self.orthonormalizeL2()
         self.N = len(self.reducedBasis)
         if self.worldcomm.isMasterRank():
@@ -540,6 +542,7 @@ class nirbOffline(ToolboxModel):
         #     self.BiOrthonormalization()
         if self.doRectification:
             self.coeffCoarse, self.coeffFine = self.coeffRectification()
+        return RIC 
 
     def addFunctionToBasis(self, snapshot, tolerance=1e-6):
         """Add function to the reduced basis, previously generated
@@ -550,7 +553,7 @@ class nirbOffline(ToolboxModel):
         """
 
         self.fineSnapShotList.append(snapshot)
-        self.reducedBasis = self.PODReducedBasis(tolerance=tolerance)
+        self.reducedBasis, RIC = self.PODReducedBasis(tolerance=tolerance)
         self.orthonormalizeL2()
 
         self.N += 1
@@ -582,13 +585,13 @@ class nirbOffline(ToolboxModel):
             self.l2ProductBasis.append(vec)
 
 
-    def PODReducedBasis(self, tolerance=1.e-6):
+    def PODReducedBasis(self, tolerance=1.e-12):
         """
         Computes the reducedOrderBasis using the POD algorithm, from a given list of snapshots contained in self.fineSnapShotList
 
         Parameters
         ----------
-            tolerance (float) : tolerance of the eigen value problem target accuracy of the data compression
+            tolerance (float) : tolerance to stop selection of basis (if (1 - RIC)<=tolerance) 
 
         Returns
         -------
@@ -597,39 +600,48 @@ class nirbOffline(ToolboxModel):
 
         Nsnap = len(self.fineSnapShotList)
 
-        correlationMatrix = PETSc.Mat().createDense(size=Nsnap, comm=MPI.COMM_SELF) # create a dense matrix in sequential mode
-        correlationMatrix.setFromOptions()
-        correlationMatrix.setUp()
+        if self.correlationMatrix == None :
+            self.correlationMatrix = np.zeros((Nsnap, Nsnap))            
+            for i, snap1 in enumerate(self.fineSnapShotList):
+                for j, snap2 in enumerate(self.fineSnapShotList):
+                        self.correlationMatrix[i,j] = self.l2ScalarProductMatrix.energy(snap1,snap2)
+        else :
+            lastSnap = self.fineSnapShotList[-1]
+            lastCol = np.zeros(Nsnap)
+            for i, snap in enumerate(self.fineSnapShotList[:Nsnap-1]):
+                lastCol[i] =  self.l2ScalarProductMatrix.energy(snap,lastSnap)
+            self.correlationMatrix = np.vstack((self.correlationMatrix, lastCol[:Nsnap-1]))
+            self.correlationMatrix = np.column_stack((self.correlationMatrix, lastCol))
 
-        for i, snap1 in enumerate(self.fineSnapShotList):
-            for j, snap2 in enumerate(self.fineSnapShotList):
-                    correlationMatrix[i,j] = self.l2ScalarProductMatrix.energy(snap1,snap2)
-
-        correlationMatrix.assemble()
-        eigenValues, eigenVectors = TruncatedEigenV(correlationMatrix, tolerance)
-
-        Nmode = len(eigenVectors)
+        eigenValues, eigenVectors = eigh(self.correlationMatrix)
+        # get ordred eigenvalues
+        idx = eigenValues.argsort()[::-1]
+        eigenValues = eigenValues[idx]
+        eigenVectors = eigenVectors[:, idx]
+        
+        Nmode = len(eigenValues)
 
         for i in range(Nmode):
-            eigenVectors[i].scale(1./math.sqrt(abs(eigenValues[i])))
+            eigenVectors[:,i] /math.sqrt(abs(eigenValues[i]))
 
         reducedBasis = []
 
         sum_eigenValues = eigenValues.sum()
-        RIC = 0.
+        RIC = []
 
-        for i in range(Nmode):              # add RIC
-            RIC = eigenValues[:i].sum() / sum_eigenValues
-            print(f"[NIRB] i = {i} : RIC = {RIC}")
+        for i in range(Nmode):              
             vec = self.Xh.element()
             vec.setZero()
             for j in range(Nsnap):
-                val = eigenVectors[i].getValue(j)
+                val = eigenVectors[j,i]
                 vec = vec + val * self.fineSnapShotList[j]
 
             reducedBasis.append(vec)
+            RIC.append(eigenValues[:i].sum() / sum_eigenValues)
+            if abs(1. - RIC[i])<= tolerance :
+                break
 
-        return reducedBasis
+        return reducedBasis, RIC
 
 
     def coeffRectification(self):
