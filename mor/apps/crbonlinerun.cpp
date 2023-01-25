@@ -61,7 +61,7 @@ loadPlugin( std::string const& name, std::string const& id )
     auto plugin = factoryCRBPlugin( pluginname, pluginlibname, dirname );
     std::cout << "Loaded the plugin " << plugin->name() << std::endl;
     bool loadFiniteElementDatabase = boption(_name="crb.load-elements-database");
-    if(boption("export-solution"))
+    if(boption(_name="export-solution"))
         loadFiniteElementDatabase=true;
     std::string jsonfilename = (fs::path(Environment::expand( soption(_name="plugin.db") )) / fs::path(pluginname) / fs::path(id) / (pluginname+".crb.json")).string() ;
 
@@ -205,7 +205,7 @@ runCrbOnline( std::vector<std::shared_ptr<Feel::CRBPluginAPI>> plugin )
     using namespace Feel;
 
     bool loadFiniteElementDatabase = boption(_name="crb.load-elements-database");
-    if(boption("export-solution"))
+    if(boption(_name="export-solution"))
         loadFiniteElementDatabase=true;
 
     Eigen::VectorXd/*typename crb_type::vectorN_type*/ time_crb;
