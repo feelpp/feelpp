@@ -56,18 +56,28 @@ To run the Python script, you need to install the https://pypi.org/project/pytho
 
 == Description of the case and the parameters
 
-
-image::cubes.png[]
+.Description of the geometry
+image::fig/cubes.png[Cube]
 
 Here are the parameters that stans for both 2D and 3D cases.
 
 * stem:[N_v] is the vertical number of cubes in the geometry (here, stem:[N_v=2]),
 * stem:[N_h] is the horizontal number of cubes in the geometry (here, stem:[N_h=3]),
-* stem:[N_d] is the depth number of cubes in the geometry (here, stem:[N_d=1]), *note :* at this time, only stem:[N_d=1] is supported
+// * stem:[N_d] is the depth number of cubes in the geometry (here, stem:[N_d=1]), *note :* at this time, only stem:[N_d=1] is supported
 * stem:[L] is the length of it,
 * stem:[h] is the height of it,
 * stem:[d] is the depth
 
+Here are some example of geometry generated with the script.
+
+.2D case, stem:[N_v=3], stem:[N_h=3], stem:[L=1], stem:[h=1]
+image::fig/2d3x3.png[2D]
+
+.2D case, stem:[N_v=3], stem:[N_h=3], stem:[L=1], stem:[h=1.5]
+image::fig/2d2.png[2D]
+
+.3D case, stem:[N_v=3], stem:[N_h=3], stem:[L=1], stem:[h=1.5], stem:[d=2]
+image::fig/3d.png[3D]
 
 == SEE ALSO
 
