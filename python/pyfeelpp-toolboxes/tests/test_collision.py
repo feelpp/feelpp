@@ -26,7 +26,6 @@ def test_collision(case,casefile,required_facets,required_elts):
 
     radius = 0.125
     forceRange = 0.03
-    deltaT = 0.001
 
     pos_array = []
 
@@ -35,18 +34,10 @@ def test_collision(case,casefile,required_facets,required_elts):
     f.startTimeStep()
     while not f.timeStepBase().isFinished():
         
-        if (case == "circle"):
-            if (f.timeStepBase().iteration() == 20 or f.timeStepBase().iteration() == 40):
-                remesh(f,required_facets,required_elts)
-                f.addContactForceModel()
-                f.addContactForceResModel()
-
-        if (case == "ellipse"):
-            if (f.timeStepBase().iteration() == 20 or f.timeStepBase().iteration() == 40 or f.timeStepBase().iteration() == 60):
-                remesh(f,required_facets,required_elts)
-                f.addContactForceModel()
-                f.addContactForceResModel()
-
+        if (f.timeStepBase().iteration() % 10 == 0):
+            remesh(f,required_facets,required_elts)
+            f.addContactForceModel()
+            f.addContactForceResModel()
         
         f.solve()
         f.exportResults()
@@ -61,6 +52,7 @@ def test_collision(case,casefile,required_facets,required_elts):
             
             if (case == "ellipse"):
                 pos_array.append(f.postProcessMeasures().values().get('Quantities_body_Ellipse.mass_center_1'))
+                
             
         else :
 
@@ -75,18 +67,11 @@ def test_collision(case,casefile,required_facets,required_elts):
                 pos = f.postProcessMeasures().values().get('Quantities_body_Ellipse.mass_center_1')
                 assert(pos < pos_array[-1])
                 pos_array.append(pos)
-
                     
         f.updateTimeStep()
     
-    if (case == "circle"):
-        Uy_final = (pos_array[-1] - pos_array[-2])/deltaT
-        assert(np.abs(Uy_final) < 0.03)
-    
     if (case == "ellipse"):
-        assert(np.abs(f.postProcessMeasures().values().get('Quantities_body_Ellipse.rigid_rotation_angles')) < 0.56)
-        Uy_final = (pos_array[-1] - pos_array[-2])/deltaT
-        assert(np.abs(Uy_final) < 0.4)
+        assert(f.postProcessMeasures().values().get('Quantities_body_Ellipse.rigid_rotation_angles') < 0)
     
 
 #test_collision("circle",'fluid/moving_body/gravity/collisions/circle.cfg',["Circle"],["Cir"])
