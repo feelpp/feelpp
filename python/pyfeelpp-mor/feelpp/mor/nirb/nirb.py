@@ -6,6 +6,7 @@
 
 import feelpp
 from .utils import *
+from .greedy import *
 import feelpp.operators as FppOp
 # from NIRBinitCase import *
 import numpy as np
