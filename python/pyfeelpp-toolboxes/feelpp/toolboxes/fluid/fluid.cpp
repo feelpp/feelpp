@@ -29,6 +29,7 @@
 #include <feel/feelmodels/modelcore/remeshinterpolation.hpp>
 #include <feel/feelcore/pybind11_json.hpp>
 #include "contactforce.hpp"
+#include "adhesionforce.hpp"
 
 namespace py = pybind11;
 using namespace Feel;
@@ -133,6 +134,27 @@ void defFM(py::module &m)
             },
             "Initialization of execution time"
         ) 
+
+        .def(
+            "addAdhesionModel",[](const fm_t& t)
+            {
+                auto add_force_term = [&t](FeelModels::ModelAlgebraic::DataUpdateLinear & data) 
+                { 
+                    adhesionModel<0>(t, data);
+                };
+
+                t.algebraicFactory()->addFunctionLinearAssembly(add_force_term);
+            },
+            "adhesionModel"
+        ) 
+
+        .def(
+            "reset_bonds",[](const fm_t& t)
+            {
+                reset_bonds(t);
+            },
+            "Initialization of bonds"
+        )
         
         ;
         
