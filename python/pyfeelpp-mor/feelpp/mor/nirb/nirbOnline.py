@@ -4,7 +4,7 @@ from feelpp.mor.nirb.utils import WriteVecAppend, init_feelpp_environment
 import sys
 import pandas as pd
 from pathlib import Path
-import os 
+import os
 from feelpp.mor.nirb.nirb_perf import *
 import argparse
 
@@ -31,7 +31,7 @@ if __name__ == "__main__":
     config_nirb = feelpp.readJson(nirb_file)['nirb']
 
 
-    greedy = args.greedy 
+    greedy = args.greedy
     expo = args.exporter
     conv = args.convergence
 
@@ -44,7 +44,7 @@ if __name__ == "__main__":
         nbSnap = config_nirb['nbSnapshots']
 
     config_nirb['greedy-generation'] = bo[greedy]
-    
+
     doGreedy = config_nirb['greedy-generation']
     doRectification = config_nirb['doRectification']
     rectPath = ["noRect", "Rect"][doRectification]
@@ -66,27 +66,23 @@ if __name__ == "__main__":
     uHh = nirb_on.getOnlineSol(mu)
     finish = time()
 
-    
-    if exporter:    
+    if exporter:
         dirname = "nirbSol"
         nirb_on.initExporter(dirname, toolbox="fine")
         fieldname = 'T'
         nirb_on.exportField(uHh,fieldname)
         nirb_on.saveExporter()
 
- 
-    
     perf = []
     perf.append(nirb_on.N)
     perf.append(finish-start)
 
     if doRectification:
-        file=RESPATH+f'/nirbOnline_time_exec_np{nirb_on.worldcomm.globalSize()}_rectif.dat'
-    else :
-        file=RESPATH+f'/nirbOnline_time_exec_np{nirb_on.worldcomm.globalSize()}.dat'
+        file = RESPATH+f'/nirbOnline_time_exec_np{nirb_on.worldcomm.globalSize()}_rectif.dat'
+    else:
+        file = RESPATH+f'/nirbOnline_time_exec_np{nirb_on.worldcomm.globalSize()}.dat'
     WriteVecAppend(file,perf)
 
-    
     if convergence :
         Nsample = 50
         errorN = ComputeErrorSampling(nirb_on, Nsample=Nsample, h1=True)
@@ -97,7 +93,7 @@ if __name__ == "__main__":
 
         file =RESPATH +f"/errors{Nsample}Params.csv"
 
-        header = not os.path.isfile(file)   
+        header = not os.path.isfile(file)
         df.to_csv(file, mode='a', index=False, header=header)
 
         if nirb_on.worldcomm.isMasterRank():
@@ -112,8 +108,6 @@ if __name__ == "__main__":
             data_max = df.max(axis=0)
             print("[NIRB online] Max of errors ")
             print(data_max)
-       
-
 
     print(f"[NIRB] Online Elapsed time =", finish-start)
     print(f"[NIRB] Online part Done !!")

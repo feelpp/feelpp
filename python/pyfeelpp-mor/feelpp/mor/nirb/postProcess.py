@@ -87,7 +87,7 @@ def getDataStat(df, h1norm=True):
     dfmean = df.pivot_table(values=lkeys, index='N', aggfunc=np.mean)
     dfmin = df.pivot_table(values=lkeys, index='N', aggfunc=np.min)
     dfmax = df.pivot_table(values=lkeys, index='N', aggfunc=np.max)
-    
+
     l2 = 'l2(uh-uHn)'
     l2rec = 'l2(uh-uHn)rec'
     l2uh = 'l2(uh-uhn)'
@@ -96,8 +96,7 @@ def getDataStat(df, h1norm=True):
     h1 = 'h1(uh-uHn)'
     h1uh = 'h1(uh-uhn)'
 
-    
-    ## L2 norm 
+    ## L2 norm
     l2df = pd.DataFrame()
 
     l2df['Min'] = dfmin[l2]
@@ -107,7 +106,7 @@ def getDataStat(df, h1norm=True):
     l2df['Max'] = dfmax[l2]
     l2df['Max_rec'] = dfmax[l2rec]
     l2df['Max_uh'] = dfmax[l2uh]
-    
+
     l2df['Mean'] = dfmean[l2]
     l2df['Mean_rec'] = dfmean[l2rec]
     l2df['Mean_uh'] = dfmean[l2uh]
@@ -117,7 +116,7 @@ def getDataStat(df, h1norm=True):
     ## H1 norm
     if h1norm:
 
-        h1df = pd.DataFrame() 
+        h1df = pd.DataFrame()
 
         h1df['Min'] = dfmin[h1]
         h1df['Min_rec'] = dfmin[h1rec]
@@ -126,17 +125,17 @@ def getDataStat(df, h1norm=True):
         h1df['Max'] = dfmax[h1]
         h1df['Max_rec'] = dfmax[h1rec]
         h1df['Max_uh'] = dfmax[h1uh]
-        
+
         h1df['Mean'] = dfmean[h1]
         h1df['Mean_rec'] = dfmean[h1rec]
         h1df['Mean_uh'] = dfmean[h1uh]
 
         h1df['h1(uh-uH)'] = dfmean['h1(uh-uH)']
 
-        return l2df, h1df 
+        return l2df, h1df
     else :
-        return l2df 
-        
+        return l2df
+
 
 def getRelativeErrors(df,h1=True):
     """Compute the relative error on a given data Frame
@@ -148,10 +147,10 @@ def getRelativeErrors(df,h1=True):
 
     l2keys = ['l2(uh-uHn)', 'l2(uh-uHn)rec', 'l2(uh-uhn)', 'l2(uh-uH)']
     h1keys = ['h1(uh-uHn)', 'h1(uh-uHn)rec', 'h1(uh-uhn)', 'h1(uh-uH)']
-    keys = l2keys.copy() 
-    if h1: keys = l2keys + h1keys 
+    keys = l2keys.copy()
+    if h1: keys = l2keys + h1keys
 
-    dfRel = df[keys].copy() 
+    dfRel = df[keys].copy()
     dfRel['N']=df['N']
 
     for key in l2keys:
@@ -184,7 +183,7 @@ def troncateNparam(df, Nparam=1, start='first'):
     dg = df.iloc[ind,:]
     dg = dg[listkeys]
     dk = pd.DataFrame(dict(dg))
-    
+
     for i in listN[1:]:
         ind = np.where(df['N']==i)[0][:Nparam]
         dg =  df.iloc[ind,:]
@@ -193,7 +192,7 @@ def troncateNparam(df, Nparam=1, start='first'):
 
     # dk.sort_values('N', inplace=True)
     dk.index = range(dk.shape[0])
-    return dk 
+    return dk
 
 
 ### Functions to vizualise data Frame
@@ -217,8 +216,8 @@ def plotDataFrame(df, norm='l2', texSave=False):
     for i in range(df.shape[1]-1):
         plt.scatter(x,df[keys[i]], label=str(keys[i]))
         plt.plot(x,df[keys[i]])
-    
-    plt.legend() 
+
+    plt.legend()
     plt.yscale('log')
     plt.xlabel("Number of basis function (N)")
     plt.ylabel(f"{nm} norm of Errors (in log)")
@@ -286,7 +285,7 @@ def plotErrors(df, keys='Mean', norm='l2', texSave=False, name="plot.tex"):
     normUHn = {'l2':r"$\Vert u^\mathcal{N}_h - u^N_{Hh}\Vert_{L^2}$" , 'h1': r"$\Vert u^\mathcal{N}_h - u^N_{Hh}\Vert_{H^1}$"}
     normUhn = {'l2':r"$\Vert u^\mathcal{N}_h - u^N_{h}\Vert_{L^2}$" , 'h1': r"$\Vert u^\mathcal{N}_h - u^N_{h}\Vert_{H^1}$"}
     normUh = {'l2':r"$\Vert u^\mathcal{N}_h - u^\mathcal{N}_{Hh}\Vert_{L^2}$" , 'h1': r"$\Vert u^\mathcal{N}_h - u^\mathcal{N}_{Hh}\Vert_{H^1}$"}
-  
+
     keyUh = {'l2': 'l2(uh-uH)', 'h1':'h1(uh-uH)'}
 
     if norm=='h1':
@@ -302,11 +301,11 @@ def plotErrors(df, keys='Mean', norm='l2', texSave=False, name="plot.tex"):
     plt.plot(xf, df[key_list[keys][1]], c='blue')
     plt.plot(xf, df[key_list[keys][2]], c='green')
 
-    # interpolate norm 
+    # interpolate norm
     plt.scatter(xf, df[keyUh[norm]], label=normUh[norm])
     plt.plot(xf, df[keyUh[norm]])
 
-    
+
     plt.legend()
     plt.yscale('log')
     plt.xlabel("Number of basis function (N)")
@@ -346,7 +345,6 @@ def compare2dataFrame(df,dg, keys='Mean', norm='l2', dataLabel='pk', labellist=N
     key_list = {'Mean':['Mean', 'Mean_rec', 'Mean_uh'], 'Max':['Max', 'Max_rec','Max_uh'],
              'Min':['Min', 'Min_rec', 'Min_uh'] }
 
-    
     if labellist==None :
         if dataLabel=='greedy' :
             labeldf = ' w/ greedy'

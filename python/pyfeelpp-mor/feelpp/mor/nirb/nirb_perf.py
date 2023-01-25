@@ -28,37 +28,37 @@ def ComputeErrors(nirb_on, mu, h1=False, relative=True):
               If relativ is True, the error is divided by the norm of the True sol.
               If h1 is True, the same norm are computed in h1 norm.
     """
-    if h1: 
+    if h1:
         l2Mat, h1Mat = nirb_on.generateOperators(h1=True)
-    else :
+    else:
         l2Mat = nirb_on.generateOperators()
 
     uH = nirb_on.getInterpSol(mu)
     uh = nirb_on.getToolboxSolution(nirb_on.tbFine, mu)
-    
+
     uNH = getNirbProjection(nirb_on, uH)
     uNHr = getNirbProjection(nirb_on, uH, doRectification=True)
     uNh = getNirbProjection(nirb_on, uh)
 
-    
+
     error = {'l2(uh-uHn)':[],'l2(uh-uHn)rec':[],'l2(uh-uhn)':[],'l2(uh)':[], 'l2(uh-uH)':[]}
     if h1:
         error.update({'h1(uh-uHn)':[],'h1(uh-uHn)rec':[],'h1(uh-uhn)':[],'h1(uh)':[], 'h1(uh-uH)':[]})
-        
-    # error 
+
+    # error
     rel = nirb_on.normMat(l2Mat,uh) if relative else 1
     error['l2(uh-uHn)'].append(nirb_on.normMat(l2Mat, uNH-uh) / rel)
     error['l2(uh-uHn)rec'].append(nirb_on.normMat(l2Mat, uNHr-uh) / rel)
     error['l2(uh-uhn)'].append(nirb_on.normMat(l2Mat, uNh-uh) / rel)
     error['l2(uh)'].append(nirb_on.normMat(l2Mat,uh))
     error['l2(uh-uH)'].append(nirb_on.normMat(l2Mat, uH-uh) / rel)
-    if h1 : 
+    if h1:
         rel = nirb_on.normMat(h1Mat,uh) if relative else 1
         error['h1(uh-uHn)'].append(nirb_on.normMat(h1Mat, uNH-uh) / rel)
         error['h1(uh-uHn)rec'].append(nirb_on.normMat(h1Mat, uNHr-uh) / rel)
         error['h1(uh-uhn)'].append(nirb_on.normMat(h1Mat, uNh-uh) / rel)
         error['h1(uh)'].append(nirb_on.normMat(h1Mat,uh))
-        error['h1(uh-uH)'].append(nirb_on.normMat(h1Mat, uH-uh) / rel) 
+        error['h1(uh-uH)'].append(nirb_on.normMat(h1Mat, uH-uh) / rel)
 
 
     return error
@@ -101,30 +101,30 @@ def ComputeErrorSampling(nirb_on, Nsample = 1, Xi_test=None, samplingType='log-r
     if h1:
         error.update({'h1(uh-uHn)':[],'h1(uh-uHn)rec':[],'h1(uh-uhn)':[],'h1(uh)':[], 'h1(uh-uH)':[]})
 
-    # for i, mu in enumerate(mus): 
+    # for i, mu in enumerate(mus):
     for i, mu in enumerate(tqdm(mus,desc=f"[NIRB] ComputeErrorSampling", ascii=False, ncols=120)):
 
         uH = nirb_on.getInterpSol(mu)
         uh = nirb_on.getToolboxSolution(nirb_on.tbFine, mu)
-        
+
         uNH = getNirbProjection(nirb_on, uH)
         uNHr = getNirbProjection(nirb_on, uH, doRectification=True)
         uNh = getNirbProjection(nirb_on, uh)
 
-        # error 
+        # error
         error['l2(uh-uHn)'].append(nirb_on.normMat(l2Mat, uNH-uh))
         error['l2(uh-uHn)rec'].append(nirb_on.normMat(l2Mat, uNHr-uh))
         error['l2(uh-uhn)'].append(nirb_on.normMat(l2Mat, uNh-uh))
         error['l2(uh)'].append(nirb_on.normMat(l2Mat,uh))
         error['l2(uh-uH)'].append(nirb_on.normMat(l2Mat, uH-uh))
-        if h1 : 
+        if h1:
             error['h1(uh-uHn)'].append(nirb_on.normMat(h1Mat, uNH-uh))
             error['h1(uh-uHn)rec'].append(nirb_on.normMat(h1Mat, uNHr-uh))
             error['h1(uh-uhn)'].append(nirb_on.normMat(h1Mat, uNh-uh))
             error['h1(uh)'].append(nirb_on.normMat(h1Mat,uh))
-            error['h1(uh-uH)'].append(nirb_on.normMat(h1Mat, uH-uh))    
+            error['h1(uh-uH)'].append(nirb_on.normMat(h1Mat, uH-uh))
 
-    return error 
+    return error
 
 
 def ComputeErrorsH(nirb_on, tbRef, mu, path=None, name=None):
