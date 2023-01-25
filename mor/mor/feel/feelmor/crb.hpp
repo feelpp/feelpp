@@ -1442,7 +1442,7 @@ public:
             int rows=A.rows();
             int cols=A.cols();
             int N = rows;
-            std::string file_name = ( boost::format("RBmatrix-N%1%-mu-%2%") %N  %mu[0] ).str();
+            std::string file_name = fmt::format("RBmatrix-N{}-mu-{}", N, mu[0]);
             if( this->worldComm().isMasterRank() )
             {
                 std::ofstream file;
@@ -1933,7 +1933,7 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu )//, spars
         }
 
         if( increment_norm > fixedpoint_critical_value )
-            throw std::logic_error( (boost::format("[CRB::offlineFixedPointPrimal]  at time %1% ERROR : increment > critical value " ) %M_bdf_primal->time() ).str() );
+            throw std::logic_error( fmt::format("[CRB::offlineFixedPointPrimal]  at time {} ERROR : increment > critical value ", M_bdf_primal->time() ) );
 
         for ( size_type l = 0; l < M_model->Nl(); ++l )
         {
@@ -2177,7 +2177,7 @@ CRB<TruthModelType>::offlineFixedPointDual(parameter_type const& mu, element_ptr
         }
 
         if( increment_norm > fixedpoint_critical_value )
-            throw std::logic_error( (boost::format("[CRB::offlineFixedPointDual]  at time %1% ERROR : increment > critical value " ) %M_bdf_dual->time() ).str() );
+            throw std::logic_error( fmt::format("[CRB::offlineFixedPointDual]  at time {} ERROR : increment > critical value ", M_bdf_dual->time() ) );
 
     }//end of loop over time
 
@@ -2566,7 +2566,7 @@ CRB<TruthModelType>::offline()
         // save mesh of rbspace
         if ( true )
         {
-            std::string meshFilenameBase = (boost::format("%1%_mesh_p%2%.json")%this->name() %this->worldComm().size()).str();
+            std::string meshFilenameBase = fmt::format("{}_mesh_p{}.json",this->name(),this->worldComm().size());
             std::string meshFilename = (M_elements_database.dbLocalPath() / fs::path(meshFilenameBase)).string();
             if( this->worldComm().isMasterRank() )
                 std::cout << "save Mesh : " << meshFilename << std::endl;
@@ -2575,7 +2575,7 @@ CRB<TruthModelType>::offline()
         // save the rb function space
         if ( true )
         {
-            std::string functionSpaceFilenameBase = (boost::format("%1%_functionSpace_p%2%.json")%this->name() %this->worldComm().size()).str();
+            std::string functionSpaceFilenameBase = fmt::format("{}_functionSpace_p{}.json",this->name(),this->worldComm().size());
             std::string functionSpaceFilename = (M_elements_database.dbLocalPath() / fs::path(functionSpaceFilenameBase)).string();
             if( this->worldComm().isMasterRank() )
                 std::cout << "save Function Space : " << functionSpaceFilename << std::endl;
@@ -2695,7 +2695,7 @@ CRB<TruthModelType>::offline()
         tic();
         M_mode_number=1;
 
-        std::string pslogname = (boost::format("N-%1%") %M_N ).str();
+        std::string pslogname = fmt::format("N-{}",M_N );
         if( write_memory_evolution )
             ps.log(pslogname);
 
@@ -2718,8 +2718,8 @@ CRB<TruthModelType>::offline()
             LOG(INFO) << "N=" << M_N << "/"  << M_iter_max << " maxerror=" << M_maxerror << " / "  << M_tolerance << "( nb proc : "<<worldComm().globalSize()<<")";
 
         // for a given parameter \p mu assemble the left and right hand side
-        u.setName( ( boost::format( "fem-primal-N%1%-proc%2%" ) % (M_N)  % proc_number ).str() );
-        udu.setName( ( boost::format( "fem-dual-N%1%-proc%2%" ) % (M_N)  % proc_number ).str() );
+        u.setName( fmt::format( "fem-primal-N{}-proc{}", M_N, proc_number ) );
+        udu.setName( fmt::format( "fem-dual-N{}-proc{}", M_N, proc_number) );
 
 #if !defined(NDEBUG)
         mu.check();
@@ -5915,7 +5915,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
 
             for ( int i=0; i<mu.size(); i++ )
             {
-                mu_str= mu_str + ( boost::format( "_%1%" ) %mu[i] ).str() ;
+                mu_str= mu_str +  fmt::format( "_{}" ,mu[i] ) ;
             }
 
             std::string name = "output-evolution" + mu_str;
@@ -6506,13 +6506,13 @@ CRB<TruthModelType>::exportBasisFunctions( const export_vector_wn_type& export_v
         {
 
             std::string basis_name = vect_names[basis_number];
-            std::string number = ( boost::format( "%1%_with_parameters" ) %element_number ).str() ;
+            std::string number = fmt::format( "{}_with_parameters",element_number );
             mu = M_WNmu->at( element_number );
             std::string mu_str;
 
             for ( int i=0; i<mu.size(); i++ )
             {
-                mu_str= mu_str + ( boost::format( "_%1%" ) %mu[i] ).str() ;
+                mu_str= mu_str + fmt::format( "_{}",mu[i] ) ;
             }
 
             std::string name =   basis_name + number + mu_str;
@@ -10479,7 +10479,7 @@ saveRbSpaceCtx( TheRbSpaceType const& rbSpace, Archive & ar, std::string const& 
     ar & boost::serialization::make_nvp( (rbctxNameInDb+"_number_of_context").c_str(), numberOfCtx );
     for ( int k=0;k<numberOfCtx;++k )
     {
-        std::string rbctxNameInDb2 = (boost::format("%1%_%2%")%rbctxNameInDb %k).str();
+        std::string rbctxNameInDb2 = fmt::format("{}_{}",rbctxNameInDb,k);
         boost::fusion::for_each( rbSpace->rbfunctionspaces(), SaveRbSpaceCtxComposite<Archive>( ar, rbctxNameInDb2, ctxRbAnyVec[k] ) );
     }
 }
@@ -10548,7 +10548,7 @@ loadRbSpaceCtx( TheRbSpaceType const& rbSpace, Archive & ar, std::string const& 
     ctxRbAny.resize( numberOfCtx );
     for ( int k=0;k<numberOfCtx;++k )
     {
-        std::string rbctxNameInDb2 = (boost::format("%1%_%2%")%rbctxNameInDb %k).str();
+        std::string rbctxNameInDb2 = fmt::format("{}_{}",rbctxNameInDb,k);
         int subspaceId = -1;
         ar & boost::serialization::make_nvp( (rbctxNameInDb2+"_spaceId").c_str(), subspaceId );
         boost::fusion::for_each( rbSpace->rbfunctionspaces(), LoadRbSpaceCtxComposite<Archive>( ar, rbctxNameInDb2, subspaceId, ctxRbAny[k] ) );
@@ -10679,7 +10679,7 @@ CRB<TruthModelType>::save( Archive & ar, const unsigned int version ) const
 
         for ( std::string const& eimName : rbSpaceContextEimNames )
         {
-            std::string rbctxNameInDb = (boost::format("rbSpaceContextEim_%1%")%eimName).str();
+            std::string rbctxNameInDb = fmt::format("rbSpaceContextEim_{}",eimName);
             Feel::detail::saveRbSpaceCtx( M_model->rBFunctionSpace(), ar, rbctxNameInDb, rbSpaceContextEim.find( eimName )->second );
         }
     }
@@ -10870,7 +10870,7 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
             std::map<std::string,std::vector<boost::any> > rbSpaceContextEim;
             for ( std::string const& eimName : rbSpaceContextEimNames )
             {
-                std::string rbctxNameInDb = (boost::format("rbSpaceContextEim_%1%")%eimName).str();
+                std::string rbctxNameInDb = fmt::format("rbSpaceContextEim_{}",eimName);
                 Feel::detail::loadRbSpaceCtx( M_model->rBFunctionSpace(), ar, rbctxNameInDb, rbSpaceContextEim[eimName] );
             }
             M_model->model()->setRbSpaceContextEim( rbSpaceContextEim );
@@ -10896,14 +10896,14 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
 
     for( int i = 0 ; i < M_N ; i++ )
     {
-        temp.setName( (boost::format( "fem-primal-%1%" ) % ( i ) ).str() );
+        temp.setName( fmt::format( "fem-primal-{}", i  );
         ar & BOOST_SERIALIZATION_NVP( temp );
         M_WN[i] = temp;
     }
 
     for( int i = 0 ; i < M_N ; i++ )
     {
-        temp.setName( (boost::format( "fem-dual-%1%" ) % ( i ) ).str() );
+        temp.setName( fmt::format( "fem-dual-{}", i ) );
         ar & BOOST_SERIALIZATION_NVP( temp );
         M_WNdu[i] = temp;
     }
@@ -10958,15 +10958,15 @@ CRB<TruthModelType>::generateSuperSampling()
 
     std::string file_name;
     if( all_proc_same_sampling )
-        file_name = ( boost::format("M_Xi_%1%_"+sampling_mode )% sampling_size ).str();
+        file_name = fmt::format("M_Xi_{}_{}", sampling_size, sampling_mode );
     else
-        file_name = ( boost::format("M_Xi_%1%_"+sampling_mode+"-proc%2%on%3%") % sampling_size %proc_number %total_proc ).str();
+        file_name = fmt::format("M_Xi_{}_{}-proc{}on{}", sampling_size, sampling_mode, proc_number, total_proc );
 
     std::ifstream file ( file_name );
 
     if ( !file )
     {
-        std::string supersamplingname =(boost::format("Dmu-%1%-generated-by-master-proc") %sampling_size ).str();
+        std::string supersamplingname =fmt::format("Dmu-{}-generated-by-master-proc",sampling_size );
         if( sampling_mode == "random" )
             this->M_Xi->randomize( sampling_size , all_proc_same_sampling, supersamplingname, false );
         else if( sampling_mode == "log-random" )
@@ -11001,7 +11001,7 @@ CRB<TruthModelType>::buildSampling()
     int N_equi = ioption(_prefix=M_prefix,_name="crb.use-equidistributed-WNmu");
     int N_random = ioption(_prefix=M_prefix,_name="crb.use-random-WNmu" );
 
-    std::string file_name = ( boost::format("SamplingWNmu") ).str();
+    std::string file_name = fmt::format("SamplingWNmu");
     std::ifstream file ( file_name );
 
     if ( use_predefined_WNmu ) // In this case we want to read the sampling
@@ -11598,11 +11598,11 @@ CRB<TruthModelType>::saveJson()
         ptree.add_child( "crbmodel", ptreeCrbModel );
 
         boost::property_tree::ptree ptreeReducedBasisSpace;
-        std::string meshFilename = (boost::format("%1%_mesh_p%2%.json")%this->name() %this->worldComm().size()).str();
+        std::string meshFilename = fmt::format("{}_mesh_p{}.json",this->name(),this->worldComm().size());
         ptreeReducedBasisSpace.add( "mesh-filename",meshFilename );
         ptreeReducedBasisSpace.add( "database-filename", M_elements_database.dbFilename() );
         // add functionspace file (useful when nproc offline != nproc online)
-        std::string functionspaceFilename = (boost::format("%1%_functionSpace_p%2%.json")%this->name() %this->worldComm().size()).str();
+        std::string functionspaceFilename = fmt::format("{}_functionSpace_p{}.json", this->name(), this->worldComm().size());
         ptreeReducedBasisSpace.add( "functionspace-filename", functionspaceFilename );
         
         ptreeReducedBasisSpace.add( "dimension", M_N );
@@ -11640,8 +11640,7 @@ CRB<TruthModelType>::saveJson()
                 M_scmM->updatePropertyTree( ptreeParameterScmM );
                 ptree.add_child( "scmM", ptreeParameterScmM );
             }
-        }
-        std::cout << "to write json" << std::endl;
+        }        
         write_json( filenameJson, ptree );
     }
 }
@@ -11712,7 +11711,6 @@ CRB<TruthModelType>::saveDB()
         }
     }
     saveJson();
-    std::cout << "done save json" << std::endl;
 }
 
 template<typename TruthModelType>
