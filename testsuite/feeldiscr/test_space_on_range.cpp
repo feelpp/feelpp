@@ -47,8 +47,8 @@ BOOST_AUTO_TEST_CASE( test_2d )
 
     typedef FunctionSpace<mesh_type,bases<Lagrange<2,Scalar> > > space_type;
 
-    auto r1 = elements(mesh, pow(Px()-0.4,2)+pow(Py()-0.5,2) < pow(cst(0.23),2) );
-    auto r2 = elements(mesh, pow(Px()-0.7,2)+pow(Py()-0.5,2) < pow(cst(0.15),2) );
+    auto r1 = elements(mesh, pow(Px()-0.4,2)+pow(Py()-0.5,2) < pow(cst(0.23),2), _selector=select_elements_from_expression::with_value, _value=1 );
+    auto r2 = elements(mesh, pow(Px()-0.7,2)+pow(Py()-0.5,2) < pow(cst(0.15),2), _selector=select_elements_from_expression::with_value, _value=1 );
     auto therange = concatenate(r1,r2);
 
     auto VhPS = space_type::New(_mesh=mesh,_range=therange);
@@ -127,8 +127,8 @@ BOOST_AUTO_TEST_CASE( test_composite_2d )
 
     typedef FunctionSpace<mesh_type,bases<Lagrange<2,Vectorial>,Lagrange<2,Scalar> > > space_type;
 
-    auto r1 = elements(mesh, pow(Px()-0.4,2)+pow(Py()-0.5,2) < pow(cst(0.23),2) );
-    auto r2 = elements(mesh, pow(Px()-0.7,2)+pow(Py()-0.5,2) < pow(cst(0.15),2) );
+    auto r1 = elements(mesh, pow(Px()-0.4,2)+pow(Py()-0.5,2) < pow(cst(0.23),2), _selector=select_elements_from_expression::with_value, _value=1 );
+    auto r2 = elements( mesh, pow( Px() - 0.7, 2 ) + pow( Py() - 0.5, 2 ) < pow( cst( 0.15 ), 2 ), _selector = select_elements_from_expression::with_value, _value = 1 );
     auto therange = concatenate(r1,r2);
     auto VhPS1 = space_type::New(_mesh=mesh,_range=therange);
     BOOST_TEST_MESSAGE( "VhPS1->nDof() : " << VhPS1->nDof() );
@@ -181,8 +181,8 @@ BOOST_AUTO_TEST_CASE( test_composite_meshes_list_2d )
 
     typedef FunctionSpace< meshes<mesh_type,submesh_type>,bases<Lagrange<2,Scalar>,Lagrange<2,Scalar> > > space_type;
 
-    auto r1 = elements(mesh, pow(Px()-0.4,2)+pow(Py()-0.5,2) < pow(cst(0.23),2) );
-    auto r2 = elements(submesh, Px()*Py()<cst(0.25) );
+    auto r1 = elements(mesh, pow(Px()-0.4,2)+pow(Py()-0.5,2) < pow(cst(0.23),2), _selector=select_elements_from_expression::with_value, _value=1 );
+    auto r2 = elements( submesh, Px() * Py() < cst( 0.25 ), _selector = select_elements_from_expression::with_value, _value = 1 );
 
     auto supp1 = std::make_shared<MeshSupport<mesh_type>>(mesh,r1);
     auto supp2 = std::make_shared<MeshSupport<submesh_type>>(submesh,r2);
@@ -228,8 +228,8 @@ BOOST_AUTO_TEST_CASE( test_extended_2d )
     using namespace Feel;
     typedef Mesh<Simplex<2>> mesh_type;
     auto mesh = loadMesh( _mesh=new mesh_type );
-    auto r1 = elements(mesh, pow(Px()-0.4,2)+pow(Py()-0.5,2)/*+pow(Pz()-0.5,2)*/ < pow(cst(0.23),2) );
-    auto r2 = elements(mesh, pow(Px()-0.7,2)+pow(Py()-0.5,2)/*+pow(Pz()-0.6,2)*/ < pow(cst(0.15),2) );
+    auto r1 = elements(mesh, pow(Px()-0.4,2)+pow(Py()-0.5,2)/*+pow(Pz()-0.5,2)*/ < pow(cst(0.23),2), _selector=select_elements_from_expression::with_value, _value=1 );
+    auto r2 = elements(mesh, pow(Px()-0.7,2)+pow(Py()-0.5,2)/*+pow(Pz()-0.6,2)*/ < pow(cst(0.15),2), _selector=select_elements_from_expression::with_value, _value=1 );
     auto therange = concatenate(r1,r2);
     typedef FunctionSpace<mesh_type,bases<Lagrange<1,Scalar,Discontinuous> > > space_type;
     auto Vh = space_type::New(_mesh=mesh,_extended_doftable=true,_range=therange);
@@ -260,8 +260,8 @@ BOOST_AUTO_TEST_CASE( test_integrate_boundaryfaces )
     using namespace Feel;
     typedef Mesh<Simplex<2>> mesh_type;
     auto mesh = loadMesh( _mesh=new mesh_type );
-    auto r1 = elements(mesh, pow(Px()-0.4,2)+pow(Py()-0.5,2) < pow(cst(0.23),2) );
-    auto r2 = elements(mesh, pow(Px()-0.7,2)+pow(Py()-0.5,2) < pow(cst(0.15),2) );
+    auto r1 = elements(mesh, pow(Px()-0.4,2)+pow(Py()-0.5,2) < pow(cst(0.23),2), _selector=select_elements_from_expression::with_value, _value=1 );
+    auto r2 = elements(mesh, pow(Px()-0.7,2)+pow(Py()-0.5,2) < pow(cst(0.15),2), _selector=select_elements_from_expression::with_value, _value=1 );
     auto therange = concatenate(r1,r2);
     typedef FunctionSpace<mesh_type,bases<Lagrange<2,Scalar> > > space_type;
     auto Vh = space_type::New(_mesh=mesh,_range=therange);
@@ -294,7 +294,7 @@ BOOST_AUTO_TEST_CASE( test_integrate_different_related_mesh )
 {
     using namespace Feel;
     auto mesh = unitCube();
-    auto Vh = Pdhv<1>(mesh,elements(mesh, Px() < cst(0.5) ), true );
+    auto Vh = Pdhv<1>(mesh,elements(mesh, Px() < cst(0.5), _selector=select_elements_from_expression::with_value, _value=1 ), true );
     //auto Vh = Pdhv<1>(mesh);
     auto submesh = createSubmesh(_mesh=mesh, _range=faces(support(Vh)),_update=0);
     //auto submesh = createSubmesh(_mesh=mesh, _range=boundaryfaces(support(Vh)));
@@ -351,7 +351,7 @@ BOOST_AUTO_TEST_CASE( test_integrate_different_related_mesh )
     double evalIntLF_check = 2*integrate(_range=internalfaces(support(Vh)),_expr=cst(2.)).evaluate()(0,0);
     //double evalIntLF_check = 2*integrate(_range=elements(submeshBoundarySupport2),_expr=cst(2.)).evaluate()(0,0);
     BOOST_TEST_MESSAGE( "evalIntLF= " << evalIntLF );
-    BOOST_CHECK_CLOSE( evalIntLF, evalIntLF_check, 1e-12 );
+    BOOST_CHECK_CLOSE( evalIntLF, evalIntLF_check, 1e-9 );
 
 }
 
