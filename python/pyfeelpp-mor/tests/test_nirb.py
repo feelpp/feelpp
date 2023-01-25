@@ -38,7 +38,7 @@ def run_offline(model_path, rect, greedy):
         _,_,_ = nirb_off.initProblemGreedy(100, 1e-5, Nmax=nbSnap, computeCoarse=True, samplingMode="random")
     else:
         _ = nirb_off.initProblem(nbSnap)
-    nirb_off.generateReducedBasis(regulParam=1.e-10)
+    RIC = nirb_off.generateReducedBasis(regulParam=1.e-10)
 
     tolortho =1.e-8
     nirb_off.orthonormalizeL2(tol=tolortho)
