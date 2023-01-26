@@ -53,11 +53,10 @@ namespace Feel
         using element_ptr_t = typename space_t::element_ptrtype;
         using elementdisc_ptr_t = typename spacedisc_t::element_ptrtype;
 
-        RHT(nl::json specs, nl::json j_viewfactor)
+        RHT(nl::json specs)
         {
             // Assign the json structures to the members of the class
-            this->specs=specs;
-            this->j_viewfactor=j_viewfactor;
+            this->specs=specs;            
         }    
 
         void init();
@@ -83,6 +82,9 @@ namespace Feel
         void build_M();
         void execute();
         void computeVF_and_save();
+        void saveVF(std::string cavity_name,const Eigen::Ref<const Eigen::MatrixXd>&  M);
+        void loadVF(std::string cavity_name,std::string filename);
+        void computeVF(std::string cavity_name,std::string filename);
         void checkResults();
 
         struct TandQ
@@ -108,15 +110,17 @@ namespace Feel
         spacevect_ptr_t M_Xhvec;
         spacedisc_ptr_t M_Xhd0;
         spacedisc_interm_ptr_t M_Xhd1;
+        std::map< std::string, spacedisc_ptr_t > M_Xhd0_map;
+        std::map< std::string, spacedisc_interm_ptr_t > M_Xhd1_map;
         mesh_ptr_t M_mesh;
-        mesh_trace_ptr_t M_surface_submesh;
-        std::vector<std::string> M_markers_list_vf;        
+        std::map< std::string, mesh_trace_ptr_t> M_surface_submesh_map;
+        std::map< std::string, std::vector<std::string> > M_markers_map;   
         bdf_ptrtype M_bdf;
         TandQ M_currentTempAndFlux;        
 
-        sparse_matrix_ptrtype M_M; // matrix for problem on multiple irradiating surfaces
-        Eigen::MatrixXd M_vf_matrix; // matrix storing view factors
-        vector_ptrtype M_D,M_N; // vectors for problem on multiple irradiating surfaces
+        sparse_matrix_ptrtype M_M, M_M_block; // matrix for problem on multiple irradiating surfaces
+        std::map< std::string, Eigen::MatrixXd > M_matrix_vf_map; // matrix storing view factors
+        vector_ptrtype M_D, M_N, M_D_block,M_N_block; // vectors for problem on multiple irradiating surfaces
 
         sparse_matrix_ptrtype M_a,M_at; // matrices for heat transfer PDE
         vector_ptrtype M_l,M_lt; // right-hand sides for heat transfer PDE
@@ -131,7 +135,6 @@ namespace Feel
         Feel::po::options_description options( "rht options" );
         options.add_options()
             ( "specs", Feel::po::value<std::string>(),"json spec file for rht" )
-            ("viewfactor", Feel::po::value<std::string>(),"json spec file for viewfactor computation" )
             ( "steady", Feel::po::value<bool>()->default_value( 1 ),"if 1: steady else unsteady" )
             ("deactivate-exporters",Feel::po::value<bool>()->default_value( false ),"deactivate exporters");
         options.add( Feel::backend_options("interp1"));
@@ -305,7 +308,7 @@ namespace Feel
                 sigma.setParameterValues({{"sigma",specs["/Parameters/sigma"_json_pointer].get<double>()}});
 
                 // Recover the emissivity epsilon of the coating material associated to the marked face
-                for ( std::string mark :  value.at("markers") )
+                for ( std::string mark :  M_markers_map[bc] )
                 {
                     auto done = 0;
                     for ( auto& [key, coat] : specs["/Coating"_json_pointer].items() )
@@ -339,7 +342,7 @@ namespace Feel
 
                 sigma.setParameterValues({{"sigma",specs["/Parameters/sigma"_json_pointer].get<double>()}});
                 
-                for ( std::string mark :  value.at("markers") )
+                for ( std::string mark :  M_markers_map[bc] )
                 {
                     auto done = 0;
                     for ( auto& [key, coat] : specs["/Coating"_json_pointer].items() )
@@ -370,131 +373,196 @@ namespace Feel
         at.solve( _rhs = lt, _solution = T_sol,_name="heatEq",_rebuild=true );
 
         M_currentTempAndFlux.setT(T_sol);
-#if 0
-        auto qout = M_Xh->elementPtr();
-
-        // Compute the radiative flux over the boundary of the emitting cavities, in order to use it later for
-        // radiation
-        for ( auto [key, material] : specs["/Models/heat/materials"_json_pointer].items() )
-        {
-            LOG( INFO ) << fmt::format( "material {}", material );
-            std::string mat = fmt::format( "/Materials/{}/k", material.get<std::string>() );
-            for ( auto& [key2, coat] : specs["/Coating"_json_pointer].items() )
-            {                
-                if(key2==material.get<std::string>() )
-                {
-                    for ( std::string markcoat : coat.at("markers") )
-                    {             
-                        auto k = specs[nl::json::json_pointer( mat )].get<std::string>();
-                        // compute the radiative flux as -K*grad(T)*N()
-                        qout->on(_range=markedfaces(M_mesh,markcoat),_expr=-expr(k)*gradv(T)*N()); 
-                        //qout->on(_range=markedfaces(M_mesh,markcoat),_expr=-gradv(T)*N()); 
-                    }
-                }
-            }            
-        }
-        M_currentTempAndFlux.setq(qout);
-#endif
-        // auto e_opInterp = exporter(_mesh=M_mesh,_name="Heat");
-        // e_opInterp->addRegions();
-        // e_opInterp->add("q",idv(M_currentTempAndFlux.q()),boundaryfaces(M_mesh));
-        // e_opInterp->add("qout",idv(qout),boundaryfaces(M_mesh));
-        // e_opInterp->add("T",idv(T));
-        // e_opInterp->add("T",idv(T_sol));
-        // e_opInterp->save();
 
     } // end RHT<Dim,Order>::solveHeatEquation
 
+// Save and store view factor matrix
+template<int Dim, int Order>
+void RHT<Dim,Order>::saveVF(std::string cavity_name,const Eigen::Ref<const Eigen::MatrixXd>& M)
+{
+    //Store VF matrix in M_matrix_vf_map
+    int i_mark=0;
+    int j_mark=0;
+    auto markers_list_vf=M_markers_map[cavity_name];
+    auto n_markers=markers_list_vf.size();
+    Eigen::MatrixXd matrix_vf(n_markers,n_markers);
+    for(auto & marker1 : markers_list_vf)
+    {
+        // Compute the first index to place view factors in the vf matrix
+        int index1;
+        auto it = std::find(markers_list_vf.begin(),markers_list_vf.end(),marker1);
+        if( it != markers_list_vf.end())
+        {
+            index1= it -  markers_list_vf.begin();
+        }
+        else
+        {
+            std::cout << fmt::format("Marker {} not in the list",marker1)<<std::endl;
+            break;
+        }
+
+        for(auto & marker2 :  markers_list_vf)
+        {
+            // Compute the second index to place view factors in the vf matrix
+            int index2;
+            auto it = std::find(markers_list_vf.begin(),markers_list_vf.end(),marker2);
+            if( it != markers_list_vf.end())
+            {
+                index2= it -  markers_list_vf.begin();
+            }
+            else
+            {
+                std::cout << fmt::format("Marker {} not in the list",marker1)<<std::endl;
+                break;
+            }                   
+            // Dispatch the newly computed view factors to the matrix from before and save this matrix
+            matrix_vf(index1,index2)=M(i_mark,j_mark);
+
+            j_mark+=1;
+        }
+        j_mark=0;
+        i_mark+=1;
+    }
+    M_matrix_vf_map.insert(std::make_pair(cavity_name,matrix_vf));
+
+    // Save the matrix into a CSV file
+    std::ofstream matrix_file;
+    std::string matrix_filename="VF_Matrix_"+cavity_name+".csv";
+    matrix_file.open(matrix_filename,std::ios_base::out);
+    for(int i=0; i<markers_list_vf.size(); i++)
+    {
+        if(i==0)
+        {
+            matrix_file << " X,";
+            for(int j=0; j<markers_list_vf.size()-1; j++)
+            {
+                matrix_file << markers_list_vf[j] << ",";
+            }
+            matrix_file << markers_list_vf[markers_list_vf.size()-1] << "\n";
+        }
+        if(markers_list_vf.size()==1)
+            matrix_file << markers_list_vf[i] << ",";
+        else
+        {
+            for(int j=0; j<markers_list_vf.size()-1; j++)
+            {
+                if(j==0)
+                {                    
+                    matrix_file << markers_list_vf[i] << ",";                                 
+                }
+                matrix_file << matrix_vf(i,j) << ",";
+            }        
+        }
+        matrix_file << matrix_vf(i,markers_list_vf.size()-1) << "\n";
+    }
+    matrix_file.close();
+    LOG(INFO) << fmt::format("View factor matrix has been saved and stored") << std::endl;
+}
+
+// Load view factor matrix
+template<int Dim, int Order>
+void RHT<Dim,Order>::loadVF(std::string cavity_name, std::string filename)
+{
+    std::fstream f;
+    f.open(Environment::expand( filename));
+    if(!f.is_open())
+    {
+        std::cout << "file not opened" << std::endl;
+    }
+    std::vector<std::string> markers;
+    std::string line, entry, temp;
+    
+    // Read first row of the matrix to get the order and number of the markers
+    //f >> temp;
+    std::getline(f, line,'\n');
+    std::stringstream s(line); 
+    int number_markers=0;
+    while (std::getline(s, entry, ','))
+    {
+        number_markers++;
+    }
+    number_markers -= 1; //first column contains no name
+
+    // Read the VF matrix CSV and markers
+    // The first column contains always the marker names
+    bool is_marker=true;
+    int row_mat=0;
+    int col_mat=0;
+    Eigen::MatrixXd matrix_vf(number_markers,number_markers);
+    while (std::getline(f, line,'\n')) 
+    {     
+        std::stringstream s(line);        
+        while (std::getline(s, entry, ',')) {    
+            if(is_marker)
+            {
+                markers.push_back(entry);
+                is_marker=false;
+            }
+            else
+            {
+                matrix_vf(row_mat,col_mat) = stod(entry);
+                col_mat+=1;   
+            }                
+        }
+        row_mat+=1;
+        col_mat=0;
+        is_marker=true;
+
+    }
+    M_markers_map.insert(std::make_pair(cavity_name,markers));
+    M_matrix_vf_map.insert(std::make_pair(cavity_name,matrix_vf));
+}
+template<int Dim, int Order>
+void RHT<Dim,Order>::computeVF(std::string cavity_name,std::string filename)
+{
+    auto jsonfile = removeComments( readFromFile( Environment::expand( filename ) ) );
+    std::istringstream astr( jsonfile );
+    json json_vf = json::parse( astr );    
+
+    auto markers = json_vf["viewfactor"]["markers"];    
+    M_markers_map.insert(std::make_pair(cavity_name,markers));
+
+    if(json_vf["viewfactor"]["type"]=="UnobstructedPlanar")
+    {
+        UnobstructedPlanarViewFactor<mesh_t> upvf( M_mesh, json_vf );                
+        upvf.compute();
+        std::cout << upvf.viewFactors() << std::endl;
+        saveVF(cavity_name,upvf.viewFactors());
+    }
+    else if(json_vf["viewfactor"]["type"]=="Raytracing")
+    {
+        std::cout << "Raytracing not implemented at the moment" <<std::endl;
+    }
+}
 // Compute the view factor matrix; for the moment, only unobstructed view factor computation
 // via numerical integration
     template<int Dim, int Order>
     void RHT<Dim,Order>::computeVF_and_save()
-    {
+    {        
         if ( specs["/BoundaryConditions/heat"_json_pointer].contains( "radiative_enclosure_heat_flux" ) )
         {            
-            // Create a matrix of size Nmarkers*Nmarkers to store the viewfactors. The correspondence 
-            // Matrix index -> markerName is done according to the position of the marker in the list of markers
-            M_vf_matrix.resize(M_markers_list_vf.size(),M_markers_list_vf.size());
-            M_vf_matrix.setZero();
             // Loop over cavities: 
             for ( auto& [bc, value] : specs["/BoundaryConditions/heat/radiative_enclosure_heat_flux"_json_pointer].items() )
-            {                  
-                    auto markers_vf = value["viewfactors"]["markers"];
-
-                    // Create a json file from the j_viewfactors json, and fill it with the markers of each cavity
-                    nl::json json_vf = this->j_viewfactor;                 
-                    json_vf["viewfactor"]["markers"]=markers_vf;
-
-                    UnobstructedPlanarViewFactor<mesh_t> upvf( M_mesh, json_vf );                
-                    upvf.compute();    
-                    int i_mark=0;
-                    int j_mark=0;
-                    for(auto & marker1 : json_vf["viewfactor"]["markers"])
-                    {
-                        // Compute the first index to place view factors in the vf matrix
-                        int index1;
-                        auto it = std::find(M_markers_list_vf.begin(),M_markers_list_vf.end(),marker1);
-                        if( it != M_markers_list_vf.end())
-                        {
-                            index1= it -  M_markers_list_vf.begin();
-                        }
-                        else
-                        {
-                            std::cout << fmt::format("Marker {} not in the list",marker1)<<std::endl;
-                            break;
-                        }
-
-                        for(auto & marker2 : json_vf["viewfactor"]["markers"])
-                        {
-                            // Compute the second index to place view factors in the vf matrix
-                            int index2;
-                            auto it = std::find(M_markers_list_vf.begin(),M_markers_list_vf.end(),marker2);
-                            if( it != M_markers_list_vf.end())
-                            {
-                                index2= it -  M_markers_list_vf.begin();
-                            }
-                            else
-                            {
-                                std::cout << fmt::format("Marker {} not in the list",marker1)<<std::endl;
-                                break;
-                            }
-
-                            // Dispatch the newly computed view factors to the matrix from before and save this matrix
-                            M_vf_matrix(index1,index2)=upvf.viewFactors()(i_mark,j_mark);
-
-                            j_mark+=1;
-                        }
-                        j_mark=0;
-                        i_mark+=1;
-                    }                                                                                  
-            }
-        }
-        std::ofstream matrix_file;
-        matrix_file.open("VF_Matrix.csv",std::ios_base::out);
-        for(int i=0; i<M_markers_list_vf.size(); i++)
-        {
-            if(i==0)
             {
-                matrix_file << " X ,";
-                for(int j=0; j<M_markers_list_vf.size()-1; j++)
+                auto vf_status = value["viewfactors"]["status"];                
+                if(vf_status=="load")
                 {
-                    matrix_file << M_markers_list_vf[j] << ",";
+                    auto vf_filename = value["viewfactors"]["filename"];
+                    fmt::format("Loading view factors for {} from {}",bc,vf_filename);
+                    loadVF(bc,vf_filename);
                 }
-                matrix_file << M_markers_list_vf[M_markers_list_vf.size()-1] << "\n";
-            }
-            for(int j=0; j<M_markers_list_vf.size()-1; j++)
-            {
-                if(j==0)
-                {                    
-                    matrix_file << M_markers_list_vf[i] << ",";                                 
+                else if(vf_status=="compute")
+                {
+                    auto vf_filename = value["viewfactors"]["filename"];
+                    fmt::format("Computing view factors for {} from {}",bc,vf_filename);                    
+                    computeVF(bc,vf_filename);
                 }
-                matrix_file << M_vf_matrix(i,j) << ",";
+                else
+                {
+                    std::cout << "View factor status not correct" << std::endl;
+                }
             }
-            matrix_file << M_vf_matrix(i,M_markers_list_vf.size()-1) << "\n";
         }
-        matrix_file.close();
-        LOG(INFO) << fmt::format("View factor matrix has been computed") << std::endl;
-
     } // end RHT<Dim,Order>::computeVF_and_save
 
 
@@ -506,23 +574,42 @@ namespace Feel
         M_mesh = loadMesh( _mesh = new mesh_t, _filename = this->specs["/Meshes/heat/Import/filename"_json_pointer].template get<std::string>() );
         M_Xh = space_t::New(_mesh=M_mesh);             
         M_Xhvec = spacevect_t::New(_mesh=M_mesh);  
-        M_markers_list_vf = this->j_viewfactor["viewfactor"]["markers"].template get<std::vector<std::string>>() ;
         tic();
         this->computeVF_and_save();        
-        toc("Computation of view factors");
-        M_surface_submesh = createSubmesh(_mesh=M_mesh,_range=markedfaces(M_mesh,M_markers_list_vf),_update=0);
-        if(M_mesh->isParentMeshOf(M_surface_submesh))
-            LOG(INFO) << fmt::format("M_mesh is parent mesh of M_surface_submesh")<< std::endl;
+        toc("Computation of view factors");  
+              
+        int n_cavities = M_markers_map.size();
+        BlocksBaseVector<double> myblock_D(n_cavities);
+        BlocksBaseVector<double> myblock_N(n_cavities);
+        BlocksBaseSparseMatrix<double> myblock_M(n_cavities,n_cavities);
 
-        // Create a discontinuous space, linear per face, over the view-factor markers
-        M_Xhd0 = Pdh<Order-1>(M_surface_submesh,true);
-        M_Xhd1 = Pdh<Order>(M_surface_submesh,true);
+        int i =0;
+        for(const auto& [cavity_name,markers]: M_markers_map)
+        {            
+            auto cavity_submesh = createSubmesh(_mesh=M_mesh,_range=markedfaces(M_mesh,markers),_update=0);
+            M_surface_submesh_map.insert(std::make_pair(cavity_name,cavity_submesh));
+            if(M_mesh->isParentMeshOf(cavity_submesh))
+                LOG(INFO) << fmt::format("M_mesh is parent mesh of {} submesh",cavity_name)<< std::endl;
+            
+            // Create a discontinuous space, linear per face, over the view-factor markers
+            M_Xhd0 = Pdh<Order-1>(cavity_submesh,true);
+            M_Xhd1 = Pdh<Order>(cavity_submesh,true);
+            M_Xhd0_map.insert(std::make_pair(cavity_name,M_Xhd0));
+            M_Xhd1_map.insert(std::make_pair(cavity_name,M_Xhd1));
 
-        // Create the matrices and vectors for the radiative problem with multiple surfaces
-        M_D = backend()->newVector(M_Xhd0);
-        M_N = backend()->newVector(M_Xhd0); 
-        auto mat_graph = stencil( _test=M_Xhd0,_trial=M_Xhd0)->graph();
-        M_M = backend()->newMatrix(0,0,0,0,mat_graph);      
+            M_D = backend()->newVector(M_Xhd0);
+            M_N = backend()->newVector(M_Xhd0); 
+            auto mat_graph = stencil( _test=M_Xhd0,_trial=M_Xhd0)->graph();
+            M_M = backend()->newMatrix(0,0,0,0,mat_graph);  
+            myblock_D(i,0)=M_D;
+            myblock_N(i,0)=M_N; 
+            myblock_M(i,i)=M_M;
+            
+            i++;
+        }       
+        M_M_block = backend()->newBlockMatrix(_block=myblock_M);
+        M_N_block = backend()->newBlockVector(_block=myblock_N);
+        M_D_block = backend()->newBlockVector(_block=myblock_D);
 
         // Create the bdf structure
         M_bdf = bdf( _space = M_Xh );
@@ -540,7 +627,7 @@ namespace Feel
                 T->on(_range=markedelements(M_mesh,mark),_expr=T_init);
             }
         }
-        if(!boption("deactivate-exporters"))
+        if(!boption(_name="deactivate-exporters"))
         {
             auto e_opInterp = exporter(_mesh=M_mesh,_name="init");
             e_opInterp->addRegions();
@@ -568,16 +655,15 @@ namespace Feel
     void RHT<Dim,Order>::build_M()
     {       
         auto v = M_Xhd0->element();
-        auto u = M_Xhd0->element();       
-
-        auto M_M_form = form2( _trial=M_Xhd0, _test = M_Xhd0,_matrix=M_M,_backend=backend(_name="Modesteq",_rebuild=true) );
+        auto u = M_Xhd0->element();      
 
         // Insert terms of the form 1/epsilon on the diagonal of the emitting surfaces
         if ( specs["/BoundaryConditions/heat"_json_pointer].contains( "radiative_enclosure_heat_flux" ) )
         {
+            int i_cavity = 0;
             for ( auto& [bc, value] : specs["/BoundaryConditions/heat/radiative_enclosure_heat_flux"_json_pointer].items() )
             {
-                for ( std::string mark :  value.at("markers") )
+                for ( std::string mark :  M_markers_map[bc] )
                 {
                     auto done = 0;
                     // Loop over the "Coating" section where epsilon is stored
@@ -588,8 +674,12 @@ namespace Feel
                             if ( mark == markcoat )
                             {                    
                                 auto epsilon = coat["epsilon"].get<std::string>();
-                                M_M_form += integrate( _range= markedfaces(M_mesh,mark),
-                                    _expr = cst(1.)/expr(epsilon)*inner(idt(u),id(v)) );                                                  
+                                
+                                form2(_trial=M_Xhd0_map[bc],_test=M_Xhd0_map[bc],_matrix=M_M_block,
+                                        _rowstart=i_cavity, _colstart=i_cavity) += 
+                                            integrate( _range= markedfaces(M_mesh,mark),
+                                                 _expr = cst(1.)/expr(epsilon)*inner(idt(u),id(v)) );       
+
                                 done = 1;
                                 break;
                             }
@@ -597,6 +687,7 @@ namespace Feel
                         if ( done ){ break; }
                     }
                 }
+                i_cavity++;
             }            
         }
     } // RHT<Dim,Order>::build_M
@@ -605,51 +696,47 @@ namespace Feel
 // emitting surfaces
     template<int Dim, int Order>
     void RHT<Dim,Order>::rebuild_N(  element_ptr_t flux )
-    {         
-        M_N->zero();
-        auto M_N_form = form1( _test = M_Xhd0, _vector=M_N );
-
-        auto v = M_Xhd0->element();
-        auto u = M_Xhd0->element();    
-        
-        auto flux_interp = M_Xhd0->element();
-        auto flux_interp_interm = M_Xhd1->element();
-        auto vf_field = M_Xhd0->element();                
-        
-        // Interpolate the continous flux onto the discontinuous space
-        auto opI_contToDisc = opInterpolation(_domainSpace=M_Xh,
-                                    _imageSpace=M_Xhd1,
-                                    _backend=backend(_name="interp1",_rebuild=true),
-                                    _type=InterpolationConforme());
-        auto opI_1to0 = opInterpolation(_domainSpace=M_Xhd1,
-                                    _imageSpace=M_Xhd0,
-                                    _backend=backend(_name="interp2",_rebuild=true),
-                                    _type=InterpolationConforme());     
-
-        opI_contToDisc->apply(*flux,flux_interp_interm);                                                       
-        opI_1to0->apply( flux_interp_interm, flux_interp );
-       
-        int i_mark=0; 
-        int j_mark=0;
-
+    {
+        M_N_block->zero();   
+        int i_cavity=0;
         // Insert terms of the form  \int_bdry (1/epsilon-1)*q(x')dF(x,x') in the vector N
         if ( specs["/BoundaryConditions/heat"_json_pointer].contains( "radiative_enclosure_heat_flux" ) )
         {
             for ( auto& [bc, value] : specs["/BoundaryConditions/heat/radiative_enclosure_heat_flux"_json_pointer].items() )
-            {                
-                for ( std::string mark :  value.at("markers") ) // Loop on index i
+            {   
+                auto v = M_Xhd0_map[bc]->element();
+                auto u = M_Xhd0_map[bc]->element();    
+                
+                auto flux_interp = M_Xhd0_map[bc]->element();
+                auto flux_interp_interm = M_Xhd1_map[bc]->element();
+                auto vf_field = M_Xhd0_map[bc]->element();                
+                // Interpolate the continous flux onto the discontinuous space
+                auto opI_contToDisc = opInterpolation(_domainSpace=M_Xh,
+                                            _imageSpace=M_Xhd1_map[bc],
+                                            _backend=backend(_name="interp1",_rebuild=true),
+                                            _type=InterpolationConforme());
+                auto opI_1to0 = opInterpolation(_domainSpace=M_Xhd1_map[bc],
+                                            _imageSpace=M_Xhd0_map[bc],
+                                            _backend=backend(_name="interp2",_rebuild=true),
+                                            _type=InterpolationConforme());     
+
+                opI_contToDisc->apply(*flux,flux_interp_interm);                                                       
+                opI_1to0->apply( flux_interp_interm, flux_interp );
+                int i_mark=0; 
+                int j_mark=0;        
+                auto cavity_markers = M_markers_map[bc];   
+                for ( std::string mark :  cavity_markers ) // Loop on index i
                 {
-                    //std::cout << "For marker " << mark << std::endl;
-                    for ( std::string mark2 :  value.at("markers") ) // Loop on index j
+                    //std::cout << "For marker " << mark << std::endl;                    
+                    for ( std::string mark2 :  cavity_markers ) // Loop on index j
                     {
                         // Compute the index relative to marker mark
-                        auto it = std::find(M_markers_list_vf.begin(),M_markers_list_vf.end(),mark);                    
-                        i_mark = it - M_markers_list_vf.begin();
+                        auto it = std::find(cavity_markers.begin(),cavity_markers.end(),mark);                    
+                        i_mark = it - cavity_markers.begin();
                         // Compute the index relative to marker mark2
-                        auto jt = std::find(M_markers_list_vf.begin(),M_markers_list_vf.end(),mark2);                    
-                        j_mark = jt - M_markers_list_vf.begin();
+                        auto jt = std::find(cavity_markers.begin(),cavity_markers.end(),mark2);                    
+                        j_mark = jt - cavity_markers.begin();
                         //std::cout << fmt::format("we add a contribution from index {} whose view factor is {}",j_mark,M_vf_matrix(i_mark,j_mark))<< std::endl;
-                        
                         auto done = 0;
                         for ( auto& [key, coat] : specs["/Coating"_json_pointer].items() )
                         {                        
@@ -659,22 +746,26 @@ namespace Feel
                                 if ( mark2 == markcoat )
                                 {                    
                                     auto epsilon_mark2 = coat["epsilon"].get<std::string>();
-                                    
                                     //std::cout << fmt::format("we add a contribution from marker {} whose emissivity is {}",markcoat,epsilon_mark2)<< std::endl;
-                                    vf_field.on(_range=markedfaces(M_mesh,mark2),_expr=cst(M_vf_matrix(i_mark,j_mark)));
-
-                                    // auto q_scal_vf = integrate(_range=markedfaces(M_mesh,mark2), _expr=inner(cst(0.4)*idv(M_currentTempAndFlux.q())+cst(0.6)*idv(flux),idv(vf_field))).evaluate()(0,0);
+                                    vf_field.on(_range=markedfaces(M_mesh,mark2),_expr=cst(M_matrix_vf_map[bc](i_mark,j_mark)));
+                                    
                                     auto q_scal_vf = integrate(_range=markedfaces(M_mesh,mark2), _expr=inner(idv(flux),idv(vf_field))).evaluate()(0,0);
                                     auto measure_mark2 = integrate( _range=markedfaces(M_mesh,mark2),_expr= cst(1.) ).evaluate()(0,0);
-                                    M_N_form += integrate( _range=markedfaces(M_mesh,mark),
+                                    
+                                    form1(_test=M_Xhd0_map[bc],_vector=M_N_block,
+                                        _rowstart=i_cavity) += integrate( _range=markedfaces(M_mesh,mark),
                                         _expr = (cst(1.)/expr(epsilon_mark2)-cst(1.))/cst(measure_mark2) * cst(q_scal_vf) * id(v) );
+
                                     done = 1;
+
+
                                 }
                             }
                             if ( done ){ break; }
                         }  
                     }                  
                 }
+                i_cavity++;
             }
         }
     } // end RHT<Dim,Order>::rebuild_N
@@ -685,82 +776,106 @@ namespace Feel
     template<int Dim, int Order>
     void RHT<Dim,Order>::rebuild_D(  element_ptr_t T )
     {           
-        M_D->zero();
-        auto M_D_form = form1(_test = M_Xhd0, _vector=M_D);        
-        auto v = M_Xhd0->element();
-        auto u = M_Xhd0->element();    
-        
-        auto T4_interp = M_Xhd0->element();
-        auto T4_interp_interm = M_Xhd1->element();
-        auto vf_field = M_Xhd0->element();
-
-        // Interpolate the continous temperature onto the discontinuous space    
-        auto opI_interm = opInterpolation(_domainSpace=M_Xh,
-                                    _imageSpace=M_Xhd1,                                    
-                                    _backend=backend(_name="interp1",_rebuild=true),
-                                    _type=InterpolationConforme());
-        auto opI_1to0 = opInterpolation(_domainSpace=M_Xhd1,
-                                    _imageSpace=M_Xhd0,                                    
-                                    _backend=backend(_name="interp2",_rebuild=true),
-                                    _type=InterpolationConforme());                                    
-        auto field = M_Xh->element();
-        field.on(_range=elements(M_mesh),_expr=idv(T)*idv(T)*idv(T)*idv(T));
-        opI_interm->apply(field,T4_interp_interm);
-        opI_1to0->apply( T4_interp_interm,T4_interp);
-
-        //  Loop over the emissivities and build the D right-hand side
-        // Integrate term of the form sigma*T^4 - \int_bdry (sigma*T^4(x') dF(x,x'))
-        int i_mark=0; 
-        int j_mark=0;
+        // M_D->zero();
+        M_D_block->zero();  
+        int i_cavity=0;      
         if ( specs["/BoundaryConditions/heat"_json_pointer].contains( "radiative_enclosure_heat_flux" ) )
         {
             for ( auto& [bc, value] : specs["/BoundaryConditions/heat/radiative_enclosure_heat_flux"_json_pointer].items() )
-            {                
+            {      
+                auto v = M_Xhd0_map[bc]->element();
+                auto u = M_Xhd0_map[bc]->element();    
+                
+                auto T4_interp = M_Xhd0_map[bc]->element();
+                auto T4_interp_interm = M_Xhd1_map[bc]->element();
+                auto vf_field = M_Xhd0_map[bc]->element();
+
+                // Interpolate the continous temperature onto the discontinuous space    
+                auto opI_interm = opInterpolation(_domainSpace=M_Xh,
+                                            _imageSpace=M_Xhd1_map[bc],                                    
+                                            _backend=backend(_name="interp1",_rebuild=true),
+                                            _type=InterpolationConforme());
+                auto opI_1to0 = opInterpolation(_domainSpace=M_Xhd1_map[bc],
+                                            _imageSpace=M_Xhd0_map[bc],                                    
+                                            _backend=backend(_name="interp2",_rebuild=true),
+                                            _type=InterpolationConforme());                                    
+                auto field = M_Xh->element();
+                field.on(_range=elements(M_mesh),_expr=idv(T)*idv(T)*idv(T)*idv(T));
+                opI_interm->apply(field,T4_interp_interm);
+                opI_1to0->apply( T4_interp_interm,T4_interp);
+
+                //  Loop over the emissivities and build the D right-hand side
+                // Integrate term of the form sigma*T^4 - \int_bdry (sigma*T^4(x') dF(x,x'))
+                int i_mark=0; 
+                int j_mark=0;           
                 auto sigma = expr(value["sigma"].get<std::string>());
 
                 sigma.setParameterValues({{"sigma",specs["/Parameters/sigma"_json_pointer].get<double>()}});
+                
+                auto cavity_markers = M_markers_map[bc];   
 
-                for ( std::string mark :  value.at("markers") )
+                int i_marker_to_bb=0;
+                for ( std::string mark :  cavity_markers )
                 {
                     //std::cout << "For marker " << mark << std::endl;
-                    for ( std::string mark2 :  value.at("markers") ) // Loop on index j
+                    for ( std::string mark2 : cavity_markers ) // Loop on index j
                     {
                         // Compute the index relative to marker mark
-                        auto it = std::find(M_markers_list_vf.begin(),M_markers_list_vf.end(),mark);                    
-                        i_mark = it - M_markers_list_vf.begin();
+                        auto it = std::find(cavity_markers.begin(),cavity_markers.end(),mark);                    
+                        i_mark = it - cavity_markers.begin();
                         // Compute the index relative to marker mark2
-                        auto jt = std::find(M_markers_list_vf.begin(),M_markers_list_vf.end(),mark2);                    
-                        j_mark = jt - M_markers_list_vf.begin();
+                        auto jt = std::find(cavity_markers.begin(),cavity_markers.end(),mark2);                    
+                        j_mark = jt - cavity_markers.begin();
                         //std::cout << fmt::format("we add a contribution from index {} whose view factor is {}",j_mark,M_vf_matrix(i_mark,j_mark))<< std::endl;
                         
                         vf_field.zero();                                                       
                         //std::cout << fmt::format("we add a contribution from marker {} whose emissivity is {}",markcoat,epsilon_mark2)<< std::endl;
-                        vf_field.on(_range=markedfaces(M_mesh,mark2),_expr=cst(M_vf_matrix(i_mark,j_mark)));                      
+                        vf_field.on(_range=markedfaces(M_mesh,mark2),_expr=cst(M_matrix_vf_map[bc](i_mark,j_mark)));                      
                     
         
                         auto T4_scal_vf = integrate(_range=markedfaces(M_mesh,mark2), _expr=inner(idv(T4_interp),idv(vf_field))).evaluate()(0,0);                                                        
                         
                         auto measure_mark2 = integrate( _range=markedfaces(M_mesh,mark2),_expr= cst(1.) ).evaluate()(0,0);
                         
-                        M_D_form += integrate( _range=markedfaces(M_mesh,mark),
-                                        _expr= cst(-1)/cst(measure_mark2)*sigma*cst(T4_scal_vf) *id(v) );                                               
+                        form1(_test=M_Xhd0_map[bc],_vector=M_D_block,
+                                        _rowstart=i_cavity) += integrate( _range=markedfaces(M_mesh,mark),
+                                        _expr= cst(-1)/cst(measure_mark2)*sigma*cst(T4_scal_vf) *id(v) );  
                                             
                     }
 
-                    M_D_form += integrate( _range=markedfaces(M_mesh,mark),
-                                        _expr= inner(sigma*idv(T4_interp), id(v) ));
+                    // If the cavity is open, and it is assumed that a black body of fixed temperature
+                    // T_ref exchances heat with the cavity, and additional term is added: 
+                    // - the view factor is computed using the reciprocity formula FijAi = FjiAj
+                    // - the contribution is of the form \sigma T^4 * Fij
+                    if(value["enclosure"]=="open")
+                    {
+                        //std::cout << "Open enclosure " << bc << std::endl;
+                        double vf_marker_to_bb = 1 - M_matrix_vf_map[bc].row(i_marker_to_bb).sum(); //Fij
+                        double vf_bb_to_marker = 1 - M_matrix_vf_map[bc].col(i_marker_to_bb).sum(); //Fji
+                        auto measure_mark1 = integrate( _range=markedfaces(M_mesh,mark),_expr= cst(1.) ).evaluate()(0,0); //Ai
+                        double area_bb = measure_mark1 * vf_marker_to_bb / vf_bb_to_marker;
+                        auto T_bb = value["Tref"].get<double>();
+                        auto T_bb4 = cst(T_bb)*cst(T_bb)*cst(T_bb)*cst(T_bb);
+                        form1(_test=M_Xhd0_map[bc],_vector=M_D_block,
+                                        _rowstart=i_cavity) += integrate( _range=markedfaces(M_mesh,mark),
+                                        _expr= cst(-1)*sigma*T_bb4*cst(vf_bb_to_marker) *id(v) ); 
+                    }
                     
+                    form1(_test=M_Xhd0_map[bc],_vector=M_D_block,
+                                        _rowstart=i_cavity) += integrate( _range=markedfaces(M_mesh,mark),
+                                        _expr= inner(sigma*idv(T4_interp), id(v) ));
+                    i_marker_to_bb++;
+                }
+                i_cavity++;
+                if(!boption(_name="deactivate-exporters"))
+                {
+                    auto e_opInterp = exporter(_mesh=M_mesh,_name="functD");
+                    e_opInterp->addRegions();
+                    e_opInterp->add("T4interp"+bc,idv(T4_interp)); 
+                    e_opInterp->save();
                 }
             }
-        }
-        if(!boption("deactivate-exporters"))
-        {
-            auto e_opInterp = exporter(_mesh=M_mesh,_name="functD");
-            e_opInterp->addRegions();
-            e_opInterp->add("T4interp",idv(T4_interp));
-            e_opInterp->add("vfield",idv(vf_field),markedfaces(M_mesh,M_markers_list_vf));
-            e_opInterp->save();
-        }
+        }        
          
     } // end RHT<Dim,Order>::rebuild_D
 
@@ -779,42 +894,61 @@ namespace Feel
         *T = *M_bdf->unknowns()[0]; // at the beginning of the loop, the temperature it the one at the previous time step
         *q = *M_currentTempAndFlux.q();// at the beginning of the loop, the flux it the one at the previous time step
         
+        int n_cavities = M_markers_map.size();
+        BlocksBaseVector<double> myblock_L(n_cavities);
+        BlocksBaseVector<double> myblock_sol(n_cavities);
+        BlocksBaseSparseMatrix<double> myblock_M(n_cavities,n_cavities);
+
+        vector_ptrtype L;
+        vector_ptrtype L_block,sol_block;
+
+        int i =0;
+        for(const auto& [cavity_name,Xhd0_space]: M_Xhd0_map)
+        {
+            L = backend()->newVector(Xhd0_space);           
+            myblock_L(i,0)=L;           
+            myblock_sol(i,0)=Xhd0_space->elementPtr();
+            i++;
+        }
+
         // Initial guess for the flux
         // Important for the correct initialization of the problem
         this->rebuild_N(M_currentTempAndFlux.q()); 
         this->rebuild_D(T);
-        vector_ptrtype L;
-        L=backend()->newVector(M_Xhd0);
-        L->add(*M_N);
-        L->add(*M_D);
+                
+        L_block=backend()->newBlockVector(_block=myblock_L);
+        L_block->add(*M_N_block);
+        L_block->add(*M_D_block);
 
-        auto lin_form = form1(_test=M_Xhd0,_vector=L);
-    
-        auto bil_form = form2(_test=M_Xhd0,_trial=M_Xhd0,_matrix=M_M,_backend=backend(_name="Modesteq"));
-    
         auto q_disc=M_Xhd0->element();
         auto q_disc_interm=M_Xhd1->element();
 
+        sol_block = backend()->newBlockVector(_block=myblock_sol);
+        backend(_rebuild=true)->solve( _matrix=M_M_block, _rhs=L_block, _solution=sol_block );
+        myblock_sol.localize(sol_block);
+
         // Solve the Modest equation with q from previous iteration and new temperature
-        bil_form.solve(_rhs=lin_form,_solution=q_disc,_name="Modesteq");
-
-        // this->rebuild_D_block(T);
-
-        // backend(_name="Modesteq",_rebuild=true)->solve( _matrix=M_M, _rhs=M_D, _solution=M_solModest );
-
-
-
-        // Interpolate the discontinuous solution onto the continuous space
-        auto opI1 = opInterpolation(_domainSpace=M_Xhd0,
-                                _imageSpace=M_Xhd1,
-                                _type=InterpolationConforme());
-        auto opI2 = opInterpolation(_domainSpace=M_Xhd1,
-                                _imageSpace=M_Xh,
-                                _range=markedfaces(M_mesh,M_markers_list_vf),
-                                _type=InterpolationConforme());                                
-        opI1->apply( q_disc, q_disc_interm );
-        opI2->apply( q_disc_interm, *q );
-
+        
+        int i_cavity=0;
+        for ( auto& [bc, value] : specs["/BoundaryConditions/heat/radiative_enclosure_heat_flux"_json_pointer].items() )
+        {
+            auto q_interp = M_Xh->element();
+            auto q_disc=M_Xhd0_map[bc]->element();
+            auto q_disc_interm=M_Xhd1_map[bc]->element();
+            // Interpolate the discontinuous solution onto the continuous space
+            auto opI1 = opInterpolation(_domainSpace=M_Xhd0_map[bc],
+                                    _imageSpace=M_Xhd1_map[bc],
+                                    _type=InterpolationConforme());
+            auto opI2 = opInterpolation(_domainSpace=M_Xhd1_map[bc],
+                                    _imageSpace=M_Xh,
+                                    _range=markedfaces(M_mesh,M_markers_map[bc]),
+                                    _type=InterpolationConforme());  
+            q_disc.container()= (*myblock_sol(i_cavity,0));            
+            opI1->apply( q_disc, q_disc_interm );
+            opI2->apply( q_disc_interm,q_interp );
+            q->on(_range = markedfaces(M_mesh,M_markers_map[bc]), _expr=idv(q_interp));
+            i_cavity++;
+        }
 
         // Initial guess for temperature and flux 
         // to be inserted in the Picard loop
@@ -835,110 +969,118 @@ namespace Feel
         // Construct the emission term with view factors for the Modest equation
         this->rebuild_N(M_currentTempAndFlux.q());         
 
-        std::cout << "inside Picard iteration" << std::endl;
+        std::cout  << "inside Picard iteration" << std::endl;
         double iter_T=0;
-        M_M->printMatlab("M.m");
-        M_N->printMatlab("N.m");
-        M_D->printMatlab("D.m");
+        if(boption(_name="deactivate-exporters"))
+        {
+            M_M_block->printMatlab("M_block.m");
+            M_N_block->printMatlab("N_block.m");
+            M_D_block->printMatlab("D_block.m");
+        }
         // Since Modest and heat equations are coupled via temperature and radiative flux
         // a double Picard loop is proposed to have the convergence of the two quantities
         while(norm_T_Tnew>tol_T)
         {
-            // *T_relaxed =0.1* (*T_new); 
-            // *T_relaxed +=0.9* (*T);
-            // this->rebuild_D(T_relaxed);
             this->rebuild_D(T_new);
-            vector_ptrtype L;
-            L=backend()->newVector(M_Xhd0);
-            L->add(*M_N);
-            L->add(*M_D);
+            
+            L_block=backend()->newBlockVector(_block=myblock_L);
+            L_block->add(*M_N_block);
+            L_block->add(*M_D_block);
 
-            auto lin_form = form1(_test=M_Xhd0,_vector=L);
-        
-            auto bil_form = form2(_test=M_Xhd0,_trial=M_Xhd0,_matrix=M_M,_backend=backend(_name="Modesteq"));
-        
+            sol_block = backend()->newBlockVector(_block=myblock_sol);
+            backend(_rebuild=true)->solve( _matrix=M_M_block, _rhs=L_block, _solution=sol_block );
+            myblock_sol.localize(sol_block);
+
             auto q_disc=M_Xhd0->element();
-            auto q_disc_interm=M_Xhd1->element();
-
-            // Solve the Modest equation with q from previous iteration and new temperature
-            bil_form.solve(_rhs=lin_form,_solution=q_disc,_name="Modesteq");
+            auto q_disc_interm=M_Xhd1->element();            
 
             // Interpolate the discontinuous solution onto the continuous space
-            auto opI1 = opInterpolation(_domainSpace=M_Xhd0,
-                                _imageSpace=M_Xhd1,
-                                _type=InterpolationConforme());
-            auto opI2 = opInterpolation(_domainSpace=M_Xhd1,
-                                _imageSpace=M_Xh,
-                                _range=markedfaces(M_mesh,M_markers_list_vf),
-                                _type=InterpolationConforme());                                
-            opI1->apply( q_disc, q_disc_interm );
-            opI2->apply( q_disc_interm, *q );
+            int i_cavity=0;
+            for ( auto& [bc, value] : specs["/BoundaryConditions/heat/radiative_enclosure_heat_flux"_json_pointer].items() )
+            {       
+                auto q_interp = M_Xh->element();         
+                auto q_disc=M_Xhd0_map[bc]->element();
+                auto q_disc_interm=M_Xhd1_map[bc]->element();
+                auto opI1 = opInterpolation(_domainSpace=M_Xhd0_map[bc],
+                                        _imageSpace=M_Xhd1_map[bc],
+                                        _type=InterpolationConforme());
+                auto opI2 = opInterpolation(_domainSpace=M_Xhd1_map[bc],
+                                        _imageSpace=M_Xh,
+                                        _range=markedfaces(M_mesh,M_markers_map[bc]),
+                                        _type=InterpolationConforme());      
+                q_disc.container() = *myblock_sol(i_cavity,0);
+                opI1->apply( q_disc , q_disc_interm );
+                opI2->apply( q_disc_interm, q_interp );
+                q->on(_range = markedfaces(M_mesh,M_markers_map[bc]), _expr=idv(q_interp));
+                i_cavity++;
+            }
                     
             auto e_opInterp2 = exporter(_mesh=M_mesh,_name="insideLoop");
             double iter=0;
-
-            auto norm_q_init = normL2(_range=markedfaces(M_mesh,M_markers_list_vf),
-                            _expr = idv(q));
+            auto norm_q_init = 0.0;
+            for ( auto& [bc, value] : specs["/BoundaryConditions/heat/radiative_enclosure_heat_flux"_json_pointer].items() )
+            {
+                norm_q_init += normL2(_range=markedfaces(M_mesh,M_markers_map[bc]),
+                                _expr = idv(q));
+            }
             double norm_q_qnew = 1;
             // Loop over the radiative flux for a fixed temperature field
             while(norm_q_qnew > tol_q)
             {
                 // Rebuild the N term of the Modest equation
                 this->rebuild_N(q);                 
-                vector_ptrtype L;
-                L=backend(_name="Modesteq")->newVector(M_Xhd0);
-                L->add(*M_N);
-                L->add(*M_D); 
-        
-                auto lin_form = form1(_test=M_Xhd0,_vector=L);    
+
+                L_block=backend()->newBlockVector(_block=myblock_L);
+                L_block->add(*M_N_block);
+                L_block->add(*M_D_block);
+           
                 auto q_new_k_l_disc=M_Xhd0->element();       
                 auto q_new_k_l_disc_interm=M_Xhd1->element();       
-                tic();
-                bil_form.solve(_rhs=lin_form,_solution=q_new_k_l_disc,_name="Modesteq");
+                tic();                
+
+                sol_block = backend()->newBlockVector(_block=myblock_sol);
+                backend(_rebuild=true)->solve( _matrix=M_M_block, _rhs=L_block, _solution=sol_block );
+                myblock_sol.localize(sol_block);
                 toc("Solve radiative heat transfer on surfaces");
-                auto opI1 = opInterpolation(_domainSpace=M_Xhd0,
-                                _imageSpace=M_Xhd1,
-                                _type=InterpolationConforme());
-                auto opI2 = opInterpolation(_domainSpace=M_Xhd1,
-                                    _imageSpace=M_Xh,
-                                    _range=markedfaces(M_mesh,M_markers_list_vf),
-                                    _type=InterpolationConforme());   
-                opI1->apply(q_new_k_l_disc,q_new_k_l_disc_interm);
-                opI2->apply( q_new_k_l_disc_interm, *q_new_k_l );
-
-                // Check if the difference between two iterates of the Picard loop is small enough
-                norm_q_qnew = normL2(_range=markedfaces(M_mesh,M_markers_list_vf),
-                            _expr = (idv(q_new_k_l)-idv(q)));
-
-                norm_q_qnew /=norm_q_init;
-
-                auto q_diff = M_Xh->element();
-
-                q_diff.on(_range=markedfaces(M_mesh,M_markers_list_vf),_expr=inner((idv(q_new_k_l)-idv(q)),(idv(q_new_k_l)-idv(q))));
                 
-                if(!boption("deactivate-exporters"))
-                {
-                    e_opInterp2->step(iter)->add("q_disc",idv(q_new_k_l_disc),markedfaces(M_mesh,M_markers_list_vf));
-                    e_opInterp2->step(iter)->add("q_new_k_l",idv(q_new_k_l),markedfaces(M_mesh,M_markers_list_vf));
-                    e_opInterp2->step(iter)->add("q",idv(q),markedfaces(M_mesh,M_markers_list_vf));
-                    e_opInterp2->step(iter)->add("qdiff",idv(q_diff),markedfaces(M_mesh,M_markers_list_vf));
-                    e_opInterp2->save();
+                int i_cavity=0;
+                for ( auto& [bc, value] : specs["/BoundaryConditions/heat/radiative_enclosure_heat_flux"_json_pointer].items() )
+                {         
+                    auto q_interp = M_Xh->element();       
+                    auto q_new_k_l_disc=M_Xhd0_map[bc]->element();       
+                    auto q_new_k_l_disc_interm=M_Xhd1_map[bc]->element(); 
+                    auto opI1 = opInterpolation(_domainSpace=M_Xhd0_map[bc],
+                                            _imageSpace=M_Xhd1_map[bc],
+                                            _type=InterpolationConforme());
+                    auto opI2 = opInterpolation(_domainSpace=M_Xhd1_map[bc],
+                                            _imageSpace=M_Xh,
+                                            _range=markedfaces(M_mesh,M_markers_map[bc]),
+                                            _type=InterpolationConforme());
+                    q_new_k_l_disc.container() = (*myblock_sol(i_cavity,0));
+                    opI1->apply( q_new_k_l_disc, q_new_k_l_disc_interm );                    
+                    opI2->apply( q_new_k_l_disc_interm, q_interp );
+                    q_new_k_l->on(_range = markedfaces(M_mesh,M_markers_map[bc]), _expr=idv(q_interp));
+                    i_cavity++;
                 }
-
+                // Check if the difference between two iterates of the Picard loop is small enough
+                norm_q_qnew=0.0;
+                for ( auto& [bc, value] : specs["/BoundaryConditions/heat/radiative_enclosure_heat_flux"_json_pointer].items() )
+                {   
+                    norm_q_qnew += normL2(_range=markedfaces(M_mesh,M_markers_map[bc]),
+                                _expr = (idv(q_new_k_l)-idv(q)));
+                }
+                norm_q_qnew /=norm_q_init;
 
                 *q=*q_new_k_l;        
                 std::cout << "norm_q_qnew" << norm_q_qnew << std::endl;    
 
-                M_M->printMatlab("M_1.m");
-                M_N->printMatlab("N_1.m");
-                M_D->printMatlab("D_1.m");            
+                M_M_block->printMatlab("M_1_block.m");
+                M_N_block->printMatlab("N_1_block.m");
+                M_D_block->printMatlab("D_1_block.m");            
                
                 iter++;
             }
             // Solve the heat trasfer equation with the newly computed radiative heat flux from Modest equation
-            // *T_relaxed =0.1* (*T_new); 
-            // *T_relaxed +=0.9* (*T);
-            // this->solveHeatEquation(T_relaxed,q);  
             tic();
             this->solveHeatEquation(T_new,q);  
             toc("Solve heat PDE");
@@ -953,7 +1095,7 @@ namespace Feel
             norm_T_Tnew /= norm_T_init;
 
             std::cout << "norm_T_Tnew" << norm_T_Tnew << std::endl;
-            if(!boption("deactivate-exporters"))
+            if(!boption(_name="deactivate-exporters"))
             {
                 e_opInterp->step(iter_T)->add("oldT",idv(T));
                 e_opInterp->step(iter_T)->add("newT",idv(T_new));       
@@ -995,7 +1137,7 @@ namespace Feel
             this->solvePicardIteration();
             toc("solve Picard iteration");
             // Export the temperature, and flux on the radiating surfaces
-            if(!boption("deactivate-exporters"))
+            if(!boption(_name="deactivate-exporters"))
                 this->exportHeat();
         }
         this->checkResults();
@@ -1084,12 +1226,12 @@ int main( int argc, char** argv )
 
         // Read the json file associated to viewfactor computation ( it must contain only the markers for which view 
         // factors are computed )
-        jsonfile = removeComments( readFromFile( Environment::expand( soption( "viewfactor" ) ) ) );
-        std::istringstream astr( jsonfile );
-        json viewfactor = json::parse( astr );   
+        // jsonfile = removeComments( readFromFile( Environment::expand( soption( "viewfactor" ) ) ) );
+        // std::istringstream astr( jsonfile );
+        // json viewfactor = json::parse( astr );   
 
         // Instantiate the class for the solution of the heat transfer problem
-        RHT<FEELPP_DIM, FEELPP_ORDER> rht(specs,viewfactor);
+        RHT<FEELPP_DIM, FEELPP_ORDER> rht(specs);
 
         // Solve the heat transfer problem
         rht.execute();

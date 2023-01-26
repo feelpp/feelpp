@@ -82,8 +82,10 @@
                     "markers": ["InnerTop", "LowerTop","LeftTop","RightTop"],
                     "sigma": "sigma:sigma",
                     "viewfactors": {
-                        "type": "raytracing",
-                        "markers": ["InnerTop", "LowerTop","LeftTop","RightTop"]
+                        "status":"load",
+                        "filename":"$cfgdir/VF_Matrix_Cavity_1.csv"
+                        // "status":"compute",
+                        // "filename":"$cfgdir/rectangular_cavity_vf.json"                        
                     }
                 }
             }
