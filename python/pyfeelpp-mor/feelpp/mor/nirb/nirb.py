@@ -715,7 +715,8 @@ class nirbOffline(ToolboxModel):
         Error = {'N':[], 'l2(uh-uHn)':[], 'l2(uh-uHn)rec':[], 'l2(uh-uhn)' : [], 'l2(uh-uH)':[]}
 
         nb = 0
-        for i in tqdm(range(1,self.N+1,min(5,self.N)), desc=f"[NIRB] Compute convergence error:", ascii=False, ncols=100):
+        pas = 1 if (self.N<50) else 5 
+        for i in tqdm(range(1,self.N+1,pas), desc=f"[NIRB] Compute convergence error:", ascii=False, ncols=100):
             nb = i
             # Get rectification matrix
             BH = self.coeffCoarse[:nb, :nb]
