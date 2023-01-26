@@ -98,14 +98,13 @@ public :
         }
 #endif
         if ( M_fileFormat == "hdf5" )
-            this->setDBFilename( ( boost::format( "%1%.%2%.h5" )
-                                   %this->name()%ext ).str() );
+            this->setDBFilename( fmt::format( "{}.{}.h5",
+                                   this->name(), ext ) );
         else
-            this->setDBFilename( ( boost::format( "%1%.%2%_p%3%.crbdb" )
-                                   %this->name()
-                                   %ext
-                                   %this->worldComm().globalRank()
-                                   ).str() );
+            this->setDBFilename( fmt::format( "{}.{}_p{}.crbdb",
+                                   this->name(),
+                                   ext,
+                                   this->worldComm().globalRank()));
     }
 
     CRBElementsDB( std::string const& name,
@@ -222,6 +221,11 @@ public :
         M_useMonolithicRbSpace = model->useMonolithicRbSpace();
     }
 
+    std::string dbFileFormat()
+    {
+        return M_fileFormat;
+    }
+
 private :
 
     friend class boost::serialization::access;
@@ -311,8 +315,8 @@ CRBElementsDB<ModelType>::loadDB()
 
     fs::path db = this->lookForDB();
 
-    if ( db.empty() )
-        return false;
+    // if ( db.empty() )
+    //     return false;
         
     // Check if the first primal basis element exists
     std::ostringstream hdf5File_primal;
@@ -322,7 +326,7 @@ CRBElementsDB<ModelType>::loadDB()
     hdf5File_primal << p.string() + additional_part_primal << ".h5";
     LOG(INFO) << fmt::format("hdf5File_primal {}",hdf5File_primal.str());
     
-    if(!fs::exists( db ) && !fs::exists(hdf5File_primal.str()))   
+    if( (!fs::exists( db ) || db.empty() ) && !fs::exists(hdf5File_primal.str()))   
         return false;    
 
     if ( M_fileFormat == "hdf5" )

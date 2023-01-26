@@ -1514,7 +1514,6 @@ protected:
         {}
 
     virtual void saveRB();
-    virtual void savenewRBelement();
 
     std::string M_prefix;
 
@@ -3071,8 +3070,7 @@ CRB<TruthModelType>::offline()
         //save DB after adding an element
         tic();
         this->saveDB();
-        //this->saveRB();
-        this->savenewRBelement();
+        this->saveRB();
         toc("Saving the Database");
 
         toc("Total Time");
@@ -11516,18 +11514,8 @@ CRB<TruthModelType>::saveRB()
 {
     M_elements_database.setWn( boost::make_tuple( M_model->rBFunctionSpace()->primalRB() , M_model->rBFunctionSpace()->dualRB() ) );
 
-    M_elements_database.saveDB();
-}
-
-template<typename TruthModelType>
-void
-CRB<TruthModelType>::savenewRBelement()
-{
-    M_elements_database.setWn( boost::make_tuple( M_model->rBFunctionSpace()->primalRB() , M_model->rBFunctionSpace()->dualRB() ) );
-
     M_elements_database.saveNewElementToDB();
 }
-
 
 
 template<typename TruthModelType>
@@ -11760,8 +11748,8 @@ CRB<TruthModelType>::setupOfflineFromDB()
     this->loadDB( (this->dbLocalPath()/fs::path(this->jsonFilename())).string(), crb::load::all );
 
     if( this->worldComm().isMasterRank() )
-        std::cout << "Database CRB " << this->lookForDB() << " available and loaded with " << M_N <<" basis\n";
-    LOG(INFO) << "Database CRB " << this->lookForDB() << " available and loaded with " << M_N <<" basis";
+        std::cout << "Database CRB available and loaded with " << M_N <<" basis\n";
+    LOG(INFO) << "Database CRB available and loaded with " << M_N <<" basis";
 
     M_elements_database.setMN( M_N );
     if( M_loadElementsDb )
@@ -11769,8 +11757,19 @@ CRB<TruthModelType>::setupOfflineFromDB()
         if( M_elements_database.loadDB() )
         {
             if( this->worldComm().isMasterRank() )
-                std::cout<<"Database for basis functions " << M_elements_database.lookForDB() << " available and loaded\n";
-            LOG(INFO) << "Database for basis functions " << M_elements_database.lookForDB() << " available and loaded";
+            {
+                if(M_elements_database.dbFileFormat()=="boost")
+                {
+                    std::cout<<"Database for basis functions " << M_elements_database.lookForDB() << " available and loaded\n";
+                    LOG(INFO) << "Database for basis functions " << M_elements_database.lookForDB() << " available and loaded";
+                }
+                else
+                {
+                    std::cout<<"Database for basis functions in HDF5 available and loaded\n";
+                    LOG(INFO) << "Database for basis functions in HDF5 available and loaded";
+                }
+            }
+                
             auto basis_functions = M_elements_database.wn();
             M_model->rBFunctionSpace()->setBasis( basis_functions );
         }
