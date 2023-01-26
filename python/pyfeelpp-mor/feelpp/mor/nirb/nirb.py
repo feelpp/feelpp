@@ -982,7 +982,7 @@ class nirbOnline(ToolboxModel):
             tb (ToolboxModel): ToolboxModel object
         """
         super().setModel(tb)
-        if tb.Coarse is None:
+        if tb.tbCoarse is None:
             super().initCoarseToolbox()
         self.tbCoarse = tb.tbCoarse
 
