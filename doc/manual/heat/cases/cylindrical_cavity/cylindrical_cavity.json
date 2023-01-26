@@ -54,12 +54,14 @@
             },      
             "radiative_enclosure_heat_flux": {
                 "Cavity_1": {
-                    "enclosure": "open",                    
+                    "enclosure": "closed",// the cavity is treated as closed since there is no black body exchanges in this test
                     "markers": ["CavityBdry"],
                     "sigma": "sigma:sigma",
                     "viewfactors": {
-                        "type": "raytracing",
-                        "markers": ["CavityBdry"]
+                        "status":"compute",
+                        "filename":"$cfgdir/cylindrical_cavity_vf.json"
+                        // "status":"load",
+                        // "filename":"$cfgdir/VF_Matrix_Cavity_1.csv"
                     }
                 }
             }
