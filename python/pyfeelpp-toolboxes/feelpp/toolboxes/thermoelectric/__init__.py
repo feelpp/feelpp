@@ -4,7 +4,7 @@ from feelpp.toolboxes.core import *
 has_te = False
 _thermoelectrics = None
 try:
-    from _thermoelectric import *
+    from ._thermoelectric import *
 
     _thermoelectrics={
         'thermoelectric(2,1)':Thermoelectric_2DP1,
@@ -18,7 +18,7 @@ except ImportError as e:
     pass  # module doesn't exist, deal with it.
 
 
-def thermoelectric(dim=2, orderPotential=1, worldComm=None, keyword="thermo-electric", subprefix="", modelRep=None):
+def thermoelectric(dim=2, orderPotential=1, worldComm=None, keyword="thermoelectric", subprefix="", modelRep=None):
     """create a thermoelectric toolbox solver
     Keyword arguments:
     dim -- the dimension (default: 2)
