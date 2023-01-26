@@ -94,8 +94,8 @@
                     "markers": ["RadiativeSurface1", "RadiativeSurface2","RadiativeSurface3"],
                     "sigma": "sigma:sigma",
                     "viewfactors": {
-                        "type": "raytracing",
-                        "markers": ["RadiativeSurface1", "RadiativeSurface2","RadiativeSurface3"]
+                        "status": "compute",     
+                        "filename":"$cfgdir/triangular_cavity_vf.json"
                     }
                 }
             }
