@@ -9,6 +9,19 @@ import glob
 
 ## Functions to vizualise dataFrame
 
+def plotRIC(RIC):
+    """plot the RIC value in respect to basis function 
+
+    Parameters
+    ----------
+    RIC : list or numpy.array
+        tab of ric value 
+    """
+    plt.plot(np.arange(RIC.size), RIC)
+    plt.title("RIC")
+    plt.xlabel("Basis function")
+    plt.ylabel("RIC values")
+
 def plotTime(dataFrame=None, csv_file=None):
     """Plot execution time of nirb method given either in dataFrame or in csv file
 
