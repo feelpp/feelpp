@@ -129,7 +129,7 @@ bool isOnSurface(Eigen::VectorXd const &point,Eigen::VectorXd const &el_p1,Eigen
         }
     }
 }
-
+#if 0
 template <typename MeshType>
 class RayTracingViewFactor : public ViewFactorBase<MeshType>
 {
@@ -803,5 +803,5 @@ public:
     }
 
 };  
-
+#endif
 } // namespace Feel
