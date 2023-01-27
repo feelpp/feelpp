@@ -636,6 +636,7 @@ class nirbOffline(ToolboxModel):
             for j in range(Nsnap):
                 vec.add(eigenVectors[j,i], self.fineSnapShotList[j])
 
+            vec = vec*(1./math.sqrt(abs(self.l2ScalarProductMatrix.energy(vec,vec))))
             reducedBasis.append(vec)
             RIC.append(eigenValues[:i].sum() / sum_eigenValues)
             if abs(1. - RIC[i])<= tolerance :
