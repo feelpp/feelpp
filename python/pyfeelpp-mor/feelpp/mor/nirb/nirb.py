@@ -251,7 +251,7 @@ class nirbOffline(ToolboxModel):
         ToolboxModel (class): class associated to the toolbox model
     """
 
-    def __init__(self, method="POD", doRectification=True, initCoarse=False, **kwargs) -> None:
+    def __init__(self, method="POD", doRectification=True, initCoarse=False, doBiorthonormal=False, **kwargs) -> None:
         """Initialize the NIRB class
 
         Args:
@@ -274,7 +274,7 @@ class nirbOffline(ToolboxModel):
         assert method in ["POD", "Greedy"]
         self.method = method
         self.doRectification = doRectification
-        # self.doBiorthonormal = doBiorthonormal
+        self.doBiorthonormal = doBiorthonormal
         self.initCoarse = initCoarse
 
         self.l2ScalarProductMatrix = None
@@ -320,9 +320,8 @@ class nirbOffline(ToolboxModel):
                 K[i,j] = self.h1ScalarProductMatrix.energy(self.reducedBasis[i],self.reducedBasis[j])
                 M[i,j] = self.l2ScalarProductMatrix.energy(self.reducedBasis[i],self.reducedBasis[j])
 
-        from scipy import linalg
 
-        eval,evec=linalg.eigh(a=K, b=M, overwrite_a=True, overwrite_b=True) #eigenvalues
+        eval,evec=eigh(a=K, b=M) #eigenvalues
         eigenValues = eval.real
         eigenVectors = evec
         idx = eigenValues.argsort()[::-1]
@@ -341,6 +340,8 @@ class nirbOffline(ToolboxModel):
             for j in range(self.N):
                 vec.add(float(eigenVectors[j,i]), oldbasis[j])
 
+            # vec = vec*(1./math.sqrt(abs(self.l2ScalarProductMatrix.energy(vec,vec))))
+            
             self.reducedBasis.append(vec)
 
 
@@ -544,8 +545,8 @@ class nirbOffline(ToolboxModel):
 
         if len(self.l2ProductBasis)==0:
             self.getl2ProductBasis()
-        # if self.doBiorthonormal:
-        #     self.BiOrthonormalization()
+        if self.doBiorthonormal:
+            self.BiOrthonormalization()
         if self.doRectification:
             self.coeffCoarse, self.coeffFine = self.coeffRectification()
         return RIC 
@@ -570,8 +571,8 @@ class nirbOffline(ToolboxModel):
 
         # we need to update the l2ProductBasis and the rectification coefficients
         self.getl2ProductBasis()
-        # if self.doBiorthonormal:
-        #     self.BiOrthonormalization()
+        if self.doBiorthonormal:
+            self.BiOrthonormalization()
         if self.doRectification:
             self.coeffCoarse, self.coeffFine = self.coeffRectification()
 
@@ -602,6 +603,7 @@ class nirbOffline(ToolboxModel):
         Returns
         -------
         ReducedBasis (list) : the reduced basis, of size numberOfModes
+        RIC (list) : Relative innformation content 
         """
 
         Nsnap = len(self.fineSnapShotList)
@@ -641,7 +643,6 @@ class nirbOffline(ToolboxModel):
             for j in range(Nsnap):
                 vec.add(eigenVectors[j,i], self.fineSnapShotList[j])
 
-            vec = vec*(1./math.sqrt(abs(self.l2ScalarProductMatrix.energy(vec,vec))))
             reducedBasis.append(vec)
             RIC.append(eigenValues[:i].sum() / sum_eigenValues)
             if abs(1. - RIC[i])<= tolerance :
@@ -787,6 +788,7 @@ class nirbOffline(ToolboxModel):
                 Z[n] = z_tmp * (1./math.sqrt(abs(self.h1ScalarProductMatrix.energy(z_tmp,z_tmp))))
 
             self.reducedBasis = Z
+            nb +=1
 
         if self.worldcomm.isMasterRank():
             print(f"[NIRB] Gram-Schmidt H1 orthonormalization done after {nb} step"+['','s'][nb>1])
@@ -854,13 +856,14 @@ class nirbOffline(ToolboxModel):
 
         for i in range(self.N):
             for j in range(self.N):
+                matH1[i,j] = self.h1ScalarProductMatrix.energy(self.reducedBasis[i], self.reducedBasis[j])
                 if i == j:
                     if abs(matH1[i, j] - 1) > tol:
-                        print(f"[NIRB] not H1 ortho : pos = {i} {j} val = {abs(matH1[i,j]-1.)} tol = {tol}")
+                        print(f"[NIRB] not H1 ortho : pos = [{i}, {j}] val = {abs(matH1[i,j]-1.)} tol = {tol}")
                         return False
                 else:
                     if abs(matH1[i, j]) > tol :
-                        print(f"[NIRB] not H1 ortho : pos = {i} {j} val = {abs(matH1[i,j])} tol = {tol}")
+                        print(f"[NIRB] not H1 ortho : pos = [{i}, {j}] val = {abs(matH1[i,j])} tol = {tol}")
                         return False
         return True
 
