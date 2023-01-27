@@ -531,7 +531,6 @@ class nirbOffline(ToolboxModel):
             regulParam(float), optional : the regularization parameter for rectification
         """
         self.reducedBasis, RIC= self.PODReducedBasis(tolerance=tolerance)
-        self.orthonormalizeL2()
         self.N = len(self.reducedBasis)
         if self.worldcomm.isMasterRank():
             print(f"[NIRB] Number of modes : {self.N}")
