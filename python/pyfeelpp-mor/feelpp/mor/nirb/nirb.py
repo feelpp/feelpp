@@ -6,7 +6,6 @@
 
 import feelpp
 from .utils import *
-from .greedy import *
 import feelpp.operators as FppOp
 # from NIRBinitCase import *
 import numpy as np
@@ -75,7 +74,7 @@ class ToolboxModel():
             print(f"[NIRB] ToolboxModel created, but the objects have not yet been initialized. Please call initModel() or setModel() to initialize the objects.")
 
 
-    def initModel(self):
+    def initModel(self, initCoarse=False):
         """Initialize the model
         """
         self.model = feelpp.readJson(self.model_path)
@@ -83,6 +82,9 @@ class ToolboxModel():
         self.Xh = feelpp.functionSpace(mesh=self.tbFine.mesh(), order=self.order)
         self.Dmu = loadParameterSpace(self.model_path)
         self.Ndofs = self.getFieldSpace().nDof()
+
+        if initCoarse:
+            self.initCoarseToolbox()
 
         if self.worldcomm.isMasterRank():
             print(f"[NIRB] Initialization done")
@@ -207,11 +209,13 @@ class ToolboxModel():
     def createInterpolator(self, domain_tb, image_tb):
         """Create an interpolator between two toolboxes
 
-        Args:
+        Parameters
+        ----------
             domain_tb (Toolbox): coarse toolbox
             image_tb  (Toolbox): fine toolbox
 
-        Returns:
+        Returns
+        --------
             OperatorInterpolation: interpolator object
         """
         if self.toolboxType == "heat":
@@ -392,120 +396,6 @@ class nirbOffline(ToolboxModel):
 
         return vector_mu
 
-    def getReducedSolution(self, coarseSolutions, mu, N):
-        """Computed the reduced solution for a given parameter and a size of basis
-
-        Args:
-        -----
-            coarseSolutions (dict of Feel++ solutions): list of coarse solution
-            mu (parameterSpaceElement): parameter
-            N (int): size of the sub-basis
-
-        Returns:
-        --------
-            numpy.array: reduced solution u_H^N
-        """
-        coarseSol = coarseSolutions[mu]
-        uHN = np.zeros(N)
-
-        for i in range(N):
-            uHN[i] = self.l2ScalarProductMatrixCoarse.energy( self.coarseSnapShotList[i], coarseSol )
-        return uHN
-
-
-    def initProblemGreedy(self, Ntrain, eps, Xi_train=None, Nmax=50, samplingMode="log-random", computeCoarse=False):
-        """Initialize the problem, using a greedy loop
-
-        Args:
-        -----
-            Ntrain (int): size of the train parameter set
-            eps (float): precision of the greedy loop
-            Xi_train (list of ParameterSpaceElement, optional): Train set for algorithm. If None is given, a set of size Ntrain is generated. Defaults to None.
-            Nmax (int, optional): maximal number of iterations. Defaults to 500.
-            samplingMode (str, optional): sampling mode. Defaults to "log-random".
-            computeCoarse (bool, optional): compute snapshots for coarse toolbox, used for rectification. Defaults to False.
-
-        Return:
-        ------
-            a tuple res where
-            - res[0] contains the sample of paramters selected
-            - res[1] contains a copy of Xi_train sample
-            - res[2] contains the evolution of Delta_max
-
-        Raises:
-            Exception: Coarse toolbox has not been initialized
-        """
-        if self.tbCoarse is None:
-            raise Exception("Coarse toolbox needed for computing coarse Snapshot. set initCoarse->True in initialization")
-        Nmax = min(Nmax, Ntrain)
-        if Xi_train is None:
-            s = self.Dmu.sampling()
-            s.sampling(Ntrain, samplingMode)
-            Xi_train = s.getVector()
-        Xi_train_copy = Xi_train.copy()
-
-        Delta_star = eps+1
-        Deltas_conv = []
-        S = []
-        self.fineSnapShotList = []
-        self.coarseSnapShotList = []
-        self.coarseSnapShotListGreedy = []
-        N = 0
-
-        # Computation of coarse solutions
-        coarseSolutions = {}
-        for mu in tqdm(Xi_train_copy, desc="[NIRB] Computing coarse solutions", ncols=120):
-            coarseSolutions[mu] = self.getToolboxSolution(self.tbCoarse, mu)
-
-        for i in range(2):
-            mu0 = self.Dmu.element()
-            S.append(mu0)
-            self.fineSnapShotList.append(   self.getToolboxSolution(self.tbFine  , mu0) )
-            uH = self.getToolboxSolution(self.tbCoarse, mu0)
-            self.coarseSnapShotList.append(uH)
-            self.coarseSnapShotListGreedy.append(uH)
-            N += 1
-            self.orthonormalizeMatL2(self.coarseSnapShotListGreedy)
-        Delta_0 = np.abs(self.getReducedSolution(coarseSolutions, Xi_train_copy[0], 2).mean()
-                         - self.getReducedSolution(coarseSolutions, Xi_train_copy[1], 1).mean())
-
-        while Delta_star > eps and N < Nmax:
-            M = N - 1
-
-            Delta_star = -float('inf')
-
-            for i, mu in enumerate(tqdm(Xi_train_copy,desc=f"[NIRB] Greedy selection", ascii=False, ncols=120)):
-                uHN = self.getReducedSolution(coarseSolutions, mu, N)
-                uHM = self.getReducedSolution(coarseSolutions, mu, M)
-
-                Delta = np.abs( uHN.mean() - uHM.mean() ) / Delta_0
-
-                if Delta > Delta_star:
-                    Delta_star = Delta
-                    mu_star = mu
-                    idx = i
-
-            S.append(mu_star)
-            del Xi_train_copy[idx]
-            self.fineSnapShotList.append(  self.getToolboxSolution(self.tbFine  , mu_star))
-            uH = self.getToolboxSolution(self.tbCoarse, mu_star)
-            self.coarseSnapShotList.append(uH)
-            self.coarseSnapShotListGreedy.append(uH)
-            N += 1
-            self.orthonormalizeMatL2(self.coarseSnapShotListGreedy)
-
-            Deltas_conv.append(Delta_star)
-            if self.worldcomm.isMasterRank():
-                print(f"[nirb] Adding snapshot with mu = {mu_star}")
-                print(f"[nirb] Greedy loop done. N = {N}, Delta_star = {Delta_star}")
-
-        if self.worldcomm.isMasterRank():
-            print(f"[NIRB] Number of snapshot computed : {N}")
-
-        print(Deltas_conv)
-
-        return S, Xi_train, Deltas_conv
-
 
     def generateOperators(self, coarse=False):
         """Assemble L2 and H1 operators, stored in self.l2ScalarProduct and self.h1ScalarProduct
@@ -531,7 +421,7 @@ class nirbOffline(ToolboxModel):
             tolerance(float), optional : tolerance of the eigen value problem target accuracy of the data compression
             regulParam(float), optional : the regularization parameter for rectification
         """
-        self.reducedBasis, RIC= self.PODReducedBasis(tolerance=tolerance)
+        self.reducedBasis, RIC = self.PODReducedBasis(tolerance=tolerance)
         self.orthonormalizeL2()
         self.N = len(self.reducedBasis)
         if self.worldcomm.isMasterRank():
@@ -977,14 +867,14 @@ class nirbOnline(ToolboxModel):
         super().initCoarseToolbox()
         self.interpolationOperator = self.createInterpolator(self.tbCoarse, self.tbFine)
 
-    def setModel(self, tb):
+    def setModel(self, tb: ToolboxModel, interpolationOperator=None):
         """Set the model from a ToolboxModel object already initialized
 
         Args:
             tb (ToolboxModel): ToolboxModel object
         """
         super().setModel(tb)
-        if tb.Coarse is None:
+        if tb.tbCoarse is None:
             super().initCoarseToolbox()
         self.tbCoarse = tb.tbCoarse
 
