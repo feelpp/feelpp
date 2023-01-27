@@ -535,6 +535,7 @@ class nirbOffline(ToolboxModel):
         self.N = len(self.reducedBasis)
         if self.worldcomm.isMasterRank():
             print(f"[NIRB] Number of modes : {self.N}")
+        self.orthonormalizeL2()
 
         if len(self.l2ProductBasis)==0:
             self.getl2ProductBasis()
