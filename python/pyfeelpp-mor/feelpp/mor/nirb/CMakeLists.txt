@@ -1,4 +1,4 @@
-###  CMakeLists.txt; coding: utf-8 --- 
+###  CMakeLists.txt; coding: utf-8 ---
 
 #  Author(s): Ali Elarif <ali.elarif@cemosis.fr>
 #             Thomas Saigre <saigre@math.unistra.fr>
@@ -26,5 +26,5 @@ cmake_minimum_required(VERSION 3.3)
 
 message(STATUS "[pyfeelpp-mor] add pymodule nirb")
 
-install(FILES nirb.py utils.py nirb_perf.py postProcess.py DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/mor/nirb)
+install(FILES nirb.py utils.py nirb_perf.py greedy.py postProcess.py DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/mor/nirb)
 

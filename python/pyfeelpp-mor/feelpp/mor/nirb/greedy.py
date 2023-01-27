@@ -51,7 +51,6 @@ def initProblemGreedy(offline, online, Ninit, Ntrain, eps=1e-5, Xi_train=None, N
     S = []
     offline.fineSnapShotList = []
     offline.coarseSnapShotList = []
-    N = 0
 
     # Computation of coarse solutions
     coarseSolutions = {}
@@ -67,9 +66,12 @@ def initProblemGreedy(offline, online, Ninit, Ntrain, eps=1e-5, Xi_train=None, N
         offline.fineSnapShotList.append( offline.getToolboxSolution(offline.tbFine  , mu0) )
         uH = offline.getToolboxSolution( offline.tbCoarse, mu0)
         offline.coarseSnapShotList.append(uH)
-        N += 1
 
-    offline.reducedBasis, RIC = offline.PODReducedBasis()
+
+    offline.generateReducedBasis()
+    online.setBasis(offline)
+    N = Ninit
+    assert N == offline.N
 
     # Greedy loop
     while Delta_star > eps and N < Nmax:
@@ -91,11 +93,10 @@ def initProblemGreedy(offline, online, Ninit, Ntrain, eps=1e-5, Xi_train=None, N
 
         S.append(mu_star)
         del Xi_train_copy[idx]
-        offline.fineSnapShotList.append( offline.getToolboxSolution(offline.tbFine  , mu_star))
         uH = offline.getToolboxSolution( offline.tbCoarse, mu_star)
-        offline.coarseSnapShotList.append(uH)
+        offline.addFunctionToBasis( offline.getToolboxSolution(offline.tbFine, mu_star), coarseSnapshot=uH )
         N += 1
-        offline.reducedBasis, RIC = offline.PODReducedBasis()
+        online.setBasis(offline)
 
         Deltas_conv.append(Delta_star)
         if offline.worldcomm.isMasterRank():

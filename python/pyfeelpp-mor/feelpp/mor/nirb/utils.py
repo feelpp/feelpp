@@ -10,7 +10,7 @@ import feelpp.toolboxes.core as core
 from petsc4py import PETSc
 from slepc4py import SLEPc
 import numpy as np
-from mpi4py import MPI 
+from mpi4py import MPI
 
 
 ############################################################################################################
@@ -93,11 +93,11 @@ def generatedAndSaveSampling(Dmu, size, path="./sampling.sample", samplingMode="
 
 
 def samplingEqui(model_path,Ns,type='equidistribute'):
-    """ Get an equidistribute sampling of parameter 
+    """ Get an equidistribute sampling of parameter
 
     Args:
-        model_path (str): model path 
-        Ns (int): number of snapshot 
+        model_path (str): model path
+        Ns (int): number of snapshot
         type (str, optional): type of the equidistribution. Defaults to 'equidistribute'.
     """
     model = feelpp.readJson(model_path)
@@ -109,13 +109,13 @@ def samplingEqui(model_path,Ns,type='equidistribute'):
     key = crb.keys()
     mus = []
     dic = {}
-    for i in range(Ns): 
+    for i in range(Ns):
         for k in key:
             dic[k] = crb[k]['min'] + i*(crb[k]['max'] - crb[k]['min'])/float(Ns)
         mu.setParameters(dic)
         mus.append(mu)
-    
-    return mus 
+
+    return mus
 
 
 ############################################################################################################
@@ -150,7 +150,7 @@ def SavePetscArrayBin(filename, PetscAray):
     outputfile = os.path.join(filename)
 
     viewer = PETSc.Viewer().createBinary(outputfile, 'w')
-    
+
     # print(help(viewer.pushFormat))
     # print(help(viewer.Format))
 
@@ -163,7 +163,7 @@ def TruncatedEigenV(matrix, epsilon = None, nbModes = None):
     """
     Computes a truncated eigen value decomposition of a symetric definite
     matrix in petsc.mat format. Get only eigen value lambda_i > epsilon^2 lambda_max
-    the basis vectors returned are orthonormalized 
+    the basis vectors returned are orthonormalized
 
     Parameters
     ----------
@@ -180,29 +180,29 @@ def TruncatedEigenV(matrix, epsilon = None, nbModes = None):
     if epsilon != None and nbModes != None:# pragma: no cover
         raise("cannot specify both epsilon and nbModes")
 
-    # Get eigenpairs of the matrix 
-    E = SLEPc.EPS() # SVD for singular value decomposition or EPS for Eigen Problem Solver  
-    E.create(comm=MPI.COMM_SELF)  # create the solver in sequential 
+    # Get eigenpairs of the matrix
+    E = SLEPc.EPS() # SVD for singular value decomposition or EPS for Eigen Problem Solver
+    E.create(comm=MPI.COMM_SELF)  # create the solver in sequential
 
     E.setOperators(matrix)
     E.setFromOptions()
     E.setWhichEigenpairs(E.Which.LARGEST_MAGNITUDE)
     E.setDimensions(matrix.size[1]) # set the number of eigen val to compute
-    # E.setTolerances(epsilon) # set the tolerance used for the convergence 
+    # E.setTolerances(epsilon) # set the tolerance used for the convergence
 
     E.solve()
-    nbmaxEv = E.getConverged() # number of eigenpairs 
- 
+    nbmaxEv = E.getConverged() # number of eigenpairs
+
     eigenValues = []
-    eigenVectors = E.getInvariantSubspace() # Get orthonormal basis associated to eigenvalues 
+    eigenVectors = E.getInvariantSubspace() # Get orthonormal basis associated to eigenvalues
 
     for i in range(nbmaxEv):
         k = float(E.getEigenvalue(i).real)
         if abs(k)<1.e-12:
             k += 1.e-10
         eigenValues.append(k)
-    
-    E.destroy() # destroy the solver object 
+
+    E.destroy() # destroy the solver object
 
     eigenValues = np.array(eigenValues)
 
@@ -240,7 +240,7 @@ def TruncatedEigenV(matrix, epsilon = None, nbModes = None):
     #         #print(nbModes, index[0][0])
     #         print("removing numerical noise from eigenvalues, nbModes is set to "+str(index[0][0])+" instead of "+str(nbModes))
     #         nbModes = index[0][0]
-    
+
     return eigenValues, eigenVectors
     # return eigenValues[0:nbModes], eigenVectors[0:nbModes]
 
@@ -250,8 +250,7 @@ def TruncatedEigenV(matrix, epsilon = None, nbModes = None):
 #                                                                                                          #
 ############################################################################################################
 def WriteVecAppend(filename, array):
-    """ Write an array or list in filename with append mode 
-            the vector value will be writen horizontally 
+    """ Write an array or list in filename with append mode the vector value will be writen horizontally
     """
     with open(filename, 'a+') as file:
         file.write(' '.join(str(i) for i in list(array))+"\n")

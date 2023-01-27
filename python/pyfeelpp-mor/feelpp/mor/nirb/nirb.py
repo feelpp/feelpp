@@ -435,7 +435,7 @@ class nirbOffline(ToolboxModel):
             self.coeffCoarse, self.coeffFine = self.coeffRectification()
         return RIC 
 
-    def addFunctionToBasis(self, snapshot, tolerance=1e-6):
+    def addFunctionToBasis(self, snapshot, tolerance=1e-6, coarseSnapshot=None):
         """Add function to the reduced basis, previously generated
 
         Args:
@@ -444,6 +444,8 @@ class nirbOffline(ToolboxModel):
         """
 
         self.fineSnapShotList.append(snapshot)
+        if coarseSnapshot is not None:
+            self.coarseSnapShotList.append(coarseSnapshot)
         self.reducedBasis, RIC = self.PODReducedBasis(tolerance=tolerance)
         self.orthonormalizeL2()
 
@@ -491,7 +493,7 @@ class nirbOffline(ToolboxModel):
 
         Nsnap = len(self.fineSnapShotList)
 
-        if self.correlationMatrix == None :
+        if self.correlationMatrix is None :
             self.correlationMatrix = np.zeros((Nsnap, Nsnap))            
             for i, snap1 in enumerate(self.fineSnapShotList):
                 for j, snap2 in enumerate(self.fineSnapShotList):
@@ -877,6 +879,21 @@ class nirbOnline(ToolboxModel):
         if tb.tbCoarse is None:
             super().initCoarseToolbox()
         self.tbCoarse = tb.tbCoarse
+        self.interpolationOperator = interpolationOperator
+
+
+    def setBasis(self, offline):
+        """Set the basis functions of the online phase
+
+        Args:
+        -----
+            offline (NIRBOffline): offline phase
+        """
+        self.reducedBasis = offline.reducedBasis
+        self.l2ProductBasis = offline.l2ProductBasis
+        self.N = offline.N
+        self.coeffCoarse = offline.coeffCoarse
+        self.coeffFine = offline.coeffFine
 
     def getCompressedSol(self, mu=None, solution=None, Nb=None):
         """
@@ -922,7 +939,7 @@ class nirbOnline(ToolboxModel):
         interpSol = self.solveOnline(mu)[1]
         return interpSol
 
-    def getOnlineSol(self, mu, Nb=None):
+    def getOnlineSol(self, mu, Nb=None, interSol=None):
         """Get the Online nirb approximate solution
 
         Parameters
@@ -931,6 +948,8 @@ class nirbOnline(ToolboxModel):
             parameter 
         Nb : int, optional
             Size of the basis, by default None. If None, the whole basis is used
+        interSol : feelpp._discr.Element, optional
+            interpolated solution on fine mesh, by default None. If None, the solution is computed
 
         Returns
         -------
@@ -942,7 +961,7 @@ class nirbOnline(ToolboxModel):
         onlineSol = self.Xh.element()
         onlineSol.setZero()
 
-        compressedSol = self.getCompressedSol(mu=mu, Nb=Nb)
+        compressedSol = self.getCompressedSol(mu=mu, Nb=Nb, solution=interSol)
 
         if self.doRectification:
             if Nb not in self.RectificationMat:
@@ -951,8 +970,6 @@ class nirbOnline(ToolboxModel):
             for i in range(Nb):
                 onlineSol = onlineSol + float(coef[i]) * self.reducedBasis[i]
 
-            if self.worldcomm.isMasterRank():
-                print("[NIRB] Solution computed with Rectification post-process ")
         else:
             for i in range(Nb):
                 onlineSol = onlineSol + float(compressedSol[i]) * self.reducedBasis[i]
