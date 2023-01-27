@@ -1173,9 +1173,6 @@ class nirbOnline(ToolboxModel):
 
         coeffCoarseFile = os.path.join(path,'coeffcoarse.npy')
         coeffFineFile = os.path.join(path,'coefffine.npy')
-        # rank = self.worldcomm.localRank()
-        # coeffCoarseFile = os.path.join(path,f"coeffcoarse_np{rank}.npy")
-        # coeffFineFile = os.path.join(path,f"coefffine_np{rank}.npy")
         if self.doRectification:
             self.coeffCoarse = np.load(coeffCoarseFile)
             self.coeffFine = np.load(coeffFineFile)
