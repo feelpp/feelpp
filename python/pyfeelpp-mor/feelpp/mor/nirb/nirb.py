@@ -645,8 +645,8 @@ class nirbOffline(ToolboxModel):
 
             reducedBasis.append(vec)
             RIC.append(eigenValues[:i].sum() / sum_eigenValues)
-            if abs(1. - RIC[i])<= tolerance :
-                break
+            # if abs(1. - RIC[i])<= tolerance :
+            #     break
 
         return reducedBasis, RIC
 
