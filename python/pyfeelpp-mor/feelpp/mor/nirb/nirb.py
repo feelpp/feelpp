@@ -13,7 +13,7 @@ import feelpp.toolboxes.heat as heat
 import feelpp.toolboxes.fluid as fluid
 import feelpp.interpolation as fi
 from tqdm import tqdm
-from random import choices
+import random 
 import math
 import pathlib
 from scipy.linalg import eigh
@@ -369,8 +369,14 @@ class nirbOffline(ToolboxModel):
             s.sampling(numberOfInitSnapshots, samplingMode)
             vector_mu = s.getVector()
         else:
-            # vector_mu = choices(Xi_train, k=numberOfInitSnapshots)
-            vector_mu = Xi_train[:numberOfInitSnapshots]
+            if self.worldcomm.isMasterRank():
+                indice_mu = random.sample(range(len(Xi_train)), k=numberOfInitSnapshots)
+                indice_mu = np.array(indice_mu, dtype='i')
+            else :
+                indice_mu = np.empty(numberOfInitSnapshots, dtype='i')
+            
+            self.worldcomm.globalComm().Bcast(indice_mu, root=0)
+            vector_mu = [Xi_train[i] for i in list(indice_mu)]
 
         if computeCoarse:
             assert self.tbCoarse is not None, f"Coarse toolbox needed for computing coarse Snapshot. set doRectification->True"
