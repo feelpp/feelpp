@@ -4,7 +4,7 @@ from petsc4py import PETSc
 
 
 
-def ComputeErrors(nirb_on, mu, h1=False, relative=True):
+def ComputeErrors(nirb_on,mu, Nb=None,h1=False, relative=True):
     """Compute the convergence errors of the projection of FE solution (in fine mesh) in the reduced space
         and the nirb solution with and without rectification for a given one parameter.
         The rectification matrix has to be defined (so make sure to set doRectification = True in offline and online phase)
@@ -13,6 +13,7 @@ def ComputeErrors(nirb_on, mu, h1=False, relative=True):
     -----
         nirb_on (class): initialized nirbOnline class
         mu (ParameterSpaceElement) : parameter
+        Nb (int, optional) : Size of reduced space, by default None. If None, the whole basis is used
         h1 (bool) : if True, also compute the h1 norm. Default to False
         relative (bool) : if True, compute the relative error (error / norm of the true solution) default to True
 
@@ -36,9 +37,9 @@ def ComputeErrors(nirb_on, mu, h1=False, relative=True):
     uH = nirb_on.getInterpSol(mu)
     uh = nirb_on.getToolboxSolution(nirb_on.tbFine, mu)
     
-    uNH = getNirbProjection(nirb_on, uH)
-    uNHr = getNirbProjection(nirb_on, uH, doRectification=True)
-    uNh = getNirbProjection(nirb_on, uh)
+    uNH = getNirbProjection(nirb_on, uH, Nb=Nb)
+    uNHr = getNirbProjection(nirb_on, uH, doRectification=True, Nb=Nb)
+    uNh = getNirbProjection(nirb_on, uh, Nb=Nb)
 
     
     error = {'l2(uh-uHn)':[],'l2(uh-uHn)rec':[],'l2(uh-uhn)':[],'l2(uh)':[], 'l2(uh-uH)':[]}
@@ -63,7 +64,7 @@ def ComputeErrors(nirb_on, mu, h1=False, relative=True):
 
     return error
 
-def ComputeErrorSampling(nirb_on, Nsample = 1, Xi_test=None, samplingType='log-random', h1=False):
+def ComputeErrorSampling(nirb_on, Nb=None, Nsample = 1, Xi_test=None, samplingType='log-random', h1=False):
     """Compute the convergence errors of the projection of FE solution (in fine mesh) in the reduced space
         and the nirb solution with and without rectification for a given sampling of parameter.
         The rectification matrix has to be defined (so make sure to set doRectification = True in offline and online phase)
@@ -72,6 +73,7 @@ def ComputeErrorSampling(nirb_on, Nsample = 1, Xi_test=None, samplingType='log-r
     -----
         nirb_on (class): initialized nirbOnline class
         mu (ParameterSpaceElement) : parameter
+        Nb (int, optional) : Size of reduced space, by default None. If None, the whole basis is used
 
     Returns:
     --------
@@ -107,9 +109,9 @@ def ComputeErrorSampling(nirb_on, Nsample = 1, Xi_test=None, samplingType='log-r
         uH = nirb_on.getInterpSol(mu)
         uh = nirb_on.getToolboxSolution(nirb_on.tbFine, mu)
         
-        uNH = getNirbProjection(nirb_on, uH)
-        uNHr = getNirbProjection(nirb_on, uH, doRectification=True)
-        uNh = getNirbProjection(nirb_on, uh)
+        uNH = getNirbProjection(nirb_on, uH, Nb=Nb)
+        uNHr = getNirbProjection(nirb_on, uH, doRectification=True, Nb=Nb)
+        uNh = getNirbProjection(nirb_on, uh, Nb=Nb)
 
         # error 
         error['l2(uh-uHn)'].append(nirb_on.normMat(l2Mat, uNH-uh))
@@ -167,81 +169,31 @@ def ComputeErrorsH(nirb_on, tbRef, mu, path=None, name=None):
 
     return error
 
-def ComputeErrorSamplingOld(nirb_on, Nsample=1, Xi_test=None, samplingType='log-random'):
-    """Compute the errors between nirb solution and FE one for a given number of parameters
-    Args:
-    -----
-        nirb_on (class): initialized nirbOnline class
-        Nsample (int): number of parameter. Defaults to 1.
-        Xi_test (list): list of parameters. Defaults to None, in this case, a random sampling is done.
-        samplingType (str, optional): type of sampling distribution. Defaults to 'log-random'.
-
-    Returns:
-    --------
-    dict: containing
-        - dict['parameter'] : the index of the parameter from 0... to Nsample
-        - dict['l2(u-uHn)'] : the l2 norm between FE solution (u) and the nirb solution (uHn)
-        - dict['h1(u-uHn)'] : the h1 norm between FE solution (u) and the nirb solution (uHn)
-        - dict['l2(u-uH)'] : the l2 norm between both FE solution (u in the fine mesh) and (uH in the coarse mesh)
-        - dict['h1(u-uH)'] : the h1 norm between both FE solution (u in the fine mesh) and (uH in the coarse mesh)
-    """
-
-    # finish = timeit()
-    if Xi_test is None:
-        Dmu = nirb_on.Dmu
-        s = Dmu.sampling()
-        s.sampling(Nsample, samplingType)
-        mus = s.getVector()
-    else:
-        Nsample = len(Xi_test)
-        mus = Xi_test
-
-    l2Mat, h1Mat = nirb_on.generateOperators(h1=True)
-
-    err = np.zeros((Nsample,4))
-    for i,mu in enumerate(mus):
-        uH = nirb_on.getInterpSol(mu)
-        uHh= nirb_on.getOnlineSol(mu)
-        uh = nirb_on.getToolboxSolution(nirb_on.tbFine, mu)
-
-        err[i,0] = nirb_on.normMat(l2Mat, uHh-uh)
-        err[i,1] = nirb_on.normMat(h1Mat, uHh-uh)
-        err[i,2] = nirb_on.normMat(l2Mat, uH-uh)
-        err[i,3] = nirb_on.normMat(h1Mat, uH-uh)
-
-    errors = {}
-    errors['parameter'] = [*range(Nsample)]
-    errors['l2(u-uHn)'] = err[:,0]
-    errors['h1(u-uHn)'] = err[:,1]
-    errors['l2(u-uH)'] = err[:,2]
-    errors['h1(u-uH)'] = err[:,3]
-
-    return errors
-
-
-def getNirbProjection(nirb_on, u, doRectification=False):
+def getNirbProjection(nirb_on, u, Nb=None, doRectification=False):
     """Get the projection of a given discrete function in the reduced space with or without rectification
 
     Args
     ----
         nirb_on (class): initialized nirbOnline class
         u (feelpp._discr.element) : function
+        Nb (int, optional) : Size of reduced space, by default None. If None, the whole basis is used
         doRectification (bool) : default to True
     """
+    if Nb is None : Nb=nirb_on.N
     if doRectification:
         assert nirb_on.doRectification, f"set doRectification from nirb_on class"
 
-    coef = nirb_on.getCompressedSol(solution=u)
+    coef = nirb_on.getCompressedSol(solution=u, Nb=Nb)
 
     uNh = nirb_on.Xh.element()
     uNh.setZero()
 
     if doRectification:
-        coef = nirb_on.RectificationMat @ coef
-        for i in range(nirb_on.N):
-            uNh = uNh + float(coef[i])*nirb_on.reducedBasis[i]
-    else :
-        for i in range(nirb_on.N):
-            uNh = uNh + float(coef[i])*nirb_on.reducedBasis[i]
+        if Nb not in nirb_on.RectificationMat :
+                nirb_on.RectificationMat[Nb] = nirb_on.getRectification(nirb_on.coeffCoarse, nirb_on.coeffFine, Nb=Nb)
+        coef = nirb_on.RectificationMat[Nb] @ coef
+    
+    for i in range(Nb):
+        uNh.add(float(coef[i]), nirb_on.reducedBasis[i])
 
     return uNh 
