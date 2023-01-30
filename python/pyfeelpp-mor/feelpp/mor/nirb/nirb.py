@@ -222,7 +222,7 @@ class ToolboxModel():
         interpolator = fi.interpolator(domain = Vh_domain, image = Vh_image, range = image_tb.rangeMeshElements())
         return interpolator
 
-    def getInformations(self):
+    def getToolboxInfos(self):
         """Get information about the model
 
         Returns:
@@ -276,6 +276,7 @@ class nirbOffline(ToolboxModel):
         self.doRectification = doRectification
         self.doBiorthonormal = doBiorthonormal
         self.initCoarse = initCoarse
+        self.doGreedy = kwargs['greedy-generation']
 
         self.l2ScalarProductMatrix = None
         self.h1ScalarProductMatrix = None
@@ -308,6 +309,20 @@ class nirbOffline(ToolboxModel):
             super().initCoarseToolbox()
 
 
+
+    def getOfflineInfos(self):
+        """Get information about offline computation + infos about toolbox model
+
+        Returns:
+            dict: information about the model + infos about offline computation
+        """
+        info = self.getToolboxInfos()
+        info["doRectification"] = self.doRectification
+        info["doBiorthonormal"] = self.doBiorthonormal
+        info["doGreedy"] = self.doGreedy 
+        info["numberOfBasis"] = self.N
+        info["outdir"] = self.outdir 
+        return info
 
     def BiOrthonormalization(self):
         """Bi-orthonormalization of reduced basis
