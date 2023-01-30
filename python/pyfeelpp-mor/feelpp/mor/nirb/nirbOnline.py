@@ -66,7 +66,10 @@ if __name__ == "__main__":
     uHh = nirb_on.getOnlineSol(mu)
     finish = time()
 
-    
+    uh = nirb_on.getToolboxSolution(nirb_on.tbFine, mu)
+    error = nirb_on.normMat(uHh - uh)
+    print(f"[NIRB] L2 norm between nirb online and toolbox sol = {error}")
+
     if exporter:    
         dirname = "nirbSol"
         nirb_on.initExporter(dirname, toolbox="fine")
