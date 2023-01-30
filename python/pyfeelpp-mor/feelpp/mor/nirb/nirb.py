@@ -1207,14 +1207,18 @@ class nirbOnline(ToolboxModel):
 
         return 0
 
-    def normMat(self, Mat, u):
-        """ Compute the norm associated to matrix Mat
-
+    def normMat(self, u, Mat=None):
+        """ Compute the norm associated to matrix Mat in the fine mesh
+                ¶u¶ = sqrt(uT*Mat*u)
+            if Mat is not specified, L2 matrix will be computed 
         Args:
         -----
-            Mat (feelpp.__alg.SparseMatrix): the matrix
+            Mat (feelpp.__alg.SparseMatrix): the matrix. Defaults to None.
             u (feelpp.__discr_Vector): the vector to compute the norm
         """
+        if Mat is None:
+            Mat = self.generateOperators()
+
         return np.sqrt(np.abs(Mat.energy(u,u)))
 
     def solveOnline(self, mu):
