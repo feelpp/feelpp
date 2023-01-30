@@ -237,7 +237,8 @@ def getNirbProjection(nirb_on, u, doRectification=False):
     uNh.setZero()
 
     if doRectification:
-        coef = nirb_on.RectificationMat @ coef
+        rectMat = nirb_on.getRectificationMat(nirb_on.N)
+        coef = rectMat @ coef
         for i in range(nirb_on.N):
             uNh = uNh + float(coef[i])*nirb_on.reducedBasis[i]
     else :
