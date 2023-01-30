@@ -567,7 +567,7 @@ class nirbOffline(ToolboxModel):
     """
     Check convergence
     """
-    def checkConvergence(self,Ns=10, Xi_test=None, regulParam=1.e-10):
+    def checkConvergence(self, Ns=10, Xi_test=None, regulParam=1.e-10):
         """
             check convergence of the offline step
         """
@@ -964,9 +964,8 @@ class nirbOnline(ToolboxModel):
         compressedSol = self.getCompressedSol(mu=mu, Nb=Nb, solution=interSol)
 
         if self.doRectification:
-            if Nb not in self.RectificationMat:
-                self.RectificationMat[Nb] = self.getRectification(self.coeffCoarse, self.coeffFine, lambd=1.e-10, Nb=Nb)
-            coef = self.RectificationMat[Nb] @ compressedSol
+            rectMat = self.getRectificationMat(Nb)
+            coef = rectMat @ compressedSol
             for i in range(Nb):
                 onlineSol = onlineSol + float(coef[i]) * self.reducedBasis[i]
 
@@ -977,6 +976,11 @@ class nirbOnline(ToolboxModel):
         # to export, call self.exportField(onlineSol, "U_nirb")
 
         return onlineSol
+
+    def getRectificationMat(self, Nb, lambd=1.e-10):
+        if Nb not in self.RectificationMat:
+            self.RectificationMat[Nb] = self.getRectification(self.coeffCoarse, self.coeffFine, lambd=lambd, Nb=Nb)
+        return self.RectificationMat[Nb]
 
     def getRectification(self, coeffCoarse, coeffFine, lambd=1.e-10, Nb=None):
         """Compute rectification matrix associated to number of basis function selected
@@ -1085,7 +1089,7 @@ class nirbOnline(ToolboxModel):
         if self.doRectification:
             self.coeffCoarse = np.load(coeffCoarseFile)
             self.coeffFine = np.load(coeffFineFile)
-            self.RectificationMat[self.N] = self.getRectification(self.coeffCoarse, self.coeffFine, lambd=regulParam)
+            self.getRectificationMat(self.N, lambd=regulParam)
 
         if self.worldcomm.isMasterRank():
             print(f"[NIRB] Data loaded from {os.path.abspath(path)}")
