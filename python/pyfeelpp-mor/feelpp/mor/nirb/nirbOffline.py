@@ -58,14 +58,16 @@ if __name__ == "__main__":
     start = time.time()
 
     Xi_train_path = RESPATH +"/sampling_train.sample"
-    if os.path.isfile(Xi_train_path):
-        s = nirb_off.Dmu.sampling()
-        N = s.readFromFile(Xi_train_path)
-        Xi_train = s.getVector()    
-        if nirb_off.worldcomm.isMasterRank():
-            print(f"[NIRB] Xi_train loaded from {Xi_train_path}") 
-    else :
-        Xi_train = generatedAndSaveSampling(nirb_off.Dmu, 200, path=Xi_train_path, samplingMode="log-random")
+    # if os.path.isfile(Xi_train_path):
+    #     s = nirb_off.Dmu.sampling()
+    #     N = s.readFromFile(Xi_train_path)
+    #     Xi_train = s.getVector()    
+    #     if nirb_off.worldcomm.isMasterRank():
+    #         print(f"[NIRB] Xi_train loaded from {Xi_train_path}") 
+    # else :
+    #     Xi_train = generatedAndSaveSampling(nirb_off.Dmu, 200, path=Xi_train_path, samplingMode="log-random")
+
+    Xi_train = generatedAndSaveSampling(nirb_off.Dmu, 200, path=Xi_train_path, samplingMode="log-random")
 
     nirb_off.generateOperators(coarse=True)
 
