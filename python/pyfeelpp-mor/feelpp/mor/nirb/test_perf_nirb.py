@@ -221,6 +221,7 @@ if __name__ == '__main__':
     if os.path.isfile(Xi_test_path):
         s = Dmu.sampling()
         N = s.readFromFile(Xi_test_path)
+        assert N==Nsample, f"Given size of sampling test {Nsample} # loaded sampling size {N}"
         Xi_test = s.getVector()  
         if feelpp.Environment.isMasterRank():
             print(f"[NIRB] Xi_test loaded from {Xi_test_path}")  
@@ -234,7 +235,7 @@ if __name__ == '__main__':
     nirb_on = nirbOnline(**config_nirb)
     nirb_on.initModel()
 
-    # Nglob = 49
+    # Nglob = nirb_off.N
     # err = nirb_on.loadData(nbSnap=Nglob, path=RESPATH)
     # assert err == 0, "loadData failed"
 
