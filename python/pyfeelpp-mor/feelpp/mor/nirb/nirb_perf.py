@@ -48,18 +48,18 @@ def ComputeErrors(nirb_on,mu, Nb=None,h1=False, relative=True):
         
     # error 
     rel = nirb_on.normMat(l2Mat,uh) if relative else 1
-    error['l2(uh-uHn)'].append(nirb_on.normMat(l2Mat, uNH-uh) / rel)
-    error['l2(uh-uHn)rec'].append(nirb_on.normMat(l2Mat, uNHr-uh) / rel)
-    error['l2(uh-uhn)'].append(nirb_on.normMat(l2Mat, uNh-uh) / rel)
-    error['l2(uh)'].append(nirb_on.normMat(l2Mat,uh))
-    error['l2(uh-uH)'].append(nirb_on.normMat(l2Mat, uH-uh) / rel)
+    error['l2(uh-uHn)'].append(nirb_on.normMat(uNH-uh, l2Mat) / rel)
+    error['l2(uh-uHn)rec'].append(nirb_on.normMat(uNHr-uh, l2Mat) / rel)
+    error['l2(uh-uhn)'].append(nirb_on.normMat(uNh-uh, l2Mat) / rel)
+    error['l2(uh)'].append(nirb_on.normMat(uh, l2Mat))
+    error['l2(uh-uH)'].append(nirb_on.normMat(uH-uh, l2Mat) / rel)
     if h1 : 
         rel = nirb_on.normMat(h1Mat,uh) if relative else 1
-        error['h1(uh-uHn)'].append(nirb_on.normMat(h1Mat, uNH-uh) / rel)
-        error['h1(uh-uHn)rec'].append(nirb_on.normMat(h1Mat, uNHr-uh) / rel)
-        error['h1(uh-uhn)'].append(nirb_on.normMat(h1Mat, uNh-uh) / rel)
-        error['h1(uh)'].append(nirb_on.normMat(h1Mat,uh))
-        error['h1(uh-uH)'].append(nirb_on.normMat(h1Mat, uH-uh) / rel) 
+        error['h1(uh-uHn)'].append(nirb_on.normMat(uNH-uh, h1Mat) / rel)
+        error['h1(uh-uHn)rec'].append(nirb_on.normMat(uNHr-uh, h1Mat) / rel)
+        error['h1(uh-uhn)'].append(nirb_on.normMat(uNh-uh, h1Mat) / rel)
+        error['h1(uh)'].append(nirb_on.normMat(uh, h1Mat))
+        error['h1(uh-uH)'].append(nirb_on.normMat(uH-uh, h1Mat) / rel) 
 
 
     return error
@@ -114,17 +114,17 @@ def ComputeErrorSampling(nirb_on, Nb=None, Nsample = 1, Xi_test=None, samplingTy
         uNh = getNirbProjection(nirb_on, uh, Nb=Nb)
 
         # error 
-        error['l2(uh-uHn)'].append(nirb_on.normMat(l2Mat, uNH-uh))
-        error['l2(uh-uHn)rec'].append(nirb_on.normMat(l2Mat, uNHr-uh))
-        error['l2(uh-uhn)'].append(nirb_on.normMat(l2Mat, uNh-uh))
-        error['l2(uh)'].append(nirb_on.normMat(l2Mat,uh))
-        error['l2(uh-uH)'].append(nirb_on.normMat(l2Mat, uH-uh))
+        error['l2(uh-uHn)'].append(nirb_on.normMat(uNH-uh, l2Mat))
+        error['l2(uh-uHn)rec'].append(nirb_on.normMat(uNHr-uh, l2Mat))
+        error['l2(uh-uhn)'].append(nirb_on.normMat(uNh-uh, l2Mat))
+        error['l2(uh)'].append(nirb_on.normMat(uh, l2Mat))
+        error['l2(uh-uH)'].append(nirb_on.normMat(uH-uh,l2Mat))
         if h1 : 
-            error['h1(uh-uHn)'].append(nirb_on.normMat(h1Mat, uNH-uh))
-            error['h1(uh-uHn)rec'].append(nirb_on.normMat(h1Mat, uNHr-uh))
-            error['h1(uh-uhn)'].append(nirb_on.normMat(h1Mat, uNh-uh))
-            error['h1(uh)'].append(nirb_on.normMat(h1Mat,uh))
-            error['h1(uh-uH)'].append(nirb_on.normMat(h1Mat, uH-uh))    
+            error['h1(uh-uHn)'].append(nirb_on.normMat(uNH-uh, h1Mat))
+            error['h1(uh-uHn)rec'].append(nirb_on.normMat(uNHr-uh, h1Mat))
+            error['h1(uh-uhn)'].append(nirb_on.normMat(uNh-uh, h1Mat))
+            error['h1(uh)'].append(nirb_on.normMat(uh, h1Mat))
+            error['h1(uh-uH)'].append(nirb_on.normMat(uH-uh, h1Mat))    
 
     return error 
 
