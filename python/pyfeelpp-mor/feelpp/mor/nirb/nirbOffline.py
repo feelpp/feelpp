@@ -1,10 +1,85 @@
 import sys
 from feelpp.mor.nirb.nirb import *
+from feelpp.mor.nirb.greedy import *
 from feelpp.mor.nirb.utils import WriteVecAppend, init_feelpp_environment, generatedAndSaveSampling
 import time
 import json
 import argparse
-import pandas as pd 
+import pandas as pd
+
+
+
+def run_offline(config_nirb, regulParam=1e-10):
+    """Run offline step using POD
+
+    Parameters
+    ----------
+    config_nirb : dict
+        configuration of the NIRB model
+    regulParam : float, optional
+        Regularization parameter, by default 1e-10
+
+    Returns
+    -------
+    nirbOffline
+        nirbOffline object, with the basis initialized
+    """
+    nirb_off = nirbOffline(**config_nirb, initCoarse=True)
+    nirb_off.initModel()
+
+    nirb_off.generateOperators(coarse=True)
+    nbSnap = 10
+    _ = nirb_off.initProblem(nbSnap)
+    RIC = nirb_off.generateReducedBasis(regulParam=regulParam)
+    print(f"[NIRB] Basis of size {nirb_off.N} generated, RIC = {RIC}")
+
+    return nirb_off
+
+
+
+def run_offline_greedy(config_nirb, Ninit, Ntrain, eps=1e-5, Xi_train=None, Nmax=50, samplingMode="log-random", Mexpr="N-1"):
+    """Run offline step using greedy algorithm
+
+    Parameters
+    ----------
+    config_nirb : dict
+        configuration of the NIRB model
+    Ninit : int
+        size of the initial basis computed using POD
+    Ntrain : int
+        size of the training set
+    eps : float, optional
+        tolerance for the greedy algorithm
+    Xi_train : list, optional
+        training set, by default None. If None, a sample of size Ntrain is generated
+    Nmax : int, optional
+        maximal size of the basis, by default 50
+    samplingMode : str, optional
+        mode for sampling the training set, by default "log-random"
+    Mexpr : str, optional
+        evaluation of M regarding N
+
+    Returns
+    -------
+    nirbOffline
+        nirbOffline object, with the basis initialized
+    """
+
+    tb = ToolboxModel(**config_nirb)
+    tb.initModel(initCoarse=True)
+    interpolator = tb.createInterpolator(tb.tbCoarse, tb.tbFine)
+
+    nirb_off = nirbOffline(initCoarse=True, **config_nirb)
+    nirb_off.setModel(tb)
+
+    nirb_on = nirbOnline(**config_nirb)
+    nirb_on.setModel(tb, interpolationOperator=interpolator)
+
+    nirb_off.generateOperators(coarse=True)
+    res = initProblemGreedy(nirb_off, nirb_on, Ninit, Ntrain, eps=eps,
+                Xi_train=Xi_train, Nmax=Nmax, samplingMode=samplingMode, Mexpr=Mexpr)
+
+    return nirb_off
 
 
 if __name__ == "__main__":
@@ -16,6 +91,17 @@ if __name__ == "__main__":
     parser.add_argument("--outdir", help="output directory", type=str, default=None)
     parser.add_argument("--greedy", help="With or without Greedy [default=0]", type=int, default=0)
     parser.add_argument("--convergence", help="Get convergence error [default=1]", type=int, default=0)
+    parser.add_argument("--generate-sampling", help="Generate and save a sampling of given size [default=0]\
+        If called, no basis is generated", type=int, default=0)
+    parser.add_argument("--load-sampling", help="Load a sampling previously generated [default=0]", type=int, default=0)
+
+    # Greedy arguments
+    parser.add_argument("--Ninit", help="[Greedy] Number of initial snapshots [default=5]", type=int, default=5)
+    parser.add_argument("--Ntrain", help="[Greedy] Number of training snapshots [default=1000]", type=int, default=1000)
+    parser.add_argument("--eps", help="[Greedy] Tolerance [default=1e-5]", type=float, default=1e-5)
+    parser.add_argument("--Nmax", help="[Greedy] Maximum number of snapshots [default=50]", type=int, default=50)
+    parser.add_argument("--sampling-mode", help="[Greedy] Sampling mode [default=log-random]", type=str, default="log-random")
+    parser.add_argument("--Mexpr", help="[Greedy] Expression of N as a function of N [default=\"N-1\"]", type=str, default="N-1")
 
     args = parser.parse_args()
     config_file = args.config_file
@@ -28,17 +114,15 @@ if __name__ == "__main__":
     nirb_file = feelpp.Environment.expand(cfg['nirb']['filename'])
     config_nirb = feelpp.readJson(nirb_file)['nirb']
 
-    greedy = args.greedy
-    conv = args.convergence
+    convergence = args.convergence != 0
+    config_nirb['greedy-generation'] = args.greedy != 0
 
-    bo = [False, True]
-    convergence = bo[conv]
 
-    nbSnap=args.N
-    if nbSnap==None:
+    nbSnap = args.N
+    if nbSnap == None:
         nbSnap = config_nirb['nbSnapshots']
 
-    config_nirb['greedy-generation'] = bo[greedy]
+    config_nirb['greedy-generation'] = args.greedy
 
     doGreedy = config_nirb['greedy-generation']
     doRectification = config_nirb['doRectification']
@@ -49,34 +133,30 @@ if __name__ == "__main__":
         RESPATH = f"results/{rectPath}/{greedyPath}"
     else:
         RESPATH = outdir
-    
-    ### Initializa the nirb object
-    nirb_off = nirbOffline(initCoarse=True, **config_nirb)
-    nirb_off.initModel()
 
-    start = time.time()
     ###
     # Only once: generate and save a sampling
-    # if False:
-    #     generatedAndSaveSampling(nirb_off.Dmu, 100)
-    #     sys.exit(0)
+    if args.generate_sampling != 0:
+        nirb_off = nirbOffline(**config_nirb, initCoarse=False)
+        nirb_off.initModel()
+        generatedAndSaveSampling(nirb_off.Dmu, args.generatesampling)
+        sys.exit(0)
+
     ###
     # If wanted: load the savec sampling to use it in algorithm generation
     Xi_train = None
-    # if True:
-    #     s = nirb_off.Dmu.sampling()
-    #     N_train = s.readFromFile('./sampling.sample')
-    #     Xi_train = s.getVector()
+    if args.load_sampling != 0:
+        s = nirb_off.Dmu.sampling()
+        N_train = s.readFromFile('./sampling.sample')
+        Xi_train = s.getVector()
 
-    nirb_off.generateOperators(coarse=True)
-
-    if doGreedy:
-        _, Xi_train, _ = nirb_off.initProblemGreedy(100, 1e-5, Nmax=config_nirb['nbSnapshots'], Xi_train=Xi_train, computeCoarse=True, samplingMode="random")
+    # Initialize objects and run the offline stage
+    start = time.time()
+    if config_nirb['greedy-generation']:
+        nirb_off = run_offline_greedy(config_nirb, args.Ninit, args.Ntrain, eps=args.eps,
+                Xi_train=Xi_train, Nmax=50, samplingMode=args.sampling_mode, Mexpr=args.Mexpr)
     else:
-        Xi_train = nirb_off.initProblem(nbSnap)
-    RIC = nirb_off.generateReducedBasis(regulParam=1.e-10, tolerance=1.e-12)
-
-    print("RIC = ", RIC)
+        nirb_off = run_offline(config_nirb)
 
     tolortho = 1.e-8
     nirb_off.orthonormalizeL2(tol=tolortho)
@@ -88,23 +168,23 @@ if __name__ == "__main__":
     print(f"proc {nirb_off.worldcomm.localRank()} Is L2 orthonormalized ?", nirb_off.checkL2Orthonormalized(tol=tolortho))
     #     print("Is H1 orthonormalized ? ", nirb_off.checkH1Orthonormalized())
 
-    if convergence :
-        Xi_test_path = RESPATH + f"/sampling_test.sample"
+    if convergence:
+        Xi_test_path = os.path.join(RESPATH, "/sampling_test.sample")
         if os.path.isfile(Xi_test_path):
             s = nirb_off.Dmu.sampling()
             N = s.readFromFile(Xi_test_path)
-            Xi_test = s.getVector()  
+            Xi_test = s.getVector()
             if nirb_off.worldcomm.isMasterRank():
-                print(f"[NIRB] Xi_test loaded from {Xi_test_path}")  
+                print(f"[NIRB] Xi_test loaded from {Xi_test_path}")
         else :
             Ns = 30
             Xi_test = generatedAndSaveSampling(nirb_off.Dmu, Ns, path=Xi_test_path, samplingMode="log-random")
-            
+
         Err = nirb_off.checkConvergence(Ns=30, Xi_test=Xi_test)
         df = pd.DataFrame(Err)
-        file =RESPATH +f"/offlineError.csv"  
+        file = os.path.join(RESPATH, "offlineError.csv")
         df.to_csv(file, index=False)
-        print(f"[NIRB] Offline error saved in {file}")
+        print(f"[NIRB] Offline error saved in {os.path.join(os.getcwd(), file)}")
 
 
     perf = []
@@ -112,9 +192,9 @@ if __name__ == "__main__":
     perf.append(finish-start)
 
     if doRectification:
-        file=RESPATH+f'/nirbOffline_time_exec_np{nirb_off.worldcomm.globalSize()}_rectif.dat'
+        file = os.path.join(RESPATH, f'/nirbOffline_time_exec_np{nirb_off.worldcomm.globalSize()}_rectif.dat')
     else :
-        file=RESPATH+f'/nirbOffline_time_exec_np{nirb_off.worldcomm.globalSize()}.dat'
+        file = os.path.join(RESPATH, f'/nirbOffline_time_exec_np{nirb_off.worldcomm.globalSize()}.dat')
     WriteVecAppend(file, perf)
 
     info = nirb_off.getInformations()

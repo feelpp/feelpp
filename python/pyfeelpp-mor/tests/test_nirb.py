@@ -5,8 +5,9 @@ import pytest
 import feelpp
 from feelpp.mor.nirb.nirb import *
 from feelpp.mor.nirb.greedy import *
+from feelpp.mor.nirb.nirbOffline import run_offline, run_offline_greedy
 
-# desc : ((toolboxtype, 'model_directory', cfg, json, geo, H, h, dimension, doRectification), 'name-of-the-test')
+# desc : (('path', 'config-file', 'model-file', rectification), 'name-of-the-test')
 casesNirb = [
         #  (('testcase/nirb/lid-driven-cavity/', 'cfd2d.cfg', 'cfd2d.json', False), 'lid-driven-cavity w/o rect.'),
         #  (('testcase/nirb/lid-driven-cavity/', 'cfd2d.cfg', 'cfd2d.json', True) , 'lid-driven-cavity rect'),
@@ -23,46 +24,6 @@ casesInit = [
          (('testcase/nirb/thermal-fin-3d', 'thermal-fin.cfg', 'thermal-fin.json'), 'thermal-fin-3d'),
         ]
 cases_paramsInit, cases_idsInit = list(zip(*casesInit))
-
-
-def run_offline(model_path, rect):
-    nbSnap = 6
-    nirb_config = feelpp.readJson(model_path)['nirb']
-    nirb_config['doRectification'] = rect
-    nirb_off = nirbOffline(**nirb_config, initCoarse=True)
-    nirb_off.initModel()
-    nirb_off.generateOperators(coarse=True)
-
-    _ = nirb_off.initProblem(nbSnap)
-    RIC = nirb_off.generateReducedBasis(regulParam=1.e-10)
-
-    tolortho =1.e-8
-    nirb_off.orthonormalizeL2(tol=tolortho)
-
-    assert nirb_off.checkL2Orthonormalized(tol=tolortho), "L2 orthonormalization failed"
-    # assert nirb_off.checkH1Orthonormalized(), "H1 orthonormalization failed"
-
-    nirb_off.saveData(force=True)
-
-
-
-def run_offline_greedy(model_path, rect):
-    nirb_config = feelpp.readJson(model_path)['nirb']
-    nirb_config['doRectification'] = rect
-
-    tb = ToolboxModel(**nirb_config)
-    tb.initModel(initCoarse=True)
-    interpolator = tb.createInterpolator(tb.tbCoarse, tb.tbFine)
-
-    nirb_off = nirbOffline(initCoarse=True, **nirb_config)
-    nirb_off.setModel(tb)
-
-    nirb_on = nirbOnline(**nirb_config)
-    nirb_on.setModel(tb, interpolationOperator=interpolator)
-
-    nirb_off.generateOperators(coarse=True)
-
-    res = initProblemGreedy(nirb_off, nirb_on, 5, 1000, 1e-5, Nmax=10)
 
 
 
@@ -82,28 +43,36 @@ def run_online(model_path, rect):
     uh = nirb_on.getToolboxSolution(nirb_on.tbFine, mu)
 
 
-@pytest.mark.parametrize("dir,cfg,json,rect", cases_params_nirb, ids=cases_ids_nirb)
+@pytest.mark.parametrize("dir, cfg, json, rect", cases_params_nirb, ids=cases_ids_nirb)
 def test_nirb(dir, cfg, json, rect, init_feelpp):
     e = init_feelpp
     casefile = os.path.join(os.path.dirname(__file__), dir, cfg)
     model_path = os.path.join(os.path.dirname(__file__), dir, json)
     feelpp.Environment.setConfigFile(casefile)
 
-    run_offline(model_path, rect)
-    run_online(model_path, rect)
+    nirb_config = feelpp.readJson(model_path)['nirb']
+    nirb_config['doRectification'] = rect
 
-@pytest.mark.parametrize("dir,cfg,json", cases_paramsInit, ids=cases_idsInit)
-def test_nirb_greedy(dir, cfg, json, init_feelpp):
+    nirb_offline = run_offline(nirb_config)
+    Nbasis = nirb_offline.N
+    # run_online(model_path, rect)
+
+@pytest.mark.parametrize("dir, cfg, json, rect", cases_params_nirb, ids=cases_ids_nirb)
+def test_nirb_greedy(dir, cfg, json, rect, init_feelpp):
     e = init_feelpp
     casefile = os.path.join(os.path.dirname(__file__), dir, cfg)
     model_path = os.path.join(os.path.dirname(__file__), dir, json)
     feelpp.Environment.setConfigFile(casefile)
 
-    run_offline_greedy(model_path, True)
-    run_online(model_path, True)
+    nirb_config = feelpp.readJson(model_path)['nirb']
+    nirb_config['doRectification'] = rect
+
+    nirb_offline = run_offline_greedy(nirb_config, 5, 500)
+    Nbasis = nirb_offline.N
+    # run_online(model_path, True)
 
 
-@pytest.mark.parametrize("dir,cfg,json", cases_paramsInit, ids=cases_idsInit)
+@pytest.mark.parametrize("dir, cfg, json", cases_paramsInit, ids=cases_idsInit)
 def test_initializer(dir, cfg, json, init_feelpp):
     e = init_feelpp
     casefile = os.path.join(os.path.dirname(__file__), dir, cfg)
