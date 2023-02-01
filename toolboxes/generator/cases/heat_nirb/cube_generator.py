@@ -10,9 +10,9 @@ def generate_cube_case():
     parser.add_argument("--Nv", help="number of fins in vertical direction [default=3]", type=str, default="3")
     parser.add_argument("--Nh", help="number of fins in horizontal direction [default=3]", type=str, default="3")
     parser.add_argument("--Nd", help="number of fins in depth direction [default=3]", type=str, default="3")
-    parser.add_argument("--L", help="width of a cube [default=1]", type=str, default="1")
-    parser.add_argument("--height", help="height of a cube [default=1]", type=str, default="1")
-    parser.add_argument("--d", help="depth of a cube (for 3D only) [default=1]", type=str, default="1")
+    parser.add_argument("--L", help="length of the domain [default=1]", type=float, default=1)
+    parser.add_argument("--h", help="height of the domain [default=1]", type=float, default=1)
+    parser.add_argument("--d", help="depth of the domain (for 3D only) [default=1]", type=str, default="1")
     parser.add_argument("--dim", help="dimension of the case (2 or 3) [default=2]", type=str, default="2")
     parser.add_argument("--odir", help="output directory", type=str, default=".")
 
@@ -53,7 +53,7 @@ def generate_cube_case():
 
     if args.dim == "2":
         ElementShape = "Rectangle"
-        ElementArgs = "{ s*L, r*height, 0, L, height, 0}"
+        ElementArgs = "{ (s-1)*width, (r-1)*height, 0, width, height, 0}"
         eltDim = "Surface"
         eltDimM1 = "Curve"
         diffVal = 1
@@ -61,21 +61,23 @@ def generate_cube_case():
 
     else:
         ElementShape = "Box"
-        ElementArgs = "{ (r-1)*L, (s-1)*height, (t-1)*d, L, height, d}"
+        ElementArgs = "{ (r-1)*width, (s-1)*height, (t-1)*depth, width, height, depth}"
         eltDim = "Volume"
         eltDimM1 = "Surface"
         diffVal = 3
         fourierVal = 1
 
 
-
+    # width =float(args.L)/float(args.Nh)
+    # height = float(args.h)/float(args.Nv)
+    # depth = float(args.d)/float(args.Nd)  
 
     renderGeo = templateGeo.render(
         Nv = args.Nv,
         Nh = args.Nh,
         Nd = args.Nd,
         L = args.L,
-        height = args.height,
+        h = args.h,
         d = args.d,
         ElementShape = ElementShape,
         ElementArgs = ElementArgs,
