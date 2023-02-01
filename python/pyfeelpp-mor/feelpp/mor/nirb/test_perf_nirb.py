@@ -53,7 +53,7 @@ def offline(nirb, RESPATH, doGreedy, N, Xi_train=None, regulParam=1e-10):
     return res 
 
 
-def online_error_sampling(nirb, RESPATH, Nb=None,  Nsample=50, Xi_test=None, verbose=True, save=True):
+def online_error_sampling(nirb, RESPATH, errorfile=None, Nb=None,  Nsample=50, Xi_test=None, verbose=True, save=True):
     """Compute the error between the toolbox solution and the NIRB solution for a sampling of parameters
        Generates the file errorParams/errors${N}.csv containing the errors for each parameter, for a given value of N,
           corresponding to the size of the reduced basis.
@@ -71,11 +71,21 @@ def online_error_sampling(nirb, RESPATH, Nb=None,  Nsample=50, Xi_test=None, ver
     errorN = ComputeErrorSampling(nirb, Nb=Nb, Nsample=Nsample, Xi_test=Xi_test, h1=True)
 
     df = pd.DataFrame(errorN) 
-    df['N'] = nirb.N 
+    df['N'] = Nb
 
     if save:
-        if feelpp.Environment.isMasterRank():    
-            file = Path(f"{RESPATH}/errors{Nsample}Params.csv").absolute()
+        if feelpp.Environment.isMasterRank():
+            if not os.path.isdir(RESPATH):
+                os.makedirs(RESPATH)
+
+            if errorfile is None :   
+                file = Path(f"{RESPATH}/errors{Nsample}Params.csv").absolute()
+            else : 
+                if not RESPATH[-1] == "/":
+                    file = RESPATH +'/'+ errorfile 
+                else :
+                    file = RESPATH + errorfile 
+
             header = not os.path.isfile(file)
             df.to_csv(file, mode='a', index=False, header=header)
             print(f"[NIRB] Convergence errors are saved in {file}")
@@ -138,6 +148,39 @@ def online_time_measure(nirb, Nsample=50, Xi_test=None):
 
     return res
 
+def loadSampling(Dmu, path='./', idmodel='s4', Ntest=50, Ntrain=200, samplingMode='log-random'):
+    """upload sampling parameter for trainning and testing 
+
+    Parameters
+    ----------
+    path : str
+        path to load or save sampling 
+    idmodel : str, optional
+        identifiant of the model, by default 's4'
+    Ntest : int, optional
+        number of test parameter, by default 50
+    Ntrain : int, optional
+        number of train parameter, by default 200
+    """
+
+    Xtrain_path = path + f"/sampling_train_{idmodel}_N{Ntrain}.sample"
+    Xtest_path = path + f"/sampling_test_{idmodel}_N{Ntest}.sample"
+
+    
+    if os.path.isfile(Xtest_path) and os.path.isfile(Xtrain_path) :
+        s = Dmu.sampling()
+        N = s.readFromFile(Xtest_path)
+        assert N==Ntest, f"Given size of sampling test {Ntest} # loaded sampling size {N}"
+        Xi_test = s.getVector() 
+        N = s.readFromFile(Xtrain_path)
+        assert N==Ntrain, f"Given size of sampling train {Ntrain} # loaded sampling size {N}"
+        Xi_train = s.getVector() 
+        if feelpp.Environment.isMasterRank():
+            print(f"[NIRB] Sampling loaded from path : {path}")  
+    else :
+        Xi_train, Xi_test = SamplingPreProcess(Dmu,Ntrain=Ntrain, Ntest=Ntest, path=path, idmodel=idmodel, samplingMode=samplingMode)
+
+    return Xi_train, Xi_test
     
 
 if __name__ == '__main__':
@@ -149,6 +192,7 @@ if __name__ == '__main__':
     parser.add_argument("--greedy", help="With or without Greedy [default=0]", type=int, default=0)
     parser.add_argument("--savetime", help="Save or not the execution time [default=0]", type=int, default=0)
     parser.add_argument("--convergence", help="Get convergence error [default=1]", type=int, default=1)
+    parser.add_argument("--idmodel", help="identifiant of the model [default='s4'(for square 4)]", type=str, default="s4")
 
     ## get parser args 
     args = parser.parse_args()
@@ -179,54 +223,34 @@ if __name__ == '__main__':
     rectPath = ["noRect", "Rect"][doRectification]
     greedyPath = ["noGreedy", "Greedy"][doGreedy]
     RESPATH = f"results/{rectPath}/{greedyPath}"
+    if not os.path.exists(RESPATH):
+        os.makedirs(RESPATH)
     
     size = feelpp.Environment.numberOfProcessors()
 
-    ### For time mesure in // computing
     
     ## square4 2D :
     # config_nirb['coarsemesh_path'] = f"$cfgdir/meshFiles/squareCoarse_p{size}.json"
     # config_nirb['finemesh_path'] = f"$cfgdir/meshFiles/squareFine_p{size}.json"
-    Xi_train_path = RESPATH + f"/sampling_train4_N200.sample"
-    Xi_test_path = RESPATH + f"/sampling_test4_Ns{Nsample}.sample"
-
+    # idmodel = 's4'
+    
     ## square9 2D 
     # config_nirb['coarsemesh_path'] = f"$cfgdir/square9mesh/squareCoarse_p{size}.json"
     # config_nirb['finemesh_path'] = f"$cfgdir/square9mesh/squareFine_p{size}.json"
-    # Xi_train_path = RESPATH + f"/sampling_train9_N200.sample"
-    # Xi_test_path = RESPATH + f"/sampling_test9_Ns{Nsample}.sample"
-
+    # idmodel ='s9'
+    
     ## thermal fin 3D 
     # config_nirb['coarsemesh_path'] = f"$cfgdir/meshFiles/coarseMesh_p{size}.json"
     # config_nirb['finemesh_path'] = f"$cfgdir/meshFiles/fineMesh_p{size}.json"
-    # Xi_train_path = RESPATH + f"/sampling_train3dfin_N200.sample"
-    # Xi_test_path = RESPATH + f"/sampling_test3dfin_Ns{Nsample}.sample"
+    # idmodel = 'fin3d'
 
     pas = 3
     baseList = range(1,Nbase, pas)
 
     Dmu = loadParameterSpace(model_path)
-    # Xi_train_path = RESPATH + f"/sampling_train4_N200.sample"
-    # Xi_test_path = RESPATH + f"/sampling_test4_Ns{Nsample}.sample"
-
-    if os.path.isfile(Xi_train_path):
-        s = Dmu.sampling()
-        N = s.readFromFile(Xi_train_path)
-        Xi_train = s.getVector()    
-        if feelpp.Environment.isMasterRank():
-            print(f"[NIRB] Xi_train loaded from {Xi_train_path}") 
-    else :
-        Xi_train = generatedAndSaveSampling(Dmu, 200, path=Xi_train_path, samplingMode="log-random")
-
-    if os.path.isfile(Xi_test_path):
-        s = Dmu.sampling()
-        N = s.readFromFile(Xi_test_path)
-        assert N==Nsample, f"Given size of sampling test {Nsample} # loaded sampling size {N}"
-        Xi_test = s.getVector()  
-        if feelpp.Environment.isMasterRank():
-            print(f"[NIRB] Xi_test loaded from {Xi_test_path}")  
-    else :
-        Xi_test = generatedAndSaveSampling(Dmu, Nsample, path=Xi_test_path, samplingMode="log-random")
+    ## get distinct training and testing sample 
+    idmodel = args.idmodel 
+    Xi_train, Xi_test = loadSampling(Dmu, path=RESPATH, idmodel=idmodel, Ntest=Nsample)
 
     ## generate nirb offline and online object :  
     nirb_off = nirbOffline(**config_nirb, initCoarse=doGreedy)
@@ -235,33 +259,33 @@ if __name__ == '__main__':
     nirb_on = nirbOnline(**config_nirb)
     nirb_on.initModel()
 
-    # Nglob = nirb_off.N
-    # err = nirb_on.loadData(nbSnap=Nglob, path=RESPATH)
-    # assert err == 0, "loadData failed"
+    ## load offline datas only once 
+    Nglob = nirb_off.N
+    err = nirb_on.loadData(nbSnap=Nglob, path=RESPATH)
+    assert err == 0, "loadData failed"
 
 
             
     comm.Barrier()
 
+    errorfile = f"errors{Nsample}Params_{idmodel}.csv"
+
     if convergence :
-        ## Get convergence error     
+        ## Get convergence error in respect to basis function     
         for N in baseList:
             N = int(N)
             print("\n\n-----------------------------")
             print(f"[NIRB] Test with N = {N}")
-            err = nirb_on.loadData(nbSnap=N, path=RESPATH)
-            assert err == 0, "loadData failed"
-            online_error_sampling(nirb_on, RESPATH, Nsample=Nsample, Xi_test=Xi_test, verbose=False, save=True)
+            online_error_sampling(nirb_on, RESPATH,errorfile=errorfile, Nb=N, Nsample=Nsample, Xi_test=Xi_test, verbose=False, save=True)
             
     if timeExec:
         ## Get online time mesure
-        err = nirb_on.loadData(nbSnap=baseList[-1], path=RESPATH)
-        assert err == 0, "loadData failed"
         resOnline = online_time_measure(nirb_on, Nsample=Nsample)
         if feelpp.Environment.isMasterRank():
             res = resOnline
             res['nirb_offline'] = resOffline['nirb_offline']
             res['nproc'] = size
+            res['stype'] = idmodel 
             df = pd.DataFrame(res) 
             # save file 
             parent3 = list(Path(RESPATH).absolute().parents)[3]
