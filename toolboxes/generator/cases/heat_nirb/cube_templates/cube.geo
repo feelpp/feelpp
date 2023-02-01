@@ -5,9 +5,15 @@ h = 0.05;
 Nv = DefineNumber[ {{ Nv }}, Name "Parameters/Nv" ];
 Nh = DefineNumber[ {{ Nh }}, Name "Parameters/Nh" ];
 L = DefineNumber[ {{ L }}, Name "Parameters/L" ];
-height = DefineNumber[ {{ height }}, Name "Parameters/height" ];
+h = DefineNumber[ {{ h }}, Name "Parameters/h" ];
+
+height = h/Nv;
+width = L/Nh;
+
 {% if dim == '3' -%}
 d = DefineNumber[ {{ d }}, Name "Parameters/d" ];
+Nd = DefineNumber[ {{ Nd }}, Name "Parameters/Nd" ];
+depth = d/Nd;
 {% endif %}
 hmax=0.1;
 Mesh.CharacteristicLengthMax = hmax;
