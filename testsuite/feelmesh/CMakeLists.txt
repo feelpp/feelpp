@@ -25,3 +25,6 @@ if ( FEELPP_HAS_PARMMG OR FEELPP_HAS_MMG )
                        test_remesh.json test_remesh_relations.json test_remesh_curved.json 
                    TIMEOUT 500)
 endif()
+
+feelpp_add_application(bvh2D SRCS test_bvh.cpp DEFS FEELPP_DIM=2 CFG test_bvh2d.cfg GEO domain_2d.geo )
+feelpp_add_application(bvh3D SRCS test_bvh.cpp DEFS FEELPP_DIM=3 CFG test_bvh3d.cfg GEO cubic_cavity.geo )
