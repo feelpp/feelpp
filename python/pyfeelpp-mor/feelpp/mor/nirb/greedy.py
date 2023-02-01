@@ -46,7 +46,7 @@ def initProblemGreedy(offline, online, Ninit, Ntrain, eps=1e-5, Xi_train=None, N
         Xi_train = s.getVector()
     Xi_train_copy = Xi_train.copy()
 
-    Delta_star = eps+1
+    Delta_star = eps + 1
     Deltas_conv = []
     S = []
     offline.fineSnapShotList = []
@@ -74,6 +74,7 @@ def initProblemGreedy(offline, online, Ninit, Ntrain, eps=1e-5, Xi_train=None, N
     assert N == offline.N
 
     # Greedy loop
+    print("[NIRB] Starting greedy loop with tolerance eps = ", eps, " and Nmax = ", Nmax)
     while Delta_star > eps and N < Nmax:
         M = eval(Mexpr)
 
