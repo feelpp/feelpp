@@ -14,7 +14,7 @@ if __name__ == "__main__":
     # Get dataFrame from csv file 
     # file = dataPath + "errors50ParamsLambda10P1.csv"
     file = dataPath + "noGreedy/errors50Params.csv"
-    # file = dataPath + "noGreedy/errors10Params.csv"
+    file = dataPath + "noGreedy/errors30Params_s4.csv"
     # file = dataPath + "noGreedy/offlineError.csv"
     
     # load absolute errors
