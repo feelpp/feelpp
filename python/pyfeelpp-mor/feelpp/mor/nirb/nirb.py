@@ -289,6 +289,9 @@ class nirbOffline(ToolboxModel):
         self.N = 0 # number of modes
         self.correlationMatrix = None # correlation matrix of the snapshot Mat[i,j] = <U_i, U_j>
 
+        self.coeffCoarse = None         # Coefficients for the rectification matrix
+        self.coeffFine = None
+
         if self.worldcomm.isMasterRank():
             print(f"[NIRB Offline] Initialization done")
 
@@ -433,7 +436,7 @@ class nirbOffline(ToolboxModel):
         #     self.BiOrthonormalization()
         if self.doRectification:
             self.coeffCoarse, self.coeffFine = self.coeffRectification()
-        return RIC 
+        return RIC
 
     def addFunctionToBasis(self, snapshot, tolerance=1e-6, coarseSnapshot=None):
         """Add function to the reduced basis, previously generated
@@ -484,7 +487,7 @@ class nirbOffline(ToolboxModel):
 
         Parameters
         ----------
-            tolerance (float) : tolerance to stop selection of basis (if (1 - RIC)<=tolerance) 
+            tolerance (float) : tolerance to stop selection of basis (if (1 - RIC)<=tolerance)
 
         Returns
         -------
@@ -494,7 +497,7 @@ class nirbOffline(ToolboxModel):
         Nsnap = len(self.fineSnapShotList)
 
         if self.correlationMatrix is None :
-            self.correlationMatrix = np.zeros((Nsnap, Nsnap))            
+            self.correlationMatrix = np.zeros((Nsnap, Nsnap))
             for i, snap1 in enumerate(self.fineSnapShotList):
                 for j, snap2 in enumerate(self.fineSnapShotList):
                         self.correlationMatrix[i,j] = self.l2ScalarProductMatrix.energy(snap1,snap2)
@@ -511,7 +514,7 @@ class nirbOffline(ToolboxModel):
         idx = eigenValues.argsort()[::-1]
         eigenValues = eigenValues[idx]
         eigenVectors = eigenVectors[:, idx]
-        
+
         Nmode = len(eigenValues)
 
         for i in range(Nmode):
@@ -522,7 +525,7 @@ class nirbOffline(ToolboxModel):
         sum_eigenValues = eigenValues.sum()
         RIC = []
 
-        for i in range(Nmode):              
+        for i in range(Nmode):
             vec = self.Xh.element()
             vec.setZero()
             for j in range(Nsnap):
@@ -945,7 +948,7 @@ class nirbOnline(ToolboxModel):
         Parameters
         ----------
         mu : ParameterSpaceElement
-            parameter 
+            parameter
         Nb : int, optional
             Size of the basis, by default None. If None, the whole basis is used
         interSol : feelpp._discr.Element, optional
