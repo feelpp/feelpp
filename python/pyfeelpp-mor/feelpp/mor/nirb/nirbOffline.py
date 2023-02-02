@@ -75,7 +75,7 @@ if __name__ == "__main__":
         _, Xi_train, _ = nirb_off.initProblemGreedy(100, 1e-5, Nmax=config_nirb['nbSnapshots'], Xi_train=Xi_train, computeCoarse=True, samplingMode="random")
     else:
         Xi_train = nirb_off.initProblem(nbSnap, Xi_train=Xi_train)
-    RIC = nirb_off.generateReducedBasis(regulParam=1.e-10, tolerance=1.e-12)
+    RIC = nirb_off.generateReducedBasis(tolerance=1.e-12)
 
 
     tolortho = 1.e-8
