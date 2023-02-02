@@ -14,7 +14,7 @@ def run_online(config_nirb, path, nbSnap, Xi=None, Nb=None):
     nirb_on.initModel()
     if Xi is None:
         s = nirb_on.Dmu.sampling()
-        s.generate(10, "random")
+        s.sampling(10, "random")
         Xi = s.getVector()
 
     if Nb is None: Nb = nbSnap
@@ -38,6 +38,9 @@ if __name__ == "__main__":
     parser.add_argument("--exporter", help="Export nirb sol for vizualisation [default=0]", type=int, default=0)
     parser.add_argument("--convergence", help="Get convergence error [default=1]", type=int, default=0)
 
+    parser.add_argument("--Xi", help="Path to file containing the parameters", type=str, default=None)
+    parser.add_argument("--Nparam", help="Number of parameters to test, if Xi is not given", type=int, default=10)
+
     args = parser.parse_args()
     config_file = args.config_file
     outdir = args.outdir
@@ -50,19 +53,14 @@ if __name__ == "__main__":
     config_nirb = feelpp.readJson(nirb_file)['nirb']
 
 
-    greedy = args.greedy
-    expo = args.exporter
-    conv = args.convergence
+    convergence = args.convergence != 0
+    exporter = args.exporter != 0
+    config_nirb['greedy-generation'] = args.greedy
 
-    bo = [False, True]
-    exporter = bo[expo]
-    convergence = bo[conv]
-
-    nbSnap=args.N
-    if nbSnap==None:
+    nbSnap = args.N
+    if nbSnap == None:
         nbSnap = config_nirb['nbSnapshots']
 
-    config_nirb['greedy-generation'] = bo[greedy]
 
     doGreedy = config_nirb['greedy-generation']
     doRectification = config_nirb['doRectification']
@@ -74,22 +72,32 @@ if __name__ == "__main__":
     else:
         RESPATH = outdir
 
-    nirb_on = nirbOnline(**config_nirb)
-    nirb_on.initModel()
-
-    start= time()
-
-    mu = nirb_on.Dmu.mumin()
-    err = nirb_on.loadData(path=RESPATH, nbSnap=nbSnap)
-    assert err == 0, "Error while loading data"
-    uHh = nirb_on.getOnlineSol(mu)
+    start = time()
+    nirb_on = run_online(config_nirb, path=RESPATH, nbSnap=nbSnap, Nb=nbSnap)
     finish = time()
 
+    s = nirb_on.Dmu.sampling()
+    if args.Xi is not None:
+        N_train = s.readFromFile('./sampling.sample')
+        Xi = s.getVector()
+    else:
+        s.sampling(args.Nparam, "random")
+        Xi = s.getVector()
+
+
+
     if exporter:
-        dirname = "nirbSol"
+        dirname = "nirbOnlineSolutions"
         nirb_on.initExporter(dirname, toolbox="fine")
-        fieldname = 'T'
-        nirb_on.exportField(uHh,fieldname)
+    
+    for i, mu in enumerate(Xi):
+        print(f"[NIRB online] Getting online solution with mu = {mu}")
+        uHh = nirb_on.getOnlineSol(mu)
+
+        if exporter:
+            nirb_on.exportField(uHh, f"uHhN_{i}")
+    
+    if exporter:
         nirb_on.saveExporter()
 
     perf = []
@@ -97,10 +105,10 @@ if __name__ == "__main__":
     perf.append(finish-start)
 
     if doRectification:
-        file = RESPATH+f'/nirbOnline_time_exec_np{nirb_on.worldcomm.globalSize()}_rectif.dat'
+        file = os.path.join(RESPATH, f'nirbOnline_time_exec_np{nirb_on.worldcomm.globalSize()}_rectif.dat')
     else:
-        file = RESPATH+f'/nirbOnline_time_exec_np{nirb_on.worldcomm.globalSize()}.dat'
-    WriteVecAppend(file,perf)
+        file = os.path.join(RESPATH, f'nirbOnline_time_exec_np{nirb_on.worldcomm.globalSize()}.dat')
+    WriteVecAppend(file, perf)
 
     if convergence :
         Nsample = 50
@@ -110,7 +118,7 @@ if __name__ == "__main__":
         df = pd.DataFrame(errorN)
         df['N'] = nirb_on.N
 
-        file =RESPATH +f"/errors{Nsample}Params.csv"
+        file = os.path.join(RESPATH, f"errors{Nsample}Params.csv")
 
         header = not os.path.isfile(file)
         df.to_csv(file, mode='a', index=False, header=header)
