@@ -8,7 +8,7 @@ Box(2) = {0, 0, 0, 1, 1, 1};
 S[]=BooleanDifference{ Volume{1}; Delete; }{ Volume{2}; Delete;};//+
 
 Characteristic Length{ PointsOf{ Volume{ : }; } } = hs;
-bdy[] = CombinedBoundary { Volume{1}; };
+bdy[] = Boundary { Volume{1}; };
 
 For ii In { 0 : (#bdy[]-1) }
         Printf("boundary number %g = %g", ii, Abs(bdy[ii]));
