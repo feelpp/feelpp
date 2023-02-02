@@ -9,6 +9,25 @@ from feelpp.mor.nirb.nirb_perf import *
 import argparse
 
 
+def run_online(config_nirb, path, nbSnap, Xi=None, Nb=None):
+    nirb_on = nirbOnline(**config_nirb)
+    nirb_on.initModel()
+    if Xi is None:
+        s = nirb_on.Dmu.sampling()
+        s.generate(10, "random")
+        Xi = s.getVector()
+
+    if Nb is None: Nb = nbSnap
+
+    err = nirb_on.loadData(path=path, nbSnap=nbSnap)
+    assert err == 0, "Error while loading data"
+
+    for mu in Xi:
+        nirb_on.getOnlineSol(mu, Nb)
+
+    return nirb_on
+
+
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='NIRB Online')

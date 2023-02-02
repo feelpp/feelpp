@@ -6,6 +6,7 @@ import feelpp
 from feelpp.mor.nirb.nirb import *
 from feelpp.mor.nirb.greedy import *
 from feelpp.mor.nirb.nirbOffline import run_offline, run_offline_greedy
+from feelpp.mor.nirb.nirbOnline import run_online
 
 # desc : (('path', 'config-file', 'model-file', rectification), 'name-of-the-test')
 casesNirb = [
@@ -27,21 +28,6 @@ cases_paramsInit, cases_idsInit = list(zip(*casesInit))
 
 
 
-def run_online(model_path, rect):
-    nbSnap=6
-    nirb_config = feelpp.readJson(model_path)['nirb']
-    nirb_config['doRectification'] = rect
-    nirb_on = nirbOnline(**nirb_config)
-    nirb_on.initModel()
-    err = nirb_on.loadData(nbSnap=nbSnap)
-    assert err == 0, "loadData failed"
-
-    mu = nirb_on.Dmu.element()
-
-    uHh = nirb_on.getOnlineSol(mu)
-    uH = nirb_on.getInterpSol(mu)
-    uh = nirb_on.getToolboxSolution(nirb_on.tbFine, mu)
-
 
 @pytest.mark.parametrize("dir, cfg, json, rect", cases_params_nirb, ids=cases_ids_nirb)
 def test_nirb(dir, cfg, json, rect, init_feelpp):
@@ -54,8 +40,19 @@ def test_nirb(dir, cfg, json, rect, init_feelpp):
     nirb_config['doRectification'] = rect
 
     nirb_offline = run_offline(nirb_config)
+    nirb_offline.saveData(force=True)
     Nbasis = nirb_offline.N
-    # run_online(model_path, rect)
+    s = nirb_offline.Dmu.sampling()
+    s.sampling(10, "random")
+    
+    # Check that the online solution is indeed computed
+    run_online(nirb_config, nirb_offline.outdir, Nbasis, s.getVector())
+
+    if Nbasis > 4:
+        # Check that we can load smaller basis
+        run_online(nirb_config, nirb_offline.outdir, Nbasis - 2, s.getVector())
+        # Check that we can compute solution with a subbasis
+        run_online(nirb_config, nirb_offline.outdir, Nbasis, s.getVector(), Nb=Nbasis - 2)
 
 @pytest.mark.parametrize("dir, cfg, json, rect", cases_params_nirb, ids=cases_ids_nirb)
 def test_nirb_greedy(dir, cfg, json, rect, init_feelpp):
@@ -68,9 +65,19 @@ def test_nirb_greedy(dir, cfg, json, rect, init_feelpp):
     nirb_config['doRectification'] = rect
 
     nirb_offline = run_offline_greedy(nirb_config, 5, 200, Nmax=20)
+    nirb_offline.saveData(force=True)
     Nbasis = nirb_offline.N
-    # run_online(model_path, True)
+    s = nirb_offline.Dmu.sampling()
+    s.sampling(10, "random")
+    
+    # Check that the online solution is indeed computed
+    run_online(nirb_config, nirb_offline.outdir, Nbasis, s.getVector())
 
+    if Nbasis > 4:
+        # Check that we can load smaller basis
+        run_online(nirb_config, nirb_offline.outdir, Nbasis - 2, s.getVector())
+        # Check that we can compute solution with a subbasis
+        run_online(nirb_config, nirb_offline.outdir, Nbasis, s.getVector(), Nb=Nbasis - 2)
 
 @pytest.mark.parametrize("dir, cfg, json", cases_paramsInit, ids=cases_idsInit)
 def test_initializer(dir, cfg, json, init_feelpp):
