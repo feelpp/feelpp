@@ -28,7 +28,7 @@ def offline(nirb, RESPATH, doGreedy, N, Xi_train=None):
         nirb.initProblemGreedy(500, 1e-3, Xi_train=Xi_train, Nmax=N, computeCoarse=True, samplingMode="log-random")
     else:
         nirb.initProblem(N, Xi_train=Xi_train)
-    RIC = nirb.generateReducedBasis(regulParam=regulParam)
+    RIC = nirb.generateReducedBasis()
 
     nirb.saveData(RESPATH, force=True)
     
