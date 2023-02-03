@@ -68,41 +68,66 @@ def initProblemGreedy(offline, online, Ninit, Ntrain, eps=1e-5, Xi_train=None, N
         offline.coarseSnapShotList.append(uH)
 
 
-    offline.generateReducedBasis()
+    RIC = offline.generateReducedBasis()
+    print("[NIRB] RIC = ", RIC)
     online.setBasis(offline)
     N = Ninit
     assert N == offline.N
 
     # Greedy loop
-    print("[NIRB] Starting greedy loop with tolerance eps = ", eps, " and Nmax = ", Nmax)
+    if offline.worldcomm.isMasterRank():
+        print("[NIRB] Starting greedy loop with tolerance eps = ", eps, " and Nmax = ", Nmax)
     while Delta_star > eps and N < Nmax:
         M = eval(Mexpr)
 
-        Delta_star = -float('inf')
+        mu_star, Xi_train = greedyStep(offline, online, Xi_train, N, M, interpSol)
 
-        for i, mu in enumerate(tqdm(Xi_train_copy,desc=f"[NIRB] Greedy selection", ascii=False, ncols=120)):
-            uHhN = online.getOnlineSol(mu, N, interSol=interpSol[mu])
-            uHhM = online.getOnlineSol(mu, M, interSol=interpSol[mu])
+        S.append(mu_star)      
 
-            diff = uHhN - uHhM
-            Delta = offline.l2ScalarProductMatrix.energy(diff, diff)
 
-            if Delta > Delta_star:
-                Delta_star = Delta
-                mu_star = mu
-                idx = i
+    online.saveExporter()
 
-        S.append(mu_star)
-        del Xi_train_copy[idx]
-        uH = offline.getToolboxSolution( offline.tbCoarse, mu_star)
-        offline.addFunctionToBasis( offline.getToolboxSolution(offline.tbFine, mu_star), coarseSnapshot=uH )
-        N += 1
-        online.setBasis(offline)
+    if offline.worldcomm.isMasterRank():
+        print(f"[NIRB] Number of snapshot computed : {N}")
 
-        Deltas_conv.append(Delta_star)
-        if offline.worldcomm.isMasterRank():
-            print(f"[nirb] Adding snapshot with mu = {mu_star}")
-            print(f"[nirb] Greedy loop done. N = {N}, Delta_star = {Delta_star}")
+    return S, Xi_train
+
+
+def greedyStep(offline, online, Xi_train, N, M, interpSol):
+
+    Delta_star = -float('inf')
+
+    Deltas = []
+
+    for i, mu in enumerate(tqdm(Xi_train,desc=f"[NIRB] Greedy selection", ascii=False, ncols=120)):
+        uHhN = online.getOnlineSol(mu, N, interSol=interpSol[mu])
+        uHhM = online.getOnlineSol(mu, M, interSol=interpSol[mu])
+
+        diff = uHhN - uHhM
+        Delta = offline.l2ScalarProductMatrix.energy(diff, diff)
+
+        Deltas.append(Delta)
+
+        if Delta > Delta_star:
+            Delta_star = Delta
+            mu_star = mu
+            idx = i
+
+    uHN_export = online.getOnlineSol(mu_star, N, interSol=interpSol[mu_star])
+    uHM_export = online.getOnlineSol(mu_star, M, interSol=interpSol[mu_star])
+    uh = online.getToolboxSolution(online.tbFine, mu)
+
+    online.exportField(uHN_export, f"NIRB{N:02}uHhN")
+    online.exportField(uHM_export, f"NIRB{N:02}uHhM")
+    online.exportField(uh, f"NIRB{N:02}uh")
+
+    del Xi_train[idx]
+    uH = offline.getToolboxSolution( offline.tbCoarse, mu_star)
+    offline.addFunctionToBasis( offline.getToolboxSolution(offline.tbFine, mu_star), coarseSnapshot=uH )
+    N += 1
+    online.setBasis(offline)
+
+    return mu_star, Xi_train
 
     if offline.worldcomm.isMasterRank():
         print(f"[NIRB] Number of snapshot computed : {N}")
