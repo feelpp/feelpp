@@ -32,9 +32,9 @@ def offline(nirb, RESPATH, doGreedy, N, Xi_train=None):
 
     nirb.saveData(RESPATH, force=True)
     
-    RIC = np.array(RIC)
-    file = "ric_offline.txt"
-    np.savetxt(file,RIC)
+    # RIC = np.array(RIC)
+    # file = "ric_offline.txt"
+    # np.savetxt(file,RIC)
 
     print(f"proc {nirb_off.worldcomm.localRank()} Is L2 orthonormalized ?", nirb_off.checkL2Orthonormalized())
     finish = time.time()
@@ -190,7 +190,7 @@ if __name__ == '__main__':
     parser.add_argument("--Ntest", help="Number of sampling test parameter [default=10]", type=int, default=10)
     parser.add_argument("--Nbase", help="Max number of basis function [default=100]", type=int, default=100)
     parser.add_argument("--greedy", help="With or without Greedy [default=0]", type=int, default=0)
-    parser.add_argument("--savetime", help="Save or not the execution time [default=0]", type=int, default=0)
+    parser.add_argument("--timeexec", help="Save or not the execution time [default=0]", type=int, default=0)
     parser.add_argument("--convergence", help="Get convergence error [default=1]", type=int, default=1)
     parser.add_argument("--idmodel", help="identifiant of the model [default='s4'(for square 4)]", type=str, default="s4")
 
@@ -199,13 +199,13 @@ if __name__ == '__main__':
     config_file = args.config_file
 
     greedy = args.greedy 
-    save_time = args.savetime
+    timeexec = args.timeexec
     conv = args.convergence
     Nsample = args.Ntest
     Nbase = args.Nbase
 
     bo = [False, True]
-    timeExec = bo[save_time]
+    timeExec = bo[timeexec]
     convergence = bo[conv]
 
     ## Init feelpp 
@@ -223,8 +223,9 @@ if __name__ == '__main__':
     rectPath = ["noRect", "Rect"][doRectification]
     greedyPath = ["noGreedy", "Greedy"][doGreedy]
     RESPATH = f"results/{rectPath}/{greedyPath}"
-    if not os.path.exists(RESPATH):
-        os.makedirs(RESPATH)
+    if feelpp.Environment.isMasterRank():
+        if not os.path.exists(RESPATH):
+            os.makedirs(RESPATH)
     
     size = feelpp.Environment.numberOfProcessors()
 
@@ -242,7 +243,7 @@ if __name__ == '__main__':
     ## thermal fin 3D 
     # config_nirb['coarsemesh_path'] = f"$cfgdir/meshFiles/coarseMesh_p{size}.json"
     # config_nirb['finemesh_path'] = f"$cfgdir/meshFiles/fineMesh_p{size}.json"
-    # idmodel = 'fin3d'
+    
 
     pas = 3
     baseList = range(1,Nbase, pas)
