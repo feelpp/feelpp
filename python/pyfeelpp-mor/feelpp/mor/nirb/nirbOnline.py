@@ -60,6 +60,13 @@ if __name__ == "__main__":
 
     start= time()
 
+    ## mu for thermal bridge test case  
+    # mub = {"h_top":1./0.06,"h_bottom":1./0.11 }
+    # mu = nirb_on.Dmu.element()
+    # mu.setParameters(mub)
+    # print(mu.view())
+
+    ## general mu 
     mu = nirb_on.Dmu.mumin()
     err = nirb_on.loadData(path=RESPATH, nbSnap=nbSnap)
     assert err == 0, "Error while loading data"
@@ -71,6 +78,11 @@ if __name__ == "__main__":
     print(f"[NIRB] L2 norm between nirb online and toolbox sol = {error}")
 
     if exporter:    
+        ## export thermal bridge solution 
+        # dirname = "nirbSolBridge"
+        # nirb_on.tbFine.fieldTemperaturePtr().setZero()
+        # nirb_on.tbFine.fieldTemperaturePtr().add(1,uHh)
+        # nirb_on.tbFine.exportResults()
         dirname = "nirbSol"
         nirb_on.initExporter(dirname, toolbox="fine")
         fieldname = 'T'
