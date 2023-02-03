@@ -64,7 +64,7 @@ def ComputeErrors(nirb_on,mu, Nb=None,h1=False, relative=True):
 
     return error
 
-def ComputeErrorSampling(nirb_on, Nb=None, Nsample = 1, Xi_test=None, samplingType='log-random', h1=False):
+def ComputeErrorSampling(nirb_on, Nb=None, Nsample = 1, Xi_test=None, samplingType='log-random', h1=False, regulParam=1.e-10):
     """Compute the convergence errors of the projection of FE solution (in fine mesh) in the reduced space
         and the nirb solution with and without rectification for a given sampling of parameter.
         The rectification matrix has to be defined (so make sure to set doRectification = True in offline and online phase)
@@ -110,7 +110,7 @@ def ComputeErrorSampling(nirb_on, Nb=None, Nsample = 1, Xi_test=None, samplingTy
         uh = nirb_on.getToolboxSolution(nirb_on.tbFine, mu)
         
         uNH = getNirbProjection(nirb_on, uH, Nb=Nb)
-        uNHr = getNirbProjection(nirb_on, uH, doRectification=True, Nb=Nb)
+        uNHr = getNirbProjection(nirb_on, uH, doRectification=True, Nb=Nb, regulParam=regulParam)
         uNh = getNirbProjection(nirb_on, uh, Nb=Nb)
 
         # error 
@@ -169,7 +169,7 @@ def ComputeErrorsH(nirb_on, tbRef, mu, path=None, name=None):
 
     return error
 
-def getNirbProjection(nirb_on, u, Nb=None, doRectification=False):
+def getNirbProjection(nirb_on, u, Nb=None, doRectification=False, regulParam=1.-10):
     """Get the projection of a given discrete function in the reduced space with or without rectification
 
     Args
@@ -178,6 +178,7 @@ def getNirbProjection(nirb_on, u, Nb=None, doRectification=False):
         u (feelpp._discr.element) : function
         Nb (int, optional) : Size of reduced space, by default None. If None, the whole basis is used
         doRectification (bool) : default to True
+        regulParam(float, optionnal) : regularization parameter of the rectification pre-process. Defaults to 1.e-10
     """
     if Nb is None : Nb=nirb_on.N
     if doRectification:
@@ -190,7 +191,7 @@ def getNirbProjection(nirb_on, u, Nb=None, doRectification=False):
 
     if doRectification:
         if Nb not in nirb_on.RectificationMat :
-                nirb_on.RectificationMat[Nb] = nirb_on.getRectification(nirb_on.coeffCoarse, nirb_on.coeffFine, Nb=Nb)
+                nirb_on.RectificationMat[Nb] = nirb_on.getRectification(nirb_on.coeffCoarse, nirb_on.coeffFine, Nb=Nb, lambd=regulParam)
         coef = nirb_on.RectificationMat[Nb] @ coef
     
     for i in range(Nb):

@@ -52,7 +52,7 @@ def offline(nirb, RESPATH, doGreedy, N, Xi_train=None):
     return res 
 
 
-def online_error_sampling(nirb, RESPATH, errorfile=None, Nb=None,  Nsample=50, Xi_test=None, verbose=True, save=True):
+def online_error_sampling(nirb, RESPATH, errorfile=None, Nb=None,  Nsample=50, Xi_test=None, verbose=True, save=True, regulParam=1.e-10):
     """Compute the error between the toolbox solution and the NIRB solution for a sampling of parameters
        Generates the file errorParams/errors${N}.csv containing the errors for each parameter, for a given value of N,
           corresponding to the size of the reduced basis.
@@ -65,9 +65,10 @@ def online_error_sampling(nirb, RESPATH, errorfile=None, Nb=None,  Nsample=50, X
         Xi_test (list): list of parameters to test. Default is None, in which case the parameters are generated randomly
         verbose (bool, optional): if True, print the errors. Defaults to True.
         save (bool, optional): if True, save the errors in a csv file. Defaults to False.
+        regulParam(float, optionnal) : regularization parameter for the rectification preprocess. Defaults to 1.e-10
     """
     
-    errorN = ComputeErrorSampling(nirb, Nb=Nb, Nsample=Nsample, Xi_test=Xi_test, h1=True)
+    errorN = ComputeErrorSampling(nirb, Nb=Nb, Nsample=Nsample, Xi_test=Xi_test, h1=True, regulParam=regulParam)
 
     df = pd.DataFrame(errorN) 
     df['N'] = Nb
@@ -259,24 +260,30 @@ if __name__ == '__main__':
     nirb_on.initModel()
 
     ## load offline datas only once 
+    regulParam = 1.e-10
     Nglob = nirb_off.N
-    err = nirb_on.loadData(nbSnap=Nglob, path=RESPATH)
+    err = nirb_on.loadData(nbSnap=Nglob, path=RESPATH, regulParam=regulParam)
     assert err == 0, "loadData failed"
+    del nirb_on.RectificationMat[Nglob]
 
-
-            
     comm.Barrier()
+    Nl = [0, 1, 3, 5, 7, 9, 10, 11, 12, 17]
+    ## for n in Nl, Lambda = 1.E-n 
+    for lm in Nl :
+        regulParam = 1./10**lm 
+        idd = str(idmodel) + f"lmd{lm}"
+        errorfile = f"errors{Nsample}Params_{idd}.csv"
 
-    errorfile = f"errors{Nsample}Params_{idmodel}.csv"
+        if convergence :
+            ## Get convergence error in respect to basis function     
+            for N in baseList:
+                N = int(N)
+                if feelpp.Environment.isMasterRank():
+                    print("\n\n-----------------------------")
+                    print(f"[NIRB] Test with N = {N}, lambda = {regulParam}")
+                online_error_sampling(nirb_on, RESPATH,errorfile=errorfile, Nb=N, Nsample=Nsample, Xi_test=Xi_test, verbose=False, regulParam=regulParam)
+                del nirb_on.RectificationMat[N] 
 
-    if convergence :
-        ## Get convergence error in respect to basis function     
-        for N in baseList:
-            N = int(N)
-            print("\n\n-----------------------------")
-            print(f"[NIRB] Test with N = {N}")
-            online_error_sampling(nirb_on, RESPATH,errorfile=errorfile, Nb=N, Nsample=Nsample, Xi_test=Xi_test, verbose=False, save=True)
-            
     if timeExec:
         ## Get online time mesure
         resOnline = online_time_measure(nirb_on, Nsample=Nsample)
