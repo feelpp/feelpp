@@ -28,7 +28,7 @@ def run_offline(config_nirb, regulParam=1e-10):
     nirb_off.initModel()
 
     nirb_off.generateOperators(coarse=True)
-    nbSnap = 10
+    nbSnap = config_nirb['nbSnapshots']
     _ = nirb_off.initProblem(nbSnap)
     RIC = nirb_off.generateReducedBasis(regulParam=regulParam)
     print(f"[NIRB] Basis of size {nirb_off.N} generated, RIC = {RIC}")
@@ -79,7 +79,7 @@ def run_offline_greedy(config_nirb, Ninit, Ntrain, eps=1e-5, Xi_train=None, Nmax
     res = initProblemGreedy(nirb_off, nirb_on, Ninit, Ntrain, eps=eps,
                 Xi_train=Xi_train, Nmax=Nmax, samplingMode=samplingMode, Mexpr=Mexpr)
 
-    return nirb_off
+    return nirb_off, nirb_on, res
 
 
 if __name__ == "__main__":
@@ -154,7 +154,7 @@ if __name__ == "__main__":
     start = time.time()
     if config_nirb['greedy-generation']:
         nirb_off = run_offline_greedy(config_nirb, args.Ninit, args.Ntrain, eps=args.eps,
-                Xi_train=Xi_train, Nmax=50, samplingMode=args.sampling_mode, Mexpr=args.Mexpr)
+                Xi_train=Xi_train, Nmax=args.Nmax, samplingMode=args.sampling_mode, Mexpr=args.Mexpr)
     else:
         nirb_off = run_offline(config_nirb)
 
@@ -192,9 +192,9 @@ if __name__ == "__main__":
     perf.append(finish-start)
 
     if doRectification:
-        file = os.path.join(RESPATH, f'/nirbOffline_time_exec_np{nirb_off.worldcomm.globalSize()}_rectif.dat')
+        file = os.path.join(RESPATH, f'nirbOffline_time_exec_np{nirb_off.worldcomm.globalSize()}_rectif.dat')
     else :
-        file = os.path.join(RESPATH, f'/nirbOffline_time_exec_np{nirb_off.worldcomm.globalSize()}.dat')
+        file = os.path.join(RESPATH, f'nirbOffline_time_exec_np{nirb_off.worldcomm.globalSize()}.dat')
     WriteVecAppend(file, perf)
 
     info = nirb_off.getInformations()

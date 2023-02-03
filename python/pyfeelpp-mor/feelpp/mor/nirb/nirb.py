@@ -518,7 +518,7 @@ class nirbOffline(ToolboxModel):
         Nmode = len(eigenValues)
 
         for i in range(Nmode):
-            eigenVectors[:,i] /math.sqrt(abs(eigenValues[i]))
+            eigenVectors[:,i] /= math.sqrt(abs(eigenValues[i]))
 
         reducedBasis = []
 
