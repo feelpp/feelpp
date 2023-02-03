@@ -10,9 +10,9 @@ def generate_cube_case():
     parser.add_argument("--Nv", help="number of fins in vertical direction [default=3]", type=str, default="3")
     parser.add_argument("--Nh", help="number of fins in horizontal direction [default=3]", type=str, default="3")
     parser.add_argument("--Nd", help="number of fins in depth direction [default=3]", type=str, default="3")
-    parser.add_argument("--L", help="length of the domain [default=1]", type=float, default=1)
-    parser.add_argument("--h", help="height of the domain [default=1]", type=float, default=1)
-    parser.add_argument("--d", help="depth of the domain (for 3D only) [default=1]", type=str, default="1")
+    parser.add_argument("--Lx", help="length of the domain [default=1]", type=float, default=1)
+    parser.add_argument("--Ly", help="height of the domain [default=1]", type=float, default=1)
+    parser.add_argument("--Lz", help="depth of the domain (for 3D only) [default=1]", type=str, default="1")
     parser.add_argument("--dim", help="dimension of the case (2 or 3) [default=2]", type=str, default="2")
     parser.add_argument("--odir", help="output directory", type=str, default=".")
 
@@ -23,7 +23,7 @@ def generate_cube_case():
         args.odir += "/"
 
     if not os.path.isdir(args.odir):
-        os.mkdir(args.odir)
+        os.makedirs(args.odir)
 
 
 
@@ -76,9 +76,9 @@ def generate_cube_case():
         Nv = args.Nv,
         Nh = args.Nh,
         Nd = args.Nd,
-        L = args.L,
-        h = args.h,
-        d = args.d,
+        Lx = args.Lx,
+        Ly = args.Ly,
+        Lz = args.Lz,
         ElementShape = ElementShape,
         ElementArgs = ElementArgs,
         eltDim = eltDim,
