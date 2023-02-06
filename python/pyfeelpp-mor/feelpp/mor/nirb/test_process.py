@@ -46,14 +46,14 @@ if __name__ == "__main__":
     listdfl2, listdfh1 = [], []
     indexes = [2, 4, 9, 16, 25]
     indexes = [0, 1, 3, 5, 7, 9, 10, 11, 12, 17]
-    sk = 's4' # s9
+    sk = 's9' # s9
     for st in indexes:
         file = dataPath + f"noGreedy/errors30Params_s4lmd{st}.csv"
         dfG = pd.read_csv(file, sep=',')
         dl2, dh1 = getDataStat(dfG)
         listdfl2.append(dl2)
         listdfh1.append(dh1)
-        listlabel.append(f"$\lambda = 1.e^{{st}}$")
+        listlabel.append(f"$\lambda = 1.e({-st})$")
         # listlabel.append(f"{st} param")
     
     compareListOfDataFrams(listdfl2, norm='Min', listlabel=listlabel, rectif=True)
