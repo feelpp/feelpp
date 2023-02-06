@@ -87,7 +87,7 @@ class ToolboxModel():
             self.initCoarseToolbox()
 
         if self.worldcomm.isMasterRank():
-            print(f"[NIRB] Initialization done")
+            print(f"[NIRB ToolboxModel] Initialization done")
             print(f"[NIRB] Number of nodes on the fine mesh : {self.tbFine.mesh().numGlobalPoints()}")
 
     def setModel(self, tb):
@@ -103,7 +103,7 @@ class ToolboxModel():
         self.Ndofs = tb.Ndofs
 
         if self.worldcomm.isMasterRank():
-            print(f"[NIRB] Initialization done")
+            print(f"[NIRB ToolboxModel] Initialization done")
             print(f"[NIRB] Number of nodes on the fine mesh : {self.tbFine.mesh().numGlobalPoints()}")
 
     def getFieldSpace(self, coarse=False):
@@ -770,11 +770,13 @@ class nirbOffline(ToolboxModel):
                 matL2[i,j] = self.l2ScalarProductMatrix.energy(self.reducedBasis[i], self.reducedBasis[j])
                 if i == j:
                     if abs(matL2[i, j] - 1) > tol:
-                        print(f"[NIRB] not L2 ortho : pos = [{i} , {j}] val = {abs(matL2[i,j] - 1.)} tol = {tol}")
+                        if self.worldcomm.isMasterRank():
+                            print(f"[NIRB] not L2 ortho : pos = [{i} , {j}] val = {abs(matL2[i,j] - 1.)} tol = {tol}")
                         return False
                 else:
                     if abs(matL2[i, j]) > tol :
-                        print(f"[NIRB] not L2 ortho : pos = [{i} , {j}] val = {abs(matL2[i,j])} tol = {tol}")
+                        if self.worldcomm.isMasterRank():
+                            print(f"[NIRB] not L2 ortho : pos = [{i} , {j}] val = {abs(matL2[i,j])} tol = {tol}")
                         return False
         return True
 
@@ -863,7 +865,7 @@ class nirbOnline(ToolboxModel):
         self.exporter = None
 
         if self.worldcomm.isMasterRank():
-            print(f"[NIRB] Initialization done")
+            print(f"[NIRB Online] Initialization done")
 
     def initModel(self):
         """Initialize the model
@@ -1040,6 +1042,8 @@ class nirbOnline(ToolboxModel):
             int: error code, 0 if all went well, 1 if not
         """
 
+        print("[NIRB] Loading data from ", os.path.abspath(path))
+
         reducedPath = os.path.join(path,'reducedBasis')
         reducedFilename = 'reducedBasis'
 
@@ -1099,6 +1103,14 @@ class nirbOnline(ToolboxModel):
             print(f"[NIRB] Number of basis functions loaded : {self.N}")
 
         return 0
+
+    def exportBasis(self):
+        """Export the basis for visualization
+        """
+        self.initExporter("reduced-basis", self.tbFine)
+        for i, xi in enumerate(self.reducedBasis):
+            self.exportField(xi, f"Xi_{i+1:03d}")
+        self.saveExporter()
 
     def normMat(self, Mat, u):
         """ Compute the norm associated to matrix Mat
