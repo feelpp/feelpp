@@ -206,25 +206,25 @@ class ToolboxModel():
         return self.getField(tb)
 
 
-    def createInterpolator(self, domain_tb, image_tb):
+    def createInterpolator(self, domain, image):
         """Create an interpolator between two toolboxes
 
         Parameters
         ----------
-            domain_tb (Toolbox): coarse toolbox
-            image_tb  (Toolbox): fine toolbox
+            domain (Toolbox): domain toolbox
+            image  (Toolbox): image toolbox
 
         Returns
         --------
             OperatorInterpolation: interpolator object
         """
         if self.toolboxType == "heat":
-            Vh_image = image_tb.spaceTemperature()
-            Vh_domain = domain_tb.spaceTemperature()
+            Vh_image = image.spaceTemperature()
+            Vh_domain = domain.spaceTemperature()
         elif self.toolboxType == "fluid":
-            Vh_image = image_tb.spaceVelocity()
-            Vh_domain = domain_tb.spaceVelocity()
-        interpolator = fi.interpolator(domain = Vh_domain, image = Vh_image, range = image_tb.rangeMeshElements())
+            Vh_image = image.spaceVelocity()
+            Vh_domain = domain.spaceVelocity()
+        interpolator = fi.interpolator(domain = Vh_domain, image = Vh_image, range = image.rangeMeshElements())
         return interpolator
 
     def getToolboxInfos(self):
@@ -574,7 +574,7 @@ class nirbOffline(ToolboxModel):
         """
         assert len(self.reducedBasis) !=0, f"need computation of reduced basis"
 
-        interpolateOperator = self.createInterpolator(self.tbCoarse, self.tbFine)
+        interpolateOperator = self.createInterpolator(domain=self.tbCoarse, image=self.tbFine)
         InterpCoarseSnaps = []
         for snap in self.coarseSnapShotList:
             InterpCoarseSnaps.append(interpolateOperator.interpolate(snap))
@@ -610,7 +610,7 @@ class nirbOffline(ToolboxModel):
 
         Ntest = len(vector_mu)
 
-        interpolationOperator = self.createInterpolator(self.tbCoarse, self.tbFine)
+        interpolationOperator = self.createInterpolator(domain=self.tbCoarse, image=self.tbFine)
 
         soltest =[]
         soltestFine=[]
@@ -897,7 +897,7 @@ class nirbOnline(ToolboxModel):
         """
         super().initModel()
         super().initCoarseToolbox()
-        self.interpolationOperator = self.createInterpolator(self.tbCoarse, self.tbFine)
+        self.interpolationOperator = self.createInterpolator(domain=self.tbCoarse, image=self.tbFine)
 
     def setModel(self, tb: ToolboxModel, interpolationOperator=None):
         """Set the model from a ToolboxModel object already initialized
