@@ -29,9 +29,15 @@ def offline(nirb, RESPATH, doGreedy, N, Xi_train=None, regulParam=1e-10):
         nirb.initProblemGreedy(500, 1e-3, Xi_train=Xi_train, Nmax=N, computeCoarse=True, samplingMode="log-random")
     else:
         nirb.initProblem(N, Xi_train=Xi_train)
-    nirb.generateReducedBasis(regulParam=regulParam)
+    RIC = nirb.generateReducedBasis(regulParam=regulParam)
 
     nirb.saveData(RESPATH, force=True)
+    
+    RIC = np.array(RIC)
+    file = "ric_offline.txt"
+    np.savetxt(file,RIC)
+
+    print(f"proc {nirb_off.worldcomm.localRank()} Is L2 orthonormalized ?", nirb_off.checkL2Orthonormalized())
     finish = time.time()
 
     comm.Barrier()
@@ -47,7 +53,7 @@ def offline(nirb, RESPATH, doGreedy, N, Xi_train=None, regulParam=1e-10):
     return res
 
 
-def online_error_sampling(nirb, RESPATH, Nsample=50, Xi_test=None, verbose=True, save=True):
+def online_error_sampling(nirb, RESPATH, Nb=None,  Nsample=50, Xi_test=None, verbose=True, save=True):
     """Compute the error between the toolbox solution and the NIRB solution for a sampling of parameters
        Generates the file errorParams/errors${N}.csv containing the errors for each parameter, for a given value of N,
           corresponding to the size of the reduced basis.
@@ -55,13 +61,14 @@ def online_error_sampling(nirb, RESPATH, Nsample=50, Xi_test=None, verbose=True,
     -----
         nirb (nirbOnline): NIRB online object
         RESPATH (str): path to the results
+        Nb (int, optional) : Size of reduced space, by default None. If None, the whole basis is used
         Nsample (int, optional): number of parameters to sample. Defaults to 50.
         Xi_test (list): list of parameters to test. Default is None, in which case the parameters are generated randomly
         verbose (bool, optional): if True, print the errors. Defaults to True.
         save (bool, optional): if True, save the errors in a csv file. Defaults to False.
     """
-
-    errorN = ComputeErrorSampling(nirb, Nsample=Nsample, Xi_test=Xi_test, h1=True)
+    
+    errorN = ComputeErrorSampling(nirb, Nb=Nb, Nsample=Nsample, Xi_test=Xi_test, h1=True)
 
     df = pd.DataFrame(errorN)
     df['N'] = nirb.N
@@ -178,22 +185,29 @@ if __name__ == '__main__':
     ### For time mesure in // computing
 
     ## square4 2D :
-    # config_nirb['coarsemesh_path'] = f"$cfgdir/square4mesh/squareCoarse_p{size}.json"
-    # config_nirb['finemesh_path'] = f"$cfgdir/square4mesh/squareFine_p{size}.json"
+    # config_nirb['coarsemesh_path'] = f"$cfgdir/meshFiles/squareCoarse_p{size}.json"
+    # config_nirb['finemesh_path'] = f"$cfgdir/meshFiles/squareFine_p{size}.json"
+    Xi_train_path = RESPATH + f"/sampling_train4_N200.sample"
+    Xi_test_path = RESPATH + f"/sampling_test4_Ns{Nsample}.sample"
 
     ## square9 2D
     # config_nirb['coarsemesh_path'] = f"$cfgdir/square9mesh/squareCoarse_p{size}.json"
     # config_nirb['finemesh_path'] = f"$cfgdir/square9mesh/squareFine_p{size}.json"
+    # Xi_train_path = RESPATH + f"/sampling_train9_N200.sample"
+    # Xi_test_path = RESPATH + f"/sampling_test9_Ns{Nsample}.sample"
 
-    ## thermal fin 3D
-    # config_nirb['coarsemesh_path'] = f"$cfgdir/coarseMesh.msh"
-    # config_nirb['finemesh_path'] = f"$cfgdir/fineMesh.msh"
+    ## thermal fin 3D 
+    # config_nirb['coarsemesh_path'] = f"$cfgdir/meshFiles/coarseMesh_p{size}.json"
+    # config_nirb['finemesh_path'] = f"$cfgdir/meshFiles/fineMesh_p{size}.json"
+    # Xi_train_path = RESPATH + f"/sampling_train3dfin_N200.sample"
+    # Xi_test_path = RESPATH + f"/sampling_test3dfin_Ns{Nsample}.sample"
 
-    baseList = range(1, Nbase+2, 1)
-    print('base =', baseList)
+    pas = 3
+    baseList = range(1, Nbase, pas)
+
     Dmu = loadParameterSpace(model_path)
-    Xi_train_path = RESPATH + f"/sampling_train4.sample"
-    Xi_test_path = RESPATH + f"/sampling_test4_{Nsample}.sample"
+    # Xi_train_path = RESPATH + f"/sampling_train4_N200.sample"
+    # Xi_test_path = RESPATH + f"/sampling_test4_Ns{Nsample}.sample"
 
     if os.path.isfile(Xi_train_path):
         s = Dmu.sampling()
@@ -207,7 +221,8 @@ if __name__ == '__main__':
     if os.path.isfile(Xi_test_path):
         s = Dmu.sampling()
         N = s.readFromFile(Xi_test_path)
-        Xi_test = s.getVector()
+        assert N == Nsample, f"Given size of sampling test {Nsample} != loaded sampling size {N}"
+        Xi_test = s.getVector()  
         if feelpp.Environment.isMasterRank():
             print(f"[NIRB] Xi_test loaded from {Xi_test_path}")
     else :
@@ -215,9 +230,17 @@ if __name__ == '__main__':
 
     ## generate nirb offline and online object :  
     nirb_off = nirbOffline(**config_nirb, initCoarse=doGreedy)
+    nirb_off.initModel()
     resOffline = offline(nirb_off, RESPATH, doGreedy, baseList[-1], Xi_train=Xi_train, regulParam=1e-10)
-   
     nirb_on = nirbOnline(**config_nirb)
+    nirb_on.initModel()
+
+    # Nglob = nirb_off.N
+    # err = nirb_on.loadData(nbSnap=Nglob, path=RESPATH)
+    # assert err == 0, "loadData failed"
+
+
+            
     comm.Barrier()
 
     if convergence :
@@ -226,7 +249,6 @@ if __name__ == '__main__':
             N = int(N)
             print("\n\n-----------------------------")
             print(f"[NIRB] Test with N = {N}")
-            ## get nirb online object
             err = nirb_on.loadData(nbSnap=N, path=RESPATH)
             assert err == 0, "loadData failed"
             online_error_sampling(nirb_on, RESPATH, Nsample=Nsample, Xi_test=Xi_test, verbose=False, save=True)

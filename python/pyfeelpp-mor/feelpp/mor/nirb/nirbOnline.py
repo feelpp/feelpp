@@ -94,6 +94,12 @@ if __name__ == "__main__":
         print(f"[NIRB online] Getting online solution with mu = {mu}")
         uHh = nirb_on.getOnlineSol(mu)
 
+        if computeError:
+            uh = nirb_on.getToolboxSolution(nirb_on.tbFine, mu)
+            error = nirb_on.normMat(uHh - uh)
+            print(f"[NIRB] L2 norm between nirb online and toolbox sol = {error}")
+
+
         if exporter:
             nirb_on.exportField(uHh, f"uHhN_{i}")
     

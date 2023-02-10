@@ -87,13 +87,16 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='NIRB Offline')
     parser.add_argument('--config-file', type=str, help='path to cfg file')
-    parser.add_argument("--N", help="Number of initial snapshots [default=10]", type=int, default=None)
+    parser.add_argument("--N", help="Number of initial snapshots [default=10]", type=int, default=10)
     parser.add_argument("--outdir", help="output directory", type=str, default=None)
-    parser.add_argument("--greedy", help="With or without Greedy [default=0]", type=int, default=0)
-    parser.add_argument("--convergence", help="Get convergence error [default=1]", type=int, default=0)
+    parser.add_argument("--greedy", help="Wether with or without Greedy [default=0]", type=int, default=0)
+    parser.add_argument("--biortho", help="Wether with or without bi-orthonormalization [default=0]", type=int, default=0)
+    parser.add_argument("--convergence", help="Wether get convergence error [default=0]", type=int, default=0)
+
     parser.add_argument("--generate-sampling", help="Generate and save a sampling of given size [default=0]\
         If called, no basis is generated", type=int, default=0)
     parser.add_argument("--load-sampling", help="Load a sampling previously generated [default=0]", type=int, default=0)
+    parser.add_argument("--sampling-path", help="Path to sampling file, for loading or saving [default=\"sampling_train.sample\"]", type=str, default="sampling_train.sample")
 
     # Greedy arguments
     parser.add_argument("--Ninit", help="[Greedy] Number of initial snapshots [default=5]", type=int, default=5)
@@ -115,14 +118,10 @@ if __name__ == "__main__":
     config_nirb = feelpp.readJson(nirb_file)['nirb']
 
     convergence = args.convergence != 0
-    config_nirb['greedy-generation'] = args.greedy != 0
-
-
     nbSnap = args.N
-    if nbSnap == None:
-        nbSnap = config_nirb['nbSnapshots']
 
-    config_nirb['greedy-generation'] = args.greedy
+    config_nirb['greedy-generation'] = args.greedy != 0
+    config_nirb['doBiorthonormal'] = args.biortho != 0
 
     doGreedy = config_nirb['greedy-generation']
     doRectification = config_nirb['doRectification']
@@ -139,37 +138,41 @@ if __name__ == "__main__":
     if args.generate_sampling != 0:
         nirb_off = nirbOffline(**config_nirb, initCoarse=False)
         nirb_off.initModel()
-        generatedAndSaveSampling(nirb_off.Dmu, args.generatesampling)
+        generatedAndSaveSampling(nirb_off.Dmu, args.generate_sampling, path=Xi_train_path)
         sys.exit(0)
 
     ###
     # If wanted: load the savec sampling to use it in algorithm generation
     Xi_train = None
+    Xi_train_path = os.path.join(RESPATH, args.sampling_path)
     if args.load_sampling != 0:
         s = nirb_off.Dmu.sampling()
-        N_train = s.readFromFile('./sampling.sample')
+        N_train = s.readFromFile(Xi_train_path)
         Xi_train = s.getVector()
 
     # Initialize objects and run the offline stage
     start = time.time()
     if config_nirb['greedy-generation']:
-        nirb_off = run_offline_greedy(config_nirb, args.Ninit, args.Ntrain, eps=args.eps,
+        nirb_off, nirb_on, _ = run_offline_greedy(config_nirb, args.Ninit, args.Ntrain, eps=args.eps,
                 Xi_train=Xi_train, Nmax=args.Nmax, samplingMode=args.sampling_mode, Mexpr=args.Mexpr)
     else:
         nirb_off = run_offline(config_nirb)
 
     tolortho = 1.e-8
-    nirb_off.orthonormalizeL2(tol=tolortho)
-    # nirb_off.orthonormalizeH1()
+
+    # nirb_off.orthonormalizeL2(tol=tolortho)
+    # nirb_off.orthonormalizeH1(tol=tolortho)
+    # nirb_off.orthonormalizeL2(tol=tolortho)
+
     nirb_off.saveData(RESPATH, force=True)
 
     finish = time.time()
 
     print(f"proc {nirb_off.worldcomm.localRank()} Is L2 orthonormalized ?", nirb_off.checkL2Orthonormalized(tol=tolortho))
-    #     print("Is H1 orthonormalized ? ", nirb_off.checkH1Orthonormalized())
+    print(f"proc {nirb_off.worldcomm.localRank()} Is H1 orthonormalized ? ", nirb_off.checkH1Orthonormalized())
 
     if convergence:
-        Xi_test_path = os.path.join(RESPATH, "/sampling_test.sample")
+        Xi_test_path = os.path.join(RESPATH, "sampling_test.sample")
         if os.path.isfile(Xi_test_path):
             s = nirb_off.Dmu.sampling()
             N = s.readFromFile(Xi_test_path)
@@ -197,9 +200,10 @@ if __name__ == "__main__":
         file = os.path.join(RESPATH, f'nirbOffline_time_exec_np{nirb_off.worldcomm.globalSize()}.dat')
     WriteVecAppend(file, perf)
 
-    info = nirb_off.getInformations()
+    info = nirb_off.getOfflineInfos()
 
     if nirb_off.worldcomm.isMasterRank():
         print(json.dumps(info, sort_keys=True, indent=4))
         print(f"[NIRB] Offline Elapsed time = ", finish-start)
+        print(f"[NIRB] doRectification : {nirb_off.doRectification}, doGreedy : {nirb_off.doGreedy}")
         print(f"[NIRB] Offline part Done !")

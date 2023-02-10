@@ -728,36 +728,36 @@ endif()
 #   set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} SPDLOG")
 # endif(FEELPP_ENABLE_SPDLOG)
 #
-option( FEELPP_ENABLE_TASKFLOW "Enable TASKFLOW" ON )
-if ( FEELPP_ENABLE_TASKFLOW )
+option( FEELPP_ENABLE_SPECX "Enable SPECX" OFF )
+if ( FEELPP_ENABLE_SPECX )
   message(STATUS "------------------------------------------------------------")
-  message(STATUS "Configuring TASKFLOW")
+  message(STATUS "Configuring SPECX")
 
-  # set(FETCHCONTENT_SOURCE_DIR_TASKFLOW ${CMAKE_CURRENT_SOURCE_DIR}/taskflow)
+  # set(FETCHCONTENT_SOURCE_DIR_SPECX ${CMAKE_CURRENT_SOURCE_DIR}/SPECX)
   # patch includes fix for 18.04 compilation
   set(TF_BUILD_TESTS OFF)
   set(TF_BUILD_EXAMPLES OFF)
-  set(FETCHCONTENT_SOURCE_DIR_TASKFLOW ${CMAKE_CURRENT_SOURCE_DIR}/taskflow)
-  FetchContent_Declare(taskflow GIT_REPOSITORY https://github.com/feelpp/taskflow.git GIT_TAG 0635a49230e8ace7d379cbbaa716c66543f3e516)
-  set( BUILD_TASKFLOW_TESTS OFF )
+  set(FETCHCONTENT_SOURCE_DIR_SPECX ${CMAKE_CURRENT_SOURCE_DIR}/SPECX)
+  FetchContent_Declare(SPECX GIT_REPOSITORY https://github.com/feelpp/SPECX.git GIT_TAG 0635a49230e8ace7d379cbbaa716c66543f3e516)
+  set( BUILD_SPECX_TESTS OFF )
   set(TF_INSTALL_CMAKE_DIR  "${CMAKE_INSTALL_DATADIR}/feel/cmake/modules")
-  message(STATUS "[feelpp-taskflow] cmake dir: ${CMAKE_INSTALL_DATADIR}/feel/cmake/modules")
-  FetchContent_MakeAvailable(taskflow)
-  add_library(feelpp_taskflow INTERFACE)
-  #set_target_properties(Taskflow PROPERTIES OUTPUT_NAME "feelpp_taskflow")
-  target_link_libraries(feelpp_taskflow INTERFACE Taskflow )
-  add_library(Feelpp::feelpp_taskflow ALIAS feelpp_taskflow)
-  target_include_directories(feelpp_taskflow INTERFACE
-      $<BUILD_INTERFACE:${taskflow_SOURCE_DIR}/>
+  message(STATUS "[feelpp-SPECX] cmake dir: ${CMAKE_INSTALL_DATADIR}/feel/cmake/modules")
+  FetchContent_MakeAvailable(SPECX)
+  add_library(feelpp_SPECX INTERFACE)
+  #set_target_properties(SPECX PROPERTIES OUTPUT_NAME "feelpp_SPECX")
+  target_link_libraries(feelpp_SPECX INTERFACE SPECX )
+  add_library(Feelpp::feelpp_SPECX ALIAS feelpp_SPECX)
+  target_include_directories(feelpp_SPECX INTERFACE
+      $<BUILD_INTERFACE:${SPECX_SOURCE_DIR}/>
       $<INSTALL_INTERFACE:include/feelpp> )
-  install(TARGETS feelpp_taskflow Taskflow EXPORT feelpp-contrib-export-targets
+  install(TARGETS feelpp_SPECX SPECX EXPORT feelpp-contrib-export-targets
       LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
       ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
       RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
       INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
       )
-  target_link_libraries( feelpp_contrib INTERFACE feelpp_taskflow )
-  set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} Taskflow")
+  target_link_libraries( feelpp_contrib INTERFACE feelpp_SPECX )
+  set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} SPECX")
 endif()
 
 
