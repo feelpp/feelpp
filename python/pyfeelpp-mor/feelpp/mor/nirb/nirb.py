@@ -1104,13 +1104,6 @@ class nirbOnline(ToolboxModel):
 
         return 0
 
-    def exportBasis(self):
-        """Export the basis for visualization
-        """
-        self.initExporter("reduced-basis", self.tbFine)
-        for i, xi in enumerate(self.reducedBasis):
-            self.exportField(xi, f"Xi_{i+1:03d}")
-        self.saveExporter()
 
     def normMat(self, Mat, u):
         """ Compute the norm associated to matrix Mat
@@ -1158,6 +1151,8 @@ class nirbOnline(ToolboxModel):
             self.exporter = feelpp.exporter(self.tbFine.mesh(), name)
         elif toolbox == "coarse":
             self.exporter = feelpp.exporter(self.tbCoarse.mesh(), name)
+        else:
+            raise ValueError("toolbox should be either 'fine' or 'coarse'")
 
     def exportField(self, field, name):
         """export a field to the exporter, if it has already been initialized
@@ -1179,5 +1174,30 @@ class nirbOnline(ToolboxModel):
         """
         if self.exporter is not None:
             self.exporter.save()
+            self.exporter = None
         else:
             print("Exporter not initialized, please call initExporter() first")
+
+    def exportBasis(self):
+        """Export the basis for visualization
+        """
+        self.initExporter("reduced-basis")
+        for i, xi in enumerate(self.reducedBasis):
+            self.exportField(xi, f"Xi_{i+1:03d}")
+        self.saveExporter()
+
+    def exportNirbSolutions(self, mu=None):
+        """Export the NIRB solutions for visualization. Fine toolbox must be initialized
+        """
+        if mu is None:
+            mu = self.Dmu.element()
+        nirbSolutions = []
+        for n in range(1, self.N+1):
+            nirbSolutions.append(self.getOnlineSol(mu, n))
+        uh = self.getToolboxSolution(self.tbFine, mu)
+
+        self.initExporter("nirb-solutions")
+        self.exportField(uh, f"uh")
+        for i, uHnN in enumerate(nirbSolutions):
+            self.exportField(uHnN, f"uHhN{i+1:03d}")
+        self.saveExporter()

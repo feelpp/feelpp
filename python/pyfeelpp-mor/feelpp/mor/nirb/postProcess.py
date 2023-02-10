@@ -361,7 +361,7 @@ def compare2dataFrame(df,dg, keys='Mean', norm='l2', dataLabel='pk', labellist=N
 
 
     order = df[key_list[keys][0]]/dg[key_list[keys][0]]
-    
+
     # plt.scatter(xf, df[key_list[keys][0]], marker='o', c='red', label=normUHn[norm] + ' w/o rect -'+ labeldf)
     # plt.scatter(xg, dg[key_list[keys][0]], marker='x', c='red', label=normUHn[norm] + ' w/o rect -'+ labeldg)
 
@@ -375,7 +375,7 @@ def compare2dataFrame(df,dg, keys='Mean', norm='l2', dataLabel='pk', labellist=N
 
     plt.plot(xf, df[key_list[keys][1]], c='blue', label=labeldf + ' & w/ rect' )
     plt.plot(xg, dg[key_list[keys][1]],'--', c='blue', label=labeldg + ' & w/ rect')
-    
+
     plt.legend()
     plt.yscale('log')
     plt.xlabel("Number of basis function (N)")
