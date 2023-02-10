@@ -164,7 +164,7 @@ def SavePetscArrayBin(filename, PetscAray):
 def SlepcEigenV(matrix, epsilon = 1.e-8):
     """
     Computes eigenpairs of a symetric definite matrix in petsc.mat format.
-    The basis vectors returned are orthonormalized 
+    The basis vectors returned are orthonormalized
 
     Parameters
     ----------
@@ -177,15 +177,15 @@ def SlepcEigenV(matrix, epsilon = 1.e-8):
     eigenvectors (list) : kept eigenvectors associated to kept eigenvalues in format PETSc.Vec
     """
 
-    # Get eigenpairs of the matrix 
-    E = SLEPc.EPS() # SVD for singular value decomposition or EPS for Eigen Problem Solver  
-    E.create(comm=MPI.COMM_SELF)  # create the solver in sequential 
+    # Get eigenpairs of the matrix
+    E = SLEPc.EPS() # SVD for singular value decomposition or EPS for Eigen Problem Solver
+    E.create(comm=MPI.COMM_SELF)  # create the solver in sequential
 
     E.setOperators(matrix)
     E.setFromOptions()
     E.setWhichEigenpairs(E.Which.LARGEST_MAGNITUDE)
     E.setDimensions(matrix.size[1]) # set the number of eigen val to compute
-    E.setTolerances(epsilon) # set the tolerance used for the convergence 
+    E.setTolerances(epsilon) # set the tolerance used for the convergence
 
     E.solve()
     nbmaxEv = E.getConverged() # number of eigenpairs
@@ -195,8 +195,8 @@ def SlepcEigenV(matrix, epsilon = 1.e-8):
 
     for i in range(nbmaxEv):
         eigenValues.append(float(E.getEigenvalue(i).real))
-    
-    E.destroy() # destroy the solver object 
+
+    E.destroy() # destroy the solver object
 
     eigenValues = np.array(eigenValues)
     idx = eigenValues.argsort()[::-1]
@@ -204,7 +204,6 @@ def SlepcEigenV(matrix, epsilon = 1.e-8):
 
     eigenVectors = [eigenVectors[i] for i in idx]
 
-    
     return eigenValues, eigenVectors
 
 ############################################################################################################

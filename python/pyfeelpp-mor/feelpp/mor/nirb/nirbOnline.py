@@ -37,6 +37,7 @@ if __name__ == "__main__":
     parser.add_argument("--greedy", help="With or without Greedy [default=0]", type=int, default=0)
     parser.add_argument("--exporter", help="Export nirb sol for vizualisation [default=0]", type=int, default=0)
     parser.add_argument("--convergence", help="Get convergence error [default=1]", type=int, default=0)
+    parser.add_argument("--compute-error", help="Compute errors of nirb solutions [default=0]", type=int, default=0)
 
     parser.add_argument("--Xi", help="Path to file containing the parameters", type=str, default=None)
     parser.add_argument("--Nparam", help="Number of parameters to test, if Xi is not given", type=int, default=10)
@@ -55,7 +56,8 @@ if __name__ == "__main__":
 
     convergence = args.convergence != 0
     exporter = args.exporter != 0
-    config_nirb['greedy-generation'] = args.greedy
+    config_nirb['greedy-generation'] = args.greedy != 0
+    computeError = args.compute_error != 0
 
     nbSnap = args.N
     if nbSnap == None:
@@ -89,7 +91,7 @@ if __name__ == "__main__":
     if exporter:
         dirname = "nirbOnlineSolutions"
         nirb_on.initExporter(dirname, toolbox="fine")
-    
+
     for i, mu in enumerate(Xi):
         print(f"[NIRB online] Getting online solution with mu = {mu}")
         uHh = nirb_on.getOnlineSol(mu)
@@ -102,7 +104,7 @@ if __name__ == "__main__":
 
         if exporter:
             nirb_on.exportField(uHh, f"uHhN_{i}")
-    
+
     if exporter:
         nirb_on.saveExporter()
 

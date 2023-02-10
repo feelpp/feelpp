@@ -32,7 +32,7 @@ def offline(nirb, RESPATH, doGreedy, N, Xi_train=None, regulParam=1e-10):
     RIC = nirb.generateReducedBasis(regulParam=regulParam)
 
     nirb.saveData(RESPATH, force=True)
-    
+
     RIC = np.array(RIC)
     file = "ric_offline.txt"
     np.savetxt(file,RIC)
@@ -67,7 +67,7 @@ def online_error_sampling(nirb, RESPATH, Nb=None,  Nsample=50, Xi_test=None, ver
         verbose (bool, optional): if True, print the errors. Defaults to True.
         save (bool, optional): if True, save the errors in a csv file. Defaults to False.
     """
-    
+
     errorN = ComputeErrorSampling(nirb, Nb=Nb, Nsample=Nsample, Xi_test=Xi_test, h1=True)
 
     df = pd.DataFrame(errorN)
@@ -179,7 +179,7 @@ if __name__ == '__main__':
     rectPath = ["noRect", "Rect"][doRectification]
     greedyPath = ["noGreedy", "Greedy"][doGreedy]
     RESPATH = f"results/{rectPath}/{greedyPath}"
-    
+
     size = feelpp.Environment.numberOfProcessors()
 
     ### For time mesure in // computing
@@ -196,7 +196,7 @@ if __name__ == '__main__':
     # Xi_train_path = RESPATH + f"/sampling_train9_N200.sample"
     # Xi_test_path = RESPATH + f"/sampling_test9_Ns{Nsample}.sample"
 
-    ## thermal fin 3D 
+    ## thermal fin 3D
     # config_nirb['coarsemesh_path'] = f"$cfgdir/meshFiles/coarseMesh_p{size}.json"
     # config_nirb['finemesh_path'] = f"$cfgdir/meshFiles/fineMesh_p{size}.json"
     # Xi_train_path = RESPATH + f"/sampling_train3dfin_N200.sample"
@@ -222,13 +222,13 @@ if __name__ == '__main__':
         s = Dmu.sampling()
         N = s.readFromFile(Xi_test_path)
         assert N == Nsample, f"Given size of sampling test {Nsample} != loaded sampling size {N}"
-        Xi_test = s.getVector()  
+        Xi_test = s.getVector()
         if feelpp.Environment.isMasterRank():
             print(f"[NIRB] Xi_test loaded from {Xi_test_path}")
     else :
         Xi_test = generatedAndSaveSampling(Dmu, Nsample, path=Xi_test_path, samplingMode="log-random")
 
-    ## generate nirb offline and online object :  
+    ## generate nirb offline and online object :
     nirb_off = nirbOffline(**config_nirb, initCoarse=doGreedy)
     nirb_off.initModel()
     resOffline = offline(nirb_off, RESPATH, doGreedy, baseList[-1], Xi_train=Xi_train, regulParam=1e-10)
@@ -239,8 +239,6 @@ if __name__ == '__main__':
     # err = nirb_on.loadData(nbSnap=Nglob, path=RESPATH)
     # assert err == 0, "loadData failed"
 
-
-            
     comm.Barrier()
 
     if convergence :

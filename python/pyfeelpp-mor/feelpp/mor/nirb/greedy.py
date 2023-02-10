@@ -82,7 +82,7 @@ def initProblemGreedy(offline, online, Ninit, Ntrain, eps=1e-5, Xi_train=None, N
 
         mu_star, Xi_train = greedyStep(offline, online, Xi_train, N, M, interpSol)
 
-        S.append(mu_star)      
+        S.append(mu_star)
 
 
     online.saveExporter()

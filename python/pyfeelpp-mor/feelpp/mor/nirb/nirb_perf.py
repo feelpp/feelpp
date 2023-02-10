@@ -36,7 +36,7 @@ def ComputeErrors(nirb_on,mu, Nb=None,h1=False, relative=True):
 
     uH = nirb_on.getInterpSol(mu)
     uh = nirb_on.getToolboxSolution(nirb_on.tbFine, mu)
-    
+
     uNH = getNirbProjection(nirb_on, uH, Nb=Nb)
     uNHr = getNirbProjection(nirb_on, uH, doRectification=True, Nb=Nb)
     uNh = getNirbProjection(nirb_on, uh, Nb=Nb)
@@ -53,13 +53,13 @@ def ComputeErrors(nirb_on,mu, Nb=None,h1=False, relative=True):
     error['l2(uh-uhn)'].append(nirb_on.normMat(uNh-uh, l2Mat) / rel)
     error['l2(uh)'].append(nirb_on.normMat(uh, l2Mat))
     error['l2(uh-uH)'].append(nirb_on.normMat(uH-uh, l2Mat) / rel)
-    if h1 : 
+    if h1 :
         rel = nirb_on.normMat(h1Mat,uh) if relative else 1
         error['h1(uh-uHn)'].append(nirb_on.normMat(uNH-uh, h1Mat) / rel)
         error['h1(uh-uHn)rec'].append(nirb_on.normMat(uNHr-uh, h1Mat) / rel)
         error['h1(uh-uhn)'].append(nirb_on.normMat(uNh-uh, h1Mat) / rel)
         error['h1(uh)'].append(nirb_on.normMat(uh, h1Mat))
-        error['h1(uh-uH)'].append(nirb_on.normMat(uH-uh, h1Mat) / rel) 
+        error['h1(uh-uH)'].append(nirb_on.normMat(uH-uh, h1Mat) / rel)
 
 
     return error
@@ -108,23 +108,23 @@ def ComputeErrorSampling(nirb_on, Nb=None, Nsample = 1, Xi_test=None, samplingTy
 
         uH = nirb_on.getInterpSol(mu)
         uh = nirb_on.getToolboxSolution(nirb_on.tbFine, mu)
-        
+
         uNH = getNirbProjection(nirb_on, uH, Nb=Nb)
         uNHr = getNirbProjection(nirb_on, uH, doRectification=True, Nb=Nb)
         uNh = getNirbProjection(nirb_on, uh, Nb=Nb)
 
-        # error 
+        # error
         error['l2(uh-uHn)'].append(nirb_on.normMat(uNH-uh, l2Mat))
         error['l2(uh-uHn)rec'].append(nirb_on.normMat(uNHr-uh, l2Mat))
         error['l2(uh-uhn)'].append(nirb_on.normMat(uNh-uh, l2Mat))
         error['l2(uh)'].append(nirb_on.normMat(uh, l2Mat))
         error['l2(uh-uH)'].append(nirb_on.normMat(uH-uh,l2Mat))
-        if h1 : 
+        if h1 :
             error['h1(uh-uHn)'].append(nirb_on.normMat(uNH-uh, h1Mat))
             error['h1(uh-uHn)rec'].append(nirb_on.normMat(uNHr-uh, h1Mat))
             error['h1(uh-uhn)'].append(nirb_on.normMat(uNh-uh, h1Mat))
             error['h1(uh)'].append(nirb_on.normMat(uh, h1Mat))
-            error['h1(uh-uH)'].append(nirb_on.normMat(uH-uh, h1Mat))    
+            error['h1(uh-uH)'].append(nirb_on.normMat(uH-uh, h1Mat))
 
     return error
 
@@ -191,8 +191,8 @@ def getNirbProjection(nirb_on, u, Nb=None, doRectification=False):
     if doRectification:
         rectMat = nirb_on.getRectificationMat(nirb_on.N)
         coef = rectMat @ coef
-        
+
     for i in range(Nb):
         uNh.add(float(coef[i]), nirb_on.reducedBasis[i])
 
-    return uNh 
+    return uNh

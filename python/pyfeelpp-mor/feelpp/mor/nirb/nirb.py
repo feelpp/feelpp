@@ -13,7 +13,7 @@ import feelpp.toolboxes.heat as heat
 import feelpp.toolboxes.fluid as fluid
 import feelpp.interpolation as fi
 from tqdm import tqdm
-import random 
+import random
 import math
 import pathlib
 from scipy.linalg import eigh
@@ -327,9 +327,9 @@ class nirbOffline(ToolboxModel):
         info = self.getToolboxInfos()
         info["doRectification"] = self.doRectification
         info["doBiorthonormal"] = self.doBiorthonormal
-        info["doGreedy"] = self.doGreedy 
+        info["doGreedy"] = self.doGreedy
         info["numberOfBasis"] = self.N
-        info["outdir"] = self.outdir 
+        info["outdir"] = self.outdir
         return info
 
     def BiOrthonormalization(self):
@@ -364,7 +364,7 @@ class nirbOffline(ToolboxModel):
                 vec.add(float(eigenVectors[j,i]), oldbasis[j])
 
             # vec = vec*(1./math.sqrt(abs(self.l2ScalarProductMatrix.energy(vec,vec))))
-            
+
             self.reducedBasis.append(vec)
 
 
@@ -398,7 +398,7 @@ class nirbOffline(ToolboxModel):
                 indice_mu = np.array(indice_mu, dtype='i')
             else :
                 indice_mu = np.empty(numberOfInitSnapshots, dtype='i')
-            
+
             self.worldcomm.globalComm().Bcast(indice_mu, root=0)
             vector_mu = [Xi_train[i] for i in list(indice_mu)]
 
@@ -514,7 +514,7 @@ class nirbOffline(ToolboxModel):
         Returns
         -------
         ReducedBasis (list) : the reduced basis, of size numberOfModes
-        RIC (list) : Relative innformation content 
+        RIC (list) : Relative innformation content
         """
 
         Nsnap = len(self.fineSnapShotList)
@@ -634,7 +634,7 @@ class nirbOffline(ToolboxModel):
         Error = {'N':[], 'l2(uh-uHn)':[], 'l2(uh-uHn)rec':[], 'l2(uh-uhn)' : [], 'l2(uh-uH)':[]}
 
         nb = 0
-        pas = 1 if (self.N<50) else 5 
+        pas = 1 if (self.N < 50) else 5
         for i in tqdm(range(1,self.N+1,pas), desc=f"[NIRB] Compute convergence error:", ascii=False, ncols=100):
             nb = i
             # Get rectification matrix
@@ -1129,7 +1129,7 @@ class nirbOnline(ToolboxModel):
     def normMat(self, u, Mat=None):
         """ Compute the norm associated to matrix Mat in the fine mesh
                 ||u|| = sqrt(uT*Mat*u)
-            if Mat is not specified, L2 matrix will be computed 
+            if Mat is not specified, L2 matrix will be computed
         Args:
         -----
             Mat (feelpp.__alg.SparseMatrix): the matrix. Defaults to None.

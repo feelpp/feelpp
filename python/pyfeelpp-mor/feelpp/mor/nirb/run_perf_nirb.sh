@@ -13,8 +13,8 @@ for n in $Nproc;
 do
 
 
-echo " ------------------------------------------ "  
-echo "  Restarting program with nb procs = : $n "  
+echo " ------------------------------------------ "
+echo "  Restarting program with nb procs = : $n "
 echo " ------------------------------------------ "
 
 test_para="mpiexec -n $n -bind-to core python3 test_perf_nirb.py --config-file model/square/square.cfg --savetime 1 --Ntest 50"
@@ -24,4 +24,4 @@ test_para="mpiexec -n $n -bind-to core python3 test_perf_nirb.py --config-file m
 ${test_para}
 
 
-done 
+done
