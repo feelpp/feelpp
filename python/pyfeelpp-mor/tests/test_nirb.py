@@ -64,7 +64,7 @@ def test_nirb_greedy(dir, cfg, json, rect, init_feelpp):
     nirb_config = feelpp.readJson(model_path)['nirb']
     nirb_config['doRectification'] = rect
 
-    nirb_offline = run_offline_greedy(nirb_config, 5, 200, Nmax=20)
+    nirb_offline, _, _ = run_offline_greedy(nirb_config, 5, 200, Nmax=20)
     nirb_offline.saveData(force=True)
     Nbasis = nirb_offline.N
     s = nirb_offline.Dmu.sampling()
