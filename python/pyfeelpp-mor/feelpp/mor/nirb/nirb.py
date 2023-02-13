@@ -627,13 +627,19 @@ class nirbOffline(ToolboxModel):
             self.correlationMatrix = np.zeros((Nsnap, Nsnap))            
             for i, snap1 in enumerate(self.fineSnapShotList):
                 for j, snap2 in enumerate(self.fineSnapShotList):
-                        self.correlationMatrix[i,j] = self.l2ScalarProductMatrix.energy(snap1,snap2)
-        else :
+                    if i > j:
+                        corr = self.l2ScalarProductMatrix.energy(snap1, snap2)
+                        self.correlationMatrix[i, j] = corr
+                        self.correlationMatrix[j, i] = corr
+                self.correlationMatrix[i, i] = self.l2ScalarProductMatrix.energy(snap1, snap1)
+            self.correlationMatrix /= Nsnap
+        else:
             lastSnap = self.fineSnapShotList[-1]
             lastCol = np.zeros(Nsnap)
-            for i, snap in enumerate(self.fineSnapShotList[:Nsnap-1]):
-                lastCol[i] =  self.l2ScalarProductMatrix.energy(snap,lastSnap)
-            self.correlationMatrix = np.vstack((self.correlationMatrix, lastCol[:Nsnap-1]))
+            for i, snap in enumerate(self.fineSnapShotList[:-1]):
+                lastCol[i] =  self.l2ScalarProductMatrix.energy(snap, lastSnap)
+            lastCol /= Nsnap
+            self.correlationMatrix = np.vstack((self.correlationMatrix, lastCol[:-1]))
             self.correlationMatrix = np.column_stack((self.correlationMatrix, lastCol))
 
         eigenValues, eigenVectors = eigh(self.correlationMatrix)
@@ -668,9 +674,8 @@ class nirbOffline(ToolboxModel):
 
     def coeffRectification(self):
         """ Compute the two matrixes used to get rectification matrix R given by :
-
-                B_h[i,j] = <U_h(s_i),phi_j >
-                B_H[i,j] = <U_H(s_i),phi_j >
+                B_h[i,j] = <U_h(s_i), phi_j >
+                B_H[i,j] = <U_H(s_i), phi_j >
 
         Returns:
         --------
@@ -738,15 +743,13 @@ class nirbOffline(ToolboxModel):
         Error = {'N':[], 'l2(uh-uHn)':[], 'l2(uh-uHn)rec':[], 'l2(uh-uhn)' : [], 'l2(uh-uH)':[]}
 
         nb = 0
-        pas = 1 if (self.N<50) else 5 
-        for i in tqdm(range(1,self.N+1,pas), desc=f"[NIRB] Compute convergence error:", ascii=False, ncols=100):
+        pas = 1 if (self.N < 50) else 5
+        for i in tqdm(range(1, self.N+1, pas), desc=f"[NIRB] Compute convergence error:", ascii=False, ncols=100):
             nb = i
             # Get rectification matrix
             BH = self.coeffCoarse[:nb, :nb]
             Bh = self.coeffFine[:nb, :nb]
-            R = np.zeros((nb,nb))
-            for s in range(nb):
-                R[s,:] = (np.linalg.inv(BH.transpose() @ BH + regulParam*np.eye(nb))@BH.transpose()@Bh[:,s])
+            R = np.linalg.solve(BH.transpose() @ BH + regulParam * np.eye(nb), BH.transpose() @ Bh).T
 
             for j in range(Ntest):
                 Unirb.setZero()
@@ -1114,11 +1117,17 @@ class nirbOnline(ToolboxModel):
 
         BH = coeffCoarse[:Nb, :Nb]
         Bh = coeffFine[:Nb, :Nb]
-        R = np.zeros((Nb, Nb))
 
         #Thikonov regularization (AT @ A + lambda I_d)^-1 @ (AT @ B)
-        for i in range(Nb):
-            R[i,:] = np.linalg.inv(BH.transpose() @ BH + lambd*np.eye(Nb)) @ BH.transpose() @ Bh[:,i]
+        R = np.linalg.solve(BH.transpose() @ BH + lambd * np.eye(Nb), BH.transpose() @ Bh)
+        
+        if False:
+            R_old = np.zeros((Nb, Nb))
+            for i in range(Nb):
+                R_old[i,:] = np.linalg.inv(BH.transpose() @ BH + lambd*np.eye(Nb)) @ BH.transpose() @ Bh[:,i]
+
+            print("Condition number of matrix", np.linalg.cond(BH.transpose() @ BH + lambd*np.eye(Nb)))
+            print("Norm of difference between two rectification matrix", np.linalg.norm(R - R_old))
 
         return R
 
