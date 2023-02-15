@@ -52,12 +52,12 @@ public:
     ~UnobstructedPlanarViewFactor() = default;
 //    void init( std::vector<std::string> const& list_of_bdys ) { ViewFactorBase::init( list_of_bdys ); }
 
-    void compute();
+    void compute(bool elementwise=false);
 };
 
 template<typename MeshType>
 void 
-UnobstructedPlanarViewFactor<MeshType>::compute()
+UnobstructedPlanarViewFactor<MeshType>::compute(bool elementwise /*false by default*/)
 {
     auto the_im = im( this->mesh_, this->j_["viewfactor"]["quadrature_order"] );
     auto current_pts = [&the_im]( auto f, auto p )
