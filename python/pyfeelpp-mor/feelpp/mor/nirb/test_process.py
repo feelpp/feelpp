@@ -14,7 +14,7 @@ if __name__ == "__main__":
     # Get dataFrame from csv file 
     # file = dataPath + "errors50ParamsLambda10P1.csv"
     file = dataPath + "noGreedy/errors50Params.csv"
-    # file = dataPath + "noGreedy/errors10Params.csv"
+    file = dataPath + "noGreedy/errors30Params_s4.csv"
     # file = dataPath + "noGreedy/offlineError.csv"
     
     # load absolute errors
@@ -41,20 +41,22 @@ if __name__ == "__main__":
     # plot_dataFrame(l2dfN)
 
     #%%
-    # Compare rectification according to regularization parameter (\lambda) 
-    # shortfiles = ["errors50ParamsLambda1P1.csv", "errors50ParamsLambda3P1.csv","errors50ParamsLambda6P1.csv", 
-    #                 "errors50ParamsLambda10P1.csv", "errors50ParamsLambda0P1.csv"]
+    ### Compare list of error files according to (\lambda, parameters, ...) 
+    listlabel = []
+    listdfl2, listdfh1 = [], []
+    indexes = [2, 4, 9, 16, 25]
+    indexes = [0, 1, 3, 5, 7, 9, 10, 11, 12, 17]
+    sk = 's9' # s9
+    for st in indexes:
+        file = dataPath + f"noGreedy/errors30Params_s4lmd{st}.csv"
+        dfG = pd.read_csv(file, sep=',')
+        dl2, dh1 = getDataStat(dfG)
+        listdfl2.append(dl2)
+        listdfh1.append(dh1)
+        listlabel.append(f"$\lambda = 1.e({-st})$")
+        # listlabel.append(f"{st} param")
     
-    # listdfl2, listdfh1 = [], []
-
-    # for st in shortfiles:
-    #     file = dataPath + st 
-    #     dfG = pd.read_csv(file, sep=',')
-    #     dl2, dh1 = getDataStat(dfG)
-    #     listdfl2.append(dl2)
-    #     listdfh1.append(dh1)
-    
-    # compare_dataFrams(listdfl2)
+    compareListOfDataFrams(listdfl2, norm='Min', listlabel=listlabel, rectif=True)
 
     # %%
     # Compare two data frames (P1 vs P2) or (Greedy vs noGreedy)  

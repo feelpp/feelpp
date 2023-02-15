@@ -544,13 +544,12 @@ class nirbOffline(ToolboxModel):
             self.l2ScalarProductMatrixCoarse.to_petsc().close()
             self.h1ScalarProductMatrixCoarse.to_petsc().close()
 
-    def generateReducedBasis(self, tolerance=1.e-12, regulParam=1.e-10):
+    def generateReducedBasis(self, tolerance=1.e-12):
         """Generate the reduced basis, and store it in the list self.reducedBasis
 
         Args:
         -----
             tolerance(float), optional : tolerance of the eigen value problem target accuracy of the data compression
-            regulParam(float), optional : the regularization parameter for rectification
         """
         self.reducedBasis, RIC= self.PODReducedBasis(tolerance=tolerance)
         self.N = len(self.reducedBasis)

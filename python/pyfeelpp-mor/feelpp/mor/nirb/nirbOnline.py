@@ -60,7 +60,17 @@ if __name__ == "__main__":
 
     start= time()
 
+    ## mu for thermal bridge test case  
+    # mub = {"h_top":1./0.06,"h_bottom":1./0.11 }
+    # mu = nirb_on.Dmu.element()
+    # mu.setParameters(mub)
+    # print(mu.view())
+
+    ## general mu 
     mu = nirb_on.Dmu.mumin()
+    print("[NIRB] Selected parameeter mu")
+    print(mu.view())
+    
     err = nirb_on.loadData(path=RESPATH, nbSnap=nbSnap)
     assert err == 0, "Error while loading data"
     uHh = nirb_on.getOnlineSol(mu)
@@ -68,13 +78,22 @@ if __name__ == "__main__":
 
     uh = nirb_on.getToolboxSolution(nirb_on.tbFine, mu)
     error = nirb_on.normMat(uHh - uh)
-    print(f"[NIRB] L2 norm between nirb online and toolbox sol = {error}")
+    
+    if nirb_on.worldcomm.isMasterRank():
+        print(f"[NIRB] L2 norm between nirb online and toolbox sol = {error}")
 
     if exporter:    
-        dirname = "nirbSol"
+        ## export thermal bridge solution 
+        # dirname = "nirbSolBridge"
+        # nirb_on.tbFine.fieldTemperaturePtr().setZero()
+        # nirb_on.tbFine.fieldTemperaturePtr().add(1,uHh)
+        # nirb_on.tbFine.exportResults()
+        dirname = "nirbSolFin3d"
         nirb_on.initExporter(dirname, toolbox="fine")
-        fieldname = 'T'
+        fieldname = 'T_nirb'
         nirb_on.exportField(uHh,fieldname)
+        fieldname = 'T_fine'
+        nirb_on.exportField(uh,fieldname)
         nirb_on.saveExporter()
 
  
@@ -118,5 +137,6 @@ if __name__ == "__main__":
        
 
 
-    print(f"[NIRB] Online Elapsed time =", finish-start)
-    print(f"[NIRB] Online part Done !!")
+    if nirb_on.worldcomm.isMasterRank():
+        print(f"[NIRB] Online Elapsed time =", finish-start)
+        print(f"[NIRB] Online part Done !!")
