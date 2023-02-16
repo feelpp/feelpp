@@ -2,6 +2,7 @@
     "viewfactor": {
         "type": "Raytracing",
         "Nrays":35,
+        "Nthreads":3,
         "markers":["TopDisk","BottomDisk","LateralSurface"],
         "description": "The viewfactor of a closed cavity."
     }

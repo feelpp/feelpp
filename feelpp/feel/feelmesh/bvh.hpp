@@ -69,10 +69,8 @@ namespace Feel
 
         static inline std::vector<BVHPrimitiveInfo> M_primitiveInfo;
         static inline trace_mesh_ptrtype M_mesh;   
-        static std::vector<std::pair<int,double>> M_distance_points;
-        static inline std::map<int,int> M_primitiveN_to_elId;
-        static inline std::vector<int> M_intersected_leaf;
-        static inline std::vector<double> M_lengths;
+        thread_local static inline std::vector<int> M_intersected_leaf;
+        thread_local static inline std::vector<double> M_lengths;
 
         std::vector<int> orderedPrims; // order of traversed primitives for depth-first search
 
@@ -106,7 +104,6 @@ namespace Feel
                     M_bound_max[k] = M_bound_max[k] + 2*FLT_MIN;
                 }                
                 BVHPrimitiveInfo primitive_i(e.id(),M_bound_min,M_bound_max);
-                M_primitiveN_to_elId.insert(std::make_pair(index_Primitive,e.id()));
                 M_primitiveInfo.push_back(primitive_i);
                 index_Primitive++;
             }
@@ -382,11 +379,12 @@ namespace Feel
         }
 
         // Verify if the ray intersects the whole bounding structure
-
-        void ray_search( Ray_bvh const& rayon,std::string s)
+        // Returns the integer corresponding to the intersected element
+        // If no element is intersected, return -1
+        int ray_search( Ray_bvh const& rayon,std::string s)
         {   
-            M_intersected_leaf.clear();
-            M_lengths.clear();
+            M_intersected_leaf = {};
+            M_lengths = {};
             if(!M_root_tree)   
                 M_root_tree = buildRootTree();
             // compute tmin and tmax
@@ -417,6 +415,16 @@ namespace Feel
                 traverse_stackless(M_root_tree, rayon);
             }
 #endif
+            if (!M_intersected_leaf.empty())
+            {
+                int argmin_lengths = std::distance(M_lengths.begin(), std::min_element(M_lengths.begin(), M_lengths.end()));
+                int closer_intersection_element = M_intersected_leaf[argmin_lengths];
+                return closer_intersection_element;
+            }
+            else
+            {
+                return -1;
+            }
         }
 
         // bool check_intersection_square(Ray_bvh const& ray)        
