@@ -1,8 +1,8 @@
 {
     "viewfactor": {
         "type": "Raytracing",    
-        "Nrays":100,
-        "Nthreads":3,
+        "Nrays":150,
+        "Nthreads":6,
         "markers":["Gamma_6","Gamma_11","Gamma_7","Gamma_9","Gamma_8","Gamma_10"],
         "description": "The viewfactor of a closed cavity."
     }
