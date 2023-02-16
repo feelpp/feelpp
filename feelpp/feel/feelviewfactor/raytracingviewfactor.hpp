@@ -22,7 +22,7 @@
 namespace Feel {
     
 // Compute random direction, uniformly distributed on the sphere or on a circle
-std::vector<double> get_random_direction(std::vector<double> &random_direction, std::mt19937 & M_gen, std::mt19937 & M_gen2,Eigen::VectorXd normal)
+void get_random_direction(std::vector<double> &random_direction, std::mt19937 & M_gen, std::mt19937 & M_gen2,Eigen::VectorXd normal)
 {    
     std::uniform_real_distribution<double> xi2(0,1);
     std::uniform_real_distribution<double> xi1(0,1);
@@ -75,7 +75,7 @@ std::vector<double> get_random_direction(std::vector<double> &random_direction, 
         throw std::logic_error( "Wrong dimension " + std::to_string(random_direction.size()) + " for the random direction" );
     }    
 
-    return random_direction;
+    //return random_direction;
 }   
 
 // 3D case
@@ -173,6 +173,7 @@ public:
         super(mesh,specs)
         {
             M_Nrays = specs["viewfactor"]["Nrays"].get<double>() ;
+            M_Nthreads = specs["viewfactor"]["Nthreads"].get<double>() ;
             if(this->list_of_bdys_.empty())
                 M_submesh = createSubmesh(_mesh=mesh,_range=boundaryfaces(mesh),_update=MESH_ADD_ELEMENTS_INFO);    
             else
@@ -226,6 +227,7 @@ public:
     std::vector<std::string> M_markers_string,list_of_bdys;
     std::vector<int> M_markers_int;
     int M_Nrays;
+    int M_Nthreads;
     std::vector<int> M_point_indices;
     Eigen::VectorXd M_view_factor_row;
     BVH_tree<MeshType::nDim> M_bvh_tree;
@@ -334,68 +336,94 @@ public:
     {
         int dim = M_mesh->dimension();
         M_view_factor_row.setZero();
+        
         auto ray_submesh = createSubmesh(_mesh=M_submesh,_range=markedelements(M_submesh,marker));
         std::vector<double> random_direction(dim);  
-        auto vf_square=0;
 
-        
+
         for(auto const &el : ray_submesh->elements()) // from each element of the submesh, launch M_Nrays randomly oriented
         {
-            for(int i=0;i<M_Nrays;i++)
-            {              
+            auto rays_from_element = [&](int n_rays_thread){
+                Eigen::VectorXd row_vf_matrix(M_view_factor_row.size());
+                row_vf_matrix.setZero();
+                // for(int i=0;i<M_Nrays;i++)
+                for(int i=0;i<n_rays_thread;i++)
+                {              
 
-                // Construct the ray emitting from a random point of the element
-                auto random_origin = get_random_point(el.second.vertices());
-                            
-                Eigen::VectorXd rand_dir(dim); 
-                Eigen::VectorXd p1(dim),p2(dim),p3(dim),origin(3);
-                
-                if(dim==3)
-                {
-                    for(int i=0;i<dim;i++)
+                    // Construct the ray emitting from a random point of the element
+                    auto random_origin = get_random_point(el.second.vertices());
+                                
+                    Eigen::VectorXd rand_dir(dim); 
+                    Eigen::VectorXd p1(dim),p2(dim),p3(dim),origin(3);
+                    
+                    if(dim==3)
                     {
-                        p1(i)=column(el.second.vertices(), 0)[i];
-                        p2(i)=column(el.second.vertices(), 1)[i];
-                        p3(i)=column(el.second.vertices(), 2)[i];                        
-                        origin(i) = random_origin[i];
-                        rand_dir(i) = random_direction[i];
-                    }                               
-                    auto element_normal = ((p3-p1).head<3>()).cross((p2-p1).head<3>());
-                    element_normal.normalize();        
-                    random_direction = get_random_direction(random_direction,M_gen,M_gen2,element_normal);
-                    for(int i=0;i<dim;i++)
-                    {
-                        rand_dir(i) = random_direction[i];
-                    }             
-                    if(rand_dir.dot(element_normal)<0.) // if the ray direction is inward to the emitting surface, invert its direction
-                    {
-                        rand_dir(0) = rand_dir(0) * (-1.);
-                        rand_dir(1) = rand_dir(1) * (-1.);
-                        rand_dir(2) = rand_dir(2) * (-1.);
+                        for(int i=0;i<dim;i++)
+                        {
+                            p1(i)=column(el.second.vertices(), 0)[i];
+                            p2(i)=column(el.second.vertices(), 1)[i];
+                            p3(i)=column(el.second.vertices(), 2)[i];                        
+                            origin(i) = random_origin[i];
+                            rand_dir(i) = random_direction[i];
+                        }                               
+                        auto element_normal = ((p3-p1).head<3>()).cross((p2-p1).head<3>());
+                        element_normal.normalize();        
+                        get_random_direction(random_direction,M_gen,M_gen2,element_normal);
+                        for(int i=0;i<dim;i++)
+                        {
+                            rand_dir(i) = random_direction[i];
+                        }             
+                        if(rand_dir.dot(element_normal)<0.) // if the ray direction is inward to the emitting surface, invert its direction
+                        {
+                            rand_dir(0) = rand_dir(0) * (-1.);
+                            rand_dir(1) = rand_dir(1) * (-1.);
+                            rand_dir(2) = rand_dir(2) * (-1.);
+                        }
+                                                
                     }
-                                               
+                    Eigen::VectorXd pQ1(3),pQ2(3),pQ3(3),pQ4(3),normal(3);
+
+                    Ray_bvh ray(origin,rand_dir);     
+                    
+                    int closer_intersection_element = M_bvh_tree.ray_search(ray,"") ;                                        
+                    if (closer_intersection_element >=0 )
+                    {
+                        // int argmin_lengths = std::distance(local_tree.M_lengths.begin(), std::min_element(local_tree.M_lengths.begin(), local_tree.M_lengths.end()));
+                        // auto closer_intersection_element = local_tree.M_intersected_leaf[argmin_lengths];
+
+                        auto marker_index = M_submesh->element(closer_intersection_element).marker().value();             
+
+                        // Find the marker's index corresponding to the element being intersected by the ray
+                        auto index_view_factor = std::find(M_markers_int.begin(), M_markers_int.end(), marker_index);
+
+                        // M_view_factor_row(std::distance(M_markers_int.begin(),index_view_factor))++;
+                        row_vf_matrix(std::distance(M_markers_int.begin(),index_view_factor))++;
+                    }
+                    else{
+                        std::cout << "RAY NOT INTERSECTING: Rand origin" << ray.origin << "rand_dir" <<  ray.dir <<std::endl;
+                    }
                 }
-                Eigen::VectorXd pQ1(3),pQ2(3),pQ3(3),pQ4(3),normal(3);
-
-                Ray_bvh ray(origin,rand_dir);     
-                M_bvh_tree.ray_search(ray,"");    
-
-                if (!M_bvh_tree.M_intersected_leaf.empty())
-                {
-                    int argmin_lengths = std::distance(M_bvh_tree.M_lengths.begin(), std::min_element(M_bvh_tree.M_lengths.begin(), M_bvh_tree.M_lengths.end()));
-                    auto closer_intersection_element = M_bvh_tree.M_intersected_leaf[argmin_lengths];
-
-                    auto marker_index = M_submesh->element(closer_intersection_element).marker().value();             
-
-                    // Find the marker's index corresponding to the element being intersected by the ray
-                    auto index_view_factor = std::find(M_markers_int.begin(), M_markers_int.end(), marker_index);
-
-                    M_view_factor_row(std::distance(M_markers_int.begin(),index_view_factor))++;
+                return row_vf_matrix;
+            };
+                std::vector<int> n_rays_thread;
+                n_rays_thread.push_back(M_Nrays - (M_Nthreads-1) * (int)(M_Nrays / M_Nthreads));
+                for(int t= 1; t < M_Nthreads; ++t){
+                   n_rays_thread.push_back( M_Nrays / M_Nthreads);
                 }
-                else{
-                    std::cout << "RAY NOT INTERSECTING: Rand origin" << ray.origin << "rand_dir" <<  ray.dir <<std::endl;
+                // Used to store the future results
+                std::vector<std::future<Eigen::VectorXd>> futures;
+                for(int t = 0; t < M_Nthreads; ++t){
+                    // Start a new asynchronous task
+                    // std::cout << n_rays_thread[t] << std::endl;
+                    futures.emplace_back(std::async(std::launch::async, rays_from_element, n_rays_thread[t]));
                 }
-            }  
+
+                
+                for(std::future<Eigen::VectorXd>& f : futures){
+                    // Wait for the result to be ready
+                    M_view_factor_row += f.get();
+                }
+
         }              
         M_view_factor_row /=(1.*M_Nrays*ray_submesh->numElements());
         std::cout << M_Nrays*ray_submesh->numElements() << std::endl;
