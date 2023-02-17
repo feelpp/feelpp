@@ -31,5 +31,4 @@ add_subdirectory( databases )
 add_subdirectory( sync_case )
 
 add_subdirectory(scripts)
-#add_subdirectory(view_factor)
 install(DIRECTORY lsan DESTINATION share/feelpp)
