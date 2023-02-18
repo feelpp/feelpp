@@ -56,7 +56,7 @@ FmuModel2::FmuModel2( fmi_import_context_t* context, std::string tmp_dir,
     //M_callbackfunctions.stepFinished = stepFinished;
     M_callbackfunctions.componentEnvironment = 0;
 
-    // Read informations in xml file for the model
+    // Read information in xml file for the model
     M_fmu = fmi2_import_parse_xml( context, tmp_dir.c_str(), 0 );
     CHECK( M_fmu) << "Error parsing XML in tmp dir " << tmp_dir <<", "
                   << jm_get_last_error( callbacks.get() ) << std::endl;
@@ -81,7 +81,7 @@ FmuModel2::FmuModel2( fmi_import_context_t* context, std::string tmp_dir,
         M_type = fmi2_cosimulation;
     }
     else
-        CHECK( false ) << "Unxepected FMU kind, exiting. " << jm_get_last_error( callbacks.get() ) << std::endl;
+        CHECK( false ) << "Unexpected FMU kind, exiting. " << jm_get_last_error( callbacks.get() ) << std::endl;
 
     // Load DLL
     auto status = fmi2_import_create_dllfmu( M_fmu, kind, &M_callbackfunctions );

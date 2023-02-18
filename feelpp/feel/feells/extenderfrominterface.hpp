@@ -102,7 +102,7 @@ ExtenderFromInterface<Dim,GeoOrder,Convex>::update( element_type const& phi )
                 ++nbminus;
         }
 
-        //if elt crossed by interface -> store its informations
+        //if elt crossed by interface -> store its information
         if ( (nbminus != convex_type::numPoints) && (nbplus!=convex_type::numPoints) )
         {
             LOG(INFO) << "element crossed " << elt.id();

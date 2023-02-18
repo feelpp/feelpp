@@ -130,7 +130,7 @@ public:
      * that contains nodes given by the context and not on all
      * elements of the mesh.
      * As we project the expression on the function space linked
-     * the the context, we can't project gradient of more
+     * to the context, we can't project gradient of more
      * generally shape::N > 1
      */
     element_type evaluateProjection( ) const;
@@ -492,7 +492,7 @@ evaluatecontext_impl( Ctx const& ctx,
  * \arg expr the expression to project
  * \arg geomap the type of geomap to use (make sense only using high order meshes)
  * \arg mpi_communications a bool that indicates if all proc communicate or not
- * \arg projection a bool that indicates if we project the expression on function space or not (usefull for EIM)
+ * \arg projection a bool that indicates if we project the expression on function space or not (useful for EIM)
  */
 template <typename ... Ts>
 auto evaluateFromContext( Ts && ... v )

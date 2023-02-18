@@ -31,7 +31,7 @@ namespace Feel
 namespace Sys
 {
 
-//! Hardware Sytem base class.
+//! Hardware System base class.
 //! This class gather information from the operating system such
 //! as memory, number of processors, distribution ...
 //! External libraries should have a specific header inheriting from

@@ -656,7 +656,7 @@ public:
     }
 
     /**
-     * update faces marker 2 from a vector whose size is exactely the number of
+     * update faces marker 2 from a vector whose size is exactly the number of
      * faces. This vector can be generated using a P0 discontinuous space
      * associated to a mesh whose elements are the faces
      */
@@ -680,7 +680,7 @@ public:
 
 
     /**
-     * update faces marker 2 from a vector whose size is exactely the number of
+     * update faces marker 2 from a vector whose size is exactly the number of
      * faces. This vector can be generated using a P0 discontinuous space
      * associated to a mesh whose elements are the faces
      */
@@ -691,7 +691,7 @@ public:
     }
 
     /**
-     * update faces marker 3 from a vector whose size is exactely the number of
+     * update faces marker 3 from a vector whose size is exactly the number of
      * faces. This vector can be generated using a P0 discontinuous space
      * associated to a mesh whose elements are the faces
      */
