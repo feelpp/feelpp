@@ -41,6 +41,7 @@ ouput.csv
 | sampling.size | number of online run (each run is setup from parameter take by a sampler, see sampling.type option | 10
 | sampling.type | type of sampling (random,...) | random
 | output_results.save.path | csv file path of the output results (can be relative or absolute file path and can use Feel++ keyword as `$repository`) | save results in `ouput.csv` file and use current directory of the application (`$repository/feelpp_mor_onlinerun/np_1/output.csv`)
+| export-solution | exports the solution for each parameter value for visualization (requires hdf5 db format) | false
 |===
 
 Some CRB DB are stored on GitHub at link:http://www.github.com/feelpp/crbdb[].
@@ -66,14 +67,9 @@ Evaluate outputs from a sampling::
 feelpp_mor_onlinerun --crbmodel.name myheat3d_P1G1 --sampling.size=64
 ----
 
-Evaluate outputs from a sampling::
-----
-feelpp_mor_onlinerun --crbmodel.name myheat3d_P1G1 --sampling.size=64
-----
-
 Evaluate outputs and export finite element solution for each parameter::
 ----
-feelpp_mor_onlinerun --crbmodel.name heat3d --sampling.size=64 --crb.load-elements-database=1
+feelpp_mor_onlinerun --crbmodel.name heat3d --sampling.size=64 --export-solution=true --crb.db.format=hdf5
 ----
 
 Specify the plugin directory::
