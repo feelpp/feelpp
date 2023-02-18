@@ -136,7 +136,7 @@ private :
 
 /**
  * \class DataMap
- *  \brief data layout in a multi-processor environnement
+ *  \brief data layout in a multi-processor environment
  *
  *  @author Christophe Prud'homme
  *  @see
@@ -169,7 +169,7 @@ public:
 
     /**
      * \param n total size of the vector
-     * \param n_local local size of the vector on the curent processor
+     * \param n_local local size of the vector on the current processor
      */
     DataMap( size_type n, size_type n_local, worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr() );
 

@@ -609,7 +609,7 @@ class GeoND
      *
      *  Exchanges points according to a list of old2new local id numbering !
      *  old2new[i] is the new local id of a point whose old local id was ! i+1
-     *  (remeber the numbering from 1 of the id's!. This is a member function
+     *  (remember the numbering from 1 of the id's!. This is a member function
      *  to be used ONLY by routines for checking or amending meshes. You must
      *  give uint16_type (which start
      */

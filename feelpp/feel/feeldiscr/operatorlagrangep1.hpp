@@ -127,7 +127,7 @@ public:
     typedef typename dual_image_space_type::fe_type image_fe_type;
 
     /**
-     * type which instances will hold the correspondance between the
+     * type which instances will hold the correspondence between the
      * mesh elements associated to the domain space and the ones
      * associated to the image space
      */

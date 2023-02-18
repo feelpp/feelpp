@@ -65,7 +65,7 @@ namespace Feel
  * {
  *
  *     u_old = u_new;
- *     commpute u_new;
+ *     compute u_new;
  *     residual = u_new-u_old;
  *     u_new = aitken.apply(residual, u_new);
  *     aitken.printInfo();
@@ -158,7 +158,7 @@ public:
     ~Aitken() {}
 
     /**
-     * initiliaze the aitken algorithm
+     * initialize the aitken algorithm
      */
     template <typename ... Ts>
     void initialize( Ts && ... v )
@@ -339,7 +339,7 @@ public:
 
 private:
     /**
-     * initiliaze the aitken algorithm
+     * initialize the aitken algorithm
      */
     void initializeimpl( element_type const& residual, element_type const& elem );
 

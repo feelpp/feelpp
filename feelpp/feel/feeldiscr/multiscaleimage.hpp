@@ -112,7 +112,7 @@ public :
         std::cout << "mat:" << gradFFTX[0][0](1,i) << std::endl; 
     }
 
-    // Allow us to acces to value of the gradient at coordinate store in real 
+    // Allow us to access to value of the gradient at coordinate store in real 
     value_type 
     operator()(int c, ublas::vector<double> const& real,ublas::vector<double> const& ref ) const
         {
@@ -133,7 +133,7 @@ public :
             int Bx=Ax/meshp;
             int By=Ay/meshp;
             
-            // Define on which element we are when nodes belong to multiple elments
+            // Define on which element we are when nodes belong to multiple elements
             if (Ax%meshp==0)
                 {
                     if (ref[0]==1)

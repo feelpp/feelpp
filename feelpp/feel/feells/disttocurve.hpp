@@ -772,7 +772,7 @@ private :
                             const node_type v = dofCoord - closestPointCoord;
 
                             // the sign of the distance function is ruled by the vectorial product of the tangent vector and the vector v : sign(v x t)
-                            // in 3D, it should be somthing like :  sign( (v x t) . n ) where n is the normal of the param surface pointing outward
+                            // in 3D, it should be something like :  sign( (v x t) . n ) where n is the normal of the param surface pointing outward
                             double signProdVec;
 
                             if (!shapeHasRevolution)

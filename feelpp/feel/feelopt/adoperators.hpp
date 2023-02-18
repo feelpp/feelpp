@@ -152,7 +152,7 @@ AD_BIN_ADD_CST( long double )
 
 #undef AD_BIN_ADD_CST
 
-//------------------------------- AD substraction operators ------------------------------------------
+//------------------------------- AD subtraction operators ------------------------------------------
 template <class L, class R>
 class ADBinarySubtract
 {

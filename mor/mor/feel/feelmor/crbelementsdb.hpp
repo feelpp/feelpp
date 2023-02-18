@@ -98,14 +98,13 @@ public :
         }
 #endif
         if ( M_fileFormat == "hdf5" )
-            this->setDBFilename( ( boost::format( "%1%.%2%.h5" )
-                                   %this->name()%ext ).str() );
+            this->setDBFilename( fmt::format( "{}.{}.h5",
+                                   this->name(), ext ) );
         else
-            this->setDBFilename( ( boost::format( "%1%.%2%_p%3%.crbdb" )
-                                   %this->name()
-                                   %ext
-                                   %this->worldComm().globalRank()
-                                   ).str() );
+            this->setDBFilename( fmt::format( "{}.{}_p{}.crbdb",
+                                   this->name(),
+                                   ext,
+                                   this->worldComm().globalRank()));
     }
 
     CRBElementsDB( std::string const& name,
@@ -134,6 +133,12 @@ public :
                                (boost::format("_p%1%.crbdb")%this->worldComm().globalRank()).str() );
             fs::path dbnamePath = fs::path( dbname );
             this->setDBFilename( dbnamePath.filename().string() );
+            
+            // get function space name (needed if nproc offline != nproc online)
+            std::string functionspaceName = ptree.template get<std::string>( "functionspace-filename" );
+            fs::path fsnamePath = fs::path( functionspaceName );
+            this->setFSFilename( fsnamePath.filename().string() );
+
             if ( dbnamePath.is_absolute() )
                 this->setDBDirectory( dbnamePath.parent_path().string() );
             else if ( !dbDir.empty() )
@@ -147,6 +152,11 @@ public :
      * save the database
      */
     void saveDB() override;
+
+    /**
+     * save a new element to the database
+     */
+    void saveNewElementToDB() override;
 
     //!
     //! 
@@ -163,6 +173,11 @@ public :
      * save the database in hdf5 format
      */
     void saveHDF5DB();
+
+    /**
+     * save a new element to the database in hdf5 format
+     */
+    void saveHDF5newElementToDB();
 
     /**
      * load the database in hdf5 format
@@ -206,6 +221,11 @@ public :
         M_useMonolithicRbSpace = model->useMonolithicRbSpace();
     }
 
+    std::string dbFileFormat()
+    {
+        return M_fileFormat;
+    }
+
 private :
 
     friend class boost::serialization::access;
@@ -232,6 +252,20 @@ private :
 
 
 };//class CRBElementsDB
+
+template<typename ModelType>
+void
+CRBElementsDB<ModelType>::saveNewElementToDB()
+{    
+    if ( M_fileFormat == "boost" )
+    {        
+        this->saveDB();     
+    }
+    else
+    {        
+        this->saveHDF5newElementToDB();     
+    }
+}
 
 
 
@@ -281,11 +315,19 @@ CRBElementsDB<ModelType>::loadDB()
 
     fs::path db = this->lookForDB();
 
-    if ( db.empty() )
-        return false;
-
-    if ( !fs::exists( db ) )
-        return false;
+    // if ( db.empty() )
+    //     return false;
+        
+    // Check if the first primal basis element exists
+    std::ostringstream hdf5File_primal;
+    fs::path p = this->dbLocalPath() / fs::path(this->dbFilename());
+    p.replace_extension("");
+    std::string additional_part_primal = std::string("-primal-") +  std::to_string(1);
+    hdf5File_primal << p.string() + additional_part_primal << ".h5";
+    LOG(INFO) << fmt::format("hdf5File_primal {}",hdf5File_primal.str());
+    
+    if( (!fs::exists( db ) || db.empty() ) && !fs::exists(hdf5File_primal.str()))   
+        return false;    
 
     if ( M_fileFormat == "hdf5" )
     {
@@ -467,6 +509,86 @@ CRBElementsDB<ModelType>::save( Archive & ar, const unsigned int version ) const
 }
 
 #ifdef FEELPP_HAS_HDF5
+
+template<typename ModelType>
+void
+CRBElementsDB<ModelType>::saveHDF5newElementToDB()
+{
+    auto & WN = M_rbSpace->primalRB();
+    auto & WNdu = M_rbSpace->dualRB();
+
+    int size = WN.size();
+
+    std::ostringstream hdf5File_primal,hdf5File_dual; 
+    std::string additional_part_primal = std::string("-primal-") +  std::to_string(size);
+    std::string additional_part_dual = std::string("-dual-") +  std::to_string(size);
+    fs::path p = this->dbLocalPath() / fs::path(this->dbFilename());
+    p.replace_extension("");
+    hdf5File_primal << p.string() + additional_part_primal << ".h5";
+    hdf5File_dual << p.string() + additional_part_dual << ".h5";
+
+    LOG(INFO) << fmt::format("String hdf 5 file primal {}",p.string() + additional_part_primal);
+    LOG(INFO) << fmt::format("String hdf 5 file dual {}",p.string() + additional_part_dual);
+
+    HDF5 hdf5_primal, hdf5_dual;
+
+    hsize_t dims[1];
+    hsize_t offset[1];
+
+    dims[0] = 1;
+    offset[0] = 0;
+
+    /* only do this on proc 0 */
+    if(this->worldComm().isMasterRank())
+    {
+        /* If a previous db already exists, we remove it */
+        if( boost::filesystem::exists( hdf5File_primal.str() ) )
+        {
+            boost::filesystem::remove( hdf5File_primal.str() );
+        }
+        if( boost::filesystem::exists( hdf5File_dual.str() ) )
+        {
+            boost::filesystem::remove( hdf5File_dual.str() );
+        }
+
+        /* Select the correct size for data */
+        hid_t memDataType;
+        if(sizeof(int) == 4)
+        { memDataType = H5T_NATIVE_INT; }
+        else
+        { memDataType = H5T_NATIVE_LLONG; }
+
+        hdf5_primal.openFile( hdf5File_primal.str(), this->worldComm().subWorldCommSeq(), true, true );
+        hdf5_primal.createTable( "dbSize", memDataType, dims, 1 );
+        hdf5_primal.write( "dbSize", memDataType, dims, offset, &size, 1 );
+        hdf5_primal.closeTable( "dbSize" );     
+        hdf5_primal.closeFile();
+
+        hdf5_dual.openFile( hdf5File_dual.str(), this->worldComm().subWorldCommSeq(), true, true );
+        hdf5_dual.createTable( "dbSize", memDataType, dims, 1 );
+        hdf5_dual.write( "dbSize", memDataType, dims, offset, &size, 1 );
+        hdf5_dual.closeTable( "dbSize" );        
+        hdf5_dual.closeFile();
+    }
+    this->worldComm().barrier();
+
+    LOG( INFO ) << "saving HDF5 Elements DB";
+
+    std::ostringstream tableName;
+    LOG( INFO ) << hdf5File_primal.str();
+    tableName << "WN[" << size-1 << "]";
+    WN[size-1]->saveHDF5(hdf5File_primal.str(), tableName.str(), true);
+
+    tableName.str("");
+    tableName << "WNdu[" << size-1 << "]";
+    WNdu[size-1]->saveHDF5(hdf5File_dual.str(), tableName.str(), true);
+
+    LOG( INFO ) << "Elements DB saved in hdf5";
+
+
+
+}
+
 template<typename ModelType>
 void
 CRBElementsDB<ModelType>::saveHDF5DB()
@@ -618,78 +740,216 @@ CRBElementsDB<ModelType>::loadHDF5DB()
     fs::path p = dbpath / fs::path(this->dbFilename());
     p.replace_extension("");
     hdf5File << p.string() << ".h5";
-    HDF5 hdf5;
-    hsize_t dims[1];
-    hsize_t offset[1];
 
-    dims[0] = 1;
-    offset[0] = 0;
-
-    int size;
-    /* Select the correct size for data */
-    hid_t memDataType;
-    if(sizeof(int) == 4)
-    { memDataType = H5T_NATIVE_INT; }
-    else
-    { memDataType = H5T_NATIVE_LLONG; }
-
-    hdf5.openFile( hdf5File.str(), this->worldComm(), true, false );
-    hdf5.openTable( "dbSize", dims);
-    hdf5.read( "dbSize", memDataType, dims, offset, &size, 1 );
-    hdf5.closeTable( "dbSize");
-    hdf5.closeFile();
-
-    this->setMN(size);
-
-    auto & WN = M_rbSpace->primalRB();
-    auto & WNdu = M_rbSpace->dualRB();
-
-    WN.resize( M_N );
-    WNdu.resize( M_N );
-
-    space_ptrtype Xh;
-    if ( M_rbSpace && M_rbSpace->functionSpace() )
-        Xh = M_rbSpace->functionSpace();
-    else
+    if (false)//boost::filesystem::exists( hdf5File.str() ) )
     {
-        if ( !M_model )
-        {
-            LOG(INFO) << "[load] model not initialized, loading fdb files...\n";
-            auto mesh = mesh_type::New();
-            bool is_mesh_loaded = mesh->load( _name="mymesh",_path=this->dbLocalPath(),_type="binary" );
-            Xh = space_type::New( mesh );
-            LOG(INFO) << "[load] loading fdb files done.\n";
-        }
+        HDF5 hdf5;
+        hsize_t dims[1];
+        hsize_t offset[1];
+
+        dims[0] = 1;
+        offset[0] = 0;
+
+        int size;
+        /* Select the correct size for data */
+        hid_t memDataType;
+        if(sizeof(int) == 4)
+        { memDataType = H5T_NATIVE_INT; }
+        else
+        { memDataType = H5T_NATIVE_LLONG; }
+
+        hdf5.openFile( hdf5File.str(), this->worldComm(), true, false );
+        hdf5.openTable( "dbSize", dims);
+        hdf5.read( "dbSize", memDataType, dims, offset, &size, 1 );
+        hdf5.closeTable( "dbSize");
+        hdf5.closeFile();
+
+        this->setMN(size);
+
+        auto & WN = M_rbSpace->primalRB();
+        auto & WNdu = M_rbSpace->dualRB();
+
+        WN.resize( M_N );
+        WNdu.resize( M_N );
+
+        space_ptrtype Xh;
+        if ( M_rbSpace && M_rbSpace->functionSpace() )
+            Xh = M_rbSpace->functionSpace();
         else
         {
-            LOG(INFO) << "[load] get mesh/Xh from model...\n";
-            auto mesh = M_model->functionSpace()->mesh();
-            Xh = M_model->functionSpace();
-            LOG(INFO) << "[load] get mesh/Xh from model done.\n";
+            if ( !M_model )
+            {
+                LOG(INFO) << "[load] model not initialized, loading fdb files...\n";
+                auto mesh = mesh_type::New();
+                bool is_mesh_loaded = mesh->load( _name="mymesh",_path=this->dbLocalPath(),_type="binary" );
+                Xh = space_type::New( mesh );
+                LOG(INFO) << "[load] loading fdb files done.\n";
+            }
+            else
+            {
+                LOG(INFO) << "[load] get mesh/Xh from model...\n";
+                auto mesh = M_model->functionSpace()->mesh();
+                Xh = M_model->functionSpace();
+                LOG(INFO) << "[load] get mesh/Xh from model done.\n";
+            }
         }
+        // read the functionspace file 
+        fs::path functionspacePath = dbpath / fs::path(this->fsFilename());
+        std::string spacefileName = functionspacePath.string();
+        LOG(INFO) << fmt::format("Reading functionspace file {}",spacefileName);    
+        std::optional<std::vector<index_type>> spacesRelation;    
+        auto ch = (spacefileName.substr(0, spacefileName.find_last_of("."))).back();
+        std::string str_nbproc(1,ch);
+        int nproc_db = std::stoi(str_nbproc);    
+        LOG(INFO) << fmt::format("Number of processors for the saved database {}",nproc_db);
+        // load the relation between current dof table and on database file
+        if (  nproc_db !=this->worldComm().globalSize() )
+        {
+            if(auto *file = fopen(spacefileName.c_str(), "r"))
+            {
+                fclose(file);
+                spacesRelation = M_rbSpace->functionSpace()->relationFromFile( spacefileName );                
+            }
+        }
+
+        LOG( INFO ) << "loading Elements DB (hdf5)";
+        for(int i=0; i<M_N; i++)
+        {
+            std::ostringstream tableName;
+            tableName << "WN[" << i << "]";
+            auto & wni = WN[i];
+            if ( !wni )
+                wni = Xh->elementPtr( (boost::format( "fem-primal-%1%" ) % ( i ) ).str() );
+            
+            // if nproc offline != nproc online
+            if(this->worldComm().globalSize() != nproc_db)
+                wni->loadHDF5(hdf5File.str(),spacesRelation, tableName.str());
+            else
+                wni->loadHDF5(hdf5File.str(), tableName.str());
+
+            tableName.str("");
+            tableName << "WNdu[" << i << "]";
+            auto & wndui = WNdu[i];
+            if ( !wndui )
+                wndui = Xh->elementPtr( (boost::format( "fem-dual-%1%" ) % ( i ) ).str() );
+            
+            // if nproc offline != nproc online
+            if(this->worldComm().globalSize() != nproc_db)
+                wndui->loadHDF5(hdf5File.str(),spacesRelation, tableName.str());
+            else
+                wndui->loadHDF5(hdf5File.str(), tableName.str());
+        }
+        M_rbSpace->updatePrimalBasisForUse();
+        M_rbSpace->updateDualBasisForUse();
+        LOG( INFO ) << "Elements DB loaded";
     }
-
-
-    LOG( INFO ) << "loading Elements DB (hdf5)";
-    for(int i=0; i<M_N; i++)
+    else
     {
-        std::ostringstream tableName;
-        tableName << "WN[" << i << "]";
-        auto & wni = WN[i];
-        if ( !wni )
-            wni = Xh->elementPtr( (boost::format( "fem-primal-%1%" ) % ( i ) ).str() );
-        wni->loadHDF5(hdf5File.str(), tableName.str());
+        std::ostringstream hdf5File;
+        fs::path dbpath = this->dbLocalPath();
+        fs::path p = dbpath / fs::path(this->dbFilename());
+        p.replace_extension("");
+        hdf5File << p.string() << ".h5";
 
-        tableName.str("");
-        tableName << "WNdu[" << i << "]";
-        auto & wndui = WNdu[i];
-        if ( !wndui )
-            wndui = Xh->elementPtr( (boost::format( "fem-dual-%1%" ) % ( i ) ).str() );
-        wndui->loadHDF5(hdf5File.str(), tableName.str());
+        
+        HDF5 hdf5_primal, hdf5_dual;
+        hsize_t dims[1];
+        hsize_t offset[1];
+
+        dims[0] = 1;
+        offset[0] = 0;
+
+        LOG(INFO) << fmt::format("Size of the reduced basis {}",M_N);
+
+        auto & WN = M_rbSpace->primalRB();
+        auto & WNdu = M_rbSpace->dualRB();
+
+        WN.resize( M_N );
+        WNdu.resize( M_N );
+
+        space_ptrtype Xh;
+        if ( M_rbSpace && M_rbSpace->functionSpace() )
+            Xh = M_rbSpace->functionSpace();
+        else
+        {
+            if ( !M_model )
+            {
+                LOG(INFO) << "[load] model not initialized, loading fdb files...\n";
+                auto mesh = mesh_type::New();
+                bool is_mesh_loaded = mesh->load( _name="mymesh",_path=this->dbLocalPath(),_type="binary" );
+                Xh = space_type::New( mesh );
+                LOG(INFO) << "[load] loading fdb files done.\n";
+            }
+            else
+            {
+                LOG(INFO) << "[load] get mesh/Xh from model...\n";
+                auto mesh = M_model->functionSpace()->mesh();
+                Xh = M_model->functionSpace();
+                LOG(INFO) << "[load] get mesh/Xh from model done.\n";
+            }
+        }
+
+        // read the functionspace file 
+        fs::path functionspacePath = dbpath / fs::path(this->fsFilename());
+        std::string spacefileName = functionspacePath.string();
+        LOG(INFO) << fmt::format("Reading functionspace file {}",spacefileName);    
+        std::optional<std::vector<index_type>> spacesRelation;    
+        auto ch = (spacefileName.substr(0, spacefileName.find_last_of("."))).back();
+        std::string str_nbproc(1,ch);
+        int nproc_db = std::stoi(str_nbproc);    
+        LOG(INFO) << fmt::format("Number of processors for the saved database {}",nproc_db);
+        // load the relation between current dof table and on database file
+        if (  nproc_db !=this->worldComm().globalSize() )
+        {
+            if(auto *file = fopen(spacefileName.c_str(), "r"))
+            {
+                fclose(file);
+                spacesRelation = M_rbSpace->functionSpace()->relationFromFile( spacefileName );                
+            }
+        }
+
+        for(int i=0; i<M_N; i++)
+        {         
+            std::ostringstream hdf5File_primal,hdf5File_dual;    
+            std::string additional_part_primal = std::string("-primal-") +  std::to_string(i+1);
+            std::string additional_part_dual = std::string("-dual-") +  std::to_string(i+1);
+            fs::path p = this->dbLocalPath() / fs::path(this->dbFilename());
+            p.replace_extension("");
+            hdf5File_primal << p.string() + additional_part_primal << ".h5";
+            hdf5File_dual << p.string() + additional_part_dual << ".h5";
+
+            LOG(INFO) << fmt::format("String hdf 5 reading file primal {}",p.string() + additional_part_primal);
+            LOG(INFO) << fmt::format("String hdf 5 reading file dual {}",p.string() + additional_part_dual);
+
+            std::ostringstream tableName;
+            tableName << "WN[" << i << "]";
+            auto & wni = WN[i];
+            if ( !wni )
+                wni = Xh->elementPtr( (boost::format( "fem-primal-%1%" ) % ( i ) ).str() );
+            
+            // if nproc offline != nproc online
+            if(this->worldComm().globalSize() != nproc_db)
+                wni->loadHDF5(hdf5File_primal.str(),spacesRelation, tableName.str());
+            else
+                wni->loadHDF5(hdf5File_primal.str(), tableName.str());
+
+            tableName.str("");
+            tableName << "WNdu[" << i << "]";
+            auto & wndui = WNdu[i];
+            if ( !wndui )
+                wndui = Xh->elementPtr( (boost::format( "fem-dual-%1%" ) % ( i ) ).str() );
+            
+            // if nproc offline != nproc online
+            if(this->worldComm().globalSize() != nproc_db)
+                wndui->loadHDF5(hdf5File_dual.str(),spacesRelation, tableName.str());
+            else
+                wndui->loadHDF5(hdf5File_dual.str(), tableName.str());
+
+        }
+        M_rbSpace->updatePrimalBasisForUse();
+        M_rbSpace->updateDualBasisForUse();
+        LOG( INFO ) << "Elements DB split loaded";
     }
-    M_rbSpace->updatePrimalBasisForUse();
-    M_rbSpace->updateDualBasisForUse();
-    LOG( INFO ) << "Elements DB loaded";
 
 }
 #endif
