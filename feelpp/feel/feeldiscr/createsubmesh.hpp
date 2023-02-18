@@ -991,9 +991,9 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::updateParallelInputRange( mesh
     // wait all requests
     mpi::wait_all(reqs, reqs + cptRequest);
     // treat recv and prepare resend data
-    // reponse=0 -> entity is not in the range
-    // reponse=1 -> entity is in the range and no constraint
-    // reponse=2 -> entity is in the range but considered ghost
+    // response=0 -> entity is not in the range
+    // response=1 -> entity is in the range and no constraint
+    // response=2 -> entity is in the range but considered ghost
     std::map<rank_type,std::vector<int> > dataToReSend,dataToReRecv;
     for ( auto const& dataToRecvBase : dataToRecv )
     {
@@ -1227,7 +1227,7 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::updateParallelSubMesh( std::sh
                     continue;
                 }
 
-                // if ghost element already build, update only new neigboring data process
+                // if ghost element already build, update only new neighboring data process
                 auto itFindGhostOld = ghostOldEltDone.find( oldElem.id() );
                 if ( itFindGhostOld != ghostOldEltDone.end() )
                 {

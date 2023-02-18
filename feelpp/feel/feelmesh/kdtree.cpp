@@ -493,7 +493,7 @@ projection3d( KDTree::node_type & res,
 }
 
 /**
- * Recursive function wich wrote in latex format the hyperplan associated with a node
+ * Recursive function which wrote in latex format the hyperplan associated with a node
  */
 void
 writeDecompositionData( KDTree::Element * tree, std::shared_ptr<std::ostringstream> __ostr )
