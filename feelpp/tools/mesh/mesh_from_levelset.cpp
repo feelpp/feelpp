@@ -16,6 +16,7 @@
 #include <feel/feelfilters/filters.hpp>
 #include <feel/feelmesh/meshmover.hpp>
 #include <feel/feelmesh/remesher.hpp>
+#include <feel/feeldiscr/minmax.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelmesh/concatenate.hpp>
 #include <feel/feelmesh/submeshdata.hpp>
@@ -48,9 +49,8 @@ class InsertingObjects
             - setAmbiantMesh : Set the ambiant mesh.
             - setObjectMesh : Set the object mesh.
             - moveObjectMesh : Adapt (translate, rotate, scale) object mesh.
-            - getAABB : Get bounding box of the object.
-            - remeshAmbiantMesh : Execute local remesh.
             - setMarkers : Set map (MarkerName, MarkerID) for all volume and boundary markers.
+            - getMinElts : Get min coordinates of each volume marker.
             - setDistanceFields : Set distance fields to all object boundary markers.
             - setLevelsets : Set levelset functions for all object boundary markers.
             - setPhysicalGroups : Set markers identifiers and names. 
@@ -64,9 +64,8 @@ class InsertingObjects
         void setAmbiantMesh();
         void setObjectMesh();
         void moveObjectMesh();
-        void getAABB();
-        void remeshAmbiantMesh();
         void setMarkers();
+        void getMinElts();
         void setDistanceFields();
         void setLevelsets();
         void setPhysicalGroups();
@@ -84,11 +83,6 @@ class InsertingObjects
         std::vector<double> M_translationVector;
         double M_scalingFactor;
         double M_rotationAngle;
-        int M_remesh;
-        double M_tolRemesh;
-        double M_hRemesh;
-        double M_tolLs;
-        int M_filter;
         int M_export;
         int M_checkers;
         bool M_articulated = false;
@@ -100,11 +94,6 @@ class InsertingObjects
         space_ptrtype M_VhAmbiantMesh;
         mesh_ptrtype M_ResultMesh;
 
-        // Coordinates of AABB
-        std::vector<double> M_AABBx;
-        std::vector<double> M_AABBy;
-        std::vector<double> M_AABBz;
-
         // Markers
         std::map<int,std::string> M_VolumeMarkersObject;
         std::map<int,std::string> M_VolumeMarkersAmbiant;
@@ -113,6 +102,10 @@ class InsertingObjects
         std::map<std::string, std::vector<size_type_> > M_AllMarkerNames;
         std::vector<std::string> M_BoundaryMarkersONames;
         std::vector<std::string> M_VolumeMarkersONames;
+        int M_nbrObjects;
+        std::map<int,std::vector<double>> M_minEltsMarker;
+    
+        
 
         // Distances and levelsets
         std::vector<decltype( M_VhObjectMesh->element() )> M_distToObjectBoundaries;
@@ -136,11 +129,6 @@ InsertingObjects<Dim>::getData(std::string filename)
     M_translationVector = jsonData["position"]["translation_vector"].get<std::vector<double>>();
     M_scalingFactor = jsonData["position"]["scaling_factor"].get<double>();
     M_rotationAngle = jsonData["position"]["rotation_angle"].get<double>();
-    M_remesh = jsonData["remesh"]["local_remesh"].get<int>();
-    M_tolRemesh = jsonData["remesh"]["tol_remesh"].get<double>();
-    M_hRemesh = jsonData["remesh"]["h_remesh"].get<double>();
-    M_tolLs = jsonData["ls"]["tol_ls"].get<double>();
-    M_filter = jsonData["filter"]["closest_filter"].get<int>();
     M_export = jsonData["postProcess"]["add_exports"].get<int>();
     M_checkers = jsonData["postProcess"]["add_checkers"].get<int>();
 }
@@ -198,60 +186,7 @@ InsertingObjects<Dim>::moveObjectMesh()
     meshMove( M_ObjectMesh , disp );
 }
 
-template<uint16_type Dim>
-void
-InsertingObjects<Dim>::getAABB()
-{
-    auto x = M_VhObjectMesh->element();
-    auto y = M_VhObjectMesh->element();
 
-    x = project(_space=M_VhObjectMesh, _range=elements(M_ObjectMesh),_expr=Px());
-    y = project(_space=M_VhObjectMesh, _range=elements(M_ObjectMesh),_expr=Py());
-
-    M_AABBx.push_back(x.min());
-    M_AABBx.push_back(x.max());
-
-    M_AABBy.push_back(y.min());
-    M_AABBy.push_back(y.max());
-
-    if constexpr(Dim == 3)
-    {
-        auto z = M_VhObjectMesh->element();
-
-        z = project(_space=M_VhObjectMesh, _range=elements(M_ObjectMesh),_expr=Pz());
-
-        M_AABBz.push_back(z.min());
-        M_AABBz.push_back(z.max());
-    }
-}
-
-template<uint16_type Dim>
-void 
-InsertingObjects<Dim>::remeshAmbiantMesh()
-{
-    auto r = remesher(M_AmbiantMesh);
-    auto met = M_VhAmbiantMesh->element();
-
-    met.on(_range=elements(M_AmbiantMesh), _expr=cst(M_hRemesh));
-    auto [ havg, hmin, hmax ] = hMeasures( M_AmbiantMesh );
-    
-    met.on(_range=elements(M_AmbiantMesh, Px() - M_AABBx[0] + M_tolRemesh, _selector=select_elements_from_expression::with_negative_values), _expr=cst(hmax));
-    met.on(_range=elements(M_AmbiantMesh, Py() - M_AABBy[0] + M_tolRemesh, _selector=select_elements_from_expression::with_negative_values), _expr=cst(hmax));
-    met.on(_range=elements(M_AmbiantMesh, Px() - M_AABBx[1] - M_tolRemesh, _selector=select_elements_from_expression::with_positive_values), _expr=cst(hmax));
-    met.on(_range=elements(M_AmbiantMesh, Py() - M_AABBy[1] - M_tolRemesh, _selector=select_elements_from_expression::with_positive_values), _expr=cst(hmax));
-
-    if constexpr ( Dim == 3 )
-    {
-        met.on(_range=elements(M_AmbiantMesh, Pz() - M_AABBz[0] + M_tolRemesh,_selector=select_elements_from_expression::with_negative_values), _expr=cst(hmax));
-        met.on(_range=elements(M_AmbiantMesh, Pz() - M_AABBz[1] - M_tolRemesh,_selector=select_elements_from_expression::with_positive_values), _expr=cst(hmax));
-    }
-
-    r.setMetric(met);
-
-    M_AmbiantMesh = r.execute();
-    M_VhAmbiantMesh = space_type::New(M_AmbiantMesh); 
-}
- 
 template<uint16_type Dim>
 void 
 InsertingObjects<Dim>::setMarkers()
@@ -304,21 +239,47 @@ InsertingObjects<Dim>::setMarkers()
     // Get names of object markers
     for (auto m : M_BoundaryMarkersObject)
         M_BoundaryMarkersONames.push_back(m.second);
+
+    M_nbrObjects = M_BoundaryMarkersONames.size();
+
     for (auto m : M_VolumeMarkersObject)
         M_VolumeMarkersONames.push_back(m.second);
+}
+
+
+template<uint16_type Dim>
+void 
+InsertingObjects<Dim>::getMinElts()
+{
+    for (auto item :  M_VolumeMarkersObject)
+    {
+        auto ux = project(_space=M_VhObjectMesh, _range=elements(M_ObjectMesh), _expr= Px());
+        auto [xmin,arg_xmin] = minelt(_range=markedelements(M_ObjectMesh,item.second), _element=ux);
+        M_minEltsMarker[item.first].push_back(xmin);
+        
+        auto uy = project(_space=M_VhObjectMesh, _range=elements(M_ObjectMesh), _expr= Py());
+        auto [ymin,arg_ymin] = minelt(_range=markedelements(M_ObjectMesh,item.second), _element=uy);
+        M_minEltsMarker[item.first].push_back(ymin);
+        
+        if constexpr ( Dim == 3 )
+        {
+            auto uz = project(_space=M_VhObjectMesh, _range=elements(M_ObjectMesh), _expr= Pz());
+            auto [zmin,arg_zmin] = minelt(_range=markedelements(M_ObjectMesh,item.second), _element=uz);
+            M_minEltsMarker[item.first].push_back(zmin);
+        }
+    }    
 }
 
 template<uint16_type Dim>
 void 
 InsertingObjects<Dim>::setDistanceFields()
 {
-    int size = M_BoundaryMarkersONames.size();
-
-    for (int i = 0;i<size;i++)
+    
+    for (int i = 0;i<M_nbrObjects;i++)
     {
         auto dist = distanceToRange(_space=M_VhObjectMesh, _range=markedfaces(M_ObjectMesh,M_BoundaryMarkersONames[i]));
 
-        for (int j=0;j<size;j++)
+        for (int j=0;j<M_nbrObjects;j++)
         {
             if (j != i)
                 dist.on(_range=markedelements(M_ObjectMesh,M_VolumeMarkersONames[j]), _expr = cst(-1.));    
@@ -327,11 +288,12 @@ InsertingObjects<Dim>::setDistanceFields()
         M_distToObjectBoundaries.push_back(dist);
     }
         
-    if (M_BoundaryMarkersONames.size() > 1)
+    if (M_nbrObjects > 1)
     {
         M_articulated = true;
         M_distToObject = distanceToRange(_space=M_VhObjectMesh, _range=markedfaces(M_ObjectMesh,M_BoundaryMarkersONames));
     }
+
 }
 
 template<uint16_type Dim>
@@ -360,100 +322,143 @@ InsertingObjects<Dim>::setLevelsets()
 }
 
 
+
 template<uint16_type Dim>
 void 
 InsertingObjects<Dim>::setPhysicalGroups()
 {
-    auto VhMarkers = Pdh<0>(M_AmbiantMesh);
-    //auto VhBoundaryMarkers = Pdh<1>(M_AmbiantMesh);
     
-    auto VolumeMarkers = VhMarkers->element();    
-    //auto BoundaryMarkers = VhBoundaryMarkers->element();   
-
-    // Volume markers
-    for (auto m : M_VolumeMarkersAmbiant)
-        VolumeMarkers.on(_range=markedelements(M_AmbiantMesh,m.second), _expr = cst(m.first));
-    
-    int it = 0;
-    for (auto m : M_VolumeMarkersObject)
-    {
-        VolumeMarkers.on(_range=elements(M_AmbiantMesh, idv(M_levelsetsObjectBoundaries[it]), _selector=select_elements_from_expression::with_negative_values), _expr = cst(m.first));
-        it++;
-    }
-    
-    // Fluid boundary markers
-    /*
-    for (auto m : M_BoundaryMarkersAmbiant)
-        BoundaryMarkers.on(_range=markedfaces(M_AmbiantMesh,m.second), _expr = cst(m.first));
-    */
-
-    // Export markers on init mesh
-    if (M_export == 1)
-    {
-        auto exp = exporter( _mesh = M_AmbiantMesh , _name = fmt::format( "InitMesh"));
-        exp->addRegions();
-        exp->add("VolumeMarkers", VolumeMarkers);
-        //exp->add("BoundaryMarkers_P0", BoundaryMarkers);
-        //exp->add("BoundaryMarkers_P1", BoundaryMarkers,"nodal");
-        exp->save();
-    }
-
-    // Interpolation
-    auto VhFinalMarkers = Pdh<0>(M_ResultMesh);
-    //auto VhBoundaryFinalMarkers = Pdh<1>(M_ResultMesh);
-
-    auto op_ = opInterpolation(_domainSpace = VhMarkers, _imageSpace = VhFinalMarkers);
-    //auto op_boundary = opInterpolation(_domainSpace = VhBoundaryMarkers, _imageSpace = VhBoundaryFinalMarkers,_range= boundaryfaces(M_ResultMesh));
-
-    auto Finalmarkers = VhFinalMarkers->element();
-    //auto finalboundarymarkerstmp = VhBoundaryFinalMarkers->element();
-
-    op_->apply(VolumeMarkers, Finalmarkers);
-    //op_boundary->apply(BoundaryMarkers, finalboundarymarkerstmp);
-
-    // Add closest filter
-    /*
-    auto finalboundarymarkers = VhBoundaryFinalMarkers->element();
-
-    if (M_filter == 1)
-    {
-        std::vector<int> keys;
-        for (auto it = M_BoundaryMarkersAmbiant.begin(); it != M_BoundaryMarkersAmbiant.end(); it++) 
-            keys.push_back(it->first);
-        std::sort(keys.begin(),keys.end());
-    
-        auto filter = [&keys]( double p ) 
-        {
-            auto const it = std::min_element(keys.begin(), keys.end(),[p] (double a, double b) {
-                return std::abs(p - a) < std::abs(p - b);
-            });
-            return *it; 
-        };
-
-        auto filterexpr = functionExpr( filter, idv(finalboundarymarkerstmp) );
-        finalboundarymarkers = project( _space=VhBoundaryFinalMarkers, _range=elements(M_ResultMesh), _expr=filterexpr );
-    }
-    else 
-        finalboundarymarkers = finalboundarymarkerstmp;
-    */
-
-    if (M_export == 1)
-    {
-        auto exp_ = exporter( _mesh = M_ResultMesh , _name = fmt::format( "FinalMesh"));
-        exp_->addRegions();
-        exp_->add("VolumeMarkers",Finalmarkers);
-        //exp_->add("Boundarymarkers_P0",finalboundarymarkers);
-        //exp_->add("Boundarymarkers_P1",finalboundarymarkers,"nodal");
-        exp_->save();
-    }
-
-    // Recover volume markers
+    std::map<int,int> Mtest;
+    std::vector<int> BodiesElts;
     for (auto & elem : M_ResultMesh->elements())
     {
         auto & [key, elt] = boost::unwrap_ref( elem );
-        auto DOF = VhFinalMarkers->dof()->localToGlobal( elt.id(), 0, 0 ).index();
-        auto markerID = (int)Finalmarkers[DOF];
-        elt.setMarker(markerID);
+        
+        if (elt.marker().value() == 2) //Fluid
+        {
+            int idF = 0;
+            for (auto m : M_VolumeMarkersAmbiant)
+                idF = m.first;
+            elt.setMarker(idF);
+            Mtest[elt.id()] =idF;
+        } 
+        else if (elt.marker().value() == 3) //Objects
+            BodiesElts.push_back(elt.id());
+    }
+
+    LOG(INFO) << "Nbr BodiesElts : " << BodiesElts.size();
+
+    int nb_foundGroups = 0;
+    while (nb_foundGroups < M_VolumeMarkersONames.size())
+    {
+        int GroupFull = 0;
+        std::vector<int> GroupElts;
+        int it = 0;
+
+        double minx;
+        double miny;
+        double minz = 0;
+
+
+        while (GroupFull == 0)
+        {
+            int tmp;
+
+            if (it == 0)
+            {
+                tmp = BodiesElts[it];
+
+                minx = M_ResultMesh->element(tmp).point(0).node()[0];
+                miny = M_ResultMesh->element(tmp).point(0).node()[1];
+
+                if constexpr ( Dim == 3 )
+                    minz =  M_ResultMesh->element(tmp).point(0).node()[2];
+
+                for (int i=1;i<Dim+1;i++)
+                {
+                    if (M_ResultMesh->element(tmp).point(i).node()[0] < minx)
+                        minx = M_ResultMesh->element(tmp).point(i).node()[0];
+
+                    if (M_ResultMesh->element(tmp).point(i).node()[1] < miny)
+                        miny = M_ResultMesh->element(tmp).point(i).node()[1];
+
+                    if (Dim == 3 && M_ResultMesh->element(tmp).point(i).node()[2] < minz)
+                        minz = M_ResultMesh->element(tmp).point(i).node()[2];
+                }
+                
+            }
+            else 
+                tmp = GroupElts[it];
+            
+
+            for (int i = 0; i < M_ResultMesh->element(tmp).nNeighbors();i++)
+            {
+                int id = M_ResultMesh->element(tmp).neighbor(i);
+                if (std::find(BodiesElts.begin(), BodiesElts.end(), id) != BodiesElts.end())
+                {
+                    GroupElts.push_back(id);
+
+                    for (int i=0;i<Dim+1;i++)
+                    {
+                        if (M_ResultMesh->element(id).point(i).node()[0] < minx)
+                            minx = M_ResultMesh->element(id).point(i).node()[0];
+
+                        if (M_ResultMesh->element(id).point(i).node()[1] < miny)
+                            miny = M_ResultMesh->element(id).point(i).node()[1];
+
+                        if (Dim == 3 && M_ResultMesh->element(id).point(i).node()[2] < minz)
+                            minz = M_ResultMesh->element(id).point(i).node()[2];
+                    }
+                    
+                    for (int j=0;j<BodiesElts.size();j++)
+                    {
+                        if (BodiesElts[j] == id)
+                            BodiesElts.erase(BodiesElts.begin()+j);
+                    }
+                }
+                    
+            }
+
+            it++;
+            if (it >= GroupElts.size())
+            {
+                GroupFull = 1;
+                LOG(INFO) << "GroupElts : " << GroupElts.size();
+
+                int marker;
+
+                if constexpr(Dim == 3)
+                {
+                    for (auto item : M_minEltsMarker)
+                    {
+                        if (math::abs(item.second[0]-minx) < 0.1 && math::abs(item.second[1]-miny) < 0.1 && math::abs(item.second[2]-minz) < 0.1)
+                            marker = item.first;
+                    }
+                }
+                else
+                {
+                    for (auto item : M_minEltsMarker)
+                    {
+                        if (math::abs(item.second[0]-minx) < 0.5 && math::abs(item.second[1]-miny) < 0.5)
+                            marker = item.first;
+                    }
+                }
+                
+                
+
+                for ( auto & elem : M_ResultMesh->elements() )
+                {
+                    auto & [key, elt] = boost::unwrap_ref( elem );
+                    if (std::find(GroupElts.begin(), GroupElts.end(), key) != GroupElts.end()) 
+                    {
+                        elt.setMarker(marker); 
+                        Mtest[elt.id()] = marker;
+                    }                   
+                }    
+            }
+                
+        }
+        nb_foundGroups ++;
     }
 
     // Recover faces markers
@@ -463,54 +468,60 @@ InsertingObjects<Dim>::setPhysicalGroups()
     for (auto & elem : M_ResultMesh->elements())
     {
         auto & [key, elt] = boost::unwrap_ref( elem );
-        auto markerID = elt.marker().value();
-        
+
+        auto markerID = Mtest[elt.id()];
+
         for (int i=0;i<elt.nNeighbors();i++)
         {
-            auto DOFneighbor = VhFinalMarkers->dof()->localToGlobal( elt.neighbor(i), 0, 0 ).index();
-            auto markerIDneighbor = (int)Finalmarkers[DOFneighbor];
+            
+            auto markerIDneighbor = Mtest[elt.neighbor(i)];
 
-            if (markerIDneighbor != markerID) // Boundary 
+            if ( M_VolumeMarkersObject.find(markerIDneighbor) == M_VolumeMarkersObject.end()) 
+                LOG(INFO) << "Not found Neighbor : " << markerIDneighbor << std::endl;
+            else 
             {
-                if (std::find(eltIDs.begin(), eltIDs.end(), elt.id())==eltIDs.end() && std::find(eltIDs.begin(), eltIDs.end(), elt.neighbor(i))==eltIDs.end()) 
+                if (markerIDneighbor != markerID) // Boundary 
                 {
-                    eltIDs.push_back(elt.id());
-                    eltIDs.push_back(elt.neighbor(i));
-
-                    // Get corresponding boundary marker id
-                    std::string name;
-                    if (M_VolumeMarkersObject.find(markerIDneighbor) != M_VolumeMarkersObject.end())
-                        name = M_VolumeMarkersObject[markerIDneighbor];
-                    else    
-                        name = M_VolumeMarkersObject[markerID];
-                    int pos=0;
-                    while (M_VolumeMarkersONames[pos].compare(name) != 0)
-                        pos++;
-                    int markerIDO;
-                    for (auto item : M_BoundaryMarkersObject)
+                    if (std::find(eltIDs.begin(), eltIDs.end(), elt.id())==eltIDs.end() && std::find(eltIDs.begin(), eltIDs.end(), elt.neighbor(i))==eltIDs.end()) 
                     {
-                        if (M_BoundaryMarkersONames[pos].compare(item.second) == 0 )
-                            markerIDO = item.first;
-                    }
+                        eltIDs.push_back(elt.id());
+                        eltIDs.push_back(elt.neighbor(i));
 
-                    // Find common face
-                    for (auto & face : elt.faces())
-                    {
-                        for (auto & faceN : M_ResultMesh->element(elt.neighbor(i)).faces())
+                        // Get corresponding boundary marker id
+                        std::string name;
+                        if (M_VolumeMarkersObject.find(markerIDneighbor) != M_VolumeMarkersObject.end())
+                            name = M_VolumeMarkersObject[markerIDneighbor];
+                        else    
+                            name = M_VolumeMarkersObject[markerID];
+                        int pos=0;
+                        while (M_VolumeMarkersONames[pos].compare(name) != 0)
+                            pos++;
+                        int markerIDO;
+                        for (auto item : M_BoundaryMarkersObject)
                         {
-                            if (face->id() == faceN->id())
+                            if (M_BoundaryMarkersONames[pos].compare(item.second) == 0 )
+                                markerIDO = item.first;
+                        }
+
+                        // Find common face
+                        for (auto & face : elt.faces())
+                        {
+                            for (auto & faceN : M_ResultMesh->element(elt.neighbor(i)).faces())
                             {
-                                boundaryfacesIdMarker[face->id()] = markerIDO;
-                                break;
-                            }
-                        }    
+                                if (face->id() == faceN->id())
+                                {
+                                    boundaryfacesIdMarker[face->id()] = markerIDO;
+                                    break;
+                                }
+                            }    
+                        }
                     }
                 }
-            }      
-        }  
+            }       
+        } 
     }
 
-
+    
     for (auto & bfaceF : boundaryfaces(M_ResultMesh))
     {
         auto & faceF = boost::unwrap_ref( bfaceF ); 
@@ -578,30 +589,6 @@ InsertingObjects<Dim>::setPhysicalGroups()
 
     }
 
-    /* Using interpolation and filter
-    int loc;
-    std::vector<unsigned int> pointIDs;
-
-    for (auto & bface : boundaryfaces(M_ResultMesh))
-    {
-        auto & face = boost::unwrap_ref( bface );
-
-        if constexpr ( Dim == 2 ) 
-            pointIDs = {face.point(0).id(), face.point(1).id()};
-        if constexpr ( Dim == 3 )
-            pointIDs = {face.point(0).id(), face.point(1).id(), face.point(2).id()};
-
-        loc = 0;
-        while (std::find(pointIDs.begin(), pointIDs.end(), face.element(0).point(loc).id()) == pointIDs.end())
-            loc++;
-
-        auto DOF = VhBoundaryFinalMarkers->dof()->localToGlobal( face.element(0).id(), loc, 0 ).index();
-        int markerID = finalboundarymarkers[DOF];
-        
-        boundaryfacesIdMarker[face.id()] = markerID;
-    }
-    */
-
     for ( auto & bface : M_ResultMesh->faces() )
     {
         auto & [key, face] = boost::unwrap_ref( bface );
@@ -667,15 +654,10 @@ InsertingObjects<Dim>::run()
     // Move object mesh
     this->moveObjectMesh();
     
-    // Local remesh
-    if (M_remesh == 1)
-    {
-        this->getAABB();
-        this->remeshAmbiantMesh();
-    }
-
     // Set markers
     this->setMarkers();
+
+    this->getMinElts();
     
     // Set distance functions and levelsets
     this->setDistanceFields();
@@ -694,6 +676,7 @@ InsertingObjects<Dim>::run()
     
     // Test boundary markers
     this->testBoundaryMarkers();
+    
     
     return 0;
 }
