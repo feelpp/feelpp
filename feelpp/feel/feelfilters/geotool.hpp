@@ -1134,7 +1134,7 @@ protected :
 public :
 
     /*
-     * Update the output stringstream wich generate the gmsh code
+     * Update the output stringstream which generate the gmsh code
      */
     void updateOstr( std::string __str )
     {
@@ -1619,7 +1619,7 @@ computeBasisOrthogonal( node_type dir,node_type centre );
 
 
 
-//creation des classes representants les objets geotool
+//creation of classes representing geotool objects
 BOOST_PP_FOR( ( 0, BOOST_PP_SUB( BOOST_PP_ARRAY_SIZE( GEOTOOL_SHAPE ),1 ) ),
               GEOTOOL_FOR_COMP,
               GEOTOOL_FOR_INCR,

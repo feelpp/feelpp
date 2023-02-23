@@ -107,7 +107,7 @@ ParseGeoFromMemory( GModel* model, std::string const& name, std::string const& g
         gmsh_yyparse();
         if(gmsh_yyerrorstate > 20)
         {
-          if(gmsh_yyerrorstate != 999) // 999 is a volontary exit
+          if(gmsh_yyerrorstate != 999) // 999 is a voluntary exit
             std::cerr << "Too many errors: aborting parser...\n";
           gmsh_yyflush();
           break;
@@ -608,7 +608,7 @@ Gmsh::refine( std::string const& name, int /*level*/, bool parametric  ) const
 
 		if ( partitions )
             {
-                LOG(INFO) << "[Gmsh::refine] Repartioning mesh : " << filename.str() << "\n";
+                LOG(INFO) << "[Gmsh::refine] Repartitioning mesh : " << filename.str() << "\n";
                 PartitionMesh( M_gmodel.get(), CTX::instance()->partitionOptions );
             }
         M_gmodel->writeMSH( nameMshOutput );

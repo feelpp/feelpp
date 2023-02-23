@@ -3025,7 +3025,7 @@ MatrixPetscMPI<T>::zero()
                 if ( ( int )it->second.template get<0>() == this->comm().globalRank() || this->mapRow().mapGlobalClusterToGlobalProcess().size()==0 )
                 {
 
-                    // Work in progress (but normaly this part is useless because we use the CSR prealocation)
+                    // Work in progress (but normally this part is useless because we use the CSR prealocation)
 #if 0
                     std::vector<PetscInt> cols(  it->second.template get<2>().size(), 0 );
                     //PetscInt row = it->second.template get<1>();

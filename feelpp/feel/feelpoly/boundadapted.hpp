@@ -133,7 +133,7 @@ struct BoundaryAdaptedTag
  *
  * The Boundary adapted basis is construct to preserve a part
  * of the Dubiner polynomials' orthogonality. However we need
- * to modify the basis in order to manage easily the boundary condtions.
+ * to modify the basis in order to manage easily the boundary conditions.
  *
  * \ingroup Polynomial
  * @author Gilles Steiner
@@ -897,7 +897,7 @@ BoundaryAdapted<Dim, Degree,  T, StoragePolicy>::derivate( ublas::matrix_express
     ublas::row( Jac,8 ) = ones; /** 1 **/
 
 
-    /** Usefull intermediate matrix to simplify the construction **/
+    /** Useful intermediate matrix to simplify the construction **/
 
     matrix_type d1 ( res[1].size1(), res[1].size2() );
     matrix_type d2 ( res[1].size1(), res[1].size2() );

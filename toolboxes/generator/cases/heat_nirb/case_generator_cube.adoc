@@ -44,9 +44,9 @@ To run the Python script, you need to install the https://pypi.org/project/pytho
 | `--Nv NV`      | number of fins in vertical direction | 3
 | `--Nh NH`      | number of fins in horizontal direction  | 3
 | `--Nd ND`      | number of fins in depth direction  | 1
-| `--L L`        | width of a cube | 1
-| `--height H`   | height of a cube | 1
-| `--d D`        | depth of a cube (for 3D only) | 1
+| `--L L`        | width of the domain | 1
+| `--h H`        | height of the domain | 1
+| `--d D`        | depth of the domain (for 3D only) | 1
 | `--dim DIM`    | dimension of the case (2 or 3) | 2
 | `--odir ODIR`  | output directory | `.`
 |===

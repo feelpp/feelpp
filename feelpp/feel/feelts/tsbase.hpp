@@ -213,7 +213,7 @@ public:
     {
         M_state = TS_RUNNING;
         M_timer.start();
-        // if initiliaze has been called M_iteration start to 1 else 0
+        // if initialize has been called M_iteration start to 1 else 0
         M_iteration = M_time_values_map.size();//1;
         M_time = M_Ti+this->timeStep();
         return M_Ti;

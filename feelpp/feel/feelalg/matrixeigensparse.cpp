@@ -299,7 +299,7 @@ MatrixEigenSparse<T>::zeroRows( std::vector<int> const& rows,
     }
     else // rowMajor
     {
-        CHECK( !on_context.test( ContextOn::SYMMETRIC ) ) << "symetric case not supported with row major\n";
+        CHECK( !on_context.test( ContextOn::SYMMETRIC ) ) << "symmetric case not supported with row major\n";
 
         for (int k=0; k<rows.size(); ++k)
         {
