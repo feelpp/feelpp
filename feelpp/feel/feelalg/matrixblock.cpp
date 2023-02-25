@@ -60,7 +60,7 @@ BlocksBaseSparseMatrix<T>::close()
     // search a reference row datamap foreach row
     for ( index_type i=0 ; i<this->nRow() ;++i)
     {
-        // search a data row avalaible
+        // search a data row available
         bool findDataMapRow=false;
         for ( index_type j=0 ; j<this->nCol() && !findDataMapRow ;++j)
         {
@@ -76,7 +76,7 @@ BlocksBaseSparseMatrix<T>::close()
     // search reference col datamap foreach col
     for ( index_type j=0 ; j<this->nCol() ;++j)
     {
-        // search a data col avalaible
+        // search a data col available
         bool findDataMapCol=false;
         for ( index_type i=0 ; i<this->nRow() && !findDataMapCol ;++i)
         {

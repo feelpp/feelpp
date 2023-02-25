@@ -2111,11 +2111,11 @@ GeoGMSHTool::updateSurfaceListFromFusionMarkersLineWithoutInterface( std::map<st
             int idNewSurf = findSurfToModify->second.second;
             auto const& mysurf = this->entitiesStorage().getSurface(idNewSurf);
 
-            boost::get<0>(*itSurf2front) = "blabla"; // shape (usefull??)
+            boost::get<0>(*itSurf2front) = "blabla"; // shape (useful??)
             boost::get<1>(*itSurf2front) = mysurf.name();
             CHECK( mysurf.listLineLoop().size() == 1 ) << "diff can be used only with surface with one lineloop";
             boost::get<2>(*itSurf2front) = std::make_pair( mysurf.globalId(),mysurf.listLineLoop().front() ); // surf id, lineloop id
-            boost::get<3>(*itSurf2front) = 0.; // mesh size (usefull??)
+            boost::get<3>(*itSurf2front) = 0.; // mesh size (useful??)
         }
         else if ( surfaceListErased.find( std::make_pair( nameSurf,idSurf ) ) != surfaceListErased.end() )
         {
@@ -2146,11 +2146,11 @@ GeoGMSHTool::updateSurfaceListFromFusionMarkersLineWithoutInterface( std::map<st
                         // modify diff surface
                         int idNewSurfDiff = findSurfDiffToModify->second.second;
                         auto const& mysurf = this->entitiesStorage().getSurface(idNewSurfDiff);
-                        boost::get<0>(*itSurfDiff) = "blablaDiff"; // shape (usefull??)
+                        boost::get<0>(*itSurfDiff) = "blablaDiff"; // shape (useful??)
                         boost::get<1>(*itSurfDiff) = mysurf.name();
                         CHECK( mysurf.listLineLoop().size() == 1 ) << "diff can be used only with surface with one lineloop";
                         boost::get<2>(*itSurfDiff) = std::make_pair( mysurf.globalId(),mysurf.listLineLoop().front() ); // surf id, lineloop id
-                        boost::get<3>(*itSurfDiff) = 0.; // mesh size (usefull??)
+                        boost::get<3>(*itSurfDiff) = 0.; // mesh size (useful??)
                     }
                     ++itSurfDiff;
                 }

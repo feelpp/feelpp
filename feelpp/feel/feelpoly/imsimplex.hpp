@@ -118,7 +118,7 @@ public:
     IMSimplex& operator=( IMSimplex const & i ) = default;
 
     /**
-     * create quadrature rule that integrates exactely up to polynomial order \c p
+     * create quadrature rule that integrates exactly up to polynomial order \c p
      */
     void create( uint16_type order ) override
         {

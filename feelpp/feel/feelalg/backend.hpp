@@ -1130,7 +1130,7 @@ public:
             needToCopySolution = true;
         }
         vector_ptrtype _rhs( this->toBackendVectorPtr( rhs ) );
-        CHECK( _rhs ) << "converstion to backend vector of rhs fails";
+        CHECK( _rhs ) << "conversion to backend vector of rhs fails";
 
         this->setTranspose( transpose );
         solve_return_type ret;
