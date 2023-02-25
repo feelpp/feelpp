@@ -684,7 +684,7 @@ protected:
     MatSolverPackageType M_matSolverPackage_type;
 
     /**
-     * Two differents tolerances on the residual for the resolution of non linear system
+     * Two different tolerances on the residual for the resolution of non linear system
      */
     double M_relativeResidualTol;
     double M_absoluteResidualTol;

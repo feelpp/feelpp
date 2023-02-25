@@ -21,5 +21,7 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
+
 feelpp_add_pymodule(fluid SRCS fluid.cpp DESTINATION feelpp/toolboxes/fluid LINK_LIBRARIES Feelpp::feelpp_toolbox_fluid_lib )
+target_include_directories(_fluid PRIVATE ${CMAKE_SOURCE_DIR}/python/pyfeelpp-toolboxes/feelpp/toolboxes/fluid)
 install(FILES  __init__.py fluid.py DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/toolboxes/fluid)

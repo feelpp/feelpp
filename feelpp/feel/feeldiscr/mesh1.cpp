@@ -35,7 +35,7 @@
 namespace Feel
 {
 
-// Explicit instatiations
+// Explicit instantiations
 //
 #if defined( FEELPP_INSTANTIATION_MODE )
 
