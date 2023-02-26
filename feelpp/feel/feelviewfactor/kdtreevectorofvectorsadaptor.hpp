@@ -28,9 +28,10 @@
 
 #pragma once
 
-#include "contrib/nanoflann/nanoflann.hpp"
+#include <nanoflann.hpp>
 #include <vector>
 
+namespace Feel {
 // ===== This example shows how to use nanoflann with these types of containers:
 // using my_vector_of_vectors_t = std::vector<std::vector<double> > ;
 //
@@ -102,7 +103,7 @@ struct KDTreeVectorOfVectorsAdaptor
     {
         nanoflann::KNNResultSet<num_t, IndexType> resultSet(num_closest);
         resultSet.init(out_indices, out_distances_sq);
-        index->findNeighbors(resultSet, query_point, nanoflann::SearchParams());
+        index->findNeighbors(resultSet, query_point, nanoflann::SearchParameters());
     }
 
     /** @name Interface expected by KDTreeSingleIndexAdaptor
@@ -134,3 +135,4 @@ struct KDTreeVectorOfVectorsAdaptor
     /** @} */
 
 };  // end of KDTreeVectorOfVectorsAdaptor
+} // namespace Feel

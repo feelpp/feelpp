@@ -46,15 +46,18 @@ install(TARGETS napp EXPORT feelpp-contrib-export-targets
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
     )
-
+add_custom_target(uninstall)
 message(STATUS "------------------------------------------------------------")
 message(STATUS "Configuring NANOFLANN")
-set(MASTER_PROJECT_HAS_TARGET_UNINSTALL ON)
+set(MASTER_PROJECT_HAS_TARGET_UNINSTALL TRUE)
 set(FETCHCONTENT_SOURCE_DIR_NANOFLANN ${CMAKE_CURRENT_SOURCE_DIR}/nanoflann)
-FetchContent_Declare(nanoflann GIT_REPOSITORY https://github.com/feelpp/nanoflann.git GIT_TAG d4c8358693eb7c847472386891a7ce26590ac76f)
+FetchContent_Declare(nanoflann GIT_REPOSITORY https://github.com/feelpp/nanoflann.git GIT_TAG 2b7e88659217da279b86f21d088ce48ebce26942)
 set(NAPP_CONFIG_INSTALL_DIR "${CMAKE_INSTALL_DATADIR}/feel/cmake/modules")
 FetchContent_MakeAvailable(nanoflann)
 target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_NANOFLANN)
+target_include_directories(nanoflann INTERFACE
+  $<BUILD_INTERFACE:${nanoflann_SOURCE_DIR}/include/>
+  $<INSTALL_INTERFACE:include/feelpp>)
 target_link_libraries(feelpp_contrib INTERFACE nanoflann)
 install(TARGETS nanoflann EXPORT feelpp-contrib-export-targets
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
