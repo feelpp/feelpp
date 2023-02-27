@@ -75,7 +75,7 @@ DataMap<SizeT>::DataMap( size_type n, size_type n_local, worldcomm_ptr_t const& 
     if ( this->worldComm().size() > 1 )
     {
 #ifdef FEELPP_HAS_MPI
-        CHECK( false ) << "Not imlemented!";
+        CHECK( false ) << "Not implemented!";
 #else
         CHECK( false ) << "MPI is required";
 #endif
@@ -484,7 +484,7 @@ DataMap<SizeT>::updateIndexSetWithParallelMissingDof( std::set<size_type> & inde
     // init data used in mpi comm
     std::map< rank_type, std::vector< size_type > > dataToSend, dataToRecv;
 
-    // up data used in mpi comm : send ghost dofs to correponding active dofs
+    // up data used in mpi comm : send ghost dofs to corresponding active dofs
     for ( auto const& id : indexSet )
     {
         if ( this->dofGlobalProcessIsGhost(id) )
@@ -1176,7 +1176,7 @@ IndexSplit::addSplit( size_type startSplit, self_ptrtype const& addedIndexSplit 
     }
 
     // second pass : add new index splits
-    int fixIndexShift = 0; // only usefull when component splits are present
+    int fixIndexShift = 0; // only useful when component splits are present
     size_type startIS = startSplit;
     for ( int k = 0 ; k < newSize ; ++k )
     {

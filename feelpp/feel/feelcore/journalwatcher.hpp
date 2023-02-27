@@ -46,7 +46,7 @@ public:
     //!
     //! When this constructor is called by a child class, the new child observer
     //! is automatically connected (in "auto" mode) to the journal system.
-    //! A slot is created and and is connected to a JournalManager.
+    //! A slot is created and is connected to a JournalManager.
     //!
     //! \see JournalManager
     explicit JournalWatcher( std::string const& category = "", std::string const& name = "", bool connect = JournalManager::journalAutoMode() );

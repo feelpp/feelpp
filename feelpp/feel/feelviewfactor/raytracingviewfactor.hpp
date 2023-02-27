@@ -14,6 +14,10 @@
 #include <feel/feel.hpp>
 #include <feel/feelviewfactor/viewfactorbase.hpp>
 #include <feel/feelmesh/bvh.hpp>
+#include <nanoflann.hpp>
+#include <feel/feelviewfactor/kdtreevectorofvectorsadaptor.hpp>
+// #include <feel/feeldiscr/createsubmesh.hpp>
+using namespace nanoflann;
 #include <random>
 #include <cmath>
 #include <iostream>
