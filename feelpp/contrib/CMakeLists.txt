@@ -46,6 +46,25 @@ install(TARGETS napp EXPORT feelpp-contrib-export-targets
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
     )
+add_custom_target(uninstall)
+message(STATUS "------------------------------------------------------------")
+message(STATUS "Configuring NANOFLANN")
+set(MASTER_PROJECT_HAS_TARGET_UNINSTALL TRUE)
+set(FETCHCONTENT_SOURCE_DIR_NANOFLANN ${CMAKE_CURRENT_SOURCE_DIR}/nanoflann)
+FetchContent_Declare(nanoflann GIT_REPOSITORY https://github.com/feelpp/nanoflann.git GIT_TAG 2b7e88659217da279b86f21d088ce48ebce26942)
+set(NAPP_CONFIG_INSTALL_DIR "${CMAKE_INSTALL_DATADIR}/feel/cmake/modules")
+FetchContent_MakeAvailable(nanoflann)
+target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_NANOFLANN)
+target_include_directories(nanoflann INTERFACE
+  $<BUILD_INTERFACE:${nanoflann_SOURCE_DIR}/include/>
+  $<INSTALL_INTERFACE:include/feelpp>)
+target_link_libraries(feelpp_contrib INTERFACE nanoflann)
+install(TARGETS nanoflann EXPORT feelpp-contrib-export-targets
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
 
 message(STATUS "------------------------------------------------------------")
 message(STATUS "Configuring FMT")
@@ -214,7 +233,7 @@ set(EIGEN_TEST_NOQT 1)
 set(FETCHCONTENT_SOURCE_DIR_EIGEN ${CMAKE_CURRENT_SOURCE_DIR}/eigen)
 set( EIGEN_INCLUDE_INSTALL_DIR "include/feelpp/eigen" )
 
-FetchContent_Declare(eigen GIT_REPOSITORY git@gitlab.com:feelpp/eigen.git GIT_TAG 3147391d946bb4b6c68edd901f2add6ac1f31f8c) # the commit hash for 1.5.0
+FetchContent_Declare(eigen GIT_REPOSITORY git@gitlab.com:feelpp/eigen.git GIT_TAG 08bd619a45b642d68ccf80c011d7391bb213ecba) # the commit hash for 1.5.0
 FetchContent_MakeAvailable(eigen)
 target_include_directories( feelpp_contrib BEFORE
       INTERFACE

@@ -1,9 +1,9 @@
-###  CMakeLists.txt; coding: utf-8 --- 
+# ##  TEMPLATE.txt.tpl; coding: utf-8 ---
 
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-#       Date: 19 Jan 2017
+# Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+# Date: 2022-06-08
 #
-#  Copyright (C) 2017 Feel++ Consortium
+# Copyright (C) 2022 Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -21,15 +21,7 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-
-add_subdirectory(info)
-add_subdirectory(remotedata)
-add_subdirectory( mesh )
-add_subdirectory( plot )
-add_subdirectory( fmi )
-add_subdirectory( databases )
-add_subdirectory( sync_case )
-
-add_subdirectory(scripts)
-add_subdirectory(view_factor)
-install(DIRECTORY lsan DESTINATION share/feelpp)
+set_directory_properties(PROPERTIES LABEL testviewfactor)
+feelpp_add_test(viewfactor NO_MPI_TEST CFG cases/viewfactor.cfg )
+feelpp_add_testcase(cases PREFIX testviewfactors)
+add_dependencies(feelpp_test_viewfactor testviewfactors_add_testcase_cases )
