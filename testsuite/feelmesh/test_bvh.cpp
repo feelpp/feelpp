@@ -20,7 +20,7 @@ int main(int argc , char **argv)
     auto submesh = createSubmesh(_mesh=mesh,_range=markedfaces(mesh,{"CavityBottom","CavitySides","CavityTop"}));
 #endif
 
-    BVH_tree<FEELPP_DIM> bvh_tree;
+    BVHTree<FEELPP_DIM> bvh_tree;
 
     bvh_tree.buildPrimitivesInfo(submesh);
 #if 0
@@ -47,10 +47,10 @@ int main(int argc , char **argv)
     direction_perp_1 << 1.,0.;  
     Eigen::VectorXd direction_perp_2(2);
     direction_perp_2 << 0.,1.;      
-    Ray_bvh ray_1(origin,direction_perp_1);
-    Ray_bvh ray_2(origin,direction_perp_2);
+    BVHRay ray_1(origin,direction_perp_1);
+    BVHRay ray_2(origin,direction_perp_2);
 
-    bvh_tree.ray_search(ray_1,"");
+    bvh_tree.raySearch(ray_1,"");
 #elif FEELPP_DIM==3  
     Eigen::VectorXd origin(3);
     origin<< 0.5,0.5,0.5;   
@@ -58,12 +58,12 @@ int main(int argc , char **argv)
     direction_perp_1 << 1.,0.,0.;  
     Eigen::VectorXd direction_perp_2(3);
     direction_perp_2 << 0.,1.,0.;      
-    Ray_bvh ray_1(origin,direction_perp_1);
-    Ray_bvh ray_2(origin,direction_perp_2);
+    BVHRay ray_1(origin,direction_perp_1);
+    BVHRay ray_2(origin,direction_perp_2);
 
-    bvh_tree.ray_search(ray_1,"");
+    bvh_tree.raySearch(ray_1,"");
     std::cout <<"============================"<< std::endl;
-    bvh_tree.ray_search(ray_2,"");
+    bvh_tree.raySearch(ray_2,"");
 #endif
     return 0;
 }
