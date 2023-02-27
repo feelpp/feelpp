@@ -486,7 +486,7 @@ BOOST_AUTO_TEST_CASE( test_cylinder )
 // }
 // #if 0
 // // Functions tested:
-// // check_intersection_with_segment, check_intersection_with_triangle
+// // checkIntersectionWithSegment, checkIntersectionWithTriangle
 // BOOST_AUTO_TEST_CASE( test_ray_intersections )
 // {
     
@@ -532,7 +532,7 @@ BOOST_AUTO_TEST_CASE( test_cylinder )
 //         double alpha = i/100.*2*pi;
 //         ray2d_dir << math::cos(alpha),math::sin(alpha);
 //         RayTracingViewFactor<Mesh<Simplex<2>>>::Ray ray2d(ray2d_orig,ray2d_dir);
-//         auto [check2d,point2d] = rtv_class_2d.check_intersection_with_segment(matrix_2d,ray2d);
+//         auto [check2d,point2d] = rtv_class_2d.checkIntersectionWithSegment(matrix_2d,ray2d);
 //         if(alpha>=math::atan(2./3.) && alpha <= pi/2.)
 //             {
 //                 BOOST_CHECK(check2d==true);
@@ -554,8 +554,8 @@ BOOST_AUTO_TEST_CASE( test_cylinder )
 //             // and (0.5/3*cos(alpha) <= beta <= pi/2)
 //             double beta = j/100.*pi;
 //             ray3d_dir << math::cos(alpha)*math::sin(beta),math::sin(alpha)*math::sin(beta),math::cos(beta);
-//             RayTracingViewFactor<Mesh<Simplex<3>>>::Ray_bvh ray3d(ray3d_orig,ray3d_dir);
-//             auto [check3d,point3d] = rtv_class_3d.check_intersection_with_triangle(matrix_3d,ray3d);
+//             RayTracingViewFactor<Mesh<Simplex<3>>>::BVHRay ray3d(ray3d_orig,ray3d_dir);
+//             auto [check3d,point3d] = rtv_class_3d.checkIntersectionWithTriangle(matrix_3d,ray3d);
 //             if((beta<=math::atan(3/0.5/math::cos(alpha)) && beta > 0. && alpha>=0 && alpha <=pi/4. )||beta==0)
 //             {
 //                 // BOOST_CHECK_MESSAGE(check3d==true);

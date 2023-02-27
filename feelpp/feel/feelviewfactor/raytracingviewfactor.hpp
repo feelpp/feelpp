@@ -234,7 +234,7 @@ public:
     int M_Nthreads;
     std::vector<int> M_point_indices;
     Eigen::VectorXd M_view_factor_row;
-    BVH_tree<MeshType::nDim> M_bvh_tree;
+    BVHTree<MeshType::nDim> M_bvh_tree;
     std::random_device M_rd;  // Will be used to obtain a seed for the random number engine
     std::random_device M_rd2;  // Will be used to obtain a seed for the random number engine
     std::mt19937 M_gen; // Standard mersenne_twister_engine seeded with rd()
@@ -387,9 +387,9 @@ public:
                     }
                     Eigen::VectorXd pQ1(3),pQ2(3),pQ3(3),pQ4(3),normal(3);
 
-                    Ray_bvh ray(origin,rand_dir);     
+                    BVHRay ray(origin,rand_dir);     
                     
-                    int closer_intersection_element = M_bvh_tree.ray_search(ray,"") ;                                        
+                    int closer_intersection_element = M_bvh_tree.raySearch(ray,"") ;                                        
                     if (closer_intersection_element >=0 )
                     {
                         // int argmin_lengths = std::distance(local_tree.M_lengths.begin(), std::min_element(local_tree.M_lengths.begin(), local_tree.M_lengths.end()));

@@ -16,19 +16,19 @@
 
 namespace Feel
 {
-    class Ray_bvh
+    class BVHRay
     { 
     public: 
         using vec_t = Eigen::VectorXd;
-        Ray_bvh(const vec_t &orig, const vec_t &dir) : 
+        BVHRay(const vec_t &orig, const vec_t &dir) : 
             origin(orig),
             dir(dir) 
         {} 
-        Ray_bvh( const Ray_bvh &r) :
+        BVHRay( const BVHRay &r) :
             origin(r.origin), 
             dir(r.dir)
         {}
-        Ray_bvh() : 
+        BVHRay() : 
             origin(),
             dir() 
         {} 
@@ -42,7 +42,7 @@ namespace Feel
     }
 
     template<int nDim>
-    class BVH_tree
+    class BVHTree
     {
         typedef Simplex<nDim,1> convex_type;
         typedef Mesh<convex_type> mesh_type;        
@@ -109,9 +109,9 @@ namespace Feel
             }
         }    
 
-        struct BVH_node
+        struct BVHNode
         {
-            void buildLeaf(BVH_node * current_parent, int first, int n, Eigen::VectorXd bounds_min, Eigen::VectorXd bounds_max)
+            void buildLeaf(BVHNode * current_parent, int first, int n, Eigen::VectorXd bounds_min, Eigen::VectorXd bounds_max)
             {
                 firstPrimOffset = first;
                 nPrimitives = n;
@@ -123,27 +123,27 @@ namespace Feel
                 LOG(INFO) <<fmt::format("leaf built: firstPrimOffset {}, nPrimitives, {}",firstPrimOffset,nPrimitives);
             }
 
-            void buildInternalNode(BVH_node * current_parent, int splitaxisIn, BVH_node *child0, BVH_node *child1)
+            void buildInternalNode(BVHNode * current_parent, int splitaxisIn, BVHNode *child0, BVHNode *child1)
             {
                 children[0]= child0;
                 children[1]= child1;
                 parent = current_parent;
-                M_bounds_min = new_Bounds_min(child0->M_bounds_min,child1->M_bounds_min);
-                M_bounds_max = new_Bounds_max(child0->M_bounds_max,child1->M_bounds_max);
+                M_bounds_min = newBoundsMin(child0->M_bounds_min,child1->M_bounds_min);
+                M_bounds_max = newBoundsMax(child0->M_bounds_max,child1->M_bounds_max);
                 M_centroid = (M_bounds_min + M_bounds_max) *0.5;
                 splitaxis = splitaxisIn;
                 nPrimitives = 0;
                 LOG(INFO) <<fmt::format("Internal node built: M_bounds_min {}, M_bounds_max {}, splitaxis {}",M_bounds_min,M_bounds_max,splitaxis);
             }
 
-            Eigen::VectorXd new_Bounds_min(Eigen::VectorXd bounds1,Eigen::VectorXd bounds2)
+            Eigen::VectorXd newBoundsMin(Eigen::VectorXd bounds1,Eigen::VectorXd bounds2)
             {
                 Eigen::VectorXd newBoundsMin(bounds1.size());
                 for(int i=0;i<bounds1.size();i++)
                     newBoundsMin[i] = std::min(bounds1[i],bounds2[i]);
                 return newBoundsMin;
             }
-            Eigen::VectorXd new_Bounds_max(Eigen::VectorXd bounds1,Eigen::VectorXd bounds2)
+            Eigen::VectorXd newBoundsMax(Eigen::VectorXd bounds1,Eigen::VectorXd bounds2)
             {
                 Eigen::VectorXd newBoundsMax(bounds1.size());
                 for(int i=0;i<bounds1.size();i++)
@@ -154,7 +154,7 @@ namespace Feel
             bool isLeaf(){return (nPrimitives !=0) ;}
             
 
-            BVH_node * nearChild(Ray_bvh const& ray)
+            BVHNode * nearChild(BVHRay const& ray)
             {
                 
                 if(ray.dir(this->splitaxis)>0)
@@ -164,7 +164,7 @@ namespace Feel
 
             }
             
-            BVH_tree::BVH_node * otherChild(BVH_tree::BVH_node * parent)
+            BVHTree::BVHNode * otherChild(BVHTree::BVHNode * parent)
             {
                 if (this==parent->children[0])
                     return parent->children[1];
@@ -172,7 +172,7 @@ namespace Feel
                     return parent->children[0];
             }
 
-            bool checkIntersection(Ray_bvh const& rayon)
+            bool checkIntersection(BVHRay const& rayon)
             {
                 double tmin = 0.0;
                 double tmax = FLT_MAX;
@@ -199,7 +199,7 @@ namespace Feel
                 return true;         
             }
             
-            bool check_intersection_with_segment(Ray_bvh const& ray)
+            bool checkIntersectionWithSegment(BVHRay const& ray)
             {
                 Eigen::VectorXd p1(2),p2(2),v1(2),v2(2),v3(2),w_(2);     
 
@@ -235,7 +235,7 @@ namespace Feel
                 
             }
 
-            std::pair<bool,double> check_intersection_with_segment(matrix_node_type const& nodes, Ray_bvh const& ray)
+            std::pair<bool,double> checkIntersectionWithSegment(matrix_node_type const& nodes, BVHRay const& ray)
             {
                 Eigen::VectorXd p1(2),p2(2),v1(2),v2(2),v3(2),w_(2);     
 
@@ -270,7 +270,7 @@ namespace Feel
             }
             
             // Verify if the ray intersects the element
-            std::pair<bool,double> check_intersection_with_triangle( Ray_bvh const& ray)
+            std::pair<bool,double> checkIntersectionWithTriangle( BVHRay const& ray)
             {
                 Eigen::Vector3d p1(3),p2(3),p3(3),n1(3),w(3),w_(3);
                 Eigen::Matrix3d m(3,3);
@@ -310,44 +310,44 @@ namespace Feel
                 
             }
 
-            std::pair<bool,double> checkLeafIntersection(Ray_bvh const& rayon,bool intersected=false)
+            std::pair<bool,double> checkLeafIntersection(BVHRay const& rayon,bool intersected=false)
             {             
                 if( nDim ==2)
                 {
                     auto nodes = M_mesh->element( M_primitiveInfo[this->firstPrimOffset].M_primitiveNumber ).vertices();                                        
-                    return check_intersection_with_segment(nodes,rayon);
+                    return checkIntersectionWithSegment(nodes,rayon);
                 }                
                 else //if ( nDim==3)
-                    return check_intersection_with_triangle(rayon);
+                    return checkIntersectionWithTriangle(rayon);
 
             }
 
-            BVH_node *children[2];
-            BVH_node *parent;
+            BVHNode *children[2];
+            BVHNode *parent;
             int splitaxis, nPrimitives,firstPrimOffset;
             Eigen::VectorXd M_bounds_min,M_bounds_max,M_centroid;  
         };    
 
-        BVH_node *  M_root_tree;
+        BVHNode *  M_root_tree;
 
-        BVH_node * buildRootTree()
+        BVHNode * buildRootTree()
         {
             M_root_tree = recursiveBuild(M_root_tree,0,0,M_primitiveInfo.size(),orderedPrims);
             return M_root_tree;
         }                        
 
-        BVH_node * recursiveBuild(BVH_node * current_parent, int cut_dimension, int start_index_primitive, int end_index_primitive,
+        BVHNode * recursiveBuild(BVHNode * current_parent, int cut_dimension, int start_index_primitive, int end_index_primitive,
                                 std::vector<int> &orderedPrims)
         {
             LOG(INFO) <<fmt::format("cut dimension {}, start index primitive {}, end index primitive {}",cut_dimension,start_index_primitive,end_index_primitive);
             Eigen::VectorXd M_bound_min_node(nDim),M_bound_max_node(nDim);
-            BVH_node * node = new BVH_tree::BVH_node();
+            BVHNode * node = new BVHTree::BVHNode();
             M_bound_min_node = M_primitiveInfo[start_index_primitive].M_bound_min;
             M_bound_max_node = M_primitiveInfo[start_index_primitive].M_bound_max;
             for (int i = start_index_primitive+1; i < end_index_primitive; ++i)
             {
-                M_bound_min_node = node->new_Bounds_min(M_bound_min_node,M_primitiveInfo[i].M_bound_min);
-                M_bound_max_node = node->new_Bounds_max(M_bound_max_node,M_primitiveInfo[i].M_bound_max);
+                M_bound_min_node = node->newBoundsMin(M_bound_min_node,M_primitiveInfo[i].M_bound_min);
+                M_bound_max_node = node->newBoundsMax(M_bound_max_node,M_primitiveInfo[i].M_bound_max);
             }
             auto mid = (start_index_primitive + end_index_primitive) / 2;
             std::nth_element(&M_primitiveInfo[start_index_primitive], &M_primitiveInfo[mid], 
@@ -381,7 +381,7 @@ namespace Feel
         // Verify if the ray intersects the whole bounding structure
         // Returns the integer corresponding to the intersected element
         // If no element is intersected, return -1
-        int ray_search( Ray_bvh const& rayon,std::string s)
+        int raySearch( BVHRay const& rayon,std::string s)
         {   
             M_intersected_leaf = {};
             M_lengths = {};
@@ -390,7 +390,7 @@ namespace Feel
             // compute tmin and tmax
             double tmin, tmax;
            
-            const BVH_tree::BVH_node *tn = static_cast<const BVH_tree::BVH_node*>( M_root_tree );
+            const BVHTree::BVHNode *tn = static_cast<const BVHTree::BVHNode*>( M_root_tree );
             
             Eigen::VectorXd mini = tn->M_bounds_min;
             Eigen::VectorXd maxi = tn->M_bounds_max;
@@ -427,7 +427,7 @@ namespace Feel
             }
         }
 
-        // bool check_intersection_square(Ray_bvh const& ray)        
+        // bool check_intersection_square(BVHRay const& ray)        
         // {
         //     Eigen::VectorXd p1(3),p2(3),p3(3),n1(3);
             
@@ -459,16 +459,16 @@ namespace Feel
             
         //     return false;
         // }
-        // void loop_over_primitives(BVH_tree::BVH_node * tree, Ray_bvh const& rayon)
+        // void loop_over_primitives(BVHTree::BVHNode * tree, BVHRay const& rayon)
         // {
         //     for(auto & primitive : M_primitiveInfo )
         //     {
-        //         if (tree->check_intersection_with_triangle(rayon,primitive.M_primitiveNumber))
+        //         if (tree->checkIntersectionWithTriangle(rayon,primitive.M_primitiveNumber))
         //             M_intersected_leaf.push_back(primitive.M_primitiveNumber);
         //     }
         // }
 
-        void traverse_stackless(BVH_tree::BVH_node * tree, Ray_bvh const& rayon)
+        void traverse_stackless(BVHTree::BVHNode * tree, BVHRay const& rayon)
         {
             auto current_node = M_root_tree->nearChild(rayon);
             char state = 'P'; // the current node is being traversed from its Parent ('P')
@@ -549,7 +549,7 @@ namespace Feel
                     break;
 
                 default:
-                    std::cout << "ERROR: None of the previous cases has been traversed" <<std::endl;
+                    LOG(ERROR) << "ERROR: None of the previous cases has been traversed";
                     break;
                 }
             }
@@ -557,4 +557,4 @@ namespace Feel
     };
 
 } // Feel
-#endif /* __BVH_tree_H */
+#endif /* __BVHTree_H */
