@@ -23,8 +23,8 @@
 //! @Copyright (C) 2007,2009 Université de Grenoble 1
 //! @Copyright (C) 2005,2006,2009 EPFL
 //!
-#ifndef __Visitor_H
-#define __Visitor_H 1
+#ifndef FEELPP_Visitor_H
+#define FEELPP_Visitor_H 1
 
 #include <boost/mpl/assert.hpp>
 #include <boost/mpl/list.hpp>
@@ -252,11 +252,13 @@ struct VisitableCatchAllDefault
 {
     static R onUnknownVisitor( Visited&, VisitorBase& )
     {
+        LOG(WARNING) << "VisitableCatchAllDefault::onUnknownVisitor: no visitor found for this type";
         return R();
     }
 
     static R onUnknownVisitor( Visited*, VisitorBase* )
     {
+        LOG( WARNING ) << "VisitableCatchAllDefault::onUnknownVisitor: no visitor found for this type";
         return R();
     }
 

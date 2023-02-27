@@ -108,7 +108,7 @@ CRBDB::lookForDB() const
         return this->dbLocalPath() / this->dbFilename();
     }
 
-    return fs::path();
+    return fs::path();    
 }
 
 bool
@@ -149,6 +149,10 @@ bool
 CRBDB::loadDB()
 {
     return false;
+}
+void
+CRBDB::saveNewElementToDB()
+{
 }
 
 fs::path

@@ -661,7 +661,7 @@ public:
     /**
      * insted of creating the dof indices on the fly, get them from a
      * vector. The situation typically arises when we want to have dof
-     * correspondance between two spaces
+     * correspondence between two spaces
      *
      * \see OperatorLagrangeP1
      */

@@ -196,7 +196,7 @@ createPeriodicCorrespondanceTable()
 
     dofTag2Done.clear();
 
-    // only one proc gather all the informations in a bi-map
+    // only one proc gather all the information in a bi-map
     std::vector< idstag1tag2_type > all_idsTag1_idsTag2;
     mpi::gather( Environment::worldComm().globalComm(),
                  idsTag1_idsTag2,
@@ -213,7 +213,7 @@ createPeriodicCorrespondanceTable()
                     0 );
 
     CHECK( M_idTag1_idTag2.left.size() == M_nbDofTag1 ) <<"problem in periodicity table of fast marching\n"
-                                                              <<"all nodes tagged 1 should have a conter part in tag2\n"
+                                                              <<"all nodes tagged 1 should have a counter part in tag2\n"
                                                               <<"M_idTag1_idTag2.left.size() = "<< M_idTag1_idTag2.left.size() <<"\n"
                                                               <<"nbDofTag1 = "<< M_nbDofTag1 <<"\n";
 

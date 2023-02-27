@@ -205,8 +205,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n     -- freq save       : " << myexporterFreq
            << "\n     -- fields exported : " << doExport_str
            << "\n   Processors"
-           << "\n     -- number of proc environnement : " << Environment::worldComm().globalSize()
-           << "\n     -- environement rank : " << Environment::worldComm().rank()
+           << "\n     -- number of proc environment : " << Environment::worldComm().globalSize()
+           << "\n     -- environment rank : " << Environment::worldComm().rank()
            << "\n     -- global rank : " << this->worldComm().globalRank()
            << "\n     -- local rank : " << this->worldComm().localRank()
         //<< "\n   Matrix Index Start"
@@ -693,7 +693,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
     auto se = this->symbolsExpr();
     this->updateFluidInletVelocity( se ); // TODO VINCENT : create an updateBoundaryConditionForUse?
 
-    // copy velocity/pressure in algebraic vector solution (maybe velocity/pressure has been changed externaly)
+    // copy velocity/pressure in algebraic vector solution (maybe velocity/pressure has been changed externally)
     this->algebraicBlockVectorSolution()->updateVectorFromSubVectors();
 #if 0
     if ( this->worldComm().isMasterRank() )

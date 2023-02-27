@@ -22,12 +22,12 @@ fi
 echo $DIST
 echo $version
 echo $EVENT_TYPE
-echo "{\"event_type\": \"$EVENT_TYPE\", \"client_payload\":{ \"dist\": \"$DIST\", \"version\": \"$version\", \"component\":\"$COMPONENT\" } }"
+echo "{\"event_type\": \"$EVENT_TYPE\", \"client_payload\":{ \"flavor\": \"$FLAVOR\", \"dist\": \"$DIST\", \"version\": \"$version\", \"component\":\"$COMPONENT\" } }"
 curl --verbose -H "Accept: application/vnd.github.everest-preview+json" \
     -H "Authorization: token ${TOKEN}" \
     -H "Content-Type: application/json" \
     --request POST \
-    --data "{\"event_type\": \"$EVENT_TYPE\", \"client_payload\": { \"dist\": \"$DIST\", \"version\": \"$version\", \"component\":\"$COMPONENT\" } }" \
+    --data "{\"event_type\": \"$EVENT_TYPE\", \"client_payload\": { \"flavor\": \"$FLAVOR\", \"dist\": \"$DIST\", \"version\": \"$version\", \"component\":\"$COMPONENT\" } }" \
     https://api.github.com/repos/${REPO}/dispatches
 
 

@@ -305,7 +305,7 @@ public :
     std::string M_tag;
 };
 
-//! store informations require by the postprocessing Norm
+//! store information require by the postprocessing Norm
 class FEELPP_EXPORT ModelPostprocessNorm : public CommObject
 {
 public :
@@ -360,7 +360,7 @@ private:
     uint16_type M_quadOrder, M_quad1Order;
 };
 
-//! store informations require by the postprocessing Statistics
+//! store information require by the postprocessing Statistics
 class FEELPP_EXPORT ModelPostprocessStatistics : public CommObject
 {
 public :
@@ -390,7 +390,7 @@ public :
     uint16_type quadOrder() const { return M_quadOrder; }
     //! quad1 order used with ho geometry and the optimized geomap
     uint16_type quad1Order() const { return M_quad1Order; }
-    //! returnn requires markers connection
+    //! return requires markers connection
     ModelMarkers const& requiresMarkersConnection() const { return M_requiresMarkersConnection; }
     //! return internalfaces evalutation type (i.e. mean,sum,max,...)
     std::string const& internalFacesEvalutationType() const { return M_internalFacesEvalutationType; }

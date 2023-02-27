@@ -732,7 +732,7 @@ buildGlobalProcessToGlobalClusterDofMapContinuousGhostDofBlockingComm( mesh_type
         {
             //CHECK( nbMsgToRecv[proc]==nbMsgToRecv2[proc] )
             if (nbMsgToRecv[proc]!=nbMsgToRecv2[proc] /*|| true*/  ) std::cout
-                                                            << "paritioning data incorect "
+                                                            << "partitioning data incorect "
                                                             << "myrank " << this->worldComm().localRank() << " proc " << proc
                                                             << " nbMsgToRecv[proc] " << nbMsgToRecv[proc]
                                                             << " nbMsgToRecv2[proc] " << nbMsgToRecv2[proc]

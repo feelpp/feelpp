@@ -51,7 +51,7 @@ gradedfromls( std::shared_ptr<SpaceT> const& Xh, faces_reference_wrapper_t<typen
     auto d = distanceToRange( _space=Xh, _range=facets );
     d *= 1./d.max(); // max of d is 1
     auto g = Xh->element();
-    CHECK( hclose > 0 && hfar > 0 ) << fmt::format("hclose({}) and/or hfar({}) must be stricly positive", hclose, hfar);
+    CHECK( hclose > 0 && hfar > 0 ) << fmt::format("hclose({}) and/or hfar({}) must be strictly positive", hclose, hfar);
     LOG_IF(WARNING, ( (cst < 0) || (cst > 1) ) ) << fmt::format("[gradedfromls] invalid constant percentage {} (should be > 0 and < 1)",cst);
 
     cst = (cst < 0)?0:(cst > 1)?1:cst;

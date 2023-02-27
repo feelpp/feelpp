@@ -46,6 +46,25 @@ install(TARGETS napp EXPORT feelpp-contrib-export-targets
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
     )
+add_custom_target(uninstall)
+message(STATUS "------------------------------------------------------------")
+message(STATUS "Configuring NANOFLANN")
+set(MASTER_PROJECT_HAS_TARGET_UNINSTALL TRUE)
+set(FETCHCONTENT_SOURCE_DIR_NANOFLANN ${CMAKE_CURRENT_SOURCE_DIR}/nanoflann)
+FetchContent_Declare(nanoflann GIT_REPOSITORY https://github.com/feelpp/nanoflann.git GIT_TAG 2b7e88659217da279b86f21d088ce48ebce26942)
+set(NAPP_CONFIG_INSTALL_DIR "${CMAKE_INSTALL_DATADIR}/feel/cmake/modules")
+FetchContent_MakeAvailable(nanoflann)
+target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_NANOFLANN)
+target_include_directories(nanoflann INTERFACE
+  $<BUILD_INTERFACE:${nanoflann_SOURCE_DIR}/include/>
+  $<INSTALL_INTERFACE:include/feelpp>)
+target_link_libraries(feelpp_contrib INTERFACE nanoflann)
+install(TARGETS nanoflann EXPORT feelpp-contrib-export-targets
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
 
 message(STATUS "------------------------------------------------------------")
 message(STATUS "Configuring FMT")
@@ -128,13 +147,44 @@ if ( FEELPP_HAS_GLOG )
   set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} GLog/Contrib")
 endif()
 
+# # cln
+message(STATUS "------------------------------------------------------------")
+message(STATUS "Configuring CLN")
+option(FEELPP_USE_EXTERNAL_CLN "USE_EXTERNAL_CLN" OFF)
+
+if(FEELPP_USE_EXTERNAL_CLN)
+  find_package(CLN REQUIRED)
+  message(STATUS "[feelpp] CLN Includes: ${CLN_INCLUDE_DIRS}")
+  message(STATUS "[feelpp] CLN Libraries: ${CLN_LIBRARIES}")
+  target_link_libraries(feelpp_contrib INTERFACE ${CLN_LIBRARIES})
+else()
+  set(FETCHCONTENT_SOURCE_DIR_CLN ${CMAKE_CURRENT_SOURCE_DIR}/cln)
+  message(STATUS)
+  FetchContent_Declare(cln GIT_REPOSITORY https://github.com/feelpp/cln.git GIT_TAG 41756c0ba619bf412de7558f493e827a07c2a6e3)
+
+  FetchContent_MakeAvailable(cln)
+  set_target_properties(cln PROPERTIES OUTPUT_NAME "feelpp_cln")
+  target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_CLN)
+  target_include_directories(cln INTERFACE
+    $<BUILD_INTERFACE:${cln_SOURCE_DIR}/include/>
+    $<INSTALL_INTERFACE:include/feelpp>)
+  target_link_libraries(feelpp_contrib INTERFACE cln::cln)
+  install(TARGETS cln EXPORT feelpp-contrib-export-targets
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+  )
+endif()
+
 message(STATUS "------------------------------------------------------------")
 message(STATUS "Configuring Ginac")
 add_subdirectory(ginac)
 #
 # cln and ginac
 #
-find_package(CLN)
+#find_package(CLN)
+
 
 target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_GINAC IN_GINAC HAVE_LIBDL)
 
@@ -142,7 +192,7 @@ target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_GINAC IN_GINAC HA
 
 target_include_directories( feelpp_contrib BEFORE
   INTERFACE
-  ${CLN_INCLUDE_DIR}
+  # ${CLN_INCLUDE_DIR}
   $<BUILD_INTERFACE:${FEELPP_SOURCE_DIR}/contrib/ginac/>
   $<BUILD_INTERFACE:${FEELPP_BUILD_DIR}/ginac/>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/contrib/ginac/ginac>
@@ -183,7 +233,7 @@ set(EIGEN_TEST_NOQT 1)
 set(FETCHCONTENT_SOURCE_DIR_EIGEN ${CMAKE_CURRENT_SOURCE_DIR}/eigen)
 set( EIGEN_INCLUDE_INSTALL_DIR "include/feelpp/eigen" )
 
-FetchContent_Declare(eigen GIT_REPOSITORY git@gitlab.com:feelpp/eigen.git GIT_TAG 3147391d946bb4b6c68edd901f2add6ac1f31f8c) # the commit hash for 1.5.0
+FetchContent_Declare(eigen GIT_REPOSITORY git@gitlab.com:feelpp/eigen.git GIT_TAG 08bd619a45b642d68ccf80c011d7391bb213ecba) # the commit hash for 1.5.0
 FetchContent_MakeAvailable(eigen)
 target_include_directories( feelpp_contrib BEFORE
       INTERFACE
@@ -697,33 +747,36 @@ endif()
 #   set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} SPDLOG")
 # endif(FEELPP_ENABLE_SPDLOG)
 #
-option( FEELPP_ENABLE_TASKFLOW "Enable TASKFLOW" ON )
-if ( FEELPP_ENABLE_TASKFLOW )
+option( FEELPP_ENABLE_SPECX "Enable SPECX" OFF )
+if ( FEELPP_ENABLE_SPECX )
   message(STATUS "------------------------------------------------------------")
-  message(STATUS "Configuring TASKFLOW")
-#  set(FETCHCONTENT_SOURCE_DIR_TASKFLOW ${CMAKE_CURRENT_SOURCE_DIR}/taskflow)
+  message(STATUS "Configuring SPECX")
+
+  # set(FETCHCONTENT_SOURCE_DIR_SPECX ${CMAKE_CURRENT_SOURCE_DIR}/SPECX)
   # patch includes fix for 18.04 compilation
-  set(FETCHCONTENT_SOURCE_DIR_TASKFLOW ${CMAKE_CURRENT_SOURCE_DIR}/taskflow)
-  FetchContent_Declare(taskflow GIT_REPOSITORY https://github.com/feelpp/taskflow.git GIT_TAG 0635a49230e8ace7d379cbbaa716c66543f3e516)
-  set( BUILD_TASKFLOW_TESTS OFF )
+  set(TF_BUILD_TESTS OFF)
+  set(TF_BUILD_EXAMPLES OFF)
+  set(FETCHCONTENT_SOURCE_DIR_SPECX ${CMAKE_CURRENT_SOURCE_DIR}/SPECX)
+  FetchContent_Declare(SPECX GIT_REPOSITORY https://github.com/feelpp/SPECX.git GIT_TAG 0635a49230e8ace7d379cbbaa716c66543f3e516)
+  set( BUILD_SPECX_TESTS OFF )
   set(TF_INSTALL_CMAKE_DIR  "${CMAKE_INSTALL_DATADIR}/feel/cmake/modules")
-  message(STATUS "[feelpp-taskflow] cmake dir: ${CMAKE_INSTALL_DATADIR}/feel/cmake/modules")
-  FetchContent_MakeAvailable(taskflow)
-  add_library(feelpp_taskflow INTERFACE)
-  #set_target_properties(Taskflow PROPERTIES OUTPUT_NAME "feelpp_taskflow")
-  target_link_libraries(feelpp_taskflow INTERFACE Taskflow )
-  add_library(Feelpp::feelpp_taskflow ALIAS feelpp_taskflow)
-  target_include_directories(feelpp_taskflow INTERFACE
-      $<BUILD_INTERFACE:${taskflow_SOURCE_DIR}/>
+  message(STATUS "[feelpp-SPECX] cmake dir: ${CMAKE_INSTALL_DATADIR}/feel/cmake/modules")
+  FetchContent_MakeAvailable(SPECX)
+  add_library(feelpp_SPECX INTERFACE)
+  #set_target_properties(SPECX PROPERTIES OUTPUT_NAME "feelpp_SPECX")
+  target_link_libraries(feelpp_SPECX INTERFACE SPECX )
+  add_library(Feelpp::feelpp_SPECX ALIAS feelpp_SPECX)
+  target_include_directories(feelpp_SPECX INTERFACE
+      $<BUILD_INTERFACE:${SPECX_SOURCE_DIR}/>
       $<INSTALL_INTERFACE:include/feelpp> )
-  install(TARGETS feelpp_taskflow Taskflow EXPORT feelpp-contrib-export-targets
+  install(TARGETS feelpp_SPECX SPECX EXPORT feelpp-contrib-export-targets
       LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
       ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
       RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
       INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
       )
-  target_link_libraries( feelpp_contrib INTERFACE feelpp_taskflow )
-  set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} Taskflow")
+  target_link_libraries( feelpp_contrib INTERFACE feelpp_SPECX )
+  set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} SPECX")
 endif()
 
 

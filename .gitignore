@@ -187,3 +187,4 @@ mor/examples/heat3d/heat3dapp.cpp
 **/doc.rb
 **/crbdb
 **/feelppdb
+conftest.o

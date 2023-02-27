@@ -1240,7 +1240,7 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( si
 {
     boost::timer t;
     // Compute the sparsity structure of the global matrix.  This can be
-    // fed into a PetscMatrix to allocate exacly the number of nonzeros
+    // fed into a PetscMatrix to allocate exactly the number of nonzeros
     // necessary to store the matrix.  This algorithm should be linear
     // in the (# of elements)*(# nodes per element)
     const size_type proc_id           = _M_X1->mesh()->comm().rank();
@@ -1508,7 +1508,7 @@ Stencil<X1, X2, RangeItTestType, RangeExtendedItType, QuadSetType>::computeGraph
 #endif
 
     // Compute the sparsity structure of the global matrix.  This can be
-    // fed into a PetscMatrix to allocate exacly the number of nonzeros
+    // fed into a PetscMatrix to allocate exactly the number of nonzeros
     // necessary to store the matrix.  This algorithm should be linear
     // in the (# of elements)*(# nodes per element)
     const size_type proc_id = _M_X1->worldsComm()[0]->localRank();
@@ -1821,7 +1821,7 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphHDG(
     static const bool hasNotFindRangeExtended = rangeExtendedIteratorType<0,0>::hasnotfindrange_type::value;
 
     // Compute the sparsity structure of the global matrix.  This can be
-    // fed into a PetscMatrix to allocate exacly the number of nonzeros
+    // fed into a PetscMatrix to allocate exactly the number of nonzeros
     // necessary to store the matrix.  This algorithm should be linear
     // in the (# of elements)*(# nodes per element)
     const size_type proc_id           = _M_X1->worldsComm()[0]->localRank();

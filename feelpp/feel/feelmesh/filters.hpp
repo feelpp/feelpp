@@ -187,15 +187,33 @@ elements( MeshType const& mesh )
 }
 
 /**
+ * @brief EXTRACT_ELEM
+ */
+enum class select_elements_from_expression {
+    with_positive_values = 1,
+    with_negative_values = 2,
+    with_changing_sign = 3,
+    with_value = 4,
+    with_value_range = 5
+};
+
+/**
  *
  * \ingroup MeshIterators
  * \return a pair of iterators to iterate over elements with pid \p flag and
  *  verified expr > 0 for all nodes of the element
  */
-template<typename MeshType,typename ExprType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0  >
-auto
-elements( MeshType const& mesh, vf::Expr<ExprType> const& expr )
+template <typename MeshType, typename ExprType, typename... Ts, std::enable_if_t<std::is_base_of_v<MeshBase<>, decay_type<std::remove_pointer_t<MeshType>>>, int> = 0>
+elements_pid_t<MeshType>
+elements( MeshType const& mesh, vf::Expr<ExprType> const& expr, Ts&&... v )
 {
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    select_elements_from_expression selector = args.get_else(_selector, select_elements_from_expression::with_positive_values);
+    auto && threshold = args.get_else(_threshold, 1e-9);
+    auto && value = args.get_else(_value, 0 );
+    auto && min = args.get_else(_min, 0 );
+    auto && max = args.get_else(_max, 1 );
+    using expr_t = decay_type<decltype( expr )>;
     rank_type pid = rank( mesh );
     typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype myelts( new typename MeshTraits<MeshType>::elements_reference_wrapper_type );
     auto const& imesh = Feel::unwrap_ptr( mesh );
@@ -208,7 +226,7 @@ elements( MeshType const& mesh, vf::Expr<ExprType> const& expr )
         auto const& initElt = unwrap_ref( *it );
         typename mesh_type::reference_convex_type refConvex;
         auto geopc = gm->preCompute( refConvex.points() );
-        const size_type context = ExprType::context|vm::POINT;
+        const size_type context = expr_t::context|vm::POINT;
         auto ctx = gm->template context<context>( initElt, geopc );
         auto expr_evaluator = expr.evaluator( vf::mapgmc(ctx) );
         for ( ; it!=en;++it )
@@ -218,18 +236,61 @@ elements( MeshType const& mesh, vf::Expr<ExprType> const& expr )
                 continue;
             ctx->template update<context>( elt );
             expr_evaluator.update( vf::mapgmc( ctx ) );
-            bool addElt = true;
+            int elt_count_positive = 0, elt_count_negative = 0;
             for ( uint16_type q=0;q<ctx->nPoints();++q )
             {
                 double val = expr_evaluator.evalq( 0,0,q );
-                if ( val < 1e-9 )
+                if ( selector == select_elements_from_expression::with_positive_values && val > -threshold )
                 {
-                    addElt = false;
+                    elt_count_positive++;
                     break;
                 }
+                else if ( selector == select_elements_from_expression::with_negative_values && val < threshold )
+                {
+                    elt_count_negative++;
+                    break;
+                }
+                else if ( selector == select_elements_from_expression::with_changing_sign ) 
+                {
+                    if ( val < 0 )
+                        elt_count_negative++;
+                    else if ( val >= 0 )
+                        elt_count_positive++;
+                }
+                else if ( selector == select_elements_from_expression::with_value ) 
+                {
+                    if ( std::abs(val - value) < threshold )
+                    {
+                        elt_count_positive++;
+                        break;
+                    }
+                }
+                else if ( selector == select_elements_from_expression::with_value_range ) 
+                {
+                    if ( ( val > min-threshold ) && ( val < max+threshold ) )
+                        elt_count_positive++;
+                }
             }
-            if ( addElt )
+            if ( ( selector == select_elements_from_expression::with_positive_values ) && elt_count_positive > 0 )
+            {
                 myelts->push_back(boost::cref(elt));
+            }
+            else if ( ( selector == select_elements_from_expression::with_negative_values ) && elt_count_negative > 0 )
+            {
+                myelts->push_back(boost::cref(elt));
+            }
+            else if ( ( selector == select_elements_from_expression::with_changing_sign ) && ( elt_count_positive > 0 && elt_count_negative > 0 ) )
+            {
+                myelts->push_back(boost::cref(elt));
+            }
+            else if ( ( selector == select_elements_from_expression::with_value ) && elt_count_positive > 0 )
+            {
+                myelts->push_back(boost::cref(elt));
+            }
+            else if ( ( selector == select_elements_from_expression::with_value_range ) && elt_count_positive > 0 )
+            {
+                myelts->push_back(boost::cref(elt));
+            }
         }
     }
     myelts->shrink_to_fit();
@@ -256,7 +317,7 @@ boundaryelements( MeshType const& mesh, uint16_type entity_min_dim = 0, uint16_t
  *
  * \ingroup MeshIterators
  * \return a pair of iterators to iterate over elements of the mesh
- * which are stricly within the domain that is to say they do not
+ * which are strictly within the domain that is to say they do not
  * share a face with the boundary
  */
 template<typename MeshType>
@@ -566,7 +627,31 @@ boundaryfaces( MeshType const& mesh  )
 {
     return range( _range=Feel::detail::boundaryfaces( mesh, rank( mesh ) ), _mesh=mesh, _pid=rank(mesh) );
 }
+template <typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>, unwrap_ptr_t<MeshType>>, int> = 0>
+boundaryfaces_t<MeshType>
+boundaryfaces( MeshType const& mesh, elements_pid_t<MeshType> const& r )
+{
+    typename MeshTraits<MeshType>::faces_reference_wrapper_ptrtype myelts( new typename MeshTraits<MeshType>::faces_reference_wrapper_type );
 
+    for ( auto const& e : r )
+    {
+        auto const& elt = boost::unwrap_ref( e );
+        auto const& eltfaces = elt.faces();
+        for ( auto it = eltfaces.first, en = eltfaces.second; it != en; ++it )
+        {
+            auto const& face = *it;
+            if ( face->isConnectedTo0() && !face->isConnectedTo1() )
+            {
+                myelts->push_back( boost::cref( *face ) );
+            }
+        }
+    }
+    myelts->shrink_to_fit();
+    return boost::make_tuple( mpl::size_t<MESH_FACES>(),
+                              myelts->begin(),
+                              myelts->end(),
+                              myelts );
+}
 
 /**
  *
@@ -581,6 +666,36 @@ internalfaces( MeshType const& mesh )
     return range( _range=Feel::detail::internalfaces( mesh, rank( mesh ) ), _mesh=mesh, _pid=rank(mesh) );
 }
 
+template <typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>, unwrap_ptr_t<MeshType>>, int> = 0>
+internalfaces_t<MeshType>
+internalfaces( MeshType const& mesh, elements_pid_t<MeshType> const& r )
+{
+    typename MeshTraits<MeshType>::faces_reference_wrapper_ptrtype myelts( new typename MeshTraits<MeshType>::faces_reference_wrapper_type );
+    // store face ids to know if a face is already in the list
+    std::set<int> fids;
+    for(auto const&e : r )
+    {
+        auto const& elt = boost::unwrap_ref( e );
+        auto const& eltfaces = elt.faces();
+        for(auto it = eltfaces.first, en = eltfaces.second; it != en; ++it)
+        {
+            auto const& face = *it;
+            if ( face->isConnectedTo0() && face->isConnectedTo1()  )
+            {
+                if ( fids.find( face->id() ) == fids.end() )
+                {
+                    fids.insert( face->id() );
+                    myelts->push_back( boost::cref( *face ) );
+                }
+            }
+        }
+    }
+    myelts->shrink_to_fit();
+    return boost::make_tuple( mpl::size_t<MESH_FACES>(),
+                              myelts->begin(),
+                              myelts->end(),
+                              myelts );
+}
 /**
  *
  * \ingroup MeshIterators
@@ -1614,7 +1729,6 @@ fragmentationMarkedElements( MeshType const& mesh, EntityProcessType entity = En
     }
     return res;
 }
-
 
 } // namespace Feel
 

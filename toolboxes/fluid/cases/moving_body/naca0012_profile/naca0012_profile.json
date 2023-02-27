@@ -1,0 +1,85 @@
+{
+    "Name": "NACA0012",
+    "ShortName":"NACA0012",
+    "Models":
+    {
+        "fluid":
+        {
+            "materials":"Fluid",
+            "setup":
+            {
+                "equations":"Navier-Stokes",
+                "gravity":
+                {
+                    "enable":0, // it was enabled but it seems that no gravity is in the benchmark
+                    "expr":"{0,0}:t"
+                }
+            }
+        },
+        "body":
+        {
+            "materials":"AirfoilVolume"
+        }
+    },
+    "Materials":
+    {
+        "Fluid":{
+            "rho":"1",//g/cm3
+            "mu":"0.01" // 
+        },
+        "AirfoilVolume":{
+            "rho":1.1
+        }
+    },
+    "BoundaryConditions":
+    {
+        "fluid":
+        {
+            "velocity":
+            {
+                "Walls":
+                {
+                    "expr":"{0,0}:t"
+                },
+                "Inlet":
+                {
+                    "expr":"{1,0}:t"
+                },
+                "Outlet":
+                {
+                    "expr":"{1,0}:t" 
+                }
+            },
+            "body":
+            {
+                "AirfoilSurface":
+                {
+                    "markers":["AirfoilSurface"],
+                    "materials":
+                    {
+                        "names":["AirfoilVolume"]
+                    },
+                    "translational-velocity":"{0,0}"
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "fluid":{
+            "Exports":
+            {
+                "fields":["velocity","pressure","pid","displacement"]
+            },
+            "Measures":
+            {
+                "Quantities":
+                {
+                    "names":"all"
+                }
+            }
+        }
+    }
+
+}
+
