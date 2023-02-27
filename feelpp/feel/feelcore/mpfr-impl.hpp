@@ -773,7 +773,7 @@ extern unsigned char *mpfr_stack;
  *****************  Useful macros *********************
  ******************************************************/
 
-/* Theses macros help the compiler to determine if a test is
+/* These macros help the compiler to determine if a test is
  * likely or unlikely. */
 #if __MPFR_GNUC(3,0) || __MPFR_ICC(8,1,0)
 # define MPFR_LIKELY(x) (__builtin_expect(!!(x),1))
