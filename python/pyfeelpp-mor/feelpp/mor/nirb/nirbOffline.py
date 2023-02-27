@@ -17,6 +17,7 @@ if __name__ == "__main__":
     parser.add_argument("--greedy", help="Wether with or without Greedy [default=0]", type=int, default=0)
     parser.add_argument("--biortho", help="Wether with or without bi-orthonormalization [default=0]", type=int, default=0)
     parser.add_argument("--convergence", help="Wether get convergence error [default=0]", type=int, default=0)
+    parser.add_argument("--time", help="Wether to solve stationary problem or not [default=0]", type=int, default=0)
 
     args = parser.parse_args()
     config_file = args.config_file
@@ -29,17 +30,16 @@ if __name__ == "__main__":
     nirb_file = feelpp.Environment.expand(cfg['nirb']['filename'])
     config_nirb = feelpp.readJson(nirb_file)['nirb']
 
-    greedy = args.greedy
-    conv = args.convergence
     nbSnap=args.N
-    doBiortho = args.biortho
+    stationary = args.time
 
     bo = [False, True]
-    convergence = bo[conv]
+    convergence = bo[args.convergence]
 
 
-    config_nirb['greedy-generation'] = bo[greedy]
-    config_nirb['doBiorthonormal'] = bo[doBiortho]
+    config_nirb['greedy-generation'] = bo[args.greedy]
+    config_nirb['doBiorthonormal'] = bo[args.biortho]
+    config_nirb['time_dependent'] = bo[args.time]
 
     doGreedy = config_nirb['greedy-generation']
     doRectification = config_nirb['doRectification']
@@ -54,7 +54,9 @@ if __name__ == "__main__":
     ### Initializa the nirb object
     nirb_off = nirbOffline(initCoarse=True, **config_nirb)
     nirb_off.initModel()
-
+    if nirb_off.time_dependent:
+        nirb_off.setTimeToolbox(nirb_off.tbFine)
+        nirb_off.setTimeToolbox(nirb_off.tbCoarse)
     start = time.time()
 
     Xi_train_path = RESPATH +"/sampling_train.sample"
