@@ -44,7 +44,7 @@ public:
     ViewFactorBase& operator=( const ViewFactorBase& ) = default;
     ViewFactorBase& operator=( ViewFactorBase&& ) = default;
     virtual ~ViewFactorBase() = default;
-    //virtual void init( std::vector<std::string> const& list_of_bdys ) { list_of_bdys_ = list_of_bdys; vf_( list_of_bdys_.size(), list_of_bdys_.size() ); }
+    virtual void init( std::vector<std::string> const& list_of_bdys ) { list_of_bdys_ = list_of_bdys; vf_( list_of_bdys_.size(), list_of_bdys_.size() ); }
 
     /// this function computes the deviation from reciprocity defined as Fij - Aj/Ai * Fji
     value_type devReciprocity( unsigned int i, unsigned int j ) const;
@@ -56,7 +56,7 @@ public:
      * @brief compute the view factor matrix
      * 
      */
-    virtual void compute() = 0;
+    virtual void compute(bool elementwise) = 0;
 
     /**
      * @brief get the view factor matrix
