@@ -189,24 +189,22 @@ if __name__ == '__main__':
     parser.add_argument('--config-file', type=str, help='path to cfg file')
     parser.add_argument("--Ntest", help="Number of sampling test parameter [default=10]", type=int, default=10)
     parser.add_argument("--Nbase", help="Max number of basis function [default=100]", type=int, default=100)
-    parser.add_argument("--greedy", help="With or without Greedy [default=0]", type=int, default=0)
-    parser.add_argument("--timeexec", help="Save or not the execution time [default=0]", type=int, default=0)
-    parser.add_argument("--convergence", help="Get convergence error [default=1]", type=int, default=1)
+    parser.add_argument("--greedy", help="Wether to get Greedy or not [default=0]", type=int, default=0)
+    parser.add_argument("--timeexec", help="Wether to get the execution time or not [default=0]", type=int, default=0)
+    parser.add_argument("--convergence", help="Wther to get convergence error [default=1]", type=int, default=1)
     parser.add_argument("--idmodel", help="identifiant of the model [default='s4'(for square 4)]", type=str, default="s4")
+    parser.add_argument("--regulparam", help="Wether to get conv error in respect of regularization parameter [default=0]", type=int, default=0)
 
     ## get parser args 
     args = parser.parse_args()
-    config_file = args.config_file
-
-    greedy = args.greedy 
-    timeexec = args.timeexec
-    conv = args.convergence
+    config_file = args.config_file 
     Nsample = args.Ntest
     Nbase = args.Nbase
 
     bo = [False, True]
-    timeExec = bo[timeexec]
-    convergence = bo[conv]
+    timeExec = bo[args.timeexec]
+    convergence = bo[args.convergence]
+    regulParameter = bo[args.regulparam]
 
     ## Init feelpp 
     cfg = feelpp.readCfg(config_file)
@@ -216,7 +214,7 @@ if __name__ == '__main__':
     config_nirb = feelpp.readJson(nirb_file)['nirb']
 
     ## Get model and data path 
-    config_nirb['greedy-generation'] = bo[greedy]
+    config_nirb['greedy-generation'] = bo[args.greedy]
     model_path = config_nirb['model_path']
     doGreedy = config_nirb['greedy-generation']
     doRectification = config_nirb['doRectification']
@@ -246,7 +244,7 @@ if __name__ == '__main__':
     
 
     pas = 3
-    baseList = range(1,Nbase, pas)
+    baseList = range(10,Nbase, pas)
 
     Dmu = loadParameterSpace(model_path)
     ## get distinct training and testing sample 
@@ -254,37 +252,51 @@ if __name__ == '__main__':
     Xi_train, Xi_test = loadSampling(Dmu, path=RESPATH, idmodel=idmodel, Ntest=Nsample)
 
     ## generate nirb offline and online object :  
-    nirb_off = nirbOffline(**config_nirb, initCoarse=doGreedy)
-    nirb_off.initModel()
-    resOffline = offline(nirb_off, RESPATH, doGreedy, baseList[-1], Xi_train=Xi_train)
+    # nirb_off = nirbOffline(**config_nirb, initCoarse=doGreedy)
+    # nirb_off.initModel()
+    # resOffline = offline(nirb_off, RESPATH, doGreedy, baseList[-1], Xi_train=Xi_train)
     nirb_on = nirbOnline(**config_nirb)
     nirb_on.initModel()
 
     ## load offline datas only once 
-    regulParam = 1.e-10
-    Nglob = nirb_off.N
-    err = nirb_on.loadData(nbSnap=Nglob, path=RESPATH, regulParam=regulParam)
+    lmd = 1.e-10
+    # Nglob = nirb_off.N
+    Nglob = 97
+    err = nirb_on.loadData(nbSnap=Nglob, path=RESPATH, regulParam=lmd)
     assert err == 0, "loadData failed"
-    del nirb_on.RectificationMat[Nglob]
+    idd = str(idmodel) + f"lmd{10}"
+    errorfile = f"errors{Nsample}Params_{idd}.csv"
 
     comm.Barrier()
-    Nl = [0, 1, 3, 5, 7, 9, 10, 11, 12, 17]
-    ## for n in Nl, Lambda = 1.E-n 
-    for lm in Nl :
-        regulParam = 1./10**lm 
-        idd = str(idmodel) + f"lmd{lm}"
-        errorfile = f"errors{Nsample}Params_{idd}.csv"
-
-        if convergence :
+    Nl = [10]
+    ## for n in Nl, Lambda = 1.E-n
+    if convergence : 
+        if regulParameter : 
+            ## test convergence i respect of regularization parameter 
+            Nl = [0, 1, 3, 5, 7, 9, 10, 11, 12, 17]
+            del nirb_on.RectificationMat[Nglob] 
+            for lm in Nl :
+                lmd = 1./10**lm 
+                idd = str(idmodel) + f"lmd{lm}"
+                errorfile = f"errors{Nsample}Params_{idd}.csv"
+                ## Get convergence error in respect to basis function     
+                for N in baseList:
+                    N = int(N)
+                    if feelpp.Environment.isMasterRank():
+                        print("\n\n-----------------------------")
+                        print(f"[NIRB] Test with N = {N}, lambda = {lmd}")
+                    online_error_sampling(nirb_on, RESPATH,errorfile=errorfile, Nb=N, Nsample=Nsample, Xi_test=Xi_test, verbose=False, regulParam=lmd)
+                    del nirb_on.RectificationMat[N] 
+        else :
             ## Get convergence error in respect to basis function     
             for N in baseList:
                 N = int(N)
                 if feelpp.Environment.isMasterRank():
                     print("\n\n-----------------------------")
-                    print(f"[NIRB] Test with N = {N}, lambda = {regulParam}")
-                online_error_sampling(nirb_on, RESPATH,errorfile=errorfile, Nb=N, Nsample=Nsample, Xi_test=Xi_test, verbose=False, regulParam=regulParam)
-                del nirb_on.RectificationMat[N] 
-
+                    print(f"[NIRB] Test with N = {N}, lambda = {lmd}")
+                online_error_sampling(nirb_on, RESPATH,errorfile=errorfile, Nb=N, Nsample=Nsample, Xi_test=Xi_test, verbose=False, regulParam=lmd)
+                del nirb_on.RectificationMat[N]
+                
     if timeExec:
         ## Get online time mesure
         resOnline = online_time_measure(nirb_on, Nsample=Nsample)
