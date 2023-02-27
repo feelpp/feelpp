@@ -115,6 +115,29 @@ private:
     
 };
 
+/**
+ * @fn get worldComm
+ * 
+ * @param commObj 
+ * @return worldcomm_t const& 
+ */
+worldcomm_t const&
+worldComm( CommObject const& commObj )
+{
+    return commObj.worldComm();
+}
+
+
+//!
+//! @fn get worldComm 
+//! @return the worldcomm associated to the communication object
+//!
+template <typename MeshType, int Entities>
+worldcomm_ptr_t const&
+worldCommPtr( CommObject const& commObj )
+{
+    return commObj.worldCommPtr();
+}
 
 
 } // Feel
