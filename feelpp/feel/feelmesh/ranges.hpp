@@ -44,17 +44,49 @@ using entities_reference_wrapper_t = boost::mp11::mp_if_c<MESH_ENTITIES==MESH_EL
                                                           >;
 // clang-format on
 
+/**
+ * @brief RangeBase class
+ * 
+ */
+template<typename IndexT = uint32_type>
+class FEELPP_EXPORT RangeBase : public CommObject 
+{
+    public:
+    using index_t = IndexT;
+    RangeBase() = default;
+    RangeBase( RangeBase const& ) = default;
+    RangeBase( RangeBase && ) = default;
+    RangeBase& operator=( RangeBase const& ) = default;
+    RangeBase& operator=( RangeBase && ) = default;
+    virtual ~RangeBase() = default;
+    RangeBase( std::shared_ptr<MeshBase<index_t>> const& b ) : CommObject( b->worldCommPtr() ), M_mesh_base( b ) {}
+
+    std::shared_ptr<MeshBase<index_t>> meshBase() { return M_mesh_base; }
+    std::shared_ptr<MeshBase<index_t>> meshBase() const { return M_mesh_base; }
+
+    protected:
+    std::shared_ptr<MeshBase<index_t>> M_mesh_base;
+
+};
+
 template <typename MeshType, int MESH_ENTITIES, std::enable_if_t<std::is_base_of_v<MeshBase<>, decay_type<std::remove_pointer_t<MeshType>>>, int> = 0>
-class Range
-    : public entities_reference_wrapper_t<MeshType, MESH_ENTITIES>
+class FEELPP_EXPORT Range
+    : public entities_reference_wrapper_t<MeshType, MESH_ENTITIES>, RangeBase<typename decay_type<std::remove_pointer_t<MeshType>>::index_t>
 {
     using super = entities_reference_wrapper_t<MeshType,MESH_ENTITIES>;
-
+    using super_range = RangeBase<typename decay_type<std::remove_pointer_t<MeshType>>::index_t>;
   public:
+    
     using mesh_t = decay_type<std::remove_pointer_t<MeshType>>;
     using mesh_ptr_t = std::shared_ptr<const mesh_t>;
     using index_type = typename mesh_t::index_type;
     using index_t = index_type;
+
+    static constexpr int mesh_entities = MESH_ENTITIES;
+    static constexpr int nDim = mesh_t::nDim;
+    static constexpr int nRealDim = mesh_t::nRealDim;
+
+
     Range() = default;
     Range( Range const& e ) = default;
     Range( Range && e ) = default;
@@ -62,10 +94,11 @@ class Range
     Range( super && e ) : super( std::move( e ) ) {}
     ~Range() = default;
 
-    static constexpr bool isOnElements() { return boost::tuples::template element<0, super>::type::value == MESH_ELEMENTS;  }
-    static constexpr bool isOnFaces() { return boost::tuples::template element<0, super>::type::value == MESH_FACES;  }
-    static constexpr bool isOnEdges() { return boost::tuples::template element<0, super>::type::value == MESH_EDGES;  }
-    static constexpr bool isOnPoints() { return boost::tuples::template element<0, super>::type::value == MESH_POINTS;  }
+    static constexpr bool isOnElements() { return mesh_entities == MESH_ELEMENTS;  }
+    static constexpr bool isOnFaces() { return mesh_entities == MESH_FACES;  }
+    static constexpr bool isOnEdges() { return mesh_entities == MESH_EDGES;  }
+    static constexpr bool isOnFacets() { return mesh_entities == MESH_FACES; }
+    static constexpr bool isOnPoints() { return mesh_entities == MESH_POINTS;  }
 
     Range( super const& er, MeshType const& m, int marker, int pid )
         : super( er ), M_mesh( unwrap_ptr(m).shared_from_this() ), M_marker( marker ), M_pid( pid )
@@ -99,11 +132,6 @@ class Range
     auto const& begin() const { return this->template get<1>(); }
     auto const& end() const { return this->template get<2>(); }
 
-    worldcomm_t& worldComm() { return M_mesh->worldComm(); }
-    worldcomm_t const& worldComm() const { return M_mesh->worldComm(); }
-    worldcomm_ptr_t& worldCommPtr() { return M_mesh->worldCommPtr(); }
-    worldcomm_ptr_t const& worldCommPtr() const { return M_mesh->worldCommPtr(); }
-
     int marker() const { return M_marker; }
     void setMarker( int m ) { M_marker = m; } 
     bool hasMarker() const { return M_marker != -1; }
@@ -130,49 +158,29 @@ range( Tv&&... v )
                                             args.get_else( _marker1, -1 ),
                                             args.get_else( _pid, -1 ) };
 }
-//!
-//! @fn get worldComm from range of entities
-//! @return the worldcomm associated to the mesh stored in the range
-//!
-template<typename MeshType, int Entities>
-worldcomm_t const&
-worldComm( Range<MeshType, Entities> const& range )
-{
-    return range.worldComm();
-}
 
-//!
-//! @fn get worldComm from range of entities
-//! @return the worldcomm associated to the mesh stored in the range
-//!
-template<typename MeshType, int Entities>
-worldcomm_ptr_t const&
-worldCommPtr( Range<MeshType, Entities> const& range )
-{
-    return range.worldComm();
-}
 
 template<typename MeshType, int MESH_ENTITIES>
 auto begin( Range<MeshType,MESH_ENTITIES> &range )
 {
-    return range.template get<1>();
+    return range.begin();
 }
 
 template<typename MeshType, int MESH_ENTITIES>
 auto end( Range<MeshType,MESH_ENTITIES> &range )
 {
-    return range.template get<2>();
+    return range.end();
 }
 template<typename MeshType, int MESH_ENTITIES>
 auto begin( Range<MeshType,MESH_ENTITIES> const&range )
 {
-    return range.template get<1>();
+    return range.begin();
 }
 
 template<typename MeshType, int MESH_ENTITIES>
 auto end( Range<MeshType,MESH_ENTITIES> const&range )
 {
-    return range.template get<2>();
+    return range.end();
 }
 
 }
