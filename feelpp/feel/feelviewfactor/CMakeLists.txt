@@ -1,9 +1,9 @@
-###  CMakeLists.txt; coding: utf-8 --- 
-
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-#       Date: 19 Jan 2017
+# -*- mode: cmake; coding: utf-8 -*-
 #
-#  Copyright (C) 2017 Feel++ Consortium
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+#       Date: 2014-01-12
+#
+#  Copyright (C) 2014-2016 Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -22,14 +22,7 @@
 #
 #
 
-add_subdirectory(info)
-add_subdirectory(remotedata)
-add_subdirectory( mesh )
-add_subdirectory( plot )
-add_subdirectory( fmi )
-add_subdirectory( databases )
-add_subdirectory( sync_case )
+set( SRC viewfactorbase.cpp unobstructedplanarviewfactor.cpp raytracingviewfactor.cpp )
 
-add_subdirectory(scripts)
-add_subdirectory(view_factor)
-install(DIRECTORY lsan DESTINATION share/feelpp)
+file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp)
+feel_append_src(feelviewfactor "${SRC};${HDR}")
