@@ -549,7 +549,11 @@ namespace Feel
                     break;
 
                 default:
+
                     LOG(ERROR) << "ERROR: None of the previous cases has been traversed";
+                    
+                    throw std::logic_error("Error in BVH traversal: none of the previous cases has been traversed.");
+
                     break;
                 }
             }

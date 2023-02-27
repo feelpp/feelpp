@@ -191,7 +191,7 @@ BOOST_AUTO_TEST_CASE( test_cylinder_raytracing )
 // Tests for the raytracing part
 
 // Function tested:
-// get_random_direction
+// getRandomDirection
 // Test if the algorithm computing the random directions on a sphere or circle 
 // provides a uniform distribution over the manifold using a chi-squared test
 #if 1
@@ -209,8 +209,8 @@ BOOST_AUTO_TEST_CASE( test_random_direction )
 
     for(int i=0; i<1e4; i++)
     {
-        get_random_direction(three_dimensional_direction,gen1,gen2,normal3d);
-        get_random_direction(two_dimensional_direction,gen1,gen2,normal2d);
+        getRandomDirection(three_dimensional_direction,gen1,gen2,normal3d);
+        getRandomDirection(two_dimensional_direction,gen1,gen2,normal2d);
 
         BOOST_CHECK_SMALL(math::pow(two_dimensional_direction[0],2)+math::pow(two_dimensional_direction[1],2)-1,1e-6);
         BOOST_CHECK_SMALL(math::pow(three_dimensional_direction[0],2)+math::pow(three_dimensional_direction[1],2)+math::pow(three_dimensional_direction[2],2)-1,1e-6);
@@ -318,8 +318,8 @@ BOOST_AUTO_TEST_CASE( test_element_area_and_point_belonging )
     barycenter_2d = (point1_2d+point2_2d)/2.;
     barycenter_3d = (point1_3d+point2_3d+point3_3d)/3.;
 
-    area2d = element_area(barycenter_2d,point1_2d,point2_2d);
-    area3d = element_area(barycenter_3d,point1_3d,point2_3d,point3_3d);
+    area2d = elementArea(barycenter_2d,point1_2d,point2_2d);
+    area3d = elementArea(barycenter_3d,point1_3d,point2_3d,point3_3d);
 
     BOOST_CHECK_SMALL(area2d-3.,1e-6);
     BOOST_CHECK_SMALL(area3d-4.5,1e-6);
