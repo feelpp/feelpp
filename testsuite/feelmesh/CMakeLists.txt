@@ -26,5 +26,5 @@ if ( FEELPP_HAS_PARMMG OR FEELPP_HAS_MMG )
                    TIMEOUT 500)
 endif()
 
-feelpp_add_application(bvh2D SRCS test_bvh.cpp DEFS FEELPP_DIM=2 CFG test_bvh2d.cfg GEO domain_2d.geo )
-feelpp_add_application(bvh3D SRCS test_bvh.cpp DEFS FEELPP_DIM=3 CFG test_bvh3d.cfg GEO cubic_cavity.geo )
+feelpp_add_test(bvh2D SRCS test_bvh.cpp DEFS FEELPP_DIM=2 CFG test_bvh2d.cfg GEO domain_2d.geo NO_MPI_TEST )
+feelpp_add_test(bvh3D SRCS test_bvh.cpp DEFS FEELPP_DIM=3 CFG test_bvh3d.cfg GEO cubic_cavity.geo NO_MPI_TEST )
