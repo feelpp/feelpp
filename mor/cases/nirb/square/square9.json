@@ -216,6 +216,10 @@
         "doBiorthonormal": false,
         "nbSnapshots": 10,
         "greedy-generation": true,
-        "outdir": "results/rect/greedy"
+        "outdir": "results/rect/greedy",
+        "time_dependent":false,
+        "timeStep":0.1,
+        "timeFinal":1,
+        "timeInitial":0
     }
 }
