@@ -89,7 +89,7 @@ template <typename RangeT>
 using range_container_t = tuple_element_t<3, RangeT>;
 
 template <typename RangeT>
-inline constexpr bool is_range_v = is_tuple_v<RangeT>;//std::is_base_of_v<std::input_iterator_tag, typename std::iterator_traits<range_iterators_t<RangeT>>::iterator_category>;
+inline constexpr bool is_range_v = is_tuple_v<RangeT> || std::is_base_of_v<RangeBase,RangeT>;//std::is_base_of_v<std::input_iterator_tag, typename std::iterator_traits<range_iterators_t<RangeT>>::iterator_category>;
 
 
 //!
@@ -869,7 +869,7 @@ internalpoints( MeshType const& mesh )
  */
 template <typename RangeT, std::enable_if_t<is_range_v<RangeT>,int> = 0>
 size_type
-nelements( RangeT const& its, bool global = false, worldcomm_t const& worldComm = Environment::worldComm() )
+nelements( RangeT const& r, bool global = false )
 {
     auto is_ghost = []( auto const& cell )
     {
@@ -892,10 +892,10 @@ nelements( RangeT const& its, bool global = false, worldcomm_t const& worldComm 
     {
         return ++x;
     };
-    size_type d = std::accumulate( begin( its ), end( its ), 0, count_without_ghost );
+    size_type d = std::accumulate( r.begin(), r.end(), 0, count_without_ghost );
     size_type gd = d;
     if ( global )
-        mpi::all_reduce(r.front().worldComm(),
+        mpi::all_reduce(r.worldComm(),
                         d,
                         gd,
                         std::plus<size_type>());
