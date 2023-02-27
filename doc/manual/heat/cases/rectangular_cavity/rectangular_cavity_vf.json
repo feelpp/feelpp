@@ -1,0 +1,9 @@
+{
+    "viewfactor": {
+        "type": "UnobstructedPlanar",
+        "algorithm":"DoubleAreaIntegration",
+        "quadrature_order":2,
+        "markers":["InnerTop", "LowerTop","LeftTop","RightTop"],        
+        "description": "The viewfactor of a closed rectangular cavity."
+    }
+}

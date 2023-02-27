@@ -333,16 +333,16 @@ Remesh<MeshType>::Remesh( std::shared_ptr<MeshType> const& mesh,
         {
             if ( M_params["remesh"]["required"].contains("elements") )
             {
-                M_required_element_markers = M_params["remesh"]["required"]["elements"].get<std::vector<std::string>>();
+                M_required_element_markers = M_params["remesh"]["required"]["elements"].template get<std::vector<std::string>>();
             }
             if ( M_params["remesh"]["required"].contains( "facets" ) )
             {
-                M_required_facet_markers = M_params["remesh"]["required"]["facets"].get < std::vector<std::string>>();
+                M_required_facet_markers = M_params["remesh"]["required"]["facets"].template get<std::vector<std::string>>();
             }
             if ( M_params["remesh"]["required"].contains( "keep_relation" ) )
-                keep_relation_required_ = M_params["remesh"]["required"]["keep_relation"].get <bool>();
-            if ( !M_params["remesh"]["required"]["facets"].get < std::vector<std::string>>().empty() &&
-                  keep_relation_required_ )
+                keep_relation_required_ = M_params["remesh"]["required"]["keep_relation"].template get<bool>();
+            if ( !M_params["remesh"]["required"]["facets"].template get<std::vector<std::string>>().empty() &&
+                 keep_relation_required_ )
             {
                 // this is necessary otherwise the hack to keep the relation and require facets will fail
                 M_params["remesh"]["opnbdy"] = 1;

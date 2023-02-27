@@ -300,7 +300,7 @@ private:
 /**
  * \param M matrix
  * \param l label of the operator
- * \param transpose boolean to say wether we want the matrix or its transpose
+ * \param transpose boolean to say whether we want the matrix or its transpose
  * \return the Operator associated to the matrix \p M
  */
 template<typename MatrixType>
@@ -399,7 +399,7 @@ private:
 /**
  * \param op an operator
  * \param l label of the operator
- * \param transpose boolean to say wether we want the matrix or its transpose
+ * \param transpose boolean to say whether we want the matrix or its transpose
  * \return the Operator associated to the matrix \p M
  */
 template<typename OpType>

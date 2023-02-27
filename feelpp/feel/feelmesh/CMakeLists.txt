@@ -25,7 +25,7 @@ SET( SRC
   marker.cpp
   entities.cpp
   regiontree.cpp kdtree.cpp
-  functors.cpp
+  functors.cpp bvh.cpp
   meshbase.cpp
   remesher.cpp
   )

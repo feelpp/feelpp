@@ -5775,7 +5775,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
     typedef typename im_type::face_quadrature_type face_im_type;
 
     CHECK( faceInit.isConnectedTo0() ) << "invalid face with id=" << faceInit.id();
-    CHECK( faceInit.element(0).gm() ) << "invalid geometric transformation assocated to face id="
+    CHECK( faceInit.element(0).gm() ) << "invalid geometric transformation associated to face id="
                                       <<  faceInit.id() << " and element id " << faceInit.element(0).id();
 
     gm_ptrtype gm = faceInit.element( 0 ).gm();

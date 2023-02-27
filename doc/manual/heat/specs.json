@@ -1,0 +1,181 @@
+{
+    "Name": "specs",
+    "ShortName": "specs",
+    "Models": {
+        "heat": {
+                "name": "heat",
+                "materials": [
+                    "Mat_0",
+                    "Mat_1",
+                    "Mat_2",
+                    "Mat_3",
+                    "Mat_4"
+                ]
+            }
+    },
+    "Parameters": {
+        "phi": {
+            "value": "5e3",
+            "min": "1e3",
+            "max": "1e4"
+        },
+        "hconv": {
+            "value":"300",
+            "min":"10",
+            "max":"1000"
+        },
+        "Tref_C": {
+            "value": "450",
+            "min": "20",
+            "max": "600"
+        },
+        "Trad_C": {
+            "value": "450",
+            "min": "20",
+            "max": "600"
+        },
+        "sigma": 5.67e-8, // default 5.67E-8  W.m-2.K-4, depends on problem unit
+        "Tdir_C": 250,
+        "Tinit_C": 0
+    },
+    "Meshes": {
+        "heat": {
+            "Import": {
+                "filename": "$cfgdir/geometry.geo",
+                "partition": 0
+            }
+        }
+    },
+    "Materials": {
+        "Mat_0": {
+            "k": "1",
+            "Cp": "4e6",
+            "rho": "1"
+        },
+        "Mat_1": {
+            "k": "2",
+            "Cp": "1e6",
+            "rho": "1"
+        },
+        "Mat_2": {
+            "k": "4",
+            "Cp": "2e6",
+            "rho": "1"
+        },
+        "Mat_3": {
+            "k": "6",
+            "Cp": "3e6",
+            "rho": "1"
+        },
+        "Mat_4": {
+            "k": "8",
+            "Cp": "4e6",
+            "rho": "1"
+        }
+    },
+    "Coating":{ // NEW SECTION: optical features linked with boundaries markers
+        "Gamma_0": {
+            "markers": ["Gamma_C_0"],
+            "emissivity": "0.9"
+        },
+        "Gamma_1": {
+            "markers": ["Gamma_O_1","Gamma_B_11","Gamma_B_12"],
+            "emissivity": "0.9"
+        },
+        "Gamma_2": {
+            "markers": ["Gamma_O_2","Gamma_B_2"],
+            "emissivity": "0.9"
+        },
+        "Gamma_3": {
+            "markers": ["Gamma_C_3"],
+            "emissivity": "0.9"
+        },
+        "Gamma_4": {
+            "markers": ["Gamma_C_4"],
+            "emissivity": "0.9"
+        }
+    },
+    "InitialConditions": {
+        "heat": {
+            "temperature": {
+                "Expression": {
+                    "Tini": {
+                        "markers":["Mat_0", "Mat_1", "Mat_2", "Mat_3", "Mat_4"],
+                        "expr":"Tinit_C+273.15:Tinit_C"
+                    }
+                }
+            }
+        }
+    },
+    "BoundaryConditions": {
+        "heat": {
+            "temperature": {
+                "Gamma_dir": {
+                    "expr": "Tdir_C+273.15:Tdir_C"
+                }
+            },
+            "flux": {
+                "Gamma_flux": {
+                    "expr": "phi:phi"
+                }
+            },
+            "convective_heat_flux": {
+                "Gamma_conv": {
+                    "h": "hconv:hconv",
+                    "Text": "Tref_C+273.15:Tref_C"
+                }
+            }, 
+            "radiative_enclosure_heat_flux": { // radiation in enclosure
+                "Cavity_open": {
+                    "enclosure": "open", // opened enclosure ie exchange with a blackbody at Tref                    "markers": ["Gamma_O_1", "Gamma_O_2"], // list of boundary linked with coating
+                    "Tref": "Trad_C+273.15:Trad_C",
+                    "sigma": "sigma:sigma",
+                    "viewfactors": {
+                        "status": "load", // to be load from viewfactors.dat
+                        "filename": "$cfgdir/viewfactors_c0.dat"
+                    }
+                },
+                "Cavity_close_1": {
+                    "enclosure": "close", // closed enclosure
+                    "markers": ["Gamma_C_3", "Gamma_C_4"], // list of boundary linked with coating
+                    "sigma": "sigma:sigma",
+                    "viewfactors": {
+                        "status": "compute", // to be compute using "type" and save
+                        "type": "raytracing", // (MC method) or unobstructed (integral method)
+                        "filename": "$cfgdir/viewfactors_c1.dat" // if None, not save
+                    }
+                },
+                "Cavity_close_2": {
+                    "enclosure": "close", // closed enclosure
+                    "markers": ["Gamma_C_0"], // list of boundary linked with coating                    "sigma": "sigma:sigma",
+                    "viewfactors": {
+                        "status": "compute", // to be compute using raytracing (because hidden faces)
+                        "filename": "$cfgdir/viewfactors_c2.dat" // if None, not save
+                    }
+                }
+            },
+            "radiative_blackbody_heat_flux": { // blackbody RHT
+                // epsilon * sigma (T**4 - Tref**4)
+                "Gamma_BBC_1": {
+                    "markers": ["Gamma_B_11","Gamma_B_12"], // list of boundary linked with coating
+                    "Tref": "Tref_C+273.15:Tref_C",
+                    "sigma": "sigma:sigma"
+                },
+                "Gamma_BBC_2": {
+                    "markers": ["Gamma_B_2"], // list of boundary linked with coating
+                    "Tref": "Tref_C+273.15:Tref_C",
+                    "sigma": "sigma:sigma"
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "Exports": {
+            "fields":["temperature","pid"],
+            "expr": {
+                "T_C": "heat_T-273.15:heat_T"
+            }
+        }
+    }
+}

@@ -1156,7 +1156,7 @@ getOptionsDescML( std::string const& prefix, std::string const& sub )
         ( prefixvm( prefix,pcctx+"ml-reuse-interpolation" ).c_str(), Feel::po::value<bool>()->default_value( false ),
           "Reuse the interpolation operators when possible (cheaper, weaker when matrix entries change a lot)" )
         ( prefixvm( prefix,pcctx+"ml-keep-agg-info" ).c_str(), Feel::po::value<bool>()->default_value( false ),
-          "Allows the preconditioner to be reused, or auxilliary matrices to be generated" )
+          "Allows the preconditioner to be reused, or auxiliary matrices to be generated" )
         ( prefixvm( prefix,pcctx+"ml-reusable" ).c_str(), Feel::po::value<bool>()->default_value( false ),
           "Store intermedaiate data structures so that the multilevel hierarchy is reusable" )
         ( prefixvm( prefix,pcctx+"ml-old-hierarchy" ).c_str(), Feel::po::value<bool>()->default_value( false ),
@@ -2524,7 +2524,7 @@ ConfigurePCFieldSplit::run( PC& pc )
     }
     else
     {
-        // call necessary before next seting
+        // call necessary before next setting
         this->check( PCSetUp( pc ) );
         KSP* subksps;
         int nSplit;
@@ -2602,7 +2602,7 @@ ConfigurePCFieldSplit::runSchur( PC& pc )
     {
         // NOTE : this part was write initialy in order to take into account SIMPLE prec,
         // but now, PETSc take into account this code by using selfp options
-        // this user part should be removed and adpated to a real use precondtioner of schur complement
+        // this user part should be removed and adpated to a real use preconditioner of schur complement
 
         this->check( PCSetUp( pc ) );
 
@@ -2685,7 +2685,7 @@ ConfigurePCFieldSplit::runSchur( PC& pc )
     this->check( MatDestroy( &schurMatPrecond ) );
 #endif
 
-    // call necessary before next seting
+    // call necessary before next setting
     this->check( PCSetUp( pc ) );
 
 #if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,10,0 )
@@ -3201,7 +3201,7 @@ ConfigurePCRedundant::run( PC& pc )
 {
 #if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,5,0 )
 
-    // redifine PCSetUp for PCREDUNDANT because originaly KSPSetUp for innerksp is called in this function
+    // redefine PCSetUp for PCREDUNDANT because originally KSPSetUp for innerksp is called in this function
     this->check( PetscImpl::PCRedundantChangeSetup(pc) );
     // build operators
     this->check( PCSetUp( pc ) );
