@@ -26,7 +26,7 @@ using namespace nanoflann;
 namespace Feel {
     
 // Compute random direction, uniformly distributed on the sphere or on a circle
-void get_random_direction(std::vector<double> &random_direction, std::mt19937 & M_gen, std::mt19937 & M_gen2,Eigen::VectorXd normal)
+void getRandomDirection(std::vector<double> &random_direction, std::mt19937 & M_gen, std::mt19937 & M_gen2,Eigen::VectorXd normal)
 {    
     std::uniform_real_distribution<double> xi2(0,1);
     std::uniform_real_distribution<double> xi1(0,1);
@@ -63,9 +63,8 @@ void get_random_direction(std::vector<double> &random_direction, std::mt19937 & 
             
             direction = matrix1 * (matrix2 * direction);
 
-            random_direction[0]=direction[0];
-            random_direction[1]=direction[1];
-            random_direction[2]=direction[2];
+            random_direction.resize(direction.size());
+            Eigen::VectorXd::Map(&random_direction[0], direction.size()) = direction;
         }
     }
     else if (random_direction.size()==2)
@@ -84,7 +83,7 @@ void get_random_direction(std::vector<double> &random_direction, std::mt19937 & 
 
 // 3D case
 // Compute the sum of the areas of three triangles
-double element_area(Eigen::VectorXd const& point,Eigen::VectorXd const& el_p1,Eigen::VectorXd const& el_p2,Eigen::VectorXd const& el_p3)
+double elementArea(Eigen::VectorXd const& point,Eigen::VectorXd const& el_p1,Eigen::VectorXd const& el_p2,Eigen::VectorXd const& el_p3)
 {
     double area = 0.;            
     if(point.size()==3)
@@ -110,7 +109,7 @@ double element_area(Eigen::VectorXd const& point,Eigen::VectorXd const& el_p1,Ei
 
 // 2D case
 // Compute the sum of the lengths of two segments
-double element_area(Eigen::VectorXd const& point,Eigen::VectorXd const& el_p1,Eigen::VectorXd const& el_p2)
+double elementArea(Eigen::VectorXd const& point,Eigen::VectorXd const& el_p1,Eigen::VectorXd const& el_p2)
 {     
     auto vector1 = point-el_p1;
     auto vector2 = point-el_p2;     
@@ -123,8 +122,8 @@ double element_area(Eigen::VectorXd const& point,Eigen::VectorXd const& el_p1,Ei
 bool isOnSurface(Eigen::VectorXd const &point,Eigen::VectorXd const &el_p1,Eigen::VectorXd const &el_p2,Eigen::VectorXd const &el_p3)
 {
     auto c = (el_p1+el_p2+el_p3)/3.;
-    auto elem_area = element_area(c, el_p1,el_p2,el_p3); 
-    auto area = element_area(point, el_p1,el_p2,el_p3);             
+    auto elem_area = elementArea(c, el_p1,el_p2,el_p3); 
+    auto area = elementArea(point, el_p1,el_p2,el_p3);             
     if (math::abs(area-elem_area)<1e-5)
         return true;
     else
@@ -372,7 +371,7 @@ public:
                         }                               
                         auto element_normal = ((p3-p1).head<3>()).cross((p2-p1).head<3>());
                         element_normal.normalize();        
-                        get_random_direction(random_direction,M_gen,M_gen2,element_normal);
+                        getRandomDirection(random_direction,M_gen,M_gen2,element_normal);
                         for(int i=0;i<dim;i++)
                         {
                             rand_dir(i) = random_direction[i];
