@@ -355,7 +355,7 @@ public:
     {
         matrix_node_type v( nRealDim, nDim  );
 
-        // there is exactely nDim vertices on each face on a d-simplex
+        // there is exactly nDim vertices on each face on a d-simplex
         for ( int p = 0; p < nDim; ++p )
         {
             switch ( nDim )

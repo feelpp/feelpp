@@ -26,6 +26,9 @@
 #include <feel/feelpython/pybind11/functional.h>
 #include <feel/feelmodels/modelcore/modelnumerical.hpp>
 #include <feel/feelmodels/fluid/fluidmechanics.hpp>
+#include <feel/feelmodels/modelcore/remeshinterpolation.hpp>
+#include <feel/feelcore/pybind11_json.hpp>
+#include <contactforce.hpp>
 
 namespace py = pybind11;
 using namespace Feel;
@@ -88,7 +91,49 @@ void defFM(py::module &m)
         .def("exportResults",static_cast<void (fm_t::*)( double )>(&fm_t::exportResults), "export the results of the fluid mechanics problem", py::arg("time"))
 
         // remesh
-        .def("applyRemesh",&fm_t::applyRemesh, "apply remesh to toolbox and regenerate the necessary data structure")
+        .def("applyRemesh",
+        []( std::shared_ptr<fm_t>& self,typename fm_t::mesh_ptrtype meshOld, typename fm_t::mesh_ptrtype meshNew ) 
+        {
+            std::shared_ptr<RemeshInterpolation> remeshInterp = std::make_shared<RemeshInterpolation>();
+            self->applyRemesh(meshOld,meshNew,remeshInterp);            
+        }, "apply remesh to toolbox and regenerate the necessary data structure",py::arg("oldMesh"),py::arg("newMesh"))
+        
+        .def(
+            "addContactForceModel",[](const fm_t& t)
+            {
+                auto add_force_term = [&t](FeelModels::ModelAlgebraic::DataUpdateLinear & data) 
+                { 
+                    contactForceModels<0>(t, data);
+                };
+
+                t.algebraicFactory()->addFunctionLinearAssembly(add_force_term);
+
+            },
+            "add function linear assembly"
+        ) 
+        
+        .def(
+            "addContactForceResModel",[](const fm_t& t)
+            {
+                auto add_force_term = [&t](FeelModels::ModelAlgebraic::DataUpdateResidual & data) 
+                { 
+                    contactForceModels<1>(t, data);
+                };  
+
+                t.algebraicFactory()->addFunctionResidualAssembly(add_force_term) ;
+
+            },
+            "add function residual assembly"
+        )
+
+        .def(
+            "reset_executionTime",[](const fm_t& t)
+            {
+                reset_executionTime(t);
+            },
+            "Initialization of execution time"
+        ) 
+        
         ;
         
 }

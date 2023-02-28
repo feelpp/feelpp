@@ -1,0 +1,214 @@
+{
+    "Name": "Thermalfin 3D RHT",
+    "ShortName": "thermalfin3d",
+    "Models": {
+        "heat": {
+                "name": "heat",
+                "materials": [ "Post", "Fin_1", "Fin_2", "Fin_3", "Fin_4" ]
+            }
+    },
+    "Meshes": {
+        "heat": {
+            "Import": {
+                "filename": "$cfgdir/../fin.geo",
+                "partition": 0
+            }
+        }
+    },
+    "Materials": {
+        "Post": {
+            "k": "1",
+            "Cp": "1.4",
+            "rho": "1"
+        },
+        "Fin_1": {
+            "k": "1",
+            "Cp": "1.4",
+            "rho": "1"
+        },
+        "Fin_2": {
+            "k": "1",
+            "Cp": "1.4",
+            "rho": "1"
+        },
+        "Fin_3": {
+            "k": "1",
+            "Cp": "1.4",
+            "rho": "1"
+        },
+        "Fin_4": {
+            "k": "1",
+            "Cp": "1.4",
+            "rho": "1"
+        }
+    },
+    "Coating":{
+        "Gamma_Post": {
+            "markers": ["Gamma_Post_1", "Gamma_Post_2", "Gamma_Post_3", "Gamma_Post_4"],
+            "epsilon": "0.9"
+        },
+        "Gamma_1": {
+            "markers": ["Gamma_bot_1", "Gamma_B_1", "Gamma_top_1"],
+            "epsilon": "0.9"
+        },
+        "Gamma_2": {
+            "markers": ["Gamma_bot_2", "Gamma_B_2", "Gamma_top_2"],
+            "epsilon": "0.9"
+        },
+        "Gamma_3": {
+            "markers": ["Gamma_bot_3", "Gamma_B_3", "Gamma_top_3"],
+            "epsilon": "0.9"
+        },
+        "Gamma_4": {
+            "markers": ["Gamma_bot_4", "Gamma_B_4", "Gamma_top_4"],
+            "epsilon": "0.9"
+        }
+    },
+    "InitialConditions": {
+        "heat": {
+            "temperature": {
+                "Expression": {
+                    "Tini": {
+                        "markers":["Fin_1", "Fin_2", "Fin_3", "Fin_4", "Post"],
+                        "expr":"Tinit_C+273.15:Tinit_C"
+                    }
+                }
+            }
+        }
+    },
+    "BoundaryConditions": {
+        "heat": {
+            "flux": {
+                "Gamma_root": {
+                    "expr": "1"
+                }
+            },
+            "convective_heat_flux": {
+                "Gamma_ext": {
+                    "h": "0.001",
+                    "Text": "Tref_C+273.15:Tref_C"
+                }
+            }, 
+            "radiative_enclosure_heat_flux": {
+                "Cavity_1": {
+                    "enclosure": "open",
+                    "markers": ["Gamma_Post_1","Gamma_bot_1"],
+                    "Tref": "333.15",
+                    "sigma": "5.67e-12",
+                    "viewfactors": {
+                        "type": "raytracing",
+                        "markers": ["Gamma_Post_1","Gamma_bot_1","Gamma_void_1"],
+                        "filename": "$cfgdir/viewfactors_1.dat"
+                    }
+                },
+                "Cavity_2": {
+                    "enclosure": "open",
+                    "markers": ["Gamma_Post_2","Gamma_bot_2","Gamma_top_1"],
+                    "Tref": "333.15",
+                    "sigma": "5.67e-12",
+                    "viewfactors": {
+                        "type": "raytracing",
+                        "markers": ["Gamma_Post_2","Gamma_bot_2","Gamma_top_1","Gamma_void_2"],
+                        "filename": "$cfgdir/viewfactors_2.dat"
+                    }
+                },
+                "Cavity_3": {
+                    "enclosure": "open",
+                    "markers": ["Gamma_Post_3","Gamma_bot_3","Gamma_top_2"],
+                    "Tref": "333.15",
+                    "sigma": "5.67e-12",
+                    "viewfactors": {
+                        "type": "raytracing",
+                        "markers": ["Gamma_Post_3","Gamma_bot_3","Gamma_top_2","Gamma_void_3"],
+                        "filename": "$cfgdir/viewfactors_3.dat"
+                    }
+                },
+                "Cavity_4": {
+                    "enclosure": "open",
+                    "markers": ["Gamma_Post_4","Gamma_bot_4","Gamma_top_3"],
+                    "Tref": "333.15",
+                    "sigma": "5.67e-12",
+                    "viewfactors": {
+                        "type": "raytracing",
+                        "markers": ["Gamma_Post_4","Gamma_bot_4","Gamma_top_3","Gamma_void_4"],
+                        "filename": "$cfgdir/viewfactors_4.dat"
+                    }
+                }
+            },
+            "radiative_blackbody_heat_flux": {
+                "Gamma_BBC_Fin_1": {
+                    "markers": ["Gamma_B_1"],
+                    "Tref": "373.15",
+                    "sigma": "5.67e-12"
+                },
+                "Gamma_BBC_Fin_2": {
+                    "markers": ["Gamma_B_2"],
+                    "Tref": "373.15",
+                    "sigma": "5.67e-12"
+                } ,
+                "Gamma_BBC_Fin_3": {
+                    "markers": ["Gamma_B_3"],
+                    "Tref": "373.15",
+                    "sigma": "5.67e-12"
+                },
+                "Gamma_BBC_Fin_4": {
+                    "markers": ["Gamma_B_4","Gamma_top_4"],
+                    "Tref": "373.15",
+                    "sigma": "5.67e-12"
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "heat": {
+            "Exports": {
+                "fields":["temperature","pid"],
+                "expr": {
+                    "T_C": "heat_T-273.15:heat_T"
+                }
+            },
+            "Measures": {
+                "Points": {
+                    "T_1": {
+                        "coord": "{0.5, 0.5, 0.75*1 + 0.5*0.25}",
+                        "expressions": {
+                            "T1_C": "heat_T-273.15:heat_T"
+                        }
+                    },
+                    "T_2": {
+                        "coord": "{0.5, 0.5, 0.75*2 + 0.5*0.25}",
+                        "expressions": {
+                            "T1_C": "heat_T-273.15:heat_T"
+                        }
+                    },
+                    "T_3": {
+                        "coord": "{0.5, 0.5, 0.75*3 + 0.5*0.25}",
+                        "expressions": {
+                            "T1_C": "heat_T-273.15:heat_T"
+                        }
+                    },
+                    "T_4": {
+                        "coord": "{0.5, 0.5, 0.75*4 + 0.5*0.25}",
+                        "expressions": {
+                            "T1_C": "heat_T-273.15:heat_T"
+                        }
+                    }
+                },
+                "Statistics": {
+                    "T_%1%_C": {
+                        "type": ["min","max","mean"],
+                        "expr": "heat_T-273.15:heat_T",
+                        "markers":["%1%"],
+                        "index1":["Gamma_root","Fin_1","Fin_2","Fin_3","Fin_4"]
+                    },
+                    "Surface_Gamma_ext": {
+                        "type": "integrate",
+                        "expr": "1",
+                        "markers": "Gamma_ext"
+                    }
+                }
+            }
+        }
+    }
+}

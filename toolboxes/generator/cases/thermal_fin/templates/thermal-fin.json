@@ -3,6 +3,19 @@
 {
     "Name": "Themal Fin {{ dim }}d",
     "ShortName":"ThermalFin{{ dim }}d",
+
+    "Meshes":
+    {
+        "heat":
+        {
+            "Import":
+            {
+                "filename": "$cfgdir/fin.geo",
+                "partition":1
+            }
+        }
+    },
+
     "Parameters":
     {
         {% for item in fins %}"k_{{ item }}":
@@ -24,6 +37,7 @@
             "max":"1"
         }
     },
+
     "Materials":
     {
         {% for item in fins %}"Fin_{{ item }}":
@@ -55,30 +69,32 @@
     },
     "BoundaryConditions":
     {
-        "temperature":
+        "heat":
         {
-            "Neumann":
+            "flux":
             {
-                "Gamma_root":
-                {
-                    "expr":"1"     // according to doc : -k nabla T.n = g
-                }
+                "Gamma_root": { "expr":"1" }
             },
-            "Robin":
+            "convective_heat_flux":
             {
                 "Gamma_ext":
                 {
-                    "expr1":"Bi:Bi",
-                    "expr2":"0"
+                    "h": "Bi:Bi",
+                    "Text": "0"
                 }
             }
         }
     },
+
     "PostProcess":
     {
-        "Exports":
+        "use-model-name":1,
+        "heat" :
         {
-            "fields":["temperature","pid"]
+            "Exports":
+            {
+                "fields": ["temperature", "pid", "marker"]
+            }
         }
     }
 }

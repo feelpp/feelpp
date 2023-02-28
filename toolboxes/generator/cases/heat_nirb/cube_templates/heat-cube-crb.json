@@ -1,0 +1,18 @@
+{
+
+    "nirb":
+    {
+        "H": 0.1,
+        "h": "H**2:H",
+        "dim": {{dim}},
+        "order": 1,
+        "toolboxType": "heat",
+        "finemesh_path": "$cfgdir/cube.geo",
+        "model_path": "$cfgdir/heat-cube.json",
+        "doRectification": true,
+        "doBiorthonormal": false,
+        "nbSnapshots": 10,
+        "greedy-generation": true,
+        "outdir": "results/rect/greedy"
+    }
+}
