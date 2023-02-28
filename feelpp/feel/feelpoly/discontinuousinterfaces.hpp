@@ -333,7 +333,7 @@ public:
                 M_dof.mapGDof().insert( *it );
             }
 
-            DVLOG(2) << "size dictionnary = " << M_dof.mapGDof().size() << " next_free_dof = " << next_free_dof+n_dof << "\n";
+            DVLOG(2) << "size dictionary = " << M_dof.mapGDof().size() << " next_free_dof = " << next_free_dof+n_dof << "\n";
 #endif
 #endif
 

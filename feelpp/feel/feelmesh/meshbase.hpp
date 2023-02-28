@@ -863,7 +863,7 @@ private:
 protected:
 
     /**
-     * marker name dictionnary ( std::string -> <int,int> )
+     * marker name dictionary ( std::string -> <int,int> )
      * get<0>() provides the id
      * get<1>() provides the topological dimension
      */

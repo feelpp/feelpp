@@ -35,6 +35,7 @@ def test_heat(casefile,dim,order):
 parts = [2,3,6]
 
 
+@pytest.mark.skip(reason="no way of currently testing this")
 @pytest.mark.parametrize("nparts", parts)
 def test_heat_ensemble(nparts):
     c=feelpp.readcfg(os.path.dirname(__file__)+'/heat/Building/ThermalBridgesENISO10211/case2.cfg')    

@@ -1,0 +1,100 @@
+{
+    "Name": "Falling two disks",
+    "ShortName":"Falling two disks",
+    "Models":
+    {
+        "equations":"Navier-Stokes",
+        "gravity":
+        {
+            "enable":1,
+            "expr":"{0,-980}:t" 
+        }
+    },
+    "Materials":
+    {
+        "Fluid":{
+            "physics":"fluid",
+            "rho":"1",
+            "mu":"0.1"
+        },
+        "DFirst":{
+            "physics":"body",
+            "rho":"1.25"
+        }
+    },
+    "Meshes":
+    {
+        "fluid":
+        {
+            "DistanceToRange":
+            {
+                "Dist12":
+                {
+                    "markers":["DFirst","DSecond"]
+                }
+            }
+        } 
+    },
+    "BoundaryConditions":
+    {
+        "velocity":
+        {
+            "Dirichlet":
+            {
+                "BoxWalls":
+                {
+                    "expr":"{0,0}"
+                }
+            }
+        },
+        "fluid":
+        {
+            "body":
+            {
+                "DiskFirst":
+                {
+                    "markers":["DiskFirst"],
+                    "materials":
+                    {
+                        "names":["DFirst"]
+                    }
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+
+        "Measures":
+        {
+            //"Statistics":
+            //{
+                //"G%1_2%_%1_1%": 
+                //{
+                    //"type":"mean", 
+                    //"expr":"%1_1%:%1_1%", 
+                    //"markers":"%1_2%",
+                    //"index1":[["x","DiskFirst"],["x","DiskSecond"],["y","DiskFirst"],["y","DiskSecond"]] 
+                //}
+            //},
+
+            "Quantities":
+            {
+
+                "names":["all"],
+                "fields":["velocity","pressure"]
+            }
+        },
+
+        "Exports":
+        {
+            "fields":["velocity","pressure","pid","displacement"]
+            //"expr": 
+            //{
+                //"F12":"{0,c/eps*max(0,5)*max(0,5)}:c:eps:rho",
+                //"dist1":"meshes_body_distanceToRange_Dist12:meshes_body_distanceToRange_Dist12"
+            //}
+        }
+    }
+
+}

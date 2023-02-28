@@ -321,7 +321,7 @@ public:
 
         //for( int k = 0; k < nDim; ++k )
         {
-            // loopover the each edge entities and add the correponding functionals
+            // loopover the each edge entities and add the corresponding functionals
             for ( int e = M_convex_ref.entityRange( nDim-1 ).begin();
                     e < M_convex_ref.entityRange( nDim-1 ).end();
                     ++e )

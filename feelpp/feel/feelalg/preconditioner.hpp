@@ -360,7 +360,7 @@ protected:
 
     /**
      * The matrix P... ie the matrix to be preconditioned.
-     * This is often the actual system matrix of a linear sytem.
+     * This is often the actual system matrix of a linear system.
      */
     sparse_matrix_ptrtype  M_matrix;
 

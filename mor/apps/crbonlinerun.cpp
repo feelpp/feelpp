@@ -61,7 +61,8 @@ loadPlugin( std::string const& name, std::string const& id )
     auto plugin = factoryCRBPlugin( pluginname, pluginlibname, dirname );
     std::cout << "Loaded the plugin " << plugin->name() << std::endl;
     bool loadFiniteElementDatabase = boption(_name="crb.load-elements-database");
-
+    if(boption(_name="export-solution"))
+        loadFiniteElementDatabase=true;
     std::string jsonfilename = (fs::path(Environment::expand( soption(_name="plugin.db") )) / fs::path(pluginname) / fs::path(id) / (pluginname+".crb.json")).string() ;
 
     std::cout << " . using db " << jsonfilename << std::endl;
@@ -204,6 +205,8 @@ runCrbOnline( std::vector<std::shared_ptr<Feel::CRBPluginAPI>> plugin )
     using namespace Feel;
 
     bool loadFiniteElementDatabase = boption(_name="crb.load-elements-database");
+    if(boption(_name="export-solution"))
+        loadFiniteElementDatabase=true;
 
     Eigen::VectorXd/*typename crb_type::vectorN_type*/ time_crb;
     double online_tol = 1e-2;//Feel::doption(Feel::_name="crb.online-tolerance");
@@ -366,8 +369,11 @@ loadPlugin()
     }
     auto meta = crbmodelDB.loadDBMetaData( attribute, attribute_data );
     std::cout << "-- crbmodelDB::dbRepository()=" << crbmodelDB.dbRepository() << std::endl;
-    
-    return crbmodelDB.loadDBPlugin( meta, soption(_name="crbmodel.db.load" ) );
+
+    if(boption(_name="export-solution"))
+        return crbmodelDB.loadDBPlugin( meta, "all" );
+    else
+        return crbmodelDB.loadDBPlugin( meta, soption(_name="crbmodel.db.load" ) );
 }
 
 int main(int argc, char**argv )
@@ -402,6 +408,7 @@ int main(int argc, char**argv )
             ( "query", po::value<std::string>(), "query string for mongodb DB feelpp.crbdb" )
             ( "compare", po::value<std::string>(), "compare results from query in mongodb DB feelpp.crbdb" )
             ( "list", "list registered DB in mongoDB  in feelpp.crbdb" )
+            ( "export-solution",po::value<bool>()->default_value(false), "export the solutions for visualization")
             ;
         po::options_description crbonlinerunliboptions( "crb online run lib options" );
     #if 1

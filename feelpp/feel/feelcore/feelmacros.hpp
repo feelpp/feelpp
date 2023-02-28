@@ -235,7 +235,7 @@
 
 
    which means that GCC will not add any of the zero's for padding (for
-   memory alignement) and make variables or fields immediately next to
+   memory alignment) and make variables or fields immediately next to
    each other. For example, here are some things I tried out -- I created
    a C source file - \c test.c
 

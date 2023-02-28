@@ -49,7 +49,7 @@ remesh_options( std::string const& prefix )
         ( prefixvm( prefix, "remesh.hsiz").c_str(),Feel::po::value<double>(), "[val], Constant mesh size")
 
         ( prefixvm( prefix, "remesh.nosizreq").c_str(),Feel::po::value<int>(), "[0/1], Allow/avoid overwritten of sizes at required points (advanced usage)")
-        ( prefixvm( prefix, "remesh.hgradreq").c_str(),Feel::po::value<double>(), "[val], Control gradation on required entites (advanced usage)")
+        ( prefixvm( prefix, "remesh.hgradreq").c_str(),Feel::po::value<double>(), "[val], Control gradation on required entities (advanced usage)")
         ( prefixvm( prefix, "remesh.hausd").c_str(),Feel::po::value<double>(), "[val], Control global Hausdorff distance (on all the boundary surfaces of the mesh)")
         ;
     // clang-format on
