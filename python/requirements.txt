@@ -1,0 +1,6 @@
+nbmake==1.4.1
+pytest
+petsc4py
+slepc4py
+plotly
+gmsh
