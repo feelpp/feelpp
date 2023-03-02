@@ -9,7 +9,7 @@ try:
 except ImportError:
     pass
 
-def simulate(toolbox, export=True, buildModelAlgebraicFactory=True,data=None,verbose=0):
+def simulate(toolbox, export=True, buildModelAlgebraicFactory=True, data=None, verbose=0):
     """simulate a toolbox
 
     simulate execute the toolbox in steady or transient case and export the results
@@ -49,7 +49,7 @@ def simulate(toolbox, export=True, buildModelAlgebraicFactory=True,data=None,ver
         for step in steps:
             if feelpp.Environment.isMasterRank() and verbose > 0:
                 print("============================================================\n")
-                print("time simulation: {}s/{}s with step: {}".format(toolbox.time(),toolbox.timeFinal(),toolbox.timeStep()))
+                print("time simulation: {}s/{}s with step: {}".format(toolbox.time(), toolbox.timeFinal(), toolbox.timeStep()))
                 print("============================================================\n")
             toolbox.solve()
             if not toolbox.postProcessMeasures().empty():
@@ -57,4 +57,4 @@ def simulate(toolbox, export=True, buildModelAlgebraicFactory=True,data=None,ver
             if export:
                 toolbox.exportResults()
             toolbox.updateTimeStep()
-    return [toolbox.checkResults(),meas]
+    return [toolbox.checkResults(), meas]
