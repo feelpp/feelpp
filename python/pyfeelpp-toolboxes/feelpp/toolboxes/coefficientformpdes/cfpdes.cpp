@@ -87,6 +87,9 @@ void defSM(py::module &m)
 
         .def( "setMesh", &toolbox_t::setMesh, "set the mesh", py::arg( "mesh" ) )
         .def( "updateParameterValues", &toolbox_t::updateParameterValues, "update parameter values" );
+
+        .def( "fieldUnknown", &toolbox_t::fieldUnknown, "outputs the solution field")
+        .def( "fieldUnknownPtr", &toolbox_t::fieldUnknownPtr, "outputs the pointer to the solution field")
 }
 
 
