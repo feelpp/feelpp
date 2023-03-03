@@ -1,0 +1,36 @@
+import feelpp
+import feelpp.meshmover as mm
+from feelpp.measure import measure
+
+def run(m, geo):
+    
+    mesh_name, dim, e_meas, e_s_1, e_s_2, e_s_bdy = geo
+    mesh = feelpp.load(m, mesh_name, 0.1)
+
+    Xh = feelpp.functionSpace(mesh=mesh,space="Pchv")
+    u = Xh.element()
+    M=measure(range=feelpp.elements(mesh))
+
+    if mesh.dimension()==2:
+        assert(abs(M-2)<1e-10)
+        u.on(range=feelpp.elements(mesh), expr=feelpp.expr("{x,y}:x:y",row=2))  
+    else:
+        assert(abs(M-1)<1e-10)
+        u.on(range=feelpp.elements(mesh), expr=feelpp.expr("{x,y,z}:x:y:z",row=3))  
+      
+
+    newmesh = mm.meshMove(mesh,u)
+    M=measure(range=feelpp.elements(newmesh))   
+
+    # Equal to 8 in 2d and 3d
+    assert(abs(M-8)<1e-10)
+
+def test_meshmove(init_feelpp):
+    feelpp.Environment.changeRepository(
+        directory="pyfeelpp-tests/integrate")
+    geo = {
+        '2': feelpp.create_rectangle(),# [0,1]x[0,2]
+        '3': feelpp.create_box(), # [0,1]x[0,2]x[0,0.5]
+    }
+    run(feelpp.mesh(dim=2), geo['2'])
+    run(feelpp.mesh(dim=3, realdim=3), geo['3'])

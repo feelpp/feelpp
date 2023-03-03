@@ -19,9 +19,10 @@ feelpp_add_pymodule(operators SRCS operators.cpp operators1.cpp operators2.cpp o
 feelpp_add_pymodule(models SRCS models.cpp DESTINATION feelpp )
 feelpp_add_pymodule(quality SRCS quality.cpp DESTINATION feelpp )
 feelpp_add_pymodule(timing SRCS timing.cpp DESTINATION feelpp)
-foreach(MODULE IN ITEMS core feelpp alg mesh discr exporter ls ts vf measure models integrate interpolation operators quality timing)
+feelpp_add_pymodule(meshmover SRCS meshmover.cpp DESTINATION feelpp)
+foreach(MODULE IN ITEMS core feelpp alg mesh discr exporter ls ts vf measure models integrate interpolation operators quality timing meshmover)
   add_dependencies(pyfeelpp _${MODULE})
 endforeach()
 
-set(PYFILES __init__.py integrate.py measure.py quality.py interpolation.py operators.py timing.py )
+set(PYFILES __init__.py integrate.py measure.py quality.py interpolation.py operators.py timing.py meshmover.py)
 install(FILES ${PYFILES} DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp)
