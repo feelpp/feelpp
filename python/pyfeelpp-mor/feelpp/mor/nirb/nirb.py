@@ -86,6 +86,14 @@ class ToolboxModel():
         if self.worldcomm.isMasterRank():
             print(f"[NIRB] Initialization done")
             print(f"[NIRB] Number of nodes on the fine mesh : {self.tbFine.mesh().numGlobalPoints()}")
+    
+    def setTimeToolbox(self,tb, timeInit=0, timeFinal=1, timeStep=0.1):
+        assert self.time_dependent, f"set time dependent to True"
+        tb.setStationary(False)
+        tb.setTimeInitial(timeInit)
+        tb.setTimeStep(timeStep)
+        tb.setTimeFinal(timeFinal)
+        tb.init()
 
     def setModel(self, tb):
         """Set model from a ToolboxModel object already initialized
@@ -202,6 +210,37 @@ class ToolboxModel():
         tb.solve()
         return self.getField(tb)
 
+    def getTimeToolboxSolution(self, tb, mu, verbose=False):
+        """Solve non stationary problem associate to a toolbox
+
+        Parameters
+        ----------
+        tb : initialized feelpp toolbox
+        mu : parameterSpaceElement
+             parameter
+        verbose : bool 
+                wether to display infos or not 
+
+        Results : list 
+            list of all time solution 
+        """
+        assert not tb.isStationary(), f"set toolbox time dependent"
+
+        listSols = []
+        assembleToolbox(tb, mu)
+        tb.startTimeStep()
+        while not tb.timeStepBase().isFinished():
+            if verbose :
+                if self.worldcomm.isMasterRank():
+                    print("============================================================\n")
+                    print("time simulation: {}s/{}s with step: {}".format(tb.time(),tb.timeFinal(),tb.timeStep()))
+                    print("============================================================\n")
+            tb.solve()
+            listSols.append(self.getField(tb))
+            tb.updateTimeStep()
+
+        return listSols
+            
 
     def createInterpolator(self, domain_tb, image_tb):
         """Create an interpolator between two toolboxes
@@ -286,6 +325,8 @@ class nirbOffline(ToolboxModel):
         self.l2ProductBasis = [] # list containing the vector given the column of (l2ScalarProductMatrix @ reeducedBasis)
         self.reducedBasis = None # list containing the vector of reduced basis function
         self.N = 0 # number of modes
+        self.Ntime = None # number of time iteration 
+        self.Nmu   = None # number of parameter selected to construct basis function 
         self.correlationMatrix = None # correlation matrix of the snapshot Mat[i,j] = <U_i, U_j>
 
         if self.worldcomm.isMasterRank():
@@ -400,8 +441,6 @@ class nirbOffline(ToolboxModel):
         if self.doRectification:
             computeCoarse=True
 
-        self.fineSnapShotList = []
-        self.coarseSnapShotList = []
 
         if Xi_train is None:
             s = self.Dmu.sampling()
@@ -417,23 +456,60 @@ class nirbOffline(ToolboxModel):
             self.worldcomm.globalComm().Bcast(indice_mu, root=0)
             vector_mu = [Xi_train[i] for i in list(indice_mu)]
 
-        if computeCoarse:
-            assert self.tbCoarse is not None, f"Coarse toolbox needed for computing coarse Snapshot. set doRectification->True"
-            for mu in vector_mu:
-                if self.worldcomm.isMasterRank():
-                    print(f"Running simulation with mu = {mu}")
-                self.fineSnapShotList.append(self.getToolboxSolution(self.tbFine, mu))
-                self.coarseSnapShotList.append(self.getToolboxSolution(self.tbCoarse, mu))
+            
+        if not self.time_dependent : 
+            self.fineSnapShotList = []
+            self.coarseSnapShotList = []
 
-        else:
-            for mu in vector_mu:
-                if self.worldcomm.isMasterRank():
-                    print(f"Running simulation with mu = {mu}")
-                self.fineSnapShotList.append(self.getToolboxSolution(self.tbFine, mu))
+            if computeCoarse:
+                assert self.tbCoarse is not None, f"Coarse toolbox needed for computing coarse Snapshot. set doRectification->True"
+                for i,mu in enumerate(vector_mu):
+                    if self.worldcomm.isMasterRank():
+                        print(f"Running simulation with mu_{i} = {mu}")
+                    self.fineSnapShotList.append(self.getToolboxSolution(self.tbFine, mu))
+                    self.coarseSnapShotList.append(self.getToolboxSolution(self.tbCoarse, mu))
 
-        if self.worldcomm.isMasterRank():
-            print(f"[NIRB] Number of snapshot computed : {len(self.fineSnapShotList)}" )
+            else:
+                for i,mu in enumerate(vector_mu):
+                    if self.worldcomm.isMasterRank():
+                        print(f"Running simulation with mu_{i} = {mu}")
+                    self.fineSnapShotList.append(self.getToolboxSolution(self.tbFine, mu))
+                
+            self.Nmu = len(self.fineSnapShotList)
 
+            if self.worldcomm.isMasterRank():
+                print(f"[NIRB] Number of snapshot computed : {self.Nmu}" )
+        else :
+            
+            self.Ntime = math.floor((self.tbFine.timeFinal() - self.tbFine.timeInitial())/self.tbFine.timeStep())
+            self.Nmu = len(vector_mu)
+
+            self.fineSnapShotList = {n:[] for n in range(self.Ntime)}
+            self.coarseSnapShotList = {n:[] for n in range(self.Ntime)}
+
+            if computeCoarse:
+                assert self.tbCoarse is not None, f"Coarse toolbox needed for computing coarse Snapshot. set doRectification->True"
+                for i,mu in enumerate(vector_mu):
+                    if self.worldcomm.isMasterRank():
+                        print(f"Running time simulation with mu_{i} = {mu}")
+                    
+                    lmufine = self.getTimeToolboxSolution(self.tbFine, mu)
+                    lmucoarse = self.getTimeToolboxSolution(self.tbCoarse, mu)
+                    for n in range(len(lmufine)):
+                        self.fineSnapShotList[n].append(lmufine[n]) 
+                        self.coarseSnapShotList[n].append(lmucoarse[n])
+                
+            else:
+                for i,mu in enumerate(vector_mu):
+                    if self.worldcomm.isMasterRank():
+                        print(f"Running simulation with mu_{i} = {mu}")
+                    lmufine = self.getTimeToolboxSolution(self.tbFine, mu)
+                    for n in range(len(lmufine)):
+                        self.fineSnapShotList[n].append(lmufine[n]) 
+
+            if self.worldcomm.isMasterRank():
+                print(f"[NIRB] Number of snapshot computed (Nmu x Ntime) : {self.Nmu}x{self.Ntime} = {self.Ntime*self.Nmu}" )
+            
         return vector_mu
 
     def getReducedSolution(self, coarseSolutions, mu, N):
