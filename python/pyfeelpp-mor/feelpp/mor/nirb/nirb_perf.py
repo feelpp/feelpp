@@ -107,8 +107,12 @@ def ComputeErrorSampling(nirb_on, Nb=None, Nsample = 1, Xi_test=None, samplingTy
     for i, mu in enumerate(tqdm(mus,desc=f"[NIRB] ComputeErrorSampling", ascii=False, ncols=120)):
 
         uH = nirb_on.getInterpSol(mu)
-        uh = nirb_on.getToolboxSolution(nirb_on.tbFine, mu)
-        
+        # uh = nirb_on.getToolboxSolution(nirb_on.tbFine, mu)
+        if not nirb_on.time_dependent:
+            uh = nirb_on.getToolboxSolution(nirb_on.tbFine, mu)
+        else :
+            uh = nirb_on.getTimeToolboxSolution(nirb_on.tbFine, mu)[nirb_on.Ntime-1]
+            
         uNH = getNirbProjection(nirb_on, uH, Nb=Nb)
         uNHr = getNirbProjection(nirb_on, uH, doRectification=True, Nb=Nb, regulParam=regulParam)
         uNh = getNirbProjection(nirb_on, uh, Nb=Nb)
