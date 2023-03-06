@@ -169,7 +169,7 @@ def ComputeErrorsH(nirb_on, tbRef, mu, path=None, name=None):
 
     return error
 
-def getNirbProjection(nirb_on, u, Nb=None, doRectification=False, regulParam=1.-10):
+def getNirbProjection(nirb_on, u, Nb=None, doRectification=False, regulParam=1.-10, itr=None):
     """Get the projection of a given discrete function in the reduced space with or without rectification
 
     Args
@@ -179,22 +179,27 @@ def getNirbProjection(nirb_on, u, Nb=None, doRectification=False, regulParam=1.-
         Nb (int, optional) : Size of reduced space, by default None. If None, the whole basis is used
         doRectification (bool) : default to True
         regulParam(float, optionnal) : regularization parameter of the rectification pre-process. Defaults to 1.e-10
+        itr (int, optional) : the time iteration. Defaults to None. 
     """
-    if Nb is None : Nb=nirb_on.N
+    if Nb is None : Nb=nirb_on.Nmu
+    if (itr is None) and (nirb_on.time_dependent) : itr = nirb_on.Ntime-1  
     if doRectification:
         assert nirb_on.doRectification, f"set doRectification from nirb_on class"
 
-    coef = nirb_on.getCompressedSol(solution=u, Nb=Nb)
+    coef = nirb_on.getCompressedSol(solution=u, Nb=Nb, itr=itr)
 
     uNh = nirb_on.Xh.element()
     uNh.setZero()
 
     if doRectification:
         if Nb not in nirb_on.RectificationMat :
-                nirb_on.RectificationMat[Nb] = nirb_on.getRectification(nirb_on.coeffCoarse, nirb_on.coeffFine, Nb=Nb, lambd=regulParam)
+                nirb_on.RectificationMat[Nb] = nirb_on.getRectification(nirb_on.coeffCoarse, nirb_on.coeffFine, Nb=Nb, lambd=regulParam, itr=itr)
         coef = nirb_on.RectificationMat[Nb] @ coef
     
-    for i in range(Nb):
-        uNh.add(float(coef[i]), nirb_on.reducedBasis[i])
-
+    if not nirb_on.time_dependent:
+        for i in range(Nb):
+            uNh.add(float(coef[i]), nirb_on.reducedBasis[i])
+    else :
+        for i in range(Nb):
+            uNh.add(float(coef[i]), nirb_on.reducedBasisTime[itr][i])
     return uNh 
