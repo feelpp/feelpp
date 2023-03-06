@@ -654,7 +654,12 @@ class nirbOffline(ToolboxModel):
         -----
             tolerance(float), optional : tolerance of the eigen value problem target accuracy of the data compression
         """
-        self.reducedBasis, RIC= self.PODReducedBasis(tolerance=tolerance)
+        if not self.time_dependent:
+            self.reducedBasis, RIC= self.PODReducedBasis(tolerance=tolerance)
+        else : 
+            print("NIRB with time dependent")
+            self.reducedBasis, RIC = self.getTimeReducedBasis(tolerance=tolerance)
+
         self.N = len(self.reducedBasis)
         if self.worldcomm.isMasterRank():
             print(f"[NIRB] Number of modes : {self.N}")
@@ -665,7 +670,10 @@ class nirbOffline(ToolboxModel):
         if self.doBiorthonormal:
             self.BiOrthonormalization()
         if self.doRectification:
-            self.coeffCoarse, self.coeffFine = self.coeffRectification()
+            if not self.time_dependent:
+                self.coeffCoarse, self.coeffFine = self.coeffRectification()
+            else :
+                self.coeffCoarse, self.coeffFine = self.coeffRectificationTime()
         return RIC 
 
     def addFunctionToBasis(self, snapshot, tolerance=1e-6):
@@ -691,7 +699,10 @@ class nirbOffline(ToolboxModel):
         if self.doBiorthonormal:
             self.BiOrthonormalization()
         if self.doRectification:
-            self.coeffCoarse, self.coeffFine = self.coeffRectification()
+            if not self.time_dependent:
+                self.coeffCoarse, self.coeffFine = self.coeffRectification()
+            else :
+                self.coeffCoarse, self.coeffFine = self.coeffRectificationTime()
 
 
     def getl2ProductBasis(self):
@@ -708,14 +719,31 @@ class nirbOffline(ToolboxModel):
             vec.addVector(self.reducedBasis[i], self.l2ScalarProductMatrix)
             self.l2ProductBasis.append(vec)
 
+    def getTimeReducedBasis(self,tolerance=1.e-12):
+        
 
-    def PODReducedBasis(self, tolerance=1.e-12):
+        assert type(self.fineSnapShotList)==dict, f"snapshot should be saved on dict"
+
+        reducedBasis = []
+        for n in self.fineSnapShotList.keys():
+            base, ric = self.PODReducedBasis(self.fineSnapShotList[n])
+            self.correlationMatrix = None 
+            reducedBasis.extend(base)
+
+        return reducedBasis, ric  
+
+            
+
+
+    def PODReducedBasis(self,snapshotList=None, tolerance=1.e-12):
         """
         Computes the reducedOrderBasis using the POD algorithm, from a given list of snapshots contained in self.fineSnapShotList
 
         Parameters
         ----------
-            tolerance (float) : tolerance to stop selection of basis (if (1 - RIC)<=tolerance) 
+            tolerance (float) : tolerance to stop selection of basis (if (1 - RIC)<=tolerance)
+            snapshotList (list): list of snapshot to construct the POD reduced basis. Defaults to None 
+            if defaults, we use the precomputed snapshot list of high fidelity solutions  
 
         Returns
         -------
@@ -723,17 +751,19 @@ class nirbOffline(ToolboxModel):
         RIC (list) : Relative innformation content 
         """
 
-        Nsnap = len(self.fineSnapShotList)
+        snapList = self.fineSnapShotList if snapshotList is None else snapshotList 
+        
+        Nsnap = len(snapList)
 
         if self.correlationMatrix == None :
             self.correlationMatrix = np.zeros((Nsnap, Nsnap))            
-            for i, snap1 in enumerate(self.fineSnapShotList):
-                for j, snap2 in enumerate(self.fineSnapShotList):
+            for i, snap1 in enumerate(snapList):
+                for j, snap2 in enumerate(snapList):
                         self.correlationMatrix[i,j] = self.l2ScalarProductMatrix.energy(snap1,snap2)
         else :
-            lastSnap = self.fineSnapShotList[-1]
+            lastSnap = snapList[-1]
             lastCol = np.zeros(Nsnap)
-            for i, snap in enumerate(self.fineSnapShotList[:Nsnap-1]):
+            for i, snap in enumerate(snapList[:Nsnap-1]):
                 lastCol[i] =  self.l2ScalarProductMatrix.energy(snap,lastSnap)
             self.correlationMatrix = np.vstack((self.correlationMatrix, lastCol[:Nsnap-1]))
             self.correlationMatrix = np.column_stack((self.correlationMatrix, lastCol))
@@ -758,7 +788,7 @@ class nirbOffline(ToolboxModel):
             vec = self.Xh.element()
             vec.setZero()
             for j in range(Nsnap):
-                vec.add(eigenVectors[j,i], self.fineSnapShotList[j])
+                vec.add(eigenVectors[j,i], snapList[j])
 
             reducedBasis.append(vec)
             RIC.append(eigenValues[:i].sum() / sum_eigenValues)
@@ -1158,8 +1188,16 @@ class nirbOffline(ToolboxModel):
         coeffFineFile = os.path.join(path, f"coefffine")
         if self.doRectification:
             if self.worldcomm.isMasterRank():
-                np.save(coeffCoarseFile, self.coeffCoarse)
-                np.save(coeffFineFile, self.coeffFine)
+                if not self.time_dependent:
+                    np.save(coeffCoarseFile, self.coeffCoarse)
+                    np.save(coeffFineFile, self.coeffFine)
+                else :
+                    coeffCoarseFile = open(coeffCoarseFile, 'wb')
+                    coeffFineFile = open(coeffFineFile, 'wb')
+                    pickle.dump(self.coeffCoarse, coeffCoarseFile)
+                    pickle.dump(self.coeffFine, coeffFineFile)
+                    coeffFineFile.close()
+                    coeffCoarseFile.close()
 
         self.outdir = os.path.abspath(path)
         if self.worldcomm.isMasterRank():
