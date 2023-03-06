@@ -228,22 +228,6 @@ if __name__ == '__main__':
     
     size = feelpp.Environment.numberOfProcessors()
 
-    
-    ## square4 2D :
-    # config_nirb['coarsemesh_path'] = f"$cfgdir/meshFiles/squareCoarse_p{size}.json"
-    # config_nirb['finemesh_path'] = f"$cfgdir/meshFiles/squareFine_p{size}.json"
-    # idmodel = 's4'
-    
-    ## square9 2D 
-    # config_nirb['coarsemesh_path'] = f"$cfgdir/square9mesh/squareCoarse_p{size}.json"
-    # config_nirb['finemesh_path'] = f"$cfgdir/square9mesh/squareFine_p{size}.json"
-    # idmodel ='s9'
-    
-    ## thermal fin 3D 
-    # config_nirb['coarsemesh_path'] = f"$cfgdir/meshFiles/coarseMesh_p{size}.json"
-    # config_nirb['finemesh_path'] = f"$cfgdir/meshFiles/fineMesh_p{size}.json"
-    
-
     pas = 3
     b = 10+Nbase+pas+1
     baseList = range(10,b, pas)
@@ -274,12 +258,11 @@ if __name__ == '__main__':
     errorfile = f"errors{Nsample}Params_{idd}.csv"
 
     comm.Barrier()
-    Nl = [10]
-    ## for n in Nl, Lambda = 1.E-n
     if convergence : 
         if regulParameter : 
             ## test convergence i respect of regularization parameter 
             Nl = [0, 1, 3, 5, 7, 9, 10, 11, 12, 17]
+            ## for n in Nl, Lambda = 1.E-n
             del nirb_on.RectificationMat[Nglob] 
             for lm in Nl :
                 lmd = 1./10**lm 
