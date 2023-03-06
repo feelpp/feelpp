@@ -11,12 +11,15 @@ import feelpp.operators as FppOp
 import numpy as np
 import feelpp.toolboxes.heat as heat
 import feelpp.toolboxes.fluid as fluid
+import feelpp.toolboxes.core as core
 import feelpp.interpolation as fi
 from tqdm import tqdm
 import random 
 import math
 import pathlib
 from scipy.linalg import eigh
+import pickle
+import json 
 
 
 import os
@@ -28,7 +31,7 @@ class ToolboxModel():
         class containing the common tools associated with the toolbox used
                     in the online and offline parts
     """
-    def __init__(self, dim, H, h, toolboxType, model_path, finemesh_path, coarsemesh_path=None, order=1, **kwargs) -> None:
+    def __init__(self, dim, H, h, toolboxType, model_path, finemesh_path, coarsemesh_path=None, order=1,time_dependent=False, **kwargs) -> None:
         """Initialize the toolbox model class
 
         Args:
@@ -48,6 +51,7 @@ class ToolboxModel():
         self.H = H
         self.h = h if h != "H**2:H" else self.H**2
         self.order = order
+        self.time_dependent = time_dependent
 
         self.toolboxType = toolboxType
         assert self.toolboxType in ["heat", "fluid"], "toolboxType must be 'heat' or 'fluid'"
@@ -791,6 +795,46 @@ class nirbOffline(ToolboxModel):
 
         return coeffCoarse, coeffFine
 
+    def coeffRectificationTime(self):
+        """ Compute the two matrixes used to get rectification matrix R on time iteration. 
+            The matrixes are given by :
+
+                B_h[i,j] = <U_h(s_i),phi_j >
+                B_H[i,j] = <U_H(s_i),phi_j >
+
+        Returns:
+        --------
+                B_h and B_H : the matrix of L2 scalar product between basis function and fine and coarse snapshot
+        """
+        assert len(self.reducedBasis) !=0, f"need computation of reduced basis"
+        assert type(self.fineSnapShotList)==dict, f"snapshot should be saved on dict"
+
+        interpolateOperator = self.createInterpolator(self.tbCoarse, self.tbFine)
+        InterpCoarseSnaps = {}
+        for n in self.coarseSnapShotList.keys():
+            InterpCoarseSnaps[n] = []
+            for snap in self.coarseSnapShotList[n]:
+                InterpCoarseSnaps[n].append(interpolateOperator.interpolate(snap))
+
+        
+        basemu={}
+        for i,n in enumerate(self.coarseSnapShotList.keys()):
+            basemu[n]= self.reducedBasis[i*self.Nmu:(i+1)*self.Nmu]
+            
+        coeffCoarse = {}
+        coeffFine   = {}
+        for n in range(self.Ntime):
+            coeffCoarse[n]=np.zeros((self.Nmu,self.Nmu))
+            coeffFine[n]  =np.zeros((self.Nmu,self.Nmu))
+
+        for n in range(self.Ntime):
+            for i in range(self.Nmu):
+                for j in range(self.Nmu):
+                    coeffFine[n][i,j] = self.l2ScalarProductMatrix.energy(self.fineSnapShotList[n][i],basemu[n][j])
+                    coeffCoarse[n][i,j] = self.l2ScalarProductMatrix.energy(InterpCoarseSnaps[n][i],basemu[n][j])
+
+        return coeffCoarse, coeffFine
+    
     """
     Check convergence
     """
