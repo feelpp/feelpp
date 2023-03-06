@@ -1476,7 +1476,7 @@ class nirbOnline(ToolboxModel):
             self.N = nbSnap
             self.Nmu = nbSnap
         else :
-            self.Nmu = nbSnap
+            self.Nmu = nbSnap if nbSnap<self.Nmu else self.Nmu 
             self.reducedBasisTime={n:[] for n in range(self.Ntime)}
             self.l2ProductBasisTime={n:[] for n in range(self.Ntime)}
             for n in range(self.Ntime):
