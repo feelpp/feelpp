@@ -270,6 +270,9 @@ if __name__ == '__main__':
 
     nirb_on = nirbOnline(**config_nirb)
     nirb_on.initModel()
+    if nirb_on.time_dependent:
+        nirb_on.setTimeToolbox(nirb_on.tbFine,timeStep=config_nirb['fineTimeStep'], timeFinal=config_nirb['timeFinal'])
+        nirb_on.setTimeToolbox(nirb_on.tbCoarse,timeStep=config_nirb['coarseTimeStep'], timeFinal=config_nirb['timeFinal'])
 
     ## load offline datas only once 
     lmd = 1.e-10
@@ -278,19 +281,20 @@ if __name__ == '__main__':
     assert err == 0, "loadData failed"
     idd = str(idmodel) + f"lmd{10}"
     errorfile = f"errors{Nsample}Params_{idd}.csv"
+    if os.path.isfile(errorfile) : os.remove(errorfile)
 
     comm.Barrier()
-    Nl = [10]
-    ## for n in Nl, Lambda = 1.E-n
     if convergence : 
         if regulParameter : 
             ## test convergence i respect of regularization parameter 
             Nl = [0, 1, 3, 5, 7, 9, 10, 11, 12, 17]
+            ## for n in Nl, Lambda = 1.E-n
             del nirb_on.RectificationMat[Nglob] 
             for lm in Nl :
                 lmd = 1./10**lm 
                 idd = str(idmodel) + f"lmd{lm}"
                 errorfile = f"errors{Nsample}Params_{idd}.csv"
+                if os.path.isfile(errorfile) : os.remove(errorfile)
                 ## Get convergence error in respect to basis function     
                 for N in baseList:
                     N = int(N)
