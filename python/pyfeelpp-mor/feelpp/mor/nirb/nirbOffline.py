@@ -31,7 +31,6 @@ if __name__ == "__main__":
     config_nirb = feelpp.readJson(nirb_file)['nirb']
 
     nbSnap=args.N
-    stationary = args.time
 
     bo = [False, True]
     convergence = bo[args.convergence]
@@ -123,6 +122,7 @@ if __name__ == "__main__":
     nirb_off.writeOfflineInfos()
     
     if nirb_off.worldcomm.isMasterRank():
+        print(f"[NIRB] offline parameters :")
         print(json.dumps(info, sort_keys=True, indent=4))
         print(f"[NIRB] Offline Elapsed time = ", finish-start)
         print(f"[NIRB] doRectification : {nirb_off.doRectification}, doGreedy : {nirb_off.doGreedy}")

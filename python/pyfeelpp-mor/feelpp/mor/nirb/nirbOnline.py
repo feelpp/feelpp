@@ -47,6 +47,8 @@ if __name__ == "__main__":
     
     doGreedy = config_nirb['greedy-generation']
     doRectification = config_nirb['doRectification']
+    time_dependent = config_nirb['time_dependent']
+
     rectPath = ["noRect", "Rect"][doRectification]
     greedyPath = ["noGreedy", "Greedy"][doGreedy]
 
@@ -57,6 +59,9 @@ if __name__ == "__main__":
 
     nirb_on = nirbOnline(**config_nirb)
     nirb_on.initModel()
+    if nirb_on.time_dependent:
+        nirb_on.setTimeToolbox(nirb_on.tbFine,timeStep=config_nirb['fineTimeStep'], timeFinal=config_nirb['timeFinal'])
+        nirb_on.setTimeToolbox(nirb_on.tbCoarse,timeStep=config_nirb['coarseTimeStep'], timeFinal=config_nirb['timeFinal'])
 
     start= time()
 
@@ -76,7 +81,11 @@ if __name__ == "__main__":
     uHh = nirb_on.getOnlineSol(mu)
     finish = time()
 
-    uh = nirb_on.getToolboxSolution(nirb_on.tbFine, mu)
+    if not nirb_on.time_dependent:
+        uh = nirb_on.getToolboxSolution(nirb_on.tbFine, mu)
+    else:
+        uh = nirb_on.getTimeToolboxSolution(nirb_on.tbFine, mu)[nirb_on.Ntime-1]
+
     error = nirb_on.normMat(uHh - uh)
     
     if nirb_on.worldcomm.isMasterRank():
