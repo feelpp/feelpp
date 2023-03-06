@@ -250,7 +250,8 @@ if __name__ == '__main__':
     
 
     pas = 3
-    baseList = range(10,Nbase, pas)
+    b = 10+Nbase+pas+1
+    baseList = range(10,b, pas)
 
     Dmu = loadParameterSpace(model_path)
     ## get distinct training and testing sample 
@@ -261,13 +262,17 @@ if __name__ == '__main__':
     nirb_off = nirbOffline(**config_nirb, initCoarse=doGreedy)
     nirb_off.initModel()
     resOffline = offline(nirb_off, RESPATH, doGreedy, baseList[-1], Xi_train=Xi_train)
+
+    assert os.path.isfile("./nirbOfflineInfos.json"), f"Missed file : ./nirbOfflineInfos.json"
+    nirb_file = feelpp.Environment.expand("./nirbOfflineInfos.json")
+    config_nirb= feelpp.readJson(nirb_file)
+
     nirb_on = nirbOnline(**config_nirb)
     nirb_on.initModel()
 
     ## load offline datas only once 
     lmd = 1.e-10
     Nglob = nirb_off.N
-    Nglob = 97
     err = nirb_on.loadData(nbSnap=Nglob, path=RESPATH, regulParam=lmd)
     assert err == 0, "loadData failed"
     idd = str(idmodel) + f"lmd{10}"
