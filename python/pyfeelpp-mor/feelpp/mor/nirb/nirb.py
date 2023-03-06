@@ -237,7 +237,10 @@ class ToolboxModel():
         info["h"] = self.h
         info["order"] = self.order
         info["toolboxType"] = self.toolboxType
-        info["dimension"] = self.dimension
+        info["dim"] = self.dimension
+        info["model_path"] = self.model_path
+        info["finemesh_path"] = self.finemesh_path
+        info["coarsemesh_path"] = self.coarsemesh_path
         if self.outdir is not None:
             info["outdir"] = self.outdir
         return info
@@ -319,10 +322,30 @@ class nirbOffline(ToolboxModel):
         info = self.getToolboxInfos()
         info["doRectification"] = self.doRectification
         info["doBiorthonormal"] = self.doBiorthonormal
-        info["doGreedy"] = self.doGreedy 
+        info["greedy-generation"] = self.doGreedy 
         info["numberOfBasis"] = self.N
-        info["outdir"] = self.outdir 
+        info["outdir"] = self.outdir
+        info["time_dependent"] = self.time_dependent 
+        info["Nmu"] = self.Nmu
+        info["Ntime"] = self.Ntime
+        info["fineTimeStep"] = self.tbFine.timeStep()
+        info["coarseTimeStep"] = self.tbCoarse.timeStep()
+        info["timeFinal"] = self.tbFine.timeFinal()
         return info
+
+    def writeOfflineInfos(self):
+        """write offline infos on Json file named : nirbOfflineInfos.json
+
+        """ 
+
+        file = os.path.join("./nirbOfflineInfos.json")
+
+        info = self.getOfflineInfos()
+
+        if self.worldcomm.isMasterRank():
+            with open(file, "w") as outfile:
+                json.dump(info, outfile)    
+            print(f"[NIRB] Offline infos are saved on : {file}")
 
     def BiOrthonormalization(self):
         """Bi-orthonormalization of reduced basis
@@ -983,7 +1006,9 @@ class nirbOnline(ToolboxModel):
 
         self.l2ProductBasis = None
         self.reducedBasis = None
-        self.N = 0
+        self.N = kwargs['numberOfBasis']
+        self.Ntime = kwargs['Ntime']
+        self.Nmu = kwargs['Nmu']
         self.RectificationMat = {}      # Dictionnary of rectification matrices : RectificationMat[Nb] for basis of size Nb
         self.coeffCoarse = None         # Coefficients for the rectification matrix
         self.coeffFine = None
@@ -1174,12 +1199,13 @@ class nirbOnline(ToolboxModel):
         self.l2ProductBasis = []
 
         if nbSnap is None:
-            import glob
-            Nreduce = len(glob.glob(os.path.join(reducedPath, "*.h5")))
-            Nl2 = len(glob.glob(os.path.join(l2productPath, "*.h5")))
+            nbSnap = self.Nmu 
+            # import glob
+            # Nreduce = len(glob.glob(os.path.join(reducedPath, "*.h5")))
+            # Nl2 = len(glob.glob(os.path.join(l2productPath, "*.h5")))
 
-            assert Nreduce == Nl2, f"different number of files, {Nreduce} != {Nl2}"
-            nbSnap = Nreduce
+            # assert Nreduce == Nl2, f"different number of files, {Nreduce} != {Nl2}"
+            # nbSnap = Nreduce
 
         for i in range(nbSnap):
             vec = self.Xh.element()

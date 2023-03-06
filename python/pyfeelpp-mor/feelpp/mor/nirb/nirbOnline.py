@@ -27,9 +27,9 @@ if __name__ == "__main__":
     toolboxType = cfg['nirb']['toolboxType']
     e = init_feelpp_environment(toolboxType, config_file)
 
-    nirb_file = feelpp.Environment.expand(cfg['nirb']['filename'])
-    config_nirb = feelpp.readJson(nirb_file)['nirb']
-
+    assert os.path.isfile("./nirbOfflineInfos.json"), f"Missed file : ./nirbOfflineInfos.json"
+    nirb_file = feelpp.Environment.expand("./nirbOfflineInfos.json")
+    config_nirb= feelpp.readJson(nirb_file)
 
     greedy = args.greedy 
     expo = args.exporter
@@ -41,7 +41,7 @@ if __name__ == "__main__":
 
     nbSnap=args.N
     if nbSnap==None:
-        nbSnap = config_nirb['nbSnapshots']
+        nbSnap = config_nirb['numberOfBasis']
 
     config_nirb['greedy-generation'] = bo[greedy]
     

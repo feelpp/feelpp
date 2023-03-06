@@ -82,10 +82,6 @@ if __name__ == "__main__":
 
     tolortho = 1.e-8
 
-    # nirb_off.orthonormalizeL2(tol=tolortho)
-    # nirb_off.orthonormalizeH1(tol=tolortho)
-    # nirb_off.orthonormalizeL2(tol=tolortho)
-
     nirb_off.saveData(RESPATH, force=True)
 
     finish = time.time()
@@ -124,6 +120,8 @@ if __name__ == "__main__":
 
     info = nirb_off.getOfflineInfos()
 
+    nirb_off.writeOfflineInfos()
+    
     if nirb_off.worldcomm.isMasterRank():
         print(json.dumps(info, sort_keys=True, indent=4))
         print(f"[NIRB] Offline Elapsed time = ", finish-start)
