@@ -740,18 +740,37 @@ class nirbOffline(ToolboxModel):
 
         soltest =[]
         soltestFine=[]
+        i=0
         for mu in vector_mu:
-            soltestFine.append(self.getToolboxSolution(self.tbFine, mu))
-            uH = self.getToolboxSolution(self.tbCoarse, mu)
-            soltest.append(interpolationOperator.interpolate(uH))
+            if not self.time_dependent:
+                uHfine = self.getToolboxSolution(self.tbFine, mu)
+                uHcoarse = self.getToolboxSolution(self.tbCoarse, mu)
+            else :
+                finalTimeIt = next(reversed(self.coeffCoarse.keys())) # take only the last time solution associate to mu
+                uHfine = self.getTimeToolboxSolution(self.tbFine,mu)[finalTimeIt] # the final time solution 
+                uHcoarse = self.getTimeToolboxSolution(self.tbCoarse, mu)[finalTimeIt]
+                
+            soltestFine.append(uHfine)
+            soltest.append(interpolationOperator.interpolate(uHcoarse))
 
-        tabcoef = np.zeros((Ntest, self.N))
-        tabcoefuh = np.zeros((Ntest, self.N))
 
-        for j in range(Ntest):
-            for k in range(self.N):
-                tabcoef[j,k] = self.l2ScalarProductMatrix.energy(soltest[j],self.reducedBasis[k])
-                tabcoefuh[j,k] = self.l2ScalarProductMatrix.energy(soltestFine[j],self.reducedBasis[k])
+        tabcoef = np.zeros((Ntest, self.Nmu))
+        tabcoefuh = np.zeros((Ntest, self.Nmu))
+
+        if not self.time_dependent:
+            for j in range(Ntest):
+                for k in range(self.N):
+                    tabcoef[j,k] = self.l2ScalarProductMatrix.energy(soltest[j],self.reducedBasis[k])
+                    tabcoefuh[j,k] = self.l2ScalarProductMatrix.energy(soltestFine[j],self.reducedBasis[k])
+        else :
+            basemu={}
+            for i,n in enumerate(self.coarseSnapShotList.keys()):
+                basemu[n]= self.reducedBasis[i*self.Nmu:(i+1)*self.Nmu]
+                    
+            for j in range(Ntest):
+                for k in range(self.Nmu):
+                    tabcoef[j,k] = self.l2ScalarProductMatrix.energy(soltest[j],basemu[finalTimeIt][k])
+                    tabcoefuh[j,k] = self.l2ScalarProductMatrix.energy(soltestFine[j],basemu[finalTimeIt][k])
 
         Unirb = self.Xh.element()
         UnirbRect = self.Xh.element()
@@ -760,15 +779,22 @@ class nirbOffline(ToolboxModel):
         Error = {'N':[], 'l2(uh-uHn)':[], 'l2(uh-uHn)rec':[], 'l2(uh-uhn)' : [], 'l2(uh-uH)':[]}
 
         nb = 0
-        pas = 1 if (self.N<50) else 5 
-        for i in tqdm(range(1,self.N+1,pas), desc=f"[NIRB] Compute convergence error:", ascii=False, ncols=100):
+        pas = 1 if (self.Nmu<=50) else 5 
+        for i in tqdm(range(1,self.Nmu+1,pas), desc=f"[NIRB] Compute convergence error:", ascii=False, ncols=100):
             nb = i
             # Get rectification matrix
-            BH = self.coeffCoarse[:nb, :nb]
-            Bh = self.coeffFine[:nb, :nb]
+            if not self.time_dependent:
+                BH = self.coeffCoarse[:nb, :nb]
+                Bh = self.coeffFine[:nb, :nb]
+            else :
+                BH = self.coeffCoarse[finalTimeIt][:nb, :nb]
+                Bh = self.coeffFine[finalTimeIt][:nb, :nb]
+
             R = np.zeros((nb,nb))
             for s in range(nb):
                 R[s,:] = (np.linalg.inv(BH.transpose() @ BH + regulParam*np.eye(nb))@BH.transpose()@Bh[:,s])
+
+            # R = np.linalg.solve(BH.transpose() @ BH + regulParam * np.eye(nb), BH.transpose() @ Bh).T
 
             for j in range(Ntest):
                 Unirb.setZero()
@@ -776,11 +802,17 @@ class nirbOffline(ToolboxModel):
                 Uhn.setZero()
                 tabRect = R @ tabcoef[j,:nb]
 
-                for k in range(nb): # get reduced sol in a basis function space
-                    Unirb.add(float(tabcoef[j,k]),self.reducedBasis[k])
-                    UnirbRect.add(float(tabRect[k]), self.reducedBasis[k])
-                    Uhn.add(float(tabcoefuh[j,k]),self.reducedBasis[k])
-
+                if not self.time_dependent:
+                    for k in range(nb): # get reduced sol in a basis function space
+                        Unirb.add(float(tabcoef[j,k]),self.reducedBasis[k])
+                        UnirbRect.add(float(tabRect[k]), self.reducedBasis[k])
+                        Uhn.add(float(tabcoefuh[j,k]),self.reducedBasis[k])
+                else :
+                    for k in range(nb): # get reduced sol in a basis function space
+                        Unirb.add(float(tabcoef[j,k]),basemu[finalTimeIt][k])
+                        UnirbRect.add(float(tabRect[k]),basemu[finalTimeIt][k])
+                        Uhn.add(float(tabcoefuh[j,k]),basemu[finalTimeIt][k])
+                    
                 Unirb.add(-1, soltestFine[j])
                 UnirbRect.add(-1, soltestFine[j])
                 Uhn.add(-1, soltestFine[j])
