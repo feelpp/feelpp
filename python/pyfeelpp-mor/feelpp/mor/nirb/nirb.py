@@ -1074,7 +1074,7 @@ class nirbOnline(ToolboxModel):
             super().initCoarseToolbox()
         self.tbCoarse = tb.tbCoarse
 
-    def getCompressedSol(self, mu=None, solution=None, Nb=None):
+    def getCompressedSol(self, mu=None, solution=None, Nb=None, itr=None):
         """
         get the projection of given solution from fine mesh into the reduced space
 
@@ -1083,6 +1083,7 @@ class nirbOnline(ToolboxModel):
         solution (feelpp._discr.Element) : the solution to be projected
         mu (ParameterSpaceElement) : parameter to compute the solution if not given
         Nb (int, optional) : Size of the basis, by default None. If None, the whole basis is used
+        itr(int, optional) : the ith iteration to compute solution. Defaults to None. 
 
         Returns
         --------
@@ -1090,35 +1091,42 @@ class nirbOnline(ToolboxModel):
         """
         assert (mu != None) or (solution != None), f"One of the arguments must be given: solution or mu"
 
-        if Nb is None: Nb = self.N
+        if Nb is None: Nb = self.Nmu
 
         if solution is None:
             sol = self.getInterpSol(mu)
         else :
             sol = solution
 
-        compressedSol = np.zeros(Nb)
+        compressedSol = np.zeros(Nb) 
 
-        for i in range(Nb):
-            compressedSol[i] = self.l2ProductBasis[i].to_petsc().dot(sol.to_petsc())
+        if not self.time_dependent:               
+            for i in range(Nb):
+                compressedSol[i] = self.l2ProductBasis[i].to_petsc().dot(sol.to_petsc())
+        else :
+            assert (itr is not None) and (itr < self.Ntime), f"set the ith itertion to compute solution itr <= {self.Ntime}"
 
+            for i in range(Nb):
+                compressedSol[i] = self.l2ProductBasisTime[itr][i].to_petsc().dot(sol.to_petsc())
+            
         return compressedSol
 
-    def getInterpSol(self, mu):
+    def getInterpSol(self, mu, itr=None):
         """Get the interpolated solution from coarse mesh to fine one
 
         Parameters
         ----------
             mu (ParameterSpaceElement): parameter
+            itr(int, optional) : the ith iteration to compute solution. Defaults to None.
 
         Returns
         -------
             interpSol (feelpp._discr.Element): interpolated solution on fine mesh
         """
-        interpSol = self.solveOnline(mu)[1]
+        interpSol = self.solveOnline(mu, itr)[1]
         return interpSol
 
-    def getOnlineSol(self, mu, Nb=None):
+    def getOnlineSol(self, mu, Nb=None,itr=None, tn=None ):
         """Get the Online nirb approximate solution
 
         Parameters
@@ -1127,37 +1135,49 @@ class nirbOnline(ToolboxModel):
             parameter 
         Nb : int, optional
             Size of the basis, by default None. If None, the whole basis is used
+            itr(int, optional) : the ith iteration to compute time solution. Defaults to None.
+            tn(float, optional) : the time to compute solution. Defaults to None.
 
         Returns
         -------
         feelpp._discr.Element
             NIRB online solution uHn^N
         """
-        if Nb is None: Nb = self.N
+        if Nb is None: Nb = self.Nmu
 
         onlineSol = self.Xh.element()
         onlineSol.setZero()
 
-        compressedSol = self.getCompressedSol(mu=mu, Nb=Nb)
-
+        if self.time_dependent:
+            if (itr is None) and (tn is None) :
+                f"missing of iteration and time, then the final iteration is considered: {self.Ntime-1}"
+                itr = self.Ntime-1
+            elif (itr is None) and (tn is not None) :
+                itr = math.floor(tn/self.tbCoarse.timeStep())
+            else :
+                assert itr<self.Ntime, f"ith iteration {itr} have to be < {self.Ntime}"
+            
+        compressedSol = self.getCompressedSol(mu=mu, Nb=Nb, itr=itr)
+        coeff = compressedSol
         if self.doRectification:
             if Nb not in self.RectificationMat:
-                self.RectificationMat[Nb] = self.getRectification(self.coeffCoarse, self.coeffFine, lambd=1.e-10, Nb=Nb)
-            coef = self.RectificationMat[Nb] @ compressedSol
-            for i in range(Nb):
-                onlineSol.add(float(coef[i]), self.reducedBasis[i])
-
+                self.RectificationMat[Nb] = self.getRectification(self.coeffCoarse, self.coeffFine, lambd=1.e-10, Nb=Nb, itr=itr)
+            coeff = self.RectificationMat[Nb] @ compressedSol
             if self.worldcomm.isMasterRank():
                 print("[NIRB] Solution computed with Rectification post-process ")
+
+        if not self.time_dependent:
+            for i in range(Nb):
+                onlineSol.add(float(coeff[i]), self.reducedBasis[i])
         else:
             for i in range(Nb):
-                onlineSol.add(float(compressedSol[i]), self.reducedBasis[i])
+                onlineSol.add(float(coeff[i]), self.reducedBasisTime[itr][i])
 
         # to export, call self.exportField(onlineSol, "U_nirb")
 
         return onlineSol
 
-    def getRectification(self, coeffCoarse, coeffFine, lambd=1.e-10, Nb=None):
+    def getRectification(self, coeffCoarse, coeffFine, lambd=1.e-10, Nb=None, itr=None):
         """Compute rectification matrix associated to number of basis function selected
                 in the online step.
 
@@ -1167,15 +1187,23 @@ class nirbOnline(ToolboxModel):
             coeffFine (numpy.array): the coefficient matrix (U^h_i, \phi_j)
             lambd (float, optional): regularization parameter. Defaults to 1.e-10.
             Nb (int, optional): number of basis function selected in the online step. Defaults to None, in which case all the basis are used.
+            itr(int, optional) : the ith iteration to compute solution. Defaults to None.
 
         Returns:
         --------
             R (numpy.array): the rectification matrix
         """
-        if Nb is None: Nb = self.N
+        if Nb is None: Nb = self.Nmu
 
-        BH = coeffCoarse[:Nb, :Nb]
-        Bh = coeffFine[:Nb, :Nb]
+        if not self.time_dependent:
+            BH = coeffCoarse[:Nb, :Nb]
+            Bh = coeffFine[:Nb, :Nb]
+        else :
+            assert (itr is not None) and (itr<self.Ntime), f"set ith iteration to compute solution {itr} < {self.Ntime}"
+            assert (type(coeffCoarse)==dict) and (type(coeffFine)==dict)
+            BH = coeffCoarse[itr][:Nb, :Nb]
+            Bh = coeffFine[itr][:Nb, :Nb]
+
         R = np.zeros((Nb, Nb))
 
         #Thikonov regularization (AT @ A + lambda I_d)^-1 @ (AT @ B)
@@ -1233,8 +1261,6 @@ class nirbOnline(ToolboxModel):
 
         self.worldcomm.globalComm().Barrier()
 
-        self.reducedBasis = []
-        self.l2ProductBasis = []
 
         if nbSnap is None:
             nbSnap = self.Nmu 
@@ -1245,24 +1271,52 @@ class nirbOnline(ToolboxModel):
             # assert Nreduce == Nl2, f"different number of files, {Nreduce} != {Nl2}"
             # nbSnap = Nreduce
 
-        for i in range(nbSnap):
-            vec = self.Xh.element()
-            vec.load(reducedPath, reducedFilename, suffix=str(i))
-            self.reducedBasis.append(vec)
+        if not self.time_dependent: 
+            self.reducedBasis = []
+            self.l2ProductBasis = []  
+            for i in range(nbSnap):
+                vec1 = self.Xh.element()
+                vec1.load(reducedPath, reducedFilename, suffix=str(i))
+                self.reducedBasis.append(vec1)
 
-        self.N = nbSnap
+                vec2 = self.Xh.element()
+                vec2.load(l2productPath, l2productFilename, suffix=str(i))
+                self.l2ProductBasis.append(vec2)
+                
+            self.N = nbSnap
+            self.Nmu = nbSnap
+        else :
+            self.Nmu = nbSnap
+            self.reducedBasisTime={n:[] for n in range(self.Ntime)}
+            self.l2ProductBasisTime={n:[] for n in range(self.Ntime)}
+            for n in range(self.Ntime):
+                k = n*self.Nmu
+                for i in range(k, k+nbSnap):
+                    vec1 = self.Xh.element()
+                    vec1.load(reducedPath, reducedFilename, suffix=str(i))
+                    self.reducedBasisTime[n].append(vec1)
 
-        for i in range(nbSnap):
-            vec = self.Xh.element()
-            vec.load(l2productPath, l2productFilename, suffix=str(i))
-            self.l2ProductBasis.append(vec)
+                    vec2 = self.Xh.element()
+                    vec2.load(l2productPath, l2productFilename, suffix=str(i))
+                    self.l2ProductBasisTime[n].append(vec2)
 
-        coeffCoarseFile = os.path.join(path,'coeffcoarse.npy')
-        coeffFineFile = os.path.join(path,'coefffine.npy')
+            self.N = self.Nmu*self.Ntime            
+
+        coeffCoarseFile = os.path.join(path,'coeffcoarse')
+        coeffFineFile = os.path.join(path,'coefffine')
         if self.doRectification:
-            self.coeffCoarse = np.load(coeffCoarseFile)
-            self.coeffFine = np.load(coeffFineFile)
-            self.RectificationMat[self.N] = self.getRectification(self.coeffCoarse, self.coeffFine, lambd=regulParam)
+            if not self.time_dependent:
+                self.coeffCoarse = np.load(coeffCoarseFile+'.npy')
+                self.coeffFine = np.load(coeffFineFile+'.npy') 
+                self.RectificationMat[self.Nmu] = self.getRectification(self.coeffCoarse, self.coeffFine, lambd=regulParam)
+            else :
+                coeffCoarseFile = open(coeffCoarseFile, 'rb')
+                coeffFineFile = open(coeffFineFile, 'rb')
+                self.coeffCoarse = pickle.load(coeffCoarseFile)
+                self.coeffFine = pickle.load(coeffFineFile)
+                coeffFineFile.close()
+                coeffCoarseFile.close()
+                self.RectificationMat[self.Nmu] = self.getRectification(self.coeffCoarse, self.coeffFine, lambd=regulParam, itr=self.Ntime-1)
 
         if self.worldcomm.isMasterRank():
             print(f"[NIRB] Data loaded from {os.path.abspath(path)}")
@@ -1284,13 +1338,15 @@ class nirbOnline(ToolboxModel):
 
         return np.sqrt(np.abs(Mat.energy(u,u)))
 
-    def solveOnline(self, mu):
+    def solveOnline(self, mu, itr=None, tn=None):
         """Retrun the interpolated FE-solution from coarse mesh to fine one u_{Hh}^calN(mu)
             Solve in Coarse mesh and interpolate in fine mesh
 
         Parameters
         ----------
             mu (ParameterSpaceElement): parameter.
+            itr(int, optional) : the ith iteration to compute solution. Defaults to None.
+            tn(float, optional) : the time to compute solution. Defaults to None.
 
         Returns
         -------
@@ -1300,7 +1356,19 @@ class nirbOnline(ToolboxModel):
         if self.tbCoarse is None:
             super().initCoarseToolbox()
 
-        coarseSol = self.getToolboxSolution(self.tbCoarse, mu)
+        if not self.time_dependent:
+            coarseSol = self.getToolboxSolution(self.tbCoarse, mu)
+        else :
+            if (itr is None) and (tn is None) :
+                f"missing of iteration and time, then the final iteration is considered: {self.Ntime-1}"
+                itr = self.Ntime-1
+            elif (itr is None) and (tn is not None) :
+                itr = math.floor(tn/self.tbCoarse.timeStep())
+            else :
+                assert itr<self.Ntime, f"ith iteration {itr} have to be <= {self.Ntime}"
+        
+            coarseSol = self.getTimeToolboxSolution(self.tbCoarse, mu)[itr]
+
         interpolatedSol = self.interpolationOperator.interpolate(coarseSol)
 
         # Export
