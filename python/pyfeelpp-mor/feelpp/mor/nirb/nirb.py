@@ -840,20 +840,42 @@ class nirbOffline(ToolboxModel):
             tol (float) : tolerence for checking orthonormalization. Defaults to 1.e-8
         """
 
-        Z = self.reducedBasis
-        nb = 0
-        while not (self.checkL2Orthonormalized(tol=tol)) and nb < nbMax:
-            Z[0] = Z[0] * (1./math.sqrt(abs(self.l2ScalarProductMatrix.energy(Z[0],Z[0]))))
-            for n in range(1, self.N):
-                s = self.Xh.element()
-                s.setZero()
-                for m in range(n):
-                    s.add(self.l2ScalarProductMatrix.energy(Z[n], Z[m]), Z[m])
-                z_tmp = Z[n] - s
-                Z[n] = z_tmp * (1./math.sqrt(abs(self.l2ScalarProductMatrix.energy(z_tmp,z_tmp))))
+        if not self.time_dependent:
+            
+            Z = self.reducedBasis
+            nb = 0
+            while not (self.checkL2Orthonormalized(tol=tol)) and nb < nbMax:
+                Z[0] = Z[0] * (1./math.sqrt(abs(self.l2ScalarProductMatrix.energy(Z[0],Z[0]))))
+                for n in range(1, self.N):
+                    s = self.Xh.element()
+                    s.setZero()
+                    for m in range(n):
+                        s.add(self.l2ScalarProductMatrix.energy(Z[n], Z[m]), Z[m])
+                    z_tmp = Z[n] - s
+                    Z[n] = z_tmp * (1./math.sqrt(abs(self.l2ScalarProductMatrix.energy(z_tmp,z_tmp))))
 
-            self.reducedBasis = Z
-            nb +=1
+                self.reducedBasis = Z
+                nb +=1
+        else:
+            Zb = []
+            for k in range(self.Ntime):
+                Z = self.reducedBasis[k*self.Nmu:(k+1)*self.Nmu]
+                nb = 0
+                while not (self.checkL2Orthonormalized(Z=Z,tol=tol)) and nb < nbMax:
+                    Z[0] = Z[0] * (1./math.sqrt(abs(self.l2ScalarProductMatrix.energy(Z[0],Z[0]))))
+                    for n in range(1, len(Z)):
+                        s = self.Xh.element()
+                        s.setZero()
+                        for m in range(n):
+                            s.add(self.l2ScalarProductMatrix.energy(Z[n], Z[m]), Z[m])
+                        z_tmp = Z[n] - s
+                        Z[n] = z_tmp * (1./math.sqrt(abs(self.l2ScalarProductMatrix.energy(z_tmp,z_tmp))))
+                    nb +=1
+
+                # nb = max(0,nb)
+                Zb.extend(Z)
+            
+            self.reducedBasis = Zb
 
         if self.worldcomm.isMasterRank():
             print(f"[NIRB] Gram-Schmidt L2 orthonormalization done after {nb} step"+['','s'][nb>1])
@@ -904,29 +926,45 @@ class nirbOffline(ToolboxModel):
                         return False
         return True
 
-    def checkL2Orthonormalized(self, tol=1e-8):
+    def checkL2Orthonormalized(self,Z=None, tol=1e-8):
         """Check if the reduced basis is L2 orthonormalized.
 
         Args:
             tol (float, optional): Tolerance. Defaults to 1e-8.
+            Z (list, optional) : a list of feelpp space function to chek orthonormalization. Defaults to None.
+                   if None, the list self.reducedBasis is used  
 
         Returns:
             bool: True if the reduced basis is L2 orthonormalized
         """
 
-        matL2 = np.zeros((self.N,self.N))
+        if self.time_dependent and Z is None :
+            # check orthonormalization at each time iteration
+            normalk = [] 
+            for k in range(self.Ntime):
+                Zk = self.reducedBasis[k*self.Nmu:(k+1)*self.Nmu]
+                normalk.append(self.checkL2Orthonormalized(Zk))
+            return all(normalk) 
+        else :
+            if Z is None:
+                Tab = self.reducedBasis
+            else :
+                Tab = Z
 
-        for i in range(self.N):
-            for j in range(self.N):
-                matL2[i,j] = self.l2ScalarProductMatrix.energy(self.reducedBasis[i], self.reducedBasis[j])
-                if i == j:
-                    if abs(matL2[i, j] - 1) > tol:
-                        print(f"[NIRB] not L2 ortho : pos = [{i} , {j}] val = {abs(matL2[i,j] - 1.)} tol = {tol}")
-                        return False
-                else:
-                    if abs(matL2[i, j]) > tol :
-                        print(f"[NIRB] not L2 ortho : pos = [{i} , {j}] val = {abs(matL2[i,j])} tol = {tol}")
-                        return False
+            Nsize = len(Tab)
+            matL2 = np.zeros((Nsize,Nsize))
+
+            for i in range(Nsize):
+                for j in range(Nsize):
+                    matL2[i,j] = self.l2ScalarProductMatrix.energy(Tab[i], Tab[j])
+                    if i == j:
+                        if abs(matL2[i, j] - 1) > tol:
+                            print(f"[NIRB] not L2 ortho : pos = [{i} , {j}] val = {abs(matL2[i,j] - 1.)} tol = {tol}")
+                            return False
+                    else:
+                        if abs(matL2[i, j]) > tol :
+                            print(f"[NIRB] not L2 ortho : pos = [{i} , {j}] val = {abs(matL2[i,j])} tol = {tol}")
+                            return False
         return True
 
     def saveData(self, path="./", force=False):
