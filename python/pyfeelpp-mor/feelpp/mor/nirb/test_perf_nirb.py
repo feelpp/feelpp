@@ -42,7 +42,8 @@ def offline(nirb, RESPATH, doGreedy, N, Xi_train=None):
 
     print(f"proc {nirb.worldcomm.localRank()} Is L2 orthonormalized ?", nirb.checkL2Orthonormalized())
     finish = time.time()
-    
+    nirb.writeOfflineInfos() 
+
     comm.Barrier()
 
     res = {}
