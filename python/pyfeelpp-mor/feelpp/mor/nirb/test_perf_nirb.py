@@ -22,6 +22,10 @@ def offline(nirb, RESPATH, doGreedy, N, Xi_train=None):
         Xi_train (list, optional): Set of parameters to train. Defaults to None.
     """
 
+    if nirb.time_dependent:
+        nirb.setTimeToolbox(nirb.tbFine)
+        nirb.setTimeToolbox(nirb.tbCoarse)
+
     start = time.time()
     nirb.generateOperators(coarse=True)
     if doGreedy:
@@ -36,7 +40,7 @@ def offline(nirb, RESPATH, doGreedy, N, Xi_train=None):
     # file = "ric_offline.txt"
     # np.savetxt(file,RIC)
 
-    print(f"proc {nirb_off.worldcomm.localRank()} Is L2 orthonormalized ?", nirb_off.checkL2Orthonormalized())
+    print(f"proc {nirb.worldcomm.localRank()} Is L2 orthonormalized ?", nirb.checkL2Orthonormalized())
     finish = time.time()
     
     comm.Barrier()
@@ -194,6 +198,7 @@ if __name__ == '__main__':
     parser.add_argument("--convergence", help="Wther to get convergence error [default=1]", type=int, default=1)
     parser.add_argument("--idmodel", help="identifiant of the model [default='s4'(for square 4)]", type=str, default="s4")
     parser.add_argument("--regulparam", help="Wether to get conv error in respect of regularization parameter [default=0]", type=int, default=0)
+    parser.add_argument("--time", help="Wether to solve stationary problem or not [default=0]", type=int, default=0)
 
     ## get parser args 
     args = parser.parse_args()
@@ -215,6 +220,7 @@ if __name__ == '__main__':
 
     ## Get model and data path 
     config_nirb['greedy-generation'] = bo[args.greedy]
+    config_nirb['time_dependent'] = bo[args.time]
     model_path = config_nirb['model_path']
     doGreedy = config_nirb['greedy-generation']
     doRectification = config_nirb['doRectification']
@@ -252,15 +258,15 @@ if __name__ == '__main__':
     Xi_train, Xi_test = loadSampling(Dmu, path=RESPATH, idmodel=idmodel, Ntest=Nsample)
 
     ## generate nirb offline and online object :  
-    # nirb_off = nirbOffline(**config_nirb, initCoarse=doGreedy)
-    # nirb_off.initModel()
-    # resOffline = offline(nirb_off, RESPATH, doGreedy, baseList[-1], Xi_train=Xi_train)
+    nirb_off = nirbOffline(**config_nirb, initCoarse=doGreedy)
+    nirb_off.initModel()
+    resOffline = offline(nirb_off, RESPATH, doGreedy, baseList[-1], Xi_train=Xi_train)
     nirb_on = nirbOnline(**config_nirb)
     nirb_on.initModel()
 
     ## load offline datas only once 
     lmd = 1.e-10
-    # Nglob = nirb_off.N
+    Nglob = nirb_off.N
     Nglob = 97
     err = nirb_on.loadData(nbSnap=Nglob, path=RESPATH, regulParam=lmd)
     assert err == 0, "loadData failed"
