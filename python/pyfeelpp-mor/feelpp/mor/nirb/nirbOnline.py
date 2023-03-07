@@ -77,10 +77,14 @@ if __name__ == "__main__":
     finish = time()
 
     uh = nirb_on.getToolboxSolution(nirb_on.tbFine, mu)
+    uH = nirb_on.getInterpSol(mu)
+
     error = nirb_on.normMat(uHh - uh)
-    
+    errorInterp = nirb_on.normMat(uH - uh)
+
     if nirb_on.worldcomm.isMasterRank():
         print(f"[NIRB] L2 norm between nirb online and toolbox sol = {error}")
+        print(f"[NIRB] L2 norm between interp sol and toolbox sol = {errorInterp}")
 
     if exporter:    
         ## export thermal bridge solution 
