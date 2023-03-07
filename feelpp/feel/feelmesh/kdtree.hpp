@@ -246,7 +246,7 @@ private:
     void clearTree();
 
     /**
-     * Run the the research of M_node_search neighbors(recursive)
+     * Run the research of M_node_search neighbors(recursive)
      */
     void run_search( Element * tree, uint16_type iter );
 

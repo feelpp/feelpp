@@ -977,7 +977,7 @@ SolverUnconstrained<Data,Problem>::Stats::show() const
 
     iter = norm_Tgrad_fx_hstr.size();
     std::cerr << "\n\nScaled Trust-Region Method Statistics:\n";
-    std::cerr << "\nNumber of outter iterations: " << iter-1 << "\n";
+    std::cerr << "\nNumber of outer iterations: " << iter-1 << "\n";
 
     std::cerr << "\n";
     std::cerr << "  k  CGiters restarts indefs crosses trustEx   ||g_til||   Delta^k   ared_til^k  phi_til^k     rho^k \n";

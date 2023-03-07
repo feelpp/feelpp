@@ -73,7 +73,7 @@ using namespace Feel;
 namespace py = boost::parameter::python;
 
 
-//definition of all methods we need for the wrapping and wich are create from a BOOST_PARAMETER_FUNCTION or a method with default value arguments  
+//definition of all methods we need for the wrapping and which are create from a BOOST_PARAMETER_FUNCTION or a method with default value arguments  
 
 std::shared_ptr<Exporter<Mesh<Simplex<3>>,1>> New1 (po::variables_map const& x,std::string y,WorldComm const& z) 
 {

@@ -1614,7 +1614,7 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
     rank_type procId = this->worldComm().localRank();
     rank_type worldSize = this->worldComm().localSize();
 
-    //usefull for binary read
+    //useful for binary read
     std::vector<int> _vectmpint;
     std::vector<gmsh_size_type> _vectmpsizet;
     std::vector<gmsh_elttag_type> _vectmpelttag;
@@ -1806,7 +1806,7 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
                 entityTagInCurrentPartitionToPartitions[0][entityTag] = partitionTags;
             else if ( parentDim == 0 )
             {
-                // WARNING : partitioning informations with points entities is quite strange for some node
+                // WARNING : partitioning information with points entities is quite strange for some node
                 // Consequence some extra node are inserted in the mesh, TODO remove maybe this node
                 entityTagInCurrentPartitionToPartitions[0][entityTag] = allPartitionTags;
             }
@@ -1914,8 +1914,8 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
         __is >> __buf;
     }
 
-    //std::map<size_type,Feel::detail::GMSHPoint> additionnalNodes;
-    std::map<rank_type,std::set<size_type>> interprocessNodes; // neighboor partId -> ( points id )
+    //std::map<size_type,Feel::detail::GMSHPoint> additionalNodes;
+    std::map<rank_type,std::set<size_type>> interprocessNodes; // neighbour partId -> ( points id )
 
     if ( std::string( __buf ) == "$Nodes" )
     {
@@ -2208,7 +2208,7 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
                 it_gmshElt.num = elementTag;
 
                 // WARNING : need to apply a special treatment on mesh partitioned with elements of dim <  mesh_type::nDim
-                // the partitioning informations with this entity is not very clear (some duplications with global entities)
+                // the partitioning information with this entity is not very clear (some duplications with global entities)
                 if ( numPartitions > 1 && entityDim < mesh_type::nDim )
                 {
                     it_gmshElt.physical = physicalTag; // here because can be modified just after
@@ -2501,7 +2501,7 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
         {
             mpi::request * reqs = new mpi::request[nbRequest];
             int cptRequest=0;
-            // prepare and send ghost informations
+            // prepare and send ghost information
             for ( auto const& [ gproc, ghostElts ] : ghostElementToSendToProcessId )
             {
                 std::vector<boost::tuple<size_type, std::vector<double> > > dataPointsToSend;
@@ -2539,7 +2539,7 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
                 reqs[cptRequest++] = this->worldComm().localComm().isend( gproc , 0, fullDataToSend );
             }
 
-            // recv ghost informations
+            // recv ghost information
             std::map<rank_type, boost::tuple< std::vector<boost::tuple<size_type, std::vector<double> > >,
                                               std::vector<std::vector<size_type>> > > dataToRecv;
             for ( rank_type aproc : ghostElementToRecvFromProcessId )

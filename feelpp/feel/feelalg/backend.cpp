@@ -667,7 +667,7 @@ void updateBackendPreconditionerOptions( po::options_description & _options, std
           "display preconditioner information" )
         ( prefixvm( prefix,pcctx+"pc-use-config-default-petsc" ).c_str(),
           (useDefaultValue)?Feel::po::value<bool>()->default_value( false ):Feel::po::value<bool>(),
-          "configure pc with defult petsc options" )
+          "configure pc with default petsc options" )
 #if defined(FEELPP_HAS_MUMPS) && PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,2,0 )
         ( prefixvm( prefix,pcctx+"pc-factor-mat-solver-package-type" ).c_str(),
           (useDefaultValue)?Feel::po::value<std::string>()->default_value( "mumps" ):Feel::po::value<std::string>(),
@@ -806,7 +806,7 @@ void updateBackendMGPreconditionerOptions( po::options_description & _options, s
     // ml options
     _options.add_options()
         ( prefixvm( prefix,pcctx+"ml-reuse-interpolation" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Reuse the interpolation operators when possible (cheaper, weaker when matrix entries change a lot)" )
-        ( prefixvm( prefix,pcctx+"ml-keep-agg-info" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Allows the preconditioner to be reused, or auxilliary matrices to be generated" )
+        ( prefixvm( prefix,pcctx+"ml-keep-agg-info" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Allows the preconditioner to be reused, or auxiliary matrices to be generated" )
         ( prefixvm( prefix,pcctx+"ml-reusable" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Store intermedaiate data structures so that the multilevel hierarchy is reusable" )
         ( prefixvm( prefix,pcctx+"ml-old-hierarchy" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Use old routine to generate hierarchy" )
         ;
@@ -961,7 +961,7 @@ po::options_description backend_options( std::string const& prefix )
 #if FEELPP_HAS_PETSC
         ( prefixvm( prefix,"pc-use-config-default-petsc" ).c_str(),
           Feel::po::value<bool>()->default_value( false ),
-          "configure pc with defult petsc options" )
+          "configure pc with default petsc options" )
 #endif
         ( prefixvm( prefix,"pc-factor-shift-type" ).c_str(),
           Feel::po::value<std::string>()->default_value( "none" ),

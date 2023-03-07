@@ -182,7 +182,7 @@ private:
     std::vector<size_type> M_Vh_indices;
     std::vector<size_type> M_Qh_indices;
 
-    // The two blocks: rhs and unknows
+    // The two blocks: rhs and unknowns
     mutable vector_ptrtype M_uin;
     mutable vector_ptrtype M_uout;
     mutable vector_ptrtype M_pin;
