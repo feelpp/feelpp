@@ -739,7 +739,7 @@ SVD<MatrixA>::ripThrough( vector_type& super_diag, const int k, const int l, con
 
         super_diag( i ) *= cos_ph;
 
-        // Current J[l-1,l] may become unsignificant
+        // Current J[l-1,l] may become insignificant
         if ( math::abs( f ) <= eps )
             break;
 

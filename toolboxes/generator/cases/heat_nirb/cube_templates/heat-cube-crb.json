@@ -24,10 +24,12 @@
         "dim": {{dim}},
         "order": 1,
         "toolboxType": "heat",
-        "geo_path": "$cfgdir/cube.geo",
+        "finemesh_path": "$cfgdir/cube.geo",
         "model_path": "$cfgdir/heat-cube.json",
         "doRectification": true,
         "doBiorthonormal": false,
-        "nbSnapshots": 10
+        "nbSnapshots": 10,
+        "greedy-generation": true,
+        "outdir": "results/rect/greedy"
     }
 }

@@ -318,7 +318,7 @@ private:
 
 /**
  * Format of a Table
- * inherits of Cell::Format which define the defaut format of cell (can be override in each cell
+ * inherits of Cell::Format which define the default format of cell (can be override in each cell
  */
 struct Format : public Cell::Format
 {
