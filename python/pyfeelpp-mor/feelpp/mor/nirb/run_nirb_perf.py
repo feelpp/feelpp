@@ -256,7 +256,7 @@ if __name__ == '__main__':
     Dmu = loadParameterSpace(model_path)
     ## get distinct training and testing sample 
     idmodel = args.idmodel 
-    Xi_train, Xi_test = loadSampling(Dmu, path=RESPATH, idmodel=idmodel, Ntest=Nsample)
+    Xi_train, Xi_test = loadSampling(Dmu, path=RESPATH, idmodel=idmodel, Ntest=Nsample, Ntrain=Nbase)
 
     ## generate nirb offline and online object :  
     nirb_off = nirbOffline(**config_nirb, initCoarse=doGreedy)
