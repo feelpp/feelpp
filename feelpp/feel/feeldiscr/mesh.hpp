@@ -1128,7 +1128,7 @@ public:
 
     //!
     //!  creates a mesh by iterating over the elements between
-    //!  \p begin_elt and and \p end_elt and adding them the the mesh
+    //!  \p begin_elt and \p end_elt and adding them to the
     //!  \p mesh
     //!
     //!  \param mesh new mesh to construct
@@ -1348,7 +1348,7 @@ public:
     //! Private Methods
     //! @{
 
-    //! update informations for the current object
+    //! update information for the current object
     void updateInformationObject( nl::json& p ) const override;
 
 #if defined( FEELPP_HAS_HDF5 )
@@ -1706,7 +1706,7 @@ public:
 
   protected:
     //!
-    //!  update the adjacency graph elements (usefull if coDimensionOne not updated)
+    //!  update the adjacency graph elements (useful if coDimensionOne not updated)
     //!
     void updateAdjacencyElements();
 
@@ -2104,7 +2104,7 @@ Mesh<Shape, T, Tag, IndexT>::createP1mesh( RangeType const& range, size_type ctx
         new_mesh->addMarkerName( itMark.first, itMark.second[0], itMark.second[1] );
     }
 
-    //!  data usefull for parallism
+    //!  data useful for parallism
     std::map<int, std::set<boost::tuple<size_type, size_type>>> memoryGhostId;
     //! std::set< int > setOfRecvProc;
     std::vector<int> nbMsgToRecv( nProc, 0 );
@@ -2357,7 +2357,7 @@ Mesh<Shape, T, Tag, IndexT>::createP1mesh( RangeType const& range, size_type ctx
                          nbMsgToSend,
                          nbMsgToRecv2 );
         for ( int proc = 0; proc < nProc; ++proc )
-            CHECK( nbMsgToRecv[proc] == nbMsgToRecv2[proc] ) << "paritioning data incorect "
+            CHECK( nbMsgToRecv[proc] == nbMsgToRecv2[proc] ) << "partitioning data incorect "
                                                              << "myrank " << MeshBase<>::worldComm().localRank() << " proc " << proc
                                                              << " nbMsgToRecv[proc] " << nbMsgToRecv[proc]
                                                              << " nbMsgToRecv2[proc] " << nbMsgToRecv2[proc] << "\n";

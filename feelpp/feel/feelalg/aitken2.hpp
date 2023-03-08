@@ -115,7 +115,7 @@ public:
     ~Aitken() {}
 
     /**
-     * initiliaze the aitken algorithm
+     * initialize the aitken algorithm
      * \param residual  previous residual
      * \param elem previous element
      */

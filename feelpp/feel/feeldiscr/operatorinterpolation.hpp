@@ -2263,7 +2263,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     //locTool->setExtrapolation(false);
 
     //-----------------------------------------
-    // usefull data
+    // useful data
     matrix_node_type ptsReal( image_mesh_type::nRealDim, 1 );
     matrix_node_type ptsRef( domain_mesh_type::nDim , 1 );
     typename Localization<domain_mesh_type>::container_search_iterator_type itanal,itanal_end;
@@ -3198,7 +3198,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
 
     std::vector<bool> dof_done( this->dualImageSpace()->nLocalDof(), false);
 
-    // usefull container
+    // useful container
     std::vector<size_type> pointsSearchedSizeWorld(this->dualImageSpace()->mesh()->worldCommPtr()->localComm().size());
     std::vector<typename image_mesh_type::node_type> dataToRecv(1);
     std::vector<uint16_type> dataToRecv_Comp(1,0);
@@ -3592,7 +3592,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
 #if 1
                                                                     // save value
                                                                     memory_valueInMatrix[i_gdof].push_back(boost::make_tuple(rankRecv,j_gdof,v));
-                                                                    // usefull to build datamap
+                                                                    // useful to build datamap
                                                                     memory_col_globalProcessToGlobalCluster[rankRecv][j_gdof]=j_gdof_gc;
 #endif
                                                                 }
@@ -4003,7 +4003,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
 
                             // save value
                             memory_valueInMatrix[i_gdof].push_back(boost::make_tuple(theproc,j_gdof,v));
-                            // usefull to build datamap
+                            // useful to build datamap
                             memory_col_globalProcessToGlobalCluster[theproc][j_gdof]=j_gdof_gc;
                         }
                         // dof ok : not anymore localise
