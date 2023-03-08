@@ -676,7 +676,6 @@ class nirbOffline(ToolboxModel):
         if not self.time_dependent:
             self.reducedBasis, RIC= self.PODReducedBasis(tolerance=tolerance)
         else : 
-            print("NIRB with time dependent")
             self.getTimeReducedBasis(tolerance=tolerance)
 
         self.N = len(self.reducedBasis)
@@ -1267,7 +1266,7 @@ class nirbOnline(ToolboxModel):
         if Nb is None: Nb = self.Nmu
 
         if solution is None:
-            sol = self.getInterpSol(mu)
+            sol = self.getInterpSol(mu, itr)
         else :
             sol = solution
 
@@ -1277,19 +1276,22 @@ class nirbOnline(ToolboxModel):
 
         return compressedSol
 
-    def getInterpSol(self, mu, itr=None):
+    def getInterpSol(self, mu, itr=None, allTimeSol=False):
         """Get the interpolated solution from coarse mesh to fine one
+            In the case of time dependent, it return the final time solution, by default.
 
         Parameters
         ----------
             mu (ParameterSpaceElement): parameter
             itr(int, optional) : the ith iteration to compute solution. Defaults to None.
+            allTimeSol(bool, optional) : wether to return all the time solutions. Defaults to False.
 
         Returns
         -------
-            interpSol (feelpp._discr.Element): interpolated solution on fine mesh
+            interpSol (feelpp._discr.Element): interpolated solution on fine mesh 
+            or a list of all time solution in the casde of parabolic problem if allTimeSol=True 
         """
-        interpSol = self.solveOnline(mu, itr)[1]
+        interpSol = self.solveOnline(mu, itr,allTimeSol)[1]
         return interpSol
 
     def getOnlineSol(self, mu, Nb=None,itr=None, tn=None ):
@@ -1475,21 +1477,25 @@ class nirbOnline(ToolboxModel):
 
         return np.sqrt(np.abs(Mat.energy(u,u)))
 
-    def solveOnline(self, mu, itr=None, tn=None):
+    def solveOnline(self, mu, itr=None, tn=None, allTimeSol=False):
         """Retrun the interpolated FE-solution from coarse mesh to fine one u_{Hh}^calN(mu)
             Solve in Coarse mesh and interpolate in fine mesh
+            In the case of time dependent, it return the final time solution, by default.
 
         Parameters
         ----------
             mu (ParameterSpaceElement): parameter.
             itr(int, optional) : the ith iteration to compute solution. Defaults to None.
             tn(float, optional) : the time to compute solution. Defaults to None.
+            allTimeSol(bool, optional) : wether to return all the time solutions. Defaults to False. 
 
         Returns
         -------
             feelpp._discr.Element: FE solution on coarse mesh
             feelpp._discr.Element: interpolated solution on fine mesh
         """
+        if allTimeSol: assert self.time_dependent, f"allTimeSol only for time dependent problem"
+
         if self.tbCoarse is None:
             super().initCoarseToolbox()
 
@@ -1504,7 +1510,11 @@ class nirbOnline(ToolboxModel):
             else :
                 assert itr<self.Ntime, f"ith iteration {itr} have to be <= {self.Ntime}"
         
-            coarseSol = self.getTimeToolboxSolution(self.tbCoarse, mu)[itr]
+            listSol = self.getTimeToolboxSolution(self.tbCoarse, mu)[itr]
+            coarseSol = listSol[itr]
+            if allTimeSol:
+                listInterpSol = [self.interpolationOperator.interpolate(f) for f in listSol]
+                return listSol, listInterpSol 
 
         interpolatedSol = self.interpolationOperator.interpolate(coarseSol)
 
