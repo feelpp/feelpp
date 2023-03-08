@@ -200,10 +200,7 @@ def getNirbProjection(nirb_on, u, Nb=None, doRectification=False, regulParam=1.-
                 nirb_on.RectificationMat[Nb] = nirb_on.getRectification(nirb_on.coeffCoarse, nirb_on.coeffFine, Nb=Nb, lambd=regulParam, itr=itr)
         coef = nirb_on.RectificationMat[Nb] @ coef
     
-    if not nirb_on.time_dependent:
-        for i in range(Nb):
-            uNh.add(float(coef[i]), nirb_on.reducedBasis[i])
-    else :
-        for i in range(Nb):
-            uNh.add(float(coef[i]), nirb_on.reducedBasisTime[itr][i])
+    for i in range(Nb):
+        uNh.add(float(coef[i]), nirb_on.reducedBasis[i])
+    
     return uNh 

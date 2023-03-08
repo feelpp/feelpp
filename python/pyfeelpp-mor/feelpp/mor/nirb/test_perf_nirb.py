@@ -279,6 +279,8 @@ if __name__ == '__main__':
     Nglob = nirb_off.N
     err = nirb_on.loadData(nbSnap=Nglob, path=RESPATH, regulParam=lmd)
     assert err == 0, "loadData failed"
+
+    ## name error file 
     idd = str(idmodel) + f"lmd{10}"
     errorfile = f"errors{Nsample}Params_{idd}.csv"
     if os.path.isfile(errorfile) : os.remove(errorfile)
@@ -286,7 +288,7 @@ if __name__ == '__main__':
     comm.Barrier()
     if convergence : 
         if regulParameter : 
-            ## test convergence i respect of regularization parameter 
+            ## test convergence in respect of regularization parameter 
             Nl = [0, 1, 3, 5, 7, 9, 10, 11, 12, 17]
             ## for n in Nl, Lambda = 1.E-n
             del nirb_on.RectificationMat[Nglob] 

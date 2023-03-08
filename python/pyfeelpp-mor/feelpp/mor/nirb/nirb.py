@@ -485,34 +485,29 @@ class nirbOffline(ToolboxModel):
                 print(f"[NIRB] Number of snapshot computed : {self.Nmu}" )
         else :
             
-            self.Ntime = math.floor((self.tbFine.timeFinal() - self.tbFine.timeInitial())/self.tbFine.timeStep())
-            self.Nmu = len(vector_mu)
-
-            self.fineSnapShotList = {n:[] for n in range(self.Ntime)}
-            self.coarseSnapShotList = {n:[] for n in range(self.Ntime)}
-
+            self.fineSnapShotList = {}
+            self.coarseSnapShotList = {}
             if computeCoarse:
                 assert self.tbCoarse is not None, f"Coarse toolbox needed for computing coarse Snapshot. set doRectification->True"
                 for i,mu in enumerate(vector_mu):
                     if self.worldcomm.isMasterRank():
                         print(f"Running time simulation with mu_{i} = {mu}")
                     
-                    lmufine = self.getTimeToolboxSolution(self.tbFine, mu)
-                    lmucoarse = self.getTimeToolboxSolution(self.tbCoarse, mu)
-                    for n in range(len(lmufine)):
-                        self.fineSnapShotList[n].append(lmufine[n]) 
-                        self.coarseSnapShotList[n].append(lmucoarse[n])
+                    self.fineSnapShotList[mu] = self.getTimeToolboxSolution(self.tbFine, mu)
+                    self.coarseSnapShotList[mu] = self.getTimeToolboxSolution(self.tbCoarse, mu)
                 
             else:
                 for i,mu in enumerate(vector_mu):
                     if self.worldcomm.isMasterRank():
                         print(f"Running simulation with mu_{i} = {mu}")
-                    lmufine = self.getTimeToolboxSolution(self.tbFine, mu)
-                    for n in range(len(lmufine)):
-                        self.fineSnapShotList[n].append(lmufine[n]) 
 
+                    self.fineSnapShotList[mu] = self.getTimeToolboxSolution(self.tbFine, mu)
+                
+            self.Ntime=len(next(iter(self.fineSnapShotList.values())))
+            self.Nmu = len(self.fineSnapShotList.keys())
+            
             if self.worldcomm.isMasterRank():
-                print(f"[NIRB] Number of snapshot computed (Nmu x Ntime) : {self.Nmu}x{self.Ntime} = {self.Ntime*self.Nmu}" )
+                print(f"[NIRB] Number of snapshot computed (Nmu x Ntime) : {self.Nmu}x{self.Ntime} = {self.Ntime * self.Nmu}" )
             
         return vector_mu
 
@@ -536,6 +531,29 @@ class nirbOffline(ToolboxModel):
             uHN[i] = self.l2ScalarProductMatrixCoarse.energy( self.coarseSnapShotList[i], coarseSol )
         return uHN
 
+    def getNirbProjection(self, Solution, N=None):
+        """Computed the projection of a fine function in the reduced basis of size N 
+
+        Args:
+        -----
+            Solution (Feel++ solution) : the solution to be projected
+            N (int, optional): size of the sub-basis. if None, N=all basis function
+
+        Returns:
+        --------
+            numpy.array: reduced solution u_H^N
+        """
+        if N is None: N=len(self.reducedBasis)
+
+        vec = self.Xh.element()
+        vec.setZero()
+
+        for i in range(N):
+            alpha = self.l2ScalarProductMatrix.energy(Solution,self.reducedBasis[i])
+            vec.add(alpha, self.reducedBasis[i])
+
+        return vec 
+    
 
     def initProblemGreedy(self, Ntrain, eps, Xi_train=None, Nmax=50, samplingMode="log-random", computeCoarse=False):
         """Initialize the problem, using a greedy loop
@@ -654,11 +672,12 @@ class nirbOffline(ToolboxModel):
         -----
             tolerance(float), optional : tolerance of the eigen value problem target accuracy of the data compression
         """
+        RIC = []
         if not self.time_dependent:
             self.reducedBasis, RIC= self.PODReducedBasis(tolerance=tolerance)
         else : 
             print("NIRB with time dependent")
-            self.reducedBasis, RIC = self.getTimeReducedBasis(tolerance=tolerance)
+            self.getTimeReducedBasis(tolerance=tolerance)
 
         self.N = len(self.reducedBasis)
         if self.worldcomm.isMasterRank():
@@ -724,13 +743,19 @@ class nirbOffline(ToolboxModel):
 
         assert type(self.fineSnapShotList)==dict, f"snapshot should be saved on dict"
 
-        reducedBasis = []
-        for n in self.fineSnapShotList.keys():
-            base, ric = self.PODReducedBasis(self.fineSnapShotList[n])
-            self.correlationMatrix = None 
-            reducedBasis.extend(base)
+        self.reducedBasis = []
+        for i,mu in enumerate(self.fineSnapShotList.keys()):
+            if i==0: 
+                base, ric = self.PODReducedBasis(self.fineSnapShotList[mu])
+            else:
+                listU =[]
+                for s in self.fineSnapShotList[mu]:
+                    listU.append(s - self.getNirbProjection(s)) 
+                    # listU.append(s)
+                base, ric = self.PODReducedBasis(listU)
 
-        return reducedBasis, ric  
+            self.correlationMatrix=None 
+            self.reducedBasis.extend(base)
 
             
 
@@ -841,27 +866,33 @@ class nirbOffline(ToolboxModel):
 
         interpolateOperator = self.createInterpolator(self.tbCoarse, self.tbFine)
         InterpCoarseSnaps = {}
-        for n in self.coarseSnapShotList.keys():
-            InterpCoarseSnaps[n] = []
-            for snap in self.coarseSnapShotList[n]:
-                InterpCoarseSnaps[n].append(interpolateOperator.interpolate(snap))
+        for mu in self.coarseSnapShotList.keys():
+            InterpCoarseSnaps[mu] = []
+            for snap in self.coarseSnapShotList[mu]:
+                InterpCoarseSnaps[mu].append(interpolateOperator.interpolate(snap))
 
+        
         
         basemu={}
         for i,n in enumerate(self.coarseSnapShotList.keys()):
             basemu[n]= self.reducedBasis[i*self.Nmu:(i+1)*self.Nmu]
             
+            
+        basemu={}
+        for i,n in enumerate(self.coarseSnapShotList.keys()):
+            basemu[n]= self.reducedBasis[i*self.Nmu:(i+1)*self.Nmu]
+            
         coeffCoarse = {}
-        coeffFine   = {}
+        coeffFine = {}
         for n in range(self.Ntime):
-            coeffCoarse[n]=np.zeros((self.Nmu,self.Nmu))
-            coeffFine[n]  =np.zeros((self.Nmu,self.Nmu))
+            coeffCoarse[n]=np.zeros((self.Nmu,self.N))
+            coeffFine[n]  =np.zeros((self.Nmu,self.N))
 
         for n in range(self.Ntime):
-            for i in range(self.Nmu):
-                for j in range(self.Nmu):
-                    coeffFine[n][i,j] = self.l2ScalarProductMatrix.energy(self.fineSnapShotList[n][i],basemu[n][j])
-                    coeffCoarse[n][i,j] = self.l2ScalarProductMatrix.energy(InterpCoarseSnaps[n][i],basemu[n][j])
+            for i,mu in enumerate(self.coarseSnapShotList.keys()):
+                for j in range(self.N):
+                    coeffFine[n][i,j] = self.l2ScalarProductMatrix.energy(self.fineSnapShotList[mu][n],self.reducedBasis[j])
+                    coeffCoarse[n][i,j] = self.l2ScalarProductMatrix.energy(InterpCoarseSnaps[mu][n],self.reducedBasis[j])
 
         return coeffCoarse, coeffFine
     
@@ -896,31 +927,21 @@ class nirbOffline(ToolboxModel):
                 uHfine = self.getToolboxSolution(self.tbFine, mu)
                 uHcoarse = self.getToolboxSolution(self.tbCoarse, mu)
             else :
-                finalTimeIt = next(reversed(self.coeffCoarse.keys())) # take only the last time solution associate to mu
-                uHfine = self.getTimeToolboxSolution(self.tbFine,mu)[finalTimeIt] # the final time solution 
-                uHcoarse = self.getTimeToolboxSolution(self.tbCoarse, mu)[finalTimeIt]
+                timeIter = self.Ntime-1  # take only the last time solution associate to mu
+                uHfine = self.getTimeToolboxSolution(self.tbFine,mu)[timeIter] # the final time solution 
+                uHcoarse = self.getTimeToolboxSolution(self.tbCoarse, mu)[timeIter]
                 
             soltestFine.append(uHfine)
             soltest.append(interpolationOperator.interpolate(uHcoarse))
 
 
-        tabcoef = np.zeros((Ntest, self.Nmu))
-        tabcoefuh = np.zeros((Ntest, self.Nmu))
+        tabcoef = np.zeros((Ntest, self.N))
+        tabcoefuh = np.zeros((Ntest, self.N))
 
-        if not self.time_dependent:
-            for j in range(Ntest):
-                for k in range(self.N):
-                    tabcoef[j,k] = self.l2ScalarProductMatrix.energy(soltest[j],self.reducedBasis[k])
-                    tabcoefuh[j,k] = self.l2ScalarProductMatrix.energy(soltestFine[j],self.reducedBasis[k])
-        else :
-            basemu={}
-            for i,n in enumerate(self.coarseSnapShotList.keys()):
-                basemu[n]= self.reducedBasis[i*self.Nmu:(i+1)*self.Nmu]
-                    
-            for j in range(Ntest):
-                for k in range(self.Nmu):
-                    tabcoef[j,k] = self.l2ScalarProductMatrix.energy(soltest[j],basemu[finalTimeIt][k])
-                    tabcoefuh[j,k] = self.l2ScalarProductMatrix.energy(soltestFine[j],basemu[finalTimeIt][k])
+        for j in range(Ntest):
+            for k in range(self.N):
+                tabcoef[j,k] = self.l2ScalarProductMatrix.energy(soltest[j],self.reducedBasis[k])
+                tabcoefuh[j,k] = self.l2ScalarProductMatrix.energy(soltestFine[j],self.reducedBasis[k])
 
         Unirb = self.Xh.element()
         UnirbRect = self.Xh.element()
@@ -929,22 +950,20 @@ class nirbOffline(ToolboxModel):
         Error = {'N':[], 'l2(uh-uHn)':[], 'l2(uh-uHn)rec':[], 'l2(uh-uhn)' : [], 'l2(uh-uH)':[]}
 
         nb = 0
-        pas = 1 if (self.Nmu<=50) else 5 
-        for i in tqdm(range(1,self.Nmu+1,pas), desc=f"[NIRB] Compute convergence error:", ascii=False, ncols=100):
+        pas = 1 if (self.N<=50) else 5 
+        for i in tqdm(range(1,self.N+1,pas), desc=f"[NIRB] Compute convergence error:", ascii=False, ncols=100):
             nb = i
             # Get rectification matrix
             if not self.time_dependent:
                 BH = self.coeffCoarse[:nb, :nb]
                 Bh = self.coeffFine[:nb, :nb]
             else :
-                BH = self.coeffCoarse[finalTimeIt][:nb, :nb]
-                Bh = self.coeffFine[finalTimeIt][:nb, :nb]
+                BH = self.coeffCoarse[timeIter][:, :nb]
+                Bh = self.coeffFine[timeIter][:, :nb]
 
             R = np.zeros((nb,nb))
-            for s in range(nb):
-                R[s,:] = (np.linalg.inv(BH.transpose() @ BH + regulParam*np.eye(nb))@BH.transpose()@Bh[:,s])
-
-            # R = np.linalg.solve(BH.transpose() @ BH + regulParam * np.eye(nb), BH.transpose() @ Bh).T
+            ## Add Thikonov regularization 
+            R = np.linalg.solve(BH.transpose() @ BH + regulParam * np.eye(nb), BH.transpose() @ Bh).T
 
             for j in range(Ntest):
                 Unirb.setZero()
@@ -952,16 +971,10 @@ class nirbOffline(ToolboxModel):
                 Uhn.setZero()
                 tabRect = R @ tabcoef[j,:nb]
 
-                if not self.time_dependent:
-                    for k in range(nb): # get reduced sol in a basis function space
-                        Unirb.add(float(tabcoef[j,k]),self.reducedBasis[k])
-                        UnirbRect.add(float(tabRect[k]), self.reducedBasis[k])
-                        Uhn.add(float(tabcoefuh[j,k]),self.reducedBasis[k])
-                else :
-                    for k in range(nb): # get reduced sol in a basis function space
-                        Unirb.add(float(tabcoef[j,k]),basemu[finalTimeIt][k])
-                        UnirbRect.add(float(tabRect[k]),basemu[finalTimeIt][k])
-                        Uhn.add(float(tabcoefuh[j,k]),basemu[finalTimeIt][k])
+                for k in range(nb): # get reduced sol in a basis function space
+                    Unirb.add(float(tabcoef[j,k]),self.reducedBasis[k])
+                    UnirbRect.add(float(tabRect[k]), self.reducedBasis[k])
+                    Uhn.add(float(tabcoefuh[j,k]),self.reducedBasis[k])
                     
                 Unirb.add(-1, soltestFine[j])
                 UnirbRect.add(-1, soltestFine[j])
@@ -1022,42 +1035,20 @@ class nirbOffline(ToolboxModel):
             tol (float) : tolerence for checking orthonormalization. Defaults to 1.e-8
         """
 
-        if not self.time_dependent:
-            
-            Z = self.reducedBasis
-            nb = 0
-            while not (self.checkL2Orthonormalized(tol=tol)) and nb < nbMax:
-                Z[0] = Z[0] * (1./math.sqrt(abs(self.l2ScalarProductMatrix.energy(Z[0],Z[0]))))
-                for n in range(1, self.N):
-                    s = self.Xh.element()
-                    s.setZero()
-                    for m in range(n):
-                        s.add(self.l2ScalarProductMatrix.energy(Z[n], Z[m]), Z[m])
-                    z_tmp = Z[n] - s
-                    Z[n] = z_tmp * (1./math.sqrt(abs(self.l2ScalarProductMatrix.energy(z_tmp,z_tmp))))
+        Z = self.reducedBasis
+        nb = 0
+        while not (self.checkL2Orthonormalized(tol=tol)) and nb < nbMax:
+            Z[0] = Z[0] * (1./math.sqrt(abs(self.l2ScalarProductMatrix.energy(Z[0],Z[0]))))
+            for n in range(1, self.N):
+                s = self.Xh.element()
+                s.setZero()
+                for m in range(n):
+                    s.add(self.l2ScalarProductMatrix.energy(Z[n], Z[m]), Z[m])
+                z_tmp = Z[n] - s
+                Z[n] = z_tmp * (1./math.sqrt(abs(self.l2ScalarProductMatrix.energy(z_tmp,z_tmp))))
 
-                self.reducedBasis = Z
-                nb +=1
-        else:
-            Zb = []
-            for k in range(self.Ntime):
-                Z = self.reducedBasis[k*self.Nmu:(k+1)*self.Nmu]
-                nb = 0
-                while not (self.checkL2Orthonormalized(Z=Z,tol=tol)) and nb < nbMax:
-                    Z[0] = Z[0] * (1./math.sqrt(abs(self.l2ScalarProductMatrix.energy(Z[0],Z[0]))))
-                    for n in range(1, len(Z)):
-                        s = self.Xh.element()
-                        s.setZero()
-                        for m in range(n):
-                            s.add(self.l2ScalarProductMatrix.energy(Z[n], Z[m]), Z[m])
-                        z_tmp = Z[n] - s
-                        Z[n] = z_tmp * (1./math.sqrt(abs(self.l2ScalarProductMatrix.energy(z_tmp,z_tmp))))
-                    nb +=1
-
-                # nb = max(0,nb)
-                Zb.extend(Z)
-            
-            self.reducedBasis = Zb
+            self.reducedBasis = Z
+            nb +=1
 
         if self.worldcomm.isMasterRank():
             print(f"[NIRB] Gram-Schmidt L2 orthonormalization done after {nb} step"+['','s'][nb>1])
@@ -1120,33 +1111,25 @@ class nirbOffline(ToolboxModel):
             bool: True if the reduced basis is L2 orthonormalized
         """
 
-        if self.time_dependent and Z is None :
-            # check orthonormalization at each time iteration
-            normalk = [] 
-            for k in range(self.Ntime):
-                Zk = self.reducedBasis[k*self.Nmu:(k+1)*self.Nmu]
-                normalk.append(self.checkL2Orthonormalized(Zk))
-            return all(normalk) 
+        if Z is None:
+            Tab = self.reducedBasis
         else :
-            if Z is None:
-                Tab = self.reducedBasis
-            else :
-                Tab = Z
+            Tab = Z
 
-            Nsize = len(Tab)
-            matL2 = np.zeros((Nsize,Nsize))
+        Nsize = len(Tab)
+        matL2 = np.zeros((Nsize,Nsize))
 
-            for i in range(Nsize):
-                for j in range(Nsize):
-                    matL2[i,j] = self.l2ScalarProductMatrix.energy(Tab[i], Tab[j])
-                    if i == j:
-                        if abs(matL2[i, j] - 1) > tol:
-                            print(f"[NIRB] not L2 ortho : pos = [{i} , {j}] val = {abs(matL2[i,j] - 1.)} tol = {tol}")
-                            return False
-                    else:
-                        if abs(matL2[i, j]) > tol :
-                            print(f"[NIRB] not L2 ortho : pos = [{i} , {j}] val = {abs(matL2[i,j])} tol = {tol}")
-                            return False
+        for i in range(Nsize):
+            for j in range(Nsize):
+                matL2[i,j] = self.l2ScalarProductMatrix.energy(Tab[i], Tab[j])
+                if i == j:
+                    if abs(matL2[i, j] - 1) > tol:
+                        print(f"[NIRB] not L2 ortho : pos = [{i} , {j}] val = {abs(matL2[i,j] - 1.)} tol = {tol}")
+                        return False
+                else:
+                    if abs(matL2[i, j]) > tol :
+                        print(f"[NIRB] not L2 ortho : pos = [{i} , {j}] val = {abs(matL2[i,j])} tol = {tol}")
+                        return False
         return True
 
     def saveData(self, path="./", force=False):
@@ -1289,16 +1272,9 @@ class nirbOnline(ToolboxModel):
             sol = solution
 
         compressedSol = np.zeros(Nb) 
+        for i in range(Nb):
+            compressedSol[i] = self.l2ProductBasis[i].to_petsc().dot(sol.to_petsc())
 
-        if not self.time_dependent:               
-            for i in range(Nb):
-                compressedSol[i] = self.l2ProductBasis[i].to_petsc().dot(sol.to_petsc())
-        else :
-            assert (itr is not None) and (itr < self.Ntime), f"set the ith itertion to compute solution itr <= {self.Ntime}"
-
-            for i in range(Nb):
-                compressedSol[i] = self.l2ProductBasisTime[itr][i].to_petsc().dot(sol.to_petsc())
-            
         return compressedSol
 
     def getInterpSol(self, mu, itr=None):
@@ -1333,7 +1309,7 @@ class nirbOnline(ToolboxModel):
         feelpp._discr.Element
             NIRB online solution uHn^N
         """
-        if Nb is None: Nb = self.Nmu
+        if Nb is None: Nb = self.N
 
         onlineSol = self.Xh.element()
         onlineSol.setZero()
@@ -1356,12 +1332,8 @@ class nirbOnline(ToolboxModel):
             if self.worldcomm.isMasterRank():
                 print("[NIRB] Solution computed with Rectification post-process ")
 
-        if not self.time_dependent:
-            for i in range(Nb):
-                onlineSol.add(float(coeff[i]), self.reducedBasis[i])
-        else:
-            for i in range(Nb):
-                onlineSol.add(float(coeff[i]), self.reducedBasisTime[itr][i])
+        for i in range(Nb):
+            onlineSol.add(float(coeff[i]), self.reducedBasis[i])
 
         # to export, call self.exportField(onlineSol, "U_nirb")
 
@@ -1383,7 +1355,7 @@ class nirbOnline(ToolboxModel):
         --------
             R (numpy.array): the rectification matrix
         """
-        if Nb is None: Nb = self.Nmu
+        if Nb is None: Nb = self.N
 
         if not self.time_dependent:
             BH = coeffCoarse[:Nb, :Nb]
@@ -1391,14 +1363,12 @@ class nirbOnline(ToolboxModel):
         else :
             assert (itr is not None) and (itr<self.Ntime), f"set ith iteration to compute solution {itr} < {self.Ntime}"
             assert (type(coeffCoarse)==dict) and (type(coeffFine)==dict)
-            BH = coeffCoarse[itr][:Nb, :Nb]
-            Bh = coeffFine[itr][:Nb, :Nb]
+            BH = coeffCoarse[itr][:, :Nb]
+            Bh = coeffFine[itr][:, :Nb]
 
         R = np.zeros((Nb, Nb))
-
-        #Thikonov regularization (AT @ A + lambda I_d)^-1 @ (AT @ B)
-        for i in range(Nb):
-            R[i,:] = np.linalg.inv(BH.transpose() @ BH + lambd*np.eye(Nb)) @ BH.transpose() @ Bh[:,i]
+        ###Thikonov regularization (AT @ A + lambda I_d)^-1 @ (AT @ B)
+        R = np.linalg.solve(BH.transpose() @ BH + lambd * np.eye(Nb), BH.transpose() @ Bh).T
 
         return R
 
@@ -1451,54 +1421,31 @@ class nirbOnline(ToolboxModel):
 
         self.worldcomm.globalComm().Barrier()
 
-
+        giveNbSnap = True 
         if nbSnap is None:
-            nbSnap = self.Nmu 
-            # import glob
-            # Nreduce = len(glob.glob(os.path.join(reducedPath, "*.h5")))
-            # Nl2 = len(glob.glob(os.path.join(l2productPath, "*.h5")))
+            nbSnap = self.N
+            giveNbSnap = False
 
-            # assert Nreduce == Nl2, f"different number of files, {Nreduce} != {Nl2}"
-            # nbSnap = Nreduce
+        self.reducedBasis = []
+        self.l2ProductBasis = []  
+        for i in range(nbSnap):
+            vec1 = self.Xh.element()
+            vec1.load(reducedPath, reducedFilename, suffix=str(i))
+            self.reducedBasis.append(vec1)
 
-        if not self.time_dependent: 
-            self.reducedBasis = []
-            self.l2ProductBasis = []  
-            for i in range(nbSnap):
-                vec1 = self.Xh.element()
-                vec1.load(reducedPath, reducedFilename, suffix=str(i))
-                self.reducedBasis.append(vec1)
+            vec2 = self.Xh.element()
+            vec2.load(l2productPath, l2productFilename, suffix=str(i))
+            self.l2ProductBasis.append(vec2)
 
-                vec2 = self.Xh.element()
-                vec2.load(l2productPath, l2productFilename, suffix=str(i))
-                self.l2ProductBasis.append(vec2)
-                
-            self.N = nbSnap
-            self.Nmu = nbSnap
-        else :
-            self.Nmu = nbSnap if nbSnap<self.Nmu else self.Nmu 
-            self.reducedBasisTime={n:[] for n in range(self.Ntime)}
-            self.l2ProductBasisTime={n:[] for n in range(self.Ntime)}
-            for n in range(self.Ntime):
-                k = n*self.Nmu
-                for i in range(k, k+nbSnap):
-                    vec1 = self.Xh.element()
-                    vec1.load(reducedPath, reducedFilename, suffix=str(i))
-                    self.reducedBasisTime[n].append(vec1)
-
-                    vec2 = self.Xh.element()
-                    vec2.load(l2productPath, l2productFilename, suffix=str(i))
-                    self.l2ProductBasisTime[n].append(vec2)
-
-            self.N = self.Nmu*self.Ntime            
-
+        if giveNbSnap: self.N = nbSnap
+                   
         coeffCoarseFile = os.path.join(path,'coeffcoarse')
         coeffFineFile = os.path.join(path,'coefffine')
         if self.doRectification:
             if not self.time_dependent:
                 self.coeffCoarse = np.load(coeffCoarseFile+'.npy')
                 self.coeffFine = np.load(coeffFineFile+'.npy') 
-                self.RectificationMat[self.Nmu] = self.getRectification(self.coeffCoarse, self.coeffFine, lambd=regulParam)
+                self.RectificationMat[self.N] = self.getRectification(self.coeffCoarse, self.coeffFine, lambd=regulParam)
             else :
                 coeffCoarseFile = open(coeffCoarseFile, 'rb')
                 coeffFineFile = open(coeffFineFile, 'rb')
@@ -1506,7 +1453,7 @@ class nirbOnline(ToolboxModel):
                 self.coeffFine = pickle.load(coeffFineFile)
                 coeffFineFile.close()
                 coeffCoarseFile.close()
-                self.RectificationMat[self.Nmu] = self.getRectification(self.coeffCoarse, self.coeffFine, lambd=regulParam, itr=self.Ntime-1)
+                self.RectificationMat[self.N] = self.getRectification(self.coeffCoarse, self.coeffFine, lambd=regulParam, itr=self.Ntime-1)
 
         if self.worldcomm.isMasterRank():
             print(f"[NIRB] Data loaded from {os.path.abspath(path)}")
