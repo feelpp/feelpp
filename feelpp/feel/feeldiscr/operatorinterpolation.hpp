@@ -818,157 +818,6 @@ struct DomainEltIdFromImageEltId
     using size_type = typename domain_mesh_type::size_type;
     using index_type = typename domain_mesh_type::index_type;
 
-#if 0
-    struct ReturnFromElement
-    {
-        static constexpr ElementsType onEntity() { return ElementsType::MESH_ELEMENTS; }
-
-        ReturnFromElement( typename domain_vector_mesh_element_type::value_type const& elt )
-            :
-            M_element( elt )
-            {}
-        auto const& element() const { return unwrap_ref( M_element ); }
-
-    private :
-        typename domain_vector_mesh_element_type::value_type M_element;
-    };
-
-    struct ReturnFromFace
-    {
-        static constexpr ElementsType onEntity() { return ElementsType::MESH_FACES; }
-
-        ReturnFromFace( typename domain_vector_mesh_element_type::value_type const& elt, uint16_type faceIdInElement )
-            :
-            M_element( elt ),
-            M_faceIdInElement( faceIdInElement )
-            {}
-        ReturnFromFace( ReturnFromFace && ) = default;
-        ReturnFromFace( ReturnFromFace const& ) = default;
-
-        auto const& element() const { return unwrap_ref( M_element ); }
-        uint16_type faceIdInElement() const { return M_faceIdInElement; }
-        auto const& face() const { return this->element().face( faceIdInElement() ); }
-
-    private :
-        typename domain_vector_mesh_element_type::value_type M_element;
-        uint16_type M_faceIdInElement;
-
-    };
-
-
-    struct ReturnFromElements
-    {
-        static constexpr ElementsType onEntity() { return ReturnFromElement::onEntity(); }
-
-        ReturnFromElements( typename image_vector_mesh_element_type::value_type imageElement,
-                            uint16_type faceIdInImageElement = invalid_v<uint16_type> )
-            :
-            M_imageElement( imageElement ),
-            M_faceIdInImageElement( faceIdInImageElement )
-            {}
-
-        auto const& imageElement() const { return unwrap_ref( M_imageElement ); }
-        uint16_type faceIdInImageElement() const { return M_faceIdInImageElement; }
-
-        std::vector<ReturnFromElement> const& elements() const { return M_elements; }
-
-        bool empty() const { return M_elements.empty(); }
-
-        bool addElement( std::shared_ptr<MeshSupport<domain_mesh_type>> meshSupport, typename domain_vector_mesh_element_type::value_type const& elt )
-            {
-                if ( meshSupport->isPartialSupport() )
-                {
-                    index_type eltId = unwrap_ref( elt ).id();
-                    if ( meshSupport->hasElement( eltId ) && !meshSupport->hasGhostElement( eltId ) )
-                    {
-                        M_elements.push_back( ReturnFromElement{elt} );
-                        return true;
-                    }
-                }
-                else
-                {
-                    M_elements.push_back( ReturnFromElement{elt} );
-                    return true;
-                }
-                return false;
-            }
-
-        void keepOnly( index_type domainId )
-            {
-                auto itFindId = std::find_if(M_elements.begin(), M_elements.end(), [&domainId]( auto const& rfe ){ return rfe.element().id() == domainId; });
-                if ( itFindId != M_elements.end() )
-                {
-                    auto rfeFound = std::move(*itFindId);
-                    M_elements.clear();
-                    M_elements.push_back( std::move( rfeFound ) );
-                }
-                else
-                    CHECK( false ) << "elt id not found";
-            }
-
-    private :
-        std::vector<ReturnFromElement> M_elements;
-        typename image_vector_mesh_element_type::value_type M_imageElement;
-        uint16_type M_faceIdInImageElement = invalid_v<uint16_type> ;
-    };
-
-    struct ReturnFromFaces
-    {
-        static constexpr ElementsType onEntity() { return ReturnFromFace::onEntity(); }
-
-        ReturnFromFaces( typename image_vector_mesh_element_type::value_type imageElement,
-                         uint16_type faceIdInImageElement = invalid_v<uint16_type> )
-            :
-            M_imageElement( imageElement ),
-            M_faceIdInImageElement( faceIdInImageElement )
-            {}
-
-
-        auto const& imageElement() const { return unwrap_ref( M_imageElement ); }
-        uint16_type faceIdInImageElement() const { return M_faceIdInImageElement; }
-
-        std::vector<ReturnFromFace> const& elements() const { return M_elements; }
-
-        bool empty() const { return M_elements.empty(); }
-
-        bool addElement( std::shared_ptr<MeshSupport<domain_mesh_type>> meshSupport, typename domain_vector_mesh_element_type::value_type const& elt, uint16_type faceIdInElt )
-            {
-                if ( meshSupport->isPartialSupport() )
-                {
-                    index_type eltId = unwrap_ref( elt ).id();
-                    if ( meshSupport->hasElement( eltId ) && !meshSupport->hasGhostElement( eltId ) )
-                    {
-                        M_elements.push_back( ReturnFromFace{elt, faceIdInElt} );
-                        return true;
-                    }
-                }
-                else
-                {
-                    M_elements.push_back( ReturnFromFace{elt, faceIdInElt} );
-                    return true;
-                }
-                return false;
-            }
-        void keepOnly( index_type domainId )
-            {
-                auto itFindId = std::find_if(M_elements.begin(), M_elements.end(), [&domainId]( auto const& rfe ){ return rfe.element().id() == domainId; });
-                if ( itFindId != M_elements.end() )
-                {
-                    auto rfeFound = std::move(*itFindId);
-                    M_elements.clear();
-                    M_elements.push_back( std::move( rfeFound ) );
-                }
-                else
-                    CHECK( false ) << "elt id not found";
-            }
-
-    private:
-        std::vector<ReturnFromFace> M_elements;
-        typename image_vector_mesh_element_type::value_type M_imageElement;
-        uint16_type M_faceIdInImageElement = invalid_v<uint16_type> ;
-    };
-#else
-
     template <int TheCoDim>
     struct ReturnDomainEntities
     {
@@ -1059,7 +908,6 @@ struct DomainEltIdFromImageEltId
     using ReturnFromFaces = ReturnType<1>;
 
 
-#endif
 
     DomainEltIdFromImageEltId( std::shared_ptr<domain_space_type> XhDomain, std::shared_ptr<image_space_type> XhImage )
         :
@@ -1088,14 +936,6 @@ struct DomainEltIdFromImageEltId
     apply( typename image_mesh_type::face_type const& imageFace ) const
         {
             image_vector_mesh_element_type imageElts;
-#if 0
-            if ( imageFace.isConnectedTo0() && !imageFace.element0().isGhostCell() )
-                if ( !M_hasMeshSupportPartialImage || M_meshSupportImage->hasElement( imageFace.element0().id() ) )
-                    imageElts.push_back( boost::cref( imageFace.element0() ) );
-            if ( imageFace.isConnectedTo1() && !imageFace.element1().isGhostCell() )
-                if ( !M_hasMeshSupportPartialImage || M_meshSupportImage->hasElement( imageFace.element1().id() ) )
-                    imageElts.push_back( boost::cref( imageFace.element1() ) );
-#else
             if ( imageFace.isConnectedTo0() )
             {
                 if ( M_hasMeshSupportPartialImage )
@@ -1123,8 +963,6 @@ struct DomainEltIdFromImageEltId
                     imageElts.push_back( boost::cref( imageFace.element1() ) );
                 }
             }
-
-#endif
 
             return this->apply<nDimDiffBetweenDomainImage>( imageFace, imageElts );
         }
