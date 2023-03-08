@@ -250,10 +250,7 @@ if __name__ == '__main__':
     # config_nirb['finemesh_path'] = f"$cfgdir/meshFiles/fineMesh_p{size}.json"
     
 
-    pas = 3
-    b = 10+Nbase+pas+1
-    baseList = range(10,b, pas)
-
+    pas = 10
     Dmu = loadParameterSpace(model_path)
     ## get distinct training and testing sample 
     idmodel = args.idmodel 
@@ -298,7 +295,7 @@ if __name__ == '__main__':
                 errorfile = f"errors{Nsample}Params_{idd}.csv"
                 if os.path.isfile(errorfile) : os.remove(errorfile)
                 ## Get convergence error in respect to basis function     
-                for N in baseList:
+                for N in range(1,Nglob,pas):
                     N = int(N)
                     if feelpp.Environment.isMasterRank():
                         print("\n\n-----------------------------")
@@ -306,8 +303,8 @@ if __name__ == '__main__':
                     online_error_sampling(nirb_on, RESPATH,errorfile=errorfile, Nb=N, Nsample=Nsample, Xi_test=Xi_test, verbose=False, regulParam=lmd)
                     del nirb_on.RectificationMat[N] 
         else :
-            ## Get convergence error in respect to basis function     
-            for N in baseList:
+            ## Get convergence error in respect to basis function    
+            for N in range(1,Nglob,pas):
                 N = int(N)
                 if feelpp.Environment.isMasterRank():
                     print("\n\n-----------------------------")
