@@ -1,5 +1,6 @@
 import sys
 import os
+import json, re
 petsc_dir = '@FEELPP_PETSC_DIR@' or '/usr/lib/petsc'
 petsc_dir = os.path.join(os.getenv('PETSC_DIR')
                          or petsc_dir, 'lib/python3/dist-packages')
@@ -17,7 +18,7 @@ from ._ts import  *
 from ._vf import  *
 from ._models import *
 
-def readcfg(filename):
+def readCfg(filename):
     """read a Feel++ config file and get a ConfigParser to manipulate the options
 
     Args:
@@ -276,3 +277,24 @@ def create_box(filename="box"):
         gmsh.model.setPhysicalName(2, gamma_3, "Gamma_3")
     mshname = gmshGenerate(3, filename)
     return mshname, 3, 1, 1.5, 1.5, 7
+
+
+
+def readJson(path):
+    """read a json file with comments in it, using json package
+    
+    Args:
+        path (str): path of the json file
+    
+    Returns:
+        dict: loaded model, as a dictionary
+    """
+    file = open(path, 'r')
+    data =  file.read()
+    file.close()
+
+    clear_data = re.sub('//.*', '', data)
+    clear_data = re.sub(r'/\*([\s\S]*?)\*/', '', clear_data)
+
+    j = json.loads(clear_data)
+    return j
