@@ -1104,14 +1104,14 @@ class GeoMap
             }
 
         //!
-        //! @return true if geomap assocated to a face, false otherwise
+        //! @return true if geomap associated to a face, false otherwise
         //!
         bool isOnFace() const
             {
                 return (subEntityCoDim == 1) && (M_face_id != invalid_uint16_type_value);
             }
         //!
-        //! @return true if geomap assocated to a face, edge or point, false otherwise
+        //! @return true if geomap associated to a face, edge or point, false otherwise
         //!
         bool isOnSubEntity() const
             {

@@ -964,7 +964,7 @@ Environment::generateOLFiles( int argc, char** argv, std::string const& appName 
     {
         for ( boost::shared_ptr<po::option_description> option : o.second )
         {
-            //Informations about the option
+            //Information about the option
             std::string optName = option->format_name().erase( 0,2 ); //Putting the option name in a variable for easier manipulations
             std::string defVal = ""; //option->format_parameter(); //Putting the option default value in a variable for easier manipulations
             std::string desc=option->description(); // Option description
@@ -1999,7 +1999,7 @@ Environment::updateInformationObject( nl::json & p ) const
                     { "number_of_processors", Environment::numberOfProcessors() }
                 } ) );
 
-        // Softwares
+        // Software
         p["/software/boost/version"_json_pointer] = BOOST_LIB_VERSION;
 #if BOOST_VERSION >= 106700
         std::stringstream mpi_version;

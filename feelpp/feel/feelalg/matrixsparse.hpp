@@ -893,7 +893,7 @@ public:
     virtual void applyInverseSqrt( Vector<value_type>& vec_in, Vector<value_type>& vec_out );
 
     /**
-     * Get informations (filling, nnz, ...)
+     * Get information (filling, nnz, ...)
      * Implemented in MatrixPetsc
      */
     virtual void getMatInfo( std::vector<double> &)

@@ -39,11 +39,16 @@ namespace Feel
 {
 template<int Dim, int Order, int RealDim, template<uint16_type,uint16_type,uint16_type> class Entity, typename T> struct GT_Lagrange;
 template<class Convex, typename T, typename IndexT> class PointSetQuadrature;
-
+/**
+ * @defgroup Quadrature 
+ * @ingroup Feel
+ * @brief Quadrature rules
+ */
 /*!
  * \class Gauss
  * \brief Gauss quadrature points
- *
+ * @ingroup Quadrature
+ * 
  * \code
  * // generate a Gauss point set that would integrate exactly linear
  * // functions using double precision numerical type

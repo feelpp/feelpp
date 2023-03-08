@@ -1,0 +1,132 @@
+{
+    "Name": "Triangular cavity 2D RHT",
+    "ShortName": "triangle2d",
+    "Models": {
+        "heat": {
+                "name": "heat",
+                "materials": [
+                    "Rectangle1",
+                    "Rectangle2",
+                    "Rectangle3"
+                ]
+            }
+    },
+    "Parameters": {        
+        "sigma": 5.67e-8, // W⋅m-2⋅K−4
+        "Tinit_C":300,
+        "Tref_C":0
+    },
+    "Meshes": {
+        "heat": {
+            "Import": {
+                "filename": "$cfgdir/triangular_cavity.geo"
+            }
+        }
+    },
+    "Materials": {
+        "Rectangle1": {
+            "k": "400", // W/(m⋅K)
+            "Cp": "385", // J/(kg⋅K)
+            "rho": "8700" // kg/m3
+        },
+        "Rectangle2": {
+            "k": "400", // W/(m⋅K)
+            "Cp": "385", // J/(kg⋅K)
+            "rho": "8700" // kg/m3
+        },
+        "Rectangle3": {
+            "k": "400", // W/(m⋅K)
+            "Cp": "385", // J/(kg⋅K)
+            "rho": "8700" // kg/m3
+        }
+    },
+    "Coating":{
+        "Rectangle1": {
+            "markers": [
+                "RadiativeSurface1"
+            ],
+            "epsilon": "0.4" // 0.4
+        },
+        "Rectangle2": {
+            "markers": [
+                "RadiativeSurface2"
+            ],
+            "epsilon": "0.8" // 0.8
+        },
+        "Rectangle3": {
+            "markers": [
+                "RadiativeSurface3"
+            ],
+            "epsilon": "0.6" // 0.6
+        }
+    },
+    "InitialConditions": {
+        "heat": {
+            "temperature": {
+                "Expression": {
+                    "Tini": {
+                        "markers":["Rectangle1","Rectangle2","Rectangle3"],
+                        "expr":"Tinit_C:Tinit_C"
+                    }
+                }
+            }
+        }
+    },
+    "BoundaryConditions": {
+        "heat": {
+            "flux": {
+                "FixedQ3": {
+                    "expr": "-6000"
+                },
+                "FixedQ2": {
+                    "expr": "-5000"
+                }
+            }, 
+            "temperature":
+            {
+                "Fixed_T":{
+                    "expr":"+300"
+                }
+            },
+            "radiative_enclosure_heat_flux": {
+                "Cavity_1": {
+                    "enclosure": "closed",
+                    "markers": ["RadiativeSurface1", "RadiativeSurface2","RadiativeSurface3"],
+                    "sigma": "sigma:sigma",
+                    "viewfactors": {
+                        "status": "compute",     
+                        "filename":"$cfgdir/triangular_cavity_vf.json"
+                    }
+                }
+            }
+        }
+    },
+    "Checker":
+    {
+        "RadiativeSurface1_q":
+        {
+            "type":"average",
+            "markers":["RadiativeSurface1"],
+            "quantity":"flux",
+            "exact_value":-2750,// 11000/L1 = 11000/4 = 2750,
+            "rel_tolerance":0.1
+        },
+        "RadiativeSurface2_T":
+        {
+            "type":"average",
+            "markers":["RadiativeSurface2"],
+            "quantity":"temperature",
+            "exact_value":600,
+            "rel_tolerance":0.1
+        },
+        "RadiativeSurface3_q":
+        {
+            "type":"average",
+            "markers":["RadiativeSurface3"],
+            "quantity":"temperature",
+            "exact_value":641,
+            "rel_tolerance":0.1
+        }
+
+    }
+}

@@ -61,7 +61,7 @@ typedef Feel::vf::detail::BilinearForm<Feel::FunctionSpace<Feel::Mesh<Feel::Simp
 
 typedef FunctionSpace<Mesh<Simplex<2>>,Feel::bases<Feel::Lagrange<1,Feel::Scalar,Feel::Continuous,Feel::PointSetEquiSpaced,0>>,double,Feel::Periodicity<Feel::NoPeriodicity>,Feel::mortars<Feel::NoMortar>> function_space_type;
 
-//definition of all methods we need for the wrapping and wich are create from a BOOST_PARAMETER_FUNCTION or a method with default value arguments  
+//definition of all methods we need for the wrapping and which are create from a BOOST_PARAMETER_FUNCTION or a method with default value arguments  
 
 std::shared_ptr<Mesh<Simplex<2>>> unitSquare_w ()
 {
