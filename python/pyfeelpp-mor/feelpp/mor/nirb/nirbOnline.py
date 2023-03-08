@@ -73,8 +73,9 @@ if __name__ == "__main__":
 
     ## general mu 
     mu = nirb_on.Dmu.mumin()
-    print("[NIRB] Selected parameeter mu")
-    print(mu.view())
+    if nirb_on.worldcomm.isMaterRank():
+        print("[NIRB] Selected parameeter mu")
+        print(mu.view())
     
     err = nirb_on.loadData(path=RESPATH, nbSnap=nbSnap)
     assert err == 0, "Error while loading data"
