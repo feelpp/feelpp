@@ -72,8 +72,10 @@ def online_error_sampling(nirb, RESPATH, errorfile=None, Nb=None,  Nsample=50, X
         save (bool, optional): if True, save the errors in a csv file. Defaults to False.
         regulParam(float, optionnal) : regularization parameter for the rectification preprocess. Defaults to 1.e-10
     """
-    
-    errorN = ComputeErrorSampling(nirb, Nb=Nb, Nsample=Nsample, Xi_test=Xi_test, h1=True, regulParam=regulParam)
+    if not nirb.time_dependent:
+        errorN = ComputeErrorSampling(nirb, Nb=Nb, Nsample=Nsample, Xi_test=Xi_test, h1=True, regulParam=regulParam)
+    else:
+        errorN = ComputeErrorSamplingTime(nirb, Nb=Nb, Nsample=Nsample, Xi_test=Xi_test, h1=True, regulParam=regulParam)
 
     df = pd.DataFrame(errorN) 
     df['N'] = Nb
@@ -249,8 +251,8 @@ if __name__ == '__main__':
     # config_nirb['coarsemesh_path'] = f"$cfgdir/meshFiles/coarseMesh_p{size}.json"
     # config_nirb['finemesh_path'] = f"$cfgdir/meshFiles/fineMesh_p{size}.json"
     
-
-    pas = 10
+    
+    pas = 3
     Dmu = loadParameterSpace(model_path)
     ## get distinct training and testing sample 
     idmodel = args.idmodel 
@@ -259,7 +261,7 @@ if __name__ == '__main__':
     ## generate nirb offline and online object :  
     nirb_off = nirbOffline(**config_nirb, initCoarse=doGreedy)
     nirb_off.initModel()
-    resOffline = offline(nirb_off, RESPATH, doGreedy, baseList[-1], Xi_train=Xi_train)
+    resOffline = offline(nirb_off, RESPATH, doGreedy, Nbase, Xi_train=Xi_train)
 
     assert os.path.isfile("./nirbOfflineInfos.json"), f"Missed file : ./nirbOfflineInfos.json"
     nirb_file = feelpp.Environment.expand("./nirbOfflineInfos.json")
