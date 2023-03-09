@@ -1291,7 +1291,7 @@ class nirbOnline(ToolboxModel):
             interpSol (feelpp._discr.Element): interpolated solution on fine mesh 
             or a list of all time solution in the casde of parabolic problem if allTimeSol=True 
         """
-        interpSol = self.solveOnline(mu, itr,allTimeSol)[1]
+        interpSol = self.solveOnline(mu,itr=itr, allTimeSol=allTimeSol)[1]
         return interpSol
 
     def getOnlineSol(self, mu, Nb=None,itr=None, tn=None ):
@@ -1502,15 +1502,13 @@ class nirbOnline(ToolboxModel):
         if not self.time_dependent:
             coarseSol = self.getToolboxSolution(self.tbCoarse, mu)
         else :
-            if (itr is None) and (tn is None) :
+            if itr is None :
                 f"missing of iteration and time, then the final iteration is considered: {self.Ntime-1}"
                 itr = self.Ntime-1
-            elif (itr is None) and (tn is not None) :
-                itr = math.floor(tn/self.tbCoarse.timeStep())
             else :
                 assert itr<self.Ntime, f"ith iteration {itr} have to be <= {self.Ntime}"
-        
-            listSol = self.getTimeToolboxSolution(self.tbCoarse, mu)[itr]
+
+            listSol = self.getTimeToolboxSolution(self.tbCoarse, mu)
             coarseSol = listSol[itr]
             if allTimeSol:
                 listInterpSol = [self.interpolationOperator.interpolate(f) for f in listSol]

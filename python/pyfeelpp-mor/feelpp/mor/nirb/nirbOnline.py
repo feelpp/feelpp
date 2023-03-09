@@ -73,7 +73,7 @@ if __name__ == "__main__":
 
     ## general mu 
     mu = nirb_on.Dmu.mumin()
-    if nirb_on.worldcomm.isMaterRank():
+    if nirb_on.worldcomm.isMasterRank():
         print("[NIRB] Selected parameeter mu")
         print(mu.view())
     

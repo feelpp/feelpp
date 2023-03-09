@@ -156,7 +156,7 @@ def ComputeErrorSamplingTime(nirb_on, Nb=None, Nsample = 1, Xi_test=None, sampli
         The same keys are given in case of h1 norm with 'h1' instead of 'l2' (exp : 'h1(uh - uHn)' )
         N.B : True sol = FE solution in the fine mesh
     """
-    assert nirb_on.time_depndent, f"Use this function only for parabolic problem. Otherwise use ComputeErrorSampling()"
+    assert nirb_on.time_dependent, f"Use this function only for parabolic problem. Otherwise use ComputeErrorSampling()"
 
     if h1:
         l2Mat, h1Mat = nirb_on.generateOperators(h1=True)
