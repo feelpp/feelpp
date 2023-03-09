@@ -869,17 +869,6 @@ class nirbOffline(ToolboxModel):
             InterpCoarseSnaps[mu] = []
             for snap in self.coarseSnapShotList[mu]:
                 InterpCoarseSnaps[mu].append(interpolateOperator.interpolate(snap))
-
-        
-        
-        basemu={}
-        for i,n in enumerate(self.coarseSnapShotList.keys()):
-            basemu[n]= self.reducedBasis[i*self.Nmu:(i+1)*self.Nmu]
-            
-            
-        basemu={}
-        for i,n in enumerate(self.coarseSnapShotList.keys()):
-            basemu[n]= self.reducedBasis[i*self.Nmu:(i+1)*self.Nmu]
             
         coeffCoarse = {}
         coeffFine = {}
