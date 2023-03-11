@@ -235,6 +235,7 @@ def create_rectangle(filename="rectangle"):
     if Environment.isMasterRank():
         import gmsh
         gmsh.initialize()
+        gmsh.option.setNumber('General.Verbosity', 1)
         gmsh.model.add("rectangle")
         gmsh.logger.start()
         rectangle = gmsh.model.occ.addRectangle(0, 0, 0, 1, 2)
