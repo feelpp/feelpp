@@ -1,6 +1,7 @@
-nbmake==1.3,4
+nbmake==1.3.4
 pytest
 petsc4py
 slepc4py
 plotly
 gmsh
+pandas
