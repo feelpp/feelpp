@@ -177,6 +177,8 @@ mor/unsteady_heat1d/unsteadyHeat1dapp.cpp
 
 gmsh-config.err
 python/pyfeelpp/feelpp/__init__.py
+*.msh
+**/.ipynb_checkpoints/**
 mor/examples/linearelasticity3d/linearelasticity3dapp.cpp
 mor/examples/heat3d/heat3dapp.cpp
 **/crbdb
