@@ -49,6 +49,7 @@ class InsertingObjects
             - setAmbiantMesh : Set the ambiant mesh.
             - setObjectMesh : Set the object mesh.
             - moveObjectMesh : Adapt (translate, rotate, scale) object mesh.
+            - remeshAmbiantMesh : Execute local remesh.
             - setMarkers : Set map (MarkerName, MarkerID) for all volume and boundary markers.
             - getMinElts : Get min coordinates of each volume marker.
             - setDistanceFields : Set distance fields to all object boundary markers.
@@ -64,6 +65,7 @@ class InsertingObjects
         void setAmbiantMesh();
         void setObjectMesh();
         void moveObjectMesh();
+        void remeshAmbiantMesh();
         void setMarkers();
         void getMinElts();
         void setDistanceFields();
@@ -80,9 +82,14 @@ class InsertingObjects
         std::string M_fileNameAmbiant;
         std::string M_fileNameObject;
         double M_hObject;
+        int M_multiPhysics;
+        std::string M_markerAmbiant;
+        std::string M_boundarymarkerAmbiant;
         std::vector<double> M_translationVector;
         double M_scalingFactor;
         double M_rotationAngle;
+        int M_remesh;
+        double M_hRemesh;
         int M_export;
         int M_checkers;
         bool M_articulated = false;
@@ -99,11 +106,15 @@ class InsertingObjects
         std::map<int,std::string> M_VolumeMarkersAmbiant;
         std::map<int,std::string> M_BoundaryMarkersObject;
         std::map<int,std::string> M_BoundaryMarkersAmbiant;
+        std::map<int,std::string> M_BoundaryMarkersAmbiant_;
         std::map<std::string, std::vector<size_type_> > M_AllMarkerNames;
         std::vector<std::string> M_BoundaryMarkersONames;
         std::vector<std::string> M_VolumeMarkersONames;
         int M_nbrObjects;
         std::map<int,std::vector<double>> M_minEltsMarker;
+        std::vector<int> M_VolumeMarkersSolidAmbiant;
+        std::vector<int> M_VolumeMarkersFluidAmbiant;
+        std::vector<std::string> M_VolumeMarkersSolidAmbiantNames;
     
         
 
@@ -126,9 +137,14 @@ InsertingObjects<Dim>::getData(std::string filename)
     M_fileNameAmbiant = jsonData["meshes"]["ambiant_mesh"].get<std::string>();
     M_fileNameObject = jsonData["meshes"]["object_mesh"].get<std::string>();
     M_hObject = jsonData["meshes"]["h_object"].get<double>();
+    M_multiPhysics = jsonData["multiPhysics"]["has_multiPhysics"].get<double>();
+    M_markerAmbiant = jsonData["multiPhysics"]["markerAmiant"].get<std::string>();
+    M_boundarymarkerAmbiant = jsonData["multiPhysics"]["boundarymarkerAmbiant"].get<std::string>();
     M_translationVector = jsonData["position"]["translation_vector"].get<std::vector<double>>();
     M_scalingFactor = jsonData["position"]["scaling_factor"].get<double>();
     M_rotationAngle = jsonData["position"]["rotation_angle"].get<double>();
+    M_remesh = jsonData["remesh"]["local_remesh"].get<int>();
+    M_hRemesh = jsonData["remesh"]["h_remesh"].get<double>();
     M_export = jsonData["postProcess"]["add_exports"].get<int>();
     M_checkers = jsonData["postProcess"]["add_checkers"].get<int>();
 }
@@ -186,6 +202,31 @@ InsertingObjects<Dim>::moveObjectMesh()
     meshMove( M_ObjectMesh , disp );
 }
 
+template<uint16_type Dim>
+void
+InsertingObjects<Dim>::remeshAmbiantMesh()
+{
+    auto r = remesher(M_AmbiantMesh);
+    auto met = M_VhAmbiantMesh->element();
+
+    auto [ havg, hmin, hmax ] = hMeasures( M_AmbiantMesh );
+    met.on(_range=elements(M_AmbiantMesh), _expr=cst(hmax));
+
+    for (int it = 0; it < M_nbrObjects; it++)
+        met.on(_range=elements(M_AmbiantMesh, idv(M_distToObjectBoundaries[it]), _selector=select_elements_from_expression::with_positive_values), _expr = cst(M_hRemesh));
+    
+    if (M_export == 1)
+    {
+        auto exp = exporter( _mesh = M_AmbiantMesh , _name = fmt::format( "metric"));
+        exp->addRegions();
+        exp->add("met", met);
+        exp->save();
+    }
+
+    r.setMetric(met);
+    M_AmbiantMesh = r.execute();
+    M_VhAmbiantMesh = space_type::New(M_AmbiantMesh); 
+}
 
 template<uint16_type Dim>
 void 
@@ -218,20 +259,72 @@ InsertingObjects<Dim>::setMarkers()
         if constexpr (Dim == 2)
         {
             if (m.second[1] == 1) 
+            {
+                if (M_multiPhysics == 1)
+                {
+                    if (M_boundarymarkerAmbiant.compare(m.first) != 0)
+                    {
+                        M_BoundaryMarkersAmbiant_.insert(std::pair<int,std::string>(m.second[0],m.first));
+                    }   
+                }
                 M_BoundaryMarkersAmbiant.insert(std::pair<int,std::string>(m.second[0],m.first));
-
+            }
+                
             else if (m.second[1] == 2) 
-                M_VolumeMarkersAmbiant.insert(std::pair<int,std::string>(m.second[0],m.first));
-            
+            {
+                if (M_multiPhysics == 1)
+                {
+                    if (M_markerAmbiant.compare(m.first) == 0)
+                    {
+                        M_VolumeMarkersAmbiant.insert(std::pair<int,std::string>(m.second[0],m.first));
+                        M_VolumeMarkersFluidAmbiant.push_back(m.second[0]);
+                    }
+                    else
+                    {
+                        M_VolumeMarkersSolidAmbiant.push_back(m.second[0]);
+                        M_VolumeMarkersSolidAmbiantNames.push_back(m.first);
+                    }
+                        
+                }
+                else
+                    M_VolumeMarkersAmbiant.insert(std::pair<int,std::string>(m.second[0],m.first));
+            }
+               
             M_AllMarkerNames[m.first] = m.second; 
         }
         else if constexpr ( Dim == 3 )
         {
-            if (m.second[1] == 2)
+            if (m.second[1] == 2)   
+            {
+                if (M_multiPhysics == 1)
+                {
+                    if (M_boundarymarkerAmbiant.compare(m.first) != 0)
+                    {
+                        M_BoundaryMarkersAmbiant_.insert(std::pair<int,std::string>(m.second[0],m.first));
+                    }   
+                }
                 M_BoundaryMarkersAmbiant.insert(std::pair<int,std::string>(m.second[0],m.first));
-            else if (m.second[1] == 3) 
-                M_VolumeMarkersAmbiant.insert(std::pair<int,std::string>(m.second[0],m.first));
-        
+            }
+                
+            else if (m.second[1] == 3)
+            {
+                if (M_multiPhysics == 1)
+                {
+                    if (M_markerAmbiant.compare(m.first) == 0)
+                    {
+                        M_VolumeMarkersAmbiant.insert(std::pair<int,std::string>(m.second[0],m.first));
+                        M_VolumeMarkersFluidAmbiant.push_back(m.second[0]);
+                    }
+                    else 
+                    {
+                        M_VolumeMarkersSolidAmbiant.push_back(m.second[0]);
+                        M_VolumeMarkersSolidAmbiantNames.push_back(m.first);
+                    }
+                }
+                else
+                    M_VolumeMarkersAmbiant.insert(std::pair<int,std::string>(m.second[0],m.first));
+            }
+                
             M_AllMarkerNames[m.first] = m.second; 
         }
     }
@@ -267,7 +360,26 @@ InsertingObjects<Dim>::getMinElts()
             auto [zmin,arg_zmin] = minelt(_range=markedelements(M_ObjectMesh,item.second), _element=uz);
             M_minEltsMarker[item.first].push_back(zmin);
         }
-    }    
+    }
+
+    for (int i = 0; i < M_VolumeMarkersSolidAmbiantNames.size();i++)
+    {
+        auto ux = project(_space=M_VhAmbiantMesh, _range=elements(M_AmbiantMesh), _expr= Px());
+        auto [xmin,arg_xmin] = minelt(_range=markedelements(M_AmbiantMesh,M_VolumeMarkersSolidAmbiantNames[i]), _element=ux);
+        M_minEltsMarker[M_VolumeMarkersSolidAmbiant[i]].push_back(xmin);
+        
+        auto uy = project(_space=M_VhAmbiantMesh, _range=elements(M_AmbiantMesh), _expr= Py());
+        auto [ymin,arg_ymin] = minelt(_range=markedelements(M_AmbiantMesh,M_VolumeMarkersSolidAmbiantNames[i]), _element=uy);
+        M_minEltsMarker[M_VolumeMarkersSolidAmbiant[i]].push_back(ymin);
+        
+        if constexpr ( Dim == 3 )
+        {
+            auto uz = project(_space=M_VhAmbiantMesh, _range=elements(M_AmbiantMesh), _expr= Pz());
+            auto [zmin,arg_zmin] = minelt(_range=markedelements(M_AmbiantMesh,M_VolumeMarkersSolidAmbiantNames[i]), _element=uz);
+            M_minEltsMarker[M_VolumeMarkersSolidAmbiant[i]].push_back(zmin);
+        }
+    }
+
 }
 
 template<uint16_type Dim>
@@ -334,22 +446,43 @@ InsertingObjects<Dim>::setPhysicalGroups()
     {
         auto & [key, elt] = boost::unwrap_ref( elem );
         
-        if (elt.marker().value() == 2) //Fluid
+        if (M_multiPhysics == 1)
         {
-            int idF = 0;
-            for (auto m : M_VolumeMarkersAmbiant)
-                idF = m.first;
-            elt.setMarker(idF);
-            Mtest[elt.id()] =idF;
-        } 
-        else if (elt.marker().value() == 3) //Objects
-            BodiesElts.push_back(elt.id());
+            if (elt.marker().value() == 2000) //Fluid
+            {
+                int idF = 0;
+                for (auto m : M_VolumeMarkersAmbiant)
+                    idF = m.first; // Fluid only has one marker
+            
+                
+                elt.setMarker(idF);
+                Mtest[elt.id()] =idF;
+            } 
+            else //(elt.marker().value() == 3000) //Objects
+                BodiesElts.push_back(elt.id());
+        }
+        else
+        {
+            if (elt.marker().value() == 2) //Fluid
+            {
+                int idF = 0;
+                for (auto m : M_VolumeMarkersAmbiant)
+                    idF = m.first; // Fluid only has one marker
+            
+                
+                elt.setMarker(idF);
+                Mtest[elt.id()] =idF;
+            } 
+            else //(elt.marker().value() == 3000) //Objects
+                BodiesElts.push_back(elt.id());
+        }
+        
     }
 
     LOG(INFO) << "Nbr BodiesElts : " << BodiesElts.size();
 
     int nb_foundGroups = 0;
-    while (nb_foundGroups < M_VolumeMarkersONames.size())
+    while (nb_foundGroups < M_VolumeMarkersONames.size() + M_VolumeMarkersSolidAmbiant.size())
     {
         int GroupFull = 0;
         std::vector<int> GroupElts;
@@ -445,7 +578,6 @@ InsertingObjects<Dim>::setPhysicalGroups()
                 }
                 
                 
-
                 for ( auto & elem : M_ResultMesh->elements() )
                 {
                     auto & [key, elt] = boost::unwrap_ref( elem );
@@ -476,8 +608,9 @@ InsertingObjects<Dim>::setPhysicalGroups()
             
             auto markerIDneighbor = Mtest[elt.neighbor(i)];
 
-            if ( M_VolumeMarkersObject.find(markerIDneighbor) == M_VolumeMarkersObject.end()) 
+            if ( M_VolumeMarkersObject.find(markerIDneighbor) == M_VolumeMarkersObject.end() && std::find(M_VolumeMarkersSolidAmbiant.begin(), M_VolumeMarkersSolidAmbiant.end(), markerIDneighbor) == M_VolumeMarkersSolidAmbiant.end()) 
                 LOG(INFO) << "Not found Neighbor : " << markerIDneighbor << std::endl;
+                    
             else 
             {
                 if (markerIDneighbor != markerID) // Boundary 
@@ -489,19 +622,44 @@ InsertingObjects<Dim>::setPhysicalGroups()
 
                         // Get corresponding boundary marker id
                         std::string name;
-                        if (M_VolumeMarkersObject.find(markerIDneighbor) != M_VolumeMarkersObject.end())
-                            name = M_VolumeMarkersObject[markerIDneighbor];
-                        else    
-                            name = M_VolumeMarkersObject[markerID];
-                        int pos=0;
-                        while (M_VolumeMarkersONames[pos].compare(name) != 0)
-                            pos++;
                         int markerIDO;
-                        for (auto item : M_BoundaryMarkersObject)
+
+                        if (std::find(M_VolumeMarkersSolidAmbiant.begin(), M_VolumeMarkersSolidAmbiant.end(), markerIDneighbor) != M_VolumeMarkersSolidAmbiant.end())
                         {
-                            if (M_BoundaryMarkersONames[pos].compare(item.second) == 0 )
-                                markerIDO = item.first;
+                            for (int i=0;i<M_VolumeMarkersSolidAmbiant.size();i++)
+                            {
+                                if (M_VolumeMarkersSolidAmbiant[i] == markerIDneighbor)
+                                {
+                                    int j = 0;
+                                    for (auto item : M_BoundaryMarkersAmbiant_)
+                                    {
+                                        if (j==i)
+                                            markerIDO = item.first;
+                                        j++;
+                                    }
+                                    
+                                    break;
+                                } 
+                            }
                         }
+                        else 
+                        {
+                            if (M_VolumeMarkersObject.find(markerIDneighbor) != M_VolumeMarkersObject.end())
+                                name = M_VolumeMarkersObject[markerIDneighbor];
+                            else    
+                                name = M_VolumeMarkersObject[markerID];
+                        
+                            int pos=0;
+                            while (M_VolumeMarkersONames[pos].compare(name) != 0)
+                                pos++;
+                        
+                            for (auto item : M_BoundaryMarkersObject)
+                            {
+                                if (M_BoundaryMarkersONames[pos].compare(item.second) == 0 )
+                                    markerIDO = item.first;
+                            }
+                        }
+                        
 
                         // Find common face
                         for (auto & face : elt.faces())
@@ -614,13 +772,18 @@ InsertingObjects<Dim>::testBoundaryMarkers()
     auto expfinal = exporter( _mesh = M_ResultMesh , _name = fmt::format( "TestMarkers"));
     expfinal->addRegions();
 
-    auto testwall = project(_space=Pch<1>(M_ResultMesh), _range=markedfaces(M_ResultMesh,"wall"),_expr=cst(2));
-    auto testinlet = project(_space=Pch<1>(M_ResultMesh), _range=markedfaces(M_ResultMesh,"inlet"),_expr=cst(3));
-    auto testoutlet = project(_space=Pch<1>(M_ResultMesh), _range=markedfaces(M_ResultMesh,"outlet"),_expr=cst(4));
-    
-    expfinal->add("wall",testwall);
-    expfinal->add("inlet",testinlet);
-    expfinal->add("outlet",testoutlet);
+    for (auto m : M_BoundaryMarkersObject)
+    {
+        auto test = project(_space=Pch<1>(M_ResultMesh), _range=markedfaces(M_ResultMesh,m.second),_expr=cst(m.first));
+        expfinal->add(m.second,test);
+    }
+
+    for (auto m : M_BoundaryMarkersAmbiant)
+    {
+        auto test = project(_space=Pch<1>(M_ResultMesh), _range=markedfaces(M_ResultMesh,m.second),_expr=cst(m.first));
+        expfinal->add(m.second,test);
+    }
+
     expfinal->save();
 }
 
@@ -659,25 +822,30 @@ InsertingObjects<Dim>::run()
 
     this->getMinElts();
     
-    // Set distance functions and levelsets
+    // Set distance functions 
     this->setDistanceFields();
+
+    // Local remesh
+    if (M_remesh == 1)
+        this->remeshAmbiantMesh();
+
+    // Set levelset
     this->setLevelsets();
     
     // Run remesh
     auto r = remesher(M_AmbiantMesh);
-    M_ResultMesh = r.mesh_from_ls(M_levelsetObject);
+    M_ResultMesh = r.mesh_from_ls(M_levelsetObject,M_VolumeMarkersSolidAmbiant, M_VolumeMarkersFluidAmbiant);
 
     // Set markers name
     this->setPhysicalGroups();
 
     // Checkers
     if (M_checkers == 1)
+    {
         this->checkers();
-    
-    // Test boundary markers
-    this->testBoundaryMarkers();
-    
-    
+        this->testBoundaryMarkers();
+    }
+        
     return 0;
 }
 

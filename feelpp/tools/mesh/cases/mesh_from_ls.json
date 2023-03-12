@@ -1,9 +1,15 @@
 {
     "meshes":
     {
-        "ambiant_mesh":"cases/carre.geo",
+        "ambiant_mesh":"cases/multiphysics.geo",
         "object_mesh":"cases/circle.geo",
-        "h_object":0.04
+        "h_object":0.01
+    },
+    "multiPhysics":
+    {
+        "has_multiPhysics":1,
+        "markerAmiant":"Fluid",
+        "boundarymarkerAmbiant":"BoxWalls"
     },
     "position":
     {
@@ -11,9 +17,14 @@
         "scaling_factor":1.0,
         "rotation_angle":0.0
     },
+    "remesh":
+    {
+        "local_remesh":0,
+        "h_remesh":0.075
+    },
     "postProcess":
     {
         "add_exports":1,
-        "add_checkers":0
+        "add_checkers":1
     }
 }

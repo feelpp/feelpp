@@ -108,6 +108,7 @@ class Remesh
     using mesh_ptrtype = std::shared_ptr<MeshType>;
     using mesh_ptr_t = mesh_ptrtype;
     using scalar_metric_t = typename Pch_type<mesh_t, 1>::element_type;
+    using marker_type = typename mesh_t::element_type::marker_type;
     typedef SubMeshData<index_type> smd_type;
     typedef std::shared_ptr<smd_type> smd_ptrtype;
 
@@ -269,7 +270,7 @@ class Remesh
      * Insert object
     */
     mesh_ptrtype mmgls2Mesh( mmg_mesh_t const& m_in);
-    std::shared_ptr<MeshType> mesh_from_ls( scalar_metric_t const&);
+    std::shared_ptr<MeshType> mesh_from_ls( scalar_metric_t const&, std::vector<int>, std::vector<int>);
 
   private:
     void setParameters();
@@ -299,7 +300,7 @@ class Remesh
     smd_ptrtype M_smd;
     std::map<int, std::pair<int, int>> M_id2tag, M_id2tag_face;
 
-    using marker_type = typename mesh_t::element_type::marker_type;
+    
     std::map<int,std::tuple<ElementsType,int,marker_type>> M_mapMmgFragmentIdToMeshFragementDesc;
 };
 
@@ -1806,11 +1807,48 @@ Remesh<MeshType>::mmgls2Mesh( mmg_mesh_t const& mesh )
 }
 
 template <typename MeshType>
-std::shared_ptr<MeshType> Remesh<MeshType>::mesh_from_ls(scalar_metric_t const& m)
+std::shared_ptr<MeshType> Remesh<MeshType>::mesh_from_ls(scalar_metric_t const& m, std::vector<int> refMarkers, std::vector<int> fluidMarker )
 { 
     // Set levelset M_mmg_sol
     this->setMetric(m);
     
+    if constexpr ( dimension_v<MeshType> == 2 )
+        MMG2D_saveMesh(std::get<MMG5_pMesh>(this->M_mmg_mesh), "initmesh.o.mesh");
+    if constexpr ( dimension_v<MeshType> == 3 )
+        MMG3D_saveMesh(std::get<MMG5_pMesh>(this->M_mmg_mesh), "initmesh.o.mesh");
+    
+    // Add multiphysics references
+    int npar = refMarkers.size() + fluidMarker.size();
+    
+    if (npar > 0)
+    {
+        if constexpr ( dimension_v<MeshType> == 2 )
+            MMG2D_Set_iparameter(std::get<MMG5_pMesh>(this->M_mmg_mesh),this->M_mmg_sol,MMG2D_IPARAM_numberOfMat,npar);
+        if constexpr ( dimension_v<MeshType> == 3 )
+            MMG3D_Set_iparameter(std::get<MMG5_pMesh>(this->M_mmg_mesh),this->M_mmg_sol,MMG3D_IPARAM_numberOfMat,npar);
+    }
+
+    for (int i = 0;i<npar;i++)
+    {
+        auto const& [et,fragId,marker] = M_mapMmgFragmentIdToMeshFragementDesc.at( i );
+            
+        if (std::find(refMarkers.begin(), refMarkers.end(), marker.value()) != refMarkers.end())
+        {
+            if constexpr ( dimension_v<MeshType> == 2 )
+                MMG2D_Set_multiMat(std::get<MMG5_pMesh>(this->M_mmg_mesh),this->M_mmg_sol,i,MMG5_MMAT_NoSplit,i,i);
+            if constexpr ( dimension_v<MeshType> == 3 )
+                MMG3D_Set_multiMat(std::get<MMG5_pMesh>(this->M_mmg_mesh),this->M_mmg_sol,i,MMG5_MMAT_NoSplit,i,i);
+        }
+        else if (std::find(fluidMarker.begin(), fluidMarker.end(), marker.value()) != fluidMarker.end())
+        {
+            if constexpr ( dimension_v<MeshType> == 2 )
+                MMG2D_Set_multiMat(std::get<MMG5_pMesh>(this->M_mmg_mesh),this->M_mmg_sol,i,MMG5_MMAT_Split,3000,2000);
+            if constexpr ( dimension_v<MeshType> == 3 )
+                MMG3D_Set_multiMat(std::get<MMG5_pMesh>(this->M_mmg_mesh),this->M_mmg_sol,i,MMG5_MMAT_Split,3000,2000);
+        }
+
+    }
+
     // Execute remeshing from levelset
     if constexpr ( dimension_v<MeshType> == 2 )
         MMG2D_mmg2dls(std::get<MMG5_pMesh>(this->M_mmg_mesh),this->M_mmg_sol,NULL);
@@ -1819,7 +1857,10 @@ std::shared_ptr<MeshType> Remesh<MeshType>::mesh_from_ls(scalar_metric_t const& 
         MMG3D_mmg3dls(std::get<MMG5_pMesh>(this->M_mmg_mesh),this->M_mmg_sol,NULL);
     
     // Save final mesh in mmg format
-    MMG2D_saveMesh(std::get<MMG5_pMesh>(this->M_mmg_mesh), "finalmesh.o.mesh");
+    if constexpr ( dimension_v<MeshType> == 2 )
+        MMG2D_saveMesh(std::get<MMG5_pMesh>(this->M_mmg_mesh), "finalmesh.o.mesh");
+    if constexpr ( dimension_v<MeshType> == 3 )
+        MMG3D_saveMesh(std::get<MMG5_pMesh>(this->M_mmg_mesh), "finalmesh.o.mesh");
 
     // Get and export final mesh in mesh format
     auto finalMesh = mmgls2Mesh(this->M_mmg_mesh);
