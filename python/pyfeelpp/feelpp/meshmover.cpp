@@ -38,10 +38,8 @@ void defMeshmover(py::module &m)
     using mesh_t = MeshT;
     using displ_t = DisplType;
     using mesh_ptr_t = std::shared_ptr<MeshT>;
-    std::string pyclass_name;
 
-    std::string suffix = fmt::format("{}DG{}", MeshT::nDim, MeshT::nOrder );
-    pyclass_name = std::string( "Meshmover" ) + suffix;
+    std::string pyclass_name = fmt::format("MeshMover{}DG{}", MeshT::nDim, MeshT::nOrder );
 
     m.def("meshMove",[]( mesh_ptr_t & mesh , displ_t const& u ) 
         {return meshMove( mesh,u);}, 
