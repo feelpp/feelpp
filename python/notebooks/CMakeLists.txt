@@ -20,5 +20,5 @@ add_test(NAME feelpp-notebook-toolbox-heat
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 set_tests_properties(feelpp-notebook-core PROPERTIES FIXTURES_REQUIRED notebooks)
-set_tests_properties(feelpp-notebook-toolbox PROPERTIES FIXTURES_REQUIRED notebooks)
+set_tests_properties(feelpp-notebook-toolbox-heat PROPERTIES FIXTURES_REQUIRED notebooks)
 
