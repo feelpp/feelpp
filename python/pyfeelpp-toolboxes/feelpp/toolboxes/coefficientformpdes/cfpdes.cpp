@@ -75,8 +75,8 @@ void defcfpdes(py::module &m)
     using step_ptr_t = typename exporter_cfpdes_t::step_ptrtype;
 
     std::string pyclass_name = std::string("cfpdes_") + std::to_string(nDim) + std::string("D");
-    py::class_<toolbox_cfpdes_t, std::shared_ptr<toolbox_cfpdes_t>, ModelNumerical>( m, pyclass_name.c_str() )
-        .def( py::init<std::string const&, std::string const&, worldcomm_ptr_t const&, std::string const&, ModelBaseRepository const&>(),
+    py::class_<toolbox_cfpdes_t, std::shared_ptr<toolbox_cfpdes_t>, ModelNumerical> cfpdes_w( m, pyclass_name.c_str(), py::dynamic_attr() );
+    cfpdes_w.def( py::init<std::string const&, std::string const&, worldcomm_ptr_t const&, std::string const&, ModelBaseRepository const&>(),
               py::arg( "prefix" ),
               py::arg( "keyword" ) = std::string( "cfpdes" ),
               py::arg( "worldComm" ) = Environment::worldCommPtr(),
@@ -139,7 +139,7 @@ void defcfpdes(py::module &m)
                 using t = hana::type<Lagrange<2, Vectorial, Continuous, PointSetFekete>>;
                 return toolbox.template coefficientFormPDE<t>(nameeq, t() );
               }, "get the coefficients form pdes for a Pchv2", py::arg( "name" ) )
-        ;
+      ;
 }
 
 
