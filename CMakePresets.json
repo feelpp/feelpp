@@ -107,6 +107,17 @@
             }
         },
         {
+            "name": "feelpp-python",
+            "inherits": "default",
+            "displayName": "python",
+            "description": "Build only the Feel++ python Component",
+            "binaryDir": "${sourceDir}/build/python",
+            "cacheVariables": {
+                "FEELPP_COMPONENT": "python",
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/build/python/install/"
+            }
+        },
+        {
             "name": "python",
             "inherits": "default",
             "displayName": "python",
