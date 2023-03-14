@@ -38,7 +38,7 @@ MathJax.Hub.Config({
  <tr id="projectrow">
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign">
-   <div id="projectname">Feel++<span id="projectnumber">&#160;0.111.0-alpha.1</span>
+   <div id="projectname">Feel++<span id="projectnumber">&#160;0.111.0-alpha.2</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -166,6 +166,10 @@ Classes</h2></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">forward declarations of <code><a class="el" href="classFeel_1_1BlockLinearForm.html" title="forward declarations of BlockLinearForm and blockform1()">BlockLinearForm</a></code> and <code>blockform1()</code>  <a href="classFeel_1_1BlockLinearForm.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1BlocksStencilPattern.html">BlocksStencilPattern</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1BVHRay.html">BVHRay</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1BVHTree.html">BVHTree</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Checker.html">Checker</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classFeel_1_1Checker.html" title="Checker class.">Checker</a> class.  <a href="classFeel_1_1Checker.html#details">More...</a><br /></td></tr>
@@ -3312,6 +3316,9 @@ FEELPP_EXPORT std::string&#160;</td><td class="memItemRight" valign="bottom"><b>
 <tr class="memitem:a3fba05c2ab66ca5ee79ad2c24ff4b576"><td class="memItemLeft" align="right" valign="top"><a id="a3fba05c2ab66ca5ee79ad2c24ff4b576" name="a3fba05c2ab66ca5ee79ad2c24ff4b576"></a>
 <a class="el" href="classFeel_1_1StatusRequestHTTP.html">StatusRequestHTTP</a>&#160;</td><td class="memItemRight" valign="bottom"><b>requestHTTPPOST</b> (std::string const &amp;url, std::vector&lt; std::string &gt; const &amp;headers, std::ostream &amp;ofile)</td></tr>
 <tr class="separator:a3fba05c2ab66ca5ee79ad2c24ff4b576"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a415be2210280a8a00f7e27b517708925"><td class="memItemLeft" align="right" valign="top"><a id="a415be2210280a8a00f7e27b517708925" name="a415be2210280a8a00f7e27b517708925"></a>
+constexpr float&#160;</td><td class="memItemRight" valign="bottom"><b>robust_const</b> (<a class="el" href="classint.html">int</a> n)</td></tr>
+<tr class="separator:a415be2210280a8a00f7e27b517708925"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaa90565f9cd5f52a52eeea0e4b7858b87"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__Core.html#gaa90565f9cd5f52a52eeea0e4b7858b87">sanitize</a> (std::string const  &amp;s)</td></tr>
 <tr class="memdesc:gaa90565f9cd5f52a52eeea0e4b7858b87"><td class="mdescLeft">&#160;</td><td class="mdescRight">trim string to remove special characters  <a href="group__Core.html#gaa90565f9cd5f52a52eeea0e4b7858b87">More...</a><br /></td></tr>
 <tr class="separator:gaa90565f9cd5f52a52eeea0e4b7858b87"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -6125,7 +6132,7 @@ template&lt;typename EltType &gt; </div>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">e</td><td>element to be checked </td></tr>
-    <tr><td class="paramname">flags</td><td>vector of strings cotnaining the markers </td></tr>
+    <tr><td class="paramname">flags</td><td>vector of strings containing the markers </td></tr>
   </table>
   </dd>
 </dl>
@@ -6284,7 +6291,7 @@ template&lt;typename MeshType &gt; </div>
         </tr>
       </table>
 </div><div class="memdoc">
-<dl class="section return"><dt>Returns</dt><dd>a pair of iterators to iterate over elements of the mesh which are stricly within the domain that is to say they do not share a face with the boundary </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>a pair of iterators to iterate over elements of the mesh which are strictly within the domain that is to say they do not share a face with the boundary </dd></dl>
 
 </div>
 </div>

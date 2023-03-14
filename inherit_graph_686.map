@@ -1,3 +1,4 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$structstd_1_1hash_3_01nlohmann_1_1basic__json_3_01ObjectType_00_01ArrayType_00_01StringType_00_06d4f1ea19ce1bda8275363c404adf9a2.html" title="hash value for JSON objects" alt="" coords="5,5,331,105"/>
+<area shape="rect" id="node1" href="$classstd_1_1conditional_3_01std_1_1is__base__of__v_3_01MeshStructuredBase_00_01MeshT_01_4_00_01sf38de804df90ca37fb2eb29ea870681d.html" title=" " alt="" coords="5,13,164,39"/>
+<area shape="rect" id="node2" href="$structFeel_1_1is__mesh__structured.html" title="trait type to detect a MeshStructured mesh" alt="" coords="212,5,396,47"/>
 </map>

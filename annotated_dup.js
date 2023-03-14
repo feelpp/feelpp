@@ -296,6 +296,8 @@ var annotated_dup =
       [ "BlockBilinearForm", "classFeel_1_1BlockBilinearForm.html", "classFeel_1_1BlockBilinearForm" ],
       [ "BlockLinearForm", "classFeel_1_1BlockLinearForm.html", "classFeel_1_1BlockLinearForm" ],
       [ "BlocksStencilPattern", "classFeel_1_1BlocksStencilPattern.html", null ],
+      [ "BVHRay", "classFeel_1_1BVHRay.html", null ],
+      [ "BVHTree", "classFeel_1_1BVHTree.html", "classFeel_1_1BVHTree" ],
       [ "Checker", "classFeel_1_1Checker.html", "classFeel_1_1Checker" ],
       [ "CheckerConvergenceFailed", "structFeel_1_1CheckerConvergenceFailed.html", null ],
       [ "CheckerExactFailed", "structFeel_1_1CheckerExactFailed.html", null ],

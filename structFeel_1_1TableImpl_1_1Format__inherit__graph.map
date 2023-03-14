@@ -1,4 +1,4 @@
 <map id="Feel::TableImpl::Format" name="Feel::TableImpl::Format">
-<area shape="rect" id="node1" title="Format of a Table inherits of Cell::Format which define the defaut format of cell (can be override in..." alt="" coords="9,219,191,369"/>
+<area shape="rect" id="node1" title="Format of a Table inherits of Cell::Format which define the default format of cell (can be override i..." alt="" coords="9,219,191,369"/>
 <area shape="rect" id="node2" href="$structFeel_1_1TableImpl_1_1Cell_1_1Format.html" title="Format of a Cell in a Table." alt="" coords="5,5,195,171"/>
 </map>

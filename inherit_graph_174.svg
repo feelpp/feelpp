@@ -12,11 +12,11 @@
 <!-- Node0 -->
 <g id="node1" class="node">
 <title>Node0</title>
-<g id="a_node1"><a xlink:href="classFeel_1_1FeelModels_1_1FluidMechanicsBoundaryConditions_1_1OutletWindkessel.html" target="_top" xlink:title=" ">
+<g id="a_node1"><a xlink:href="classFeel_1_1FeelModels_1_1FluidMechanicsBoundaryConditions_1_1BodyInterface.html" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="black" points="0,-0.5 0,-41.5 180,-41.5 180,-0.5 0,-0.5"/>
 <text text-anchor="start" x="8" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::FluidMechanics</text>
 <text text-anchor="start" x="8" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">BoundaryConditions&lt; Dim &gt;</text>
-<text text-anchor="middle" x="90" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">::OutletWindkessel</text>
+<text text-anchor="middle" x="90" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">::BodyInterface</text>
 </a>
 </g>
 </g>

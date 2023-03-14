@@ -31,7 +31,7 @@
 <!-- Node2 -->
 <g id="node2" class="node">
 <title>Node2</title>
-<g id="a_node2"><a xlink:href="structFeel_1_1TableImpl_1_1Format.html" target="_top" xlink:title="Format of a Table inherits of Cell::Format which define the defaut format of cell (can be override in...">
+<g id="a_node2"><a xlink:href="structFeel_1_1TableImpl_1_1Format.html" target="_top" xlink:title="Format of a Table inherits of Cell::Format which define the default format of cell (can be override i...">
 <polygon fill="white" stroke="black" points="3,-0.5 3,-112.5 139,-112.5 139,-0.5 3,-0.5"/>
 <text text-anchor="middle" x="71" y="-100.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::TableImpl::Format</text>
 <polyline fill="none" stroke="black" points="3,-93.5 139,-93.5 "/>
