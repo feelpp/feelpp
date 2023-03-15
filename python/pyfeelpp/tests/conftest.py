@@ -4,7 +4,7 @@ import sys
 import py
 import pytest
 import feelpp
-import gmsh 
+import gmsh
 
 log = getLogger(__name__)
 MPI_ARGS = ("mpirun", "-n")
