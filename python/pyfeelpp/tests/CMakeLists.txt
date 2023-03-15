@@ -1,6 +1,6 @@
 
 
-set(PYFILES conftest.py test_alg.py test_core.py test_remotedata.py test_discr.py test_exporter.py test_mesh.py test_remesh.py )
+set(PYFILES conftest.py test_alg.py test_core.py test_remotedata.py test_discr.py test_exporter.py test_mesh.py test_remesh.py test_meshmover.py)
 install(FILES ${PYFILES} DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp)
 
 foreach( test  alg core discr exporter integrate interpolation measure mesh operators remesh remotedata )

@@ -12,7 +12,7 @@ try:
     }
     has_cfpde = True
 except ImportError as e:
-    print('Import feelpp.toolboxes.cfpde failed: Feel++ Toolbox cfpde is not available')
+    print('Import feelpp.toolboxes.cfpdes failed: Feel++ Toolbox cfpdes is not available')
     pass  # module doesn't exist, deal with it.
 
 
@@ -31,8 +31,36 @@ def cfpdes(dim=2, worldComm=None, keyword="cfpdes", subprefix="", modelRep=None 
         raise RuntimeError('cfpde solver '+key+' not existing')
     if modelRep is None:
         modelRep = ModelBaseRepository()
-    return _cfpdes[key](prefix="cfpdes", keyword=keyword, worldComm=worldComm, subprefix="", modelRep=modelRep)
-
+    pdes = _cfpdes[key](prefix="cfpdes", keyword=keyword, worldComm=worldComm, subprefix="", modelRep=modelRep)
+    pdes.pde = lambda nameeq: pde(pdes,nameeq)
+    return pdes
 
 
     
+def dispatch_call(funcs, *args, **kwargs):
+    """
+    Dispatches a call to a list of functions and returns the result of the first
+    function that does not return None.
+
+    :param funcs: A list of functions to call.
+    :param args: Arguments to pass to the functions.
+    :param kwargs: Keyword arguments to pass to the functions.
+    :return: The result of the first function that does not return None, or None if all
+             functions return None.
+    """
+    for func in funcs:
+        result = func(*args, **kwargs)
+        if result is not None:
+            return result
+    return None
+
+def pde(toolbox,nameeq):
+    """get the pde from toolbox with nameeq
+    Keyword arguments:
+    toolbox -- the toolbox
+    nameeq -- the name of the equation
+    """
+#    if not has_cfpde:
+#        raise Exception('CFPDE toolbox is not enabled in Feel++')
+    result = dispatch_call([toolbox.pdePch1, toolbox.pdePch2, toolbox.pdePchv1, toolbox.pdePchv2], nameeq)
+    return result

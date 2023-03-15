@@ -146,9 +146,11 @@ void defExporter(py::module &m)
 
         // continuous
         .def("addP1c", &exporter_t::template add<typename Pch_type<mesh_t,1>::element_type>,"add P1 continuous Lagrange function  to exported data", py::arg("name"),py::arg("element"),py::arg("reps")="",py::arg("enable_if")=nullptr)
-
         .def("addP2c", &exporter_t::template add<typename Pch_type<mesh_t,2>::element_type>,"add P2 continuous Lagrange function  to exported data", py::arg("name"),py::arg("element"),py::arg("reps")="",py::arg("enable_if")=nullptr)
         .def("addP3c", &exporter_t::template add<typename Pch_type<mesh_t,3>::element_type>,"add P3 continuous Lagrange function  to exported data", py::arg("name"),py::arg("element"),py::arg("reps")="",py::arg("enable_if")=nullptr)
+        .def("addP1cv", &exporter_t::template add<typename Pchv_type<mesh_t,1>::element_type>,"add P1 continuous vectorial Lagrange function  to exported data", py::arg("name"),py::arg("element"),py::arg("reps")="",py::arg("enable_if")=nullptr)
+        .def("addP2cv", &exporter_t::template add<typename Pchv_type<mesh_t,2>::element_type>,"add P2 continuous vectorial Lagrange function  to exported data", py::arg("name"),py::arg("element"),py::arg("reps")="",py::arg("enable_if")=nullptr)
+        .def("addP3cv", &exporter_t::template add<typename Pchv_type<mesh_t,3>::element_type>,"add P3 continuous vectorial Lagrange function  to exported data", py::arg("name"),py::arg("element"),py::arg("reps")="",py::arg("enable_if")=nullptr)
 
         // discontinuous
         .def("addP0d", &exporter_t::template add<typename Pdh_type<mesh_t,0>::element_type>,"add P0 discontinuous Lagrange function  to exported data", py::arg("name"),py::arg("element"),py::arg("reps")="",py::arg("enable_if")=nullptr)
