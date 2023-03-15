@@ -107,9 +107,9 @@
             }
         },
         {
-            "name": "python",
+            "name": "feelpp-python",
             "inherits": "default",
-            "displayName": "feelpp-python",
+            "displayName": "python",
             "description": "Build only the Feel++ python Component",
             "binaryDir": "${sourceDir}/build/python",
             "cacheVariables": {
@@ -118,9 +118,9 @@
             }
         },
         {
-            "name": "feelpp-python",
+            "name": "python",
             "inherits": "default",
-            "displayName": "feelpp-python",
+            "displayName": "python",
             "description": "Build only the Feel++ python Component",
             "binaryDir": "${sourceDir}/build/python",
             "cacheVariables": {
@@ -238,20 +238,7 @@
         {
             "name": "feelpp-python",
             "inherits": "default",
-            "configurePreset": "feelpp-python",
-            "targets": [
-                "all",
-                "install"
-            ]
-        },
-        {
-            "name": "python",
-            "inherits": "default",
-            "configurePreset": "python",
-            "targets": [
-                "all",
-                "install"
-            ]
+            "configurePreset": "feelpp-python"
         },
         {
             "name": "feelpp-python-dbg",
@@ -311,11 +298,6 @@
         {
             "name": "mor",
             "configurePreset": "mor",
-            "inherits": "feelpp"
-        },
-        {
-            "name": "python",
-            "configurePreset": "python",
             "inherits": "feelpp"
         },
         {

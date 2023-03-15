@@ -19,7 +19,7 @@ except ImportError as e:
     pass  # module doesn't exist, deal with it.
 
 
-def heat(dim=2, order=1, worldComm=None, keyword="heat", subprefix="", modelRep=None):
+def heat(dim=2, order=1, worldComm=None, keyword="heat", subprefix="", modelRep=None,verbose=0):
     """create a heat toolbox solver
     Keyword arguments:
     dim -- the dimension (default: 2)
@@ -31,8 +31,8 @@ def heat(dim=2, order=1, worldComm=None, keyword="heat", subprefix="", modelRep=
     if worldComm is None:
         worldComm = feelpp.Environment.worldCommPtr()
     key='heat('+str(dim)+','+str(order)+')'
-    if worldComm.isMasterRank():
-        print(key)
+    if worldComm.isMasterRank() and verbose > 0:
+        print(f"Toolbox {key} created.")
     if key not in _heats:
         raise RuntimeError('Heat solver '+key+' not existing')
     if modelRep is None:
