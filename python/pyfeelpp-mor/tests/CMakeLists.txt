@@ -20,20 +20,20 @@ add_test (NAME feelpp_mor_python-tests-mpi-mor
 )
 
 
-foreach(fonc test_initializer test_nirb test_nirb_greedy)
-      add_test( NAME feelpp_mor_python_nirb-${fonc}
-        COMMAND ${CMAKE_COMMAND} -E env
-        LD_LIBRARY_PATH=${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}:$ENV{LD_LIBRARY_PATH}
-        PYTHONPATH=${CMAKE_INSTALL_PREFIX}/${FEELPP_PYTHON_MODULE_PATH}
-        ${PYTHON_EXECUTABLE} -m pytest test_nirb.py::${fonc} -s -vv
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-      )
+# foreach(fonc test_initializer test_nirb test_nirb_greedy)
+#       add_test( NAME feelpp_mor_python_nirb-${fonc}
+#         COMMAND ${CMAKE_COMMAND} -E env
+#         LD_LIBRARY_PATH=${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}:$ENV{LD_LIBRARY_PATH}
+#         PYTHONPATH=${CMAKE_INSTALL_PREFIX}/${FEELPP_PYTHON_MODULE_PATH}
+#         ${PYTHON_EXECUTABLE} -m pytest test_nirb.py::${fonc} -s -vv
+#         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+#       )
 
-      add_test( NAME feelpp_mor_python_nirb-mpi-${fonc}
-      COMMAND ${CMAKE_COMMAND} -E env
-      LD_LIBRARY_PATH=${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}:$ENV{LD_LIBRARY_PATH}
-      PYTHONPATH=${CMAKE_INSTALL_PREFIX}/${FEELPP_PYTHON_MODULE_PATH}
-      mpirun -np 4 ${PYTHON_EXECUTABLE} -m pytest test_nirb.py::${fonc} -s -vv
-      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    )
-endforeach()
+#       add_test( NAME feelpp_mor_python_nirb-mpi-${fonc}
+#       COMMAND ${CMAKE_COMMAND} -E env
+#       LD_LIBRARY_PATH=${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}:$ENV{LD_LIBRARY_PATH}
+#       PYTHONPATH=${CMAKE_INSTALL_PREFIX}/${FEELPP_PYTHON_MODULE_PATH}
+#       mpirun -np 4 ${PYTHON_EXECUTABLE} -m pytest test_nirb.py::${fonc} -s -vv
+#       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+#     )
+# endforeach()

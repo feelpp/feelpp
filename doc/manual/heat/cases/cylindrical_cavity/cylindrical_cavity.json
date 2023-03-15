@@ -1,0 +1,81 @@
+{
+    "Name": "Cylindrical cavity 3D RHT",
+    "ShortName": "cylinder3d",
+    "Models": {
+        "heat": {
+                "name": "heat",
+                "materials": [
+                    "Insulation"
+                ]
+            }
+    },
+    "Parameters": {        
+        "sigma": 5.67e-8, // W⋅m-2⋅K−4
+        "Tinit_C":500
+    },
+    "Meshes": {
+        "heat": {
+            "Import": {
+                "filename": "$cfgdir/cylindrical_cavity.geo"
+            }
+        }
+    },
+    "Materials": {
+        "Insulation": {
+            "k": "400", // W/(m⋅K)
+            "Cp": "0", // J/(kg⋅K)
+            "rho": "8700" // kg/m3
+        }
+    },
+    "Coating":{
+        "Top": {
+            "markers": ["CavityBdry"],
+            "epsilon": "0.5"         
+        }
+    },
+    "InitialConditions": {
+        "heat": {
+            "temperature": {
+                "Expression": {
+                    "Tini": {
+                        "markers":["Insulation"],
+                        "expr":"Tinit_C:Tinit_C"
+                    }
+                }
+            }
+        }
+    },
+    "BoundaryConditions": {
+        "heat": {      
+            "temperature":{
+                "CavityBdry":{
+                    "expr":"500"                
+                }
+            },      
+            "radiative_enclosure_heat_flux": {
+                "Cavity_1": {
+                    "enclosure": "closed",// the cavity is treated as closed since there is no black body exchanges in this test
+                    "markers": ["CavityBdry"],
+                    "sigma": "sigma:sigma",
+                    "viewfactors": {
+                        "status":"compute",
+                        "filename":"$cfgdir/cylindrical_cavity_vf.json"
+                        // "status":"load",
+                        // "filename":"$cfgdir/VF_Matrix_Cavity_1.csv"
+                    }
+                }
+            }
+        }
+    },
+    "Checker":
+    {
+        "RadiativeSurface1_q":
+        {
+            "type":"average",        
+            "markers": ["CavityBdry"],
+            "quantity":"flux",
+            "exact_value":88.5937, // 1/40 * sigma * Tini^4
+            "rel_tolerance":0.1        
+        }
+    }
+}
