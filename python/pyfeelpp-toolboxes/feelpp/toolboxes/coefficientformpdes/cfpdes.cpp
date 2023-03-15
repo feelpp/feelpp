@@ -30,34 +30,66 @@
 namespace py = pybind11;
 using namespace Feel;
 
-template<int nDim>
-void defSM(py::module &m)
+template<int nDim, typename BasisT>
+void defcfpde(py::module &m, std::string const& basisname )
 {
     using namespace Feel;
     using namespace Feel::FeelModels;
-    using toolbox_t = FeelModels::coefficient_form_PDEs_t<Simplex<nDim, 1>>;
-    
-    using exporter_t = Exporter<typename toolbox_t::mesh_type,1>;
-    using exporter_ptr_t = std::shared_ptr<exporter_t>;
-    using step_t = typename exporter_t::step_type;
-    using step_ptr_t = typename exporter_t::step_ptrtype;
+    using toolbox_cfpde_t = FeelModels::CoefficientFormPDE<Simplex<nDim, 1>,BasisT>;
+    using exporter_cfpde_t = Exporter<typename toolbox_cfpde_t::mesh_type,1>;
+    using exporter_cfpde_ptr_t = std::shared_ptr<exporter_cfpde_t>;
+    using step_t = typename exporter_cfpde_t::step_type;
+    using step_ptr_t = typename exporter_cfpde_t::step_ptrtype;
+
+    std::string pyclass_name = fmt::format("cfpde_{}D_{}",nDim,basisname);
+    py::class_<toolbox_cfpde_t, std::shared_ptr<toolbox_cfpde_t>, ModelNumerical>( m, pyclass_name.c_str() )
+#if 0    
+        .def( py::init<std::string const&, std::string const&, worldcomm_ptr_t const&, std::string const&, ModelBaseRepository const&>(),
+              py::arg( "prefix" ),
+              py::arg( "keyword" ) = std::string( "cfpde" ),
+              py::arg( "worldComm" ) = Environment::worldCommPtr(),
+              py::arg( "subprefix" ) = std::string( "" ),
+              py::arg( "modelRep" ) = ModelBaseRepository(),
+              "Initialize the coefficient form pdes toolbox" )
+
+        .def( "init", &toolbox_cfpde_t::init, "initialize the heat  toolbox", py::arg( "buildModelAlgebraicFactory" ) = true )
+#endif
+        // mesh
+        //.def( "mesh", &toolbox_cfpde_t::mesh, "get the mesh", py::arg("mesh") )
+        //.def( "setMesh", &toolbox_cfpde_t::setMesh, "set the mesh", py::arg("mesh") )
+        .def( "unknownIsScalar", &toolbox_cfpde_t::unknownIsScalar, "return true if the unknown is scalar")
+        .def( "spaceUnknown", &toolbox_cfpde_t::spaceUnknown, "return the space of the unknown")
+        .def( "fieldUnknown", &toolbox_cfpde_t::fieldUnknownPtr, "return the field of the unknown");
+
+}
+template<int nDim>
+void defcfpdes(py::module &m)
+{
+    using namespace Feel;
+    using namespace Feel::FeelModels;
+
+    using toolbox_cfpdes_t = FeelModels::coefficient_form_PDEs_t<Simplex<nDim, 1>>;
+    using exporter_cfpdes_t = Exporter<typename toolbox_cfpdes_t::mesh_type,1>;
+    using exporter_cfpdes_ptr_t = std::shared_ptr<exporter_cfpdes_t>;
+    using step_t = typename exporter_cfpdes_t::step_type;
+    using step_ptr_t = typename exporter_cfpdes_t::step_ptrtype;
 
     std::string pyclass_name = std::string("cfpdes_") + std::to_string(nDim) + std::string("D");
-    py::class_<toolbox_t, std::shared_ptr<toolbox_t>, ModelNumerical>( m, pyclass_name.c_str() )
-        .def( py::init<std::string const&, std::string const&, worldcomm_ptr_t const&, std::string const&, ModelBaseRepository const&>(),
+    py::class_<toolbox_cfpdes_t, std::shared_ptr<toolbox_cfpdes_t>, ModelNumerical> cfpdes_w( m, pyclass_name.c_str(), py::dynamic_attr() );
+    cfpdes_w.def( py::init<std::string const&, std::string const&, worldcomm_ptr_t const&, std::string const&, ModelBaseRepository const&>(),
               py::arg( "prefix" ),
               py::arg( "keyword" ) = std::string( "cfpdes" ),
               py::arg( "worldComm" ) = Environment::worldCommPtr(),
               py::arg( "subprefix" ) = std::string( "" ),
               py::arg( "modelRep" ) = ModelBaseRepository(),
               "Initialize the coefficient form pdes toolbox" )
-        .def( "init", &toolbox_t::init, "initialize the heat  toolbox", py::arg( "buildModelAlgebraicFactory" ) = true )
+        .def( "init", &toolbox_cfpdes_t::init, "initialize the heat  toolbox", py::arg( "buildModelAlgebraicFactory" ) = true )
 
         // mesh
-        .def( "mesh", &toolbox_t::mesh, "get the mesh" )
-        .def( "setMesh", &toolbox_t::setMesh, "set the mesh" )
+        .def( "mesh", &toolbox_cfpdes_t::mesh, "get the mesh" )
+        .def( "setMesh", &toolbox_cfpdes_t::setMesh, "set the mesh" )
         .def(
-            "exportSolutionToStep", []( std::shared_ptr<toolbox_t> const& t, step_ptr_t& s )
+            "exportSolutionToStep", []( std::shared_ptr<toolbox_cfpdes_t> const& t, step_ptr_t& s )
             {
                 t->apply( [&s]( auto const& cfpde )
                           {
@@ -67,26 +99,47 @@ void defSM(py::module &m)
             },
             "apply external exporter on solution" )
 
-        //.def( "rangeMeshElements", &toolbox_t::rangeMeshElements, "get the range of mesh elements" )
+        //.def( "rangeMeshElements", &toolbox_cfpdes_t::rangeMeshElements, "get the range of mesh elements" )
 
         // elements
-        //.def( "spaceTemperature", &toolbox_t::spaceTemperature, "get the temperature function space")
-        //.def( "fieldTemperature", static_cast<element_temperature_t const& (toolbox_t::*)() const>(&toolbox_t::fieldTemperature), "returns the temperature field" )
-        //.def( "fieldTemperaturePtr", static_cast<element_temperature_ptr_t const& (toolbox_t::*)() const>(&toolbox_t::fieldTemperaturePtr), "returns the temperature field shared_ptr" )
+        //.def( "spaceTemperature", &toolbox_cfpdes_t::spaceTemperature, "get the temperature function space")
+        //.def( "fieldTemperature", static_cast<element_temperature_t const& (toolbox_cfpdes_t::*)() const>(&toolbox_cfpdes_t::fieldTemperature), "returns the temperature field" )
+        //.def( "fieldTemperaturePtr", static_cast<element_temperature_ptr_t const& (toolbox_cfpdes_t::*)() const>(&toolbox_cfpdes_t::fieldTemperaturePtr), "returns the temperature field shared_ptr" )
 
         // time stepping
-        .def( "timeStepBase", static_cast<std::shared_ptr<TSBase> ( toolbox_t::* )() const>( &toolbox_t::timeStepBase ), "get time stepping base" )
-        .def( "startTimeStep", &toolbox_t::startTimeStep, "start time stepping" )
-        .def( "updateTimeStep", &toolbox_t::updateTimeStep, "update time stepping" )
+        .def( "timeStepBase", static_cast<std::shared_ptr<TSBase> ( toolbox_cfpdes_t::* )() const>( &toolbox_cfpdes_t::timeStepBase ), "get time stepping base" )
+        .def( "startTimeStep", &toolbox_cfpdes_t::startTimeStep, "start time stepping" )
+        .def( "updateTimeStep", &toolbox_cfpdes_t::updateTimeStep, "update time stepping" )
         // solve
-        .def( "solve", &toolbox_t::solve, "solve the cfpde problem" )
-        .def( "exportResults", static_cast<void ( toolbox_t::* )()>( &toolbox_t::exportResults ), "export the results of the cfpde problem" )
-        .def( "exportResults", static_cast<void ( toolbox_t::* )( double )>( &toolbox_t::exportResults ), py::arg("time"), "export the results of the cfpde problem at time 'time'" )
-        .def( "checkResults", static_cast<bool ( toolbox_t::* )() const>( &toolbox_t::checkResults ), "check the results of the cfpde problem" )
-        //        .def("exportResults",static_cast<void (toolbox_t::*)( double )>(&toolbox_t::exportResults), "export the results of the heat mechanics problem", py::arg("time"))
+        .def( "solve", &toolbox_cfpdes_t::solve, "solve the cfpde problem" )
+        .def( "exportResults", static_cast<void ( toolbox_cfpdes_t::* )()>( &toolbox_cfpdes_t::exportResults ), "export the results of the cfpde problem" )
+        .def( "exportResults", static_cast<void ( toolbox_cfpdes_t::* )( double )>( &toolbox_cfpdes_t::exportResults ), py::arg("time"), "export the results of the cfpde problem at time 'time'" )
+        .def( "checkResults", static_cast<bool ( toolbox_cfpdes_t::* )() const>( &toolbox_cfpdes_t::checkResults ), "check the results of the cfpde problem" )
+        //        .def("exportResults",static_cast<void (toolbox_cfpdes_t::*)( double )>(&toolbox_cfpdes_t::exportResults), "export the results of the heat mechanics problem", py::arg("time"))
 
-        .def( "setMesh", &toolbox_t::setMesh, "set the mesh", py::arg( "mesh" ) )
-        .def( "updateParameterValues", &toolbox_t::updateParameterValues, "update parameter values" );
+        .def( "setMesh", &toolbox_cfpdes_t::setMesh, "set the mesh", py::arg( "mesh" ) )
+        .def( "updateParameterValues", &toolbox_cfpdes_t::updateParameterValues, "update parameter values" )
+        .def( "pdePch1", 
+              []( toolbox_cfpdes_t const& toolbox, std::string& nameeq ){
+                using t = hana::type<Lagrange<1, Scalar, Continuous, PointSetFekete>>;
+                return toolbox.template coefficientFormPDE<t>(nameeq, t() );                
+              }, "get the coefficients form pdes for a Pch1", py::arg( "name" ) )
+        .def( "pdePch2", 
+              []( toolbox_cfpdes_t const& toolbox, std::string& nameeq ){
+                using t = hana::type<Lagrange<2, Scalar, Continuous, PointSetFekete>>;
+                return toolbox.template coefficientFormPDE<t>(nameeq, t() ); 
+              }, "get the coefficients form pdes for a Pch2", py::arg( "name" ) )
+        .def( "pdePchv1", 
+              []( toolbox_cfpdes_t const& toolbox, std::string& nameeq ){
+                using t = hana::type<Lagrange<1, Vectorial, Continuous, PointSetFekete>>;
+                return toolbox.template coefficientFormPDE<t>(nameeq, t() ); 
+              }, "get the coefficients form pdes for a Pchv1", py::arg( "name" ) )
+        .def( "pdePchv2", 
+              []( toolbox_cfpdes_t const& toolbox, std::string& nameeq ){
+                using t = hana::type<Lagrange<2, Vectorial, Continuous, PointSetFekete>>;
+                return toolbox.template coefficientFormPDE<t>(nameeq, t() );
+              }, "get the coefficients form pdes for a Pchv2", py::arg( "name" ) )
+      ;
 }
 
 
@@ -94,8 +147,17 @@ PYBIND11_MODULE(_cfpdes, m )
 {
     using namespace Feel;
     
-    defSM<2>(m);
-    defSM<3>(m);
+    defcfpde<2, Lagrange<1, Scalar, Continuous, PointSetFekete>>( m, "Pch1" );
+    defcfpde<3, Lagrange<1, Scalar, Continuous, PointSetFekete>>( m, "Pch1" );
+    defcfpde<2, Lagrange<2, Scalar, Continuous, PointSetFekete>>( m, "Pch2" );
+    defcfpde<3, Lagrange<2, Scalar, Continuous, PointSetFekete>>( m, "Pch2" );
+    defcfpde<2, Lagrange<1, Vectorial, Continuous, PointSetFekete>>( m, "Pchv1" );
+    defcfpde<3, Lagrange<1, Vectorial, Continuous, PointSetFekete>>( m, "Pchv1" );
+    defcfpde<2, Lagrange<2, Vectorial, Continuous, PointSetFekete>>( m, "Pchv2" );
+    defcfpde<3, Lagrange<2, Vectorial, Continuous, PointSetFekete>>( m, "Pchv2" );
+
+    defcfpdes<2>(m);
+    defcfpdes<3>(m);
 
 }
 
