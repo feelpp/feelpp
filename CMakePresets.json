@@ -241,6 +241,11 @@
             "configurePreset": "feelpp-python"
         },
         {
+            "name": "python",
+            "inherits": "default",
+            "configurePreset": "python"
+        },
+        {
             "name": "feelpp-python-dbg",
             "inherits": "default",
             "configurePreset": "feelpp-python-dbg",
