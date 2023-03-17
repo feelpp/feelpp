@@ -815,6 +815,9 @@ class nirbOffline(ToolboxModel):
         Args :
             path (str, optional): Path where files are saved. Defaults to "./".
             force (bool, optional): Force saving, even if files are already present. Defaults to False.
+
+        Returns:
+            outdir (str): path where files are saved
         """
 
         reducedPath = os.path.join(path, 'reducedBasis')
@@ -853,6 +856,7 @@ class nirbOffline(ToolboxModel):
         self.outdir = os.path.abspath(path)
         if self.worldcomm.isMasterRank():
             print(f"[NIRB] Data saved in {self.outdir}")
+        return self.outdir
 
 ### ONLINE PHASE ###
 
@@ -1021,8 +1025,8 @@ class nirbOnline(ToolboxModel):
 
         Args:
         -----
-            coeffCoarse (numpy.array): the coefficient matrix gieven by (U^H_i, \phi_j)
-            coeffFine (numpy.array): the coefficient matrix (U^h_i, \phi_j)
+            coeffCoarse (numpy.array): the coefficient matrix gieven by (U^H_i, phi_j)
+            coeffFine (numpy.array): the coefficient matrix (U^h_i, phi_j)
             lambd (float, optional): regularization parameter. Defaults to 1.e-10.
             Nb (int, optional): number of basis function selected in the online step. Defaults to None, in which case all the basis are used.
 
@@ -1030,6 +1034,7 @@ class nirbOnline(ToolboxModel):
         --------
             R (numpy.array): the rectification matrix
         """
+        print(coeffCoarse, coeffFine)
         if Nb is None: Nb = self.N
 
         BH = coeffCoarse[:Nb, :Nb]

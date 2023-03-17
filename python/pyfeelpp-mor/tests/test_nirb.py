@@ -12,11 +12,10 @@ from feelpp.mor.nirb.nirbOnline import run_online
 casesNirb = [
         #  (('testcase/nirb/lid-driven-cavity/', 'cfd2d.cfg', 'cfd2d.json', False), 'lid-driven-cavity w/o rect.'),
         #  (('testcase/nirb/lid-driven-cavity/', 'cfd2d.cfg', 'cfd2d.json', True) , 'lid-driven-cavity rect'),
-         (('testcase/nirb/square', 'square.cfg', 'square.json', False, False), 'square2d w/o rect wogreedy'),
-         (('testcase/nirb/square', 'square.cfg', 'square.json', True, False) , 'square2d rect wogreedy'),
-        #  (('testcase/nirb/square', 'square.cfg', 'square.json', True, True) , 'square2d rect egreedy'),
-         (('testcase/nirb/thermal-fin-3d', 'thermal-fin.cfg', 'thermal-fin.json', False, False), 'thermal-fin-3d w/o rect wogreedy'),
-         (('testcase/nirb/thermal-fin-3d', 'thermal-fin.cfg', 'thermal-fin.json', True, False) , 'thermal-fin-3d rect wogreedy'),
+         (('testcase/nirb/square', 'square.cfg', 'square.json', False) , 'square2d drect'),
+         (('testcase/nirb/square', 'square.cfg', 'square.json', True) , 'square2d erect'),
+         (('testcase/nirb/thermal-fin-3d', 'thermal-fin.cfg', 'thermal-fin.json', False), 'thermal-fin-3d w/o rect'),
+         (('testcase/nirb/thermal-fin-3d', 'thermal-fin.cfg', 'thermal-fin.json', True) , 'thermal-fin-3d rect'),
         ]
 # NB: for the name of the test, wogreedy is a keyword standing for "without greedy", and egreedy for "enable greedy"
 cases_params_nirb, cases_ids_nirb = list(zip(*casesNirb))
@@ -40,11 +39,27 @@ def test_nirb(dir, cfg, json, rect, init_feelpp):
     nirb_config = feelpp.readJson(model_path)['nirb']
     nirb_config['doRectification'] = rect
 
-    uHh = nirb_on.getOnlineSol(mu)
-    uH = nirb_on.getInterpSol(mu)
-    uh = nirb_on.getToolboxSolution(nirb_on.tbFine, mu)
-    errorNirb = nirb_on.normMat(uHh - uh)
-    errorInterp = nirb_on.normMat(uH - uh)
+    nirb_off = nirbOffline(**nirb_config, initCoarse=True)
+    nirb_off.initModel()
+    nirb_off.generateOperators(coarse=True)
+    nbSnap = 6
+    Xi = nirb_off.initProblem(nbSnap)
+    RIC = nirb_off.generateReducedBasis()
+    path = nirb_off.saveData(force=True)
+
+    s = nirb_off.Dmu.sampling()
+    s.sampling(10, "random")
+
+    Nbasis = nirb_off.N
+
+    # Check that the online solution is indeed computed
+    run_online(nirb_config, nirb_off.outdir, Nbasis, s.getVector())
+
+    if Nbasis > 4:
+        # Check that we can load smaller basis
+        run_online(nirb_config, nirb_off.outdir, Nbasis - 2, s.getVector())
+        # Check that we can compute solution with a subbasis
+        run_online(nirb_config, nirb_off.outdir, Nbasis, s.getVector(), Nb=Nbasis - 2)
 
     # assert errorNirb<0.08, f"higher nirb error value"
     # assert errorInterp<0.05, f"higher interp error value"
