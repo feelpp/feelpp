@@ -150,7 +150,11 @@ void defMesh(py::module &m)
         .def("hMax",&mesh_t::hMax,"get the maximum edge length of the mesh")
         .def("updateMeasures",&mesh_t::updateMeasures,"update the measures of the mesh")
         .def("measure",&mesh_t::measure,py::arg("parallel") = true,"get the measure of the mesh")
-        .def("measureBoundary",&mesh_t::measureBoundary,"get the measure of the boundary of the mesh");
+        .def("measureBoundary",&mesh_t::measureBoundary,"get the measure of the boundary of the mesh")
+        .def("markerNames",[](mesh_ptr_t const& self ) {
+                return self->markerNames();
+            }, "get the list of marker names" )
+        ;
 
     pyclass_name = std::string("simplex_elements_reference_wrapper_")+suffix;
     py::class_<elements_reference_wrapper_t<mesh_ptr_t>>(m,pyclass_name.c_str())
@@ -177,6 +181,7 @@ void defMesh(py::module &m)
         },
         "load a mesh from a file", py::arg("mesh"), py::arg("name"), py::arg("h")=0.1, py::arg("verbose") = 1 );
 
+    
     m.def("elements", &elementsByPid<mesh_ptr_t>,"get iterator over the elements of the mesh", py::arg("mesh"));
     m.def("markedelements", &elementsByMarker<mesh_ptr_t>,"get iterator over the marked elements of the mesh", py::arg("mesh"),py::arg("tag"));
     m.def("boundaryfaces", &boundaryfacesByPid<mesh_ptr_t>,"get iterator over the boundary faces of the mesh", py::arg("mesh"));
