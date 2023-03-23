@@ -13,11 +13,10 @@ def run(m, geo):
 
     if mesh.dimension()==2:
         assert(abs(M-2)<1e-10)
-        u.on(range=feelpp.elements(mesh), expr=feelpp.expr("{x,y}:x:y",row=2))  
     else:
         assert(abs(M-1)<1e-10)
-        u.on(range=feelpp.elements(mesh), expr=feelpp.expr("{x,y,z}:x:y:z",row=3))  
-      
+    
+    u.on(range=feelpp.elements(mesh), expr=feelpp.expr("{x,y}:x:y" if dim ==2 else "{x,y,z}:x:y:z",row=dim)) 
 
     newmesh = mm.meshMove(mesh,u)
     M=measure(range=feelpp.elements(newmesh))   
@@ -27,7 +26,7 @@ def run(m, geo):
 
 def test_meshmove(init_feelpp):
     feelpp.Environment.changeRepository(
-        directory="pyfeelpp-tests/integrate")
+        directory="pyfeelpp-tests/meshmove/")
     geo = {
         '2': feelpp.create_rectangle(),# [0,1]x[0,2]
         '3': feelpp.create_box(), # [0,1]x[0,2]x[0,0.5]

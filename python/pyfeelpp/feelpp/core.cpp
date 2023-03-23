@@ -170,6 +170,7 @@ PYBIND11_MODULE(_core, m )
         .def_static("setConfigFile",&Feel::Environment::setConfigFile,"set config file and update variable map",py::arg("filename"))
         .def_static("changeRepository", []( std::string const& fmt,  Location l, bool subdir )
             { Feel::Environment::changeRepository(_directory=boost::format(fmt),_location=location(l),_subdir=subdir); },py::arg("directory"), py::arg("location")=Location::global, py::arg("subdir")=true,"change repository")
+        .def_static("saveTimers",&Feel::Environment::saveTimers,"save timers and display them if @c display is set to True",py::arg("display")=false)
         ;
 
     py::class_<Info>(m,"Info")

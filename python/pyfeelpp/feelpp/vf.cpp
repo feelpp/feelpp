@@ -25,8 +25,13 @@
 
 #include <feel/feelpython/pybind11/eigen.h>
 #include <feel/feelpython/pybind11/json.h>
+#include <feel/feeldiscr/mesh.hpp>
+#include <feel/feeldiscr/pch.hpp>
+#include <feel/feeldiscr/pchv.hpp>
 #include <feel/feelvf/expr.hpp>
+#include <feel/feelvf/vf.hpp>
 #include <feel/feelvf/ginac.hpp>
+#include <feel/feelvf/vonmises.hpp>
 #include <mpi4py/mpi4py.h>
 #include <pybind11/stl.h>
 
@@ -98,8 +103,6 @@ void addGinacMatrix( py::module& m )
 
 PYBIND11_MODULE(_vf, m )
 {
-    
-
     if (import_mpi4py()<0) return ;
 
     addGinacMatrix<1, 1, 2>( m );
@@ -107,4 +110,35 @@ PYBIND11_MODULE(_vf, m )
     addGinacMatrix<3, 1, 2>( m );
     addGinacMatrix<2, 2, 2>( m );
     addGinacMatrix<3, 3, 2>( m );
+
+    using namespace Feel;
+    using namespace Feel::vf;
+
+    auto dimt = hana::make_tuple(2_c,3_c);
+    auto ordert = hana::make_tuple( 0_c, 1_c, 2_c, 3_c );
+
+    hana::for_each( hana::cartesian_product(hana::make_tuple(dimt,ordert)), [&m]( auto const& d )
+                       {
+                            constexpr int _dim = std::decay_t<decltype(hana::at_c<0>(d))>::value;
+                            constexpr int _order = std::decay_t<decltype(hana::at_c<1>(d))>::value;
+                            using mesh_t = Mesh<Simplex<_dim, 1>>;
+                            using mesh_ptr_t = std::shared_ptr<mesh_t>;
+                            
+                            m.def( "vonmises", []( Pchv_element_t<mesh_t, 1> const& d, nl::json const& model )
+                                   {
+                                        auto Xh = Pch<_order>(d.functionSpace()->mesh());
+                                        auto r = Xh->element();
+                                        if ( model["/model/type"_json_pointer] == "linear-elasticity" )
+                                        {
+                                            double mu = model["/model/parameters/mu"_json_pointer];
+                                            double lambda = model["/model/parameters/lambda"_json_pointer];
+
+                                            auto def = (gradv(d)+trans(gradv(d)))/2;
+                                            r.on( _range=elements(d.functionSpace()->mesh()), _expr=vonmises( 2*mu*def+lambda*divv(d)*eye<_dim,_dim>() ) );
+                                        }
+
+                                        return r; 
+                                    },
+                                    "compute von mises stress", py::arg( "displacement" ), py::arg( "model" ) );
+                        } );
 }
