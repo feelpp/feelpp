@@ -25,5 +25,5 @@ foreach(MODULE IN ITEMS core feelpp alg mesh discr exporter ls ts vf measure mod
   add_dependencies(pyfeelpp _${MODULE})
 endforeach()
 
-set(PYFILES __init__.py integrate.py mesh_plot.py measure.py quality.py interpolation.py operators.py timing.py meshmover.py plotly.py )
+set(PYFILES __init__.py integrate.py measure.py quality.py interpolation.py operators.py timing.py meshmover.py plotly.py )
 install(FILES ${PYFILES} DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp)
