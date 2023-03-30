@@ -1115,7 +1115,7 @@ IndexSplit::parseFieldsDef( std::string s )
                     int splitId = boost::lexical_cast<int>( s.substr(index-indexLenght,indexLenght).c_str() );
                     res[fieldId].insert( splitId );
                     find=true;
-                    index+=indexLenght+1;
+                    index+=2;
                 }
                 else
                 {
