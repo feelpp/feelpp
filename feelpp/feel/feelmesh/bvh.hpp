@@ -44,6 +44,7 @@ namespace Feel
     template<int nDim>
     class BVHTree
     {
+        typedef BVHTree<nDim> self_type;
         typedef Simplex<nDim,1> convex_type;
         typedef Mesh<convex_type> mesh_type;        
         typedef typename mesh_type::trace_mesh_type trace_mesh_type;
@@ -59,7 +60,7 @@ namespace Feel
                 M_primitiveNumber=primitiveNumber;
                 M_bound_min = bounds_min;
                 M_bound_max = bounds_max;
-                M_centroid = ( M_bound_min + M_bound_max ) * 0.5;
+                M_centroid = ( M_bound_min + M_bound_max ) * 0.5;            
             }
             int M_primitiveNumber;
             Eigen::VectorXd M_bound_min;
@@ -67,8 +68,10 @@ namespace Feel
             Eigen::VectorXd M_centroid;
         };
 
-        static inline std::vector<BVHPrimitiveInfo> M_primitiveInfo;
-        static inline trace_mesh_ptrtype M_mesh;   
+        // static inline std::vector<BVHPrimitiveInfo> M_primitiveInfo;
+        // static inline trace_mesh_ptrtype M_mesh;   
+        std::vector<BVHPrimitiveInfo> M_primitiveInfo;
+        trace_mesh_ptrtype M_mesh;   
         thread_local static inline std::vector<int> M_intersected_leaf;
         thread_local static inline std::vector<double> M_lengths;
 
@@ -109,8 +112,9 @@ namespace Feel
             }
         }    
 
-        struct BVHNode
+        class BVHNode
         {
+            public: 
             void buildLeaf(BVHNode * current_parent, int first, int n, Eigen::VectorXd bounds_min, Eigen::VectorXd bounds_max)
             {
                 firstPrimOffset = first;
@@ -198,7 +202,7 @@ namespace Feel
                 
                 return true;         
             }
-            
+ #if 0           
             bool checkIntersectionWithSegment(BVHRay const& ray)
             {
                 Eigen::VectorXd p1(2),p2(2),v1(2),v2(2),v3(2),w_(2);     
@@ -234,7 +238,7 @@ namespace Feel
                 return false;
                 
             }
-
+#endif
             std::pair<bool,double> checkIntersectionWithSegment(matrix_node_type const& nodes, BVHRay const& ray)
             {
                 Eigen::VectorXd p1(2),p2(2),v1(2),v2(2),v3(2),w_(2);     
@@ -270,11 +274,12 @@ namespace Feel
             }
             
             // Verify if the ray intersects the element
-            std::pair<bool,double> checkIntersectionWithTriangle( BVHRay const& ray)
+            std::pair<bool,double> checkIntersectionWithTriangle( BVHRay const& ray, trace_mesh_ptrtype mesh, std::vector<BVHPrimitiveInfo>& primitiveInfo)
             {
                 Eigen::Vector3d p1(3),p2(3),p3(3),n1(3),w(3),w_(3);
-                Eigen::Matrix3d m(3,3);
-                auto nodes =  M_mesh->element(M_primitiveInfo[this->firstPrimOffset].M_primitiveNumber).vertices();
+                Eigen::Matrix3d m(3,3);            
+                    
+                auto nodes =  mesh->element(primitiveInfo[this->firstPrimOffset].M_primitiveNumber).vertices();
 
                 for ( int i = 0; i < nodes.size1(); ++i )
                 {p1( i ) = nodes(i,0);
@@ -310,22 +315,23 @@ namespace Feel
                 
             }
 
-            std::pair<bool,double> checkLeafIntersection(BVHRay const& rayon,bool intersected=false)
+            std::pair<bool,double> checkLeafIntersection(BVHRay const& rayon, trace_mesh_ptrtype mesh, std::vector<BVHPrimitiveInfo>& primitiveInfo)
             {             
                 if( nDim ==2)
                 {
-                    auto nodes = M_mesh->element( M_primitiveInfo[this->firstPrimOffset].M_primitiveNumber ).vertices();                                        
+                    auto nodes = mesh->element( primitiveInfo[this->firstPrimOffset].M_primitiveNumber ).vertices();                                        
                     return checkIntersectionWithSegment(nodes,rayon);
                 }                
                 else //if ( nDim==3)
-                    return checkIntersectionWithTriangle(rayon);
+                    return checkIntersectionWithTriangle(rayon,mesh,primitiveInfo);
 
             }
 
             BVHNode *children[2];
             BVHNode *parent;
             int splitaxis, nPrimitives,firstPrimOffset;
-            Eigen::VectorXd M_bounds_min,M_bounds_max,M_centroid;  
+            Eigen::VectorXd M_bounds_min,M_bounds_max,M_centroid;
+            
         };    
 
         BVHNode *  M_root_tree;
@@ -471,7 +477,7 @@ namespace Feel
         void traverse_stackless(BVHTree::BVHNode * tree, BVHRay const& rayon)
         {
             auto current_node = M_root_tree->nearChild(rayon);
-            char state = 'P'; // the current node is being traversed from its Parent ('P')
+            char state = 'P'; // the current node is being traversed from its Parent ('P')      
 
             while(true)
             {
@@ -502,7 +508,7 @@ namespace Feel
                     }
                     else if(current_node->isLeaf())
                     {                        
-                        auto [has_intersected_leaf,distance] = current_node->checkLeafIntersection(rayon);
+                        auto [has_intersected_leaf,distance] = current_node->checkLeafIntersection(rayon,M_mesh,M_primitiveInfo);
                         if(has_intersected_leaf)
                         {
                             if ( std::find(M_intersected_leaf.begin(), M_intersected_leaf.end(), M_primitiveInfo[current_node->firstPrimOffset].M_primitiveNumber) == M_intersected_leaf.end() )
@@ -529,7 +535,7 @@ namespace Feel
                     }
                     else if(current_node->isLeaf())
                     {
-                        auto [has_intersected_leaf,distance] = current_node->checkLeafIntersection(rayon);
+                        auto [has_intersected_leaf,distance] = current_node->checkLeafIntersection(rayon,M_mesh,M_primitiveInfo);
                         if(has_intersected_leaf)
                         {
                             if ( std::find(M_intersected_leaf.begin(), M_intersected_leaf.end(), M_primitiveInfo[current_node->firstPrimOffset].M_primitiveNumber) == M_intersected_leaf.end() )
