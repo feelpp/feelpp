@@ -24,7 +24,6 @@ def mixedpoisson(dim=2, order=1, prefix="", prefix_toolbox="hdg.poisson", physic
     dim -- the dimension (default: 2)
     order -- the polynomial order for the fields : potential, flux, displacement, stress and associated traces (default: 1)
     prefix -- application prefix for the HDG poisson
-    prefix_toolbox -- toolbox prefix
     physic -- physic to use
     worldComm -- the parallel communicator for the mesh (default: core.Environment::worldCommPtr())
     subprefix -- subprefix
