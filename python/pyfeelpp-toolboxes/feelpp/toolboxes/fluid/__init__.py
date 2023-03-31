@@ -40,4 +40,4 @@ def fluid( dim=2, orderVelocity=2, orderPressure=1, orderGeometry=1, worldComm=N
         raise RuntimeError('Fluid solver '+key+' not existing')
     if modelRep is None:
         modelRep=ModelBaseRepository()
-    return _cfds[key]( prefix=prefix, keyword=keyword, worldComm=worldComm, subprefix=subprefix, modelRep )
+    return _cfds[key]( prefix=prefix, keyword=keyword, worldComm=worldComm, subprefix=subprefix, modelRep=modelRep )
