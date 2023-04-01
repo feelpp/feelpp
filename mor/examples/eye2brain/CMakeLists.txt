@@ -1,9 +1,10 @@
 # ##  CMakeLists.txt; coding: utf-8 ---
 
 # Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-# Date: 12 Jun 2017
+#            Thomas Saigre <saigre@math.unistra.fr>
+# Date: 01 April 2023
 #
-# Copyright (C) 2017 Feel++ Consortium
+# Copyright (C) 2023 Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -32,3 +33,8 @@ set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_EYE2BRAIN_LIBRARIES 
 mor_add_model(eye2brain Eye2brain HDRS eye2brain.hpp  LINK_LIBRARIES ${CRB_LIB_EYE2BRAIN} )
 
 feelpp_add_testcase(eye2brain PREFIX feelpp_crb CATEGORY CRB)
+
+feelpp_add_application( sensitivity_analysis SRCS sensitivity_analysis.cpp
+    PROJECT mor
+    LINK_LIBRARIES OT Feelpp::feelpp_mor tbb
+)
