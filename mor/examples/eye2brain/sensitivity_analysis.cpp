@@ -45,7 +45,7 @@
 #endif
 
 // #include <omp.h>
-// #include "tqdm/tqdm.h"
+#include "tqdm/tqdm.h"
 // #include "results.hpp"
 // #include "FunctionalChaos.hpp"
 // #include "MartinezSensitivity.hpp"
@@ -158,9 +158,10 @@ OT::ComposedDistribution composedFromModel()
  *
  * @param plugin std::vector containing the plugin from load_plugin
  * @param sampling_size size of the input sample used for computation of sobol indices
+ * @param rbDim size of the reduced basis
  * @param computeSecondOrder boolean to compute second order sobol indices
  */
-void runSensitivityAnalysis( std::vector<plugin_ptr_t> plugin, size_t sampling_size, bool computeSecondOrder=true )
+void runSensitivityAnalysis( std::vector<plugin_ptr_t> plugin, size_t sampling_size, int rbDim, bool computeSecondOrder=true )
 {
     using namespace Feel;
 
@@ -170,7 +171,7 @@ void runSensitivityAnalysis( std::vector<plugin_ptr_t> plugin, size_t sampling_s
 
     Eigen::VectorXd/*typename crb_type::vectorN_type*/ time_crb;
     double online_tol = 1e-2;               //Feel::doption(Feel::_name="crb.online-tolerance");
-    int rbDim = ioption(_name="rb-dim");
+    
     bool print_rb_matrix = false;           //boption(_name="crb.print-rb-matrix");
     parameter_space_ptr_t muspace = plugin[0]->parameterSpace();
 
@@ -228,9 +229,10 @@ int main( int argc, char** argv )
                      _about = makeAbout() );
 
     OT::RandomGenerator::SetSeed( ::time(NULL) );
-    // plugin_ptr_t plugin = loadPlugin();
+    plugin_ptr_t plugin = loadPlugin();
+    int rbDim = ioption(_name="rb-dim");
     // runCrbOnline( { plugin } );
-    // runSensitivityAnalysis( { plugin }, ioption(_name="sampling.size"), false );
+    runSensitivityAnalysis( { plugin }, ioption(_name="sampling.size"), rbDim, false );
 
     Feel::cout << tc::green << "Done ✓" << tc::reset << std::endl;
     return 0;
