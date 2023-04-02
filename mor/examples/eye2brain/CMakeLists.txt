@@ -30,7 +30,7 @@ install(FILES eye2brain.hpp DESTINATION include/feelpp/crb/eye2brain COMPONENT D
 set(FEELPP_CRB_EYE2BRAIN_LIBRARIES ${CRB_LIB_EYE2BRAIN} PARENT_SCOPE)
 set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_EYE2BRAIN_LIBRARIES PARENT_SCOPE)
 
-mor_add_model(eye2brain Eye2brain HDRS eye2brain.hpp  LINK_LIBRARIES ${CRB_LIB_EYE2BRAIN} )
+mor_add_model(eye2brain Eye2Brain HDRS eye2brain.hpp  LINK_LIBRARIES ${CRB_LIB_EYE2BRAIN} )
 
 feelpp_add_testcase(eye2brain PREFIX feelpp_crb CATEGORY CRB)
 
