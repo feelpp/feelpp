@@ -44,7 +44,7 @@ namespace Feel
     template<int nDim>
     class BVHTree
     {
-        typedef BVHTree<nDim> self_type;
+        using self_type = BVHTree<nDim>;
         typedef Simplex<nDim,1> convex_type;
         typedef Mesh<convex_type> mesh_type;        
         typedef typename mesh_type::trace_mesh_type trace_mesh_type;
@@ -66,10 +66,7 @@ namespace Feel
             Eigen::VectorXd M_bound_min;
             Eigen::VectorXd M_bound_max;
             Eigen::VectorXd M_centroid;
-        };
-
-        // static inline std::vector<BVHPrimitiveInfo> M_primitiveInfo;
-        // static inline trace_mesh_ptrtype M_mesh;   
+        };               
         std::vector<BVHPrimitiveInfo> M_primitiveInfo;
         trace_mesh_ptrtype M_mesh;   
         thread_local static inline std::vector<int> M_intersected_leaf;
