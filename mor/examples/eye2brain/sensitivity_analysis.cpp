@@ -46,8 +46,8 @@
 
 // #include <omp.h>
 #include "tqdm/tqdm.h"
-// #include "results.hpp"
-// #include "FunctionalChaos.hpp"
+#include "results.hpp"
+#include "FunctionalChaos.hpp"
 // #include "MartinezSensitivity.hpp"
 
 typedef Feel::ParameterSpaceX::element_type element_t;
@@ -151,6 +151,90 @@ OT::ComposedDistribution composedFromModel()
     return OT::ComposedDistribution( marginals );
 }
 
+/**
+ * @brief Generate the output sample from a given input sample
+ *
+ * @param input Sample of input parameters
+ * @param plugin loaded plugin
+ * @param time_crb collection of timers
+ * @param online_tol online tolerance
+ * @param rbDim size of the reduced basis
+ * @return OT::Sample 
+ */
+OT::Sample output(OT::Sample const& input, plugin_ptr_t const& plugin, Eigen::VectorXd &time_crb, double online_tol, int rbDim)
+{
+    size_t n = input.getSize();
+    OT::Sample output(n, 1);
+    {
+        parameter_space_ptr_t Dmu = plugin->parameterSpace();
+        std::vector<std::string> names = Dmu->parameterNames();
+        Feel::cout << "Start to compute outputs, sampling of size " << n << std::endl;
+
+        for (size_t i: tqdm::range(n))          // std::for_each
+        {
+            element_t mu = Dmu->element();
+            OT::Point X = input[i];
+            // "mu0": "klens:klens",
+            // "mu1": "hamb:hamb",
+            // "mu2": "hbl:hbl",
+            // "mu3": "1",
+            // "mu4": "h_amb * T_amb + 6 * T_amb + E:h_amb:T_amb:E",
+            // "mu5": "h_bl * T_bl:h_bl:T_bl"
+            mu.setParameter(0, X[5]);
+            mu.setParameter(1, X[1] + X[0]);
+            // mu.setParameter(2, 1);
+            mu.setParameter(3, X[1]*X[3] + 6*X[3] + X[4]);
+            mu.setParameter(4, X[0]*X[2]);
+
+            Feel::CRBResults crbResult = plugin->run( mu, time_crb, online_tol, rbDim, false );
+            output[i] = OT::Point({boost::get<0>( crbResult )[0]});
+        }
+        Feel::cout << "output computed" << std::endl;
+    }
+    return output;
+}
+
+
+void computeSobolIndicesBootstrap(std::vector<plugin_ptr_t> plugin, OT::ComposedDistribution composed_distribution, size_t sampling_size,
+    OT::Sample input_sample, OT::Sample output_sample, std::vector<std::string> tableRowHeader, Eigen::VectorXd &time_crb, double online_tol, int rbDim)
+{
+    using namespace Feel;
+    size_t dim = composed_distribution.getDimension();
+    size_t bootstrap_size = ioption(_name="algo.bootstrap-size");
+    Feel::cout << tc::bold << tc::red << "Run polynomial chaos and bootstrap : sampling of size " << sampling_size
+        << " (bootstrap size " << bootstrap_size << ")" << tc::reset << std::endl;
+
+    OT::Collection<OT::Distribution> marginals(dim);
+    for ( size_t d = 0; d < dim; ++d )
+        marginals[d] = composed_distribution.getMarginal(d);
+    auto basis = OT::OrthogonalProductPolynomialFactory( marginals );
+    OT::UnsignedInteger total_degree = 3;
+
+    Results res( dim, tableRowHeader, "polynomial-chaos-bootstrap", sampling_size );
+
+
+    // Check the meta-model
+    if ( boption(_name="algo.check-meta-model"))
+    {
+        Feel::cout << "Compute Sparse Least Squares Chaos" << std::endl;
+        tic();
+        OT::FunctionalChaosResult polynomialChaosResult =
+            computeSparseLeastSquaresChaos(input_sample, output_sample, basis, total_degree, composed_distribution);
+        toc("computeSparseLeastSquaresChaos");
+        tic();
+        OT::Function metaModel = polynomialChaosResult.getMetaModel();
+        OT::UnsignedInteger n_valid = 1000;
+        OT::Sample X_test = composed_distribution.getSample(n_valid);
+        OT::Sample Y_test = output(X_test, plugin[0], time_crb, online_tol, rbDim);
+        checkMetaModel( X_test, Y_test, metaModel );
+        toc("checkMetaModel");
+    }
+    
+    OT::Graph graph = computeAndDrawSobolIndices( res, input_sample, output_sample, basis, total_degree, composed_distribution, bootstrap_size=bootstrap_size);
+    res.print();
+    res.exportValues( soption( _name="save.path" ) + "-bootstrap.json" );
+    graph.draw("sobol-indices.png");
+}
 
 
 /**
@@ -176,6 +260,22 @@ void runSensitivityAnalysis( std::vector<plugin_ptr_t> plugin, size_t sampling_s
     parameter_space_ptr_t muspace = plugin[0]->parameterSpace();
 
     OT::ComposedDistribution composed_distribution = composedFromModel();
+
+    std::vector<std::string> tableRowHeader = muspace->parameterNames();
+    size_t dim = muspace->dimension();
+
+    double adapt_tol = doption(_name="adapt.tol");
+
+    OT::Sample input_sample = composed_distribution.getSample(sampling_size);
+    tic();
+    OT::Sample output_sample = output(input_sample, plugin[0], time_crb, online_tol, rbDim);
+    toc("output sample");
+
+    Feel::cout << "input_sample = " << input_sample << std::endl;
+    Feel::cout << "output_sample = " << output_sample << std::endl;
+
+
+    computeSobolIndicesBootstrap(plugin, composed_distribution, sampling_size, input_sample, output_sample, tableRowHeader, time_crb, online_tol, rbDim);
 }
 
 int main( int argc, char** argv )
