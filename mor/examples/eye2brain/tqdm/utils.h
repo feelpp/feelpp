@@ -53,13 +53,11 @@ Wrapper for pointers and std containter iterators.
 @author Casper da Costa-Luis
 */
 class MyIteratorWrapper
-    : public std::iterator<
-          std::forward_iterator_tag,
-          typename std::iterator_traits<_Iterator>::value_type> {
+    : public std::iterator_traits<_Iterator> {
   mutable _Iterator p;  // TODO: remove this mutable
 
 public:
-  // already done by std::iterator
+  // already done by std::iterator_traits
   typedef typename std::iterator_traits<_Iterator>::value_type value_type;
 
   explicit MyIteratorWrapper(_Iterator x) : p(x) {}
@@ -148,7 +146,16 @@ _MyIteratorWrapper myIteratorWrapper(_Iterator x) {
 
 template <typename IntType = int>
 class RangeIterator
-    : public std::iterator<std::forward_iterator_tag, IntType> {
+    /*: public std::iterator<std::forward_iterator_tag, IntType>*/ {
+      // using iterator_category = std::forward_iterator_tag;
+      // using value_type = IntType;
+public:
+  using iterator_category = std::forward_iterator_tag;
+  using value_type = IntType;
+  using difference_type = IntType;
+  using pointer = IntType*;
+  using reference = IntType&;
+
 private:
   mutable IntType current;
   IntType total;
