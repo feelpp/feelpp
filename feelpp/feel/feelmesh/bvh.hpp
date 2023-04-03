@@ -68,7 +68,7 @@ namespace Feel
             Eigen::VectorXd M_centroid;
         };               
         std::vector<BVHPrimitiveInfo> M_primitiveInfo;
-        trace_mesh_ptrtype M_mesh;   
+        trace_mesh_ptrtype M_mesh;
         thread_local static inline std::vector<int> M_intersected_leaf;
         thread_local static inline std::vector<double> M_lengths;
 
