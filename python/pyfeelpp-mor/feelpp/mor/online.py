@@ -1,21 +1,22 @@
 import feelpp
 import feelpp.mor as mor
 from feelpp.timing import *
-import sys,os,time
+import sys, os, time
+import pandas as pd
 
 class Online:
     """Class to execute the online phase of the reduced basis method
-    """    
-    def __init__(self,plugin,root):
+    """
+    def __init__(self, plugin, root):
         """construct a new Online code
 
         Args:
-            plugin (_type_): plugin name
-            root (_type_): root directory where the 
-        """        
-        self.crbdb = mor.CRBModelDB(pluginname=plugin, root=root)
+            plugin (str): plugin name
+            root (str): root directory where the database is located
+        """
+        self.crbdb = mor.CRBModelDB(name=plugin, root=root)
         self.meta = self.crbdb.loadDBMetaData("last_modified", "")
-        print(f"model: {self.meta.model_name} json: {self.meta.json_path} plugin name:{self.meta.plugin_name}")
+        print(f"model: {self.meta.model_name}\njson: {self.meta.json_path.string()}\nplugin name:{self.meta.plugin_name}")
         self.rbmodel = self.crbdb.loadDBPlugin(self.meta, load="rb")
         if ( self.rbmodel.isFiniteElementModelDBLoaded() ):
             self.rbmodel.initExporter()
@@ -28,7 +29,7 @@ class Online:
 
         Returns:
             sampling: Parameter set sampling
-        """        
+        """
         Dmu = self.rbmodel.parameterSpace()
         s = Dmu.sampling()
         s.sampling(Nsamples,type)
@@ -44,16 +45,36 @@ class Online:
 
         Returns:
             np.array: the results of the run
-        """        
+        """
         with Timer('rbmodel.run'):
             r = self.rbmodel.run(samples.getVector())
         for x in r:
-            print("mu =", x.parameter(), "s =", x.output(), "error =",x.errorBound())
+            print("mu =", x.parameter(), "s =", x.output(), "error =", x.errorBound())
             if ( export and self.rbmodel.isFiniteElementModelDBLoaded() ):            
                 self.rbmodel.exportField("sol-" + str(x.parameter()), x)
         if ( export and self.rbmodel.isFiniteElementModelDBLoaded() ):
-            self.rbmodel.saveExporter()      
+            self.rbmodel.saveExporter()
         return r
+
+
+def convertToDataframe( res ):
+    """Convert the result of the online phase to dataframe
+
+    Parameters
+    ----------
+    res : list of feelpp.mor._mor.CRBResults
+        list of results
+
+    Returns
+    -------
+    pandas.DataFrame
+        dataframe with the results : parameter, output, errorBound
+    """
+    print(type(res), type(res[0]))
+    df = pd.DataFrame(columns=('parameter', 'output', 'errorBound'))
+    for i, r in enumerate(res):
+        df.loc[i] = [r.parameter(), r.output(), r.errorBound()]
+    return df
 
 
 def main(args):
@@ -74,12 +95,10 @@ def main(args):
     o = Online(options.name, options.dir)
     s = o.sampling(options.N)
     res = o.run(samples=s, export=True)
-    import pandas as pd
-    df = pd.DataFrame(res)
+    df = convertToDataframe(res)
     print(df)
     df.to_csv("results.csv")
-     
+
 if __name__ == '__main__':
     import sys
     main(sys.argv[1:])
-    
