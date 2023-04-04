@@ -70,10 +70,13 @@ def convertToDataframe( res ):
     pandas.DataFrame
         dataframe with the results : parameter, output, errorBound
     """
-    print(type(res), type(res[0]))
-    df = pd.DataFrame(columns=('parameter', 'output', 'errorBound'))
+    names = res[0].parameter().parameterNames()
+    df = pd.DataFrame(columns = tuple(names) + ('output', 'errorBound'))
+    # df = pd.DataFrame(columns = ('parameter', 'output', 'errorBound'))
     for i, r in enumerate(res):
-        df.loc[i] = [r.parameter(), r.output(), r.errorBound()]
+        p = r.parameter()
+        df.loc[i] = [p.parameterNamed(p.parameterName(i)) for i in range(p.size())]+  [r.output(), r.errorBound()]
+        # df.loc[i] = [r.parameter(), r.output(), r.errorBound()]
     return df
 
 
