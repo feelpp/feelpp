@@ -174,17 +174,19 @@ OT::Sample output(OT::Sample const& input, plugin_ptr_t const& plugin, Eigen::Ve
         {
             element_t mu = Dmu->element();
             OT::Point X = input[i];
+            // X = [ h_bl, h_amb, T_bl, T_amb, E, k_lens ]
             // "mu0": "klens:klens",
-            // "mu1": "hamb:hamb",
-            // "mu2": "hbl:hbl",
-            // "mu3": "1",
-            // "mu4": "h_amb * T_amb + 6 * T_amb + E:h_amb:T_amb:E",
-            // "mu5": "h_bl * T_bl:h_bl:T_bl"
             mu.setParameter(0, X[5]);
-            mu.setParameter(1, X[1] + X[0]);
+            // "mu1": "hamb:hamb",
+            mu.setParameter(1, X[1]);
+            // "mu2": "hbl:hbl",
+            mu.setParameter(2, X[0]);
+            // "mu3": "1",
             // mu.setParameter(2, 1);
-            mu.setParameter(3, X[1]*X[3] + 6*X[3] + X[4]);
-            mu.setParameter(4, X[0]*X[2]);
+            // "mu4": "h_amb * T_amb + 6 * T_amb + E:h_amb:T_amb:E",
+            mu.setParameter(4, X[1]*X[3] + 6*X[3] + X[4]);
+            // "mu5": "h_bl * T_bl:h_bl:T_bl"
+            mu.setParameter(5, X[0]*X[2]);
 
             Feel::CRBResults crbResult = plugin->run( mu, time_crb, online_tol, rbDim, false );
             output[i] = OT::Point({boost::get<0>( crbResult )[0]});
