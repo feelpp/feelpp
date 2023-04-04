@@ -13,14 +13,14 @@ class Online:
             plugin (_type_): plugin name
             root (_type_): root directory where the 
         """        
-        self.crbdb = mor.CRBModelDB(pluginname=plugin,root=root)
-        self.meta = crbdb.loadDBMetaData("last_modified", "")
-        print(f"model: {meta.model_name} json: {meta.json_path} plugin name:{meta.plugin_name}")
-        self.rbmodel=crbdb.loadDBPlugin(meta,load="rb")
+        self.crbdb = mor.CRBModelDB(pluginname=plugin, root=root)
+        self.meta = self.crbdb.loadDBMetaData("last_modified", "")
+        print(f"model: {self.meta.model_name} json: {self.meta.json_path} plugin name:{self.meta.plugin_name}")
+        self.rbmodel = self.crbdb.loadDBPlugin(self.meta, load="rb")
         if ( self.rbmodel.isFiniteElementModelDBLoaded() ):
-            rbmodel.initExporter()
+            self.rbmodel.initExporter()
 
-    def sampling( Nsamples=1, type="random" ):
+    def sampling( self, Nsamples=1, type="random" ):
         """generate a sampling of Nsamples points in the parameter space
 
         Args:
@@ -29,12 +29,12 @@ class Online:
         Returns:
             sampling: Parameter set sampling
         """        
-        Dmu=self.rbmodel.parameterSpace()
-        s=Dmu.sampling()
+        Dmu = self.rbmodel.parameterSpace()
+        s = Dmu.sampling()
         s.sampling(Nsamples,type)
         return s
 
-    def run( samples, export=False ):
+    def run( self, samples, export=False ):
         """
         run the model with the given samples
 
@@ -46,33 +46,34 @@ class Online:
             np.array: the results of the run
         """        
         with Timer('rbmodel.run'):
-            r=self.rbmodel.run(samples.getVector())
+            r = self.rbmodel.run(samples.getVector())
         for x in r:
-            print("mu=",x.parameter(),"s=",x.output(), " error=",x.errorBound())
-            if ( export and rbmodel.isFiniteElementModelDBLoaded() ):            
-                self.rbmodel.exportField("sol-"+str(x.parameter()),x)
-        if ( export and rbmodel.isFiniteElementModelDBLoaded() ):
+            print("mu =", x.parameter(), "s =", x.output(), "error =",x.errorBound())
+            if ( export and self.rbmodel.isFiniteElementModelDBLoaded() ):            
+                self.rbmodel.exportField("sol-" + str(x.parameter()), x)
+        if ( export and self.rbmodel.isFiniteElementModelDBLoaded() ):
             self.rbmodel.saveExporter()      
         return r
 
 
 def main(args):
+    libdir = os.path.join(feelpp.Info.prefix().string(), feelpp.Info.libdir().string())
     from optparse import OptionParser
     parser = OptionParser()
     parser.add_option('-N', '--Num', dest='N', help='number of parameters to evaluate the plugin', type=int, default=1)
-    parser.add_option('-d', '--dir', dest='dir', help='directory location of the plugins', default=feelpp.Info.prefix() + '/' +feelpp.Info.libdir())
+    parser.add_option('-d', '--dir', dest='dir', help='directory location of the plugins', default=libdir)
     parser.add_option('-n', '--name', dest='name', help='name of the plugin',type="string")
     parser.add_option('-i', '--id', dest='dbid', help='DB id to be used', type="string")
     parser.add_option('-l', '--load', dest='load', help='type of data to be loadedoaded', type="string",default="rb")
     (options, args) = parser.parse_args()
-    print("members:",mor.CRBLoad.__members__)
-    print("rb members:",mor.CRBLoad.__members__["rb"])
-    print("libdir: {}".format(feelpp.Info.prefix() + '/' +feelpp.Info.libdir()))
+    print("members:", mor.CRBLoad.__members__)
+    print("rb members:", mor.CRBLoad.__members__["rb"])
+    print("libdir:", libdir)
 
-    app=feelpp.Environment(sys.argv,mor.makeCRBOptions())
-    o = Online(options.name,options.dir)
-    s=o.sampling(options.N)
-    res = o.run(samples=s,export=True)
+    app = feelpp.Environment(sys.argv, mor.makeCRBOptions())
+    o = Online(options.name, options.dir)
+    s = o.sampling(options.N)
+    res = o.run(samples=s, export=True)
     import pandas as pd
     df = pd.DataFrame(res)
     print(df)
