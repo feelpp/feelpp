@@ -1,7 +1,7 @@
 #include <feel/feelmor/crbplugin.hpp>
 
 #include <eye2brain.hpp>
-
+#include <iomanip>
 namespace Feel
 {
 
@@ -177,8 +177,8 @@ Eye2Brain::initModel()
 
     /// [output]
     auto out1 = form1( _test = Xh );
-    double meas = integrate( _range = elements(mesh), _expr = cst(1.) ).evaluate()(0,0);
-    out1 = integrate( _range=elements( mesh ), _expr=id( u )/cst(meas)) ;
+    double meas = integrate( _range = markedelements(mesh, "Cornea"), _expr = cst(1.) ).evaluate()(0,0);
+    out1 = integrate( _range = markedelements(mesh, "Cornea"), _expr = id( u )/cst(meas)) ;
 
     this->addOutput( { out1, "1" } );
 }
@@ -198,8 +198,8 @@ Eye2Brain::output( int output_index, parameter_type const& mu , element_type& u,
     }
     else if ( output_index == 1 )
     {
-        output = mean(_range=elements(mesh),_expr=idv(u))(0,0);
-        std::cout << " Eye2Brain::output " << output << "\n";
+        output = mean(_range = markedelements(mesh, "Cornea"), _expr = idv(u))(0,0);
+        std::cout << " Eye2Brain::output " << std::setprecision(16) << output << "\n";
     }
     // else if ( output_index == 2 )
     // {
