@@ -4,6 +4,7 @@ from feelpp.timing import *
 import sys, os, time
 import pandas as pd
 
+
 class Online:
     """Class to execute the online phase of the reduced basis method
     """
@@ -21,7 +22,7 @@ class Online:
         if ( self.rbmodel.isFiniteElementModelDBLoaded() ):
             self.rbmodel.initExporter()
 
-    def sampling( self, Nsamples=1, type="random" ):
+    def sampling(self, Nsamples=1, samplingMode="random"):
         """generate a sampling of Nsamples points in the parameter space
 
         Args:
@@ -32,10 +33,10 @@ class Online:
         """
         Dmu = self.rbmodel.parameterSpace()
         s = Dmu.sampling()
-        s.sampling(Nsamples,type)
+        s.sampling(Nsamples, samplingMode)
         return s
 
-    def run( self, samples, export=False ):
+    def run(self, samples, export=False ):
         """
         run the model with the given samples
 
