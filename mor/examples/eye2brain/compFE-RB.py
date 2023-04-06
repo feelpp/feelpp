@@ -122,12 +122,16 @@ def run_offline(sample):
     app_path = os.path.join(APP_DIR, "feelpp_mor_eye2brainapp")
     cfg_path = os.path.join(os.path.join( os.path.dirname(os.path.abspath(__file__)), "eye2brain/eye2brain.cfg"))
     out = []
-    for mu in sample.getVector():
+    for i, mu in enumerate(sample.getVector()):
         mu_str = " ".join([f"{mu.parameterNamed(n)} " for n in mu.parameterNames()])[:-1]
-        command = f"{app_path} --config-file {cfg_path} --eye2brain.run.mode 1 --crb.user-parameters \"{mu_str}\""
-        res = subprocess.getoutput(command)
-        print("\n\n\n", res, "\n\n\n")
-        out.append( float(res.split(' ')[-1]) )
+        command = f"{app_path} --config-file {cfg_path} --eye2brain.run.mode 0 --crb.user-parameters \"{mu_str}\""
+        output = subprocess.getoutput(command)
+        log_path = f"output_{i}.log"
+        f = open(log_path, "w")
+        f.write(output)
+        f.close()
+        o = subprocess.getoutput(f"cat {log_path} | grep Eye2Brain::output")
+        out.append( float(o.split(' ')[-1]) )
     return out
 
 
@@ -166,5 +170,6 @@ if __name__ == '__main__':
     df['PFEM_output'] = out
 
     print(df)
+    df.to_csv("results.csv")
 
     sys.exit(0)
