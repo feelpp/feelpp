@@ -1,5 +1,5 @@
 #include <feel/feelmor/crbplugin.hpp>
-
+#include <feel/feeldiscr/sensors.hpp>
 #include <eye2brain.hpp>
 #include <iomanip>
 namespace Feel
@@ -176,9 +176,19 @@ Eye2Brain::initModel()
     this->addEnergyMatrix( energy );
 
     /// [output]
+#if 0 
     auto out1 = form1( _test = Xh );
+   
     double meas = integrate( _range = markedelements(mesh, "Cornea"), _expr = cst(1.) ).evaluate()(0,0);
     out1 = integrate( _range = markedelements(mesh, "Cornea"), _expr = id( u )/cst(meas)) ;
+#else
+    std::vector<double> coord = {-0.013597, 0, 0};
+    node_type n(Eye2BrainConfig::space_type::nDim);
+    for( int i = 0; i < Eye2BrainConfig::space_type::nDim; ++i )
+        n(i) = coord[i];
+    auto s = std::make_shared<SensorPointwise<space_type>>(Xh, n, "O");
+    auto out1 = form1(_test=Xh,_vector=s->containerPtr());
+#endif
 
     this->addOutput( { out1, "1" } );
 }
