@@ -1,5 +1,8 @@
 import feelpp
 import feelpp.mor as mor
+import feelpp._core as core
+import feelpp.toolboxes.core as tb_core
+import feelpp.toolboxes.heat as heat
 import sys, os
 import pandas as pd
 from feelpp.mor.online import Online
@@ -118,26 +121,79 @@ def convert_to_dataframe(res, inputs):
 
 
 def run_offline(sample):
-    APP_DIR = "~/Documents/code/feelpp-dev/build/mor/mor/examples/eye2brain/"
-    app_path = os.path.join(APP_DIR, "feelpp_mor_eye2brainapp")
-    cfg_path = os.path.join(os.path.join( os.path.dirname(os.path.abspath(__file__)), "eye2brain/eye2brain.cfg"))
-    out = []
-    for i, mu in enumerate(sample.getVector()):
-        mu_str = " ".join([f"{mu.parameterNamed(n)} " for n in mu.parameterNames()])[:-1]
-        command = f"{app_path} --config-file {cfg_path} --eye2brain.run.mode 0 --crb.user-parameters \"{mu_str}\""
-        output = subprocess.getoutput(command)
-        log_path = f"output_{i}.log"
-        f = open(log_path, "w")
-        f.write(output)
-        f.close()
-        o = subprocess.getoutput(f"cat {log_path} | grep Eye2Brain::output")
-        out.append( float(o.split(' ')[-1]) )
+    if feelpp.Environment.isMasterRank():
+        print("Offline phase")
+        np = feelpp.Environment.numberOfProcessors()
+        APP_DIR = "~/Documents/code/feelpp-dev/build/mor/mor/examples/eye2brain/"
+        app_path = os.path.join(APP_DIR, "feelpp_mor_eye2brainapp")
+        cfg_path = os.path.join(os.path.join( os.path.dirname(os.path.abspath(__file__)), "eye2brain/eye2brain.cfg"))
+        out = []
+        for i, mu in enumerate(sample.getVector()):
+            mu_str = " ".join([f"{mu.parameterNamed(n)} " for n in mu.parameterNames()])[:-1]
+            command = f"{app_path} --config-file {cfg_path} --eye2brain.run.mode 0 --crb.user-parameters \"{mu_str}\""
+            print(f"Running command : {command}")
+            output = subprocess.getoutput(command)
+            log_path = f"logs/output_{i}.log"
+            f = open(log_path, "w")
+            f.write(output)
+            f.close()
+            o = subprocess.getoutput(f"cat {log_path} | grep Eye2Brain::output")
+            out.append( float(o.split(' ')[-1]) )
     return out
+
+############################################################################################################
+# FEM simulation using the toolbox
+
+
+def assembleToolbox(tb, mu):
+    """Assemble the toolbox with the given parameters
+
+    Parameters
+    ----------
+    tb : feelpp.toolboxes._toolboxes.Toolbox
+        toolbox to assemble
+    mu : feelpp.mor._mor.Parameter
+        parameters to use
+    """
+    for i in range(0,mu.size()):
+        tb.addParameterInModelProperties(mu.parameterName(i), mu(i))
+
+    for i in range(0,mu.size()):
+        tb.addParameterInModelProperties(mu.parameterName(i), mu(i))
+
+    tb.updateParameterValues()
+
+def run_toolbox(app, sample):
+    CFG_DIR = os.path.join( os.path.dirname(os.path.abspath(__file__)), "eye2brain" )
+    cfg_file = os.path.join(CFG_DIR, "eye-linear.cfg")
+
+    app.setConfigFile(cfg_file)
+
+    heatBox = heat.heat(dim=3, order=2)
+    heatBox.init()
+
+    out = []
+    for mu in sample.getVector():
+        assembleToolbox(heatBox, mu)
+        heatBox.solve()
+        heatBox.exportResults()
+
+        l = heatBox.postProcessMeasures()
+
+        meas = heatBox.postProcessMeasures().values()
+
+        if feelpp.Environment.isMasterRank():
+            print("          mu meas", meas)
+            out.append(meas['Statistics_cornea_mean'])
+    
+    return out
+
 
 
 if __name__ == '__main__':
 
-    app = feelpp.Environment(sys.argv, opts=mor.makeCRBOptions())
+    opts = tb_core.toolboxes_options("heat").add(mor.makeToolboxMorOptions()).add(mor.makeCRBOptions())
+    app = feelpp.Environment(sys.argv, opts=opts)
     crbdir = app.repository().globalRoot().string()
     m_def = os.path.join( os.path.dirname(os.path.abspath(__file__)), "eye2brain/crb_param.json" )
     name = "eye2brain_p1g1"
@@ -169,7 +225,11 @@ if __name__ == '__main__':
     out = run_offline(s)
     df['PFEM_output'] = out
 
-    print(df)
+    out = run_toolbox(app, s_heat)
+    df['FEM_output'] = out
+
+    if feelpp.Environment.isMasterRank():
+        print(df)
     df.to_csv("results.csv")
 
     sys.exit(0)
