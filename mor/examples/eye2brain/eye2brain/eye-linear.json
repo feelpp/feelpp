@@ -18,7 +18,7 @@
     {
         "h_bl": 65,         // [W / m^2 / K]
         "h_amb": 10,        // [W / m^2 / K]        \cite{KOSKY2013259}
-        "h_tau": 6,         // [W / m^2 / K]
+        "h_r": 6,           // [W / m^2 / K]
         "T_bl": 310,        // [K] 36.85°C          \cite{https://hypertextbook.com/facts/1997/LenaWong.shtml}
         "T_amb": 294,       // [K] 24.85°C          \cite{MAPSTONE1968237}
         "E": 40,            // [W / m^2]            \cite{Scott_1988}
@@ -111,7 +111,7 @@
                     "Text":"T_bl:T_bl"
                 },
                 "BC_Cornea": {
-                    "h": "h_amb+h_tau:h_amb:h_tau",
+                    "h": "h_amb+h_r:h_amb:h_r",
                     "Text": "T_amb:T_amb"
                     // "expr":"-(h_amb * (heat_T - T_amb) + sigma * epsilon * (heat_T * heat_T * heat_T * heat_T - T_amb * T_amb * T_amb * T_amb) + E):heat_T:T_amb:h_amb:epsilon:sigma:E"
                 }
@@ -123,7 +123,7 @@
                 "BC_Cornea":
                 {
                     "expr":"-E:E"
-                    //"expr": "-( (h_amb+h_tau)*(heat_T-T_amb) + E ):h_amb:h_tau:heat_T:T_amb:E"
+                    // "expr": "-( (h_amb+h_r)*(heat_T-T_amb) + E ):h_amb:h_r:heat_T:T_amb:E"
                     // "expr":"-(h_amb * (heat_T - T_amb) + sigma * epsilon * (heat_T * heat_T * heat_T * heat_T - T_amb * T_amb * T_amb * T_amb) + E):heat_T:T_amb:h_amb:epsilon:sigma:E"
 
                 }
