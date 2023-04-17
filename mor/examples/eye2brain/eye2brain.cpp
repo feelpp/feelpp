@@ -44,7 +44,7 @@ Eye2Brain::updateSpecificityModelPropertyTree( boost::property_tree::ptree & ptr
 void
 Eye2Brain::initBetaQ()
 {
-    this->M_betaAq.resize( 4 );
+    this->M_betaAq.resize( 5 );
     this->M_betaFq.resize( 2 );
     this->M_betaFq[0].resize( 2 );
     this->M_betaFq[1].resize( 1 );
@@ -57,10 +57,10 @@ Eye2Brain::computeBetaQ( parameter_type const& mu )
     if ( this->M_betaAq.empty() )
         this->initBetaQ();
 
-    for (int k = 0; k < 4; ++k)
+    for (int k = 0; k < 5; ++k)
         this->M_betaAq[k] = mu(k);
     for (int k = 0; k < 2; ++k)
-        this->M_betaFq[0][k] = mu( 4 + k );
+        this->M_betaFq[0][k] = mu( 5 + k );
     this->M_betaFq[1][0] = 1.;
     //std::cout << "computeBetaQ finish \n";
     return boost::make_tuple( this->M_betaAq, this->M_betaFq );
@@ -81,14 +81,15 @@ Eye2Brain::initModel()
     // "mu3": "1",
     // "mu4": "h_amb * T_amb + 6 * T_amb + E:h_amb:T_amb:E",
     // "mu5": "h_bl * T_bl:h_bl:T_bl"
-    Dmu->setDimension( 6 );
+    Dmu->setDimension( 7 );
     auto mu_min = Dmu->element();
     //mu_min << 50, 8, 308, 238.15, 20, 0.21;
-    mu_min << 0.21, 8, 50, 1, 8*283.15+6*283.15+20, 50*308;
+    mu_min << 0.21, 8, 50, 1, 8*283.15 + 6*283.15 - 320, 50*308;
+    // mu_min << 0, 0, 0, 0, 0, 0, 0;
     Dmu->setMin( mu_min );
     auto mu_max = Dmu->element();
     // mu_max << 110, 100, 312.15, 303.15, 320, 0.544;
-    mu_max << 0.544, 100, 110, 1,100*303.15+6*303.15+320, 110*312.15;
+    mu_max << 0.544, 100, 110, 10, 1, 100*303.15 + 6*303.15 - 20, 110*312.15;
     Dmu->setMax( mu_max );
     
 
@@ -125,7 +126,7 @@ Eye2Brain::initModel()
     CHECK( mesh->hasMarker( "cylinder" ) ) << "mesh does not have the surface marker : cylinder";
     */
 
-    std::vector<double> muRef = {0.4, 10, 65, 1};
+    std::vector<double> muRef = {0.4, 10, 65, 6, 1};
 
     auto energy = backend()->newMatrix( _test = Xh, _trial = Xh );
 
@@ -148,24 +149,30 @@ Eye2Brain::initModel()
     energy->addMatrix(muRef[2], a3.matrixPtr() );
 
     auto a4 = form2( _trial = Xh, _test = Xh );
-    a4 = integrate( _range = markedfaces(mesh, "BC_Cornea"), _expr = cst(6.) * idt( u )  * id( v ));
+    a4 = integrate( _range = markedfaces(mesh, "BC_Cornea"), _expr = idt( u )  * id( v ));
+    a4.matrixPtr()->close();
+    this->addLhs( { a4 , "mu3" } );
+    energy->addMatrix(muRef[3], a4.matrixPtr() );
+
+    auto a5 = form2( _trial = Xh, _test = Xh );
     std::map < std::string, double > regions = { {"Cornea", 0.58}, {"Sclera", 1.0042}, {"AqueousHumor", 0.28}, {"VitreousHumor", 0.603}, {"Iris", 1.0042}, {"Lamina", 1.0042}, {"Choroid", 0.52}, {"Retina", 0.52}, {"OpticNerve", 1.0042} };
     for (auto const& [key, value] : regions)
     {
-        a4 += integrate( _range = markedelements(mesh, key), _expr = value * gradt( u ) * trans( grad( v ) ));
+        a5 += integrate( _range = markedelements(mesh, key), _expr = value * gradt( u ) * trans( grad( v ) ));
     }
-    this->addLhs( { a4 , "mu3" } );
-    energy->addMatrix(muRef[3], a4.matrixPtr() );
+    a5.matrixPtr()->close();
+    this->addLhs( { a5 , "mu4" } );
+    energy->addMatrix(muRef[4], a5.matrixPtr() );
 
     auto f0 = form1( _test = Xh );
     f0 = integrate( _range = markedfaces( mesh, "BC_Cornea" ), _expr = id( v ) );
     f0.vectorPtr()->close();
-    this->addRhs( { f0, "mu4" } );
+    this->addRhs( { f0, "mu5" } );
 
     auto f1 = form1( _test = Xh );
     f1 = integrate( _range = markedfaces( mesh, {"BC_Sclera", "BC_OpticNerve" } ), _expr = id( v ) );
     f1.vectorPtr()->close();
-    this->addRhs( { f1, "mu5" } );
+    this->addRhs( { f1, "mu6" } );
 
     /// [energy]
     //a0.matrixPtr()->symmetricPart( energy );
@@ -176,7 +183,7 @@ Eye2Brain::initModel()
     this->addEnergyMatrix( energy );
 
     /// [output]
-#if 0 
+#if 1
     auto out1 = form1( _test = Xh );
    
     double meas = integrate( _range = markedelements(mesh, "Cornea"), _expr = cst(1.) ).evaluate()(0,0);
@@ -208,8 +215,23 @@ Eye2Brain::output( int output_index, parameter_type const& mu , element_type& u,
     }
     else if ( output_index == 1 )
     {
+#if 1
         output = mean(_range = markedelements(mesh, "Cornea"), _expr = idv(u))(0,0);
+#else
+        std::vector<double> coord = {-0.013597, 0, 0};
+        node_type n(Eye2BrainConfig::space_type::nDim);
+        for( int i = 0; i < Eye2BrainConfig::space_type::nDim; ++i )
+            n(i) = coord[i];
+        auto s = std::make_shared<SensorPointwise<space_type>>(Xh, n, "O");
+        auto out1 = form1(_test=Xh,_vector=s->containerPtr());
+        out1 = integrate( _range = markedelements(mesh, "Cornea"), _expr = id( u ) );
+        out1.vectorPtr()->close();
+        output = out1.vectorPtr()->operator()(0);
+#endif
+
+    if ( Environment::isMasterRank() )
         std::cout << " Eye2Brain::output " << std::setprecision(16) << output << "\n";
+
     }
     // else if ( output_index == 2 )
     // {

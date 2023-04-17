@@ -64,7 +64,7 @@ def convert_model(mu, Dmu):
     mu_model.setParameterNamed("mu1", h_amb)
     mu_model.setParameterNamed("mu2", h_bl)
   # mu_model.setParameterNamed("mu3", 1)
-    mu_model.setParameterNamed("mu4", h_amb*T_amb + 6*T_amb + E)
+    mu_model.setParameterNamed("mu4", h_amb*T_amb + 6*T_amb - E)
     mu_model.setParameterNamed("mu5", h_bl*T_bl)
     return mu_model
 
@@ -193,7 +193,8 @@ def run_toolbox(app, sample):
 if __name__ == '__main__':
 
     opts = tb_core.toolboxes_options("heat").add(mor.makeToolboxMorOptions()).add(mor.makeCRBOptions())
-    app = feelpp.Environment(sys.argv, opts=opts)
+    config = feelpp.globalRepository(f"eye2brain/compFE-RB")
+    app = feelpp.Environment(sys.argv, opts=opts, config=config)
     crbdir = app.repository().globalRoot().string()
     m_def = os.path.join( os.path.dirname(os.path.abspath(__file__)), "eye2brain/crb_param.json" )
     name = "eye2brain_p1g1"
@@ -220,7 +221,8 @@ if __name__ == '__main__':
     res_rb = o.run(s)
 
     df = convert_to_dataframe(res_rb, s_heat)
-    print(df)
+    if feelpp.Environment.isMasterRank():
+        print(df)
 
     out = run_offline(s)
     df['PFEM_output'] = out
