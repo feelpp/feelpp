@@ -56,6 +56,7 @@ def convert_model(mu, Dmu):
     k_lens = mu.parameterNamed("k_lens")
     h_amb = mu.parameterNamed("h_amb")
     h_bl = mu.parameterNamed("h_bl")
+    h_r = 6
     T_amb = mu.parameterNamed("T_amb")
     T_bl = mu.parameterNamed("T_bl")
     E = mu.parameterNamed("E")
@@ -63,9 +64,10 @@ def convert_model(mu, Dmu):
     mu_model.setParameterNamed("mu0", k_lens)
     mu_model.setParameterNamed("mu1", h_amb)
     mu_model.setParameterNamed("mu2", h_bl)
-  # mu_model.setParameterNamed("mu3", 1)
-    mu_model.setParameterNamed("mu4", h_amb*T_amb + 6*T_amb - E)
-    mu_model.setParameterNamed("mu5", h_bl*T_bl)
+    mu_model.setParameterNamed("mu3", h_r)
+  # mu_model.setParameterNamed("mu4", 1)
+    mu_model.setParameterNamed("mu5", h_amb*T_amb + 6*T_amb - E)
+    mu_model.setParameterNamed("mu6", h_bl*T_bl)
     return mu_model
 
 
