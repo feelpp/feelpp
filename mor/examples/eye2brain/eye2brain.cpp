@@ -75,21 +75,23 @@ Eye2Brain::initModel()
     LOG_IF( WARNING, ((Options&NonLinear) == NonLinear) ) << "Invalid model is_linear:" << is_linear << " is_time_dependent:" << is_time_dependent << "\n";
     LOG_IF( WARNING, ((Options&TimeDependent) == TimeDependent) ) << "Invalid model is_linear:" << is_linear << " is_time_dependent:" << is_time_dependent << "\n";
 
-    // "mu0": "klens:klens",
-    // "mu1": "hamb:hamb",
-    // "mu2": "hbl:hbl",
-    // "mu3": "1",
-    // "mu4": "h_amb * T_amb + 6 * T_amb + E:h_amb:T_amb:E",
-    // "mu5": "h_bl * T_bl:h_bl:T_bl"
+    // "mu0": "k_lens:k_lens",
+    // "mu1": "h_amb:h_amb",
+    // "mu2": "h_bl:h_bl",
+    // "mu3": "h_r:h_r",
+    // "mu4": "1",
+    // "mu5": "h_amb * T_amb + h_r * T_amb - E:h_amb:T_amb:E:h_r",
+    // "mu6": "h_bl * T_bl:h_bl:T_bl"
+
     Dmu->setDimension( 7 );
     auto mu_min = Dmu->element();
     //mu_min << 50, 8, 308, 238.15, 20, 0.21;
-    mu_min << 0.21, 8, 50, 1, 8*283.15 + 6*283.15 - 320, 50*308;
+    mu_min << 0.21, 8, 50, 6, 1, 8*283.15 + 6*283.15 - 320, 50*308;
     // mu_min << 0, 0, 0, 0, 0, 0, 0;
     Dmu->setMin( mu_min );
     auto mu_max = Dmu->element();
     // mu_max << 110, 100, 312.15, 303.15, 320, 0.544;
-    mu_max << 0.544, 100, 110, 10, 1, 100*303.15 + 6*303.15 - 20, 110*312.15;
+    mu_max << 0.544, 100, 110, 6, 1, 100*303.15 + 6*303.15 - 20, 110*312.15;
     Dmu->setMax( mu_max );
     
 
