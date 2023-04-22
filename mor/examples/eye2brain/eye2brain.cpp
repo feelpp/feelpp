@@ -86,7 +86,7 @@ Eye2Brain::initModel()
     Dmu->setDimension( 7 );
     auto mu_min = Dmu->element();
     //mu_min << 50, 8, 308, 238.15, 20, 0.21;
-    mu_min << 0.21, 8, 50, 6, 1, 8*283.15 + 6*283.15 - 320, 50*308;
+    mu_min << 0.21, 0, 0, 0, 1, 0*283.15 + 0*283.15 - 0, 50*308;
     // mu_min << 0, 0, 0, 0, 0, 0, 0;
     Dmu->setMin( mu_min );
     auto mu_max = Dmu->element();
@@ -132,39 +132,40 @@ Eye2Brain::initModel()
 
     auto energy = backend()->newMatrix( _test = Xh, _trial = Xh );
 
+    auto a0 = form2( _trial = Xh, _test = Xh );
+    a0 = integrate( _range = markedelements(mesh, "Lens"), _expr = gradt( u ) * trans( grad( v ) )  );
+    a0.matrixPtr()->close();
+    this->addLhs( { a0 , "mu0" } );
+    energy->addMatrix(muRef[0], a0.matrixPtr() );
+
     auto a1 = form2( _trial = Xh, _test = Xh );
-    a1 = integrate( _range = markedelements(mesh, "Lens"), _expr = gradt( u ) * trans( grad( v ) )  );
+    a1 = integrate( _range = markedfaces(mesh, {"BC_Cornea"}), _expr = idt( u )  * id( v ) );
     a1.matrixPtr()->close();
-    this->addLhs( { a1 , "mu0" } );
-    energy->addMatrix(muRef[0], a1.matrixPtr() );
+    this->addLhs( { a1 , "mu1" } );
+    energy->addMatrix(muRef[1], a1.matrixPtr() );
 
     auto a2 = form2( _trial = Xh, _test = Xh );
-    a2 = integrate( _range = markedfaces(mesh, {"BC_Cornea"}), _expr = idt( u )  * id( v ) );
+    a2 = integrate( _range = markedfaces(mesh, {"BC_Sclera", "BC_OpticNerve"}), _expr = idt( u )  * id( v ) );
     a2.matrixPtr()->close();
-    this->addLhs( { a2 , "mu1" } );
-    energy->addMatrix(muRef[1], a2.matrixPtr() );
+    this->addLhs( { a2 , "mu2" } );
+    energy->addMatrix(muRef[2], a2.matrixPtr() );
 
     auto a3 = form2( _trial = Xh, _test = Xh );
-    a3 = integrate( _range = markedfaces(mesh, {"BC_Sclera", "BC_OpticNerve"}), _expr = idt( u )  * id( v ) );
+    a3 = integrate( _range = markedfaces(mesh, "BC_Cornea"), _expr = idt( u )  * id( v ));
     a3.matrixPtr()->close();
-    this->addLhs( { a3 , "mu2" } );
-    energy->addMatrix(muRef[2], a3.matrixPtr() );
+    this->addLhs( { a3 , "mu3" } );
+    energy->addMatrix(muRef[3], a3.matrixPtr() );
 
     auto a4 = form2( _trial = Xh, _test = Xh );
-    a4 = integrate( _range = markedfaces(mesh, "BC_Cornea"), _expr = idt( u )  * id( v ));
-    a4.matrixPtr()->close();
-    this->addLhs( { a4 , "mu3" } );
-    energy->addMatrix(muRef[3], a4.matrixPtr() );
-
-    auto a5 = form2( _trial = Xh, _test = Xh );
     std::map < std::string, double > regions = { {"Cornea", 0.58}, {"Sclera", 1.0042}, {"AqueousHumor", 0.28}, {"VitreousHumor", 0.603}, {"Iris", 1.0042}, {"Lamina", 1.0042}, {"Choroid", 0.52}, {"Retina", 0.52}, {"OpticNerve", 1.0042} };
+    // std::map < std::string, double > regions = { {"Cornea", 1}, {"Sclera", 1}, {"AqueousHumor", 1}, {"VitreousHumor", 1}, {"Iris", 1}, {"Lamina", 1}, {"Choroid", 1}, {"Retina", 1.}, {"OpticNerve", 1} };
     for (auto const& [key, value] : regions)
     {
-        a5 += integrate( _range = markedelements(mesh, key), _expr = value * gradt( u ) * trans( grad( v ) ));
+        a4 += integrate( _range = markedelements(mesh, key), _expr = value * gradt( u ) * trans( grad( v ) ));
     }
-    a5.matrixPtr()->close();
-    this->addLhs( { a5 , "mu4" } );
-    energy->addMatrix(muRef[4], a5.matrixPtr() );
+    a4.matrixPtr()->close();
+    this->addLhs( { a4 , "mu4" } );
+    energy->addMatrix(muRef[4], a4.matrixPtr() );
 
     auto f0 = form1( _test = Xh );
     f0 = integrate( _range = markedfaces( mesh, "BC_Cornea" ), _expr = id( v ) );
