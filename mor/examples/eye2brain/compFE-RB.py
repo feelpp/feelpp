@@ -7,6 +7,8 @@ import sys, os
 import pandas as pd
 from feelpp.mor.online import Online
 import subprocess
+from numpy import abs
+
 
 
 def loadParameterSpace(model_path):
@@ -234,6 +236,13 @@ if __name__ == '__main__':
 
     if feelpp.Environment.isMasterRank():
         print(df)
+        print()
+        print("Error bounds")
+        print(df['errorBound'])
+        print("\nRB - PFEM")
+        print(abs(df["RB_output"] - df["PFEM_output"]))
+        print("\nFEM - PFEM")
+        print(abs(df["FEM_output"] - df["PFEM_output"]))
     df.to_csv("results.csv")
 
     sys.exit(0)
