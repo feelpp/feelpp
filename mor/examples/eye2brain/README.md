@@ -1,7 +1,7 @@
 # Offline step
 
 ```bash
-./feelpp_mor_eye2brainapp --config-file /home/saigre/Documents/code/feelpp-dev/mor/examples/eye2brain/eye2brain/eye2brain.cfg
+mpirun -np 4 ./feelpp_mor_eye2brainapp --config-file /home/saigre/Documents/code/feelpp-dev/mor/examples/eye2brain/eye2brain/eye2brain.cfg
 ```
 
 

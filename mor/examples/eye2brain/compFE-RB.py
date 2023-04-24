@@ -50,6 +50,14 @@ def generate_sampling(model_path, Nsamples=1, samplingMode="random"):
     Dmu = loadParameterSpace(model_path)
     s_heat = Dmu.sampling()
     s_heat.sampling(Nsamples, samplingMode)
+    for i in range(Nsamples):
+        # s_heat[i].setParameterNamed("h_bl", round(s_heat[i].parameterNamed("h_bl"), 2))
+        # s_heat[i].setParameterNamed("h_amb", round(s_heat[i].parameterNamed("h_amb"), 2))
+        s_heat[i].setParameterNamed("h_r", 6)
+        # s_heat[i].setParameterNamed("T_bl", round(s_heat[i].parameterNamed("T_bl"), 2))
+        # s_heat[i].setParameterNamed("T_amb", round(s_heat[i].parameterNamed("T_amb"), 2))
+        # s_heat[i].setParameterNamed("E", round(s_heat[i].parameterNamed("E"), 2))
+        # s_heat[i].setParameterNamed("k_lens", round(s_heat[i].parameterNamed("k_lens"), 2))
     return s_heat
 
 
@@ -58,7 +66,7 @@ def convert_model(mu, Dmu):
     k_lens = mu.parameterNamed("k_lens")
     h_amb = mu.parameterNamed("h_amb")
     h_bl = mu.parameterNamed("h_bl")
-    h_r = 6
+    h_r = mu.parameterNamed("h_r")
     T_amb = mu.parameterNamed("T_amb")
     T_bl = mu.parameterNamed("T_bl")
     E = mu.parameterNamed("E")
@@ -68,8 +76,9 @@ def convert_model(mu, Dmu):
     mu_model.setParameterNamed("mu2", h_bl)
     mu_model.setParameterNamed("mu3", h_r)
   # mu_model.setParameterNamed("mu4", 1)
-    mu_model.setParameterNamed("mu5", h_amb*T_amb + 6*T_amb - E)
+    mu_model.setParameterNamed("mu5", h_amb*T_amb + h_r*T_amb - E)
     mu_model.setParameterNamed("mu6", h_bl*T_bl)
+
     return mu_model
 
 
@@ -173,7 +182,7 @@ def run_toolbox(app, sample):
 
     app.setConfigFile(cfg_file)
 
-    heatBox = heat.heat(dim=3, order=2)
+    heatBox = heat.heat(dim=3, order=1)
     heatBox.init()
 
     out = []
