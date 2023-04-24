@@ -19,7 +19,7 @@
 //! @file
 //! @author Thomas Saigre <saigre@math.unistra.fr>
 //! @date 01 April 2023 🐟
-//! @copyright 2022 Feel++ Consortium
+//! @copyright 2023 Feel++ Consortium
 //!
 #include <boost/dll.hpp>
 #include <boost/algorithm/string/split.hpp>
@@ -53,6 +53,12 @@
 typedef Feel::ParameterSpaceX::element_type element_t;
 typedef std::shared_ptr<Feel::CRBPluginAPI> plugin_ptr_t;
 typedef std::shared_ptr<Feel::ParameterSpaceX> parameter_space_ptr_t;
+
+
+const std::vector<std::string> NAMES = {"h_bl", "h_amb", "T_bl", "T_amb", "E", "k_lens"};
+const std::vector<double> MINS       = {50    , 8      , 308.3 , 283.15 , 20 , 0.21    };
+const std::vector<double> MAXS       = {110   , 100    , 312   , 303.15 , 320, 0.544   };
+const size_t SIZE = 6;
 
 
 std::shared_ptr<Feel::CRBPluginAPI>
@@ -109,17 +115,12 @@ OT::ComposedDistribution composedFromModel()
 {
     using namespace Feel;
 
-    size_t N = 6;   // number of parameters of the model
-    OT::Collection<OT::Distribution> marginals( N );
+    OT::Collection<OT::Distribution> marginals( SIZE );
 
-    std::vector<std::string> names = {"h_bl", "h_amb", "T_bl", "T_amb", "E", "k_lens"};
-    std::vector<double> mins       = {50    , 8      , 308.3 , 283.15 , 20 , 0.21    };
-    std::vector<double> maxs       = {110   , 100    , 312   , 303.15 , 320, 0.544   };
-
-    for (size_t d = 0; d < N; ++d)
+    for (size_t d = 0; d < SIZE; ++d)
     {
         OT::Distribution dist;
-        std::string name = names[d];
+        std::string name = NAMES[d];
     
         if (name == "h_bl")
         {
@@ -136,11 +137,11 @@ OT::ComposedDistribution composedFromModel()
             // double s = 0.7; double mu = log(40.) - 0.5*s*s;
             // dist = OT::TruncatedDistribution(OT::LogNormal(mu, s, 20), OT::Interval(20, 130));
             double Emin = 20, Emax = 320;
-            dist = OT::Uniform( mins[d], maxs[d] );
+            dist = OT::Uniform( MINS[d], MAXS[d] );
         }
         else
         {
-            dist = OT::Uniform( mins[d], maxs[d] );
+            dist = OT::Uniform( MINS[d], MAXS[d] );
         }
         
         dist.setDescription( {name} );
@@ -170,23 +171,35 @@ OT::Sample output(OT::Sample const& input, plugin_ptr_t const& plugin, Eigen::Ve
         std::vector<std::string> names = Dmu->parameterNames();
         Feel::cout << "Start to compute outputs, sampling of size " << n << std::endl;
 
+        double k_lens, h_amb, h_bl, h_r=6, T_amb, T_bl, E;
+
         for (size_t i: tqdm::range(n))          // std::for_each
         {
             element_t mu = Dmu->element();
             OT::Point X = input[i];
             // X = [ h_bl, h_amb, T_bl, T_amb, E, k_lens ]
-            // "mu0": "klens:klens",
-            mu.setParameter(0, X[5]);
-            // "mu1": "hamb:hamb",
-            mu.setParameter(1, X[1]);
-            // "mu2": "hbl:hbl",
-            mu.setParameter(2, X[0]);
-            // "mu3": "1",
-            // mu.setParameter(2, 1);
-            // "mu4": "h_amb * T_amb + 6 * T_amb + E:h_amb:T_amb:E",
-            mu.setParameter(4, X[1]*X[3] + 6*X[3] + X[4]);
+            k_lens = X[5];
+            h_amb = X[1];
+            h_bl = X[0];
+            T_amb = X[3];
+            T_bl = X[2];
+            E = X[4];
+
+            // "mu0": "k_lens:k_lens",
+            mu.setParameter(0, k_lens);
+            // "mu1": "h_amb:h_amb",
+            mu.setParameter(1, h_amb);
+            // "mu2": "h_bl:h_bl",
+            mu.setParameter(2, h_bl);
+            // "mu3": "h_r:h_r"
+            mu.setParameter(3, h_r);
+            // "mu4": "1",
+//          mu.setParameter(4, 1);
+            // "mu4": "h_amb * T_amb + h_r * T_amb - E:h_amb:T_amb:E",
+            mu.setParameter(5, h_amb*T_amb + h_r*T_amb - E);
             // "mu5": "h_bl * T_bl:h_bl:T_bl"
-            mu.setParameter(5, X[0]*X[2]);
+            mu.setParameter(6, h_bl*T_bl);
+            // Feel::cout << "mu = " << mu << std::endl;
 
             Feel::CRBResults crbResult = plugin->run( mu, time_crb, online_tol, rbDim, false );
             output[i] = OT::Point({boost::get<0>( crbResult )[0]});
@@ -236,6 +249,7 @@ void computeSobolIndicesBootstrap(std::vector<plugin_ptr_t> plugin, OT::Composed
     res.print();
     res.exportValues( soption( _name="save.path" ) + "-bootstrap.json" );
     graph.draw("sobol-indices.png");
+    Feel::cout << "Files are saved in " << fs::current_path() << std::endl;
 }
 
 
@@ -263,8 +277,6 @@ void runSensitivityAnalysis( std::vector<plugin_ptr_t> plugin, size_t sampling_s
 
     OT::ComposedDistribution composed_distribution = composedFromModel();
 
-    std::vector<std::string> tableRowHeader = muspace->parameterNames();
-    size_t dim = muspace->dimension();
 
     double adapt_tol = doption(_name="adapt.tol");
 
@@ -273,11 +285,12 @@ void runSensitivityAnalysis( std::vector<plugin_ptr_t> plugin, size_t sampling_s
     OT::Sample output_sample = output(input_sample, plugin[0], time_crb, online_tol, rbDim);
     toc("output sample");
 
-    Feel::cout << "input_sample = " << input_sample << std::endl;
-    Feel::cout << "output_sample = " << output_sample << std::endl;
+    Feel::cout << "input_sample =\n" << input_sample << std::endl;
+    Feel::cout << "output_sample =\n" << output_sample << std::endl;
 
 
-    computeSobolIndicesBootstrap(plugin, composed_distribution, sampling_size, input_sample, output_sample, tableRowHeader, time_crb, online_tol, rbDim);
+    computeSobolIndicesBootstrap(plugin, composed_distribution, sampling_size, input_sample, output_sample, NAMES, time_crb, online_tol, rbDim);
+
 }
 
 int main( int argc, char** argv )
