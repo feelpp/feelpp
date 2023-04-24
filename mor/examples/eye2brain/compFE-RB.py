@@ -132,8 +132,10 @@ def convert_to_dataframe(res, inputs):
         df.loc[i] = [mu_heat.parameterNamed(n) for n in names_heat] + [mu.parameterNamed(n) for n in names] + [r.output(), r.errorBound()]
     return df
 
+############################################################################################################
+# PFEM part
 
-def run_offline(sample):
+def run_pfem(sample):
     if feelpp.Environment.isMasterRank():
         print("Offline phase")
         np = feelpp.Environment.numberOfProcessors()
@@ -154,9 +156,9 @@ def run_offline(sample):
             out.append( float(o.split(' ')[-1]) )
     return out
 
+
 ############################################################################################################
 # FEM simulation using the toolbox
-
 
 def assembleToolbox(tb, mu):
     """Assemble the toolbox with the given parameters
@@ -186,18 +188,17 @@ def run_toolbox(app, sample):
     heatBox.init()
 
     out = []
-    for mu in sample.getVector():
+    for i, mu in enumerate(sample.getVector()):
         assembleToolbox(heatBox, mu)
         heatBox.solve()
         heatBox.exportResults()
 
         l = heatBox.postProcessMeasures()
-
         meas = heatBox.postProcessMeasures().values()
 
         if feelpp.Environment.isMasterRank():
-            print("          mu meas", meas)
-            out.append(meas['Statistics_cornea_mean'])
+            print(i, "mu meas =", meas)
+        out.append(meas['Statistics_cornea_mean'])
     
     return out
 
@@ -222,9 +223,6 @@ if __name__ == '__main__':
     parser.add_option('-m', '--model', dest='model', help='path to the model description', type="string", default=m_def)
     
     (options, args) = parser.parse_args()
-    print("members:", mor.CRBLoad.__members__)
-    print("rb members:", mor.CRBLoad.__members__["rb"])
-    print("crbdir:", crbdir)
 
     o = Online(options.name, options.dir)
 
@@ -237,8 +235,12 @@ if __name__ == '__main__':
     if feelpp.Environment.isMasterRank():
         print(df)
 
-    out = run_offline(s)
-    df['PFEM_output'] = out
+    if not feelpp.Environment.isParallel():
+        out = run_pfem(s)
+        df['PFEM_output'] = out
+    else:
+        if feelpp.Environment.isMasterRank():
+            print("Cannot run parallel of PFEM, sorry !")
 
     out = run_toolbox(app, s_heat)
     df['FEM_output'] = out
@@ -248,10 +250,11 @@ if __name__ == '__main__':
         print()
         print("Error bounds")
         print(df['errorBound'])
-        print("\nRB - PFEM")
-        print(abs(df["RB_output"] - df["PFEM_output"]))
-        print("\nFEM - PFEM")
-        print(abs(df["FEM_output"] - df["PFEM_output"]))
+        if not feelpp.Environment.isParallel():
+            print("\nRB - PFEM")
+            print(abs(df["RB_output"] - df["PFEM_output"]))
+            print("\nFEM - PFEM")
+            print(abs(df["FEM_output"] - df["PFEM_output"]))
     df.to_csv("results.csv")
 
     sys.exit(0)
