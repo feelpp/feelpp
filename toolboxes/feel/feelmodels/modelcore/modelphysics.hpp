@@ -1011,16 +1011,16 @@ public:
     //! return true if physic id is already registered
     bool hasPhysic( physic_id_type const& pId ) const { return M_physics.find( pId ) != M_physics.end(); }
 
-    //! return physic registerd from physic id
+    //! return physic registered from physic id
     std::shared_ptr<ModelPhysic<Dim>> physic( physic_id_type const& pId ) const { CHECK( this->hasPhysic(pId) ) << "no physic id"; return M_physics.find( pId )->second; }
 
-    //! return all physics registerd
+    //! return all physics registered
     std::map<physic_id_type,std::shared_ptr<ModelPhysic<nDim>>> const& physics() const { return M_physics; }
 
-    //! return all physics registerd related to a type of physic
+    //! return all physics registered related to a type of physic
     std::map<physic_id_type,std::shared_ptr<ModelPhysic<Dim>>> physics( std::string const& type ) const;
 
-    //! return all physics registerd related to the current type
+    //! return all physics registered related to the current type
     std::map<physic_id_type,std::shared_ptr<ModelPhysic<nDim>>> physicsFromCurrentType() const { return this->physics( this->physicType() ); }
 
     //! return the physic modeling

@@ -860,7 +860,7 @@ public :
     auto symbolsExpr( std::string const& prefix_symbol = "materials_" ) const
         {
             int nMat = this->numberOfMaterials();
-            std::map<std::string,std::string> propertyNamesToSymbol; //usefull for expression on whole mesh
+            std::map<std::string,std::string> propertyNamesToSymbol; //useful for expression on whole mesh
             // generate symbols heat_matName_k or heat_matName_k(_xx,_xy,...,_zz)
             auto tupleSymbolExprsByMaterial = hana::transform( ModelExpression::expr_shapes, [this,&prefix_symbol,&nMat,&propertyNamesToSymbol](auto const& e_ij) {
                     constexpr int ni = std::decay_t<decltype(hana::at_c<0>(e_ij))>::value;

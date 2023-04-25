@@ -125,10 +125,11 @@ loadMeshImpl( args_loadMesh_type<MeshType> && args )
             mesh_name.extension() != ".med" &&
             mesh_name.extension() != ".arm" )
         << "Invalid filename " << filenameExpand << " it should have either the .geo. .json or .msh extension\n";
-
+    VLOG(1) << "[loadmesh] loading mesh " << filenameExpand << " from " << mesh_name.string() << " with extension " << mesh_name.extension() << " on " << worldcomm->localSize() << " processors\n";
 #if defined(FEELPP_HAS_GMSH_H)
     if ( mesh_name.extension() == ".geo" )
     {
+        VLOG(1) << fmt::format("[loadmesh] loading geometry from file {}", mesh_name.string());
 #if defined(FEELPP_HAS_HDF5)
         if ( boption(_name="mesh.load.enable") && soption(_name="mesh.load.format") == "json+h5" )
         {

@@ -1006,7 +1006,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::redistanciate()
                   ////<< "\n      * hj pseudo time step dtau : " << hj_dtau
                   ////<< "\n      * hj stabilization : SUPG"
                   ////<< "\n      * hj coeff stab : " << option( prefixvm(M_prefix,"hj-coeff-stab")).template as<double>()
-                  ////<< "\n      * hj tolerence on dist to dist error : "<<hj_tol;
+                  ////<< "\n      * hj tolerance on dist to dist error : "<<hj_tol;
         ////}
         ////else
         ////{
