@@ -28,15 +28,15 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::LevelSetBase(
 :
     super_type( prefix, keyword, worldComm, subPrefix, modelRep, ModelBaseCommandLineOptions(levelset_options(prefix)) ),
     ModelBase( prefix, keyword, worldComm, subPrefix, modelRep, ModelBaseCommandLineOptions(levelset_options(prefix)) ),
-    M_levelsetGradPhi( [this]( element_vectorial_ptrtype & gradPhi ) { this->updateGradPhi( gradPhi ); } ),
-    M_levelsetModGradPhi( [this]( element_scalar_ptrtype & modGradPhi ) { this->updateModGradPhi( modGradPhi ); } ),
-    M_levelsetNormal( [this]( element_vectorial_ptrtype & N ) { this->updateNormal( N ); } ),
-    M_levelsetCurvature( [this]( element_scalar_ptrtype & K ) { this->updateCurvature( K ); } ),
-    M_dirac( [this]( element_scalar_ptrtype & D ) { this->updateDirac( D ); } ),
-    M_heaviside( [this]( element_scalar_ptrtype & H ) { this->updateHeaviside( H ); } ),
-    M_distance( [this]( element_scalar_ptrtype & dist ) { this->updateDistance( dist ); } ),
-    M_distanceNormal( [this]( element_vectorial_ptrtype & distN ) { this->updateDistanceNormal( distN ); } ),
-    M_distanceCurvature( [this]( element_scalar_ptrtype & distK ) { this->updateDistanceCurvature( distK ); } ),
+    M_levelsetGradPhi( new cached_vectorial_field_type( [this]( element_vectorial_ptrtype & gradPhi ) { this->updateGradPhi( gradPhi ); } ) ),
+    M_levelsetModGradPhi( new cached_scalar_field_type( [this]( element_scalar_ptrtype & modGradPhi ) { this->updateModGradPhi( modGradPhi ); } ) ),
+    M_levelsetNormal( new cached_vectorial_field_type( [this]( element_vectorial_ptrtype & N ) { this->updateNormal( N ); } ) ),
+    M_levelsetCurvature( new cached_scalar_field_type( [this]( element_scalar_ptrtype & K ) { this->updateCurvature( K ); } ) ),
+    M_dirac( new cached_scalar_field_type( [this]( element_scalar_ptrtype & D ) { this->updateDirac( D ); } ) ),
+    M_heaviside( new cached_scalar_field_type( [this]( element_scalar_ptrtype & H ) { this->updateHeaviside( H ); } ) ),
+    M_distance( new cached_scalar_field_type( [this]( element_scalar_ptrtype & dist ) { this->updateDistance( dist ); } ) ),
+    M_distanceNormal( new cached_vectorial_field_type( [this]( element_vectorial_ptrtype & distN ) { this->updateDistanceNormal( distN ); } ) ),
+    M_distanceCurvature( new cached_scalar_field_type( [this]( element_scalar_ptrtype & distK ) { this->updateDistanceCurvature( distK ); } ) ),
     M_doUpdateInterfaceElements(true),
     M_doUpdateRangeDiracElements(true),
     M_doUpdateInterfaceFaces(true),
@@ -554,8 +554,11 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateGradPhi( element_vectorial_ptrtype & gra
     this->log("LevelSetBase", "updateGradPhi", "start");
     this->timerTool("UpdateInterfaceData").start();
 
-    if( !gradPhi )
-        gradPhi.reset( new element_vectorial_type(this->functionSpaceVectorial(), "GradPhi") );
+    if( !gradPhi->functionSpace() )
+    {
+        gradPhi->setFunctionSpace( this->functionSpaceVectorial() );
+        gradPhi->setName( "GradPhi" );
+    }
 
     *gradPhi = this->grad( this->phiElt(), M_gradPhiMethod );
 
@@ -570,8 +573,11 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateModGradPhi( element_scalar_ptrtype & mod
     this->log("LevelSetBase", "updateModGradPhi", "start");
     this->timerTool("UpdateInterfaceData").start();
 
-    if( !modGradPhi )
-        modGradPhi.reset( new element_levelset_type(this->functionSpace(), "ModGradPhi") );
+    if( !modGradPhi->functionSpace() )
+    {
+        modGradPhi->setFunctionSpace( this->functionSpace() );
+        modGradPhi->setName( "ModGradPhi" );
+    }
 
     *modGradPhi = this->modGrad( this->phiElt(), M_modGradPhiMethod );
 
@@ -586,8 +592,11 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateNormal( element_vectorial_ptrtype & N ) 
     this->log("LevelSetBase", "updateNormal", "start");
     this->timerTool("UpdateInterfaceData").start();
 
-    if( !N )
-        N.reset( new element_vectorial_type(this->functionSpaceVectorial(), "Normal") );
+    if( !N->functionSpace() )
+    {
+        N->setFunctionSpace( this->functionSpaceVectorial() );
+        N->setName( "Normal" );
+    }
 
     auto gradPhi = this->gradPhi();
     N->on(_range=this->rangeMeshElements(), _expr=idv(gradPhi) / norm2(idv(gradPhi)) );
@@ -603,8 +612,11 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateCurvature( element_scalar_ptrtype & K ) 
     this->log("LevelSetBase", "updateCurvature", "start");
     this->timerTool("UpdateInterfaceData").start();
 
-    if( !K )
-        K.reset( new element_scalar_type(this->functionSpace(), "Curvature") );
+    if( !K->functionSpace() )
+    {
+        K->setFunctionSpace( this->functionSpace() );
+        K->setName( "Curvature" );
+    }
 
     switch( M_curvatureMethod )
     {
@@ -673,8 +685,11 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateDirac( element_scalar_ptrtype & D ) cons
     this->log("LevelSetBase", "updateDirac", "start");
     this->timerTool("UpdateInterfaceData").start();
 
-    if( !D )
-        D.reset( new element_scalar_type(this->functionSpace(), "Dirac") );
+    if( !D->functionSpace() )
+    {
+        D->setFunctionSpace( this->functionSpace() );
+        D->setName( "Dirac" );
+    }
 
     auto eps0 = this->thicknessInterface();
 
@@ -736,8 +751,11 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateHeaviside( element_scalar_ptrtype & H ) 
     this->log("LevelSetBase", "updateHeaviside", "start");
     this->timerTool("UpdateInterfaceData").start();
 
-    if( !H )
-        H.reset( new element_scalar_type(this->functionSpace(), "Heaviside") );
+    if( !H->functionSpace() )
+    {
+        H->setFunctionSpace( this->functionSpace() );
+        H->setName( "Heaviside" );
+    }
 
     auto eps = this->thicknessInterface();
 
@@ -790,8 +808,11 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateDistance( element_scalar_ptrtype & dist 
     this->log("LevelSetBase", "updateDistance", "start");
     this->timerTool("UpdateInterfaceData").start();
 
-    if( !dist )
-        dist.reset( new element_levelset_type(this->functionSpace(), "Distance") );
+    if( !dist->functionSpace() )
+    {
+        dist->setFunctionSpace( this->functionSpace() );
+        dist->setName( "Distance" );
+    }
 
     *dist = this->redistanciate( this->phiElt(), M_distanceMethod );
 
@@ -806,8 +827,11 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateDistanceNormal( element_vectorial_ptrtyp
     this->log("LevelSetBase", "updateDistanceNormal", "start");
     this->timerTool("UpdateInterfaceData").start();
 
-    if( !distN )
-        distN.reset( new element_vectorial_type(this->functionSpaceVectorial(), "DistanceNormal") );
+    if( !distN->functionSpace() )
+    {
+        distN->setFunctionSpace( this->functionSpaceVectorial() );
+        distN->setName( "DistanceNormal" );
+    }
 
     auto const& phi = this->distance();
     auto const N_expr = trans(gradv(phi)) / norm2( gradv(phi) );
@@ -850,8 +874,11 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateDistanceCurvature( element_scalar_ptrtyp
     this->log("LevelSetBase", "updateDistanceCurvature", "start");
     this->timerTool("UpdateInterfaceData").start();
 
-    if( !distK )
-        distK.reset( new element_levelset_type(this->functionSpace(), "DistanceCurvature") );
+    if( !distK->functionSpace() )
+    {
+        distK->setFunctionSpace( this->functionSpace() );
+        distK->setName( "DistanceCurvature" );
+    }
 
     switch( M_curvatureMethod )
     {
@@ -1388,15 +1415,15 @@ LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateInterfaceQuantities()
 {
-    M_levelsetGradPhi.setDoUpdate( true );
-    M_levelsetModGradPhi.setDoUpdate( true );
-    M_levelsetNormal.setDoUpdate( true );
-    M_levelsetCurvature.setDoUpdate( true );
-    M_dirac.setDoUpdate( true );
-    M_heaviside.setDoUpdate( true );
-    M_distance.setDoUpdate( true );
-    M_distanceNormal.setDoUpdate( true );
-    M_distanceCurvature.setDoUpdate( true );
+    M_levelsetGradPhi->setDoUpdate( true );
+    M_levelsetModGradPhi->setDoUpdate( true );
+    M_levelsetNormal->setDoUpdate( true );
+    M_levelsetCurvature->setDoUpdate( true );
+    M_dirac->setDoUpdate( true );
+    M_heaviside->setDoUpdate( true );
+    M_distance->setDoUpdate( true );
+    M_distanceNormal->setDoUpdate( true );
+    M_distanceCurvature->setDoUpdate( true );
 
     M_doUpdateInterfaceElements = true;
     M_doUpdateRangeDiracElements = true;

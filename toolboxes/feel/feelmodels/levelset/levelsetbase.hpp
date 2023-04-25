@@ -145,7 +145,9 @@ public:
     //--------------------------------------------------------------------//
     // Cached fields
     using cached_scalar_field_type = CachedModelField<element_scalar_type, InplaceUpdatePolicy>;
+    using cached_scalar_field_ptrtype = std::shared_ptr<cached_scalar_field_type>;
     using cached_vectorial_field_type = CachedModelField<element_vectorial_type, InplaceUpdatePolicy>;
+    using cached_vectorial_field_ptrtype = std::shared_ptr<cached_vectorial_field_type>;
 
     //--------------------------------------------------------------------//
     // Heaviside and Dirac expressions
@@ -298,23 +300,23 @@ public:
     void setPhi( element_levelset_type const& phi, bool reinit = true ) { *M_phi = phi; M_hasRedistanciated = reinit; }
     void setPhi( element_levelset_ptrtype const& phi, bool reinit = true ) { this->setPhi( *phi, reinit ); }
 
-    element_vectorial_ptrtype gradPhi() const { return M_levelsetGradPhi.fieldPtr(); }
-    element_levelset_ptrtype modGradPhi() const { return M_levelsetModGradPhi.fieldPtr(); }
+    element_vectorial_ptrtype gradPhi() const { return M_levelsetGradPhi->fieldPtr(); }
+    element_levelset_ptrtype modGradPhi() const { return M_levelsetModGradPhi->fieldPtr(); }
 
-    element_vectorial_ptrtype normal() const { return M_levelsetNormal.fieldPtr(); }
+    element_vectorial_ptrtype normal() const { return M_levelsetNormal->fieldPtr(); }
     element_vectorial_ptrtype N() const { return this->normal(); }
-    element_levelset_ptrtype curvature() const { return M_levelsetCurvature.fieldPtr(); }
+    element_levelset_ptrtype curvature() const { return M_levelsetCurvature->fieldPtr(); }
     element_levelset_ptrtype K() const { return this->curvature(); }
 
-    element_levelset_ptrtype dirac() const { return M_dirac.fieldPtr(); }
+    element_levelset_ptrtype dirac() const { return M_dirac->fieldPtr(); }
     element_levelset_ptrtype D() const { return this->dirac(); }
     levelset_delta_expr_type diracExpr() const;
-    element_levelset_ptrtype heaviside() const { return M_heaviside.fieldPtr(); }
+    element_levelset_ptrtype heaviside() const { return M_heaviside->fieldPtr(); }
     element_levelset_ptrtype H() const { return this->heaviside(); }
 
-    element_levelset_ptrtype distance() const { return M_distance.fieldPtr(); }
-    element_vectorial_ptrtype distanceNormal() const { return M_distanceNormal.fieldPtr(); }
-    element_levelset_ptrtype distanceCurvature() const { return M_distanceCurvature.fieldPtr(); }
+    element_levelset_ptrtype distance() const { return M_distance->fieldPtr(); }
+    element_vectorial_ptrtype distanceNormal() const { return M_distanceNormal->fieldPtr(); }
+    element_levelset_ptrtype distanceCurvature() const { return M_distanceCurvature->fieldPtr(); }
 
     element_levelset_PN_ptrtype const& phiPN() const;
 
@@ -630,18 +632,18 @@ private:
 protected:
     //--------------------------------------------------------------------//
     // Levelset data
-    cached_vectorial_field_type M_levelsetGradPhi;
-    cached_scalar_field_type M_levelsetModGradPhi;
+    cached_vectorial_field_ptrtype M_levelsetGradPhi;
+    cached_scalar_field_ptrtype M_levelsetModGradPhi;
     // Normal, curvature
-    cached_vectorial_field_type M_levelsetNormal;
-    cached_scalar_field_type M_levelsetCurvature;
+    cached_vectorial_field_ptrtype M_levelsetNormal;
+    cached_scalar_field_ptrtype M_levelsetCurvature;
     // Dirac, heaviside
-    cached_scalar_field_type M_dirac;
-    cached_scalar_field_type M_heaviside;
+    cached_scalar_field_ptrtype M_dirac;
+    cached_scalar_field_ptrtype M_heaviside;
     // Distance function
-    cached_scalar_field_type M_distance;
-    cached_vectorial_field_type M_distanceNormal;
-    cached_scalar_field_type M_distanceCurvature;
+    cached_scalar_field_ptrtype M_distance;
+    cached_vectorial_field_ptrtype M_distanceNormal;
+    cached_scalar_field_ptrtype M_distanceCurvature;
 
     mutable element_levelset_PN_ptrtype M_levelsetPhiPN;
 
