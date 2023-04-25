@@ -147,7 +147,7 @@ void partition( std::vector<int> const& nParts, nl::json const& partconfig )
                     partitionByRange.push_back( markedelements(mesh,marker) );
             }
         }
-
+        std::string outputPathMesh;
         for ( int nPartition : nParts )
         {
             std::string outputFilenameWithoutExt = "";
@@ -167,7 +167,7 @@ void partition( std::vector<int> const& nParts, nl::json const& partconfig )
                 outputDirPath = fs::system_complete( soption("odir") );
             else
                 outputDirPath = fs::current_path();
-            std::string outputPathMesh = ( outputDirPath / fs::path(outputFilenameWithExt) ).string();
+            outputPathMesh = ( outputDirPath / fs::path(outputFilenameWithExt) ).string();
 
             fs::path outputDir = fs::path(outputPathMesh).parent_path();
             if ( !fs::exists( outputDir ) )
@@ -185,8 +185,8 @@ void partition( std::vector<int> const& nParts, nl::json const& partconfig )
             io.write( partitionMesh( mesh, nPartition, partitionByRange, partconfig ) );
             toc("paritioning and save on disk done",FLAGS_v>0);
         }
-
-        doExport(mesh);
+        auto parallel_mesh = loadMesh(_mesh=new mesh_type, _filename=outputPathMesh);
+        doExport(parallel_mesh);
     }
 
 }
