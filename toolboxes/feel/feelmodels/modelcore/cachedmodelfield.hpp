@@ -21,8 +21,8 @@ struct ReturnValueUpdatePolicy
     using update_function_type = std::function<field_type()>;
 
     template<typename UpdateFunctionType>
-    ReturnValueUpdatePolicy( UpdateFunctionType f ) :
-        M_updateFunction( f )
+    ReturnValueUpdatePolicy( UpdateFunctionType && f ) :
+        M_updateFunction( std::forward<UpdateFunctionType>(f) )
     {}
 
     void update( field_ptrtype & fieldPtr )
@@ -45,8 +45,8 @@ struct InplaceUpdatePolicy
     using update_function_type = std::function<void(field_ptrtype &)>;
 
     template<typename UpdateFunctionType>
-    InplaceUpdatePolicy( UpdateFunctionType f ) :
-        M_updateFunction( f )
+    InplaceUpdatePolicy( UpdateFunctionType && f ) :
+        M_updateFunction( std::forward<UpdateFunctionType>(f) )
     {}
 
     void update( field_ptrtype & fieldPtr )
@@ -69,16 +69,15 @@ struct CachedModelField : UpdatePolicy<FieldType>
     typedef typename field_type::functionspace_type functionspace_type;
     typedef std::shared_ptr<functionspace_type> functionspace_ptrtype;
 
-    using update_function_type = std::function<field_type()>;
-
     template<typename UpdateFunctionType>
-    CachedModelField( UpdateFunctionType f ) :
-        update_policy( f ),
+    CachedModelField( UpdateFunctionType && f ) :
+        update_policy( std::forward<UpdateFunctionType>(f) ),
+        M_fieldPtr( new field_type ),
         M_doUpdateField( true )
     {}
     template<typename UpdateFunctionType>
-    CachedModelField( field_ptrtype const& fieldPtr, UpdateFunctionType f ) :
-        update_policy( f ),
+    CachedModelField( field_ptrtype const& fieldPtr, UpdateFunctionType && f ) :
+        update_policy( std::forward<UpdateFunctionType>(f) ),
         M_fieldPtr( fieldPtr ),
         M_doUpdateField( true )
     {}
@@ -113,7 +112,6 @@ struct CachedModelField : UpdatePolicy<FieldType>
 
 private:
     field_ptrtype M_fieldPtr;
-    update_function_type M_updateFunction;
     bool M_doUpdateField {true};
 };
 
@@ -127,10 +125,11 @@ template<typename T>
 inline constexpr bool is_cached_model_field_v = is_cached_model_field<T>::value;
 
 template<typename T>
-struct raw_field_type : Feel::remove_shared_ptr<T> {};
-
+struct raw_field_type { typedef T type; };
 template<typename T, template<typename> class U>
-struct raw_field_type<CachedModelField<T,U>> : Feel::remove_shared_ptr<T> {};
+struct raw_field_type<CachedModelField<T,U>> : raw_field_type<T> {};
+template<typename T>
+struct raw_field_type<std::shared_ptr<T>>: raw_field_type<T> {};
 
 template<typename T>
 using raw_field_t = typename raw_field_type<T>::type;

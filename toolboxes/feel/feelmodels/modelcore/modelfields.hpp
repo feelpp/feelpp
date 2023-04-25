@@ -67,7 +67,8 @@ struct ModelField1
 {
     using self_type = ModelField1<ModelFieldTagType,FieldType>;
     using tag_type = ModelFieldTagType;
-    using field_type = FieldType;
+    using field_type = FieldType; // NOTE: field_type is shared_ptr<CachedModelField> when using a CachedModelField
+    static constexpr bool is_cached = is_cached_model_field_v<decay_type<field_type>>;
     using update_function_type = std::function<field_type const&()>;
 
     using raw_field_type = raw_field_t<field_type>;
@@ -76,7 +77,21 @@ struct ModelField1
     static constexpr uint16_type nRealDim = raw_field_type::nRealDim;
     using functionspace_type = typename raw_field_type::functionspace_type;
 
-    ModelField1( tag_type const& thetag, std::string const& prefix, std::string const& name, field_type const& u, std::string const& symbol, std::string const& prefix_symbol, update_function_type const& updateFunction )
+    template<typename FieldT,
+        typename std::enable_if_t<!is_cached_model_field_v<decay_type<FieldT>>, bool> = true>
+    ModelField1( tag_type const& thetag, std::string const& prefix, std::string const& name, FieldT && u, std::string const& symbol, std::string const& prefix_symbol, update_function_type const& updateFunction )
+        :
+        M_tag( thetag ),
+        M_prefix( prefix ),
+        M_name( name ),
+        M_field( std::forward<FieldT>(u) ),
+        M_symbol( symbol ),
+        M_prefixSymbol( prefix_symbol ),
+        M_updateFunction( updateFunction )
+        {}
+    template<typename FieldT,
+        typename std::enable_if_t<is_cached_model_field_v<decay_type<FieldT>>, bool> = true>
+    ModelField1( tag_type const& thetag, std::string const& prefix, std::string const& name, std::shared_ptr<FieldT> u, std::string const& symbol, std::string const& prefix_symbol, update_function_type const& updateFunction )
         :
         M_tag( thetag ),
         M_prefix( prefix ),
@@ -95,8 +110,8 @@ struct ModelField1
     std::string const& prefix() const { return M_prefix; }
     auto field() const 
     {
-        if constexpr ( is_cached_model_field_v<field_type> ) // M_field is a CachedModelField
-            return M_field.fieldPtr( false ); // we return the field ptr (not updated)
+        if constexpr ( is_cached ) // M_field is a shared_ptr<CachedModelField>
+            return M_field->fieldPtr( false ); // we return the field ptr (not updated)
         else
             return M_field; // otherwise we return directly the field
     }
@@ -104,9 +119,16 @@ struct ModelField1
     std::string const& prefixSymbol() const { return M_prefixSymbol; }
     SymbolExprUpdateFunction updateFunctionSymbolExpr() const
     {
-        if constexpr ( is_cached_model_field_v<field_type> ) // M_field is a CachedModelField
+        if constexpr ( is_cached ) // M_field is a shared_ptr<CachedModelField>
         {
-            return std::bind( &self_type::applyUpdateFunction, this );
+            // NOTE: ModelFields are not garanteed to outlive their SymbolExpr due to the field-only binding 
+            // (e.g. idv(this->field()) not binding the ModelField but directly the field itself instead).
+            // We cannot therefore bind this to an update function as this can lead to dangling references.
+            // However, the CachedModelField is supposed to have extended lifetime (due to its specific *cached* 
+            // nature), so that we can safely bind directly the CachedModelField update method. 
+            // The CachedModelField extended lifetime is further enforced by requiring shared_ptr
+            // access, which can then be bound to the update.
+            return std::bind( &decay_type<field_type>::update, M_field );
         }
         else
         {
@@ -121,9 +143,9 @@ struct ModelField1
 
     void applyUpdateFunction() const
     {
-        if constexpr ( is_cached_model_field_v<field_type> ) // M_field is a CachedModelField
+        if constexpr ( is_cached ) // M_field is a shared_ptr<CachedModelField>
         {
-            const_cast<self_type*>(this)->M_field.update();
+            const_cast<self_type*>(this)->M_field->update();
         }
         else
         {
@@ -135,93 +157,93 @@ struct ModelField1
 
     template <size_type Ctx>
     auto symbolExpr1( std::enable_if_t< Ctx == FieldCtx::ID >* = nullptr ) const
-        {
-            SymbolExprComponentSuffix secs( nComponents1, nComponents2 );
-            using _expr_type = std::decay_t<decltype( idv(this->field()) )>;
-            return typename symbol_expression_t<_expr_type>::symbolexpr1_type( prefixvm( this->prefixSymbol(),this->symbol(),"_" ),
-                                                                               idv(this->field()),
-                                                                               secs, this->updateFunctionSymbolExpr() );
-        }
+    {
+        SymbolExprComponentSuffix secs( nComponents1, nComponents2 );
+        using _expr_type = std::decay_t<decltype( idv(this->field()) )>;
+        return typename symbol_expression_t<_expr_type>::symbolexpr1_type( prefixvm( this->prefixSymbol(),this->symbol(),"_" ),
+                                                                           idv(this->field()),
+                                                                           secs, this->updateFunctionSymbolExpr() );
+    }
     template <size_type Ctx>
     auto trialSymbolExpr1( size_type blockSpaceIndex, std::enable_if_t< Ctx == FieldCtx::ID >* = nullptr ) const
-        {
-            using _expr_type = std::decay_t<decltype( idt(this->field()) )>;
-            using trial_symbol_expr1_type = typename trial_symbol_expr_t<functionspace_type,_expr_type>::trial_symbol_expr1_type;
-            static_assert( trial_symbol_expr1_type::expr_shape_type::M == nComponents1 && trial_symbol_expr1_type::expr_shape_type::N == nComponents2, "invalid shape");
-            std::string symbolNameBase = prefixvm( this->prefixSymbol(),this->symbol(),"_" );
-            auto theSpace = unwrap_ptr( this->field() ).functionSpace();
-            return trial_symbol_expr1_type( theSpace,symbolNameBase,idt( this->field() ), blockSpaceIndex );
-        }
+    {
+        using _expr_type = std::decay_t<decltype( idt(this->field()) )>;
+        using trial_symbol_expr1_type = typename trial_symbol_expr_t<functionspace_type,_expr_type>::trial_symbol_expr1_type;
+        static_assert( trial_symbol_expr1_type::expr_shape_type::M == nComponents1 && trial_symbol_expr1_type::expr_shape_type::N == nComponents2, "invalid shape");
+        std::string symbolNameBase = prefixvm( this->prefixSymbol(),this->symbol(),"_" );
+        auto theSpace = unwrap_ptr( this->field() ).functionSpace();
+        return trial_symbol_expr1_type( theSpace,symbolNameBase,idt( this->field() ), blockSpaceIndex );
+    }
     template <size_type Ctx>
     auto symbolExpr1( std::enable_if_t< Ctx == FieldCtx::MAGNITUDE >* = nullptr ) const
-        {
-            SymbolExprComponentSuffix secs( 1, 1 );
-            using _expr_type = std::decay_t<decltype( norm2(idv(this->field())) )>;
-            return typename symbol_expression_t<_expr_type>::symbolexpr1_type( prefixvm( this->prefixSymbol(), this->symbol()+"_magnitude","_" ),
-                                                                               norm2(idv(this->field())),
-                                                                               secs, this->updateFunctionSymbolExpr() );
-        }
+    {
+        SymbolExprComponentSuffix secs( 1, 1 );
+        using _expr_type = std::decay_t<decltype( norm2(idv(this->field())) )>;
+        return typename symbol_expression_t<_expr_type>::symbolexpr1_type( prefixvm( this->prefixSymbol(), this->symbol()+"_magnitude","_" ),
+                                                                           norm2(idv(this->field())),
+                                                                           secs, this->updateFunctionSymbolExpr() );
+    }
     template <size_type Ctx>
     auto symbolExpr1( std::enable_if_t< Ctx == FieldCtx::GRAD >* = nullptr ) const
-        {
-            SymbolExprComponentSuffix secs( nComponents1, nRealDim );
-            using _expr_type = std::decay_t<decltype( gradv(this->field()) )>;
-            return typename symbol_expression_t<_expr_type>::symbolexpr1_type( prefixvm( this->prefixSymbol(), "grad_"+this->symbol(),"_" ),
-                                                                               gradv(this->field()),
-                                                                               secs, this->updateFunctionSymbolExpr() );
-        }
+    {
+        SymbolExprComponentSuffix secs( nComponents1, nRealDim );
+        using _expr_type = std::decay_t<decltype( gradv(this->field()) )>;
+        return typename symbol_expression_t<_expr_type>::symbolexpr1_type( prefixvm( this->prefixSymbol(), "grad_"+this->symbol(),"_" ),
+                                                                           gradv(this->field()),
+                                                                           secs, this->updateFunctionSymbolExpr() );
+    }
     template <size_type Ctx>
     auto trialSymbolExpr1( size_type blockSpaceIndex, std::enable_if_t< Ctx == FieldCtx::GRAD >* = nullptr ) const
-        {
-            using _expr_type = std::decay_t<decltype( gradt(this->field()) )>;
-            using trial_symbol_expr1_type = typename trial_symbol_expr_t<functionspace_type,_expr_type>::trial_symbol_expr1_type;
-            static_assert( trial_symbol_expr1_type::expr_shape_type::M == nComponents1 && trial_symbol_expr1_type::expr_shape_type::N == nRealDim, "invalid shape");
-            std::string symbolNameBase = prefixvm( this->prefixSymbol(), "grad_"+this->symbol(),"_" );
-            auto theSpace = unwrap_ptr( this->field() ).functionSpace();
-            return trial_symbol_expr1_type( theSpace,symbolNameBase,gradt( this->field() ), blockSpaceIndex );
-        }
+    {
+        using _expr_type = std::decay_t<decltype( gradt(this->field()) )>;
+        using trial_symbol_expr1_type = typename trial_symbol_expr_t<functionspace_type,_expr_type>::trial_symbol_expr1_type;
+        static_assert( trial_symbol_expr1_type::expr_shape_type::M == nComponents1 && trial_symbol_expr1_type::expr_shape_type::N == nRealDim, "invalid shape");
+        std::string symbolNameBase = prefixvm( this->prefixSymbol(), "grad_"+this->symbol(),"_" );
+        auto theSpace = unwrap_ptr( this->field() ).functionSpace();
+        return trial_symbol_expr1_type( theSpace,symbolNameBase,gradt( this->field() ), blockSpaceIndex );
+    }
 
     template <size_type Ctx>
     auto symbolExpr1( std::enable_if_t< Ctx == FieldCtx::GRAD_NORMAL >* = nullptr ) const
-        {
-            static_assert( nComponents2 == 1, "not support tensor2 shape" );
-            SymbolExprComponentSuffix secs( nComponents1, 1 );
-            using _expr_type = std::decay_t<decltype( dnv(this->field()) )>;
-            return typename symbol_expression_t<_expr_type>::symbolexpr1_type( prefixvm( this->prefixSymbol(), "dn_"+this->symbol(),"_" ),
-                                                                               dnv(this->field()),
-                                                                               secs, this->updateFunctionSymbolExpr() );
-        }
+    {
+        static_assert( nComponents2 == 1, "not support tensor2 shape" );
+        SymbolExprComponentSuffix secs( nComponents1, 1 );
+        using _expr_type = std::decay_t<decltype( dnv(this->field()) )>;
+        return typename symbol_expression_t<_expr_type>::symbolexpr1_type( prefixvm( this->prefixSymbol(), "dn_"+this->symbol(),"_" ),
+                                                                           dnv(this->field()),
+                                                                           secs, this->updateFunctionSymbolExpr() );
+    }
     template <size_type Ctx>
     auto symbolExpr1( std::enable_if_t< Ctx == FieldCtx::CURL >* = nullptr ) const
-        {
-            static_assert( nComponents1 > 1 && nComponents2 == 1, "only for vectorial shape" );
-            SymbolExprComponentSuffix secs( nRealDim==3 ? 3 : 1, 1 );
-            using _expr_type = std::decay_t<decltype( curlv(this->field()) )>;
-            return typename symbol_expression_t<_expr_type>::symbolexpr1_type( prefixvm( this->prefixSymbol(), "curl_"+this->symbol(),"_" ),
-                                                                               curlv(this->field()),
-                                                                               secs, this->updateFunctionSymbolExpr() );
-        }
+    {
+        static_assert( nComponents1 > 1 && nComponents2 == 1, "only for vectorial shape" );
+        SymbolExprComponentSuffix secs( nRealDim==3 ? 3 : 1, 1 );
+        using _expr_type = std::decay_t<decltype( curlv(this->field()) )>;
+        return typename symbol_expression_t<_expr_type>::symbolexpr1_type( prefixvm( this->prefixSymbol(), "curl_"+this->symbol(),"_" ),
+                                                                           curlv(this->field()),
+                                                                           secs, this->updateFunctionSymbolExpr() );
+    }
     template <size_type Ctx>
     auto trialSymbolExpr1( size_type blockSpaceIndex, std::enable_if_t< Ctx == FieldCtx::CURL >* = nullptr ) const
-        {
-            using _expr_type = std::decay_t<decltype( curlt(this->field()) )>;
-            using trial_symbol_expr1_type = typename trial_symbol_expr_t<functionspace_type,_expr_type>::trial_symbol_expr1_type;
-            static_assert( trial_symbol_expr1_type::expr_shape_type::M == (nRealDim==3 ? 3 : 1) && trial_symbol_expr1_type::expr_shape_type::N == 1, "invalid shape");
-            std::string symbolNameBase = prefixvm( this->prefixSymbol(), "curl_"+this->symbol(),"_" );
-            auto theSpace = unwrap_ptr( this->field() ).functionSpace();
-            return trial_symbol_expr1_type( theSpace,symbolNameBase,curlt( this->field() ), blockSpaceIndex );
-        }
+    {
+        using _expr_type = std::decay_t<decltype( curlt(this->field()) )>;
+        using trial_symbol_expr1_type = typename trial_symbol_expr_t<functionspace_type,_expr_type>::trial_symbol_expr1_type;
+        static_assert( trial_symbol_expr1_type::expr_shape_type::M == (nRealDim==3 ? 3 : 1) && trial_symbol_expr1_type::expr_shape_type::N == 1, "invalid shape");
+        std::string symbolNameBase = prefixvm( this->prefixSymbol(), "curl_"+this->symbol(),"_" );
+        auto theSpace = unwrap_ptr( this->field() ).functionSpace();
+        return trial_symbol_expr1_type( theSpace,symbolNameBase,curlt( this->field() ), blockSpaceIndex );
+    }
 
     template <size_type Ctx>
     auto symbolExpr1( std::enable_if_t< Ctx == FieldCtx::CURL_MAGNITUDE >* = nullptr ) const
-        {
-            static_assert( nComponents1 > 1 && nComponents2 == 1, "only for vectorial shape" );
-            SymbolExprComponentSuffix secs( 1, 1 );
-            using _expr_type = std::decay_t<decltype( norm2(curlv(this->field())) )>;
-            return typename symbol_expression_t<_expr_type>::symbolexpr1_type( prefixvm( this->prefixSymbol(), "curl_"+this->symbol()+"_magnitude","_" ),
-                                                                               norm2(curlv(this->field())),
-                                                                               secs, this->updateFunctionSymbolExpr() );
-        }
+    {
+        static_assert( nComponents1 > 1 && nComponents2 == 1, "only for vectorial shape" );
+        SymbolExprComponentSuffix secs( 1, 1 );
+        using _expr_type = std::decay_t<decltype( norm2(curlv(this->field())) )>;
+        return typename symbol_expression_t<_expr_type>::symbolexpr1_type( prefixvm( this->prefixSymbol(), "curl_"+this->symbol()+"_magnitude","_" ),
+                                                                           norm2(curlv(this->field())),
+                                                                           secs, this->updateFunctionSymbolExpr() );
+    }
     template <size_type Ctx>
     auto symbolExpr1( std::enable_if_t< Ctx == FieldCtx::DIV >* = nullptr ) const
         {
@@ -234,53 +256,53 @@ struct ModelField1
         }
     template <size_type Ctx>
     auto trialSymbolExpr1( size_type blockSpaceIndex, std::enable_if_t< Ctx == FieldCtx::DIV >* = nullptr ) const
-        {
-            using _expr_type = std::decay_t<decltype( divt(this->field()) )>;
-            using trial_symbol_expr1_type = typename trial_symbol_expr_t<functionspace_type,_expr_type>::trial_symbol_expr1_type;
-            static_assert( trial_symbol_expr1_type::expr_shape_type::M == (nComponents2==1 ? 1 : nComponents1) && trial_symbol_expr1_type::expr_shape_type::N == 1, "invalid shape");
-            std::string symbolNameBase = prefixvm( this->prefixSymbol(), "div_"+this->symbol(),"_" );
-            auto theSpace = unwrap_ptr( this->field() ).functionSpace();
-            return trial_symbol_expr1_type( theSpace,symbolNameBase,divt( this->field() ), blockSpaceIndex );
-        }
+    {
+        using _expr_type = std::decay_t<decltype( divt(this->field()) )>;
+        using trial_symbol_expr1_type = typename trial_symbol_expr_t<functionspace_type,_expr_type>::trial_symbol_expr1_type;
+        static_assert( trial_symbol_expr1_type::expr_shape_type::M == (nComponents2==1 ? 1 : nComponents1) && trial_symbol_expr1_type::expr_shape_type::N == 1, "invalid shape");
+        std::string symbolNameBase = prefixvm( this->prefixSymbol(), "div_"+this->symbol(),"_" );
+        auto theSpace = unwrap_ptr( this->field() ).functionSpace();
+        return trial_symbol_expr1_type( theSpace,symbolNameBase,divt( this->field() ), blockSpaceIndex );
+    }
 
 
     template <size_type Ctx>
     void updateInformationObject( nl::json & p ) const
-        {
-            p.emplace( "name", this->name() );
-            if ( !M_prefix.empty() )
-                p.emplace( "prefix", this->prefix() );
-            p.emplace( "base symbol", this->symbol() );
-            p.emplace( "prefix symbol", this->prefixSymbol() );
-            if constexpr ( is_cached_model_field_v<field_type> ) // M_field is a CachedModelField
-                p.emplace( "function space", "unknown (cached model field)" );
-            else
-                p.emplace( "function space", unwrap_ptr( M_field ).functionSpace()->journalSection().to_string() );
+    {
+        p.emplace( "name", this->name() );
+        if ( !M_prefix.empty() )
+            p.emplace( "prefix", this->prefix() );
+        p.emplace( "base symbol", this->symbol() );
+        p.emplace( "prefix symbol", this->prefixSymbol() );
+        if constexpr ( is_cached ) // M_field is a CachedModelField
+            p.emplace( "function space", "unknown (cached model field)" );
+        else
+            p.emplace( "function space", unwrap_ptr( M_field ).functionSpace()->journalSection().to_string() );
 
-            nl::json::array_t jaSE;
+        nl::json::array_t jaSE;
 
-            hana::for_each(hana::make_tuple( std::make_tuple( std::integral_constant<size_type,FieldCtx::ID>{}, "idv(.)",  "eval of "+ M_name ),
-                                             std::make_tuple( std::integral_constant<size_type,FieldCtx::MAGNITUDE>{}, "norm2(.)",  "norm2 of "+ M_name ),
-                                             std::make_tuple( std::integral_constant<size_type,FieldCtx::GRAD>{}, "gradv(.)",  "grad of "+ M_name ),
-                                             std::make_tuple( std::integral_constant<size_type,FieldCtx::GRAD_NORMAL>{}, "dnv(.)",  "normal derivative of "+ M_name ),
-                                             std::make_tuple( std::integral_constant<size_type,FieldCtx::CURL>{}, "curlv(.)",  "curl of "+ M_name ),
-                                             std::make_tuple( std::integral_constant<size_type,FieldCtx::CURL_MAGNITUDE>{}, "norm2(curlv(.))",  "norm2 of curl of "+ M_name ),
-                                             std::make_tuple( std::integral_constant<size_type,FieldCtx::DIV>{}, "divv(.)",  "div of "+ M_name )
-                                             ), [this,&jaSE](auto const& x) {
-                    constexpr size_type thectx = std::decay_t<decltype( std::get<0>( x ) )>::value;
-                    if constexpr ( has_value_v<Ctx,thectx> )
-                        {
-                            auto se1 = this->symbolExpr1<thectx>();
-                            jaSE.push_back( symbolExprInformations( se1.symbol(), std::get<1>(x), se1.componentSuffix(), std::get<2>(x) ) );
-                        }
-                });
-            p.emplace( "SymbolsExpr", jaSE );
-        }
+        hana::for_each(hana::make_tuple( std::make_tuple( std::integral_constant<size_type,FieldCtx::ID>{}, "idv(.)",  "eval of "+ M_name ),
+                                         std::make_tuple( std::integral_constant<size_type,FieldCtx::MAGNITUDE>{}, "norm2(.)",  "norm2 of "+ M_name ),
+                                         std::make_tuple( std::integral_constant<size_type,FieldCtx::GRAD>{}, "gradv(.)",  "grad of "+ M_name ),
+                                         std::make_tuple( std::integral_constant<size_type,FieldCtx::GRAD_NORMAL>{}, "dnv(.)",  "normal derivative of "+ M_name ),
+                                         std::make_tuple( std::integral_constant<size_type,FieldCtx::CURL>{}, "curlv(.)",  "curl of "+ M_name ),
+                                         std::make_tuple( std::integral_constant<size_type,FieldCtx::CURL_MAGNITUDE>{}, "norm2(curlv(.))",  "norm2 of curl of "+ M_name ),
+                                         std::make_tuple( std::integral_constant<size_type,FieldCtx::DIV>{}, "divv(.)",  "div of "+ M_name )
+                                         ), [this,&jaSE](auto const& x) {
+                constexpr size_type thectx = std::decay_t<decltype( std::get<0>( x ) )>::value;
+                if constexpr ( has_value_v<Ctx,thectx> )
+                    {
+                        auto se1 = this->symbolExpr1<thectx>();
+                        jaSE.push_back( symbolExprInformations( se1.symbol(), std::get<1>(x), se1.componentSuffix(), std::get<2>(x) ) );
+                    }
+            });
+        p.emplace( "SymbolsExpr", jaSE );
+    }
 private :
     tag_type M_tag;
     std::string M_prefix;
     std::string M_name;
-    field_type M_field;
+    field_type M_field; // NOTE: M_field must be a shared_ptr when using a CachedModelField
     std::string M_symbol, M_prefixSymbol;
     update_function_type M_updateFunction;
 };
@@ -326,10 +348,10 @@ class ModelField : public std::vector<ModelField1<ModelFieldTagType,FieldType> >
     {
         std::string const& symbolNameUsed = symbol.empty()? name : symbol;
         if constexpr ( is_shared_ptr_v<field_type> )
-            {
-                if ( u )
-                    this->push_back( model_field1_type( thetag,prefix, name, u, symbolNameUsed, prefix_symbol, updateFunction ) );
-            }
+        {
+            if ( u )
+                this->push_back( model_field1_type( thetag,prefix, name, u, symbolNameUsed, prefix_symbol, updateFunction ) );
+        }
         else
             this->push_back( model_field1_type( thetag,prefix, name, u, symbolNameUsed, prefix_symbol, updateFunction ) );
     }
@@ -348,21 +370,21 @@ class ModelField : public std::vector<ModelField1<ModelFieldTagType,FieldType> >
 
     template <typename SelectorModelFieldType>
     auto trialSymbolsExpr( SelectorModelFieldType const& smf ) const
-        {
-            return Feel::FeelModels::trialSymbolsExpr<functionspace_type>( this->trialSymbolsExprImpl<FieldCtx::ID>( smf ),
-                                                                           this->trialSymbolsExprImpl<FieldCtx::GRAD>( smf ),
-                                                                           this->trialSymbolsExprImpl<FieldCtx::CURL>( smf ),
-                                                                           this->trialSymbolsExprImpl<FieldCtx::DIV>( smf )
-                                                                           );
-        }
+    {
+        return Feel::FeelModels::trialSymbolsExpr<functionspace_type>( this->trialSymbolsExprImpl<FieldCtx::ID>( smf ),
+                                                                       this->trialSymbolsExprImpl<FieldCtx::GRAD>( smf ),
+                                                                       this->trialSymbolsExprImpl<FieldCtx::CURL>( smf ),
+                                                                       this->trialSymbolsExprImpl<FieldCtx::DIV>( smf )
+                                                                       );
+    }
 
     void updateInformationObject( nl::json & p ) const
+    {
+        for ( auto const& mfield : *this )
         {
-            for ( auto const& mfield : *this )
-            {
-                mfield.template updateInformationObject<ctx_clean>( p[mfield.nameWithPrefix()] );
-            }
+            mfield.template updateInformationObject<ctx_clean>( p[mfield.nameWithPrefix()] );
         }
+    }
 
   private :
     template <size_type TheContext>
