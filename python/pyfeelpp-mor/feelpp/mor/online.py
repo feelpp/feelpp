@@ -17,7 +17,8 @@ class Online:
         """
         self.crbdb = mor.CRBModelDB(name=plugin, root=root)
         self.meta = self.crbdb.loadDBMetaData("last_modified", "")
-        print(f"model: {self.meta.model_name}\njson: {self.meta.json_path.string()}\nplugin name:{self.meta.plugin_name}")
+        if feelpp.Environment.isMasterRank():
+            print(f"model: {self.meta.model_name}\njson: {self.meta.json_path.string()}\nplugin name:{self.meta.plugin_name}")
         self.rbmodel = self.crbdb.loadDBPlugin(self.meta, load="rb")
         if ( self.rbmodel.isFiniteElementModelDBLoaded() ):
             self.rbmodel.initExporter()
@@ -50,7 +51,8 @@ class Online:
         with Timer('rbmodel.run'):
             r = self.rbmodel.run(samples.getVector())
         for x in r:
-            print("mu =", x.parameter(), "s =", x.output(), "error =", x.errorBound())
+            if feelpp.Environment.isMasterRank():
+                print("mu =", x.parameter(), "s =", x.output(), "error =", x.errorBound())
             if ( export and self.rbmodel.isFiniteElementModelDBLoaded() ):            
                 self.rbmodel.exportField("sol-" + str(x.parameter()), x)
         if ( export and self.rbmodel.isFiniteElementModelDBLoaded() ):
