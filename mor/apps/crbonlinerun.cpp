@@ -368,12 +368,14 @@ loadPlugin()
         throw std::runtime_error( "no crbmodel selection, crbmodel.db.id or crbmodel.db.last should be defined" );
     }
     auto meta = crbmodelDB.loadDBMetaData( attribute, attribute_data );
-    std::cout << "-- crbmodelDB::dbRepository()=" << crbmodelDB.dbRepository() << std::endl;
+    std::string pluginlibdir = Environment::expand( soption(_name="plugin.dir") );
+    std::cout << "-- crbmodelDB::dbRepository() = " << crbmodelDB.dbRepository() << std::endl;
+    std::cout << "-- plugin libdir = " << pluginlibdir << std::endl;
 
     if(boption(_name="export-solution"))
-        return crbmodelDB.loadDBPlugin( meta, "all" );
+        return crbmodelDB.loadDBPlugin( meta, "all", pluginlibdir );
     else
-        return crbmodelDB.loadDBPlugin( meta, soption(_name="crbmodel.db.load" ) );
+        return crbmodelDB.loadDBPlugin( meta, soption(_name="crbmodel.db.load" ), pluginlibdir );
 }
 
 int main(int argc, char**argv )
