@@ -17,8 +17,11 @@ makeEye2BrainAbout( std::string const& str = "eye2brain" );
 
 struct FEELPP_EXPORT Eye2BrainConfig
 {
+    typedef double value_type;
     typedef Mesh<Simplex<3>> mesh_type;
-    typedef Pch_type<mesh_type,1> space_type;
+    typedef bases< Lagrange<1, Scalar> > basis_type;
+    typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
+    // typedef Pch_type<mesh_type, 2> space_type;
 };
 
 class FEELPP_EXPORT Eye2Brain : public ModelCrbBase<ParameterSpace<>, Eye2BrainConfig::space_type >

@@ -28,9 +28,9 @@ makeEye2BrainAbout( std::string const& str )
 
 Eye2Brain::Eye2Brain()
     :
-    super_type( "eye2brain_P1G1" )
+    super_type( "eye2brain_P2G1" )
 {
-    this->setPluginName( BOOST_PP_STRINGIZE(FEELPP_MOR_PLUGIN_NAME) + std::string("P1G1") );
+    this->setPluginName( BOOST_PP_STRINGIZE(FEELPP_MOR_PLUGIN_NAME) + std::string("P2G1") );
     this->setPluginLibName( BOOST_PP_STRINGIZE(FEELPP_MOR_PLUGIN_LIBNAME) );
 }
 
@@ -100,7 +100,6 @@ Eye2Brain::initModel()
     auto mu_max = Dmu->element();
     mu_max << k_lens_max, h_amb_max, h_bl_max, h_r_max, 1, h_amb_max*T_amb_max + h_r_max*T_amb_max - E_min, h_bl_max*T_bl_max;
     Dmu->setMax( mu_max );
-    
 
     auto mesh = loadMesh( _mesh = new Eye2BrainConfig::mesh_type,
                           _update = size_type(MESH_UPDATE_FACES_MINIMAL|MESH_NO_UPDATE_MEASURES),
@@ -116,7 +115,6 @@ Eye2Brain::initModel()
 
     auto u = Xh->element();
     auto v = Xh->element();
-
 
     std::vector<double> muRef = {k_lens_ref, h_amb_ref, h_bl_ref, h_r_ref, 1};
 
@@ -181,7 +179,10 @@ Eye2Brain::initModel()
     double meas = integrate( _range = markedelements(mesh, "Cornea"), _expr = cst(1.) ).evaluate()(0,0);
     out1 = integrate( _range = markedelements(mesh, "Cornea"), _expr = id( u )/cst(meas)) ;
 #else
-    std::vector<double> coord = {-0.013597, 0, 0};
+    int index = 0;
+    std::vector<double> coord = M_output_index_vectors[index];
+    std::string name = M_output_index_names[index];
+    Feel::cout << "coord" << std::endl;
     node_type n(Eye2BrainConfig::space_type::nDim);
     for( int i = 0; i < Eye2BrainConfig::space_type::nDim; ++i )
         n(i) = coord[i];
@@ -201,10 +202,10 @@ Eye2Brain::output( int output_index, parameter_type const& mu , element_type& u,
     double output=0;
     // right hand side (compliant)
     if ( output_index == 0 )
-    {
-        //output  = integrate( markedfaces( mesh,"BR" ), -mu(0)*expr(soption("functions.f"))*(gradv(u)*N()+doption("gamma")*idv(u)) ).evaluate()(0,0)
-        //    + integrate( markedfaces( mesh,"BL" ), -mu(1)*expr(soption("functions.g"))*(gradv(u)*N()+doption("gamma")*idv(u)) ).evaluate()(0,0);
-    }
+    {/*
+        output = integrate( _range = markedfaces( mesh, "BC_Cornea" )                    , _expr = mu(5) * id( u ) ).evaluate()(0,0)
+               + integrate( _range = markedfaces( mesh, {"BC_Sclera", "BC_OpticNerve" } ), _expr = mu(6) * id( u ) ).evaluate()(0,0);
+  */}
     else if ( output_index == 1 )
     {
 #if 1
@@ -221,21 +222,18 @@ Eye2Brain::output( int output_index, parameter_type const& mu , element_type& u,
         output = out1.vectorPtr()->operator()(0);
 #endif
 
+    else
+        throw std::logic_error( "[Eye2Brain::output] error with output_index : only 0 or 1 " );
+    
     if ( Environment::isMasterRank() )
         std::cout << " Eye2Brain::output " << std::setprecision(16) << output << "\n";
 
     }
-    // else if ( output_index == 2 )
-    // {
-    //     output = mean(elements(mesh),idv(u)).evaluat()(0,0);
-    // }
-    else
-        throw std::logic_error( "[Eye2Brain::output] error with output_index : only 0 or 1 " );
     return output;
 
 }
 
 
-FEELPP_CRB_PLUGIN( Eye2Brain, BOOST_PP_CAT(FEELPP_MOR_PLUGIN_NAME,P1G1) )
+FEELPP_CRB_PLUGIN( Eye2Brain, BOOST_PP_CAT(FEELPP_MOR_PLUGIN_NAME, P2G1) )
 
 } // namespace Feel
