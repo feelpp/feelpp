@@ -120,6 +120,24 @@ public :
      */
     std::shared_ptr<CRBPluginAPI> loadDBPlugin( MetaData const& metadata, std::string load ) const;
 
+    /**
+     * @brief load DB plugin from metadata
+     * 
+     * @param metadata 
+     * @param load_type load "rb", "fe", or "all"
+     * @param pluginlibdir directory where to find the plugin library
+     * 
+     * \code {.cpp}
+     * auto p = loadDBPlugin( metadata, crb::loadToString(crb::load::rb) );
+     * auto p = loadDBPlugin( metadata, crb::loadToString(crb::load::fe) );
+     * auto p = loadDBPlugin( metadata, crb::loadToString(crb::load::all) );
+     * \endcode
+     * 
+     *
+     * @return std::shared_ptr<CRBPluginAPI> 
+     */
+    std::shared_ptr<CRBPluginAPI> loadDBPlugin( MetaData const& metadata, std::string load, std::string pluginlibdir ) const;
+
     static uuids::uuid idFromDBFilename( std::string const& name, std::string const& filename );
     static uuids::uuid idFromDBLast( std::string const& name, crb::last last, std::string const& root = Environment::rootRepository() );
     static uuids::uuid idFromId( std::string const& name, std::string const& uid, std::string const& root = Environment::rootRepository() );
