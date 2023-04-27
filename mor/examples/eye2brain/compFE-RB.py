@@ -107,29 +107,46 @@ def convert_sampling(s_heat, Dmu):
     return s
 
 
-def convert_to_dataframe(res, inputs):
+def convert_results_to_dataframe(res):
     """Convert the result of the online phase to dataframe
 
     Parameters
     ----------
     res : list of feelpp.mor._mor.CRBResults
         list of results
-    inputs : list of feelpp.mor._mor.ParameterSpaceSampling
-        list of inputs from the heat model
 
     Returns
     -------
     pandas.DataFrame
         dataframe with the results : parameter, output, errorBound
     """
-    names_heat = inputs[0].parameterNames()
     names = res[0].parameter().parameterNames()
 
-    df = pd.DataFrame(columns=names_heat + names + ["RB_output", "errorBound"])
+    df = pd.DataFrame(columns = names + ["RB_output", "errorBound"])
     for i, r in enumerate(res):
-        mu_heat = inputs[i]
         mu = r.parameter()
-        df.loc[i] = [mu_heat.parameterNamed(n) for n in names_heat] + [mu.parameterNamed(n) for n in names] + [r.output(), r.errorBound()]
+        df.loc[i] = [mu.parameterNamed(n) for n in names] + [r.output(), r.errorBound()]
+    return df
+
+def convert_parameters_to_dataframe(inputs):
+    """Convert the result of the online phase to dataframe
+
+    Parameters
+    ----------
+    inputs : list of feelpp.mor._mor.ParameterSpaceSampling
+        list of inputs from the heat model
+
+    Returns
+    -------
+    pandas.DataFrame
+        dataframe with the results : parameter
+    """
+    names_heat = inputs[0].parameterNames()
+
+    df = pd.DataFrame(columns = names_heat)
+    for i in range(len(inputs.getVector())):
+        mu_heat = inputs[i]
+        df.loc[i] = [mu_heat.parameterNamed(n) for n in names_heat]
     return df
 
 ############################################################################################################
@@ -178,7 +195,7 @@ def assembleToolbox(tb, mu):
 
     tb.updateParameterValues()
 
-def run_toolbox(app, sample):
+def run_toolbox(app, sample, output_key = "Statistics_cornea_mean"):
     CFG_DIR = os.path.join( os.path.dirname(os.path.abspath(__file__)), "eye2brain" )
     cfg_file = os.path.join(CFG_DIR, "eye-linear.cfg")
 
@@ -197,8 +214,8 @@ def run_toolbox(app, sample):
         meas = heatBox.postProcessMeasures().values()
 
         if feelpp.Environment.isMasterRank():
-            print(i, "mu meas =", meas)
-        out.append(meas['Statistics_cornea_mean'])
+            print(i, "mu meas =", meas[output_key])
+        out.append(meas[output_key])
     
     return out
 
@@ -221,26 +238,49 @@ if __name__ == '__main__':
     parser.add_option('-i', '--id', dest='dbid', help='DB id to be used', type="string")
     parser.add_option('-l', '--load', dest='load', help='type of data to be loadedoaded', type="string",default="rb")
     parser.add_option('-m', '--model', dest='model', help='path to the model description', type="string", default=m_def)
-    
+
+    parser.add_option('-t', '--toolbox-only', dest='toolbox', help='run only toolbox output for given sampling', default=False)
+    parser.add_option('-s', '--sampling', dest='sampling', help='path to the heat model sampling file (if None, one is generated)', type="string", default=None)
+    parser.add_option('-o', '--output', dest='output', help='path to the output file', type="string", default=None)
+
     (options, args) = parser.parse_args()
 
-    o = Online(options.name, options.dir)
 
-    s_heat = generate_sampling(options.model, options.N)
-    s = convert_sampling(s_heat, o.rbmodel.parameterSpace())
-
-    res_rb = o.run(s)
-
-    df = convert_to_dataframe(res_rb, s_heat)
-    if feelpp.Environment.isMasterRank():
-        print(df)
-
-    if not feelpp.Environment.isParallel():
-        out = run_pfem(s)
-        df['PFEM_output'] = out
+    if options.sampling is None:
+        s_heat = generate_sampling(options.model, 0)
     else:
+        Dmu = loadParameterSpace(options.model)
+        s_heat = Dmu.sampling()
+        N_read = s_heat.readFromFile(options.sampling)
         if feelpp.Environment.isMasterRank():
-            print("Cannot run parallel of PFEM, sorry !")
+            print("Read", N_read, "samples from", options.sampling)
+    
+    df = convert_parameters_to_dataframe(s_heat)
+
+    if not options.toolbox:
+        o = Online(options.name, options.dir)
+        s = convert_sampling(s_heat, o.rbmodel.parameterSpace())
+
+        res_rb = o.run(s)
+        df_rb = convert_results_to_dataframe(res_rb)
+
+        df = pd.concat([df, df_rb], axis=1)
+
+        if not feelpp.Environment.isParallel():
+            out = run_pfem(s)
+            df['PFEM_output'] = out
+        else:
+            if feelpp.Environment.isMasterRank():
+                print("Cannot run parallel of PFEM, sorry !")
+
+    else:
+        if options.output is not None:
+            df0 = pd.read_csv(options.output)
+        else:
+            df0 = None
+
+        df = pd.concat([df, df0], axis=1)
+
 
     out = run_toolbox(app, s_heat)
     df['FEM_output'] = out
@@ -248,13 +288,16 @@ if __name__ == '__main__':
     if feelpp.Environment.isMasterRank():
         print(df)
         print()
-        print("Error bounds")
-        print(df['errorBound'])
-        if not feelpp.Environment.isParallel():
+        if 'errorBound' in df.columns:
+            print("Error bounds")
+            print(df['errorBound'])
+        if 'RB_output' in df.columns:
             print("\nRB - PFEM")
-            print(abs(df["RB_output"] - df["PFEM_output"]))
+            print(abs(df["RB_output"] - df["FEM_output"]))
+        if 'PFEM_output' in df.columns:
             print("\nFEM - PFEM")
             print(abs(df["FEM_output"] - df["PFEM_output"]))
+
     df.to_csv("results.csv")
 
     sys.exit(0)

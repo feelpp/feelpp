@@ -290,7 +290,7 @@ runCrbOnline( std::vector<std::shared_ptr<Feel::CRBPluginAPI>> plugin )
         
         auto const& mu = (*mysampling)[k];
         std::ostringstream ostrmu;
-        for ( uint16_type d=0;d<muspace->dimension();++d)
+        for ( uint16_type d = 0; d < muspace->dimension(); ++d)
             ostrmu << mu(d) << " ";
         // std::cout << "--------------------------------------\n";
         // std::cout << "mu["<<k<<"] : " << ostrmu.str() << "\n";
