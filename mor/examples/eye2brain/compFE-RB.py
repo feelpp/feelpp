@@ -7,8 +7,9 @@ import sys, os
 import pandas as pd
 from feelpp.mor.online import Online
 import subprocess
-from numpy import abs
-
+from numpy import abs, max
+import matplotlib.pyplot as plt
+import tikzplotlib
 
 
 def loadParameterSpace(model_path):
@@ -202,6 +203,26 @@ def run_toolbox(app, sample):
     
     return out
 
+############################################################################################################
+def plot_results(fem, rb, error_bound):
+
+    err = abs(fem - rb)
+    print("max error = ", max(err))
+
+    mn = rb.min()
+    mx = rb.max()
+
+    print("min = ", mn)
+    print("max = ", mx)
+
+    plt.scatter(rb, fem, label='result')
+    plt.plot([mn, mx], [mn, mx], 'k--', label='y=x')
+    plt.xlabel("Mean over Cornea (RBM)")
+    plt.ylabel("Mean over Cornea (FEM)")
+    plt.legend()
+    tikzplotlib.save("fem-rbm.tex")
+    print("saved fem-rbm.tex in {}".format(os.getcwd()))
+    plt.show()
 
 
 if __name__ == '__main__':
@@ -215,7 +236,7 @@ if __name__ == '__main__':
 
     from optparse import OptionParser
     parser = OptionParser()
-    parser.add_option('-N', '--Num', dest='N', help='number of parameters to evaluate the plugin', type=int, default=1)
+    parser.add_option('-N', '--Num', dest='N', help='number of parameters to evaluate the plugin', type=int, default=10)
     parser.add_option('-d', '--dir', dest='dir', help='directory location of crbdb directory', default=crbdir)
     parser.add_option('-n', '--name', dest='name', help='name of the plugin', type="string", default=name)
     parser.add_option('-i', '--id', dest='dbid', help='DB id to be used', type="string")
@@ -255,6 +276,6 @@ if __name__ == '__main__':
             print(abs(df["RB_output"] - df["PFEM_output"]))
             print("\nFEM - PFEM")
             print(abs(df["FEM_output"] - df["PFEM_output"]))
-    df.to_csv("results.csv")
 
-    sys.exit(0)
+        plot_results(df["FEM_output"], df["RB_output"], df["errorBound"])
+    df.to_csv("results.csv")
