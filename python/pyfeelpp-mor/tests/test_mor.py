@@ -61,6 +61,38 @@ def test_init_from_ModelPropeties(casefile, dim, mumin_th, mumax_th,  init_feelp
         assert( mumax.parameterNamed(p) == mumax_th[p] )
 
 
+@pytest.mark.parametrize("casefile", [cases_params[-1][0]], ids=[cases_ids[-1]])
+def test_sampling(casefile, init_feelpp):
+    e = init_feelpp
+    feelpp.Environment.setConfigFile(casefile)
+
+    model_path = "$cfgdir/"+os.path.splitext(os.path.basename(casefile))[0] + ".json"
+    model_properties = CRBModelProperties(worldComm=feelpp.Environment.worldCommPtr())
+    model_properties.setup(model_path)
+    modelParameters = model_properties.parameters()
+    Dmu = feelpp.mor._mor.ParameterSpace.New(modelParameters, feelpp.Environment.worldCommPtr())
+
+    print(feelpp.mor.__file__)
+    Nsamples = 10
+    s = Dmu.sampling()
+    s.sampling(Nsamples, samplingMode="random")
+
+    assert len(s) == Nsamples , "wrong number of samples"
+    v = s.getVector()
+    assert len(v) == Nsamples , "wrong number of samples"
+
+    s.writeOnFile("samplingTest.sample")
+    s_read  = Dmu.sampling()
+    N_read = s_read.readFromFile("samplingTest.sample")
+    v_read  = s_read.getVector()
+
+    assert N_read == Nsamples, "wrong number of samples read"
+
+    for i in range(Nsamples):
+        for p in Dmu.parameterNames():
+            diff = abs(v[i].parameterNamed(p) - v_read [i].parameterNamed(p))
+            assert diff < 1e-10 , f"wrong sample read at index {i} : {v[i].parameterNamed(p)} != {v_read[i].parameterNamed(p)}"
+
 
 @pytest.mark.parametrize("casefile,dim,Mu", [cases_params[-1][:3]], ids=[cases_ids[-1]])
 def test_param_not_in_range(casefile, dim, Mu,  init_feelpp):
