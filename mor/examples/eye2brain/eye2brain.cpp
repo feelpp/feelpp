@@ -221,6 +221,7 @@ Eye2Brain::output( int output_index, parameter_type const& mu , element_type& u,
         out1.vectorPtr()->close();
         output = out1.vectorPtr()->operator()(0);
 #endif
+    }
 
     else
         throw std::logic_error( "[Eye2Brain::output] error with output_index : only 0 or 1 " );
@@ -228,7 +229,6 @@ Eye2Brain::output( int output_index, parameter_type const& mu , element_type& u,
     if ( Environment::isMasterRank() )
         std::cout << " Eye2Brain::output " << std::setprecision(16) << output << "\n";
 
-    }
     return output;
 
 }
