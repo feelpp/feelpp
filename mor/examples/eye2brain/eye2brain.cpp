@@ -222,7 +222,6 @@ Eye2Brain::output( int output_index, parameter_type const& mu , element_type& u,
         output = out1.vectorPtr()->operator()(0);
 #endif
     }
-
     else
         throw std::logic_error( "[Eye2Brain::output] error with output_index : only 0 or 1 " );
     
