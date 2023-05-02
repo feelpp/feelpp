@@ -348,14 +348,14 @@ loadPlugin()
 {
     using namespace Feel;
 
-    std::string crbmodelName = Environment::expand( soption(_name="crbmodel.name") );
+    std::string crbmodelName = Environment::expand( soption(_name = "crbmodel.name") );
     CRBModelDB crbmodelDB{ crbmodelName, uuids::nil_uuid() };
 
-    std::string attribute = soption(_name="crbmodel.attribute" );
+    std::string attribute = soption(_name = "crbmodel.attribute" );
     std::string attribute_data;
     if ( attribute == "id"  || attribute == "name")
     {
-        attribute_data = Environment::expand( soption(_name=fmt::format("crbmodel.db.{}",attribute) ) );
+        attribute_data = Environment::expand( soption(_name = fmt::format("crbmodel.db.{}",attribute) ) );
     }
     else if ( attribute == "last_created" || attribute == "last_modified" )
     {
@@ -368,7 +368,7 @@ loadPlugin()
         throw std::runtime_error( "no crbmodel selection, crbmodel.db.id or crbmodel.db.last should be defined" );
     }
     auto meta = crbmodelDB.loadDBMetaData( attribute, attribute_data );
-    std::string pluginlibdir = Environment::expand( soption(_name="plugin.dir") );
+    std::string pluginlibdir = Environment::expand( soption(_name = "plugin.dir") );
     std::cout << "-- crbmodelDB::dbRepository() = " << crbmodelDB.dbRepository() << std::endl;
     std::cout << "-- plugin libdir = " << pluginlibdir << std::endl;
 
