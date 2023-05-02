@@ -14,11 +14,12 @@ class Online:
         Args:
             plugin (str): plugin name
             root (str): root directory where the database is located
+            plugindir (str): directory where the plugin is located
         """
         self.crbdb = mor.CRBModelDB(name=plugin, root=root)
         self.meta = self.crbdb.loadDBMetaData("last_modified", "")
         if feelpp.Environment.isMasterRank():
-            print(f"model: {self.meta.model_name}\njson: {self.meta.json_path.string()}\nplugin name:{self.meta.plugin_name}")
+            print(f"model: {self.meta.model_name}\njson: {self.meta.json_path.string()}\nplugin name: {self.meta.plugin_name}")
         self.rbmodel = self.crbdb.loadDBPlugin(self.meta, load="rb", pluginlibdir=plugindir)
         if ( self.rbmodel.isFiniteElementModelDBLoaded() ):
             self.rbmodel.initExporter()
