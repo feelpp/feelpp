@@ -530,10 +530,10 @@ protected:
 private:
     FEELPP_NO_EXPORT void readFromMemory( mesh_type* mesh );
     FEELPP_NO_EXPORT void readFromFile( mesh_type* mesh );
-    FEELPP_NO_EXPORT void readFromFileVersion2( mesh_type* mesh, std::ifstream & __is, char __buf[],
+    FEELPP_NO_EXPORT void readFromFileVersion2( mesh_type* mesh, std::ifstream & __is, std::string __buf,
                                                 double version, bool binary, bool swap );
     template <typename gmsh_size_type,typename gmsh_size_partition_type,typename gmsh_size_periodiclink_type,typename gmsh_elttag_type>
-    FEELPP_NO_EXPORT void readFromFileVersion4( mesh_type* mesh, std::ifstream & __is, char __buf[],
+    FEELPP_NO_EXPORT void readFromFileVersion4( mesh_type* mesh, std::ifstream & __is, std::string __buf,
                                                 double version, bool binary, bool swap );
 
 
@@ -997,8 +997,9 @@ ImporterGmsh<MeshType>::readFromFile( mesh_type* mesh )
         throw std::invalid_argument( ostr.str() );
     }
 
-    char __buf[256];
-    __is.getline(__buf, 256);
+    //char __buf[256];
+    std::string __buf;
+    __is >> __buf;
 
     std::string theversion;
     double version = boost::lexical_cast<double>( FEELPP_GMSH_FORMAT_VERSION );
@@ -1033,12 +1034,12 @@ ImporterGmsh<MeshType>::readFromFile( mesh_type* mesh )
             //LOG(INFO) << "character= " << c << "\n";
         }
         // should be $EndMeshFormat
-        __is.getline(__buf, 256);
+        __is >> __buf;
         CHECK( std::string( __buf ) == "$EndMeshFormat" )
             << "invalid file format entry "
             << __buf
             << " instead of $EndMeshFormat\n";
-        __is.getline(__buf, 256);
+        __is >> __buf;
     }
 
 
@@ -1076,7 +1077,7 @@ ImporterGmsh<MeshType>::readFromFile( mesh_type* mesh )
         {
             CHECK( mesh->markerNames().size() == ( size_type )nnames ) << "invalid number of physical names" << mesh->markerNames().size() << " vs " << nnames;
         }
-        __is.getline(__buf, 256);
+        __is >> __buf;
         CHECK( std::string( __buf ) == "$EndPhysicalNames" )
             << "invalid file format entry "
             << __buf
@@ -1087,7 +1088,7 @@ ImporterGmsh<MeshType>::readFromFile( mesh_type* mesh )
             mesh->addMarkerName( it.name, it.ids[0], it.ids[1] );
         }
 
-        __is.getline(__buf, 256);
+        __is >> __buf;
     }
 
     if ( version >= 2 && version < 4 )
@@ -1102,7 +1103,7 @@ ImporterGmsh<MeshType>::readFromFile( mesh_type* mesh )
 
 template<typename MeshType>
 void
-ImporterGmsh<MeshType>::readFromFileVersion2( mesh_type* mesh, std::ifstream & __is, char __buf[],
+ImporterGmsh<MeshType>::readFromFileVersion2( mesh_type* mesh, std::ifstream & __is, std::string __buf,
                                               double version, bool binary, bool swap )
 {
     //
@@ -1179,7 +1180,7 @@ ImporterGmsh<MeshType>::readFromFileVersion2( mesh_type* mesh, std::ifstream & _
     if ( binary )
         __is.get();
 
-    __is.getline( __buf, 256 );
+    __is >> __buf;
     DVLOG(2) << "buf: "<< __buf << "\n";
     // make sure that we have read all the points
     CHECK( std::string( __buf ) == "$ENDNOD" ||
@@ -1191,7 +1192,7 @@ ImporterGmsh<MeshType>::readFromFileVersion2( mesh_type* mesh, std::ifstream & _
     //
     // Read ELEMENTS
     //
-    __is.getline(__buf, 256);
+    __is >> __buf;
     CHECK( std::string( __buf ) == "$ELM" ||
            std::string( __buf ) == "$Elements" )
         << "invalid elements string " << __buf << " in gmsh importer, it should be either $ELM or $Elements\n";
@@ -1399,17 +1400,17 @@ ImporterGmsh<MeshType>::readFromFileVersion2( mesh_type* mesh, std::ifstream & _
     }
 #endif
     if ( binary )
-        __is.getline(__buf, 256);
+        __is >> __buf;
 
     // make sure that we have read everything
-    __is.getline(__buf, 256);
+    __is >> __buf;
     CHECK( std::string( __buf ) == "$ENDELM" ||
            std::string( __buf ) == "$EndElements" )
         << "invalid end elements string " << __buf
         << " in gmsh importer. It should be either $ENDELM or $EndElements\n";
 
     // read periodic data if present
-    __is.getline(__buf, 256);
+    __is >> __buf;
     std::vector<PeriodicEntity> periodic_entities;
     if ( std::string( __buf ) == "$Periodic" )
     {
@@ -1437,7 +1438,7 @@ ImporterGmsh<MeshType>::readFromFileVersion2( mesh_type* mesh, std::ifstream & _
                                                             << " expected : " << numv << "\n";
             periodic_entities.push_back( e );
         }
-        __is.getline(__buf, 256);
+        __is >> __buf;
         CHECK( std::string( __buf ) == "$EndPeriodic" )
             << "invalid end $Periodic string " << __buf
             << " in gmsh importer. It should be either $EndPeriodic\n";
@@ -1608,7 +1609,7 @@ ImporterGmsh<MeshType>::readFromFileVersion2( mesh_type* mesh, std::ifstream & _
 template<typename MeshType>
 template <typename gmsh_size_type,typename gmsh_size_partition_type,typename gmsh_size_periodiclink_type,typename gmsh_elttag_type>
 void
-ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & __is, char __buf[],
+ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & __is, std::string __buf,
                                               double version, bool binary, bool swap )
 {
     rank_type procId = this->worldComm().localRank();
@@ -1708,14 +1709,14 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
             }
         }
 
-        __is.getline(__buf, 256);
+        __is >> __buf;
         CHECK( std::string( __buf ) == "$EndEntities" )
             << "invalid file format entry "
             << __buf
             << " instead of $EndEntities\n";
         VLOG(2) << "Reading $Entities done";
 
-        __is.getline(__buf, 256);
+        __is >> __buf;
     }
 
     gmsh_size_partition_type numPartitions = 1;
@@ -1904,14 +1905,14 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
             }
         }
 
-        __is.getline(__buf, 256);
+        __is >> __buf;
         CHECK( std::string( __buf ) == "$EndPartitionedEntities" )
             << "invalid file format entry "
             << __buf
             << " instead of $EndPartitionedEntities\n";
         VLOG(2) << "Reading $PartitionedEntities done";
 
-        __is.getline(__buf, 256);
+        __is >> __buf;
     }
 
     //std::map<size_type,Feel::detail::GMSHPoint> additionalNodes;
@@ -2064,14 +2065,14 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
                 mesh->addPoint( pt );
             }
         }
-        __is.getline(__buf, 256);
+        __is >> __buf;
         CHECK( std::string( __buf ) == "$EndNodes" )
             << "invalid file format entry "
             << __buf
             << " instead of $EndNodes\n";
         VLOG(2) << "Reading $Nodes done";
 
-        __is.getline(__buf, 256);
+        __is >> __buf;
     }
 
 
@@ -2336,13 +2337,13 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
 
             }
         }
-        __is.getline(__buf, 256);
+        __is >> __buf;
         CHECK( std::string( __buf ) == "$EndElements" )
             << "invalid file format entry "
             << __buf
             << " instead of $EndElements";
         VLOG(2) << "Reading $Elements done";
-        __is.getline(__buf, 256);
+        __is >> __buf;
     }
 
     std::vector<PeriodicEntity> periodic_entities;
@@ -2418,12 +2419,12 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
                                                                              << " expected : " << numCorrespondingNodes << "\n";
             periodic_entities.push_back( e );
         }
-        __is.getline(__buf, 256);
+        __is >> __buf;
         CHECK( std::string( __buf ) == "$EndPeriodic" )
             << "invalid end $Periodic string " << __buf
             << " in gmsh importer. It should be either $EndPeriodic\n";
         VLOG(2) << "Reading $Periodic done";
-        __is.getline(__buf, 256);
+        __is >> __buf;
     }
 
 
@@ -2485,13 +2486,13 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
                     ghostElementToRecvFromProcessId.insert( Feel::detail::gmshPartitionTagToProcessId( partitionTag, worldSize ) );
             }
         }
-        __is.getline(__buf, 256);
+        __is >> __buf;
         CHECK( std::string( __buf ) == "$EndGhostElements" )
             << "invalid file format entry "
             << __buf
             << " instead of $EndGhostElements";
         VLOG(2) << "Reading $GhostElements done";
-        __is.getline(__buf, 256);
+        __is >> __buf;
     }
 
     if ( numPartitions > 1 )
