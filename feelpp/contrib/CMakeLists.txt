@@ -322,10 +322,24 @@ if ( FEELPP_ENABLE_NLOPT )
 
   if( FEELPP_CONTRIB_PREPARE_SUCCEED )
     add_subdirectory( nlopt )
-    set(NLOPT_INCLUDE_DIR ${FEELPP_SOURCE_DIR}/contrib/nlopt/api  ${FEELPP_BINARY_DIR}/contrib/nlopt/api)
-    target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_NLOPT )
-    target_link_libraries(feelpp_contrib INTERFACE feelpp_nlopt )
-    SET( FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} NLOpt/Contrib")
+
+    add_library(feelpp_nlopt INTERFACE)
+    set_target_properties(nlopt PROPERTIES OUTPUT_NAME "feelpp_nlopt")
+    target_link_libraries(feelpp_nlopt INTERFACE nlopt)
+    target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_NLOPT)
+    add_library(Feelpp::feelpp_nlopt ALIAS feelpp_nlopt)
+    target_include_directories(feelpp_nlopt INTERFACE
+      $<BUILD_INTERFACE:${FEELPP_SOURCE_DIR}/contrib/nlopt/api>
+      $<BUILD_INTERFACE:${FEELPP_BINARY_DIR}/contrib/nlopt/api>
+      $<INSTALL_INTERFACE:include/feelpp>)
+    install(TARGETS feelpp_nlopt nlopt EXPORT feelpp-contrib-export-targets
+      LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+      ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+      RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+      INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    )
+    target_link_libraries(feelpp_contrib INTERFACE feelpp_nlopt)
+    set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} nlopt/contrib")
   endif( FEELPP_CONTRIB_PREPARE_SUCCEED )
 endif( FEELPP_ENABLE_NLOPT )
 
