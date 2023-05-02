@@ -747,36 +747,36 @@ endif()
 #   set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} SPDLOG")
 # endif(FEELPP_ENABLE_SPDLOG)
 #
-option( FEELPP_ENABLE_SPECX "Enable SPECX" OFF )
+option( FEELPP_ENABLE_SPECX "Enable specx" OFF )
 if ( FEELPP_ENABLE_SPECX )
   message(STATUS "------------------------------------------------------------")
-  message(STATUS "Configuring SPECX")
+  message(STATUS "Configuring specx")
 
   # set(FETCHCONTENT_SOURCE_DIR_SPECX ${CMAKE_CURRENT_SOURCE_DIR}/SPECX)
   # patch includes fix for 18.04 compilation
-  set(TF_BUILD_TESTS OFF)
-  set(TF_BUILD_EXAMPLES OFF)
-  set(FETCHCONTENT_SOURCE_DIR_SPECX ${CMAKE_CURRENT_SOURCE_DIR}/SPECX)
-  FetchContent_Declare(SPECX GIT_REPOSITORY https://github.com/feelpp/SPECX.git GIT_TAG 0635a49230e8ace7d379cbbaa716c66543f3e516)
+  set(SPECX_BUILD_TESTS OFF)
+  set(SPECX_BUILD_EXAMPLES OFF)
+  set(FETCHCONTENT_SOURCE_DIR_SPECX ${CMAKE_CURRENT_SOURCE_DIR}/specx)
+  FetchContent_Declare(SPECX GIT_REPOSITORY https://github.com/feelpp/specx.git GIT_TAG 6cb8f36cb8d61145fdfec81ba62a9f59c0d80372)
   set( BUILD_SPECX_TESTS OFF )
-  set(TF_INSTALL_CMAKE_DIR  "${CMAKE_INSTALL_DATADIR}/feel/cmake/modules")
-  message(STATUS "[feelpp-SPECX] cmake dir: ${CMAKE_INSTALL_DATADIR}/feel/cmake/modules")
-  FetchContent_MakeAvailable(SPECX)
-  add_library(feelpp_SPECX INTERFACE)
-  #set_target_properties(SPECX PROPERTIES OUTPUT_NAME "feelpp_SPECX")
-  target_link_libraries(feelpp_SPECX INTERFACE SPECX )
-  add_library(Feelpp::feelpp_SPECX ALIAS feelpp_SPECX)
-  target_include_directories(feelpp_SPECX INTERFACE
+  set(SPECX_INSTALL_CMAKE_DIR  "${CMAKE_INSTALL_DATADIR}/feel/cmake/modules")
+  message(STATUS "[feelpp-specx] cmake dir: ${CMAKE_INSTALL_DATADIR}/feel/cmake/modules")
+  FetchContent_MakeAvailable(specx)
+  add_library(feelpp_specx INTERFACE)
+  #set_target_properties(specx PROPERTIES OUTPUT_NAME "feelpp_specx")
+  target_link_libraries(feelpp_specx INTERFACE specx )
+  add_library(Feelpp::feelpp_specx ALIAS feelpp_specx)
+  target_include_directories(feelpp_specx INTERFACE
       $<BUILD_INTERFACE:${SPECX_SOURCE_DIR}/>
       $<INSTALL_INTERFACE:include/feelpp> )
-  install(TARGETS feelpp_SPECX SPECX EXPORT feelpp-contrib-export-targets
+  install(TARGETS feelpp_specx specx EXPORT feelpp-contrib-export-targets
       LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
       ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
       RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
       INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
       )
-  target_link_libraries( feelpp_contrib INTERFACE feelpp_SPECX )
-  set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} SPECX")
+  target_link_libraries( feelpp_contrib INTERFACE feelpp_specx )
+  set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} specx")
 endif()
 
 

@@ -75,6 +75,24 @@
             }
         },
         {
+            "name": "feelpp+specx",
+            "inherits": "default",
+            "displayName": "feelpp+specx",
+            "description": "Build only the Feel++ library Component with specx runtime",
+            "generator": "Unix Makefiles",
+            "binaryDir": "${sourceDir}/build/feelpp+specx",
+            "cacheVariables": {
+                "FEELPP_COMPONENT": "feelpp",
+                "FEELPP_ENABLE_MOR": "OFF",
+                "FEELPP_ENABLE_TOOLBOXES": "OFF",
+                "FEELPP_ENABLE_FEELPP_PYTHON": "OFF",
+                "FEELPP_ENABLE_TESTS": "OFF",
+                "FEELPP_ENABLE_FMILIB": "OFF",
+                "FEELPP_ENABLE_BENCHMARKS": "ON",
+                "FEELPP_ENABLE_SPECX": "ON"
+            }
+        },
+        {
             "name": "toolboxes",
             "inherits": "default",
             "displayName": "toolboxes",
