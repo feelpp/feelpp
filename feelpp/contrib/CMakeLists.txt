@@ -602,6 +602,7 @@ if ( FEELPP_ENABLE_RANGE_V3 )
   message(STATUS "Configuring Range V3")
   feelppContribPrepare( range-v3 )
   if( FEELPP_CONTRIB_PREPARE_SUCCEED )
+    set(RANGE_V3_INSTALL ON FORCE)
     if ( FEELPP_STD_CPP STREQUAL "17" )
       set( RANGES_CXX_STD "17" )
     endif()
@@ -610,12 +611,25 @@ if ( FEELPP_ENABLE_RANGE_V3 )
     endif()
     message( STATUS "range-v3 CMAKE_INSTALL°INCLUDE_DIR: ${CMAKE_INSTALL_INCLUDEDIR}")
     add_subdirectory( range-v3 )
-    target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_RANGE_V3 )
-    target_link_libraries(feelpp_contrib INTERFACE range-v3 )
-    target_include_directories(feelpp_contrib INTERFACE
-      $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/contrib/range-v3/>
-      $<INSTALL_INTERFACE:include/feelpp> )
-    set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} range-v3/Contrib")
+
+    add_library(feelpp_range-v3 INTERFACE)
+    set_target_properties(range-v3 PROPERTIES OUTPUT_NAME "feelpp_range-v3")
+    target_link_libraries(feelpp_range-v3 INTERFACE range-v3)
+    target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_RANGE_V3)
+    add_library(Feelpp::feelpp_range-v3 ALIAS feelpp_range-v3)
+    target_include_directories(feelpp_range-v3 INTERFACE
+      $<BUILD_INTERFACE:${FEELPP_SOURCE_DIR}/contrib/range-v3/>
+      $<INSTALL_INTERFACE:include/feelpp>)
+
+    install(TARGETS feelpp_range-v3 range-v3 range-v3-concepts range-v3-meta EXPORT feelpp-contrib-export-targets
+      LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+      ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+      RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+      INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    )
+
+    target_link_libraries(feelpp_contrib INTERFACE feelpp_range-v3)
+    set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} range-v3/contrib")
   endif()
 endif( FEELPP_ENABLE_RANGE_V3 )
 
