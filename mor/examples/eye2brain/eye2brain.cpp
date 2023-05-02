@@ -28,9 +28,9 @@ makeEye2BrainAbout( std::string const& str )
 
 Eye2Brain::Eye2Brain()
     :
-    super_type( "eye2brain_P2G1" )
+    super_type( fmt::format("eye2brain_P{}G1", ORDER) )
 {
-    this->setPluginName( BOOST_PP_STRINGIZE(FEELPP_MOR_PLUGIN_NAME) + std::string("P2G1") );
+    this->setPluginName( BOOST_PP_STRINGIZE(FEELPP_MOR_PLUGIN_NAME) + fmt::format("P{}G1", ORDER) );
     this->setPluginLibName( BOOST_PP_STRINGIZE(FEELPP_MOR_PLUGIN_LIBNAME) );
 }
 
@@ -101,11 +101,11 @@ Eye2Brain::initModel()
     mu_max << k_lens_max, h_amb_max, h_bl_max, h_r_max, 1, h_amb_max*T_amb_max + h_r_max*T_amb_max - E_min, h_bl_max*T_bl_max;
     Dmu->setMax( mu_max );
 
-    auto mesh = loadMesh( _mesh = new Eye2BrainConfig::mesh_type,
+    auto mesh = loadMesh( _mesh = new Eye2BrainConfig<ORDER>::mesh_type,
                           _update = size_type(MESH_UPDATE_FACES_MINIMAL|MESH_NO_UPDATE_MEASURES),
                           _savehdf5 = 0 );
 
-    this->setFunctionSpaces( Eye2BrainConfig::space_type::New( mesh ) );
+    this->setFunctionSpaces( Eye2BrainConfig<ORDER>::space_type::New( mesh ) );
     this->setSymbolicExpressionBuildDir("$repository/crb/eye2brain/symbolicexpr/");
 
     if( Environment::worldComm().isMasterRank() )
