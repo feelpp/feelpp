@@ -70,7 +70,7 @@ PetscErrorCode __feel_petsc_prec_ksp_monitor(KSP ksp,PetscInt it,PetscReal rnorm
     PetscViewerAndFormatCreate( (comm == PETSC_COMM_SELF)? PETSC_VIEWER_STDOUT_SELF : PETSC_VIEWER_STDOUT_WORLD,PETSC_VIEWER_DEFAULT,&vf);
 #if PETSC_VERSION_GREATER_OR_EQUAL_THAN(3,15,0)    
     int ierr = KSPMonitorResidual( ksp,it,rnorm, vf );
-#elif
+#else
     int ierr = KSPMonitorDefault( ksp,it,rnorm, vf );
 #endif    
     PetscViewerAndFormatDestroy( &vf );
