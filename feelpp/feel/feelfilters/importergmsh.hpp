@@ -530,10 +530,10 @@ protected:
 private:
     FEELPP_NO_EXPORT void readFromMemory( mesh_type* mesh );
     FEELPP_NO_EXPORT void readFromFile( mesh_type* mesh );
-    FEELPP_NO_EXPORT void readFromFileVersion2( mesh_type* mesh, std::ifstream & __is, char __buf[],
+    FEELPP_NO_EXPORT void readFromFileVersion2( mesh_type* mesh, std::ifstream & __is, std::string __buf,
                                                 double version, bool binary, bool swap );
     template <typename gmsh_size_type,typename gmsh_size_partition_type,typename gmsh_size_periodiclink_type,typename gmsh_elttag_type>
-    FEELPP_NO_EXPORT void readFromFileVersion4( mesh_type* mesh, std::ifstream & __is, char __buf[],
+    FEELPP_NO_EXPORT void readFromFileVersion4( mesh_type* mesh, std::ifstream & __is, std::string __buf,
                                                 double version, bool binary, bool swap );
 
 
@@ -997,7 +997,8 @@ ImporterGmsh<MeshType>::readFromFile( mesh_type* mesh )
         throw std::invalid_argument( ostr.str() );
     }
 
-    char __buf[256];
+    //char __buf[256];
+    std::string __buf;
     __is >> __buf;
 
     std::string theversion;
@@ -1102,7 +1103,7 @@ ImporterGmsh<MeshType>::readFromFile( mesh_type* mesh )
 
 template<typename MeshType>
 void
-ImporterGmsh<MeshType>::readFromFileVersion2( mesh_type* mesh, std::ifstream & __is, char __buf[],
+ImporterGmsh<MeshType>::readFromFileVersion2( mesh_type* mesh, std::ifstream & __is, std::string __buf,
                                               double version, bool binary, bool swap )
 {
     //
@@ -1608,7 +1609,7 @@ ImporterGmsh<MeshType>::readFromFileVersion2( mesh_type* mesh, std::ifstream & _
 template<typename MeshType>
 template <typename gmsh_size_type,typename gmsh_size_partition_type,typename gmsh_size_periodiclink_type,typename gmsh_elttag_type>
 void
-ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & __is, char __buf[],
+ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & __is, std::string __buf,
                                               double version, bool binary, bool swap )
 {
     rank_type procId = this->worldComm().localRank();
