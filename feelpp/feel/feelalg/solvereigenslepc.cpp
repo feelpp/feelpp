@@ -110,10 +110,10 @@ SolverEigenSlepc<T>::init ()
         BVOrthogRefineType refinement;
 #if (SLEPC_VERSION_MAJOR == 3) && (SLEPC_VERSION_MINOR >= 6)
         BVOrthogBlockType blockOrthoType;
-        ierr = BVGetOrthogonalization ( M_ip, PETSC_NULL, &refinement, &eta,&blockOrthoType );
+        ierr = BVGetOrthogonalization ( M_ip, PETSC_IGNORE, &refinement, &eta,&blockOrthoType );
         ierr = BVSetOrthogonalization ( M_ip, BV_ORTHOG_MGS, refinement, eta, blockOrthoType );
 #else
-        ierr = BVGetOrthogonalization ( M_ip, PETSC_NULL, &refinement, &eta );
+        ierr = BVGetOrthogonalization ( M_ip, PETSC_IGNORE, &refinement, &eta );
         ierr = BVSetOrthogonalization ( M_ip, BV_ORTHOG_MGS, refinement, eta );
 #endif
 
@@ -126,20 +126,20 @@ SolverEigenSlepc<T>::init ()
         // and leave other parameters unchanged
 #if 0
         EPSOrthogonalizationRefinementType refinement;
-        ierr = EPSGetOrthogonalization ( M_eps, PETSC_NULL, &refinement, &eta );
+        ierr = EPSGetOrthogonalization ( M_eps, PETSC_IGNORE, &refinement, &eta );
         ierr = EPSSetOrthogonalization ( M_eps, EPS_MGS_ORTH, refinement, eta );
 #else
 #if (SLEPC_VERSION_MAJOR == 3) && (SLEPC_VERSION_MINOR >= 2)
         IPOrthogRefineType refinement;
-        ierr = IPGetOrthogonalization ( M_ip, PETSC_NULL, &refinement, &eta );
+        ierr = IPGetOrthogonalization ( M_ip, PETSC_IGNORE, &refinement, &eta );
         ierr = IPSetOrthogonalization ( M_ip, IP_ORTHOG_MGS, refinement, eta );
 #elif (SLEPC_VERSION_MAJOR == 3) && (SLEPC_VERSION_MINOR >= 1)
         IPOrthogonalizationRefinementType refinement;
-        ierr = IPGetOrthogonalization ( M_ip, PETSC_NULL, &refinement, &eta );
+        ierr = IPGetOrthogonalization ( M_ip, PETSC_IGNORE, &refinement, &eta );
         ierr = IPSetOrthogonalization ( M_ip, IP_ORTH_MGS, refinement, eta );
 #else
         IPOrthogonalizationRefinementType refinement;
-        ierr = IPGetOrthogonalization ( M_ip, PETSC_NULL, &refinement, &eta );
+        ierr = IPGetOrthogonalization ( M_ip, PETSC_IGNORE, &refinement, &eta );
         ierr = IPSetOrthogonalization ( M_ip, IP_MGS_ORTH, refinement, eta );
 #endif //
 #endif // 0
@@ -188,7 +188,7 @@ SolverEigenSlepc<T>::solve ( MatrixSparse<T> &matrix_A_in,
 #endif
 
     // Set operators.
-    ierr = EPSSetOperators ( M_eps, matrix_A->mat(), PETSC_NULL );
+    ierr = EPSSetOperators ( M_eps, matrix_A->mat(), PETSC_IGNORE );
     CHKERRABORT( PETSC_COMM_WORLD,ierr );
 
     //set the problem type and the position of the spectrum
@@ -245,7 +245,7 @@ SolverEigenSlepc<T>::solve ( MatrixSparse<T> &matrix_A_in,
 
     for ( int i=0; i<nconv; i++ )
     {
-        ierr = EPSGetEigenpair( M_eps, i, &kr, &ki, PETSC_NULL, PETSC_NULL );
+        ierr = EPSGetEigenpair( M_eps, i, &kr, &ki, PETSC_IGNORE, PETSC_IGNORE );
         CHKERRABORT( PETSC_COMM_WORLD,ierr );
 
 #if SLEPC_VERSION_LT(3,6,0)
@@ -286,9 +286,9 @@ SolverEigenSlepc<T>::solve ( MatrixSparse<T> &matrix_A_in,
     if ( dmCol.nProcessors() == 1 )
     {
 #if PETSC_VERSION_LESS_THAN(3,6,0)
-        ierr = MatGetVecs( matrix_A->mat(),PETSC_NULL,&M_mode );
+        ierr = MatGetVecs( matrix_A->mat(),PETSC_IGNORE,&M_mode );
 #else
-        ierr = MatCreateVecs( matrix_A->mat(),PETSC_NULL,&M_mode );
+        ierr = MatCreateVecs( matrix_A->mat(),PETSC_IGNORE,&M_mode );
 #endif
         CHKERRABORT( PETSC_COMM_WORLD,ierr );
     }
@@ -367,8 +367,8 @@ SolverEigenSlepc<T>::solve ( MatrixSparse<T> &matrix_A_in,
 
     // Set operators.
     ierr = EPSSetOperators ( M_eps, matrix_A->mat(), matrix_B->mat() );
-    //ierr = EPSSetOperators (M_eps, matrix_A->mat(), PETSC_NULL);
-    //ierr = EPSSetOperators (M_eps, matrix_B->mat(), PETSC_NULL);
+    //ierr = EPSSetOperators (M_eps, matrix_A->mat(), PETSC_IGNORE);
+    //ierr = EPSSetOperators (M_eps, matrix_B->mat(), PETSC_IGNORE);
     CHKERRABORT( PETSC_COMM_WORLD,ierr );
     CHKERRABORT( PETSC_COMM_WORLD,ierr );
 
@@ -412,7 +412,7 @@ SolverEigenSlepc<T>::solve ( MatrixSparse<T> &matrix_A_in,
     //PetscPrintf(PETSC_COMM_WORLD," Number of iterations of the method: %d\n",its);
 #if (SLEPC_VERSION_MAJOR == 3) && (SLEPC_VERSION_MINOR < 5)
     int lits;
-    EPSGetOperationCounters( M_eps,PETSC_NULL,PETSC_NULL,&lits );
+    EPSGetOperationCounters( M_eps,PETSC_IGNORE,PETSC_IGNORE,&lits );
     //PetscPrintf(PETSC_COMM_WORLD," Number of linear iterations of the method: %d\n",lits);
 #endif
 #if PETSC_VERSION_LESS_THAN(3,4,0)
@@ -455,7 +455,7 @@ SolverEigenSlepc<T>::solve ( MatrixSparse<T> &matrix_A_in,
 
     for ( int i=0; i<nconv; i++ )
     {
-        ierr = EPSGetEigenpair( M_eps, i, &kr, &ki, PETSC_NULL, PETSC_NULL );
+        ierr = EPSGetEigenpair( M_eps, i, &kr, &ki, PETSC_IGNORE, PETSC_IGNORE );
         CHKERRABORT( PETSC_COMM_WORLD,ierr );
 
 #if SLEPC_VERSION_LT(3,6,0)
@@ -503,9 +503,9 @@ SolverEigenSlepc<T>::solve ( MatrixSparse<T> &matrix_A_in,
     if ( dmCol.nProcessors() == 1 )
     {
 #if PETSC_VERSION_LESS_THAN(3,6,0)
-        ierr = MatGetVecs( matrix_A->mat(),PETSC_NULL,&M_mode );
+        ierr = MatGetVecs( matrix_A->mat(),PETSC_IGNORE,&M_mode );
 #else
-        ierr = MatCreateVecs( matrix_A->mat(),PETSC_NULL,&M_mode );
+        ierr = MatCreateVecs( matrix_A->mat(),PETSC_IGNORE,&M_mode );
 #endif
         CHKERRABORT( PETSC_COMM_WORLD,ierr );
     }
@@ -893,7 +893,7 @@ SolverEigenSlepc<T>::eigenPair( unsigned int i )
     int s;
     ierr = VecGetSize( M_mode,&s );
     CHKERRABORT( PETSC_COMM_WORLD,ierr );
-    ierr = EPSGetEigenpair( M_eps, i, &kr, &ki, M_mode, PETSC_NULL );
+    ierr = EPSGetEigenpair( M_eps, i, &kr, &ki, M_mode, PETSC_IGNORE );
     CHKERRABORT( PETSC_COMM_WORLD,ierr );
 
 #ifdef USE_COMPLEX_NUMBERS
