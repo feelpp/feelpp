@@ -34,7 +34,15 @@ mor_add_model(eye2brain Eye2Brain HDRS eye2brain.hpp  LINK_LIBRARIES ${CRB_LIB_E
 
 feelpp_add_testcase(eye2brain PREFIX feelpp_crb CATEGORY CRB)
 
-feelpp_add_application( sensitivity_analysis SRCS sensitivity_analysis.cpp
-    PROJECT mor
-    LINK_LIBRARIES OT Feelpp::feelpp_mor tbb
-)
+find_package(OpenTURNS 1.20)
+
+if ( NOT OpenTURNS_FOUND )
+    message( FATAL_ERROR "OpenTURNS not found!" )
+else()
+    message(STATUS "Found OpenTURNS: ${OpenTURNS_DIR}  (found version \"${OpenTURNS_VERSION}\")")
+    
+    feelpp_add_application( sensitivity_analysis SRCS sensitivity_analysis.cpp
+        PROJECT mor
+        LINK_LIBRARIES OT Feelpp::feelpp_mor tbb
+    )
+endif()
