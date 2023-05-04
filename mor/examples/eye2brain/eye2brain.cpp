@@ -233,6 +233,6 @@ Eye2Brain::output( int output_index, parameter_type const& mu , element_type& u,
 }
 
 
-FEELPP_CRB_PLUGIN( Eye2Brain, BOOST_PP_CAT(FEELPP_MOR_PLUGIN_NAME, P2G1) )
+FEELPP_CRB_PLUGIN( Eye2Brain, BOOST_PP_CAT(FEELPP_MOR_PLUGIN_NAME, P1G1) )
 
 } // namespace Feel
