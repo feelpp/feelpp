@@ -37,7 +37,7 @@ feelpp_add_testcase(eye2brain PREFIX feelpp_crb CATEGORY CRB)
 find_package(OpenTURNS 1.20)
 
 if ( NOT OpenTURNS_FOUND )
-    message( FATAL_ERROR "OpenTURNS not found!" )
+    message( "OpenTURNS not found!" )
 else()
     message(STATUS "Found OpenTURNS: ${OpenTURNS_DIR}  (found version \"${OpenTURNS_VERSION}\")")
     
