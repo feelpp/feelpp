@@ -268,7 +268,7 @@ if __name__ == '__main__':
 
 
     if options.sampling is None:
-        s_heat = generate_sampling(options.model, 0)
+        s_heat = generate_sampling(options.model, options.N)
     else:
         Dmu = loadParameterSpace(options.model)
         s_heat = Dmu.sampling()
