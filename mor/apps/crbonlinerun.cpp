@@ -290,7 +290,7 @@ runCrbOnline( std::vector<std::shared_ptr<Feel::CRBPluginAPI>> plugin )
         
         auto const& mu = (*mysampling)[k];
         std::ostringstream ostrmu;
-        for ( uint16_type d=0;d<muspace->dimension();++d)
+        for ( uint16_type d = 0; d < muspace->dimension(); ++d)
             ostrmu << mu(d) << " ";
         // std::cout << "--------------------------------------\n";
         // std::cout << "mu["<<k<<"] : " << ostrmu.str() << "\n";
@@ -348,14 +348,14 @@ loadPlugin()
 {
     using namespace Feel;
 
-    std::string crbmodelName = Environment::expand( soption(_name="crbmodel.name") );
+    std::string crbmodelName = Environment::expand( soption(_name = "crbmodel.name") );
     CRBModelDB crbmodelDB{ crbmodelName, uuids::nil_uuid() };
 
-    std::string attribute = soption(_name="crbmodel.attribute" );
+    std::string attribute = soption(_name = "crbmodel.attribute" );
     std::string attribute_data;
     if ( attribute == "id"  || attribute == "name")
     {
-        attribute_data = Environment::expand( soption(_name=fmt::format("crbmodel.db.{}",attribute) ) );
+        attribute_data = Environment::expand( soption(_name = fmt::format("crbmodel.db.{}",attribute) ) );
     }
     else if ( attribute == "last_created" || attribute == "last_modified" )
     {
@@ -368,12 +368,14 @@ loadPlugin()
         throw std::runtime_error( "no crbmodel selection, crbmodel.db.id or crbmodel.db.last should be defined" );
     }
     auto meta = crbmodelDB.loadDBMetaData( attribute, attribute_data );
-    std::cout << "-- crbmodelDB::dbRepository()=" << crbmodelDB.dbRepository() << std::endl;
+    std::string pluginlibdir = Environment::expand( soption(_name = "plugin.dir") );
+    std::cout << "-- crbmodelDB::dbRepository() = " << crbmodelDB.dbRepository() << std::endl;
+    std::cout << "-- plugin libdir = " << pluginlibdir << std::endl;
 
     if(boption(_name="export-solution"))
-        return crbmodelDB.loadDBPlugin( meta, "all" );
+        return crbmodelDB.loadDBPlugin( meta, "all", pluginlibdir );
     else
-        return crbmodelDB.loadDBPlugin( meta, soption(_name="crbmodel.db.load" ) );
+        return crbmodelDB.loadDBPlugin( meta, soption(_name="crbmodel.db.load" ), pluginlibdir );
 }
 
 int main(int argc, char**argv )

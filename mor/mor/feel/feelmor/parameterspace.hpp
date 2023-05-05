@@ -219,7 +219,10 @@ public:
                 if (value >= min_val && value <= max_val)
                     this->operator()( it - paramNames.begin() ) = value;
                 else
+                {
+                    Feel::cout << tc::red << "Warning: " << tc::reset << value << " not in range [" << min_val << ", " << max_val << "]" << std::endl;
                     LOG( WARNING ) << value << " not in range [" << min_val << ", " << max_val << "]" << std::endl;
+                }
             }
             else
                 LOG( WARNING ) << name << " is not a parameter" << std::endl;
@@ -231,7 +234,10 @@ public:
             if (value >= min(i) && value <= max(i))
                 this->operator()(i) = value;
             else
+            {
+                Feel::cout << tc::red << "Warning: " << tc::reset << value << " not in range [" << min(i) << ", " << max(i) << "]" << std::endl;
                 LOG( WARNING ) << value << " not in range [" << min(i) << ", " << max(i) << "]" << std::endl;
+            }
         }
 
         /**
@@ -249,7 +255,10 @@ public:
                 if (values[i] >= min(i) && values[i] <= max(i))
                     this->operator()(i) = values[i];
                 else
+                {
+                    Feel::cout << tc::red << "Warning: " << tc::reset << values[i] << " not in range [" << min(i) << ", " << max(i) << "]" << std::endl;
                     LOG( WARNING ) << values[i] << " not in range [" << min(i) << ", " << max(i) << "]" << std::endl;
+                }
             }
 
         }

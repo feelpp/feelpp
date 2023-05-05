@@ -22,11 +22,11 @@
         "T_bl": 310,        // [K] 36.85°C          \cite{https://hypertextbook.com/facts/1997/LenaWong.shtml}
         "T_amb": 294,       // [K] 24.85°C          \cite{MAPSTONE1968237}
         "E": 40,            // [W / m^2]            \cite{Scott_1988}
+        "k_lens": 0.21,     // [ W / m / K]
         "sigma": 5.67e-8,   // [W / (m^2 * K^4)]
         "epsilon": 0.974,   // [-]                  \cite{MAPSTONE1968237}
         "rho_Cornea": 1050, // [kg / m^3]
-        "rho_Lens": 1000,   // [kg / m^3]
-        "k_lens": 0.40      // [ W / m / K]
+        "rho_Lens": 1000   // [kg / m^3]
     },
 
     "Materials":
