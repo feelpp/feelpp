@@ -3,6 +3,8 @@
 #ifndef FEELPP_EYE2BRAIN_HPP
 #define FEELPP_EYE2BRAIN_HPP 1
 
+#define ORDER 1
+
 #include <feel/options.hpp>
 
 #include <feel/feelmor/modelcrbbase.hpp>
@@ -15,15 +17,19 @@ makeEye2BrainOptions();
 FEELPP_EXPORT AboutData
 makeEye2BrainAbout( std::string const& str = "eye2brain" );
 
+template<int Order>
 struct FEELPP_EXPORT Eye2BrainConfig
 {
+    typedef double value_type;
     typedef Mesh<Simplex<3>> mesh_type;
-    typedef Pch_type<mesh_type,1> space_type;
+    typedef bases< Lagrange<Order, Scalar> > basis_type;
+    typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
+    // typedef Pch_type<mesh_type, 2> space_type;
 };
 
-class FEELPP_EXPORT Eye2Brain : public ModelCrbBase<ParameterSpace<>, Eye2BrainConfig::space_type >
+class FEELPP_EXPORT Eye2Brain : public ModelCrbBase<ParameterSpace<>, Eye2BrainConfig<ORDER>::space_type >
 {
-    typedef ModelCrbBase<ParameterSpace<>, Eye2BrainConfig::space_type > super_type;
+    typedef ModelCrbBase<ParameterSpace<>, Eye2BrainConfig<ORDER>::space_type > super_type;
 
 public:
     Eye2Brain();

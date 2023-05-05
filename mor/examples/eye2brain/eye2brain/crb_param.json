@@ -15,6 +15,13 @@
             "description": "Ambiant air convection coefficient [W/m/m/K]",
             "source": "assumption from litterature"
         },
+        "h_r":    // [K]         \cite{KOSKY2013259}
+        {
+            "min":"0",
+            "max":"10",
+            "description": "Radiation convection coefficient [W/m/m/K]",
+            "source": "assumption from litterature"
+        },
         "T_bl":    // [K]         \cite{https://hypertextbook.com/facts/1997/LenaWong.shtml}
         {
             "min":"308",
