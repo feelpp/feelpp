@@ -65,7 +65,7 @@ void checkMetaModel(OT::Sample X_test, OT::Sample Y_test, OT::Function metamodel
     OT::Scalar Q2 = validation.computePredictivityFactor()[0];
     OT::GridLayout graph = validation.drawValidation();
     OT::Graph graphDrawable = graph.getGraph(0, 0);
-    graphDrawable.draw("validation.png");
+    //graphDrawable.draw("validation.png");
     // graphDrawable.draw("validation.tex");
     Feel::cout << Feel::tc::green << "Check of the metamodel : Q2 = " << Q2 << Feel::tc::reset << std::endl;
 }

@@ -248,7 +248,7 @@ void computeSobolIndicesBootstrap(std::vector<plugin_ptr_t> plugin, OT::Composed
     OT::Graph graph = computeAndDrawSobolIndices( res, input_sample, output_sample, basis, total_degree, composed_distribution, bootstrap_size=bootstrap_size);
     res.print();
     res.exportValues( soption( _name="save.path" ) + "-bootstrap.json" );
-    graph.draw("sobol-indices.png");
+    //graph.draw("sobol-indices.png");
     Feel::cout << "Files are saved in " << fs::current_path() << std::endl;
 }
 
