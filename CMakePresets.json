@@ -95,7 +95,8 @@
             "cacheVariables": {
                 "CMAKE_INSTALL_PREFIX": "${sourceDir}/build/mor/install/",
                 "FEELPP_COMPONENT": "mor",
-                "FEELPP_ENABLE_RESEARCH": "OFF"
+                "FEELPP_ENABLE_RESEARCH": "OFF",
+                "FEELPP_ENABLE_OPENTURNS": "ON"
             }
         },
         {
@@ -108,7 +109,8 @@
                 "CMAKE_INSTALL_PREFIX": "${sourceDir}/build/mor-dbg/install/",
                 "FEELPP_COMPONENT": "mor",
                 "FEELPP_ENABLE_RESEARCH": "OFF",
-                "CMAKE_BUILD_TYPE": "Debug"
+                "CMAKE_BUILD_TYPE": "Debug",
+                "FEELPP_ENABLE_OPENTURNS": "ON"
             }
         },
         {

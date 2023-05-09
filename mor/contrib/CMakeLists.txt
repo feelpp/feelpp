@@ -94,12 +94,9 @@ if(FEELPP_ENABLE_OPENTURNS)
                 $<BUILD_INTERFACE:${openturns_SOURCE_DIR}/${dir}>)
         endforeach()
 
-        # install(TARGETS feelpp_openturns openturns EXPORT feelpp-mor-export-targets
-        # LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        # ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        # RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-        # INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-        # )
-        # target_link_libraries(feelpp_contrib INTERFACE feelpp_openturns)
-        # set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} openturns/Contrib")
+        install(TARGETS feelpp_openturns OT EXPORT feelpp-mor-export-targets
+            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+            ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+            INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} )
         endif()
