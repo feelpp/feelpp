@@ -79,3 +79,6 @@
 [submodule "feelpp/contrib/nanoflann"]
 	path = feelpp/contrib/nanoflann
 	url = https://github.com/feelpp/nanoflann.git
+[submodule "mor/contrib/openturns"]
+	path = mor/contrib/openturns
+	url = https://github.com/feelpp/openturns.git
