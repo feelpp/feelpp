@@ -29,6 +29,7 @@
 #ifndef __EXPORTERENSIGHT_CPP
 #define __EXPORTERENSIGHT_CPP
 
+#include <fmt/core.h>
 #include <feel/feelcore/feel.hpp>
 
 #include <feel/feeldiscr/mesh.hpp>
@@ -609,7 +610,7 @@ ExporterEnsight<MeshType,N>::saveFields( typename timeset_type::step_ptrtype __s
             for ( auto const& [fragmentId,fragmentData] : fragmentationMarkedElements( __step->mesh() ) )
             {
                 auto const& [range,mIds,fragmentName] = fragmentData;
-                sprintf( buffer, "part %d",fragmentId );
+                fmt::format_to_n( buffer, 80, "part {}", fragmentId );
                 __out.write( ( char * ) & buffer, sizeof( buffer ) );
                 DVLOG(2) << "part " << buffer << "\n";
                 strcpy( buffer, this->elementType().c_str() );
@@ -718,11 +719,11 @@ ExporterEnsight<MeshType,N>::visit( mesh_type* __mesh )
     {
         auto const& [range,mIds,fragmentName] = fragmentData;
 
-        sprintf( buffer, "part %d",fragmentId );
+        fmt::format_to_n( buffer, 80, "part {}",fragmentId );
         //    strcpy( buffer, "part 1" );
 
         __out.write( ( char * ) & buffer, sizeof( buffer ) );
-        sprintf( buffer, "Marker %d (%s)", fragmentId, fragmentName.substr(0, 32).c_str());
+        fmt::format_to_n( buffer, 80, "Marker {} ({})", fragmentId, fragmentName.substr(0, 32).c_str());
 
         __out.write( ( char * ) & buffer, sizeof( buffer ) );
 
