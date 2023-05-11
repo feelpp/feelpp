@@ -1,18 +1,30 @@
 .Eye2brain model
 
+## Offline step
+
+.Generate 2D model
 [source,bash]
 ----
-./feelpp_mor_eye2brainapp --config-file eye2brain/eye2brain.cfg
+./feelpp_mor_eye2brainapp_2d --config-file eye2brain/eye2brain-2d.cfg
+----
+
+.Generate 3D model
+[source,bash]
+----
+./feelpp_mor_eye2brainapp_3d --config-file eye2brain/eye2brain-3d.cfg
 ----
 
 
-# Online step
+## Online step
 
 .Run online
 [source,bash]
 ----
-feelpp_mor_onlinerun --crbmodel.name eye2brain_p1g1
+feelpp_mor_onlinerun --crbmodel.name eye2brain_<dim>d --plugin.dir ${build_directory}/install/bin/
 ----
+
+WARNING: While the branch 2068 is not merged, you need to build and run the `feelpp_mor_onlinerun` from the `apps` directory.
+
 
 .Compare RB and PFEM with Python
 [source,bash]
