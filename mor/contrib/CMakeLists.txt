@@ -27,7 +27,7 @@ if(FEELPP_ENABLE_OPENTURNS)
     set(FETCHCONTENT_SOURCE_DIR_OPENTURNS ${CMAKE_CURRENT_SOURCE_DIR}/openturns)
 
     # patch includes fix for 18.04 compilation
-    FetchContent_Declare(openturns GIT_REPOSITORY https://github.com/feelpp/openturns.git GIT_TAG 1.20)
+    FetchContent_Declare(openturns GIT_REPOSITORY https://github.com/feelpp/openturns.git GIT_TAG 4198b836e5fecc0757241f2dc74ec5cc6f79fe40)
 
     FetchContent_MakeAvailable(openturns)
     add_library(feelpp_openturns INTERFACE)
