@@ -29,9 +29,9 @@ makeEye2BrainAbout( std::string const& str )
 template<int Dim>
 Eye2Brain<Dim>::Eye2Brain()
     :
-    super_type( fmt::format("eye2brain_P{}G1_{}D", ORDER, Dim) )
+    super_type( fmt::format("eye2brain_{}D", Dim) )
 {
-    this->setPluginName( BOOST_PP_STRINGIZE(FEELPP_MOR_PLUGIN_NAME) + fmt::format("P{}G1{}D", ORDER, Dim) );
+    this->setPluginName( BOOST_PP_STRINGIZE(FEELPP_MOR_PLUGIN_NAME) + fmt::format("{}D", Dim) );
     this->setPluginLibName( BOOST_PP_STRINGIZE(FEELPP_MOR_PLUGIN_LIBNAME) );
 }
 
