@@ -30,11 +30,22 @@ install(FILES eye2brain.hpp DESTINATION include/feelpp/crb/eye2brain COMPONENT D
 set(FEELPP_CRB_EYE2BRAIN_LIBRARIES ${CRB_LIB_EYE2BRAIN} PARENT_SCOPE)
 set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_EYE2BRAIN_LIBRARIES PARENT_SCOPE)
 
-mor_add_model(eye2brain Eye2Brain HDRS eye2brain.hpp  LINK_LIBRARIES ${CRB_LIB_EYE2BRAIN} )
+# mor_add_model(eye2brain Eye2Brain HDRS eye2brain.hpp  LINK_LIBRARIES ${CRB_LIB_EYE2BRAIN} )
+
+foreach( D 2 3)
+    # configure_file( eye2brain_${D}d.cfg.in eye2brain_${D}d.cfg @ONLY )
+    mor_add_model(
+        eye2brain_${D}d
+        Eye2Brain
+        CLASS Eye2Brain<${D}>
+        HDRS eye2brain.hpp
+        LINK_LIBRARIES ${CRB_LIB_EYE2BRAIN}
+    )
+endforeach()
 
 feelpp_add_testcase(eye2brain PREFIX feelpp_crb CATEGORY CRB)
 
-if (FEELPP_ENABLE_OPENTURNS)   
+if (FEELPP_ENABLE_OPENTURNS)
      feelpp_add_application( sensitivity_analysis SRCS sensitivity_analysis.cpp
          PROJECT mor
          LINK_LIBRARIES Feelpp::feelpp_mor Feelpp::feelpp_openturns tbb

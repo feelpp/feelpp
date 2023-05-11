@@ -91,9 +91,9 @@
                         },
                         "fields": "temperature",
                         "include_coordinates": 1,
-                        "output": 
+                        "output":
                         {
-                           "type":"table" 
+                           "type":"table"
                         }
                     }
                 }
