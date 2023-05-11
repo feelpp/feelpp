@@ -1,4 +1,4 @@
-.Eye2brain model 
+.Eye2brain model
 
 [source,bash]
 ----
@@ -14,7 +14,7 @@
 feelpp_mor_onlinerun --crbmodel.name eye2brain_p1g1
 ----
 
-.Compare RB and PFEM with Python 
+.Compare RB and PFEM with Python
 [source,bash]
 ----
 python3 compFE-RB.py -N 3

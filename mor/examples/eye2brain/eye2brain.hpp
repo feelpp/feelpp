@@ -17,27 +17,30 @@ makeEye2BrainOptions();
 FEELPP_EXPORT AboutData
 makeEye2BrainAbout( std::string const& str = "eye2brain" );
 
-template<int Order>
+template<int Order, int Dim>
 struct FEELPP_EXPORT Eye2BrainConfig
 {
     typedef double value_type;
-    typedef Mesh<Simplex<3>> mesh_type;
+    typedef Mesh<Simplex<Dim>> mesh_type;
     typedef bases< Lagrange<Order, Scalar> > basis_type;
     typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
     // typedef Pch_type<mesh_type, 2> space_type;
 };
 
-class FEELPP_EXPORT Eye2Brain : public ModelCrbBase<ParameterSpace<>, Eye2BrainConfig<ORDER>::space_type >
+template<int Dim>
+class FEELPP_EXPORT Eye2Brain : public ModelCrbBase<ParameterSpace<>, typename Eye2BrainConfig<ORDER, Dim>::space_type >
 {
-    typedef ModelCrbBase<ParameterSpace<>, Eye2BrainConfig<ORDER>::space_type > super_type;
-
+    typedef ModelCrbBase<ParameterSpace<>, typename Eye2BrainConfig<ORDER, Dim>::space_type > super_type;
 public:
+    typedef CRBResults::parameter_type parameter_type;
+    typedef typename super_type::element_type element_type;
+    typedef typename super_type::value_type value_type;
+
     Eye2Brain();
 
     void initBetaQ();
 
-    super_type::betaq_type computeBetaQ( parameter_type const& mu );
-
+    typename super_type::betaq_type computeBetaQ( parameter_type const& mu );
 
     void updateSpecificityModelPropertyTree( boost::property_tree::ptree & ptree ) const;
 
@@ -48,7 +51,7 @@ public:
      * Given the output index \p output_index and the parameter \p mu, return
      * the value of the corresponding FEM output
      */
-    value_type output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve=false);
+    double output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve=false);
 
 
     // parameter_type crbParametersFromUserParameters( feelpp4fastsim::UserParameters const& userParam ) const;
