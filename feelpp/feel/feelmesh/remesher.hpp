@@ -161,6 +161,7 @@ class Remesh
      * set scalar metric
      */
     void setMetric( scalar_metric_t const& );
+    void setMetricLs( scalar_metric_t const& );
 
     /**
      * execute remesh task
@@ -271,6 +272,7 @@ class Remesh
     */
     mesh_ptrtype mmgls2Mesh( mmg_mesh_t const& m_in);
     std::shared_ptr<MeshType> mesh_from_ls( scalar_metric_t const&, std::vector<int>, std::vector<int>);
+    std::shared_ptr<MeshType> mesh_from_ls_met( scalar_metric_t const&, scalar_metric_t const&, std::vector<int>, std::vector<int>);
 
   private:
     void setParameters();
@@ -367,15 +369,15 @@ Remesh<MeshType>::Remesh( std::shared_ptr<MeshType> const& mesh,
         MMG5_pMesh m = nullptr;
         if constexpr ( dimension_v<MeshType> == 3 )
             MMG3D_Init_mesh( MMG5_ARG_start,
-                             MMG5_ARG_ppMesh, &m, MMG5_ARG_ppMet, &M_mmg_sol,
+                             MMG5_ARG_ppMesh, &m, MMG5_ARG_ppLs,&M_mmg_met, MMG5_ARG_ppMet, &M_mmg_sol,
                              MMG5_ARG_end );
         else if constexpr ( dimension_v<MeshType> == 2 && real_dimension_v<MeshType> == 3 )
             MMGS_Init_mesh( MMG5_ARG_start,
-                            MMG5_ARG_ppMesh, &m, MMG5_ARG_ppMet, &M_mmg_sol,
+                            MMG5_ARG_ppMesh, &m, MMG5_ARG_ppLs,&M_mmg_met, MMG5_ARG_ppMet, &M_mmg_sol,
                             MMG5_ARG_end );
         else if constexpr ( dimension_v<MeshType> == 2 && real_dimension_v<MeshType> == 2 )
             MMG2D_Init_mesh( MMG5_ARG_start,
-                             MMG5_ARG_ppMesh, &m, MMG5_ARG_ppMet, &M_mmg_sol,
+                             MMG5_ARG_ppMesh, &m, MMG5_ARG_ppLs,&M_mmg_met, MMG5_ARG_ppMet, &M_mmg_sol,
                              MMG5_ARG_end );
         M_mmg_mesh = m;
         setParameters();
@@ -513,6 +515,121 @@ void Remesh<MeshType>::setMetric( scalar_metric_t const& m )
         delete[] sol;
     }
 }
+
+
+template <typename MeshType>
+void Remesh<MeshType>::setMetricLs( scalar_metric_t const& m )
+{
+    if ( std::holds_alternative<MMG5_pMesh>( M_mmg_mesh ) )
+    {
+        if constexpr ( dimension_v<MeshType> == 3 )
+        {
+            if ( MMG3D_Set_solSize( std::get<MMG5_pMesh>( M_mmg_mesh ), M_mmg_met,
+                                    MMG5_Vertex, M_mesh->numPoints(), MMG5_Scalar ) != 1 )
+            {
+                throw std::logic_error( "Unable to allocate the metric array." );
+            }
+        }
+        else if constexpr ( dimension_v<MeshType> == 2 && real_dimension_v<MeshType> == 3 )
+        {
+            if ( MMGS_Set_solSize( std::get<MMG5_pMesh>( M_mmg_mesh ), M_mmg_met,
+                                   MMG5_Vertex, M_mesh->numPoints(), MMG5_Scalar ) != 1 )
+            {
+                throw std::logic_error( "Unable to allocate the metric array." );
+            }
+        }
+        else if constexpr ( dimension_v<MeshType> == 2 && real_dimension_v<MeshType> == 2 )
+        {
+            if ( MMG2D_Set_solSize( std::get<MMG5_pMesh>( M_mmg_mesh ), M_mmg_met,
+                                    MMG5_Vertex, M_mesh->numPoints(), MMG5_Scalar ) != 1 )
+            {
+                throw std::logic_error( "Unable to allocate the metric array." );
+            }
+        }
+
+        for ( auto const& welt : M_mesh->elements() )
+        {
+            auto const& [key, elt] = boost::unwrap_ref( welt );
+            for ( auto const& ldof : m.functionSpace()->dof()->localDof( elt.id() ) )
+            {
+                size_type index = ldof.second.index();
+                uint16_type local_dof = ldof.first.localDof();
+                auto s = m( index );
+                int pos = pt_id[elt.point( local_dof ).id()];
+                if constexpr ( dimension_v<MeshType> == 3 )
+                {
+                    if ( MMG3D_Set_scalarSol( M_mmg_met, s, pos ) != 1 )
+                    {
+                        throw std::logic_error( "Unable to set metric" );
+                    }
+                }
+                else if constexpr ( dimension_v<MeshType> == 2 && real_dimension_v<MeshType> == 3 )
+                {
+                    if ( MMGS_Set_scalarSol( M_mmg_met, s, pos ) != 1 )
+                    {
+                        throw std::logic_error( "Unable to set metric" );
+                    }
+                }
+                else if constexpr ( dimension_v<MeshType> == 2 && real_dimension_v<MeshType> == 2 )
+                {
+                    if ( MMG2D_Set_scalarSol( M_mmg_met, s, pos ) != 1 )
+                    {
+                        throw std::logic_error( "Unable to set metric" );
+                    }
+                }
+            }
+        }
+    }
+    if ( std::holds_alternative<PMMG_pParMesh>( M_mmg_mesh ) )
+    {
+        auto mesh = std::get<PMMG_pParMesh>( M_mmg_mesh );
+        LOG( INFO ) << fmt::format( " - setting metric  size: {}...", m.nDof() );
+        if ( PMMG_Set_metSize( mesh, MMG5_Vertex, m.nLocalDof(), MMG5_Scalar ) != 1 )
+        {
+            fmt::print( fg( fmt::color::crimson ) | fmt::emphasis::bold,
+                        "Unable to allocate the metric array.\n" );
+            throw std::logic_error( "Unable to set metric size" );
+        }
+        for ( auto const& welt : M_mesh->elements() )
+        {
+            auto const& [key, elt] = boost::unwrap_ref( welt );
+            for ( auto const& ldof : m.functionSpace()->dof()->localDof( elt.id() ) )
+            {
+                size_type index = ldof.second.index();
+                uint16_type local_dof = ldof.first.localDof();
+                auto s = m( index );
+                int pos = pt_id[elt.point( local_dof ).id()];
+                if constexpr ( dimension_v<MeshType> == 3 )
+                {
+                    if ( PMMG_Set_scalarMet( mesh, s, pos ) != 1 )
+                    {
+                        fmt::print( fg( fmt::color::crimson ) | fmt::emphasis::bold,
+                                    "Unable to set metric {} at pos {}.\n", s, pos );
+                        throw std::logic_error( "Unable to set metric" );
+                    }
+                }
+            }
+        }
+        double* sol = new double[m.nLocalDof()];
+        for ( int k = 0; k < m.nLocalDof(); k++ )
+        {
+            /* Vertex by vertex */
+            if ( PMMG_Get_scalarMet( mesh, &sol[k] ) != 1 )
+            {
+                LOG( ERROR ) << fmt::format( fg( fmt::color::crimson ) | fmt::emphasis::bold,
+                                             "Unable to get metrics {} \n", k );
+            }
+            if ( sol[k] <= 0.0 )
+            {
+                LOG( ERROR ) << fmt::format( fg( fmt::color::crimson ) | fmt::emphasis::bold,
+                                             "Invalid metrics {} at {} \n", sol[k], k );
+            }
+        }
+        delete[] sol;
+    }
+}
+
+
 template <typename MeshType>
 typename Remesh<MeshType>::mmg_mesh_t
 Remesh<MeshType>::mesh2Mmg( std::shared_ptr<MeshType> const& m_in )
@@ -1867,6 +1984,70 @@ std::shared_ptr<MeshType> Remesh<MeshType>::mesh_from_ls(scalar_metric_t const& 
 
     return finalMesh;
 }
+
+template <typename MeshType>
+std::shared_ptr<MeshType> Remesh<MeshType>::mesh_from_ls_met(scalar_metric_t const& m, scalar_metric_t const& m_ls, std::vector<int> refMarkers, std::vector<int> fluidMarker )
+{ 
+    // Set levelset M_mmg_sol
+    this->setMetric(m);
+    this->setMetricLs(m_ls);
+    
+    if constexpr ( dimension_v<MeshType> == 2 )
+        MMG2D_saveMesh(std::get<MMG5_pMesh>(this->M_mmg_mesh), "initmesh.o.mesh");
+    if constexpr ( dimension_v<MeshType> == 3 )
+        MMG3D_saveMesh(std::get<MMG5_pMesh>(this->M_mmg_mesh), "initmesh.o.mesh");
+    
+    // Add multiphysics references
+    int npar = refMarkers.size() + fluidMarker.size();
+    
+    if (npar > 0)
+    {
+        if constexpr ( dimension_v<MeshType> == 2 )
+            MMG2D_Set_iparameter(std::get<MMG5_pMesh>(this->M_mmg_mesh),this->M_mmg_sol,MMG2D_IPARAM_numberOfMat,npar);
+        if constexpr ( dimension_v<MeshType> == 3 )
+            MMG3D_Set_iparameter(std::get<MMG5_pMesh>(this->M_mmg_mesh),this->M_mmg_sol,MMG3D_IPARAM_numberOfMat,npar);
+    }
+
+    for (int i = 0;i<npar;i++)
+    {
+        auto const& [et,fragId,marker] = M_mapMmgFragmentIdToMeshFragementDesc.at( i );
+            
+        if (std::find(refMarkers.begin(), refMarkers.end(), marker.value()) != refMarkers.end())
+        {
+            if constexpr ( dimension_v<MeshType> == 2 )
+                MMG2D_Set_multiMat(std::get<MMG5_pMesh>(this->M_mmg_mesh),this->M_mmg_sol,i,MMG5_MMAT_NoSplit,i,i);
+            if constexpr ( dimension_v<MeshType> == 3 )
+                MMG3D_Set_multiMat(std::get<MMG5_pMesh>(this->M_mmg_mesh),this->M_mmg_sol,i,MMG5_MMAT_NoSplit,i,i);
+        }
+        else if (std::find(fluidMarker.begin(), fluidMarker.end(), marker.value()) != fluidMarker.end())
+        {
+            if constexpr ( dimension_v<MeshType> == 2 )
+                MMG2D_Set_multiMat(std::get<MMG5_pMesh>(this->M_mmg_mesh),this->M_mmg_sol,i,MMG5_MMAT_Split,3000,2000);
+            if constexpr ( dimension_v<MeshType> == 3 )
+                MMG3D_Set_multiMat(std::get<MMG5_pMesh>(this->M_mmg_mesh),this->M_mmg_sol,i,MMG5_MMAT_Split,3000,2000);
+        }
+
+    }
+
+    // Execute remeshing from levelset
+    if constexpr ( dimension_v<MeshType> == 2 )
+        MMG2D_mmg2dls(std::get<MMG5_pMesh>(this->M_mmg_mesh),this->M_mmg_sol,this->M_mmg_met);
+           
+    if constexpr ( dimension_v<MeshType> == 3 )
+        MMG3D_mmg3dls(std::get<MMG5_pMesh>(this->M_mmg_mesh),this->M_mmg_sol,this->M_mmg_met);
+    
+    // Save final mesh in mmg format
+    if constexpr ( dimension_v<MeshType> == 2 )
+        MMG2D_saveMesh(std::get<MMG5_pMesh>(this->M_mmg_mesh), "finalmesh.o.mesh");
+    if constexpr ( dimension_v<MeshType> == 3 )
+        MMG3D_saveMesh(std::get<MMG5_pMesh>(this->M_mmg_mesh), "finalmesh.o.mesh");
+
+    // Get and export final mesh in mesh format
+    auto finalMesh = mmgls2Mesh(this->M_mmg_mesh);
+
+    return finalMesh;
+}
+
 
 #endif // FEELPP_HAS_MMG && FEELPP_HAS_PARMMG
 
