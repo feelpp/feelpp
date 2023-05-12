@@ -216,7 +216,7 @@ runCrbOnline( std::vector<std::shared_ptr<Feel::CRBPluginAPI>> plugin )
     std::ostringstream ostrmumin,ostrmumax;
     auto mumin=muspace->min();
     auto mumax=muspace->max();
-    for ( uint16_type d=0;d<muspace->dimension();++d)
+    for ( uint16_type d = 0; d < muspace->dimension(); ++d)
     {
         ostrmumin << mumin(d) << " ";
         ostrmumax << mumax(d) << " ";
@@ -259,8 +259,8 @@ runCrbOnline( std::vector<std::shared_ptr<Feel::CRBPluginAPI>> plugin )
     {
         CHECK( inputParameter.size() == muspace->dimension() ) << "parameter has a wrong size : "<< inputParameter.size() << " but must be " << muspace->dimension() << ":"<<inputParameter;
         auto mu = muspace->element();
-        for ( uint16_type d=0;d<muspace->dimension();++d)
-            mu(d)=inputParameter[d];
+        for ( uint16_type d = 0; d < muspace->dimension(); ++d)
+            mu(d) = inputParameter[d];
         mysampling->push_back( mu );
     }
     else if ( mysampling->empty() )
@@ -277,15 +277,17 @@ runCrbOnline( std::vector<std::shared_ptr<Feel::CRBPluginAPI>> plugin )
     int nSamples = mysampling->size();
 
     Feel::Table tableOutputResults;
+    tableOutputResults.format().setFloatingPointPrecision( ioption(_name="output_results.precision") );
     std::vector<std::string> tableRowHeader = muspace->parameterNames();
-    tableRowHeader.push_back( "output");
-    tableRowHeader.push_back( "time(s)");
+    tableRowHeader.push_back( "output" );
+    tableRowHeader.push_back( "errorBound" );
+    tableRowHeader.push_back( "time(s)" );
     tableOutputResults.add_row( tableRowHeader );
     tableOutputResults.format().setFirstRowIsHeader( true );
 
     std::vector<double> tableRowValues(tableRowHeader.size());
 
-    for ( int k=0;k<nSamples;++k )
+    for ( int k = 0; k < nSamples; ++k )
     {
         
         auto const& mu = (*mysampling)[k];
@@ -300,15 +302,18 @@ runCrbOnline( std::vector<std::shared_ptr<Feel::CRBPluginAPI>> plugin )
         {
             tic();
             auto crbResult = p->run( mu, time_crb, online_tol, rbDim, print_rb_matrix);
-            auto resOuptut = boost::get<0>( crbResult );
-            auto resError = boost::get<0>( boost::get<6>( crbResult ) );
-            //std::cout << "output " << resOuptut.back() << " " << resError.back() << "\n";
             double t = toc("rb_online", FLAGS_v>0);
+
+            double resOuptut = crbResult.output();
+            double resErrorBound = crbResult.errorbound();
             int curRowValIndex = 0;
-            for ( uint16_type d=0;d<muspace->dimension();++d)
+            // add values of parameter mu to table
+            for ( uint16_type d = 0; d < muspace->dimension(); ++d)
                 tableRowValues[curRowValIndex++] = mu(d);
-            if ( !resOuptut.empty() )
-                tableRowValues[curRowValIndex++] = resOuptut.back();
+
+            // add values of output and error bound to table
+            tableRowValues[curRowValIndex++] = resOuptut;
+            tableRowValues[curRowValIndex++] = resErrorBound;
             tableRowValues[curRowValIndex++] = t;
             tableOutputResults.add_row( tableRowValues );
 
@@ -406,11 +411,12 @@ int main(int argc, char**argv )
             ( "sampling.type", po::value<std::string>()->default_value( "random" ), "type of sampling" )
             ( "rb-dim", po::value<int>()->default_value( -1 ), "reduced basis dimension used (-1 use the max dim)" )
             ( "output_results.save.path", po::value<std::string>(), "output_results.save.path" )
+            ( "output_results.precision", po::value<int>()->default_value( 6 ), "float precision for output results")
 
             ( "query", po::value<std::string>(), "query string for mongodb DB feelpp.crbdb" )
             ( "compare", po::value<std::string>(), "compare results from query in mongodb DB feelpp.crbdb" )
             ( "list", "list registered DB in mongoDB  in feelpp.crbdb" )
-            ( "export-solution",po::value<bool>()->default_value(false), "export the solutions for visualization")
+            ( "export-solution", po::value<bool>()->default_value(false), "export the solutions for visualization")
             ;
         po::options_description crbonlinerunliboptions( "crb online run lib options" );
     #if 1
