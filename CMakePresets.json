@@ -213,6 +213,20 @@
             }
         },
         {
+            "name": "macos-homebrew",
+            "inherits": "default",
+            "displayName": "MacOS configuration using Homebrew",
+            "description": "This build is only available on MacOS",
+            "binaryDir": "${sourceDir}/build/macos-homebrew",
+            "cacheVariables": {
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/build/macos-homebrew/install/",
+                "CMAKE_CXX_COMPILER": "/opt/homebrew/opt/llvm/bin/clang++",
+                "CMAKE_C_COMPILER": "/opt/homebrew/opt/llvm/bin/clang",
+                "FEELPP_STD_CPP": "20",
+                "CMAKE_CXX_FLAGS": "-D_HAS_AUTO_PTR_ETC=0"
+            }
+        },
+        {
             "name": "doxygen",
             "inherits": "default",
             "displayName": "doxygen",
@@ -243,6 +257,11 @@
                 "pyfeelpp",
                 "install"
             ]
+        },
+        {
+            "name": "macos-homebrew",
+            "configurePreset": "macos-homebrew",
+            "jobs": 2
         },
         {
             "name": "feelpp",
