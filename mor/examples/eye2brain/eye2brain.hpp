@@ -3,7 +3,7 @@
 #ifndef FEELPP_EYE2BRAIN_HPP
 #define FEELPP_EYE2BRAIN_HPP 1
 
-#define ORDER 1
+#define ORDER 2
 
 #include <feel/options.hpp>
 
@@ -27,10 +27,10 @@ struct FEELPP_EXPORT Eye2BrainConfig
     // typedef Pch_type<mesh_type, 2> space_type;
 };
 
-template<int Dim>
-class FEELPP_EXPORT Eye2Brain : public ModelCrbBase<ParameterSpace<>, typename Eye2BrainConfig<ORDER, Dim>::space_type >
+template<int Order, int Dim>
+class FEELPP_EXPORT Eye2Brain : public ModelCrbBase<ParameterSpace<>, typename Eye2BrainConfig<Order, Dim>::space_type >
 {
-    typedef ModelCrbBase<ParameterSpace<>, typename Eye2BrainConfig<ORDER, Dim>::space_type > super_type;
+    typedef ModelCrbBase<ParameterSpace<>, typename Eye2BrainConfig<Order, Dim>::space_type > super_type;
 public:
     typedef CRBResults::parameter_type parameter_type;
     typedef typename super_type::element_type element_type;

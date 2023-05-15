@@ -26,25 +26,25 @@ makeEye2BrainAbout( std::string const& str )
     return about;
 }
 
-template<int Dim>
-Eye2Brain<Dim>::Eye2Brain()
+template<int Order, int Dim>
+Eye2Brain<Order, Dim>::Eye2Brain()
     :
-    super_type( fmt::format("eye2brain_{}D", Dim) )
+    super_type( fmt::format("eye2brain_{}DP{}", Dim, Order) )
 {
-    this->setPluginName( BOOST_PP_STRINGIZE(FEELPP_MOR_PLUGIN_NAME) + fmt::format("{}D", Dim) );
+    this->setPluginName( BOOST_PP_STRINGIZE(FEELPP_MOR_PLUGIN_NAME) + fmt::format("{}DP{}", Dim, Order) );
     this->setPluginLibName( BOOST_PP_STRINGIZE(FEELPP_MOR_PLUGIN_LIBNAME) );
 }
 
-template<int Dim>
+template<int Order, int Dim>
 void
-Eye2Brain<Dim>::updateSpecificityModelPropertyTree( boost::property_tree::ptree & ptree ) const
+Eye2Brain<Order, Dim>::updateSpecificityModelPropertyTree( boost::property_tree::ptree & ptree ) const
 {
 
 }
 
-template<int Dim>
+template<int Order, int Dim>
 void
-Eye2Brain<Dim>::initBetaQ()
+Eye2Brain<Order, Dim>::initBetaQ()
 {
     this->M_betaAq.resize( 5 );
     this->M_betaFq.resize( 2 );
@@ -52,9 +52,9 @@ Eye2Brain<Dim>::initBetaQ()
     this->M_betaFq[1].resize( 1 );
 }
 
-template<int Dim>
-typename Eye2Brain<Dim>::super_type::betaq_type
-Eye2Brain<Dim>::computeBetaQ( parameter_type const& mu )
+template<int Order, int Dim>
+typename Eye2Brain<Order, Dim>::super_type::betaq_type
+Eye2Brain<Order, Dim>::computeBetaQ( parameter_type const& mu )
 {
     // std::cout << "computeBetaQ start \n" << mu << std::endl;
     if ( this->M_betaAq.empty() )
@@ -69,9 +69,9 @@ Eye2Brain<Dim>::computeBetaQ( parameter_type const& mu )
     return boost::make_tuple( this->M_betaAq, this->M_betaFq );
 }
 
-template<int Dim>
+template<int Order, int Dim>
 void
-Eye2Brain<Dim>::initModel()
+Eye2Brain<Order, Dim>::initModel()
 {
 
     CHECK( this->is_linear && !this->is_time_dependent ) << "Invalid model is_linear:" << this->is_linear << " is_time_dependent:" << this->is_time_dependent << "\n";
@@ -110,11 +110,11 @@ Eye2Brain<Dim>::initModel()
     LOG(INFO) << "[Eye2brain::initModel] Set parameter space : mu_max " << mu_max << "\n" << std::endl;
 
 
-    auto mesh = loadMesh( _mesh = new typename Eye2BrainConfig<ORDER, Dim>::mesh_type,
+    auto mesh = loadMesh( _mesh = new typename Eye2BrainConfig<Order, Dim>::mesh_type,
                           _update = MESH_UPDATE_FACES | MESH_UPDATE_EDGES | MESH_NO_UPDATE_MEASURES,
                           _savehdf5 = 0 );
 
-    this->setFunctionSpaces( Eye2BrainConfig<ORDER, Dim>::space_type::New( mesh ) );
+    this->setFunctionSpaces( Eye2BrainConfig<Order, Dim>::space_type::New( mesh ) );
 
     this->setSymbolicExpressionBuildDir("$repository/crb/eye2brain/symbolicexpr/");
 
@@ -203,9 +203,9 @@ Eye2Brain<Dim>::initModel()
     this->addOutput( { out1, "1" } );
 }
 
-template<int Dim>
+template<int Order, int Dim>
 double
-Eye2Brain<Dim>::output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve )
+Eye2Brain<Order, Dim>::output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve )
 {
     //CHECK( ! need_to_solve ) << "The model need to have the solution to compute the output\n";
 
@@ -244,12 +244,16 @@ Eye2Brain<Dim>::output( int output_index, parameter_type const& mu , element_typ
 }
 
 
-template class Eye2Brain<2>;
-template class Eye2Brain<3>;
+template class Eye2Brain<1, 2>;
+template class Eye2Brain<1, 3>;
+template class Eye2Brain<2, 2>;
+template class Eye2Brain<2, 3>;
 
 // FEELPP_CRB_PLUGIN( Eye2Brain, BOOST_PP_CAT(FEELPP_MOR_PLUGIN_NAME, P1G1) )
-FEELPP_CRB_PLUGIN_TEMPLATE( Eye2Brain2D, Eye2Brain<2>, BOOST_PP_CAT(FEELPP_MOR_PLUGIN_NAME, 2D) )
-FEELPP_CRB_PLUGIN_TEMPLATE( Eye2Brain3D, Eye2Brain<3>, BOOST_PP_CAT(FEELPP_MOR_PLUGIN_NAME, 3D) )
+FEELPP_CRB_PLUGIN_TEMPLATE( Eye2Brain2D_P1, Eye2Brain<1 BOOST_PP_COMMA() 2>, BOOST_PP_CAT(FEELPP_MOR_PLUGIN_NAME, 2D_P1) )
+FEELPP_CRB_PLUGIN_TEMPLATE( Eye2Brain3D_P1, Eye2Brain<1 BOOST_PP_COMMA() 3>, BOOST_PP_CAT(FEELPP_MOR_PLUGIN_NAME, 3D_P1) )
+FEELPP_CRB_PLUGIN_TEMPLATE( Eye2Brain2D_P2, Eye2Brain<2 BOOST_PP_COMMA() 2>, BOOST_PP_CAT(FEELPP_MOR_PLUGIN_NAME, 2D_P2) )
+FEELPP_CRB_PLUGIN_TEMPLATE( Eye2Brain3D_P2, Eye2Brain<2 BOOST_PP_COMMA() 3>, BOOST_PP_CAT(FEELPP_MOR_PLUGIN_NAME, 3D_P2) )
 
 
 } // namespace Feel
