@@ -32,16 +32,19 @@ set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_EYE2BRAIN_LIBRARIES 
 
 # mor_add_model(eye2brain Eye2Brain HDRS eye2brain.hpp  LINK_LIBRARIES ${CRB_LIB_EYE2BRAIN} )
 
-foreach( DIM 2 3)
+foreach( ORDER 1 2 )
+foreach( DIM 2 3 )
     # configure_file( eye2brain_${D}d.cfg.in eye2brain_${D}d.cfg @ONLY )
     mor_add_model(
-        eye2brain_${DIM}d
+        eye2brain_${DIM}dP${ORDER}
         Eye2Brain
-        CLASS Eye2Brain<${DIM}>
+        CLASS Eye2Brain<${ORDER}, ${DIM}>
         HDRS eye2brain.hpp
         LINK_LIBRARIES ${CRB_LIB_EYE2BRAIN}
     )
 endforeach()
+endforeach()
+
 
 feelpp_add_testcase(eye2brain PREFIX feelpp_crb CATEGORY CRB)
 
