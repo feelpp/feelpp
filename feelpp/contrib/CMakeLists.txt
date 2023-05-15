@@ -754,21 +754,28 @@ if ( FEELPP_ENABLE_SPECX )
 
   # set(FETCHCONTENT_SOURCE_DIR_SPECX ${CMAKE_CURRENT_SOURCE_DIR}/SPECX)
   # patch includes fix for 18.04 compilation
-  set(SPECX_BUILD_TESTS OFF)
-  set(SPECX_BUILD_EXAMPLES OFF)
+  set(SPECX_JUST_LIB ON)
+  set(SPECX_DO_INSTALL ON)
+  set(SPECX_COMPILE_WITH_MPI OFF)
   set(FETCHCONTENT_SOURCE_DIR_SPECX ${CMAKE_CURRENT_SOURCE_DIR}/specx)
-  FetchContent_Declare(SPECX GIT_REPOSITORY https://github.com/feelpp/specx.git GIT_TAG 6cb8f36cb8d61145fdfec81ba62a9f59c0d80372)
-  set( BUILD_SPECX_TESTS OFF )
+  FetchContent_Declare(SPECX GIT_REPOSITORY https://github.com/feelpp/specx.git GIT_TAG e092e061ec17afd42374041cccfa6f44b939b19c)
+
   set(SPECX_INSTALL_CMAKE_DIR  "${CMAKE_INSTALL_DATADIR}/feel/cmake/modules")
   message(STATUS "[feelpp-specx] cmake dir: ${CMAKE_INSTALL_DATADIR}/feel/cmake/modules")
   FetchContent_MakeAvailable(specx)
   add_library(feelpp_specx INTERFACE)
-  #set_target_properties(specx PROPERTIES OUTPUT_NAME "feelpp_specx")
+
+  # set_target_properties(specx PROPERTIES OUTPUT_NAME "feelpp_specx")
+  target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_SPECX)
   target_link_libraries(feelpp_specx INTERFACE specx )
   add_library(Feelpp::feelpp_specx ALIAS feelpp_specx)
   target_include_directories(feelpp_specx INTERFACE
-      $<BUILD_INTERFACE:${SPECX_SOURCE_DIR}/>
-      $<INSTALL_INTERFACE:include/feelpp> )
+    $<BUILD_INTERFACE:${specx_BINARY_DIR}/>
+    $<BUILD_INTERFACE:${specx_BINARY_DIR}/Src>
+    $<BUILD_INTERFACE:${specx_SOURCE_DIR}/>
+    $<BUILD_INTERFACE:${specx_SOURCE_DIR}/Src>
+    $<INSTALL_INTERFACE:include/feelpp>
+    $<INSTALL_INTERFACE:include/feelpp/specx>)
   install(TARGETS feelpp_specx specx EXPORT feelpp-contrib-export-targets
       LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
       ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}

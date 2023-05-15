@@ -34,6 +34,19 @@
             }
         },
         {
+            "name": "specx",
+            "inherits": "default",
+            "displayName": "specx",
+            "description": "Build feelpp with specx",
+            "generator": "Unix Makefiles",
+            "binaryDir": "${sourceDir}/build/specx",
+            "cacheVariables": {
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/build/specx/install/",
+                "FEELPP_ENABLE_BENCHMARKS": "ON",
+                "FEELPP_ENABLE_SPECX": "ON"
+            }
+        },
+        {
             "name": "dbg",
             "displayName": "Debug Config",
             "description": "Debug build using Makefile generator",
@@ -217,6 +230,11 @@
             "jobs": 25
         },
         {
+            "name": "specx",
+            "configurePreset": "specx",
+            "jobs": 25
+        },
+        {
             "name": "dbg",
             "configurePreset": "dbg",
             "jobs": 10,
@@ -307,6 +325,11 @@
                     "count": 3
                 }
             }
+        },
+        {
+            "name": "specx",
+            "configurePreset": "specx",
+            "inherits": "default"
         },
         {
             "name": "feelpp",
