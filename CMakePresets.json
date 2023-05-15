@@ -254,6 +254,11 @@
             ]
         },
         {
+            "name": "mor-dbg",
+            "inherits": "default",
+            "configurePreset": "mor-dbg"
+        },
+        {
             "name": "feelpp-python",
             "inherits": "default",
             "configurePreset": "feelpp-python"
