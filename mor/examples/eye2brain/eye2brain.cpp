@@ -111,7 +111,7 @@ Eye2Brain<Dim>::initModel()
 
 
     auto mesh = loadMesh( _mesh = new typename Eye2BrainConfig<ORDER, Dim>::mesh_type,
-                          _update = size_type(MESH_UPDATE_FACES_MINIMAL | MESH_NO_UPDATE_MEASURES),
+                          _update = MESH_UPDATE_FACES | MESH_UPDATE_EDGES | MESH_NO_UPDATE_MEASURES,
                           _savehdf5 = 0 );
 
     this->setFunctionSpaces( Eye2BrainConfig<ORDER, Dim>::space_type::New( mesh ) );
