@@ -25,7 +25,7 @@ def loadParameterSpace(model_path):
     feelpp.mor._mor.ParameterSpace
         object containing the parameter space
     """
-   
+
     crb_model_properties = mor.CRBModelProperties("", feelpp.Environment.worldCommPtr(), "")
     crb_model_properties.setup(model_path)
     Dmu = feelpp.mor._mor.ParameterSpace.New(crb_model_properties.parameters(), feelpp.Environment.worldCommPtr())
@@ -217,7 +217,7 @@ def run_toolbox(app, sample, output_key = "Statistics_cornea_mean"):
         if feelpp.Environment.isMasterRank():
             print(i, "mu meas =", meas[output_key])
         out.append(meas[output_key])
-    
+
     return out
 
 ############################################################################################################
@@ -275,7 +275,7 @@ if __name__ == '__main__':
         N_read = s_heat.readFromFile(options.sampling)
         if feelpp.Environment.isMasterRank():
             print("Read", N_read, "samples from", options.sampling)
-    
+
     df = convert_parameters_to_dataframe(s_heat)
 
     if not options.toolbox:
