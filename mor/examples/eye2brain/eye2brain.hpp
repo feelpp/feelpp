@@ -20,21 +20,22 @@ makeEye2BrainAbout( std::string const& str = "eye2brain" );
 template<int Order, int Dim>
 struct FEELPP_EXPORT Eye2BrainConfig
 {
-    typedef double value_type;
-    typedef Mesh<Simplex<Dim>> mesh_type;
-    typedef bases< Lagrange<Order, Scalar> > basis_type;
-    typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
+    using value_type = double;
+    using mesh_type = Mesh<Simplex<Dim>>;
+    using basis_type = bases< Lagrange<Order, Scalar> >;
+    using space_type = FunctionSpace<mesh_type, basis_type, value_type>;
     // typedef Pch_type<mesh_type, 2> space_type;
 };
 
 template<int Order, int Dim>
 class FEELPP_EXPORT Eye2Brain : public ModelCrbBase<ParameterSpace<>, typename Eye2BrainConfig<Order, Dim>::space_type >
 {
-    typedef ModelCrbBase<ParameterSpace<>, typename Eye2BrainConfig<Order, Dim>::space_type > super_type;
+    using super_type = ModelCrbBase<ParameterSpace<>, typename Eye2BrainConfig<Order, Dim>::space_type >;
 public:
-    typedef CRBResults::parameter_type parameter_type;
-    typedef typename super_type::element_type element_type;
-    typedef typename super_type::value_type value_type;
+    using parameter_type = typename super_type::parameter_type;
+    using element_type = typename super_type::element_type;
+    using value_type = typename super_type::value_type;
+    using space_type = typename super_type::space_type;
 
     Eye2Brain();
 
