@@ -41,6 +41,7 @@ foreach( DIM 2 3 )
         Eye2Brain
         CLASS Eye2Brain<${ORDER}, ${DIM}>
         HDRS eye2brain.hpp
+        OPT eye2brain
         LINK_LIBRARIES ${CRB_LIB_EYE2BRAIN}
     )
     add_dependencies(feelpp_mor_eye2brain feelpp_mor_eye2brain_${DIM}dP${ORDER}app)
