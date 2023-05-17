@@ -31,6 +31,7 @@ set(FEELPP_CRB_EYE2BRAIN_LIBRARIES ${CRB_LIB_EYE2BRAIN} PARENT_SCOPE)
 set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_EYE2BRAIN_LIBRARIES PARENT_SCOPE)
 
 # mor_add_model(eye2brain Eye2Brain HDRS eye2brain.hpp  LINK_LIBRARIES ${CRB_LIB_EYE2BRAIN} )
+add_custom_target(feelpp_mor_eye2brain ALL)
 
 foreach( ORDER 1 2 )
 foreach( DIM 2 3 )
@@ -42,6 +43,7 @@ foreach( DIM 2 3 )
         HDRS eye2brain.hpp
         LINK_LIBRARIES ${CRB_LIB_EYE2BRAIN}
     )
+    add_dependencies(feelpp_mor_eye2brain feelpp_mor_eye2brain_${DIM}dP${ORDER}app)
 endforeach()
 endforeach()
 
