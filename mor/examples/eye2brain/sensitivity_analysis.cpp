@@ -50,9 +50,9 @@
 #include "FunctionalChaos.hpp"
 // #include "MartinezSensitivity.hpp"
 
-typedef Feel::ParameterSpaceX::element_type element_t;
-typedef std::shared_ptr<Feel::CRBPluginAPI> plugin_ptr_t;
-typedef std::shared_ptr<Feel::ParameterSpaceX> parameter_space_ptr_t;
+using element_t = Feel::ParameterSpaceX::element_type;
+using plugin_ptr_t = std::shared_ptr<Feel::CRBPluginAPI>;
+using parameter_space_ptr_t = std::shared_ptr<Feel::ParameterSpaceX>;
 
 
 const std::vector<std::string> NAMES = {"h_bl", "h_amb", "T_bl", "T_amb", "E", "k_lens"};
@@ -109,7 +109,7 @@ inline Feel::AboutData makeAbout()
 /**
  * @brief Generate of composed distribution for the eye model
  *
- * @return OT::ComposedDistribution 
+ * @return OT::ComposedDistribution
  */
 OT::ComposedDistribution composedFromModel()
 {
@@ -121,7 +121,7 @@ OT::ComposedDistribution composedFromModel()
     {
         OT::Distribution dist;
         std::string name = NAMES[d];
-    
+
         if (name == "h_bl")
         {
             double s = 0.15; double mu = log(65) - 0.5*s*s;
@@ -143,7 +143,7 @@ OT::ComposedDistribution composedFromModel()
         {
             dist = OT::Uniform( MINS[d], MAXS[d] );
         }
-        
+
         dist.setDescription( {name} );
         marginals[d] = dist;
         Feel::cout << tc::blue << "Distribution " << d << " (" << name << ") = " << dist << tc::reset << std::endl;
@@ -160,7 +160,7 @@ OT::ComposedDistribution composedFromModel()
  * @param time_crb collection of timers
  * @param online_tol online tolerance
  * @param rbDim size of the reduced basis
- * @return OT::Sample 
+ * @return OT::Sample
  */
 OT::Sample output(OT::Sample const& input, plugin_ptr_t const& plugin, Eigen::VectorXd &time_crb, double online_tol, int rbDim)
 {
@@ -202,7 +202,7 @@ OT::Sample output(OT::Sample const& input, plugin_ptr_t const& plugin, Eigen::Ve
             // Feel::cout << "mu = " << mu << std::endl;
 
             Feel::CRBResults crbResult = plugin->run( mu, time_crb, online_tol, rbDim, false );
-            output[i] = OT::Point({boost::get<0>( crbResult )[0]});
+            output[i] = OT::Point( crbResult.output() );
         }
         Feel::cout << "output computed" << std::endl;
     }
@@ -244,7 +244,7 @@ void computeSobolIndicesBootstrap(std::vector<plugin_ptr_t> plugin, OT::Composed
         checkMetaModel( X_test, Y_test, metaModel );
         toc("checkMetaModel");
     }
-    
+
     OT::Graph graph = computeAndDrawSobolIndices( res, input_sample, output_sample, basis, total_degree, composed_distribution, bootstrap_size=bootstrap_size);
     res.print();
     res.exportValues( soption( _name="save.path" ) + "-bootstrap.json" );
@@ -271,7 +271,6 @@ void runSensitivityAnalysis( std::vector<plugin_ptr_t> plugin, size_t sampling_s
 
     Eigen::VectorXd/*typename crb_type::vectorN_type*/ time_crb;
     double online_tol = 1e-2;               //Feel::doption(Feel::_name="crb.online-tolerance");
-    
     bool print_rb_matrix = false;           //boption(_name="crb.print-rb-matrix");
     parameter_space_ptr_t muspace = plugin[0]->parameterSpace();
 
