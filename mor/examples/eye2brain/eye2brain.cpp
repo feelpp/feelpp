@@ -127,6 +127,7 @@ Eye2Brain<Order, Dim>::initModel()
     auto v = this->Xh->element();
 
     std::vector<double> muRef = {k_lens_ref, h_amb_ref, h_bl_ref, h_r_ref, 1};
+    auto energy = backend()->newMatrix( _test = this->Xh, _trial = this->Xh );
 
 
     auto a0 = form2( _trial = this->Xh, _test = this->Xh );
@@ -174,7 +175,6 @@ Eye2Brain<Order, Dim>::initModel()
     this->addRhs( { f1, "mu6" } );
 
     /// [energy]
-    auto energy = backend()->newMatrix( _test = this->Xh, _trial = this->Xh );
     energy->close();
     this->addEnergyMatrix( energy );
 
