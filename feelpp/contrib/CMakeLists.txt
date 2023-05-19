@@ -347,7 +347,8 @@ if ( FEELPP_ENABLE_NLOPT )
     target_include_directories(feelpp_nlopt INTERFACE
       $<BUILD_INTERFACE:${FEELPP_SOURCE_DIR}/contrib/nlopt/api>
       $<BUILD_INTERFACE:${FEELPP_BINARY_DIR}/contrib/nlopt/api>
-      $<INSTALL_INTERFACE:include/feelpp>)
+      $<INSTALL_INTERFACE:include/feelpp>
+      $<INSTALL_INTERFACE:include/feelpp/nlopt>)
     install(TARGETS feelpp_nlopt nlopt EXPORT feelpp-contrib-export-targets
       LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
       ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
