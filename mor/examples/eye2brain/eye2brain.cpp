@@ -9,9 +9,9 @@ po::options_description
 makeEye2BrainOptions()
 {
     po::options_description eye2brainoptions( "Eye2Brain options" );
-    // eye2brainoptions.add_options()
-    //     ( "gamma", po::value<double>()->default_value( 10 ), "penalisation term" )
-    //     ;
+    eye2brainoptions.add_options()
+        ( "measure-index", po::value<int>()->default_value( 1 ), "index of the output to be computed.\n\t          0 : mean over cornea,\n\tFrom 1 to 9 : corresponding point in {O, A, B, B1, C, D, D1, F, G}\n\tWARNING : do not confuse with the option crb.output-index" )
+        ;
     return eye2brainoptions;
 }
 AboutData
@@ -128,7 +128,6 @@ Eye2Brain<Order, Dim>::initModel()
 
     std::vector<double> muRef = {k_lens_ref, h_amb_ref, h_bl_ref, h_r_ref, 1};
 
-    auto energy = backend()->newMatrix( _test = this->Xh, _trial = this->Xh );
 
     auto a0 = form2( _trial = this->Xh, _test = this->Xh );
     a0 = integrate( _range = markedelements(mesh, "Lens"), _expr = gradt( u ) * trans( grad( v ) )  );
@@ -175,63 +174,80 @@ Eye2Brain<Order, Dim>::initModel()
     this->addRhs( { f1, "mu6" } );
 
     /// [energy]
-    //a0.matrixPtr()->symmetricPart( energy );
-    //energy->addMatrix(1.,a0.matrixPtr() );
-    //energy->addMatrix(1./mymu,a0.matrixPtr() );
-
+    auto energy = backend()->newMatrix( _test = this->Xh, _trial = this->Xh );
     energy->close();
     this->addEnergyMatrix( energy );
 
     /// [output]
-#if 1
-    auto out1 = form1( _test = this->Xh );
+    using form1_type = vf::detail::LinearForm<typename Eye2BrainConfig<Order, Dim>::space_type, typename backend_type::vector_type, typename backend_type::vector_type>;
+    form1_type out1;
+    int measure_index = ioption(_name = "measure-index");
+    std::cout << "Measure index = " << measure_index << std::endl;
+    if (measure_index >= 1 && measure_index <= 9)    // sensor output
+    {
+        std::string name = m_outputNames[measure_index-1];
+        std::vector<double> coord = m_coordinates[measure_index-1];
+        std::cout << "Output " << name << " at coord " << coord << std::endl;
+        node_type n(Eye2BrainConfig<Order, Dim>::space_type::nDim);
+        for( int i = 0; i < Eye2BrainConfig<Order,Dim>::space_type::nDim; ++i )
+            n(i) = coord[i];
+        Feel::cout << n << std::endl;
+        auto s = std::make_shared<SensorPointwise<space_type>>(this->Xh, n, "O");
+        out1 = form1(_test = this->Xh, _vector = s->containerPtr());
+        out1.vectorPtr()->close();
+    }
+    else if ( measure_index == 0 )   // mean over cornea
+    {
+        out1 = form1( _test = this->Xh );
 
-    double meas = integrate( _range = markedelements(mesh, "Cornea"), _expr = cst(1.) ).evaluate()(0,0);
-    out1 = integrate( _range = markedelements(mesh, "Cornea"), _expr = id( u )/cst(meas)) ;
-#else
-    int index = 0;
-    std::vector<double> coord = M_output_index_vectors[index];
-    std::string name = M_output_index_names[index];
-    Feel::cout << "coord" << std::endl;
-    node_type n(Eye2BrainConfig::space_type::nDim);
-    for( int i = 0; i < Eye2BrainConfig::space_type::nDim; ++i )
-        n(i) = coord[i];
-    auto s = std::make_shared<SensorPointwise<space_type>>(Xh, n, "O");
-    auto out1 = form1(_test=Xh,_vector=s->containerPtr());
-#endif
+        double meas = integrate( _range = markedelements(mesh, "Cornea"), _expr = cst(1.) ).evaluate()(0,0);
+        out1 = integrate( _range = markedelements(mesh, "Cornea"), _expr = id( u )/cst(meas)) ;
+    }
+    else
+        throw std::logic_error( "[Eye2Brain::output] error with output_index : between 0 and 9 " );
+
 
     this->addOutput( { out1, "1" } );
+
 }
 
 template<int Order, int Dim>
 double
 Eye2Brain<Order, Dim>::output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve )
 {
-    //CHECK( ! need_to_solve ) << "The model need to have the solution to compute the output\n";
-
     auto mesh = this->Xh->mesh();
-    double output = 0;
-    // right hand side (compliant)
-    if ( output_index == 0 )
-    {/*
+    std::string name;
+    double output;
+
+    if (output_index == 0) // compliant output
+    {
+        name = "compliant";
+        /*
         output = integrate( _range = markedfaces( mesh, "BC_Cornea" )                    , _expr = mu(5) * id( u ) ).evaluate()(0,0)
                + integrate( _range = markedfaces( mesh, {"BC_Sclera", "BC_OpticNerve" } ), _expr = mu(6) * id( u ) ).evaluate()(0,0);
   */}
     else if ( output_index == 1 )
     {
-#if 1
-        output = mean(_range = markedelements(mesh, "Cornea"), _expr = idv(u))(0,0);
-#else
-        std::vector<double> coord = {-0.013597, 0, 0};
-        node_type n(Eye2BrainConfig::space_type::nDim);
-        for( int i = 0; i < Eye2BrainConfig::space_type::nDim; ++i )
-            n(i) = coord[i];
-        auto s = std::make_shared<SensorPointwise<space_type>>(Xh, n, "O");
-        auto out1 = form1(_test=Xh,_vector=s->containerPtr());
-        out1 = integrate( _range = markedelements(mesh, "Cornea"), _expr = id( u ) );
-        out1.vectorPtr()->close();
-        output = out1.vectorPtr()->operator()(0);
-#endif
+        int measure_index = ioption(_name = "measure-index");
+        if (measure_index == 0)                             // mean over cornea
+        {
+            name = "mean_cornea";
+            output = mean(_range = markedelements(mesh, "Cornea"), _expr = idv(u))(0,0);
+        }
+        else if (measure_index >= 1 && measure_index <= 9)  // sensor output
+        {
+            name = m_outputNames[measure_index-1];
+            std::vector<double> coord = m_coordinates[measure_index-1];
+            node_type n(Eye2BrainConfig<Order, Dim>::space_type::nDim);
+            for( int i = 0; i < Eye2BrainConfig<Order,Dim>::space_type::nDim; ++i )
+                n(i) = coord[i];
+            auto s = std::make_shared<SensorPointwise<space_type>>(this->Xh, n, name);
+            auto out1 = form1(_test = this->Xh, _vector = s->containerPtr());
+            out1.vectorPtr()->close();
+            output = out1(u);
+        }
+        else
+            throw std::logic_error( "[Eye2Brain::output] error with output_index : between 0 and 9 " );
     }
     else
         throw std::logic_error( "[Eye2Brain::output] error with output_index : only 0 or 1 " );
@@ -249,7 +265,6 @@ template class Eye2Brain<1, 3>;
 template class Eye2Brain<2, 2>;
 template class Eye2Brain<2, 3>;
 
-// FEELPP_CRB_PLUGIN( Eye2Brain, BOOST_PP_CAT(FEELPP_MOR_PLUGIN_NAME, P1G1) )
 FEELPP_CRB_PLUGIN_TEMPLATE( Eye2Brain2D_P1, Eye2Brain<1 BOOST_PP_COMMA() 2>, BOOST_PP_CAT(FEELPP_MOR_PLUGIN_NAME, 2D_P1) )
 FEELPP_CRB_PLUGIN_TEMPLATE( Eye2Brain3D_P1, Eye2Brain<1 BOOST_PP_COMMA() 3>, BOOST_PP_CAT(FEELPP_MOR_PLUGIN_NAME, 3D_P1) )
 FEELPP_CRB_PLUGIN_TEMPLATE( Eye2Brain2D_P2, Eye2Brain<2 BOOST_PP_COMMA() 2>, BOOST_PP_CAT(FEELPP_MOR_PLUGIN_NAME, 2D_P2) )

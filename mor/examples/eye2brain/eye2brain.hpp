@@ -58,6 +58,12 @@ public:
     // parameter_type crbParametersFromUserParameters( feelpp4fastsim::UserParameters const& userParam ) const;
     // void updateFieldsExported( SourceCrbInterface * pvsource, element_type & feField, vtkSmartPointer<vtkUnstructuredGrid> vtkOutput );
 
+private:
+    const std::vector<std::vector<double>> m_coordinates = {
+        //   O                  A                B                    B1                        C                  D               D1             F               G
+            {-0.013597, 0, 0}, {-0.0126, 0, 0}, {-0.00979266, 0, 0}, {-0.009524,0.00194062,0}, {-0.00615819,0,0}, {0.0106, 0, 0}, {0.011, 0, 0}, {0.0115, 0, 0}, {0.0125, 0, 0}
+        };
+    const std::vector<std::string> m_outputNames = {"O", "A", "B", "B1", "C", "D", "D1", "F", "G"};
 
 };
 
