@@ -38,7 +38,7 @@ MathJax.Hub.Config({
  <tr id="projectrow">
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign">
-   <div id="projectname">Feel++<span id="projectnumber">&#160;0.111.0-alpha.2</span>
+   <div id="projectname">Feel++<span id="projectnumber">&#160;0.111.0-alpha.3</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -120,7 +120,7 @@ $(document).ready(function(){initNavTree('classFeel_1_1BVHTree.html',''); initRe
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Classes</h2></td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1BVHTree_1_1BVHNode.html">BVHNode</a></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1BVHTree_1_1BVHNode.html">BVHNode</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1BVHTree_1_1BVHPrimitiveInfo.html">BVHPrimitiveInfo</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -131,22 +131,28 @@ Public Member Functions</h2></td></tr>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>buildPrimitivesInfo</b> (trace_mesh_ptrtype const &amp;mesh)</td></tr>
 <tr class="separator:a64ea7089d2620ae6e53b5c5645c2b307"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0cef9c7edbbf942d1e0267bd622bdf91"><td class="memItemLeft" align="right" valign="top"><a id="a0cef9c7edbbf942d1e0267bd622bdf91" name="a0cef9c7edbbf942d1e0267bd622bdf91"></a>
-<a class="el" href="structFeel_1_1BVHTree_1_1BVHNode.html">BVHNode</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>buildRootTree</b> ()</td></tr>
+<a class="el" href="classFeel_1_1BVHTree_1_1BVHNode.html">BVHNode</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>buildRootTree</b> ()</td></tr>
 <tr class="separator:a0cef9c7edbbf942d1e0267bd622bdf91"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a335f71f3652979baa5ce4b1b762cf5c1"><td class="memItemLeft" align="right" valign="top"><a id="a335f71f3652979baa5ce4b1b762cf5c1" name="a335f71f3652979baa5ce4b1b762cf5c1"></a>
 <a class="el" href="classint.html">int</a>&#160;</td><td class="memItemRight" valign="bottom"><b>raySearch</b> (<a class="el" href="classFeel_1_1BVHRay.html">BVHRay</a> const &amp;rayon, std::string s)</td></tr>
 <tr class="separator:a335f71f3652979baa5ce4b1b762cf5c1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a69a7a5b977b0af00091825801051d013"><td class="memItemLeft" align="right" valign="top"><a id="a69a7a5b977b0af00091825801051d013" name="a69a7a5b977b0af00091825801051d013"></a>
-<a class="el" href="structFeel_1_1BVHTree_1_1BVHNode.html">BVHNode</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>recursiveBuild</b> (<a class="el" href="structFeel_1_1BVHTree_1_1BVHNode.html">BVHNode</a> *current_parent, <a class="el" href="classint.html">int</a> cut_dimension, <a class="el" href="classint.html">int</a> start_index_primitive, <a class="el" href="classint.html">int</a> end_index_primitive, std::vector&lt; <a class="el" href="classint.html">int</a> &gt; &amp;orderedPrims)</td></tr>
+<a class="el" href="classFeel_1_1BVHTree_1_1BVHNode.html">BVHNode</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>recursiveBuild</b> (<a class="el" href="classFeel_1_1BVHTree_1_1BVHNode.html">BVHNode</a> *current_parent, <a class="el" href="classint.html">int</a> cut_dimension, <a class="el" href="classint.html">int</a> start_index_primitive, <a class="el" href="classint.html">int</a> end_index_primitive, std::vector&lt; <a class="el" href="classint.html">int</a> &gt; &amp;orderedPrims)</td></tr>
 <tr class="separator:a69a7a5b977b0af00091825801051d013"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afd8e052cf0adac4af474b964ab45bb78"><td class="memItemLeft" align="right" valign="top"><a id="afd8e052cf0adac4af474b964ab45bb78" name="afd8e052cf0adac4af474b964ab45bb78"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>traverse_stackless</b> (<a class="el" href="structFeel_1_1BVHTree_1_1BVHNode.html">BVHTree::BVHNode</a> *tree, <a class="el" href="classFeel_1_1BVHRay.html">BVHRay</a> const &amp;rayon)</td></tr>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>traverse_stackless</b> (<a class="el" href="classFeel_1_1BVHTree_1_1BVHNode.html">BVHTree::BVHNode</a> *tree, <a class="el" href="classFeel_1_1BVHRay.html">BVHRay</a> const &amp;rayon)</td></tr>
 <tr class="separator:afd8e052cf0adac4af474b964ab45bb78"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
+<tr class="memitem:a8ef9be17340b630a1c755a3a48eb4087"><td class="memItemLeft" align="right" valign="top"><a id="a8ef9be17340b630a1c755a3a48eb4087" name="a8ef9be17340b630a1c755a3a48eb4087"></a>
+trace_mesh_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>M_mesh</b></td></tr>
+<tr class="separator:a8ef9be17340b630a1c755a3a48eb4087"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a99d76d36912fd80c8c4dd106d06ca579"><td class="memItemLeft" align="right" valign="top"><a id="a99d76d36912fd80c8c4dd106d06ca579" name="a99d76d36912fd80c8c4dd106d06ca579"></a>
+std::vector&lt; <a class="el" href="structFeel_1_1BVHTree_1_1BVHPrimitiveInfo.html">BVHPrimitiveInfo</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>M_primitiveInfo</b></td></tr>
+<tr class="separator:a99d76d36912fd80c8c4dd106d06ca579"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5cf324128731f44ae59dc09cc28c6e34"><td class="memItemLeft" align="right" valign="top"><a id="a5cf324128731f44ae59dc09cc28c6e34" name="a5cf324128731f44ae59dc09cc28c6e34"></a>
-<a class="el" href="structFeel_1_1BVHTree_1_1BVHNode.html">BVHNode</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>M_root_tree</b></td></tr>
+<a class="el" href="classFeel_1_1BVHTree_1_1BVHNode.html">BVHNode</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>M_root_tree</b></td></tr>
 <tr class="separator:a5cf324128731f44ae59dc09cc28c6e34"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5ac012732f5938ec5936cbaff058a092"><td class="memItemLeft" align="right" valign="top"><a id="a5ac012732f5938ec5936cbaff058a092" name="a5ac012732f5938ec5936cbaff058a092"></a>
 std::vector&lt; <a class="el" href="classint.html">int</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>orderedPrims</b></td></tr>
@@ -160,12 +166,6 @@ static thread_local std::vector&lt; <a class="el" href="classint.html">int</a> &
 <tr class="memitem:a7ba325e55d02e448fd60ffbb72fbf1d8"><td class="memItemLeft" align="right" valign="top"><a id="a7ba325e55d02e448fd60ffbb72fbf1d8" name="a7ba325e55d02e448fd60ffbb72fbf1d8"></a>
 static thread_local std::vector&lt; double &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>M_lengths</b></td></tr>
 <tr class="separator:a7ba325e55d02e448fd60ffbb72fbf1d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8ef9be17340b630a1c755a3a48eb4087"><td class="memItemLeft" align="right" valign="top"><a id="a8ef9be17340b630a1c755a3a48eb4087" name="a8ef9be17340b630a1c755a3a48eb4087"></a>
-static trace_mesh_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>M_mesh</b></td></tr>
-<tr class="separator:a8ef9be17340b630a1c755a3a48eb4087"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a99d76d36912fd80c8c4dd106d06ca579"><td class="memItemLeft" align="right" valign="top"><a id="a99d76d36912fd80c8c4dd106d06ca579" name="a99d76d36912fd80c8c4dd106d06ca579"></a>
-static std::vector&lt; <a class="el" href="structFeel_1_1BVHTree_1_1BVHPrimitiveInfo.html">BVHPrimitiveInfo</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>M_primitiveInfo</b></td></tr>
-<tr class="separator:a99d76d36912fd80c8c4dd106d06ca579"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 </div><!-- doc-content -->

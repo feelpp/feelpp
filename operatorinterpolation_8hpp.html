@@ -38,7 +38,7 @@ MathJax.Hub.Config({
  <tr id="projectrow">
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign">
-   <div id="projectname">Feel++<span id="projectnumber">&#160;0.111.0-alpha.2</span>
+   <div id="projectname">Feel++<span id="projectnumber">&#160;0.111.0-alpha.3</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -115,9 +115,13 @@ $(document).ready(function(){initNavTree('operatorinterpolation_8hpp.html',''); 
 Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1detail_1_1DomainEltIdFromImageEltId.html">Feel::detail::DomainEltIdFromImageEltId&lt; DomainSpaceType, ImageSpaceType &gt;</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1detail_1_1DomainEltIdFromImageEltId_1_1ReturnDomainEntities.html">Feel::detail::DomainEltIdFromImageEltId&lt; DomainSpaceType, ImageSpaceType &gt;::ReturnDomainEntities&lt; TheCoDim &gt;</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1detail_1_1DomainEltIdFromImageEltId_1_1ReturnType.html">Feel::detail::DomainEltIdFromImageEltId&lt; DomainSpaceType, ImageSpaceType &gt;::ReturnType&lt; TheCoDim &gt;</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1detail_1_1opinterprangetype.html">Feel::detail::opinterprangetype&lt; RangeType &gt;</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1detail_1_1PrecomputeDomainBasisFunction.html">Feel::detail::PrecomputeDomainBasisFunction&lt; DomainSpaceType, ImageSpaceType, ExprType &gt;</a></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1detail_1_1PrecomputeDomainBasisFunction.html">Feel::detail::PrecomputeDomainBasisFunction&lt; DomainSpaceType, ImageSpaceType, ExprType, DomainEvalOnSubEntityCoDim &gt;</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1InterpolationConforming.html">Feel::InterpolationConforming</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -225,10 +229,6 @@ template&lt;typename ... Ts&gt; </td></tr>
 template&lt;typename ... Ts&gt; </td></tr>
 <tr class="memitem:a1690cf42cf4390a3099067309072cc59"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::Div</b> (Ts &amp;&amp;... v)</td></tr>
 <tr class="separator:a1690cf42cf4390a3099067309072cc59"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a08abda789343aad664f020fc8d5b671a"><td class="memTemplParams" colspan="2"><a id="a08abda789343aad664f020fc8d5b671a" name="a08abda789343aad664f020fc8d5b671a"></a>
-template&lt;typename DomainDofType , typename ImageDofType , typename ImageEltType , typename DomainGmcType &gt; </td></tr>
-<tr class="memitem:a08abda789343aad664f020fc8d5b671a"><td class="memTemplItemLeft" align="right" valign="top">uint16_type&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::detail::domainLocalDofFromImageLocalDof</b> (std::shared_ptr&lt; DomainDofType &gt; const &amp;domaindof, std::shared_ptr&lt; ImageDofType &gt; const &amp;imagedof, ImageEltType const &amp;imageElt, uint16_type imageLocDof, size_type imageGlobDof, uint16_type comp, size_type domainEltId, std::shared_ptr&lt; DomainGmcType &gt; &amp;gmcDomain)</td></tr>
-<tr class="separator:a08abda789343aad664f020fc8d5b671a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa9098d8759307106ebbd5d3288dbc789"><td class="memTemplParams" colspan="2"><a id="aa9098d8759307106ebbd5d3288dbc789" name="aa9098d8759307106ebbd5d3288dbc789"></a>
 template&lt;typename ... Ts&gt; </td></tr>
 <tr class="memitem:aa9098d8759307106ebbd5d3288dbc789"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::Grad</b> (Ts &amp;&amp;... v)</td></tr>
@@ -272,10 +272,10 @@ template&lt;typename ... Ts&gt; </td></tr>
 template&lt;typename DomainSpaceType , typename ImageSpaceType , typename IteratorRange , typename InterpType &gt; </td></tr>
 <tr class="memitem:ad0c7da3380885602989cd96c1d258181"><td class="memTemplItemLeft" align="right" valign="top">decltype(auto)&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::opInterpPtr</b> (std::shared_ptr&lt; DomainSpaceType &gt; const &amp;domainspace, std::shared_ptr&lt; ImageSpaceType &gt; const &amp;imagespace, IteratorRange const &amp;r, typename OperatorInterpolation&lt; DomainSpaceType, ImageSpaceType, typename <a class="el" href="structFeel_1_1detail_1_1opinterprangetype.html">Feel::detail::opinterprangetype</a>&lt; IteratorRange &gt;::type, InterpType &gt;::backend_ptrtype const &amp;backend, InterpType const &amp;interptype, <a class="el" href="classbool.html">bool</a> ddmethod, OperatorInterpolationMatrixSetup&lt; typename DomainSpaceType::value_type &gt; const &amp;matSetup=OperatorInterpolationMatrixSetup&lt; typename DomainSpaceType::value_type &gt;{})</td></tr>
 <tr class="separator:ad0c7da3380885602989cd96c1d258181"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad045a3663f3db28b5da045b64b064a47"><td class="memTemplParams" colspan="2"><a id="ad045a3663f3db28b5da045b64b064a47" name="ad045a3663f3db28b5da045b64b064a47"></a>
-template&lt;typename DomainSpaceType , typename ImageSpaceType , typename ExprType &gt; </td></tr>
-<tr class="memitem:ad045a3663f3db28b5da045b64b064a47"><td class="memTemplItemLeft" align="right" valign="top">std::shared_ptr&lt; PrecomputeDomainBasisFunction&lt; DomainSpaceType, ImageSpaceType, ExprType &gt; &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::detail::precomputeDomainBasisFunction</b> (std::shared_ptr&lt; DomainSpaceType &gt; const &amp;domainSpace, std::shared_ptr&lt; ImageSpaceType &gt; const &amp;imageSpace, ExprType const &amp;expr)</td></tr>
-<tr class="separator:ad045a3663f3db28b5da045b64b064a47"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad5bcbb700254872ee65562ec6b01ca04"><td class="memTemplParams" colspan="2"><a id="ad5bcbb700254872ee65562ec6b01ca04" name="ad5bcbb700254872ee65562ec6b01ca04"></a>
+template&lt;<a class="el" href="classint.html">int</a> DomainEvalOnSubEntityCoDim, typename DomainSpaceType , typename ImageSpaceType , typename ExprType &gt; </td></tr>
+<tr class="memitem:ad5bcbb700254872ee65562ec6b01ca04"><td class="memTemplItemLeft" align="right" valign="top">std::shared_ptr&lt; PrecomputeDomainBasisFunction&lt; DomainSpaceType, ImageSpaceType, ExprType, DomainEvalOnSubEntityCoDim &gt; &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::detail::precomputeDomainBasisFunction</b> (std::shared_ptr&lt; DomainSpaceType &gt; const &amp;domainSpace, std::shared_ptr&lt; ImageSpaceType &gt; const &amp;imageSpace, ExprType const &amp;expr)</td></tr>
+<tr class="separator:ad5bcbb700254872ee65562ec6b01ca04"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>

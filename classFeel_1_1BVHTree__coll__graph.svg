@@ -157,7 +157,7 @@ var sectionId = 'dynsection-0';
 <!-- Node11 -->
 <g id="node11" class="node">
 <title>Node11</title>
-<g id="a_node11"><a xlink:href="structFeel_1_1BVHTree_1_1BVHNode.html" target="_top" xlink:title=" ">
+<g id="a_node11"><a xlink:href="classFeel_1_1BVHTree_1_1BVHNode.html" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="#bfbfbf" points="197,-312.5 197,-435.5 385,-435.5 385,-312.5 197,-312.5"/>
 <text text-anchor="start" x="205" y="-423.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::BVHTree&lt; nDim</text>
 <text text-anchor="middle" x="291" y="-412.5" font-family="Helvetica,sans-Serif" font-size="10.00"> &gt;::BVHNode</text>
@@ -168,8 +168,8 @@ var sectionId = 'dynsection-0';
 <text text-anchor="start" x="205" y="-363.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ buildLeaf()</text>
 <text text-anchor="start" x="205" y="-352.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ checkIntersection()</text>
 <text text-anchor="start" x="205" y="-341.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ checkIntersectionWithSegment()</text>
-<text text-anchor="start" x="205" y="-330.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ checkIntersectionWithSegment()</text>
-<text text-anchor="start" x="205" y="-319.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 7 more...</text>
+<text text-anchor="start" x="205" y="-330.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ checkIntersectionWithTriangle()</text>
+<text text-anchor="start" x="205" y="-319.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 6 more...</text>
 </a>
 </g>
 </g>

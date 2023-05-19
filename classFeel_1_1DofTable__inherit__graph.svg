@@ -76,7 +76,7 @@ var sectionId = 'dynsection-0';
 <text text-anchor="start" x="8" y="-51.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ build()</text>
 <text text-anchor="start" x="8" y="-40.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ build()</text>
 <text text-anchor="start" x="8" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ buildBoundaryDofMap()</text>
-<text text-anchor="start" x="8" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 94 more...</text>
+<text text-anchor="start" x="8" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 96 more...</text>
 <text text-anchor="start" x="8" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ nDofComponents()</text>
 </a>
 </g>

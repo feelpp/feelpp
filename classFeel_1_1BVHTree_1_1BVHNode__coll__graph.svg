@@ -23,15 +23,15 @@
 <text text-anchor="start" x="117.43" y="-51.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ buildLeaf()</text>
 <text text-anchor="start" x="117.43" y="-40.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ checkIntersection()</text>
 <text text-anchor="start" x="117.43" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ checkIntersectionWithSegment()</text>
-<text text-anchor="start" x="117.43" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ checkIntersectionWithSegment()</text>
-<text text-anchor="start" x="117.43" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 7 more...</text>
+<text text-anchor="start" x="117.43" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ checkIntersectionWithTriangle()</text>
+<text text-anchor="start" x="117.43" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 6 more...</text>
 </a>
 </g>
 </g>
 <!-- Node2 -->
 <g id="node2" class="node">
 <title>Node2</title>
-<g id="a_node2"><a xlink:href="structFeel_1_1BVHTree_1_1BVHNode.html" target="_top" xlink:title=" ">
+<g id="a_node2"><a xlink:href="classFeel_1_1BVHTree_1_1BVHNode.html" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="#bfbfbf" points="109.43,-182.5 109.43,-305.5 297.43,-305.5 297.43,-182.5 109.43,-182.5"/>
 <text text-anchor="start" x="117.43" y="-293.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::BVHTree&lt; nDim</text>
 <text text-anchor="middle" x="203.43" y="-282.5" font-family="Helvetica,sans-Serif" font-size="10.00"> &gt;::BVHNode</text>
@@ -42,8 +42,8 @@
 <text text-anchor="start" x="117.43" y="-233.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ buildLeaf()</text>
 <text text-anchor="start" x="117.43" y="-222.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ checkIntersection()</text>
 <text text-anchor="start" x="117.43" y="-211.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ checkIntersectionWithSegment()</text>
-<text text-anchor="start" x="117.43" y="-200.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ checkIntersectionWithSegment()</text>
-<text text-anchor="start" x="117.43" y="-189.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 7 more...</text>
+<text text-anchor="start" x="117.43" y="-200.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ checkIntersectionWithTriangle()</text>
+<text text-anchor="start" x="117.43" y="-189.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 6 more...</text>
 </a>
 </g>
 </g>

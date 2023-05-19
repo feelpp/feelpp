@@ -92,7 +92,7 @@ var searchData=
   ['buildid_89',['buildId',['../classFeel_1_1Info.html#afbe3a5ad059049957212c8f5b490f617',1,'Feel::Info']]],
   ['buildlocallydiscontinuousdofmap_90',['buildLocallyDiscontinuousDofMap',['../classFeel_1_1DofTable.html#a39bf3b51de6e39f6a53336cf935d497e',1,'Feel::DofTable']]],
   ['buildperiodicdofmap_91',['buildPeriodicDofMap',['../classFeel_1_1DofTable.html#ac4394232be2dd756cc581bb556fc564c',1,'Feel::DofTable']]],
-  ['bvhnode_92',['BVHNode',['../structFeel_1_1BVHTree_1_1BVHNode.html',1,'Feel::BVHTree']]],
+  ['bvhnode_92',['BVHNode',['../classFeel_1_1BVHTree_1_1BVHNode.html',1,'Feel::BVHTree']]],
   ['bvhprimitiveinfo_93',['BVHPrimitiveInfo',['../structFeel_1_1BVHTree_1_1BVHPrimitiveInfo.html',1,'Feel::BVHTree']]],
   ['bvhray_94',['BVHRay',['../classFeel_1_1BVHRay.html',1,'Feel']]],
   ['bvhtree_95',['BVHTree',['../classFeel_1_1BVHTree.html',1,'Feel']]],

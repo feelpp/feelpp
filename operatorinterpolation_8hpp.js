@@ -1,8 +1,10 @@
 var operatorinterpolation_8hpp =
 [
-    [ "Feel::detail::DomainEltIdFromImageEltId< DomainSpaceType, ImageSpaceType >", "structFeel_1_1detail_1_1DomainEltIdFromImageEltId.html", null ],
+    [ "Feel::detail::DomainEltIdFromImageEltId< DomainSpaceType, ImageSpaceType >", "structFeel_1_1detail_1_1DomainEltIdFromImageEltId.html", "structFeel_1_1detail_1_1DomainEltIdFromImageEltId" ],
+    [ "Feel::detail::DomainEltIdFromImageEltId< DomainSpaceType, ImageSpaceType >::ReturnDomainEntities< TheCoDim >", "structFeel_1_1detail_1_1DomainEltIdFromImageEltId_1_1ReturnDomainEntities.html", null ],
+    [ "Feel::detail::DomainEltIdFromImageEltId< DomainSpaceType, ImageSpaceType >::ReturnType< TheCoDim >", "structFeel_1_1detail_1_1DomainEltIdFromImageEltId_1_1ReturnType.html", null ],
     [ "Feel::detail::opinterprangetype< RangeType >", "structFeel_1_1detail_1_1opinterprangetype.html", null ],
-    [ "Feel::detail::PrecomputeDomainBasisFunction< DomainSpaceType, ImageSpaceType, ExprType >", "structFeel_1_1detail_1_1PrecomputeDomainBasisFunction.html", null ],
+    [ "Feel::detail::PrecomputeDomainBasisFunction< DomainSpaceType, ImageSpaceType, ExprType, DomainEvalOnSubEntityCoDim >", "structFeel_1_1detail_1_1PrecomputeDomainBasisFunction.html", "structFeel_1_1detail_1_1PrecomputeDomainBasisFunction" ],
     [ "Feel::InterpolationConforming", "structFeel_1_1InterpolationConforming.html", null ],
     [ "Feel::InterpolationCurl< C >", "structFeel_1_1InterpolationCurl.html", null ],
     [ "Feel::InterpolationDiv< C >", "structFeel_1_1InterpolationDiv.html", null ],

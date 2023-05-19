@@ -38,7 +38,7 @@ MathJax.Hub.Config({
  <tr id="projectrow">
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign">
-   <div id="projectname">Feel++<span id="projectnumber">&#160;0.111.0-alpha.2</span>
+   <div id="projectname">Feel++<span id="projectnumber">&#160;0.111.0-alpha.3</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -560,6 +560,14 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>initDofMap</b> (<a cl
 <tr class="memitem:a458e39055eda39fa2810c9523d1d89a3"><td class="memItemLeft" align="right" valign="top"><a id="a458e39055eda39fa2810c9523d1d89a3" name="a458e39055eda39fa2810c9523d1d89a3"></a>
 std::pair&lt; local_dof_const_iterator, local_dof_const_iterator &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>localDof</b> () const</td></tr>
 <tr class="separator:a458e39055eda39fa2810c9523d1d89a3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a582fec8a83fee57df34f1480da45ae2d"><td class="memTemplParams" colspan="2"><a id="a582fec8a83fee57df34f1480da45ae2d" name="a582fec8a83fee57df34f1480da45ae2d"></a>
+template&lt;typename MeshEntityType , std::enable_if_t&lt; std::is_same_v&lt; MeshEntityType, typename mesh_type::element_type &gt;, <a class="el" href="classbool.html">bool</a> &gt;  = true&gt; </td></tr>
+<tr class="memitem:a582fec8a83fee57df34f1480da45ae2d"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><b>localDof</b> (MeshEntityType const &amp;elt) const</td></tr>
+<tr class="separator:a582fec8a83fee57df34f1480da45ae2d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa4a37de8f25dcba8895e626ec961e62c"><td class="memTemplParams" colspan="2"><a id="aa4a37de8f25dcba8895e626ec961e62c" name="aa4a37de8f25dcba8895e626ec961e62c"></a>
+template&lt;typename MeshEntityType , std::enable_if_t&lt; std::is_same_v&lt; MeshEntityType, typename mesh_type::face_type &gt; &amp;&amp;(mesh_type::nDim &gt; 0), <a class="el" href="classbool.html">bool</a> &gt;  = true&gt; </td></tr>
+<tr class="memitem:aa4a37de8f25dcba8895e626ec961e62c"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><b>localDof</b> (MeshEntityType const &amp;face) const</td></tr>
+<tr class="separator:aa4a37de8f25dcba8895e626ec961e62c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac9f705bdde2b7401ea332c0bd87b8a2f"><td class="memItemLeft" align="right" valign="top"><a id="ac9f705bdde2b7401ea332c0bd87b8a2f" name="ac9f705bdde2b7401ea332c0bd87b8a2f"></a>
 std::pair&lt; local_dof_const_iterator, local_dof_const_iterator &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>localDof</b> (size_type ElId) const</td></tr>
 <tr class="separator:ac9f705bdde2b7401ea332c0bd87b8a2f"><td class="memSeparator" colspan="2">&#160;</td></tr>

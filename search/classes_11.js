@@ -46,5 +46,7 @@ var searchData=
   ['result_3c_20nlocaldof_28s_2c_20t_29_3e_43',['result&lt; NLocalDof(S, T)&gt;',['../structFeel_1_1detail_1_1NLocalDof_1_1result_3_01NLocalDof_07S_00_01T_08_4.html',1,'Feel::detail::NLocalDof']]],
   ['result_3c_20nlocaldofonproc_28s_2c_20t_29_3e_44',['result&lt; NLocalDofOnProc(S, T)&gt;',['../structFeel_1_1detail_1_1NLocalDofOnProc_1_1result_3_01NLocalDofOnProc_07S_00_01T_08_4.html',1,'Feel::detail::NLocalDofOnProc']]],
   ['result_3c_20searchindicesbyspace_28m_2c_20t_29_3e_45',['result&lt; searchIndicesBySpace(M, T)&gt;',['../structFeel_1_1detail_1_1searchIndicesBySpace_1_1result_3_01searchIndicesBySpace_07M_00_01T_08_4.html',1,'Feel::detail::searchIndicesBySpace']]],
-  ['robin_46',['Robin',['../classFeel_1_1FeelModels_1_1CoefficientFormPDEBoundaryConditions_1_1Robin.html',1,'Feel::FeelModels::CoefficientFormPDEBoundaryConditions&lt; Dim, EquationRank &gt;::Robin'],['../classFeel_1_1FeelModels_1_1SolidMechanicsBoundaryConditions_1_1Robin.html',1,'Feel::FeelModels::SolidMechanicsBoundaryConditions&lt; Dim &gt;::Robin']]]
+  ['returndomainentities_46',['ReturnDomainEntities',['../structFeel_1_1detail_1_1DomainEltIdFromImageEltId_1_1ReturnDomainEntities.html',1,'Feel::detail::DomainEltIdFromImageEltId']]],
+  ['returntype_47',['ReturnType',['../structFeel_1_1detail_1_1DomainEltIdFromImageEltId_1_1ReturnType.html',1,'Feel::detail::DomainEltIdFromImageEltId']]],
+  ['robin_48',['Robin',['../classFeel_1_1FeelModels_1_1CoefficientFormPDEBoundaryConditions_1_1Robin.html',1,'Feel::FeelModels::CoefficientFormPDEBoundaryConditions&lt; Dim, EquationRank &gt;::Robin'],['../classFeel_1_1FeelModels_1_1SolidMechanicsBoundaryConditions_1_1Robin.html',1,'Feel::FeelModels::SolidMechanicsBoundaryConditions&lt; Dim &gt;::Robin']]]
 ];

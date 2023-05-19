@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.3"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Feel++: Feel::BVHTree&lt; nDim &gt;::BVHNode Struct Reference</title>
+<title>Feel++: Feel::BVHTree&lt; nDim &gt;::BVHNode Class Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -38,7 +38,7 @@ MathJax.Hub.Config({
  <tr id="projectrow">
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign">
-   <div id="projectname">Feel++<span id="projectnumber">&#160;0.111.0-alpha.2</span>
+   <div id="projectname">Feel++<span id="projectnumber">&#160;0.111.0-alpha.3</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -81,7 +81,7 @@ var searchBox = new SearchBox("searchBox", "search",'Search','.html');
 </div>
 <script type="text/javascript">
 /* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
-$(document).ready(function(){initNavTree('structFeel_1_1BVHTree_1_1BVHNode.html',''); initResizable(); });
+$(document).ready(function(){initNavTree('classFeel_1_1BVHTree_1_1BVHNode.html',''); initResizable(); });
 /* @license-end */
 </script>
 <div id="doc-content">
@@ -103,8 +103,8 @@ $(document).ready(function(){initNavTree('structFeel_1_1BVHTree_1_1BVHNode.html'
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
-<a href="structFeel_1_1BVHTree_1_1BVHNode-members.html">List of all members</a>  </div>
-  <div class="headertitle"><div class="title">Feel::BVHTree&lt; nDim &gt;::BVHNode Struct Reference</div></div>
+<a href="classFeel_1_1BVHTree_1_1BVHNode-members.html">List of all members</a>  </div>
+  <div class="headertitle"><div class="title">Feel::BVHTree&lt; nDim &gt;::BVHNode Class Reference</div></div>
 </div><!--header-->
 <div class="contents">
 <div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
@@ -112,38 +112,35 @@ $(document).ready(function(){initNavTree('structFeel_1_1BVHTree_1_1BVHNode.html'
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">
 </div>
 <div id="dynsection-0-content" class="dyncontent" style="display:none;">
-<div class="center"><iframe scrolling="no" frameborder="0" src="structFeel_1_1BVHTree_1_1BVHNode__coll__graph.svg" width="667" height="588"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+<div class="center"><iframe scrolling="no" frameborder="0" src="classFeel_1_1BVHTree_1_1BVHNode__coll__graph.svg" width="667" height="588"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a0d31bddf9a2ea6e4c7c1b7394a4b938e"><td class="memItemLeft" align="right" valign="top"><a id="a0d31bddf9a2ea6e4c7c1b7394a4b938e" name="a0d31bddf9a2ea6e4c7c1b7394a4b938e"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>buildInternalNode</b> (<a class="el" href="structFeel_1_1BVHTree_1_1BVHNode.html">BVHNode</a> *current_parent, <a class="el" href="classint.html">int</a> splitaxisIn, <a class="el" href="structFeel_1_1BVHTree_1_1BVHNode.html">BVHNode</a> *child0, <a class="el" href="structFeel_1_1BVHTree_1_1BVHNode.html">BVHNode</a> *child1)</td></tr>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>buildInternalNode</b> (<a class="el" href="classFeel_1_1BVHTree_1_1BVHNode.html">BVHNode</a> *current_parent, <a class="el" href="classint.html">int</a> splitaxisIn, <a class="el" href="classFeel_1_1BVHTree_1_1BVHNode.html">BVHNode</a> *child0, <a class="el" href="classFeel_1_1BVHTree_1_1BVHNode.html">BVHNode</a> *child1)</td></tr>
 <tr class="separator:a0d31bddf9a2ea6e4c7c1b7394a4b938e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4be19af60bdd6ba65cc5390c5b6e7ebc"><td class="memItemLeft" align="right" valign="top"><a id="a4be19af60bdd6ba65cc5390c5b6e7ebc" name="a4be19af60bdd6ba65cc5390c5b6e7ebc"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>buildLeaf</b> (<a class="el" href="structFeel_1_1BVHTree_1_1BVHNode.html">BVHNode</a> *current_parent, <a class="el" href="classint.html">int</a> first, <a class="el" href="classint.html">int</a> n, Eigen::VectorXd bounds_min, Eigen::VectorXd bounds_max)</td></tr>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>buildLeaf</b> (<a class="el" href="classFeel_1_1BVHTree_1_1BVHNode.html">BVHNode</a> *current_parent, <a class="el" href="classint.html">int</a> first, <a class="el" href="classint.html">int</a> n, Eigen::VectorXd bounds_min, Eigen::VectorXd bounds_max)</td></tr>
 <tr class="separator:a4be19af60bdd6ba65cc5390c5b6e7ebc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab004da8e2dda7d6cdddcfd7ef8baab18"><td class="memItemLeft" align="right" valign="top"><a id="ab004da8e2dda7d6cdddcfd7ef8baab18" name="ab004da8e2dda7d6cdddcfd7ef8baab18"></a>
 <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>checkIntersection</b> (<a class="el" href="classFeel_1_1BVHRay.html">BVHRay</a> const &amp;rayon)</td></tr>
 <tr class="separator:ab004da8e2dda7d6cdddcfd7ef8baab18"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aab87803c3d54529b5ce9537a55eebcfc"><td class="memItemLeft" align="right" valign="top"><a id="aab87803c3d54529b5ce9537a55eebcfc" name="aab87803c3d54529b5ce9537a55eebcfc"></a>
-<a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>checkIntersectionWithSegment</b> (<a class="el" href="classFeel_1_1BVHRay.html">BVHRay</a> const &amp;ray)</td></tr>
-<tr class="separator:aab87803c3d54529b5ce9537a55eebcfc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac9da1188babae4697fbe9db399ae9781"><td class="memItemLeft" align="right" valign="top"><a id="ac9da1188babae4697fbe9db399ae9781" name="ac9da1188babae4697fbe9db399ae9781"></a>
 std::pair&lt; <a class="el" href="classbool.html">bool</a>, double &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>checkIntersectionWithSegment</b> (matrix_node_type const &amp;nodes, <a class="el" href="classFeel_1_1BVHRay.html">BVHRay</a> const &amp;ray)</td></tr>
 <tr class="separator:ac9da1188babae4697fbe9db399ae9781"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a246fa37f27e1d0cbe8b6a121273051df"><td class="memItemLeft" align="right" valign="top"><a id="a246fa37f27e1d0cbe8b6a121273051df" name="a246fa37f27e1d0cbe8b6a121273051df"></a>
-std::pair&lt; <a class="el" href="classbool.html">bool</a>, double &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>checkIntersectionWithTriangle</b> (<a class="el" href="classFeel_1_1BVHRay.html">BVHRay</a> const &amp;ray)</td></tr>
-<tr class="separator:a246fa37f27e1d0cbe8b6a121273051df"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4bc16457f5da937610bf448b097820af"><td class="memItemLeft" align="right" valign="top"><a id="a4bc16457f5da937610bf448b097820af" name="a4bc16457f5da937610bf448b097820af"></a>
-std::pair&lt; <a class="el" href="classbool.html">bool</a>, double &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>checkLeafIntersection</b> (<a class="el" href="classFeel_1_1BVHRay.html">BVHRay</a> const &amp;rayon, <a class="el" href="classbool.html">bool</a> intersected=false)</td></tr>
-<tr class="separator:a4bc16457f5da937610bf448b097820af"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1984428f52e5be3bc2bc0c97e69fe268"><td class="memItemLeft" align="right" valign="top"><a id="a1984428f52e5be3bc2bc0c97e69fe268" name="a1984428f52e5be3bc2bc0c97e69fe268"></a>
+std::pair&lt; <a class="el" href="classbool.html">bool</a>, double &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>checkIntersectionWithTriangle</b> (<a class="el" href="classFeel_1_1BVHRay.html">BVHRay</a> const &amp;ray, trace_mesh_ptrtype mesh, std::vector&lt; <a class="el" href="structFeel_1_1BVHTree_1_1BVHPrimitiveInfo.html">BVHPrimitiveInfo</a> &gt; &amp;primitiveInfo)</td></tr>
+<tr class="separator:a1984428f52e5be3bc2bc0c97e69fe268"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a851c463052505e5e2a6ff7853aa3494f"><td class="memItemLeft" align="right" valign="top"><a id="a851c463052505e5e2a6ff7853aa3494f" name="a851c463052505e5e2a6ff7853aa3494f"></a>
+std::pair&lt; <a class="el" href="classbool.html">bool</a>, double &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>checkLeafIntersection</b> (<a class="el" href="classFeel_1_1BVHRay.html">BVHRay</a> const &amp;rayon, trace_mesh_ptrtype mesh, std::vector&lt; <a class="el" href="structFeel_1_1BVHTree_1_1BVHPrimitiveInfo.html">BVHPrimitiveInfo</a> &gt; &amp;primitiveInfo)</td></tr>
+<tr class="separator:a851c463052505e5e2a6ff7853aa3494f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a21829cbde63c5d3f9f1c1e2f29243c71"><td class="memItemLeft" align="right" valign="top"><a id="a21829cbde63c5d3f9f1c1e2f29243c71" name="a21829cbde63c5d3f9f1c1e2f29243c71"></a>
 <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>isLeaf</b> ()</td></tr>
 <tr class="separator:a21829cbde63c5d3f9f1c1e2f29243c71"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a732d10133beade0c01ff2a050cb9a40a"><td class="memItemLeft" align="right" valign="top"><a id="a732d10133beade0c01ff2a050cb9a40a" name="a732d10133beade0c01ff2a050cb9a40a"></a>
-<a class="el" href="structFeel_1_1BVHTree_1_1BVHNode.html">BVHNode</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>nearChild</b> (<a class="el" href="classFeel_1_1BVHRay.html">BVHRay</a> const &amp;ray)</td></tr>
+<a class="el" href="classFeel_1_1BVHTree_1_1BVHNode.html">BVHNode</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>nearChild</b> (<a class="el" href="classFeel_1_1BVHRay.html">BVHRay</a> const &amp;ray)</td></tr>
 <tr class="separator:a732d10133beade0c01ff2a050cb9a40a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a085caebb0dd95292fb09475881f4056e"><td class="memItemLeft" align="right" valign="top"><a id="a085caebb0dd95292fb09475881f4056e" name="a085caebb0dd95292fb09475881f4056e"></a>
 Eigen::VectorXd&#160;</td><td class="memItemRight" valign="bottom"><b>newBoundsMax</b> (Eigen::VectorXd bounds1, Eigen::VectorXd bounds2)</td></tr>
@@ -152,13 +149,13 @@ Eigen::VectorXd&#160;</td><td class="memItemRight" valign="bottom"><b>newBoundsM
 Eigen::VectorXd&#160;</td><td class="memItemRight" valign="bottom"><b>newBoundsMin</b> (Eigen::VectorXd bounds1, Eigen::VectorXd bounds2)</td></tr>
 <tr class="separator:ac5e92fd45fc169c1b4e3695238e2f3d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a969d90dace5f7b14af321af881d0e3ec"><td class="memItemLeft" align="right" valign="top"><a id="a969d90dace5f7b14af321af881d0e3ec" name="a969d90dace5f7b14af321af881d0e3ec"></a>
-<a class="el" href="structFeel_1_1BVHTree_1_1BVHNode.html">BVHTree::BVHNode</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>otherChild</b> (<a class="el" href="structFeel_1_1BVHTree_1_1BVHNode.html">BVHTree::BVHNode</a> *parent)</td></tr>
+<a class="el" href="classFeel_1_1BVHTree_1_1BVHNode.html">BVHTree::BVHNode</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>otherChild</b> (<a class="el" href="classFeel_1_1BVHTree_1_1BVHNode.html">BVHTree::BVHNode</a> *parent)</td></tr>
 <tr class="separator:a969d90dace5f7b14af321af881d0e3ec"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
 <tr class="memitem:a0a6f0fb897f0f4adebcae0977454ed20"><td class="memItemLeft" align="right" valign="top"><a id="a0a6f0fb897f0f4adebcae0977454ed20" name="a0a6f0fb897f0f4adebcae0977454ed20"></a>
-<a class="el" href="structFeel_1_1BVHTree_1_1BVHNode.html">BVHNode</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>children</b> [2]</td></tr>
+<a class="el" href="classFeel_1_1BVHTree_1_1BVHNode.html">BVHNode</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>children</b> [2]</td></tr>
 <tr class="separator:a0a6f0fb897f0f4adebcae0977454ed20"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a74c2225f9ba49f7ea905905ddc2ff859"><td class="memItemLeft" align="right" valign="top"><a id="a74c2225f9ba49f7ea905905ddc2ff859" name="a74c2225f9ba49f7ea905905ddc2ff859"></a>
 <a class="el" href="classint.html">int</a>&#160;</td><td class="memItemRight" valign="bottom"><b>firstPrimOffset</b></td></tr>
@@ -176,7 +173,7 @@ Eigen::VectorXd&#160;</td><td class="memItemRight" valign="bottom"><b>M_centroid
 <a class="el" href="classint.html">int</a>&#160;</td><td class="memItemRight" valign="bottom"><b>nPrimitives</b></td></tr>
 <tr class="separator:ac2dd81a468e050f338b75acb7afed6be"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0000e811b8c9e39091650a5ecac1c364"><td class="memItemLeft" align="right" valign="top"><a id="a0000e811b8c9e39091650a5ecac1c364" name="a0000e811b8c9e39091650a5ecac1c364"></a>
-<a class="el" href="structFeel_1_1BVHTree_1_1BVHNode.html">BVHNode</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>parent</b></td></tr>
+<a class="el" href="classFeel_1_1BVHTree_1_1BVHNode.html">BVHNode</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>parent</b></td></tr>
 <tr class="separator:a0000e811b8c9e39091650a5ecac1c364"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2451178c0e3f2f24dc4d374ed3ca53ef"><td class="memItemLeft" align="right" valign="top"><a id="a2451178c0e3f2f24dc4d374ed3ca53ef" name="a2451178c0e3f2f24dc4d374ed3ca53ef"></a>
 <a class="el" href="classint.html">int</a>&#160;</td><td class="memItemRight" valign="bottom"><b>splitaxis</b></td></tr>
@@ -187,7 +184,7 @@ Eigen::VectorXd&#160;</td><td class="memItemRight" valign="bottom"><b>M_centroid
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="navelem"><a class="el" href="namespaceFeel.html">Feel</a></li><li class="navelem"><a class="el" href="classFeel_1_1BVHTree.html">BVHTree</a></li><li class="navelem"><a class="el" href="structFeel_1_1BVHTree_1_1BVHNode.html">BVHNode</a></li>
+    <li class="navelem"><a class="el" href="namespaceFeel.html">Feel</a></li><li class="navelem"><a class="el" href="classFeel_1_1BVHTree.html">BVHTree</a></li><li class="navelem"><a class="el" href="classFeel_1_1BVHTree_1_1BVHNode.html">BVHNode</a></li>
     <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.3 </li>
   </ul>
 </div>

@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.3"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Feel++: Feel::detail::PrecomputeDomainBasisFunction&lt; DomainSpaceType, ImageSpaceType, ExprType &gt; Struct Template Reference</title>
+<title>Feel++: Feel::detail::PrecomputeDomainBasisFunction&lt; DomainSpaceType, ImageSpaceType, ExprType, DomainEvalOnSubEntityCoDim &gt; Struct Template Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -38,7 +38,7 @@ MathJax.Hub.Config({
  <tr id="projectrow">
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign">
-   <div id="projectname">Feel++<span id="projectnumber">&#160;0.111.0-alpha.2</span>
+   <div id="projectname">Feel++<span id="projectnumber">&#160;0.111.0-alpha.3</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -103,115 +103,156 @@ $(document).ready(function(){initNavTree('structFeel_1_1detail_1_1PrecomputeDoma
   <div class="summary">
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pub-static-methods">Static Public Member Functions</a> &#124;
 <a href="#pub-static-attribs">Static Public Attributes</a> &#124;
 <a href="structFeel_1_1detail_1_1PrecomputeDomainBasisFunction-members.html">List of all members</a>  </div>
-  <div class="headertitle"><div class="title">Feel::detail::PrecomputeDomainBasisFunction&lt; DomainSpaceType, ImageSpaceType, ExprType &gt; Struct Template Reference</div></div>
+  <div class="headertitle"><div class="title">Feel::detail::PrecomputeDomainBasisFunction&lt; DomainSpaceType, ImageSpaceType, ExprType, DomainEvalOnSubEntityCoDim &gt; Struct Template Reference</div></div>
 </div><!--header-->
 <div class="contents">
 <div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
-  <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Collaboration diagram for Feel::detail::PrecomputeDomainBasisFunction&lt; DomainSpaceType, ImageSpaceType, ExprType &gt;:</div>
+  <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Collaboration diagram for Feel::detail::PrecomputeDomainBasisFunction&lt; DomainSpaceType, ImageSpaceType, ExprType, DomainEvalOnSubEntityCoDim &gt;:</div>
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">
 </div>
 <div id="dynsection-0-content" class="dyncontent" style="display:none;">
-<div class="center"><iframe scrolling="no" frameborder="0" src="structFeel_1_1detail_1_1PrecomputeDomainBasisFunction__coll__graph.svg" width="279" height="316"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+<div class="center"><iframe scrolling="no" frameborder="0" src="structFeel_1_1detail_1_1PrecomputeDomainBasisFunction__coll__graph.svg" width="279" height="375"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
 Public Types</h2></td></tr>
-<tr class="memitem:ad81a0e34a9d6a8db3ec586a32fc09a9a"><td class="memItemLeft" align="right" valign="top"><a id="ad81a0e34a9d6a8db3ec586a32fc09a9a" name="ad81a0e34a9d6a8db3ec586a32fc09a9a"></a>
+<tr class="memitem:a4122538475ac9c75733651c7747f6ef9"><td class="memItemLeft" align="right" valign="top"><a id="a4122538475ac9c75733651c7747f6ef9" name="a4122538475ac9c75733651c7747f6ef9"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>domain_geoelement_type</b> = typename domain_mesh_type::element_type</td></tr>
+<tr class="separator:a4122538475ac9c75733651c7747f6ef9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a403104743fcee8f0628239d9cb006904"><td class="memItemLeft" align="right" valign="top"><a id="a403104743fcee8f0628239d9cb006904" name="a403104743fcee8f0628239d9cb006904"></a>
+typedef domain_gm_type::precompute_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>domain_geopc_ptrtype</b></td></tr>
+<tr class="separator:a403104743fcee8f0628239d9cb006904"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a11d87f59d70423499184317b80318d1b"><td class="memItemLeft" align="right" valign="top"><a id="a11d87f59d70423499184317b80318d1b" name="a11d87f59d70423499184317b80318d1b"></a>
+typedef domain_gm_type::precompute_type&#160;</td><td class="memItemRight" valign="bottom"><b>domain_geopc_type</b></td></tr>
+<tr class="separator:a11d87f59d70423499184317b80318d1b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a06bfa2578c10ae808150403b37f0b2f3"><td class="memItemLeft" align="right" valign="top"><a id="a06bfa2578c10ae808150403b37f0b2f3" name="a06bfa2578c10ae808150403b37f0b2f3"></a>
+typedef domain_geoelement_type::gm_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>domain_gm_ptrtype</b></td></tr>
+<tr class="separator:a06bfa2578c10ae808150403b37f0b2f3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab69734347e5e952504f0768a7dcd0732"><td class="memItemLeft" align="right" valign="top"><a id="ab69734347e5e952504f0768a7dcd0732" name="ab69734347e5e952504f0768a7dcd0732"></a>
+typedef domain_geoelement_type::gm_type&#160;</td><td class="memItemRight" valign="bottom"><b>domain_gm_type</b></td></tr>
+<tr class="separator:ab69734347e5e952504f0768a7dcd0732"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad4ec1b885a4046cc836cf7138c2ab332"><td class="memItemLeft" align="right" valign="top"><a id="ad4ec1b885a4046cc836cf7138c2ab332" name="ad4ec1b885a4046cc836cf7138c2ab332"></a>
+typedef std::shared_ptr&lt; domain_gmc_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>domain_gmc_ptrtype</b></td></tr>
+<tr class="separator:ad4ec1b885a4046cc836cf7138c2ab332"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a86b19687448eaae09c64f1f7887def9b"><td class="memItemLeft" align="right" valign="top"><a id="a86b19687448eaae09c64f1f7887def9b" name="a86b19687448eaae09c64f1f7887def9b"></a>
+typedef domain_gm_type::template <a class="el" href="classFeel_1_1meta_1_1Context.html">Context</a>&lt; domain_geoelement_type, DomainEvalOnSubEntityCoDim &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>domain_gmc_type</b></td></tr>
+<tr class="separator:a86b19687448eaae09c64f1f7887def9b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a11f98c47c2f279378241996788ac6b6a"><td class="memItemLeft" align="right" valign="top"><a id="a11f98c47c2f279378241996788ac6b6a" name="a11f98c47c2f279378241996788ac6b6a"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>domain_mesh_type</b> = typename DomainSpaceType::mesh_type</td></tr>
+<tr class="separator:a11f98c47c2f279378241996788ac6b6a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a580d10ad05d9f8b2ccd56f1d66e3cb5e"><td class="memItemLeft" align="right" valign="top"><a id="a580d10ad05d9f8b2ccd56f1d66e3cb5e" name="a580d10ad05d9f8b2ccd56f1d66e3cb5e"></a>
+typedef domain_geoelement_type::permutation_type&#160;</td><td class="memItemRight" valign="bottom"><b>domain_permutation_type</b></td></tr>
+<tr class="separator:a580d10ad05d9f8b2ccd56f1d66e3cb5e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1bceb375eadd19b6c126665534226011"><td class="memItemLeft" align="right" valign="top"><a id="a1bceb375eadd19b6c126665534226011" name="a1bceb375eadd19b6c126665534226011"></a>
 typedef std::shared_ptr&lt; DomainSpaceType &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>domain_space_ptrtype</b></td></tr>
-<tr class="separator:ad81a0e34a9d6a8db3ec586a32fc09a9a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afd3d92d861ba936f7cc329446539e023"><td class="memItemLeft" align="right" valign="top"><a id="afd3d92d861ba936f7cc329446539e023" name="afd3d92d861ba936f7cc329446539e023"></a>
+<tr class="separator:a1bceb375eadd19b6c126665534226011"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac08f31a96eab6dafb5bc81891f57cad2"><td class="memItemLeft" align="right" valign="top"><a id="ac08f31a96eab6dafb5bc81891f57cad2" name="ac08f31a96eab6dafb5bc81891f57cad2"></a>
 typedef ExprType&#160;</td><td class="memItemRight" valign="bottom"><b>expression_type</b></td></tr>
-<tr class="separator:afd3d92d861ba936f7cc329446539e023"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a050431bc3f3d9216d484b1e57b420476"><td class="memItemLeft" align="right" valign="top"><a id="a050431bc3f3d9216d484b1e57b420476" name="a050431bc3f3d9216d484b1e57b420476"></a>
+<tr class="separator:ac08f31a96eab6dafb5bc81891f57cad2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4fa1ce4bbab4de0e1e13d5a83a043d0e"><td class="memItemLeft" align="right" valign="top"><a id="a4fa1ce4bbab4de0e1e13d5a83a043d0e" name="a4fa1ce4bbab4de0e1e13d5a83a043d0e"></a>
 typedef DomainSpaceType::basis_type&#160;</td><td class="memItemRight" valign="bottom"><b>fe_type</b></td></tr>
-<tr class="separator:a050431bc3f3d9216d484b1e57b420476"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:affad3c45b0fc0ca7cd945302db85905a"><td class="memItemLeft" align="right" valign="top"><a id="affad3c45b0fc0ca7cd945302db85905a" name="affad3c45b0fc0ca7cd945302db85905a"></a>
+<tr class="separator:a4fa1ce4bbab4de0e1e13d5a83a043d0e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0ec27d72496a23196e8e55adbb763a0b"><td class="memItemLeft" align="right" valign="top"><a id="a0ec27d72496a23196e8e55adbb763a0b" name="a0ec27d72496a23196e8e55adbb763a0b"></a>
 typedef std::shared_ptr&lt; fecontext_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>fecontext_ptrtype</b></td></tr>
-<tr class="separator:affad3c45b0fc0ca7cd945302db85905a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad283180091bf60f47d7df98131669de0"><td class="memItemLeft" align="right" valign="top"><a id="ad283180091bf60f47d7df98131669de0" name="ad283180091bf60f47d7df98131669de0"></a>
-typedef fe_type::template <a class="el" href="classFeel_1_1meta_1_1Context.html">Context</a>&lt; context, fe_type, gm_type, geoelement_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>fecontext_type</b></td></tr>
-<tr class="separator:ad283180091bf60f47d7df98131669de0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab397d5dea781d29331ae964bbb327db7"><td class="memItemLeft" align="right" valign="top"><a id="ab397d5dea781d29331ae964bbb327db7" name="ab397d5dea781d29331ae964bbb327db7"></a>
-typedef DomainSpaceType::mesh_type::element_type&#160;</td><td class="memItemRight" valign="bottom"><b>geoelement_type</b></td></tr>
-<tr class="separator:ab397d5dea781d29331ae964bbb327db7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a28b2dc8011825e6d4fcb29026d19dd62"><td class="memItemLeft" align="right" valign="top"><a id="a28b2dc8011825e6d4fcb29026d19dd62" name="a28b2dc8011825e6d4fcb29026d19dd62"></a>
-typedef gm_type::precompute_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>geopc_ptrtype</b></td></tr>
-<tr class="separator:a28b2dc8011825e6d4fcb29026d19dd62"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a72f1723e218cc4731fb43f6a41315158"><td class="memItemLeft" align="right" valign="top"><a id="a72f1723e218cc4731fb43f6a41315158" name="a72f1723e218cc4731fb43f6a41315158"></a>
-typedef gm_type::precompute_type&#160;</td><td class="memItemRight" valign="bottom"><b>geopc_type</b></td></tr>
-<tr class="separator:a72f1723e218cc4731fb43f6a41315158"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a99672b885e9b6af2109df30191bb81a5"><td class="memItemLeft" align="right" valign="top"><a id="a99672b885e9b6af2109df30191bb81a5" name="a99672b885e9b6af2109df30191bb81a5"></a>
-typedef geoelement_type::gm_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>gm_ptrtype</b></td></tr>
-<tr class="separator:a99672b885e9b6af2109df30191bb81a5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a467b3e231144a8a1f3d0d4b740daab0e"><td class="memItemLeft" align="right" valign="top"><a id="a467b3e231144a8a1f3d0d4b740daab0e" name="a467b3e231144a8a1f3d0d4b740daab0e"></a>
-typedef geoelement_type::gm_type&#160;</td><td class="memItemRight" valign="bottom"><b>gm_type</b></td></tr>
-<tr class="separator:a467b3e231144a8a1f3d0d4b740daab0e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6515514a57e47f5dc6cece0e1a00ff47"><td class="memItemLeft" align="right" valign="top"><a id="a6515514a57e47f5dc6cece0e1a00ff47" name="a6515514a57e47f5dc6cece0e1a00ff47"></a>
-typedef std::shared_ptr&lt; gmc_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>gmc_ptrtype</b></td></tr>
-<tr class="separator:a6515514a57e47f5dc6cece0e1a00ff47"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4db46509b9d5467b23b19ab94eda470d"><td class="memItemLeft" align="right" valign="top"><a id="a4db46509b9d5467b23b19ab94eda470d" name="a4db46509b9d5467b23b19ab94eda470d"></a>
-typedef gm_type::template <a class="el" href="classFeel_1_1meta_1_1Context.html">Context</a>&lt; geoelement_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>gmc_type</b></td></tr>
-<tr class="separator:a4db46509b9d5467b23b19ab94eda470d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8266b52f7ea29ebf84012fd54c622aef"><td class="memItemLeft" align="right" valign="top"><a id="a8266b52f7ea29ebf84012fd54c622aef" name="a8266b52f7ea29ebf84012fd54c622aef"></a>
+<tr class="separator:a0ec27d72496a23196e8e55adbb763a0b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9f326903cf7697c88a5c716f47b741c6"><td class="memItemLeft" align="right" valign="top"><a id="a9f326903cf7697c88a5c716f47b741c6" name="a9f326903cf7697c88a5c716f47b741c6"></a>
+typedef fe_type::template <a class="el" href="classFeel_1_1meta_1_1Context.html">Context</a>&lt; context, fe_type, domain_gm_type, domain_geoelement_type, 0, domain_gmc_type::subEntityCoDim &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>fecontext_type</b></td></tr>
+<tr class="separator:a9f326903cf7697c88a5c716f47b741c6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8185c7769de04464ec76de6a58260b42"><td class="memItemLeft" align="right" valign="top"><a id="a8185c7769de04464ec76de6a58260b42" name="a8185c7769de04464ec76de6a58260b42"></a>
 typedef image_fe_type::template ChangeDim&lt; fe_type::nDim &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>image_fe_changedim_type</b></td></tr>
-<tr class="separator:a8266b52f7ea29ebf84012fd54c622aef"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a57023b29017681d35d4e76f2c8214151"><td class="memItemLeft" align="right" valign="top"><a id="a57023b29017681d35d4e76f2c8214151" name="a57023b29017681d35d4e76f2c8214151"></a>
+<tr class="separator:a8185c7769de04464ec76de6a58260b42"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a08f6d8e625dc00635e01ae053a4dc8e2"><td class="memItemLeft" align="right" valign="top"><a id="a08f6d8e625dc00635e01ae053a4dc8e2" name="a08f6d8e625dc00635e01ae053a4dc8e2"></a>
 typedef ImageSpaceType::basis_type&#160;</td><td class="memItemRight" valign="bottom"><b>image_fe_type</b></td></tr>
-<tr class="separator:a57023b29017681d35d4e76f2c8214151"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a30eacb83ff7a88878534f9064cfed610"><td class="memItemLeft" align="right" valign="top"><a id="a30eacb83ff7a88878534f9064cfed610" name="a30eacb83ff7a88878534f9064cfed610"></a>
+<tr class="separator:a08f6d8e625dc00635e01ae053a4dc8e2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a770c11e7cca031c6d3f69e4488e1c8ba"><td class="memItemLeft" align="right" valign="top"><a id="a770c11e7cca031c6d3f69e4488e1c8ba" name="a770c11e7cca031c6d3f69e4488e1c8ba"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>image_geoelement_type</b> = typename image_mesh_type::element_type</td></tr>
+<tr class="separator:a770c11e7cca031c6d3f69e4488e1c8ba"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae68f3b8e5e864099153897ed3f3368d1"><td class="memItemLeft" align="right" valign="top"><a id="ae68f3b8e5e864099153897ed3f3368d1" name="ae68f3b8e5e864099153897ed3f3368d1"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>image_geopc_type</b> = typename image_gm_type::precompute_type</td></tr>
+<tr class="separator:ae68f3b8e5e864099153897ed3f3368d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7e48824dac4f2dea3e09cf61e4cca518"><td class="memItemLeft" align="right" valign="top"><a id="a7e48824dac4f2dea3e09cf61e4cca518" name="a7e48824dac4f2dea3e09cf61e4cca518"></a>
+typedef image_geoelement_type::gm_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>image_gm_ptrtype</b></td></tr>
+<tr class="separator:a7e48824dac4f2dea3e09cf61e4cca518"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a28eff2d9fb51f87c5755dd016b6e1524"><td class="memItemLeft" align="right" valign="top"><a id="a28eff2d9fb51f87c5755dd016b6e1524" name="a28eff2d9fb51f87c5755dd016b6e1524"></a>
+typedef image_geoelement_type::gm_type&#160;</td><td class="memItemRight" valign="bottom"><b>image_gm_type</b></td></tr>
+<tr class="separator:a28eff2d9fb51f87c5755dd016b6e1524"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae8edb7e5cf9a58ff45551cdd3edb1021"><td class="memItemLeft" align="right" valign="top"><a id="ae8edb7e5cf9a58ff45551cdd3edb1021" name="ae8edb7e5cf9a58ff45551cdd3edb1021"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>image_gmc_type</b> = typename image_gm_type::template <a class="el" href="classFeel_1_1meta_1_1Context.html">Context</a>&lt; image_geoelement_type, 0 &gt;</td></tr>
+<tr class="separator:ae8edb7e5cf9a58ff45551cdd3edb1021"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9882d9b67780b4b925f5cd819c9f04e1"><td class="memItemLeft" align="right" valign="top"><a id="a9882d9b67780b4b925f5cd819c9f04e1" name="a9882d9b67780b4b925f5cd819c9f04e1"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>image_mesh_type</b> = typename ImageSpaceType::mesh_type</td></tr>
+<tr class="separator:a9882d9b67780b4b925f5cd819c9f04e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a401fb6b9c6cadc52514e638f981a6272"><td class="memItemLeft" align="right" valign="top"><a id="a401fb6b9c6cadc52514e638f981a6272" name="a401fb6b9c6cadc52514e638f981a6272"></a>
 typedef std::shared_ptr&lt; ImageSpaceType &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>image_space_ptrtype</b></td></tr>
-<tr class="separator:a30eacb83ff7a88878534f9064cfed610"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acac4857c84fea9db6550be58bed71f09"><td class="memItemLeft" align="right" valign="top"><a id="acac4857c84fea9db6550be58bed71f09" name="acac4857c84fea9db6550be58bed71f09"></a>
+<tr class="separator:a401fb6b9c6cadc52514e638f981a6272"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abb9393d5785382ce67817ef3dd275674"><td class="memItemLeft" align="right" valign="top"><a id="abb9393d5785382ce67817ef3dd275674" name="abb9393d5785382ce67817ef3dd275674"></a>
 typedef <a class="el" href="classboost_1_1fusion_1_1map.html">fusion::map</a>&lt; fusion::pair&lt; vf::detail::gmc&lt; 0 &gt;, fecontext_ptrtype &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>map_fec_type</b></td></tr>
-<tr class="separator:acac4857c84fea9db6550be58bed71f09"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa11ae592d1101bd9b08eddec95c2a6dd"><td class="memItemLeft" align="right" valign="top"><a id="aa11ae592d1101bd9b08eddec95c2a6dd" name="aa11ae592d1101bd9b08eddec95c2a6dd"></a>
-typedef <a class="el" href="classboost_1_1fusion_1_1map.html">fusion::map</a>&lt; fusion::pair&lt; vf::detail::gmc&lt; 0 &gt;, gmc_ptrtype &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>map_gmc_type</b></td></tr>
-<tr class="separator:aa11ae592d1101bd9b08eddec95c2a6dd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a45590eaaac37926a85f7aa6879f9b77a"><td class="memItemLeft" align="right" valign="top"><a id="a45590eaaac37926a85f7aa6879f9b77a" name="a45590eaaac37926a85f7aa6879f9b77a"></a>
+<tr class="separator:abb9393d5785382ce67817ef3dd275674"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a881387909e70ba172bcc9a9ad7400c7e"><td class="memItemLeft" align="right" valign="top"><a id="a881387909e70ba172bcc9a9ad7400c7e" name="a881387909e70ba172bcc9a9ad7400c7e"></a>
+typedef <a class="el" href="classboost_1_1fusion_1_1map.html">fusion::map</a>&lt; fusion::pair&lt; vf::detail::gmc&lt; 0 &gt;, domain_gmc_ptrtype &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>map_gmc_type</b></td></tr>
+<tr class="separator:a881387909e70ba172bcc9a9ad7400c7e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab26e3ac6d1a96c8e24ec18381c8b663b"><td class="memItemLeft" align="right" valign="top"><a id="ab26e3ac6d1a96c8e24ec18381c8b663b" name="ab26e3ac6d1a96c8e24ec18381c8b663b"></a>
 typedef expression_type::template tensor&lt; <a class="el" href="classboost_1_1fusion_1_1map.html">map_gmc_type</a>, <a class="el" href="classboost_1_1fusion_1_1map.html">map_fec_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>t_expr_type</b></td></tr>
-<tr class="separator:a45590eaaac37926a85f7aa6879f9b77a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="separator:ab26e3ac6d1a96c8e24ec18381c8b663b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:aa5e0fa4a61e3cc766d2ebaead943f879"><td class="memItemLeft" align="right" valign="top"><a id="aa5e0fa4a61e3cc766d2ebaead943f879" name="aa5e0fa4a61e3cc766d2ebaead943f879"></a>
-gmc_ptrtype &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>gmc</b> ()</td></tr>
-<tr class="separator:aa5e0fa4a61e3cc766d2ebaead943f879"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa0c051d08505e6a802f1c4e55a41feba"><td class="memItemLeft" align="right" valign="top"><a id="aa0c051d08505e6a802f1c4e55a41feba" name="aa0c051d08505e6a802f1c4e55a41feba"></a>
+<tr class="memitem:a6db4e901bbe71936549ba3369b6b47ac"><td class="memItemLeft" align="right" valign="top"><a id="a6db4e901bbe71936549ba3369b6b47ac" name="a6db4e901bbe71936549ba3369b6b47ac"></a>
+domain_gmc_ptrtype &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>gmc</b> ()</td></tr>
+<tr class="separator:a6db4e901bbe71936549ba3369b6b47ac"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af7c3dd32a1c401deec8513889855223c"><td class="memItemLeft" align="right" valign="top"><a id="af7c3dd32a1c401deec8513889855223c" name="af7c3dd32a1c401deec8513889855223c"></a>
 Eigen::MatrixXd const &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>interpolant</b> () const</td></tr>
-<tr class="separator:aa0c051d08505e6a802f1c4e55a41feba"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af4e9722b8483aa3a211bf9c8c36e4b5f"><td class="memItemLeft" align="right" valign="top"><a id="af4e9722b8483aa3a211bf9c8c36e4b5f" name="af4e9722b8483aa3a211bf9c8c36e4b5f"></a>
+<tr class="memdesc:af7c3dd32a1c401deec8513889855223c"><td class="mdescLeft">&#160;</td><td class="mdescRight">return current interpolant <br /></td></tr>
+<tr class="separator:af7c3dd32a1c401deec8513889855223c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9ef997d1ed7593fcdfc17ea8eeacf1f3"><td class="memItemLeft" align="right" valign="top"><a id="a9ef997d1ed7593fcdfc17ea8eeacf1f3" name="a9ef997d1ed7593fcdfc17ea8eeacf1f3"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>PrecomputeDomainBasisFunction</b> (domain_space_ptrtype const &amp;XhDomain, image_space_ptrtype const &amp;XhImage, ExprType const &amp;<a class="el" href="namespaceFeel.html#a338e05dd5e37f3594666f0a00e029d3d">expr</a>)</td></tr>
-<tr class="separator:af4e9722b8483aa3a211bf9c8c36e4b5f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a846e071cbf0b9375d6c57904e3ce1850"><td class="memTemplParams" colspan="2"><a id="a846e071cbf0b9375d6c57904e3ce1850" name="a846e071cbf0b9375d6c57904e3ce1850"></a>
-template&lt;typename ImageEltType &gt; </td></tr>
-<tr class="memitem:a846e071cbf0b9375d6c57904e3ce1850"><td class="memTemplItemLeft" align="right" valign="top">uint16_type&#160;</td><td class="memTemplItemRight" valign="bottom"><b>update</b> (geoelement_type const &amp;elt, ImageEltType const &amp;imageElt, uint16_type imageLocDof, <a class="el" href="namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58">size_type</a> imageGlobDof, uint16_type comp)</td></tr>
-<tr class="separator:a846e071cbf0b9375d6c57904e3ce1850"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="separator:a9ef997d1ed7593fcdfc17ea8eeacf1f3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1538c712c04946c349caadf7a48d529c"><td class="memTemplParams" colspan="2"><a id="a1538c712c04946c349caadf7a48d529c" name="a1538c712c04946c349caadf7a48d529c"></a>
+template&lt;typename InterpOnType , std::enable_if_t&lt;(InterpOnType::onEntity()==ElementsType::MESH_ELEMENTS), <a class="el" href="classbool.html">bool</a> &gt;  = true&gt; </td></tr>
+<tr class="memitem:a1538c712c04946c349caadf7a48d529c"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>update</b> (InterpOnType const &amp;interpOnElts)</td></tr>
+<tr class="separator:a1538c712c04946c349caadf7a48d529c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae7b58f1d2890d66b03201796072b281f"><td class="memTemplParams" colspan="2"><a id="ae7b58f1d2890d66b03201796072b281f" name="ae7b58f1d2890d66b03201796072b281f"></a>
+template&lt;typename InterpOnType , std::enable_if_t&lt;(InterpOnType::onEntity()==ElementsType::MESH_FACES) &amp;&amp;(DomainSpaceType::nDim==ImageSpaceType::nDim), <a class="el" href="classbool.html">bool</a> &gt;  = true&gt; </td></tr>
+<tr class="memitem:ae7b58f1d2890d66b03201796072b281f"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>update</b> (InterpOnType const &amp;interpOnFaceFull)</td></tr>
+<tr class="separator:ae7b58f1d2890d66b03201796072b281f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae7b58f1d2890d66b03201796072b281f"><td class="memTemplParams" colspan="2"><a id="ae7b58f1d2890d66b03201796072b281f" name="ae7b58f1d2890d66b03201796072b281f"></a>
+template&lt;typename InterpOnType , std::enable_if_t&lt;(InterpOnType::onEntity()==ElementsType::MESH_FACES) &amp;&amp;(DomainSpaceType::nDim==(ImageSpaceType::nDim+1)), <a class="el" href="classbool.html">bool</a> &gt;  = true&gt; </td></tr>
+<tr class="memitem:ae7b58f1d2890d66b03201796072b281f"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>update</b> (InterpOnType const &amp;interpOnFaceFull)</td></tr>
+<tr class="separator:ae7b58f1d2890d66b03201796072b281f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-methods" name="pub-static-methods"></a>
+Static Public Member Functions</h2></td></tr>
+<tr class="memitem:a73ebfbf33ed9e06433fc7423061e1ecb"><td class="memTemplParams" colspan="2"><a id="a73ebfbf33ed9e06433fc7423061e1ecb" name="a73ebfbf33ed9e06433fc7423061e1ecb"></a>
+template&lt;typename Gmc1Type , typename Gmc2Type &gt; </td></tr>
+<tr class="memitem:a73ebfbf33ed9e06433fc7423061e1ecb"><td class="memTemplItemLeft" align="right" valign="top">static void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>upMatchingDofPoints</b> (std::shared_ptr&lt; Gmc1Type &gt; gmc1, std::shared_ptr&lt; Gmc2Type &gt; gmc2, std::vector&lt; uint16_type &gt; &amp;mapGmc1ToGmc2)</td></tr>
+<tr class="separator:a73ebfbf33ed9e06433fc7423061e1ecb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-attribs" name="pub-static-attribs"></a>
 Static Public Attributes</h2></td></tr>
-<tr class="memitem:aa653c5d9611295233ad267e327b4c6aa"><td class="memItemLeft" align="right" valign="top"><a id="aa653c5d9611295233ad267e327b4c6aa" name="aa653c5d9611295233ad267e327b4c6aa"></a>
-static const <a class="el" href="namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58">size_type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>context</b> = ( DomainSpaceType::nDim == ImageSpaceType::nDim )? context2 : context2|vm::POINT</td></tr>
-<tr class="separator:aa653c5d9611295233ad267e327b4c6aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad694acb72320ecd31d3071aa340cfd89"><td class="memItemLeft" align="right" valign="top">static const <a class="el" href="namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58">size_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1detail_1_1PrecomputeDomainBasisFunction.html#ad694acb72320ecd31d3071aa340cfd89">context2</a></td></tr>
-<tr class="separator:ad694acb72320ecd31d3071aa340cfd89"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2a9eb48c319105abe3136611c1f36bd0"><td class="memItemLeft" align="right" valign="top"><a id="a2a9eb48c319105abe3136611c1f36bd0" name="a2a9eb48c319105abe3136611c1f36bd0"></a>
+static const <a class="el" href="namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58">size_type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>context</b> = context2|vm::POINT</td></tr>
+<tr class="separator:a2a9eb48c319105abe3136611c1f36bd0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9f2ef06c862f685e3eefc4dd1f2ca544"><td class="memItemLeft" align="right" valign="top">static const <a class="el" href="namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58">size_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1detail_1_1PrecomputeDomainBasisFunction.html#a9f2ef06c862f685e3eefc4dd1f2ca544">context2</a></td></tr>
+<tr class="separator:a9f2ef06c862f685e3eefc4dd1f2ca544"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Data Documentation</h2>
-<a id="ad694acb72320ecd31d3071aa340cfd89" name="ad694acb72320ecd31d3071aa340cfd89"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad694acb72320ecd31d3071aa340cfd89">&#9670;&nbsp;</a></span>context2</h2>
+<a id="a9f2ef06c862f685e3eefc4dd1f2ca544" name="a9f2ef06c862f685e3eefc4dd1f2ca544"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9f2ef06c862f685e3eefc4dd1f2ca544">&#9670;&nbsp;</a></span>context2</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename DomainSpaceType , typename ImageSpaceType , typename ExprType &gt; </div>
+template&lt;typename DomainSpaceType , typename ImageSpaceType , typename ExprType , <a class="el" href="classint.html">int</a> DomainEvalOnSubEntityCoDim&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58">size_type</a> <a class="el" href="structFeel_1_1detail_1_1PrecomputeDomainBasisFunction.html">Feel::detail::PrecomputeDomainBasisFunction</a>&lt; DomainSpaceType, ImageSpaceType, ExprType &gt;::context2</td>
+          <td class="memname">const <a class="el" href="namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58">size_type</a> <a class="el" href="structFeel_1_1detail_1_1PrecomputeDomainBasisFunction.html">Feel::detail::PrecomputeDomainBasisFunction</a>&lt; DomainSpaceType, ImageSpaceType, ExprType, DomainEvalOnSubEntityCoDim &gt;::context2</td>
         </tr>
       </table>
   </td>

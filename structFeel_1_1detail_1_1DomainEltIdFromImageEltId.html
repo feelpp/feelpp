@@ -38,7 +38,7 @@ MathJax.Hub.Config({
  <tr id="projectrow">
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign">
-   <div id="projectname">Feel++<span id="projectnumber">&#160;0.111.0-alpha.2</span>
+   <div id="projectname">Feel++<span id="projectnumber">&#160;0.111.0-alpha.3</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -101,8 +101,10 @@ $(document).ready(function(){initNavTree('structFeel_1_1detail_1_1DomainEltIdFro
 
 <div class="header">
   <div class="summary">
+<a href="#nested-classes">Classes</a> &#124;
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pub-static-attribs">Static Public Attributes</a> &#124;
 <a href="structFeel_1_1detail_1_1DomainEltIdFromImageEltId-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">Feel::detail::DomainEltIdFromImageEltId&lt; DomainSpaceType, ImageSpaceType &gt; Struct Template Reference</div></div>
 </div><!--header-->
@@ -112,10 +114,17 @@ $(document).ready(function(){initNavTree('structFeel_1_1detail_1_1DomainEltIdFro
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">
 </div>
 <div id="dynsection-0-content" class="dyncontent" style="display:none;">
-<div class="center"><iframe scrolling="no" frameborder="0" src="structFeel_1_1detail_1_1DomainEltIdFromImageEltId__coll__graph.svg" width="275" height="147"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+<div class="center"><iframe scrolling="no" frameborder="0" src="structFeel_1_1detail_1_1DomainEltIdFromImageEltId__coll__graph.svg" width="466" height="302"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
+Classes</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1detail_1_1DomainEltIdFromImageEltId_1_1ReturnDomainEntities.html">ReturnDomainEntities</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1detail_1_1DomainEltIdFromImageEltId_1_1ReturnType.html">ReturnType</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
 Public Types</h2></td></tr>
 <tr class="memitem:ae00cd7166ed924a8948b541285a59365"><td class="memItemLeft" align="right" valign="top"><a id="ae00cd7166ed924a8948b541285a59365" name="ae00cd7166ed924a8948b541285a59365"></a>
@@ -136,21 +145,48 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>image_space_type</b>
 <tr class="memitem:ac4f63bac9df9a22322d14f4da8c783b8"><td class="memItemLeft" align="right" valign="top"><a id="ac4f63bac9df9a22322d14f4da8c783b8" name="ac4f63bac9df9a22322d14f4da8c783b8"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>image_vector_mesh_element_type</b> = typename image_mesh_type::super_elements::elements_reference_wrapper_type</td></tr>
 <tr class="separator:ac4f63bac9df9a22322d14f4da8c783b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0fdad01218da098d69b75595c3d696e1"><td class="memItemLeft" align="right" valign="top"><a id="a0fdad01218da098d69b75595c3d696e1" name="a0fdad01218da098d69b75595c3d696e1"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>index_type</b> = typename domain_mesh_type::index_type</td></tr>
+<tr class="separator:a0fdad01218da098d69b75595c3d696e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adda97aea02582648d1270b4e7476aadd"><td class="memItemLeft" align="right" valign="top"><a id="adda97aea02582648d1270b4e7476aadd" name="adda97aea02582648d1270b4e7476aadd"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>ReturnFromElement</b> = <a class="el" href="structFeel_1_1detail_1_1DomainEltIdFromImageEltId_1_1ReturnDomainEntities.html">ReturnDomainEntities</a>&lt; 0 &gt;</td></tr>
+<tr class="separator:adda97aea02582648d1270b4e7476aadd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afb8e3dc70866e57fc4a50714b7a59525"><td class="memItemLeft" align="right" valign="top"><a id="afb8e3dc70866e57fc4a50714b7a59525" name="afb8e3dc70866e57fc4a50714b7a59525"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>ReturnFromElements</b> = <a class="el" href="structFeel_1_1detail_1_1DomainEltIdFromImageEltId_1_1ReturnType.html">ReturnType</a>&lt; 0 &gt;</td></tr>
+<tr class="separator:afb8e3dc70866e57fc4a50714b7a59525"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aeb363ef37b71e16d66f53aadbe3070ce"><td class="memItemLeft" align="right" valign="top"><a id="aeb363ef37b71e16d66f53aadbe3070ce" name="aeb363ef37b71e16d66f53aadbe3070ce"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>ReturnFromFace</b> = <a class="el" href="structFeel_1_1detail_1_1DomainEltIdFromImageEltId_1_1ReturnDomainEntities.html">ReturnDomainEntities</a>&lt; 1 &gt;</td></tr>
+<tr class="separator:aeb363ef37b71e16d66f53aadbe3070ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a17af77ed421e5661b90f84a3cea03d90"><td class="memItemLeft" align="right" valign="top"><a id="a17af77ed421e5661b90f84a3cea03d90" name="a17af77ed421e5661b90f84a3cea03d90"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>ReturnFromFaces</b> = <a class="el" href="structFeel_1_1detail_1_1DomainEltIdFromImageEltId_1_1ReturnType.html">ReturnType</a>&lt; 1 &gt;</td></tr>
+<tr class="separator:a17af77ed421e5661b90f84a3cea03d90"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aabe0819f819283beb68e89a1ea5ead88"><td class="memItemLeft" align="right" valign="top"><a id="aabe0819f819283beb68e89a1ea5ead88" name="aabe0819f819283beb68e89a1ea5ead88"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>size_type</b> = typename domain_mesh_type::size_type</td></tr>
 <tr class="separator:aabe0819f819283beb68e89a1ea5ead88"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:aeb69567bfc883ee1e6e33b1bf44ea150"><td class="memItemLeft" align="right" valign="top"><a id="aeb69567bfc883ee1e6e33b1bf44ea150" name="aeb69567bfc883ee1e6e33b1bf44ea150"></a>
-std::set&lt; size_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>apply</b> (typename image_mesh_type::element_type const &amp;imageElt) const</td></tr>
-<tr class="separator:aeb69567bfc883ee1e6e33b1bf44ea150"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab38a4bf91e83b24b344fa1e376ece969"><td class="memItemLeft" align="right" valign="top"><a id="ab38a4bf91e83b24b344fa1e376ece969" name="ab38a4bf91e83b24b344fa1e376ece969"></a>
-std::set&lt; size_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>apply</b> (typename image_mesh_type::face_type const &amp;imageFace) const</td></tr>
-<tr class="separator:ab38a4bf91e83b24b344fa1e376ece969"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0829dddf4ec6dd8a60fa5ebf7ff5a4a6"><td class="memItemLeft" align="right" valign="top"><a id="a0829dddf4ec6dd8a60fa5ebf7ff5a4a6" name="a0829dddf4ec6dd8a60fa5ebf7ff5a4a6"></a>
+auto&#160;</td><td class="memItemRight" valign="bottom"><b>apply</b> (typename image_mesh_type::element_type const &amp;imageElt) const</td></tr>
+<tr class="separator:a0829dddf4ec6dd8a60fa5ebf7ff5a4a6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6743936635efcf17c05e16b4cda6d662"><td class="memItemLeft" align="right" valign="top"><a id="a6743936635efcf17c05e16b4cda6d662" name="a6743936635efcf17c05e16b4cda6d662"></a>
+auto&#160;</td><td class="memItemRight" valign="bottom"><b>apply</b> (typename image_mesh_type::face_type const &amp;imageFace) const</td></tr>
+<tr class="separator:a6743936635efcf17c05e16b4cda6d662"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7a3a8eec2fe62978d87b0eb78d371efd"><td class="memItemLeft" align="right" valign="top"><a id="a7a3a8eec2fe62978d87b0eb78d371efd" name="a7a3a8eec2fe62978d87b0eb78d371efd"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>DomainEltIdFromImageEltId</b> (std::shared_ptr&lt; domain_space_type &gt; XhDomain, std::shared_ptr&lt; image_space_type &gt; XhImage)</td></tr>
 <tr class="separator:a7a3a8eec2fe62978d87b0eb78d371efd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-attribs" name="pub-static-attribs"></a>
+Static Public Attributes</h2></td></tr>
+<tr class="memitem:a3b30d3353d8f944c1ee2c2ac58feb57e"><td class="memItemLeft" align="right" valign="top"><a id="a3b30d3353d8f944c1ee2c2ac58feb57e" name="a3b30d3353d8f944c1ee2c2ac58feb57e"></a>
+static constexpr <a class="el" href="classint.html">int</a>&#160;</td><td class="memItemRight" valign="bottom"><b>nDimDiffBetweenDomainImage</b> = nDimDomain-nDimImage</td></tr>
+<tr class="separator:a3b30d3353d8f944c1ee2c2ac58feb57e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a42b98294790cb8c558d01f204c5a79ee"><td class="memItemLeft" align="right" valign="top"><a id="a42b98294790cb8c558d01f204c5a79ee" name="a42b98294790cb8c558d01f204c5a79ee"></a>
+static constexpr uint16_type&#160;</td><td class="memItemRight" valign="bottom"><b>nDimDomain</b> = domain_mesh_type::nDim</td></tr>
+<tr class="separator:a42b98294790cb8c558d01f204c5a79ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad3fa6c83420945947f12a521076d893a"><td class="memItemLeft" align="right" valign="top"><a id="ad3fa6c83420945947f12a521076d893a" name="ad3fa6c83420945947f12a521076d893a"></a>
+static constexpr uint16_type&#160;</td><td class="memItemRight" valign="bottom"><b>nDimImage</b> = image_mesh_type::nDim</td></tr>
+<tr class="separator:ad3fa6c83420945947f12a521076d893a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 </div><!-- doc-content -->

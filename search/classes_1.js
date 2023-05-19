@@ -35,7 +35,7 @@ var searchData=
   ['boundaries_32',['boundaries',['../structnlohmann_1_1detail_1_1dtoa__impl_1_1boundaries.html',1,'nlohmann::detail::dtoa_impl']]],
   ['boundaryconditionsbase_33',['BoundaryConditionsBase',['../classFeel_1_1FeelModels_1_1BoundaryConditionsBase.html',1,'Feel::FeelModels']]],
   ['box_5findex_5ftype_34',['box_index_type',['../structFeel_1_1RegionTree_1_1box__index__type.html',1,'Feel::RegionTree']]],
-  ['bvhnode_35',['BVHNode',['../structFeel_1_1BVHTree_1_1BVHNode.html',1,'Feel::BVHTree']]],
+  ['bvhnode_35',['BVHNode',['../classFeel_1_1BVHTree_1_1BVHNode.html',1,'Feel::BVHTree']]],
   ['bvhprimitiveinfo_36',['BVHPrimitiveInfo',['../structFeel_1_1BVHTree_1_1BVHPrimitiveInfo.html',1,'Feel::BVHTree']]],
   ['bvhray_37',['BVHRay',['../classFeel_1_1BVHRay.html',1,'Feel']]],
   ['bvhtree_38',['BVHTree',['../classFeel_1_1BVHTree.html',1,'Feel']]],
