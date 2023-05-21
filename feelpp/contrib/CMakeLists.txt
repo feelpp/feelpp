@@ -30,6 +30,7 @@ add_library( Feelpp::feelpp_contrib ALIAS feelpp_contrib)
 set( CMAKE_INSTALL_DATADIR "share/feelpp")
 if ( NOT ${CMAKE_INSTALL_INCLUDEDIR} MATCHES "feelpp$")
     set( CMAKE_INSTALL_INCLUDEDIR "${CMAKE_INSTALL_INCLUDEDIR}/feelpp")
+    message(STATUS "CMAKE_INSTALL_INCLUDEDIR=${CMAKE_INSTALL_INCLUDEDIR}")
 endif()
 
 message(STATUS "------------------------------------------------------------")
@@ -321,6 +322,21 @@ if ( FEELPP_ENABLE_NLOPT )
   feelppContribPrepare( nlopt )
 
   if( FEELPP_CONTRIB_PREPARE_SUCCEED )
+    option(NLOPT_CXX "enable cxx routines" ON)
+    option(NLOPT_FORTRAN "enable fortran tests" OFF)
+    option(BUILD_SHARED_LIBS "Build NLopt as a shared library" ON)
+    option(NLOPT_PYTHON "build python bindings" ON)
+    option(NLOPT_OCTAVE "build octave bindings" OFF)
+    option(NLOPT_MATLAB "build matlab bindings" OFF)
+    option(NLOPT_GUILE "build guile bindings" OFF)
+    option(NLOPT_SWIG "use SWIG to build bindings" ON)
+    option(NLOPT_TESTS "build unit tests" OFF)
+
+    set(INSTALL_INCLUDE_DIR ${CMAKE_INSTALL_INCLUDEDIR}/nlopt/ CACHE PATH "Installation directory for header files")
+    set(INSTALL_DATA_DIR ${CMAKE_INSTALL_DATADIR}/nlopt CACHE PATH "Installation directory for data files")
+    set(INSTALL_MAN_DIR ${CMAKE_INSTALL_DATADIR}/man CACHE PATH "Installation directory for man documentation")
+    set(INSTALL_CMAKE_DIR ${CMAKE_INSTALL_DATADIR}/nlopt/cmake CACHE PATH "Installation directory for cmake config files")
+
     add_subdirectory( nlopt )
 
     add_library(feelpp_nlopt INTERFACE)
@@ -331,7 +347,8 @@ if ( FEELPP_ENABLE_NLOPT )
     target_include_directories(feelpp_nlopt INTERFACE
       $<BUILD_INTERFACE:${FEELPP_SOURCE_DIR}/contrib/nlopt/api>
       $<BUILD_INTERFACE:${FEELPP_BINARY_DIR}/contrib/nlopt/api>
-      $<INSTALL_INTERFACE:include/feelpp>)
+      $<INSTALL_INTERFACE:include/feelpp>
+      $<INSTALL_INTERFACE:include/feelpp/nlopt>)
     install(TARGETS feelpp_nlopt nlopt EXPORT feelpp-contrib-export-targets
       LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
       ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
