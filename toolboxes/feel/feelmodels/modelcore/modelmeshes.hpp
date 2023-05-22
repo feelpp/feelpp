@@ -6,6 +6,7 @@
 #include <feel/feelmesh/enums.hpp>
 #include <feel/feeldiscr/geometricspace.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feelpoly/nedelec.hpp>
 #include <feel/feelfilters/databymeshentity.hpp>
 #include <feel/feelmodels/modelcore/modelbase.hpp>
 #include <feel/feelmodels/modelpostprocess.hpp>
@@ -192,7 +193,7 @@ public :
     using collection_data_by_mesh_entity_type = CollectionOfDataByMeshEntity<index_type>;
     using import_config_type = typename ModelMeshCommon<IndexType>::ImportConfig;
 private :
-        struct FieldsSetup
+    struct FieldsSetup
     {
         FieldsSetup( std::string const& name, nl::json const& jarg )
             :
@@ -469,25 +470,54 @@ public :
 
     std::map<std::string,collection_data_by_mesh_entity_type> const& collectionOfDataByMeshEntity() const { return M_codbme; }
 
+
+    //! return basis field types supported by modelMesh (including the name associated)
+    template <typename MeshType>
+    static constexpr auto basisFieldTypeSupported()
+        {
+            if constexpr ( MeshType::nDim == 1 )
+            {
+               if constexpr( MeshType::nRealDim == 1 )
+                   return hana::make_tuple( hana::make_tuple( "Pch1", hana::type_c<Lagrange<1,Scalar,Continuous,PointSetFekete>> ),
+                                            hana::make_tuple( "Pch2", hana::type_c<Lagrange<2,Scalar,Continuous,PointSetFekete>> ),
+                                            hana::make_tuple( "Pdh0", hana::type_c<Lagrange<0,Scalar,Discontinuous,PointSetFekete>> ),
+                                            hana::make_tuple( "Pdh1", hana::type_c<Lagrange<1,Scalar,Discontinuous,PointSetFekete>> )
+                                            );
+               else
+                   return hana::make_tuple( hana::make_tuple( "Pch1", hana::type_c<Lagrange<1,Scalar,Continuous,PointSetFekete>> ),
+                                            hana::make_tuple( "Pch2", hana::type_c<Lagrange<2,Scalar,Continuous,PointSetFekete>> ),
+                                            hana::make_tuple( "Pdh0", hana::type_c<Lagrange<0,Scalar,Discontinuous,PointSetFekete>> ),
+                                            hana::make_tuple( "Pdh1", hana::type_c<Lagrange<1,Scalar,Discontinuous,PointSetFekete>> ),
+                                            hana::make_tuple( "Pchv1", hana::type_c<Lagrange<1,Vectorial,Continuous,PointSetFekete>> ),
+                                            hana::make_tuple( "Pchv2", hana::type_c<Lagrange<2,Vectorial,Continuous,PointSetFekete>> )
+                                            );
+            }
+            else
+                return hana::make_tuple( hana::make_tuple( "Pch1", hana::type_c<Lagrange<1,Scalar,Continuous,PointSetFekete>> ),
+                                         hana::make_tuple( "Pch2", hana::type_c<Lagrange<2,Scalar,Continuous,PointSetFekete>> ),
+                                         hana::make_tuple( "Pdh0", hana::type_c<Lagrange<0,Scalar,Discontinuous,PointSetFekete>> ),
+                                         hana::make_tuple( "Pdh1", hana::type_c<Lagrange<1,Scalar,Discontinuous,PointSetFekete>> ),
+                                         hana::make_tuple( "Pchv1", hana::type_c<Lagrange<1,Vectorial,Continuous,PointSetFekete>> ),
+                                         hana::make_tuple( "Pchv2", hana::type_c<Lagrange<2,Vectorial,Continuous,PointSetFekete>> ),
+                                         hana::make_tuple( "Ned1h0", hana::type_c<Nedelec<0,NedelecKind::NED1>> )
+                                         );
+        }
+
     template <typename MeshType>
     auto modelFields( std::string const& prefix_field = "", std::string const& prefix_symbol = "" ) const
         {
-            static constexpr auto tuple_t_basis = hana::to_tuple(hana::tuple_t<
-                                                                 Lagrange<1,Scalar,Continuous,PointSetFekete>,
-                                                                 Lagrange<2,Scalar,Continuous,PointSetFekete>,
-                                                                 Lagrange<1,Vectorial,Continuous,PointSetFekete>,
-                                                                 Lagrange<2,Vectorial,Continuous,PointSetFekete>
-                                                                 >);
+            static constexpr auto tuple_t_basis = ModelMesh<IndexType>::template basisFieldTypeSupported<MeshType>();
 
             auto mf_fields = hana::fold( tuple_t_basis, model_fields_empty_t{}, [this,prefix_field,prefix_symbol]( auto const& r, auto const& cur )
                                        {
-                                           using basis_type = typename std::decay_t<decltype(cur)>::type;
+                                           using basis_type = typename std::decay_t<decltype(hana::at_c<1>( cur ) )>::type;
+                                           //using basis_type = typename std::decay_t<decltype(cur)>::type;
                                            using space_type = FunctionSpace<MeshType, bases<basis_type> >;
                                            using field_type = typename space_type::element_type;
                                            using field_ptrtype = std::shared_ptr<field_type>;
 
                                            auto mftag = ModelFieldTag< ModelMesh<index_type>,0>( this );
-                                           auto mf = modelField<FieldCtx::ID,field_ptrtype>( mftag );
+                                           auto mf = modelField<FieldCtx::FULL,field_ptrtype>( mftag );
 
                                            for ( auto const& [name,fieldBase] : M_fields )
                                            {
@@ -626,6 +656,13 @@ public :
     template <typename MeshType>
     void applyRemesh( std::shared_ptr<MeshType> const& newMesh );
 
+#if 0 // WIP
+    //! append field that will can be used in symbolic expression. This field is identified by a name
+    void appendField( std::string const& name, std::shared_ptr<Vector<double>> u ) { M_fields[name] = u; }
+
+    //! remove a field from this name and return true is the field has been removed
+    bool removeField( std::string const& name ) { return M_fields.erase( name ) > 0; }
+#endif
 private:
     std::string M_name;
     nl::json M_metadata;
