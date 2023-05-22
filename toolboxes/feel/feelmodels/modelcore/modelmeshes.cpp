@@ -509,11 +509,7 @@ ModelMesh<IndexType>::updateForUse( ModelMeshes<IndexType> const& mMeshes )
 
 
     // fields
-    static constexpr auto tuple_t_basis = hana::make_tuple( hana::make_tuple( "Pch1", hana::type_c<Lagrange<1,Scalar,Continuous,PointSetFekete>> ),
-                                                            hana::make_tuple( "Pch2", hana::type_c<Lagrange<2,Scalar,Continuous,PointSetFekete>> ),
-                                                            hana::make_tuple( "Pchv1", hana::type_c<Lagrange<1,Vectorial,Continuous,PointSetFekete>> ),
-                                                            hana::make_tuple( "Pchv2", hana::type_c<Lagrange<2,Vectorial,Continuous,PointSetFekete>> )
-                                                            );
+    static constexpr auto tuple_t_basis = ModelMesh<IndexType>::template basisFieldTypeSupported<mesh_type>();
     for ( auto const& fs : M_fieldsSetup )
     {
         std::string const& basis = fs.basis();
