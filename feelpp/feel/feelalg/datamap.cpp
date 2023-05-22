@@ -1114,8 +1114,8 @@ IndexSplit::parseFieldsDef( std::string s )
                     ++nSplit;
                     int splitId;                    
                     
-                    // One can specify an interval of integers using ":" as in 2:6 -> {2,3,4,5,6}
-                    // or as in 2:11:3 -> {2,5,8,11}
+                    // One can specify an interval of integers using ":" as in 2:6 -> {2,3,4,5}
+                    // or as in 2:12:3 -> {2,5,8,11}
                     if(s.substr(index-indexLength,indexLength).find(":") != std::string::npos )
                     {
                         // Split the string using ":"
@@ -1127,7 +1127,7 @@ IndexSplit::parseFieldsDef( std::string s )
                         {
                             int left_extremum = boost::lexical_cast<int>( interval_list[0].c_str() );
                             int right_extremum = boost::lexical_cast<int>( interval_list[1].c_str() );
-                            for(int i=left_extremum; i<=right_extremum; i++)
+                            for(int i=left_extremum; i<right_extremum; i++)
                                 res[fieldId].insert( i );
                         }
                         else if( interval_list.size() == 3 ) // insert integers separated by "step"
@@ -1135,7 +1135,7 @@ IndexSplit::parseFieldsDef( std::string s )
                             int left_extremum = boost::lexical_cast<int>( interval_list[0].c_str() );
                             int right_extremum = boost::lexical_cast<int>( interval_list[1].c_str() );
                             int step = boost::lexical_cast<int>( interval_list[2].c_str() );
-                            for(int i=left_extremum; i<=right_extremum; i += step )
+                            for(int i=left_extremum; i<right_extremum; i += step )
                                 res[fieldId].insert( i );
                         }
                         
@@ -1157,8 +1157,8 @@ IndexSplit::parseFieldsDef( std::string s )
                         ++nSplit;
                         int splitId;
                         
-                        // One can specify an interval of integers using ":" as in 2:6 -> {2,3,4,5,6}
-                        // or as in 2:11:3 -> {2,5,8,11}
+                        // One can specify an interval of integers using ":" as in 2:6 -> {2,3,4,5}
+                        // or as in 2:12:3 -> {2,5,8,11}
                         if(s.substr(index-indexLength,indexLength).find(":") != std::string::npos )
                         {
                             // Split the string using ":"
@@ -1170,7 +1170,7 @@ IndexSplit::parseFieldsDef( std::string s )
                             {
                                 int left_extremum = boost::lexical_cast<int>( interval_list[0].c_str() );
                                 int right_extremum = boost::lexical_cast<int>( interval_list[1].c_str() );
-                                for(int i=left_extremum; i<=right_extremum; i++)
+                                for(int i=left_extremum; i<right_extremum; i++)
                                     res[fieldId].insert( i );
                             }
                             else if( interval_list.size() == 3 ) // insert integers separated by "step"
@@ -1178,7 +1178,7 @@ IndexSplit::parseFieldsDef( std::string s )
                                 int left_extremum = boost::lexical_cast<int>( interval_list[0].c_str() );
                                 int right_extremum = boost::lexical_cast<int>( interval_list[1].c_str() );
                                 int step = boost::lexical_cast<int>( interval_list[2].c_str() );
-                                for(int i=left_extremum; i<=right_extremum; i += step )
+                                for(int i=left_extremum; i<right_extremum; i += step )
                                     res[fieldId].insert( i );
                             }
                             
