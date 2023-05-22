@@ -30,6 +30,7 @@ add_library( Feelpp::feelpp_contrib ALIAS feelpp_contrib)
 set( CMAKE_INSTALL_DATADIR "share/feelpp")
 if ( NOT ${CMAKE_INSTALL_INCLUDEDIR} MATCHES "feelpp$")
     set( CMAKE_INSTALL_INCLUDEDIR "${CMAKE_INSTALL_INCLUDEDIR}/feelpp")
+    message(STATUS "CMAKE_INSTALL_INCLUDEDIR=${CMAKE_INSTALL_INCLUDEDIR}")
 endif()
 
 message(STATUS "------------------------------------------------------------")
@@ -321,6 +322,21 @@ if ( FEELPP_ENABLE_NLOPT )
   feelppContribPrepare( nlopt )
 
   if( FEELPP_CONTRIB_PREPARE_SUCCEED )
+    option(NLOPT_CXX "enable cxx routines" ON)
+    option(NLOPT_FORTRAN "enable fortran tests" OFF)
+    option(BUILD_SHARED_LIBS "Build NLopt as a shared library" ON)
+    option(NLOPT_PYTHON "build python bindings" ON)
+    option(NLOPT_OCTAVE "build octave bindings" OFF)
+    option(NLOPT_MATLAB "build matlab bindings" OFF)
+    option(NLOPT_GUILE "build guile bindings" OFF)
+    option(NLOPT_SWIG "use SWIG to build bindings" ON)
+    option(NLOPT_TESTS "build unit tests" OFF)
+
+    set(INSTALL_INCLUDE_DIR ${CMAKE_INSTALL_INCLUDEDIR}/nlopt/ CACHE PATH "Installation directory for header files")
+    set(INSTALL_DATA_DIR ${CMAKE_INSTALL_DATADIR}/nlopt CACHE PATH "Installation directory for data files")
+    set(INSTALL_MAN_DIR ${CMAKE_INSTALL_DATADIR}/man CACHE PATH "Installation directory for man documentation")
+    set(INSTALL_CMAKE_DIR ${CMAKE_INSTALL_DATADIR}/nlopt/cmake CACHE PATH "Installation directory for cmake config files")
+
     add_subdirectory( nlopt )
 
     add_library(feelpp_nlopt INTERFACE)
@@ -331,7 +347,8 @@ if ( FEELPP_ENABLE_NLOPT )
     target_include_directories(feelpp_nlopt INTERFACE
       $<BUILD_INTERFACE:${FEELPP_SOURCE_DIR}/contrib/nlopt/api>
       $<BUILD_INTERFACE:${FEELPP_BINARY_DIR}/contrib/nlopt/api>
-      $<INSTALL_INTERFACE:include/feelpp>)
+      $<INSTALL_INTERFACE:include/feelpp>
+      $<INSTALL_INTERFACE:include/feelpp/nlopt>)
     install(TARGETS feelpp_nlopt nlopt EXPORT feelpp-contrib-export-targets
       LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
       ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -777,36 +794,43 @@ endif()
 #   set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} SPDLOG")
 # endif(FEELPP_ENABLE_SPDLOG)
 #
-option( FEELPP_ENABLE_SPECX "Enable SPECX" OFF )
+option( FEELPP_ENABLE_SPECX "Enable specx" OFF )
 if ( FEELPP_ENABLE_SPECX )
   message(STATUS "------------------------------------------------------------")
-  message(STATUS "Configuring SPECX")
+  message(STATUS "Configuring specx")
 
   # set(FETCHCONTENT_SOURCE_DIR_SPECX ${CMAKE_CURRENT_SOURCE_DIR}/SPECX)
   # patch includes fix for 18.04 compilation
-  set(TF_BUILD_TESTS OFF)
-  set(TF_BUILD_EXAMPLES OFF)
-  set(FETCHCONTENT_SOURCE_DIR_SPECX ${CMAKE_CURRENT_SOURCE_DIR}/SPECX)
-  FetchContent_Declare(SPECX GIT_REPOSITORY https://github.com/feelpp/SPECX.git GIT_TAG 0635a49230e8ace7d379cbbaa716c66543f3e516)
-  set( BUILD_SPECX_TESTS OFF )
-  set(TF_INSTALL_CMAKE_DIR  "${CMAKE_INSTALL_DATADIR}/feel/cmake/modules")
-  message(STATUS "[feelpp-SPECX] cmake dir: ${CMAKE_INSTALL_DATADIR}/feel/cmake/modules")
-  FetchContent_MakeAvailable(SPECX)
-  add_library(feelpp_SPECX INTERFACE)
-  #set_target_properties(SPECX PROPERTIES OUTPUT_NAME "feelpp_SPECX")
-  target_link_libraries(feelpp_SPECX INTERFACE SPECX )
-  add_library(Feelpp::feelpp_SPECX ALIAS feelpp_SPECX)
-  target_include_directories(feelpp_SPECX INTERFACE
-      $<BUILD_INTERFACE:${SPECX_SOURCE_DIR}/>
-      $<INSTALL_INTERFACE:include/feelpp> )
-  install(TARGETS feelpp_SPECX SPECX EXPORT feelpp-contrib-export-targets
+  set(SPECX_JUST_LIB ON)
+  set(SPECX_DO_INSTALL ON)
+  set(SPECX_COMPILE_WITH_MPI OFF)
+  set(FETCHCONTENT_SOURCE_DIR_SPECX ${CMAKE_CURRENT_SOURCE_DIR}/specx)
+  FetchContent_Declare(SPECX GIT_REPOSITORY https://github.com/feelpp/specx.git GIT_TAG e092e061ec17afd42374041cccfa6f44b939b19c)
+
+  set(SPECX_INSTALL_CMAKE_DIR  "${CMAKE_INSTALL_DATADIR}/feel/cmake/modules")
+  message(STATUS "[feelpp-specx] cmake dir: ${CMAKE_INSTALL_DATADIR}/feel/cmake/modules")
+  FetchContent_MakeAvailable(specx)
+  add_library(feelpp_specx INTERFACE)
+
+  # set_target_properties(specx PROPERTIES OUTPUT_NAME "feelpp_specx")
+  target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_SPECX)
+  target_link_libraries(feelpp_specx INTERFACE specx )
+  add_library(Feelpp::feelpp_specx ALIAS feelpp_specx)
+  target_include_directories(feelpp_specx INTERFACE
+    $<BUILD_INTERFACE:${specx_BINARY_DIR}/>
+    $<BUILD_INTERFACE:${specx_BINARY_DIR}/Src>
+    $<BUILD_INTERFACE:${specx_SOURCE_DIR}/>
+    $<BUILD_INTERFACE:${specx_SOURCE_DIR}/Src>
+    $<INSTALL_INTERFACE:include/feelpp>
+    $<INSTALL_INTERFACE:include/feelpp/specx>)
+  install(TARGETS feelpp_specx specx EXPORT feelpp-contrib-export-targets
       LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
       ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
       RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
       INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
       )
-  target_link_libraries( feelpp_contrib INTERFACE feelpp_SPECX )
-  set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} SPECX")
+  target_link_libraries( feelpp_contrib INTERFACE feelpp_specx )
+  set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} specx")
 endif()
 
 

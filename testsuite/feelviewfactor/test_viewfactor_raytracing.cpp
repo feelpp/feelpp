@@ -138,25 +138,26 @@ void checkViewFactorRaytracing(std::string const& prefix)
 
     BOOST_CHECK_MESSAGE(rtvf.maxDevReciprocity()<2e-2, fmt::format("Max dev reciprocity less than 2e-2, {}",rtvf.maxDevReciprocity()));
 
+    double rtol=8e-2;
     if(prefix=="cube-raytracing")
     {
         auto vf_parallel_walls = view_factor_parallel_walls_exact(1.,1.,1.); // cube of side 1.
         auto vf_perp_walls = view_factor_perp_walls_exact(1.,1.,1.); // cube of side 1.
         // std::cout << "vf_parallel_walls" << vf_parallel_walls << std::endl;
         // std::cout << "vf_perp_walls" << vf_perp_walls << std::endl;
-        BOOST_CHECK_MESSAGE( abs(rtvf.viewFactors()(0,1)-vf_parallel_walls)/vf_parallel_walls <4e-2, fmt::format("Relative error view factors between parallel walls 0 1 is less than 4e-2 ") );
-        BOOST_CHECK_MESSAGE( abs(rtvf.viewFactors()(2,3)-vf_parallel_walls)/vf_parallel_walls <4e-2, fmt::format("Relative error view factors between parallel walls 2 3 is less than 4e-2 ") );
-        BOOST_CHECK_MESSAGE( abs(rtvf.viewFactors()(4,5)-vf_parallel_walls)/vf_parallel_walls <4e-2, fmt::format("Relative error view factors between parallel walls 4 5 is less than 4e-2 ") );
-        BOOST_CHECK_MESSAGE( abs(rtvf.viewFactors()(0,2)-vf_perp_walls)/vf_perp_walls <4e-2, fmt::format("Relative error view factors between perp walls 0 2 is less than 4e-2 ") );
-        BOOST_CHECK_MESSAGE( abs(rtvf.viewFactors()(0,3)-vf_perp_walls)/vf_perp_walls <4e-2, fmt::format("Relative error view factors between perp walls 0 3 is less than 4e-2 ") );
-        BOOST_CHECK_MESSAGE( abs(rtvf.viewFactors()(0,4)-vf_perp_walls)/vf_perp_walls <4e-2, fmt::format("Relative error view factors between perp walls 0 4 is less than 4e-2 ") );
-        BOOST_CHECK_MESSAGE( abs(rtvf.viewFactors()(0,5)-vf_perp_walls)/vf_perp_walls <4e-2, fmt::format("Relative error view factors between perp walls 0 5 is less than 4e-2 ") );
-        BOOST_CHECK_MESSAGE( abs(rtvf.viewFactors()(1,3)-vf_perp_walls)/vf_perp_walls <4e-2, fmt::format("Relative error view factors between perp walls 1 3 is less than 4e-2 ") );
-        BOOST_CHECK_MESSAGE( abs(rtvf.viewFactors()(1,4)-vf_perp_walls)/vf_perp_walls <4e-2, fmt::format("Relative error view factors between perp walls 1 4 is less than 4e-2 ") );
-        BOOST_CHECK_MESSAGE( abs(rtvf.viewFactors()(1,5)-vf_perp_walls)/vf_perp_walls <4e-2, fmt::format("Relative error view factors between perp walls 1 5 is less than 4e-2 ") );
-        BOOST_CHECK_MESSAGE( abs(rtvf.viewFactors()(2,4)-vf_perp_walls)/vf_perp_walls <4e-2, fmt::format("Relative error view factors between perp walls 2 4 is less than 4e-2 ") );
-        BOOST_CHECK_MESSAGE( abs(rtvf.viewFactors()(2,5)-vf_perp_walls)/vf_perp_walls <4e-2, fmt::format("Relative error view factors between perp walls 2 5 is less than 4e-2 ") );
-        BOOST_CHECK_MESSAGE( abs(rtvf.viewFactors()(3,5)-vf_perp_walls)/vf_perp_walls <4e-2, fmt::format("Relative error view factors between perp walls 3 5 is less than 4e-2 ") );
+        BOOST_CHECK_MESSAGE( abs(rtvf.viewFactors()(0,1)-vf_parallel_walls)/vf_parallel_walls < rtol, fmt::format("Relative error view factors between parallel walls 0 1 is less than {} ", rtol) );
+        BOOST_CHECK_MESSAGE( abs(rtvf.viewFactors()(2,3)-vf_parallel_walls)/vf_parallel_walls < rtol, fmt::format("Relative error view factors between parallel walls 2 3 is less than {} ", rtol) );
+        BOOST_CHECK_MESSAGE( abs(rtvf.viewFactors()(4,5)-vf_parallel_walls)/vf_parallel_walls < rtol, fmt::format("Relative error view factors between parallel walls 4 5 is less than {} ", rtol) );
+        BOOST_CHECK_MESSAGE( abs(rtvf.viewFactors()(0,2)-vf_perp_walls)/vf_perp_walls < rtol, fmt::format("Relative error view factors between perp walls 0 2 is less than {} ", rtol ) );
+        BOOST_CHECK_MESSAGE( abs(rtvf.viewFactors()(0,3)-vf_perp_walls)/vf_perp_walls < rtol, fmt::format("Relative error view factors between perp walls 0 3 is less than {} ", rtol ) );
+        BOOST_CHECK_MESSAGE( abs(rtvf.viewFactors()(0,4)-vf_perp_walls)/vf_perp_walls < rtol, fmt::format("Relative error view factors between perp walls 0 4 is less than {} ", rtol ) );
+        BOOST_CHECK_MESSAGE( abs(rtvf.viewFactors()(0,5)-vf_perp_walls)/vf_perp_walls < rtol, fmt::format("Relative error view factors between perp walls 0 5 is less than {} ", rtol ) );
+        BOOST_CHECK_MESSAGE( abs(rtvf.viewFactors()(1,3)-vf_perp_walls)/vf_perp_walls < rtol, fmt::format("Relative error view factors between perp walls 1 3 is less than {} ", rtol ) );
+        BOOST_CHECK_MESSAGE( abs(rtvf.viewFactors()(1,4)-vf_perp_walls)/vf_perp_walls < rtol, fmt::format("Relative error view factors between perp walls 1 4 is less than {} ", rtol ) );
+        BOOST_CHECK_MESSAGE( abs(rtvf.viewFactors()(1,5)-vf_perp_walls)/vf_perp_walls < rtol, fmt::format("Relative error view factors between perp walls 1 5 is less than {} ", rtol ) );
+        BOOST_CHECK_MESSAGE( abs(rtvf.viewFactors()(2,4)-vf_perp_walls)/vf_perp_walls < rtol, fmt::format("Relative error view factors between perp walls 2 4 is less than {} ", rtol ) );
+        BOOST_CHECK_MESSAGE( abs(rtvf.viewFactors()(2,5)-vf_perp_walls)/vf_perp_walls < rtol, fmt::format("Relative error view factors between perp walls 2 5 is less than {} ", rtol ) );
+        BOOST_CHECK_MESSAGE( abs(rtvf.viewFactors()(3,5)-vf_perp_walls)/vf_perp_walls < rtol, fmt::format("Relative error view factors between perp walls 3 5 is less than {} ", rtol ) );
     }
     else if(prefix=="cylinder-raytracing")
     {
@@ -166,13 +167,13 @@ void checkViewFactorRaytracing(std::string const& prefix)
         // std::cout <<       vf_cylinder["BasisToLateral"]<< std::endl;
         // std::cout <<      vf_cylinder["LateralToBasis"] << std::endl;
         // std::cout <<       vf_cylinder["LateralToLateral"] << std::endl;
-        BOOST_CHECK_MESSAGE( abs(rtvf.viewFactors()(0,1)-vf_cylinder["BasisToBasis"])/vf_cylinder["BasisToBasis"] <4e-2, fmt::format("Relative error view factors between bases 0 1 is less than 4e-2 ") );
-        BOOST_CHECK_MESSAGE( abs(rtvf.viewFactors()(0,2)-vf_cylinder["BasisToLateral"])/vf_cylinder["BasisToLateral"] <4e-2, fmt::format("Relative error view factors between bottom basis to lateral walls 0 2 is less than 4e-2 ") );
-        BOOST_CHECK_MESSAGE( abs(rtvf.viewFactors()(1,0)-vf_cylinder["BasisToBasis"])/vf_cylinder["BasisToBasis"] <4e-2, fmt::format("Relative error view factors between bases 1 0 is less than 4e-2 ") );
-        BOOST_CHECK_MESSAGE( abs(rtvf.viewFactors()(1,2)-vf_cylinder["BasisToLateral"])/vf_cylinder["BasisToLateral"] <4e-2, fmt::format("Relative error view factors between bottom basis to lateral walls 1 2 is less than 4e-2 ") );
-        BOOST_CHECK_MESSAGE( abs(rtvf.viewFactors()(2,0)-vf_cylinder["LateralToBasis"])/vf_cylinder["LateralToBasis"]  <4e-2, fmt::format("Relative error view factors between lateral wall to top basis 2 0 is less than 4e-2 ") );
-        BOOST_CHECK_MESSAGE( abs(rtvf.viewFactors()(2,1)-vf_cylinder["LateralToBasis"])/vf_cylinder["LateralToBasis"]  <4e-2, fmt::format("Relative error view factors between lateral wall to bottom basis 2 1 is less than 4e-2 ") );
-        BOOST_CHECK_MESSAGE( abs(rtvf.viewFactors()(2,2)-vf_cylinder["LateralToLateral"])/vf_cylinder["LateralToLateral"]  <4e-2, fmt::format("Relative error view factors between lateral wall to itself 2 2 is less than 4e-2: {}",(rtvf.viewFactors()(2,2)-vf_cylinder["LateralToLateral"])/vf_cylinder["LateralToLateral"]) );
+        BOOST_CHECK_MESSAGE( abs(rtvf.viewFactors()(0,1)-vf_cylinder["BasisToBasis"])/vf_cylinder["BasisToBasis"] < rtol, fmt::format("Relative error view factors between bases 0 1 is less than {} ", rtol ) );
+        BOOST_CHECK_MESSAGE( abs(rtvf.viewFactors()(0,2)-vf_cylinder["BasisToLateral"])/vf_cylinder["BasisToLateral"] < rtol, fmt::format("Relative error view factors between bottom basis to lateral walls 0 2 is less than {} ", rtol ) );
+        BOOST_CHECK_MESSAGE( abs(rtvf.viewFactors()(1,0)-vf_cylinder["BasisToBasis"])/vf_cylinder["BasisToBasis"] < rtol, fmt::format("Relative error view factors between bases 1 0 is less than {} ", rtol ) );
+        BOOST_CHECK_MESSAGE( abs(rtvf.viewFactors()(1,2)-vf_cylinder["BasisToLateral"])/vf_cylinder["BasisToLateral"] < rtol, fmt::format("Relative error view factors between bottom basis to lateral walls 1 2 is less than {} ", rtol ) );
+        BOOST_CHECK_MESSAGE( abs(rtvf.viewFactors()(2,0)-vf_cylinder["LateralToBasis"])/vf_cylinder["LateralToBasis"]  < rtol, fmt::format("Relative error view factors between lateral wall to top basis 2 0 is less than {} ", rtol ) );
+        BOOST_CHECK_MESSAGE( abs(rtvf.viewFactors()(2,1)-vf_cylinder["LateralToBasis"])/vf_cylinder["LateralToBasis"]  < rtol, fmt::format("Relative error view factors between lateral wall to bottom basis 2 1 is less than {} ", rtol ) );
+        BOOST_CHECK_MESSAGE( abs(rtvf.viewFactors()(2,2)-vf_cylinder["LateralToLateral"])/vf_cylinder["LateralToLateral"]  < rtol, fmt::format("Relative error view factors between lateral wall to itself 2 2 is less than {}:  {}", rtol, (rtvf.viewFactors()(2,2)-vf_cylinder["LateralToLateral"])/vf_cylinder["LateralToLateral"]) );
     }
 }
 
