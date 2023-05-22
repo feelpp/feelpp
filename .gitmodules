@@ -79,3 +79,6 @@
 [submodule "feelpp/contrib/nanoflann"]
 	path = feelpp/contrib/nanoflann
 	url = https://github.com/feelpp/nanoflann.git
+[submodule "feelpp/contrib/specx"]
+	path = feelpp/contrib/specx
+	url = https://github.com/feelpp/specx.git

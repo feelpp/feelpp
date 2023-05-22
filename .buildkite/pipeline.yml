@@ -51,6 +51,15 @@ steps:
         env:
           DIST: "kinetic"
     - trigger: "pkg-feelpp"
+      label: ":package: :ubuntu: 23.04/lunar Feel++ ${BUILDKITE_BRANCH}"
+      async: true
+      if: |
+        ( pipeline.slug=="feelpp" && ( build.branch == "develop" || build.branch == "master" )) && 
+        build.message !~ /skip pkg/
+      build:
+        env:
+          DIST: "lunar"
+    - trigger: "pkg-feelpp"
       label: ":package: :debian: 11/bullseye Feel++ ${BUILDKITE_BRANCH}"
       async: true
       if: |
