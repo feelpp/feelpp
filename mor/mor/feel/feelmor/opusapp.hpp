@@ -222,6 +222,12 @@ public:
     crb_ptrtype & crbPtr() { return crb; }
     crb_ptrtype const& crbPtr() const { return crb; }
 
+    /* Get parameter space associated to model */
+    auto getParameterSpace() const { return model->parameterSpace(); }
+    
+    /* Returns CRB objects */
+    crb_ptrtype getCRB() const { return this->crb; }
+
     void setMode( std::string const& mode )
         {
             if ( mode == "pfem" ) M_mode = CRBModelMode::PFEM;
@@ -417,6 +423,38 @@ public:
         else
             u_pfem =  model->solveFemUsingAffineDecompositionFixedPoint( mu );
         return u_pfem;
+    }
+
+    /**
+     * @brief Compute the RB solution for a given parameter mu
+     * 
+     * @param mu parameter
+     * @param N size of the reduced basis (default -1, i.e. use the maximum size)
+     * @return auto tuple composed of uN, output, errorBound
+     */
+    auto getRBsolution( parameter_type const &mu, int N = -1 )
+    {
+        vectorN_type time_crb;
+        double online_tol = doption(_name="crb.online-tolerance");
+        bool print_rb_matrix = boption(_name="crb.print-rb-matrix");
+
+        auto o = crb->run( mu, time_crb, online_tol, N, print_rb_matrix);
+        auto uN = o.coefficients();
+        double errorBound = o.errorbound();
+        double output = o.output();
+
+        return std::make_tuple( uN, output, errorBound );
+    }
+
+    double computeEffectivity( parameter_type const &mu )
+    {
+        element_type u_pfem = getFEMsolution( mu );
+        auto sol_rbm = getRBsolution( mu );
+        auto u_N = std::get<0>(sol_rbm);
+        double error_bound = std::get<2>(sol_rbm);
+        element_type u_crb = crb->expansion( u_N );
+
+        return error_bound / l2Norm( u_pfem - u_crb );        
     }
 
 
