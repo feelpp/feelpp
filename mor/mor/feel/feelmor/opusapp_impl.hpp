@@ -596,7 +596,7 @@ OpusApp<ModelType,RM,Model>::run()
 
                     model->computeAffineDecomposition();
                     bool use_newton = boption(_name="crb.use-newton");
-                    element_type u_pfem = getFEMsolution( mu, use_newton);
+                    element_type u_pfem = getFEMsolution( mu, use_newton );
                     std::ostringstream u_pfem_str;
                     u_pfem_str << "u_pfem(" << mu_str.str() << ")";
                     u_pfem.setName( u_pfem_str.str()  );
