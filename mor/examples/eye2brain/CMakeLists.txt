@@ -25,7 +25,7 @@
 
 mor_add_library(eye2brain SRCS eye2brain.cpp EXEC CRB_LIB_EYE2BRAIN PLUGIN )
 target_compile_definitions(${CRB_LIB_EYE2BRAIN} PRIVATE FEELPP_MOR_PLUGIN_NAME=eye2brain FEELPP_MOR_PLUGIN_LIBNAME=${CRB_LIB_EYE2BRAIN})
-# install(FILES eye2brain.hpp DESTINATION include/feelpp/crb/eye2brain COMPONENT Devel)
+install(FILES eye2brain.hpp DESTINATION include/feelpp/crb/eye2brain COMPONENT Devel)
 
 set(FEELPP_CRB_EYE2BRAIN_LIBRARIES ${CRB_LIB_EYE2BRAIN} PARENT_SCOPE)
 set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_EYE2BRAIN_LIBRARIES PARENT_SCOPE)
@@ -57,3 +57,24 @@ if (FEELPP_ENABLE_OPENTURNS)
          LINK_LIBRARIES Feelpp::feelpp_mor Feelpp::feelpp_openturns tbb
      )
 endif()
+
+
+## test
+foreach( ORDER 1 2 )
+foreach( DIM 2 3 )
+
+    set (TEST_SCRIPT "${CMAKE_CURRENT_BINARY_DIR}/test_${DIM}dP${ORDER}.sh")
+    file (WRITE ${TEST_SCRIPT}
+        "#!/bin/bash\n"
+        "./feelpp_mor_eye2brain_${DIM}dP${ORDER}app --config-file ${CMAKE_CURRENT_SOURCE_DIR}/eye2brain/eye2brain-${DIM}d.cfg\
+        --eye2brain.model-name eye2brain_${DIM}dP${ORDER}_test --eye2brain.run.mode 2\
+        --crb.dimension-max 3\n"
+        "../../apps/feelpp_mor_onlinerun --crbmodel.name eye2brain_${DIM}dP${ORDER}_test --plugin.dir ${CMAKE_BINARY_DIR}/install/lib\n"
+    )
+
+    add_test( NAME feelpp_mor_eye2brain_${DIM}dP${ORDER}_test
+        COMMAND bash ${TEST_SCRIPT}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+
+endforeach()
+endforeach()
