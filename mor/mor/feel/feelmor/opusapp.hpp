@@ -408,11 +408,17 @@ public:
             fs::current_path( M_current_path );
         }
 
-        /* Returns CRB objects */
-        crb_ptrtype getCRB()
-        {
-            return this->crb;
-        }
+
+    element_type getFEMsolution( parameter_type const& mu, bool use_newton=true )
+    {
+        element_type u_pfem;
+        if( use_newton )
+            u_pfem =  model->solveFemUsingAffineDecompositionNewton( mu );
+        else
+            u_pfem =  model->solveFemUsingAffineDecompositionFixedPoint( mu );
+        return u_pfem;
+    }
+
 
 private:
     int printParameterHdr( std::ostream& os, int N, std::vector<std::string> outputhdrs )
