@@ -75,7 +75,21 @@ remeshImpl( std::shared_ptr<MeshT> const& r,
         auto R = std::make_shared<Remesh<mesh_t>>( r, req_elts, req_facets, parent, std::string{}, params );
         auto P1h = Pch<1>( r );
 
-        if ( std::smatch sm;
+        if ( std::smatch match;
+             std::regex_search( metric_expr, match, std::regex("gradedls\\(\\[(.*?)\\],\\s*([0-9.]+),\\s*([0-9.]+),\\s*([0-9.]+)") ) )
+        {
+            std::string markers = match[1];
+            double hclose = std::stof(match[2]);
+            double hfar = std::stof(match[3]);
+            double treshold = std::stof(match[4]);
+            std::regex marker_regex( "\\s*,\\s*" );
+            std::vector<std::string> marker_vector{
+                std::sregex_token_iterator( markers.begin(), markers.end(), marker_regex, -1 ),
+                std::sregex_token_iterator() };
+            LOG( INFO ) << fmt::format( "[remesh] gradedfromls markers=[{}] hclose={} hfar={}", marker_vector, hclose, hfar, treshold ) << std::endl;
+            R->setMetric( gradedfromls( P1h, markedfaces( r, marker_vector ), hclose, hfar, treshold ) );
+        }
+        else if ( std::smatch sm;
              std::regex_match( metric_expr, sm, std::regex( "gradedls\\((.*),(.*)\\)" ) ) )
         {
             double hclose = std::stod( sm[1] );
