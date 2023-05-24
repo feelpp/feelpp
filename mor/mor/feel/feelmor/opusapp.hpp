@@ -445,7 +445,6 @@ public:
         double output_crb = std::get<1>(sol_rbm);
         double output_fem = model->output( 1, mu, u_pfem, false );
         double error_bound = std::get<2>(sol_rbm);
-        element_type u_crb = crb->expansion( u_N );
 
         return error_bound / math::abs( output_crb - output_fem );        
     }
