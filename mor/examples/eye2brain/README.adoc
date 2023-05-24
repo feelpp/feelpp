@@ -14,6 +14,44 @@
 ./feelpp_mor_eye2brainapp_3d --config-file eye2brain/eye2brain-3d.cfg
 ----
 
+[cols="1,2"]
+|===
+|`measure-index`
+|Output name
+
+|`0`
+|Mean over cornea
+
+|`1`
+|Point `O`
+
+|`2`
+|Point `A`
+
+|`3`
+|Point `B`
+
+|`4`
+|Point `B1`
+
+|`5`
+|Point `C`
+
+|`6`
+|Point `D`
+
+|`7`
+|Point `D1`
+
+|`8`
+|Point `F`
+
+|`9`
+|Point `G`
+
+|=== 
+
+
 
 ## Online step
 

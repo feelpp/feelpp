@@ -202,7 +202,8 @@ OT::Sample output(OT::Sample const& input, plugin_ptr_t const& plugin, Eigen::Ve
             // Feel::cout << "mu = " << mu << std::endl;
 
             Feel::CRBResults crbResult = plugin->run( mu, time_crb, online_tol, rbDim, false );
-            output[i] = OT::Point( crbResult.output() );
+            OT::Point P(1); P[0] = crbResult.output();
+            output[i] = P;
         }
         Feel::cout << "output computed" << std::endl;
     }
