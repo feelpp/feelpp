@@ -129,25 +129,26 @@ public:
         :
         super(),
         M_modelName( soption(_prefix=this->about().appName(),_name="model-name") ),
-        M_mode( ( CRBModelMode )ioption(_name=_o( this->about().appName(),"run.mode" )) )
+        M_mode( ( CRBModelMode )ioption(_name=_o( this->about().appName(),"run.mode" )) ),
+        use_newton_( boption(_name="crb.use-newton") && !ModelType::is_linear )
         {
             this->init();
         }
 
     OpusApp( AboutData const& ad, po::options_description const& od )
         :
-        super( ad, opusapp_options(ad.appName())
-               .add( od )
-               .add( crbOptions() )
-               .add( eimOptions() )
-               .add( crbSEROptions() )
-               .add( podOptions() )),
-        M_modelName( soption(_prefix=this->about().appName(),_name="model-name") ),
-        M_mode( ( CRBModelMode )ioption(_name=_o( this->about().appName(),"run.mode" )) )
+        OpusApp(ad, od,  ( CRBModelMode )ioption(_name=_o( this->about().appName(),"run.mode" )) )
         {
-            this->init();
         }
-
+    OpusApp( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+        :
+        OpusApp(ad, od,  ( CRBModelMode )ioption(_name=_o( this->about().appName(),"run.mode" )) )
+        {
+        }
+    OpusApp( int argc, char** argv, AboutData const& ad, po::options_description const& od, CRBModelMode mode )
+        :
+        OpusApp(ad,od,mode)
+        {}
     OpusApp( AboutData const& ad, po::options_description const& od, CRBModelMode mode )
         :
         super( ad, opusapp_options( ad.appName() )
@@ -157,37 +158,13 @@ public:
                .add( crbSEROptions() )
                .add( podOptions() )),
         M_modelName( soption(_prefix=this->about().appName(),_name="model-name") ),
-        M_mode( mode )
+        M_mode( mode ),
+        use_newton_( boption(_name="crb.use-newton") && !ModelType::is_linear )
         {
             this->init();
         }
 
-    OpusApp( int argc, char** argv, AboutData const& ad, po::options_description const& od )
-        :
-        super( ad, opusapp_options( ad.appName() )
-               .add( od )
-               .add( crbOptions() )
-               .add( eimOptions() )
-               .add( crbSEROptions() )
-               .add( podOptions() )),
-        M_modelName( soption(_prefix=this->about().appName(),_name="model-name") ),
-        M_mode( ( CRBModelMode )ioption(_name=_o( this->about().appName(),"run.mode" )) )
-        {
-            this->init();
-        }
-    OpusApp( int argc, char** argv, AboutData const& ad, po::options_description const& od, CRBModelMode mode )
-        :
-        super( ad, opusapp_options( ad.appName() )
-               .add( od )
-               .add( crbOptions() )
-               .add( eimOptions() )
-               .add( crbSEROptions() )
-               .add( podOptions() )),
-        M_modelName( soption(_prefix=this->about().appName(),_name="model-name") ),
-        M_mode( mode )
-        {
-            this->init();
-        }
+private:
     void init()
         {
             try
@@ -211,6 +188,7 @@ public:
             }
 
         }
+public:
     /**
      * \return a new CRB shared pointer
      */
@@ -415,6 +393,13 @@ public:
         }
 
 
+    /**
+     * @brief Compute the FEM solution for a given parameter \p mu
+     * 
+     * @param mu parameter
+     * @param use_newton use Newton method (default true)
+     * @return element_type solution of the FEM problem
+     */
     element_type getFEMsolution( parameter_type const& mu, bool use_newton=true )
     {
         element_type u_pfem;
@@ -446,15 +431,23 @@ public:
         return std::make_tuple( uN, output, errorBound );
     }
 
-    double computeEffectivity( parameter_type const &mu )
+    /**
+     * @brief Compute the effectivity of the RB solution for a given parameter \p mu
+     * 
+     * @param mu parameter
+     * @param N size of the reduced basis (default -1, i.e. use the maximum size)
+     * @return double effectivity $\eta_N^s(\mu) = \frac{\Delta_N^s(\mu)}{s(\mu) - s_N(\mu)}$
+     */
+    double computeEffectivity( parameter_type const &mu, int N = -1 )
     {
-        element_type u_pfem = getFEMsolution( mu );
-        auto sol_rbm = getRBsolution( mu );
-        auto u_N = std::get<0>(sol_rbm);
+        element_type u_pfem = getFEMsolution( mu, use_newton_ );
+        auto sol_rbm = getRBsolution( mu, N );
+        double output_crb = std::get<1>(sol_rbm);
+        double output_fem = model->output( 1, mu, u_pfem, false );
         double error_bound = std::get<2>(sol_rbm);
         element_type u_crb = crb->expansion( u_N );
 
-        return error_bound / l2Norm( u_pfem - u_crb );        
+        return error_bound / math::abs( output_crb - output_fem );        
     }
 
 
@@ -961,6 +954,7 @@ private:
     std::string M_modelName;
     CRBModelMode M_mode;
     crbmodel_ptrtype model;
+    bool use_newton_;
 
     crb_ptrtype crb;
 
