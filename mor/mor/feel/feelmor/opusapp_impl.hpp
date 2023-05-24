@@ -595,8 +595,7 @@ OpusApp<ModelType,RM,Model>::run()
                     boost::mpi::timer ti;
 
                     model->computeAffineDecomposition();
-                    bool use_newton = boption(_name="crb.use-newton");
-                    element_type u_pfem = getFEMsolution( mu, use_newton );
+                    element_type u_pfem = getFEMsolution( mu, use_newton_ );
                     std::ostringstream u_pfem_str;
                     u_pfem_str << "u_pfem(" << mu_str.str() << ")";
                     u_pfem.setName( u_pfem_str.str()  );
@@ -734,8 +733,6 @@ OpusApp<ModelType,RM,Model>::run()
 
                     if ( compute_fem )
                     {
-                        bool use_newton = boption(_name="crb.use-newton");
-
                         LOG(INFO) << "solve u_fem\n";
                         ti.restart();
 
@@ -752,7 +749,7 @@ OpusApp<ModelType,RM,Model>::run()
                             else
                             {
                                 //use affine decomposition
-                                if ( !model->isLinear() && use_newton )
+                                if ( !model->isLinear() && use_newton_ )
                                     u_fem = model->solveFemUsingAffineDecompositionNewton( mu );
                                 else
                                     u_fem = model->solveFemUsingAffineDecompositionFixedPoint( mu );
