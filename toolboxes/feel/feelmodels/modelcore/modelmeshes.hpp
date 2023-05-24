@@ -195,27 +195,28 @@ public :
 private :
     struct FieldsSetup
     {
-        FieldsSetup( std::string const& name, nl::json const& jarg )
-            :
-            M_name( name )
-            {
-                if ( jarg.contains("filename") )
-                    M_filename = Environment::expand( jarg.at("filename") );
-                else
-                    CHECK( false ) << "filename required";
-
-                if ( jarg.contains("basis") )
-                    M_basis = Environment::expand( jarg.at("basis") );
-                else
-                    CHECK( false ) << "basis required";
-            }
+        struct PartSetup
+        {
+            PartSetup() = default;
+            std::string const& filename() const { return M_filename; }
+            bool hasExpr() const { return M_mexpr ? true : false; }
+            ModelExpression const& mExpr() const { return *M_mexpr; }
+            ModelMarkers const& markers() const { return M_markers; }
+            static std::optional<PartSetup> create( ModelMeshes<IndexType> const& mMeshes, nl::json const& jarg );
+        private:
+            std::string M_filename;
+            std::optional<ModelExpression> M_mexpr;
+            ModelMarkers M_markers;
+        };
+        FieldsSetup( std::string const& name, ModelMeshes<IndexType> const& mMeshes, nl::json const& jarg );
         std::string const& name() const { return M_name; }
-        std::string const& filename() const { return M_filename; }
         std::string const& basis() const { return M_basis; }
+        std::vector<PartSetup> const& parts() const { return M_parts; }
+
     private :
         std::string M_name;
-        std::string M_filename;
         std::string M_basis;
+        std::vector<PartSetup> M_parts;
     };
 
     struct DistanceToRangeSetup
@@ -656,10 +657,51 @@ public :
     template <typename MeshType>
     void applyRemesh( std::shared_ptr<MeshType> const& newMesh );
 
-#if 0 // WIP
+#if 1 // WIP
     //! append field that will can be used in symbolic expression. This field is identified by a name
-    void appendField( std::string const& name, std::shared_ptr<Vector<double>> u ) { M_fields[name] = u; }
+    //void appendField( std::string const& name, std::shared_ptr<Vector<double>> u ) { M_fields[name] = u; }
+    template <typename MeshType, typename ExprTypr,typename RangeType>
+    void updateField( std::string const& name, Expr<ExprTypr> const& expr, std::string const& basis, RangeType const& range, bool initZero = false )
+        {
+            auto themesh = this->mesh<MeshType>();
+            if ( !themesh )
+                return;
+            static constexpr auto tuple_t_basis = ModelMesh<IndexType>::template basisFieldTypeSupported<MeshType>();
+            hana::for_each( tuple_t_basis, [this,&name,&expr,&basis,&range,&initZero,&themesh]( auto const& b ) {
+                                               if ( basis != hana::at_c<0>( b ) )
+                                                   return;
+                                               using basis_type = typename std::decay_t<decltype(hana::at_c<1>( b ) )>::type;
+                                               using space_type = FunctionSpace<MeshType, bases<basis_type> >;
 
+                                               bool doInit = false;
+                                               if ( M_fields.find( name ) == M_fields.end() )
+                                                   doInit = true;
+                                               else if ( !dynamic_cast<typename space_type::element_type*>( M_fields.at( name ).get() ) )
+                                                   doInit = true;
+
+                                               // init field if necessary
+                                               if ( doInit )
+                                               {
+                                                   auto Vh = M_mmeshCommon->template createFunctionSpace<space_type>( basis );
+                                                   auto u = Vh->elementPtr();
+                                                   M_fields[name] = u;
+                                               }
+
+                                               // apply nodal interpolation
+                                               auto u = dynamic_cast<typename space_type::element_type*>( M_fields.at( name ).get() );
+                                               if ( initZero )
+                                                   u->zero();
+                                               u->on(_range=range,_expr=expr);
+                                           } );
+        }
+    template <typename MeshType, typename ExprTypr>
+    void updateField( std::string const& name, Expr<ExprTypr> const& expr, std::string const& basis, bool initZero = false )
+        {
+            auto themesh = this->mesh<MeshType>();
+            if ( !themesh )
+                return;
+            this->updateField( name, expr, basis, elements(themesh), initZero );
+        }
     //! remove a field from this name and return true is the field has been removed
     bool removeField( std::string const& name ) { return M_fields.erase( name ) > 0; }
 #endif
