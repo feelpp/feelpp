@@ -78,7 +78,7 @@ public:
 
     /**
      * @brief Reset indices and intervals
-     * 
+     *
      */
     void reset()
     {
