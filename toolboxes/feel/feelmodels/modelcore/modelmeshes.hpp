@@ -657,54 +657,77 @@ public :
     template <typename MeshType>
     void applyRemesh( std::shared_ptr<MeshType> const& newMesh );
 
-#if 1 // WIP
-    //! append field that will can be used in symbolic expression. This field is identified by a name
-    //void appendField( std::string const& name, std::shared_ptr<Vector<double>> u ) { M_fields[name] = u; }
-    template <typename MeshType, typename ExprTypr,typename RangeType>
-    void updateField( std::string const& name, Expr<ExprTypr> const& expr, std::string const& basis, RangeType const& range, bool initZero = false )
+    //! update field from an expression on range of element. This field is identified by a name and the basis param allow to select the function space representation.
+    //! if the field already exist but the basis differ, the field is rebuilt.
+    template <typename MeshType, typename ExprTypr, typename RangeType, std::enable_if_t< is_filter_v<std::decay_t<RangeType>>, bool> = true>
+    void updateField( std::string const& name, Expr<ExprTypr> const& expr, RangeType const& range, std::string const& basis = "", bool initZero = false )
         {
+            using expr_shape_type = typename ExprTraits<RangeType,Expr<ExprTypr>>::shape;
+            std::string basisUsed = basis;
+            if ( basis.empty() )
+            {
+                if ( expr_shape_type::is_scalar )
+                    basisUsed = "Pch1";
+                else if ( expr_shape_type::is_vectorial )
+                     basisUsed = "Pchv1";
+                // TODO tensor case
+            }
+
             auto themesh = this->mesh<MeshType>();
             if ( !themesh )
                 return;
             static constexpr auto tuple_t_basis = ModelMesh<IndexType>::template basisFieldTypeSupported<MeshType>();
-            hana::for_each( tuple_t_basis, [this,&name,&expr,&basis,&range,&initZero,&themesh]( auto const& b ) {
-                                               if ( basis != hana::at_c<0>( b ) )
+            hana::for_each( tuple_t_basis, [this,&name,&expr,&basisUsed,&range,&initZero,&themesh]( auto const& b ) {
+                                               if ( basisUsed != hana::at_c<0>( b ) )
                                                    return;
                                                using basis_type = typename std::decay_t<decltype(hana::at_c<1>( b ) )>::type;
                                                using space_type = FunctionSpace<MeshType, bases<basis_type> >;
-
-                                               bool doInit = false;
-                                               if ( M_fields.find( name ) == M_fields.end() )
-                                                   doInit = true;
-                                               else if ( !dynamic_cast<typename space_type::element_type*>( M_fields.at( name ).get() ) )
-                                                   doInit = true;
-
-                                               // init field if necessary
-                                               if ( doInit )
+                                               if constexpr ( expr_shape_type::M == space_type::nComponents1 && expr_shape_type::N == space_type::nComponents2 )
                                                {
-                                                   auto Vh = M_mmeshCommon->template createFunctionSpace<space_type>( basis );
-                                                   auto u = Vh->elementPtr();
-                                                   M_fields[name] = u;
+                                                   bool doInit = false;
+                                                   if ( M_fields.find( name ) == M_fields.end() )
+                                                       doInit = true;
+                                                   else if ( !dynamic_cast<typename space_type::element_type*>( M_fields.at( name ).get() ) )
+                                                       doInit = true;
+                                                   // init field if necessary
+                                                   if ( doInit )
+                                                   {
+                                                       auto Vh = M_mmeshCommon->template createFunctionSpace<space_type>( basisUsed );
+                                                       auto u = Vh->elementPtr();
+                                                       M_fields[name] = u;
+                                                   }
+                                                   // apply nodal interpolation
+                                                   auto u = dynamic_cast<typename space_type::element_type*>( M_fields.at( name ).get() );
+                                                   if ( initZero )
+                                                       u->zero();
+                                                   u->on(_range=range,_expr=expr);
                                                }
-
-                                               // apply nodal interpolation
-                                               auto u = dynamic_cast<typename space_type::element_type*>( M_fields.at( name ).get() );
-                                               if ( initZero )
-                                                   u->zero();
-                                               u->on(_range=range,_expr=expr);
+                                               else
+                                                   throw std::runtime_error( fmt::format("ModelMesh<IndexType>::updateField expression and space incompatible : expr [{},{}] vs space [{},{}]",
+                                                                                         expr_shape_type::M, expr_shape_type::N, space_type::nComponents1, space_type::nComponents2 ) );
                                            } );
         }
+    //! update field from an expression on all mesh elements
     template <typename MeshType, typename ExprTypr>
-    void updateField( std::string const& name, Expr<ExprTypr> const& expr, std::string const& basis, bool initZero = false )
+    void updateField( std::string const& name, Expr<ExprTypr> const& expr, std::string const& basis = "" )
         {
             auto themesh = this->mesh<MeshType>();
             if ( !themesh )
                 return;
-            this->updateField( name, expr, basis, elements(themesh), initZero );
+            this->updateField<MeshType>( name, expr, elements(themesh), basis );
         }
+
+    //! update field from another field
+    template <typename MeshType,typename FieldType, std::enable_if_t< is_functionspace_element_v<std::decay_t<FieldType>>, bool> = true>
+    void updateField( std::string const& name, FieldType const& u, std::string const& basis = "" )
+        {
+            // TODO : get a default basis if empty (iterate over all space, maybe one will match or use also continuity property)
+            this->updateField<MeshType>( name, idv(u), basis );
+        }
+
     //! remove a field from this name and return true is the field has been removed
     bool removeField( std::string const& name ) { return M_fields.erase( name ) > 0; }
-#endif
+
 private:
     std::string M_name;
     nl::json M_metadata;
