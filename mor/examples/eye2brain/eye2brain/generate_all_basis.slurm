@@ -13,14 +13,14 @@ export EXEC_DIR=../../../../build/mor/mor/examples/eye2brain
 export DIM=3
 export ORDER=2
 
-index_array=(1 2 3 4 5 6 7 8 9 10)
-output_names=(pointO pointA pointB pointB1 pointC pointD pointD1 pointF pointG cornea)
+index_array=(0 1 2 3 4 5 6 7 8 9)
+output_names=(cornea pointO pointA pointB pointB1 pointC pointD pointD1 pointF pointG)
 
 # run offline simulation
 for i in "${!index_array[@]}";
 do
     echo Generating basis for ${output_names[$i]}
-    mpirun -np 12 ${EXEC_DIR}/feelpp_mor_eye2brain_${DIM}dP${ORDER}app --config-file=${PWD}/eye2brain-${DIM}d.cfg --measure-index ${index_array[$i]} --eye2brain.run.mode 2 --eye2brain.model-name eye2brain_${DIM}dP${ORDER}_${output_names[$i]}
+    mpirun -np 12 ${EXEC_DIR}/feelpp_mor_eye2brain_${DIM}dP${ORDER}app --config-file=${PWD}/eye2brain-${DIM}d.cfg --measure-index ${index_array[$i]} --eye2brain.run.mode 2 --eye2brain.model-name eye2brain_${DIM}dP${ORDER}_${output_names[$i]} --crb.rebuild-database 1
     printf "\n\n"
 done
 
