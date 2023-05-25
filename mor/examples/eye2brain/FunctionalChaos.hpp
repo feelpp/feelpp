@@ -123,7 +123,7 @@ auto computeChaosSensitivity( const OT::Sample X, const OT::Sample Y,
  * @param distribution Distribution of X
  * @param bootstrap_size Size of the bootstrap sample
  * @param eps Tolerance for the bootstrap, default to 1e-9
- * @return auto 
+ * @return auto
  */
 auto computeBootstrapChaosSobolIndices( const OT::Sample X, const OT::Sample Y,
     OT::OrthogonalProductPolynomialFactory basis, OT::UnsignedInteger total_degree, OT::Distribution distribution,
@@ -167,7 +167,7 @@ auto computeBootstrapChaosSobolIndices( const OT::Sample X, const OT::Sample Y,
  * @param fo_sample First order Sobol's indices
  * @param to_sample Total order Sobol's indices
  * @param alpha Confidence level
- * @return tuple of lower and upper bounds of the confidence interval for both first and total order Sobol's indices 
+ * @return tuple of lower and upper bounds of the confidence interval for both first and total order Sobol's indices
  */
 auto computeSobolIndicesConfidenceInterval(OT::Sample fo_sample, OT::Sample to_sample, OT::Scalar alpha=0.95)
 {

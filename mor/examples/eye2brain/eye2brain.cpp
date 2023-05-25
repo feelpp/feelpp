@@ -182,12 +182,12 @@ Eye2Brain<Order, Dim>::initModel()
     using form1_type = vf::detail::LinearForm<typename Eye2BrainConfig<Order, Dim>::space_type, typename backend_type::vector_type, typename backend_type::vector_type>;
     form1_type out1;
     int measure_index = ioption(_name = "measure-index");
-    std::cout << "Measure index = " << measure_index << std::endl;
+    Feel::cout << "Measure index = " << measure_index << std::endl;
     if (measure_index >= 1 && measure_index <= 9)    // sensor output
     {
         std::string name = m_outputNames[measure_index-1];
         std::vector<double> coord = m_coordinates[measure_index-1];
-        std::cout << "Output " << name << " at coord " << coord << std::endl;
+        Feel::cout << "[Eye2brain] Output " << name << " at coord " << coord << std::endl;
         node_type n(Eye2BrainConfig<Order, Dim>::space_type::nDim);
         for( int i = 0; i < Eye2BrainConfig<Order,Dim>::space_type::nDim; ++i )
             n(i) = coord[i];
@@ -198,8 +198,9 @@ Eye2Brain<Order, Dim>::initModel()
     }
     else if ( measure_index == 0 )   // mean over cornea
     {
-        out1 = form1( _test = this->Xh );
+        Feel::cout << "[Eye2brain] Output mean over cornea" << std::endl;
 
+        out1 = form1( _test = this->Xh );
         double meas = integrate( _range = markedelements(mesh, "Cornea"), _expr = cst(1.) ).evaluate()(0,0);
         out1 = integrate( _range = markedelements(mesh, "Cornea"), _expr = id( u )/cst(meas)) ;
     }
