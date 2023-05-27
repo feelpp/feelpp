@@ -28,7 +28,6 @@
 #include <feel/feelmesh/metric.hpp>
 #include <feel/feelmesh/remesher.hpp>
 #include <fmt/core.h>
-#include <regex>
 namespace Feel
 {
 /**
@@ -70,48 +69,29 @@ remeshImpl( std::shared_ptr<MeshT> const& r,
     static int cpt = 0;
     using mesh_t = MeshT;
     using mesh_ptr_t = std::shared_ptr<mesh_t>;
-    if ( r->worldComm().localSize() == 1 )
-    {
-        auto R = std::make_shared<Remesh<mesh_t>>( r, req_elts, req_facets, parent, std::string{}, params );
-        auto P1h = Pch<1>( r );
 
-        if ( std::smatch match;
-             std::regex_search( metric_expr, match, std::regex("gradedls\\(\\[(.*?)\\],\\s*([0-9.]+),\\s*([0-9.]+),\\s*([0-9.]+)") ) )
+    auto setMetric = [&metric_expr, &req_facets]( auto const& P1h, auto& R ){ 
+        if ( metric_expr.find("gradedls") != std::string::npos )
         {
-            std::string markers = match[1];
-            double hclose = std::stof(match[2]);
-            double hfar = std::stof(match[3]);
-            double treshold = std::stof(match[4]);
-            std::regex marker_regex( "\\s*,\\s*" );
-            std::vector<std::string> marker_vector{
-                std::sregex_token_iterator( markers.begin(), markers.end(), marker_regex, -1 ),
-                std::sregex_token_iterator() };
-            LOG( INFO ) << fmt::format( "[remesh] gradedfromls markers=[{}] hclose={} hfar={}", marker_vector, hclose, hfar, treshold ) << std::endl;
-            R->setMetric( gradedfromls( P1h, markedfaces( r, marker_vector ), hclose, hfar, treshold ) );
+            bool created = createGradedLevelsetMetric( P1h, metric_expr, 
+                                                        [&R](auto const& met ){ R->setMetric(met); }, req_facets );
+            if ( !created )
+            {
+                LOG( INFO ) << fmt::format( "[remesh] invalid metric expression={}\n", metric_expr ) << std::endl;
+                throw std::invalid_argument( fmt::format( "[remesh] invalid metric expression={}\n", metric_expr ) );
+            }
         }
-        else if ( std::smatch sm;
-             std::regex_match( metric_expr, sm, std::regex( "gradedls\\((.*),(.*)\\)" ) ) )
-        {
-            double hclose = std::stod( sm[1] );
-            double hfar = std::stod( sm[2] );
-            LOG( INFO ) << fmt::format( "[remesh] gradedfromls hclose={} hfar={}", hclose, hfar, 0. ) << std::endl;
-            R->setMetric( gradedfromls( P1h, markedfaces( r, req_facets ), hclose, hfar, 0. ) );
-        }
-        else if ( std::smatch sm;
-                  std::regex_match( metric_expr, sm, std::regex( "gradedls\\((.*),(.*),(.*)\\)" ) ) )
-        {
-            double hclose = std::stod( sm[1] );
-            double hfar = std::stod( sm[2] );
-            double cst = std::stod( sm[3] );
-            LOG( INFO ) << fmt::format( "[remesh] gradedfromls hclose={} hfar={} percent={}", hclose, hfar, cst ) << std::endl;
-            R->setMetric( gradedfromls( P1h, markedfaces( r, req_facets ), hclose, hfar, cst ) );
-        }
-        else
+        else 
         {
             LOG( INFO ) << fmt::format( "[remesh] metric={}\n", metric_expr ) << std::endl;
             R->setMetric( expr( P1h, expr( metric_expr ) ) );
         }
-
+    };
+    if ( r->worldComm().localSize() == 1 )
+    {
+        auto R = std::make_shared<Remesh<mesh_t>>( r, req_elts, req_facets, parent, std::string{}, params );
+        auto P1h = Pch<1>( r );
+        setMetric( P1h, R );
         auto m = R->execute();
         return std::tuple{ m, ++cpt };
     }
@@ -132,18 +112,7 @@ remeshImpl( std::shared_ptr<MeshT> const& r,
                                      _straighten = false );
             auto P1h = Pch<1>( meshSeq );
             auto R = std::make_shared<Remesh<mesh_t>>( meshSeq, req_elts, req_facets, parent );
-
-            if ( std::smatch sm; std::regex_match( metric_expr, sm, std::regex( "gradedls\\((.*),(.*)\\)" ) ) )
-            {
-                double hclose = std::stod( sm[1] );
-                double hfar = std::stod( sm[2] );
-                LOG(INFO) << fmt::format( "hclose={} hfar={}", hclose, hfar ) << std::endl;
-                R->setMetric( gradedfromls( P1h, markedfaces( meshSeq, req_facets ), hclose, hfar ) );
-            }
-            else
-            {
-                R->setMetric( expr( P1h, expr( metric_expr ) ) );
-            }
+            setMetric( P1h, R );
             auto m = R->execute();
             using io_t = PartitionIO<mesh_t>;
             io_t io( omeshParaPath );
