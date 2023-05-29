@@ -3,7 +3,7 @@
 #SBATCH -J offline       # name of the job
 #SBATCH -N 1             # number of nodes
 #SBATCH -n 12            # number of cores
-#SBATCH -t 06:45:00      # job duration
+#SBATCH -t 12:45:00      # job duration
 #SBATCH -o offline%j.out # standard output
 #SBATCH -e offline%j.err # standard error
 
@@ -20,7 +20,7 @@ output_names=(cornea pointO pointA pointB pointB1 pointC pointD pointD1 pointF p
 for i in "${!index_array[@]}";
 do
     echo Generating basis for ${output_names[$i]}
-    mpirun -np 12 ${EXEC_DIR}/feelpp_mor_eye2brain_${DIM}dP${ORDER}app --config-file=${PWD}/eye2brain-${DIM}d.cfg --measure-index ${index_array[$i]} --eye2brain.run.mode 2 --eye2brain.model-name eye2brain_${DIM}dP${ORDER}_${output_names[$i]} --crb.rebuild-database 1
+    mpirun -np 12 ${EXEC_DIR}/feelpp_mor_eye2brain_${DIM}dP${ORDER}app --config-file=${PWD}/eye2brain-${DIM}d.cfg --measure-index ${index_array[$i]} --eye2brain.run.mode 2 --eye2brain.model-name eye2brain_${DIM}dP${ORDER}_${output_names[$i]} --crb.rebuild-database 1 | tee -a output.log | sed -u "s/^/[${output_names[$i]}] /"
     printf "\n\n"
 done
 
