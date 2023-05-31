@@ -88,7 +88,8 @@ loadPlugin()
     auto meta = crbmodelDB.loadDBMetaData( attribute, attribute_data );
     Feel::cout << "-- crbmodelDB::dbRepository()=" << crbmodelDB.dbRepository() << std::endl;
 
-    return crbmodelDB.loadDBPlugin( meta, soption(_name="crbmodel.db.load" ) );
+    std::string pluginlibdir = Environment::expand( soption(_name = "plugin.dir") );
+    return crbmodelDB.loadDBPlugin( meta, soption(_name="crbmodel.db.load" ), pluginlibdir );
 }
 
 
@@ -125,7 +126,7 @@ OT::ComposedDistribution composedFromModel()
         if (name == "h_bl")
         {
             double s = 0.15; double mu = log(65) - 0.5*s*s;
-            dist = OT::TruncatedDistribution(OT::LogNormal(mu, s, 0), OT::Interval(50, 120));
+            dist = OT::TruncatedDistribution(OT::LogNormal(mu, s, 0), OT::Interval(50, 110));
         }
         else if (name == "h_amb")
         {
@@ -165,10 +166,22 @@ OT::ComposedDistribution composedFromModel()
 OT::Sample output(OT::Sample const& input, plugin_ptr_t const& plugin, Eigen::VectorXd &time_crb, double online_tol, int rbDim)
 {
     size_t n = input.getSize();
+    double s_output, s_errorBound;
     OT::Sample output(n, 1);
     {
         parameter_space_ptr_t Dmu = plugin->parameterSpace();
+        element_t muMin = Dmu->min(), muMax = Dmu->max();
         std::vector<std::string> names = Dmu->parameterNames();
+        Feel::cout << Feel::tc::green << "Parameter space: " << std::endl;
+        Feel::cout << "  - names: " << names << std::endl;
+        Feel::cout << "  - min: ";
+        for (size_t i = 0; i < names.size(); ++i)
+            Feel::cout << muMin[i] << " ";
+        Feel::cout << std::endl;
+        Feel::cout << "  - max: ";
+        for (size_t i = 0; i < names.size(); ++i)
+            Feel::cout << muMax[i] << " ";
+        Feel::cout << Feel::tc::reset << std::endl << std::endl;
         Feel::cout << "Start to compute outputs, sampling of size " << n << std::endl;
 
         double k_lens, h_amb, h_bl, h_r=6, T_amb, T_bl, E;
@@ -202,7 +215,9 @@ OT::Sample output(OT::Sample const& input, plugin_ptr_t const& plugin, Eigen::Ve
             // Feel::cout << "mu = " << mu << std::endl;
 
             Feel::CRBResults crbResult = plugin->run( mu, time_crb, online_tol, rbDim, false );
-            OT::Point P(1); P[0] = crbResult.output();
+            s_output = crbResult.output();
+            s_errorBound = crbResult.errorbound();
+            OT::Point P(1); P[0] = s_output;
             output[i] = P;
         }
         Feel::cout << "output computed" << std::endl;
@@ -210,8 +225,20 @@ OT::Sample output(OT::Sample const& input, plugin_ptr_t const& plugin, Eigen::Ve
     return output;
 }
 
-
-void computeSobolIndicesBootstrap(std::vector<plugin_ptr_t> plugin, OT::ComposedDistribution composed_distribution, size_t sampling_size,
+/**
+ * @brief Compute the Sobol indices using bootstrap
+ * 
+ * @param plugin plugin loaded
+ * @param composed_distribution compused distribution of the input parameters
+ * @param sampling_size size of the sampling
+ * @param input_sample input sample of parameters
+ * @param output_sample output sample computed from the input sample
+ * @param tableRowHeader names of the input parameters
+ * @param time_crb time collection
+ * @param online_tol online tolerance
+ * @param rbDim dimension of the reduced basis
+ */
+void computeSobolIndicesBootstrap(plugin_ptr_t plugin, OT::ComposedDistribution composed_distribution, size_t sampling_size,
     OT::Sample input_sample, OT::Sample output_sample, std::vector<std::string> tableRowHeader, Eigen::VectorXd &time_crb, double online_tol, int rbDim)
 {
     using namespace Feel;
@@ -241,7 +268,7 @@ void computeSobolIndicesBootstrap(std::vector<plugin_ptr_t> plugin, OT::Composed
         OT::Function metaModel = polynomialChaosResult.getMetaModel();
         OT::UnsignedInteger n_valid = 1000;
         OT::Sample X_test = composed_distribution.getSample(n_valid);
-        OT::Sample Y_test = output(X_test, plugin[0], time_crb, online_tol, rbDim);
+        OT::Sample Y_test = output(X_test, plugin, time_crb, online_tol, rbDim);
         checkMetaModel( X_test, Y_test, metaModel );
         toc("checkMetaModel");
     }
@@ -257,32 +284,28 @@ void computeSobolIndicesBootstrap(std::vector<plugin_ptr_t> plugin, OT::Composed
 /**
  * @brief Compute sobol indices
  *
- * @param plugin std::vector containing the plugin from load_plugin
+ * @param plugin the plugin from load_plugin
  * @param sampling_size size of the input sample used for computation of sobol indices
  * @param rbDim size of the reduced basis
  * @param computeSecondOrder boolean to compute second order sobol indices
+ * @param online_tol tolerance for online computation of reduced basis, default to 1e-2
+ * @param print_rb_matrix boolean to print the reduced basis matrix, default to false
  */
-void runSensitivityAnalysis( std::vector<plugin_ptr_t> plugin, size_t sampling_size, int rbDim, bool computeSecondOrder=true )
+void runSensitivityAnalysis( plugin_ptr_t plugin, size_t sampling_size, int rbDim, bool computeSecondOrder=true, double online_tol=1e-2, bool print_rb_matrix=false )
 {
     using namespace Feel;
 
     Feel::cout << "Running sensisivity analysis with a sample of size " << sampling_size << std::endl;
 
-    bool loadFiniteElementDatabase = boption(_name="crb.load-elements-database");
-
     Eigen::VectorXd/*typename crb_type::vectorN_type*/ time_crb;
-    double online_tol = 1e-2;               //Feel::doption(Feel::_name="crb.online-tolerance");
-    bool print_rb_matrix = false;           //boption(_name="crb.print-rb-matrix");
-    parameter_space_ptr_t muspace = plugin[0]->parameterSpace();
+    parameter_space_ptr_t muspace = plugin->parameterSpace();
 
     OT::ComposedDistribution composed_distribution = composedFromModel();
 
 
-    double adapt_tol = doption(_name="adapt.tol");
-
     OT::Sample input_sample = composed_distribution.getSample(sampling_size);
     tic();
-    OT::Sample output_sample = output(input_sample, plugin[0], time_crb, online_tol, rbDim);
+    OT::Sample output_sample = output(input_sample, plugin, time_crb, online_tol, rbDim);
     toc("output sample");
 
     Feel::cout << "input_sample =\n" << input_sample << std::endl;
@@ -292,6 +315,34 @@ void runSensitivityAnalysis( std::vector<plugin_ptr_t> plugin, size_t sampling_s
     computeSobolIndicesBootstrap(plugin, composed_distribution, sampling_size, input_sample, output_sample, NAMES, time_crb, online_tol, rbDim);
 
 }
+
+/**
+ * @brief Export the output sample to a csv file
+ * 
+ * @param plugin plugin from load_plugin
+ * @param sampling_size size of the input sample used for computation of sobol indices
+ * @param rbDim size of the reduced basis
+ * @param online_tol online tolerance for reduced basis computation, default to 1e-2
+ * @param print_rb_matrix print the reduced basis matrix, default to false
+ */
+void exportOutputSample( plugin_ptr_t plugin, size_t sampling_size, int rbDim, double online_tol=1e-2, bool print_rb_matrix=false)
+{
+    using namespace Feel;
+    Feel::cout << "Computing expectation distribution" << std::endl;
+
+    Eigen::VectorXd/*typename crb_type::vectorN_type*/ time_crb;
+    parameter_space_ptr_t muspace = plugin->parameterSpace();
+
+    OT::ComposedDistribution composed_distribution = composedFromModel();
+
+    OT::Sample input_sample = composed_distribution.getSample(sampling_size);
+    tic();
+    OT::Sample output_sample = output(input_sample, plugin, time_crb, online_tol, rbDim);
+    toc("output sample");
+    output_sample.exportToCSVFile( soption( _name="save.path" ) + "-output_sample.csv" );
+}
+
+
 
 int main( int argc, char** argv )
 {
@@ -314,12 +365,16 @@ int main( int argc, char** argv )
         ( "rb-dim", po::value<int>()->default_value( -1 ), "reduced basis dimension used (-1 use the max dim)" )
         ( "output_results.save.path", po::value<std::string>(), "output_results.save.path" )
 
+        ( "run_sensitivity_analysis", po::value<bool>()->default_value(true), "run sensitivity analysis")
+        ( "export_output_sample", po::value<bool>()->default_value(false), "run uncertainty propagation")
+
         ( "algo.poly", po::value<bool>()->default_value(true), "use polynomial chaos" )
         ( "algo.bootstrap", po::value<bool>()->default_value(true), "use polynomial chaos and bootstrap" )
         ( "algo.nrun", po::value<int>()->default_value(5), "number to run algorithm" )
         ( "adapt.tol", po::value<double>()->default_value(0.01), "tolerance for adaptative algoritmh" )
         ( "algo.bootstrap-size", po::value<int>()->default_value(100), "bootstrap size for sensitivity analysis" )
         ( "algo.check-meta-model", po::value<bool>()->default_value(false), "Check the metamodel" )
+
         ( "save.path", po::value<std::string>()->default_value( "sensitivity" ))
 
         ( "query", po::value<std::string>(), "query string for mongodb DB feelpp.crbdb" )
@@ -343,11 +398,15 @@ int main( int argc, char** argv )
                      _desc_lib = crbonlinerunliboptions.add( feel_options() ),
                      _about = makeAbout() );
 
-    OT::RandomGenerator::SetSeed( ::time(NULL) );
+    OT::RandomGenerator::SetSeed( 0 );
     plugin_ptr_t plugin = loadPlugin();
     int rbDim = ioption(_name="rb-dim");
-    // runCrbOnline( { plugin } );
-    runSensitivityAnalysis( { plugin }, ioption(_name="sampling.size"), rbDim, false );
+
+    if (boption(_name="run_sensitivity_analysis"))
+        runSensitivityAnalysis( plugin, ioption(_name="sampling.size"), rbDim, false );
+
+    if (boption(_name="export_output_sample"))
+        runUncertaintyPropagation( plugin, ioption(_name="sampling.size"), rbDim );
 
     Feel::cout << tc::green << "Done ✓" << tc::reset << std::endl;
     return 0;
