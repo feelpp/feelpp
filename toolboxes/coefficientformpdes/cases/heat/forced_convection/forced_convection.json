@@ -29,7 +29,8 @@
             "Import":
             {
                 //"filename":"$repository/toolboxes/fluid/TurekHron/cfd2/P2P1G1/np_1/fluid.msh"
-                "filename":"$repository/toolboxes/fluid/TurekHron/cfd2/P2P1G1/np_24/fluid.json"
+                //"filename":"$repository/toolboxes/fluid/TurekHron/cfd2/P2P1G1/np_24/fluid.mesh.json"
+                "filename":"$repository/toolboxes/fluid/TurekHron/cfd2/P2P1G1/np_24/meshes/tmp/mesh_o.json" // WARNING the field is define on the adapted (TODO: improve mesh/fields management)
             },
             "Fields":
             {
@@ -87,7 +88,7 @@
                 "fields":["heat.temperature"],
                 "expr":
                 {
-                    "heat_beta":"{materials_heat_beta_0,materials_heat_beta_1}:materials_heat_beta_0:materials_heat_beta_1"
+                    "heat_beta":"{physics_heat_heat_beta_0,physics_heat_heat_beta_1}:physics_heat_heat_beta_0:physics_heat_heat_beta_1"
                 }
             }
         }
