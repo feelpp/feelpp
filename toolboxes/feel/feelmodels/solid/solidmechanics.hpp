@@ -555,7 +555,7 @@ public :
             //mfield_disp.add( FieldTag::displacement(this), prefix,"acceleration", this->fieldAccelerationPtr(), "a", this->keyword() );
             auto mfield_pressure = modelField<FieldCtx::ID>( FieldTag::pressure(this), prefix,"pressure", field_p, "p", this->keyword() );
 
-            return Feel::FeelModels::modelFields( mfield_disp, mfield_pressure );
+            return Feel::FeelModels::modelFields( mfield_disp, mfield_pressure, this->template modelFieldsMeshes<mesh_type>( prefix ) );
         }
 
     auto trialSelectorModelFields( size_type startBlockSpaceIndex = 0 ) const
@@ -575,9 +575,11 @@ public :
 #if 1
             auto seToolbox = this->symbolsExprToolbox( mfields );
             auto seParam = this->symbolsExprParameter();
+            auto seMeshes = this->template symbolsExprMeshes<mesh_type,false>();
             auto seMat = this->materialsProperties()->symbolsExpr();
             auto seFields = mfields.symbolsExpr();
-            return Feel::vf::symbolsExpr( seToolbox, seParam, seMat, seFields );
+            auto sePhysics = this->symbolsExprPhysics( this->physics() );
+            return Feel::vf::symbolsExpr( seToolbox, seParam, seMeshes, seMat, seFields, sePhysics );
 #else
             return symbols_expression_empty_t{};
 #endif
