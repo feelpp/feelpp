@@ -240,8 +240,8 @@ PYBIND11_MODULE( _mor, m )
             "loadDBMetaData", []( CRBModelDB& db, std::string const& from, std::string const& name )
             { return db.loadDBMetaData( from, name ); },
             py::arg( "attribute" ) = crb::attributeToString( crb::attribute::last_modified ), py::arg( "data" ) = std::nullopt )
-        .def( "loadDBPlugin", static_cast<std::shared_ptr<CRBPluginAPI> ( CRBModelDB::* )( CRBModelDB::MetaData const&, std::string ) const>( &CRBModelDB::loadDBPlugin ), py::arg( "metadata" ), py::arg( "load" ) = "rb", "load DB plugin", pybind11::return_value_policy::reference )
-        .def( "loadDBPlugin", static_cast<std::shared_ptr<CRBPluginAPI> ( CRBModelDB::* )( CRBModelDB::MetaData const&, std::string, std::string ) const>( &CRBModelDB::loadDBPlugin ), py::arg( "metadata" ), py::arg( "load" ) = "rb", py::arg( "pluginlibdir" ), "load DB plugin", pybind11::return_value_policy::reference );
+        .def( "loadDBPlugin", static_cast<std::shared_ptr<CRBPluginAPI> ( CRBModelDB::* )( CRBModelDB::MetaData const&, std::string const& ) const>( &CRBModelDB::loadDBPlugin ), py::arg( "metadata" ), py::arg( "load" ) = "rb", "load DB plugin", pybind11::return_value_policy::reference )
+        .def( "loadDBPlugin", static_cast<std::shared_ptr<CRBPluginAPI> ( CRBModelDB::* )( CRBModelDB::MetaData const&, std::string const&, std::string const&) const>( &CRBModelDB::loadDBPlugin ), py::arg( "metadata" ), py::arg( "load" ) = "rb", py::arg( "pluginlibdir" ), "load DB plugin", pybind11::return_value_policy::reference );
     py::class_<CRBModelParameter>(m,"CRBModelParamater")
         .def(py::init<>())
         .def("name",&CRBModelParameter::name, "name of the parameter")
