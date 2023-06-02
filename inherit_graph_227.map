@@ -1,3 +1,6 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classFeel_1_1FeelModels_1_1ModelMesh.html" title=" " alt="" coords="5,5,239,47"/>
+<area shape="rect" id="node1" href="$structFeel_1_1FeelModels_1_1ModelMesh_1_1MeshAdaptation_1_1Event.html" title=" " alt="" coords="5,93,283,134"/>
+<area shape="rect" id="node2" href="$structFeel_1_1FeelModels_1_1ModelMesh_1_1MeshAdaptation_1_1EventAfterImport.html" title=" " alt="" coords="331,5,563,61"/>
+<area shape="rect" id="node3" href="$structFeel_1_1FeelModels_1_1ModelMesh_1_1MeshAdaptation_1_1EventAfterInit.html" title=" " alt="" coords="331,85,563,141"/>
+<area shape="rect" id="node4" href="$structFeel_1_1FeelModels_1_1ModelMesh_1_1MeshAdaptation_1_1EventEachTimeStep.html" title=" " alt="" coords="331,165,563,221"/>
 </map>

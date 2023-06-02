@@ -117,7 +117,7 @@ $(document).ready(function(){initNavTree('classFeel_1_1FeelModels_1_1ModelMesh.h
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">
 </div>
 <div id="dynsection-0-content" class="dyncontent" style="display:none;">
-<div class="center"><iframe scrolling="no" frameborder="0" src="classFeel_1_1FeelModels_1_1ModelMesh__coll__graph.svg" width="258" height="191"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+<div class="center"><iframe scrolling="no" frameborder="0" src="classFeel_1_1FeelModels_1_1ModelMesh__coll__graph.svg" width="258" height="206"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
 <table class="memberdecls">
@@ -201,6 +201,10 @@ template&lt;typename MeshType &gt; </td></tr>
 <tr class="memitem:aa121b919415e1c8744aba783cdfd516c"><td class="memItemLeft" align="right" valign="top"><a id="aa121b919415e1c8744aba783cdfd516c" name="aa121b919415e1c8744aba783cdfd516c"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>ModelMesh</b> (std::string const &amp;name, <a class="el" href="classFeel_1_1FeelModels_1_1ModelMeshes.html">ModelMeshes</a>&lt; IndexType &gt; const &amp;mMeshes)</td></tr>
 <tr class="separator:aa121b919415e1c8744aba783cdfd516c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae27e714bc0d477a30084415ba9c4965f"><td class="memItemLeft" align="right" valign="top"><a id="ae27e714bc0d477a30084415ba9c4965f" name="ae27e714bc0d477a30084415ba9c4965f"></a>
+<a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>removeField</b> (std::string const &amp;name)</td></tr>
+<tr class="memdesc:ae27e714bc0d477a30084415ba9c4965f"><td class="mdescLeft">&#160;</td><td class="mdescRight">remove a field from this name and return true is the field has been removed <br /></td></tr>
+<tr class="separator:ae27e714bc0d477a30084415ba9c4965f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af292692e6e9faf4cce485f9519453792"><td class="memItemLeft" align="right" valign="top"><a id="af292692e6e9faf4cce485f9519453792" name="af292692e6e9faf4cce485f9519453792"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>setAsShared</b> (<a class="el" href="classFeel_1_1FeelModels_1_1ModelMesh.html">ModelMesh</a>&lt; IndexType &gt; const &amp;m)</td></tr>
 <tr class="separator:af292692e6e9faf4cce485f9519453792"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -227,6 +231,21 @@ template&lt;typename MeshType  = mesh_base_type, <a class="el" href="classbool.h
 template&lt;typename MeshType &gt; </td></tr>
 <tr class="memitem:a6587f31cc2c0acedbb42c83409af1d1f"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>updateDistanceToRange</b> ()</td></tr>
 <tr class="separator:a6587f31cc2c0acedbb42c83409af1d1f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1595ba1be71c63084085577ed9b0ec77"><td class="memTemplParams" colspan="2"><a id="a1595ba1be71c63084085577ed9b0ec77" name="a1595ba1be71c63084085577ed9b0ec77"></a>
+template&lt;typename MeshType , typename ExprTypr , typename RangeType , std::enable_if_t&lt; is_filter_v&lt; std::decay_t&lt; RangeType &gt; &gt;, <a class="el" href="classbool.html">bool</a> &gt;  = true&gt; </td></tr>
+<tr class="memitem:a1595ba1be71c63084085577ed9b0ec77"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>updateField</b> (std::string const &amp;name, Expr&lt; ExprTypr &gt; const &amp;<a class="el" href="namespaceFeel.html#a338e05dd5e37f3594666f0a00e029d3d">expr</a>, RangeType const &amp;<a class="el" href="group__Core.html#ga9ac2567d303c357e7c0de44280697997">range</a>, std::string const &amp;basis=&quot;&quot;, <a class="el" href="classbool.html">bool</a> initZero=false)</td></tr>
+<tr class="memdesc:a1595ba1be71c63084085577ed9b0ec77"><td class="mdescLeft">&#160;</td><td class="mdescRight">update field from an expression on range of element. This field is identified by a name and the basis param allow to select the function space representation. if the field already exist but the basis differ, the field is rebuilt. <br /></td></tr>
+<tr class="separator:a1595ba1be71c63084085577ed9b0ec77"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac13418379d03d501e13df441e122395d"><td class="memTemplParams" colspan="2"><a id="ac13418379d03d501e13df441e122395d" name="ac13418379d03d501e13df441e122395d"></a>
+template&lt;typename MeshType , typename ExprTypr &gt; </td></tr>
+<tr class="memitem:ac13418379d03d501e13df441e122395d"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>updateField</b> (std::string const &amp;name, Expr&lt; ExprTypr &gt; const &amp;<a class="el" href="namespaceFeel.html#a338e05dd5e37f3594666f0a00e029d3d">expr</a>, std::string const &amp;basis=&quot;&quot;)</td></tr>
+<tr class="memdesc:ac13418379d03d501e13df441e122395d"><td class="mdescLeft">&#160;</td><td class="mdescRight">update field from an expression on all mesh elements <br /></td></tr>
+<tr class="separator:ac13418379d03d501e13df441e122395d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a563a8a7d2f898df7cd06ddd3aa7ede5b"><td class="memTemplParams" colspan="2"><a id="a563a8a7d2f898df7cd06ddd3aa7ede5b" name="a563a8a7d2f898df7cd06ddd3aa7ede5b"></a>
+template&lt;typename MeshType , typename FieldType , std::enable_if_t&lt; <a class="el" href="group__Traits.html#ga4d50181c65d94cfa6520d07dc40206df">is_functionspace_element_v</a>&lt; std::decay_t&lt; FieldType &gt; &gt;, <a class="el" href="classbool.html">bool</a> &gt;  = true&gt; </td></tr>
+<tr class="memitem:a563a8a7d2f898df7cd06ddd3aa7ede5b"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>updateField</b> (std::string const &amp;name, FieldType const &amp;u, std::string const &amp;basis=&quot;&quot;)</td></tr>
+<tr class="memdesc:a563a8a7d2f898df7cd06ddd3aa7ede5b"><td class="mdescLeft">&#160;</td><td class="mdescRight">update field from another field <br /></td></tr>
+<tr class="separator:a563a8a7d2f898df7cd06ddd3aa7ede5b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aae5b6f247af85d2e253b77936bc4ea6f"><td class="memTemplParams" colspan="2"><a id="aae5b6f247af85d2e253b77936bc4ea6f" name="aae5b6f247af85d2e253b77936bc4ea6f"></a>
 template&lt;typename MeshType &gt; </td></tr>
 <tr class="memitem:aae5b6f247af85d2e253b77936bc4ea6f"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>updateForUse</b> (<a class="el" href="classFeel_1_1FeelModels_1_1ModelMeshes.html">ModelMeshes</a>&lt; IndexType &gt; const &amp;mMeshes)</td></tr>
@@ -248,6 +267,11 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>updateTime</b> (doubl
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-methods" name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
+<tr class="memitem:a85080781487c19e14685df638e713c22"><td class="memTemplParams" colspan="2"><a id="a85080781487c19e14685df638e713c22" name="a85080781487c19e14685df638e713c22"></a>
+template&lt;typename MeshType &gt; </td></tr>
+<tr class="memitem:a85080781487c19e14685df638e713c22"><td class="memTemplItemLeft" align="right" valign="top">static constexpr auto&#160;</td><td class="memTemplItemRight" valign="bottom"><b>basisFieldTypeSupported</b> ()</td></tr>
+<tr class="memdesc:a85080781487c19e14685df638e713c22"><td class="mdescLeft">&#160;</td><td class="mdescRight">return basis field types supported by modelMesh (including the name associated) <br /></td></tr>
+<tr class="separator:a85080781487c19e14685df638e713c22"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a091917eafa24cda6e20bfeb2c9b21e81"><td class="memItemLeft" align="right" valign="top"><a id="a091917eafa24cda6e20bfeb2c9b21e81" name="a091917eafa24cda6e20bfeb2c9b21e81"></a>
 static tabulate_informations_ptr_t&#160;</td><td class="memItemRight" valign="bottom"><b>tabulateInformations</b> (<a class="el" href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">nl::json</a> const &amp;p, <a class="el" href="classFeel_1_1TabulateInformationProperties.html">TabulateInformationProperties</a> const &amp;tabInfoProp)</td></tr>
 <tr class="separator:a091917eafa24cda6e20bfeb2c9b21e81"><td class="memSeparator" colspan="2">&#160;</td></tr>

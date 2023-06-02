@@ -2095,6 +2095,10 @@ template&lt;typename ... Ts&gt; </td></tr>
 <tr class="memitem:af8422215aba50ba1a104612833780884"><td class="memItemLeft" align="right" valign="top"><a id="af8422215aba50ba1a104612833780884" name="af8422215aba50ba1a104612833780884"></a>
 FEELPP_EXPORT MasterStream&#160;</td><td class="memItemRight" valign="bottom"><b>cout</b> (std::cout)</td></tr>
 <tr class="separator:af8422215aba50ba1a104612833780884"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4436529759df028cbd8917d48507d6a1"><td class="memTemplParams" colspan="2">template&lt;typename SpacePtrType , typename MetricSetter &gt; </td></tr>
+<tr class="memitem:a4436529759df028cbd8917d48507d6a1"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classbool.html">bool</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#a4436529759df028cbd8917d48507d6a1">createGradedLevelsetMetric</a> (SpacePtrType const &amp;P1h, std::string const &amp;metric_expr, MetricSetter metric_setter, std::vector&lt; std::string &gt; default_markers={})</td></tr>
+<tr class="memdesc:a4436529759df028cbd8917d48507d6a1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a Graded Levelset metric.  <a href="namespaceFeel.html#a4436529759df028cbd8917d48507d6a1">More...</a><br /></td></tr>
+<tr class="separator:a4436529759df028cbd8917d48507d6a1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab5134473f449a9625be5bfe17c668fce"><td class="memTemplParams" colspan="2"><a id="ab5134473f449a9625be5bfe17c668fce" name="ab5134473f449a9625be5bfe17c668fce"></a>
 template&lt;typename MeshArgType , typename RangeArgType &gt; </td></tr>
 <tr class="memitem:ab5134473f449a9625be5bfe17c668fce"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="structFeel_1_1detail_1_1CreateSubmeshTrait.html">Feel::detail::CreateSubmeshTrait</a>&lt; MeshArgType, RangeArgType &gt;::ptrtype&#160;</td><td class="memTemplItemRight" valign="bottom"><b>createSubmesh</b> (NA::arguments&lt; typename na::mesh::template required_as_t&lt; MeshArgType &gt;, typename na::range::template required_as_t&lt; RangeArgType &gt;, typename na::worldcomm::template required_as_t&lt; <a class="el" href="group__Core.html#gad8f8196f0b8ff9495dd4119eda223772">worldcomm_ptr_t</a> &gt;, typename na::context::template required_as_t&lt; <a class="el" href="namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58">size_type</a> &gt;, typename na::update::template required_as_t&lt; <a class="el" href="namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58">size_type</a> &gt;, typename na::only_on_boundary_faces::template required_as_t&lt; <a class="el" href="classbool.html">bool</a> &gt;, typename na::view::template required_as_t&lt; <a class="el" href="classbool.html">bool</a> &gt; &gt; &amp;&amp;args)</td></tr>
@@ -5277,6 +5281,69 @@ template&lt;typename... Ts&gt; </div>
 <div class="line"><span class="keyword">auto</span> ctx = <a class="code hl_function" href="namespaceFeel.html#aa913270cd2843deef2b86218e20a88f3">context</a>(_geomap=Xh-&gt;gm(),_type=on_elements_t(),_pointset=Xh-&gt;fe()-&gt;points());</div>
 <div class="ttc" id="anamespaceFeel_html_aa913270cd2843deef2b86218e20a88f3"><div class="ttname"><a href="namespaceFeel.html#aa913270cd2843deef2b86218e20a88f3">Feel::context</a></div><div class="ttdeci">auto context(Ts &amp;&amp;... v)</div><div class="ttdoc">get the the geometric mapping context associated to a functionspace</div><div class="ttdef"><b>Definition:</b> context.hpp:74</div></div>
 </div><!-- fragment --><dl class="section return"><dt>Returns</dt><dd>the context </dd></dl>
+
+</div>
+</div>
+<a id="a4436529759df028cbd8917d48507d6a1" name="a4436529759df028cbd8917d48507d6a1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4436529759df028cbd8917d48507d6a1">&#9670;&nbsp;</a></span>createGradedLevelsetMetric()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename SpacePtrType , typename MetricSetter &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classbool.html">bool</a> Feel::createGradedLevelsetMetric </td>
+          <td>(</td>
+          <td class="paramtype">SpacePtrType const &amp;&#160;</td>
+          <td class="paramname"><em>P1h</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::string const &amp;&#160;</td>
+          <td class="paramname"><em>metric_expr</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">MetricSetter&#160;</td>
+          <td class="paramname"><em>metric_setter</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; std::string &gt;&#160;</td>
+          <td class="paramname"><em>default_markers</em> = <code>{}</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Create a Graded Levelset metric. </p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">SpacePtrType</td><td>P1 function space type </td></tr>
+    <tr><td class="paramname">MetricSetter</td><td>functor that takes a P1 function and set the metric </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">P1h</td><td>the function space in which the metric is defined </td></tr>
+    <tr><td class="paramname">metric_expr</td><td>the expression of the metric </td></tr>
+    <tr><td class="paramname">metric_setter</td><td>the setter functor </td></tr>
+    <tr><td class="paramname">default_markers</td><td>the default markers to use if the metric_expr does not contain markers </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>true if the metric has been set </dd>
+<dd>
+false otherwise </dd></dl>
 
 </div>
 </div>

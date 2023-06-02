@@ -744,6 +744,7 @@ var namespaceFeel =
     [ "complement", "namespaceFeel.html#ab17b89f0643bc3b4a432c8d44dd15e7b", null ],
     [ "concatenate", "namespaceFeel.html#a1411206eb551cee7af2dda6338cc2999", null ],
     [ "context", "namespaceFeel.html#aa913270cd2843deef2b86218e20a88f3", null ],
+    [ "createGradedLevelsetMetric", "namespaceFeel.html#a4436529759df028cbd8917d48507d6a1", null ],
     [ "csrGraphBlocks", "namespaceFeel.html#a05b4939fb96a9aeca7ab193cb521c3a5", null ],
     [ "densityviscosity_options", "namespaceFeel.html#a775136d895312f831d778398a21bde86", null ],
     [ "DhPdh", "namespaceFeel.html#a08f5e5fbf9a0d1b56ee8a91ac82f4673", null ],

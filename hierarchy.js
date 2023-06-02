@@ -553,6 +553,7 @@ var hierarchy =
     [ "Feel::FeelModels::ModelMeasuresStorageValues", "classFeel_1_1FeelModels_1_1ModelMeasuresStorageValues.html", null ],
     [ "Feel::FeelModels::ModelMesh< IndexType >", "classFeel_1_1FeelModels_1_1ModelMesh.html", null ],
     [ "Feel::FeelModels::ModelMesh< IndexType >::DistanceToRangeSetup::Normalization", "structFeel_1_1FeelModels_1_1ModelMesh_1_1DistanceToRangeSetup_1_1Normalization.html", null ],
+    [ "Feel::FeelModels::ModelMesh< IndexType >::FieldsSetup::PartSetup", "structFeel_1_1FeelModels_1_1ModelMesh_1_1FieldsSetup_1_1PartSetup.html", null ],
     [ "Feel::FeelModels::ModelMesh< IndexType >::MeshAdaptation", "structFeel_1_1FeelModels_1_1ModelMesh_1_1MeshAdaptation.html", null ],
     [ "Feel::FeelModels::ModelMesh< IndexType >::MeshAdaptation::Event", "structFeel_1_1FeelModels_1_1ModelMesh_1_1MeshAdaptation_1_1Event.html", [
       [ "Feel::FeelModels::ModelMesh< IndexType >::MeshAdaptation::EventAfterImport", "structFeel_1_1FeelModels_1_1ModelMesh_1_1MeshAdaptation_1_1EventAfterImport.html", null ],
