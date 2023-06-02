@@ -406,7 +406,7 @@ int main( int argc, char** argv )
         runSensitivityAnalysis( plugin, ioption(_name="sampling.size"), rbDim, false );
 
     if (boption(_name="export_output_sample"))
-        runUncertaintyPropagation( plugin, ioption(_name="sampling.size"), rbDim );
+        exportOutputSample( plugin, ioption(_name="sampling.size"), rbDim );
 
     Feel::cout << tc::green << "Done ✓" << tc::reset << std::endl;
     return 0;
