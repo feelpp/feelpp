@@ -153,7 +153,7 @@ CRBModelDB::loadDBMetaData( crb::attribute from, std::optional<std::string> cons
 }
 
 std::shared_ptr<CRBPluginAPI>
-CRBModelDB::loadDBPlugin( MetaData const& meta, std::string load ) const
+CRBModelDB::loadDBPlugin( MetaData const& meta, std::string const& load ) const
 {
     //auto meta = this->loadDBMetaData( from, value );
     if ( meta.plugin_name.empty() )
@@ -163,7 +163,7 @@ CRBModelDB::loadDBPlugin( MetaData const& meta, std::string load ) const
     return p;
 }
 std::shared_ptr<CRBPluginAPI>
-CRBModelDB::loadDBPlugin( MetaData const& meta, std::string load, std::string pluginlibdir ) const
+CRBModelDB::loadDBPlugin( MetaData const& meta, std::string const& load, std::string const& pluginlibdir ) const
 {
     //auto meta = this->loadDBMetaData( from, value );
     if ( meta.plugin_name.empty() )
