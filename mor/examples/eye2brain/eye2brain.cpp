@@ -223,10 +223,9 @@ Eye2Brain<Order, Dim>::output( int output_index, parameter_type const& mu , elem
     if (output_index == 0) // compliant output
     {
         name = "compliant";
-        /*
-        output = integrate( _range = markedfaces( mesh, "BC_Cornea" )                    , _expr = mu(5) * id( u ) ).evaluate()(0,0)
-               + integrate( _range = markedfaces( mesh, {"BC_Sclera", "BC_OpticNerve" } ), _expr = mu(6) * id( u ) ).evaluate()(0,0);
-  */}
+        output = integrate( _range = markedfaces( mesh, "BC_Cornea" )                    , _expr = mu(5) * idv( u ) ).evaluate()(0,0)
+               + integrate( _range = markedfaces( mesh, {"BC_Sclera", "BC_OpticNerve" } ), _expr = mu(6) * idv( u ) ).evaluate()(0,0);
+    }
     else if ( output_index == 1 )
     {
         int measure_index = ioption(_name = "measure-index");
