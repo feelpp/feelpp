@@ -20,7 +20,7 @@ struct Adhesion_param
     node_type coord_R;
     node_type coord_S;
     int id_R;
-    int id_S;
+    //int id_S;
     double dist;        
 };
 
@@ -28,15 +28,15 @@ class Bonds
 {
     public:
         static int nbr;
-        static std::vector<int> ligandIDs;
+        static std::vector<node_type> ligandNodes;
         static std::vector<int> receptorIDs;
         static std::vector<std::string> cellIDs;
 };
 
 int Bonds::nbr = 0;
-std::vector<int> Bonds::ligandIDs(100,0);
-std::vector<int> Bonds::receptorIDs(100,0);
-std::vector<std::string> Bonds::cellIDs(100,"");
+std::vector<node_type> Bonds::ligandNodes(1000,node_type());
+std::vector<int> Bonds::receptorIDs(1000,0);
+std::vector<std::string> Bonds::cellIDs(1000,"");
 
 template<typename FluidMechanics>
 void
@@ -46,12 +46,13 @@ reset_bonds(FluidMechanics const& t)
     
     for (int i=0; i<100; i++)
     {
-        Bonds::ligandIDs[i] = 0;
+        Bonds::ligandNodes[i] = node_type();
         Bonds::receptorIDs[i] = 0;
         Bonds::cellIDs[i] = "";
     }
 }
 
+/*
 double
 distanceNodes( const node_type & p1, const node_type & p2 )
 {
@@ -64,6 +65,7 @@ distanceNodes( const node_type & p1, const node_type & p2 )
 
     return res;
 }
+*/
 
 RowVectord
 unitVector( const node_type & p1, const node_type & p2, int dim, double dist )
@@ -77,28 +79,50 @@ unitVector( const node_type & p1, const node_type & p2, int dim, double dist )
     return res;
 }
 
+template<typename FluidMechanics>
+void
+index_boundary_points(FluidMechanics const& t)
+{
+    std::set<int> pointIDs;
+
+    for (auto & sface : markedfaces(t.mesh(),"Circle"))
+    {
+        auto & face = boost::unwrap_ref( sface );
+        
+        pointIDs.insert(face.point(0).id());
+        pointIDs.insert(face.point(1).id());
+    }
+
+    LOG(INFO) << "IDs : " << pointIDs << std::endl;
+
+}
+
 template<std::size_t residualType,typename FluidMechanics,typename DataType>
 void
 adhesionModel(FluidMechanics const& t, DataType & data)
 {
     // Get parameters
     int const dim = t.nDim;
-    auto HC = 0.04;
-    auto A = 0.00005;
-    auto lambda = 0.02;
-    auto sigma = 2.;
+    //auto HC = 0.04;
+    auto HC = 0.04*math::pow(10.,-6);
+    //auto A = 0.00005;
+    auto A = 5*math::pow(10.,-20);
+    auto lambda = 0.02*math::pow( 10., -6 );
+    auto sigma = 0.002;
     auto T = 310.;
-    auto kb = 0.0000000138;
+    auto kb = 1.38*math::pow( 10., -23 );
     auto kf0 = 0.01;
-    auto kr0 = 0.01;
-    auto sigmaTS = 1.;
-    auto deltat = 0.001;
+    auto kr0 = 0.01*math::pow( 10., -12 );
+    auto sigmaTS = 0.001;
+    auto deltat = 0.00005;
+    auto N = 47*math::pow( 10., 12 );
+    auto tmp = math::pow(10.,5);
+    //auto tmp = 1;
     std::vector<std::string> marker_surface = {"walls"};
     
     // Get for each cell all the receptors IDs
     std::map<std::string, std::set<int>> CellReceptors;
     std::map<std::string, RowVectord> CellG;
-    int nbr_cells;
 
     for ( auto const& [bpname,bpbc] : t.bodySetBC() )
     {
@@ -115,12 +139,10 @@ adhesionModel(FluidMechanics const& t, DataType & data)
                 CellReceptors[marker].insert(face.point(2).id());
         }
         CellG[marker] = bpbc.body().massCenter();         
-        nbr_cells ++;
     }
 
     LOG(INFO) << "CellReceptors : " << CellReceptors << std::endl;
     
-
     // Compute distance to surface
     int nbr_surface = marker_surface.size();
     auto Vh = Pch<1>(t.mesh()); 
@@ -140,6 +162,8 @@ adhesionModel(FluidMechanics const& t, DataType & data)
         for (int s_i = 0;s_i < nbr_surface; s_i++)
         {
             auto [minToCi,arg_minToCi] = minelt(_range=markedfaces(t.mesh(),c_i.first), _element=distToSurface[s_i]);
+
+            LOG(INFO) << "Distance : " << minToCi << std::endl;
 
             if (minToCi <= HC)
             {   
@@ -167,7 +191,7 @@ adhesionModel(FluidMechanics const& t, DataType & data)
 
                 // Get possible ligands points 
                 std::vector<node_type> ligands;
-                std::vector<int> ligandsIDs;
+                //std::vector<int> ligandsIDs;
                 
                 for (auto & sface : markedfaces(t.mesh(),marker_surface[s_i]))
                 {
@@ -187,16 +211,14 @@ adhesionModel(FluidMechanics const& t, DataType & data)
                     auto DOF = Vh->dof()->localToGlobal( face.element(0).id(), loc, 0 ).index();
                     auto dist = distToCi[DOF];
                     
-                    if ((dist < HC) && (std::find(Bonds::ligandIDs.begin(), Bonds::ligandIDs.end(), face.element(0).point(loc).id()) == Bonds::ligandIDs.end()))
+                    //if ((dist < HC) && (std::find(Bonds::ligandIDs.begin(), Bonds::ligandIDs.end(), face.element(0).point(loc).id()) == Bonds::ligandIDs.end()))
+                    if (dist < HC)
                     {
                         ligands.push_back(face.element(0).point(loc).node());
-                        ligandsIDs.push_back(face.element(0).point(loc).id());
+                        //ligandsIDs.push_back(face.element(0).point(loc).id());
                     }
                 }
-
-                LOG(INFO) << "Ligands : " << ligands << std::endl;
-                LOG(INFO) << "LigandsIDs : " << ligandsIDs << std::endl;
-
+                
                 for (auto & cface : markedfaces(t.mesh(),c_i.first))
                 {
                     auto & face = boost::unwrap_ref( cface );
@@ -220,8 +242,8 @@ adhesionModel(FluidMechanics const& t, DataType & data)
                         Adhesion_param adh;
                         adh.coord_R = face.element(0).point(loc).node();
                         adh.id_R = face.element(0).point(loc).id();
-                        // Search closest ligand
                         
+                        // Search closest ligand
                         auto closest = [&ligands]( node_type p ) 
                         {
                             auto const it = std::min_element(ligands.begin(), ligands.end(),[p] (node_type a, node_type b) {
@@ -232,6 +254,7 @@ adhesionModel(FluidMechanics const& t, DataType & data)
 
                         adh.coord_S =  closest(adh.coord_R);
 
+                        /*
                         for (int j=0;j<ligands.size();j++)
                         {
                             if ((adh.coord_S(0) == ligands[j](0)) && (adh.coord_S(1) == ligands[j](1)))
@@ -240,6 +263,7 @@ adhesionModel(FluidMechanics const& t, DataType & data)
                                 break;   
                             }     
                         }
+                        */
 
                         adh.dist = math::sqrt(distanceNodes(adh.coord_R,adh.coord_S));
                         AdhesionParam[c_i.first].push_back(adh);
@@ -247,29 +271,6 @@ adhesionModel(FluidMechanics const& t, DataType & data)
                 }   
             }
         } 
-    }
-
-
-    for (auto m : CollisionParam)
-    {
-        LOG(INFO) << "ID : " << m.first << std::endl;
-        LOG(INFO) << "coord c : " << m.second.coord_C << std::endl;
-        LOG(INFO) << "coord s : " << m.second.coord_S << std::endl;
-        LOG(INFO) << "rayon c : " << m.second.radius_C << std::endl;
-        LOG(INFO) << "dist : " << m.second.dist << std::endl;
-    }    
-
-    for (auto m : AdhesionParam)
-    {
-        std::cout << "ID : " << m.first << std::endl;
-        for (auto n : m.second)
-        {
-            std::cout << "coord r : " << n.coord_R << std::endl;
-            std::cout << "coord s : " << n.coord_S << std::endl;
-            std::cout << "id r : " << n.id_R << std::endl;
-            std::cout << "id s : " << n.id_S << std::endl;
-            std::cout << "dist : " << n.dist << std::endl;
-        }
     }
 
     // Compute forces and torques
@@ -282,9 +283,9 @@ adhesionModel(FluidMechanics const& t, DataType & data)
         RowVectord F = A/(8*math::sqrt(2.)) * math::sqrt(data.radius_C/data.dist) * (data.coord_C - data.coord_S)/data.dist;
         
         if (forces.find(id) == forces.end()) 
-            forces[id] = F;
+            forces[id] = F*10;
         else
-            forces[id] = forces[id] + F;
+            forces[id] = forces[id] + F*10;
     }
 
 
@@ -295,22 +296,22 @@ adhesionModel(FluidMechanics const& t, DataType & data)
     for (int i = 0;i < Bonds::nbr; i++)
     {
         // Compute proba of bond rupture
-        auto dist = math::sqrt(distanceNodes(t.mesh()->point(Bonds::receptorIDs[i]).node(),t.mesh()->point(Bonds::ligandIDs[i]).node()));
+        auto dist = math::sqrt(distanceNodes(t.mesh()->point(Bonds::receptorIDs[i]).node(),Bonds::ligandNodes[i]));
         auto rupture = kr0*math::exp((sigma-sigmaTS)*(dist-lambda)*(dist-lambda)/(2*kb*T));
         auto probaRupture = 1-math::exp(-rupture*deltat);
         
-        std::cout << "Proba rupture : " << probaRupture << std::endl;
+        LOG(INFO) << "Proba rupture : " << probaRupture << std::endl;
                 
-        // If rupture -> use Marco Carlo
-        if (probaRupture > 0.5)
+        // If rupture
+        if (probaRupture > ((double) rand() / (RAND_MAX)))
             itErase.push_back(i);
         else 
         {
-            RowVectord F = sigma*(dist - lambda)*unitVector(t.mesh()->point(Bonds::ligandIDs[i]).node(), t.mesh()->point(Bonds::receptorIDs[i]).node(), dim, dist);
+            RowVectord F = sigma*(dist - lambda)*unitVector(Bonds::ligandNodes[i], t.mesh()->point(Bonds::receptorIDs[i]).node(), dim, dist);
             if (forces.find(Bonds::cellIDs[i]) == forces.end()) 
-                forces[Bonds::cellIDs[i]] = F;
+                forces[Bonds::cellIDs[i]] = F*tmp;
             else
-                forces[Bonds::cellIDs[i]] = forces[Bonds::cellIDs[i]] + F;
+                forces[Bonds::cellIDs[i]] = forces[Bonds::cellIDs[i]] + F*tmp;
             
             if (dim == 2)
             {   
@@ -318,9 +319,9 @@ adhesionModel(FluidMechanics const& t, DataType & data)
                 Eigen::Vector3d F_(F[0],F[1],0.);
 
                 if (torques.find(Bonds::cellIDs[i]) == torques.end()) 
-                    torques[Bonds::cellIDs[i]] = F_.cross(Gx);
+                    torques[Bonds::cellIDs[i]] = -F_.cross(Gx)*tmp;
                 else
-                    torques[Bonds::cellIDs[i]] = torques[Bonds::cellIDs[i]] + F_.cross(Gx);
+                    torques[Bonds::cellIDs[i]] = torques[Bonds::cellIDs[i]] - F_.cross(Gx)*tmp;
 
             }    
             else if (dim == 3)
@@ -329,9 +330,9 @@ adhesionModel(FluidMechanics const& t, DataType & data)
                 Eigen::Vector3d F_ = F;
 
                 if (torques.find(Bonds::cellIDs[i]) == torques.end()) 
-                    torques[Bonds::cellIDs[i]] = F_.cross(Gx);
+                    torques[Bonds::cellIDs[i]] = -F_.cross(Gx)*tmp;
                 else
-                    torques[Bonds::cellIDs[i]] = torques[Bonds::cellIDs[i]] + F_.cross(Gx);                  
+                    torques[Bonds::cellIDs[i]] = torques[Bonds::cellIDs[i]] - F_.cross(Gx)*tmp;                  
             } 
         }
     }
@@ -340,12 +341,15 @@ adhesionModel(FluidMechanics const& t, DataType & data)
     int addit=0;
     for (auto it : itErase)
     {
-        Bonds::ligandIDs.erase(Bonds::ligandIDs.begin()+it-addit);
+        LOG(INFO) << "Apply erase" << std::endl;
+        Bonds::ligandNodes.erase(Bonds::ligandNodes.begin()+it-addit);
         Bonds::receptorIDs.erase(Bonds::receptorIDs.begin()+it-addit);
         Bonds::cellIDs.erase(Bonds::cellIDs.begin()+it-addit);
         Bonds::nbr--;
         addit++;
     }  
+
+    std::cout << "Nbr bonds : " << Bonds::nbr << std::endl;
 
     // New bonds     
     for (const auto& [id, bonds] : AdhesionParam)
@@ -354,22 +358,23 @@ adhesionModel(FluidMechanics const& t, DataType & data)
         {
             // Compute proba of bond construction
             auto construction = kf0*math::exp(-(sigmaTS)*(data.dist-lambda)*(data.dist-lambda)/(2*kb*T));
-            auto probaConstruction = 1-math::exp(-construction*deltat);
-            std::cout << "Proba construction : " << probaConstruction << std::endl;
-            
-            if (probaConstruction > 0.0000000001)
+            auto probaConstruction = 1-math::exp(-N*construction*deltat);
+
+            LOG(INFO) << "Proba construction : " << probaConstruction << std::endl;
+
+            if (probaConstruction > ((double) rand() / (RAND_MAX)))
             {
                 RowVectord F = sigma*(data.dist - lambda)*unitVector(data.coord_S, data.coord_R, dim, data.dist);
             
                 Bonds::cellIDs[Bonds::nbr] = id;
-                Bonds::ligandIDs[Bonds::nbr] = data.id_S;
+                Bonds::ligandNodes[Bonds::nbr] = data.coord_S;
                 Bonds::receptorIDs[Bonds::nbr] = data.id_R;
                 Bonds::nbr +=1;
             
                 if (forces.find(id) == forces.end()) 
-                    forces[id] = F;
+                    forces[id] = F*tmp;
                 else
-                    forces[id] = forces[id] + F;
+                    forces[id] = forces[id] + F*tmp;
             
             
                 if (dim == 2)
@@ -378,9 +383,9 @@ adhesionModel(FluidMechanics const& t, DataType & data)
                     Eigen::Vector3d F_(F[0],F[1],0.);
 
                     if (torques.find(id) == torques.end()) 
-                        torques[id] = F_.cross(Gx);
+                        torques[id] = -F_.cross(Gx)*tmp;
                     else
-                        torques[id] = torques[id] + F_.cross(Gx);
+                        torques[id] = torques[id] - F_.cross(Gx)*tmp;
 
                 }    
 
@@ -390,9 +395,9 @@ adhesionModel(FluidMechanics const& t, DataType & data)
                     Eigen::Vector3d F_ = F;
 
                     if (torques.find(id) == torques.end()) 
-                        torques[id] = F_.cross(Gx);
+                        torques[id] = - F_.cross(Gx)*tmp;
                     else
-                        torques[id] = torques[id] + F_.cross(Gx);                  
+                        torques[id] = torques[id] - F_.cross(Gx)*tmp;                  
                 } 
             }
         }

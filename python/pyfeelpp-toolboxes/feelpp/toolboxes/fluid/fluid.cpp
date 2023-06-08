@@ -155,6 +155,16 @@ void defFM(py::module &m)
             },
             "Initialization of bonds"
         )
+
+        .def(
+            "index_boundary_points",[](const fm_t& t)
+            {
+                index_boundary_points(t);
+            },
+            "points"
+        )
+
+
         
         ;
         
