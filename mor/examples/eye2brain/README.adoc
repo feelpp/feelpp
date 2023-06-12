@@ -55,10 +55,10 @@
 
 ## Online step
 
-.Run online
+.Run online application
 [source,bash]
 ----
-feelpp_mor_onlinerun --crbmodel.name eye2brain_<dim>d --plugin.dir ${build_directory}/install/bin/
+feelpp_mor_onlinerun --crbmodel.name eye2brain_<dim>d --plugin.dir ${build_directory}/install/bin/ --output_results.precision 12
 ----
 
 WARNING: While the branch 2068 is not merged, you need to build and run the `feelpp_mor_onlinerun` from the `apps` directory.

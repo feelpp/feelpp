@@ -58,8 +58,8 @@ if (FEELPP_ENABLE_OPENTURNS)
      )
 endif()
 
-
-## test
+#[==[
+## test : disabled for the runner : meshed are only present locally
 foreach( ORDER 1 2 )
 
     set (TEST_SCRIPT "${CMAKE_CURRENT_BINARY_DIR}/test_2dP${ORDER}.sh")
@@ -89,3 +89,4 @@ foreach( ORDER 1 2 )
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
 endforeach()
+#]==]
