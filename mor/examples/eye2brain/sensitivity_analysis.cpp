@@ -398,7 +398,7 @@ int main( int argc, char** argv )
                      _desc_lib = crbonlinerunliboptions.add( feel_options() ),
                      _about = makeAbout() );
 
-    OT::RandomGenerator::SetSeed( 0 );
+    OT::RandomGenerator::SetSeed( ::time(NULL) );
     plugin_ptr_t plugin = loadPlugin();
     int rbDim = ioption(_name="rb-dim");
 
