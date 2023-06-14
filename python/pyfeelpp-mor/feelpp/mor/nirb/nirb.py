@@ -13,7 +13,7 @@ import feelpp.toolboxes.heat as heat
 import feelpp.toolboxes.fluid as fluid
 import feelpp.interpolation as fi
 from tqdm import tqdm
-import random 
+import random
 import math
 import pathlib
 from scipy.linalg import eigh
@@ -319,9 +319,9 @@ class nirbOffline(ToolboxModel):
         info = self.getToolboxInfos()
         info["doRectification"] = self.doRectification
         info["doBiorthonormal"] = self.doBiorthonormal
-        info["doGreedy"] = self.doGreedy 
+        info["doGreedy"] = self.doGreedy
         info["numberOfBasis"] = self.N
-        info["outdir"] = self.outdir 
+        info["outdir"] = self.outdir
         return info
 
     def BiOrthonormalization(self):
@@ -356,7 +356,7 @@ class nirbOffline(ToolboxModel):
                 vec.add(float(eigenVectors[j,i]), oldbasis[j])
 
             # vec = vec*(1./math.sqrt(abs(self.l2ScalarProductMatrix.energy(vec,vec))))
-            
+
             self.reducedBasis.append(vec)
 
 
@@ -390,7 +390,7 @@ class nirbOffline(ToolboxModel):
                 indice_mu = np.array(indice_mu, dtype='i')
             else :
                 indice_mu = np.empty(numberOfInitSnapshots, dtype='i')
-            
+
             self.worldcomm.globalComm().Bcast(indice_mu, root=0)
             vector_mu = [Xi_train[i] for i in list(indice_mu)]
 
@@ -563,7 +563,7 @@ class nirbOffline(ToolboxModel):
             self.BiOrthonormalization()
         if self.doRectification:
             self.coeffCoarse, self.coeffFine = self.coeffRectification()
-        return RIC 
+        return RIC
 
     def addFunctionToBasis(self, snapshot, tolerance=1e-6):
         """Add function to the reduced basis, previously generated
@@ -612,18 +612,18 @@ class nirbOffline(ToolboxModel):
 
         Parameters
         ----------
-            tolerance (float) : tolerance to stop selection of basis (if (1 - RIC)<=tolerance) 
+            tolerance (float) : tolerance to stop selection of basis (if (1 - RIC)<=tolerance)
 
         Returns
         -------
         ReducedBasis (list) : the reduced basis, of size numberOfModes
-        RIC (list) : Relative innformation content 
+        RIC (list) : Relative innformation content
         """
 
         Nsnap = len(self.fineSnapShotList)
 
         if self.correlationMatrix == None :
-            self.correlationMatrix = np.zeros((Nsnap, Nsnap))            
+            self.correlationMatrix = np.zeros((Nsnap, Nsnap))
             for i, snap1 in enumerate(self.fineSnapShotList):
                 for j, snap2 in enumerate(self.fineSnapShotList):
                     if i > j:
@@ -646,7 +646,7 @@ class nirbOffline(ToolboxModel):
         idx = eigenValues.argsort()[::-1]
         eigenValues = eigenValues[idx]
         eigenVectors = eigenVectors[:, idx]
-        
+
         Nmode = len(eigenValues)
 
         for i in range(Nmode):
@@ -657,7 +657,7 @@ class nirbOffline(ToolboxModel):
         sum_eigenValues = eigenValues.sum()
         RIC = []
 
-        for i in range(Nmode):              
+        for i in range(Nmode):
             vec = self.Xh.element()
             vec.setZero()
             for j in range(Nsnap):
@@ -1064,7 +1064,7 @@ class nirbOnline(ToolboxModel):
         Parameters
         ----------
         mu : ParameterSpaceElement
-            parameter 
+            parameter
         Nb : int, optional
             Size of the basis, by default None. If None, the whole basis is used
 
@@ -1119,7 +1119,7 @@ class nirbOnline(ToolboxModel):
 
         #Thikonov regularization (AT @ A + lambda I_d)^-1 @ (AT @ B)
         R = np.linalg.solve(BH.transpose() @ BH + lambd * np.eye(Nb), BH.transpose() @ Bh)
-        
+
         if False:
             R_old = np.zeros((Nb, Nb))
             for i in range(Nb):
@@ -1157,7 +1157,6 @@ class nirbOnline(ToolboxModel):
         --------
             int: error code, 0 if all went well, 1 if not
         """
-
         reducedPath = os.path.join(path,'reducedBasis')
         reducedFilename = 'reducedBasis'
 
@@ -1217,8 +1216,8 @@ class nirbOnline(ToolboxModel):
 
     def normMat(self, u, Mat=None):
         """ Compute the norm associated to matrix Mat in the fine mesh
-                ¶u¶ = sqrt(uT*Mat*u)
-            if Mat is not specified, L2 matrix will be computed 
+                ||u|| = sqrt(uT*Mat*u)
+            if Mat is not specified, L2 matrix will be computed
         Args:
         -----
             Mat (feelpp.__alg.SparseMatrix): the matrix. Defaults to None.

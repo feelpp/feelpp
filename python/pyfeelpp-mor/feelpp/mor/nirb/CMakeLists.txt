@@ -1,4 +1,4 @@
-###  CMakeLists.txt; coding: utf-8 --- 
+###  CMakeLists.txt; coding: utf-8 ---
 
 #  Author(s): Ali Elarif <ali.elarif@cemosis.fr>
 #             Thomas Saigre <saigre@math.unistra.fr>

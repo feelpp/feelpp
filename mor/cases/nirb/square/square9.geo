@@ -9,17 +9,17 @@ d = DefineNumber[ 0, Name "Parameters/d" ];
 hmax=0.5;
 Mesh.CharacteristicLengthMax = hmax;
 //+
-// Left boxes 
+// Left boxes
 For r In {1:N}
     Printf("boxe = %g",r);
     Rectangle(r) = {-L, r*(d+t), 0, L, t, 0};
 EndFor
-// Middle boxes 
+// Middle boxes
 For r In {1:N}
     Printf("boxe = %g",r+N);
     Rectangle(r+N) = {0, r*(d+t), 0, L, t, 0};
 EndFor
-// Right boxes 
+// Right boxes
 For r In {1:N}
     Printf("boxe = %g",r);
     Rectangle(r+2*N) = {L, r*(d+t), 0, L, t, 0};
@@ -35,7 +35,7 @@ For r In {1:N}
     Physical Surface(Sprintf("mat_%g",r)) = {r};
     Physical Surface(Sprintf("mat_%g",r+N)) = {r+N};
     Physical Surface(Sprintf("mat_%g",r+2*N)) = {r+2*N};
-EndFor 
+EndFor
 
 bdy[] = CombinedBoundary { Surface{:}; };
 
@@ -47,7 +47,7 @@ Physical Curve("Tflux") =  {1, 11, 18};
 // For ii In { 1 : (#bdy[]-1) }
 //     If (Abs(bdy[ii]) != 1)
 //         Printf("boundary out number %g = %g", ii, Abs(bdy[ii]));
-//         Physical Curve("Tfourier") += Abs(bdy[ii]);   
+//         Physical Curve("Tfourier") += Abs(bdy[ii]);
 //     Else
 //         Printf("boundary In number %g = %g", ii, Abs(bdy[ii]));
 //         Physical Curve("Tflux") = Abs(bdy[ii]);

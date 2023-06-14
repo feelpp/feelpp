@@ -4,7 +4,7 @@ from feelpp.mor.nirb.utils import WriteVecAppend, init_feelpp_environment, gener
 import time
 import json
 import argparse
-import pandas as pd 
+import pandas as pd
 
 
 if __name__ == "__main__":
@@ -50,7 +50,7 @@ if __name__ == "__main__":
         RESPATH = f"results/{rectPath}/{greedyPath}"
     else:
         RESPATH = outdir
-    
+
     ### Initializa the nirb object
     nirb_off = nirbOffline(initCoarse=True, **config_nirb)
     nirb_off.initModel()
@@ -63,9 +63,9 @@ if __name__ == "__main__":
     # if os.path.isfile(Xi_train_path):
     #     s = nirb_off.Dmu.sampling()
     #     N = s.readFromFile(Xi_train_path)
-    #     Xi_train = s.getVector()    
+    #     Xi_train = s.getVector()
     #     if nirb_off.worldcomm.isMasterRank():
-    #         print(f"[NIRB] Xi_train loaded from {Xi_train_path}") 
+    #         print(f"[NIRB] Xi_train loaded from {Xi_train_path}")
     # else :
     #     Xi_train = generatedAndSaveSampling(nirb_off.Dmu, 200, path=Xi_train_path, samplingMode="log-random")
 
@@ -98,16 +98,16 @@ if __name__ == "__main__":
         if os.path.isfile(Xi_test_path):
             s = nirb_off.Dmu.sampling()
             N = s.readFromFile(Xi_test_path)
-            Xi_test = s.getVector()  
+            Xi_test = s.getVector()
             if nirb_off.worldcomm.isMasterRank():
-                print(f"[NIRB] Xi_test loaded from {Xi_test_path}")  
+                print(f"[NIRB] Xi_test loaded from {Xi_test_path}")
         else :
             Ns = 30
             Xi_test = generatedAndSaveSampling(nirb_off.Dmu, Ns, path=Xi_test_path, samplingMode="log-random")
-            
+
         Err = nirb_off.checkConvergence(Ns=30, Xi_test=Xi_test)
         df = pd.DataFrame(Err)
-        file =RESPATH +f"/offlineError.csv"  
+        file =RESPATH +f"/offlineError.csv"
         df.to_csv(file, index=False)
         print(f"[NIRB] Offline error saved in {file}")
 

@@ -1,6 +1,6 @@
 import sys
 from feelpp.mor.nirb.nirb import *
-from feelpp.mor.nirb.utils import WriteVecAppend, init_feelpp_environment, generatedAndSaveSampling
+from feelpp.mor.nirb.utils import WriteVecAppend, init_feelpp_environment, generatedAndSaveSampling, SamplingPreProcess
 import time
 import pandas as pd
 from pathlib import Path
@@ -31,14 +31,14 @@ def offline(nirb, RESPATH, doGreedy, N, Xi_train=None):
     RIC = nirb.generateReducedBasis()
 
     nirb.saveData(RESPATH, force=True)
-    
+
     # RIC = np.array(RIC)
     # file = "ric_offline.txt"
     # np.savetxt(file,RIC)
 
     print(f"proc {nirb_off.worldcomm.localRank()} Is L2 orthonormalized ?", nirb_off.checkL2Orthonormalized())
     finish = time.time()
-    nirb.writeOfflineInfos() 
+    nirb.writeOfflineInfos()
 
     comm.Barrier()
 
@@ -49,8 +49,8 @@ def offline(nirb, RESPATH, doGreedy, N, Xi_train=None):
     if feelpp.Environment.isMasterRank():
         print(f"[NIRB] Offline Elapsed time = ", finish-start)
         print(f"[NIRB] Offline part Done !")
-    
-    return res 
+
+    return res
 
 
 def online_error_sampling(nirb, RESPATH, errorfile=None, Nb=None,  Nsample=50, Xi_test=None, verbose=True, save=True, regulParam=1.e-10):
@@ -68,10 +68,10 @@ def online_error_sampling(nirb, RESPATH, errorfile=None, Nb=None,  Nsample=50, X
         save (bool, optional): if True, save the errors in a csv file. Defaults to False.
         regulParam(float, optionnal) : regularization parameter for the rectification preprocess. Defaults to 1.e-10
     """
-    
+
     errorN = ComputeErrorSampling(nirb, Nb=Nb, Nsample=Nsample, Xi_test=Xi_test, h1=True, regulParam=regulParam)
 
-    df = pd.DataFrame(errorN) 
+    df = pd.DataFrame(errorN)
     df['N'] = Nb
 
     if save:
@@ -79,18 +79,18 @@ def online_error_sampling(nirb, RESPATH, errorfile=None, Nb=None,  Nsample=50, X
             if not os.path.isdir(RESPATH):
                 os.makedirs(RESPATH)
 
-            if errorfile is None :   
+            if errorfile is None :
                 file = Path(f"{RESPATH}/errors{Nsample}Params.csv").absolute()
-            else : 
+            else :
                 if not RESPATH[-1] == "/":
-                    file = RESPATH +'/'+ errorfile 
+                    file = RESPATH +'/'+ errorfile
                 else :
-                    file = RESPATH + errorfile 
+                    file = RESPATH + errorfile
 
             header = not os.path.isfile(file)
             df.to_csv(file, mode='a', index=False, header=header)
             print(f"[NIRB] Convergence errors are saved in {file}")
-        
+
     if verbose:
         if feelpp.Environment.isMasterRank():
             print("[NIRB online] all computed errors ")
@@ -109,7 +109,7 @@ def online_time_measure(nirb, Nsample=50, Xi_test=None):
     """Measures the online time to compute solution, compared to the time taken by the toolbox
        Generates the file nirbOnline_time_exec.dat containing the time to compute the NIRB solution and the toolbox solution,
            according to the number of samples N
-    
+
     Args:
     -----
         nirb_config (nirbOnline): nirb object
@@ -150,12 +150,12 @@ def online_time_measure(nirb, Nsample=50, Xi_test=None):
     return res
 
 def loadSampling(Dmu, path='./', idmodel='s4', Ntest=50, Ntrain=200, samplingMode='log-random'):
-    """upload sampling parameter for trainning and testing 
+    """upload sampling parameter for trainning and testing
 
     Parameters
     ----------
     path : str
-        path to load or save sampling 
+        path to load or save sampling
     idmodel : str, optional
         identifiant of the model, by default 's4'
     Ntest : int, optional
@@ -164,25 +164,24 @@ def loadSampling(Dmu, path='./', idmodel='s4', Ntest=50, Ntrain=200, samplingMod
         number of train parameter, by default 200
     """
 
-    Xtrain_path = path + f"/sampling_train_{idmodel}_N{Ntrain}.sample"
-    Xtest_path = path + f"/sampling_test_{idmodel}_N{Ntest}.sample"
+    Xtrain_path = os.path.join(path, f"sampling_train_{idmodel}_N{Ntrain}.sample")
+    Xtest_path = os.path.join(path, f"sampling_test_{idmodel}_N{Ntest}.sample")
 
-    
     if os.path.isfile(Xtest_path) and os.path.isfile(Xtrain_path) :
         s = Dmu.sampling()
         N = s.readFromFile(Xtest_path)
         assert N==Ntest, f"Given size of sampling test {Ntest} # loaded sampling size {N}"
-        Xi_test = s.getVector() 
+        Xi_test = s.getVector()
         N = s.readFromFile(Xtrain_path)
         assert N==Ntrain, f"Given size of sampling train {Ntrain} # loaded sampling size {N}"
-        Xi_train = s.getVector() 
+        Xi_train = s.getVector()
         if feelpp.Environment.isMasterRank():
-            print(f"[NIRB] Sampling loaded from path : {path}")  
+            print(f"[NIRB] Sampling loaded from path : {path}")
     else :
-        Xi_train, Xi_test = SamplingPreProcess(Dmu,Ntrain=Ntrain, Ntest=Ntest, path=path, idmodel=idmodel, samplingMode=samplingMode)
+        Xi_train, Xi_test = SamplingPreProcess(Dmu, Ntrain=Ntrain, Ntest=Ntest, path=path, idmodel=idmodel, samplingMode=samplingMode)
 
     return Xi_train, Xi_test
-    
+
 
 if __name__ == '__main__':
 
@@ -196,9 +195,9 @@ if __name__ == '__main__':
     parser.add_argument("--idmodel", help="identifiant of the model [default='s4'(for square 4)]", type=str, default="s4")
     parser.add_argument("--regulparam", help="Wether to get conv error in respect of regularization parameter [default=0]", type=int, default=0)
 
-    ## get parser args 
+    ## get parser args
     args = parser.parse_args()
-    config_file = args.config_file 
+    config_file = args.config_file
     Nsample = args.Ntest
     Nbase = args.Nbase
 
@@ -207,14 +206,14 @@ if __name__ == '__main__':
     convergence = bo[args.convergence]
     regulParameter = bo[args.regulparam]
 
-    ## Init feelpp 
+    ## Init feelpp
     cfg = feelpp.readCfg(config_file)
     toolboxType = cfg['nirb']['toolboxType']
     e = init_feelpp_environment(toolboxType, config_file)
     nirb_file = feelpp.Environment.expand(cfg['nirb']['filename'])
     config_nirb = feelpp.readJson(nirb_file)['nirb']
 
-    ## Get model and data path 
+    ## Get model and data path
     config_nirb['greedy-generation'] = bo[args.greedy]
     model_path = config_nirb['model_path']
     doGreedy = config_nirb['greedy-generation']
@@ -225,7 +224,7 @@ if __name__ == '__main__':
     if feelpp.Environment.isMasterRank():
         if not os.path.exists(RESPATH):
             os.makedirs(RESPATH)
-    
+
     size = feelpp.Environment.numberOfProcessors()
 
     pas = 3
@@ -233,11 +232,11 @@ if __name__ == '__main__':
     baseList = range(10,b, pas)
 
     Dmu = loadParameterSpace(model_path)
-    ## get distinct training and testing sample 
-    idmodel = args.idmodel 
+    ## get distinct training and testing sample
+    idmodel = args.idmodel
     Xi_train, Xi_test = loadSampling(Dmu, path=RESPATH, idmodel=idmodel, Ntest=Nsample, Ntrain=Nbase)
 
-    ## generate nirb offline and online object :  
+    ## generate nirb offline and online object :
     nirb_off = nirbOffline(**config_nirb, initCoarse=doGreedy)
     nirb_off.initModel()
     resOffline = offline(nirb_off, RESPATH, doGreedy, baseList[-1], Xi_train=Xi_train)
@@ -249,7 +248,7 @@ if __name__ == '__main__':
     nirb_on = nirbOnline(**config_nirb)
     nirb_on.initModel()
 
-    ## load offline datas only once 
+    ## load offline datas only once
     lmd = 1.e-10
     Nglob = nirb_off.N
     err = nirb_on.loadData(nbSnap=Nglob, path=RESPATH, regulParam=lmd)
@@ -258,26 +257,26 @@ if __name__ == '__main__':
     errorfile = f"errors{Nsample}Params_{idd}.csv"
 
     comm.Barrier()
-    if convergence : 
-        if regulParameter : 
-            ## test convergence i respect of regularization parameter 
+    if convergence :
+        if regulParameter :
+            ## test convergence i respect of regularization parameter
             Nl = [0, 1, 3, 5, 7, 9, 10, 11, 12, 17]
             ## for n in Nl, Lambda = 1.E-n
-            del nirb_on.RectificationMat[Nglob] 
+            del nirb_on.RectificationMat[Nglob]
             for lm in Nl :
-                lmd = 1./10**lm 
+                lmd = 1./10**lm
                 idd = str(idmodel) + f"lmd{lm}"
                 errorfile = f"errors{Nsample}Params_{idd}.csv"
-                ## Get convergence error in respect to basis function     
+                ## Get convergence error in respect to basis function
                 for N in baseList:
                     N = int(N)
                     if feelpp.Environment.isMasterRank():
                         print("\n\n-----------------------------")
                         print(f"[NIRB] Test with N = {N}, lambda = {lmd}")
                     online_error_sampling(nirb_on, RESPATH,errorfile=errorfile, Nb=N, Nsample=Nsample, Xi_test=Xi_test, verbose=False, regulParam=lmd)
-                    del nirb_on.RectificationMat[N] 
+                    del nirb_on.RectificationMat[N]
         else :
-            ## Get convergence error in respect to basis function     
+            ## Get convergence error in respect to basis function
             for N in baseList:
                 N = int(N)
                 if feelpp.Environment.isMasterRank():
@@ -285,7 +284,7 @@ if __name__ == '__main__':
                     print(f"[NIRB] Test with N = {N}, lambda = {lmd}")
                 online_error_sampling(nirb_on, RESPATH,errorfile=errorfile, Nb=N, Nsample=Nsample, Xi_test=Xi_test, verbose=False, regulParam=lmd)
                 del nirb_on.RectificationMat[N]
-                
+
     if timeExec:
         ## Get online time mesure
         resOnline = online_time_measure(nirb_on, Nsample=Nsample)
@@ -293,9 +292,9 @@ if __name__ == '__main__':
             res = resOnline
             res['nirb_offline'] = resOffline['nirb_offline']
             res['nproc'] = size
-            res['stype'] = idmodel 
-            df = pd.DataFrame(res) 
-            # save file 
+            res['stype'] = idmodel
+            df = pd.DataFrame(res)
+            # save file
             parent3 = list(Path(RESPATH).absolute().parents)[3]
             file = Path(f"{parent3}/nirb_parallel_time_exec.csv")
             header = not os.path.isfile(file)

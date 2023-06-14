@@ -78,7 +78,6 @@
             "min":"0.1",
             "max":"10"
         },
-        
         "Bi":
         {
             "value":"0.01",
@@ -158,18 +157,17 @@
             "Cp":"1",
             "rho":"1"
         }
-        
     },
     "InitialConditions":
     {
-        "temperature": 
+        "temperature":
         {
-            "Expression": 
+            "Expression":
             {
-                "init": 
+                "init":
                 {
-                    "markers":["mat_1", "mat_2", "mat_3", "mat_4", "mat_5", "mat_6", "mat_7", "mat_8", "mat_9" ], 
-                    "expr":"0" 
+                    "markers":["mat_1", "mat_2", "mat_3", "mat_4", "mat_5", "mat_6", "mat_7", "mat_8", "mat_9" ],
+                    "expr":"0"
                 }
             }
         }
