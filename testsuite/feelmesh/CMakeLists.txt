@@ -24,4 +24,12 @@ if ( FEELPP_HAS_PARMMG OR FEELPP_HAS_MMG )
                    GEO domains_2d.geo domains_3d.geo domains_2d_curved.geo domains_3d_curved.geo domain_2d.geo  domain_3d.geo 
                        test_remesh.json test_remesh_relations.json test_remesh_curved.json 
                    TIMEOUT 500)
+
+  feelpp_add_test(remesh_gradedls CFG test_remesh_gradedls.cfg
+    GEO domains_2d.geo domains_3d.geo domains_2d_curved.geo domains_3d_curved.geo domain_2d.geo domain_3d.geo
+    test_remesh_gradedls.json
+    TIMEOUT 500)
 endif()
+
+feelpp_add_test(bvh2D SRCS test_bvh.cpp DEFS FEELPP_DIM=2 CFG test_bvh2d.cfg GEO domain_2d.geo NO_MPI_TEST )
+feelpp_add_test(bvh3D SRCS test_bvh.cpp DEFS FEELPP_DIM=3 CFG test_bvh3d.cfg GEO cubic_cavity.geo NO_MPI_TEST )

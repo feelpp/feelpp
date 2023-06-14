@@ -11,12 +11,15 @@ from ._feelpp import  *
 from ._core import *
 from ._alg import *
 from ._mesh import *
+from ._plot import *
 from ._discr import *
 from ._exporter import  *
 from ._ls import *
 from ._ts import  *
 from ._vf import  *
 from ._models import *
+
+__version__ = '@FEELPP_VERSION_STRING@'
 
 def readCfg(filename):
     """read a Feel++ config file and get a ConfigParser to manipulate the options
@@ -236,6 +239,7 @@ def create_rectangle(filename="rectangle"):
     if Environment.isMasterRank():
         import gmsh
         gmsh.initialize()
+        gmsh.option.setNumber('General.Verbosity', 1)
         gmsh.model.add("rectangle")
         gmsh.logger.start()
         rectangle = gmsh.model.occ.addRectangle(0, 0, 0, 1, 2)

@@ -730,7 +730,7 @@ roots( JacobiP const& p, Vector& xr )
         for ( int k = 0; k < N; ++k )
         {
             value_type pi = 4.0*math::atan( value_type( 1.0 ) );
-            // use k-th checbychev point to  initiliaze newton
+            // use k-th checbychev point to  initialize newton
             r = -math::cos( ( 2.0*value_type( k ) + 1.0 ) * pi / ( 2.0 * value_type( N ) ) );
 
             // use average of r and xr[k-1] as starting point (see KS)

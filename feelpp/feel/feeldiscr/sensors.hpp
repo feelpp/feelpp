@@ -164,7 +164,7 @@ public:
             auto mapfec = Feel::vf::mapfec( fec );
             auto tExpr = expr.evaluator(mapgmc, mapfec);
 
-            // TODO check if next lines are really usefull?
+            // TODO check if next lines are really useful?
             fec->update( gmc );
             tExpr.update( mapgmc, mapfec );
 

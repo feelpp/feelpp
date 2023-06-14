@@ -34,6 +34,19 @@
             }
         },
         {
+            "name": "specx",
+            "inherits": "default",
+            "displayName": "specx",
+            "description": "Build feelpp with specx",
+            "generator": "Unix Makefiles",
+            "binaryDir": "${sourceDir}/build/specx",
+            "cacheVariables": {
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/build/specx/install/",
+                "FEELPP_ENABLE_BENCHMARKS": "ON",
+                "FEELPP_ENABLE_SPECX": "ON"
+            }
+        },
+        {
             "name": "dbg",
             "displayName": "Debug Config",
             "description": "Debug build using Makefile generator",
@@ -75,6 +88,24 @@
             }
         },
         {
+            "name": "feelpp+specx",
+            "inherits": "default",
+            "displayName": "feelpp+specx",
+            "description": "Build only the Feel++ library Component with specx runtime",
+            "generator": "Unix Makefiles",
+            "binaryDir": "${sourceDir}/build/feelpp+specx",
+            "cacheVariables": {
+                "FEELPP_COMPONENT": "feelpp",
+                "FEELPP_ENABLE_MOR": "OFF",
+                "FEELPP_ENABLE_TOOLBOXES": "OFF",
+                "FEELPP_ENABLE_FEELPP_PYTHON": "OFF",
+                "FEELPP_ENABLE_TESTS": "OFF",
+                "FEELPP_ENABLE_FMILIB": "OFF",
+                "FEELPP_ENABLE_BENCHMARKS": "ON",
+                "FEELPP_ENABLE_SPECX": "ON"
+            }
+        },
+        {
             "name": "toolboxes",
             "inherits": "default",
             "displayName": "toolboxes",
@@ -107,9 +138,9 @@
             }
         },
         {
-            "name": "python",
+            "name": "feelpp-python",
             "inherits": "default",
-            "displayName": "feelpp-python",
+            "displayName": "python",
             "description": "Build only the Feel++ python Component",
             "binaryDir": "${sourceDir}/build/python",
             "cacheVariables": {
@@ -118,9 +149,9 @@
             }
         },
         {
-            "name": "feelpp-python",
+            "name": "python",
             "inherits": "default",
-            "displayName": "feelpp-python",
+            "displayName": "python",
             "description": "Build only the Feel++ python Component",
             "binaryDir": "${sourceDir}/build/python",
             "cacheVariables": {
@@ -182,6 +213,20 @@
             }
         },
         {
+            "name": "macos-homebrew",
+            "inherits": "default",
+            "displayName": "MacOS configuration using Homebrew",
+            "description": "This build is only available on MacOS",
+            "binaryDir": "${sourceDir}/build/macos-homebrew",
+            "cacheVariables": {
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/build/macos-homebrew/install/",
+                "CMAKE_CXX_COMPILER": "/opt/homebrew/opt/llvm/bin/clang++",
+                "CMAKE_C_COMPILER": "/opt/homebrew/opt/llvm/bin/clang",
+                "FEELPP_STD_CPP": "20",
+                "CMAKE_CXX_FLAGS": "-D_HAS_AUTO_PTR_ETC=0"
+            }
+        },
+        {
             "name": "doxygen",
             "inherits": "default",
             "displayName": "doxygen",
@@ -199,6 +244,11 @@
             "jobs": 25
         },
         {
+            "name": "specx",
+            "configurePreset": "specx",
+            "jobs": 25
+        },
+        {
             "name": "dbg",
             "configurePreset": "dbg",
             "jobs": 10,
@@ -207,6 +257,11 @@
                 "pyfeelpp",
                 "install"
             ]
+        },
+        {
+            "name": "macos-homebrew",
+            "configurePreset": "macos-homebrew",
+            "jobs": 2
         },
         {
             "name": "feelpp",
@@ -238,20 +293,12 @@
         {
             "name": "feelpp-python",
             "inherits": "default",
-            "configurePreset": "feelpp-python",
-            "targets": [
-                "all",
-                "install"
-            ]
+            "configurePreset": "feelpp-python"
         },
         {
             "name": "python",
             "inherits": "default",
-            "configurePreset": "python",
-            "targets": [
-                "all",
-                "install"
-            ]
+            "configurePreset": "python"
         },
         {
             "name": "feelpp-python-dbg",
@@ -299,6 +346,11 @@
             }
         },
         {
+            "name": "specx",
+            "configurePreset": "specx",
+            "inherits": "default"
+        },
+        {
             "name": "feelpp",
             "configurePreset": "feelpp",
             "inherits":"default"
@@ -311,11 +363,6 @@
         {
             "name": "mor",
             "configurePreset": "mor",
-            "inherits": "feelpp"
-        },
-        {
-            "name": "python",
-            "configurePreset": "python",
             "inherits": "feelpp"
         },
         {

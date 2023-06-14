@@ -40,24 +40,23 @@ def createInterpolator(image_tb,domain_tb):
     return interpolator
 
 @pytest.mark.parametrize("cfg_path, geo_path, model_path", cases_params, ids=cases_ids)
-def test_interpolate_constant(cfg_path, geo_path, model_path):
+def test_interpolate_constant(init_feelpp,cfg_path, geo_path, model_path):
 
     cfg_path = os.path.join(os.path.dirname(__file__), cfg_path)
     geo_path = os.path.join(os.path.dirname(__file__), geo_path)
     model_path = os.path.join(os.path.dirname(__file__), model_path)
-
-    config = feelpp.globalRepository("nirb")
-    e=feelpp.Environment(["pyfeelpp-test-nirb"], opts = toolboxes_options("heat"), config=config)
-
+    
+    feelpp.Environment.changeRepository(directory="pyfeelpp-tests/interpolate/nirb")
+    
     # fineness of two grids
     H = 0.1
     h = H**2
 
     # load the model
-    e.setConfigFile(cfg_path)
+    feelpp.Environment.setConfigFile(cfg_path)
 
     model = feelpp.readJson(model_path)
-
+    
     tbCoarse = setToolbox(H, geo_path, model)
     tbFine = setToolbox(h, geo_path, model)
 
