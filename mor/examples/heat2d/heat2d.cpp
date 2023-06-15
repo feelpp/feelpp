@@ -76,35 +76,35 @@ Heat2D::initModel()
     //lhs
     /// [lhs1]
     auto a0 = form2( _trial=Xh, _test=Xh);
-    a0 = integrate( markedelements( mesh,"SR" ),  gradt( u )*trans( grad( v ) )  )
-        - integrate( markedfaces( mesh, "BR"), (gradt(u)*id(v)+grad(v)*idt(u))*N() + doption("gamma")*idt(u)*id(v) );
+    a0 = integrate(  _range = markedelements( mesh,"SR" ), _expr= gradt( u )*trans( grad( v ) )  )
+        - integrate(  _range = markedfaces( mesh, "BR"), _expr=(gradt(u)*id(v)+grad(v)*idt(u))*N() + doption("gamma")*idt(u)*id(v) );
     this->addLhs( { a0 , "mu0" } );
     /// [lhs1]
 
     /// [lhs2]
     auto a1 = form2( _trial=Xh, _test=Xh);
-    a1 = integrate( markedelements( mesh,"SL" ),  gradt( u )*trans( grad( v ) )  )
-        - integrate( markedfaces( mesh, "BL"), (gradt(u)*id(v)+grad(v)*idt(u))*N() + doption("gamma")*idt(u)*id(v) );
+    a1 = integrate(  _range = markedelements( mesh,"SL" ), _expr= gradt( u )*trans( grad( v ) )  )
+        - integrate(  _range = markedfaces( mesh, "BL"),_expr= (gradt(u)*id(v)+grad(v)*idt(u))*N() + doption("gamma")*idt(u)*id(v) );
     this->addLhs( { a1 , "mu1" } );
     /// [lhs2]
 
     //rhs
     /// [rhs1]
     auto f0 = form1( _test=Xh );
-    f0 = integrate( markedfaces( mesh,"BR" ), -expr(soption("functions.f"))*(grad(v)*N()+doption("gamma")*id(v)) );
+    f0 = integrate(  _range = markedfaces( mesh,"BR" ),_expr= -expr(soption("functions.f"))*(grad(v)*N()+doption("gamma")*id(v)) );
     this->addRhs( { f0, "mu0" } );
     /// [rhs1]
 
     /// [rhs2]
     auto f1 = form1( _test=Xh );
-    f1 = integrate( markedfaces( mesh,"BL" ), -expr(soption("functions.g"))*(grad(v)*N()+doption("gamma")*id(v)) );
+    f1 = integrate(  _range = markedfaces( mesh,"BL" ),_expr= -expr(soption("functions.g"))*(grad(v)*N()+doption("gamma")*id(v)) );
     this->addRhs( { f1, "mu1" } );
     /// [rhs2]
 
     /// [output]
     auto out1 = form1( _test=Xh );
-    double meas = integrate(elements(mesh),cst(1.)).evaluate()(0,0);
-    out1 = integrate( elements( mesh ), id( u )/cst(meas)) ;
+    double meas = integrate( _range = elements(mesh),_expr=cst(1.)).evaluate()(0,0);
+    out1 = integrate(  _range = elements( mesh ),_expr= id( u )/cst(meas)) ;
     this->addOutput( { out1, "1" } );
     /// [output]
 
@@ -114,10 +114,10 @@ Heat2D::initModel()
 
     /// [energy]
     auto energy = form2( _trial=Xh, _test=Xh);
-    energy = integrate( markedelements( mesh, "SL" ), gradt( u )*trans( grad( v ) )  )
-        - integrate(    markedfaces( mesh, "BR" ), ( (id(v)*gradt(u)+idt(u)*grad(v))*N() + doption("gamma")*idt(u)*id(v) ))
-        - integrate(    markedfaces( mesh, "BL" ), ( (id(v)*gradt(u)+idt(u)*grad(v))*N() + doption("gamma")*idt(u)*id(v) ))
-        + integrate( markedelements( mesh, "SR" ), gradt( u )*trans( grad( v ) )  );
+    energy = integrate(  _range = markedelements( mesh, "SL" ), _expr=gradt( u )*trans( grad( v ) )  )
+        - integrate(     _range = markedfaces( mesh, "BR" ), _expr=( (id(v)*gradt(u)+idt(u)*grad(v))*N() + doption("gamma")*idt(u)*id(v) ))
+        - integrate(     _range = markedfaces( mesh, "BL" ), _expr=( (id(v)*gradt(u)+idt(u)*grad(v))*N() + doption("gamma")*idt(u)*id(v) ))
+        + integrate(  _range = markedelements( mesh, "SR" ), _expr=gradt( u )*trans( grad( v ) )  );
     this->addEnergyMatrix( energy );
     /// [energy]
 }
@@ -135,12 +135,12 @@ Heat2D::output( int output_index, parameter_type const& mu , element_type& u, bo
     // right hand side (compliant)
     if ( output_index == 0 )
     {
-        output  = integrate( markedfaces( mesh,"BR" ), -mu(0)*expr(soption("functions.f"))*(gradv(u)*N()+doption("gamma")*idv(u)) ).evaluate()(0,0)
-            + integrate( markedfaces( mesh,"BL" ), -mu(1)*expr(soption("functions.g"))*(gradv(u)*N()+doption("gamma")*idv(u)) ).evaluate()(0,0);
+        output  = integrate( _range = markedfaces( mesh,"BR" ), _expr=-mu(0)*expr(soption("functions.f"))*(gradv(u)*N()+doption("gamma")*idv(u)) ).evaluate()(0,0)
+            + integrate(  _range = markedfaces( mesh,"BL" ), _expr=-mu(1)*expr(soption("functions.g"))*(gradv(u)*N()+doption("gamma")*idv(u)) ).evaluate()(0,0);
     }
     else if ( output_index == 1 )
     {
-        output = mean(elements(mesh),idv(u))(0,0);
+        output = mean( _range = elements(mesh),_expr=idv(u))(0,0);
     }
     // else if ( output_index == 2 )
     // {
