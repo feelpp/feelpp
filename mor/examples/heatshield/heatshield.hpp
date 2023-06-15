@@ -166,18 +166,18 @@ public:
             std::string symbol;
 
             ginac_expressionA[0].expression().setParameterValues( { { "BiotOut", mu(0) } , { "BiotIn", mu(1) } } );
-            this->M_betaAq[0] = ginac_expressionA[0].evaluate();
+            this->M_betaAq[0] = ginac_expressionA[0].evaluate()(0,0);
             ginac_expressionA[1].expression().setParameterValues( { { "BiotOut", mu(0) } , { "BiotIn", mu(1) } } );
-            this->M_betaAq[1] = ginac_expressionA[1].evaluate();
+            this->M_betaAq[1] = ginac_expressionA[1].evaluate()(0,0);
             ginac_expressionA[2].expression().setParameterValues( { { "BiotOut", mu(0) } , { "BiotIn", mu(1) } } );
-            this->M_betaAq[2] = ginac_expressionA[2].evaluate();
+            this->M_betaAq[2] = ginac_expressionA[2].evaluate()(0,0);
 
-            this->M_betaMq[0] = ginac_expressionM[0].evaluate();
+            this->M_betaMq[0] = ginac_expressionM[0].evaluate()(0,0);
 
             ginac_expressionF[0].expression().setParameterValues( { { "BiotOut", mu(0) } , { "BiotIn", mu(1) } , { "surface", surface } } );
-            this->M_betaFq[0][0] = ginac_expressionF[0].evaluate();
+            this->M_betaFq[0][0] = ginac_expressionF[0].evaluate()(0,0);
             ginac_expressionF[1].expression().setParameterValues( { { "BiotOut", mu(0) } , { "BiotIn", mu(1) } , { "surface", surface } } );
-            this->M_betaFq[1][0] = ginac_expressionF[1].evaluate();
+            this->M_betaFq[1][0] = ginac_expressionF[1].evaluate()(0,0);
 #if 0
             int idx=0;
             int nl = M_Nl;
@@ -401,8 +401,8 @@ void HeatShield<Order>::initModel()
     CHECK( this->is_linear && this->is_time_dependent ) << "Invalid model is_linear:" << this->is_linear << " is_time_dependent:" << this->is_time_dependent << "\n";
     LOG_IF( WARNING, ((this->Options&NonLinear) == NonLinear) ) << "Invalid model is_linear:" << this->is_linear << " is_time_dependent:" << this->is_time_dependent << "\n";
 
-    std::string mshfile_name = option("mshfile").as<std::string>();
-    double hsize = option("hsize").as<double>();
+    std::string mshfile_name = soption(_name="mshfile");
+    double hsize = doption(_name="hsize");
 
     M_Qa=3;
     M_Qm=1;
@@ -432,8 +432,8 @@ void HeatShield<Order>::initModel()
         if( ! load_mesh_already_partitioned )
         {
             int N = Environment::worldComm().globalSize();
-            std::string mshfile = option("mshfile").as<std::string>();
-            std::string mshfile_complete = option("mshfile").as<std::string>();
+            std::string mshfile = soption(_name="mshfile");
+            std::string mshfile_complete = soption(_name="mshfile");
             auto pos = mshfile.find(".msh");
             mshfile.erase( pos , 4);
             std::string filename = (boost::format(mshfile+"-np%1%.msh") %N ).str();
@@ -449,7 +449,7 @@ void HeatShield<Order>::initModel()
         else
         {
             mesh = loadGMSHMesh( _mesh=new mesh_type,
-                                 _filename=option("mshfile").as<std::string>(),
+                                 _filename=soption(_name="mshfile"),
                                  _rebuild_partitions=false,
                                  _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER );
         }
@@ -526,12 +526,12 @@ void HeatShield<Order>::assemble()
     u = this->Xh->element();
     v = this->Xh->element();
 
-    if( boption("do-not-use-operators-free") )
+    if( boption(_name="do-not-use-operators-free") )
     {
-        this->M_Aq[0] = backend()->newMatrix( this->Xh, this->Xh );
-        this->M_Aq[1] = backend()->newMatrix( this->Xh, this->Xh );
-        this->M_Aq[2] = backend()->newMatrix( this->Xh, this->Xh );
-        this->M_Mq[0] = backend()->newMatrix( this->Xh, this->Xh );
+        this->M_Aq[0] = backend()->newMatrix( _test = this->Xh, _trial = this->Xh );
+        this->M_Aq[1] = backend()->newMatrix( _test = this->Xh, _trial = this->Xh );
+        this->M_Aq[2] = backend()->newMatrix( _test = this->Xh, _trial = this->Xh );
+        this->M_Mq[0] = backend()->newMatrix( _test = this->Xh, _trial = this->Xh );
         this->M_Fq[0][0] = backend()->newVector( this->Xh );
         this->M_Fq[1][0] = backend()->newVector( this->Xh );
         form2(_test=this->Xh, _trial=this->Xh, _matrix=this->M_Aq[0]) = integrate( _range= elements( mesh ), _expr= gradt( u )*trans( grad( v ) ) );
@@ -575,9 +575,9 @@ void HeatShield<Order>::assemble()
     //for scalarProduct
     auto M = backend()->newMatrix( _test=this->Xh, _trial=this->Xh );
     form2( _test=this->Xh, _trial=this->Xh, _matrix=M ) =
-        integrate( elements( mesh ), gradt( u )*trans( grad( v ) ) ) +
-        integrate( markedfaces( mesh, "left" ), 0.01 * idt( u )*id( v ) ) +
-        integrate( markedfaces( mesh, "gamma_holes" ), 0.001 * idt( u )*id( v ) )
+        integrate( _range = elements( mesh ), _expr = gradt( u )*trans( grad( v ) ) ) +
+        integrate(_range =  markedfaces( mesh, "left" ),_expr =  0.01 * idt( u )*id( v ) ) +
+        integrate( _range = markedfaces( mesh, "gamma_holes" ), _expr = 0.001 * idt( u )*id( v ) )
         ;
     this->addEnergyMatrix( M );
 
