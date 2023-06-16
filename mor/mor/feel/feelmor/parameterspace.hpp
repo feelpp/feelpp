@@ -220,8 +220,8 @@ public:
                     this->operator()( it - paramNames.begin() ) = value;
                 else
                 {
-                    Feel::cout << tc::red << "Warning: " << tc::reset << value << " not in range [" << min_val << ", " << max_val << "]" << std::endl;
-                    LOG( WARNING ) << value << " not in range [" << min_val << ", " << max_val << "]" << std::endl;
+                    LOG( WARNING ) << value << " not in range [" << min_val << ", " << max_val << "] for parameter named " << name << std::endl;
+                    throw std::invalid_argument("Parameter out of range");
                 }
             }
             else
@@ -235,8 +235,8 @@ public:
                 this->operator()(i) = value;
             else
             {
-                Feel::cout << tc::red << "Warning: " << tc::reset << value << " not in range [" << min(i) << ", " << max(i) << "]" << std::endl;
-                LOG( WARNING ) << value << " not in range [" << min(i) << ", " << max(i) << "]" << std::endl;
+                LOG( WARNING ) << value << " not in range [" << min(i) << ", " << max(i) << "] for parameter number " << i << std::endl;
+                throw std::invalid_argument("Parameter out of range");
             }
         }
 
