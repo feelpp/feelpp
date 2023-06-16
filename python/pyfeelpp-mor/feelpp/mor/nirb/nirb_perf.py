@@ -41,20 +41,19 @@ def ComputeErrors(nirb_on,mu, Nb=None,h1=False, relative=True):
     uNHr = getNirbProjection(nirb_on, uH, doRectification=True, Nb=Nb)
     uNh = getNirbProjection(nirb_on, uh, Nb=Nb)
 
-
     error = {'l2(uh-uHn)':[],'l2(uh-uHn)rec':[],'l2(uh-uhn)':[],'l2(uh)':[], 'l2(uh-uH)':[]}
     if h1:
         error.update({'h1(uh-uHn)':[],'h1(uh-uHn)rec':[],'h1(uh-uhn)':[],'h1(uh)':[], 'h1(uh-uH)':[]})
 
     # error
-    rel = nirb_on.normMat(l2Mat,uh) if relative else 1
+    rel = nirb_on.normMat(uh, l2Mat) if relative else 1
     error['l2(uh-uHn)'].append(nirb_on.normMat(uNH-uh, l2Mat) / rel)
     error['l2(uh-uHn)rec'].append(nirb_on.normMat(uNHr-uh, l2Mat) / rel)
     error['l2(uh-uhn)'].append(nirb_on.normMat(uNh-uh, l2Mat) / rel)
     error['l2(uh)'].append(nirb_on.normMat(uh, l2Mat))
     error['l2(uh-uH)'].append(nirb_on.normMat(uH-uh, l2Mat) / rel)
-    if h1 :
-        rel = nirb_on.normMat(h1Mat,uh) if relative else 1
+    if h1:
+        rel = nirb_on.normMat(uh, h1Mat) if relative else 1
         error['h1(uh-uHn)'].append(nirb_on.normMat(uNH-uh, h1Mat) / rel)
         error['h1(uh-uHn)rec'].append(nirb_on.normMat(uNHr-uh, h1Mat) / rel)
         error['h1(uh-uhn)'].append(nirb_on.normMat(uNh-uh, h1Mat) / rel)
@@ -64,7 +63,7 @@ def ComputeErrors(nirb_on,mu, Nb=None,h1=False, relative=True):
 
     return error
 
-def ComputeErrorSampling(nirb_on, Nb=None, Nsample = 1, Xi_test=None, samplingType='log-random', h1=False):
+def ComputeErrorSampling(nirb_on, Nb=None, Nsample = 1, Xi_test=None, samplingType='log-random', h1=False, regulParam=1.e-10):
     """Compute the convergence errors of the projection of FE solution (in fine mesh) in the reduced space
         and the nirb solution with and without rectification for a given sampling of parameter.
         The rectification matrix has to be defined (so make sure to set doRectification = True in offline and online phase)
@@ -110,7 +109,7 @@ def ComputeErrorSampling(nirb_on, Nb=None, Nsample = 1, Xi_test=None, samplingTy
         uh = nirb_on.getToolboxSolution(nirb_on.tbFine, mu)
 
         uNH = getNirbProjection(nirb_on, uH, Nb=Nb)
-        uNHr = getNirbProjection(nirb_on, uH, doRectification=True, Nb=Nb)
+        uNHr = getNirbProjection(nirb_on, uH, doRectification=True, Nb=Nb, regulParam=regulParam)
         uNh = getNirbProjection(nirb_on, uh, Nb=Nb)
 
         # error
@@ -119,7 +118,7 @@ def ComputeErrorSampling(nirb_on, Nb=None, Nsample = 1, Xi_test=None, samplingTy
         error['l2(uh-uhn)'].append(nirb_on.normMat(uNh-uh, l2Mat))
         error['l2(uh)'].append(nirb_on.normMat(uh, l2Mat))
         error['l2(uh-uH)'].append(nirb_on.normMat(uH-uh,l2Mat))
-        if h1 :
+        if h1:
             error['h1(uh-uHn)'].append(nirb_on.normMat(uNH-uh, h1Mat))
             error['h1(uh-uHn)rec'].append(nirb_on.normMat(uNHr-uh, h1Mat))
             error['h1(uh-uhn)'].append(nirb_on.normMat(uNh-uh, h1Mat))
@@ -169,7 +168,7 @@ def ComputeErrorsH(nirb_on, tbRef, mu, path=None, name=None):
 
     return error
 
-def getNirbProjection(nirb_on, u, Nb=None, doRectification=False):
+def getNirbProjection(nirb_on, u, Nb=None, doRectification=False, regulParam=1.-10):
     """Get the projection of a given discrete function in the reduced space with or without rectification
 
     Args
@@ -178,6 +177,7 @@ def getNirbProjection(nirb_on, u, Nb=None, doRectification=False):
         u (feelpp._discr.element) : function
         Nb (int, optional) : Size of reduced space, by default None. If None, the whole basis is used
         doRectification (bool) : default to True
+        regulParam(float, optionnal) : regularization parameter of the rectification pre-process. Defaults to 1.e-10
     """
     if Nb is None : Nb=nirb_on.N
     if doRectification:
@@ -189,8 +189,9 @@ def getNirbProjection(nirb_on, u, Nb=None, doRectification=False):
     uNh.setZero()
 
     if doRectification:
-        rectMat = nirb_on.getRectificationMat(nirb_on.N)
-        coef = rectMat @ coef
+        if Nb not in nirb_on.RectificationMat :
+                nirb_on.RectificationMat[Nb] = nirb_on.getRectification(nirb_on.coeffCoarse, nirb_on.coeffFine, Nb=Nb, lambd=regulParam)
+        coef = nirb_on.RectificationMat[Nb] @ coef
 
     for i in range(Nb):
         uNh.add(float(coef[i]), nirb_on.reducedBasis[i])

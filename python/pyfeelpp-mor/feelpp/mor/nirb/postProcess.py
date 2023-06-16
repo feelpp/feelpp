@@ -238,7 +238,7 @@ def plotDataFrame(df, norm='l2', texSave=False):
         tikzplotlib.save(f"plotError{keys}.tex")
     plt.show()
 
-def compareListOfDataFrams(listdf, keys='Mean', norm='l2'):
+def compareListOfDataFrams(listdf, keys='Mean', rectif=True, norm='l2', listlabel=None):
     """Compare some data Frame containing in a list the dataFrames should be the result of function getDataStat()
 
     Args:
@@ -248,31 +248,38 @@ def compareListOfDataFrams(listdf, keys='Mean', norm='l2'):
         norm (str, optional): type of norm to compare. Defaults to 'l2'.
     """
 
-    labels =["$\lambda = 1.e^{-1}$", "$\lambda = 1.e^{-3}$", "$\lambda = 1.e^{-6}$", "$\lambda = 1.e^{-10}$", "$\lambda = 0$"]
+    if listlabel is None :
+        labels =["$\lambda = 1.e^{-1}$", "$\lambda = 1.e^{-3}$", "$\lambda = 1.e^{-6}$", "$\lambda = 1.e^{-10}$", "$\lambda = 0$"]
+    else:
+        labels = listlabel
+
     key_list = {'Mean':['Mean', 'Mean_rec', 'Mean_uh'], 'Max':['Max', 'Max_rec','Max_uh'],
              'Min':['Min', 'Min_rec', 'Min_uh'] }
+    normUHn = {'l2':r"$\Vert u^\mathcal{N}_h - u^N_{Hh}\Vert_{L^2}$" , 'h1': r"$\Vert u^\mathcal{N}_h - u^N_{Hh}\Vert_{H^1}$"}
 
     assert len(labels)>=len(listdf)
 
-    if norm=='h1':
-        nm = f"$H^1$"
+    if norm=='h1' or norm=='H1':
+        nm = 'h1'
     else :
-        nm = f"$L^2$"
+        nm = 'l2'
 
-    idk = 1
-    i=0
-    for df in listdf:
+    idk = 0
+    title = "Solutions without rectification"
+    if rectif :
+        idk = 1
+        title = "Solutions with rectification"
+
+    for i, df in enumerate(listdf):
         plt.scatter(df.index, df[key_list[keys][idk]], label=labels[i])
         plt.plot(df.index, df[key_list[keys][idk]])
-        i+=1
 
-    plt.scatter(df.index, df[key_list[keys][0]], label="w/o rectif")
-    plt.plot(df.index, df[key_list[keys][0]])
 
     plt.legend()
     plt.yscale('log')
     plt.xlabel("Number of basis function (N)")
-    plt.ylabel(f"{nm} norm of Errors (in log scale)")
+    plt.ylabel(f"{normUHn[nm]} (in log scale)")
+    plt.title(title)
     plt.show()
 
 
@@ -317,7 +324,6 @@ def plotErrors(df, keys='Mean', norm='l2', texSave=False, name="plot.tex"):
     # interpolate norm
     plt.scatter(xf, df[keyUh[norm]], label=normUh[norm])
     plt.plot(xf, df[keyUh[norm]])
-
 
     plt.legend()
     plt.yscale('log')

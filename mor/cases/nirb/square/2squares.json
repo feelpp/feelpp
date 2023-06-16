@@ -91,6 +91,10 @@
         "model_path": "$cfgdir/2squares.json",
         "doRectification": true,
         "doBiorthogonalization": false,
-        "nbSnapshots": 10
+        "nbSnapshots": 10,
+        "time_dependent":false,
+        "timeStep":0.1,
+        "timeFinal":1,
+        "timeInitial":0
     }
 }

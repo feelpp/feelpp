@@ -92,6 +92,7 @@ if __name__ == "__main__":
     parser.add_argument("--greedy", help="Wether with or without Greedy [default=0]", type=int, default=0)
     parser.add_argument("--biortho", help="Wether with or without bi-orthonormalization [default=0]", type=int, default=0)
     parser.add_argument("--convergence", help="Wether get convergence error [default=0]", type=int, default=0)
+    parser.add_argument("--time", help="Wether to solve stationary problem or not [default=0]", type=int, default=0)
 
     parser.add_argument("--generate-sampling", help="Generate and save a sampling of given size [default=0]\
         If called, no basis is generated", type=int, default=0)
