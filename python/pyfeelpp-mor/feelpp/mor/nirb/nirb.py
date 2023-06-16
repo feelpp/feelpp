@@ -1033,7 +1033,6 @@ class nirbOnline(ToolboxModel):
         --------
             R (numpy.array): the rectification matrix
         """
-        print(coeffCoarse, coeffFine)
         if Nb is None: Nb = self.N
 
         BH = coeffCoarse[:Nb, :Nb]
