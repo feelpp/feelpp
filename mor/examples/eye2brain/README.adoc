@@ -69,3 +69,11 @@ WARNING: While the branch 2068 is not merged, you need to build and run the `fee
 ----
 python3 compFE-RB.py -N 3
 ----
+
+
+
+.Run sensitivity analysis
+[source,bash]
+----
+./feelpp_mor_sensitivity_analysis --crbmodel.name <model-name> --plugin.dir ${build_directory}/install/bin/
+----
