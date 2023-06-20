@@ -58,7 +58,6 @@ if __name__ == "__main__":
     if len(sys.argv) > 1 and 'ip' not in sys.argv[1]:
         path = sys.argv[1]
     else:
-        # path = "/data/scratch/saigre/feel-nirb/feelpp_mor_sensitivity_analysis/np_1/B1.json"
         path = "feelpp_mor_sensitivity_analysis/np_1/sensitivity-bootstrap.json"
     plot(path)
 

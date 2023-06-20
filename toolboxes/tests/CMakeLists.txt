@@ -39,7 +39,7 @@ message(STATUS "[feelpp/testsuite] disable compile failure: ${FEELPP_DISABLE_COM
 
 
 
-foreach( testdir heat)
+foreach( testdir heat coefficientformpdes)
   add_custom_target( ${testdir} )
   add_subdirectory( ${testdir} )
 endforeach()

@@ -16,11 +16,14 @@ except ImportError as e:
     pass  # module doesn't exist, deal with it.
 
 
-def cfpdes(dim=2, worldComm=None, keyword="cfpdes", subprefix="", modelRep=None ):
+def cfpdes(dim=2, worldComm=None, keyword="cfpdes", prefix="cfpdes", subprefix="", modelRep=None ):
     """create a cfpde toolbox solver
     Keyword arguments:
     dim -- the dimension (default: 2)
     worldComm -- the parallel communicator for the mesh (default: feelpp.Environment::worldCommPtr())
+    keyword -- the json keyword for the toolbox    (default: "cfpdes")
+    prefix -- the prefix for the toolbox for the command line and .cfg options  (default: "cfpdes")
+    subprefix -- the subprefix for the toolbox for the command line and .cfg options (default: "")
     """
     if not has_cfpde:
         raise Exception('CFPDE toolbox is not enabled in Feel++')
@@ -31,7 +34,7 @@ def cfpdes(dim=2, worldComm=None, keyword="cfpdes", subprefix="", modelRep=None 
         raise RuntimeError('cfpde solver '+key+' not existing')
     if modelRep is None:
         modelRep = ModelBaseRepository()
-    pdes = _cfpdes[key](prefix="cfpdes", keyword=keyword, worldComm=worldComm, subprefix="", modelRep=modelRep)
+    pdes = _cfpdes[key](prefix=prefix, keyword=keyword, worldComm=worldComm, subprefix=subprefix, modelRep=modelRep)
     pdes.pde = lambda nameeq: pde(pdes,nameeq)
     return pdes
 

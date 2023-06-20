@@ -29,9 +29,9 @@ makeEye2BrainAbout( std::string const& str )
 template<int Order, int Dim>
 Eye2Brain<Order, Dim>::Eye2Brain()
     :
-    super_type( fmt::format("eye2brain_{}DP{}", Dim, Order) )
+    super_type( fmt::format("eye2brain_{}D_P{}", Dim, Order) )
 {
-    this->setPluginName( BOOST_PP_STRINGIZE(FEELPP_MOR_PLUGIN_NAME) + fmt::format("{}DP{}", Dim, Order) );
+    this->setPluginName( BOOST_PP_STRINGIZE(FEELPP_MOR_PLUGIN_NAME) + fmt::format("{}D_P{}", Dim, Order) );
     this->setPluginLibName( BOOST_PP_STRINGIZE(FEELPP_MOR_PLUGIN_LIBNAME) );
 }
 
@@ -187,7 +187,7 @@ Eye2Brain<Order, Dim>::initModel()
     {
         std::string name = m_outputNames[measure_index-1];
         std::vector<double> coord = m_coordinates[measure_index-1];
-        std::cout << "Output " << name << " at coord " << coord << std::endl;
+        Feel::cout << "[Eye2brain] Output " << name << " at coord " << coord << std::endl;
         node_type n(Eye2BrainConfig<Order, Dim>::space_type::nDim);
         for( int i = 0; i < Eye2BrainConfig<Order,Dim>::space_type::nDim; ++i )
             n(i) = coord[i];
@@ -198,8 +198,9 @@ Eye2Brain<Order, Dim>::initModel()
     }
     else if ( measure_index == 0 )   // mean over cornea
     {
-        out1 = form1( _test = this->Xh );
+        Feel::cout << "[Eye2brain] Output mean over cornea" << std::endl;
 
+        out1 = form1( _test = this->Xh );
         double meas = integrate( _range = markedelements(mesh, "Cornea"), _expr = cst(1.) ).evaluate()(0,0);
         out1 = integrate( _range = markedelements(mesh, "Cornea"), _expr = id( u )/cst(meas)) ;
     }
@@ -222,10 +223,9 @@ Eye2Brain<Order, Dim>::output( int output_index, parameter_type const& mu , elem
     if (output_index == 0) // compliant output
     {
         name = "compliant";
-        /*
-        output = integrate( _range = markedfaces( mesh, "BC_Cornea" )                    , _expr = mu(5) * id( u ) ).evaluate()(0,0)
-               + integrate( _range = markedfaces( mesh, {"BC_Sclera", "BC_OpticNerve" } ), _expr = mu(6) * id( u ) ).evaluate()(0,0);
-  */}
+        output = integrate( _range = markedfaces( mesh, "BC_Cornea" )                    , _expr = mu(5) * idv( u ) ).evaluate()(0,0)
+               + integrate( _range = markedfaces( mesh, {"BC_Sclera", "BC_OpticNerve" } ), _expr = mu(6) * idv( u ) ).evaluate()(0,0);
+    }
     else if ( output_index == 1 )
     {
         int measure_index = ioption(_name = "measure-index");

@@ -1,26 +1,22 @@
 import sys
 import os
 import pytest
-from petsc4py import PETSc
 
 
 import feelpp
-from feelpp.mor import *
+from feelpp.mor import CRBModelProperties
 
 # desc : (('path/to/cfg/file', dimension, {mumin}, {mumax}), 'name-of-the-test')
 cases = [
-         #(('testcase/thermal-fin/2d/thermal-fin.cfg', 2,
-         #   #{"k_1": 0.1, "k_2": 0.1, "k_3": 0.1, "k_4": 0.1, "k_0": 1, "Bi": 0.01},
-         #   {"k_1": 0.1, "k_2": 0.1, "k_3": 0.1, "k_4": 0.1, "k_0": 1, "Bi": 0.01},
-         #   {"k_1": 10, "k_2": 10, "k_3": 10, "k_4": 10, "k_0": 1, "Bi": 1}), 'thermal-fin-2d'),
-         #(('testcase/thermal-fin/3d/thermal-fin.cfg', 3,
-         #   #{"k_1": 0.1, "k_2": 0.1, "k_3": 0.1, "k_4": 0.1, "k_0": 1, "Bi": 0.01},
-         #   {"k_1": 0.1, "k_2": 0.1, "k_3": 0.1, "k_4": 0.1, "k_0": 1, "Bi": 0.01},
-         #   {"k_1": 10, "k_2": 10, "k_3": 10, "k_4": 10, "k_0": 1, "Bi": 1}), 'thermal-fin-3d'),
+         (('testcase/thermal-fin/2d/thermal-fin.cfg', 2,
+           {"k_1": 0.1, "k_2": 0.1, "k_3": 0.1, "k_4": 0.1, "Bi": 0.01},
+           {"k_1": 10 , "k_2": 10 , "k_3": 10 , "k_4": 10 , "Bi": 1   }), 'thermal-fin-2d'),
+         (('testcase/thermal-fin/3d/thermal-fin.cfg', 3,
+           {"k_1": 0.1, "k_2": 0.1, "k_3": 0.1, "k_4": 0.1, "Bi": 0.01},
+           {"k_1": 10 , "k_2": 10 , "k_3": 10 , "k_4": 10 , "Bi": 1   }), 'thermal-fin-3d'),
          (('testcase/testcase/test.cfg', 2,
-            #{"k_1": 5, "k_2": 2, "k_3": 10, "k_4": 0.1},
             {"k_1": 0.1, "k_2": 0.1, "k_3": 0.1, "k_4": 0.1},
-            {"k_1": 10, "k_2": 10, "k_3": 10, "k_4": 10}), 'test-case'),
+            {"k_1": 10 , "k_2": 10 , "k_3": 10 , "k_4": 10 }), 'test-case'),
         ]
 cases_params, cases_ids = list(zip(*cases))
 
@@ -57,8 +53,8 @@ def test_init_from_ModelPropeties(casefile, dim, mumin_th, mumax_th,  init_feelp
 
 
     for p in mumin_th:
-        assert( mumin.parameterNamed(p) == mumin_th[p] )
-        assert( mumax.parameterNamed(p) == mumax_th[p] )
+        assert mumin.parameterNamed(p) == mumin_th[p], f"Minimal value wrong for {p}"
+        assert mumax.parameterNamed(p) == mumax_th[p], f"Maximal value wrong for {p}"
 
 
 @pytest.mark.parametrize("casefile", [cases_params[-1][0]], ids=[cases_ids[-1]])
@@ -109,8 +105,13 @@ def test_param_not_in_range(casefile, dim, Mu,  init_feelpp):
     # just set values
     mu.setParameters(Mu)
 
-    mu.setParameter(0, 5000)
-    assert( mu(0) != 5000)
+    # check that exception is raised when setting a parameter out of range
+    try:
+        mu.setParameter(0, 5000)
+    except ValueError as e:
+        assert "out of range" in str(e)
 
-    mu.setParameterNamed('Bi', -666)
-    assert( mu.parameterNamed('Bi') != -666 )
+    try:
+        mu.setParameterNamed('Bi', -666)
+    except ValueError as e:
+        assert "out of range" in str(e)

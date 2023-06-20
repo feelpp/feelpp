@@ -118,7 +118,7 @@ public :
      *
      * @return std::shared_ptr<CRBPluginAPI> 
      */
-    std::shared_ptr<CRBPluginAPI> loadDBPlugin( MetaData const& metadata, std::string load ) const;
+    std::shared_ptr<CRBPluginAPI> loadDBPlugin( MetaData const& metadata, std::string const& load ) const;
 
     /**
      * @brief load DB plugin from metadata
@@ -136,7 +136,7 @@ public :
      *
      * @return std::shared_ptr<CRBPluginAPI> 
      */
-    std::shared_ptr<CRBPluginAPI> loadDBPlugin( MetaData const& metadata, std::string load, std::string pluginlibdir ) const;
+    std::shared_ptr<CRBPluginAPI> loadDBPlugin( MetaData const& metadata, std::string const& load, std::string const& pluginlibdir ) const;
 
     static uuids::uuid idFromDBFilename( std::string const& name, std::string const& filename );
     static uuids::uuid idFromDBLast( std::string const& name, crb::last last, std::string const& root = Environment::rootRepository() );

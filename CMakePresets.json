@@ -34,6 +34,19 @@
             }
         },
         {
+            "name": "specx",
+            "inherits": "default",
+            "displayName": "specx",
+            "description": "Build feelpp with specx",
+            "generator": "Unix Makefiles",
+            "binaryDir": "${sourceDir}/build/specx",
+            "cacheVariables": {
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/build/specx/install/",
+                "FEELPP_ENABLE_BENCHMARKS": "ON",
+                "FEELPP_ENABLE_SPECX": "ON"
+            }
+        },
+        {
             "name": "dbg",
             "displayName": "Debug Config",
             "description": "Debug build using Makefile generator",
@@ -73,6 +86,24 @@
                 "FEELPP_ENABLE_TESTS": "OFF",
                 "FEELPP_ENABLE_FMILIB": "OFF",
                 "FEELPP_ENABLE_BENCHMARKS": "OFF"
+            }
+        },
+        {
+            "name": "feelpp+specx",
+            "inherits": "default",
+            "displayName": "feelpp+specx",
+            "description": "Build only the Feel++ library Component with specx runtime",
+            "generator": "Unix Makefiles",
+            "binaryDir": "${sourceDir}/build/feelpp+specx",
+            "cacheVariables": {
+                "FEELPP_COMPONENT": "feelpp",
+                "FEELPP_ENABLE_MOR": "OFF",
+                "FEELPP_ENABLE_TOOLBOXES": "OFF",
+                "FEELPP_ENABLE_FEELPP_PYTHON": "OFF",
+                "FEELPP_ENABLE_TESTS": "OFF",
+                "FEELPP_ENABLE_FMILIB": "OFF",
+                "FEELPP_ENABLE_BENCHMARKS": "ON",
+                "FEELPP_ENABLE_SPECX": "ON"
             }
         },
         {
@@ -200,6 +231,20 @@
             }
         },
         {
+            "name": "macos-homebrew",
+            "inherits": "default",
+            "displayName": "MacOS configuration using Homebrew",
+            "description": "This build is only available on MacOS",
+            "binaryDir": "${sourceDir}/build/macos-homebrew",
+            "cacheVariables": {
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/build/macos-homebrew/install/",
+                "CMAKE_CXX_COMPILER": "/opt/homebrew/opt/llvm/bin/clang++",
+                "CMAKE_C_COMPILER": "/opt/homebrew/opt/llvm/bin/clang",
+                "FEELPP_STD_CPP": "20",
+                "CMAKE_CXX_FLAGS": "-D_HAS_AUTO_PTR_ETC=0"
+            }
+        },
+        {
             "name": "doxygen",
             "inherits": "default",
             "displayName": "doxygen",
@@ -217,6 +262,11 @@
             "jobs": 25
         },
         {
+            "name": "specx",
+            "configurePreset": "specx",
+            "jobs": 25
+        },
+        {
             "name": "dbg",
             "configurePreset": "dbg",
             "jobs": 10,
@@ -225,6 +275,11 @@
                 "pyfeelpp",
                 "install"
             ]
+        },
+        {
+            "name": "macos-homebrew",
+            "configurePreset": "macos-homebrew",
+            "jobs": 2
         },
         {
             "name": "feelpp",
@@ -312,6 +367,11 @@
                     "count": 3
                 }
             }
+        },
+        {
+            "name": "specx",
+            "configurePreset": "specx",
+            "inherits": "default"
         },
         {
             "name": "feelpp",

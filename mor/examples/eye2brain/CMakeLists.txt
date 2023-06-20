@@ -57,3 +57,36 @@ if (FEELPP_ENABLE_OPENTURNS)
          LINK_LIBRARIES Feelpp::feelpp_mor Feelpp::feelpp_openturns tbb
      )
 endif()
+
+#[==[
+## test : disabled for the runner : meshed are only present locally
+foreach( ORDER 1 2 )
+
+    set (TEST_SCRIPT "${CMAKE_CURRENT_BINARY_DIR}/test_2dP${ORDER}.sh")
+    file (WRITE ${TEST_SCRIPT}
+        "#!/bin/bash\n"
+        "./feelpp_mor_eye2brain_2dP${ORDER}app --config-file ${CMAKE_CURRENT_SOURCE_DIR}/eye2brain/eye2brain-2d.cfg\
+        --eye2brain.model-name eye2brain_2dP${ORDER}_test --eye2brain.run.mode 2 --eye2brain.run.sampling.size 4\
+        --crb.dimension-max 3\n"
+        "../../apps/feelpp_mor_onlinerun --crbmodel.name eye2brain_2dP${ORDER}_test --plugin.dir ${CMAKE_BINARY_DIR}/install/lib\n"
+    )
+
+    add_test( NAME feelpp_mor_eye2brain_2dP${ORDER}_test
+        COMMAND bash ${TEST_SCRIPT}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+
+    set (TEST_SCRIPT "${CMAKE_CURRENT_BINARY_DIR}/test_3dP${ORDER}.sh")
+    file (WRITE ${TEST_SCRIPT}
+        "#!/bin/bash\n"
+        "mpirun -np 12 ./feelpp_mor_eye2brain_3dP${ORDER}app --config-file ${CMAKE_CURRENT_SOURCE_DIR}/eye2brain/eye2brain-3d.cfg\
+        --eye2brain.model-name eye2brain_3dP${ORDER}_test --eye2brain.run.mode 2 --eye2brain.run.sampling.size 4\
+        --crb.dimension-max 3\n"
+        "../../apps/feelpp_mor_onlinerun --crbmodel.name eye2brain_3dP${ORDER}_test --plugin.dir ${CMAKE_BINARY_DIR}/install/lib\n"
+    )
+
+    add_test( NAME feelpp_mor_eye2brain_3dP${ORDER}_test
+        COMMAND bash ${TEST_SCRIPT}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+
+endforeach()
+#]==]
