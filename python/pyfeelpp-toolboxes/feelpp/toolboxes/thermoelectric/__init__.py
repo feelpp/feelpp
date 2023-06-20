@@ -18,12 +18,15 @@ except ImportError as e:
     pass  # module doesn't exist, deal with it.
 
 
-def thermoelectric(dim=2, orderPotential=1, worldComm=None, keyword="thermoelectric", subprefix="", modelRep=None):
+def thermoelectric(dim=2, orderPotential=1, worldComm=None, keyword="thermoelectric", prefix="thermo-electric", subprefix="", modelRep=None):
     """create a thermoelectric toolbox solver
     Keyword arguments:
     dim -- the dimension (default: 2)
     orderPotential -- the polynomial order for the potential (default: 1)
     worldComm -- the parallel communicator for the mesh (default: core.Environment::worldCommPtr())
+    keyword -- the json keyword for the toolbox    (default: "thermoelectric")
+    prefix -- the prefix for the toolbox for the command line and .cfg options  (default: "thermo-electric")
+    subprefix -- the subprefix for the toolbox for the command line and .cfg options (default: "")
     """
     if worldComm is None:
         worldComm = feelpp.Environment.worldCommPtr()
@@ -34,4 +37,4 @@ def thermoelectric(dim=2, orderPotential=1, worldComm=None, keyword="thermoelect
         raise RuntimeError('Thermoelectric solver '+key+' not existing')
     if modelRep is None:
         modelRep = ModelBaseRepository()
-    return _thermoelectrics[key](prefix="thermo-electric", keyword=keyword, worldComm=worldComm, subprefix="", modelRep=modelRep)
+    return _thermoelectrics[key](prefix=prefix, keyword=keyword, worldComm=worldComm, subprefix=subprefix, modelRep=modelRep)

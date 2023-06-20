@@ -279,7 +279,9 @@ PetscConvertKSPReasonToString( KSPConvergedReason reason )
     case KSP_CONVERGED_ITS             : return "CONVERGED_ITS";
     case KSP_CONVERGED_CG_NEG_CURVE    : return "CONVERGED_CG_NEG_CURVE";
     case KSP_CONVERGED_CG_CONSTRAINED  : return "CONVERGED_CG_CONSTRAINED";
+#if PETSC_VERSION_LESS_THAN( 3, 19, 0 )
     case KSP_CONVERGED_STEP_LENGTH     : return "CONVERGED_STEP_LENGTH";
+#endif    
     case KSP_CONVERGED_HAPPY_BREAKDOWN : return "CONVERGED_HAPPY_BREAKDOWN";
 
         /* diverged */

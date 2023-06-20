@@ -154,7 +154,8 @@ public:
         {
             return Feel::FeelModels::modelFields( modelField<FieldCtx::FULL>( FieldTag::unknown(this), prefix, this->unknownName(), field_u, this->unknownSymbol(), this->keyword() ),
                                                   modelField<FieldCtx::FULL>( FieldTag::unknown_previous(this), prefix, this->unknownName()+"_previous", this->fieldUnknownPtr(), this->unknownSymbol() + "_previous", this->keyword() ),
-                                                  modelField<FieldCtx::FULL>( FieldTag::unknown(this), prefix, this->unknownName()+"_remove_trial", field_u, this->unknownSymbol() + "_rt", this->keyword() )
+                                                  modelField<FieldCtx::FULL>( FieldTag::unknown(this), prefix, this->unknownName()+"_remove_trial", field_u, this->unknownSymbol() + "_rt", this->keyword() ),
+                                                  this->template modelFieldsMeshes<mesh_type>( prefix )
                                                   );
         }
 
@@ -172,9 +173,11 @@ public:
         {
             auto seToolbox = this->symbolsExprToolbox( mfields );
             auto seParam = this->symbolsExprParameter();
+            auto seMeshes = this->template symbolsExprMeshes<mesh_type,false>();
             auto seMat = this->materialsProperties()->symbolsExpr();
             auto seFields = mfields.symbolsExpr(); // generate symbols heat_T, heat_grad_T(_x,_y,_z), heat_dn_T
-            return Feel::vf::symbolsExpr( seToolbox, seParam, seMat, seFields );
+            auto sePhysics = this->symbolsExprPhysics( this->physics() );
+            return Feel::vf::symbolsExpr( seToolbox, seParam, seMeshes, seMat, seFields, sePhysics );
         }
     auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields( prefix ) ); }
 

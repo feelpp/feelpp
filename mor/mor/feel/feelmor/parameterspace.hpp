@@ -220,12 +220,12 @@ public:
                     this->operator()( it - paramNames.begin() ) = value;
                 else
                 {
-                    Feel::cout << tc::red << "Warning: " << tc::reset << value << " not in range [" << min_val << ", " << max_val << "]" << std::endl;
-                    LOG( WARNING ) << value << " not in range [" << min_val << ", " << max_val << "]" << std::endl;
+                    LOG( WARNING ) << fmt::format("{} value not in range [{}, {}] for parameter named {}", value, min_val, max_val, name) << std::endl;
+                    throw std::invalid_argument("Parameter out of range");
                 }
             }
             else
-                LOG( WARNING ) << name << " is not a parameter" << std::endl;
+                LOG( WARNING ) << fmt::format("{} is not a parameter", name) << std::endl;
         }
 
         void setParameter( int i, double value)
@@ -235,8 +235,8 @@ public:
                 this->operator()(i) = value;
             else
             {
-                Feel::cout << tc::red << "Warning: " << tc::reset << value << " not in range [" << min(i) << ", " << max(i) << "]" << std::endl;
-                LOG( WARNING ) << value << " not in range [" << min(i) << ", " << max(i) << "]" << std::endl;
+                LOG( WARNING ) << fmt::format("{} value not in range [{}, {}] for parameter number {}", value, min(i), max(i), i) << std::endl;
+                throw std::invalid_argument("Parameter out of range");
             }
         }
 
@@ -247,7 +247,7 @@ public:
         {
             size_t n = values.size();
             if (n != this->size())
-                LOG( WARNING ) << "The size of the given vector (" << n << ") is different fom the size (" << this->size() << ")" << std::endl;
+                LOG( WARNING ) << fmt::format("The size of the given vector ({}) is different fom the size ({})", n, this->size()) << std::endl;
             size_t N = (n <= this->size()) ? n : this->size();
             element_type min = M_space->min(), max = M_space->max();
             for (size_t i=0; i<N; ++i)
@@ -256,8 +256,8 @@ public:
                     this->operator()(i) = values[i];
                 else
                 {
-                    Feel::cout << tc::red << "Warning: " << tc::reset << values[i] << " not in range [" << min(i) << ", " << max(i) << "]" << std::endl;
-                    LOG( WARNING ) << values[i] << " not in range [" << min(i) << ", " << max(i) << "]" << std::endl;
+                    LOG( WARNING ) << fmt::format("{} value not in range [{}, {}] for parameter number {}", values[i], min(i), max(i), i) << std::endl; 
+                    throw std::invalid_argument("Parameter out of range");
                 }
             }
 

@@ -324,7 +324,7 @@ runCrbOnline( std::vector<std::shared_ptr<Feel::CRBPluginAPI>> plugin )
         }
     }
 
-    bool printResults = true;
+    bool printResults = boption(_name="output_results.print");
     if ( printResults )
         std::cout << tableOutputResults << std::endl;
     bool saveResults = true;
@@ -412,6 +412,7 @@ int main(int argc, char**argv )
             ( "rb-dim", po::value<int>()->default_value( -1 ), "reduced basis dimension used (-1 use the max dim)" )
             ( "output_results.save.path", po::value<std::string>(), "output_results.save.path" )
             ( "output_results.precision", po::value<int>()->default_value( 6 ), "float precision for output results")
+            ( "output_results.print", po::value<bool>()->default_value( true ), "print results in shell")
 
             ( "query", po::value<std::string>(), "query string for mongodb DB feelpp.crbdb" )
             ( "compare", po::value<std::string>(), "compare results from query in mongodb DB feelpp.crbdb" )

@@ -6,6 +6,7 @@
 #include <feel/feelmesh/enums.hpp>
 #include <feel/feeldiscr/geometricspace.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feelpoly/nedelec.hpp>
 #include <feel/feelfilters/databymeshentity.hpp>
 #include <feel/feelmodels/modelcore/modelbase.hpp>
 #include <feel/feelmodels/modelpostprocess.hpp>
@@ -192,29 +193,30 @@ public :
     using collection_data_by_mesh_entity_type = CollectionOfDataByMeshEntity<index_type>;
     using import_config_type = typename ModelMeshCommon<IndexType>::ImportConfig;
 private :
-        struct FieldsSetup
+    struct FieldsSetup
     {
-        FieldsSetup( std::string const& name, nl::json const& jarg )
-            :
-            M_name( name )
-            {
-                if ( jarg.contains("filename") )
-                    M_filename = Environment::expand( jarg.at("filename") );
-                else
-                    CHECK( false ) << "filename required";
-
-                if ( jarg.contains("basis") )
-                    M_basis = Environment::expand( jarg.at("basis") );
-                else
-                    CHECK( false ) << "basis required";
-            }
+        struct PartSetup
+        {
+            PartSetup() = default;
+            std::string const& filename() const { return M_filename; }
+            bool hasExpr() const { return M_mexpr ? true : false; }
+            ModelExpression const& mExpr() const { return *M_mexpr; }
+            ModelMarkers const& markers() const { return M_markers; }
+            static std::optional<PartSetup> create( ModelMeshes<IndexType> const& mMeshes, nl::json const& jarg );
+        private:
+            std::string M_filename;
+            std::optional<ModelExpression> M_mexpr;
+            ModelMarkers M_markers;
+        };
+        FieldsSetup( std::string const& name, ModelMeshes<IndexType> const& mMeshes, nl::json const& jarg );
         std::string const& name() const { return M_name; }
-        std::string const& filename() const { return M_filename; }
         std::string const& basis() const { return M_basis; }
+        std::vector<PartSetup> const& parts() const { return M_parts; }
+
     private :
         std::string M_name;
-        std::string M_filename;
         std::string M_basis;
+        std::vector<PartSetup> M_parts;
     };
 
     struct DistanceToRangeSetup
@@ -469,25 +471,54 @@ public :
 
     std::map<std::string,collection_data_by_mesh_entity_type> const& collectionOfDataByMeshEntity() const { return M_codbme; }
 
+
+    //! return basis field types supported by modelMesh (including the name associated)
+    template <typename MeshType>
+    static constexpr auto basisFieldTypeSupported()
+        {
+            if constexpr ( MeshType::nDim == 1 )
+            {
+               if constexpr( MeshType::nRealDim == 1 )
+                   return hana::make_tuple( hana::make_tuple( "Pch1", hana::type_c<Lagrange<1,Scalar,Continuous,PointSetFekete>> ),
+                                            hana::make_tuple( "Pch2", hana::type_c<Lagrange<2,Scalar,Continuous,PointSetFekete>> ),
+                                            hana::make_tuple( "Pdh0", hana::type_c<Lagrange<0,Scalar,Discontinuous,PointSetFekete>> ),
+                                            hana::make_tuple( "Pdh1", hana::type_c<Lagrange<1,Scalar,Discontinuous,PointSetFekete>> )
+                                            );
+               else
+                   return hana::make_tuple( hana::make_tuple( "Pch1", hana::type_c<Lagrange<1,Scalar,Continuous,PointSetFekete>> ),
+                                            hana::make_tuple( "Pch2", hana::type_c<Lagrange<2,Scalar,Continuous,PointSetFekete>> ),
+                                            hana::make_tuple( "Pdh0", hana::type_c<Lagrange<0,Scalar,Discontinuous,PointSetFekete>> ),
+                                            hana::make_tuple( "Pdh1", hana::type_c<Lagrange<1,Scalar,Discontinuous,PointSetFekete>> ),
+                                            hana::make_tuple( "Pchv1", hana::type_c<Lagrange<1,Vectorial,Continuous,PointSetFekete>> ),
+                                            hana::make_tuple( "Pchv2", hana::type_c<Lagrange<2,Vectorial,Continuous,PointSetFekete>> )
+                                            );
+            }
+            else
+                return hana::make_tuple( hana::make_tuple( "Pch1", hana::type_c<Lagrange<1,Scalar,Continuous,PointSetFekete>> ),
+                                         hana::make_tuple( "Pch2", hana::type_c<Lagrange<2,Scalar,Continuous,PointSetFekete>> ),
+                                         hana::make_tuple( "Pdh0", hana::type_c<Lagrange<0,Scalar,Discontinuous,PointSetFekete>> ),
+                                         hana::make_tuple( "Pdh1", hana::type_c<Lagrange<1,Scalar,Discontinuous,PointSetFekete>> ),
+                                         hana::make_tuple( "Pchv1", hana::type_c<Lagrange<1,Vectorial,Continuous,PointSetFekete>> ),
+                                         hana::make_tuple( "Pchv2", hana::type_c<Lagrange<2,Vectorial,Continuous,PointSetFekete>> ),
+                                         hana::make_tuple( "Ned1h0", hana::type_c<Nedelec<0,NedelecKind::NED1>> )
+                                         );
+        }
+
     template <typename MeshType>
     auto modelFields( std::string const& prefix_field = "", std::string const& prefix_symbol = "" ) const
         {
-            static constexpr auto tuple_t_basis = hana::to_tuple(hana::tuple_t<
-                                                                 Lagrange<1,Scalar,Continuous,PointSetFekete>,
-                                                                 Lagrange<2,Scalar,Continuous,PointSetFekete>,
-                                                                 Lagrange<1,Vectorial,Continuous,PointSetFekete>,
-                                                                 Lagrange<2,Vectorial,Continuous,PointSetFekete>
-                                                                 >);
+            static constexpr auto tuple_t_basis = ModelMesh<IndexType>::template basisFieldTypeSupported<MeshType>();
 
             auto mf_fields = hana::fold( tuple_t_basis, model_fields_empty_t{}, [this,prefix_field,prefix_symbol]( auto const& r, auto const& cur )
                                        {
-                                           using basis_type = typename std::decay_t<decltype(cur)>::type;
+                                           using basis_type = typename std::decay_t<decltype(hana::at_c<1>( cur ) )>::type;
+                                           //using basis_type = typename std::decay_t<decltype(cur)>::type;
                                            using space_type = FunctionSpace<MeshType, bases<basis_type> >;
                                            using field_type = typename space_type::element_type;
                                            using field_ptrtype = std::shared_ptr<field_type>;
 
                                            auto mftag = ModelFieldTag< ModelMesh<index_type>,0>( this );
-                                           auto mf = modelField<FieldCtx::ID,field_ptrtype>( mftag );
+                                           auto mf = modelField<FieldCtx::FULL,field_ptrtype>( mftag );
 
                                            for ( auto const& [name,fieldBase] : M_fields )
                                            {
@@ -625,6 +656,77 @@ public :
 
     template <typename MeshType>
     void applyRemesh( std::shared_ptr<MeshType> const& newMesh );
+
+    //! update field from an expression on range of element. This field is identified by a name and the basis param allow to select the function space representation.
+    //! if the field already exist but the basis differ, the field is rebuilt.
+    template <typename MeshType, typename ExprTypr, typename RangeType, std::enable_if_t< is_filter_v<std::decay_t<RangeType>>, bool> = true>
+    void updateField( std::string const& name, Expr<ExprTypr> const& expr, RangeType const& range, std::string const& basis = "", bool initZero = false )
+        {
+            using expr_shape_type = typename ExprTraits<RangeType,Expr<ExprTypr>>::shape;
+            std::string basisUsed = basis;
+            if ( basis.empty() )
+            {
+                if ( expr_shape_type::is_scalar )
+                    basisUsed = "Pch1";
+                else if ( expr_shape_type::is_vectorial )
+                     basisUsed = "Pchv1";
+                // TODO tensor case
+            }
+
+            auto themesh = this->mesh<MeshType>();
+            if ( !themesh )
+                return;
+            static constexpr auto tuple_t_basis = ModelMesh<IndexType>::template basisFieldTypeSupported<MeshType>();
+            hana::for_each( tuple_t_basis, [this,&name,&expr,&basisUsed,&range,&initZero,&themesh]( auto const& b ) {
+                                               if ( basisUsed != hana::at_c<0>( b ) )
+                                                   return;
+                                               using basis_type = typename std::decay_t<decltype(hana::at_c<1>( b ) )>::type;
+                                               using space_type = FunctionSpace<MeshType, bases<basis_type> >;
+                                               if constexpr ( expr_shape_type::M == space_type::nComponents1 && expr_shape_type::N == space_type::nComponents2 )
+                                               {
+                                                   bool doInit = false;
+                                                   if ( M_fields.find( name ) == M_fields.end() )
+                                                       doInit = true;
+                                                   else if ( !dynamic_cast<typename space_type::element_type*>( M_fields.at( name ).get() ) )
+                                                       doInit = true;
+                                                   // init field if necessary
+                                                   if ( doInit )
+                                                   {
+                                                       auto Vh = M_mmeshCommon->template createFunctionSpace<space_type>( basisUsed );
+                                                       auto u = Vh->elementPtr();
+                                                       M_fields[name] = u;
+                                                   }
+                                                   // apply nodal interpolation
+                                                   auto u = dynamic_cast<typename space_type::element_type*>( M_fields.at( name ).get() );
+                                                   if ( initZero )
+                                                       u->zero();
+                                                   u->on(_range=range,_expr=expr);
+                                               }
+                                               else
+                                                   throw std::runtime_error( fmt::format("ModelMesh<IndexType>::updateField expression and space incompatible : expr [{},{}] vs space [{},{}]",
+                                                                                         expr_shape_type::M, expr_shape_type::N, space_type::nComponents1, space_type::nComponents2 ) );
+                                           } );
+        }
+    //! update field from an expression on all mesh elements
+    template <typename MeshType, typename ExprTypr>
+    void updateField( std::string const& name, Expr<ExprTypr> const& expr, std::string const& basis = "" )
+        {
+            auto themesh = this->mesh<MeshType>();
+            if ( !themesh )
+                return;
+            this->updateField<MeshType>( name, expr, elements(themesh), basis );
+        }
+
+    //! update field from another field
+    template <typename MeshType,typename FieldType, std::enable_if_t< is_functionspace_element_v<std::decay_t<FieldType>>, bool> = true>
+    void updateField( std::string const& name, FieldType const& u, std::string const& basis = "" )
+        {
+            // TODO : get a default basis if empty (iterate over all space, maybe one will match or use also continuity property)
+            this->updateField<MeshType>( name, idv(u), basis );
+        }
+
+    //! remove a field from this name and return true is the field has been removed
+    bool removeField( std::string const& name ) { return M_fields.erase( name ) > 0; }
 
 private:
     std::string M_name;

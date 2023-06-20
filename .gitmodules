@@ -82,3 +82,7 @@
 [submodule "mor/contrib/openturns"]
 	path = mor/contrib/openturns
 	url = https://github.com/feelpp/openturns.git
+[submodule "feelpp/contrib/specx"]
+	path = feelpp/contrib/specx
+	url = https://github.com/feelpp/specx.git
+  
