@@ -182,7 +182,7 @@ Eye2Brain<Order, Dim>::initModel()
     using form1_type = vf::detail::LinearForm<typename Eye2BrainConfig<Order, Dim>::space_type, typename backend_type::vector_type, typename backend_type::vector_type>;
     form1_type out1;
     int measure_index = ioption(_name = "measure-index");
-    std::cout << "Measure index = " << measure_index << std::endl;
+    Feel::cout << "Measure index = " << measure_index << std::endl;
     if (measure_index >= 1 && measure_index <= 9)    // sensor output
     {
         std::string name = m_outputNames[measure_index-1];
