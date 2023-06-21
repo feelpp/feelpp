@@ -1,0 +1,133 @@
+{
+    "Name": "Aqueous humor hydrodynamics in human eye heat transfer",
+    "ShortName":"EyeHeat",
+
+    "Meshes":
+    {
+        "heat":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/M3/Eye_Mesh3D_p$np.json",
+                "partition":0
+            }
+        }
+    },
+
+    "Parameters":
+    {
+        "h_bl": 65,         // [W / m^2 / K]
+        "h_amb": 10,        // [W / m^2 / K]        \cite{KOSKY2013259}
+        "h_r": 6,           // [W / m^2 / K]
+        "T_bl": 310,        // [K] 36.85°C          \cite{https://hypertextbook.com/facts/1997/LenaWong.shtml}
+        "T_amb": 294,       // [K] 24.85°C          \cite{MAPSTONE1968237}
+        "E": 40,            // [W / m^2]            \cite{Scott_1988}
+        "k_lens": 0.21,     // [ W / m / K]
+        "sigma": 5.67e-8,   // [W / (m^2 * K^4)]
+        "epsilon": 0.974,   // [-]                  \cite{MAPSTONE1968237}
+        "rho_Cornea": 1050, // [kg / m^3]
+        "rho_Lens": 1000   // [kg / m^3]
+    },
+
+    "Materials":
+    {
+        "Cornea":
+        {
+            "k":"0.58", // [W / (m * K)]
+            "rho":"rho_Cornea:rho_Cornea", // [kg / m^3]
+            "Cp":"4178" // [J / (kg * K)]
+        },
+        "Sclera": {
+            "k": "1.0042", // [W / (m * K)]
+            "rho": "1050", // [kg / m^3]
+            "Cp": "3180" // [J / (kg * K)]
+        },
+        "AqueousHumor":
+        {
+            "k":"0.28", // [W / (m * K)]
+            "rho":"996", // [kg / m^3]
+            "Cp":"3997" // [J / (kg * K)]
+            // "mu":"0.00074", // [N s / m^2]
+            // "beta":"0.000337" // [1 / K]
+        },
+        "Lens":
+        {
+            "k":"k_lens:k_lens", // [W / (m * K)]
+            "rho":"rho_Lens:rho_Lens", // [kg / m^3]
+            "Cp":"3000" // [J / (kg * K)]
+        },
+        "VitreousHumor":
+        {
+            "k":"0.603", // [W / (m * K)]
+            "rho":"1100", // [kg / m^3]
+            "Cp":"4178" //[J / (kg * K)]
+        },
+        "Iris":
+        {
+            "k":"1.0042", // [W / (m * K)]
+            "rho":"1050", // [kg / m^3]
+            "Cp":"3180" // [J / (kg * K)]
+        },
+        "Lamina":
+        {
+            "k":"1.0042", // [W / (m * K)]
+            "rho":"1050", // [kg / m^3]
+            "Cp":"3180" // [J / (kg * K)]
+        },
+        "Choroid":
+        {
+            "k":"0.52", // [W / (m * K)]
+            "rho":"1050", // [kg / m^3]
+            "Cp":"3180" // [J / (kg * K)]
+        },
+        "Retina":
+        {
+            "k":"0.52", // [W / (m * K)]
+            "rho":"1050", // [kg / m^3]
+            "Cp":"3180" // [J / (kg * K)]
+        },
+        "OpticNerve":
+        {
+            "k":"1.0042", // [W / (m * K)]
+            "rho":"1050", // [kg / m^3]
+            "Cp":"3180" // [J / (kg * K)]
+        }
+    },
+
+    "BoundaryConditions":
+    {
+        "heat":
+        {
+            "convective_heat_flux":
+            {
+                "BC_Sclera":
+                {
+                    "h":"h_bl:h_bl",
+                    "Text":"T_bl:T_bl"
+                },
+                "BC_OpticNerve":
+                {
+                    "h":"h_bl:h_bl",
+                    "Text":"T_bl:T_bl"
+                },
+                "BC_Cornea": {
+                    "h": "h_amb+h_r:h_amb:h_r",
+                    "Text": "T_amb:T_amb"
+                    // "expr":"-(h_amb * (heat_T - T_amb) + sigma * epsilon * (heat_T * heat_T * heat_T * heat_T - T_amb * T_amb * T_amb * T_amb) + E):heat_T:T_amb:h_amb:epsilon:sigma:E"
+                }
+
+
+            },
+            "flux":
+            {
+                "BC_Cornea":
+                {
+                    "expr":"-E:E"
+                    // "expr": "-( (h_amb+h_r)*(heat_T-T_amb) + E ):h_amb:h_r:heat_T:T_amb:E"
+                    // "expr":"-(h_amb * (heat_T - T_amb) + sigma * epsilon * (heat_T * heat_T * heat_T * heat_T - T_amb * T_amb * T_amb * T_amb) + E):heat_T:T_amb:h_amb:epsilon:sigma:E"
+
+                }
+            }
+        }
+    }
+}
