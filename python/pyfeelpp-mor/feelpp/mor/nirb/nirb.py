@@ -281,7 +281,7 @@ class nirbOffline(ToolboxModel):
         self.doRectification = doRectification
         self.doBiorthonormal = doBiorthonormal
         self.initCoarse = initCoarse
-        self.doGreedy = kwargs['greedy-generation']
+        self.doGreedy = kwargs['doGreedy']
 
         self.l2ScalarProductMatrix = None
         self.h1ScalarProductMatrix = None
@@ -598,9 +598,25 @@ class nirbOffline(ToolboxModel):
     Check convergence
     """
     def checkConvergence(self, Ns=10, Xi_test=None, regulParam=1.e-10):
+        """ Check the convergence of the offline step
+
+        Parameters:
+        ----------
+            Ns (int) : number of random mu to test
+            Xi_test (list) : list of mu to test
+            regulParam (float) : regularization parameter for the computation of the inverse of the matrix
+
+        Returns:
+        --------
+            Error (dict) : dictionnary with the following keys :
+                - 'N' : sizes the reduced basis
+                - 'l2(uh-uHn)' : l2 norm of the error between the fine and coarse solution
+                - 'l2(uh-uHn)rec' : l2 norm of the error between the fine and coarse solution with rectification
+                - 'l2(uh-uhn)' : l2 norm of the error between the fine and reduced solution
+                - 'l2(uh-uH)' : l2 norm of the error between the u_H^\N interpolated on the fine mesh, and the fine solution
+
         """
-            check convergence of the offline step
-        """
+
         assert self.tbCoarse is not None, f"Coarse toolbox needed for computing coarse Snapshot. set doRectification->True"
 
         if self.worldcomm.isMasterRank():
@@ -608,7 +624,7 @@ class nirbOffline(ToolboxModel):
 
         if Xi_test is None:
             s = self.Dmu.sampling()
-            s.sampling(Ns,'log-random')
+            s.sampling(Ns, 'log-random')
             vector_mu = s.getVector()
         else:
             vector_mu = Xi_test
@@ -617,31 +633,30 @@ class nirbOffline(ToolboxModel):
 
         interpolationOperator = self.createInterpolator(domain=self.tbCoarse, image=self.tbFine)
 
-        soltest =[]
-        soltestFine=[]
+        soltestFine= []     # fine solutions u_h^\N(mu)
+        soltestInt = []        # coarse solutions interpolated u_Hh^\N(mu)
         for mu in vector_mu:
             soltestFine.append(self.getToolboxSolution(self.tbFine, mu))
             uH = self.getToolboxSolution(self.tbCoarse, mu)
-            soltest.append(interpolationOperator.interpolate(uH))
+            soltestInt.append(interpolationOperator.interpolate(uH))
 
         tabcoef = np.zeros((Ntest, self.N))
         tabcoefuh = np.zeros((Ntest, self.N))
 
         for j in range(Ntest):
             for k in range(self.N):
-                tabcoef[j,k] = self.l2ScalarProductMatrix.energy(soltest[j],self.reducedBasis[k])
-                tabcoefuh[j,k] = self.l2ScalarProductMatrix.energy(soltestFine[j],self.reducedBasis[k])
+                tabcoef[j,k]   = self.l2ScalarProductMatrix.energy(soltestInt[j],  self.reducedBasis[k])
+                tabcoefuh[j,k] = self.l2ScalarProductMatrix.energy(soltestFine[j], self.reducedBasis[k])
 
-        Unirb = self.Xh.element()
-        UnirbRect = self.Xh.element()
+        Unirb = self.Xh.element()       # NIRB solution u_Hh^N(mu) w/o rectification
+        UnirbRect = self.Xh.element()   # NIRB solution u_Hh^N(mu) with rectification
         Uhn = self.Xh.element()
 
         Error = {'N':[], 'l2(uh-uHn)':[], 'l2(uh-uHn)rec':[], 'l2(uh-uhn)' : [], 'l2(uh-uH)':[]}
 
         nb = 0
         pas = 1 if (self.N < 50) else 5
-        for i in tqdm(range(1, self.N+1, pas), desc=f"[NIRB] Compute convergence error:", ascii=False, ncols=100):
-            nb = i
+        for nb in tqdm(range(1, self.N+1, pas), desc=f"[NIRB] Compute convergence error", ascii=False, ncols=100):
             # Get rectification matrix
             BH = self.coeffCoarse[:nb, :nb]
             Bh = self.coeffFine[:nb, :nb]
@@ -654,23 +669,23 @@ class nirbOffline(ToolboxModel):
                 tabRect = R @ tabcoef[j,:nb]
 
                 for k in range(nb): # get reduced sol in a basis function space
-                    Unirb.add(float(tabcoef[j,k]),self.reducedBasis[k])
+                    Unirb.add(float(tabcoef[j,k]), self.reducedBasis[k])
                     UnirbRect.add(float(tabRect[k]), self.reducedBasis[k])
-                    Uhn.add(float(tabcoefuh[j,k]),self.reducedBasis[k])
+                    Uhn.add(float(tabcoefuh[j,k]), self.reducedBasis[k])
 
                 Unirb.add(-1, soltestFine[j])
                 UnirbRect.add(-1, soltestFine[j])
                 Uhn.add(-1, soltestFine[j])
-                Uhint = soltestFine[j] - soltest[j]
-                err1 = np.sqrt(abs(self.l2ScalarProductMatrix.energy(Unirb,Unirb)))
-                err2 = np.sqrt(abs(self.l2ScalarProductMatrix.energy(UnirbRect,UnirbRect)))
-                err3 = np.sqrt(abs(self.l2ScalarProductMatrix.energy(Uhn,Uhn)))
-                err4 = np.sqrt(abs(self.l2ScalarProductMatrix.energy(Uhint,Uhint)))
+                Uhint = soltestFine[j] - soltestInt[j]
+                nirbError = np.sqrt(abs(self.l2ScalarProductMatrix.energy(Unirb, Unirb)))
+                nirbErrorRect = np.sqrt(abs(self.l2ScalarProductMatrix.energy(UnirbRect, UnirbRect)))
+                fineProjectionError = np.sqrt(abs(self.l2ScalarProductMatrix.energy(Uhn, Uhn)))
+                interpolationError = np.sqrt(abs(self.l2ScalarProductMatrix.energy(Uhint, Uhint)))
 
-                Error['l2(uh-uHn)'].append(err1)
-                Error['l2(uh-uHn)rec'].append(err2)
-                Error['l2(uh-uhn)'].append(err3)
-                Error['l2(uh-uH)'].append(err4)
+                Error['l2(uh-uHn)'].append(nirbError)
+                Error['l2(uh-uHn)rec'].append(nirbErrorRect)
+                Error['l2(uh-uhn)'].append(fineProjectionError)
+                Error['l2(uh-uH)'].append(interpolationError)
                 Error["N"].append(nb)
 
         return Error
@@ -1042,7 +1057,7 @@ class nirbOnline(ToolboxModel):
 
         #Thikonov regularization (AT @ A + lambda I_d)^-1 @ (AT @ B)
         R = np.linalg.solve(BH.transpose() @ BH + lambd * np.eye(Nb), BH.transpose() @ Bh)
-        
+
         if False:
             R_old = np.zeros((Nb, Nb))
             for i in range(Nb):

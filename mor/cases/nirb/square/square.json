@@ -117,8 +117,16 @@
         "model_path": "$cfgdir/square.json",
         "doRectification": true,
         "doBiorthonormal": false,
-        "nbSnapshots": 10,
-        "greedy-generation": true,
-        "outdir": "results/rect/greedy"
+        "nbSnapshots": 60,
+        "doGreedy": false,
+        "greedy-parameters":
+        {
+            "Ninit": 5,
+            "Ntrain": 1000,
+            "eps": 1e-5,
+            "Nmax": 50,
+            "sampling-mode": "log-random",
+            "Mexpr": "N-1"
+        }
     }
 }

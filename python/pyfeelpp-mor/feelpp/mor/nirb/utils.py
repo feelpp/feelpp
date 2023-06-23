@@ -86,8 +86,8 @@ def generatedAndSaveSampling(Dmu, size, path="./sampling.sample", samplingMode="
     """
     s = Dmu.sampling()
     s.sampling(size, samplingMode)
+    s.writeOnFile(path)
     if feelpp.Environment.isMasterRank():
-        s.writeOnFile(path)
         print("Sampling saved in ", path)
 
     return s.getVector()

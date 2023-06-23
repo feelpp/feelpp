@@ -1,5 +1,6 @@
-import sys
-from feelpp.mor.nirb.nirb import *
+import sys, os
+import feelpp
+from feelpp.mor.nirb import nirbOffline, nirbOnline, ToolboxModel
 from feelpp.mor.nirb.greedy import *
 from feelpp.mor.nirb.utils import WriteVecAppend, init_feelpp_environment, generatedAndSaveSampling
 import time
@@ -7,6 +8,41 @@ import json
 import argparse
 import pandas as pd
 
+
+default_values = {
+    "nbSnapshots": 10,
+    "outdir": None,
+
+    "doRectification": True,
+    "doBiorthonormal": False,
+    "doGreedy": True,
+
+    "greedy-Ninit": 5,
+    "greedy-Ntrain": 1000,
+    "greedy-eps": 1e-5,
+    "greedy-Nmax": 50,
+    "greedy-samplingMode": "log-random",
+    "greedy-Mexpr": "N-1",
+}
+
+def get_config_parameter(config, parameter):
+    """
+    Get parameter from config file, if not found, return default value
+    
+    Parameters
+    ----------
+    config : dict
+        configuration of the NIRB model
+    parameter : str
+        parameter to get from config file
+        
+    Returns
+    -------
+    parameter
+    """
+    if parameter.startswith("greedy-"):
+        return config["greedy-parameters"].get(parameter[7:], default_values[parameter])
+    return config.get(parameter, default_values[parameter])
 
 
 def run_offline(config_nirb, regulParam=1e-10):
@@ -88,27 +124,25 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='NIRB Offline')
     parser.add_argument('--config-file', type=str, help='path to cfg file')
     parser.add_argument("--N", help="Number of initial snapshots [default=10]", type=int, default=10)
-    parser.add_argument("--outdir", help="output directory", type=str, default=None)
-    parser.add_argument("--greedy", help="Wether with or without Greedy [default=0]", type=int, default=0)
-    parser.add_argument("--biortho", help="Wether with or without bi-orthonormalization [default=0]", type=int, default=0)
     parser.add_argument("--convergence", help="Wether get convergence error [default=0]", type=int, default=0)
+    parser.add_argument("--load-sampling", help="Load a sampling previously generated [default=0]", type=int, default=0)
 
     parser.add_argument("--generate-sampling", help="Generate and save a sampling of given size [default=0]\
         If called, no basis is generated", type=int, default=0)
-    parser.add_argument("--load-sampling", help="Load a sampling previously generated [default=0]", type=int, default=0)
     parser.add_argument("--sampling-path", help="Path to sampling file, for loading or saving [default=\"sampling_train.sample\"]", type=str, default="sampling_train.sample")
-
-    # Greedy arguments
-    parser.add_argument("--Ninit", help="[Greedy] Number of initial snapshots [default=5]", type=int, default=5)
-    parser.add_argument("--Ntrain", help="[Greedy] Number of training snapshots [default=1000]", type=int, default=1000)
-    parser.add_argument("--eps", help="[Greedy] Tolerance [default=1e-5]", type=float, default=1e-5)
-    parser.add_argument("--Nmax", help="[Greedy] Maximum number of snapshots [default=50]", type=int, default=50)
-    parser.add_argument("--sampling-mode", help="[Greedy] Sampling mode [default=log-random]", type=str, default="log-random")
-    parser.add_argument("--Mexpr", help="[Greedy] Expression of N as a function of N [default=\"N-1\"]", type=str, default="N-1")
+    parser.add_argument("--sampling-mode", help="Mode for sampling the training set [default=\"log-random\"]", type=str, default="log-random")
+    parser.add_argument("--print-default-values", help="Print default values for config file [default=0]", type=int, default=0)
 
     args = parser.parse_args()
     config_file = args.config_file
-    outdir = args.outdir
+
+    sampling_path = args.sampling_path
+
+    if args.print_default_values:
+        print("[NIRB] Default values:")
+        for k, v in default_values.items():
+            print(f"{k:>24}: {v}")
+        sys.exit(0)
 
     cfg = feelpp.readCfg(config_file)
     toolboxType = cfg['nirb']['toolboxType']
@@ -116,35 +150,40 @@ if __name__ == "__main__":
 
     nirb_file = feelpp.Environment.expand(cfg['nirb']['filename'])
     config_nirb = feelpp.readJson(nirb_file)['nirb']
+    outdir = get_config_parameter(config_nirb, 'outdir')
 
     convergence = args.convergence != 0
-    nbSnap = args.N
+    nbSnap = get_config_parameter(config_nirb, 'nbSnapshots')
 
-    config_nirb['greedy-generation'] = args.greedy != 0
-    config_nirb['doBiorthonormal'] = args.biortho != 0
-
-    doGreedy = config_nirb['greedy-generation']
-    doRectification = config_nirb['doRectification']
+    doGreedy = get_config_parameter(config_nirb, 'doGreedy')
+    print(f"[NIRB] Greedy generation: {doGreedy}")
+    doRectification = get_config_parameter(config_nirb, 'doRectification')
+    doBiorthonormal = get_config_parameter(config_nirb, 'doBiorthonormal')
     rectPath = ["noRect", "Rect"][doRectification]
     greedyPath = ["noGreedy", "Greedy"][doGreedy]
 
     if outdir is None:
-        RESPATH = f"results/{rectPath}/{greedyPath}"
+        RESPATH = os.path.join(os.getcwd(), "results", rectPath, greedyPath)
     else:
         RESPATH = outdir
 
+    # Create the directory if it does not exist to avoid errors
+    if not os.path.exists(RESPATH):
+        os.makedirs(RESPATH)
+
+    Xi_train = None
+    Xi_train_path = os.path.join(RESPATH, sampling_path)
+    
     ###
     # Only once: generate and save a sampling
     if args.generate_sampling != 0:
         nirb_off = nirbOffline(**config_nirb, initCoarse=False)
         nirb_off.initModel()
-        generatedAndSaveSampling(nirb_off.Dmu, args.generate_sampling, path=Xi_train_path)
+        generatedAndSaveSampling(nirb_off.Dmu, args.generate_sampling, path=Xi_train_path, samplingMode=args.sampling_mode)
         sys.exit(0)
 
     ###
     # If wanted: load the savec sampling to use it in algorithm generation
-    Xi_train = None
-    Xi_train_path = os.path.join(RESPATH, args.sampling_path)
     if args.load_sampling != 0:
         s = nirb_off.Dmu.sampling()
         N_train = s.readFromFile(Xi_train_path)
@@ -152,10 +191,18 @@ if __name__ == "__main__":
 
     # Initialize objects and run the offline stage
     start = time.time()
-    if config_nirb['greedy-generation']:
-        nirb_off, nirb_on, _ = run_offline_greedy(config_nirb, args.Ninit, args.Ntrain, eps=args.eps,
-                Xi_train=Xi_train, Nmax=args.Nmax, samplingMode=args.sampling_mode, Mexpr=args.Mexpr)
+    if doGreedy:
+        print("+------------------------------------------------+\n[NIRB] Running offline greedy")
+        Ninit = get_config_parameter(config_nirb, 'greedy-Ninit')
+        Ntrain = get_config_parameter(config_nirb, 'greedy-Ntrain')
+        eps = get_config_parameter(config_nirb, 'greedy-eps')
+        Nmax = get_config_parameter(config_nirb, 'greedy-Nmax')
+        samplingMode = get_config_parameter(config_nirb, 'greedy-samplingMode')
+        Mexpr = get_config_parameter(config_nirb, 'greedy-Mexpr')
+        nirb_off, nirb_on, _ = run_offline_greedy(config_nirb, Ninit, Ntrain, eps=eps,
+                Xi_train=Xi_train, Nmax=Nmax, samplingMode=samplingMode, Mexpr=Mexpr)
     else:
+        print("+------------------------------------------------+\n[NIRB] Running offline")
         nirb_off = run_offline(config_nirb)
 
     tolortho = 1.e-8
@@ -169,10 +216,11 @@ if __name__ == "__main__":
     finish = time.time()
 
     print(f"proc {nirb_off.worldcomm.localRank()} Is L2 orthonormalized ?", nirb_off.checkL2Orthonormalized(tol=tolortho))
-    print(f"proc {nirb_off.worldcomm.localRank()} Is H1 orthonormalized ? ", nirb_off.checkH1Orthonormalized())
+    print(f"proc {nirb_off.worldcomm.localRank()} Is H1 orthonormalized ?", nirb_off.checkH1Orthonormalized())
 
     if convergence:
-        Xi_test_path = os.path.join(RESPATH, "sampling_test.sample")
+        print(f"[NIRB] Check convergence with sampling [{sampling_path}]")
+        Xi_test_path = os.path.join(RESPATH, sampling_path)
         if os.path.isfile(Xi_test_path):
             s = nirb_off.Dmu.sampling()
             N = s.readFromFile(Xi_test_path)
@@ -180,7 +228,7 @@ if __name__ == "__main__":
             if nirb_off.worldcomm.isMasterRank():
                 print(f"[NIRB] Xi_test loaded from {Xi_test_path}")
         else :
-            Ns = 30
+            Ns = 1
             Xi_test = generatedAndSaveSampling(nirb_off.Dmu, Ns, path=Xi_test_path, samplingMode="log-random")
 
         Err = nirb_off.checkConvergence(Ns=30, Xi_test=Xi_test)
