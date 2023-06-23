@@ -341,7 +341,7 @@ public:
     using vector_indices_type = std::unordered_map<size_type,localglobal_indices_type,
                                         std::hash<size_type>,std::equal_to<size_type>,
                                         Eigen::aligned_allocator<std::pair<const size_type,localglobal_indices_type > > >;
-    
+
     DofTable( WorldComm const& _worldComm )
         :
         super( _worldComm )
@@ -851,6 +851,16 @@ public:
             return M_dfe( elid, edge_id );
         }
 
+    template <typename MeshEntityType,std::enable_if_t< std::is_same_v<MeshEntityType,typename mesh_type::element_type>, bool> = true >
+    auto localDof( MeshEntityType const& elt ) const { return this->localDof( elt.id() ); }
+    template <typename MeshEntityType,std::enable_if_t< std::is_same_v<MeshEntityType,typename mesh_type::face_type> && (mesh_type::nDim > 0), bool> = true >
+    auto localDof( MeshEntityType const& face ) const { return this->faceLocalDof( face.id() ); }
+#if 0
+    template <typename MeshEntityType,std::enable_if_t< std::is_same_v<MeshEntityType,typename mesh_type::edge_type> && (mesh_type::nDim == 3), bool> = true >
+    auto localDof( MeshEntityType const& edge ) const { this->edgeLocalDof( edge.id() ); }
+#endif
+
+
     template<typename ElemTest,typename ElemTrial>
     std::vector<uint16_type> const& localIndices( ElemTest const& eltTest, ElemTrial const& eltTrial  ) const
         {
@@ -1348,8 +1358,8 @@ public:
 
     /**
      * build point id to dof id relationship
-     * if \p dof2pid is true then generate dof to point id relation, 
-     * if \p pid2dof is true then generate point id to dof relation, 
+     * if \p dof2pid is true then generate dof to point id relation,
+     * if \p pid2dof is true then generate point id to dof relation,
      */
     std::pair<std::unordered_map<size_type,size_type>,std::unordered_map<size_type,size_type> >
     pointIdToDofRelation( std::string fname="", bool dof2pid = true, bool pid2dof = true ) const;
@@ -1491,7 +1501,7 @@ private:
         {
             if (! mesh.numElements() )
                 return;
-                
+
             element_type const& _elt = mesh.beginElement()->second;
             PointSetMapped<element_type, convex_type, nOrder> pts( _elt );
 
@@ -1551,7 +1561,7 @@ private:
 
     /// a view of the dof container
     //dof_container_type M_dof_view;
-    
+
     vector_indices_type M_locglob_indices;
     vector_indices_type M_locglob_signs;
     localglobal_indices_type M_locglob_nosigns;
@@ -1849,7 +1859,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
             {
                 em.push_back( boost::make_tuple( elt.id(), c, (elt.hasMarker())? elt.marker().value() : 0 ) );
             }
-    } 
+    }
     if ( !em.empty() )
     {
         VLOG(2) << "[build] some element dof were not assigned\n";
@@ -1875,8 +1885,8 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
         VLOG(2) << "[build] call buildBoundaryDofMap()\n";
         this->buildBoundaryDofMap( M );
     }
-    
-    tic( ); 
+
+    tic( );
     // multi process
     if ( this->worldComm().localSize()>1 )
     {
@@ -1942,7 +1952,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
                 }
             }
         }
-    } 
+    }
     else
     {
     toc("DofTable::multi process", FLAGS_v>1);
@@ -2666,7 +2676,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildBoundaryDofMap( me
             FEELPP_ASSERT( boost::get<0>( M_face_l2g[face.id()][face_dof_id] ) != invalid_v<size_type> )( face.id() )( face_dof_id ).warn( "invalid dof table: initialized dof entries" );
 
 #endif
-    
+
     toc( "DofTable::buildBoundaryDofMap", FLAGS_v>1 );
 }    // updateBoundaryDof
 
@@ -2677,7 +2687,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mes
 {
     tic();
     generateDofPoints( M, buildMinimalParallel, mpl::bool_<is_mortar>() );
-    toc("DofTable::generateDofPoints",FLAGS_v>1); 
+    toc("DofTable::generateDofPoints",FLAGS_v>1);
 
 }
 template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>

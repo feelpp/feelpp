@@ -438,13 +438,12 @@ class nirbOffline(ToolboxModel):
             self.l2ScalarProductMatrixCoarse.to_petsc().close()
             self.h1ScalarProductMatrixCoarse.to_petsc().close()
 
-    def generateReducedBasis(self, tolerance=1.e-12, regulParam=1.e-10):
+    def generateReducedBasis(self, tolerance=1.e-12):
         """Generate the reduced basis, and store it in the list self.reducedBasis
 
         Args:
         -----
             tolerance(float), optional : tolerance of the eigen value problem target accuracy of the data compression
-            regulParam(float), optional : the regularization parameter for rectification
         """
         self.reducedBasis, RIC = self.PODReducedBasis(tolerance=tolerance)
         self.orthonormalizeL2()
@@ -1049,7 +1048,6 @@ class nirbOnline(ToolboxModel):
         --------
             R (numpy.array): the rectification matrix
         """
-        print(coeffCoarse, coeffFine)
         if Nb is None: Nb = self.N
 
         BH = coeffCoarse[:Nb, :Nb]
@@ -1216,10 +1214,7 @@ class nirbOnline(ToolboxModel):
             name (str): name of the field
         """
         if self.exporter is not None:
-            if self.order == 1:
-                self.exporter.addP1c(name, field)
-            elif self.order == 2:
-                self.exporter.addP2c(name, field)
+            self.exporter.add(name, field)
         else:
             print("Exporter not initialized, please call initExporter() first")
 

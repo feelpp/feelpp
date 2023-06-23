@@ -144,5 +144,5 @@ if __name__ == "__main__":
             print("[NIRB online] Max of errors ")
             print(data_max)
 
-    print(f"[NIRB] Online Elapsed time =", finish-start)
+    print(f"[NIRB] Online Elapsed time = {finish-start}")
     print(f"[NIRB] Online part Done !!")

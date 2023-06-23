@@ -409,7 +409,7 @@ Environment::initPetsc( int * argc, char *** argv )
     {
         int ierr;
         if( (*argc > 0) && ( argv != nullptr ) )
-            ierr = PetscInitialize( argc, argv, PETSC_NULL, PETSC_NULL );
+            ierr = PetscInitialize( argc, argv, PETSC_IGNORE, PETSC_IGNORE );
         else
             ierr = PetscInitializeNoArguments();
         CHKERRABORT( *S_worldcomm,ierr );
@@ -426,7 +426,7 @@ Environment::initPetsc( int * argc, char *** argv )
     {
         int ierr;
         if( (*argc > 0) && ( argv != nullptr ) )
-            ierr = SlepcInitialize( argc, argv, PETSC_NULL, PETSC_NULL );
+            ierr = SlepcInitialize( argc, argv, PETSC_IGNORE, PETSC_IGNORE );
         else
             ierr = SlepcInitializeNoArguments();
         CHKERRABORT( *S_worldcomm,ierr );

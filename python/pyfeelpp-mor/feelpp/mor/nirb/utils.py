@@ -11,6 +11,7 @@ from petsc4py import PETSc
 from slepc4py import SLEPc
 import numpy as np
 from mpi4py import MPI
+import random
 
 
 ############################################################################################################
@@ -119,6 +120,65 @@ def samplingEqui(model_path,Ns,type='equidistribute'):
 
     return mus
 
+def SamplingPreProcess(Dmu,Ntrain=200, Ntest=50,path="./", idmodel='s4', samplingMode='log-random'):
+    """Generate and save sampling for trainning and testing. It ensure that both sampling will be distinct
+
+    Parameters
+    ----------
+    Dmu : feelpp.ParameterSpace
+        parameter space
+    Ntrain : int, optional
+        number of trainning parameter, by default 200
+    Ntest : int, optional
+        number of testing parameter, by default 50
+    path : str, optional
+        directory to save datas, by default "./"
+    idmodel : str, optional
+        end of file before extension, by default 's4'
+    samplingMode : str, optional
+        feelpp sampling mode , by default 'log-random'
+
+    Returns
+    -------
+    None
+        write the sampling on file named by :
+        sampling_train_{idmodel}_N{Ntrain}.sample
+        sampling_test_{idmodel}_N{Ntest}.sample
+    """
+
+    Nglob = Ntrain + Ntest + 100
+    g = Dmu.sampling()
+    g.sampling(Nglob, samplingMode)
+    Xglob = g.getVector()
+
+    if feelpp.Environment.isMasterRank():
+        itest = random.sample(range(Nglob), k=Ntest)
+        inp = np.array(itest, dtype='i')
+    else:
+        inp = np.empty(Ntest, dtype='i')
+
+    feelpp.Environment.worldComm().globalComm().Bcast(inp, root=0)
+    itest = list(inp)
+
+    Xtest = [Xglob[i] for i in itest]
+    Xtrain = [Xglob[i] for i in range(Nglob) if i not in itest]
+    Xtrain = Xtrain[:Ntrain]
+
+    g.setElements(Xtest)
+    if feelpp.Environment.isMasterRank():
+        Xtest_path = f"{path}/sampling_test_{idmodel}_N{Ntest}.sample"
+        g.writeOnFile(Xtest_path)
+
+    g.setElements(Xtrain)
+    if feelpp.Environment.isMasterRank():
+        Xtrain_path = f"{path}/sampling_train_{idmodel}_N{Ntrain}.sample"
+        g.writeOnFile(Xtrain_path)
+
+    if feelpp.Environment.isMasterRank():
+        print(f"[NIRB] Sampling saved on path : {path}")
+
+    return Xtrain, Xtest
+
 
 ############################################################################################################
 #                                                                                                          #
@@ -212,7 +272,8 @@ def SlepcEigenV(matrix, epsilon = 1.e-8):
 #                                                                                                          #
 ############################################################################################################
 def WriteVecAppend(filename, array):
-    """ Write an array or list in filename with append mode the vector value will be writen horizontally
+    """ Write an array or list in filename with append mode
+            the vector value will be writen horizontally
     """
     with open(filename, 'a+') as file:
         file.write(' '.join(str(i) for i in list(array))+"\n")

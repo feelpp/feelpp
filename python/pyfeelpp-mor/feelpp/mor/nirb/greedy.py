@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-## utilis function for NIRB
+## functions for greedy algorithm in NIRB
 ## Thomas Saigre, Ali Elarif
 ## 01/2023
 
 from tqdm import tqdm
-
+from feelpp.mor.nirb.nirb import *
 
 def initProblemGreedy(offline, online, Ninit, Ntrain, eps=1e-5, Xi_train=None, Nmax=50, samplingMode="log-random", Mexpr='N-1'):
     """Generate the reduced space using the greedy algorithm.
@@ -33,7 +33,7 @@ def initProblemGreedy(offline, online, Ninit, Ntrain, eps=1e-5, Xi_train=None, N
     Returns
     -------
     tuple
-        TO BE COMPLETED
+        TODO
     """
 
     if offline.tbCoarse is None:
@@ -42,7 +42,7 @@ def initProblemGreedy(offline, online, Ninit, Ntrain, eps=1e-5, Xi_train=None, N
 
     if Xi_train is None:
         s = offline.Dmu.sampling()
-        s.sampling(Ntrain, samplingMode)
+        s.sampling(20, samplingMode)
         Xi_train = s.getVector()
     Xi_train_copy = Xi_train.copy()
 
@@ -76,12 +76,15 @@ def initProblemGreedy(offline, online, Ninit, Ntrain, eps=1e-5, Xi_train=None, N
 
     # Greedy loop
     if offline.worldcomm.isMasterRank():
-        print("[NIRB] Starting greedy loop with tolerance eps = ", eps, " and Nmax = ", Nmax)
+        print(f"[NIRB] Starting greedy loop with tolerance eps = {eps} and Nmax = {Nmax}")
     while Delta_star > eps and N < Nmax:
+        if offline.worldcomm.isMasterRank():
+            print(f"[NIRB] Greedy loop : N = {N} Delta_star = {Delta_star}")
         M = eval(Mexpr)
 
-        mu_star, Xi_train = greedyStep(offline, online, Xi_train, N, M, interpSol)
-
+        mu_star, Xi_train, Delta_star = greedyStep(offline, online, Xi_train, N, M, interpSol)
+        N = offline.N
+        Deltas_conv.append(Delta_star)
         S.append(mu_star)
 
 
@@ -89,11 +92,34 @@ def initProblemGreedy(offline, online, Ninit, Ntrain, eps=1e-5, Xi_train=None, N
 
     if offline.worldcomm.isMasterRank():
         print(f"[NIRB] Number of snapshot computed : {N}")
+        print(f"[NIRB] Convergence of the greedy algorithm : {Deltas_conv}")
 
     return S, Xi_train
 
 
-def greedyStep(offline, online, Xi_train, N, M, interpSol):
+def greedyStep(offline: nirbOffline, online: nirbOnline, Xi_train, N, M, interpSol):
+    """Compute on step of greedy algorithm
+
+    Parameters
+    ----------
+    offline : nirbOffline
+        nirbOffline object
+    online : nirbOnline
+        nirbOnline object
+    Xi_train : list of ParameterSpaceElement
+        train set of parameters
+    N : int
+        size of reduced basis
+    M : int
+        size of rediced basis to compare
+    interpSol : _type_
+        Interpolated solution
+
+    Returns
+    -------
+    tuple
+        TODO
+    """
 
     Delta_star = -float('inf')
 
@@ -112,26 +138,18 @@ def greedyStep(offline, online, Xi_train, N, M, interpSol):
             Delta_star = Delta
             mu_star = mu
             idx = i
-
     uHN_export = online.getOnlineSol(mu_star, N, interSol=interpSol[mu_star])
     uHM_export = online.getOnlineSol(mu_star, M, interSol=interpSol[mu_star])
-    uh = online.getToolboxSolution(online.tbFine, mu)
+    uh = online.getToolboxSolution(online.tbFine, mu_star)
 
-    online.exportField(uHN_export, f"NIRB{N:02}uHhN")
-    online.exportField(uHM_export, f"NIRB{N:02}uHhM")
-    online.exportField(uh, f"NIRB{N:02}uh")
+    if online.exporter is not None:
+        online.exportField(uHN_export, f"NIRB{N:02}uHhN")
+        online.exportField(uHM_export, f"NIRB{N:02}uHhM")
+        online.exportField(uh, f"NIRB{N:02}uh")
 
     del Xi_train[idx]
     uH = offline.getToolboxSolution( offline.tbCoarse, mu_star)
     offline.addFunctionToBasis( offline.getToolboxSolution(offline.tbFine, mu_star), coarseSnapshot=uH )
-    N += 1
     online.setBasis(offline)
 
-    return mu_star, Xi_train
-
-    if offline.worldcomm.isMasterRank():
-        print(f"[NIRB] Number of snapshot computed : {N}")
-
-    print(Deltas_conv)
-
-    return S, Xi_train, Deltas_conv
+    return mu_star, Xi_train, Delta_star

@@ -322,6 +322,9 @@ PYBIND11_MODULE( _mor, m )
         .def("writeOnFile", &ParameterSpaceX::Sampling::writeOnFile, "write the sampling on file\nin the file we write :\nmu_0= [ value0 , value1 , ... ]\nmu_1= [ value0 , value1 , ... ]", py::arg("filename"))
         .def("readFromFile", &ParameterSpaceX::Sampling::readFromFile, "read the sampling from file\nin the file we expect :\nmu_0= [ value0 , value1 , ... ]\nmu_1= [ value0 , value1 , ... ]\nreturn the size of the sampling", py::arg("filename"))
         .def("__len__", &std_item<ParameterSpaceX::Sampling>::size)
+        .def("addElement",&ParameterSpaceX::Sampling::addElement, "add element to sampling", py::arg("element") )
+        .def("setElements",&ParameterSpaceX::Sampling::setElements, "add vector of elements to sampling", py::arg("vector") )
+        .def("clear",&ParameterSpaceX::Sampling::clear, "clear a sampling")
         ;
 
     //!

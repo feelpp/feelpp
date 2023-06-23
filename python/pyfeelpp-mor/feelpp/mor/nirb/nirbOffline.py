@@ -126,6 +126,7 @@ if __name__ == "__main__":
     parser.add_argument("--N", help="Number of initial snapshots [default=10]", type=int, default=10)
     parser.add_argument("--convergence", help="Wether get convergence error [default=0]", type=int, default=0)
     parser.add_argument("--load-sampling", help="Load a sampling previously generated [default=0]", type=int, default=0)
+    parser.add_argument("--time", help="Wether to solve stationary problem or not [default=0]", type=int, default=0)
 
     parser.add_argument("--generate-sampling", help="Generate and save a sampling of given size [default=0]\
         If called, no basis is generated", type=int, default=0)
