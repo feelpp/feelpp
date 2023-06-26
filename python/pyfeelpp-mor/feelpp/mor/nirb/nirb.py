@@ -368,13 +368,13 @@ class nirbOffline(ToolboxModel):
             self.reducedBasis.append(vec)
 
 
-    def initProblem(self, numberOfInitSnapshots, Xi_train=None, samplingMode="log-random", computeCoarse=False):
-        """Initialize the problem
+    def computeSnapshots(self, numberOfInitSnapshots, Xi_train=None, samplingMode="log-random", computeCoarse=False):
+        """Compute snapshots that will be used to generate the reduced basis
 
         Args:
         -----
             numberOfInitSnapshots (int): number of snapshots to use for the initialization
-            Xi_train (list of ParameteœrSpaceElement, optional): Train set for algorithm. If None is given, a set of size Ntrain is generated. Defaults to None.
+            Xi_train (list of ParameterSpaceElement, optional): Train set for algorithm. If None is given, a set of size Ntrain is generated. Defaults to None.
             samplingMode (str, optional): sampling mode in the parameter space.(random, log-random, log-equidistribute, equidistribute) Defaults to "log-random".
             computeCoarse (bool, optional): compute snapshots for coarse toolbox, used for rectification. Defaults to False.
 
@@ -383,16 +383,16 @@ class nirbOffline(ToolboxModel):
             Xi_train (list of ParameterSpaceElement): parameters used for do build the basis
         """
         if self.doRectification:
-            computeCoarse=True
+            computeCoarse = True
 
         self.fineSnapShotList = []
         self.coarseSnapShotList = []
 
-        if Xi_train is None:
+        if Xi_train is None:        # Generate a set of parameters
             s = self.Dmu.sampling()
             s.sampling(numberOfInitSnapshots, samplingMode)
             vector_mu = s.getVector()
-        else:
+        else:                       # Select in Xi_train a set of parameters
             if self.worldcomm.isMasterRank():
                 indice_mu = random.sample(range(len(Xi_train)), k=numberOfInitSnapshots)
                 indice_mu = np.array(indice_mu, dtype='i')
@@ -403,21 +403,21 @@ class nirbOffline(ToolboxModel):
             vector_mu = [Xi_train[i] for i in list(indice_mu)]
 
         if computeCoarse:
-            assert self.tbCoarse is not None, f"Coarse toolbox needed for computing coarse Snapshot. set doRectification->True"
+            assert self.tbCoarse is not None, f"[NIRB::computeSnapshots] Coarse toolbox needed for computing coarse Snapshot. Set doRectification->True"
             for mu in vector_mu:
                 if self.worldcomm.isMasterRank():
-                    print(f"Running simulation with mu = {mu}")
-                self.fineSnapShotList.append(self.getToolboxSolution(self.tbFine, mu))
+                    print(f"[NIRB::computeSnapshots] Computing coarse and fine snapshots with mu = {mu}")
+                self.fineSnapShotList.append(  self.getToolboxSolution(self.tbFine,   mu))
                 self.coarseSnapShotList.append(self.getToolboxSolution(self.tbCoarse, mu))
 
         else:
             for mu in vector_mu:
                 if self.worldcomm.isMasterRank():
-                    print(f"Running simulation with mu = {mu}")
+                    print(f"[NIRB::computeSnapshots] Computing fine snapshot with mu = {mu}")
                 self.fineSnapShotList.append(self.getToolboxSolution(self.tbFine, mu))
 
         if self.worldcomm.isMasterRank():
-            print(f"[NIRB] Number of snapshot computed : {len(self.fineSnapShotList)}" )
+            print(f"[NIRB::computeSnapshots] Number of snapshot computed : {len(self.fineSnapShotList)}" )
 
         return vector_mu
 
@@ -612,7 +612,7 @@ class nirbOffline(ToolboxModel):
                 - 'l2(uh-uHn)' : l2 norm of the error between the fine and coarse solution
                 - 'l2(uh-uHn)rec' : l2 norm of the error between the fine and coarse solution with rectification
                 - 'l2(uh-uhn)' : l2 norm of the error between the fine and reduced solution
-                - 'l2(uh-uH)' : l2 norm of the error between the u_H^\N interpolated on the fine mesh, and the fine solution
+                - 'l2(uh-uH)' : l2 norm of the error between the u_H^calN interpolated on the fine mesh, and the fine solution
 
         """
 

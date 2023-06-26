@@ -45,15 +45,13 @@ def get_config_parameter(config, parameter):
     return config.get(parameter, default_values[parameter])
 
 
-def run_offline(config_nirb, regulParam=1e-10):
+def run_offline(config_nirb):
     """Run offline step using POD
 
     Parameters
     ----------
     config_nirb : dict
         configuration of the NIRB model
-    regulParam : float, optional
-        Regularization parameter, by default 1e-10
 
     Returns
     -------
@@ -65,10 +63,8 @@ def run_offline(config_nirb, regulParam=1e-10):
 
     nirb_off.generateOperators(coarse=True)
     nbSnap = config_nirb['nbSnapshots']
-    _ = nirb_off.initProblem(nbSnap)
-    RIC = nirb_off.generateReducedBasis(regulParam=regulParam)
-    print(f"[NIRB] Basis of size {nirb_off.N} generated, RIC = {RIC}")
-
+    _ = nirb_off.computeSnapshots(nbSnap)
+    RIC = nirb_off.generateReducedBasis()
     return nirb_off
 
 
@@ -162,7 +158,6 @@ if __name__ == "__main__":
     doBiorthonormal = get_config_parameter(config_nirb, 'doBiorthonormal')
     rectPath = ["noRect", "Rect"][doRectification]
     greedyPath = ["noGreedy", "Greedy"][doGreedy]
-
     if outdir is None:
         RESPATH = os.path.join(os.getcwd(), "results", rectPath, greedyPath)
     else:
