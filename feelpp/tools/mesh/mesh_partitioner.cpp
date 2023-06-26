@@ -47,7 +47,8 @@ int main( int argc, char** argv )
 	po::options_description meshpartoptions( "Mesh Partitioner options" );
 	meshpartoptions.add_options()
         ( "dim", po::value<int>()->default_value( 3 ), "mesh dimension" )
-        ( "shape", po::value<std::string>()->default_value( "simplex" ), "mesh dimension" )
+        ( "topdim-equal-realdim", po::value<bool>()->default_value( true ), "mesh dimension" )
+        ( "shape", po::value<std::string>()->default_value( "simplex" ), "mesh basic unit" )
         ( "order", po::value<int>()->default_value( 1 ), "mesh geometric order" )
         ( "by-markers", "partitioning by markers" )
         ( "by-markers-desc", po::value<std::vector<std::string> >()->multitoken(), "partitioning by markers. Example : --by-markers-desc=marker1:marker2,marker3" )
@@ -72,6 +73,7 @@ int main( int argc, char** argv )
                      _directory=".",_subdir=false );
 
     int dim = ioption(_name="dim");
+    int realdim = boption(_name="topdim-equal-realdim")? dim : dim + 1;
     std::string shape = soption(_name="shape");
     int order = ioption(_name="order");
 
@@ -120,10 +122,14 @@ int main( int argc, char** argv )
             switch ( dim )
             {
             case 2 :
-                if ( order == 1 )
+                if ( order == 1 && realdim==2)
                     partition<Simplex<2>>( nParts, partconfig );
-                else if ( order==2 )
+                else if ( order == 1 && realdim==3)
+                    partition<Simplex<2,1,3>>( nParts, partconfig );
+                else if ( order==2 && realdim==2)
                     partition<Simplex<2,2>>( nParts, partconfig );
+                else if ( order==2 && realdim==3)
+                    partition<Simplex<2,2,3>>( nParts, partconfig );
                 break;
             case 3 :
                 if ( order == 1 )
