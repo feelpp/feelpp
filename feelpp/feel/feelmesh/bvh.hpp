@@ -41,14 +41,20 @@ namespace Feel
         return (n * epsil) / (1 - n * epsil);
     }
 
-    template<int nDim>
+    template<int nDim, int realDim>
     class BVHTree
     {
-        using self_type = BVHTree<nDim>;
-        typedef Simplex<nDim,1> convex_type;
-        typedef Mesh<convex_type> mesh_type;        
-        typedef typename mesh_type::trace_mesh_type trace_mesh_type;
-        typedef typename mesh_type::trace_mesh_ptrtype trace_mesh_ptrtype;
+        using self_type = BVHTree<nDim,realDim>;
+        using convex_type = Simplex<nDim,1,realDim>;
+        using mesh_type = Mesh<convex_type>;     
+        using trace_mesh_type = typename  std::conditional< nDim==realDim,
+                                                    typename mesh_type::trace_mesh_type,
+                                                    mesh_type >::type;
+        using trace_mesh_ptrtype =  typename  std::conditional< nDim==realDim,
+                                                        typename mesh_type::trace_mesh_ptrtype,
+                                                        typename mesh_type::ptrtype >::type ;
+        // typedef typename mesh_type::trace_mesh_type trace_mesh_type;
+        // typedef typename mesh_type::trace_mesh_ptrtype trace_mesh_ptrtype;
         typedef typename matrix_node<double>::type matrix_node_type;
 
         // Information on the primitive (bounding box, index, centroid)
@@ -178,7 +184,7 @@ namespace Feel
                 double tmin = 0.0;
                 double tmax = FLT_MAX;
 
-                for(int i=0; i<nDim; i++)
+                for(int i=0; i<realDim; i++)
                 {                    
                     double ratio = 1.0/(rayon.dir[i]+2*FLT_MIN);
                     double t1 = (M_bounds_min[i]-rayon.origin[i]) * ratio;
@@ -314,12 +320,12 @@ namespace Feel
 
             std::pair<bool,double> checkLeafIntersection(BVHRay const& rayon, trace_mesh_ptrtype mesh, std::vector<BVHPrimitiveInfo>& primitiveInfo)
             {             
-                if( nDim ==2)
+                if( realDim ==2)
                 {
                     auto nodes = mesh->element( primitiveInfo[this->firstPrimOffset].M_primitiveNumber ).vertices();                                        
                     return checkIntersectionWithSegment(nodes,rayon);
                 }                
-                else //if ( nDim==3)
+                else //if ( realDim==3)
                     return checkIntersectionWithTriangle(rayon,mesh,primitiveInfo);
 
             }
@@ -343,7 +349,7 @@ namespace Feel
                                 std::vector<int> &orderedPrims)
         {
             LOG(INFO) <<fmt::format("cut dimension {}, start index primitive {}, end index primitive {}",cut_dimension,start_index_primitive,end_index_primitive);
-            Eigen::VectorXd M_bound_min_node(nDim),M_bound_max_node(nDim);
+            Eigen::VectorXd M_bound_min_node(realDim),M_bound_max_node(realDim);
             BVHNode * node = new BVHTree::BVHNode();
             M_bound_min_node = M_primitiveInfo[start_index_primitive].M_bound_min;
             M_bound_max_node = M_primitiveInfo[start_index_primitive].M_bound_max;
@@ -373,9 +379,9 @@ namespace Feel
             }
             else{
                 // Create a node, since there are at least two primitives in the list
-                node->buildInternalNode(current_parent,(cut_dimension+1)%nDim,
-                                    recursiveBuild( node, (cut_dimension+1)%nDim, start_index_primitive, mid, orderedPrims),
-                                    recursiveBuild( node, (cut_dimension+1)%nDim, mid, end_index_primitive, orderedPrims));
+                node->buildInternalNode(current_parent,(cut_dimension+1)%realDim,
+                                    recursiveBuild( node, (cut_dimension+1)%realDim, start_index_primitive, mid, orderedPrims),
+                                    recursiveBuild( node, (cut_dimension+1)%realDim, mid, end_index_primitive, orderedPrims));
             }
 
             return node;

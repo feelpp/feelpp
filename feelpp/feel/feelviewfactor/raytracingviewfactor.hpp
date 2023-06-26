@@ -233,7 +233,7 @@ public:
     int M_Nthreads;
     std::vector<int> M_point_indices;
     Eigen::VectorXd M_view_factor_row;
-    BVHTree<MeshType::nDim> M_bvh_tree;
+    BVHTree<MeshType::nDim,MeshType::nRealDim> M_bvh_tree;
     std::random_device M_rd;  // Will be used to obtain a seed for the random number engine
     std::random_device M_rd2;  // Will be used to obtain a seed for the random number engine
     std::mt19937 M_gen; // Standard mersenne_twister_engine seeded with rd()
