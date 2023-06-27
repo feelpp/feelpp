@@ -1036,28 +1036,28 @@ class nirbOnline(ToolboxModel):
         onlineSol = self.Xh.element()
         onlineSol.setZero()
 
-        compressedSol = self.getCompressedSolution(mu=mu, Nb=Nb, solution=interSol)
+        compressedSolution = self.getCompressedSolution(mu=mu, Nb=Nb, solution=interSol)
 
         if doRectification:
             rectMat = self.getRectificationMat(Nb)
-            coef = rectMat @ compressedSol
+            coef = rectMat @ compressedSolution
             for i in range(Nb):
                 onlineSol.add(float(coef[i]), self.reducedBasis[i])
 
         else:
             for i in range(Nb):
-                onlineSol.add(float(compressedSol[i]), self.reducedBasis[i])
+                onlineSol.add(float(compressedSolution[i]), self.reducedBasis[i])
 
         # to export, call self.exportField(onlineSol, "U_nirb")
 
         return onlineSol
 
-    def getRectificationMat(self, Nb, lambd=1.e-10):
+    def getRectificationMat(self, Nb, regularizationParameter=1.e-10):
         if Nb not in self.RectificationMat:
-            self.RectificationMat[Nb] = self.getRectification(self.coeffCoarse, self.coeffFine, lambd=lambd, Nb=Nb)
+            self.RectificationMat[Nb] = self.getRectification(self.coeffCoarse, self.coeffFine, regularizationParameter=regularizationParameter, Nb=Nb)
         return self.RectificationMat[Nb]
 
-    def getRectification(self, coeffCoarse, coeffFine, lambd=1.e-10, Nb=None):
+    def getRectification(self, coeffCoarse, coeffFine, regularizationParameter=1.e-10, Nb=None):
         """Compute rectification matrix associated to number of basis function selected
                 in the online step.
 
@@ -1065,7 +1065,7 @@ class nirbOnline(ToolboxModel):
         -----
             coeffCoarse (numpy.array): the coefficient matrix gieven by (U^H_i, phi_j)
             coeffFine (numpy.array): the coefficient matrix (U^h_i, phi_j)
-            lambd (float, optional): regularization parameter. Defaults to 1.e-10.
+            regularizationParameter (float, optional): regularization parameter. Defaults to 1.e-10.
             Nb (int, optional): number of basis function selected in the online step. Defaults to None, in which case all the basis are used.
 
         Returns:
@@ -1074,18 +1074,18 @@ class nirbOnline(ToolboxModel):
         """
         if Nb is None: Nb = self.N
 
-        BH = coeffCoarse[:Nb, :Nb]
-        Bh = coeffFine[:Nb, :Nb]
+        CH = coeffCoarse[:Nb, :Nb]
+        Ch = coeffFine[:Nb, :Nb]
 
-        #Thikonov regularization (AT @ A + lambda I_d)^-1 @ (AT @ B)
-        R = np.linalg.solve(BH.transpose() @ BH + lambd * np.eye(Nb), BH.transpose() @ Bh)
+        #Thikonov regularization (AT @ A + regularizationParametera I_d)^-1 @ (AT @ B)
+        R = np.linalg.solve(CH.transpose() @ CH + regularizationParameter * np.eye(Nb), CH.transpose() @ Ch).T
 
         if False:
             R_old = np.zeros((Nb, Nb))
             for i in range(Nb):
-                R_old[i,:] = np.linalg.inv(BH.transpose() @ BH + lambd*np.eye(Nb)) @ BH.transpose() @ Bh[:,i]
+                R_old[i,:] = np.linalg.inv(BH.transpose() @ BH + regularizationParameter*np.eye(Nb)) @ BH.transpose() @ Bh[:,i]
 
-            print("Condition number of matrix", np.linalg.cond(BH.transpose() @ BH + lambd*np.eye(Nb)))
+            print("Condition number of matrix", np.linalg.cond(BH.transpose() @ BH + regularizationParameter*np.eye(Nb)))
             print("Norm of difference between two rectification matrix", np.linalg.norm(R - R_old))
 
         return R
@@ -1169,7 +1169,7 @@ class nirbOnline(ToolboxModel):
         if self.doRectification:
             self.coeffCoarse = np.load(coeffCoarseFile)
             self.coeffFine = np.load(coeffFineFile)
-            self.getRectificationMat(self.N, lambd=regulParam)
+            self.getRectificationMat(self.N, regularizationParameter=regulParam)
 
         if self.worldcomm.isMasterRank():
             print(f"[NIRB] Data loaded from {os.path.abspath(path)}")
