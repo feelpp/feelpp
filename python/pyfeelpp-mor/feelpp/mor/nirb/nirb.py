@@ -3,7 +3,7 @@
 ## Thomas Saigre, Ali Elarif
 ## 09/2022
 
-
+import warnings
 import feelpp
 from .utils import *
 import feelpp.operators as FppOp
@@ -624,6 +624,7 @@ class nirbOffline(ToolboxModel):
                 - 'l2(uh-uH)' : l2 norm of the error between the u_H^calN interpolated on the fine mesh, and the fine solution
 
         """
+        warnings.warn("This function is deprecated, use checkConvergenceError in nirb_perf instead", DeprecationWarning)
 
         assert self.tbCoarse is not None, f"Coarse toolbox needed for computing coarse Snapshot. set doRectification->True"
 
@@ -941,6 +942,18 @@ class nirbOnline(ToolboxModel):
         self.tbCoarse = tb.tbCoarse
         self.interpolationOperator = interpolationOperator
 
+    def setModelFromOffline(self, offline: nirbOffline):
+        self.model = offline.model
+        self.tbFine = offline.tbFine
+        if offline.tbCoarse is None:
+            super().initCoarseToolbox()
+        else:
+            self.tbCoarse = offline.tbCoarse
+        self.Xh = offline.Xh
+        self.Dmu = offline.Dmu
+        self.Ndofs = offline.Ndofs
+
+
 
     def setBasis(self, offline):
         """Set the basis functions of the online phase
@@ -955,7 +968,7 @@ class nirbOnline(ToolboxModel):
         self.coeffCoarse = offline.coeffCoarse
         self.coeffFine = offline.coeffFine
 
-    def getCompressedSol(self, mu=None, solution=None, Nb=None):
+    def getCompressedSolution(self, mu=None, solution=None, Nb=None):
         """
         get the projection of given solution from fine mesh into the reduced space
 
@@ -974,7 +987,7 @@ class nirbOnline(ToolboxModel):
         if Nb is None: Nb = self.N
 
         if solution is None:
-            sol = self.getInterpSol(mu)
+            sol = self.getInterpolatedSolution(mu)
         else :
             sol = solution
 
@@ -985,7 +998,7 @@ class nirbOnline(ToolboxModel):
 
         return compressedSol
 
-    def getInterpSol(self, mu):
+    def getInterpolatedSolution(self, mu):
         """Get the interpolated solution from coarse mesh to fine one
 
         Parameters
@@ -999,7 +1012,7 @@ class nirbOnline(ToolboxModel):
         interpSol = self.solveOnline(mu)[1]
         return interpSol
 
-    def getOnlineSol(self, mu, Nb=None, interSol=None):
+    def getOnlineSolution(self, mu, Nb=None, interSol=None, doRectification=-1):
         """Get the Online nirb approximate solution
 
         Parameters
@@ -1017,13 +1030,15 @@ class nirbOnline(ToolboxModel):
             NIRB online solution uHn^N
         """
         if Nb is None: Nb = self.N
+        if doRectification == -1: doRectification = self.doRectification
+        else: doRectification = bool(doRectification)
 
         onlineSol = self.Xh.element()
         onlineSol.setZero()
 
-        compressedSol = self.getCompressedSol(mu=mu, Nb=Nb, solution=interSol)
+        compressedSol = self.getCompressedSolution(mu=mu, Nb=Nb, solution=interSol)
 
-        if self.doRectification:
+        if doRectification:
             rectMat = self.getRectificationMat(Nb)
             coef = rectMat @ compressedSol
             for i in range(Nb):

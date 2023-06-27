@@ -1,7 +1,94 @@
 import numpy as np
 from tqdm import tqdm
+from feelpp.mor.nirb import nirbOffline, nirbOnline
 from petsc4py import PETSc
 
+
+"""
+Check convergence
+"""
+def checkConvergence(nirb_offline: nirbOffline, nirb_online: nirbOnline, Ns=10, Xi_test=None):
+    """ Check the convergence of the offline step
+
+    Parameters:
+    ----------
+        Ns (int) : number of random mu to test
+        Xi_test (list) : list of mu to test
+
+    Returns:
+    --------
+        Error (dict) : dictionnary with the following keys :
+            - 'N' : sizes the reduced basis
+            - 'l2(uh-uHn)' : l2 norm of the error between the fine and coarse solution
+            - 'l2(uh-uHn)rec' : l2 norm of the error between the fine and coarse solution with rectification
+            - 'l2(uh-uhn)' : l2 norm of the error between the fine and reduced solution
+            - 'l2(uh-uH)' : l2 norm of the error between the u_H^calN interpolated on the fine mesh, and the fine solution
+
+    """
+    print(f"[CONVCONV] Check convergence with {Xi_test}")
+    if nirb_offline.worldcomm.isMasterRank():
+        print(f"[NIRB] Compute offline convergence error")
+
+    if Xi_test is None:
+        s = nirb_offline.Dmu.sampling()
+        s.sampling(Ns, 'log-random')
+        vector_mu = s.getVector()
+    else:
+        vector_mu = Xi_test
+
+    Ntest = len(vector_mu)
+
+    Nbasis = nirb_offline.N
+    assert Nbasis == nirb_online.N, "The number of basis functions in the offline and online phase are not the same"
+
+    print(f"[CONVCONV] Number of basis functions : {Nbasis}")
+
+    interpolationOperator = nirb_offline.createInterpolator(domain=nirb_online.tbCoarse, image=nirb_offline.tbFine)
+
+    fineSolutions= []                   # fine solutions u_h^\N(mu)
+    interpolatedSolutions = []          # coarse solutions interpolated in fine mesh u_Hh^\N(mu)
+    for mu in vector_mu:
+        fineSolutions.append(nirb_offline.getToolboxSolution(nirb_offline.tbFine, mu))
+        uH = nirb_offline.getToolboxSolution(nirb_online.tbCoarse, mu)
+        interpolatedSolutions.append(interpolationOperator.interpolate(uH))
+
+    Uhn = nirb_offline.Xh.element()
+
+    Error = {'N':[], 'idx':[], 'l2(uh-uHn)':[], 'l2(uh-uHn)rec':[], 'l2(uh-uhn)' : [], 'l2(uh-uH)':[]}
+
+    pas = 1 if (Nbasis < 50) else 5
+    for size in tqdm(range(1, Nbasis + 1, pas), desc=f"[NIRB] Compute convergence error", ascii=False, ncols=100):
+        print(f"[CONVCONV] Size of reduced basis : {size}")
+
+
+        for j in range(Ntest):
+            Uhn.setZero()
+
+            for k in range(size): # get reduced sol in a basis function space
+                projectionCoefficientFine = nirb_offline.l2ScalarProductMatrix.energy(fineSolutions[j], nirb_offline.reducedBasis[k])   # <u_h^Ncal(mu_j), phi_k>L2
+                Uhn.add(float(projectionCoefficientFine), nirb_offline.reducedBasis[k])
+
+            UnirbNoRect = nirb_online.getOnlineSolution(mu, Nb=size, interSol=interpolatedSolutions[j], doRectification=False)
+            UnirbRect   = nirb_online.getOnlineSolution(mu, Nb=size, interSol=interpolatedSolutions[j], doRectification=True)
+
+            UnirbNoRect.add(-1, fineSolutions[j])       # UnirbNoRect = u_h^Ncal(mu) - u_Hh^Ncal(mu)
+            UnirbRect.add(-1, fineSolutions[j])         # UnirbRect   = u_h^Ncal(mu) - Ru_Hh^Ncal(mu)
+            Uhn.add(-1, fineSolutions[j])               # Uhn         = u_h^Ncal(mu) - u_h^\N(mu)
+            UhInt = fineSolutions[j] - interpolatedSolutions[j]
+
+            nirbError           = np.sqrt(abs(nirb_offline.l2ScalarProductMatrix.energy(UnirbNoRect, UnirbNoRect)))
+            nirbErrorRect       = np.sqrt(abs(nirb_offline.l2ScalarProductMatrix.energy(UnirbRect, UnirbRect)))
+            fineProjectionError = np.sqrt(abs(nirb_offline.l2ScalarProductMatrix.energy(Uhn, Uhn)))
+            interpolationError  = np.sqrt(abs(nirb_offline.l2ScalarProductMatrix.energy(UhInt, UhInt)))
+
+            Error['l2(uh-uHn)'].append(nirbError)
+            Error['l2(uh-uHn)rec'].append(nirbErrorRect)
+            Error['l2(uh-uhn)'].append(fineProjectionError)
+            Error['l2(uh-uH)'].append(interpolationError)
+            Error['N'].append(size)
+            Error['idx'].append(j)
+
+    return Error
 
 
 def ComputeErrors(nirb_on,mu, Nb=None,h1=False, relative=True):

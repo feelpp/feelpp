@@ -3,6 +3,7 @@ import feelpp
 from feelpp.mor.nirb import nirbOffline, nirbOnline, ToolboxModel
 from feelpp.mor.nirb.greedy import *
 from feelpp.mor.nirb.utils import WriteVecAppend, init_feelpp_environment, generatedAndSaveSampling
+from feelpp.mor.nirb.nirb_perf import checkConvergence
 import time
 import json
 import argparse
@@ -215,6 +216,9 @@ if __name__ == "__main__":
     print(f"proc {nirb_off.worldcomm.localRank()} Is H1 orthonormalized ?", nirb_off.checkH1Orthonormalized())
 
     if convergence:
+        nirb_on = nirb_on = nirbOnline(**config_nirb)
+        nirb_on.setModelFromOffline(nirb_off)
+        nirb_on.setBasis(nirb_off)
         print(f"[NIRB] Check convergence with sampling [{sampling_path}]")
         Xi_test_path = os.path.join(RESPATH, sampling_path)
         if os.path.isfile(Xi_test_path):
@@ -227,7 +231,7 @@ if __name__ == "__main__":
             Ns = 1
             Xi_test = generatedAndSaveSampling(nirb_off.Dmu, Ns, path=Xi_test_path, samplingMode="log-random")
 
-        Err = nirb_off.checkConvergence(Ns=30, Xi_test=Xi_test)
+        Err = checkConvergence(nirb_off, nirb_on, Ns=30, Xi_test=Xi_test)
         df = pd.DataFrame(Err)
         file = os.path.join(RESPATH, "offlineError.csv")
         df.to_csv(file, index=False)
