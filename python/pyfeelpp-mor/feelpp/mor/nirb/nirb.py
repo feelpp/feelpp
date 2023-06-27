@@ -340,11 +340,10 @@ class nirbOffline(ToolboxModel):
 
         for i in range(self.N):
             for j in range(self.N):
-                K[i,j] = self.h1ScalarProductMatrix.energy(self.reducedBasis[i],self.reducedBasis[j])
-                M[i,j] = self.l2ScalarProductMatrix.energy(self.reducedBasis[i],self.reducedBasis[j])
+                K[i,j] = self.h1ScalarProductMatrix.energy(self.reducedBasis[i], self.reducedBasis[j])
+                M[i,j] = self.l2ScalarProductMatrix.energy(self.reducedBasis[i], self.reducedBasis[j])
 
-
-        eval,evec=eigh(a=K, b=M) #eigenvalues
+        eval, evec = eigh(a=K, b=M) #eigenvalues
         eigenValues = eval.real
         eigenVectors = evec
         idx = eigenValues.argsort()[::-1]
@@ -423,7 +422,12 @@ class nirbOffline(ToolboxModel):
 
 
     def generateOperators(self, coarse=False):
-        """Assemble L2 and H1 operators, stored in self.l2ScalarProduct and self.h1ScalarProduct
+        """Generate the scalar product matrices
+
+        Parameters
+        ----------
+        coarse : bool, optional
+            compute coarse operators too, by default False
         """
         if self.l2ScalarProductMatrix is None or self.h1ScalarProductMatrix is None:
             # Vh = feelpp.functionSpace(mesh=self.tbFine.mesh(), order=self.order)
@@ -445,13 +449,12 @@ class nirbOffline(ToolboxModel):
         -----
             tolerance(float), optional : tolerance of the eigen value problem target accuracy of the data compression
         """
-        self.reducedBasis, RIC = self.PODReducedBasis(tolerance=tolerance)
+        RIC = self.PODReducedBasis(tolerance=tolerance)
         self.orthonormalizeL2()
-        self.N = len(self.reducedBasis)
         if self.worldcomm.isMasterRank():
-            print(f"[NIRB] Number of modes : {self.N}")
+            print(f"[NIRB::generateReducedBasis] Number of modes in the basis : {self.N}")
 
-        if len(self.l2ProductBasis)==0:
+        if len(self.l2ProductBasis) == 0:
             self.getl2ProductBasis()
         if self.doBiorthonormal:
             self.BiOrthonormalization()
@@ -470,7 +473,7 @@ class nirbOffline(ToolboxModel):
         self.fineSnapShotList.append(snapshot)
         if coarseSnapshot is not None:
             self.coarseSnapShotList.append(coarseSnapshot)
-        self.reducedBasis, RIC = self.PODReducedBasis(tolerance=tolerance)
+        RIC = self.PODReducedBasis(tolerance=tolerance)
         self.orthonormalizeL2()
 
         self.N += 1
@@ -488,7 +491,8 @@ class nirbOffline(ToolboxModel):
 
 
     def getl2ProductBasis(self):
-        """Get the L2 scalar product matrix with reduced basis function
+        """Get the L2 scalar product matrix with reduced basis function :
+            self.l2ProductBasis[i] = l2ScalarProductMatrix @ reducedBasis[i] = M_{L2} * xi_i^h
         """
         assert self.reducedBasis is not None, f"reduced Basis have to be computed before"
 
@@ -498,7 +502,7 @@ class nirbOffline(ToolboxModel):
         for i in range(self.N):
             vec = backend.newVector(dm=self.Xh.mapPtr()) # beacause the modification of vec will modify the referance at each iteration
             vec.setZero()
-            vec.addVector(self.reducedBasis[i], self.l2ScalarProductMatrix)
+            vec.addVector(self.reducedBasis[i], self.l2ScalarProductMatrix)     # vec += l2ScalarProductMatrix * reducedBasis[i]
             self.l2ProductBasis.append(vec)
 
 
@@ -518,7 +522,8 @@ class nirbOffline(ToolboxModel):
 
         Nsnap = len(self.fineSnapShotList)
 
-        if self.correlationMatrix is None :
+        # compute the correlation matrix : C_{i,j} = <u_h^i, u_h^j>
+        if self.correlationMatrix is None:
             self.correlationMatrix = np.zeros((Nsnap, Nsnap))
             for i, snap1 in enumerate(self.fineSnapShotList):
                 for j, snap2 in enumerate(self.fineSnapShotList):
@@ -527,13 +532,13 @@ class nirbOffline(ToolboxModel):
                         self.correlationMatrix[i, j] = corr
                         self.correlationMatrix[j, i] = corr
                 self.correlationMatrix[i, i] = self.l2ScalarProductMatrix.energy(snap1, snap1)
-            self.correlationMatrix /= Nsnap
-        else:
+            # self.correlationMatrix /= Nsnap
+        else:                                       # we only need to compute the last column / row
             lastSnap = self.fineSnapShotList[-1]
             lastCol = np.zeros(Nsnap)
             for i, snap in enumerate(self.fineSnapShotList[:-1]):
                 lastCol[i] =  self.l2ScalarProductMatrix.energy(snap, lastSnap)
-            lastCol /= Nsnap
+            # lastCol /= Nsnap
             self.correlationMatrix = np.vstack((self.correlationMatrix, lastCol[:-1]))
             self.correlationMatrix = np.column_stack((self.correlationMatrix, lastCol))
 
@@ -541,14 +546,15 @@ class nirbOffline(ToolboxModel):
         # get ordred eigenvalues
         idx = eigenValues.argsort()[::-1]
         eigenValues = eigenValues[idx]
-        eigenVectors = eigenVectors[:, idx]
+        eigenVectors = eigenVectors[:, idx]             # i-th column is the i-th eigenvector
 
         Nmode = len(eigenValues)
 
         for i in range(Nmode):
             eigenVectors[:,i] /= math.sqrt(abs(eigenValues[i]))
 
-        reducedBasis = []
+        self.reducedBasis = []
+        self.N = 0
 
         sum_eigenValues = eigenValues.sum()
         RIC = []
@@ -559,12 +565,15 @@ class nirbOffline(ToolboxModel):
             for j in range(Nsnap):
                 vec.add(eigenVectors[j,i], self.fineSnapShotList[j])
 
-            reducedBasis.append(vec)
+            self.reducedBasis.append(vec)
+            self.N += 1
             RIC.append(eigenValues[:i].sum() / sum_eigenValues)
             # if abs(1. - RIC[i])<= tolerance :
             #     break
 
-        return reducedBasis, RIC
+        if feelpp.Environment.isMasterRank():
+            print(f"[NIRB::PODReducedBasis] basis generated with POD algorithm: {self.N} modes, with RIC = {RIC[-1]}")
+        return RIC
 
 
     def coeffRectification(self):
