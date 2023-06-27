@@ -278,9 +278,9 @@ OpusApp<ModelType,RM,Model>::run()
 
     std::map<CRBModelMode,std::vector<std::string> > hdrs;
     std::vector<std::string> pfemhdrs{"FEM Output", "PFEM Output", "FEM Time", "l2_error", "h1_error", "output error"};
-    std::vector<std::string> crbhdrs{"FEM Output", "FEM Time", "RB Output", "Error Bounds", "CRB Time", "output error", "Conditionning", "l2_error", "h1_error"};
+    std::vector<std::string> crbhdrs{"FEM Output", "FEM Time", "RB Output", "Error Bounds", "effectivity", "CRB Time", "output error", "Conditionning", "l2_error", "h1_error"};
     std::vector<std::string> scmhdrs{"Lb","Lb Time", "Ub", "Ub Time", "FEM", "FEM Time", "output error"};
-    std::vector<std::string> crbonlinehdrs{"RB Output", "Error Bounds", "CRB Time"};
+    std::vector<std::string> crbonlinehdrs{"RB Output", "Error Bounds", "effectivity", "CRB Time"};
     std::vector<std::string> scmonlinehdrs{"Lb", "Lb Time", "Ub", "Ub Time", "Rel.(FEM-Lb)"};
     hdrs[CRBModelMode::PFEM] = pfemhdrs;
     hdrs[CRBModelMode::CRB] = crbhdrs;
@@ -595,12 +595,7 @@ OpusApp<ModelType,RM,Model>::run()
                     boost::mpi::timer ti;
 
                     model->computeAffineDecomposition();
-                    bool use_newton = option(_name="crb.use-newton").template as<bool>();
-                    element_type u_pfem;
-                    if( use_newton )
-                        u_pfem =  model->solveFemUsingAffineDecompositionNewton( mu );
-                    else
-                        u_pfem =  model->solveFemUsingAffineDecompositionFixedPoint( mu );
+                    element_type u_pfem = getFEMsolution( mu, use_newton_ );
                     std::ostringstream u_pfem_str;
                     u_pfem_str << "u_pfem(" << mu_str.str() << ")";
                     u_pfem.setName( u_pfem_str.str()  );
@@ -650,7 +645,7 @@ OpusApp<ModelType,RM,Model>::run()
                 {
                     LOG(INFO) << "CRB mode\n";
                     if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
-                        std::cout << "CRB mode -- "<<curpar<<"/"<<sampling_size<<std::endl;
+                        std::cout << "CRB mode -- " << curpar << "/" << sampling_size << std::endl;
 
                     boost::mpi::timer ti;
 
@@ -667,17 +662,18 @@ OpusApp<ModelType,RM,Model>::run()
                     ti.restart();
 
                     auto o = crb->run( mu, time_crb, online_tol , N, print_rb_matrix);
-                    double time_crb_prediction=time_crb(0);
-                    double time_crb_error_estimation=time_crb(1);
+                    double time_crb_prediction = time_crb(0);
+                    double time_crb_error_estimation = time_crb(1);
 
                     auto WN = crb->wn();
                     auto WNdu = crb->wndu();
                     //auto u_crb = crb->expansion( mu , N );
-                    auto solutions=o.template get<2>();
+                    auto solutions = o.template get<2>();
                     auto uN = solutions.template get<0>();
                     auto uNdu = solutions.template get<1>();
 
                     int size = uN.size();
+
 
                     // Re-use uN given by lb in crb->run
 
@@ -731,15 +727,13 @@ OpusApp<ModelType,RM,Model>::run()
                     double solution_estimated_error = all_upper_bounds.template get<1>();
                     double dual_solution_estimated_error = all_upper_bounds.template get<2>();
 
-                    auto output_vector=o.template get<0>();
+                    auto output_vector = o.template get<0>();
                     double output_vector_size=output_vector.size();
                     double ocrb = output_vector[output_vector_size-1];//output at last time
                     double time_fem_solve=-1;
 
                     if ( compute_fem )
                     {
-                        bool use_newton = boption(_name="crb.use-newton");
-
                         LOG(INFO) << "solve u_fem\n";
                         ti.restart();
 
@@ -756,7 +750,7 @@ OpusApp<ModelType,RM,Model>::run()
                             else
                             {
                                 //use affine decomposition
-                                if ( !model->isLinear() && use_newton )
+                                if ( !model->isLinear() && use_newton_ )
                                     u_fem = model->solveFemUsingAffineDecompositionNewton( mu );
                                 else
                                     u_fem = model->solveFemUsingAffineDecompositionFixedPoint( mu );
@@ -810,8 +804,8 @@ OpusApp<ModelType,RM,Model>::run()
                             e->add( exportName, u_error );
                         }
 
-                        LOG(INFO) << "L2(fem)=" << l2Norm( u_fem )    << "\n";
-                        LOG(INFO) << "H1(fem)=" << h1Norm( u_fem )    << "\n";
+                        LOG(INFO) << "L2(fem) = " << l2Norm( u_fem ) << "\n";
+                        LOG(INFO) << "H1(fem) = " << h1Norm( u_fem ) << "\n";
 
                         if( boption(_name="crb.absolute-error") )
                         {
@@ -825,7 +819,7 @@ OpusApp<ModelType,RM,Model>::run()
                         }
 
                         output_fem = ofem[0];
-                        time_fem = ofem[1]+time_fem_solve;
+                        time_fem = ofem[1] + time_fem_solve;
 
                         if( boost::is_same<  crbmodel_type , crbmodelbilinear_type >::value )
                         {
@@ -860,92 +854,50 @@ OpusApp<ModelType,RM,Model>::run()
                             }
                         }
 
-                    }//compute-fem-during-online
+                    } //compute-fem-during-online
+                    double effectivity = output_estimated_error / math::abs(output_fem - ocrb);
 
-                    if ( crb->errorType()==2 )
+                    std::vector<double> v{output_fem, time_fem, ocrb, relative_estimated_error, effectivity, time_crb_prediction, relative_error, condition_number, l2_error, h1_error};
+
+                    if( proc_number == Environment::worldComm().masterRank() )
                     {
-                        auto output_vector=o.template get<0>();
-                        double output_vector_size=output_vector.size();
-                        double ocrb = output_vector[output_vector_size-1];//output at last time
-                        std::vector<double> v{output_fem, time_fem, ocrb, relative_estimated_error, time_crb_prediction, relative_error, condition_number, l2_error, h1_error};
+                        Feel::cout << "output = " << ocrb << " with " << o.template get<1>() << " basis functions";
+                        if (crb->errorType() != 2)
+                            Feel::cout << " (error estimation on this output : " << output_estimated_error << ")";
+                        Feel::cout << std::endl;
+                        
+                        printEntry( file_summary_of_simulations, mu, v );
+                        printEntry( ostr, mu, v );
+                        //file_summary_of_simulations.close();
 
-                        if( proc_number == Environment::worldComm().masterRank() )
+                        if ( boption(_name="crb.compute-stat") && compute_fem )
                         {
-                            std::cout << "output=" << ocrb << " with " << o.template get<1>() << " basis functions\n";
-                            printEntry( file_summary_of_simulations, mu, v );
-                            printEntry( ostr, mu, v );
-                            //file_summary_of_simulations.close();
+                            relative_error_vector[curpar-1] = relative_error;
+                            l2_error_vector[curpar-1] = l2_error;
+                            h1_error_vector[curpar-1] = h1_error;
+                            time_fem_vector[curpar-1] = time_fem;
+                            time_crb_vector_prediction[curpar-1] = time_crb_prediction;
+                            time_crb_vector_error_estimation[curpar-1] = time_crb_error_estimation;
+                            if (crb->errorType() != 2)
+                                relative_estimated_error_vector[curpar-1] = relative_estimated_error;
 
-                            if ( boption(_name="crb.compute-stat") && compute_fem )
-                            {
-                                relative_error_vector[curpar-1] = relative_error;
-                                l2_error_vector[curpar-1] = l2_error;
-                                h1_error_vector[curpar-1] = h1_error;
-                                time_fem_vector[curpar-1] = time_fem;
-                                time_crb_vector_prediction[curpar-1] = time_crb_prediction;
-                                time_crb_vector_error_estimation[curpar-1] = time_crb_error_estimation;
-                            }
-                            std::ofstream res(soption(_name="result-file") );
-                            res << "output="<< ocrb << "\n";
+                        }
+                        std::ofstream res(soption(_name="result-file") );
+                        res << "output = " << ocrb << "\n";
 
-                            if( this->vm().count("crb.minimization-func") && !soption("crb.minimization-func").empty() )
+                        if( this->vm().count("crb.minimization-func") && !soption("crb.minimization-func").empty() )
+                        {
+                            auto min_func = expr( min_func_str, "min_func" );
+                            min_map[soption(_name="crb.minimization-param-name")] = ocrb;
+                            auto min = min_func.evaluate( min_map )(0,0);
+                            if( min < min_value["rb"] || curpar == 1 )
                             {
-                                auto min_func = expr( min_func_str, "min_func" );
-                                min_map[soption(_name="crb.minimization-param-name")] = ocrb;
-                                auto min = min_func.evaluate( min_map )(0,0);
-                                if( min < min_value["rb"] || curpar == 1 )
-                                {
-                                    min_value["rb"] = min;
-                                    min_mu["rb"] = mu;
-                                }
+                                min_value["rb"] = min;
+                                min_mu["rb"] = mu;
                             }
                         }
+                    }
 
-                    }//end of crb->errorType==2
-                    else
-                    {
-                        //if( ! boost::is_same<  crbmodel_type , crbmodelbilinear_type >::value )
-                        //    throw std::logic_error( "ERROR TYPE must be 2 when using CRBTrilinear (no error estimation)" );
-
-                        auto output_vector=o.template get<0>();
-                        double output_vector_size=output_vector.size();
-                        double ocrb = output_vector[output_vector_size-1];//output at last time
-                        std::vector<double> v{output_fem, time_fem, ocrb, relative_estimated_error, time_crb_prediction, relative_error, condition_number, l2_error, h1_error};
-                        if( proc_number == Environment::worldComm().masterRank() )
-                        {
-                            std::cout << "output=" << ocrb << " with " << o.template get<1>() << " basis functions  (error estimation on this output : " << output_estimated_error<<") \n";
-                            //std::ofstream file_summary_of_simulations( ( boost::format( "summary_of_simulations_%d" ) % o.template get<2>() ).str().c_str() ,std::ios::out | std::ios::app );
-                            printEntry( file_summary_of_simulations, mu, v );
-                            printEntry( ostr, mu, v );
-                            //file_summary_of_simulations.close();
-
-                            if ( boption(_name="crb.compute-stat") && compute_fem )
-                            {
-                                relative_error_vector[curpar-1] = relative_error;
-                                l2_error_vector[curpar-1] = l2_error;
-                                h1_error_vector[curpar-1] = h1_error;
-                                time_fem_vector[curpar-1] = time_fem;
-                                time_crb_vector_prediction[curpar-1] = time_crb_prediction;
-                                time_crb_vector_error_estimation[curpar-1] = time_crb_error_estimation;
-                                relative_estimated_error_vector[curpar-1] = relative_estimated_error;
-                            }
-                            std::ofstream res(soption(_name="result-file") );
-                            res << "output="<< ocrb << "\n";
-
-                            if( this->vm().count("crb.minimization-func") && !soption("crb.minimization-func").empty() )
-                            {
-                                auto min_func = expr( min_func_str, "min_func" );
-                                min_map[soption(_name="crb.minimization-param-name")] = ocrb;
-                                auto min = min_func.evaluate( min_map )(0,0);
-                                if( min < min_value["rb"] || curpar == 1 )
-                                {
-                                    min_value["rb"] = min;
-                                    min_mu["rb"] = mu;
-                                }
-                            }
-
-                        }//end of proc==master
-                    }//end of else (errorType==2)
 
                     if (boption(_name="eim.cvg-study") )
                     {
