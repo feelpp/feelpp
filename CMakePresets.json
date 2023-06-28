@@ -78,6 +78,7 @@
             "generator": "Unix Makefiles",
             "binaryDir": "${sourceDir}/build/feelpp",
             "cacheVariables": {
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/build/feelpp/install/",
                 "FEELPP_COMPONENT": "feelpp",
                 "FEELPP_ENABLE_MOR": "OFF",
                 "FEELPP_ENABLE_TOOLBOXES": "OFF",
@@ -112,7 +113,8 @@
             "description": "Build only the Feel++ Toolboxes Component",
             "binaryDir": "${sourceDir}/build/toolboxes",
             "cacheVariables": {
-                "FEELPP_COMPONENT": "toolboxes"
+                "FEELPP_COMPONENT": "toolboxes",
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/build/toolboxes/install/"
             }
         },
         {
@@ -122,8 +124,24 @@
             "description": "Build only the Feel++ MOR Component",
             "binaryDir": "${sourceDir}/build/mor",
             "cacheVariables": {
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/build/mor/install/",
                 "FEELPP_COMPONENT": "mor",
-                "FEELPP_ENABLE_RESEARCH": "OFF"
+                "FEELPP_ENABLE_RESEARCH": "OFF",
+                "FEELPP_ENABLE_OPENTURNS": "ON"
+            }
+        },
+        {
+            "name": "mor-dbg",
+            "inherits": "mor",
+            "displayName": "mor-dbg",
+            "description": "Build only the Feel++ MOR Component in Debug",
+            "binaryDir": "${sourceDir}/build/mor-dbg",
+            "cacheVariables": {
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/build/mor-dbg/install/",
+                "FEELPP_COMPONENT": "mor",
+                "FEELPP_ENABLE_RESEARCH": "OFF",
+                "CMAKE_BUILD_TYPE": "Debug",
+                "FEELPP_ENABLE_OPENTURNS": "ON"
             }
         },
         {
@@ -289,6 +307,11 @@
                 "all",
                 "install"
             ]
+        },
+        {
+            "name": "mor-dbg",
+            "inherits": "default",
+            "configurePreset": "mor-dbg"
         },
         {
             "name": "feelpp-python",

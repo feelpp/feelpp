@@ -214,12 +214,16 @@ endmacro(mor_add_python_module)
 macro(mor_add_model)
 
   PARSE_ARGUMENTS(mor_MODEL
-    "HDRS;SRCS;LINK_LIBRARIES;CFG;XML;SCRIPTS;CLASS;DEFS;GEO;MSH"
+    "HDRS;SRCS;LINK_LIBRARIES;CFG;XML;SCRIPTS;CLASS;DEFS;GEO;MSH;OPT"
     "TEST;ADD_OT"
     ${ARGN}
     )
   CAR(mor_MODEL_SHORT_NAME ${mor_MODEL_DEFAULT_ARGS})
   CDR(mor_MODEL_LONG_NAME ${mor_MODEL_DEFAULT_ARGS})
+
+  if (NOT DEFINED mor_MODEL_OPT)
+    set(mor_MODEL_OPT ${mor_MODEL_SHORT_NAME})
+  endif()
 
   if ( FEELPP_ENABLE_VERBOSE_CMAKE )
     MESSAGE("*** Arguments for Crb models ${mor_MODEL_SHORT_NAME}(${mor_MODEL_LONG_NAME})")
@@ -246,8 +250,8 @@ macro(mor_add_model)
 int main( int argc, char** argv )
 {
     using namespace Feel\;
-    Feel::Environment env( _argc=argc, _argv=argv,
-                           _desc=opusapp_options(\"${mor_MODEL_SHORT_NAME}\")
+    Feel::Environment env( _argc = argc, _argv = argv,
+                           _desc = opusapp_options(\"${mor_MODEL_OPT}\")
                            .add(crbOptions())
                            .add(crbSEROptions())
                            .add(make${mor_MODEL_LONG_NAME}Options())
@@ -257,7 +261,7 @@ int main( int argc, char** argv )
                            .add(backend_options(\"backend-dual\"))
                            .add(backend_options(\"backend-l2\"))
                            .add(bdf_options(\"${mor_MODEL_LONG_NAME}\")),
-                           _about=make${mor_MODEL_LONG_NAME}About( \"${mor_MODEL_SHORT_NAME}\" ) )\;
+                           _about = make${mor_MODEL_LONG_NAME}About( \"${mor_MODEL_OPT}\" ) )\;
 
     Feel::OpusApp<Feel::${mor_MODEL_CLASS} > app\;
     app.run()\;

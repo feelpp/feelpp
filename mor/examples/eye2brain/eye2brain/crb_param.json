@@ -1,0 +1,118 @@
+{
+    "CRBParameters":
+    {
+        "h_bl":    // [K]
+        {
+            "min":"50",
+            "max":"110",
+            "description": "Blood convection coefficient [W/m/m/K]",
+            "source": "assumption from litterature"
+        },
+        "h_amb":    // [K]         \cite{KOSKY2013259}
+        {
+            "min":"8",
+            "max":"100",
+            "description": "Ambiant air convection coefficient [W/m/m/K]",
+            "source": "assumption from litterature"
+        },
+        "h_r":    // [K]         \cite{KOSKY2013259}
+        {
+            "min":"0",
+            "max":"10",
+            "description": "Radiation convection coefficient [W/m/m/K]",
+            "source": "assumption from litterature"
+        },
+        "T_bl":    // [K]         \cite{https://hypertextbook.com/facts/1997/LenaWong.shtml}
+        {
+            "min":"308",
+            "max":"312.15",
+            "description":"Blood tempetature [K]",
+            "source": "pm 5% of 310.15K = 37°C"
+        },
+        "T_amb":    // [K]         \cite{MAPSTONE1968237}
+        {
+            "min":"283.15",
+            "max":"303.15",
+            "description":"Ambiant temperature [K]",
+            "source": "de 10°C à 30°C"
+        },
+        "E":   // [W / m^2]        \cite{Scott_1988}
+        {
+            "min":"20",
+            "max":"320",
+            "description": "Evaporation rate [W/m/m]",
+            "source": "In Scott « the minimum and maximum values for a normal eye (E=20 and E=100 W/m2) »"
+        },
+        "k_lens":    // [ W / m / K]
+        {
+            "min":"0.21",
+            "max":"0.544",
+            "description":"thermal conductivity of the lens [W/m/K]",
+            "source": "Min: Emery et al 1975, max: Neelakantaswamy and Ramakrishnan 1979"
+        }
+    },
+    "CRBOutputs":
+    {
+        "PointO":
+        {
+            "type": "point",
+            "coord": [-0.013597, 0, 0],
+            "expr": "crb_u:crb_u"
+        },
+        "PointA":
+        {
+            "type": "point",
+            "coord": [-0.0126, 0, 0],
+            "expr": "crb_u:crb_u"
+        },
+        "PointB":
+        {
+            "type": "point",
+            "coord": [-0.00979266, 0, 0],
+            "expr": "crb_u:crb_u"
+        },
+        "PointB1":
+        {
+            "type": "point",
+            "coord": [-0.009524,0.00194062,0],
+            "expr": "crb_u:crb_u"
+        },
+        "PointC":
+        {
+            "type": "point",
+            "coord": [-0.00615819,0,0],
+            "expr": "crb_u:crb_u"
+        },
+        "PointD":
+        {
+            "type": "point",
+            "coord": [0.0106, 0, 0],
+            "expr": "crb_u:crb_u"
+        },
+        "PointD1":
+        {
+            "type": "point",
+            "coord": [0.011, 0, 0],
+            "expr": "crb_u:crb_u"
+        },
+        "PointF":
+        {
+            "type": "point",
+            "coord": [0.0115, 0, 0],
+            "expr": "crb_u:crb_u"
+        },
+        "PointG":
+        {
+            "type": "point",
+            "coord": [0.0125, 0, 0],
+            "expr": "crb_u:crb_u"
+        },
+        "cornea":
+        {
+            "type": "mean",
+            "markers":["Cornea"],
+            "topodim": 3,
+            "expr": "crb_u:crb_u"
+        }
+    }
+}
