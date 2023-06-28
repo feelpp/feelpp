@@ -4,9 +4,9 @@
 ## 01/2023
 
 from tqdm import tqdm
-from feelpp.mor.nirb.nirb import *
+from feelpp.mor.nirb import nirbOffline, nirbOnline
 
-def initProblemGreedy(offline, online, Ninit, Ntrain, eps=1e-5, Xi_train=None, Nmax=50, samplingMode="log-random", Mexpr='N-1'):
+def initProblemGreedy(offline: nirbOffline, online: nirbOnline, Ninit, Ntrain, tol=1e-5, Xi_train=None, Nmax=50, samplingMode="log-random", Mexpr='N-1'):
     """Generate the reduced space using the greedy algorithm.
 
     Parameters
@@ -19,7 +19,7 @@ def initProblemGreedy(offline, online, Ninit, Ntrain, eps=1e-5, Xi_train=None, N
         size of the initial reduced space
     Ntrain : int
         size of the train parameter set
-    eps : float, optional
+    tol : float, optional
         tolerance for greedy algorithm, by default 1e-5
     Xi_train : list, optional
         train set for the greedy algorithm, by default None. If None, a sampling of size Ntrain is generated
@@ -46,7 +46,7 @@ def initProblemGreedy(offline, online, Ninit, Ntrain, eps=1e-5, Xi_train=None, N
         Xi_train = s.getVector()
     Xi_train_copy = Xi_train.copy()
 
-    Delta_star = eps + 1
+    Delta_star = tol + 1
     Deltas_conv = []
     S = []
     offline.fineSnapShotList = []
@@ -54,19 +54,17 @@ def initProblemGreedy(offline, online, Ninit, Ntrain, eps=1e-5, Xi_train=None, N
 
     # Computation of coarse solutions
     coarseSolutions = {}
-    interpSol = {}
+    interpolatedSolutions = {}
     for mu in tqdm(Xi_train_copy, desc="[NIRB] Computing interpolated coarse solutions", ncols=120):
         coarseSolutions[mu] = offline.getToolboxSolution(offline.tbCoarse, mu)
-        interpSol[mu] = online.getInterpSol(mu)
+        interpolatedSolutions[mu] = online.getInterpolatedSolution(mu)
 
     # intialization of the first reduced space
     for i in range(Ninit):
         mu0 = offline.Dmu.element()
         S.append(mu0)
-        offline.fineSnapShotList.append( offline.getToolboxSolution(offline.tbFine  , mu0) )
-        uH = offline.getToolboxSolution( offline.tbCoarse, mu0)
-        offline.coarseSnapShotList.append(uH)
-
+        offline.fineSnapShotList.append(   offline.getToolboxSolution(offline.tbFine, mu0)    )
+        offline.coarseSnapShotList.append( offline.getToolboxSolution( offline.tbCoarse, mu0) )
 
     RIC = offline.generateReducedBasis()
     print("[NIRB] RIC = ", RIC)
@@ -76,13 +74,13 @@ def initProblemGreedy(offline, online, Ninit, Ntrain, eps=1e-5, Xi_train=None, N
 
     # Greedy loop
     if offline.worldcomm.isMasterRank():
-        print(f"[NIRB] Starting greedy loop with tolerance eps = {eps} and Nmax = {Nmax}")
-    while Delta_star > eps and N < Nmax:
+        print(f"[NIRB] Starting greedy loop with tolerance tol = {tol} and Nmax = {Nmax}")
+    while Delta_star > tol and N < Nmax:
         if offline.worldcomm.isMasterRank():
             print(f"[NIRB] Greedy loop : N = {N} Delta_star = {Delta_star}")
         M = eval(Mexpr)
 
-        mu_star, Xi_train, Delta_star = greedyStep(offline, online, Xi_train, N, M, interpSol)
+        mu_star, Xi_train, Delta_star = greedyStep(offline, online, Xi_train, N, M, interpolatedSolutions)
         N = offline.N
         Deltas_conv.append(Delta_star)
         S.append(mu_star)
@@ -126,8 +124,8 @@ def greedyStep(offline: nirbOffline, online: nirbOnline, Xi_train, N, M, interpS
     Deltas = []
 
     for i, mu in enumerate(tqdm(Xi_train,desc=f"[NIRB] Greedy selection", ascii=False, ncols=120)):
-        uHhN = online.getOnlineSol(mu, N, interSol=interpSol[mu])
-        uHhM = online.getOnlineSol(mu, M, interSol=interpSol[mu])
+        uHhN = online.getOnlineSolution(mu, N, interSol=interpSol[mu])
+        uHhM = online.getOnlineSolution(mu, M, interSol=interpSol[mu])
 
         diff = uHhN - uHhM
         Delta = offline.l2ScalarProductMatrix.energy(diff, diff)
@@ -138,8 +136,8 @@ def greedyStep(offline: nirbOffline, online: nirbOnline, Xi_train, N, M, interpS
             Delta_star = Delta
             mu_star = mu
             idx = i
-    uHN_export = online.getOnlineSol(mu_star, N, interSol=interpSol[mu_star])
-    uHM_export = online.getOnlineSol(mu_star, M, interSol=interpSol[mu_star])
+    uHN_export = online.getOnlineSolution(mu_star, N, interSol=interpSol[mu_star])
+    uHM_export = online.getOnlineSolution(mu_star, M, interSol=interpSol[mu_star])
     uh = online.getToolboxSolution(online.tbFine, mu_star)
 
     if online.exporter is not None:
@@ -149,7 +147,8 @@ def greedyStep(offline: nirbOffline, online: nirbOnline, Xi_train, N, M, interpS
 
     del Xi_train[idx]
     uH = offline.getToolboxSolution( offline.tbCoarse, mu_star)
-    offline.addFunctionToBasis( offline.getToolboxSolution(offline.tbFine, mu_star), coarseSnapshot=uH )
+    uh = offline.getToolboxSolution( offline.tbFine, mu_star)
+    offline.addFunctionToBasis( uh, coarseSnapshot=uH )
     online.setBasis(offline)
 
     return mu_star, Xi_train, Delta_star

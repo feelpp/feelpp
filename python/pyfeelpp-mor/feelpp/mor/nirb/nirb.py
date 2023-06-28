@@ -519,7 +519,6 @@ class nirbOffline(ToolboxModel):
         ReducedBasis (list) : the reduced basis, of size numberOfModes
         RIC (list) : Relative innformation content
         """
-
         Nsnap = len(self.fineSnapShotList)
 
         # compute the correlation matrix : C_{i,j} = <u_h^i, u_h^j>
@@ -541,6 +540,7 @@ class nirbOffline(ToolboxModel):
             # lastCol /= Nsnap
             self.correlationMatrix = np.vstack((self.correlationMatrix, lastCol[:-1]))
             self.correlationMatrix = np.column_stack((self.correlationMatrix, lastCol))
+            self.correlationMatrix[-1, -1] = self.l2ScalarProductMatrix.energy(lastSnap, lastSnap)
 
         eigenValues, eigenVectors = eigh(self.correlationMatrix)
         # get ordred eigenvalues
@@ -568,8 +568,10 @@ class nirbOffline(ToolboxModel):
             self.reducedBasis.append(vec)
             self.N += 1
             RIC.append(eigenValues[:i].sum() / sum_eigenValues)
-            # if abs(1. - RIC[i])<= tolerance :
-            #     break
+            if abs(1. - RIC[i])<= tolerance:
+                if feelpp.Environment.isMasterRank():
+                    print(f"[NIRB::PODReducedBasis] Toleance for RIC reached : {RIC[-1]}")
+                break
 
         if feelpp.Environment.isMasterRank():
             print(f"[NIRB::PODReducedBasis] basis generated with POD algorithm: {self.N} modes, with RIC = {RIC[-1]}")

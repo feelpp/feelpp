@@ -20,7 +20,7 @@ default_values = {
 
     "greedy-Ninit": 5,
     "greedy-Ntrain": 1000,
-    "greedy-eps": 1e-5,
+    "greedy-tol": 1e-5,
     "greedy-Nmax": 50,
     "greedy-samplingMode": "log-random",
     "greedy-Mexpr": "N-1",
@@ -70,7 +70,7 @@ def run_offline(config_nirb):
 
 
 
-def run_offline_greedy(config_nirb, Ninit, Ntrain, eps=1e-5, Xi_train=None, Nmax=50, samplingMode="log-random", Mexpr="N-1"):
+def run_offline_greedy(config_nirb, Ninit, Ntrain, tol=1e-5, Xi_train=None, Nmax=50, samplingMode="log-random", Mexpr="N-1"):
     """Run offline step using greedy algorithm
 
     Parameters
@@ -81,7 +81,7 @@ def run_offline_greedy(config_nirb, Ninit, Ntrain, eps=1e-5, Xi_train=None, Nmax
         size of the initial basis computed using POD
     Ntrain : int
         size of the training set
-    eps : float, optional
+    tol : float, optional
         tolerance for the greedy algorithm
     Xi_train : list, optional
         training set, by default None. If None, a sample of size Ntrain is generated
@@ -109,7 +109,7 @@ def run_offline_greedy(config_nirb, Ninit, Ntrain, eps=1e-5, Xi_train=None, Nmax
     nirb_on.setModel(tb, interpolationOperator=interpolator)
 
     nirb_off.generateOperators(coarse=True)
-    res = initProblemGreedy(nirb_off, nirb_on, Ninit, Ntrain, eps=eps,
+    res = initProblemGreedy(nirb_off, nirb_on, Ninit, Ntrain, tol=tol,
                 Xi_train=Xi_train, Nmax=Nmax, samplingMode=samplingMode, Mexpr=Mexpr)
 
     return nirb_off, nirb_on, res
@@ -192,11 +192,11 @@ if __name__ == "__main__":
         print("+------------------------------------------------+\n[NIRB] Running offline greedy")
         Ninit = get_config_parameter(config_nirb, 'greedy-Ninit')
         Ntrain = get_config_parameter(config_nirb, 'greedy-Ntrain')
-        eps = get_config_parameter(config_nirb, 'greedy-eps')
+        tol = get_config_parameter(config_nirb, 'greedy-tol')
         Nmax = get_config_parameter(config_nirb, 'greedy-Nmax')
         samplingMode = get_config_parameter(config_nirb, 'greedy-samplingMode')
         Mexpr = get_config_parameter(config_nirb, 'greedy-Mexpr')
-        nirb_off, nirb_on, _ = run_offline_greedy(config_nirb, Ninit, Ntrain, eps=eps,
+        nirb_off, nirb_on, _ = run_offline_greedy(config_nirb, Ninit, Ntrain, tol=tol,
                 Xi_train=Xi_train, Nmax=Nmax, samplingMode=samplingMode, Mexpr=Mexpr)
     else:
         print("+------------------------------------------------+\n[NIRB] Running offline")

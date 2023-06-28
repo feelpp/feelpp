@@ -123,7 +123,7 @@
         {
             "Ninit": 5,
             "Ntrain": 1000,
-            "eps": 1e-5,
+            "tol": 1e-5,
             "Nmax": 50,
             "sampling-mode": "log-random",
             "Mexpr": "N-1"
