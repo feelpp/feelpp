@@ -949,6 +949,7 @@ class nirbOnline(ToolboxModel):
             super().initCoarseToolbox()
         else:
             self.tbCoarse = offline.tbCoarse
+        self.interpolationOperator = self.createInterpolator(domain=self.tbCoarse, image=self.tbFine)
         self.Xh = offline.Xh
         self.Dmu = offline.Dmu
         self.Ndofs = offline.Ndofs
@@ -970,17 +971,17 @@ class nirbOnline(ToolboxModel):
 
     def getCompressedSolution(self, mu=None, solution=None, Nb=None):
         """
-        get the projection of given solution from fine mesh into the reduced space
+        Get the projection of given solution from fine mesh into the reduced space
 
         Parameters
         ----------
-        solution (feelpp._discr.Element) : the solution to be projected
-        mu (ParameterSpaceElement) : parameter to compute the solution if not given
-        Nb (int, optional) : Size of the basis, by default None. If None, the whole basis is used
+            solution (feelpp._discr.Element) : the solution to be projected
+            mu (ParameterSpaceElement) : parameter to compute the solution if not given
+            Nb (int, optional) : Size of the basis, by default None. If None, the whole basis is used
 
         Returns
         --------
-        compressedSol (numpy.ndarray) : the compressed solution, of size (self.N)
+            compressedSol (numpy.ndarray) : the compressed solution, of size (self.N)
         """
         assert (mu != None) or (solution != None), f"One of the arguments must be given: solution or mu"
 
@@ -1011,6 +1012,27 @@ class nirbOnline(ToolboxModel):
         """
         interpSol = self.solveOnline(mu)[1]
         return interpSol
+    
+    def fineProjection(self, uh, Nb=-1):
+        """Project the solution from coarse mesh to fine one
+
+        Parameters
+        ----------
+            uh (feelpp._discr.Element): solution on coarse mesh
+            Nb (int, optional): Size of the basis, by default -1. If -1, the whole basis is used
+
+        Returns
+        -------
+            interpSol (feelpp._discr.Element): interpolated solution on fine mesh
+        """
+        if Nb == -1: Nb = self.N
+        uhN = self.Xh.element()
+        uhN.setZero()
+        nirbCoeff = self.getCompressedSolution(solution=uh)
+        for i in range(Nb):
+            uhN.add(float(nirbCoeff[i]), self.reducedBasis[i])
+
+        return uhN
 
     def getOnlineSolution(self, mu, Nb=None, interSol=None, doRectification=-1):
         """Get the Online nirb approximate solution
