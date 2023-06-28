@@ -1199,7 +1199,6 @@ class nirbOnline(ToolboxModel):
         if self.doRectification:
             self.coeffCoarse = np.load(coeffCoarseFile)
             self.coeffFine = np.load(coeffFineFile)
-            print("efmlefl fine coarse", self.coeffCoarse.shape, self.coeffFine.shape)
 
         if self.worldcomm.isMasterRank():
             print(f"[NIRB::loadData] Data loaded from {os.path.abspath(path)}")
@@ -1245,6 +1244,8 @@ class nirbOnline(ToolboxModel):
 
         return coarseSol, interpolatedSol
 
+    def getFineSolution(self, mu):
+        return self.getToolboxSolution(self.tbFine, mu)
 
     def initExporter(self, name, toolbox="fine"):
         """init feelpp exporter

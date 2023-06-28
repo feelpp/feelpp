@@ -38,12 +38,13 @@ def test_nirb(dir, cfg, json, rect, init_feelpp):
 
     nirb_config = feelpp.readJson(model_path)['nirb']
     nirb_config['doRectification'] = rect
+    nirb_config['doGreedy'] = False
 
     nirb_off = nirbOffline(**nirb_config, initCoarse=True)
     nirb_off.initModel()
     nirb_off.generateOperators(coarse=True)
     nbSnap = 6
-    Xi = nirb_off.initProblem(nbSnap)
+    Xi = nirb_off.computeSnapshots(nbSnap)
     RIC = nirb_off.generateReducedBasis()
     path = nirb_off.saveData(force=True)
 
@@ -53,13 +54,14 @@ def test_nirb(dir, cfg, json, rect, init_feelpp):
     Nbasis = nirb_off.N
 
     # Check that the online solution is indeed computed
-    run_online(nirb_config, nirb_off.outdir, Nbasis, s.getVector())
+    run_online(nirb_config, path, Xi=s.getVector(), Nb=Nbasis, rectification=rect)
+    run_online(nirb_config, path, Xi=s.getVector(), rectification=rect)
 
     if Nbasis > 4:
         # Check that we can load smaller basis
-        run_online(nirb_config, nirb_off.outdir, Nbasis - 2, s.getVector())
+        run_online(nirb_config, path, nbSnap=Nbasis-2, Xi=s.getVector(), rectification=rect)
         # Check that we can compute solution with a subbasis
-        run_online(nirb_config, nirb_off.outdir, Nbasis, s.getVector(), Nb=Nbasis - 2)
+        run_online(nirb_config, path, Xi=s.getVector(), Nb=Nbasis - 2, rectification=rect)
 
     # assert errorNirb<0.08, f"higher nirb error value"
     # assert errorInterp<0.05, f"higher interp error value"
@@ -73,21 +75,23 @@ def test_nirb_greedy(dir, cfg, json, rect, init_feelpp):
 
     nirb_config = feelpp.readJson(model_path)['nirb']
     nirb_config['doRectification'] = rect
+    nirb_config['doGreedy'] = True
 
     nirb_offline, _, _ = run_offline_greedy(nirb_config, 5, 200, Nmax=20)
-    nirb_offline.saveData(force=True)
+    path = nirb_offline.saveData(force=True)
     Nbasis = nirb_offline.N
     s = nirb_offline.Dmu.sampling()
     s.sampling(10, "random")
 
     # Check that the online solution is indeed computed
-    run_online(nirb_config, nirb_offline.outdir, Nbasis, s.getVector())
+    run_online(nirb_config, path, Xi=s.getVector(), Nb=Nbasis, rectification=rect)
+    run_online(nirb_config, path, Xi=s.getVector(), rectification=rect)
 
     if Nbasis > 4:
         # Check that we can load smaller basis
-        run_online(nirb_config, nirb_offline.outdir, Nbasis - 2, s.getVector())
+        run_online(nirb_config, path, nbSnap=Nbasis-2, Xi=s.getVector(), rectification=rect)
         # Check that we can compute solution with a subbasis
-        run_online(nirb_config, nirb_offline.outdir, Nbasis, s.getVector(), Nb=Nbasis - 2)
+        run_online(nirb_config, path, Xi=s.getVector(), Nb=Nbasis - 2, rectification=rect)
 
 @pytest.mark.parametrize("dir, cfg, json", cases_paramsInit, ids=cases_idsInit)
 def test_initializer(dir, cfg, json, init_feelpp):
@@ -98,6 +102,7 @@ def test_initializer(dir, cfg, json, init_feelpp):
     feelpp.Environment.setConfigFile(casefile)
     nirb_config = feelpp.readJson(model_path)['nirb']
     nirb_config['doRectification'] = True
+    nirb_config['doGreedy'] = True
     tbModel = ToolboxModel(**nirb_config)
     tbModel.initModel()
 
