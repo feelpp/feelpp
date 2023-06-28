@@ -13,6 +13,7 @@
 #include <fmt/core.h>
 #include <fmt/ranges.h>
 #include <feel/feelmesh/filters.hpp>
+#include <feel/feelmesh/kdtree.hpp>
 #include <feel/feelfilters/filters.hpp>
 #include <feel/feelmesh/meshmover.hpp>
 #include <feel/feelmesh/remesher.hpp>
@@ -29,8 +30,24 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <random>
 
 using namespace Feel;
+
+
+double
+distanceNodes( const std::vector<double> & p1, const std::vector<double> & p2 )
+{
+    double res=0.0;
+
+    for ( uint16_type i=0; i<p1.size(); ++i )
+    {
+        res+=( p2[i]-p1[i] )*( p2[i]-p1[i] );
+    }
+
+    return res;
+}
+
 
 template<uint16_type Dim>
 class InsertingObjects
@@ -60,7 +77,7 @@ class InsertingObjects
         */
 
         InsertingObjects() = default;
-        void getData(std::string path);
+        void getData(std::string);
         void setAmbiantMesh();
         void setObjectMesh();
         void moveObjectMesh();
@@ -72,6 +89,8 @@ class InsertingObjects
         void setPhysicalGroups();
         void testBoundaryMarkers();
         int run();
+
+        int createObjectMesh(int, int, double);
 
         
     
@@ -186,12 +205,7 @@ InsertingObjects<Dim>::setAmbiantMesh()
     M_AmbiantMesh = r.execute();
     saveGMSHMesh( _mesh=M_AmbiantMesh, _filename="remeshedsubmesh.msh" );  
     M_VhAmbiantMesh = space_type::New(M_AmbiantMesh); 
-
-    auto exp1 = exporter( _mesh = M_AmbiantMesh , _name = fmt::format( "Remesh"));
-    exp1->addRegions();
-    exp1->save();
-    */
-
+    */ 
 }
 
 template<uint16_type Dim>
@@ -736,18 +750,76 @@ InsertingObjects<Dim>::setPhysicalGroups()
 
     
     std::cout << "Get fluid boundary markers" << std::endl;
+
+    KDTree kd_tree;
+
+    //std::vector<std::tuple<int, std::vector<double>>> Centers;
+    for (auto &bfaceI : boundaryfaces(M_AmbiantMesh))
+    {
+        auto & faceI = boost::unwrap_ref( bfaceI );
+
+        if constexpr (Dim == 2)
+        {
+            KDTree::node_type centerI( 2 );
+            centerI( 0 )=(faceI.point(0).node()[0] + faceI.point(1).node()[0])/2.;
+            centerI( 1 )=(faceI.point(0).node()[1] + faceI.point(1).node()[1])/2.;
+            kd_tree.addPoint(centerI, faceI.marker().value());
+            //std::vector<double> centerI = {(faceI.point(0).node()[0] + faceI.point(1).node()[0])/2.,(faceI.point(0).node()[1] + faceI.point(1).node()[1])/2.};
+            //Centers.push_back(std::make_tuple(faceI.marker().value(), centerI));
+
+        }
+        else if constexpr(Dim == 3)
+        {
+            KDTree::node_type centerI( 3 );
+            centerI( 0 )=(faceI.point(0).node()[0] + faceI.point(1).node()[0] + faceI.point(2).node()[0])/3.;
+            centerI( 1 )=(faceI.point(0).node()[1] + faceI.point(1).node()[1] + faceI.point(2).node()[1])/3.;
+            centerI( 2 )=(faceI.point(0).node()[2] + faceI.point(1).node()[2] + faceI.point(2).node()[2])/3.;
+            kd_tree.addPoint(centerI,faceI.marker().value());
+            //std::vector<double> centerI = {(faceI.point(0).node()[0] + faceI.point(1).node()[0] + faceI.point(2).node()[0])/3.,(faceI.point(0).node()[1] + faceI.point(1).node()[1]+ faceI.point(2).node()[1])/3.,(faceI.point(0).node()[2] + faceI.point(1).node()[2]+ faceI.point(2).node()[2])/3.};
+            //Centers.push_back(std::make_tuple(faceI.marker().value(), centerI));
+        }
+    }
+    
+    std::cout << " kdtrees nPoints() : " <<  kd_tree.nPoints() << std::endl;
+
+
     for (auto & bfaceF : boundaryfaces(M_ResultMesh))
     {
         auto & faceF = boost::unwrap_ref( bfaceF ); 
 
         if constexpr ( Dim == 2 ) 
         {
-            std::vector<double> centerF = {(faceF.point(0).node()[0] + faceF.point(1).node()[0])/2.,(faceF.point(0).node()[1] + faceF.point(1).node()[1])/2.};
+            kd_tree.nbNearNeighbor( 1 );
 
-            double minDist = 0;
-            int minMarker = 0;
-            int first = 1;
+            KDTree::node_type p( 2 );
+            p( 0 )=(faceF.point(0).node()[0] + faceF.point(1).node()[0])/2.;
+            p( 1 )=(faceF.point(0).node()[1] + faceF.point(1).node()[1])/2.;
+            kd_tree.search( p );
 
+            KDTree::points_search_type res=kd_tree.pointsNearNeighbor();
+           
+            //std::vector<double> centerF = {(faceF.point(0).node()[0] + faceF.point(1).node()[0])/2.,(faceF.point(0).node()[1] + faceF.point(1).node()[1])/2.};
+
+            //double minDist = 0;
+            //int minMarker = 0;
+            //int first = 1;
+
+            /*
+            auto closest = [&Centers]( std::vector<double> p ) 
+            {
+                auto const it = std::min_element(Centers.begin(), Centers.end(),[p] (std::tuple<int, std::vector<double>> a, std::tuple<int, std::vector<double>> b) {
+                    return distanceNodes(p,std::get<1>(a)) < distanceNodes(p,std::get<1>(b));
+                });
+                return std::get<0>(*it); 
+            };
+
+            auto minMarker = closest(centerF);
+            */
+
+
+            //std::cout << "IT : " << minMarker << std::endl;
+            
+            /*
             for (auto & bfaceI : boundaryfaces(M_AmbiantMesh))
             {
                 auto & faceI = boost::unwrap_ref( bfaceI ); 
@@ -767,18 +839,44 @@ InsertingObjects<Dim>::setPhysicalGroups()
                 }
                 
             }
-            boundaryfacesIdMarker[faceF.id()] = minMarker;
+            */
+            boundaryfacesIdMarker[faceF.id()] = boost::get<3>( res[0] );
         }
         
         
         else if constexpr ( Dim == 3 ) 
         {
-            std::vector<double> centerF = {(faceF.point(0).node()[0] + faceF.point(1).node()[0] + faceF.point(2).node()[0])/3.,(faceF.point(0).node()[1] + faceF.point(1).node()[1]+ faceF.point(2).node()[1])/3.,(faceF.point(0).node()[2] + faceF.point(1).node()[2]+ faceF.point(2).node()[2])/3.};
+            kd_tree.nbNearNeighbor( 1 );
 
-            double minDist = 0;
-            int minMarker = 0;
-            int first = 1;
+            KDTree::node_type p( 3 );
+            p( 0 )=(faceF.point(0).node()[0] + faceF.point(1).node()[0] + faceF.point(2).node()[0])/3.;
+            p( 1 )=(faceF.point(0).node()[1] + faceF.point(1).node()[1] + faceF.point(2).node()[1])/3.;
+            p( 2 )=(faceF.point(0).node()[2] + faceF.point(1).node()[2] + faceF.point(2).node()[2])/3.;
+            kd_tree.search( p );
 
+            KDTree::points_search_type res=kd_tree.pointsNearNeighbor();
+
+            //std::vector<double> centerF = {(faceF.point(0).node()[0] + faceF.point(1).node()[0] + faceF.point(2).node()[0])/3.,(faceF.point(0).node()[1] + faceF.point(1).node()[1]+ faceF.point(2).node()[1])/3.,(faceF.point(0).node()[2] + faceF.point(1).node()[2]+ faceF.point(2).node()[2])/3.};
+
+            //double minDist = 0;
+            //int minMarker = 0;
+            //int first = 1;
+
+            /*
+            auto closest = [&Centers]( std::vector<double> p ) 
+            {
+                auto const it = std::min_element(Centers.begin(), Centers.end(),[p] (std::tuple<int, std::vector<double>> a, std::tuple<int, std::vector<double>> b) {
+                    return distanceNodes(p,std::get<1>(a)) < distanceNodes(p,std::get<1>(b));
+                });
+                return std::get<0>(*it); 
+            };
+
+            auto minMarker = closest(centerF);
+            */
+
+            //std::cout << "IT : " << minMarker << std::endl;
+
+            /*
             for (auto & bfaceI : boundaryfaces(M_AmbiantMesh))
             {
                 auto & faceI = boost::unwrap_ref( bfaceI ); 
@@ -798,7 +896,9 @@ InsertingObjects<Dim>::setPhysicalGroups()
                 }
                 
             }
-            boundaryfacesIdMarker[faceF.id()] = minMarker;
+            */
+            
+            boundaryfacesIdMarker[faceF.id()] = boost::get<3>( res[0] );
         }
 
     }
@@ -902,18 +1002,272 @@ InsertingObjects<Dim>::run()
     expfinal->save();
 
     auto r = remesher(M_AmbiantMesh);
+
     if (M_remesh == 1)
         M_ResultMesh = r.mesh_from_ls_met(M_levelsetObject,M_metric,M_MultiPhysicsVolumeMarkersSolid, M_MultiPhysicsVolumeMarkersFluid);
     else 
         M_ResultMesh = r.mesh_from_ls(M_levelsetObject,M_MultiPhysicsVolumeMarkersSolid, M_MultiPhysicsVolumeMarkersFluid);
 
     // Set physical groups
+    saveGMSHMesh( _mesh=M_ResultMesh, _filename="resultmesh.msh" ); 
+
     std::cout << "Physical names" << std::endl;
     this->setPhysicalGroups();
 
     // Checkers
     if (M_checkers == 1)
         this->testBoundaryMarkers();
+        
+    return 0;
+}
+
+template<uint16_type Dim>
+int
+InsertingObjects<Dim>::createObjectMesh(int object, int N, double radius)
+{
+    // Get ambiant mesh
+    fs::path path = fs::path(Environment::findFile("cases/mesh_from_ls.json"));
+    std::ifstream i(path.string().c_str());
+    json jsonData = json::parse(i);
+
+    M_fileNameAmbiant = jsonData["meshes"]["ambiant_mesh"].get<std::string>();
+
+
+    auto create_mesh = [&]() {
+    if constexpr ( Dim == 2 )
+        return loadMesh( _mesh = new Mesh<Simplex<2>>( "mesh" ), _filename = M_fileNameAmbiant );
+    else if constexpr ( Dim == 3 )
+        return loadMesh( _mesh = new Mesh<Simplex<3, 1>>( "mesh" ), _filename = M_fileNameAmbiant );
+    };
+    
+    M_AmbiantMesh = create_mesh();
+    M_VhAmbiantMesh = space_type::New(M_AmbiantMesh); 
+
+    // Get object mesh if not sphere (= 0)
+    if (object != 0)
+    {
+        M_fileNameObject = jsonData["meshes"]["object_mesh"].get<std::string>();
+
+        auto create_mesh = [&]() {
+            if constexpr ( Dim == 2 )
+                return loadMesh( _mesh = new Mesh<Simplex<2>>( "mesh" ), _filename = M_fileNameObject );
+            else if constexpr ( Dim == 3 )
+                return loadMesh( _mesh = new Mesh<Simplex<3, 1>>( "mesh" ), _filename = M_fileNameObject );
+        };
+    
+        M_ObjectMesh = create_mesh();
+        M_VhObjectMesh = space_type::New(M_ObjectMesh); 
+    }
+
+    // Get AABB of object
+    auto ux = project(_space=M_VhObjectMesh, _range=elements(M_ObjectMesh), _expr= Px());
+    auto [xmin,arg_xmin] = minelt(_range=elements(M_ObjectMesh), _element=ux);
+    auto [xmax,arg_xmax] = maxelt(_range=elements(M_ObjectMesh), _element=ux);
+    auto length_x = std::abs(xmax - xmin);
+        
+    auto uy = project(_space=M_VhObjectMesh, _range=elements(M_ObjectMesh), _expr= Py());
+    auto [ymin,arg_ymin] = minelt(_range=elements(M_ObjectMesh), _element=uy);
+    auto [ymax,arg_ymax] = maxelt(_range=elements(M_ObjectMesh), _element=uy);
+    auto length_y = std::abs(ymax - ymin);
+
+    std::cout << " AABB xmin : " << xmin << " xmax : " << xmax << " ymin : " << ymin << " ymax : " << ymax << std::endl;    
+
+    auto distW = distanceToRange(_space=M_VhAmbiantMesh, _range=markedfaces(M_AmbiantMesh,"wall"));
+    auto distI = distanceToRange(_space=M_VhAmbiantMesh, _range=markedfaces(M_AmbiantMesh,"inlet"));
+    auto distO = distanceToRange(_space=M_VhAmbiantMesh, _range=markedfaces(M_AmbiantMesh,"outlet"));
+
+    auto coord_x = vf::project( _space=M_VhAmbiantMesh, _range=elements( M_AmbiantMesh ), _expr=Px() );
+    auto coord_y = vf::project( _space=M_VhAmbiantMesh, _range=elements( M_AmbiantMesh ), _expr=Py() );
+
+    auto min_coord_x = coord_x.min();
+    auto max_coord_x = coord_x.max();
+    std::cout << "Min : " << min_coord_x << " max : " << max_coord_x << std::endl;
+    std::uniform_real_distribution<double> unif(min_coord_x,max_coord_x);
+    std::default_random_engine re;
+
+    auto min_coord_y = coord_y.min();
+    auto max_coord_y = coord_y.max();
+
+    auto [ havg, hmin, hmax ] = hMeasures( M_AmbiantMesh );
+
+    // for spheres
+    if (object == 0)
+    {
+        std::vector<double> centers_X;
+        std::vector<double> centers_Y;
+
+        for (int i=0; i<N; i++)
+        {
+            int redo = 0;
+
+            double x_tmp;
+            double y_tmp;
+
+            while (redo != 1)
+            {
+                redo = 1;
+                // Choose random value for x coordinate
+                double random_coord_x = unif(re);
+
+                // Get all possible values
+                std::vector<std::tuple<int,double>> possibleCoord_x;
+
+                int iter=0;
+                for (auto elem_x : coord_x)
+                {
+                    if (elem_x <= random_coord_x + hmin && elem_x >= random_coord_x - hmin)
+                        possibleCoord_x.push_back(std::make_tuple(iter,elem_x));
+                    iter++;
+                }    
+
+                std::vector<double> possibleCoord_y;
+                for (auto elem : possibleCoord_x)       
+                    possibleCoord_y.push_back(coord_y[std::get<0>(elem)]);
+        
+                // Check intersection 
+                int takeValue = 0;
+
+                iter = 0;
+                while (takeValue != 1)
+                {
+                    takeValue = 1;
+            
+                    int randomIT = rand() % possibleCoord_y.size();
+
+                    double distanceW = distW[std::get<0>(possibleCoord_x[randomIT])];
+                    double distanceI = distI[std::get<0>(possibleCoord_x[randomIT])];
+                    double distanceO = distO[std::get<0>(possibleCoord_x[randomIT])];
+
+                    if (distanceW > radius + hmax && distanceI > radius + hmax && distanceO > radius + hmax)
+                    {
+                        x_tmp = std::get<1>(possibleCoord_x[randomIT]);
+                        y_tmp = possibleCoord_y[randomIT];
+
+                        for (int j=0; j<i; j++) 
+                        {
+                            if (x_tmp <= centers_X[j] + 2*radius + hmin && x_tmp >= centers_X[j] - 2*radius - hmin)
+                            {
+                                if (y_tmp <= centers_Y[j] + 2*radius + hmin && y_tmp >= centers_Y[j] - 2*radius - hmin)
+                                {
+                                    takeValue = 0;
+                                    break;
+                                }
+                    
+                            }    
+                        }
+                    }
+                    else
+                    {
+                        iter++;
+                        takeValue = 0; 
+                    }
+
+                    if (iter == possibleCoord_y.size())
+                    {
+                        redo = 0;
+                        break;
+                    } 
+                }        
+            }
+        
+            // Check intersection with ambiant mesh
+
+            centers_X.push_back(x_tmp);
+            centers_Y.push_back(y_tmp);
+        }
+
+        std::cout << "centers_X : " << centers_X << std::endl;
+        std::cout << "centers_Y : " << centers_Y << std::endl;
+    }
+    else 
+    {
+        std::vector<double> centers_X;
+        std::vector<double> centers_Y;
+
+        for (int i=0; i<N; i++)
+        {
+            int redo = 0;
+
+            double x_tmp;
+            double y_tmp;
+
+            while (redo != 1)
+            {
+                redo = 1;
+                // Choose random value for x coordinate
+                double random_coord_x = unif(re);
+
+                // Get all possible values
+                std::vector<std::tuple<int,double>> possibleCoord_x;
+
+                int iter=0;
+                for (auto elem_x : coord_x)
+                {
+                    if (elem_x <= random_coord_x + hmin && elem_x >= random_coord_x - hmin)
+                        possibleCoord_x.push_back(std::make_tuple(iter,elem_x));
+                    iter++;
+                }    
+
+                std::vector<double> possibleCoord_y;
+                for (auto elem : possibleCoord_x)       
+                    possibleCoord_y.push_back(coord_y[std::get<0>(elem)]);
+        
+                // Check intersection 
+                int takeValue = 0;
+
+                iter = 0;
+                while (takeValue != 1)
+                {
+                    takeValue = 1;
+            
+                    int randomIT = rand() % possibleCoord_y.size();
+
+                    double distanceW = distW[std::get<0>(possibleCoord_x[randomIT])];
+                    double distanceI = distI[std::get<0>(possibleCoord_x[randomIT])];
+                    double distanceO = distO[std::get<0>(possibleCoord_x[randomIT])];
+
+                    if (distanceW >  length_y/2 + hmax && distanceI > length_x/2 + hmax && distanceO > length_x/2 + hmax)
+                    {
+                        x_tmp = std::get<1>(possibleCoord_x[randomIT]);
+                        y_tmp = possibleCoord_y[randomIT];
+
+                        for (int j=0; j<i; j++) 
+                        {
+                            if (x_tmp <= centers_X[j] + length_x + hmin && x_tmp >= centers_X[j] - length_x - hmin)
+                            {
+                                if (y_tmp <= centers_Y[j] + length_y + hmin && y_tmp >= centers_Y[j] - length_y - hmin)
+                                {
+                                    takeValue = 0;
+                                    break;
+                                }
+                    
+                            }    
+                        }
+                    }
+                    else
+                    {
+                        iter++;
+                        takeValue = 0; 
+                    }
+
+                    if (iter == possibleCoord_y.size())
+                    {
+                        redo = 0;
+                        break;
+                    } 
+                }        
+            }
+        
+            // Check intersection with ambiant mesh
+
+            centers_X.push_back(x_tmp);
+            centers_Y.push_back(y_tmp);
+        }
+
+        std::cout << "centers_X : " << centers_X << std::endl;
+        std::cout << "centers_Y : " << centers_Y << std::endl;
+    }
+    
         
     return 0;
 }
@@ -925,9 +1279,15 @@ int main( int argc, char** argv)
     Environment env( _argc=argc, _argv=argv,
                      _about=about( _name="Inserting_objects"));
     
-    InsertingObjects<2> inserting_object;
-    inserting_object.run();  
+    InsertingObjects<3> inserting_object;
 
+    //inserting_object.createObjectMesh(1,1,2);
+    //inserting_object.createObjectMesh(1,2,2);
+    //inserting_object.createObjectMesh(1,3,2);
+    //inserting_object.createObjectMesh(1,5,2);
+    //inserting_object.createObjectMesh(1,7,2);
+
+    inserting_object.run();  
 
     return 0;
 }
