@@ -228,30 +228,33 @@ if __name__ == "__main__":
             if nirb_off.worldcomm.isMasterRank():
                 print(f"[NIRB] Xi_test loaded from {Xi_test_path}")
         else :
-            Ns = 1
+            Ns = 30
             Xi_test = generatedAndSaveSampling(nirb_off.Dmu, Ns, path=Xi_test_path, samplingMode="log-random")
 
         Err = checkConvergence(nirb_off, nirb_on, Ns=30, Xi_test=Xi_test)
+        # Err = nirb_off.checkConvergence(Ns=30, Xi_test=Xi_test)
         df = pd.DataFrame(Err)
-        file = os.path.join(RESPATH, "offlineError.csv")
-        df.to_csv(file, index=False)
-        print(f"[NIRB] Offline error saved in {os.path.join(os.getcwd(), file)}")
+        errorfile = os.path.join(RESPATH, "offlineError.csv")
+        df.to_csv(errorfile, index=False)
+        if feelpp.Environment.isMasterRank():
+            print(f"[NIRB] Offline error saved in {os.path.join(os.getcwd(), errorfile)}")
 
 
     perf = []
     perf.append(nbSnap)
-    perf.append(finish-start)
+    perf.append(finish - start)
 
     if doRectification:
-        file = os.path.join(RESPATH, f'nirbOffline_time_exec_np{nirb_off.worldcomm.globalSize()}_rectif.dat')
+        perfFile = os.path.join(RESPATH, f'nirbOffline_time_exec_np{nirb_off.worldcomm.globalSize()}_rectif.dat')
     else :
-        file = os.path.join(RESPATH, f'nirbOffline_time_exec_np{nirb_off.worldcomm.globalSize()}.dat')
-    WriteVecAppend(file, perf)
+        perfFile = os.path.join(RESPATH, f'nirbOffline_time_exec_np{nirb_off.worldcomm.globalSize()}.dat')
+    WriteVecAppend(perfFile, perf)
 
     info = nirb_off.getOfflineInfos()
 
     if nirb_off.worldcomm.isMasterRank():
         print(json.dumps(info, sort_keys=True, indent=4))
-        print(f"[NIRB] Offline Elapsed time = ", finish-start)
+        print(f"[NIRB] Perf saved in {perfFile}")
+        print(f"[NIRB] Offline Elapsed time = ", finish - start)
         print(f"[NIRB] doRectification : {nirb_off.doRectification}, doGreedy : {nirb_off.doGreedy}")
         print(f"[NIRB] Offline part Done !")

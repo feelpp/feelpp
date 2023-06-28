@@ -26,7 +26,7 @@ def checkConvergence(nirb_offline: nirbOffline, nirb_online: nirbOnline, Ns=10, 
 
     """
     if nirb_offline.worldcomm.isMasterRank():
-        print(f"[NIRB] Compute offline convergence error")
+        print(f"[NIRB::checkConvergence] Compute offline convergence error")
 
     if Xi_test is None:
         s = nirb_offline.Dmu.sampling()
@@ -42,7 +42,8 @@ def checkConvergence(nirb_offline: nirbOffline, nirb_online: nirbOnline, Ns=10, 
 
     fineSolutions= []                   # fine solutions u_h^\N(mu)
     interpolatedSolutions = []          # coarse solutions interpolated in fine mesh u_Hh^\N(mu)
-    for mu in vector_mu:
+    for j in tqdm(range(len(vector_mu)), desc=f"[NIRB::checkConvergence] Compute fine solutions", ascii=False, ncols=120):
+        mu = vector_mu[j]
         uH_interpolated = nirb_online.getInterpolatedSolution(mu)
         fineSolutions.append(nirb_offline.getToolboxSolution(nirb_offline.tbFine, mu))
         interpolatedSolutions.append(uH_interpolated)
@@ -52,7 +53,7 @@ def checkConvergence(nirb_offline: nirbOffline, nirb_online: nirbOnline, Ns=10, 
     Error = {'N':[], 'idx':[], 'l2(uh-uHn)':[], 'l2(uh-uHn)rec':[], 'l2(uh-uhn)' : [], 'l2(uh-uH)':[]}
 
     pas = 1 if (Nbasis < 50) else 5
-    for size in tqdm(range(1, Nbasis + 1, pas), desc=f"[NIRB] Compute convergence error", ascii=False, ncols=100):
+    for size in tqdm(range(1, Nbasis + 1, pas), desc=f"[NIRB::checkConvergence] Compute convergence error", ascii=False, ncols=120):
 
         for j in range(Ntest):
 
