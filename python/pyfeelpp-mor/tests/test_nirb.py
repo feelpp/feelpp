@@ -79,7 +79,7 @@ def test_nirb_greedy(dir, cfg, json, rect, init_feelpp):
     Nbasis = nirb_offline.N
     s = nirb_offline.Dmu.sampling()
     s.sampling(10, "random")
-    
+
     # Check that the online solution is indeed computed
     run_online(nirb_config, nirb_offline.outdir, Nbasis, s.getVector())
 

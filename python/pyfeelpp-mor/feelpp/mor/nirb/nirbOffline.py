@@ -29,14 +29,14 @@ default_values = {
 def get_config_parameter(config, parameter):
     """
     Get parameter from config file, if not found, return default value
-    
+
     Parameters
     ----------
     config : dict
         configuration of the NIRB model
     parameter : str
         parameter to get from config file
-        
+
     Returns
     -------
     parameter
@@ -170,7 +170,7 @@ if __name__ == "__main__":
 
     Xi_train = None
     Xi_train_path = os.path.join(RESPATH, sampling_path)
-    
+
     ###
     # Only once: generate and save a sampling
     if args.generate_sampling != 0:

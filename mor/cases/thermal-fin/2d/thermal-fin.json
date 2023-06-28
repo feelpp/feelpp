@@ -80,16 +80,16 @@
     },
     "InitialConditions":
     {
-        "temperature": 
+        "temperature":
         {
-            "Expression": 
+            "Expression":
             {
-                "init": 
+                "init":
                 {
                     "markers":"[Fin_1, Fin_2, Fin_3, Fin_4, Post]",
                     //"markers":["Fin_1", "Fin_2", "Fin_3", "Fin_4", "Post"],
                     "expr":"0"
-                    //"expr":"cos(x):x" 
+                    //"expr":"cos(x):x"
                 }
             }
         }
