@@ -3636,7 +3636,6 @@ CRBModel<TruthModelType>::solveFemUsingOfflineEim( parameter_type const& mu )
         {
             M_backend_primal->solve( _matrix=A , _solution=u, _rhs=Rhs, _rebuild=true);
         }
-        // mybdf->shiftRight(u);
     }
 
     return u;
@@ -3724,8 +3723,6 @@ CRBModel<TruthModelType>::solveFemMonolithicFormulation( parameter_type const& m
             {
                 M_backend_primal->solve( _matrix=A , _solution=u, _rhs=F[0], _rebuild=true);
             }
-
-            // mybdf->shiftRight(u);
 
             if( is_linear )
                 norm = 0;
@@ -3901,7 +3898,6 @@ CRBModel<TruthModelType>::solveFemUsingAffineDecompositionFixedPoint( parameter_
                 norm = this->computeNormL2( uold , u );
             iter++;
         } while( norm > increment_fixedpoint_tol && iter<max_fixedpoint_iterations );
-        //mybdf->shiftRight(u);
     }
     return u;
 }
@@ -4094,8 +4090,6 @@ CRBModel<TruthModelType>::solveFemDualMonolithicFormulation( parameter_type cons
         M_preconditioner_dual->setMatrix( Adu );
 
         M_backend_dual->solve( _matrix=Adu , _solution=udu, _rhs=Rhs , _prec=M_preconditioner_dual);
-
-        // mybdf->shiftRight(udu);
     }
 
     return udu;
@@ -4271,7 +4265,6 @@ CRBModel<TruthModelType>::solveFemDualUsingAffineDecompositionFixedPoint( parame
                 norm = this->computeNormL2( uold , udu );
             iter++;
         } while( norm > increment_fixedpoint_tol && iter<max_fixedpoint_iterations );
-        // mybdf->shiftRight(udu);
     }
     return udu;
 }
