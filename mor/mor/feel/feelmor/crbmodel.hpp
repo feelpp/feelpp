@@ -3615,7 +3615,7 @@ CRBModel<TruthModelType>::solveFemUsingOfflineEim( parameter_type const& mu )
     double bdf_coeff ;
     auto vec_bdf_poly = M_backend->newVector( Xh );
 
-    for( mybdf->start(*InitialGuess); !mybdf->isFinished(); mybdf->next() )
+    for( mybdf->start(*InitialGuess); !mybdf->isFinished(); mybdf->next(u) )
     {
         bdf_coeff = mybdf->polyDerivCoefficient( 0 );
         auto bdf_poly = mybdf->polyDeriv();
@@ -3636,7 +3636,7 @@ CRBModel<TruthModelType>::solveFemUsingOfflineEim( parameter_type const& mu )
         {
             M_backend_primal->solve( _matrix=A , _solution=u, _rhs=Rhs, _rebuild=true);
         }
-        mybdf->shiftRight(u);
+        // mybdf->shiftRight(u);
     }
 
     return u;
@@ -3696,7 +3696,7 @@ CRBModel<TruthModelType>::solveFemMonolithicFormulation( parameter_type const& m
     int iter=0;
     double norm=0;
 
-    for( mybdf->start(*InitialGuess); !mybdf->isFinished(); mybdf->next() )
+    for( mybdf->start(*InitialGuess); !mybdf->isFinished(); mybdf->next(u) )
     {
         bdf_coeff = mybdf->polyDerivCoefficient( 0 );
         auto bdf_poly = mybdf->polyDeriv();
@@ -3725,7 +3725,7 @@ CRBModel<TruthModelType>::solveFemMonolithicFormulation( parameter_type const& m
                 M_backend_primal->solve( _matrix=A , _solution=u, _rhs=F[0], _rebuild=true);
             }
 
-            mybdf->shiftRight(u);
+            // mybdf->shiftRight(u);
 
             if( is_linear )
                 norm = 0;
@@ -3866,7 +3866,7 @@ CRBModel<TruthModelType>::solveFemUsingAffineDecompositionFixedPoint( parameter_
     auto vec_bdf_poly = M_backend->newVector( Xh );
 
 
-    for( mybdf->start(*initialGuess); !mybdf->isFinished(); mybdf->next() )
+    for( mybdf->start(*initialGuess); !mybdf->isFinished(); mybdf->next(u) )
     {
         iter=0;
         bdf_coeff = mybdf->polyDerivCoefficient( 0 );
@@ -3901,7 +3901,7 @@ CRBModel<TruthModelType>::solveFemUsingAffineDecompositionFixedPoint( parameter_
                 norm = this->computeNormL2( uold , u );
             iter++;
         } while( norm > increment_fixedpoint_tol && iter<max_fixedpoint_iterations );
-        mybdf->shiftRight(u);
+        //mybdf->shiftRight(u);
     }
     return u;
 }
@@ -4061,7 +4061,7 @@ CRBModel<TruthModelType>::solveFemDualMonolithicFormulation( parameter_type cons
         udu=*dual_initial_field;
     }
 
-    for( mybdf->start(*InitialGuess); !mybdf->isFinished(); mybdf->next() )
+    for( mybdf->start(*InitialGuess); !mybdf->isFinished(); mybdf->next(udu) )
     {
         bdf_coeff = mybdf->polyDerivCoefficient( 0 );
         auto bdf_poly = mybdf->polyDeriv();
@@ -4095,7 +4095,7 @@ CRBModel<TruthModelType>::solveFemDualMonolithicFormulation( parameter_type cons
 
         M_backend_dual->solve( _matrix=Adu , _solution=udu, _rhs=Rhs , _prec=M_preconditioner_dual);
 
-        mybdf->shiftRight(udu);
+        // mybdf->shiftRight(udu);
     }
 
     return udu;
@@ -4230,7 +4230,7 @@ CRBModel<TruthModelType>::solveFemDualUsingAffineDecompositionFixedPoint( parame
     }
 
 
-    for( mybdf->start(udu); !mybdf->isFinished(); mybdf->next() )
+    for( mybdf->start(udu); !mybdf->isFinished(); mybdf->next(udu) )
     {
         iter=0;
         bdf_coeff = mybdf->polyDerivCoefficient( 0 );
@@ -4271,7 +4271,7 @@ CRBModel<TruthModelType>::solveFemDualUsingAffineDecompositionFixedPoint( parame
                 norm = this->computeNormL2( uold , udu );
             iter++;
         } while( norm > increment_fixedpoint_tol && iter<max_fixedpoint_iterations );
-        mybdf->shiftRight(udu);
+        // mybdf->shiftRight(udu);
     }
     return udu;
 }

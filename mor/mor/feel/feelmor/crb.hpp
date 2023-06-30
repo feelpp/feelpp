@@ -1827,7 +1827,7 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu )//, spars
 
     for ( M_bdf_primal->start(u),M_bdf_primal_save->start(u);
           !M_bdf_primal->isFinished() && !M_bdf_primal_save->isFinished();
-          M_bdf_primal->next() , M_bdf_primal_save->next() )
+          M_bdf_primal->next(u) , M_bdf_primal_save->next() )
     {
         int bdf_iter = M_bdf_primal->iteration();
 
@@ -1913,7 +1913,7 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu )//, spars
 
         }while( increment_norm > increment_fixedpoint_tol && iteration < max_fixedpoint_iterations );
 
-        M_bdf_primal->shiftRight( u );
+        // M_bdf_primal->shiftRight( u );
         if ( ! M_model->isSteady() )
         {
             u.close();
