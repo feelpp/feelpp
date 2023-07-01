@@ -1827,7 +1827,7 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu )//, spars
 
     for ( M_bdf_primal->start(u),M_bdf_primal_save->start(u);
           !M_bdf_primal->isFinished() && !M_bdf_primal_save->isFinished();
-          M_bdf_primal->next() , M_bdf_primal_save->next() )
+          M_bdf_primal->next(u) , M_bdf_primal_save->next() )
     {
         int bdf_iter = M_bdf_primal->iteration();
 
@@ -1913,7 +1913,6 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu )//, spars
 
         }while( increment_norm > increment_fixedpoint_tol && iteration < max_fixedpoint_iterations );
 
-        M_bdf_primal->shiftRight( u );
         if ( ! M_model->isSteady() )
         {
             u.close();
@@ -2066,7 +2065,7 @@ CRB<TruthModelType>::offlineFixedPointDual(parameter_type const& mu, element_ptr
 
     for ( M_bdf_dual->start(udu),M_bdf_dual_save->start(udu);
           !M_bdf_dual->isFinished() && !M_bdf_dual_save->isFinished();
-          M_bdf_dual->next() , M_bdf_dual_save->next() )
+          M_bdf_dual->next(udu) , M_bdf_dual_save->next() )
     {
 
         int bdf_iter = M_bdf_dual->iteration();
@@ -2149,8 +2148,6 @@ CRB<TruthModelType>::offlineFixedPointDual(parameter_type const& mu, element_ptr
             iteration++;
 
         }while( increment_norm > increment_fixedpoint_tol && iteration < max_fixedpoint_iterations );
-
-        M_bdf_dual->shiftRight( udu );
 
         //check dual property
         //double term1 = A->energy( udu, u );
