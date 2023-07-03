@@ -73,7 +73,7 @@ public:
 
     typedef ModelCrbBase<ParameterSpaceX, decltype(Pch<5>(Mesh<Simplex<1>>::New()))> super_type;
 
-    Heat1D() : super_type( "heat1d" ) {}
+    Heat1D();
 
     void initBetaQ();
         
