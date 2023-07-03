@@ -2,7 +2,7 @@
 :math:
 :latex:
 
-= CRB application : linearelasticity3d 
+= CRB application : thermalbuilding 
 
 == run offline
 
