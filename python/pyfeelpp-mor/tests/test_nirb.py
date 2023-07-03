@@ -30,7 +30,7 @@ cases_paramsInit, cases_idsInit = list(zip(*casesInit))
 
 
 @pytest.mark.parametrize("dir, cfg, json, rect", cases_params_nirb, ids=cases_ids_nirb)
-def test_nirb(dir, cfg, json, rect, init_feelpp):
+def test_nirb_pod(dir, cfg, json, rect, init_feelpp):
     e = init_feelpp
     casefile = os.path.join(os.path.dirname(__file__), dir, cfg)
     model_path = os.path.join(os.path.dirname(__file__), dir, json)

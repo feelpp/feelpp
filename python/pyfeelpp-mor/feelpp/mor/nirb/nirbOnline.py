@@ -9,13 +9,17 @@ import argparse
 from feelpp.timing import tic,toc
 
 
-def run_online(nirb_on: nirbOnline, Nmu=10, Xi=None, Nb=-1, export=False, computeError=False, rectification=True):
+def run_online(config_nirb, loadPath, nbSnap=-1, Nmu=10, Xi=None, Nb=-1, export=False, computeError=False, rectification=True):
     """Run NIRB online step
 
     Parameters
     ----------
     nirb_on : nirbOnline
         nirbOnline object, with the basis initialized
+    loadPath : str
+        path to load data
+    nbSnap : int, optional
+        number of snapshots to load, by default -1. If -1, the whole basis is loaded
     Nmu : int, optional
         number of parameters if none is given, by default 10
     Xi : list of parameterSpaceElement, optional
@@ -29,6 +33,16 @@ def run_online(nirb_on: nirbOnline, Nmu=10, Xi=None, Nb=-1, export=False, comput
     rectification : bool, optional
         use rectification post process, by default True
     """
+
+    start = time()
+    nirb_on = nirbOnline(**config_nirb)
+    nirb_on.initModel()
+    err = nirb_on.loadData(path=loadPath, nbSnap=nbSnap)
+    finish = time()
+    assert err == 0, "Error while loading data"
+
+    if feelpp.Environment.isMasterRank():
+        print(f"[NIRB Online] Data loaded in {finish-start} s")
     
     if Xi is None:
         s = nirb_on.Dmu.sampling()
@@ -93,7 +107,6 @@ if __name__ == "__main__":
     config_nirb = feelpp.readJson(nirb_file)['nirb']
 
 
-    convergence = args.convergence != 0
     export = args.export != 0
     computeError = args.compute_error != 0
     doRectification = args.rectification != 0
@@ -111,23 +124,7 @@ if __name__ == "__main__":
     else:
         RESPATH = outdir
 
-    start = time()
-    nirb_on = nirbOnline(**config_nirb)
-    nirb_on.initModel()
-    err = nirb_on.loadData(path=RESPATH, nbSnap=nbSnap)
-    finish = time()
-    assert err == 0, "Error while loading data"
-
-    if feelpp.Environment.isMasterRank():
-        print(f"[NIRB Online] Data loaded in {finish-start} s")
-
-    s = nirb_on.Dmu.sampling()
-    Xi = None
-    if args.Xi is not None:
-        N_train = s.readFromFile('./sampling.sample')
-        Xi = s.getVector()
-
-    run_online(nirb_on, Nmu=args.Nparam, Xi=Xi, Nb=Nb, export=export, computeError=computeError, rectification=doRectification)
+    run_online(config_nirb, loadpath=RESPATH, Nmu=args.Nparam, Nb=Nb, export=export, computeError=computeError, rectification=doRectification)
 
 
     feelpp.Environment.saveTimers(display=True)

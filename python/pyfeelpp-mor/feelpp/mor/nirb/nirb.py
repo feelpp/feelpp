@@ -879,6 +879,13 @@ class nirbOffline(ToolboxModel):
                 np.save(coeffCoarseFile, self.coeffCoarse)
                 np.save(coeffFineFile, self.coeffFine)
 
+        info = self.getOfflineInfos()
+        info["comment"] = "Automatically generated from offline code"
+        infoFile = os.path.join(path, f"offline-info.json")
+        if self.worldcomm.isMasterRank():
+            with open(infoFile, 'w') as f:
+                json.dump(info, f, indent=4)
+
         self.outdir = os.path.abspath(path)
         if self.worldcomm.isMasterRank():
             print(f"[NIRB] Data saved in {self.outdir}")
