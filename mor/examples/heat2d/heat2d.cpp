@@ -29,6 +29,11 @@
 
 namespace Feel {
 
+Heat2D::Heat2D() : super( "Heat2D" ) {
+    this->setPluginName( BOOST_PP_STRINGIZE(FEELPP_MOR_PLUGIN_NAME) );
+    this->setPluginLibName( BOOST_PP_STRINGIZE(FEELPP_MOR_PLUGIN_LIBNAME) );
+}
+
 Heat2D::super::betaq_type
 Heat2D::computeBetaQ( parameter_type const& mu )
 {

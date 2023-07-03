@@ -124,7 +124,7 @@ include::heat2d.hpp[lhs2]
 
 Of course, one can use the command line to indicate theses options.
 ----
- ./crb_heat1dapp --heat2d.run.sampling.size 22 --crb.compute-fem-during-online=false --heat1d.export-solution true
+ ./feelpp_mor_heat2dapp --config-file heat2d/heat2d.cfg --heat2d.run.sampling.size 22 --crb.compute-fem-during-online=false --heat1d.export-solution true
 ----
 
 === Execution
