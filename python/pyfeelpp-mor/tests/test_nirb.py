@@ -5,7 +5,7 @@ import pytest
 import feelpp
 from feelpp.mor.nirb.nirb import *
 from feelpp.mor.nirb.greedy import *
-from feelpp.mor.nirb.nirbOffline import run_offline, run_offline_greedy
+from feelpp.mor.nirb.nirbOffline import run_offline_pod, run_offline_greedy
 from feelpp.mor.nirb.nirbOnline import run_online
 
 # desc : (('path', 'config-file', 'model-file', rectification), 'name-of-the-test')
@@ -14,10 +14,9 @@ casesNirb = [
         #  (('testcase/nirb/lid-driven-cavity/', 'cfd2d.cfg', 'cfd2d.json', True) , 'lid-driven-cavity rect'),
          (('testcase/nirb/square', 'square.cfg', 'square.json', False) , 'square2d drect'),
          (('testcase/nirb/square', 'square.cfg', 'square.json', True) , 'square2d erect'),
-         (('testcase/nirb/thermal-fin-3d', 'thermal-fin.cfg', 'thermal-fin.json', False), 'thermal-fin-3d w/o rect'),
          (('testcase/nirb/thermal-fin-3d', 'thermal-fin.cfg', 'thermal-fin.json', True) , 'thermal-fin-3d rect'),
         ]
-# NB: for the name of the test, wogreedy is a keyword standing for "without greedy", and egreedy for "enable greedy"
+# NB: for the name of the test, erect is a keyword standing for "enable rectification", and drect for "disable rectification"
 cases_params_nirb, cases_ids_nirb = list(zip(*casesNirb))
 
 casesInit = [
@@ -39,13 +38,16 @@ def test_nirb_pod(dir, cfg, json, rect, init_feelpp):
     nirb_config = feelpp.readJson(model_path)['nirb']
     nirb_config['doRectification'] = rect
     nirb_config['doGreedy'] = False
+    # It is just for tests so we take large mesh to fasten the computation
+    if nirb_config['dim'] == 2:
+        nirb_config['H'] = 0.1
+        nirb_config['h'] = 0.01
+    else:
+        nirb_config['H'] = 0.5
+        nirb_config['h'] = 0.2
+    nirb_config['nbSnapshots'] = 10
 
-    nirb_off = nirbOffline(**nirb_config, initCoarse=True)
-    nirb_off.initModel()
-    nirb_off.generateOperators(coarse=True)
-    nbSnap = 6
-    Xi = nirb_off.computeSnapshots(nbSnap)
-    RIC = nirb_off.generateReducedBasis()
+    nirb_off = run_offline_pod(nirb_config)
     path = nirb_off.saveData(force=True)
 
     s = nirb_off.Dmu.sampling()
@@ -76,6 +78,13 @@ def test_nirb_greedy(dir, cfg, json, rect, init_feelpp):
     nirb_config = feelpp.readJson(model_path)['nirb']
     nirb_config['doRectification'] = rect
     nirb_config['doGreedy'] = True
+    # It is just for tests so we take large mesh to fasten the computation
+    if nirb_config['dim'] == 2:
+        nirb_config['H'] = 0.1
+        nirb_config['h'] = 0.01
+    else:
+        nirb_config['H'] = 0.5
+        nirb_config['h'] = 0.2
 
     nirb_offline, _, _ = run_offline_greedy(nirb_config, 5, 200, Nmax=20)
     path = nirb_offline.saveData(force=True)

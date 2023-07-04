@@ -20,7 +20,7 @@ add_test (NAME feelpp_mor_python-tests-mpi-mor
 )
 
 
-foreach(fonc test_initializer test_nirb test_nirb_greedy)
+foreach(fonc test_initializer test_nirb_pod test_nirb_greedy)
       add_test( NAME feelpp_mor_python_nirb-${fonc}
         COMMAND ${CMAKE_COMMAND} -E env
         LD_LIBRARY_PATH=${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}:$ENV{LD_LIBRARY_PATH}

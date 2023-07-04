@@ -108,8 +108,8 @@
 
     "nirb":
     {
-        "H": 0.1,
-        "h": "H**2:H",
+        "H": 0.05,
+        "h": 0.0025,
         "dim": 2,
         "order": 1,
         "toolboxType": "heat",
@@ -117,7 +117,7 @@
         "model_path": "$cfgdir/square.json",
         "doRectification": true,
         "doBiorthonormal": false,
-        "nbSnapshots": 60,
+        "nbSnapshots": 64,
         "doGreedy": false,
         "greedy-parameters":
         {

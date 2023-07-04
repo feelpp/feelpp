@@ -46,7 +46,7 @@ def get_config_parameter(config, parameter):
     return config.get(parameter, default_values[parameter])
 
 
-def run_offline(config_nirb):
+def run_offline_pod(config_nirb):
     """Run offline step using POD
 
     Parameters
@@ -137,9 +137,10 @@ if __name__ == "__main__":
     sampling_path = args.sampling_path
 
     if args.print_default_values:
-        print("[NIRB] Default values:")
-        for k, v in default_values.items():
-            print(f"{k:>24}: {v}")
+        if feelpp.Environment.isMasterRank():
+            print("[NIRB] Default values:")
+            for k, v in default_values.items():
+                print(f"{k:>24}: {v}")
         sys.exit(0)
 
     cfg = feelpp.readCfg(config_file)
@@ -154,7 +155,6 @@ if __name__ == "__main__":
     nbSnap = get_config_parameter(config_nirb, 'nbSnapshots')
 
     doGreedy = get_config_parameter(config_nirb, 'doGreedy')
-    print(f"[NIRB] Greedy generation: {doGreedy}")
     doRectification = get_config_parameter(config_nirb, 'doRectification')
     doBiorthonormal = get_config_parameter(config_nirb, 'doBiorthonormal')
     rectPath = ["noRect", "Rect"][doRectification]
@@ -189,7 +189,8 @@ if __name__ == "__main__":
     # Initialize objects and run the offline stage
     start = time.time()
     if doGreedy:
-        print("+------------------------------------------------+\n[NIRB] Running offline greedy")
+        if feelpp.Environment.isMasterRank():
+            print("+------------------------------------------------+\n[NIRB] Running offline greedy")
         Ninit = get_config_parameter(config_nirb, 'greedy-Ninit')
         Ntrain = get_config_parameter(config_nirb, 'greedy-Ntrain')
         tol = get_config_parameter(config_nirb, 'greedy-tol')
@@ -199,8 +200,9 @@ if __name__ == "__main__":
         nirb_off, nirb_on, _ = run_offline_greedy(config_nirb, Ninit, Ntrain, tol=tol,
                 Xi_train=Xi_train, Nmax=Nmax, samplingMode=samplingMode, Mexpr=Mexpr)
     else:
-        print("+------------------------------------------------+\n[NIRB] Running offline")
-        nirb_off = run_offline(config_nirb)
+        if feelpp.Environment.isMasterRank():
+            print("+------------------------------------------------+\n[NIRB] Running offline")
+        nirb_off = run_offline_pod(config_nirb)
 
     tolortho = 1.e-8
 

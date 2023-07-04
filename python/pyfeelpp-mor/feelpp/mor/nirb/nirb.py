@@ -18,6 +18,7 @@ import math
 import pathlib
 from scipy.linalg import eigh
 import json
+from feelpp.timing import tic, toc
 
 import os
 
@@ -406,14 +407,20 @@ class nirbOffline(ToolboxModel):
             for mu in vector_mu:
                 if self.worldcomm.isMasterRank():
                     print(f"[NIRB::computeSnapshots] Computing coarse and fine snapshots with mu = {mu}")
+                tic()
                 self.fineSnapShotList.append(  self.getToolboxSolution(self.tbFine,   mu))
+                toc("compute fine snapshot")
+                tic()
                 self.coarseSnapShotList.append(self.getToolboxSolution(self.tbCoarse, mu))
+                toc("compute coarse snapshot")
 
         else:
             for mu in vector_mu:
                 if self.worldcomm.isMasterRank():
                     print(f"[NIRB::computeSnapshots] Computing fine snapshot with mu = {mu}")
+                tic()
                 self.fineSnapShotList.append(self.getToolboxSolution(self.tbFine, mu))
+                toc("compute fine snapshot")
 
         if self.worldcomm.isMasterRank():
             print(f"[NIRB::computeSnapshots] Number of snapshot computed : {len(self.fineSnapShotList)}" )
