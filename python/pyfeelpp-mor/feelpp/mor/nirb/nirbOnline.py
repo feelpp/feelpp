@@ -1,7 +1,7 @@
 from time import time
 import feelpp
 from feelpp.mor.nirb import nirbOnline
-from feelpp.mor.nirb.utils import WriteVecAppend, init_feelpp_environment
+from feelpp.mor.nirb.utils import init_feelpp_environment
 import pandas as pd
 import os
 from feelpp.mor.nirb.nirb_perf import *
@@ -124,7 +124,5 @@ if __name__ == "__main__":
     else:
         RESPATH = outdir
 
-    run_online(config_nirb, loadpath=RESPATH, Nmu=args.Nparam, Nb=Nb, export=export, computeError=computeError, rectification=doRectification)
+    run_online(config_nirb, RESPATH, Nmu=args.Nparam, Nb=Nb, export=export, computeError=computeError, rectification=doRectification)
 
-
-    feelpp.Environment.saveTimers(display=True)
