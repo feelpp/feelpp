@@ -1310,7 +1310,7 @@ class nirbOnline(ToolboxModel):
             mu = self.Dmu.element()
         nirbSolutions = []
         for n in range(1, self.N+1):
-            nirbSolutions.append(self.getOnlineSol(mu, n))
+            nirbSolutions.append(self.getOnlineSolution(mu, n))
         uh = self.getToolboxSolution(self.tbFine, mu)
 
         self.initExporter("nirb-solutions")
