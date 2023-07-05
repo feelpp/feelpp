@@ -165,8 +165,10 @@ if __name__ == "__main__":
         RESPATH = outdir
 
     # Create the directory if it does not exist to avoid errors
-    if not os.path.exists(RESPATH):
-        os.makedirs(RESPATH)
+    if feelpp.Environment.isMasterRank():
+        if not os.path.exists(RESPATH):
+            os.makedirs(RESPATH)
+    feelpp.Environment.worldComm().globalComm().Barrier()
 
     Xi_train = None
     Xi_train_path = os.path.join(RESPATH, sampling_path)
