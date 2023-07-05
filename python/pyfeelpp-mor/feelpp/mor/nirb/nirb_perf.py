@@ -7,7 +7,7 @@ from petsc4py import PETSc
 """
 Check convergence
 """
-def checkConvergence(nirb_offline: nirbOffline, nirb_online: nirbOnline, Ns=10, Xi_test=None):
+def checkConvergence(nirb_offline: nirbOffline, nirb_online: nirbOnline, Ns=10, Xi_test=None, h1=False, relative=False):
     """ Check the convergence of the offline step
 
     Parameters:
@@ -27,6 +27,11 @@ def checkConvergence(nirb_offline: nirbOffline, nirb_online: nirbOnline, Ns=10, 
     """
     if nirb_offline.worldcomm.isMasterRank():
         print(f"[NIRB::checkConvergence] Compute offline convergence error")
+
+    if h1:
+        l2Mat, h1Mat = nirb_online.generateOperators(h1=True)
+    else :
+        l2Mat = nirb_online.generateOperators()
 
     if Xi_test is None:
         s = nirb_offline.Dmu.sampling()
@@ -51,6 +56,8 @@ def checkConvergence(nirb_offline: nirbOffline, nirb_online: nirbOnline, Ns=10, 
     Uhn = nirb_offline.Xh.element()
 
     Error = {'N':[], 'idx':[], 'l2(uh-uHn)':[], 'l2(uh-uHn)rec':[], 'l2(uh-uhn)' : [], 'l2(uh-uH)':[]}
+    if h1:
+        Error.update({'h1(uh-uHn)':[],'h1(uh-uHn)rec':[],'h1(uh-uhn)':[], 'h1(uh-uH)':[]})
 
     pas = 1 if (Nbasis < 50) else 5
     for size in tqdm(range(1, Nbasis + 1, pas), desc=f"[NIRB::checkConvergence] Compute convergence error", ascii=False, ncols=120):
@@ -66,17 +73,31 @@ def checkConvergence(nirb_offline: nirbOffline, nirb_online: nirbOnline, Ns=10, 
             Uhn.add(-1, fineSolutions[j])               # Uhn         = u_h^Ncal(mu) - u_h^\N(mu)
             UhInt = fineSolutions[j] - interpolatedSolutions[j]
 
-            nirbError           = np.sqrt(abs(nirb_offline.l2ScalarProductMatrix.energy(UnirbNoRect, UnirbNoRect)))
-            nirbErrorRect       = np.sqrt(abs(nirb_offline.l2ScalarProductMatrix.energy(UnirbRect, UnirbRect)))
-            fineProjectionError = np.sqrt(abs(nirb_offline.l2ScalarProductMatrix.energy(Uhn, Uhn)))
-            interpolationError  = np.sqrt(abs(nirb_offline.l2ScalarProductMatrix.energy(UhInt, UhInt)))
 
-            Error['l2(uh-uHn)'].append(nirbError)
-            Error['l2(uh-uHn)rec'].append(nirbErrorRect)
-            Error['l2(uh-uhn)'].append(fineProjectionError)
-            Error['l2(uh-uH)'].append(interpolationError)
+            rel                   = nirb_online.normMat(fineSolutions[j], l2Mat) if relative else 1.
+            nirbErrorL2           = nirb_online.normMat(UnirbNoRect, l2Mat) / rel
+            nirbErrorRectL2       = nirb_online.normMat(UnirbRect, l2Mat) / rel
+            fineProjectionErrorL2 = nirb_online.normMat(Uhn, l2Mat) / rel
+            interpolationErrorL2  = nirb_online.normMat(UhInt, l2Mat) / rel
+
             Error['N'].append(size)
             Error['idx'].append(j)
+            Error['l2(uh-uHn)'].append(nirbErrorL2)
+            Error['l2(uh-uHn)rec'].append(nirbErrorRectL2)
+            Error['l2(uh-uhn)'].append(fineProjectionErrorL2)
+            Error['l2(uh-uH)'].append(interpolationErrorL2)
+
+            if h1:
+                rel = nirb_online.normMat(fineSolutions[j], h1Mat) if relative else 1.
+                nirbErrorH1           = nirb_online.normMat(UnirbNoRect, h1Mat) / rel
+                nirbErrorRectH1       = nirb_online.normMat(UnirbRect, h1Mat) / rel
+                fineProjectionErrorH1 = nirb_online.normMat(Uhn, h1Mat) / rel
+                interpolationErrorH1  = nirb_online.normMat(UhInt, h1Mat) / rel
+
+                Error['h1(uh-uHn)'].append(nirbErrorH1)
+                Error['h1(uh-uHn)rec'].append(nirbErrorRectH1)
+                Error['h1(uh-uhn)'].append(fineProjectionErrorH1)
+                Error['h1(uh-uH)'].append(interpolationErrorH1)
 
     return Error
 

@@ -235,8 +235,7 @@ if __name__ == "__main__":
             Ns = 30
             Xi_test = generatedAndSaveSampling(nirb_off.Dmu, Ns, path=Xi_test_path, samplingMode="log-random")
 
-        Err = checkConvergence(nirb_off, nirb_on, Ns=30, Xi_test=Xi_test)
-        # Err = nirb_off.checkConvergence(Ns=30, Xi_test=Xi_test)
+        Err = checkConvergence(nirb_off, nirb_on, Ns=30, Xi_test=Xi_test, h1=True)
         df = pd.DataFrame(Err)
         errorfile = os.path.join(RESPATH, "offlineError.csv")
         df.to_csv(errorfile, index=False)

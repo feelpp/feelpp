@@ -565,7 +565,7 @@ class nirbOffline(ToolboxModel):
         sum_eigenValues = eigenValues.sum()
         RIC = []
 
-        for i in range(Nmode):
+        for i in tqdm(range(Nmode), desc=f"[NIRB::PODReducedBasis] Compute basis functions", ascii=False, ncols=120):
             vec = self.Xh.element()
             vec.setZero()
             for j in range(Nsnap):
@@ -1127,7 +1127,7 @@ class nirbOnline(ToolboxModel):
 
         return R
 
-    def generateOperators(self,h1=False):
+    def generateOperators(self, h1=False):
         """Assemble L2 and H1 operators associated to the fine toolbox
         """
         if h1:
@@ -1136,7 +1136,7 @@ class nirbOnline(ToolboxModel):
             l2Mat.to_petsc().close()
             h1Mat.to_petsc().close()
             return l2Mat, h1Mat
-        else :
+        else:
             l2Mat = FppOp.mass(test=self.Xh, trial=self.Xh, range=feelpp.elements(self.tbFine.mesh()))
             l2Mat.to_petsc().close()
             return l2Mat
