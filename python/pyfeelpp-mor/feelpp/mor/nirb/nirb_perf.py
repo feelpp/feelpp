@@ -1,4 +1,6 @@
+import sys, os
 import numpy as np
+import pandas as pd
 from tqdm import tqdm
 from feelpp.mor.nirb import nirbOffline, nirbOnline
 from petsc4py import PETSc
@@ -237,3 +239,49 @@ def computeErrorsH(nirb_on, tbRef, mu, path=None, name=None):
     error.append((Uref_int - uh).to_petsc().vec().norm(PETSc.NormType.NORM_INFINITY))
 
     return error
+
+
+def plotConvergenceError(filePath: str, norm='l2'):
+    df = pd.read_csv(filePath)
+
+    N_values = df['N'].unique()
+    N_values.sort()
+
+    df_array = np.zeros((len(N_values), 13))
+    df_array[:,0] = N_values
+
+    for i, N in enumerate(N_values):
+        df_N = df[df['N'] == N]
+
+        mins = df_N.min()
+        maxs = df_N.max()
+        means = df_N.mean()
+
+        df_array[i,1] = mins[f'{norm}(uh-uHn)']
+        df_array[i,2] = means[f'{norm}(uh-uHn)']
+        df_array[i,3] = maxs[f'{norm}(uh-uHn)']
+
+        df_array[i,4] = mins[f'{norm}(uh-uHn)rec']
+        df_array[i,5] = means[f'{norm}(uh-uHn)rec']
+        df_array[i,6] = maxs[f'{norm}(uh-uHn)rec']
+
+        df_array[i,7] = mins[f'{norm}(uh-uH)']
+        df_array[i,8] = means[f'{norm}(uh-uH)']
+        df_array[i,9] = maxs[f'{norm}(uh-uH)']
+
+        df_array[i,10] = mins[f'{norm}(uh-uhn)']
+        df_array[i,11] = means[f'{norm}(uh-uhn)']
+        df_array[i,12] = maxs[f'{norm}(uh-uhn)']
+
+    df_out = pd.DataFrame(df_array, columns=['N', f'{norm}NirbMin', f'{norm}NirbMean', f'{norm}NirbMax', f'{norm}NirbRectMin', f'{norm}NirbRectMean', f'{norm}NirbRectMax', f'{norm}IntMin', f'{norm}IntMean', f'{norm}IntMax', f'{norm}ProjMin', f'{norm}ProjMean', f'{norm}ProjMax'])
+    df_out.to_csv(f'error{norm}.csv', index=False)
+    print(f"File error{norm}.csv saved in {os.getcwd()}")
+
+
+if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        if len(sys.argv) > 2:
+            plotConvergenceError(sys.argv[1], sys.argv[2])
+        plotConvergenceError(sys.argv[1])
+    else:
+        print('Usage: python3 convergence.py <path to csv file> <norm> (l2 or h1, default l2)')
