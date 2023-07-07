@@ -391,6 +391,7 @@ class nirbOffline(ToolboxModel):
         if Xi_train is None:        # Generate a set of parameters
             s = self.Dmu.sampling()
             s.sampling(numberOfInitSnapshots, samplingMode)
+            s.writeOnFile("Xi_train_nirb.sample")
             vector_mu = s.getVector()
         else:                       # Select in Xi_train a set of parameters
             if self.worldcomm.isMasterRank():
@@ -1049,7 +1050,7 @@ class nirbOnline(ToolboxModel):
 
         return uhN
 
-    def getOnlineSolution(self, mu, Nb=-1, interSol=None, doRectification=-1):
+    def getOnlineSolution(self, mu, Nb=-1, interSol=None, doRectification=-1, regularizationParameter=1e-10):
         """Get the Online nirb approximate solution
 
         Parameters
@@ -1076,7 +1077,7 @@ class nirbOnline(ToolboxModel):
         compressedSolution = self.getCompressedSolution(mu=mu, Nb=Nb, solution=interSol)
 
         if doRectification:
-            rectMat = self.getRectificationMat(Nb)
+            rectMat = self.getRectificationMat(Nb, regularizationParameter=regularizationParameter)
             coef = rectMat @ compressedSolution
             for i in range(Nb):
                 onlineSol.add(float(coef[i]), self.reducedBasis[i])
@@ -1090,11 +1091,13 @@ class nirbOnline(ToolboxModel):
         return onlineSol
 
     def getRectificationMat(self, Nb, regularizationParameter=1.e-10):
+        if regularizationParameter != 1.e-10:
+            return self.getRectification(self.coeffCoarse, self.coeffFine, regularizationParameter=regularizationParameter, Nb=Nb)
         if Nb not in self.RectificationMat:
-            self.RectificationMat[Nb] = self.getRectification(self.coeffCoarse, self.coeffFine, regularizationParameter=regularizationParameter, Nb=Nb)
+            self.RectificationMat[Nb] =self.getRectification(self.coeffCoarse, self.coeffFine, regularizationParameter=regularizationParameter, Nb=Nb)
         return self.RectificationMat[Nb]
 
-    def getRectification(self, coeffCoarse, coeffFine, regularizationParameter=1.e-10, Nb=None):
+    def getRectification(self, coeffCoarse, coeffFine, regularizationParameter=1.e-10, Nb=-1):
         """Compute rectification matrix associated to number of basis function selected
                 in the online step.
 
@@ -1103,13 +1106,13 @@ class nirbOnline(ToolboxModel):
             coeffCoarse (numpy.array): the coefficient matrix gieven by (U^H_i, phi_j)
             coeffFine (numpy.array): the coefficient matrix (U^h_i, phi_j)
             regularizationParameter (float, optional): regularization parameter. Defaults to 1.e-10.
-            Nb (int, optional): number of basis function selected in the online step. Defaults to None, in which case all the basis are used.
+            Nb (int, optional): number of basis function selected in the online step. Defaults to -1, in which case all the basis are used.
 
         Returns:
         --------
             R (numpy.array): the rectification matrix
         """
-        if Nb is None: Nb = self.N
+        if Nb == -1: Nb = self.N
 
         CH = coeffCoarse[:Nb, :Nb]
         Ch = coeffFine[:Nb, :Nb]

@@ -9,7 +9,7 @@ from petsc4py import PETSc
 """
 Check convergence
 """
-def checkConvergence(nirb_offline: nirbOffline, nirb_online: nirbOnline, Ns=10, Xi_test=None, h1=False, relative=False):
+def checkConvergence(nirb_offline: nirbOffline, nirb_online: nirbOnline, Ns=10, Xi_test=None, h1=False, relative=False, regularizationParameter=1e-10):
     """ Check the convergence of the offline step
 
     Parameters:
@@ -68,7 +68,7 @@ def checkConvergence(nirb_offline: nirbOffline, nirb_online: nirbOnline, Ns=10, 
 
             Uhn         = nirb_online.fineProjection(fineSolutions[j], size) # get reduced sol in a basis function space
             UnirbNoRect = nirb_online.getOnlineSolution(mu, Nb=size, interSol=interpolatedSolutions[j], doRectification=False)
-            UnirbRect   = nirb_online.getOnlineSolution(mu, Nb=size, interSol=interpolatedSolutions[j], doRectification=True)
+            UnirbRect   = nirb_online.getOnlineSolution(mu, Nb=size, interSol=interpolatedSolutions[j], doRectification=True, regularizationParameter=regularizationParameter)
 
             UnirbNoRect.add(-1, fineSolutions[j])       # UnirbNoRect = u_h^Ncal(mu) - u_Hh^Ncal(mu)
             UnirbRect.add(-1, fineSolutions[j])         # UnirbRect   = u_h^Ncal(mu) - Ru_Hh^Ncal(mu)
