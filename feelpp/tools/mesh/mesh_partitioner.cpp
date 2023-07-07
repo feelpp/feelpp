@@ -47,7 +47,7 @@ int main( int argc, char** argv )
 	po::options_description meshpartoptions( "Mesh Partitioner options" );
 	meshpartoptions.add_options()
         ( "dim", po::value<int>()->default_value( 3 ), "mesh dimension" )
-        ( "topdim-equal-realdim", po::value<bool>()->default_value( true ), "mesh dimension" )
+        ( "realdim", po::value<int>(), "real dimension of mesh nodes" )
         ( "shape", po::value<std::string>()->default_value( "simplex" ), "mesh basic unit" )
         ( "order", po::value<int>()->default_value( 1 ), "mesh geometric order" )
         ( "by-markers", "partitioning by markers" )
@@ -73,7 +73,16 @@ int main( int argc, char** argv )
                      _directory=".",_subdir=false );
 
     int dim = ioption(_name="dim");
-    int realdim = boption(_name="topdim-equal-realdim")? dim : dim + 1;
+    int realdim;
+    if ( Environment::vm().count("realdim"))
+    {
+        realdim = ioption(_name="realdim");
+        CHECK( realdim >= dim && realdim <=3 ) << "Realdim must be larger thank dim and at most 3";     
+    }
+    else
+    {
+        realdim=dim;
+    }
     std::string shape = soption(_name="shape");
     int order = ioption(_name="order");
 
