@@ -86,3 +86,6 @@
 	path = feelpp/contrib/specx
 	url = https://github.com/feelpp/specx.git
   
+[submodule "feelpp/contrib/eigenrand"]
+	path = feelpp/contrib/eigenrand
+	url = https://github.com/feelpp/EigenRand.git

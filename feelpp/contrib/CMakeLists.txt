@@ -833,6 +833,39 @@ if ( FEELPP_ENABLE_SPECX )
   set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} specx")
 endif()
 
+option(FEELPP_ENABLE_EIGENRAND "Enable EigenRand" ON)
+
+if(FEELPP_ENABLE_EIGENRAND)
+  message(STATUS "------------------------------------------------------------")
+  message(STATUS "Configuring EigenRand")
+
+  # set(FETCHCONTENT_SOURCE_DIR_EIGENRAND ${CMAKE_CURRENT_SOURCE_DIR}/EIGENRAND)
+  # patch includes fix for 18.04 compilation
+  set(EIGENRAND_BUILD_TEST OFF)
+  set(FETCHCONTENT_SOURCE_DIR_EIGENRAND ${CMAKE_CURRENT_SOURCE_DIR}/eigenrand)
+  FetchContent_Declare(EIGENRAND GIT_REPOSITORY https://github.com/feelpp/EigenRand.git GIT_TAG HEAD)
+
+  FetchContent_MakeAvailable(eigenrand)
+  add_library(feelpp_eigenrand INTERFACE)
+
+  # set_target_properties(eigenrand PROPERTIES OUTPUT_NAME "feelpp_eigenrand")
+  target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_EIGENRAND)
+  target_link_libraries(feelpp_eigenrand INTERFACE eigenrand)
+  add_library(Feelpp::feelpp_eigenrand ALIAS feelpp_eigenrand)
+  target_include_directories(feelpp_eigenrand INTERFACE
+    $<BUILD_INTERFACE:${eigenrand_BINARY_DIR}/>
+    $<BUILD_INTERFACE:${eigenrand_SOURCE_DIR}/>
+    $<INSTALL_INTERFACE:include/feelpp>)
+  install(TARGETS feelpp_eigenrand eigenrand EXPORT feelpp-contrib-export-targets
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+  )
+  target_link_libraries(feelpp_contrib INTERFACE feelpp_eigenrand)
+  set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} eigenrand")
+endif()
+
 
 
 
