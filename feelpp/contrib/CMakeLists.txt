@@ -843,7 +843,7 @@ if(FEELPP_ENABLE_EIGENRAND)
   # patch includes fix for 18.04 compilation
   set(EIGENRAND_BUILD_TEST OFF)
   set(FETCHCONTENT_SOURCE_DIR_EIGENRAND ${CMAKE_CURRENT_SOURCE_DIR}/eigenrand)
-  FetchContent_Declare(EIGENRAND GIT_REPOSITORY https://github.com/feelpp/EigenRand.git GIT_TAG HEAD)
+  FetchContent_Declare(EIGENRAND GIT_REPOSITORY https://github.com/feelpp/EigenRand.git GIT_TAG 0f25f9ef26d48ec09510d2e8ff07cb12e8f3fa81)
 
   FetchContent_MakeAvailable(eigenrand)
   add_library(feelpp_eigenrand INTERFACE)
