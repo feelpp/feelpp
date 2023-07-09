@@ -17,7 +17,7 @@ except ImportError as e:
     print('Import feelpp.toolboxes.fluid failed: Feel++ Toolbox Fluid is not available')
     pass  # module doesn't exist, deal with it.
 
-def fluid( dim=2, orderVelocity=2, orderPressure=1, orderGeometry=1, worldComm=None, subprefix="", modelRep=None ):
+def fluid( dim=2, orderVelocity=2, orderPressure=1, orderGeometry=1, worldComm=None, prefix="fluid", keyword="fluid", subprefix="", modelRep=None ):
     """create a fluid toolbox solver
     Keyword arguments:
     dim -- the dimension (default: 2)
@@ -25,6 +25,9 @@ def fluid( dim=2, orderVelocity=2, orderPressure=1, orderGeometry=1, worldComm=N
     orderPressure -- the polynomial order for the pressure (default: 1)
     orderGeometry -- the polynomial order for the geometry (default: 1)
     worldComm -- the parallel communicator for the mesh (default: feelpp.Environment::worldCommPtr())
+    keyword -- the json keyword for the toolbox (default: "fluid")
+    prefix -- the prefix for the toolbox for the command line and .cfg options (default: "fluid")
+    subprefix -- the subprefix for the toolbox for the command line and .cfg options (default: "")
     """
     if not has_fluid:
         raise Exception('Fluid toolbox is not enabled in Feel++')
@@ -37,4 +40,4 @@ def fluid( dim=2, orderVelocity=2, orderPressure=1, orderGeometry=1, worldComm=N
         raise RuntimeError('Fluid solver '+key+' not existing')
     if modelRep is None:
         modelRep=ModelBaseRepository()
-    return _cfds[key]( "fluid", "fluid", worldComm, "", modelRep )
+    return _cfds[key]( prefix=prefix, keyword=keyword, worldComm=worldComm, subprefix=subprefix, modelRep=modelRep )

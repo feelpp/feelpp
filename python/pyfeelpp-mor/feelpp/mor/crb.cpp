@@ -240,7 +240,8 @@ PYBIND11_MODULE( _mor, m )
             "loadDBMetaData", []( CRBModelDB& db, std::string const& from, std::string const& name )
             { return db.loadDBMetaData( from, name ); },
             py::arg( "attribute" ) = crb::attributeToString( crb::attribute::last_modified ), py::arg( "data" ) = std::nullopt )
-        .def( "loadDBPlugin", static_cast<std::shared_ptr<CRBPluginAPI> ( CRBModelDB::* )( CRBModelDB::MetaData const&, std::string ) const>( &CRBModelDB::loadDBPlugin ), py::arg( "metadata" ), py::arg( "load" ) = "rb", "load DB plugin", pybind11::return_value_policy::reference );
+        .def( "loadDBPlugin", static_cast<std::shared_ptr<CRBPluginAPI> ( CRBModelDB::* )( CRBModelDB::MetaData const&, std::string const& ) const>( &CRBModelDB::loadDBPlugin ), py::arg( "metadata" ), py::arg( "load" ) = "rb", "load DB plugin", pybind11::return_value_policy::reference )
+        .def( "loadDBPlugin", static_cast<std::shared_ptr<CRBPluginAPI> ( CRBModelDB::* )( CRBModelDB::MetaData const&, std::string const&, std::string const&) const>( &CRBModelDB::loadDBPlugin ), py::arg( "metadata" ), py::arg( "load" ) = "rb", py::arg( "pluginlibdir" ), "load DB plugin", pybind11::return_value_policy::reference );
     py::class_<CRBModelParameter>(m,"CRBModelParamater")
         .def(py::init<>())
         .def("name",&CRBModelParameter::name, "name of the parameter")
@@ -315,10 +316,12 @@ PYBIND11_MODULE( _mor, m )
 
     py::class_<ParameterSpaceX::Sampling, std::shared_ptr<ParameterSpaceX::Sampling>>(m,"ParameterSpaceSampling")
         .def(py::init<std::shared_ptr<ParameterSpaceX>,int,std::shared_ptr<ParameterSpaceX::Sampling>>())
-        .def("sampling",&ParameterSpaceX::Sampling::sampling)
+        .def("sampling",&ParameterSpaceX::Sampling::sampling, "create a sampling with global number of samples", py::arg("n"), py::arg("samplingMode"))
         .def("__getitem__", &std_item<ParameterSpaceX::Sampling>::get,py::return_value_policy::reference)
         .def("__setitem__", &std_item<ParameterSpaceX::Sampling>::set)
-        .def("getVector", &std_item<ParameterSpaceX::Sampling>::getVector)
+        .def("getVector", &std_item<ParameterSpaceX::Sampling>::getVector, "return list of parameters of the sample")
+        .def("writeOnFile", &ParameterSpaceX::Sampling::writeOnFile, "write the sampling on file\nin the file we write :\nmu_0= [ value0 , value1 , ... ]\nmu_1= [ value0 , value1 , ... ]", py::arg("filename"))
+        .def("readFromFile", &ParameterSpaceX::Sampling::readFromFile, "read the sampling from file\nin the file we expect :\nmu_0= [ value0 , value1 , ... ]\nmu_1= [ value0 , value1 , ... ]\nreturn the size of the sampling", py::arg("filename"))
         .def("__len__", &std_item<ParameterSpaceX::Sampling>::size)
         ;
 

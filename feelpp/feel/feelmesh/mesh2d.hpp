@@ -93,7 +93,7 @@ class Mesh2D
 
     using index_type = typename super::index_type;
     using size_type = typename super::size_type;
-    
+
     typedef Elements<Shape,T> super_elements;
     typedef typename super_elements::elements_type elements_type;
     typedef typename super_elements::element_type element_type;
@@ -210,7 +210,7 @@ class Mesh2D
         return super_elements::element_type::numLocalEdges;
     }
 
-    //! 
+    //!
     //! the number of topological faces per element
     //! @return the number of topological faces per element
     //!
@@ -307,70 +307,52 @@ class Mesh2D
     /**
      * update permutation of entities of co-dimension 1
      */
-    void updateEntitiesCoDimensionOnePermutation() 
-    {
-        //updateEntitiesCoDimensionOnePermutation( mpl::bool_<Shape::nDim==Shape::nRealDim>() );
-        updateEntitiesCoDimensionOnePermutation( mpl::bool_<true>() );
-    }
-
-    void
-    updateEntitiesCoDimensionOnePermutation( mpl::bool_<false> )
-    {
-    }
-
-    void updateEntitiesCoDimensionOnePermutation( mpl::bool_<true> )
-    {
-        for ( typename super_elements::element_iterator elt_it = this->beginElement();
-              elt_it != this->endElement(); ++elt_it )
+    void updateEntitiesCoDimensionOnePermutation()
         {
-            auto & elt = elt_it->second;
-            for ( uint16_type j = 0; j < element_type::numEdges; j++ )
+            std::vector<index_type> pointIdInElt0(element_type::numVertices);
+            std::vector<index_type> pointIdInElt1(element_type::numVertices);
+
+            for ( typename super_elements::element_iterator elt_it = this->beginElement();
+                  elt_it != this->endElement(); ++elt_it )
             {
-                if ( !elt.hasFace( j ) )
-                    continue;
-                auto const& face = elt.face( j );
+                auto & elt = elt_it->second;
+                for ( uint16_type f = 0; f < element_type::numVertices; ++f )
+                    pointIdInElt0[f] = elt.point( f ).id();
 
-                // if on boundary don't do anything
-                if ( face.isOnBoundary() || !face.isConnectedTo1() )
-                    continue;
+                for ( uint16_type j = 0; j < element_type::numEdges; j++ )
+                {
+                    if ( !elt.hasFace( j ) )
+                        continue;
+                    auto const& face = elt.face( j );
 
-                bool applyOnFirstConnection = false;
-                if ( face.isInterProcessDomain() )
-                {
-                    if ( face.partition1() < face.partition2() )
-                    {
-                        if ( face.proc_first() == face.partition2() )
-                            applyOnFirstConnection = true;
-                    }
-                    else
-                    {
-                        if ( face.proc_first() == face.partition1() )
-                            applyOnFirstConnection = true;
-                    }
-                }
+                    if ( !(face.isConnectedTo0() && face.isConnectedTo1()) )
+                        continue;
 
-                if ( applyOnFirstConnection )
-                {
-                    if ( face.ad_first() == elt.id() )
-                        elt.setEdgePermutation( face.pos_first(), edge_permutation_type( edge_permutation_type::REVERSE_PERMUTATION ) );
-                }
-                else
-                {
-                    if ( face.ad_second() == elt.id() )
-                        elt.setEdgePermutation( face.pos_second(), edge_permutation_type( edge_permutation_type::REVERSE_PERMUTATION ) );
-                }
+                    bool eltUseConnection0 = face.element0().id() == elt.id();
+                    // only change in connection 1
+                    if ( eltUseConnection0 )
+                        continue;
 
-#if 0
-                if ( elt.face( j ).isConnectedTo1() &&
-                     elt.face( j ).ad_second() == elt.id() )
-                {
-                    elt.setEdgePermutation( elt.face( j ).pos_second(),
-                                            edge_permutation_type( edge_permutation_type::REVERSE_PERMUTATION ) );
+                    uint16_type idInElement0 = eltUseConnection0? face.idInElement0() : face.idInElement1();
+                    uint16_type idInElement1 = eltUseConnection0? face.idInElement1() : face.idInElement0();
+                    auto const& elt0 = elt;
+                    auto const& elt1 = eltUseConnection0? face.element1() : face.element0();
+
+                    for ( uint16_type f = 0; f < element_type::numVertices; ++f )
+                        pointIdInElt1[f] = elt1.point( f ).id();
+
+                    index_type e0_0 = pointIdInElt0[elt0.e2p(idInElement0,0)];
+                    index_type e0_1 = pointIdInElt0[elt0.e2p(idInElement0,1)];
+                    index_type e1_0 = pointIdInElt1[elt1.e2p(idInElement1,0)];
+                    index_type e1_1 = pointIdInElt1[elt1.e2p(idInElement1,1)];
+
+                    if ( eltUseConnection0 )
+                        continue;
+                    if ( e0_0 != e1_0 )
+                        elt.setEdgePermutation( idInElement0, edge_permutation_type( edge_permutation_type::REVERSE_PERMUTATION ) );
                 }
-#endif
             }
         }
-    }
 
     /**
      * update the entities of co-dimension 2

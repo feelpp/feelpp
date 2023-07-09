@@ -1,0 +1,103 @@
+{
+    "PostProcess":
+    {
+        "use-model-name":1,
+        "heat":
+        {
+            "Exports":
+            {
+                "fields":["temperature", "marker", "pid"],
+                "expr":
+                {
+                    "heat_T_C":"heat_T-273.15:heat_T"
+                }
+            },
+            "Measures":
+            {
+                "Statistics":
+                {
+                    "eye":
+                    {
+                        "type":["min","max","mean"],
+                        "field":"temperature"
+                    },
+                    "cornea":
+                    {
+                        "type":["min","max","mean"],
+                        "field":"temperature",
+                        "markers":"Cornea"
+                    }
+                },
+                "Points":
+                {
+                    "O":
+                    {
+                        "coord": "{-0.013597, 0, 0}",
+                        "expressions": {
+                            "TO_C": "heat_T-273.15:heat_T",
+                            "TO": "heat_T:heat_T"
+                        }
+                    },
+                    "A":
+                    {
+                        "coord": "{-0.0126, 0, 0}",
+                        "expressions": {"TA_C": "heat_T-273.15:heat_T"}
+                    },
+                    "B":
+                    {
+                        "coord": "{-0.00979266, 0, 0}",
+                        "expressions": {"TB_C": "heat_T-273.15:heat_T"}
+                    },
+                    "B1":
+                    {
+                        "coord": "{-0.009524,0.00194062,0}",
+                        "expressions": {"TB1_C": "heat_T-273.15:heat_T"}
+                    },
+                    "C":
+                    {
+                        "coord": "{-0.00615819,0,0}",
+                        "expressions": {"TC_C": "heat_T-273.15:heat_T"}
+                    },
+                    "D":
+                    {
+                        "coord": "{0.0106, 0, 0}",
+                        "expressions": {"TD_C": "heat_T-273.15:heat_T"}
+                    },
+                    "D1":
+                    {
+                        "coord": "{0.011, 0, 0}",
+                        "expressions": {"TD1_C": "heat_T-273.15:heat_T"}
+                    },
+                    "F":
+                    {
+                        "coord": "{0.0115, 0, 0}",
+                        "expressions": {"TF_C": "heat_T-273.15:heat_T"}
+                    },
+                    "G":
+                    {
+                        "coord": "{0.0125, 0, 0}",
+                        "expressions": {"TG_C": "heat_T-273.15:heat_T"}
+                    },
+                    "axis":
+                    {
+                        "over_geometry":
+                        {
+                            "segment":
+                            {
+                                "point1": "{-0.013597, 0, 0}",
+                                "point2": "{0.0125, 0, 0}",
+                                "n_points": "100"
+                            }
+                        },
+                        "fields": "temperature",
+                        "include_coordinates": 1,
+                        "output":
+                        {
+                           "type":"table"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
