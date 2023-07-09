@@ -61,8 +61,8 @@ else()
   feelpp_get_environment()
   set(FEELPP_DIR ${CMAKE_INSTALL_PREFIX})
    set(FEELPP_FOUND ON)
-  set(FEELPP_TOOLBOXES_FOUND ON)
-  set(FEELPP_MOR_FOUND ON)
+  set(FEELPP_TOOLBOXES_FOUND ${FEELPP_ENABLE_TOOLBOXES})
+  set(FEELPP_MOR_FOUND ${FEELPP_ENNABLE_MOR})
 endif()
 
 find_package(Python3 COMPONENTS Interpreter Development)
@@ -112,9 +112,28 @@ macro(feelpp_add_pymodule)
   endif()
 endmacro(feelpp_add_pymodule)
 
+option(FEELPP_ENABLE_PYTHON3_VENV ON)
+if (FEELPP_ENABLE_PYTHON3_VENV)
+  set(REQUIREMENTS ${CMAKE_CURRENT_SOURCE_DIR}/requirements.txt)
+  set(VENV ${CMAKE_CURRENT_BINARY_DIR}/venv)
+  set(BIN_DIR ${VENV}/bin)
+  set(PYTHON ${BIN_DIR}/python)
+  
+  add_custom_command(
+    OUTPUT ${PYTHON}
+    DEPENDS venv requirements.txt
+    COMMAND ${Python3_EXECUTABLE} -m venv ${VENV}
+    COMMAND ${BIN_DIR}/pip install -r ${CMAKE_CURRENT_SOURCE_DIR}/requirements.txt 
+    DEPENDS ${REQUIREMENTS}
+  )
+  add_custom_target(venv DEPENDS ${PYTHON})
+  #add_dependencies(test venv)
+endif(FEELPP_ENABLE_PYTHON3_VENV)
+
 #include(feelpp.module.pyfeelpp)
 if ( FEELPP_FOUND )
 add_subdirectory(pyfeelpp)
+add_subdirectory(notebooks)
 endif()
 
 # TOOLBOXES needs to be defined for pyfeelpp-toolboxes 

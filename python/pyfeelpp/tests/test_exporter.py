@@ -7,15 +7,19 @@ def run(m, geo):
     m2d = feelpp.load(m, mesh_name, 0.1)
 
     Xh = feelpp.functionSpace(space="Pch", mesh=m2d, order=1)
+    Xhv = feelpp.functionSpace(space="Pchv", mesh=m2d, order=1)
     P0h = feelpp.functionSpace(space="Pdh", mesh=m2d, order=0)
     #u=Xh.elementFromExpr("{sin(2*pi*x)*cos(pi*y)}:x:y")
     u = Xh.element()
     u.on(range=feelpp.elements(m2d), expr=feelpp.expr("x*x:x"))
+    v = Xhv.element()
+    v.on(range=feelpp.elements(m2d), expr=feelpp.expr("{x,y}:x:y" if dim==2 else "{x,y,z}:x:y:z",row=dim))
 
     e = feelpp.exporter(mesh=m2d, name="feelpp"+str(m.dimension())+"d")
-    e.addScalar("un", 1.)
-    e.addP1c("u", u)
-    e.addP0d("pid", feelpp.pid(P0h))
+    e.add("un", 1.)
+    e.add("u", u)
+    e.add("v", v)
+    e.add("pid", feelpp.pid(P0h))
     e.save()
 
 

@@ -1,5 +1,22 @@
 {
 
+    "CRBParameters":
+    {
+        {% for item in fins %}"k_{{ item }}":
+        {
+            "value":"0.1",
+            "min":"0.1",
+            "max":"10"
+        },
+        {% endfor %}
+        "Bi":
+        {
+            "value":"0.01",
+            "min":"0.01",
+            "max":"1"
+        }
+    },
+
     "nirb":
     {
         "H": 0.1,

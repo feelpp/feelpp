@@ -224,7 +224,8 @@ public :
     template <typename PotentialFieldType>
     auto modelFields( PotentialFieldType const& field_p, std::string const& prefix = "" ) const
         {
-            return Feel::FeelModels::modelFields( modelField<FieldCtx::FULL>( FieldTag::potential(this), prefix, "electric-potential", field_p, "P", this->keyword() ) );
+            return Feel::FeelModels::modelFields( modelField<FieldCtx::FULL>( FieldTag::potential(this), prefix, "electric-potential", field_p, "P", this->keyword() ),
+                                                  this->template modelFieldsMeshes<mesh_type>( prefix ) );
         }
 
     auto trialSelectorModelFields( size_type startBlockSpaceIndex = 0 ) const
@@ -241,9 +242,11 @@ public :
         {
             auto seToolbox = this->symbolsExprToolbox( mfields );
             auto seParam = this->symbolsExprParameter();
+            auto seMeshes = this->template symbolsExprMeshes<mesh_type,false>();
             auto seMat = this->materialsProperties()->symbolsExpr();
             auto seFields = mfields.symbolsExpr(); // generate symbols electric_P, electric_grad_P(_x,_y,_z), electric_dn_P
-            return Feel::vf::symbolsExpr( seToolbox, seParam, seMat, seFields );
+            auto sePhysics = this->symbolsExprPhysics( this->physics() );
+            return Feel::vf::symbolsExpr( seToolbox, seParam, seMeshes, seMat, seFields, sePhysics );
         }
     auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields( prefix ) ); }
 

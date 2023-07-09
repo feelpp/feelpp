@@ -1080,20 +1080,20 @@ IndexSplit::parseFieldsDef( std::string s )
     while ( index < s.size() )
     {
         bool findArrow=false;
-        int indexLenght=0;
+        int indexLength=0;
         int fieldId=0;
 
         while (!findArrow && index < s.size())
         {
             if ( s.substr(index,2) == "->" )
             {
-                fieldId=boost::lexical_cast<int>( s.substr(index-indexLenght,indexLenght).c_str() );
+                fieldId=boost::lexical_cast<int>( s.substr(index-indexLength,indexLength).c_str() );
                 findArrow=true;
                 index+=2;
             }
             else
             {
-                ++indexLenght;
+                ++indexLength;
                 ++index;
             }
         }
@@ -1104,31 +1104,96 @@ IndexSplit::parseFieldsDef( std::string s )
         {
             ++index;
             bool find=false;
-            std::vector<int> allIndexLenght;
-            /*int*/ indexLenght=0;
+            std::vector<int> allindexLength;
+            /*int*/ indexLength=0;
             int nSplit=0;
             while (!find && index < s.size() )
             {
                 if ( s.substr(index,1) == ")" )
                 {
                     ++nSplit;
-                    int splitId = boost::lexical_cast<int>( s.substr(index-indexLenght,indexLenght).c_str() );
-                    res[fieldId].insert( splitId );
-                    find=true;
-                    index+=indexLenght+1;
+                    int splitId;                    
+                    
+                    // One can specify an interval of integers using ":" as in 2:6 -> {2,3,4,5}
+                    // or as in 2:12:3 -> {2,5,8,11}
+                    if(s.substr(index-indexLength,indexLength).find(":") != std::string::npos )
+                    {
+                        // Split the string using ":"
+                        auto interval_string = s.substr(index-indexLength,indexLength).c_str();
+                        std::vector<std::string> interval_list;                        
+                        boost::split(interval_list, interval_string, boost::is_any_of(":"));
+
+                        if( interval_list.size() == 2 ) // insert all integers between the extrema
+                        {
+                            int left_extremum = boost::lexical_cast<int>( interval_list[0].c_str() );
+                            int right_extremum = boost::lexical_cast<int>( interval_list[1].c_str() );
+                            for(int i=left_extremum; i<right_extremum; i++)
+                                res[fieldId].insert( i );
+                        }
+                        else if( interval_list.size() == 3 ) // insert integers separated by "step"
+                        {
+                            int left_extremum = boost::lexical_cast<int>( interval_list[0].c_str() );
+                            int right_extremum = boost::lexical_cast<int>( interval_list[1].c_str() );
+                            int step = boost::lexical_cast<int>( interval_list[2].c_str() );
+                            for(int i=left_extremum; i<right_extremum; i += step )
+                                res[fieldId].insert( i );
+                        }
+                        
+                        find=true;
+                        index += 2;
+                    }
+                    else // no colon in the string, hence it's only an integer
+                    {
+                        splitId = boost::lexical_cast<int>( s.substr(index-indexLength,indexLength).c_str() );
+                        res[fieldId].insert( splitId );
+                        find=true;
+                        index+=2;
+                    } 
                 }
                 else
                 {
                     if ( s.substr(index,1) == "," )
                     {
                         ++nSplit;
-                        int splitId = boost::lexical_cast<int>( s.substr(index-indexLenght,indexLenght).c_str() );
-                        res[fieldId].insert( splitId );
-                        indexLenght=0;
+                        int splitId;
+                        
+                        // One can specify an interval of integers using ":" as in 2:6 -> {2,3,4,5}
+                        // or as in 2:12:3 -> {2,5,8,11}
+                        if(s.substr(index-indexLength,indexLength).find(":") != std::string::npos )
+                        {
+                            // Split the string using ":"
+                            auto interval_string = s.substr(index-indexLength,indexLength).c_str();
+                            std::vector<std::string> interval_list;                            
+                            boost::split(interval_list, interval_string, boost::is_any_of(":"));
+
+                            if( interval_list.size() == 2 ) // insert all integers between the extrema
+                            {
+                                int left_extremum = boost::lexical_cast<int>( interval_list[0].c_str() );
+                                int right_extremum = boost::lexical_cast<int>( interval_list[1].c_str() );
+                                for(int i=left_extremum; i<right_extremum; i++)
+                                    res[fieldId].insert( i );
+                            }
+                            else if( interval_list.size() == 3 ) // insert integers separated by "step"
+                            {
+                                int left_extremum = boost::lexical_cast<int>( interval_list[0].c_str() );
+                                int right_extremum = boost::lexical_cast<int>( interval_list[1].c_str() );
+                                int step = boost::lexical_cast<int>( interval_list[2].c_str() );
+                                for(int i=left_extremum; i<right_extremum; i += step )
+                                    res[fieldId].insert( i );
+                            }
+                            
+                            indexLength=0;
+                        }
+                        else // no colon in the string, hence it's only an integer
+                        {
+                            splitId = boost::lexical_cast<int>( s.substr(index-indexLength,indexLength).c_str() );                            
+                            res[fieldId].insert( splitId );
+                            indexLength=0;
+                        }
                     }
                     else
                     {
-                        ++indexLenght;
+                        ++indexLength;
                     }
                     ++index;
                 }

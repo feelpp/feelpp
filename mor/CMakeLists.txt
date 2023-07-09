@@ -83,7 +83,7 @@ if ( FEELPP_FOUND AND FEELPP_TOOLBOXES_FOUND )
   add_subdirectory(apps)
 
 
-
+  add_subdirectory(contrib)
 
 if ( FEELPP_ENABLE_MOR_MORDICUS )
   if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/mordicus/src/cpp )

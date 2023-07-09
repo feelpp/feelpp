@@ -1,4 +1,5 @@
 from ._timing import *
+import time
 
 class Timer(object):
     """helper class to time a block of code

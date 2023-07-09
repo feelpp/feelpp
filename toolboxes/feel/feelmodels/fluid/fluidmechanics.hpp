@@ -2099,7 +2099,7 @@ public :
             auto seMeshes = this->template symbolsExprMeshes<mesh_type,false>();
             auto seMat = this->materialsProperties()->symbolsExpr();
             auto seFields = mfields.symbolsExpr();
-            auto sePhysics = this->symbolsExprPhysicsFromCurrentType();
+            auto sePhysics = this->symbolsExprPhysics( this->physics() );//this->symbolsExprPhysicsFromCurrentType();
             return Feel::vf::symbolsExpr( seToolbox, seParam, seMeshes, seMat, seFields, sePhysics );
 #else
             return symbols_expression_empty_t{};

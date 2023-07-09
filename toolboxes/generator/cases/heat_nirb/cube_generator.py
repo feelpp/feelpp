@@ -25,8 +25,6 @@ def generate_cube_case():
     if not os.path.isdir(args.odir):
         os.makedirs(args.odir)
 
-
-
     if args.dim not in ["2","3"]:
         raise ValueError("dimension must be 2 or 3")
 
@@ -66,7 +64,6 @@ def generate_cube_case():
         eltDimM1 = "Surface"
         diffVal = 3
         fourierVal = 1
-
 
     # width =float(args.L)/float(args.Nh)
     # height = float(args.h)/float(args.Nv)

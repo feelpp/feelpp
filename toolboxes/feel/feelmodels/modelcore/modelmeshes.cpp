@@ -156,6 +156,65 @@ ModelMeshCommon<IndexType>::ImportConfig::tabulateInformations( nl::json const& 
     return TabulateInformations::New( tabInfo );
 }
 
+
+template <typename IndexType>
+ModelMesh<IndexType>::FieldsSetup::FieldsSetup( std::string const& name, ModelMeshes<IndexType> const& mMeshes, nl::json const& jarg )
+    :
+    M_name( name )
+{
+    if ( jarg.contains("basis") )
+        M_basis = Environment::expand( jarg.at("basis") );
+    else
+        throw std::runtime_error( "basis required" );
+
+    if ( jarg.contains("parts") )
+    {
+        auto const& j_parts = jarg.at("parts");
+        if ( j_parts.is_array() )
+        {
+            for ( auto const& [j_partkey,j_partval] : j_parts.items() )
+            {
+                auto partSetup = PartSetup::create( mMeshes, j_partval );
+                if ( partSetup )
+                    M_parts.push_back( std::move(*partSetup) );
+            }
+        }
+        else if ( j_parts.is_object() )
+        {
+            auto partSetup = PartSetup::create( mMeshes, j_parts );
+            if ( partSetup )
+                M_parts.push_back( std::move(*partSetup) );
+        }
+    }
+    else
+    {
+        auto partSetup = PartSetup::create( mMeshes, jarg );
+        if ( partSetup )
+            M_parts.push_back( std::move(*partSetup) );
+    }
+}
+
+template <typename IndexType>
+std::optional<typename ModelMesh<IndexType>::FieldsSetup::PartSetup>
+ModelMesh<IndexType>::FieldsSetup::PartSetup::create( ModelMeshes<IndexType> const& mMeshes, nl::json const& jarg )
+{
+    PartSetup ret;
+    if ( jarg.contains("markers") )
+        ret.M_markers.setup( jarg.at("markers") );
+    if ( jarg.contains("expr") )
+    {
+        ModelExpression mexpr;
+        mexpr.setExpr( jarg.at("expr"), mMeshes.worldComm(), mMeshes.repository().expr()/*, indexes*/ );
+        if ( mexpr.hasAtLeastOneExpr() )
+            ret.M_mexpr = mexpr;
+    }
+    if ( jarg.contains("filename") )
+        ret.M_filename = Environment::expand( jarg.at("filename") );
+
+    return ret;
+}
+
+
 template <typename IndexType>
 ModelMesh<IndexType>::DistanceToRangeSetup::DistanceToRangeSetup( std::string const& name, ModelMeshes<IndexType> const& mMeshes, nl::json const& jarg )
     :
@@ -327,8 +386,9 @@ ModelMesh<IndexType>::setup( nl::json const& jarg, ModelMeshes<IndexType> const&
         for ( auto const& el : jarg.at("Fields").items() )
         {
             std::string const& dataName = el.key();
-            FieldsSetup fs(dataName,el.value() );
-            M_fieldsSetup.push_back( std::move( fs ) );
+            FieldsSetup fs(dataName,mMeshes,el.value() );
+            if ( !fs.parts().empty() )
+                M_fieldsSetup.push_back( std::move( fs ) );
         }
     }
 
@@ -500,6 +560,8 @@ ModelMesh<IndexType>::updateForUse( ModelMeshes<IndexType> const& mMeshes )
         }
     } // if ( !hasMesh )
 
+    auto themesh = this->mesh<MeshType>();
+
     // update data by mesh entity
     for ( auto & [name,data] : M_codbme )
     {
@@ -509,15 +571,11 @@ ModelMesh<IndexType>::updateForUse( ModelMeshes<IndexType> const& mMeshes )
 
 
     // fields
-    static constexpr auto tuple_t_basis = hana::make_tuple( hana::make_tuple( "Pch1", hana::type_c<Lagrange<1,Scalar,Continuous,PointSetFekete>> ),
-                                                            hana::make_tuple( "Pch2", hana::type_c<Lagrange<2,Scalar,Continuous,PointSetFekete>> ),
-                                                            hana::make_tuple( "Pchv1", hana::type_c<Lagrange<1,Vectorial,Continuous,PointSetFekete>> ),
-                                                            hana::make_tuple( "Pchv2", hana::type_c<Lagrange<2,Vectorial,Continuous,PointSetFekete>> )
-                                                            );
+    static constexpr auto tuple_t_basis = ModelMesh<IndexType>::template basisFieldTypeSupported<mesh_type>();
     for ( auto const& fs : M_fieldsSetup )
     {
         std::string const& basis = fs.basis();
-        hana::for_each( tuple_t_basis, [this,&basis,&fs]( auto const& b )
+        hana::for_each( tuple_t_basis, [this,&basis,&fs,&themesh]( auto const& b )
                         {
                             if ( basis == hana::at_c<0>( b ) )
                             {
@@ -526,7 +584,25 @@ ModelMesh<IndexType>::updateForUse( ModelMeshes<IndexType> const& mMeshes )
 
                                 auto Vh = M_mmeshCommon->template createFunctionSpace<space_type>( basis );
                                 auto u = Vh->elementPtr();
-                                u->load(_path=fs.filename(),_type="default");
+
+                                // TODO : manage sync of dof interprocess
+                                for ( auto const& partSetup : fs.parts() )
+                                {
+                                    auto rangeMeshElt = partSetup.markers().empty() ? elements(themesh) : markedelements(themesh, (std::set<std::string>)partSetup.markers() );
+                                    if ( partSetup.hasExpr() )
+                                    {
+                                        if ( !partSetup.mExpr().template hasExpr<space_type::nComponents1,space_type::nComponents2>() )
+                                            throw std::runtime_error( fmt::format("ModelMesh<IndexType>::updateForUse fields basis and expr rank invalid, expr should be [{},{}]", space_type::nComponents1,space_type::nComponents2 ) );
+                                        auto const& theexpr = partSetup.mExpr().template expr<space_type::nComponents1,space_type::nComponents2>();
+                                        u->on(_range=rangeMeshElt, _expr=theexpr );
+                                    }
+                                    else
+                                    {
+                                        // TODO use rangeMeshElt
+                                        CHECK( partSetup.markers().empty() ) << "TODO ModelMesh<IndexType>::updateForUse fields : requires the use of range elements with file loading";
+                                        u->load(_path=partSetup.filename(),_type="default");
+                                    }
+                                }
                                 M_fields[fs.name()] = u;
                             }
                         });
@@ -551,7 +627,7 @@ ModelMesh<IndexType>::updateForUse( ModelMeshes<IndexType> const& mMeshes )
     {
         if ( M_meshMotionSetup )
         {
-            auto themesh = this->mesh<MeshType>();
+            //auto themesh = this->mesh<MeshType>();
             auto meshALE = meshale( _mesh=themesh,
                                     _prefix=mMeshes.prefix(),
                                     _keyword=fmt::format("meshes_{}_meshmotion",M_name),
