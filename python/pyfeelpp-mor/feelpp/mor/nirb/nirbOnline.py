@@ -43,12 +43,12 @@ def run_online(config_nirb, loadPath, nbSnap=-1, Nmu=10, Xi=None, Nb=-1, export=
 
     if feelpp.Environment.isMasterRank():
         print(f"[NIRB Online] Data loaded in {finish-start} s")
-    
+
     if Xi is None:
         s = nirb_on.Dmu.sampling()
         s.sampling(Nmu, "log-random")
         Xi = s.getVector()
-    
+
     wo = ['without', 'with'][rectification]
 
     if export:
