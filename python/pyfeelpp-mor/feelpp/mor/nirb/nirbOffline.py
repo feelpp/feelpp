@@ -66,6 +66,7 @@ def run_offline_pod(config_nirb):
     nbSnap = config_nirb['nbSnapshots']
     _ = nirb_off.computeSnapshots(nbSnap)
     RIC = nirb_off.generateReducedBasis()
+
     return nirb_off
 
 
@@ -99,7 +100,7 @@ def run_offline_greedy(config_nirb, Ninit, Ntrain, tol=1e-5, Xi_train=None, Nmax
     """
 
     tb = ToolboxModel(**config_nirb)
-    tb.initModel(initCoarse=True)
+    tb.initModel()
     interpolator = tb.createInterpolator(tb.tbCoarse, tb.tbFine)
 
     nirb_off = nirbOffline(initCoarse=True, **config_nirb)
@@ -107,6 +108,7 @@ def run_offline_greedy(config_nirb, Ninit, Ntrain, tol=1e-5, Xi_train=None, Nmax
 
     nirb_on = nirbOnline(**config_nirb)
     nirb_on.setModel(tb, interpolationOperator=interpolator)
+    nirb_on.generateOperators(coarse=True, fine=True)
 
     nirb_off.generateOperators(coarse=True)
     res = initProblemGreedy(nirb_off, nirb_on, Ninit, Ntrain, tol=tol,

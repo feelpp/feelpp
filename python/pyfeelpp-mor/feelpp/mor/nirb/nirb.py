@@ -1055,6 +1055,7 @@ class nirbOnline(ToolboxModel):
         """
         self.reducedBasis = offline.reducedBasis
         self.l2ProductBasis = offline.l2ProductBasis
+        self.reducedBasisFunctions = offline.reducedBasisFunctions
         self.N = offline.N
         self.coeffCoarse = offline.coeffCoarse
         self.coeffFine = offline.coeffFine
@@ -1103,6 +1104,30 @@ class nirbOnline(ToolboxModel):
         interpSol = self.solveOnline(mu)[1]
         return interpSol
     
+    def computeAlphaH(self, coarseSolution, Nb=-1):
+        """Compute the interpolation coefficients alpha_i^{N,H} = <u_H^calN, xi_{h,red]^i>_L2
+
+        Parameters
+        ----------
+        coarseSolution : feelpp._discr.Element
+            solution of the coarse problem
+        Nb : int, optional
+            size of the subbasis used, by default -1
+
+        Returns
+        -------
+        np.ndarray
+            array of size Nb containing the interpolation coefficients
+        """
+        if Nb == -1: Nb = self.N
+
+        alphaH = np.zeros(Nb)
+        for i in range(Nb):
+            alphaH[i] = self.l2ScalarProductMatrixCoarse.energy( coarseSolution, self.reducedBasisFunctions[i] )
+
+        return alphaH
+
+
     def fineProjection(self, uh, Nb=-1):
         """Project the solution from coarse mesh to fine one
 
@@ -1124,7 +1149,7 @@ class nirbOnline(ToolboxModel):
 
         return uhN
 
-    def getOnlineSolution(self, mu, Nb=-1, interSol=None, doRectification=-1, regularizationParameter=1e-10):
+    def getOnlineSolutionAttic(self, mu, Nb=-1, interSol=None, doRectification=-1, regularizationParameter=1e-10):
         """Get the Online nirb approximate solution
 
         Parameters
@@ -1139,8 +1164,9 @@ class nirbOnline(ToolboxModel):
         Returns
         -------
         feelpp._discr.Element
-            NIRB online solution uHn^N
+            NIRB online solution uHh^N
         """
+        warnings.deprecation("This function is deprecated, use getOnlineSolution instead")
         if Nb == -1: Nb = self.N
         if doRectification == -1: doRectification = self.doRectification
         else: doRectification = bool(doRectification)
@@ -1159,6 +1185,48 @@ class nirbOnline(ToolboxModel):
         else:
             for i in range(Nb):
                 onlineSol.add(float(compressedSolution[i]), self.reducedBasis[i])
+
+        # to export, call self.exportField(onlineSol, "U_nirb")
+
+        return onlineSol
+
+    def getOnlineSolution(self, mu, Nb=-1, interSol=None, doRectification=-1, regularizationParameter=1e-10):
+        """Get the Online nirb approximate solution
+
+        Parameters
+        ----------
+        mu : ParameterSpaceElement
+            parameter
+        Nb : int, optional
+            Size of the basis, by default None. If None, the whole basis is used
+        interSol : feelpp._discr.Element, optional
+            interpolated solution on fine mesh, by default None. If None, the solution is computed
+
+        Returns
+        -------
+        feelpp._discr.Element
+            NIRB online solution uHh^N
+        """
+        if Nb == -1: Nb = self.N
+        if doRectification == -1: doRectification = self.doRectification
+        else: doRectification = bool(doRectification)
+
+        onlineSol = self.Xh.element()
+        onlineSol.setZero()
+
+        # compressedSolution = self.getCompressedSolution(mu=mu, Nb=Nb, solution=interSol)
+        coarseSolution = self.getCoarseSolution(mu=mu)
+        alpha = self.computeAlphaH(coarseSolution, Nb=Nb)
+
+        if doRectification:
+            rectMat = self.getRectificationMat(Nb, regularizationParameter=regularizationParameter)
+            coef = rectMat @ alpha
+            for i in range(Nb):
+                onlineSol.add(float(coef[i]), self.reducedBasis[i])
+
+        else:
+            for i in range(Nb):
+                onlineSol.add(float(alpha[i]), self.reducedBasis[i])
 
         # to export, call self.exportField(onlineSol, "U_nirb")
 
