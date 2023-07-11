@@ -1236,7 +1236,7 @@ class nirbOnline(ToolboxModel):
         if regularizationParameter != 1.e-10:
             return self.getRectification(self.coeffCoarse, self.coeffFine, regularizationParameter=regularizationParameter, Nb=Nb)
         if Nb not in self.RectificationMat:
-            self.RectificationMat[Nb] =self.getRectification(self.coeffCoarse, self.coeffFine, regularizationParameter=regularizationParameter, Nb=Nb)
+            self.RectificationMat[Nb] = self.getRectification(self.coeffCoarse, self.coeffFine, regularizationParameter=regularizationParameter, Nb=Nb)
         return self.RectificationMat[Nb]
 
     def getRectification(self, coeffCoarse, coeffFine, regularizationParameter=1.e-10, Nb=-1):
@@ -1351,8 +1351,8 @@ class nirbOnline(ToolboxModel):
             self.reducedBasisFunctions.append(vec)
         self.N = nbSnap
 
-        coeffCoarseFile = os.path.join(path, 'coeffcoarse.npy')
-        coeffFineFile = os.path.join(path, 'coefffine.npy')
+        coeffCoarseFile = os.path.join(path, 'coeffCoarse.npy')
+        coeffFineFile = os.path.join(path, 'coeffFine.npy')
         if self.doRectification:
             self.coeffCoarse = np.load(coeffCoarseFile)
             self.coeffFine = np.load(coeffFineFile)
