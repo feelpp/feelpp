@@ -27,6 +27,20 @@ cases_paramsInit, cases_idsInit = list(zip(*casesInit))
 
 
 
+def check_saved(config_nirb, loadPath, nirb_off):
+    print("\n\nCheck saved data")
+    nirb_on = nirbOnline(**config_nirb)
+    nirb_on.initModel()
+    err = nirb_on.loadData(path=loadPath)
+    assert err == 0
+
+    assert nirb_off.N == nirb_on.N, "N is not the same"
+    for i in range(nirb_off.N):
+        norm_offline = nirb_off.reducedBasis[i].l2Norm()
+        norm_online = nirb_on.reducedBasis[i].l2Norm()
+        assert abs(norm_offline - norm_online) < 1e-10, f"norms are not the same for i={i} : {norm_offline} != {norm_online}"
+
+
 
 @pytest.mark.parametrize("dir, cfg, json, rect", cases_params_nirb, ids=cases_ids_nirb)
 def test_nirb_pod(dir, cfg, json, rect, init_feelpp):
@@ -49,6 +63,8 @@ def test_nirb_pod(dir, cfg, json, rect, init_feelpp):
 
     nirb_off = run_offline_pod(nirb_config)
     path = nirb_off.saveData(force=True)
+
+    check_saved(nirb_config, path, nirb_off)
 
     s = nirb_off.Dmu.sampling()
     s.sampling(10, "random")
@@ -88,6 +104,8 @@ def test_nirb_greedy(dir, cfg, json, rect, init_feelpp):
 
     nirb_offline, _, _ = run_offline_greedy(nirb_config, 5, 200, Nmax=20)
     path = nirb_offline.saveData(force=True)
+    check_saved(nirb_config, path, nirb_offline)
+
     Nbasis = nirb_offline.N
     s = nirb_offline.Dmu.sampling()
     s.sampling(10, "random")
