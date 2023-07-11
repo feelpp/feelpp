@@ -512,6 +512,17 @@ class nirbOffline(ToolboxModel):
             vec.addVector(self.reducedBasis[i], self.l2ScalarProductMatrix)     # vec += l2ScalarProductMatrix * reducedBasis[i]
             self.l2ProductBasis.append(vec)
 
+    def reduceBasisFunctions(self):
+        """Compute the reduced basis functions, and store them in self.reducedSnapShotList
+           \xi_i^{h,red} = M_{Hh}^T \xi_i^h
+        """
+        assert self.reducedBasis is not None, f"reduced Basis have to be computed before"
+
+        self.reducedBasisFunctions = []
+        interpolationFineToCoarse = self.createInterpolator(domain=self.tbFine, image=self.tbCorase)
+        for basisFunction in self.reducedBasis:
+            self.reducedBasisFunctions.append( interpolationFineToCoarse.interpolate(basisFunction))
+
 
     def PODReducedBasis(self, tolerance=1.e-12):
         """
@@ -606,8 +617,8 @@ class nirbOffline(ToolboxModel):
 
         for i in range(self.N):
             for j in range(self.N):
-                coeffCoarse[i,j] = self.l2ScalarProductMatrix.energy(InterpCoarseSnaps[i],self.reducedBasis[j])
-                coeffFine[i,j] = self.l2ScalarProductMatrix.energy(self.fineSnapShotList[i],self.reducedBasis[j])
+                coeffCoarse[i,j] = self.l2ScalarProductMatrix.energy(InterpCoarseSnaps[i], self.reducedBasis[j])
+                coeffFine[i,j]   = self.l2ScalarProductMatrix.energy(self.fineSnapShotList[i], self.reducedBasis[j])
 
         return coeffCoarse, coeffFine
 
@@ -859,6 +870,11 @@ class nirbOffline(ToolboxModel):
         l2productPath = os.path.join(path,  'l2productBasis')
         l2productFilename = 'l2productBasis'
 
+        reducedFunctionPath = os.path.join(path, 'reducedBasisFunctions')
+        reducedFunctionFilename = 'reducedBasisFunctions'
+
+
+
         if self.worldcomm.isMasterRank():
             if os.path.isdir(path) and not force:
                 print(f"[NIRB] Directory {path} already exists. Rerun with force=True to force saving")
@@ -869,6 +885,8 @@ class nirbOffline(ToolboxModel):
                 os.makedirs(reducedPath)
             if not os.path.isdir(l2productPath):
                 os.makedirs(l2productPath)
+            if not os.path.isdir(reducedFunctionPath):
+                os.makedirs(reducedFunctionPath)
 
         self.worldcomm.globalComm().Barrier()
 
@@ -879,10 +897,14 @@ class nirbOffline(ToolboxModel):
             vec = self.Xh.element(self.l2ProductBasis[i])
             vec.save(l2productPath, l2productFilename, suffix=str(i))
 
-        coeffCoarseFile = os.path.join(path, f"coeffcoarse")
-        coeffFineFile = os.path.join(path, f"coefffine")
-        if self.doRectification:
-            if self.worldcomm.isMasterRank():
+        for i in range(len(self.reducedFunction)):
+            self.reducedBasisFunctions[i].save(reducedFunctionPath, reducedFunctionFilename, suffix=str(i))
+
+
+        coeffCoarseFile = os.path.join(path, "coeffCoarse")
+        coeffFineFile = os.path.join(path, "coeffFine")
+        if self.worldcomm.isMasterRank():
+            if self.doRectification:
                 np.save(coeffCoarseFile, self.coeffCoarse)
                 np.save(coeffFineFile, self.coeffFine)
 
