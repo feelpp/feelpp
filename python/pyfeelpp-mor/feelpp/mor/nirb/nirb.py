@@ -81,7 +81,7 @@ class ToolboxModel():
             print(f"[NIRB] ToolboxModel created, but the objects have not yet been initialized. Please call initModel() or setModel() to initialize the objects.")
 
 
-    def initModel(self, initCoarse=False):
+    def initModel(self):
         """Initialize the model
         """
         self.model = feelpp.readJson(self.model_path)
@@ -89,9 +89,7 @@ class ToolboxModel():
         self.Xh = feelpp.functionSpace(mesh=self.tbFine.mesh(), order=self.order)
         self.Dmu = loadParameterSpace(self.model_path)
         self.Ndofs = self.getFieldSpace().nDof()
-
-        if initCoarse:
-            self.initCoarseToolbox()
+        self.initCoarseToolbox()
 
         if self.worldcomm.isMasterRank():
             print(f"[NIRB ToolboxModel] Initialization done")
@@ -284,10 +282,14 @@ class ToolboxModel():
             info["outdir"] = self.outdir
         return info
 
-    def generateOperators(self, coarse=False):
+    def generateOperators(self, coarse=False, fine=True):
         """Generate the scalar product matrices
+
+        Args:
+            coarse (bool, optional): generate the coarse scalar product matrices. Defaults to False.
+            fine (bool, optional): generate the fine scalar product matrices. Defaults to True.
         """
-        if self.l2ScalarProductMatrix is None or self.h1ScalarProductMatrix is None:
+        if fine and (self.l2ScalarProductMatrix is None or self.h1ScalarProductMatrix is None):
             # Vh = feelpp.functionSpace(mesh=self.tbFine.mesh(), order=self.order)
             self.l2ScalarProductMatrix = FppOp.mass(test=self.Xh, trial=self.Xh, range=feelpp.elements(self.tbFine.mesh()))
             self.h1ScalarProductMatrix = FppOp.stiffness(test=self.Xh, trial=self.Xh, range=feelpp.elements(self.tbFine.mesh()))
@@ -512,6 +514,7 @@ class nirbOffline(ToolboxModel):
             self.BiOrthonormalization()
         if self.doRectification:
             self.coeffCoarse, self.coeffFine = self.coeffRectification()
+        self.reduceBasisFunctions()
         return RIC
 
     def addFunctionToBasis(self, snapshot, tolerance=1e-6, coarseSnapshot=None):
@@ -540,6 +543,8 @@ class nirbOffline(ToolboxModel):
         if self.doRectification:
             self.coeffCoarse, self.coeffFine = self.coeffRectification()
 
+        self.reduceBasisFunctions()
+
 
     def getl2ProductBasis(self):
         """Get the L2 scalar product matrix with reduced basis function :
@@ -558,12 +563,12 @@ class nirbOffline(ToolboxModel):
 
     def reduceBasisFunctions(self):
         """Compute the reduced basis functions, and store them in self.reducedSnapShotList
-           \xi_i^{h,red} = M_{Hh}^T \xi_{h, red}^i
+           xi_i^{h,red} = M_{Hh}^T xi_{h, red}^i
         """
         assert self.reducedBasis is not None, f"reduced Basis have to be computed before"
 
         self.reducedBasisFunctions = []
-        interpolationFineToCoarse = self.createInterpolator(domain=self.tbFine, image=self.tbCorase)
+        interpolationFineToCoarse = self.createInterpolator(domain=self.tbFine, image=self.tbCoarse)
         for basisFunction in self.reducedBasis:
             self.reducedBasisFunctions.append( interpolationFineToCoarse.interpolate(basisFunction))
 
@@ -941,7 +946,7 @@ class nirbOffline(ToolboxModel):
             vec = self.Xh.element(self.l2ProductBasis[i])
             vec.save(l2productPath, l2productFilename, suffix=str(i))
 
-        for i in range(len(self.reducedFunction)):
+        for i in range(len(self.reducedBasisFunctions)):
             self.reducedBasisFunctions[i].save(reducedFunctionPath, reducedFunctionFilename, suffix=str(i))
 
 
@@ -1011,6 +1016,7 @@ class nirbOnline(ToolboxModel):
         super().initModel()
         super().initCoarseToolbox()
         self.interpolationOperator = self.createInterpolator(domain=self.tbCoarse, image=self.tbFine)
+        self.generateOperators(coarse=True, fine=False)
 
     def setModel(self, tb: ToolboxModel, interpolationOperator=None):
         """Set the model from a ToolboxModel object already initialized
@@ -1021,6 +1027,7 @@ class nirbOnline(ToolboxModel):
         super().setModel(tb)
         if tb.tbCoarse is None:
             super().initCoarseToolbox()
+        self.XH = tb.XH
         self.tbCoarse = tb.tbCoarse
         self.interpolationOperator = interpolationOperator
 
@@ -1033,6 +1040,7 @@ class nirbOnline(ToolboxModel):
             self.tbCoarse = offline.tbCoarse
         self.interpolationOperator = self.createInterpolator(domain=self.tbCoarse, image=self.tbFine)
         self.Xh = offline.Xh
+        self.XH = offline.XH
         self.Dmu = offline.Dmu
         self.Ndofs = offline.Ndofs
 
@@ -1216,6 +1224,9 @@ class nirbOnline(ToolboxModel):
         l2productPath = os.path.join(path, 'l2productBasis')
         l2productFilename = 'l2productBasis'
 
+        reducedFunctionPath = os.path.join(path, 'reducedBasisFunctions')
+        reducedFunctionFilename = 'reducedBasisFunctions'
+
         if self.worldcomm.isMasterRank():
             print(f"[NIRB] Loading data from {os.path.abspath(path)}")
 
@@ -1228,18 +1239,22 @@ class nirbOnline(ToolboxModel):
             if not os.path.isdir(l2productPath):
                 print(f"[NIRB] Error : Could not find path {l2productPath}")
                 return 1
+            if not os.path.isdir(reducedFunctionPath):
+                print(f"[NIRB] Error : Could not find path {reducedFunctionPath}")
+                return 1
 
         self.worldcomm.globalComm().Barrier()
 
         self.reducedBasis = []
         self.l2ProductBasis = []
+        self.reducedBasisFunctions = []
 
         if nbSnap == -1:
 
             import glob
             Nreduce = len(glob.glob(os.path.join(reducedPath, "*.h5")))
             Nl2 = len(glob.glob(os.path.join(l2productPath, "*.h5")))
-            assert Nreduce == Nl2, f"different number of files, {Nreduce} != {Nl2}"
+            NreduceFunction = len(glob.glob(os.path.join(reducedFunctionPath, "*.h5")))
 
             info_file = os.path.join(path,'offline-info.json')
             if os.path.exists(info_file):
@@ -1249,21 +1264,27 @@ class nirbOnline(ToolboxModel):
             else:
                 warnings.warn(f"Could not find {info_file}, loading all the basis, I will try to guess the number of basis : {Nreduce}")
                 nbSnap = Nreduce
+            
+            assert Nreduce >= nbSnap, f"Could not find enough reduced basis, found {Nreduce} but need {nbSnap}"
+            assert Nl2 >= nbSnap, f"Could not find enough l2product basis, found {Nl2} but need {nbSnap}"
+            assert NreduceFunction >= nbSnap, f"Could not find enough reduced basis functions, found {NreduceFunction} but need {nbSnap}"
 
         for i in range(nbSnap):
             vec = self.Xh.element()
             vec.load(reducedPath, reducedFilename, suffix=str(i))
             self.reducedBasis.append(vec)
 
-        self.N = nbSnap
-
-        for i in range(nbSnap):
             vec = self.Xh.element()
             vec.load(l2productPath, l2productFilename, suffix=str(i))
             self.l2ProductBasis.append(vec)
 
-        coeffCoarseFile = os.path.join(path,'coeffcoarse.npy')
-        coeffFineFile = os.path.join(path,'coefffine.npy')
+            vec = self.XH.element()
+            vec.load(reducedFunctionPath, reducedFunctionFilename, suffix=str(i))
+            self.reducedBasisFunctions.append(vec)
+        self.N = nbSnap
+
+        coeffCoarseFile = os.path.join(path, 'coeffcoarse.npy')
+        coeffFineFile = os.path.join(path, 'coefffine.npy')
         if self.doRectification:
             self.coeffCoarse = np.load(coeffCoarseFile)
             self.coeffFine = np.load(coeffFineFile)
@@ -1274,19 +1295,7 @@ class nirbOnline(ToolboxModel):
 
         return 0
 
-    def normMat(self, u, Mat=None):
-        """ Compute the norm associated to matrix Mat in the fine mesh
-                ||u|| = sqrt(uT*Mat*u)
-            if Mat is not specified, L2 matrix will be computed
-        Args:
-        -----
-            Mat (feelpp.__alg.SparseMatrix): the matrix. Defaults to None.
-            u (feelpp.__discr_Vector): the vector to compute the norm
-        """
-        if Mat is None:
-            Mat = self.generateOperators()
 
-        return np.sqrt(np.abs(Mat.energy(u,u)))
 
     def solveOnline(self, mu):
         """Retrun the interpolated FE-solution from coarse mesh to fine one u_{Hh}^calN(mu)
