@@ -1,9 +1,6 @@
-from time import time
 import feelpp
 from feelpp.mor.nirb import nirbOnline
 from feelpp.mor.nirb.utils import init_feelpp_environment
-import pandas as pd
-import os
 from feelpp.mor.nirb.nirb_perf import *
 import argparse
 from feelpp.timing import tic,toc
@@ -66,7 +63,7 @@ def run_online(config_nirb, loadPath, nbSnap=-1, Nmu=10, Xi=None, Nb=-1, export=
             nirb_on.exportField(uHhN, f"n{i:02}uHhN{mu}")
 
         if computeError:
-            uh = nirb_on.getToolboxSolution(nirb_on.tbFine, mu)
+            uh = nirb_on.getFineSolution(mu)
             diff = uHhN - uh
             error = nirb_on.normMat(diff)
             print(f"[NIRB Online] L2 norm between nirb online and toolbox sol = {error}")
@@ -125,4 +122,3 @@ if __name__ == "__main__":
         RESPATH = outdir
 
     run_online(config_nirb, RESPATH, Nmu=args.Nparam, Nb=Nb, export=export, computeError=computeError, rectification=doRectification)
-

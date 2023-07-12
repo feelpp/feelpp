@@ -514,7 +514,6 @@ class nirbOffline(ToolboxModel):
             self.BiOrthonormalization()
         if self.doRectification:
             self.coeffCoarse, self.coeffFine = self.coeffRectification()
-        self.reduceBasisFunctions()
         return RIC
 
     def addFunctionToBasis(self, snapshot, tolerance=1e-6, coarseSnapshot=None):
@@ -542,9 +541,6 @@ class nirbOffline(ToolboxModel):
             self.BiOrthonormalization()
         if self.doRectification:
             self.coeffCoarse, self.coeffFine = self.coeffRectification()
-
-        self.reduceBasisFunctions()
-
 
     def getl2ProductBasis(self):
         """Get the L2 scalar product matrix with reduced basis function :
@@ -919,10 +915,6 @@ class nirbOffline(ToolboxModel):
         l2productPath = os.path.join(path,  'l2productBasis')
         l2productFilename = 'l2productBasis'
 
-        reducedFunctionPath = os.path.join(path, 'reducedBasisFunctions')
-        reducedFunctionFilename = 'reducedBasisFunctions'
-
-
 
         if self.worldcomm.isMasterRank():
             if os.path.isdir(path) and not force:
@@ -934,8 +926,7 @@ class nirbOffline(ToolboxModel):
                 os.makedirs(reducedPath)
             if not os.path.isdir(l2productPath):
                 os.makedirs(l2productPath)
-            if not os.path.isdir(reducedFunctionPath):
-                os.makedirs(reducedFunctionPath)
+
 
         self.worldcomm.globalComm().Barrier()
 
@@ -945,10 +936,6 @@ class nirbOffline(ToolboxModel):
         for i in range(len(self.l2ProductBasis)):
             vec = self.Xh.element(self.l2ProductBasis[i])
             vec.save(l2productPath, l2productFilename, suffix=str(i))
-
-        for i in range(len(self.reducedBasisFunctions)):
-            self.reducedBasisFunctions[i].save(reducedFunctionPath, reducedFunctionFilename, suffix=str(i))
-
 
         coeffCoarseFile = os.path.join(path, "coeffCoarse")
         coeffFineFile = os.path.join(path, "coeffFine")
@@ -1030,6 +1017,10 @@ class nirbOnline(ToolboxModel):
         self.XH = tb.XH
         self.tbCoarse = tb.tbCoarse
         self.interpolationOperator = interpolationOperator
+        self.l2ScalarProductMatrix = tb.l2ScalarProductMatrix
+        self.l2ScalarProductMatrixCoarse = tb.l2ScalarProductMatrixCoarse
+        self.h1ScalarProductMatrix = tb.h1ScalarProductMatrix
+        self.h1ScalarProductMatrixCoarse = tb.h1ScalarProductMatrixCoarse
 
     def setModelFromOffline(self, offline: nirbOffline):
         self.model = offline.model
@@ -1043,6 +1034,10 @@ class nirbOnline(ToolboxModel):
         self.XH = offline.XH
         self.Dmu = offline.Dmu
         self.Ndofs = offline.Ndofs
+        self.l2ScalarProductMatrix = offline.l2ScalarProductMatrix
+        self.l2ScalarProductMatrixCoarse = offline.l2ScalarProductMatrixCoarse
+        self.h1ScalarProductMatrix = offline.h1ScalarProductMatrix
+        self.h1ScalarProductMatrixCoarse = offline.h1ScalarProductMatrixCoarse
 
 
 
@@ -1149,47 +1144,6 @@ class nirbOnline(ToolboxModel):
 
         return uhN
 
-    def getOnlineSolutionAttic(self, mu, Nb=-1, interSol=None, doRectification=-1, regularizationParameter=1e-10):
-        """Get the Online nirb approximate solution
-
-        Parameters
-        ----------
-        mu : ParameterSpaceElement
-            parameter
-        Nb : int, optional
-            Size of the basis, by default None. If None, the whole basis is used
-        interSol : feelpp._discr.Element, optional
-            interpolated solution on fine mesh, by default None. If None, the solution is computed
-
-        Returns
-        -------
-        feelpp._discr.Element
-            NIRB online solution uHh^N
-        """
-        warnings.deprecation("This function is deprecated, use getOnlineSolution instead")
-        if Nb == -1: Nb = self.N
-        if doRectification == -1: doRectification = self.doRectification
-        else: doRectification = bool(doRectification)
-
-        onlineSol = self.Xh.element()
-        onlineSol.setZero()
-
-        compressedSolution = self.getCompressedSolution(mu=mu, Nb=Nb, solution=interSol)
-
-        if doRectification:
-            rectMat = self.getRectificationMat(Nb, regularizationParameter=regularizationParameter)
-            coef = rectMat @ compressedSolution
-            for i in range(Nb):
-                onlineSol.add(float(coef[i]), self.reducedBasis[i])
-
-        else:
-            for i in range(Nb):
-                onlineSol.add(float(compressedSolution[i]), self.reducedBasis[i])
-
-        # to export, call self.exportField(onlineSol, "U_nirb")
-
-        return onlineSol
-
     def getOnlineSolution(self, mu, Nb=-1, interSol=None, doRectification=-1, regularizationParameter=1e-10):
         """Get the Online nirb approximate solution
 
@@ -1214,23 +1168,33 @@ class nirbOnline(ToolboxModel):
         onlineSol = self.Xh.element()
         onlineSol.setZero()
 
-        # compressedSolution = self.getCompressedSolution(mu=mu, Nb=Nb, solution=interSol)
-        coarseSolution = self.getCoarseSolution(mu=mu)
-        alpha = self.computeAlphaH(coarseSolution, Nb=Nb)
+        compressedSolution = self.getCompressedSolution(mu=mu, Nb=Nb, solution=interSol)
 
+        tic()
         if doRectification:
+            tic()
             rectMat = self.getRectificationMat(Nb, regularizationParameter=regularizationParameter)
-            coef = rectMat @ alpha
-            for i in range(Nb):
-                onlineSol.add(float(coef[i]), self.reducedBasis[i])
+            coef = rectMat @ compressedSolution
+            toc("NIRB: Rectification")
 
+            # tic()
+            # for i in range(Nb):
+            #     onlineSol.add(float(coef[i]), self.reducedBasis[i])
+            # toc('NIRB: assemble solution loop')
+
+            tic()
+            # onlineSol.to_petsc().maxpy(coef, self.reducedBasis)
+            onlineSol.to_petsc().vec().maxpy(coef, self.reducedBasis_petsc)
+            toc('NIRB: assemble solution PETSc')
         else:
             for i in range(Nb):
-                onlineSol.add(float(alpha[i]), self.reducedBasis[i])
+                onlineSol.add(float(compressedSolution[i]), self.reducedBasis[i])
+        toc('NIRB: assemble online solution')
 
         # to export, call self.exportField(onlineSol, "U_nirb")
 
         return onlineSol
+
 
     def getRectificationMat(self, Nb, regularizationParameter=1.e-10):
         if regularizationParameter != 1.e-10:
@@ -1292,8 +1256,6 @@ class nirbOnline(ToolboxModel):
         l2productPath = os.path.join(path, 'l2productBasis')
         l2productFilename = 'l2productBasis'
 
-        reducedFunctionPath = os.path.join(path, 'reducedBasisFunctions')
-        reducedFunctionFilename = 'reducedBasisFunctions'
 
         if self.worldcomm.isMasterRank():
             print(f"[NIRB] Loading data from {os.path.abspath(path)}")
@@ -1307,22 +1269,17 @@ class nirbOnline(ToolboxModel):
             if not os.path.isdir(l2productPath):
                 print(f"[NIRB] Error : Could not find path {l2productPath}")
                 return 1
-            if not os.path.isdir(reducedFunctionPath):
-                print(f"[NIRB] Error : Could not find path {reducedFunctionPath}")
-                return 1
 
         self.worldcomm.globalComm().Barrier()
 
         self.reducedBasis = []
         self.l2ProductBasis = []
-        self.reducedBasisFunctions = []
 
         if nbSnap == -1:
 
             import glob
             Nreduce = len(glob.glob(os.path.join(reducedPath, "*.h5")))
             Nl2 = len(glob.glob(os.path.join(l2productPath, "*.h5")))
-            NreduceFunction = len(glob.glob(os.path.join(reducedFunctionPath, "*.h5")))
 
             info_file = os.path.join(path,'offline-info.json')
             if os.path.exists(info_file):
@@ -1346,9 +1303,6 @@ class nirbOnline(ToolboxModel):
             vec.load(l2productPath, l2productFilename, suffix=str(i))
             self.l2ProductBasis.append(vec)
 
-            vec = self.XH.element()
-            vec.load(reducedFunctionPath, reducedFunctionFilename, suffix=str(i))
-            self.reducedBasisFunctions.append(vec)
         self.N = nbSnap
 
         coeffCoarseFile = os.path.join(path, 'coeffCoarse.npy')
@@ -1365,7 +1319,7 @@ class nirbOnline(ToolboxModel):
 
 
 
-    def solveOnline(self, mu):
+    def getInterpolatedSolution(self, mu):
         """Retrun the interpolated FE-solution from coarse mesh to fine one u_{Hh}^calN(mu)
             Solve in Coarse mesh and interpolate in fine mesh
 
@@ -1375,12 +1329,9 @@ class nirbOnline(ToolboxModel):
 
         Returns
         -------
-            feelpp._discr.Element: FE solution on coarse mesh
-            feelpp._discr.Element: interpolated solution on fine mesh
+            feelpp._discr.Element: FE solution on coarse mesh u_H^Ncal(mu) of size Ncal_H
+            feelpp._discr.Element: interpolated solution on fine mesh u_{Hh}^Ncal(mu) of size Ncal_h
         """
-        if self.tbCoarse is None:
-            super().initCoarseToolbox()
-
         coarseSol = self.getCoarseSolution(mu)
         interpolatedSol = self.interpolationOperator.interpolate(coarseSol)
 
