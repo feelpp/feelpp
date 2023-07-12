@@ -557,16 +557,6 @@ class nirbOffline(ToolboxModel):
             vec.addVector(self.reducedBasis[i], self.l2ScalarProductMatrix)     # vec += l2ScalarProductMatrix * reducedBasis[i]
             self.l2ProductBasis.append(vec)
 
-    def reduceBasisFunctions(self):
-        """Compute the reduced basis functions, and store them in self.reducedSnapShotList
-           xi_i^{h,red} = M_{Hh}^T xi_{h, red}^i
-        """
-        assert self.reducedBasis is not None, f"reduced Basis have to be computed before"
-
-        self.reducedBasisFunctions = []
-        interpolationFineToCoarse = self.createInterpolator(domain=self.tbFine, image=self.tbCoarse)
-        for basisFunction in self.reducedBasis:
-            self.reducedBasisFunctions.append( interpolationFineToCoarse.interpolate(basisFunction))
 
 
     def PODReducedBasis(self, tolerance=1.e-12):
@@ -1002,7 +992,9 @@ class nirbOnline(ToolboxModel):
         """
         super().initModel()
         super().initCoarseToolbox()
+        tic()
         self.interpolationOperator = self.createInterpolator(domain=self.tbCoarse, image=self.tbFine)
+        toc("NIRB: Creation of interpolation operator")
         self.generateOperators(coarse=True, fine=False)
 
     def setModel(self, tb: ToolboxModel, interpolationOperator=None):
@@ -1074,53 +1066,29 @@ class nirbOnline(ToolboxModel):
         if Nb == -1: Nb = self.N
 
         if solution is None:
-            sol = self.getInterpolatedSolution(mu)
-        else :
+            tic()
+            _, sol = self.getInterpolatedSolution(mu)
+            toc("NIRB: Interpolation")
+        else:
             sol = solution
 
-        compressedSol = np.zeros(Nb)
+        tic()
 
+        compressedSol = np.zeros(Nb)
         for i in range(Nb):
             compressedSol[i] = self.l2ProductBasis[i].to_petsc().dot(sol.to_petsc())
+        toc("NIRB: Compute all alpha_i loop")
 
+        # tic()
+        # compressedSol_petsc = PETSc.Vec().createSeq(Nb)
+        # sol.to_petsc().vec().mDot(self.l2ProductBasis_petsc, compressedSol_petsc)
+        # toc("NIRB: Compute all alpha_i (petsc)")
+
+        # print(f"Error between both methods: {(compressedSol - compressedSol_petsc.array)}")
+
+        # return compressedSol_petsc.array
         return compressedSol
 
-    def getInterpolatedSolution(self, mu):
-        """Get the interpolated solution from coarse mesh to fine one
-
-        Parameters
-        ----------
-            mu (ParameterSpaceElement): parameter
-
-        Returns
-        -------
-            interpSol (feelpp._discr.Element): interpolated solution on fine mesh
-        """
-        interpSol = self.solveOnline(mu)[1]
-        return interpSol
-    
-    def computeAlphaH(self, coarseSolution, Nb=-1):
-        """Compute the interpolation coefficients alpha_i^{N,H} = <u_H^calN, xi_{h,red]^i>_L2
-
-        Parameters
-        ----------
-        coarseSolution : feelpp._discr.Element
-            solution of the coarse problem
-        Nb : int, optional
-            size of the subbasis used, by default -1
-
-        Returns
-        -------
-        np.ndarray
-            array of size Nb containing the interpolation coefficients
-        """
-        if Nb == -1: Nb = self.N
-
-        alphaH = np.zeros(Nb)
-        for i in range(Nb):
-            alphaH[i] = self.l2ScalarProductMatrixCoarse.energy( coarseSolution, self.reducedBasisFunctions[i] )
-
-        return alphaH
 
 
     def fineProjection(self, uh, Nb=-1):
@@ -1292,16 +1260,20 @@ class nirbOnline(ToolboxModel):
             
             assert Nreduce >= nbSnap, f"Could not find enough reduced basis, found {Nreduce} but need {nbSnap}"
             assert Nl2 >= nbSnap, f"Could not find enough l2product basis, found {Nl2} but need {nbSnap}"
-            assert NreduceFunction >= nbSnap, f"Could not find enough reduced basis functions, found {NreduceFunction} but need {nbSnap}"
+
+        self.reducedBasis_petsc = []
+        self.l2ProductBasis_petsc = []
 
         for i in range(nbSnap):
             vec = self.Xh.element()
             vec.load(reducedPath, reducedFilename, suffix=str(i))
             self.reducedBasis.append(vec)
+            self.reducedBasis_petsc.append(vec.to_petsc().vec())
 
             vec = self.Xh.element()
             vec.load(l2productPath, l2productFilename, suffix=str(i))
             self.l2ProductBasis.append(vec)
+            self.l2ProductBasis_petsc.append(vec.to_petsc().vec())
 
         self.N = nbSnap
 
