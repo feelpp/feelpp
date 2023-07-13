@@ -47,6 +47,9 @@ namespace Feel
         using self_type = BVHTree<nDim,realDim>;
         using convex_type = Simplex<nDim,1,realDim>;
         using mesh_type = Mesh<convex_type>;     
+        using VectorRealDim = typename  std::conditional< realDim==3,
+                                                            Eigen::Vector3d,
+                                                            Eigen::Vector2d>::type;        
         using trace_mesh_type = typename  std::conditional< nDim==realDim,
                                                     typename mesh_type::trace_mesh_type,
                                                     mesh_type >::type;
@@ -61,7 +64,7 @@ namespace Feel
         public:
         struct BVHPrimitiveInfo
         {
-            BVHPrimitiveInfo(int primitiveNumber, Eigen::VectorXd bounds_min, Eigen::VectorXd bounds_max)
+            BVHPrimitiveInfo(int primitiveNumber, VectorRealDim bounds_min, VectorRealDim bounds_max)
             {
                 M_primitiveNumber=primitiveNumber;
                 M_bound_min = bounds_min;
@@ -69,9 +72,9 @@ namespace Feel
                 M_centroid = ( M_bound_min + M_bound_max ) * 0.5;            
             }
             int M_primitiveNumber;
-            Eigen::VectorXd M_bound_min;
-            Eigen::VectorXd M_bound_max;
-            Eigen::VectorXd M_centroid;
+            VectorRealDim M_bound_min;
+            VectorRealDim M_bound_max;
+            VectorRealDim M_centroid;
         };               
         std::vector<BVHPrimitiveInfo> M_primitiveInfo;
         trace_mesh_ptrtype M_mesh;
@@ -90,11 +93,11 @@ namespace Feel
             for(auto &elt : elem)
             {
                 auto const& e = unwrap_ref( elt );                
-                Eigen::VectorXd M_bound_min(mesh->realDimension()),M_bound_max(mesh->realDimension());
+                VectorRealDim M_bound_min,M_bound_max;
                 auto v1 = e.point(0).node();
                 double* ptr_data = &v1[0];
-                M_bound_min = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(ptr_data, v1.size());
-                M_bound_max = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(ptr_data, v1.size());
+                M_bound_min = Eigen::Map<VectorRealDim, Eigen::Unaligned>(ptr_data, v1.size());
+                M_bound_max = Eigen::Map<VectorRealDim, Eigen::Unaligned>(ptr_data, v1.size());
             
                 for(int j=1;j<e.nPoints();j++)
                 {
@@ -143,16 +146,16 @@ namespace Feel
                 LOG(INFO) <<fmt::format("Internal node built: M_bounds_min {}, M_bounds_max {}, splitaxis {}",M_bounds_min,M_bounds_max,splitaxis);
             }
 
-            Eigen::VectorXd newBoundsMin(Eigen::VectorXd bounds1,Eigen::VectorXd bounds2)
+            VectorRealDim newBoundsMin(VectorRealDim bounds1,VectorRealDim bounds2)
             {
-                Eigen::VectorXd newBoundsMin(bounds1.size());
+                VectorRealDim newBoundsMin(bounds1.size());
                 for(int i=0;i<bounds1.size();i++)
                     newBoundsMin[i] = std::min(bounds1[i],bounds2[i]);
                 return newBoundsMin;
             }
-            Eigen::VectorXd newBoundsMax(Eigen::VectorXd bounds1,Eigen::VectorXd bounds2)
+            VectorRealDim newBoundsMax(VectorRealDim bounds1,VectorRealDim bounds2)
             {
-                Eigen::VectorXd newBoundsMax(bounds1.size());
+                VectorRealDim newBoundsMax(bounds1.size());
                 for(int i=0;i<bounds1.size();i++)
                     newBoundsMax[i] = std::max(bounds1[i],bounds2[i]);
                 return newBoundsMax;
@@ -244,14 +247,14 @@ namespace Feel
 #endif
             std::pair<bool,double> checkIntersectionWithSegment(matrix_node_type const& nodes, BVHRay const& ray)
             {
-                Eigen::VectorXd p1(2),p2(2),v1(2),v2(2),v3(2),w_(2);     
+                VectorRealDim p1,p2,v1,v2,v3,w_;     
 
                 for ( int i = 0; i < nodes.size1(); ++i )
                 {
                     p1( i ) = nodes(i,0);
                     p2( i ) = nodes(i,1);
                 }        
-                Eigen::VectorXd origin(2),direction(2);
+                VectorRealDim origin,direction;
                 direction << ray.dir[0],ray.dir[1];
                 origin << ray.origin[0],ray.origin[1];        
                 v1 = origin - p1;
@@ -279,7 +282,7 @@ namespace Feel
             // Verify if the ray intersects the element
             std::pair<bool,double> checkIntersectionWithTriangle( BVHRay const& ray, trace_mesh_ptrtype mesh, std::vector<BVHPrimitiveInfo>& primitiveInfo)
             {
-                Eigen::Vector3d p1(3),p2(3),p3(3),n1(3),w(3),w_(3);
+                VectorRealDim p1,p2,p3,n1,w,w_;
                 Eigen::Matrix3d m(3,3);            
                     
                 auto nodes =  mesh->element(primitiveInfo[this->firstPrimOffset].M_primitiveNumber).vertices();
@@ -288,7 +291,7 @@ namespace Feel
                 {p1( i ) = nodes(i,0);
                     p2( i ) = nodes(i,1);
                     p3( i ) = nodes(i,2);}
-                Eigen::Vector3d origin(3),direction(3);
+                VectorRealDim origin,direction;
                 direction << ray.dir[0],ray.dir[1],ray.dir[2];
                 origin << ray.origin[0],ray.origin[1],ray.origin[2];
 
@@ -320,12 +323,12 @@ namespace Feel
 
             std::pair<bool,double> checkLeafIntersection(BVHRay const& rayon, trace_mesh_ptrtype mesh, std::vector<BVHPrimitiveInfo>& primitiveInfo)
             {             
-                if( realDim ==2)
+                if constexpr (realDim ==2)
                 {
                     auto nodes = mesh->element( primitiveInfo[this->firstPrimOffset].M_primitiveNumber ).vertices();                                        
                     return checkIntersectionWithSegment(nodes,rayon);
                 }                
-                else //if ( realDim==3)
+                if constexpr (realDim==3) //if ( realDim==3)
                     return checkIntersectionWithTriangle(rayon,mesh,primitiveInfo);
 
             }
@@ -333,7 +336,7 @@ namespace Feel
             BVHNode *children[2];
             BVHNode *parent;
             int splitaxis, nPrimitives,firstPrimOffset;
-            Eigen::VectorXd M_bounds_min,M_bounds_max,M_centroid;
+            VectorRealDim M_bounds_min,M_bounds_max,M_centroid;
             
         };    
 
@@ -341,22 +344,23 @@ namespace Feel
 
         BVHNode * buildRootTree()
         {
-            M_root_tree = recursiveBuild(M_root_tree,0,0,M_primitiveInfo.size(),orderedPrims);
+            VectorRealDim bound_min_node,bound_max_node;
+            M_root_tree = recursiveBuild(M_root_tree,0,0,M_primitiveInfo.size(),orderedPrims,bound_min_node,bound_max_node);
             return M_root_tree;
         }                        
 
         BVHNode * recursiveBuild(BVHNode * current_parent, int cut_dimension, int start_index_primitive, int end_index_primitive,
-                                std::vector<int> &orderedPrims)
+                                std::vector<int> &orderedPrims, VectorRealDim &bound_min_node, VectorRealDim &bound_max_node)
         {
             LOG(INFO) <<fmt::format("cut dimension {}, start index primitive {}, end index primitive {}",cut_dimension,start_index_primitive,end_index_primitive);
-            Eigen::VectorXd M_bound_min_node(realDim),M_bound_max_node(realDim);
+            
             BVHNode * node = new BVHTree::BVHNode();
-            M_bound_min_node = M_primitiveInfo[start_index_primitive].M_bound_min;
-            M_bound_max_node = M_primitiveInfo[start_index_primitive].M_bound_max;
+            bound_min_node = M_primitiveInfo[start_index_primitive].M_bound_min;
+            bound_max_node = M_primitiveInfo[start_index_primitive].M_bound_max;
             for (int i = start_index_primitive+1; i < end_index_primitive; ++i)
             {
-                M_bound_min_node = node->newBoundsMin(M_bound_min_node,M_primitiveInfo[i].M_bound_min);
-                M_bound_max_node = node->newBoundsMax(M_bound_max_node,M_primitiveInfo[i].M_bound_max);
+                bound_min_node = node->newBoundsMin(bound_min_node,M_primitiveInfo[i].M_bound_min);
+                bound_max_node = node->newBoundsMax(bound_max_node,M_primitiveInfo[i].M_bound_max);
             }
             auto mid = (start_index_primitive + end_index_primitive) / 2;
             std::nth_element(&M_primitiveInfo[start_index_primitive], &M_primitiveInfo[mid], 
@@ -374,14 +378,15 @@ namespace Feel
                 int primNum = M_primitiveInfo[i].M_primitiveNumber;
                 orderedPrims.push_back(primNum);
                 }
-                node->buildLeaf(current_parent,firstPrimOffset, nPrimitives, M_bound_min_node,M_bound_max_node);
+                node->buildLeaf(current_parent,firstPrimOffset, nPrimitives, bound_min_node,bound_max_node);
                 return node;
             }
             else{
+                int next_cut_dimension=(cut_dimension+1)%realDim;
                 // Create a node, since there are at least two primitives in the list
-                node->buildInternalNode(current_parent,(cut_dimension+1)%realDim,
-                                    recursiveBuild( node, (cut_dimension+1)%realDim, start_index_primitive, mid, orderedPrims),
-                                    recursiveBuild( node, (cut_dimension+1)%realDim, mid, end_index_primitive, orderedPrims));
+                node->buildInternalNode(current_parent, next_cut_dimension,
+                                    recursiveBuild( node, next_cut_dimension, start_index_primitive, mid, orderedPrims, bound_min_node, bound_max_node),
+                                    recursiveBuild( node, next_cut_dimension, mid, end_index_primitive, orderedPrims, bound_min_node, bound_max_node));
             }
 
             return node;
@@ -401,8 +406,8 @@ namespace Feel
            
             const BVHTree::BVHNode *tn = static_cast<const BVHTree::BVHNode*>( M_root_tree );
             
-            Eigen::VectorXd mini = tn->M_bounds_min;
-            Eigen::VectorXd maxi = tn->M_bounds_max;
+            VectorRealDim mini = tn->M_bounds_min;
+            VectorRealDim maxi = tn->M_bounds_max;
                     
             double div1 = 1./rayon.dir[0];
             double div2 = 1./rayon.dir[1];
