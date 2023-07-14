@@ -242,6 +242,7 @@ PYBIND11_MODULE(_alg, m )
         .def( "newMatrix", static_cast<std::shared_ptr<MatrixSparse<double>> ( BackendPetsc<double>::* )( datamap_ptr_t<uint32_type> const&, datamap_ptr_t<uint32_type> const&, uint32_type, bool )>( &BackendPetsc<double>::newMatrix ), py::arg( "dmrow" ) = datamap_ptr_t<uint32_type>{}, py::arg( "dmcol" ) = datamap_ptr_t<uint32_type>{}, py::arg( "prop" ) = (int)NON_HERMITIAN, py::arg( "init" ) = true, "build a zero matrix from DataMap" )
 
         .def( "newZeroMatrix", static_cast<std::shared_ptr<MatrixSparse<double>> ( BackendPetsc<double>::* )( datamap_ptr_t<uint32_type> const&, datamap_ptr_t<uint32_type> const& )>( &BackendPetsc<double>::newZeroMatrix ), py::arg( "dmrow" ), py::arg( "dmcol" ), "build a zero matrix from DataMap" )
+        .def( "newVectors", []( BackendPetsc<double>& b, datamap_ptr_t<uint32_type> const& dm, int N ){ return b.newVectors( dm, N ); }, py::arg( "dm" ), py::arg("N")=int(1), "build a vector of Vectors from a DataMap" )
         .def( "prefix", &BackendPetsc<double>::prefix, "return the prefix" )
         ;
 

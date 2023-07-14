@@ -19,7 +19,11 @@
                 "/usr/include",
                 "${workspaceFolder}/**"
             ],
-            "defines": [],
+            "defines": [
+                "FEELPP_HAS_PETSC=1",
+                "FEELPP_HAS_PETSC4PY=1",
+                "FEELPP_HAS_PETSC_H=1"
+            ],
             "intelliSenseMode": "clang-x64",
             "browse": {
                 "path": [
@@ -50,6 +54,7 @@
             "defines": [
                 "FEELPP_HAS_PETSC=1",
                 "FEELPP_HAS_PETSC4PY=1",
+                "FEELPP_HAS_PETSC_H=1"
             ],
             "intelliSenseMode": "clang-x64",
             "browse": {

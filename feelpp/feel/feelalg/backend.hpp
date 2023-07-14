@@ -60,6 +60,7 @@
 #include <feel/feelvf/block.hpp>
 
 #include <feel/feelalg/nullspace.hpp>
+#include <feel/feeldiscr/traits.hpp>
 
 namespace Feel
 {
@@ -624,7 +625,7 @@ public:
      * @param n number of Vectors
      * @return std::vector<vector_ptrtype> 
      */
-    template <typename SpaceType, typename = typename std::enable_if_t<std::is_base_of_v<FunctionSpaceBase, SpaceType>>>
+    template <typename SpaceType, typename = std::enable_if_t<is_functionspace_v<decay_type<SpaceType>>>>
     std::vector<vector_ptrtype> newVectors( std::shared_ptr<SpaceType> const& space, const size_type n ) { return this->newVectors( space->dof(), n ); }
 
     //@}

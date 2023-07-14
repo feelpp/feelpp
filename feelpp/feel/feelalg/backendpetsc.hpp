@@ -38,8 +38,6 @@
 #include <feel/feelalg/solvernonlinearpetsc.hpp>
 #include <feel/feelalg/backend.hpp>
 
-
-
 namespace Feel
 {
 namespace po = boost::program_options;
@@ -318,8 +316,8 @@ public:
      * @param N number of vectors
      * @return std::vector<vector_ptrtype>
      */
-    template<typename SpaceT>
-    static auto newVectors(SpaceT& space, size_t vector_count) 
+    template <typename SpaceT, typename = std::enable_if_t<is_functionspace_v<decay_type<SpaceT>>>>
+    static auto newVectors( SpaceT const& space, size_t vector_count ) 
     {
         using underlying_t = typename std::remove_reference<decltype(*space)>::type;
         static_assert(std::is_member_function_pointer<decltype(&underlying_t::dof)>::value, "Underlying type of SpaceT must have a dof() member function");

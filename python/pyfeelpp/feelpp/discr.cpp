@@ -129,6 +129,10 @@ void defDiscr(py::module &m, std::string const& suffix = "")
             }, py::arg("vec"), py::arg("start") = 0, "get an element from a vector")     
         .def("element", []( std::shared_ptr<space_t> & Xh, VectorPetsc<double> const& v, int blockIdStart ) { return Xh->element( v, blockIdStart );
             }, py::arg("vec"), py::arg("start") = 0, "get an element from a vector")      
+        .def("elementsPtr", []( std::shared_ptr<space_t> & Xh, int N ) { return Xh->elementsPtr( N );
+            }, py::arg("N") = 0, "get a vector of elements")
+        .def("newVectors", []( std::shared_ptr<space_t> & Xh, int N ) { return Xh->newVectors( N );
+            }, py::arg("N") = 0, "get a vector of Vector<> built from a function space")
         ;
 
     // Element

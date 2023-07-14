@@ -736,7 +736,7 @@ BOOST_AUTO_TEST_CASE( test_mdot )
     auto mesh = unitSquare();
     auto Vh = Pch<1>( mesh );
     auto u = Vh->element();
-    auto us = Vh->newElements(3);
+    auto us = Vh->newVectors(3);
 
     u.setConstant( 1 );
     for( auto w : us )
@@ -796,7 +796,7 @@ BOOST_AUTO_TEST_CASE( test_maxpy )
     auto u = Vh->element();
     auto vs = backendPetsc->newVectors( Vh, 3 );
     BOOST_CHECK_EQUAL( vs.size(), 3 );
-    auto us = Vh->newElements(3);
+    auto us = Vh->newVectors(3);
     BOOST_CHECK_EQUAL( us.size(), 3 );
 
     v->setConstant( 0 );

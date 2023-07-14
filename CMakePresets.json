@@ -302,11 +302,7 @@
         {
             "name": "mor",
             "inherits": "default",
-            "configurePreset": "mor",
-            "targets": [
-                "all",
-                "install"
-            ]
+            "configurePreset": "mor"
         },
         {
             "name": "mor-dbg",

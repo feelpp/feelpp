@@ -5241,7 +5241,7 @@ public:
         return u;
     }
     std::vector<vector_ptrtype>
-    newElements( int N, std::string const& name = "u" )
+    newVectors( int N, std::string const& name = "u" )
     {
         std::vector<vector_ptrtype> u;
         u.reserve(N);
