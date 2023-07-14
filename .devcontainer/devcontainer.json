@@ -1,11 +1,33 @@
 {
-	"name": "Feel++ Jammy",
-	"image": "ghcr.io/feelpp/feelpp-dev:jammy",
+	"name": "Feel++",
+
+	// feelpp-dev images are available for the following distributions:
+	//"image": "ghcr.io/feelpp/feelpp-dev:focal",
+	//"image": "ghcr.io/feelpp/feelpp-dev:jammy",
+	//"image": "ghcr.io/feelpp/feelpp-dev:kinetic",
+	//"image": "ghcr.io/feelpp/feelpp-dev:lunar",
+	//"image": "ghcr.io/feelpp/feelpp-dev:bookworm",
+	//"image": "ghcr.io/feelpp/feelpp-dev:sid",
+	//"image": "ghcr.io/feelpp/feelpp-dev:testing",
+
+	// feelpp-env images are available for the following distributions:
+	//"image": "ghcr.io/feelpp/feelpp-env:ubuntu-20.04",
+	//"image": "ghcr.io/feelpp/feelpp-env:ubuntu-22.04",
+	//"image": "ghcr.io/feelpp/feelpp-env:debian-11",
+	"image": "ghcr.io/feelpp/feelpp-env:debian-12",
+	//"image": "ghcr.io/feelpp/feelpp-env:debian-testing",
+	//"image": "ghcr.io/feelpp/feelpp-env:debian-sid",
+	//"image": "ghcr.io/feelpp/feelpp-env:fedora-36",
+	//"image": "ghcr.io/feelpp/feelpp-env:fedora-37",
+	
 	// Add the IDs of extensions you want installed when the container is created in the array below.
 	"extensions": [
 		"ms-vscode.cpptools",
 		"ms-vscode.cmake-tools",
 		"josetr.cmake-language-support-vscode",
-		"asciidoctor.asciidoctor-vscode"
+		"asciidoctor.asciidoctor-vscode",
+		"ms-python.python",
+		"ms-toolsai.jupyter",
+		"ms-vsliveshare.vsliveshare"
 	]
 }
