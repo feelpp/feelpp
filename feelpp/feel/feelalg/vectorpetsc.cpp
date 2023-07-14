@@ -743,6 +743,29 @@ VectorPetsc<T>::dot( Vector<T> const& __v ) const
 
 template <typename T>
 void
+VectorPetsc<T>::mDot( int nv, const Vector<value_type> *y, value_type val[] )
+{
+    if ( !this->closed() )
+        const_cast<VectorPetsc<T>*>( this )->close();
+
+    Vec *mVecArray = new Vec[nv];
+    for (int i = 0; i < nv; ++i)
+    {
+        const VectorPetsc<T>* vecPetsc = dynamic_cast<const VectorPetsc<T>*>( &y[i] );
+        mVecArray[i] = vecPetsc->M_vec;   
+    }
+
+    int ierr = 0;
+    ierr = VecMDot( this->vec(), nv, mVecArray, val );
+    CHKERRABORT( this->comm(),ierr );
+    
+    delete[] mVecArray;
+
+    return;
+}
+
+template <typename T>
+void
 VectorPetsc<T>::addVector ( const Vector<value_type>& V_in,
                             const MatrixSparse<value_type>& A_in )
 {
@@ -776,6 +799,26 @@ VectorPetsc<T>::addVector ( const Vector<value_type>& V_in,
         return;
     }
 
+}
+
+template <typename T>
+void
+VectorPetsc<T>::maxpy( int nv, const value_type alpha[], const Vector<value_type> *v )
+{
+    int ierr = 0;
+    Vec *mVecArray = new Vec[nv];
+    for (int i = 0; i < nv; i++)
+    {
+        const VectorPetsc<T>* vecPetsc = dynamic_cast<const VectorPetsc<T>*>( &v[i] );
+        mVecArray[i] = vecPetsc->M_vec;
+    }
+
+    ierr = VecMAXPY( M_vec, nv, alpha, mVecArray);
+    CHKERRABORT( this->comm(), ierr );
+
+    delete [] mVecArray;
+
+    return;
 }
 
 template <typename T>

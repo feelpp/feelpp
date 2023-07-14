@@ -615,6 +615,13 @@ public:
      * \p operator +=.
      */
     void add ( const value_type& a_in, const Vector<value_type>& v_in ) override;
+
+    /**
+     * Computes y = y + sum \p alpha[i] * \p x[i] for i = 0, ..., \p nv-1.
+     * 
+     */
+    void maxpy ( int nv, const value_type alpha[], const Vector<value_type> *v_in );
+
     /**
      * Replaces each component of a vector by its reciprocal.
      */
@@ -708,6 +715,12 @@ public:
     void printMatlab( const std::string name="NULL", bool renumber = false ) const override;
 
     value_type dot( Vector<T> const& __v ) const override;
+
+    /**
+     * Computes multiple vector dot products.
+     * \p val [i] = \p y [i] . \p this for i=0,..., \p nv - 1
+     */
+    void mDot( int nv, const Vector<value_type> *y, value_type val[] );
 
     /**
      * This function creates a vector which is defined
