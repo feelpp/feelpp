@@ -33,13 +33,17 @@
 #include <feel/feelcore/testsuite.hpp>
 
 #include <feel/feelcore/traits.hpp>
+#include <feel/feelcore/enumerate.hpp>
 #include <feel/feelalg/glas.hpp>
 #include <feel/feelalg/vectorublas.hpp>
 #include <feel/feelalg/backend.hpp>
 #include <feel/feelfilters/unitsquare.hpp>
+#include <feel/feeldiscr/pch.hpp>
 #include <feel/feeldiscr/pchv.hpp>
 #include <feel/feeldiscr/thch.hpp>
 #include <feel/feeldiscr/stencil.hpp>
+
+#include <range/v3/view/take.hpp>
 
 namespace Feel
 {
@@ -724,5 +728,119 @@ BOOST_AUTO_TEST_CASE( test_vector_petsc_extarray )
     auto vecCloned = vB1_petsc1->clone();
     vecCloned->setConstant( 3. );
     BOOST_CHECK_SMALL( vecCloned->sum() - 3*nDofVhB1, 1e-9 );
+}
+
+BOOST_AUTO_TEST_CASE( test_mdot )
+{
+    using namespace Feel;
+    auto mesh = unitSquare();
+    auto Vh = Pch<1>( mesh );
+    auto u = Vh->element();
+    auto us = Vh->newElements(3);
+
+    u.setConstant( 1 );
+    for( auto w : us )
+        u.setConstant( 1 );
+
+    auto backendPetsc = backend( _kind = "petsc" );
+    auto v = backendPetsc->newVector( Vh );
+    auto vs = backendPetsc->newVectors( Vh, 3 );
+    BOOST_CHECK_EQUAL( vs.size(), 3 );
+
+    v->setConstant( 1 );
+    for( auto w : vs )
+        w->setConstant( 1 );
+    
+    tic();
+    auto r = v->mDot(vs);
+    toc("mdot 3 vectors");
+    BOOST_TEST_MESSAGE( fmt::format("r.size()={}, r={}", r.size(),r) );
+    for( auto [i,w] : enumerate(vs) )
+        BOOST_CHECK_EQUAL( r[i], w->sum() );
+
+    r = v->mDot( vs, 2 );
+    BOOST_TEST_MESSAGE( fmt::format("r.size()={}, r={}", r.size(),r) );
+    for( auto [i,w] : enumerate(vs | ranges::views::take(2)) )
+        BOOST_CHECK_EQUAL( r[i], w->sum() );
+
+    r = u.mDot(vs);
+    toc("mdot 3 vectors petsc -> ublas");
+    BOOST_TEST_MESSAGE( fmt::format("r.size()={}, r={}", r.size(),r) );
+    for( auto [i,w] : enumerate(vs) )
+        BOOST_CHECK_EQUAL( r[i], w->sum() );
+
+    r = u.mDot(us);
+    toc("mdot 3 vectors ublas -> ublas");
+    BOOST_TEST_MESSAGE( fmt::format("r.size()={}, r={}", r.size(),r) );
+    for( auto [i,w] : enumerate(us) )
+        BOOST_CHECK_EQUAL( r[i], w->sum() );
+
+    r = v->mDot(us);
+    toc("mdot 3 vectors ublas -> petsc");
+    BOOST_TEST_MESSAGE( fmt::format("r.size()={}, r={}", r.size(),r) );
+    for( auto [i,w] : enumerate(us) )
+        BOOST_CHECK_EQUAL( r[i], w->sum() );
+
+
+
+}
+
+BOOST_AUTO_TEST_CASE( test_maxpy )
+{
+    using namespace Feel;
+    auto mesh = unitSquare();
+    auto Vh = Pch<1>( mesh );
+
+    auto backendPetsc = backend( _kind = "petsc" );
+    auto v = backendPetsc->newVector( Vh );
+    auto u = Vh->element();
+    auto vs = backendPetsc->newVectors( Vh, 3 );
+    BOOST_CHECK_EQUAL( vs.size(), 3 );
+    auto us = Vh->newElements(3);
+    BOOST_CHECK_EQUAL( us.size(), 3 );
+
+    v->setConstant( 0 );
+    for( auto w : vs )
+        w->setConstant( 1 );
+    for( auto w : us )
+        w->setConstant( 1 );
+    
+    eigen_vector_type<> alpha(3);
+    alpha << 1, 2, 3;
+    tic();
+    v->add(alpha,vs);
+    toc("add 3 vectors");
+    BOOST_CHECK_EQUAL( v->sum(), 6*vs[0]->size() );
+
+    v->setConstant( 0 );
+    tic();
+    v->add(alpha,us);
+    toc("add 3 vectors ublas -> petsc");
+    BOOST_CHECK_EQUAL( v->sum(), 6*us[0]->size() );
+
+    u.setConstant( 0 );
+    tic();
+    u.add(alpha,vs);
+    toc("add 3 vectors petsc -> ublas");
+    BOOST_CHECK_EQUAL( u.sum(), 6*vs[0]->size() );
+
+    u.setConstant( 0 );
+    tic();
+    u.add(alpha,us);
+    toc("add 3 vectors ublas -> ublas ");
+    BOOST_CHECK_EQUAL( u.sum(), 6*us[0]->size() );
+    
+    auto sv = vs| ranges::views::take(2);
+    v->setConstant( 0 );   
+    tic();
+    v->add(alpha,{sv.begin(), sv.end()});
+    toc("add 2 vectors");
+    BOOST_CHECK_EQUAL( v->sum(), 3 * vs[0]->size() );
+
+    v->setConstant( 0 );    
+    tic();
+    v->add(alpha,vs,2);
+    toc("add 2 vectors with stride");
+    BOOST_CHECK_EQUAL( v->sum(), 3 * vs[0]->size() );
 }
 BOOST_AUTO_TEST_SUITE_END()

@@ -301,25 +301,78 @@ public:
         return mat;
     }
 
-    template<typename SpaceT>
-    static vector_ptrtype newVector( SpaceT const& space )
+    template <typename SpaceT>
+    static auto newVector( SpaceT const& space )
     {
-        if ( space->worldComm().globalSize()>1 )
-            return vector_ptrtype( new petscMPI_vector_type( space->dof() ) );
-        else
-            return vector_ptrtype( new petsc_vector_type( space->dof() ) );
+        using underlying_t = typename std::remove_reference<decltype(*space)>::type;
+        static_assert(std::is_member_function_pointer<decltype(&underlying_t::dof)>::value, "Underlying type of SpaceT must have a dof() member function");
+
+        return newVector(space->dof());
     }
 
+    /**
+     * @brief create a new vector of \c N VectorPetsc
+     *
+     * @tparam SpaceT function space type
+     * @param space function space
+     * @param N number of vectors
+     * @return std::vector<vector_ptrtype>
+     */
+    template<typename SpaceT>
+    static auto newVectors(SpaceT& space, size_t vector_count) 
+    {
+        using underlying_t = typename std::remove_reference<decltype(*space)>::type;
+        static_assert(std::is_member_function_pointer<decltype(&underlying_t::dof)>::value, "Underlying type of SpaceT must have a dof() member function");
+
+        return newVectors(space->dof());
+    }
+
+    /**
+     * @brief create a new vector of \c N VectorPetsc
+     * 
+     * @param dm Datamap
+     * @param vector_count size of the vector
+     * @return vector_ptrtype 
+     */
+    std::vector<vector_ptrtype> newVectors( datamap_ptrtype const& dm, const size_type vector_count ) override
+    {
+        std::vector<vector_ptrtype> result;
+
+        // Reserve memory in advance for efficiency
+        result.reserve(vector_count);
+
+        try
+        {
+            for ( size_t i = 0; i < vector_count; ++i )
+            {
+                result.push_back(newVector(dm));
+            }     
+        }
+        catch(const std::bad_alloc& e) // catches if new allocation fails
+        {
+            LOG(WARNING) << fmt::format("[BackendPetsc::newVectors] Memory allocation failed: {} ",e.what()) << '\n';
+            throw;
+        }
+        return result;
+    }
+
+    /**
+     * @brief create a new VectorPetsc
+     * 
+     * @param dm Datamap
+     * @return vector_ptrtype 
+     */
     vector_ptrtype newVector( datamap_ptrtype const& dm ) override
     {
-        if ( this->comm().globalSize()>1 ) return vector_ptrtype( new petscMPI_vector_type( dm ) );
-
-        else return vector_ptrtype( new petsc_vector_type( dm ) );
+        if ( this->comm().globalSize()>1 ) 
+            return std::make_shared<petscMPI_vector_type>( dm );
+        else 
+           return std::make_shared<petsc_vector_type>( dm );
     }
 
     vector_ptrtype newVector( const size_type n, const size_type n_local ) override
     {
-        return vector_ptrtype( new petsc_vector_type( n, n_local, this->worldCommPtr() ) );
+        return std::make_shared<petsc_vector_type>( n, n_local, this->worldCommPtr() );
     }
 
 

@@ -586,6 +586,15 @@ public:
     virtual vector_ptrtype newVector( datamap_ptrtype const& dm ) = 0;
 
     /**
+     * @brief create a new vector of Vectors of size n
+     * 
+     * @param dm DataMap
+     * @param n number of vectors
+     * @return std::vector<vector_ptrtype> 
+     */
+    virtual std::vector<vector_ptrtype> newVectors( datamap_ptrtype const& dm, const size_type n ) = 0;
+
+    /**
      * instantiate a new vector
      */
     virtual vector_ptrtype newVector( const size_type n, const size_type n_local ) = 0;
@@ -604,7 +613,19 @@ public:
     }
 
     template <typename SpaceType,typename = typename std::enable_if_t< std::is_base_of_v<FunctionSpaceBase,SpaceType>>>
-    vector_ptrtype newVector( std::shared_ptr<SpaceType> space ) { return this->newVector(_test=space ); }
+    vector_ptrtype newVector( std::shared_ptr<SpaceType> const& space ) { return this->newVector(_test=space ); }
+
+    /**
+     * @brief create a new vector of Vectors of size n
+     * 
+     * @tparam SpaceType type of space
+     * @tparam std::enable_if_t<std::is_base_of_v<FunctionSpaceBase, SpaceType>> 
+     * @param space function space
+     * @param n number of Vectors
+     * @return std::vector<vector_ptrtype> 
+     */
+    template <typename SpaceType, typename = typename std::enable_if_t<std::is_base_of_v<FunctionSpaceBase, SpaceType>>>
+    std::vector<vector_ptrtype> newVectors( std::shared_ptr<SpaceType> const& space, const size_type n ) { return this->newVectors( space->dof(), n ); }
 
     //@}
 

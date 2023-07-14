@@ -37,7 +37,8 @@
 #include <feel/feelcore/traits.hpp>
 
 #include <feel/feelalg/datamap.hpp>
-
+#include <feel/feelalg/glas.hpp>
+#include <range/v3/view/take.hpp>
 namespace Feel
 {
 namespace ublas = boost::numeric::ublas;
@@ -478,6 +479,32 @@ public:
     {
         add( a, *v );
     }
+
+    /**
+     * @brief add a vector to a vector
+     * 
+     * @param a vector of coefficients to multiply the vectors
+     * @param v vector of vectors to add
+     */
+    virtual void add ( const eigen_vector_type<Eigen::Dynamic,value_type>& a, const std::vector<vector_ptrtype>& v ) {}
+
+    /**
+     * @brief add to a vector  a given number of vectors
+     * 
+     * @param a 
+     * @param v 
+     * @param N 
+     */
+    virtual void add ( const eigen_vector_type<Eigen::Dynamic,value_type>& a, const std::vector<vector_ptrtype>& v, int N ) 
+    {
+        if ( N >= v.size() )
+            throw std::invalid_argument( fmt::format("invalid number of vectors {} should be less than {}", N, v.size() ) ); 
+        if ( a.size() < N )
+            throw std::invalid_argument( fmt::format("invalid number of coefficients {} should be greater of equal to {}", a.size(), N ) );
+        auto sv = v| ranges::views::take(N);
+        this->add( a, {sv.begin(), sv.end()} );
+    }
+
     /**
      * \f$ U+=v \f$ where v is a ublas::vector<T>
      * and you
@@ -539,6 +566,22 @@ public:
 
     virtual value_type dot( Vector<T> const& v ) const = 0;
     virtual value_type dot( std::shared_ptr<Vector<T> > const& v ) const { return dot( *v ); }
+
+    /**
+     * @brief multiple dot products
+     * 
+     * @return eigen_vector_type<Eigen::Dynamic,value_type> 
+     */
+    virtual eigen_vector_type<Eigen::Dynamic,value_type> mDot( std::vector<vector_ptrtype> const& vs ) const  { return eigen_vector_type<Eigen::Dynamic,value_type>(); }
+
+    virtual eigen_vector_type<Eigen::Dynamic,value_type> mDot( std::vector<vector_ptrtype> const& vs, int N ) const  
+    {
+        if ( N >= vs.size() )
+            throw std::invalid_argument( fmt::format( "invalid number of vectors {} should be less than {}", N, vs.size() ) );
+        auto sv = vs | ranges::views::take( N );
+        return this->mDot( { sv.begin(), sv.end() } );
+    }
+   
 
     /**
      * \f$ U=v \f$ where v is a DenseVector<T>

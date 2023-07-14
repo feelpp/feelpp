@@ -5232,10 +5232,22 @@ public:
     elements_ptrtype
     elementsPtr( int r, std::string const& name = "u" )
     {
-        elements_ptrtype u( r );
+        elements_ptrtype u;
+        u.reserve(r);
         for( int i = 0; i <  r; ++i )
         {
-            u[i] = std::make_shared<element_type>( this->shared_from_this(), name );
+            u.push_back( std::make_shared<element_type>( this->shared_from_this(), name ) );
+        }
+        return u;
+    }
+    std::vector<vector_ptrtype>
+    newElements( int N, std::string const& name = "u" )
+    {
+        std::vector<vector_ptrtype> u;
+        u.reserve(N);
+        for( int i = 0; i <  N; ++i )
+        {
+            u.push_back( std::make_shared<element_type>( this->shared_from_this(), name ) );
         }
         return u;
     }

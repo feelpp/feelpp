@@ -135,7 +135,7 @@ public:
                size_type matrix_properties = NON_HERMITIAN ) override
     {
         //sparse_matrix_ptrtype mat( new eigen_sparse_matrix_type( m,n ) );
-        sparse_matrix_ptrtype mat( new eigen_sparse_matrix_type( m,n,this->worldCommPtr() ) );
+        auto mat = std::make_shared<eigen_sparse_matrix_type>( m,n,this->worldCommPtr() );
         mat->setMatrixProperties( matrix_properties );
         return mat;
     }
@@ -149,7 +149,7 @@ public:
                size_type matrix_properties = NON_HERMITIAN ) override
     {
         //sparse_matrix_ptrtype mat( new eigen_sparse_matrix_type( m,n ) );
-        sparse_matrix_ptrtype mat( new eigen_sparse_matrix_type( m,n,this->worldCommPtr() ) );
+        auto mat = std::make_shared<eigen_sparse_matrix_type>( m,n,this->worldCommPtr() );
         mat->setMatrixProperties( matrix_properties );
         return mat;
     }
@@ -157,7 +157,7 @@ public:
     sparse_matrix_ptrtype
     newMatrix( datamap_ptrtype const& d1, datamap_ptrtype const& d2, size_type matrix_properties = NON_HERMITIAN, bool init = true ) override
     {
-        auto A = sparse_matrix_ptrtype( new eigen_sparse_matrix_type( d2, d1 ) );
+        auto A = std::make_shared<eigen_sparse_matrix_type>( d2, d1 );
         A->setMatrixProperties( matrix_properties );
         return A;
     }
@@ -168,7 +168,7 @@ public:
                    const size_type m_l,
                    const size_type n_l ) override
     {
-        auto A = sparse_matrix_ptrtype( new eigen_sparse_matrix_type( m, n ) );
+        auto A = std::make_shared<eigen_sparse_matrix_type>( m, n );
         //A->setMatrixProperties( matrix_properties );
         return A;
     }
@@ -177,7 +177,7 @@ public:
     sparse_matrix_ptrtype
     newZeroMatrix( datamap_ptrtype const& d1, datamap_ptrtype const& d2 ) override
     {
-        auto A = sparse_matrix_ptrtype( new eigen_sparse_matrix_type( d2, d1 ) );
+        auto A = std::make_shared<eigen_sparse_matrix_type>( d2, d1 );
         //A->setMatrixProperties( matrix_properties );
         return A;
     }
@@ -186,25 +186,48 @@ public:
     static vector_ptrtype newVector( std::shared_ptr<SpaceT> const& space )
     {
         //return vector_ptrtype( new eigen_vector_type( space->nDof() ) );
-        return vector_ptrtype( new eigen_vector_type( space->nDof(), space->map()->worldCommPtr() ) );
+        return std::make_shared<eigen_vector_type>( space->nDof(), space->map()->worldCommPtr() );
     }
 
     template<typename SpaceT>
     static vector_ptrtype newVector( SpaceT const& space )
     {
         //return vector_ptrtype( new eigen_vector_type( space.nDof() ) );
-        return vector_ptrtype( new eigen_vector_type( space.nDof(), space.map()->worldCommPtr() ) );
+        return std::make_shared<eigen_vector_type>( space.nDof(), space.map()->worldCommPtr() );
     }
 
     vector_ptrtype
     newVector( datamap_ptrtype const& d ) override
     {
-        return vector_ptrtype( new eigen_vector_type( d->nGlobalElements(), this->worldCommPtr() ) );
+        return std::make_shared<eigen_vector_type>( d->nGlobalElements(), this->worldCommPtr() );
+    }
+
+    std::vector<vector_ptrtype>
+    newVectors( datamap_ptrtype const& d, const size_type vector_count ) override
+    {
+        std::vector<vector_ptrtype> result;
+
+        // Reserve memory in advance for efficiency
+        result.reserve(vector_count);
+
+        try
+        {
+            for ( size_t i = 0; i < vector_count; ++i )
+            {
+                result.push_back( std::make_shared<eigen_vector_type>( d ) );
+            } 
+        }
+        catch ( const std::bad_alloc& e ) // catches if new allocation fails
+        {
+            LOG( WARNING ) << fmt::format( "[BackendEigen::newVectors] Memory allocation failed: {} ", e.what() ) << '\n';
+            throw;
+        }
+        return result;
     }
 
     vector_ptrtype newVector( const size_type n, const size_type n_local ) override
     {
-        return vector_ptrtype( new eigen_vector_type( n, this->worldCommPtr() ) );
+        return std::make_shared<eigen_vector_type>( n, this->worldCommPtr() );
     }
 
 

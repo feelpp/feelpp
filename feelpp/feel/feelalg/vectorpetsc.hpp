@@ -617,6 +617,14 @@ public:
     void add ( const value_type& a_in, const Vector<value_type>& v_in ) override;
 
     /**
+     * @brief add linear combination of vs to this vector
+     * 
+     * @param a vector of coefficients
+     * @param vs vector of vectors
+     */
+    void add( const eigen_vector_type<Eigen::Dynamic, value_type>& a, const std::vector<vector_ptrtype>& vs ) override;
+
+    /**
      * Computes y = y + sum \p alpha[i] * \p x[i] for i = 0, ..., \p nv-1.
      * 
      */
@@ -720,7 +728,7 @@ public:
      * Computes multiple vector dot products.
      * \p val [i] = \p y [i] . \p this for i=0,..., \p nv - 1
      */
-    void mDot( int nv, const Vector<value_type> *y, value_type val[] );
+    eigen_vector_type<Eigen::Dynamic,value_type> mDot( std::vector<vector_ptrtype> const& vs ) const override;
 
     /**
      * This function creates a vector which is defined
@@ -915,6 +923,14 @@ public:
      * \p operator +=.
      */
     void add( const value_type& a_in, const Vector<value_type>& v_in ) override;
+
+    /**
+     * @brief add linear combination of vs to this vector
+     * 
+     * @param a_in 
+     * @param v_in 
+     */
+    void add( const eigen_vector_type<Eigen::Dynamic,value_type>& a_in, const std::vector<vector_ptrtype>& v_in ) override;
 
     /**
      * v(i) = value (i is global process index)

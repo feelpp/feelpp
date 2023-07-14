@@ -22,7 +22,7 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-
+#include <feel/feelcore/enumerate.hpp>
 #include <feel/feelalg/vectorublas.hpp>
 #include <feel/feelcore/hdf5.hpp>
 
@@ -273,6 +273,37 @@ void VectorUblasBase<T>::add( const value_type & a, const Vector<T> & v )
 }
 
 template< typename T >
+void VectorUblasBase<T>::add( const eigen_vector_type<Eigen::Dynamic,value_type> & a, const std::vector<vector_ptrtype> & vs )
+{
+#ifndef NDEBUG
+    checkInvariants();
+#endif
+    for( auto const& [i,v] : enumerate(vs) )
+    {
+        // Ublas case
+        const VectorUblasBase<T> * vecUblas = dynamic_cast<const VectorUblasBase<T> *>( v.get() );
+        if( vecUblas )
+        {
+            this->maddVector( a[i], *vecUblas );
+            continue;
+        }
+    #if FEELPP_HAS_PETSC
+        // Petsc case
+        const VectorPetsc<T> * vecPetsc = dynamic_cast<const VectorPetsc<T> *>( v.get() );
+        if( vecPetsc )
+        {
+            this->maddVector( a[i], *vecPetsc );
+            continue;
+        }
+    #endif
+        // Default
+        for( size_type j = 0; j < this->localSize(); ++j )
+            this->operator()( j ) += a[i] * v->operator()( j );
+    }
+    return;
+}
+
+template< typename T >
 void VectorUblasBase<T>::sub( const Vector<T> & v )
 {
 #ifndef NDEBUG
@@ -384,7 +415,49 @@ typename VectorUblasBase<T>::value_type VectorUblasBase<T>::dot( const Vector<T>
 #endif
     return globalRes;
 }
+template <typename T>
+eigen_vector_type<Eigen::Dynamic,typename VectorUblasBase<T>::value_type> 
+VectorUblasBase<T>::mDot( const std::vector<std::shared_ptr<Vector<T>>>& vs ) const
+{
+    eigen_vector_type<Eigen::Dynamic,value_type> r(vs.size());
+    // Ublas case
+    const VectorUblasBase<T>* vecUblas = dynamic_cast<const VectorUblasBase<T>*>( vs[0].get() );
+    if ( vecUblas )
+    {
+        for ( auto const& [i, v] : enumerate(vs) )
+        {
+            r[i] = this->dotVector( *dynamic_cast<const VectorUblasBase<T>*>( v.get() ) );
+        }
+        return r;
+    }
+        
+#if FEELPP_HAS_PETSC
+    // Petsc case
+    const VectorPetsc<T>* vecPetsc = dynamic_cast<const VectorPetsc<T>*>( vs[0].get() );
+    if ( vecPetsc )
+    {
+        for ( auto const& [i, v] : enumerate(vs) )
+        {
+            r[i] = this->dotVector( *dynamic_cast<const VectorPetsc<T>*>(  v.get() ) );
+        }
+        return r;
+    }
+#endif
 
+    // Default
+    for ( auto const& [j, v] : enumerate(vs) )
+    {
+        value_type localRes = 0;
+        for ( size_type i = 0; i < this->map().nLocalDofWithoutGhost(); ++i )
+            localRes += this->operator()( i ) * v->operator()( i );
+        r[j] = localRes;
+#ifdef FEELPP_HAS_MPI
+        if ( this->comm().size() > 1 )
+            mpi::all_reduce( this->comm(), localRes, r[j], std::plus<value_type>() );
+#endif
+    }
+    return r;
+}
 namespace helpers {
 #if defined(FEELPP_HAS_TBB)
 template<typename VectorType>

@@ -275,8 +275,8 @@ PYBIND11_MODULE(_alg, m )
         ( std::shared_ptr<Vector<double>> const& , std::shared_ptr<MatrixSparse<double>> const&  )
         >( &Vector<double>::addVector ), "add the product of a MatrixSparse and a vector to this vector" )
         .def( "add", [](Vector<double> &v, double a, Vector<double> const& w){ v.add(a, w); }, "add a scalar*vector to this vector" )
-        .def( "maxpy", [](Vector<double> &v, int nv, double *a, Vector<double> *w){ v.maxpy(nv, a, w); }, "add a sum of scalar*vector to this vector" )
-        .def( "mDot", [](Vector<double> &v, int nv, Vector<double> *y, double *val){ v.mDot(nv, y, val); }, "Computes multiple vector dot products" )
+        .def( "add", [](Vector<double> &v, eigen_vector_type<Eigen::Dynamic,double> const& a, std::vector<std::shared_ptr<Vector<double>>> const& vs ){ v.add(a, vs); }, "add a linear combination of vectors vs using coefficients a" )
+        .def( "mDot", []( Vector<double> &v, std::vector<vector_ptrtype> const& vs ){ return v.mDot( vs ); }, "Computes multiple vector dot products" )
         ;
     py::class_<VectorPetsc<double>, Vector<double, uint32_type>, std::shared_ptr<VectorPetsc<double>>>( m, "VectorPetscDouble" )
         .def( py::init<>() )
@@ -304,6 +304,11 @@ PYBIND11_MODULE(_alg, m )
         .def( "l1Norm", &VectorPetsc<double>::l1Norm, "l1 norm of entries" )
         .def( "l2Norm", &VectorPetsc<double>::l2Norm, "l2 norm of entries" )
         .def( "linftyNorm", &VectorPetsc<double>::linftyNorm, "linfty norm of entries" )
+        .def( "mDot", &VectorPetsc<double>::mDot, "multiple dot products" )
+        .def( "add", []( VectorPetsc<double>& v, eigen_vector_type<Eigen::Dynamic,double> const& a, std::vector<std::shared_ptr<Vector<double>>> const& vs )
+                      {
+                            v.add( a, vs );
+                      }, "add a linear combination of vectors vs using coefficients a" )
         .def( "vec", static_cast<Vec ( VectorPetsc<double>::* )() const>( &VectorPetsc<double>::vec ), "return a PETSc Vector" );
     
     py::class_<VectorPetscMPI<double>, VectorPetsc<double>, std::shared_ptr<VectorPetscMPI<double>>>( m, "VectorPetscMPIDouble" )
@@ -376,6 +381,11 @@ PYBIND11_MODULE(_alg, m )
         .def( "linftyNorm", &VectorUblas<double>::linftyNorm, "linfty norm of entries" )
         .def( "to_petsc", [](VectorUblas<double> &v){ return toPETSc( v );
 }, "c s ba VectorDouble to a VectorPetscDouble" )
+        .def( "mDot", &VectorUblas<double>::mDot, "multiple dot products" )
+        .def( "add", []( VectorUblas<double>& v, eigen_vector_type<Eigen::Dynamic,double> const& a, std::vector<std::shared_ptr<Vector<double>>> const& vs )
+                      {
+                            v.add( a, vs );
+                      }, "add a linear combination of vectors vs using coefficients a" )
         .def_static( "createFromPETSc", &VectorUblas<double>::createView, "create a VectorUblas<double> from a VectorPETScDouble", py::arg("vec") );
 
 

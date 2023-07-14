@@ -27,6 +27,7 @@
    \date 2007-07-02
  */
 #include <feel/feelcore/feel.hpp>
+#include <feel/feelcore/enumerate.hpp>
 #include <feel/feelcore/feelpetsc.hpp>
 #include <feel/feelalg/vectorpetsc.hpp>
 #include <feel/feelalg/matrixpetsc.hpp>
@@ -493,6 +494,35 @@ VectorPetsc<T>::add ( const value_type& a_in, const Vector<value_type>& v_in )
     }
 }
 
+template <typename T>
+void VectorPetsc<T>::add( const eigen_vector_type<Eigen::Dynamic, value_type>& a_in, const std::vector<vector_ptrtype>& vs )
+{
+    if ( !this->closed() )
+        this->close();
+
+    if ( vs.size() == 0 )
+        return;
+    if (  dynamic_cast<VectorPetsc<T>*>( vs[0].get() ) )
+    {
+        std::vector<Vec> vvs;
+        vvs.reserve( vs.size() );
+        for( auto& w: vs )
+        {
+            vvs.push_back( dynamic_cast<VectorPetsc<T>*>( w.get() )->vec() );
+        }
+        
+        int ierr = VecMAXPY( this->vec(), vs.size(), a_in.data(), vvs.data() );
+        CHKERRABORT( this->comm(), ierr );
+    }
+    else
+    {
+        for( auto const& [i,v] : enumerate(vs) )
+        {
+            this->add( a_in[i], *v );
+        }
+    }
+    return;
+}
 
 template <typename T>
 typename VectorPetsc<T>::real_type
@@ -742,26 +772,36 @@ VectorPetsc<T>::dot( Vector<T> const& __v ) const
 }
 
 template <typename T>
-void
-VectorPetsc<T>::mDot( int nv, const Vector<value_type> *y, value_type val[] )
+eigen_vector_type<Eigen::Dynamic,typename VectorPetsc<T>::value_type>
+VectorPetsc<T>::mDot( std::vector<vector_ptrtype> const& vs ) const
 {
     if ( !this->closed() )
         const_cast<VectorPetsc<T>*>( this )->close();
-
-    Vec *mVecArray = new Vec[nv];
-    for (int i = 0; i < nv; ++i)
+    eigen_vector_type<Eigen::Dynamic, T> r( vs.size() );
+    if ( vs.size() == 0 )
+        return r;
+    if ( dynamic_cast<VectorPetsc<T>*>( vs[0].get() ) )
     {
-        const VectorPetsc<T>* vecPetsc = dynamic_cast<const VectorPetsc<T>*>( &y[i] );
-        mVecArray[i] = vecPetsc->M_vec;   
+        std::vector<Vec> vvs;
+        vvs.reserve( vs.size() );
+        for ( auto const& v : vs )
+        {
+            vvs.push_back( dynamic_cast<VectorPetsc<T>*>( v.get() )->vec() );
+        }
+
+        int ierr = VecMDot( this->vec(), vs.size(), vvs.data(), r.data() );
+        CHKERRABORT( this->comm(), ierr );
+        return r;
     }
-
-    int ierr = 0;
-    ierr = VecMDot( this->vec(), nv, mVecArray, val );
-    CHKERRABORT( this->comm(),ierr );
-    
-    delete[] mVecArray;
-
-    return;
+    else
+    {
+        
+        for ( auto const& [i,v] : enumerate(vs) )
+        {
+            r[i] = this->dot( *v );
+        }
+        return r;
+    }
 }
 
 template <typename T>
@@ -1375,6 +1415,18 @@ VectorPetscMPI<T>::add( const value_type& a_in, const Vector<value_type>& v_in )
     super::add( a_in, v_in );
 }
 
+template <typename T>
+void
+VectorPetscMPI<T>::add( const eigen_vector_type<Eigen::Dynamic,value_type>& as, const std::vector<vector_ptrtype>& vs )
+{
+    if ( !this->closed() )
+        this->close();
+
+    for( auto const& [i,v] : enumerate(vs) )
+    {
+        this->add( as[i], *v );
+    }
+}
 
 template <typename T>
 void

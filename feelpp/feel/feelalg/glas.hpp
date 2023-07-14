@@ -254,7 +254,7 @@ using tensor_eigen_ublas_type = Eigen::TensorMap<Eigen::Tensor<const value_type,
 
 using d_tensor_eigen_ublas_type = Eigen::TensorMap<Eigen::Tensor<const double,2>> ;
 
-template<int Dim,typename T=double>
+template<int Dim = Eigen::Dynamic,typename T=double>
 using eigen_vector_type = Eigen::Matrix<T,Dim,1>;
 
 template <typename T = double>

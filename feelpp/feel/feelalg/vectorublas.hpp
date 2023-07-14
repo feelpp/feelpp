@@ -233,6 +233,7 @@ class FEELPP_EXPORT VectorUblas : public Vector<T>
         void add( const value_type & value ) override { return M_vectorImpl->add( value ); }
         void add( const Vector<T> & v ) override { return M_vectorImpl->add( v ); }
         void add( const value_type & a, const Vector<T> & v ) override { return M_vectorImpl->add( a, v ); }
+        void add( const eigen_vector_type<Eigen::Dynamic, value_type>& a, const std::vector<vector_ptrtype>& v ) override { return M_vectorImpl->add( a, v ); }
         void addVector( int * i, int n, value_type * v, size_type K = 0, size_type K2 = invalid_v<size_type> ) override { return M_vectorImpl->addVector( i, n, v, K, K2 ); }
         void addVector( const std::vector<value_type> & v, const std::vector<size_type> & dof_ids ) override { return M_vectorImpl->addVector( v, dof_ids ); }
         void addVector( const Vector<T> & v, const std::vector<size_type> & dof_ids ) override { return M_vectorImpl->addVector( v, dof_ids ); }
@@ -261,6 +262,7 @@ class FEELPP_EXPORT VectorUblas : public Vector<T>
         value_type sum() const override { return M_vectorImpl->sum(); }
 
         value_type dot( const Vector<T> & v ) const override { return M_vectorImpl->dot( v ); }
+        eigen_vector_type<Eigen::Dynamic,value_type> mDot( const std::vector<std::shared_ptr<Vector<T>>> & vs ) const override { return M_vectorImpl->mDot( vs ); }
 
         self_type sqrt() const { return self_type( M_vectorImpl->sqrt() ); }
         self_type pow( int n ) const { return self_type( M_vectorImpl->pow( n ) ); }
@@ -539,6 +541,7 @@ class FEELPP_EXPORT VectorUblasBase: public Vector<T>
         void add( const value_type & value ) override;
         void add( const Vector<T> & v ) override;
         void add( const value_type & a, const Vector<T> & v ) override;
+        void add( const eigen_vector_type<Eigen::Dynamic,value_type> & a, const std::vector<vector_ptrtype> & v ) override;
         void addVector( int * i, int n, value_type * v, size_type K = 0, size_type K2 = invalid_v<size_type> ) override;
         void addVector( const std::vector<value_type> & v, const std::vector<size_type> & dof_ids ) override;
         void addVector( const Vector<T> & v, const std::vector<size_type> & dof_ids ) override;
@@ -606,6 +609,7 @@ class FEELPP_EXPORT VectorUblasBase: public Vector<T>
         virtual value_type sum() const override = 0;
 
         value_type dot( const Vector<T> & v ) const override;
+        eigen_vector_type<Eigen::Dynamic,value_type> mDot( const std::vector<std::shared_ptr<Vector<T>>> & v ) const override;
 
         virtual std::unique_ptr<VectorUblasBase<T>> sqrt() const;
         virtual std::unique_ptr<VectorUblasBase<T>> pow( int n ) const;
