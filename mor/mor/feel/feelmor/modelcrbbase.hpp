@@ -2300,8 +2300,34 @@ public:
     bool hasDisplacementField() const { return M_has_displacement_field; }
     void setHasDisplacementField( bool const _hwf ) { M_has_displacement_field=_hwf; }
 
+    /**
+     * @brief get the plugin name
+     * 
+     * @return std::string the name of the plugin
+     */
+    std::string pluginName() const { return M_pluginName; }
+
+    /**
+     * @brief get the plugin library name
+     * 
+     * @return std::string the name of the plugin library
+     */
+    std::string pluginLibName() const { return M_pluginLibName; }
+
 protected:
+
+    /**
+     * @brief Set the Plugin Name object
+     * 
+     * @param name 
+     */
     void setPluginName( std::string const& name ) { M_pluginName = name; }
+
+    /**
+     * @brief Set the Plugin Lib Name object
+     * 
+     * @param libname 
+     */
     void setPluginLibName( std::string const& libname ) { M_pluginLibName = libname; }
 
 protected :
