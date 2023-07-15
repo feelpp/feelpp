@@ -33,7 +33,13 @@ template<bool IsStationary>
 OpusHeat<IsStationary>::OpusHeat()
     :
     super_type((IsStationary)?"OpusHeat_stationary":"OpusHeat")
-{}
+{
+    this->setPluginName( BOOST_PP_STRINGIZE(FEELPP_MOR_PLUGIN_NAME));
+    this->setPluginLibName( BOOST_PP_STRINGIZE(FEELPP_MOR_PLUGIN_LIBNAME) );
+
+    std::cout << fmt::format("[OpusHeat] plugin.name={}, plugin.libname={}",this->pluginName(),this->pluginLibName()) << std::endl;
+    LOG( INFO ) << fmt::format( "[OpusHeat] plugin.name={}, plugin.libname={}", this->pluginName(), this->pluginLibName() ) << std::endl;
+}
 
 template<bool IsStationary>
 void
@@ -96,6 +102,8 @@ template<bool IsStationary>
 void
 OpusHeat<IsStationary>::initModel()
 {
+    std::cout << fmt::format( "[OpusHeat::initModel] plugin.name={}, plugin.libname={}", this->pluginName(), this->pluginLibName() ) << std::endl;
+    LOG( INFO ) << fmt::format( "[OpusHeat::initModel] plugin.name={}, plugin.libname={}", this->pluginName(), this->pluginLibName() ) << std::endl;
 
     auto mesh = loadMesh( _mesh=new typename OpusHeatConfig<IsStationary>::mesh_type,
                           //_update=size_type(MESH_UPDATE_FACES_MINIMAL|MESH_NO_UPDATE_MEASURES),
@@ -104,8 +112,8 @@ OpusHeat<IsStationary>::initModel()
 
     if( Environment::worldComm().isMasterRank() )
     {
-        std::cout << "Number of local dof " << this->Xh->nLocalDof() << "\n";
-        std::cout << "Number of dof " << this->Xh->nDof() << "\n";
+        std::cout << fmt::format( "[OpusHeat::initModel] Number of local dof={} Number of dof = {}", this->Xh->nLocalDof(), this->Xh->nDof() ) << "\n";
+        LOG( INFO ) << fmt::format( "[OpusHeat::initModel] Number of local dof={} Number of dof = {}", this->Xh->nLocalDof(), this->Xh->nDof() ) << "\n";
     }
 
     for ( std::string const& marker : std::vector<std::string>({"AIR","PCB","IC1","IC2"}) )

@@ -142,7 +142,7 @@ CRBModelDB::loadDBMetaData( crb::attribute from, std::optional<std::string> cons
     }
     else
     {
-        throw std::runtime_error( fmt::format( "crb db JSON file not valid : {}", jsonPathStr ) );
+        throw std::runtime_error( fmt::format( "[loadDBMetaData] crb db JSON file not valid : {}", jsonPathStr ) );
     }
     LOG(INFO) << "load crb db JSON file : " << jsonPathStr;
     LOG(INFO) << "crb db model name : " << res.model_name;
@@ -157,7 +157,7 @@ CRBModelDB::loadDBPlugin( MetaData const& meta, std::string const& load ) const
 {
     //auto meta = this->loadDBMetaData( from, value );
     if ( meta.plugin_name.empty() )
-        throw std::runtime_error( fmt::format( "crb db JSON file not valid : {}", meta.json_path.string() ) );
+        throw std::runtime_error( fmt::format( "[lodDBPlugin(meta, load)] crb db JSON file not valid : {}", meta.json_path.string() ) );
     auto p = factoryCRBPlugin( meta.plugin_name, meta.plugin_libname /*, meta.plugin_libdir*/ );
     p->loadDB( meta.json_path.string(), crb::loadFromString( load ) );
     return p;
@@ -167,7 +167,7 @@ CRBModelDB::loadDBPlugin( MetaData const& meta, std::string const& load, std::st
 {
     //auto meta = this->loadDBMetaData( from, value );
     if ( meta.plugin_name.empty() )
-        throw std::runtime_error( fmt::format( "crb db JSON file not valid : {}", meta.json_path.string() ) );
+        throw std::runtime_error( fmt::format( "[lodDBPlugin(meta, load, pluginlibdir)] crb db JSON file not valid : {}", meta.json_path.string() ) );
     auto p = factoryCRBPlugin( meta.plugin_name, meta.plugin_libname, pluginlibdir );
     p->loadDB( meta.json_path.string(), crb::loadFromString( load ) );
     return p;
