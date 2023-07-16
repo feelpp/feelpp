@@ -55,9 +55,9 @@ public :
     typedef typename space_type::element_type element_type;
     typedef std::shared_ptr<element_type> element_ptrtype;
 #else
-    typedef typename meta::Pchv<mesh_type,Order>::type functionspace_type;
+    typedef typename Feel::meta::Pchv<mesh_type,Order>::type functionspace_type;
     typedef functionspace_type space_type;
-    typedef typename meta::Pchv<mesh_type,Order>::ptrtype functionspace_ptrtype;
+    typedef typename Feel::meta::Pchv<mesh_type,Order>::ptrtype functionspace_ptrtype;
     typedef functionspace_ptrtype space_ptrtype;
     typedef typename functionspace_type::element_type element_type;
     typedef std::shared_ptr<element_type> element_ptrtype;

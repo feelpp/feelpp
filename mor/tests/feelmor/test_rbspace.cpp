@@ -49,8 +49,8 @@ public :
 
     typedef Mesh<Simplex<Dim> > mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
-    typedef typename meta::Pch<mesh_type,Order>::type functionspace_type;
-    typedef typename meta::Pch<mesh_type,Order>::ptrtype functionspace_ptrtype;
+    typedef typename Feel::meta::Pch<mesh_type,Order>::type functionspace_type;
+    typedef typename Feel::meta::Pch<mesh_type,Order>::ptrtype functionspace_ptrtype;
     typedef typename functionspace_type::element_type element_type;
     typedef std::shared_ptr<element_type> element_ptrtype;
 
