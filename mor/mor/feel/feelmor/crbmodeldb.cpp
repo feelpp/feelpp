@@ -129,6 +129,7 @@ CRBModelDB::loadDBMetaData( crb::attribute from, std::optional<std::string> cons
     // TODO : move this part in CRBModelDB class
     std::ifstream ifs( jsonPathStr );
     nl::json jarg = nl::json::parse( ifs, nullptr, true, true );
+    VLOG( 2 ) << fmt::format( "[CRBModelDB::loadDBMetaData] json from file : {}", jarg.dump( 1 ) );
     if ( jarg.contains( "crbmodel" ) )
     {
         auto const& j_crbmodel = jarg.at( "crbmodel" );
