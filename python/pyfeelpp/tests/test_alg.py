@@ -31,6 +31,25 @@ def test_alg(init_feelpp):
         # scalar product with itself
         d=w.dot(w)
         assert(abs(d) == w.getSize())
+
+def test_alg_vector(init_feelpp):
+    feelpp.Environment.changeRepository(
+        directory = "pyfeelpp-tests/alg/test_alg_vector")
+    wc = feelpp.Environment.worldCommPtr()
+    u = feelpp.VectorPetscDouble(10, wc)
+    u.setConstant(1)
+    us = []
+    for i in range(3):
+        us.append( feelpp.VectorPetscDouble(10, wc) )
+        us[i].setConstant(i+1)
+    if feelpp.Environment.isMasterRank():
+        print("Test mDot 3 vectors")
+    r = u.mDot( us )
+    assert( r.size() == 3 )
+    for i in range(3):
+        assert( r[i] == us[i].sum() )
+
+    
    
 
 def test_backend_vector():
