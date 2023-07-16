@@ -484,9 +484,11 @@ public:
             {
                 M_rebuild = true;
                 this->worldComm().barrier();
+                LOG(INFO) << fmt::format("CRB::init() : rebuild database");
             }
             if ( !M_rebuild )
             {
+                LOG(INFO) << fmt::format("CRB::init() : load database from {}", (this->dbLocalPath()/fs::path(this->jsonFilename())).string() );
                 this->setupOfflineFromDB();
             }
             else
@@ -494,15 +496,17 @@ public:
                 M_scmM->setId( this->id() );
                 M_scmA->setId( this->id() );
                 M_elements_database.setId( this->id() );
+                LOG(INFO) << fmt::format("CRB::init() : build database, initialized SCM_M and SCM_A");
             }
             if( this->worldComm().isMasterRank() )
-                std::cout << "Use DB id " << this->id() << std::endl;
+                std::cout << "CRB::init() : Use DB id " << this->id() << std::endl;
+            LOG(INFO) << fmt::format("CRB::init() : Use DB id {}", this->id() );
 
             if ( M_N == 0 )
             {
                 if( this->worldComm().isMasterRank() )
-                    std::cout<< "Databases does not exist or incomplete -> Start from the begining\n";
-                LOG( INFO ) <<"Databases does not exist or incomplete -> Start from the begining";
+                    std::cout << "CRB::init() : Databases does not exist or incomplete -> Start from the begining\n";
+                LOG( INFO ) <<"CRB::init() : Databases does not exist or incomplete -> Start from the begining";
             }
 
             // fe vector is requiert in online : must not be TODO
@@ -2431,7 +2435,7 @@ CRB<TruthModelType>::offline()
     bool seek_mu_in_complement = M_seekMuInComplement;
 
     Feel::Timer ti;
-    LOG(INFO)<< "Offline CRB starts, this may take a while until Database is computed...\n";
+    LOG(INFO)<< "[CRB::offline] Offline CRB starts, this may take a while until Database is computed...\n";
     //LOG(INFO) << "[CRB::offline] Starting offline for output " << M_output_index << "\n";
     //LOG(INFO) << "[CRB::offline] initialize underlying finite element model\n";
     M_model->init();
@@ -5831,7 +5835,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
                          std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold, bool print_rb_matrix, int K,
                          bool computeOutput ) const
 {
-    LOG(INFO) <<"CRB : Start lb functions with mu="<<mu.toString()<<", N="<<N;
+    VLOG(2) << fmt::format("CRB::lb() : Start lb functions with mu={}, N={}, print_rb_matrix={}, K={}, computeOutput={}",mu.toString(),N,print_rb_matrix,K,computeOutput);
     if ( N > M_N ) N = M_N;
 
     int number_of_time_step = M_model->numberOfTimeStep();
@@ -5924,7 +5928,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
             file_output.close();
         }
     }
-    LOG(INFO)<<"CBR : end of lb()";
+    VLOG(2) <<"CRB::lb() : end lb function";
     return boost::make_tuple( output_vector, matrix_info);
 
 }
@@ -5939,7 +5943,7 @@ CRB<TruthModelType>::delta( size_type N,
                             std::vector<vectorN_type> const& uNduold,
                             int k ) const
 {
-    LOG(INFO) << "CRB : Start delta with mu="<<mu.toString()<<", N="<<N;
+    VLOG(2) << "CRB::delta : Start compute delta with mu="<<mu.toString()<<", N="<<N;
     std::vector< std::vector<double> > primal_residual_coeffs;
     std::vector< std::vector<double> > dual_residual_coeffs;
     std::vector<double> output_upper_bound;
@@ -5948,7 +5952,7 @@ CRB<TruthModelType>::delta( size_type N,
 
     if( M_SER_errorEstimation && M_SER_useGreedyInRb ) // If SER is used : use Riesz residual norm as error indicator
     {
-        LOG(INFO) << "Use SER error estimation \n";
+        VLOG(2) << "CRB::delta : Use SER error estimation \n";
         output_upper_bound.resize(1);
         output_upper_bound[0] = computeRieszResidualNorm( mu, uN );
         return boost::make_tuple( output_upper_bound , primal_residual_coeffs, dual_residual_coeffs , delta_pr, delta_du);
@@ -6711,7 +6715,7 @@ template<typename TruthModelType>
 typename CRB<TruthModelType>::residual_error_type
 CRB<TruthModelType>::transientPrimalResidual( int Ncur,parameter_type const& mu,  vectorN_type const& Un ,vectorN_type const& Unold , double time_step, double time ) const
 {
-    LOG(INFO) << "CRB : Start transientPrimalresidual with mu="<<mu.toString() << ", N="<<Ncur;
+    VLOG(2) << fmt::format("CRB : Start transientPrimalresidual with mu={}, Ncur={}, Un.size={}, Unold.size={}, time_step={}, time={}",mu.toString(), Ncur, Un.size(), Unold.size(), time_step, time);
     beta_vector_type betaAqm;
     beta_vector_type betaMqm;
     std::vector<beta_vector_type> betaFqm;
