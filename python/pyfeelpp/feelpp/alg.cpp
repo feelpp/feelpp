@@ -26,6 +26,7 @@
 
 #include <feel/feelpython/pybind11/pybind11.h>
 #include <feel/feelpython/pybind11/stl.h>
+#include <feel/feelpython/pybind11/eigen.h>
 
 #if defined(FEELPP_HAS_PETSC4PY)
 #include <petsc4py/petsc4py.h>
