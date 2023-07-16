@@ -39,6 +39,14 @@ OpusHeat<IsStationary>::OpusHeat()
 
     std::cout << fmt::format("[OpusHeat] plugin.name={}, plugin.libname={}",this->pluginName(),this->pluginLibName()) << std::endl;
     LOG( INFO ) << fmt::format( "[OpusHeat] plugin.name={}, plugin.libname={}", this->pluginName(), this->pluginLibName() ) << std::endl;
+
+    if ( countoption( _name="bdf.time-initial" )  )
+    {
+        this->setTimeInitial( doption(_name="bdf.time-initial") );
+        this->setTimeFinal( doption(_name="bdf.time-final") );
+        this->setTimeStep( doption(_name="bdf.time-step") );
+        this->setTimeOrder( ioption(_name="bdf.order") );
+    }
 }
 
 template<bool IsStationary>
