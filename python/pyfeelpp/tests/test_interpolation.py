@@ -40,7 +40,7 @@ def createInterpolator(image_tb,domain_tb):
     return interpolator
 
 @pytest.mark.parametrize("cfg_path, geo_path, model_path", cases_params, ids=cases_ids)
-def test_interpolate_constant(init_feelpp,cfg_path, geo_path, model_path):
+def test_interpolate(init_feelpp, cfg_path, geo_path, model_path):
 
     cfg_path = os.path.join(os.path.dirname(__file__), cfg_path)
     geo_path = os.path.join(os.path.dirname(__file__), geo_path)

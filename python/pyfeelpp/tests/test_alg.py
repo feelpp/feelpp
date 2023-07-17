@@ -2,6 +2,7 @@ import feelpp
 import sys
 import pytest
 from petsc4py import PETSc
+import numpy as np
 
 def test_alg(init_feelpp):
     feelpp.Environment.changeRepository(
@@ -28,6 +29,7 @@ def test_alg(init_feelpp):
 
         assert(n1 == w.getSize())
         assert(n2 == sqrt(w.getSize()))
+        assert(ni == 1)
         # scalar product with itself
         d=w.dot(w)
         assert(abs(d) == w.getSize())
@@ -36,21 +38,29 @@ def test_alg_vector(init_feelpp):
     feelpp.Environment.changeRepository(
         directory = "pyfeelpp-tests/alg/test_alg_vector")
     wc = feelpp.Environment.worldCommPtr()
-    u = feelpp.VectorPetscDouble(10, wc)
-    u.setConstant(1)
-    us = []
-    for i in range(3):
-        us.append( feelpp.VectorPetscDouble(10, wc) )
-        us[i].setConstant(i+1)
-    if feelpp.Environment.isMasterRank():
-        print("Test mDot 3 vectors")
-    r = u.mDot( us )
-    assert( r.size() == 3 )
-    for i in range(3):
-        assert( r[i] == us[i].sum() )
+    if feelpp.Environment.isSequential():
+        u = feelpp.VectorPetscDouble(10, wc)
+        u.setConstant(1)
+        us = []
+        for i in range(3):
+            us.append( feelpp.VectorPetscDouble(10, wc) )
+            us[i].setConstant(i+1)
+        if feelpp.Environment.isMasterRank():
+            print("Test mDot 3 vectors")
+        r = u.mDot( us )
+        assert( r.shape == (3,) )
+        for i in range(3):
+            assert( r[i] == us[i].sum() )
 
-    
-   
+        if feelpp.Environment.isMasterRank():
+            print("Test maxpy")
+
+        alpha = np.array([1,2,3])
+        u.setConstant(0)
+
+        u.add(alpha, us)            # u += sum_i alpha[i] * us[i]
+        assert( u.sum() == 14 * u.size() )
+
 
 def test_backend_vector():
     feelpp.Environment.changeRepository(
