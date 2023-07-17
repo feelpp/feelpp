@@ -25,6 +25,7 @@
 #include <feel/feelpython/pybind11/pybind11.h>
 #include <feel/feelpython/pybind11/eigen.h>
 #include <feel/feelpython/pybind11/stl_bind.h>
+#include <feel/feelpython/pybind11/stl.h>
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feeldiscr/pchv.hpp>
 #include <feel/feeldiscr/pdh.hpp>

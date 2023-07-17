@@ -119,6 +119,42 @@ def run_element(m, geo):
     print("norm(vv_petsc-v_petsc)={}, vv.l2={}, v.l2={}".format(l2_w, vv.l2Norm(), v.l2Norm()))
     assert abs(l2_w) < 1e-12
 
+def run_element_alg(m, geo):
+    mesh_name, dim, e_meas, e_s_1, e_s_2, e_s_bdy=geo
+    
+    m2d = feelpp.load(m, mesh_name, 0.1)
+
+    Xh = feelpp.functionSpace(mesh=m2d)
+
+    if feelpp.Environment.isMasterRank():
+        print("Xh basisname: ", Xh.basisName())
+        print("Xh nDof: ", Xh.nDof())
+        print("Xh nLocalDof: ", Xh.nLocalDof())
+        print("Xh nLocalDofWithGhost: ", Xh.nLocalDofWithGhost())
+        print("Xh nLocalDofWithoutGhost: ", Xh.nLocalDofWithoutGhost())
+
+    m3 = Xh.mesh()
+
+    assert m3 == m2d
+
+    b = feelpp.backend(worldcomm=feelpp.Environment.worldCommPtr())
+    v = b.newVector(dm=Xh.mapPtr())
+    
+    # test constant
+    v.setConstant(1.0)
+    # create u which use the same memory storage as v
+    u = Xh.element(v)
+
+    us = Xh.newVectors(3)
+    for ui in us:
+        ui.setConstant(1.0)
+    
+    r = u.mDot(us)
+    assert r.shape == (3,)
+    for i in range(3):
+        assert( r[i] == us[i].sum() )
+
+
 geo_cases=[(2, feelpp.create_rectangle),
             (3, feelpp.create_box)]
  
@@ -143,3 +179,9 @@ def test_element(dim,geo,init_feelpp):
     feelpp.Environment.changeRepository(
         directory="pyfeelpp-tests/discr/test_{}d_element".format(dim))
     run_element( feelpp.mesh(dim=dim, realdim=dim), geo(filename="boxelement" if dim==3 else "rectelement") )
+
+@pytest.mark.parametrize("dim,geo", geo_cases)
+def test_element_alg(dim, geo, init_feelpp):
+    feelpp.Environment.changeRepository(
+        directory="pyfeelpp-tests/discr/test_{}d_element".format(dim))
+    run_element_alg( feelpp.mesh(dim=dim, realdim=dim), geo(filename="boxelement" if dim==3 else "rectelement") )

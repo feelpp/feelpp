@@ -46,7 +46,7 @@ def download(data,worldComm):
     """Download remote data file"""
     rd = RemoteData(data,worldComm)
     if rd.canDownload():
-        d=Environment.downloadsRepository()
+        d = Environment.downloadsRepository()
         return rd.download( d )
     else:
         raise RuntimeError("Remote Data " + data + " cannot be downloaded")
@@ -174,10 +174,10 @@ def functionSpace( mesh, space="Pch", order=1, worldscomm=None):
     """create a function space
     """
     if worldscomm is None:
-        worldscomm=Environment.worldsComm(1)
-    key="{}({},{},{})".format(space,mesh.dimension(),order,mesh.order())
+        worldscomm = Environment.worldsComm(1)
+    key = "{}({},{},{})".format(space, mesh.dimension(), order, mesh.order())
     if key not in _spaces:
-        raise RuntimeError('FunctionSpace '+key+' not existing in dictionary')
+        raise RuntimeError(f'FunctionSpace {key} not existing in dictionary')
     return _spaces[key]( mesh=mesh, worldsComm=worldscomm )
 
 
