@@ -349,12 +349,12 @@ runCrbOnline( std::vector<std::shared_ptr<Feel::CRBPluginAPI>> plugin )
 }
 
 std::shared_ptr<Feel::CRBPluginAPI>
-loadPlugin()
+loadPlugin( std::string const& root )
 {
     using namespace Feel;
 
     std::string crbmodelName = Environment::expand( soption(_name = "crbmodel.name") );
-    CRBModelDB crbmodelDB{ crbmodelName, uuids::nil_uuid() };
+    CRBModelDB crbmodelDB{ crbmodelName, uuids::nil_uuid(), root };
 
     std::string attribute = soption(_name = "crbmodel.attribute" );
     std::string attribute_data;
@@ -390,7 +390,7 @@ int main(int argc, char**argv )
         po::options_description crbonlinerunoptions( "crb online run options" );
         crbonlinerunoptions.add_options()
             ( "plugin.dir", po::value<std::string>()->default_value( Info::libdir().string() ) , "plugin directory" )
-
+            ( "crbmodel.root", po::value<std::string>(), "CRB online code root repository" )
             ( "crbmodel.name", po::value<std::string>(), "CRB online code name" )
             ( "crbmodel.attribute", po::value<std::string>()->default_value( "last_modified" ), "last_created, last_modified, id, name" )
             ( "crbmodel.db.id", po::value<std::string>(), "CRB online code id" )
@@ -449,7 +449,7 @@ int main(int argc, char**argv )
         }
         if ( Environment::vm().count( "query" ) == 0 )
         {
-            runCrbOnline( { loadPlugin() } );
+            runCrbOnline( { loadPlugin(soption(_name="crbmodel.root")) } );
         }
         else
         {
