@@ -120,4 +120,8 @@ if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
   include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/feelpp.version.cmake)
 endif()
 
+if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/research )
+  ADD_SUBDIRECTORY ( research )
+endif()
+
 endif(FEELPP_FOUND AND FEELPP_TOOLBOXES_FOUND)
