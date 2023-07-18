@@ -159,9 +159,19 @@ CRBModelDB::loadDBPlugin( MetaData const& meta, std::string const& load ) const
     //auto meta = this->loadDBMetaData( from, value );
     if ( meta.plugin_name.empty() )
         throw std::runtime_error( fmt::format( "[lodDBPlugin(meta, load)] crb db JSON file not valid : {}", meta.json_path.string() ) );
-    auto p = factoryCRBPlugin( meta.plugin_name, meta.plugin_libname /*, meta.plugin_libdir*/ );
-    p->loadDB( meta.json_path.string(), crb::loadFromString( load ) );
-    return p;
+
+    try
+    {
+        auto p = factoryCRBPlugin( meta.plugin_name, meta.plugin_libname, this->dbRepository() );
+        p->loadDB( meta.json_path.string(), crb::loadFromString( load ) );
+        return p;
+    }
+    catch ( std::runtime_error const& err )
+    {
+        LOG(WARNING) << fmt::format( "plugin could not be found in {}", this->dbRepository() );
+        throw;
+    }
+    return nullptr;
 }
 std::shared_ptr<CRBPluginAPI>
 CRBModelDB::loadDBPlugin( MetaData const& meta, std::string const& load, std::string const& pluginlibdir ) const
