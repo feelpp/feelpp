@@ -65,7 +65,8 @@ struct MORModel
     std::string name;
     std::string attribute = "last_modified"; // last_created, last_modified
     std::string load = "rb";
-    NLOHMANN_DEFINE_TYPE_INTRUSIVE( MORModel, dbroot, name, attribute, load )
+    std::string output;
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE( MORModel, dbroot, name, attribute, load, output )
 
     template<typename ...Args>
     auto 
@@ -250,18 +251,12 @@ struct MORModels: std::vector<MORModel>
             tableOutputResults.format().setFloatingPointPrecision( ioption( _name = "output_results.precision" ) );
             std::vector<std::string> tableRowHeader;// = muspace->parameterNames();
 
-            std::transform( this->begin(), this->end(), std::back_inserter( tableRowHeader ),
-                            []( MORModel const& o )
-                            { return fmt::format( "{} time", o.name ); } );
-
-            std::transform( this->begin(), this->end(), std::back_inserter( tableRowHeader ),
-                            []( MORModel const& o )
-                            { return fmt::format( "{} output", o.name ); } );
-
-            std::transform( this->begin(), this->end(), std::back_inserter( tableRowHeader ),
-                            []( MORModel const& o )
-                            { return fmt::format( "{} error", o.name ); } );
-
+            for( auto const& p : *this )
+            {
+                tableRowHeader.push_back( fmt::format( "{}.{} time", p.name, p.output ) );
+                tableRowHeader.push_back( fmt::format( "{}.{} output", p.name, p.output ) );
+                tableRowHeader.push_back( fmt::format( "{}.{} error", p.name, p.output ) );
+            }
             LOG(INFO) << fmt::format("[MORModels::run] tableRowHeader {}", tableRowHeader);
             tableOutputResults.add_row( tableRowHeader );
             tableOutputResults.format().setFirstRowIsHeader( true );
@@ -275,9 +270,9 @@ struct MORModels: std::vector<MORModel>
             {
                 tic();
                 results.push_back( p.run( mu, time_crb, online_tol, N, print_rb_matrix ) );
-                double t = toc( fmt::format("rb-online-{}",p.name ), FLAGS_v > 0 );
+                double t = toc( fmt::format("rb-online-{}-{}",p.name,p.output ), FLAGS_v > 0 );
 
-                p.exportField( fmt::format( "sol-{}-{}", p.name, k ), results.back() );
+                p.exportField( fmt::format( "sol-{}-{}-{}", p.name, p.output, k ), results.back() );
             } 
             
             for ( auto const& [index,o] : enumerate(results[0].outputs()) ) 
@@ -285,10 +280,10 @@ struct MORModels: std::vector<MORModel>
                 int curRowValIndex = 0;
                 for ( auto const& [output_index,p] : enumerate(*this) )
                 {
-                    tableRowValues[curRowValIndex++] = index;
-                    // add values of output and error bound to table
-                    tableRowValues[curRowValIndex++] = results[output_index].outputs()[index];
-                    tableRowValues[curRowValIndex++] = results[output_index].errors()[index];
+                    int tableindex = output_index*3;
+                    tableRowValues[tableindex+0] = index;
+                    tableRowValues[tableindex+1] = results[output_index].outputs()[index];
+                    tableRowValues[tableindex+2] = results[output_index].errors()[index];
                     //tableRowValues[curRowValIndex++] = t;
                 }
                 tableOutputResults.add_row( tableRowValues );
@@ -300,20 +295,14 @@ struct MORModels: std::vector<MORModel>
             bool printResults = boption( _name = "output_results.print" );
             if ( printResults )
                 std::cout << tableOutputResults << std::endl;
-            bool saveResults = true;
 
-            std::string outputResultPath = "output.csv";
-            if ( Environment::vm().count( "output_results.save.path" ) )
-                outputResultPath = soption( _name = "output_results.save.path" );
-            outputResultPath = Environment::expand( outputResultPath );
-            if ( !fs::exists( fs::path( outputResultPath ).parent_path() ) && !fs::path( outputResultPath ).parent_path().empty() )
-                fs::create_directories( fs::path( outputResultPath ).parent_path() );
+            auto results_p = fs::path( this->at(0).dbroot ).parent_path()/ fs::path(std::string("results"));
+            fs::create_directories( results_p );
+            LOG(INFO) << fmt::format("[MORModels::run] results path : {}", results_p.string() );
+            std::ofstream ofs( results_p / fs::path( fmt::format( "results-{}.csv", k ) ) );
+            LOG(INFO) << fmt::format("[MORModels::run] results file : {}", ( results_p / fs::path( fmt::format( "results-{}.csv", k ) ) ).string() );
+            tableOutputResults.exportCSV( ofs );
 
-            if ( saveResults )
-            {
-                std::ofstream ofs( outputResultPath );
-                tableOutputResults.exportCSV( ofs );
-            }
         } // end for sample k
 
         this->saveExporter();
@@ -485,7 +474,7 @@ int main(int argc, char**argv )
         po::options_description crbonlinerunoptions( "crb online run options" );
         crbonlinerunoptions.add_options()
             ( "plugin.dir", po::value<std::string>()->default_value( Info::libdir().string() ) , "plugin directory" )
-            ( "crbmodels", po::value<std::string>(), "CRB model json data" )
+            ( "morjson", po::value<std::string>(), "filename describing the mor models associated to the case study" )
 # if 0            
             ( "crbmodel.root", po::value<std::string>(), "CRB online code root repository" )
             ( "crbmodel.name", po::value<std::string>(), "CRB online code name" )
@@ -534,9 +523,9 @@ int main(int argc, char**argv )
                                     _author="Feel++ Consortium",
                                     _email="feelpp-devel@feelpp.org"));
 
-        std::istringstream is( soption(_name="crbmodels" ) );                       
-        nl::json js = nl::json::parse(is,nullptr,true,true);
-        MORModels ms = js.get<MORModels>();
+        std::ifstream is( Environment::expand( soption(_name="morjson" ) ) );                       
+        nl::json js = nl::json::parse(is);
+        MORModels ms = js["mormodels"].get<MORModels>();
         ms.load();
         ms.run(-1);
 #if 0
