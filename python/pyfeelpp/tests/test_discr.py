@@ -1,5 +1,6 @@
 import feelpp
 import sys
+import numpy as np
 import pytest
 from feelpp.timing import tic,toc
 
@@ -120,7 +121,7 @@ def run_element(m, geo):
     assert abs(l2_w) < 1e-12
 
 def run_element_alg(m, geo):
-    mesh_name, dim, e_meas, e_s_1, e_s_2, e_s_bdy=geo
+    mesh_name, dim, e_meas, e_s_1, e_s_2, e_s_bdy = geo
     
     m2d = feelpp.load(m, mesh_name, 0.1)
 
@@ -149,14 +150,28 @@ def run_element_alg(m, geo):
     for ui in us:
         ui.setConstant(1.0)
     
+    if feelpp.Environment.isMasterRank():
+        print("Test mDot")
     r = u.mDot(us)
     assert r.shape == (3,)
     for i in range(3):
         assert( r[i] == us[i].sum() )
 
+    if feelpp.Environment.isMasterRank():
+        print("Test maxpy")
+    alpha = np.array([1,2,3])
+    u.setConstant(0.0)
+    u.add(alpha, us)
+    assert( u.sum() == 6 * u.size() )
+
+    u.setConstant(0.0)
+    for i in range(3):
+        u.add(alpha[i], us[i])
+    assert( u.sum() == 6 * u.size() )
+
 
 geo_cases=[(2, feelpp.create_rectangle),
-            (3, feelpp.create_box)]
+           (3, feelpp.create_box)]
  
 @pytest.mark.parametrize("dim,geo", geo_cases)
 def test_discr(dim,geo,init_feelpp):
@@ -183,5 +198,5 @@ def test_element(dim,geo,init_feelpp):
 @pytest.mark.parametrize("dim,geo", geo_cases)
 def test_element_alg(dim, geo, init_feelpp):
     feelpp.Environment.changeRepository(
-        directory="pyfeelpp-tests/discr/test_{}d_element".format(dim))
+        directory = "pyfeelpp-tests/discr/test_{}d_element".format(dim))
     run_element_alg( feelpp.mesh(dim=dim, realdim=dim), geo(filename="boxelement" if dim==3 else "rectelement") )

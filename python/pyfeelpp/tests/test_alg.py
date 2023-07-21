@@ -56,9 +56,14 @@ def test_alg_vector(init_feelpp):
             print("Test maxpy")
 
         alpha = np.array([1,2,3])
-        u.setConstant(0)
 
+        u.setConstant(0)
         u.add(alpha, us)            # u += sum_i alpha[i] * us[i]
+        assert( u.sum() == 14 * u.size() )
+
+        u.setConstant(0)
+        for i in range(3):
+            u.add(alpha[i], us[i])
         assert( u.sum() == 14 * u.size() )
 
 
