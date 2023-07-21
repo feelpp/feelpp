@@ -1431,7 +1431,7 @@ public:
      * \pram uNold : old primal solution
      * \param K : time index
      */
-    virtual double correctionTerms(parameter_type const& mu, std::vector< vectorN_type > const & uN, std::vector< vectorN_type > const & uNdu , std::vector<vectorN_type> const & uNold,  int const K=0) const;
+    virtual double correctionTerms(parameter_type const& mu, std::vector< vectorN_type > const & uN, std::vector< vectorN_type > const & uNdu , std::vector<vectorN_type> const & uNold,  int const K=0, double const prevcorrection  = 0 ) const;
 
     /*
      * build matrix to store functions used to compute the variance output
@@ -4133,7 +4133,7 @@ CRB<TruthModelType>::check( size_type N ) const
 
 template< typename TruthModelType>
 double
-CRB<TruthModelType>::correctionTerms(parameter_type const& mu, std::vector< vectorN_type > const & uN, std::vector< vectorN_type > const & uNdu,  std::vector<vectorN_type> const & /*uNold*/, int const k ) const
+CRB<TruthModelType>::correctionTerms(parameter_type const& mu, std::vector< vectorN_type > const & uN, std::vector< vectorN_type > const & uNdu,  std::vector<vectorN_type> const & /*uNold*/, int const k, double const prevcorrection ) const
 {
     int N = uN[0].size();
 
@@ -4197,7 +4197,10 @@ CRB<TruthModelType>::correctionTerms(parameter_type const& mu, std::vector< vect
         int primal_time_index;
         int dual_time_index;
         int kpd=0;//kp dual
-        for( int kp=1; kp<=k; kp++)
+        //for( int kp=k-1; kp<=k; kp++)
+        const int kp = k;
+        correction = prevcorrection;
+        if ( k >= 1 )
         {
 
             Aprdu.setZero( N , N );
@@ -5771,38 +5774,19 @@ CRB<TruthModelType>::fixedPoint(  size_type N, parameter_type const& mu, std::ve
                                   std::vector< double > & output_vector, int K, bool print_rb_matrix, bool computeOutput ) const
 {
     matrix_info_tuple matrix_info;
-
-#if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
-    if(boption(_name="parallel.opencl.enable"))
-    {
-        matrix_info = fixedPointPrimalCL( N, mu , uN , uNold, output_vector, K , print_rb_matrix) ;
-
-        if(ioption(_name="parallel.debug"))
-        {
-            this->dumpData("./out.gpu.dump", "[CPU] uN: ", uN[0].data(), N);
-        }
-    }
-    else
-    {
-#endif
-
-        matrix_info = fixedPointPrimal( N, mu , uN , uNold, output_vector, K , print_rb_matrix, computeOutput ) ;
-
-#if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
-        if(ioption(_name="parallel.debug"))
-        {
-            this->dumpData("./out.cpu.dump", "[CPU] uN: ", uN[0].data(), N);
-        }
-    }
-#endif
-
+    tic();
+    matrix_info = fixedPointPrimal( N, mu , uN , uNold, output_vector, K , print_rb_matrix, computeOutput ) ;
+    VLOG(3) << fmt::format("CRB::fixedPoint() : fixedPointPrimal took {} seconds",toc("CRB::fixedPoint() : fixedPointPrimal"));
 
     if( M_solve_dual_problem )
     {
+        tic();
         fixedPointDual( N, mu , uN, uNdu , uNduold , output_vector , K ) ;
+        VLOG(3) << fmt::format("CRB::fixedPoint() : fixedPointDual took {} seconds",toc("CRB::fixedPoint() : fixedPointDual"));
 
         if ( computeOutput )
         {
+            tic();
             // apply correction terms
             if ( M_model->isSteady() )
             {
@@ -5817,12 +5801,16 @@ CRB<TruthModelType>::fixedPoint(  size_type N, parameter_type const& mu, std::ve
                     time_for_output = K*time_step;
 
                 int time_index=0;
+                double prevcorrection = 0;
                 for ( double time=0; math::abs(time-time_for_output-time_step)>1e-9; time+=time_step )
                 {
-                    output_vector[time_index]+=correctionTerms(mu, uN , uNdu, uNold, time_index );
+                    double curcorrection = correctionTerms(mu, uN , uNdu, uNold, time_index, prevcorrection );
+                    output_vector[time_index]+= curcorrection;
+                    prevcorrection = curcorrection;
                     ++time_index;
                 }
             }
+            VLOG(3) << fmt::format("CRB::fixedPoint() : correctionTerms took {} seconds",toc("CRB::fixedPoint() : correctionTerms"));
         }
     }
 
@@ -5860,7 +5848,9 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
     // init by 1, the model could provide better init
     uN[0].setOnes(N);
 
+    tic();
     auto matrix_info = onlineSolve( N ,  mu , uN , uNdu , uNold , uNduold , output_vector , K , print_rb_matrix, computeOutput );
+    VLOG(3) << fmt::format("CRB::lb() : onlineSolve took {} seconds",toc("CRB::lb() : onlineSolve"));
 
     if ( M_compute_variance || M_save_output_behavior )
     {
@@ -6002,6 +5992,7 @@ CRB<TruthModelType>::delta( size_type N,
 
         if ( M_error_type == CRB_RESIDUAL_SCM )
         {
+            tic();
             double alphaA_up, lbti;
             boost::tie( alphaA, lbti ) = M_scmA->lb( mu );
             if( M_scmA->useScm() )
@@ -6016,6 +6007,7 @@ CRB<TruthModelType>::delta( size_type N,
                     boost::tie( alphaM_up, lbti ) = M_scmM->ub( mu );
                 //LOG( INFO ) << "alphaM_lo = " << alphaM << " alphaM_hi = " << alphaM_up ;
             }
+            VLOG(3) << fmt::format("CRB::delta() : scm took {} seconds",toc("CRB::delta() : scm"));
         }
 
         //index associated to the output time
@@ -9458,6 +9450,7 @@ CRB<TruthModelType>::run( parameter_type const& mu, vectorN_type & time, double 
         compareResidualsForTransientProblems(Nwn, mu , Un, Unold, Undu, Unduold, primal_residual_coefficients, dual_residual_coefficients );
     }
 #endif
+    tic();
     M_model->countAffineDecompositionTerms();
 
     std::vector<vectorN_type> uN;
@@ -9478,13 +9471,19 @@ CRB<TruthModelType>::run( parameter_type const& mu, vectorN_type & time, double 
         Nwn = M_N;
     }
     Feel::Timer t1;
+    tic();
     auto o = lb( Nwn, mu, uN, uNdu , uNold, uNduold , print_rb_matrix);
+    VLOG(3) << fmt::format( "[CRB::run] lb = {}", toc("[CRB::run] lb") );
+
     double time_prediction=t1.elapsed();
     auto output_vector=o.template get<0>();
     double output_vector_size=output_vector.size();
     double output = output_vector[output_vector_size-1];
     t1.start();
+    tic();
     auto error_estimation = delta( Nwn, mu, uN, uNdu , uNold, uNduold );
+    VLOG(3) << fmt::format( "[CRB::run] delta = {}", toc("[CRB::run] delta") );
+    
     double time_error_estimation=t1.elapsed();
     auto vector_output_upper_bound = error_estimation.template get<0>();
     double output_upper_bound = vector_output_upper_bound[0];
@@ -9515,21 +9514,26 @@ CRB<TruthModelType>::run( parameter_type const& mu, vectorN_type & time, double 
         primal_residual_norm = math::sqrt( math::abs(primal_residual_norm) );
         dual_residual_norm = math::sqrt( math::abs(dual_residual_norm) );
     }
-
+    tic();
     double delta_pr = error_estimation.template get<3>();
+    VLOG(3) << fmt::format( "[CRB::run] delta_pr = {}", toc("[CRB::run] delta_pr") );
+    tic();
     double delta_du = error_estimation.template get<4>();
+    VLOG(3) << fmt::format( "[CRB::run] delta_du = {}", toc("[CRB::run] delta_du") );
 
     time.resize(2);
     time(0)=time_prediction;
     time(1)=time_error_estimation;
 
     int size = uN.size();
-
+    tic();
     auto upper_bounds = boost::make_tuple(vector_output_upper_bound , delta_pr, delta_du , primal_coefficients , dual_coefficients );
     auto solutions = boost::make_tuple( uN , uNdu, uNold, uNduold);
 
     CRBResults r(boost::make_tuple( output_vector , Nwn , solutions, matrix_info , primal_residual_norm , dual_residual_norm, upper_bounds ));
     r.setParameter( mu );
+    VLOG(3) << fmt::format( "[CRB::run] get results = {}", toc("[CRB::run] get results") );
+    VLOG(3) << fmt::format( "[CRB::run] total time = {}", toc("[CRB::run] total time") );
     return r;
 }
 
