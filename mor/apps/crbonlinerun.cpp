@@ -269,7 +269,7 @@ struct MORModels: std::vector<MORModel>
             for ( auto const& p : *this )
             {
                 tic();
-                results.push_back( p.run( mu, time_crb, online_tol, N, print_rb_matrix ) );
+                results.emplace_back( p.run( mu, time_crb, online_tol, N, print_rb_matrix ) );
                 double t = toc( fmt::format("rb-online-{}-{}",p.name,p.output ), FLAGS_v > 0 );
 
                 p.exportField( fmt::format( "sol-{}-{}-{}", p.name, p.output, k ), results.back() );
