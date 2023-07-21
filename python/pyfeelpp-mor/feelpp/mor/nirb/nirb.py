@@ -474,7 +474,7 @@ class nirbOffline(ToolboxModel):
                 if self.worldcomm.isMasterRank():
                     print(f"[NIRB::computeSnapshots] Computing coarse and fine snapshots with mu = {mu}")
                 tic()
-                self.fineSnapShotList.append( self.getFineSolution(mu))
+                self.fineSnapShotList.append(self.getFineSolution(mu))
                 toc("NIRB: compute fine snapshot")
                 tic()
                 self.coarseSnapShotList.append(self.getCoarseSolution(mu))
@@ -1042,12 +1042,11 @@ class nirbOnline(ToolboxModel):
         """
         self.reducedBasis = offline.reducedBasis
         self.l2ProductBasis = offline.l2ProductBasis
-        self.reducedBasisFunctions = offline.reducedBasisFunctions
         self.N = offline.N
         self.coeffCoarse = offline.coeffCoarse
         self.coeffFine = offline.coeffFine
 
-    def getCompressedSolution(self, mu=None, solution=None, Nb=-1):
+    def computeAlphaH(self, mu=None, solution=None, Nb=-1):
         """
         Get the projection of given solution from fine mesh into the reduced space
 
@@ -1072,22 +1071,16 @@ class nirbOnline(ToolboxModel):
         else:
             sol = solution
 
+        # tic()                         # Much slower than mDot
+        # alphaH_loop = np.zeros(Nb)
+        # for i in range(Nb):
+        #     alphaH_loop[i] = self.l2ProductBasis[i].to_petsc().dot(sol.to_petsc())
+        # toc("NIRB: Compute all alpha_i loop")
+
         tic()
-
-        compressedSol = np.zeros(Nb)
-        for i in range(Nb):
-            compressedSol[i] = self.l2ProductBasis[i].to_petsc().dot(sol.to_petsc())
-        toc("NIRB: Compute all alpha_i loop")
-
-        # tic()
-        # compressedSol_petsc = PETSc.Vec().createSeq(Nb)
-        # sol.to_petsc().vec().mDot(self.l2ProductBasis_petsc, compressedSol_petsc)
-        # toc("NIRB: Compute all alpha_i (petsc)")
-
-        # print(f"Error between both methods: {(compressedSol - compressedSol_petsc.array)}")
-
-        # return compressedSol_petsc.array
-        return compressedSol
+        alphaH = sol.mDot(self.l2ProductBasis)
+        toc("NIRB: Compute all alpha_i (petsc)")
+        return alphaH
 
 
 
@@ -1107,8 +1100,9 @@ class nirbOnline(ToolboxModel):
         uhN = self.Xh.element()
         uhN.setZero()
         nirbCoeff = self.getCompressedSolution(solution=uh)
-        for i in range(Nb):
-            uhN.add(float(nirbCoeff[i]), self.reducedBasis[i])
+        # for i in range(Nb):        # Much slower than add
+            # uhN.add(float(nirbCoeff[i]), self.reducedBasis[i])
+        uhN.add(nirbCoeff, self.reducedBasis)
 
         return uhN
 
@@ -1135,8 +1129,10 @@ class nirbOnline(ToolboxModel):
 
         onlineSol = self.Xh.element()
         onlineSol.setZero()
+        onlineSol_loop = self.Xh.element()
+        onlineSol_loop.setZero()
 
-        compressedSolution = self.getCompressedSolution(mu=mu, Nb=Nb, solution=interSol)
+        compressedSolution = self.computeAlphaH(mu=mu, Nb=Nb, solution=interSol)
 
         tic()
         if doRectification:
@@ -1145,18 +1141,20 @@ class nirbOnline(ToolboxModel):
             coef = rectMat @ compressedSolution
             toc("NIRB: Rectification")
 
-            # tic()
-            # for i in range(Nb):
-            #     onlineSol.add(float(coef[i]), self.reducedBasis[i])
-            # toc('NIRB: assemble solution loop')
+            tic()
+            for i in range(Nb):     # Much slower than add
+                onlineSol_loop.add(float(coef[i]), self.reducedBasis[i])
+            toc('NIRB: assemble solution loop')
 
             tic()
-            # onlineSol.to_petsc().maxpy(coef, self.reducedBasis)
-            onlineSol.to_petsc().vec().maxpy(coef, self.reducedBasis_petsc)
+            onlineSol.add(coef, self.reducedBasis)
             toc('NIRB: assemble solution PETSc')
+
+            print("Difference between loop and PETSc: ", (onlineSol_loop - onlineSol).l2Norm())
         else:
-            for i in range(Nb):
-                onlineSol.add(float(compressedSolution[i]), self.reducedBasis[i])
+            # for i in range(Nb):       # Much slower than add
+                # onlineSol.add(float(compressedSolution[i]), self.reducedBasis[i])
+            onlineSol.add(compressedSolution, self.reducedBasis)
         toc('NIRB: assemble online solution')
 
         # to export, call self.exportField(onlineSol, "U_nirb")
