@@ -527,7 +527,7 @@ int main(int argc, char**argv )
         nl::json js = nl::json::parse(is);
         MORModels ms = js["mormodels"].get<MORModels>();
         ms.load();
-        ms.run(-1);
+        ms.run(ioption(_name="rb-dim"));
 #if 0
         if ( Environment::vm().count( "list" )  )
         {
