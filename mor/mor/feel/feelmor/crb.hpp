@@ -5977,14 +5977,16 @@ CRB<TruthModelType>::delta( size_type N,
             shift=0;
             restart_time_index=0;
         }
-
-        double primal_sum=0;
-        double dual_sum=0;
+        int K = Tf/dt;
+        eigen_vector_x_col_type<> primal_sum(K);
+        primal_sum.setZero();
+        eigen_vector_x_col_type<> dual_sum(K);
+        dual_sum.setZero();
         double primal_sum_eim=0;
         double dual_sum_eim=0;
 
         //vectors to store residual coefficients
-        int K = Tf/dt;
+       
         primal_residual_coeffs.resize( K );
         dual_residual_coeffs.resize( K );
 
@@ -6031,18 +6033,21 @@ CRB<TruthModelType>::delta( size_type N,
             if( M_useAccurateApee )
             {
                 //in this case, we use a different way to compute primal_sum (i.e. square of dual norm of primal residual)
-                for( double time=dt; math::abs(time-output_time-dt)>1e-9; time+=dt )
+                //for( double time=dt; math::abs(time-output_time-dt)>1e-9; time+=dt )
+                double time = output_time;
                 {
-                    primal_sum += computeOnlinePrimalApee( N , mu , uN[time_index], uN[time_index]/*uNold[time_index]*/, dt, time );
+                    primal_sum[time_index] += computeOnlinePrimalApee( N , mu , uN[time_index], uN[time_index]/*uNold[time_index]*/, dt, time );
                 }
             }
             else
             {
-                for ( double time=dt; math::abs(time-output_time-dt)>1e-9; time+=dt )
+                //for ( double time=dt; math::abs(time-output_time-dt)>1e-9; time+=dt )
+                double time = output_time;
                 {
                     int time_old_index = ( M_model->isSteady() )? 0 : time_index-1;
                     auto pr = transientPrimalResidual( N, mu, uN[time_index], uN[time_old_index]/*uNold[time_index]*/, dt, time );
-                    primal_sum += pr.template get<0>();
+                    primal_sum(time_index) = pr.template get<0>();
+
                     if( global_time_index==K )
                     {
                         primal_residual_coeffs[time_index-shift].resize( pr.template get<1>().size() );
@@ -6070,17 +6075,19 @@ CRB<TruthModelType>::delta( size_type N,
                 if( M_useAccurateApee )
                 {
                     //in this case, we use a different way to compute primal_sum (i.e. square of dual norm of primal residual)
-                    for ( double time=output_time; math::abs(time - dt + dt) > 1e-9 ; time-=dt )
+                    //for ( double time=output_time; math::abs(time - dt + dt) > 1e-9 ; time-=dt )
+                    double time = output_time;
                     {
-                        dual_sum += computeOnlineDualApee( N , mu , uNdu[time_index], uNduold[time_index], dt, time );
+                        dual_sum[time_index] += computeOnlineDualApee( N , mu , uNdu[time_index], uNduold[time_index], dt, time );
                     }
                 }
                 else
                 {
-                    for ( double time=output_time; math::abs(time - dt + dt) > 1e-9 ; time-=dt )
+                    //for ( double time=output_time; math::abs(time - dt + dt) > 1e-9 ; time-=dt )
+                    double time = output_time;
                     {
                         auto du = transientDualResidual( N, mu, uNdu[time_index], uNduold[time_index], dt, time );
-                        dual_sum += du.template get<0>();
+                        dual_sum(time_index) += du.template get<0>();
                         if( global_time_index == K )
                         {
                             dual_residual_coeffs[time_index-shift].resize( du.template get<1>().size() );
@@ -6107,12 +6114,12 @@ CRB<TruthModelType>::delta( size_type N,
             {
                 if( model_has_eim_error )
                 {
-                    double r = math::sqrt( primal_sum );
+                    double r = math::sqrt( primal_sum.sum() );
                     double reim = math::sqrt( primal_sum_eim );
                     delta_pr =  ( r + reim ) /  alphaA ;
                     if( M_solve_dual_problem )
                     {
-                        double rdu = math::sqrt( dual_sum );
+                        double rdu = math::sqrt( dual_sum.sum() );
                         double rdueim = math::sqrt( dual_sum_eim );
                         delta_du =  ( rdu + rdueim ) / alphaA;
                     }
@@ -6122,9 +6129,9 @@ CRB<TruthModelType>::delta( size_type N,
                 }
                 else
                 {
-                    delta_pr = math::sqrt( primal_sum ) /  alphaA ;
+                    delta_pr = math::sqrt( primal_sum.sum() ) /  alphaA ;
                     if( M_solve_dual_problem )
-                        delta_du = math::sqrt( dual_sum ) / alphaA;
+                        delta_du = math::sqrt( dual_sum.sum() ) / alphaA;
                     else
                         delta_du = 1;
                     output_upper_bound[global_time_index] = alphaA * delta_pr * delta_du;
@@ -6134,9 +6141,9 @@ CRB<TruthModelType>::delta( size_type N,
             }
             else
             {
-                delta_pr = math::sqrt( dt/alphaA * primal_sum );
+                delta_pr = math::sqrt( dt/alphaA * primal_sum.sum() );
                 if( M_solve_dual_problem )
-                    delta_du = math::sqrt( dt/alphaA * dual_sum + dual_residual/alphaM );
+                    delta_du = math::sqrt( dt/alphaA * dual_sum.sum() + dual_residual/alphaM );
                 else
                     delta_du = 1;
                 output_upper_bound[global_time_index] = delta_pr * delta_du;
