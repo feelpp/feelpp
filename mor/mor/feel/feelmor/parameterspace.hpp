@@ -455,6 +455,13 @@ public:
             {}
 
         /**
+         * @brief get the parameter space
+         * 
+         * @return the parameter space
+         */
+        auto parameterSpace() const { return M_space; }
+
+        /**
          * \brief return number of elements in the sampling
          */
         int nbElements() const
@@ -1270,14 +1277,6 @@ public:
 
                 return boost::make_tuple( mumax, index );
             }
-        /**
-         * \brief Retuns the parameter space
-         */
-        parameterspace_ptrtype const& parameterSpace() const
-            {
-                return M_space;
-            }
-
         /**
          * \breif Returns the supersampling (might be null)
          */
