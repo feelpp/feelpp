@@ -59,6 +59,11 @@ bool runCrbOnline( std::vector<std::shared_ptr<Feel::CRBPluginAPI>> plugin );
 */
 namespace Feel
 {
+
+/**
+ * @brief Model wrapper for RB online
+ * 
+ */
 struct MORModel
 {
     fs::path dbroot;
@@ -134,11 +139,23 @@ struct MORModel
 
     std::shared_ptr<Feel::CRBPluginAPI> p_;
 };
-struct MORModels: std::vector<MORModel>
+
+class MORObserver
+{
+    public:
+    virtual void update( std::pair<int,ParameterSpaceX::Element> const& , std::vector<CRBResults> const& results ) = 0;
+};
+/**
+ * @brief List of models for a given problem
+ *
+ * The models should at least share the same parameter space
+ *
+ */
+struct MORModels : std::vector<MORModel>
 {
     void load()
     {
-        for( auto& m: *this )
+        for ( auto& m : *this )
         {
             m.loadPlugin( m );
         }
@@ -146,172 +163,155 @@ struct MORModels: std::vector<MORModel>
     auto
     parameterSpace() const
     {
-        return this->at(0).parameterSpace();
+        return this->at( 0 ).parameterSpace();
+    }
+
+    /**
+     * @brief a sampling of the parameter space
+     *
+     * @return auto
+     */
+    auto sampling() const
+    {
+        return this->at( 0 ).parameterSpace()->sampling();
     }
     /**
      * @brief initialize the Exporter for all models using the first model
-     * 
+     *
      */
     void
     initExporter()
     {
-        if ( this->at(0).load == "all" || this->at(0).load == "fe" )
-            this->at(0).initExporter();
+        if ( this->at( 0 ).load == "all" || this->at( 0 ).load == "fe" )
+            this->at( 0 ).initExporter();
     }
     void
     saveExporter()
     {
-        if ( this->at(0).load == "all" || this->at(0).load == "fe" )
-            this->at(0).saveExporter();
+        if ( this->at( 0 ).load == "all" || this->at( 0 ).load == "fe" )
+            this->at( 0 ).saveExporter();
     }
-    bool
-    run( int N )
+    std::vector<std::vector<CRBResults>>
+    run( int N, std::shared_ptr<ParameterSpaceX::Sampling> const& sampling )
     {
         using namespace Feel;
 
         Eigen::VectorXd /*typename crb_type::vectorN_type*/ time_crb;
         double online_tol = 1e-2;     // Feel::doption(Feel::_name="crb.online-tolerance");
         bool print_rb_matrix = false; // boption(_name="crb.print-rb-matrix");
-        auto muspace = this->parameterSpace();
 
-        std::ostringstream ostrmumin, ostrmumax;
-        auto mumin = muspace->min();
-        auto mumax = muspace->max();
-        for ( uint16_type d = 0; d < muspace->dimension(); ++d )
+        std::vector<std::vector<CRBResults>> results( sampling->size() );
+        for ( auto const& [k, mu] : enumerate( *sampling ) )
         {
-            ostrmumin << mumin( d ) << " ";
-            ostrmumax << mumax( d ) << " ";
-        }
-        std::cout << "dimension of parameter space : " << muspace->dimension() << "\n";
-        std::cout << "min element in parameter space : " << ostrmumin.str() << "\n";
-        std::cout << "max element in parameter space : " << ostrmumax.str() << "\n";
-
-        auto mysampling = muspace->sampling();
-
-        std::vector<double> inputParameter;
-        if ( Environment::vm().count( "parameter" ) )
-        {
-            auto inputParameterParsed = Environment::vm()["parameter"].as<std::vector<std::string>>();
-
-            if ( inputParameterParsed.size() == 1 )
-            {
-                std::vector<std::string> stringParsedSplitted;
-                boost::split( stringParsedSplitted, inputParameterParsed.front(), boost::is_any_of( " " ), boost::token_compress_on );
-                inputParameterParsed = stringParsedSplitted;
-            }
-
-            for ( std::string const& paramParsed : inputParameterParsed )
-                inputParameter.push_back( std::stod( paramParsed ) );
-        }
-        else if ( Environment::vm().count( "parameter.filename" ) )
-        {
-            std::string fname = Environment::vm()["parameter.filename"].as<std::string>();
-            auto r = loadXYFromCSV( fname, muspace->parameterNames() );
-            auto mu = muspace->element();
-            for ( auto const& p : r )
-            {
-                mu = p;
-                mysampling->push_back( mu );
-            }
-        }
-        // inputParameter = Environment::vm()["parameter"].as<std::vector<double> >();
-        if ( !inputParameter.empty() )
-        {
-            CHECK( inputParameter.size() == muspace->dimension() ) << "parameter has a wrong size : " << inputParameter.size() << " but must be " << muspace->dimension() << ":" << inputParameter;
-            auto mu = muspace->element();
-            for ( uint16_type d = 0; d < muspace->dimension(); ++d )
-                mu( d ) = inputParameter[d];
-            mysampling->push_back( mu );
-        }
-        else if ( mysampling->empty() )
-        {
-            int nSample = ioption( _name = "sampling.size" );
-            std::string sampler = soption( "sampling.type" );
-            mysampling->sample( nSample, sampler );
-        }
-
-        // use first model exporter for all exports if load==all
-        this->initExporter();
-
-        int nSamples = mysampling->size();
-
-        for ( int k = 0; k < nSamples; ++k )
-        {
-
-            auto const& mu = ( *mysampling )[k];
-            std::ostringstream ostrmu;
-            for ( uint16_type d = 0; d < muspace->dimension(); ++d )
-                ostrmu << mu( d ) << " ";
-            // std::cout << "--------------------------------------\n";
-            // std::cout << "mu["<<k<<"] : " << ostrmu.str() << "\n";
-            // auto mu = crb->Dmu()->element();
-            // std::cout << "input mu\n" << mu << "\n";
-
-            Feel::Table tableOutputResults;
-            tableOutputResults.format().setFloatingPointPrecision( ioption( _name = "output_results.precision" ) );
-            std::vector<std::string> tableRowHeader;// = muspace->parameterNames();
-
-            for( auto const& p : *this )
-            {
-                tableRowHeader.push_back( fmt::format( "{}.{} time", p.name, p.output ) );
-                tableRowHeader.push_back( fmt::format( "{}.{} output", p.name, p.output ) );
-                tableRowHeader.push_back( fmt::format( "{}.{} error", p.name, p.output ) );
-            }
-            LOG(INFO) << fmt::format("[MORModels::run] tableRowHeader {}", tableRowHeader);
-            tableOutputResults.add_row( tableRowHeader );
-            tableOutputResults.format().setFirstRowIsHeader( true );
-
-            std::vector<double> tableRowValues( tableRowHeader.size() );
-
-            
-            std::vector<CRBResults> results;
-            results.reserve( this->size() );
+            results[k].reserve( this->size() );
             for ( auto const& p : *this )
             {
                 tic();
-                results.emplace_back( p.run( mu, time_crb, online_tol, N, print_rb_matrix ) );
-                double t = toc( fmt::format("rb-online-{}-{}",p.name,p.output ), FLAGS_v > 0 );
-
-                p.exportField( fmt::format( "sol-{}-{}-{}", p.name, p.output, k ), results.back() );
-            } 
-            
-            for ( auto const& [index,o] : enumerate(results[0].outputs()) ) 
-            {
-                int curRowValIndex = 0;
-                for ( auto const& [output_index,p] : enumerate(*this) )
-                {
-                    int tableindex = output_index*3;
-                    tableRowValues[tableindex+0] = index;
-                    tableRowValues[tableindex+1] = results[output_index].outputs()[index];
-                    tableRowValues[tableindex+2] = results[output_index].errors()[index];
-                    //tableRowValues[curRowValIndex++] = t;
-                }
-                tableOutputResults.add_row( tableRowValues );
+                results[k].emplace_back( p.run( mu, time_crb, online_tol, N, print_rb_matrix ) );
+                double t = toc( fmt::format( "rb-online-{}-{}", p.name, p.output ), FLAGS_v > 0 );
             }
-            
-
-           
-
-            bool printResults = boption( _name = "output_results.print" );
-            if ( printResults )
-                std::cout << tableOutputResults << std::endl;
-
-            auto results_p = fs::path( this->at(0).dbroot ).parent_path()/ fs::path(std::string("results"));
-            fs::create_directories( results_p );
-            LOG(INFO) << fmt::format("[MORModels::run] results path : {}", results_p.string() );
-            std::ofstream ofs( results_p / fs::path( fmt::format( "results-{}.csv", k ) ) );
-            LOG(INFO) << fmt::format("[MORModels::run] results file : {}", ( results_p / fs::path( fmt::format( "results-{}.csv", k ) ) ).string() );
-            tableOutputResults.exportCSV( ofs );
-
+            for ( auto const& o : observers_ )
+            {
+                o->update( std::pair{ k, mu }, results[k] );
+            }
         } // end for sample k
 
-        this->saveExporter();
-
-        return true;
+        return results;
     }
+    void addObserver( std::shared_ptr<MORObserver> const& o )
+    {
+        observers_.push_back( o );
+    }
+    std::vector<std::shared_ptr<MORObserver>> observers_;
 };
-}
 
+
+
+class MORExporter : public MORObserver
+{
+    public:
+    MORExporter( MORModels& models )
+        : models_( models )
+    {
+        models_.initExporter();
+    }
+    void update( std::pair<int, ParameterSpaceX::Element> const& mu, std::vector<CRBResults> const& results )
+    {
+        for ( auto const& [index, o] : enumerate( results[0].outputs() ) )
+        {
+            for ( auto const& p : models_ )
+            {
+                if ( p.load == "all" || p.load == "fe" )
+                    p.exportField( fmt::format( "sol-{}-{}-{}", p.name, p.output, mu.first ), results[index] );
+            }
+        }
+        models_.saveExporter();
+    }
+    MORModels& models_;
+};
+class MORTable : public MORObserver
+{
+    public:
+    MORTable( MORModels const& models, bool print_to_screen = false, bool save_to_file = true )
+        : models_( models ), print_to_screen_( print_to_screen ), save_to_file_( save_to_file ), results_path_( "" )
+    {
+        table_.format().setFloatingPointPrecision( ioption( _name = "output_results.precision" ) );
+        std::vector<std::string> tableRowHeader; // = muspace->parameterNames();
+
+        for ( auto const& p : models_ )
+        {
+            tableRowHeader.push_back( fmt::format( "{}.{} time", p.name, p.output ) );
+            tableRowHeader.push_back( fmt::format( "{}.{} output", p.name, p.output ) );
+            tableRowHeader.push_back( fmt::format( "{}.{} error", p.name, p.output ) );
+        }
+        LOG( INFO ) << fmt::format( "[MORModels::run] tableRowHeader {}", tableRowHeader );
+        table_.add_row( tableRowHeader );
+        table_.format().setFirstRowIsHeader( true );
+
+        results_path_ = fs::path( models_.at( 0 ).dbroot ).parent_path() / fs::path( std::string( "results" ) );
+        fs::create_directories( results_path_ );
+        LOG( INFO ) << fmt::format( "[MORTable] results path : {}", results_path_.string() );
+    }
+
+    void update( std::pair<int, ParameterSpaceX::Element> const& mu, std::vector<CRBResults> const& results )
+    {
+        std::ostringstream ostrmu;
+        for ( uint16_type d = 0; d < mu.second.size(); ++d )
+            ostrmu << mu.second( d ) << " ";
+        std::vector<double> tableRowValues( 3*models_.size() );
+
+        for ( auto const& [index, o] : enumerate( results[0].outputs() ) )
+        {
+            int curRowValIndex = 0;
+            for ( auto const& [output_index, p] : enumerate( models_ ) )
+            {
+                int tableindex = output_index * 3;
+                tableRowValues[tableindex + 0] = index;
+                tableRowValues[tableindex + 1] = results[output_index].outputs()[index];
+                tableRowValues[tableindex + 2] = results[output_index].errors()[index];
+                // tableRowValues[curRowValIndex++] = t;
+            }
+            table_.add_row( tableRowValues );
+        }
+
+        if ( print_to_screen_ )
+            std::cout << table_ << std::endl;
+
+        if ( save_to_file_ )
+        {
+            std::ofstream ofs( results_path_ / fs::path( fmt::format( "results-{}.csv", mu.first ) ) );
+            VLOG(2) << fmt::format( "[MORTable::update] results file for mu key {}  value {} : {}", mu.first, mu.second, ( results_path_ / fs::path( fmt::format( "results-{}.csv", mu.first ) ) ).string() );
+            table_.exportCSV( ofs );
+        }
+    }
+    MORModels const& models_;
+    Table table_;
+    bool print_to_screen_;
+    bool save_to_file_;
+    fs::path results_path_;
+};
+
+} // namespace Feel
 std::shared_ptr<Feel::CRBPluginAPI>
 loadPlugin( std::string const& name, std::string const& id )
 {
@@ -466,7 +466,71 @@ loadModelName( std::string const& filename )
     return modelName;
 }
 
+namespace Feel {
 
+auto
+setupSampling( MORModels const& m )
+{
+    auto muspace = m.parameterSpace();
+
+    std::ostringstream ostrmumin, ostrmumax;
+    auto mumin = muspace->min();
+    auto mumax = muspace->max();
+    for ( uint16_type d = 0; d < muspace->dimension(); ++d )
+    {
+        ostrmumin << mumin( d ) << " ";
+        ostrmumax << mumax( d ) << " ";
+    }
+    std::cout << "dimension of parameter space : " << muspace->dimension() << "\n";
+    std::cout << "min element in parameter space : " << ostrmumin.str() << "\n";
+    std::cout << "max element in parameter space : " << ostrmumax.str() << "\n";
+
+    auto mysampling = muspace->sampling();
+
+    std::vector<double> inputParameter;
+    if ( Environment::vm().count( "parameter" ) )
+    {
+        auto inputParameterParsed = Environment::vm()["parameter"].as<std::vector<std::string>>();
+
+        if ( inputParameterParsed.size() == 1 )
+        {
+            std::vector<std::string> stringParsedSplitted;
+            boost::split( stringParsedSplitted, inputParameterParsed.front(), boost::is_any_of( " " ), boost::token_compress_on );
+            inputParameterParsed = stringParsedSplitted;
+        }
+
+        for ( std::string const& paramParsed : inputParameterParsed )
+            inputParameter.push_back( std::stod( paramParsed ) );
+    }
+    else if ( Environment::vm().count( "parameter.filename" ) )
+    {
+        std::string fname = Environment::vm()["parameter.filename"].as<std::string>();
+        auto r = loadXYFromCSV( fname, muspace->parameterNames() );
+        auto mu = muspace->element();
+        for ( auto const& p : r )
+        {
+            mu = p;
+            mysampling->push_back( mu );
+        }
+    }
+    // inputParameter = Environment::vm()["parameter"].as<std::vector<double> >();
+    if ( !inputParameter.empty() )
+    {
+        CHECK( inputParameter.size() == muspace->dimension() ) << "parameter has a wrong size : " << inputParameter.size() << " but must be " << muspace->dimension() << ":" << inputParameter;
+        auto mu = muspace->element();
+        for ( uint16_type d = 0; d < muspace->dimension(); ++d )
+            mu( d ) = inputParameter[d];
+        mysampling->push_back( mu );
+    }
+    else if ( mysampling->empty() )
+    {
+        int nSample = ioption( _name = "sampling.size" );
+        std::string sampler = soption( "sampling.type" );
+        mysampling->sample( nSample, sampler );
+    }
+    return mysampling;
+}
+}
 int main(int argc, char**argv )
 {
     using namespace Feel;
@@ -527,7 +591,9 @@ int main(int argc, char**argv )
         nl::json js = nl::json::parse(is);
         MORModels ms = js["mormodels"].get<MORModels>();
         ms.load();
-        ms.run(ioption(_name="rb-dim"));
+        MORTable table( ms );
+        ms.addObserver( std::make_shared<MORTable>( table ) );
+        ms.run(ioption(_name="rb-dim"), setupSampling( ms ));
 #if 0
         if ( Environment::vm().count( "list" )  )
         {
