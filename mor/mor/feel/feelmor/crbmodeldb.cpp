@@ -45,7 +45,7 @@ std::string
 CRBModelDB::jsonFilename() const
 {
     std::string model_name = fs::path( this->rootRepository() ).parent_path().rbegin()->string();
-    std::cout << fmt::format( "[CRBModelDB::jsonFilename] model_name={}", model_name ) << std::endl;
+    VLOG(2) << fmt::format( "[CRBModelDB::jsonFilename] model_name={}", model_name ) << std::endl;
     return CRBModelDB::jsonFilename( model_name );
     //return CRBModelDB::jsonFilename( this->name() );
 }
@@ -125,7 +125,7 @@ CRBModelDB::loadDBMetaData( crb::attribute from, std::optional<std::string> cons
 
     MetaData res;
     std::string model_name = fs::path( this->rootRepository() ).parent_path().rbegin()->string();
-    std::cout << fmt::format( "model_name={}", model_name ) << std::endl;
+    VLOG(2) << fmt::format( "model_name={}", model_name ) << std::endl;
     res.json_path = fs::path( this->dbRepository() ) / fmt::format( "{}.crb.json", model_name);
     std::string jsonPathStr = res.json_path.string();
     if ( !fs::exists( res.json_path ) )
@@ -238,17 +238,17 @@ CRBModelDB::idFromDBLast( std::string const& name, crb::last last, std::string c
         return uuids::nil_uuid();
 
     std::string model_name = fs::path( root ).parent_path().rbegin()->string();
-    std::cout << fmt::format( "[CRBModelDB::idFromDBLast] model_name={}", model_name ) << std::endl;
+    VLOG(3) << fmt::format( "[CRBModelDB::idFromDBLast] model_name={}", model_name ) << std::endl;
 
     fs::path crbdb = fs::path(root) / "crbdb";
     if ( !fs::exists( crbdb ) )
         return uuids::nil_uuid();
 
     fs::path dbbasedir = crbdb / fs::path(name) ;
-    std::cout << fmt::format("dbbasedir= {}",dbbasedir.string()) << std::endl;
+    VLOG(3) << fmt::format("dbbasedir= {}",dbbasedir.string()) << std::endl;
     if ( !fs::exists( dbbasedir ) && !fs::is_directory(dbbasedir) )
         return uuids::nil_uuid();
-    std::cout << fmt::format("dbbasedir= {} found",dbbasedir.string()) << std::endl;
+    VLOG(3)<< fmt::format("dbbasedir= {} found",dbbasedir.string()) << std::endl;
     //throw std::invalid_argument(std::string("db directory ") + dbbasedir.string() + " does not exist");
     // either id provides the full directory or part of it
     // try first full path
@@ -260,7 +260,7 @@ CRBModelDB::idFromDBLast( std::string const& name, crb::last last, std::string c
     for( auto const& dir: boost::make_iterator_range( fs::directory_iterator(dbbasedir),{} ) )
     {
         fs::path dbfilename = dir.path() / CRBModelDB::jsonFilename( model_name );
-        std::cout << fmt::format("looking for dbfilename= {}",dbfilename.string()) << std::endl;
+        VLOG(3) << fmt::format("looking for dbfilename= {}",dbfilename.string()) << std::endl;
         if (fs::exists( dbfilename ) )
         {
             fs::path uidpath = dir.path().filename();
@@ -277,7 +277,7 @@ CRBModelDB::idFromDBLast( std::string const& name, crb::last last, std::string c
     if ( result_set.size() )
     {
         std::string uidstring = result_set.rbegin()->second.string();
-        std::cout << "Last " << ((last==crb::last::modified)?"modified":"created") << " db uid: " << uidstring << std::endl;
+        VLOG(3) << "Last " << ((last==crb::last::modified)?"modified":"created") << " db uid: " << uidstring << std::endl;
         return boost::lexical_cast<uuids::uuid>( uidstring );
     }
     //throw std::invalid_argument(std::string("Last database for ") + name() + " not found");

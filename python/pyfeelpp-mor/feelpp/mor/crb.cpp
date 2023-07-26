@@ -26,10 +26,11 @@
 
 #include <Eigen/Core>
 #include <boost/shared_ptr.hpp>
+#include <feel/feelcore/pybind11_json.hpp>
+#include <feel/feelpython/pybind11/functional.h>
 #include <feel/feelpython/pybind11/pybind11.h>
 #include <feel/feelpython/pybind11/stl.h>
-#include <feel/feelpython/pybind11/functional.h>
-#include <feel/feelcore/pybind11_json.hpp>
+#include <feel/feelpython/pybind11/stl_bind.h>
 //#include <feel/feelpython/pybind11/eigen.h>
 //#include <feel/feelpython/pybind11/numpy.h>
 
@@ -43,6 +44,7 @@
 #include <feel/feelmor/options.hpp>
 #include <feel/feelmor/crbmodelproperties.hpp>
 #include <feel/feelmor/mormodels.hpp>
+#include <feel/feelmor/zip.hpp>
 
 
 namespace py = pybind11;
@@ -213,6 +215,8 @@ class PyMORObserver : public MORObserver
 namespace py = pybind11;
 PYBIND11_MODULE( _mor, m )
 {
+    m.def("extractZipFile", &extractZipFile, "extract zip file", py::arg("file"), py::arg("dir") );
+    m.def("cleanupTemporaryDirectory", &cleanupTemporaryDirectory, "cleanup temporary directory", py::arg("dir") );
     m.def("makeCRBOptions", &makeCRBOptions, "Create CRB Options" );
     m.def("factoryCRBPlugin", &factoryCRBPlugin, "Factory for CRB plugins",
           py::arg("name"),py::arg("libname")=std::string(""),py::arg("dirname")=Info::libdir().string() );
@@ -434,8 +438,8 @@ PYBIND11_MODULE( _mor, m )
     
     py::class_<MORModels, std::shared_ptr<MORModels>>( m, "MORModels" )
         .def( py::init<>() )
-        .def( py::init<nl::json const&>() )
-        .def( py::init<std::string const&>() )
+        //.def( py::init<nl::json const&>() )
+        .def( py::init<fs::path const&>() )
         .def( "load", &MORModels::load, "load the MOR models" )
         .def( "parameterSpace", &MORModels::parameterSpace, "get the parameter space" )
         .def( "sampling", &MORModels::sampling, "create a sampling with global number of samples" )
@@ -467,4 +471,6 @@ PYBIND11_MODULE( _mor, m )
               py::arg( "save_to_file" ) = true );
 
         //.def("run",&CRBPluginAPI::run)
+
+    
 }
