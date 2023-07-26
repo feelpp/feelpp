@@ -1,5 +1,6 @@
 
 #include <feel/feelmor/mormodels.hpp>
+#include <feel/feelmor/zip.hpp>
 
 namespace Feel
 {
@@ -28,7 +29,7 @@ MORModel::loadPlugin()
         throw std::runtime_error( "no crbmodel selection, crbmodel.db.id or crbmodel.db.last should be defined" );
     }
     auto meta = crbmodelDB.loadDBMetaData( attribute, attribute_data );
-    std::cout << "-- crbmodelDB::dbRepository() = " << crbmodelDB.dbRepository() << std::endl;
+    VLOG(2) << "-- crbmodelDB::dbRepository() = " << crbmodelDB.dbRepository() << std::endl;
 #if 0
     if ( boption( _name = "export-solution" ) )
         p_ = crbmodelDB.loadDBPlugin( meta, "all" );
@@ -36,7 +37,46 @@ MORModel::loadPlugin()
 #endif    
     p_ = crbmodelDB.loadDBPlugin( meta, this->load );
 }
-
+MORModels::MORModels( fs::path const& fpp )
+{
+    auto _load = [this]( fs::path const& fpp ) {
+            std::ifstream f( fpp / "mormodels.json" );
+            nl::json j = nl::json::parse( f );
+            f.close();
+            *this = j["mormodels"].get<MORModels>();
+            this->load();
+    };
+    if ( !fs::exists( fpp ) )
+    {
+        throw std::invalid_argument( fmt::format( "[MORModels::MORModels] resource {} does not exist", fpp.string() ) );
+    }
+    if ( fs::is_directory(fpp) && fs::exists(fpp/"mormodels.json") )
+    {
+        _load( fpp );
+    }
+    if ( fpp.extension() != ".fpp")
+    {
+        throw std::invalid_argument( fmt::format( "[MORModels::MORModels] the zip file should have a .fpp extension", fpp.string() ) );
+    }
+    else
+    {
+        extractZipFile(fpp.string(), fpp.parent_path().string() );
+        VLOG(2) << fmt::format("-- MORModels::MORModels: extractZipFile : {} done", fpp.string()) << std::endl;
+        fs::path cfg = fpp.parent_path() / fpp.stem() / fs::path(fpp.stem().string() + ".cfg");
+        Environment::setConfigFile( cfg.string() );
+        fs::path desc = fpp.parent_path() / fpp.stem() / "mormodels.json";
+        VLOG(2) << fmt::format("-- MORModels::MORModels: Looking for  {} ", desc.string() ) << std::endl;
+        if ( !fs::exists(desc) )
+        {
+            throw std::invalid_argument( fmt::format( "[MORModels::MORModels] FPP file {} does not contain a mormodels.json file : {}", fpp.string(), desc.string() ) );
+        }
+        _load( fpp.parent_path() / fpp.stem() );
+        cleanupTemporaryDirectory( ( fpp.parent_path() / fpp.stem() ).string() );
+    }
+    if ( Environment::isMasterRank() )
+        std::cout << fmt::format( "-- model {} loaded from {} with {} outputs", this->operator[](0).name, fpp.string(), this->size() ) << std::endl;
+    //throw std::invalid_argument( fmt::format( "[MORModels::MORModels] FPP file {} does not exist", fppfilename ) );
+}
 std::vector<std::vector<CRBResults>>
 MORModels::run( std::shared_ptr<ParameterSpaceX::Sampling> const& sampling, nl::json const& data ) const
 {

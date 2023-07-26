@@ -32,13 +32,16 @@ set(SRC toolboxmor.cpp
   crbmodelproperties.cpp 
   crbmodelparameters.cpp 
   crbmodeloutputs.cpp
-  mormodels.cpp )
+  mormodels.cpp zip.cpp )
+
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(LibZip REQUIRED libzip)
 
 file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp)
 add_library( feelpp_mor SHARED ${SRC} )
 add_library(Feelpp::feelpp_mor ALIAS feelpp_mor )
 set_target_properties(feelpp_mor PROPERTIES VERSION 1 SOVERSION 1)
-target_link_libraries( feelpp_mor PUBLIC Feelpp::feelpp   )
+target_link_libraries(feelpp_mor PUBLIC Feelpp::feelpp ${LibZip_LIBRARIES})
 target_include_directories(feelpp_mor PUBLIC
   $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/mor>
   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/mor>

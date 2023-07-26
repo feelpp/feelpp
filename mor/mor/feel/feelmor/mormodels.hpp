@@ -111,8 +111,15 @@ class MORModels : public std::vector<MORModel>
     public:
 
     MORModels() = default;
-    MORModels( nl::json && j ) : super( j["mormodels"].get<std::vector<MORModel>>() ) {}
-    MORModels( nl::json const& j ) : super( j["mormodels"].get<std::vector<MORModel>>() ) {}
+    /**
+     * @brief Construct a new MORModels object from a fpp file
+     * 
+     * a .fpp file is a zip archive containing a plugin, a database and some metadata to run the MOR model.
+     * @param fppfile .fpp file to unzip and read data from
+     */
+    MORModels( fs::path const& fppfile );
+    explicit MORModels( nl::json && j ) : super( j["mormodels"].get<std::vector<MORModel>>() ) {}
+    explicit MORModels( nl::json const& j ) : super( j["mormodels"].get<std::vector<MORModel>>() ) {}
 
     void load()
     {
