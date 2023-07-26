@@ -37,9 +37,11 @@ SET( CMAKE_MODULE_PATH  ${CMAKE_CURRENT_SOURCE_DIR}/cmake )
 # version of feel++. This is useful also for staged compilation for docker
 list(FIND FEELPP_COMPONENT "mor" COMPONENT_MOR)
 list(FIND FEELPP_COMPONENT "python" COMPONENT_PYTHON )
+
 if ( CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR OR COMPONENT_PYTHON GREATER -1 )
   if ( COMPONENT_MOR GREATER -1 )
     find_package(Feel++ COMPONENTS Toolboxes PATHS ${FEELPP_DIR}/share/feelpp/feel/cmake/modules $ENV{FEELPP_DIR}/share/feelpp/feel/cmake/modules /usr/share/feelpp/feel/cmake/modules /usr/local/share/feelpp/feel/cmake/modules )
+    set(FEELPP_MOR_FOUND TRUE)
   else()
     find_package(Feel++ COMPONENTS Toolboxes MOR PATHS ${FEELPP_DIR}/share/feelpp/feel/cmake/modules $ENV{FEELPP_DIR}/share/feelpp/feel/cmake/modules /usr/share/feelpp/feel/cmake/modules /usr/local/share/feelpp/feel/cmake/modules)
   endif()
