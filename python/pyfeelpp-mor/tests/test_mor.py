@@ -43,8 +43,8 @@ def test_init_from_ModelPropeties(casefile, dim, mumin_th, mumax_th,  init_feelp
     Dmu = feelpp.mor._mor.ParameterSpace.New(modelParameters, feelpp.Environment.worldCommPtr())
 
     # mubar = Dmu.mubar()       # /!\ doesn't exist anymore !
-    mumin = Dmu.mumin()
-    mumax = Dmu.mumax()
+    mumin = Dmu.min()
+    mumax = Dmu.max()
 
     mu = Dmu.element()
     print("try to access to the names of elements")
@@ -71,7 +71,7 @@ def test_sampling(casefile, init_feelpp):
     print(feelpp.mor.__file__)
     Nsamples = 10
     s = Dmu.sampling()
-    s.sampling(Nsamples, samplingMode="random")
+    s.sample(Nsamples, samplingMode="random")
 
     assert len(s) == Nsamples , "wrong number of samples"
     v = s.getVector()

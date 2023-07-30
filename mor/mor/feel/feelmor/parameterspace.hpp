@@ -83,6 +83,7 @@ public:
     using super = CommObject;
     typedef ParameterSpace<Dimension> parameterspace_type;
     typedef std::shared_ptr<parameterspace_type> parameterspace_ptrtype;
+    using value_type = double;
 
     //@}
 
@@ -102,30 +103,32 @@ public:
         /**
          * default constructor
          */
-        Element()
-            :
-            super(),
-            M_space()
-            {}
+        Element() : super(), M_space(), param_indices_(){}
 
         /**
-         * default constructor
+         * @brief Default constructor.
+         *
+         * Creates an empty Element object.
          */
         Element( Element const& e ) = default;
 
         /**
-         * construct element from \p space
+         * @brief Constructor with ParameterSpace pointer.
+         *
+         * Creates an Element object with a size based on the dimension of the ParameterSpace.
+         *
+         * @param space A shared pointer to a ParameterSpace object.
          */
         Element( parameterspace_ptrtype const& space )
-            :
-            super( space->dimension() ),
-            M_space( space )
-            {}
+            : super( space->dimension() ), M_space( space ), param_indices_()
+        {
+            precomputeParamIndices();
+        }
 
         // This constructor allows you to construct Element from Eigen expressions
         template<typename OtherDerived>
         Element(const Eigen::MatrixBase<OtherDerived>& other)
-            : super(other)
+            : super(other), param_indices_()
             { }
         /**
          * destructor
@@ -144,6 +147,7 @@ public:
                 this->resize( e.size() );
                 super::operator=( e );
                 M_space = e.M_space;
+                param_indices_ = e.param_indices_;
 
                 return *this;
             }
@@ -183,20 +187,31 @@ public:
         }
 
         /**
-         * access element by name
+         * @brief Accesses an element by its parameter name.
+         * 
+         * @param name The name of the parameter to access.
+         * @return Reference to the value of the specified parameter.
+         * @throws std::invalid_argument If the parameter name is not found.
          */
-        double const& parameterNamed( std::string name ) const
-            {
-                auto paramNames = M_space->parameterNames();
-                auto it = std::find(paramNames.begin(), paramNames.end(), name);
-                return this->operator()( it - paramNames.begin() );
-            }
-        double& parameterNamed( std::string name )
-            {
-                auto paramNames = M_space->parameterNames();
-                auto it = std::find(paramNames.begin(), paramNames.end(), name);
-                return this->operator()( it - paramNames.begin() );
-            }
+        double const &parameterNamed(std::string name) const
+        {
+            int index = paramIndexByName(name);
+            return this->coeff(index);
+        }
+
+        /**
+         * @brief Accesses an element by its parameter name (modifiable version).
+         * 
+         * @param name The name of the parameter to access.
+         * @return Reference to the value of the specified parameter.
+         * @throws std::invalid_argument If the parameter name is not found.
+         */
+        double &parameterNamed(std::string name)
+        {
+            int index = paramIndexByName(name);
+            return this->coeff(index);
+        }
+
 
         void view() const
         {
@@ -205,27 +220,24 @@ public:
         }
 
         /**
-         * set a parameter
+         * @brief Sets the value of a parameter with a specific name.
+         *
+         * Checks whether the given value is within the valid range for the parameter.
+         *
+         * @param name The name of the parameter to set.
+         * @param value The new value for the parameter.
+         * @throws std::invalid_argument If the parameter name is not found or the value is out of range.
          */
         void setParameterNamed( std::string name, double value )
         {
-            auto paramNames = M_space->parameterNames();
-            element_type min = M_space->min(), max = M_space->max();
-            auto it = std::find(paramNames.begin(), paramNames.end(), name);
-            if( it != paramNames.end() )
-            {
-                double min_val = min.parameterNamed(name),
-                       max_val = max.parameterNamed(name);
-                if (value >= min_val && value <= max_val)
-                    this->operator()( it - paramNames.begin() ) = value;
-                else
-                {
-                    LOG( WARNING ) << fmt::format("{} value not in range [{}, {}] for parameter named {}", value, min_val, max_val, name) << std::endl;
-                    throw std::invalid_argument("Parameter out of range");
-                }
-            }
+            int index = paramIndexByName( name );
+            if ( isValueInRange( index, value ) )
+                this->coeff( index ) = value;
             else
-                LOG( WARNING ) << fmt::format("{} is not a parameter", name) << std::endl;
+            {
+                LOG( WARNING ) << fmt::format( "{} value not in range [{}, {}] for parameter named {}", value, M_space->min( index ), M_space->max( index ) ) << std::endl;
+                throw std::invalid_argument( "Parameter out of range" );
+            }
         }
 
         void setParameter( int i, double value)
@@ -263,10 +275,40 @@ public:
 
         }
 
+        /**
+         * @brief Set the Parameters object
+         * 
+         * @param values map of parameter values
+         */
         void setParameters( const std::map<std::string, double> &values )
         {
             for (auto a : values)
                 setParameterNamed( a.first, a.second );
+        }
+
+        /**
+         * @brief Set the parameters to the map of values
+         * 
+         * @param values map of values 
+         * @return Element& 
+         */
+        Element& set( const std::map<std::string, double> &values )
+        {
+            for (auto a : values)
+                setParameterNamed( a.first, a.second );
+            return *this;
+        }
+
+        /**
+         * @brief Set the parameters to the vector of values
+         * 
+         * @param values vector of values ordered by parameter index
+         * @return Element& 
+         */
+        Element& set( const std::vector<double> &values )
+        {
+            setParameters( values );
+            return *this;
         }
 
         /**
@@ -364,6 +406,54 @@ public:
         }
 
     private:
+
+      /**
+       * @brief Map from parameter names to their corresponding indices.
+       */
+      std::unordered_map<std::string, int> param_indices_;
+
+      /**
+       * @brief Helper function to precompute the parameter indices during construction.
+       */
+      void precomputeParamIndices()
+      {
+            auto paramNames = M_space->parameterNames();
+            for ( int i = 0; i < paramNames.size(); ++i )
+                param_indices_[paramNames[i]] = i;
+      }
+
+      /**
+       * @brief Helper function to fetch the parameter index by its name.
+       *
+       * @param name The name of the parameter to fetch the index for.
+       * @return The index of the specified parameter.
+       * @throws std::invalid_argument If the parameter name is not found.
+       */
+      int paramIndexByName( std::string name ) const
+      {
+            auto it = param_indices_.find( name );
+            if ( it != param_indices_.end() )
+                return it->second;
+            else
+                throw std::invalid_argument( "Parameter name not found" );
+      }
+
+      /**
+       * @brief Helper function to check if a given value is within the valid range for a parameter.
+       *
+       * @param index The index of the parameter to check.
+       * @param value The value to check.
+       * @return true if the value is within the valid range, false otherwise.
+       */
+      bool isValueInRange( int index, double value ) const
+      {
+            auto min_val = M_space->min( index );
+            auto max_val = M_space->max( index );
+            return ( value >= min_val && value <= max_val );
+      }
+
+    private:
+
         friend class boost::serialization::access;
         template<class Archive>
         void save( Archive & ar, const unsigned int version ) const
@@ -481,42 +571,20 @@ public:
          * \brief create a sampling with elements given by the user
          * \param V : vector of element_type
          */
-        void setElements( std::vector< element_type > const& V )
+        Sampling& setElements( std::vector< element_type > const& V )
         {
-#if 0
-            CHECK( M_space ) << "Invalid(null pointer) parameter space for parameter generation\n";
-
-            // first empty the set
-            this->clear();
-
-            if( M_space->worldComm().isMasterRank() )
-            {
-                for( auto const& mu : V )
-                    super::push_back( mu );
-            }
-
-            boost::mpi::broadcast( M_space->worldComm() , *this , M_space->worldComm().masterRank() );
-#else
             super::operator=( V );
-#endif
+            return *this;
         }
 
         /**
          * \brief create add an element to a sampling
          * \param mu : element_type
          */
-        void addElement( element_type const& mu )
+        Sampling& addElement( element_type const& mu )
         {
-#if 0
-            CHECK( M_space ) << "Invalid(null pointer) parameter space for parameter generation\n";
-            if( M_space->worldComm().isMasterRank() )
-            {
-                super::push_back( mu );
-            }
-            boost::mpi::broadcast( M_space->worldComm() , *this , M_space->worldComm().masterRank() );
-#else
             super::push_back( mu );
-#endif
+            return *this;
         }
 
         void distributeOnAllProcessors( int N , std::string const& file_name )
@@ -1308,14 +1376,80 @@ public:
 
         /**
          * \brief add new parameter \p mu in sampling and store \p index in super sampling
+         * 
+         * \param mu the new parameter
+         * \param index the index in the super sampling if the super sampling is not null
          */
-        void push_back( element_type const& mu, size_type index = invalid_v<size_type> )
+        Sampling& push_back( element_type const& mu, size_type index = invalid_v<size_type> )
             {
                 if ( M_supersampling && index != invalid_v<size_type> )
                     M_superindices.push_back( index );
 
                 super::push_back( mu );
+                return *this;
             }
+        
+        /**
+         * @brief set the sampling from a vector of vector of values
+         * 
+         * @param data data to set the sampling
+         * @return Sampling& 
+         */
+        Sampling& set( std::vector<std::vector<value_type>> const& data )
+        {
+            this->clear();
+            for (const auto &elem_data : data)
+            {
+                this->emplace_back(Element(M_space).set(elem_data));
+            }
+            return *this;
+        }
+
+        /**
+         * @brief add new parameter \p mu in sampling 
+         * 
+         * @param data 
+         * @return Sampling& 
+         */
+        Sampling& add( std::vector<std::vector<value_type>> const& data )
+        {
+            for (const auto &elem_data : data)
+            {
+                this->emplace_back(Element(M_space).set(elem_data));
+            }
+            return *this;
+        }
+
+        /**
+         * @brief set the sampling from a vector of map of pair of name and values
+         * 
+         * @param data data to set the sampling
+         * @return Sampling& 
+         */
+        Sampling& set( std::vector<std::map<std::string,value_type>> const& data )
+        {
+            this->clear();
+            for (const auto &elem_data : data)
+            {
+                this->emplace_back(Element(M_space).set(elem_data));
+            }
+            return *this;
+        }
+
+        /**
+         * @brief add new parameter \p mu in sampling 
+         * 
+         * @param data 
+         * @return Sampling& 
+         */
+        Sampling& add( std::vector<std::map<std::string,value_type>> const& data )
+        {
+            for (const auto &elem_data : data)
+            {
+                this->emplace_back(Element(M_space).set(elem_data));
+            }
+            return *this;
+        }
 
         /**
          * \brief given a local index, returns the index in the super sampling
@@ -1582,27 +1716,76 @@ public:
 
     //! \return the parameter space dimension
     uint16_type dimension() const
-        {
-            return M_nDim;//Dimension;
-        }
+    {
+        return M_nDim;//Dimension;
+    }
 
     /**
      * return the minimum element
      */
     element_type const& min() const
-        {
-            return M_min;
-        }
+    {
+        return M_min;
+    }
 
+    /**
+     * @brief return the minimum element in direction d
+     * 
+     * @param d direction
+     * @return value_type min value
+     */
+    value_type min( uint16_type d ) const
+    {
+        return M_min(d);
+    }
+
+    /**
+     * @brief return the minimum element of the parameter named name
+     * 
+     * @param name name pof the parameter
+     * @return value_type 
+     */
+    value_type min( std::string const& name ) const
+    {
+        auto it = std::find(M_parameterNames.begin(), M_parameterNames.end(), name);
+        if( it != M_parameterNames.end() )
+            return M_min(it - M_parameterNames.begin());
+        else
+             std::invalid_argument( fmt::format("invalid parameter name {}",name) );
+    }
     /**
      * return the maximum element
      */
     element_type const& max() const
-        {
-            return M_max;
-        }
+    {
+        return M_max;
+    }
 
+    /**
+     * @brief return the maximum element of the parameter named name
+     * 
+     * @param name name pof the parameter
+     * @return value_type 
+     */
+    value_type max( std::string const& name ) const
+    {
+        auto it = std::find(M_parameterNames.begin(), M_parameterNames.end(), name);
+        if( it != M_parameterNames.end() )
+            return M_max(it - M_parameterNames.begin());
+        else
+            std::invalid_argument( fmt::format("invalid parameter name {}",name) );
+    }
 
+    /**
+     * @brief return the maximum element in direction d
+     * 
+     * @param d direction
+     * @return value_type max value
+     */
+    value_type max( uint16_type d ) const
+    {
+        return M_max(d);
+    }
 
     /**
      * \brief the log-middle point of the parameter space
