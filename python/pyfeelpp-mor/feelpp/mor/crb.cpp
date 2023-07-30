@@ -333,6 +333,9 @@ PYBIND11_MODULE( _mor, m )
         .def("setParameterNamed", static_cast<void (ElementP::*)(std::string, double)>(&ElementP::setParameterNamed), "set the named parameter to the value", py::arg("name"), py::arg("value"))
         .def("setParameters", static_cast<void (ElementP::*)(const std::vector<double> &param)>(&ElementP::setParameters), "set the parameter to the given list", py::arg("values"))
         .def("setParameters", static_cast<void (ElementP::*)(const std::map<std::string, double> &dict)>(&ElementP::setParameters), "set the parameter to the given dict with values", py::arg("values"))
+        .def("set", []( ElementP& e, std::vector<double> const& v ){ e.setParameters(v); return e; }, "set the parameter to the given list", py::arg("values"))
+        .def("set", []( ElementP& e, std::map<std::string, double> const& v ){ e.setParameters(v); return e; }, "set the parameter to the given dict with values", py::arg("values"))
+        .def("set", []( ElementP& e, std::string const& name, double v ){ e.setParameterNamed(name,v); return e; }, "set the named parameter to the value", py::arg("name"), py::arg("value"))
         ;
 
     //!
@@ -350,6 +353,12 @@ PYBIND11_MODULE( _mor, m )
         .def("writeOnFile", &ParameterSpaceX::Sampling::writeOnFile, "write the sampling on file\nin the file we write :\nmu_0= [ value0 , value1 , ... ]\nmu_1= [ value0 , value1 , ... ]", py::arg("filename"))
         .def("readFromFile", &ParameterSpaceX::Sampling::readFromFile, "read the sampling from file\nin the file we expect :\nmu_0= [ value0 , value1 , ... ]\nmu_1= [ value0 , value1 , ... ]\nreturn the size of the sampling", py::arg("filename"))
         .def("__len__", &std_item<ParameterSpaceX::Sampling>::size)
+        //.def("set", []( ParameterSpaceX::Sampling& s, std::vector<ParameterSpaceX::Element> const& v ){ s.set(v); return s; }, "set the parameter to the given list", py::arg("values"))
+        .def("set", []( ParameterSpaceX::Sampling& s, std::vector<std::map<std::string, double>> const& v ){ s.set(v); return s; }, "set the parameter to the given dict with values", py::arg("values"))
+        .def("set", []( ParameterSpaceX::Sampling& s, std::vector<std::vector<double>> const& v ){ s.set(v); return s; }, "set the parameter to the given dict with values", py::arg("values"))
+        //.def("add", []( ParameterSpaceX::Sampling& s, ParameterSpaceX::Element const& v ){ s.add(v); return s; }, "add a parameter to the sampling", py::arg("values"))
+        .def("add", []( ParameterSpaceX::Sampling& s, std::vector<std::map<std::string, double>> const& v ){ s.add(v); return s; }, "add a vector of pair of names,values to the sampling", py::arg("values"))
+        .def("add", []( ParameterSpaceX::Sampling& s, std::vector<std::vector<double>> const& v ){ s.add(v); return s; }, "add a vector of parameter to the sampling", py::arg("values"))
         ;
 
     //!
@@ -362,8 +371,10 @@ PYBIND11_MODULE( _mor, m )
         .def("sampling", &ParameterSpaceX::sampling)
         .def("element", &ParameterSpaceX::element, "return a parameter from the space\n  - broadcast : share the parameter to all processors\n  - apply_log : log random chosen parameter",
             py::arg("broadcast")=true, py::arg("apply_log")=false)
-        .def("mumin", &ParameterSpaceX::min, "return mumin the 'minimal' parameter")
-        .def("mumax", &ParameterSpaceX::max, "return mubar the 'maximal' parameter")
+        .def("min", [](ParameterSpaceX const& X ){ return X.min(); }, "return the 'minimal' parameter")
+        .def("min", [](ParameterSpaceX const& X, int dir ){ return X.min(dir); }, "return the 'minimal' parameter in the direction dir", py::arg("dir"))
+        .def("max", [](ParameterSpaceX const& X ){ return X.max(); }, "return the 'maximal' parameter")
+        .def("max", [](ParameterSpaceX const& X, int dir ){ return X.max(dir); }, "return the 'maximal' parameter in the direction dir", py::arg("dir"))
         .def("dimension", &ParameterSpaceX::dimension, "get the dimension of the space")
         .def("parameterNames", &ParameterSpaceX::parameterNames, "get the list of all parameters")
         .def("parameterName", &ParameterSpaceX::parameterName, "return the i-th name ", py::arg("i"))

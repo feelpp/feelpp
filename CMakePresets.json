@@ -411,6 +411,11 @@
             "inherits": "feelpp"
         },
         {
+            "name": "mor_python",
+            "configurePreset": "mor_python",
+            "inherits": "feelpp"
+        },
+        {
             "name": "testsuite",
             "configurePreset": "testsuite",
             "inherits": "feelpp"
