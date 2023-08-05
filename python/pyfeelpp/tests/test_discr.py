@@ -145,9 +145,6 @@ def run_element_alg(m, geo):
     v.setConstant(1.0)
     # create u which use the same memory storage as v
     u = Xh.element(v)
-    print("\n\n\n\n\n\n\n")
-    print(type(u))
-    help(u)
 
     us = Xh.newVectors(3)
     for ui in us:
