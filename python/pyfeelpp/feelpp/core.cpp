@@ -95,7 +95,7 @@ PYBIND11_MODULE(_core, m )
         .def("clear", &worldscomm_ptr_t::clear)
         .def("pop_back", &worldscomm_ptr_t::pop_back)
         .def("__len__", [](const worldscomm_ptr_t &v) {
-        return v.size(); })
+                return v.size(); })
         .def("__iter__", [](worldscomm_ptr_t &v) {
                 return py::make_iterator(v.begin(), v.end());
             }, py::keep_alive<0, 1>()) /* Keep vector alive while iterator is used */;

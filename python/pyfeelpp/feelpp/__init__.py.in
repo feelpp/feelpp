@@ -78,8 +78,8 @@ def mesh( dim=2, geo=1, realdim=2, worldComm=None ):
     worldComm -- the parallel communicator for the mesh (default: Environment::worldCommPtr())
     """
     if worldComm is None:
-        worldComm=Environment.worldCommPtr()
-    key='mesh('+str(dim)+','+str(geo)+','+str(realdim)+')'
+        worldComm = Environment.worldCommPtr()
+    key = 'mesh({},{},{})'.format(dim, geo, realdim)
     if key not in _meshes:
         raise RuntimeError('Mesh '+key+' no existing')
     return _meshes[key]( worldComm )
@@ -95,8 +95,8 @@ def meshstructured( dim=2, geo=1, realdim=2, worldComm=None ):
     worldComm -- the parallel communicator for the mesh (default: Environment::worldCommPtr())
     """
     if worldComm is None:
-        worldComm=Environment.worldCommPtr()
-    key='meshstructured('+str(dim)+','+str(geo)+','+str(realdim)+')'
+        worldComm = Environment.worldCommPtr()
+    key = 'meshstructured({},{},{})'.format(dim, geo, realdim)
     if key not in _meshes:
         raise RuntimeError('Mesh '+key+' no existing')
     return _meshes[key]( worldComm )
@@ -175,10 +175,11 @@ def functionSpace( mesh, space="Pch", order=1, worldscomm=None):
     """
     if worldscomm is None:
         worldscomm = Environment.worldsComm(1)
+    worldscomm_list = [worldcomm for worldcomm in worldscomm]
     key = "{}({},{},{})".format(space, mesh.dimension(), order, mesh.order())
     if key not in _spaces:
         raise RuntimeError(f'FunctionSpace {key} not existing in dictionary')
-    return _spaces[key]( mesh=mesh, worldsComm=worldscomm )
+    return _spaces[key]( mesh=mesh, worldsComm=worldscomm_list )
 
 
 def expr(e,row=1, col=1,filename=None,worldComm=None,directory=None):
