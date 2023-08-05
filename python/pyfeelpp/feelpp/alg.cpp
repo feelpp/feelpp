@@ -276,7 +276,7 @@ PYBIND11_MODULE(_alg, m )
         .def( "addVector", static_cast<void ( Vector<double>::* )
         ( std::shared_ptr<Vector<double>> const& , std::shared_ptr<MatrixSparse<double>> const&  )
         >( &Vector<double>::addVector ), "add the product of a MatrixSparse and a vector to this vector" )
-        .def( "add", [](Vector<double> &v, double a, Vector<double> const& w){ v.add(a, w); }, "add a scalar*vector to this vector" )
+        .def( "addVector", [](Vector<double> &v, double a, Vector<double> const& w){ v.add(a, w); }, "add a scalar*vector to this vector" )
         .def( "add", [](Vector<double> &v, eigen_vector_type<Eigen::Dynamic,double> const& a, std::vector<std::shared_ptr<Vector<double>>> const& vs ){ v.add(a, vs); }, "add a linear combination of vectors vs using coefficients a" )
         .def( "mDot", []( Vector<double> &v, std::vector<vector_ptrtype> const& vs ){ return v.mDot( vs ); }, "Computes multiple vector dot products" )
         ;

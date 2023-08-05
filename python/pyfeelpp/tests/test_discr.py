@@ -145,6 +145,9 @@ def run_element_alg(m, geo):
     v.setConstant(1.0)
     # create u which use the same memory storage as v
     u = Xh.element(v)
+    print("\n\n\n\n\n\n\n")
+    print(type(u))
+    help(u)
 
     us = Xh.newVectors(3)
     for ui in us:
@@ -166,7 +169,7 @@ def run_element_alg(m, geo):
 
     u.setConstant(0.0)
     for i in range(3):
-        u.add(alpha[i], us[i])
+        u.addVector(alpha[i], us[i])
     assert( u.sum() == 6 * u.size() )
 
 

@@ -63,7 +63,7 @@ def test_alg_vector(init_feelpp):
 
         u.setConstant(0)
         for i in range(3):
-            u.add(alpha[i], us[i])
+            u.addVector(alpha[i], us[i])
         assert( u.sum() == 14 * u.size() )
 
 
