@@ -600,11 +600,13 @@ class nirbOffline(ToolboxModel):
         idx = eigenValues.argsort()[::-1]
         eigenValues = eigenValues[idx]
         eigenVectors = eigenVectors[:, idx]             # i-th column is the i-th eigenvector
+        # At this points, eigen[values/vectors] are sorted in descending order
 
         Nmode = len(eigenValues)
-
-        for i in range(Nmode):
-            eigenVectors[:,i] /= math.sqrt(abs(eigenValues[i]))
+        # for i in range(Nmode):
+            # eigenVectors[:, i] /= math.sqrt(abs(eigenValues[i]))
+        
+        eigenVectors = np.divide(eigenVectors, np.sqrt(np.abs(eigenValues)))
 
         self.reducedBasis = []
         self.N = 0
@@ -615,8 +617,7 @@ class nirbOffline(ToolboxModel):
         for i in tqdm(range(Nmode), desc=f"[NIRB::PODReducedBasis] Compute basis functions", ascii=False, ncols=120):
             vec = self.Xh.element()
             vec.setZero()
-            for j in range(Nsnap):
-                vec.add(eigenVectors[j,i], self.fineSnapShotList[j])
+            vec.add(eigenVectors[:, i], self.fineSnapShotList)
 
             self.reducedBasis.append(vec)
             self.N += 1
@@ -1078,7 +1079,7 @@ class nirbOnline(ToolboxModel):
         # toc("NIRB: Compute all alpha_i loop")
 
         tic()
-        alphaH = sol.mDot(self.l2ProductBasis)
+        alphaH = sol.mDot(self.l2ProductBasis[:Nb])
         toc("NIRB: Compute all alpha_i (petsc)")
         return alphaH
 
@@ -1142,8 +1143,8 @@ class nirbOnline(ToolboxModel):
             toc("NIRB: Rectification")
 
             tic()
-            for i in range(Nb):     # Much slower than add
-                onlineSol_loop.add(float(coef[i]), self.reducedBasis[i])
+            for i in range(Nb):     # Much slower than add this should be removed when everything will work
+                onlineSol_loop.addVector(float(coef[i]), self.reducedBasis[i])
             toc('NIRB: assemble solution loop')
 
             tic()

@@ -30,10 +30,9 @@ def checkConvergence(nirb_offline: nirbOffline, nirb_online: nirbOnline, Ns=10, 
     if nirb_offline.worldcomm.isMasterRank():
         print(f"[NIRB::checkConvergence] Compute offline convergence error")
 
-    if h1:
-        l2Mat, h1Mat = nirb_online.generateOperators(h1=True)
-    else :
-        l2Mat = nirb_online.generateOperators()
+    nirb_online.generateOperators(fine=True, coarse=True)
+    l2Mat = nirb_online.l2ScalarProductMatrix
+    h1Mat = nirb_online.h1ScalarProductMatrix
 
     if Xi_test is None:
         s = nirb_offline.Dmu.sampling()
