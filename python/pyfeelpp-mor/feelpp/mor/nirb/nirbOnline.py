@@ -31,15 +31,15 @@ def run_online(config_nirb, loadPath, nbSnap=-1, Nmu=10, Xi=None, Nb=-1, export=
         use rectification post process, by default True
     """
 
-    start = time()
+    tic()
     nirb_on = nirbOnline(**config_nirb)
     nirb_on.initModel()
     err = nirb_on.loadData(path=loadPath, nbSnap=nbSnap)
-    finish = time()
+    toc("NIRB : loadData")
     assert err == 0, "Error while loading data"
 
     if feelpp.Environment.isMasterRank():
-        print(f"[NIRB Online] Data loaded in {finish-start} s")
+        print(f"[NIRB Online] Data loaded from {loadPath}")
 
     if Xi is None:
         s = nirb_on.Dmu.sampling()
@@ -51,6 +51,8 @@ def run_online(config_nirb, loadPath, nbSnap=-1, Nmu=10, Xi=None, Nb=-1, export=
     if export:
         dirname = "nirbOnlineSolutions"
         nirb_on.initExporter(dirname, toolbox="fine")
+
+    nirb_on.generateOperators(fine=True)
 
     for i, mu in enumerate(Xi):
         tic()
