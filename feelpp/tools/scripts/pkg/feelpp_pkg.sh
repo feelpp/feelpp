@@ -89,6 +89,8 @@ cp build/$FEELPP_COMPONENT//${COMPONENT}-*.tar.gz feelpp.pkg/${COMPONENT}/$renam
 cd feelpp.pkg/${COMPONENT}/$DIST && tar xzf ../$rename_archive --strip 1
 
 echo "--- update changelog ${COMPONENT}  $version-1"
+export DEBEMAIL="christophe.prudhomme@cemosis.fr" 
+export DEBFULLNAME="Christophe Prud'homme" 
 dch -v "$version-1" --distribution "unstable" -b "New upstream commits"
 
 echo "--- add source ${COMPONENT}  $version-1"
