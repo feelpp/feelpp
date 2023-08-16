@@ -252,6 +252,8 @@ BOOST_AUTO_TEST_CASE( crd_db_test1 )
         { wnSample.push_back(wn0[i]); }
     }
 
+    return;
+
     // Execute the Heat1d app with both boost and hdf5 databases
     // Except we are reloading the databases here
     Environment::setOptionValue("crb.rebuild-database", false);

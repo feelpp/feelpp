@@ -46,6 +46,7 @@
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/environment.hpp>
+#include <feel/feelcore/enumerate.hpp>
 #include <feel/feelcore/commobject.hpp>
 #include <feel/feelmesh/kdtree.hpp>
 #include <feel/feelcore/ptreetools.hpp>
@@ -128,7 +129,7 @@ public:
         // This constructor allows you to construct Element from Eigen expressions
         template<typename OtherDerived>
         Element(const Eigen::MatrixBase<OtherDerived>& other)
-            : super(other), param_indices_()
+            : super(other), param_indices_(other.param_indices_)
             { }
         /**
          * destructor
@@ -327,6 +328,7 @@ public:
         void setParameterSpace( parameterspace_ptrtype const& space )
             {
                 M_space = space;
+                precomputeParamIndices();
             }
 
 
@@ -435,7 +437,7 @@ public:
             if ( it != param_indices_.end() )
                 return it->second;
             else
-                throw std::invalid_argument( "Parameter name not found" );
+                throw std::invalid_argument( fmt::format("Parameter named {} not found", name ) );
       }
 
       /**
@@ -1654,16 +1656,14 @@ public:
     {
         this->setDimension( modelParameters.size() );
 
-        int i = 0;
-        for( auto const& parameterPair : modelParameters )
+        for( auto const& [index,parameterPair] : enumerate( modelParameters ) )
         {
-            setParameterName( i, parameterPair.second.name() );
-            M_min(i) = parameterPair.second.min();
-            M_max(i) = parameterPair.second.max();
+            setParameterName( index, parameterPair.second.name() );
+            M_min( index ) = parameterPair.second.min();
+            M_max( index ) = parameterPair.second.max();
 
             if (!( parameterPair.second.min() < parameterPair.second.max() ))
                 throw std::logic_error( fmt::format("invalid range parameter {}\n",parameterPair.second.name()) );
-            ++i;
         }
 
     }
@@ -1691,10 +1691,10 @@ public:
         }
     static parameterspace_ptrtype New( CRBModelParameters const& modelParameters, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr())
         {
-	    auto ps = std::make_shared<parameterspace_type>( modelParameters, worldComm );
-	    ps->setSpaces();
-	    return ps;
-	}
+	        auto ps = std::make_shared<parameterspace_type>( modelParameters, worldComm );
+    	    ps->setSpaces();
+	        return ps;
+	    }
     void setSpaces()
         {
             M_min.setParameterSpace(this->shared_from_this() );
