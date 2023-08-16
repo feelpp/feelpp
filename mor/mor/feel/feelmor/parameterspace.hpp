@@ -129,7 +129,7 @@ public:
         // This constructor allows you to construct Element from Eigen expressions
         template<typename OtherDerived>
         Element(const Eigen::MatrixBase<OtherDerived>& other)
-            : super(other), param_indices_(other.param_indices_)
+            : super(other), param_indices_()
             { }
         /**
          * destructor
