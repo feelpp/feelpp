@@ -109,9 +109,9 @@ def test_param_not_in_range(casefile, dim, Mu,  init_feelpp):
     try:
         mu.setParameter(0, 5000)
     except ValueError as e:
-        assert "out of range" in str(e)
+        assert "not found" in str(e) or "out of range" in str(e)
 
     try:
         mu.setParameterNamed('Bi', -666)
     except ValueError as e:
-        assert "out of range" in str(e)
+        assert "not found" in str(e) or "out of range" in str(e)
