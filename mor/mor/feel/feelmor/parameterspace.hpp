@@ -237,19 +237,19 @@ public:
             else
             {
                 LOG( WARNING ) << fmt::format( "{} value not in range [{}, {}] for parameter named {}", value, M_space->min( index ), M_space->max( index ) ) << std::endl;
-                throw std::invalid_argument( "Parameter out of range" );
+                throw std::invalid_argument( fmt::format( "Parameter named = {} with index = {} is out of range, cannot set to value = {}", name, index, value ) );
             }
         }
-
+    
         void setParameter( int i, double value)
         {
             element_type min = M_space->min(), max = M_space->max();
-            if (value >= min(i) && value <= max(i))
+            if ( isValueInRange( i, value ) )
                 this->operator()(i) = value;
             else
             {
                 LOG( WARNING ) << fmt::format("{} value not in range [{}, {}] for parameter number {}", value, min(i), max(i), i) << std::endl;
-                throw std::invalid_argument("Parameter out of range");
+                throw std::invalid_argument(fmt::format("Parameter with index = {} is out of range, cannot set to value = {}", i, value ) );
             }
         }
 
