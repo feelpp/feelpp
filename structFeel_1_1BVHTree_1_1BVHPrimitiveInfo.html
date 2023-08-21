@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.3"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Feel++: Feel::BVHTree&lt; nDim &gt;::BVHPrimitiveInfo Struct Reference</title>
+<title>Feel++: Feel::BVHTree&lt; nDim, realDim &gt;::BVHPrimitiveInfo Struct Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -104,11 +104,11 @@ $(document).ready(function(){initNavTree('structFeel_1_1BVHTree_1_1BVHPrimitiveI
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
 <a href="structFeel_1_1BVHTree_1_1BVHPrimitiveInfo-members.html">List of all members</a>  </div>
-  <div class="headertitle"><div class="title">Feel::BVHTree&lt; nDim &gt;::BVHPrimitiveInfo Struct Reference</div></div>
+  <div class="headertitle"><div class="title">Feel::BVHTree&lt; nDim, realDim &gt;::BVHPrimitiveInfo Struct Reference</div></div>
 </div><!--header-->
 <div class="contents">
 <div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
-  <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Collaboration diagram for Feel::BVHTree&lt; nDim &gt;::BVHPrimitiveInfo:</div>
+  <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Collaboration diagram for Feel::BVHTree&lt; nDim, realDim &gt;::BVHPrimitiveInfo:</div>
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">
 </div>
 <div id="dynsection-0-content" class="dyncontent" style="display:none;">
@@ -118,24 +118,24 @@ $(document).ready(function(){initNavTree('structFeel_1_1BVHTree_1_1BVHPrimitiveI
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a82ce46a5990149d6b47e445dbd749852"><td class="memItemLeft" align="right" valign="top"><a id="a82ce46a5990149d6b47e445dbd749852" name="a82ce46a5990149d6b47e445dbd749852"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>BVHPrimitiveInfo</b> (<a class="el" href="classint.html">int</a> primitiveNumber, Eigen::VectorXd bounds_min, Eigen::VectorXd bounds_max)</td></tr>
-<tr class="separator:a82ce46a5990149d6b47e445dbd749852"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afd1538c8cbe50a254c8465584f46f3ce"><td class="memItemLeft" align="right" valign="top"><a id="afd1538c8cbe50a254c8465584f46f3ce" name="afd1538c8cbe50a254c8465584f46f3ce"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>BVHPrimitiveInfo</b> (<a class="el" href="classint.html">int</a> primitiveNumber, VectorRealDim bounds_min, VectorRealDim bounds_max)</td></tr>
+<tr class="separator:afd1538c8cbe50a254c8465584f46f3ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
-<tr class="memitem:a794a129f408ba39ae0ceec9b01843ce9"><td class="memItemLeft" align="right" valign="top"><a id="a794a129f408ba39ae0ceec9b01843ce9" name="a794a129f408ba39ae0ceec9b01843ce9"></a>
-Eigen::VectorXd&#160;</td><td class="memItemRight" valign="bottom"><b>M_bound_max</b></td></tr>
-<tr class="separator:a794a129f408ba39ae0ceec9b01843ce9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a08a9daf596f1ad5b6bf217c15f136d74"><td class="memItemLeft" align="right" valign="top"><a id="a08a9daf596f1ad5b6bf217c15f136d74" name="a08a9daf596f1ad5b6bf217c15f136d74"></a>
-Eigen::VectorXd&#160;</td><td class="memItemRight" valign="bottom"><b>M_bound_min</b></td></tr>
-<tr class="separator:a08a9daf596f1ad5b6bf217c15f136d74"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae0ac719f31b1ff989d3ffcea661ec018"><td class="memItemLeft" align="right" valign="top"><a id="ae0ac719f31b1ff989d3ffcea661ec018" name="ae0ac719f31b1ff989d3ffcea661ec018"></a>
-Eigen::VectorXd&#160;</td><td class="memItemRight" valign="bottom"><b>M_centroid</b></td></tr>
-<tr class="separator:ae0ac719f31b1ff989d3ffcea661ec018"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0baf811ecf34a55255afe54c32ba8b8f"><td class="memItemLeft" align="right" valign="top"><a id="a0baf811ecf34a55255afe54c32ba8b8f" name="a0baf811ecf34a55255afe54c32ba8b8f"></a>
+<tr class="memitem:a001d76be73d19c209506fc184caefdcb"><td class="memItemLeft" align="right" valign="top"><a id="a001d76be73d19c209506fc184caefdcb" name="a001d76be73d19c209506fc184caefdcb"></a>
+VectorRealDim&#160;</td><td class="memItemRight" valign="bottom"><b>M_bound_max</b></td></tr>
+<tr class="separator:a001d76be73d19c209506fc184caefdcb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a73b27acf2fb36ad51b6ede8f0de28e34"><td class="memItemLeft" align="right" valign="top"><a id="a73b27acf2fb36ad51b6ede8f0de28e34" name="a73b27acf2fb36ad51b6ede8f0de28e34"></a>
+VectorRealDim&#160;</td><td class="memItemRight" valign="bottom"><b>M_bound_min</b></td></tr>
+<tr class="separator:a73b27acf2fb36ad51b6ede8f0de28e34"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a64fe204495a7766876a67a44b835b54f"><td class="memItemLeft" align="right" valign="top"><a id="a64fe204495a7766876a67a44b835b54f" name="a64fe204495a7766876a67a44b835b54f"></a>
+VectorRealDim&#160;</td><td class="memItemRight" valign="bottom"><b>M_centroid</b></td></tr>
+<tr class="separator:a64fe204495a7766876a67a44b835b54f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6cafe48b990b47236491a0ce4b405c0d"><td class="memItemLeft" align="right" valign="top"><a id="a6cafe48b990b47236491a0ce4b405c0d" name="a6cafe48b990b47236491a0ce4b405c0d"></a>
 <a class="el" href="classint.html">int</a>&#160;</td><td class="memItemRight" valign="bottom"><b>M_primitiveNumber</b></td></tr>
-<tr class="separator:a0baf811ecf34a55255afe54c32ba8b8f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="separator:a6cafe48b990b47236491a0ce4b405c0d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 </div><!-- doc-content -->

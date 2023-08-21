@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.3"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Feel++: Feel::BVHTree&lt; nDim &gt;::BVHNode Class Reference</title>
+<title>Feel++: Feel::BVHTree&lt; nDim, realDim &gt;::BVHNode Class Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -104,80 +104,80 @@ $(document).ready(function(){initNavTree('classFeel_1_1BVHTree_1_1BVHNode.html',
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
 <a href="classFeel_1_1BVHTree_1_1BVHNode-members.html">List of all members</a>  </div>
-  <div class="headertitle"><div class="title">Feel::BVHTree&lt; nDim &gt;::BVHNode Class Reference</div></div>
+  <div class="headertitle"><div class="title">Feel::BVHTree&lt; nDim, realDim &gt;::BVHNode Class Reference</div></div>
 </div><!--header-->
 <div class="contents">
 <div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
-  <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Collaboration diagram for Feel::BVHTree&lt; nDim &gt;::BVHNode:</div>
+  <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Collaboration diagram for Feel::BVHTree&lt; nDim, realDim &gt;::BVHNode:</div>
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">
 </div>
 <div id="dynsection-0-content" class="dyncontent" style="display:none;">
-<div class="center"><iframe scrolling="no" frameborder="0" src="classFeel_1_1BVHTree_1_1BVHNode__coll__graph.svg" width="667" height="588"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classFeel_1_1BVHTree_1_1BVHNode__coll__graph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a0d31bddf9a2ea6e4c7c1b7394a4b938e"><td class="memItemLeft" align="right" valign="top"><a id="a0d31bddf9a2ea6e4c7c1b7394a4b938e" name="a0d31bddf9a2ea6e4c7c1b7394a4b938e"></a>
+<tr class="memitem:a67712f68e75b4a47a4458427069f4570"><td class="memItemLeft" align="right" valign="top"><a id="a67712f68e75b4a47a4458427069f4570" name="a67712f68e75b4a47a4458427069f4570"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>buildInternalNode</b> (<a class="el" href="classFeel_1_1BVHTree_1_1BVHNode.html">BVHNode</a> *current_parent, <a class="el" href="classint.html">int</a> splitaxisIn, <a class="el" href="classFeel_1_1BVHTree_1_1BVHNode.html">BVHNode</a> *child0, <a class="el" href="classFeel_1_1BVHTree_1_1BVHNode.html">BVHNode</a> *child1)</td></tr>
-<tr class="separator:a0d31bddf9a2ea6e4c7c1b7394a4b938e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4be19af60bdd6ba65cc5390c5b6e7ebc"><td class="memItemLeft" align="right" valign="top"><a id="a4be19af60bdd6ba65cc5390c5b6e7ebc" name="a4be19af60bdd6ba65cc5390c5b6e7ebc"></a>
+<tr class="separator:a67712f68e75b4a47a4458427069f4570"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aba97859d227bdf55c4f29c9b535245d7"><td class="memItemLeft" align="right" valign="top"><a id="aba97859d227bdf55c4f29c9b535245d7" name="aba97859d227bdf55c4f29c9b535245d7"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>buildLeaf</b> (<a class="el" href="classFeel_1_1BVHTree_1_1BVHNode.html">BVHNode</a> *current_parent, <a class="el" href="classint.html">int</a> first, <a class="el" href="classint.html">int</a> n, Eigen::VectorXd bounds_min, Eigen::VectorXd bounds_max)</td></tr>
-<tr class="separator:a4be19af60bdd6ba65cc5390c5b6e7ebc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab004da8e2dda7d6cdddcfd7ef8baab18"><td class="memItemLeft" align="right" valign="top"><a id="ab004da8e2dda7d6cdddcfd7ef8baab18" name="ab004da8e2dda7d6cdddcfd7ef8baab18"></a>
+<tr class="separator:aba97859d227bdf55c4f29c9b535245d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa5db92a18723ead900269914714f9f52"><td class="memItemLeft" align="right" valign="top"><a id="aa5db92a18723ead900269914714f9f52" name="aa5db92a18723ead900269914714f9f52"></a>
 <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>checkIntersection</b> (<a class="el" href="classFeel_1_1BVHRay.html">BVHRay</a> const &amp;rayon)</td></tr>
-<tr class="separator:ab004da8e2dda7d6cdddcfd7ef8baab18"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac9da1188babae4697fbe9db399ae9781"><td class="memItemLeft" align="right" valign="top"><a id="ac9da1188babae4697fbe9db399ae9781" name="ac9da1188babae4697fbe9db399ae9781"></a>
+<tr class="separator:aa5db92a18723ead900269914714f9f52"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a415bc4987408150c23add5f496849aa4"><td class="memItemLeft" align="right" valign="top"><a id="a415bc4987408150c23add5f496849aa4" name="a415bc4987408150c23add5f496849aa4"></a>
 std::pair&lt; <a class="el" href="classbool.html">bool</a>, double &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>checkIntersectionWithSegment</b> (matrix_node_type const &amp;nodes, <a class="el" href="classFeel_1_1BVHRay.html">BVHRay</a> const &amp;ray)</td></tr>
-<tr class="separator:ac9da1188babae4697fbe9db399ae9781"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1984428f52e5be3bc2bc0c97e69fe268"><td class="memItemLeft" align="right" valign="top"><a id="a1984428f52e5be3bc2bc0c97e69fe268" name="a1984428f52e5be3bc2bc0c97e69fe268"></a>
+<tr class="separator:a415bc4987408150c23add5f496849aa4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1c7fbf7b9df01692d6d733dfb00d09a7"><td class="memItemLeft" align="right" valign="top"><a id="a1c7fbf7b9df01692d6d733dfb00d09a7" name="a1c7fbf7b9df01692d6d733dfb00d09a7"></a>
 std::pair&lt; <a class="el" href="classbool.html">bool</a>, double &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>checkIntersectionWithTriangle</b> (<a class="el" href="classFeel_1_1BVHRay.html">BVHRay</a> const &amp;ray, trace_mesh_ptrtype mesh, std::vector&lt; <a class="el" href="structFeel_1_1BVHTree_1_1BVHPrimitiveInfo.html">BVHPrimitiveInfo</a> &gt; &amp;primitiveInfo)</td></tr>
-<tr class="separator:a1984428f52e5be3bc2bc0c97e69fe268"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a851c463052505e5e2a6ff7853aa3494f"><td class="memItemLeft" align="right" valign="top"><a id="a851c463052505e5e2a6ff7853aa3494f" name="a851c463052505e5e2a6ff7853aa3494f"></a>
+<tr class="separator:a1c7fbf7b9df01692d6d733dfb00d09a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a82007e1a0669039a731f743e4d4be502"><td class="memItemLeft" align="right" valign="top"><a id="a82007e1a0669039a731f743e4d4be502" name="a82007e1a0669039a731f743e4d4be502"></a>
 std::pair&lt; <a class="el" href="classbool.html">bool</a>, double &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>checkLeafIntersection</b> (<a class="el" href="classFeel_1_1BVHRay.html">BVHRay</a> const &amp;rayon, trace_mesh_ptrtype mesh, std::vector&lt; <a class="el" href="structFeel_1_1BVHTree_1_1BVHPrimitiveInfo.html">BVHPrimitiveInfo</a> &gt; &amp;primitiveInfo)</td></tr>
-<tr class="separator:a851c463052505e5e2a6ff7853aa3494f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a21829cbde63c5d3f9f1c1e2f29243c71"><td class="memItemLeft" align="right" valign="top"><a id="a21829cbde63c5d3f9f1c1e2f29243c71" name="a21829cbde63c5d3f9f1c1e2f29243c71"></a>
+<tr class="separator:a82007e1a0669039a731f743e4d4be502"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae001923174d6c039eeae1022d4040299"><td class="memItemLeft" align="right" valign="top"><a id="ae001923174d6c039eeae1022d4040299" name="ae001923174d6c039eeae1022d4040299"></a>
 <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>isLeaf</b> ()</td></tr>
-<tr class="separator:a21829cbde63c5d3f9f1c1e2f29243c71"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a732d10133beade0c01ff2a050cb9a40a"><td class="memItemLeft" align="right" valign="top"><a id="a732d10133beade0c01ff2a050cb9a40a" name="a732d10133beade0c01ff2a050cb9a40a"></a>
+<tr class="separator:ae001923174d6c039eeae1022d4040299"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ada052cd902f0992c4f0d57a555383f0b"><td class="memItemLeft" align="right" valign="top"><a id="ada052cd902f0992c4f0d57a555383f0b" name="ada052cd902f0992c4f0d57a555383f0b"></a>
 <a class="el" href="classFeel_1_1BVHTree_1_1BVHNode.html">BVHNode</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>nearChild</b> (<a class="el" href="classFeel_1_1BVHRay.html">BVHRay</a> const &amp;ray)</td></tr>
-<tr class="separator:a732d10133beade0c01ff2a050cb9a40a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a085caebb0dd95292fb09475881f4056e"><td class="memItemLeft" align="right" valign="top"><a id="a085caebb0dd95292fb09475881f4056e" name="a085caebb0dd95292fb09475881f4056e"></a>
-Eigen::VectorXd&#160;</td><td class="memItemRight" valign="bottom"><b>newBoundsMax</b> (Eigen::VectorXd bounds1, Eigen::VectorXd bounds2)</td></tr>
-<tr class="separator:a085caebb0dd95292fb09475881f4056e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac5e92fd45fc169c1b4e3695238e2f3d9"><td class="memItemLeft" align="right" valign="top"><a id="ac5e92fd45fc169c1b4e3695238e2f3d9" name="ac5e92fd45fc169c1b4e3695238e2f3d9"></a>
-Eigen::VectorXd&#160;</td><td class="memItemRight" valign="bottom"><b>newBoundsMin</b> (Eigen::VectorXd bounds1, Eigen::VectorXd bounds2)</td></tr>
-<tr class="separator:ac5e92fd45fc169c1b4e3695238e2f3d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a969d90dace5f7b14af321af881d0e3ec"><td class="memItemLeft" align="right" valign="top"><a id="a969d90dace5f7b14af321af881d0e3ec" name="a969d90dace5f7b14af321af881d0e3ec"></a>
+<tr class="separator:ada052cd902f0992c4f0d57a555383f0b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a418819f4a951b74757f06d40c0cc636f"><td class="memItemLeft" align="right" valign="top"><a id="a418819f4a951b74757f06d40c0cc636f" name="a418819f4a951b74757f06d40c0cc636f"></a>
+VectorRealDim&#160;</td><td class="memItemRight" valign="bottom"><b>newBoundsMax</b> (VectorRealDim bounds1, VectorRealDim bounds2)</td></tr>
+<tr class="separator:a418819f4a951b74757f06d40c0cc636f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad3c8a4b1bc3ccb6f8b5aaa20f8208fc6"><td class="memItemLeft" align="right" valign="top"><a id="ad3c8a4b1bc3ccb6f8b5aaa20f8208fc6" name="ad3c8a4b1bc3ccb6f8b5aaa20f8208fc6"></a>
+VectorRealDim&#160;</td><td class="memItemRight" valign="bottom"><b>newBoundsMin</b> (VectorRealDim bounds1, VectorRealDim bounds2)</td></tr>
+<tr class="separator:ad3c8a4b1bc3ccb6f8b5aaa20f8208fc6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a50a33e45dd4cceb799ae842ab48da35e"><td class="memItemLeft" align="right" valign="top"><a id="a50a33e45dd4cceb799ae842ab48da35e" name="a50a33e45dd4cceb799ae842ab48da35e"></a>
 <a class="el" href="classFeel_1_1BVHTree_1_1BVHNode.html">BVHTree::BVHNode</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>otherChild</b> (<a class="el" href="classFeel_1_1BVHTree_1_1BVHNode.html">BVHTree::BVHNode</a> *parent)</td></tr>
-<tr class="separator:a969d90dace5f7b14af321af881d0e3ec"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="separator:a50a33e45dd4cceb799ae842ab48da35e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
-<tr class="memitem:a0a6f0fb897f0f4adebcae0977454ed20"><td class="memItemLeft" align="right" valign="top"><a id="a0a6f0fb897f0f4adebcae0977454ed20" name="a0a6f0fb897f0f4adebcae0977454ed20"></a>
+<tr class="memitem:a266b98080165b83ef01561e62497a362"><td class="memItemLeft" align="right" valign="top"><a id="a266b98080165b83ef01561e62497a362" name="a266b98080165b83ef01561e62497a362"></a>
 <a class="el" href="classFeel_1_1BVHTree_1_1BVHNode.html">BVHNode</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>children</b> [2]</td></tr>
-<tr class="separator:a0a6f0fb897f0f4adebcae0977454ed20"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a74c2225f9ba49f7ea905905ddc2ff859"><td class="memItemLeft" align="right" valign="top"><a id="a74c2225f9ba49f7ea905905ddc2ff859" name="a74c2225f9ba49f7ea905905ddc2ff859"></a>
+<tr class="separator:a266b98080165b83ef01561e62497a362"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a25a948b413c83e719bb4fdd4f7616e64"><td class="memItemLeft" align="right" valign="top"><a id="a25a948b413c83e719bb4fdd4f7616e64" name="a25a948b413c83e719bb4fdd4f7616e64"></a>
 <a class="el" href="classint.html">int</a>&#160;</td><td class="memItemRight" valign="bottom"><b>firstPrimOffset</b></td></tr>
-<tr class="separator:a74c2225f9ba49f7ea905905ddc2ff859"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a16f60113cb88809a6f63d4d106ee02f0"><td class="memItemLeft" align="right" valign="top"><a id="a16f60113cb88809a6f63d4d106ee02f0" name="a16f60113cb88809a6f63d4d106ee02f0"></a>
-Eigen::VectorXd&#160;</td><td class="memItemRight" valign="bottom"><b>M_bounds_max</b></td></tr>
-<tr class="separator:a16f60113cb88809a6f63d4d106ee02f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a20c031617c4f712dcc0187160cf7d688"><td class="memItemLeft" align="right" valign="top"><a id="a20c031617c4f712dcc0187160cf7d688" name="a20c031617c4f712dcc0187160cf7d688"></a>
-Eigen::VectorXd&#160;</td><td class="memItemRight" valign="bottom"><b>M_bounds_min</b></td></tr>
-<tr class="separator:a20c031617c4f712dcc0187160cf7d688"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a67420f6632687181784d93dac67d96f0"><td class="memItemLeft" align="right" valign="top"><a id="a67420f6632687181784d93dac67d96f0" name="a67420f6632687181784d93dac67d96f0"></a>
-Eigen::VectorXd&#160;</td><td class="memItemRight" valign="bottom"><b>M_centroid</b></td></tr>
-<tr class="separator:a67420f6632687181784d93dac67d96f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac2dd81a468e050f338b75acb7afed6be"><td class="memItemLeft" align="right" valign="top"><a id="ac2dd81a468e050f338b75acb7afed6be" name="ac2dd81a468e050f338b75acb7afed6be"></a>
+<tr class="separator:a25a948b413c83e719bb4fdd4f7616e64"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a81421c98d4e99d59398ceee27f4950fc"><td class="memItemLeft" align="right" valign="top"><a id="a81421c98d4e99d59398ceee27f4950fc" name="a81421c98d4e99d59398ceee27f4950fc"></a>
+VectorRealDim&#160;</td><td class="memItemRight" valign="bottom"><b>M_bounds_max</b></td></tr>
+<tr class="separator:a81421c98d4e99d59398ceee27f4950fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad184f53c527eb466844aaf6538fcf858"><td class="memItemLeft" align="right" valign="top"><a id="ad184f53c527eb466844aaf6538fcf858" name="ad184f53c527eb466844aaf6538fcf858"></a>
+VectorRealDim&#160;</td><td class="memItemRight" valign="bottom"><b>M_bounds_min</b></td></tr>
+<tr class="separator:ad184f53c527eb466844aaf6538fcf858"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aecd108089d0f4843093c739de157bdab"><td class="memItemLeft" align="right" valign="top"><a id="aecd108089d0f4843093c739de157bdab" name="aecd108089d0f4843093c739de157bdab"></a>
+VectorRealDim&#160;</td><td class="memItemRight" valign="bottom"><b>M_centroid</b></td></tr>
+<tr class="separator:aecd108089d0f4843093c739de157bdab"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a52d890bb26750f1f41f6a74fefa69be4"><td class="memItemLeft" align="right" valign="top"><a id="a52d890bb26750f1f41f6a74fefa69be4" name="a52d890bb26750f1f41f6a74fefa69be4"></a>
 <a class="el" href="classint.html">int</a>&#160;</td><td class="memItemRight" valign="bottom"><b>nPrimitives</b></td></tr>
-<tr class="separator:ac2dd81a468e050f338b75acb7afed6be"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0000e811b8c9e39091650a5ecac1c364"><td class="memItemLeft" align="right" valign="top"><a id="a0000e811b8c9e39091650a5ecac1c364" name="a0000e811b8c9e39091650a5ecac1c364"></a>
+<tr class="separator:a52d890bb26750f1f41f6a74fefa69be4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1bf5facae2ed964663290e3e8abb86be"><td class="memItemLeft" align="right" valign="top"><a id="a1bf5facae2ed964663290e3e8abb86be" name="a1bf5facae2ed964663290e3e8abb86be"></a>
 <a class="el" href="classFeel_1_1BVHTree_1_1BVHNode.html">BVHNode</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>parent</b></td></tr>
-<tr class="separator:a0000e811b8c9e39091650a5ecac1c364"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2451178c0e3f2f24dc4d374ed3ca53ef"><td class="memItemLeft" align="right" valign="top"><a id="a2451178c0e3f2f24dc4d374ed3ca53ef" name="a2451178c0e3f2f24dc4d374ed3ca53ef"></a>
+<tr class="separator:a1bf5facae2ed964663290e3e8abb86be"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab020cf31feda7ad4e59549c83f4b33cc"><td class="memItemLeft" align="right" valign="top"><a id="ab020cf31feda7ad4e59549c83f4b33cc" name="ab020cf31feda7ad4e59549c83f4b33cc"></a>
 <a class="el" href="classint.html">int</a>&#160;</td><td class="memItemRight" valign="bottom"><b>splitaxis</b></td></tr>
-<tr class="separator:a2451178c0e3f2f24dc4d374ed3ca53ef"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="separator:ab020cf31feda7ad4e59549c83f4b33cc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 </div><!-- doc-content -->

@@ -1,13 +1,12 @@
-<map id="Feel::BVHTree&lt; nDim &gt;" name="Feel::BVHTree&lt; nDim &gt;">
-<area shape="rect" id="node1" title=" " alt="" coords="305,620,482,756"/>
-<area shape="rect" id="node2" title=" " alt="" coords="701,465,913,557"/>
-<area shape="rect" id="node3" href="$structFeel_1_1BVHTree_1_1BVHPrimitiveInfo.html" title=" " alt="" coords="725,211,888,303"/>
-<area shape="rect" id="node4" href="$classint.html" title=" " alt="" coords="321,5,359,83"/>
-<area shape="rect" id="node8" title=" " alt="" coords="5,364,144,441"/>
-<area shape="rect" id="node11" href="$classFeel_1_1BVHTree_1_1BVHNode.html" title=" " alt="" coords="268,175,519,340"/>
-<area shape="rect" id="node5" title=" " alt="" coords="691,5,773,83"/>
-<area shape="rect" id="node6" title=" " alt="" coords="188,473,345,550"/>
-<area shape="rect" id="node7" title=" " alt="" coords="205,219,243,296"/>
-<area shape="rect" id="node9" title=" " alt="" coords="511,473,676,550"/>
-<area shape="rect" id="node10" title=" " alt="" coords="635,219,701,296"/>
+<map id="Feel::BVHTree&lt; nDim, realDim &gt;" name="Feel::BVHTree&lt; nDim, realDim &gt;">
+<area shape="rect" id="node1" title=" " alt="" coords="236,620,407,771"/>
+<area shape="rect" id="node2" title=" " alt="" coords="629,465,841,557"/>
+<area shape="rect" id="node3" href="$structFeel_1_1BVHTree_1_1BVHPrimitiveInfo.html" title=" " alt="" coords="601,211,815,303"/>
+<area shape="rect" id="node4" href="$classint.html" title=" " alt="" coords="222,5,261,83"/>
+<area shape="rect" id="node7" title=" " alt="" coords="5,364,144,441"/>
+<area shape="rect" id="node10" href="$classFeel_1_1BVHTree_1_1BVHNode.html" title=" " alt="" coords="131,175,381,340"/>
+<area shape="rect" id="node5" title=" " alt="" coords="608,5,659,83"/>
+<area shape="rect" id="node6" title=" " alt="" coords="215,473,265,550"/>
+<area shape="rect" id="node8" title=" " alt="" coords="439,473,604,550"/>
+<area shape="rect" id="node9" title=" " alt="" coords="497,219,564,296"/>
 </map>
