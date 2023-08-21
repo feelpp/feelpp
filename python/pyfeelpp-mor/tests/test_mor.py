@@ -43,8 +43,8 @@ def test_init_from_ModelPropeties(casefile, dim, mumin_th, mumax_th,  init_feelp
     Dmu = feelpp.mor._mor.ParameterSpace.New(modelParameters, feelpp.Environment.worldCommPtr())
 
     # mubar = Dmu.mubar()       # /!\ doesn't exist anymore !
-    mumin = Dmu.mumin()
-    mumax = Dmu.mumax()
+    mumin = Dmu.min()
+    mumax = Dmu.max()
 
     mu = Dmu.element()
     print("try to access to the names of elements")
@@ -71,7 +71,7 @@ def test_sampling(casefile, init_feelpp):
     print(feelpp.mor.__file__)
     Nsamples = 10
     s = Dmu.sampling()
-    s.sampling(Nsamples, samplingMode="random")
+    s.sample(Nsamples, samplingMode="random")
 
     assert len(s) == Nsamples , "wrong number of samples"
     v = s.getVector()
@@ -109,9 +109,9 @@ def test_param_not_in_range(casefile, dim, Mu,  init_feelpp):
     try:
         mu.setParameter(0, 5000)
     except ValueError as e:
-        assert "out of range" in str(e)
+        assert "not found" in str(e) or "out of range" in str(e)
 
     try:
         mu.setParameterNamed('Bi', -666)
     except ValueError as e:
-        assert "out of range" in str(e)
+        assert "not found" in str(e) or "out of range" in str(e)

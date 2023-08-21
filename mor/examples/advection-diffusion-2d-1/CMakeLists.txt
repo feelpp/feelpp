@@ -22,12 +22,12 @@
 #
 #
 
-mor_add_library( ad SRCS ad.cpp EXEC CRB_LIB_AD PLUGIN)
-target_compile_definitions(${CRB_LIB_AD} PRIVATE FEELPP_MOR_PLUGIN_NAME=ad FEELPP_MOR_PLUGIN_LIBNAME=${CRB_LIB_AD})
+mor_add_library( adcouette SRCS ad.cpp EXEC CRB_LIB_AD PLUGIN)
+target_compile_definitions(${CRB_LIB_AD} PRIVATE FEELPP_MOR_PLUGIN_NAME=adcouette FEELPP_MOR_PLUGIN_LIBNAME=${CRB_LIB_AD})
 install(FILES ad.hpp DESTINATION include/feelpp/crb/ad COMPONENT Devel)
 set(FEELPP_CRB_AD_LIBRARIES ${CRB_LIB_AD} PARENT_SCOPE)
 set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_AD_LIBRARIES PARENT_SCOPE)
 
 #mor_add_executable(ad1pfem ad1pfem.cpp LINK_LIBRARIES feel++_crb_models ${FEELPP_LIBRARIES} CFG ad1pfem.cfg )
 #mor_add_executable(ad1crb ad1crb.cpp LINK_LIBRARIES feel++_crb_crb ${FEELPP_LIBRARIES} CFG ad1crb.cfg)
-mor_add_model(ad AdvectionDiffusion HDRS ad.hpp LINK_LIBRARIES ${CRB_LIB_AD} CFG ad.cfg XML ad.xml SCRIPTS ad.m )
+mor_add_model(adcouette AdvectionDiffusion HDRS ad.hpp LINK_LIBRARIES ${CRB_LIB_AD} CFG ad.cfg XML ad.xml SCRIPTS ad.m )
