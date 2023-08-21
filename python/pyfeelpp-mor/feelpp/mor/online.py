@@ -35,7 +35,7 @@ class Online:
         """
         Dmu = self.rbmodel.parameterSpace()
         s = Dmu.sampling()
-        s.sampling(Nsamples, samplingMode)
+        s.sample(Nsamples, samplingMode)
         return s
 
     def run(self, samples, export=False ):
@@ -105,7 +105,7 @@ def main(args):
     print("libdir:", options.plugin)
 
     o = Online(options.name, options.dir, options.plugin)
-    s = o.sampling(options.N)
+    s = o.sample(options.N)
     res = o.run(samples=s, export=True)
     df = convertToDataframe(res)
     print(df)
