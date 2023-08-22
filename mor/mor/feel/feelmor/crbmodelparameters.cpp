@@ -61,6 +61,7 @@ CRBModelParameters::setup()
                     min = j_min.get<double>();
                 else if ( j_min.is_string() )
                     min = std::stod( j_min.get<std::string>() );
+                LOG( INFO ) << fmt::format( "parameter {} has min value {}", name, min );
             }
             else
             {
@@ -74,6 +75,7 @@ CRBModelParameters::setup()
                     max = j_max.get<double>();
                 else if ( j_max.is_string() )
                     max = std::stod( j_max.get<std::string>() );
+                LOG( INFO ) << fmt::format( "parameter {} has max value {}", name, max );
             }
             else
             {
@@ -89,6 +91,7 @@ CRBModelParameters::setup()
                     value = j_val.get<double>();
                 else if ( j_val.is_string() )
                     value = std::stod( j_val.get<std::string>() );
+                LOG(INFO) << fmt::format("parameter {} has value {}", name, value);
             }
             int sample = 0;
             if ( jargval.contains("sampling-size") )

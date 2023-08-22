@@ -38,14 +38,20 @@ public:
     typedef typename super_type::beta_vector_light_type beta_vector_light_type;
     typedef typename super_type::affine_decomposition_light_type affine_decomposition_light_type;
 
-    typedef typename super_type::element_type element_type;
-    typedef typename super_type::element_ptrtype element_ptrtype;
-    typedef typename super_type::parameter_type parameter_type;
-    typedef typename super_type::space_type space_type;
-    typedef Bdf<space_type>  bdf_type;
-    typedef std::shared_ptr<bdf_type> bdf_ptrtype;
+    using element_type = typename super_type::element_type;
+    using element_ptrtype = std::shared_ptr<element_type>;
+    using parameter_type = typename super_type::parameter_type;
+    using space_type = typename super_type::space_type;
+    using space_ptrtype = typename super_type::space_ptrtype;
+//    using rbspace_type = typename super_type::rbspace_type;
+//    using rbspace_ptrtype = typename super_type::rbspace_ptrtype;
 
     using super_type::computeBetaQm;
+
+   // using bdf_type = std::variant< Bdf<space_type>, Bdf<rbspace_type> >;
+
+    using bdf_type = Bdf<space_type>;
+    using bdf_ptrtype = std::shared_ptr<bdf_type>;
 
     OpusHeat();
 

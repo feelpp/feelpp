@@ -382,7 +382,7 @@ class nirbOffline(ToolboxModel):
 
         if Xi_train is None:
             s = self.Dmu.sampling()
-            s.sampling(numberOfInitSnapshots, samplingMode)
+            s.sample(numberOfInitSnapshots, samplingMode)
             vector_mu = s.getVector()
         else:
             if self.worldcomm.isMasterRank():
@@ -461,7 +461,7 @@ class nirbOffline(ToolboxModel):
         Nmax = min(Nmax, Ntrain)
         if Xi_train is None:
             s = self.Dmu.sampling()
-            s.sampling(Ntrain, samplingMode)
+            s.sample(Ntrain, samplingMode)
             Xi_train = s.getVector()
         Xi_train_copy = Xi_train.copy()
 
@@ -712,7 +712,7 @@ class nirbOffline(ToolboxModel):
 
         if Xi_test is None:
             s = self.Dmu.sampling()
-            s.sampling(Ns,'log-random')
+            s.sample(Ns,'log-random')
             vector_mu = s.getVector()
         else:
             vector_mu = Xi_test
