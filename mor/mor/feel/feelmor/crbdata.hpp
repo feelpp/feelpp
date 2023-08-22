@@ -78,12 +78,41 @@ public:
             M_mu = mu;
         }
     parameter_type const& parameter() const { return M_mu; }
-    //!
-    //! @return the output
-    //!
+
+    /**
+     * @brief return output at last time step
+     * 
+     * @return double 
+     */
     double output() const { return boost::get<0>( *this ).back(); }
+
+    /**
+     * @brief return error bound at last time step
+     * 
+     * @return double 
+     */
     double errorbound() const  { return boost::get<0>( boost::get<6>( *this ) ).back(); }
+
+    /**
+     * @brief return solution at last time step
+     * 
+     * @return vectorN_type const& 
+     */
     vectorN_type const& coefficients() const { return boost::get<0>(boost::get<2>( *this )).back(); }
+
+    /**
+     * @brief return outputs at all time steps otherwize, if time independent, a vector of size 1
+     * 
+     * @return std::vector<double> const& 
+     */
+    std::vector<double> const& outputs() const { return boost::get<0>( *this ); }
+
+    /**
+     * @brief return error bounds at all time steps otherwize, if time independent, a vector of size 1
+     * 
+     * @return std::vector<double> const& 
+     */
+    std::vector<double> const& errors() const { return boost::get<0>( boost::get<6>( *this ) ); }
 
     CRBResults ( super const& s )
         :

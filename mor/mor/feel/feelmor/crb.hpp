@@ -484,9 +484,11 @@ public:
             {
                 M_rebuild = true;
                 this->worldComm().barrier();
+                LOG(INFO) << fmt::format("CRB::init() : rebuild database");
             }
             if ( !M_rebuild )
             {
+                LOG(INFO) << fmt::format("CRB::init() : load database from {}", (this->dbLocalPath()/fs::path(this->jsonFilename())).string() );
                 this->setupOfflineFromDB();
             }
             else
@@ -494,15 +496,17 @@ public:
                 M_scmM->setId( this->id() );
                 M_scmA->setId( this->id() );
                 M_elements_database.setId( this->id() );
+                LOG(INFO) << fmt::format("CRB::init() : build database, initialized SCM_M and SCM_A");
             }
             if( this->worldComm().isMasterRank() )
-                std::cout << "Use DB id " << this->id() << std::endl;
+                std::cout << "CRB::init() : Use DB id " << this->id() << std::endl;
+            LOG(INFO) << fmt::format("CRB::init() : Use DB id {}", this->id() );
 
             if ( M_N == 0 )
             {
                 if( this->worldComm().isMasterRank() )
-                    std::cout<< "Databases does not exist or incomplete -> Start from the begining\n";
-                LOG( INFO ) <<"Databases does not exist or incomplete -> Start from the begining";
+                    std::cout << "CRB::init() : Databases does not exist or incomplete -> Start from the begining\n";
+                LOG( INFO ) <<"CRB::init() : Databases does not exist or incomplete -> Start from the begining";
             }
 
             // fe vector is requiert in online : must not be TODO
@@ -1427,7 +1431,7 @@ public:
      * \pram uNold : old primal solution
      * \param K : time index
      */
-    virtual double correctionTerms(parameter_type const& mu, std::vector< vectorN_type > const & uN, std::vector< vectorN_type > const & uNdu , std::vector<vectorN_type> const & uNold,  int const K=0) const;
+    virtual double correctionTerms(parameter_type const& mu, std::vector< vectorN_type > const & uN, std::vector< vectorN_type > const & uNdu , std::vector<vectorN_type> const & uNold,  int const K=0, double const prevcorrection  = 0 ) const;
 
     /*
      * build matrix to store functions used to compute the variance output
@@ -2431,7 +2435,7 @@ CRB<TruthModelType>::offline()
     bool seek_mu_in_complement = M_seekMuInComplement;
 
     Feel::Timer ti;
-    LOG(INFO)<< "Offline CRB starts, this may take a while until Database is computed...\n";
+    LOG(INFO)<< "[CRB::offline] Offline CRB starts, this may take a while until Database is computed...\n";
     //LOG(INFO) << "[CRB::offline] Starting offline for output " << M_output_index << "\n";
     //LOG(INFO) << "[CRB::offline] initialize underlying finite element model\n";
     M_model->init();
@@ -4129,7 +4133,7 @@ CRB<TruthModelType>::check( size_type N ) const
 
 template< typename TruthModelType>
 double
-CRB<TruthModelType>::correctionTerms(parameter_type const& mu, std::vector< vectorN_type > const & uN, std::vector< vectorN_type > const & uNdu,  std::vector<vectorN_type> const & /*uNold*/, int const k ) const
+CRB<TruthModelType>::correctionTerms(parameter_type const& mu, std::vector< vectorN_type > const & uN, std::vector< vectorN_type > const & uNdu,  std::vector<vectorN_type> const & /*uNold*/, int const k, double const prevcorrection ) const
 {
     int N = uN[0].size();
 
@@ -4193,7 +4197,10 @@ CRB<TruthModelType>::correctionTerms(parameter_type const& mu, std::vector< vect
         int primal_time_index;
         int dual_time_index;
         int kpd=0;//kp dual
-        for( int kp=1; kp<=k; kp++)
+        //for( int kp=k-1; kp<=k; kp++)
+        const int kp = k;
+        correction = prevcorrection;
+        if ( k >= 1 )
         {
 
             Aprdu.setZero( N , N );
@@ -5767,38 +5774,19 @@ CRB<TruthModelType>::fixedPoint(  size_type N, parameter_type const& mu, std::ve
                                   std::vector< double > & output_vector, int K, bool print_rb_matrix, bool computeOutput ) const
 {
     matrix_info_tuple matrix_info;
-
-#if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
-    if(boption(_name="parallel.opencl.enable"))
-    {
-        matrix_info = fixedPointPrimalCL( N, mu , uN , uNold, output_vector, K , print_rb_matrix) ;
-
-        if(ioption(_name="parallel.debug"))
-        {
-            this->dumpData("./out.gpu.dump", "[CPU] uN: ", uN[0].data(), N);
-        }
-    }
-    else
-    {
-#endif
-
-        matrix_info = fixedPointPrimal( N, mu , uN , uNold, output_vector, K , print_rb_matrix, computeOutput ) ;
-
-#if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
-        if(ioption(_name="parallel.debug"))
-        {
-            this->dumpData("./out.cpu.dump", "[CPU] uN: ", uN[0].data(), N);
-        }
-    }
-#endif
-
+    tic();
+    matrix_info = fixedPointPrimal( N, mu , uN , uNold, output_vector, K , print_rb_matrix, computeOutput ) ;
+    VLOG(3) << fmt::format("CRB::fixedPoint() : fixedPointPrimal took {} seconds",toc("CRB::fixedPoint() : fixedPointPrimal"));
 
     if( M_solve_dual_problem )
     {
+        tic();
         fixedPointDual( N, mu , uN, uNdu , uNduold , output_vector , K ) ;
+        VLOG(3) << fmt::format("CRB::fixedPoint() : fixedPointDual took {} seconds",toc("CRB::fixedPoint() : fixedPointDual"));
 
         if ( computeOutput )
         {
+            tic();
             // apply correction terms
             if ( M_model->isSteady() )
             {
@@ -5813,12 +5801,16 @@ CRB<TruthModelType>::fixedPoint(  size_type N, parameter_type const& mu, std::ve
                     time_for_output = K*time_step;
 
                 int time_index=0;
+                double prevcorrection = 0;
                 for ( double time=0; math::abs(time-time_for_output-time_step)>1e-9; time+=time_step )
                 {
-                    output_vector[time_index]+=correctionTerms(mu, uN , uNdu, uNold, time_index );
+                    double curcorrection = correctionTerms(mu, uN , uNdu, uNold, time_index, prevcorrection );
+                    output_vector[time_index]+= curcorrection;
+                    prevcorrection = curcorrection;
                     ++time_index;
                 }
             }
+            VLOG(3) << fmt::format("CRB::fixedPoint() : correctionTerms took {} seconds",toc("CRB::fixedPoint() : correctionTerms"));
         }
     }
 
@@ -5831,7 +5823,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
                          std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold, bool print_rb_matrix, int K,
                          bool computeOutput ) const
 {
-    LOG(INFO) <<"CRB : Start lb functions with mu="<<mu.toString()<<", N="<<N;
+    VLOG(2) << fmt::format("CRB::lb() : Start lb functions with mu={}, N={}, print_rb_matrix={}, K={}, computeOutput={}",mu.toString(),N,print_rb_matrix,K,computeOutput);
     if ( N > M_N ) N = M_N;
 
     int number_of_time_step = M_model->numberOfTimeStep();
@@ -5856,7 +5848,9 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
     // init by 1, the model could provide better init
     uN[0].setOnes(N);
 
+    tic();
     auto matrix_info = onlineSolve( N ,  mu , uN , uNdu , uNold , uNduold , output_vector , K , print_rb_matrix, computeOutput );
+    VLOG(3) << fmt::format("CRB::lb() : onlineSolve took {} seconds",toc("CRB::lb() : onlineSolve"));
 
     if ( M_compute_variance || M_save_output_behavior )
     {
@@ -5924,7 +5918,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
             file_output.close();
         }
     }
-    LOG(INFO)<<"CBR : end of lb()";
+    VLOG(2) <<"CRB::lb() : end lb function";
     return boost::make_tuple( output_vector, matrix_info);
 
 }
@@ -5939,7 +5933,7 @@ CRB<TruthModelType>::delta( size_type N,
                             std::vector<vectorN_type> const& uNduold,
                             int k ) const
 {
-    LOG(INFO) << "CRB : Start delta with mu="<<mu.toString()<<", N="<<N;
+    VLOG(2) << "CRB::delta : Start compute delta with mu="<<mu.toString()<<", N="<<N;
     std::vector< std::vector<double> > primal_residual_coeffs;
     std::vector< std::vector<double> > dual_residual_coeffs;
     std::vector<double> output_upper_bound;
@@ -5948,7 +5942,7 @@ CRB<TruthModelType>::delta( size_type N,
 
     if( M_SER_errorEstimation && M_SER_useGreedyInRb ) // If SER is used : use Riesz residual norm as error indicator
     {
-        LOG(INFO) << "Use SER error estimation \n";
+        VLOG(2) << "CRB::delta : Use SER error estimation \n";
         output_upper_bound.resize(1);
         output_upper_bound[0] = computeRieszResidualNorm( mu, uN );
         return boost::make_tuple( output_upper_bound , primal_residual_coeffs, dual_residual_coeffs , delta_pr, delta_du);
@@ -5983,14 +5977,16 @@ CRB<TruthModelType>::delta( size_type N,
             shift=0;
             restart_time_index=0;
         }
-
-        double primal_sum=0;
-        double dual_sum=0;
+        int K = Tf/dt;
+        eigen_vector_x_col_type<> primal_sum(K);
+        primal_sum.setZero();
+        eigen_vector_x_col_type<> dual_sum(K);
+        dual_sum.setZero();
         double primal_sum_eim=0;
         double dual_sum_eim=0;
 
         //vectors to store residual coefficients
-        int K = Tf/dt;
+       
         primal_residual_coeffs.resize( K );
         dual_residual_coeffs.resize( K );
 
@@ -5998,6 +5994,7 @@ CRB<TruthModelType>::delta( size_type N,
 
         if ( M_error_type == CRB_RESIDUAL_SCM )
         {
+            tic();
             double alphaA_up, lbti;
             boost::tie( alphaA, lbti ) = M_scmA->lb( mu );
             if( M_scmA->useScm() )
@@ -6012,6 +6009,7 @@ CRB<TruthModelType>::delta( size_type N,
                     boost::tie( alphaM_up, lbti ) = M_scmM->ub( mu );
                 //LOG( INFO ) << "alphaM_lo = " << alphaM << " alphaM_hi = " << alphaM_up ;
             }
+            VLOG(3) << fmt::format("CRB::delta() : scm took {} seconds",toc("CRB::delta() : scm"));
         }
 
         //index associated to the output time
@@ -6035,18 +6033,21 @@ CRB<TruthModelType>::delta( size_type N,
             if( M_useAccurateApee )
             {
                 //in this case, we use a different way to compute primal_sum (i.e. square of dual norm of primal residual)
-                for( double time=dt; math::abs(time-output_time-dt)>1e-9; time+=dt )
+                //for( double time=dt; math::abs(time-output_time-dt)>1e-9; time+=dt )
+                double time = output_time;
                 {
-                    primal_sum += computeOnlinePrimalApee( N , mu , uN[time_index], uN[time_index]/*uNold[time_index]*/, dt, time );
+                    primal_sum[time_index] += computeOnlinePrimalApee( N , mu , uN[time_index], uN[time_index]/*uNold[time_index]*/, dt, time );
                 }
             }
             else
             {
-                for ( double time=dt; math::abs(time-output_time-dt)>1e-9; time+=dt )
+                //for ( double time=dt; math::abs(time-output_time-dt)>1e-9; time+=dt )
+                double time = output_time;
                 {
                     int time_old_index = ( M_model->isSteady() )? 0 : time_index-1;
                     auto pr = transientPrimalResidual( N, mu, uN[time_index], uN[time_old_index]/*uNold[time_index]*/, dt, time );
-                    primal_sum += pr.template get<0>();
+                    primal_sum(time_index) = pr.template get<0>();
+
                     if( global_time_index==K )
                     {
                         primal_residual_coeffs[time_index-shift].resize( pr.template get<1>().size() );
@@ -6074,17 +6075,19 @@ CRB<TruthModelType>::delta( size_type N,
                 if( M_useAccurateApee )
                 {
                     //in this case, we use a different way to compute primal_sum (i.e. square of dual norm of primal residual)
-                    for ( double time=output_time; math::abs(time - dt + dt) > 1e-9 ; time-=dt )
+                    //for ( double time=output_time; math::abs(time - dt + dt) > 1e-9 ; time-=dt )
+                    double time = output_time;
                     {
-                        dual_sum += computeOnlineDualApee( N , mu , uNdu[time_index], uNduold[time_index], dt, time );
+                        dual_sum[time_index] += computeOnlineDualApee( N , mu , uNdu[time_index], uNduold[time_index], dt, time );
                     }
                 }
                 else
                 {
-                    for ( double time=output_time; math::abs(time - dt + dt) > 1e-9 ; time-=dt )
+                    //for ( double time=output_time; math::abs(time - dt + dt) > 1e-9 ; time-=dt )
+                    double time = output_time;
                     {
                         auto du = transientDualResidual( N, mu, uNdu[time_index], uNduold[time_index], dt, time );
-                        dual_sum += du.template get<0>();
+                        dual_sum(time_index) += du.template get<0>();
                         if( global_time_index == K )
                         {
                             dual_residual_coeffs[time_index-shift].resize( du.template get<1>().size() );
@@ -6111,12 +6114,12 @@ CRB<TruthModelType>::delta( size_type N,
             {
                 if( model_has_eim_error )
                 {
-                    double r = math::sqrt( primal_sum );
+                    double r = math::sqrt( primal_sum.sum() );
                     double reim = math::sqrt( primal_sum_eim );
                     delta_pr =  ( r + reim ) /  alphaA ;
                     if( M_solve_dual_problem )
                     {
-                        double rdu = math::sqrt( dual_sum );
+                        double rdu = math::sqrt( dual_sum.sum() );
                         double rdueim = math::sqrt( dual_sum_eim );
                         delta_du =  ( rdu + rdueim ) / alphaA;
                     }
@@ -6126,9 +6129,9 @@ CRB<TruthModelType>::delta( size_type N,
                 }
                 else
                 {
-                    delta_pr = math::sqrt( primal_sum ) /  alphaA ;
+                    delta_pr = math::sqrt( primal_sum.sum() ) /  alphaA ;
                     if( M_solve_dual_problem )
-                        delta_du = math::sqrt( dual_sum ) / alphaA;
+                        delta_du = math::sqrt( dual_sum.sum() ) / alphaA;
                     else
                         delta_du = 1;
                     output_upper_bound[global_time_index] = alphaA * delta_pr * delta_du;
@@ -6138,9 +6141,9 @@ CRB<TruthModelType>::delta( size_type N,
             }
             else
             {
-                delta_pr = math::sqrt( dt/alphaA * primal_sum );
+                delta_pr = math::sqrt( dt/alphaA * primal_sum.sum() );
                 if( M_solve_dual_problem )
-                    delta_du = math::sqrt( dt/alphaA * dual_sum + dual_residual/alphaM );
+                    delta_du = math::sqrt( dt/alphaA * dual_sum.sum() + dual_residual/alphaM );
                 else
                     delta_du = 1;
                 output_upper_bound[global_time_index] = delta_pr * delta_du;
@@ -6711,7 +6714,7 @@ template<typename TruthModelType>
 typename CRB<TruthModelType>::residual_error_type
 CRB<TruthModelType>::transientPrimalResidual( int Ncur,parameter_type const& mu,  vectorN_type const& Un ,vectorN_type const& Unold , double time_step, double time ) const
 {
-    LOG(INFO) << "CRB : Start transientPrimalresidual with mu="<<mu.toString() << ", N="<<Ncur;
+    VLOG(2) << fmt::format("CRB : Start transientPrimalresidual with mu={}, Ncur={}, Un.size={}, Unold.size={}, time_step={}, time={}",mu.toString(), Ncur, Un.size(), Unold.size(), time_step, time);
     beta_vector_type betaAqm;
     beta_vector_type betaMqm;
     std::vector<beta_vector_type> betaFqm;
@@ -9454,6 +9457,7 @@ CRB<TruthModelType>::run( parameter_type const& mu, vectorN_type & time, double 
         compareResidualsForTransientProblems(Nwn, mu , Un, Unold, Undu, Unduold, primal_residual_coefficients, dual_residual_coefficients );
     }
 #endif
+    tic();
     M_model->countAffineDecompositionTerms();
 
     std::vector<vectorN_type> uN;
@@ -9474,13 +9478,19 @@ CRB<TruthModelType>::run( parameter_type const& mu, vectorN_type & time, double 
         Nwn = M_N;
     }
     Feel::Timer t1;
+    tic();
     auto o = lb( Nwn, mu, uN, uNdu , uNold, uNduold , print_rb_matrix);
+    VLOG(3) << fmt::format( "[CRB::run] lb = {}", toc("[CRB::run] lb") );
+
     double time_prediction=t1.elapsed();
     auto output_vector=o.template get<0>();
     double output_vector_size=output_vector.size();
     double output = output_vector[output_vector_size-1];
     t1.start();
+    tic();
     auto error_estimation = delta( Nwn, mu, uN, uNdu , uNold, uNduold );
+    VLOG(3) << fmt::format( "[CRB::run] delta = {}", toc("[CRB::run] delta") );
+    
     double time_error_estimation=t1.elapsed();
     auto vector_output_upper_bound = error_estimation.template get<0>();
     double output_upper_bound = vector_output_upper_bound[0];
@@ -9511,21 +9521,26 @@ CRB<TruthModelType>::run( parameter_type const& mu, vectorN_type & time, double 
         primal_residual_norm = math::sqrt( math::abs(primal_residual_norm) );
         dual_residual_norm = math::sqrt( math::abs(dual_residual_norm) );
     }
-
+    tic();
     double delta_pr = error_estimation.template get<3>();
+    VLOG(3) << fmt::format( "[CRB::run] delta_pr = {}", toc("[CRB::run] delta_pr") );
+    tic();
     double delta_du = error_estimation.template get<4>();
+    VLOG(3) << fmt::format( "[CRB::run] delta_du = {}", toc("[CRB::run] delta_du") );
 
     time.resize(2);
     time(0)=time_prediction;
     time(1)=time_error_estimation;
 
     int size = uN.size();
-
+    tic();
     auto upper_bounds = boost::make_tuple(vector_output_upper_bound , delta_pr, delta_du , primal_coefficients , dual_coefficients );
     auto solutions = boost::make_tuple( uN , uNdu, uNold, uNduold);
 
     CRBResults r(boost::make_tuple( output_vector , Nwn , solutions, matrix_info , primal_residual_norm , dual_residual_norm, upper_bounds ));
     r.setParameter( mu );
+    VLOG(3) << fmt::format( "[CRB::run] get results = {}", toc("[CRB::run] get results") );
+    VLOG(3) << fmt::format( "[CRB::run] total time = {}", toc("[CRB::run] total time") );
     return r;
 }
 

@@ -5,8 +5,8 @@
 int main( int argc, char** argv )
 {
     using namespace Feel;
-    Feel::Environment env( _argc=argc, _argv=argv,
-                           _desc=opusapp_options("heatshieldminimalversion2")
+    Feel::Environment env( _argc = argc, _argv = argv,
+                           _desc = opusapp_options("heatshieldminimalversion2")
                            .add(crbOptions())
                            .add(crbSEROptions())
                            .add(makeHeatShieldMinimalVersionOptions())
@@ -16,7 +16,7 @@ int main( int argc, char** argv )
                            .add(backend_options("backend-dual"))
                            .add(backend_options("backend-l2"))
                            .add(bdf_options("HeatShieldMinimalVersion")),
-                           _about=makeHeatShieldMinimalVersionAbout( "heatshieldminimalversion2" ) );
+                           _about = makeHeatShieldMinimalVersionAbout( "heatshieldminimalversion2" ) );
 
     Feel::OpusApp<Feel::HeatShieldMinimalVersion<2> > app;
     app.run();
