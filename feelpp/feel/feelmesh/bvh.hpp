@@ -5,14 +5,9 @@
 
 
 #include <vector>
-//#include <boost/tuple/tuple.hpp>
-//#include <boost/tuple/tuple_comparison.hpp>
-//#include <boost/tuple/tuple_io.hpp>
-
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelalg/glas.hpp>
-
-#include <feel/feel.hpp>
+#include <feel/feeldiscr/mesh.hpp>
 
 namespace Feel
 {
@@ -34,44 +29,38 @@ public:
 private:
     vec_t M_origin, M_dir;  // ray origin and dir
 };
-
+#if 0
 inline constexpr float robust_const(int n)
 {
     double epsil = std::numeric_limits<double>::epsilon() * 0.5;
     return (n * epsil) / (1 - n * epsil);
 }
-
-template<int nDim, int realDim>
+#endif
+template <typename MeshEntityType>
 class BVHTree
 {
-    using self_type = BVHTree<nDim,realDim>;
-    using convex_type = Simplex<nDim,1,realDim>;
-    using mesh_type = Mesh<convex_type>;
-    using VectorRealDim = typename  std::conditional< realDim==3,
-                                                      Eigen::Vector3d,
-                                                      Eigen::Vector2d>::type;
-    using trace_mesh_type = typename  std::conditional< nDim==realDim,
-                                                        typename mesh_type::trace_mesh_type,
-                                                        mesh_type >::type;
-    using trace_mesh_ptrtype =  typename  std::conditional< nDim==realDim,
-                                                            typename mesh_type::trace_mesh_ptrtype,
-                                                            typename mesh_type::ptrtype >::type ;
-    // typedef typename mesh_type::trace_mesh_type trace_mesh_type;
-    // typedef typename mesh_type::trace_mesh_ptrtype trace_mesh_ptrtype;
+    using self_type = BVHTree<MeshEntityType>;
+    using mesh_entity_type = std::decay_t<MeshEntityType>;
+    static constexpr uint16_type nDim = mesh_entity_type::nDim;
+    static constexpr uint16_type nRealDim = mesh_entity_type::nRealDim;
+    // using VectorRealDim = typename  std::conditional< nRealDim==3,
+    //                                                   Eigen::Vector3d,
+    //                                                   Eigen::Vector2d>::type;
+    using vector_realdim_type = Eigen::Matrix<double,nRealDim,1>;
     typedef typename matrix_node<double>::type matrix_node_type;
 
     // Information on the primitive (bounding box, index, centroid)
 public:
-    using ray_type = BVHRay<realDim>;
+    using ray_type = BVHRay<nRealDim>;
 
     struct BVHPrimitiveInfo
     {
-        BVHPrimitiveInfo(typename trace_mesh_type::element_type const& meshElt )
+        BVHPrimitiveInfo( mesh_entity_type const& meshElt )
             :
             M_meshElement( meshElt )
             {
                 auto verticesUblas = meshElt.vertices();
-                auto G = em_cmatrix_col_type<double>( verticesUblas.data().begin(), realDim, trace_mesh_type::element_type::numVertices );
+                auto G = em_cmatrix_col_type<double>( verticesUblas.data().begin(), nRealDim, mesh_entity_type::numVertices );
                 M_bound_min = G.rowwise().minCoeff();
                 M_bound_max = G.rowwise().maxCoeff();
                 M_bound_min.array() -= 2*FLT_MIN;
@@ -79,46 +68,31 @@ public:
                 M_centroid = ( M_bound_min + M_bound_max ) * 0.5;
             }
 
-        typename trace_mesh_type::element_type const& meshElement() { return M_meshElement.get(); }
+        mesh_entity_type const& meshElement() const { return M_meshElement.get(); }
 
-        VectorRealDim const& boundMin() const noexcept { return M_bound_min; }
-        VectorRealDim const& boundMax() const noexcept { return M_bound_max; }
-        VectorRealDim const& centroid() const noexcept { return M_centroid; }
+        vector_realdim_type const& boundMin() const noexcept { return M_bound_min; }
+        vector_realdim_type const& boundMax() const noexcept { return M_bound_max; }
+        vector_realdim_type const& centroid() const noexcept { return M_centroid; }
 
     private:
-        VectorRealDim M_bound_min;
-        VectorRealDim M_bound_max;
-        VectorRealDim M_centroid;
-        std::reference_wrapper<typename trace_mesh_type::element_type const> M_meshElement;
+        vector_realdim_type M_bound_min;
+        vector_realdim_type M_bound_max;
+        vector_realdim_type M_centroid;
+        std::reference_wrapper<mesh_entity_type const> M_meshElement;
     };
-
-    // From the mesh, build the bounding box info for each element and store it in
-    // the structure BVHPrimitiveInfo
-    void buildPrimitivesInfo(trace_mesh_ptrtype const& mesh)
-        {
-            M_mesh = mesh;
-            auto rangeElem = elements(mesh);
-            M_primitiveInfo.clear();
-            M_primitiveInfo.reserve( nelements(rangeElem) );
-            for ( auto const& eltWrap : rangeElem)
-            {
-                auto const& e = unwrap_ref( eltWrap );
-                M_primitiveInfo.push_back( BVHPrimitiveInfo{e} );
-            }
-        }
 
     class BVHNode
     {
-        friend class BVHTree<nDim,realDim>;
+        friend class BVHTree<mesh_entity_type>;
     public:
         BVHNode() = default;
 
         //! return the parent of this node
         BVHNode * parent() const { return M_parent; }
 
-        VectorRealDim const& boundMin() const noexcept { return M_bounds_min; }
-        VectorRealDim const& boundMax() const noexcept { return M_bounds_max; }
-        VectorRealDim centroid() const { return 0.5*(M_bounds_min + M_bounds_max); }
+        vector_realdim_type const& boundMin() const noexcept { return M_bounds_min; }
+        vector_realdim_type const& boundMax() const noexcept { return M_bounds_max; }
+        vector_realdim_type centroid() const { return 0.5*(M_bounds_min + M_bounds_max); }
         int splitAxis() const noexcept { return M_splitAxis; }
         int nPrimitives() const noexcept { return M_nPrimitives; }
         int firstPrimOffset() const noexcept { return M_firstPrimOffset; }
@@ -148,7 +122,7 @@ public:
                 double tmin = 0.0;
                 double tmax = FLT_MAX;
 
-                for(int i=0; i<realDim; i++)
+                for(int i=0; i<nRealDim; i++)
                 {
                     double ratio = 1.0/(rayon.dir()[i]+2*FLT_MIN);
                     double t1 = (M_bounds_min[i]-rayon.origin()[i]) * ratio;
@@ -210,14 +184,14 @@ public:
         // TODO VINCENT optimize here
         std::pair<bool,double> checkIntersectionWithSegment(matrix_node_type const& nodes, ray_type const& ray)
             {
-                VectorRealDim p1,p2,v1,v2,v3,w_;
+                vector_realdim_type p1,p2,v1,v2,v3,w_;
 
                 for ( int i = 0; i < nodes.size1(); ++i )
                 {
                     p1( i ) = nodes(i,0);
                     p2( i ) = nodes(i,1);
                 }
-                VectorRealDim origin,direction;
+                vector_realdim_type origin,direction;
                 direction << ray.dir()[0],ray.dir()[1];
                 origin << ray.origin()[0],ray.origin()[1];
                 v1 = origin - p1;
@@ -243,14 +217,14 @@ public:
             }
 
         // Verify if the ray intersects the element
-        std::pair<bool,double> checkIntersectionWithTriangle( ray_type const& ray, trace_mesh_ptrtype mesh, std::vector<BVHPrimitiveInfo>& primitiveInfo)
+        std::pair<bool,double> checkIntersectionWithTriangle( ray_type const& ray, std::vector<BVHPrimitiveInfo> const& primitiveInfo ) const
             {
                 DCHECK( this->isLeaf() ) << "should be a leaf: ";
 
                 auto const& meshElt = primitiveInfo[this->firstPrimOffset()].meshElement();
-                auto p1 = Eigen::Map<const Eigen::Matrix<double,realDim,1>>( meshElt.point(0).node().data().begin() );
-                auto p2 = Eigen::Map<const Eigen::Matrix<double,realDim,1>>( meshElt.point(1).node().data().begin() );
-                auto p3 = Eigen::Map<const Eigen::Matrix<double,realDim,1>>( meshElt.point(2).node().data().begin() );
+                auto p1 = Eigen::Map<const Eigen::Matrix<double,nRealDim,1>>( meshElt.point(0).node().data().begin() );
+                auto p2 = Eigen::Map<const Eigen::Matrix<double,nRealDim,1>>( meshElt.point(1).node().data().begin() );
+                auto p3 = Eigen::Map<const Eigen::Matrix<double,nRealDim,1>>( meshElt.point(2).node().data().begin() );
 
                 auto const& origin = ray.origin();
                 auto const& direction = ray.dir();
@@ -280,16 +254,15 @@ public:
                 return std::make_pair((w_(0)> 2*FLT_MIN ) && (w_(1)>0) && (w_(0) +  w_(1)<1),t_line);
             }
 
-        std::pair<bool,double> checkLeafIntersection(ray_type const& rayon, trace_mesh_ptrtype mesh, std::vector<BVHPrimitiveInfo>& primitiveInfo)
+        std::pair<bool,double> checkLeafIntersection(ray_type const& rayon, std::vector<BVHPrimitiveInfo> const& primitiveInfo)
             {
-                if constexpr ( realDim == 2 )
+                if constexpr ( nRealDim == 2 )
                 {
-                    //auto nodes = mesh->element( primitiveInfo[this->firstPrimOffset()].M_primitiveNumber ).vertices();
                     auto nodes = primitiveInfo[this->firstPrimOffset()].meshElement().vertices();
                     return checkIntersectionWithSegment( nodes, rayon );
                 }
-                else if constexpr ( realDim == 3 ) //if ( realDim==3)
-                    return checkIntersectionWithTriangle( rayon, mesh, primitiveInfo );
+                else if constexpr ( nRealDim == 3 ) //if ( nRealDim==3)
+                    return checkIntersectionWithTriangle( rayon, primitiveInfo );
             }
 
     private:
@@ -315,10 +288,70 @@ public:
         std::array<std::unique_ptr<BVHNode>,2> M_children;
         BVHNode *M_parent = nullptr;
         int M_splitAxis = 0, M_nPrimitives = 0, M_firstPrimOffset = 0;
-        VectorRealDim M_bounds_min, M_bounds_max;
+        vector_realdim_type M_bounds_min, M_bounds_max;
     };
 
+    BVHTree() = default;
 
+    template <typename RangeType>
+    void
+    updateForUse( RangeType const& range )
+        {
+            // From the mesh, build the bounding box info for each element and store it in
+            // the structure BVHPrimitiveInfo
+
+            M_primitiveInfo.clear();
+            M_primitiveInfo.reserve( nelements(range) );
+            for ( auto const& eltWrap : range )
+            {
+                auto const& e = unwrap_ref( eltWrap );
+                M_primitiveInfo.push_back( BVHPrimitiveInfo{e} );
+            }
+            this->buildRootTree();
+        }
+
+
+    // Verify if the ray intersects the whole bounding structure
+    // Returns the integer corresponding to the intersected element
+    // If no element is intersected, return -1
+    int raySearch( ray_type const& rayon )
+        {
+            M_intersected_leaf = {};
+            M_lengths = {};
+            if ( !M_rootNode )
+                buildRootTree();
+
+            if ( M_rootNode->checkIntersection(rayon) )
+            {
+                traverse_stackless( M_rootNode.get(), rayon );
+            }
+            if ( !M_intersected_leaf.empty() )
+            {
+                int argmin_lengths = std::distance(M_lengths.begin(), std::min_element(M_lengths.begin(), M_lengths.end()));
+                int closer_intersection_element = M_intersected_leaf[argmin_lengths];
+                return closer_intersection_element;
+            }
+            else
+            {
+                return -1;
+            }
+        }
+private:
+#if 0
+    // From the mesh, build the bounding box info for each element and store it in
+    // the structure BVHPrimitiveInfo
+    void buildPrimitivesInfo(trace_mesh_ptrtype const& mesh)
+        {
+            auto rangeElem = elements(mesh);
+            M_primitiveInfo.clear();
+            M_primitiveInfo.reserve( nelements(rangeElem) );
+            for ( auto const& eltWrap : rangeElem )
+            {
+                auto const& e = unwrap_ref( eltWrap );
+                M_primitiveInfo.push_back( BVHPrimitiveInfo{e} );
+            }
+        }
+#endif
 
     void buildRootTree()
         {
@@ -360,7 +393,7 @@ public:
                                          return a.centroid()[cut_dimension] < b.centroid()[cut_dimension];
                                      });
 
-                    int next_cut_dimension=(cut_dimension+1)%realDim;
+                    int next_cut_dimension=(cut_dimension+1)%nRealDim;
                     auto childNode0 = currentNode->setChild( 0, std::make_unique<BVHNode>() );
                     stack.push( std::make_tuple(childNode0, next_cut_dimension, start_index_primitive, mid) );
                     auto childNode1 = currentNode->setChild( 1, std::make_unique<BVHNode>() );
@@ -371,53 +404,6 @@ public:
             }
         }
 
-        // Verify if the ray intersects the whole bounding structure
-        // Returns the integer corresponding to the intersected element
-        // If no element is intersected, return -1
-        int raySearch( ray_type const& rayon)//,std::string s)
-        {
-            M_intersected_leaf = {};
-            M_lengths = {};
-            if ( !M_rootNode )
-                buildRootTree();
-#if 0
-            // compute tmin and tmax
-            //const BVHTree::BVHNode *tn = static_cast<const BVHTree::BVHNode*>( M_rootNode );
-            VectorRealDim const& mini = M_rootNode->boundMin();
-            VectorRealDim const& maxi = M_rootNode->boundMax();
-
-            double div1 = 1./rayon.dir[0];
-            double div2 = 1./rayon.dir[1];
-            double div3 = 1./rayon.dir[2];
-
-
-            double t1 = (mini(0) - rayon.origin[0]) * div1;
-            double t2 = (maxi(0) - rayon.origin[0]) * div1 * (1 + 2 * robust_const(3));
-            double t3 = (mini(1) - rayon.origin[1]) * div2;
-            double t4 = (maxi(1) - rayon.origin[1]) * div2 * (1 + 2 * robust_const(3));
-            double t5 = (mini(2) - rayon.origin[2]) * div3;
-            double t6 = (maxi(2) - rayon.origin[2]) * div3 * (1 + 2 * robust_const(3));
-
-            double tmin = std::max(std::max(std::min(t1, t2), std::min(t3, t4)), std::min(t5, t6));
-            double tmax = std::min(std::min(std::max(t1, t2), std::max(t3, t4)), std::max(t5, t6));
-#endif
-#if 1
-            if ( M_rootNode->checkIntersection(rayon) )
-            {
-                traverse_stackless( M_rootNode.get(), rayon );
-            }
-#endif
-            if ( !M_intersected_leaf.empty() )
-            {
-                int argmin_lengths = std::distance(M_lengths.begin(), std::min_element(M_lengths.begin(), M_lengths.end()));
-                int closer_intersection_element = M_intersected_leaf[argmin_lengths];
-                return closer_intersection_element;
-            }
-            else
-            {
-                return -1;
-            }
-        }
 
     // bool check_intersection_square(BVHRay const& ray)
     // {
@@ -461,18 +447,18 @@ public:
     // }
 
 
-    std::tuple<VectorRealDim,VectorRealDim> bounds( int start_index_primitive, int end_index_primitive ) const
+    std::tuple<vector_realdim_type,vector_realdim_type> bounds( int start_index_primitive, int end_index_primitive ) const
         {
             if ( start_index_primitive >= end_index_primitive )
                 throw std::logic_error("Error in BVHNode : compute bounds with no elemnent");
 
-            //VectorRealDim newBoundsMin, newBoundsMax;
-            VectorRealDim newBoundsMin = M_primitiveInfo[start_index_primitive].boundMin();
-            VectorRealDim newBoundsMax = M_primitiveInfo[start_index_primitive].boundMax();
+            //vector_realdim_type newBoundsMin, newBoundsMax;
+            vector_realdim_type newBoundsMin = M_primitiveInfo[start_index_primitive].boundMin();
+            vector_realdim_type newBoundsMax = M_primitiveInfo[start_index_primitive].boundMax();
             for (int i = start_index_primitive+1; i < end_index_primitive; ++i)
             {
                 auto const& primitiveInfo = M_primitiveInfo[i];
-                for ( uint8_type d=0;d<VectorRealDim::SizeAtCompileTime;++d )
+                for ( uint8_type d=0;d<vector_realdim_type::SizeAtCompileTime;++d )
                 {
                     newBoundsMin[d] = std::min( newBoundsMin[d], primitiveInfo.boundMin()[d] );
                     newBoundsMax[d] = std::max( newBoundsMax[d], primitiveInfo.boundMax()[d] );
@@ -516,7 +502,7 @@ public:
                     }
                     else if ( current_node->isLeaf() )
                     {
-                        auto [has_intersected_leaf,distance] = current_node->checkLeafIntersection(rayon,M_mesh,M_primitiveInfo);
+                        auto [has_intersected_leaf,distance] = current_node->checkLeafIntersection(rayon,M_primitiveInfo);
                         if ( has_intersected_leaf )
                         {
                             if ( std::find(M_intersected_leaf.begin(), M_intersected_leaf.end(), M_primitiveInfo[current_node->firstPrimOffset()].meshElement().id()) == M_intersected_leaf.end() )
@@ -543,7 +529,7 @@ public:
                     }
                     else if ( current_node->isLeaf() )
                     {
-                        auto [has_intersected_leaf,distance] = current_node->checkLeafIntersection(rayon,M_mesh,M_primitiveInfo);
+                        auto [has_intersected_leaf,distance] = current_node->checkLeafIntersection(rayon,M_primitiveInfo);
                         if ( has_intersected_leaf )
                         {
                             if ( std::find(M_intersected_leaf.begin(), M_intersected_leaf.end(), M_primitiveInfo[current_node->firstPrimOffset()].meshElement().id()) == M_intersected_leaf.end() )
@@ -577,12 +563,24 @@ private:
     std::unique_ptr<BVHNode> M_rootNode;
 
     std::vector<BVHPrimitiveInfo> M_primitiveInfo;
-    trace_mesh_ptrtype M_mesh;
     thread_local static inline std::vector<int> M_intersected_leaf;
     thread_local static inline std::vector<double> M_lengths;
 
     std::vector<int> M_orderedPrims; // order of traversed primitives for depth-first search
 };
+
+
+template<typename... Ts>
+auto boundingVolumeHierarchy( Ts && ... v )
+{
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && range = args.get(_range);
+    using mesh_entity_type = std::remove_const_t<entity_range_t<std::decay_t<decltype(range)>>>;
+    using bvh_type = BVHTree<mesh_entity_type>;
+    auto bvh = std::make_unique<bvh_type>();
+    bvh->updateForUse(range);
+    return bvh;
+}
 
 } // Feel
 #endif /* FEELPP_MESH_BVH_HPP */

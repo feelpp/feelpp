@@ -1,10 +1,8 @@
 #define BOOST_TEST_MODULE bvh_tests
 #include <feel/feelcore/testsuite.hpp>
-
-
+#include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelmesh/bvh.hpp>
 using namespace Feel;
-using Feel::project;
 
 inline
 AboutData
@@ -44,28 +42,9 @@ BOOST_AUTO_TEST_CASE( intersection_bvh )
     auto submesh = createSubmesh(_mesh=mesh,_range=markedfaces(mesh,{"CavityBottom","CavitySides","CavityTop"}));
 #endif
 
-    using bvh_type = BVHTree<FEELPP_DIM,FEELPP_DIM>;
-    using bvh_ray_type = typename bvh_type::ray_type;
-    BVHTree<FEELPP_DIM,FEELPP_DIM> bvh_tree;
+    auto bvh_tree = boundingVolumeHierarchy(_range=elements(submesh));
+    using bvh_ray_type = typename std::decay_t<decltype(*bvh_tree)>::ray_type;
 
-    bvh_tree.buildPrimitivesInfo(submesh);
-#if 0
-    for(auto info: bvh_tree.M_primitiveInfo)
-    {
-        std::cout << "primitive number" << info.M_primitiveNumber <<std::endl;
-        std::cout << "Min_bound" << info.M_bound_min <<std::endl;
-        std::cout << "Max_bound" << info.M_bound_max <<std::endl;
-        std::cout << "Centroid" << info.M_centroid <<std::endl;
-    }
-#endif
-
-    bvh_tree.buildRootTree();
-
-    // for(auto i: bvh_tree.orderedPrims )
-    // {
-    //     std::cout << i << std::endl;
-    //     std::cout << bvh_tree.M_primitiveInfo[i].M_centroid << std::endl;
-    // }
 #if FEELPP_DIM==2
     Eigen::VectorXd origin(2);
     origin<< 0.5,0.5;
@@ -76,9 +55,9 @@ BOOST_AUTO_TEST_CASE( intersection_bvh )
     bvh_ray_type ray_1(origin,direction_perp_1);
     bvh_ray_type ray_2(origin,direction_perp_2);
 
-    int element_number = bvh_tree.raySearch(ray_1);
+    int element_number = bvh_tree->raySearch(ray_1);
     BOOST_CHECK_MESSAGE(element_number > 0, fmt::format("Intersection between ray1 and BVH tree has been found"));
-    element_number = bvh_tree.raySearch(ray_2);
+    element_number = bvh_tree->raySearch(ray_2);
     BOOST_CHECK_MESSAGE(element_number > 0, fmt::format("Intersection between ray2 and BVH tree has been found"));
 #elif FEELPP_DIM==3
     Eigen::VectorXd origin(3);
@@ -90,9 +69,9 @@ BOOST_AUTO_TEST_CASE( intersection_bvh )
     bvh_ray_type ray_1(origin,direction_perp_1);
     bvh_ray_type ray_2(origin,direction_perp_2);
 
-    int element_number = bvh_tree.raySearch(ray_1);
+    int element_number = bvh_tree->raySearch(ray_1);
     BOOST_CHECK_MESSAGE(element_number > 0, fmt::format("Intersection between ray1 and BVH tree has been found"));
-    element_number = bvh_tree.raySearch(ray_2);
+    element_number = bvh_tree->raySearch(ray_2);
     BOOST_CHECK_MESSAGE(element_number > 0, fmt::format("Intersection between ray2 and BVH tree has been found"));
 #endif
 }
