@@ -141,12 +141,11 @@ public:
                     return this->child(1);
             }
 
-        BVHTree::BVHNode * otherChild(BVHTree::BVHNode * parent) const
+        BVHTree::BVHNode * siblingNode() const
             {
-                if ( this == parent->child(0) )
-                    return parent->child(1);
-                else
-                    return parent->child(0);
+                if ( !M_parent )
+                    return nullptr;
+                return M_parent->child( this == M_parent->child(0)? 1 : 0 );
             }
 
         bool checkIntersection(BVHRay const& rayon)
@@ -505,7 +504,7 @@ public:
 
                     if ( current_node == current_node->parent()->nearChild( rayon ) )
                     {
-                        current_node = current_node->otherChild( current_node->parent() );
+                        current_node = current_node->siblingNode();
                         state = 'S'; // the current node has been accessed from its sibling
                     }
                     else
@@ -546,7 +545,7 @@ public:
                 case 'P':
                     if ( current_node->checkIntersection(rayon) == false )
                     {
-                        current_node=current_node->otherChild( current_node->parent() );
+                        current_node=current_node->siblingNode();
                         state = 'S'; // the current node has been accessed from its sibling
                     }
                     else if ( current_node->isLeaf() )
@@ -560,7 +559,7 @@ public:
                                 M_lengths.push_back(distance);
                             }
                         }
-                        current_node = current_node->otherChild( current_node->parent() );
+                        current_node = current_node->siblingNode();
                         state = 'S'; // the current node has been accessed from its sibling
                     }
                     else
