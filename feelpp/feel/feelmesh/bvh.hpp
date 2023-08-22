@@ -16,23 +16,23 @@
 
 namespace Feel
 {
+template <int RealDim>
 class BVHRay
 {
 public:
-    using vec_t = Eigen::VectorXd;
-    BVHRay(const vec_t &orig, const vec_t &dir) :
-        origin(orig),
-        dir(dir)
+    using vec_t = eigen_vector_type<RealDim>;
+    BVHRay(vec_t const& orig, vec_t const& dir)
+        :
+        M_origin( orig ),
+        M_dir( dir )
         {}
-    BVHRay( const BVHRay &r) :
-        origin(r.origin),
-        dir(r.dir)
-        {}
-    BVHRay() :
-        origin(),
-        dir()
-        {}
-    vec_t origin, dir;  // ray origin and dir
+    BVHRay( BVHRay const& ) = default;
+    BVHRay( BVHRay &&) = default;
+
+    vec_t const& origin() const noexcept { return M_origin; }
+    vec_t const& dir() const noexcept { return M_dir; }
+private:
+    vec_t M_origin, M_dir;  // ray origin and dir
 };
 
 inline constexpr float robust_const(int n)
@@ -62,6 +62,8 @@ class BVHTree
 
     // Information on the primitive (bounding box, index, centroid)
 public:
+    using ray_type = BVHRay<realDim>;
+
     struct BVHPrimitiveInfo
     {
         BVHPrimitiveInfo(typename trace_mesh_type::element_type const& meshElt )
@@ -126,9 +128,9 @@ public:
         bool isLeaf() const { return !M_children[0] && !M_children[1]; }
 
 
-        BVHNode * nearChild( BVHRay const& ray ) const
+        BVHNode * nearChild( ray_type const& ray ) const
             {
-                if( ray.dir(this->splitAxis()) > 0 )
+                if( ray.dir()(this->splitAxis()) > 0 )
                     return this->child(0);
                 else
                     return this->child(1);
@@ -141,16 +143,16 @@ public:
                 return M_parent->child( this == M_parent->child(0)? 1 : 0 );
             }
 
-        bool checkIntersection(BVHRay const& rayon)
+        bool checkIntersection(ray_type const& rayon)
             {
                 double tmin = 0.0;
                 double tmax = FLT_MAX;
 
                 for(int i=0; i<realDim; i++)
                 {
-                    double ratio = 1.0/(rayon.dir[i]+2*FLT_MIN);
-                    double t1 = (M_bounds_min[i]-rayon.origin[i]) * ratio;
-                    double t2 = (M_bounds_max[i]-rayon.origin[i]) * ratio;
+                    double ratio = 1.0/(rayon.dir()[i]+2*FLT_MIN);
+                    double t1 = (M_bounds_min[i]-rayon.origin()[i]) * ratio;
+                    double t2 = (M_bounds_max[i]-rayon.origin()[i]) * ratio;
                     if (t1 > t2)
                     {
                         double tTemp = t1;
@@ -204,7 +206,9 @@ public:
 
             }
 #endif
-        std::pair<bool,double> checkIntersectionWithSegment(matrix_node_type const& nodes, BVHRay const& ray)
+
+        // TODO VINCENT optimize here
+        std::pair<bool,double> checkIntersectionWithSegment(matrix_node_type const& nodes, ray_type const& ray)
             {
                 VectorRealDim p1,p2,v1,v2,v3,w_;
 
@@ -214,8 +218,8 @@ public:
                     p2( i ) = nodes(i,1);
                 }
                 VectorRealDim origin,direction;
-                direction << ray.dir[0],ray.dir[1];
-                origin << ray.origin[0],ray.origin[1];
+                direction << ray.dir()[0],ray.dir()[1];
+                origin << ray.origin()[0],ray.origin()[1];
                 v1 = origin - p1;
                 v2 = p2 - p1;
                 v3 <<-direction[1], direction[0];
@@ -229,8 +233,8 @@ public:
 
                 if (t1 > 2*FLT_MIN && (t2 >= 0.0 && t2 <= 1.0))
                 {
-                    w_[0] =  ray.origin[0] + ray.dir[0]*t1;
-                    w_[1] =  ray.origin[1] + ray.dir[1]*t1;
+                    w_[0] =  ray.origin()[0] + ray.dir()[0]*t1;
+                    w_[1] =  ray.origin()[1] + ray.dir()[1]*t1;
                     return std::make_pair(true,t1);
                 }
 
@@ -239,7 +243,7 @@ public:
             }
 
         // Verify if the ray intersects the element
-        std::pair<bool,double> checkIntersectionWithTriangle( BVHRay const& ray, trace_mesh_ptrtype mesh, std::vector<BVHPrimitiveInfo>& primitiveInfo)
+        std::pair<bool,double> checkIntersectionWithTriangle( ray_type const& ray, trace_mesh_ptrtype mesh, std::vector<BVHPrimitiveInfo>& primitiveInfo)
             {
                 DCHECK( this->isLeaf() ) << "should be a leaf: ";
 
@@ -248,8 +252,8 @@ public:
                 auto p2 = Eigen::Map<const Eigen::Matrix<double,realDim,1>>( meshElt.point(1).node().data().begin() );
                 auto p3 = Eigen::Map<const Eigen::Matrix<double,realDim,1>>( meshElt.point(2).node().data().begin() );
 
-                auto const& origin = ray.origin;
-                auto const& direction = ray.dir;
+                auto const& origin = ray.origin();
+                auto const& direction = ray.dir();
 
                 // // normal vector
                 auto n1 = (p2-p1).cross(p3-p1);
@@ -276,7 +280,7 @@ public:
                 return std::make_pair((w_(0)> 2*FLT_MIN ) && (w_(1)>0) && (w_(0) +  w_(1)<1),t_line);
             }
 
-        std::pair<bool,double> checkLeafIntersection(BVHRay const& rayon, trace_mesh_ptrtype mesh, std::vector<BVHPrimitiveInfo>& primitiveInfo)
+        std::pair<bool,double> checkLeafIntersection(ray_type const& rayon, trace_mesh_ptrtype mesh, std::vector<BVHPrimitiveInfo>& primitiveInfo)
             {
                 if constexpr ( realDim == 2 )
                 {
@@ -370,7 +374,7 @@ public:
         // Verify if the ray intersects the whole bounding structure
         // Returns the integer corresponding to the intersected element
         // If no element is intersected, return -1
-        int raySearch( BVHRay const& rayon,std::string s)
+        int raySearch( ray_type const& rayon)//,std::string s)
         {
             M_intersected_leaf = {};
             M_lengths = {};
@@ -478,7 +482,7 @@ public:
         }
 
 
-    void traverse_stackless(BVHTree::BVHNode * tree, BVHRay const& rayon)
+    void traverse_stackless(BVHTree::BVHNode * tree, ray_type const& rayon)
         {
             auto current_node = M_rootNode->nearChild(rayon);
             char state = 'P'; // the current node is being traversed from its Parent ('P')
