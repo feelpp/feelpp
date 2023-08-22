@@ -118,7 +118,7 @@ def online_time_measure(nirb, Nsample=50, Xi_test=None):
     if Xi_test is None :
         Dmu = nirb_on.Dmu
         s = Dmu.sampling()
-        s.sampling(Nsample, 'log-random')
+        s.sample(Nsample, 'log-random')
         mus = s.getVector()
     else :
         mus = Xi_test

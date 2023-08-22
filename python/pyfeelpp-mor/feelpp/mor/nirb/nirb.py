@@ -390,7 +390,7 @@ class nirbOffline(ToolboxModel):
 
         if Xi_train is None:        # Generate a set of parameters
             s = self.Dmu.sampling()
-            s.sampling(numberOfInitSnapshots, samplingMode)
+            s.sample(numberOfInitSnapshots, samplingMode)
             s.writeOnFile("Xi_train_nirb.sample")
             vector_mu = s.getVector()
         else:                       # Select in Xi_train a set of parameters
@@ -427,7 +427,6 @@ class nirbOffline(ToolboxModel):
             print(f"[NIRB::computeSnapshots] Number of snapshot computed : {len(self.fineSnapShotList)}" )
 
         return vector_mu
-
 
     def generateOperators(self, coarse=False):
         """Generate the scalar product matrices
@@ -642,7 +641,7 @@ class nirbOffline(ToolboxModel):
 
         if Xi_test is None:
             s = self.Dmu.sampling()
-            s.sampling(Ns, 'log-random')
+            s.sample(Ns,'log-random')
             vector_mu = s.getVector()
         else:
             vector_mu = Xi_test
