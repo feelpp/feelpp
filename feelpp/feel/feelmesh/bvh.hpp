@@ -64,17 +64,30 @@ class BVHTree
 public:
     struct BVHPrimitiveInfo
     {
-        BVHPrimitiveInfo(int primitiveNumber, VectorRealDim bounds_min, VectorRealDim bounds_max)
+        BVHPrimitiveInfo(typename trace_mesh_type::element_type const& meshElt )
+            :
+            M_meshElement( meshElt )
             {
-                M_primitiveNumber=primitiveNumber;
-                M_bound_min = bounds_min;
-                M_bound_max = bounds_max;
+                auto verticesUblas = meshElt.vertices();
+                auto G = em_cmatrix_col_type<double>( verticesUblas.data().begin(), realDim, trace_mesh_type::element_type::numVertices );
+                M_bound_min = G.rowwise().minCoeff();
+                M_bound_max = G.rowwise().maxCoeff();
+                M_bound_min.array() -= 2*FLT_MIN;
+                M_bound_max.array() += 2*FLT_MIN;
                 M_centroid = ( M_bound_min + M_bound_max ) * 0.5;
             }
-        int M_primitiveNumber;
+
+        typename trace_mesh_type::element_type const& meshElement() { return M_meshElement.get(); }
+
+        VectorRealDim const& boundMin() const noexcept { return M_bound_min; }
+        VectorRealDim const& boundMax() const noexcept { return M_bound_max; }
+        VectorRealDim const& centroid() const noexcept { return M_centroid; }
+
+    private:
         VectorRealDim M_bound_min;
         VectorRealDim M_bound_max;
         VectorRealDim M_centroid;
+        std::reference_wrapper<typename trace_mesh_type::element_type const> M_meshElement;
     };
 
     // From the mesh, build the bounding box info for each element and store it in
@@ -83,32 +96,12 @@ public:
         {
             M_mesh = mesh;
             auto rangeElem = elements(mesh);
-            int index_Primitive=0;
+            M_primitiveInfo.clear();
+            M_primitiveInfo.reserve( nelements(rangeElem) );
             for ( auto const& eltWrap : rangeElem)
             {
                 auto const& e = unwrap_ref( eltWrap );
-                VectorRealDim M_bound_min,M_bound_max;
-                auto v1 = e.point(0).node();
-                double* ptr_data = &v1[0];
-                M_bound_min = Eigen::Map<VectorRealDim, Eigen::Unaligned>(ptr_data, v1.size());
-                M_bound_max = Eigen::Map<VectorRealDim, Eigen::Unaligned>(ptr_data, v1.size());
-
-                for(int j=1;j<e.nPoints();j++)
-                {
-                    for(int k=0;k<mesh->realDimension();k++)
-                    {
-                        M_bound_min[k] = std::min(M_bound_min[k],e.point(j).node()[k]);
-                        M_bound_max[k] = std::max(M_bound_max[k],e.point(j).node()[k]);
-                    }
-                }
-                for(int k=0;k<mesh->realDimension();k++)
-                {
-                    M_bound_min[k] = M_bound_min[k] - 2*FLT_MIN;
-                    M_bound_max[k] = M_bound_max[k] + 2*FLT_MIN;
-                }
-                BVHPrimitiveInfo primitive_i(e.id(),M_bound_min,M_bound_max);
-                M_primitiveInfo.push_back(primitive_i);
-                index_Primitive++;
+                M_primitiveInfo.push_back( BVHPrimitiveInfo{e} );
             }
         }
 
@@ -248,24 +241,18 @@ public:
         // Verify if the ray intersects the element
         std::pair<bool,double> checkIntersectionWithTriangle( BVHRay const& ray, trace_mesh_ptrtype mesh, std::vector<BVHPrimitiveInfo>& primitiveInfo)
             {
-                VectorRealDim p1,p2,p3,n1,w,w_;
-                Eigen::Matrix3d m(3,3);
+                DCHECK( this->isLeaf() ) << "should be a leaf: ";
 
-                DCHECK( this->isLeaf() ) << "not a leaf: ";
+                auto const& meshElt = primitiveInfo[this->firstPrimOffset()].meshElement();
+                auto p1 = Eigen::Map<const Eigen::Matrix<double,realDim,1>>( meshElt.point(0).node().data().begin() );
+                auto p2 = Eigen::Map<const Eigen::Matrix<double,realDim,1>>( meshElt.point(1).node().data().begin() );
+                auto p3 = Eigen::Map<const Eigen::Matrix<double,realDim,1>>( meshElt.point(2).node().data().begin() );
 
-                auto nodes = mesh->element(primitiveInfo[this->firstPrimOffset()].M_primitiveNumber).vertices();
-
-                for ( int i = 0; i < nodes.size1(); ++i )
-                {p1( i ) = nodes(i,0);
-                    p2( i ) = nodes(i,1);
-                    p3( i ) = nodes(i,2);}
-                VectorRealDim origin,direction;
-                direction << ray.dir[0],ray.dir[1],ray.dir[2];
-                origin << ray.origin[0],ray.origin[1],ray.origin[2];
-
+                auto const& origin = ray.origin;
+                auto const& direction = ray.dir;
 
                 // // normal vector
-                n1 = (p2-p1).cross(p3-p1);
+                auto n1 = (p2-p1).cross(p3-p1);
                 n1 = n1/n1.norm();
                 double n_dot_dir = direction.dot(n1);
                 // Ray is parallel to the triangle's plane
@@ -278,22 +265,23 @@ public:
                 if( t_line <= 1e-10) // intersection not in the same direction as the ray
                     return std::make_pair(false,0);
                 // intersection point
-                w = origin + direction* t_line;
+                auto w = origin + direction* t_line;
 
+                Eigen::Matrix<double,3,3> m;
                 m.col(0) = p2-p1;
                 m.col(1) = p3-p1;
                 m.col(2) = n1;
-                w_ = m.inverse()*(w-p1);
+                auto w_ = m.inverse()*(w-p1);
 
                 return std::make_pair((w_(0)> 2*FLT_MIN ) && (w_(1)>0) && (w_(0) +  w_(1)<1),t_line);
-
             }
 
         std::pair<bool,double> checkLeafIntersection(BVHRay const& rayon, trace_mesh_ptrtype mesh, std::vector<BVHPrimitiveInfo>& primitiveInfo)
             {
                 if constexpr ( realDim == 2 )
                 {
-                    auto nodes = mesh->element( primitiveInfo[this->firstPrimOffset()].M_primitiveNumber ).vertices();
+                    //auto nodes = mesh->element( primitiveInfo[this->firstPrimOffset()].M_primitiveNumber ).vertices();
+                    auto nodes = primitiveInfo[this->firstPrimOffset()].meshElement().vertices();
                     return checkIntersectionWithSegment( nodes, rayon );
                 }
                 else if constexpr ( realDim == 3 ) //if ( realDim==3)
@@ -353,7 +341,7 @@ public:
                     int firstPrimOffset = M_orderedPrims.size();
                     for (int i = start_index_primitive; i < end_index_primitive; ++i)
                     {
-                        int primNum = M_primitiveInfo[i].M_primitiveNumber;
+                        int primNum = M_primitiveInfo[i].meshElement().id();
                         M_orderedPrims.push_back(primNum);
                     }
                     currentNode->updateForUse( firstPrimOffset, nPrimitives, -1, bound_min_node, bound_max_node );
@@ -365,7 +353,7 @@ public:
                     std::nth_element(&M_primitiveInfo[start_index_primitive], &M_primitiveInfo[mid],
                                      &M_primitiveInfo[end_index_primitive-1]+1,
                                      [cut_dimension=cut_dimension](const BVHPrimitiveInfo &a, const BVHPrimitiveInfo &b) {
-                                         return a.M_centroid[cut_dimension] < b.M_centroid[cut_dimension];
+                                         return a.centroid()[cut_dimension] < b.centroid()[cut_dimension];
                                      });
 
                     int next_cut_dimension=(cut_dimension+1)%realDim;
@@ -474,15 +462,16 @@ public:
             if ( start_index_primitive >= end_index_primitive )
                 throw std::logic_error("Error in BVHNode : compute bounds with no elemnent");
 
-            VectorRealDim newBoundsMin, newBoundsMax;
-            auto bound_min_node = M_primitiveInfo[start_index_primitive].M_bound_min;
-            auto bound_max_node = M_primitiveInfo[start_index_primitive].M_bound_max;
+            //VectorRealDim newBoundsMin, newBoundsMax;
+            VectorRealDim newBoundsMin = M_primitiveInfo[start_index_primitive].boundMin();
+            VectorRealDim newBoundsMax = M_primitiveInfo[start_index_primitive].boundMax();
             for (int i = start_index_primitive+1; i < end_index_primitive; ++i)
             {
+                auto const& primitiveInfo = M_primitiveInfo[i];
                 for ( uint8_type d=0;d<VectorRealDim::SizeAtCompileTime;++d )
                 {
-                    newBoundsMin[d] = std::min( newBoundsMin[d], M_primitiveInfo[i].M_bound_min[d] );
-                    newBoundsMax[d] = std::max( newBoundsMax[d], M_primitiveInfo[i].M_bound_max[d] );
+                    newBoundsMin[d] = std::min( newBoundsMin[d], primitiveInfo.boundMin()[d] );
+                    newBoundsMax[d] = std::max( newBoundsMax[d], primitiveInfo.boundMax()[d] );
                 }
             }
             return std::make_tuple( std::move(newBoundsMin), std::move(newBoundsMax) );
@@ -526,9 +515,9 @@ public:
                         auto [has_intersected_leaf,distance] = current_node->checkLeafIntersection(rayon,M_mesh,M_primitiveInfo);
                         if ( has_intersected_leaf )
                         {
-                            if ( std::find(M_intersected_leaf.begin(), M_intersected_leaf.end(), M_primitiveInfo[current_node->firstPrimOffset()].M_primitiveNumber) == M_intersected_leaf.end() )
+                            if ( std::find(M_intersected_leaf.begin(), M_intersected_leaf.end(), M_primitiveInfo[current_node->firstPrimOffset()].meshElement().id()) == M_intersected_leaf.end() )
                             {
-                                M_intersected_leaf.push_back(M_primitiveInfo[current_node->firstPrimOffset()].M_primitiveNumber);
+                                M_intersected_leaf.push_back(M_primitiveInfo[current_node->firstPrimOffset()].meshElement().id());
                                 M_lengths.push_back(distance);
                             }
                         }
@@ -553,9 +542,9 @@ public:
                         auto [has_intersected_leaf,distance] = current_node->checkLeafIntersection(rayon,M_mesh,M_primitiveInfo);
                         if ( has_intersected_leaf )
                         {
-                            if ( std::find(M_intersected_leaf.begin(), M_intersected_leaf.end(), M_primitiveInfo[current_node->firstPrimOffset()].M_primitiveNumber) == M_intersected_leaf.end() )
+                            if ( std::find(M_intersected_leaf.begin(), M_intersected_leaf.end(), M_primitiveInfo[current_node->firstPrimOffset()].meshElement().id()) == M_intersected_leaf.end() )
                             {
-                                M_intersected_leaf.push_back(M_primitiveInfo[current_node->firstPrimOffset()].M_primitiveNumber);
+                                M_intersected_leaf.push_back(M_primitiveInfo[current_node->firstPrimOffset()].meshElement().id());
                                 M_lengths.push_back(distance);
                             }
                         }
