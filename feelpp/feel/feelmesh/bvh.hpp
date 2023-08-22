@@ -1,7 +1,7 @@
 // Bounding volume hierarchy
 
-#ifndef FEELPP_BVH_HPP
-#define FEELPP_BVH_HPP 1
+#ifndef FEELPP_MESH_BVH_HPP
+#define FEELPP_MESH_BVH_HPP
 
 
 #include <vector>
@@ -76,23 +76,17 @@ public:
         VectorRealDim M_bound_max;
         VectorRealDim M_centroid;
     };
-    std::vector<BVHPrimitiveInfo> M_primitiveInfo;
-    trace_mesh_ptrtype M_mesh;
-    thread_local static inline std::vector<int> M_intersected_leaf;
-    thread_local static inline std::vector<double> M_lengths;
-
-    std::vector<int> orderedPrims; // order of traversed primitives for depth-first search
 
     // From the mesh, build the bounding box info for each element and store it in
     // the structure BVHPrimitiveInfo
     void buildPrimitivesInfo(trace_mesh_ptrtype const& mesh)
         {
             M_mesh = mesh;
-            auto elem = elements(mesh);
+            auto rangeElem = elements(mesh);
             int index_Primitive=0;
-            for(auto &elt : elem)
+            for ( auto const& eltWrap : rangeElem)
             {
-                auto const& e = unwrap_ref( elt );
+                auto const& e = unwrap_ref( eltWrap );
                 VectorRealDim M_bound_min,M_bound_max;
                 auto v1 = e.point(0).node();
                 double* ptr_data = &v1[0];
@@ -120,66 +114,39 @@ public:
 
     class BVHNode
     {
+        friend class BVHTree<nDim,realDim>;
     public:
-        void buildLeaf(BVHNode * current_parent, int first, int n, Eigen::VectorXd bounds_min, Eigen::VectorXd bounds_max)
+        BVHNode() = default;
+
+        //! return the parent of this node
+        BVHNode * parent() const { return M_parent; }
+
+        VectorRealDim const& boundMin() const noexcept { return M_bounds_min; }
+        VectorRealDim const& boundMax() const noexcept { return M_bounds_max; }
+        VectorRealDim centroid() const { return 0.5*(M_bounds_min + M_bounds_max); }
+        int splitAxis() const noexcept { return M_splitAxis; }
+        int nPrimitives() const noexcept { return M_nPrimitives; }
+        int firstPrimOffset() const noexcept { return M_firstPrimOffset; }
+
+        BVHNode* child( int k ) const { return M_children[k].get(); }
+
+        bool isLeaf() const { return !M_children[0] && !M_children[1]; }
+
+
+        BVHNode * nearChild( BVHRay const& ray ) const
             {
-                firstPrimOffset = first;
-                nPrimitives = n;
-                M_bounds_min = bounds_min;
-                M_bounds_max = bounds_max;
-                children[0]=nullptr;
-                children[1]=nullptr;
-                parent = current_parent;
-                LOG(INFO) <<fmt::format("leaf built: firstPrimOffset {}, nPrimitives, {}",firstPrimOffset,nPrimitives);
-            }
-
-        void buildInternalNode(BVHNode * current_parent, int splitaxisIn, BVHNode *child0, BVHNode *child1)
-            {
-                children[0]= child0;
-                children[1]= child1;
-                parent = current_parent;
-                M_bounds_min = newBoundsMin(child0->M_bounds_min,child1->M_bounds_min);
-                M_bounds_max = newBoundsMax(child0->M_bounds_max,child1->M_bounds_max);
-                M_centroid = (M_bounds_min + M_bounds_max) *0.5;
-                splitaxis = splitaxisIn;
-                nPrimitives = 0;
-                LOG(INFO) <<fmt::format("Internal node built: M_bounds_min {}, M_bounds_max {}, splitaxis {}",M_bounds_min,M_bounds_max,splitaxis);
-            }
-
-        VectorRealDim newBoundsMin(VectorRealDim bounds1,VectorRealDim bounds2)
-            {
-                VectorRealDim newBoundsMin(bounds1.size());
-                for(int i=0;i<bounds1.size();i++)
-                    newBoundsMin[i] = std::min(bounds1[i],bounds2[i]);
-                return newBoundsMin;
-            }
-        VectorRealDim newBoundsMax(VectorRealDim bounds1,VectorRealDim bounds2)
-            {
-                VectorRealDim newBoundsMax(bounds1.size());
-                for(int i=0;i<bounds1.size();i++)
-                    newBoundsMax[i] = std::max(bounds1[i],bounds2[i]);
-                return newBoundsMax;
-            }
-
-        bool isLeaf(){return (nPrimitives !=0) ;}
-
-
-        BVHNode * nearChild(BVHRay const& ray)
-            {
-
-                if(ray.dir(this->splitaxis)>0)
-                    return this->children[0];
+                if( ray.dir(this->splitAxis()) > 0 )
+                    return this->child(0);
                 else
-                    return this->children[1];
-
+                    return this->child(1);
             }
 
-        BVHTree::BVHNode * otherChild(BVHTree::BVHNode * parent)
+        BVHTree::BVHNode * otherChild(BVHTree::BVHNode * parent) const
             {
-                if (this==parent->children[0])
-                    return parent->children[1];
+                if ( this == parent->child(0) )
+                    return parent->child(1);
                 else
-                    return parent->children[0];
+                    return parent->child(0);
             }
 
         bool checkIntersection(BVHRay const& rayon)
@@ -285,7 +252,9 @@ public:
                 VectorRealDim p1,p2,p3,n1,w,w_;
                 Eigen::Matrix3d m(3,3);
 
-                auto nodes =  mesh->element(primitiveInfo[this->firstPrimOffset].M_primitiveNumber).vertices();
+                DCHECK( this->isLeaf() ) << "not a leaf: ";
+
+                auto nodes = mesh->element(primitiveInfo[this->firstPrimOffset()].M_primitiveNumber).vertices();
 
                 for ( int i = 0; i < nodes.size1(); ++i )
                 {p1( i ) = nodes(i,0);
@@ -323,91 +292,108 @@ public:
 
         std::pair<bool,double> checkLeafIntersection(BVHRay const& rayon, trace_mesh_ptrtype mesh, std::vector<BVHPrimitiveInfo>& primitiveInfo)
             {
-                if constexpr (realDim ==2)
-                             {
-                                 auto nodes = mesh->element( primitiveInfo[this->firstPrimOffset].M_primitiveNumber ).vertices();
-                                 return checkIntersectionWithSegment(nodes,rayon);
-                             }
-                if constexpr (realDim==3) //if ( realDim==3)
-                                 return checkIntersectionWithTriangle(rayon,mesh,primitiveInfo);
-
+                if constexpr ( realDim == 2 )
+                {
+                    auto nodes = mesh->element( primitiveInfo[this->firstPrimOffset()].M_primitiveNumber ).vertices();
+                    return checkIntersectionWithSegment( nodes, rayon );
+                }
+                else if constexpr ( realDim == 3 ) //if ( realDim==3)
+                    return checkIntersectionWithTriangle( rayon, mesh, primitiveInfo );
             }
 
-        BVHNode *children[2];
-        BVHNode *parent;
-        int splitaxis, nPrimitives,firstPrimOffset;
-        VectorRealDim M_bounds_min,M_bounds_max,M_centroid;
+    private:
+        BVHNode* setChild( uint16_type k, std::unique_ptr<BVHNode> && childNode )
+            {
+                if ( childNode->M_parent ) { /*TODO remove child in this parent*/ }
 
+                childNode->M_parent = this;
+                M_children[k] = std::move( childNode );
+                return M_children[k].get();
+            }
+
+        void updateForUse( int firstPrimOffset, int nPrimitives, int splitAxis, Eigen::VectorXd const& bounds_min, Eigen::VectorXd const& bounds_max )
+            {
+                M_firstPrimOffset = firstPrimOffset;
+                M_nPrimitives = nPrimitives;
+                M_bounds_min = bounds_min;
+                M_bounds_max = bounds_max;
+                M_splitAxis = splitAxis;
+            }
+
+    private:
+        std::array<std::unique_ptr<BVHNode>,2> M_children;
+        BVHNode *M_parent = nullptr;
+        int M_splitAxis = 0, M_nPrimitives = 0, M_firstPrimOffset = 0;
+        VectorRealDim M_bounds_min, M_bounds_max;
     };
 
-    BVHNode *  M_root_tree;
 
-    BVHNode * buildRootTree()
+
+    void buildRootTree()
         {
-            VectorRealDim bound_min_node,bound_max_node;
-            M_root_tree = recursiveBuild(M_root_tree,0,0,M_primitiveInfo.size(),orderedPrims,bound_min_node,bound_max_node);
-            return M_root_tree;
-        }
+            if ( M_rootNode )
+                return;
 
-    BVHNode * recursiveBuild(BVHNode * current_parent, int cut_dimension, int start_index_primitive, int end_index_primitive,
-                             std::vector<int> &orderedPrims, VectorRealDim &bound_min_node, VectorRealDim &bound_max_node)
-        {
-            LOG(INFO) <<fmt::format("cut dimension {}, start index primitive {}, end index primitive {}",cut_dimension,start_index_primitive,end_index_primitive);
+            M_rootNode = std::make_unique<BVHNode>();
 
-            BVHNode * node = new BVHTree::BVHNode();
-            bound_min_node = M_primitiveInfo[start_index_primitive].M_bound_min;
-            bound_max_node = M_primitiveInfo[start_index_primitive].M_bound_max;
-            for (int i = start_index_primitive+1; i < end_index_primitive; ++i)
+            std::stack<std::tuple<BVHNode*,int,int,int>> stack;
+            stack.push( std::make_tuple(M_rootNode.get(),0,0,M_primitiveInfo.size()) );
+            while ( !stack.empty() )
             {
-                bound_min_node = node->newBoundsMin(bound_min_node,M_primitiveInfo[i].M_bound_min);
-                bound_max_node = node->newBoundsMax(bound_max_node,M_primitiveInfo[i].M_bound_max);
-            }
-            auto mid = (start_index_primitive + end_index_primitive) / 2;
-            std::nth_element(&M_primitiveInfo[start_index_primitive], &M_primitiveInfo[mid],
-                             &M_primitiveInfo[end_index_primitive-1]+1,
-                             [cut_dimension](const BVHPrimitiveInfo &a, const BVHPrimitiveInfo &b) {
-                                 return a.M_centroid[cut_dimension] < b.M_centroid[cut_dimension];
-                             });
-            int nPrimitives = end_index_primitive - start_index_primitive;
-            if (nPrimitives == 1)
-            {
-                // Create a leaf, since there is only one primitive in the list
-                int firstPrimOffset = orderedPrims.size();
-                for (int i = start_index_primitive; i < end_index_primitive; ++i)
+                auto [currentNode,cut_dimension,start_index_primitive,end_index_primitive] = stack.top();
+                stack.pop();
+
+                int nPrimitives = end_index_primitive - start_index_primitive;
+                DCHECK( nPrimitives>0 ) << nPrimitives;
+
+                auto [bound_min_node,bound_max_node] = this->bounds( start_index_primitive,end_index_primitive );
+
+                if ( nPrimitives == 1 )
                 {
-                    int primNum = M_primitiveInfo[i].M_primitiveNumber;
-                    orderedPrims.push_back(primNum);
+                    // Create a leaf, since there is only one primitive in the list
+                    int firstPrimOffset = M_orderedPrims.size();
+                    for (int i = start_index_primitive; i < end_index_primitive; ++i)
+                    {
+                        int primNum = M_primitiveInfo[i].M_primitiveNumber;
+                        M_orderedPrims.push_back(primNum);
+                    }
+                    currentNode->updateForUse( firstPrimOffset, nPrimitives, -1, bound_min_node, bound_max_node );
                 }
-                node->buildLeaf(current_parent,firstPrimOffset, nPrimitives, bound_min_node,bound_max_node);
-                return node;
-            }
-            else{
-                int next_cut_dimension=(cut_dimension+1)%realDim;
-                // Create a node, since there are at least two primitives in the list
-                node->buildInternalNode(current_parent, next_cut_dimension,
-                                        recursiveBuild( node, next_cut_dimension, start_index_primitive, mid, orderedPrims, bound_min_node, bound_max_node),
-                                        recursiveBuild( node, next_cut_dimension, mid, end_index_primitive, orderedPrims, bound_min_node, bound_max_node));
-            }
+                else
+                {
+                    CHECK( start_index_primitive >=0 && end_index_primitive <= M_primitiveInfo.size() ) << start_index_primitive << " " << end_index_primitive;
+                    auto mid = (start_index_primitive + end_index_primitive) / 2;
+                    std::nth_element(&M_primitiveInfo[start_index_primitive], &M_primitiveInfo[mid],
+                                     &M_primitiveInfo[end_index_primitive-1]+1,
+                                     [cut_dimension=cut_dimension](const BVHPrimitiveInfo &a, const BVHPrimitiveInfo &b) {
+                                         return a.M_centroid[cut_dimension] < b.M_centroid[cut_dimension];
+                                     });
 
-            return node;
+                    int next_cut_dimension=(cut_dimension+1)%realDim;
+                    auto childNode0 = currentNode->setChild( 0, std::make_unique<BVHNode>() );
+                    stack.push( std::make_tuple(childNode0, next_cut_dimension, start_index_primitive, mid) );
+                    auto childNode1 = currentNode->setChild( 1, std::make_unique<BVHNode>() );
+                    stack.push( std::make_tuple( childNode1, next_cut_dimension, mid, end_index_primitive ) );
+
+                    currentNode->updateForUse( -1, nPrimitives, next_cut_dimension, bound_min_node, bound_max_node );
+                }
+            }
         }
 
-    // Verify if the ray intersects the whole bounding structure
-    // Returns the integer corresponding to the intersected element
-    // If no element is intersected, return -1
-    int raySearch( BVHRay const& rayon,std::string s)
+        // Verify if the ray intersects the whole bounding structure
+        // Returns the integer corresponding to the intersected element
+        // If no element is intersected, return -1
+        int raySearch( BVHRay const& rayon,std::string s)
         {
             M_intersected_leaf = {};
             M_lengths = {};
-            if(!M_root_tree)
-                M_root_tree = buildRootTree();
+            if ( !M_rootNode )
+                buildRootTree();
+#if 0
             // compute tmin and tmax
-            double tmin, tmax;
-
-            const BVHTree::BVHNode *tn = static_cast<const BVHTree::BVHNode*>( M_root_tree );
-
-            VectorRealDim mini = tn->M_bounds_min;
-            VectorRealDim maxi = tn->M_bounds_max;
+            //const BVHTree::BVHNode *tn = static_cast<const BVHTree::BVHNode*>( M_rootNode );
+            VectorRealDim const& mini = M_rootNode->boundMin();
+            VectorRealDim const& maxi = M_rootNode->boundMax();
 
             double div1 = 1./rayon.dir[0];
             double div2 = 1./rayon.dir[1];
@@ -421,15 +407,16 @@ public:
             double t5 = (mini(2) - rayon.origin[2]) * div3;
             double t6 = (maxi(2) - rayon.origin[2]) * div3 * (1 + 2 * robust_const(3));
 
-            tmin = std::max(std::max(std::min(t1, t2), std::min(t3, t4)), std::min(t5, t6));
-            tmax = std::min(std::min(std::max(t1, t2), std::max(t3, t4)), std::max(t5, t6));
+            double tmin = std::max(std::max(std::min(t1, t2), std::min(t3, t4)), std::min(t5, t6));
+            double tmax = std::min(std::min(std::max(t1, t2), std::max(t3, t4)), std::max(t5, t6));
+#endif
 #if 1
-            if(M_root_tree->checkIntersection(rayon))
+            if ( M_rootNode->checkIntersection(rayon) )
             {
-                traverse_stackless(M_root_tree, rayon);
+                traverse_stackless( M_rootNode.get(), rayon );
             }
 #endif
-            if (!M_intersected_leaf.empty())
+            if ( !M_intersected_leaf.empty() )
             {
                 int argmin_lengths = std::distance(M_lengths.begin(), std::min_element(M_lengths.begin(), M_lengths.end()));
                 int closer_intersection_element = M_intersected_leaf[argmin_lengths];
@@ -482,9 +469,30 @@ public:
     //     }
     // }
 
+
+    std::tuple<VectorRealDim,VectorRealDim> bounds( int start_index_primitive, int end_index_primitive ) const
+        {
+            if ( start_index_primitive >= end_index_primitive )
+                throw std::logic_error("Error in BVHNode : compute bounds with no elemnent");
+
+            VectorRealDim newBoundsMin, newBoundsMax;
+            auto bound_min_node = M_primitiveInfo[start_index_primitive].M_bound_min;
+            auto bound_max_node = M_primitiveInfo[start_index_primitive].M_bound_max;
+            for (int i = start_index_primitive+1; i < end_index_primitive; ++i)
+            {
+                for ( uint8_type d=0;d<VectorRealDim::SizeAtCompileTime;++d )
+                {
+                    newBoundsMin[d] = std::min( newBoundsMin[d], M_primitiveInfo[i].M_bound_min[d] );
+                    newBoundsMax[d] = std::max( newBoundsMax[d], M_primitiveInfo[i].M_bound_max[d] );
+                }
+            }
+            return std::make_tuple( std::move(newBoundsMin), std::move(newBoundsMax) );
+        }
+
+
     void traverse_stackless(BVHTree::BVHNode * tree, BVHRay const& rayon)
         {
-            auto current_node = M_root_tree->nearChild(rayon);
+            auto current_node = M_rootNode->nearChild(rayon);
             char state = 'P'; // the current node is being traversed from its Parent ('P')
 
             while(true)
@@ -493,39 +501,39 @@ public:
                 {
                 case 'C': // the node is being traversed from its child
 
-                    if(current_node==M_root_tree) return;
+                    if ( current_node == M_rootNode.get() ) return;
 
-                    if(current_node==current_node->parent->nearChild(rayon))
+                    if ( current_node == current_node->parent()->nearChild( rayon ) )
                     {
-                        current_node=current_node->otherChild(current_node->parent);
-                        state='S'; // the current node has been accessed from its sibling
+                        current_node = current_node->otherChild( current_node->parent() );
+                        state = 'S'; // the current node has been accessed from its sibling
                     }
                     else
                     {
-                        current_node=current_node->parent;
-                        state='C'; // the current node has been accessed from its sibling
+                        current_node = current_node->parent();
+                        state = 'C'; // the current node has been accessed from its sibling
                     }
                     break;
 
                 case 'S': // the node is being traversed from its Sibling ('S')
 
-                    if( current_node->checkIntersection(rayon)==false) // back to parent
+                    if ( current_node->checkIntersection( rayon ) == false ) // back to parent
                     {
-                        current_node=current_node->parent;
-                        state='C'; // the current node is being accessed from its child
+                        current_node = current_node->parent();
+                        state = 'C'; // the current node is being accessed from its child
                     }
-                    else if(current_node->isLeaf())
+                    else if ( current_node->isLeaf() )
                     {
                         auto [has_intersected_leaf,distance] = current_node->checkLeafIntersection(rayon,M_mesh,M_primitiveInfo);
-                        if(has_intersected_leaf)
+                        if ( has_intersected_leaf )
                         {
-                            if ( std::find(M_intersected_leaf.begin(), M_intersected_leaf.end(), M_primitiveInfo[current_node->firstPrimOffset].M_primitiveNumber) == M_intersected_leaf.end() )
+                            if ( std::find(M_intersected_leaf.begin(), M_intersected_leaf.end(), M_primitiveInfo[current_node->firstPrimOffset()].M_primitiveNumber) == M_intersected_leaf.end() )
                             {
-                                M_intersected_leaf.push_back(M_primitiveInfo[current_node->firstPrimOffset].M_primitiveNumber);
+                                M_intersected_leaf.push_back(M_primitiveInfo[current_node->firstPrimOffset()].M_primitiveNumber);
                                 M_lengths.push_back(distance);
                             }
                         }
-                        current_node=current_node->parent;
+                        current_node = current_node->parent();
                         state='C'; // the current node is being accessed from its child
                     }
                     else
@@ -536,29 +544,29 @@ public:
                     break;
 
                 case 'P':
-                    if( current_node->checkIntersection(rayon)==false )
+                    if ( current_node->checkIntersection(rayon) == false )
                     {
-                        current_node=current_node->otherChild(current_node->parent);
-                        state='S'; // the current node has been accessed from its sibling
+                        current_node=current_node->otherChild( current_node->parent() );
+                        state = 'S'; // the current node has been accessed from its sibling
                     }
-                    else if(current_node->isLeaf())
+                    else if ( current_node->isLeaf() )
                     {
                         auto [has_intersected_leaf,distance] = current_node->checkLeafIntersection(rayon,M_mesh,M_primitiveInfo);
-                        if(has_intersected_leaf)
+                        if ( has_intersected_leaf )
                         {
-                            if ( std::find(M_intersected_leaf.begin(), M_intersected_leaf.end(), M_primitiveInfo[current_node->firstPrimOffset].M_primitiveNumber) == M_intersected_leaf.end() )
+                            if ( std::find(M_intersected_leaf.begin(), M_intersected_leaf.end(), M_primitiveInfo[current_node->firstPrimOffset()].M_primitiveNumber) == M_intersected_leaf.end() )
                             {
-                                M_intersected_leaf.push_back(M_primitiveInfo[current_node->firstPrimOffset].M_primitiveNumber);
+                                M_intersected_leaf.push_back(M_primitiveInfo[current_node->firstPrimOffset()].M_primitiveNumber);
                                 M_lengths.push_back(distance);
                             }
                         }
-                        current_node=current_node->otherChild(current_node->parent);
-                        state='S'; // the current node has been accessed from its sibling
+                        current_node = current_node->otherChild( current_node->parent() );
+                        state = 'S'; // the current node has been accessed from its sibling
                     }
                     else
                     {
-                        current_node = current_node->nearChild(rayon);
-                        state='P'; // the current node has been accessed from its parent
+                        current_node = current_node->nearChild( rayon );
+                        state = 'P'; // the current node has been accessed from its parent
                     }
                     break;
 
@@ -572,7 +580,17 @@ public:
                 }
             }
         }
+
+private:
+    std::unique_ptr<BVHNode> M_rootNode;
+
+    std::vector<BVHPrimitiveInfo> M_primitiveInfo;
+    trace_mesh_ptrtype M_mesh;
+    thread_local static inline std::vector<int> M_intersected_leaf;
+    thread_local static inline std::vector<double> M_lengths;
+
+    std::vector<int> M_orderedPrims; // order of traversed primitives for depth-first search
 };
 
 } // Feel
-#endif /* __BVHTree_H */
+#endif /* FEELPP_MESH_BVH_HPP */
