@@ -11,16 +11,18 @@
  */
 #pragma once
 
-#include <feel/feel.hpp>
-#include <feel/feelviewfactor/viewfactorbase.hpp>
-#include <feel/feelmesh/bvh.hpp>
-#include <nanoflann.hpp>
-#include <feel/feelviewfactor/kdtreevectorofvectorsadaptor.hpp>
-// #include <feel/feeldiscr/createsubmesh.hpp>
-using namespace nanoflann;
 #include <random>
 #include <cmath>
 #include <iostream>
+#include <future>
+
+#include <feel/feelviewfactor/viewfactorbase.hpp>
+#include <feel/feelmesh/bvh.hpp>
+#include <feel/feelvf/vf.hpp>
+#include <nanoflann.hpp>
+#include <feel/feelviewfactor/kdtreevectorofvectorsadaptor.hpp>
+
+using namespace nanoflann;
 
 
 namespace Feel {
@@ -164,7 +166,7 @@ class RayTracingViewFactor : public ViewFactorBase<MeshType>
     typedef typename MeshType::trace_mesh_ptrtype tr_mesh_ptrtype;
     typedef typename MeshType::face_type face_type;
     typedef typename matrix_node<double>::type matrix_node_type;
-    using bvh_type = BVHTree<MeshType::nDim,MeshType::nRealDim>;
+    using bvh_type = BVHTree<typename MeshType::trace_mesh_type::element_type>;
     using bvh_ray_type = typename bvh_type::ray_type;
 public:
     using value_type = double;
@@ -184,8 +186,7 @@ public:
             else
                 M_submesh = createSubmesh(_mesh=mesh,_range=markedfaces(mesh,this->list_of_bdys_),_update=MESH_ADD_ELEMENTS_INFO);
 
-            M_bvh_tree.buildPrimitivesInfo(M_submesh);
-            M_bvh_tree.buildRootTree();
+            M_bvh_tree = boundingVolumeHierarchy(_range=elements(M_submesh));
 
             M_view_factor_row.resize(this->list_of_bdys_.size());
 
@@ -235,7 +236,7 @@ public:
     int M_Nthreads;
     std::vector<int> M_point_indices;
     Eigen::VectorXd M_view_factor_row;
-    BVHTree<MeshType::nDim,MeshType::nRealDim> M_bvh_tree;
+    std::shared_ptr<bvh_type> M_bvh_tree;
     std::random_device M_rd;  // Will be used to obtain a seed for the random number engine
     std::random_device M_rd2;  // Will be used to obtain a seed for the random number engine
     std::mt19937 M_gen; // Standard mersenne_twister_engine seeded with rd()
@@ -390,7 +391,7 @@ public:
 
                     bvh_ray_type ray(origin,rand_dir);
 
-                    int closer_intersection_element = M_bvh_tree.raySearch(ray) ;
+                    int closer_intersection_element = M_bvh_tree->raySearch(ray) ;
                     if (closer_intersection_element >=0 )
                     {
                         // int argmin_lengths = std::distance(local_tree.M_lengths.begin(), std::min_element(local_tree.M_lengths.begin(), local_tree.M_lengths.end()));
