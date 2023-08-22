@@ -37,14 +37,14 @@ BOOST_AUTO_TEST_SUITE( bvh_intersection_tests )
 BOOST_AUTO_TEST_CASE( intersection_bvh )
 {
 
-    auto mesh = loadMesh(_mesh = new Mesh<Simplex<FEELPP_DIM,1>>);
+    auto mesh = loadMesh(_mesh = new Mesh<Simplex<FEELPP_DIM,1,FEELPP_DIM>>);
 #if FEELPP_DIM==2    
     auto submesh = createSubmesh(_mesh=mesh,_range=markedfaces(mesh,{"RequiredBoundaryOfRequiredElements"}));
 #elif FEELPP_DIM==3
     auto submesh = createSubmesh(_mesh=mesh,_range=markedfaces(mesh,{"CavityBottom","CavitySides","CavityTop"}));
 #endif
 
-    BVHTree<FEELPP_DIM> bvh_tree;
+    BVHTree<FEELPP_DIM,FEELPP_DIM> bvh_tree;
 
     bvh_tree.buildPrimitivesInfo(submesh);
 #if 0

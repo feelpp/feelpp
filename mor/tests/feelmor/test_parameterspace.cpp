@@ -246,8 +246,7 @@ BOOST_AUTO_TEST_CASE( test_loadParameterSpace )
     std::istringstream istr( json );
     nl::json p;
     istr >> p;
-    //pt::ptree p;
-    //pt::read_json(istr, p);
+    BOOST_TEST_MESSAGE( fmt::format("json = {}", p.dump(4) ) );
     auto parameters = CRBModelParameters();
     parameters.setPTree(p);
     auto Dmu = parameterspace_type::New(parameters);

@@ -86,7 +86,7 @@ def generatedAndSaveSampling(Dmu, size, path="./sampling.sample", samplingMode="
         list of parameterSpaceElement: the sampling generated
     """
     s = Dmu.sampling()
-    s.sampling(size, samplingMode)
+    s.sample(size, samplingMode)
     s.writeOnFile(path)
     if feelpp.Environment.isMasterRank():
         print("Sampling saved in ", path)
