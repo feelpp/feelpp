@@ -29,13 +29,7 @@ public:
 private:
     vec_t M_origin, M_dir;  // ray origin and dir
 };
-#if 0
-inline constexpr float robust_const(int n)
-{
-    double epsil = std::numeric_limits<double>::epsilon() * 0.5;
-    return (n * epsil) / (1 - n * epsil);
-}
-#endif
+
 template <typename MeshEntityType>
 class BVHTree
 {
@@ -43,16 +37,13 @@ class BVHTree
     using mesh_entity_type = std::decay_t<MeshEntityType>;
     static constexpr uint16_type nDim = mesh_entity_type::nDim;
     static constexpr uint16_type nRealDim = mesh_entity_type::nRealDim;
-    // using VectorRealDim = typename  std::conditional< nRealDim==3,
-    //                                                   Eigen::Vector3d,
-    //                                                   Eigen::Vector2d>::type;
     using vector_realdim_type = Eigen::Matrix<double,nRealDim,1>;
     typedef typename matrix_node<double>::type matrix_node_type;
 
-    // Information on the primitive (bounding box, index, centroid)
 public:
     using ray_type = BVHRay<nRealDim>;
 
+    //! @brief Information on the primitive (bounding box, index, centroid)
     struct BVHPrimitiveInfo
     {
         BVHPrimitiveInfo( mesh_entity_type const& meshElt )
@@ -68,8 +59,7 @@ public:
                 M_centroid = ( M_bound_min + M_bound_max ) * 0.5;
             }
 
-        mesh_entity_type const& meshElement() const { return M_meshElement.get(); }
-
+        mesh_entity_type const& meshElement() const noexcept { return M_meshElement.get(); }
         vector_realdim_type const& boundMin() const noexcept { return M_bound_min; }
         vector_realdim_type const& boundMax() const noexcept { return M_bound_max; }
         vector_realdim_type const& centroid() const noexcept { return M_centroid; }
@@ -143,60 +133,19 @@ public:
 
                 return true;
             }
-#if 0
-        bool checkIntersectionWithSegment(BVHRay const& ray)
+
+        std::pair<bool,double> checkIntersectionWithSegment( ray_type const& ray, std::vector<BVHPrimitiveInfo> const& primitiveInfo ) const
             {
-                Eigen::VectorXd p1(2),p2(2),v1(2),v2(2),v3(2),w_(2);
+                auto const& meshElt = primitiveInfo[this->firstPrimOffset()].meshElement();
+                auto p1 = Eigen::Map<const Eigen::Matrix<double,nRealDim,1>>( meshElt.point(0).node().data().begin() );
+                auto p2 = Eigen::Map<const Eigen::Matrix<double,nRealDim,1>>( meshElt.point(1).node().data().begin() );
 
-                auto nodes =  M_mesh->element( M_primitiveInfo[this->firstPrimOffset].M_primitiveNumber).vertices();
+                auto const& origin = ray.origin();
+                auto const& direction = ray.dir();
 
-                for ( int i = 0; i < nodes.size1(); ++i )
-                {
-                    p1( i ) = nodes(i,0);
-                    p2( i ) = nodes(i,1);
-                }
-                Eigen::VectorXd origin(2),direction(2);
-                direction << ray.dir[0],ray.dir[1];
-                origin << ray.origin[0],ray.origin[1];
-                v1 = origin - p1;
-                v2 = p2 - p1;
-                v3 <<-direction[1], direction[0];
-
-                double dot = v2.dot(v3);
-                if (math::abs(dot) < 1e-6)
-                    return false;
-
-                double t1 = (v2[0]*v1[1]-v2[1]*v1[0])/ dot;
-                double t2 = v1.dot(v3) / dot;
-
-                if (t1 > 2*FLT_MIN && (t2 >= 0.0 && t2 <= 1.0))
-                {
-                    w_[0] =  ray.origin[0] + ray.dir[0]*t1;
-                    w_[1] =  ray.origin[1] + ray.dir[1]*t1;
-                    return true;
-                }
-
-                return false;
-
-            }
-#endif
-
-        // TODO VINCENT optimize here
-        std::pair<bool,double> checkIntersectionWithSegment(matrix_node_type const& nodes, ray_type const& ray)
-            {
-                vector_realdim_type p1,p2,v1,v2,v3,w_;
-
-                for ( int i = 0; i < nodes.size1(); ++i )
-                {
-                    p1( i ) = nodes(i,0);
-                    p2( i ) = nodes(i,1);
-                }
-                vector_realdim_type origin,direction;
-                direction << ray.dir()[0],ray.dir()[1];
-                origin << ray.origin()[0],ray.origin()[1];
-                v1 = origin - p1;
-                v2 = p2 - p1;
-                v3 <<-direction[1], direction[0];
+                vector_realdim_type v1 = origin - p1;
+                vector_realdim_type v2 = p2 - p1;
+                vector_realdim_type v3{ -direction[1], direction[0] };
 
                 double dot = v2.dot(v3);
                 if (math::abs(dot) < 1e-6)
@@ -207,13 +156,14 @@ public:
 
                 if (t1 > 2*FLT_MIN && (t2 >= 0.0 && t2 <= 1.0))
                 {
-                    w_[0] =  ray.origin()[0] + ray.dir()[0]*t1;
-                    w_[1] =  ray.origin()[1] + ray.dir()[1]*t1;
+#if 0
+                    vector_realdim_type w_{
+                        origin[0] + direction[0]*t1,
+                        origin[1] + direction[1]*t1; };
+#endif
                     return std::make_pair(true,t1);
                 }
-
                 return std::make_pair(false,t1);
-
             }
 
         // Verify if the ray intersects the element
@@ -257,11 +207,8 @@ public:
         std::pair<bool,double> checkLeafIntersection(ray_type const& rayon, std::vector<BVHPrimitiveInfo> const& primitiveInfo)
             {
                 if constexpr ( nRealDim == 2 )
-                {
-                    auto nodes = primitiveInfo[this->firstPrimOffset()].meshElement().vertices();
-                    return checkIntersectionWithSegment( nodes, rayon );
-                }
-                else if constexpr ( nRealDim == 3 ) //if ( nRealDim==3)
+                    return checkIntersectionWithSegment( rayon, primitiveInfo );
+                else if constexpr ( nRealDim == 3 )
                     return checkIntersectionWithTriangle( rayon, primitiveInfo );
             }
 
@@ -299,7 +246,6 @@ public:
         {
             // From the mesh, build the bounding box info for each element and store it in
             // the structure BVHPrimitiveInfo
-
             M_primitiveInfo.clear();
             M_primitiveInfo.reserve( nelements(range) );
             for ( auto const& eltWrap : range )
@@ -307,7 +253,8 @@ public:
                 auto const& e = unwrap_ref( eltWrap );
                 M_primitiveInfo.push_back( BVHPrimitiveInfo{e} );
             }
-            this->buildRootTree();
+            // build BVH tree
+            this->buildTree();
         }
 
 
@@ -319,7 +266,7 @@ public:
             M_intersected_leaf = {};
             M_lengths = {};
             if ( !M_rootNode )
-                buildRootTree();
+                buildTree();
 
             if ( M_rootNode->checkIntersection(rayon) )
             {
@@ -337,23 +284,8 @@ public:
             }
         }
 private:
-#if 0
-    // From the mesh, build the bounding box info for each element and store it in
-    // the structure BVHPrimitiveInfo
-    void buildPrimitivesInfo(trace_mesh_ptrtype const& mesh)
-        {
-            auto rangeElem = elements(mesh);
-            M_primitiveInfo.clear();
-            M_primitiveInfo.reserve( nelements(rangeElem) );
-            for ( auto const& eltWrap : rangeElem )
-            {
-                auto const& e = unwrap_ref( eltWrap );
-                M_primitiveInfo.push_back( BVHPrimitiveInfo{e} );
-            }
-        }
-#endif
 
-    void buildRootTree()
+    void buildTree()
         {
             if ( M_rootNode )
                 return;
@@ -403,48 +335,6 @@ private:
                 }
             }
         }
-
-
-    // bool check_intersection_square(BVHRay const& ray)
-    // {
-    //     Eigen::VectorXd p1(3),p2(3),p3(3),n1(3);
-
-    //     Eigen::VectorXd origin(3),direction(3);
-    //     direction << ray.dir[0],ray.dir[1],ray.dir[2];
-    //     origin << ray.origin[0],ray.origin[1],ray.origin[2];
-    //     n1 << 0.,0.,-1.;
-    //     p1 << 0.,0.,1.;
-    //     p2 << 1.,0.,1.;
-    //     p3 << 0.,1.,1.;
-
-    //     auto t = n1.dot(p1-origin)/n1.dot(direction);
-    //     LOG(INFO) << fmt::format("Origin {}, direction {}, normal {}, t {}, p1 {}",origin, direction, n1, t,p1);
-
-    //     if(t<0)
-    //         return false;
-
-    //     auto intersection = origin + t*direction;
-    //     auto v=intersection-p1;
-
-    //     double width=1;
-    //     double height=1;
-
-    //     double proj1=v.dot(p2-p1);
-    //     double proj2=v.dot(p3-p1);
-
-    //     if(proj1 < width && proj1>0 && proj2>0 && proj2<height)
-    //         return true;
-
-    //     return false;
-    // }
-    // void loop_over_primitives(BVHTree::BVHNode * tree, BVHRay const& rayon)
-    // {
-    //     for(auto & primitive : M_primitiveInfo )
-    //     {
-    //         if (tree->checkIntersectionWithTriangle(rayon,primitive.M_primitiveNumber))
-    //             M_intersected_leaf.push_back(primitive.M_primitiveNumber);
-    //     }
-    // }
 
 
     std::tuple<vector_realdim_type,vector_realdim_type> bounds( int start_index_primitive, int end_index_primitive ) const
