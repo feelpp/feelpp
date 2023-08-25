@@ -42,8 +42,8 @@ void printRayIntersectionResults( std::vector<RayIntersectionResultType> const& 
     BOOST_TEST_MESSAGE( "Number of intersection: " << rirs.size() );
     for ( auto const& rir : rirs )
     {
-        BOOST_TEST_MESSAGE( " --  Mesh entity id: " << rir.primitive().meshElement().id() );
-        BOOST_TEST_MESSAGE( " --  Mesh entity barycenter: " << rir.primitive().meshElement().barycenter() );
+        BOOST_TEST_MESSAGE( " --  Mesh entity id: " << rir.primitive().meshEntity().id() );
+        BOOST_TEST_MESSAGE( " --  Mesh entity barycenter: " << rir.primitive().meshEntity().barycenter() );
         BOOST_TEST_MESSAGE( " ---------------------------------" );
     }
 }

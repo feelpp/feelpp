@@ -394,7 +394,7 @@ public:
                     auto rayIntersectionResult = M_bvh_tree->intersect(ray) ;
                     if ( !rayIntersectionResult.empty() )
                     {
-                        auto marker_index = rayIntersectionResult.front().primitive().meshElement().marker().value();
+                        auto marker_index = rayIntersectionResult.front().primitive().meshEntity().marker().value();
 
                         // Find the marker's index corresponding to the element being intersected by the ray
                         auto index_view_factor = std::find(M_markers_int.begin(), M_markers_int.end(), marker_index);

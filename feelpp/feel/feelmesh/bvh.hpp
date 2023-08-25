@@ -79,11 +79,11 @@ public:
     //! @brief Information on the primitive (mesh entity, bounding box, centroid)
     struct BVHPrimitiveInfo
     {
-        BVHPrimitiveInfo( mesh_entity_type const& meshElt )
+        BVHPrimitiveInfo( mesh_entity_type const& meshEntity )
             :
-            M_meshElement( meshElt )
+            M_meshEntity( meshEntity )
             {
-                auto verticesUblas = meshElt.vertices();
+                auto verticesUblas = meshEntity.vertices();
                 auto G = em_cmatrix_col_type<double>( verticesUblas.data().begin(), nRealDim, mesh_entity_type::numVertices );
                 M_bound_min = G.rowwise().minCoeff();
                 M_bound_max = G.rowwise().maxCoeff();
@@ -96,7 +96,7 @@ public:
         BVHPrimitiveInfo& operator=( BVHPrimitiveInfo && ) = default;
         BVHPrimitiveInfo& operator=( BVHPrimitiveInfo const& ) = default;
 
-        mesh_entity_type const& meshElement() const { return M_meshElement.get(); }
+        mesh_entity_type const& meshEntity() const { return M_meshEntity.get(); }
         vector_realdim_type const& boundMin() const noexcept { return M_bound_min; }
         vector_realdim_type const& boundMax() const noexcept { return M_bound_max; }
         vector_realdim_type const& centroid() const noexcept { return M_centroid; }
@@ -105,7 +105,7 @@ public:
         vector_realdim_type M_bound_min;
         vector_realdim_type M_bound_max;
         vector_realdim_type M_centroid;
-        std::reference_wrapper<mesh_entity_type const> M_meshElement;
+        std::reference_wrapper<mesh_entity_type const> M_meshEntity;
     };
     using primitiveinfo_type = BVHPrimitiveInfo;
 
@@ -200,8 +200,8 @@ public:
                         backend_vector_realdim_type::generate([&primInfo] (std::size_t i) { return primInfo.boundMax()[i]; })
                     });
 
-                auto const& meshElt = primInfo.meshElement();
-                auto bary = meshElt.barycenter();
+                auto const& meshEntity = primInfo.meshEntity();
+                auto bary = meshEntity.barycenter();
                 centers.push_back( backend_vector_realdim_type::generate([&bary] (std::size_t i) { return bary[i]; }) );
             }
 
@@ -220,12 +220,12 @@ public:
             {
                 auto j = should_permute ? M_bvh->prim_ids[i] : i;
                 auto const& primInfo = this->M_primitiveInfo[j];
-                auto const& meshElt = primInfo.meshElement();
+                auto const& meshEntity = primInfo.meshEntity();
                 if constexpr ( nRealDim == 3 )
                 {
-                    auto const& pt0 = meshElt.point(0);
-                    auto const& pt1 = meshElt.point(1);
-                    auto const& pt2 = meshElt.point(2);
+                    auto const& pt0 = meshEntity.point(0);
+                    auto const& pt1 = meshEntity.point(1);
+                    auto const& pt2 = meshEntity.point(2);
                     M_precomputeTriangle[i] = backend_precompute_triangle_type{
                         backend_vector_realdim_type::generate([&pt0] (std::size_t i) { return pt0[i]; }),
                         backend_vector_realdim_type::generate([&pt1] (std::size_t i) { return pt1[i]; }),
@@ -364,7 +364,7 @@ public:
 
         std::pair<bool,double> checkIntersectionWithSegment( ray_type const& ray, std::vector<primitiveinfo_type> const& primitiveInfo ) const
             {
-                auto const& meshElt = primitiveInfo[this->firstPrimOffset()].meshElement();
+                auto const& meshElt = primitiveInfo[this->firstPrimOffset()].meshEntity();
                 auto p1 = Eigen::Map<const Eigen::Matrix<double,nRealDim,1>>( meshElt.point(0).node().data().begin() );
                 auto p2 = Eigen::Map<const Eigen::Matrix<double,nRealDim,1>>( meshElt.point(1).node().data().begin() );
 
@@ -399,7 +399,7 @@ public:
             {
                 DCHECK( this->isLeaf() ) << "should be a leaf: ";
 
-                auto const& meshElt = primitiveInfo[this->firstPrimOffset()].meshElement();
+                auto const& meshElt = primitiveInfo[this->firstPrimOffset()].meshEntity();
                 auto p1 = Eigen::Map<const Eigen::Matrix<double,nRealDim,1>>( meshElt.point(0).node().data().begin() );
                 auto p2 = Eigen::Map<const Eigen::Matrix<double,nRealDim,1>>( meshElt.point(1).node().data().begin() );
                 auto p3 = Eigen::Map<const Eigen::Matrix<double,nRealDim,1>>( meshElt.point(2).node().data().begin() );
@@ -530,7 +530,7 @@ private:
                     int firstPrimOffset = M_orderedPrims.size();
                     for (int i = start_index_primitive; i < end_index_primitive; ++i)
                     {
-                        int primNum = this->M_primitiveInfo[i].meshElement().id();
+                        int primNum = this->M_primitiveInfo[i].meshEntity().id();
                         M_orderedPrims.push_back(primNum);
                     }
                     currentNode->updateForUse( firstPrimOffset, nPrimitives, -1, bound_min_node, bound_max_node );
@@ -615,10 +615,10 @@ private:
                         auto [has_intersected_leaf,distance] = current_node->checkLeafIntersection(rayon,this->M_primitiveInfo);
                         if ( has_intersected_leaf )
                         {
-                            //if ( std::find(M_intersected_leaf.begin(), M_intersected_leaf.end(), this->M_primitiveInfo[current_node->firstPrimOffset()].meshElement().id()) == M_intersected_leaf.end() )
+                            //if ( std::find(M_intersected_leaf.begin(), M_intersected_leaf.end(), this->M_primitiveInfo[current_node->firstPrimOffset()].meshEntity().id()) == M_intersected_leaf.end() )
                             if ( std::find(M_intersected_leaf.begin(), M_intersected_leaf.end(), current_node->firstPrimOffset() ) == M_intersected_leaf.end() )
                             {
-                                //M_intersected_leaf.push_back(this->M_primitiveInfo[current_node->firstPrimOffset()].meshElement().id());
+                                //M_intersected_leaf.push_back(this->M_primitiveInfo[current_node->firstPrimOffset()].meshEntity().id());
                                 M_intersected_leaf.push_back(current_node->firstPrimOffset());
                                 M_lengths.push_back(distance);
                             }
@@ -644,10 +644,10 @@ private:
                         auto [has_intersected_leaf,distance] = current_node->checkLeafIntersection(rayon,this->M_primitiveInfo);
                         if ( has_intersected_leaf )
                         {
-                            //if ( std::find(M_intersected_leaf.begin(), M_intersected_leaf.end(), this->M_primitiveInfo[current_node->firstPrimOffset()].meshElement().id()) == M_intersected_leaf.end() )
+                            //if ( std::find(M_intersected_leaf.begin(), M_intersected_leaf.end(), this->M_primitiveInfo[current_node->firstPrimOffset()].meshEntity().id()) == M_intersected_leaf.end() )
                             if ( std::find(M_intersected_leaf.begin(), M_intersected_leaf.end(), current_node->firstPrimOffset()) == M_intersected_leaf.end() )
                             {
-                                //M_intersected_leaf.push_back(this->M_primitiveInfo[current_node->firstPrimOffset()].meshElement().id());
+                                //M_intersected_leaf.push_back(this->M_primitiveInfo[current_node->firstPrimOffset()].meshEntity().id());
                                 M_intersected_leaf.push_back(current_node->firstPrimOffset());
                                 M_lengths.push_back(distance);
                             }
