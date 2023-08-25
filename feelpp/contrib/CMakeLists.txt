@@ -873,7 +873,7 @@ if( FEELPP_ENABLE_THIRDPARTY_BVH )
   message(STATUS "Configuring BVH")
 
   #set(FETCHCONTENT_SOURCE_DIR_BVH ${CMAKE_CURRENT_SOURCE_DIR}/bvh)
-  FetchContent_Declare(bvh GIT_REPOSITORY https://github.com/feelpp/bvh.git GIT_TAG 83e024254bb76e993aa49d21436d3215f52ac0ca)
+  FetchContent_Declare(bvh GIT_REPOSITORY https://github.com/feelpp/bvh.git GIT_TAG 4cdf53bb536b955ec7ebddd879dc8142d067cb5f)
 
   FetchContent_MakeAvailable(bvh)
   add_library(feelpp_bvh INTERFACE)
