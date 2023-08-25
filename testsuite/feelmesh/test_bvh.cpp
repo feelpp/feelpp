@@ -88,7 +88,8 @@ void test3D( RangeType const& range )
 
     auto bvhInHouse = boundingVolumeHierarchy(_range=range,_kind="in-house");
     auto bvhThirdParty = boundingVolumeHierarchy(_range=range,_kind="third-party");
-    for ( auto bvhCurrent : {bvhInHouse.get(),bvhThirdParty.get()} )
+    auto bvhThirdPartyLow = boundingVolumeHierarchy(_range=range,_kind="third-party",_quality=BVHEnum::Quality::Low);
+    for ( auto bvhCurrent : {bvhInHouse.get(),bvhThirdParty.get(),bvhThirdPartyLow.get()} )
     {
         auto rayIntersectionResult1 = bvhCurrent->intersect(ray_1) ;
         BOOST_CHECK_MESSAGE(!rayIntersectionResult1.empty(), fmt::format("Intersection between ray1 and BVH tree has been found"));
