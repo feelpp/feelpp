@@ -133,6 +133,7 @@ public:
     BVH() = default;
     BVH( BVH && ) = default;
     BVH( BVH const& ) = default;
+    virtual ~BVH() {}
 
     //! compute intersection(s) with a ray from the BVH built and return a vector of intersection result
     virtual std::vector<rayintersection_result_type> intersect( ray_type const& rayon ) = 0;
