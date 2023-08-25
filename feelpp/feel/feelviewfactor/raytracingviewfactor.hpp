@@ -389,7 +389,7 @@ public:
                     }
                     Eigen::VectorXd pQ1(3),pQ2(3),pQ3(3),pQ4(3),normal(3);
 
-                    bvh_ray_type ray(origin,rand_dir);
+                    bvh_ray_type ray(origin,rand_dir,1e-8); // warning, put a minimal distance > 0
 
                     auto rayIntersectionResult = M_bvh_tree->intersect(ray) ;
                     if ( !rayIntersectionResult.empty() )
