@@ -65,6 +65,10 @@ private:
     double M_distanceMin, M_distanceMax;
 };
 
+struct BVHEnum
+{
+    enum class Quality { Low, Medium, High };
+};
 //! @brief BVH base class
 template <typename MeshEntityType>
 class BVH
@@ -75,6 +79,7 @@ public:
     static constexpr uint16_type nRealDim = mesh_entity_type::nRealDim;
     using vector_realdim_type = Eigen::Matrix<double,nRealDim,1>;
     using ray_type = BVHRay<nRealDim>;
+
 
     //! @brief Information on the primitive (mesh entity, bounding box, centroid)
     struct BVHPrimitiveInfo
@@ -125,6 +130,7 @@ public:
         BVHRayIntersectionResult& operator=( BVHRayIntersectionResult const& ) = default;
 
         BVHPrimitiveInfo const& primitive() const { return M_primitive.get(); }
+        double distance() const noexcept { return M_distance; }
     private:
         std::reference_wrapper<BVHPrimitiveInfo const> M_primitive;
         double M_distance;
@@ -132,13 +138,16 @@ public:
     };
     using rayintersection_result_type = BVHRayIntersectionResult;
 
-    BVH() = default;
+    BVH( BVHEnum::Quality quality = BVHEnum::Quality::High )
+        :
+        M_quality( quality )
+        {}
     BVH( BVH && ) = default;
     BVH( BVH const& ) = default;
     virtual ~BVH() {}
 
     //! compute intersection(s) with a ray from the BVH built and return a vector of intersection result
-    virtual std::vector<rayintersection_result_type> intersect( ray_type const& rayon ) = 0;
+    virtual std::vector<rayintersection_result_type> intersect( ray_type const& rayon, bool useRobustTraversal = true ) = 0;
 protected:
     template <typename RangeType>
     void
@@ -157,6 +166,7 @@ protected:
 
 protected:
     std::vector<BVHPrimitiveInfo> M_primitiveInfo;
+    BVHEnum::Quality M_quality = BVHEnum::Quality::High;
 };
 
 
@@ -179,7 +189,7 @@ public:
     using ray_type = typename super_type::ray_type;
     using rayintersection_result_type = typename super_type::rayintersection_result_type;
 
-    BVH_ThirdParty() = default;
+    BVH_ThirdParty( BVHEnum::Quality quality ) : super_type( quality ) {}
     BVH_ThirdParty( BVH_ThirdParty && ) = default;
 
     template <typename RangeType>
@@ -207,7 +217,13 @@ public:
             }
 
             typename bvh::v2::DefaultBuilder<node_type>::Config config;
-            config.quality = bvh::v2::DefaultBuilder<node_type>::Quality::High;
+            switch ( this->M_quality )
+            {
+            default:
+            case BVHEnum::Quality::High: config.quality = bvh::v2::DefaultBuilder<node_type>::Quality::High; break;
+            case BVHEnum::Quality::Medium: config.quality = bvh::v2::DefaultBuilder<node_type>::Quality::Medium; break;
+            case BVHEnum::Quality::Low: config.quality = bvh::v2::DefaultBuilder<node_type>::Quality::Low; break;
+            }
             M_bvh = std::make_unique<backend_bvh_type>( bvh::v2::DefaultBuilder<node_type>::build(/*thread_pool,*/ bboxes, centers, config) );
 
 
@@ -215,9 +231,9 @@ public:
             static constexpr bool should_permute = true;
 
             if constexpr ( nRealDim == 3 )
-                             M_precomputeTriangle.resize( this->M_primitiveInfo.size() );
+                 M_precomputeTriangle.resize( this->M_primitiveInfo.size() );
 
-            for ( std::size_t i = 0; i < this->M_primitiveInfo.size(); ++i )// auto const& primInfo : this->M_primitiveInfo )
+            for ( std::size_t i = 0; i < this->M_primitiveInfo.size(); ++i )
             {
                 auto j = should_permute ? M_bvh->prim_ids[i] : i;
                 auto const& primInfo = this->M_primitiveInfo[j];
@@ -237,52 +253,59 @@ public:
         }
 
 
-    std::vector<rayintersection_result_type> intersect( ray_type const& ray ) override
+    std::vector<rayintersection_result_type> intersect( ray_type const& ray, bool useRobustTraversal = true ) override
         {
             auto rayBackend = bvh::v2::Ray<value_type,nRealDim>{
                 backend_vector_realdim_type::generate([&ray] (std::size_t i) { return ray.origin()[i]; }),
                 backend_vector_realdim_type::generate([&ray] (std::size_t i) { return ray.dir()[i]; }),
                 ray.distanceMin(), ray.distanceMax()
             };
-            return this->intersectImpl<true>( rayBackend );
+            if ( useRobustTraversal )
+                return this->intersectImpl<true>( rayBackend );
+            else
+                return this->intersectImpl<false>( rayBackend );
         };
 private:
-    template <bool UseRobustTraversal>
-    std::vector<rayintersection_result_type> intersectImpl( bvh::v2::Ray<value_type,nRealDim> & rayBackend ) {
-        static constexpr size_t stack_size = 64;
-        static constexpr bool should_permute = true;
-        // Traverse the BVH and get the u, v coordinates of the closest intersection.
-        bvh::v2::SmallStack<typename backend_bvh_type::Index, stack_size> stack;
-        std::vector<rayintersection_result_type> res;
-        M_bvh->template intersect<true/*false*/, UseRobustTraversal>(rayBackend, M_bvh->get_root().index, stack,
-                                                     [&] (std::size_t begin, std::size_t end) {
-                                                         for (std::size_t i = begin; i < end; ++i) {
-                                                             std::size_t j = should_permute ? i : M_bvh->prim_ids[i];
-                                                             if constexpr ( nRealDim == 2 )
-                                                             {
-                                                                 CHECK( false ) << "TODO";
-                                                             }
-                                                             else if constexpr ( nRealDim == 3 )
-                                                             {
-                                                                 if (auto hit = M_precomputeTriangle[j].intersect(rayBackend)) {
-                                                                     //prim_id = i;
-                                                                     res.push_back( rayintersection_result_type{this->M_primitiveInfo[M_bvh->prim_ids[i]], rayBackend.tmax} );
-                                                                     return true;
-                                                                     //std::tie(u, v) = *hit;
-                                                                 }
-                                                             }
-                                                         }
-                                                         //return prim_id != invalid_id;
-                                                         //return prim_id >= 0;
-                                                         return false;
-                                                   });
 
-        return res;
-    }
+    template <bool UseRobustTraversal>
+    std::vector<rayintersection_result_type> intersectImpl( bvh::v2::Ray<value_type,nRealDim> & rayBackend )
+        {
+            static constexpr size_t stack_size = 64;
+            static constexpr bool should_permute = true;
+            static constexpr bool isAnyHit = false;
+            // Traverse the BVH and get the u, v coordinates of the closest intersection.
+            bvh::v2::SmallStack<typename backend_bvh_type::Index, stack_size> stack;
+            std::vector<rayintersection_result_type> res;
+            M_bvh->template intersect<isAnyHit, UseRobustTraversal>( rayBackend, M_bvh->get_root().index, stack,
+                                                                     [&] (std::size_t begin, std::size_t end) {
+                                                                         std::size_t previousResultSize = res.size();
+                                                                         for (std::size_t i = begin; i < end; ++i)
+                                                                         {
+                                                                             std::size_t j = should_permute ? i : M_bvh->prim_ids[i];
+                                                                             if constexpr ( nRealDim == 2 )
+                                                                             {
+                                                                                 CHECK( false ) << "TODO";
+                                                                             }
+                                                                             else if constexpr ( nRealDim == 3 )
+                                                                             {
+                                                                                 if (auto hit = M_precomputeTriangle[j].intersect(rayBackend))
+                                                                                 {
+                                                                                     //std::tie(u, v) = *hit;
+                                                                                     res.push_back( rayintersection_result_type{this->M_primitiveInfo[M_bvh->prim_ids[i]], rayBackend.tmax} );
+                                                                                     if constexpr ( isAnyHit )
+                                                                                          return true;
+                                                                                 }
+                                                                             }
+                                                                         }
+                                                                         return res.size() > previousResultSize;
+                                                                     });
+            //! sort all intersection from the distance (closer to far)
+            std::sort( res.begin(), res.end(), [](auto const& res0,auto const& res1){ return res0.distance() < res1.distance(); } );
+            return res;
+        }
 private:
     std::unique_ptr<backend_bvh_type> M_bvh;
     std::vector<backend_precompute_triangle_type> M_precomputeTriangle;
-    std::vector<int> M_primInv;
 };
 
 
@@ -483,7 +506,7 @@ public:
     // Verify if the ray intersects the whole bounding structure
     // Returns the integer corresponding to the intersected element
     // If no element is intersected, return -1
-    std::vector<rayintersection_result_type> intersect( ray_type const& rayon ) override
+    std::vector<rayintersection_result_type> intersect( ray_type const& rayon, bool useRobustTraversal = true ) override
         {
             M_intersected_leaf = {};
             M_lengths = {};
@@ -690,8 +713,8 @@ auto boundingVolumeHierarchy( Ts && ... v )
     auto args = NA::make_arguments( std::forward<Ts>(v)... );
     auto && range = args.get(_range);
     using mesh_entity_type = std::remove_const_t<entity_range_t<std::decay_t<decltype(range)>>>;
-
     std::string const& kind = args.get_else(_kind, mesh_entity_type::nRealDim == 3 ? "third-party" : "in-house");
+    BVHEnum::Quality quality = args.get_else(_quality, BVHEnum::Quality::High );
 
     using bvh_type = BVH<mesh_entity_type>;
     std::unique_ptr<bvh_type> bvh;
@@ -707,7 +730,7 @@ auto boundingVolumeHierarchy( Ts && ... v )
     {
         if constexpr ( mesh_entity_type::nRealDim != 3 )
             throw std::invalid_argument("third-party only implement with triangle in 3D");
-        auto bvhThirdParty = std::make_unique<BVH_ThirdParty<mesh_entity_type>>();
+        auto bvhThirdParty = std::make_unique<BVH_ThirdParty<mesh_entity_type>>( quality );
         bvhThirdParty->updateForUse(range);
         bvh = std::move( bvhThirdParty );
     }
