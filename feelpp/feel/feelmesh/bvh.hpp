@@ -244,11 +244,18 @@ private:
                                                      [&] (std::size_t begin, std::size_t end) {
                                                          for (std::size_t i = begin; i < end; ++i) {
                                                              std::size_t j = should_permute ? i : M_bvh->prim_ids[i];
-                                                             if (auto hit = M_precomputeTriangle[j].intersect(rayBackend)) {
-                                                                 //prim_id = i;
-                                                                 res.push_back( rayintersection_result_type{this->M_primitiveInfo[M_bvh->prim_ids[i]], rayBackend.tmax} );
-                                                                 return true;
-                                                                 //std::tie(u, v) = *hit;
+                                                             if constexpr ( nRealDim == 2 )
+                                                             {
+                                                                 CHECK( false ) << "TODO";
+                                                             }
+                                                             else if constexpr ( nRealDim == 3 )
+                                                             {
+                                                                 if (auto hit = M_precomputeTriangle[j].intersect(rayBackend)) {
+                                                                     //prim_id = i;
+                                                                     res.push_back( rayintersection_result_type{this->M_primitiveInfo[M_bvh->prim_ids[i]], rayBackend.tmax} );
+                                                                     return true;
+                                                                     //std::tie(u, v) = *hit;
+                                                                 }
                                                              }
                                                          }
                                                          //return prim_id != invalid_id;
