@@ -89,7 +89,9 @@ public:
                 M_bound_max = G.rowwise().maxCoeff();
                 M_bound_min.array() -= 2*FLT_MIN;
                 M_bound_max.array() += 2*FLT_MIN;
-                M_centroid = ( M_bound_min + M_bound_max ) * 0.5;
+                //M_centroid = ( M_bound_min + M_bound_max ) * 0.5;
+                auto bary = meshEntity.barycenter();
+                M_centroid = Eigen::Map<Eigen::Matrix<double,nRealDim,1>>( bary.data().begin() );
             }
         BVHPrimitiveInfo( BVHPrimitiveInfo && ) = default;
         BVHPrimitiveInfo( BVHPrimitiveInfo const& ) = default;
@@ -200,9 +202,8 @@ public:
                         backend_vector_realdim_type::generate([&primInfo] (std::size_t i) { return primInfo.boundMax()[i]; })
                     });
 
-                auto const& meshEntity = primInfo.meshEntity();
-                auto bary = meshEntity.barycenter();
-                centers.push_back( backend_vector_realdim_type::generate([&bary] (std::size_t i) { return bary[i]; }) );
+                auto const& centroid = primInfo.centroid();
+                centers.push_back( backend_vector_realdim_type::generate([&centroid] (std::size_t i) { return centroid[i]; }) );
             }
 
             typename bvh::v2::DefaultBuilder<node_type>::Config config;
