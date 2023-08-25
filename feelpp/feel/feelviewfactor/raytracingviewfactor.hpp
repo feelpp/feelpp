@@ -166,7 +166,7 @@ class RayTracingViewFactor : public ViewFactorBase<MeshType>
     typedef typename MeshType::trace_mesh_ptrtype tr_mesh_ptrtype;
     typedef typename MeshType::face_type face_type;
     typedef typename matrix_node<double>::type matrix_node_type;
-    using bvh_type = BVHTree<typename MeshType::trace_mesh_type::element_type>;
+    using bvh_type = BVH<typename MeshType::trace_mesh_type::element_type>;
     using bvh_ray_type = typename bvh_type::ray_type;
 public:
     using value_type = double;
@@ -391,13 +391,10 @@ public:
 
                     bvh_ray_type ray(origin,rand_dir);
 
-                    int closer_intersection_element = M_bvh_tree->raySearch(ray) ;
-                    if (closer_intersection_element >=0 )
+                    auto rayIntersectionResult = M_bvh_tree->intersect(ray) ;
+                    if ( !rayIntersectionResult.empty() )
                     {
-                        // int argmin_lengths = std::distance(local_tree.M_lengths.begin(), std::min_element(local_tree.M_lengths.begin(), local_tree.M_lengths.end()));
-                        // auto closer_intersection_element = local_tree.M_intersected_leaf[argmin_lengths];
-
-                        auto marker_index = M_submesh->element(closer_intersection_element).marker().value();
+                        auto marker_index = rayIntersectionResult.front().primitive().meshElement().marker().value();
 
                         // Find the marker's index corresponding to the element being intersected by the ray
                         auto index_view_factor = std::find(M_markers_int.begin(), M_markers_int.end(), marker_index);

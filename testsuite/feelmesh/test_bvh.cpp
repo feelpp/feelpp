@@ -42,38 +42,51 @@ BOOST_AUTO_TEST_CASE( intersection_bvh )
     auto submesh = createSubmesh(_mesh=mesh,_range=markedfaces(mesh,{"CavityBottom","CavitySides","CavityTop"}));
 #endif
 
-    auto bvh_tree = boundingVolumeHierarchy(_range=elements(submesh));
-    using bvh_ray_type = typename std::decay_t<decltype(*bvh_tree)>::ray_type;
+    auto rangeEntity = elements(submesh);
+    using mesh_entity_type = std::remove_const_t<entity_range_t<std::decay_t<decltype(rangeEntity)>>>;
 
-#if FEELPP_DIM==2
-    Eigen::VectorXd origin(2);
-    origin<< 0.5,0.5;
-    Eigen::VectorXd direction_perp_1(2);
-    direction_perp_1 << 1.,0.;
-    Eigen::VectorXd direction_perp_2(2);
-    direction_perp_2 << 0.,1.;
-    bvh_ray_type ray_1(origin,direction_perp_1);
-    bvh_ray_type ray_2(origin,direction_perp_2);
+    //using bvh_ray_type = typename std::decay_t<decltype(*bvhInHouse)>::ray_type;
+    using bvh_ray_type = BVHRay<mesh_entity_type::nRealDim>;
 
-    int element_number = bvh_tree->raySearch(ray_1);
-    BOOST_CHECK_MESSAGE(element_number > 0, fmt::format("Intersection between ray1 and BVH tree has been found"));
-    element_number = bvh_tree->raySearch(ray_2);
-    BOOST_CHECK_MESSAGE(element_number > 0, fmt::format("Intersection between ray2 and BVH tree has been found"));
-#elif FEELPP_DIM==3
-    Eigen::VectorXd origin(3);
-    origin<< 0.5,0.5,0.5;
-    Eigen::VectorXd direction_perp_1(3);
-    direction_perp_1 << 1.,0.,0.;
-    Eigen::VectorXd direction_perp_2(3);
-    direction_perp_2 << 0.,1.,0.;
-    bvh_ray_type ray_1(origin,direction_perp_1);
-    bvh_ray_type ray_2(origin,direction_perp_2);
+    if constexpr ( mesh_entity_type::nRealDim == 2 )
+    {
+        Eigen::VectorXd origin(2);
+        origin<< 0.5,0.5;
+        Eigen::VectorXd direction_perp_1(2);
+        direction_perp_1 << 1.,0.;
+        Eigen::VectorXd direction_perp_2(2);
+        direction_perp_2 << 0.,1.;
+        bvh_ray_type ray_1(origin,direction_perp_1);
+        bvh_ray_type ray_2(origin,direction_perp_2);
 
-    int element_number = bvh_tree->raySearch(ray_1);
-    BOOST_CHECK_MESSAGE(element_number > 0, fmt::format("Intersection between ray1 and BVH tree has been found"));
-    element_number = bvh_tree->raySearch(ray_2);
-    BOOST_CHECK_MESSAGE(element_number > 0, fmt::format("Intersection between ray2 and BVH tree has been found"));
-#endif
+        auto bvhInHouse = boundingVolumeHierarchy(_range=elements(submesh),_kind="in-house");
+        auto rayIntersectionResult1 = bvhInHouse->intersect(ray_1) ;
+        BOOST_CHECK_MESSAGE(!rayIntersectionResult1.empty(), fmt::format("Intersection between ray1 and BVH tree has been found"));
+        auto rayIntersectionResult2 = bvhInHouse->intersect(ray_2) ;
+        BOOST_CHECK_MESSAGE(!rayIntersectionResult2.empty(), fmt::format("Intersection between ray2 and BVH tree has been found"));
+    }
+    else if constexpr ( mesh_entity_type::nRealDim == 3 )
+    {
+        Eigen::VectorXd origin(3);
+        origin<< 0.5,0.5,0.5;
+        Eigen::VectorXd direction_perp_1(3);
+        direction_perp_1 << 1.,0.,0.;
+        Eigen::VectorXd direction_perp_2(3);
+        direction_perp_2 << 0.,1.,0.;
+        bvh_ray_type ray_1(origin,direction_perp_1);
+        bvh_ray_type ray_2(origin,direction_perp_2);
+
+        auto bvhInHouse = boundingVolumeHierarchy(_range=elements(submesh),_kind="in-house");
+        auto bvhThirdParty = boundingVolumeHierarchy(_range=elements(submesh),_kind="third-party");
+        for ( auto bvhCurrent : {bvhInHouse.get(),bvhThirdParty.get()} )
+        {
+            auto rayIntersectionResult1 = bvhCurrent->intersect(ray_1) ;
+            BOOST_CHECK_MESSAGE(!rayIntersectionResult1.empty(), fmt::format("Intersection between ray1 and BVH tree has been found"));
+            auto rayIntersectionResult2 = bvhCurrent->intersect(ray_2) ;
+            BOOST_CHECK_MESSAGE(!rayIntersectionResult2.empty(), fmt::format("Intersection between ray2 and BVH tree has been found"));
+        }
+    }
+
 }
 
 BOOST_AUTO_TEST_SUITE_END()
