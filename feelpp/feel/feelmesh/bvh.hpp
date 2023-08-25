@@ -35,16 +35,22 @@ class BVHRay
 {
 public:
     using vec_t = eigen_vector_type<RealDim>;
-    BVHRay(vec_t const& orig, vec_t const& dir)
+    BVHRay(vec_t const& orig, vec_t const& dir,
+           double dmin = 0, double dmax = std::numeric_limits<double>::max() )
         :
         M_origin( orig ),
-        M_dir( dir )
+        M_dir( dir ),
+        M_distanceMin( dmin ),
+        M_distanceMax( dmax )
         {}
     BVHRay( BVHRay const& ) = default;
     BVHRay( BVHRay &&) = default;
 
     vec_t const& origin() const noexcept { return M_origin; }
     vec_t const& dir() const noexcept { return M_dir; }
+    double distanceMin() const { return M_distanceMin; }
+    double distanceMax() const { return M_distanceMax; }
+
 #if 0
     Orthant orthant() const {
         static_assert(RealDim <= Orthant::max_dim);
@@ -56,8 +62,10 @@ public:
 #endif
 private:
     vec_t M_origin, M_dir;  // ray origin and dir
+    double M_distanceMin, M_distanceMax;
 };
 
+//! @brief BVH base class
 template <typename MeshEntityType>
 class BVH
 {
@@ -68,7 +76,7 @@ public:
     using vector_realdim_type = Eigen::Matrix<double,nRealDim,1>;
     using ray_type = BVHRay<nRealDim>;
 
-    //! @brief Information on the primitive (bounding box, index, centroid)
+    //! @brief Information on the primitive (mesh entity, bounding box, centroid)
     struct BVHPrimitiveInfo
     {
         BVHPrimitiveInfo( mesh_entity_type const& meshElt )
@@ -101,6 +109,7 @@ public:
     };
     using primitiveinfo_type = BVHPrimitiveInfo;
 
+    //! @brief Data returned after apply an intersection with a ray
     struct BVHRayIntersectionResult
     {
         BVHRayIntersectionResult( BVHPrimitiveInfo const& primitive, double dist )
@@ -125,6 +134,7 @@ public:
     BVH( BVH && ) = default;
     BVH( BVH const& ) = default;
 
+    //! compute intersection(s) with a ray from the BVH built and return a vector of intersection result
     virtual std::vector<rayintersection_result_type> intersect( ray_type const& rayon ) = 0;
 protected:
     template <typename RangeType>
@@ -146,6 +156,9 @@ protected:
     std::vector<BVHPrimitiveInfo> M_primitiveInfo;
 };
 
+
+
+//! @brief implementation of BVH tool with an external third party
 template <typename MeshEntityType>
 class BVH_ThirdParty : public BVH<MeshEntityType>
 {
@@ -208,30 +221,29 @@ public:
                 auto const& primInfo = this->M_primitiveInfo[j];
                 auto const& meshElt = primInfo.meshElement();
                 if constexpr ( nRealDim == 3 )
-                             {
-                                 auto const& pt0 = meshElt.point(0);
-                                 auto const& pt1 = meshElt.point(1);
-                                 auto const& pt2 = meshElt.point(2);
-                                 M_precomputeTriangle[i] = backend_precompute_triangle_type{
-                                         backend_vector_realdim_type::generate([&pt0] (std::size_t i) { return pt0[i]; }),
-                                         backend_vector_realdim_type::generate([&pt1] (std::size_t i) { return pt1[i]; }),
-                                         backend_vector_realdim_type::generate([&pt2] (std::size_t i) { return pt2[i]; })
-                                     };
-                             }
+                {
+                    auto const& pt0 = meshElt.point(0);
+                    auto const& pt1 = meshElt.point(1);
+                    auto const& pt2 = meshElt.point(2);
+                    M_precomputeTriangle[i] = backend_precompute_triangle_type{
+                        backend_vector_realdim_type::generate([&pt0] (std::size_t i) { return pt0[i]; }),
+                        backend_vector_realdim_type::generate([&pt1] (std::size_t i) { return pt1[i]; }),
+                        backend_vector_realdim_type::generate([&pt2] (std::size_t i) { return pt2[i]; })
+                    };
+                }
             }
         }
 
 
-    std::vector<rayintersection_result_type> intersect( ray_type const& ray ) override {
-
-        auto rayBackend = bvh::v2::Ray<value_type,nRealDim>{
-            backend_vector_realdim_type::generate([&ray] (std::size_t i) { return ray.origin()[i]; }),
-            backend_vector_realdim_type::generate([&ray] (std::size_t i) { return ray.dir()[i]; }),
-            1e-8 // tmin
+    std::vector<rayintersection_result_type> intersect( ray_type const& ray ) override
+        {
+            auto rayBackend = bvh::v2::Ray<value_type,nRealDim>{
+                backend_vector_realdim_type::generate([&ray] (std::size_t i) { return ray.origin()[i]; }),
+                backend_vector_realdim_type::generate([&ray] (std::size_t i) { return ray.dir()[i]; }),
+                ray.distanceMin(), ray.distanceMax()
+            };
+            return this->intersectImpl<true>( rayBackend );
         };
-
-        return this->intersectImpl<true>( rayBackend );
-    };
 private:
     template <bool UseRobustTraversal>
     std::vector<rayintersection_result_type> intersectImpl( bvh::v2::Ray<value_type,nRealDim> & rayBackend ) {
@@ -272,6 +284,7 @@ private:
 };
 
 
+//! @brief in house implementation of BVH tool
 template <typename MeshEntityType>
 class BVHTree : public BVH<MeshEntityType>
 {
