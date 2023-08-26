@@ -311,10 +311,10 @@ private:
 
 //! @brief in house implementation of BVH tool
 template <typename MeshEntityType>
-class BVHTree : public BVH<MeshEntityType>
+class BVH_InHouse : public BVH<MeshEntityType>
 {
     using super_type = BVH<MeshEntityType>;
-    using self_type = BVHTree<MeshEntityType>;
+    using self_type = BVH_InHouse<MeshEntityType>;
     using mesh_entity_type = typename super_type::mesh_entity_type;
     using vector_realdim_type = typename super_type::vector_realdim_type;
     static constexpr uint16_type nRealDim = super_type::nRealDim;
@@ -325,7 +325,7 @@ public:
 
     class BVHNode
     {
-        friend class BVHTree<mesh_entity_type>;
+        friend class BVH_InHouse<mesh_entity_type>;
     public:
         BVHNode() = default;
 
@@ -352,7 +352,7 @@ public:
                     return this->child(1);
             }
 
-        BVHTree::BVHNode * siblingNode() const
+        BVH_InHouse::BVHNode * siblingNode() const
             {
                 if ( !M_parent )
                     return nullptr;
@@ -490,7 +490,7 @@ public:
         vector_realdim_type M_bounds_min, M_bounds_max;
     };
 
-    BVHTree() = default;
+    BVH_InHouse() = default;
 
     template <typename RangeType>
     void
@@ -602,7 +602,7 @@ private:
         }
 
 
-    void traverse_stackless( BVHTree::BVHNode * tree, ray_type const& rayon )
+    void traverse_stackless( BVH_InHouse::BVHNode * tree, ray_type const& rayon )
         {
             auto current_node = M_rootNode->nearChild(rayon);
             char state = 'P'; // the current node is being traversed from its Parent ('P')
@@ -721,7 +721,7 @@ auto boundingVolumeHierarchy( Ts && ... v )
 
     if ( kind == "in-house" )
     {
-        using bvh_inhouse_type = BVHTree<mesh_entity_type>;
+        using bvh_inhouse_type = BVH_InHouse<mesh_entity_type>;
         auto bvhInHouse = std::make_unique<bvh_inhouse_type>();
         bvhInHouse->updateForUse(range);
         bvh = std::move( bvhInHouse );
