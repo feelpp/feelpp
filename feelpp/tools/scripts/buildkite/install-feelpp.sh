@@ -58,7 +58,7 @@ else
     CTEST_FLAGS="-T test --no-compress-output --output-on-failure"
 fi
 
-if [ ! -z ${BUILDKITE_JOB_ID} ]; then
+if [[ ! -z ${BUILDKITE_JOB_ID} ]]; then
 cat << EOF | buildkite-agent annotate --style "info"
 Building Feel++ ${component} with the following configuration
  * CXX=${CXX}
