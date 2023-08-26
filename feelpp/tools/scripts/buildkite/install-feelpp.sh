@@ -41,7 +41,7 @@ elif [ "${component}" = "toolboxes" -o "${component}" = "testsuite" ] ; then
 elif [ "${component}" = "mor" ] ; then
     dockerfile_from "docker/${image}/Dockerfile.template" "ghcr.io/feelpp/feelpp-toolboxes:${tag}" > docker/${image}/dockerfile.tmp
 elif [ "${component}" = "feelpp-python" -o "${component}" = "python" ] ; then
-    dockerfile_from "docker/${image}/Dockerfile.template" "ghcr.io/feelpp/feelpp-mor:${tag}" > docker/${image}/dockerfile.tmp    
+    dockerfile_from "docker/${image}/Dockerfile.template" "ghcr.io/feelpp/feelpp-mor:${tag}" > docker/${image}/dockerfile.tmp
 else
     dockerfile_from "docker/${image}/Dockerfile.template" "ghcr.io/feelpp/feelpp-toolboxes:${tag}" > docker/${image}/dockerfile.tmp
 fi
@@ -58,7 +58,7 @@ else
     CTEST_FLAGS="-T test --no-compress-output --output-on-failure"
 fi
 
-if [ ! -z $BUILDKITE_JOB_ID]; then
+if [ ! -z ${BUILDKITE_JOB_ID} ]; then
 cat << EOF | buildkite-agent annotate --style "info"
 Building Feel++ ${component} with the following configuration
  * CXX=${CXX}
