@@ -38,8 +38,9 @@ jobs:
     runs-on: self-pkg
 
     strategy:
+      fail-fast: false
       matrix:
-        distro:
+        include:
           - { distro: 'ubuntu/jammy', flavor: ubuntu, dist: jammy, version: '22.04' }
           - { distro: 'ubuntu/focal', flavor: ubuntu, dist: focal, version: '20.04' }
           - { distro: 'ubuntu/lunar', flavor: ubuntu, dist: lunar, version: '23.04' }
