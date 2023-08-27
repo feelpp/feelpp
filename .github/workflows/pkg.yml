@@ -28,8 +28,8 @@ on:
 
 
 env:
-  DISTRO: ${{ github.event.inputs.dist || 'ubuntu/jammy' }}
-  DEB_BUILD_OPTIONS: parallel=${{ github.event.inputs.parallel || 20 }}
+  DISTRO: ${{ inputs.dist || 'ubuntu/jammy' }}
+  DEB_BUILD_OPTIONS: parallel=${{ inputs.parallel || 20 }}
   CXX: clang++
   CC: clang
 
@@ -53,4 +53,4 @@ jobs:
       -
         name: "PKG [${{ matrix.distro }}]"
         if: ${{ env.DISTRO == matrix.distro }}
-        run: echo "PKG build [${{ github.event.inputs }}] ${{ matrix.flavor }}-${{ matrix.dist }}"
+        run: echo "PKG build [${{ inputs.dist }}] ${{ matrix.flavor }}-${{ matrix.dist }}"
