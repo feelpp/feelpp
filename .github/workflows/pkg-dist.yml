@@ -24,7 +24,7 @@ jobs:
         if: ${{ github.event.inputs.dist == 'jammy' && github.event.inputs.flavor == 'ubuntu' }}
         runs-on: self-pkg
         steps:
-        - run: echo ok go ${{ FLAVOR }} - ${{ DIST }}
+        - run: echo ok go ${{ env.FLAVOR }} - ${{ env.DIST }}
           shell: bash
           env:
             DIST: ${{ github.event.inputs.dist }}
