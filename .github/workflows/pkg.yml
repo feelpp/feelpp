@@ -1,0 +1,56 @@
+name: Feelpp CI
+
+on:
+  push:
+    branches:
+      - develop
+  workflow_dispatch:
+    inputs:
+      dist:
+        description: 'Flavor/Distribution to build'
+        required: true
+        default: 'ubuntu/jammy'
+        type: choice
+        options:
+        - 'ubuntu/jammy'
+        - 'ubuntu/focal'
+        - 'ubuntu/kinetic'
+        - 'ubuntu/lunar'
+        - 'debian/bookworm'
+        - 'debian/bullseye'
+        - 'debian/testing'
+        - 'debian/sid'
+      parallel:
+        description: 'Number of parallel jobs'
+        required: true
+        default: 20
+        type: number
+
+
+env:
+  DISTRO: ${{ github.event.inputs.dist || 'ubuntu/jammy' }}
+  DEB_BUILD_OPTIONS: parallel=${{ github.event.inputs.parallel || 20 }}
+  CXX: clang++
+  CC: clang
+
+jobs:
+  build:
+    runs-on: self-pkg
+
+    strategy:
+      matrix:
+        distro:
+          - { distro: 'ubuntu/jammy', flavor: ubuntu, dist: jammy, version: '22.04' }
+          - { distro: 'ubuntu/focal', flavor: ubuntu, dist: focal, version: '20.04' }
+          - { distro: 'ubuntu/lunar', flavor: ubuntu, dist: lunar, version: '23.04' }
+          - { distro: 'ubuntu/kinetic', flavor: ubuntu, dist: kinetic, version: '22.10' }
+          - { distro: 'debian/bookwork', flavor: debian, dist: bookworm, version: '12' }
+          - { distro: 'debian/bullseye', flavor: debian, dist: bullseye, version: '11' }
+          - { distro: 'debian/testing', flavor: debian, dist: testing, version: '13' }
+          - { distro: 'debian/sid', flavor: debian, dist: sid, version: 'unstable' }
+
+    steps:
+      -
+        name: "PKG build ${{ github.event.inputs }}]"
+        if: ${{ github.event.inputs == matrix.distro }}
+        run: echo "PKG build [${{ github.event.inputs }}] ${{ matrix.flavor }}-${{ matrix.dist }}"
