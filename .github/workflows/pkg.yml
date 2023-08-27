@@ -51,6 +51,6 @@ jobs:
 
     steps:
       -
-        name: "PKG build ${{ github.event.inputs }}]"
-        if: ${{ github.event.inputs == matrix.distro }}
+        name: "PKG [${{ matrix.distro }}]"
+        if: ${{ env.DISTRO == matrix.distro }}
         run: echo "PKG build [${{ github.event.inputs }}] ${{ matrix.flavor }}-${{ matrix.dist }}"
