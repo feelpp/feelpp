@@ -33,6 +33,11 @@ on:
         required: true
         default: 20
         type: number
+      skip:
+        description: 'Skip build'
+        required: true
+        default: ""
+        type: string
 
 
 env:
@@ -44,6 +49,8 @@ jobs:
   build:
     uses: ./.github/workflows/pkg-dist.yml
     with:
-        dist: ${{ matrix.dist }}
-        flavor: ${{ matrix.flavor }}
+        dist: ${{ inputs.dist }}
+        flavor: ${{ inputs.flavor }}
+        parallel: ${{ inputs.parallel }}
+        skip: ${{ inputs.skip }}
 
