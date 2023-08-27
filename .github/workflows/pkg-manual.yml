@@ -42,8 +42,7 @@ env:
 
 jobs:
   build:
-    runs-on: self-pkg
-    uses: ./.github/workflows/pkg-dist.yml@develop
+    uses: ./.github/workflows/pkg-dist.yml
     with:
         dist: ${{ matrix.dist }}
         flavor: ${{ matrix.flavor }}
