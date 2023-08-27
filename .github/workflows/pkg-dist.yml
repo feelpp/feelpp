@@ -12,8 +12,8 @@ on:
                 default: "ubuntu"
             parallel:
                 required: false
-                type: number
-                default: 20
+                type: string
+                default: "20"
             skip:
                 required: false
                 type: string
