@@ -12,7 +12,7 @@ on:
 
 jobs:
     activate:
-        if: github.event.inputs.dist == 'jammy'
+        if: ${{ github.event.inputs.dist == 'jammy' && github.event.inputs.flavor == 'ubuntu' }}
         runs-on: self-pkg
         steps:
         - run: echo ok go $FLAVOR - $DIST 
