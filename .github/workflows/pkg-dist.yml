@@ -10,13 +10,21 @@ on:
                 required: true
                 type: string 
                 default: "ubuntu"
+            parallel:
+                required: false
+                type: number
+                default: 20
+            skip:
+                required: false
+                type: string
+                default: ""
 
 jobs:
     activate:
         if: ${{ github.event.inputs.dist == 'jammy' && github.event.inputs.flavor == 'ubuntu' }}
         runs-on: self-pkg
         steps:
-        - run: echo ok go $FLAVOR - $DIST 
+        - run: echo ok go ${{ FLAVOR }} - ${{ DIST }}
           shell: bash
           env:
             DIST: ${{ github.event.inputs.dist }}
@@ -31,81 +39,67 @@ jobs:
         - name: Checkout code
           uses: actions/checkout@v3
         - name: Build Feelpp package
+          if: ${{ contains( github.event.head_commit.message, 'skip feelpp' ) || contains( inputs.skip, 'skip feelpp' ) }}
           run: |
-            if [[ ${{ github.event.head_commit.message }} =~ skip\ feelpp.*|skip\ components.*|skip\ $DIST.* ]]; then
-            exit 0
-            fi
             feelpp/tools/scripts/pkg/feelpp_pkg.sh
           env:
             COMPONENT: feelpp
 
         - name: Publish Feelpp package
+          if: ${{ contains( github.event.head_commit.message, 'skip feelpp' ) || contains( inputs.skip, 'skip feelpp' )}}
           run: |
-            if [[ ${{ github.event.head_commit.message }} =~ skip\ feelpp.*|skip\ components.*|skip\ $DIST.* ]]; then
-            exit 0
-            fi
+            echo "Publishing Feelpp packages"
             feelpp/tools/scripts/pkg/feelpp_pkg_publish.sh
           env:
             COMPONENT: feelpp
 
         - name: Build  Feelpp toolboxes package
+          if: ${{ contains( github.event.head_commit.message, 'skip toolboxes' ) || contains( inputs.skip, 'skip toolboxes' ) }}
           run: |
-            if [[ ${{ github.event.head_commit.message }} =~ skip\ toolboxes.*|skip\ components.*|skip\ $DIST.* ]]; then
-            exit 0
-            fi
             feelpp/tools/scripts/pkg/feelpp_pkg.sh
           env:
             COMPONENT: feelpp-toolboxes
 
         - name: Publish Feelpp toolboxes package
+          if: ${{ contains( github.event.head_commit.message, 'skip toolboxes' ) || contains( inputs.skip, 'skip toolboxes' )}}
           run: |
-            if [[ ${{ github.event.head_commit.message }} =~ skip\ toolboxes.*|skip\ components.*|skip\ $DIST.* ]]; then
-            exit 0
-            fi
+            echo "Publishing Feelpp toolboxes packages"
             feelpp/tools/scripts/pkg/feelpp_pkg_publish.sh
           env:
             COMPONENT: feelpp-toolboxes
 
         - name: Build Feelpp MOR package
+          if: ${{ contains( github.event.head_commit.message, 'skip mor' ) || contains( inputs.skip, 'skip mor' )}}
           run: |
-            if [[ ${{ github.event.head_commit.message }} =~ skip\ mor.*|skip\ components.*|skip\ $DIST.* ]]; then
-            exit 0
-            fi
             feelpp/tools/scripts/pkg/feelpp_pkg.sh
           env:
             COMPONENT: feelpp-mor
 
         - name: Publish Feelpp MOR package
+          if: ${{ contains( github.event.head_commit.message, 'skip mor' ) || contains( inputs.skip, 'skip mor' )}}
           run: |
-            if [[ ${{ github.event.head_commit.message }} =~ skip\ mor.*|skip\ components.*|skip\ $DIST.* ]]; then
-            exit 0
-            fi
+            echo "Publishing Feelpp MOR packages"
             feelpp/tools/scripts/pkg/feelpp_pkg_publish.sh
           env:
             COMPONENT: feelpp-mor
 
         - name: Build Feelpp Python package
+          if: ${{ contains( github.event.head_commit.message, 'skip python' ) || contains( inputs.skip, 'skip python' ) }}
           run: |
-            if [[ ${{ github.event.head_commit.message }} =~ skip\ python.*|skip\ components.*|skip\ $DIST.* ]]; then
-            exit 0
-            fi
             feelpp/tools/scripts/pkg/feelpp_pkg.sh
           env:
             COMPONENT: feelpp-python
 
         - name: Publish Feelpp Python package
+          if: ${{ contains( github.event.head_commit.message, 'skip python' ) || contains( inputs.skip, 'skip python' ) }}
           run: |
-            if [[ ${{ github.event.head_commit.message }} =~ skip\ python.*|skip\ components.*|skip\ $DIST.* ]]; then
-            exit 0
-            fi
+            echo "Publishing Feelpp Python packages"
             feelpp/tools/scripts/pkg/feelpp_pkg_publish.sh
           env:
             COMPONENT: feelpp-python
 
         - name: Build and publish Feelpp Docker package
+          if: ${{ contains( github.event.head_commit.message, 'skip docker' ) || contains( inputs.skip, 'skip docker' )}}
           run: |
-            if [[ ${{ github.event.head_commit.message }} =~ skip\ docker.* ]]; then
-            exit 0
-            fi
             feelpp/tools/scripts/pkg/feelpp_pkg_docker.sh
 
