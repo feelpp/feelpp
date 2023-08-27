@@ -1,4 +1,4 @@
-name: Feelpp CI
+name: Feelpp PKG CI
 
 on:
   push:
