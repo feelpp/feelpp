@@ -48,9 +48,9 @@ jobs:
           - { distro: 'debian/bullseye', flavor: debian, dist: bullseye, version: '11' }
           - { distro: 'debian/testing', flavor: debian, dist: testing, version: '13' }
           - { distro: 'debian/sid', flavor: debian, dist: sid, version: 'unstable' }
-      if: ${{ matrix.distro == inputs.dist }}
-      uses: feelpp/feelpp/.github/workflows/pkg-dist.yml@develop
-      with:
+    if: ${{ matrix.distro == inputs.dist }}
+    uses: feelpp/feelpp/.github/workflows/pkg-dist.yml@develop
+    with:
         dist: ${{ matrix.dist }}
         flavor: ${{ matrix.flavor }}
 
