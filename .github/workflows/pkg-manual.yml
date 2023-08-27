@@ -31,8 +31,8 @@ on:
       parallel:
         description: 'Number of parallel jobs'
         required: true
-        default: 20
-        type: number
+        default: "20"
+        type: string
       skip:
         description: 'Skip build'
         required: true
