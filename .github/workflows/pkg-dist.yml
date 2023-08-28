@@ -1,0 +1,105 @@
+name: Feelpp PKG Reusable Workflow
+on:
+    workflow_call:
+        inputs:
+            dist: 
+                required: true
+                type: string
+                default: "jammy"
+            flavor: 
+                required: true
+                type: string 
+                default: "ubuntu"
+            parallel:
+                required: false
+                type: string
+                default: "20"
+            skip:
+                required: false
+                type: string
+                default: ""
+
+jobs:
+    activate:
+        if: ${{ github.event.inputs.dist == 'jammy' && github.event.inputs.flavor == 'ubuntu' }}
+        runs-on: self-pkg
+        steps:
+        - run: echo ok go ${{ env.FLAVOR }} - ${{ env.DIST }}
+          shell: bash
+          env:
+            DIST: ${{ github.event.inputs.dist }}
+            FLAVOR: ${{ github.event.inputs.flavor }}
+    build:
+        needs: activate
+        runs-on: self-pkg
+        env:
+            DIST: ${{ github.event.inputs.dist }}
+            FLAVOR: ${{ github.event.inputs.flavor }}
+        steps:
+        - name: Checkout code
+          uses: actions/checkout@v3
+        - name: Build Feelpp package
+          if: ${{ !contains( github.event.head_commit.message, 'skip feelpp' ) && !contains( inputs.skip, 'skip feelpp' ) }}
+          run: |
+            feelpp/tools/scripts/pkg/feelpp_pkg.sh
+          env:
+            COMPONENT: feelpp
+
+        - name: Publish Feelpp package
+          if: ${{ !contains( github.event.head_commit.message, 'skip feelpp' ) && !contains( inputs.skip, 'skip feelpp' )}}
+          run: |
+            echo "Publishing Feelpp packages"
+            feelpp/tools/scripts/pkg/feelpp_pkg_publish.sh
+          env:
+            COMPONENT: feelpp
+
+        - name: Build  Feelpp toolboxes package
+          if: ${{ !contains( github.event.head_commit.message, 'skip toolboxes' ) && !contains( inputs.skip, 'skip toolboxes' ) }}
+          run: |
+            feelpp/tools/scripts/pkg/feelpp_pkg.sh
+          env:
+            COMPONENT: feelpp-toolboxes
+
+        - name: Publish Feelpp toolboxes package
+          if: ${{ !contains( github.event.head_commit.message, 'skip toolboxes' ) && !contains( inputs.skip, 'skip toolboxes' )}}
+          run: |
+            echo "Publishing Feelpp toolboxes packages"
+            feelpp/tools/scripts/pkg/feelpp_pkg_publish.sh
+          env:
+            COMPONENT: feelpp-toolboxes
+
+        - name: Build Feelpp MOR package
+          if: ${{ !contains( github.event.head_commit.message, 'skip mor' ) && !contains( inputs.skip, 'skip mor' )}}
+          run: |
+            feelpp/tools/scripts/pkg/feelpp_pkg.sh
+          env:
+            COMPONENT: feelpp-mor
+
+        - name: Publish Feelpp MOR package
+          if: ${{ !contains( github.event.head_commit.message, 'skip mor' ) && !contains( inputs.skip, 'skip mor' )}}
+          run: |
+            echo "Publishing Feelpp MOR packages"
+            feelpp/tools/scripts/pkg/feelpp_pkg_publish.sh
+          env:
+            COMPONENT: feelpp-mor
+
+        - name: Build Feelpp Python package
+          if: ${{ !contains( github.event.head_commit.message, 'skip python' ) && !contains( inputs.skip, 'skip python' ) }}
+          run: |
+            feelpp/tools/scripts/pkg/feelpp_pkg.sh
+          env:
+            COMPONENT: feelpp-python
+
+        - name: Publish Feelpp Python package
+          if: ${{ !contains( github.event.head_commit.message, 'skip python' ) && !contains( inputs.skip, 'skip python' ) }}
+          run: |
+            echo "Publishing Feelpp Python packages"
+            feelpp/tools/scripts/pkg/feelpp_pkg_publish.sh
+          env:
+            COMPONENT: feelpp-python
+
+        - name: Build and publish Feelpp Docker package
+          if: ${{ !contains( github.event.head_commit.message, 'skip docker' ) && !contains( inputs.skip, 'skip docker' )}}
+          run: |
+            feelpp/tools/scripts/pkg/feelpp_pkg_docker.sh
+
