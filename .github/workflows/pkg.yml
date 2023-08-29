@@ -4,34 +4,6 @@ on:
   push:
     branches:
       - develop
-  workflow_dispatch:
-    inputs:
-      dist:
-        description: 'Flavor/Distribution to build'
-        required: true
-        default: 'ubuntu/jammy'
-        type: choice
-        options:
-        - 'ubuntu/jammy'
-        - 'ubuntu/focal'
-        - 'ubuntu/kinetic'
-        - 'ubuntu/lunar'
-        - 'debian/bookworm'
-        - 'debian/bullseye'
-        - 'debian/testing'
-        - 'debian/sid'
-      parallel:
-        description: 'Number of parallel jobs'
-        required: true
-        default: 20
-        type: number
-
-
-env:
-  DISTRO: ${{ inputs.dist || 'ubuntu/jammy' }}
-  DEB_BUILD_OPTIONS: parallel=${{ inputs.parallel || 20 }}
-  CXX: clang++
-  CC: clang
 
 jobs:
   build:
@@ -48,8 +20,9 @@ jobs:
           - { distro: 'debian/bullseye', flavor: debian, dist: bullseye, version: '11' }
           - { distro: 'debian/testing', flavor: debian, dist: testing, version: '13' }
           - { distro: 'debian/sid', flavor: debian, dist: sid, version: 'unstable' }
-    uses: feelpp/feelpp/.github/workflows/pkg-dist.yml@develop
+    uses: ./.github/workflows/pkg-dist.yml
     with:
         dist: ${{ matrix.dist }}
         flavor: ${{ matrix.flavor }}
+        parallel: 20
 
