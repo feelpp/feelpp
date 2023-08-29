@@ -35,13 +35,10 @@ jobs:
         env:
             DIST: ${{ github.event.inputs.dist }}
             FLAVOR: ${{ github.event.inputs.flavor }}
-            BUILDKITE_PASSPHRASE: ${{ secrets.BUILDKITE_PASSPHRASE }}
-            AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-            AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         steps:
         - name: Checkout code
           uses: actions/checkout@v3
-          with:
+          with: 
             submodules: true
         - name: Build Feelpp package
           if: ${{ !contains( github.event.head_commit.message, 'skip feelpp' ) && !contains( inputs.skip, 'skip feelpp' ) }}
@@ -51,12 +48,15 @@ jobs:
             COMPONENT: feelpp
 
         - name: Publish Feelpp package
-          if: ${{ !contains( github.event.head_commit.message, 'skip feelpp' ) && !contains( inputs.skip, 'skip feelpp' )}}
+          if: ${{ !contains( github.event.head_commit.message, 'skip feelpp' ) && !contains( inputs.skip, 'skip publish' )}}
           run: |
             echo "Publishing Feelpp packages"
             feelpp/tools/scripts/pkg/feelpp_pkg_publish.sh
           env:
             COMPONENT: feelpp
+            BUILDKITE_PASSPHRASE: ${{ secrets.BUILDKITE_PASSPHRASE }}
+            AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
         - name: Build  Feelpp toolboxes package
           if: ${{ !contains( github.event.head_commit.message, 'skip toolboxes' ) && !contains( inputs.skip, 'skip toolboxes' ) }}
@@ -66,12 +66,15 @@ jobs:
             COMPONENT: feelpp-toolboxes
 
         - name: Publish Feelpp toolboxes package
-          if: ${{ !contains( github.event.head_commit.message, 'skip toolboxes' ) && !contains( inputs.skip, 'skip toolboxes' )}}
+          if: ${{ !contains( github.event.head_commit.message, 'skip toolboxes' ) && !contains( inputs.skip, 'skip publish' )}}
           run: |
             echo "Publishing Feelpp toolboxes packages"
             feelpp/tools/scripts/pkg/feelpp_pkg_publish.sh
           env:
             COMPONENT: feelpp-toolboxes
+            BUILDKITE_PASSPHRASE: ${{ secrets.BUILDKITE_PASSPHRASE }}
+            AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
         - name: Build Feelpp MOR package
           if: ${{ !contains( github.event.head_commit.message, 'skip mor' ) && !contains( inputs.skip, 'skip mor' )}}
@@ -81,12 +84,15 @@ jobs:
             COMPONENT: feelpp-mor
 
         - name: Publish Feelpp MOR package
-          if: ${{ !contains( github.event.head_commit.message, 'skip mor' ) && !contains( inputs.skip, 'skip mor' )}}
+          if: ${{ !contains( github.event.head_commit.message, 'skip mor' ) && !contains( inputs.skip, 'skip publish' )}}
           run: |
             echo "Publishing Feelpp MOR packages"
             feelpp/tools/scripts/pkg/feelpp_pkg_publish.sh
           env:
             COMPONENT: feelpp-mor
+            BUILDKITE_PASSPHRASE: ${{ secrets.BUILDKITE_PASSPHRASE }}
+            AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
         - name: Build Feelpp Python package
           if: ${{ !contains( github.event.head_commit.message, 'skip python' ) && !contains( inputs.skip, 'skip python' ) }}
@@ -96,12 +102,15 @@ jobs:
             COMPONENT: feelpp-python
 
         - name: Publish Feelpp Python package
-          if: ${{ !contains( github.event.head_commit.message, 'skip python' ) && !contains( inputs.skip, 'skip python' ) }}
+          if: ${{ !contains( github.event.head_commit.message, 'skip python' ) && !contains( inputs.skip, 'skip publish' ) }}
           run: |
             echo "Publishing Feelpp Python packages"
             feelpp/tools/scripts/pkg/feelpp_pkg_publish.sh
           env:
             COMPONENT: feelpp-python
+            BUILDKITE_PASSPHRASE: ${{ secrets.BUILDKITE_PASSPHRASE }}
+            AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
         - name: Build and publish Feelpp Docker package
           if: ${{ !contains( github.event.head_commit.message, 'skip docker' ) && !contains( inputs.skip, 'skip docker' )}}
