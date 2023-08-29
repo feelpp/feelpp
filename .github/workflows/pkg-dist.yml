@@ -21,7 +21,7 @@ on:
 
 jobs:
     activate:
-        if: ${{ github.event.inputs.dist == 'jammy' && github.event.inputs.flavor == 'ubuntu' }}
+        if: ${{ github.event.inputs.flavor == 'ubuntu' || github.event.inputs.flavor == 'debian' }}
         runs-on: self-pkg
         steps:
         - run: echo ok go ${{ env.FLAVOR }} - ${{ env.DIST }}
