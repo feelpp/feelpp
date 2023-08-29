@@ -41,6 +41,8 @@ jobs:
         steps:
         - name: Checkout code
           uses: actions/checkout@v3
+          with:
+            submodules: true
         - name: Build Feelpp package
           if: ${{ !contains( github.event.head_commit.message, 'skip feelpp' ) && !contains( inputs.skip, 'skip feelpp' ) }}
           run: |
