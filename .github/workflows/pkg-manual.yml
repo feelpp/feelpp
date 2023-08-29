@@ -1,5 +1,5 @@
 name: Feelpp PKG Manual CI
-
+run-name: ":factory: Feel++ [ ${{ inputs.flavor }}/${{ inputs.dist }} ]"
 on:
   push:
     branches:
