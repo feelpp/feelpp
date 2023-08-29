@@ -38,7 +38,7 @@ MathJax.Hub.Config({
  <tr id="projectrow">
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign">
-   <div id="projectname">Feel++<span id="projectnumber">&#160;0.111.0-alpha.5</span>
+   <div id="projectname">Feel++<span id="projectnumber">&#160;0.111.0-preview.6</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -100,18 +100,20 @@ $(document).ready(function(){initNavTree('classFeel_1_1BVHRay.html',''); initRes
 </div>
 
 <div class="header">
-  <div class="headertitle"><div class="title">Feel::BVHRay Member List</div></div>
+  <div class="headertitle"><div class="title">Feel::BVHRay&lt; RealDim &gt; Member List</div></div>
 </div><!--header-->
 <div class="contents">
 
-<p>This is the complete list of members for <a class="el" href="classFeel_1_1BVHRay.html">Feel::BVHRay</a>, including all inherited members.</p>
+<p>This is the complete list of members for <a class="el" href="classFeel_1_1BVHRay.html">Feel::BVHRay&lt; RealDim &gt;</a>, including all inherited members.</p>
 <table class="directory">
-  <tr bgcolor="#f0f0f0" class="even"><td class="entry"><b>BVHRay</b>(const vec_t &amp;orig, const vec_t &amp;dir) (defined in <a class="el" href="classFeel_1_1BVHRay.html">Feel::BVHRay</a>)</td><td class="entry"><a class="el" href="classFeel_1_1BVHRay.html">Feel::BVHRay</a></td><td class="entry"></td></tr>
-  <tr bgcolor="#f0f0f0" class="odd"><td class="entry"><b>BVHRay</b>(const BVHRay &amp;r) (defined in <a class="el" href="classFeel_1_1BVHRay.html">Feel::BVHRay</a>)</td><td class="entry"><a class="el" href="classFeel_1_1BVHRay.html">Feel::BVHRay</a></td><td class="entry"></td></tr>
-  <tr bgcolor="#f0f0f0" class="even"><td class="entry"><b>BVHRay</b>() (defined in <a class="el" href="classFeel_1_1BVHRay.html">Feel::BVHRay</a>)</td><td class="entry"><a class="el" href="classFeel_1_1BVHRay.html">Feel::BVHRay</a></td><td class="entry"></td></tr>
-  <tr bgcolor="#f0f0f0" class="odd"><td class="entry"><b>dir</b> (defined in <a class="el" href="classFeel_1_1BVHRay.html">Feel::BVHRay</a>)</td><td class="entry"><a class="el" href="classFeel_1_1BVHRay.html">Feel::BVHRay</a></td><td class="entry"></td></tr>
-  <tr bgcolor="#f0f0f0" class="even"><td class="entry"><b>origin</b> (defined in <a class="el" href="classFeel_1_1BVHRay.html">Feel::BVHRay</a>)</td><td class="entry"><a class="el" href="classFeel_1_1BVHRay.html">Feel::BVHRay</a></td><td class="entry"></td></tr>
-  <tr bgcolor="#f0f0f0" class="odd"><td class="entry"><b>vec_t</b> typedef (defined in <a class="el" href="classFeel_1_1BVHRay.html">Feel::BVHRay</a>)</td><td class="entry"><a class="el" href="classFeel_1_1BVHRay.html">Feel::BVHRay</a></td><td class="entry"></td></tr>
+  <tr bgcolor="#f0f0f0" class="even"><td class="entry"><b>BVHRay</b>(vec_t const &amp;orig, vec_t const &amp;dir, double dmin=0, double dmax=std::numeric_limits&lt; double &gt;::max()) (defined in <a class="el" href="classFeel_1_1BVHRay.html">Feel::BVHRay&lt; RealDim &gt;</a>)</td><td class="entry"><a class="el" href="classFeel_1_1BVHRay.html">Feel::BVHRay&lt; RealDim &gt;</a></td><td class="entry"></td></tr>
+  <tr bgcolor="#f0f0f0" class="odd"><td class="entry"><b>BVHRay</b>(BVHRay const &amp;)=default (defined in <a class="el" href="classFeel_1_1BVHRay.html">Feel::BVHRay&lt; RealDim &gt;</a>)</td><td class="entry"><a class="el" href="classFeel_1_1BVHRay.html">Feel::BVHRay&lt; RealDim &gt;</a></td><td class="entry"></td></tr>
+  <tr bgcolor="#f0f0f0" class="even"><td class="entry"><b>BVHRay</b>(BVHRay &amp;&amp;)=default (defined in <a class="el" href="classFeel_1_1BVHRay.html">Feel::BVHRay&lt; RealDim &gt;</a>)</td><td class="entry"><a class="el" href="classFeel_1_1BVHRay.html">Feel::BVHRay&lt; RealDim &gt;</a></td><td class="entry"></td></tr>
+  <tr bgcolor="#f0f0f0" class="odd"><td class="entry"><b>dir</b>() const noexcept (defined in <a class="el" href="classFeel_1_1BVHRay.html">Feel::BVHRay&lt; RealDim &gt;</a>)</td><td class="entry"><a class="el" href="classFeel_1_1BVHRay.html">Feel::BVHRay&lt; RealDim &gt;</a></td><td class="entry"></td></tr>
+  <tr bgcolor="#f0f0f0" class="even"><td class="entry"><b>distanceMax</b>() const (defined in <a class="el" href="classFeel_1_1BVHRay.html">Feel::BVHRay&lt; RealDim &gt;</a>)</td><td class="entry"><a class="el" href="classFeel_1_1BVHRay.html">Feel::BVHRay&lt; RealDim &gt;</a></td><td class="entry"></td></tr>
+  <tr bgcolor="#f0f0f0" class="odd"><td class="entry"><b>distanceMin</b>() const (defined in <a class="el" href="classFeel_1_1BVHRay.html">Feel::BVHRay&lt; RealDim &gt;</a>)</td><td class="entry"><a class="el" href="classFeel_1_1BVHRay.html">Feel::BVHRay&lt; RealDim &gt;</a></td><td class="entry"></td></tr>
+  <tr bgcolor="#f0f0f0" class="even"><td class="entry"><b>origin</b>() const noexcept (defined in <a class="el" href="classFeel_1_1BVHRay.html">Feel::BVHRay&lt; RealDim &gt;</a>)</td><td class="entry"><a class="el" href="classFeel_1_1BVHRay.html">Feel::BVHRay&lt; RealDim &gt;</a></td><td class="entry"></td></tr>
+  <tr bgcolor="#f0f0f0" class="odd"><td class="entry"><b>vec_t</b> typedef (defined in <a class="el" href="classFeel_1_1BVHRay.html">Feel::BVHRay&lt; RealDim &gt;</a>)</td><td class="entry"><a class="el" href="classFeel_1_1BVHRay.html">Feel::BVHRay&lt; RealDim &gt;</a></td><td class="entry"></td></tr>
 </table></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->

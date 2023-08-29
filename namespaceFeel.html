@@ -38,7 +38,7 @@ MathJax.Hub.Config({
  <tr id="projectrow">
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign">
-   <div id="projectname">Feel++<span id="projectnumber">&#160;0.111.0-alpha.5</span>
+   <div id="projectname">Feel++<span id="projectnumber">&#160;0.111.0-preview.6</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -167,9 +167,18 @@ Classes</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1BlocksStencilPattern.html">BlocksStencilPattern</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1BVHRay.html">BVHRay</a></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1BVH.html">BVH</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classFeel_1_1BVH.html" title="BVH base class.">BVH</a> base class.  <a href="classFeel_1_1BVH.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1BVHTree.html">BVHTree</a></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1BVH__InHouse.html">BVH_InHouse</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">in house implementation of <a class="el" href="classFeel_1_1BVH.html" title="BVH base class.">BVH</a> tool  <a href="classFeel_1_1BVH__InHouse.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1BVH__ThirdParty.html">BVH_ThirdParty</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">implementation of <a class="el" href="classFeel_1_1BVH.html" title="BVH base class.">BVH</a> tool with an external third party  <a href="classFeel_1_1BVH__ThirdParty.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1BVHEnum.html">BVHEnum</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1BVHRay.html">BVHRay</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Checker.html">Checker</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classFeel_1_1Checker.html" title="Checker class.">Checker</a> class.  <a href="classFeel_1_1Checker.html#details">More...</a><br /></td></tr>
@@ -2033,6 +2042,10 @@ template&lt;typename MeshType , std::enable_if_t&lt; std::is_base_of_v&lt; <a cl
 <tr class="memitem:a7793cabd1778915a23b69cbb156d2049"><td class="memTemplParams" colspan="2">template&lt;typename MeshType &gt; </td></tr>
 <tr class="memitem:a7793cabd1778915a23b69cbb156d2049"><td class="memTemplItemLeft" align="right" valign="top">boundarypoints_t&lt; MeshType &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#a7793cabd1778915a23b69cbb156d2049">boundarypoints</a> (MeshType const &amp;mesh)</td></tr>
 <tr class="separator:a7793cabd1778915a23b69cbb156d2049"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6b95b8897fa3cc4adfb8af0901604409"><td class="memTemplParams" colspan="2"><a id="a6b95b8897fa3cc4adfb8af0901604409" name="a6b95b8897fa3cc4adfb8af0901604409"></a>
+template&lt;typename... Ts&gt; </td></tr>
+<tr class="memitem:a6b95b8897fa3cc4adfb8af0901604409"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><b>boundingVolumeHierarchy</b> (Ts &amp;&amp;... v)</td></tr>
+<tr class="separator:a6b95b8897fa3cc4adfb8af0901604409"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad5ec83f6a08b85c0eb180423dbee604d"><td class="memItemLeft" align="right" valign="top"><a id="ad5ec83f6a08b85c0eb180423dbee604d" name="ad5ec83f6a08b85c0eb180423dbee604d"></a>
 FEELPP_NO_EXPORT RegionTree::element_base *&#160;</td><td class="memItemRight" valign="bottom"><b>build</b> (RegionTree::pbox_container_type &amp;b, const node_type &amp;bmin, const node_type &amp;bmax, <a class="el" href="namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58">size_type</a> last_dir)</td></tr>
 <tr class="separator:ad5ec83f6a08b85c0eb180423dbee604d"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -3324,9 +3337,6 @@ FEELPP_EXPORT std::string&#160;</td><td class="memItemRight" valign="bottom"><b>
 <tr class="memitem:a3fba05c2ab66ca5ee79ad2c24ff4b576"><td class="memItemLeft" align="right" valign="top"><a id="a3fba05c2ab66ca5ee79ad2c24ff4b576" name="a3fba05c2ab66ca5ee79ad2c24ff4b576"></a>
 <a class="el" href="classFeel_1_1StatusRequestHTTP.html">StatusRequestHTTP</a>&#160;</td><td class="memItemRight" valign="bottom"><b>requestHTTPPOST</b> (std::string const &amp;url, std::vector&lt; std::string &gt; const &amp;headers, std::ostream &amp;ofile)</td></tr>
 <tr class="separator:a3fba05c2ab66ca5ee79ad2c24ff4b576"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a415be2210280a8a00f7e27b517708925"><td class="memItemLeft" align="right" valign="top"><a id="a415be2210280a8a00f7e27b517708925" name="a415be2210280a8a00f7e27b517708925"></a>
-constexpr float&#160;</td><td class="memItemRight" valign="bottom"><b>robust_const</b> (<a class="el" href="classint.html">int</a> n)</td></tr>
-<tr class="separator:a415be2210280a8a00f7e27b517708925"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaa90565f9cd5f52a52eeea0e4b7858b87"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__Core.html#gaa90565f9cd5f52a52eeea0e4b7858b87">sanitize</a> (std::string const  &amp;s)</td></tr>
 <tr class="memdesc:gaa90565f9cd5f52a52eeea0e4b7858b87"><td class="mdescLeft">&#160;</td><td class="mdescRight">trim string to remove special characters  <a href="group__Core.html#gaa90565f9cd5f52a52eeea0e4b7858b87">More...</a><br /></td></tr>
 <tr class="separator:gaa90565f9cd5f52a52eeea0e4b7858b87"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -4041,6 +4051,9 @@ constexpr auto &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>_quad
 <tr class="memitem:aad84e7e2a9fa842ee69b70f4d4e4cd60"><td class="memItemLeft" align="right" valign="top"><a id="aad84e7e2a9fa842ee69b70f4d4e4cd60" name="aad84e7e2a9fa842ee69b70f4d4e4cd60"></a>
 constexpr auto &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>_quadptloc</b> = NA::identifier&lt;na::quadptloc&gt;</td></tr>
 <tr class="separator:aad84e7e2a9fa842ee69b70f4d4e4cd60"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afb4e45d34ddb0c3ec79dccd09b976a91"><td class="memItemLeft" align="right" valign="top"><a id="afb4e45d34ddb0c3ec79dccd09b976a91" name="afb4e45d34ddb0c3ec79dccd09b976a91"></a>
+constexpr auto &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>_quality</b> = NA::identifier&lt;na::quality&gt;</td></tr>
+<tr class="separator:afb4e45d34ddb0c3ec79dccd09b976a91"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5444d5b720211bcb7d8bb3a708d09c9a"><td class="memItemLeft" align="right" valign="top"><a id="a5444d5b720211bcb7d8bb3a708d09c9a" name="a5444d5b720211bcb7d8bb3a708d09c9a"></a>
 constexpr auto &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>_range</b> = NA::identifier&lt;na::range&gt;</td></tr>
 <tr class="separator:a5444d5b720211bcb7d8bb3a708d09c9a"><td class="memSeparator" colspan="2">&#160;</td></tr>

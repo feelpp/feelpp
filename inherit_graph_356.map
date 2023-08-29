@@ -1,5 +1,5 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classFeel_1_1Operator.html" title=" " alt="" coords="5,13,283,69"/>
-<area shape="rect" id="node2" href="$classFeel_1_1OperatorLinear.html" title=" " alt="" coords="331,5,572,76"/>
-<area shape="rect" id="node3" href="$classFeel_1_1Projector.html" title="Projection made easy." alt="" coords="620,20,844,61"/>
+<area shape="rect" id="node1" href="$classFeel_1_1Operator.html" title=" " alt="" coords="5,13,224,54"/>
+<area shape="rect" id="node2" href="$classFeel_1_1OperatorLinear.html" title=" " alt="" coords="272,5,517,61"/>
+<area shape="rect" id="node3" href="$classFeel_1_1OperatorInterpolation.html" title="Global interpolation operator." alt="" coords="565,5,844,61"/>
 </map>
