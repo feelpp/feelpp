@@ -19,7 +19,6 @@ on:
 
 jobs:
   build:
-    runs-on: self-pkg
     strategy:
       fail-fast: false
       matrix:
