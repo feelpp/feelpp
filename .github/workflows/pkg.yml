@@ -14,7 +14,7 @@ on:
       skip:
         description: 'Skip build'
         required: false
-        default: "false"
+        default: ""
         type: string
 
 jobs:
