@@ -4,6 +4,18 @@ on:
   push:
     branches:
       - develop
+  workflow_dispatch:
+    inputs:
+      parallel:
+        description: 'Number of parallel jobs'
+        required: false
+        default: "20"
+        type: string
+      skip:
+        description: 'Skip build'
+        required: false
+        default: "false"
+        type: string
 
 jobs:
   build:
@@ -24,5 +36,7 @@ jobs:
     with:
         dist: ${{ matrix.dist }}
         flavor: ${{ matrix.flavor }}
-        parallel: 20
+        parallel: ${{ github.event.inputs.parallel }}
+        skip: ${{ github.event.inputs.skip }}
+    secrets: inherit
 

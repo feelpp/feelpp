@@ -30,12 +30,12 @@ on:
         - 'sid'
       parallel:
         description: 'Number of parallel jobs'
-        required: true
+        required: false
         default: "20"
         type: string
       skip:
         description: 'Skip build'
-        required: true
+        required: false
         default: ""
         type: string
 
