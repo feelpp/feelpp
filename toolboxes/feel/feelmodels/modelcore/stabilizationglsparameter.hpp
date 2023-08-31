@@ -27,7 +27,7 @@ public :
     using mesh_t = typename super_type::mesh_t;// MeshType;
     using mesh_ptr_t = typename super_type::mesh_ptr_t;
 
-    static const uint16_type nOrder = OrderPoly;
+    static inline const uint16_type nOrder = OrderPoly;
     using space_t = Pdh_type<mesh_t,nOrder>;
     using space_ptr_t = std::shared_ptr<space_t>;
     using element_t = typename space_t::element_type;

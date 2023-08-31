@@ -68,10 +68,10 @@ public :
 
     typedef typename matrix_node<value_type>::type points_type;
 
-    static const uint32_type Dim = Convex::nDim;
-    static const uint32_type convexOrder = Convex::nOrder;
-    static const uint32_type topological_dimension = Convex::topological_dimension;
-    static const uint32_type nRealDim = Convex::nRealDim;
+    static inline const uint32_type Dim = Convex::nDim;
+    static inline const uint32_type convexOrder = Convex::nOrder;
+    static inline const uint32_type topological_dimension = Convex::topological_dimension;
+    static inline const uint32_type nRealDim = Convex::nRealDim;
 
     static const size_type Shape = Convex::Shape;
 
@@ -84,11 +84,11 @@ public :
 
     typedef Reference<Convex, Dim, convexOrder, Dim/*nRealDim*/, value_type> RefElem;
 
-    static const uint32_type numPoints = conv_order_type::type::numPoints;
-    static const uint32_type nbPtsPerVertex = conv_order_type::type::nbPtsPerVertex;
-    static const uint32_type nbPtsPerEdge = conv_order_type::type::nbPtsPerEdge;
-    static const uint32_type nbPtsPerFace = conv_order_type::type::nbPtsPerFace;
-    static const uint32_type nbPtsPerVolume = conv_order_type::type::nbPtsPerVolume;
+    static inline const uint32_type numPoints = conv_order_type::type::numPoints;
+    static inline const uint32_type nbPtsPerVertex = conv_order_type::type::nbPtsPerVertex;
+    static inline const uint32_type nbPtsPerEdge = conv_order_type::type::nbPtsPerEdge;
+    static inline const uint32_type nbPtsPerFace = conv_order_type::type::nbPtsPerFace;
+    static inline const uint32_type nbPtsPerVolume = conv_order_type::type::nbPtsPerVolume;
 
     typedef typename Convex::edge_to_point_t edge_to_point_t;
     typedef typename Convex::face_to_point_t face_to_point_t;

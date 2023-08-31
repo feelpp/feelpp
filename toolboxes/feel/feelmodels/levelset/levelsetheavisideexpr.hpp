@@ -20,9 +20,9 @@ public:
     static const size_type context = expr_levelsetphi_type::context;
     static const bool is_terminal = false;
 
-    //static const uint16_type imorder = expr_levelsetphi_type::imorder;
-    //static const uint16_type imorderDefault = 2*expr_levelsetphi_type::imorder;
-    //static const uint16_type imorder = (IMOrder>=0) ? IMOrder: imorderDefault;
+    //static inline const uint16_type imorder = expr_levelsetphi_type::imorder;
+    //static inline const uint16_type imorderDefault = 2*expr_levelsetphi_type::imorder;
+    //static inline const uint16_type imorder = (IMOrder>=0) ? IMOrder: imorderDefault;
     //static const bool imIsPoly = false;
 
     template<typename Func>
