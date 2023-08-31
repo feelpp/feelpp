@@ -2023,8 +2023,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
     // typedef on integral mesh (expr) :
     typedef typename eval::gm_type gm_expr_type;
     typedef typename eval::gm1_type gm1_expr_type;
-    static const uint16_type nDimRange = gm_expr_type::nDim;
-    static const size_type gmc_context_expr_v = expression_type::context|vm::POINT|vm::JACOBIAN;
+    constexpr uint16_type nDimRange = gm_expr_type::nDim;
+    constexpr size_type gmc_context_expr_v = expression_type::context|vm::POINT|vm::JACOBIAN;
     typedef typename gm_expr_type::template Context<typename eval::element_type> gmc_expr_type;
     typedef typename gm1_expr_type::template Context<typename eval::element_type> gmc1_expr_type;
     typedef std::shared_ptr<gmc_expr_type> gmc_expr_ptrtype;
@@ -2041,10 +2041,10 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
     // test
     typedef typename FormType::gm_1_type gm_formTest_type;
     typedef typename FormType::gm1_1_type gm1_formTest_type;
-    static const uint16_type nDimTest = gm_formTest_type::nDim;
-    static const uint16_type gmTestRangeRelation = ( nDimTest > nDimRange )? nDimTest-nDimRange : nDimRange-nDimTest;
+    constexpr uint16_type nDimTest = gm_formTest_type::nDim;
+    constexpr uint16_type gmTestRangeRelation = ( nDimTest > nDimRange )? nDimTest-nDimRange : nDimRange-nDimTest;
     typedef typename FormType::mesh_element_1_type geoelement_formTest_type;
-    static const size_type gmc_context_formTest_v = expression_type::context|vm::POINT|vm::JACOBIAN;
+    constexpr size_type gmc_context_formTest_v = expression_type::context|vm::POINT|vm::JACOBIAN;
     typedef typename gm_formTest_type::template Context<geoelement_formTest_type,gmTestRangeRelation> gmc_formTest_type;
     typedef typename gm1_formTest_type::template Context<geoelement_formTest_type,gmTestRangeRelation> gmc1_formTest_type;
     typedef std::shared_ptr<gmc_formTest_type> gmc_formTest_ptrtype;
@@ -2059,10 +2059,10 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
     // trial
     typedef typename FormType::gm_2_type gm_formTrial_type;
     typedef typename FormType::gm1_2_type gm1_formTrial_type;
-    static const uint16_type nDimTrial = gm_formTrial_type::nDim;
-    static const uint16_type gmTrialRangeRelation = ( nDimTrial > nDimRange )? nDimTrial-nDimRange : nDimRange-nDimTrial;
+    constexpr uint16_type nDimTrial = gm_formTrial_type::nDim;
+    constexpr uint16_type gmTrialRangeRelation = ( nDimTrial > nDimRange )? nDimTrial-nDimRange : nDimRange-nDimTrial;
     typedef typename FormType::mesh_element_2_type geoelement_formTrial_type;
-    static const size_type gmc_context_formTrial_v = expression_type::context|vm::POINT|vm::JACOBIAN;
+    constexpr size_type gmc_context_formTrial_v = expression_type::context|vm::POINT|vm::JACOBIAN;
     typedef typename gm_formTrial_type::template Context<geoelement_formTrial_type,gmTrialRangeRelation> gmc_formTrial_type;
     typedef typename gm1_formTrial_type::template Context<geoelement_formTrial_type,gmTrialRangeRelation> gmc1_formTrial_type;
     typedef std::shared_ptr<gmc_formTrial_type> gmc_formTrial_ptrtype;

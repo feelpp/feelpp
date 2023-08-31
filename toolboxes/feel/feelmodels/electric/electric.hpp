@@ -74,16 +74,16 @@ public:
 
     // mesh
     typedef ConvexType convex_type;
-    static const uint16_type nDim = convex_type::nDim;
-    static const uint16_type nOrderGeo = convex_type::nOrder;
-    static const uint16_type nRealDim = convex_type::nRealDim;
+    static inline const uint16_type nDim = convex_type::nDim;
+    static inline const uint16_type nOrderGeo = convex_type::nOrder;
+    static inline const uint16_type nRealDim = convex_type::nRealDim;
     typedef Mesh<convex_type> mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     typedef mesh_type mesh_electric_type;
 
     // function space electric-potential
     typedef BasisPotentialType basis_electricpotential_type;
-    static const uint16_type nOrderPolyElectricPotential = basis_electricpotential_type::nOrder;
+    static inline const uint16_type nOrderPolyElectricPotential = basis_electricpotential_type::nOrder;
     typedef FunctionSpace<mesh_type, bases<basis_electricpotential_type> > space_electricpotential_type;
     typedef std::shared_ptr<space_electricpotential_type> space_electricpotential_ptrtype;
     typedef typename space_electricpotential_type::element_type element_electricpotential_type;

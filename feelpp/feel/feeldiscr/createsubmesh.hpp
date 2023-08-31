@@ -56,7 +56,7 @@ public :
     typedef typename boost::tuples::template element<0, range_type>::type idim_type;
     typedef typename boost::tuples::template element<1, range_type>::type iterator_type;
 
-    static const uint16_type tag = TheTag;
+    static inline const uint16_type tag = TheTag;
     typedef MeshType mesh_type;
     typedef typename mesh_type::value_type value_type;
     using index_type = typename mesh_type::index_type;

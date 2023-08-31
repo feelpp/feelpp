@@ -72,7 +72,7 @@ public:
     // -- TYPEDEFS --
     typedef Space space_type;
 
-    static const uint16_type Dim = space_type::nDim;
+    static inline const uint16_type Dim = space_type::nDim;
     typedef typename space_type::value_type value_type;
 
     /* backend */
@@ -102,8 +102,8 @@ public:
     typedef typename space_i_type::element_type element_i_type;
 
     /* quadrature */
-    static const uint16_type uOrder = boost::fusion::result_of::value_at_c<typename Space::basis_type, 0>::type::nOrder;
-    static const uint16_type pOrder = boost::fusion::result_of::value_at_c<typename Space::basis_type, 1>::type::nOrder;
+    static inline const uint16_type uOrder = boost::fusion::result_of::value_at_c<typename Space::basis_type, 0>::type::nOrder;
+    static inline const uint16_type pOrder = boost::fusion::result_of::value_at_c<typename Space::basis_type, 1>::type::nOrder;
     template<int Order>
     struct im
     {

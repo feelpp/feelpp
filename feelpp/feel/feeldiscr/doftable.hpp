@@ -190,13 +190,13 @@ public:
 
     using dof_from_edge_type = DofFromEdge<doftable_type,fe_type>;
 
-    static const uint16_type nOrder = fe_type::nOrder;
-    static const uint16_type nDim = mesh_type::nDim;
-    static const uint16_type nRealDim = mesh_type::nRealDim;
-    static const uint16_type Shape = mesh_type::Shape;
-    static const uint16_type nComponents = fe_type::nComponents;
-    static const uint16_type nComponents1 = fe_type::nComponents1;
-    static const uint16_type nComponents2 = fe_type::nComponents2;
+    static inline const uint16_type nOrder = fe_type::nOrder;
+    static inline const uint16_type nDim = mesh_type::nDim;
+    static inline const uint16_type nRealDim = mesh_type::nRealDim;
+    static inline const uint16_type Shape = mesh_type::Shape;
+    static inline const uint16_type nComponents = fe_type::nComponents;
+    static inline const uint16_type nComponents1 = fe_type::nComponents1;
+    static inline const uint16_type nComponents2 = fe_type::nComponents2;
 
 
     static const bool is_continuous = fe_type::isContinuous;
@@ -209,15 +209,15 @@ public:
     static const bool is_tensor2symm = FEType::is_tensor2 && is_symm_v<FEType>;
     static const bool is_modal = FEType::is_modal;
     static const bool is_product = FEType::is_product;
-    static const uint16_type nRealComponents = is_tensor2symm?(fe_type::nComponents1*(fe_type::nComponents1+1)/2):fe_type::nComponents;
+    static inline const uint16_type nRealComponents = is_tensor2symm?(fe_type::nComponents1*(fe_type::nComponents1+1)/2):fe_type::nComponents;
 
     static const bool is_p0_continuous = ( ( nOrder == 0 ) && is_continuous );
 
     static const bool is_hdiv_conforming = Feel::is_hdiv_conforming<fe_type>::value;
     static const bool is_hcurl_conforming = Feel::is_hcurl_conforming<fe_type>::value;
 
-    static const uint16_type nDofPerEdge = fe_type::nDofPerEdge;
-    static const uint16_type nDofPerElement = mpl::if_<mpl::bool_<is_product>, mpl::int_<FEType::nLocalDof*nComponents>, mpl::int_<FEType::nLocalDof> >::type::value;
+    static inline const uint16_type nDofPerEdge = fe_type::nDofPerEdge;
+    static inline const uint16_type nDofPerElement = mpl::if_<mpl::bool_<is_product>, mpl::int_<FEType::nLocalDof*nComponents>, mpl::int_<FEType::nLocalDof> >::type::value;
 
     typedef PeriodicityType periodicity_type;
     static const bool is_periodic = periodicity_type::is_periodic;
@@ -1576,11 +1576,6 @@ private:
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
-
-template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
-const uint16_type DofTable<MeshType, FEType, PeriodicityType, MortarType>::nComponents;
-template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
-const uint16_type DofTable<MeshType, FEType, PeriodicityType, MortarType>::nRealComponents;
 
 template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
 DofTable<MeshType, FEType, PeriodicityType, MortarType>::DofTable( mesh_type& mesh,

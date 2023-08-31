@@ -172,7 +172,7 @@ LevelSetRedistanciationFM<FunctionSpaceType>::initFastMarching( element_type con
             auto const modGradPhi = spaceModGradPhi->elementPtr();
             modGradPhi->on( _range=rangeInitialElts, _expr=norm2(gradv(phi)) );
 
-            static const uint16_type nDofPerElt = functionspace_type::fe_type::nDof;
+            static inline const uint16_type nDofPerElt = functionspace_type::fe_type::nDof;
             auto itElt = boost::get<1>( rangeInitialElts );
             auto enElt = boost::get<2>( rangeInitialElts );
             for( ; itElt != enElt; ++itElt )
@@ -250,7 +250,7 @@ LevelSetRedistanciationFM<FunctionSpaceType>::initFastMarching( element_type con
 
             phiRedist->setConstant( 1e8 );
 
-            static const uint16_type nDofPerElt = functionspace_type::fe_type::nDof;
+            static inline const uint16_type nDofPerElt = functionspace_type::fe_type::nDof;
             auto itElt = boost::get<1>( rangeInitialElts );
             auto enElt = boost::get<2>( rangeInitialElts );
             for( ; itElt != enElt; ++itElt )

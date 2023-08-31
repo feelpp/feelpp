@@ -62,13 +62,13 @@ class DofFromMortar
     typedef typename element_type::face_permutation_type face_permutation_type;
     using size_type = typename mesh_type::size_type;
     using mesh_marker_type = typename doftable_type::mesh_marker_type;
-    static const uint16_type nOrder = mortar_fe_type::nOrder;
-    static const uint16_type nDim = mesh_type::nDim;
-    static const uint16_type nRealDim = mesh_type::nRealDim;
-    static const uint16_type Shape = mesh_type::Shape;
-    static const uint16_type nComponents = mortar_fe_type::nComponents;
-    static const uint16_type nComponents1 = mortar_fe_type::nComponents1;
-    static const uint16_type nComponents2 = mortar_fe_type::nComponents2;
+    static inline const uint16_type nOrder = mortar_fe_type::nOrder;
+    static inline const uint16_type nDim = mesh_type::nDim;
+    static inline const uint16_type nRealDim = mesh_type::nRealDim;
+    static inline const uint16_type Shape = mesh_type::Shape;
+    static inline const uint16_type nComponents = mortar_fe_type::nComponents;
+    static inline const uint16_type nComponents1 = mortar_fe_type::nComponents1;
+    static inline const uint16_type nComponents2 = mortar_fe_type::nComponents2;
 
     static const bool is_continuous = mortar_fe_type::isContinuous;
     static const bool is_discontinuous_locally = mortar_fe_type::continuity_type::is_discontinuous_locally;
@@ -82,7 +82,7 @@ class DofFromMortar
 
     static const bool is_p0_continuous = ( ( nOrder == 0 ) && is_continuous );
 
-    static const uint16_type nDofPerElement = mpl::if_<mpl::bool_<is_product>, mpl::int_<mortar_fe_type::nLocalDof * nComponents1>, mpl::int_<mortar_fe_type::nLocalDof>>::type::value;
+    static inline const uint16_type nDofPerElement = mpl::if_<mpl::bool_<is_product>, mpl::int_<mortar_fe_type::nLocalDof * nComponents1>, mpl::int_<mortar_fe_type::nLocalDof>>::type::value;
 
     //@}
 

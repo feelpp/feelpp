@@ -36,8 +36,8 @@ public:
     typedef value_type evaluate_type;
     static const bool is_terminal = true;
 
-    static const uint16_type orderdisplacement = functionspace_disp_type::basis_type::nOrder;
-    static const uint16_type nDim = functionspace_disp_type::nDim;
+    static inline const uint16_type orderdisplacement = functionspace_disp_type::basis_type::nOrder;
+    static inline const uint16_type nDim = functionspace_disp_type::nDim;
 
     template<typename Func>
     struct HasTestFunction
