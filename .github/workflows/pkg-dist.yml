@@ -29,9 +29,10 @@ jobs:
           env:
             DIST: ${{ github.event.inputs.dist }}
             FLAVOR: ${{ github.event.inputs.flavor }}
-    build:
+    pkg:
         needs: activate
         runs-on: self-pkg
+        timeout-minutes: 600
         env:
             DIST: ${{ github.event.inputs.dist }}
             FLAVOR: ${{ github.event.inputs.flavor }}
