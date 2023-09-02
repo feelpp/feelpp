@@ -30,6 +30,7 @@ jobs:
         id: build-feelpp
         if: ${{ !contains(github.event.head_commit.message, 'skip feelpp')  && !contains(github.event.head_commit.message, 'skip components')}}
         run: |
+          echo "Building Feelpp for branch ${{ github.ref_name }}"
           feelpp/tools/scripts/buildkite/install-feelpp.sh feelpp
         env:
           TARGET: ${{ matrix.TARGET }}
