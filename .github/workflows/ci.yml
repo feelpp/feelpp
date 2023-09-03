@@ -59,6 +59,8 @@ jobs:
         env:
           TARGET: ${{ matrix.TARGET }}
           BRANCH: ${{ github.event.pull_request && github.head_ref || github.ref_name }}
+          CR_PAT: ${{ secrets.CR_PAT }}
+          CR_LOGIN: ${{ secrets.CR_LOGIN }}
 
   toolboxes:
     needs: [feelpp]
@@ -83,6 +85,8 @@ jobs:
         env:
           TARGET: ${{ matrix.TARGET }}
           BRANCH: ${{ github.event.pull_request && github.head_ref || github.ref_name }}
+          CR_PAT: ${{ secrets.CR_PAT }}
+          CR_LOGIN: ${{ secrets.CR_LOGIN }}
 
   mor:
     needs: [toolboxes]
@@ -111,6 +115,8 @@ jobs:
         env:
           TARGET: ${{ matrix.TARGET }}
           BRANCH: ${{ github.event.pull_request && github.head_ref || github.ref_name }}
+          CR_PAT: ${{ secrets.CR_PAT }}
+          CR_LOGIN: ${{ secrets.CR_LOGIN }}
 
   python:
     needs: [feelpp,toolboxes,mor]
@@ -135,3 +141,5 @@ jobs:
         env:
           TARGET: ${{ matrix.TARGET }}
           BRANCH: ${{ github.event.pull_request && github.head_ref || github.ref_name }}
+          CR_PAT: ${{ secrets.CR_PAT }}
+          CR_LOGIN: ${{ secrets.CR_LOGIN }}
