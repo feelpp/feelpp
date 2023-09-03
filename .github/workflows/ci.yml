@@ -21,6 +21,8 @@ jobs:
               - "debian:11"
               - "debian:12"
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
       - name: Workaround checkout Needed single revision issue
         run: |
           git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD'
