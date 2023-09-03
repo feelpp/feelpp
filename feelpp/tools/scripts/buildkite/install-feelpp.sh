@@ -9,9 +9,9 @@ source $(dirname $0)/common.sh
 echo '--- clone/pull feelpp/docker'
 if [ -d docker ]; then (cd docker; git pull) else git clone --depth=1 https://github.com/feelpp/docker; fi
 
-#tag=$(echo "${GITHUB_REF_NAME}" | sed -e 's/\//-/g')-$(cut -d- -f 2- <<< $(tag_from_target $TARGET))
+#tag=$(echo "${BRANCH}" | sed -e 's/\//-/g')-$(cut -d- -f 2- <<< $(tag_from_target $TARGET))
 #tag=$(cut -d- -f 2- <<< $(tag_from_target $TARGET))
-BRANCHTAG=$(echo "${GITHUB_REF_NAME}" | sed -e 's/\//-/g')
+BRANCHTAG=$(echo "${BRANCH}" | sed -e 's/\//-/g')
 tag_compiler=$(echo ${CC} | sed -e 's/-//g')
 if test "$tag_compiler" != "${tag_compiler%gcc*}"; then
     tag=$(tag_from_target $TARGET $BRANCHTAG $FEELPP_VERSION)-${tag_compiler}
@@ -62,7 +62,7 @@ docker build \
        --pull \
        --tag=ghcr.io/feelpp/${image}:${tag} \
        --build-arg=BUILD_JOBS=${JOBS}\
-       --build-arg=BRANCH=${GITHUB_REF_NAME}\
+       --build-arg=BRANCH=${BRANCH}\
        --build-arg=CXX="${CXX}" \
        --build-arg=CC="${CC}" \
        --build-arg=CONFIGURE_FLAGS="${CONFIGURE_FLAGS}" \
