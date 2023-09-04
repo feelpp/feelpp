@@ -30,6 +30,8 @@ jobs:
           echo "Running on ${{ matrix.TARGET }}"
           echo "Branch ${{ github.event.pull_request && github.head_ref || github.ref_name }}"
           echo "message ${{ github.event.head_commit.message }}"
+          echo "${{toJSON(github.event)}}"
+
       - name: Checkout code
         uses: actions/checkout@v3
       - name: Workaround checkout Needed single revision issue
