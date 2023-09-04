@@ -30,7 +30,9 @@ jobs:
           echo "Running on ${{ matrix.TARGET }}"
           echo "Branch ${{ github.event.pull_request && github.head_ref || github.ref_name }}"
           echo "message ${{ github.event.head_commit.message }}"
-          echo "${{toJSON(github.event)}}"
+          text=$(git log -1 --no-merges --pretty=%B)
+          echo "text $text"
+#          echo "${{toJSON(github.event)}}"
 
       - name: Checkout code
         uses: actions/checkout@v3
