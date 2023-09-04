@@ -10,11 +10,30 @@ on:
       - develop
 
 jobs:
+  feelpp_activate:
+    runs-on: self-docker
+    outputs:
+      head-commit-message: ${{ steps.get_head_commit_message.outputs.HEAD_COMMIT_MESSAGE }}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      with:
+        ref: ${{ env.GITHUB_SHA }}
+    - name: Get Head Commit Message
+      id: get_head_commit_message
+      run: echo "HEAD_COMMIT_MESSAGE=$(git show -s --format=%s)" >> "$GITHUB_OUTPUT"
+    - name: Print
+      run: |
+        echo "Running on ${{ matrix.TARGET }}"
+        echo "Branch ${{ github.event.pull_request && github.head_ref || github.ref_name }}"
+        echo "message ${{ steps.get_head_commit_message.outputs.HEAD_COMMIT_MESSAGE }}"
+
   feelpp:
+    needs: [feelpp_activate]
     runs-on: self-docker
     if: |
-      !contains(github.event.head_commit.message, 'skip feelpp')  &&
-      !contains(github.event.head_commit.message, 'skip components')
+      !contains ( needs.feelpp_activate.outputs.head-commit-message, 'skip feelpp' )  &&
+      !contains ( needs.feelpp_activate.outputs.head-commit-message, 'skip components' )
     continue-on-error: false
     timeout-minutes: 600
     strategy:
@@ -25,18 +44,19 @@ jobs:
               - "debian:11"
               - "debian:12"
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ env.GITHUB_SHA }}
+      - name: Get Head Commit Message
+        id: get_head_commit_message
+        run: echo "HEAD_COMMIT_MESSAGE=$(git show -s --format=%s)" >> "$GITHUB_OUTPUT"
       - name: Print
         run: |
           echo "Running on ${{ matrix.TARGET }}"
           echo "Branch ${{ github.event.pull_request && github.head_ref || github.ref_name }}"
-          echo "message ${{ github.event.head_commit.message }}"
-          text=$(git log -1 --no-merges --pretty=%B)
-          echo "text $text"
-          echo "message ${{ github.event.commits[0].message }}"
-#          echo "${{toJSON(github.event)}}"
+          echo "message ${{ steps.get_head_commit_message.outputs.HEAD_COMMIT_MESSAGE }}"
 
-      - name: Checkout code
-        uses: actions/checkout@v3
       - name: Workaround checkout Needed single revision issue
         run: |
           git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD'
