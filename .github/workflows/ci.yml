@@ -10,30 +10,28 @@ on:
       - develop
 
 jobs:
-  feelpp_activate:
+  check_skip:
     runs-on: self-docker
     outputs:
-      head-commit-message: ${{ steps.get_head_commit_message.outputs.HEAD_COMMIT_MESSAGE }}
+        check_skip_components: ${{ steps.check_skip_components.outputs.SKIP_COMPONENT }}
+        check_skip_feelpp: ${{ steps.check_skip_components.outputs.SKIP_FEELPP }}
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
       with:
         ref: ${{ env.GITHUB_SHA }}
-    - name: Get Head Commit Message
-      id: get_head_commit_message
-      run: echo "HEAD_COMMIT_MESSAGE=$(git show -s --format=%s)" >> "$GITHUB_OUTPUT"
-    - name: Print
+    - name: Check if skip components
+      id: check_skip_components
       run: |
-        echo "Running on ${{ matrix.TARGET }}"
-        echo "Branch ${{ github.event.pull_request && github.head_ref || github.ref_name }}"
-        echo "message ${{ steps.get_head_commit_message.outputs.HEAD_COMMIT_MESSAGE }}"
+        echo "SKIP_COMPONENT=$(echo $(git log -1 --pretty=%B) =~ "skip components")" >> $GITHUB_OUTPUT
+        echo "SKIP_FEELPP=$(echo $(git log -1 --pretty=%B) =~ "skip feelpp")" >> $GITHUB_OUTPUT
 
   feelpp:
-    needs: [feelpp_activate]
+    needs: [check_skip]
     runs-on: self-docker
     if: |
-      !contains ( needs.feelpp_activate.outputs.head-commit-message, 'skip feelpp' )  &&
-      !contains ( needs.feelpp_activate.outputs.head-commit-message, 'skip components' )
+      needs.check_skip.outputs.check_skip_components == 'false' &&
+      needs.check_skip.outputs.check_skip_feelpp == 'false'
     continue-on-error: false
     timeout-minutes: 600
     strategy:
@@ -46,17 +44,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-        with:
-          ref: ${{ env.GITHUB_SHA }}
-      - name: Get Head Commit Message
-        id: get_head_commit_message
-        run: echo "HEAD_COMMIT_MESSAGE=$(git show -s --format=%s)" >> "$GITHUB_OUTPUT"
-      - name: Print
-        run: |
-          echo "Running on ${{ matrix.TARGET }}"
-          echo "Branch ${{ github.event.pull_request && github.head_ref || github.ref_name }}"
-          echo "message ${{ steps.get_head_commit_message.outputs.HEAD_COMMIT_MESSAGE }}"
-
       - name: Workaround checkout Needed single revision issue
         run: |
           git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD'
@@ -81,8 +68,8 @@ jobs:
     needs: [feelpp]
     runs-on: self-docker
     if: |
-      !contains(github.event.head_commit.message, 'skip tests')  &&
-      !contains(github.event.head_commit.message, 'skip components')
+      !contains ( github.event.head_commit.message, 'skip tests')  &&
+      !contains ( github.event.head_commit.message, 'skip components')
     continue-on-error: false
     timeout-minutes: 600
     strategy:
