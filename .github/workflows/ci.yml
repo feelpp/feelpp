@@ -23,7 +23,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
       with:
-        ref: ${{ env.GITHUB_SHA }}
+        ref: ${{ github.event.pull_request.head.sha }}
     - name: Check if skip components
       id: check_skip_components
       run: |
