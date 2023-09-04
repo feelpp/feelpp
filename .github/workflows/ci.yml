@@ -13,6 +13,7 @@ jobs:
   feelpp:
     runs-on: self-docker
     continue-on-error: false
+    timeout-minutes: 600
     strategy:
           matrix:
             TARGET:
@@ -48,6 +49,7 @@ jobs:
     needs: [feelpp]
     runs-on: self-docker 
     continue-on-error: false
+    timeout-minutes: 600
     strategy:
         matrix:
             TARGET:
@@ -75,6 +77,7 @@ jobs:
     needs: [feelpp]
     runs-on: self-docker
     continue-on-error: false
+    timeout-minutes: 600
     strategy:
         matrix:
             TARGET:
@@ -103,6 +106,7 @@ jobs:
     runs-on: self-docker
     if: ${{ !contains(github.event.head_commit.message, 'skip mor') && !contains(github.event.head_commit.message, 'skip components') }}
     continue-on-error: false
+    timeout-minutes: 600
     strategy:
         matrix:
             TARGET:
@@ -134,6 +138,7 @@ jobs:
     runs-on: self-docker
     if: ${{ !contains(github.event.head_commit.message, 'skip python') && !contains(github.event.head_commit.message, 'skip components') }}
     continue-on-error: false
+    timeout-minutes: 600
     strategy:
         matrix:
             TARGET:
