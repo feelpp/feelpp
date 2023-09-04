@@ -34,29 +34,41 @@ jobs:
         fi
         if [[ $(git show -s --format=%s) =~ "skip feelpp" ]]; then
           echo "SKIP_FEELPP=true" >> $GITHUB_OUTPUT
+          echo "SKIP_FEELPP=true"
         else
           echo "SKIP_FEELPP=false" >> $GITHUB_OUTPUT
+          echo "SKIP_FEELPP=false"
         fi
         if [[ $(git show -s --format=%s) =~ "skip tests" ]]; then
           echo "SKIP_TESTS=true" >> $GITHUB_OUTPUT
+          echo "SKIP_TESTS=true"
         else
           echo "SKIP_TESTS=false" >> $GITHUB_OUTPUT
+          echo "SKIP_TESTS=false"
         fi
         if [[ $(git show -s --format=%s) =~ "skip toolboxes" ]]; then
           echo "SKIP_TOOLBOXES=true" >> $GITHUB_OUTPUT
+          echo "SKIP_TOOLBOXES=true"
         else
           echo "SKIP_TOOLBOXES=false" >> $GITHUB_OUTPUT
+          echo "SKIP_TOOLBOXES=false"
         fi
         if [[ $(git show -s --format=%s) =~ "skip mor" ]]; then
           echo "SKIP_MOR=true" >> $GITHUB_OUTPUT
+          echo "SKIP_MOR=true"
         else
           echo "SKIP_MOR=false" >> $GITHUB_OUTPUT
+          echo "SKIP_MOR=false"
         fi
         if [[ $(git show -s --format=%s) =~ "skip python" ]]; then
           echo "SKIP_PYTHON=true" >> $GITHUB_OUTPUT
+          echo "SKIP_PYTHON=true"
         else
           echo "SKIP_PYTHON=false" >> $GITHUB_OUTPUT
+          echo "SKIP_PYTHON=false"
         fi
+
+
 
   feelpp:
     needs: [check_skip]
