@@ -27,13 +27,36 @@ jobs:
     - name: Check if skip components
       id: check_skip_components
       run: |
-        echo "SKIP_COMPONENT=$(echo $(git log -1 --pretty=%B) =~ "skip components")" >> $GITHUB_OUTPUT
-        echo "SKIP_FEELPP=$(echo $(git log -1 --pretty=%B) =~ "skip feelpp")" >> $GITHUB_OUTPUT
-        echo "SKIP_TESTS=$(echo $(git log -1 --pretty=%B) =~ "skip tests")" >> $GITHUB_OUTPUT
-        echo "SKIP_TOOLBOXES=$(echo $(git log -1 --pretty=%B) =~ "skip toolboxes")" >> $GITHUB_OUTPUT
-        echo "SKIP_MOR=$(echo $(git log -1 --pretty=%B) =~ "skip mor")" >> $GITHUB_OUTPUT
-        echo "SKIP_PYTHON=$(echo $(git log -1 --pretty=%B) =~ "skip python")" >> $GITHUB_OUTPUT
-        echo "$(echo $(git log -1 --pretty=%B) =~ "skip feelpp")"
+        if [[ $(git show -s --format=%s) =~ "skip components" ]]; then
+          echo "SKIP_COMPONENT=true" >> $GITHUB_OUTPUT
+        else
+          echo "SKIP_COMPONENT=false" >> $GITHUB_OUTPUT
+        fi
+        if [[ $(git show -s --format=%s) =~ "skip feelpp" ]]; then
+          echo "SKIP_FEELPP=true" >> $GITHUB_OUTPUT
+        else
+          echo "SKIP_FEELPP=false" >> $GITHUB_OUTPUT
+        fi
+        if [[ $(git show -s --format=%s) =~ "skip tests" ]]; then
+          echo "SKIP_TESTS=true" >> $GITHUB_OUTPUT
+        else
+          echo "SKIP_TESTS=false" >> $GITHUB_OUTPUT
+        fi
+        if [[ $(git show -s --format=%s) =~ "skip toolboxes" ]]; then
+          echo "SKIP_TOOLBOXES=true" >> $GITHUB_OUTPUT
+        else
+          echo "SKIP_TOOLBOXES=false" >> $GITHUB_OUTPUT
+        fi
+        if [[ $(git show -s --format=%s) =~ "skip mor" ]]; then
+          echo "SKIP_MOR=true" >> $GITHUB_OUTPUT
+        else
+          echo "SKIP_MOR=false" >> $GITHUB_OUTPUT
+        fi
+        if [[ $(git show -s --format=%s) =~ "skip python" ]]; then
+          echo "SKIP_PYTHON=true" >> $GITHUB_OUTPUT
+        else
+          echo "SKIP_PYTHON=false" >> $GITHUB_OUTPUT
+        fi
 
   feelpp:
     needs: [check_skip]
