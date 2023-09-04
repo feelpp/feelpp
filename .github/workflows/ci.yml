@@ -15,6 +15,10 @@ jobs:
     outputs:
         check_skip_components: ${{ steps.check_skip_components.outputs.SKIP_COMPONENT }}
         check_skip_feelpp: ${{ steps.check_skip_components.outputs.SKIP_FEELPP }}
+        check_skip_tests: ${{ steps.check_skip_components.outputs.SKIP_TESTS }}
+        check_skip_toolboxes: ${{ steps.check_skip_components.outputs.SKIP_TOOLBOXES }}
+        check_skip_mor: ${{ steps.check_skip_components.outputs.SKIP_MOR }}
+        check_skip_python: ${{ steps.check_skip_components.outputs.SKIP_PYTHON }}
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
@@ -25,6 +29,10 @@ jobs:
       run: |
         echo "SKIP_COMPONENT=$(echo $(git log -1 --pretty=%B) =~ "skip components")" >> $GITHUB_OUTPUT
         echo "SKIP_FEELPP=$(echo $(git log -1 --pretty=%B) =~ "skip feelpp")" >> $GITHUB_OUTPUT
+        echo "SKIP_TESTS=$(echo $(git log -1 --pretty=%B) =~ "skip tests")" >> $GITHUB_OUTPUT
+        echo "SKIP_TOOLBOXES=$(echo $(git log -1 --pretty=%B) =~ "skip toolboxes")" >> $GITHUB_OUTPUT
+        echo "SKIP_MOR=$(echo $(git log -1 --pretty=%B) =~ "skip mor")" >> $GITHUB_OUTPUT
+        echo "SKIP_PYTHON=$(echo $(git log -1 --pretty=%B) =~ "skip python")" >> $GITHUB_OUTPUT
 
   feelpp:
     needs: [check_skip]
@@ -65,11 +73,14 @@ jobs:
           JOBS: 20
 
   testsuite:
-    needs: [feelpp]
+    needs: [check_skip,feelpp]
     runs-on: self-docker
     if: |
-      !contains ( github.event.head_commit.message, 'skip tests')  &&
-      !contains ( github.event.head_commit.message, 'skip components')
+      always() &&
+      !contains ( needs.*.result, 'failure') &&
+      !contains ( needs.*.result, 'cancelled') &&
+      needs.check_skip.outputs.check_skip_components == 'false' &&
+      needs.check_skip.outputs.check_skip_tests == 'false'
     continue-on-error: false
     timeout-minutes: 600
     strategy:
@@ -95,11 +106,14 @@ jobs:
           JOBS: 20
 
   toolboxes:
-    needs: [feelpp]
+    needs: [check_skip,feelpp]
     runs-on: self-docker
     if: |
-      !contains(github.event.head_commit.message, 'skip toolboxes')  &&
-      !contains(github.event.head_commit.message, 'skip components')
+      always() &&
+      !contains ( needs.*.result, 'failure') &&
+      !contains ( needs.*.result, 'cancelled') &&
+      needs.check_skip.outputs.check_skip_components == 'false' &&
+      needs.check_skip.outputs.check_skip_toolboxes == 'false'
     continue-on-error: false
     timeout-minutes: 600
     strategy:
@@ -115,9 +129,6 @@ jobs:
 
       - name: Build Feelpp Toolboxes
         id: build-feeltoolboxes
-        if: |
-          !contains(github.event.head_commit.message, 'skip toolboxes') &&
-          !contains(github.event.head_commit.message, 'skip components')
         run: |
           feelpp/tools/scripts/buildkite/install-feelpp.sh toolboxes
         env:
@@ -128,11 +139,14 @@ jobs:
           JOBS: 20
 
   mor:
-    needs: [toolboxes]
+    needs: [check_skip,toolboxes]
     runs-on: self-docker
     if: |
-      !contains(github.event.head_commit.message, 'skip mor') &&
-      !contains(github.event.head_commit.message, 'skip components')
+      always() &&
+      !contains ( needs.*.result, 'failure') &&
+      !contains ( needs.*.result, 'cancelled') &&
+      needs.check_skip.outputs.check_skip_components == 'false' &&
+      needs.check_skip.outputs.check_skip_mor == 'false'
     continue-on-error: false
     timeout-minutes: 600
     strategy:
@@ -158,11 +172,14 @@ jobs:
           JOBS: 20
 
   python:
-    needs: [feelpp,toolboxes,mor]
+    needs: [check_skip,feelpp,toolboxes,mor]
     runs-on: self-docker
     if: |
-      !contains(github.event.head_commit.message, 'skip python') &&
-      !contains(github.event.head_commit.message, 'skip components')
+      always() &&
+      !contains ( needs.*.result, 'failure') &&
+      !contains ( needs.*.result, 'cancelled') &&
+      needs.check_skip.outputs.check_skip_components == 'false' &&
+      needs.check_skip.outputs.check_skip_python == 'false'
     continue-on-error: false
     timeout-minutes: 600
     strategy:
