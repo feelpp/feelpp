@@ -33,7 +33,7 @@ jobs:
         echo "SKIP_TOOLBOXES=$(echo $(git log -1 --pretty=%B) =~ "skip toolboxes")" >> $GITHUB_OUTPUT
         echo "SKIP_MOR=$(echo $(git log -1 --pretty=%B) =~ "skip mor")" >> $GITHUB_OUTPUT
         echo "SKIP_PYTHON=$(echo $(git log -1 --pretty=%B) =~ "skip python")" >> $GITHUB_OUTPUT
-        echo "$GITHUB_OUTPUT"
+        echo "$(echo $(git log -1 --pretty=%B) =~ "skip feelpp")"
 
   feelpp:
     needs: [check_skip]
