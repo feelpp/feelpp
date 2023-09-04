@@ -32,6 +32,7 @@ jobs:
           echo "message ${{ github.event.head_commit.message }}"
           text=$(git log -1 --no-merges --pretty=%B)
           echo "text $text"
+          echo "message ${{ github.event.commits[0].message }}"
 #          echo "${{toJSON(github.event)}}"
 
       - name: Checkout code
