@@ -25,6 +25,11 @@ jobs:
               - "debian:11"
               - "debian:12"
     steps:
+      - name: Print
+        run: |
+          echo "Running on ${{ matrix.TARGET }}"
+          echo "Branch ${{ github.event.pull_request && github.head_ref || github.ref_name }}"
+          echo "message ${{ github.event.head_commit.message }}"
       - name: Checkout code
         uses: actions/checkout@v3
       - name: Workaround checkout Needed single revision issue
