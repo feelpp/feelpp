@@ -12,7 +12,9 @@ on:
 jobs:
   feelpp:
     runs-on: self-docker
-    if: ${{ !contains(github.event.head_commit.message, 'skip feelpp')  && !contains(github.event.head_commit.message, 'skip components')}}
+    if: |
+      !contains(github.event.head_commit.message, 'skip feelpp')  &&
+      !contains(github.event.head_commit.message, 'skip components')
     continue-on-error: false
     timeout-minutes: 600
     strategy:
@@ -47,8 +49,10 @@ jobs:
 
   testsuite:
     needs: [feelpp]
-    runs-on: self-docker 
-    if: ${{ !contains(github.event.head_commit.message, 'skip tests')  && !contains(github.event.head_commit.message, 'skip components')}}
+    runs-on: self-docker
+    if: |
+      !contains(github.event.head_commit.message, 'skip tests')  &&
+      !contains(github.event.head_commit.message, 'skip components')
     continue-on-error: false
     timeout-minutes: 600
     strategy:
@@ -76,7 +80,9 @@ jobs:
   toolboxes:
     needs: [feelpp]
     runs-on: self-docker
-    if: ${{ !contains(github.event.head_commit.message, 'skip toolboxes')  && !contains(github.event.head_commit.message, 'skip components')}}
+    if: |
+      !contains(github.event.head_commit.message, 'skip toolboxes')  &&
+      !contains(github.event.head_commit.message, 'skip components')
     continue-on-error: false
     timeout-minutes: 600
     strategy:
@@ -92,7 +98,9 @@ jobs:
 
       - name: Build Feelpp Toolboxes
         id: build-feeltoolboxes
-        if: ${{ !contains(github.event.head_commit.message, 'skip toolboxes') && !contains(github.event.head_commit.message, 'skip components') }}
+        if: |
+          !contains(github.event.head_commit.message, 'skip toolboxes') &&
+          !contains(github.event.head_commit.message, 'skip components')
         run: |
           feelpp/tools/scripts/buildkite/install-feelpp.sh toolboxes
         env:
@@ -105,7 +113,9 @@ jobs:
   mor:
     needs: [toolboxes]
     runs-on: self-docker
-    if: ${{ !contains(github.event.head_commit.message, 'skip mor') && !contains(github.event.head_commit.message, 'skip components') }}
+    if: |
+      !contains(github.event.head_commit.message, 'skip mor') &&
+      !contains(github.event.head_commit.message, 'skip components')
     continue-on-error: false
     timeout-minutes: 600
     strategy:
@@ -133,7 +143,9 @@ jobs:
   python:
     needs: [feelpp,toolboxes,mor]
     runs-on: self-docker
-    if: ${{ !contains(github.event.head_commit.message, 'skip python') && !contains(github.event.head_commit.message, 'skip components') }}
+    if: |
+      !contains(github.event.head_commit.message, 'skip python') &&
+      !contains(github.event.head_commit.message, 'skip components')
     continue-on-error: false
     timeout-minutes: 600
     strategy:
